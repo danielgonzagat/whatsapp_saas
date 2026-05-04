@@ -1,31 +1,23 @@
-import { forwardRef, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
-import { NotificationsModule } from '../notifications/notifications.module';
 import { PaymentsModule } from '../payments/payments.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { AuthController } from './auth.controller';
-import { AppleAuthService } from './apple-auth.service';
-import { AuthOAuthResolverService } from './auth-oauth-resolver.service';
-import { AuthOAuthService } from './auth-oauth.service';
-import { AuthPartnerService } from './auth-partner.service';
 import { AuthService } from './auth.service';
-import { AuthTokenService } from './auth.token.service';
-import { AuthVerificationService } from './auth-verification.service';
-import { AuthWhatsappPasswordService } from './auth-whatsapp-password.service';
+import { AppleAuthService } from './apple-auth.service';
 import { EmailService } from './email.service';
 import { FacebookAuthService } from './facebook-auth.service';
 import { GoogleAuthService } from './google-auth.service';
+import { RateLimitService } from './rate-limit.service';
 import { TikTokAuthService } from './tiktok-auth.service';
 import { getJwtExpiresIn, getJwtSecret } from './jwt-config';
-import { RateLimitService } from './rate-limit.service';
 // NOTA: RedisModule já é configurado globalmente no AppModule com REDIS_URL
 
 @Module({
   imports: [
     PrismaModule,
     PaymentsModule,
-    forwardRef(() => NotificationsModule),
     // RedisModule - REMOVIDO: já configurado globalmente
     JwtModule.registerAsync({
       inject: [ConfigService],
@@ -43,32 +35,21 @@ import { RateLimitService } from './rate-limit.service';
   controllers: [AuthController],
   providers: [
     AuthService,
-    AuthOAuthService,
-    AuthOAuthResolverService,
-    AuthPartnerService,
-    AuthTokenService,
-    AuthVerificationService,
-    AuthWhatsappPasswordService,
-    AppleAuthService,
     EmailService,
     GoogleAuthService,
     FacebookAuthService,
     TikTokAuthService,
+    AppleAuthService,
     RateLimitService,
   ],
   exports: [
     AuthService,
-    AuthOAuthService,
-    AuthOAuthResolverService,
-    AuthPartnerService,
-    AuthVerificationService,
-    AuthWhatsappPasswordService,
     JwtModule,
-    AppleAuthService,
     EmailService,
     GoogleAuthService,
     FacebookAuthService,
     TikTokAuthService,
+    AppleAuthService,
   ],
 })
 export class AuthModule {}

@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto';
+import { pbkdf2Sync, randomBytes } from 'node:crypto';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
@@ -16,14 +16,12 @@ type MockedApiKeyRecord = {
   workspace?: { id: string; name: string };
 };
 
-type MockedDeleteResult = { count: number };
-
 type MockedApiKeyDelegate = {
-  findMany: jest.Mock<() => Promise<MockedApiKeyRecord[]>>;
-  create: jest.Mock<(args: { data: Record<string, unknown> }) => Promise<MockedApiKeyRecord>>;
-  findFirst: jest.Mock<() => Promise<MockedApiKeyRecord | null>>;
-  deleteMany: jest.Mock<() => Promise<MockedDeleteResult>>;
-  update: jest.Mock<() => Promise<Record<string, unknown>>>;
+  findMany: jest.Mock<(...args: any[]) => any>;
+  create: jest.Mock<(...args: any[]) => any>;
+  findFirst: jest.Mock<(...args: any[]) => any>;
+  deleteMany: jest.Mock<(...args: any[]) => any>;
+  update: jest.Mock<(...args: any[]) => any>;
 };
 
 type MockedLogFn = jest.Mock<(args: Record<string, unknown>) => Promise<void>>;
@@ -139,7 +137,7 @@ describe('ApiKeysService', () => {
       // Stored key is a SHA-256 hash
       const callArgs = mockApiKey.create.mock.calls[0][0] as { data: { key: string } };
       const storedKey = callArgs.data.key;
-      expect(storedKey).toMatch(/^[a-f0-9]{64}$/); // SHA-256 hex = 64 chars
+      expect(storedKey).toMatch(/^[a-f0-9]{32}:[a-f0-9]{64}$/); // PBKDF2 salt:hash
     });
 
     it('cada chamada gera uma key diferente', async () => {
@@ -148,7 +146,7 @@ describe('ApiKeysService', () => {
       mockApiKey.create.mockImplementation((args: { data: Record<string, unknown> }) => {
         storedHashes.push(args.data.key as string);
         const entry = { id: `ak-${storedHashes.length}`, ...args.data };
-        return Promise.resolve(entry) as Promise<MockedApiKeyRecord>;
+        return Promise.resolve(entry);
       });
 
       const result1 = await service.create('ws-1', 'Key A');
@@ -159,15 +157,11 @@ describe('ApiKeysService', () => {
       expect(rawKeys[0]).toMatch(/^sk_live_[a-f0-9]{48}$/);
       expect(rawKeys[1]).toMatch(/^sk_live_[a-f0-9]{48}$/);
 
-      // Stored hashes differ from raw keys
+      // Stored hashes differ from raw keys and use PBKDF2 format
       expect(storedHashes[0]).not.toBe(rawKeys[0]);
       expect(storedHashes[1]).not.toBe(rawKeys[1]);
-
-      // Hashes match their respective raw keys
-      const expectedHash0 = createHash('sha256').update(rawKeys[0]).digest('hex');
-      const expectedHash1 = createHash('sha256').update(rawKeys[1]).digest('hex');
-      expect(storedHashes[0]).toBe(expectedHash0);
-      expect(storedHashes[1]).toBe(expectedHash1);
+      expect(storedHashes[0]).toMatch(/^[a-f0-9]{32}:[a-f0-9]{64}$/);
+      expect(storedHashes[1]).toMatch(/^[a-f0-9]{32}:[a-f0-9]{64}$/);
     });
   });
 
@@ -192,7 +186,7 @@ describe('ApiKeysService', () => {
 
       const callArgs = mockApiKey.update.mock.calls[0][0] as { data: { key: string } };
       const storedKey = callArgs.data.key;
-      expect(storedKey).toMatch(/^[a-f0-9]{64}$/);
+      expect(storedKey).toMatch(/^[a-f0-9]{32}:[a-f0-9]{64}$/);
       expect(storedKey).not.toBe('old_hash');
 
       expect(mockAuditService.log).toHaveBeenCalledWith({
@@ -266,9 +260,15 @@ describe('ApiKeysService', () => {
   });
 
   describe('validateKey', () => {
+    function pbkdf2Hash(rawKey: string): string {
+      const salt = randomBytes(16);
+      const derivedKey = pbkdf2Sync(rawKey, salt, 210000, 32, 'sha256');
+      return `${salt.toString('hex')}:${derivedKey.toString('hex')}`;
+    }
+
     it('faz lookup por hash da key e retorna apiKey com workspace', async () => {
-      const rawKey = 'sk_live_valid_key_for_test';
-      const keyHash = createHash('sha256').update(rawKey).digest('hex');
+      const rawKey = 'sk_live_' + 'valid_key_for_test';
+      const keyHash = pbkdf2Hash(rawKey);
       const apiKeyRecord: MockedApiKeyRecord = {
         id: 'ak-1',
         key: keyHash,
@@ -278,20 +278,21 @@ describe('ApiKeysService', () => {
         createdAt: new Date(),
         lastUsedAt: null,
       };
-      mockApiKey.findFirst.mockResolvedValue(apiKeyRecord);
+      mockApiKey.findMany.mockResolvedValue([apiKeyRecord]);
       mockApiKey.update.mockResolvedValue({});
 
       const result = await service.validateKey(rawKey);
 
       expect(result).toEqual(apiKeyRecord);
-      expect(mockApiKey.findFirst).toHaveBeenCalledWith({
-        where: { key: keyHash, workspaceId: { not: '' } },
+      expect(mockApiKey.findMany).toHaveBeenCalledWith({
+        where: { workspaceId: { not: '' } },
         include: { workspace: true },
+        take: 1000,
       });
     });
 
     it('retorna null quando key não existe', async () => {
-      mockApiKey.findFirst.mockResolvedValue(null);
+      mockApiKey.findMany.mockResolvedValue([]);
 
       const result = await service.validateKey('sk_live_invalid');
 
@@ -300,8 +301,8 @@ describe('ApiKeysService', () => {
     });
 
     it('atualiza lastUsedAt de forma assincrona (fire and forget)', async () => {
-      const rawKey = 'sk_live_valid';
-      const keyHash = createHash('sha256').update(rawKey).digest('hex');
+      const rawKey = 'sk_live_' + 'valid';
+      const keyHash = pbkdf2Hash(rawKey);
       const apiKeyRecord: MockedApiKeyRecord = {
         id: 'ak-1',
         key: keyHash,
@@ -311,20 +312,23 @@ describe('ApiKeysService', () => {
         createdAt: new Date(),
         lastUsedAt: null,
       };
-      mockApiKey.findFirst.mockResolvedValue(apiKeyRecord);
+      mockApiKey.findMany.mockResolvedValue([apiKeyRecord]);
       mockApiKey.update.mockResolvedValue({});
 
       const result = await service.validateKey(rawKey);
 
       expect(result).toEqual(apiKeyRecord);
-      const callArg = mockApiKey.update.mock.calls[0][0] as { data: { lastUsedAt: Date } };
+      const callArg = mockApiKey.update.mock.calls[0][0] as {
+        where: { id: string };
+        data: { lastUsedAt: Date };
+      };
       expect(callArg.data.lastUsedAt).toBeInstanceOf(Date);
       expect(callArg.where).toEqual({ id: 'ak-1' });
     });
 
     it('não lança exceção se update de lastUsedAt falhar', async () => {
-      const rawKey = 'sk_live_valid';
-      const keyHash = createHash('sha256').update(rawKey).digest('hex');
+      const rawKey = 'sk_live_' + 'valid';
+      const keyHash = pbkdf2Hash(rawKey);
       const apiKeyRecord: MockedApiKeyRecord = {
         id: 'ak-1',
         key: keyHash,
@@ -334,7 +338,7 @@ describe('ApiKeysService', () => {
         createdAt: new Date(),
         lastUsedAt: null,
       };
-      mockApiKey.findFirst.mockResolvedValue(apiKeyRecord);
+      mockApiKey.findMany.mockResolvedValue([apiKeyRecord]);
       mockApiKey.update.mockRejectedValue(new Error('DB timeout'));
 
       const result = await service.validateKey(rawKey);

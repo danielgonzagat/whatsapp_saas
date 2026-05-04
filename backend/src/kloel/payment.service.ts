@@ -200,6 +200,22 @@ export class PaymentService {
             },
           },
         });
+
+        await this.auditService.logWithTx(tx, {
+          workspaceId: params.data.workspaceId,
+          action: 'payment.created',
+          resource: 'KloelPayment',
+          resourceId: params.paymentIntent.id,
+          details: {
+            leadId: params.data.leadId,
+            amount: params.data.amount,
+            paymentMethod: 'PIX',
+            externalPaymentId: params.paymentIntent.id,
+            idempotencyKey: params.idempotencyKey,
+            customerName: params.data.customerName,
+            description: params.data.description,
+          },
+        });
       },
       { isolationLevel: 'ReadCommitted' },
     );
@@ -394,10 +410,15 @@ export class PaymentService {
 
         await this.auditService.logWithTx(tx, {
           workspaceId,
-          action: 'PAYMENT_CONFIRMED',
+          action: 'payment.status_changed',
           resource: 'KloelSale',
           resourceId: typeof sale.id === 'string' ? sale.id : '',
-          details: { externalPaymentId: payment.id, event },
+          details: {
+            externalPaymentId: payment.id,
+            event,
+            previousStatus: sale.status,
+            newStatus: 'paid',
+          },
         });
       },
       { isolationLevel: 'ReadCommitted' },

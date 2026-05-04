@@ -1,9 +1,10 @@
+import { NotImplementedException } from '@nestjs/common';
 import {
   GoogleMapsStrategy,
   InstagramStrategy,
   IScraperStrategy,
   LinkedInStrategy,
-  ScraperResult,
+  ScraperSourceCapability,
 } from './strategies';
 
 describe('strategies', () => {
@@ -18,18 +19,15 @@ describe('strategies', () => {
       expect(strategy.name).toBe('GOOGLE_MAPS');
     });
 
-    it('scrape returns empty leads and zero stats', async () => {
-      const result: ScraperResult = await strategy.scrape('restaurants', {});
-
-      expect(result.leads).toEqual([]);
-      expect(result.stats).toEqual({ found: 0, valid: 0 });
+    it('capability reports available_worker', () => {
+      const cap: ScraperSourceCapability = strategy.capability();
+      expect(cap.name).toBe('GOOGLE_MAPS');
+      expect(cap.status).toBe('available_worker');
+      expect(cap.message).toContain('worker');
     });
 
-    it('ignores query and filters params', async () => {
-      const r1 = await strategy.scrape('anything', { key: 'value' });
-      const r2 = await strategy.scrape('different', { other: 42 });
-
-      expect(r1).toEqual(r2);
+    it('scrape throws NotImplementedException (real scraper in worker)', () => {
+      expect(() => strategy.scrape('restaurants', {})).toThrow(NotImplementedException);
     });
   });
 
@@ -44,18 +42,15 @@ describe('strategies', () => {
       expect(strategy.name).toBe('INSTAGRAM');
     });
 
-    it('scrape returns empty leads and zero stats', async () => {
-      const result: ScraperResult = await strategy.scrape('fitness', {});
-
-      expect(result.leads).toEqual([]);
-      expect(result.stats).toEqual({ found: 0, valid: 0 });
+    it('capability reports available_worker', () => {
+      const cap: ScraperSourceCapability = strategy.capability();
+      expect(cap.name).toBe('INSTAGRAM');
+      expect(cap.status).toBe('available_worker');
+      expect(cap.message).toContain('worker');
     });
 
-    it('ignores query and filters params', async () => {
-      const r1 = await strategy.scrape('fitness', { location: 'NYC' });
-      const r2 = await strategy.scrape('yoga', {});
-
-      expect(r1).toEqual(r2);
+    it('scrape throws NotImplementedException (real scraper in worker)', () => {
+      expect(() => strategy.scrape('fitness', {})).toThrow(NotImplementedException);
     });
   });
 
@@ -70,18 +65,14 @@ describe('strategies', () => {
       expect(strategy.name).toBe('LINKEDIN');
     });
 
-    it('scrape returns empty leads and zero stats', async () => {
-      const result: ScraperResult = await strategy.scrape('engineers', {});
-
-      expect(result.leads).toEqual([]);
-      expect(result.stats).toEqual({ found: 0, valid: 0 });
+    it('capability reports unavailable', () => {
+      const cap: ScraperSourceCapability = strategy.capability();
+      expect(cap.name).toBe('LINKEDIN');
+      expect(cap.status).toBe('unavailable');
     });
 
-    it('ignores query and filters params', async () => {
-      const r1 = await strategy.scrape('engineers', { industry: 'tech' });
-      const r2 = await strategy.scrape('designers', {});
-
-      expect(r1).toEqual(r2);
+    it('scrape throws NotImplementedException', () => {
+      expect(() => strategy.scrape('engineers', {})).toThrow(NotImplementedException);
     });
   });
 
@@ -92,19 +83,19 @@ describe('strategies', () => {
       new InstagramStrategy(),
     ];
 
-    it.each(strategies)('$name implements IScraperStrategy correctly', async (strategy) => {
+    it.each(strategies)('$name implements IScraperStrategy correctly', (strategy) => {
       expect(strategy).toHaveProperty('name');
       expect(typeof strategy.name).toBe('string');
       expect(typeof strategy.scrape).toBe('function');
+      expect(typeof strategy.capability).toBe('function');
 
-      const result = await strategy.scrape('test', {});
-      expect(result).toHaveProperty('leads');
-      expect(result).toHaveProperty('stats');
-      expect(result.stats).toHaveProperty('found');
-      expect(result.stats).toHaveProperty('valid');
-      expect(Array.isArray(result.leads)).toBe(true);
-      expect(typeof result.stats.found).toBe('number');
-      expect(typeof result.stats.valid).toBe('number');
+      const cap = strategy.capability();
+      expect(cap).toHaveProperty('name');
+      expect(cap).toHaveProperty('status');
+      expect(cap).toHaveProperty('message');
+      expect(['available', 'available_direct', 'available_worker', 'unavailable']).toContain(
+        cap.status,
+      );
     });
   });
 });

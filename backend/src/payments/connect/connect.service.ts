@@ -1,5 +1,4 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
-import * as Sentry from '@sentry/node';
+import { Injectable, Logger } from '@nestjs/common';
 import type { ConnectAccountBalance } from '@prisma/client';
 
 import { StripeService } from '../../billing/stripe.service';
@@ -237,93 +236,81 @@ export class ConnectService {
    * SUPPLIER, COPRODUCER, MANAGER) are also one-per-workspace today;
    * promote to multi-instance later if the product requires it.
    */
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async createCustomAccount(input: CreateCustomAccountInput): Promise<CreateCustomAccountResult> {
-    const workspace = await this.prisma.workspace.findUnique({
-      where: { id: input.workspaceId },
-      select: { id: true },
-    });
-    if (!workspace) {
-      throw new BadRequestException('Workspace not found');
-    }
-
-    const existing = await this.prisma.connectAccountBalance.findFirst({
-      where: { workspaceId: input.workspaceId, accountType: input.accountType },
-    });
-    if (existing) {
-      throw new ConnectAccountAlreadyExistsError(input.workspaceId, input.accountType);
-    }
-
-    const country = input.country ?? 'BR';
-    const requestedCapabilities = ['card_payments', 'transfers'];
-    const accountPayload: StripeAccountCreateParams = {
-      type: 'custom',
-      country,
-      email: input.email,
-      capabilities: {
-        card_payments: { requested: true },
-        transfers: { requested: true },
-      },
-      settings: {
-        payouts: {
-          schedule: {
-            interval: 'manual',
-          },
-        },
-      },
-      metadata: {
-        workspaceId: input.workspaceId,
-        accountType: input.accountType,
-        ...(input.displayName ? { displayName: input.displayName } : {}),
-      },
-    };
-
-    let account: StripeAccount;
-    try {
-      account = await this.stripeService.stripe.accounts.create(accountPayload);
-    } catch (error: unknown) {
-      if (!this.shouldRetryWithoutManualPayoutSchedule(error, country)) {
-        Sentry.captureException(error, {
-          tags: { type: 'financial_alert', operation: 'connect_account_create' },
-          extra: { workspaceId: input.workspaceId, accountType: input.accountType, country },
-          level: 'error',
+    return this.prisma.$transaction(
+      async (tx) => {
+        const existing = await tx.connectAccountBalance.findFirst({
+          where: { workspaceId: input.workspaceId, accountType: input.accountType },
         });
-        throw error;
-      }
+        if (existing) {
+          throw new ConnectAccountAlreadyExistsError(input.workspaceId, input.accountType);
+        }
 
-      this.logger.warn(
-        `Stripe rejected manual payout schedule for country=${country}; retrying workspace=${input.workspaceId} type=${input.accountType} without schedule`,
-      );
-      Sentry.captureException(error, {
-        tags: { type: 'financial_alert', operation: 'connect_account_create_retry' },
-        extra: { workspaceId: input.workspaceId, accountType: input.accountType, country },
-        level: 'warning',
-      });
+        const country = input.country ?? 'BR';
+        const requestedCapabilities = ['card_payments', 'transfers'];
+        const accountPayload: StripeAccountCreateParams = {
+          type: 'custom',
+          country,
+          email: input.email,
+          capabilities: {
+            card_payments: { requested: true },
+            transfers: { requested: true },
+          },
+          settings: {
+            payouts: {
+              schedule: {
+                interval: 'manual',
+              },
+            },
+          },
+          metadata: {
+            workspaceId: input.workspaceId,
+            accountType: input.accountType,
+            ...(input.displayName ? { displayName: input.displayName } : {}),
+          },
+        };
 
-      const payloadWithoutManualPayoutSchedule: StripeAccountCreateParams = {
-        ...accountPayload,
-        settings: undefined,
-      };
-      account = await this.stripeService.stripe.accounts.create(payloadWithoutManualPayoutSchedule);
-    }
+        let account: StripeAccount;
+        try {
+          account = await this.stripeService.stripe.accounts.create(accountPayload);
+        } catch (error) {
+          if (!this.shouldRetryWithoutManualPayoutSchedule(error, country)) {
+            throw error;
+          }
 
-    const balance = await this.prisma.connectAccountBalance.create({
-      data: {
-        workspaceId: input.workspaceId,
-        stripeAccountId: account.id,
-        accountType: input.accountType,
+          this.logger.warn(
+            `Stripe rejected manual payout schedule for country=${country}; retrying workspace=${input.workspaceId} type=${input.accountType} without schedule`,
+          );
+
+          const payloadWithoutManualPayoutSchedule: StripeAccountCreateParams = {
+            ...accountPayload,
+            settings: undefined,
+          };
+          account = await this.stripeService.stripe.accounts.create(
+            payloadWithoutManualPayoutSchedule,
+          );
+        }
+
+        const balance = await tx.connectAccountBalance.create({
+          data: {
+            workspaceId: input.workspaceId,
+            stripeAccountId: account.id,
+            accountType: input.accountType,
+          },
+        });
+
+        this.logger.log(
+          `Created Custom Connected Account ${account.id} for workspace=${input.workspaceId} type=${input.accountType}`,
+        );
+
+        return {
+          accountBalanceId: balance.id,
+          stripeAccountId: account.id,
+          requestedCapabilities,
+        };
       },
-    });
-
-    this.logger.log(
-      `Created Custom Connected Account ${account.id} for workspace=${input.workspaceId} type=${input.accountType}`,
+      { isolationLevel: 'ReadCommitted' },
     );
-
-    return {
-      accountBalanceId: balance.id,
-      stripeAccountId: account.id,
-      requestedCapabilities,
-    };
   }
 
   /**
@@ -331,7 +318,6 @@ export class ConnectService {
    * surface "missing documents", "verification pending", etc., to the seller
    * without ever exposing a Stripe URL.
    */
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async getOnboardingStatus(stripeAccountId: string): Promise<OnboardingStatus> {
     const account = (await this.stripeService.stripe.accounts.retrieve(
       stripeAccountId,
@@ -361,7 +347,6 @@ export class ConnectService {
    * Custom account. This keeps KYC and bank-account collection hosted inside
    * Kloel while still surfacing live requirement status from Stripe.
    */
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async submitOnboardingProfile(input: SubmitOnboardingProfileInput): Promise<OnboardingStatus> {
     const payload = buildOnboardingAccountUpdate(input);
 
@@ -378,32 +363,15 @@ export class ConnectService {
    * account exists in Stripe but Kloel has no local mirror — useful when
    * processing webhooks that may arrive before our DB write commits.
    */
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async findBalanceByStripeAccountId(
     stripeAccountId: string,
   ): Promise<ConnectAccountBalance | null> {
     return this.prisma.connectAccountBalance.findUnique({
       where: { stripeAccountId },
-      // Include workspaceId explicitly to surface the producer-workspace anchor
-      // at the call site (Stripe-account → workspace binding).
-      select: {
-        id: true,
-        workspaceId: true,
-        stripeAccountId: true,
-        accountType: true,
-        pendingBalanceCents: true,
-        availableBalanceCents: true,
-        lifetimeReceivedCents: true,
-        lifetimePaidOutCents: true,
-        lifetimeChargebacksCents: true,
-        createdAt: true,
-        updatedAt: true,
-      },
     });
   }
 
   /** List balances. */
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async listBalances(workspaceId?: string): Promise<ConnectAccountBalance[]> {
     return this.prisma.connectAccountBalance.findMany({
       where: workspaceId ? { workspaceId } : undefined,

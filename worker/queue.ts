@@ -396,7 +396,7 @@ export class Queue {
         async (job: Job) => {
           await callback(job.data);
         },
-        { connection: getConnection() },
+        { connection: getConnection(), lockDuration: 120_000 },
       );
       additionalWorkers.push(this.worker);
       console.log(`👷 [Queue] Worker criado para fila "${this.name}"`);

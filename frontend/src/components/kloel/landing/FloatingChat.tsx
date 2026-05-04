@@ -43,8 +43,8 @@ const S = "var(--font-sora), 'Sora', sans-serif";
 const THINKING_LABELS = ['Pensando', 'Analisando', 'Raciocinando'];
 
 const USER_BUBBLE_STYLE: React.CSSProperties = {
-  background: 'colors.ember.primary',
-  color: 'colors.background.void',
+  background: colors.ember.primary,
+  color: colors.background.void,
   borderRadius: 6,
   padding: '10px 14px',
   fontFamily: S,
@@ -56,7 +56,7 @@ const USER_BUBBLE_STYLE: React.CSSProperties = {
 const ASSISTANT_BUBBLE_STYLE: React.CSSProperties = {
   fontFamily: S,
   fontSize: 14,
-  color: 'colors.text.silver',
+  color: colors.text.silver,
   lineHeight: 1.65,
   wordBreak: 'break-word',
   whiteSpace: 'pre-wrap',
@@ -527,8 +527,8 @@ export function FloatingChat({
             width: 'min(400px, calc(100vw - 24px))',
             height: 'min(560px, calc(100dvh - 108px))',
             maxHeight: 'calc(100dvh - 108px)',
-            background: 'colors.background.void',
-            border: '1px solid colors.border.space',
+            background: colors.background.void,
+            border: `1px solid ${colors.border.space}`,
             borderRadius: 12,
             boxShadow: '0 8px 40px rgba(0,0,0,0.5)',
             display: 'flex',
@@ -556,7 +556,7 @@ export function FloatingChat({
                 background: 'none',
                 border: 'none',
                 cursor: 'pointer',
-                color: 'colors.text.dim',
+                color: colors.text.dim,
                 padding: 4,
                 display: 'flex',
                 alignItems: 'center',
@@ -598,7 +598,7 @@ export function FloatingChat({
                   opacity: 0.3,
                 }}
               >
-                <span style={{ fontFamily: S, fontSize: 12, color: 'colors.text.muted' }}>
+                <span style={{ fontFamily: S, fontSize: 12, color: colors.text.muted }}>
                   {kloelT(`Digite sua mensagem`)}
                 </span>
               </div>
@@ -637,7 +637,7 @@ export function FloatingChat({
                   animated
                   spores="animated"
                 />
-                <span style={{ fontFamily: S, fontSize: 12, color: 'colors.text.muted' }}>
+                <span style={{ fontFamily: S, fontSize: 12, color: colors.text.muted }}>
                   {thinkingLabel}
                 </span>
               </div>
@@ -650,7 +650,7 @@ export function FloatingChat({
           <div
             style={{
               padding: 12,
-              borderTop: '1px solid colors.background.elevated',
+              borderTop: `1px solid ${colors.background.elevated}`,
               flexShrink: 0,
             }}
           >
@@ -659,8 +659,8 @@ export function FloatingChat({
                 display: 'flex',
                 alignItems: 'center',
                 gap: 8,
-                background: 'colors.background.surface',
-                border: '1px solid colors.border.space',
+                background: colors.background.surface,
+                border: `1px solid ${colors.border.space}`,
                 borderRadius: 6,
                 padding: '8px 12px',
               }}
@@ -676,7 +676,7 @@ export function FloatingChat({
                   background: 'none',
                   border: 'none',
                   outline: 'none',
-                  color: 'colors.text.silver',
+                  color: colors.text.silver,
                   fontSize: 14,
                   fontFamily: S,
                 }}
@@ -689,13 +689,13 @@ export function FloatingChat({
                   width: 28,
                   height: 28,
                   borderRadius: 6,
-                  background: input.trim() ? 'colors.ember.primary' : 'colors.background.elevated',
+                  background: input.trim() ? colors.ember.primary : colors.background.elevated,
                   border: 'none',
                   cursor: input.trim() ? 'pointer' : 'default',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: input.trim() ? 'colors.background.void' : 'colors.text.dim',
+                  color: input.trim() ? colors.background.void : colors.text.dim,
                   transition: 'all 150ms ease',
                   flexShrink: 0,
                 }}
@@ -731,7 +731,7 @@ export function FloatingChat({
           width: 48,
           height: 48,
           borderRadius: 6,
-          background: 'colors.ember.primary',
+          background: colors.ember.primary,
           border: 'none',
           cursor: 'pointer',
           boxShadow: '0 4px 20px rgba(232,93,48,0.3)',

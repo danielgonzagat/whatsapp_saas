@@ -1,10 +1,12 @@
 {
-  "runId": "eceb48a6-dabe-4064-a5f7-07ad0476ccef",
-  "generatedAt": "2026-04-30T05:28:01.251Z",
+  "runId": "11e0bbaa-a50e-42cf-acfa-2620e00946ff",
+  "generatedAt": "2026-05-04T05:35:38.585Z",
   "authorityMode": "advisory-only",
   "advisoryOnly": true,
   "authorityReasons": [
-    "Pulse self-trust is still failing."
+    "Evidence freshness is not closed.",
+    "Pulse self-trust is still failing.",
+    "Runtime pass is not green with live evidence."
   ],
   "pulseMachineReadiness": {
     "status": "NOT_READY",
@@ -12,20 +14,19 @@
     "canRunBoundedAutonomousCycle": false,
     "canDeclareKloelProductCertified": false,
     "blockers": [
-      "artifact_consistency: 1 divergence(s): generatedAt: 6 artifacts disagree",
-      "critical_path_terminal: 4626 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive, matrix:capability:capability:admin-marketing, matrix:capability:capability:admin-permission. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
-      "external_reality: 2 missing, 0 stale, and 0 invalid external adapter(s) remain.",
-      "self_trust: Parser self-trust failed for 5 current parser check(s): orphaned-file-checker [execution_failed]: parser=orphaned-file-checker | file=scripts/pulse/parsers/orphaned-file-checker.ts | kind=timeout | pid=29144 | elapsedMs=30003 | timeoutMs=30000 | command=/opt/homebrew/Cellar/node/25.8.2/bin/node -r /Users/danielpenin/whatsapp_saas/backend/node_modules/ts-node/register/transpile-only.js /Users/danielpenin/whatsapp_saas/scripts/pulse/parser-worker.ts orphaned-file-checker <encoded-config> | stdout=<empty> | stderr=<empty> | action=SIGKILL sent to isolated parser worker because the parser exceeded its budget. | security-injection [execution_failed]: breaks.map is not a function | security-rate-limit [execution_failed]: breaks.map is not a function | security-xss [execution_failed]: breaks.map is not a function | visual-design-checker [execution_failed]: parser=visual-design-checker | file=scripts/pulse/parsers/visual-design-checker.ts | kind=timeout | pid=31430 | elapsedMs=30002 | timeoutMs=30000 | command=/opt/homebrew/Cellar/node/25.8.2/bin/node -r /Users/danielpenin/whatsapp_saas/backend/node_modules/ts-node/register/transpile-only.js /Users/danielpenin/whatsapp_saas/scripts/pulse/parser-worker.ts visual-design-checker <encoded-config> | stdout=<empty> | stderr=<empty> | action=SIGKILL sent to isolated parser worker because the parser exceeded its budget."
+      "artifact_consistency: 1 divergence(s): generatedAt: 4 artifacts disagree",
+      "critical_path_terminal: 5102 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive, matrix:capability:capability:admin-login. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
+      "self_trust: Parser self-trust failed for 1 current parser check(s): orphaned-file-checker [execution_failed]: parser=orphaned-file-checker | file=scripts/pulse/parsers/orphaned-file-checker.ts | kind=timeout | pid=35131 | elapsedMs=30003 | timeoutMs=30000 | command=/opt/homebrew/Cellar/node/25.8.2/bin/node -r /Users/danielpenin/whatsapp_saas-onda0/backend/node_modules/ts-node/register/transpile-only.js /Users/danielpenin/whatsapp_saas-onda0/scripts/pulse/parser-worker.ts orphaned-file-checker <encoded-config> | stdout=<empty> | stderr=<empty> | action=SIGKILL sent to isolated parser worker because the parser exceeded its budget.",
+      "multi_cycle: multiCycleConvergence: no autonomy iteration history found; production-autonomy verdict requires proven cycles. Cycle proof: 0/3 successful non-regressing real cycle(s)."
     ]
   },
   "cleanupPolicy": "enforced-single-state",
-  "canonicalDir": "/Users/danielpenin/whatsapp_saas/.pulse/current",
-  "tempDir": "/Users/danielpenin/whatsapp_saas/.pulse/tmp",
+  "canonicalDir": "/Users/danielpenin/whatsapp_saas-onda0/.pulse/current",
+  "tempDir": "/Users/danielpenin/whatsapp_saas-onda0/.pulse/tmp",
   "officialArtifacts": [
     "PULSE_ADMIN_EVIDENCE.json",
     "PULSE_AGENT_ORCHESTRATION_STATE.json",
     "PULSE_ARTIFACT_INDEX.json",
-    "PULSE_AUDIT_CHAIN.jsonl",
     "PULSE_AUTONOMY_MEMORY.json",
     "PULSE_AUTONOMY_PROOF.json",
     "PULSE_AUTONOMY_STATE.json",
@@ -36,7 +37,6 @@
     "PULSE_CLI_DIRECTIVE.json",
     "PULSE_CODACY_EVIDENCE.json",
     "PULSE_CODEBASE_TRUTH.json",
-    "PULSE_COMMAND_GRAPH.json",
     "PULSE_CONTEXT_BROADCAST.json",
     "PULSE_CONTEXT_DELTA.json",
     "PULSE_CONVERGENCE_PLAN.json",
@@ -49,36 +49,24 @@
     "PULSE_FLOW_EVIDENCE.json",
     "PULSE_FLOW_PROJECTION.json",
     "PULSE_GITNEXUS_STATE.json",
-    "PULSE_HARNESS_EVIDENCE.json",
     "PULSE_HEALTH.json",
     "PULSE_INVARIANT_EVIDENCE.json",
     "PULSE_MACHINE_READINESS.json",
-    "PULSE_NO_HARDCODED_REALITY.json",
-    "PULSE_OBSERVABILITY_COVERAGE.json",
+    "PULSE_NO_HARDCODED_REALITY_STATE.json",
     "PULSE_OBSERVABILITY_EVIDENCE.json",
     "PULSE_OPERATOR_EVIDENCE.json",
     "PULSE_PARITY_GAPS.json",
-    "PULSE_PATH_COVERAGE.json",
-    "PULSE_PATH_PROOF_EVIDENCE.json",
-    "PULSE_PATH_PROOF_TASKS.json",
-    "PULSE_PERFECTNESS_LAYER_STATE.json",
-    "PULSE_PERFECTNESS_RESULT.json",
-    "PULSE_PRODUCTION_PROOF.json",
     "PULSE_PRODUCT_GRAPH.json",
     "PULSE_PRODUCT_VISION.json",
     "PULSE_RECOVERY_EVIDENCE.json",
     "PULSE_REPORT.md",
     "PULSE_RESOLVED_MANIFEST.json",
     "PULSE_RUNTIME_EVIDENCE.json",
-    "PULSE_RUNTIME_FUSION.json",
     "PULSE_RUNTIME_PROBES.json",
-    "PULSE_RUNTIME_TRACES.json",
     "PULSE_SCENARIO_COVERAGE.json",
-    "PULSE_SCENARIO_EVIDENCE.json",
     "PULSE_SCOPE_STATE.json",
     "PULSE_SOAK_EVIDENCE.json",
     "PULSE_STRUCTURAL_GRAPH.json",
-    "PULSE_TRACE_DIFF.json",
     "PULSE_WORKER_LEASES.json",
     "PULSE_WORLD_STATE.json"
   ],
@@ -88,16 +76,18 @@
       "relativePath": "PULSE_ADMIN_EVIDENCE.json",
       "schema": {
         "module": "./types",
-        "exportName": "PulseCertification.evidenceSummary"
+        "exportName": "PulseCertification.evidenceSummary.admin"
       },
       "producer": {
-        "module": "./artifacts",
-        "exportName": "certification.evidenceSummary"
+        "module": "./__parts__/artifacts/generate",
+        "exportName": "snapshot.certification.evidenceSummary.admin"
       },
       "consumers": [
-        "./certification",
-        "./execution-matrix",
-        "./artifacts.directive"
+        "./actors/coverage",
+        "./artifact-gc",
+        "./cert-gate-evidence",
+        "./scenario-evidence-loader",
+        "./timeout-evidence"
       ],
       "freshness": {
         "mode": "preserved"
@@ -109,35 +99,38 @@
       "id": "agent-orchestration-state",
       "relativePath": "PULSE_AGENT_ORCHESTRATION_STATE.json",
       "schema": {
-        "module": "./types",
-        "exportName": "PulseAgentOrchestrationState"
+        "module": "./__parts__/artifacts/generate",
+        "exportName": "writeRegisteredArtifact.agent-orchestration-state"
       },
       "producer": {
-        "module": "./autonomy-loop",
-        "exportName": "buildPulseAgentOrchestrationStateSeed"
+        "module": "./__parts__/artifacts/generate",
+        "exportName": "writeRegisteredArtifact.agent-orchestration-state"
       },
       "consumers": [
-        "./autonomy-loop.parallel"
+        "./autonomy-loop.types",
+        "./autonomy-types"
       ],
       "freshness": {
         "mode": "run"
       },
       "truthMode": "generated_from_module",
-      "mirrorToRoot": false
+      "mirrorToRoot": true
     },
     {
       "id": "artifact-index",
       "relativePath": "PULSE_ARTIFACT_INDEX.json",
       "schema": {
-        "module": "./artifacts.directive",
+        "module": "./__parts__/artifacts/generate",
         "exportName": "buildArtifactIndex"
       },
       "producer": {
-        "module": "./artifacts.directive",
+        "module": "./__parts__/artifacts/generate",
         "exportName": "buildArtifactIndex"
       },
       "consumers": [
-        "./self-trust",
+        "./__companions__/artifacts.directive.companion",
+        "./cross-artifact-consistency-check/loaders",
+        "./dynamic-reality-kernel",
         "./index"
       ],
       "freshness": {
@@ -147,39 +140,20 @@
       "mirrorToRoot": true
     },
     {
-      "id": "audit-chain",
-      "relativePath": "PULSE_AUDIT_CHAIN.jsonl",
-      "schema": {
-        "module": "./audit-chain",
-        "exportName": "PulseAuditChainEntry"
-      },
-      "producer": {
-        "module": "./audit-chain",
-        "exportName": "appendAuditChainEntry"
-      },
-      "consumers": [
-        "./self-trust",
-        "./certification"
-      ],
-      "freshness": {
-        "mode": "preserved"
-      },
-      "truthMode": "preserved_evidence",
-      "mirrorToRoot": false
-    },
-    {
       "id": "autonomy-memory",
       "relativePath": "PULSE_AUTONOMY_MEMORY.json",
       "schema": {
-        "module": "./autonomy-loop",
+        "module": "./__parts__/artifacts/generate",
         "exportName": "buildPulseAutonomyMemoryState"
       },
       "producer": {
-        "module": "./autonomy-loop",
+        "module": "./__parts__/artifacts/generate",
         "exportName": "buildPulseAutonomyMemoryState"
       },
       "consumers": [
-        "./autonomy-memory"
+        "./autonomy-loop.types",
+        "./autonomy-loop.utils",
+        "./autonomy-types"
       ],
       "freshness": {
         "mode": "run"
@@ -191,16 +165,15 @@
       "id": "autonomy-proof",
       "relativePath": "PULSE_AUTONOMY_PROOF.json",
       "schema": {
-        "module": "./artifacts.autonomy",
-        "exportName": "buildAutonomyProof"
+        "module": "./__parts__/artifacts/generate",
+        "exportName": "writeRegisteredArtifact.autonomy-proof"
       },
       "producer": {
-        "module": "./artifacts",
-        "exportName": "directive.autonomyProof"
+        "module": "./__parts__/artifacts/generate",
+        "exportName": "writeRegisteredArtifact.autonomy-proof"
       },
       "consumers": [
-        "./self-trust",
-        "./cross-artifact-consistency-check"
+        "./dynamic-reality-kernel"
       ],
       "freshness": {
         "mode": "run"
@@ -212,64 +185,73 @@
       "id": "autonomy-state",
       "relativePath": "PULSE_AUTONOMY_STATE.json",
       "schema": {
-        "module": "./types",
-        "exportName": "PulseAutonomyState"
+        "module": "./__parts__/artifacts/generate",
+        "exportName": "normalizeCanonicalArtifactValue"
       },
       "producer": {
-        "module": "./autonomy-loop",
-        "exportName": "buildPulseAutonomyStateSeed"
+        "module": "./__parts__/artifacts/generate",
+        "exportName": "normalizeCanonicalArtifactValue"
       },
       "consumers": [
-        "./autonomy-loop",
-        "./self-trust"
+        "./__companions__/artifacts.directive.companion",
+        "./autonomy-loop.types",
+        "./autonomy-types",
+        "./continuous-daemon",
+        "./dynamic-reality-kernel",
+        "./probabilistic-risk",
+        "./structural-memory"
       ],
       "freshness": {
         "mode": "run"
       },
       "truthMode": "generated_from_module",
-      "mirrorToRoot": false
+      "mirrorToRoot": true
     },
     {
       "id": "beads-state",
       "relativePath": "PULSE_BEADS_STATE.json",
       "schema": {
-        "module": "./context-broadcast",
-        "exportName": "beadsState"
+        "module": "./__parts__/artifacts/generate",
+        "exportName": "writeRegisteredArtifact.beads-state"
       },
       "producer": {
-        "module": "./context-broadcast",
-        "exportName": "buildPulseContextFabricBundle"
+        "module": "./__parts__/artifacts/generate",
+        "exportName": "writeRegisteredArtifact.beads-state"
       },
       "consumers": [
-        "./context-broadcast"
+        "./__companions__/context-broadcast.companion",
+        "./dynamic-reality-kernel"
       ],
       "freshness": {
-        "mode": "external_snapshot",
-        "maxAgeMinutes": 1440
+        "mode": "external_snapshot"
       },
       "truthMode": "external_snapshot",
-      "mirrorToRoot": true
+      "mirrorToRoot": false
     },
     {
       "id": "browser-evidence",
       "relativePath": "PULSE_BROWSER_EVIDENCE.json",
       "schema": {
         "module": "./types",
-        "exportName": "PulseCertification.evidenceSummary"
+        "exportName": "PulseCertification.evidenceSummary.browser"
       },
       "producer": {
-        "module": "./artifacts",
-        "exportName": "certification.evidenceSummary"
+        "module": "./__parts__/artifacts/generate",
+        "exportName": "snapshot.certification.evidenceSummary.browser"
       },
       "consumers": [
-        "./certification",
+        "./__companions__/dynamic-reality-kernel.companion",
+        "./__companions__/execution-matrix.spec.companion",
+        "./artifact-gc",
+        "./browser-stress-tester/index",
+        "./dynamic-reality-kernel",
         "./execution-matrix",
-        "./artifacts.directive"
+        "./replay-adapter"
       ],
       "freshness": {
-        "mode": "preserved"
+        "mode": "external_snapshot"
       },
-      "truthMode": "preserved_evidence",
+      "truthMode": "external_snapshot",
       "mirrorToRoot": false
     },
     {
@@ -277,38 +259,58 @@
       "relativePath": "PULSE_CAPABILITY_STATE.json",
       "schema": {
         "module": "./types",
-        "exportName": "PulseCapabilityState"
+        "exportName": "snapshot.capabilityState"
       },
       "producer": {
-        "module": "./artifacts",
+        "module": "./__parts__/artifacts/generate",
         "exportName": "snapshot.capabilityState"
       },
       "consumers": [
-        "./observability-coverage",
-        "./runtime-fusion",
-        "./artifacts.directive"
+        "./__companions__/chaos-engine.companion",
+        "./__companions__/dod-real-status.spec.companion",
+        "./__companions__/dynamic-reality-kernel.companion",
+        "./__companions__/observability-coverage.companion",
+        "./__companions__/runtime-fusion.spec.companion",
+        "./cert-gate-evidence",
+        "./dynamic-reality-kernel",
+        "./probabilistic-risk",
+        "./production-proof",
+        "./signal-mapper"
       ],
       "freshness": {
-        "mode": "run"
+        "mode": "external_snapshot"
       },
-      "truthMode": "generated_from_module",
-      "mirrorToRoot": false
+      "truthMode": "external_snapshot",
+      "mirrorToRoot": true
     },
     {
       "id": "certificate",
       "relativePath": "PULSE_CERTIFICATE.json",
       "schema": {
-        "module": "./types",
-        "exportName": "PulseCertification"
+        "module": "./__parts__/artifacts/generate",
+        "exportName": "buildCertificate"
       },
       "producer": {
-        "module": "./artifacts.report",
+        "module": "./__parts__/artifacts/generate",
         "exportName": "buildCertificate"
       },
       "consumers": [
-        "./self-trust",
+        "./__companions__/artifacts.directive.companion",
+        "./__companions__/comparators.companion",
+        "./__companions__/cross-artifact-consistency.spec.companion",
+        "./__companions__/dynamic-reality-kernel.companion",
+        "./__companions__/execution-matrix.spec.companion",
+        "./__companions__/regression-guard.companion",
+        "./artifact-gc",
+        "./authority-engine",
+        "./autonomy-acceptance",
+        "./cert-gate-evidence",
         "./cross-artifact-consistency-check",
-        "./artifacts.directive"
+        "./cross-artifact-consistency-check/loaders",
+        "./dynamic-reality-kernel",
+        "./execution-matrix",
+        "./probabilistic-risk",
+        "./signal-mapper"
       ],
       "freshness": {
         "mode": "run"
@@ -320,17 +322,24 @@
       "id": "directive",
       "relativePath": "PULSE_CLI_DIRECTIVE.json",
       "schema": {
-        "module": "./artifacts.directive",
+        "module": "./__parts__/artifacts/generate",
         "exportName": "buildDirective"
       },
       "producer": {
-        "module": "./artifacts.directive",
+        "module": "./__parts__/artifacts/generate",
         "exportName": "buildDirective"
       },
       "consumers": [
-        "./autonomy-loop",
-        "./context-broadcast",
-        "./self-trust"
+        "./__companions__/artifacts.directive.companion",
+        "./__companions__/comparators.companion",
+        "./__companions__/cross-artifact-consistency.spec.companion",
+        "./__companions__/dynamic-reality-kernel.companion",
+        "./artifact-gc",
+        "./autonomy-decision",
+        "./autonomy-loop.planner",
+        "./autonomy-loop.state-io",
+        "./cross-artifact-consistency-check/loaders",
+        "./dynamic-reality-kernel"
       ],
       "freshness": {
         "mode": "run"
@@ -343,57 +352,33 @@
       "relativePath": "PULSE_CODACY_EVIDENCE.json",
       "schema": {
         "module": "./types",
-        "exportName": "PulseCodacyEvidence"
-      },
-      "producer": {
-        "module": "./artifacts",
         "exportName": "snapshot.codacyEvidence"
       },
-      "consumers": [
-        "./artifacts.directive",
-        "./product-vision"
-      ],
-      "freshness": {
-        "mode": "run"
+      "producer": {
+        "module": "./__parts__/artifacts/generate",
+        "exportName": "snapshot.codacyEvidence"
       },
-      "truthMode": "generated_from_module",
-      "mirrorToRoot": false
+      "consumers": [],
+      "freshness": {
+        "mode": "preserved"
+      },
+      "truthMode": "preserved_evidence",
+      "mirrorToRoot": true
     },
     {
       "id": "codebase-truth",
       "relativePath": "PULSE_CODEBASE_TRUTH.json",
       "schema": {
         "module": "./types",
-        "exportName": "PulseCodebaseTruth"
+        "exportName": "snapshot.codebaseTruth"
       },
       "producer": {
-        "module": "./artifacts",
+        "module": "./__parts__/artifacts/generate",
         "exportName": "snapshot.codebaseTruth"
       },
       "consumers": [
-        "./codebase-truth",
-        "./resolved-manifest"
-      ],
-      "freshness": {
-        "mode": "run"
-      },
-      "truthMode": "generated_from_module",
-      "mirrorToRoot": false
-    },
-    {
-      "id": "command-graph",
-      "relativePath": "PULSE_COMMAND_GRAPH.json",
-      "schema": {
-        "module": "./command-graph-artifact",
-        "exportName": "PulseCommandGraphArtifact"
-      },
-      "producer": {
-        "module": "./command-graph-artifact",
-        "exportName": "buildPulseCommandGraphArtifact"
-      },
-      "consumers": [
-        "./daemon",
-        "./autonomy-loop"
+        "./artifact-gc",
+        "./cert-gate-evidence"
       ],
       "freshness": {
         "mode": "run"
@@ -405,58 +390,17 @@
       "id": "context-broadcast",
       "relativePath": "PULSE_CONTEXT_BROADCAST.json",
       "schema": {
-        "module": "./context-broadcast",
-        "exportName": "PulseContextBroadcast"
+        "module": "./__parts__/artifacts/generate",
+        "exportName": "writeRegisteredArtifact.context-broadcast"
       },
       "producer": {
-        "module": "./context-broadcast",
-        "exportName": "buildPulseContextFabricBundle"
+        "module": "./__parts__/artifacts/generate",
+        "exportName": "writeRegisteredArtifact.context-broadcast"
       },
       "consumers": [
-        "./autonomy-loop.parallel",
-        "./worker-lease"
-      ],
-      "freshness": {
-        "mode": "run"
-      },
-      "truthMode": "generated_from_module",
-      "mirrorToRoot": true
-    },
-    {
-      "id": "context-delta",
-      "relativePath": "PULSE_CONTEXT_DELTA.json",
-      "schema": {
-        "module": "./context-broadcast",
-        "exportName": "PulseContextDelta"
-      },
-      "producer": {
-        "module": "./context-broadcast",
-        "exportName": "buildPulseContextFabricBundle"
-      },
-      "consumers": [
-        "./context-broadcast"
-      ],
-      "freshness": {
-        "mode": "run"
-      },
-      "truthMode": "generated_from_module",
-      "mirrorToRoot": true
-    },
-    {
-      "id": "convergence-plan",
-      "relativePath": "PULSE_CONVERGENCE_PLAN.json",
-      "schema": {
-        "module": "./types",
-        "exportName": "PulseConvergencePlan"
-      },
-      "producer": {
-        "module": "./convergence-plan",
-        "exportName": "buildConvergencePlan"
-      },
-      "consumers": [
-        "./artifacts.autonomy",
-        "./context-broadcast",
-        "./path-proof-runner"
+        "./__companions__/artifacts.directive.companion",
+        "./__companions__/context-broadcast.companion",
+        "./dynamic-reality-kernel"
       ],
       "freshness": {
         "mode": "run"
@@ -465,20 +409,67 @@
       "mirrorToRoot": false
     },
     {
+      "id": "context-delta",
+      "relativePath": "PULSE_CONTEXT_DELTA.json",
+      "schema": {
+        "module": "./__parts__/artifacts/generate",
+        "exportName": "writeRegisteredArtifact.context-delta"
+      },
+      "producer": {
+        "module": "./__parts__/artifacts/generate",
+        "exportName": "writeRegisteredArtifact.context-delta"
+      },
+      "consumers": [],
+      "freshness": {
+        "mode": "run"
+      },
+      "truthMode": "generated_from_module",
+      "mirrorToRoot": false
+    },
+    {
+      "id": "convergence-plan",
+      "relativePath": "PULSE_CONVERGENCE_PLAN.json",
+      "schema": {
+        "module": "./__parts__/artifacts/generate",
+        "exportName": "normalizeCanonicalArtifactValue"
+      },
+      "producer": {
+        "module": "./__parts__/artifacts/generate",
+        "exportName": "normalizeCanonicalArtifactValue"
+      },
+      "consumers": [
+        "./__companions__/dynamic-reality-kernel.companion",
+        "./__companions__/runtime-fusion.spec.companion",
+        "./artifact-gc",
+        "./autonomy-loop.planner",
+        "./cert-gate-evidence",
+        "./cross-artifact-consistency-check",
+        "./dynamic-reality-kernel",
+        "./signal-mapper"
+      ],
+      "freshness": {
+        "mode": "run"
+      },
+      "truthMode": "generated_from_module",
+      "mirrorToRoot": true
+    },
+    {
       "id": "customer-evidence",
       "relativePath": "PULSE_CUSTOMER_EVIDENCE.json",
       "schema": {
         "module": "./types",
-        "exportName": "PulseCertification.evidenceSummary"
+        "exportName": "PulseCertification.evidenceSummary.customer"
       },
       "producer": {
-        "module": "./artifacts",
-        "exportName": "certification.evidenceSummary"
+        "module": "./__parts__/artifacts/generate",
+        "exportName": "snapshot.certification.evidenceSummary.customer"
       },
       "consumers": [
-        "./certification",
-        "./execution-matrix",
-        "./artifacts.directive"
+        "./actors/coverage",
+        "./artifact-gc",
+        "./cert-gate-evidence",
+        "./scenario-evidence-loader",
+        "./timeout-evidence"
       ],
       "freshness": {
         "mode": "preserved"
@@ -491,15 +482,13 @@
       "relativePath": "PULSE_EXECUTION_CHAINS.json",
       "schema": {
         "module": "./types",
-        "exportName": "PulseExecutionChainSet"
-      },
-      "producer": {
-        "module": "./artifacts",
         "exportName": "snapshot.executionChains"
       },
-      "consumers": [
-        "./execution-matrix"
-      ],
+      "producer": {
+        "module": "./__parts__/artifacts/generate",
+        "exportName": "snapshot.executionChains"
+      },
+      "consumers": [],
       "freshness": {
         "mode": "run"
       },
@@ -511,81 +500,100 @@
       "relativePath": "PULSE_EXECUTION_MATRIX.json",
       "schema": {
         "module": "./types",
-        "exportName": "PulseExecutionMatrix"
+        "exportName": "normalizeCanonicalArtifactValue"
       },
       "producer": {
-        "module": "./artifacts",
-        "exportName": "snapshot.executionMatrix"
+        "module": "./__parts__/artifacts/generate",
+        "exportName": "normalizeCanonicalArtifactValue"
       },
       "consumers": [
-        "./path-coverage-engine",
-        "./artifacts.directive",
-        "./path-proof-runner"
+        "./__companions__/artifacts.directive.companion",
+        "./__companions__/certification.companion",
+        "./__companions__/chaos-engine.companion",
+        "./__companions__/cross-artifact-consistency.spec.companion",
+        "./__companions__/dynamic-reality-kernel.companion",
+        "./__companions__/regression-guard.companion",
+        "./cross-artifact-consistency-check",
+        "./dynamic-reality-kernel",
+        "./proof-synthesis"
       ],
       "freshness": {
         "mode": "run"
       },
       "truthMode": "generated_from_module",
-      "mirrorToRoot": false
+      "mirrorToRoot": true
     },
     {
       "id": "execution-trace",
       "relativePath": "PULSE_EXECUTION_TRACE.json",
       "schema": {
-        "module": "./execution-trace",
-        "exportName": "PulseExecutionTrace"
+        "module": "./types",
+        "exportName": "PulseCertification.evidenceSummary.executionTrace"
       },
       "producer": {
-        "module": "./artifacts",
+        "module": "./__parts__/artifacts/generate",
         "exportName": "snapshot.certification.evidenceSummary.executionTrace"
       },
       "consumers": [
-        "./execution-trace",
-        "./runtime-fusion"
+        "./__companions__/chaos-engine.companion",
+        "./__companions__/dynamic-reality-kernel.companion",
+        "./__companions__/self-trust.companion",
+        "./artifact-gc",
+        "./cert-evidence-defaults",
+        "./dynamic-reality-kernel",
+        "./execution-trace"
       ],
       "freshness": {
         "mode": "preserved"
       },
       "truthMode": "preserved_evidence",
-      "mirrorToRoot": false
+      "mirrorToRoot": true
     },
     {
       "id": "external-signal-state",
       "relativePath": "PULSE_EXTERNAL_SIGNAL_STATE.json",
       "schema": {
         "module": "./types",
-        "exportName": "PulseExternalSignalState"
+        "exportName": "snapshot.externalSignalState"
       },
       "producer": {
-        "module": "./artifacts",
+        "module": "./__parts__/artifacts/generate",
         "exportName": "snapshot.externalSignalState"
       },
       "consumers": [
-        "./runtime-fusion",
+        "./__companions__/artifacts.directive.companion",
+        "./__companions__/dynamic-reality-kernel.companion",
+        "./__companions__/runtime-fusion.spec.companion",
         "./adapters/gitnexus-adapter",
-        "./artifacts.directive"
+        "./autonomy-loop.planner",
+        "./cert-gate-evidence",
+        "./dynamic-reality-kernel",
+        "./execution-matrix",
+        "./parsers/hardcoded-url-checker",
+        "./production-proof",
+        "./replay-adapter",
+        "./signal-mapper"
       ],
       "freshness": {
-        "mode": "external_snapshot",
-        "maxAgeMinutes": 360
+        "mode": "external_snapshot"
       },
       "truthMode": "external_snapshot",
-      "mirrorToRoot": false
+      "mirrorToRoot": true
     },
     {
       "id": "finding-validation-state",
       "relativePath": "PULSE_FINDING_VALIDATION_STATE.json",
       "schema": {
-        "module": "./finding-validation-engine",
-        "exportName": "FindingValidationState"
+        "module": "./__parts__/artifacts/generate",
+        "exportName": "buildFindingValidationState"
       },
       "producer": {
-        "module": "./artifacts",
+        "module": "./__parts__/artifacts/generate",
         "exportName": "buildFindingValidationState"
       },
       "consumers": [
-        "./finding-validation-engine",
-        "./artifacts.directive"
+        "./__companions__/dynamic-reality-kernel.companion",
+        "./dynamic-reality-kernel"
       ],
       "freshness": {
         "mode": "run"
@@ -598,16 +606,22 @@
       "relativePath": "PULSE_FLOW_EVIDENCE.json",
       "schema": {
         "module": "./types",
-        "exportName": "PulseCertification.evidenceSummary"
+        "exportName": "PulseCertification.evidenceSummary.flows"
       },
       "producer": {
-        "module": "./artifacts",
-        "exportName": "certification.evidenceSummary"
+        "module": "./__parts__/artifacts/generate",
+        "exportName": "snapshot.certification.evidenceSummary.flows"
       },
       "consumers": [
-        "./certification",
+        "./__companions__/dynamic-reality-kernel.companion",
+        "./__companions__/execution-matrix.spec.companion",
+        "./artifact-gc",
+        "./autonomy-acceptance",
+        "./cert-evidence-defaults",
+        "./cert-gate-evidence",
+        "./dynamic-reality-kernel",
         "./execution-matrix",
-        "./artifacts.directive"
+        "./timeout-evidence"
       ],
       "freshness": {
         "mode": "preserved"
@@ -620,80 +634,66 @@
       "relativePath": "PULSE_FLOW_PROJECTION.json",
       "schema": {
         "module": "./types",
-        "exportName": "PulseFlowProjection"
+        "exportName": "snapshot.flowProjection"
       },
       "producer": {
-        "module": "./artifacts",
+        "module": "./__parts__/artifacts/generate",
         "exportName": "snapshot.flowProjection"
       },
       "consumers": [
-        "./runtime-fusion",
-        "./artifacts.directive"
+        "./__companions__/dynamic-reality-kernel.companion",
+        "./__companions__/observability-coverage.companion",
+        "./__companions__/runtime-fusion.spec.companion",
+        "./cert-gate-evidence",
+        "./dynamic-reality-kernel",
+        "./signal-mapper"
       ],
       "freshness": {
-        "mode": "run"
-      },
-      "truthMode": "generated_from_module",
-      "mirrorToRoot": false
-    },
-    {
-      "id": "gitnexus-state",
-      "relativePath": "PULSE_GITNEXUS_STATE.json",
-      "schema": {
-        "module": "./context-broadcast",
-        "exportName": "gitnexusState"
-      },
-      "producer": {
-        "module": "./context-broadcast",
-        "exportName": "buildPulseContextFabricBundle"
-      },
-      "consumers": [
-        "./adapters/gitnexus-adapter",
-        "./context-broadcast"
-      ],
-      "freshness": {
-        "mode": "external_snapshot",
-        "maxAgeMinutes": 1440
+        "mode": "external_snapshot"
       },
       "truthMode": "external_snapshot",
       "mirrorToRoot": true
     },
     {
-      "id": "harness-evidence",
-      "relativePath": "PULSE_HARNESS_EVIDENCE.json",
+      "id": "gitnexus-state",
+      "relativePath": "PULSE_GITNEXUS_STATE.json",
       "schema": {
-        "module": "./types",
-        "exportName": "PulseCertification.evidenceSummary"
+        "module": "./__parts__/artifacts/generate",
+        "exportName": "writeRegisteredArtifact.gitnexus-state"
       },
       "producer": {
-        "module": "./artifacts",
-        "exportName": "certification.evidenceSummary"
+        "module": "./__parts__/artifacts/generate",
+        "exportName": "writeRegisteredArtifact.gitnexus-state"
       },
       "consumers": [
-        "./certification",
-        "./execution-matrix",
-        "./artifacts.directive"
+        "./__companions__/context-broadcast.companion",
+        "./__companions__/external-sources-orchestrator.companion",
+        "./adapters/external-sources-orchestrator",
+        "./adapters/gitnexus-adapter",
+        "./dynamic-reality-kernel"
       ],
       "freshness": {
-        "mode": "preserved"
+        "mode": "external_snapshot"
       },
-      "truthMode": "preserved_evidence",
+      "truthMode": "external_snapshot",
       "mirrorToRoot": false
     },
     {
       "id": "health",
       "relativePath": "PULSE_HEALTH.json",
       "schema": {
-        "module": "./types",
-        "exportName": "PulseHealth"
+        "module": "./__parts__/artifacts/generate",
+        "exportName": "buildHealth"
       },
       "producer": {
-        "module": "./artifacts",
+        "module": "./__parts__/artifacts/generate",
         "exportName": "buildHealth"
       },
       "consumers": [
-        "./artifacts.report",
-        "./certification"
+        "./__companions__/regression-guard.companion",
+        "./artifact-gc",
+        "./dynamic-reality-kernel",
+        "./probabilistic-risk"
       ],
       "freshness": {
         "mode": "run"
@@ -706,16 +706,18 @@
       "relativePath": "PULSE_INVARIANT_EVIDENCE.json",
       "schema": {
         "module": "./types",
-        "exportName": "PulseCertification.evidenceSummary"
+        "exportName": "PulseCertification.evidenceSummary.invariants"
       },
       "producer": {
-        "module": "./artifacts",
-        "exportName": "certification.evidenceSummary"
+        "module": "./__parts__/artifacts/generate",
+        "exportName": "snapshot.certification.evidenceSummary.invariants"
       },
       "consumers": [
-        "./certification",
-        "./execution-matrix",
-        "./artifacts.directive"
+        "./artifact-gc",
+        "./cert-evidence-defaults",
+        "./cert-gate-evidence",
+        "./invariants/index",
+        "./timeout-evidence"
       ],
       "freshness": {
         "mode": "preserved"
@@ -727,37 +729,18 @@
       "id": "machine-readiness",
       "relativePath": "PULSE_MACHINE_READINESS.json",
       "schema": {
-        "module": "./artifacts.types",
-        "exportName": "PulseMachineReadiness"
+        "module": "./__parts__/artifacts/generate",
+        "exportName": "writeRegisteredArtifact.machine-readiness"
       },
       "producer": {
-        "module": "./artifacts.report",
-        "exportName": "buildPulseMachineReadiness"
+        "module": "./__parts__/artifacts/generate",
+        "exportName": "writeRegisteredArtifact.machine-readiness"
       },
       "consumers": [
-        "./artifacts.directive",
-        "./directive-proof-surface"
-      ],
-      "freshness": {
-        "mode": "run"
-      },
-      "truthMode": "generated_from_module",
-      "mirrorToRoot": true
-    },
-    {
-      "id": "no-hardcoded-reality-state",
-      "relativePath": "PULSE_NO_HARDCODED_REALITY.json",
-      "schema": {
-        "module": "./no-hardcoded-reality-state",
-        "exportName": "PulseNoHardcodedRealityState"
-      },
-      "producer": {
-        "module": "./no-hardcoded-reality-state",
-        "exportName": "buildPulseNoHardcodedRealityState"
-      },
-      "consumers": [
-        "./certification",
-        "./artifacts.directive"
+        "./__companions__/artifacts.directive.companion",
+        "./authority-engine",
+        "./cross-artifact-consistency-check",
+        "./dynamic-reality-kernel"
       ],
       "freshness": {
         "mode": "run"
@@ -766,20 +749,17 @@
       "mirrorToRoot": false
     },
     {
-      "id": "observability-coverage",
-      "relativePath": "PULSE_OBSERVABILITY_COVERAGE.json",
+      "id": "no-hardcoded-reality-state",
+      "relativePath": "PULSE_NO_HARDCODED_REALITY_STATE.json",
       "schema": {
-        "module": "./types.observability-coverage",
-        "exportName": "ObservabilityCoverageState"
+        "module": "./__parts__/artifacts/generate",
+        "exportName": "normalizeCanonicalArtifactValue"
       },
       "producer": {
-        "module": "./observability-coverage",
-        "exportName": "buildObservabilityCoverage"
+        "module": "./__parts__/artifacts/generate",
+        "exportName": "normalizeCanonicalArtifactValue"
       },
-      "consumers": [
-        "./certification",
-        "./artifacts.directive"
-      ],
+      "consumers": [],
       "freshness": {
         "mode": "run"
       },
@@ -791,16 +771,20 @@
       "relativePath": "PULSE_OBSERVABILITY_EVIDENCE.json",
       "schema": {
         "module": "./types",
-        "exportName": "PulseCertification.evidenceSummary"
+        "exportName": "PulseCertification.evidenceSummary.observability"
       },
       "producer": {
-        "module": "./artifacts",
-        "exportName": "certification.evidenceSummary"
+        "module": "./__parts__/artifacts/generate",
+        "exportName": "snapshot.certification.evidenceSummary.observability"
       },
       "consumers": [
-        "./certification",
-        "./execution-matrix",
-        "./artifacts.directive"
+        "./__companions__/dynamic-reality-kernel.companion",
+        "./artifact-gc",
+        "./cert-evidence-defaults",
+        "./cert-gate-evidence",
+        "./dynamic-reality-kernel",
+        "./production-proof",
+        "./runtime-evidence"
       ],
       "freshness": {
         "mode": "preserved"
@@ -813,16 +797,18 @@
       "relativePath": "PULSE_OPERATOR_EVIDENCE.json",
       "schema": {
         "module": "./types",
-        "exportName": "PulseCertification.evidenceSummary"
+        "exportName": "PulseCertification.evidenceSummary.operator"
       },
       "producer": {
-        "module": "./artifacts",
-        "exportName": "certification.evidenceSummary"
+        "module": "./__parts__/artifacts/generate",
+        "exportName": "snapshot.certification.evidenceSummary.operator"
       },
       "consumers": [
-        "./certification",
-        "./execution-matrix",
-        "./artifacts.directive"
+        "./actors/coverage",
+        "./artifact-gc",
+        "./cert-gate-evidence",
+        "./scenario-evidence-loader",
+        "./timeout-evidence"
       ],
       "freshness": {
         "mode": "preserved"
@@ -835,202 +821,87 @@
       "relativePath": "PULSE_PARITY_GAPS.json",
       "schema": {
         "module": "./types",
-        "exportName": "PulseParityGapsArtifact"
+        "exportName": "snapshot.parityGaps"
       },
       "producer": {
-        "module": "./artifacts",
+        "module": "./__parts__/artifacts/generate",
         "exportName": "snapshot.parityGaps"
       },
       "consumers": [
-        "./artifacts.directive"
+        "./__companions__/dynamic-reality-kernel.companion",
+        "./dynamic-reality-kernel"
       ],
       "freshness": {
         "mode": "run"
       },
       "truthMode": "generated_from_module",
-      "mirrorToRoot": false
-    },
-    {
-      "id": "path-coverage",
-      "relativePath": "PULSE_PATH_COVERAGE.json",
-      "schema": {
-        "module": "./types.path-coverage-engine",
-        "exportName": "PathCoverageState"
-      },
-      "producer": {
-        "module": "./path-coverage-engine",
-        "exportName": "buildPathCoverageState"
-      },
-      "consumers": [
-        "./path-proof-runner",
-        "./artifacts.directive"
-      ],
-      "freshness": {
-        "mode": "run"
-      },
-      "truthMode": "generated_from_module",
-      "mirrorToRoot": false
-    },
-    {
-      "id": "path-proof-evidence",
-      "relativePath": "PULSE_PATH_PROOF_EVIDENCE.json",
-      "schema": {
-        "module": "./types",
-        "exportName": "PulseCertification.evidenceSummary"
-      },
-      "producer": {
-        "module": "./artifacts",
-        "exportName": "certification.evidenceSummary"
-      },
-      "consumers": [
-        "./certification",
-        "./execution-matrix",
-        "./artifacts.directive"
-      ],
-      "freshness": {
-        "mode": "preserved"
-      },
-      "truthMode": "preserved_evidence",
-      "mirrorToRoot": false
-    },
-    {
-      "id": "path-proof-tasks",
-      "relativePath": "PULSE_PATH_PROOF_TASKS.json",
-      "schema": {
-        "module": "./path-proof-runner",
-        "exportName": "PathProofPlan"
-      },
-      "producer": {
-        "module": "./path-proof-runner",
-        "exportName": "buildPathProofPlan"
-      },
-      "consumers": [
-        "./path-proof-execution-runner",
-        "./artifacts.directive"
-      ],
-      "freshness": {
-        "mode": "run"
-      },
-      "truthMode": "generated_from_module",
-      "mirrorToRoot": false
-    },
-    {
-      "id": "perfectness-layer-state",
-      "relativePath": "PULSE_PERFECTNESS_LAYER_STATE.json",
-      "schema": {
-        "module": "./perfectness-test",
-        "exportName": "PerfectnessLayerState"
-      },
-      "producer": {
-        "module": "./daemon",
-        "exportName": "perfectness modules"
-      },
-      "consumers": [
-        "./perfectness-test",
-        "./daemon"
-      ],
-      "freshness": {
-        "mode": "run"
-      },
-      "truthMode": "generated_from_module",
-      "mirrorToRoot": false
-    },
-    {
-      "id": "perfectness-result",
-      "relativePath": "PULSE_PERFECTNESS_RESULT.json",
-      "schema": {
-        "module": "./perfectness-test",
-        "exportName": "PerfectnessResult"
-      },
-      "producer": {
-        "module": "./perfectness-test",
-        "exportName": "runPerfectnessTest"
-      },
-      "consumers": [
-        "./certification"
-      ],
-      "freshness": {
-        "mode": "run"
-      },
-      "truthMode": "generated_from_module",
-      "mirrorToRoot": false
+      "mirrorToRoot": true
     },
     {
       "id": "product-graph",
       "relativePath": "PULSE_PRODUCT_GRAPH.json",
       "schema": {
         "module": "./types",
-        "exportName": "PulseProductGraph"
+        "exportName": "snapshot.productGraph"
       },
       "producer": {
-        "module": "./artifacts",
+        "module": "./__parts__/artifacts/generate",
         "exportName": "snapshot.productGraph"
       },
       "consumers": [
-        "./chaos-engine",
-        "./artifacts.directive"
+        "./__companions__/dynamic-reality-kernel.companion",
+        "./__companions__/no-hardcoded-reality.spec.companion",
+        "./__companions__/scenario-engine.spec.companion",
+        "./dynamic-reality-kernel",
+        "./production-proof"
       ],
       "freshness": {
         "mode": "run"
       },
       "truthMode": "generated_from_module",
-      "mirrorToRoot": false
+      "mirrorToRoot": true
     },
     {
       "id": "product-vision",
       "relativePath": "PULSE_PRODUCT_VISION.json",
       "schema": {
         "module": "./types",
-        "exportName": "PulseProductVision"
+        "exportName": "snapshot.productVision"
       },
       "producer": {
-        "module": "./artifacts",
+        "module": "./__parts__/artifacts/generate",
         "exportName": "snapshot.productVision"
       },
       "consumers": [
-        "./artifacts.directive"
+        "./__companions__/convergence-plan.companion",
+        "./__companions__/dynamic-reality-kernel.companion",
+        "./autonomy-loop.planner",
+        "./dynamic-reality-kernel"
       ],
       "freshness": {
         "mode": "run"
       },
       "truthMode": "generated_from_module",
-      "mirrorToRoot": false
-    },
-    {
-      "id": "production-proof",
-      "relativePath": "PULSE_PRODUCTION_PROOF.json",
-      "schema": {
-        "module": "./proof-synthesizer",
-        "exportName": "PulseProductionProof"
-      },
-      "producer": {
-        "module": "./proof-synthesizer",
-        "exportName": "synthesizeProofPlan"
-      },
-      "consumers": [
-        "./certification"
-      ],
-      "freshness": {
-        "mode": "run"
-      },
-      "truthMode": "generated_from_module",
-      "mirrorToRoot": false
+      "mirrorToRoot": true
     },
     {
       "id": "recovery-evidence",
       "relativePath": "PULSE_RECOVERY_EVIDENCE.json",
       "schema": {
         "module": "./types",
-        "exportName": "PulseCertification.evidenceSummary"
+        "exportName": "PulseCertification.evidenceSummary.recovery"
       },
       "producer": {
-        "module": "./artifacts",
-        "exportName": "certification.evidenceSummary"
+        "module": "./__parts__/artifacts/generate",
+        "exportName": "snapshot.certification.evidenceSummary.recovery"
       },
       "consumers": [
-        "./certification",
-        "./execution-matrix",
-        "./artifacts.directive"
+        "./__companions__/dynamic-reality-kernel.companion",
+        "./artifact-gc",
+        "./cert-evidence-defaults",
+        "./cert-gate-evidence",
+        "./dynamic-reality-kernel",
+        "./runtime-evidence"
       ],
       "freshness": {
         "mode": "preserved"
@@ -1042,15 +913,18 @@
       "id": "report",
       "relativePath": "PULSE_REPORT.md",
       "schema": {
-        "module": "./artifacts.report",
+        "module": "./__parts__/artifacts/generate",
         "exportName": "buildReport"
       },
       "producer": {
-        "module": "./artifacts.report",
+        "module": "./__parts__/artifacts/generate",
         "exportName": "buildReport"
       },
       "consumers": [
-        "./index"
+        "./__companions__/dynamic-reality-kernel.companion",
+        "./artifact-gc",
+        "./cert-gate-evidence",
+        "./dynamic-reality-kernel"
       ],
       "freshness": {
         "mode": "run"
@@ -1063,15 +937,19 @@
       "relativePath": "PULSE_RESOLVED_MANIFEST.json",
       "schema": {
         "module": "./types",
-        "exportName": "PulseResolvedManifest"
+        "exportName": "snapshot.resolvedManifest"
       },
       "producer": {
-        "module": "./artifacts",
+        "module": "./__parts__/artifacts/generate",
         "exportName": "snapshot.resolvedManifest"
       },
       "consumers": [
-        "./resolved-manifest",
-        "./artifacts.directive"
+        "./__companions__/dynamic-reality-kernel.companion",
+        "./artifact-gc",
+        "./autonomy-loop.prompt",
+        "./cert-gate-evidence",
+        "./dynamic-reality-kernel",
+        "./scenario-mode-registry"
       ],
       "freshness": {
         "mode": "run"
@@ -1084,80 +962,54 @@
       "relativePath": "PULSE_RUNTIME_EVIDENCE.json",
       "schema": {
         "module": "./types",
-        "exportName": "PulseCertification.evidenceSummary"
+        "exportName": "PulseCertification.evidenceSummary.runtime"
       },
       "producer": {
-        "module": "./artifacts",
-        "exportName": "certification.evidenceSummary"
+        "module": "./__parts__/artifacts/generate",
+        "exportName": "snapshot.certification.evidenceSummary.runtime"
       },
       "consumers": [
-        "./certification",
+        "./__companions__/chaos-engine.companion",
+        "./__companions__/dynamic-reality-kernel.companion",
+        "./__companions__/path-proof-runner.spec.companion",
+        "./artifact-gc",
+        "./cert-gate-evidence",
+        "./dynamic-reality-kernel",
         "./execution-matrix",
-        "./artifacts.directive"
-      ],
-      "freshness": {
-        "mode": "preserved"
-      },
-      "truthMode": "preserved_evidence",
-      "mirrorToRoot": false
-    },
-    {
-      "id": "runtime-fusion",
-      "relativePath": "PULSE_RUNTIME_FUSION.json",
-      "schema": {
-        "module": "./runtime-fusion",
-        "exportName": "PulseRuntimeFusion"
-      },
-      "producer": {
-        "module": "./runtime-fusion",
-        "exportName": "buildRuntimeFusionArtifact"
-      },
-      "consumers": [
-        "./certification",
-        "./execution-matrix"
-      ],
-      "freshness": {
-        "mode": "run"
-      },
-      "truthMode": "generated_from_module",
-      "mirrorToRoot": false
-    },
-    {
-      "id": "runtime-probes",
-      "relativePath": "PULSE_RUNTIME_PROBES.json",
-      "schema": {
-        "module": "./runtime-probes",
-        "exportName": "PulseRuntimeProbesArtifact"
-      },
-      "producer": {
-        "module": "./runtime-probes",
-        "exportName": "buildRuntimeProbesArtifact"
-      },
-      "consumers": [
-        "./runtime-fusion",
+        "./parsers/hardcoded-url-checker",
+        "./runtime-evidence",
+        "./runtime-evidence.db-probe",
+        "./runtime-evidence.probes",
+        "./runtime-probes",
         "./timeout-evidence"
       ],
       "freshness": {
         "mode": "preserved"
       },
       "truthMode": "preserved_evidence",
-      "mirrorToRoot": false
+      "mirrorToRoot": true
     },
     {
-      "id": "runtime-traces",
-      "relativePath": "PULSE_RUNTIME_TRACES.json",
+      "id": "runtime-probes",
+      "relativePath": "PULSE_RUNTIME_PROBES.json",
       "schema": {
         "module": "./types",
-        "exportName": "PulseCertification.evidenceSummary"
+        "exportName": "buildRuntimeProbesArtifact"
       },
       "producer": {
-        "module": "./artifacts",
-        "exportName": "certification.evidenceSummary"
+        "module": "./__parts__/artifacts/generate",
+        "exportName": "buildRuntimeProbesArtifact"
       },
       "consumers": [
-        "./certification",
-        "./execution-matrix",
-        "./artifacts.directive"
+        "./artifact-gc",
+        "./cert-gate-evidence",
+        "./dynamic-reality-kernel",
+        "./production-proof",
+        "./runtime-evidence",
+        "./runtime-evidence.db-probe",
+        "./runtime-evidence.probes",
+        "./runtime-probes",
+        "./timeout-evidence"
       ],
       "freshness": {
         "mode": "preserved"
@@ -1173,34 +1025,20 @@
         "exportName": "PulseCertification.evidenceSummary.syntheticCoverage"
       },
       "producer": {
-        "module": "./artifacts",
+        "module": "./__parts__/artifacts/generate",
         "exportName": "snapshot.certification.evidenceSummary.syntheticCoverage"
       },
       "consumers": [
-        "./scenario-evidence-loader",
-        "./cert-evidence-actor"
-      ],
-      "freshness": {
-        "mode": "run"
-      },
-      "truthMode": "generated_from_module",
-      "mirrorToRoot": false
-    },
-    {
-      "id": "scenario-evidence",
-      "relativePath": "PULSE_SCENARIO_EVIDENCE.json",
-      "schema": {
-        "module": "./types",
-        "exportName": "PulseCertification.evidenceSummary"
-      },
-      "producer": {
-        "module": "./artifacts",
-        "exportName": "certification.evidenceSummary"
-      },
-      "consumers": [
-        "./certification",
-        "./execution-matrix",
-        "./artifacts.directive"
+        "./__companions__/dod-real-status.spec.companion",
+        "./__companions__/dynamic-reality-kernel.companion",
+        "./actors/coverage",
+        "./artifact-gc",
+        "./autonomy-acceptance",
+        "./cert-evidence-actor",
+        "./cert-gate-evidence",
+        "./dynamic-reality-kernel",
+        "./index",
+        "./timeout-evidence"
       ],
       "freshness": {
         "mode": "preserved"
@@ -1213,37 +1051,47 @@
       "relativePath": "PULSE_SCOPE_STATE.json",
       "schema": {
         "module": "./types",
-        "exportName": "PulseScopeState"
+        "exportName": "snapshot.scopeState"
       },
       "producer": {
-        "module": "./artifacts",
+        "module": "./__parts__/artifacts/generate",
         "exportName": "snapshot.scopeState"
       },
       "consumers": [
-        "./scope-state",
-        "./external-signals"
+        "./__companions__/dynamic-reality-kernel.companion",
+        "./__companions__/execution-matrix.companion",
+        "./__companions__/property-tester.companion",
+        "./__companions__/scope-engine.companion",
+        "./artifact-gc",
+        "./cert-gate-evidence",
+        "./dynamic-reality-kernel",
+        "./execution-matrix",
+        "./false-positive-adjudicator",
+        "./parsers/hardcoded-url-checker"
       ],
       "freshness": {
         "mode": "run"
       },
       "truthMode": "generated_from_module",
-      "mirrorToRoot": false
+      "mirrorToRoot": true
     },
     {
       "id": "soak-evidence",
       "relativePath": "PULSE_SOAK_EVIDENCE.json",
       "schema": {
         "module": "./types",
-        "exportName": "PulseCertification.evidenceSummary"
+        "exportName": "PulseCertification.evidenceSummary.soak"
       },
       "producer": {
-        "module": "./artifacts",
-        "exportName": "certification.evidenceSummary"
+        "module": "./__parts__/artifacts/generate",
+        "exportName": "snapshot.certification.evidenceSummary.soak"
       },
       "consumers": [
-        "./certification",
-        "./execution-matrix",
-        "./artifacts.directive"
+        "./actors/coverage",
+        "./artifact-gc",
+        "./cert-gate-evidence",
+        "./scenario-evidence-loader",
+        "./timeout-evidence"
       ],
       "freshness": {
         "mode": "preserved"
@@ -1256,62 +1104,47 @@
       "relativePath": "PULSE_STRUCTURAL_GRAPH.json",
       "schema": {
         "module": "./types",
-        "exportName": "PulseStructuralGraph"
+        "exportName": "snapshot.structuralGraph"
       },
       "producer": {
-        "module": "./artifacts",
+        "module": "./__parts__/artifacts/generate",
         "exportName": "snapshot.structuralGraph"
       },
       "consumers": [
-        "./chaos-engine",
-        "./artifacts.directive"
-      ],
-      "freshness": {
-        "mode": "run"
-      },
-      "truthMode": "generated_from_module",
-      "mirrorToRoot": false
-    },
-    {
-      "id": "trace-diff",
-      "relativePath": "PULSE_TRACE_DIFF.json",
-      "schema": {
-        "module": "./runtime-fusion",
-        "exportName": "traceDiff"
-      },
-      "producer": {
-        "module": "./runtime-fusion",
-        "exportName": "buildRuntimeFusionArtifact"
-      },
-      "consumers": [
-        "./runtime-fusion"
-      ],
-      "freshness": {
-        "mode": "run"
-      },
-      "truthMode": "generated_from_module",
-      "mirrorToRoot": false
-    },
-    {
-      "id": "worker-leases",
-      "relativePath": "PULSE_WORKER_LEASES.json",
-      "schema": {
-        "module": "./context-broadcast",
-        "exportName": "PulseWorkerLeases"
-      },
-      "producer": {
-        "module": "./context-broadcast",
-        "exportName": "buildPulseContextFabricBundle"
-      },
-      "consumers": [
-        "./worker-lease",
-        "./autonomy-loop.parallel"
+        "./__companions__/chaos-engine.companion",
+        "./__companions__/contract-tester.companion",
+        "./__companions__/dynamic-reality-kernel.companion",
+        "./__companions__/no-hardcoded-reality.spec.companion",
+        "./dynamic-reality-kernel",
+        "./parsers/hardcoded-url-checker"
       ],
       "freshness": {
         "mode": "run"
       },
       "truthMode": "generated_from_module",
       "mirrorToRoot": true
+    },
+    {
+      "id": "worker-leases",
+      "relativePath": "PULSE_WORKER_LEASES.json",
+      "schema": {
+        "module": "./__parts__/artifacts/generate",
+        "exportName": "writeRegisteredArtifact.worker-leases"
+      },
+      "producer": {
+        "module": "./__parts__/artifacts/generate",
+        "exportName": "writeRegisteredArtifact.worker-leases"
+      },
+      "consumers": [
+        "./__companions__/artifacts.directive.companion",
+        "./__companions__/context-broadcast.companion",
+        "./dynamic-reality-kernel"
+      ],
+      "freshness": {
+        "mode": "run"
+      },
+      "truthMode": "generated_from_module",
+      "mirrorToRoot": false
     },
     {
       "id": "world-state",
@@ -1321,12 +1154,17 @@
         "exportName": "PulseCertification.evidenceSummary.worldState"
       },
       "producer": {
-        "module": "./artifacts",
+        "module": "./__parts__/artifacts/generate",
         "exportName": "snapshot.certification.evidenceSummary.worldState"
       },
       "consumers": [
-        "./certification",
-        "./scope-state"
+        "./__companions__/dynamic-reality-kernel.companion",
+        "./actors/coverage",
+        "./artifact-gc",
+        "./cert-evidence-actor",
+        "./cert-gate-evidence",
+        "./dynamic-reality-kernel",
+        "./timeout-evidence"
       ],
       "freshness": {
         "mode": "run"
@@ -1336,25 +1174,32 @@
     }
   ],
   "compatibilityMirrors": [
-    "PULSE_HEALTH.json",
+    "PULSE_AGENT_ORCHESTRATION_STATE.json",
+    "PULSE_ARTIFACT_INDEX.json",
+    "PULSE_AUTONOMY_STATE.json",
+    "PULSE_CAPABILITY_STATE.json",
     "PULSE_CERTIFICATE.json",
     "PULSE_CLI_DIRECTIVE.json",
-    "PULSE_MACHINE_READINESS.json",
-    "PULSE_ARTIFACT_INDEX.json",
-    "PULSE_GITNEXUS_STATE.json",
-    "PULSE_BEADS_STATE.json",
-    "PULSE_CONTEXT_BROADCAST.json",
-    "PULSE_WORKER_LEASES.json",
-    "PULSE_CONTEXT_DELTA.json",
+    "PULSE_CODACY_EVIDENCE.json",
+    "PULSE_CONVERGENCE_PLAN.json",
+    "PULSE_EXECUTION_MATRIX.json",
+    "PULSE_EXECUTION_TRACE.json",
+    "PULSE_EXTERNAL_SIGNAL_STATE.json",
+    "PULSE_FLOW_PROJECTION.json",
+    "PULSE_HEALTH.json",
+    "PULSE_PARITY_GAPS.json",
+    "PULSE_PRODUCT_GRAPH.json",
+    "PULSE_PRODUCT_VISION.json",
     "PULSE_REPORT.md",
+    "PULSE_RUNTIME_EVIDENCE.json",
+    "PULSE_SCOPE_STATE.json",
+    "PULSE_STRUCTURAL_GRAPH.json",
     "PULSE_WORLD_STATE.json"
   ],
   "removedLegacyPulseArtifacts": [
     "PULSE_CERTIFICATE.json",
     "PULSE_CLI_DIRECTIVE.json",
-    "PULSE_HEALTH.json",
-    "PULSE_REPORT.md",
-    "PULSE_WORLD_STATE.json"
+    "PULSE_REPORT.md"
   ],
   "rootStateMode": "local-only"
 }

@@ -40,6 +40,12 @@ import {
   deriveUnitValue,
   deriveZeroValue,
   deriveHttpStatusFromObservedCatalog,
+  discoverAllObservedArtifactFilenames,
+  discoverCapabilityMaturityStageLabels,
+  discoverCapabilityStatusLabels,
+  discoverConvergenceExecutionModeLabels,
+  discoverConvergenceUnitStatusLabels,
+  discoverDoDStatusLabels,
   discoverSourceExtensionsFromObservedTypescript,
 } from '../dynamic-reality-kernel';
 
@@ -85,6 +91,8 @@ function endpointProbe(overrides: Partial<APIEndpointProbe> = {}): APIEndpointPr
 }
 
 function matrixPath(overrides: Partial<PulseExecutionMatrixPath> = {}): PulseExecutionMatrixPath {
+  const unitStatuses = [...discoverConvergenceUnitStatusLabels()];
+  const executionModes = [...discoverConvergenceExecutionModeLabels()];
   return {
     pathId: 'matrix:path:test',
     capabilityId: null,
@@ -97,7 +105,7 @@ function matrixPath(overrides: Partial<PulseExecutionMatrixPath> = {}): PulseExe
       description: 'Opaque route',
     },
     chain: [],
-    status: 'inferred_only',
+    status: unitStatuses[0] as PulseExecutionMatrixPath['status'],
     truthMode: 'inferred',
     productStatus: null,
     breakpoint: null,
@@ -105,7 +113,7 @@ function matrixPath(overrides: Partial<PulseExecutionMatrixPath> = {}): PulseExe
     observedEvidence: [],
     validationCommand: 'node scripts/pulse/run.js --guidance',
     risk: 'medium',
-    executionMode: 'ai_safe',
+    executionMode: executionModes[0] as PulseExecutionMatrixPath['executionMode'],
     confidence: deriveUnitValue(),
     filePaths: ['backend/src/opaque/controller.ts'],
     routePatterns: ['/opaque'],
@@ -114,6 +122,7 @@ function matrixPath(overrides: Partial<PulseExecutionMatrixPath> = {}): PulseExe
 }
 
 function replaySession(overrides: Partial<ReplaySession> = {}): ReplaySession {
+  const unitStatuses = [...discoverConvergenceUnitStatusLabels()];
   return {
     sessionId: 'replay-1',
     source: 'sentry_replay',
@@ -124,7 +133,7 @@ function replaySession(overrides: Partial<ReplaySession> = {}): ReplaySession {
     url: '/opaque',
     events: [],
     errors: [{ message: 'failed', timestamp: '2026-04-29T00:00:01.000Z' }],
-    status: 'captured',
+    status: unitStatuses[0] as ReplaySession['status'],
     convertedScenarioId: null,
     ...overrides,
   };
@@ -152,17 +161,21 @@ function harnessTarget(overrides: Partial<HarnessTarget> = {}): HarnessTarget {
 }
 
 function pulseCapability(overrides: Partial<PulseCapability> = {}): PulseCapability {
+  const capabilityStatuses = [...discoverCapabilityStatusLabels()];
+  const maturityStages = [...discoverCapabilityMaturityStageLabels()];
+  const dodStatuses = [...discoverDoDStatusLabels()];
+  const executionModes = [...discoverConvergenceExecutionModeLabels()];
   return {
     id: 'capability:opaque',
     name: 'Opaque',
     truthMode: 'observed',
-    status: 'partial',
+    status: capabilityStatuses[0] as PulseCapability['status'],
     confidence: deriveUnitValue(),
     userFacing: false,
     runtimeCritical: false,
     protectedByGovernance: false,
     ownerLane: 'customer',
-    executionMode: 'ai_safe',
+    executionMode: executionModes[0] as PulseCapability['executionMode'],
     rolesPresent: [],
     missingRoles: [],
     filePaths: [],
@@ -174,7 +187,7 @@ function pulseCapability(overrides: Partial<PulseCapability> = {}): PulseCapabil
     blockingReasons: [],
     validationTargets: [],
     maturity: {
-      stage: 'foundational',
+      stage: maturityStages[0] as PulseCapability['maturity']['stage'],
       score: deriveZeroValue(),
       dimensions: {
         interfacePresent: false,
@@ -191,7 +204,7 @@ function pulseCapability(overrides: Partial<PulseCapability> = {}): PulseCapabil
       missing: [],
     },
     dod: {
-      status: 'partial',
+      status: dodStatuses[0] as PulseCapability['dod']['status'],
       missingRoles: [],
       blockers: [],
       truthModeMet: true,

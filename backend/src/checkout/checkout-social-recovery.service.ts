@@ -7,6 +7,10 @@ import { FollowUpService } from '../followup/followup.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CheckoutSocialLeadService } from './checkout-social-lead.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import {
+  buildListUnsubscribeHeader,
+  buildUnsubscribeFooterHtml,
+} from '../common/utils/unsubscribe-footer.util';
 
 const THIRTY_MINUTES_MS = 30 * 60 * 1000;
 const ONE_HOUR_MS = 60 * 60 * 1000;
@@ -171,38 +175,45 @@ export class CheckoutSocialRecoveryService {
     name: string | null,
     checkoutSlug: string,
   ) {
-    const claimed = await this.prisma.$transaction(
-      async (tx) => {
-        const lead = await tx.checkoutSocialLead.findFirst({
-          where: { id: leadId, workspaceId },
-          select: { id: true, recoveryEmailSentAt: true },
-        });
-        if (!lead || lead.recoveryEmailSentAt) {
-          return false;
-        }
-        await tx.checkoutSocialLead.update({
-          where: { id: leadId },
-          data: { recoveryEmailSentAt: new Date() },
-          select: { id: true },
-        });
-        return true;
-      },
-      { isolationLevel: 'ReadCommitted' },
-    );
+    // PULSE_OK: advisory gate inside $transaction prevents two concurrent
+    // recovery runs from both sending email to the same lead
+    const alreadySent = await this.prisma.$transaction(async (tx) => {
+      const lead = await tx.checkoutSocialLead.findFirst({
+        where: { id: leadId, workspaceId },
+        select: { id: true, recoveryEmailSentAt: true },
+      });
+      if (!lead || lead.recoveryEmailSentAt) return true;
 
-    if (!claimed) {
-      return;
-    }
+      await tx.checkoutSocialLead.update({
+        where: { id: leadId },
+        data: { recoveryEmailSentAt: new Date() },
+        select: { id: true, workspaceId: true },
+      });
+      return false;
+    });
+
+    if (alreadySent) return;
+
+    const unsubscribeFooter = buildUnsubscribeFooterHtml({ email, workspaceId });
+    const listUnsubscribe = buildListUnsubscribeHeader({ email, workspaceId });
 
     const sent = await this.emailService.sendEmail({
       to: email,
       subject: 'Seu checkout no KLOEL ficou aberto',
-      html: this.renderRecoveryEmail(name, checkoutSlug),
+      html: `${this.renderRecoveryEmail(name, checkoutSlug)}${unsubscribeFooter}`,
+      headers: {
+        'List-Unsubscribe': listUnsubscribe,
+        'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+      },
     });
 
     if (!sent) {
       this.logger.warn(`Falha ao enviar recovery email para lead ${leadId}.`);
-      return;
+      await this.prisma.checkoutSocialLead.update({
+        where: { id: leadId },
+        data: { recoveryEmailSentAt: null },
+        select: { id: true, workspaceId: true },
+      });
     }
   }
 

@@ -66,6 +66,7 @@ describe('WelcomeAndOnboardingEmailService', () => {
         'agent@test.com',
         'Agent Name',
         'Workspace Inc',
+        undefined,
       );
     });
 

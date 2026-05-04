@@ -128,13 +128,9 @@ export class InstagramController {
 
   /** Get comments. */
   @Get('media/:id/comments')
-  async getComments(
-    @Req() req: AuthenticatedRequest,
-    @Param('id') mediaId: string,
-    @Query('accessToken') accessToken: string,
-  ) {
+  async getComments(@Req() req: AuthenticatedRequest, @Param('id') mediaId: string) {
     const workspaceId = resolveWorkspaceId(req);
-    const connection = await this.resolveInstagramConnection(workspaceId, undefined, accessToken);
+    const connection = await this.resolveInstagramConnection(workspaceId);
     return this.instagramService.getComments(
       normalizeMetaGraphSegment(mediaId, 'Instagram media id'),
       connection.accessToken,
@@ -146,14 +142,10 @@ export class InstagramController {
   async replyToComment(
     @Req() req: AuthenticatedRequest,
     @Param('id') commentId: string,
-    @Body() body: { text: string; accessToken: string },
+    @Body() body: { text: string },
   ) {
     const workspaceId = resolveWorkspaceId(req);
-    const connection = await this.resolveInstagramConnection(
-      workspaceId,
-      undefined,
-      body.accessToken,
-    );
+    const connection = await this.resolveInstagramConnection(workspaceId);
     return this.instagramService.replyToComment(
       normalizeMetaGraphSegment(commentId, 'Instagram comment id'),
       body.text,

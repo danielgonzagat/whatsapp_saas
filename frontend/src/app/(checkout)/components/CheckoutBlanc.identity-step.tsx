@@ -122,6 +122,7 @@ export function BlancIdentityStep({
               color: BLANC_MUTED,
               padding: 4,
             }}
+            aria-label={kloelT('Editar identificação')}
           >
             <SharedEd stroke={inputTheme.editStroke} />
           </button>

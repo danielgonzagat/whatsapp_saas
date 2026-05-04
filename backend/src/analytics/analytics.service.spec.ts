@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service';
+import { CacheService } from '../common/cache/cache.service';
 import { AnalyticsService } from './analytics.service';
 
 describe('AnalyticsService', () => {
@@ -52,7 +53,14 @@ describe('AnalyticsService', () => {
     };
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [AnalyticsService, { provide: PrismaService, useValue: prisma }],
+      providers: [
+        AnalyticsService,
+        { provide: PrismaService, useValue: prisma },
+        {
+          provide: CacheService,
+          useValue: { wrap: jest.fn((_key: string, fn: () => unknown) => fn()) },
+        },
+      ],
     }).compile();
 
     service = module.get<AnalyticsService>(AnalyticsService);
@@ -229,9 +237,8 @@ describe('AnalyticsService', () => {
       expect(result).toHaveProperty('resolutionRate');
       expect(result).toHaveProperty('csat');
       expect(result).toHaveProperty('productsLoaded');
-      expect(result.resolutionRate).toBe(94);
-      expect(result.avgResponseTime).toBe('2.8s');
-      expect(result.csat).toBe(4.7);
+      expect(result.resolutionRate).toBeNull();
+      expect(result.csat).toBeNull();
     });
   });
 

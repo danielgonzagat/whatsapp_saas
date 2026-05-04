@@ -6,6 +6,10 @@ import { Injectable, Logger, Optional } from '@nestjs/common';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { getTraceHeaders } from '../common/trace-headers';
 import { escapeHtml } from '../common/utils/html-escape.util';
+import {
+  buildListUnsubscribeHeader,
+  buildUnsubscribeFooterHtml,
+} from '../common/utils/unsubscribe-footer.util';
 
 /** Names of every HTML template shipped with the auth module. */
 type TemplateName =
@@ -156,11 +160,19 @@ export class EmailService {
     email: string,
     agentName: string,
     workspaceName: string,
+    workspaceId?: string,
   ): Promise<boolean> {
     const subject = 'Bem-vindo ao KLOEL!';
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
     const html = this.renderTemplate('welcome', { agentName, workspaceName, frontendUrl });
-    return this.send(email, subject, html);
+    const htmlWithUnsub = html + buildUnsubscribeFooterHtml({ email, workspaceId });
+    const headers = buildListUnsubscribeHeader({ email, workspaceId })
+      ? {
+          'List-Unsubscribe': buildListUnsubscribeHeader({ email, workspaceId }),
+          'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+        }
+      : undefined;
+    return this.send(email, subject, htmlWithUnsub, headers);
   }
 
   /** Send onboarding sequence email (day 1, 3, or 7). */
@@ -168,6 +180,7 @@ export class EmailService {
     email: string,
     agentName: string,
     template: 'onboarding-day1' | 'onboarding-day3' | 'onboarding-day7',
+    workspaceId?: string,
   ): Promise<boolean> {
     const subjects: Record<typeof template, string> = {
       'onboarding-day1': 'Primeiros passos no KLOEL',
@@ -176,7 +189,14 @@ export class EmailService {
     };
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
     const html = this.renderTemplate(template, { agentName, frontendUrl });
-    return this.send(email, subjects[template], html);
+    const htmlWithUnsub = html + buildUnsubscribeFooterHtml({ email, workspaceId });
+    const headers = buildListUnsubscribeHeader({ email, workspaceId })
+      ? {
+          'List-Unsubscribe': buildListUnsubscribeHeader({ email, workspaceId }),
+          'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+        }
+      : undefined;
+    return this.send(email, subjects[template], htmlWithUnsub, headers);
   }
 
   /**

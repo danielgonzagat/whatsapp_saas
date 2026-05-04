@@ -46,6 +46,7 @@ import {
   discoverAllObservedArtifactFilenames,
   discoverChaosResultLabels,
   discoverChaosScenarioKindLabels,
+  discoverChaosTargetLabels,
   discoverSourceExtensionsFromObservedTypescript,
   discoverPropertyPassedStatusFromTypeEvidence,
   discoverExternalReceiverTokensFromEvidence,
@@ -115,6 +116,12 @@ const EXTERNAL_PACKAGE_HINT_RE =
   /(?:api|auth|cache|client|cloud|gateway|http|mail|mq|payment|provider|queue|sdk|sms|storage|transport)$/i;
 
 // ── Helpers ───────────────────────────────────────────────────────────────
+
+function lookupChaosTargetEvidence(label: string): ChaosTarget {
+  const labels = discoverChaosTargetLabels();
+  for (const l of labels) if (l === label) return l as ChaosTarget;
+  throw new Error(`ChaosTarget type contract missing member: ${label}`);
+}
 
 function readSafe(filePath: string): string {
   try {
@@ -432,20 +439,25 @@ function detectCodebaseTargets(rootDir: string): Set<ChaosTarget> {
 
 export function classifyTargetsFromSource(content: string): Set<ChaosTarget> {
   const targets = new Set<ChaosTarget>();
+  const postgresLabel = lookupChaosTargetEvidence('postgres');
+  const redisLabel = lookupChaosTargetEvidence('redis');
+  const internalApiLabel = lookupChaosTargetEvidence('internal_api');
+  const externalHttpLabel = lookupChaosTargetEvidence('external_http');
+  const webhookReceiverLabel = lookupChaosTargetEvidence('webhook_receiver');
   if (PRISMA_OPERATION_RE.test(content)) {
-    targets.add('postgres');
+    targets.add(postgresLabel);
   }
   if (QUEUE_OR_CACHE_RE.test(content)) {
-    targets.add('redis');
+    targets.add(redisLabel);
   }
   if (hasInternalRouteEvidence(content)) {
-    targets.add('internal_api');
+    targets.add(internalApiLabel);
   }
   if (EXTERNAL_HTTP_RE.test(content)) {
-    targets.add('external_http');
+    targets.add(externalHttpLabel);
   }
   if (WEBHOOK_RECEIVER_RE.test(content)) {
-    targets.add('webhook_receiver');
+    targets.add(webhookReceiverLabel);
   }
   return targets;
 }
@@ -518,19 +530,24 @@ function loadEffectGraphRecords(rootDir: string): Record<string, unknown>[] {
 
 /** Find all capabilities that structurally depend on a target class. */
 export function computeBlastRadius(target: ChaosTarget, capabilities: PulseCapability[]): string[] {
+  const postgresLabel = lookupChaosTargetEvidence('postgres');
+  const redisLabel = lookupChaosTargetEvidence('redis');
+  const internalApiLabel = lookupChaosTargetEvidence('internal_api');
+  const externalHttpLabel = lookupChaosTargetEvidence('external_http');
+  const webhookReceiverLabel = lookupChaosTargetEvidence('webhook_receiver');
   return capabilities
     .filter((cap) => {
       const roles = new Set(cap.rolesPresent ?? []);
-      if (target === 'postgres') {
+      if (target === postgresLabel) {
         return roles.has('persistence');
       }
-      if (target === 'redis') {
+      if (target === redisLabel) {
         return roles.has('side_effect') || roles.has('orchestration');
       }
-      if (target === 'internal_api') {
+      if (target === internalApiLabel) {
         return roles.has('interface') || cap.routePatterns.length > deriveZeroValue();
       }
-      if (target === 'external_http' || target === 'webhook_receiver') {
+      if (target === externalHttpLabel || target === webhookReceiverLabel) {
         return roles.has('side_effect') || cap.routePatterns.length > deriveZeroValue();
       }
       return false;
@@ -570,17 +587,19 @@ function targetForDetectedDependency(
   dependency: ChaosProviderName,
   dependencyFiles: string[],
 ): ChaosTarget {
-  if (dependency === dependencyId('target', 'postgres')) {
-    return 'postgres';
+  const postgresDep = dependencyId('target', lookupChaosTargetEvidence('postgres'));
+  const redisDep = dependencyId('target', lookupChaosTargetEvidence('redis'));
+  if (dependency === postgresDep) {
+    return lookupChaosTargetEvidence('postgres');
   }
-  if (dependency === dependencyId('target', 'redis')) {
-    return 'redis';
+  if (dependency === redisDep) {
+    return lookupChaosTargetEvidence('redis');
   }
   const receiverTokens = discoverExternalReceiverTokensFromEvidence();
   if (dependencyFiles.some((file) => receiverTokens.some((token) => file.includes(token)))) {
-    return 'webhook_receiver';
+    return lookupChaosTargetEvidence('webhook_receiver');
   }
-  return 'external_http';
+  return lookupChaosTargetEvidence('external_http');
 }
 
 function dependencyLabel(dependency: ChaosProviderName): string {
@@ -1161,7 +1180,7 @@ export function generateProviderScenarios(
 
   for (const [provider, providerFiles] of compactProviderDependencies(detectedProviders)) {
     const target = targetForDetectedDependency(provider, providerFiles);
-    if (target === 'postgres' || target === 'redis') {
+    if (target === lookupChaosTargetEvidence('postgres') || target === lookupChaosTargetEvidence('redis')) {
       continue;
     }
     const blastRadius = computeProviderBlastRadius(provider, providerFiles, loadedCapabilities);
@@ -1350,12 +1369,12 @@ function buildExpectedBehavior(
 
     case 'slow_close': {
       let behavior = `Persistent connections to ${providerLabel} drain slowly — partial responses may arrive.`;
-      if (target === 'postgres') {
+      if (target === lookupChaosTargetEvidence('postgres')) {
         behavior +=
           ' Prisma connection pool MUST detect partial results and return error or timeout.';
         behavior += ' Transactions in-flight MUST be rolled back.';
       }
-      if (target === 'redis') {
+      if (target === lookupChaosTargetEvidence('redis')) {
         behavior += ' Redis client MUST timeout on incomplete responses.';
         behavior += ' Rate-limiting fallback MUST allow operations (fail-open for non-critical).';
       }

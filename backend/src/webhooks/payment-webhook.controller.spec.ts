@@ -28,7 +28,8 @@ describe('PaymentWebhookController.handleStripe — checkout payment intents', (
 
   it('marks checkout payment/order as paid when payment_intent.succeeded arrives for a Kloel order', async () => {
     const { controller, prisma, webhooksService } = buildController();
-    prisma.checkoutOrder.findUnique.mockResolvedValueOnce({ status: 'PROCESSING' });
+    prisma.checkoutOrder.findFirst.mockResolvedValueOnce({ status: 'PROCESSING' });
+    prisma.checkoutOrder.findFirst.mockResolvedValueOnce({ status: 'PROCESSING' });
 
     const result = await controller.handleStripe(
       {
@@ -75,7 +76,7 @@ describe('PaymentWebhookController.handleStripe — checkout payment intents', (
     );
     expect(prisma.checkoutOrder.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { id: 'order-1', workspaceId: 'ws-1' },
+        where: { id: 'order-1', workspaceId: 'ws-1', status: 'PROCESSING' },
         data: expect.objectContaining({ status: 'PAID', paidAt: expect.any(Date) }),
       }),
     );

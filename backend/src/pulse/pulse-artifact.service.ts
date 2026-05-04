@@ -214,7 +214,22 @@ export class PulseArtifactService {
   }
 
   readArtifactJson<T = Record<string, unknown>>(artifactName: string): PulseArtifactPayload<T> {
-    const targetPath = path.join(this.getArtifactCanonicalDir(), artifactName);
+    const canonicalDir = path.resolve(this.getArtifactCanonicalDir());
+    const targetPath = path.resolve(canonicalDir, artifactName);
+    const resolvedCanonical = canonicalDir + path.sep;
+
+    if (!targetPath.startsWith(resolvedCanonical)) {
+      return {
+        artifact: artifactName,
+        path: targetPath,
+        freshness: 'missing',
+        generatedAt: null,
+        staleMs: null,
+        data: null,
+        error: 'path_traversal_blocked',
+      };
+    }
+
     if (!fs.existsSync(targetPath)) {
       return {
         artifact: artifactName,

@@ -148,29 +148,48 @@ async function updateOrderStatusForIntent(
 ): Promise<void> {
   const currentOrder = await deps.prisma.checkoutOrder.findFirst({
     where: { id: orderId, workspaceId },
-    select: { status: true },
+    select: { status: true, metadata: true, totalInCents: true },
   });
   if (checkoutPaymentStatus === 'APPROVED') {
-    if (currentOrder?.status !== 'PROCESSING' && currentOrder?.status !== 'PAID') {
-      deps.logger.warn(
-        `Invalid payment state transition: tried to move from ${currentOrder?.status} to PAID for order ${orderId}; enforcing PROCESSING intermediate state`,
-      );
-      // PULSE_OK: already in $transaction
-      await deps.prisma.$transaction(async (tx) => {
+    await deps.prisma.$transaction(async (tx) => {
+      const resolvedOrder = await tx.checkoutOrder.findFirst({
+        where: { id: orderId, workspaceId },
+        select: { status: true },
+      });
+
+      if (!resolvedOrder) {
+        deps.logger.warn(
+          `Order ${orderId} not found during APPROVED webhook processing for workspace ${workspaceId}`,
+        );
+        return;
+      }
+
+      const currentStatus = resolvedOrder.status;
+
+      if (currentStatus === 'PAID') {
+        deps.logger.log(`Order ${orderId} already PAID; skipping redundant APPROVED transition`);
+        return;
+      }
+
+      if (currentStatus !== 'PROCESSING') {
+        deps.logger.warn(
+          `Order ${orderId} entering PROCESSING (was ${currentStatus}) before PAID via webhook`,
+        );
         await tx.checkoutOrder.updateMany({
           where: { id: orderId, workspaceId },
           data: { status: 'PROCESSING' },
         });
-      }, FINANCIAL_TRANSACTION_OPTIONS);
-    } else {
-      // PULSE_OK: already in $transaction
-      await deps.prisma.$transaction(async (tx) => {
-        await tx.checkoutOrder.updateMany({
-          where: { id: orderId, workspaceId },
-          data: { status: 'PAID', paidAt: new Date() },
-        });
-      }, FINANCIAL_TRANSACTION_OPTIONS);
-    }
+      }
+
+      const updateResult = await tx.checkoutOrder.updateMany({
+        where: { id: orderId, workspaceId, status: 'PROCESSING' },
+        data: { status: 'PAID', paidAt: new Date() },
+      });
+
+      if (updateResult.count > 0 && currentOrder) {
+        // updateAffiliateCountersFromOrder not yet implemented — no-op for now
+      }
+    }, FINANCIAL_TRANSACTION_OPTIONS);
   } else if (checkoutPaymentStatus === 'PROCESSING') {
     await deps.prisma.checkoutOrder.updateMany({
       where: { id: orderId, workspaceId },

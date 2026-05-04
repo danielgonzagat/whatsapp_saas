@@ -72,13 +72,13 @@ export function buildController() {
       stripeAccountId: 'acct_manager',
       requestedCapabilities: ['card_payments', 'transfers'],
     }),
-    getOnboardingStatus: jest.fn((stripeAccountId: string) => ({
-      stripeAccountId,
+    getOnboardingStatus: jest.fn().mockResolvedValue({
+      stripeAccountId: 'acct_test',
       chargesEnabled: true,
       payoutsEnabled: true,
       detailsSubmitted: true,
       requirementsCurrentlyDue: [],
-    })),
+    }),
     submitOnboardingProfile: jest.fn().mockResolvedValue({
       stripeAccountId: 'acct_seller',
       chargesEnabled: false,

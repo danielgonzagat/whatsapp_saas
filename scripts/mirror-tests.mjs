@@ -23,7 +23,9 @@ function collectFiles() {
     for (const m of matches) {
       const full = join(REPO_ROOT, m);
       try {
-        if (statSync(full).isFile()) files.push(full);
+        if (statSync(full).isFile()) {
+          files.push(full);
+        }
       } catch (e) {
         /* skip */
       }

@@ -85,6 +85,7 @@ export function NoirIdentityStep({
             type="button"
             onClick={() => setStep(1)}
             style={{ marginLeft: 'auto', background: 'none', border: 'none', padding: 4 }}
+            aria-label={kloelT('Editar identificação')}
           >
             <SharedEd stroke={inputTheme.editStroke} />
           </button>

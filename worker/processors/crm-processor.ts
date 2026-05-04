@@ -45,7 +45,7 @@ export const ghostCloserWorker = new Worker(
       throw err;
     }
   },
-  { connection, concurrency: 1 },
+  { connection, concurrency: 1, lockDuration: 120_000 },
 );
 
 async function checkInactivity(workspaceId: string) {

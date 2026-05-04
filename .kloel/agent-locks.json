@@ -102,6 +102,122 @@
       "files": ["backend/src/billing/**", "backend/src/wallet/**"],
       "status": "complete",
       "summary": "Billing+Wallet hardening audit. 4 critical fixes applied: (1) cancelSubscription now respects Stripe cancel_at_period_end — sets cancelAtPeriodEnd:true and preserves status instead of immediate CANCELED. (2) fulfillCheckout wrapped in $transaction for atomic subscription upsert+plan activation. (3) Webhook idempotency via WebhookEvent model (provider+externalId unique constraint, status tracking). (4) syncSubscriptionStatus preserves existing plan name instead of overwriting with Stripe price ID. Wallet verified: all 4 mutation methods (creditFromWebhook, chargeForUsage, settleUsageCharge, refundUsageCharge) use $transaction with ReadCommitted — correct. All money amounts are bigint in schema and service layer — correct. Idempotency via @@unique([referenceType, referenceId, type]) — correct. Tests: 13 suites, 150/151 pass. Typecheck: pre-existing TS2564 errors only (DTO strictPropertyInitialization)."
+    },
+    "agent-A13-kyc": { "domain": "kyc", "files": ["backend/src/kyc/**"], "status": "pending" },
+    "agent-A14-inbox": {
+      "domain": "inbox",
+      "files": [
+        "backend/src/inbox/**",
+        "frontend/src/lib/api/inbox*",
+        "frontend/src/components/kloel/inbox/InboxWorkspace.tsx",
+        "frontend/src/components/kloel/chat-container.tsx",
+        "frontend/src/lib/api/conversations.ts"
+      ],
+      "status": "complete",
+      "summary": "Inbox audit: NO fake data. Backend InboxService uses real Prisma (conversation.findMany, message.findMany, $transaction). Frontend InboxWorkspace uses real API calls via listConversations/getConversationMessages/apiFetch. chat-container.tsx localStorage is session-only (guest ID/onboarding). No fake/mock/dummy placeholders in inbox pipeline. Backend build: inbox compiles clean (2 errors in checkout — yellow zone). Graph bridge alive at :37779. No changes needed."
+    },
+    "agent-A15-autopilot": {
+      "domain": "autopilot",
+      "files": ["backend/src/autopilot/**"],
+      "status": "pending"
+    },
+    "agent-A16-webhooks": {
+      "domain": "webhooks",
+      "files": ["backend/src/webhooks/**"],
+      "status": "pending"
+    },
+    "agent-A17-queue": {
+      "domain": "queue",
+      "files": ["backend/src/queue/**", "worker/src/**"],
+      "status": "pending"
+    },
+    "agent-A18-campaigns": {
+      "domain": "campaigns",
+      "files": ["backend/src/campaigns/**"],
+      "status": "pending"
+    },
+    "agent-A19-member-area": {
+      "domain": "member-area",
+      "files": ["backend/src/member-area/**"],
+      "status": "pending"
+    },
+    "agent-A20-affiliate": {
+      "domain": "affiliate",
+      "files": ["backend/src/affiliate/**"],
+      "status": "pending"
+    },
+    "agent-A21-partnerships": {
+      "domain": "partnerships",
+      "files": ["backend/src/partnerships/**"],
+      "status": "pending"
+    },
+    "agent-A22-team": { "domain": "team", "files": ["backend/src/team/**"], "status": "pending" },
+    "agent-A23-api-keys": {
+      "domain": "api-keys",
+      "files": ["backend/src/api-keys/**"],
+      "status": "pending"
+    },
+    "agent-A24-notifications": {
+      "domain": "notifications",
+      "files": ["backend/src/notifications/**"],
+      "status": "pending"
+    },
+    "agent-A25-marketing": {
+      "domain": "marketing",
+      "files": ["backend/src/marketing/**"],
+      "status": "pending"
+    },
+    "agent-A26-scrapers": {
+      "domain": "scrapers",
+      "files": ["backend/src/scrapers/**"],
+      "status": "pending"
+    },
+    "agent-A27-meta": { "domain": "meta", "files": ["backend/src/meta/**"], "status": "pending" },
+    "agent-A28-growth": {
+      "domain": "growth",
+      "files": ["backend/src/growth/**"],
+      "status": "pending"
+    },
+    "agent-A29-pipeline": {
+      "domain": "pipeline",
+      "files": ["backend/src/pipeline/**"],
+      "status": "pending"
+    },
+    "agent-A30-media": {
+      "domain": "media",
+      "files": ["backend/src/media/**"],
+      "status": "pending"
+    },
+    "agent-A31-health": {
+      "domain": "health",
+      "files": ["backend/src/health/**"],
+      "status": "pending"
+    },
+    "agent-A32-public-api": {
+      "domain": "public-api",
+      "files": ["backend/src/public-api/**"],
+      "status": "pending"
+    },
+    "agent-A33-observability": {
+      "domain": "observability",
+      "files": ["backend/src/observability/**"],
+      "status": "pending"
+    },
+    "agent-A34-e2e": {
+      "domain": "e2e",
+      "files": ["e2e/**"],
+      "status": "complete",
+      "summary": "E2E infrastructure validated: Playwright 1.59.1 (e2e/package.json), 2 projects (chromium + visual), 26 spec files in e2e/specs/, 2 visual specs, 3 root-level specs. ~73 chromium tests + ~48 visual tests listed via --list. New specs validated: product-catalog-flow.spec.ts (10 tests, CRUD catalog lifecycle) and whatsapp-message-flow.spec.ts (9 tests, send/inbox/templates/session). Both follow established patterns (ensureE2EAdmin, graceful status assertions, serial mode). Critical flows covered: Auth (auth-flows, customer-auth-shell), Login→Flow→Execute (critical-flow), Checkout (customer-purchase-journey, public-checkout-smoke, customer-product-and-checkout), WhatsApp (whatsapp-message-flow, whatsapp-qr, marketing-whatsapp-flow, customer-whatsapp-and-inbox), Products (product-catalog-flow, product-creation, products-card-layout-audit), Billing (billing-plan-lifecycle, billing-reactivation, billing-suspension, system-payment-reconciliation), KYC (settings-kyc), Flows (flow-wait, flows-auth), Autopilot (autopilot-run), Worker (worker-health), Kloel chat (kloel-chat-composer-real, kloel-stream-smoke), Theme (theme-toggle-persistence), Mobile (mobile-surface-audit). Visual: critical-flows.spec.ts (14 routes × 3 viewports = 42 baselines), kloel-chat.spec.ts. Gaps: No E2E for backend-only modules still pending (campaigns, affiliate, partnerships, team, api-keys, notifications, marketing, scrapers, meta, growth, pipeline, public-api, observability) — these lack frontend surfaces and their agents are still pending in Wave 2 grid.",
+      "tests": {
+        "totalChromiumTests": 73,
+        "totalVisualTests": 48,
+        "specFiles": 28,
+        "newSpecsValidated": [
+          "e2e/specs/product-catalog-flow.spec.ts",
+          "e2e/specs/whatsapp-message-flow.spec.ts"
+        ],
+        "infraReady": true
+      }
     }
   }
 }

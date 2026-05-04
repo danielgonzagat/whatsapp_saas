@@ -3318,7 +3318,7 @@ function AreaMembros({
                                           referrerPolicy="strict-origin-when-cross-origin"
                                           style={{ border: 'none', borderRadius: 6 }}
                                           allowFullScreen
-                                          title={kloelT(`Preview`)}
+                                          title="Preview"
                                         />
                                       </div>
                                     )}
@@ -3492,7 +3492,7 @@ function AreaMembros({
                                       referrerPolicy="strict-origin-when-cross-origin"
                                       style={{ border: 'none', borderRadius: 6 }}
                                       allowFullScreen
-                                      title={kloelT(`Preview`)}
+                                      title="Preview"
                                     />
                                   </div>
                                 )}

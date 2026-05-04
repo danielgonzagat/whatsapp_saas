@@ -273,6 +273,7 @@ export class WebhooksController {
     @Req() req?: WebhookRequestLike,
   ) {
     this.verifySignatureOrThrow(signature, req);
+    await this.checkIdempotencyOrThrow(undefined, req);
     const { workspaceId, externalId, status, errorCode, phone, channel } = body || {};
     return this.webhooksService.updateMessageStatus({
       workspaceId,
@@ -302,6 +303,7 @@ export class WebhooksController {
     @Req() req?: WebhookRequestLike,
   ) {
     this.verifySignatureOrThrow(signature, req);
+    await this.checkIdempotencyOrThrow(undefined, req);
     return this.webhooksService.updateMessageStatus({
       ...body,
       channel: 'EMAIL',
@@ -327,6 +329,7 @@ export class WebhooksController {
     // Validar assinatura do Meta
     this.verifyMetaSignature(hubSignature, req);
     await this.assertWorkspaceNotSuspended(workspaceId);
+    await this.checkIdempotencyOrThrow(undefined, req);
 
     this.logger.log(`[INSTAGRAM] Webhook received for workspace ${workspaceId}`);
 

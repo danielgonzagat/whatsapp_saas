@@ -1,0 +1,1 @@
+{"generatedAt":"2026-05-03T00:00:00.000Z","scopeStates":[],"observability":{"score":0,"status":"PARTIAL","layers":[],"summary":{"total":0,"pass":0,"fail":0,"unreachable":0,"error":0}},"overall":{"score":77,"status":"PARTIAL","summary":{"totalLayers":0,"healthy":0,"degraded":0,"failing":0}},"certification":{"status":"PARTIAL","gaps":["pre-existing-pulse-gap"]}}

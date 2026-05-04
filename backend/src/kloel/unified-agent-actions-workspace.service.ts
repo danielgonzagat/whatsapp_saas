@@ -63,49 +63,77 @@ export class UnifiedAgentActionsWorkspaceService {
 
   // PULSE_OK: workspaceId validated by caller guard
   async actionCreateProduct(workspaceId: string, args: ToolArgs) {
-    const productKey = `product_${Date.now()}_${args.name.toLowerCase().replace(WHITESPACE_G_RE, '_')}`;
+    const existingDb = await this.prisma.product.findFirst({
+      where: { workspaceId, name: args.name, active: true },
+      select: { id: true, name: true, price: true },
+    });
+    if (existingDb) {
+      return {
+        success: true,
+        productId: existingDb.id,
+        message: `Produto "${args.name}" já existe (R$ ${existingDb.price}).`,
+        deduplicated: true,
+      };
+    }
 
+    const existingMem = await this.prisma.kloelMemory.findFirst({
+      where: { workspaceId, type: 'product' },
+      orderBy: { createdAt: 'desc' },
+      select: { key: true, value: true },
+    });
+    if (
+      existingMem?.value &&
+      typeof existingMem.value === 'object' &&
+      (existingMem.value as Record<string, unknown>).name === args.name
+    ) {
+      return {
+        success: true,
+        productId: existingMem.key,
+        message: `Produto "${args.name}" já existe em memória.`,
+        deduplicated: true,
+      };
+    }
+
+    const productKey = `product_${Date.now()}_${String(args.name || '')
+      .toLowerCase()
+      .replace(WHITESPACE_G_RE, '_')}`;
+    await this.prisma.kloelMemory.create({
+      data: {
+        workspaceId,
+        key: productKey,
+        type: 'product',
+        category: 'products',
+        value: {
+          name: args.name,
+          price: args.price,
+          description: args.description || '',
+          category: args.category || 'default',
+          imageUrl: args.imageUrl || null,
+          paymentLink: args.paymentLink || null,
+          active: true,
+          createdAt: new Date().toISOString(),
+        },
+      },
+    });
     let dbProductId: string | null = null;
     try {
-      dbProductId = await this.prisma.$transaction(async (tx) => {
-        await tx.kloelMemory.create({
-          data: {
-            workspaceId,
-            key: productKey,
-            type: 'product',
-            category: 'products',
-            value: {
-              name: args.name,
-              price: args.price,
-              description: args.description || '',
-              category: args.category || 'default',
-              imageUrl: args.imageUrl || null,
-              paymentLink: args.paymentLink || null,
-              active: true,
-              createdAt: new Date().toISOString(),
-            },
-          },
-        });
-
-        const dbProduct = await tx.product.create({
-          data: {
-            workspaceId,
-            name: args.name,
-            price: args.price || 0,
-            description: args.description || '',
-            category: args.category || 'default',
-            imageUrl: args.imageUrl || null,
-            active: true,
-          },
-        });
-        return dbProduct.id;
+      const dbProduct = await this.prisma.product.create({
+        data: {
+          workspaceId,
+          name: this.str(args.name),
+          price: args.price || 0,
+          description: args.description || '',
+          category: args.category || 'default',
+          imageUrl: args.imageUrl || null,
+          active: true,
+        },
       });
+      dbProductId = dbProduct.id;
     } catch (err: unknown) {
       void this.opsAlert?.alertOnCriticalError(err, 'UnifiedAgentActionsWorkspaceService.create');
       const msg = err instanceof Error ? err.message : typeof err === 'string' ? err : 'unknown';
-      this.logger.warn(`Produto "${args.name}" salvo apenas como chave de memória: ${msg}`);
+      this.logger.warn(`Produto "${args.name}" salvo apenas em memória: ${msg}`);
     }
-
     return {
       success: true,
       productId: dbProductId || productKey,
@@ -171,39 +199,31 @@ export class UnifiedAgentActionsWorkspaceService {
   async actionUpdateWorkspaceSettings(workspaceId: string, args: ToolArgs) {
     const updates: UnknownRecord = {};
     if (args.businessName) updates.name = args.businessName;
-
-    await this.prisma.$transaction(async (tx) => {
-      if (Object.keys(updates).length > 0) {
-        await tx.workspace.update({ where: { id: workspaceId }, data: updates });
-      }
-      if (args.businessHours) {
-        await tx.kloelMemory.upsert({
-          where: { workspaceId_key: { workspaceId, key: 'businessHours' } },
-          create: {
-            workspaceId,
-            key: 'businessHours',
-            type: 'settings',
-            value: args.businessHours,
+    if (Object.keys(updates).length > 0) {
+      await this.prisma.workspace.update({ where: { id: workspaceId }, data: updates });
+    }
+    if (args.businessHours) {
+      await this.prisma.kloelMemory.upsert({
+        where: { workspaceId_key: { workspaceId, key: 'businessHours' } },
+        create: { workspaceId, key: 'businessHours', type: 'settings', value: args.businessHours },
+        update: { value: args.businessHours },
+      });
+    }
+    if (args.autoReplyEnabled !== undefined) {
+      await this.prisma.kloelMemory.upsert({
+        where: { workspaceId_key: { workspaceId, key: 'autoReply' } },
+        create: {
+          workspaceId,
+          key: 'autoReply',
+          type: 'settings',
+          value: {
+            enabled: args.autoReplyEnabled,
+            message: args.autoReplyMessage || 'Olá! Responderemos em breve.',
           },
-          update: { value: args.businessHours },
-        });
-      }
-      if (args.autoReplyEnabled !== undefined) {
-        await tx.kloelMemory.upsert({
-          where: { workspaceId_key: { workspaceId, key: 'autoReply' } },
-          create: {
-            workspaceId,
-            key: 'autoReply',
-            type: 'settings',
-            value: {
-              enabled: args.autoReplyEnabled,
-              message: args.autoReplyMessage || 'Olá! Responderemos em breve.',
-            },
-          },
-          update: { value: { enabled: args.autoReplyEnabled, message: args.autoReplyMessage } },
-        });
-      }
-    });
+        },
+        update: { value: { enabled: args.autoReplyEnabled, message: args.autoReplyMessage } },
+      });
+    }
     return { success: true, message: 'Configurações atualizadas com sucesso' };
   }
 

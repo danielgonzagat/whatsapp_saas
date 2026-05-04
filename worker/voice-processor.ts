@@ -280,6 +280,7 @@ export const voiceWorker = new Worker(
   {
     connection,
     concurrency: 3,
+    lockDuration: 120_000,
   },
 );
 

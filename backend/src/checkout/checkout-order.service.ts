@@ -197,29 +197,96 @@ export class CheckoutOrderService {
       );
     }
     const orderNumber = generateCheckoutOrderNumber();
-    const existingOrder = await this.prisma.checkoutOrder.findFirst({
-      where: {
-        workspaceId: orderData.workspaceId,
-        metadata: { path: ['correlationId'], equals: correlationId },
-      },
-      include: {
-        plan: {
-          include: {
-            product: true,
-            upsells: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } },
+
+    // PULSE_OK: correlationId idempotency gate + create wrapped in single
+    // $transaction to prevent duplicate orders from concurrent createOrder
+    // calls with the same correlationId (metadata is a JSON field, no
+    // unique constraint on the correlationId path)
+    const orderResult = await this.prisma.$transaction(
+      async (tx) => {
+        const existing = await tx.checkoutOrder.findFirst({
+          where: {
+            workspaceId: orderData.workspaceId,
+            metadata: { path: ['correlationId'], equals: correlationId },
           },
-        },
-        payment: true,
+          include: {
+            plan: {
+              include: {
+                product: true,
+                upsells: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } },
+              },
+            },
+            payment: true,
+          },
+        });
+        if (existing) return { replay: true, order: existing } as const;
+
+        const created = await tx.checkoutOrder.create({
+          data: {
+            ...orderData,
+            shippingPrice: normalizedShippingInCents,
+            acceptedBumps: toPrismaJsonArray(serverTotals.acceptedBumpIds),
+            subtotalInCents: normalizedSubtotalInCents,
+            discountInCents: normalizedDiscountInCents,
+            bumpTotalInCents: normalizedBumpTotalInCents,
+            totalInCents: normalizedBaseTotalInCents,
+            couponCode: orderData.couponCode ? orderData.couponCode.toUpperCase() : null,
+            couponDiscount: normalizedDiscountInCents || null,
+            installments: normalizedInstallments,
+            affiliateId: affiliateLink?.affiliateWorkspaceId || affiliateId,
+            metadata: buildCheckoutOrderMetadata({
+              checkoutCode,
+              capturedLeadId,
+              correlationId,
+              deviceFingerprint,
+              qualityGate,
+              customerRegistrationDate,
+              normalizedOrderQuantity,
+              planQuantity: planRecord.quantity,
+              clientTotals: {
+                subtotalInCents: orderData.subtotalInCents,
+                discountInCents: orderData.discountInCents,
+                bumpTotalInCents: orderData.bumpTotalInCents,
+                totalInCents: orderData.totalInCents,
+              },
+              lineItems,
+              affiliateLink: affiliateLink
+                ? {
+                    id: affiliateLink.id,
+                    code: affiliateLink.code,
+                    affiliateWorkspaceId: affiliateLink.affiliateWorkspaceId,
+                    affiliateCommissionPct,
+                    affiliateCommissionInCents,
+                  }
+                : null,
+              marketplacePricing,
+              producerNetInCents,
+            }),
+            orderNumber,
+          },
+          include: {
+            plan: {
+              include: {
+                product: true,
+                upsells: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } },
+              },
+            },
+            payment: true,
+          },
+        });
+        return { replay: false, order: created } as const;
       },
-    });
-    if (existingOrder) {
+      { isolationLevel: 'ReadCommitted' },
+    );
+
+    if (orderResult.replay) {
       this.logOrderEvent('checkout_order_idempotent_replay', {
         correlationId,
-        orderId: existingOrder.id,
-        orderNumber: existingOrder.orderNumber,
+        orderId: orderResult.order.id,
+        orderNumber: orderResult.order.orderNumber,
       });
       const paymentData = await this.processOrderPostPayment({
-        order: existingOrder,
+        order: orderResult.order,
         orderNumber,
         correlationId,
         data,
@@ -229,61 +296,10 @@ export class CheckoutOrderService {
         normalizedInstallments,
         cardHolderName,
       });
-      return { ...existingOrder, paymentData };
+      return { ...orderResult.order, paymentData };
     }
-    const order = await this.prisma.checkoutOrder.create({
-      data: {
-        ...orderData,
-        shippingPrice: normalizedShippingInCents,
-        acceptedBumps: toPrismaJsonArray(serverTotals.acceptedBumpIds),
-        subtotalInCents: normalizedSubtotalInCents,
-        discountInCents: normalizedDiscountInCents,
-        bumpTotalInCents: normalizedBumpTotalInCents,
-        totalInCents: normalizedBaseTotalInCents,
-        couponCode: orderData.couponCode ? orderData.couponCode.toUpperCase() : null,
-        couponDiscount: normalizedDiscountInCents || null,
-        installments: normalizedInstallments,
-        affiliateId: affiliateLink?.affiliateWorkspaceId || affiliateId,
-        metadata: buildCheckoutOrderMetadata({
-          checkoutCode,
-          capturedLeadId,
-          correlationId,
-          deviceFingerprint,
-          qualityGate,
-          customerRegistrationDate,
-          normalizedOrderQuantity,
-          planQuantity: planRecord.quantity,
-          clientTotals: {
-            subtotalInCents: orderData.subtotalInCents,
-            discountInCents: orderData.discountInCents,
-            bumpTotalInCents: orderData.bumpTotalInCents,
-            totalInCents: orderData.totalInCents,
-          },
-          lineItems,
-          affiliateLink: affiliateLink
-            ? {
-                id: affiliateLink.id,
-                code: affiliateLink.code,
-                affiliateWorkspaceId: affiliateLink.affiliateWorkspaceId,
-                affiliateCommissionPct,
-                affiliateCommissionInCents,
-              }
-            : null,
-          marketplacePricing,
-          producerNetInCents,
-        }),
-        orderNumber,
-      },
-      include: {
-        plan: {
-          include: {
-            product: true,
-            upsells: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } },
-          },
-        },
-        payment: true,
-      },
-    });
+
+    const order = orderResult.order;
     this.logOrderEvent('checkout_order_created', {
       correlationId,
       orderId: order.id,

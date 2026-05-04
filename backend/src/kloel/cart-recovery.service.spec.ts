@@ -14,6 +14,7 @@ describe('CartRecoveryService', () => {
   let service: CartRecoveryService;
 
   beforeEach(() => {
+    process.env.JWT_SECRET = 'test-jwt-secret-for-cart-recovery-tests';
     sendEmail.mockClear();
     prisma = {
       checkoutOrder: {

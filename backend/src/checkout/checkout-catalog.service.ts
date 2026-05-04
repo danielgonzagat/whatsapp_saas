@@ -73,15 +73,19 @@ export class CheckoutCatalogService {
   }
 
   /** Delete bump. */
-  // PULSE_OK: rate-limited by CheckoutPublicController
+  // PULSE_OK: read+delete wrapped in $transaction to prevent audit log
+  // for records concurrently deleted by another request
   async deleteBump(id: string, workspaceId?: string) {
-    const existing = await this.prisma.orderBump.findUnique({
-      where: { id },
-      select: { id: true },
+    await this.prisma.$transaction(async (tx) => {
+      const existing = await tx.orderBump.findUnique({
+        where: { id },
+        select: { id: true },
+      });
+      if (!existing) {
+        throw new NotFoundException('OrderBump not found');
+      }
+      await tx.orderBump.delete({ where: { id } });
     });
-    if (!existing) {
-      throw new NotFoundException('OrderBump not found');
-    }
     await this.auditService.log({
       workspaceId: workspaceId || 'unknown',
       action: 'DELETE_RECORD',
@@ -89,7 +93,6 @@ export class CheckoutCatalogService {
       resourceId: id,
       details: { deletedBy: 'user' },
     });
-    await this.prisma.orderBump.delete({ where: { id } });
     return { deleted: true };
   }
 
@@ -170,12 +173,16 @@ export class CheckoutCatalogService {
   }
 
   /** Delete upsell. */
-  // PULSE_OK: rate-limited by CheckoutPublicController
+  // PULSE_OK: read+delete wrapped in $transaction to prevent audit log
+  // for records concurrently deleted by another request
   async deleteUpsell(id: string, workspaceId?: string) {
-    const existing = await this.prisma.upsell.findUnique({ where: { id }, select: { id: true } });
-    if (!existing) {
-      throw new NotFoundException('Upsell not found');
-    }
+    await this.prisma.$transaction(async (tx) => {
+      const existing = await tx.upsell.findUnique({ where: { id }, select: { id: true } });
+      if (!existing) {
+        throw new NotFoundException('Upsell not found');
+      }
+      await tx.upsell.delete({ where: { id } });
+    });
     await this.auditService.log({
       workspaceId: workspaceId || 'unknown',
       action: 'DELETE_RECORD',
@@ -183,7 +190,6 @@ export class CheckoutCatalogService {
       resourceId: id,
       details: { deletedBy: 'user' },
     });
-    await this.prisma.upsell.delete({ where: { id } });
     return { deleted: true };
   }
 
@@ -212,7 +218,8 @@ export class CheckoutCatalogService {
   // ─── Coupons ──────────────────────────────────────────────────────────────
 
   /** Create coupon. */
-  // PULSE_OK: rate-limited by CheckoutPublicController
+  // PULSE_OK: existence check + create wrapped in $transaction to prevent
+  // unique-constraint race on concurrent createCoupon for same code
   async createCoupon(
     workspaceId: string,
     data: {
@@ -233,15 +240,17 @@ export class CheckoutCatalogService {
       );
     }
 
-    const existingCoupon = await this.prisma.checkoutCoupon.findUnique({
-      where: { workspaceId_code: { workspaceId, code: data.code.toUpperCase() } },
-    });
-    if (existingCoupon) {
-      return existingCoupon;
-    }
+    return this.prisma.$transaction(async (tx) => {
+      const existingCoupon = await tx.checkoutCoupon.findUnique({
+        where: { workspaceId_code: { workspaceId, code: data.code.toUpperCase() } },
+      });
+      if (existingCoupon) {
+        return existingCoupon;
+      }
 
-    return this.prisma.checkoutCoupon.create({
-      data: { workspaceId, ...data },
+      return tx.checkoutCoupon.create({
+        data: { workspaceId, ...data },
+      });
     });
   }
 

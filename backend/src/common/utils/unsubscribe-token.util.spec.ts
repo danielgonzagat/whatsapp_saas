@@ -3,6 +3,10 @@ import { generateUnsubscribeToken, verifyUnsubscribeToken } from './unsubscribe-
 describe('UnsubscribeToken', () => {
   const email = 'test@kloel.com';
 
+  beforeAll(() => {
+    process.env.JWT_SECRET = 'test-jwt-secret-for-unsubscribe-tests';
+  });
+
   it('should generate a token that verifies to the same email', () => {
     const token = generateUnsubscribeToken({ email });
     const payload = verifyUnsubscribeToken(token);

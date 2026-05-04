@@ -303,7 +303,7 @@ export const memoryWorker = new Worker(
       throw err;
     }
   },
-  { concurrency: WORKER_CONCURRENCY, connection },
+  { concurrency: WORKER_CONCURRENCY, connection, lockDuration: 300_000 },
 );
 
 /**

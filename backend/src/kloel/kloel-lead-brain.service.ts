@@ -1,5 +1,6 @@
 import { Injectable, Logger, Optional } from '@nestjs/common';
 import { KloelLead, Prisma } from '@prisma/client';
+import { LLMBudgetService, estimateChatCostCents } from './llm-budget.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { UnifiedAgentService } from './unified-agent.service';
@@ -32,11 +33,16 @@ export class KloelLeadBrainService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly planLimits: PlanLimitsService,
+    private readonly llmBudget: LLMBudgetService,
     private readonly unifiedAgentService: UnifiedAgentService,
     private readonly smartPaymentService: SmartPaymentService,
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {
-    this.openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    this.openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+      timeout: 60_000,
+      maxRetries: 0,
+    });
   }
 
   async getOrCreateLead(workspaceId: string, phone: string): Promise<KloelLead> {
@@ -274,6 +280,11 @@ export class KloelLeadBrainService {
       ];
 
       await this.planLimits.ensureTokenBudget(workspaceId);
+      const estimatedCostCents = estimateChatCostCents({
+        inputChars: JSON.stringify(messages).length,
+        maxOutputTokens: 1000,
+      });
+      await this.llmBudget.assertBudget(workspaceId, estimatedCostCents);
       const response = await chatCompletionWithFallback(
         this.openai,
         {
@@ -284,6 +295,9 @@ export class KloelLeadBrainService {
         },
         resolveBackendOpenAIModel('writer_fallback'),
       );
+      await this.llmBudget
+        .recordSpend(workspaceId, response?.usage?.total_tokens ?? 0)
+        .catch(() => {});
       await this.planLimits
         .trackAiUsage(workspaceId, response?.usage?.total_tokens ?? 500)
         .catch(() => {});

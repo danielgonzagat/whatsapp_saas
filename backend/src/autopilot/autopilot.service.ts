@@ -119,25 +119,23 @@ export class AutopilotService {
     const suspended = (settings?.billingSuspended ?? false) === true;
     if (suspended) {
       try {
-        await this.prisma.$transaction(async (tx) => {
-          await tx.autopilotEvent.create({
-            data: {
-              workspaceId,
-              intent: 'BILLING',
-              action: 'SUSPENDED',
-              status: 'skipped',
-              reason: 'billing_suspended',
-              meta: { source: 'autopilot_service' },
-            },
-          });
-          await tx.auditLog.create({
-            data: {
-              workspaceId,
-              action: 'AUTOPILOT_SUSPENDED',
-              resource: 'billing',
-              details: { reason: 'billing_suspended' },
-            },
-          });
+        await this.prisma.autopilotEvent.create({
+          data: {
+            workspaceId,
+            intent: 'BILLING',
+            action: 'SUSPENDED',
+            status: 'skipped',
+            reason: 'billing_suspended',
+            meta: { source: 'autopilot_service' },
+          },
+        });
+        await this.prisma.auditLog.create({
+          data: {
+            workspaceId,
+            action: 'AUTOPILOT_SUSPENDED',
+            resource: 'billing',
+            details: { reason: 'billing_suspended' },
+          },
         });
       } catch (err: unknown) {
         this.logger.warn(
@@ -186,37 +184,35 @@ export class AutopilotService {
 
   /** Toggle autopilot. */
   async toggleAutopilot(workspaceId: string, enabled: boolean) {
-    await this.prisma.$transaction(async (tx) => {
-      const workspace = await tx.workspace.findUnique({
-        where: { id: workspaceId },
-        select: { providerSettings: true },
-      });
-      const s = this.readRecord(workspace?.providerSettings);
+    const workspace = await this.prisma.workspace.findUnique({
+      where: { id: workspaceId },
+      select: { providerSettings: true },
+    });
+    const settings = this.readRecord(workspace?.providerSettings);
 
-      if (enabled) {
-        await this.ensureBillingAllowsAutopilot(workspaceId, s);
-        this.ensureWhatsAppConnectedOrThrow(s);
-      }
+    if (enabled) {
+      await this.ensureBillingAllowsAutopilot(workspaceId, settings);
+      this.ensureWhatsAppConnectedOrThrow(settings);
+    }
 
-      const autopilotCfg = { ...((s.autopilot as Record<string, unknown>) || {}), enabled };
-      const autonomy = {
-        ...((s.autonomy as Record<string, unknown>) || {}),
-        mode: enabled ? 'LIVE' : 'OFF',
-        reactiveEnabled: enabled,
-        proactiveEnabled: false,
-        reason: enabled ? 'manual_toggle_on' : 'manual_toggle_off',
-        lastTransitionAt: new Date().toISOString(),
-      };
-      await tx.workspace.update({
-        where: { id: workspaceId },
-        data: {
-          providerSettings: {
-            ...s,
-            autopilot: autopilotCfg,
-            autonomy,
-          },
+    const autopilotCfg = { ...((settings.autopilot as Record<string, unknown>) || {}), enabled };
+    const autonomy = {
+      ...((settings.autonomy as Record<string, unknown>) || {}),
+      mode: enabled ? 'LIVE' : 'OFF',
+      reactiveEnabled: enabled,
+      proactiveEnabled: false,
+      reason: enabled ? 'manual_toggle_on' : 'manual_toggle_off',
+      lastTransitionAt: new Date().toISOString(),
+    };
+    await this.prisma.workspace.update({
+      where: { id: workspaceId },
+      data: {
+        providerSettings: {
+          ...settings,
+          autopilot: autopilotCfg,
+          autonomy,
         },
-      });
+      },
     });
     return { workspaceId, enabled };
   }
@@ -230,34 +226,54 @@ export class AutopilotService {
       recoveryTemplateName?: string | null;
     },
   ) {
-    const autopilotCfg = await this.prisma.$transaction(async (tx) => {
-      const workspace = await tx.workspace.findUnique({
+    const startedAt = Date.now();
+    const operation = 'autopilot/config';
+    try {
+      const workspace = await this.prisma.workspace.findUnique({
         where: { id: workspaceId },
         select: { providerSettings: true },
       });
       const settings = (workspace?.providerSettings as Record<string, unknown>) || {};
-      const cfg = { ...((settings.autopilot as Record<string, unknown>) || {}) };
+      const autopilotCfg = { ...((settings.autopilot as Record<string, unknown>) || {}) };
       if (payload.conversionFlowId !== undefined) {
-        cfg.conversionFlowId = payload.conversionFlowId;
+        autopilotCfg.conversionFlowId = payload.conversionFlowId;
       }
       if (payload.currencyDefault) {
-        cfg.currencyDefault = payload.currencyDefault;
+        autopilotCfg.currencyDefault = payload.currencyDefault;
       }
       if (payload.recoveryTemplateName !== undefined) {
-        cfg.recoveryTemplateName = payload.recoveryTemplateName;
+        autopilotCfg.recoveryTemplateName = payload.recoveryTemplateName;
       }
-      await tx.workspace.update({
+      await this.prisma.workspace.update({
         where: { id: workspaceId },
         data: {
           providerSettings: {
             ...settings,
-            autopilot: cfg,
+            autopilot: autopilotCfg,
           } as Prisma.InputJsonValue,
         },
       });
-      return cfg;
-    });
-    return { workspaceId, autopilot: autopilotCfg };
+      const result = { workspaceId, autopilot: autopilotCfg };
+      this.logger.log(
+        { workspaceId, operation, durationMs: Date.now() - startedAt, status: 'ok' },
+        'Autopilot config succeeded',
+      );
+      return result;
+    } catch (error: unknown) {
+      this.logger.error(
+        {
+          workspaceId,
+          operation,
+          durationMs: Date.now() - startedAt,
+          errorCode: (error as Record<string, unknown>)?.code,
+          errorName: error instanceof Error ? error.constructor.name : 'Error',
+          status: 'error',
+        },
+        error instanceof Error ? error.stack : undefined,
+        'Autopilot config failed',
+      );
+      throw error;
+    }
   }
 
   /** Get status. */

@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { ExecutionContext, UnauthorizedException } from '@nestjs/common';
 import { ApiKeyGuard } from './api-key.guard';
+import type { ApiKeysService } from '../api-keys/api-keys.service';
 
 type MockValidateKeyFn = jest.Mock<
   (key: string) => Promise<{ id: string; workspaceId: string } | null>
@@ -36,7 +37,7 @@ describe('ApiKeyGuard', () => {
       validateKey: jest.fn(),
     };
 
-    guard = new ApiKeyGuard(mockApiKeysService);
+    guard = new ApiKeyGuard(mockApiKeysService as unknown as ApiKeysService);
   });
 
   describe('canActivate', () => {

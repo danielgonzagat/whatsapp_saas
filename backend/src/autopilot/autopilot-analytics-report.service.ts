@@ -246,33 +246,56 @@ export class AutopilotAnalyticsReportService {
    * Lista ações recentes do Autopilot (para debug/UX).
    */
   async getRecentActions(workspaceId: string, limit = 30, status?: string) {
-    const events = await this.prisma.autopilotEvent.findMany({
-      where: {
-        workspaceId,
-        ...(status ? { status } : {}),
-      },
-      orderBy: { createdAt: 'desc' },
-      take: Math.min(Math.max(limit, 5), 100),
-      select: {
-        createdAt: true,
-        contactId: true,
-        intent: true,
-        action: true,
-        status: true,
-        reason: true,
-        meta: true,
-      },
-    });
+    const startedAt = Date.now();
+    const operation = 'autopilot/actions';
+    try {
+      const events = await this.prisma.autopilotEvent.findMany({
+        where: {
+          workspaceId,
+          ...(status ? { status } : {}),
+        },
+        orderBy: { createdAt: 'desc' },
+        take: Math.min(Math.max(limit, 5), 100),
+        select: {
+          createdAt: true,
+          contactId: true,
+          intent: true,
+          action: true,
+          status: true,
+          reason: true,
+          meta: true,
+        },
+      });
 
-    const contactIds = Array.from(new Set(events.map((l) => l.contactId).filter(Boolean)));
-    const contacts = await this.prisma.contact.findMany({
-      take: 5000,
-      where: { id: { in: contactIds }, workspaceId },
-      select: { id: true, phone: true, name: true, customFields: true },
-    });
-    const map = new Map(contacts.map((c) => [c.id, c]));
+      const contactIds = Array.from(new Set(events.map((l) => l.contactId).filter(Boolean)));
+      const contacts = await this.prisma.contact.findMany({
+        take: 5000,
+        where: { id: { in: contactIds }, workspaceId },
+        select: { id: true, phone: true, name: true, customFields: true },
+      });
+      const map = new Map(contacts.map((c) => [c.id, c]));
 
-    return events.map((l) => this.serializeRecentAction(l, map));
+      const result = events.map((l) => this.serializeRecentAction(l, map));
+      this.logger.log(
+        { workspaceId, operation, durationMs: Date.now() - startedAt, status: 'ok' },
+        'Autopilot actions succeeded',
+      );
+      return result;
+    } catch (error: unknown) {
+      this.logger.error(
+        {
+          workspaceId,
+          operation,
+          durationMs: Date.now() - startedAt,
+          errorCode: (error as Record<string, unknown>)?.code,
+          errorName: error instanceof Error ? error.constructor.name : 'Error',
+          status: 'error',
+        },
+        error instanceof Error ? error.stack : undefined,
+        'Autopilot actions failed',
+      );
+      throw error;
+    }
   }
 
   serializeRecentAction(

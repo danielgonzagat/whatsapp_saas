@@ -7,13 +7,6 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { ConnectService } from './connect.service';
 import { ConnectAccountAlreadyExistsError } from './connect.types';
 
-// Test-only helper: bridges in-memory stubs to the Nest provider type. The
-// stub satisfies the subset of the surface area exercised by the suite. This
-// is the standard typescript-eslint pattern for casting opaque test doubles
-// to a service type without `any` and without a double-cast.
-const asMock = <T>(value: unknown): T => value as T;
-const TEST_BANK_TOKEN = 'btok_br_test_123';
-
 type StripeStub = {
   stripe: {
     accounts: {
@@ -39,12 +32,29 @@ function makeStripeStub(): StripeStub {
 function makePrismaStub(initial: ConnectAccountBalance[] = []) {
   const balances = new Map(initial.map((b) => [b.id, b]));
   let nextId = 1;
-  return {
-    balances,
-    prisma: asMock<PrismaService>({
-      workspace: {
-        findUnique: jest.fn().mockResolvedValue({ id: 'ws_1' }),
-      },
+
+  function makeBalanceRow(data: {
+    workspaceId: string;
+    stripeAccountId: string;
+    accountType: ConnectAccountType;
+  }): ConnectAccountBalance {
+    return {
+      id: `cab_${nextId++}`,
+      workspaceId: data.workspaceId,
+      stripeAccountId: data.stripeAccountId,
+      accountType: data.accountType,
+      pendingBalanceCents: 0n,
+      availableBalanceCents: 0n,
+      lifetimeReceivedCents: 0n,
+      lifetimePaidOutCents: 0n,
+      lifetimeChargebacksCents: 0n,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+  }
+
+  function makeTxClient() {
+    return {
       connectAccountBalance: {
         findFirst: jest.fn(
           async ({ where }: { where: { workspaceId: string; accountType: ConnectAccountType } }) =>
@@ -66,25 +76,54 @@ function makePrismaStub(initial: ConnectAccountBalance[] = []) {
               accountType: ConnectAccountType;
             };
           }) => {
-            const row: ConnectAccountBalance = {
-              id: `cab_${nextId++}`,
-              workspaceId: data.workspaceId,
-              stripeAccountId: data.stripeAccountId,
-              accountType: data.accountType,
-              pendingBalanceCents: 0n,
-              availableBalanceCents: 0n,
-              lifetimeReceivedCents: 0n,
-              lifetimePaidOutCents: 0n,
-              lifetimeChargebacksCents: 0n,
-              createdAt: new Date(),
-              updatedAt: new Date(),
-            };
+            const row = makeBalanceRow(data);
             balances.set(row.id, row);
             return row;
           },
         ),
       },
-    }),
+    };
+  }
+
+  return {
+    balances,
+    prisma: {
+      connectAccountBalance: {
+        findFirst: jest.fn(
+          async ({ where }: { where: { workspaceId: string; accountType: ConnectAccountType } }) =>
+            [...balances.values()].find(
+              (b) => b.workspaceId === where.workspaceId && b.accountType === where.accountType,
+            ) ?? null,
+        ),
+        findUnique: jest.fn(
+          async ({ where }: { where: { stripeAccountId: string } }) =>
+            [...balances.values()].find((b) => b.stripeAccountId === where.stripeAccountId) ?? null,
+        ),
+        create: jest.fn(
+          async ({
+            data,
+          }: {
+            data: {
+              workspaceId: string;
+              stripeAccountId: string;
+              accountType: ConnectAccountType;
+            };
+          }) => {
+            const row = makeBalanceRow(data);
+            balances.set(row.id, row);
+            return row;
+          },
+        ),
+      },
+      $transaction: jest.fn(
+        async (
+          callback: (tx: ReturnType<typeof makeTxClient>) => Promise<unknown>,
+          _options?: unknown,
+        ) => {
+          return callback(makeTxClient());
+        },
+      ),
+    } as unknown as PrismaService,
   };
 }
 
@@ -457,7 +496,7 @@ describe('ConnectService.submitOnboardingProfile', () => {
         },
       },
       externalAccount: {
-        token: TEST_BANK_TOKEN,
+        token: 'btok_br_test_123',
       },
     });
 
@@ -474,7 +513,7 @@ describe('ConnectService.submitOnboardingProfile', () => {
           postal_code: '01310-100',
         },
       },
-      external_account: TEST_BANK_TOKEN,
+      external_account: 'btok_br_test_123',
     });
     expect(result).toEqual({
       stripeAccountId: 'acct_company',

@@ -208,6 +208,11 @@ export const WhatsAppEngine = {
         throw new Error(subStatus.reason || 'Assinatura inativa');
       }
 
+      const dailyLimit = await PlanLimitsProvider.checkDailyMessageLimit(normalizedWorkspace.id);
+      if (!dailyLimit.allowed) {
+        throw new Error(dailyLimit.reason || 'Limite diário de mensagens excedido');
+      }
+
       const msgLimit = await PlanLimitsProvider.checkMessageLimit(normalizedWorkspace.id);
       if (!msgLimit.allowed) {
         throw new Error(msgLimit.reason || 'Limite de mensagens excedido');
@@ -283,6 +288,11 @@ export const WhatsAppEngine = {
       const subStatus = await PlanLimitsProvider.checkSubscriptionStatus(normalizedWorkspace.id);
       if (!subStatus.active) {
         throw new Error(subStatus.reason || 'Assinatura inativa');
+      }
+
+      const dailyLimit = await PlanLimitsProvider.checkDailyMessageLimit(normalizedWorkspace.id);
+      if (!dailyLimit.allowed) {
+        throw new Error(dailyLimit.reason || 'Limite diário de mensagens excedido');
       }
 
       const msgLimit = await PlanLimitsProvider.checkMessageLimit(normalizedWorkspace.id);

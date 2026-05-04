@@ -261,6 +261,29 @@ export class AutopilotCycleExecutorService {
     }
   }
 
+  private async fetchWorkspaceProductInfo(workspaceId: string): Promise<{
+    products: Array<{
+      name: string;
+      price: number;
+      currency: string;
+      description: string | null;
+      active: boolean;
+    }>;
+    hasProducts: boolean;
+  }> {
+    const products = await this.prisma.product.findMany({
+      where: { workspaceId, active: true },
+      select: { name: true, price: true, currency: true, description: true, active: true },
+      orderBy: { featured: 'desc' },
+      take: 5,
+    });
+    return { products, hasProducts: products.length > 0 };
+  }
+
+  private isCommercialAction(type: string): boolean {
+    return ['offer', 'offer_soft', 'price', 'upsell', 'lead_unlocker'].includes(type);
+  }
+
   private async generateResponse(
     type: string,
     conv: AutopilotConversation,
@@ -284,13 +307,31 @@ export class AutopilotCycleExecutorService {
       chat: "Reply naturally to the user's last message. Be helpful and concise.",
     };
 
+    let productContext = '';
+    if (this.isCommercialAction(type) && conv.workspaceId) {
+      const info = await this.fetchWorkspaceProductInfo(conv.workspaceId);
+      if (!info.hasProducts) {
+        return 'Olá! No momento não temos produtos disponíveis para oferecer. Um consultor entrará em contato em breve com mais informações. Posso ajudar com outra dúvida enquanto isso?';
+      }
+      productContext = info.products
+        .map(
+          (p) =>
+            `- ${p.name}: ${p.currency === 'BRL' ? 'R$' : p.currency + ' '}${p.price.toFixed(2)}${p.description ? ` — ${p.description}` : ''}`,
+        )
+        .join('\n');
+    }
+
     const prompt = `
     You are a top-tier sales assistant on WhatsApp.
     Context: User is ${analysis?.intent || 'interested'}.
     Task: ${templates[type] || templates.chat}
     Last Message: ${conv.messages[0]?.content}
+${productContext ? `\nAVAILABLE PRODUCTS (use ONLY these real products in your response — never invent or hallucinate names, prices, or features):\n${productContext}` : ''}
 
-    Write the WhatsApp message response (Portuguese Brazil). No quotes.
+    RULES:
+    - NEVER invent product names, prices, bundles, promotions, deadlines, guarantees, or policies.
+    - If the user asks about a product not listed, say you'll check and get back.
+    - Write the WhatsApp message response (Portuguese Brazil). No quotes.
     `;
 
     if (conv?.workspaceId) {

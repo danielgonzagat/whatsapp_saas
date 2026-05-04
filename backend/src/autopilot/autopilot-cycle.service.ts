@@ -88,23 +88,51 @@ export class AutopilotCycleService {
 
   /** Main Cycle - Runs every X minutes (via Cron or manual trigger). */
   async runAutopilotCycle(workspaceId: string) {
-    if (!this.isLegacyExecutionEnabled()) {
-      this.logger.warn(
-        `[Autopilot] Legacy backend cycle disabled for workspace ${workspaceId}; worker runtime is the single execution source.`,
+    const startedAt = Date.now();
+    const operation = 'autopilot/process';
+    try {
+      if (!this.isLegacyExecutionEnabled()) {
+        this.logger.warn(
+          `[Autopilot] Legacy backend cycle disabled for workspace ${workspaceId}; worker runtime is the single execution source.`,
+        );
+        const result = {
+          status: 'disabled',
+          reason: 'legacy_backend_autopilot_disabled',
+        };
+        this.logger.log(
+          { workspaceId, operation, durationMs: Date.now() - startedAt, status: 'disabled' },
+          'Autopilot process succeeded (disabled)',
+        );
+        return result;
+      }
+
+      await this.ensureNotSuspended(workspaceId);
+      this.logger.log(`[Autopilot] Starting cycle for workspace ${workspaceId}`);
+
+      await this.handleReactive(workspaceId);
+      await this.handleProactive(workspaceId);
+
+      const result = { status: 'Cycle Completed' };
+      this.logger.log(
+        { workspaceId, operation, durationMs: Date.now() - startedAt, status: 'ok' },
+        'Autopilot process succeeded',
       );
-      return {
-        status: 'disabled',
-        reason: 'legacy_backend_autopilot_disabled',
-      };
+      return result;
+    } catch (error: unknown) {
+      this.logger.error(
+        {
+          workspaceId,
+          operation,
+          durationMs: Date.now() - startedAt,
+          errorCode: (error as Record<string, unknown>)?.code,
+          errorName: error instanceof Error ? error.constructor.name : 'Error',
+          status: 'error',
+        },
+        error instanceof Error ? error.stack : undefined,
+        'Autopilot process failed',
+      );
+      throw error;
     }
-
-    await this.ensureNotSuspended(workspaceId);
-    this.logger.log(`[Autopilot] Starting cycle for workspace ${workspaceId}`);
-
-    await this.handleReactive(workspaceId);
-    await this.handleProactive(workspaceId);
-
-    return { status: 'Cycle Completed' };
   }
 
   /**

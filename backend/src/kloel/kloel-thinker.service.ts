@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { Response } from 'express';
+import { LLMBudgetService, estimateChatCostCents } from './llm-budget.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { KloelComposerService } from './kloel-composer.service';
@@ -60,6 +61,7 @@ export class KloelThinkerService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly planLimits: PlanLimitsService,
+    private readonly llmBudget: LLMBudgetService,
     private readonly threadService: KloelThreadService,
     private readonly wsContextService: KloelWorkspaceContextService,
     private readonly composerService: KloelComposerService,
@@ -275,9 +277,19 @@ export class KloelThinkerService {
         return;
       }
 
-      if (workspaceId) await this.planLimits.ensureTokenBudget(workspaceId);
+      if (workspaceId) {
+        await this.planLimits.ensureTokenBudget(workspaceId);
+        const estimatedCost = estimateChatCostCents({
+          inputChars: JSON.stringify(messages).length,
+          maxOutputTokens: responseMaxTokens,
+        });
+        await this.llmBudget.assertBudget(workspaceId, estimatedCost);
+      }
       safeWrite(createKloelStatusEvent('thinking'));
       const streamedReply = await streamWriterResponse(messages, responseTemperature);
+      if (workspaceId && streamedReply) {
+        this.llmBudget.recordSpend(workspaceId, streamedReply.estimatedTokens).catch(() => {});
+      }
       if (!streamedReply) return;
       let fullResponse = streamedReply.fullResponse;
       if (!fullResponse.trim()) {

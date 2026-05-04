@@ -2,9 +2,14 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AuthService } from './auth.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
-import { AuthOAuthService } from './auth-oauth.service';
-import { AuthPartnerService } from './auth-partner.service';
-import { AuthVerificationService } from './auth-verification.service';
+import { EmailService } from './email.service';
+import { ConfigService } from '@nestjs/config';
+import { FacebookAuthService } from './facebook-auth.service';
+import { GoogleAuthService } from './google-auth.service';
+import { ConnectService } from '../payments/connect/connect.service';
+import { TikTokAuthService } from './tiktok-auth.service';
+import { RateLimitService } from './rate-limit.service';
+import type { Redis } from 'ioredis';
 import {
   BadRequestException,
   ConflictException,
@@ -48,13 +53,12 @@ const mockPrismaService = {
     updateMany: jest.fn(),
     update: jest.fn(),
   },
-  $transaction: jest.fn((arg: (tx: Record<string, unknown>) => Promise<unknown>) => {
+  $transaction: jest.fn((arg: any) => {
     if (typeof arg === 'function') {
       // Transação interativa
       return arg({
         agent: mockPrismaService.agent,
         workspace: mockPrismaService.workspace,
-        refreshToken: mockPrismaService.refreshToken,
       });
     }
     // Transação em batch (array de operações)
@@ -66,41 +70,52 @@ const mockJwtService = {
   signAsync: jest.fn().mockResolvedValue('mock-jwt-token'),
 };
 
-const mockAuthOAuthService = {
-  verifyGoogleCredential: jest.fn(),
-  verifyFacebookAccessToken: jest.fn(),
-  verifyAppleIdentityToken: jest.fn(),
-  verifyTikTokAuthorizationCode: jest.fn(),
-  verifyTikTokAccessToken: jest.fn(),
-  resolveAgentForProfile: jest.fn(),
+const mockEmailService = {
+  sendPasswordResetEmail: jest.fn().mockResolvedValue(true),
+  sendVerificationEmail: jest.fn().mockResolvedValue(true),
 };
 
-const mockAuthPartnerService = {
-  resolvePartnerInvite: jest.fn().mockResolvedValue(null),
-  finalizePartnerInviteRegistration: jest.fn().mockResolvedValue(undefined),
-  resolvePartnerInviteAccountType: jest.fn(),
-};
-
-const mockAuthVerificationService = {
-  requestMagicLink: jest.fn(),
-  verifyMagicLink: jest.fn(),
-  sendWhatsAppCode: jest.fn(),
-  verifyWhatsAppCode: jest.fn(),
-  forgotPassword: jest.fn().mockResolvedValue({
-    success: true,
-    message: 'Se o email existir, um link de redefinição será enviado.',
+const mockConfigService = {
+  get: jest.fn((key: string) => {
+    const config: Record<string, string> = {
+      META_ACCESS_TOKEN: 'mock-token',
+      META_PHONE_NUMBER_ID: 'mock-phone-id',
+      ENCRYPTION_KEY: '12345678901234567890123456789012',
+    };
+    return config[key];
   }),
-  resetPassword: jest.fn().mockResolvedValue(undefined),
-  sendVerificationEmail: jest.fn(),
-  verifyEmail: jest
-    .fn()
-    .mockResolvedValue({ success: true, message: 'Email verificado com sucesso.' }),
-  resendVerificationEmail: jest.fn(),
+};
+
+const mockGoogleAuthService = {
+  verifyCredential: jest.fn(),
+};
+
+const mockFacebookAuthService = {
+  verifyAccessToken: jest.fn(),
+};
+
+const mockTikTokAuthService = {
+  verifyAuthorizationCode: jest.fn(),
+  verifyAccessToken: jest.fn(),
+};
+
+const mockConnectService = {
+  createCustomAccount: jest.fn().mockResolvedValue({
+    accountBalanceId: 'cab_affiliate',
+    stripeAccountId: 'acct_affiliate',
+    requestedCapabilities: ['card_payments', 'transfers'],
+  }),
+};
+
+const mockRateLimitService = {
+  checkRateLimit: jest.fn().mockResolvedValue(undefined),
 };
 
 describe('AuthService', () => {
   let service: AuthService;
   let prisma: typeof mockPrismaService;
+  let emailService: typeof mockEmailService;
+  let connectService: typeof mockConnectService;
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -121,14 +136,20 @@ describe('AuthService', () => {
         AuthService,
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: JwtService, useValue: mockJwtService },
-        { provide: AuthOAuthService, useValue: mockAuthOAuthService },
-        { provide: AuthPartnerService, useValue: mockAuthPartnerService },
-        { provide: AuthVerificationService, useValue: mockAuthVerificationService },
+        { provide: EmailService, useValue: mockEmailService },
+        { provide: ConfigService, useValue: mockConfigService },
+        { provide: GoogleAuthService, useValue: mockGoogleAuthService },
+        { provide: FacebookAuthService, useValue: mockFacebookAuthService },
+        { provide: TikTokAuthService, useValue: mockTikTokAuthService },
+        { provide: ConnectService, useValue: mockConnectService },
+        { provide: RateLimitService, useValue: mockRateLimitService },
       ],
     }).compile();
 
     service = module.get<AuthService>(AuthService);
     prisma = mockPrismaService;
+    emailService = mockEmailService;
+    connectService = module.get(ConnectService);
   });
 
   describe('checkEmail', () => {
@@ -157,7 +178,7 @@ describe('AuthService', () => {
 
   describe('register', () => {
     beforeEach(() => {
-      mockAuthPartnerService.resolvePartnerInvite.mockResolvedValue(null);
+      prisma.affiliatePartner.findFirst.mockResolvedValue(null);
     });
 
     it('should throw ConflictException for existing email', async () => {
@@ -206,7 +227,7 @@ describe('AuthService', () => {
 
     it('should provision affiliate workspace + connect account when invite token is valid', async () => {
       prisma.agent.findFirst.mockResolvedValue(null);
-      mockAuthPartnerService.resolvePartnerInvite.mockResolvedValue({
+      prisma.affiliatePartner.findFirst.mockResolvedValue({
         id: 'partner-1',
         workspaceId: 'seller-ws',
         partnerName: 'Ana',
@@ -226,6 +247,11 @@ describe('AuthService', () => {
         role: 'ADMIN',
         workspaceId: 'ws-aff',
       });
+      prisma.affiliatePartner.update.mockResolvedValue({
+        id: 'partner-1',
+        partnerWorkspaceId: 'ws-aff',
+        status: 'ACTIVE',
+      });
       prisma.refreshToken.create.mockResolvedValue({ token: 'refresh-token' });
 
       const result = await service.register({
@@ -237,23 +263,36 @@ describe('AuthService', () => {
       });
 
       expect(result).toHaveProperty('access_token');
-      expect(mockAuthPartnerService.resolvePartnerInvite).toHaveBeenCalledWith(
-        'invite-token-1',
-        'affiliate@test.com',
-      );
-      expect(mockAuthPartnerService.finalizePartnerInviteRegistration).toHaveBeenCalledWith(
+      expect(prisma.affiliatePartner.findFirst).toHaveBeenCalledWith(
         expect.objectContaining({
-          invite: expect.objectContaining({ id: 'partner-1' }),
-          workspace: expect.objectContaining({ id: 'ws-aff' }),
-          agent: expect.objectContaining({ id: 'agent-aff' }),
-          email: 'affiliate@test.com',
+          where: expect.objectContaining({
+            partnerEmail: 'affiliate@test.com',
+            metadata: expect.objectContaining({
+              path: ['inviteTokenHash'],
+            }),
+          }),
+        }),
+      );
+      expect(connectService.createCustomAccount).toHaveBeenCalledWith({
+        workspaceId: 'ws-aff',
+        accountType: 'AFFILIATE',
+        email: 'affiliate@test.com',
+        displayName: 'Ana Workspace',
+      });
+      expect(prisma.affiliatePartner.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'partner-1' },
+          data: expect.objectContaining({
+            partnerWorkspaceId: 'ws-aff',
+            status: 'ACTIVE',
+          }),
         }),
       );
     });
 
     it('should provision the mapped connect role when a coproducer invite token is valid', async () => {
       prisma.agent.findFirst.mockResolvedValue(null);
-      mockAuthPartnerService.resolvePartnerInvite.mockResolvedValue({
+      prisma.affiliatePartner.findFirst.mockResolvedValue({
         id: 'partner-2',
         workspaceId: 'seller-ws',
         partnerName: 'Carla',
@@ -273,6 +312,11 @@ describe('AuthService', () => {
         role: 'ADMIN',
         workspaceId: 'ws-copro',
       });
+      prisma.affiliatePartner.update.mockResolvedValue({
+        id: 'partner-2',
+        partnerWorkspaceId: 'ws-copro',
+        status: 'ACTIVE',
+      });
       prisma.refreshToken.create.mockResolvedValue({ token: 'refresh-token' });
 
       const result = await service.register({
@@ -284,20 +328,17 @@ describe('AuthService', () => {
       });
 
       expect(result).toHaveProperty('access_token');
-      expect(mockAuthPartnerService.finalizePartnerInviteRegistration).toHaveBeenCalledWith(
-        expect.objectContaining({
-          invite: expect.objectContaining({ id: 'partner-2', type: 'COPRODUCER' }),
-          workspace: expect.objectContaining({ id: 'ws-copro' }),
-          email: 'copro@test.com',
-        }),
-      );
+      expect(connectService.createCustomAccount).toHaveBeenCalledWith({
+        workspaceId: 'ws-copro',
+        accountType: 'COPRODUCER',
+        email: 'copro@test.com',
+        displayName: 'Carla Workspace',
+      });
     });
 
     it('should reject invalid affiliate invite token before creating workspace', async () => {
       prisma.agent.findFirst.mockResolvedValue(null);
-      mockAuthPartnerService.resolvePartnerInvite.mockRejectedValue(
-        new BadRequestException('token inválido'),
-      );
+      prisma.affiliatePartner.findFirst.mockResolvedValue(null);
 
       await expect(
         service.register({
@@ -364,7 +405,7 @@ describe('AuthService', () => {
       delete process.env.RATE_LIMIT_DISABLED;
       try {
         const counters = new Map<string, number>();
-        const mockRedis: { incr: jest.Mock; expire: jest.Mock } = {
+        const mockRedis: any = {
           incr: jest.fn().mockImplementation(async (key: string) => {
             const next = (counters.get(key) || 0) + 1;
             counters.set(key, next);
@@ -374,11 +415,14 @@ describe('AuthService', () => {
         };
         const serviceWithRedis = new AuthService(
           mockPrismaService,
-          mockJwtService as never,
-          {} as never,
-          {} as never,
-          {} as never,
-          mockRedis as never,
+          mockJwtService as any,
+          mockEmailService as any,
+          mockConfigService as any,
+          mockGoogleAuthService as any,
+          mockFacebookAuthService as unknown as FacebookAuthService,
+          mockTikTokAuthService as unknown as TikTokAuthService,
+          mockConnectService as unknown as ConnectService,
+          new RateLimitService(mockRedis),
         );
 
         prisma.agent.findFirst.mockResolvedValue(null);
@@ -414,14 +458,17 @@ describe('AuthService', () => {
       try {
         const serviceWithRedisFailure = new AuthService(
           mockPrismaService,
-          mockJwtService as never,
-          {} as never,
-          {} as never,
-          {} as never,
-          {
+          mockJwtService as any,
+          mockEmailService as any,
+          mockConfigService as any,
+          mockGoogleAuthService as any,
+          mockFacebookAuthService as unknown as FacebookAuthService,
+          mockTikTokAuthService as unknown as TikTokAuthService,
+          mockConnectService as unknown as ConnectService,
+          new RateLimitService({
             incr: jest.fn().mockRejectedValue(new Error('redis down')),
             expire: jest.fn(),
-          } as never,
+          } as unknown as Redis),
         );
 
         prisma.agent.findFirst.mockResolvedValue(null);
@@ -445,42 +492,37 @@ describe('AuthService', () => {
 
   describe('forgotPassword', () => {
     it('should return success message for non-existent email (security)', async () => {
-      mockAuthVerificationService.forgotPassword.mockResolvedValue({
-        success: true,
-        message: 'Se o email existir, um link de redefinição será enviado.',
-      });
+      prisma.agent.findFirst.mockResolvedValue(null);
 
       const result = await service.forgotPassword('nonexistent@test.com');
 
       expect(result.success).toBe(true);
       expect(result.message).toContain('Se o email existir');
-      expect(mockAuthVerificationService.forgotPassword).toHaveBeenCalledWith(
-        'nonexistent@test.com',
-        undefined,
-      );
+      expect(emailService.sendPasswordResetEmail).not.toHaveBeenCalled();
     });
 
     it('should send reset email for existing user', async () => {
-      mockAuthVerificationService.forgotPassword.mockResolvedValue({
-        success: true,
-        message: 'Se o email existir, um link de redefinição será enviado.',
+      prisma.agent.findFirst.mockResolvedValue({
+        id: 'agent-1',
+        email: 'test@test.com',
+      });
+      prisma.passwordResetToken.create.mockResolvedValue({
+        token: 'reset-token',
       });
 
       const result = await service.forgotPassword('test@test.com');
 
       expect(result.success).toBe(true);
-      expect(mockAuthVerificationService.forgotPassword).toHaveBeenCalledWith(
+      expect(emailService.sendPasswordResetEmail).toHaveBeenCalledWith(
         'test@test.com',
-        undefined,
+        expect.stringContaining('reset-password'),
       );
     });
   });
 
   describe('resetPassword', () => {
     it('should throw UnauthorizedException for invalid token', async () => {
-      mockAuthVerificationService.resetPassword.mockRejectedValue(
-        new UnauthorizedException('Token inválido ou expirado'),
-      );
+      prisma.passwordResetToken.findUnique.mockResolvedValue(null);
 
       await expect(service.resetPassword('invalid-token', 'newpassword123')).rejects.toThrow(
         UnauthorizedException,
@@ -488,9 +530,12 @@ describe('AuthService', () => {
     });
 
     it('should throw UnauthorizedException for expired token', async () => {
-      mockAuthVerificationService.resetPassword.mockRejectedValue(
-        new UnauthorizedException('Token expirado'),
-      );
+      prisma.passwordResetToken.findUnique.mockResolvedValue({
+        token: 'expired-token',
+        used: false,
+        expiresAt: new Date(Date.now() - 1000), // Expired
+        agent: { id: 'agent-1' },
+      });
 
       await expect(service.resetPassword('expired-token', 'newpassword123')).rejects.toThrow(
         UnauthorizedException,
@@ -498,9 +543,12 @@ describe('AuthService', () => {
     });
 
     it('should throw UnauthorizedException for used token', async () => {
-      mockAuthVerificationService.resetPassword.mockRejectedValue(
-        new UnauthorizedException('Token já utilizado'),
-      );
+      prisma.passwordResetToken.findUnique.mockResolvedValue({
+        token: 'used-token',
+        used: true,
+        expiresAt: new Date(Date.now() + 60000),
+        agent: { id: 'agent-1' },
+      });
 
       await expect(service.resetPassword('used-token', 'newpassword123')).rejects.toThrow(
         UnauthorizedException,
@@ -510,17 +558,20 @@ describe('AuthService', () => {
 
   describe('verifyEmail', () => {
     it('should throw UnauthorizedException for invalid token', async () => {
-      mockAuthVerificationService.verifyEmail.mockRejectedValue(
-        new UnauthorizedException('Token de verificação inválido ou expirado.'),
-      );
+      prisma.agent.findFirst.mockResolvedValue(null);
 
       await expect(service.verifyEmail('invalid-token')).rejects.toThrow(UnauthorizedException);
     });
 
     it('should verify email successfully', async () => {
-      mockAuthVerificationService.verifyEmail.mockResolvedValue({
-        success: true,
-        message: 'Email verificado com sucesso.',
+      prisma.agent.findFirst.mockResolvedValue({
+        id: 'agent-1',
+        emailVerificationToken: 'valid-token',
+        emailVerificationExpiry: new Date(Date.now() + 60000),
+      });
+      prisma.agent.update.mockResolvedValue({
+        id: 'agent-1',
+        emailVerified: true,
       });
 
       const result = await service.verifyEmail('valid-token');

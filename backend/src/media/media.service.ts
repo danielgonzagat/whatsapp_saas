@@ -7,7 +7,7 @@ import { createRedisClient } from '../common/redis/redis.util';
 import { StorageService } from '../common/storage/storage.service';
 import { getTraceHeaders } from '../common/trace-headers';
 import { safeStorageFetch } from '../common/utils/url-safety';
-import { collectAllowedHosts } from '../common/utils/url-validator';
+import { collectAllowedHosts, validateNoInternalAccess } from '../common/utils/url-validator';
 import { PrismaService } from '../prisma/prisma.service';
 
 /** Media service. */
@@ -37,6 +37,8 @@ export class MediaService {
 
   /** Create video job. */
   async createVideoJob(workspaceId: string, data: { imageUrl: string; prompt?: string }) {
+    validateNoInternalAccess(data.imageUrl);
+
     const job = await this.prisma.mediaJob.create({
       data: {
         workspaceId,

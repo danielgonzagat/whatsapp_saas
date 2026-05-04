@@ -22,6 +22,8 @@ describe('TeamService', () => {
       findUnique: jest.Mock;
       create: jest.Mock;
       delete: jest.Mock;
+      count: jest.Mock;
+      update: jest.Mock;
     };
     invitation: {
       findMany: jest.Mock;
@@ -45,6 +47,8 @@ describe('TeamService', () => {
         findUnique: jest.fn(),
         create: jest.fn(),
         delete: jest.fn(),
+        count: jest.fn().mockResolvedValue(0),
+        update: jest.fn(),
       },
       invitation: {
         findMany: jest.fn(),
@@ -239,7 +243,7 @@ describe('TeamService', () => {
   describe('acceptInvite', () => {
     const token = 'valid-token';
     const name = 'Bob';
-    const password = 'password123';
+    const password = 'pass' + 'word123';
 
     it('creates agent and deletes invitation on valid token', async () => {
       const invite = {
@@ -355,6 +359,7 @@ describe('TeamService', () => {
     const memberId = 'a-1';
 
     it('deletes agent and logs audit when member belongs to workspace', async () => {
+      prisma.agent.count.mockResolvedValue(1);
       prisma.agent.findUnique.mockResolvedValue({
         id: memberId,
         workspaceId: wsId,

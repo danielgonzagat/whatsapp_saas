@@ -46,10 +46,14 @@ describe('KloelService', () => {
             Promise.resolve({ id: `${data.role}-1` }),
           ),
         count: jest.fn().mockResolvedValue(0),
+        update: jest.fn(),
+        deleteMany: jest.fn(),
       },
       kloelMessage: {
         findMany: jest.fn().mockResolvedValue([]),
         create: jest.fn().mockResolvedValue({}),
+        update: jest.fn().mockResolvedValue({}),
+        deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
       },
       product: {
         create: jest.fn(),
@@ -136,9 +140,15 @@ describe('KloelService', () => {
       buildCapabilityPrompt: jest.fn().mockReturnValue(''),
     };
 
+    const llmBudgetMock = {
+      assertBudget: jest.fn().mockResolvedValue(undefined),
+      recordSpend: jest.fn().mockResolvedValue(undefined),
+    };
+
     thinkerService = new KloelThinkerService(
       prisma as never as ConstructorParameters<typeof KloelThinkerService>[0],
       planLimitsMock as never,
+      llmBudgetMock as never,
       threadService,
       wsContextServiceMock as never,
       composerServiceMock as never,

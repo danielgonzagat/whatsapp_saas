@@ -9,6 +9,7 @@ const YOUTUBE_HOSTS = new Set([
 ]);
 
 const VIMEO_HOSTS = new Set(['vimeo.com', 'www.vimeo.com', 'player.vimeo.com']);
+const VIMEO_ID_RE = /^\d+$/;
 
 function coerceToString(value: unknown): string {
   return String(value || '');
@@ -123,6 +124,10 @@ export function toYouTubeEmbedUrl(rawUrl: string): string {
   }
 }
 
+function isValidVimeoId(videoId: string | null): videoId is string {
+  return !!videoId && VIMEO_ID_RE.test(videoId);
+}
+
 /** To supported embed url. */
 export function toSupportedEmbedUrl(rawUrl: string): string | null {
   const youtubeUrl = toYouTubeEmbedUrl(rawUrl);
@@ -138,7 +143,7 @@ export function toSupportedEmbedUrl(rawUrl: string): string | null {
     }
 
     const videoId = extractVimeoId(url.pathname);
-    if (!videoId) {
+    if (!isValidVimeoId(videoId)) {
       return null;
     }
 

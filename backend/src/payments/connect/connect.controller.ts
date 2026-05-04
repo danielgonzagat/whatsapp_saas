@@ -18,6 +18,7 @@ import { ConnectAccountType, type ConnectLedgerEntryType } from '@prisma/client'
 
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../../common/guards/workspace.guard';
+import { Idempotent } from '../../common/idempotency.guard';
 import { PrismaService } from '../../prisma/prisma.service';
 import { LedgerService } from '../ledger/ledger.service';
 
@@ -410,6 +411,7 @@ export class ConnectController {
   /** Create payout. */
   // PULSE_OK: internal route, called by worker process for Stripe Connect payout creation
   @Post(':workspaceId/payouts')
+  @Idempotent()
   async createPayout(
     @Param('workspaceId') workspaceId: string,
     @Body()
@@ -499,6 +501,7 @@ export class ConnectController {
   /** Create payout request. */
   // PULSE_OK: internal route, called by worker process for Stripe Connect payout request creation
   @Post(':workspaceId/payout-requests')
+  @Idempotent()
   async createPayoutRequest(
     @Param('workspaceId') workspaceId: string,
     @Body()

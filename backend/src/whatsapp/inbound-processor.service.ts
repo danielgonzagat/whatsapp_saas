@@ -509,18 +509,40 @@ export class InboundProcessorService {
           this.logger.error(`[AUTOPILOT] Inline reply failed: ${r.message || 'send_failed'}`);
       });
       keepReplyLock = true;
-    } catch (error: unknown) {
+    } catch (agentError: unknown) {
       this.logger.error(
-        `[AUTOPILOT] Inline agent failed: ${(error instanceof Error ? error : new Error(String(error))).message}`,
+        `[AUTOPILOT] Inline agent failed: ${(agentError instanceof Error ? agentError : new Error(String(agentError))).message}`,
       );
       void this.opsAlert?.alertOnCriticalError(
-        error,
+        agentError,
         'InboundProcessorService.triggerInlineAutopilot',
         {
           workspaceId: input.workspaceId,
           metadata: { contactId: input.contactId, phone: input.phone },
         },
       );
+
+      const fallbackReply = this.buildInlineFallbackReply(aggMsg);
+      if (fallbackReply) {
+        try {
+          const r = await this.whatsappService.sendMessage(
+            input.workspaceId,
+            input.phone,
+            fallbackReply,
+            {
+              externalId: `inline:${input.messageId}:fallback`,
+              complianceMode: 'reactive',
+              forceDirect: true,
+              quotedMessageId: latestQid,
+            },
+          );
+          if (!r?.error) keepReplyLock = true;
+        } catch (fallbackErr: unknown) {
+          this.logger.error(
+            `[AUTOPILOT] Fallback reply also failed: ${(fallbackErr instanceof Error ? fallbackErr : new Error(String(fallbackErr))).message}`,
+          );
+        }
+      }
     } finally {
       if (!keepReplyLock) await this.releaseSharedReplyLock(replyLockKey);
     }

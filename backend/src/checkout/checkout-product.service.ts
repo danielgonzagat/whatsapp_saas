@@ -136,15 +136,19 @@ export class CheckoutProductService {
   }
 
   /** Delete product. */
-  // PULSE_OK: rate-limited by CheckoutPublicController
+  // PULSE_OK: read+delete wrapped in $transaction to prevent audit log
+  // for records concurrently deleted by another request
   async deleteProduct(id: string, workspaceId: string) {
-    const existing = await this.prisma.product.findFirst({
-      where: { id, workspaceId },
-      select: { id: true },
+    await this.prisma.$transaction(async (tx) => {
+      const existing = await tx.product.findFirst({
+        where: { id, workspaceId },
+        select: { id: true },
+      });
+      if (!existing) {
+        throw new NotFoundException('Product not found');
+      }
+      await tx.product.deleteMany({ where: { id, workspaceId } });
     });
-    if (!existing) {
-      throw new NotFoundException('Product not found');
-    }
     await this.auditService.log({
       workspaceId,
       action: 'DELETE_RECORD',
@@ -152,7 +156,6 @@ export class CheckoutProductService {
       resourceId: id,
       details: { deletedBy: 'user' },
     });
-    await this.prisma.product.deleteMany({ where: { id, workspaceId } });
     return { deleted: true };
   }
 
@@ -220,18 +223,22 @@ export class CheckoutProductService {
   }
 
   /** Delete plan. */
-  // PULSE_OK: rate-limited by CheckoutPublicController
+  // PULSE_OK: read+delete wrapped in $transaction to prevent audit log
+  // for records concurrently deleted by another request
   async deletePlan(id: string, workspaceId?: string) {
-    const existing = await this.prisma.checkoutProductPlan.findUnique({
-      where: { id },
-      select: { id: true, product: { select: { workspaceId: true } } },
+    await this.prisma.$transaction(async (tx) => {
+      const existing = await tx.checkoutProductPlan.findUnique({
+        where: { id },
+        select: { id: true, product: { select: { workspaceId: true } } },
+      });
+      if (!existing) {
+        throw new NotFoundException('CheckoutProductPlan not found');
+      }
+      if (workspaceId && existing.product.workspaceId !== workspaceId) {
+        throw new NotFoundException('CheckoutProductPlan not found');
+      }
+      await tx.checkoutProductPlan.delete({ where: { id } });
     });
-    if (!existing) {
-      throw new NotFoundException('CheckoutProductPlan not found');
-    }
-    if (workspaceId && existing.product.workspaceId !== workspaceId) {
-      throw new NotFoundException('CheckoutProductPlan not found');
-    }
     await this.auditService.log({
       workspaceId: workspaceId || 'unknown',
       action: 'DELETE_RECORD',
@@ -239,7 +246,6 @@ export class CheckoutProductService {
       resourceId: id,
       details: { deletedBy: 'user' },
     });
-    await this.prisma.checkoutProductPlan.delete({ where: { id } });
     return { deleted: true };
   }
 

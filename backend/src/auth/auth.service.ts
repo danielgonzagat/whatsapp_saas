@@ -1,65 +1,91 @@
+import { forwardRef, Inject, Injectable, Logger, Optional } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
 import { InjectRedis } from '@nestjs-modules/ioredis';
-import { BadRequestException, forwardRef, Inject, Injectable, Optional } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt'; // PULSE_OK: reasonable expiry (30m)
 import type { Redis } from 'ioredis';
+import { AuditService } from '../audit/audit.service';
 import { WelcomeAndOnboardingEmailService } from '../notifications/welcome-onboarding-email.service';
+import { ConnectService } from '../payments/connect/connect.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { AuthOAuthService } from './auth-oauth.service';
-import { AuthPartnerService } from './auth-partner.service';
-import { AuthVerificationService } from './auth-verification.service';
-import { assertAgentCanAuthenticate } from './auth.helpers';
-import { AuthPasswordService } from './auth.password.service';
-import { AuthTokenService } from './auth.token.service';
-import { GoogleVerifiedProfile } from './google-auth.service';
+import { EmailService } from './email.service';
+import { FacebookAuthService } from './facebook-auth.service';
+import { GoogleAuthService } from './google-auth.service';
+import { TikTokAuthService } from './tiktok-auth.service';
 import { RateLimitService } from './rate-limit.service';
 
-/** Auth service — public entry point that composes the extracted token / password
- *  collaborators and delegates verification / OAuth / partner-invite flows to
- *  dedicated sub-services. The DI surface (constructor signature) is preserved so
- *  existing call sites and unit tests continue to wire it the same way. */
+import type { AuthPartsDeps } from './__parts__/auth-service/register-login';
+import {
+  checkEmail,
+  createAnonymous,
+  register,
+  login,
+} from './__parts__/auth-service/register-login';
+import { issueTokensForAgentId, refreshToken } from './__parts__/auth-service/tokens';
+import {
+  oauthLogin,
+  loginWithGoogleCredential,
+  loginWithFacebookAccessToken,
+  loginWithAppleCredential,
+  loginWithTikTokAuthorizationCode,
+  loginWithTikTokAccessToken,
+} from './__parts__/auth-service/oauth-entry';
+import { requestMagicLink, verifyMagicLink } from './__parts__/auth-service/magic-link';
+import { sendWhatsAppCode, verifyWhatsAppCode } from './__parts__/auth-service/whatsapp';
+import {
+  forgotPassword,
+  resetPassword,
+  sendVerificationEmail,
+  verifyEmail,
+  resendVerificationEmail,
+} from './__parts__/auth-service/password-verification';
+
+/** Auth service. */
 @Injectable()
 export class AuthService {
-  private readonly rateLimitService: RateLimitService;
-  private readonly tokenService: AuthTokenService;
-  private readonly passwordService: AuthPasswordService;
+  private readonly logger = new Logger(AuthService.name);
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
-    private readonly authOAuthService: AuthOAuthService,
-    private readonly authPartnerService: AuthPartnerService,
-    private readonly authVerificationService: AuthVerificationService,
+    private readonly emailService: EmailService,
+    private readonly config: ConfigService,
+    private readonly googleAuthService: GoogleAuthService,
+    private readonly facebookAuthService: FacebookAuthService,
+    private readonly tikTokAuthService: TikTokAuthService,
+    private readonly connectService: ConnectService,
+    private readonly rateLimitService: RateLimitService,
     @Optional() @InjectRedis() private readonly redis?: Redis,
+    @Optional() private readonly auditService?: AuditService,
     @Optional()
     @Inject(forwardRef(() => WelcomeAndOnboardingEmailService))
     private readonly welcomeEmailService?: WelcomeAndOnboardingEmailService,
-  ) {
-    this.rateLimitService = new RateLimitService(this.redis || null);
-    this.tokenService = new AuthTokenService(this.prisma, this.jwt, this.redis);
-    this.passwordService = new AuthPasswordService(
-      this.prisma,
-      this.tokenService,
-      this.authPartnerService,
-      this.rateLimitService,
-    );
+  ) {}
+
+  private buildDeps(): AuthPartsDeps {
+    return {
+      prisma: this.prisma,
+      jwt: this.jwt,
+      emailService: this.emailService,
+      config: this.config,
+      googleAuthService: this.googleAuthService,
+      facebookAuthService: this.facebookAuthService,
+      tikTokAuthService: this.tikTokAuthService,
+      connectService: this.connectService,
+      rateLimitService: this.rateLimitService,
+      redis: this.redis,
+      auditService: this.auditService,
+      logger: this.logger,
+    };
   }
 
-  /** Issue tokens for agent id. */
-  async issueTokensForAgentId(agentId: string) {
-    return this.tokenService.issueTokensForAgentId(agentId);
-  }
-
-  /** Check email. */
   async checkEmail(email: string): Promise<{ exists: boolean }> {
-    return this.passwordService.checkEmail(email);
+    return checkEmail(this.prisma, email);
   }
 
-  /** Create anonymous. */
   async createAnonymous(ip?: string) {
-    return this.passwordService.createAnonymous(ip);
+    return createAnonymous(this.buildDeps(), ip);
   }
 
-  /** Register. */
   async register(data: {
     name?: string;
     email: string;
@@ -68,28 +94,28 @@ export class AuthService {
     affiliateInviteToken?: string;
     ip?: string;
   }) {
-    const result = await this.passwordService.register(data);
+    const result = await register(this.buildDeps(), data);
     this.triggerWelcomeFlow(
       result?.user?.email ?? data.email,
       result?.user?.name ?? data.name ?? 'Usuario',
       result?.workspace?.name ?? data.workspaceName ?? 'Meu Workspace',
+      result?.user?.workspaceId,
     );
     return result;
   }
 
-  /** Login. */
   async login(data: { email: string; password: string; ip?: string }) {
-    return this.passwordService.login(data);
+    return login(this.buildDeps(), data);
   }
 
-  /** Refresh. */
-  async refresh(refreshToken: string) {
-    return this.tokenService.refresh(refreshToken);
+  async issueTokensForAgentId(agentId: string) {
+    return issueTokensForAgentId(this.prisma, this.jwt, this.logger, agentId);
   }
 
-  /**
-   * Endpoint legado. Bloqueia payload OAuth "cru" vindo do cliente.
-   */
+  async refresh(token: string) {
+    return refreshToken(this.prisma, this.jwt, this.logger, token);
+  }
+
   async oauthLogin(data: {
     provider?: 'google' | 'apple';
     providerId?: string;
@@ -99,50 +125,75 @@ export class AuthService {
     credential?: string;
     ip?: string;
   }) {
-    if (data?.provider === 'google' && data?.credential) {
-      return this.loginWithGoogleCredential({ credential: data.credential, ip: data.ip });
-    }
-    throw new BadRequestException({
-      error: 'legacy_oauth_payload_disabled',
-      message: 'Use o endpoint seguro /auth/oauth/google com a credential emitida pelo Google.',
-    });
+    return oauthLogin(this.buildDeps(), data);
   }
 
-  /** Login with google credential. */
   async loginWithGoogleCredential(data: { credential: string; ip?: string }) {
-    const profile = await this.authOAuthService.verifyGoogleCredential(data);
-    return this.completeTrustedOAuthLogin(profile);
+    const result = await loginWithGoogleCredential(this.buildDeps(), data);
+    if (result.isNewUser) {
+      this.triggerWelcomeFlow(
+        result?.user?.email ?? '',
+        result?.user?.name ?? 'Usuario',
+        result?.workspace?.name ?? 'Meu Workspace',
+        result?.user?.workspaceId,
+      );
+    }
+    return result;
   }
 
-  /** Login with facebook access token. */
   async loginWithFacebookAccessToken(data: { accessToken: string; userId?: string; ip?: string }) {
-    const profile = await this.authOAuthService.verifyFacebookAccessToken(data);
-    return this.completeTrustedOAuthLogin(profile);
+    const result = await loginWithFacebookAccessToken(this.buildDeps(), data);
+    if (result.isNewUser) {
+      this.triggerWelcomeFlow(
+        result?.user?.email ?? '',
+        result?.user?.name ?? 'Usuario',
+        result?.workspace?.name ?? 'Meu Workspace',
+        result?.user?.workspaceId,
+      );
+    }
+    return result;
   }
 
-  /** Login with apple credential. */
   async loginWithAppleCredential(data: {
-    identityToken?: string;
+    identityToken: string;
     authorizationCode?: string;
     redirectUri?: string;
     user?: { name?: { firstName?: string; lastName?: string }; email?: string };
     ip?: string;
   }) {
-    const profile = await this.authOAuthService.verifyAppleIdentityToken(data);
-    return this.completeTrustedOAuthLogin(profile);
+    const result = await loginWithAppleCredential(this.buildDeps(), {
+      identityToken: data.identityToken,
+      user: data.user,
+      ip: data.ip,
+    });
+    if (result.isNewUser) {
+      this.triggerWelcomeFlow(
+        result?.user?.email ?? '',
+        result?.user?.name ?? 'Usuario',
+        result?.workspace?.name ?? 'Meu Workspace',
+        result?.user?.workspaceId,
+      );
+    }
+    return result;
   }
 
-  /** Login with TikTok authorization code. */
   async loginWithTikTokAuthorizationCode(data: {
     code: string;
     redirectUri?: string;
     ip?: string;
   }) {
-    const profile = await this.authOAuthService.verifyTikTokAuthorizationCode(data);
-    return this.completeTrustedOAuthLogin(profile);
+    const result = await loginWithTikTokAuthorizationCode(this.buildDeps(), data);
+    if (result.isNewUser) {
+      this.triggerWelcomeFlow(
+        result?.user?.email ?? '',
+        result?.user?.name ?? 'Usuario',
+        result?.workspace?.name ?? 'Meu Workspace',
+        result?.user?.workspaceId,
+      );
+    }
+    return result;
   }
 
-  /** Login with TikTok access token. */
   async loginWithTikTokAccessToken(data: {
     accessToken: string;
     openId?: string;
@@ -150,100 +201,61 @@ export class AuthService {
     expiresInSeconds?: number;
     ip?: string;
   }) {
-    const profile = await this.authOAuthService.verifyTikTokAccessToken(data);
-    return this.completeTrustedOAuthLogin(profile);
-  }
-
-  private async completeTrustedOAuthLogin(profile: GoogleVerifiedProfile) {
-    const { agent, isNewUser } = await this.authOAuthService.resolveAgentForProfile(profile);
-    assertAgentCanAuthenticate(agent);
-    const result = await this.tokenService.issueTokens(agent, { isNewUser });
-    if (isNewUser) {
+    const result = await loginWithTikTokAccessToken(this.buildDeps(), data);
+    if (result.isNewUser) {
       this.triggerWelcomeFlow(
-        result?.user?.email ?? agent.email,
-        result?.user?.name ?? agent.name ?? 'Usuario',
+        result?.user?.email ?? '',
+        result?.user?.name ?? 'Usuario',
         result?.workspace?.name ?? 'Meu Workspace',
+        result?.user?.workspaceId,
       );
     }
     return result;
   }
 
-  // =========================================
-  // MAGIC LINK — delegated to AuthVerificationService
-  // =========================================
-
-  /** Request magic link. */
   async requestMagicLink(data: { email: string; redirectTo?: string; ip?: string }) {
-    return this.authVerificationService.requestMagicLink(data);
+    return requestMagicLink(this.buildDeps(), data);
   }
 
-  /** Verify magic link. */
   async verifyMagicLink(token: string, ip?: string) {
-    const { agent, isNewUser, redirectTo } = await this.authVerificationService.verifyMagicLink(
-      token,
-      ip,
-    );
-    assertAgentCanAuthenticate(agent);
-    const result = {
-      ...(await this.tokenService.issueTokens(agent, { isNewUser })),
-      redirectTo,
-    };
-    if (isNewUser) {
+    const result = await verifyMagicLink(this.buildDeps(), token, ip);
+    if (result.isNewUser) {
       this.triggerWelcomeFlow(
-        result?.user?.email ?? agent.email,
-        result?.user?.name ?? agent.name ?? 'Usuario',
+        result?.user?.email ?? '',
+        result?.user?.name ?? 'Usuario',
         result?.workspace?.name ?? 'Meu Workspace',
+        result?.user?.workspaceId,
       );
     }
     return result;
   }
 
-  // =========================================
-  // WHATSAPP OTP — delegated to AuthVerificationService
-  // =========================================
-
-  /** Send WhatsApp OTP. */
   async sendWhatsAppCode(phone: string, ip?: string) {
-    return this.authVerificationService.sendWhatsAppCode(phone, ip);
+    return sendWhatsAppCode(this.buildDeps(), phone, ip);
   }
 
-  /** Verify WhatsApp OTP and issue tokens. */
   async verifyWhatsAppCode(phone: string, code: string, ip?: string) {
-    const agent = await this.authVerificationService.verifyWhatsAppCode(phone, code, ip);
-    return this.tokenService.issueTokens(agent);
+    return verifyWhatsAppCode(this.buildDeps(), phone, code, ip);
   }
 
-  // =========================================
-  // PASSWORD RECOVERY — delegated to AuthVerificationService
-  // =========================================
-
-  /** Forgot password. */
   async forgotPassword(email: string, ip?: string) {
-    return this.authVerificationService.forgotPassword(email, ip);
+    return forgotPassword(this.buildDeps(), email, ip);
   }
 
-  /** Reset password. */
   async resetPassword(token: string, newPassword: string, ip?: string) {
-    return this.authVerificationService.resetPassword(token, newPassword, ip);
+    return resetPassword(this.buildDeps(), token, newPassword, ip);
   }
 
-  // =========================================
-  // EMAIL VERIFICATION — delegated to AuthVerificationService
-  // =========================================
-
-  /** Send verification email. */
   async sendVerificationEmail(agentId: string) {
-    return this.authVerificationService.sendVerificationEmail(agentId);
+    return sendVerificationEmail(this.buildDeps(), agentId);
   }
 
-  /** Verify email. */
   async verifyEmail(token: string, ip?: string) {
-    return this.authVerificationService.verifyEmail(token, ip);
+    return verifyEmail(this.buildDeps(), token, ip);
   }
 
-  /** Resend verification email. */
   async resendVerificationEmail(email: string, ip?: string) {
-    return this.authVerificationService.resendVerificationEmail(email, ip);
+    return resendVerificationEmail(this.buildDeps(), email, ip);
   }
 
   /** Logout — revoke all refresh tokens for the authenticated agent. */
@@ -252,8 +264,9 @@ export class AuthService {
       where: { agentId, revoked: false },
       data: { revoked: true },
     });
-    if (accessTokenJti && accessTokenExp) {
-      await this.tokenService.revokeAccessToken(accessTokenJti, accessTokenExp);
+    if (accessTokenJti && accessTokenExp && this.redis) {
+      const ttl = Math.max(1, accessTokenExp - Math.floor(Date.now() / 1000));
+      await this.redis.set(`access-token-revoked:${accessTokenJti}`, '1', 'EX', ttl);
     }
     return { success: true };
   }
@@ -262,11 +275,16 @@ export class AuthService {
    * Fire-and-forget welcome email + onboarding sequence scheduling.
    * Errors are caught and logged — never blocks the auth response.
    */
-  private triggerWelcomeFlow(email: string, name: string, workspaceName: string) {
+  private triggerWelcomeFlow(
+    email: string,
+    name: string,
+    workspaceName: string,
+    workspaceId?: string,
+  ) {
     if (!this.welcomeEmailService) {
       return;
     }
-    void this.welcomeEmailService.sendWelcomeEmail(email, name, workspaceName);
-    void this.welcomeEmailService.scheduleOnboardingSequence(email, name);
+    void this.welcomeEmailService.sendWelcomeEmail(email, name, workspaceName, workspaceId);
+    void this.welcomeEmailService.scheduleOnboardingSequence(email, name, workspaceId);
   }
 }

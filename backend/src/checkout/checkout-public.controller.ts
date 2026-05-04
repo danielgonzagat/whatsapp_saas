@@ -154,6 +154,7 @@ export class CheckoutPublicController {
   /** Accept upsell. */
   // PULSE_OK: called from frontend/src/app/(checkout)/hooks/useCheckout.ts (/n/ prefix proxy)
   @Post('upsell/:orderId/accept/:upsellId')
+  @Idempotent()
   acceptUpsell(@Param('orderId') orderId: string, @Param('upsellId') upsellId: string) {
     return this.checkoutService.acceptUpsell(orderId, upsellId);
   }
@@ -161,6 +162,7 @@ export class CheckoutPublicController {
   /** Decline upsell. */
   // PULSE_OK: called from frontend/src/app/(checkout)/hooks/useCheckout.ts (/n/ prefix proxy)
   @Post('upsell/:orderId/decline/:upsellId')
+  @Idempotent()
   declineUpsell(@Param('orderId') orderId: string, @Param('upsellId') upsellId: string) {
     return this.checkoutService.declineUpsell(orderId, upsellId);
   }

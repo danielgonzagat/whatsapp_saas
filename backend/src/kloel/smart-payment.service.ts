@@ -427,7 +427,7 @@ export class SmartPaymentService {
         async (tx) => {
           await this.auditService.logWithTx(tx, {
             workspaceId: params.workspaceId,
-            action: 'PAYMENT_CONFIRMED',
+            action: 'payment.status_changed',
             resource: 'SmartPayment',
             resourceId: params.paymentId,
             details: { status, amount, customerId: params.customerId },
@@ -452,6 +452,18 @@ export class SmartPaymentService {
     }
 
     if (status === 'REFUNDED') {
+      await this.prisma.$transaction(
+        async (tx) => {
+          await this.auditService.logWithTx(tx, {
+            workspaceId: params.workspaceId,
+            action: 'refund.processed',
+            resource: 'SmartPayment',
+            resourceId: params.paymentId,
+            details: { status, amount, customerId: params.customerId },
+          });
+        },
+        { isolationLevel: 'ReadCommitted' },
+      );
       return {
         sendMessage: true,
         message: 'Seu reembolso foi processado. O valor estará disponível em até 5 dias úteis.',

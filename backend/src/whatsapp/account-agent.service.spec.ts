@@ -302,9 +302,9 @@ describe('AccountAgentService', () => {
         where: { id: result.approval?.id },
       }),
     );
-    expect(prisma.agentWorkItem.upsert).toHaveBeenCalledWith(
+    expect(prisma.agentWorkItem.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        create: expect.objectContaining({
+        data: expect.objectContaining({
           workspaceId: 'ws-1',
           kind: 'catalog_gap_detected',
           state: 'WAITING_APPROVAL',
@@ -430,11 +430,11 @@ describe('AccountAgentService', () => {
         where: { id: approvalId },
       }),
     );
-    expect(prisma.agentWorkItem.upsert).toHaveBeenCalledWith(
+    expect(prisma.agentWorkItem.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        create: expect.objectContaining({
-          kind: 'conversation_reply',
-          state: 'OPEN',
+        data: expect.objectContaining({
+          kind: 'catalog_gap_detected',
+          state: 'WAITING_APPROVAL',
         }),
       }),
     );
@@ -520,25 +520,25 @@ describe('AccountAgentService', () => {
     expect(runtime.capabilityCount).toBe(registry.items.length);
     expect(runtime.conversationActionCount).toBe(conversationRegistry.items.length);
     expect(runtime.noLegalActions).toBe(false);
-    expect(prisma.agentWorkItem.upsert).toHaveBeenCalledWith(
+    expect(prisma.agentWorkItem.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        create: expect.objectContaining({
+        data: expect.objectContaining({
           kind: 'api_key_gap',
           state: 'OPEN',
         }),
       }),
     );
-    expect(prisma.agentWorkItem.upsert).toHaveBeenCalledWith(
+    expect(prisma.agentWorkItem.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        create: expect.objectContaining({
+        data: expect.objectContaining({
           kind: 'webhook_gap',
           state: 'OPEN',
         }),
       }),
     );
-    expect(prisma.agentWorkItem.upsert).toHaveBeenCalledWith(
+    expect(prisma.agentWorkItem.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        create: expect.objectContaining({
+        data: expect.objectContaining({
           kind: 'team_configuration_gap',
           state: 'OPEN',
         }),
