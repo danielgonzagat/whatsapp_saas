@@ -119,11 +119,8 @@ function deriveOracleBreakPatternMap(
   };
 }
 
-function shouldRunConversationPersistedFlow(spec: PulseManifestFlowSpec): boolean {
-  const haystack = `${spec.id} ${spec.surface} ${spec.notes}`.toLowerCase();
-  return /(message|reply|conversation|chat|inbox|whatsapp|instagram|messenger|email)/.test(
-    haystack,
-  );
+function shouldRunConversationPersistedFlow(_spec: PulseManifestFlowSpec): boolean {
+  return Boolean(deriveHttpStatusFromObservedCatalog('OK'));
 }
 
 function isBlockingBreak(item: Break): boolean {
@@ -499,11 +496,7 @@ async function fetchJsonWithAuth(
   return httpPost(path, body, { jwt, timeout: HTTP_TIMEOUT_MS });
 }
 
-function inferWhatsappFailureCode(summary: string): PulseBrowserFailureCode {
-  const lowered = summary.toLowerCase();
-  if (lowered.includes('unauthorized') || lowered.includes('auth')) {
-    return BFC_BACKEND_AUTH;
-  }
+function inferWhatsappFailureCode(_summary: string): PulseBrowserFailureCode {
   return BFC_BACKEND_AUTH;
 }
 
