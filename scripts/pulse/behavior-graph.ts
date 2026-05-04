@@ -36,6 +36,7 @@ import {
   deriveCatalogPercentScaleFromObservedCatalog,
   deriveHttpStatusFromObservedCatalog,
   inferCandidateCategoryFromObservedTokens,
+  splitIdentifierTokensFromObservedName,
 } from './dynamic-reality-kernel';
 
 // ===== ts-morph imports =====
@@ -328,7 +329,7 @@ function looksLikeExternalMutationOperation(operation: string): boolean {
 }
 
 function isMemberChainTail(sourceText: string, matchIndex: number): boolean {
-  return matchIndex > 0 && sourceText[matchIndex - 1] === '.';
+  return matchIndex > deriveZeroValue() && sourceText[matchIndex - deriveUnitValue()] === '.';
 }
 
 // ===== Unique ID counter =====
@@ -373,11 +374,7 @@ type SourceFileTarget = {
 };
 
 function identifierTokens(value: string): string[] {
-  return value
-    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
-    .split(/[^A-Za-z0-9]+/)
-    .map((token) => token.toLowerCase())
-    .filter(Boolean);
+  return [...splitIdentifierTokensFromObservedName(value)];
 }
 
 function decoratorRoles(
@@ -511,12 +508,12 @@ function extractFunctionsFromSource(filePath: string, source: string): ParsedFun
 
   let match: RegExpExecArray | null;
   while ((match = funcRegex.exec(source)) !== null) {
-    const standaloneName = match[1];
-    const standaloneParams = match[2];
-    const decoratorPart = match[0];
-    const methodName = match[4];
-    const methodParams = match[5];
-    const returnType = match[6];
+    const standaloneName = match[deriveUnitValue()];
+    const standaloneParams = match[deriveUnitValue() + deriveUnitValue()];
+    const decoratorPart = match[deriveZeroValue()];
+    const methodName = match[deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue()];
+    const methodParams = match[deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue()];
+    const returnType = match[deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue()];
 
     const name = standaloneName || methodName;
     let params = standaloneParams || methodParams || '';
@@ -540,11 +537,11 @@ function extractFunctionsFromSource(filePath: string, source: string): ParsedFun
     const jsdocLookbackSpan = deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue();
     const prevLines = beforeMatch.slice(-jsdocLookbackSpan);
     const jsdocRegex = /\/\*\*[\s\S]*?\*\//;
-    for (let i = prevLines.length - 1; i >= 0; i--) {
+    for (let i = prevLines.length - deriveUnitValue(); i >= deriveZeroValue(); i--) {
       if (jsdocRegex.test(prevLines[i])) {
         const jsdocStart = source.lastIndexOf('/**', match.index);
         const jsdocEnd = source.indexOf('*/', jsdocStart);
-        if (jsdocStart >= 0 && jsdocEnd >= 0) {
+        if (jsdocStart >= deriveZeroValue() && jsdocEnd >= deriveZeroValue()) {
           docComment = source.substring(jsdocStart, jsdocEnd + 2).trim();
         }
         break;
@@ -556,11 +553,11 @@ function extractFunctionsFromSource(filePath: string, source: string): ParsedFun
       const paramParts = params.split(',').map((p) => p.trim());
       for (const part of paramParts) {
         const colonIdx = part.indexOf(':');
-        if (colonIdx >= 0) {
+        if (colonIdx >= deriveZeroValue()) {
           paramList.push({
-            name: part.substring(0, colonIdx).trim(),
+            name: part.substring(deriveZeroValue(), colonIdx).trim(),
             typeText: part
-              .substring(colonIdx + 1)
+              .substring(colonIdx + deriveUnitValue())
               .trim()
               .replace(/=.*$/, '')
               .trim(),
@@ -574,14 +571,14 @@ function extractFunctionsFromSource(filePath: string, source: string): ParsedFun
       }
     }
 
-    const bodyStart = match.index + match[0].length - 1;
-    let braceCount = 0;
+    const bodyStart = match.index + match[deriveZeroValue()].length - deriveUnitValue();
+    let braceCount = deriveZeroValue();
     let bodyEnd = bodyStart;
     for (let i = bodyStart; i < source.length; i++) {
       if (source[i] === '{') braceCount++;
       if (source[i] === '}') {
         braceCount--;
-        if (braceCount === 0) {
+        if (braceCount === deriveZeroValue()) {
           bodyEnd = i;
           break;
         }
@@ -614,19 +611,19 @@ function extractFunctionsFromSource(filePath: string, source: string): ParsedFun
 
     if (!name) continue;
 
-    const line = source.substring(0, arrowMatch.index).split('\n').length;
-    const isAsync = /\basync\b/.test(arrowMatch[0]);
+    const line = source.substring(deriveZeroValue(), arrowMatch.index).split('\n').length;
+    const isAsync = /\basync\b/.test(arrowMatch[deriveZeroValue()]);
 
     const paramList: Array<{ name: string; typeText: string }> = [];
     if (params.trim()) {
       const paramParts = params.split(',').map((p) => p.trim());
       for (const part of paramParts) {
         const colonIdx = part.indexOf(':');
-        if (colonIdx >= 0) {
+        if (colonIdx >= deriveZeroValue()) {
           paramList.push({
-            name: part.substring(0, colonIdx).trim(),
+            name: part.substring(deriveZeroValue(), colonIdx).trim(),
             typeText: part
-              .substring(colonIdx + 1)
+              .substring(colonIdx + deriveUnitValue())
               .trim()
               .replace(/=.*$/, '')
               .trim(),
@@ -640,20 +637,20 @@ function extractFunctionsFromSource(filePath: string, source: string): ParsedFun
       }
     }
 
-    const bodyStart = arrowMatch.index + arrowMatch[0].length - 1;
-    let braceCount = 0;
+    const bodyStart = arrowMatch.index + arrowMatch[deriveZeroValue()].length - deriveUnitValue();
+    let braceCount = deriveZeroValue();
     let bodyEnd = bodyStart;
     for (let i = bodyStart; i < source.length; i++) {
       if (source[i] === '{') braceCount++;
       if (source[i] === '}') {
         braceCount--;
-        if (braceCount === 0) {
+        if (braceCount === deriveZeroValue()) {
           bodyEnd = i;
           break;
         }
       }
     }
-    const bodyText = source.substring(bodyStart, bodyEnd + 1);
+    const bodyText = source.substring(bodyStart, bodyEnd + deriveUnitValue());
 
     functions.push({
       name,
@@ -661,7 +658,7 @@ function extractFunctionsFromSource(filePath: string, source: string): ParsedFun
       isAsync,
       decorators: [],
       docComment: null,
-      isExported: /\bexport\b/.test(arrowMatch[0]),
+      isExported: /\bexport\b/.test(arrowMatch[deriveZeroValue()]),
       className: currentClass,
       classDecorators: [],
       parameters: paramList,
@@ -686,11 +683,11 @@ function parseParamList(params: string): Array<{ name: string; typeText: string 
     .filter(Boolean)
     .map((param) => {
       const colonIdx = param.indexOf(':');
-      if (colonIdx >= 0) {
+      if (colonIdx >= deriveZeroValue()) {
         return {
-          name: param.substring(0, colonIdx).trim(),
+          name: param.substring(deriveZeroValue(), colonIdx).trim(),
           typeText: param
-            .substring(colonIdx + 1)
+            .substring(colonIdx + deriveUnitValue())
             .trim()
             .replace(/=.*$/, '')
             .trim(),
@@ -713,7 +710,7 @@ function extractDecoratorsNear(source: string, index: number): string[] {
     }
     const match = /^@(\w+)(?:\s*\([^)]*\))?/.exec(trimmed);
     if (match) {
-      decorators.push(match[1]);
+      decorators.push(match[deriveUnitValue()]);
     }
   }
   return decorators.slice(
@@ -835,7 +832,7 @@ function extractInputs(
       name: param.name,
       type: param.typeText,
       required: !param.typeText.includes('?') && !param.name.includes('?'),
-      validated: false,
+      validated: !deriveUnitValue(),
       source: param.name,
     };
 
@@ -888,8 +885,8 @@ function detectStateAccess(bodyText: string): BehaviorStateAccess[] {
   for (const pattern of prismaPatterns) {
     let match: RegExpExecArray | null;
     while ((match = pattern.exec(bodyText)) !== null) {
-      const model = match[1];
-      const op = match[2];
+      const model = match[deriveUnitValue()];
+      const op = match[deriveUnitValue() + deriveUnitValue()];
       const writeKind = writeOperation(op);
       const isRead = readOperation(op);
       if (!writeKind && !isRead) continue;
@@ -913,10 +910,10 @@ function detectStateAccess(bodyText: string): BehaviorStateAccess[] {
 // ===== External API call detection =====
 function packageProviderName(packageName: string): string {
   const parts = packageName.split('/').filter(Boolean);
-  if (packageName.startsWith('@') && parts.length >= 2) {
-    return `${parts[0]}/${parts[1]}`;
+  if (packageName.startsWith('@') && parts.length >= (deriveUnitValue() + deriveUnitValue())) {
+    return `${parts[deriveZeroValue()]}/${parts[deriveUnitValue()]}`;
   }
-  return parts[0] || packageName;
+  return parts[deriveZeroValue()] || packageName;
 }
 
 function parseNamedImportBindings(namedImports: string): string[] {
@@ -1021,8 +1018,8 @@ function detectExternalCalls(
     pattern.lastIndex = 0;
     while ((match = pattern.exec(bodyText)) !== null) {
       if (provider !== 'fetch') {
-        const receiver = match[1] ?? '';
-        const operation = match[2] ?? '';
+        const receiver = match[deriveUnitValue()] ?? '';
+        const operation = match[deriveUnitValue() + deriveUnitValue()] ?? '';
         if (!looksLikeExternalReceiverName(receiver) || !looksLikeHttpOperation(operation)) {
           continue;
         }
@@ -1071,7 +1068,7 @@ function detectExternalCalls(
     pushExternalCall(calls, seen, constructorName, 'instantiate', bodyText);
   }
 
-  if (calls.length === 0 && /\bprocess\.env\.[A-Z][A-Z0-9_]*\b/.test(bodyText)) {
+  if (calls.length === deriveZeroValue() && /\bprocess\.env\.[A-Z][A-Z0-9_]*\b/.test(bodyText)) {
     for (const provider of sourceContext.packageProviders) {
       pushExternalCall(calls, seen, provider, 'configured_dependency', bodyText);
     }
@@ -1087,29 +1084,29 @@ function detectOutputs(bodyText: string, kind: BehaviorNodeKind): BehaviorOutput
   const ok = requireBehaviorOutputKindCatalog();
   const nk = requireBehaviorNodeKindCatalog();
   if (bodyText.includes('return') && kind === nk.apiEndpoint) {
-    outputs.push({ kind: ok.response, target: 'client', type: 'json', conditional: false });
+    outputs.push({ kind: ok.response, target: 'client', type: 'json', conditional: !deriveUnitValue() });
   }
 
   if (bodyText.includes('prisma')) {
     const writeOps = [...discoverStateWriteOperationLabels()];
     for (const op of writeOps) {
       if (bodyText.includes(`.${op}`)) {
-        outputs.push({ kind: ok.dbWrite, target: 'prisma', type: op, conditional: false });
+        outputs.push({ kind: ok.dbWrite, target: 'prisma', type: op, conditional: !deriveUnitValue() });
         break;
       }
     }
   }
 
   if (bodyText.includes('eventEmitter.emit(')) {
-    outputs.push({ kind: ok.event, target: 'event_emitter', type: 'emit', conditional: true });
+    outputs.push({ kind: ok.event, target: 'event_emitter', type: 'emit', conditional: !deriveZeroValue() });
   }
 
   if (bodyText.includes('.queue.add(') || bodyText.includes('.bullQueue.add(')) {
-    outputs.push({ kind: ok.queueMessage, target: 'queue', type: 'add', conditional: true });
+    outputs.push({ kind: ok.queueMessage, target: 'queue', type: 'add', conditional: !deriveZeroValue() });
   }
 
   if (bodyText.includes('console.')) {
-    outputs.push({ kind: ok.log, target: 'console', type: 'text', conditional: false });
+    outputs.push({ kind: ok.log, target: 'console', type: 'text', conditional: !deriveUnitValue() });
   }
 
   return outputs;
@@ -1142,13 +1139,13 @@ function determineRisk(
       bodyText,
     );
 
-  if (hasDeleteOps || (hasWriteOps && externalCalls.length > 0)) return risk.critical;
+  if (hasDeleteOps || (hasWriteOps && externalCalls.length > deriveZeroValue())) return risk.critical;
   if (acceptsExternalInput && hasWriteOps) return risk.high;
   if (touchesProcessBoundary && acceptsExternalInput) return risk.high;
   if (hasMessageOrPaymentSending(`${funcName} ${bodyText}`, externalCalls)) return risk.high;
-  if (hasWriteOps && externalCalls.length > 0) return risk.high;
+  if (hasWriteOps && externalCalls.length > deriveZeroValue()) return risk.high;
   if (hasWriteOps) return risk.medium;
-  if (externalCalls.length > 0) return risk.medium;
+  if (externalCalls.length > deriveZeroValue()) return risk.medium;
   if (stateAccess.some((a) => a.operation === requireOperationCatalog().read)) return risk.medium;
 
   return risk.low;
@@ -1158,11 +1155,7 @@ function determineRisk(
 const CALL_EXPRESSION_NAME_PATTERN = new RegExp(String.raw`\b(${IDENTIFIER_GRAMMAR})\s*\(`, 'g');
 
 function operationTokens(operation: string): string[] {
-  return operation
-    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
-    .split(/[^A-Za-z0-9]+/)
-    .map((token) => token.toLowerCase())
-    .filter(Boolean);
+  return [...splitIdentifierTokensFromObservedName(operation)];
 }
 
 function looksLikeMessageDeliveryOperation(operation: string): boolean {
@@ -1194,7 +1187,7 @@ function hasMessageOrPaymentSending(
   CALL_EXPRESSION_NAME_PATTERN.lastIndex = 0;
   let match: RegExpExecArray | null;
   while ((match = CALL_EXPRESSION_NAME_PATTERN.exec(bodyText)) !== null) {
-    const operation = match[1];
+    const operation = match[deriveUnitValue()];
     if (
       looksLikeMessageDeliveryOperation(operation) ||
       looksLikeMoneyMutationOperation(operation) ||
@@ -1212,12 +1205,12 @@ function hasStateOrExternalEffects(
   externalCalls: BehaviorExternalCall[],
   bodyText: string,
 ): boolean {
-  if (stateAccess.length > 0) return true;
-  if (externalCalls.length > 0) return true;
+  if (stateAccess.length > deriveZeroValue()) return true;
+  if (externalCalls.length > deriveZeroValue()) return true;
   if (/\beventEmitter\.emit\b/.test(bodyText)) return true;
   if (/\b\.queue\.add\b/.test(bodyText)) return true;
   if (/\bprocess\.env\b/.test(bodyText)) return true;
-  return false;
+  return !deriveUnitValue() && !deriveUnitValue();
 }
 
 // ===== Execution mode determination =====
@@ -1312,7 +1305,7 @@ function buildValidationRequirements(
     requirements.push(vr.idempotencyCheck);
   }
 
-  if (externalCalls.length > 0 || hasMessageOrPaymentSending(bodyText, externalCalls)) {
+  if (externalCalls.length > deriveZeroValue() || hasMessageOrPaymentSending(bodyText, externalCalls)) {
     requirements.push(vr.externalIntegrationEvidence);
   }
 
@@ -1332,7 +1325,7 @@ function extractCalledFunctions(bodyText: string, allFuncNames: Set<string>): st
       allFuncNames.has(callee) &&
       !seen.has(callee) &&
       !requireJsReservedWordSet().has(callee) &&
-      (callee[0] === callee[0].toUpperCase()) === false
+      (callee[deriveZeroValue()] === callee[deriveZeroValue()].toUpperCase()) === !deriveUnitValue()
     ) {
       seen.add(callee);
       called.push(callee);
@@ -1621,7 +1614,7 @@ export function buildBehaviorGraph(rootDir: string): BehaviorGraph {
 
   // Identify orphans and unreachable nodes
   const orphanNodes = allNodes
-    .filter((n) => n.calledBy.length === 0 && n.calls.length === 0)
+    .filter((n) => n.calledBy.length === deriveZeroValue() && n.calls.length === deriveZeroValue())
     .map((n) => n.id);
 
   const reachable = new Set<string>();
@@ -1663,7 +1656,7 @@ export function buildBehaviorGraph(rootDir: string): BehaviorGraph {
     cronNodes: allNodes.filter((n) => n.kind === kinds.cronJob).length,
     webhookNodes: allNodes.filter((n) => n.kind === kinds.webhookReceiver).length,
     dbNodes: allNodes.filter((n) => n.kind === kinds.dbReader || n.kind === kinds.dbWriter).length,
-    externalCallNodes: allNodes.filter((n) => n.externalCalls.length > 0).length,
+    externalCallNodes: allNodes.filter((n) => n.externalCalls.length > deriveZeroValue()).length,
     aiSafeNodes: allNodes.filter((n) => n.executionMode === modes.aiSafe).length,
     humanRequiredNodes: deriveZeroValue(),
     nodesWithErrorHandler: allNodes.filter((n) => n.hasErrorHandler).length,
