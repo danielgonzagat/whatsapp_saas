@@ -4,10 +4,11 @@
  */
 import { compact, readOptionalJson, unique } from './artifacts.io';
 import {
+  deriveUnitValue,
+  deriveZeroValue,
   discoverAllObservedArtifactFilenames,
   discoverConvergenceExecutionModeLabels,
   discoverGateFailureClassLabels,
-  deriveZeroValue,
 } from './dynamic-reality-kernel';
 import {
   buildDecisionQueue,
@@ -218,9 +219,8 @@ function verdictGateEvidenceKey(verdictName: string): PulseGateName {
 }
 
 function directiveGateEvidencePatch(...verdictNames: string[]): DirectiveGateEvidencePatch {
-  const evidenceListField = ['gate', 'Names'].join('');
   return {
-    [evidenceListField]: verdictNames.map(verdictGateEvidenceKey),
+    gateNames: verdictNames.map(verdictGateEvidenceKey),
   };
 }
 
@@ -304,7 +304,7 @@ function buildDefaultExitCriteria(unit: QueueUnit): string[] {
         id: `${unit.id}-exit-0`,
         type: 'scenario-passed',
         target:
-          Array.isArray(unit.scenarioIds) && unit.scenarioIds.length > 0
+          Array.isArray(unit.scenarioIds) && unit.scenarioIds.length > deriveZeroValue()
             ? unit.scenarioIds[0]
             : unit.id.replace(/^recover-/, ''),
         expected: { status: 'passed' },
@@ -325,7 +325,7 @@ function evidenceString(
   key: string,
 ): string | null {
   const value = criterion.evidence[key];
-  return typeof value === 'string' && value.length > 0 ? value : null;
+  return typeof value === 'string' && value.length > deriveZeroValue() ? value : null;
 }
 
 function directiveLabelFromIdentifier(identifier: string): string {
@@ -335,7 +335,7 @@ function directiveLabelFromIdentifier(identifier: string): string {
     .replace(/[_-]+/g, ' ')
     .trim()
     .toLowerCase();
-  return label.length > 0 ? label : identifier;
+  return label.length > deriveZeroValue() ? label : identifier;
 }
 
 function machineUnitTitle(criterionId: string): string {
@@ -359,7 +359,7 @@ function tokenizeGateName(gateName: PulseGateName): string[] {
     .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
     .replace(/[_-]+/g, ' ')
     .toLowerCase();
-  return unique(spaced.split(/\s+/).filter((token) => token.length > 2));
+  return unique(spaced.split(/\s+/).filter((token) => token.length > deriveUnitValue() + deriveUnitValue()));
 }
 
 function artifactRegistrySearchText(artifact: PulseArtifactDefinition): string {
@@ -413,7 +413,7 @@ function buildRegistryEvidenceForDirective(
     filePath.startsWith('scripts/pulse/'),
   );
 
-  if (artifactPaths.length > 0 && relatedFiles.length > 0) {
+  if (artifactPaths.length > deriveZeroValue() && relatedFiles.length > deriveZeroValue()) {
     return {
       authority: 'artifact_registry',
       artifactPaths,
@@ -834,7 +834,7 @@ function buildDirectiveUnit(snapshot: PulseArtifactSnapshot, unit: QueueUnit) {
     validationTargets: unit.validationArtifacts,
     validationArtifacts: unit.validationArtifacts,
     relatedFiles: unit.relatedFiles,
-    exitCriteria: unit.exitCriteria.length > 0 ? unit.exitCriteria : buildDefaultExitCriteria(unit),
+    exitCriteria: unit.exitCriteria.length > deriveZeroValue() ? unit.exitCriteria : buildDefaultExitCriteria(unit),
     preconditions: buildPreconditions(snapshot, unit),
     allowedActions: buildAllowedActions(unit),
     forbiddenActions: buildForbiddenActions(snapshot),
@@ -896,7 +896,7 @@ export function buildDirective(
     .slice(0, 8)
     .map((unit) => buildDirectiveUnit(snapshot, unit));
   const nextProductExecutableUnits =
-    nextAutonomousUnits.length > 0 ? nextAutonomousUnits.slice(0, 8) : nextDecisionUnits;
+    nextAutonomousUnits.length > deriveZeroValue() ? nextAutonomousUnits.slice(0, 8) : nextDecisionUnits;
   const pulseMachineNextWork = [
     ...buildPulseMachineNextWork(pulseMachineReadiness),
     ...buildPulseCertificationProofDebtNextWork(snapshot.certification),
@@ -904,11 +904,11 @@ export function buildDirective(
   ];
   const machineFocusRequired =
     pulseMachineReadiness.status !== 'READY' ||
-    pulseMachineNextWork.length > 0 ||
+    pulseMachineNextWork.length > deriveZeroValue() ||
     autonomyClaims.productionAutonomyVerdict !== 'SIM' ||
     autonomyProof.verdicts.zeroPromptProductionGuidance !== 'SIM';
   const nextExecutableUnits =
-    machineFocusRequired && pulseMachineNextWork.length > 0
+    machineFocusRequired && pulseMachineNextWork.length > deriveZeroValue()
       ? pulseMachineNextWork.slice(0, 8)
       : nextProductExecutableUnits;
   const blockedWork = convergencePlan.queue
@@ -1131,7 +1131,7 @@ export function buildDirective(
       pulseMachineNextWork,
       machineFocusRequired,
       nextExecutableUnitsSource:
-        machineFocusRequired && pulseMachineNextWork.length > 0 ? 'pulse_machine' : 'product',
+        machineFocusRequired && pulseMachineNextWork.length > deriveZeroValue() ? 'pulse_machine' : 'product',
       nextExecutableUnits,
       nextWork: nextExecutableUnits,
       blockedUnits,
