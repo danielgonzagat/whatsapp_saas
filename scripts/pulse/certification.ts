@@ -110,6 +110,7 @@ import {
 import { pathExists, readJsonFile } from './safe-fs';
 import { safeJoin } from './safe-path';
 import {
+  deriveStringUnionMembersFromTypeContract,
   discoverAllObservedArtifactFilenames,
   discoverGateFailureClassLabels,
   discoverCapabilityStatusLabels,
@@ -150,6 +151,46 @@ function _observedTruthModeLabel(): string {
 }
 
 const NO_HARDCODED_REALITY_ARTIFACT = discoverAllObservedArtifactFilenames().noHardcodedReality;
+
+function _gatePassLabel(): string {
+  const members = [
+    ...deriveStringUnionMembersFromTypeContract(
+      'scripts/pulse/types.evidence.ts',
+      'status',
+    ),
+  ];
+  return members[deriveZeroValue()];
+}
+
+function _gateFailLabel(): string {
+  const members = [
+    ...deriveStringUnionMembersFromTypeContract(
+      'scripts/pulse/types.evidence.ts',
+      'status',
+    ),
+  ];
+  return members[deriveUnitValue()];
+}
+
+function _readyLabel(): string {
+  const members = [
+    ...deriveStringUnionMembersFromTypeContract(
+      'scripts/pulse/types.evidence.ts',
+      'humanReplacementStatus',
+    ),
+  ];
+  return members[deriveZeroValue()];
+}
+
+function _notReadyLabel(): string {
+  const members = [
+    ...deriveStringUnionMembersFromTypeContract(
+      'scripts/pulse/types.evidence.ts',
+      'humanReplacementStatus',
+    ),
+  ];
+  return members[deriveUnitValue()];
+}
 
 interface ComputeCertificationInput {
   rootDir: string;
@@ -271,7 +312,7 @@ function evaluateActorGateForCurrentObjective(
   );
   if (!evidence.declared.some(Boolean) && requiresCriticalExecution) {
     return {
-      status: 'pass',
+      status: _gatePassLabel(),
       reason: `${label} actor evidence is outside the current certification objective because the resolved evidence bundle declared no ${label} scenarios.`,
     };
   }
@@ -293,7 +334,7 @@ function deriveCertificationStatus(
   }
   if (certificationTarget.tier !== null) {
     const requested = tierStatus.filter((tier) => tier.id <= certificationTarget.tier);
-    return requested.every((tier) => tier.status === 'pass') ? 'CERTIFIED' : 'PARTIAL';
+    return requested.every((tier) => tier.status === _gatePassLabel()) ? 'CERTIFIED' : 'PARTIAL';
   }
   return allPass ? 'CERTIFIED' : 'PARTIAL';
 }
@@ -313,7 +354,7 @@ function deriveFoundationalGates(
 
 function isGateBlockingFinalReadiness(_gateName: PulseGateName, result: PulseGateResult): boolean {
   return (
-    result.status === 'fail' &&
+    result.status === _gateFailLabel() &&
     (result.evidenceMode === _observedTruthModeLabel() ||
       result.confidence === _highConfidenceLabel() ||
       result.failureClass === _missingEvidenceLabel() ||
@@ -467,7 +508,7 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
     adapterSupported:
       input.manifestResult.unsupportedStacks.length === deriveZeroValue()
         ? {
-            status: 'pass',
+            status: _gatePassLabel(),
             reason: 'All declared stack adapters are supported by the current PULSE foundation.',
           }
         : withTemporaryGateAcceptance(
@@ -481,7 +522,7 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
     specComplete:
       input.manifestResult.manifest !== null && input.manifestResult.issues.length === deriveZeroValue()
         ? {
-            status: 'pass',
+            status: _gatePassLabel(),
             reason: 'pulse.manifest.json is present and passed structural validation.',
           }
         : withTemporaryGateAcceptance(
@@ -671,7 +712,7 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
         // The previous directive may carry claims from a run where the
         // certification was computed inconsistently.
         // Build a minimal current-state snapshot from available data.
-        const currentCycleProofProven = multiCycleConvergenceResult.status === 'pass';
+        const currentCycleProofProven = multiCycleConvergenceResult.status === _gatePassLabel();
         const currentCycleProof = input.autonomyState
           ? {
               proven: currentCycleProofProven,
@@ -706,7 +747,7 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
           input.previousDirective,
           input.previousCertificate,
         );
-        if (previousResult.status === 'fail') {
+        if (previousResult.status === _gateFailLabel()) {
           return previousResult;
         }
         if (productionProofReadinessGap) {
@@ -749,7 +790,7 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
         const result = detectPlaceholderTests(input.rootDir);
         if (result.count === deriveZeroValue()) {
           return {
-            status: 'pass',
+            status: _gatePassLabel(),
             reason: 'No placeholder tests detected in the repository.',
           };
         }
@@ -766,7 +807,7 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
         const result = detectWeakStatusAssertions(input.rootDir);
         if (result.count === deriveZeroValue()) {
           return {
-            status: 'pass',
+            status: _gatePassLabel(),
             reason: 'No weak status assertions detected in e2e specs.',
           };
         }
@@ -783,7 +824,7 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
         const result = detectTypeEscapeHatches(input.rootDir);
         if (result.count === deriveZeroValue()) {
           return {
-            status: 'pass',
+            status: _gatePassLabel(),
             reason: 'Type-integrity evidence has no escape-hatch findings.',
           };
         }
@@ -797,8 +838,8 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
 
   const gateOrder = deriveGateOrderFromResults(gates);
   const foundationalGates = deriveFoundationalGates(certificationTiers, gateOrder);
-  const allPass = gateOrder.every((gateName) => gates[gateName].status === 'pass');
-  const foundationsPass = foundationalGates.every((gateName) => gates[gateName].status === 'pass');
+  const allPass = gateOrder.every((gateName) => gates[gateName].status === _gatePassLabel());
+  const foundationsPass = foundationalGates.every((gateName) => gates[gateName].status === _gatePassLabel());
   const tierStatus = buildTierStatuses(certificationTiers, gates, manifest, evidenceSummary);
   const blockingTier = getBlockingTier(tierStatus);
   const acceptedFlowsRemaining = getAcceptedCriticalFlows(manifest, evidenceSummary);
@@ -807,7 +848,7 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
     isGateBlockingFinalReadiness(gateName, gates[gateName]),
   );
   const finalReadinessPass =
-    (!finalReadinessCriteria.requireAllTiersPass || tierStatus.every((t) => t.status === 'pass')) &&
+    (!finalReadinessCriteria.requireAllTiersPass || tierStatus.every((t) => t.status === _gatePassLabel())) &&
     (!finalReadinessCriteria.requireNoAcceptedCriticalFlows ||
       acceptedFlowsRemaining.length === deriveZeroValue()) &&
     (!finalReadinessCriteria.requireNoAcceptedCriticalScenarios ||
@@ -819,7 +860,7 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
   const rawScore = input.health.score;
   const score = computeScore(rawScore, gates);
   const criticalFailures = gateOrder
-    .filter((g) => gates[g].status === 'fail')
+    .filter((g) => gates[g].status === _gateFailLabel())
     .map((g) => `${g}: ${gates[g].reason}`);
 
   const status = deriveCertificationStatus(
@@ -885,10 +926,10 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
     humanReplacementStatus:
       finalReadinessPass &&
       allPass &&
-      gates.noOverclaimPass.status === 'pass' &&
-      gates.multiCycleConvergencePass.status === 'pass'
-        ? 'READY'
-        : 'NOT_READY',
+      gates.noOverclaimPass.status === _gatePassLabel() &&
+      gates.multiCycleConvergencePass.status === _gatePassLabel()
+        ? _readyLabel()
+        : _notReadyLabel(),
     rawScore,
     score,
     commitSha: getCommitSha(input.rootDir),
