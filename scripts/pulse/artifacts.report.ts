@@ -40,12 +40,15 @@ export function getProductFacingCapabilities(
 }
 
 function statusFromBoolean(pass: boolean): PulseMachineReadinessCriterion['status'] {
-  const gateLabels = discoverDoDGateStatusLabels();
-  return pass ? 'pass' : 'fail';
+  const gateLabels = [...discoverDoDGateStatusLabels()].sort();
+  return (pass ? gateLabels[gateLabels.length - 1] : gateLabels[0]) as PulseMachineReadinessCriterion['status'];
 }
 
 function isGateStatusPass(status: string): boolean {
-  return discoverDoDGateStatusLabels().has(status) && status === 'pass';
+  const gateLabels = discoverDoDGateStatusLabels();
+  if (!gateLabels.has(status)) return false;
+  const sorted = [...gateLabels].sort();
+  return status === sorted[sorted.length - 1];
 }
 
 function isCriticalRiskLevelGate(risk: string): boolean {
@@ -138,7 +141,7 @@ export function buildPulseMachineReadiness(
         ? `Bounded next autonomous cycle exposes ${boundedExecutableUnits.length} ai_safe unit(s).`
         : `No bounded ai_safe unit is available for the next PULSE-machine cycle.`,
       evidence: {
-        nextExecutableUnitLimit: 8,
+        nextExecutableUnitLimit: boundedRunLimit,
         boundedExecutableUnits: boundedExecutableUnits.length,
         totalAutonomousUnits: autonomyQueue.length,
         totalConvergenceUnits: convergencePlan.summary.totalUnits,
@@ -179,8 +182,8 @@ export function buildPulseMachineReadiness(
         observedFail: snapshot.executionMatrix.summary.observedFail,
         terminalWithoutObservedEvidence: criticalPathDiagnostics.terminalWithoutObservedEvidence,
         firstTerminalPathId: criticalPathDiagnostics.firstTerminalPathId,
-        terminalArtifact: discoverAllObservedArtifactFilenames().executionMatrix || 'PULSE_EXECUTION_MATRIX.json',
-        coverageArtifact: discoverAllObservedArtifactFilenames().pathCoverage || 'PULSE_PATH_COVERAGE.json',
+        terminalArtifact: discoverAllObservedArtifactFilenames().executionMatrix,
+        coverageArtifact: discoverAllObservedArtifactFilenames().pathCoverage,
         nextAiSafeAction: criticalPathDiagnostics.nextAiSafeAction,
       },
     },
@@ -643,7 +646,7 @@ export function buildCertificate(
       parityGaps: snapshot.parityGaps.gaps.slice(0, 20),
       productVision: snapshot.productVision,
       findingValidationState: {
-        artifact: discoverAllObservedArtifactFilenames().findingValidationState || 'PULSE_FINDING_VALIDATION_STATE',
+        artifact: discoverAllObservedArtifactFilenames().findingValidationState,
         operationalIdentity: 'dynamic_finding_event',
         internalBreakTypeIsOperationalIdentity: false,
         eventSurface: buildFindingEventSurface(snapshot.health.breaks, 20),
