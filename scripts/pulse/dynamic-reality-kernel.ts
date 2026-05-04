@@ -1513,3 +1513,4 @@ export { discoverExecutionPhaseStatusLabels } from './__kernel_additions__/disco
 export { discoverSurfaceClassificationLabels } from './__kernel_additions__/discoverSurfaceClassificationLabels';
 export { discoverFlowOracleLabels } from './__kernel_additions__/discoverFlowOracleLabels';
 export { discoverFlowRunnerLabels } from './__kernel_additions__/discoverFlowRunnerLabels';
+export { discoverExecutionRealityModeLabels } from './__kernel_additions__/discoverExecutionRealityModeLabels';
