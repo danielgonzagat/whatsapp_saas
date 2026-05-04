@@ -38,6 +38,10 @@ const REPO_ROOT = resolve(process.env.KLOEL_REPO_ROOT || resolve(__dirname, '..'
 const AGGREGATE_PATH = resolve(REPO_ROOT, 'FINDINGS_AGGREGATE.json');
 const AGGREGATE_SCRIPT = resolve(REPO_ROOT, 'scripts', 'ops', 'aggregate-findings.mjs');
 const EMIT_SCRIPT = resolve(REPO_ROOT, 'scripts', 'ops', 'emit-findings-sidecars.mjs');
+
+// launchd's inherited PATH excludes /opt/homebrew/bin — prepend node's bin dir
+// so `npx`, `prisma`, etc. resolve when this daemon spawns children at boot.
+const CHILD_PATH = `${dirname(process.execPath)}:${process.env.PATH || ''}`;
 const PID_FILE = '/tmp/kloel-findings-watch.pid';
 
 const MIRROR_ROOT = resolve(
@@ -543,7 +547,7 @@ function runScopedEslint(absPath) {
       ['--no-install', 'eslint', '--format', 'json', '--no-error-on-unmatched-pattern', relPath],
       {
         cwd: wsRoot,
-        env: { ...process.env },
+        env: { ...process.env, PATH: CHILD_PATH },
         stdio: ['ignore', 'pipe', 'pipe'],
       },
     );
@@ -653,9 +657,9 @@ function runFullAggregate() {
   return new Promise((resolveOverall) => {
     log('aggregate-trigger', 'full re-aggregate');
 
-    const aggChild = spawn('node', [AGGREGATE_SCRIPT], {
+    const aggChild = spawn(process.execPath, [AGGREGATE_SCRIPT], {
       cwd: REPO_ROOT,
-      env: { ...process.env },
+      env: { ...process.env, PATH: CHILD_PATH },
       stdio: 'inherit',
     });
 
@@ -667,9 +671,9 @@ function runFullAggregate() {
       log('aggregate-done', `exit=${aggCode}`);
 
       // Emit sidecars after aggregate
-      const emitChild = spawn('node', [EMIT_SCRIPT], {
+      const emitChild = spawn(process.execPath, [EMIT_SCRIPT], {
         cwd: REPO_ROOT,
-        env: { ...process.env },
+        env: { ...process.env, PATH: CHILD_PATH },
         stdio: 'inherit',
       });
 

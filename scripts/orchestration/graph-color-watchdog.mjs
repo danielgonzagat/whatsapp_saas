@@ -132,7 +132,7 @@ function applyFactoryLens() {
   }
   lastApplyTime = now;
 
-  const factoryChild = spawn('node', [LENS_SCRIPT, '--factory'], {
+  const factoryChild = spawn(process.execPath, [LENS_SCRIPT, '--factory'], {
     cwd: REPO_ROOT,
     env: { ...process.env },
     stdio: ['ignore', 'pipe', 'pipe'],
@@ -148,7 +148,7 @@ function applyFactoryLens() {
       log('error', `lens --factory exit ${factoryCode}: ${factoryStderr.slice(0, 300)}`);
       return;
     }
-    const extendChild = spawn('node', [EXTEND_LENS_SCRIPT], {
+    const extendChild = spawn(process.execPath, [EXTEND_LENS_SCRIPT], {
       cwd: REPO_ROOT,
       env: { ...process.env },
       stdio: ['ignore', 'pipe', 'pipe'],
