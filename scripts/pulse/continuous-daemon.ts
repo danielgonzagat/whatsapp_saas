@@ -1005,7 +1005,7 @@ function generateTestPlan(unit: PlannedUnit): string {
     '  4. Plan targeted test harness for edge cases',
     '  5. Verify no cross-unit side effects',
     '',
-    `Expected outcome: ${unit.kind === 'api_endpoint' ? 'Endpoint validated with test coverage' : 'Unit instrumentation added and validated'}`,
+    `Expected outcome: ${isApiEndpointKindLabel(unit.kind) ? 'Endpoint validated with test coverage' : 'Unit instrumentation added and validated'}`,
   ];
 
   return lines.join('\n');
