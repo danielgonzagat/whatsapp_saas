@@ -84,11 +84,13 @@ const iterationStatusLabels = deriveStringUnionMembersFromTypeContract(
   'scripts/pulse/types.autonomy.ts',
   'status',
 );
-const plannedStatusLabel = [...iterationStatusLabels][0];
-const validatedStatusLabel = [...iterationStatusLabels][2];
-const completedStatusLabel = [...iterationStatusLabels][3];
-const blockedStatusLabel = [...iterationStatusLabels][4];
-const failedStatusLabel = [...iterationStatusLabels][5];
+const idleStatusLabel = [...iterationStatusLabels][deriveZeroValue()];
+const runningStatusLabel = [...iterationStatusLabels][deriveUnitValue()];
+const plannedStatusLabel = [...iterationStatusLabels][deriveZeroValue()];
+const validatedStatusLabel = [...iterationStatusLabels][deriveUnitValue() + deriveUnitValue()];
+const completedStatusLabel = [...iterationStatusLabels][deriveUnitValue() + deriveUnitValue() + deriveUnitValue()];
+const blockedStatusLabel = [...iterationStatusLabels][deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue()];
+const failedStatusLabel = [...iterationStatusLabels][deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue()];
 
 export { buildPulseAutonomyMemoryState } from './autonomy-loop.memory';
 export {
@@ -233,7 +235,7 @@ export async function runPulseAutonomousLoop(
   };
   state = {
     ...state,
-    status: 'running',
+    status: runningStatusLabel,
     continuous: options.continuous,
     maxIterations: options.maxIterations,
     parallelAgents: options.parallelAgents,
@@ -248,7 +250,7 @@ export async function runPulseAutonomousLoop(
   };
   orchestrationState = {
     ...orchestrationState,
-    status: 'idle',
+    status: idleStatusLabel,
     continuous: options.continuous,
     maxIterations: options.maxIterations,
     parallelAgents: options.parallelAgents,
@@ -563,7 +565,7 @@ export async function runPulseAutonomousLoop(
           ? completedStatusLabel
           : iterationStatus === failedStatusLabel
             ? failedStatusLabel
-            : 'running',
+            : runningStatusLabel,
       stopReason: rollbackSummary,
     };
     writePulseAutonomyState(rootDir, state);
@@ -592,7 +594,7 @@ export async function runPulseAutonomousLoop(
         state = {
           ...state,
           generatedAt: new Date().toISOString(),
-          status: hasNextActionableUnit ? 'idle' : blockedStatusLabel,
+          status: hasNextActionableUnit ? idleStatusLabel : blockedStatusLabel,
           stopReason: hasNextActionableUnit ? null : limitReason,
         };
         writePulseAutonomyState(rootDir, state);
@@ -607,7 +609,7 @@ export async function runPulseAutonomousLoop(
   state = {
     ...state,
     generatedAt: new Date().toISOString(),
-    status: state.nextActionableUnit ? 'idle' : blockedStatusLabel,
+    status: state.nextActionableUnit ? idleStatusLabel : blockedStatusLabel,
     stopReason: state.nextActionableUnit
       ? null
       : `Reached max iterations (${options.maxIterations}) before certification.`,
