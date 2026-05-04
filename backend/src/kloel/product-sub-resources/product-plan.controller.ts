@@ -103,16 +103,18 @@ export class ProductPlanController {
   ) {
     await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
-    const plan = await this.prisma.productPlan.findFirst({
-      where: { id: planId, productId },
-    });
-    if (!plan) {
-      throw new NotFoundException('Plano não encontrado');
-    }
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const plan = await tx.productPlan.findFirst({
+        where: { id: planId, productId },
+      });
+      if (!plan) {
+        throw new NotFoundException('Plano não encontrado');
+      }
 
-    const updated = await this.prisma.productPlan.update({
-      where: { id: planId },
-      data: buildPlanData(body, plan) as Prisma.ProductPlanUncheckedUpdateInput,
+      return tx.productPlan.update({
+        where: { id: planId },
+        data: buildPlanData(body, plan) as Prisma.ProductPlanUncheckedUpdateInput,
+      });
     });
 
     return serializePlan(updated);

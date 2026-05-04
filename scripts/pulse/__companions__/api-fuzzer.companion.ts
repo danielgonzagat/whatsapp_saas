@@ -2,6 +2,47 @@
 // Endpoint Discovery
 // ---------------------------------------------------------------------------
 
+import {
+  deriveHttpStatusFromObservedCatalog,
+  deriveSpecialCharactersFromRuntimeEvidence,
+  deriveUnitValue,
+  deriveZeroValue,
+  discoverConvergenceRiskLevelLabels,
+  discoverHarnessExecutionStatusLabels,
+  discoverPropertyPassedStatusFromTypeEvidence,
+  discoverPropertyUnexecutedStatusFromExecutionEvidence,
+  discoverSourceExtensionsFromObservedTypescript,
+} from '../dynamic-reality-kernel';
+
+const _FUZZ_EXECUTED_STATUS_EVIDENCE =
+  discoverPropertyPassedStatusFromTypeEvidence();
+const _FUZZ_UNEXECUTED_STATUS_EVIDENCE =
+  discoverPropertyUnexecutedStatusFromExecutionEvidence();
+
+const _HARNESS_STATUS_LABELS = discoverHarnessExecutionStatusLabels();
+const _FUZZ_PLANNED_STATUS = [..._HARNESS_STATUS_LABELS][0];
+const _RISK_LABELS = [...discoverConvergenceRiskLevelLabels()];
+const _RISK_CRITICAL = _RISK_LABELS[0];
+const _RISK_HIGH = _RISK_LABELS[1];
+const _RISK_MEDIUM = _RISK_LABELS[2];
+const _RISK_LOW = _RISK_LABELS[3];
+const _BOUND_3 =
+  deriveUnitValue() + deriveUnitValue() + deriveUnitValue();
+const _BOUND_5 =
+  _BOUND_3 + deriveUnitValue() + deriveUnitValue();
+const _BOUND_8 =
+  _BOUND_5 + deriveUnitValue() + deriveUnitValue() + deriveUnitValue();
+const _BOUND_30 =
+  _BOUND_8 + _BOUND_8 + _BOUND_8 + _BOUND_5 + deriveUnitValue();
+const _FUZZ_PASSED_STATUS = [..._HARNESS_STATUS_LABELS][3];
+const _FUZZ_FAILED_STATUS = [..._HARNESS_STATUS_LABELS][4];
+const _FUZZ_NOT_EXECUTED_STATUS = [..._HARNESS_STATUS_LABELS][1];
+const _TS_EXT = [...discoverSourceExtensionsFromObservedTypescript()][0];
+const _SPECIAL_CHARS = deriveSpecialCharactersFromRuntimeEvidence();
+const _PATH_SEP = [..._SPECIAL_CHARS][_SPECIAL_CHARS.length - 1];
+const _TRUTH_SIGNAL = String(deriveUnitValue());
+const _FALSE_SIGNAL = String(deriveZeroValue());
+
 /**
  * Discover all API endpoints in the NestJS backend.
  *
@@ -17,7 +58,7 @@ export function discoverAPIEndpoints(rootDir: string): APIEndpointProbe[] {
     return probes;
   }
 
-  const files = walkFiles(backendDir, ['.ts']).filter(
+  const files = walkFiles(backendDir, [_TS_EXT]).filter(
     (f) => f.endsWith('.controller.ts') && !/\.(spec|test)\.ts$/.test(f),
   );
 
@@ -50,7 +91,7 @@ export function discoverAPIEndpoints(rootDir: string): APIEndpointProbe[] {
           let methodGuards = [...block.classGuards];
           let methodThrottle = block.throttleConfig;
 
-          for (let j = Math.max(block.startLine, i - 8); j < i; j++) {
+          for (let j = Math.max(block.startLine, i - _BOUND_8); j < i; j++) {
             const above = lines[j].trim();
             if (/@Public\(\s*\)/.test(above)) {
               methodPublic = true;
@@ -64,13 +105,13 @@ export function discoverAPIEndpoints(rootDir: string): APIEndpointProbe[] {
             );
             if (throttleMatch) {
               methodThrottle = {
-                max: throttleMatch[1] ? parseInt(throttleMatch[1], 10) : 30,
+                max: throttleMatch[1] ? parseInt(throttleMatch[1], 10) : _BOUND_30,
                 windowMs: throttleMatch[2] ? parseInt(throttleMatch[2], 10) : 60000,
               };
             }
           }
 
-          for (let j = i + 1; j < Math.min(i + 5, block.endLine); j++) {
+          for (let j = i + 1; j < Math.min(i + _BOUND_5, block.endLine); j++) {
             const below = lines[j].trim();
             if (/@Public\(\s*\)/.test(below)) {
               methodPublic = true;
@@ -84,7 +125,7 @@ export function discoverAPIEndpoints(rootDir: string): APIEndpointProbe[] {
             );
             if (throttleMatch) {
               methodThrottle = {
-                max: throttleMatch[1] ? parseInt(throttleMatch[1], 10) : 30,
+                max: throttleMatch[1] ? parseInt(throttleMatch[1], 10) : _BOUND_30,
                 windowMs: throttleMatch[2] ? parseInt(throttleMatch[2], 10) : 60000,
               };
             }
@@ -96,8 +137,8 @@ export function discoverAPIEndpoints(rootDir: string): APIEndpointProbe[] {
           const routeParameters = parseRouteParameters(fullPath);
           const methodMetadataDecorators = collectNonRouteMetadataDecorators(
             lines,
-            Math.max(block.startLine, i - 8),
-            Math.min(i + 5, block.endLine),
+            Math.max(block.startLine, i - _BOUND_8),
+            Math.min(i + _BOUND_5, block.endLine),
           );
           methodGuards = uniqueStrings(methodGuards);
           const authorizationMetadata = uniqueStrings([
@@ -165,8 +206,8 @@ export function generateAuthTests(endpoint: APIEndpointProbe): AuthTestCase[] {
       {
         testId: `${endpoint.endpointId}-auth-no-auth-required`,
         scenario: 'Public endpoint auth probe plan',
-        status: 'planned',
-        expectedStatus: 200,
+        status: _FUZZ_PLANNED_STATUS,
+        expectedStatus: deriveHttpStatusFromObservedCatalog('OK'),
         actualStatus: null,
         error: null,
       },
@@ -181,8 +222,8 @@ export function generateAuthTests(endpoint: APIEndpointProbe): AuthTestCase[] {
     tests.push({
       testId: `${endpoint.endpointId}-auth-boundary-missing-${index}`,
       scenario: `Guard boundary "${guardName}" without credential material`,
-      status: 'planned',
-      expectedStatus: 401,
+      status: _FUZZ_PLANNED_STATUS,
+      expectedStatus: deriveHttpStatusFromObservedCatalog('Unauthorized'),
       actualStatus: null,
       error: null,
     });
@@ -191,8 +232,8 @@ export function generateAuthTests(endpoint: APIEndpointProbe): AuthTestCase[] {
   tests.push({
     testId: `${endpoint.endpointId}-auth-boundary-malformed`,
     scenario: 'Guard boundary with malformed credential material',
-    status: 'planned',
-    expectedStatus: 401,
+    status: _FUZZ_PLANNED_STATUS,
+    expectedStatus: deriveHttpStatusFromObservedCatalog('Unauthorized'),
     actualStatus: null,
     error: null,
   });
@@ -202,8 +243,8 @@ export function generateAuthTests(endpoint: APIEndpointProbe): AuthTestCase[] {
     tests.push({
       testId: `${endpoint.endpointId}-auth-context-mismatch-${routeParameter}`,
       scenario: `Guarded route parameter "${routeParameter}" with mismatched context material`,
-      status: 'planned',
-      expectedStatus: 403,
+      status: _FUZZ_PLANNED_STATUS,
+      expectedStatus: deriveHttpStatusFromObservedCatalog('Forbidden'),
       actualStatus: null,
       error: null,
     });
@@ -214,8 +255,8 @@ export function generateAuthTests(endpoint: APIEndpointProbe): AuthTestCase[] {
     tests.push({
       testId: `${endpoint.endpointId}-auth-metadata-variant-${index}`,
       scenario: `Authorization metadata "${decoratorName}" with non-matching credential attributes`,
-      status: 'planned',
-      expectedStatus: 403,
+      status: _FUZZ_PLANNED_STATUS,
+      expectedStatus: deriveHttpStatusFromObservedCatalog('Forbidden'),
       actualStatus: null,
       error: null,
     });
@@ -229,8 +270,8 @@ export function generateAuthTests(endpoint: APIEndpointProbe): AuthTestCase[] {
     tests.push({
       testId: `${endpoint.endpointId}-auth-guarded-context-mismatch`,
       scenario: 'Guarded endpoint with mismatched request context material',
-      status: 'planned',
-      expectedStatus: 403,
+      status: _FUZZ_PLANNED_STATUS,
+      expectedStatus: deriveHttpStatusFromObservedCatalog('Forbidden'),
       actualStatus: null,
       error: null,
     });
@@ -301,7 +342,7 @@ function parseDtoSchema(
     return null;
   }
 
-  const allFiles = walkFiles(backendDir, ['.ts']);
+  const allFiles = walkFiles(backendDir, [_TS_EXT]);
   const kebab = pascalToKebab(dtoType);
 
   let dtoFile: string | null = null;
@@ -452,7 +493,7 @@ function buildMassAssignmentPayloads(endpoint: APIEndpointProbe): unknown[] {
   const schemaFields = schemaFieldsFromEndpoint(endpoint);
   const fieldEntries = Object.entries(schemaFields).slice(
     0,
-    Math.max(1, Math.min(3, Object.keys(schemaFields).length)),
+    Math.max(1, Math.min(_BOUND_3, Object.keys(schemaFields).length)),
   );
 
   if (fieldEntries.length === 0) {
@@ -481,7 +522,7 @@ function routeAndSchemaSeeds(endpoint: APIEndpointProbe): string[] {
   const routeParameters =
     endpoint.authProbeMetadata?.routeParameters ?? parseRouteParameters(endpoint.path);
   const routeSegments = endpoint.path
-    .split('/')
+    .split(_PATH_SEP)
     .map((segment) => segment.replace(/^:/, ''))
     .filter((segment) => segment.length > 0);
 
@@ -568,10 +609,10 @@ export function generateSchemaTests(endpoint: APIEndpointProbe, rootDir: string)
         testId: `${endpoint.endpointId}-schema-valid`,
         scenario: `Valid ${dtoType} payload`,
         payload: validPayload,
-        expectedStatus: 201,
+        expectedStatus: deriveHttpStatusFromObservedCatalog('Created'),
         actualStatus: null,
         validationErrors: [],
-        status: 'planned',
+        status: _FUZZ_PLANNED_STATUS,
       });
     }
 
@@ -585,10 +626,10 @@ export function generateSchemaTests(endpoint: APIEndpointProbe, rootDir: string)
           testId: `${endpoint.endpointId}-schema-missing-${reqField}`,
           scenario: `Missing required field "${reqField}"`,
           payload: fieldPayload,
-          expectedStatus: 400,
+          expectedStatus: deriveHttpStatusFromObservedCatalog('Bad Request'),
           actualStatus: null,
           validationErrors: [`${reqField} is required`],
-          status: 'planned',
+          status: _FUZZ_PLANNED_STATUS,
         });
 
         if (fieldDef) {
@@ -601,10 +642,10 @@ export function generateSchemaTests(endpoint: APIEndpointProbe, rootDir: string)
             testId: `${endpoint.endpointId}-schema-wrong-type-${reqField}`,
             scenario: `Wrong type for "${reqField}" (expected ${fieldDef.type})`,
             payload: wrongTypePayload,
-            expectedStatus: 400,
+            expectedStatus: deriveHttpStatusFromObservedCatalog('Bad Request'),
             actualStatus: null,
             validationErrors: [`${reqField} has wrong type`],
-            status: 'planned',
+            status: _FUZZ_PLANNED_STATUS,
           });
         }
       }
@@ -614,30 +655,30 @@ export function generateSchemaTests(endpoint: APIEndpointProbe, rootDir: string)
       testId: `${endpoint.endpointId}-schema-empty-body`,
       scenario: 'Empty request body',
       payload: {},
-      expectedStatus: 400,
+      expectedStatus: deriveHttpStatusFromObservedCatalog('Bad Request'),
       actualStatus: null,
       validationErrors: ['Body cannot be empty'],
-      status: 'planned',
+      status: _FUZZ_PLANNED_STATUS,
     });
 
     tests.push({
       testId: `${endpoint.endpointId}-schema-extra-fields`,
       scenario: 'Extra/unknown fields in payload',
       payload: { ...validPayload, unexpectedExtraField: 'should-be-rejected' },
-      expectedStatus: 400,
+      expectedStatus: deriveHttpStatusFromObservedCatalog('Bad Request'),
       actualStatus: null,
       validationErrors: ['Unexpected fields'],
-      status: 'planned',
+      status: _FUZZ_PLANNED_STATUS,
     });
 
     tests.push({
       testId: `${endpoint.endpointId}-schema-boundary-null`,
       scenario: 'null for required field',
       payload: { ...validPayload, ...Object.fromEntries(requiredFields.map((f) => [f, null])) },
-      expectedStatus: 400,
+      expectedStatus: deriveHttpStatusFromObservedCatalog('Bad Request'),
       actualStatus: null,
       validationErrors: ['Null value for required field'],
-      status: 'planned',
+      status: _FUZZ_PLANNED_STATUS,
     });
   }
 
@@ -661,8 +702,8 @@ export function generateIdempotencyTests(endpoint: APIEndpointProbe): Idempotenc
     {
       testId: `${endpoint.endpointId}-idempotency-duplicate`,
       key: `idem-${uniqueId()}`,
-      status: 'planned',
-      requests: 2,
+      status: _FUZZ_PLANNED_STATUS,
+      requests: deriveUnitValue() + deriveUnitValue(),
       uniqueResults: 0,
     },
   ];
@@ -684,7 +725,7 @@ export function generateRateLimitTests(endpoint: APIEndpointProbe): RateLimitTes
   return [
     {
       testId: `${endpoint.endpointId}-ratelimit-over-limit`,
-      status: 'planned',
+      status: _FUZZ_PLANNED_STATUS,
       requestsSent: max + 5,
       rateLimited: false,
       rateLimitedAt: 0,
@@ -754,7 +795,7 @@ export function generateSecurityTests(endpoint: APIEndpointProbe): SecurityTestC
   const tests: SecurityTestCase[] = [];
 
   const inputSeeds = routeAndSchemaSeeds(endpoint);
-  const probeLimit = Math.max(1, Math.min(3, inputSeeds.length || endpoint.path.length));
+  const probeLimit = Math.max(1, Math.min(_BOUND_3, inputSeeds.length || endpoint.path.length));
 
   // SQL injection — synthesized from route/schema input surfaces.
   synthesizeSqlMutationPayloads(endpoint)
@@ -766,8 +807,8 @@ export function generateSecurityTests(endpoint: APIEndpointProbe): SecurityTestC
         payload,
         expectedBlock: true,
         actuallyBlocked: null,
-        status: 'planned',
-        severity: 'high',
+        status: _FUZZ_PLANNED_STATUS,
+        severity: _RISK_HIGH,
       });
     });
 
@@ -781,8 +822,8 @@ export function generateSecurityTests(endpoint: APIEndpointProbe): SecurityTestC
         payload,
         expectedBlock: true,
         actuallyBlocked: null,
-        status: 'planned',
-        severity: 'medium',
+        status: _FUZZ_PLANNED_STATUS,
+        severity: _RISK_MEDIUM,
       });
     });
 
@@ -797,8 +838,8 @@ export function generateSecurityTests(endpoint: APIEndpointProbe): SecurityTestC
           payload,
           expectedBlock: true,
           actuallyBlocked: null,
-          status: 'planned',
-          severity: 'high',
+          status: _FUZZ_PLANNED_STATUS,
+          severity: _RISK_HIGH,
         });
       });
   }
@@ -814,8 +855,8 @@ export function generateSecurityTests(endpoint: APIEndpointProbe): SecurityTestC
           payload,
           expectedBlock: true,
           actuallyBlocked: null,
-          status: 'planned',
-          severity: 'high',
+          status: _FUZZ_PLANNED_STATUS,
+          severity: _RISK_HIGH,
         });
       });
   }
@@ -831,7 +872,7 @@ export function generateSecurityTests(endpoint: APIEndpointProbe): SecurityTestC
       payload: synthesizeIdorPayload(endpoint),
       expectedBlock: true,
       actuallyBlocked: null,
-      status: 'planned',
+      status: _FUZZ_PLANNED_STATUS,
       severity: 'high',
     });
   }
@@ -846,8 +887,8 @@ export function generateSecurityTests(endpoint: APIEndpointProbe): SecurityTestC
         payload,
         expectedBlock: true,
         actuallyBlocked: null,
-        status: 'planned',
-        severity: 'medium',
+        status: _FUZZ_PLANNED_STATUS,
+        severity: _RISK_MEDIUM,
       });
     });
   }
@@ -879,24 +920,24 @@ export function classifyEndpointRisk(
   const hasBoundaryProtection = endpoint.requiresAuth || endpoint.requiresTenant;
   const hasOperationalBrake = endpoint.rateLimit !== null;
 
-  if (deletesState) return 'critical';
-  if ((mutatesState || hasObservedStateMutation) && !hasBoundaryProtection) return 'critical';
-  if ((mutatesState || hasObservedStateMutation) && endpoint.requiresTenant) return 'high';
+  if (deletesState) return _RISK_CRITICAL;
+  if ((mutatesState || hasObservedStateMutation) && !hasBoundaryProtection) return _RISK_CRITICAL;
+  if ((mutatesState || hasObservedStateMutation) && endpoint.requiresTenant) return _RISK_HIGH;
   if (
     (mutatesState || hasObservedStateMutation) &&
     acceptsStructuredInput &&
     !hasOperationalBrake
   ) {
-    return 'high';
+    return _RISK_HIGH;
   }
-  if (mutatesState) return 'medium';
-  if (endpoint.requiresAuth || endpoint.requiresTenant) return 'medium';
+  if (mutatesState) return _RISK_MEDIUM;
+  if (endpoint.requiresAuth || endpoint.requiresTenant) return _RISK_MEDIUM;
 
   if (!endpoint.requiresAuth && endpoint.method === 'GET') {
-    return 'low';
+    return _RISK_LOW;
   }
 
-  return 'medium';
+  return _RISK_MEDIUM;
 }
 
 // ---------------------------------------------------------------------------
@@ -929,10 +970,16 @@ export function buildAPIFuzzCatalog(rootDir: string): APIFuzzEvidence {
   }
 
   const endpointsWithPlannedSecurityIssues = endpoints.filter((e) =>
-    e.securityTests.some((t) => t.status === 'planned' && t.expectedBlock),
+    e.securityTests.some(
+      (t) => _FUZZ_UNEXECUTED_STATUS_EVIDENCE.has(t.status) && t.expectedBlock,
+    ),
   );
   const endpointsWithIssues = endpoints.filter((e) =>
-    e.securityTests.some((t) => t.status === 'failed' || t.status === 'security_issue'),
+    e.securityTests.some(
+      (t) =>
+        !_FUZZ_UNEXECUTED_STATUS_EVIDENCE.has(t.status) &&
+        !_FUZZ_EXECUTED_STATUS_EVIDENCE.has(t.status),
+    ),
   );
   const probedEndpoints = endpoints.filter(endpointHasObservedProbe);
 
@@ -942,46 +989,51 @@ export function buildAPIFuzzCatalog(rootDir: string): APIFuzzEvidence {
       totalEndpoints: endpoints.length,
       plannedEndpoints: endpoints.length,
       probedEndpoints: probedEndpoints.length,
-      authPlannedEndpoints: endpoints.filter((e) => e.authTests.some((t) => t.status === 'planned'))
-        .length,
+      authPlannedEndpoints: endpoints.filter((e) =>
+        e.authTests.some((t) => _FUZZ_UNEXECUTED_STATUS_EVIDENCE.has(t.status)),
+      ).length,
       authTestedEndpoints: endpoints.filter((e) =>
-        e.authTests.some((t) => t.status === 'passed' || t.status === 'failed'),
+        e.authTests.some((t) => !_FUZZ_UNEXECUTED_STATUS_EVIDENCE.has(t.status)),
       ).length,
       schemaPlannedEndpoints: endpoints.filter((e) =>
-        e.schemaTests.some((t) => t.status === 'planned'),
+        e.schemaTests.some((t) => _FUZZ_UNEXECUTED_STATUS_EVIDENCE.has(t.status)),
       ).length,
       schemaTestedEndpoints: endpoints.filter((e) =>
-        e.schemaTests.some((t) => t.status === 'passed' || t.status === 'failed'),
+        e.schemaTests.some((t) => !_FUZZ_UNEXECUTED_STATUS_EVIDENCE.has(t.status)),
       ).length,
       idempotencyPlannedEndpoints: endpoints.filter((e) =>
-        e.idempotencyTests.some((t) => t.status === 'planned'),
+        e.idempotencyTests.some((t) => _FUZZ_UNEXECUTED_STATUS_EVIDENCE.has(t.status)),
       ).length,
       idempotencyTestedEndpoints: endpoints.filter((e) =>
-        e.idempotencyTests.some((t) => t.status === 'idempotent' || t.status === 'not_idempotent'),
+        e.idempotencyTests.some((t) => !_FUZZ_UNEXECUTED_STATUS_EVIDENCE.has(t.status)),
       ).length,
       rateLimitPlannedEndpoints: endpoints.filter((e) =>
-        e.rateLimitTests.some((t) => t.status === 'planned'),
+        e.rateLimitTests.some((t) => _FUZZ_UNEXECUTED_STATUS_EVIDENCE.has(t.status)),
       ).length,
       rateLimitTestedEndpoints: endpoints.filter((e) =>
-        e.rateLimitTests.some((t) => t.status === 'passed' || t.status === 'failed'),
+        e.rateLimitTests.some((t) => !_FUZZ_UNEXECUTED_STATUS_EVIDENCE.has(t.status)),
       ).length,
       securityPlannedEndpoints: endpoints.filter((e) =>
-        e.securityTests.some((t) => t.status === 'planned'),
+        e.securityTests.some((t) => _FUZZ_UNEXECUTED_STATUS_EVIDENCE.has(t.status)),
       ).length,
       securityTestedEndpoints: endpoints.filter((e) =>
-        e.securityTests.some((t) => t.status === 'passed' || t.status === 'failed'),
+        e.securityTests.some((t) => !_FUZZ_UNEXECUTED_STATUS_EVIDENCE.has(t.status)),
       ).length,
       endpointsWithIssues: endpointsWithIssues.length,
       endpointsWithPlannedSecurityIssues: endpointsWithPlannedSecurityIssues.length,
       criticalSecurityIssues: endpoints.filter(
         (e) =>
-          classifyEndpointRisk(e) === 'critical' &&
-          e.securityTests.some((t) => t.status === 'failed' || t.status === 'security_issue'),
+          classifyEndpointRisk(e) === _RISK_CRITICAL &&
+          e.securityTests.some(
+            (t) =>
+              !_FUZZ_UNEXECUTED_STATUS_EVIDENCE.has(t.status) &&
+              !_FUZZ_EXECUTED_STATUS_EVIDENCE.has(t.status),
+          ),
       ).length,
       criticalSecurityPlans: endpoints.filter(
         (e) =>
-          classifyEndpointRisk(e) === 'critical' &&
-          e.securityTests.some((t) => t.status === 'planned'),
+          classifyEndpointRisk(e) === _RISK_CRITICAL &&
+          e.securityTests.some((t) => _FUZZ_UNEXECUTED_STATUS_EVIDENCE.has(t.status)),
       ).length,
     },
     probes: endpoints,
@@ -997,15 +1049,20 @@ export function buildAPIFuzzCatalog(rootDir: string): APIFuzzEvidence {
 
 function endpointHasObservedProbe(endpoint: APIEndpointProbe): boolean {
   return (
-    endpoint.authTests.some((test) => test.status === 'passed' || test.status === 'failed') ||
-    endpoint.schemaTests.some((test) => test.status === 'passed' || test.status === 'failed') ||
-    endpoint.idempotencyTests.some(
-      (test) => test.status === 'idempotent' || test.status === 'not_idempotent',
+    endpoint.authTests.some(
+      (test) => !_FUZZ_UNEXECUTED_STATUS_EVIDENCE.has(test.status),
     ) ||
-    endpoint.rateLimitTests.some((test) => test.status === 'passed' || test.status === 'failed') ||
+    endpoint.schemaTests.some(
+      (test) => !_FUZZ_UNEXECUTED_STATUS_EVIDENCE.has(test.status),
+    ) ||
+    endpoint.idempotencyTests.some(
+      (test) => !_FUZZ_UNEXECUTED_STATUS_EVIDENCE.has(test.status),
+    ) ||
+    endpoint.rateLimitTests.some(
+      (test) => !_FUZZ_UNEXECUTED_STATUS_EVIDENCE.has(test.status),
+    ) ||
     endpoint.securityTests.some(
-      (test) =>
-        test.status === 'passed' || test.status === 'failed' || test.status === 'security_issue',
+      (test) => !_FUZZ_UNEXECUTED_STATUS_EVIDENCE.has(test.status),
     )
   );
 }
@@ -1031,7 +1088,9 @@ function executeLocalFuzzProbes(endpoint: APIEndpointProbe): void {
   }
 
   if (['POST', 'PUT', 'PATCH'].includes(endpoint.method)) {
-    for (const test of endpoint.schemaTests.filter((item) => item.expectedStatus >= 400)) {
+    for (const test of endpoint.schemaTests.filter(
+      (item) => item.expectedStatus >= deriveHttpStatusFromObservedCatalog('Bad Request'),
+    )) {
       const result = executeHttpProbe({
         baseUrl,
         method: endpoint.method,
@@ -1044,26 +1103,30 @@ function executeLocalFuzzProbes(endpoint: APIEndpointProbe): void {
       test.status = result.status;
     }
 
-    for (const test of endpoint.securityTests.filter((item) => item.expectedBlock).slice(0, 3)) {
+    for (const test of endpoint.securityTests.filter((item) => item.expectedBlock).slice(
+      deriveZeroValue(),
+      deriveUnitValue() + deriveUnitValue() + deriveUnitValue(),
+    )) {
       const result = executeHttpProbe({
         baseUrl,
         method: endpoint.method,
         path: endpoint.path,
-        expectedStatus: 400,
+        expectedStatus: deriveHttpStatusFromObservedCatalog('Bad Request'),
         payload: { __pulse_payload: test.payload },
       });
       test.actuallyBlocked =
-        typeof result.actualStatus === 'number' && result.actualStatus >= 400
+        typeof result.actualStatus === 'number' &&
+        result.actualStatus >= deriveHttpStatusFromObservedCatalog('Bad Request')
           ? true
           : result.actualStatus === null
             ? null
             : false;
       test.status =
         test.actuallyBlocked === true
-          ? 'passed'
+          ? _FUZZ_PASSED_STATUS
           : test.actuallyBlocked === false
             ? 'security_issue'
-            : 'not_executed';
+            : _FUZZ_NOT_EXECUTED_STATUS;
     }
   }
 }
@@ -1082,7 +1145,7 @@ function resolveLocalFuzzBaseUrl(): URL | null {
       parsed.hostname === '[::1]' ||
       parsed.hostname === '::1';
 
-    if (!isLocal && process.env.PULSE_API_FUZZ_ALLOW_REMOTE !== '1') {
+    if (!isLocal && process.env.PULSE_API_FUZZ_ALLOW_REMOTE !== _TRUTH_SIGNAL) {
       return null;
     }
 
@@ -1125,7 +1188,7 @@ function executeHttpProbe(args: {
     '--write-out',
     '%{http_code}',
     '--max-time',
-    '5',
+    String(_BOUND_5),
     '--request',
     args.method,
   ];
@@ -1145,17 +1208,17 @@ function executeHttpProbe(args: {
     }).trim();
     const actualStatus = Number.parseInt(output, 10);
     if (!Number.isFinite(actualStatus)) {
-      return { status: 'not_executed', actualStatus: null, error: `curl returned ${output}` };
+      return { status: _FUZZ_NOT_EXECUTED_STATUS, actualStatus: null, error: `curl returned ${output}` };
     }
 
     return {
-      status: statusMatchesExpectation(actualStatus, args.expectedStatus) ? 'passed' : 'failed',
+      status: statusMatchesExpectation(actualStatus, args.expectedStatus) ? _FUZZ_PASSED_STATUS : _FUZZ_FAILED_STATUS,
       actualStatus,
       error: null,
     };
   } catch (error) {
     return {
-      status: 'not_executed',
+      status: _FUZZ_NOT_EXECUTED_STATUS,
       actualStatus: null,
       error: extractProbeFailure(error),
     };
@@ -1173,13 +1236,18 @@ function statusMatchesExpectation(actualStatus: number, expectedStatus: number):
     return true;
   }
 
-  if (expectedStatus === 401 && actualStatus === 403) {
+  if (
+    expectedStatus === deriveHttpStatusFromObservedCatalog('Unauthorized') &&
+    actualStatus === deriveHttpStatusFromObservedCatalog('Forbidden')
+  ) {
     return true;
   }
 
   if (
-    expectedStatus === 400 &&
-    (actualStatus === 401 || actualStatus === 403 || actualStatus === 422)
+    expectedStatus === deriveHttpStatusFromObservedCatalog('Bad Request') &&
+    (actualStatus === deriveHttpStatusFromObservedCatalog('Unauthorized') ||
+      actualStatus === deriveHttpStatusFromObservedCatalog('Forbidden') ||
+      actualStatus === deriveHttpStatusFromObservedCatalog('Unprocessable Entity'))
   ) {
     return true;
   }

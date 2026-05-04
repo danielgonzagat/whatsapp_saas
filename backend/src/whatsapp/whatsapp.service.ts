@@ -1004,46 +1004,50 @@ export class WhatsappService {
 
   // ═══ OPT-IN / OUT ═══
   async optInContact(ws: string, phone: string) {
-    const c = await this.prisma.contact.upsert({
-      where: { workspaceId_phone: { workspaceId: ws, phone } },
-      update: {},
-      create: { workspaceId: ws, phone, name: null },
+    return this.prisma.$transaction(async (tx) => {
+      const c = await tx.contact.upsert({
+        where: { workspaceId_phone: { workspaceId: ws, phone } },
+        update: {},
+        create: { workspaceId: ws, phone, name: null },
+      });
+      await tx.contact.updateMany({
+        where: { id: c.id, workspaceId: ws },
+        data: { optIn: true, optedOutAt: null },
+      });
+      const t = await tx.tag.upsert({
+        where: { workspaceId_name: { workspaceId: ws, name: 'optin_whatsapp' } },
+        update: {},
+        create: { workspaceId: ws, name: 'optin_whatsapp', color: '#16a34a' },
+      });
+      await tx.contact.update({
+        where: { workspaceId_phone: { workspaceId: ws, phone } },
+        data: { tags: { connect: { id: t.id } } },
+      });
+      return { ok: true };
     });
-    await this.prisma.contact.updateMany({
-      where: { id: c.id, workspaceId: ws },
-      data: { optIn: true, optedOutAt: null },
-    });
-    const t = await this.prisma.tag.upsert({
-      where: { workspaceId_name: { workspaceId: ws, name: 'optin_whatsapp' } },
-      update: {},
-      create: { workspaceId: ws, name: 'optin_whatsapp', color: '#16a34a' },
-    });
-    await this.prisma.contact.update({
-      where: { workspaceId_phone: { workspaceId: ws, phone } },
-      data: { tags: { connect: { id: t.id } } },
-    });
-    return { ok: true };
   }
   async optOutContact(ws: string, phone: string) {
-    const c = await this.prisma.contact.findUnique({
-      where: { workspaceId_phone: { workspaceId: ws, phone } },
-      select: { id: true },
-    });
-    if (!c) return { ok: true };
-    await this.prisma.contact.updateMany({
-      where: { id: c.id, workspaceId: ws },
-      data: { optIn: false, optedOutAt: new Date() },
-    });
-    const t = await this.prisma.tag.findUnique({
-      where: { workspaceId_name: { workspaceId: ws, name: 'optin_whatsapp' } },
-      select: { id: true },
-    });
-    if (t)
-      await this.prisma.contact.update({
+    return this.prisma.$transaction(async (tx) => {
+      const c = await tx.contact.findUnique({
         where: { workspaceId_phone: { workspaceId: ws, phone } },
-        data: { tags: { disconnect: { id: t.id } } },
+        select: { id: true },
       });
-    return { ok: true };
+      if (!c) return { ok: true };
+      await tx.contact.updateMany({
+        where: { id: c.id, workspaceId: ws },
+        data: { optIn: false, optedOutAt: new Date() },
+      });
+      const t = await tx.tag.findUnique({
+        where: { workspaceId_name: { workspaceId: ws, name: 'optin_whatsapp' } },
+        select: { id: true },
+      });
+      if (t)
+        await tx.contact.update({
+          where: { workspaceId_phone: { workspaceId: ws, phone } },
+          data: { tags: { disconnect: { id: t.id } } },
+        });
+      return { ok: true };
+    });
   }
   async optInBulk(ws: string, phones: string[]) {
     const u = Array.from(new Set((phones || []).map((p) => p?.trim()).filter(Boolean)));

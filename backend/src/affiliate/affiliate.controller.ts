@@ -144,18 +144,21 @@ export class AffiliateController {
     let link = null;
     if (status === 'APPROVED') {
       const code = await this.generateAffiliateLinkCode();
-      link = await this.prisma.affiliateLink.create({
-        data: {
-          affiliateProductId: productId,
-          affiliateWorkspaceId: workspaceId,
-          code,
-        },
-      });
+      link = await this.prisma.$transaction(async (tx) => {
+        const created = await tx.affiliateLink.create({
+          data: {
+            affiliateProductId: productId,
+            affiliateWorkspaceId: workspaceId,
+            code,
+          },
+        });
 
-      // Increment affiliate count
-      await this.prisma.affiliateProduct.update({
-        where: { id: productId },
-        data: { totalAffiliates: { increment: 1 } },
+        await tx.affiliateProduct.update({
+          where: { id: productId },
+          data: { totalAffiliates: { increment: 1 } },
+        });
+
+        return created;
       });
     }
 

@@ -3,6 +3,7 @@ import { WhatsAppCatchupService } from './whatsapp-catchup.service';
 
 /** Catchup prisma mock type. */
 export type CatchupPrismaMock = {
+  $transaction: jest.Mock;
   workspace: {
     findUnique: jest.Mock;
     update: jest.Mock;
@@ -10,6 +11,8 @@ export type CatchupPrismaMock = {
   contact: {
     findUnique: jest.Mock;
     upsert: jest.Mock;
+    updateMany: jest.Mock;
+    findFirst: jest.Mock;
   };
   conversation: {
     findFirst: jest.Mock;
@@ -102,7 +105,7 @@ export type CatchupMocks = {
 
 /** Build a fresh set of catchup mocks with sensible defaults for tests. */
 export function buildCatchupMocks(): CatchupMocks {
-  const prisma: CatchupPrismaMock = {
+  const prisma: any = {
     workspace: {
       findUnique: jest.fn().mockResolvedValue({
         name: 'Workspace Teste',
@@ -113,6 +116,8 @@ export function buildCatchupMocks(): CatchupMocks {
     contact: {
       findUnique: jest.fn().mockResolvedValue(null),
       upsert: jest.fn().mockResolvedValue({ id: 'contact-1' }),
+      updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+      findFirst: jest.fn().mockResolvedValue(null),
     },
     conversation: {
       findFirst: jest.fn().mockResolvedValue(null),
@@ -120,6 +125,7 @@ export function buildCatchupMocks(): CatchupMocks {
       update: jest.fn().mockResolvedValue({ id: 'conv-1' }),
     },
   };
+  prisma.$transaction = jest.fn((cb: any) => cb(prisma));
 
   const providerRegistry: CatchupProviderRegistryMock = {
     getProviderType: jest.fn().mockResolvedValue('whatsapp-api'),

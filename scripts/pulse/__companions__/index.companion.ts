@@ -1,3 +1,8 @@
+/**
+ * FOLDED-BACK into scripts/pulse/flows/index.ts (2026-05-03).
+ * This companion is vestigial — all exported functions already live
+ * in the restored flows/index.ts module. Kept on disk per governance.
+ */
 async function runWalletWithdrawalFlow(
   spec: PulseManifestFlowSpec,
   context: FlowRuntimeContext,
@@ -774,4 +779,3 @@ export async function runDeclaredFlows(input: RunDeclaredFlowsInput): Promise<Pu
     results,
   };
 }
-

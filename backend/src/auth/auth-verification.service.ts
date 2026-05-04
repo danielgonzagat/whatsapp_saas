@@ -271,27 +271,38 @@ export class AuthVerificationService {
 
   /** Send email verification link to an agent. */
   async sendVerificationEmail(agentId: string) {
-    const agent = await this.prisma.agent.findUnique({
-      where: { id: agentId },
-      select: { id: true, workspaceId: true, email: true, emailVerified: true },
-    });
+    const { agent, token } = await this.prisma.$transaction(
+      async (tx) => {
+        const a = await tx.agent.findUnique({
+          where: { id: agentId },
+          select: { id: true, workspaceId: true, email: true, emailVerified: true },
+        });
 
-    if (!agent) {
-      throw new UnauthorizedException('Usuário não encontrado');
-    }
+        if (!a) {
+          throw new UnauthorizedException('Usuário não encontrado');
+        }
 
-    if (agent.emailVerified) {
+        if (a.emailVerified) {
+          return { agent: a, token: '', expiry: null as Date | null };
+        }
+
+        const t = randomUUID();
+        const e = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+        await tx.agent.update({
+          where: { id: agentId },
+          data: { emailVerificationToken: t, emailVerificationExpiry: e },
+          select: { id: true, workspaceId: true },
+        });
+
+        return { agent: a, token: t, expiry: e };
+      },
+      { isolationLevel: 'ReadCommitted' },
+    );
+
+    if (!token) {
       return { success: true, message: 'Email já verificado.', alreadyVerified: true };
     }
-
-    const token = randomUUID();
-    const expiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
-
-    await this.prisma.agent.update({
-      where: { id: agentId },
-      data: { emailVerificationToken: token, emailVerificationExpiry: expiry },
-      select: { id: true, workspaceId: true },
-    });
 
     const verifyUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verify-email?token=${token}`;
     await this.emailService.sendVerificationEmail(agent.email, verifyUrl);
@@ -308,28 +319,35 @@ export class AuthVerificationService {
     await this.rateLimitService.checkRateLimit(`verify-email:${ip || 'ip-unknown'}`, 10, 60 * 1000);
 
     try {
-      const agent = await this.prisma.agent.findFirst({
-        where: { emailVerificationToken: token },
-        select: { id: true, workspaceId: true, emailVerificationExpiry: true },
-      });
+      await this.prisma.$transaction(
+        async (tx) => {
+          const agent = await tx.agent.findFirst({
+            where: { emailVerificationToken: token },
+            select: { id: true, workspaceId: true, emailVerificationExpiry: true },
+          });
 
-      if (!agent) {
-        throw new UnauthorizedException('Token de verificação inválido');
-      }
+          if (!agent) {
+            throw new UnauthorizedException('Token de verificação inválido');
+          }
 
-      if (agent.emailVerificationExpiry && agent.emailVerificationExpiry < new Date()) {
-        throw new UnauthorizedException('Token de verificação expirado. Solicite um novo.');
-      }
+          if (agent.emailVerificationExpiry && agent.emailVerificationExpiry < new Date()) {
+            throw new UnauthorizedException('Token de verificação expirado. Solicite um novo.');
+          }
 
-      await this.prisma.agent.update({
-        where: { id: agent.id },
-        data: {
-          emailVerified: true,
-          emailVerificationToken: null,
-          emailVerificationExpiry: null,
+          await tx.agent.update({
+            where: { id: agent.id },
+            data: {
+              emailVerified: true,
+              emailVerificationToken: null,
+              emailVerificationExpiry: null,
+            },
+            select: { id: true, workspaceId: true },
+          });
+
+          return agent;
         },
-        select: { id: true, workspaceId: true },
-      });
+        { isolationLevel: 'ReadCommitted' },
+      );
 
       return { success: true, message: 'Email verificado com sucesso!' };
     } catch (error: unknown) {

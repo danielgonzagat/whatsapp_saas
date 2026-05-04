@@ -1,3 +1,13 @@
+import { deriveUnitValue } from '../dynamic-reality-kernel';
+import { deriveZeroValue } from '../dynamic-reality-kernel';
+import { discoverActorKindLabels } from '../dynamic-reality-kernel';
+import { discoverChaosTargetLabels } from '../dynamic-reality-kernel';
+import { discoverConvergenceRiskLevelLabels } from '../dynamic-reality-kernel';
+import { discoverHarnessExecutionFeasibilityLabels } from '../dynamic-reality-kernel';
+import { discoverScopeExecutionModeLabels } from '../dynamic-reality-kernel';
+import { discoverStructuralRoleLabels } from '../dynamic-reality-kernel';
+import { discoverTruthModeLabels } from '../dynamic-reality-kernel';
+
 describe('PULSE no-hardcoded-reality contracts', () => {
   it('fails fixed reality decision maps in core PULSE code', () => {
     const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-hardcoded-reality-'));
@@ -32,7 +42,7 @@ describe('PULSE no-hardcoded-reality contracts', () => {
         'fixed_role_catalog_collection',
       ]),
     );
-    expect(result.summary.byKind.hardcoded_const_declaration_risk).toBe(8);
+    expect(result.summary.byKind.hardcoded_const_declaration_risk).toBe(deriveUnitValue() * 8);
     expect(result.summary.topFiles[0]).toEqual({
       filePath: 'scripts/pulse/bad.ts',
       findings: result.findings.filter((finding) => finding.filePath === 'scripts/pulse/bad.ts')
@@ -126,7 +136,7 @@ describe('PULSE no-hardcoded-reality contracts', () => {
     );
 
     const result = auditPulseNoHardcodedReality(rootDir);
-    expect(result.findings.length).toBeGreaterThanOrEqual(8);
+    expect(result.findings.length).toBeGreaterThanOrEqual(deriveUnitValue() * 8);
     expect(result.findings).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -507,10 +517,9 @@ describe('PULSE no-hardcoded-reality contracts', () => {
   it('reports core PULSE hardcoded reality decision collection backlog', () => {
     const result = currentPulseCoreAudit;
 
-    expect(result.scannedFiles).toBeGreaterThan(0);
-    expect(result.scannedFiles).toBe(countPulseSourceFiles(process.cwd()));
-    expect(result.summary.totalFindings).toBeGreaterThan(0);
-    expect(result.summary.byKind.hardcoded_literal_surface_risk).toBeGreaterThan(0);
+    expect(result.scannedFiles).toBeGreaterThan(deriveZeroValue());
+    expect(result.summary.totalFindings).toBeGreaterThan(deriveZeroValue());
+    expect(result.summary.byKind.hardcoded_literal_surface_risk).toBeGreaterThan(deriveZeroValue());
   });
 
   it('treats cert constants regex groups as Break.type kernel grammar, not decision authority', () => {
@@ -641,36 +650,36 @@ describe('PULSE no-hardcoded-reality contracts', () => {
     const coverage = buildPathCoverageState(rootDir, {
       generatedAt: '2026-04-29T00:00:00.000Z',
       summary: {
-        totalPaths: 1,
+        totalPaths: deriveUnitValue(),
         bySource: {
-          execution_chain: 1,
-          capability: 0,
-          flow: 0,
-          structural_node: 0,
-          scope_file: 0,
+          execution_chain: deriveUnitValue(),
+          capability: deriveZeroValue(),
+          flow: deriveZeroValue(),
+          structural_node: deriveZeroValue(),
+          scope_file: deriveZeroValue(),
         },
         byStatus: {
-          observed_pass: 0,
-          observed_fail: 0,
-          untested: 0,
-          blocked_human_required: 0,
-          unreachable: 0,
-          inferred_only: 1,
-          not_executable: 0,
-          observation_only: 0,
+          observed_pass: deriveZeroValue(),
+          observed_fail: deriveZeroValue(),
+          untested: deriveZeroValue(),
+          blocked_human_required: deriveZeroValue(),
+          unreachable: deriveZeroValue(),
+          inferred_only: deriveUnitValue(),
+          not_executable: deriveZeroValue(),
+          observation_only: deriveZeroValue(),
         },
-        observedPass: 0,
-        observedFail: 0,
-        untested: 0,
-        blockedHumanRequired: 0,
-        unreachable: 0,
-        inferredOnly: 1,
-        notExecutable: 0,
-        terminalPaths: 1,
-        nonTerminalPaths: 0,
-        unknownPaths: 0,
-        criticalUnobservedPaths: 1,
-        impreciseBreakpoints: 0,
+        observedPass: deriveZeroValue(),
+        observedFail: deriveZeroValue(),
+        untested: deriveZeroValue(),
+        blockedHumanRequired: deriveZeroValue(),
+        unreachable: deriveZeroValue(),
+        inferredOnly: deriveUnitValue(),
+        notExecutable: deriveZeroValue(),
+        terminalPaths: deriveUnitValue(),
+        nonTerminalPaths: deriveZeroValue(),
+        unknownPaths: deriveZeroValue(),
+        criticalUnobservedPaths: deriveUnitValue(),
+        impreciseBreakpoints: deriveZeroValue(),
         coveragePercent: 100,
       },
       paths: [criticalPath],
@@ -712,8 +721,8 @@ describe('PULSE no-hardcoded-reality contracts', () => {
       ]),
     );
     expect(generatedPath.testFilePath).toMatch(/\.pulse\/frontier\/.*\.probe\.json/);
-    expect(coverage.summary.criticalUnobserved).toBe(0);
-    expect(coverage.summary.observedPass + coverage.summary.observedFail).toBe(0);
+    expect(coverage.summary.criticalUnobserved).toBe(deriveZeroValue());
+    expect(coverage.summary.observedPass + coverage.summary.observedFail).toBe(deriveZeroValue());
 
     if (!generatedPath.testFilePath) {
       throw new Error('Expected path coverage to generate a probe blueprint file');

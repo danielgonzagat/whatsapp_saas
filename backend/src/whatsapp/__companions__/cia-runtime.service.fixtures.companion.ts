@@ -3,6 +3,7 @@ import { CiaBootstrapService } from '../cia-bootstrap.service';
 import { CiaBacklogRunService } from '../cia-backlog-run.service';
 
 export type PrismaMock = {
+  $transaction: jest.Mock;
   workspace: { findUnique: jest.Mock; update: jest.Mock };
   conversation: {
     findMany: jest.Mock;

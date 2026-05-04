@@ -171,23 +171,30 @@ export class AuthWhatsappPasswordService {
     });
 
     if (!agent) {
-      const workspace = await this.prisma.workspace.create({
-        data: { name: `WhatsApp User` },
-      });
+      const result = await this.prisma.$transaction(
+        async (tx) => {
+          const workspace = await tx.workspace.create({
+            data: { name: `WhatsApp User` },
+          });
 
-      agent = await this.prisma.agent.create({
-        data: {
-          name: `User ${normalizedPhone.slice(-4)}`,
-          email: `${normalizedPhone}@whatsapp.kloel.com`,
-          password: '',
-          role: 'ADMIN',
-          workspaceId: workspace.id,
-          phone: normalizedPhone,
-          provider: 'whatsapp',
-          providerId: normalizedPhone,
+          return tx.agent.create({
+            data: {
+              name: `User ${normalizedPhone.slice(-4)}`,
+              email: `${normalizedPhone}@whatsapp.kloel.com`,
+              password: '',
+              role: 'ADMIN',
+              workspaceId: workspace.id,
+              phone: normalizedPhone,
+              provider: 'whatsapp',
+              providerId: normalizedPhone,
+            },
+            select: AGENT_AUTH_SELECT,
+          });
         },
-        select: AGENT_AUTH_SELECT,
-      });
+        { isolationLevel: 'ReadCommitted' },
+      );
+
+      agent = result;
     }
 
     return agent;

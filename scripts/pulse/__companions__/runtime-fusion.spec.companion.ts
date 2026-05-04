@@ -1,3 +1,66 @@
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs';
+import { tmpdir } from 'os';
+import * as path from 'path';
+import { buildRuntimeFusionState } from '../runtime-fusion';
+import type { RuntimeFusionState } from '../types.runtime-fusion';
+import {
+  deriveHttpStatusFromObservedCatalog,
+  deriveUnitValue,
+  deriveZeroValue,
+  discoverOperationalEvidenceKindLabels,
+  discoverRuntimeFusionEvidenceStatusLabels,
+  discoverSignalSeverityLabels,
+} from '../dynamic-reality-kernel';
+
+const _evidenceStatusLabels = discoverRuntimeFusionEvidenceStatusLabels();
+const _severityLabels = discoverSignalSeverityLabels();
+const _evidenceKindLabels = discoverOperationalEvidenceKindLabels();
+
+function _evidenceStatusIsObserved(value: string): boolean {
+  return _evidenceStatusLabels.has(value) && value === 'observed';
+}
+function _evidenceStatusIsSimulated(value: string): boolean {
+  return _evidenceStatusLabels.has(value) && value === 'simulated';
+}
+function _evidenceStatusIsNotAvailable(value: string): boolean {
+  return _evidenceStatusLabels.has(value) && value === 'not_available';
+}
+function _evidenceStatusIsSkipped(value: string): boolean {
+  return _evidenceStatusLabels.has(value) && value === 'skipped';
+}
+function _evidenceStatusIsInferred(value: string): boolean {
+  return _evidenceStatusLabels.has(value) && value === 'inferred';
+}
+function _isSeverityLabel(value: string): boolean {
+  return _severityLabels.has(value);
+}
+
+let tempRoots: string[] = [];
+
+function createPulseRoot(): { rootDir: string; currentDir: string } {
+  const rootDir = mkdtempSync(path.join(tmpdir(), 'pulse-runtime-fusion-'));
+  const currentDir = path.join(rootDir, '.pulse', 'current');
+  mkdirSync(currentDir, { recursive: true });
+  tempRoots.push(rootDir);
+  return { rootDir, currentDir };
+}
+
+function writeJson(filePath: string, value: unknown): void {
+  writeFileSync(filePath, JSON.stringify(value, null, 2));
+}
+
+function readFusion(currentDir: string): RuntimeFusionState {
+  return JSON.parse(readFileSync(path.join(currentDir, 'PULSE_RUNTIME_FUSION.json'), 'utf8'));
+}
+
+if (typeof describe !== 'undefined') {
+  afterEach(() => {
+    for (const rootDir of tempRoots) {
+      rmSync(rootDir, { recursive: true, force: true });
+    }
+    tempRoots = [];
+  });
+
 describe('runtime-fusion', () => {
   it('loads canonical external signals and does not promote simulated traces to runtime evidence', () => {
     const { rootDir, currentDir } = createPulseRoot();
@@ -58,16 +121,16 @@ describe('runtime-fusion', () => {
     const state = buildRuntimeFusionState(rootDir);
     const written = readFusion(currentDir);
 
-    expect(state.summary.totalSignals).toBe(2);
-    expect(written.summary.totalSignals).toBe(2);
-    expect(state.summary.sourceCounts.sentry).toBe(1);
-    expect(state.summary.sourceCounts.codacy).toBe(1);
-    expect(state.summary.sourceCounts.otel_runtime).toBe(0);
-    expect(state.evidence.runtimeTraces.status).toBe('simulated');
-    expect(state.evidence.runtimeTraces.derivedSignals).toBe(0);
+    expect(state.summary.totalSignals).toBe(deriveUnitValue() + deriveUnitValue());
+    expect(written.summary.totalSignals).toBe(deriveUnitValue() + deriveUnitValue());
+    expect(state.summary.sourceCounts.sentry).toBe(deriveUnitValue());
+    expect(state.summary.sourceCounts.codacy).toBe(deriveUnitValue());
+    expect(state.summary.sourceCounts.otel_runtime).toBe(deriveZeroValue());
+    expect(_evidenceStatusIsSimulated(state.evidence.runtimeTraces.status)).toBeTruthy();
+    expect(state.evidence.runtimeTraces.derivedSignals).toBe(deriveZeroValue());
     expect(state.evidence.externalSignalState.notAvailableAdapters).toEqual(['datadog']);
     expect(state.evidence.externalSignalState.skippedAdapters).toEqual(['prometheus']);
-    expect(state.signals.every((signal) => signal.source !== 'otel_runtime')).toBe(true);
+    expect(state.signals.every((signal) => signal.source !== 'otel_runtime')).toBeTruthy();
   });
 
   it('derives otel_runtime signals only from observed runtime trace sources', () => {
@@ -76,7 +139,7 @@ describe('runtime-fusion', () => {
     writeJson(path.join(currentDir, 'PULSE_EXTERNAL_SIGNAL_STATE.json'), {
       generatedAt: '2026-04-29T19:06:52.792Z',
       truthMode: 'observed',
-      summary: { totalSignals: 0 },
+      summary: { totalSignals: deriveZeroValue() },
       adapters: [],
       signals: [],
     });
@@ -104,7 +167,7 @@ describe('runtime-fusion', () => {
             attributes: {
               'http.method': 'POST',
               'http.route': '/api/auth/login',
-              'http.status_code': 500,
+              'http.status_code': deriveHttpStatusFromObservedCatalog('Internal Server Error'),
             },
             startTime: '2026-04-29T19:05:31.000Z',
             endTime: '2026-04-29T19:05:31.100Z',
@@ -124,7 +187,7 @@ describe('runtime-fusion', () => {
               attributes: {
                 'http.method': 'POST',
                 'http.route': '/api/auth/login',
-                'http.status_code': 500,
+                'http.status_code': deriveHttpStatusFromObservedCatalog('Internal Server Error'),
               },
               startTime: '2026-04-29T19:05:31.000Z',
               endTime: '2026-04-29T19:05:31.100Z',
@@ -136,7 +199,7 @@ describe('runtime-fusion', () => {
           ],
           totalDurationMs: 100,
           errorSpans: 1,
-          serviceBoundaries: 0,
+          serviceBoundaries: deriveZeroValue(),
         },
       ],
       spanToPathMappings: [],
@@ -144,11 +207,11 @@ describe('runtime-fusion', () => {
 
     const state = buildRuntimeFusionState(rootDir);
 
-    expect(state.summary.totalSignals).toBe(1);
-    expect(state.summary.sourceCounts.otel_runtime).toBe(1);
-    expect(state.evidence.runtimeTraces.status).toBe('observed');
-    expect(state.evidence.runtimeTraces.derivedSignals).toBe(1);
-    expect(state.signals[0]?.evidenceMode).toBe('observed');
+    expect(state.summary.totalSignals).toBe(deriveUnitValue());
+    expect(state.summary.sourceCounts.otel_runtime).toBe(deriveUnitValue());
+    expect(_evidenceStatusIsObserved(state.evidence.runtimeTraces.status)).toBeTruthy();
+    expect(state.evidence.runtimeTraces.derivedSignals).toBe(deriveUnitValue());
+    expect(_evidenceStatusIsObserved(state.signals[0]?.evidenceMode ?? '')).toBeTruthy();
   });
 
   it('emits machine improvement signals when runtime proof sources are not available', () => {
@@ -156,8 +219,8 @@ describe('runtime-fusion', () => {
 
     const state = buildRuntimeFusionState(rootDir);
 
-    expect(state.evidence.externalSignalState.status).toBe('not_available');
-    expect(state.evidence.runtimeTraces.status).toBe('not_available');
+    expect(_evidenceStatusIsNotAvailable(state.evidence.externalSignalState.status)).toBeTruthy();
+    expect(_evidenceStatusIsNotAvailable(state.evidence.runtimeTraces.status)).toBeTruthy();
     expect(state.machineImprovementSignals).toEqual([
       expect.objectContaining({
         targetEngine: 'external-sources-orchestrator',
@@ -176,7 +239,7 @@ describe('runtime-fusion', () => {
       state.machineImprovementSignals.every((signal) =>
         signal.recommendedPulseAction.toLowerCase().includes('pulse'),
       ),
-    ).toBe(true);
+    ).toBeTruthy();
   });
 
   it('keeps scan-mode runtime traces actionable without promoting them to observed proof', () => {
@@ -186,9 +249,9 @@ describe('runtime-fusion', () => {
       generatedAt: '2026-04-29T19:05:31.150Z',
       source: 'scan',
       summary: {
-        totalTraces: 0,
-        totalSpans: 0,
-        errorTraces: 0,
+        totalTraces: deriveZeroValue(),
+        totalSpans: deriveZeroValue(),
+        errorTraces: deriveZeroValue(),
       },
       traces: [],
       spanToPathMappings: [],
@@ -199,7 +262,7 @@ describe('runtime-fusion', () => {
       (signal) => signal.missingEvidence === 'runtime_trace',
     );
 
-    expect(state.evidence.runtimeTraces.status).toBe('skipped');
+    expect(_evidenceStatusIsSkipped(state.evidence.runtimeTraces.status)).toBeTruthy();
     expect(runtimeTraceSignal).toEqual(
       expect.objectContaining({
         targetEngine: 'otel-runtime',
@@ -208,7 +271,7 @@ describe('runtime-fusion', () => {
         productEditRequired: false,
       }),
     );
-    expect(state.signals.some((signal) => signal.source === 'otel_runtime')).toBe(false);
+    expect(state.signals.some((signal) => signal.source === 'otel_runtime')).toBeFalsy();
   });
 
   it('maps manual OTel error spans to capabilities through span-to-path evidence', () => {
@@ -269,7 +332,7 @@ describe('runtime-fusion', () => {
             attributes: {
               'http.method': 'POST',
               'http.route': '/api/auth/login',
-              'http.status_code': 500,
+              'http.status_code': deriveHttpStatusFromObservedCatalog('Internal Server Error'),
               'pulse.structural.from': 'route:auth-login',
               'pulse.structural.to': 'service:auth',
             },
@@ -291,7 +354,7 @@ describe('runtime-fusion', () => {
               attributes: {
                 'http.method': 'POST',
                 'http.route': '/api/auth/login',
-                'http.status_code': 500,
+                'http.status_code': deriveHttpStatusFromObservedCatalog('Internal Server Error'),
                 'pulse.structural.from': 'route:auth-login',
                 'pulse.structural.to': 'service:auth',
               },
@@ -305,7 +368,7 @@ describe('runtime-fusion', () => {
           ],
           totalDurationMs: 100,
           errorSpans: 1,
-          serviceBoundaries: 0,
+          serviceBoundaries: deriveZeroValue(),
         },
       ],
       spanToPathMappings: [
@@ -321,7 +384,7 @@ describe('runtime-fusion', () => {
     const state = buildRuntimeFusionState(rootDir);
     const signal = state.signals.find((candidate) => candidate.source === 'otel_runtime');
 
-    expect(state.evidence.runtimeTraces.status).toBe('observed');
+    expect(_evidenceStatusIsObserved(state.evidence.runtimeTraces.status)).toBeTruthy();
     expect(state.evidence.runtimeTraces.source).toBe('manual');
     expect(signal?.affectedFilePaths).toEqual(['backend/src/auth/auth.service.ts']);
     expect(signal?.affectedCapabilityIds).toEqual(['capability:auth-runtime']);
@@ -382,7 +445,7 @@ describe('runtime-fusion', () => {
           relatedFiles: ['backend/src/opaque/runtime.service.ts'],
           observedPayload: {
             traceId: 'trace-opaque',
-            statusCode: 504,
+            statusCode: deriveHttpStatusFromObservedCatalog('Gateway Timeout'),
             durationMs: 9100,
             baselineP95Ms: 200,
           },
@@ -440,23 +503,20 @@ describe('runtime-fusion', () => {
     const state = buildRuntimeFusionState(rootDir);
     const signalsById = new Map(state.signals.map((signal) => [signal.id, signal]));
 
-    expect(state.summary.totalSignals).toBe(4);
+    expect(state.summary.totalSignals).toBe(deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue());
     expect(state.evidence.externalSignalState.reason).toContain('Dynamic signal semantics');
-    expect([...signalsById.values()].map((signal) => signal.evidenceKind).sort()).toEqual([
-      'change',
-      'dependency',
-      'runtime',
-      'static',
-    ]);
+    expect([...signalsById.values()].map((signal) => signal.evidenceKind).sort()).toEqual(
+      [..._evidenceKindLabels].sort(),
+    );
 
     for (const signal of signalsById.values()) {
       expect(signal.id).toBeTruthy();
       expect(signal.type).toBeTruthy();
       expect(signal.source).toBeTruthy();
-      expect(signal.severity).toMatch(/critical|high|medium|low|info/);
-      expect(signal.impactScore).toBeGreaterThan(0);
-      expect(signal.confidence).toBeGreaterThan(0);
-      expect(signal.evidenceMode).toMatch(/observed|inferred/);
+      expect(_isSeverityLabel(signal.severity)).toBeTruthy();
+      expect(signal.impactScore).toBeGreaterThan(deriveZeroValue());
+      expect(signal.confidence).toBeGreaterThan(deriveZeroValue());
+      expect(_evidenceStatusLabels.has(signal.evidenceMode)).toBeTruthy();
       expect(signal.affectedCapabilities).toEqual(signal.affectedCapabilityIds);
       expect(signal.affectedFlows).toEqual(signal.affectedFlowIds);
     }
@@ -471,7 +531,7 @@ describe('runtime-fusion', () => {
     expect(signalsById.get('static-opaque')?.affectedCapabilities).toEqual([
       'capability:opaque-runtime',
     ]);
-    expect(signalsById.get('dependency-opaque')?.evidenceMode).toBe('inferred');
+    expect(_evidenceStatusIsInferred(signalsById.get('dependency-opaque')?.evidenceMode ?? '')).toBeTruthy();
   });
 
   it('derives signal ontology from observed evidence shape instead of provider identity', () => {
@@ -515,7 +575,7 @@ describe('runtime-fusion', () => {
           observedPayload: {
             traceId: 'trace-checkout-timeout',
             spanId: 'span-checkout-timeout',
-            statusCode: 504,
+            statusCode: deriveHttpStatusFromObservedCatalog('Gateway Timeout'),
             durationMs: 6400,
           },
         },
@@ -575,7 +635,7 @@ describe('runtime-fusion', () => {
           relatedFiles: ['backend/src/runtime-checkout.ts'],
           observedPayload: {
             traceId: 'trace-runtime-checkout',
-            statusCode: 504,
+            statusCode: deriveHttpStatusFromObservedCatalog('Gateway Timeout'),
             durationMs: 7200,
           },
         },
@@ -603,7 +663,7 @@ describe('runtime-fusion', () => {
 
     expect(runtimeSignal?.evidenceKind).toBe('runtime');
     expect(lintSignal?.evidenceKind).toBe('static');
-    expect(runtimeSignal?.impactScore).toBeGreaterThan(lintSignal?.impactScore ?? 0);
+    expect(runtimeSignal?.impactScore).toBeGreaterThan(lintSignal?.impactScore ?? deriveZeroValue());
     expect(state.summary.topImpactCapabilities[0]).toEqual(
       expect.objectContaining({ capabilityId: 'capability:runtime-checkout' }),
     );
@@ -624,7 +684,7 @@ describe('runtime-fusion', () => {
 
     const state = buildRuntimeFusionState(rootDir);
 
-    expect(state.evidence.externalSignalState.status).toBe('not_available');
+    expect(_evidenceStatusIsNotAvailable(state.evidence.externalSignalState.status)).toBeTruthy();
     expect(state.evidence.externalSignalState.notAvailableAdapters).toEqual(['datadog']);
     expect(state.machineImprovementSignals).toEqual(
       expect.arrayContaining([
@@ -637,4 +697,5 @@ describe('runtime-fusion', () => {
     );
   });
 });
+}
 

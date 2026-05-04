@@ -2,6 +2,7 @@ import { WhatsAppProviderRegistry } from './provider-registry';
 
 describe('WhatsAppProviderRegistry', () => {
   let prisma: {
+    $transaction: jest.Mock;
     workspace: {
       findUnique: jest.Mock;
       update: jest.Mock;
@@ -44,6 +45,7 @@ describe('WhatsAppProviderRegistry', () => {
     delete process.env.WAHA_BASE_URL;
     delete process.env.WAHA_URL;
     prisma = {
+      $transaction: jest.fn((callback: any) => callback(prisma)),
       workspace: {
         findUnique: jest.fn().mockResolvedValue({
           providerSettings: {

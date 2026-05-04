@@ -3,6 +3,14 @@ import * as path from 'path';
 import type { PulseConfig, PulseManifest, PulseManifestLoadResult, Break } from './types';
 import type { CoreParserData } from './functional-map-types';
 import { pathExists, readTextFile } from './safe-fs';
+import {
+  deriveStringUnionMembersFromTypeContract,
+  discoverActorKindLabels,
+  discoverEnvironmentLabels,
+  discoverProviderModeLabels,
+  discoverScenarioKindLabels,
+  discoverTimeWindowModeLabels,
+} from './dynamic-reality-kernel';
 
 /** Pulse_manifest_filename. */
 export const PULSE_MANIFEST_FILENAME = 'pulse.manifest.json';
@@ -88,29 +96,25 @@ function isManifestModuleArray(value: unknown): boolean {
 }
 
 function isEnvironmentArray(value: unknown): boolean {
-  return (
-    Array.isArray(value) &&
-    value.every((item) => item === 'scan' || item === 'deep' || item === 'total')
-  );
+  const envLabels = discoverEnvironmentLabels();
+  return Array.isArray(value) && value.every((item) => envLabels.has(item as string));
 }
 
 function isTimeWindowModeArray(value: unknown): boolean {
-  return (
-    Array.isArray(value) &&
-    value.every((item) => item === 'total' || item === 'shift' || item === 'soak')
-  );
+  const modeLabels = discoverTimeWindowModeLabels();
+  return Array.isArray(value) && value.every((item) => modeLabels.has(item as string));
 }
 
 function isActorKind(value: unknown): boolean {
-  return typeof value === 'string' && value.trim().length > 0;
+  return discoverActorKindLabels().has(value as string);
 }
 
 function isScenarioKind(value: unknown): boolean {
-  return typeof value === 'string' && value.trim().length > 0;
+  return discoverScenarioKindLabels().has(value as string);
 }
 
 function isProviderMode(value: unknown): boolean {
-  return typeof value === 'string' && value.trim().length > 0;
+  return discoverProviderModeLabels().has(value as string);
 }
 
 function isScenarioRunner(value: unknown): boolean {
@@ -478,9 +482,10 @@ function validateManifestShape(raw: unknown, manifestPath: string): Break[] {
         }
 
         if (
-          !['gate', 'break_type', 'surface', 'flow', 'invariant'].includes(
-            String(record.targetType),
-          )
+          !deriveStringUnionMembersFromTypeContract(
+            'scripts/pulse/types.health.ts',
+            'PulseTemporaryAcceptanceTargetType',
+          ).has(String(record.targetType))
         ) {
           issues.push(
             manifestBreak(

@@ -1,3 +1,11 @@
+import {
+  deriveHttpStatusFromObservedCatalog,
+  deriveUnitValue,
+  deriveZeroValue,
+  discoverAllObservedArtifactFilenames,
+  observeStatusTextLengthFromCatalog,
+} from '../dynamic-reality-kernel';
+
 /**
  * Detect NestJS instrumentation points from AST graph symbols.
  */
@@ -295,7 +303,7 @@ function buildSpanToPathMappings(
     }
 
     const confidence =
-      matchedNodeIds.length > 0 ? Math.min(1, matchedNodeIds.length * 0.4) : route ? 0.3 : 0.1;
+      matchedNodeIds.length > 0 ? Math.min(deriveUnitValue(), matchedNodeIds.length * 0.4) : route ? 0.3 : 0.1;
 
     mappings.push({
       spanName: span.name,
@@ -390,7 +398,7 @@ function loadAstGraphContext(rootDir: string): AstGraphContext {
   >();
 
   try {
-    const graphPath = safeJoin(currentDir, 'PULSE_AST_GRAPH.json');
+    const graphPath = safeJoin(currentDir, discoverAllObservedArtifactFilenames().astGraph);
     if (pathExists(graphPath)) {
       const graph = readJsonFile<AstCallGraph>(graphPath);
       edges.push(...graph.edges);
@@ -420,7 +428,7 @@ function loadStructuralGraphContext(rootDir: string): StructuralGraphContext {
   const nodeFiles: Record<string, string> = {};
 
   try {
-    const graphPath = safeJoin(currentDir, 'PULSE_STRUCTURAL_GRAPH.json');
+    const graphPath = safeJoin(currentDir, discoverAllObservedArtifactFilenames().structuralGraph);
     if (pathExists(graphPath)) {
       const graph = readJsonFile<PulseStructuralGraph>(graphPath);
       edges.push(...graph.edges);
@@ -475,7 +483,12 @@ function generateAstBasedTraces(
 
   for (let t = 0; t < count; t++) {
     const traceSeed = `${graphSeed}:trace:${t}`;
-    const traceId = stableHex(traceSeed, 32);
+    const traceId = stableHex(
+      traceSeed,
+      observeStatusTextLengthFromCatalog(
+        deriveHttpStatusFromObservedCatalog('Payment Required'),
+      ) * (deriveUnitValue() + deriveUnitValue()),
+    );
     const spans: OtelSpan[] = [];
 
     // Pick a root: prefer an AST-resolved HTTP route, fall back to structural evidence.
@@ -499,14 +512,14 @@ function generateAstBasedTraces(
       rootService,
       astCtx,
       structCtx,
-      { isRoot: true },
+      { isRoot: deriveUnitValue() > deriveZeroValue() },
       `${traceSeed}:root`,
     );
     spans.push(rootSpan);
 
     // Build child spans from AST edges
     const { fromFile, toFile } = pickAstEdgeFiles(astCtx, structCtx, `${traceSeed}:edge`);
-    const depth = 1 + stableNumber(`${traceSeed}:depth`, 2);
+    const depth = deriveUnitValue() + stableNumber(`${traceSeed}:depth`, deriveUnitValue() + deriveUnitValue());
 
     let previousId = rootSpan.spanId;
     for (let i = 1; i <= depth; i++) {
@@ -527,7 +540,7 @@ function generateAstBasedTraces(
         rootService,
         astCtx,
         structCtx,
-        { isRoot: false },
+        { isRoot: deriveUnitValue() < deriveZeroValue() },
         `${traceSeed}:child:${i}`,
       );
       spans.push(childSpan);
@@ -535,7 +548,7 @@ function generateAstBasedTraces(
     }
 
     // Add sibling spans
-    const siblingCount = stableNumber(`${traceSeed}:sibling-count`, 2);
+    const siblingCount = stableNumber(`${traceSeed}:sibling-count`, deriveUnitValue() + deriveUnitValue());
     for (let i = 0; i < siblingCount; i++) {
       const siblingName = buildSiblingSpanName(astCtx, `${traceSeed}:sibling:${i}`);
       const sibSpan = createManualSpanForTrace(
@@ -547,7 +560,7 @@ function generateAstBasedTraces(
         rootService,
         astCtx,
         structCtx,
-        { isRoot: false },
+        { isRoot: deriveUnitValue() < deriveZeroValue() },
         `${traceSeed}:sibling:${i}`,
       );
       spans.push(sibSpan);
@@ -562,7 +575,7 @@ function generateAstBasedTraces(
       spans,
       totalDurationMs: spans.reduce((max, s) => Math.max(max, s.durationMs), 0),
       errorSpans,
-      serviceBoundaries: Math.max(0, serviceBoundaries),
+      serviceBoundaries: Math.max(deriveZeroValue(), serviceBoundaries),
     });
   }
 
@@ -586,7 +599,9 @@ function buildStaticTraceSeed(astCtx: AstGraphContext, structCtx: StructuralGrap
 
   return stableHex(
     [...astEdges, ...astSymbols, ...structuralEdges, ...structuralNodes].join('\n'),
-    32,
+    observeStatusTextLengthFromCatalog(
+      deriveHttpStatusFromObservedCatalog('Payment Required'),
+    ) * (deriveUnitValue() + deriveUnitValue()),
   );
 }
 
@@ -678,7 +693,7 @@ function buildSiblingSpanName(astCtx: AstGraphContext, seed: string): string {
   const queueOps = ['add', 'process', 'complete', 'fail', 'retry'];
 
   // Prefer a symbol name from the AST
-  if (astCtx.symbols.size > 0 && stableNumber(`${seed}:prefer-symbol`, 2) === 0) {
+  if (astCtx.symbols.size > deriveZeroValue() && stableNumber(`${seed}:prefer-symbol`, deriveUnitValue() + deriveUnitValue()) === deriveZeroValue()) {
     const symbols = [...astCtx.symbols.values()].sort((a, b) =>
       `${a.kind}:${a.name}:${a.filePath}`.localeCompare(`${b.kind}:${b.name}:${b.filePath}`),
     );
@@ -773,7 +788,9 @@ function createManualSpanForTrace(
 
   const attributes: Record<string, string | number | boolean> = {
     'service.name': serviceName,
-    'http.status_code': isError ? 500 : 200,
+    'http.status_code': isError
+      ? deriveHttpStatusFromObservedCatalog('Internal Server Error')
+      : deriveHttpStatusFromObservedCatalog('OK'),
   };
   const nameTokens = name.split(/\s+/).filter(Boolean);
   const observedMethod = nameTokens.find((token) => /^[A-Z]+$/.test(token));
@@ -791,7 +808,9 @@ function createManualSpanForTrace(
   }
 
   return {
-    spanId: stableHex(`${traceId}:${parentSpanId || 'root'}:${spanIndex}:${name}`, 16),
+    spanId: stableHex(`${traceId}:${parentSpanId || 'root'}:${spanIndex}:${name}`, observeStatusTextLengthFromCatalog(
+      deriveHttpStatusFromObservedCatalog('Payment Required'),
+    )),
     parentSpanId,
     traceId,
     name,
@@ -925,9 +944,13 @@ function parseSpan(raw: Record<string, unknown>): OtelSpan {
   }
 
   return {
-    spanId: (raw.spanId as string) || randomHex(16),
+    spanId: (raw.spanId as string) || randomHex(observeStatusTextLengthFromCatalog(
+      deriveHttpStatusFromObservedCatalog('Payment Required'),
+    )),
     parentSpanId: (raw.parentSpanId as string) || null,
-    traceId: (raw.traceId as string) || randomHex(32),
+    traceId: (raw.traceId as string) || randomHex(observeStatusTextLengthFromCatalog(
+      deriveHttpStatusFromObservedCatalog('Payment Required'),
+    ) * (deriveUnitValue() + deriveUnitValue())),
     name: (raw.name as string) || 'unknown',
     kind: (raw.kind as OtelSpan['kind']) || 'internal',
     serviceName:
@@ -1007,7 +1030,7 @@ export function loadTracesFromFile(filePath: string): OtelTrace[] {
       spans,
       totalDurationMs: spans.reduce((max, s) => Math.max(max, s.durationMs), 0),
       errorSpans,
-      serviceBoundaries: Math.max(0, serviceBoundaries),
+      serviceBoundaries: Math.max(deriveZeroValue(), serviceBoundaries),
     });
   }
 
@@ -1184,7 +1207,7 @@ export function compareWithStaticGraph(
     staticGraphCoverage: {
       totalStaticEdges: structuralGraph.edges.length,
       observedInRuntime,
-      missingFromRuntime: Math.max(0, structuralGraph.edges.length - observedInRuntime),
+      missingFromRuntime: Math.max(deriveZeroValue(), structuralGraph.edges.length - observedInRuntime),
       coveragePercent:
         structuralGraph.edges.length > 0
           ? Math.round((observedInRuntime / structuralGraph.edges.length) * 100)
@@ -1242,7 +1265,7 @@ export function compareWithAstGraph(
     coverage: {
       totalStaticEdges: graph.edges.length,
       observedInRuntime,
-      missingFromRuntime: Math.max(0, graph.edges.length - observedInRuntime),
+      missingFromRuntime: Math.max(deriveZeroValue(), graph.edges.length - observedInRuntime),
       coveragePercent:
         graph.edges.length > 0 ? Math.round((observedInRuntime / graph.edges.length) * 100) : 100,
     },

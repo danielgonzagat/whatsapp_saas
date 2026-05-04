@@ -156,7 +156,7 @@ export function buildMockProviderRegistry() {
 export function buildMockPrisma(localContactsSeed: any[]) {
   const createdContacts: any[] = [];
   const allContacts = () => [...localContactsSeed, ...createdContacts];
-  return {
+  const mockObj: any = {
     contact: {
       findMany: jest
         .fn()
@@ -200,6 +200,7 @@ export function buildMockPrisma(localContactsSeed: any[]) {
       }),
       update: jest.fn().mockResolvedValue({}),
       findFirst: jest.fn().mockResolvedValue(null),
+      updateMany: jest.fn().mockResolvedValue({ count: 1 }),
     },
     conversation: { findMany: jest.fn().mockResolvedValue(localConversationsSeed) },
     message: {
@@ -217,4 +218,6 @@ export function buildMockPrisma(localContactsSeed: any[]) {
       findUnique: jest.fn().mockResolvedValue(null),
     },
   };
+  mockObj.$transaction = jest.fn((callback: any) => callback(mockObj));
+  return mockObj;
 }

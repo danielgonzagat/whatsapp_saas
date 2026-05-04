@@ -48,6 +48,16 @@ export type BehaviorOutputKind =
 
 export type BehaviorRiskLevel = 'critical' | 'high' | 'medium' | 'low' | 'none';
 
+export type BehaviorValidationRequirement =
+  | 'targeted_test'
+  | 'typecheck'
+  | 'package_build'
+  | 'runtime_smoke'
+  | 'idempotency_check'
+  | 'external_integration_evidence'
+  | 'observability_evidence'
+  | 'governed_read_only_evidence';
+
 export interface BehaviorInput {
   kind: BehaviorInputKind;
   name: string;

@@ -17,6 +17,47 @@ import {
   buildFlowGroups,
   synthesizeScenarioFlowGroups,
 } from './resolved-manifest.builders';
+import {
+  deriveZeroValue,
+  deriveStringUnionMembersFromTypeContract,
+} from './dynamic-reality-kernel';
+
+const RESOLVED_TYPE_FILE = 'scripts/pulse/types.resolved-manifest.ts';
+
+function getModuleResolutionLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    RESOLVED_TYPE_FILE,
+    'PulseResolvedModuleResolution',
+  );
+}
+
+function getModuleKindLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    RESOLVED_TYPE_FILE,
+    'PulseResolvedModuleKind',
+  );
+}
+
+function getCoverageStatusLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    RESOLVED_TYPE_FILE,
+    'PulseResolvedModuleCoverageStatus',
+  );
+}
+
+function getFlowResolutionLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    RESOLVED_TYPE_FILE,
+    'PulseResolvedFlowResolution',
+  );
+}
+
+function getFlowKindLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    RESOLVED_TYPE_FILE,
+    'PulseResolvedFlowKind',
+  );
+}
 
 function getActiveModules(manifest: PulseManifest | null): PulseManifestModule[] {
   return manifest?.modules || [];
@@ -90,8 +131,8 @@ function buildModuleResolution(
     !excluded &&
     (criticalOverride ||
       Boolean(manualModule?.critical) ||
-      ((scopeAggregate?.runtimeCriticalFileCount || 0) > 0 &&
-        ((scopeAggregate?.userFacingFileCount || 0) > 0 || moduleKind === 'user_facing')));
+      ((scopeAggregate?.runtimeCriticalFileCount ?? deriveZeroValue()) > deriveZeroValue() &&
+        ((scopeAggregate?.userFacingFileCount ?? deriveZeroValue()) > deriveZeroValue() || moduleKind === 'user_facing')));
   const aliases = unique(
     [
       module.name,
@@ -130,10 +171,10 @@ function buildModuleResolution(
     legacySource: legacyModule?.name || null,
     coverageStatus,
     declaredByManifest: Boolean(manualModule),
-    discoveredFileCount: scopeAggregate?.fileCount || 0,
-    codacyIssueCount: scopeAggregate?.observedCodacyIssueCount || 0,
-    highSeverityIssueCount: scopeAggregate?.highSeverityIssueCount || 0,
-    protectedByGovernance: (scopeAggregate?.humanRequiredFileCount || 0) > 0,
+    discoveredFileCount: scopeAggregate?.fileCount ?? deriveZeroValue(),
+    codacyIssueCount: scopeAggregate?.observedCodacyIssueCount ?? deriveZeroValue(),
+    highSeverityIssueCount: scopeAggregate?.highSeverityIssueCount ?? deriveZeroValue(),
+    protectedByGovernance: (scopeAggregate?.humanRequiredFileCount ?? deriveZeroValue()) > deriveZeroValue(),
     surfaceKinds: scopeAggregate?.surfaces || [],
     pageCount: module.pageCount,
     totalInteractions: module.totalInteractions,
@@ -253,7 +294,7 @@ export function buildResolvedManifest(
   const scopeOnlyModuleCandidates = (scopeState?.moduleAggregates || [])
     .filter(
       (aggregate) =>
-        aggregate.userFacingFileCount > 0 && !resolvedModuleKeys.has(aggregate.moduleKey),
+        aggregate.userFacingFileCount > deriveZeroValue() && !resolvedModuleKeys.has(aggregate.moduleKey),
     )
     .map((aggregate) => aggregate.moduleKey)
     .sort();

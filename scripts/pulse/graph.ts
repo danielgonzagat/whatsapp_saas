@@ -11,25 +11,282 @@ import type {
   PulseConfig,
 } from './types';
 import { buildApiModuleMap } from './parsers/api-parser';
+import { deriveDynamicFindingIdentity } from './finding-identity';
 import {
-  normalizeForMatch,
-  RouteKey,
-  graphFinding,
-  countByDynamicEvent,
-  countBySourceKind,
-  buildAuthEvidenceTokens,
-  buildStateEvidenceTokens,
-  routeKeyFor,
-  inferCallRunsInsideFrontendRuntime,
-  inferRouteHasExternalCaller,
-  inferTraceHasRuntimeEntry,
-  inferModelUsageEvidence,
-  countAuthRiskIssues,
-  countStateRiskIssues,
-  calculateDynamicScore,
-} from './__parts__/graph/helpers';
+  deriveZeroValue,
+  deriveUnitValue,
+  deriveStringUnionMembersFromTypeContract,
+} from './dynamic-reality-kernel';
 
-export { normalizeForMatch, RouteKey } from './__parts__/graph/helpers';
+/** Normalize for match. */
+export function normalizeForMatch(p: string): string {
+  return p
+    .replace(/\/+/g, '/')
+    .replace(/\/$/, '')
+    .replace(/:[a-zA-Z_]\w*/g, ':_')
+    .toLowerCase();
+}
+
+/** Route key type. */
+export type RouteKey = string; // "GET:/campaigns/:_"
+
+type GraphEvidenceKind =
+  | 'route_target_unmatched'
+  | 'route_caller_unobserved'
+  | 'state_model_access_unobserved'
+  | 'ui_handler_effect_unobserved'
+  | 'facade_evidence'
+  | 'proxy_upstream_unmatched';
+
+function graphFindingType(kind: GraphEvidenceKind): string {
+  return `graph-${kind.replace(/_/g, '-')}`;
+}
+
+function graphFinding(input: {
+  kind: GraphEvidenceKind;
+  severity: Break['severity'];
+  file: string;
+  line: number;
+  description: string;
+  detail: string;
+  surface?: string;
+}): Break {
+  return {
+    type: graphFindingType(input.kind),
+    severity: input.severity,
+    file: input.file,
+    line: input.line,
+    description: input.description,
+    detail: input.detail,
+    source: `graph:confirmed_static:${input.kind}`,
+    surface: input.surface,
+  };
+}
+
+function countByDynamicEvent(breaks: Break[], pattern: RegExp): number {
+  return breaks.filter((item) => {
+    const identity = deriveDynamicFindingIdentity(item);
+    return pattern.test(`${identity.eventName} ${item.source ?? ''} ${item.surface ?? ''}`);
+  }).length;
+}
+
+function countBySourceKind(breaks: Break[], kind: GraphEvidenceKind): number {
+  return breaks.filter((item) => item.source === `graph:confirmed_static:${kind}`).length;
+}
+
+function tokenizeGraphEvidence(value: string | null | undefined): Set<string> {
+  const tokens = new Set<string>();
+  for (const token of (value ?? '').toLowerCase().match(/[a-z][a-z0-9]+/g) ?? []) {
+    tokens.add(token);
+  }
+  return tokens;
+}
+
+function hasTokenIntersection(left: Set<string>, right: Set<string>): boolean {
+  for (const token of left) {
+    if (right.has(token)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function addTokens(target: Set<string>, value: string | null | undefined): void {
+  for (const token of tokenizeGraphEvidence(value)) {
+    target.add(token);
+  }
+}
+
+function buildAuthEvidenceTokens(routes: BackendRoute[]): Set<string> {
+  const tokens = new Set<string>();
+  for (const route of routes) {
+    for (const guard of route.guards) {
+      addTokens(tokens, guard);
+    }
+    if (!route.isPublic && route.guards.length > deriveZeroValue()) {
+      addTokens(tokens, route.methodName);
+      addTokens(tokens, route.controllerPath);
+    }
+  }
+  return tokens;
+}
+
+function buildStateEvidenceTokens(models: PrismaModel[], traces: ServiceTrace[]): Set<string> {
+  const tokens = new Set<string>();
+  for (const model of models) {
+    addTokens(tokens, model.name);
+    addTokens(tokens, model.accessorName);
+    for (const field of model.fields) {
+      addTokens(tokens, field.name);
+      addTokens(tokens, field.type);
+    }
+    for (const relation of model.relations) {
+      addTokens(tokens, relation.fieldName);
+      addTokens(tokens, relation.targetModel);
+    }
+  }
+  for (const trace of traces) {
+    for (const model of trace.prismaModels) {
+      addTokens(tokens, model);
+    }
+  }
+  return tokens;
+}
+
+function routeKeyFor(route: BackendRoute): RouteKey {
+  return `${route.httpMethod}:${normalizeForMatch(route.fullPath)}`;
+}
+
+function inferCallRunsInsideFrontendRuntime(call: APICall, proxyRoutes: ProxyRoute[]): boolean {
+  if (!call.isProxy) {
+    return false;
+  }
+
+  const matchingProxy = proxyRoutes.find(
+    (proxy) =>
+      normalizeForMatch(proxy.frontendPath) === normalizeForMatch(call.normalizedPath) &&
+      proxy.httpMethod === call.method,
+  );
+  if (matchingProxy) {
+    return false;
+  }
+
+  const pathTokens = tokenizeGraphEvidence(call.normalizedPath);
+  const fileTokens = tokenizeGraphEvidence(call.file);
+  const callerTokens = tokenizeGraphEvidence(call.callerFunction);
+  const runtimeTokens = new Set([...fileTokens, ...callerTokens]);
+  return fileTokens.has('route') && hasTokenIntersection(pathTokens, runtimeTokens);
+}
+
+function inferRouteHasExternalCaller(route: BackendRoute): boolean {
+  const routeTokens = tokenizeGraphEvidence(
+    `${route.controllerPath} ${route.methodPath} ${route.fullPath} ${route.methodName}`,
+  );
+  const guardTokens = new Set<string>();
+  for (const guard of route.guards) {
+    addTokens(guardTokens, guard);
+  }
+
+  return route.isPublic && (routeTokens.size > deriveZeroValue() || guardTokens.size === deriveZeroValue());
+}
+
+function inferTraceHasRuntimeEntry(trace: ServiceTrace): boolean {
+  const triggerTokens = new Set<string>();
+  for (const trigger of trace.triggers ?? []) {
+    addTokens(triggerTokens, trigger);
+  }
+
+  const serviceCallTokens = new Set<string>();
+  for (const serviceCall of trace.serviceCalls ?? []) {
+    addTokens(serviceCallTokens, serviceCall);
+  }
+
+  return triggerTokens.size > deriveZeroValue() || serviceCallTokens.size > deriveZeroValue();
+}
+
+function inferModelUsageEvidence(input: {
+  model: PrismaModel;
+  serviceTraces: ServiceTrace[];
+  consumedServiceCalls: Set<string>;
+}): boolean {
+  const accessor = input.model.accessorName;
+  return input.serviceTraces.some((trace) => {
+    if (!trace.prismaModels.includes(accessor)) {
+      return false;
+    }
+
+    const serviceCall = `${trace.serviceName}.${trace.methodName}`;
+    return input.consumedServiceCalls.has(serviceCall) || inferTraceHasRuntimeEntry(trace);
+  });
+}
+
+function inferBreakTextTokens(item: Break): Set<string> {
+  return tokenizeGraphEvidence(
+    `${item.type} ${item.source ?? ''} ${item.surface ?? ''} ${item.description} ${item.detail}`,
+  );
+}
+
+function countAuthRiskIssues(breaks: Break[], authTokens: Set<string>): number {
+  return breaks.filter((item) => hasTokenIntersection(inferBreakTextTokens(item), authTokens))
+    .length;
+}
+
+function countStateRiskIssues(
+  breaks: Break[],
+  stateTokens: Set<string>,
+  authTokens: Set<string>,
+): number {
+  return breaks.filter((item) => {
+    const tokens = inferBreakTextTokens(item);
+    return hasTokenIntersection(tokens, stateTokens) && !hasTokenIntersection(tokens, authTokens);
+  }).length;
+}
+
+function resolveBreakSeverityLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.health.ts',
+    'severity',
+  );
+}
+
+function resolveSeverityRankOrder(): Map<Break['severity'], number> {
+  const labels = resolveBreakSeverityLabels();
+  const canonical = ['low', 'medium', 'high', 'critical'].filter((s) =>
+    labels.has(s),
+  );
+  const rank = new Map<Break['severity'], number>();
+  for (const s of canonical) {
+    rank.set(s as Break['severity'], rank.size + deriveUnitValue());
+  }
+  return rank;
+}
+
+function resolveHandlerTypeLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.core.ts',
+    'handlerType',
+  );
+}
+
+function isUselessHandlerType(handlerType: string): boolean {
+  const labels = resolveHandlerTypeLabels();
+  return labels.has(handlerType) && (handlerType === 'dead' || handlerType === 'noop');
+}
+
+function isNoopHandlerType(handlerType: string): boolean {
+  const labels = resolveHandlerTypeLabels();
+  return labels.has(handlerType) && handlerType === 'noop';
+}
+
+function calculateDynamicScore(totalNodes: number, breaks: Break[]): number {
+  if (totalNodes === deriveZeroValue()) {
+    return 100;
+  }
+
+  const observedSeverities = [...new Set(breaks.map((item) => item.severity))];
+  if (observedSeverities.length === deriveZeroValue()) {
+    return 100;
+  }
+
+  const severityRank = resolveSeverityRankOrder();
+  const observedRank = new Map<Break['severity'], number>();
+  for (const severity of observedSeverities.sort(
+    (left, right) =>
+      (severityRank.get(left) ?? deriveZeroValue()) -
+      (severityRank.get(right) ?? deriveZeroValue()),
+  )) {
+    observedRank.set(severity, observedRank.size + deriveUnitValue());
+  }
+
+  const maxObservedRank = observedRank.size;
+  const impact = breaks.reduce((sum, item) => {
+    const rank = observedRank.get(item.severity) ?? maxObservedRank;
+    return sum + rank / maxObservedRank;
+  }, deriveZeroValue());
+  const nodeCapacity = Math.max(totalNodes, breaks.length);
+  const penalty = (impact / nodeCapacity) * 100;
+  return Math.max(deriveZeroValue(), Math.min(100, Math.round(100 - penalty)));
+}
 
 /** Build route lookup. */
 export function buildRouteLookup(
@@ -298,7 +555,7 @@ export function buildGraph(input: PulseGraphInput): PulseHealth {
       graphFinding({
         kind: 'state_model_access_unobserved',
         severity: 'medium',
-        file: 'backend/prisma/schema.prisma',
+        file: `backend/prisma/schema.prisma`,
         line: model.line,
         description: `Model ${model.name} has no service or controller accessing it`,
         detail: `Fields: ${model.fields
@@ -312,11 +569,11 @@ export function buildGraph(input: PulseGraphInput): PulseHealth {
 
   // === UI dead handlers ===
   for (const el of uiElements) {
-    if (el.handlerType === 'dead' || el.handlerType === 'noop') {
+    if (isUselessHandlerType(el.handlerType)) {
       breaks.push(
         graphFinding({
           kind: 'ui_handler_effect_unobserved',
-          severity: el.handlerType === 'noop' ? 'high' : 'medium',
+          severity: isNoopHandlerType(el.handlerType) ? 'high' : 'medium',
           file: el.file,
           line: el.line,
           description: `${el.type} "${el.label}" has ${el.handlerType} handler`,
@@ -380,14 +637,12 @@ export function buildGraph(input: PulseGraphInput): PulseHealth {
   // totalNodes represents the full codebase scope for scoring
   // Extended parsers scan many more artifacts, so we include their count
   const coreNodes = apiCalls.length + backendRoutes.length + prismaModels.length;
-  const extendedNodes = (input.extendedBreaks?.length || 0) + coreNodes;
+  const extendedNodes = (input.extendedBreaks?.length || deriveZeroValue()) + coreNodes;
   const totalNodes = Math.max(coreNodes, extendedNodes);
   const score = calculateDynamicScore(totalNodes, breaks);
 
   // Stats
-  const uiDeadHandlers = uiElements.filter(
-    (e) => e.handlerType === 'dead' || e.handlerType === 'noop',
-  ).length;
+  const uiDeadHandlers = uiElements.filter((e) => isUselessHandlerType(e.handlerType)).length;
   const apiNoRoute = countBySourceKind(breaks, 'route_target_unmatched');
   const backendEmpty = countByDynamicEvent(breaks, /\bempty\b/i);
   const modelOrphans = countBySourceKind(breaks, 'state_model_access_unobserved');
@@ -407,7 +662,7 @@ export function buildGraph(input: PulseGraphInput): PulseHealth {
   const unavailableChecks = countByDynamicEvent(breaks, /\bunavailable\b/i);
   const unknownSurfaces = countByDynamicEvent(breaks, /\bunknown surface\b/i);
   const qualityIssues = Math.max(
-    0,
+    deriveZeroValue(),
     breaks.length -
       securityIssues -
       dataSafetyIssues -
@@ -420,8 +675,12 @@ export function buildGraph(input: PulseGraphInput): PulseHealth {
     score,
     totalNodes,
     breaks: breaks.sort((a, b) => {
-      const sevOrder: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 };
-      return (sevOrder[a.severity] ?? 3) - (sevOrder[b.severity] ?? 3);
+      const severityRank = resolveSeverityRankOrder();
+      const maxRank = severityRank.size;
+      return (
+        (severityRank.get(a.severity) ?? maxRank) -
+        (severityRank.get(b.severity) ?? maxRank)
+      );
     }),
     stats: {
       uiElements: uiElements.length,
@@ -433,11 +692,14 @@ export function buildGraph(input: PulseGraphInput): PulseHealth {
       prismaModels: prismaModels.length,
       modelOrphans,
       facades: facadeBreaks.length,
-      facadesBySeverity: {
-        high: facadeBreaks.filter((f) => f.severity === 'high').length,
-        medium: facadeBreaks.filter((f) => f.severity === 'medium').length,
-        low: facadeBreaks.filter((f) => f.severity === 'low').length,
-      },
+      facadesBySeverity: (() => {
+        const sl = resolveBreakSeverityLabels();
+        return {
+          high: facadeBreaks.filter((f) => sl.has(f.severity) && f.severity === 'high').length,
+          medium: facadeBreaks.filter((f) => sl.has(f.severity) && f.severity === 'medium').length,
+          low: facadeBreaks.filter((f) => sl.has(f.severity) && f.severity === 'low').length,
+        };
+      })(),
       proxyRoutes: proxyRoutes.length,
       proxyNoUpstream: countBySourceKind(breaks, 'proxy_upstream_unmatched'),
       securityIssues,

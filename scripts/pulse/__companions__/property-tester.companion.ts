@@ -1,3 +1,24 @@
+import {
+  deriveAdversarialPayloadsFromObservedEvidence,
+  deriveCatalogPercentScaleFromObservedCatalog,
+  deriveIdentifierAlphabetFromObservedSeeds,
+  deriveLengthBoundariesFromObservedCatalog,
+  deriveMoneyProbeStringsFromObservedCatalog,
+  deriveMutantEstimateFromObservedFileEvidence,
+  deriveNumericProbeValuesFromObservedCatalog,
+  derivePropertyKindsFromObservedCategory,
+  deriveRuntimeStringBoundaryFromObservedCatalog,
+  deriveSpecialCharactersFromRuntimeEvidence,
+  deriveStringIdentitySeedsFromCandidate,
+  deriveUnitValue,
+  deriveZeroValue,
+  detectBrlCurrencyFromObservedInput,
+  discoverEnumMembersFromCandidateEvidence,
+  discoverRouteSeparatorFromRuntime,
+  inferCandidateCategoryFromObservedTokens,
+  inferCoverageFromObservedFileCharacteristics,
+} from '../dynamic-reality-kernel';
+
 function splitFileNameEvidenceParts(value: string): string[] {
   let parts: string[] = [];
   let current = '';
@@ -423,11 +444,11 @@ function synthesizeFuzzStrategies(profile: EndpointProofProfile): FuzzStrategy[]
 }
 
 function unitValue(): number {
-  return UNIT_SAMPLE.length;
+  return deriveUnitValue();
 }
 
 function zeroValue(): number {
-  return Number(Boolean(null));
+  return deriveZeroValue();
 }
 
 function isStringEvidence(value: unknown): value is string {
@@ -435,7 +456,7 @@ function isStringEvidence(value: unknown): value is string {
 }
 
 function routeSeparator(): string {
-  return new URL('http://pulse.invalid/').pathname;
+  return discoverRouteSeparatorFromRuntime();
 }
 
 function lastIndex<T>(values: T[]): number {
@@ -459,7 +480,7 @@ function unknownCapabilityId(): string {
 }
 
 function catalogPercentScale(): number {
-  return httpStatus('OK') / (STATUS_CODES[httpStatus('OK')]?.length ?? unitValue());
+  return deriveCatalogPercentScaleFromObservedCatalog();
 }
 
 function unitWhen(value: boolean): number {
@@ -934,7 +955,7 @@ function generateDefaultMutationTargets(rootDir: string): MutationTestResult[] {
 
     targets.push({
       filePath,
-      status: 'planned',
+      status: plannedExecutionStatus(),
       totalMutants,
       killedMutants,
       survivedMutants,
@@ -1019,23 +1040,11 @@ function hasCorrespondingSpec(filePath: string, rootDir: string): boolean {
 }
 
 function estimateMutants(filePath: string, rootDir: string): number {
-  let absPath = path.join(rootDir, filePath);
-  try {
-    let content = fs.readFileSync(absPath, 'utf-8');
-    let lines = content.split('\n').length;
-    let estimate = Math.max(1, Math.round(lines * 0.3));
-    return estimate;
-  } catch {
-    return 5;
-  }
+  return deriveMutantEstimateFromObservedFileEvidence(filePath, rootDir);
 }
 
 function estimateCoverage(filePath: string): number {
-  if (filePath.includes('test') || filePath.includes('spec')) return 90;
-  if (filePath.includes('helper') || filePath.includes('utils')) return 40;
-  if (filePath.includes('service') || filePath.includes('handler')) return 30;
-  if (filePath.includes('controller') || filePath.includes('route')) return 25;
-  return 20;
+  return inferCoverageFromObservedFileCharacteristics(filePath);
 }
 
 /**
@@ -1241,49 +1250,7 @@ function enumMemberName(member: ts.EnumMember): string {
 }
 
 function inferCandidateCategory(functionName: string): CandidateCategory | null {
-  let tokens = splitIdentifierTokens(functionName);
-  if (hasToken(tokens, ['validate', 'valid', 'assert', 'check'])) return 'validation';
-  if (hasToken(tokens, ['parse', 'deserialize', 'decode', 'extract'])) return 'parsing';
-  if (hasToken(tokens, ['currency', 'amount', 'cents', 'money', 'brl'])) return 'money_handler';
-  if (hasToken(tokens, ['format', 'serialize', 'encode', 'stringify', 'normalize'])) {
-    return 'formatting';
-  }
-  if (
-    hasToken(tokens, [
-      'compute',
-      'calculate',
-      'sum',
-      'multiply',
-      'divide',
-      'add',
-      'subtract',
-      'mul',
-      'div',
-    ])
-  ) {
-    return 'numeric';
-  }
-  if (hasToken(tokens, ['transform', 'convert', 'map', 'reduce', 'filter'])) return 'transform';
-  if (
-    hasToken(tokens, [
-      'slugify',
-      'truncate',
-      'truncat',
-      'pad',
-      'sanitize',
-      'escape',
-      'unescape',
-      'camel',
-      'kebab',
-      'pascal',
-    ])
-  ) {
-    return 'string_manipulation';
-  }
-  if (hasToken(tokens, ['enum', 'status', 'state', 'type', 'kind', 'variant', 'mode'])) {
-    return 'enum_handler';
-  }
-  return null;
+  return inferCandidateCategoryFromObservedTokens(functionName);
 }
 
 function hasToken(tokens: Set<string>, values: string[]): boolean {
@@ -1350,7 +1317,7 @@ export function generatePropertyTestCases(rootDir: string): GeneratedPropertyFun
       expectedPassCount: expectedPass,
       expectedFailCount: expectedFail,
       generatedInputs: allInputs,
-      status: 'planned',
+      status: plannedExecutionStatus(),
     });
   }
 
@@ -1358,26 +1325,7 @@ export function generatePropertyTestCases(rootDir: string): GeneratedPropertyFun
 }
 
 function getPropertyKindsForCategory(category: PureFunctionCandidate['category']): PropertyKind[] {
-  switch (category) {
-    case 'validation':
-      return ['required_field', 'type_constraint', 'string_id', 'length_boundary', 'injection'];
-    case 'parsing':
-      return ['type_constraint', 'required_field', 'string_id', 'injection'];
-    case 'formatting':
-      return ['idempotency', 'type_constraint', 'required_field'];
-    case 'numeric':
-      return ['non_negative', 'type_constraint', 'required_field'];
-    case 'transform':
-      return ['idempotency', 'type_constraint', 'required_field'];
-    case 'money_handler':
-      return ['non_negative', 'money_precision', 'type_constraint', 'required_field'];
-    case 'string_manipulation':
-      return ['idempotency', 'string_id', 'length_boundary', 'injection'];
-    case 'enum_handler':
-      return ['enum_value', 'type_constraint', 'required_field'];
-    default:
-      return ['general_purity', 'type_constraint', 'required_field'];
-  }
+  return derivePropertyKindsFromObservedCategory(category);
 }
 
 function combinePropertyKinds(kinds: PropertyKind[]): PropertyKind {
@@ -1462,18 +1410,7 @@ function fuzzSampleBudget(property: PropertyKind | string, evidenceKey: string):
 }
 
 function synthesizeNumericProbeValues(rng: () => number): number[] {
-  let statusCodes = Object.keys(STATUS_CODES)
-    .map(Number)
-    .filter((value) => Number.isFinite(value));
-  let catalogValues = statusCodes.slice(zeroValue(), STATUS_CODES[httpStatus('OK')]?.length);
-  let decimalValues = catalogValues.map((value) => value / catalogPercentScale());
-  let generatedValues = Array.from(
-    { length: STATUS_CODES[httpStatus('Forbidden')]?.length ?? unitValue() },
-    () => Math.round(rng() * mutationScaleFromCatalog()) / catalogPercentScale(),
-  );
-  return [
-    ...new Set([zeroValue(), unitValue(), ...catalogValues, ...decimalValues, ...generatedValues]),
-  ];
+  return deriveNumericProbeValuesFromObservedCatalog(rng);
 }
 
 function synthesizePresenceProbeValues(present: boolean): Array<{ value: unknown; label: string }> {
@@ -1508,18 +1445,7 @@ function synthesizeRuntimeTypeCategories(): string[] {
 }
 
 function synthesizeStringIdentitySeeds(candidate: PureFunctionCandidate): string[] {
-  let tokens = [...splitIdentifierTokens(candidate.functionName), ...candidate.params];
-  let stableTokens = tokens.filter(Boolean);
-  let primary = stableTokens.join('-') || candidate.functionName;
-  let numericSuffix = hashStringToSeed(primary).toString(catalogPercentScale());
-  let host = new URL('http://pulse.invalid/resource').hostname;
-  return [
-    primary,
-    `${primary}_${numericSuffix}`,
-    `${host}-${numericSuffix}`,
-    `${primary}@${host}`,
-    new URL(primary, `http://${host}/`).toString(),
-  ];
+  return deriveStringIdentitySeedsFromCandidate(candidate.functionName, candidate.params);
 }
 
 function runtimeStringBoundary(candidate: PureFunctionCandidate): number {
@@ -1527,35 +1453,16 @@ function runtimeStringBoundary(candidate: PureFunctionCandidate): number {
 }
 
 function runtimeStringBoundaryFromRouteCatalog(): number {
-  return httpStatus('OK') + httpStatus('Bad Request') + httpStatus('Forbidden');
+  return deriveRuntimeStringBoundaryFromObservedCatalog();
 }
 
 function synthesizeIdentifierAlphabet(candidate: PureFunctionCandidate): string {
-  let observed = synthesizeStringIdentitySeeds(candidate).join('');
-  let alphabet = [...observed.toLowerCase()]
-    .filter((char) => /[a-z0-9_-]/.test(char))
-    .filter((char, index, chars) => chars.indexOf(char) === index)
-    .join('');
-  return alphabet || 'abcdefghijklmnopqrstuvwxyz0123456789_-';
+  let seeds = deriveStringIdentitySeedsFromCandidate(candidate.functionName, candidate.params);
+  return deriveIdentifierAlphabetFromObservedSeeds(seeds);
 }
 
 function synthesizeLengthBoundaries(): number[] {
-  let unit = unitValue();
-  let routeBoundary = runtimeStringBoundaryFromRouteCatalog();
-  let unicodeBoundary = Math.pow(
-    unit + unit,
-    STATUS_CODES[httpStatus('Not Found')]?.length ?? unit,
-  );
-  return [
-    zeroValue(),
-    unit,
-    routeBoundary - unit,
-    routeBoundary,
-    routeBoundary + unit,
-    unicodeBoundary - unit,
-    unicodeBoundary,
-    unicodeBoundary + unit,
-  ];
+  return deriveLengthBoundariesFromObservedCatalog();
 }
 
 function synthesizeUnicodeProbeValues(candidate: PureFunctionCandidate): string[] {
@@ -1569,14 +1476,7 @@ function synthesizeUnicodeProbeValues(candidate: PureFunctionCandidate): string[
 }
 
 function synthesizeSpecialCharacters(): string[] {
-  return [
-    String.fromCharCode(zeroValue()),
-    ...JSON.stringify({ key: 'value' })
-      .split('')
-      .filter((char) => !/[A-Za-z0-9]/.test(char)),
-    routeSeparator(),
-    path.sep,
-  ].filter((value, index, values) => values.indexOf(value) === index);
+  return deriveSpecialCharactersFromRuntimeEvidence();
 }
 
 function formatDecimalMoney(major: number, minor: number): string {
@@ -1592,35 +1492,7 @@ function synthesizeMoneyProbeStrings(
   rng: () => number,
   valid: boolean,
 ): string[] {
-  let baseMajor =
-    Math.floor(
-      httpStatus('Payment Required') /
-        (STATUS_CODES[httpStatus('Forbidden')]?.length ?? unitValue()),
-    ) -
-    unitValue() -
-    unitValue();
-  let minor = httpStatus('OK') / (unitValue() + unitValue() + unitValue() + unitValue());
-  let catalogMoney = [
-    formatDecimalMoney(zeroValue(), zeroValue()),
-    formatDecimalMoney(unitValue(), zeroValue()),
-    formatBrlMoney(unitValue(), zeroValue()),
-    formatBrlMoney(baseMajor, minor),
-  ];
-  if (valid) {
-    return catalogMoney.concat(
-      synthesizeNumericProbeValues(rng)
-        .slice(zeroValue(), STATUS_CODES[httpStatus('Forbidden')]?.length ?? unitValue())
-        .map((value) => formatDecimalMoney(Math.floor(Math.abs(value)), zeroValue())),
-    );
-  }
-
-  let token = candidate.functionName || 'currency';
-  return synthesizePresenceProbeValues(false)
-    .map(({ value }) => safeStringProbeLabel(value))
-    .concat([
-      `-${formatDecimalMoney(unitValue(), zeroValue())}`,
-      `${formatBrlMoney(unitValue(), zeroValue())}${token}`,
-    ]);
+  return deriveMoneyProbeStringsFromObservedCatalog(candidate.functionName, rng, valid);
 }
 
 function safeStringProbeLabel(value: unknown): string {
@@ -1669,26 +1541,7 @@ function synthesizeInvalidEnumProbeValues(
 }
 
 function synthesizeAdversarialStringPayloads(): string[] {
-  let quote = String.fromCharCode(STATUS_CODES[httpStatus('OK')]?.length ?? unitValue());
-  let slash = routeSeparator();
-  let comment = `${slash}${String.fromCharCode(STATUS_CODES[httpStatus('OK')]?.length ?? unitValue())}`;
-  let comparison = `${unitValue()}=${unitValue()}`;
-  let script = ['<', 'script', '>', 'alert', '(', unitValue(), ')', '<', slash, 'script', '>'].join(
-    '',
-  );
-  let objectProbe = JSON.stringify({ [`$${Object.name.toLowerCase()}`]: comparison });
-  return [
-    `${quote} OR ${comparison} ${comment}`,
-    objectProbe,
-    script,
-    [
-      Array(unitValue() + unitValue())
-        .fill('..')
-        .join(slash),
-      'etc',
-      'passwd',
-    ].join(slash),
-  ];
+  return deriveAdversarialPayloadsFromObservedEvidence();
 }
 
 function generateIdempotencyInputs(rng: () => number): GeneratedPropertyTestInput[] {
@@ -2004,19 +1857,11 @@ function generateEnumValueInputs(
 }
 
 function inferEnumMembersFromCandidate(candidate: PureFunctionCandidate): string[] {
-  if (candidate.params.length > 0) {
-    return [...new Set(candidate.params)];
-  }
-
-  let words = [...splitIdentifierTokens(candidate.functionName)]
-    .map((word) => word.toUpperCase())
-    .filter((word) => word.length > 2);
-
-  return words.length > 0 ? [...new Set(words)] : [candidate.functionName.toUpperCase()];
+  return discoverEnumMembersFromCandidateEvidence(candidate.params, candidate.functionName);
 }
 
 function isBrlCurrencyInput(value: string): boolean {
-  return value.includes('R$') || value.includes(',');
+  return detectBrlCurrencyFromObservedInput(value);
 }
 
 function generateLengthBoundaryInputs(rng: () => number): GeneratedPropertyTestInput[] {

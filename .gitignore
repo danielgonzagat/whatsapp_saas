@@ -73,3 +73,10 @@ PULSE_GITNEXUS_*.md
 
 # Local Obsidian vault
 Obsidian/
+
+# Findings engines (Phase 1 mirror expansion)
+FINDINGS_AGGREGATE.json
+HUD_LAST_REFRESH.json
+artifacts/opencode-fleet/
+.opencode-archive/
+BLOCKER_RANK.json

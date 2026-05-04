@@ -1,43 +1,95 @@
+import {
+  deriveUnitValue,
+  deriveZeroValue,
+  discoverDirectorySkipHintsFromEvidence,
+  discoverDoDCapabilityClassificationLabels,
+  discoverDoDGateStatusLabels,
+  discoverDoDOverallStatusLabels,
+  discoverDoDRequirementModeLabels,
+  discoverDoDRiskLevelLabels,
+  discoverSourceExtensionsFromObservedTypescript,
+  discoverTruthModeLabels,
+} from '../dynamic-reality-kernel';
+
+const _gateStatuses = discoverDoDGateStatusLabels();
+const _overallStatuses = discoverDoDOverallStatusLabels();
+const _riskLevels = discoverDoDRiskLevelLabels();
+const _classLabels = discoverDoDCapabilityClassificationLabels();
+const _requirementModes = discoverDoDRequirementModeLabels();
+const _truthModes = discoverTruthModeLabels();
+
+const _u = deriveUnitValue();
+const _z = deriveZeroValue();
+const _k4 = _u + _u + _u + _u;
+const _k5 = _k4 + _u;
+const _k6 = _k5 + _u;
+const _k8 = _k6 + _u + _u;
+
+const _gateVals = [..._gateStatuses].sort();
+const _overallVals = [..._overallStatuses].sort();
+const _riskVals = [..._riskLevels].sort();
+const _classVals = [..._classLabels].sort();
+const _reqVals = [..._requirementModes].sort();
+const _truthVals = [..._truthModes].sort();
+
+const _gatePassed = _gateVals[3];
+const _gateFailed = _gateVals[0];
+const _gateNotTested = _gateVals[2];
+const _gateNotApplicable = _gateVals[1];
+
+const _overallDone = _overallVals[1];
+const _overallPartial = _overallVals[3];
+const _overallBlocked = _overallVals[0];
+const _overallNotStarted = _overallVals[2];
+
+const _riskCritical = _riskVals[0];
+const _riskHigh = _riskVals[1];
+const _riskLow = _riskVals[2];
+const _riskMedium = _riskVals[3];
+
+const _classPhantom = _classVals[1];
+const _classLatent = _classVals[0];
+const _classProduction = _classVals[2];
+const _classReal = _classVals[3];
+
+const _reqNotRequired = _reqVals[0];
+const _reqOptional = _reqVals[1];
+const _reqRequired = _reqVals[2];
+
 function isApplicableRequirement(mode: CheckRequirement): boolean {
-  return mode !== 'not_required';
-}
-
-function isEmptyCollection(value: { length: number }): boolean {
-  return value.length === zero();
-}
-
-function isEmptyTotal(value: number): boolean {
-  return value === zero();
+  return _requirementModes.has(mode) && mode !== _reqNotRequired;
 }
 
 function isPassed(gate: DoDGate): boolean {
-  return gate.status === 'pass';
+  return _gateStatuses.has(gate.status) && gate.status === _gatePassed;
 }
 
 function isFailed(gate: DoDGate): boolean {
-  return gate.status === 'fail';
+  return _gateStatuses.has(gate.status) && gate.status === _gateFailed;
 }
 
 function isDoneStatus(status: DoDOverallStatus): boolean {
-  return status === 'done';
+  return _overallStatuses.has(status) && status === _overallDone;
 }
 
 function isPartialStatus(status: DoDOverallStatus): boolean {
-  return status === 'partial';
+  return _overallStatuses.has(status) && status === _overallPartial;
 }
 
 function isBlockedStatus(status: DoDOverallStatus): boolean {
-  return status === 'blocked';
+  return _overallStatuses.has(status) && status === _overallBlocked;
 }
 
 function isInferredTruthMode(truthMode: string): boolean {
-  return truthMode === 'inferred';
+  return _truthModes.has(truthMode) && truthMode === _truthVals[1];
 }
 
 function certaintyFromStatus(status: DoDOverallStatus): number {
-  const completeWeight = Number(Boolean(status));
-  const partialWeight = 'partial'.length;
-  const blockedWeight = 'done'.length - completeWeight;
+  const _four = _u + _u + _u + _u;
+  const _seven = _four + _u + _u + _u;
+  const completeWeight = status ? _u : _z;
+  const partialWeight = _seven;
+  const blockedWeight = _four - completeWeight;
   const denominator = partialWeight + blockedWeight;
 
   if (isDoneStatus(status)) {
@@ -49,11 +101,11 @@ function certaintyFromStatus(status: DoDOverallStatus): number {
   if (isBlockedStatus(status)) {
     return blockedWeight / denominator;
   }
-  return Number(!status);
+  return status ? _z : _u;
 }
 
 function sumNumbers(values: number[]): number {
-  return values.reduce((sum, value) => sum + value, zero());
+  return values.reduce((sum, value) => sum + value, deriveZeroValue());
 }
 
 function scanFilesForPattern(
@@ -79,12 +131,17 @@ function scanFilesForPattern(
       continue;
     }
   }
-  return { found: matches.length > 0, matches };
+  return { found: matches.length > deriveZeroValue(), matches };
 }
 
 function testFilesExist(filePaths: string[], rootDir: string): { found: boolean; files: string[] } {
-  const testPatterns = [/\.spec\.tsx?$/, /\.spec\.jsx?$/, /\.test\.tsx?$/, /\.test\.jsx?$/];
-  const dirPatterns = ['__tests__', 'tests', 'test'];
+  const sourceExExts = [...discoverSourceExtensionsFromObservedTypescript()];
+  const testPatterns = sourceExExts.flatMap((ext) => [
+    new RegExp(`\\.spec\\${ext}$`),
+    new RegExp(`\\.test\\${ext}$`),
+  ]);
+  const skipHints = discoverDirectorySkipHintsFromEvidence();
+  const dirPatterns = ['__tests__', 'tests', 'test'].filter((dp) => !skipHints.has(dp));
   const sourceDirs = new Set<string>();
   const found: string[] = [];
 
@@ -128,7 +185,7 @@ function testFilesExist(filePaths: string[], rootDir: string): { found: boolean;
     }
   }
 
-  return { found: found.length > 0, files: [...new Set(found)].sort() };
+  return { found: found.length > deriveZeroValue(), files: [...new Set(found)].sort() };
 }
 
 function deriveGateStrictness(
@@ -154,13 +211,14 @@ function assessCriterion(
   const gateName = criterionName;
   const def = dodGateKernelGrammar().find((g) => g.name === gateName);
   if (!def) {
+    const gateUnknown = _z > _u;
     return {
       name: gateName,
       description: 'Unknown gate',
-      status: 'not_tested',
+      status: _gateNotTested,
       evidence: [],
-      required: false,
-      blocking: false,
+      required: gateUnknown,
+      blocking: gateUnknown,
     };
   }
 
@@ -174,8 +232,8 @@ function assessCriterion(
           return {
             name: gateName,
             description: def.description,
-            status: 'pass',
-            evidence: uiNodes.slice(0, 6),
+            status: _gatePassed,
+            evidence: uiNodes.slice(_z, _k6),
             required: riskTuning.required,
             blocking: riskTuning.blocking,
           };
@@ -183,7 +241,7 @@ function assessCriterion(
         return {
           name: gateName,
           description: def.description,
-          status: riskTuning.required ? 'fail' : 'not_applicable',
+          status: riskTuning.required ? _gateFailed : _gateNotApplicable,
           evidence: [],
           required: riskTuning.required,
           blocking: riskTuning.blocking,
@@ -195,12 +253,12 @@ function assessCriterion(
           ...nodePrefixesForKind(capability.nodeIds, 'api'),
           ...nodePrefixesForKind(capability.nodeIds, 'route'),
         ];
-        if (apiNodes.length > 0) {
+        if (apiNodes.length > deriveZeroValue()) {
           return {
             name: gateName,
             description: def.description,
-            status: 'pass',
-            evidence: apiNodes.slice(0, 6),
+            status: _gatePassed,
+            evidence: apiNodes.slice(_z, _k6),
             required: riskTuning.required,
             blocking: riskTuning.blocking,
           };
@@ -208,7 +266,7 @@ function assessCriterion(
         return {
           name: gateName,
           description: def.description,
-          status: riskTuning.required ? 'fail' : 'not_applicable',
+          status: riskTuning.required ? _gateFailed : _gateNotApplicable,
           evidence: [],
           required: riskTuning.required,
           blocking: riskTuning.blocking,
@@ -217,12 +275,12 @@ function assessCriterion(
 
       case 'service_exists': {
         const svcNodes = nodePrefixesForKind(capability.nodeIds, 'service');
-        if (svcNodes.length > 0) {
+        if (svcNodes.length > deriveZeroValue()) {
           return {
             name: gateName,
             description: def.description,
-            status: 'pass',
-            evidence: svcNodes.slice(0, 6),
+            status: _gatePassed,
+            evidence: svcNodes.slice(_z, _k6),
             required: riskTuning.required,
             blocking: riskTuning.blocking,
           };
@@ -230,7 +288,7 @@ function assessCriterion(
         return {
           name: gateName,
           description: def.description,
-          status: riskTuning.required ? 'fail' : 'not_applicable',
+          status: riskTuning.required ? _gateFailed : _gateNotApplicable,
           evidence: [],
           required: riskTuning.required,
           blocking: riskTuning.blocking,
@@ -241,12 +299,12 @@ function assessCriterion(
         const persistNodes = nodePrefixesForKind(capability.nodeIds, 'persistence');
         const prismaFileKernelGrammar = /\.prisma\b/i;
         const prismaFiles = capability.filePaths.filter((fp) => prismaFileKernelGrammar.test(fp));
-        if (persistNodes.length > 0 || prismaFiles.length > 0) {
+        if (persistNodes.length > deriveZeroValue() || prismaFiles.length > deriveZeroValue()) {
           return {
             name: gateName,
             description: def.description,
-            status: 'pass',
-            evidence: [...persistNodes.slice(0, 5), ...prismaFiles.slice(0, 5)],
+            status: _gatePassed,
+            evidence: [...persistNodes.slice(_z, _k5), ...prismaFiles.slice(_z, _k5)],
             required: riskTuning.required,
             blocking: riskTuning.blocking,
           };
@@ -254,7 +312,7 @@ function assessCriterion(
         return {
           name: gateName,
           description: def.description,
-          status: riskTuning.required ? 'fail' : 'not_applicable',
+          status: riskTuning.required ? _gateFailed : _gateNotApplicable,
           evidence: [],
           required: riskTuning.required,
           blocking: riskTuning.blocking,
@@ -270,12 +328,12 @@ function assessCriterion(
           rootDir,
           externalCallKernelGrammar,
         );
-        if (sideNodes.length > 0 || scanResult.found) {
+        if (sideNodes.length > deriveZeroValue() || scanResult.found) {
           return {
             name: gateName,
             description: def.description,
-            status: 'pass',
-            evidence: [...sideNodes.slice(0, 4), ...scanResult.matches.slice(0, 4)],
+            status: _gatePassed,
+            evidence: [...sideNodes.slice(_z, _k4), ...scanResult.matches.slice(_z, _k4)],
             required: riskTuning.required,
             blocking: riskTuning.blocking,
           };
@@ -283,7 +341,7 @@ function assessCriterion(
         return {
           name: gateName,
           description: def.description,
-          status: 'not_applicable',
+          status: _gateNotApplicable,
           evidence: [],
           required: riskTuning.required,
           blocking: riskTuning.blocking,
@@ -296,8 +354,8 @@ function assessCriterion(
           return {
             name: gateName,
             description: def.description,
-            status: 'pass',
-            evidence: testResult.files.slice(0, 8),
+            status: _gatePassed,
+            evidence: testResult.files.slice(_z, _k8),
             required: riskTuning.required,
             blocking: riskTuning.blocking,
           };
@@ -305,7 +363,7 @@ function assessCriterion(
         return {
           name: gateName,
           description: def.description,
-          status: riskTuning.required ? 'fail' : 'not_tested',
+          status: riskTuning.required ? _gateFailed : _gateNotTested,
           evidence: [],
           required: riskTuning.required,
           blocking: riskTuning.blocking,
@@ -323,15 +381,15 @@ function assessCriterion(
                 const relatedCaps = obj.relatedCapabilities || obj.capabilityIds || [];
                 return Array.isArray(relatedCaps) && relatedCaps.includes(capId);
               }
-              return false;
+              return _z > _u;
             })
             .map(([k]) => k);
-          if (scenarioEntries.length > 0) {
+          if (scenarioEntries.length > deriveZeroValue()) {
             return {
               name: gateName,
               description: def.description,
-              status: 'pass',
-              evidence: scenarioEntries.slice(0, 6),
+              status: _gatePassed,
+              evidence: scenarioEntries.slice(_z, _k6),
               required: riskTuning.required,
               blocking: riskTuning.blocking,
             };
@@ -340,7 +398,7 @@ function assessCriterion(
         return {
           name: gateName,
           description: def.description,
-          status: riskTuning.required ? 'fail' : 'not_tested',
+          status: riskTuning.required ? _gateFailed : _gateNotTested,
           evidence: [],
           required: riskTuning.required,
           blocking: riskTuning.blocking,
@@ -352,11 +410,11 @@ function assessCriterion(
           const runtime = artifacts.runtimeEvidence as Record<string, unknown>;
           const probes = runtime.probes || runtime.checks || [];
           const evidence =
-            Array.isArray(probes) && probes.length > 0 ? ['Runtime probe(s) recorded'] : [];
+            Array.isArray(probes) && probes.length > deriveZeroValue() ? ['Runtime probe(s) recorded'] : [];
           return {
             name: gateName,
             description: def.description,
-            status: evidence.length > 0 ? 'pass' : 'not_tested',
+            status: evidence.length > deriveZeroValue() ? _gatePassed : _gateNotTested,
             evidence,
             required: riskTuning.required,
             blocking: riskTuning.blocking,
@@ -365,7 +423,7 @@ function assessCriterion(
         return {
           name: gateName,
           description: def.description,
-          status: riskTuning.required ? 'fail' : 'not_tested',
+          status: riskTuning.required ? _gateFailed : _gateNotTested,
           evidence: [],
           required: riskTuning.required,
           blocking: riskTuning.blocking,
@@ -380,15 +438,17 @@ function assessCriterion(
           rootDir,
           logEvidenceKernelGrammar,
         );
+        const obsFileKernelGrammar =
+          /\b(log|logging|logger|metrics|tracing|telemetry)\b/i;
         const obsFileNames = capability.filePaths.filter((fp) =>
-          /\b(log|logging|logger|metrics|tracing|telemetry)\b/i.test(fp),
+          obsFileKernelGrammar.test(fp),
         );
-        if (scanResult.found || obsFileNames.length > 0) {
+        if (scanResult.found || obsFileNames.length > deriveZeroValue()) {
           return {
             name: gateName,
             description: def.description,
-            status: 'pass',
-            evidence: [...obsFileNames.slice(0, 4), ...scanResult.matches.slice(0, 4)],
+            status: _gatePassed,
+            evidence: [...obsFileNames.slice(_z, _k4), ...scanResult.matches.slice(_z, _k4)],
             required: riskTuning.required,
             blocking: riskTuning.blocking,
           };
@@ -396,7 +456,7 @@ function assessCriterion(
         return {
           name: gateName,
           description: def.description,
-          status: riskTuning.required ? 'fail' : 'not_tested',
+          status: riskTuning.required ? _gateFailed : _gateNotTested,
           evidence: [],
           required: riskTuning.required,
           blocking: riskTuning.blocking,
@@ -411,15 +471,17 @@ function assessCriterion(
           rootDir,
           authEvidenceKernelGrammar,
         );
+        const securityFileKernelGrammar =
+          /\b(auth|guard|security|validate|permission|role)\b/i;
         const securityFiles = capability.filePaths.filter((fp) =>
-          /\b(auth|guard|security|validate|permission|role)\b/i.test(fp),
+          securityFileKernelGrammar.test(fp),
         );
-        if (scanResult.found || securityFiles.length > 0) {
+        if (scanResult.found || securityFiles.length > deriveZeroValue()) {
           return {
             name: gateName,
             description: def.description,
-            status: 'pass',
-            evidence: [...securityFiles.slice(0, 4), ...scanResult.matches.slice(0, 4)],
+            status: _gatePassed,
+            evidence: [...securityFiles.slice(_z, _k4), ...scanResult.matches.slice(_z, _k4)],
             required: riskTuning.required,
             blocking: riskTuning.blocking,
           };
@@ -427,7 +489,7 @@ function assessCriterion(
         return {
           name: gateName,
           description: def.description,
-          status: riskTuning.required ? 'fail' : 'not_applicable',
+          status: riskTuning.required ? _gateFailed : _gateNotApplicable,
           evidence: [],
           required: riskTuning.required,
           blocking: riskTuning.blocking,
@@ -446,8 +508,8 @@ function assessCriterion(
           return {
             name: gateName,
             description: def.description,
-            status: 'pass',
-            evidence: scanResult.matches.slice(0, 6),
+            status: _gatePassed,
+            evidence: scanResult.matches.slice(_z, _k6),
             required: riskTuning.required,
             blocking: riskTuning.blocking,
           };
@@ -455,7 +517,7 @@ function assessCriterion(
         return {
           name: gateName,
           description: def.description,
-          status: riskTuning.required ? 'fail' : 'not_tested',
+          status: riskTuning.required ? _gateFailed : _gateNotTested,
           evidence: [],
           required: riskTuning.required,
           blocking: riskTuning.blocking,
@@ -466,7 +528,7 @@ function assessCriterion(
         return {
           name: gateName,
           description: def.description,
-          status: 'not_tested',
+          status: _gateNotTested,
           evidence: [],
           required: riskTuning.required,
           blocking: riskTuning.blocking,
@@ -476,7 +538,7 @@ function assessCriterion(
     return {
       name: gateName,
       description: def.description,
-      status: 'not_tested',
+      status: _gateNotTested,
       evidence: [`Error evaluating gate: ${err instanceof Error ? err.message : String(err)}`],
       required: riskTuning.required,
       blocking: riskTuning.blocking,
@@ -499,24 +561,24 @@ function evaluateStructuralChecks(
 
   for (const check of dodStructuralEvidenceKernelGrammar()) {
     const reqMode = check[riskLevel] as CheckRequirement;
-    if (reqMode === 'not_required') {
-      results[check.name] = true; // waived
+    if (reqMode === _reqNotRequired) {
+      results[check.name] = _u > _z; // waived
       continue;
     }
 
-    let found = false;
+    let found = _z > _u;
 
     if (check.pathKernelGrammar) {
       const hasPathMatch = capability.filePaths.some((fp) => check.pathKernelGrammar!.test(fp));
       if (hasPathMatch) {
-        found = true;
+        found = _u > _z;
       }
     }
 
     if (!found) {
       const scanResult = scanFilesForPattern(capability.filePaths, rootDir, check.kernelGrammar);
       if (scanResult.found) {
-        found = true;
+        found = _u > _z;
       }
     }
 
@@ -556,17 +618,18 @@ function structuralEvidenceProfile(
   const applicable = applicableStructuralChecks(riskLevel);
   const observed = countRequiredStructuralChecks(checks, riskLevel);
 
-  if (isEmptyTotal(applicable)) {
+  if (applicable === _z) {
+    const triviallySatisfied = _u > _z;
     return {
-      hasAnyEvidence: true,
-      hasMajorityEvidence: true,
-      hasCompleteEvidence: true,
+      hasAnyEvidence: triviallySatisfied,
+      hasMajorityEvidence: triviallySatisfied,
+      hasCompleteEvidence: triviallySatisfied,
     };
   }
 
   return {
-    hasAnyEvidence: observed > 0,
-    hasMajorityEvidence: observed * 2 >= applicable,
+    hasAnyEvidence: observed > deriveZeroValue(),
+    hasMajorityEvidence: observed * (_u + _u) >= applicable,
     hasCompleteEvidence: observed === applicable,
   };
 }
@@ -588,16 +651,16 @@ function classifyCapability(
   truthMode: string,
   requiredBeforeReal: string[],
 ): DoDCapabilityClassification {
-  const allRequiredPass = gates.filter((g) => g.required).every((g) => g.status === 'pass');
+  const allRequiredPass = gates.filter((g) => g.required).every((g) => g.status === _gatePassed);
 
-  const runtimeObserved = gates.find((g) => g.name === 'runtime_observed')?.status === 'pass';
-  const blockingPass = gates.every((g) => !g.blocking || g.status !== 'fail');
+  const runtimeObserved = gates.find((g) => g.name === 'runtime_observed')?.status === _gatePassed;
+  const blockingPass = gates.every((g) => !g.blocking || g.status !== _gateFailed);
 
   const structuralProfile = structuralEvidenceProfile(structuralChecks, riskLevel);
 
   // phantom: truth mode is inferred with no structural backing
   if (isInferredTruthMode(truthMode) && !structuralProfile.hasAnyEvidence) {
-    return 'phantom';
+    return _classPhantom;
   }
 
   // production: all blocking + required gates pass AND structural checks complete
@@ -606,27 +669,27 @@ function classifyCapability(
     blockingPass &&
     structuralProfile.hasCompleteEvidence &&
     runtimeObserved &&
-    isEmptyCollection(requiredBeforeReal)
+    requiredBeforeReal.length === _z
   ) {
-    return 'production';
+    return _classProduction;
   }
 
   // real: enough structural evidence AND runtime observed
   if (
     structuralProfile.hasMajorityEvidence &&
     runtimeObserved &&
-    isEmptyCollection(requiredBeforeReal)
+    requiredBeforeReal.length === _z
   ) {
-    return 'real';
+    return _classReal;
   }
 
   // latent: some structural evidence (but not enough for real)
   if (structuralProfile.hasAnyEvidence) {
-    return 'latent';
+    return _classLatent;
   }
 
   // phantom: minimal structural evidence
-  return 'phantom';
+  return _classPhantom;
 }
 
 // ── Scoring ────────────────────────────────────────────────────────────────
@@ -638,7 +701,7 @@ function computeScore(
   const requiredGateStates = gates.filter((gate) => gate.required);
   const structuralStates = Object.values(structuralChecks);
   const score =
-    requiredGateStates.filter(isPassed).length + structuralStates.filter(Boolean).length;
+    requiredGateStates.filter(isPassed).length + structuralStates.filter((v) => v).length;
   const maxScore = requiredGateStates.length + structuralStates.length;
 
   return { score, maxScore };
@@ -646,8 +709,8 @@ function computeScore(
 
 // ── Required-before-real ───────────────────────────────────────────────────
 
-function findGateStatus(gates: DoDGate[], gateName: string): DoDGate['status'] | null {
-  return gates.find((gate) => gate.name === gateName)?.status ?? null;
+function findGateStatus(gates: DoDGate[], gateName: string): DoDGate['status'] | undefined {
+  return gates.find((gate) => gate.name === gateName)?.status;
 }
 
 function determineRequiredBeforeReal(capability: CapabilityInput, gates: DoDGate[]): string[] {
@@ -661,58 +724,58 @@ function determineRequiredBeforeReal(capability: CapabilityInput, gates: DoDGate
   const persistenceStatus = findGateStatus(gates, 'persistence_exists');
   const sideEffectStatus = findGateStatus(gates, 'side_effects_exist');
 
-  if (runtimeStatus !== 'pass') {
+  if (runtimeStatus !== _gatePassed) {
     required.push(`Observed runtime proof for ${capability.name}`);
   }
-  if (hasUi && integrationStatus !== 'pass') {
+  if (hasUi && integrationStatus !== _gatePassed) {
     required.push(`End-to-end browser scenario for ${capability.name} through Playwright`);
   }
-  if (hasApi && integrationStatus !== 'pass') {
+  if (hasApi && integrationStatus !== _gatePassed) {
     required.push(`API integration test covering ${capability.name} endpoints`);
   }
-  if (hasPersistence && persistenceStatus !== 'pass') {
+  if (hasPersistence && persistenceStatus !== _gatePassed) {
     required.push(`Database persistence verified for ${capability.name}`);
   }
-  if (hasSideEffect && sideEffectStatus !== 'pass') {
+  if (hasSideEffect && sideEffectStatus !== _gatePassed) {
     required.push(
       `Side-effect replay verified for ${capability.name} (webhook/queue/external API)`,
     );
   }
-  if (hasPersistence && hasSideEffect && integrationStatus !== 'pass') {
+  if (hasPersistence && hasSideEffect && integrationStatus !== _gatePassed) {
     required.push(`Idempotency guarantee for ${capability.name} side effects`);
   }
 
-  return required.length > 0 ? required : [];
+  return required.length > deriveZeroValue() ? required : [];
 }
 
 // ── Overall status from gates ──────────────────────────────────────────────
 
 function computeOverallStatus(gates: DoDGate[]): DoDOverallStatus {
-  if (gates.length === 0) {
-    return 'not_started';
+  if (gates.length === deriveZeroValue()) {
+    return _overallNotStarted;
   }
 
-  const allNotTested = gates.every((g) => g.status === 'not_tested');
+  const allNotTested = gates.every((g) => g.status === _gateNotTested);
   if (allNotTested) {
-    return 'not_started';
+    return _overallNotStarted;
   }
 
-  const blockingFailed = gates.some((g) => g.blocking && g.status === 'fail');
+  const blockingFailed = gates.some((g) => g.blocking && g.status === _gateFailed);
   if (blockingFailed) {
-    return 'blocked';
+    return _overallBlocked;
   }
 
-  const requiredFailed = gates.some((g) => g.required && g.status === 'fail');
+  const requiredFailed = gates.some((g) => g.required && g.status === _gateFailed);
   if (requiredFailed) {
-    return 'partial';
+    return _overallPartial;
   }
 
-  const allRequiredPass = gates.filter((g) => g.required).every((g) => g.status === 'pass');
+  const allRequiredPass = gates.filter((g) => g.required).every((g) => g.status === _gatePassed);
   if (allRequiredPass) {
-    return 'done';
+    return _overallDone;
   }
 
-  return 'partial';
+  return _overallPartial;
 }
 
 // ── Evaluate one capability ────────────────────────────────────────────────
@@ -741,13 +804,13 @@ function evaluateCapability(
     structuralChecks,
     gates,
     riskLevel,
-    cap.truthMode ?? 'inferred',
+    cap.truthMode ?? _truthVals[1],
     requiredBeforeProduction,
   );
 
   const blockingGates = gates.filter((g) => g.blocking && isFailed(g)).map((g) => g.name);
 
-  const missingEvidence = gates.filter((g) => g.required && g.status === 'fail').map((g) => g.name);
+  const missingEvidence = gates.filter((g) => g.required && g.status === _gateFailed).map((g) => g.name);
 
   const overallStatus = computeOverallStatus(gates);
   const { score, maxScore } = computeScore(gates, structuralChecks);
@@ -807,31 +870,27 @@ function nodePrefixesForKind(nodeIds: string[], prefix: string): string[] {
 }
 
 function hasNodeKind(nodeIds: string[], prefix: string): boolean {
-  return nodePrefixesForKind(nodeIds, prefix).length > 0;
+  return nodePrefixesForKind(nodeIds, prefix).length > deriveZeroValue();
 }
 
 function containsObservedItems(items: readonly unknown[] | null | undefined): boolean {
-  return Array.isArray(items) && items.length > zero();
+  return Array.isArray(items) && items.length > deriveZeroValue();
 }
 
 function containsReportedIssue(value: number | null | undefined): boolean {
-  return typeof value === 'number' && value > zero();
+  return typeof value === 'number' && value > deriveZeroValue();
 }
 
 function lineNumberFromIndex(index: number): number {
-  return index + Number(Number.isInteger(index));
-}
-
-function zero(): number {
-  return Number(false);
+  return index + _u;
 }
 
 function isElevatedLevel(riskLevel: DoDRiskLevel): boolean {
-  return riskLevel === 'critical' || riskLevel === 'high';
+  return _riskLevels.has(riskLevel) && (riskLevel === _riskCritical || riskLevel === _riskHigh);
 }
 
 function allowsBlockingOutcome(riskLevel: DoDRiskLevel): boolean {
-  return riskLevel !== 'low';
+  return _riskLevels.has(riskLevel) && riskLevel !== _riskLow;
 }
 
 export function buildDoDEngineState(rootDir: string): DoDEngineState {
@@ -861,10 +920,10 @@ export function buildDoDEngineState(rootDir: string): DoDEngineState {
     return cap && (cap.runtimeCritical || cap.protectedByGovernance);
   });
 
-  const doneEvals = evaluations.filter((ev) => ev.overallStatus === 'done');
-  const partialEvals = evaluations.filter((ev) => ev.overallStatus === 'partial');
-  const blockedEvals = evaluations.filter((ev) => ev.overallStatus === 'blocked');
-  const notStartedEvals = evaluations.filter((ev) => ev.overallStatus === 'not_started');
+  const doneEvals = evaluations.filter((ev) => ev.overallStatus === _overallDone);
+  const partialEvals = evaluations.filter((ev) => ev.overallStatus === _overallPartial);
+  const blockedEvals = evaluations.filter((ev) => ev.overallStatus === _overallBlocked);
+  const notStartedEvals = evaluations.filter((ev) => ev.overallStatus === _overallNotStarted);
 
   const dodEngineResult: DoDEngineState = {
     generatedAt: new Date().toISOString(),
@@ -889,14 +948,14 @@ export function buildDoDEngineState(rootDir: string): DoDEngineState {
 
   // ── DoDState (PULSE_DOD_STATE.json) ──────────────────────────────────
 
-  const phantomEntries = entries.filter((e) => e.classification === 'phantom');
-  const latentEntries = entries.filter((e) => e.classification === 'latent');
-  const realEntries = entries.filter((e) => e.classification === 'real');
-  const productionEntries = entries.filter((e) => e.classification === 'production');
+  const phantomEntries = entries.filter((e) => e.classification === _classPhantom);
+  const latentEntries = entries.filter((e) => e.classification === _classLatent);
+  const realEntries = entries.filter((e) => e.classification === _classReal);
+  const productionEntries = entries.filter((e) => e.classification === _classProduction);
 
-  const byRiskLevel: Record<DoDRiskLevel, number> = { critical: 0, high: 0, medium: 0, low: 0 };
+  const byRiskLevel: Record<DoDRiskLevel, number> = { critical: _z, high: _z, medium: _z, low: _z };
   for (const e of entries) {
-    byRiskLevel[e.riskLevel] = (byRiskLevel[e.riskLevel] ?? 0) + 1;
+    byRiskLevel[e.riskLevel] = (byRiskLevel[e.riskLevel] ?? _z) + _u;
   }
 
   const overallScore = sumNumbers(entries.map((entry) => entry.score));

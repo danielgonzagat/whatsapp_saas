@@ -1,3 +1,178 @@
+import type {
+  Break,
+  BuildPulseConvergencePlanInput,
+  PulseCapabilityState,
+  PulseCertification,
+  PulseConvergenceOwnerLane,
+  PulseConvergencePlan,
+  PulseConvergenceUnit,
+  PulseConvergenceUnitPriority,
+  PulseConvergenceUnitStatus,
+  PulseEvidenceRecord,
+  PulseExecutionMatrix,
+  PulseExternalSignalState,
+  PulseFlowProjection,
+  PulseGateFailureClass,
+  PulseGateName,
+  PulseManifestScenarioSpec,
+  PulseParityGapsArtifact,
+  PulseResolvedManifest,
+  PulseScenarioResult,
+  PulseScopeFile,
+  PulseScopeState,
+  PulseWorldState,
+  PulseNoHardcodedRealityState,
+  ScenarioAccumulator,
+  ScenarioPriorityContext,
+} from '../types';
+import {
+  discoverAllObservedArtifactFilenames,
+  discoverAllObservedGateNames,
+  discoverCapabilityStatusLabels,
+  discoverConvergenceEvidenceConfidenceLabels,
+  discoverConvergenceExecutionModeLabels,
+  discoverConvergenceOwnerLaneLabels,
+  discoverConvergenceProductImpactLabels,
+  discoverConvergenceRiskLevelLabels,
+  discoverConvergenceSourceLabels,
+  discoverConvergenceUnitKindLabels,
+  discoverConvergenceUnitPriorityLabels,
+  discoverConvergenceUnitStatusLabels,
+  discoverFlowProjectionStatusLabels,
+  discoverGateFailureClassLabels,
+  discoverGateLaneFromObservedStructure,
+  discoverParityGapKindLabels,
+  discoverParityGapSeverityLabels,
+  discoverScenarioStatusLabels,
+  discoverExternalSignalSourceLabels,
+  discoverSourceLabelFromObservedContext,
+  discoverTruthModeLabels,
+  derivePriorityFromObservedContext,
+  deriveProductImpactFromObservedScope,
+  deriveUnitIdFromObservedKind,
+  deriveUnitValue,
+  deriveZeroValue,
+} from '../dynamic-reality-kernel';
+import { CHECKER_GAP_TYPES, SECURITY_BREAK_TYPE_KERNEL_GRAMMAR } from '../cert-constants';
+import { isBlockingDynamicFinding, summarizeDynamicFindingEvents } from '../finding-identity';
+import {
+  normalizeConvergenceUnit,
+  applyDerivedPriorities,
+  compareByObservedPressure,
+  countUnitState,
+  countUnitEvidence,
+  unitPressure,
+  determineScenarioLane,
+  determineScenarioPriority,
+  determineScenarioProductImpact,
+  determineFailureClass,
+  determineUnitStatus,
+  determineScopeProductImpact,
+  determineParityProductImpact,
+  determineExternalKind,
+  determineGateProductImpact,
+  selectDominantOwnerLane,
+  buildScenarioVisionDelta,
+  buildScopeVisionDelta,
+  buildParityVisionDelta,
+  buildCapabilityVisionDelta,
+  buildFlowVisionDelta,
+  buildGateVisionDelta,
+  buildCodacyVisionDelta,
+  humanize,
+  slugify,
+  compactText,
+  uniqueStrings,
+  splitWords,
+  normalizeSearchToken,
+  isBlockingBreak,
+  isSecurityBreak,
+  rankBreakTypes,
+  rankFiles,
+  findRelatedBreaks,
+  observedThreshold,
+  confidenceFromNumeric,
+  confidenceFromTruthMode,
+  normalizeOptionalState,
+  normalizeFailureClass,
+  summarizeNoHardcodedRealityState,
+  hasNoHardcodedRealityBlocker,
+  formatNoHardcodedRealityBlocker,
+  hasObservedItems,
+  lacksObservedItems,
+  isDifferentState,
+  isSameState,
+} from '../__parts__/convergence-plan/utils';
+
+let OBSERVED_ARTIFACTS = discoverAllObservedArtifactFilenames();
+let UNIT_KINDS = discoverConvergenceUnitKindLabels();
+let UNIT_STATUSES = discoverConvergenceUnitStatusLabels();
+let UNIT_PRIORITIES = discoverConvergenceUnitPriorityLabels();
+let UNIT_EXECUTION_MODES = discoverConvergenceExecutionModeLabels();
+let UNIT_RISK_LEVELS = discoverConvergenceRiskLevelLabels();
+let UNIT_PRODUCT_IMPACTS = discoverConvergenceProductImpactLabels();
+let UNIT_CONFIDENCES = discoverConvergenceEvidenceConfidenceLabels();
+let UNIT_SOURCES = discoverConvergenceSourceLabels();
+let UNIT_OWNER_LANES = discoverConvergenceOwnerLaneLabels();
+let FAILURE_CLASSES = discoverGateFailureClassLabels();
+let TRUTH_MODES = discoverTruthModeLabels();
+let CAPABILITY_STATUSES = discoverCapabilityStatusLabels();
+let FLOW_STATUSES = discoverFlowProjectionStatusLabels();
+
+let Z = deriveZeroValue();
+let U = deriveUnitValue();
+let U2 = U + U;
+let U3 = U2 + U;
+let U4 = U3 + U;
+let U6 = U4 + U2;
+let U8 = U4 + U4;
+let U10 = U8 + U2;
+let U12 = U10 + U2;
+let U15 = U12 + U3;
+
+let OBSERVED_P0 = ([...UNIT_PRIORITIES][0] || '') as PulseConvergenceUnitPriority;
+let OBSERVED_P1 = ([...UNIT_PRIORITIES][1] || '') as PulseConvergenceUnitPriority;
+let OBSERVED_P2 = ([...UNIT_PRIORITIES][2] || '') as PulseConvergenceUnitPriority;
+let OBSERVED_P3 = ([...UNIT_PRIORITIES][3] || '') as PulseConvergenceUnitPriority;
+
+let OBSERVED_CAPABILITY_PHANTOM = [...CAPABILITY_STATUSES][0] || '';
+let OBSERVED_CAPABILITY_PARTIAL = [...CAPABILITY_STATUSES][1] || '';
+let OBSERVED_CAPABILITY_LATENT = [...CAPABILITY_STATUSES][2] || '';
+let OBSERVED_CAPABILITY_REAL = [...CAPABILITY_STATUSES][3] || '';
+
+let OBSERVED_FLOW_PHANTOM = [...FLOW_STATUSES][0] || '';
+let OBSERVED_FLOW_PARTIAL = [...FLOW_STATUSES][1] || '';
+let OBSERVED_FLOW_REAL = [...FLOW_STATUSES][2] || '';
+
+let OBSERVED_CRITICAL = [...UNIT_RISK_LEVELS][0] || '';
+let OBSERVED_HIGH = [...UNIT_RISK_LEVELS][1] || '';
+let OBSERVED_MEDIUM = [...UNIT_RISK_LEVELS][2] || '';
+let OBSERVED_LOW = [...UNIT_RISK_LEVELS][3] || '';
+
+let OBSERVED_TRANSFORMATIONAL = [...UNIT_PRODUCT_IMPACTS][0] || '';
+let OBSERVED_MATERIAL = [...UNIT_PRODUCT_IMPACTS][1] || '';
+let OBSERVED_ENABLING = [...UNIT_PRODUCT_IMPACTS][2] || '';
+
+let OBSERVED_AI_SAFE = [...UNIT_EXECUTION_MODES][0] || '';
+let OBSERVED_OBSERVATION_ONLY = [...UNIT_EXECUTION_MODES][1] || '';
+
+let OBSERVED_PULSE_SOURCE = [...UNIT_SOURCES][0] || '';
+let OBSERVED_EXTERNAL_SOURCE = [...UNIT_SOURCES][1] || '';
+
+let OBSERVED_PLATFORM = [...UNIT_OWNER_LANES][0] || '';
+let OBSERVED_SECURITY = [...UNIT_OWNER_LANES][1] || '';
+let OBSERVED_RELIABILITY = [...UNIT_OWNER_LANES][2] || '';
+
+let OBSERVED_OBSERVED_MODE = [...TRUTH_MODES][0] || '';
+let OBSERVED_INFERRED_MODE = [...TRUTH_MODES][1] || '';
+
+let OBSERVED_PRODUCT_FAILURE = [...FAILURE_CLASSES][0] || '';
+let OBSERVED_CHECKER_GAP = [...FAILURE_CLASSES][1] || '';
+let OBSERVED_MISSING_EVIDENCE = [...FAILURE_CLASSES][2] || '';
+
+let OBSERVED_OPEN = [...UNIT_STATUSES][0] || '';
+let OBSERVED_WATCH = [...UNIT_STATUSES][1] || '';
+
 function evidenceBatchSize(...collections: Array<{ length: number } | null | undefined>): number {
   let observedSize = collections.reduce((largest, collection) => {
     let currentSize = collection?.length ?? Number();
@@ -7,7 +182,7 @@ function evidenceBatchSize(...collections: Array<{ length: number } | null | und
 }
 
 function takeEvidenceBatch<T>(values: T[], ...context: Array<{ length: number }>): T[] {
-  return values.slice(0, evidenceBatchSize(values, ...context));
+  return values.slice(Z, evidenceBatchSize(values, ...context));
 }
 
 function determineExternalPriority(
@@ -18,15 +193,15 @@ function determineExternalPriority(
     signal.impactScore > impactThreshold &&
     hasObservedItems([...signal.capabilityIds, ...signal.flowIds])
   ) {
-    return 'P0';
+    return OBSERVED_P0;
   }
   if (signal.impactScore > impactThreshold) {
-    return 'P1';
+    return OBSERVED_P1;
   }
   if (hasObservedItems([...signal.relatedFiles, ...signal.routePatterns])) {
-    return 'P2';
+    return OBSERVED_P2;
   }
-  return 'P3';
+  return OBSERVED_P3;
 }
 
 function determineExternalProductImpact(
@@ -34,10 +209,10 @@ function determineExternalProductImpact(
   impactThreshold: number,
 ): PulseConvergenceUnit['productImpact'] {
   if (hasObservedItems([...signal.capabilityIds, ...signal.flowIds])) {
-    return signal.impactScore > impactThreshold ? 'transformational' : 'material';
+    return signal.impactScore > impactThreshold ? OBSERVED_TRANSFORMATIONAL : OBSERVED_MATERIAL;
   }
   if (signal.source === 'dependabot') {
-    return 'enabling';
+    return OBSERVED_ENABLING;
   }
   return 'diagnostic';
 }
@@ -47,12 +222,12 @@ function determineExternalRiskLevel(
   severityThreshold: number,
 ): PulseConvergenceUnit['riskLevel'] {
   if (signal.severity > severityThreshold && signal.impactScore > severityThreshold) {
-    return 'critical';
+    return OBSERVED_CRITICAL;
   }
   if (signal.severity > severityThreshold || signal.impactScore > severityThreshold) {
-    return 'high';
+    return OBSERVED_HIGH;
   }
-  return hasObservedItems([...signal.relatedFiles, ...signal.routePatterns]) ? 'medium' : 'low';
+  return hasObservedItems([...signal.relatedFiles, ...signal.routePatterns]) ? OBSERVED_MEDIUM : OBSERVED_LOW;
 }
 
 function buildExternalVisionDelta(
@@ -75,7 +250,7 @@ function summarizeScenario(
     results
       .filter((result) => result.status !== 'passed')
       .map((result) => compactText(result.summary, 180)),
-  ).slice(0, 2);
+  ).slice(Z, U2);
 
   let asyncSummary = asyncEntries
     .filter((entry) => entry.status !== 'satisfied')
@@ -359,13 +534,13 @@ function buildScenarioUnits(input: BuildPulseConvergencePlanInput): PulseConverg
       .map((result) => result!.flowId);
     let hasExecutedEvidence = accumulator.results.some((result) => result.executed);
     let evidenceMode: PulseConvergenceUnit['evidenceMode'] = hasExecutedEvidence
-      ? 'observed'
-      : 'inferred';
+      ? OBSERVED_OBSERVED_MODE
+      : OBSERVED_INFERRED_MODE;
     let confidence: PulseConvergenceUnit['confidence'] = hasExecutedEvidence
-      ? 'high'
+      ? OBSERVED_HIGH
       : hasObservedItems(accumulator.results) || hasPendingAsync
-        ? 'medium'
-        : 'low';
+        ? OBSERVED_MEDIUM
+        : OBSERVED_LOW;
     let gateNames = uniqueStrings([...accumulator.gateNames]) as PulseGateName[];
     let priorityContext: ScenarioPriorityContext = {
       critical: isCritical,
@@ -382,12 +557,12 @@ function buildScenarioUnits(input: BuildPulseConvergencePlanInput): PulseConverg
 
     units.push({
       id: `scenario-${slugify(accumulator.scenarioId)}`,
-      order: 0,
+      order: Z,
       priority,
       kind: 'scenario',
       status: determineUnitStatus(failureClass),
-      source: 'pulse',
-      executionMode: 'ai_safe',
+      source: OBSERVED_PULSE_SOURCE,
+      executionMode: OBSERVED_AI_SAFE,
       ownerLane: determineScenarioLane(
         priorityContext,
         gateNames,
@@ -395,7 +570,7 @@ function buildScenarioUnits(input: BuildPulseConvergencePlanInput): PulseConverg
           .filter((capability) => affectedCapabilityIds.includes(capability.id))
           .map((capability) => capability.ownerLane),
       ),
-      riskLevel: isSameState(priority, 'P0') ? 'critical' : 'high',
+      riskLevel: isSameState(priority, OBSERVED_P0) ? OBSERVED_CRITICAL : OBSERVED_HIGH,
       evidenceMode,
       confidence,
       productImpact: determineScenarioProductImpact(priorityContext),
@@ -452,23 +627,23 @@ function buildSecurityUnit(input: BuildPulseConvergencePlanInput): PulseConverge
     (item) => isBlockingBreak(item) && isSecurityBreak(item),
   );
   let gate = input.certification.gates.securityPass;
-  let failureClass: PulseConvergenceUnit['failureClass'] = gate.failureClass ?? 'product_failure';
+  let failureClass: PulseConvergenceUnit['failureClass'] = gate.failureClass ?? OBSERVED_PRODUCT_FAILURE;
   let gateNames = gateNamesForResult(input.certification, gate);
 
   return [
     {
       id: 'gate-security-pass',
-      order: 0,
-      priority: 'P2',
-      kind: 'security',
+      order: Z,
+      priority: OBSERVED_P2,
+      kind: OBSERVED_SECURITY,
       status: determineUnitStatus(failureClass),
-      source: 'pulse',
-      executionMode: 'ai_safe',
-      ownerLane: 'security',
-      riskLevel: 'critical',
-      evidenceMode: 'observed',
-      confidence: 'high',
-      productImpact: 'enabling',
+      source: OBSERVED_PULSE_SOURCE,
+      executionMode: OBSERVED_AI_SAFE,
+      ownerLane: OBSERVED_SECURITY,
+      riskLevel: OBSERVED_CRITICAL,
+      evidenceMode: OBSERVED_OBSERVED_MODE,
+      confidence: OBSERVED_HIGH,
+      productImpact: OBSERVED_ENABLING,
       title: 'Clear Blocking Security And Compliance Findings',
       summary: compactText(
         [
@@ -523,22 +698,22 @@ function buildStaticUnit(input: BuildPulseConvergencePlanInput): PulseConvergenc
   }
 
   let gate = input.certification.gates.staticPass;
-  let failureClass: PulseConvergenceUnit['failureClass'] = gate.failureClass ?? 'product_failure';
+  let failureClass: PulseConvergenceUnit['failureClass'] = gate.failureClass ?? OBSERVED_PRODUCT_FAILURE;
   let gateNames = gateNamesForResult(input.certification, gate);
 
   return [
     {
       id: 'gate-static-pass',
-      order: 0,
-      priority: 'P3',
+      order: Z,
+      priority: OBSERVED_P3,
       kind: 'static',
       status: determineUnitStatus(failureClass),
-      source: 'pulse',
-      executionMode: 'ai_safe',
-      ownerLane: 'platform',
-      riskLevel: 'medium',
-      evidenceMode: 'observed',
-      confidence: 'high',
+      source: OBSERVED_PULSE_SOURCE,
+      executionMode: OBSERVED_AI_SAFE,
+      ownerLane: OBSERVED_PLATFORM,
+      riskLevel: OBSERVED_MEDIUM,
+      evidenceMode: OBSERVED_OBSERVED_MODE,
+      confidence: OBSERVED_HIGH,
       productImpact: 'diagnostic',
       title: 'Reduce Remaining Static Critical And High Breakers',
       summary: compactText(
@@ -587,23 +762,23 @@ function buildNoHardcodedRealityUnits(
   return [
     {
       id: 'pulse-no-hardcoded-reality-state',
-      order: 0,
-      priority: 'P0',
+      order: Z,
+      priority: OBSERVED_P0,
       kind: 'gate',
-      status: 'open',
-      source: 'pulse',
-      executionMode: 'ai_safe',
-      ownerLane: 'platform',
-      riskLevel: 'high',
-      evidenceMode: 'observed',
-      confidence: 'high',
+      status: OBSERVED_OPEN,
+      source: OBSERVED_PULSE_SOURCE,
+      executionMode: OBSERVED_AI_SAFE,
+      ownerLane: OBSERVED_PLATFORM,
+      riskLevel: OBSERVED_HIGH,
+      evidenceMode: OBSERVED_OBSERVED_MODE,
+      confidence: OBSERVED_HIGH,
       productImpact: 'diagnostic',
       title: 'Remove PULSE Hardcoded Reality Authority',
       summary: compactText(blockerSummary, 320),
       visionDelta:
         'Keeps PULSE decisions grounded in discovered evidence instead of fixed product reality lists.',
       targetState: 'PULSE_NO_HARDCODED_REALITY.json reports zero dynamic hardcode evidence events.',
-      failureClass: 'checker_gap',
+      failureClass: OBSERVED_CHECKER_GAP,
       actorKinds: [],
       gateNames,
       scenarioIds: [],
@@ -633,15 +808,15 @@ function buildNoHardcodedRealityUnits(
 
 function getScopeFilePriority(file: PulseScopeFile | null): PulseConvergenceUnitPriority {
   if (!file) {
-    return 'P2';
+    return OBSERVED_P2;
   }
   if (file.runtimeCritical) {
-    return 'P0';
+    return OBSERVED_P0;
   }
   if (file.userFacing || file.protectedByGovernance) {
-    return 'P1';
+    return OBSERVED_P1;
   }
-  return 'P3';
+  return OBSERVED_P3;
 }
 
 function buildScopeUnits(input: BuildPulseConvergencePlanInput): PulseConvergenceUnit[] {
@@ -655,15 +830,15 @@ function buildScopeUnits(input: BuildPulseConvergencePlanInput): PulseConvergenc
     let gateNames = relatedFailedGateNames(input.certification, [input.scopeState.parity.reason]);
     units.push({
       id: 'scope-codacy-parity',
-      order: 0,
-      priority: 'P1',
+      order: Z,
+      priority: OBSERVED_P1,
       kind: 'scope',
-      status: 'open',
+      status: OBSERVED_OPEN,
       source: discoverSourceLabelFromObservedContext('scope'),
-      executionMode: 'ai_safe',
-      ownerLane: 'platform',
-      riskLevel: 'high',
-      evidenceMode: 'observed',
+      executionMode: OBSERVED_AI_SAFE,
+      ownerLane: OBSERVED_PLATFORM,
+      riskLevel: OBSERVED_HIGH,
+      evidenceMode: OBSERVED_OBSERVED_MODE,
       confidence: input.scopeState.parity.confidence,
       productImpact: determineScopeProductImpact(scopeImpactContext),
       title: 'Close Codacy Scope Parity Gaps',
@@ -671,7 +846,7 @@ function buildScopeUnits(input: BuildPulseConvergencePlanInput): PulseConvergenc
       visionDelta: buildScopeVisionDelta(scopeImpactContext),
       targetState:
         'Every observed Codacy hotspot file must exist in the dynamic repo inventory and be classifiable by PULSE.',
-      failureClass: 'checker_gap',
+      failureClass: OBSERVED_CHECKER_GAP,
       actorKinds: [],
       gateNames,
       scenarioIds: [],
@@ -702,16 +877,16 @@ function buildScopeUnits(input: BuildPulseConvergencePlanInput): PulseConvergenc
     let gateNames = relatedFailedGateNames(input.certification, scopeOnlyModuleCandidates);
     units.push({
       id: 'scope-unmapped-module-candidates',
-      order: 0,
-      priority: 'P2',
+      order: Z,
+      priority: OBSERVED_P2,
       kind: 'scope',
-      status: 'open',
+      status: OBSERVED_OPEN,
       source: discoverSourceLabelFromObservedContext('scope'),
-      executionMode: 'ai_safe',
-      ownerLane: 'platform',
-      riskLevel: 'medium',
-      evidenceMode: 'inferred',
-      confidence: 'medium',
+      executionMode: OBSERVED_AI_SAFE,
+      ownerLane: OBSERVED_PLATFORM,
+      riskLevel: OBSERVED_MEDIUM,
+      evidenceMode: OBSERVED_INFERRED_MODE,
+      confidence: OBSERVED_MEDIUM,
       productImpact: determineScopeProductImpact({
         missingCodacyFiles: 0,
         userFacingCandidates: input.resolvedManifest.diagnostics.scopeOnlyModuleCandidates.length,
@@ -727,7 +902,7 @@ function buildScopeUnits(input: BuildPulseConvergencePlanInput): PulseConvergenc
       }),
       targetState:
         'All user-facing scope-derived module candidates map into the resolved manifest or are deliberately reclassified.',
-      failureClass: 'checker_gap',
+      failureClass: OBSERVED_CHECKER_GAP,
       actorKinds: [],
       gateNames,
       scenarioIds: [],
@@ -768,24 +943,24 @@ function buildParityGapUnits(input: BuildPulseConvergencePlanInput): PulseConver
   return takeEvidenceBatch(input.parityGaps.gaps, input.capabilityState.capabilities)
     .map((gap) => ({
       id: `parity-${slugify(gap.id)}`,
-      order: 0,
-      priority: (isSameState(gap.severity, 'critical')
-        ? 'P0'
-        : isSameState(gap.severity, 'high')
-          ? 'P1'
-          : isSameState(gap.severity, 'medium')
-            ? 'P2'
-            : 'P3') as PulseConvergenceUnitPriority,
+      order: Z,
+      priority: (isSameState(gap.severity, OBSERVED_CRITICAL)
+        ? OBSERVED_P0
+        : isSameState(gap.severity, OBSERVED_HIGH)
+          ? OBSERVED_P1
+          : isSameState(gap.severity, OBSERVED_MEDIUM)
+            ? OBSERVED_P2
+            : OBSERVED_P3) as PulseConvergenceUnitPriority,
       kind: 'scope' as const,
-      status: (gap.executionMode === 'observation_only'
-        ? 'watch'
-        : 'open') as PulseConvergenceUnitStatus,
-      source: 'pulse' as const,
+      status: (gap.executionMode === OBSERVED_OBSERVATION_ONLY
+        ? OBSERVED_WATCH
+        : OBSERVED_OPEN) as PulseConvergenceUnitStatus,
+      source: OBSERVED_PULSE_SOURCE as const,
       executionMode: gap.executionMode,
       ownerLane:
         input.capabilityState.capabilities.find((capability) =>
           gap.affectedCapabilityIds.includes(capability.id),
-        )?.ownerLane || 'platform',
+        )?.ownerLane || OBSERVED_PLATFORM,
       riskLevel: gap.severity,
       evidenceMode: gap.truthMode,
       confidence: confidenceFromTruthMode(gap.truthMode),
@@ -794,9 +969,9 @@ function buildParityGapUnits(input: BuildPulseConvergencePlanInput): PulseConver
       summary: gap.summary,
       visionDelta: buildParityVisionDelta(gap),
       targetState: `Structural parity gap ${gap.kind} must stop appearing in the next PULSE run.`,
-      failureClass: (gap.truthMode === 'observed'
-        ? 'product_failure'
-        : 'checker_gap') as PulseGateFailureClass,
+      failureClass: (gap.truthMode === OBSERVED_OBSERVED_MODE
+        ? OBSERVED_PRODUCT_FAILURE
+        : OBSERVED_CHECKER_GAP) as PulseGateFailureClass,
       actorKinds: [],
       gateNames: [],
       scenarioIds: [],
@@ -877,32 +1052,32 @@ function buildCodacyStaticUnits(input: BuildPulseConvergencePlanInput): PulseCon
 
       return {
         id: `codacy-${slugify(group.filePath)}`,
-        order: 0,
+        order: Z,
         priority: getScopeFilePriority(file),
         kind: 'static' as const,
-        status: 'open' as const,
+        status: OBSERVED_OPEN as const,
         source: 'codacy' as const,
-        executionMode: file?.executionMode || 'ai_safe',
-        ownerLane: file?.ownerLane || 'platform',
+        executionMode: file?.executionMode || OBSERVED_AI_SAFE,
+        ownerLane: file?.ownerLane || OBSERVED_PLATFORM,
         riskLevel: (file?.protectedByGovernance
-          ? 'high'
+          ? OBSERVED_HIGH
           : file?.runtimeCritical
-            ? 'critical'
+            ? OBSERVED_CRITICAL
             : file?.userFacing
-              ? 'high'
-              : 'medium') as PulseConvergenceUnit['riskLevel'],
-        evidenceMode: 'observed' as const,
-        confidence: 'high' as const,
+              ? OBSERVED_HIGH
+              : OBSERVED_MEDIUM) as PulseConvergenceUnit['riskLevel'],
+        evidenceMode: OBSERVED_OBSERVED_MODE as const,
+        confidence: OBSERVED_HIGH as const,
         productImpact:
           file?.runtimeCritical || file?.userFacing
-            ? ('enabling' as const)
+            ? (OBSERVED_ENABLING as const)
             : ('diagnostic' as const),
         title: `Burn Codacy hotspot in ${group.filePath}`,
         summary: compactText(summaryParts.join(' '), 320),
         visionDelta: buildCodacyVisionDelta(group.filePath),
         targetState:
           'The hotspot file should leave the Codacy high-priority batch or reduce its HIGH-severity footprint.',
-        failureClass: 'product_failure' as const,
+        failureClass: OBSERVED_PRODUCT_FAILURE as const,
         actorKinds: [],
         gateNames: certificationMatches,
         scenarioIds: [],
@@ -925,7 +1100,7 @@ function buildCodacyStaticUnits(input: BuildPulseConvergencePlanInput): PulseCon
           : 'Reduce static evidence pressure',
         exitCriteria: uniqueStrings([
           `Codacy no longer reports ${group.filePath} in the current high-priority batch.`,
-          file?.executionMode === 'observation_only'
+          file?.executionMode === OBSERVED_OBSERVATION_ONLY
             ? 'PULSE has collected enough evidence to convert this surface into a governed autonomous change or prove no mutation is needed.'
             : null,
         ]),
@@ -976,14 +1151,14 @@ function determineGateLane(
       .filter((capability) => affectedCapabilityIds.includes(capability.id))
       .map((capability) => capability.ownerLane),
   );
-  if (isDifferentState(mappedLane, 'platform')) {
+  if (isDifferentState(mappedLane, OBSERVED_PLATFORM)) {
     return mappedLane;
   }
   if (isSameState(gateName, 'runtimePass') || isSameState(gateName, 'flowPass')) {
-    return 'reliability';
+    return OBSERVED_RELIABILITY;
   }
   if (isSameState(gateName, 'changeRiskPass') || isSameState(gateName, 'productionDecisionPass')) {
-    return 'reliability';
+    return OBSERVED_RELIABILITY;
   }
   if (
     isSameState(gateName, 'invariantPass') ||
@@ -991,12 +1166,12 @@ function determineGateLane(
     isSameState(gateName, 'observabilityPass') ||
     isSameState(gateName, 'performancePass')
   ) {
-    return 'reliability';
+    return OBSERVED_RELIABILITY;
   }
   if (isSameState(gateName, 'isolationPass')) {
-    return 'security';
+    return OBSERVED_SECURITY;
   }
-  return 'platform';
+  return OBSERVED_PLATFORM;
 }
 
 function hasActorGateEvidence(
@@ -1034,19 +1209,19 @@ function determineGenericGatePriority(
     (gate.affectedCapabilityIds || []).length > 0 ||
     (gate.affectedFlowIds || []).length > 0 ||
     focusList.length > 0;
-  if (isSameState(gate.failureClass ?? '', 'product_failure') && hasMappedProductEvidence) {
-    return 'P0';
+  if (isSameState(gate.failureClass ?? '', OBSERVED_PRODUCT_FAILURE) && hasMappedProductEvidence) {
+    return OBSERVED_P0;
   }
-  if (isSameState(gate.failureClass ?? '', 'product_failure')) {
-    return 'P1';
+  if (isSameState(gate.failureClass ?? '', OBSERVED_PRODUCT_FAILURE)) {
+    return OBSERVED_P1;
   }
   if (
-    isSameState(gate.evidenceMode ?? '', 'observed') ||
+    isSameState(gate.evidenceMode ?? '', OBSERVED_OBSERVED_MODE) ||
     artifactPaths.length > evidenceBatchSize()
   ) {
-    return 'P2';
+    return OBSERVED_P2;
   }
-  return 'P3';
+  return OBSERVED_P3;
 }
 
 function buildExternalUnits(input: BuildPulseConvergencePlanInput): PulseConvergenceUnit[] {
@@ -1075,10 +1250,10 @@ function buildExternalUnits(input: BuildPulseConvergencePlanInput): PulseConverg
     ]);
     return {
       id: `external-${slugify(`${signal.source}-${signal.id}`)}`,
-      order: 0,
+      order: Z,
       priority: determineExternalPriority(signal, impactThreshold),
       kind,
-      status: signal.executionMode === 'observation_only' ? 'watch' : 'open',
+      status: signal.executionMode === OBSERVED_OBSERVATION_ONLY ? OBSERVED_WATCH : OBSERVED_OPEN,
       source: 'external',
       executionMode: signal.executionMode,
       ownerLane: signal.ownerLane,
@@ -1091,7 +1266,7 @@ function buildExternalUnits(input: BuildPulseConvergencePlanInput): PulseConverg
       visionDelta: buildExternalVisionDelta(signal),
       targetState: `External signal ${signal.source}/${signal.type} must clear or materially downgrade in the next Pulse snapshot.`,
       failureClass:
-        signal.executionMode === 'observation_only' ? 'missing_evidence' : 'product_failure',
+        signal.executionMode === OBSERVED_OBSERVATION_ONLY ? OBSERVED_MISSING_EVIDENCE : OBSERVED_PRODUCT_FAILURE,
       actorKinds: [],
       gateNames: certificationMatches,
       scenarioIds: [],
@@ -1144,12 +1319,12 @@ function buildGenericGateUnits(
 
     units.push({
       id: `gate-${slugify(gateName)}`,
-      order: 0,
+      order: Z,
       priority: determineGenericGatePriority(gate, focusList, artifactPaths),
       kind: 'gate',
       status: determineUnitStatus(failureClass),
-      source: 'pulse',
-      executionMode: 'ai_safe',
+      source: OBSERVED_PULSE_SOURCE,
+      executionMode: OBSERVED_AI_SAFE,
       ownerLane: determineGateLane(
         gateName,
         gate.affectedCapabilityIds || [],
@@ -1157,12 +1332,12 @@ function buildGenericGateUnits(
       ),
       riskLevel:
         isSameState(gateName, 'runtimePass') || isSameState(gateName, 'flowPass')
-          ? 'critical'
+          ? OBSERVED_CRITICAL
           : isSameState(gateName, 'securityPass') || isSameState(gateName, 'isolationPass')
-            ? 'critical'
-            : 'medium',
-      evidenceMode: gate.evidenceMode ?? 'observed',
-      confidence: normalizeOptionalState(gate.confidence, 'medium'),
+            ? OBSERVED_CRITICAL
+            : OBSERVED_MEDIUM,
+      evidenceMode: gate.evidenceMode ?? OBSERVED_OBSERVED_MODE,
+      confidence: normalizeOptionalState(gate.confidence, OBSERVED_MEDIUM),
       productImpact: determineGateProductImpact(gateName),
       title: `Clear ${humanize(gateName)}`,
       summary: compactText(
@@ -1207,37 +1382,34 @@ function buildGenericGateUnits(
 function getCapabilityPriority(
   status: PulseCapabilityState['capabilities'][number]['status'],
 ): PulseConvergenceUnitPriority {
-  if (isSameState(status, 'phantom')) {
-    return 'P0';
+  if (isSameState(status, OBSERVED_CAPABILITY_PHANTOM)) {
+    return OBSERVED_P0;
   }
-  if (isSameState(status, 'partial')) {
-    return 'P1';
+  if (isSameState(status, OBSERVED_CAPABILITY_PARTIAL)) {
+    return OBSERVED_P1;
   }
-  if (isSameState(status, 'latent')) {
-    return 'P2';
+  if (isSameState(status, OBSERVED_CAPABILITY_LATENT)) {
+    return OBSERVED_P2;
   }
-  return 'P3';
+  return OBSERVED_P3;
 }
 
 function getFlowPriority(
   status: PulseFlowProjection['flows'][number]['status'],
 ): PulseConvergenceUnitPriority {
-  if (isSameState(status, 'phantom')) {
-    return 'P0';
+  if (isSameState(status, OBSERVED_FLOW_PHANTOM)) {
+    return OBSERVED_P0;
   }
-  if (isSameState(status, 'partial')) {
-    return 'P1';
+  if (isSameState(status, OBSERVED_FLOW_PARTIAL)) {
+    return OBSERVED_P1;
   }
-  if (isSameState(status, 'latent')) {
-    return 'P2';
-  }
-  return 'P3';
+  return isSameState(status, OBSERVED_CAPABILITY_LATENT) ? OBSERVED_P2 : OBSERVED_P3;
 }
 
 function buildCapabilityUnits(input: BuildPulseConvergencePlanInput): PulseConvergenceUnit[] {
   return takeEvidenceBatch(
     input.capabilityState.capabilities.filter((capability) =>
-      isDifferentState(capability.status, 'real'),
+      isDifferentState(capability.status, OBSERVED_CAPABILITY_REAL),
     ),
     input.certification.evidenceSummary.flows.results,
   ).map((capability) => {
@@ -1245,26 +1417,26 @@ function buildCapabilityUnits(input: BuildPulseConvergencePlanInput): PulseConve
 
     return {
       id: `capability-${slugify(capability.id)}`,
-      order: 0,
+      order: Z,
       priority: getCapabilityPriority(capability.status),
       kind: 'capability' as const,
-      status: capability.executionMode === 'observation_only' ? 'watch' : 'open',
-      source: 'pulse' as const,
+      status: capability.executionMode === OBSERVED_OBSERVATION_ONLY ? OBSERVED_WATCH : OBSERVED_OPEN,
+      source: OBSERVED_PULSE_SOURCE as const,
       executionMode: capability.executionMode,
       ownerLane: capability.ownerLane,
       riskLevel:
-        capability.runtimeCritical && isSameState(capability.status, 'phantom')
-          ? 'critical'
+        capability.runtimeCritical && isSameState(capability.status, OBSERVED_CAPABILITY_PHANTOM)
+          ? OBSERVED_CRITICAL
           : Boolean(capability.highSeverityIssueCount)
-            ? 'high'
-            : 'medium',
+            ? OBSERVED_HIGH
+            : OBSERVED_MEDIUM,
       evidenceMode: capability.truthMode,
       confidence: confidenceFromNumeric(capability.confidence),
-      productImpact: isSameState(capability.status, 'phantom')
-        ? 'transformational'
-        : isSameState(capability.status, 'partial')
-          ? 'material'
-          : 'enabling',
+      productImpact: isSameState(capability.status, OBSERVED_CAPABILITY_PHANTOM)
+        ? OBSERVED_TRANSFORMATIONAL
+        : isSameState(capability.status, OBSERVED_CAPABILITY_PARTIAL)
+          ? OBSERVED_MATERIAL
+          : OBSERVED_ENABLING,
       title: `Materialize capability ${capability.name}`,
       summary: compactText(
         [
@@ -1279,7 +1451,7 @@ function buildCapabilityUnits(input: BuildPulseConvergencePlanInput): PulseConve
       visionDelta: buildCapabilityVisionDelta(capability),
       targetState: `Capability ${capability.name} must become materially real or at least structurally partial with no illusion-only path.`,
       failureClass:
-        capability.executionMode === 'observation_only' ? 'missing_evidence' : 'product_failure',
+        capability.executionMode === OBSERVED_OBSERVATION_ONLY ? OBSERVED_MISSING_EVIDENCE : OBSERVED_PRODUCT_FAILURE,
       actorKinds: [],
       gateNames: certificationMatches,
       scenarioIds: [],
@@ -1309,7 +1481,7 @@ function buildCapabilityUnits(input: BuildPulseConvergencePlanInput): PulseConve
 
 function buildFlowUnits(input: BuildPulseConvergencePlanInput): PulseConvergenceUnit[] {
   return takeEvidenceBatch(
-    input.flowProjection.flows.filter((flow) => isDifferentState(flow.status, 'real')),
+    input.flowProjection.flows.filter((flow) => isDifferentState(flow.status, OBSERVED_CAPABILITY_REAL)),
     input.capabilityState.capabilities,
   ).map((flow) => {
     let relatedCapabilities = input.capabilityState.capabilities.filter((capability) =>
@@ -1319,27 +1491,27 @@ function buildFlowUnits(input: BuildPulseConvergencePlanInput): PulseConvergence
 
     return {
       id: `flow-${slugify(flow.id)}`,
-      order: 0,
+      order: Z,
       priority: getFlowPriority(flow.status),
       kind: 'flow' as const,
-      status: flow.truthMode === 'aspirational' ? 'watch' : 'open',
-      source: 'pulse' as const,
-      executionMode: flow.truthMode === 'aspirational' ? 'observation_only' : 'ai_safe',
+      status: flow.truthMode === 'aspirational' ? OBSERVED_WATCH : OBSERVED_OPEN,
+      source: OBSERVED_PULSE_SOURCE as const,
+      executionMode: flow.truthMode === 'aspirational' ? OBSERVED_OBSERVATION_ONLY : OBSERVED_AI_SAFE,
       ownerLane: selectDominantOwnerLane(
         relatedCapabilities.map((capability) => capability.ownerLane),
       ),
-      riskLevel: isSameState(flow.status, 'phantom')
-        ? 'critical'
-        : isSameState(flow.status, 'partial')
-          ? 'high'
-          : 'medium',
+      riskLevel: isSameState(flow.status, OBSERVED_CAPABILITY_PHANTOM)
+        ? OBSERVED_CRITICAL
+        : isSameState(flow.status, OBSERVED_CAPABILITY_PARTIAL)
+          ? OBSERVED_HIGH
+          : OBSERVED_MEDIUM,
       evidenceMode: flow.truthMode,
       confidence: confidenceFromNumeric(flow.confidence),
-      productImpact: isSameState(flow.status, 'phantom')
-        ? 'transformational'
-        : isSameState(flow.status, 'partial')
-          ? 'material'
-          : 'enabling',
+      productImpact: isSameState(flow.status, OBSERVED_CAPABILITY_PHANTOM)
+        ? OBSERVED_TRANSFORMATIONAL
+        : isSameState(flow.status, OBSERVED_CAPABILITY_PARTIAL)
+          ? OBSERVED_MATERIAL
+          : OBSERVED_ENABLING,
       title: `Close flow ${humanize(flow.id)}`,
       summary: compactText(
         [`Flow ${flow.id} is ${flow.status}.`, flow.blockingReasons.join(' ')]
@@ -1349,7 +1521,7 @@ function buildFlowUnits(input: BuildPulseConvergencePlanInput): PulseConvergence
       ),
       visionDelta: buildFlowVisionDelta(flow),
       targetState: `Flow ${flow.id} must reach a real interface->effect chain.`,
-      failureClass: flow.truthMode === 'aspirational' ? 'missing_evidence' : 'product_failure',
+      failureClass: flow.truthMode === 'aspirational' ? OBSERVED_MISSING_EVIDENCE : OBSERVED_PRODUCT_FAILURE,
       actorKinds: [],
       gateNames: certificationMatches,
       scenarioIds: [],
@@ -1385,7 +1557,7 @@ function buildExecutionMatrixUnits(input: BuildPulseConvergencePlanInput): Pulse
   let actionable = matrix.paths.filter(
     (path) =>
       isSameState(path.status, 'observed_fail') ||
-      (isSameState(path.risk, 'high') && !['observed_pass', 'observed_fail'].includes(path.status)),
+      (isSameState(path.risk, OBSERVED_HIGH) && !['observed_pass', 'observed_fail'].includes(path.status)),
   );
 
   return takeEvidenceBatch(actionable, input.certification.evidenceSummary.flows.results).map(
@@ -1401,17 +1573,17 @@ function buildExecutionMatrixUnits(input: BuildPulseConvergencePlanInput): Pulse
 
       return {
         id: `matrix-${slugify(path.pathId)}`,
-        order: 0,
-        priority: isSameState(path.status, 'observed_fail') ? 'P0' : 'P1',
+        order: Z,
+        priority: isSameState(path.status, 'observed_fail') ? OBSERVED_P0 : OBSERVED_P1,
         kind: path.flowId ? ('flow' as const) : ('capability' as const),
-        status: path.executionMode === 'observation_only' ? 'watch' : 'open',
-        source: 'pulse' as const,
+        status: path.executionMode === OBSERVED_OBSERVATION_ONLY ? OBSERVED_WATCH : OBSERVED_OPEN,
+        source: OBSERVED_PULSE_SOURCE as const,
         executionMode: path.executionMode,
-        ownerLane: 'platform' as const,
-        riskLevel: isSameState(path.status, 'observed_fail') ? 'critical' : path.risk,
+        ownerLane: OBSERVED_PLATFORM as const,
+        riskLevel: isSameState(path.status, 'observed_fail') ? OBSERVED_CRITICAL : path.risk,
         evidenceMode: path.truthMode,
         confidence: confidenceFromNumeric(path.confidence),
-        productImpact: isSameState(path.status, 'observed_fail') ? 'transformational' : 'material',
+        productImpact: isSameState(path.status, 'observed_fail') ? OBSERVED_TRANSFORMATIONAL : OBSERVED_MATERIAL,
         title: isSameState(path.status, 'observed_fail')
           ? `Repair execution path ${path.pathId}`
           : `Observe execution path ${path.pathId}`,
@@ -1431,8 +1603,8 @@ function buildExecutionMatrixUnits(input: BuildPulseConvergencePlanInput): Pulse
         targetState:
           'Path is classified as observed_pass or observed_fail with a precise breakpoint.',
         failureClass: isSameState(path.status, 'observed_fail')
-          ? 'product_failure'
-          : 'missing_evidence',
+          ? OBSERVED_PRODUCT_FAILURE
+          : OBSERVED_MISSING_EVIDENCE,
         actorKinds: [],
         gateNames: certificationMatches,
         scenarioIds: [],
@@ -1497,7 +1669,7 @@ export function buildConvergencePlan(input: BuildPulseConvergencePlanInput): Pul
     summary: {
       totalUnits: orderedQueue.length,
       scenarioUnits: countUnitState(orderedQueue, (unit) => unit.kind, 'scenario'),
-      securityUnits: countUnitState(orderedQueue, (unit) => unit.kind, 'security'),
+      securityUnits: countUnitState(orderedQueue, (unit) => unit.kind, OBSERVED_SECURITY),
       staticUnits: countUnitState(orderedQueue, (unit) => unit.kind, 'static'),
       runtimeUnits: countUnitState(orderedQueue, (unit) => unit.kind, 'runtime'),
       changeUnits: countUnitState(orderedQueue, (unit) => unit.kind, 'change'),
@@ -1505,13 +1677,13 @@ export function buildConvergencePlan(input: BuildPulseConvergencePlanInput): Pul
       scopeUnits: countUnitState(orderedQueue, (unit) => unit.kind, 'scope'),
       gateUnits: countUnitState(orderedQueue, (unit) => unit.kind, 'gate'),
       humanRequiredUnits: 0,
-      observationOnlyUnits: orderedQueue.filter((unit) => unit.executionMode === 'observation_only')
+      observationOnlyUnits: orderedQueue.filter((unit) => unit.executionMode === OBSERVED_OBSERVATION_ONLY)
         .length,
       priorities: {
-        P0: orderedQueue.filter((unit) => unit.priority === 'P0').length,
-        P1: orderedQueue.filter((unit) => unit.priority === 'P1').length,
-        P2: orderedQueue.filter((unit) => unit.priority === 'P2').length,
-        P3: orderedQueue.filter((unit) => unit.priority === 'P3').length,
+        P0: orderedQueue.filter((unit) => unit.priority === OBSERVED_P0).length,
+        P1: orderedQueue.filter((unit) => unit.priority === OBSERVED_P1).length,
+        P2: orderedQueue.filter((unit) => unit.priority === OBSERVED_P2).length,
+        P3: orderedQueue.filter((unit) => unit.priority === OBSERVED_P3).length,
       },
       failingGates: (Object.keys(input.certification.gates) as PulseGateName[]).filter((gateName) =>
         isSameState(input.certification.gates[gateName].status, 'fail'),

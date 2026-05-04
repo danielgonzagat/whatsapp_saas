@@ -1,4 +1,7 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { PrismaService } from '../../prisma/prisma.service';
+import { AuditService } from '../../audit/audit.service';
+import { OpsAlertService } from '../../observability/ops-alert.service';
 
 const VALID_PIXEL_TYPES = [
   'FACEBOOK',
@@ -11,7 +14,7 @@ const VALID_PIXEL_TYPES = [
 ];
 
 export async function createCheckoutPixel(
-  deps: { prisma: any },
+  deps: { prisma: PrismaService },
   checkoutConfigId: string,
   data: {
     type: 'FACEBOOK' | 'GOOGLE_ADS' | 'GOOGLE_ANALYTICS' | 'TIKTOK' | 'KWAI' | 'TABOOLA' | 'CUSTOM';
@@ -54,7 +57,7 @@ export async function resetCatalogConfig(
 }
 
 export async function deleteCheckoutPixel(
-  deps: { prisma: any; auditService: any },
+  deps: { prisma: PrismaService; auditService: AuditService },
   id: string,
   workspaceId?: string,
 ) {
@@ -79,7 +82,7 @@ export async function deleteCheckoutPixel(
 }
 
 export async function deleteCouponHelper(
-  deps: { prisma: any; auditService: any; opsAlert?: any },
+  deps: { prisma: PrismaService; auditService: AuditService; opsAlert?: OpsAlertService },
   id: string,
   workspaceId?: string,
 ) {

@@ -134,11 +134,11 @@ export class KloelChatToolsService {
     workspaceId: string,
     args: ToolToggleAutopilotArgs,
   ): Promise<ToolResult> {
-    const workspace = await this.prisma.workspace.findUnique({
+    const settingsSnapshot = await this.prisma.workspace.findUnique({
       where: { id: workspaceId },
       select: { providerSettings: true },
     });
-    const currentSettings = (workspace?.providerSettings as Record<string, unknown>) || {};
+    const currentSettings = (settingsSnapshot?.providerSettings as Record<string, unknown>) || {};
     if (args.enabled && currentSettings.billingSuspended === true) {
       return {
         success: false,
@@ -146,23 +146,31 @@ export class KloelChatToolsService {
         error: 'Autopilot suspenso: regularize cobrança para ativar.',
       };
     }
-    const newSettings = {
-      ...currentSettings,
-      autopilot: {
-        ...((currentSettings.autopilot as Record<string, unknown>) || {}),
+
+    return this.prisma.$transaction(async (tx) => {
+      const workspace = await tx.workspace.findUnique({
+        where: { id: workspaceId },
+        select: { providerSettings: true },
+      });
+      const settings = (workspace?.providerSettings as Record<string, unknown>) || {};
+      const newSettings = {
+        ...settings,
+        autopilot: {
+          ...((settings.autopilot as Record<string, unknown>) || {}),
+          enabled: args.enabled,
+        },
+        autopilotEnabled: args.enabled,
+      };
+      await tx.workspace.update({
+        where: { id: workspaceId },
+        data: { providerSettings: newSettings },
+      });
+      return {
+        success: true,
         enabled: args.enabled,
-      },
-      autopilotEnabled: args.enabled,
-    };
-    await this.prisma.workspace.update({
-      where: { id: workspaceId },
-      data: { providerSettings: newSettings },
+        message: args.enabled ? 'Autopilot ativado.' : 'Autopilot desativado.',
+      };
     });
-    return {
-      success: true,
-      enabled: args.enabled,
-      message: args.enabled ? 'Autopilot ativado.' : 'Autopilot desativado.',
-    };
   }
 
   // PULSE_OK: workspaceId validated by caller guard

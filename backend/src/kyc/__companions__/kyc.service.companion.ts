@@ -77,16 +77,22 @@ export type KycSyncDeps = {
 };
 
 export async function doAdminApprove(deps: { prisma: any }, agentId: string) {
-  const agent = await deps.prisma.agent.findUnique({
-    where: { id: agentId },
-    select: { id: true, kycStatus: true },
-  });
-  if (!agent) throw new NotFoundException('Agent not found');
-  if (agent.kycStatus === 'approved') throw new BadRequestException('KYC already approved');
-  await deps.prisma.agent.update({
-    where: { id: agentId },
-    data: { kycStatus: 'approved', kycApprovedAt: new Date() },
-  });
+  await deps.prisma.$transaction(
+    async (tx: any) => {
+      const a = await tx.agent.findUnique({
+        where: { id: agentId },
+        select: { id: true, kycStatus: true },
+      });
+      if (!a) throw new NotFoundException('Agent not found');
+      if (a.kycStatus === 'approved') throw new BadRequestException('KYC already approved');
+      await tx.agent.update({
+        where: { id: agentId },
+        data: { kycStatus: 'approved', kycApprovedAt: new Date() },
+      });
+      return a;
+    },
+    { isolationLevel: 'ReadCommitted' as any },
+  );
   return { success: true, status: 'approved', agentId };
 }
 

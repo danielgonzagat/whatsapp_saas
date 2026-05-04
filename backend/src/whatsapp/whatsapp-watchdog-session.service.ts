@@ -115,34 +115,36 @@ export class WhatsAppWatchdogSessionService {
     },
   ): Promise<void> {
     try {
-      const workspace = await this.prisma.workspace.findUnique({
-        where: { id: workspaceId },
-        select: { providerSettings: true },
-      });
-      if (!workspace) {
-        return;
-      }
+      await this.prisma.$transaction(async (tx) => {
+        const workspace = await tx.workspace.findUnique({
+          where: { id: workspaceId },
+          select: { providerSettings: true },
+        });
+        if (!workspace) {
+          return;
+        }
 
-      const settings = asProviderSettings(workspace.providerSettings);
-      const sessionMeta = settings.whatsappWebSession || settings.whatsappApiSession || {};
+        const settings = asProviderSettings(workspace.providerSettings);
+        const sessionMeta = settings.whatsappWebSession || settings.whatsappApiSession || {};
 
-      await this.prisma.workspace.update({
-        where: { id: workspaceId },
-        data: {
-          providerSettings: toPrismaJsonValue({
-            ...settings,
-            whatsappApiSession: {
-              ...sessionMeta,
-              ...update,
-              lastUpdated: new Date().toISOString(),
-            },
-            whatsappWebSession: {
-              ...sessionMeta,
-              ...update,
-              lastUpdated: new Date().toISOString(),
-            },
-          }),
-        },
+        await tx.workspace.update({
+          where: { id: workspaceId },
+          data: {
+            providerSettings: toPrismaJsonValue({
+              ...settings,
+              whatsappApiSession: {
+                ...sessionMeta,
+                ...update,
+                lastUpdated: new Date().toISOString(),
+              },
+              whatsappWebSession: {
+                ...sessionMeta,
+                ...update,
+                lastUpdated: new Date().toISOString(),
+              },
+            }),
+          },
+        });
       });
     } catch (error: unknown) {
       const msg =

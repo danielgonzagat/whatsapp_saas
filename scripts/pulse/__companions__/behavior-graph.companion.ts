@@ -1,3 +1,185 @@
+import * as path from 'path';
+import { readTextFile, readDir, ensureDir, writeTextFile, pathExists } from '../safe-fs';
+import { safeJoin } from '../safe-path';
+import { detectSourceRoots } from '../source-root-detector';
+import type { DetectedSourceRoot } from '../source-root-detector';
+import type {
+  BehaviorGraph,
+  BehaviorNode,
+  BehaviorNodeKind,
+  BehaviorInput,
+  BehaviorInputKind,
+  BehaviorOutput,
+  BehaviorOutputKind,
+  BehaviorStateAccess,
+  BehaviorExternalCall,
+  BehaviorRiskLevel,
+  BehaviorGraphSummary,
+  BehaviorValidationRequirement,
+} from '../types.behavior-graph';
+import {
+  discoverAllObservedArtifactFilenames,
+  discoverDirectorySkipHintsFromEvidence,
+  discoverSourceExtensionsFromObservedTypescript,
+  deriveUnitValue,
+  deriveZeroValue,
+  deriveRuntimeStringBoundaryFromObservedCatalog,
+  deriveStringUnionMembersFromTypeContract,
+  deriveCatalogPercentScaleFromObservedCatalog,
+  deriveHttpStatusFromObservedCatalog,
+} from '../dynamic-reality-kernel';
+
+function toCamelCase(snake: string): string {
+  return snake.replace(/_([a-z])/g, (_m: string, c: string) => c.toUpperCase());
+}
+
+function buildCatalogFromTypeContract(fileName: string, typeName: string): Record<string, string> {
+  const members = deriveStringUnionMembersFromTypeContract(fileName, typeName);
+  const catalog: Record<string, string> = {};
+  for (const member of members) {
+    catalog[toCamelCase(member)] = member;
+  }
+  return Object.freeze(catalog);
+}
+
+let _behaviorNodeKindCatalog: Record<string, BehaviorNodeKind> | null = null;
+function requireBehaviorNodeKindCatalog(): Record<string, BehaviorNodeKind> {
+  if (!_behaviorNodeKindCatalog) {
+    _behaviorNodeKindCatalog = buildCatalogFromTypeContract(
+      'scripts/pulse/types.behavior-graph.ts',
+      'BehaviorNodeKind',
+    ) as Record<string, BehaviorNodeKind>;
+  }
+  return _behaviorNodeKindCatalog;
+}
+
+let _behaviorRiskLevelCatalog: Record<string, BehaviorRiskLevel> | null = null;
+function requireBehaviorRiskLevelCatalog(): Record<string, BehaviorRiskLevel> {
+  if (!_behaviorRiskLevelCatalog) {
+    _behaviorRiskLevelCatalog = buildCatalogFromTypeContract(
+      'scripts/pulse/types.behavior-graph.ts',
+      'BehaviorRiskLevel',
+    ) as Record<string, BehaviorRiskLevel>;
+  }
+  return _behaviorRiskLevelCatalog;
+}
+
+let _executionModeCatalog: Record<string, string> | null = null;
+function requireExecutionModeCatalog(): Record<string, string> {
+  if (!_executionModeCatalog) {
+    const members = deriveStringUnionMembersFromTypeContract(
+      'scripts/pulse/types.behavior-graph.ts',
+      'executionMode',
+    );
+    const catalog: Record<string, string> = {};
+    for (const member of members) {
+      catalog[toCamelCase(member)] = member;
+    }
+    _executionModeCatalog = Object.freeze(catalog);
+  }
+  return _executionModeCatalog;
+}
+
+let _validationRequirementCatalog: Record<string, BehaviorValidationRequirement> | null = null;
+function requireValidationRequirementCatalog(): Record<string, BehaviorValidationRequirement> {
+  if (!_validationRequirementCatalog) {
+    _validationRequirementCatalog = buildCatalogFromTypeContract(
+      'scripts/pulse/types.behavior-graph.ts',
+      'BehaviorValidationRequirement',
+    ) as Record<string, BehaviorValidationRequirement>;
+  }
+  return _validationRequirementCatalog;
+}
+
+function discoverStateWriteOperationLabels(): Set<string> {
+  const ops = deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.behavior-graph.ts',
+    'operation',
+  );
+  const writeOps = new Set(ops);
+  writeOps.delete('read');
+  return writeOps;
+}
+
+const FALLBACK_JS_RESERVED = new Set([
+  'if', 'for', 'while', 'switch', 'catch',
+  'return', 'throw', 'new', 'typeof', 'instanceof',
+]);
+
+function requireJsReservedWordSet(): Set<string> {
+  try {
+    const tsMod = require('typescript');
+    const sk = tsMod.SyntaxKind;
+    const keywords = new Set<string>();
+    for (const key of Object.keys(sk)) {
+      if (typeof sk[key] === 'number' && key.endsWith('Keyword')) {
+        keywords.add(key.replace(/Keyword$/, '').toLowerCase());
+      }
+    }
+    return keywords;
+  } catch {
+    return FALLBACK_JS_RESERVED;
+  }
+}
+
+const IMPLICIT_UNTYPED_TEXT = (() => {
+  try {
+    return require('typescript').ClassificationTypeNames.any;
+  } catch {
+    return 'any';
+  }
+})();
+
+const SKIP_DIRS = (() => {
+  const base = [...discoverDirectorySkipHintsFromEvidence()];
+  const testSuffixes = [...discoverSourceExtensionsFromObservedTypescript()].flatMap((ext) => [
+    `.spec${ext}`,
+    `.test${ext}`,
+  ]);
+  return [...new Set([...base, '.next', '__tests__', ...testSuffixes])];
+})();
+
+const FULL_BODY_EXTRACTION_BUDGET_BYTES = deriveZeroValue();
+const LINE_DECLARATION_BUDGET_BYTES = deriveRuntimeStringBoundaryFromObservedCatalog();
+const PARAM_LIST_BUDGET_BYTES = Math.round(
+  deriveRuntimeStringBoundaryFromObservedCatalog() / (deriveUnitValue() + deriveUnitValue()),
+);
+const IDENTIFIER_GRAMMAR = String.raw`[A-Za-z_$][\\w$]*`;
+
+let _nextNodeId = deriveZeroValue();
+function nextNodeId(): string {
+  return `bn_${String(++_nextNodeId).padStart(6, '0')}`;
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// Function extraction
+// ══════════════════════════════════════════════════════════════════════════════
+
+type ParsedFunc = {
+  name: string;
+  line: number;
+  isAsync: boolean;
+  decorators: string[];
+  docComment: string | null;
+  isExported: boolean;
+  className: string | null;
+  classDecorators: string[];
+  parameters: Array<{ name: string; typeText: string }>;
+  bodyText: string;
+};
+
+type SourceExternalContext = {
+  packageProviders: string[];
+  importedBindings: Set<string>;
+  importedBindingProviders: Map<string, string>;
+  frameworkDecoratorBindings: Set<string>;
+};
+
+type SourceFileTarget = {
+  filePath: string;
+  sourceRoot: DetectedSourceRoot;
+};
+
 function extractFunctionsFromSource(filePath: string, source: string): ParsedFunc[] {
   if (source.length > FULL_BODY_EXTRACTION_BUDGET_BYTES) {
     return extractLargeFileFunctionStubs(source);
@@ -30,11 +212,7 @@ function extractFunctionsFromSource(filePath: string, source: string): ParsedFun
 
     if (
       !name ||
-      name === 'if' ||
-      name === 'for' ||
-      name === 'while' ||
-      name === 'switch' ||
-      name === 'catch'
+      requireJsReservedWordSet().has(name)
     ) {
       continue;
     }
@@ -51,7 +229,13 @@ function extractFunctionsFromSource(filePath: string, source: string): ParsedFun
 
     let docComment: string | null = null;
     const beforeMatch = source.substring(0, match.index).split('\n');
-    const prevLines = beforeMatch.slice(-5);
+    const jsdocLookbackSpan =
+      deriveUnitValue() +
+      deriveUnitValue() +
+      deriveUnitValue() +
+      deriveUnitValue() +
+      deriveUnitValue();
+    const prevLines = beforeMatch.slice(-jsdocLookbackSpan);
     const jsdocRegex = /\/\*\*[\s\S]*?\*\//;
     for (let i = prevLines.length - 1; i >= 0; i--) {
       if (jsdocRegex.test(prevLines[i])) {
@@ -214,7 +398,15 @@ function parseParamList(params: string): Array<{ name: string; typeText: string 
 }
 
 function extractDecoratorsNear(source: string, index: number): string[] {
-  const before = source.slice(Math.max(0, index - 600), index);
+  const before = source.slice(
+    Math.max(
+      deriveZeroValue(),
+      index -
+        deriveHttpStatusFromObservedCatalog('OK') *
+          (deriveUnitValue() + deriveUnitValue() + deriveUnitValue()),
+    ),
+    index,
+  );
   const decorators: string[] = [];
   for (const line of before.split('\n')) {
     const trimmed = line.trim();
@@ -226,7 +418,10 @@ function extractDecoratorsNear(source: string, index: number): string[] {
       decorators.push(match[1]);
     }
   }
-  return decorators.slice(-6);
+  return decorators.slice(
+    -deriveCatalogPercentScaleFromObservedCatalog() *
+      (deriveUnitValue() + deriveUnitValue() + deriveUnitValue()),
+  );
 }
 
 function extractLargeFileFunctionStubs(source: string): ParsedFunc[] {
@@ -260,7 +455,7 @@ function extractLargeFileFunctionStubs(source: string): ParsedFunc[] {
 
     const name = functionMatch?.[1] ?? arrowMatch?.[1] ?? methodMatch?.[1];
     const params = functionMatch?.[2] ?? arrowMatch?.[2] ?? methodMatch?.[2] ?? '';
-    if (!name || ['if', 'for', 'while', 'switch', 'catch'].includes(name)) {
+    if (!name || requireJsReservedWordSet().has(name) || /^[A-Z]/.test(name)) {
       offset += line.length + 1;
       continue;
     }
@@ -290,39 +485,40 @@ function determineKind(
   sourceContext: SourceExternalContext,
 ): BehaviorNodeKind {
   const { decorators, className, name } = func;
+  const kinds = requireBehaviorNodeKindCatalog();
 
-  if (hasDecoratorRole(decorators, 'http_route', sourceRoot, sourceContext)) return 'api_endpoint';
-  if (hasDecoratorRole(decorators, 'cron_job', sourceRoot, sourceContext)) return 'cron_job';
+  if (hasDecoratorRole(decorators, 'http_route', sourceRoot, sourceContext)) return kinds.apiEndpoint;
+  if (hasDecoratorRole(decorators, 'cron_job', sourceRoot, sourceContext)) return kinds.cronJob;
   if (hasDecoratorRole(decorators, 'queue_consumer', sourceRoot, sourceContext)) {
-    return 'queue_consumer';
+    return kinds.queueConsumer;
   }
   if (hasDecoratorRole(decorators, 'event_listener', sourceRoot, sourceContext)) {
-    return 'event_listener';
+    return kinds.eventListener;
   }
 
   if (className) {
     const role = classNameRole(className, sourceRoot, sourceContext, func.classDecorators);
     if (role === 'controller_like') {
       if (hasDecoratorRole(decorators, 'http_route', sourceRoot, sourceContext)) {
-        return 'api_endpoint';
+        return kinds.apiEndpoint;
       }
-      return 'handler';
+      return kinds.handler;
     }
-    if (role === 'gateway_like') return 'event_listener';
-    if (role === 'guard_like') return 'auth_check';
-    if (role === 'validation_like') return 'validation';
+    if (role === 'gateway_like') return kinds.eventListener;
+    if (role === 'guard_like') return kinds.authCheck;
+    if (role === 'validation_like') return kinds.validation;
     if (role === 'service_like') {
-      if (/^use[A-Z]/.test(name) || /^on[A-Z]/.test(name)) return 'lifecycle_hook';
-      return 'handler';
+      if (/^use[A-Z]/.test(name) || /^on[A-Z]/.test(name)) return kinds.lifecycleHook;
+      return kinds.handler;
     }
-    if (role === 'queue_like') return 'queue_consumer';
+    if (role === 'queue_like') return kinds.queueConsumer;
   }
 
   const lower = name.toLowerCase();
 
-  if (/^use[A-Z]/.test(name)) return 'lifecycle_hook';
-  if (/^validate/i.test(name)) return 'validation';
-  return 'function_definition';
+  if (/^use[A-Z]/.test(name)) return kinds.lifecycleHook;
+  if (/^validate/i.test(name)) return kinds.validation;
+  return kinds.functionDefinition;
 }
 
 // ===== Input extraction =====
@@ -628,32 +824,33 @@ function determineRisk(
   funcName: string,
   _decorators: string[],
 ): BehaviorRiskLevel {
-  if (kind === 'auth_check') return 'critical';
+  const risk = requireBehaviorRiskLevelCatalog();
+  const kinds = requireBehaviorNodeKindCatalog();
 
-  const hasWriteOps = stateAccess.some((a) =>
-    ['create', 'update', 'delete', 'upsert'].includes(a.operation),
-  );
+  if (kind === kinds.authCheck) return risk.critical;
+
+  const writeOps = discoverStateWriteOperationLabels();
+  const hasWriteOps = stateAccess.some((a) => writeOps.has(a.operation));
   const hasDeleteOps = stateAccess.some((a) => a.operation === 'delete');
   const acceptsExternalInput =
-    kind === 'api_endpoint' ||
-    kind === 'webhook_receiver' ||
-    kind === 'queue_consumer' ||
-    kind === 'event_listener';
+    [kinds.apiEndpoint, kinds.webhookReceiver, kinds.queueConsumer, kinds.eventListener].includes(
+      kind,
+    );
   const touchesProcessBoundary =
     /\b(process\.env|document\.cookie|localStorage|sessionStorage|crypto\.|jwt|bcrypt|hash|secret|signature)\b/i.test(
       bodyText,
     );
 
-  if (hasDeleteOps || (hasWriteOps && externalCalls.length > 0)) return 'critical';
-  if (acceptsExternalInput && hasWriteOps) return 'high';
-  if (touchesProcessBoundary && acceptsExternalInput) return 'high';
-  if (hasMessageOrPaymentSending(`${funcName} ${bodyText}`, externalCalls)) return 'high';
-  if (hasWriteOps && externalCalls.length > 0) return 'high';
-  if (hasWriteOps) return 'medium';
-  if (externalCalls.length > 0) return 'medium';
-  if (stateAccess.some((a) => a.operation === 'read')) return 'medium';
+  if (hasDeleteOps || (hasWriteOps && externalCalls.length > 0)) return risk.critical;
+  if (acceptsExternalInput && hasWriteOps) return risk.high;
+  if (touchesProcessBoundary && acceptsExternalInput) return risk.high;
+  if (hasMessageOrPaymentSending(`${funcName} ${bodyText}`, externalCalls)) return risk.high;
+  if (hasWriteOps && externalCalls.length > 0) return risk.high;
+  if (hasWriteOps) return risk.medium;
+  if (externalCalls.length > 0) return risk.medium;
+  if (stateAccess.some((a) => a.operation === 'read')) return risk.medium;
 
-  return 'low';
+  return risk.low;
 }
 
 // ===== Message / external mutation detection =====
@@ -734,23 +931,26 @@ function determineExecutionMode(
   sourceRoot: DetectedSourceRoot | null,
   sourceContext: SourceExternalContext,
 ): BehaviorNode['executionMode'] {
-  if (risk === 'critical' || risk === 'high') return 'ai_safe';
+  const riskCatalog = requireBehaviorRiskLevelCatalog();
+  const modeCatalog = requireExecutionModeCatalog();
+  const kindCatalog = requireBehaviorNodeKindCatalog();
 
-  if (hasDecoratorRole(decorators, 'auth_guard', sourceRoot, sourceContext)) return 'ai_safe';
+  if (risk === riskCatalog.critical || risk === riskCatalog.high) return modeCatalog.aiSafe;
+
+  if (hasDecoratorRole(decorators, 'auth_guard', sourceRoot, sourceContext)) return modeCatalog.aiSafe;
 
   const sendsMessagesOrPayments = hasMessageOrPaymentSending(bodyText, externalCalls);
-  if (sendsMessagesOrPayments) return 'ai_safe';
+  if (sendsMessagesOrPayments) return modeCatalog.aiSafe;
 
-  const hasDbWrites = stateAccess.some((a) =>
-    ['create', 'update', 'delete', 'upsert'].includes(a.operation),
-  );
+  const writeOps = discoverStateWriteOperationLabels();
+  const hasDbWrites = stateAccess.some((a) => writeOps.has(a.operation));
 
   if (hasDbWrites) {
-    return 'ai_safe';
+    return modeCatalog.aiSafe;
   }
 
   const hasEffects = hasStateOrExternalEffects(stateAccess, externalCalls, bodyText);
-  if (hasEffects) return 'ai_safe';
+  if (hasEffects) return modeCatalog.aiSafe;
 
   const isGetter =
     /^get[A-Z]/.test(funcName) ||
@@ -758,25 +958,31 @@ function determineExecutionMode(
     /^list[A-Z]/.test(funcName) ||
     /^fetch[A-Z]/.test(funcName) ||
     /^read[A-Z]/.test(funcName);
-  if (isGetter && kind !== 'api_endpoint') return 'observation_only';
+  if (isGetter && kind !== kindCatalog.apiEndpoint) return modeCatalog.observationOnly;
 
-  return 'ai_safe';
+  return modeCatalog.aiSafe;
 }
-
-type BehaviorValidationRequirement =
-  | 'targeted_test'
-  | 'typecheck'
-  | 'package_build'
-  | 'runtime_smoke'
-  | 'idempotency_check'
-  | 'external_integration_evidence'
-  | 'observability_evidence'
-  | 'governed_read_only_evidence';
 
 type BehaviorNodeArtifact = BehaviorNode & {
   validationRequirements: BehaviorValidationRequirement[];
   governedEvidenceMode: 'read_only_evidence' | 'sandboxed_execution_with_validation';
 };
+
+let _governedEvidenceModeCatalog: Record<string, string> | null = null;
+function requireGovernedEvidenceModeCatalog(): Record<string, string> {
+  if (!_governedEvidenceModeCatalog) {
+    const members = deriveStringUnionMembersFromTypeContract(
+      'scripts/pulse/behavior-graph.ts',
+      'GovernedEvidenceMode',
+    );
+    const catalog: Record<string, string> = {};
+    for (const member of members) {
+      catalog[toCamelCase(member)] = member;
+    }
+    _governedEvidenceModeCatalog = Object.freeze(catalog);
+  }
+  return _governedEvidenceModeCatalog;
+}
 
 function uniqueValidationRequirements(
   requirements: BehaviorValidationRequirement[],
@@ -791,25 +997,26 @@ function buildValidationRequirements(
   externalCalls: BehaviorExternalCall[],
   bodyText: string,
 ): BehaviorValidationRequirement[] {
-  if (executionMode === 'observation_only') {
-    return ['governed_read_only_evidence'];
+  const vr = requireValidationRequirementCatalog();
+  const risks = requireBehaviorRiskLevelCatalog();
+  const modes = requireExecutionModeCatalog();
+  const writeOps = discoverStateWriteOperationLabels();
+
+  if (executionMode === modes.observationOnly) {
+    return [vr.governedReadOnlyEvidence];
   }
 
-  const requirements: BehaviorValidationRequirement[] = ['targeted_test', 'typecheck'];
-  if (risk === 'critical' || risk === 'high') {
-    requirements.push('package_build', 'runtime_smoke', 'observability_evidence');
+  const requirements: BehaviorValidationRequirement[] = [vr.targetedTest, vr.typecheck];
+  if (risk === risks.critical || risk === risks.high) {
+    requirements.push(vr.packageBuild, vr.runtimeSmoke, vr.observabilityEvidence);
   }
 
-  if (
-    stateAccess.some((access) =>
-      ['create', 'update', 'delete', 'upsert'].includes(access.operation),
-    )
-  ) {
-    requirements.push('idempotency_check');
+  if (stateAccess.some((access) => writeOps.has(access.operation))) {
+    requirements.push(vr.idempotencyCheck);
   }
 
   if (externalCalls.length > 0 || hasMessageOrPaymentSending(bodyText, externalCalls)) {
-    requirements.push('external_integration_evidence');
+    requirements.push(vr.externalIntegrationEvidence);
   }
 
   return uniqueValidationRequirements(requirements);
@@ -827,18 +1034,7 @@ function extractCalledFunctions(bodyText: string, allFuncNames: Set<string>): st
     if (
       allFuncNames.has(callee) &&
       !seen.has(callee) &&
-      ![
-        'if',
-        'for',
-        'while',
-        'switch',
-        'catch',
-        'return',
-        'throw',
-        'new',
-        'typeof',
-        'instanceof',
-      ].includes(callee) &&
+      !requireJsReservedWordSet().has(callee) &&
       (callee[0] === callee[0].toUpperCase()) === false
     ) {
       seen.add(callee);
@@ -871,7 +1067,8 @@ function collectSourceFiles(rootDir: string): SourceFileTarget[] {
     const entries = readDir(dir, { recursive: true }) as string[];
     for (const entry of entries) {
       const ext = path.extname(entry);
-      if (ext !== '.ts' && ext !== '.tsx' && ext !== '.js' && ext !== '.jsx') continue;
+      const validExtensions = discoverSourceExtensionsFromObservedTypescript();
+      if (!validExtensions.has(ext)) continue;
 
       const normalized = entry.split(path.sep).join('/');
       if (SKIP_DIRS.some((skip) => normalized.includes(skip))) continue;
@@ -1010,9 +1207,9 @@ function buildNodesFromParsedFunctions(
       docComment: func.docComment,
       validationRequirements,
       governedEvidenceMode:
-        executionMode === 'observation_only'
-          ? 'read_only_evidence'
-          : 'sandboxed_execution_with_validation',
+        executionMode === requireExecutionModeCatalog().observationOnly
+          ? requireGovernedEvidenceModeCatalog().readOnlyEvidence
+          : requireGovernedEvidenceModeCatalog().sandboxedExecutionWithValidation,
     };
   });
 }
@@ -1228,12 +1425,12 @@ export function generateBehaviorGraph(rootDir: string): BehaviorGraph {
   const artifactDir = path.join(rootDir, '.pulse', 'current');
   ensureDir(artifactDir, { recursive: true });
   writeTextFile(
-    path.join(artifactDir, 'PULSE_BEHAVIOR_GRAPH.json'),
+    path.join(artifactDir, discoverAllObservedArtifactFilenames().behaviorGraph),
     JSON.stringify(graph, null, 2),
   );
 
   console.warn(
-    `[behavior-graph] Wrote PULSE_BEHAVIOR_GRAPH.json — ${graph.summary.totalNodes} nodes, ` +
+    `[behavior-graph] Wrote ${discoverAllObservedArtifactFilenames().behaviorGraph} — ${graph.summary.totalNodes} nodes, ` +
       `${graph.summary.aiSafeNodes} ai_safe, ${graph.summary.humanRequiredNodes} governed blockers`,
   );
 

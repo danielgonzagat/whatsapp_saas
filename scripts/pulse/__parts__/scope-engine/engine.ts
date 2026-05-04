@@ -1,25 +1,145 @@
+import * as crypto from 'crypto';
+import * as fs from 'fs';
 import * as path from 'path';
-import { safeJoin } from '../../lib/safe-path';
-import { ensureDir, readTextFile, writeTextFile } from '../../safe-fs';
+import { safeJoin, assertWithinRoot } from '../../lib/safe-path';
+import {
+  ensureDir,
+  pathExists,
+  readDir,
+  readTextFile,
+  statPath,
+  writeTextFile,
+} from '../../safe-fs';
+import { IGNORED_DIRECTORIES } from '../../scope-state.constants';
 import { loadGovernanceBoundary } from '../../scope-state-classify';
+import { detectSourceRoots } from '../../source-root-detector';
+import {
+  discoverAllObservedArtifactFilenames,
+  discoverDirectorySkipHintsFromEvidence,
+} from '../../dynamic-reality-kernel';
 import type {
   ScopeEngineState,
   ScopeEngineSummary,
   ScopeFileEntry,
+  ScopeFileRole,
   ScopeFileStatus,
 } from '../../types.scope-engine';
-import { classifyFileExtension, extractImports } from './constants';
 import {
+  classifyFileExtension,
+  classifyFileRole,
   isTestFile,
   isGeneratedFile,
   isProtectedFile,
   isSourceFile,
-  classifyFileRole,
   computeExecutionMode,
-} from './classifiers';
-import { hasExports, resolveImportPath } from './import-utils';
-import { walkFiles, computeContentHash } from './walker';
-import { getOrphanFiles, getCriticalOrphans } from './orphans';
+  extractImports,
+  hasExports,
+  resolveImportPath,
+  classifyFileRolePublic,
+  SCANNABLE_EXTENSIONS,
+  UNKNOWN_STATUS,
+  HIGH_CONFIDENCE,
+  LOW_CONFIDENCE,
+} from './classify';
+
+export { classifyFileRolePublic };
+
+function computeContentHash(content: string): string {
+  return crypto.createHash('sha256').update(content).digest('hex');
+}
+
+function walkFiles(dir: string, files: string[]): void {
+  let entries: string[];
+  try {
+    entries = readDir(dir);
+  } catch {
+    return;
+  }
+
+  for (const entry of entries) {
+    if (IGNORED_DIRECTORIES.has(entry)) continue;
+    const fullPath = path.join(dir, entry);
+    let stats;
+    try {
+      stats = statPath(fullPath);
+    } catch {
+      continue;
+    }
+    if (stats.isDirectory()) {
+      if (!entry.startsWith('.') && !discoverDirectorySkipHintsFromEvidence().has(entry)) {
+        walkFiles(fullPath, files);
+      }
+    } else if (stats.isFile()) {
+      const ext = path.extname(entry).toLowerCase();
+      if (SCANNABLE_EXTENSIONS.has(ext)) {
+        files.push(fullPath);
+      }
+    }
+  }
+}
+
+export function detectNewFile(rootDir: string, filePath: string): ScopeFileEntry | null {
+  const relativePath = assertWithinRoot(filePath, rootDir);
+
+  if (!pathExists(filePath)) return null;
+
+  let content: string;
+  try {
+    content = readTextFile(filePath);
+  } catch {
+    return null;
+  }
+
+  const extension = classifyFileExtension(filePath);
+  const role = classifyFileRole(filePath, content);
+  const isTest = isTestFile(filePath, content);
+  const isGenerated = isGeneratedFile(filePath, content);
+  const governanceBoundary = loadGovernanceBoundary(rootDir);
+  const isProtected = isProtectedFile(rootDir, filePath, governanceBoundary);
+  const executionMode = computeExecutionMode(filePath, extension, isProtected, content);
+  const contentHash = computeContentHash(content);
+  const now = new Date().toISOString();
+
+  let status: ScopeFileStatus = 'classified';
+  if (role === 'unknown') status = 'unknown';
+
+  return {
+    filePath,
+    relativePath,
+    extension,
+    status,
+    role,
+    isSource: isSourceFile(filePath, extension, content),
+    isTest,
+    isGenerated,
+    isProtected,
+    executionMode,
+    connections: [],
+    connectedFrom: [],
+    capabilityIds: [],
+    flowIds: [],
+    nodeIds: [],
+    firstSeen: now,
+    lastModified: now,
+    contentHash,
+    classificationConfidence: role !== UNKNOWN_STATUS ? HIGH_CONFIDENCE : LOW_CONFIDENCE,
+  };
+}
+
+export function getOrphanFiles(state: ScopeEngineState): ScopeFileEntry[] {
+  return state.files.filter((f) => f.connections.length === 0 && f.connectedFrom.length === 0);
+}
+
+export function getCriticalOrphans(state: ScopeEngineState): ScopeFileEntry[] {
+  return state.files.filter(
+    (f) =>
+      f.isSource &&
+      !f.isTest &&
+      !f.isGenerated &&
+      f.connections.length === 0 &&
+      f.connectedFrom.length === 0,
+  );
+}
 
 export function buildScopeEngineState(
   rootDir: string,
@@ -95,9 +215,6 @@ export function buildScopeEngineState(
     const relativePath = path.relative(rootDir, filePath);
     const prev = previousMap.get(filePath);
 
-    const imports = extractImports(filePath, content);
-    const exports = hasExports(content);
-
     entries.push({
       filePath,
       relativePath,
@@ -117,7 +234,7 @@ export function buildScopeEngineState(
       firstSeen: prev?.firstSeen ?? now,
       lastModified: contentHash !== prev?.contentHash ? now : (prev?.lastModified ?? now),
       contentHash,
-      classificationConfidence: role !== 'unknown' ? 85 : 30,
+      classificationConfidence: role !== UNKNOWN_STATUS ? HIGH_CONFIDENCE : LOW_CONFIDENCE,
     });
   }
 
@@ -227,7 +344,7 @@ export function buildScopeEngineState(
 
   const outDir = safeJoin(rootDir, '.pulse', 'current');
   ensureDir(outDir, { recursive: true });
-  const outPath = safeJoin(outDir, 'PULSE_SCOPE_STATE.json');
+  const outPath = safeJoin(outDir, discoverAllObservedArtifactFilenames().scopeState);
   const json = JSON.stringify(state, null, 2);
   writeTextFile(outPath, json);
 
@@ -260,4 +377,423 @@ export function buildScopeEngineState(
   );
 
   return state;
+}
+
+export interface ZeroUnknownReport {
+  passed: boolean;
+  generatedAt: string;
+  totalFiles: number;
+  unknownFiles: number;
+  unknownFilePaths: string[];
+  criticalOrphans: number;
+  criticalOrphanPaths: string[];
+}
+
+export function validateZeroUnknown(state: ScopeEngineState): ZeroUnknownReport {
+  const unknownEntries = state.files.filter((f) => f.status === 'unknown');
+  const criticalOrphans = getCriticalOrphans(state);
+
+  return {
+    passed: unknownEntries.length === 0 && criticalOrphans.length === 0,
+    generatedAt: new Date().toISOString(),
+    totalFiles: state.summary.totalFiles,
+    unknownFiles: unknownEntries.length,
+    unknownFilePaths: unknownEntries.map((f) => f.filePath),
+    criticalOrphans: criticalOrphans.length,
+    criticalOrphanPaths: criticalOrphans.map((f) => f.filePath),
+  };
+}
+
+export function enforceZeroUnknown(rootDir: string): ZeroUnknownReport {
+  const state = buildScopeEngineState(rootDir);
+  const report = validateZeroUnknown(state);
+
+  const outDir = safeJoin(rootDir, '.pulse', 'current');
+  ensureDir(outDir, { recursive: true });
+  const outPath = safeJoin(outDir, 'PULSE_SCOPE_ZERO_UNKNOWN.json');
+  writeTextFile(outPath, JSON.stringify(report, null, 2));
+
+  if (!report.passed) {
+    if (process.env.PULSE_SCOPE_DEBUG === '1') {
+      console.warn(
+        `[scope-engine] zero-unknown FAIL: ${report.unknownFiles} unknown, ${report.criticalOrphans} critical orphans`,
+      );
+    }
+  }
+
+  return report;
+}
+
+// ─── Real-time File Watcher (30s detection window) ────────────────────────
+
+interface WatchEvent {
+  eventType: 'rename' | 'change';
+  filename: string;
+  timestamp: number;
+}
+
+interface ScopeWatcherState {
+  rootDir: string;
+  lastScanAt: number;
+  lastState: ScopeEngineState | null;
+  pendingEvents: Map<string, WatchEvent>;
+  scanTimer: ReturnType<typeof setTimeout> | null;
+  watchers: fs.FSWatcher[];
+  stopped: boolean;
+}
+
+function discoverPrismaRoots(rootDir: string): string[] {
+  const roots = new Set<string>();
+  try {
+    for (const entry of readDir(rootDir, { recursive: true }) as string[]) {
+      const normalized = String(entry).split(path.sep).join('/');
+      if (normalized.split('/').some((part) => IGNORED_DIRECTORIES.has(part))) continue;
+      if (path.basename(normalized) === 'schema.prisma') {
+        roots.add(path.dirname(safeJoin(rootDir, normalized)));
+      }
+    }
+  } catch {
+    return [];
+  }
+  return [...roots];
+}
+
+function hasScannableDescendant(dir: string, depthRemaining = 4): boolean {
+  let entries: string[];
+  try {
+    entries = readDir(dir);
+  } catch {
+    return false;
+  }
+
+  for (const entry of entries) {
+    if (IGNORED_DIRECTORIES.has(entry) || entry.startsWith('.')) continue;
+    const fullPath = safeJoin(dir, entry);
+    let stats;
+    try {
+      stats = statPath(fullPath);
+    } catch {
+      continue;
+    }
+    if (stats.isFile() && SCANNABLE_EXTENSIONS.has(path.extname(entry).toLowerCase())) {
+      return true;
+    }
+    if (
+      stats.isDirectory() &&
+      depthRemaining > 0 &&
+      hasScannableDescendant(fullPath, depthRemaining - 1)
+    ) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function discoverFallbackWatchRoots(rootDir: string): string[] {
+  let entries: string[];
+  try {
+    entries = readDir(rootDir);
+  } catch {
+    return [];
+  }
+
+  const roots: string[] = [];
+  for (const entry of entries) {
+    if (IGNORED_DIRECTORIES.has(entry) || entry.startsWith('.')) continue;
+    const candidate = safeJoin(rootDir, entry);
+    try {
+      if (statPath(candidate).isDirectory() && hasScannableDescendant(candidate)) {
+        roots.push(candidate);
+      }
+    } catch {
+      continue;
+    }
+  }
+  return roots;
+}
+
+export function discoverWatchableDirectories(rootDir: string): string[] {
+  const dynamicRoots = detectSourceRoots(rootDir)
+    .filter((root) => root.availability === 'inferred')
+    .map((root) => root.absolutePath);
+  const prismaRoots = discoverPrismaRoots(rootDir);
+  const inferred = [...new Set([...dynamicRoots, ...prismaRoots])];
+  if (inferred.length > 0) return inferred;
+  return discoverFallbackWatchRoots(rootDir);
+}
+
+function watchableAbsolutePaths(rootDir: string): string[] {
+  const candidates = discoverWatchableDirectories(rootDir);
+  return candidates.filter((p) => {
+    try {
+      return statPath(p).isDirectory();
+    } catch {
+      return false;
+    }
+  });
+}
+
+function isWatchableFilePath(filePath: string): boolean {
+  const ext = path.extname(filePath).toLowerCase();
+  if (!SCANNABLE_EXTENSIONS.has(ext)) return false;
+
+  const segments = filePath.split(path.sep);
+  const ignoreSet = IGNORED_DIRECTORIES;
+  for (const segment of segments) {
+    if (ignoreSet.has(segment)) return false;
+  }
+
+  return true;
+}
+
+function handleWatcherEvent(
+  watcherState: ScopeWatcherState,
+  eventType: 'rename' | 'change',
+  filename: string,
+): void {
+  const fullPath = path.join(watcherState.rootDir, filename);
+
+  if (!isWatchableFilePath(fullPath)) return;
+
+  const now = Date.now();
+  watcherState.pendingEvents.set(fullPath, {
+    eventType,
+    filename,
+    timestamp: now,
+  });
+
+  if (process.env.PULSE_SCOPE_DEBUG === '1') {
+    console.warn(`[scope-engine] watch event: ${eventType} ${filename}`);
+  }
+
+  scheduleScan(watcherState);
+}
+
+const SCAN_DEBOUNCE_MS = 5_000;
+
+function scheduleScan(watcherState: ScopeWatcherState): void {
+  if (watcherState.stopped) return;
+
+  if (watcherState.scanTimer !== null) {
+    clearTimeout(watcherState.scanTimer);
+  }
+
+  watcherState.scanTimer = setTimeout(() => {
+    processPendingEvents(watcherState);
+  }, SCAN_DEBOUNCE_MS);
+}
+
+function processPendingEvents(watcherState: ScopeWatcherState): void {
+  if (watcherState.stopped || watcherState.pendingEvents.size === 0) return;
+
+  const scanStart = Date.now();
+  const events = new Map(watcherState.pendingEvents);
+  watcherState.pendingEvents.clear();
+
+  if (process.env.PULSE_SCOPE_DEBUG === '1') {
+    console.warn(`[scope-engine] processing ${events.size} pending events`);
+  }
+
+  const state = buildScopeEngineState(watcherState.rootDir, watcherState.lastState ?? undefined);
+  watcherState.lastState = state;
+  watcherState.lastScanAt = Date.now();
+
+  const detectedWithin = Date.now() - scanStart;
+  const newlyDetected = state.newFilesSinceLastRun.length;
+  const newlyModified = state.modifiedFilesSinceLastRun.length;
+  const newlyDeleted = state.deletedFilesSinceLastRun.length;
+
+  if (newlyDetected > 0 || newlyModified > 0 || newlyDeleted > 0) {
+    if (process.env.PULSE_SCOPE_DEBUG === '1') {
+      console.warn(
+        `[scope-engine] scan completed in ${detectedWithin}ms: ` +
+          `${newlyDetected} new, ${newlyModified} modified, ${newlyDeleted} deleted`,
+      );
+    }
+  }
+
+  const zeroUnknownReport = validateZeroUnknown(state);
+  if (!zeroUnknownReport.passed) {
+    if (process.env.PULSE_SCOPE_DEBUG === '1') {
+      console.warn(
+        `[scope-engine] zero-unknown: ${zeroUnknownReport.unknownFiles} unknown, ` +
+          `${zeroUnknownReport.criticalOrphans} critical orphans`,
+      );
+    }
+  }
+}
+
+export interface ScopeWatcherHandle {
+  stop: () => void;
+  getLastState: () => ScopeEngineState | null;
+  runFullScan: () => ScopeEngineState;
+}
+
+export function startScopeWatcher(rootDir: string): ScopeWatcherHandle {
+  if (process.env.PULSE_SCOPE_DEBUG === '1') {
+    console.warn(`[scope-engine] starting watcher for ${rootDir}`);
+  }
+
+  const watcherState: ScopeWatcherState = {
+    rootDir,
+    lastScanAt: 0,
+    lastState: null,
+    pendingEvents: new Map(),
+    scanTimer: null,
+    watchers: [],
+    stopped: false,
+  };
+
+  const initial = buildScopeEngineState(rootDir);
+  watcherState.lastState = initial;
+  watcherState.lastScanAt = Date.now();
+
+  const watchDirs = watchableAbsolutePaths(rootDir);
+
+  for (const watchDir of watchDirs) {
+    try {
+      const watcher = fs.watch(
+        watchDir,
+        { recursive: true, persistent: false },
+        (eventType, filename) => {
+          if (!filename) return;
+          handleWatcherEvent(watcherState, eventType as 'rename' | 'change', filename);
+        },
+      );
+
+      watcher.on('error', (err) => {
+        if (process.env.PULSE_SCOPE_DEBUG === '1') {
+          console.warn(`[scope-engine] watcher error on ${watchDir}: ${err.message}`);
+        }
+      });
+
+      watcherState.watchers.push(watcher);
+
+      if (process.env.PULSE_SCOPE_DEBUG === '1') {
+        console.warn(`[scope-engine] watching directory: ${watchDir}`);
+      }
+    } catch {
+      if (process.env.PULSE_SCOPE_DEBUG === '1') {
+        console.warn(`[scope-engine] failed to watch directory: ${watchDir}`);
+      }
+    }
+  }
+
+  if (watcherState.watchers.length === 0) {
+    if (process.env.PULSE_SCOPE_DEBUG === '1') {
+      console.warn('[scope-engine] no directories to watch, falling back to polling');
+    }
+    startPollingWatcher(watcherState);
+  }
+
+  return {
+    stop: () => {
+      watcherState.stopped = true;
+      if (watcherState.scanTimer) {
+        clearTimeout(watcherState.scanTimer);
+      }
+      for (const w of watcherState.watchers) {
+        try {
+          w.close();
+        } catch {
+          // already closed
+        }
+      }
+      watcherState.watchers = [];
+    },
+    getLastState: () => watcherState.lastState,
+    runFullScan: () => {
+      const state = buildScopeEngineState(rootDir, watcherState.lastState ?? undefined);
+      watcherState.lastState = state;
+      watcherState.lastScanAt = Date.now();
+      return state;
+    },
+  };
+}
+
+const POLL_INTERVAL_MS = 10_000;
+
+function startPollingWatcher(watcherState: ScopeWatcherState): void {
+  const poll = () => {
+    if (watcherState.stopped) return;
+
+    try {
+      const state = buildScopeEngineState(
+        watcherState.rootDir,
+        watcherState.lastState ?? undefined,
+      );
+
+      const changes =
+        state.newFilesSinceLastRun.length +
+        state.modifiedFilesSinceLastRun.length +
+        state.deletedFilesSinceLastRun.length;
+
+      if (changes > 0 || process.env.PULSE_SCOPE_DEBUG === '1') {
+        watcherState.lastState = state;
+        watcherState.lastScanAt = Date.now();
+
+        const zeroUnknownReport = validateZeroUnknown(state);
+        if (!zeroUnknownReport.passed && process.env.PULSE_SCOPE_DEBUG === '1') {
+          console.warn(
+            `[scope-engine] poll: ${zeroUnknownReport.unknownFiles} unknown, ` +
+              `${zeroUnknownReport.criticalOrphans} critical orphans`,
+          );
+        }
+      }
+    } catch {
+      // polling failure is non-fatal
+    }
+
+    watcherState.scanTimer = setTimeout(poll, POLL_INTERVAL_MS);
+  };
+
+  watcherState.scanTimer = setTimeout(poll, POLL_INTERVAL_MS);
+}
+
+// ─── Script entry point ────────────────────────────────────────────────────
+
+if (typeof require !== 'undefined' && require.main === module) {
+  const args = process.argv.slice(2);
+  let rootDir = '';
+  let watch = false;
+  let enforce = false;
+
+  for (let i = 0; i < args.length; i++) {
+    if ((args[i] === '--root' || args[i] === '--rootDir') && args[i + 1]) {
+      rootDir = path.resolve(args[i + 1]);
+      i++;
+    } else if (args[i] === '--watch') {
+      watch = true;
+    } else if (args[i] === '--enforce') {
+      enforce = true;
+    }
+  }
+
+  if (!rootDir) {
+    rootDir = path.resolve(__dirname, '..', '..');
+  }
+
+  if (enforce) {
+    const report = enforceZeroUnknown(rootDir);
+    console.log(JSON.stringify(report, null, 2));
+    process.exit(report.passed ? 0 : 1);
+  }
+
+  if (watch) {
+    console.log(`[scope-engine] Watching ${rootDir}...`);
+    startScopeWatcher(rootDir);
+    process.stdin.resume();
+  } else {
+    console.log(`[scope-engine] Scanning ${rootDir}...`);
+    const state = buildScopeEngineState(rootDir);
+    console.log(
+      `[scope-engine] ${state.summary.totalFiles} files | ` +
+        `${state.summary.sourceFiles} source | ` +
+        `${state.summary.testFiles} test | ` +
+        `${state.summary.classifiedFiles} classified | ` +
+        `${state.summary.unknownFiles} unknown | ` +
+        `${state.summary.orphanFiles} orphans (${state.summary.criticalOrphanFiles} critical)`,
+    );
+  }
 }

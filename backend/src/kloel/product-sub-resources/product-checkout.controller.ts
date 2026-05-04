@@ -83,16 +83,18 @@ export class ProductCheckoutController {
   ) {
     await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
-    const checkout = await this.prisma.productCheckout.findFirst({
-      where: { id: checkoutId, productId },
-    });
-    if (!checkout) {
-      throw new NotFoundException('Checkout não encontrado');
-    }
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const checkout = await tx.productCheckout.findFirst({
+        where: { id: checkoutId, productId },
+      });
+      if (!checkout) {
+        throw new NotFoundException('Checkout não encontrado');
+      }
 
-    const updated = await this.prisma.productCheckout.update({
-      where: { id: checkoutId },
-      data: buildCheckoutData(body, checkout) as Prisma.ProductCheckoutUncheckedUpdateInput,
+      return tx.productCheckout.update({
+        where: { id: checkoutId },
+        data: buildCheckoutData(body, checkout) as Prisma.ProductCheckoutUncheckedUpdateInput,
+      });
     });
 
     return serializeCheckout(updated);

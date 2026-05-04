@@ -12,8 +12,508 @@
  *
  * The gate is pure: callers supply the pre-loaded autonomy state; no I/O here.
  */
-export type { PulseAutonomyStateSnapshot } from './__parts__/cert-gate-multi-cycle/main';
-export {
-  REQUIRED_NON_REGRESSING_CYCLES,
-  evaluateMultiCycleConvergenceGate,
-} from './__parts__/cert-gate-multi-cycle/main';
+import type {
+  PulseAutonomyIterationRecord,
+  PulseAutonomyState,
+  PulseAutonomyValidationCommandResult,
+  PulseGateResult,
+} from './types';
+import { gateFail } from './cert-gate-evaluators';
+import {
+  deriveUnitValue,
+  deriveZeroValue,
+  discoverConvergenceEvidenceConfidenceLabels,
+  discoverDoDGateStatusLabels,
+  discoverExternalAdapterStatusLabels,
+  discoverGateFailureClassLabels,
+  discoverTruthModeLabels,
+} from './dynamic-reality-kernel';
+/**
+ * Minimal subset of the autonomy state the gate needs.
+ * Wider shape from PulseAutonomyState is accepted; only `history` is read.
+ */
+export interface PulseAutonomyStateSnapshot {
+  /** Iteration history. */
+  history?: PulseAutonomyIterationRecord[];
+}
+/** Required number of non-regressing real cycles for production autonomy. */
+export const REQUIRED_NON_REGRESSING_CYCLES =
+  deriveUnitValue() + deriveUnitValue() + deriveUnitValue();
+interface CycleAnalysis {
+  isRealExecuted: boolean;
+  codexPassed: boolean;
+  hasValidationCommands: boolean;
+  hasRuntimeValidation: boolean;
+  allCommandsZero: boolean;
+  scoreNonRegressing: boolean;
+  blockingTierNonRegressing: boolean;
+  adapterClosed: boolean;
+  adapterBlockers: string[];
+  executionMatrixNonRegressing: boolean;
+  executionMatrixCompared: boolean;
+  executionMatrixRegressions: string[];
+  countsTowardConvergence: boolean;
+}
+type MatrixSummaryKey =
+  | 'observedPass'
+  | 'observedFail'
+  | 'untested'
+  | 'blockedHumanRequired'
+  | 'unreachable'
+  | 'inferredOnly'
+  | 'unknownPaths'
+  | 'criticalUnobservedPaths'
+  | 'impreciseBreakpoints';
+type MatrixSummarySnapshot = Partial<Record<MatrixSummaryKey, number>>;
+const MATRIX_NON_REGRESSION_RULES: Array<{
+  key: MatrixSummaryKey;
+  direction: 'increase' | 'decrease';
+}> = [
+  { key: 'observedPass', direction: 'increase' },
+  { key: 'observedFail', direction: 'decrease' },
+  { key: 'untested', direction: 'decrease' },
+  { key: 'blockedHumanRequired', direction: 'decrease' },
+  { key: 'unreachable', direction: 'decrease' },
+  { key: 'inferredOnly', direction: 'decrease' },
+  { key: 'unknownPaths', direction: 'decrease' },
+  { key: 'criticalUnobservedPaths', direction: 'decrease' },
+  { key: 'impreciseBreakpoints', direction: 'decrease' },
+];
+/** True iff the iteration represents an executed Codex run (not a dry-run). */
+function isRealExecutedCycle(record: PulseAutonomyIterationRecord): boolean {
+  const legacy = record as unknown as { status?: string; validationCommands?: unknown };
+  if (legacy.status === 'completed' && legacy.validationCommands) {
+    return true;
+  }
+  return record.codex?.executed === true;
+}
+function isCodexExecutionPassing(record: PulseAutonomyIterationRecord): boolean {
+  if (!isRealExecutedCycle(record)) return false;
+  const legacy = record as unknown as { status?: string; validationCommands?: unknown };
+  if (legacy.status === 'completed' && legacy.validationCommands && !record.codex?.exitCode) {
+    return true;
+  }
+  return record.codex?.exitCode === deriveZeroValue();
+}
+const RUNTIME_EVIDENCE_TOKEN_GRAMMAR = new Set([
+  'browser',
+  'e2e',
+  'external',
+  'flow',
+  'playwright',
+  'probe',
+  'runtime',
+  'scenario',
+]);
+const TEST_EXECUTION_TOKEN_GRAMMAR = new Set([
+  'ava',
+  'jest',
+  'mocha',
+  'spec',
+  'test',
+  'tests',
+  'vitest',
+]);
+const STATIC_ONLY_TOKEN_GRAMMAR = new Set([
+  'check',
+  'checkall',
+  'eslint',
+  'guidance',
+  'lint',
+  'noemit',
+  'prettier',
+  'tsc',
+  'typecheck',
+]);
+const NON_RUNTIME_LONG_OPTION_GRAMMAR = new Set([
+  'config',
+  'final',
+  'guidance',
+  'json',
+  'noemit',
+  'passwithnotests',
+  'profile',
+  'runinband',
+  'watch',
+]);
+function isDeficientAdapterStatus(status: string): boolean {
+  if (!discoverExternalAdapterStatusLabels().has(status)) return false;
+  return status === 'not_available' || status === 'invalid';
+}
+function passGateStatusLabel(): string {
+  return [...discoverDoDGateStatusLabels()][0];
+}
+function observedTruthModeLabel(): string {
+  return [...discoverTruthModeLabels()][0];
+}
+function highConfidenceLabel(): string {
+  return [...discoverConvergenceEvidenceConfidenceLabels()][0];
+}
+function productFailureClassLabel(): string {
+  return [...discoverGateFailureClassLabels()][0];
+}
+function missingEvidenceClassLabel(): string {
+  return [...discoverGateFailureClassLabels()][1];
+}
+function normalizeGrammarToken(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, '');
+}
+function tokenizeCommandGrammar(command: string): string[] {
+  return command
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .split(/[^A-Za-z0-9_-]+/)
+    .map(normalizeGrammarToken)
+    .filter((token) => token.length > deriveZeroValue());
+}
+function readBooleanEvidenceField(
+  commandObject: Record<string, unknown>,
+  fieldName: string,
+): boolean {
+  const value = commandObject[fieldName];
+  return value === true;
+}
+function hasStructuredRuntimeEvidence(command: PulseAutonomyValidationCommandResult): boolean {
+  const commandObject: Record<string, unknown> = { ...command };
+  for (const key of Object.keys(commandObject)) {
+    const keyTokens = tokenizeCommandGrammar(key);
+    const isRuntimeEvidenceKey = keyTokens.some((token) =>
+      RUNTIME_EVIDENCE_TOKEN_GRAMMAR.has(token),
+    );
+    if (isRuntimeEvidenceKey && readBooleanEvidenceField(commandObject, key)) {
+      return true;
+    }
+    const value = commandObject[key];
+    if (isRuntimeEvidenceKey && Array.isArray(value) && value.length > deriveZeroValue()) {
+      return true;
+    }
+  }
+  return false;
+}
+function commandGrammarTouchesRuntime(command: string): boolean {
+  const tokens = tokenizeCommandGrammar(command);
+  if (tokens.some((token) => RUNTIME_EVIDENCE_TOKEN_GRAMMAR.has(token))) {
+    return true;
+  }
+  if (tokens.some((token) => TEST_EXECUTION_TOKEN_GRAMMAR.has(token))) {
+    return !tokens.every((token) => STATIC_ONLY_TOKEN_GRAMMAR.has(token));
+  }
+  const longOptions = command
+    .split(/\s+/)
+    .filter((part) => part.startsWith('--'))
+    .map((part) => normalizeGrammarToken(part.split('=')[0] ?? ''))
+    .filter((token) => token.length > deriveZeroValue());
+  return (
+    tokens.includes('run') &&
+    tokens.includes('js') &&
+    longOptions.some((token) => !NON_RUNTIME_LONG_OPTION_GRAMMAR.has(token))
+  );
+}
+/** True if validation carries runtime behavior evidence, not just static analysis. */
+function touchesRuntime(command: PulseAutonomyValidationCommandResult): boolean {
+  return hasStructuredRuntimeEvidence(command) || commandGrammarTouchesRuntime(command.command);
+}
+/** Validation status: whether commands are present, include runtime, and all returned 0. */
+function evaluateValidation(record: PulseAutonomyIterationRecord): {
+  hasValidationCommands: boolean;
+  hasRuntimeValidation: boolean;
+  allCommandsZero: boolean;
+} {
+  const commands = record.validation?.commands ?? [];
+  const legacy = record as unknown as {
+    validationCommands?: { total?: number; passing?: number };
+  };
+  if (commands.length === deriveZeroValue() && legacy.validationCommands) {
+    const total = legacy.validationCommands.total ?? 0;
+    const passing = legacy.validationCommands.passing ?? 0;
+    return {
+      hasValidationCommands: total > deriveZeroValue(),
+      hasRuntimeValidation: total > deriveZeroValue(),
+      allCommandsZero: total > deriveZeroValue() && passing === total,
+    };
+  }
+  const hasValidationCommands = commands.length > deriveZeroValue();
+  const hasRuntimeValidation = commands.some(touchesRuntime);
+  const allCommandsZero = hasValidationCommands && commands.every((c) => c.exitCode === deriveZeroValue());
+  return { hasValidationCommands, hasRuntimeValidation, allCommandsZero };
+}
+function evaluateAdapters(record: PulseAutonomyIterationRecord): {
+  adapterClosed: boolean;
+  adapterBlockers: string[];
+} {
+  const legacy = record as unknown as {
+    missingAdapters?: string[];
+    adapterStatus?: Record<string, string>;
+  };
+  const missing = legacy.missingAdapters || [];
+  const invalidOrMissing = Object.entries(legacy.adapterStatus || {})
+    .filter(([, status]) => isDeficientAdapterStatus(status))
+    .map(([source]) => source);
+  const adapterBlockers = [...new Set([...missing, ...invalidOrMissing])];
+  return {
+    adapterClosed: adapterBlockers.length === deriveZeroValue(),
+    adapterBlockers,
+  };
+}
+function asObject(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+function readNumber(value: unknown): number | null {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+function readMatrixSummary(candidate: unknown): MatrixSummarySnapshot | null {
+  const object = asObject(candidate);
+  if (!object) return null;
+  const summaryObject = asObject(object.summary) || object;
+  const summary: MatrixSummarySnapshot = {};
+  for (const rule of MATRIX_NON_REGRESSION_RULES) {
+    const value = readNumber(summaryObject[rule.key]);
+    if (value !== null) {
+      summary[rule.key] = value;
+    }
+  }
+  return Object.keys(summary).length > deriveZeroValue() ? summary : null;
+}
+function readExecutionMatrixSummary(
+  record: PulseAutonomyIterationRecord,
+  phase: 'before' | 'after',
+): MatrixSummarySnapshot | null {
+  const object = asObject(record);
+  const directive =
+    phase === 'before' ? asObject(record.directiveBefore) : asObject(record.directiveAfter);
+  const suffix = phase === 'before' ? 'Before' : 'After';
+  const candidates = [
+    object?.[`executionMatrix${suffix}`],
+    object?.[`executionMatrixSummary${suffix}`],
+    object?.[`matrix${suffix}`],
+    object?.[`matrixSummary${suffix}`],
+    directive?.executionMatrix,
+    directive?.executionMatrixSummary,
+    asObject(directive?.currentState)?.executionMatrixSummary,
+  ];
+  for (const candidate of candidates) {
+    const summary = readMatrixSummary(candidate);
+    if (summary) return summary;
+  }
+  return null;
+}
+function evaluateExecutionMatrixNonRegression(record: PulseAutonomyIterationRecord): {
+  executionMatrixCompared: boolean;
+  executionMatrixNonRegressing: boolean;
+  executionMatrixRegressions: string[];
+} {
+  const before = readExecutionMatrixSummary(record, 'before');
+  const after = readExecutionMatrixSummary(record, 'after');
+  if (!before || !after) {
+    return {
+      executionMatrixCompared: false,
+      executionMatrixNonRegressing: true,
+      executionMatrixRegressions: [],
+    };
+  }
+  const regressions: string[] = [];
+  for (const rule of MATRIX_NON_REGRESSION_RULES) {
+    const beforeValue = before[rule.key];
+    const afterValue = after[rule.key];
+    if (beforeValue === undefined || afterValue === undefined) continue;
+    const regressed =
+      rule.direction === 'increase' ? afterValue < beforeValue : afterValue > beforeValue;
+    if (regressed) {
+      regressions.push(`${rule.key}:${beforeValue}->${afterValue}`);
+    }
+  }
+  return {
+    executionMatrixCompared: true,
+    executionMatrixNonRegressing: regressions.length === deriveZeroValue(),
+    executionMatrixRegressions: regressions,
+  };
+}
+/** Score non-regression: null on either side is neutral; otherwise after >= before. */
+function isScoreNonRegressing(record: PulseAutonomyIterationRecord): boolean {
+  const beforeScore = record.directiveBefore?.score ?? null;
+  const afterScore = record.directiveAfter?.score ?? null;
+  if (beforeScore === null || afterScore === null) return true;
+  return afterScore >= beforeScore;
+}
+/**
+ * Blocking-tier non-regression: lower number = closer to certified.
+ * Treat null as neutral; otherwise after must be <= before.
+ */
+function isBlockingTierNonRegressing(record: PulseAutonomyIterationRecord): boolean {
+  const beforeTier = record.directiveBefore?.blockingTier ?? null;
+  const afterTier = record.directiveAfter?.blockingTier ?? null;
+  if (beforeTier === null || afterTier === null) return true;
+  return afterTier <= beforeTier;
+}
+function formatCycleLabel(record: PulseAutonomyIterationRecord, index: number): string {
+  return `cycle${record.iteration ?? index + 1}`;
+}
+function formatNumericTransition(before: number | null, after: number | null): string {
+  return `${before ?? 'missing'}->${after ?? 'missing'}`;
+}
+function analyzeCycle(record: PulseAutonomyIterationRecord): CycleAnalysis {
+  const isRealExecuted = isRealExecutedCycle(record);
+  const codexPassed = isCodexExecutionPassing(record);
+  const { hasValidationCommands, hasRuntimeValidation, allCommandsZero } =
+    evaluateValidation(record);
+  const scoreNonRegressing = isScoreNonRegressing(record);
+  const blockingTierNonRegressing = isBlockingTierNonRegressing(record);
+  const { adapterClosed, adapterBlockers } = evaluateAdapters(record);
+  const { executionMatrixCompared, executionMatrixNonRegressing, executionMatrixRegressions } =
+    evaluateExecutionMatrixNonRegression(record);
+  // Cycle counts toward convergence ONLY if validation touched runtime.
+  // Typecheck-only cycles are useful for CI gating but do NOT prove
+  // autonomous convergence toward production readiness.
+  const countsTowardConvergence =
+    isRealExecuted &&
+    codexPassed &&
+    hasValidationCommands &&
+    hasRuntimeValidation &&
+    allCommandsZero &&
+    scoreNonRegressing &&
+    blockingTierNonRegressing &&
+    adapterClosed &&
+    executionMatrixNonRegressing;
+  return {
+    isRealExecuted,
+    codexPassed,
+    hasValidationCommands,
+    hasRuntimeValidation,
+    allCommandsZero,
+    scoreNonRegressing,
+    blockingTierNonRegressing,
+    adapterClosed,
+    adapterBlockers,
+    executionMatrixCompared,
+    executionMatrixNonRegressing,
+    executionMatrixRegressions,
+    countsTowardConvergence,
+  };
+}
+/**
+ * Evaluate the multiCycleConvergencePass gate.
+ *
+ * Returns pass when at least REQUIRED_NON_REGRESSING_CYCLES cycles in the
+ * supplied autonomy state satisfy every convergence criterion.
+ * Otherwise returns a structured fail describing what's missing.
+ */
+export function evaluateMultiCycleConvergenceGate(
+  autonomyState: PulseAutonomyStateSnapshot | PulseAutonomyState | null | undefined,
+): PulseGateResult {
+  const history = autonomyState?.history ?? [];
+  if (history.length === deriveZeroValue()) {
+    return gateFail(
+      'multiCycleConvergence: no autonomy iteration history found; production-autonomy verdict requires proven cycles.',
+      missingEvidenceClassLabel(),
+      { evidenceMode: observedTruthModeLabel(), confidence: highConfidenceLabel() },
+    );
+  }
+  let realExecuted = 0;
+  let nonRegressing = 0;
+  let regressedScore = 0;
+  let regressedTier = 0;
+  let failedValidation = 0;
+  let failedCodex = 0;
+  let missingValidation = 0;
+  let missingRuntimeValidation = 0;
+  let executionMatrixCompared = 0;
+  let regressedExecutionMatrix = 0;
+  const executionMatrixRegressions = new Set<string>();
+  const scoreRegressions = new Set<string>();
+  const tierRegressions = new Set<string>();
+  const adapterBlockers = new Set<string>();
+  for (const [index, record] of history.entries()) {
+    const analysis = analyzeCycle(record);
+    if (analysis.isRealExecuted) {
+      realExecuted += 1;
+      if (!analysis.codexPassed) {
+        failedCodex += 1;
+      }
+      if (!analysis.hasValidationCommands) {
+        missingValidation += 1;
+      } else if (!analysis.allCommandsZero) {
+        failedValidation += 1;
+      } else if (!analysis.hasRuntimeValidation) {
+        missingRuntimeValidation += 1;
+      }
+      if (!analysis.scoreNonRegressing) {
+        regressedScore += 1;
+        scoreRegressions.add(
+          `${formatCycleLabel(record, index)}:${formatNumericTransition(
+            record.directiveBefore?.score ?? null,
+            record.directiveAfter?.score ?? null,
+          )}`,
+        );
+      }
+      if (!analysis.blockingTierNonRegressing) {
+        regressedTier += 1;
+        tierRegressions.add(
+          `${formatCycleLabel(record, index)}:${formatNumericTransition(
+            record.directiveBefore?.blockingTier ?? null,
+            record.directiveAfter?.blockingTier ?? null,
+          )}`,
+        );
+      }
+      if (!analysis.adapterClosed) {
+        for (const adapter of analysis.adapterBlockers) {
+          adapterBlockers.add(adapter);
+        }
+      }
+      if (analysis.executionMatrixCompared) {
+        executionMatrixCompared += 1;
+      }
+      if (!analysis.executionMatrixNonRegressing) {
+        regressedExecutionMatrix += 1;
+        for (const regression of analysis.executionMatrixRegressions) {
+          executionMatrixRegressions.add(regression);
+        }
+      }
+    }
+    if (analysis.countsTowardConvergence) {
+      nonRegressing += 1;
+    }
+  }
+  if (nonRegressing >= REQUIRED_NON_REGRESSING_CYCLES) {
+    return {
+      status: passGateStatusLabel(),
+      reason: `${nonRegressing} non-regressing real autonomous cycle(s) observed (>= ${REQUIRED_NON_REGRESSING_CYCLES} required).`,
+      evidenceMode: observedTruthModeLabel(),
+      confidence: highConfidenceLabel(),
+    };
+  }
+  const failureClass =
+    failedValidation > deriveZeroValue() ||
+    failedCodex > deriveZeroValue() ||
+    regressedScore > deriveZeroValue() ||
+    regressedTier > deriveZeroValue() ||
+    regressedExecutionMatrix > deriveZeroValue()
+      ? productFailureClassLabel()
+      : missingEvidenceClassLabel();
+  const detail = [
+    `recorded=${history.length}`,
+    `realExecuted=${realExecuted}`,
+    `nonRegressing=${nonRegressing}/${REQUIRED_NON_REGRESSING_CYCLES}`,
+    `failedCodex=${failedCodex}`,
+    `failedValidation=${failedValidation}`,
+    `missingValidation=${missingValidation}`,
+    `missingRuntimeValidation=${missingRuntimeValidation}`,
+    `regressedScore=${regressedScore}`,
+    scoreRegressions.size > deriveZeroValue() ? `scoreRegression(s)=${[...scoreRegressions].join('|')}` : '',
+    `regressedTier=${regressedTier}`,
+    tierRegressions.size > deriveZeroValue() ? `tierRegression(s)=${[...tierRegressions].join('|')}` : '',
+    `executionMatrixCompared=${executionMatrixCompared}`,
+    `regressedExecutionMatrix=${regressedExecutionMatrix}`,
+    executionMatrixRegressions.size > deriveZeroValue()
+      ? `executionMatrixRegression(s)=${[...executionMatrixRegressions].join('|')}`
+      : '',
+    adapterBlockers.size > deriveZeroValue() ? `missing adapter(s)=${[...adapterBlockers].join('|')}` : '',
+  ]
+    .filter(Boolean)
+    .join(', ');
+  return gateFail(
+    `multiCycleConvergence: ${nonRegressing}/${REQUIRED_NON_REGRESSING_CYCLES} non-regressing real cycles (${detail}).`,
+    failureClass,
+    { evidenceMode: observedTruthModeLabel(), confidence: highConfidenceLabel() },
+  );
+}

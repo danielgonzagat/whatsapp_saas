@@ -319,16 +319,19 @@ export async function updateMessageFeedback(
         : undefined;
   if (type === undefined)
     throw new BadRequestException('Feedback inválido. Use positive, negative ou null.');
-  const existing = await deps.prisma.chatMessage.findFirst({
-    where: { id, thread: { workspaceId } },
-    select: { id: true, threadId: true, role: true, metadata: true, createdAt: true },
+
+  return deps.prisma.$transaction(async (tx) => {
+    const existing = await tx.chatMessage.findFirst({
+      where: { id, thread: { workspaceId } },
+      select: { id: true, threadId: true, role: true, metadata: true, createdAt: true },
+    });
+    if (!existing) throw new NotFoundException('Mensagem não encontrada.');
+    if (existing.role !== 'assistant')
+      throw new BadRequestException('Feedback só pode ser salvo em mensagens do assistente.');
+    const nextMetadata = {
+      ...normalizeMessageMetadata(existing.metadata),
+      feedback: type ? { type, updatedAt: new Date().toISOString() } : null,
+    };
+    return tx.chatMessage.update({ where: { id }, data: { metadata: nextMetadata } });
   });
-  if (!existing) throw new NotFoundException('Mensagem não encontrada.');
-  if (existing.role !== 'assistant')
-    throw new BadRequestException('Feedback só pode ser salvo em mensagens do assistente.');
-  const nextMetadata = {
-    ...normalizeMessageMetadata(existing.metadata),
-    feedback: type ? { type, updatedAt: new Date().toISOString() } : null,
-  };
-  return deps.prisma.chatMessage.update({ where: { id }, data: { metadata: nextMetadata } });
 }

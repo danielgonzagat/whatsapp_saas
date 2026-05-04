@@ -732,22 +732,24 @@ export class WhatsAppCatchupService {
 
   // ═══ PERSISTENCE ═══
   private async persistCatchupSnapshot(ws: string, update: Record<string, unknown>) {
-    const w = await this.prisma.workspace.findUnique({
-      where: { id: ws },
-      select: { providerSettings: true },
-    });
-    if (!w) return;
-    const s = asProviderSettings(w.providerSettings);
-    const sm = s.whatsappApiSession || {};
-    await this.prisma.workspace.update({
-      where: { id: ws },
-      data: {
-        providerSettings: toPrismaJsonValue({
-          ...s,
-          ...(typeof update.status === 'string' ? { connectionStatus: update.status } : {}),
-          whatsappApiSession: { ...sm, ...update },
-        }),
-      },
+    await this.prisma.$transaction(async (tx) => {
+      const w = await tx.workspace.findUnique({
+        where: { id: ws },
+        select: { providerSettings: true },
+      });
+      if (!w) return;
+      const s = asProviderSettings(w.providerSettings);
+      const sm = s.whatsappApiSession || {};
+      await tx.workspace.update({
+        where: { id: ws },
+        data: {
+          providerSettings: toPrismaJsonValue({
+            ...s,
+            ...(typeof update.status === 'string' ? { connectionStatus: update.status } : {}),
+            whatsappApiSession: { ...sm, ...update },
+          }),
+        },
+      });
     });
   }
 
