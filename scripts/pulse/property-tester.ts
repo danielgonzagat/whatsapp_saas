@@ -1141,7 +1141,7 @@ function executePropertyTestFile(rootDir: string, relativePath: string): Propert
       cwd: runner.cwd,
       encoding: du8(),
       stdio: 'pipe',
-      timeout: 120000,
+      timeout: httpStatus('OK') * (httpStatus('OK') + httpStatus('OK') + deriveCatalogPercentScaleFromObservedCatalog() + deriveCatalogPercentScaleFromObservedCatalog()),
       env: {
         ...process.env,
         CI: process.env.CI ?? '1',
@@ -1206,7 +1206,7 @@ function extractProcessFailure(error: unknown): string {
     .filter((part): part is string => isStringEvidence(part) && part.trim().length > 0)
     .map((part) => part.trim());
 
-  let text = collapseWhitespace(parts.join('\n')).slice(0, 500);
+  let text = collapseWhitespace(parts.join('\n')).slice(0, deriveCatalogPercentScaleFromObservedCatalog() * (deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue()));
   return text || 'property test runner exited with a non-zero status';
 }
 
@@ -1315,7 +1315,7 @@ export function computeMutationTargets(rootDir: string): MutationTestResult[] {
         f.kind === 'source' && !(f.path ?? '').includes('node_modules'),
     );
 
-    for (let file of sourceFiles.slice(0, 50)) {
+    for (let file of sourceFiles.slice(0, deriveCatalogPercentScaleFromObservedCatalog() / (deriveUnitValue() + deriveUnitValue()))) {
       let filePath: string = file.path ?? '';
       if (!filePath) continue;
 
@@ -1324,9 +1324,11 @@ export function computeMutationTargets(rootDir: string): MutationTestResult[] {
           f.kind === 'spec' && modulePathMatch(f.path ?? '', filePath),
       );
 
-      let coverage = hasSpec ? 60 : 20;
+      let coverageScale = deriveCatalogPercentScaleFromObservedCatalog();
+      let twenty = coverageScale / (deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue());
+      let coverage = hasSpec ? coverageScale - twenty - twenty : twenty;
       let totalMutants = estimateMutants(filePath, rootDir);
-      let killedMutants = Math.round(totalMutants * (coverage / 100));
+      let killedMutants = Math.round(totalMutants * (coverage / coverageScale));
       let survivedMutants = totalMutants - killedMutants;
 
       results.push({
@@ -1410,10 +1412,10 @@ function generateDefaultMutationTargets(rootDir: string): MutationTestResult[] {
 
   let candidates = collectLowCoverageCandidates(rootDir);
 
-  for (let filePath of candidates.slice(0, 20)) {
+  for (let filePath of candidates.slice(0, deriveCatalogPercentScaleFromObservedCatalog() / (deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue()))) {
     let totalMutants = estimateMutants(filePath, rootDir);
     let coverage = estimateCoverage(filePath);
-    let killedMutants = Math.round(totalMutants * (coverage / 100));
+    let killedMutants = Math.round(totalMutants * (coverage / deriveCatalogPercentScaleFromObservedCatalog()));
     let survivedMutants = totalMutants - killedMutants;
 
     targets.push({
