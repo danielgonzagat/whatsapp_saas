@@ -5,7 +5,10 @@ import type { CoreParserData } from './functional-map-types';
 import { pathExists, readTextFile } from './safe-fs';
 import {
   deriveStringUnionMembersFromTypeContract,
+  discoverActorKindLabels,
   discoverEnvironmentLabels,
+  discoverProviderModeLabels,
+  discoverScenarioKindLabels,
   discoverTimeWindowModeLabels,
 } from './dynamic-reality-kernel';
 
@@ -103,15 +106,15 @@ function isTimeWindowModeArray(value: unknown): boolean {
 }
 
 function isActorKind(value: unknown): boolean {
-  return typeof value === 'string' && value.trim().length > 0;
+  return discoverActorKindLabels().has(value as string);
 }
 
 function isScenarioKind(value: unknown): boolean {
-  return typeof value === 'string' && value.trim().length > 0;
+  return discoverScenarioKindLabels().has(value as string);
 }
 
 function isProviderMode(value: unknown): boolean {
-  return typeof value === 'string' && value.trim().length > 0;
+  return discoverProviderModeLabels().has(value as string);
 }
 
 function isScenarioRunner(value: unknown): boolean {
