@@ -4,10 +4,15 @@ import { tokenize, unique } from '../signal-normalizers';
 import {
   discoverSignalSourceLabels,
   discoverSignalSeverityLabels,
+  discoverSignalActionLabels,
+  discoverSignalTypeLabels,
+  discoverRuntimeFusionEvidenceStatusLabels,
+  discoverOperationalEvidenceKindLabels,
   discoverConvergenceUnitPriorityLabels,
   deriveStringUnionMembersFromTypeContract,
   discoverAllObservedArtifactFilenames,
   deriveUnitValue,
+  deriveZeroValue,
   deriveHttpStatusFromObservedCatalog,
   deriveVerificationThresholdFromObservedCatalog,
 } from '../dynamic-reality-kernel';
@@ -54,7 +59,7 @@ function traceSourceLooksObserved(source: string, runtimeObserved: boolean): boo
 function emptySourceCounts(): Record<SignalSource, number> {
   let counts: Record<string, number> = {};
   for (let source of SIGNAL_SOURCE_LABELS) {
-    counts[source] = 0;
+    counts[source] = deriveZeroValue();
   }
   return counts as Record<SignalSource, number>;
 }
@@ -104,10 +109,10 @@ function parseCanonicalExternalSignal(value: unknown): CanonicalExternalSignal |
   let explicitSeverity = asOptionalNumber(value.severity);
   let explicitImpact = asOptionalNumber(value['impactScore']);
   let baselineValue = bound01(
-    asNumber(value['runtimeBaselineScore'] ?? value.baselineScore ?? value.baselineDelta, 0),
+    asNumber(value['runtimeBaselineScore'] ?? value.baselineScore ?? value.baselineDelta, deriveZeroValue()),
   );
   let blastRadiusValue = bound01(
-    asNumber(value['blastRadiusScore'] ?? value.blastRadius ?? value.blastRadiusImpact, 0),
+    asNumber(value['blastRadiusScore'] ?? value.blastRadius ?? value.blastRadiusImpact, deriveZeroValue()),
   );
 
   return {
@@ -133,8 +138,8 @@ function parseCanonicalExternalSignal(value: unknown): CanonicalExternalSignal |
       ...asStringArray(value.affectedFlows),
     ]),
     confidence: defaultCertainty(value.confidence),
-    frequency: Math.max(1, asNumber(value.frequency ?? value.count, 1)),
-    affectedUsers: Math.max(0, asNumber(value.affectedUsers ?? value.userCount, 0)),
+    frequency: Math.max(deriveUnitValue(), asNumber(value.frequency ?? value.count, deriveUnitValue())),
+    affectedUsers: Math.max(deriveZeroValue(), asNumber(value.affectedUsers ?? value.userCount, deriveZeroValue())),
     trend: parseTrend(value.trend),
     observedPayload: parseObservedPayload(value),
   };
@@ -260,9 +265,9 @@ function loadCanonicalExternalSignals(currentDir: string): {
       evidence: {
         status: existsAt(artifactPath) ? 'invalid' : 'not_available',
         artifactPath,
-        totalSignals: 0,
-        observedSignals: 0,
-        inferredSignals: 0,
+        totalSignals: deriveZeroValue(),
+        observedSignals: deriveZeroValue(),
+        inferredSignals: deriveZeroValue(),
         adapterStatusCounts: {},
         notAvailableAdapters: [],
         skippedAdapters: [],
@@ -286,7 +291,7 @@ function loadCanonicalExternalSignals(currentDir: string): {
   let invalidAdapters: string[] = [];
 
   for (let adapter of state.adapters) {
-    adapterStatusCounts[adapter.status] = (adapterStatusCounts[adapter.status] ?? 0) + 1;
+    adapterStatusCounts[adapter.status] = (adapterStatusCounts[adapter.status] ?? deriveZeroValue()) + deriveUnitValue();
     if (adapter.status === 'not_available') notAvailableAdapters.push(adapter.source);
     if (adapter.status === 'stale') staleAdapters.push(adapter.source);
     if (adapter.status === 'invalid') invalidAdapters.push(adapter.source);
@@ -343,7 +348,7 @@ function otelErrorSpanToSignal(
 ): RuntimeSignal {
   let httpMethod = (span.attributes['http.method'] as string) || '';
   let httpRoute = (span.attributes['http.route'] as string) || '';
-  let httpStatus = (span.attributes['http.status_code'] as number) || 0;
+  let httpStatus = (span.attributes['http.status_code'] as number) || deriveZeroValue();
   let structuralFrom = (span.attributes['pulse.structural.from'] as string) || '';
   let structuralTo = (span.attributes['pulse.structural.to'] as string) || '';
 
@@ -371,8 +376,8 @@ function otelErrorSpanToSignal(
     affectedCapabilityIds: [],
     affectedFlowIds: [],
     affectedFilePaths,
-    frequency: 1,
-    affectedUsers: 0,
+    frequency: deriveUnitValue(),
+    affectedUsers: deriveZeroValue(),
     impactScore: bound01(httpStatus / observedHttpDenominator(httpStatus)),
     confidence: bound01(httpStatus / observedHttpDenominator(httpStatus)),
     evidenceKind: 'runtime',
@@ -411,7 +416,7 @@ function otelLatencyToSignal(
     affectedFlowIds: [],
     affectedFilePaths: [],
     frequency: traceTotal,
-    affectedUsers: 0,
+    affectedUsers: deriveZeroValue(),
     impactScore: bound01(p95Ms / observedLatencyDenominator(p95Ms, avgMs, traceTotal)),
     confidence: bound01(traceTotal / (traceTotal + observedOccurrence(traceTotal))),
     evidenceKind: 'runtime',
@@ -441,11 +446,11 @@ function runtimeTraceEvidenceToSignals(evidence: RuntimeCallGraphEvidence): Runt
   let signals: RuntimeSignal[] = [];
   let mappedPathsBySpanName = new Map<string, string[]>();
   let endpointCounts = Object.values(evidence.summary.endpointMap);
-  let activeEndpointFloor = observedMeanOrSelf(endpointCounts, 0);
+  let activeEndpointFloor = observedMeanOrSelf(endpointCounts, deriveZeroValue());
   let durationSignals = [evidence.summary.avgDurationMs, evidence.summary.p95DurationMs].filter(
-    (value) => value > 0,
+    (value) => value > deriveZeroValue(),
   );
-  let durationFloor = observedMeanOrSelf(durationSignals, 0) + observedSpread(durationSignals);
+  let durationFloor = observedMeanOrSelf(durationSignals, deriveZeroValue()) + observedSpread(durationSignals);
 
   for (let mapping of evidence.spanToPathMappings) {
     if (mapping.confidence < deriveVerificationThresholdFromObservedCatalog() || mapping.matchedFilePaths.length === 0) continue;
@@ -505,10 +510,10 @@ function loadRuntimeTraceEvidence(currentDir: string): {
         status: existsAt(artifactPath) ? 'invalid' : 'not_available',
         artifactPath,
         source: null,
-        totalTraces: 0,
-        totalSpans: 0,
-        errorTraces: 0,
-        derivedSignals: 0,
+        totalTraces: deriveZeroValue(),
+        totalSpans: deriveZeroValue(),
+        errorTraces: deriveZeroValue(),
+        derivedSignals: deriveZeroValue(),
         reason: existsAt(artifactPath)
           ? `${RUNTIME_TRACES_FILE} is not valid JSON.`
           : `${RUNTIME_TRACES_FILE} is not available in .pulse/current.`,
@@ -521,8 +526,8 @@ function loadRuntimeTraceEvidence(currentDir: string): {
   let runtimeObserved = sourceDetails.runtimeObserved === true;
   let summary = isRecord(payload.summary) ? payload.summary : {};
   let totalTraces = asNumber(summary.totalTraces, asArray(payload.traces).length);
-  let totalSpans = asNumber(summary.totalSpans, 0);
-  let errorTraces = asNumber(summary.errorTraces, 0);
+  let totalSpans = asNumber(summary.totalSpans, deriveZeroValue());
+  let errorTraces = asNumber(summary.errorTraces, deriveZeroValue());
 
   if (source === 'simulated') {
     return {
@@ -534,7 +539,7 @@ function loadRuntimeTraceEvidence(currentDir: string): {
         totalTraces,
         totalSpans,
         errorTraces,
-        derivedSignals: 0,
+        derivedSignals: deriveZeroValue(),
         reason: `${RUNTIME_TRACES_FILE} source is simulated; traces are retained as non-observed metadata only.`,
       },
     };
@@ -550,7 +555,7 @@ function loadRuntimeTraceEvidence(currentDir: string): {
         totalTraces,
         totalSpans,
         errorTraces,
-        derivedSignals: 0,
+        derivedSignals: deriveZeroValue(),
         reason: source
           ? `${RUNTIME_TRACES_FILE} source ${source} is not an observed runtime source for fusion.`
           : `${RUNTIME_TRACES_FILE} does not declare a runtime source.`,
@@ -568,13 +573,13 @@ function loadRuntimeTraceEvidence(currentDir: string): {
         totalTraces,
         totalSpans,
         errorTraces,
-        derivedSignals: 0,
+        derivedSignals: deriveZeroValue(),
         reason: `${RUNTIME_TRACES_FILE} source ${source} is missing required trace evidence fields.`,
       },
     };
   }
 
-  if (totalTraces === 0 || totalSpans === 0) {
+  if (totalTraces === deriveZeroValue() || totalSpans === deriveZeroValue()) {
     return {
       signals: [],
       evidence: {
@@ -584,7 +589,7 @@ function loadRuntimeTraceEvidence(currentDir: string): {
         totalTraces,
         totalSpans,
         errorTraces,
-        derivedSignals: 0,
+        derivedSignals: deriveZeroValue(),
         reason: `${RUNTIME_TRACES_FILE} source ${source} declares observed runtime provenance but contains zero traces or spans.`,
       },
     };
@@ -950,7 +955,7 @@ function buildSummary(
 
   let sourceCounts = emptySourceCounts();
   for (let s of signals) {
-    sourceCounts[s.source] = (sourceCounts[s.source] ?? 0) + 1;
+    sourceCounts[s.source] = (sourceCounts[s.source] ?? deriveZeroValue()) + deriveUnitValue();
   }
 
   let signalsByCapability: Record<string, number> = {};
@@ -960,12 +965,12 @@ function buildSummary(
 
   for (let s of signals) {
     for (let capId of s.affectedCapabilityIds) {
-      signalsByCapability[capId] = (signalsByCapability[capId] ?? 0) + 1;
-      capImpactAccum[capId] = (capImpactAccum[capId] ?? 0) + s.impactScore;
+      signalsByCapability[capId] = (signalsByCapability[capId] ?? deriveZeroValue()) + deriveUnitValue();
+      capImpactAccum[capId] = (capImpactAccum[capId] ?? deriveZeroValue()) + s.impactScore;
     }
     for (let flowId of s.affectedFlowIds) {
-      signalsByFlow[flowId] = (signalsByFlow[flowId] ?? 0) + 1;
-      flowImpactAccum[flowId] = (flowImpactAccum[flowId] ?? 0) + s.impactScore;
+      signalsByFlow[flowId] = (signalsByFlow[flowId] ?? deriveZeroValue()) + deriveUnitValue();
+      flowImpactAccum[flowId] = (flowImpactAccum[flowId] ?? deriveZeroValue()) + s.impactScore;
     }
   }
 
@@ -1026,14 +1031,14 @@ export function buildRuntimeFusionState(rootDir: string): RuntimeFusionState {
   let allSignals: RuntimeSignal[] = [...externalSignals.signals, ...runtimeTraces.signals];
 
   // Try loading capability state for signal→capability mapping context
-  let capabilityStatePath = p.join(currentDir, 'PULSE_CAPABILITY_STATE.json');
+  let capabilityStatePath = p.join(currentDir, discoverAllObservedArtifactFilenames().capabilityState);
   let capabilityPayload = safeJsonParseFile(capabilityStatePath);
   let capabilityState = capabilityPayload
     ? (capabilityPayload as unknown as {
         capabilities?: Array<{ id: string; name: string; filePaths?: string[] }>;
       })
     : undefined;
-  let flowProjectionPath = p.join(currentDir, 'PULSE_FLOW_PROJECTION.json');
+  let flowProjectionPath = p.join(currentDir, discoverAllObservedArtifactFilenames().flowProjection);
   let flowProjectionPayload = safeJsonParseFile(flowProjectionPath);
   let flowProjection = flowProjectionPayload
     ? (flowProjectionPayload as unknown as {
@@ -1067,7 +1072,7 @@ export function buildRuntimeFusionState(rootDir: string): RuntimeFusionState {
   }
 
   // Load convergence plan for priority context
-  let convergencePlanPath = p.join(currentDir, 'PULSE_CONVERGENCE_PLAN.json');
+  let convergencePlanPath = p.join(currentDir, discoverAllObservedArtifactFilenames().convergencePlan);
   let convergencePayload = safeJsonParseFile(convergencePlanPath);
   let convergencePlan = convergencePayload
     ? (convergencePayload as unknown as {
