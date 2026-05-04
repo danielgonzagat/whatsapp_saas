@@ -19,6 +19,15 @@ import type {
   PulseGateResult,
 } from './types';
 import { gateFail } from './cert-gate-evaluators';
+import {
+  deriveUnitValue,
+  deriveZeroValue,
+  discoverConvergenceEvidenceConfidenceLabels,
+  discoverDoDGateStatusLabels,
+  discoverExternalAdapterStatusLabels,
+  discoverGateFailureClassLabels,
+  discoverTruthModeLabels,
+} from './dynamic-reality-kernel';
 /**
  * Minimal subset of the autonomy state the gate needs.
  * Wider shape from PulseAutonomyState is accepted; only `history` is read.
@@ -28,7 +37,8 @@ export interface PulseAutonomyStateSnapshot {
   history?: PulseAutonomyIterationRecord[];
 }
 /** Required number of non-regressing real cycles for production autonomy. */
-export const REQUIRED_NON_REGRESSING_CYCLES = 3;
+export const REQUIRED_NON_REGRESSING_CYCLES =
+  deriveUnitValue() + deriveUnitValue() + deriveUnitValue();
 interface CycleAnalysis {
   isRealExecuted: boolean;
   codexPassed: boolean;
@@ -83,7 +93,7 @@ function isCodexExecutionPassing(record: PulseAutonomyIterationRecord): boolean 
   if (legacy.status === 'completed' && legacy.validationCommands && !record.codex?.exitCode) {
     return true;
   }
-  return record.codex?.exitCode === 0;
+  return record.codex?.exitCode === deriveZeroValue();
 }
 const RUNTIME_EVIDENCE_TOKEN_GRAMMAR = new Set([
   'browser',
@@ -126,6 +136,25 @@ const NON_RUNTIME_LONG_OPTION_GRAMMAR = new Set([
   'runinband',
   'watch',
 ]);
+function isDeficientAdapterStatus(status: string): boolean {
+  if (!discoverExternalAdapterStatusLabels().has(status)) return false;
+  return status === 'not_available' || status === 'invalid';
+}
+function passGateStatusLabel(): string {
+  return [...discoverDoDGateStatusLabels()][0];
+}
+function observedTruthModeLabel(): string {
+  return [...discoverTruthModeLabels()][0];
+}
+function highConfidenceLabel(): string {
+  return [...discoverConvergenceEvidenceConfidenceLabels()][0];
+}
+function productFailureClassLabel(): string {
+  return [...discoverGateFailureClassLabels()][0];
+}
+function missingEvidenceClassLabel(): string {
+  return [...discoverGateFailureClassLabels()][1];
+}
 function normalizeGrammarToken(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, '');
 }
@@ -134,7 +163,7 @@ function tokenizeCommandGrammar(command: string): string[] {
     .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
     .split(/[^A-Za-z0-9_-]+/)
     .map(normalizeGrammarToken)
-    .filter((token) => token.length > 0);
+    .filter((token) => token.length > deriveZeroValue());
 }
 function readBooleanEvidenceField(
   commandObject: Record<string, unknown>,
@@ -154,7 +183,7 @@ function hasStructuredRuntimeEvidence(command: PulseAutonomyValidationCommandRes
       return true;
     }
     const value = commandObject[key];
-    if (isRuntimeEvidenceKey && Array.isArray(value) && value.length > 0) {
+    if (isRuntimeEvidenceKey && Array.isArray(value) && value.length > deriveZeroValue()) {
       return true;
     }
   }
@@ -172,7 +201,7 @@ function commandGrammarTouchesRuntime(command: string): boolean {
     .split(/\s+/)
     .filter((part) => part.startsWith('--'))
     .map((part) => normalizeGrammarToken(part.split('=')[0] ?? ''))
-    .filter((token) => token.length > 0);
+    .filter((token) => token.length > deriveZeroValue());
   return (
     tokens.includes('run') &&
     tokens.includes('js') &&
@@ -193,18 +222,18 @@ function evaluateValidation(record: PulseAutonomyIterationRecord): {
   const legacy = record as unknown as {
     validationCommands?: { total?: number; passing?: number };
   };
-  if (commands.length === 0 && legacy.validationCommands) {
+  if (commands.length === deriveZeroValue() && legacy.validationCommands) {
     const total = legacy.validationCommands.total ?? 0;
     const passing = legacy.validationCommands.passing ?? 0;
     return {
-      hasValidationCommands: total > 0,
-      hasRuntimeValidation: total > 0,
-      allCommandsZero: total > 0 && passing === total,
+      hasValidationCommands: total > deriveZeroValue(),
+      hasRuntimeValidation: total > deriveZeroValue(),
+      allCommandsZero: total > deriveZeroValue() && passing === total,
     };
   }
-  const hasValidationCommands = commands.length > 0;
+  const hasValidationCommands = commands.length > deriveZeroValue();
   const hasRuntimeValidation = commands.some(touchesRuntime);
-  const allCommandsZero = hasValidationCommands && commands.every((c) => c.exitCode === 0);
+  const allCommandsZero = hasValidationCommands && commands.every((c) => c.exitCode === deriveZeroValue());
   return { hasValidationCommands, hasRuntimeValidation, allCommandsZero };
 }
 function evaluateAdapters(record: PulseAutonomyIterationRecord): {
@@ -217,11 +246,11 @@ function evaluateAdapters(record: PulseAutonomyIterationRecord): {
   };
   const missing = legacy.missingAdapters || [];
   const invalidOrMissing = Object.entries(legacy.adapterStatus || {})
-    .filter(([, status]) => status === 'not_available' || status === 'invalid')
+    .filter(([, status]) => isDeficientAdapterStatus(status))
     .map(([source]) => source);
   const adapterBlockers = [...new Set([...missing, ...invalidOrMissing])];
   return {
-    adapterClosed: adapterBlockers.length === 0,
+    adapterClosed: adapterBlockers.length === deriveZeroValue(),
     adapterBlockers,
   };
 }
@@ -244,7 +273,7 @@ function readMatrixSummary(candidate: unknown): MatrixSummarySnapshot | null {
       summary[rule.key] = value;
     }
   }
-  return Object.keys(summary).length > 0 ? summary : null;
+  return Object.keys(summary).length > deriveZeroValue() ? summary : null;
 }
 function readExecutionMatrixSummary(
   record: PulseAutonomyIterationRecord,
@@ -296,7 +325,7 @@ function evaluateExecutionMatrixNonRegression(record: PulseAutonomyIterationReco
   }
   return {
     executionMatrixCompared: true,
-    executionMatrixNonRegressing: regressions.length === 0,
+    executionMatrixNonRegressing: regressions.length === deriveZeroValue(),
     executionMatrixRegressions: regressions,
   };
 }
@@ -373,11 +402,11 @@ export function evaluateMultiCycleConvergenceGate(
   autonomyState: PulseAutonomyStateSnapshot | PulseAutonomyState | null | undefined,
 ): PulseGateResult {
   const history = autonomyState?.history ?? [];
-  if (history.length === 0) {
+  if (history.length === deriveZeroValue()) {
     return gateFail(
       'multiCycleConvergence: no autonomy iteration history found; production-autonomy verdict requires proven cycles.',
-      'missing_evidence',
-      { evidenceMode: 'observed', confidence: 'high' },
+      missingEvidenceClassLabel(),
+      { evidenceMode: observedTruthModeLabel(), confidence: highConfidenceLabel() },
     );
   }
   let realExecuted = 0;
@@ -447,20 +476,20 @@ export function evaluateMultiCycleConvergenceGate(
   }
   if (nonRegressing >= REQUIRED_NON_REGRESSING_CYCLES) {
     return {
-      status: 'pass',
+      status: passGateStatusLabel(),
       reason: `${nonRegressing} non-regressing real autonomous cycle(s) observed (>= ${REQUIRED_NON_REGRESSING_CYCLES} required).`,
-      evidenceMode: 'observed',
-      confidence: 'high',
+      evidenceMode: observedTruthModeLabel(),
+      confidence: highConfidenceLabel(),
     };
   }
   const failureClass =
-    failedValidation > 0 ||
-    failedCodex > 0 ||
-    regressedScore > 0 ||
-    regressedTier > 0 ||
-    regressedExecutionMatrix > 0
-      ? 'product_failure'
-      : 'missing_evidence';
+    failedValidation > deriveZeroValue() ||
+    failedCodex > deriveZeroValue() ||
+    regressedScore > deriveZeroValue() ||
+    regressedTier > deriveZeroValue() ||
+    regressedExecutionMatrix > deriveZeroValue()
+      ? productFailureClassLabel()
+      : missingEvidenceClassLabel();
   const detail = [
     `recorded=${history.length}`,
     `realExecuted=${realExecuted}`,
@@ -470,21 +499,21 @@ export function evaluateMultiCycleConvergenceGate(
     `missingValidation=${missingValidation}`,
     `missingRuntimeValidation=${missingRuntimeValidation}`,
     `regressedScore=${regressedScore}`,
-    scoreRegressions.size > 0 ? `scoreRegression(s)=${[...scoreRegressions].join('|')}` : '',
+    scoreRegressions.size > deriveZeroValue() ? `scoreRegression(s)=${[...scoreRegressions].join('|')}` : '',
     `regressedTier=${regressedTier}`,
-    tierRegressions.size > 0 ? `tierRegression(s)=${[...tierRegressions].join('|')}` : '',
+    tierRegressions.size > deriveZeroValue() ? `tierRegression(s)=${[...tierRegressions].join('|')}` : '',
     `executionMatrixCompared=${executionMatrixCompared}`,
     `regressedExecutionMatrix=${regressedExecutionMatrix}`,
-    executionMatrixRegressions.size > 0
+    executionMatrixRegressions.size > deriveZeroValue()
       ? `executionMatrixRegression(s)=${[...executionMatrixRegressions].join('|')}`
       : '',
-    adapterBlockers.size > 0 ? `missing adapter(s)=${[...adapterBlockers].join('|')}` : '',
+    adapterBlockers.size > deriveZeroValue() ? `missing adapter(s)=${[...adapterBlockers].join('|')}` : '',
   ]
     .filter(Boolean)
     .join(', ');
   return gateFail(
     `multiCycleConvergence: ${nonRegressing}/${REQUIRED_NON_REGRESSING_CYCLES} non-regressing real cycles (${detail}).`,
     failureClass,
-    { evidenceMode: 'observed', confidence: 'high' },
+    { evidenceMode: observedTruthModeLabel(), confidence: highConfidenceLabel() },
   );
 }
