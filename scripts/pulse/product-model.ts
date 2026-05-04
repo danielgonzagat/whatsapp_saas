@@ -33,6 +33,7 @@ import {
   discoverTruthModeLabels,
   deriveHttpStatusFromObservedCatalog,
   deriveUnitValue,
+  deriveZeroValue,
 } from './dynamic-reality-kernel';
 import {
   deriveRouteFamily,
