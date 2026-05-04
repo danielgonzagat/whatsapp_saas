@@ -12,9 +12,31 @@ jest.mock('@sentry/node', () => ({
   withScope: jest.fn((callback) => callback({ setTag: jest.fn(), setExtra: jest.fn() })),
 }));
 
+jest.mock('ioredis', () => {
+  const events = jest.requireActual<typeof import('node:events')>('node:events');
+  class MockRedis extends events.EventEmitter {
+    get = jest.fn();
+    set = jest.fn();
+    del = jest.fn();
+    keys = jest.fn();
+    quit = jest.fn();
+    disconnect = jest.fn();
+    status = 'ready';
+  }
+  return { default: MockRedis, Redis: MockRedis };
+});
+
 jest.mock('fs', () => ({
   existsSync: jest.fn(),
   readFileSync: jest.fn(),
+  unlinkSync: jest.fn(),
+  readdirSync: jest.fn().mockReturnValue([]),
+  mkdirSync: jest.fn(),
+  rmdirSync: jest.fn(),
+  statSync: jest.fn().mockReturnValue({ isDirectory: () => false }),
+  writeFileSync: jest.fn(),
+  openSync: jest.fn(),
+  closeSync: jest.fn(),
   constants: { O_CREAT: 0, O_WRONLY: 0, O_RDONLY: 0 },
   promises: { readFile: jest.fn(), writeFile: jest.fn(), mkdir: jest.fn() },
 }));

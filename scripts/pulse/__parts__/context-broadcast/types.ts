@@ -2,7 +2,7 @@ type SnapshotStatus = 'ready' | 'missing' | 'stale' | 'invalid';
 type LeaseStatus = 'active' | 'expired' | 'released' | 'conflicted';
 type GitNexusSourceMode = 'local_files' | 'cli' | 'missing';
 
-interface ProtectedGovernanceConfig {
+export interface ProtectedGovernanceConfig {
   protectedExact: string[];
   protectedPrefixes: string[];
 }

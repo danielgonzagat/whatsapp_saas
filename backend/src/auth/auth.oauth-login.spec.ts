@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 import { BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthOAuthService } from './auth-oauth.service';
@@ -7,6 +8,11 @@ import { AuthPartnerService } from './auth-partner.service';
 import { AuthVerificationService } from './auth-verification.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from './email.service';
+import { GoogleAuthService } from './google-auth.service';
+import { FacebookAuthService } from './facebook-auth.service';
+import { TikTokAuthService } from './tiktok-auth.service';
+import { ConnectService } from '../payments/connect/connect.service';
+import { RateLimitService } from './rate-limit.service';
 
 const mockPrismaService = {
   agent: {
@@ -88,6 +94,29 @@ const mockEmailService = {
   sendMagicLinkEmail: jest.fn().mockResolvedValue(true),
 };
 
+const mockConfigService = {
+  get: jest.fn().mockReturnValue(undefined),
+};
+
+const mockGoogleAuthService = {
+  verifyCredential: jest.fn(),
+};
+
+const mockFacebookAuthService = {
+  verifyAccessToken: jest.fn(),
+};
+
+const mockTikTokAuthService = {
+  verifyAuthorizationCode: jest.fn(),
+  verifyAccessToken: jest.fn(),
+};
+
+const mockConnectService = {};
+
+const mockRateLimitService = {
+  checkRateLimit: jest.fn(),
+};
+
 describe('AuthService OAuth login', () => {
   let service: AuthService;
   let prisma: typeof mockPrismaService;
@@ -110,6 +139,11 @@ describe('AuthService OAuth login', () => {
         { provide: JwtService, useValue: mockJwtService },
         { provide: EmailService, useValue: mockEmailService },
         { provide: ConfigService, useValue: mockConfigService },
+        { provide: GoogleAuthService, useValue: mockGoogleAuthService },
+        { provide: FacebookAuthService, useValue: mockFacebookAuthService },
+        { provide: TikTokAuthService, useValue: mockTikTokAuthService },
+        { provide: ConnectService, useValue: mockConnectService },
+        { provide: RateLimitService, useValue: mockRateLimitService },
         { provide: AuthOAuthService, useValue: mockAuthOAuthService },
         { provide: AuthPartnerService, useValue: mockAuthPartnerService },
         { provide: AuthVerificationService, useValue: mockAuthVerificationService },
@@ -142,7 +176,7 @@ describe('AuthService OAuth login', () => {
       image: undefined,
       emailVerified: true,
     };
-    mockAuthOAuthService.verifyGoogleCredential.mockResolvedValue(profile);
+    mockGoogleAuthService.verifyCredential.mockResolvedValue(profile);
     mockAuthOAuthService.resolveAgentForProfile.mockResolvedValue({
       agent: {
         id: 'agent-1',
@@ -165,7 +199,7 @@ describe('AuthService OAuth login', () => {
 
     expect(result).toHaveProperty('access_token');
     expect(result).toHaveProperty('isNewUser', true);
-    expect(mockAuthOAuthService.verifyGoogleCredential).toHaveBeenCalledWith(
+    expect(mockGoogleAuthService.verifyCredential).toHaveBeenCalledWith(
       expect.objectContaining({ credential: 'google-credential' }),
     );
   });
@@ -173,7 +207,7 @@ describe('AuthService OAuth login', () => {
   it('should require reauthentication when Facebook login matches an existing verified email', async () => {
     const { BadRequestException: _B, ...rest } = await import('@nestjs/common');
     void rest;
-    mockAuthOAuthService.verifyFacebookAccessToken.mockRejectedValue(
+    mockFacebookAuthService.verifyAccessToken.mockRejectedValue(
       Object.assign(new Error('oauth_reauthentication_required'), {
         response: { error: 'oauth_reauthentication_required' },
         status: 409,
@@ -192,7 +226,7 @@ describe('AuthService OAuth login', () => {
       }),
     });
 
-    expect(mockAuthOAuthService.verifyFacebookAccessToken).toHaveBeenCalledWith(
+    expect(mockFacebookAuthService.verifyAccessToken).toHaveBeenCalledWith(
       expect.objectContaining({ accessToken: 'fb-token', userId: 'fb-user-1' }),
     );
     expect(prisma.agent.update).not.toHaveBeenCalled();
@@ -200,7 +234,7 @@ describe('AuthService OAuth login', () => {
   });
 
   it('should require reauthentication when multiple active accounts share the same verified email', async () => {
-    mockAuthOAuthService.verifyFacebookAccessToken.mockRejectedValue(
+    mockFacebookAuthService.verifyAccessToken.mockRejectedValue(
       Object.assign(new Error('oauth_reauthentication_required'), {
         response: { error: 'oauth_reauthentication_required' },
         status: 409,
@@ -235,7 +269,7 @@ describe('AuthService OAuth login', () => {
       accessToken: 'tt-access-token',
       refreshToken: 'tt-refresh-token',
     };
-    mockAuthOAuthService.verifyTikTokAuthorizationCode.mockResolvedValue(profile);
+    mockTikTokAuthService.verifyAuthorizationCode.mockResolvedValue(profile);
     mockAuthOAuthService.resolveAgentForProfile.mockResolvedValue({
       agent: {
         id: 'agent-tt-1',
@@ -259,7 +293,7 @@ describe('AuthService OAuth login', () => {
 
     expect(result).toHaveProperty('access_token');
     expect(result).toHaveProperty('isNewUser', true);
-    expect(mockAuthOAuthService.verifyTikTokAuthorizationCode).toHaveBeenCalledWith(
+    expect(mockTikTokAuthService.verifyAuthorizationCode).toHaveBeenCalledWith(
       expect.objectContaining({
         code: 'tiktok-code',
         redirectUri: 'https://auth.kloel.com/api/auth/callback/tiktok',
@@ -268,7 +302,7 @@ describe('AuthService OAuth login', () => {
   });
 
   it('should preserve an existing real email when TikTok login uses a synthetic provider email', async () => {
-    mockAuthOAuthService.verifyTikTokAuthorizationCode.mockResolvedValue({
+    mockTikTokAuthService.verifyAuthorizationCode.mockResolvedValue({
       provider: 'tiktok',
       providerId: 'tt-user-2',
       email: 'tiktok-tt-user-2@oauth.kloel.local',
@@ -320,7 +354,7 @@ describe('AuthService OAuth login', () => {
       accessToken: 'tt-access-token',
       refreshToken: 'tt-refresh-token',
     };
-    mockAuthOAuthService.verifyTikTokAccessToken.mockResolvedValue(profile);
+    mockTikTokAuthService.verifyAccessToken.mockResolvedValue(profile);
     mockAuthOAuthService.resolveAgentForProfile.mockResolvedValue({
       agent: {
         id: 'agent-tt-3',
@@ -349,7 +383,7 @@ describe('AuthService OAuth login', () => {
 
     expect(result).toHaveProperty('access_token');
     expect(result).toHaveProperty('isNewUser', true);
-    expect(mockAuthOAuthService.verifyTikTokAccessToken).toHaveBeenCalledWith(
+    expect(mockTikTokAuthService.verifyAccessToken).toHaveBeenCalledWith(
       expect.objectContaining({
         accessToken: 'tt-access-token',
         openId: 'tt-user-3',
@@ -360,7 +394,7 @@ describe('AuthService OAuth login', () => {
   });
 
   it('should return InternalServerErrorException (500) on unexpected errors', async () => {
-    mockAuthOAuthService.verifyGoogleCredential.mockResolvedValue({
+    mockGoogleAuthService.verifyCredential.mockResolvedValue({
       provider: 'google',
       providerId: 'gid-1',
       email: 'test@test.com',

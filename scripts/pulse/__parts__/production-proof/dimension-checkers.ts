@@ -1,3 +1,4 @@
+import * as path from 'path';
 import { safeJoin } from '../../lib/safe-path';
 import { pathExists } from '../../safe-fs';
 import { isRuntimeProbeProofEligible } from '../../runtime-probes';

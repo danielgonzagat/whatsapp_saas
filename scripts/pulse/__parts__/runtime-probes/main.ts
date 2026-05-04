@@ -326,7 +326,7 @@ export function buildRuntimeProbesArtifact(
       executed: runtimeEvidence.executed,
       summary: runtimeEvidence.summary,
       artifactPaths: runtimeEvidence.artifactPaths,
-      probes: runtimeEvidence.probes as PulseRuntimeProbe[],
+      probes: runtimeEvidence.probes as PulseRuntimeProbeArtifactProbe[],
     },
     { ...options, generatedAt, source },
   );

@@ -1,7 +1,11 @@
 import * as path from 'node:path';
 import { pathExists, readTextFile, statPath } from '../../safe-fs';
 import { safeJoin } from '../../lib/safe-path';
-import type { PulseCommandGraph, PulseDiscoveredCommand } from './types';
+import type {
+  PulseCommandGraph,
+  PulseDiscoveredCommand,
+  PulseDiscoveredEnvironmentVariable,
+} from './types';
 import { uniqueSorted, toRelativePath } from './types';
 import {
   discoverStaticSources,

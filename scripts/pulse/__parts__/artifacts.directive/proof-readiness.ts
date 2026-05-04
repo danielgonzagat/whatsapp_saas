@@ -2,7 +2,7 @@ import { unique } from '../../artifacts.io';
 import { buildAutonomyReadiness, buildAutonomyProof } from '../../artifacts.autonomy';
 import type { PulseProofReadinessSummary } from '../../cert-gate-overclaim';
 import { buildDirectiveProofSurface } from '../../directive-proof-surface';
-import type { DirectivePathProofSurface } from '../../directive-proof-surface';
+import type { DirectiveProofSurface } from '../../directive-proof-surface';
 import type { PulseMachineReadiness } from '../../artifacts.types';
 import type { PathProofPlan } from '../../path-proof-runner';
 import type { PathCoverageState } from '../../types.path-coverage-engine';
@@ -126,7 +126,7 @@ export function applyProofReadinessToAutonomyClaims(
 
 export function buildPathProofSurfaceForDirective(
   machineReadiness: PulseMachineReadiness,
-): DirectivePathProofSurface {
+): DirectiveProofSurface {
   return buildDirectiveProofSurface({
     pathProofPlan: readCurrentPulseArtifact<PathProofPlan>(PATH_PROOF_TASKS_ARTIFACT),
     pathCoverage: readCurrentPulseArtifact<PathCoverageState>(PATH_COVERAGE_ARTIFACT),
