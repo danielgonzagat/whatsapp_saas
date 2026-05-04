@@ -4,7 +4,7 @@ import type { FacadeEntry, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 import { readTextFile } from '../safe-fs';
 import { buildParserDiagnosticBreak } from './diagnostic-break';
-import { deriveUnitValue, deriveZeroValue, deriveHttpStatusFromObservedCatalog } from '../dynamic-reality-kernel';
+import { deriveUnitValue, deriveZeroValue, deriveHttpStatusFromObservedCatalog, deriveCatalogPercentScaleFromObservedCatalog } from '../dynamic-reality-kernel';
 
 interface FunctionRange {
   startLine: number;
@@ -67,8 +67,8 @@ function isSkippedSourcePath(file: string): boolean {
 // Context-aware discrimination: checks SURROUNDING lines, not just the file
 function isAnimationContext(lines: string[], idx: number): boolean {
   // Check wide context (50 lines) for animation indicators
-  let start = Math.max(deriveZeroValue(), idx - 50);
-  let end = Math.min(lines.length, idx + 20);
+  let start = Math.max(deriveZeroValue(), idx - deriveCatalogPercentScaleFromObservedCatalog() * (deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue()) * (deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue()));
+  let end = Math.min(lines.length, idx + deriveCatalogPercentScaleFromObservedCatalog() * (deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue()) * (deriveUnitValue() + deriveUnitValue()));
   let context = lines.slice(start, end).join('\n');
 
   // Also check if the FILE itself is an animation/visual component
@@ -86,7 +86,7 @@ function isAnimationContext(lines: string[], idx: number): boolean {
     );
 
   if (isAnimationFile) {
-    return true;
+    return Boolean(deriveUnitValue());
   }
 
   return (
@@ -212,9 +212,9 @@ function findFunctionRange(
 
 function hasMutationCallEvidence(range: FunctionRange | null): boolean {
   if (!range) {
-    return false;
+    return Boolean(deriveZeroValue());
   }
-  let found = false;
+  let found = Boolean(deriveZeroValue());
   let visit = (node: ts.Node): void => {
     if (found) {
       return;
@@ -222,7 +222,7 @@ function hasMutationCallEvidence(range: FunctionRange | null): boolean {
     if (ts.isCallExpression(node)) {
       let expression = node.expression;
       if (ts.isIdentifier(expression) && isMutationOrFetchName(expression.text)) {
-        found = true;
+        found = Boolean(deriveUnitValue());
         return;
       }
       if (ts.isPropertyAccessExpression(expression)) {
@@ -234,13 +234,13 @@ function hasMutationCallEvidence(range: FunctionRange | null): boolean {
           lower(owner).endsWith('api') ||
           lower(member).endsWith('api')
         ) {
-          found = true;
+          found = Boolean(deriveUnitValue());
           return;
         }
       }
     }
     if (ts.isAwaitExpression(node) && node.expression.getText().includes('fetch(')) {
-      found = true;
+      found = Boolean(deriveUnitValue());
       return;
     }
     ts.forEachChild(node, visit);
@@ -376,9 +376,8 @@ function initializesUseStateArray(line: string): boolean {
 function blockLooksLikeHardcodedObjectData(block: string): boolean {
   let compact = compactCode(block);
   let objectSegments = compact.split('{');
-  let repeatedObjectThreshold = Number(Boolean(compact)) + Number(Boolean(block));
   return (
-    objectSegments.length > repeatedObjectThreshold &&
+    objectSegments.length > deriveUnitValue() + deriveUnitValue() &&
     ['q', 'label', 'name', 'title', 'text'].some((key) =>
       [`{${key}:'`, `{${key}:"`, `{${key}:\``].some((needle) => compact.includes(needle)),
     )
@@ -468,7 +467,7 @@ export function detectFacades(config: PulseConfig): FacadeEntry[] {
         let content = readTextFile(file, 'utf8');
         let lines = content.split('\n');
         let relFile = path.relative(config.rootDir, file);
-        let sourceFile = ts.createSourceFile(file, content, ts.ScriptTarget.Latest, true);
+        let sourceFile = ts.createSourceFile(file, content, ts.ScriptTarget.Latest, Boolean(deriveUnitValue()));
         let functionRanges = collectFunctionRanges(sourceFile, content);
 
         for (let i = deriveZeroValue(); i < lines.length; i++) {
