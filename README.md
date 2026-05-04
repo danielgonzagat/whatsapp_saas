@@ -228,3 +228,4 @@ README.)
 - **Audit log** — operacoes financeiras, webhook events, KYC
 - **Financial alerts** — alertas de operacoes monetarias
 - **DLQ monitoring** — dead letter queue webhooks
+
