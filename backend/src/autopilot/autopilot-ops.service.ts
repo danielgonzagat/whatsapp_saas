@@ -166,102 +166,137 @@ export class AutopilotOpsService {
     waitMs?: number;
     liveSend?: boolean;
   }) {
-    const workspace = await this.prisma.workspace.findUnique({
-      where: { id: input.workspaceId },
-      select: { id: true, name: true, providerSettings: true },
-    });
-    if (!workspace) {
-      throw new NotFoundException('Workspace não encontrado para smoke test');
-    }
+    const startedAt = Date.now();
+    const operation = 'autopilot/test';
+    try {
+      const workspace = await this.prisma.workspace.findUnique({
+        where: { id: input.workspaceId },
+        select: { id: true, name: true, providerSettings: true },
+      });
+      if (!workspace) {
+        throw new NotFoundException('Workspace não encontrado para smoke test');
+      }
 
-    const phone =
-      this.normalizePhone(input.phone) ||
-      this.normalizePhone(process.env.AUTOPILOT_TEST_PHONE) ||
-      '5511999999999';
-    const message =
-      String(input.message || '').trim() ||
-      'Olá, quero testar se o Kloel está respondendo corretamente no WhatsApp.';
-    const smokeTestId = randomUUID();
-    const smokeKey = `autopilot:smoke:${smokeTestId}`;
-    const waitMs = Math.min(Math.max(input.waitMs || 12000, 2000), 30000);
-    const contact = await this.prisma.contact.upsert({
-      where: { workspaceId_phone: { workspaceId: input.workspaceId, phone } },
-      update: {},
-      create: { workspaceId: input.workspaceId, phone, name: `Smoke Test ${phone}` },
-      select: { id: true },
-    });
+      const phone =
+        this.normalizePhone(input.phone) ||
+        this.normalizePhone(process.env.AUTOPILOT_TEST_PHONE) ||
+        '5511999999999';
+      const message =
+        String(input.message || '').trim() ||
+        'Olá, quero testar se o Kloel está respondendo corretamente no WhatsApp.';
+      const smokeTestId = randomUUID();
+      const smokeKey = `autopilot:smoke:${smokeTestId}`;
+      const waitMs = Math.min(Math.max(input.waitMs || 12000, 2000), 30000);
+      const contact = await this.prisma.contact.upsert({
+        where: { workspaceId_phone: { workspaceId: input.workspaceId, phone } },
+        update: {},
+        create: { workspaceId: input.workspaceId, phone, name: `Smoke Test ${phone}` },
+        select: { id: true },
+      });
 
-    await this.redisClient.set(
-      smokeKey,
-      JSON.stringify({
+      await this.redisClient.set(
+        smokeKey,
+        JSON.stringify({
+          smokeTestId,
+          status: 'queued',
+          workspaceId: input.workspaceId,
+          contactId: contact.id,
+          phone,
+          mode: input.liveSend ? 'live' : 'dry-run',
+          queuedAt: new Date().toISOString(),
+        }),
+        'EX',
+        300,
+      );
+
+      await autopilotQueue.add(
+        'scan-contact',
+        {
+          workspaceId: input.workspaceId,
+          contactId: contact.id,
+          phone,
+          messageContent: message,
+          smokeTestId,
+          smokeMode: input.liveSend ? 'live' : 'dry-run',
+        },
+        {
+          jobId: buildQueueJobId(
+            'scan-contact',
+            input.workspaceId,
+            contact.id,
+            'smoke',
+            smokeTestId,
+          ),
+          removeOnComplete: true,
+        },
+      );
+
+      const result = await pollUntil<Record<string, unknown> | null>({
+        timeoutMs: waitMs,
+        intervalMs: 500,
+        read: async () => {
+          const current = await this.redisClient.get(smokeKey);
+          if (!current) return null;
+          try {
+            return this.readRecord(JSON.parse(current));
+          } catch {
+            return null;
+          }
+        },
+        stop: (current) =>
+          current !== null &&
+          ['completed', 'failed', 'skipped', 'disabled', 'billing_suspended'].includes(
+            typeof current.status === 'string' ? current.status : '',
+          ),
+        sleep: (ms) => this.sleep(ms),
+      });
+
+      if (
+        result &&
+        ['completed', 'failed', 'skipped'].includes(
+          typeof result.status === 'string' ? result.status : '',
+        )
+      ) {
+        await this.redisClient.del(smokeKey).catch(() => {});
+      }
+
+      const response = {
         smokeTestId,
-        status: 'queued',
         workspaceId: input.workspaceId,
-        contactId: contact.id,
-        phone,
+        workspaceName: workspace.name,
+        queued: true,
         mode: input.liveSend ? 'live' : 'dry-run',
-        queuedAt: new Date().toISOString(),
-      }),
-      'EX',
-      300,
-    );
-
-    await autopilotQueue.add(
-      'scan-contact',
-      {
-        workspaceId: input.workspaceId,
-        contactId: contact.id,
         phone,
-        messageContent: message,
-        smokeTestId,
-        smokeMode: input.liveSend ? 'live' : 'dry-run',
-      },
-      {
-        jobId: buildQueueJobId('scan-contact', input.workspaceId, contact.id, 'smoke', smokeTestId),
-        removeOnComplete: true,
-      },
-    );
-
-    const result = await pollUntil<Record<string, unknown> | null>({
-      timeoutMs: waitMs,
-      intervalMs: 500,
-      read: async () => {
-        const current = await this.redisClient.get(smokeKey);
-        if (!current) return null;
-        try {
-          return this.readRecord(JSON.parse(current));
-        } catch {
-          return null;
-        }
-      },
-      stop: (current) =>
-        current !== null &&
-        ['completed', 'failed', 'skipped', 'disabled', 'billing_suspended'].includes(
-          typeof current.status === 'string' ? current.status : '',
-        ),
-      sleep: (ms) => this.sleep(ms),
-    });
-
-    if (
-      result &&
-      ['completed', 'failed', 'skipped'].includes(
-        typeof result.status === 'string' ? result.status : '',
-      )
-    ) {
-      await this.redisClient.del(smokeKey).catch(() => {});
+        message,
+        result: result || { status: 'queued' },
+        queue: await autopilotQueue.getJobCounts('waiting', 'active', 'delayed', 'failed'),
+      };
+      this.logger.log(
+        {
+          workspaceId: input.workspaceId,
+          smokeTestId,
+          operation,
+          durationMs: Date.now() - startedAt,
+          status: 'ok',
+        },
+        'Autopilot test succeeded',
+      );
+      return response;
+    } catch (error: unknown) {
+      this.logger.error(
+        {
+          workspaceId: input.workspaceId,
+          operation,
+          durationMs: Date.now() - startedAt,
+          errorCode: (error as Record<string, unknown>)?.code,
+          errorName: error instanceof Error ? error.constructor.name : 'Error',
+          status: 'error',
+        },
+        error instanceof Error ? error.stack : undefined,
+        'Autopilot test failed',
+      );
+      throw error;
     }
-
-    return {
-      smokeTestId,
-      workspaceId: input.workspaceId,
-      workspaceName: workspace.name,
-      queued: true,
-      mode: input.liveSend ? 'live' : 'dry-run',
-      phone,
-      message,
-      result: result || { status: 'queued' },
-      queue: await autopilotQueue.getJobCounts('waiting', 'active', 'delayed', 'failed'),
-    };
   }
 
   /** Enfileira processamento do Autopilot no worker (escala horizontal). */

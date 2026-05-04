@@ -226,31 +226,54 @@ export class AutopilotService {
       recoveryTemplateName?: string | null;
     },
   ) {
-    const workspace = await this.prisma.workspace.findUnique({
-      where: { id: workspaceId },
-      select: { providerSettings: true },
-    });
-    const settings = (workspace?.providerSettings as Record<string, unknown>) || {};
-    const autopilotCfg = { ...((settings.autopilot as Record<string, unknown>) || {}) };
-    if (payload.conversionFlowId !== undefined) {
-      autopilotCfg.conversionFlowId = payload.conversionFlowId;
+    const startedAt = Date.now();
+    const operation = 'autopilot/config';
+    try {
+      const workspace = await this.prisma.workspace.findUnique({
+        where: { id: workspaceId },
+        select: { providerSettings: true },
+      });
+      const settings = (workspace?.providerSettings as Record<string, unknown>) || {};
+      const autopilotCfg = { ...((settings.autopilot as Record<string, unknown>) || {}) };
+      if (payload.conversionFlowId !== undefined) {
+        autopilotCfg.conversionFlowId = payload.conversionFlowId;
+      }
+      if (payload.currencyDefault) {
+        autopilotCfg.currencyDefault = payload.currencyDefault;
+      }
+      if (payload.recoveryTemplateName !== undefined) {
+        autopilotCfg.recoveryTemplateName = payload.recoveryTemplateName;
+      }
+      await this.prisma.workspace.update({
+        where: { id: workspaceId },
+        data: {
+          providerSettings: {
+            ...settings,
+            autopilot: autopilotCfg,
+          } as Prisma.InputJsonValue,
+        },
+      });
+      const result = { workspaceId, autopilot: autopilotCfg };
+      this.logger.log(
+        { workspaceId, operation, durationMs: Date.now() - startedAt, status: 'ok' },
+        'Autopilot config succeeded',
+      );
+      return result;
+    } catch (error: unknown) {
+      this.logger.error(
+        {
+          workspaceId,
+          operation,
+          durationMs: Date.now() - startedAt,
+          errorCode: (error as Record<string, unknown>)?.code,
+          errorName: error instanceof Error ? error.constructor.name : 'Error',
+          status: 'error',
+        },
+        error instanceof Error ? error.stack : undefined,
+        'Autopilot config failed',
+      );
+      throw error;
     }
-    if (payload.currencyDefault) {
-      autopilotCfg.currencyDefault = payload.currencyDefault;
-    }
-    if (payload.recoveryTemplateName !== undefined) {
-      autopilotCfg.recoveryTemplateName = payload.recoveryTemplateName;
-    }
-    await this.prisma.workspace.update({
-      where: { id: workspaceId },
-      data: {
-        providerSettings: {
-          ...settings,
-          autopilot: autopilotCfg,
-        } as Prisma.InputJsonValue,
-      },
-    });
-    return { workspaceId, autopilot: autopilotCfg };
   }
 
   /** Get status. */
