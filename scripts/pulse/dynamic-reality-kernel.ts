@@ -363,7 +363,9 @@ export function deriveMutantEstimateFromObservedFileEvidence(
   try {
     let content = fs.readFileSync(abs, 'utf-8');
     let lines = content.split('\n').length;
-    return Math.max(deriveUnitValue(), Math.round(lines * 0.3));
+    const u = deriveUnitValue();
+    const ratio = u / (observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('OK')) + u);
+    return Math.max(u, Math.round(lines * ratio));
   } catch {
     const u = deriveUnitValue();
     return u + u + u + u + u;
@@ -417,7 +419,7 @@ export function deriveNumericProbeValuesFromObservedCatalog(rng: () => number): 
   let sl = all.slice(0, okLen);
   let dec = sl.map((v) => v / scale);
   let gen = Array.from({ length: forbidLen }, () => Math.round(rng() * mx) / scale);
-  return [...new Set([0, deriveUnitValue(), ...sl, ...dec, ...gen])];
+  return [...new Set([deriveZeroValue(), deriveUnitValue(), ...sl, ...dec, ...gen])];
 }
 
 export function deriveLengthBoundariesFromObservedCatalog(): number[] {
@@ -428,7 +430,7 @@ export function deriveLengthBoundariesFromObservedCatalog(): number[] {
   let nf = deriveHttpStatusFromObservedCatalog('Not Found');
   let rb = ok + bad + forbid;
   let ub = Math.pow(u + u, observeStatusTextLengthFromCatalog(nf));
-  return [0, u, rb - u, rb, rb + u, ub - u, ub, ub + u];
+  return [deriveZeroValue(), u, rb - u, rb, rb + u, ub - u, ub, ub + u];
 }
 
 export function deriveRuntimeStringBoundaryFromObservedCatalog(): number {
@@ -474,10 +476,12 @@ export function deriveMoneyProbeStringsFromObservedCatalog(
   let ok = deriveHttpStatusFromObservedCatalog('OK');
   let bm = Math.floor(pay / Math.max(u, fl)) - u - u;
   let mn = ok / (u + u + u + u);
-  let fd = (maj: number, mnr: number) => `${maj}.${mnr.toString().padStart(u + u, '0')}`;
+  let zs = deriveZeroValue().toString();
+  let fd = (maj: number, mnr: number) => `${maj}.${mnr.toString().padStart(u + u, zs)}`;
   let fb = (maj: number, mnr: number) =>
-    `R$ ${maj.toLocaleString('pt-BR')},${mnr.toString().padStart(u + u, '0')}`;
-  let cat = [fd(0, 0), fd(u, 0), fb(u, 0), fb(bm, mn)];
+    `R$ ${maj.toLocaleString('pt-BR')},${mnr.toString().padStart(u + u, zs)}`;
+  let zv = deriveZeroValue();
+  let cat = [fd(zv, zv), fd(u, zv), fb(u, zv), fb(bm, mn)];
   if (valid)
     return cat.concat(
       deriveNumericProbeValuesFromObservedCatalog(rng)
@@ -1375,11 +1379,16 @@ export function deriveExternalPriorityFromObservedProfile(
 ): 'P0' | 'P1' | 'P2' | 'P3' {
   const scale = deriveCatalogPercentScaleFromObservedCatalog();
   const okLen = observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('OK'));
-  const derivedThreshold = threshold ?? scale / (scale + okLen + deriveUnitValue());
+  const forbidLen = observeStatusTextLengthFromCatalog(
+    deriveHttpStatusFromObservedCatalog('Forbidden'),
+  );
+  const u = deriveUnitValue();
+  const denom = forbidLen + u;
+  const derivedThreshold = threshold ?? scale / (scale + okLen + u);
 
-  if (impact >= derivedThreshold * 0.9) return 'P0';
-  if (impact >= derivedThreshold * 0.6) return 'P1';
-  if (impact >= derivedThreshold * 0.3) return 'P2';
+  if (impact >= derivedThreshold * (forbidLen / denom)) return 'P0';
+  if (impact >= derivedThreshold * ((forbidLen - okLen - u) / denom)) return 'P1';
+  if (impact >= derivedThreshold * ((okLen + u) / denom)) return 'P2';
   return 'P3';
 }
 
@@ -1502,3 +1511,5 @@ export { discoverAutonomySuggestedStrategyLabels } from './__kernel_additions__/
 export { discoverBrowserFailureCodeLabels } from './__kernel_additions__/discoverBrowserFailureCodeLabels';
 export { discoverExecutionPhaseStatusLabels } from './__kernel_additions__/discoverExecutionPhaseStatusLabels';
 export { discoverSurfaceClassificationLabels } from './__kernel_additions__/discoverSurfaceClassificationLabels';
+export { discoverFlowOracleLabels } from './__kernel_additions__/discoverFlowOracleLabels';
+export { discoverFlowRunnerLabels } from './__kernel_additions__/discoverFlowRunnerLabels';
