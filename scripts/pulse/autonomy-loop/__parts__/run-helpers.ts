@@ -6,6 +6,7 @@ import type {
   PulseAgentOrchestrationState,
   PulseAutonomyIterationRecord,
   PulseAutonomyState,
+  PulseAutonomyValidationCommandResult,
 } from '../../types';
 import {
   DEFAULT_MAX_ITERATIONS,
@@ -13,6 +14,9 @@ import {
   DEFAULT_PARALLEL_AGENTS,
   DEFAULT_MAX_WORKER_RETRIES,
   DEFAULT_PLANNER_MODEL,
+  type PulseAutonomousDirective,
+  type PulseAutonomousDirectiveUnit,
+  type PulseAutonomySummarySnapshot,
   type PulseAutonomyRunOptions,
 } from '../../autonomy-loop.types';
 import { coercePositiveInt } from '../../autonomy-loop.utils';
@@ -80,7 +84,8 @@ export function buildRunOptions(
     'scripts/pulse/autonomy-loop.types.ts',
     'riskProfile',
   );
-  const defaultRiskLabel = [...riskLabelSet][deriveUnitValue()] || [...riskLabelSet][0];
+  const defaultRiskLabel = ([...riskLabelSet][deriveUnitValue()] ||
+    [...riskLabelSet][0]) as PulseAutonomyRunOptions['riskProfile'];
 
   return {
     rootDir,
@@ -102,7 +107,7 @@ export function buildRunOptions(
       flags.riskProfile ||
       (process.env.PULSE_AUTONOMY_RISK_PROFILE &&
       riskLabelSet.has(process.env.PULSE_AUTONOMY_RISK_PROFILE)
-        ? process.env.PULSE_AUTONOMY_RISK_PROFILE
+        ? (process.env.PULSE_AUTONOMY_RISK_PROFILE as PulseAutonomyRunOptions['riskProfile'])
         : defaultRiskLabel),
     plannerModel: flags.plannerModel || process.env.PULSE_AUTONOMY_MODEL || DEFAULT_PLANNER_MODEL,
     codexModel: flags.codexModel || process.env.PULSE_AUTONOMY_CODEX_MODEL || null,
@@ -121,7 +126,7 @@ export function bootstrapSingleAgentLoop(
   options: PulseAutonomyRunOptions,
   codexCliAvailable: boolean,
   agentsSdkVersion: string | null,
-  plannerMode: string,
+  plannerMode: PulseAutonomyState['plannerMode'],
 ): { state: PulseAutonomyState; rollbackGuard: { enabled: boolean; reason: string } } {
   const rollbackGuard = detectRollbackGuard(rootDir);
   const previousState = loadPulseAutonomyState(rootDir);
@@ -204,7 +209,7 @@ export async function handleRegressionGuard(
     targetCheckpoint?: Record<string, unknown> | null;
     visionGap?: string | null;
   },
-  plannerMode: string,
+  plannerMode: PulseAutonomyState['plannerMode'],
 ): Promise<PulseAutonomyState | null> {
   if (!dryRun && codexExecuted && regressionBefore) {
     const regressionAfter = captureRegressionSnapshot(rootDir);
@@ -260,17 +265,17 @@ export async function handleRegressionGuard(
 
 export function buildIterationRecord(
   state: PulseAutonomyState,
-  plannerMode: string,
+  plannerMode: PulseAutonomyState['plannerMode'],
   strategyMode: 'normal' | 'adaptive_narrow_scope',
-  iterationStatus: string,
+  iterationStatus: PulseAutonomyIterationRecord['status'],
   iterationStartedAt: string,
   dryRun: boolean,
   improved: boolean,
-  selectedUnit: { title: string; [key: string]: unknown },
-  directiveBefore: { [key: string]: unknown },
-  directiveAfter: { [key: string]: unknown },
-  beforeSnapshot: Record<string, unknown>,
-  afterSnapshot: Record<string, unknown>,
+  selectedUnit: PulseAutonomousDirectiveUnit,
+  directiveBefore: PulseAutonomousDirective,
+  directiveAfter: PulseAutonomousDirective,
+  beforeSnapshot: PulseAutonomySummarySnapshot,
+  afterSnapshot: PulseAutonomySummarySnapshot,
   rollbackSummary: string | null,
   codexResult: {
     executed: boolean;
@@ -278,7 +283,7 @@ export function buildIterationRecord(
     exitCode: number | null;
     finalMessage: string | null;
   },
-  validationResults: Array<{ exitCode: number | null }>,
+  validationResults: PulseAutonomyValidationCommandResult[],
 ): PulseAutonomyIterationRecord {
   return {
     iteration: state.completedIterations + deriveUnitValue(),

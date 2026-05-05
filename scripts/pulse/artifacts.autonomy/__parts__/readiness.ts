@@ -1,6 +1,6 @@
 import { deriveZeroValue } from '../../dynamic-reality-kernel';
 import { REQUIRED_NON_REGRESSING_CYCLES } from '../../cert-gate-multi-cycle';
-import type { PulseArtifactSnapshot } from '../../artifacts';
+import type { PulseArtifactSnapshot } from '../../__parts__/artifacts/types';
 import type { PulseAutonomyState, PulseConvergencePlan } from '../../types';
 import type { QueueUnit } from '../../artifacts.queue';
 import { MATRIX_NON_REGRESSION_RULES, GATE_PASS } from './types';

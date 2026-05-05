@@ -2,25 +2,26 @@ import { safeJoin } from './safe-path';
 import type { PulseConfig } from './types';
 import { renderDashboard } from './dashboard';
 import { loadPulseManifest } from './manifest';
-import { computeCertification } from './certification';
-import { generateArtifacts } from './artifacts';
+import { computeCertification } from './certification/__parts__/compute';
+import { generateArtifacts } from './__parts__/artifacts/generate';
 import { extractCodebaseTruth } from './codebase-truth';
-import { buildResolvedManifest } from './resolved-manifest';
+import { buildResolvedManifest } from './resolved-manifest/__parts__/builder';
 import { buildScopeState } from './scope-state';
-import { buildGraph } from './graph';
+import { buildGraph } from './graph/__parts__/graph-part3-builder';
 import { buildCodacyEvidence } from './codacy-evidence';
 import { buildStructuralGraph } from './structural-graph';
 import { buildExecutionChains } from './execution-chains';
-import { buildProductModel } from './product-model';
-import { buildCapabilityState } from './capability-model';
+import { buildProductModel } from './product-model/__parts__/model-builder';
+import { buildCapabilityState } from './capability-model/__parts__/builder';
 import { buildFlowProjection } from './flow-projection';
 import { buildParityGaps } from './parity-gaps';
-import { buildProductVision } from './product-vision';
+import { buildProductVision } from './product-vision/__parts__/builder';
 import { buildExternalSignalState } from './external-signals';
 import type { PulseExecutionTracer } from './execution-trace';
-import { fullScan, type FullScanOptions, type FullScanResult } from './daemon';
+import { fullScan } from './daemon/__parts__/fullScan';
+import type { FullScanOptions, FullScanResult } from './daemon/__parts__/types';
 import { getWatchRefreshMode, type PulseWatchChangeKind } from './daemon-watch-classifier';
-import { buildMerkleDag } from './merkle-cache';
+import { buildMerkleDag } from './merkle-cache/__parts__/dag-build';
 
 interface RebuildDerivedScanStateOptions {
   /** Tracer property. */

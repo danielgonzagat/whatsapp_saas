@@ -30,6 +30,14 @@ import {
   routeFromAppDir,
 } from './helpers';
 
+function deriveSkipHandlerStatuses(): Set<UICrawlerStatus> {
+  const statuses = deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.ui-crawler.ts',
+    'UICrawlerStatus',
+  );
+  return new Set([...statuses].filter((status) => status.includes('not_')) as UICrawlerStatus[]);
+}
+
 /**
  * Discover all Next.js App Router pages under `frontend/src/app/`.
  *

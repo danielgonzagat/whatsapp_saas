@@ -3,7 +3,7 @@
  * Exports: buildArtifactIndex
  */
 import { normalizeCanonicalArtifactValue } from '../../artifacts.queue';
-import { deriveAuthorityState } from '../../artifacts.autonomy';
+import { deriveAuthorityState } from '../../artifacts.autonomy/__parts__/authority';
 import type { PulseArtifactCleanupReport } from '../../artifact-gc';
 import type { PulseArtifactRegistry } from '../../artifact-registry';
 import type { PulseRunIdentity } from '../../run-identity';

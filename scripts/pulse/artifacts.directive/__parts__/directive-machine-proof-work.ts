@@ -6,7 +6,7 @@ import { unique } from '../../artifacts.io';
 import { deriveZeroValue } from '../../dynamic-reality-kernel';
 import type { PulseAutonomyState, PulseConvergencePlan } from '../../types';
 import type { PulseGateName, PulseGateResult } from '../../types';
-import { buildAutonomyProof } from '../../artifacts.autonomy';
+import { buildAutonomyProof } from '../../artifacts.autonomy/__parts__/autonomy-proof';
 import { OBSERVED_ARTIFACT_FILENAMES, type PulseMachineDirectiveUnit } from './directive-shared';
 import {
   isMachineProofGate,

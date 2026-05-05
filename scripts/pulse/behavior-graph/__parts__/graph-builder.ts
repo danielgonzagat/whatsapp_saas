@@ -1,8 +1,8 @@
 import * as path from 'path';
 import { readTextFile, readDir, ensureDir, writeTextFile, pathExists } from '../../safe-fs';
 import { safeJoin } from '../../safe-path';
-import { detectSourceRoots } from '../../source-root-detector';
-import type { DetectedSourceRoot } from '../../source-root-detector';
+import { detectSourceRoots } from '../../source-root-detector/__parts__/api';
+import type { DetectedSourceRoot } from '../../source-root-detector/__parts__/types';
 import type { BehaviorGraph, BehaviorNode, BehaviorGraphSummary } from '../../types.behavior-graph';
 import {
   requireBehaviorNodeKindCatalog,
@@ -10,7 +10,7 @@ import {
   requireExecutionModeCatalog,
   loadTsMorph,
   SKIP_DIRS,
-  _nextNodeId,
+  resetNodeIdSequence,
   deriveRiskLevelOrdinalPositions,
 } from './catalog-helpers';
 import {
@@ -75,7 +75,7 @@ function parseFileWithTsMorph(
 }
 
 export function buildBehaviorGraph(rootDir: string): BehaviorGraph {
-  _nextNodeId = deriveZeroValue();
+  resetNodeIdSequence();
   const tsMorphAvailable = loadTsMorph();
   _tsMorphAvailable = tsMorphAvailable;
   const allNodes: BehaviorNode[] = [];

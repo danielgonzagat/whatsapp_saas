@@ -5,7 +5,7 @@
 import * as path from 'path';
 import { Project, Node, type Decorator } from 'ts-morph';
 import { pathExists } from '../../safe-fs';
-import { sourceGlobsForTsMorph } from '../../source-root-detector';
+import { sourceGlobsForTsMorph } from '../../source-root-detector/__parts__/api';
 import type { AstCallGraph, AstCallEdge, AstResolvedSymbol } from '../../types.ast-graph';
 import {
   deriveStringUnionMembersFromTypeContract,

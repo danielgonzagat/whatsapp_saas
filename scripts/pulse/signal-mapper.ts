@@ -33,7 +33,7 @@ export interface BuildExternalSignalStateInput {
   capabilityState: PulseCapabilityState;
   flowProjection: PulseFlowProjection;
   liveExternalState?:
-    | import('./adapters/external-sources-orchestrator').ConsolidatedExternalState
+    | import('./adapters/external-sources-orchestrator/__parts__/core').ConsolidatedExternalState
     | null;
 }
 

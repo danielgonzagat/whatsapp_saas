@@ -5,23 +5,20 @@
 import { safeJoin } from '../../safe-path';
 import { readOptionalJson } from '../../artifacts.io';
 import { normalizeArtifactStatus, normalizeArtifactExecutionMode } from '../../artifacts.queue';
-import {
-  discoverAllObservedArtifactFilenames,
-  deriveZeroValue,
-} from '../../dynamic-reality-kernel';
+import { discoverAllObservedArtifactFilenames } from '../../dynamic-reality-kernel';
 import type { QueueUnit } from '../../artifacts.queue';
-import type { PulseMachineReadiness } from '../../artifacts.autonomy/__parts__/types';
 
 export const CURRENT_PULSE_ARTIFACT_DIR = '.pulse/current';
 export const OBSERVED_ARTIFACT_FILENAMES = discoverAllObservedArtifactFilenames();
 
-export type DirectiveExecutionMatrixPath = {
-  [key: string]: string | number | boolean | Record<string, unknown> | null;
+export type DirectiveExecutionMatrixPath = object & {
+  status: string;
+  executionMode: string;
 };
-export type DirectiveExecutionMatrixSummary = Record<string, unknown> & {
+export type DirectiveExecutionMatrixSummary = object & {
   byStatus: Record<string, number>;
 };
-export type DirectiveExternalSignalSummary = Record<string, unknown>;
+export type DirectiveExternalSignalSummary = object;
 
 export type PulseMachineDirectiveUnit = Record<string, string | number | boolean | string[] | null>;
 
@@ -65,7 +62,7 @@ export function normalizeExecutionMatrixPathForDirective(
   return {
     ...path,
     status: normalizeMatrixStatusForDirective(path.status as string),
-    executionMode: normalizeArtifactExecutionMode(path.executionMode as string),
+    executionMode: normalizeArtifactExecutionMode(path.executionMode as QueueUnit['executionMode']),
   };
 }
 

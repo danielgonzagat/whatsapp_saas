@@ -20,7 +20,7 @@ import type {
 } from './kernel';
 import {
   CAPABILITY_STATUSES,
-  EXTERNAL_SIGNAL_SOURCES,
+  OBSERVED_EXTERNAL_SIGNAL_SOURCE_LABELS,
   FAILURE_CLASSES,
   FLOW_STATUSES,
   OBSERVED_ARTIFACTS,
@@ -88,7 +88,7 @@ import {
   normalizeFailureClass,
   normalizeOptionalState,
   observedThreshold,
-  rankBreakTypes,
+  rankFindingEvents,
   rankFiles,
   relatedFailedGateNames,
   selectDominantOwnerLane,
@@ -392,7 +392,7 @@ export function buildScenarioUnits(input: BuildPulseConvergencePlanInput): Pulse
       affectedCapabilityIds,
       affectedFlowIds: flowIds,
       asyncExpectations,
-      breakTypes: rankBreakTypes(relatedBreaks, evidenceBatchSize(relatedBreaks)),
+      findingEvents: rankFindingEvents(relatedBreaks, evidenceBatchSize(relatedBreaks)),
       artifactPaths,
       relatedFiles: rankFiles(relatedBreaks, evidenceBatchSize(relatedBreaks)),
       validationArtifacts: buildValidationArtifacts(
@@ -454,7 +454,7 @@ export function buildSecurityUnit(input: BuildPulseConvergencePlanInput): PulseC
         [
           gate.reason,
           securityBreaks.length > 0
-            ? `Top blocking events: ${rankBreakTypes(securityBreaks).join(', ')}.`
+            ? `Top blocking events: ${rankFindingEvents(securityBreaks).join(', ')}.`
             : '',
         ]
           .filter(Boolean)
@@ -475,7 +475,7 @@ export function buildSecurityUnit(input: BuildPulseConvergencePlanInput): PulseC
       affectedCapabilityIds: [],
       affectedFlowIds: [],
       asyncExpectations: [],
-      breakTypes: rankBreakTypes(securityBreaks, evidenceBatchSize(securityBreaks)),
+      findingEvents: rankFindingEvents(securityBreaks, evidenceBatchSize(securityBreaks)),
       artifactPaths: [OBSERVED_ARTIFACTS.certificate, OBSERVED_ARTIFACTS.report],
       relatedFiles: rankFiles(securityBreaks, evidenceBatchSize(securityBreaks)),
       validationArtifacts: [OBSERVED_ARTIFACTS.certificate, OBSERVED_ARTIFACTS.report],
@@ -483,7 +483,7 @@ export function buildSecurityUnit(input: BuildPulseConvergencePlanInput): PulseC
       exitCriteria: uniqueStrings([
         'securityPass returns pass in the next certification run.',
         securityBreaks.length > 0
-          ? `Blocking security events are cleared: ${rankBreakTypes(securityBreaks, evidenceBatchSize(securityBreaks)).join(', ')}.`
+          ? `Blocking security events are cleared: ${rankFindingEvents(securityBreaks, evidenceBatchSize(securityBreaks)).join(', ')}.`
           : null,
       ]),
     },
@@ -523,9 +523,10 @@ export function buildStaticUnit(input: BuildPulseConvergencePlanInput): PulseCon
       productImpact: observedDiagnosticImpact,
       title: 'Reduce Remaining Static Critical And High Breakers',
       summary: compactText(
-        [gate.reason, `Top structural events: ${rankBreakTypes(blockingBreaks).join(', ')}.`].join(
-          ' ',
-        ),
+        [
+          gate.reason,
+          `Top structural events: ${rankFindingEvents(blockingBreaks).join(', ')}.`,
+        ].join(' '),
         320,
       ),
       visionDelta:
@@ -542,7 +543,7 @@ export function buildStaticUnit(input: BuildPulseConvergencePlanInput): PulseCon
       affectedCapabilityIds: [],
       affectedFlowIds: [],
       asyncExpectations: [],
-      breakTypes: rankBreakTypes(blockingBreaks, evidenceBatchSize(blockingBreaks)),
+      findingEvents: rankFindingEvents(blockingBreaks, evidenceBatchSize(blockingBreaks)),
       artifactPaths: [OBSERVED_ARTIFACTS.certificate, OBSERVED_ARTIFACTS.report],
       relatedFiles: rankFiles(blockingBreaks, evidenceBatchSize(blockingBreaks)),
       validationArtifacts: [OBSERVED_ARTIFACTS.certificate, OBSERVED_ARTIFACTS.report],
@@ -594,7 +595,7 @@ export function buildNoHardcodedRealityUnits(
       affectedCapabilityIds: [],
       affectedFlowIds: [],
       asyncExpectations: [],
-      breakTypes: ['dynamic_hardcode_evidence_event'],
+      findingEvents: ['dynamic_hardcode_evidence_event'],
       artifactPaths: [OBSERVED_ARTIFACTS.noHardcodedReality, OBSERVED_ARTIFACTS.certificate],
       relatedFiles: summary.topFiles,
       validationArtifacts: [
@@ -664,7 +665,7 @@ export function buildScopeUnits(input: BuildPulseConvergencePlanInput): PulseCon
       affectedCapabilityIds: [],
       affectedFlowIds: [],
       asyncExpectations: [],
-      breakTypes: ['SCOPE_PARITY_GAP'],
+      findingEvents: ['SCOPE_PARITY_GAP'],
       artifactPaths: [OBSERVED_ARTIFACTS.scopeState, OBSERVED_ARTIFACTS.codacyState],
       relatedFiles: input.scopeState.parity.missingCodacyFiles,
       validationArtifacts: [
@@ -720,7 +721,7 @@ export function buildScopeUnits(input: BuildPulseConvergencePlanInput): PulseCon
       affectedCapabilityIds: [],
       affectedFlowIds: [],
       asyncExpectations: [],
-      breakTypes: ['SCOPE_MODULE_DRIFT'],
+      findingEvents: ['SCOPE_MODULE_DRIFT'],
       artifactPaths: [OBSERVED_ARTIFACTS.scopeState, OBSERVED_ARTIFACTS.resolvedManifest],
       relatedFiles: input.scopeState.files
         .filter(
@@ -789,7 +790,7 @@ export function buildParityGapUnits(input: BuildPulseConvergencePlanInput): Puls
       affectedCapabilityIds: gap.affectedCapabilityIds,
       affectedFlowIds: gap.affectedFlowIds,
       asyncExpectations: [],
-      breakTypes: [gap.kind],
+      findingEvents: [gap.kind],
       artifactPaths: [OBSERVED_ARTIFACTS.parityGaps, OBSERVED_ARTIFACTS.cliDirective],
       relatedFiles: gap.relatedFiles,
       validationArtifacts: uniqueStrings([
@@ -897,7 +898,7 @@ export function buildCodacyStaticUnits(
         affectedCapabilityIds: [],
         affectedFlowIds: [],
         asyncExpectations: [],
-        breakTypes: patterns,
+        findingEvents: patterns,
         artifactPaths: [OBSERVED_ARTIFACTS.codacyState, OBSERVED_ARTIFACTS.scopeState],
         relatedFiles: [group.filePath],
         validationArtifacts: [
@@ -1095,7 +1096,7 @@ export function buildExternalUnits(input: BuildPulseConvergencePlanInput): Pulse
       affectedCapabilityIds: signal.capabilityIds,
       affectedFlowIds: signal.flowIds,
       asyncExpectations: [],
-      breakTypes: [signal.type],
+      findingEvents: [signal.type],
       artifactPaths: [OBSERVED_ARTIFACTS.externalSignalState],
       relatedFiles: signal.relatedFiles,
       validationArtifacts: signal.validationTargets,
@@ -1183,7 +1184,7 @@ export function buildGenericGateUnits(
       affectedCapabilityIds: gate.affectedCapabilityIds || [],
       affectedFlowIds: gate.affectedFlowIds || [],
       asyncExpectations: [],
-      breakTypes: [],
+      findingEvents: [],
       artifactPaths,
       relatedFiles: [],
       validationArtifacts: artifactPaths,
@@ -1270,7 +1271,7 @@ export function buildCapabilityUnits(
       affectedCapabilityIds: [capability.id],
       affectedFlowIds: [],
       asyncExpectations: [],
-      breakTypes: [],
+      findingEvents: [],
       artifactPaths: [OBSERVED_ARTIFACTS.capabilityState, OBSERVED_ARTIFACTS.productVision],
       relatedFiles: takeEvidenceBatch(capability.filePaths, capability.validationTargets),
       validationArtifacts: [
@@ -1340,7 +1341,7 @@ export function buildFlowUnits(input: BuildPulseConvergencePlanInput): PulseConv
       affectedCapabilityIds: flow.capabilityIds,
       affectedFlowIds: [flow.id],
       asyncExpectations: [],
-      breakTypes: flow.missingLinks,
+      findingEvents: flow.missingLinks,
       artifactPaths: [OBSERVED_ARTIFACTS.flowProjection, OBSERVED_ARTIFACTS.productVision],
       relatedFiles: relatedCapabilities
         .flatMap((capability) => capability.filePaths)
@@ -1428,7 +1429,7 @@ export function buildExecutionMatrixUnits(
         affectedCapabilityIds: path.capabilityId ? [path.capabilityId] : [],
         affectedFlowIds: path.flowId ? [path.flowId] : [],
         asyncExpectations: [],
-        breakTypes: [],
+        findingEvents: [],
         artifactPaths: [OBSERVED_ARTIFACTS.executionMatrix],
         relatedFiles: takeEvidenceBatch(path.filePaths, path.routePatterns),
         validationArtifacts: [

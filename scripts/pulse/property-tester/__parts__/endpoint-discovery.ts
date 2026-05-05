@@ -14,7 +14,13 @@ import {
   hasObservedToken,
   splitIdentifierTokensFromObservedName,
 } from '../../dynamic-reality-kernel';
-import { du8, isStringEvidence, splitWhitespace } from './core';
+import {
+  du8,
+  isSourceFileName,
+  isStringEvidence,
+  shouldScanDirectory,
+  splitWhitespace,
+} from './core';
 
 interface EndpointDescriptor {
   method: string;

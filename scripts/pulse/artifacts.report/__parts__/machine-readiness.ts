@@ -2,7 +2,7 @@
  * Pulse machine readiness — internal helpers and public exports.
  */
 import { buildAutonomyQueue } from '../../artifacts.queue';
-import { buildAutonomyCycleProof } from '../../artifacts.autonomy';
+import { buildAutonomyCycleProof } from '../../artifacts.autonomy/__parts__/readiness';
 import type {
   PulseArtifactSnapshot,
   PulseMachineReadiness,

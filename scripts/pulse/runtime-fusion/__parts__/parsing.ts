@@ -170,8 +170,9 @@ function parseCanonicalExternalSignal(value: unknown): CanonicalExternalSignal |
   if (!isSignalSource(sourceRaw) || sourceRaw === 'otel_runtime') return null;
 
   let truthModeRaw = asString(value.truthMode);
-  let truthMode: CanonicalExternalSignal['truthMode'] =
-    truthModeRaw === TRUTH_INFERRED ? TRUTH_INFERRED : TRUTH_OBSERVED;
+  let truthMode: CanonicalExternalSignal['truthMode'] = (
+    truthModeRaw === TRUTH_INFERRED ? TRUTH_INFERRED : TRUTH_OBSERVED
+  ) as CanonicalExternalSignal['truthMode'];
   let summary = asString(value.summary ?? value.message ?? value.title);
   let explicitSeverity = asOptionalNumber(value.severity);
   let explicitImpact = asOptionalNumber(value['impactScore']);
@@ -243,8 +244,9 @@ function parseCanonicalExternalSignalState(
   payload: Record<string, unknown>,
 ): CanonicalExternalSignalState {
   let truthModeRaw = asString(payload.truthMode);
-  let truthMode: CanonicalExternalSignalState['truthMode'] =
-    truthModeRaw === TRUTH_INFERRED ? TRUTH_INFERRED : TRUTH_OBSERVED;
+  let truthMode: CanonicalExternalSignalState['truthMode'] = (
+    truthModeRaw === TRUTH_INFERRED ? TRUTH_INFERRED : TRUTH_OBSERVED
+  ) as CanonicalExternalSignalState['truthMode'];
   let signals = asArray(payload.signals)
     .map(parseCanonicalExternalSignal)
     .filter((signal): signal is CanonicalExternalSignal => signal !== null);
@@ -338,7 +340,9 @@ export function loadCanonicalExternalSignals(currentDir: string): {
     return {
       signals: [],
       evidence: {
-        status: existsAt(artifactPath) ? EVIDENCE_INVALID : EVIDENCE_NOT_AVAILABLE,
+        status: (existsAt(artifactPath)
+          ? EVIDENCE_INVALID
+          : EVIDENCE_NOT_AVAILABLE) as RuntimeFusionEvidenceStatus,
         artifactPath,
         totalSignals: 0,
         observedSignals: 0,
@@ -379,13 +383,13 @@ export function loadCanonicalExternalSignals(currentDir: string): {
   let inferredSignals = state.signals.length - observedSignals;
   let status: RuntimeFusionEvidenceStatus = EVIDENCE_NOT_AVAILABLE;
   if (state.signals.length > 0) {
-    status = state.truthMode;
+    status = state.truthMode as RuntimeFusionEvidenceStatus;
   } else if (invalidAdapters.length > 0 || notAvailableAdapters.length > 0) {
-    status = EVIDENCE_NOT_AVAILABLE;
+    status = EVIDENCE_NOT_AVAILABLE as RuntimeFusionEvidenceStatus;
   } else if (staleAdapters.length > 0) {
-    status = TRUTH_INFERRED;
+    status = TRUTH_INFERRED as RuntimeFusionEvidenceStatus;
   } else if (skippedAdapters.length > 0) {
-    status = EVIDENCE_SKIPPED;
+    status = EVIDENCE_SKIPPED as RuntimeFusionEvidenceStatus;
   }
 
   return {

@@ -18,7 +18,7 @@ import {
   AUTONOMY_MEMORY_ARTIFACT,
   type PulseRollbackGuard,
 } from './autonomy-types';
-import { fingerprintStrategy } from './structural-memory';
+import { fingerprintStrategy } from './structural-memory/__parts__/memory-core';
 
 export function compact(value: string, max: number = 400): string {
   const normalized = value.replace(/\s+/g, ' ').trim();

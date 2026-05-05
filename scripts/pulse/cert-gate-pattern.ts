@@ -18,7 +18,7 @@ import type {
 import {
   filterBlockingBreaks,
   matchesAny,
-  summarizeBreakTypes,
+  summarizeFindingEventTypes,
   summarizeCodacyFiles,
   isGateAccepted,
   acceptedGatePass,
@@ -60,7 +60,7 @@ export function evaluatePatternGate(
 
   return gateFail(
     `${failReason} Objective: ${objective}. Evidence requirement: ${evidenceRequirement}. Blocking finding predicates: ${[
-      ...summarizeBreakTypes(blockingBreaks),
+      ...summarizeFindingEventTypes(blockingBreaks),
       ...summarizeCodacyFiles(codacyIssues),
     ].join(', ')}.`,
     'product_failure',

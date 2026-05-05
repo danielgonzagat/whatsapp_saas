@@ -1,9 +1,6 @@
 // PULSE — Live Codebase Nervous System
 // Core parser types: UI, API, backend routes, DB models, facades
 
-// Re-export BreakType for consumers that import it from types.core
-export type { BreakType } from './types.break-types';
-
 // ===== LAYER 1: UI Elements =====
 export interface UIElement {
   /** File property. */

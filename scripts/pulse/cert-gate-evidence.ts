@@ -112,7 +112,7 @@ export function buildGateEvidence(
         artifactPaths: evidence.runtime.artifactPaths,
         metrics: {
           executedChecks: evidence.runtime.executedChecks.length,
-          blockingFindingEvents: evidence.runtime.blockingBreakTypes.length,
+          blockingFindingEvents: evidence.runtime.blockingFindingEvents.length,
         },
       },
       {

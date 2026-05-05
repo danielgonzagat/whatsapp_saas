@@ -24,7 +24,7 @@ import {
   discoverGateFailureClassLabels,
   discoverPropertyPassedStatusFromTypeEvidence,
   discoverProviderModeLabels,
-  discoverRuntimeBreakTypePatternsFromEvidence,
+  discoverRuntimeFindingEventPatternsFromEvidence,
   observeStatusTextLengthFromCatalog,
 } from '../../../dynamic-reality-kernel';
 
@@ -69,7 +69,7 @@ export const DEFAULT_REPLAY_TEST_PHONE = '5511999990000';
 export { MAX_READBACK_ATTEMPTS, BASE_WAIT_MS, LONG_WAIT_MS, OK_LEN, MAX_SLUG_LEN };
 
 export const ORACLE_BREAK_PATTERNS: Record<PulseFlowOracle, RegExp[]> = deriveOracleBreakPatternMap(
-  discoverRuntimeBreakTypePatternsFromEvidence(),
+  discoverRuntimeFindingEventPatternsFromEvidence(),
 );
 
 export const FLOW_FAILED = [

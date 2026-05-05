@@ -44,8 +44,8 @@ export function mergeExecutionEvidence(
       ...defaults.runtime,
       ...(overrides.runtime || {}),
       executedChecks: overrides.runtime?.executedChecks || defaults.runtime.executedChecks,
-      blockingBreakTypes:
-        overrides.runtime?.blockingBreakTypes || defaults.runtime.blockingBreakTypes,
+      blockingFindingEvents:
+        overrides.runtime?.blockingFindingEvents || defaults.runtime.blockingFindingEvents,
       artifactPaths: overrides.runtime?.artifactPaths || defaults.runtime.artifactPaths,
       probes: overrides.runtime?.probes || defaults.runtime.probes,
     },

@@ -37,4 +37,4 @@ export const MASS_EMITTER_TYPE_THRESHOLD = 3;
 
 export const ALLOWLIST_NAME_RE =
   /(?:^|[^a-z])(?:allow(?:ed|list)?|denylist|blocklist|known|fixed|supported|permitted|accepted|whitelist|blacklist)(?:$|[^a-z])/i;
-export const BREAK_TYPE_RE = /^[A-Z][A-Z0-9_]{2,}$/;
+export const FINDING_EVENT_NAME_RE = /^[A-Z][A-Z0-9_]{2,}$/;

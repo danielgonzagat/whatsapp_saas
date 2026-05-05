@@ -18,7 +18,7 @@ import {
   OBSERVED_ARTIFACTS,
   OBSERVED_GATES,
   CAPABILITY_STATUSES,
-  EXTERNAL_SIGNAL_SOURCES,
+  OBSERVED_EXTERNAL_SIGNAL_SOURCE_LABELS,
   FAILURE_CLASSES,
   FLOW_STATUSES,
   PARITY_GAP_KINDS,
@@ -34,7 +34,7 @@ import {
   UNIT_STATUSES,
 } from './kernel';
 import type { BuildPulseConvergencePlanInput, ScenarioPriorityContext } from './kernel';
-import { CHECKER_GAP_TYPES, SECURITY_BREAK_TYPE_KERNEL_GRAMMAR } from '../../cert-constants';
+import { CHECKER_GAP_TYPES, SECURITY_FINDING_EVENT_KERNEL_GRAMMAR } from '../../cert-constants';
 import { isBlockingDynamicFinding, summarizeDynamicFindingEvents } from '../../finding-identity';
 import {
   discoverGateLaneFromObservedStructure,
@@ -90,7 +90,7 @@ export function countUnitEvidence(unit: PulseConvergenceUnit): number {
     unit.affectedCapabilityIds,
     unit.affectedFlowIds,
     unit.asyncExpectations,
-    unit.breakTypes,
+    unit.findingEvents,
     unit.artifactPaths,
     unit.relatedFiles,
     unit.validationArtifacts,
@@ -121,7 +121,7 @@ export function unitPressure(unit: PulseConvergenceUnit): number {
     pressure += unit.validationArtifacts.length || 1;
   }
   if (unit.riskLevel === observedCriticalLevel) {
-    pressure += unit.relatedFiles.length || unit.breakTypes.length || 1;
+    pressure += unit.relatedFiles.length || unit.findingEvents.length || 1;
   }
   if (unit.productImpact === observedTransformationalImpact) {
     pressure += unit.affectedCapabilityIds.length + unit.affectedFlowIds.length + 1;
@@ -204,10 +204,10 @@ export function isBlockingBreak(item: Break): boolean {
 }
 
 export function isSecurityBreak(item: Break): boolean {
-  return SECURITY_BREAK_TYPE_KERNEL_GRAMMAR.some((pattern) => pattern.test(item.type));
+  return SECURITY_FINDING_EVENT_KERNEL_GRAMMAR.some((pattern) => pattern.test(item.type));
 }
 
-export function rankBreakTypes(breaks: Break[], limit?: number): string[] {
+export function rankFindingEvents(breaks: Break[], limit?: number): string[] {
   return summarizeDynamicFindingEvents(breaks, limit ?? evidenceBatchSize(breaks));
 }
 
@@ -588,10 +588,16 @@ export function determineExternalKind(
   let observedChangeKind = [...UNIT_KINDS].find((k) =>
     k.includes('change'),
   )! as PulseConvergenceUnit['kind'];
-  let dependabotSource = [...EXTERNAL_SIGNAL_SOURCES].find((s) => s.includes('dependabot'));
-  let sentrySource = [...EXTERNAL_SIGNAL_SOURCES].find((s) => s.includes('sentry'));
-  let datadogSource = [...EXTERNAL_SIGNAL_SOURCES].find((s) => s.includes('datadog'));
-  let prometheusSource = [...EXTERNAL_SIGNAL_SOURCES].find((s) => s.includes('prometheus'));
+  let dependabotSource = [...OBSERVED_EXTERNAL_SIGNAL_SOURCE_LABELS].find((s) =>
+    s.includes('dependabot'),
+  );
+  let sentrySource = [...OBSERVED_EXTERNAL_SIGNAL_SOURCE_LABELS].find((s) => s.includes('sentry'));
+  let datadogSource = [...OBSERVED_EXTERNAL_SIGNAL_SOURCE_LABELS].find((s) =>
+    s.includes('datadog'),
+  );
+  let prometheusSource = [...OBSERVED_EXTERNAL_SIGNAL_SOURCE_LABELS].find((s) =>
+    s.includes('prometheus'),
+  );
   if (signal.source === dependabotSource || /dependency|vuln|supply/i.test(signal.type)) {
     return observedDependencyKind;
   }
@@ -653,7 +659,9 @@ export function determineExternalProductImpact(
       ? observedTransformationalImpact
       : observedMaterialImpact;
   }
-  let dependabotSource = [...EXTERNAL_SIGNAL_SOURCES].find((s) => s.includes('dependabot'));
+  let dependabotSource = [...OBSERVED_EXTERNAL_SIGNAL_SOURCE_LABELS].find((s) =>
+    s.includes('dependabot'),
+  );
   if (signal.source === dependabotSource) return observedEnablingImpact;
   return observedDiagnosticImpact;
 }

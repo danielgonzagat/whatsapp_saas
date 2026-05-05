@@ -169,7 +169,7 @@ export function summarizeRuntimeEvidence(
     return {
       executed: false,
       executedChecks: [],
-      blockingBreakTypes: [],
+      blockingFindingEvents: [],
       artifactPaths: [RUNTIME_EVIDENCE_PATH, RUNTIME_PROBES_PATH],
       summary: 'Runtime probes were not executed in scan mode.',
       backendUrl: resolution.backendUrl,
@@ -197,7 +197,7 @@ export function summarizeRuntimeEvidence(
   return {
     executed: probes.some((probe) => probe.executed),
     executedChecks,
-    blockingBreakTypes: [],
+    blockingFindingEvents: [],
     artifactPaths: [RUNTIME_EVIDENCE_PATH, RUNTIME_PROBES_PATH],
     summary,
     backendUrl: resolution.backendUrl,

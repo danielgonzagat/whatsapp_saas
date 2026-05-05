@@ -13,12 +13,13 @@ import {
   normalizeArtifactExecutionMode,
   normalizeCanonicalArtifactValue,
 } from '../../artifacts.queue';
-import { buildPulseMachineReadiness, getProductFacingCapabilities } from '../../artifacts.report';
 import {
-  deriveAuthorityState,
-  buildAutonomyReadiness,
-  buildAutonomyProof,
-} from '../../artifacts.autonomy';
+  buildPulseMachineReadiness,
+  getProductFacingCapabilities,
+} from '../../artifacts.report/__parts__/machine-readiness';
+import { deriveAuthorityState } from '../../artifacts.autonomy/__parts__/authority';
+import { buildAutonomyReadiness } from '../../artifacts.autonomy/__parts__/readiness';
+import { buildAutonomyProof } from '../../artifacts.autonomy/__parts__/autonomy-proof';
 import { buildFindingEventSurface } from '../../finding-event-surface';
 import {
   formatNoHardcodedRealityBlocker,
@@ -108,7 +109,9 @@ export function buildDirective(
   const nextProductExecutableUnits =
     nextAutonomousUnits.length > 0 ? nextAutonomousUnits.slice(0, 8) : nextDecisionUnits;
   const pulseMachineNextWork = [
-    ...buildPulseMachineNextWork(pulseMachineReadiness),
+    ...buildPulseMachineNextWork(
+      pulseMachineReadiness as unknown as Parameters<typeof buildPulseMachineNextWork>[0],
+    ),
     ...buildPulseCertificationProofDebtNextWork(snapshot.certification),
     ...buildPulseAutonomyProofDebtNextWork(autonomyClaims.autonomyProof),
   ];
@@ -205,7 +208,7 @@ export function buildDirective(
       findingValidationState: {
         artifact: 'PULSE_FINDING_VALIDATION_STATE',
         operationalIdentity: 'dynamic_finding_event',
-        internalBreakTypeIsOperationalIdentity: false,
+        internalFindingEventIsOperationalIdentity: false,
         parserSignalMustPassValidationBeforeBlocking: true,
         weakSignalCanBlock: false,
         eventSurface: findingEventSurface,

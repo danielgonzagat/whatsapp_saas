@@ -24,6 +24,7 @@ import type {
   PulseDirectiveSnapshot,
   PulseProofReadinessSummary,
 } from '../../cert-gate-overclaim';
+import type { PulseAutonomyStateSnapshot } from '../../cert-gate-multi-cycle';
 import type {
   PulseCapabilityState,
   PulseCertificationTarget,
@@ -40,7 +41,11 @@ import type {
   PulseScopeState,
   PulseSelfTrustReport,
   PulseStructuralGraph,
-  PulseAutonomyStateSnapshot,
+  PulseGateFailureClass,
+  PulseGateResult,
+  PulseConvergenceEvidenceConfidence,
+  PulseTruthMode,
+  PulseCertification,
 } from '../../types';
 
 function _phantomLabel(): string {
@@ -48,65 +53,65 @@ function _phantomLabel(): string {
   return members[deriveUnitValue() + deriveUnitValue() + deriveUnitValue()];
 }
 
-function _checkerGapLabel(): string {
+function _checkerGapLabel(): PulseGateFailureClass {
   const members = [...discoverGateFailureClassLabels()];
-  return members[deriveUnitValue() + deriveUnitValue()];
+  return members[deriveUnitValue() + deriveUnitValue()] as PulseGateFailureClass;
 }
 
-function _missingEvidenceLabel(): string {
+function _missingEvidenceLabel(): PulseGateFailureClass {
   const members = [...discoverGateFailureClassLabels()];
-  return members[deriveUnitValue()];
+  return members[deriveUnitValue()] as PulseGateFailureClass;
 }
 
-function _productFailureLabel(): string {
+function _productFailureLabel(): PulseGateFailureClass {
   const members = [...discoverGateFailureClassLabels()];
-  return members[deriveZeroValue()];
+  return members[deriveZeroValue()] as PulseGateFailureClass;
 }
 
-function _highConfidenceLabel(): string {
+function _highConfidenceLabel(): PulseConvergenceEvidenceConfidence {
   const members = [...discoverConvergenceEvidenceConfidenceLabels()];
-  return members[deriveZeroValue()];
+  return members[deriveZeroValue()] as PulseConvergenceEvidenceConfidence;
 }
 
-function _observedTruthModeLabel(): string {
+function _observedTruthModeLabel(): PulseTruthMode {
   const members = [...discoverTruthModeLabels()];
-  return members[deriveZeroValue()];
+  return members[deriveZeroValue()] as PulseTruthMode;
 }
 
 const NO_HARDCODED_REALITY_ARTIFACT = discoverAllObservedArtifactFilenames().noHardcodedReality;
 
-function _gatePassLabel(): string {
+function _gatePassLabel(): PulseGateResult['status'] {
   const members = [
     ...deriveStringUnionMembersFromTypeContract('scripts/pulse/types.evidence.ts', 'status'),
   ];
-  return members[deriveZeroValue()];
+  return members[deriveZeroValue()] as PulseGateResult['status'];
 }
 
-function _gateFailLabel(): string {
+function _gateFailLabel(): PulseGateResult['status'] {
   const members = [
     ...deriveStringUnionMembersFromTypeContract('scripts/pulse/types.evidence.ts', 'status'),
   ];
-  return members[deriveUnitValue()];
+  return members[deriveUnitValue()] as PulseGateResult['status'];
 }
 
-function _readyLabel(): string {
+function _readyLabel(): PulseCertification['humanReplacementStatus'] {
   const members = [
     ...deriveStringUnionMembersFromTypeContract(
       'scripts/pulse/types.evidence.ts',
       'humanReplacementStatus',
     ),
   ];
-  return members[deriveZeroValue()];
+  return members[deriveZeroValue()] as PulseCertification['humanReplacementStatus'];
 }
 
-function _notReadyLabel(): string {
+function _notReadyLabel(): PulseCertification['humanReplacementStatus'] {
   const members = [
     ...deriveStringUnionMembersFromTypeContract(
       'scripts/pulse/types.evidence.ts',
       'humanReplacementStatus',
     ),
   ];
-  return members[deriveUnitValue()];
+  return members[deriveUnitValue()] as PulseCertification['humanReplacementStatus'];
 }
 
 interface ComputeCertificationInput {

@@ -3,7 +3,7 @@ import type { BuildPulseConvergencePlanInput } from './types';
 import {
   isBlockingBreak,
   isSecurityBreak,
-  rankBreakTypes,
+  rankFindingEvents,
   rankFiles,
   uniqueStrings,
   compactText,
@@ -48,7 +48,7 @@ export function buildSecurityUnit(input: BuildPulseConvergencePlanInput): PulseC
         [
           gate.reason,
           securityBreaks.length > 0
-            ? `Top blocking events: ${rankBreakTypes(securityBreaks).join(', ')}.`
+            ? `Top blocking events: ${rankFindingEvents(securityBreaks).join(', ')}.`
             : '',
         ]
           .filter(Boolean)
@@ -69,7 +69,7 @@ export function buildSecurityUnit(input: BuildPulseConvergencePlanInput): PulseC
       affectedCapabilityIds: [],
       affectedFlowIds: [],
       asyncExpectations: [],
-      breakTypes: rankBreakTypes(securityBreaks, 8),
+      findingEvents: rankFindingEvents(securityBreaks, 8),
       artifactPaths: [OBSERVED_ARTIFACTS.certificate, OBSERVED_ARTIFACTS.report],
       relatedFiles: rankFiles(securityBreaks, 12),
       validationArtifacts: [OBSERVED_ARTIFACTS.certificate, OBSERVED_ARTIFACTS.report],
@@ -77,7 +77,7 @@ export function buildSecurityUnit(input: BuildPulseConvergencePlanInput): PulseC
       exitCriteria: uniqueStrings([
         'securityPass returns pass in the next certification run.',
         securityBreaks.length > 0
-          ? `Blocking security events are cleared: ${rankBreakTypes(securityBreaks, 8).join(', ')}.`
+          ? `Blocking security events are cleared: ${rankFindingEvents(securityBreaks, 8).join(', ')}.`
           : null,
       ]),
     },
@@ -116,9 +116,10 @@ export function buildStaticUnit(input: BuildPulseConvergencePlanInput): PulseCon
       productImpact: 'diagnostic',
       title: 'Reduce Remaining Static Critical And High Breakers',
       summary: compactText(
-        [gate.reason, `Top structural events: ${rankBreakTypes(blockingBreaks).join(', ')}.`].join(
-          ' ',
-        ),
+        [
+          gate.reason,
+          `Top structural events: ${rankFindingEvents(blockingBreaks).join(', ')}.`,
+        ].join(' '),
         320,
       ),
       visionDelta:
@@ -135,7 +136,7 @@ export function buildStaticUnit(input: BuildPulseConvergencePlanInput): PulseCon
       affectedCapabilityIds: [],
       affectedFlowIds: [],
       asyncExpectations: [],
-      breakTypes: rankBreakTypes(blockingBreaks, 10),
+      findingEvents: rankFindingEvents(blockingBreaks, 10),
       artifactPaths: [OBSERVED_ARTIFACTS.certificate, OBSERVED_ARTIFACTS.report],
       relatedFiles: rankFiles(blockingBreaks, 15),
       validationArtifacts: [OBSERVED_ARTIFACTS.certificate, OBSERVED_ARTIFACTS.report],
@@ -187,7 +188,7 @@ export function buildNoHardcodedRealityUnits(
       affectedCapabilityIds: [],
       affectedFlowIds: [],
       asyncExpectations: [],
-      breakTypes: ['dynamic_hardcode_evidence_event'],
+      findingEvents: ['dynamic_hardcode_evidence_event'],
       artifactPaths: [OBSERVED_ARTIFACTS.noHardcodedReality, OBSERVED_ARTIFACTS.certificate],
       relatedFiles: summary.topFiles,
       validationArtifacts: [

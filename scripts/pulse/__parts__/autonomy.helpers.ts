@@ -1,7 +1,7 @@
 import { unique } from '../artifacts.io';
 import { isBalancedAutomationSafe } from '../artifacts.queue';
 import { REQUIRED_NON_REGRESSING_CYCLES } from '../cert-gate-multi-cycle';
-import type { PulseArtifactSnapshot } from '../artifacts';
+import type { PulseArtifactSnapshot } from './artifacts/types';
 import type { PulseAutonomyState, PulseConvergencePlan } from '../types';
 import type { QueueUnit } from '../artifacts.queue';
 import type { OverclaimGovernedValidationEvidence } from '../overclaim-guard';

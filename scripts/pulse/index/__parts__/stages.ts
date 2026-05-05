@@ -1,6 +1,6 @@
 import { detectConfig } from '../../config';
 import { PulseExecutionTracer, runPhaseWithTrace } from '../../execution-trace';
-import { loadParserInventory } from '../../parser-registry';
+import { loadParserInventory } from '../../parser-registry/__parts__/loader';
 import {
   deriveUnitValue,
   deriveZeroValue,

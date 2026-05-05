@@ -1,12 +1,10 @@
 // PULSE — Live Codebase Nervous System
 // Health, config, and base manifest spec types
 
-import type { BreakType } from './types.break-types';
-
 // ===== Graph =====
 export interface Break {
   /** Type property. */
-  type: BreakType;
+  type: string;
   /** Severity property. */
   severity: 'critical' | 'high' | 'medium' | 'low';
   /** File property. */

@@ -18,7 +18,7 @@ import {
 import {
   isAdapterRequired,
   normalizeExternalSignalProfile,
-} from '../../adapters/external-sources-orchestrator';
+} from '../../adapters/external-sources-orchestrator/__parts__/core';
 import { PULSE_EXTERNAL_SNAPSHOT_FILES } from './snapshot-config';
 import type { UnclassifiedExternalAdapter } from './adapter-builders';
 import {

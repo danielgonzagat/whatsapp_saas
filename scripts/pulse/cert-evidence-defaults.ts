@@ -22,17 +22,17 @@ import type {
   PulseRecoveryEvidence,
   PulseResolvedManifest,
 } from './types';
-import { RUNTIME_PATTERNS } from './cert-constants';
 import {
   filterBlockingBreaks,
   matchesAny,
   inferRuntimeCheckNames,
-  summarizeBreakTypes,
+  summarizeFindingEventTypes,
   getApplicableFlowIds,
   getApplicableInvariantIds,
   getAcceptedTargetIds,
   getActiveTemporaryAcceptances,
 } from './cert-helpers';
+import { discoverRuntimeFindingEventPatternsFromEvidence } from './dynamic-reality-kernel';
 import {
   buildDefaultActorEvidence,
   buildDefaultSyntheticCoverage,
@@ -238,7 +238,7 @@ function buildRuntimeEvidence(
     return {
       executed: false,
       executedChecks: [],
-      blockingBreakTypes: [],
+      blockingFindingEvents: [],
       artifactPaths: [],
       summary: 'Runtime evidence was not collected in scan mode.',
       probes: [],
@@ -247,7 +247,7 @@ function buildRuntimeEvidence(
   return {
     executed: true,
     executedChecks: inferRuntimeCheckNames(parserInventory),
-    blockingBreakTypes: summarizeBreakTypes(runtimeBreaks),
+    blockingFindingEvents: summarizeFindingEventTypes(runtimeBreaks),
     artifactPaths: [],
     summary:
       runtimeBreaks.length > 0
@@ -268,7 +268,7 @@ export function buildDefaultEvidence(
 ): PulseExecutionEvidence {
   const runtimeBreaks = filterBlockingBreaks(
     health.breaks,
-    (item) => matchesAny(item.type, RUNTIME_PATTERNS),
+    (item) => matchesAny(item.type, discoverRuntimeFindingEventPatternsFromEvidence()),
     manifest,
   );
   const runtime = buildRuntimeEvidence(env, parserInventory, health, runtimeBreaks);

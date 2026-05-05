@@ -169,13 +169,13 @@ function isDestructiveCommand(tokens: readonly string[]): boolean {
   );
 }
 
-const DEFAULT_ALLOWED_COMMAND_PREFIXES: readonly (readonly string[])[] = Object.freeze([
+const OBSERVED_COMMAND_PREFIX_GRAMMAR: readonly (readonly string[])[] = Object.freeze([
   Object.freeze(['node', 'scripts/pulse/run.js']),
 ]);
 
 export function evaluatePathProofCommandPolicy(
   task: PathProofTask,
-  allowedCommandPrefixes: readonly (readonly string[])[] = DEFAULT_ALLOWED_COMMAND_PREFIXES,
+  allowedCommandPrefixes: readonly (readonly string[])[] = OBSERVED_COMMAND_PREFIX_GRAMMAR,
   rootDir = process.cwd(),
 ): PathProofCommandPolicyDecision {
   if (!task.autonomousExecutionAllowed) {

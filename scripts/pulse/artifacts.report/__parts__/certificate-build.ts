@@ -60,7 +60,7 @@ export function buildCertificate(
       findingValidationState: {
         artifact: discoverAllObservedArtifactFilenames().findingValidationState,
         operationalIdentity: 'dynamic_finding_event',
-        internalBreakTypeIsOperationalIdentity: false,
+        internalFindingEventIsOperationalIdentity: false,
         eventSurface: buildFindingEventSurface(snapshot.health.breaks, certLimit20),
       },
       convergencePlan: {

@@ -176,7 +176,10 @@ export function isGateAccepted(manifest: PulseManifest | null, gate: PulseGateNa
   );
 }
 
-export function isBreakTypeAccepted(manifest: PulseManifest | null, type: Break['type']): boolean {
+export function isFindingEventAccepted(
+  manifest: PulseManifest | null,
+  type: Break['type'],
+): boolean {
   return getActiveTemporaryAcceptances(manifest).some(
     (entry) => entry.targetType === 'break_type' && entry.target === type,
   );
@@ -205,7 +208,7 @@ export function filterBlockingBreaks(
   return breaks.filter((item) => {
     if (!isCriticalBreak(item)) return false;
     if (CHECKER_GAP_TYPES.has(item.type)) return false;
-    if (manifest && isBreakTypeAccepted(manifest, item.type)) return false;
+    if (manifest && isFindingEventAccepted(manifest, item.type)) return false;
     if (!isBlockingDynamicFinding(item)) return false;
     return predicate ? predicate(item) : true;
   });
@@ -222,7 +225,7 @@ export function inferRuntimeCheckNames(parserInventory: PulseParserInventory): s
     .sort();
 }
 
-export function summarizeBreakTypes(breaks: Break[]): string[] {
+export function summarizeFindingEventTypes(breaks: Break[]): string[] {
   return summarizeDynamicFindingEvents(breaks);
 }
 

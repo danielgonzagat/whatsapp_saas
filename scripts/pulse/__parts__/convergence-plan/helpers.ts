@@ -5,7 +5,7 @@ import type {
   PulseConvergenceUnitStatus,
   PulseGateFailureClass,
 } from '../../types';
-import { CHECKER_GAP_TYPES, SECURITY_BREAK_TYPE_KERNEL_GRAMMAR } from '../../cert-constants';
+import { CHECKER_GAP_TYPES, SECURITY_FINDING_EVENT_KERNEL_GRAMMAR } from '../../cert-constants';
 import { isBlockingDynamicFinding, summarizeDynamicFindingEvents } from '../../finding-identity';
 
 export function evidenceBatchSize(
@@ -55,7 +55,7 @@ export function countUnitEvidence(unit: PulseConvergenceUnit): number {
     unit.affectedCapabilityIds,
     unit.affectedFlowIds,
     unit.asyncExpectations,
-    unit.breakTypes,
+    unit.findingEvents,
     unit.artifactPaths,
     unit.relatedFiles,
     unit.validationArtifacts,
@@ -75,7 +75,7 @@ export function unitPressure(unit: PulseConvergenceUnit): number {
     pressure += unit.validationArtifacts.length || 1;
   }
   if (unit.riskLevel === 'critical') {
-    pressure += unit.relatedFiles.length || unit.breakTypes.length || 1;
+    pressure += unit.relatedFiles.length || unit.findingEvents.length || 1;
   }
   if (unit.productImpact === 'transformational') {
     pressure += unit.affectedCapabilityIds.length + unit.affectedFlowIds.length + 1;
@@ -158,10 +158,10 @@ export function isBlockingBreak(item: Break): boolean {
 }
 
 export function isSecurityBreak(item: Break): boolean {
-  return SECURITY_BREAK_TYPE_KERNEL_GRAMMAR.some((pattern) => pattern.test(item.type));
+  return SECURITY_FINDING_EVENT_KERNEL_GRAMMAR.some((pattern) => pattern.test(item.type));
 }
 
-export function rankBreakTypes(breaks: Break[], limit?: number): string[] {
+export function rankFindingEvents(breaks: Break[], limit?: number): string[] {
   return summarizeDynamicFindingEvents(breaks, limit ?? evidenceBatchSize(breaks));
 }
 

@@ -4,30 +4,28 @@
  * models (structural graph, capabilities, flows, signals, parity gaps, vision),
  * then renders or emits output based on the active flags.
  */
-import type { FullScanResult } from './daemon';
+import type { FullScanResult } from './daemon/__parts__/types';
 import type { PulseCertification, PulseConfig } from './types';
 import { buildStructuralGraph } from './structural-graph';
 import { buildExecutionChains } from './execution-chains';
-import { buildExecutionMatrix } from './execution-matrix';
-import { buildCapabilityState } from './capability-model';
+import { buildExecutionMatrix } from './execution-matrix/__parts__/matrix';
+import { buildCapabilityState } from './capability-model/__parts__/builder';
 import { buildFlowProjection } from './flow-projection';
 import { buildParityGaps } from './parity-gaps';
-import { buildProductVision } from './product-vision';
-import { buildProductModel } from './product-model';
+import { buildProductVision } from './product-vision/__parts__/builder';
+import { buildProductModel } from './product-model/__parts__/model-builder';
 import { buildExternalSignalState } from './external-signals';
-import { runExternalSourcesOrchestrator } from './adapters/external-sources-orchestrator';
-import type { ExternalSourcesConfig } from './adapters/external-sources-orchestrator';
+import { runExternalSourcesOrchestrator } from './adapters/external-sources-orchestrator/__parts__/orchestration';
+import type { ExternalSourcesConfig } from './adapters/external-sources-orchestrator/__parts__/core';
 import { deriveExternalSourcesTimeoutMs } from './external-sources-timeout';
 import { buildFunctionalMap } from './functional-map';
 import { generateFunctionalMapReport, renderFunctionalMapSummary } from './functional-map-report';
 import { PulseExecutionTracer, runPhaseWithTrace } from './execution-trace';
 import { renderDashboard } from './dashboard';
-import {
-  generateArtifacts,
-  type PulseArtifactPaths,
-  type PulseArtifactSnapshot,
-} from './artifacts';
-import { formatSelfTrustReport, type SelfTrustReport } from './self-trust';
+import { generateArtifacts } from './__parts__/artifacts/generate';
+import type { PulseArtifactPaths, PulseArtifactSnapshot } from './__parts__/artifacts/types';
+import type { SelfTrustReport } from './self-trust/__parts__/checks-core';
+import { formatSelfTrustReport } from './self-trust/__parts__/runner';
 import { readTextFile } from './safe-fs';
 import type { flags } from './cli-args';
 import { refreshProofReadinessArtifact } from './proof-readiness-artifact';

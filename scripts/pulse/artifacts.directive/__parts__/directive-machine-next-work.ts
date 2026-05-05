@@ -4,7 +4,7 @@
  */
 import { unique } from '../../artifacts.io';
 import { deriveZeroValue } from '../../dynamic-reality-kernel';
-import type { PulseMachineReadiness } from '../../artifacts.autonomy/__parts__/types';
+import type { PulseMachineReadiness } from '../../artifacts.types';
 import { OBSERVED_ARTIFACT_FILENAMES, type PulseMachineDirectiveUnit } from './directive-shared';
 import {
   buildMachineCriterionRegistryEvidence,

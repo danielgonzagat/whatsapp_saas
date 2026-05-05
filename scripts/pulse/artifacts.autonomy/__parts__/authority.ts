@@ -2,7 +2,7 @@ import { unique } from '../../artifacts.io';
 import { isBalancedAutomationSafe } from '../../artifacts.queue';
 import { isRuntimeExternalSignal } from '../../cert-helpers';
 import { deriveZeroValue, deriveUnitValue } from '../../dynamic-reality-kernel';
-import type { PulseArtifactSnapshot } from '../../artifacts';
+import type { PulseArtifactSnapshot } from '../../__parts__/artifacts/types';
 import type { OverclaimGovernedValidationEvidence } from '../../overclaim-guard';
 import type { PulseAutonomyState, PulseConvergencePlan } from '../../types';
 import type { QueueUnit } from '../../artifacts.queue';

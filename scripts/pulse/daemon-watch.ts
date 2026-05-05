@@ -1,8 +1,9 @@
 import * as path from 'path';
 import type { PulseConfig } from './types';
-import { generateArtifacts } from './artifacts';
+import { generateArtifacts } from './__parts__/artifacts/generate';
 import { renderDashboard } from './dashboard';
-import { fullScan, type FullScanResult } from './daemon';
+import { fullScan } from './daemon/__parts__/fullScan';
+import type { FullScanResult } from './daemon/__parts__/types';
 import { classifyWatchChange, shouldRescanForWatchChange } from './daemon-watch-classifier';
 import { refreshScanResultForWatchChange } from './daemon-watch-state';
 import { PULSE_EXTERNAL_INPUT_FILES } from './external-signals';

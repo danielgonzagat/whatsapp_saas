@@ -1,6 +1,6 @@
 import * as ts from 'typescript';
 import type { HardcodedFindingAuditFinding, HardcodedFindingAuditSource } from './types';
-import { MIN_COLLECTION_SIZE, ALLOWLIST_NAME_RE, BREAK_TYPE_RE } from './types';
+import { MIN_COLLECTION_SIZE, ALLOWLIST_NAME_RE, FINDING_EVENT_NAME_RE } from './types';
 import {
   locationOf,
   symbolName,
@@ -17,11 +17,11 @@ import {
   nodeContainsRegexPredicate,
 } from './ast-helpers';
 
-export function isBreakObject(node: ts.ObjectLiteralExpression): boolean {
-  return objectBreakType(node) !== null;
+export function isFindingEventObject(node: ts.ObjectLiteralExpression): boolean {
+  return objectFindingEventName(node) !== null;
 }
 
-export function isBreaksPushArgument(node: ts.ObjectLiteralExpression): boolean {
+export function isFindingPushArgument(node: ts.ObjectLiteralExpression): boolean {
   const parent = node.parent;
   if (!ts.isCallExpression(parent) || parent.arguments[0] !== node) {
     return false;
@@ -34,7 +34,7 @@ export function isBreaksPushArgument(node: ts.ObjectLiteralExpression): boolean 
   );
 }
 
-export function objectBreakType(node: ts.ObjectLiteralExpression): string | null {
+export function objectFindingEventName(node: ts.ObjectLiteralExpression): string | null {
   for (const property of node.properties) {
     if (!ts.isPropertyAssignment(property)) {
       continue;

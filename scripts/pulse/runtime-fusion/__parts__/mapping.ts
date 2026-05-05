@@ -123,9 +123,9 @@ export function computeImpactScore(signal: RuntimeSignal): number {
 }
 
 function deriveMagnitude(signal: RuntimeSignal): number {
-  let levels: SignalSeverity[] = [
-    ...discoverSignalSeverityLabels(),
-  ].toReversed() as SignalSeverity[];
+  let levels: SignalSeverity[] = [...discoverSignalSeverityLabels()]
+    .slice()
+    .reverse() as SignalSeverity[];
   let ordinal = levels.indexOf(signal.severity);
   let ordinalForce =
     ordinal >= 0 ? (ordinal + deriveUnitValue()) / levels.length : signal.impactScore;

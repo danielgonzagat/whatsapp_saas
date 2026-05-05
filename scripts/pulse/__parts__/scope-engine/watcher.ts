@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { safeJoin } from '../../lib/safe-path';
 import { readDir, statPath } from '../../safe-fs';
-import { detectSourceRoots } from '../../source-root-detector';
+import { detectSourceRoots } from '../../source-root-detector/__parts__/api';
 import { IGNORED_DIRECTORIES } from '../../scope-state.constants';
 import type { ScopeEngineState } from '../../types.scope-engine';
 import { SCANNABLE_EXTENSIONS } from './constants';

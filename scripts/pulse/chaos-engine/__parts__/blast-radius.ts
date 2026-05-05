@@ -1,6 +1,7 @@
 import type { ChaosTarget } from '../../types.chaos-engine';
 import type { PulseCapability } from '../../types';
 import {
+  type ChaosOperationalConcern,
   ChaosProviderName,
   lookupChaosTargetEvidence,
   compactBlastRadius,

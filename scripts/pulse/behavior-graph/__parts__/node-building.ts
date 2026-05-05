@@ -7,7 +7,7 @@ import type {
   BehaviorExternalCall,
   BehaviorOutput,
 } from '../../types.behavior-graph';
-import type { DetectedSourceRoot } from '../../source-root-detector';
+import type { DetectedSourceRoot } from '../../source-root-detector/__parts__/types';
 import type { ParsedFunc, SourceExternalContext, GovernedEvidenceMode } from './grammar-and-types';
 import {
   requireDecoratorRoleCatalog,
@@ -28,6 +28,7 @@ import {
   EXTERNAL_SDK_OPERATION_PATTERN,
   EXTERNAL_SDK_CHAIN_PATTERN,
   CONSTRUCTOR_CALL_PATTERN,
+  isMemberChainTail,
   looksLikeExternalReceiverName,
   looksLikeHttpOperation,
 } from './grammar-and-types';
@@ -154,7 +155,8 @@ function detectStateAccess(bodyText: string): BehaviorStateAccess[] {
 
       accesses.push({
         model,
-        operation: writeKind ?? requireOperationCatalog().read,
+        operation:
+          writeKind ?? (requireOperationCatalog().read as BehaviorStateAccess['operation']),
         fieldPaths: [],
         whereClause: bodyText.includes('where') ? 'present' : null,
       });

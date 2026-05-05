@@ -309,7 +309,7 @@ export function loadRuntimeTraceEvidence(currentDir: string): {
   return {
     signals,
     evidence: {
-      status: TRUTH_OBSERVED,
+      status: TRUTH_OBSERVED as RuntimeFusionState['evidence']['runtimeTraces']['status'],
       artifactPath,
       source,
       totalTraces,
@@ -324,10 +324,11 @@ export function loadRuntimeTraceEvidence(currentDir: string): {
 function truthModeFromEvidenceStatus(
   status: RuntimeFusionState['evidence']['externalSignalState']['status'],
 ): RuntimeFusionMachineImprovementSignal['truthMode'] {
-  if (status === TRUTH_OBSERVED) return TRUTH_OBSERVED;
+  if (status === TRUTH_OBSERVED)
+    return TRUTH_OBSERVED as RuntimeFusionMachineImprovementSignal['truthMode'];
   if (status === TRUTH_INFERRED || status === EVIDENCE_SIMULATED || status === EVIDENCE_SKIPPED)
-    return TRUTH_INFERRED;
-  return EVIDENCE_NOT_AVAILABLE;
+    return TRUTH_INFERRED as RuntimeFusionMachineImprovementSignal['truthMode'];
+  return EVIDENCE_NOT_AVAILABLE as RuntimeFusionMachineImprovementSignal['truthMode'];
 }
 
 export function buildMachineImprovementSignals(

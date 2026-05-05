@@ -24,7 +24,7 @@ const INVARIANT_ARTIFACT = 'PULSE_INVARIANT_EVIDENCE.json';
 const INVARIANT_BREAK_PATTERNS: Record<string, RegExp[]> = {
   'workspace-isolation': [/^WORKSPACE_ISOLATION_BROKEN$/, /^MISSING_WORKSPACE_FILTER$/, /^TENANT_/],
   'financial-audit-trail': [
-    /^AUDIT_FINANCIAL_NO_TRAIL$/,
+    /^AUDIT_.*_NO_TRAIL$/,
     /^AUDIT_DELETION_NO_LOG$/,
     /^AUDIT_ADMIN_NO_LOG$/,
   ],

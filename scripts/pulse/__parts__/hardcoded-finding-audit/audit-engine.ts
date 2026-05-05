@@ -8,7 +8,7 @@ import {
   MIN_COLLECTION_SIZE,
   MASS_EMITTER_TYPE_THRESHOLD,
   ALLOWLIST_NAME_RE,
-  BREAK_TYPE_RE,
+  FINDING_EVENT_NAME_RE,
 } from './types';
 import {
   locationOf,
@@ -24,7 +24,11 @@ import {
   nodeContainsRegexPredicate,
   collectStringLiteralValues,
 } from './ast-helpers';
-import { isBreakObject, isBreaksPushArgument, objectBreakType } from './break-helpers';
+import {
+  isFindingEventObject,
+  isFindingPushArgument,
+  objectFindingEventName,
+} from './break-helpers';
 import { hasStructuralParserSignal } from './export-checks';
 
 function pushUniqueFinding(
@@ -56,7 +60,7 @@ export function auditSource(input: HardcodedFindingAuditSource): HardcodedFindin
     true,
   );
   const findings: HardcodedFindingAuditFinding[] = [];
-  const breakTypesByFunction = new Map<ts.Node, Set<string>>();
+  const findingEventNamesByFunction = new Map<ts.Node, Set<string>>();
 
   const visit = (node: ts.Node): void => {
     if (ts.isVariableDeclaration(node) || ts.isPropertyAssignment(node)) {
@@ -101,7 +105,9 @@ export function auditSource(input: HardcodedFindingAuditSource): HardcodedFindin
     }
 
     if (ts.isArrayLiteralExpression(node)) {
-      const values = collectStringLiteralValues(node).filter((value) => BREAK_TYPE_RE.test(value));
+      const values = collectStringLiteralValues(node).filter((value) =>
+        FINDING_EVENT_NAME_RE.test(value),
+      );
       if (values.length >= MASS_EMITTER_TYPE_THRESHOLD) {
         pushUniqueFinding(findings, sourceFile, node, {
           kind: 'fixed_break_type_mass_emitter',
@@ -113,33 +119,33 @@ export function auditSource(input: HardcodedFindingAuditSource): HardcodedFindin
       }
     }
 
-    if (ts.isObjectLiteralExpression(node) && isBreakObject(node)) {
-      const breakType = objectBreakType(node);
+    if (ts.isObjectLiteralExpression(node) && isFindingEventObject(node)) {
+      const findingEventName = objectFindingEventName(node);
       const owner = nearestFunctionLike(node);
-      if (owner && breakType) {
-        const current = breakTypesByFunction.get(owner) ?? new Set<string>();
-        current.add(breakType);
-        breakTypesByFunction.set(owner, current);
+      if (owner && findingEventName) {
+        const current = findingEventNamesByFunction.get(owner) ?? new Set<string>();
+        current.add(findingEventName);
+        findingEventNamesByFunction.set(owner, current);
       }
-      if (breakType && isBreaksPushArgument(node)) {
+      if (findingEventName && isFindingPushArgument(node)) {
         pushUniqueFinding(findings, sourceFile, node, {
           kind: 'hardcoded_break_push_type_risk',
-          symbol: breakType,
-          evidence: breakType,
+          symbol: findingEventName,
+          evidence: findingEventName,
           reason:
             'Parser emits a fixed final break identity; parsers must emit evidence, not final diagnostics.',
         });
       }
       const conditional = nearestConditional(node);
       if (
-        breakType &&
+        findingEventName &&
         conditional &&
         nodeContainsRegexPredicate(conditional) &&
         !hasStructuralParserSignal(conditional)
       ) {
         pushUniqueFinding(findings, sourceFile, node, {
           kind: 'regex_only_break_emitter',
-          symbol: breakType,
+          symbol: findingEventName,
           evidence: conditional.getText(sourceFile).slice(0, 240),
           reason:
             'Break emission appears driven only by regex predicates, without structural parser evidence.',
@@ -152,7 +158,7 @@ export function auditSource(input: HardcodedFindingAuditSource): HardcodedFindin
 
   visit(sourceFile);
 
-  for (const [owner, types] of breakTypesByFunction.entries()) {
+  for (const [owner, types] of findingEventNamesByFunction.entries()) {
     if (types.size < MASS_EMITTER_TYPE_THRESHOLD) {
       continue;
     }

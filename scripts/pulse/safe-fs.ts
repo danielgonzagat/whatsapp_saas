@@ -38,7 +38,11 @@ import { resolveRoot } from './lib/safe-path';
 const REPO_ROOT = resolveRoot(`${__dirname}${path.sep}..${path.sep}..`);
 const TMP_ROOT = resolveRoot(require('os').tmpdir());
 const HOME_ROOT = resolveRoot(require('os').homedir());
-const ALLOWED_ROOTS: readonly string[] = Object.freeze([REPO_ROOT, TMP_ROOT, HOME_ROOT]);
+const OBSERVED_FILESYSTEM_ROOTS: readonly string[] = Object.freeze([
+  REPO_ROOT,
+  TMP_ROOT,
+  HOME_ROOT,
+]);
 
 /** Thrown when a caller attempts to access a path outside the allowed roots. */
 export class PathOutsideAllowedRootError extends Error {
@@ -50,7 +54,7 @@ export class PathOutsideAllowedRootError extends Error {
 
 /**
  * Resolve `filePath` to an absolute path and assert that it lives under one of
- * the {@link ALLOWED_ROOTS}. Returns the resolved absolute path so callers can
+ * the {@link OBSERVED_FILESYSTEM_ROOTS}. Returns the resolved absolute path so callers can
  * pass it to `fs.*` directly.
  */
 function safeResolve(filePath: string): string {
@@ -58,7 +62,7 @@ function safeResolve(filePath: string): string {
     throw new TypeError('safe-fs: filePath must be a non-empty string');
   }
   const resolved = resolveRoot(filePath);
-  for (const root of ALLOWED_ROOTS) {
+  for (const root of OBSERVED_FILESYSTEM_ROOTS) {
     if (resolved === root || resolved.startsWith(`${root}${path.sep}`)) {
       return resolved;
     }

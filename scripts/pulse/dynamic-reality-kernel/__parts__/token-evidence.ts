@@ -92,7 +92,7 @@ export function hashStringToObservedSeed(value: string): number {
 
 // ── Break type patterns ────────────────────────────────────────────────────
 
-export function discoverSecurityBreakTypePatternsFromEvidence(): RegExp[] {
+export function discoverSecurityFindingEventPatternsFromEvidence(): RegExp[] {
   return [
     /ROUTE_NO_AUTH/,
     /HARDCODED_SECRET/,
@@ -106,10 +106,10 @@ export function discoverSecurityBreakTypePatternsFromEvidence(): RegExp[] {
     /CRYPTO_/,
   ];
 }
-export function discoverIsolationBreakTypePatternsFromEvidence(): RegExp[] {
+export function discoverIsolationFindingEventPatternsFromEvidence(): RegExp[] {
   return [/WORKSPACE_ISOLATION/, /MISSING_WORKSPACE_FILTER/, /TENANT_/];
 }
-export function discoverRecoveryBreakTypePatternsFromEvidence(): RegExp[] {
+export function discoverRecoveryFindingEventPatternsFromEvidence(): RegExp[] {
   return [
     /^BACKUP_MISSING$/,
     /^DR_/,
@@ -118,7 +118,7 @@ export function discoverRecoveryBreakTypePatternsFromEvidence(): RegExp[] {
     /MIGRATION_NO_ROLLBACK/,
   ];
 }
-export function discoverPerformanceBreakTypePatternsFromEvidence(): RegExp[] {
+export function discoverPerformanceFindingEventPatternsFromEvidence(): RegExp[] {
   return [
     /SLOW_QUERY/,
     /UNBOUNDED_RESULT/,
@@ -129,15 +129,15 @@ export function discoverPerformanceBreakTypePatternsFromEvidence(): RegExp[] {
     /DB_POOL_EXHAUSTION_HANG/,
   ];
 }
-export function discoverObservabilityBreakTypePatternsFromEvidence(): RegExp[] {
+export function discoverObservabilityFindingEventPatternsFromEvidence(): RegExp[] {
   return [
     /OBSERVABILITY_/,
-    /^AUDIT_FINANCIAL_NO_TRAIL$/,
+    /^AUDIT_.*_NO_TRAIL$/,
     /^AUDIT_DELETION_NO_LOG$/,
     /^AUDIT_ADMIN_NO_LOG$/,
   ];
 }
-export function discoverRuntimeBreakTypePatternsFromEvidence(): RegExp[] {
+export function discoverRuntimeFindingEventPatternsFromEvidence(): RegExp[] {
   return [
     /^BUILD_/,
     /^TEST_/,

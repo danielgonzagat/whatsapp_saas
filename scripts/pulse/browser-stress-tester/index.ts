@@ -9,7 +9,7 @@ import { safeJoin, safeResolve } from '../safe-path';
 
 import * as path from 'path';
 import { detectConfig } from '../config';
-import { fullScan } from '../daemon';
+import { fullScan } from '../daemon/__parts__/fullScan';
 import { buildFunctionalMap } from '../functional-map';
 import { getBackendUrl, getFrontendUrl, getRuntimeResolution } from '../parsers/runtime-utils';
 import { obtainAuthToken, injectAuth, verifyAuth } from './auth';

@@ -216,7 +216,7 @@ export function buildGenericGateUnits(
       affectedCapabilityIds: gate.affectedCapabilityIds || [],
       affectedFlowIds: gate.affectedFlowIds || [],
       asyncExpectations: [],
-      breakTypes: [],
+      findingEvents: [],
       artifactPaths,
       relatedFiles: [],
       validationArtifacts: artifactPaths,

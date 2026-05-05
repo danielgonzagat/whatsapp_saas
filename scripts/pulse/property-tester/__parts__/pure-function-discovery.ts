@@ -6,17 +6,11 @@ import { readDir } from '../../safe-fs';
 import {
   deriveUnitValue,
   inferCandidateCategoryFromObservedTokens,
+  type DerivedCandidateCategory,
 } from '../../dynamic-reality-kernel';
 import { du8, isSourceFileName, shouldScanDirectory, isTestLikeFile } from './core';
 
-export type CandidateCategory =
-  | 'validation'
-  | 'parsing'
-  | 'formatting'
-  | 'numeric'
-  | 'transform'
-  | 'enum_handler'
-  | 'string_id';
+export type CandidateCategory = Exclude<DerivedCandidateCategory, null>;
 
 export interface DiscoveredExport {
   functionName: string;

@@ -47,7 +47,7 @@ interface BuildParityGapsInput {
   health: PulseHealth;
 }
 
-function isObservabilityBreakType(type: string): boolean {
+function isObservabilityFindingEvent(type: string): boolean {
   return /(?:observability|audit|log|trace|metric|alert)/i.test(type);
 }
 
@@ -85,7 +85,7 @@ export function buildParityGaps(input: BuildParityGapsInput): PulseParityGapsArt
       .filter(
         (item) =>
           (item.severity === 'critical' || item.severity === 'high') &&
-          isObservabilityBreakType(item.type),
+          isObservabilityFindingEvent(item.type),
       )
       .map((item) => item.file)
       .filter(Boolean),

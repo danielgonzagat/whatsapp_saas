@@ -23,14 +23,13 @@ import type {
   PageEntry,
   CoreParserData,
 } from './functional-map-types';
+import { normalizeForMatch, type RouteKey } from './graph/__parts__/graph-part1-core';
 import {
-  normalizeForMatch,
   buildRouteLookup,
   matchApiCallToRoute,
   buildServiceModelMap,
   resolveRouteModels,
-  type RouteKey,
-} from './graph';
+} from './graph/__parts__/graph-part2-routing';
 import { buildApiModuleMap } from './parsers/api-parser';
 import { pathExists, readTextFile } from './safe-fs';
 import { findApiCallForElement, groupElementsByPage } from './functional-map.helpers';

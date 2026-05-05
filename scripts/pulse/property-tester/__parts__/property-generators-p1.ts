@@ -24,8 +24,6 @@ import {
   synthesizeSpecialCharacters,
   synthesizeUnicodeProbeValues,
   synthesizeIdentifierAlphabet,
-  generateRandomValue,
-  generateValueOfType,
 } from './property-input-helpers';
 
 export function generateIdempotencyInputs(rng: () => number): GeneratedPropertyTestInput[] {

@@ -5,6 +5,7 @@ import type {
   UIElementKind,
 } from '../../types.ui-crawler';
 import {
+  discoverAllObservedHttpMethods,
   deriveStringUnionMembersFromTypeContract,
   deriveZeroValue,
 } from '../../dynamic-reality-kernel';
@@ -18,6 +19,41 @@ import {
   resolveComponentFiles,
   classifyHandlerStatus,
 } from './elements';
+
+function deriveBrokenStatuses(): Set<UICrawlerStatus> {
+  const statuses = deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.ui-crawler.ts',
+    'UICrawlerStatus',
+  );
+  return new Set([...statuses].filter((status) => !status.includes('works')) as UICrawlerStatus[]);
+}
+
+function deriveDeadHandlerStatuses(): Set<UICrawlerStatus> {
+  const statuses = deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.ui-crawler.ts',
+    'UICrawlerStatus',
+  );
+  return new Set(
+    [...statuses].filter(
+      (status) => status.includes('handler') || status.includes('fake'),
+    ) as UICrawlerStatus[],
+  );
+}
+
+function deriveCriticalRoles(): Set<CrawlerRole> {
+  const roles = deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.ui-crawler.ts',
+    'CrawlerRole',
+  );
+  return new Set([...roles].filter((role) => !role.includes('anonymous')) as CrawlerRole[]);
+}
+
+function deriveHttpMethodPost(): string {
+  return (
+    discoverAllObservedHttpMethods().find((method) => method.toLowerCase().includes('post')) ??
+    discoverAllObservedHttpMethods()[deriveZeroValue()]
+  );
+}
 
 /**
  * Build the full UI Crawler catalog for a repository.

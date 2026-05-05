@@ -8,7 +8,7 @@ import type {
   BehaviorInput,
   BehaviorOutput,
 } from '../../types.behavior-graph';
-import type { DetectedSourceRoot } from '../../source-root-detector';
+import type { DetectedSourceRoot } from '../../source-root-detector/__parts__/types';
 import type {
   ParsedFunc,
   SourceExternalContext,
@@ -153,7 +153,10 @@ function determineExecutionMode(
   sourceContext: SourceExternalContext,
 ): BehaviorNode['executionMode'] {
   const riskCatalog = requireBehaviorRiskLevelCatalog();
-  const modeCatalog = requireExecutionModeCatalog();
+  const modeCatalog = requireExecutionModeCatalog() as Record<
+    string,
+    BehaviorNode['executionMode']
+  >;
   const kindCatalog = requireBehaviorNodeKindCatalog();
   const dr = requireDecoratorRoleCatalog();
   if (risk === riskCatalog.critical || risk === riskCatalog.high) return modeCatalog.aiSafe;

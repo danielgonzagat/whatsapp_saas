@@ -1,14 +1,6 @@
-import type {
-  PulseConvergencePlan,
-  PulseGateName,
-} from '../../types';
+import type { PulseConvergencePlan, PulseGateName } from '../../types';
 import type { BuildPulseConvergencePlanInput } from './kernel';
-import {
-  SCENARIO_STATUSES,
-  UNIT_EXECUTION_MODES,
-  UNIT_KINDS,
-  UNIT_PRIORITIES,
-} from './kernel';
+import { SCENARIO_STATUSES, UNIT_EXECUTION_MODES, UNIT_KINDS, UNIT_PRIORITIES } from './kernel';
 import {
   applyDerivedPriorities,
   compactText,
@@ -171,15 +163,19 @@ export function renderConvergencePlanMarkdown(plan: PulseConvergencePlan): strin
     lines.push(`- Summary: ${unit.summary}`);
     lines.push(`- Target State: ${unit.targetState}`);
     lines.push(`- Gates: ${unit.gateNames.length > 0 ? unit.gateNames.join(', ') : '\u2014'}`);
-    lines.push(`- Scenarios: ${unit.scenarioIds.length > 0 ? unit.scenarioIds.join(', ') : '\u2014'}`);
+    lines.push(
+      `- Scenarios: ${unit.scenarioIds.length > 0 ? unit.scenarioIds.join(', ') : '\u2014'}`,
+    );
     lines.push(`- Modules: ${unit.moduleKeys.length > 0 ? unit.moduleKeys.join(', ') : '\u2014'}`);
-    lines.push(`- Routes: ${unit.routePatterns.length > 0 ? unit.routePatterns.join(', ') : '\u2014'}`);
+    lines.push(
+      `- Routes: ${unit.routePatterns.length > 0 ? unit.routePatterns.join(', ') : '\u2014'}`,
+    );
     lines.push(`- Flows: ${unit.flowIds.length > 0 ? unit.flowIds.join(', ') : '\u2014'}`);
     lines.push(
       `- Async Expectations: ${unit.asyncExpectations.length > 0 ? unit.asyncExpectations.join(', ') : '\u2014'}`,
     );
     lines.push(
-      `- Finding Events: ${unit.breakTypes.length > 0 ? unit.breakTypes.join(', ') : '\u2014'}`,
+      `- Finding Events: ${unit.findingEvents.length > 0 ? unit.findingEvents.join(', ') : '\u2014'}`,
     );
     lines.push(
       `- Related Files: ${unit.relatedFiles.length > 0 ? unit.relatedFiles.join(', ') : '\u2014'}`,

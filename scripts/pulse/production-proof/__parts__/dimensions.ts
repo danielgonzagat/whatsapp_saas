@@ -22,6 +22,7 @@ import type {
   ProductionProofDimension,
   ProductionProofDimensionEvidence,
   ProductionProofState,
+  ProductionProofTruthMode,
   ProofStatus,
 } from '../../types.production-proof';
 import type {
@@ -33,12 +34,13 @@ const _artifacts = discoverAllObservedArtifactFilenames();
 const PRODUCTION_PROOF_FILENAME = _artifacts.productionProof ?? 'PULSE_PRODUCTION_PROOF.json';
 const CAPABILITY_STATE_FILENAME = _artifacts.capabilityState ?? 'PULSE_CAPABILITY_STATE.json';
 const PRODUCT_GRAPH_FILENAME = _artifacts.productGraph ?? 'PULSE_PRODUCT_GRAPH.json';
-const RUNTIME_PROBES_FILENAME = _artifacts.runtimeProbes ?? 'PULSE_RUNTIME_PROBES.json';
-const SENTRY_ADAPTER_FILENAME =
+export const RUNTIME_PROBES_FILENAME = _artifacts.runtimeProbes ?? 'PULSE_RUNTIME_PROBES.json';
+export const SENTRY_ADAPTER_FILENAME =
   _artifacts.externalSignalState ?? 'PULSE_EXTERNAL_SIGNAL_STATE.json';
-const OBSERVABILITY_FILENAME =
+export const OBSERVABILITY_FILENAME =
   _artifacts.observabilityEvidence ?? 'PULSE_OBSERVABILITY_EVIDENCE.json';
-const SCENARIO_EVIDENCE_FILENAME = _artifacts.scenarioEvidence ?? 'PULSE_SCENARIO_EVIDENCE.json';
+export const SCENARIO_EVIDENCE_FILENAME =
+  _artifacts.scenarioEvidence ?? 'PULSE_SCENARIO_EVIDENCE.json';
 
 const _proofStatuses = [
   ...deriveStringUnionMembersFromTypeContract(
@@ -46,11 +48,11 @@ const _proofStatuses = [
     'ProofStatus',
   ),
 ];
-const _proofProven = _proofStatuses[0]!;
-const _proofUnproven = _proofStatuses[1]!;
-const _proofFailed = _proofStatuses[2]!;
-const _proofStale = _proofStatuses[3]!;
-const _proofNotRequired = _proofStatuses[4]!;
+export const _proofProven = _proofStatuses[0]! as ProofStatus;
+export const _proofUnproven = _proofStatuses[1]! as ProofStatus;
+export const _proofFailed = _proofStatuses[2]! as ProofStatus;
+export const _proofStale = _proofStatuses[3]! as ProofStatus;
+const _proofNotRequired = _proofStatuses[4]! as ProofStatus;
 
 const _truthModes = [
   ...deriveStringUnionMembersFromTypeContract(
@@ -58,9 +60,9 @@ const _truthModes = [
     'ProductionProofTruthMode',
   ),
 ];
-const _truthObserved = _truthModes[0]!;
-const _truthInferred = _truthModes[1]!;
-const _truthNotAvailable = _truthModes[2]!;
+const _truthObserved = _truthModes[0]! as ProductionProofTruthMode;
+const _truthInferred = _truthModes[1]! as ProductionProofTruthMode;
+export const _truthNotAvailable = _truthModes[2]! as ProductionProofTruthMode;
 
 const _probeStatuses = [...discoverRuntimeProbeStatusLabels()];
 const _probePassed = _probeStatuses[0]!;
@@ -70,7 +72,7 @@ const _scenarioStatuses = [...discoverScenarioStatusLabels()];
 const _scenarioPassed = _scenarioStatuses[1]!;
 const _scenarioFailed = _scenarioStatuses[2]!;
 
-function resolveArtifactPath(rootDir: string, fileName: string): string {
+export function resolveArtifactPath(rootDir: string, fileName: string): string {
   const candidates = [
     path.join(rootDir, fileName),
     safeJoin(rootDir, '.pulse', 'current', fileName),
@@ -83,7 +85,7 @@ function resolveArtifactPath(rootDir: string, fileName: string): string {
   return safeJoin(rootDir, '.pulse', 'current', fileName);
 }
 
-function resolveStatePath(rootDir: string): string {
+export function resolveStatePath(rootDir: string): string {
   return safeJoin(rootDir, '.pulse', 'current', PRODUCTION_PROOF_FILENAME);
 }
 
@@ -110,7 +112,7 @@ function loadRuntimeProbesArtifact(rootDir: string): PulseRuntimeProbesArtifact 
  * - If at least one dimension is `unproven`, overall is `unproven`.
  * - If any dimension is `stale` and none are `failed`/`unproven`, overall is `stale`.
  */
-function computeOverallStatus(statuses: ProofStatus[]): ProofStatus {
+export function computeOverallStatus(statuses: ProofStatus[]): ProofStatus {
   if (statuses.length === deriveZeroValue()) {
     return _proofUnproven;
   }
@@ -133,7 +135,7 @@ function computeOverallStatus(statuses: ProofStatus[]): ProofStatus {
   return _proofStale;
 }
 
-function loadCapabilities(rootDir: string): PulseCapability[] {
+export function loadCapabilities(rootDir: string): PulseCapability[] {
   const state = safeReadJson<PulseCapabilityState>(rootDir, CAPABILITY_STATE_FILENAME);
   if (state && Array.isArray(state.capabilities)) {
     return state.capabilities;
@@ -191,7 +193,7 @@ function loadCapabilities(rootDir: string): PulseCapability[] {
   return [];
 }
 
-function checkDeployStatus(_capabilityId: string, rootDir: string): ProofStatus {
+export function checkDeployStatus(_capabilityId: string, rootDir: string): ProofStatus {
   const runtimeProbes = loadRuntimeProbesArtifact(rootDir);
   if (!runtimeProbes) {
     return _proofUnproven;
@@ -228,7 +230,7 @@ function proofStatusForProbeSet(probes: PulseRuntimeProbeArtifactProbe[]): Proof
   return _proofUnproven;
 }
 
-function checkHealthCheck(_capabilityId: string, rootDir: string): ProofStatus {
+export function checkHealthCheck(_capabilityId: string, rootDir: string): ProofStatus {
   const runtimeProbes = loadRuntimeProbesArtifact(rootDir);
   if (runtimeProbes) {
     return proofStatusForProbeSet(
@@ -240,7 +242,7 @@ function checkHealthCheck(_capabilityId: string, rootDir: string): ProofStatus {
   return _proofUnproven;
 }
 
-function checkScenarioPass(_capabilityId: string, rootDir: string): ProofStatus {
+export function checkScenarioPass(_capabilityId: string, rootDir: string): ProofStatus {
   const scenarioEvidence = safeReadJson<Record<string, unknown>>(
     rootDir,
     SCENARIO_EVIDENCE_FILENAME,
@@ -267,7 +269,7 @@ function checkScenarioPass(_capabilityId: string, rootDir: string): ProofStatus 
   return hasScenarioFile ? _proofStale : _proofUnproven;
 }
 
-function checkRuntimeProbe(_capabilityId: string, rootDir: string): ProofStatus {
+export function checkRuntimeProbe(_capabilityId: string, rootDir: string): ProofStatus {
   const runtimeProbes = loadRuntimeProbesArtifact(rootDir);
   if (runtimeProbes) {
     return proofStatusForProbeSet(runtimeProbes.probes);
@@ -275,7 +277,7 @@ function checkRuntimeProbe(_capabilityId: string, rootDir: string): ProofStatus 
   return _proofUnproven;
 }
 
-function checkObservability(_capabilityId: string, rootDir: string): ProofStatus {
+export function checkObservability(_capabilityId: string, rootDir: string): ProofStatus {
   const obsEvidence = safeReadJson<Record<string, unknown>>(rootDir, OBSERVABILITY_FILENAME);
   if (obsEvidence && typeof obsEvidence.executed === 'boolean') {
     if (obsEvidence.executed) {
@@ -286,7 +288,7 @@ function checkObservability(_capabilityId: string, rootDir: string): ProofStatus
   return _proofUnproven;
 }
 
-function checkSentryRegression(_capabilityId: string, rootDir: string): ProofStatus {
+export function checkSentryRegression(_capabilityId: string, rootDir: string): ProofStatus {
   const signalState = safeReadJson<Record<string, unknown>>(rootDir, SENTRY_ADAPTER_FILENAME);
   if (!signalState) {
     return _proofUnproven;
@@ -341,7 +343,7 @@ function checkSentryRegression(_capabilityId: string, rootDir: string): ProofSta
   return _proofUnproven;
 }
 
-function checkDbSideEffects(_capabilityId: string, rootDir: string): ProofStatus {
+export function checkDbSideEffects(_capabilityId: string, rootDir: string): ProofStatus {
   const runtimeProbes = loadRuntimeProbesArtifact(rootDir);
   if (runtimeProbes) {
     return proofStatusForProbeSet(
@@ -351,11 +353,11 @@ function checkDbSideEffects(_capabilityId: string, rootDir: string): ProofStatus
   return _proofUnproven;
 }
 
-function checkRollbackFeasibility(rootDir: string): ProofStatus {
+export function checkRollbackFeasibility(rootDir: string): ProofStatus {
   return isRollbackPossible(rootDir) ? _proofProven : _proofUnproven;
 }
 
-function checkPerformanceBudget(_capabilityId: string, _rootDir: string): ProofStatus {
+export function checkPerformanceBudget(_capabilityId: string, _rootDir: string): ProofStatus {
   return _proofUnproven;
 }
 
@@ -412,7 +414,7 @@ function reasonForProofStatus(dimension: ProductionProofDimension, status: Proof
   return `${dimension} has no observed PULSE proof for this capability.`;
 }
 
-function buildDimensionEvidence(
+export function buildDimensionEvidence(
   statuses: Record<ProductionProofDimension, ProofStatus>,
 ): Record<ProductionProofDimension, ProductionProofDimensionEvidence> {
   return Object.fromEntries(
@@ -459,7 +461,7 @@ export function isRollbackPossible(rootDir: string): boolean {
   return false;
 }
 
-function loadDeployHistory(rootDir: string): ProductionProofState['deployHistory'] {
+export function loadDeployHistory(rootDir: string): ProductionProofState['deployHistory'] {
   const runtimeProbes = safeReadJson<Record<string, unknown>>(rootDir, RUNTIME_PROBES_FILENAME);
   if (runtimeProbes && Array.isArray(runtimeProbes.deployHistory)) {
     return (runtimeProbes.deployHistory as Array<Record<string, unknown>>).map((entry) => ({

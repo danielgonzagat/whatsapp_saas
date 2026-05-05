@@ -126,7 +126,9 @@ export function resolveRole(
   if (/\bcustomer\b/.test(discoveredTokens)) {
     return 'customer';
   }
-  const observedTruthSet = new Set([...discoverTruthModeLabels()].filter((t) => t === 'observed'));
+  const observedTruthSet = new Set<string>(
+    [...discoverTruthModeLabels()].filter((t) => t === 'observed'),
+  );
   if (
     endpoints.length === _zero &&
     capabilities.every((capability) => !observedTruthSet.has(capability.truthMode))

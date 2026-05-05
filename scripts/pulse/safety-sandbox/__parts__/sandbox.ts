@@ -3,7 +3,8 @@
 
 import * as path from 'path';
 
-import { buildPulseCommandGraph, type PulseCommandPurpose } from '../../command-graph';
+import type { PulseCommandPurpose } from '../../command-graph/__parts__/types';
+import { buildPulseCommandGraph } from '../../command-graph/__parts__/env-and-build';
 import {
   discoverAllObservedArtifactFilenames,
   discoverConvergenceEvidenceConfidenceLabels,

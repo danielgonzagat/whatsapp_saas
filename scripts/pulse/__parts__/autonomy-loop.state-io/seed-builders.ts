@@ -15,7 +15,7 @@ import {
   DEFAULT_MAX_WORKER_RETRIES,
 } from '../../autonomy-loop.types';
 import { toUnitSnapshot } from '../../autonomy-loop.unit-ranking';
-import { fingerprintStrategy } from '../../structural-memory';
+import { fingerprintStrategy } from '../../structural-memory/__parts__/memory-core';
 import { readDirectiveArtifact } from './directive';
 import { readQueueInfluence } from './queue-influence';
 import {

@@ -48,7 +48,7 @@ import {
   discoverScenarioStatusLabels,
   discoverExternalSignalSourceLabels,
 } from '../../dynamic-reality-kernel';
-import { CHECKER_GAP_TYPES, SECURITY_BREAK_TYPE_KERNEL_GRAMMAR } from '../../cert-constants';
+import { CHECKER_GAP_TYPES, SECURITY_FINDING_EVENT_KERNEL_GRAMMAR } from '../../cert-constants';
 
 let OBSERVED_ARTIFACTS = discoverAllObservedArtifactFilenames();
 let OBSERVED_GATES = discoverAllObservedGateNames();
@@ -68,7 +68,7 @@ let PARITY_GAP_SEVERITIES = discoverParityGapSeverityLabels();
 let CAPABILITY_STATUSES = discoverCapabilityStatusLabels();
 let FLOW_STATUSES = discoverFlowProjectionStatusLabels();
 let SCENARIO_STATUSES = discoverScenarioStatusLabels();
-let EXTERNAL_SIGNAL_SOURCES = discoverExternalSignalSourceLabels();
+let OBSERVED_EXTERNAL_SIGNAL_SOURCE_LABELS = discoverExternalSignalSourceLabels();
 
 export {
   OBSERVED_ARTIFACTS,
@@ -89,7 +89,7 @@ export {
   CAPABILITY_STATUSES,
   FLOW_STATUSES,
   SCENARIO_STATUSES,
-  EXTERNAL_SIGNAL_SOURCES,
+  OBSERVED_EXTERNAL_SIGNAL_SOURCE_LABELS,
 };
 
 export interface BuildPulseConvergencePlanInput {

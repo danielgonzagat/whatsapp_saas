@@ -5,11 +5,11 @@ export {
   type PulseArtifactFreshnessPolicy,
   type PulseArtifactDefinition,
   type PulseArtifactRegistry,
-} from './__parts__/discovery';
+} from './artifact-registry/__parts__/discovery';
 
 export {
   buildArtifactRegistry,
   getArtifactDefinitionById,
   requireArtifactDefinitionById,
   resolveArtifactRelativePath,
-} from './__parts__/registry';
+} from './artifact-registry/__parts__/registry';

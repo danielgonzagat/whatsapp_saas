@@ -2,7 +2,8 @@ import { safeJoin } from './safe-path';
 import * as path from 'path';
 import type { PulseConfig } from './types';
 import { pathExists, readDir, readTextFile } from './safe-fs';
-import { detectSourceRoots, type DetectedSourceRoot } from './source-root-detector';
+import { detectSourceRoots } from './source-root-detector/__parts__/api';
+import type { DetectedSourceRoot } from './source-root-detector/__parts__/types';
 
 function hasMatchingFile(rootDir: string, matcher: (relativePath: string) => boolean): boolean {
   if (!pathExists(rootDir)) return false;

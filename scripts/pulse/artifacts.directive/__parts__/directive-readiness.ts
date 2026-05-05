@@ -6,7 +6,8 @@
 import { unique } from '../../artifacts.io';
 import { deriveZeroValue } from '../../dynamic-reality-kernel';
 import { buildDirectiveProofSurface } from '../../directive-proof-surface';
-import { buildAutonomyProof, buildAutonomyReadiness } from '../../artifacts.autonomy';
+import { buildAutonomyProof } from '../../artifacts.autonomy/__parts__/autonomy-proof';
+import { buildAutonomyReadiness } from '../../artifacts.autonomy/__parts__/readiness';
 import type { PulseArtifactSnapshot, PulseMachineReadiness } from '../../artifacts.types';
 import type { PulseProofReadinessSummary } from '../../cert-gate-overclaim';
 import type { PathProofPlan } from '../../path-proof-runner';

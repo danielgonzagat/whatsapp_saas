@@ -40,7 +40,7 @@ export function buildGraph(input: PulseGraphInput): PulseHealth {
     globalPrefix,
   } = input;
 
-  const breaks: Break[] = [];
+  let breaks: Break[] = [];
   const routeLookup = buildRouteLookup(backendRoutes, globalPrefix);
   const serviceModelMap = buildServiceModelMap(serviceTraces);
   const authEvidenceTokens = buildAuthEvidenceTokens(backendRoutes);
@@ -73,7 +73,8 @@ export function buildGraph(input: PulseGraphInput): PulseHealth {
         }
       }
 
-      breaks.push(
+      breaks = [
+        ...breaks,
         graphFinding({
           kind: 'route_target_unmatched',
           severity: 'high',
@@ -83,7 +84,7 @@ export function buildGraph(input: PulseGraphInput): PulseHealth {
           detail: `Pattern: ${call.callPattern}, endpoint: ${call.endpoint}`,
           surface: 'api-connectivity',
         }),
-      );
+      ];
     }
   }
 
@@ -118,7 +119,8 @@ export function buildGraph(input: PulseGraphInput): PulseHealth {
         continue;
       }
 
-      breaks.push(
+      breaks = [
+        ...breaks,
         graphFinding({
           kind: 'route_caller_unobserved',
           severity: 'low',
@@ -128,7 +130,7 @@ export function buildGraph(input: PulseGraphInput): PulseHealth {
           detail: `Controller: ${route.methodName}`,
           surface: 'route-connectivity',
         }),
-      );
+      ];
     }
   }
 
@@ -142,7 +144,8 @@ export function buildGraph(input: PulseGraphInput): PulseHealth {
       continue;
     }
 
-    breaks.push(
+    breaks = [
+      ...breaks,
       graphFinding({
         kind: 'state_model_access_unobserved',
         severity: 'medium',
@@ -155,12 +158,13 @@ export function buildGraph(input: PulseGraphInput): PulseHealth {
           .join(', ')}${model.fields.length > 5 ? '...' : ''}`,
         surface: 'state-access',
       }),
-    );
+    ];
   }
 
   for (const el of uiElements) {
     if (isUselessHandlerType(el.handlerType)) {
-      breaks.push(
+      breaks = [
+        ...breaks,
         graphFinding({
           kind: 'ui_handler_effect_unobserved',
           severity: isNoopHandlerType(el.handlerType) ? 'high' : 'medium',
@@ -170,12 +174,13 @@ export function buildGraph(input: PulseGraphInput): PulseHealth {
           detail: `Handler: ${(el.handler || '').slice(0, 80)}`,
           surface: 'ui-interaction',
         }),
-      );
+      ];
     }
   }
 
   for (const f of facades) {
-    breaks.push(
+    breaks = [
+      ...breaks,
       graphFinding({
         kind: 'facade_evidence',
         severity: f.severity,
@@ -185,7 +190,7 @@ export function buildGraph(input: PulseGraphInput): PulseHealth {
         detail: f.evidence,
         surface: 'capability-materialization',
       }),
-    );
+    ];
   }
 
   for (const proxy of proxyRoutes) {
@@ -200,7 +205,8 @@ export function buildGraph(input: PulseGraphInput): PulseHealth {
         }
       }
       if (!found) {
-        breaks.push(
+        breaks = [
+          ...breaks,
           graphFinding({
             kind: 'proxy_upstream_unmatched',
             severity: 'medium',
@@ -210,13 +216,13 @@ export function buildGraph(input: PulseGraphInput): PulseHealth {
             detail: '',
             surface: 'proxy-connectivity',
           }),
-        );
+        ];
       }
     }
   }
 
   if (input.extendedBreaks) {
-    breaks.push(...input.extendedBreaks);
+    breaks = [...breaks, ...input.extendedBreaks];
   }
 
   const coreNodes = apiCalls.length + backendRoutes.length + prismaModels.length;

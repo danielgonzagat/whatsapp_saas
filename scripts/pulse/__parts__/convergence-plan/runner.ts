@@ -154,7 +154,7 @@ export function renderConvergencePlanMarkdown(plan: PulseConvergencePlan): strin
       `- Async Expectations: ${unit.asyncExpectations.length > 0 ? unit.asyncExpectations.join(', ') : '\u2014'}`,
     );
     lines.push(
-      `- Finding Events: ${unit.breakTypes.length > 0 ? unit.breakTypes.join(', ') : '\u2014'}`,
+      `- Finding Events: ${unit.findingEvents.length > 0 ? unit.findingEvents.join(', ') : '\u2014'}`,
     );
     lines.push(
       `- Related Files: ${unit.relatedFiles.length > 0 ? unit.relatedFiles.join(', ') : '\u2014'}`,

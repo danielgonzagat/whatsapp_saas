@@ -1,4 +1,4 @@
-import type { DetectedSourceRoot } from '../../source-root-detector';
+import type { DetectedSourceRoot } from '../../source-root-detector/__parts__/types';
 import type { BehaviorNode, BehaviorValidationRequirement } from '../../types.behavior-graph';
 import { discoverExternalReceiverTokensFromEvidence } from '../../dynamic-reality-kernel';
 import { discoverSourceExtensionsFromObservedTypescript } from '../../dynamic-reality-kernel';

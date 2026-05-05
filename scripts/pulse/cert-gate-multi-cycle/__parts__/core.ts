@@ -1,11 +1,15 @@
 import type {
   PulseAutonomyIterationRecord,
   PulseAutonomyState,
+  PulseGateFailureClass,
   PulseGateResult,
+  PulseTruthMode,
+  PulseConvergenceEvidenceConfidence,
 } from '../../types';
 
 import { gateFail } from '../../cert-gate-evaluators';
 import {
+  deriveUnitValue,
   deriveZeroValue,
   discoverConvergenceEvidenceConfidenceLabels,
   discoverDoDGateStatusLabels,
@@ -23,6 +27,24 @@ import {
   type PulseAutonomyStateSnapshot,
 } from './helpers';
 
+function observedFailureClassAt(index: number): PulseGateFailureClass {
+  return [...discoverGateFailureClassLabels()][index] as PulseGateFailureClass;
+}
+
+function observedTruthModeAt(index: number): PulseTruthMode {
+  return [...discoverTruthModeLabels()][index] as PulseTruthMode;
+}
+
+function observedConfidenceAt(index: number): PulseConvergenceEvidenceConfidence {
+  return [...discoverConvergenceEvidenceConfidenceLabels()][
+    index
+  ] as PulseConvergenceEvidenceConfidence;
+}
+
+function observedGateStatusAt(index: number): PulseGateResult['status'] {
+  return [...discoverDoDGateStatusLabels()][index] as PulseGateResult['status'];
+}
+
 /**
  * Evaluate the multiCycleConvergencePass gate.
  *
@@ -37,10 +59,10 @@ export function evaluateMultiCycleConvergenceGate(
   if (history.length === deriveZeroValue()) {
     return gateFail(
       'multiCycleConvergence: no autonomy iteration history found; production-autonomy verdict requires proven cycles.',
-      [...discoverGateFailureClassLabels()][1],
+      observedFailureClassAt(deriveUnitValue()),
       {
-        evidenceMode: [...discoverTruthModeLabels()][0],
-        confidence: [...discoverConvergenceEvidenceConfidenceLabels()][0],
+        evidenceMode: observedTruthModeAt(deriveZeroValue()),
+        confidence: observedConfidenceAt(deriveZeroValue()),
       },
     );
   }
@@ -111,10 +133,10 @@ export function evaluateMultiCycleConvergenceGate(
   }
   if (nonRegressing >= REQUIRED_NON_REGRESSING_CYCLES) {
     return {
-      status: [...discoverDoDGateStatusLabels()][0],
+      status: observedGateStatusAt(deriveZeroValue()),
       reason: `${nonRegressing} non-regressing real autonomous cycle(s) observed (>= ${REQUIRED_NON_REGRESSING_CYCLES} required).`,
-      evidenceMode: [...discoverTruthModeLabels()][0],
-      confidence: [...discoverConvergenceEvidenceConfidenceLabels()][0],
+      evidenceMode: observedTruthModeAt(deriveZeroValue()),
+      confidence: observedConfidenceAt(deriveZeroValue()),
     };
   }
   const failureClass =
@@ -123,8 +145,8 @@ export function evaluateMultiCycleConvergenceGate(
     regressedScore > deriveZeroValue() ||
     regressedTier > deriveZeroValue() ||
     regressedExecutionMatrix > deriveZeroValue()
-      ? [...discoverGateFailureClassLabels()][0]
-      : [...discoverGateFailureClassLabels()][1];
+      ? observedFailureClassAt(deriveZeroValue())
+      : observedFailureClassAt(deriveUnitValue());
   const detail = [
     `recorded=${history.length}`,
     `realExecuted=${realExecuted}`,
@@ -156,8 +178,8 @@ export function evaluateMultiCycleConvergenceGate(
     `multiCycleConvergence: ${nonRegressing}/${REQUIRED_NON_REGRESSING_CYCLES} non-regressing real cycles (${detail}).`,
     failureClass,
     {
-      evidenceMode: [...discoverTruthModeLabels()][0],
-      confidence: [...discoverConvergenceEvidenceConfidenceLabels()][0],
+      evidenceMode: observedTruthModeAt(deriveZeroValue()),
+      confidence: observedConfidenceAt(deriveZeroValue()),
     },
   );
 }

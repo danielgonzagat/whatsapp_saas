@@ -34,7 +34,7 @@ const CANONICAL_ADAPTER_REQUIREMENT = [...discoverExternalAdapterRequirementLabe
 const CANONICAL_ADAPTER_REQUIREDNESS = [...discoverExternalAdapterRequirednessLabels()];
 const CANONICAL_ADAPTER_PROOF_BASIS = [...discoverExternalAdapterProofBasisLabels()];
 const CANONICAL_CERTIFICATION_PROFILE = [...discoverCertificationProfileLabels()];
-const CANONICAL_SIGNAL_SOURCES = [...discoverExternalSignalSourceLabels()];
+const OBSERVED_EXTERNAL_SIGNAL_SOURCE_LABELS = [...discoverExternalSignalSourceLabels()];
 
 export function pulseExecTimeoutMs(): number {
   const ok = deriveHttpStatusFromObservedCatalog('OK');
@@ -109,28 +109,28 @@ export function resolveBlockingStatusSet(): Set<string> {
 }
 
 export function githubSource(): PulseExternalSignalSource {
-  return CANONICAL_SIGNAL_SOURCES[0] as PulseExternalSignalSource;
+  return OBSERVED_EXTERNAL_SIGNAL_SOURCE_LABELS[0] as PulseExternalSignalSource;
 }
 export function githubActionsSource(): PulseExternalSignalSource {
-  return CANONICAL_SIGNAL_SOURCES[1] as PulseExternalSignalSource;
+  return OBSERVED_EXTERNAL_SIGNAL_SOURCE_LABELS[1] as PulseExternalSignalSource;
 }
 export function codecovSource(): PulseExternalSignalSource {
-  return CANONICAL_SIGNAL_SOURCES[3] as PulseExternalSignalSource;
+  return OBSERVED_EXTERNAL_SIGNAL_SOURCE_LABELS[3] as PulseExternalSignalSource;
 }
 export function sentrySource(): PulseExternalSignalSource {
-  return CANONICAL_SIGNAL_SOURCES[4] as PulseExternalSignalSource;
+  return OBSERVED_EXTERNAL_SIGNAL_SOURCE_LABELS[4] as PulseExternalSignalSource;
 }
 export function datadogSource(): PulseExternalSignalSource {
-  return CANONICAL_SIGNAL_SOURCES[5] as PulseExternalSignalSource;
+  return OBSERVED_EXTERNAL_SIGNAL_SOURCE_LABELS[5] as PulseExternalSignalSource;
 }
 export function prometheusSource(): PulseExternalSignalSource {
-  return CANONICAL_SIGNAL_SOURCES[6] as PulseExternalSignalSource;
+  return OBSERVED_EXTERNAL_SIGNAL_SOURCE_LABELS[6] as PulseExternalSignalSource;
 }
 export function dependabotSource(): PulseExternalSignalSource {
-  return CANONICAL_SIGNAL_SOURCES[7] as PulseExternalSignalSource;
+  return OBSERVED_EXTERNAL_SIGNAL_SOURCE_LABELS[7] as PulseExternalSignalSource;
 }
 export function gitnexusSource(): PulseExternalSignalSource {
-  return CANONICAL_SIGNAL_SOURCES[8] as PulseExternalSignalSource;
+  return OBSERVED_EXTERNAL_SIGNAL_SOURCE_LABELS[8] as PulseExternalSignalSource;
 }
 
 // ─── Discovery infrastructure ─────────────────────────────────────────────────

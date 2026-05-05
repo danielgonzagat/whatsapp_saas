@@ -79,7 +79,7 @@ export function buildExternalUnits(input: BuildPulseConvergencePlanInput): Pulse
       affectedCapabilityIds: signal.capabilityIds,
       affectedFlowIds: signal.flowIds,
       asyncExpectations: [],
-      breakTypes: [signal.type],
+      findingEvents: [signal.type],
       artifactPaths: [OBSERVED_ARTIFACTS.externalSignalState],
       relatedFiles: signal.relatedFiles,
       validationArtifacts: signal.validationTargets,
@@ -166,7 +166,7 @@ export function buildExecutionMatrixUnits(
         affectedCapabilityIds: path.capabilityId ? [path.capabilityId] : [],
         affectedFlowIds: path.flowId ? [path.flowId] : [],
         asyncExpectations: [],
-        breakTypes: [],
+        findingEvents: [],
         artifactPaths: [OBSERVED_ARTIFACTS.executionMatrix],
         relatedFiles: takeEvidenceBatch(path.filePaths, path.routePatterns),
         validationArtifacts: [

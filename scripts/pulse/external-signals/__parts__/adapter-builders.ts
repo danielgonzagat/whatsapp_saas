@@ -24,7 +24,7 @@ import type { BuildExternalSignalStateInput } from '../../signal-mapper';
 import {
   getAdapterRequiredness,
   isAdapterRequired,
-} from '../../adapters/external-sources-orchestrator';
+} from '../../adapters/external-sources-orchestrator/__parts__/core';
 import type { PulseExternalAdapterProofBasis } from '../../types';
 import { PULSE_EXTERNAL_SNAPSHOT_FILES } from './snapshot-config';
 

@@ -3,7 +3,7 @@ import { safeJoin } from '../../safe-path';
 import type { APICall, UIElement } from '../../types';
 import type { HookRegistry } from '../../parsers/hook-registry';
 import type { PageEntry } from '../../functional-map-types';
-import { normalizeForMatch } from '../../graph';
+import { normalizeForMatch } from '../../graph/__parts__/graph-part1-core';
 import { pathExists } from '../../safe-fs';
 import {
   extractDirectApiFromBody,

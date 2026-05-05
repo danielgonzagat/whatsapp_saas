@@ -6,32 +6,29 @@
  */
 import type { Break, PulseGateName } from './types';
 import {
-  discoverSecurityBreakTypePatternsFromEvidence,
-  discoverIsolationBreakTypePatternsFromEvidence,
-  discoverRecoveryBreakTypePatternsFromEvidence,
-  discoverPerformanceBreakTypePatternsFromEvidence,
-  discoverObservabilityBreakTypePatternsFromEvidence,
-  discoverRuntimeBreakTypePatternsFromEvidence,
+  discoverSecurityFindingEventPatternsFromEvidence,
+  discoverIsolationFindingEventPatternsFromEvidence,
+  discoverRecoveryFindingEventPatternsFromEvidence,
+  discoverPerformanceFindingEventPatternsFromEvidence,
+  discoverObservabilityFindingEventPatternsFromEvidence,
+  discoverRuntimeFindingEventPatternsFromEvidence,
   discoverCheckerGapTypesFromEvidence,
 } from './dynamic-reality-kernel';
 
-export const SECURITY_BREAK_TYPE_KERNEL_GRAMMAR = discoverSecurityBreakTypePatternsFromEvidence();
+export const SECURITY_FINDING_EVENT_KERNEL_GRAMMAR =
+  discoverSecurityFindingEventPatternsFromEvidence();
 
-export const ISOLATION_BREAK_TYPE_KERNEL_GRAMMAR = discoverIsolationBreakTypePatternsFromEvidence();
+export const ISOLATION_FINDING_EVENT_KERNEL_GRAMMAR =
+  discoverIsolationFindingEventPatternsFromEvidence();
 
-export const RECOVERY_BREAK_TYPE_KERNEL_GRAMMAR = discoverRecoveryBreakTypePatternsFromEvidence();
+export const RECOVERY_FINDING_EVENT_KERNEL_GRAMMAR =
+  discoverRecoveryFindingEventPatternsFromEvidence();
 
-export const PERFORMANCE_BREAK_TYPE_KERNEL_GRAMMAR =
-  discoverPerformanceBreakTypePatternsFromEvidence();
+export const PERFORMANCE_FINDING_EVENT_KERNEL_GRAMMAR =
+  discoverPerformanceFindingEventPatternsFromEvidence();
 
-export const OBSERVABILITY_BREAK_TYPE_KERNEL_GRAMMAR =
-  discoverObservabilityBreakTypePatternsFromEvidence();
-
-export const SECURITY_PATTERNS = discoverSecurityBreakTypePatternsFromEvidence();
-export const ISOLATION_PATTERNS = discoverIsolationBreakTypePatternsFromEvidence();
-export const RECOVERY_PATTERNS = discoverRecoveryBreakTypePatternsFromEvidence();
-export const PERFORMANCE_PATTERNS = discoverPerformanceBreakTypePatternsFromEvidence();
-export const OBSERVABILITY_PATTERNS = discoverObservabilityBreakTypePatternsFromEvidence();
+export const OBSERVABILITY_FINDING_EVENT_KERNEL_GRAMMAR =
+  discoverObservabilityFindingEventPatternsFromEvidence();
 
 export interface CertificationFindingPredicate {
   gateName: PulseGateName;
@@ -46,40 +43,39 @@ export const CERTIFICATION_FINDING_PREDICATES = {
     objective: 'dynamic security certification objective',
     evidenceRequirement:
       'runtime, static, or external evidence must not expose blocking security predicates',
-    legacyPatterns: discoverSecurityBreakTypePatternsFromEvidence(),
+    legacyPatterns: discoverSecurityFindingEventPatternsFromEvidence(),
   },
   isolationPass: {
     gateName: 'isolationPass',
     objective: 'dynamic tenant-isolation certification objective',
     evidenceRequirement:
       'workspace and tenant evidence must not expose blocking isolation predicates',
-    legacyPatterns: discoverIsolationBreakTypePatternsFromEvidence(),
+    legacyPatterns: discoverIsolationFindingEventPatternsFromEvidence(),
   },
   recoveryPass: {
     gateName: 'recoveryPass',
     objective: 'dynamic recovery certification objective',
     evidenceRequirement:
       'backup, rollback, deploy, and disaster-recovery evidence must be executable',
-    legacyPatterns: discoverRecoveryBreakTypePatternsFromEvidence(),
+    legacyPatterns: discoverRecoveryFindingEventPatternsFromEvidence(),
   },
   performancePass: {
     gateName: 'performancePass',
     objective: 'dynamic performance certification objective',
     evidenceRequirement:
       'latency, scale, browser, and resource evidence must not expose blocking performance predicates',
-    legacyPatterns: discoverPerformanceBreakTypePatternsFromEvidence(),
+    legacyPatterns: discoverPerformanceFindingEventPatternsFromEvidence(),
   },
   observabilityPass: {
     gateName: 'observabilityPass',
     objective: 'dynamic observability certification objective',
     evidenceRequirement:
       'audit, deletion, admin, and telemetry evidence must not expose blocking observability predicates',
-    legacyPatterns: discoverObservabilityBreakTypePatternsFromEvidence(),
+    legacyPatterns: discoverObservabilityFindingEventPatternsFromEvidence(),
   },
 } satisfies Partial<Record<PulseGateName, CertificationFindingPredicate>>;
 
-export const RUNTIME_BREAK_TYPE_KERNEL_GRAMMAR = discoverRuntimeBreakTypePatternsFromEvidence();
-
-export const RUNTIME_PATTERNS = discoverRuntimeBreakTypePatternsFromEvidence();
+export const RUNTIME_FINDING_EVENT_KERNEL_GRAMMAR =
+  discoverRuntimeFindingEventPatternsFromEvidence();
 
 export const CHECKER_GAP_TYPES = discoverCheckerGapTypesFromEvidence() as Set<Break['type']>;

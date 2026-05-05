@@ -14,10 +14,9 @@ import {
   buildSuccessCriteria,
 } from '../../artifacts.directive.helpers';
 import type { PulseArtifactDefinition, PulseArtifactRegistry } from '../../artifact-registry';
-import type { PulseArtifactSnapshot } from '../../artifacts.types';
+import type { PulseArtifactSnapshot, PulseMachineReadiness } from '../../artifacts.types';
 import type { QueueUnit } from '../../artifacts.queue';
 import type { PulseGateName, PulseGateResult } from '../../types';
-import type { PulseMachineReadiness } from '../../artifacts.autonomy/__parts__/types';
 import {
   buildDefaultExitCriteria,
   OBSERVED_ARTIFACT_FILENAMES,
@@ -179,9 +178,7 @@ export function evidenceNumber(
   criterion: PulseMachineReadiness['criteria'][number],
   key: string,
 ): number {
-  const value = (criterion as Record<string, unknown>).evidence?.[
-    key as keyof typeof criterion.evidence
-  ];
+  const value = criterion.evidence[key];
   return typeof value === 'number' ? value : 0;
 }
 
@@ -189,9 +186,7 @@ export function evidenceString(
   criterion: PulseMachineReadiness['criteria'][number],
   key: string,
 ): string | null {
-  const value = (criterion as Record<string, unknown>).evidence?.[
-    key as keyof typeof criterion.evidence
-  ];
+  const value = criterion.evidence[key];
   return typeof value === 'string' && value.length > 0 ? (value as string) : null;
 }
 

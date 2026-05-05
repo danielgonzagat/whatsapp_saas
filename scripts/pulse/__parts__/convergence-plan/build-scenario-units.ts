@@ -27,7 +27,7 @@ import {
   hasObservedItems,
   isBlockingBreak,
   findRelatedBreaks,
-  rankBreakTypes,
+  rankFindingEvents,
   rankFiles,
   determineFailureClass,
   determineUnitStatus,
@@ -236,7 +236,7 @@ export function buildScenarioUnits(input: BuildPulseConvergencePlanInput): Pulse
       affectedCapabilityIds,
       affectedFlowIds: flowIds,
       asyncExpectations,
-      breakTypes: rankBreakTypes(relatedBreaks, 6),
+      findingEvents: rankFindingEvents(relatedBreaks, 6),
       artifactPaths,
       relatedFiles: rankFiles(relatedBreaks, 10),
       validationArtifacts: buildValidationArtifacts(

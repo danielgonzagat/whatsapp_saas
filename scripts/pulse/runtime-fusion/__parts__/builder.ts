@@ -63,7 +63,7 @@ export function overridePriorities(
     );
     if (capabilitySignals.length === 0) continue;
 
-    let originalPriority = PRIORITY_P2;
+    let originalPriority: string = PRIORITY_P2;
     if (convergencePlan) {
       if (convergencePlan.priorities?.[capId]) {
         originalPriority = convergencePlan.priorities[capId];

@@ -38,7 +38,7 @@ import {
   buildRuntimeRealityQueueInfluence,
 } from '../../autonomy-loop.unit-ranking';
 import { buildPulseAutonomyMemoryState } from '../../autonomy-loop.memory';
-import { fingerprintStrategy } from '../../structural-memory';
+import { fingerprintStrategy } from '../../structural-memory/__parts__/memory-core';
 import type { FalsePositiveAdjudicationState } from '../../types.false-positive-adjudicator';
 import type { RuntimeFusionState } from '../../types.runtime-fusion';
 import type { StructuralMemoryState } from '../../types.structural-memory';

@@ -228,6 +228,10 @@ function nextNodeId(): string {
   return `bn_${String(++_nextNodeId).padStart(6, String(deriveZeroValue()))}`;
 }
 
+function resetNodeIdSequence(): void {
+  _nextNodeId = deriveZeroValue();
+}
+
 let _governedEvidenceModeCatalog: Record<string, GovernedEvidenceMode> | null = null;
 function requireGovernedEvidenceModeCatalog(): Record<string, GovernedEvidenceMode> {
   if (!_governedEvidenceModeCatalog) {
@@ -264,5 +268,6 @@ export {
   LINE_DECLARATION_BUDGET_BYTES,
   PARAM_LIST_BUDGET_BYTES,
   nextNodeId,
+  resetNodeIdSequence,
   requireGovernedEvidenceModeCatalog,
 };

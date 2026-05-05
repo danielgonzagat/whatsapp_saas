@@ -22,6 +22,8 @@ import type {
   SignalAction,
   SignalSeverity,
   SignalType,
+  RuntimeFusionEvidenceStatus,
+  RuntimeSignalEvidenceMode,
 } from '../../types.runtime-fusion';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -33,30 +35,60 @@ export let FUSION_OUTPUT_FILE = discoverAllObservedArtifactFilenames().runtimeFu
 export let DYNAMIC_SIGNAL_SEMANTICS_NOTE = `Dynamic signal semantics derived from ${discoverAllObservedArtifactFilenames().externalSignalState} source capability, observed payload, runtime baseline, trend, impact, and blast-radius hints; legacy labels are weak calibration only.`;
 
 let EVIDENCE_STATUS_LABELS = discoverRuntimeFusionEvidenceStatusLabels();
-export let EVIDENCE_NOT_AVAILABLE = [...EVIDENCE_STATUS_LABELS].find((l) =>
-  /^not.?avail/i.test(l),
-)!;
-export let EVIDENCE_INVALID = [...EVIDENCE_STATUS_LABELS].find((l) => /invalid/i.test(l))!;
-export let EVIDENCE_SKIPPED = [...EVIDENCE_STATUS_LABELS].find((l) => /skip/i.test(l))!;
-export let EVIDENCE_SIMULATED = [...EVIDENCE_STATUS_LABELS].find((l) => /simul/i.test(l))!;
+export let EVIDENCE_NOT_AVAILABLE: RuntimeFusionEvidenceStatus = [...EVIDENCE_STATUS_LABELS].find(
+  (l) => /^not.?avail/i.test(l),
+)! as RuntimeFusionEvidenceStatus;
+export let EVIDENCE_INVALID: RuntimeFusionEvidenceStatus = [...EVIDENCE_STATUS_LABELS].find((l) =>
+  /invalid/i.test(l),
+)! as RuntimeFusionEvidenceStatus;
+export let EVIDENCE_SKIPPED: RuntimeFusionEvidenceStatus = [...EVIDENCE_STATUS_LABELS].find((l) =>
+  /skip/i.test(l),
+)! as RuntimeFusionEvidenceStatus;
+export let EVIDENCE_SIMULATED: RuntimeFusionEvidenceStatus = [...EVIDENCE_STATUS_LABELS].find((l) =>
+  /simul/i.test(l),
+)! as RuntimeFusionEvidenceStatus;
 
 let TRUTH_LABELS = discoverTruthModeLabels();
-export let TRUTH_OBSERVED = [...TRUTH_LABELS].find((l) => /^observ/i.test(l))!;
-export let TRUTH_INFERRED = [...TRUTH_LABELS].find((l) => /^infer/i.test(l))!;
+export let TRUTH_OBSERVED: RuntimeSignalEvidenceMode = [...TRUTH_LABELS].find((l) =>
+  /^observ/i.test(l),
+)! as RuntimeSignalEvidenceMode;
+export let TRUTH_INFERRED: RuntimeSignalEvidenceMode = [...TRUTH_LABELS].find((l) =>
+  /^infer/i.test(l),
+)! as RuntimeSignalEvidenceMode;
 
 let SEVERITY_LABELS = discoverSignalSeverityLabels();
-export let SEVERITY_CRITICAL = [...SEVERITY_LABELS].find((l) => /^crit/i.test(l))!;
-export let SEVERITY_HIGH = [...SEVERITY_LABELS].find((l) => /^high/i.test(l))!;
-export let SEVERITY_MEDIUM = [...SEVERITY_LABELS].find((l) => /^med/i.test(l))!;
-export let SEVERITY_LOW = [...SEVERITY_LABELS].find((l) => /^low/i.test(l))!;
-export let SEVERITY_INFO = [...SEVERITY_LABELS].find((l) => /^info/i.test(l))!;
+export let SEVERITY_CRITICAL: SignalSeverity = [...SEVERITY_LABELS].find((l) =>
+  /^crit/i.test(l),
+)! as SignalSeverity;
+export let SEVERITY_HIGH: SignalSeverity = [...SEVERITY_LABELS].find((l) =>
+  /^high/i.test(l),
+)! as SignalSeverity;
+export let SEVERITY_MEDIUM: SignalSeverity = [...SEVERITY_LABELS].find((l) =>
+  /^med/i.test(l),
+)! as SignalSeverity;
+export let SEVERITY_LOW: SignalSeverity = [...SEVERITY_LABELS].find((l) =>
+  /^low/i.test(l),
+)! as SignalSeverity;
+export let SEVERITY_INFO: SignalSeverity = [...SEVERITY_LABELS].find((l) =>
+  /^info/i.test(l),
+)! as SignalSeverity;
 
 let ACTION_LABELS = discoverSignalActionLabels();
-export let ACTION_BLOCK_DEPLOY = [...ACTION_LABELS].find((l) => /deploy/i.test(l))!;
-export let ACTION_BLOCK_MERGE = [...ACTION_LABELS].find((l) => /merge/i.test(l))!;
-export let ACTION_PRIORITIZE = [...ACTION_LABELS].find((l) => /priorit/i.test(l))!;
-export let ACTION_CREATE_ISSUE = [...ACTION_LABELS].find((l) => /issue/i.test(l))!;
-export let ACTION_LOG_ONLY = [...ACTION_LABELS].find((l) => /log/i.test(l))!;
+export let ACTION_BLOCK_DEPLOY: SignalAction = [...ACTION_LABELS].find((l) =>
+  /deploy/i.test(l),
+)! as SignalAction;
+export let ACTION_BLOCK_MERGE: SignalAction = [...ACTION_LABELS].find((l) =>
+  /merge/i.test(l),
+)! as SignalAction;
+export let ACTION_PRIORITIZE: SignalAction = [...ACTION_LABELS].find((l) =>
+  /priorit/i.test(l),
+)! as SignalAction;
+export let ACTION_CREATE_ISSUE: SignalAction = [...ACTION_LABELS].find((l) =>
+  /issue/i.test(l),
+)! as SignalAction;
+export let ACTION_LOG_ONLY: SignalAction = [...ACTION_LABELS].find((l) =>
+  /log/i.test(l),
+)! as SignalAction;
 
 let TYPE_LABELS = discoverSignalTypeLabels();
 export let TYPE_DEPLOY_FAILURE = [...TYPE_LABELS].find((l) => /deploy_fail/i.test(l))!;
@@ -269,7 +301,9 @@ export function deriveOperationalEvidenceKind(
     observedMeanOrSelf(positiveScores, 0),
     dynamicFloor + dynamicSeparation,
   );
-  return best && best.score >= minimumEvidence ? best.kind : externalLabel;
+  return best && best.score >= minimumEvidence
+    ? best.kind
+    : (externalLabel as OperationalEvidenceKind);
 }
 
 export function deriveSignalType(

@@ -112,7 +112,7 @@ export function buildCapabilityUnits(
       affectedCapabilityIds: [capability.id],
       affectedFlowIds: [],
       asyncExpectations: [],
-      breakTypes: [],
+      findingEvents: [],
       artifactPaths: [OBSERVED_ARTIFACTS.capabilityState, 'PULSE_PRODUCT_VISION.json'],
       relatedFiles: takeEvidenceBatch(capability.filePaths, capability.validationTargets),
       validationArtifacts: [
@@ -182,7 +182,7 @@ export function buildFlowUnits(input: BuildPulseConvergencePlanInput): PulseConv
       affectedCapabilityIds: flow.capabilityIds,
       affectedFlowIds: [flow.id],
       asyncExpectations: [],
-      breakTypes: flow.missingLinks,
+      findingEvents: flow.missingLinks,
       artifactPaths: [OBSERVED_ARTIFACTS.flowProjection, 'PULSE_PRODUCT_VISION.json'],
       relatedFiles: relatedCapabilities
         .flatMap((capability) => capability.filePaths)

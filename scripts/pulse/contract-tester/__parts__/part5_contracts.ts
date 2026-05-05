@@ -19,13 +19,12 @@ import {
 } from './part1_helpers';
 import { normalizeHttpMethod } from './part1_helpers';
 import {
-  resolveAuthLabel,
-  resolveStatusLabel,
   HTTP_METHOD_PATTERN,
   NESTJS_DECORATOR_NAMES,
-  findControllerPrefix,
-  collectRouteDecorators,
-} from './part1_helpers';
+  resolveAuthLabel,
+  resolveStatusLabel,
+} from './part0_constants';
+import { findControllerPrefix, collectRouteDecorators } from './part1_helpers';
 import { readTextFile } from '../../safe-fs';
 import { walkFiles } from '../../parsers/utils';
 

@@ -95,7 +95,7 @@ export function buildSuccessCriteria(unit: QueueUnit): string[] {
     criteria.push('All conditional branches are covered.');
   }
 
-  if (unit.kind === 'scope' && unit.breakTypes.includes('SCOPE_PARITY_GAP')) {
+  if (unit.kind === 'scope' && unit.findingEvents.includes('SCOPE_PARITY_GAP')) {
     criteria.push('Gap type (front/back/persistence/etc) resolved.');
     criteria.push('Affected surface now has real backing.');
   }

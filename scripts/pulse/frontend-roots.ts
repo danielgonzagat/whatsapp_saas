@@ -2,7 +2,7 @@ import * as path from 'path';
 import type { PulseConfig } from './types';
 import { pathExists, readDir, readJsonFile } from './safe-fs';
 import { safeJoin } from './safe-path';
-import { detectSourceRoots } from './source-root-detector';
+import { detectSourceRoots } from './source-root-detector/__parts__/api';
 
 const IGNORED_ROOT_DIRS = new Set(['.git', '.next', '.pulse', 'dist', 'node_modules']);
 

@@ -69,7 +69,7 @@ export function buildParityGapUnits(input: BuildPulseConvergencePlanInput): Puls
       affectedCapabilityIds: gap.affectedCapabilityIds,
       affectedFlowIds: gap.affectedFlowIds,
       asyncExpectations: [],
-      breakTypes: [gap.kind],
+      findingEvents: [gap.kind],
       artifactPaths: [OBSERVED_ARTIFACTS.parityGaps, OBSERVED_ARTIFACTS.cliDirective],
       relatedFiles: gap.relatedFiles,
       validationArtifacts: uniqueStrings([
@@ -177,7 +177,7 @@ export function buildCodacyStaticUnits(
         affectedCapabilityIds: [],
         affectedFlowIds: [],
         asyncExpectations: [],
-        breakTypes: patterns,
+        findingEvents: patterns,
         artifactPaths: [OBSERVED_ARTIFACTS.codacyState, OBSERVED_ARTIFACTS.scopeState],
         relatedFiles: [group.filePath],
         validationArtifacts: [

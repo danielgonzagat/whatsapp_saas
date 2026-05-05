@@ -2,7 +2,7 @@ import * as path from 'path';
 import * as ts from 'typescript';
 import type { Break, PulseExecutionTrace, PulseParserContract } from '../../types';
 import { pathExists, readTextFile } from '../../safe-fs';
-import { discoverParserContracts } from '../../parser-registry';
+import { discoverParserContracts } from '../../parser-registry/__parts__/loader';
 import {
   getActiveExecutionTraceSnapshot,
   verifyExecutionTraceAuditTrail,
@@ -194,15 +194,15 @@ export function selfTrustCriticalParserNames(
   ].sort();
 }
 
-export function riskLabelCritical(): string {
-  return [..._riskLevelLabels][deriveZeroValue()];
+export function riskLabelCritical(): SelfTrustCheckpoint['severity'] {
+  return [..._riskLevelLabels][deriveZeroValue()] as SelfTrustCheckpoint['severity'];
 }
-export function riskLabelHigh(): string {
-  return [..._riskLevelLabels][deriveUnitValue()];
+export function riskLabelHigh(): SelfTrustCheckpoint['severity'] {
+  return [..._riskLevelLabels][deriveUnitValue()] as SelfTrustCheckpoint['severity'];
 }
-export function riskLabelMedium(): string {
+export function riskLabelMedium(): SelfTrustCheckpoint['severity'] {
   const unit = deriveUnitValue();
-  return [..._riskLevelLabels][unit + unit];
+  return [..._riskLevelLabels][unit + unit] as SelfTrustCheckpoint['severity'];
 }
 
 export function isCriticalSeverity(s: string): boolean {

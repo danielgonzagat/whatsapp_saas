@@ -1,9 +1,6 @@
 import * as path from 'node:path';
-import {
-  buildPulseCommandGraph,
-  type PulseCommandGraph,
-  type PulseCommandPurpose,
-} from './command-graph';
+import type { PulseCommandGraph, PulseCommandPurpose } from './command-graph/__parts__/types';
+import { buildPulseCommandGraph } from './command-graph/__parts__/env-and-build';
 import { safeJoin } from './lib/safe-path';
 import { ensureDir, writeTextFile } from './safe-fs';
 

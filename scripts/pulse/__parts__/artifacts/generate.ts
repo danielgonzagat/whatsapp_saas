@@ -1,21 +1,24 @@
 import * as path from 'path';
 import {
-  buildPulseAutonomyMemoryState,
   buildPulseAgentOrchestrationStateSeed,
   buildPulseAutonomyStateSeed,
-} from '../../autonomy-loop';
+} from '../../autonomy-loop.state-io';
+import { buildPulseAutonomyMemoryState } from '../../autonomy-loop.memory';
 import {
   buildArtifactRegistry,
   resolveArtifactRelativePath,
   type PulseArtifactRegistry,
 } from '../../artifact-registry';
 import { cleanupPulseArtifacts } from '../../artifact-gc';
-import { buildConvergencePlan } from '../../convergence-plan';
+import { buildConvergencePlan } from '../../__parts__/convergence-plan/plan';
 import { readOptionalJson, writeArtifact } from '../../artifacts.io';
-import { buildReport, buildCertificate, buildPulseMachineReadiness } from '../../artifacts.report';
-import { buildDirective, buildArtifactIndex } from '../../artifacts.directive';
+import { buildPulseMachineReadiness } from '../../artifacts.report/__parts__/machine-readiness';
+import { buildReport } from '../../artifacts.report/__parts__/report-build';
+import { buildCertificate } from '../../artifacts.report/__parts__/certificate-build';
+import { buildDirective } from '../../artifacts.directive/__parts__/directive-core';
+import { buildArtifactIndex } from '../../artifacts.directive/__parts__/directive-index';
 import { normalizeCanonicalArtifactValue } from '../../artifacts.queue';
-import { deriveAuthorityState } from '../../artifacts.autonomy';
+import { deriveAuthorityState } from '../../artifacts.autonomy/__parts__/authority';
 import { buildRuntimeProbesArtifact } from '../../runtime-probes';
 import { createRunIdentity, type PulseRunIdentity } from '../../run-identity';
 import { buildFindingEventSurface } from '../../finding-event-surface';
@@ -99,8 +102,8 @@ function buildFindingValidationState(snapshot: PulseArtifactSnapshot): unknown {
     generatedAt: snapshot.certification.timestamp,
     operationalIdentity: 'dynamic_finding_event',
     compatibility: {
-      internalBreakTypeRetained: !deriveZeroValue() as unknown as true,
-      internalBreakTypeIsOperationalIdentity: deriveZeroValue() as unknown as false,
+      internalFindingEventRetained: !deriveZeroValue() as unknown as true,
+      internalFindingEventIsOperationalIdentity: deriveZeroValue() as unknown as false,
       parserSignalMustPassValidationBeforeBlocking: !deriveZeroValue() as unknown as true,
       weakSignalCanBlock: deriveZeroValue() as unknown as false,
     },

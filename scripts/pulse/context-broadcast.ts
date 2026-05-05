@@ -4,11 +4,11 @@ export type {
   PulseContextBroadcast,
   PulseContextDelta,
   PulseContextFabricBundle,
-} from './__parts__/types';
+} from './context-broadcast/__parts__/types';
 
-export { buildGitNexusSnapshot, buildBeadsSnapshot } from './__parts__/snapshots';
+export { buildGitNexusSnapshot, buildBeadsSnapshot } from './context-broadcast/__parts__/snapshots';
 
 export {
   buildPulseContextFabricBundle,
   buildDirectiveContextFabricPatch,
-} from './__parts__/fabric';
+} from './context-broadcast/__parts__/fabric';

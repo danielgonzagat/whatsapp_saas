@@ -85,7 +85,7 @@ export interface PathProofCommandPolicyDecision {
 const DEFAULT_TIMEOUT_MS = 30_000;
 const DEFAULT_MAX_TASKS = 25;
 
-const DEFAULT_ALLOWED_COMMAND_PREFIXES: readonly (readonly string[])[] = Object.freeze([
+const OBSERVED_COMMAND_PREFIX_GRAMMAR: readonly (readonly string[])[] = Object.freeze([
   Object.freeze(['node', 'scripts/pulse/run.js']),
 ]);
 
@@ -128,7 +128,7 @@ export async function executePathProofPlan(
   const cwd = options.cwd ?? process.cwd();
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   const maxTasks = options.maxTasks ?? DEFAULT_MAX_TASKS;
-  const allowedCommandPrefixes = options.allowedCommandPrefixes ?? DEFAULT_ALLOWED_COMMAND_PREFIXES;
+  const allowedCommandPrefixes = options.allowedCommandPrefixes ?? OBSERVED_COMMAND_PREFIX_GRAMMAR;
   const executor = options.executor ?? defaultExecutor;
   const results: PathProofExecutionResult[] = [];
   let attemptedTasks = 0;

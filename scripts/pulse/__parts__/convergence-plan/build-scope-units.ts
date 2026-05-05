@@ -60,7 +60,7 @@ export function buildScopeUnits(input: BuildPulseConvergencePlanInput): PulseCon
       affectedCapabilityIds: [],
       affectedFlowIds: [],
       asyncExpectations: [],
-      breakTypes: ['SCOPE_PARITY_GAP'],
+      findingEvents: ['SCOPE_PARITY_GAP'],
       artifactPaths: [OBSERVED_ARTIFACTS.scopeState, OBSERVED_ARTIFACTS.codacyState],
       relatedFiles: input.scopeState.parity.missingCodacyFiles,
       validationArtifacts: [
@@ -116,7 +116,7 @@ export function buildScopeUnits(input: BuildPulseConvergencePlanInput): PulseCon
       affectedCapabilityIds: [],
       affectedFlowIds: [],
       asyncExpectations: [],
-      breakTypes: ['SCOPE_MODULE_DRIFT'],
+      findingEvents: ['SCOPE_MODULE_DRIFT'],
       artifactPaths: [OBSERVED_ARTIFACTS.scopeState, OBSERVED_ARTIFACTS.resolvedManifest],
       relatedFiles: input.scopeState.files
         .filter(

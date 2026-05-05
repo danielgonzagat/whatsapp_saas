@@ -93,9 +93,11 @@ export type PulseMachineReadiness = {
   };
 };
 
-export const GATE_STATUS_LABELS = [...discoverDoDGateStatusLabels()];
-export const GATE_PASS = GATE_STATUS_LABELS[0];
-export const GATE_FAIL = GATE_STATUS_LABELS[1];
+export const GATE_STATUS_LABELS = [...discoverDoDGateStatusLabels()] as Array<
+  PulseMachineReadinessGate['status']
+>;
+export const GATE_PASS: PulseMachineReadinessGate['status'] = GATE_STATUS_LABELS[0];
+export const GATE_FAIL: PulseMachineReadinessGate['status'] = GATE_STATUS_LABELS[1];
 export const GOVERNED_EXECUTION_MODES = new Set(
   [...discoverConvergenceExecutionModeLabels()].slice(1),
 );
