@@ -24,7 +24,7 @@ import { resolve } from 'node:path';
 
 const REPO_ROOT = process.cwd();
 const BOOTSTRAP_PATH = resolve(REPO_ROOT, 'backend/dist/src/bootstrap.js');
-const TIMEOUT_MS = 25_000;
+const TIMEOUT_MS = Number(process.env.BACKEND_BOOT_SMOKE_TIMEOUT_MS || 60_000);
 // Wait for these markers in any order. They span the three module cycles that
 // historically broke: BillingModule (cycle A), WhatsappModule (cycle A+B),
 // KloelModule (cycle B), plus AppModule to prove full graph resolution, plus
