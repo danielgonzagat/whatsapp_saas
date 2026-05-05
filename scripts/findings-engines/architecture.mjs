@@ -45,7 +45,8 @@ function parseSizeViolation(line) {
   };
 }
 
-// "  - frontend/src/components/Foo.tsx:42 -> new @ts-ignore (@ts-ignore)"
+// Example violation line shape:
+//   "  - <path>:<line> -> new <rule-label> (<offending-snippet>)"
 const SUPPRESSION_LINE_RE = /^\s*-\s+(.+?):(\d+)\s+->\s+(.+?)\s+\((.+?)\)$/;
 function parseSuppressionViolation(line) {
   const m = SUPPRESSION_LINE_RE.exec(line);

@@ -160,7 +160,7 @@ You write ONE stage file. The CEO will fold all 24 stage files into the main ker
 scripts/pulse/__kernel_additions__/${primitive.functionName}.ts
 \`\`\`
 
-Create the directory if it doesn't exist. Create ONLY this file. Do NOT touch \`dynamic-reality-kernel.ts\` or any other file.
+Create the directory if it doesn't exist. Create ONLY this file. Do NOT touch \`dynamic-reality-kernel.ts\` or other files in this scope.
 
 ## What to implement
 
@@ -342,14 +342,12 @@ process.stdout.write(
       runId: manifest.runId,
       tasks: tasks.length,
       concurrency: manifest.concurrency,
-      primitives: unique
-        .slice(0, 24)
-        .map((p) => ({
-          name: p.functionName,
-          source: p.source,
-          type: p.typeName,
-          contract: p.contractFile,
-        })),
+      primitives: unique.slice(0, 24).map((p) => ({
+        name: p.functionName,
+        source: p.source,
+        type: p.typeName,
+        contract: p.contractFile,
+      })),
       totalRequestsCollected: requests.length,
       totalContractsScanned: contracts.length,
     },

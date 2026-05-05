@@ -8,11 +8,11 @@ import { AutopilotCycleService } from './autopilot-cycle.service';
 import { AutopilotOpsService } from './autopilot-ops.service';
 import { AutopilotOpsConversionService } from './autopilot-ops-conversion.service';
 
-const mockQueueAdd: any = jest.fn();
-let mockAutopilotAdd: any;
-let mockRedisSet: any;
-let mockRedisGet: any;
-let mockQueueGetJobCounts: any;
+const mockQueueAdd: jest.Mock = jest.fn();
+let mockAutopilotAdd: jest.Mock;
+let mockRedisSet: jest.Mock;
+let mockRedisGet: jest.Mock;
+let mockQueueGetJobCounts: jest.Mock;
 
 jest.mock('../queue/queue', () => ({
   autopilotQueue: { add: jest.fn(), getJobCounts: jest.fn() },
@@ -34,8 +34,8 @@ jest.mock('bullmq', () => ({
 describe('AutopilotService', () => {
   let service: AutopilotService;
 
-  const mockPrisma: any = {
-    $transaction: jest.fn((callback: any) => callback(mockPrisma)),
+  const mockPrisma: Record<string, unknown> = {
+    $transaction: jest.fn((callback: (tx: unknown) => unknown) => callback(mockPrisma)),
     workspace: {
       findUnique: jest.fn(),
       update: jest.fn(),
@@ -108,9 +108,14 @@ describe('AutopilotService', () => {
   };
 
   beforeEach(async () => {
-    const queueModule: any = jest.requireMock('../queue/queue');
+    const queueModule: {
+      autopilotQueue: { add: jest.Mock; getJobCounts: jest.Mock };
+      flowQueue: { add: jest.Mock };
+    } = jest.requireMock('../queue/queue');
 
-    const redisModule: any = jest.requireMock('../common/redis/redis.util');
+    const redisModule: { createRedisClient: jest.Mock } = jest.requireMock(
+      '../common/redis/redis.util',
+    );
     mockAutopilotAdd = queueModule.autopilotQueue.add;
     mockQueueGetJobCounts = queueModule.autopilotQueue.getJobCounts;
     void queueModule.flowQueue.add;

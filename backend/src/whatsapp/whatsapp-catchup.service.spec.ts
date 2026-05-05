@@ -60,7 +60,7 @@ describe('WhatsAppCatchupService', () => {
     process.env.WAHA_CATCHUP_MARK_READ_WITHOUT_REPLY = 'true';
 
     prisma = {
-      $transaction: jest.fn((cb: any) => cb(prisma)),
+      $transaction: jest.fn((cb: (tx: unknown) => unknown) => cb(prisma)),
       workspace: {
         findUnique: jest.fn().mockResolvedValue({
           name: 'Workspace Teste',

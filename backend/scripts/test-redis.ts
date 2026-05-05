@@ -97,8 +97,8 @@ try {
       try {
         const pong = await client.ping();
         console.log('   ✅ PING:', pong);
-      } catch (err: any) {
-        console.log('   ❌ PING falhou:', err.message);
+      } catch (err: unknown) {
+        console.log('   ❌ PING falhou:', err instanceof Error ? err.message : String(err));
       }
 
       // Fechar conexão
@@ -128,8 +128,8 @@ try {
     console.log('');
     process.exit(1);
   }, 15000);
-} catch (err: any) {
-  console.log('   ❌ Erro ao resolver URL:', err.message);
+} catch (err: unknown) {
+  console.log('   ❌ Erro ao resolver URL:', err instanceof Error ? err.message : String(err));
   console.log('');
   console.log('   📋 Configure uma das variáveis:');
   console.log('      REDIS_URL=redis://...');

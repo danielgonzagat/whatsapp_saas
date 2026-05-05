@@ -30,6 +30,15 @@ function proofKindFor(predicateKind: string): string {
   return normalized ? `prove_${normalized}` : 'prove_evidence';
 }
 
+function blockingGradePredicateKind(diagnostic: PulseGeneratedDiagnostic): string {
+  const truthPredicates = diagnostic.proofContract.predicates
+    .map((predicate) => predicate.kind)
+    .filter((kind) => kind.startsWith('truth_'))
+    .sort();
+
+  return truthPredicates.length > 0 ? truthPredicates.join('_or_') : 'truth_requires_evidence';
+}
+
 export function synthesizeProofPlan(
   diagnostic: PulseGeneratedDiagnostic,
 ): PulseSynthesizedProofPlan {
@@ -59,7 +68,7 @@ export function synthesizeProofPlan(
   if (!diagnostic.blockingEligible) {
     requirements.unshift({
       kind: 'prove_blocking_grade_evidence',
-      predicateKind: 'truth_observed_or_confirmed_static',
+      predicateKind: blockingGradePredicateKind(diagnostic),
       signalIds: diagnostic.evidenceIds,
       reason:
         'Weak or inferred-only signals cannot block by themselves; PULSE must confirm with observed or static evidence before treating this as final truth.',

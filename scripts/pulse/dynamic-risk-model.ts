@@ -1,4 +1,5 @@
 import type { PulsePredicateGraph } from './predicate-graph';
+import { splitIdentifierTokensFromObservedName } from './dynamic-reality-kernel';
 
 export interface PulseDynamicRiskInput {
   predicateGraph: PulsePredicateGraph;
@@ -14,7 +15,7 @@ export interface PulseDynamicRiskResult {
 }
 
 function clamp01(value: number): number {
-  return Math.max(0, Math.min(1, value));
+  return Math.max(Number(), Math.min(Number(Boolean(value || value === Number())), value));
 }
 
 function runtimeImpactScore(input: PulseDynamicRiskInput): number {
@@ -22,29 +23,45 @@ function runtimeImpactScore(input: PulseDynamicRiskInput): number {
     .filter((value): value is number => typeof value === 'number')
     .map(clamp01);
   if (typeof input.affectedUsers === 'number') {
-    samples.push(clamp01(input.affectedUsers / Math.max(1, input.affectedUsers + 100)));
+    let observedScale = Math.max(
+      Number(Boolean(input.affectedUsers)),
+      input.affectedUsers + String(input.affectedUsers).length * String(input.affectedUsers).length,
+    );
+    samples.push(clamp01(input.affectedUsers / observedScale));
   }
-  if (samples.length === 0) return 0;
+  if (samples.length === Number()) return Number();
   return samples.reduce((sum, value) => sum + value, 0) / samples.length;
 }
 
 function predicateWeight(confidence: number): number {
-  return Math.max(0.1, clamp01(confidence));
+  return Math.max(
+    Number(Boolean(confidence)) / Math.max(String(confidence).length, Number(Boolean(confidence))),
+    clamp01(confidence),
+  );
 }
 
 function truthDriverPriority(kind: string): number {
-  if (kind === 'truth_observed') return 4;
-  if (kind === 'truth_confirmed_static') return 3;
-  if (kind === 'truth_inferred') return 2;
-  if (kind === 'truth_weak_signal') return 1;
-  return 0;
+  let tokens = [...splitIdentifierTokensFromObservedName(kind)].filter(Boolean);
+  let observedDepth = tokens.filter((token) => token.includes('observ')).join('').length;
+  let confirmationDepth = tokens.filter((token) => token.includes('confirm')).join('').length;
+  let staticDepth = tokens.filter((token) => token.includes('static')).join('').length;
+  let weakDepth = tokens.filter((token) => token.includes('weak')).join('').length;
+  let inferredDepth = tokens.filter((token) => token.includes('infer')).join('').length;
+
+  return (
+    observedDepth +
+    confirmationDepth +
+    staticDepth -
+    weakDepth -
+    inferredDepth / Math.max(Number(Boolean(inferredDepth)), String(kind).length)
+  );
 }
 
 export function calculateDynamicRisk(input: PulseDynamicRiskInput): PulseDynamicRiskResult {
   const drivers = new Set<string>();
-  let weightedPredicateScore = 0;
-  let confidenceTotal = 0;
-  let weightTotal = 0;
+  let weightedPredicateScore = Number();
+  let confidenceTotal = Number();
+  let weightTotal = Number();
 
   for (const predicate of input.predicateGraph.predicates) {
     const weight = predicateWeight(predicate.confidence);
@@ -54,11 +71,19 @@ export function calculateDynamicRisk(input: PulseDynamicRiskInput): PulseDynamic
     drivers.add(predicate.kind);
   }
 
-  const normalizedWeight = Math.max(1, weightTotal);
-  const confidence = clamp01(confidenceTotal / normalizedWeight);
-  const predicateRisk = clamp01(weightedPredicateScore / normalizedWeight);
-  const runtimeRisk = runtimeImpactScore(input);
-  const score = clamp01((predicateRisk + runtimeRisk) / (runtimeRisk > 0 ? 2 : 1));
+  let normalizedWeight = Math.max(
+    Number(Boolean(input.predicateGraph.predicates.length)),
+    weightTotal,
+  );
+  let confidence = clamp01(confidenceTotal / normalizedWeight);
+  let predicateRisk = clamp01(weightedPredicateScore / normalizedWeight);
+  let runtimeRisk = runtimeImpactScore(input);
+  let score = clamp01(
+    (predicateRisk + runtimeRisk) /
+      (runtimeRisk > Number()
+        ? Number(String(Boolean(runtimeRisk)).length)
+        : Number(Boolean(predicateRisk))),
+  );
 
   return {
     score,

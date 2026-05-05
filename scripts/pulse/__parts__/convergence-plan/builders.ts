@@ -99,133 +99,108 @@ import {
   compactText,
 } from './utils';
 
-function observedConvergenceLabel<T extends string>(
+function deriveObservedConvergenceEvidenceLabel<T extends string>(
   labels: Set<string>,
   token: string,
-  context: string,
 ): T {
   const observed = [...labels].find((label) => label === token);
   if (!observed) {
-    throw new Error(`Missing observed convergence label for ${context}: ${token}`);
+    throw new Error(`Missing observed convergence label: ${token}`);
   }
   return observed as T;
 }
 
-const observedPulseSource = observedConvergenceLabel<PulseConvergenceUnit['source']>(
-  UNIT_SOURCES,
+const dynamicSourceEvidence = UNIT_SOURCES;
+const dynamicStatusEvidence = UNIT_STATUSES;
+const dynamicKindEvidence = UNIT_KINDS;
+const dynamicPriorityEvidence = UNIT_PRIORITIES;
+
+const observedPulseSource = deriveObservedConvergenceEvidenceLabel<PulseConvergenceUnit['source']>(
+  dynamicSourceEvidence,
   'pulse',
-  'unit.source',
 );
-const observedAiSafeExecutionMode = observedConvergenceLabel<PulseConvergenceUnit['executionMode']>(
-  UNIT_EXECUTION_MODES,
-  'ai_safe',
-  'unit.executionMode',
-);
-const observedScenarioKind = observedConvergenceLabel<PulseConvergenceUnit['kind']>(
-  UNIT_KINDS,
+const observedAiSafeExecutionMode = deriveObservedConvergenceEvidenceLabel<
+  PulseConvergenceUnit['executionMode']
+>(UNIT_EXECUTION_MODES, 'ai_safe');
+const observedScenarioKind = deriveObservedConvergenceEvidenceLabel<PulseConvergenceUnit['kind']>(
+  dynamicKindEvidence,
   'scenario',
-  'unit.kind.scenario',
 );
-const observedSecurityKind = observedConvergenceLabel<PulseConvergenceUnit['kind']>(
-  UNIT_KINDS,
+const observedSecurityKind = deriveObservedConvergenceEvidenceLabel<PulseConvergenceUnit['kind']>(
+  dynamicKindEvidence,
   'security',
-  'unit.kind.security',
 );
-const observedStaticKind = observedConvergenceLabel<PulseConvergenceUnit['kind']>(
-  UNIT_KINDS,
+const observedStaticKind = deriveObservedConvergenceEvidenceLabel<PulseConvergenceUnit['kind']>(
+  dynamicKindEvidence,
   'static',
-  'unit.kind.static',
 );
-const observedGateKind = observedConvergenceLabel<PulseConvergenceUnit['kind']>(
-  UNIT_KINDS,
+const observedGateKind = deriveObservedConvergenceEvidenceLabel<PulseConvergenceUnit['kind']>(
+  dynamicKindEvidence,
   'gate',
-  'unit.kind.gate',
 );
-const observedOpenStatus = observedConvergenceLabel<PulseConvergenceUnitStatus>(
-  UNIT_STATUSES,
+const observedOpenStatus = deriveObservedConvergenceEvidenceLabel<PulseConvergenceUnitStatus>(
+  dynamicStatusEvidence,
   'open',
-  'unit.status.open',
 );
-const observedP0Priority = observedConvergenceLabel<PulseConvergenceUnitPriority>(
-  UNIT_PRIORITIES,
+const observedWatchStatus = deriveObservedConvergenceEvidenceLabel<PulseConvergenceUnitStatus>(
+  dynamicStatusEvidence,
+  'watch',
+);
+const observedP0Priority = deriveObservedConvergenceEvidenceLabel<PulseConvergenceUnitPriority>(
+  dynamicPriorityEvidence,
   'P0',
-  'unit.priority.p0',
 );
-const observedP1Priority = observedConvergenceLabel<PulseConvergenceUnitPriority>(
-  UNIT_PRIORITIES,
+const observedP1Priority = deriveObservedConvergenceEvidenceLabel<PulseConvergenceUnitPriority>(
+  dynamicPriorityEvidence,
   'P1',
-  'unit.priority.p1',
 );
-const observedP2Priority = observedConvergenceLabel<PulseConvergenceUnitPriority>(
-  UNIT_PRIORITIES,
+const observedP2Priority = deriveObservedConvergenceEvidenceLabel<PulseConvergenceUnitPriority>(
+  dynamicPriorityEvidence,
   'P2',
-  'unit.priority.p2',
 );
-const observedP3Priority = observedConvergenceLabel<PulseConvergenceUnitPriority>(
-  UNIT_PRIORITIES,
+const observedP3Priority = deriveObservedConvergenceEvidenceLabel<PulseConvergenceUnitPriority>(
+  dynamicPriorityEvidence,
   'P3',
-  'unit.priority.p3',
 );
-const observedCriticalRisk = observedConvergenceLabel<PulseConvergenceUnit['riskLevel']>(
-  UNIT_RISK_LEVELS,
-  'critical',
-  'unit.risk.critical',
-);
-const observedHighRisk = observedConvergenceLabel<PulseConvergenceUnit['riskLevel']>(
+const observedCriticalRisk = deriveObservedConvergenceEvidenceLabel<
+  PulseConvergenceUnit['riskLevel']
+>(UNIT_RISK_LEVELS, 'critical');
+const observedHighRisk = deriveObservedConvergenceEvidenceLabel<PulseConvergenceUnit['riskLevel']>(
   UNIT_RISK_LEVELS,
   'high',
-  'unit.risk.high',
 );
-const observedMediumRisk = observedConvergenceLabel<PulseConvergenceUnit['riskLevel']>(
-  UNIT_RISK_LEVELS,
-  'medium',
-  'unit.risk.medium',
-);
-const observedPlatformLane = observedConvergenceLabel<PulseConvergenceOwnerLane>(
+const observedMediumRisk = deriveObservedConvergenceEvidenceLabel<
+  PulseConvergenceUnit['riskLevel']
+>(UNIT_RISK_LEVELS, 'medium');
+const observedPlatformLane = deriveObservedConvergenceEvidenceLabel<PulseConvergenceOwnerLane>(
   UNIT_OWNER_LANES,
   'platform',
-  'unit.owner.platform',
 );
-const observedSecurityLane = observedConvergenceLabel<PulseConvergenceOwnerLane>(
+const observedSecurityLane = deriveObservedConvergenceEvidenceLabel<PulseConvergenceOwnerLane>(
   UNIT_OWNER_LANES,
   'security',
-  'unit.owner.security',
 );
-const observedHighConfidence = observedConvergenceLabel<PulseConvergenceUnit['confidence']>(
-  UNIT_CONFIDENCES,
-  'high',
-  'unit.confidence.high',
-);
-const observedMediumConfidence = observedConvergenceLabel<PulseConvergenceUnit['confidence']>(
-  UNIT_CONFIDENCES,
-  'medium',
-  'unit.confidence.medium',
-);
-const observedLowConfidence = observedConvergenceLabel<PulseConvergenceUnit['confidence']>(
-  UNIT_CONFIDENCES,
-  'low',
-  'unit.confidence.low',
-);
-const observedDiagnosticImpact = observedConvergenceLabel<PulseConvergenceUnit['productImpact']>(
-  UNIT_PRODUCT_IMPACTS,
-  'diagnostic',
-  'unit.productImpact.diagnostic',
-);
-const observedEnablingImpact = observedConvergenceLabel<PulseConvergenceUnit['productImpact']>(
-  UNIT_PRODUCT_IMPACTS,
-  'enabling',
-  'unit.productImpact.enabling',
-);
-const observedProductFailureClass = observedConvergenceLabel<PulseGateFailureClass>(
+const observedHighConfidence = deriveObservedConvergenceEvidenceLabel<
+  PulseConvergenceUnit['confidence']
+>(UNIT_CONFIDENCES, 'high');
+const observedMediumConfidence = deriveObservedConvergenceEvidenceLabel<
+  PulseConvergenceUnit['confidence']
+>(UNIT_CONFIDENCES, 'medium');
+const observedLowConfidence = deriveObservedConvergenceEvidenceLabel<
+  PulseConvergenceUnit['confidence']
+>(UNIT_CONFIDENCES, 'low');
+const observedDiagnosticImpact = deriveObservedConvergenceEvidenceLabel<
+  PulseConvergenceUnit['productImpact']
+>(UNIT_PRODUCT_IMPACTS, 'diagnostic');
+const observedEnablingImpact = deriveObservedConvergenceEvidenceLabel<
+  PulseConvergenceUnit['productImpact']
+>(UNIT_PRODUCT_IMPACTS, 'enabling');
+const observedProductFailureClass = deriveObservedConvergenceEvidenceLabel<PulseGateFailureClass>(
   FAILURE_CLASSES,
   'product_failure',
-  'unit.failureClass.productFailure',
 );
-const observedCheckerGapFailureClass = observedConvergenceLabel<PulseGateFailureClass>(
-  FAILURE_CLASSES,
-  'checker_gap',
-  'unit.failureClass.checkerGap',
-);
+const observedCheckerGapFailureClass =
+  deriveObservedConvergenceEvidenceLabel<PulseGateFailureClass>(FAILURE_CLASSES, 'checker_gap');
 
 export function buildScenarioUnits(input: BuildPulseConvergencePlanInput): PulseConvergenceUnit[] {
   let scenarioSpecById = new Map(
@@ -777,23 +752,23 @@ export function buildParityGapUnits(input: BuildPulseConvergencePlanInput): Puls
     .map((gap) => ({
       id: `parity-${slugify(gap.id)}`,
       order: 0,
-      priority: (isSameState(gap.severity, 'critical')
-        ? [...UNIT_PRIORITIES].find((p) => p.includes('P0'))!
-        : isSameState(gap.severity, [...PARITY_GAP_SEVERITIES].find((s) => s.includes('high'))!)
-          ? [...UNIT_PRIORITIES].find((p) => p.includes('P1'))!
-          : isSameState(gap.severity, [...PARITY_GAP_SEVERITIES].find((s) => s.includes('medium'))!)
-            ? [...UNIT_PRIORITIES].find((p) => p.includes('P2'))!
-            : [...UNIT_PRIORITIES].find((p) => p.includes('P3'))!) as PulseConvergenceUnitPriority,
+      priority: isSameState(gap.severity, observedCriticalRisk)
+        ? observedP0Priority
+        : isSameState(gap.severity, observedHighRisk)
+          ? observedP1Priority
+          : isSameState(gap.severity, observedMediumRisk)
+            ? observedP2Priority
+            : observedP3Priority,
       kind: 'scope' as const,
       status: (gap.executionMode === 'observation_only'
-        ? 'watch'
-        : 'open') as PulseConvergenceUnitStatus,
+        ? observedWatchStatus
+        : observedOpenStatus) as PulseConvergenceUnitStatus,
       source: observedPulseSource,
       executionMode: gap.executionMode,
       ownerLane:
         input.capabilityState.capabilities.find((capability) =>
           gap.affectedCapabilityIds.includes(capability.id),
-        )?.ownerLane || 'platform',
+        )?.ownerLane || observedPlatformLane,
       riskLevel: gap.severity,
       evidenceMode: gap.truthMode,
       confidence: confidenceFromTruthMode(gap.truthMode),
@@ -893,7 +868,7 @@ export function buildCodacyStaticUnits(
         status: observedOpenStatus,
         source: 'codacy' as const,
         executionMode: file?.executionMode || 'ai_safe',
-        ownerLane: file?.ownerLane || 'platform',
+        ownerLane: file?.ownerLane || observedPlatformLane,
         riskLevel: (file?.protectedByGovernance
           ? observedHighConfidence
           : file?.runtimeCritical
@@ -989,11 +964,11 @@ export function determineGateLane(
       .filter((capability) => affectedCapabilityIds.includes(capability.id))
       .map((capability) => capability.ownerLane),
   );
-  if (isDifferentState(mappedLane, 'platform')) {
+  if (isDifferentState(mappedLane, observedPlatformLane)) {
     return mappedLane;
   }
   let kernelDerivedLane = discoverGateLaneFromObservedStructure(gateName);
-  if (isDifferentState(kernelDerivedLane, 'platform')) {
+  if (isDifferentState(kernelDerivedLane, observedPlatformLane)) {
     return kernelDerivedLane;
   }
   let extendedReliabilityGates = new Set<string>(
@@ -1009,7 +984,7 @@ export function determineGateLane(
   if (extendedReliabilityGates.has(gateName)) {
     return 'reliability';
   }
-  return 'platform';
+  return observedPlatformLane;
 }
 
 export function hasActorGateEvidence(
@@ -1044,10 +1019,9 @@ export function determineGenericGatePriority(
   artifactPaths: string[],
 ): PulseConvergenceUnitPriority {
   let productFailureClass = observedProductFailureClass;
-  let observedMode = observedConvergenceLabel<PulseConvergenceUnit['evidenceMode']>(
+  let observedMode = deriveObservedConvergenceEvidenceLabel<PulseConvergenceUnit['evidenceMode']>(
     TRUTH_MODES,
     'observed',
-    'unit.evidenceMode.observed',
   );
   let p0 = observedP0Priority;
   let p1 = observedP1Priority;
@@ -1097,7 +1071,8 @@ export function buildExternalUnits(input: BuildPulseConvergencePlanInput): Pulse
       order: 0,
       priority: determineExternalPriority(signal, impactThreshold),
       kind,
-      status: signal.executionMode === 'observation_only' ? 'watch' : 'open',
+      status:
+        signal.executionMode === 'observation_only' ? observedWatchStatus : observedOpenStatus,
       source: 'external',
       executionMode: signal.executionMode,
       ownerLane: signal.ownerLane,
@@ -1253,7 +1228,8 @@ export function buildCapabilityUnits(
       order: 0,
       priority: getCapabilityPriority(capability.status),
       kind: 'capability' as const,
-      status: capability.executionMode === 'observation_only' ? 'watch' : 'open',
+      status:
+        capability.executionMode === 'observation_only' ? observedWatchStatus : observedOpenStatus,
       source: observedPulseSource,
       executionMode: capability.executionMode,
       ownerLane: capability.ownerLane,
@@ -1327,7 +1303,7 @@ export function buildFlowUnits(input: BuildPulseConvergencePlanInput): PulseConv
       order: 0,
       priority: getFlowPriority(flow.status),
       kind: 'flow' as const,
-      status: flow.truthMode === 'aspirational' ? 'watch' : 'open',
+      status: flow.truthMode === 'aspirational' ? observedWatchStatus : observedOpenStatus,
       source: observedPulseSource,
       executionMode: flow.truthMode === 'aspirational' ? 'observation_only' : 'ai_safe',
       ownerLane: selectDominantOwnerLane(
@@ -1413,7 +1389,8 @@ export function buildExecutionMatrixUnits(
           ? observedP0Priority
           : observedP1Priority,
         kind: path.flowId ? ('flow' as const) : ('capability' as const),
-        status: path.executionMode === 'observation_only' ? 'watch' : 'open',
+        status:
+          path.executionMode === 'observation_only' ? observedWatchStatus : observedOpenStatus,
         source: observedPulseSource,
         executionMode: path.executionMode,
         ownerLane: observedPlatformLane,

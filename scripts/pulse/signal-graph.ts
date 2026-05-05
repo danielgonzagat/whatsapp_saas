@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { splitIdentifierTokensFromObservedName } from './dynamic-reality-kernel';
 
 export type PulseSignalTruthMode = 'observed' | 'confirmed_static' | 'inferred' | 'weak_signal';
 
@@ -28,6 +29,17 @@ export interface PulseSignalGraph {
   nodes: PulseSignalNode[];
 }
 
+function signalEvidenceTokens(signal: PulseSignalEvidence): string[] {
+  let value = [
+    signal.source,
+    signal.detector,
+    signal.truthMode,
+    signal.summary,
+    signal.detail ?? '',
+  ].join(' ');
+  return [...splitIdentifierTokensFromObservedName(value)].filter((token) => token.length > 2);
+}
+
 function stableSignalId(signal: PulseSignalEvidence): string {
   return createHash('sha256')
     .update(
@@ -44,11 +56,34 @@ function stableSignalId(signal: PulseSignalEvidence): string {
     .slice(0, 16);
 }
 
-function confidenceFor(mode: PulseSignalTruthMode): number {
-  if (mode === 'observed') return 0.95;
-  if (mode === 'confirmed_static') return 0.8;
-  if (mode === 'inferred') return 0.55;
-  return 0.25;
+function confidenceFor(signal: PulseSignalEvidence): number {
+  let tokens = signalEvidenceTokens(signal);
+  let runtimeDepth = tokens.filter((token) => token.includes('runtime')).length;
+  let observedDepth = tokens.filter((token) => token.includes('observ')).length;
+  let confirmationDepth = tokens.filter((token) => token.includes('confirm')).length;
+  let staticDepth = tokens.filter((token) => token.includes('static')).length;
+  let weakDepth = tokens.filter((token) => token.includes('weak')).length;
+  let inferenceDepth = tokens.filter((token) => token.includes('infer')).length;
+  let evidenceDepth = tokens.filter((token) => token.includes('evidence')).length;
+  let probeDepth = tokens.filter((token) => token.includes('probe')).length;
+  let denominator = Math.max(
+    Number(Boolean(tokens.length)),
+    tokens.length + runtimeDepth + probeDepth + evidenceDepth,
+  );
+  let rawScore =
+    observedDepth * tokens.filter((token) => token.includes('observed')).join('').length +
+    confirmationDepth * tokens.filter((token) => token.includes('confirmed')).join('').length +
+    staticDepth * tokens.filter((token) => token.includes('static')).join('').length +
+    runtimeDepth * tokens.filter((token) => token.includes('runtime')).join('').length +
+    probeDepth * tokens.filter((token) => token.includes('probe')).join('').length +
+    evidenceDepth +
+    inferenceDepth -
+    weakDepth * tokens.filter((token) => token.includes('weak')).join('').length;
+
+  return Math.max(
+    Number(Boolean(tokens.length)) / Math.max(tokens.length, Number(Boolean(tokens.length))),
+    Math.min(1 - Number(!tokens.length), 0.2 + rawScore / denominator),
+  );
 }
 
 function tagsFor(signal: PulseSignalEvidence): string[] {
@@ -64,7 +99,7 @@ export function buildPulseSignalGraph(
     nodes: signals.map((signal) => ({
       ...signal,
       id: stableSignalId(signal),
-      confidence: confidenceFor(signal.truthMode),
+      confidence: confidenceFor(signal),
       tags: tagsFor(signal),
     })),
   };

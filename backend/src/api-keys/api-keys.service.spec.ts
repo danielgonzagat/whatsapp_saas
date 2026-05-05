@@ -16,12 +16,26 @@ type MockedApiKeyRecord = {
   workspace?: { id: string; name: string };
 };
 
+type AsMock = jest.Mock<(...args: unknown[]) => unknown>;
 type MockedApiKeyDelegate = {
-  findMany: jest.Mock<(...args: any[]) => any>;
-  create: jest.Mock<(...args: any[]) => any>;
-  findFirst: jest.Mock<(...args: any[]) => any>;
-  deleteMany: jest.Mock<(...args: any[]) => any>;
-  update: jest.Mock<(...args: any[]) => any>;
+  findMany: AsMock & {
+    mockResolvedValue: (v: unknown) => AsMock;
+    mockResolvedValueOnce: (v: unknown) => AsMock;
+  };
+  create: AsMock & {
+    mockResolvedValue: (v: unknown) => AsMock;
+  };
+  findFirst: AsMock & {
+    mockResolvedValue: (v: unknown) => AsMock;
+    mockResolvedValueOnce: (v: unknown) => AsMock;
+  };
+  deleteMany: AsMock & {
+    mockResolvedValue: (v: unknown) => AsMock;
+  };
+  update: AsMock & {
+    mockResolvedValue: (v: unknown) => AsMock;
+    mockRejectedValue: (err: unknown) => AsMock;
+  };
 };
 
 type MockedLogFn = jest.Mock<(args: Record<string, unknown>) => Promise<void>>;

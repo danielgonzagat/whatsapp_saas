@@ -139,9 +139,15 @@ export function assertFinding(obj) {
   if (typeof f.file !== 'string' || !f.file.length) throw new Error('finding.file: missing');
   if (f.line !== undefined && (typeof f.line !== 'number' || f.line < 1))
     throw new Error('finding.line: invalid');
-  if (typeof f.category !== 'string' || !CATEGORIES.includes(/** @type {any} */ (f.category)))
+  if (
+    typeof f.category !== 'string' ||
+    !/** @type {readonly string[]} */ (CATEGORIES).includes(f.category)
+  )
     throw new Error(`finding.category: invalid (${String(f.category)})`);
-  if (typeof f.severity !== 'string' || !SEVERITIES.includes(/** @type {any} */ (f.severity)))
+  if (
+    typeof f.severity !== 'string' ||
+    !/** @type {readonly string[]} */ (SEVERITIES).includes(f.severity)
+  )
     throw new Error(`finding.severity: invalid (${String(f.severity)})`);
   if (typeof f.engine !== 'string' || !f.engine.length) throw new Error('finding.engine: missing');
   if (typeof f.rule !== 'string' || !f.rule.length) throw new Error('finding.rule: missing');

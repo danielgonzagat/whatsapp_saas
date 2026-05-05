@@ -1,4 +1,5 @@
 import type { PulseDynamicRiskResult } from './dynamic-risk-model';
+import { buildEvidenceGraph, type PulseEvidenceGraph } from './evidence-graph';
 import type { PulsePredicateGraph } from './predicate-graph';
 import type { PulseSignalGraph, PulseSignalNode, PulseSignalTruthMode } from './signal-graph';
 
@@ -45,15 +46,29 @@ function sentenceCase(value: string): string {
   return normalized ? `${normalized[0]?.toUpperCase() ?? ''}${normalized.slice(1)}` : 'Finding';
 }
 
-const TRUTH_MODE_PRIORITY: Record<PulseSignalTruthMode, number> = {
-  observed: 4,
-  confirmed_static: 3,
-  inferred: 2,
-  weak_signal: 1,
-};
+function evidenceTruthDepth(signal: PulseSignalNode): number {
+  const evidenceGraph = buildEvidenceGraph({ generatedAt: '', nodes: [signal] });
+  const [evidence] = evidenceGraph.evidence;
+  if (!evidence) return signal.confidence;
+
+  const observedDepth = evidence.basis.filter((token) => token.includes('observ')).length;
+  const confirmationDepth = evidence.basis.filter((token) => token.includes('confirm')).length;
+  const staticDepth = evidence.basis.filter((token) => token.includes('static')).length;
+  const weakDepth = evidence.basis.filter((token) => token.includes('weak')).length;
+  const inferredDepth = evidence.basis.filter((token) => token.includes('infer')).length;
+
+  return (
+    signal.confidence +
+    observedDepth +
+    confirmationDepth +
+    staticDepth -
+    weakDepth -
+    inferredDepth / 2
+  );
+}
 
 function compareSignals(left: PulseSignalNode, right: PulseSignalNode): number {
-  const truthDelta = TRUTH_MODE_PRIORITY[right.truthMode] - TRUTH_MODE_PRIORITY[left.truthMode];
+  const truthDelta = evidenceTruthDepth(right) - evidenceTruthDepth(left);
   if (truthDelta !== 0) return truthDelta;
   const confidenceDelta = right.confidence - left.confidence;
   if (confidenceDelta !== 0) return confidenceDelta;
@@ -66,9 +81,13 @@ function strongestSignal(signalGraph: PulseSignalGraph): PulseSignalNode | undef
 }
 
 function hasBlockingGradeEvidence(signalGraph: PulseSignalGraph): boolean {
-  return signalGraph.nodes.some(
-    (signal) => signal.truthMode === 'observed' || signal.truthMode === 'confirmed_static',
-  );
+  const evidenceGraph = buildEvidenceGraph(signalGraph);
+  return evidenceGraph.evidence.some((evidence) => {
+    const hasObservedBasis = evidence.basis.some((token) => token.includes('observ'));
+    const hasConfirmedBasis = evidence.basis.some((token) => token.includes('confirm'));
+    const hasStaticBasis = evidence.basis.some((token) => token.includes('static'));
+    return hasObservedBasis || (hasConfirmedBasis && hasStaticBasis);
+  });
 }
 
 function predicateTruthPriority(
@@ -78,7 +97,7 @@ function predicateTruthPriority(
   const signalsById = new Map(signalGraph.nodes.map((signal) => [signal.id, signal]));
   return signalIds.reduce((best, signalId) => {
     const signal = signalsById.get(signalId);
-    return Math.max(best, signal ? TRUTH_MODE_PRIORITY[signal.truthMode] : 0);
+    return Math.max(best, signal ? evidenceTruthDepth(signal) : 0);
   }, 0);
 }
 
@@ -115,6 +134,7 @@ export function synthesizeDiagnostic(
   signalGraph: PulseSignalGraph,
   predicateGraph: PulsePredicateGraph,
   risk: PulseDynamicRiskResult,
+  evidenceGraph: PulseEvidenceGraph = buildEvidenceGraph(signalGraph),
 ): PulseGeneratedDiagnostic {
   const predicateKinds = [...new Set(predicateGraph.predicates.map((predicate) => predicate.kind))];
   const titleBasis = titleBasisFrom(signalGraph, predicateGraph);
@@ -125,15 +145,18 @@ export function synthesizeDiagnostic(
   const proofContract: PulseDiagnosticProofContract = {
     diagnosticId: id,
     generatedAt: signalGraph.generatedAt,
-    rawSignals: signalGraph.nodes.map((signal) => ({
-      id: signal.id,
-      source: signal.source,
-      detector: signal.detector,
-      truthMode: signal.truthMode,
-      summary: signal.summary,
-      location: signal.location,
-      confidence: signal.confidence,
-    })),
+    rawSignals: evidenceGraph.evidence.map((evidence) => {
+      const signal = signalGraph.nodes.find((item) => item.id === evidence.signalId);
+      return {
+        id: evidence.signalId,
+        source: evidence.source,
+        detector: evidence.detector,
+        truthMode: signal?.truthMode ?? 'weak_signal',
+        summary: evidence.summary,
+        location: evidence.location,
+        confidence: evidence.confidence,
+      };
+    }),
     predicates: predicateGraph.predicates.map((predicate) => ({
       id: predicate.id,
       kind: predicate.kind,

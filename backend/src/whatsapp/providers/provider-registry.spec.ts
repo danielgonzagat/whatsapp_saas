@@ -45,7 +45,7 @@ describe('WhatsAppProviderRegistry', () => {
     delete process.env.WAHA_BASE_URL;
     delete process.env.WAHA_URL;
     prisma = {
-      $transaction: jest.fn((callback: any) => callback(prisma)),
+      $transaction: jest.fn((callback: (tx: unknown) => unknown) => callback(prisma)),
       workspace: {
         findUnique: jest.fn().mockResolvedValue({
           providerSettings: {
