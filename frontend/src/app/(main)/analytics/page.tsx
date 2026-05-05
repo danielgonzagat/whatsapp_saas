@@ -1909,9 +1909,8 @@ function EnvioRelatoriosTab({ filters, isMobile }: { filters: RF; isMobile: bool
         period: `${filters.startDate},${filters.endDate}`,
         filters: reportFilters,
       });
-      const resObj = res as unknown as Record<string, unknown>;
-      if (resObj?.error) {
-        throw new Error(String(resObj.error));
+      if (res.error) {
+        throw new Error(String(res.error));
       }
       setResult({ ok: true, message: `Relatório enviado para ${email.trim()}` });
     } catch (error: unknown) {

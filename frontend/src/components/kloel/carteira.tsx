@@ -392,7 +392,7 @@ function WithdrawModal({
     });
   }, []);
 
-  const bankAccounts = (rawAccounts as unknown as RawBankAccount[]).map((a) => ({
+  const bankAccounts = (rawAccounts as RawBankAccount[]).map((a) => ({
     bank: a.bankName || a.bank || a.name || 'Conta',
     acc:
       a.displayAccount ||

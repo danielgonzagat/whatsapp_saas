@@ -1382,7 +1382,7 @@ export function ProductNerveCenterComissaoTab() {
       {comSub === 'afiliados' && (
         <AfiliadosSubTab
           productId={productId}
-          p={p as unknown as JsonRecord}
+          p={p}
           refreshProduct={refreshProduct}
           setAffiliateSummary={setAffiliateSummary}
           affiliateSummary={affiliateSummary}
@@ -1394,7 +1394,7 @@ export function ProductNerveCenterComissaoTab() {
       {comSub === 'merchan' && (
         <MerchanSubTab
           productId={productId}
-          p={p as unknown as JsonRecord}
+          p={p}
           refreshProduct={refreshProduct}
           setAffiliateSummary={setAffiliateSummary}
         />
@@ -1402,7 +1402,7 @@ export function ProductNerveCenterComissaoTab() {
       {comSub === 'termos' && (
         <TermosSubTab
           productId={productId}
-          p={p as unknown as JsonRecord}
+          p={p}
           refreshProduct={refreshProduct}
           setAffiliateSummary={setAffiliateSummary}
         />

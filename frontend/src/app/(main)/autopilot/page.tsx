@@ -704,7 +704,7 @@ export default function AutopilotPage() {
         waitMs: 12000,
         token,
       });
-      setSmokeResult(data as unknown as AutopilotSmokeTestResult);
+      setSmokeResult(data as never as AutopilotSmokeTestResult);
       await fetchAutopilotData();
     } catch (err: unknown) {
       console.error('Error running autopilot smoke test:', err);

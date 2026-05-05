@@ -448,7 +448,7 @@ function CheckoutConfigPanel({
 
   useEffect(() => {
     if (ckCfg) {
-      setCkLocal(ckCfg as unknown as JsonRecord);
+      setCkLocal(ckCfg as JsonRecord);
     }
   }, [ckCfg]);
 
