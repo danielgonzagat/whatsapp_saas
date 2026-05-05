@@ -386,7 +386,14 @@ export class AccountAgentService {
       where: { workspaceId_key: { workspaceId, key } },
     });
     if (!record) throw new NotFoundException('Registro da sessão não encontrado');
-    return { record, session: s };
+    const recordTyped = {
+      key: record.key,
+      metadata:
+        record.metadata && typeof record.metadata === 'object' && !Array.isArray(record.metadata)
+          ? (record.metadata as Record<string, unknown>)
+          : null,
+    };
+    return { record: recordTyped, session: s };
   }
 
   private async ensureInputSession(workspaceId: string, approval: AccountApprovalPayload) {
