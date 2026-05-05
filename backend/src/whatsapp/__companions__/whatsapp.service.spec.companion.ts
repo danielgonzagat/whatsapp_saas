@@ -153,19 +153,61 @@ export function buildMockProviderRegistry() {
   };
 }
 
-export function buildMockPrisma(localContactsSeed: any[]) {
-  const createdContacts: any[] = [];
+type ContactSeed = {
+  id: string;
+  workspaceId: string;
+  phone: string;
+  name: string;
+  email: string | null;
+  customFields?: Record<string, unknown>;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+type ContactSeedUpdate = Partial<Pick<ContactSeed, 'name' | 'email'>> & { updatedAt?: Date };
+
+type FindManyWhere = { workspaceId?: string };
+type UpsertWhere = { workspaceId_phone: { workspaceId: string; phone: string } };
+type UpsertCreate = { workspaceId: string; phone: string; name?: string; email?: string | null };
+
+type FindManyArgs = { where?: FindManyWhere };
+type UpsertArgs = { where: UpsertWhere; create: UpsertCreate; update?: ContactSeedUpdate };
+type FindUniqueArgs = { where: UpsertWhere };
+
+type MockPrismaService = {
+  contact: {
+    findMany: jest.Mock;
+    upsert: jest.Mock;
+    findUnique: jest.Mock;
+    update: jest.Mock;
+    findFirst: jest.Mock;
+    updateMany: jest.Mock;
+  };
+  conversation: { findMany: jest.Mock };
+  message: {
+    findMany: jest.Mock;
+    findFirst: jest.Mock;
+    create: jest.Mock;
+    update: jest.Mock;
+  };
+  autopilotEvent: { findFirst: jest.Mock; create: jest.Mock };
+  tag: { upsert: jest.Mock; findUnique: jest.Mock };
+  $transaction?: jest.Mock;
+};
+
+export function buildMockPrisma(localContactsSeed: ContactSeed[]) {
+  const createdContacts: ContactSeed[] = [];
   const allContacts = () => [...localContactsSeed, ...createdContacts];
-  const mockObj: any = {
+  const mockObj: MockPrismaService = {
     contact: {
       findMany: jest
         .fn()
-        .mockImplementation(({ where }: any) =>
+        .mockImplementation(({ where }: FindManyArgs) =>
           Promise.resolve(
             allContacts().filter((c) => !where?.workspaceId || c.workspaceId === where.workspaceId),
           ),
         ),
-      upsert: jest.fn().mockImplementation(({ where, create, update }: any) => {
+      upsert: jest.fn().mockImplementation(({ where, create, update }: UpsertArgs) => {
         const existing = allContacts().find(
           (c) =>
             c.workspaceId === where.workspaceId_phone.workspaceId &&
@@ -178,11 +220,11 @@ export function buildMockPrisma(localContactsSeed: any[]) {
             email: update?.email ?? existing.email,
             updatedAt: new Date('2026-03-20T12:00:00.000Z'),
           });
-        const next = {
+        const next: ContactSeed = {
           id: `contact-${createdContacts.length + 10}`,
           workspaceId: create.workspaceId,
           phone: create.phone,
-          name: create.name,
+          name: create.name ?? '',
           email: create.email || null,
           createdAt: new Date('2026-03-20T12:00:00.000Z'),
           updatedAt: new Date('2026-03-20T12:00:00.000Z'),
@@ -190,7 +232,7 @@ export function buildMockPrisma(localContactsSeed: any[]) {
         createdContacts.push(next);
         return Promise.resolve(next);
       }),
-      findUnique: jest.fn().mockImplementation(({ where }: any) => {
+      findUnique: jest.fn().mockImplementation(({ where }: FindUniqueArgs) => {
         const found = allContacts().find(
           (c) =>
             c.workspaceId === where.workspaceId_phone.workspaceId &&
@@ -218,6 +260,8 @@ export function buildMockPrisma(localContactsSeed: any[]) {
       findUnique: jest.fn().mockResolvedValue(null),
     },
   };
-  mockObj.$transaction = jest.fn((callback: any) => callback(mockObj));
+  mockObj.$transaction = jest.fn((callback: (tx: MockPrismaService) => Promise<unknown>) =>
+    callback(mockObj),
+  );
   return mockObj;
 }

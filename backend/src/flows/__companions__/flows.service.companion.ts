@@ -1,6 +1,21 @@
 import { Logger } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 import { forEachSequential } from '../../common/async-sequence';
+
+interface FlowExecutionRow {
+  id: string;
+  workspaceId: string;
+  flowId: string;
+  contactId: string;
+  status: string;
+  state: Prisma.JsonValue | null;
+  currentNodeId: string | null;
+  updatedAt: Date;
+}
+
+interface FlowExecutionPrismaDelegate {
+  flowExecution: PrismaClient['flowExecution'];
+}
 
 /** Shape of data stored in a waitForReply node */
 export interface WaitForReplyNodeData {
@@ -47,7 +62,7 @@ export function resolveTimeoutMs(
 }
 
 export async function pauseForWaitNode(
-  deps: { prisma: any; logger: Logger },
+  deps: { prisma: FlowExecutionPrismaDelegate; logger: Logger },
   params: {
     executionId: string;
     contactPhone: string;
@@ -101,7 +116,7 @@ export async function pauseForWaitNode(
 }
 
 export async function resumeFromWait(
-  deps: { prisma: any; logger: Logger },
+  deps: { prisma: FlowExecutionPrismaDelegate; logger: Logger },
   params: {
     contactPhone: string;
     workspaceId: string;
@@ -187,7 +202,7 @@ export async function resumeFromWait(
 }
 
 export async function expireWaitTimeouts(
-  deps: { prisma: any; logger: Logger },
+  deps: { prisma: FlowExecutionPrismaDelegate; logger: Logger },
   workspaceId?: string,
   batchSize = 50,
 ): Promise<ResumeResult[]> {
@@ -213,7 +228,7 @@ export async function expireWaitTimeouts(
     take: batchSize,
   });
 
-  await forEachSequential(candidates, async (exec: any) => {
+  await forEachSequential(candidates, async (exec: FlowExecutionRow) => {
     const state = (exec.state as WaitState) || ({} as WaitState);
     if (!state.waitExpiresAt) {
       return;

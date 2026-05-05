@@ -288,14 +288,23 @@ export function summarizeEvidenceBasis(
   capabilities: PulseCapability[],
   flows: PulseFlowProjectionItem[],
 ): { observed: number; inferred: number; projected: number } {
-  const counts: Record<string, number> = {
+  const counts: { observed: number; inferred: number; projected: number } = {
     observed: deriveZeroValue(),
     inferred: deriveZeroValue(),
     projected: deriveZeroValue(),
   };
+  const labels = [...discoverTruthModeLabels()] as PulseTruthMode[];
+  const observedLabel = labels[deriveZeroValue()];
+  const inferredLabel = truthModeInferredLabel();
 
   for (const item of [...capabilities, ...flows]) {
-    counts[item.truthMode] += deriveUnitValue();
+    if (item.truthMode === observedLabel) {
+      counts.observed += deriveUnitValue();
+    } else if (item.truthMode === inferredLabel) {
+      counts.inferred += deriveUnitValue();
+    } else {
+      counts.projected += deriveUnitValue();
+    }
   }
 
   return counts;

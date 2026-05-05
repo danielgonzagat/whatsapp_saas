@@ -3,7 +3,7 @@
  * Phase A: Restoration fleet builder.
  *
  * Detects truncated files (main module missing exports that callers expect, with content in
- * `__companions__/<basename>.companion.ts`) and produces one EDIT-ONLY task per truncated file.
+ * a discovered companion archive entry and produces one EDIT-ONLY task per truncated file.
  *
  * Subagents do NOT commit. They:
  *   1. Read main + companion
@@ -24,16 +24,26 @@ import { fileURLToPath } from 'node:url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(__dirname, '..', '..');
 
-const COMPANIONS_DIR = join(REPO_ROOT, 'scripts/pulse/__companions__');
 const PULSE_DIR = join(REPO_ROOT, 'scripts/pulse');
+const COMPANION_DIR_CANDIDATES = [
+  join(REPO_ROOT, 'pulse_legacy_archive/legacy-companions-archive'),
+  join(REPO_ROOT, '.pulse/current/legacy-companions-archive'),
+  join(REPO_ROOT, 'scripts/pulse/__companions__'),
+];
+
+function discoverCompanionsDir() {
+  return COMPANION_DIR_CANDIDATES.find((candidate) => existsSync(candidate)) ?? null;
+}
 
 function listCompanions() {
-  if (!existsSync(COMPANIONS_DIR)) return [];
-  return readdirSync(COMPANIONS_DIR)
+  const companionsDir = discoverCompanionsDir();
+  if (!companionsDir) return [];
+  const companionRoot = companionsDir.replace(`${REPO_ROOT}/`, '');
+  return readdirSync(companionsDir)
     .filter((f) => f.endsWith('.companion.ts'))
     .map((f) => {
       const base = f.replace(/\.companion\.ts$/, '');
-      return { companion: `scripts/pulse/__companions__/${f}`, base };
+      return { companion: `${companionRoot}/${f}`, base };
     });
 }
 
@@ -104,9 +114,10 @@ Your file \`${mainFile}\` is **TRUNCATED** — main module lost public exports t
 # 1. Smoke import — every recovered export must resolve
 ./backend/node_modules/.bin/ts-node --transpile-only --project scripts/pulse/tsconfig.json -e "const m=require('./${mainFile.replace(/\.ts$/, '')}'); console.log('EXPORTS:', Object.keys(m).join(','));"
 
-# 2. If a spec exists, run it
-if ls scripts/pulse/__tests__/${basename(mainFile, '.ts')}.spec.ts 2>/dev/null; then
-  npx vitest run scripts/pulse/__tests__/${basename(mainFile, '.ts')}.spec.ts 2>&1 | tail -10
+# 2. If an archived legacy spec exists, run it from the discovered evidence archive
+PULSE_SPEC_ARCHIVE=pulse_legacy_archive/legacy-pulse-tests-archive/${basename(mainFile, '.ts')}.spec.ts
+if ls "$PULSE_SPEC_ARCHIVE" 2>/dev/null; then
+  npx vitest run "$PULSE_SPEC_ARCHIVE" 2>&1 | tail -10
 fi
 
 # 3. File-level auditor count

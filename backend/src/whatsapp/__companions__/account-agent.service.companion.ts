@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import type { Prisma } from '@prisma/client';
 import { forEachSequential } from '../../common/async-sequence';
 import { toPrismaJsonValue } from '../../common/prisma/prisma-json.util';
 
@@ -29,7 +30,12 @@ export type AccountDeps = {
   agentEvents: AgentEventsService;
 };
 
-function toJson(value: unknown): any {
+type InputSessionRecord = {
+  key: string;
+  metadata: Record<string, unknown> | null;
+};
+
+function toJson(value: unknown): Prisma.InputJsonValue {
   return toPrismaJsonValue(value);
 }
 
@@ -385,7 +391,7 @@ export async function respondToInputSessionExt(
     findInputSessionFn: (
       workspaceId: string,
       sessionId: string,
-    ) => Promise<{ record: any; session: AccountInputSessionPayload }>;
+    ) => Promise<{ record: InputSessionRecord; session: AccountInputSessionPayload }>;
     finishApprovalFn: (
       workspaceId: string,
       approvalId: string,

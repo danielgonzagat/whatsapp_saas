@@ -6,15 +6,63 @@ jest.mock('../queue/queue', () => ({
   voiceQueue: { add: jest.fn() },
 }));
 
+type FlexMock = jest.Mock;
+
+type MockPrisma = {
+  contact: { upsert: FlexMock; update: FlexMock; updateMany: FlexMock };
+  message: { findFirst: FlexMock; findMany: FlexMock };
+  workspace: { findUnique: FlexMock };
+  conversation: { findFirst: FlexMock; update: FlexMock; updateMany: FlexMock };
+  autopilotEvent: { create: FlexMock };
+};
+
+type MockInbox = {
+  saveMessageByPhone: FlexMock;
+};
+
+type MockRedis = {
+  get: FlexMock;
+  set: FlexMock;
+  del: FlexMock;
+  rpush: FlexMock;
+  expire: FlexMock;
+};
+
+type MockAccountAgent = {
+  detectCatalogGap: FlexMock;
+};
+
+type MockWorkerRuntime = {
+  isAvailable: FlexMock;
+};
+
+type QuotedReplyPlanParams = {
+  workspaceId: string;
+  contactId?: string;
+  phone: string;
+  draftReply: string;
+  customerMessages: Array<{ content: string; quotedMessageId: string }>;
+};
+
+type MockUnifiedAgent = {
+  processIncomingMessage: FlexMock;
+  buildQuotedReplyPlan: FlexMock;
+};
+
+type MockWhatsappService = {
+  sendMessage: FlexMock;
+  syncRemoteContactProfile: FlexMock;
+};
+
 describe('InboundProcessorService', () => {
   let service: InboundProcessorService;
-  let prisma: any;
-  let inbox: any;
-  let redis: any;
-  let accountAgent: any;
-  let workerRuntime: any;
-  let unifiedAgent: any;
-  let whatsappService: any;
+  let prisma: MockPrisma;
+  let inbox: MockInbox;
+  let redis: MockRedis;
+  let accountAgent: MockAccountAgent;
+  let workerRuntime: MockWorkerRuntime;
+  let unifiedAgent: MockUnifiedAgent;
+  let whatsappService: MockWhatsappService;
   let mockAutopilotAdd: jest.Mock;
 
   beforeEach(() => {
@@ -97,8 +145,8 @@ describe('InboundProcessorService', () => {
       }),
       buildQuotedReplyPlan: jest
         .fn()
-        .mockImplementation(async ({ draftReply, customerMessages }: any) =>
-          (customerMessages || []).map((message: any) => ({
+        .mockImplementation(async ({ draftReply, customerMessages }: QuotedReplyPlanParams) =>
+          (customerMessages || []).map((message) => ({
             quotedMessageId: message.quotedMessageId,
             text: draftReply,
           })),
@@ -112,13 +160,13 @@ describe('InboundProcessorService', () => {
     };
 
     service = new InboundProcessorService(
-      prisma,
-      inbox,
-      redis,
-      accountAgent,
-      workerRuntime,
-      unifiedAgent,
-      whatsappService,
+      prisma as never,
+      inbox as never,
+      redis as never,
+      accountAgent as never,
+      workerRuntime as never,
+      unifiedAgent as never,
+      whatsappService as never,
     );
   });
 

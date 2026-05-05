@@ -10,21 +10,53 @@ jest.mock('../queue/queue', () => ({
   flowQueue: { add: jest.fn() },
 }));
 
+type MockPrisma = {
+  contact: {
+    findMany: jest.Mock;
+    upsert: jest.Mock;
+    findUnique: jest.Mock;
+    update: jest.Mock;
+    findFirst: jest.Mock;
+    updateMany: jest.Mock;
+  };
+  conversation: { findMany: jest.Mock };
+  message: {
+    findMany: jest.Mock;
+    findFirst: jest.Mock;
+    create: jest.Mock;
+    update: jest.Mock;
+  };
+  autopilotEvent: { findFirst: jest.Mock; create: jest.Mock };
+  tag: { upsert: jest.Mock; findUnique: jest.Mock };
+  $transaction?: jest.Mock;
+};
+
 describe('WhatsappService', () => {
   let service: WhatsappService;
   let mockAutopilotAdd: jest.Mock;
   let mockFlowAdd: jest.Mock;
-  let workspaceService: any;
-  let inboxService: any;
-  let planLimits: any;
-  let redis: any;
-  let neuroCrm: any;
-  let prisma: any;
-  let providerRegistry: any;
-  let whatsappApi: any;
-  let catchupService: any;
-  let ciaRuntime: any;
-  let workerRuntime: any;
+  let workspaceService: { getWorkspace: jest.Mock; toEngineWorkspace: jest.Mock };
+  let inboxService: { saveMessageByPhone: jest.Mock };
+  let planLimits: {
+    trackMessageSend: jest.Mock;
+    ensureSubscriptionActive: jest.Mock;
+    ensureMessageRate: jest.Mock;
+  };
+  let redis: {
+    get: jest.Mock;
+    setex: jest.Mock;
+    set: jest.Mock;
+    publish: jest.Mock;
+    rpush: jest.Mock;
+    expire: jest.Mock;
+  };
+  let neuroCrm: { analyzeContact: jest.Mock };
+  let prisma: MockPrisma;
+  let providerRegistry: Record<string, jest.Mock>;
+  let whatsappApi: { getRuntimeConfigDiagnostics: jest.Mock };
+  let catchupService: { triggerCatchup: jest.Mock };
+  let ciaRuntime: { startBacklogRun: jest.Mock };
+  let workerRuntime: { isAvailable: jest.Mock };
 
   beforeEach(() => {
     jest.useFakeTimers({ doNotFake: ['nextTick', 'setImmediate'] });
@@ -87,17 +119,17 @@ describe('WhatsappService', () => {
     mockFlowAdd.mockResolvedValue(undefined);
 
     service = new WhatsappService(
-      workspaceService,
-      inboxService,
-      planLimits,
-      redis,
-      neuroCrm,
-      prisma,
-      providerRegistry,
-      whatsappApi,
-      catchupService,
-      ciaRuntime,
-      workerRuntime,
+      workspaceService as never,
+      inboxService as never,
+      planLimits as never,
+      redis as never,
+      neuroCrm as never,
+      prisma as never,
+      providerRegistry as never,
+      whatsappApi as never,
+      catchupService as never,
+      ciaRuntime as never,
+      workerRuntime as never,
     );
   });
 

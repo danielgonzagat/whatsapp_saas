@@ -100,7 +100,7 @@ Read in order:
 2. \`scripts/pulse/no-hardcoded-reality-audit.ts\` lines **79–220** — allowed-context kernel-grammar tokens (your patches must be in functions whose context contains these tokens, e.g. \`evidence\`, \`kernel\`, \`ast\`, \`schema\`, \`structural\`, \`grammar\`, \`token\`, \`gate\`, \`type\`).
 3. \`docs/ai/PULSE_NO_HARDCODED_REALITY_DEBT_GUIDE.md\` — patterns that worked / failed before.
 4. \`${filePath}\` in full.
-5. If your file is truncated/companion-split, also read its companion at \`scripts/pulse/__companions__/<basename>.companion.ts\` — restoring main from companion FIRST (preserve all exports) is acceptable in this task.
+5. If your file is truncated/companion-split, discover the companion archive path first (prefer \`pulse_legacy_archive/legacy-companions-archive/<basename>.companion.ts\`, then \`.pulse/current/legacy-companions-archive/<basename>.companion.ts\`, then legacy \`scripts/pulse/__companions__/<basename>.companion.ts\`) — restoring main from companion FIRST (preserve all exports) is acceptable in this task.
 
 ## Workflow (do all steps; stop only on uncatchable error)
 

@@ -1,17 +1,27 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import type { Request } from 'express';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaService } from './prisma/prisma.service';
+import { AuthenticatedRequest } from './common/interfaces/authenticated-request.interface';
+
+type MockPrisma = {
+  $queryRaw: jest.Mock;
+  workspace: { count: jest.Mock };
+  agent: { count: jest.Mock };
+  contact: { count: jest.Mock };
+  conversation: { count: jest.Mock };
+};
+
+/** Minimal request mock that covers the properties `diagnostic()` accesses. */
+type DiagReqStub = Pick<Request, 'headers' | 'query'>;
+
+/** Diagnostic mock used when DIAG_TOKEN is unset (auth gate skipped). */
+const diagReqStub: DiagReqStub = { headers: {}, query: {} };
 
 describe('AppController', () => {
   let appController: AppController;
-  let prisma: {
-    $queryRaw: jest.Mock;
-    workspace: { count: jest.Mock };
-    agent: { count: jest.Mock };
-    contact: { count: jest.Mock };
-    conversation: { count: jest.Mock };
-  };
+  let prisma: MockPrisma;
 
   let originalDiagToken: string | undefined;
 
@@ -60,12 +70,7 @@ describe('AppController', () => {
       prisma.contact.count.mockResolvedValue(8);
       prisma.conversation.count.mockResolvedValue(13);
 
-      await expect(
-        appController.diagnostic({
-          headers: {},
-          query: {},
-        } as any),
-      ).resolves.toEqual(
+      await expect(appController.diagnostic(diagReqStub as AuthenticatedRequest)).resolves.toEqual(
         expect.objectContaining({
           database: 'connected',
           tables: {
@@ -81,15 +86,7 @@ describe('AppController', () => {
     it('captures database errors without throwing the endpoint response away', async () => {
       prisma.$queryRaw.mockRejectedValue(new Error('db offline'));
 
-      // The diagnostic endpoint must NOT leak the underlying error message
-      // or the call stack — it returns a generic 'database query failed'
-      // string. The internal Error is logged by the controller, not echoed.
-      await expect(
-        appController.diagnostic({
-          headers: {},
-          query: {},
-        } as any),
-      ).resolves.toEqual(
+      await expect(appController.diagnostic(diagReqStub as AuthenticatedRequest)).resolves.toEqual(
         expect.objectContaining({
           database: 'error',
           error: 'database query failed',
