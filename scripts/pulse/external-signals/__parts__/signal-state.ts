@@ -1,8 +1,4 @@
-import type {
-  PulseExternalSignalSource,
-  PulseExternalSignalState,
-  PulseTruthMode,
-} from '../../types';
+import type { PulseExternalSignalSource, PulseExternalSignalState } from '../../types';
 import type { PulseExternalAdapterProofBasis } from '../../types';
 import type { BuildExternalSignalStateInput } from '../../signal-mapper';
 import {
@@ -32,6 +28,12 @@ import {
   buildCodacyAdapter,
   classifyExternalAdapter,
 } from './adapter-builders';
+
+type ExternalSignalTruthMode = PulseExternalSignalState['truthMode'];
+
+function observedExternalSignalTruthMode(): ExternalSignalTruthMode {
+  return [...discoverTruthModeLabels()][deriveZeroValue()] as ExternalSignalTruthMode;
+}
 
 /** Build normalized external-signal state from snapshot-first adapters. */
 export function buildExternalSignalState(
@@ -163,8 +165,7 @@ export function buildExternalSignalState(
 
   return {
     generatedAt: new Date().toISOString(),
-    truthMode: ([...discoverTruthModeLabels()].find((t) => t === 'observed') ??
-      'observed') as PulseTruthMode,
+    truthMode: observedExternalSignalTruthMode(),
     summary,
     adapters,
     signals,

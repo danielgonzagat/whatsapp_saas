@@ -7,6 +7,7 @@ import type {
   FacadeEntry,
   Break,
   PulseConfig,
+  PrismaModel,
 } from '../../types';
 import { normalizeForMatch } from './graph-part1-core';
 import type { RouteKey } from './graph-part1-core';

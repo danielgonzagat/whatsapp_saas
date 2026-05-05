@@ -36,10 +36,7 @@ import {
   buildDirectiveContextFabricPatch,
   buildPulseContextFabricBundle,
 } from '../../context-broadcast';
-import type {
-  PulseAgentOrchestrationState,
-  PulseAutonomyState,
-} from '../../types';
+import type { PulseAgentOrchestrationState, PulseAutonomyState } from '../../types';
 import type { PulseArtifactSnapshot, PulseArtifactPaths } from './types';
 
 /**
@@ -137,7 +134,8 @@ export function generateArtifacts(
     'scripts/pulse/run-identity.ts',
     'PulseRunMode',
   );
-  const defaultRunMode = [...RUN_MODES].find((m) => m === 'scan') || [...RUN_MODES][0];
+  const defaultRunMode = ([...RUN_MODES].find((m) => m === 'scan') ||
+    [...RUN_MODES][0]) as PulseRunIdentity['mode'];
   const identity = createRunIdentity(runMode ?? defaultRunMode, profile);
   registry.runId = identity.runId;
 
@@ -259,8 +257,8 @@ export function generateArtifacts(
   const augmentedDirectiveContent = (() => {
     try {
       const directive = JSON.parse(directiveContent) as Record<string, unknown>;
-      const byUnitId = new Map(
-        contextBundle.broadcast.workers.map((worker) => [worker.unitId, worker]),
+      const byUnitId = new Map<string, (typeof contextBundle.broadcast.workers)[number]>(
+        contextBundle.broadcast.workers.map((worker) => [worker.unitId, worker] as const),
       );
       const augmentUnits = (value: unknown): unknown => {
         if (!Array.isArray(value)) {
@@ -317,7 +315,13 @@ export function generateArtifacts(
   const artifactIndexPath = writeRegisteredArtifact(
     registry,
     'artifact-index',
-    buildArtifactIndex(registry, cleanupReport, authority, identity, machineReadiness),
+    buildArtifactIndex(
+      registry,
+      cleanupReport,
+      authority,
+      identity,
+      machineReadiness as unknown as Parameters<typeof buildArtifactIndex>[4],
+    ),
     identity,
   );
 
@@ -420,8 +424,8 @@ export function generateArtifacts(
     previousState: previousAutonomyState,
     orchestrationMode:
       previousAutonomyState?.orchestrationMode ||
-      [...AUTO_MODES].find((m) => m === 'single') ||
-      [...AUTO_MODES][0],
+      (([...AUTO_MODES].find((m) => m === 'single') ||
+        [...AUTO_MODES][0]) as PulseAutonomyState['orchestrationMode']),
     parallelAgents:
       previousAutonomyState?.parallelAgents ||
       discoverAllObservedHttpStatusCodes().filter((c) => c >= 100 && c < 200).length,
@@ -446,8 +450,8 @@ export function generateArtifacts(
       discoverAllObservedHttpStatusCodes().filter((c) => c >= 400 && c < 500).length,
     plannerMode:
       previousAgentOrchestrationState?.plannerMode ||
-      [...PLAN_MODES].find((m) => m === 'deterministic') ||
-      [...PLAN_MODES][0],
+      (([...PLAN_MODES].find((m) => m === 'deterministic') ||
+        [...PLAN_MODES][0]) as PulseAgentOrchestrationState['plannerMode']),
   });
   writeRegisteredArtifact(
     registry,
