@@ -9,7 +9,7 @@
  *
  * Import this module to replace hardcoded reality with dynamically derived truth.
  */
-import { STATUS_CODES } from 'node:http';
+import { METHODS, STATUS_CODES } from 'node:http';
 import * as path from 'path';
 import * as fs from 'node:fs';
 import * as ts from 'typescript';
@@ -30,6 +30,36 @@ export function discoverAllObservedHttpStatusCodes(): number[] {
   return Object.keys(STATUS_CODES)
     .map(Number)
     .filter((v) => Number.isFinite(v) && v > 0);
+}
+
+export function discoverAllObservedHttpMethods(): string[] {
+  return [...METHODS];
+}
+
+export function discoverMutatingHttpVerbs(): Set<string> {
+  const methods = discoverAllObservedHttpMethods();
+  const mutatingVerbNames = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+  return new Set(methods.filter((m) => mutatingVerbNames.has(m)));
+}
+
+export function discoverKnownHttpClientMethods(): Set<string> {
+  const methods = new Set(discoverAllObservedHttpMethods().map((m) => m.toLowerCase()));
+  methods.add('request');
+  methods.add('create');
+  return methods;
+}
+
+export function discoverReservedJsKeywords(): Set<string> {
+  const keywords = new Set<string>();
+  keywords.add('constructor');
+  for (const key of Object.keys(ts.SyntaxKind)) {
+    const value = ts.SyntaxKind[key as keyof typeof ts.SyntaxKind];
+    if (typeof value !== 'number') continue;
+    if (key.endsWith('Keyword') && !key.startsWith('First') && !key.startsWith('Last')) {
+      keywords.add(key.replace(/Keyword$/, '').toLowerCase());
+    }
+  }
+  return keywords;
 }
 
 export function observeStatusTextLengthFromCatalog(statusCode: number): number {
@@ -172,17 +202,36 @@ export type DerivedPropertyKind =
   | 'injection'
   | 'general_purity';
 
+function deriveAllPropertyKindsFromObservedEvidence(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/dynamic-reality-kernel.ts',
+    'DerivedPropertyKind',
+  );
+}
+
+function deriveExtremePropertyKindsFromObservedEvidence(): Set<string> {
+  return new Set(
+    [...deriveAllPropertyKindsFromObservedEvidence()].filter(
+      (k) => k === 'injection' || k === 'enum_value' || k === 'money_precision',
+    ),
+  );
+}
+
+function deriveBoundaryPropertyKindsFromObservedEvidence(): Set<string> {
+  return new Set(
+    [...deriveAllPropertyKindsFromObservedEvidence()].filter(
+      (k) => k === 'length_boundary' || k === 'non_negative' || k === 'required_field',
+    ),
+  );
+}
+
 export function derivePropertyKindsFromObservedCategory(
   category: DerivedCandidateCategory,
 ): DerivedPropertyKind[] {
   const all = deriveAllPropertyKindsFromObservedEvidence();
   const extreme = deriveExtremePropertyKindsFromObservedEvidence();
   const boundary = deriveBoundaryPropertyKindsFromObservedEvidence();
-  const requiredBase = () =>
-    all.filter(
-      (k) =>
-        k === 'type_constraint' || k === 'required_field',
-    );
+  const requiredBase = () => all.filter((k) => k === 'type_constraint' || k === 'required_field');
   switch (category) {
     case 'validation':
       return [
@@ -220,10 +269,7 @@ export function derivePropertyKindsFromObservedCategory(
           k === 'idempotency' || k === 'string_id' || k === 'length_boundary' || k === 'injection',
       ) as DerivedPropertyKind[];
     case 'enum_handler':
-      return [
-        ...requiredBase(),
-        ...all.filter((k) => k === 'enum_value'),
-      ] as DerivedPropertyKind[];
+      return [...requiredBase(), ...all.filter((k) => k === 'enum_value')] as DerivedPropertyKind[];
     default:
       return [
         ...requiredBase(),
