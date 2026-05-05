@@ -1,9 +1,9 @@
-import type { ChaosScenarioKind, ChaosTarget } from '../types.chaos-engine';
+import type { ChaosScenarioKind, ChaosTarget } from '../../types.chaos-engine';
 import {
   discoverChaosScenarioKindLabels,
   deriveUnitValue,
   deriveZeroValue,
-} from '../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel';
 
 export function generateInjectionConfig(
   kind: ChaosScenarioKind,

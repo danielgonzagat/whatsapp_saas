@@ -10,7 +10,7 @@ import type {
   ContractStatus,
   ProviderContract,
   SchemaDiffSeverity,
-} from '../types.contract-tester';
+} from '../../types.contract-tester';
 import {
   deriveStringUnionMembersFromTypeContract,
   deriveUnitValue,
@@ -21,7 +21,7 @@ import {
   discoverRouteSeparatorFromRuntime,
   discoverSourceExtensionsFromObservedTypescript,
   discoverStructuralNodeKindLabels,
-} from '../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel';
 
 // ── Artifact filenames ──────────────────────────────────────────────────────
 

@@ -1,11 +1,11 @@
-import type { PulseProductGraph } from '../../types.product-graph';
-import type { BehaviorGraph } from '../../types.behavior-graph';
-import type { PulseScopeState } from '../../types.truth.scope';
+import type { PulseProductGraph } from '../../../types.product-graph';
+import type { BehaviorGraph } from '../../../types.behavior-graph';
+import type { PulseScopeState } from '../../../types.truth.scope';
 import {
   deriveUnitValue,
   discoverAllObservedArtifactFilenames,
   discoverRouteSeparatorFromRuntime,
-} from '../../dynamic-reality-kernel';
+} from '../../../dynamic-reality-kernel';
 import type {
   BrowserAuthRoutes,
   BrowserLiveArtifacts,

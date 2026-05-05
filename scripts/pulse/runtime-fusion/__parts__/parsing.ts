@@ -1,17 +1,17 @@
 import * as p from 'path';
-import { pathExists as existsAt, readTextFile } from '../safe-fs';
-import { tokenize, unique } from '../signal-normalizers';
+import { pathExists as existsAt, readTextFile } from '../../safe-fs';
+import { tokenize, unique } from '../../signal-normalizers';
 import {
   deriveStringUnionMembersFromTypeContract,
   discoverSignalSourceLabels,
-} from '../dynamic-reality-kernel';
-import type { RuntimeCallGraphEvidence } from '../types.otel-runtime';
+} from '../../dynamic-reality-kernel';
+import type { RuntimeCallGraphEvidence } from '../../types.otel-runtime';
 import type {
   RuntimeSignal,
   SignalSource,
   RuntimeFusionState,
   RuntimeFusionEvidenceStatus,
-} from '../types.runtime-fusion';
+} from '../../types.runtime-fusion';
 import {
   ADAPTER_STALE,
   DYNAMIC_SIGNAL_SEMANTICS_NOTE,

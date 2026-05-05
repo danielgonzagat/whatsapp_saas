@@ -4,7 +4,7 @@ import type {
   BehaviorOutputKind,
   BehaviorRiskLevel,
   BehaviorValidationRequirement,
-} from '../types.behavior-graph';
+} from '../../types.behavior-graph';
 import type {
   BehaviorDecoratorRole,
   BehaviorClassNameRole,
@@ -17,7 +17,7 @@ import {
   deriveRuntimeStringBoundaryFromObservedCatalog,
   deriveUnitValue,
   deriveStringUnionMembersFromTypeContract,
-} from '../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel';
 
 let Project: typeof import('ts-morph').Project;
 let SyntaxKind: typeof import('ts-morph').SyntaxKind;

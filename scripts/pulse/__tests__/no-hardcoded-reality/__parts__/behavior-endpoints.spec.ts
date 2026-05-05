@@ -3,17 +3,17 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 
-import { classifyEndpointRisk } from '../../api-fuzzer';
-import { buildBehaviorGraph } from '../../behavior-graph';
+import { classifyEndpointRisk } from '../../../api-fuzzer';
+import { buildBehaviorGraph } from '../../../behavior-graph';
 import {
   classifyTargetsFromSource,
   detectProviders,
   generateProviderScenarios,
-} from '../../chaos-engine';
-import { isInternalEndpoint, providerFromUrl } from '../../contract-tester';
-import { determineRiskLevel } from '../../dod-engine';
-import { buildSideEffectSignals } from '../../structural-side-effects';
-import { filePathToCapability, filePathToFlow, isCriticalPath } from '../../gitnexus/provider';
+} from '../../../chaos-engine';
+import { isInternalEndpoint, providerFromUrl } from '../../../contract-tester';
+import { determineRiskLevel } from '../../../dod-engine';
+import { buildSideEffectSignals } from '../../../structural-side-effects';
+import { filePathToCapability, filePathToFlow, isCriticalPath } from '../../../gitnexus/provider';
 import {
   deriveUnitValue,
   deriveZeroValue,
@@ -21,8 +21,8 @@ import {
   discoverCapabilityStatusLabels,
   discoverConvergenceExecutionModeLabels,
   discoverDoDStatusLabels,
-} from '../../dynamic-reality-kernel';
-import type { PulseCapability } from '../../types';
+} from '../../../dynamic-reality-kernel';
+import type { PulseCapability } from '../../../types';
 
 function pulseCapability(overrides: Partial<PulseCapability> = {}): PulseCapability {
   const capabilityStatuses = [...discoverCapabilityStatusLabels()];

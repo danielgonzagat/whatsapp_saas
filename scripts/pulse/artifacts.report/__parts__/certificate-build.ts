@@ -1,15 +1,15 @@
 /**
  * Pulse certificate builder.
  */
-import { normalizeCanonicalArtifactValue, normalizeArtifactText } from '../artifacts.queue';
-import { buildFindingEventSurface } from '../finding-event-surface';
-import type { PulseArtifactSnapshot } from '../artifacts.types';
-import type { PulseAutonomyState, PulseConvergencePlan } from '../types';
+import { normalizeCanonicalArtifactValue, normalizeArtifactText } from '../../artifacts.queue';
+import { buildFindingEventSurface } from '../../finding-event-surface';
+import type { PulseArtifactSnapshot } from '../../artifacts.types';
+import type { PulseAutonomyState, PulseConvergencePlan } from '../../types';
 import {
   deriveUnitValue,
   deriveZeroValue,
   discoverAllObservedArtifactFilenames,
-} from '../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel';
 import { buildPulseMachineReadiness } from './machine-readiness';
 
 export function buildCertificate(

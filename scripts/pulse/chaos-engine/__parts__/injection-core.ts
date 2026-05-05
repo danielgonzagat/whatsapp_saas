@@ -1,5 +1,5 @@
-import type { ChaosScenarioKind, ChaosTarget } from '../types.chaos-engine';
-import type { PulseCapability, PulseRuntimeEvidence, PulseExecutionTrace } from '../types';
+import type { ChaosScenarioKind, ChaosTarget } from '../../types.chaos-engine';
+import type { PulseCapability, PulseRuntimeEvidence, PulseExecutionTrace } from '../../types';
 import {
   ChaosProviderName,
   ChaosEvidenceContext,
@@ -13,7 +13,7 @@ import {
   discoverPropertyPassedStatusFromTypeEvidence,
   deriveUnitValue,
   deriveZeroValue,
-} from '../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel';
 
 function normalizeEvidenceText(value: unknown): string {
   if (typeof value === 'string') {

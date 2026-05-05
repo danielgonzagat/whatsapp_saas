@@ -9,9 +9,9 @@ import type {
   PulseExternalAdapterStatus,
   PulseExternalSignalSource,
   PulseSignal,
-} from '../../types';
-import { deriveZeroValue } from '../../dynamic-reality-kernel';
-import { safeJoin } from '../../safe-path';
+} from '../../../types';
+import { deriveZeroValue } from '../../../dynamic-reality-kernel';
+import { safeJoin } from '../../../safe-path';
 import {
   fullProductProfile,
   pulseCoreFinalProfile,
@@ -33,7 +33,7 @@ import {
   readGitHubCliToken,
 } from './helpers';
 import type { ExternalSourceCapabilityEvidence, ExternalSourceCapabilityKind } from './helpers';
-import { discoverCertificationProfileLabels } from '../../dynamic-reality-kernel';
+import { discoverCertificationProfileLabels } from '../../../dynamic-reality-kernel';
 
 /**
  * Adapter requiredness profile.
@@ -299,8 +299,8 @@ export function sourceCapability(
   };
 }
 
-import type { PulseSignal, PulseExternalSignalSource } from '../../types';
-import { deriveZeroValue } from '../../dynamic-reality-kernel';
+import type { PulseSignal, PulseExternalSignalSource } from '../../../types';
+import { deriveZeroValue } from '../../../dynamic-reality-kernel';
 import { invalidStatus, notAvailableStatus } from './helpers';
 
 export function pushSourceErrorResult(

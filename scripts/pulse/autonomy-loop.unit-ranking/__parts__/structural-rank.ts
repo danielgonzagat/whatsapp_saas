@@ -1,12 +1,12 @@
 /**
  * Structural ranking: grammar matchers, unit ranking helpers, queue influence.
  */
-import type { PulseAutonomyUnitSnapshot } from '../types';
+import type { PulseAutonomyUnitSnapshot } from '../../types';
 import type {
   PulseAutonomousDirective,
   PulseAutonomousDirectiveUnit,
-} from '../autonomy-loop.types';
-import { unique } from '../autonomy-loop.utils';
+} from '../../autonomy-loop.types';
+import { unique } from '../../autonomy-loop.utils';
 import {
   deriveUnitValue,
   deriveZeroValue,
@@ -17,10 +17,10 @@ import {
   discoverConvergenceUnitKindLabels,
   discoverConvergenceUnitPriorityLabels,
   discoverRuntimeFusionEvidenceStatusLabels,
-} from '../dynamic-reality-kernel';
-import type { FalsePositiveAdjudicationState } from '../types.false-positive-adjudicator';
-import type { OperationalEvidenceKind, SignalSource } from '../types.runtime-fusion';
-import type { StructuralMemoryState, UnitMemory } from '../types.structural-memory';
+} from '../../dynamic-reality-kernel';
+import type { FalsePositiveAdjudicationState } from '../../types.false-positive-adjudicator';
+import type { OperationalEvidenceKind, SignalSource } from '../../types.runtime-fusion';
+import type { StructuralMemoryState, UnitMemory } from '../../types.structural-memory';
 
 // ── Grammar matchers ──────────────────────────────────────────────────────────
 

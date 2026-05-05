@@ -3,8 +3,8 @@
  * Runs all external adapters and consolidates signals into a single state report.
  */
 
-import type { PulseSignal } from '../../types';
-import { deriveZeroValue } from '../../dynamic-reality-kernel';
+import type { PulseSignal } from '../../../types';
+import { deriveZeroValue } from '../../../dynamic-reality-kernel';
 import { fetchGitHubSignals } from '../../github-adapter';
 import { fetchSentrySignals } from '../../sentry-adapter';
 import { fetchDatadogSignals } from '../../datadog-adapter';

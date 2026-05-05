@@ -1,5 +1,5 @@
-import type { DetectedSourceRoot } from '../source-root-detector';
-import type { BehaviorInputKind } from '../types.behavior-graph';
+import type { DetectedSourceRoot } from '../../source-root-detector';
+import type { BehaviorInputKind } from '../../types.behavior-graph';
 import type {
   BehaviorDecoratorRole,
   BehaviorClassNameRole,

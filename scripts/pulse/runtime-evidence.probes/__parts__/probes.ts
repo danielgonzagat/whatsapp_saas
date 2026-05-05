@@ -1,10 +1,10 @@
 /**
  * Pulse runtime probe implementations.
  */
-import { obtainAuthToken } from '../browser-stress-tester/auth';
-import { httpGet } from '../parsers/runtime-utils';
-import { compactReason, shouldTreatAsMissingEvidence } from '../runtime-evidence.db-probe';
-import type { PulseRuntimeProbeResult, RuntimeProbeContext } from '../runtime-evidence.db-probe';
+import { obtainAuthToken } from '../../browser-stress-tester/auth';
+import { httpGet } from '../../parsers/runtime-utils';
+import { compactReason, shouldTreatAsMissingEvidence } from '../../runtime-evidence.db-probe';
+import type { PulseRuntimeProbeResult, RuntimeProbeContext } from '../../runtime-evidence.db-probe';
 import {
   PROBE_ARTIFACT_PATHS,
   RUNTIME_EVIDENCE_PATH,
@@ -21,7 +21,7 @@ import {
   deriveHttpStatusFromObservedCatalog,
   deriveUnitValue,
   deriveZeroValue,
-} from '../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel';
 
 export async function runBackendHealthProbe(
   context: RuntimeProbeContext,

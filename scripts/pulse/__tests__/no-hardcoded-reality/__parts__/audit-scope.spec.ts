@@ -3,8 +3,8 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 
-import { auditPulseNoHardcodedReality } from '../../no-hardcoded-reality-audit';
-import { deriveZeroValue } from '../../dynamic-reality-kernel';
+import { auditPulseNoHardcodedReality } from '../../../no-hardcoded-reality-audit';
+import { deriveZeroValue } from '../../../dynamic-reality-kernel';
 
 describe('PULSE no-hardcoded-reality contracts', () => {
   it('fails fixed reality decision maps in core PULSE code', () => {

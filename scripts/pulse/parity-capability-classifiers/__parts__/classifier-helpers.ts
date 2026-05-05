@@ -1,7 +1,7 @@
 import * as ts from 'typescript';
-import { readTextFile } from '../safe-fs';
-import { deriveStructuralFamilies, familiesOverlap } from '../structural-family';
-import type { PulseCapability } from '../types';
+import { readTextFile } from '../../safe-fs';
+import { deriveStructuralFamilies, familiesOverlap } from '../../structural-family';
+import type { PulseCapability } from '../../types';
 
 interface CapabilityEvidenceFacts {
   hasRoutes: boolean;

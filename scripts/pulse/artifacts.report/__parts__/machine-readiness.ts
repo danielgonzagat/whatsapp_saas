@@ -1,14 +1,18 @@
 /**
  * Pulse machine readiness — internal helpers and public exports.
  */
-import { buildAutonomyQueue } from '../artifacts.queue';
-import { buildAutonomyCycleProof } from '../artifacts.autonomy';
+import { buildAutonomyQueue } from '../../artifacts.queue';
+import { buildAutonomyCycleProof } from '../../artifacts.autonomy';
 import type {
   PulseArtifactSnapshot,
   PulseMachineReadiness,
   PulseMachineReadinessCriterion,
-} from '../artifacts.types';
-import type { PulseAutonomyState, PulseConvergencePlan, PulseExecutionMatrixPath } from '../types';
+} from '../../artifacts.types';
+import type {
+  PulseAutonomyState,
+  PulseConvergencePlan,
+  PulseExecutionMatrixPath,
+} from '../../types';
 import {
   discoverAllObservedArtifactFilenames,
   discoverConvergenceRiskLevelLabels,
@@ -16,7 +20,7 @@ import {
   discoverExecutionMatrixPathStatusLabels,
   deriveUnitValue,
   deriveZeroValue,
-} from '../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel';
 
 export function getProductFacingCapabilities(
   snapshot: PulseArtifactSnapshot,

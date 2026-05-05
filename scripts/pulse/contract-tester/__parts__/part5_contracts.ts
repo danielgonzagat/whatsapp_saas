@@ -3,8 +3,8 @@
  */
 
 import * as ts from 'typescript';
-import type { ProviderContract } from '../types.contract-tester';
-import { discoverSourceExtensionsFromObservedTypescript } from '../dynamic-reality-kernel';
+import type { ProviderContract } from '../../types.contract-tester';
+import { discoverSourceExtensionsFromObservedTypescript } from '../../dynamic-reality-kernel';
 import {
   findBackendDir,
   inferAuthType,
@@ -26,8 +26,8 @@ import {
   findControllerPrefix,
   collectRouteDecorators,
 } from './part1_helpers';
-import { readTextFile } from '../safe-fs';
-import { walkFiles } from '../parsers/utils';
+import { readTextFile } from '../../safe-fs';
+import { walkFiles } from '../../parsers/utils';
 
 interface RawEndpointCall {
   endpoint: string;

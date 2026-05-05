@@ -3,14 +3,14 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 
-import { auditPulseNoHardcodedReality } from '../../no-hardcoded-reality-audit';
-import { classifyFinancialModel } from '../../dataflow-engine';
-import { classifyEndpointRisk as classifyPropertyEndpointRisk } from '../../property-tester';
-import { classifySurface, classifyModuleCandidate } from '../../scope-state.classify';
-import { detectNewFile } from '../../scope-engine';
-import { classifyWatchChange } from '../../watch-classifier';
-import { discoverPlugins } from '../../plugin-system';
-import { deriveZeroValue, deriveUnitValue } from '../../dynamic-reality-kernel';
+import { auditPulseNoHardcodedReality } from '../../../no-hardcoded-reality-audit';
+import { classifyFinancialModel } from '../../../dataflow-engine';
+import { classifyEndpointRisk as classifyPropertyEndpointRisk } from '../../../property-tester';
+import { classifySurface, classifyModuleCandidate } from '../../../scope-state.classify';
+import { detectNewFile } from '../../../scope-engine';
+import { classifyWatchChange } from '../../../watch-classifier';
+import { discoverPlugins } from '../../../plugin-system';
+import { deriveZeroValue, deriveUnitValue } from '../../../dynamic-reality-kernel';
 
 import { countPulseSourceFiles, currentPulseCoreAudit, endpointProbe } from './helpers.spec';
 

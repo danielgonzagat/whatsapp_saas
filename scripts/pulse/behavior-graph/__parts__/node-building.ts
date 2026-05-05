@@ -6,8 +6,8 @@ import type {
   BehaviorStateAccess,
   BehaviorExternalCall,
   BehaviorOutput,
-} from '../types.behavior-graph';
-import type { DetectedSourceRoot } from '../source-root-detector';
+} from '../../types.behavior-graph';
+import type { DetectedSourceRoot } from '../../source-root-detector';
 import type { ParsedFunc, SourceExternalContext, GovernedEvidenceMode } from './grammar-and-types';
 import {
   requireDecoratorRoleCatalog,

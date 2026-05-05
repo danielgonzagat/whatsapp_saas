@@ -4,7 +4,7 @@
 import type {
   RuntimeFusionState,
   RuntimeFusionMachineImprovementSignal,
-} from '../types.runtime-fusion';
+} from '../../types.runtime-fusion';
 import {
   ADAPTER_STALE,
   EVIDENCE_INVALID,

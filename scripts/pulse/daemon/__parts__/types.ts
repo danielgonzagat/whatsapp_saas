@@ -19,10 +19,10 @@ import type {
   PulseResolvedManifest,
   PulseScopeState,
   PulseStructuralGraph,
-} from '../types';
-import type { PulseExecutionChainSet } from '../types.product-graph';
-import type { CoreParserData } from '../functional-map-types';
-import type { PulseExecutionTracer } from '../execution-trace';
+} from '../../types';
+import type { PulseExecutionChainSet } from '../../types.product-graph';
+import type { CoreParserData } from '../../functional-map-types';
+import type { PulseExecutionTracer } from '../../execution-trace';
 import { spawn } from 'child_process';
 import * as path from 'path';
 import {
@@ -32,7 +32,7 @@ import {
   discoverHarnessExecutionStatusLabels,
   discoverPropertyPassedStatusFromTypeEvidence,
   discoverPropertyUnexecutedStatusFromExecutionEvidence,
-} from '../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel';
 
 export const PASSED = discoverPropertyPassedStatusFromTypeEvidence().values().next().value;
 export const FAILED = [...discoverHarnessExecutionStatusLabels()].find(

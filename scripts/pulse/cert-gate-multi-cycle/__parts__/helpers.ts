@@ -18,7 +18,7 @@ import type {
   PulseAutonomyValidationCommandResult,
   PulseGateResult,
 } from '../../types';
-import { gateFail } from '../cert-gate-evaluators';
+import { gateFail } from '../../cert-gate-evaluators';
 import {
   deriveUnitValue,
   deriveZeroValue,
@@ -27,7 +27,7 @@ import {
   discoverExternalAdapterStatusLabels,
   discoverGateFailureClassLabels,
   discoverTruthModeLabels,
-} from '../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel';
 /**
  * Minimal subset of the autonomy state the gate needs.
  * Wider shape from PulseAutonomyState is accepted; only `history` is read.

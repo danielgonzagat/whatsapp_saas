@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import type { PulseSnapshot } from '../../regression-guard';
-import { deriveUnitValue, deriveZeroValue } from '../../dynamic-reality-kernel';
+import type { PulseSnapshot } from '../../../regression-guard';
+import { deriveUnitValue, deriveZeroValue } from '../../../dynamic-reality-kernel';
 
 const U = deriveUnitValue();
 const Z = deriveZeroValue();

@@ -5,14 +5,14 @@
 
 import * as path from 'path';
 import * as ts from 'typescript';
-import type { ContractProvider, ProviderContract } from '../types.contract-tester';
+import type { ContractProvider, ProviderContract } from '../../types.contract-tester';
 import {
   deriveUnitValue,
   deriveZeroValue,
   discoverRouteSeparatorFromRuntime,
-} from '../dynamic-reality-kernel';
-import { safeJoin } from '../lib/safe-path';
-import { pathExists } from '../safe-fs';
+} from '../../dynamic-reality-kernel';
+import { safeJoin } from '../../lib/safe-path';
+import { pathExists } from '../../safe-fs';
 import {
   AUTH_TYPE_LABELS,
   CONTRACT_EVIDENCE_FILENAME,

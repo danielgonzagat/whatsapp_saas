@@ -2,11 +2,11 @@
  * Directive machine proof-debt work builders.
  * Exports: buildPulseCertificationProofDebtNextWork, buildPulseAutonomyProofDebtNextWork
  */
-import { unique } from '../artifacts.io';
-import { deriveZeroValue } from '../dynamic-reality-kernel';
-import type { PulseAutonomyState, PulseConvergencePlan } from '../types';
-import type { PulseGateName, PulseGateResult } from '../types';
-import { buildAutonomyProof } from '../artifacts.autonomy';
+import { unique } from '../../artifacts.io';
+import { deriveZeroValue } from '../../dynamic-reality-kernel';
+import type { PulseAutonomyState, PulseConvergencePlan } from '../../types';
+import type { PulseGateName, PulseGateResult } from '../../types';
+import { buildAutonomyProof } from '../../artifacts.autonomy';
 import { OBSERVED_ARTIFACT_FILENAMES, type PulseMachineDirectiveUnit } from './directive-shared';
 import {
   isMachineProofGate,

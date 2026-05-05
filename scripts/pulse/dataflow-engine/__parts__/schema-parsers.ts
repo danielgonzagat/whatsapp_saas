@@ -1,20 +1,20 @@
 import * as path from 'path';
-import { safeJoin } from '../lib/safe-path';
-import { readTextFile, writeTextFile, pathExists, readDir, ensureDir } from '../safe-fs';
+import { safeJoin } from '../../lib/safe-path';
+import { readTextFile, writeTextFile, pathExists, readDir, ensureDir } from '../../safe-fs';
 import {
   deriveUnitValue,
   deriveZeroValue,
   discoverSourceExtensionsFromObservedTypescript,
   discoverAllObservedArtifactFilenames,
   discoverParityGapSeverityLabels,
-} from '../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel';
 import type {
   DataflowRawSignal,
   DataflowCoverageStatus,
   DataflowState,
   DataflowStateMutation,
   EntityLifecycle,
-} from '../types.dataflow-engine';
+} from '../../types.dataflow-engine';
 
 const MODEL_REGEX = /model\s+(\w+)\s*\{/g;
 

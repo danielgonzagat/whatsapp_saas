@@ -3,14 +3,14 @@
  * Exports: buildProofReadinessSummaryForDirective, applyProofReadinessToAutonomyClaims,
  * buildPathProofSurfaceForDirective
  */
-import { unique } from '../artifacts.io';
-import { deriveZeroValue } from '../dynamic-reality-kernel';
-import { buildDirectiveProofSurface } from '../directive-proof-surface';
-import { buildAutonomyProof, buildAutonomyReadiness } from '../artifacts.autonomy';
-import type { PulseArtifactSnapshot, PulseMachineReadiness } from '../artifacts.types';
-import type { PulseProofReadinessSummary } from '../cert-gate-overclaim';
-import type { PathProofPlan } from '../path-proof-runner';
-import type { PathCoverageState } from '../types.path-coverage-engine';
+import { unique } from '../../artifacts.io';
+import { deriveZeroValue } from '../../dynamic-reality-kernel';
+import { buildDirectiveProofSurface } from '../../directive-proof-surface';
+import { buildAutonomyProof, buildAutonomyReadiness } from '../../artifacts.autonomy';
+import type { PulseArtifactSnapshot, PulseMachineReadiness } from '../../artifacts.types';
+import type { PulseProofReadinessSummary } from '../../cert-gate-overclaim';
+import type { PathProofPlan } from '../../path-proof-runner';
+import type { PathCoverageState } from '../../types.path-coverage-engine';
 import {
   OBSERVED_ARTIFACT_FILENAMES,
   readCurrentPulseArtifact,

@@ -1,12 +1,16 @@
-import type { PulseExternalSignalSource, PulseExternalSignalState, PulseTruthMode } from '../types';
-import type { PulseExternalAdapterProofBasis } from '../types';
-import type { BuildExternalSignalStateInput } from '../signal-mapper';
+import type {
+  PulseExternalSignalSource,
+  PulseExternalSignalState,
+  PulseTruthMode,
+} from '../../types';
+import type { PulseExternalAdapterProofBasis } from '../../types';
+import type { BuildExternalSignalStateInput } from '../../signal-mapper';
 import {
   attachRecentChangeRefs,
   isRuntimeSignal,
   isChangeSignal,
   isDependencySignal,
-} from '../signal-mapper';
+} from '../../signal-mapper';
 import {
   deriveUnitValue,
   deriveZeroValue,
@@ -14,11 +18,11 @@ import {
   discoverExternalSignalSourceLabels,
   discoverConvergenceExecutionModeLabels,
   discoverTruthModeLabels,
-} from '../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel';
 import {
   isAdapterRequired,
   normalizeExternalSignalProfile,
-} from '../adapters/external-sources-orchestrator';
+} from '../../adapters/external-sources-orchestrator';
 import { PULSE_EXTERNAL_SNAPSHOT_FILES } from './snapshot-config';
 import type { UnclassifiedExternalAdapter } from './adapter-builders';
 import {

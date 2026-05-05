@@ -5,8 +5,8 @@
  */
 
 import { execFileSync } from 'child_process';
-import { isDirectory, pathExists, readDir, readTextFile } from '../../safe-fs';
-import { safeJoin } from '../../safe-path';
+import { isDirectory, pathExists, readDir, readTextFile } from '../../../safe-fs';
+import { safeJoin } from '../../../safe-path';
 import {
   deriveHttpStatusFromObservedCatalog,
   deriveUnitValue,
@@ -18,14 +18,14 @@ import {
   discoverExternalAdapterProofBasisLabels,
   discoverCertificationProfileLabels,
   discoverExternalSignalSourceLabels,
-} from '../../dynamic-reality-kernel';
+} from '../../../dynamic-reality-kernel';
 import type {
   PulseCertificationProfile,
   PulseExternalAdapterProofBasis,
   PulseExternalAdapterRequirement,
   PulseExternalAdapterStatus,
   PulseExternalSignalSource,
-} from '../../types';
+} from '../../../types';
 
 // ─── Canonical label derivation from type contracts ───
 

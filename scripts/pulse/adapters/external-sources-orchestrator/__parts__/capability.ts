@@ -3,8 +3,8 @@
  * Scans repo, CI, env, and tool surfaces to detect which external sources are available.
  */
 
-import type { PulseCertificationProfile } from '../../types';
-import { deriveZeroValue } from '../../dynamic-reality-kernel';
+import type { PulseCertificationProfile } from '../../../types';
+import { deriveZeroValue } from '../../../dynamic-reality-kernel';
 import {
   commandAvailable,
   repoPathExists,

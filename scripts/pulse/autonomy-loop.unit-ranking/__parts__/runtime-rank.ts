@@ -4,19 +4,19 @@
 import type {
   PulseAutonomousDirective,
   PulseAutonomousDirectiveUnit,
-} from '../autonomy-loop.types';
-import { unique } from '../autonomy-loop.utils';
+} from '../../autonomy-loop.types';
+import { unique } from '../../autonomy-loop.utils';
 import {
   deriveUnitValue,
   deriveZeroValue,
   discoverOperationalEvidenceKindLabels,
   discoverRuntimeFusionEvidenceStatusLabels,
-} from '../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel';
 import type {
   OperationalEvidenceKind,
   RuntimeFusionState,
   RuntimeSignal,
-} from '../types.runtime-fusion';
+} from '../../types.runtime-fusion';
 import type { StructuralQueueInfluence, RuntimeRealityUnitMetadata } from './structural-rank';
 import {
   emptyStructuralQueueInfluence,

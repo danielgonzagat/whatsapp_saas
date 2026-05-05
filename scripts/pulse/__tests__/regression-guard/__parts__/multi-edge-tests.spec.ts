@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { detectRegression } from '../../regression-guard';
+import { detectRegression } from '../../../regression-guard';
 import {
   U,
   Z,

@@ -1,5 +1,5 @@
-import { discoverAllObservedArtifactFilenames } from '../dynamic-reality-kernel';
-import type { PulseExternalSignalSource } from '../types';
+import { discoverAllObservedArtifactFilenames } from '../../dynamic-reality-kernel';
+import type { PulseExternalSignalSource } from '../../types';
 
 interface PulseExternalSourceConfig {
   fileName: string;

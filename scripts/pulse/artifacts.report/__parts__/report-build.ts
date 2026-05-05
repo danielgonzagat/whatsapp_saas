@@ -1,23 +1,23 @@
 /**
  * Pulse report builder.
  */
-import { compact } from '../artifacts.io';
+import { compact } from '../../artifacts.io';
 import {
   buildDecisionQueue,
   normalizeArtifactExecutionMode,
   normalizeArtifactStatus,
   normalizeArtifactText,
-} from '../artifacts.queue';
-import { buildFindingEventSurface } from '../finding-event-surface';
-import type { PulseArtifactSnapshot } from '../artifacts.types';
-import type { PulseAutonomyState, PulseConvergencePlan } from '../types';
-import type { PulseArtifactCleanupReport } from '../artifact-gc';
-import { calculateCoverage } from '../coverage-calculator';
+} from '../../artifacts.queue';
+import { buildFindingEventSurface } from '../../finding-event-surface';
+import type { PulseArtifactSnapshot } from '../../artifacts.types';
+import type { PulseAutonomyState, PulseConvergencePlan } from '../../types';
+import type { PulseArtifactCleanupReport } from '../../artifact-gc';
+import { calculateCoverage } from '../../coverage-calculator';
 import {
   discoverExternalSignalSourceLabels,
   deriveUnitValue,
   deriveZeroValue,
-} from '../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel';
 import {
   buildPulseMachineReadiness,
   getProductFacingCapabilities,

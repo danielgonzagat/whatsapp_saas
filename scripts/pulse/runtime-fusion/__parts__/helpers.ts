@@ -1,4 +1,4 @@
-import { tokenize, unique } from '../signal-normalizers';
+import { tokenize, unique } from '../../signal-normalizers';
 import {
   discoverAllObservedArtifactFilenames,
   discoverExternalAdapterStatusLabels,
@@ -12,7 +12,7 @@ import {
   discoverTruthModeLabels,
   deriveUnitValue,
   deriveZeroValue,
-} from '../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel';
 import type { CanonicalExternalSignal } from './parsing';
 import { TREND_LABELS, isRecord, asNumber } from './parsing';
 import { computeImpactScore } from './mapping';
@@ -22,7 +22,7 @@ import type {
   SignalAction,
   SignalSeverity,
   SignalType,
-} from '../types.runtime-fusion';
+} from '../../types.runtime-fusion';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 

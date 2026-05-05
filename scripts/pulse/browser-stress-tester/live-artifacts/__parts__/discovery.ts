@@ -1,13 +1,13 @@
-import { pathExists, readJsonFile, readTextFile } from '../../safe-fs';
-import { safeJoin } from '../../safe-path';
-import type { PulseProductGraph } from '../../types.product-graph';
+import { pathExists, readJsonFile, readTextFile } from '../../../safe-fs';
+import { safeJoin } from '../../../safe-path';
+import type { PulseProductGraph } from '../../../types.product-graph';
 import {
   deriveZeroValue,
   deriveUnitValue,
   discoverRouteSeparatorFromRuntime,
   observeStatusTextLengthFromCatalog,
-} from '../../dynamic-reality-kernel';
-import { deriveHttpStatusFromObservedCatalog } from '../../dynamic-reality-kernel';
+} from '../../../dynamic-reality-kernel';
+import { deriveHttpStatusFromObservedCatalog } from '../../../dynamic-reality-kernel';
 import type { RouteCandidate, BrowserAuthRoutes, BrowserPageDiscovery } from './types';
 import type { ResolvedManifestOverlay } from './types';
 

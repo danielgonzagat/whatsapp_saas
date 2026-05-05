@@ -1,16 +1,16 @@
 import * as path from 'path';
 import { METHODS as HTTP_METHODS } from 'node:http';
-import type { ChaosTarget, ChaosScenarioKind } from '../types.chaos-engine';
+import type { ChaosTarget, ChaosScenarioKind } from '../../types.chaos-engine';
 import type {
   PulseCapability,
   PulseExecutionMatrix,
   PulseExecutionTrace,
   PulseRuntimeEvidence,
   PulseRuntimeProbe,
-} from '../types';
-import { walkFiles } from '../parsers/utils';
-import { readTextFile, readJsonFile, pathExists } from '../safe-fs';
-import { safeJoin } from '../safe-path';
+} from '../../types';
+import { walkFiles } from '../../parsers/utils';
+import { readTextFile, readJsonFile, pathExists } from '../../safe-fs';
+import { safeJoin } from '../../safe-path';
 import {
   discoverAllObservedArtifactFilenames,
   discoverChaosTargetLabels,
@@ -18,7 +18,7 @@ import {
   discoverExternalReceiverTokensFromEvidence,
   deriveUnitValue,
   deriveZeroValue,
-} from '../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel';
 
 export type ChaosProviderName = string;
 export type ChaosOperationalConcern =

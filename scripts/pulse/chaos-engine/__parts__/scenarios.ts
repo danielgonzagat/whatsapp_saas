@@ -4,8 +4,8 @@ import type {
   ChaosScenario,
   ChaosScenarioKind,
   ChaosTarget,
-} from '../types.chaos-engine';
-import type { PulseCapability } from '../types';
+} from '../../types.chaos-engine';
+import type { PulseCapability } from '../../types';
 import {
   ChaosProviderName,
   ChaosOperationalConcern,
@@ -32,13 +32,13 @@ import {
   buildChaosEvidenceContext,
   deriveChaosScenarioSeeds,
 } from './injection';
-import { ensureDir, writeTextFile } from '../safe-fs';
-import { safeJoin } from '../safe-path';
+import { ensureDir, writeTextFile } from '../../safe-fs';
+import { safeJoin } from '../../safe-path';
 import {
   discoverAllObservedArtifactFilenames,
   discoverChaosResultLabels,
   deriveHttpStatusFromObservedCatalog,
-} from '../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel';
 
 export function buildChaosCatalog(rootDir: string): ChaosEvidence {
   const targets = detectCodebaseTargets(rootDir);

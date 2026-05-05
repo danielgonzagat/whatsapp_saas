@@ -1,7 +1,7 @@
 import {
   discoverAllObservedArtifactFilenames,
   discoverConvergenceExecutionModeLabels,
-} from '../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel';
 
 type SnapshotStatus = 'ready' | 'missing' | 'stale' | 'invalid';
 type LeaseStatus = 'active' | 'expired' | 'released' | 'conflicted';

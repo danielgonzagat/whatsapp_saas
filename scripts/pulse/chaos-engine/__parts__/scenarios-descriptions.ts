@@ -1,4 +1,4 @@
-import type { ChaosScenarioKind, ChaosTarget } from '../types.chaos-engine';
+import type { ChaosScenarioKind, ChaosTarget } from '../../types.chaos-engine';
 import {
   ChaosProviderName,
   ChaosOperationalConcern,
@@ -6,7 +6,7 @@ import {
 } from './detection-core';
 import { dependencyLabel } from './blast-radius';
 import { generateInjectionConfig } from './injection-config';
-import { deriveHttpStatusFromObservedCatalog } from '../dynamic-reality-kernel';
+import { deriveHttpStatusFromObservedCatalog } from '../../dynamic-reality-kernel';
 
 export function buildDescription(
   kind: ChaosScenarioKind,

@@ -1,5 +1,5 @@
-import type { ChaosScenarioKind, ChaosTarget } from '../types.chaos-engine';
-import type { PulseCapability, PulseRuntimeEvidence, PulseExecutionTrace } from '../types';
+import type { ChaosScenarioKind, ChaosTarget } from '../../types.chaos-engine';
+import type { PulseCapability, PulseRuntimeEvidence, PulseExecutionTrace } from '../../types';
 import { ChaosProviderName, ChaosEvidenceContext, ChaosScenarioSeed, unique } from './detection';
 import { computeProviderBlastRadius } from './blast-radius';
 import {
@@ -8,7 +8,7 @@ import {
   discoverPropertyPassedStatusFromTypeEvidence,
   deriveUnitValue,
   deriveZeroValue,
-} from '../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel';
 
 // ── Injection config generation ───────────────────────────────────────────
 

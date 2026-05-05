@@ -3,8 +3,8 @@
  */
 
 import * as path from 'path';
-import type { LoadedArtifact } from '../types';
-import { deepGet } from '../loaders';
+import type { LoadedArtifact } from '../../types';
+import { deepGet } from '../../loaders';
 import {
   deriveUnitValue,
   deriveZeroValue,
@@ -12,7 +12,7 @@ import {
   discoverConvergenceExecutionModeLabels,
   discoverGateFailureClassLabels,
   discoverRouteSeparatorFromRuntime,
-} from '../../dynamic-reality-kernel';
+} from '../../../dynamic-reality-kernel';
 
 export interface DirectiveUnitView {
   id?: string;

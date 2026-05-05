@@ -1,6 +1,6 @@
-import { tokenize, unique } from '../signal-normalizers';
-import { deriveUnitValue, discoverSignalSeverityLabels } from '../dynamic-reality-kernel';
-import type { RuntimeSignal, SignalSeverity } from '../types.runtime-fusion';
+import { tokenize, unique } from '../../signal-normalizers';
+import { deriveUnitValue, discoverSignalSeverityLabels } from '../../dynamic-reality-kernel';
+import type { RuntimeSignal, SignalSeverity } from '../../types.runtime-fusion';
 import {
   ACTION_BLOCK_DEPLOY,
   ACTION_BLOCK_MERGE,

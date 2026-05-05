@@ -2,7 +2,7 @@
  * JSON parsing and type-safe accessor utilities used by runtime-fusion parts.
  */
 import * as p from 'path';
-import { pathExists as existsAt, readTextFile } from '../safe-fs';
+import { pathExists as existsAt, readTextFile } from '../../safe-fs';
 
 function safeJsonParse(raw: string): Record<string, unknown> | null {
   try {

@@ -1,7 +1,7 @@
 /**
  * Pulse artifact autonomy — types and grammar constants.
  */
-import type { AuthorityMode } from '../types.authority-mode';
+import type { AuthorityMode } from '../../types.authority-mode';
 import {
   deriveHttpStatusFromObservedCatalog,
   deriveUnitValue,
@@ -12,7 +12,7 @@ import {
   discoverConvergenceUnitStatusLabels,
   discoverConvergenceExecutionModeLabels,
   discoverCertificationProfileLabels,
-} from '../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel';
 
 export type AuthorityState = {
   mode: AuthorityMode;

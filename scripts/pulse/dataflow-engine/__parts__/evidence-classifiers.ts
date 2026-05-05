@@ -1,5 +1,5 @@
-import { deriveUnitValue, deriveZeroValue } from '../dynamic-reality-kernel';
-import type { DataflowRawSignal } from '../types.dataflow-engine';
+import { deriveUnitValue, deriveZeroValue } from '../../dynamic-reality-kernel';
+import type { DataflowRawSignal } from '../../types.dataflow-engine';
 import type {
   PrismaFieldEvidence,
   FieldUsageEvidence,

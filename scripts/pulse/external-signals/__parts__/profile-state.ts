@@ -1,5 +1,5 @@
-import type { ConsolidatedExternalState } from '../adapters/external-sources-orchestrator';
-import type { PulseCertificationProfile } from '../types';
+import type { ConsolidatedExternalState } from '../../adapters/external-sources-orchestrator';
+import type { PulseCertificationProfile } from '../../types';
 
 /** Build an empty live-state envelope that carries active profile/scope semantics. */
 export function createExternalSignalProfileState(

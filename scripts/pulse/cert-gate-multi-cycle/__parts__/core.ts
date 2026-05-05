@@ -4,7 +4,7 @@ import type {
   PulseGateResult,
 } from '../../types';
 
-import { gateFail } from '../cert-gate-evaluators';
+import { gateFail } from '../../cert-gate-evaluators';
 import {
   deriveZeroValue,
   discoverConvergenceEvidenceConfidenceLabels,
@@ -12,7 +12,7 @@ import {
   discoverExternalAdapterStatusLabels,
   discoverGateFailureClassLabels,
   discoverTruthModeLabels,
-} from '../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel';
 
 import {
   analyzeCycle,

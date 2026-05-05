@@ -14,7 +14,7 @@ import {
   discoverNestjsDecoratorNamesFromTypeEvidence,
   discoverRuntimeProbeStatusLabels,
   discoverSourceExtensionsFromObservedTypescript,
-} from '../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel';
 
 function getRuntimeEvidencePath(): string {
   return discoverAllObservedArtifactFilenames().runtimeEvidence || 'PULSE_RUNTIME_EVIDENCE.json';

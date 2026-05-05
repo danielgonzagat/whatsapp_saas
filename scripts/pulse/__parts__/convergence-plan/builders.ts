@@ -35,6 +35,7 @@ import {
   UNIT_PRIORITIES,
   UNIT_RISK_LEVELS,
   UNIT_PRODUCT_IMPACTS,
+  UNIT_SOURCES,
   UNIT_STATUSES,
 } from './kernel';
 import {
@@ -97,6 +98,129 @@ import {
   uniqueStrings,
   compactText,
 } from './utils';
+
+function observedConvergenceLabel<T extends string>(
+  labels: Set<string>,
+  token: string,
+  context: string,
+): T {
+  const observed = [...labels].find((label) => label === token);
+  if (!observed) {
+    throw new Error(`Missing observed convergence label for ${context}: ${token}`);
+  }
+  return observed as T;
+}
+
+const observedPulseSource = observedConvergenceLabel<PulseConvergenceUnit['source']>(
+  UNIT_SOURCES,
+  'pulse',
+  'unit.source',
+);
+const observedAiSafeExecutionMode = observedConvergenceLabel<PulseConvergenceUnit['executionMode']>(
+  UNIT_EXECUTION_MODES,
+  'ai_safe',
+  'unit.executionMode',
+);
+const observedScenarioKind = observedConvergenceLabel<PulseConvergenceUnit['kind']>(
+  UNIT_KINDS,
+  'scenario',
+  'unit.kind.scenario',
+);
+const observedSecurityKind = observedConvergenceLabel<PulseConvergenceUnit['kind']>(
+  UNIT_KINDS,
+  'security',
+  'unit.kind.security',
+);
+const observedStaticKind = observedConvergenceLabel<PulseConvergenceUnit['kind']>(
+  UNIT_KINDS,
+  'static',
+  'unit.kind.static',
+);
+const observedGateKind = observedConvergenceLabel<PulseConvergenceUnit['kind']>(
+  UNIT_KINDS,
+  'gate',
+  'unit.kind.gate',
+);
+const observedOpenStatus = observedConvergenceLabel<PulseConvergenceUnitStatus>(
+  UNIT_STATUSES,
+  'open',
+  'unit.status.open',
+);
+const observedP0Priority = observedConvergenceLabel<PulseConvergenceUnitPriority>(
+  UNIT_PRIORITIES,
+  'P0',
+  'unit.priority.p0',
+);
+const observedP2Priority = observedConvergenceLabel<PulseConvergenceUnitPriority>(
+  UNIT_PRIORITIES,
+  'P2',
+  'unit.priority.p2',
+);
+const observedP3Priority = observedConvergenceLabel<PulseConvergenceUnitPriority>(
+  UNIT_PRIORITIES,
+  'P3',
+  'unit.priority.p3',
+);
+const observedCriticalRisk = observedConvergenceLabel<PulseConvergenceUnit['riskLevel']>(
+  UNIT_RISK_LEVELS,
+  'critical',
+  'unit.risk.critical',
+);
+const observedHighRisk = observedConvergenceLabel<PulseConvergenceUnit['riskLevel']>(
+  UNIT_RISK_LEVELS,
+  'high',
+  'unit.risk.high',
+);
+const observedMediumRisk = observedConvergenceLabel<PulseConvergenceUnit['riskLevel']>(
+  UNIT_RISK_LEVELS,
+  'medium',
+  'unit.risk.medium',
+);
+const observedPlatformLane = observedConvergenceLabel<PulseConvergenceOwnerLane>(
+  UNIT_OWNER_LANES,
+  'platform',
+  'unit.owner.platform',
+);
+const observedSecurityLane = observedConvergenceLabel<PulseConvergenceOwnerLane>(
+  UNIT_OWNER_LANES,
+  'security',
+  'unit.owner.security',
+);
+const observedHighConfidence = observedConvergenceLabel<PulseConvergenceUnit['confidence']>(
+  UNIT_CONFIDENCES,
+  'high',
+  'unit.confidence.high',
+);
+const observedMediumConfidence = observedConvergenceLabel<PulseConvergenceUnit['confidence']>(
+  UNIT_CONFIDENCES,
+  'medium',
+  'unit.confidence.medium',
+);
+const observedLowConfidence = observedConvergenceLabel<PulseConvergenceUnit['confidence']>(
+  UNIT_CONFIDENCES,
+  'low',
+  'unit.confidence.low',
+);
+const observedDiagnosticImpact = observedConvergenceLabel<PulseConvergenceUnit['productImpact']>(
+  UNIT_PRODUCT_IMPACTS,
+  'diagnostic',
+  'unit.productImpact.diagnostic',
+);
+const observedEnablingImpact = observedConvergenceLabel<PulseConvergenceUnit['productImpact']>(
+  UNIT_PRODUCT_IMPACTS,
+  'enabling',
+  'unit.productImpact.enabling',
+);
+const observedProductFailureClass = observedConvergenceLabel<PulseGateFailureClass>(
+  FAILURE_CLASSES,
+  'product_failure',
+  'unit.failureClass.productFailure',
+);
+const observedCheckerGapFailureClass = observedConvergenceLabel<PulseGateFailureClass>(
+  FAILURE_CLASSES,
+  'checker_gap',
+  'unit.failureClass.checkerGap',
+);
 
 export function buildScenarioUnits(input: BuildPulseConvergencePlanInput): PulseConvergenceUnit[] {
   let scenarioSpecById = new Map(
@@ -237,10 +361,10 @@ export function buildScenarioUnits(input: BuildPulseConvergencePlanInput): Pulse
       ? 'observed'
       : 'inferred';
     let confidence: PulseConvergenceUnit['confidence'] = hasExecutedEvidence
-      ? 'high'
+      ? observedHighConfidence
       : hasObservedItems(accumulator.results) || hasPendingAsync
-        ? 'medium'
-        : 'low';
+        ? observedMediumConfidence
+        : observedLowConfidence;
     let gateNames = uniqueStrings([...accumulator.gateNames]) as PulseGateName[];
     let priorityContext: ScenarioPriorityContext = {
       critical: isCritical,
@@ -259,10 +383,10 @@ export function buildScenarioUnits(input: BuildPulseConvergencePlanInput): Pulse
       id: `scenario-${slugify(accumulator.scenarioId)}`,
       order: 0,
       priority,
-      kind: 'scenario',
+      kind: observedScenarioKind,
       status: determineUnitStatus(failureClass),
-      source: 'pulse',
-      executionMode: 'ai_safe',
+      source: observedPulseSource,
+      executionMode: observedAiSafeExecutionMode,
       ownerLane: determineScenarioLane(
         priorityContext,
         gateNames,
@@ -270,7 +394,9 @@ export function buildScenarioUnits(input: BuildPulseConvergencePlanInput): Pulse
           .filter((capability) => affectedCapabilityIds.includes(capability.id))
           .map((capability) => capability.ownerLane),
       ),
-      riskLevel: isSameState(priority, 'P0') ? 'critical' : 'high',
+      riskLevel: isSameState(priority, observedP0Priority)
+        ? observedCriticalRisk
+        : observedHighRisk,
       evidenceMode,
       confidence,
       productImpact: determineScenarioProductImpact(priorityContext),
@@ -705,7 +831,9 @@ export function buildParityGapUnits(input: BuildPulseConvergencePlanInput): Puls
     .sort(compareByObservedPressure);
 }
 
-export function buildCodacyStaticUnits(input: BuildPulseConvergencePlanInput): PulseConvergenceUnit[] {
+export function buildCodacyStaticUnits(
+  input: BuildPulseConvergencePlanInput,
+): PulseConvergenceUnit[] {
   if (input.scopeState.codacy.highPriorityBatch.length === 0) {
     return [];
   }
@@ -811,7 +939,10 @@ export function buildCodacyStaticUnits(input: BuildPulseConvergencePlanInput): P
     .sort(compareByObservedPressure);
 }
 
-export function summarizeGateFocus(gateName: PulseGateName, certification: PulseCertification): string[] {
+export function summarizeGateFocus(
+  gateName: PulseGateName,
+  certification: PulseCertification,
+): string[] {
   if (isSameState(gateName, 'flowPass')) {
     return uniqueStrings(
       certification.evidenceSummary.flows.results
@@ -1097,7 +1228,9 @@ export function getFlowPriority(
   return derivePriorityFromObservedContext(status, isSameState(status, phantomStatus), false);
 }
 
-export function buildCapabilityUnits(input: BuildPulseConvergencePlanInput): PulseConvergenceUnit[] {
+export function buildCapabilityUnits(
+  input: BuildPulseConvergencePlanInput,
+): PulseConvergenceUnit[] {
   return takeEvidenceBatch(
     input.capabilityState.capabilities.filter((capability) =>
       isDifferentState(capability.status, 'real'),
@@ -1240,7 +1373,9 @@ export function buildFlowUnits(input: BuildPulseConvergencePlanInput): PulseConv
   });
 }
 
-export function buildExecutionMatrixUnits(input: BuildPulseConvergencePlanInput): PulseConvergenceUnit[] {
+export function buildExecutionMatrixUnits(
+  input: BuildPulseConvergencePlanInput,
+): PulseConvergenceUnit[] {
   let matrix = input.executionMatrix;
   if (!matrix) {
     return [];

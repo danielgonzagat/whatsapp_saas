@@ -2,29 +2,32 @@
  * Directive core — main buildDirective function orchestrating all other builders.
  * Exports: buildDirective
  */
-import { unique } from '../artifacts.io';
-import { deriveZeroValue, discoverConvergenceExecutionModeLabels } from '../dynamic-reality-kernel';
+import { unique } from '../../artifacts.io';
+import {
+  deriveZeroValue,
+  discoverConvergenceExecutionModeLabels,
+} from '../../dynamic-reality-kernel';
 import {
   buildDecisionQueue,
   buildAutonomyQueue,
   normalizeArtifactExecutionMode,
   normalizeCanonicalArtifactValue,
-} from '../artifacts.queue';
-import { buildPulseMachineReadiness, getProductFacingCapabilities } from '../artifacts.report';
+} from '../../artifacts.queue';
+import { buildPulseMachineReadiness, getProductFacingCapabilities } from '../../artifacts.report';
 import {
   deriveAuthorityState,
   buildAutonomyReadiness,
   buildAutonomyProof,
-} from '../artifacts.autonomy';
-import { buildFindingEventSurface } from '../finding-event-surface';
+} from '../../artifacts.autonomy';
+import { buildFindingEventSurface } from '../../finding-event-surface';
 import {
   formatNoHardcodedRealityBlocker,
   hasNoHardcodedRealityBlocker,
   summarizeNoHardcodedRealityState,
   type PulseNoHardcodedRealityState,
-} from '../no-hardcoded-reality-state';
-import type { PulseArtifactSnapshot, PulseMachineReadiness } from '../artifacts.types';
-import type { PulseAutonomyState, PulseConvergencePlan } from '../types';
+} from '../../no-hardcoded-reality-state';
+import type { PulseArtifactSnapshot, PulseMachineReadiness } from '../../artifacts.types';
+import type { PulseAutonomyState, PulseConvergencePlan } from '../../types';
 import {
   readCurrentPulseArtifact,
   artifactJsonReplacer,

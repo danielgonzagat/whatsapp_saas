@@ -1,9 +1,9 @@
 /**
  * Pulse database connectivity probe.
  */
-import { dbQuery } from '../parsers/runtime-utils';
-import { compactReason, runDbReadbackFallback } from '../runtime-evidence.db-probe';
-import type { PulseRuntimeProbeResult, RuntimeProbeContext } from '../runtime-evidence.db-probe';
+import { dbQuery } from '../../parsers/runtime-utils';
+import { compactReason, runDbReadbackFallback } from '../../runtime-evidence.db-probe';
+import type { PulseRuntimeProbeResult, RuntimeProbeContext } from '../../runtime-evidence.db-probe';
 import { PROBE_ARTIFACT_PATHS, probeStatusPassed } from './helpers';
 
 export async function runDbProbe(

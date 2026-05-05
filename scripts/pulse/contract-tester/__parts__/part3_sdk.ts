@@ -4,10 +4,10 @@
 
 import { builtinModules } from 'node:module';
 import * as ts from 'typescript';
-import { discoverSourceExtensionsFromObservedTypescript } from '../dynamic-reality-kernel';
+import { discoverSourceExtensionsFromObservedTypescript } from '../../dynamic-reality-kernel';
 import { findBackendDir, parseSourceFile } from './part1_helpers';
-import { readTextFile } from '../safe-fs';
-import { walkFiles } from '../parsers/utils';
+import { readTextFile } from '../../safe-fs';
+import { walkFiles } from '../../parsers/utils';
 
 function collectPackageImports(content: string, filePath: string): string[] {
   const source = parseSourceFile(filePath, content);

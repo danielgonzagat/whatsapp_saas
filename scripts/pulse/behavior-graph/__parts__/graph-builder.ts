@@ -1,9 +1,9 @@
 import * as path from 'path';
-import { readTextFile, readDir, ensureDir, writeTextFile, pathExists } from '../safe-fs';
-import { safeJoin } from '../safe-path';
-import { detectSourceRoots } from '../source-root-detector';
-import type { DetectedSourceRoot } from '../source-root-detector';
-import type { BehaviorGraph, BehaviorNode, BehaviorGraphSummary } from '../types.behavior-graph';
+import { readTextFile, readDir, ensureDir, writeTextFile, pathExists } from '../../safe-fs';
+import { safeJoin } from '../../safe-path';
+import { detectSourceRoots } from '../../source-root-detector';
+import type { DetectedSourceRoot } from '../../source-root-detector';
+import type { BehaviorGraph, BehaviorNode, BehaviorGraphSummary } from '../../types.behavior-graph';
 import {
   requireBehaviorNodeKindCatalog,
   requireBehaviorRiskLevelCatalog,
@@ -17,7 +17,7 @@ import {
   deriveZeroValue,
   deriveUnitValue,
   discoverAllObservedArtifactFilenames,
-} from '../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel';
 import type { ParsedFunc } from './grammar-and-types';
 import type { BehaviorNodeArtifact } from './grammar-and-types';
 import { extractFunctionsFromSource } from './function-extraction';

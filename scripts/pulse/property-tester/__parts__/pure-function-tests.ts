@@ -12,7 +12,7 @@ import {
   deriveZeroValue,
 } from '../../dynamic-reality-kernel';
 import { fallbackGeneratedPath, dpe, dfa } from './core';
-import { discoverPureFunctionCandidates } from '../property-tester';
+import { discoverPureFunctionCandidates } from '../../property-tester';
 import {
   generateIdempotencyInputs,
   generateNonNegativeInputs,

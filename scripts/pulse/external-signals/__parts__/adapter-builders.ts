@@ -1,13 +1,13 @@
 import * as path from 'path';
-import { deriveUnitValue, deriveZeroValue } from '../dynamic-reality-kernel';
+import { deriveUnitValue, deriveZeroValue } from '../../dynamic-reality-kernel';
 import type {
   PulseCertificationProfile,
   PulseCodacyEvidence,
   PulseExternalAdapterSnapshot,
   PulseExternalSignalSource,
-} from '../types';
-import { pathExists, readTextFile } from '../safe-fs';
-import { compact, normalizeDate, normalizePathValue } from '../signal-normalizers';
+} from '../../types';
+import { pathExists, readTextFile } from '../../safe-fs';
+import { compact, normalizeDate, normalizePathValue } from '../../signal-normalizers';
 import {
   parseGithubSignals,
   parseGithubActionsSignals,
@@ -17,15 +17,15 @@ import {
   parsePrometheusSignals,
   parseDependabotSignals,
   normalizeSignalDraft,
-} from '../signal-parsers';
-import type { PulseSignalDraft } from '../signal-parsers';
-import { buildSignalState } from '../signal-mapper';
-import type { BuildExternalSignalStateInput } from '../signal-mapper';
+} from '../../signal-parsers';
+import type { PulseSignalDraft } from '../../signal-parsers';
+import { buildSignalState } from '../../signal-mapper';
+import type { BuildExternalSignalStateInput } from '../../signal-mapper';
 import {
   getAdapterRequiredness,
   isAdapterRequired,
-} from '../adapters/external-sources-orchestrator';
-import type { PulseExternalAdapterProofBasis } from '../types';
+} from '../../adapters/external-sources-orchestrator';
+import type { PulseExternalAdapterProofBasis } from '../../types';
 import { PULSE_EXTERNAL_SNAPSHOT_FILES } from './snapshot-config';
 
 type AdapterClassificationFields =

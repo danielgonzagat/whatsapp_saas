@@ -1,13 +1,13 @@
 import * as path from 'path';
-import { safeJoin } from '../lib/safe-path';
-import { readTextFile, writeTextFile, ensureDir, pathExists } from '../safe-fs';
+import { safeJoin } from '../../lib/safe-path';
+import { readTextFile, writeTextFile, ensureDir, pathExists } from '../../safe-fs';
 import {
   deriveUnitValue,
   deriveZeroValue,
   discoverAllObservedArtifactFilenames,
-} from '../dynamic-reality-kernel';
-import type { DataflowState } from '../types.dataflow-engine';
-import type { EntityLifecycle } from '../types.dataflow-engine';
+} from '../../dynamic-reality-kernel';
+import type { DataflowState } from '../../types.dataflow-engine';
+import type { EntityLifecycle } from '../../types.dataflow-engine';
 import type { SourceFileSnapshot, PrismaFieldEvidence, FieldUsageEvidence } from './schema-parsers';
 import {
   createFieldUsageEvidence,

@@ -3,13 +3,13 @@
  */
 
 import * as path from 'path';
-import type { ArtifactDivergence, ConsistencyResult, LoadedArtifact } from '../types';
-import { deepGet, MAX_GENERATED_AT_DRIFT_MS } from '../loaders';
+import type { ArtifactDivergence, ConsistencyResult, LoadedArtifact } from '../../types';
+import { deepGet, MAX_GENERATED_AT_DRIFT_MS } from '../../loaders';
 import {
   deriveUnitValue,
   deriveZeroValue,
   discoverAllObservedArtifactFilenames,
-} from '../../dynamic-reality-kernel';
+} from '../../../dynamic-reality-kernel';
 import {
   collectProofDebtSignals,
   firstExecutableUnit,

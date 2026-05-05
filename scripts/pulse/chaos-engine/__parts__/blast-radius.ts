@@ -1,5 +1,5 @@
-import type { ChaosTarget } from '../types.chaos-engine';
-import type { PulseCapability } from '../types';
+import type { ChaosTarget } from '../../types.chaos-engine';
+import type { PulseCapability } from '../../types';
 import {
   ChaosProviderName,
   lookupChaosTargetEvidence,
@@ -9,7 +9,7 @@ import {
 import {
   discoverExternalReceiverTokensFromEvidence,
   deriveZeroValue,
-} from '../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel';
 
 // ── Blast-radius computation ──────────────────────────────────────────────
 

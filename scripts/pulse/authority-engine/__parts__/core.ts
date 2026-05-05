@@ -2,22 +2,22 @@
  * Authority Engine — Core internals: contracts, paths, I/O, gate evaluators, helpers.
  */
 import * as path from 'node:path';
-import { ensureDir, pathExists, readJsonFile, writeTextFile } from '../safe-fs';
+import { ensureDir, pathExists, readJsonFile, writeTextFile } from '../../safe-fs';
 import {
   deriveStringUnionMembersFromTypeContract,
   deriveUnitValue,
   deriveZeroValue,
   discoverAllObservedArtifactFilenames,
   discoverPropertyPassedStatusFromTypeEvidence,
-} from '../dynamic-reality-kernel';
-import type { PulseGateName } from '../types.manifest';
-import type { PulseCertification } from '../types.evidence';
-import type { PulseMachineReadiness } from '../artifacts.types';
+} from '../../dynamic-reality-kernel';
+import type { PulseGateName } from '../../types.manifest';
+import type { PulseCertification } from '../../types.evidence';
+import type { PulseMachineReadiness } from '../../artifacts.types';
 import type {
   AuthorityLevel,
   AuthorityState,
   AuthorityTransitionGate,
-} from '../types.authority-engine';
+} from '../../types.authority-engine';
 
 // ── Authority-level contract derivation ─────────────────────────────────────
 
