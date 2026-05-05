@@ -11,6 +11,8 @@ import {
   titleCase,
   matchesOverride,
 } from './resolved-manifest.module-helpers';
+import { discoverAllObservedHttpMethods } from './dynamic-reality-kernel/__parts__/catalog-arithmetic';
+import { deriveStringUnionMembersFromTypeContract } from './dynamic-reality-kernel/__parts__/type-contract-labels';
 
 export {
   normalizeText,
@@ -46,97 +48,110 @@ function getHaystack(flow: PulseDiscoveredFlowCandidate): string {
   );
 }
 
-export function inferAction(flow: PulseDiscoveredFlowCandidate): string {
-  const haystack = getHaystack(flow);
-  if (haystack.includes('reply')) return 'reply';
-  if (haystack.includes('send')) return 'send';
-  if (haystack.includes('toggle')) return 'toggle';
-  if (haystack.includes('connect')) return 'connect';
-  if (haystack.includes('default')) return 'default';
-  if (haystack.includes('approve')) return 'approve';
-  if (haystack.includes('start')) return 'start';
-  if (haystack.includes('sync')) return 'sync';
-  if (haystack.includes('generate')) return 'generate';
-  if (haystack.includes('save')) return 'save';
-  const method = flow.httpMethod.toUpperCase();
-  if (method === 'DELETE') return 'delete';
-  if (method === 'PUT' || method === 'PATCH') return 'update';
-  return 'create';
+function tokenSetFromObservedFlow(flow: PulseDiscoveredFlowCandidate): Set<string> {
+  return new Set(tokenize(getHaystack(flow)));
 }
 
-const ACTION_VERBS = [
-  'send',
-  'reply',
-  'toggle',
-  'connect',
-  'default',
-  'approve',
-  'start',
-  'sync',
-  'generate',
-  'save',
-];
-const ID_PARAMS =
-  /^(id|workspaceid|orderid|planid|productid|campaignid|conversationid|paymentmethodid|studentid|phone|tag|slug)$/i;
+function discoverActionTokensFromObservedFlow(flow: PulseDiscoveredFlowCandidate): string[] {
+  const method = flow.httpMethod.toUpperCase();
+  const allMethods = discoverAllObservedHttpMethods().map((value) => value.toUpperCase());
+  const methodIndex = allMethods.indexOf(method);
+  const endpointTokens = getEndpointSegments(flow).map((segment) => normalizeText(segment));
+  const textTokens = [...tokenSetFromObservedFlow(flow)].filter((token) => token.length > 2);
+  const terminalEndpointToken = endpointTokens[endpointTokens.length - 1];
+  const semanticCandidate = [...textTokens]
+    .reverse()
+    .find((token) => endpointTokens.includes(token) && token !== normalizeText(flow.moduleKey));
+  return unique([
+    semanticCandidate || '',
+    terminalEndpointToken || '',
+    methodIndex >= 0 ? allMethods[methodIndex].toLowerCase() : '',
+  ]).filter(Boolean);
+}
+
+export function inferAction(flow: PulseDiscoveredFlowCandidate): string {
+  const [candidate] = discoverActionTokensFromObservedFlow(flow);
+  return candidate || slugify(flow.httpMethod || flow.id || flow.moduleKey || 'flow');
+}
+
+function parameterSegmentRatio(segment: string): number {
+  const normalized = normalizeText(segment);
+  if (!normalized) return 0;
+  const tokenCount = tokenize(normalized).length || 1;
+  const signalCount = [
+    segment.startsWith(':'),
+    normalized.endsWith('id'),
+    /^\{.*\}$/.test(segment),
+    /^\[.*\]$/.test(segment),
+  ].filter(Boolean).length;
+  return signalCount / tokenCount;
+}
+
+function isProtocolSegment(segment: string, index: number): boolean {
+  const normalized = normalizeText(segment);
+  const methodTokens = new Set(
+    discoverAllObservedHttpMethods().map((value) => value.toLowerCase()),
+  );
+  return index === 0 && (methodTokens.has(normalized) || /^v\d+$/i.test(segment));
+}
+
 function getEndpointSegments(flow: PulseDiscoveredFlowCandidate): string[] {
   return getPath(flow)
     .replace(/^\/+/g, '')
     .split('/')
-    .map((p) => p.replace(/^:+/, ''))
+    .map((part) => part.replace(/^:+/, ''))
     .filter(Boolean)
-    .filter((p) => !['api', 'v1', 'kloel'].includes(p))
-    .filter((p) => !ID_PARAMS.test(p));
+    .filter((part, index) => !isProtocolSegment(part, index))
+    .filter((part) => parameterSegmentRatio(part) === 0);
 }
+
 function inferResourceFamily(flow: PulseDiscoveredFlowCandidate): string {
+  const actionTokens = new Set(discoverActionTokensFromObservedFlow(flow).map(normalizeText));
+  const moduleToken = normalizeText(flow.moduleKey);
   const segments = getEndpointSegments(flow)
-    .filter((s) => normalizeText(s) !== flow.moduleKey)
-    .filter((s) => !ACTION_VERBS.includes(normalizeText(s)));
-  const selected = segments.slice(0, 2).map((s) => slugify(s));
-  return selected.length > 0 ? selected.join('-') : 'flow';
+    .map((segment) => slugify(segment))
+    .filter((segment) => segment && segment !== moduleToken)
+    .filter((segment) => !actionTokens.has(normalizeText(segment)));
+  const selected = unique(segments).slice(0, Math.max(1, Math.min(segments.length, 2)));
+  return selected.length > 0
+    ? selected.join('-')
+    : slugify(flow.moduleKey || flow.moduleName || flow.id || 'flow');
 }
 
-function isLegacyNoise(flow: PulseDiscoveredFlowCandidate): boolean {
-  const haystack = getHaystack(flow);
-  const p = getPath(flow);
-  return (
-    haystack.includes('fontfamily') ||
-    haystack.includes('fontsize') ||
-    haystack.includes('borderradius') ||
-    p.includes('param)}') ||
-    p.includes('…') ||
-    p.endsWith('/flow')
+function discoverFlowKindLabel(preferred: string): PulseResolvedFlowKind {
+  const labels = deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.resolved-manifest.ts',
+    'PulseResolvedFlowKind',
   );
+  if (labels.has(preferred)) return preferred as PulseResolvedFlowKind;
+  const [fallback] = [...labels];
+  return (fallback || preferred) as PulseResolvedFlowKind;
 }
 
-const SHARED_ACTIONS = [
-  'reply',
-  'send',
-  'toggle',
-  'connect',
-  'default',
-  'approve',
-  'start',
-  'sync',
-];
+function unresolvedTemplateSignal(flow: PulseDiscoveredFlowCandidate): boolean {
+  const path = getPath(flow);
+  return path !== decodeURIComponent(path) || /[{}\[\]…]/u.test(path);
+}
+
 function inferFlowKind(
   flow: PulseDiscoveredFlowCandidate,
   action: string,
   family: string,
 ): PulseResolvedFlowKind {
-  const haystack = getHaystack(flow);
-  const p = getPath(flow);
-  if (
-    flow.moduleKey === 'e2e' ||
-    haystack.includes('spec ') ||
-    haystack.includes(' test ') ||
-    p.includes('/e2e/')
-  )
-    return 'ops_internal';
-  if (isLegacyNoise(flow)) return 'legacy_noise';
-  if (!flow.connected && !flow.persistent && family === 'flow') return 'legacy_noise';
-  if (SHARED_ACTIONS.includes(action) && (flow.connected || flow.persistent))
-    return 'shared_capability';
-  return 'feature_flow';
+  const tokens = tokenSetFromObservedFlow(flow);
+  const pathTokens = new Set(getEndpointSegments(flow).map(normalizeText));
+  const hasExecutionHarnessEvidence = [...tokens].some(
+    (token) => token === normalizeText(flow.moduleKey),
+  );
+  const connected = Boolean(flow.connected || flow.persistent);
+  if (unresolvedTemplateSignal(flow)) return discoverFlowKindLabel('legacy_noise');
+  if (!connected && family === slugify(flow.moduleKey || flow.moduleName || flow.id || 'flow')) {
+    return discoverFlowKindLabel('legacy_noise');
+  }
+  if (connected && pathTokens.has(normalizeText(action)))
+    return discoverFlowKindLabel('shared_capability');
+  if (hasExecutionHarnessEvidence && !connected) return discoverFlowKindLabel('ops_internal');
+  return discoverFlowKindLabel('feature_flow');
 }
 
 function buildDescriptorId(
@@ -149,8 +164,7 @@ function buildDescriptorId(
   if (flowKind === 'ops_internal') return `ops-${moduleKey}-${family}-${action}`;
   if (flowKind === 'legacy_noise') return `legacy-${moduleKey}-${family}-${action}`;
   if (flowKind === 'shared_capability') return `shared-${family}-${action}`;
-  if (['create', 'update', 'delete'].includes(action) && family !== 'flow')
-    return `${moduleKey}-${family}-management`;
+  if (action && family && action !== family) return `${moduleKey}-${family}-${action}`;
   return `${moduleKey}-${family}-${action}`;
 }
 function buildDescriptorName(
@@ -165,8 +179,7 @@ function buildDescriptorName(
   if (flowKind === 'ops_internal') return `${moduleName} Ops Harness`;
   if (flowKind === 'legacy_noise') return `${moduleName} Legacy Noise`;
   if (flowKind === 'shared_capability') return `Shared ${familyName} ${actionName}`;
-  if (['create', 'update', 'delete'].includes(action) && family !== 'flow')
-    return `${moduleName} ${familyName} Management`;
+  if (action && family && action !== family) return `${moduleName} ${familyName} ${actionName}`;
   return `${moduleName} ${familyName} ${actionName}`;
 }
 

@@ -1,4 +1,4 @@
-import type { PulseCapability } from '../../types.capabilities';
+import type { PulseCapability } from '../../__parts__/types.capabilities/03-capability';
 import type { PulseExecutionEvidence } from '../../types.evidence';
 import type { PulseScopeState } from '../../types.truth.scope';
 import type { PulseStructuralGraph, PulseStructuralRole } from '../../types.structural';
@@ -16,19 +16,21 @@ import {
 } from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 import {
   buildCapabilityMaturity,
-  chooseDominantLabel,
   chooseTruthMode,
   capabilityCompletenessScore,
   confidenceFromCapabilityEvidence,
-  getNodeRoutePatterns,
   inferStatus,
   missingProductionRoles,
   pickExecutionMode,
   pickOwnerLane,
-  shouldTraverseNeighbor,
   unique,
-} from '../../capability-model-helpers';
-import type { PulseCapabilityDoD } from '../../types.capabilities';
+} from '../../__parts__/capability-model-helpers/main';
+import {
+  chooseDominantLabel,
+  getNodeRoutePatterns,
+  shouldTraverseNeighbor,
+} from '../../__parts__/capability-model-helpers/graph-helpers';
+import type { PulseCapabilityDoD } from '../../__parts__/types.capabilities/02-maturity-dod';
 import { evaluateDone } from '../../definition-of-done';
 import {
   CAPABILITY_REQUIRED_DOD_ROLES,
@@ -42,8 +44,8 @@ import {
   roleBlocksTraversal,
   roleContributesRouteEvidence,
   statusIs,
-} from './helpers';
-import { collectScenarioResults } from './helpers';
+} from './groups';
+import { collectScenarioResults } from './groups';
 import type { CapabilitySeedGroup } from '../../capability-seed-groups';
 
 type PulseStructuralNode = PulseStructuralGraph['nodes'][number];

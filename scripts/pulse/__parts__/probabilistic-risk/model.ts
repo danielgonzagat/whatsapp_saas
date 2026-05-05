@@ -2,7 +2,7 @@ import * as path from 'node:path';
 import { pathExists, readJsonFile } from '../../safe-fs';
 import type { PulseHealth } from '../../types.health';
 import type { PulseCertification } from '../../types.evidence';
-import type { PulseCapability, PulseCapabilityState } from '../../types.capabilities';
+import type { PulseCapability, PulseCapabilityState } from '../types.capabilities/03-capability';
 import type { PulseAutonomyState } from '../../types.autonomy';
 import type { CapabilityReliability, ProbabilisticRiskState } from '../../types.probabilistic-risk';
 

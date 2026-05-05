@@ -25,7 +25,7 @@ import type {
   PulseExternalAdapterRequirement,
   PulseExternalAdapterStatus,
   PulseExternalSignalSource,
-} from '../../../types.capabilities';
+} from '../../../__parts__/types.capabilities/01-primitives';
 
 // ─── Canonical label derivation from type contracts ───
 

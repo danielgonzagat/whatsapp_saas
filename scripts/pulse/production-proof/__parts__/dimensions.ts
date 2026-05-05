@@ -20,7 +20,10 @@ import {
   isRuntimeProbeProofEligible,
   normalizeRuntimeProbesArtifact,
 } from '../../__parts__/runtime-probes/main';
-import type { PulseCapability, PulseCapabilityState } from '../../types.capabilities';
+import type {
+  PulseCapability,
+  PulseCapabilityState,
+} from '../../__parts__/types.capabilities/03-capability';
 import type { PulseProductGraph } from '../../types.product-graph';
 import type {
   ProductionProofDimension,

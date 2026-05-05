@@ -38,6 +38,18 @@ import {
 } from './functional-map.helpers/__parts__/public';
 import { findAllPages, resolveComponentTree } from './functional-map-pages';
 import { traceInteractionChain, classifyInteraction } from './functional-map-classify';
+import { deriveStringUnionMembersFromTypeContract } from './dynamic-reality-kernel/__parts__/type-contract-labels';
+
+function buildInteractionStatusCounter(): Record<InteractionStatus, number> {
+  return Object.fromEntries(
+    [
+      ...deriveStringUnionMembersFromTypeContract(
+        'scripts/pulse/functional-map-types.ts',
+        'InteractionStatus',
+      ),
+    ].map((status) => [status, 0]),
+  ) as Record<InteractionStatus, number>;
+}
 
 // ===== Step 6: Extract data sources (useSWR/GET) per page =====
 
@@ -177,13 +189,7 @@ export function buildFunctionalMap(
     );
 
     // Counts
-    const counts: Record<InteractionStatus, number> = {
-      FUNCIONA: 0,
-      FACHADA: 0,
-      QUEBRADO: 0,
-      INCOMPLETO: 0,
-      AUSENTE: 0,
-    };
+    const counts = buildInteractionStatusCounter();
     for (const i of interactions) {
       counts[i.status]++;
     }
@@ -203,13 +209,7 @@ export function buildFunctionalMap(
   }
 
   // Summary
-  const totalByStatus: Record<InteractionStatus, number> = {
-    FUNCIONA: 0,
-    FACHADA: 0,
-    QUEBRADO: 0,
-    INCOMPLETO: 0,
-    AUSENTE: 0,
-  };
+  const totalByStatus = buildInteractionStatusCounter();
   const byGroup: Record<string, Record<InteractionStatus, number>> = {};
   let totalInteractions = 0;
   let redirectPages = 0;
@@ -225,7 +225,7 @@ export function buildFunctionalMap(
     }
 
     if (!byGroup[page.group]) {
-      byGroup[page.group] = { FUNCIONA: 0, FACHADA: 0, QUEBRADO: 0, INCOMPLETO: 0, AUSENTE: 0 };
+      byGroup[page.group] = buildInteractionStatusCounter();
     }
     for (const [status, count] of Object.entries(page.counts)) {
       byGroup[page.group][status as InteractionStatus] += count;

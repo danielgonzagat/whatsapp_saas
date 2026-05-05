@@ -3,7 +3,7 @@
  * Fetches recent error clusters to detect runtime issues
  */
 
-import type { PulseSignal } from '../types.capabilities';
+import type { PulseSignal } from '../__parts__/types.capabilities/05-external-signals';
 
 interface SentryAdapterConfig {
   dsn?: string;

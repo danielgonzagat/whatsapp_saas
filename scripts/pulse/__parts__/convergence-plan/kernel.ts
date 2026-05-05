@@ -1,10 +1,8 @@
 import type { Break, PulseGateName, PulseManifestScenarioSpec } from '../../types.manifest';
-import type {
-  PulseCapabilityState,
-  PulseExternalSignalState,
-  PulseParityGapsArtifact,
-  PulseFlowProjection,
-} from '../../types.capabilities';
+import type { PulseCapabilityState } from '../types.capabilities/03-capability';
+import type { PulseExternalSignalState } from '../types.capabilities/05-external-signals';
+import type { PulseParityGapsArtifact } from '../../types.capabilities.parity';
+import type { PulseFlowProjection } from '../types.capabilities/04-flow-projection';
 import type { PulseCertification, PulseWorldState } from '../../types.evidence';
 import type { PulseConvergenceOwnerLane, PulseGateFailureClass } from '../../types.gate-failure';
 import type {

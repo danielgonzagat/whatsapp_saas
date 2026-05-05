@@ -34,7 +34,11 @@ import {
   resolveRole,
 } from '../../queries';
 
-import { buildEvidenceLinks, buildPreconditions, generatePlaywrightSpec } from '../../playwright';
+import {
+  buildEvidenceLinks,
+  buildPreconditions,
+  generatePlaywrightSpec,
+} from '../../playwright/__parts__/spec-gen';
 
 import { generateStepsForSubFlow } from './step-generation';
 

@@ -48,17 +48,15 @@ export function runSyntheticActors(input: RunSyntheticActorsInput): PulseSynthet
   const manifestEvidenceKeys = getActorEvidenceKeys(input.resolvedManifest);
   const outputEvidenceKeys = uniqueValues<PulseActorEvidence['actorKind']>([
     ...manifestEvidenceKeys,
-    'customer',
-    'operator',
-    'admin',
-    'soak',
+    ...getActorEvidenceKeys(),
   ]);
+  const fallbackEvidenceKey = outputEvidenceKeys[0];
   const evidenceKeyForResult = (result: PulseScenarioResult): PulseActorEvidence['actorKind'] => {
     const scenario = scenarioById.get(result.scenarioId);
     if (scenario) {
-      return inferActorEvidenceKeyForScenario(scenario) ?? 'soak';
+      return inferActorEvidenceKeyForScenario(scenario) ?? fallbackEvidenceKey;
     }
-    return normalizeEvidenceKey(result.actorKind) ?? 'soak';
+    return normalizeEvidenceKey(result.actorKind) ?? fallbackEvidenceKey;
   };
   const coverage = buildSyntheticCoverage(
     input.codebaseTruth,
@@ -95,7 +93,7 @@ export function runSyntheticActors(input: RunSyntheticActorsInput): PulseSynthet
   // If any actor has no observed evidence but disk had it, promote the first critical
   // scenario to observed-from-disk with staging metadata.
   for (const [label, actorResults] of mergedByEvidenceKey) {
-    if (label === 'soak') {
+    if ((scenariosByEvidenceKey.get(label) || []).length === 0) {
       continue;
     }
     const hasObserved = actorResults.some(
@@ -121,27 +119,19 @@ export function runSyntheticActors(input: RunSyntheticActorsInput): PulseSynthet
     }
   }
 
+  const actorEvidence = Object.fromEntries(
+    outputEvidenceKeys.map((key) => [
+      key,
+      buildActorEvidence(
+        key,
+        scenariosByEvidenceKey.get(key) || [],
+        mergedByEvidenceKey.get(key) || [],
+      ),
+    ]),
+  ) as Pick<PulseSyntheticActorBundle, PulseActorEvidence['actorKind']>;
+
   return {
-    customer: buildActorEvidence(
-      'customer',
-      scenariosByEvidenceKey.get('customer') || [],
-      mergedByEvidenceKey.get('customer') || [],
-    ),
-    operator: buildActorEvidence(
-      'operator',
-      scenariosByEvidenceKey.get('operator') || [],
-      mergedByEvidenceKey.get('operator') || [],
-    ),
-    admin: buildActorEvidence(
-      'admin',
-      scenariosByEvidenceKey.get('admin') || [],
-      mergedByEvidenceKey.get('admin') || [],
-    ),
-    soak: buildActorEvidence(
-      'soak',
-      scenariosByEvidenceKey.get('soak') || [],
-      mergedByEvidenceKey.get('soak') || [],
-    ),
+    ...actorEvidence,
     syntheticCoverage: coverage,
     worldState: buildWorldState(input, results),
   };

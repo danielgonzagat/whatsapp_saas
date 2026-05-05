@@ -3,7 +3,7 @@
  * Runs all external adapters and consolidates signals into a single state report.
  */
 
-import type { PulseSignal } from '../../../types.capabilities';
+import type { PulseSignal } from '../../../__parts__/types.capabilities/05-external-signals';
 import { deriveZeroValue } from '../../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 import { fetchGitHubSignals } from '../../github-adapter';
 import { fetchSentrySignals } from '../../sentry-adapter';

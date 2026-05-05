@@ -22,9 +22,11 @@ import type {
 import type {
   PulseCapability,
   PulseCapabilityState,
+} from '../../__parts__/types.capabilities/03-capability';
+import type {
   PulseFlowProjection,
   PulseFlowProjectionItem,
-} from '../../types.capabilities';
+} from '../../__parts__/types.capabilities/04-flow-projection';
 import {
   resolveCapabilityFiles,
   toRepoRelativePath,

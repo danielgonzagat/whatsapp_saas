@@ -1,5 +1,5 @@
 import { discoverAllObservedArtifactFilenames } from '../../dynamic-reality-kernel/__parts__/token-evidence';
-import type { PulseExternalSignalSource } from '../../types.capabilities';
+import type { PulseExternalSignalSource } from '../../__parts__/types.capabilities/01-primitives';
 
 interface PulseExternalSourceConfig {
   fileName: string;

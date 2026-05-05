@@ -6,12 +6,10 @@ import type {
   PulseParserDefinition,
   PulseParserInventory,
 } from '../../types.manifest';
-import type {
-  PulseCapabilityState,
-  PulseExternalSignalState,
-  PulseFlowProjection,
-  PulseParityGapsArtifact,
-} from '../../types.capabilities';
+import type { PulseCapabilityState } from '../../__parts__/types.capabilities/03-capability';
+import type { PulseExternalSignalState } from '../../__parts__/types.capabilities/05-external-signals';
+import type { PulseFlowProjection } from '../../__parts__/types.capabilities/04-flow-projection';
+import type { PulseParityGapsArtifact } from '../../types.capabilities.parity';
 import type { PulseCodebaseTruth } from '../../types.truth';
 import type { PulseCodacyEvidence, PulseStructuralGraph } from '../../types.structural';
 import type { PulseCertification } from '../../types.evidence';

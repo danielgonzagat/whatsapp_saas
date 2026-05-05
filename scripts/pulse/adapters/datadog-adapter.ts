@@ -3,7 +3,7 @@
  * Fetches active monitors and error rates from Datadog API
  */
 
-import type { PulseSignal } from '../types.capabilities';
+import type { PulseSignal } from '../__parts__/types.capabilities/05-external-signals';
 
 interface DatadogAdapterConfig {
   apiKey?: string;

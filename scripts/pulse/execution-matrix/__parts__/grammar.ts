@@ -1,10 +1,12 @@
 import type {
   PulseCapability,
   PulseCapabilityState,
-  PulseExternalSignalState,
+} from '../../__parts__/types.capabilities/03-capability';
+import type { PulseExternalSignalState } from '../../__parts__/types.capabilities/05-external-signals';
+import type {
   PulseFlowProjection,
   PulseFlowProjectionItem,
-} from '../../types.capabilities';
+} from '../../__parts__/types.capabilities/04-flow-projection';
 import type { PulseExecutionChain, PulseExecutionChainSet } from '../../types.product-graph';
 import type { PulseExecutionEvidence } from '../../types.evidence';
 import type {

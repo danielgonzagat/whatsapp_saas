@@ -1,9 +1,7 @@
 import type { Break, PulseGateName } from '../../types.manifest';
-import type {
-  PulseCapabilityState,
-  PulseFlowProjection,
-  PulseParityGapsArtifact,
-} from '../../types.capabilities';
+import type { PulseCapabilityState } from '../types.capabilities/03-capability';
+import type { PulseFlowProjection } from '../types.capabilities/04-flow-projection';
+import type { PulseParityGapsArtifact } from '../../types.capabilities.parity';
 import type { PulseCertification } from '../../types.evidence';
 import type { PulseConvergenceOwnerLane, PulseGateFailureClass } from '../../types.gate-failure';
 import type {

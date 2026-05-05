@@ -1,7 +1,7 @@
 import type { PulseCodacySummary } from '../../types.truth.codacy';
 import type { PulseEnvironment, PulseManifest } from '../../types.manifest';
 import type { PulseExecutionEvidence } from '../../types.evidence';
-import type { PulseExternalSignalState } from '../../types.capabilities';
+import type { PulseExternalSignalState } from '../types.capabilities/05-external-signals';
 import type { PulseHealth } from '../../types.health';
 import {
   filterBlockingBreaks,

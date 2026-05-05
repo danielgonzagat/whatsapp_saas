@@ -1,5 +1,6 @@
 import * as path from 'path';
-import type { PulseCapabilityState, PulseFlowProjectionItem } from '../../types.capabilities';
+import type { PulseCapabilityState } from '../../__parts__/types.capabilities/03-capability';
+import type { PulseFlowProjectionItem } from '../../__parts__/types.capabilities/04-flow-projection';
 import type { PulseCodebaseTruth } from '../../types.truth';
 import type { PulseExecutionEvidence } from '../../types.evidence';
 import type { PulseResolvedManifest } from '../../types.resolved-manifest';
@@ -20,7 +21,8 @@ import {
 import { normalizePath } from '../../scope-state.codacy';
 import { readTextFile } from '../../safe-fs';
 import { safeJoin } from '../../lib/safe-path';
-import type { PulseCapabilityDoD, PulseDoDStatus } from '../../types.capabilities';
+import type { PulseCapabilityDoD } from '../../__parts__/types.capabilities/02-maturity-dod';
+import type { PulseDoDStatus } from '../../__parts__/types.capabilities/01-primitives';
 import {
   evaluateDone,
   type CapabilityRoleEvidence,

@@ -1,8 +1,19 @@
 /** String/regex helpers shared by api-parser modules. */
+import { discoverAllObservedHttpMethods } from '../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 
 /** Escape a string for use as a literal pattern in a RegExp. */
 export function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function discoverHttpMethodLiteralPattern(): RegExp {
+  const alternatives = discoverAllObservedHttpMethods().map(escapeRegExp).join('|');
+  return new RegExp(`method\\s*:\\s*['"\`](${alternatives})['"\`]`, 'i');
+}
+
+function discoverReadHttpMethodFallback(): string {
+  const methods = discoverAllObservedHttpMethods();
+  return methods.find((method) => method.toLowerCase() === 'get') ?? methods[0] ?? '';
 }
 
 /** Parse a URL or path string, returning just the pathname. */
@@ -99,21 +110,14 @@ export function readTemplateEndpoint(text: string, start: number): string {
 
 /** Detect the HTTP method from a code context string. */
 export function detectMethod(context: string): string {
-  const m = context.match(/method\s*:\s*['"`](GET|POST|PUT|PATCH|DELETE)['"`]/i);
+  const m = context.match(discoverHttpMethodLiteralPattern());
   if (m) {
     return m[1].toUpperCase();
   }
-  if (/\.post\s*\(/i.test(context)) {
-    return 'POST';
+  for (const method of discoverAllObservedHttpMethods()) {
+    if (new RegExp(`\\.${escapeRegExp(method.toLowerCase())}\\s*\\(`, 'i').test(context)) {
+      return method.toUpperCase();
+    }
   }
-  if (/\.put\s*\(/i.test(context)) {
-    return 'PUT';
-  }
-  if (/\.patch\s*\(/i.test(context)) {
-    return 'PATCH';
-  }
-  if (/\.delete\s*\(/i.test(context)) {
-    return 'DELETE';
-  }
-  return 'GET';
+  return discoverReadHttpMethodFallback();
 }

@@ -1,13 +1,17 @@
 import type {
   PulseCapability,
   PulseCapabilityState,
+} from '../../__parts__/types.capabilities/03-capability';
+import type {
   PulseCapabilityStatus,
-  PulseExternalSignalState,
+  PulseFlowProjectionStatus,
+} from '../../__parts__/types.capabilities/01-primitives';
+import type { PulseExternalSignalState } from '../../__parts__/types.capabilities/05-external-signals';
+import type {
   PulseFlowProjection,
   PulseFlowProjectionItem,
-  PulseFlowProjectionStatus,
-  PulseParityGapsArtifact,
-} from '../../types.capabilities';
+} from '../../__parts__/types.capabilities/04-flow-projection';
+import type { PulseParityGapsArtifact } from '../../types.capabilities.parity';
 import type { PulseCertification } from '../../types.evidence';
 import type { PulseCodacyEvidence, PulseTruthMode } from '../../types.structural';
 import type { PulseProductVision } from '../../types.product-vision';

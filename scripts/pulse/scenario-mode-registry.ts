@@ -4,15 +4,30 @@ import type { PulseActorEvidence } from './types.evidence';
 import type { PulseActorKind, PulseTimeWindowMode } from './types.health';
 import type { PulseActorProfile, PulseManifest, PulseManifestScenarioSpec } from './types.manifest';
 import type { PulseSyntheticRunMode } from './actors/types';
+import { deriveStringUnionMembersFromTypeContract } from './dynamic-reality-kernel/__parts__/type-contract-labels';
 
 export type PulseActorEvidenceKey = PulseActorEvidence['actorKind'];
 
 type ScenarioModeSource = Pick<PulseManifestScenarioSpec, 'actorKind' | 'timeWindowModes'>;
 
-const LEGACY_ACTOR_EVIDENCE_KEYS = ['customer', 'operator', 'admin', 'soak'] as const;
-const SYNTHETIC_RUN_MODES = ['customer', 'operator', 'admin', 'shift', 'soak'] as const;
 const SYNTHETIC_FLAG_PREFIX = '--';
 const EVIDENCE_FILE_PATTERN = /^PULSE_([A-Z0-9_]+)_EVIDENCE[.]json$/;
+
+function discoverSyntheticRunModesFromTypeContract(): PulseSyntheticRunMode[] {
+  return [
+    ...deriveStringUnionMembersFromTypeContract(
+      'scripts/pulse/actors/types.ts',
+      'PulseSyntheticRunMode',
+    ),
+  ]
+    .map((mode) => mode as PulseSyntheticRunMode)
+    .sort();
+}
+
+function discoverActorEvidenceKeysFromTypeContract(): PulseActorEvidenceKey[] {
+  const modes = discoverSyntheticRunModesFromTypeContract();
+  return modes.filter((mode) => mode !== 'shift') as PulseActorEvidenceKey[];
+}
 
 export function getActorEvidenceKeys(
   manifest?: Pick<PulseManifest, 'actorProfiles' | 'scenarioSpecs'> | null,
@@ -20,15 +35,15 @@ export function getActorEvidenceKeys(
   if (manifest) {
     return deriveEvidenceKeysFromManifest(manifest);
   }
-  return [...LEGACY_ACTOR_EVIDENCE_KEYS];
+  return discoverActorEvidenceKeysFromTypeContract();
 }
 
 export function isActorEvidenceKey(value: string): value is PulseActorEvidenceKey {
-  return LEGACY_ACTOR_EVIDENCE_KEYS.some((key) => key === value);
+  return discoverActorEvidenceKeysFromTypeContract().some((key) => key === value);
 }
 
 export function isSyntheticRunMode(value: string): value is PulseSyntheticRunMode {
-  return SYNTHETIC_RUN_MODES.some((mode) => mode === value);
+  return discoverSyntheticRunModesFromTypeContract().some((mode) => mode === value);
 }
 
 export function uniqueValues<T>(values: T[]): T[] {
@@ -106,7 +121,9 @@ export function toSyntheticModeFlag(mode: PulseSyntheticRunMode): string {
 }
 
 export function explicitSyntheticModesFromArgs(args: string[]): PulseSyntheticRunMode[] {
-  return SYNTHETIC_RUN_MODES.filter((mode) => args.includes(toSyntheticModeFlag(mode)));
+  return discoverSyntheticRunModesFromTypeContract().filter((mode) =>
+    args.includes(toSyntheticModeFlag(mode)),
+  );
 }
 
 export function deriveSyntheticModesFromManifest(

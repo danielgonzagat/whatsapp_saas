@@ -6,11 +6,9 @@
 import type { PulseCodacyIssue } from './types.truth.codacy';
 import type { PulseEnvironment, PulseGateName, PulseManifest } from './types.manifest';
 import type { PulseExecutionEvidence, PulseGateResult } from './types.evidence';
-import type {
-  PulseExternalSignalState,
-  PulseCapabilityState,
-  PulseFlowProjection,
-} from './types.capabilities';
+import type { PulseExternalSignalState } from './__parts__/types.capabilities/05-external-signals';
+import type { PulseCapabilityState } from './__parts__/types.capabilities/03-capability';
+import type { PulseFlowProjection } from './__parts__/types.capabilities/04-flow-projection';
 import type { PulseHealth } from './types.health';
 import {
   filterBlockingBreaks,

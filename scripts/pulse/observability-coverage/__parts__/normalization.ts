@@ -20,7 +20,7 @@ import type {
   CapabilityObservability,
   ObservabilityMachineImprovementSignal,
 } from '../../types.observability-coverage';
-import type { PulseFlowProjectionItem } from '../../types.capabilities';
+import type { PulseFlowProjectionItem } from '../../__parts__/types.capabilities/04-flow-projection';
 import {
   tokenizeObservabilityTerm,
   signalMatchesPillar,

@@ -15,7 +15,8 @@ import {
   extractRoutePattern,
   getHttpDecorator,
 } from '../../queries';
-import { buildDynamicScenarioPlan, buildStep } from '../../playwright';
+import { buildStep } from '../../playwright/__parts__/spec-gen';
+import { buildDynamicScenarioPlan } from '../../playwright/__parts__/plan-gen';
 import { buildInputSelector, normalizeSelectorToken } from './selector-helpers';
 
 export function generateStepsForSubFlow(

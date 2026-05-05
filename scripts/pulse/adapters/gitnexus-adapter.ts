@@ -8,8 +8,8 @@
 import type {
   PulseExternalAdapterStatus,
   PulseExternalSignalSource,
-  PulseSignal,
-} from '../types.capabilities';
+} from '../__parts__/types.capabilities/01-primitives';
+import type { PulseSignal } from '../__parts__/types.capabilities/05-external-signals';
 import { GitNexusCodeGraphProvider } from '../gitnexus/provider';
 
 let provider: GitNexusCodeGraphProvider | null = null;

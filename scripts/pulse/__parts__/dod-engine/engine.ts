@@ -12,7 +12,7 @@ import type {
   DoDStateSummary,
   DoDOverallStatus,
 } from '../../types.dod-engine';
-import type { PulseCapability, PulseCapabilityState } from '../../types.capabilities';
+import type { PulseCapability, PulseCapabilityState } from '../types.capabilities/03-capability';
 import {
   dodArtifactFile,
   dodGateKernelGrammar,

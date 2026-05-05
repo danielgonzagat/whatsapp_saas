@@ -1,16 +1,16 @@
+import type { PulseCapability } from './__parts__/types.capabilities/03-capability';
+import type { PulseFlowProjectionItem } from './__parts__/types.capabilities/04-flow-projection';
 import type {
-  PulseCapability,
-  PulseFlowProjectionItem,
   PulseParityGap,
   PulseParityGapKind,
   PulseParityGapsArtifact,
   PulseParityGapSeverity,
-} from './types.capabilities';
+} from './types.capabilities.parity';
 import type { PulseResolvedManifest } from './types.resolved-manifest';
 import type { PulseScopeExecutionMode } from './types.truth.scope';
 import type { PulseTruthMode } from './types.structural';
 import { deriveStructuralFamilies, slugifyStructural } from './structural-family';
-import { isInterfaceOnlyWithoutRoutes } from './parity-capability-classifiers';
+import { isInterfaceOnlyWithoutRoutes } from './parity-capability-classifiers/__parts__/classifier-helpers';
 import { unique } from './parity-utils';
 
 /** Capability families. */

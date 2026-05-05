@@ -5,10 +5,8 @@ import {
 } from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 import type { PulseCertificationProfile } from '../../types.health';
 import type { PulseCodacyEvidence } from '../../types.structural';
-import type {
-  PulseExternalAdapterSnapshot,
-  PulseExternalSignalSource,
-} from '../../types.capabilities';
+import type { PulseExternalAdapterSnapshot } from '../../__parts__/types.capabilities/05-external-signals';
+import type { PulseExternalSignalSource } from '../../__parts__/types.capabilities/01-primitives';
 import { pathExists, readTextFile } from '../../safe-fs';
 import { compact, normalizeDate, normalizePathValue } from '../../signal-normalizers';
 import {
@@ -28,7 +26,7 @@ import {
   getAdapterRequiredness,
   isAdapterRequired,
 } from '../../adapters/external-sources-orchestrator/__parts__/core';
-import type { PulseExternalAdapterProofBasis } from '../../types.capabilities';
+import type { PulseExternalAdapterProofBasis } from '../../__parts__/types.capabilities/01-primitives';
 import { PULSE_EXTERNAL_SNAPSHOT_FILES } from './snapshot-config';
 
 type AdapterClassificationFields =

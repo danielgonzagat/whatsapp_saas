@@ -1,5 +1,6 @@
-import type { PulseExternalSignalSource, PulseExternalSignalState } from '../../types.capabilities';
-import type { PulseExternalAdapterProofBasis } from '../../types.capabilities';
+import type { PulseExternalSignalSource } from '../../__parts__/types.capabilities/01-primitives';
+import type { PulseExternalSignalState } from '../../__parts__/types.capabilities/05-external-signals';
+import type { PulseExternalAdapterProofBasis } from '../../__parts__/types.capabilities/01-primitives';
 import type { BuildExternalSignalStateInput } from '../../signal-mapper';
 import {
   attachRecentChangeRefs,

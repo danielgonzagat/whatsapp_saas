@@ -5,7 +5,7 @@ import type {
   ChaosScenarioKind,
   ChaosTarget,
 } from '../../types.chaos-engine';
-import type { PulseCapability } from '../../types.capabilities';
+import type { PulseCapability } from '../../__parts__/types.capabilities/03-capability';
 import {
   ChaosProviderName,
   ChaosOperationalConcern,

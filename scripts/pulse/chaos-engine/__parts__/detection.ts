@@ -1,7 +1,7 @@
 import * as path from 'path';
 import { METHODS as HTTP_METHODS } from 'node:http';
 import type { ChaosTarget, ChaosScenarioKind } from '../../types.chaos-engine';
-import type { PulseCapability } from '../../types.capabilities';
+import type { PulseCapability } from '../../__parts__/types.capabilities/03-capability';
 import type { PulseExecutionMatrix } from '../../types.execution-matrix';
 import type { PulseExecutionTrace } from '../../types.evidence';
 import type { PulseRuntimeEvidence, PulseRuntimeProbe } from '../../types.convergence';

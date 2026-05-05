@@ -2,11 +2,11 @@ import { deriveStringUnionMembersFromTypeContract } from '../dynamic-reality-ker
 
 /**
  * Returns the string-literal union members of `PulseExternalSignalSource` declared in
- * `scripts/pulse/types.capabilities.ts`, derived dynamically via TypeScript AST. No hardcoded list.
+ * `scripts/pulse/__parts__/types.capabilities/01-primitives.ts`, derived dynamically via TypeScript AST. No hardcoded list.
  */
 export function discoverExternalSignalSourceLabels(): Set<string> {
   return deriveStringUnionMembersFromTypeContract(
-    'scripts/pulse/types.capabilities.ts',
+    'scripts/pulse/__parts__/types.capabilities/01-primitives.ts',
     'PulseExternalSignalSource',
   );
 }

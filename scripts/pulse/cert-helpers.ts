@@ -19,7 +19,7 @@ import type {
   PulseGateResult,
   PulseActorEvidence,
 } from './types.evidence';
-import type { PulseExternalSignalState } from './types.capabilities';
+import type { PulseExternalSignalState } from './__parts__/types.capabilities/05-external-signals';
 import type { PulseGateFailureClass } from './types.gate-failure';
 import type { PulseResolvedManifest } from './types.resolved-manifest';
 import { CHECKER_GAP_TYPES } from './cert-constants';

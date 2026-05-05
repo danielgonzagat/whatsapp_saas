@@ -1,12 +1,16 @@
 import type {
   PulseCapability,
   PulseCapabilityState,
+} from './__parts__/types.capabilities/03-capability';
+import type {
   PulseFlowProjection,
   PulseFlowProjectionItem,
+} from './__parts__/types.capabilities/04-flow-projection';
+import type {
   PulseParityGap,
   PulseParityGapsArtifact,
   PulseParityGapSeverity,
-} from './types.capabilities';
+} from './types.capabilities.parity';
 import type { PulseCertification } from './types.evidence';
 import type { PulseCodebaseTruth } from './types.truth';
 import type { PulseHealth } from './types.health';
@@ -21,13 +25,15 @@ import {
   isCoveredByMaterializedEntryPoint,
   isCoveredByMaterializedRouteFamily,
   isCoveredByProductSurfaceRouteFamily,
-  isFrameworkShellCapability,
   isIncludedInRoutedCapability,
+  isRoadmapCatalogCapability,
+} from './parity-capability-classifiers/__parts__/classifier-routes';
+import {
+  isFrameworkShellCapability,
   isInterfaceOnlyWithoutRoutes,
   isMaterializedCapability,
   isOperationalReadinessCapability,
-  isRoadmapCatalogCapability,
-} from './parity-capability-classifiers';
+} from './parity-capability-classifiers/__parts__/classifier-helpers';
 import {
   buildGap,
   buildSummary,

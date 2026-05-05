@@ -1,6 +1,9 @@
-import type { PulseFlowProjection, PulseFlowProjectionItem } from '../../types.capabilities';
+import type {
+  PulseFlowProjection,
+  PulseFlowProjectionItem,
+} from '../../__parts__/types.capabilities/04-flow-projection';
 import type { PulseStructuralRole } from '../../types.structural';
-import type { PulseCapabilityDoD } from '../../types.capabilities';
+import type { PulseCapabilityDoD } from '../../__parts__/types.capabilities/02-maturity-dod';
 import { deriveStructuralFamilies, familiesOverlap } from '../../structural-family';
 import { buildObservationFootprint, footprintMatchesFamilies } from '../../execution-observation';
 import { evaluateDone } from '../../definition-of-done';

@@ -4,7 +4,10 @@
 // Codacy high count to drive the final CapabilityStatus ('real'/'partial'/'latent'/'phantom').
 // See: scripts/pulse/definition-of-done.ts and scripts/pulse/__tests__/definition-of-done.spec.ts
 
-import type { PulseCapability, PulseCapabilityState } from '../../types.capabilities';
+import type {
+  PulseCapability,
+  PulseCapabilityState,
+} from '../../__parts__/types.capabilities/03-capability';
 import type { PulseCodacyEvidence, PulseStructuralGraph } from '../../types.structural';
 import type { PulseExecutionEvidence } from '../../types.evidence';
 import type { PulseResolvedManifest } from '../../types.resolved-manifest';
@@ -15,12 +18,12 @@ import { buildFallbackGroups, buildSeedGroups } from '../../capability-seed-grou
 import { deriveZeroValue } from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 import {
   getNodeFamilies,
-  getNodeRoutePatterns,
   getPrimaryFamily,
   graphTraversalDepthLimit,
   reachableRoutePatternLimit,
   unique,
-} from '../../capability-model-helpers';
+} from '../../__parts__/capability-model-helpers/main';
+import { getNodeRoutePatterns } from '../../__parts__/capability-model-helpers/graph-helpers';
 import {
   collectScenarioResults,
   countCapabilityStatus,
@@ -28,7 +31,7 @@ import {
   countMaturityStage,
   roleBlocksTraversal,
   sameToken,
-} from './helpers';
+} from './groups';
 import { processGroup, type ProcessGroupContext } from './builder-process-group';
 
 // DoD helpers (`buildCapabilityDoDEvidence`, `toDoDStatus`) and the

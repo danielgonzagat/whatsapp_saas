@@ -5,8 +5,8 @@ import type { PulseTruthMode } from './types.structural';
 import type {
   PulseCapabilityStatus,
   PulseFlowProjectionStatus,
-  PulseExternalSignalSummary,
-} from './types.capabilities';
+} from './__parts__/types.capabilities/01-primitives';
+import type { PulseExternalSignalSummary } from './__parts__/types.capabilities/05-external-signals';
 import type { PulseCertification } from './types.evidence';
 
 /** Pulse product vision shape. */

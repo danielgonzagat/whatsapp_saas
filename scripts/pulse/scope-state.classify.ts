@@ -1,11 +1,11 @@
 import * as path from 'path';
 import type { PulseConvergenceOwnerLane } from './types.gate-failure';
 import type { PulseScopeFileKind, PulseScopeSurface } from './types.truth.scope';
+import { ROOT_CONFIG_FILES } from './__parts__/scope-state.constants/main';
 import {
-  ROOT_CONFIG_FILES,
   discoverWorkspaceStructure,
   type WorkspaceStructure,
-} from './scope-state.constants';
+} from './__parts__/scope-state.constants/workspace-walk';
 import { normalizePath } from './scope-state.codacy';
 
 /**

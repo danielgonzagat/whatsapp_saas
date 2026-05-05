@@ -4,7 +4,7 @@
  */
 
 import * as https from 'https';
-import type { PulseSignal } from '../types.capabilities';
+import type { PulseSignal } from '../__parts__/types.capabilities/05-external-signals';
 
 interface GitHubActionsAdapterConfig {
   token?: string;
