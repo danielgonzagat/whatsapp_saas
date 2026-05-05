@@ -8,11 +8,19 @@ import { AutopilotCycleService } from './autopilot-cycle.service';
 import { AutopilotOpsService } from './autopilot-ops.service';
 import { AutopilotOpsConversionService } from './autopilot-ops-conversion.service';
 
-const mockQueueAdd: jest.Mock = jest.fn();
-let mockAutopilotAdd: jest.Mock;
-let mockRedisSet: jest.Mock;
-let mockRedisGet: jest.Mock;
-let mockQueueGetJobCounts: jest.Mock;
+type AnyMock = jest.Mock & {
+  mockResolvedValue: (v: unknown) => AnyMock;
+  mockResolvedValueOnce: (v: unknown) => AnyMock;
+  mockRejectedValue: (err: unknown) => AnyMock;
+  mockReturnValue: (v: unknown) => AnyMock;
+  mockReturnValueOnce: (v: unknown) => AnyMock;
+  mockImplementation: (fn: (...args: unknown[]) => unknown) => AnyMock;
+};
+const mockQueueAdd: AnyMock = jest.fn() as AnyMock;
+let mockAutopilotAdd: AnyMock;
+let mockRedisSet: AnyMock;
+let mockRedisGet: AnyMock;
+let mockQueueGetJobCounts: AnyMock;
 
 jest.mock('../queue/queue', () => ({
   autopilotQueue: { add: jest.fn(), getJobCounts: jest.fn() },
@@ -34,8 +42,31 @@ jest.mock('bullmq', () => ({
 describe('AutopilotService', () => {
   let service: AutopilotService;
 
-  const mockPrisma: Record<string, unknown> = {
-    $transaction: jest.fn((callback: (tx: unknown) => unknown) => callback(mockPrisma)),
+  type FlexMock = jest.Mock & {
+    mockResolvedValue: (v: unknown) => FlexMock;
+    mockResolvedValueOnce: (v: unknown) => FlexMock;
+    mockRejectedValue: (err: unknown) => FlexMock;
+    mockReturnValue: (v: unknown) => FlexMock;
+    mockImplementation: (fn: (...args: unknown[]) => unknown) => FlexMock;
+  };
+  type MockedPrismaShape = {
+    $transaction: FlexMock;
+    workspace: { findUnique: FlexMock; update: FlexMock };
+    conversation: { findMany: FlexMock };
+    campaign: { create: FlexMock; update: FlexMock };
+    contact: { upsert: FlexMock };
+    message: { count: FlexMock; findFirst: FlexMock };
+    subscription: { findUnique: FlexMock };
+    autopilotEvent: {
+      create: FlexMock;
+      findMany: FlexMock;
+      count: FlexMock;
+      findFirst: FlexMock;
+    };
+    auditLog: { create: FlexMock };
+  };
+  const mockPrisma: MockedPrismaShape = {
+    $transaction: jest.fn(),
     workspace: {
       findUnique: jest.fn(),
       update: jest.fn(),
@@ -67,6 +98,9 @@ describe('AutopilotService', () => {
       create: jest.fn(),
     },
   };
+  mockPrisma.$transaction.mockImplementation((callback: (tx: MockedPrismaShape) => unknown) =>
+    callback(mockPrisma),
+  );
 
   const mockAnalytics = {};
 
@@ -82,12 +116,12 @@ describe('AutopilotService', () => {
   };
 
   const mockCycle: {
-    runAutopilotCycle: jest.Mock;
-    moneyMachine: jest.Mock;
-    getRuntimeConfig: jest.Mock;
-    getQueueStats: jest.Mock;
-    nextBestAction: jest.Mock;
-    ensureCompliance: jest.Mock;
+    runAutopilotCycle: jest.Mock<(...args: unknown[]) => unknown>;
+    moneyMachine: jest.Mock<(...args: unknown[]) => unknown>;
+    getRuntimeConfig: jest.Mock<(...args: unknown[]) => unknown>;
+    getQueueStats: jest.Mock<(...args: unknown[]) => unknown>;
+    nextBestAction: jest.Mock<(...args: unknown[]) => unknown>;
+    ensureCompliance: jest.Mock<(...args: unknown[]) => unknown>;
   } = {
     runAutopilotCycle: jest.fn<() => Promise<unknown>>().mockResolvedValue({
       status: 'disabled',
@@ -109,7 +143,7 @@ describe('AutopilotService', () => {
 
   beforeEach(async () => {
     const queueModule: {
-      autopilotQueue: { add: jest.Mock; getJobCounts: jest.Mock };
+      autopilotQueue: { add: jest.Mock<(...args: unknown[]) => unknown>; getJobCounts: jest.Mock };
       flowQueue: { add: jest.Mock };
     } = jest.requireMock('../queue/queue');
 
@@ -133,10 +167,9 @@ describe('AutopilotService', () => {
     }).compile();
 
     service = module.get<AutopilotService>(AutopilotService);
-    const redisClient =
-      redisModule.createRedisClient.mock.results[
-        redisModule.createRedisClient.mock.results.length - 1
-      ]?.value || {};
+    const redisClient = (redisModule.createRedisClient.mock.results[
+      redisModule.createRedisClient.mock.results.length - 1
+    ]?.value ?? {}) as { set: jest.Mock<(...args: unknown[]) => unknown>; get: jest.Mock };
     mockRedisSet = redisClient.set;
     mockRedisGet = redisClient.get;
   });

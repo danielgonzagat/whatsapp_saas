@@ -14,7 +14,7 @@ function mockReq(): AuthenticatedRequest {
     get: () => undefined,
     header: () => undefined,
     user: { workspaceId: 'ws-1', agentId: 'agent-1', email: 'test@test.com' },
-  } as unknown as AuthenticatedRequest;
+  } as never as AuthenticatedRequest;
 }
 
 describe('affiliate-helpers', () => {

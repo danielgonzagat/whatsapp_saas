@@ -55,14 +55,16 @@ describe('ApiKeysService', () => {
     update: jest.fn(),
   };
 
-  const mockPrisma = {
+  type MockedPrisma = { apiKey: typeof mockApiKey; auditLog: typeof mockAuditLog };
+  const mockPrisma: MockedPrisma = {
     apiKey: mockApiKey,
     auditLog: mockAuditLog,
-  } as unknown as PrismaService;
+  };
 
-  const mockAuditService = {
+  type MockedAuditService = { log: MockedLogFn };
+  const mockAuditService: MockedAuditService = {
     log: jest.fn().mockResolvedValue(undefined as never) as MockedLogFn,
-  } as unknown as AuditService;
+  };
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -70,10 +72,10 @@ describe('ApiKeysService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ApiKeysService,
-        { provide: PrismaService, useValue: mockPrisma },
+        { provide: PrismaService, useValue: mockPrisma as never },
         {
           provide: AuditService,
-          useValue: mockAuditService,
+          useValue: mockAuditService as never,
         },
       ],
     }).compile();

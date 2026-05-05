@@ -72,7 +72,7 @@ export class AuthController {
         tags: { type: 'auth_alert', operation: 'register' },
         extra: {
           email: (body.email ?? '').substring(0, 3) + '***',
-          hasReferral: Boolean((body as unknown as Record<string, unknown>).referralCode),
+          hasReferral: Boolean((body as never as Record<string, unknown>).referralCode),
         },
         level: 'error',
       });

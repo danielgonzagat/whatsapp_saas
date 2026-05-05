@@ -70,10 +70,7 @@ describe('TranscriptionService', () => {
       alertOnCriticalError: jest.fn(),
     };
 
-    service = new TranscriptionService(
-      config as unknown as ConstructorParameters<typeof TranscriptionService>[0],
-      opsAlert as unknown as ConstructorParameters<typeof TranscriptionService>[1],
-    );
+    service = new TranscriptionService(config as never, opsAlert as never);
   });
 
   afterEach(() => {
@@ -92,9 +89,7 @@ describe('TranscriptionService', () => {
     it('returns fallback when openai key is not configured', async () => {
       mockExistsSync.mockReturnValue(true);
       config.get.mockReturnValue(undefined);
-      const svc = new TranscriptionService(
-        config as unknown as ConstructorParameters<typeof TranscriptionService>[0],
-      );
+      const svc = new TranscriptionService(config as never);
 
       const result = await svc.transcribeAudio('/tmp/test.ogg');
 
@@ -179,7 +174,7 @@ describe('TranscriptionService', () => {
             ok: false,
             status: 400,
             text: () => Promise.resolve('bad request'),
-          } as unknown as Response);
+          } as Response);
         }
         return Promise.resolve({
           ok: true,
