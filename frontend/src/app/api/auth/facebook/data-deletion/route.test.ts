@@ -1,3 +1,4 @@
+import { type NextRequest } from 'next/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
@@ -22,7 +23,7 @@ function createRequest(
       host: 'auth.kloel.com',
     }),
     text: vi.fn(async () => body),
-  } as any;
+  } as unknown as NextRequest;
 }
 
 describe('facebook data deletion proxy route', () => {
