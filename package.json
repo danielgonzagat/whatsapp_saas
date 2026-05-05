@@ -129,7 +129,7 @@
     "pg": "^8.20.0",
     "qrcode": "^1.5.4",
     "react": "^19.2.5",
-    "zustand": "^5.0.12"
+    "zustand": "^5.0.13"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
