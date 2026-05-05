@@ -1,11 +1,54 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import * as db from '../db';
+import type { Mock } from 'vitest';
 import { runScanContact } from '../processors/autopilot-processor';
 import * as unifiedAgentIntegrator from '../providers/unified-agent-integrator';
 import * as queueModule from '../queue';
 import * as redisClientModule from '../redis-client';
 import { setMockContact, setupDefaultMocks } from './__parts__/scan-contact.setup';
 import { addSweepTests } from './__parts__/scan-contact.cases.sweep';
+
+type MockPrisma = Record<string, Record<string, Mock>>;
+
+type FlexMock = Mock;
+
+const mockPrisma = vi.hoisted<MockPrisma>(() => ({
+  workspace: { findUnique: vi.fn() as FlexMock, findMany: vi.fn() as FlexMock },
+  contact: {
+    findFirst: vi.fn() as FlexMock,
+    findUnique: vi.fn() as FlexMock,
+    update: vi.fn() as FlexMock,
+    updateMany: vi.fn() as FlexMock,
+  },
+  message: {
+    findFirst: vi.fn() as FlexMock,
+    findMany: vi.fn() as FlexMock,
+    create: vi.fn() as FlexMock,
+  },
+  product: { findMany: vi.fn() as FlexMock },
+  kloelMemory: {
+    findMany: vi.fn() as FlexMock,
+    findFirst: vi.fn() as FlexMock,
+    findUnique: vi.fn() as FlexMock,
+    upsert: vi.fn() as FlexMock,
+    create: vi.fn() as FlexMock,
+  },
+  conversation: {
+    findMany: vi.fn() as FlexMock,
+    findFirst: vi.fn() as FlexMock,
+    create: vi.fn() as FlexMock,
+    update: vi.fn() as FlexMock,
+    updateMany: vi.fn() as FlexMock,
+    count: vi.fn() as FlexMock,
+  },
+  auditLog: { create: vi.fn() as FlexMock },
+  autopilotEvent: { create: vi.fn() as FlexMock },
+  autonomyExecution: {
+    create: vi.fn() as FlexMock,
+    findFirst: vi.fn() as FlexMock,
+    update: vi.fn() as FlexMock,
+  },
+  systemInsight: { findFirst: vi.fn() as FlexMock, create: vi.fn() as FlexMock },
+}));
 
 const {
   mockDispatchOutbound,
@@ -23,29 +66,7 @@ const {
 
 vi.mock('../db', () => ({
   prisma: {
-    workspace: { findUnique: vi.fn(), findMany: vi.fn() },
-    contact: { findFirst: vi.fn(), findUnique: vi.fn(), update: vi.fn(), updateMany: vi.fn() },
-    message: { findFirst: vi.fn(), findMany: vi.fn(), create: vi.fn() },
-    product: { findMany: vi.fn() },
-    kloelMemory: {
-      findMany: vi.fn(),
-      findFirst: vi.fn(),
-      findUnique: vi.fn(),
-      upsert: vi.fn(),
-      create: vi.fn(),
-    },
-    conversation: {
-      findMany: vi.fn(),
-      findFirst: vi.fn(),
-      create: vi.fn(),
-      update: vi.fn(),
-      updateMany: vi.fn(),
-      count: vi.fn(),
-    },
-    auditLog: { create: vi.fn() },
-    autopilotEvent: { create: vi.fn() },
-    autonomyExecution: { create: vi.fn(), findFirst: vi.fn(), update: vi.fn() },
-    systemInsight: { findFirst: vi.fn(), create: vi.fn() },
+    ...mockPrisma,
     $queryRaw: vi.fn(async () => []),
   },
 }));
@@ -100,8 +121,6 @@ vi.mock('../providers/unified-agent-integrator', () => ({
   mapUnifiedActionsToAutopilot: mockMapUnifiedActions,
   extractTextResponse: mockExtractTextResponse,
 }));
-
-const mockPrisma: any = db.prisma;
 
 describe('scan-contact job', () => {
   beforeEach(() => {

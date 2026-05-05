@@ -1,16 +1,25 @@
 import { describe, expect, it } from 'vitest';
 import { planCiaActions } from '../processors/cia/brain';
+import type { CiaWorkspaceState } from '../processors/cia/build-state';
 
 // PULSE_OK: assertions exist below
 describe('cia-brain', () => {
   it('prioritizes payment recovery and hot leads while respecting the action cap', () => {
-    const state: any = {
+    const state: CiaWorkspaceState = {
       workspaceId: 'ws-1',
       generatedAt: new Date().toISOString(),
       snapshot: {
         openBacklog: 18,
         hotLeadCount: 4,
         pendingPaymentCount: 2,
+        approvedSalesCount: 0,
+        approvedSalesAmount: 0,
+        avgResponseMinutes: 0,
+        dominantObjection: null,
+        topProductKey: null,
+        growthRiskLevel: 'MEDIUM' as const,
+        attentionBudget: { hot: 4, pendingPayments: 2, support: 0, nurture: 0, cold: 0 },
+        generatedAt: new Date().toISOString(),
       },
       marketSignals: [],
       candidates: [
@@ -20,11 +29,20 @@ describe('cia-brain', () => {
           phone: '5511999999991',
           contactName: 'Pagamento',
           unreadCount: 0,
+          pending: false,
           lastMessageText: 'me manda o pix novamente',
           priority: 99,
           cluster: 'PAYMENT',
           suggestedAction: 'PAYMENT_RECOVERY',
-          demandState: { attentionScore: 1.1 },
+          demandState: {
+            heatScore: 0.5,
+            fatigueScore: 0.1,
+            conversionOdds: 0.7,
+            abandonmentRisk: 0.1,
+            lane: 'HOT' as const,
+            strategy: 'PUSH' as const,
+            attentionScore: 1.1,
+          },
           silenceMinutes: 90,
           cognitiveState: {
             intent: 'PAYMENT',
@@ -51,11 +69,20 @@ describe('cia-brain', () => {
           phone: '5511999999992',
           contactName: 'Quente',
           unreadCount: 2,
+          pending: false,
           lastMessageText: 'quanto custa o serum?',
           priority: 97,
           cluster: 'HOT',
           suggestedAction: 'RESPOND',
-          demandState: { attentionScore: 1.02 },
+          demandState: {
+            heatScore: 0.5,
+            fatigueScore: 0.1,
+            conversionOdds: 0.8,
+            abandonmentRisk: 0.05,
+            lane: 'HOT' as const,
+            strategy: 'PUSH' as const,
+            attentionScore: 1.02,
+          },
           silenceMinutes: 5,
           cognitiveState: {
             intent: 'BUYING',
@@ -82,11 +109,20 @@ describe('cia-brain', () => {
           phone: '5511999999993',
           contactName: 'Morno',
           unreadCount: 0,
+          pending: false,
           lastMessageText: 'ainda estou pensando',
           priority: 72,
           cluster: 'WARM',
           suggestedAction: 'FOLLOWUP_SOFT',
-          demandState: { attentionScore: 0.7 },
+          demandState: {
+            heatScore: 0.3,
+            fatigueScore: 0.2,
+            conversionOdds: 0.4,
+            abandonmentRisk: 0.3,
+            lane: 'WARM' as const,
+            strategy: 'NURTURE' as const,
+            attentionScore: 0.7,
+          },
           silenceMinutes: 720,
           cognitiveState: {
             intent: 'CURIOUS',
@@ -136,13 +172,21 @@ describe('cia-brain', () => {
   });
 
   it('uses global strategy hints to expand the cycle and prefer payment recovery', () => {
-    const state: any = {
+    const state: CiaWorkspaceState = {
       workspaceId: 'ws-1',
       generatedAt: new Date().toISOString(),
       snapshot: {
         openBacklog: 24,
         hotLeadCount: 2,
         pendingPaymentCount: 3,
+        approvedSalesCount: 0,
+        approvedSalesAmount: 0,
+        avgResponseMinutes: 0,
+        dominantObjection: null,
+        topProductKey: null,
+        growthRiskLevel: 'MEDIUM' as const,
+        attentionBudget: { hot: 2, pendingPayments: 3, support: 0, nurture: 0, cold: 0 },
+        generatedAt: new Date().toISOString(),
       },
       marketSignals: [],
       candidates: [
@@ -151,10 +195,19 @@ describe('cia-brain', () => {
           contactId: 'contact-payment-1',
           priority: 88,
           unreadCount: 0,
+          pending: false,
           lastMessageText: 'manda o pix de novo',
           cluster: 'PAYMENT',
           suggestedAction: 'PAYMENT_RECOVERY',
-          demandState: { attentionScore: 0.9 },
+          demandState: {
+            heatScore: 0.5,
+            fatigueScore: 0.1,
+            conversionOdds: 0.7,
+            abandonmentRisk: 0.1,
+            lane: 'HOT' as const,
+            strategy: 'PUSH' as const,
+            attentionScore: 0.9,
+          },
           silenceMinutes: 180,
           cognitiveState: {
             intent: 'PAYMENT',
@@ -180,10 +233,19 @@ describe('cia-brain', () => {
           contactId: 'contact-followup-1',
           priority: 89,
           unreadCount: 0,
+          pending: false,
           lastMessageText: 'depois eu vejo',
           cluster: 'WARM',
           suggestedAction: 'FOLLOWUP_SOFT',
-          demandState: { attentionScore: 0.7 },
+          demandState: {
+            heatScore: 0.3,
+            fatigueScore: 0.2,
+            conversionOdds: 0.4,
+            abandonmentRisk: 0.3,
+            lane: 'WARM' as const,
+            strategy: 'NURTURE' as const,
+            attentionScore: 0.7,
+          },
           silenceMinutes: 480,
           cognitiveState: {
             intent: 'CURIOUS',
@@ -209,10 +271,19 @@ describe('cia-brain', () => {
           contactId: 'contact-followup-2',
           priority: 74,
           unreadCount: 0,
+          pending: false,
           lastMessageText: 'estou pensando',
           cluster: 'COLD',
           suggestedAction: 'FOLLOWUP_SOFT',
-          demandState: { attentionScore: 0.5 },
+          demandState: {
+            heatScore: 0.1,
+            fatigueScore: 0.4,
+            conversionOdds: 0.2,
+            abandonmentRisk: 0.5,
+            lane: 'COLD' as const,
+            strategy: 'WAIT' as const,
+            attentionScore: 0.5,
+          },
           silenceMinutes: 1500,
           cognitiveState: {
             intent: 'UNKNOWN',

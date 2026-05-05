@@ -46,7 +46,7 @@ describe('whatsappApiProvider', () => {
         phoneNumber: '+55 11 99999-9999',
       }),
     });
-    global.fetch = fetchMock as any;
+    global.fetch = fetchMock as unknown as typeof fetch;
 
     const { whatsappApiProvider } = await import('../providers/whatsapp-api-provider');
     const result = await whatsappApiProvider.getStatus('ws-1');
@@ -70,7 +70,7 @@ describe('whatsappApiProvider', () => {
         messageId: 'wamid.123',
       }),
     });
-    global.fetch = fetchMock as any;
+    global.fetch = fetchMock as unknown as typeof fetch;
 
     const { whatsappApiProvider } = await import('../providers/whatsapp-api-provider');
     const result = await whatsappApiProvider.sendText({ id: 'ws-1' }, '5511999999999', 'Oi', {

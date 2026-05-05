@@ -1,3 +1,4 @@
+import type { PrismaClient } from '@prisma/client';
 import { describe, expect, it, vi } from 'vitest';
 import {
   computeLearningSnapshot,
@@ -9,7 +10,7 @@ import {
 describe('cia-self-improvement', () => {
   it('picks the best stored variant while still supporting exploration defaults', async () => {
     const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.99);
-    const prisma: any = {
+    const prisma = {
       kloelMemory: {
         findMany: vi.fn(async () => [
           {
@@ -22,7 +23,7 @@ describe('cia-self-improvement', () => {
           },
         ]),
       },
-    };
+    } as unknown as PrismaClient;
 
     const variant = await pickVariant(prisma, 'ws-1', 'followup');
 
@@ -36,13 +37,13 @@ describe('cia-self-improvement', () => {
     const upsert = vi.fn(async () => ({}));
     const findUnique = vi.fn(async () => null);
 
-    const prisma: any = {
+    const prisma = {
       kloelMemory: {
         create,
         upsert,
         findUnique,
       },
-    };
+    } as unknown as PrismaClient;
 
     await recordDecisionLog(prisma, {
       workspaceId: 'ws-1',
@@ -85,7 +86,7 @@ describe('cia-self-improvement', () => {
   });
 
   it('builds a learning snapshot from recent decision logs', async () => {
-    const prisma: any = {
+    const prisma = {
       kloelMemory: {
         findMany: vi.fn(async () => [
           { value: { variantKey: 'followup:direct', outcome: 'SENT' } },
@@ -93,7 +94,7 @@ describe('cia-self-improvement', () => {
           { value: { variantKey: 'followup:proof', outcome: 'FAILED' } },
         ]),
       },
-    };
+    } as unknown as PrismaClient;
 
     const snapshot = await computeLearningSnapshot(prisma, 'ws-1');
 

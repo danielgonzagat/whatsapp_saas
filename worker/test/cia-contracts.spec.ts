@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { evaluateCiaCandidate, planCiaActions } from '../processors/cia/brain';
+import type { CiaDecisionBatch } from '../processors/cia/brain';
 import {
   assertCiaExhaustion,
   assertCiaGuarantees,
@@ -7,6 +8,8 @@ import {
   buildCiaGuaranteeReport,
 } from '../processors/cia/contracts';
 import { buildSeedCognitiveState } from '../processors/cia/cognitive-state';
+import type { CiaCandidate, CiaCluster, CiaWorkspaceState } from '../processors/cia/build-state';
+import type { DemandStrategy } from '../providers/commercial-intelligence.types';
 
 function mulberry32(seed: number) {
   return function () {
@@ -17,19 +20,20 @@ function mulberry32(seed: number) {
   };
 }
 
-function buildRandomState(seed: number, candidateCount: number) {
+function buildRandomState(seed: number, candidateCount: number): CiaWorkspaceState {
   const rand = mulberry32(seed);
-  const candidates: any[] = [];
-  const clusters = {
-    HOT: [] as any[],
-    PAYMENT: [] as any[],
-    WARM: [] as any[],
-    COLD: [] as any[],
+  const candidates: CiaCandidate[] = [];
+  const clusters: Record<CiaCluster, CiaCandidate[]> = {
+    HOT: [],
+    PAYMENT: [],
+    WARM: [],
+    COLD: [],
   };
 
   for (let index = 0; index < candidateCount; index += 1) {
     const roll = rand();
-    const cluster = roll < 0.2 ? 'PAYMENT' : roll < 0.45 ? 'HOT' : roll < 0.7 ? 'WARM' : 'COLD';
+    const cluster: CiaCluster =
+      roll < 0.2 ? 'PAYMENT' : roll < 0.45 ? 'HOT' : roll < 0.7 ? 'WARM' : 'COLD';
     const type =
       cluster === 'PAYMENT' ? 'PAYMENT_RECOVERY' : roll < 0.6 ? 'RESPOND' : 'FOLLOWUP_SOFT';
     const lastMessageText =
@@ -38,32 +42,50 @@ function buildRandomState(seed: number, candidateCount: number) {
         : cluster === 'HOT'
           ? 'quanto custa isso?'
           : 'ainda estou pensando';
-    const candidate = {
-      conversationId: `conv-${seed}-${index}`,
-      contactId: `contact-${seed}-${index}`,
-      phone: `55${seed}${index}`.slice(0, 13),
+    const demandLane: 'HOT' | 'WARM' | 'COLD' =
+      cluster === 'COLD' ? 'COLD' : cluster === 'WARM' ? 'WARM' : 'HOT';
+    const demandStrategy: DemandStrategy =
+      cluster === 'PAYMENT' ? 'RECOVER_PAYMENT' : cluster === 'HOT' ? 'PUSH' : 'NURTURE';
+    const unreadCount = Math.floor(rand() * 4);
+    const silenceMinutes = Math.floor(rand() * 2000);
+    const priority = Number((rand() * 100 + (cluster === 'PAYMENT' ? 50 : 0)).toFixed(3));
+    const contactId = `contact-${seed}-${index}`;
+    const conversationId = `conv-${seed}-${index}`;
+    const phone = `55${seed}${index}`.slice(0, 13);
+
+    const candidate: CiaCandidate = {
+      conversationId,
+      contactId,
+      phone,
       contactName: `Contato ${index}`,
-      unreadCount: Math.floor(rand() * 4),
+      unreadCount,
+      pending: false,
       lastMessageText,
-      priority: Number((rand() * 100 + (cluster === 'PAYMENT' ? 50 : 0)).toFixed(3)),
+      priority,
       cluster,
       suggestedAction: type,
       demandState: {
+        heatScore: rand(),
+        fatigueScore: rand() * 0.3,
+        conversionOdds: rand(),
+        abandonmentRisk: rand() * 0.2,
+        lane: demandLane,
+        strategy: demandStrategy,
         attentionScore: rand(),
       },
-      silenceMinutes: Math.floor(rand() * 2000),
+      silenceMinutes,
       cognitiveState: buildSeedCognitiveState({
-        conversationId: `conv-${seed}-${index}`,
-        contactId: `contact-${seed}-${index}`,
-        phone: `55${seed}${index}`.slice(0, 13),
+        conversationId,
+        contactId,
+        phone,
         lastMessageText,
-        unreadCount: Math.floor(rand() * 4),
-        lastMessageAt: new Date(Date.now() - Math.floor(rand() * 2000) * 60_000),
+        unreadCount,
+        lastMessageAt: new Date(Date.now() - silenceMinutes * 60_000),
         leadScore: Math.floor(rand() * 100),
       }),
     };
     candidates.push(candidate);
-    clusters[cluster as keyof typeof clusters].push(candidate);
+    clusters[cluster].push(candidate);
   }
 
   return {
@@ -73,6 +95,20 @@ function buildRandomState(seed: number, candidateCount: number) {
       openBacklog: candidateCount,
       hotLeadCount: clusters.HOT.length,
       pendingPaymentCount: clusters.PAYMENT.length,
+      approvedSalesCount: 0,
+      approvedSalesAmount: 0,
+      avgResponseMinutes: 0,
+      dominantObjection: null,
+      topProductKey: null,
+      growthRiskLevel: 'MEDIUM' as const,
+      attentionBudget: {
+        hot: clusters.HOT.length,
+        pendingPayments: clusters.PAYMENT.length,
+        support: 0,
+        nurture: 0,
+        cold: 0,
+      },
+      generatedAt: new Date().toISOString(),
     },
     marketSignals: [],
     candidates: candidates.sort((a, b) => b.priority - a.priority),
@@ -84,9 +120,9 @@ describe('cia-contracts', () => {
   it('proves core invariants across many deterministic random cycles', { timeout: 20000 }, () => {
     for (let seed = 1; seed <= 200; seed += 1) {
       const state = buildRandomState(seed, 120);
-      const batch = planCiaActions(state as any, { maxActionsPerCycle: 5 });
-      const report = buildCiaGuaranteeReport(state as any, batch, 5);
-      const exhaustionReport = buildCiaExhaustionReport(state as any, batch, 5);
+      const batch = planCiaActions(state, { maxActionsPerCycle: 5 });
+      const report = buildCiaGuaranteeReport(state, batch, 5);
+      const exhaustionReport = buildCiaExhaustionReport(state, batch, 5);
 
       expect(() => assertCiaGuarantees(report)).not.toThrow();
       expect(() => assertCiaExhaustion(exhaustionReport)).not.toThrow();
@@ -98,9 +134,9 @@ describe('cia-contracts', () => {
 
   it('keeps guarantees under scale with 1000 simulated contacts', () => {
     const state = buildRandomState(999, 1000);
-    const batch = planCiaActions(state as any, { maxActionsPerCycle: 5 });
-    const report = buildCiaGuaranteeReport(state as any, batch, 5);
-    const exhaustionReport = buildCiaExhaustionReport(state as any, batch, 5);
+    const batch = planCiaActions(state, { maxActionsPerCycle: 5 });
+    const report = buildCiaGuaranteeReport(state, batch, 5);
+    const exhaustionReport = buildCiaExhaustionReport(state, batch, 5);
 
     expect(report.details.candidateCount).toBe(1000);
     expect(report.details.selectedCount).toBeLessThanOrEqual(5);
@@ -136,7 +172,7 @@ describe('cia-contracts', () => {
       summary: '',
     };
 
-    const report = buildCiaGuaranteeReport(state as any, batch as any, 5);
+    const report = buildCiaGuaranteeReport(state, batch as unknown as CiaDecisionBatch, 5);
 
     expect(report.guaranteed).toBe(false);
     expect(() => assertCiaGuarantees(report)).toThrow(/cia_contract_violation/);
@@ -167,7 +203,11 @@ describe('cia-contracts', () => {
       summary: 'Vou agir em um fantasma.',
     };
 
-    const exhaustionReport = buildCiaExhaustionReport(state as any, batch as any, 5);
+    const exhaustionReport = buildCiaExhaustionReport(
+      state,
+      batch as unknown as CiaDecisionBatch,
+      5,
+    );
 
     expect(exhaustionReport.exhaustive).toBe(false);
     expect(exhaustionReport.orphanSelectedCount).toBe(1);
@@ -179,7 +219,7 @@ describe('cia-contracts', () => {
       const state = buildRandomState(seed * 17, 25);
 
       for (const candidate of state.candidates) {
-        const decision = evaluateCiaCandidate(candidate as any, null);
+        const decision = evaluateCiaCandidate(candidate, null);
 
         expect(decision.selectedActionRank).toBe(1);
         expect(decision.betterActionCount).toBe(0);

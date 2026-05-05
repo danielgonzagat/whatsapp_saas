@@ -3,28 +3,35 @@ process.env.AUTOPILOT_WINDOW_START = '0';
 process.env.AUTOPILOT_WINDOW_END = '24';
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import * as db from '../db';
 import { runCiaCycleWorkspace } from '../processors/autopilot-processor';
 import { autopilotQueue } from '../queue';
 
-vi.mock('../db', () => ({
-  prisma: {
-    workspace: { findUnique: vi.fn(), findMany: vi.fn() },
-    conversation: { findMany: vi.fn(), count: vi.fn() },
-    contact: { findFirst: vi.fn(), findUnique: vi.fn() },
-    message: { findFirst: vi.fn(), findMany: vi.fn(), create: vi.fn() },
-    kloelMemory: {
-      upsert: vi.fn(),
-      create: vi.fn(),
-      findMany: vi.fn(),
-      findUnique: vi.fn(),
-    },
-    agentWorkItem: { findMany: vi.fn() },
-    accountProofSnapshot: { create: vi.fn() },
-    systemInsight: { findFirst: vi.fn(), create: vi.fn() },
-    autopilotEvent: { findMany: vi.fn(), create: vi.fn() },
-    auditLog: { create: vi.fn() },
+type FlexMock = ReturnType<typeof vi.fn>;
+
+const mockPrisma = vi.hoisted(() => ({
+  workspace: { findUnique: vi.fn() as FlexMock, findMany: vi.fn() as FlexMock },
+  conversation: { findMany: vi.fn() as FlexMock, count: vi.fn() as FlexMock },
+  contact: { findFirst: vi.fn() as FlexMock, findUnique: vi.fn() as FlexMock },
+  message: {
+    findFirst: vi.fn() as FlexMock,
+    findMany: vi.fn() as FlexMock,
+    create: vi.fn() as FlexMock,
   },
+  kloelMemory: {
+    upsert: vi.fn() as FlexMock,
+    create: vi.fn() as FlexMock,
+    findMany: vi.fn() as FlexMock,
+    findUnique: vi.fn() as FlexMock,
+  },
+  agentWorkItem: { findMany: vi.fn() as FlexMock },
+  accountProofSnapshot: { create: vi.fn() as FlexMock },
+  systemInsight: { findFirst: vi.fn() as FlexMock, create: vi.fn() as FlexMock },
+  autopilotEvent: { findMany: vi.fn() as FlexMock, create: vi.fn() as FlexMock },
+  auditLog: { create: vi.fn() as FlexMock },
+}));
+
+vi.mock('../db', () => ({
+  prisma: mockPrisma,
 }));
 
 vi.mock('../providers/whatsapp-engine', () => ({
@@ -67,7 +74,6 @@ vi.mock('../providers/channel-dispatcher', () => ({
   sendEmail: vi.fn(),
 }));
 
-const mockPrisma: any = db.prisma;
 // PULSE_OK: assertions exist below
 describe('cia-cycle', () => {
   beforeEach(() => {
@@ -105,8 +111,8 @@ describe('cia-cycle', () => {
         updatedAt: new Date(),
       },
     ]);
-    mockPrisma.accountProofSnapshot.create.mockImplementation(({ data }: any) =>
-      Promise.resolve({ id: 'proof-1', ...data }),
+    mockPrisma.accountProofSnapshot.create.mockImplementation(
+      ({ data }: { data: Record<string, unknown> }) => Promise.resolve({ id: 'proof-1', ...data }),
     );
     mockPrisma.systemInsight.create.mockResolvedValue({});
     mockPrisma.auditLog.create.mockResolvedValue({});
