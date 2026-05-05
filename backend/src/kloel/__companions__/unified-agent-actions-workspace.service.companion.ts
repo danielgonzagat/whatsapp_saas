@@ -1,9 +1,25 @@
+import type { PrismaClient } from '@prisma/client';
+
 type UnknownRecord = Record<string, unknown>;
+
+interface WorkspaceActionArgs {
+  includeMetrics?: boolean;
+  includeConnections?: boolean;
+  includeHealth?: boolean;
+}
+
+interface WorkspacePrismaDelegate {
+  workspace: PrismaClient['workspace'];
+  contact: PrismaClient['contact'];
+  message: PrismaClient['message'];
+  flow: PrismaClient['flow'];
+  product: PrismaClient['product'];
+}
 
 export async function actionGetWorkspaceStatus(deps: {
   workspaceId: string;
-  args: any;
-  prisma: any;
+  args: WorkspaceActionArgs;
+  prisma: WorkspacePrismaDelegate;
 }) {
   const { workspaceId, args } = deps;
   const includeMetrics = args?.includeMetrics !== false;

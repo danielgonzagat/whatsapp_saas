@@ -1,4 +1,5 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import type { PrismaService } from '../../prisma/prisma.service';
 import type { ConnectService } from '../../payments/connect/connect.service';
 
@@ -76,9 +77,12 @@ export type KycSyncDeps = {
   connectService: ConnectService;
 };
 
-export async function doAdminApprove(deps: { prisma: any }, agentId: string) {
+export async function doAdminApprove(
+  deps: { prisma: Pick<PrismaService, '$transaction'> },
+  agentId: string,
+) {
   await deps.prisma.$transaction(
-    async (tx: any) => {
+    async (tx: Prisma.TransactionClient) => {
       const a = await tx.agent.findUnique({
         where: { id: agentId },
         select: { id: true, kycStatus: true },
@@ -91,13 +95,15 @@ export async function doAdminApprove(deps: { prisma: any }, agentId: string) {
       });
       return a;
     },
-    { isolationLevel: 'ReadCommitted' as any },
+    { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted },
   );
   return { success: true, status: 'approved', agentId };
 }
 
+type AutoApprovePrisma = { prisma: Pick<PrismaService, 'agent'> };
+
 export async function doAutoApproveIfComplete(
-  deps: { prisma: any },
+  deps: AutoApprovePrisma,
   getCompletion: (agentId: string, workspaceId: string) => Promise<{ percentage: number }>,
   agentId: string,
   workspaceId: string,

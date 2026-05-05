@@ -15,8 +15,19 @@ jest.mock('openai');
 
 // PULSE_OK: assertions exist below
 describe('OpenAI Wrapper', () => {
-  function makeRetryableError(message: string, status = 500) {
-    const err: any = new Error(message);
+  type RetryableTestError = Error & { status: number };
+
+  type FlexMock = jest.Mock & {
+    mockResolvedValue: (v: unknown) => FlexMock;
+    mockResolvedValueOnce: (v: unknown) => FlexMock;
+    mockRejectedValue: (e: unknown) => FlexMock;
+    mockRejectedValueOnce: (e: unknown) => FlexMock;
+    mockReturnValue: (v: unknown) => FlexMock;
+    mockImplementation: (fn: (...args: unknown[]) => unknown) => FlexMock;
+  };
+
+  function makeRetryableError(message: string, status = 500): RetryableTestError {
+    const err = new Error(message) as RetryableTestError;
     err.status = status;
     return err;
   }
@@ -51,7 +62,7 @@ describe('OpenAI Wrapper', () => {
 
     it('should throw after max retries', async () => {
       const mockFn = jest
-        .fn<() => Promise<any>>()
+        .fn<() => Promise<{ success: boolean }>>()
         .mockRejectedValue(makeRetryableError('Persistent error', 500));
 
       await expect(
@@ -66,9 +77,9 @@ describe('OpenAI Wrapper', () => {
     });
 
     it('should not retry non-retryable errors', async () => {
-      const error = new Error('Invalid API key') as any;
+      const error = new Error('Invalid API key') as RetryableTestError;
       error.status = 401;
-      const mockFn = jest.fn<() => Promise<any>>().mockRejectedValue(error);
+      const mockFn = jest.fn<() => Promise<{ success: boolean }>>().mockRejectedValue(error);
 
       await expect(
         callOpenAIWithRetry(mockFn, { maxRetries: 3, initialDelayMs: 10 }),
@@ -80,7 +91,7 @@ describe('OpenAI Wrapper', () => {
 
     it('should use exponential backoff', async () => {
       jest.useFakeTimers();
-      jest.spyOn(Math, 'random').mockReturnValue(0);
+      const randomSpy = jest.spyOn(Math, 'random').mockReturnValue(0);
       const setTimeoutSpy = jest.spyOn(global, 'setTimeout');
 
       const mockFn = jest
@@ -109,31 +120,31 @@ describe('OpenAI Wrapper', () => {
       await expect(promise).resolves.toEqual({ success: true });
 
       setTimeoutSpy.mockRestore();
-      (Math.random as any).mockRestore?.();
+      randomSpy.mockRestore();
       jest.useRealTimers();
     });
   });
 
   describe('chatCompletionWithFallback', () => {
     let mockOpenAI: OpenAI;
-    let createMock: any;
+    let createMock: FlexMock;
 
     beforeEach(() => {
-      createMock = jest.fn();
+      createMock = jest.fn() as FlexMock;
       mockOpenAI = {
         chat: {
           completions: {
-            create: createMock,
+            create: createMock as jest.Mock,
           },
         },
-      } as any;
+      } as unknown as OpenAI;
     });
 
     it('should use primary model when successful', async () => {
       const mockResponse = {
         choices: [{ message: { content: 'Hello' } }],
       };
-      createMock.mockResolvedValue(mockResponse as any);
+      createMock.mockResolvedValue(mockResponse);
 
       const result = await chatCompletionWithFallback(
         mockOpenAI,
@@ -155,10 +166,10 @@ describe('OpenAI Wrapper', () => {
       };
 
       // Falha primária (não-retryable) -> não retrya, cai no fallback em seguida
-      const nonRetryable: any = new Error('Primary failed');
+      const nonRetryable = new Error('Primary failed') as RetryableTestError;
       nonRetryable.status = 400;
 
-      createMock.mockRejectedValueOnce(nonRetryable).mockResolvedValueOnce(mockResponse as any);
+      createMock.mockRejectedValueOnce(nonRetryable).mockResolvedValueOnce(mockResponse);
 
       const result = await chatCompletionWithFallback(
         mockOpenAI,
@@ -182,17 +193,17 @@ describe('OpenAI Wrapper', () => {
 
   describe('chatCompletionStreamWithRetry', () => {
     let mockOpenAI: OpenAI;
-    let createMock: any;
+    let createMock: FlexMock;
 
     beforeEach(() => {
-      createMock = jest.fn();
+      createMock = jest.fn() as FlexMock;
       mockOpenAI = {
         chat: {
           completions: {
-            create: createMock,
+            create: createMock as jest.Mock,
           },
         },
-      } as any;
+      } as unknown as OpenAI;
     });
 
     it('normalizes max_tokens into max_completion_tokens for streaming requests', async () => {
@@ -201,7 +212,7 @@ describe('OpenAI Wrapper', () => {
           yield { choices: [{ delta: { content: 'oi' } }] };
         },
       };
-      createMock.mockResolvedValue(streamMock as any);
+      createMock.mockResolvedValue(streamMock);
 
       const result = await chatCompletionStreamWithRetry(mockOpenAI, {
         model: 'gpt-4.1',

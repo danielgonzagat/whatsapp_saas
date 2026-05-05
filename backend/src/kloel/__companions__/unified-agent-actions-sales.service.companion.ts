@@ -1,20 +1,51 @@
+import type { PrismaClient } from '@prisma/client';
+
 type UnknownRecord = Record<string, unknown>;
+
+interface SalesActionArgs {
+  objectionType?: string;
+  technique?: string;
+}
+
+interface SalesMessagingService {
+  actionSendMessage(
+    workspaceId: string,
+    phone: string,
+    args: { message: string },
+    context?: UnknownRecord,
+  ): unknown;
+}
+
+interface SalesPrismaDelegate {
+  kloelMemory: PrismaClient['kloelMemory'];
+  autopilotEvent: PrismaClient['autopilotEvent'];
+}
+
+interface SalesOpsAlert {
+  alertOnCriticalError(error: unknown, context: string): Promise<void>;
+}
+
+interface KloelMemoryRow {
+  id: string;
+  key: string;
+  value: unknown;
+}
 
 export async function actionHandleObjection(deps: {
   workspaceId: string;
   contactId: string;
   phone: string;
-  args: any;
+  args: SalesActionArgs;
   context: UnknownRecord | undefined;
-  prisma: any;
-  messaging: any;
+  prisma: SalesPrismaDelegate;
+  messaging: SalesMessagingService;
   logger: { error(msg: string): void };
-  opsAlert?: any;
+  opsAlert?: SalesOpsAlert;
 }) {
   const { workspaceId, contactId, phone, args, context } = deps;
   try {
-    const objectionType = (args as UnknownRecord)?.objectionType || 'other';
-    const technique = (args as UnknownRecord)?.technique || 'value_focus';
+    const objectionType = args.objectionType || 'other';
+    const technique = args.technique || 'value_focus';
     const objections = await deps.prisma.kloelMemory.findMany({
       where: { workspaceId, category: 'objections' },
       select: { id: true, key: true, value: true },
@@ -32,11 +63,11 @@ export async function actionHandleObjection(deps: {
       other:
         'Compreendo totalmente sua posição. Cada cliente é único e merece atenção especial. \nO que posso fazer para ajudar você a tomar a melhor decisão?',
     };
-    const customObjection = objections.find((o: any) => {
+    const customObjection = objections.find((o: KloelMemoryRow) => {
       const val = typeof o.value === 'string' ? JSON.parse(o.value) : o.value;
       return (val as UnknownRecord)?.type === objectionType;
     });
-    let response = objectionResponses[objectionType as string] || objectionResponses.other;
+    let response = objectionResponses[objectionType] || objectionResponses.other;
     if (customObjection?.value) {
       const customData =
         typeof customObjection.value === 'string'

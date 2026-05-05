@@ -1,5 +1,21 @@
 import { CartRecoveryService } from './cart-recovery.service';
 
+type FlexMock = jest.Mock & {
+  mockResolvedValue: (v: unknown) => FlexMock;
+  mockResolvedValueOnce: (v: unknown) => FlexMock;
+  mockRejectedValue: (e: unknown) => FlexMock;
+  mockReturnValue: (v: unknown) => FlexMock;
+  mockImplementation: (fn: (...args: unknown[]) => unknown) => FlexMock;
+};
+
+type MockPrisma = {
+  checkoutOrder: {
+    findMany: FlexMock;
+    update: FlexMock;
+    updateMany: FlexMock;
+  };
+};
+
 const sendEmail = jest.fn().mockResolvedValue(undefined);
 
 jest.mock('../auth/email.service', () => ({
@@ -10,7 +26,7 @@ jest.mock('../auth/email.service', () => ({
 
 // PULSE_OK: assertions exist below
 describe('CartRecoveryService', () => {
-  let prisma: any;
+  let prisma: MockPrisma;
   let service: CartRecoveryService;
 
   beforeEach(() => {
@@ -24,7 +40,7 @@ describe('CartRecoveryService', () => {
       },
     };
 
-    service = new CartRecoveryService(prisma);
+    service = new CartRecoveryService(prisma as never);
   });
 
   it('ignores malformed metadata when marking recovery email as sent', async () => {

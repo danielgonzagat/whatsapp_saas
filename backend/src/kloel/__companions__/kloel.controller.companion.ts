@@ -1,5 +1,6 @@
 import { extname } from 'node:path';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
+import type { Prisma } from '@prisma/client';
 import type { Request, Response } from 'express';
 import type { PrismaService } from '../../prisma/prisma.service';
 import type { StorageService } from '../../common/storage/storage.service';
@@ -135,7 +136,12 @@ export async function addThreadMessage(
       select: { id: true },
     });
     const msg = await deps.prisma.chatMessage.create({
-      data: { threadId: id, role: dto.role, content: dto.content, metadata: dto.metadata as any },
+      data: {
+        threadId: id,
+        role: dto.role,
+        content: dto.content,
+        metadata: dto.metadata as Prisma.InputJsonValue,
+      },
     });
     await deps.prisma.chatThread.updateMany({
       where: { id, workspaceId },
@@ -267,10 +273,10 @@ export async function exportData(deps: { prisma: PrismaService }, workspaceId: s
 
 // ── Update thread message ──
 
-function normalizeMessageMetadata(metadata: any) {
+function normalizeMessageMetadata(metadata: Prisma.JsonValue): Record<string, unknown> {
   if (metadata && typeof metadata === 'object' && !Array.isArray(metadata))
     return { ...(metadata as Record<string, unknown>) };
-  return {} as Record<string, unknown>;
+  return {};
 }
 
 export async function updateThreadMessage(

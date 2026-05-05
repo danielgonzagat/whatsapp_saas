@@ -1,3 +1,5 @@
+import type { PrismaClient } from '@prisma/client';
+
 export const NON_DIGIT_RE = /\D/g;
 
 /** Generic tool result shape. */
@@ -50,15 +52,50 @@ export interface ToolTranscribeAudioArgs {
   language?: string;
 }
 
+// ── Dependency interfaces ──
+
+interface AudioServiceClient {
+  textToSpeech(text: string, voice?: string, workspaceId?: string): Promise<Buffer>;
+}
+
+interface PlanLimitsClient {
+  ensureDailyMessageQuota(workspaceId: string): Promise<unknown>;
+}
+
+interface WhatsappSendOpts {
+  mediaUrl?: string;
+  mediaType?: 'image' | 'video' | 'audio' | 'document';
+  caption?: string;
+}
+interface WhatsappServiceClient {
+  sendMessage(ws: string, to: string, message: string, opts?: WhatsappSendOpts): Promise<unknown>;
+}
+
+interface LoggerClient {
+  error(message: string, error?: unknown): void;
+}
+
+interface OpsAlertClient {
+  alertOnCriticalError(
+    error: unknown,
+    context: string,
+    extra?: { workspaceId?: string; metadata?: Record<string, unknown> },
+  ): Promise<void>;
+}
+
+interface DocumentPrismaDelegate {
+  document?: PrismaClient['document'];
+}
+
 // ── Media send helpers ──
 
 export async function toolSendAudio(
   deps: {
-    audioService: any;
-    planLimits: any;
-    whatsappService: any;
-    logger: any;
-    opsAlert?: any;
+    audioService: AudioServiceClient;
+    planLimits: PlanLimitsClient;
+    whatsappService: WhatsappServiceClient;
+    logger: LoggerClient;
+    opsAlert?: OpsAlertClient;
   },
   workspaceId: string,
   args: ToolSendAudioArgs,
@@ -89,11 +126,11 @@ export async function toolSendAudio(
 
 export async function toolSendDocument(
   deps: {
-    prisma: any;
-    planLimits: any;
-    whatsappService: any;
-    logger: any;
-    opsAlert?: any;
+    prisma: DocumentPrismaDelegate;
+    planLimits: PlanLimitsClient;
+    whatsappService: WhatsappServiceClient;
+    logger: LoggerClient;
+    opsAlert?: OpsAlertClient;
   },
   workspaceId: string,
   args: ToolSendDocumentArgs,

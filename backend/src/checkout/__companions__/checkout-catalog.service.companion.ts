@@ -1,4 +1,5 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
+import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../../audit/audit.service';
 import { OpsAlertService } from '../../observability/ops-alert.service';
@@ -61,7 +62,7 @@ export async function deleteCheckoutPixel(
   id: string,
   workspaceId?: string,
 ) {
-  await deps.prisma.$transaction(async (tx: any) => {
+  await deps.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     const existing = await tx.checkoutPixel.findUnique({
       where: { id },
       select: { id: true },
@@ -89,7 +90,7 @@ export async function deleteCouponHelper(
   if (!workspaceId) {
     throw new BadRequestException('workspaceId is required');
   }
-  await deps.prisma.$transaction(async (tx: any) => {
+  await deps.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     const existing = await tx.checkoutCoupon.findFirst({
       where: { id, workspaceId },
       select: { id: true },

@@ -20,14 +20,98 @@ import { ModuleRef } from '@nestjs/core';
  * conversation.update) happen against the SAME client.
  */
 
-function buildTxClient(
-  overrides: Partial<{
+type FlexMock = jest.Mock & {
+  mockResolvedValue: (v: unknown) => FlexMock;
+  mockResolvedValueOnce: (v: unknown) => FlexMock;
+  mockRejectedValue: (e: unknown) => FlexMock;
+  mockReturnValue: (v: unknown) => FlexMock;
+  mockImplementation: (fn: (...args: unknown[]) => unknown) => FlexMock;
+};
+
+type MockPrisma = {
+  conversation: {
+    findFirst: FlexMock;
+    findFirstOrThrow: FlexMock;
+    findUnique: FlexMock;
+    create: FlexMock;
+    update: FlexMock;
+    updateMany: FlexMock;
+  };
+  message: { create: FlexMock };
+  $transaction: FlexMock;
+};
+
+type MockGateway = { emitToWorkspace: jest.Mock };
+
+type MockDispatcher = { dispatch: jest.Mock };
+
+type MockModuleRef = { get: jest.Mock };
+
+/** Shape returned by `saveMessage` — mirrors the Prisma Message model fields. */
+interface SaveMessageResult {
+  id: string;
+  status: string;
+  contactId: string;
+  workspaceId: string;
+  createdAt: Date;
+  updatedAt: Date;
+  externalId: string | null;
+  direction: string;
+  type: string;
+  content: string | null;
+  mediaUrl: string | null;
+  errorCode: string | null;
+  conversationId: string | null;
+  agentId: string | null;
+}
+
+const messageStub: SaveMessageResult = {
+  id: 'msg-1',
+  status: 'DELIVERED',
+  contactId: 'contact-1',
+  workspaceId: 'ws-1',
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  externalId: null,
+  direction: 'OUTBOUND',
+  type: 'TEXT',
+  content: null,
+  mediaUrl: null,
+  errorCode: null,
+  conversationId: null,
+  agentId: null,
+};
+
+type TxOverrides = Partial<{
+  findFirst: jest.Mock;
+  create: jest.Mock;
+  messageCreate: jest.Mock;
+  conversationUpdate: jest.Mock;
+}>;
+
+interface TxClientMock {
+  conversation: {
     findFirst: jest.Mock;
     create: jest.Mock;
-    messageCreate: jest.Mock;
-    conversationUpdate: jest.Mock;
-  }> = {},
-) {
+    update: jest.Mock;
+    updateMany: jest.Mock;
+    findFirstOrThrow: jest.Mock;
+  };
+  message: { create: jest.Mock };
+}
+
+/** Payload received by `message.create` inside `saveMessage`. */
+interface MessageCreateArgs {
+  data: Record<string, unknown>;
+}
+
+/** Payload received by `conversation.updateMany` inside `saveMessage`. */
+interface ConversationUpdateArgs {
+  data: Record<string, unknown>;
+  where: Record<string, unknown>;
+}
+
+function buildTxClient(overrides: TxOverrides = {}): TxClientMock {
   return {
     conversation: {
       findFirst: overrides.findFirst ?? jest.fn().mockResolvedValue(null),
@@ -78,23 +162,23 @@ function buildTxClient(
 
 describe('InboxService', () => {
   let service: InboxService;
-  let prisma: any;
-  let gateway: any;
-  let dispatcher: any;
-  let moduleRef: { get: jest.Mock };
+  let prisma: MockPrisma;
+  let gateway: MockGateway;
+  let dispatcher: MockDispatcher;
+  let moduleRef: MockModuleRef;
 
   beforeEach(async () => {
     prisma = {
       conversation: {
-        findFirst: jest.fn(),
-        findFirstOrThrow: jest.fn(),
-        findUnique: jest.fn(),
-        create: jest.fn(),
-        update: jest.fn(),
-        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+        findFirst: jest.fn() as FlexMock,
+        findFirstOrThrow: jest.fn() as FlexMock,
+        findUnique: jest.fn() as FlexMock,
+        create: jest.fn() as FlexMock,
+        update: jest.fn() as FlexMock,
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }) as FlexMock,
       },
-      message: { create: jest.fn() },
-      $transaction: jest.fn(),
+      message: { create: jest.fn() as FlexMock },
+      $transaction: jest.fn() as FlexMock,
     };
     gateway = { emitToWorkspace: jest.fn() };
     dispatcher = { dispatch: jest.fn().mockResolvedValue(undefined) };
@@ -203,9 +287,11 @@ describe('InboxService', () => {
   describe('saveMessage (I15 — Inbound Message Atomicity)', () => {
     it('runs findFirst + message.create + conversation.update inside ONE $transaction', async () => {
       const tx = buildTxClient();
-      prisma.$transaction.mockImplementation(async (cb: any, _opts: any) => {
-        return cb(tx);
-      });
+      prisma.$transaction.mockImplementation(
+        async (cb: (tx: TxClientMock) => Promise<unknown>, _opts: unknown) => {
+          return cb(tx);
+        },
+      );
 
       await service.saveMessage({
         workspaceId: 'ws-1',
@@ -227,11 +313,11 @@ describe('InboxService', () => {
     it('emits a WebSocket event and dispatches a webhook AFTER the transaction commits', async () => {
       const commitOrder: string[] = [];
       const tx = buildTxClient({
-        messageCreate: jest.fn(async (args: any) => {
+        messageCreate: jest.fn(async (args: MessageCreateArgs) => {
           commitOrder.push('message.create');
           return { id: 'msg-1', ...args.data };
         }),
-        conversationUpdate: jest.fn(async (args: any) => {
+        conversationUpdate: jest.fn(async (args: ConversationUpdateArgs) => {
           commitOrder.push('conversation.update');
           return {
             id: 'conv-1',
@@ -243,7 +329,7 @@ describe('InboxService', () => {
           };
         }),
       });
-      prisma.$transaction.mockImplementation(async (cb: any) => {
+      prisma.$transaction.mockImplementation(async (cb: (tx: TxClientMock) => Promise<unknown>) => {
         const result = await cb(tx);
         commitOrder.push('tx.commit');
         return result;
@@ -278,7 +364,9 @@ describe('InboxService', () => {
       const tx = buildTxClient({
         messageCreate: jest.fn().mockRejectedValue(new Error('db failed')),
       });
-      prisma.$transaction.mockImplementation(async (cb: any) => cb(tx));
+      prisma.$transaction.mockImplementation(async (cb: (tx: TxClientMock) => Promise<unknown>) =>
+        cb(tx),
+      );
 
       await expect(
         service.saveMessage({
@@ -295,7 +383,9 @@ describe('InboxService', () => {
 
     it('respects silent: true (no websocket, no webhook)', async () => {
       const tx = buildTxClient();
-      prisma.$transaction.mockImplementation(async (cb: any) => cb(tx));
+      prisma.$transaction.mockImplementation(async (cb: (tx: TxClientMock) => Promise<unknown>) =>
+        cb(tx),
+      );
 
       await service.saveMessage({
         workspaceId: 'ws-1',
@@ -322,9 +412,7 @@ describe('InboxService', () => {
       moduleRef.get.mockReturnValue({
         sendMessage: jest.fn().mockResolvedValue({ queued: { provider: 'waha' } }),
       });
-      const saveMessageSpy = jest.spyOn(service, 'saveMessage').mockResolvedValue({
-        id: 'msg-1',
-      } as any);
+      const saveMessageSpy = jest.spyOn(service, 'saveMessage').mockResolvedValue(messageStub);
 
       await service.replyToConversation('ws-1', 'conv-1', 'oi');
 
@@ -342,9 +430,7 @@ describe('InboxService', () => {
       moduleRef.get.mockReturnValue({
         sendMessage: jest.fn().mockResolvedValue({ queued: true, jobId: 'job-1' }),
       });
-      const saveMessageSpy = jest.spyOn(service, 'saveMessage').mockResolvedValue({
-        id: 'msg-1',
-      } as any);
+      const saveMessageSpy = jest.spyOn(service, 'saveMessage').mockResolvedValue(messageStub);
 
       await service.replyToConversation('ws-1', 'conv-1', 'oi');
 

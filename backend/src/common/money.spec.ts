@@ -30,9 +30,10 @@ describe('Cents — invariant I7 (money is integer cents)', () => {
     });
 
     it('rejects non-number inputs', () => {
-      expect(() => cents('100' as any)).toThrow();
-      expect(() => cents(null as any)).toThrow();
-      expect(() => cents(undefined as any)).toThrow();
+      const castNumber = (v: unknown) => v as number;
+      expect(() => cents(castNumber('100'))).toThrow();
+      expect(() => cents(castNumber(null))).toThrow();
+      expect(() => cents(castNumber(undefined))).toThrow();
     });
   });
 
