@@ -13,7 +13,7 @@
  *    → Products with status=PUBLISHED and zero Plans → DATA_PRODUCT_NO_PLAN
  * 2. Every Plan must have a price > 0
  *    → Plans with price <= 0 → data consistency violation
- * 3. Every Product with checkoutEnabled=true must have Asaas config (apiKey or linked account)
+ * 3. Every Product with checkoutEnabled=true must have active payment-provider config
  *
  * Order rules:
  * 4. Every Order with status=PAID must have a corresponding Payment with status=CONFIRMED

@@ -11,7 +11,7 @@
  * 4. POST /products/:id/coupons with valid coupon (PROMO10, 10% off) → expect 201
  * 5. POST /products/:id/coupons with duplicate code → expect 409
  * 6. PATCH /products/:id/ai-config with AI settings → expect 200
- * 7. PATCH /products/:id/checkout-config with Asaas settings → expect 200
+ * 7. PATCH /products/:id/checkout-config with payment settings → expect 200
  * 8. GET /products/:id → verify all nested data (plans, coupons, ai-config) returned
  * 9. GET /products (list) → verify product appears in list
  * 10. Publish product: PATCH /products/:id/publish → expect 200, status = PUBLISHED
@@ -28,7 +28,7 @@
  * - Test workspace (PULSE_TEST_WORKSPACE_ID)
  *
  * BREAK TYPES:
- * - E2E_PRODUCT_BROKEN (critical) — any step in product→plan→checkout config fails
+ * - E2E_PRODUCT_BROKEN (critical) — every step in product→plan→checkout config
  */
 
 import type { Break, PulseConfig } from '../types';
@@ -41,6 +41,8 @@ import {
   isDeepMode,
   getBackendUrl,
 } from './runtime-utils';
+
+type ProductRow = { id?: string; name?: string };
 
 /** Check e2e product creation. */
 export async function checkE2eProductCreation(config: PulseConfig): Promise<Break[]> {
@@ -77,7 +79,7 @@ export async function checkE2eProductCreation(config: PulseConfig): Promise<Brea
       workspaceId: agent.workspaceId,
       role: 'ADMIN',
     });
-  } catch (err: any) {
+  } catch {
     // DB unavailable — skip test
     return breaks;
   }
@@ -152,8 +154,9 @@ export async function checkE2eProductCreation(config: PulseConfig): Promise<Brea
     // ── Step 3: GET /products (list) — verify product appears ───────────
     const listRes = await httpGet('/products', { jwt });
     if (listRes.ok) {
-      const products: any[] = listRes.body?.products || listRes.body || [];
-      const found = Array.isArray(products) ? products.some((p: any) => p.id === productId) : false;
+      const listBody = listRes.body as { products?: ProductRow[] } | ProductRow[] | undefined;
+      const products: ProductRow[] = Array.isArray(listBody) ? listBody : listBody?.products || [];
+      const found = products.some((p) => p.id === productId);
       if (!found) {
         breaks.push({
           type: 'E2E_PRODUCT_BROKEN',
@@ -161,7 +164,7 @@ export async function checkE2eProductCreation(config: PulseConfig): Promise<Brea
           file: 'backend/src/kloel/product.controller.ts',
           line: 86,
           description: 'Newly created product not found in GET /products list',
-          detail: `productId: ${productId}, list count: ${Array.isArray(products) ? products.length : 'N/A'}`,
+          detail: `productId: ${productId}, list count: ${products.length}`,
         });
       }
     }
@@ -184,14 +187,15 @@ export async function checkE2eProductCreation(config: PulseConfig): Promise<Brea
     } catch {
       // DB not available — skip DB verification
     }
-  } catch (err: any) {
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
     breaks.push({
       type: 'E2E_PRODUCT_BROKEN',
       severity: 'critical',
       file: 'backend/src/kloel/product.controller.ts',
       line: 164,
       description: 'E2E product creation test threw an unexpected error',
-      detail: err?.message || String(err),
+      detail: message,
     });
   } finally {
     // ── Cleanup: DELETE /products/:id ─────────────────────────────────────

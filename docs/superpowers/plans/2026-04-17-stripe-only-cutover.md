@@ -6,7 +6,7 @@
 > checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** cortar o caminho ativo de pagamentos do checkout público para
-Stripe-only em modo de teste, removendo Mercado Pago/Asaas do fluxo real de
+Stripe-only em modo de teste, removendo legacy BR providers do fluxo real de
 criação de pedido, cobrança e webhook.
 
 **Architecture:** o checkout público passa a criar ordens Kloel normalmente, mas
@@ -26,7 +26,7 @@ público, Jest.
 
 - Este plano cobre o **caminho ativo** do checkout público e os contratos que o
   alimentam.
-- Não cobre a remoção imediata de toda referência histórica a Asaas/Mercado Pago
+- Não cobre a remoção imediata de toda referência histórica a legacy BR providers
   em áreas administrativas, docs históricas ou módulos não usados no checkout
   público.
 - O objetivo deste corte é: **checkout público funcionando com Stripe-only em
@@ -184,7 +184,7 @@ público, Jest.
 
 ## Explicit Non-Goals For This Cut
 
-- Deleting every historical Asaas/Mercado Pago file in the repository.
+- Deleting every historical legacy BR providers file in the repository.
 - Rewriting unrelated Kloel admin/payment/wallet surfaces in the same patch.
 - Production/live Stripe cutover. This plan is strictly for test-mode
   validation.

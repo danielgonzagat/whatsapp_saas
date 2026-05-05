@@ -10,7 +10,7 @@
  *    (too strict = users logged out spuriously; too loose = security risk)
  * 3. Timezone handling: financial reports and scheduling must use UTC storage
  *    with explicit timezone conversion at display layer — not mix of TZ
- * 4. Idempotent webhook processing with sequence numbers (Asaas sends events in order
+ * 4. Idempotent webhook processing with sequence numbers (payment providers send events in order
  *    but network can deliver out of order)
  * 5. Cron job timing: cron expressions verified against intended schedule
  *    (0 0 * * * = midnight UTC, not midnight local)
