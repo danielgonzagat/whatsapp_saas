@@ -299,10 +299,6 @@ export function sourceCapability(
   };
 }
 
-import type { PulseSignal, PulseExternalSignalSource } from '../../../types';
-import { deriveZeroValue } from '../../../dynamic-reality-kernel';
-import { invalidStatus, notAvailableStatus } from './helpers';
-
 export function pushSourceErrorResult(
   sourceMap: Record<string, PulseSignal[]>,
   sourceList: ExternalSourceRunResult[],

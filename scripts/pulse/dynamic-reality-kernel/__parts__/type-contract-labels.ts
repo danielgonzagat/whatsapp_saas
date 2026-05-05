@@ -5,9 +5,28 @@ import * as ts from 'typescript';
 // ── Type-contract AST derivation (meta-primitive) ──────────────────────────
 
 const AST_TYPE_CONTRACT_CACHE = new Map<string, Set<string>>();
+const AST_TYPE_CONTRACT_RESOLUTION_STACK = new Set<string>();
 
 function resolvePulseTypeContractPath(fileName: string): string {
   return path.resolve(process.cwd(), fileName);
+}
+
+function resolveObservedTypeContractModulePath(
+  fromFilePath: string,
+  moduleSpecifier: string,
+): string | null {
+  if (!moduleSpecifier.startsWith('.')) {
+    return null;
+  }
+
+  const resolvedBasePath = path.resolve(path.dirname(fromFilePath), moduleSpecifier);
+  const observedCandidates = [
+    resolvedBasePath,
+    `${resolvedBasePath}.ts`,
+    path.join(resolvedBasePath, 'index.ts'),
+  ];
+
+  return observedCandidates.find((candidate) => fs.existsSync(candidate)) ?? null;
 }
 
 function extractUnionStringLiteralMembersFromAstNode(
@@ -57,6 +76,7 @@ export function deriveStringUnionMembersFromTypeContract(
 
   const members = new Set<string>();
   let found = false;
+  let reexportFileName: string | null = null;
 
   function visitTypeAlias(node: ts.Node): void {
     if (found) return;
@@ -86,6 +106,48 @@ export function deriveStringUnionMembersFromTypeContract(
       ts.forEachChild(node, visitInterface);
     }
     visitInterface(sourceFile);
+  }
+
+  if (!found) {
+    for (const statement of sourceFile.statements) {
+      if (!ts.isExportDeclaration(statement)) continue;
+      if (!statement.moduleSpecifier || !ts.isStringLiteral(statement.moduleSpecifier)) continue;
+      if (!statement.exportClause || !ts.isNamedExports(statement.exportClause)) continue;
+
+      const exportedElement = statement.exportClause.elements.find((element) => {
+        const exportedName = element.name.text;
+        const propertyName = element.propertyName?.text;
+        return exportedName === typeName || propertyName === typeName;
+      });
+      if (!exportedElement) continue;
+
+      const observedModulePath = resolveObservedTypeContractModulePath(
+        absolutePath,
+        statement.moduleSpecifier.text,
+      );
+      if (!observedModulePath) continue;
+
+      reexportFileName = path.relative(process.cwd(), observedModulePath);
+      break;
+    }
+  }
+
+  if (!found && reexportFileName) {
+    const reexportCacheKey = `${reexportFileName}::${typeName}`;
+    if (AST_TYPE_CONTRACT_RESOLUTION_STACK.has(reexportCacheKey)) {
+      throw new Error(
+        `deriveStringUnionMembersFromTypeContract: circular type re-export for "${typeName}" from ${fileName}`,
+      );
+    }
+
+    AST_TYPE_CONTRACT_RESOLUTION_STACK.add(cacheKey);
+    try {
+      const reexportMembers = deriveStringUnionMembersFromTypeContract(reexportFileName, typeName);
+      AST_TYPE_CONTRACT_CACHE.set(cacheKey, reexportMembers);
+      return reexportMembers;
+    } finally {
+      AST_TYPE_CONTRACT_RESOLUTION_STACK.delete(cacheKey);
+    }
   }
 
   if (!found) {

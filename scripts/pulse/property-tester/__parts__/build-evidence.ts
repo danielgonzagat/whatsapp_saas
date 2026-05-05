@@ -13,9 +13,9 @@ import { canonicalArtifactFilename, mergeAndDedupe } from './core';
 import { discoverEndpoints } from './endpoint-discovery';
 import { generateFuzzCasesFromEndpoints } from './endpoint-fuzz';
 import { scanForExistingPropertyTests } from './property-scanner';
-import { generatePropertyTestTargets } from './pure-functions';
+import { generatePropertyTestTargets } from './pure-function-discovery';
 import { computeMutationTargets } from './mutation-targets';
-import { generatePropertyTestCases } from './pure-functions';
+import { generatePropertyTestCases } from './pure-function-tests';
 
 export function buildPropertyTestEvidence(
   rootDir: string,
