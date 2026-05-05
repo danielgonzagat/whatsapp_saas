@@ -3,7 +3,7 @@ import {
   deriveZeroValue,
   discoverDirectorySkipHintsFromEvidence,
   discoverSourceExtensionsFromObservedTypescript,
-} from '../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel';
 
 export type PackageJson = {
   name?: string;

@@ -51,7 +51,9 @@ export function generateTestHarnessCode(target: HarnessTarget): HarnessGenerated
     {
       testName: `[PULSE] ${suiteName} — ${PLANNED_STATUS} ${executionMode} harness`,
       status: PLANNED_STATUS as HarnessGeneratedTest['status'],
-      framework: target.httpMethod ? SUPERTEST_FRAMEWORK : JEST_FRAMEWORK,
+      framework: (target.httpMethod
+        ? SUPERTEST_FRAMEWORK
+        : JEST_FRAMEWORK) as HarnessGeneratedTest['framework'],
       canRunLocally: false,
       code: buildHarnessBlueprintCode(target, executionMode, terminalReason),
     },

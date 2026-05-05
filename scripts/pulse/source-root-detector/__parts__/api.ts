@@ -1,6 +1,6 @@
 import * as path from 'path';
-import { pathExists, readDir, readTextFile } from '../safe-fs';
-import { safeJoin } from '../safe-path';
+import { pathExists, readDir, readTextFile } from '../../safe-fs';
+import { safeJoin } from '../../safe-path';
 import {
   DetectedSourceRoot,
   SourceRootEvidenceBasis,

@@ -174,7 +174,7 @@ export function discoverServices(config: PulseConfig): HarnessTarget[] {
 
       targets.push({
         targetId,
-        kind: SERVICE_KIND_LABEL,
+        kind: SERVICE_KIND_LABEL as HarnessTargetKind,
         name: `${className}.${method.name}`,
         filePath: relFile,
         methodName: method.name,
@@ -215,7 +215,7 @@ export function discoverWorkers(config: PulseConfig): HarnessTarget[] {
 
     targets.push({
       targetId,
-      kind: WORKER_KIND_LABEL,
+      kind: WORKER_KIND_LABEL as HarnessTargetKind,
       name: `${discovery.queueName}/${discovery.handlerName}`,
       filePath: discovery.file,
       methodName: discovery.handlerName,
@@ -243,7 +243,7 @@ export function discoverWorkers(config: PulseConfig): HarnessTarget[] {
 
     targets.push({
       targetId,
-      kind: WORKER_KIND_LABEL,
+      kind: WORKER_KIND_LABEL as HarnessTargetKind,
       name: `${discovery.queueName}/${discovery.handlerName}`,
       filePath: discovery.file,
       methodName: discovery.handlerName,
@@ -272,7 +272,7 @@ export function discoverWorkers(config: PulseConfig): HarnessTarget[] {
 
       targets.push({
         targetId,
-        kind: WORKER_KIND_LABEL,
+        kind: WORKER_KIND_LABEL as HarnessTargetKind,
         name: `${discovery.queueName}/${discovery.handlerName}`,
         filePath: discovery.file,
         methodName: discovery.handlerName,
@@ -356,7 +356,7 @@ export function discoverCrons(config: PulseConfig): HarnessTarget[] {
 
       targets.push({
         targetId,
-        kind: CRO_KIND_LABEL,
+        kind: CRO_KIND_LABEL as HarnessTargetKind,
         name: `${className}.${methodName} (${cronExpr})`,
         filePath: relFile,
         methodName,

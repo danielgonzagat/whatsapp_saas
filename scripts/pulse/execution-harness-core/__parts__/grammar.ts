@@ -22,6 +22,10 @@ import {
   discoverPropertyPassedStatusFromTypeEvidence,
   discoverPropertyUnexecutedStatusFromExecutionEvidence,
 } from '../../dynamic-reality-kernel';
+import {
+  discoverMutatingHttpVerbsFromSourceEvidence,
+  discoverReservedJsKeywordsFromRuntimeEvidence,
+} from '../../dynamic-runtime-method-evidence';
 
 // ─── Structural Grammar ─────────────────────────────────────────────────────
 
@@ -111,21 +115,7 @@ function ignoredDirectoryNames(): Set<string> {
 }
 
 export function nonCallableMemberNames(): Set<string> {
-  return new Set([
-    'constructor',
-    'if',
-    'for',
-    'while',
-    'return',
-    'catch',
-    'switch',
-    'import',
-    'export',
-    'throw',
-    'new',
-    'await',
-    'super',
-  ]);
+  return discoverReservedJsKeywordsFromRuntimeEvidence();
 }
 
 export function infrastructureAliasNames(): Set<string> {
@@ -151,7 +141,7 @@ export function isConstructorMemberName(name: string): boolean {
 }
 
 export function mutatingHttpVerbs(): Set<string> {
-  return new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+  return discoverMutatingHttpVerbsFromSourceEvidence();
 }
 
 export function persistentStateMutationShape(): RegExp {

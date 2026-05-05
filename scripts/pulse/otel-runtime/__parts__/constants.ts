@@ -14,6 +14,11 @@ import {
   discoverRouteSeparatorFromRuntime,
   observeStatusTextLengthFromCatalog,
 } from '../../dynamic-reality-kernel';
+import {
+  discoverAxiosMethodNamesFromRuntimeTypeEvidence,
+  discoverBullMQMethodNamesFromRuntimeTypeEvidence,
+  discoverPrismaClientMethodNamesFromRuntimeTypeEvidence,
+} from '../../dynamic-runtime-method-evidence';
 import type { OtelRuntimeSource, OtelTraceSummary } from '../../types.otel-runtime';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -77,52 +82,16 @@ export const HTTP_STATUS_TEXT_LEN_FORBIDDEN =
 
 export const NESTJS_DECORATOR_NAMES = [...discoverNestjsDecoratorNamesFromTypeEvidence()];
 
-export const PRISMA_METHODS = [
-  'findUnique',
-  'findFirst',
-  'findMany',
-  'create',
-  'createMany',
-  'update',
-  'updateMany',
-  'delete',
-  'deleteMany',
-  'upsert',
-  'count',
-  'aggregate',
-  'groupBy',
-  'findRaw',
-  'executeRaw',
-  'queryRaw',
-  'runCommandRaw',
-  '$transaction',
-  '$queryRaw',
-  '$executeRaw',
-  '$runCommandRaw',
-];
+export const PRISMA_METHODS = [...discoverPrismaClientMethodNamesFromRuntimeTypeEvidence()];
 
-export const BULLMQ_PATTERNS = [
-  'add',
-  'addBulk',
-  'getJob',
-  'getJobs',
-  'getActive',
-  'getWaiting',
-  'getDelayed',
-  'getCompleted',
-  'getFailed',
-  'pause',
-  'resume',
-  'close',
-  'removeJobs',
-  'drain',
-  'obliterate',
-  'trimEvents',
-  'process',
-  'processJob',
-];
+export const BULLMQ_PATTERNS = [...discoverBullMQMethodNamesFromRuntimeTypeEvidence()];
 
-export const AXIOS_METHODS = [...discoverKnownHttpClientMethods()];
+export const AXIOS_METHODS = [
+  ...new Set([
+    ...discoverKnownHttpClientMethods(),
+    ...discoverAxiosMethodNamesFromRuntimeTypeEvidence(),
+  ]),
+];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
