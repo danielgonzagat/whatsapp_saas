@@ -45,6 +45,11 @@ worker/test-results/
 test-results/
 screenshots/
 PULSE_EXECUTION_TRACE.json
+
+# HUD orchestrator + findings engines runtime state
+HUD_LAST_REFRESH.json
+FINDINGS_AGGREGATE.json
+/artifacts/
 .pulse/
 PULSE_*.json
 PULSE_REPORT.md

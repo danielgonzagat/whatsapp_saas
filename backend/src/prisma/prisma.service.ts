@@ -27,7 +27,12 @@ type PrismaTransactionInput<T> =
 
 type MemberAccessTransactionClient = Pick<
   Prisma.TransactionClient,
-  '$executeRaw' | 'auditLog' | 'checkoutOrder' | 'memberArea' | 'memberEnrollment'
+  | '$executeRaw'
+  | 'auditLog'
+  | 'checkoutOrder'
+  | 'checkoutPayment'
+  | 'memberArea'
+  | 'memberEnrollment'
 >;
 
 /** Prisma service. */
@@ -44,6 +49,7 @@ export class PrismaService
   }
 
   private installCheckoutPaidMemberAccessHook() {
+    const originalPaymentUpdateMany = this.checkoutPayment.updateMany.bind(this.checkoutPayment);
     const originalUpdateMany = this.checkoutOrder.updateMany.bind(this.checkoutOrder);
     const originalTransaction = this.$transaction.bind(this) as <T>(
       input: PrismaTransactionInput<T>,
@@ -59,6 +65,20 @@ export class PrismaService
           this.logger.warn(`Member access grant hook failed: ${message}`);
         });
         await this.runPostPaymentCheckoutEffectsFromPaidUpdate(args);
+        return result;
+      },
+    });
+
+    Object.defineProperty(this.checkoutPayment, 'updateMany', {
+      configurable: true,
+      value: async (args: Prisma.CheckoutPaymentUpdateManyArgs) => {
+        const result = await originalPaymentUpdateMany(args);
+        await this.markCheckoutOrderPaidFromApprovedCheckoutPaymentUpdate(args).catch(
+          (error: unknown) => {
+            const message = error instanceof Error ? error.message : 'unknown error';
+            this.logger.warn(`Checkout payment paid hook failed: ${message}`);
+          },
+        );
         return result;
       },
     });
@@ -90,6 +110,7 @@ export class PrismaService
     paidUpdates: Prisma.CheckoutOrderUpdateManyArgs[],
   ) {
     const originalUpdateMany = tx.checkoutOrder.updateMany.bind(tx.checkoutOrder);
+    const originalPaymentUpdateMany = tx.checkoutPayment.updateMany.bind(tx.checkoutPayment);
 
     Object.defineProperty(tx.checkoutOrder, 'updateMany', {
       configurable: true,
@@ -108,6 +129,21 @@ export class PrismaService
       },
     });
 
+    Object.defineProperty(tx.checkoutPayment, 'updateMany', {
+      configurable: true,
+      value: async (args: Prisma.CheckoutPaymentUpdateManyArgs) => {
+        const result = await originalPaymentUpdateMany(args);
+        await this.markCheckoutOrderPaidFromApprovedCheckoutPaymentUpdateInTransaction(
+          args,
+          tx,
+        ).catch((error: unknown) => {
+          const message = error instanceof Error ? error.message : 'unknown error';
+          this.logger.warn(`Checkout payment paid transaction hook failed: ${message}`);
+        });
+        return result;
+      },
+    });
+
     return tx;
   }
 
@@ -119,6 +155,57 @@ export class PrismaService
     await this.$transaction(async (tx) => {
       await this.grantMemberAccessFromPaidCheckoutUpdateInTransaction(args, tx);
     });
+  }
+
+  async markCheckoutOrderPaidFromApprovedCheckoutPaymentUpdate(
+    args: Prisma.CheckoutPaymentUpdateManyArgs,
+  ) {
+    if (args.data.status !== 'APPROVED') {
+      return;
+    }
+
+    await this.$transaction(async (tx) => {
+      await this.markCheckoutOrderPaidFromApprovedCheckoutPaymentUpdateInTransaction(args, tx);
+    });
+  }
+
+  private async markCheckoutOrderPaidFromApprovedCheckoutPaymentUpdateInTransaction(
+    args: Prisma.CheckoutPaymentUpdateManyArgs,
+    tx: MemberAccessTransactionClient,
+  ) {
+    if (args.data.status !== 'APPROVED') {
+      return;
+    }
+
+    const where = args.where || {};
+    if (!where.id && !where.orderId && !where.externalId) {
+      return;
+    }
+
+    const payments = await tx.checkoutPayment.findMany({
+      where,
+      take: 20,
+      select: {
+        orderId: true,
+        order: {
+          select: {
+            id: true,
+            workspaceId: true,
+            status: true,
+          },
+        },
+      },
+    });
+
+    for (const payment of payments) {
+      if (!payment.order || payment.order.status === 'PAID') {
+        continue;
+      }
+      await tx.checkoutOrder.updateMany({
+        where: { id: payment.order.id, workspaceId: payment.order.workspaceId },
+        data: { status: 'PAID', paidAt: new Date() },
+      });
+    }
   }
 
   private async grantMemberAccessFromPaidCheckoutUpdateInTransaction(
