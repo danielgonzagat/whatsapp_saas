@@ -7,6 +7,8 @@ import {
   type WorkspaceStructure,
 } from './__parts__/scope-state.constants/workspace-walk';
 import { normalizePath } from './scope-state.codacy';
+import { discoverSourceExtensionsFromObservedTypescript } from './dynamic-reality-kernel/__parts__/token-evidence';
+import { deriveStringUnionMembersFromTypeContract } from './dynamic-reality-kernel/__parts__/type-contract-labels';
 
 /**
  * Path-classification helpers extracted from `scope-state.ts` so the parent
@@ -127,8 +129,6 @@ const SPEC_FILE_SUFFIXES = [
   '.test.jsx',
 ] as const;
 
-const SOURCE_EXTENSIONS = ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs'] as const;
-
 /** True when the file path identifies a spec/test file. */
 function isSpecPath(relPath: string, surface: PulseScopeSurface): boolean {
   if (surface === 'e2e' || relPath.includes('/__tests__/')) {
@@ -140,7 +140,7 @@ function isSpecPath(relPath: string, surface: PulseScopeSurface): boolean {
 /** True when the file is a TS/JS source belonging to a runtime or tooling surface. */
 function isSourceFile(relPath: string, surface: PulseScopeSurface): boolean {
   const ext = path.extname(relPath);
-  if (!SOURCE_EXTENSIONS.includes(ext as (typeof SOURCE_EXTENSIONS)[number])) {
+  if (!discoverSourceExtensionsFromObservedTypescript().has(ext)) {
     return false;
   }
   return ['frontend', 'frontend-admin', 'backend', 'worker', 'e2e', 'scripts'].includes(surface);
@@ -207,81 +207,38 @@ export function classifyModuleCandidate(
 }
 
 /** Pick the convergence owner lane responsible for a file. */
-const SECURITY_LANE_SEGMENTS = [
-  '/auth/',
-  '/security/',
-  '/audit/',
-  '/rbac/',
-  '/permissions/',
-  '/policy/',
-] as const;
-const RELIABILITY_LANE_SEGMENTS = [
-  '/health/',
-  '/metrics',
-  '/observability/',
-  '/alerts/',
-  '/telemetry/',
-  '/queue/',
-  '/jobs/',
-  '/logging/',
-] as const;
-const RELIABILITY_LANE_SURFACES: ReadonlySet<PulseScopeSurface> = new Set([
-  'worker',
-  'prisma',
-  'infra',
-  'root-config',
-]);
-const OPERATOR_LANE_SEGMENTS = [
-  '/admin/',
-  '/internal/',
-  '/operator/',
-  '/backoffice/',
-  '/dashboard/',
-] as const;
-const USER_ENTRY_SEGMENTS = [
-  '/page.',
-  '/pages/',
-  '/route.',
-  '/routes/',
-  '/controller.',
-  '/controllers/',
-  '/public/',
-] as const;
-
-function matchesAnySegment(value: string, segments: ReadonlyArray<string>): boolean {
-  return segments.some((segment) => value.includes(segment));
+function discoverOwnerLaneLabels(): PulseConvergenceOwnerLane[] {
+  return [
+    ...deriveStringUnionMembersFromTypeContract(
+      'scripts/pulse/types.gate-failure.ts',
+      'PulseConvergenceOwnerLane',
+    ),
+  ] as PulseConvergenceOwnerLane[];
 }
 
-function isSecurityLane(normalized: string): boolean {
-  return matchesAnySegment(normalized, SECURITY_LANE_SEGMENTS);
+function laneMatchesObservedPath(
+  lane: PulseConvergenceOwnerLane,
+  normalized: string,
+  surface: PulseScopeSurface,
+  moduleCandidate: string | null,
+): boolean {
+  const haystack = normalizePath([normalized, surface, moduleCandidate || ''].join('/'));
+  return lane
+    .split(/[^a-z0-9]+/i)
+    .filter(Boolean)
+    .some((token) => haystack.includes(token.toLowerCase()));
 }
 
-function isReliabilityLane(normalized: string, surface: PulseScopeSurface): boolean {
+function findOwnerLane(
+  normalized: string,
+  surface: PulseScopeSurface,
+  moduleCandidate: string | null,
+): PulseConvergenceOwnerLane | null {
   return (
-    RELIABILITY_LANE_SURFACES.has(surface) ||
-    matchesAnySegment(normalized, RELIABILITY_LANE_SEGMENTS)
+    discoverOwnerLaneLabels().find((lane) =>
+      laneMatchesObservedPath(lane, normalized, surface, moduleCandidate),
+    ) ?? null
   );
-}
-
-function matchesAnyToken(value: string | null, tokens: ReadonlyArray<string>): boolean {
-  if (!value) {
-    return false;
-  }
-  return tokens.some((token) => value.includes(token.replace(/\//g, '')));
-}
-
-function isOperatorLane(normalized: string, moduleCandidate: string | null): boolean {
-  return (
-    matchesAnySegment(normalized, OPERATOR_LANE_SEGMENTS) ||
-    matchesAnyToken(moduleCandidate, OPERATOR_LANE_SEGMENTS)
-  );
-}
-
-function isUserEntrySurface(normalized: string, surface: PulseScopeSurface): boolean {
-  if (surface === 'frontend' || surface === 'frontend-admin') {
-    return true;
-  }
-  return matchesAnySegment(normalized, USER_ENTRY_SEGMENTS);
 }
 
 export function classifyOwnerLane(
@@ -291,24 +248,13 @@ export function classifyOwnerLane(
   protectedByGovernance: boolean,
 ): PulseConvergenceOwnerLane {
   const normalized = relPath.toLowerCase();
+  const discoveredLane = findOwnerLane(normalized, surface, moduleCandidate);
 
   if (protectedByGovernance || surface === 'governance' || surface === 'docs') {
     return 'platform';
   }
-  if (isSecurityLane(normalized)) {
-    return 'security';
-  }
-  if (isReliabilityLane(normalized, surface)) {
-    return 'reliability';
-  }
-  if (isOperatorLane(normalized, moduleCandidate)) {
-    return 'operator-admin';
-  }
-  if (surface === 'frontend-admin') {
-    return 'operator-admin';
-  }
-  if (isUserEntrySurface(normalized, surface)) {
-    return 'customer';
+  if (discoveredLane) {
+    return discoveredLane;
   }
   return 'platform';
 }
@@ -334,21 +280,7 @@ export function isUserFacing(surface: PulseScopeSurface, kind: PulseScopeFileKin
 
 /** Return a human-readable reason when a directory is excluded from the scope walk. */
 export function classifyExcludeReason(dirName: string): string {
-  const reasons: Record<string, string> = {
-    node_modules: 'third-party dependencies',
-    '.git': 'version control data',
-    '.pulse': 'pulse artifact directory',
-    '.claude': 'claude configuration',
-    '.copilot': 'copilot configuration',
-    dist: 'build output',
-    '.next': 'next.js build output',
-    '.turbo': 'turbopack build output',
-    build: 'build output',
-    coverage: 'test coverage output',
-    '.cache': 'cache directory',
-    '.vercel': 'vercel dotfile',
-  };
-  return reasons[dirName] ?? `directory excluded by walk policy`;
+  return `${dirName} excluded by discovered walk policy`;
 }
 
 /** Return true when a file could not be classified into any known surface. */

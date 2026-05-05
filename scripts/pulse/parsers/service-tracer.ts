@@ -4,33 +4,11 @@ import type { ServiceTrace } from '../types.core';
 import type { PulseConfig } from '../types.manifest';
 import { walkFiles } from './utils';
 import { readTextFile } from '../safe-fs';
+import { discoverReservedJsKeywords } from '../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 
-const NON_METHOD_NAMES = new Set([
-  'constructor',
-  'if',
-  'for',
-  'while',
-  'return',
-  'catch',
-  'switch',
-  'import',
-  'export',
-  'throw',
-  'new',
-  'await',
-  'super',
-]);
-
-const SERVICE_ALIAS_IGNORE = new Set([
-  'ConfigService',
-  'EventEmitter2',
-  'HttpService',
-  'Logger',
-  'ModuleRef',
-  'PrismaService',
-  'Reflector',
-  'Request',
-]);
+function isNonMethodName(name: string): boolean {
+  return discoverReservedJsKeywords().has(name);
+}
 
 function extractConstructorAliases(content: string): Map<string, string> {
   const aliases = new Map<string, string>();
@@ -43,9 +21,7 @@ function extractConstructorAliases(content: string): Map<string, string> {
     /(?:@(?:Inject|InjectRedis|Optional)\([^)]*\)\s*)?(?:private|public|protected)?\s*(?:readonly\s+)?(\w+)\??\s*:\s*([A-Z][A-Za-z0-9_]+)/g;
   let match: RegExpExecArray | null;
   while ((match = paramRe.exec(ctorMatch[1])) !== null) {
-    if (!SERVICE_ALIAS_IGNORE.has(match[2])) {
-      aliases.set(match[1], match[2]);
-    }
+    aliases.set(match[1], match[2]);
   }
 
   return aliases;
@@ -56,9 +32,7 @@ function extractAssignedServiceAliases(content: string): Map<string, string> {
   const assignmentRe = /\bthis\.([A-Za-z_]\w*)\s*=\s*new\s+([A-Z][A-Za-z0-9_]+)\s*\(/g;
   let match: RegExpExecArray | null;
   while ((match = assignmentRe.exec(content)) !== null) {
-    if (!SERVICE_ALIAS_IGNORE.has(match[2])) {
-      aliases.set(match[1], match[2]);
-    }
+    aliases.set(match[1], match[2]);
   }
   return aliases;
 }
@@ -72,7 +46,7 @@ function getClassMethodDeclarationName(trimmedLine: string): string | null {
   }
 
   const methodName = methodMatch[1];
-  if (NON_METHOD_NAMES.has(methodName)) {
+  if (isNonMethodName(methodName)) {
     return null;
   }
 
@@ -270,7 +244,7 @@ function collectServiceCallsFromText(
   }
   const selfCallRe = /\bthis\.([A-Za-z_]\w*)\s*\(/g;
   while ((match = selfCallRe.exec(text)) !== null) {
-    if (!NON_METHOD_NAMES.has(match[1])) {
+    if (!isNonMethodName(match[1])) {
       calls.add(`${className}.${match[1]}`);
     }
   }
