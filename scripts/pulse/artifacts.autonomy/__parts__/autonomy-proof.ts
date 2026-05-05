@@ -1,9 +1,10 @@
 import { unique } from '../../artifacts.io';
 import { normalizeArtifactText } from '../../artifacts.queue';
 import { evaluateOverclaimPass, hasOpenGovernedValidationGap } from '../../overclaim-guard';
-import { deriveZeroValue } from '../../dynamic-reality-kernel';
+import { deriveZeroValue } from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 import type { PulseArtifactSnapshot } from '../../__parts__/artifacts/types';
-import type { PulseAutonomyState, PulseConvergencePlan } from '../../types';
+import type { PulseAutonomyState } from '../../types.autonomy';
+import type { PulseConvergencePlan } from '../../types.convergence';
 import type { QueueUnit } from '../../artifacts.queue';
 import { CERT_PROFILE_PULSE_CORE_FINAL, BLOCKER_SLICE_LIMIT, GATE_PASS, GATE_FAIL } from './types';
 import type { AuthorityState } from './types';

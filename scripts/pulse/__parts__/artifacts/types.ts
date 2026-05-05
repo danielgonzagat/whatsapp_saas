@@ -1,22 +1,20 @@
+import type { PulseHealth } from '../../types.health';
+import type { PulseManifest } from '../../types.manifest';
+import type { PulseCodebaseTruth } from '../../types.truth';
+import type { PulseResolvedManifest } from '../../types.resolved-manifest';
+import type { PulseScopeState } from '../../types.truth.scope';
+import type { PulseCodacyEvidence, PulseStructuralGraph } from '../../types.structural';
+import type { PulseExecutionChainSet, PulseProductGraph } from '../../types.product-graph';
+import type { PulseExecutionMatrix } from '../../types.execution-matrix';
 import type {
-  PulseHealth,
-  PulseManifest,
-  PulseCodebaseTruth,
-  PulseResolvedManifest,
-  PulseScopeState,
-  PulseCodacyEvidence,
-  PulseStructuralGraph,
-  PulseExecutionChainSet,
-  PulseExecutionMatrix,
-  PulseProductGraph,
   PulseCapabilityState,
   PulseFlowProjection,
   PulseParityGapsArtifact,
   PulseExternalSignalState,
-  PulseProductVision,
-  PulseCertification,
-} from '../../types';
-import type { PulseArtifactRegistry } from '../../artifact-registry';
+} from '../../types.capabilities';
+import type { PulseProductVision } from '../../types.product-vision';
+import type { PulseCertification } from '../../types.evidence';
+import type { PulseArtifactRegistry } from '../../artifact-registry/__parts__/discovery';
 
 /** Pulse artifact snapshot shape. */
 export interface PulseArtifactSnapshot {

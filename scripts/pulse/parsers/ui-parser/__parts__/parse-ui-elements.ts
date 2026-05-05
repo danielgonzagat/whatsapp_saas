@@ -1,6 +1,7 @@
 import * as path from 'path';
 import * as ts from 'typescript';
-import type { UIElement, PulseConfig } from '../../../types';
+import type { UIElement } from '../../../types.core';
+import type { PulseConfig } from '../../../types.manifest';
 import type { HookRegistry } from '../../hook-registry';
 import { buildApiModuleMap } from '../../api-parser';
 import { extractSaveHandlerApiCalls } from '../../../ui-api-calls';
@@ -12,8 +13,8 @@ import { getFrontendSourceDirs } from '../../../frontend-roots';
 import {
   deriveUnitValue,
   deriveZeroValue,
-  discoverSourceExtensionsFromObservedTypescript,
-} from '../../../dynamic-reality-kernel';
+} from '../../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+import { discoverSourceExtensionsFromObservedTypescript } from '../../../dynamic-reality-kernel/__parts__/token-evidence';
 import { extractLabel, extractComponent, isTestOrSpecFile } from './text-and-string-utils';
 import { extractJSXHandler, expandInlineHandler, DOM_HANDLER_PROPS } from './handler-utils';
 import {

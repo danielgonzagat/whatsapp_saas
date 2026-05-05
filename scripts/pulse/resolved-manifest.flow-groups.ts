@@ -2,12 +2,9 @@
  * Flow group builders: synthesizeScenarioFlowGroups and buildFlowGroups.
  * Companion to resolved-manifest.builders.ts.
  */
-import type {
-  PulseCodebaseTruth,
-  PulseDiscoveredFlowCandidate,
-  PulseManifest,
-  PulseResolvedFlowGroup,
-} from './types';
+import type { PulseCodebaseTruth, PulseDiscoveredFlowCandidate } from './types.truth';
+import type { PulseManifest } from './types.manifest';
+import type { PulseResolvedFlowGroup } from './types.resolved-manifest';
 import { unique, titleCase, matchesOverride } from './resolved-manifest.module-helpers';
 import {
   type SemanticFlowDescriptor,

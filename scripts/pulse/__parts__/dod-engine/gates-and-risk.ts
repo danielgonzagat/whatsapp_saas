@@ -1,4 +1,4 @@
-import type { PulseCapability } from '../../types';
+import type { PulseCapability } from '../../types.capabilities';
 import type { DoDRiskLevel } from '../../types.dod-engine';
 import {
   isElevatedLevel,

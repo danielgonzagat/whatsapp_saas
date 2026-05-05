@@ -1,9 +1,10 @@
-import type { PulseFlowResult, PulseManifestFlowSpec } from '../../../types';
+import type { PulseFlowResult } from '../../../types.convergence';
+import type { PulseManifestFlowSpec } from '../../../types.manifest';
 import {
   deriveHttpStatusFromObservedCatalog,
   deriveUnitValue,
   deriveZeroValue,
-} from '../../../dynamic-reality-kernel';
+} from '../../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 import {
   BASE_36_RADIX,
   buildFailureResult,

@@ -8,18 +8,17 @@
 import * as path from 'node:path';
 import { safeJoin, safeResolve } from '../../safe-path';
 import { pathExists, readJsonFile } from '../../safe-fs';
-import {
-  deriveZeroValue,
-  discoverAllObservedArtifactFilenames,
-  deriveStringUnionMembersFromTypeContract,
-} from '../../dynamic-reality-kernel';
+import { deriveZeroValue } from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+import { discoverAllObservedArtifactFilenames } from '../../dynamic-reality-kernel/__parts__/token-evidence';
+import { deriveStringUnionMembersFromTypeContract } from '../../dynamic-reality-kernel/__parts__/type-contract-labels';
 import type {
   ObservabilityEvidenceKind,
   ObservabilityCoverageState,
   ObservabilityPillar,
   ObservabilityStatus,
 } from '../../types.observability-coverage';
-import type { PulseObservabilityEvidence, PulseRuntimeEvidence } from '../../types';
+import type { PulseObservabilityEvidence } from '../../types.scenario-result';
+import type { PulseRuntimeEvidence } from '../../types.convergence';
 import type { BehaviorGraph, BehaviorNode } from '../../types.behavior-graph';
 import type { RuntimeFusionState, RuntimeSignal } from '../../types.runtime-fusion';
 

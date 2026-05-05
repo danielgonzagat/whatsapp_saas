@@ -3,10 +3,8 @@
  * Exports: buildDirective
  */
 import { unique } from '../../artifacts.io';
-import {
-  deriveZeroValue,
-  discoverConvergenceExecutionModeLabels,
-} from '../../dynamic-reality-kernel';
+import { deriveZeroValue } from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+import { discoverConvergenceExecutionModeLabels } from '../../__kernel_additions__/discoverConvergenceExecutionModeLabels';
 import {
   buildDecisionQueue,
   buildAutonomyQueue,
@@ -28,7 +26,8 @@ import {
   type PulseNoHardcodedRealityState,
 } from '../../no-hardcoded-reality-state';
 import type { PulseArtifactSnapshot, PulseMachineReadiness } from '../../artifacts.types';
-import type { PulseAutonomyState, PulseConvergencePlan } from '../../types';
+import type { PulseAutonomyState } from '../../types.autonomy';
+import type { PulseConvergencePlan } from '../../types.convergence';
 import {
   readCurrentPulseArtifact,
   artifactJsonReplacer,

@@ -1,10 +1,6 @@
-import type {
-  PulseCodacyEvidence,
-  PulseCodacyEvidenceHotspot,
-  PulseConvergenceOwnerLane,
-  PulseScopeFile,
-  PulseScopeState,
-} from './types';
+import type { PulseCodacyEvidence, PulseCodacyEvidenceHotspot } from './types.structural';
+import type { PulseConvergenceOwnerLane } from './types.gate-failure';
+import type { PulseScopeFile, PulseScopeState } from './types.truth.scope';
 import { classifyCodacyIssues } from './codacy-false-positive-classifier';
 import type { CodacyClassification } from './types.codacy-classification';
 

@@ -1,5 +1,6 @@
 import * as path from 'path';
-import type { BackendRoute, PulseConfig } from '../types';
+import type { BackendRoute } from '../types.core';
+import type { PulseConfig } from '../types.manifest';
 import { walkFiles } from './utils';
 import { readTextFile } from '../safe-fs';
 

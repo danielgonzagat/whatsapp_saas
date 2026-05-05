@@ -3,7 +3,10 @@
  * map helpers, file risk impact.
  */
 
-import { deriveUnitValue, deriveZeroValue } from '../../dynamic-reality-kernel';
+import {
+  deriveUnitValue,
+  deriveZeroValue,
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 import type { BehaviorGraph, BehaviorNode } from '../../types.behavior-graph';
 import { incrementCount, hasEntries, calibrationFloor } from './state-foundation';
 import type {

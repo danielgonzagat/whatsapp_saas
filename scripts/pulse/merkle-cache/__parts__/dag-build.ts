@@ -1,6 +1,6 @@
 import * as path from 'path';
 import type { MerkleDag, MerkleNode } from '../../types.merkle-cache';
-import { discoverAllObservedArtifactFilenames } from '../../dynamic-reality-kernel';
+import { discoverAllObservedArtifactFilenames } from '../../dynamic-reality-kernel/__parts__/token-evidence';
 import { ensureDir, pathExists, readJsonFile, writeTextFile } from '../../safe-fs';
 import {
   CACHE_DIR,

@@ -6,7 +6,7 @@ import type {
   PulseCodacyIssue,
   PulseCodacySeverity,
   PulseCodacySummary,
-} from './types';
+} from './types.truth.codacy';
 
 /**
  * Codacy-snapshot ingestion for `scope-state.ts`.

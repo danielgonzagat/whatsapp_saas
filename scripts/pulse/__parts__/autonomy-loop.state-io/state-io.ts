@@ -1,4 +1,4 @@
-import type { PulseAutonomyIterationRecord, PulseAutonomyState } from '../../types';
+import type { PulseAutonomyIterationRecord, PulseAutonomyState } from '../../types.autonomy';
 import type {
   PulseAgentOrchestrationBatchRecord,
   PulseAgentOrchestrationState,

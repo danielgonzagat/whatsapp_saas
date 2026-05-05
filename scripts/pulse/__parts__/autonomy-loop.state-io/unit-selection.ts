@@ -1,11 +1,14 @@
 import { spawnSync } from 'node:child_process';
-import type { PulseAutonomyState } from '../../types';
+import type { PulseAutonomyState } from '../../types.autonomy';
 import type {
   PulseAutonomousDirective,
   PulseAutonomousDirectiveUnit,
 } from '../../autonomy-loop.types';
 import { compact } from '../../autonomy-loop.utils';
-import { getPreferredAutomationSafeUnits, hasUnitConflict } from '../../autonomy-loop.unit-ranking';
+import {
+  getPreferredAutomationSafeUnits,
+  hasUnitConflict,
+} from '../../autonomy-loop.unit-ranking/__parts__/selection';
 import { readDirectiveArtifact } from './directive';
 import {
   readQueueInfluence,

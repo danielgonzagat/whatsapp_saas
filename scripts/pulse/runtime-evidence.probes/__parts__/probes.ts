@@ -21,7 +21,7 @@ import {
   deriveHttpStatusFromObservedCatalog,
   deriveUnitValue,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 
 export async function runBackendHealthProbe(
   context: RuntimeProbeContext,

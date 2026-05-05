@@ -1,5 +1,6 @@
 import { tokenize, unique } from '../../signal-normalizers';
-import { deriveUnitValue, discoverSignalSeverityLabels } from '../../dynamic-reality-kernel';
+import { deriveUnitValue } from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+import { discoverSignalSeverityLabels } from '../../dynamic-reality-kernel/__parts__/type-contract-engines';
 import type { RuntimeSignal, SignalSeverity } from '../../types.runtime-fusion';
 import {
   ACTION_BLOCK_DEPLOY,

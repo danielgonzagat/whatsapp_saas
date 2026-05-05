@@ -1,4 +1,4 @@
-import { discoverAllObservedArtifactFilenames } from '../../dynamic-reality-kernel';
+import { discoverAllObservedArtifactFilenames } from '../../dynamic-reality-kernel/__parts__/token-evidence';
 
 // ── Artifact names ─────────────────────────────────────────────────────────
 

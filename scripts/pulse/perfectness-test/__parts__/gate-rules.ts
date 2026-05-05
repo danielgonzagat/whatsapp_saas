@@ -3,7 +3,7 @@
 //
 // The canonical 8-gate evaluation rule set.
 
-import { deriveZeroValue } from '../../dynamic-reality-kernel';
+import { deriveZeroValue } from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 import type { PerfectnessGate } from '../../types.perfectness-test';
 import {
   PULSE_AUTONOMY_STATE_FILE,

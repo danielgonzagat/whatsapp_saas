@@ -15,7 +15,7 @@
 
 import * as http from 'http';
 import * as https from 'https';
-import type { PulseSignal } from '../types';
+import type { PulseSignal } from '../types.capabilities';
 
 interface PrometheusAdapterConfig {
   baseUrl?: string;

@@ -11,17 +11,19 @@ import type {
   ProviderContract,
   SchemaDiffSeverity,
 } from '../../types.contract-tester';
+import { deriveStringUnionMembersFromTypeContract } from '../../dynamic-reality-kernel/__parts__/type-contract-labels';
 import {
-  deriveStringUnionMembersFromTypeContract,
   deriveUnitValue,
   deriveZeroValue,
+  discoverRouteSeparatorFromRuntime,
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+import {
   discoverAllObservedArtifactFilenames,
   discoverDirectorySkipHintsFromEvidence,
-  discoverNestjsDecoratorNamesFromTypeEvidence,
-  discoverRouteSeparatorFromRuntime,
   discoverSourceExtensionsFromObservedTypescript,
-  discoverStructuralNodeKindLabels,
-} from '../../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel/__parts__/token-evidence';
+import { discoverNestjsDecoratorNamesFromTypeEvidence } from '../../dynamic-reality-kernel/__parts__/evidence-domain';
+import { discoverStructuralNodeKindLabels } from '../../dynamic-reality-kernel/__parts__/type-contract-engines';
 
 // ── Artifact filenames ──────────────────────────────────────────────────────
 

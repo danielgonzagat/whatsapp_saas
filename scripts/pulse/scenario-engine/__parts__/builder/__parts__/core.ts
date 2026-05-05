@@ -3,11 +3,11 @@
 
 import {
   discoverHarnessExecutionStatusLabels,
-  discoverPropertyPassedStatusFromTypeEvidence,
   discoverScenarioStatusLabels,
-} from '../../../../dynamic-reality-kernel';
+} from '../../../../dynamic-reality-kernel/__parts__/type-contract-engines';
+import { discoverPropertyPassedStatusFromTypeEvidence } from '../../../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 import { writeTextFile } from '../../../../safe-fs';
-import type { PulseProductSurface } from '../../../../types';
+import type { PulseProductSurface } from '../../../../types.product-graph';
 import type {
   Scenario,
   ScenarioEvidenceState,

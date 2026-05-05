@@ -1,6 +1,6 @@
 import { safeJoin } from '../../lib/safe-path';
 import { readTextFile, pathExists } from '../../safe-fs';
-import { deriveZeroValue } from '../../dynamic-reality-kernel';
+import { deriveZeroValue } from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 import type { DataflowCoverageStatus } from '../../types.dataflow-engine';
 import type { PrismaFieldEvidence, SourceFileSnapshot, FieldUsageEvidence } from './schema-parsers';
 import {

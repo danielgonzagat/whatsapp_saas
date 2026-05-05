@@ -1,19 +1,18 @@
+import type { Break, PulseGateName } from '../../types.manifest';
 import type {
-  Break,
   PulseCapabilityState,
-  PulseCertification,
-  PulseConvergenceOwnerLane,
+  PulseParityGapsArtifact,
+  PulseFlowProjection,
+} from '../../types.capabilities';
+import type { PulseCertification, PulseWorldState } from '../../types.evidence';
+import type { PulseConvergenceOwnerLane, PulseGateFailureClass } from '../../types.gate-failure';
+import type {
   PulseConvergenceUnit,
   PulseConvergenceUnitPriority,
   PulseConvergenceUnitStatus,
   PulseEvidenceRecord,
-  PulseGateFailureClass,
-  PulseGateName,
-  PulseParityGapsArtifact,
-  PulseFlowProjection,
-  PulseScenarioResult,
-  PulseWorldState,
-} from '../../types';
+} from '../../types.convergence';
+import type { PulseScenarioResult } from '../../types.scenario-result';
 import {
   OBSERVED_ARTIFACTS,
   OBSERVED_GATES,
@@ -40,8 +39,8 @@ import {
   discoverGateLaneFromObservedStructure,
   derivePriorityFromObservedContext,
   deriveProductImpactFromObservedScope,
-  deriveUnitValue,
-} from '../../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel/__parts__/token-evidence';
+import { deriveUnitValue } from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 
 export function evidenceBatchSize(
   ...collections: Array<{ length: number } | null | undefined>

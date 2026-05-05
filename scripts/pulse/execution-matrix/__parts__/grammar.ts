@@ -1,9 +1,13 @@
 import type {
   PulseCapability,
   PulseCapabilityState,
-  PulseExecutionChain,
-  PulseExecutionChainSet,
-  PulseExecutionEvidence,
+  PulseExternalSignalState,
+  PulseFlowProjection,
+  PulseFlowProjectionItem,
+} from '../../types.capabilities';
+import type { PulseExecutionChain, PulseExecutionChainSet } from '../../types.product-graph';
+import type { PulseExecutionEvidence } from '../../types.evidence';
+import type {
   PulseExecutionMatrix,
   PulseExecutionMatrixBreakpoint,
   PulseExecutionMatrixEvidenceRequirement,
@@ -11,24 +15,22 @@ import type {
   PulseExecutionMatrixPath,
   PulseExecutionMatrixPathSource,
   PulseExecutionMatrixPathStatus,
-  PulseExternalSignalState,
-  PulseFlowProjection,
-  PulseFlowProjectionItem,
-  PulseScopeFile,
-  PulseScopeState,
+} from '../../types.execution-matrix';
+import type { PulseScopeFile, PulseScopeState } from '../../types.truth.scope';
+import type {
   PulseStructuralGraph,
   PulseStructuralNode,
   PulseTruthMode,
-} from '../../types';
+} from '../../types.structural';
 import {
   deriveZeroValue,
   deriveUnitValue,
   deriveCatalogPercentScaleFromObservedCatalog,
-  discoverConvergenceExecutionModeLabels,
-  discoverConvergenceRiskLevelLabels,
-  discoverExecutionMatrixPathStatusLabels,
-  discoverExecutionMatrixPathSourceLabels,
-} from '../../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+import { discoverConvergenceExecutionModeLabels } from '../../__kernel_additions__/discoverConvergenceExecutionModeLabels';
+import { discoverConvergenceRiskLevelLabels } from '../../__kernel_additions__/discoverConvergenceRiskLevelLabels';
+import { discoverExecutionMatrixPathStatusLabels } from '../../__kernel_additions__/discoverExecutionMatrixPathStatusLabels';
+import { discoverExecutionMatrixPathSourceLabels } from '../../dynamic-reality-kernel/__parts__/type-contract-engines';
 
 export interface BuildExecutionMatrixInput {
   structuralGraph: PulseStructuralGraph;

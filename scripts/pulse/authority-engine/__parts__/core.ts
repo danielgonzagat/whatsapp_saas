@@ -3,13 +3,13 @@
  */
 import * as path from 'node:path';
 import { ensureDir, pathExists, readJsonFile, writeTextFile } from '../../safe-fs';
+import { deriveStringUnionMembersFromTypeContract } from '../../dynamic-reality-kernel/__parts__/type-contract-labels';
 import {
-  deriveStringUnionMembersFromTypeContract,
   deriveUnitValue,
   deriveZeroValue,
-  discoverAllObservedArtifactFilenames,
   discoverPropertyPassedStatusFromTypeEvidence,
-} from '../../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+import { discoverAllObservedArtifactFilenames } from '../../dynamic-reality-kernel/__parts__/token-evidence';
 import type { PulseGateName } from '../../types.manifest';
 import type { PulseCertification } from '../../types.evidence';
 import type { PulseMachineReadiness } from '../../artifacts.types';

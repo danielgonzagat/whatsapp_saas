@@ -3,14 +3,14 @@
  */
 
 import type { ContractTestEvidence, SchemaDiff } from '../../types.contract-tester';
-import type { PulseStructuralGraph } from '../../types';
+import type { PulseStructuralGraph } from '../../types.structural';
 import { pathExists, readTextFile } from '../../safe-fs';
 import { safeJoin } from '../../lib/safe-path';
 import { walkFiles } from '../../parsers/utils';
 import {
   discoverAllObservedArtifactFilenames,
   discoverSourceExtensionsFromObservedTypescript,
-} from '../../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel/__parts__/token-evidence';
 import { isNodeKind, CONTRACT_EVIDENCE_FILENAME, resolveSeverityLabel } from './part0_constants';
 import {
   findBackendDir,

@@ -1,13 +1,12 @@
+import type { PulseCapability, PulseFlowProjectionItem } from '../../types.capabilities';
+import type { PulseExecutionChain } from '../../types.product-graph';
 import type {
-  PulseCapability,
-  PulseExecutionChain,
   PulseExecutionMatrixBreakpoint,
   PulseExecutionMatrixEvidenceRequirement,
   PulseExecutionMatrixObservedEvidence,
   PulseExecutionMatrixPathStatus,
-  PulseFlowProjectionItem,
-  PulseTruthMode,
-} from '../../types';
+} from '../../types.execution-matrix';
+import type { PulseTruthMode } from '../../types.structural';
 import {
   differsGrammar,
   failedEvidenceRecoveryGrammar,

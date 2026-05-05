@@ -1,12 +1,8 @@
 import { safeJoin, safeResolve } from './safe-path';
 import { pathExists, readJsonFile, readTextFile } from './safe-fs';
-import type {
-  PulseEnvironment,
-  PulseObservabilityEvidence,
-  PulseRecoveryEvidence,
-  PulseRuntimeEvidence,
-  PulseRuntimeProbe,
-} from './types';
+import type { PulseEnvironment } from './types.manifest';
+import type { PulseObservabilityEvidence, PulseRecoveryEvidence } from './types.scenario-result';
+import type { PulseRuntimeEvidence, PulseRuntimeProbe } from './types.convergence';
 import { getRuntimeResolution } from './parsers/runtime-utils';
 import {
   runBackendHealthProbe,
@@ -15,7 +11,7 @@ import {
   runFrontendProbe,
   runDbProbe,
   type RuntimeProbeContext,
-} from './runtime-evidence.probes';
+} from './runtime-evidence.probes/__parts__/probes';
 
 const RUNTIME_EVIDENCE_PATH = 'PULSE_RUNTIME_EVIDENCE.json';
 const RUNTIME_PROBES_PATH = 'PULSE_RUNTIME_PROBES.json';

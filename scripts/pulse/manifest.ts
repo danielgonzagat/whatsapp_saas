@@ -1,16 +1,16 @@
 import { safeJoin, safeResolve } from './safe-path';
 import * as path from 'path';
-import type { PulseConfig, PulseManifest, PulseManifestLoadResult, Break } from './types';
+import type { PulseConfig, PulseManifest, PulseManifestLoadResult, Break } from './types.manifest';
 import type { CoreParserData } from './functional-map-types';
 import { pathExists, readTextFile } from './safe-fs';
+import { deriveStringUnionMembersFromTypeContract } from './dynamic-reality-kernel/__parts__/type-contract-labels';
 import {
-  deriveStringUnionMembersFromTypeContract,
   discoverActorKindLabels,
   discoverEnvironmentLabels,
   discoverProviderModeLabels,
   discoverScenarioKindLabels,
   discoverTimeWindowModeLabels,
-} from './dynamic-reality-kernel';
+} from './dynamic-reality-kernel/__parts__/type-contract-engines';
 
 /** Pulse_manifest_filename. */
 export const PULSE_MANIFEST_FILENAME = 'pulse.manifest.json';

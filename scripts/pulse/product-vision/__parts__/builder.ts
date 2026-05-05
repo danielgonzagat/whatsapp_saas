@@ -1,8 +1,5 @@
-import type {
-  PulseCapabilityStatus,
-  PulseFlowProjectionStatus,
-  PulseProductVision,
-} from '../../types';
+import type { PulseCapabilityStatus, PulseFlowProjectionStatus } from '../../types.capabilities';
+import type { PulseProductVision } from '../../types.product-vision';
 import { deriveStructuralFamilies, familiesOverlap } from '../../structural-family';
 import {
   type BuildProductVisionInput,

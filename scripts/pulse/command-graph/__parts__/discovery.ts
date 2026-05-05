@@ -1,10 +1,8 @@
 import * as path from 'node:path';
 import { pathExists, readDir, readTextFile, statPath } from '../../safe-fs';
 import { safeJoin } from '../../lib/safe-path';
-import {
-  deriveUnitValue,
-  discoverDirectorySkipHintsFromEvidence,
-} from '../../dynamic-reality-kernel';
+import { deriveUnitValue } from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+import { discoverDirectorySkipHintsFromEvidence } from '../../dynamic-reality-kernel/__parts__/token-evidence';
 import type {
   PulseCommandPurpose,
   PulseDiscoveredCommand,

@@ -1,13 +1,13 @@
 /** Semantic analysis helpers for codebase-truth: token scoring, flow discovery, divergence. */
 
+import type { BackendRoute } from './types.core';
 import type {
-  BackendRoute,
   PulseDiscoveredFlowCandidate,
   PulseDiscoveredModule,
-  PulseManifest,
   PulseTruthDivergence,
   PulseTruthPageSummary,
-} from './types';
+} from './types.truth';
+import type { PulseManifest } from './types.manifest';
 import type { CoreParserData, InteractionChain, PageFunctionalMap } from './functional-map-types';
 import {
   normalizeText,

@@ -1,11 +1,8 @@
-import type {
-  PulseConvergenceUnit,
-  PulseConvergenceUnitPriority,
-  PulseScopeFile,
-} from '../../types';
+import type { PulseConvergenceUnit, PulseConvergenceUnitPriority } from '../../types.convergence';
+import type { PulseScopeFile } from '../../types.truth.scope';
 import type { BuildPulseConvergencePlanInput } from './types';
 import { uniqueStrings, compactText } from './helpers';
-import { discoverSourceLabelFromObservedContext } from '../../dynamic-reality-kernel';
+import { discoverSourceLabelFromObservedContext } from '../../dynamic-reality-kernel/__parts__/token-evidence';
 import { determineScopeProductImpact, buildScopeVisionDelta } from './priorities';
 import { relatedFailedGateNames } from './scenario-evidence';
 import { OBSERVED_ARTIFACTS } from './state';

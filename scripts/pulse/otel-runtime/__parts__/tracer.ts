@@ -1,6 +1,9 @@
 // PULSE — Manual Span Tracer for OpenTelemetry call graph collection
 
-import { deriveUnitValue, deriveZeroValue } from '../../dynamic-reality-kernel';
+import {
+  deriveUnitValue,
+  deriveZeroValue,
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 import type { OtelSpan, OtelTrace } from '../../types.otel-runtime';
 import {
   nowIso,

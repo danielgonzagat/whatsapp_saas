@@ -1,4 +1,5 @@
-import type { PulseHealth, PulseCertification } from './types';
+import type { PulseHealth } from './types.health';
+import type { PulseCertification } from './types.evidence';
 import { deriveDynamicFindingIdentity, isBlockingDynamicFinding } from './finding-identity';
 
 const RESET = '\x1b[0m';

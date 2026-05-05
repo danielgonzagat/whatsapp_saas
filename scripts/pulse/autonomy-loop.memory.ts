@@ -7,7 +7,7 @@ import type {
   PulseAutonomyMemoryState,
   PulseAutonomyState,
   PulseAgentOrchestrationState,
-} from './types';
+} from './types.autonomy';
 import { fingerprintStrategy } from './structural-memory/__parts__/memory-core';
 
 function buildAutonomyConceptConfidence(recurrence: number): 'low' | 'medium' | 'high' {

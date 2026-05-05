@@ -4,8 +4,8 @@ import type {
   PathProofEvidenceFreshness,
   PathProofObservedEvidenceLink,
   PathProofEvidenceEntry,
-} from '../../path-proof-evidence';
-import type { PathProofTask } from '../../path-proof-runner';
+} from './main';
+import type { PathProofTask } from '../path-proof-runner/main';
 
 const PATH_PROOF_EVIDENCE_ARTIFACT = '.pulse/current/PULSE_PATH_PROOF_EVIDENCE.json';
 
@@ -224,10 +224,10 @@ export function buildEvidenceEntry(
 }
 
 export function summarize(
-  plan: import('../../path-proof-runner').PathProofPlan,
+  plan: import('../path-proof-runner/main').PathProofPlan,
   runnerResults: PathProofRunnerResult[],
   tasks: PathProofEvidenceEntry[],
-): import('../../path-proof-evidence').PathProofEvidenceArtifact['summary'] {
+): import('../path-proof-evidence/main').PathProofEvidenceArtifact['summary'] {
   return {
     totalTasks: tasks.length,
     runnerResults: runnerResults.length,

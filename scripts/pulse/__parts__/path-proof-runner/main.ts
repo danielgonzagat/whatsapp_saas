@@ -1,4 +1,4 @@
-import type { PulseExecutionMatrix, PulseExecutionMatrixPath } from '../../types';
+import type { PulseExecutionMatrix, PulseExecutionMatrixPath } from '../../types.execution-matrix';
 import type {
   PathCoverageEntry,
   PathCoverageExpectedEvidence,

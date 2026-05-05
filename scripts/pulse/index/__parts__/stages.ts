@@ -4,8 +4,8 @@ import { loadParserInventory } from '../../parser-registry/__parts__/loader';
 import {
   deriveUnitValue,
   deriveZeroValue,
-  discoverAllObservedArtifactFilenames,
-} from '../../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+import { discoverAllObservedArtifactFilenames } from '../../dynamic-reality-kernel/__parts__/token-evidence';
 
 type PulseIndexStageId =
   | 'full-scan'

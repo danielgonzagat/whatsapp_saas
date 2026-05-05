@@ -1,7 +1,7 @@
 import * as path from 'node:path';
 import * as fs from 'node:fs';
 import { spawnSync } from 'node:child_process';
-import { deriveZeroValue } from '../../dynamic-reality-kernel';
+import { deriveZeroValue } from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 import type { RollbackOutcome } from './types';
 
 /**

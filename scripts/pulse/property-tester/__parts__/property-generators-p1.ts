@@ -8,7 +8,7 @@ import {
   deriveHttpStatusFromObservedCatalog as httpStatus,
   deriveUnitValue,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 import { dpe, dfa } from './core';
 import {
   fuzzSampleBudget,

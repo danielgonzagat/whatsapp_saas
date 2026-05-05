@@ -5,7 +5,7 @@
  * computeProofCoverage, and buildProductionProofState.
  */
 
-import { deriveZeroValue } from '../../dynamic-reality-kernel';
+import { deriveZeroValue } from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 import { pathExists, writeTextFile } from '../../safe-fs';
 import type {
   ProductionProof,

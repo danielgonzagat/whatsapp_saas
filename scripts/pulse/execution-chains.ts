@@ -3,11 +3,13 @@ import type {
   PulseExecutionChainSet,
   PulseExecutionChainStep,
   PulseExecutionChainStepRole,
+} from './types.product-graph';
+import type {
   PulseStructuralEdge,
   PulseStructuralGraph,
   PulseStructuralNode,
   PulseTruthMode,
-} from './types';
+} from './types.structural';
 
 interface BuildExecutionChainsInput {
   structuralGraph: PulseStructuralGraph;

@@ -1,13 +1,10 @@
 // PULSE — Live Codebase Nervous System
 // Resolved manifest: module resolution helper functions
 
-import type {
-  PulseCodebaseTruth,
-  PulseManifest,
-  PulseManifestModule,
-  PulseScopeModuleAggregate,
-  PulseResolvedModule,
-} from './types';
+import type { PulseCodebaseTruth } from './types.truth';
+import type { PulseManifest, PulseManifestModule } from './types.manifest';
+import type { PulseScopeModuleAggregate } from './types.truth.scope';
+import type { PulseResolvedModule } from './types.resolved-manifest';
 
 export function normalizeText(value: string): string {
   return value

@@ -13,7 +13,8 @@ import type {
   PulseSyntheticRunMode,
   RunSyntheticActorsInput,
 } from './types';
-import type { PulseActorEvidence, PulseScenarioResult } from '../types';
+import type { PulseActorEvidence } from '../types.evidence';
+import type { PulseScenarioResult } from '../types.scenario-result';
 
 export type {
   PulseSyntheticActorBundle,

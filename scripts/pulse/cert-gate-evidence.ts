@@ -2,17 +2,15 @@
  * buildGateEvidence: maps scan health + execution evidence to per-gate evidence records.
  * These records feed the gate evaluators and become part of the final certificate.
  */
-import type {
-  PulseCodebaseTruth,
-  PulseCodacySummary,
-  PulseEvidenceRecord,
-  PulseExecutionEvidence,
-  PulseExternalSignalState,
-  PulseGateName,
-  PulseHealth,
-  PulseResolvedManifest,
-  PulseScopeState,
-} from './types';
+import type { PulseCodebaseTruth } from './types.truth';
+import type { PulseCodacySummary } from './types.truth.codacy';
+import type { PulseEvidenceRecord } from './types.convergence';
+import type { PulseExecutionEvidence } from './types.evidence';
+import type { PulseExternalSignalState } from './types.capabilities';
+import type { PulseGateName } from './types.manifest';
+import type { PulseHealth } from './types.health';
+import type { PulseResolvedManifest } from './types.resolved-manifest';
+import type { PulseScopeState } from './types.truth.scope';
 import { unique } from './cert-helpers';
 import { isRuntimeExternalSignal, isChangeExternalSignal } from './cert-helpers';
 import { isBlockingDynamicFinding } from './finding-identity';

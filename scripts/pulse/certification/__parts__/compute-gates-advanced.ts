@@ -1,10 +1,9 @@
 import type {
   PulseCertificationTarget,
   PulseExecutionEvidence,
-  PulseGateName,
   PulseGateResult,
-  PulseManifest,
-} from '../../types';
+} from '../../types.evidence';
+import type { PulseGateName, PulseManifest } from '../../types.manifest';
 
 import type { PulsePathCoverageGateState } from '../../cert-gate-execution-matrix';
 import type {
@@ -25,11 +24,9 @@ import {
   NO_HARDCODED_REALITY_ARTIFACT,
 } from './helpers';
 
-import {
-  gateFail,
-  evaluateEvidenceFreshGate,
-  evaluatePulseSelfTrustGate,
-} from '../../cert-gate-evaluators';
+import { gateFail } from '../../__parts__/cert-gate-evaluators/gate-fail';
+import { evaluateEvidenceFreshGate } from '../../__parts__/cert-gate-evaluators/main';
+import { evaluatePulseSelfTrustGate } from '../../__parts__/cert-gate-evaluators/truth-gates';
 
 import { withTemporaryGateAcceptance } from '../../cert-gate-pattern';
 
@@ -38,7 +35,7 @@ import { evaluateActorGate, evaluateSyntheticCoverageGate } from '../../cert-gat
 import { evaluateNoOverclaimGate, formatProofReadinessGap } from '../../cert-gate-overclaim';
 
 import { PROOF_READINESS_ARTIFACT } from '../../proof-readiness-artifact';
-import { REQUIRED_NON_REGRESSING_CYCLES } from '../../cert-gate-multi-cycle';
+import { REQUIRED_NON_REGRESSING_CYCLES } from '../../cert-gate-multi-cycle/__parts__/helpers';
 import {
   evaluateBreakpointPrecisionGate,
   evaluateCriticalPathObservedGate,
@@ -50,7 +47,7 @@ import {
   detectTypeEscapeHatches,
 } from '../../test-honesty';
 import { formatNoHardcodedRealityBlocker } from '../../no-hardcoded-reality-state';
-import { deriveZeroValue } from '../../dynamic-reality-kernel';
+import { deriveZeroValue } from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 
 import {
   certificationTargetRequiresGate,

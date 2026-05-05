@@ -1,11 +1,10 @@
 import type {
   PulseCertificationTarget,
   PulseExecutionEvidence,
-  PulseExecutionMatrix,
-  PulseManifest,
-  PulseGateName,
   PulseGateResult,
-} from '../../types';
+} from '../../types.evidence';
+import type { PulseExecutionMatrix } from '../../types.execution-matrix';
+import type { PulseManifest, PulseGateName } from '../../types.manifest';
 
 import type { PulseProofReadinessSummary } from '../../cert-gate-overclaim';
 
@@ -16,12 +15,10 @@ import type { ComputeCertificationInput } from './helpers';
 import { buildDefaultEvidence, mergeExecutionEvidence } from '../../cert-evidence-defaults';
 import { buildGateEvidence } from '../../cert-gate-evidence';
 import { withTemporaryGateAcceptance } from '../../cert-gate-pattern';
-import { evaluateMultiCycleConvergenceGate } from '../../cert-gate-multi-cycle';
+import { evaluateMultiCycleConvergenceGate } from '../../cert-gate-multi-cycle/__parts__/core';
 
-import {
-  deriveZeroValue,
-  discoverAllObservedArtifactFilenames,
-} from '../../dynamic-reality-kernel';
+import { deriveZeroValue } from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+import { discoverAllObservedArtifactFilenames } from '../../dynamic-reality-kernel/__parts__/token-evidence';
 
 import { PROOF_READINESS_ARTIFACT } from '../../proof-readiness-artifact';
 import {

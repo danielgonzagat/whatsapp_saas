@@ -1,4 +1,4 @@
-import type { PulseExecutionMatrixPath } from '../../types';
+import type { PulseExecutionMatrixPath } from '../../types.execution-matrix';
 import type {
   PathClassification,
   PathCoverageExecutionMode,
@@ -22,7 +22,7 @@ import {
   unique,
 } from './kernel-helpers';
 import { normalizeCoverageExecutionMode, isHighOrCriticalRisk } from './path-classification';
-import { deriveZeroValue } from '../../dynamic-reality-kernel';
+import { deriveZeroValue } from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 
 function buildTerminalReason(
   mp: PulseExecutionMatrixPath,

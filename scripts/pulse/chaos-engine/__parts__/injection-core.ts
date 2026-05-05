@@ -1,5 +1,7 @@
 import type { ChaosScenarioKind, ChaosTarget } from '../../types.chaos-engine';
-import type { PulseCapability, PulseRuntimeEvidence, PulseExecutionTrace } from '../../types';
+import type { PulseCapability } from '../../types.capabilities';
+import type { PulseRuntimeEvidence } from '../../types.convergence';
+import type { PulseExecutionTrace } from '../../types.evidence';
 import {
   ChaosProviderName,
   ChaosEvidenceContext,
@@ -7,13 +9,13 @@ import {
   unique,
 } from './detection-core';
 import { computeProviderBlastRadius } from './blast-radius';
+import { discoverExternalReceiverTokensFromEvidence } from '../../dynamic-reality-kernel/__parts__/token-evidence';
+import { discoverChaosScenarioKindLabels } from '../../dynamic-reality-kernel/__parts__/type-contract-engines';
 import {
-  discoverExternalReceiverTokensFromEvidence,
-  discoverChaosScenarioKindLabels,
   discoverPropertyPassedStatusFromTypeEvidence,
   deriveUnitValue,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 
 function normalizeEvidenceText(value: unknown): string {
   if (typeof value === 'string') {

@@ -5,7 +5,7 @@
 import { getProfileSelection, parseCertificationProfile } from './profiles';
 import { runSyntheticActors } from './actors';
 import type { PulseSyntheticRunMode } from './actors';
-import type { PulseBrowserEvidence } from './types';
+import type { PulseBrowserEvidence } from './types.convergence';
 
 export const args = process.argv.slice(2);
 

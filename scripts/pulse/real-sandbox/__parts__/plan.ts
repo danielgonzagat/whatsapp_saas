@@ -29,7 +29,7 @@ import {
   planStatusBlocked,
   kernelHeaderPrefixLength,
 } from './kernel';
-import { deriveZeroValue } from '../../dynamic-reality-kernel';
+import { deriveZeroValue } from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 import { pathExists, readJsonFile } from '../../safe-fs';
 
 const DEFAULT_PROTECTED_BOUNDARY: RealSandboxProtectedBoundary = {

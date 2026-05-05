@@ -1,10 +1,7 @@
-import type {
-  PulseCertification,
-  PulseEvidenceRecord,
-  PulseGateName,
-  PulseScenarioResult,
-  PulseWorldState,
-} from '../../types';
+import type { PulseCertification, PulseWorldState } from '../../types.evidence';
+import type { PulseEvidenceRecord } from '../../types.convergence';
+import type { PulseGateName } from '../../types.manifest';
+import type { PulseScenarioResult } from '../../types.scenario-result';
 import {
   uniqueStrings,
   compactText,

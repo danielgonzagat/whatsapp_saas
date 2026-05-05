@@ -1,4 +1,4 @@
-import { deriveStringUnionMembersFromTypeContract } from '../dynamic-reality-kernel';
+import { deriveStringUnionMembersFromTypeContract } from '../dynamic-reality-kernel/__parts__/type-contract-labels';
 
 /**
  * Returns the string-literal union members of `PulseCapabilityStatus` declared in

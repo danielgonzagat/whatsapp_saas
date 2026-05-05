@@ -1,6 +1,7 @@
 import * as path from 'path';
 import * as ts from 'typescript';
-import type { ServiceTrace, PulseConfig } from '../types';
+import type { ServiceTrace } from '../types.core';
+import type { PulseConfig } from '../types.manifest';
 import { walkFiles } from './utils';
 import { readTextFile } from '../safe-fs';
 

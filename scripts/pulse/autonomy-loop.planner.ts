@@ -2,7 +2,7 @@
  * Agent-based and deterministic planner for the autonomy loop.
  */
 import { Agent, MemorySession, run, tool } from '@openai/agents';
-import type { PulseAutonomyState } from './types';
+import type { PulseAutonomyState } from './types.autonomy';
 import type {
   PulseAutonomousDirective,
   PulseAutonomyDecision,
@@ -28,7 +28,7 @@ import {
   getPreferredAutomationSafeUnits,
   getAutomationSafeUnits,
   hasAdaptiveRetryBeenExhausted,
-} from './autonomy-loop.unit-ranking';
+} from './autonomy-loop.unit-ranking/__parts__/selection';
 import {
   buildCodexPrompt,
   buildAdaptivePrompt,

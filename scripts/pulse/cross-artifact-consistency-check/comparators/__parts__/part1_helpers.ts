@@ -8,11 +8,11 @@ import { deepGet } from '../../loaders';
 import {
   deriveUnitValue,
   deriveZeroValue,
-  discoverAllObservedArtifactFilenames,
-  discoverConvergenceExecutionModeLabels,
-  discoverGateFailureClassLabels,
   discoverRouteSeparatorFromRuntime,
-} from '../../../dynamic-reality-kernel';
+} from '../../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+import { discoverAllObservedArtifactFilenames } from '../../../dynamic-reality-kernel/__parts__/token-evidence';
+import { discoverConvergenceExecutionModeLabels } from '../../../__kernel_additions__/discoverConvergenceExecutionModeLabels';
+import { discoverGateFailureClassLabels } from '../../../dynamic-reality-kernel/__parts__/type-contract-labels';
 
 export interface DirectiveUnitView {
   id?: string;

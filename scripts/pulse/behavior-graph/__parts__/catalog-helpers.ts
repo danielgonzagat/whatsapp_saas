@@ -13,11 +13,13 @@ import type {
 import {
   discoverDirectorySkipHintsFromEvidence,
   discoverSourceExtensionsFromObservedTypescript,
+} from '../../dynamic-reality-kernel/__parts__/token-evidence';
+import {
   deriveZeroValue,
-  deriveRuntimeStringBoundaryFromObservedCatalog,
   deriveUnitValue,
-  deriveStringUnionMembersFromTypeContract,
-} from '../../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+import { deriveRuntimeStringBoundaryFromObservedCatalog } from '../../dynamic-reality-kernel/__parts__/profile-derivations';
+import { deriveStringUnionMembersFromTypeContract } from '../../dynamic-reality-kernel/__parts__/type-contract-labels';
 
 let Project: typeof import('ts-morph').Project;
 let SyntaxKind: typeof import('ts-morph').SyntaxKind;

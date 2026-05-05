@@ -1,6 +1,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import type { PulseActorEvidence, PulseScenarioResult } from '../../types';
+import type { PulseActorEvidence } from '../../types.evidence';
+import type { PulseScenarioResult } from '../../types.scenario-result';
 import { normalizeEvidenceKey } from '../../scenario-mode-registry';
 
 type ActorEvidenceKey = 'customer' | 'operator' | 'admin' | 'soak';

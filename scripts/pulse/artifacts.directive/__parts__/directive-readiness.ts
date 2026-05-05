@@ -4,13 +4,13 @@
  * buildPathProofSurfaceForDirective
  */
 import { unique } from '../../artifacts.io';
-import { deriveZeroValue } from '../../dynamic-reality-kernel';
+import { deriveZeroValue } from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 import { buildDirectiveProofSurface } from '../../directive-proof-surface';
 import { buildAutonomyProof } from '../../artifacts.autonomy/__parts__/autonomy-proof';
 import { buildAutonomyReadiness } from '../../artifacts.autonomy/__parts__/readiness';
 import type { PulseArtifactSnapshot, PulseMachineReadiness } from '../../artifacts.types';
 import type { PulseProofReadinessSummary } from '../../cert-gate-overclaim';
-import type { PathProofPlan } from '../../path-proof-runner';
+import type { PathProofPlan } from '../../__parts__/path-proof-runner/main';
 import type { PathCoverageState } from '../../types.path-coverage-engine';
 import {
   OBSERVED_ARTIFACT_FILENAMES,

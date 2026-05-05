@@ -4,8 +4,8 @@ import * as path from 'path';
 import {
   deriveUnitValue,
   deriveZeroValue,
-  discoverAllObservedArtifactFilenames,
-} from '../../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+import { discoverAllObservedArtifactFilenames } from '../../dynamic-reality-kernel/__parts__/token-evidence';
 import type { OtelSpan } from '../../types.otel-runtime';
 import type { AstGraphContext, StructuralGraphContext } from './generation';
 import {

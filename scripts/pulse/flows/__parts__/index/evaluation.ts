@@ -1,4 +1,5 @@
-import type { PulseFlowEvidence, PulseFlowResult, PulseManifestFlowSpec } from '../../../types';
+import type { PulseFlowEvidence, PulseFlowResult } from '../../../types.convergence';
+import type { PulseManifestFlowSpec } from '../../../types.manifest';
 import { summarizeDynamicFindingEvents } from '../../../finding-identity';
 import { getRuntimeResolution } from '../../../parsers/runtime-utils';
 import type { RunDeclaredFlowsInput, FlowRuntimeContext } from './types-and-config';

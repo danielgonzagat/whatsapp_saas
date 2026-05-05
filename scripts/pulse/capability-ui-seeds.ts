@@ -1,4 +1,4 @@
-import type { PulseStructuralNode } from './types';
+import type { PulseStructuralNode } from './types.structural';
 
 /** Has api calls. */
 export function hasApiCalls(node: PulseStructuralNode): boolean {

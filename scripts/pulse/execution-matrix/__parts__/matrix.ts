@@ -4,13 +4,13 @@ import type {
   PulseExecutionMatrixPath,
   PulseExecutionMatrixPathSource,
   PulseExecutionMatrixPathStatus,
-  PulseScopeFile,
-} from '../../types';
+} from '../../types.execution-matrix';
+import type { PulseScopeFile } from '../../types.truth.scope';
 import {
   deriveUnitValue,
   deriveZeroValue,
-  discoverExecutionMatrixPathStatusLabels,
-} from '../../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+import { discoverExecutionMatrixPathStatusLabels } from '../../__kernel_additions__/discoverExecutionMatrixPathStatusLabels';
 import {
   artifactGrammar,
   differsGrammar,

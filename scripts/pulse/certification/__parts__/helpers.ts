@@ -1,13 +1,15 @@
+import { discoverAllObservedArtifactFilenames } from '../../dynamic-reality-kernel/__parts__/token-evidence';
+import { discoverCapabilityStatusLabels } from '../../__kernel_additions__/discoverCapabilityStatusLabels';
+import { discoverConvergenceEvidenceConfidenceLabels } from '../../__kernel_additions__/discoverConvergenceEvidenceConfidenceLabels';
 import {
-  discoverAllObservedArtifactFilenames,
-  discoverCapabilityStatusLabels,
-  discoverConvergenceEvidenceConfidenceLabels,
   discoverGateFailureClassLabels,
-  discoverTruthModeLabels,
   deriveStringUnionMembersFromTypeContract,
+} from '../../dynamic-reality-kernel/__parts__/type-contract-labels';
+import { discoverTruthModeLabels } from '../../dynamic-reality-kernel/__parts__/type-contract-engines';
+import {
   deriveUnitValue,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 
 import {
   PROOF_READINESS_ARTIFACT,
@@ -24,29 +26,32 @@ import type {
   PulseDirectiveSnapshot,
   PulseProofReadinessSummary,
 } from '../../cert-gate-overclaim';
-import type { PulseAutonomyStateSnapshot } from '../../cert-gate-multi-cycle';
+import type { PulseAutonomyStateSnapshot } from '../../cert-gate-multi-cycle/__parts__/helpers';
 import type {
   PulseCapabilityState,
-  PulseCertificationTarget,
-  PulseCodacyEvidence,
-  PulseCodebaseTruth,
-  PulseExecutionEvidence,
-  PulseExecutionMatrix,
   PulseExternalSignalState,
   PulseFlowProjection,
-  PulseHealth,
-  PulseManifestLoadResult,
-  PulseParserInventory,
-  PulseResolvedManifest,
-  PulseScopeState,
+} from '../../types.capabilities';
+import type {
+  PulseCertificationTarget,
+  PulseExecutionEvidence,
   PulseSelfTrustReport,
-  PulseStructuralGraph,
-  PulseGateFailureClass,
   PulseGateResult,
-  PulseConvergenceEvidenceConfidence,
-  PulseTruthMode,
   PulseCertification,
-} from '../../types';
+} from '../../types.evidence';
+import type {
+  PulseCodacyEvidence,
+  PulseStructuralGraph,
+  PulseTruthMode,
+} from '../../types.structural';
+import type { PulseCodebaseTruth } from '../../types.truth';
+import type { PulseExecutionMatrix } from '../../types.execution-matrix';
+import type { PulseHealth } from '../../types.health';
+import type { PulseManifestLoadResult, PulseParserInventory } from '../../types.manifest';
+import type { PulseResolvedManifest } from '../../types.resolved-manifest';
+import type { PulseScopeState } from '../../types.truth.scope';
+import type { PulseGateFailureClass } from '../../types.gate-failure';
+import type { PulseConvergenceEvidenceConfidence } from '../../types.convergence';
 
 function _phantomLabel(): string {
   const members = [...discoverCapabilityStatusLabels()];

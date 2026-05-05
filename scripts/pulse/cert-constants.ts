@@ -4,7 +4,7 @@
  * certification objectives. Gate/profile/numeric-limit decisions are derived
  * outside this module from resolved artifacts and evaluated evidence.
  */
-import type { Break, PulseGateName } from './types';
+import type { Break, PulseGateName } from './types.manifest';
 import {
   discoverSecurityFindingEventPatternsFromEvidence,
   discoverIsolationFindingEventPatternsFromEvidence,
@@ -13,7 +13,7 @@ import {
   discoverObservabilityFindingEventPatternsFromEvidence,
   discoverRuntimeFindingEventPatternsFromEvidence,
   discoverCheckerGapTypesFromEvidence,
-} from './dynamic-reality-kernel';
+} from './dynamic-reality-kernel/__parts__/token-evidence';
 
 export const SECURITY_FINDING_EVENT_KERNEL_GRAMMAR =
   discoverSecurityFindingEventPatternsFromEvidence();

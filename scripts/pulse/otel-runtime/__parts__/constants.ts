@@ -5,15 +5,15 @@ import * as path from 'path';
 import * as crypto from 'crypto';
 import {
   deriveHttpStatusFromObservedCatalog,
-  deriveStringUnionMembersFromTypeContract,
   deriveUnitValue,
   deriveZeroValue,
-  discoverAllObservedArtifactFilenames,
   discoverKnownHttpClientMethods,
-  discoverNestjsDecoratorNamesFromTypeEvidence,
   discoverRouteSeparatorFromRuntime,
   observeStatusTextLengthFromCatalog,
-} from '../../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+import { deriveStringUnionMembersFromTypeContract } from '../../dynamic-reality-kernel/__parts__/type-contract-labels';
+import { discoverAllObservedArtifactFilenames } from '../../dynamic-reality-kernel/__parts__/token-evidence';
+import { discoverNestjsDecoratorNamesFromTypeEvidence } from '../../dynamic-reality-kernel/__parts__/evidence-domain';
 import {
   discoverAxiosMethodNamesFromRuntimeTypeEvidence,
   discoverBullMQMethodNamesFromRuntimeTypeEvidence,

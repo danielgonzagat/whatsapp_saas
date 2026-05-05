@@ -1,4 +1,5 @@
-import type { Break, PulseHealth } from '../../types';
+import type { Break } from '../../types.manifest';
+import type { PulseHealth } from '../../types.health';
 import {
   normalizeForMatch,
   routeKeyFor,
@@ -26,7 +27,7 @@ import {
   type PulseGraphInput,
 } from './graph-part2-routing';
 import { buildApiModuleMap } from '../../parsers/api-parser';
-import { deriveZeroValue } from '../../dynamic-reality-kernel';
+import { deriveZeroValue } from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 
 export function buildGraph(input: PulseGraphInput): PulseHealth {
   const {

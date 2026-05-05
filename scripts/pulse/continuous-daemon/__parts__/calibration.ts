@@ -7,7 +7,7 @@ import {
   deriveHttpStatusFromObservedCatalog,
   deriveUnitValue,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 import type { BehaviorGraph } from '../../types.behavior-graph';
 import type { ContinuousDaemonState } from '../../types.continuous-daemon';
 import {

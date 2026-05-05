@@ -2,20 +2,24 @@ import type {
   PulseAutonomyIterationRecord,
   PulseAutonomyState,
   PulseAutonomyValidationCommandResult,
-} from '../../types';
+} from '../../types.autonomy';
 import { DEFAULT_PLANNER_MODEL } from '../../autonomy-loop.types';
 import { sleep, readAgentsSdkVersion, commandExists } from '../../autonomy-loop.utils';
-import { toUnitSnapshot } from '../../autonomy-loop.unit-ranking';
+import { toUnitSnapshot } from '../../autonomy-loop.unit-ranking/__parts__/structural-rank';
 import {
   directiveDigest,
   getDirectiveSnapshot,
+} from '../../__parts__/autonomy-loop.state-io/directive';
+import {
   getMemoryAwarePreferredAutomationSafeUnits,
+  runPulseGuidance,
+} from '../../__parts__/autonomy-loop.state-io/unit-selection';
+import {
   writePulseAutonomyState,
   appendHistory,
-  runPulseGuidance,
-} from '../../autonomy-loop.state-io';
+} from '../../__parts__/autonomy-loop.state-io/state-io';
 import { rollbackWorkspaceToHead } from '../../autonomy-loop.workspace';
-import { captureRegressionSnapshot } from '../../regression-guard';
+import { captureRegressionSnapshot } from '../../regression-guard/__parts__/snapshot';
 import {
   buildDeterministicDecision,
   determinePlannerMode,
@@ -30,11 +34,11 @@ import {
 } from '../../autonomy-loop.prompt';
 import { createExecutor, detectAvailableExecutor, type ExecutorKind } from '../../executor';
 import { runParallelAutonomousLoop } from '../../autonomy-loop.parallel';
+import { deriveStringUnionMembersFromTypeContract } from '../../dynamic-reality-kernel/__parts__/type-contract-labels';
 import {
-  deriveStringUnionMembersFromTypeContract,
   deriveUnitValue,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 import {
   certifiedConvergenceLabel,
   buildRunOptions,

@@ -1,4 +1,4 @@
-import { deriveZeroValue } from '../../dynamic-reality-kernel';
+import { deriveZeroValue } from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 import type { PulseSnapshot, RegressionResult } from './types';
 import {
   detectExecutionMatrixRegressions,

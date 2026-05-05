@@ -10,7 +10,7 @@ import {
   deriveUnitValue,
   deriveCatalogPercentScaleFromObservedCatalog,
   deriveHttpStatusFromObservedCatalog,
-} from '../../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 import type {
   CapabilityObservability,
   ObservabilityCoverageState,

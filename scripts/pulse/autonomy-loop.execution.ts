@@ -3,15 +3,15 @@
  */
 import * as path from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
-import { buildArtifactRegistry } from './artifact-registry';
+import { buildArtifactRegistry } from './artifact-registry/__parts__/registry';
 import { createAppendStream, ensureDir, pathExists, readTextFile, writeTextFile } from './safe-fs';
 import type {
   PulseAutonomyValidationCommandResult,
   PulseAgentOrchestrationWorkerResult,
-} from './types';
+} from './types.autonomy';
 import type { PulseAutonomousDirective, PulseAutonomousDirectiveUnit } from './autonomy-loop.types';
 import { compact } from './autonomy-loop.utils';
-import { toUnitSnapshot } from './autonomy-loop.unit-ranking';
+import { toUnitSnapshot } from './autonomy-loop.unit-ranking/__parts__/structural-rank';
 import { buildWorkerPrompt } from './autonomy-loop.prompt';
 import {
   prepareIsolatedWorkerWorkspace,

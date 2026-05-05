@@ -4,12 +4,13 @@
 import { normalizeCanonicalArtifactValue, normalizeArtifactText } from '../../artifacts.queue';
 import { buildFindingEventSurface } from '../../finding-event-surface';
 import type { PulseArtifactSnapshot } from '../../artifacts.types';
-import type { PulseAutonomyState, PulseConvergencePlan } from '../../types';
+import type { PulseAutonomyState } from '../../types.autonomy';
+import type { PulseConvergencePlan } from '../../types.convergence';
 import {
   deriveUnitValue,
   deriveZeroValue,
-  discoverAllObservedArtifactFilenames,
-} from '../../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+import { discoverAllObservedArtifactFilenames } from '../../dynamic-reality-kernel/__parts__/token-evidence';
 import { buildPulseMachineReadiness } from './machine-readiness';
 
 export function buildCertificate(

@@ -1,6 +1,6 @@
 import * as path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { buildArtifactRegistry } from '../../artifact-registry';
+import { buildArtifactRegistry } from '../../artifact-registry/__parts__/registry';
 import { ensureDir, pathExists, removePath, writeTextFile } from '../../safe-fs';
 import { compact, commandExists } from '../../autonomy-loop.utils';
 import type { PulseRollbackGuard } from '../../autonomy-loop.types';

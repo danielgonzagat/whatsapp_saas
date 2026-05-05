@@ -1,4 +1,6 @@
-import type { PulseConvergenceUnit, PulseGateFailureClass, PulseGateName } from '../../types';
+import type { PulseConvergenceUnit } from '../../types.convergence';
+import type { PulseGateFailureClass } from '../../types.gate-failure';
+import type { PulseGateName } from '../../types.manifest';
 import type { BuildPulseConvergencePlanInput } from './types';
 import {
   isBlockingBreak,

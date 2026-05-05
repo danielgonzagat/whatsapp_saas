@@ -1,8 +1,8 @@
 import type { DetectedSourceRoot } from '../../source-root-detector/__parts__/types';
 import type { BehaviorNode, BehaviorValidationRequirement } from '../../types.behavior-graph';
-import { discoverExternalReceiverTokensFromEvidence } from '../../dynamic-reality-kernel';
-import { discoverSourceExtensionsFromObservedTypescript } from '../../dynamic-reality-kernel';
-import { discoverAllObservedHttpStatusCodes } from '../../dynamic-reality-kernel';
+import { discoverExternalReceiverTokensFromEvidence } from '../../dynamic-reality-kernel/__parts__/token-evidence';
+import { discoverSourceExtensionsFromObservedTypescript } from '../../dynamic-reality-kernel/__parts__/token-evidence';
+import { discoverAllObservedHttpStatusCodes } from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 
 type BehaviorDecoratorRole =
   | 'http_route'

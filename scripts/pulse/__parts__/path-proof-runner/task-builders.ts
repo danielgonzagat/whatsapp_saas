@@ -1,4 +1,4 @@
-import type { PulseExecutionMatrixPath } from '../../types';
+import type { PulseExecutionMatrixPath } from '../../types.execution-matrix';
 import type {
   PathCoverageArtifactLink,
   PathCoverageEntry,
@@ -10,7 +10,7 @@ import {
   normalizePath,
   type GovernanceBoundary,
 } from '../../scope-state-classify';
-import type { PathProofTask, PathProofTaskMode } from '../../path-proof-runner';
+import type { PathProofTask, PathProofTaskMode } from './main';
 
 function hasPreciseTerminalReason(path: PulseExecutionMatrixPath): boolean {
   if (path.status === 'observed_pass' || path.status === 'observed_fail') {

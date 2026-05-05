@@ -2,12 +2,11 @@ import type {
   PulseCertification,
   PulseActorEvidence,
   PulseCertificationTarget,
-  PulseGateName,
   PulseGateResult,
-  PulseManifest,
-} from '../../types';
+} from '../../types.evidence';
+import type { PulseGateName, PulseManifest } from '../../types.manifest';
 
-import { deriveZeroValue } from '../../dynamic-reality-kernel';
+import { deriveZeroValue } from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 
 import {
   _gatePassLabel,

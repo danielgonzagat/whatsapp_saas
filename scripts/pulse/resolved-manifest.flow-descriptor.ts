@@ -3,7 +3,8 @@
  * Companion to resolved-manifest.flow-helpers.ts.
  * Exports: SemanticFlowDescriptor, describeFlow, inferAction.
  */
-import type { PulseDiscoveredFlowCandidate, PulseResolvedFlowKind } from './types';
+import type { PulseDiscoveredFlowCandidate } from './types.truth';
+import type { PulseResolvedFlowKind } from './types.resolved-manifest';
 import { normalizeText, slugify, titleCase, unique } from './resolved-manifest.module-helpers';
 
 export interface SemanticFlowDescriptor {

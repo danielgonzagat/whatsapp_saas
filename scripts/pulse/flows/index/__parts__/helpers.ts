@@ -1,15 +1,16 @@
 import type {
   Break,
-  PulseBrowserFailureCode,
   PulseEnvironment,
-  PulseFlowEvidence,
-  PulseFlowOracle,
-  PulseFlowResult,
-  PulseHealth,
   PulseManifest,
   PulseManifestFlowSpec,
   PulseParserInventory,
-} from '../../../types';
+} from '../../../types.manifest';
+import type {
+  PulseBrowserFailureCode,
+  PulseFlowEvidence,
+  PulseFlowResult,
+} from '../../../types.convergence';
+import type { PulseFlowOracle, PulseHealth } from '../../../types.health';
 import { randomBytes } from 'node:crypto';
 import { obtainAuthToken } from '../../../browser-stress-tester/auth';
 import type { AuthCredentials } from '../../../browser-stress-tester/types';
@@ -17,16 +18,20 @@ import { getRuntimeResolution, httpGet, httpPost, httpPut } from '../../../parse
 import { isBlockingDynamicFinding } from '../../../finding-identity';
 import {
   deriveHttpStatusFromObservedCatalog,
-  deriveStringUnionMembersFromTypeContract,
   deriveUnitValue,
   deriveZeroValue,
-  discoverAllObservedArtifactFilenames,
-  discoverGateFailureClassLabels,
   discoverPropertyPassedStatusFromTypeEvidence,
-  discoverProviderModeLabels,
-  discoverRuntimeFindingEventPatternsFromEvidence,
   observeStatusTextLengthFromCatalog,
-} from '../../../dynamic-reality-kernel';
+} from '../../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+import {
+  deriveStringUnionMembersFromTypeContract,
+  discoverGateFailureClassLabels,
+} from '../../../dynamic-reality-kernel/__parts__/type-contract-labels';
+import {
+  discoverAllObservedArtifactFilenames,
+  discoverRuntimeFindingEventPatternsFromEvidence,
+} from '../../../dynamic-reality-kernel/__parts__/token-evidence';
+import { discoverProviderModeLabels } from '../../../dynamic-reality-kernel/__parts__/type-contract-engines';
 
 export interface RunDeclaredFlowsInput {
   environment: PulseEnvironment;

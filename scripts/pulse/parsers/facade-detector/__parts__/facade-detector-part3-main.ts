@@ -1,13 +1,14 @@
 import * as path from 'path';
 import * as ts from 'typescript';
-import type { FacadeEntry, PulseConfig } from '../../../types';
+import type { FacadeEntry } from '../../../types.core';
+import type { PulseConfig } from '../../../types.manifest';
 import { walkFiles } from '../../utils';
 import { readTextFile } from '../../../safe-fs';
 import {
   deriveUnitValue,
   deriveZeroValue,
   deriveHttpStatusFromObservedCatalog,
-} from '../../../dynamic-reality-kernel';
+} from '../../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 import {
   isSkippedSourcePath,
   hasCommentMarker,

@@ -1,10 +1,10 @@
-import type { UIElement } from '../../../types';
+import type { UIElement } from '../../../types.core';
 import {
   deriveUnitValue,
   deriveZeroValue,
   observeStatusTextLengthFromCatalog,
   deriveHttpStatusFromObservedCatalog,
-} from '../../../dynamic-reality-kernel';
+} from '../../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 
 function buildHandlerEvidence(
   handler: string | null,

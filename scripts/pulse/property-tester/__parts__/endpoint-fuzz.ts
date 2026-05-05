@@ -8,11 +8,15 @@ import {
   deriveEndpointRiskFromObservedProfile,
   deriveExpectedStatusCodesFromObservedProfile,
   deriveStrategyWeightFromObservedProfile,
+} from '../../dynamic-reality-kernel/__parts__/profile-derivations';
+import {
   deriveUnitValue,
   deriveZeroValue,
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+import {
   hasObservedToken,
   splitIdentifierTokensFromObservedName,
-} from '../../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel/__parts__/token-evidence';
 import { addExpectedStatus, hasQueryParameter, isStringEvidence } from './core';
 
 type EndpointRisk = 'high' | 'medium' | 'low';

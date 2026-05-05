@@ -7,7 +7,7 @@ import {
   deriveUnitValue,
   inferCandidateCategoryFromObservedTokens,
   type DerivedCandidateCategory,
-} from '../../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 import { du8, isSourceFileName, shouldScanDirectory, isTestLikeFile } from './core';
 
 export type CandidateCategory = Exclude<DerivedCandidateCategory, null>;

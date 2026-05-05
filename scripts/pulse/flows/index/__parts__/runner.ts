@@ -1,5 +1,9 @@
-import type { PulseFlowEvidence, PulseFlowResult, PulseManifestFlowSpec } from '../../../types';
-import { deriveUnitValue, deriveZeroValue } from '../../../dynamic-reality-kernel';
+import type { PulseFlowEvidence, PulseFlowResult } from '../../../types.convergence';
+import type { PulseManifestFlowSpec } from '../../../types.manifest';
+import {
+  deriveUnitValue,
+  deriveZeroValue,
+} from '../../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 import { getRuntimeResolution } from '../../../parsers/runtime-utils';
 import { summarizeDynamicFindingEvents } from '../../../finding-identity';
 import {

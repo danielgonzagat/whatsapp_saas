@@ -1,4 +1,4 @@
-import type { PulseStructuralNode } from './types';
+import type { PulseStructuralNode } from './types.structural';
 import { shouldSkipUiSeed } from './capability-ui-seeds';
 
 /** Capability seed group shape. */

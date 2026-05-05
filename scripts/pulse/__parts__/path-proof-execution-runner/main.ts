@@ -1,6 +1,6 @@
 import { spawnSync } from 'node:child_process';
 
-import type { PathProofTask } from '../../path-proof-runner';
+import type { PathProofTask } from '../path-proof-runner/main';
 import {
   isProtectedFile as isGovernanceProtectedFile,
   loadGovernanceBoundary,
@@ -122,7 +122,7 @@ function buildSkippedResult(
 }
 
 export async function executePathProofPlan(
-  plan: import('../../path-proof-runner').PathProofPlan,
+  plan: import('../path-proof-runner/main').PathProofPlan,
   options: ExecutePathProofPlanOptions = {},
 ): Promise<PathProofExecutionRun> {
   const cwd = options.cwd ?? process.cwd();

@@ -1,9 +1,6 @@
-import type {
-  PulseCertificationProfile,
-  PulseCertificationTarget,
-  PulseEnvironment,
-  PulseManifest,
-} from './types';
+import type { PulseCertificationProfile } from './types.health';
+import type { PulseCertificationTarget } from './types.evidence';
+import type { PulseEnvironment, PulseManifest } from './types.manifest';
 import { deriveSyntheticModesFromManifest, uniqueValues } from './scenario-mode-registry';
 import type { PulseSyntheticRunMode } from './actors/types';
 

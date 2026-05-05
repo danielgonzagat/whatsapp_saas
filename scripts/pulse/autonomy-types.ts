@@ -136,7 +136,7 @@ export interface PulseAutonomyRunOptions {
 export interface PulseAutonomyArtifactSeedInput {
   rootDir?: string;
   directive: PulseAutonomousDirective;
-  previousState?: import('./types').PulseAutonomyState | null;
+  previousState?: import('./types.autonomy').PulseAutonomyState | null;
   codexCliAvailable?: boolean;
   orchestrationMode?: 'single' | 'parallel';
   parallelAgents?: number;
@@ -149,7 +149,7 @@ export interface PulseAutonomyArtifactSeedInput {
 
 export interface PulseAgentOrchestrationArtifactSeedInput {
   directive: PulseAutonomousDirective;
-  previousState?: import('./types').PulseAgentOrchestrationState | null;
+  previousState?: import('./types.autonomy').PulseAgentOrchestrationState | null;
   codexCliAvailable?: boolean;
   parallelAgents?: number;
   maxWorkerRetries?: number;

@@ -1,7 +1,7 @@
 import * as path from 'path';
-import type { PulseConfig } from './types';
+import type { PulseConfig } from './types.manifest';
 import { PULSE_MANIFEST_FILENAME } from './manifest';
-import { PULSE_EXTERNAL_INPUT_FILES } from './external-signals';
+import { PULSE_EXTERNAL_INPUT_FILES } from './external-signals/__parts__/snapshot-config';
 import { classifySurface } from './scope-state.classify';
 
 /** Pulse watch change kind type. */

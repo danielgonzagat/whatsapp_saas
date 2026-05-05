@@ -2,7 +2,7 @@ import type {
   PulseConvergenceProductImpact,
   PulseConvergenceUnit,
   PulseConvergenceUnitPriority,
-} from './types';
+} from './types.convergence';
 
 /** Priority_rank. */
 export const PRIORITY_RANK: Record<PulseConvergenceUnitPriority, number> = {

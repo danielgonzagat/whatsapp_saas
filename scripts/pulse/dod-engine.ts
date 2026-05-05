@@ -5,9 +5,11 @@ import {
   discoverDoDCapabilityClassificationLabels,
   discoverDoDRequirementModeLabels,
   discoverTruthModeLabels,
+} from './dynamic-reality-kernel/__parts__/type-contract-engines';
+import {
   deriveUnitValue,
   deriveZeroValue,
-} from './dynamic-reality-kernel';
+} from './dynamic-reality-kernel/__parts__/catalog-arithmetic';
 
 // ── Re-exports from parts ───────────────────────────────────────────────────
 
@@ -35,19 +37,31 @@ export function resolveObservedGateNotTestedStatusFromKernelGrammar(): string {
 }
 
 export function hasPassedGateFromKernelEvidence(status: string): boolean {
-  return discoverDoDGateStatusLabels().has(status) && status === resolveObservedGatePassStatusFromKernelGrammar();
+  return (
+    discoverDoDGateStatusLabels().has(status) &&
+    status === resolveObservedGatePassStatusFromKernelGrammar()
+  );
 }
 
 export function hasFailedGateFromKernelEvidence(status: string): boolean {
-  return discoverDoDGateStatusLabels().has(status) && status === resolveObservedGateFailStatusFromKernelGrammar();
+  return (
+    discoverDoDGateStatusLabels().has(status) &&
+    status === resolveObservedGateFailStatusFromKernelGrammar()
+  );
 }
 
 export function isGateApplicableFromKernelEvidence(status: string): boolean {
-  return discoverDoDGateStatusLabels().has(status) && status !== resolveObservedGateNotApplicableStatusFromKernelGrammar();
+  return (
+    discoverDoDGateStatusLabels().has(status) &&
+    status !== resolveObservedGateNotApplicableStatusFromKernelGrammar()
+  );
 }
 
 export function isGateTestedFromKernelEvidence(status: string): boolean {
-  return discoverDoDGateStatusLabels().has(status) && status !== resolveObservedGateNotTestedStatusFromKernelGrammar();
+  return (
+    discoverDoDGateStatusLabels().has(status) &&
+    status !== resolveObservedGateNotTestedStatusFromKernelGrammar()
+  );
 }
 
 // ── Derived overall status labels ───────────────────────────────────────────
@@ -71,19 +85,31 @@ export function resolveObservedNotStartedStatusFromKernelGrammar(): string {
 }
 
 export function isDoneStatusFromKernelEvidence(status: string): boolean {
-  return discoverDoDOverallStatusLabels().has(status) && status === resolveObservedDoneStatusFromKernelGrammar();
+  return (
+    discoverDoDOverallStatusLabels().has(status) &&
+    status === resolveObservedDoneStatusFromKernelGrammar()
+  );
 }
 
 export function isPartialStatusFromKernelEvidence(status: string): boolean {
-  return discoverDoDOverallStatusLabels().has(status) && status === resolveObservedPartialStatusFromKernelGrammar();
+  return (
+    discoverDoDOverallStatusLabels().has(status) &&
+    status === resolveObservedPartialStatusFromKernelGrammar()
+  );
 }
 
 export function isBlockedStatusFromKernelEvidence(status: string): boolean {
-  return discoverDoDOverallStatusLabels().has(status) && status === resolveObservedBlockedStatusFromKernelGrammar();
+  return (
+    discoverDoDOverallStatusLabels().has(status) &&
+    status === resolveObservedBlockedStatusFromKernelGrammar()
+  );
 }
 
 export function isNotStartedStatusFromKernelEvidence(status: string): boolean {
-  return discoverDoDOverallStatusLabels().has(status) && status === resolveObservedNotStartedStatusFromKernelGrammar();
+  return (
+    discoverDoDOverallStatusLabels().has(status) &&
+    status === resolveObservedNotStartedStatusFromKernelGrammar()
+  );
 }
 
 // ── Derived risk level labels ───────────────────────────────────────────────
@@ -108,9 +134,10 @@ export function resolveObservedLowRiskLevelFromKernelGrammar(): string {
 
 export function isBlockerRiskFromKernelEvidence(riskLevel: string): boolean {
   const labels = discoverDoDRiskLevelLabels();
-  return labels.has(riskLevel) && (
-    riskLevel === resolveObservedCriticalRiskLevelFromKernelGrammar() ||
-    riskLevel === resolveObservedHighRiskLevelFromKernelGrammar()
+  return (
+    labels.has(riskLevel) &&
+    (riskLevel === resolveObservedCriticalRiskLevelFromKernelGrammar() ||
+      riskLevel === resolveObservedHighRiskLevelFromKernelGrammar())
   );
 }
 
@@ -136,15 +163,18 @@ export function resolveObservedProductionClassificationFromKernelGrammar(): stri
 
 export function isClassifiedAsRealOrBetterFromKernelEvidence(classification: string): boolean {
   const labels = discoverDoDCapabilityClassificationLabels();
-  return labels.has(classification) && (
-    classification === resolveObservedRealClassificationFromKernelGrammar() ||
-    classification === resolveObservedProductionClassificationFromKernelGrammar()
+  return (
+    labels.has(classification) &&
+    (classification === resolveObservedRealClassificationFromKernelGrammar() ||
+      classification === resolveObservedProductionClassificationFromKernelGrammar())
   );
 }
 
 export function isClassifiedAsPhantomFromKernelEvidence(classification: string): boolean {
-  return discoverDoDCapabilityClassificationLabels().has(classification) &&
-    classification === resolveObservedPhantomClassificationFromKernelGrammar();
+  return (
+    discoverDoDCapabilityClassificationLabels().has(classification) &&
+    classification === resolveObservedPhantomClassificationFromKernelGrammar()
+  );
 }
 
 // ── Derived requirement mode labels ─────────────────────────────────────────
@@ -164,13 +194,17 @@ export function resolveObservedNotRequiredModeFromKernelGrammar(): string {
 }
 
 export function isRequiredModeFromKernelEvidence(mode: string): boolean {
-  return discoverDoDRequirementModeLabels().has(mode) &&
-    mode === resolveObservedRequiredModeFromKernelGrammar();
+  return (
+    discoverDoDRequirementModeLabels().has(mode) &&
+    mode === resolveObservedRequiredModeFromKernelGrammar()
+  );
 }
 
 export function isNotRequiredModeFromKernelEvidence(mode: string): boolean {
-  return discoverDoDRequirementModeLabels().has(mode) &&
-    mode === resolveObservedNotRequiredModeFromKernelGrammar();
+  return (
+    discoverDoDRequirementModeLabels().has(mode) &&
+    mode === resolveObservedNotRequiredModeFromKernelGrammar()
+  );
 }
 
 // ── Derived truth mode labels ───────────────────────────────────────────────
@@ -182,8 +216,10 @@ export function resolveObservedInferredTruthFromKernelGrammar(): string {
 }
 
 export function isInferredTruthFromKernelEvidence(truthMode: string): boolean {
-  return discoverTruthModeLabels().has(truthMode) &&
-    truthMode === resolveObservedInferredTruthFromKernelGrammar();
+  return (
+    discoverTruthModeLabels().has(truthMode) &&
+    truthMode === resolveObservedInferredTruthFromKernelGrammar()
+  );
 }
 
 // ── Derived numeric thresholds ──────────────────────────────────────────────

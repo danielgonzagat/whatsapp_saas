@@ -1,11 +1,9 @@
-import {
-  deriveStringUnionMembersFromTypeContract,
-  discoverAllObservedArtifactFilenames,
-  discoverConvergenceExecutionModeLabels,
-  discoverConvergenceRiskLevelLabels,
-  discoverExecutionMatrixPathStatusLabels,
-  discoverHarnessExecutionStatusLabels,
-} from '../../dynamic-reality-kernel';
+import { deriveStringUnionMembersFromTypeContract } from '../../dynamic-reality-kernel/__parts__/type-contract-labels';
+import { discoverAllObservedArtifactFilenames } from '../../dynamic-reality-kernel/__parts__/token-evidence';
+import { discoverConvergenceExecutionModeLabels } from '../../__kernel_additions__/discoverConvergenceExecutionModeLabels';
+import { discoverConvergenceRiskLevelLabels } from '../../__kernel_additions__/discoverConvergenceRiskLevelLabels';
+import { discoverExecutionMatrixPathStatusLabels } from '../../__kernel_additions__/discoverExecutionMatrixPathStatusLabels';
+import { discoverHarnessExecutionStatusLabels } from '../../dynamic-reality-kernel/__parts__/type-contract-engines';
 
 const _PATH_CLASSIFICATION_MEMBERS = deriveStringUnionMembersFromTypeContract(
   'scripts/pulse/types.path-coverage-engine.ts',

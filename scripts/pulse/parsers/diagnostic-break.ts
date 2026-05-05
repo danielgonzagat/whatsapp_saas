@@ -2,7 +2,7 @@ import { calculateDynamicRisk } from '../dynamic-risk-model';
 import { synthesizeDiagnostic } from '../diagnostic-synthesizer';
 import { buildPredicateGraph } from '../predicate-graph';
 import { buildPulseSignalGraph, type PulseSignalEvidence } from '../signal-graph';
-import type { Break } from '../types';
+import type { Break } from '../types.manifest';
 
 export interface ParserDiagnosticBreakInput {
   detector: string;

@@ -1,11 +1,9 @@
-import type {
-  PulseCodebaseTruth,
-  PulseManifest,
-  PulseScopeState,
-  PulseResolvedManifest,
-} from '../../types';
+import type { PulseCodebaseTruth } from '../../types.truth';
+import type { PulseManifest } from '../../types.manifest';
+import type { PulseScopeState } from '../../types.truth.scope';
+import type { PulseResolvedManifest } from '../../types.resolved-manifest';
 import { buildFlowGroups, synthesizeScenarioFlowGroups } from '../../resolved-manifest.builders';
-import { deriveZeroValue } from '../../dynamic-reality-kernel';
+import { deriveZeroValue } from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 import {
   buildModuleResolution,
   getActiveModules,

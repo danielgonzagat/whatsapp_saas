@@ -5,16 +5,17 @@
  * then renders or emits output based on the active flags.
  */
 import type { FullScanResult } from './daemon/__parts__/types';
-import type { PulseCertification, PulseConfig } from './types';
+import type { PulseCertification } from './types.evidence';
+import type { PulseConfig } from './types.manifest';
 import { buildStructuralGraph } from './structural-graph';
 import { buildExecutionChains } from './execution-chains';
 import { buildExecutionMatrix } from './execution-matrix/__parts__/matrix';
 import { buildCapabilityState } from './capability-model/__parts__/builder';
-import { buildFlowProjection } from './flow-projection';
+import { buildFlowProjection } from './flow-projection/__parts__/builder';
 import { buildParityGaps } from './parity-gaps';
 import { buildProductVision } from './product-vision/__parts__/builder';
 import { buildProductModel } from './product-model/__parts__/model-builder';
-import { buildExternalSignalState } from './external-signals';
+import { buildExternalSignalState } from './external-signals/__parts__/signal-state';
 import { runExternalSourcesOrchestrator } from './adapters/external-sources-orchestrator/__parts__/orchestration';
 import type { ExternalSourcesConfig } from './adapters/external-sources-orchestrator/__parts__/core';
 import { deriveExternalSourcesTimeoutMs } from './external-sources-timeout';

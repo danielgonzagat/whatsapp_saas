@@ -1,4 +1,4 @@
-import type { FacadeEntry } from '../../../types';
+import type { FacadeEntry } from '../../../types.core';
 
 export interface FunctionRange {
   startLine: number;

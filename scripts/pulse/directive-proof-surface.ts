@@ -1,4 +1,8 @@
-import type { PathProofPlan, PathProofTask, PathProofTaskMode } from './path-proof-runner';
+import type {
+  PathProofPlan,
+  PathProofTask,
+  PathProofTaskMode,
+} from './__parts__/path-proof-runner/main';
 import type { PulseMachineReadiness } from './artifacts.types';
 import type { PathCoverageState } from './types.path-coverage-engine';
 

@@ -1,6 +1,11 @@
 import { safeJoin } from '../../safe-path';
 import * as path from 'path';
-import type { PulseConfig, PulseManifest, PulseManifestLoadResult, Break } from '../../types';
+import type {
+  PulseConfig,
+  PulseManifest,
+  PulseManifestLoadResult,
+  Break,
+} from '../../types.manifest';
 import type { CoreParserData } from '../../functional-map-types';
 import { pathExists, readTextFile } from '../../safe-fs';
 import { PULSE_MANIFEST_FILENAME, manifestBreak, discoverSurfaceKinds } from './helpers';

@@ -1,4 +1,4 @@
-import type { Break, PulseConfig, PulseParserDefinition } from './types';
+import type { Break, PulseConfig, PulseParserDefinition } from './types.manifest';
 
 const RESULT_PREFIX = '__PULSE_PARSER_RESULT__';
 const PARSER_NAME_RE = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;

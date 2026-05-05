@@ -1,5 +1,8 @@
 import type { MerkleDag, MerkleProof } from '../../types.merkle-cache';
-import { deriveZeroValue, deriveUnitValue } from '../../dynamic-reality-kernel';
+import {
+  deriveZeroValue,
+  deriveUnitValue,
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 import { computeSha256 } from './core';
 import { buildParentMap } from './dag-graph';
 

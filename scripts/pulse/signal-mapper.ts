@@ -7,15 +7,13 @@
 import type {
   PulseCapability,
   PulseCapabilityState,
-  PulseConvergenceOwnerLane,
   PulseFlowProjection,
   PulseFlowProjectionItem,
-  PulseScopeExecutionMode,
-  PulseScopeFile,
-  PulseScopeState,
   PulseSignal,
-} from './types';
-import type { PulseCodacyEvidence } from './types';
+} from './types.capabilities';
+import type { PulseConvergenceOwnerLane } from './types.gate-failure';
+import type { PulseScopeExecutionMode, PulseScopeFile, PulseScopeState } from './types.truth.scope';
+import type { PulseCodacyEvidence } from './types.structural';
 import type { PulseSignalDraft } from './signal-parsers';
 import {
   normalizePathValue,

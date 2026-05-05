@@ -1,5 +1,5 @@
 import { parseCertificationProfile, getProfileSelection } from './profiles';
-import type { PulseBrowserEvidence } from './types';
+import type { PulseBrowserEvidence } from './types.convergence';
 import type { PulseSyntheticRunMode, runSyntheticActors } from './actors';
 import {
   getActorEvidenceKeys,

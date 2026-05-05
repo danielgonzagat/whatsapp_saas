@@ -4,7 +4,7 @@
 
 import { builtinModules } from 'node:module';
 import * as ts from 'typescript';
-import { discoverSourceExtensionsFromObservedTypescript } from '../../dynamic-reality-kernel';
+import { discoverSourceExtensionsFromObservedTypescript } from '../../dynamic-reality-kernel/__parts__/token-evidence';
 import { findBackendDir, parseSourceFile } from './part1_helpers';
 import { readTextFile } from '../../safe-fs';
 import { walkFiles } from '../../parsers/utils';

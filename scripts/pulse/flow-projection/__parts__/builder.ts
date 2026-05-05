@@ -1,8 +1,5 @@
-import type {
-  PulseFlowProjection,
-  PulseFlowProjectionItem,
-  PulseStructuralRole,
-} from '../../types';
+import type { PulseFlowProjection, PulseFlowProjectionItem } from '../../types.capabilities';
+import type { PulseStructuralRole } from '../../types.structural';
 import type { PulseCapabilityDoD } from '../../types.capabilities';
 import { deriveStructuralFamilies, familiesOverlap } from '../../structural-family';
 import { buildObservationFootprint, footprintMatchesFamilies } from '../../execution-observation';

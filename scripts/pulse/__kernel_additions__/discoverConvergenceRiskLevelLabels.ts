@@ -1,4 +1,4 @@
-import { deriveStringUnionMembersFromTypeContract } from '../dynamic-reality-kernel';
+import { deriveStringUnionMembersFromTypeContract } from '../dynamic-reality-kernel/__parts__/type-contract-labels';
 
 export function discoverConvergenceRiskLevelLabels(): Set<string> {
   return deriveStringUnionMembersFromTypeContract(

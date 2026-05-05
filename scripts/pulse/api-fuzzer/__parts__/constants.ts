@@ -6,15 +6,15 @@
  */
 import {
   deriveHttpStatusFromObservedCatalog,
-  deriveLengthBoundariesFromObservedCatalog,
   deriveUnitValue,
   deriveZeroValue,
-  discoverNestjsDecoratorNamesFromTypeEvidence,
   discoverPropertyPassedStatusFromTypeEvidence,
   discoverPropertyUnexecutedStatusFromExecutionEvidence,
-  deriveStringUnionMembersFromTypeContract,
   observeStatusTextLengthFromCatalog,
-} from '../../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+import { deriveLengthBoundariesFromObservedCatalog } from '../../dynamic-reality-kernel/__parts__/profile-derivations';
+import { discoverNestjsDecoratorNamesFromTypeEvidence } from '../../dynamic-reality-kernel/__parts__/evidence-domain';
+import { deriveStringUnionMembersFromTypeContract } from '../../dynamic-reality-kernel/__parts__/type-contract-labels';
 import type { FuzzTestCaseStatus, IdempotencyResult } from '../../types.api-fuzzer';
 
 // ── Kernel-derived constants ─────────────────────────────────────────────────

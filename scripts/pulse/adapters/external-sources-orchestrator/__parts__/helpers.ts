@@ -12,20 +12,20 @@ import {
   deriveUnitValue,
   deriveZeroValue,
   observeStatusTextLengthFromCatalog,
-  discoverExternalAdapterStatusLabels,
-  discoverExternalAdapterRequirementLabels,
-  discoverExternalAdapterRequirednessLabels,
-  discoverExternalAdapterProofBasisLabels,
-  discoverCertificationProfileLabels,
-  discoverExternalSignalSourceLabels,
-} from '../../../dynamic-reality-kernel';
+} from '../../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+import { discoverExternalAdapterStatusLabels } from '../../../__kernel_additions__/discoverExternalAdapterStatusLabels';
+import { discoverExternalAdapterRequirementLabels } from '../../../__kernel_additions__/discoverExternalAdapterRequirementLabels';
+import { discoverExternalAdapterRequirednessLabels } from '../../../__kernel_additions__/discoverExternalAdapterRequirednessLabels';
+import { discoverExternalAdapterProofBasisLabels } from '../../../__kernel_additions__/discoverExternalAdapterProofBasisLabels';
+import { discoverCertificationProfileLabels } from '../../../dynamic-reality-kernel/__parts__/type-contract-engines';
+import { discoverExternalSignalSourceLabels } from '../../../__kernel_additions__/discoverExternalSignalSourceLabels';
+import type { PulseCertificationProfile } from '../../../types.health';
 import type {
-  PulseCertificationProfile,
   PulseExternalAdapterProofBasis,
   PulseExternalAdapterRequirement,
   PulseExternalAdapterStatus,
   PulseExternalSignalSource,
-} from '../../../types';
+} from '../../../types.capabilities';
 
 // ─── Canonical label derivation from type contracts ───
 

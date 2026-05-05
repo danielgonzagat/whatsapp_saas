@@ -19,7 +19,7 @@ import {
   deepGet,
   loadArtifact,
 } from './cross-artifact-consistency-check/loaders';
-import { checkConsistency as runBaseConsistencyCheck } from './cross-artifact-consistency-check/comparators';
+import { checkConsistency as runBaseConsistencyCheck } from './cross-artifact-consistency-check/comparators/__parts__/part2_check';
 import { formatConsistencyResult } from './cross-artifact-consistency-check/formatter';
 import { safeJoin } from './lib/safe-path';
 

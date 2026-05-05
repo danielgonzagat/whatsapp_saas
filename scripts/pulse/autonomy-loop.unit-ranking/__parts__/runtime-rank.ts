@@ -9,9 +9,11 @@ import { unique } from '../../autonomy-loop.utils';
 import {
   deriveUnitValue,
   deriveZeroValue,
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+import {
   discoverOperationalEvidenceKindLabels,
   discoverRuntimeFusionEvidenceStatusLabels,
-} from '../../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel/__parts__/type-contract-engines';
 import type {
   OperationalEvidenceKind,
   RuntimeFusionState,

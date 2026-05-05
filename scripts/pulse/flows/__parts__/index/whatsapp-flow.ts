@@ -1,8 +1,5 @@
-import type {
-  PulseManifestFlowSpec,
-  PulseFlowResult,
-  PulseBrowserFailureCode,
-} from '../../../types';
+import type { PulseManifestFlowSpec } from '../../../types.manifest';
+import type { PulseFlowResult, PulseBrowserFailureCode } from '../../../types.convergence';
 import type { FlowRuntimeContext } from './types-and-config';
 import {
   isTruthyEnv,

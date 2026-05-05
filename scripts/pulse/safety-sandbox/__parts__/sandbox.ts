@@ -5,10 +5,8 @@ import * as path from 'path';
 
 import type { PulseCommandPurpose } from '../../command-graph/__parts__/types';
 import { buildPulseCommandGraph } from '../../command-graph/__parts__/env-and-build';
-import {
-  discoverAllObservedArtifactFilenames,
-  discoverConvergenceEvidenceConfidenceLabels,
-} from '../../dynamic-reality-kernel';
+import { discoverAllObservedArtifactFilenames } from '../../dynamic-reality-kernel/__parts__/token-evidence';
+import { discoverConvergenceEvidenceConfidenceLabels } from '../../__kernel_additions__/discoverConvergenceEvidenceConfidenceLabels';
 import { ensureDir, writeTextFile } from '../../safe-fs';
 import type {
   DestructiveActionKind,

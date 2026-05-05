@@ -1,11 +1,6 @@
-import type {
-  PulseScopeState,
-  PulseScopeOrphanFile,
-  PulseScopeFile,
-  PulseStructuralGraph,
-  PulseCapabilityState,
-  PulseFlowProjection,
-} from './types';
+import type { PulseScopeState, PulseScopeOrphanFile, PulseScopeFile } from './types.truth.scope';
+import type { PulseStructuralGraph } from './types.structural';
+import type { PulseCapabilityState, PulseFlowProjection } from './types.capabilities';
 
 function filePathToModule(filePath: string): string {
   return filePath

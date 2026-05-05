@@ -1,4 +1,4 @@
-import type { Break } from './types';
+import type { Break } from './types.manifest';
 import {
   deriveDynamicFindingIdentity,
   type PulseDynamicFindingIdentity,

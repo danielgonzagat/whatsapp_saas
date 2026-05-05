@@ -1,6 +1,6 @@
 import * as ts from 'typescript';
 import { deriveStructuralFamilies, familiesOverlap } from '../../structural-family';
-import type { PulseCapability } from '../../types';
+import type { PulseCapability } from '../../types.capabilities';
 import {
   hasItems,
   hasNoItems,

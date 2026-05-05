@@ -1,7 +1,7 @@
 // PULSE — Trace File Loading & Parsing
 
 import { randomHex, nowIso, OTEL_STATUS_UNSET, OTEL_STATUS_ERROR } from './constants';
-import { deriveZeroValue } from '../../dynamic-reality-kernel';
+import { deriveZeroValue } from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 import type { OtelSpan, OtelTrace } from '../../types.otel-runtime';
 import { readJsonFile } from '../../safe-fs';
 

@@ -6,10 +6,10 @@ import { pathExists, readJsonFile } from '../../safe-fs';
 import {
   deriveUnitValue,
   deriveZeroValue,
-  discoverAllObservedArtifactFilenames,
-} from '../../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+import { discoverAllObservedArtifactFilenames } from '../../dynamic-reality-kernel/__parts__/token-evidence';
 import type { OtelSpan, OtelTrace } from '../../types.otel-runtime';
-import type { PulseStructuralEdge, PulseStructuralGraph } from '../../types';
+import type { PulseStructuralEdge, PulseStructuralGraph } from '../../types.structural';
 import type { AstCallGraph, AstCallEdge } from '../../types.ast-graph';
 import {
   stableHex,

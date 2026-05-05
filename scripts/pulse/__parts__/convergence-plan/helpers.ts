@@ -1,10 +1,10 @@
+import type { Break } from '../../types.manifest';
 import type {
-  Break,
   PulseConvergenceUnit,
   PulseConvergenceUnitPriority,
   PulseConvergenceUnitStatus,
-  PulseGateFailureClass,
-} from '../../types';
+} from '../../types.convergence';
+import type { PulseGateFailureClass } from '../../types.gate-failure';
 import { CHECKER_GAP_TYPES, SECURITY_FINDING_EVENT_KERNEL_GRAMMAR } from '../../cert-constants';
 import { isBlockingDynamicFinding, summarizeDynamicFindingEvents } from '../../finding-identity';
 

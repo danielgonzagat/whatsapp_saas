@@ -1,15 +1,15 @@
 import * as path from 'path';
 import type { CoreParserData } from './functional-map-types';
+import type { PulseExecutionEvidence } from './types.evidence';
+import type { PulseResolvedManifest } from './types.resolved-manifest';
+import type { PulseScopeState } from './types.truth.scope';
 import type {
-  PulseExecutionEvidence,
-  PulseResolvedManifest,
-  PulseScopeState,
   PulseStructuralEdge,
   PulseStructuralGraph,
   PulseStructuralNode,
   PulseStructuralRole,
   PulseTruthMode,
-} from './types';
+} from './types.structural';
 import { buildSideEffectSignals } from './structural-side-effects';
 import { markObservedStructuralGraph } from './structural-observation';
 

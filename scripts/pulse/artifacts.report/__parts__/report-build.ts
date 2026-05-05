@@ -10,14 +10,15 @@ import {
 } from '../../artifacts.queue';
 import { buildFindingEventSurface } from '../../finding-event-surface';
 import type { PulseArtifactSnapshot } from '../../artifacts.types';
-import type { PulseAutonomyState, PulseConvergencePlan } from '../../types';
+import type { PulseAutonomyState } from '../../types.autonomy';
+import type { PulseConvergencePlan } from '../../types.convergence';
 import type { PulseArtifactCleanupReport } from '../../artifact-gc';
 import { calculateCoverage } from '../../coverage-calculator';
+import { discoverExternalSignalSourceLabels } from '../../__kernel_additions__/discoverExternalSignalSourceLabels';
 import {
-  discoverExternalSignalSourceLabels,
   deriveUnitValue,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 import {
   buildPulseMachineReadiness,
   getProductFacingCapabilities,

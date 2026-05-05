@@ -3,11 +3,9 @@ import * as path from 'path';
 import { pathExists, readTextFile } from '../../safe-fs';
 import { safeJoin, resolveRoot } from '../../lib/safe-path';
 import type { DoDRiskLevel, DoDGate, DoDOverallStatus } from '../../types.dod-engine';
-import type { PulseCapability } from '../../types';
-import {
-  deriveZeroValue,
-  derivePriorityFromObservedContext,
-} from '../../dynamic-reality-kernel';
+import type { PulseCapability } from '../../types.capabilities';
+import { deriveZeroValue } from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+import { derivePriorityFromObservedContext } from '../../dynamic-reality-kernel/__parts__/token-evidence';
 
 // ── Risk classification rules ──────────────────────────────────────────────
 
@@ -172,7 +170,10 @@ export function scanFilesForPattern(
   return { found: matches.length > 0, matches };
 }
 
-export function testFilesExist(filePaths: string[], rootDir: string): { found: boolean; files: string[] } {
+export function testFilesExist(
+  filePaths: string[],
+  rootDir: string,
+): { found: boolean; files: string[] } {
   const testPatterns = [/\.spec\.tsx?$/, /\.spec\.jsx?$/, /\.test\.tsx?$/, /\.test\.jsx?$/];
   const dirPatterns = ['__tests__', 'tests', 'test'];
   const sourceDirs = new Set<string>();

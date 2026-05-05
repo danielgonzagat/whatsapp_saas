@@ -1,6 +1,6 @@
 import { safeJoin } from './safe-path';
 import * as path from 'path';
-import type { PulseConfig } from './types';
+import type { PulseConfig } from './types.manifest';
 import { pathExists, readDir, readTextFile } from './safe-fs';
 import { detectSourceRoots } from './source-root-detector/__parts__/api';
 import type { DetectedSourceRoot } from './source-root-detector/__parts__/types';

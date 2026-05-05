@@ -5,8 +5,11 @@
 import * as path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { pathExists, readJsonFile } from '../../safe-fs';
-import { deriveUnitValue, deriveZeroValue } from '../../dynamic-reality-kernel';
-import type { PulseAutonomyState } from '../../types';
+import {
+  deriveUnitValue,
+  deriveZeroValue,
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+import type { PulseAutonomyState } from '../../types.autonomy';
 import type {
   AttemptStatus,
   LearnedPattern,

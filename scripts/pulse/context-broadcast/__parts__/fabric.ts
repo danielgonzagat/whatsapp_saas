@@ -1,9 +1,12 @@
 import * as crypto from 'node:crypto';
 import { buildDecisionQueue, type QueueUnit } from '../../artifacts.queue';
 import { safeJoin } from '../../safe-path';
-import type { PulseArtifactRegistry } from '../../artifact-registry';
-import type { PulseConvergencePlan } from '../../types';
-import { deriveUnitValue, deriveZeroValue } from '../../dynamic-reality-kernel';
+import type { PulseArtifactRegistry } from '../../artifact-registry/__parts__/discovery';
+import type { PulseConvergencePlan } from '../../types.convergence';
+import {
+  deriveUnitValue,
+  deriveZeroValue,
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 import {
   CONTEXT_TTL_MINUTES,
   DEFAULT_WORKER_COUNT,

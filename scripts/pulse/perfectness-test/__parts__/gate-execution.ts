@@ -5,7 +5,10 @@
 
 import * as path from 'path';
 
-import { deriveUnitValue, deriveZeroValue } from '../../dynamic-reality-kernel';
+import {
+  deriveUnitValue,
+  deriveZeroValue,
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 import type {
   ExitAction,
   GateEvidencePlan,

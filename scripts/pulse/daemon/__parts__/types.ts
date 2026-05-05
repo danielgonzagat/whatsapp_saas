@@ -1,25 +1,26 @@
 import type {
   Break,
-  PulseCapabilityState,
-  PulseCodebaseTruth,
-  PulseCodacyEvidence,
-  PulseCertification,
   PulseConfig,
-  PulseExternalSignalState,
-  PulseExecutionMatrix,
-  PulseFlowProjection,
-  PulseHealth,
   PulseManifest,
   PulseManifestLoadResult,
-  PulseParityGapsArtifact,
   PulseParserDefinition,
   PulseParserInventory,
-  PulseProductGraph,
-  PulseProductVision,
-  PulseResolvedManifest,
-  PulseScopeState,
-  PulseStructuralGraph,
-} from '../../types';
+} from '../../types.manifest';
+import type {
+  PulseCapabilityState,
+  PulseExternalSignalState,
+  PulseFlowProjection,
+  PulseParityGapsArtifact,
+} from '../../types.capabilities';
+import type { PulseCodebaseTruth } from '../../types.truth';
+import type { PulseCodacyEvidence, PulseStructuralGraph } from '../../types.structural';
+import type { PulseCertification } from '../../types.evidence';
+import type { PulseExecutionMatrix } from '../../types.execution-matrix';
+import type { PulseHealth } from '../../types.health';
+import type { PulseProductGraph } from '../../types.product-graph';
+import type { PulseProductVision } from '../../types.product-vision';
+import type { PulseResolvedManifest } from '../../types.resolved-manifest';
+import type { PulseScopeState } from '../../types.truth.scope';
 import type { PulseExecutionChainSet } from '../../types.product-graph';
 import type { CoreParserData } from '../../functional-map-types';
 import type { PulseExecutionTracer } from '../../execution-trace';
@@ -28,11 +29,11 @@ import * as path from 'path';
 import {
   deriveUnitValue,
   deriveZeroValue,
-  discoverDoDStatusLabels,
-  discoverHarnessExecutionStatusLabels,
   discoverPropertyPassedStatusFromTypeEvidence,
   discoverPropertyUnexecutedStatusFromExecutionEvidence,
-} from '../../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+import { discoverDoDStatusLabels } from '../../__kernel_additions__/discoverDoDStatusLabels';
+import { discoverHarnessExecutionStatusLabels } from '../../dynamic-reality-kernel/__parts__/type-contract-engines';
 
 export const PASSED = discoverPropertyPassedStatusFromTypeEvidence().values().next().value;
 export const FAILED = [...discoverHarnessExecutionStatusLabels()].find(

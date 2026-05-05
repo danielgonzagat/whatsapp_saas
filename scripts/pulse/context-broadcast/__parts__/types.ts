@@ -1,7 +1,5 @@
-import {
-  discoverAllObservedArtifactFilenames,
-  discoverConvergenceExecutionModeLabels,
-} from '../../dynamic-reality-kernel';
+import { discoverAllObservedArtifactFilenames } from '../../dynamic-reality-kernel/__parts__/token-evidence';
+import { discoverConvergenceExecutionModeLabels } from '../../__kernel_additions__/discoverConvergenceExecutionModeLabels';
 
 type SnapshotStatus = 'ready' | 'missing' | 'stale' | 'invalid';
 type LeaseStatus = 'active' | 'expired' | 'released' | 'conflicted';

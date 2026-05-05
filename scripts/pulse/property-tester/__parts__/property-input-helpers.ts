@@ -1,20 +1,24 @@
 import { STATUS_CODES } from 'node:http';
 import {
   deriveAdversarialPayloadsFromObservedEvidence,
-  deriveCatalogPercentScaleFromObservedCatalog,
   deriveFuzzBudgetFromObservedDimensions,
-  deriveHttpStatusFromObservedCatalog as httpStatus,
   deriveIdentifierAlphabetFromObservedSeeds,
   deriveLengthBoundariesFromObservedCatalog,
   deriveMoneyProbeStringsFromObservedCatalog,
   deriveNumericProbeValuesFromObservedCatalog,
   deriveRuntimeStringBoundaryFromObservedCatalog,
   deriveSpecialCharactersFromRuntimeEvidence,
-  deriveStringIdentitySeedsFromCandidate,
+} from '../../dynamic-reality-kernel/__parts__/profile-derivations';
+import {
+  deriveCatalogPercentScaleFromObservedCatalog,
+  deriveHttpStatusFromObservedCatalog as httpStatus,
   deriveUnitValue,
   deriveZeroValue,
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+import {
+  deriveStringIdentitySeedsFromCandidate,
   splitIdentifierTokensFromObservedName,
-} from '../../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel/__parts__/token-evidence';
 
 export function mutationScaleFromCatalog(): number {
   return Number.MAX_SAFE_INTEGER / deriveCatalogPercentScaleFromObservedCatalog();

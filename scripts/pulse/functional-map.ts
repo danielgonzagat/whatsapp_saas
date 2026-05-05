@@ -4,15 +4,15 @@
 import { safeJoin } from './safe-path';
 
 import * as path from 'path';
+import type { PulseConfig } from './types.manifest';
 import type {
-  PulseConfig,
   UIElement,
   APICall,
   BackendRoute,
   ServiceTrace,
   ProxyRoute,
   FacadeEntry,
-} from './types';
+} from './types.core';
 import type { HookRegistry } from './parsers/hook-registry';
 import type {
   InteractionStatus,
@@ -32,7 +32,10 @@ import {
 } from './graph/__parts__/graph-part2-routing';
 import { buildApiModuleMap } from './parsers/api-parser';
 import { pathExists, readTextFile } from './safe-fs';
-import { findApiCallForElement, groupElementsByPage } from './functional-map.helpers';
+import {
+  findApiCallForElement,
+  groupElementsByPage,
+} from './functional-map.helpers/__parts__/public';
 import { findAllPages, resolveComponentTree } from './functional-map-pages';
 import { traceInteractionChain, classifyInteraction } from './functional-map-classify';
 

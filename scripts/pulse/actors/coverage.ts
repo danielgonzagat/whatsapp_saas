@@ -1,11 +1,11 @@
+import type { PulseCodebaseTruth } from '../types.truth';
+import type { PulseManifestScenarioSpec } from '../types.manifest';
+import type { PulseResolvedManifest } from '../types.resolved-manifest';
 import type {
-  PulseCodebaseTruth,
-  PulseManifestScenarioSpec,
-  PulseResolvedManifest,
   PulseSurfaceClassification,
   PulseSurfaceCoverageEntry,
   PulseSyntheticCoverageEvidence,
-} from '../types';
+} from '../types.evidence';
 import { inferEvidenceFileName, normalizeEvidenceKey } from '../scenario-mode-registry';
 
 /** Customer evidence artifact filename. */

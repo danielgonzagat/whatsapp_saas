@@ -1,4 +1,6 @@
-import type { PulseActorEvidence, PulseManifestScenarioSpec, PulseScenarioResult } from '../types';
+import type { PulseActorEvidence } from '../types.evidence';
+import type { PulseManifestScenarioSpec } from '../types.manifest';
+import type { PulseScenarioResult } from '../types.scenario-result';
 import { inferActorEvidenceKeyForScenario } from '../scenario-mode-registry';
 import { SCENARIO_GROUP_ARTIFACT, WORLD_STATE_ARTIFACT, getArtifactName, unique } from './coverage';
 

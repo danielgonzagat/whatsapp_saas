@@ -1,15 +1,14 @@
 import * as path from 'path';
+import type { PulseCapabilityState, PulseFlowProjectionItem } from '../../types.capabilities';
+import type { PulseCodebaseTruth } from '../../types.truth';
+import type { PulseExecutionEvidence } from '../../types.evidence';
+import type { PulseResolvedManifest } from '../../types.resolved-manifest';
+import type { PulseScopeState } from '../../types.truth.scope';
 import type {
-  PulseCapabilityState,
-  PulseCodebaseTruth,
-  PulseExecutionEvidence,
-  PulseFlowProjectionItem,
-  PulseResolvedManifest,
-  PulseScopeState,
   PulseStructuralGraph,
   PulseStructuralRole,
   PulseTruthMode,
-} from '../../types';
+} from '../../types.structural';
 import type { PulseActorEvidence } from '../../types.evidence';
 import {
   deriveRouteFamily,

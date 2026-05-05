@@ -1,4 +1,4 @@
-import type { UIElement } from '../../../types';
+import type { UIElement } from '../../../types.core';
 import { buildHandlerEvidence } from './handler-evidence';
 
 export function buildElement(

@@ -2,13 +2,13 @@ import * as path from 'path';
 import {
   buildPulseAgentOrchestrationStateSeed,
   buildPulseAutonomyStateSeed,
-} from '../../autonomy-loop.state-io';
+} from '../autonomy-loop.state-io/seed-builders';
 import { buildPulseAutonomyMemoryState } from '../../autonomy-loop.memory';
 import {
   buildArtifactRegistry,
   resolveArtifactRelativePath,
-  type PulseArtifactRegistry,
-} from '../../artifact-registry';
+} from '../../artifact-registry/__parts__/registry';
+import type { PulseArtifactRegistry } from '../../artifact-registry/__parts__/discovery';
 import { cleanupPulseArtifacts } from '../../artifact-gc';
 import { buildConvergencePlan } from '../../__parts__/convergence-plan/plan';
 import { readOptionalJson, writeArtifact } from '../../artifacts.io';
@@ -19,7 +19,7 @@ import { buildDirective } from '../../artifacts.directive/__parts__/directive-co
 import { buildArtifactIndex } from '../../artifacts.directive/__parts__/directive-index';
 import { normalizeCanonicalArtifactValue } from '../../artifacts.queue';
 import { deriveAuthorityState } from '../../artifacts.autonomy/__parts__/authority';
-import { buildRuntimeProbesArtifact } from '../../runtime-probes';
+import { buildRuntimeProbesArtifact } from '../runtime-probes/main';
 import { createRunIdentity, type PulseRunIdentity } from '../../run-identity';
 import { buildFindingEventSurface } from '../../finding-event-surface';
 import { synthesizeDiagnosticFromBreaks } from '../../legacy-break-adapter';
@@ -29,17 +29,19 @@ import {
   deriveHttpStatusFromObservedCatalog,
   deriveUnitValue,
   deriveZeroValue,
-  deriveStringUnionMembersFromTypeContract,
-  discoverAllObservedArtifactFilenames,
   discoverAllObservedHttpStatusCodes,
-  discoverDirectorySkipHintsFromEvidence,
   observeStatusTextLengthFromCatalog,
-} from '../../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+import { deriveStringUnionMembersFromTypeContract } from '../../dynamic-reality-kernel/__parts__/type-contract-labels';
+import {
+  discoverAllObservedArtifactFilenames,
+  discoverDirectorySkipHintsFromEvidence,
+} from '../../dynamic-reality-kernel/__parts__/token-evidence';
 import {
   buildDirectiveContextFabricPatch,
   buildPulseContextFabricBundle,
-} from '../../context-broadcast';
-import type { PulseAgentOrchestrationState, PulseAutonomyState } from '../../types';
+} from '../../context-broadcast/__parts__/fabric';
+import type { PulseAgentOrchestrationState, PulseAutonomyState } from '../../types.autonomy';
 import type { PulseArtifactSnapshot, PulseArtifactPaths } from './types';
 
 /**

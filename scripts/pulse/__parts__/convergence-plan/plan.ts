@@ -1,4 +1,5 @@
-import type { PulseConvergencePlan, PulseGateName } from '../../types';
+import type { PulseConvergencePlan } from '../../types.convergence';
+import type { PulseGateName } from '../../types.manifest';
 import type { BuildPulseConvergencePlanInput } from './kernel';
 import { SCENARIO_STATUSES, UNIT_EXECUTION_MODES, UNIT_KINDS, UNIT_PRIORITIES } from './kernel';
 import {

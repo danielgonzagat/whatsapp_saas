@@ -1,12 +1,14 @@
 import { safeJoin } from '../safe-path';
 import * as path from 'path';
-import type { APICall, ProxyRoute, PulseConfig } from '../types';
+import type { APICall, ProxyRoute } from '../types.core';
+import type { PulseConfig } from '../types.manifest';
 import { walkFiles } from './utils';
 import { pathExists, readTextFile } from '../safe-fs';
 import { getFrontendSourceDirs } from '../frontend-roots';
 import { normalizeEndpoint } from './api-parser-normalize';
 import { detectMethod } from './api-parser-string-utils';
-import { deriveUnitValue, discoverSourceExtensionsFromObservedTypescript } from '../dynamic-reality-kernel';
+import { deriveUnitValue } from '../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+import { discoverSourceExtensionsFromObservedTypescript } from '../dynamic-reality-kernel/__parts__/token-evidence';
 import {
   extractMethodBlock,
   extractWrappedFetchCall,
@@ -38,7 +40,9 @@ export function buildApiModuleMap(
     .map((frontendDir) => safeJoin(frontendDir, 'lib', 'api'))
     .filter((apiDir) => pathExists(apiDir));
 
-  const files = apiDirs.flatMap((apiDir) => walkFiles(apiDir, [...discoverSourceExtensionsFromObservedTypescript()]));
+  const files = apiDirs.flatMap((apiDir) =>
+    walkFiles(apiDir, [...discoverSourceExtensionsFromObservedTypescript()]),
+  );
   const wrapperPrefixes = buildFetchWrapperPrefixMap(files);
   for (const file of files) {
     const content = readTextFile(file, 'utf8');
@@ -130,7 +134,23 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
 
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
-        const context = lines.slice(i, Math.min(i + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue(), lines.length)).join('\n');
+        const context = lines
+          .slice(
+            i,
+            Math.min(
+              i +
+                deriveUnitValue() +
+                deriveUnitValue() +
+                deriveUnitValue() +
+                deriveUnitValue() +
+                deriveUnitValue() +
+                deriveUnitValue() +
+                deriveUnitValue() +
+                deriveUnitValue(),
+              lines.length,
+            ),
+          )
+          .join('\n');
 
         // Pattern 1: apiFetch('/endpoint', ...)
         const apiFetchMatches = [
@@ -140,7 +160,11 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
         for (const m of apiFetchMatches) {
           const raw = m[1];
           const endpoint = normalizeEndpoint(raw);
-          if (/^\/api:[a-z]/i.test(endpoint) || endpoint === '/api' || endpoint.length < deriveUnitValue() + deriveUnitValue() + deriveUnitValue()) {
+          if (
+            /^\/api:[a-z]/i.test(endpoint) ||
+            endpoint === '/api' ||
+            endpoint.length < deriveUnitValue() + deriveUnitValue() + deriveUnitValue()
+          ) {
             continue;
           }
           const key = `${relFile}:${i + 1}:${endpoint}`;
@@ -168,7 +192,20 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
             }
           }
           if (started && parenDepth > 0) {
-            for (let j = i + 1; j < Math.min(i + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue(), lines.length); j++) {
+            for (
+              let j = i + 1;
+              j <
+              Math.min(
+                i +
+                  deriveUnitValue() +
+                  deriveUnitValue() +
+                  deriveUnitValue() +
+                  deriveUnitValue() +
+                  deriveUnitValue(),
+                lines.length,
+              );
+              j++
+            ) {
               for (const ch of lines[j]) {
                 stmtContext += ch;
                 if (ch === '(') {
@@ -411,7 +448,21 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
 
         // Pattern 4b: Multiline apiFetch
         if (apiFetchMatches.length === 0 && /apiFetch\s*(?:<[^(]*>)?\s*\(\s*$/.test(line)) {
-          const block = lines.slice(i, Math.min(i + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue(), lines.length)).join('\n');
+          const block = lines
+            .slice(
+              i,
+              Math.min(
+                i +
+                  deriveUnitValue() +
+                  deriveUnitValue() +
+                  deriveUnitValue() +
+                  deriveUnitValue() +
+                  deriveUnitValue() +
+                  deriveUnitValue(),
+                lines.length,
+              ),
+            )
+            .join('\n');
           const multiMatch = block.match(
             /apiFetch\s*(?:<[^>]*>)?\s*\(\s*\n\s*(?:['"`]([^'"`]+)['"`]|`([^`]+)`)/,
           );
@@ -419,7 +470,11 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
             const raw = multiMatch[1] || multiMatch[2];
             if (raw) {
               const endpoint = normalizeEndpoint(raw);
-              if (!/^\/api:[a-z]/i.test(endpoint) && endpoint !== '/api' && endpoint.length >= deriveUnitValue() + deriveUnitValue() + deriveUnitValue()) {
+              if (
+                !/^\/api:[a-z]/i.test(endpoint) &&
+                endpoint !== '/api' &&
+                endpoint.length >= deriveUnitValue() + deriveUnitValue() + deriveUnitValue()
+              ) {
                 const key = `${relFile}:${i + 1}:${endpoint}`;
                 if (!seen.has(key)) {
                   seen.add(key);
@@ -442,7 +497,21 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
                     }
                   }
                   if (st && pd > 0) {
-                    for (let j = i + 1; j < Math.min(i + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue(), lines.length); j++) {
+                    for (
+                      let j = i + 1;
+                      j <
+                      Math.min(
+                        i +
+                          deriveUnitValue() +
+                          deriveUnitValue() +
+                          deriveUnitValue() +
+                          deriveUnitValue() +
+                          deriveUnitValue() +
+                          deriveUnitValue(),
+                        lines.length,
+                      );
+                      j++
+                    ) {
                       for (const ch of lines[j]) {
                         stmtCtx += ch;
                         if (ch === '(') {
@@ -479,7 +548,15 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
         }
 
         if (!swrMatch && /useSWR\s*(?:<[^>]*>)?\s*\(\s*$/.test(line)) {
-          const block = lines.slice(i, Math.min(i + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue(), lines.length)).join('\n');
+          const block = lines
+            .slice(
+              i,
+              Math.min(
+                i + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue(),
+                lines.length,
+              ),
+            )
+            .join('\n');
           const multiMatch = block.match(
             /useSWR\s*(?:<[^>]*>)?\s*\(\s*\n\s*(?:[\w]+\s*\?\s*)?(?:['"`]([^'"`]+)['"`]|`([^`]+)`)/,
           );
@@ -537,7 +614,11 @@ export function parseProxyRoutes(config: PulseConfig): ProxyRoute[] {
       if (appIdx === -1) {
         continue;
       }
-      const routePart = path.dirname(file.substring(appIdx + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue()));
+      const routePart = path.dirname(
+        file.substring(
+          appIdx + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue(),
+        ),
+      );
       const frontendPath = routePart.replace(/\/\[\.\.\.?\w+\]/, '/:path');
 
       const handlerRe = /export\s+(?:async\s+)?function\s+(GET|POST|PUT|PATCH|DELETE)\s*\(/g;

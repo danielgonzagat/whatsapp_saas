@@ -1,4 +1,4 @@
-import type { Break } from './types';
+import type { Break } from './types.manifest';
 
 export type PulseFindingTruthMode = 'observed' | 'confirmed_static' | 'inferred' | 'weak_signal';
 export type PulseFindingActionability = 'fix_now' | 'needs_probe' | 'needs_context' | 'ignore';

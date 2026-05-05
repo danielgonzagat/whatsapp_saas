@@ -4,11 +4,11 @@
  */
 import type {
   PulseCertificationTarget,
-  PulseEnvironment,
   PulseExecutionEvidence,
   PulseGateResult,
-} from './types';
-import { gateFail } from './cert-gate-evaluators';
+} from './types.evidence';
+import type { PulseEnvironment } from './types.manifest';
+import { gateFail } from './__parts__/cert-gate-evaluators/gate-fail';
 import { chooseStructuredFailureClass } from './cert-helpers';
 
 export function evaluateBrowserGate(

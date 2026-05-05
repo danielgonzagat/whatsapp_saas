@@ -1,4 +1,5 @@
-import type { PulseManifestFlowSpec, PulseFlowResult } from '../../../types';
+import type { PulseManifestFlowSpec } from '../../../types.manifest';
+import type { PulseFlowResult } from '../../../types.convergence';
 import type { AuthCredentials } from '../../../browser-stress-tester/types';
 import { obtainAuthToken } from '../../../browser-stress-tester/auth';
 import { httpGet, httpPost, httpPut } from '../../../parsers/runtime-utils';

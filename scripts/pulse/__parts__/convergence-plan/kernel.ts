@@ -1,26 +1,23 @@
+import type { Break, PulseGateName, PulseManifestScenarioSpec } from '../../types.manifest';
 import type {
-  Break,
   PulseCapabilityState,
-  PulseCertification,
-  PulseConvergenceOwnerLane,
+  PulseExternalSignalState,
+  PulseParityGapsArtifact,
+  PulseFlowProjection,
+} from '../../types.capabilities';
+import type { PulseCertification, PulseWorldState } from '../../types.evidence';
+import type { PulseConvergenceOwnerLane, PulseGateFailureClass } from '../../types.gate-failure';
+import type {
   PulseConvergencePlan,
   PulseConvergenceUnit,
   PulseConvergenceUnitPriority,
   PulseConvergenceUnitStatus,
   PulseEvidenceRecord,
-  PulseExecutionMatrix,
-  PulseExternalSignalState,
-  PulseGateFailureClass,
-  PulseGateName,
-  PulseManifestScenarioSpec,
-  PulseParityGapsArtifact,
-  PulseResolvedManifest,
-  PulseScenarioResult,
-  PulseScopeFile,
-  PulseScopeState,
-  PulseFlowProjection,
-  PulseWorldState,
-} from '../../types';
+} from '../../types.convergence';
+import type { PulseExecutionMatrix } from '../../types.execution-matrix';
+import type { PulseResolvedManifest } from '../../types.resolved-manifest';
+import type { PulseScenarioResult } from '../../types.scenario-result';
+import type { PulseScopeFile, PulseScopeState } from '../../types.truth.scope';
 import {
   discoverAllObservedArtifactFilenames,
   discoverAllObservedGateNames,
@@ -29,25 +26,29 @@ import {
   discoverSourceLabelFromObservedContext,
   deriveUnitIdFromObservedKind,
   deriveProductImpactFromObservedScope,
-  deriveUnitValue,
-  discoverConvergenceUnitKindLabels,
-  discoverConvergenceUnitStatusLabels,
-  discoverConvergenceUnitPriorityLabels,
-  discoverConvergenceExecutionModeLabels,
-  discoverConvergenceRiskLevelLabels,
-  discoverConvergenceProductImpactLabels,
-  discoverConvergenceEvidenceConfidenceLabels,
-  discoverConvergenceSourceLabels,
+} from '../../dynamic-reality-kernel/__parts__/token-evidence';
+import { deriveUnitValue } from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+import { discoverConvergenceUnitKindLabels } from '../../__kernel_additions__/discoverConvergenceUnitKindLabels';
+import { discoverConvergenceUnitStatusLabels } from '../../__kernel_additions__/discoverConvergenceUnitStatusLabels';
+import { discoverConvergenceUnitPriorityLabels } from '../../__kernel_additions__/discoverConvergenceUnitPriorityLabels';
+import { discoverConvergenceExecutionModeLabels } from '../../__kernel_additions__/discoverConvergenceExecutionModeLabels';
+import { discoverConvergenceRiskLevelLabels } from '../../__kernel_additions__/discoverConvergenceRiskLevelLabels';
+import { discoverConvergenceProductImpactLabels } from '../../__kernel_additions__/discoverConvergenceProductImpactLabels';
+import { discoverConvergenceEvidenceConfidenceLabels } from '../../__kernel_additions__/discoverConvergenceEvidenceConfidenceLabels';
+import { discoverConvergenceSourceLabels } from '../../__kernel_additions__/discoverConvergenceSourceLabels';
+import {
   discoverConvergenceOwnerLaneLabels,
   discoverGateFailureClassLabels,
-  discoverTruthModeLabels,
   discoverParityGapKindLabels,
   discoverParityGapSeverityLabels,
-  discoverCapabilityStatusLabels,
-  discoverFlowProjectionStatusLabels,
+} from '../../dynamic-reality-kernel/__parts__/type-contract-labels';
+import {
+  discoverTruthModeLabels,
   discoverScenarioStatusLabels,
-  discoverExternalSignalSourceLabels,
-} from '../../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel/__parts__/type-contract-engines';
+import { discoverCapabilityStatusLabels } from '../../__kernel_additions__/discoverCapabilityStatusLabels';
+import { discoverFlowProjectionStatusLabels } from '../../__kernel_additions__/discoverFlowProjectionStatusLabels';
+import { discoverExternalSignalSourceLabels } from '../../__kernel_additions__/discoverExternalSignalSourceLabels';
 import { CHECKER_GAP_TYPES, SECURITY_FINDING_EVENT_KERNEL_GRAMMAR } from '../../cert-constants';
 
 let OBSERVED_ARTIFACTS = discoverAllObservedArtifactFilenames();

@@ -4,19 +4,15 @@
 // Codacy high count to drive the final CapabilityStatus ('real'/'partial'/'latent'/'phantom').
 // See: scripts/pulse/definition-of-done.ts and scripts/pulse/__tests__/definition-of-done.spec.ts
 
-import type {
-  PulseCapability,
-  PulseCapabilityState,
-  PulseCodacyEvidence,
-  PulseExecutionEvidence,
-  PulseResolvedManifest,
-  PulseScopeState,
-  PulseStructuralGraph,
-} from '../../types';
+import type { PulseCapability, PulseCapabilityState } from '../../types.capabilities';
+import type { PulseCodacyEvidence, PulseStructuralGraph } from '../../types.structural';
+import type { PulseExecutionEvidence } from '../../types.evidence';
+import type { PulseResolvedManifest } from '../../types.resolved-manifest';
+import type { PulseScopeState } from '../../types.truth.scope';
 import { buildObservationFootprint } from '../../execution-observation';
 import { hasApiCalls } from '../../capability-ui-seeds';
 import { buildFallbackGroups, buildSeedGroups } from '../../capability-seed-groups';
-import { deriveZeroValue } from '../../dynamic-reality-kernel';
+import { deriveZeroValue } from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 import {
   getNodeFamilies,
   getNodeRoutePatterns,

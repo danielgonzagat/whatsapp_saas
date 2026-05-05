@@ -5,9 +5,10 @@ import type {
   PulseParserContract,
   PulseParserDefinition,
   PulseParserInventory,
-} from '../../types';
-import { discoverPlugins, loadPlugin } from '../../plugin-system';
-import { deriveZeroValue } from '../../dynamic-reality-kernel';
+} from '../../types.manifest';
+import { loadPlugin } from '../../__parts__/plugin-system/main';
+import { discoverPlugins } from '../../__parts__/plugin-system/schema-discovery';
+import { deriveZeroValue } from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 import {
   getOperationalMetadata,
   operationalMetadataFromPluginDefinition,

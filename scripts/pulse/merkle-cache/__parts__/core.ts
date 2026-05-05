@@ -2,10 +2,8 @@ import { createHash } from 'crypto';
 import { readFileSync, statSync } from 'fs';
 import * as path from 'path';
 import type { MerkleNode } from '../../types.merkle-cache';
-import {
-  deriveStringUnionMembersFromTypeContract,
-  deriveZeroValue,
-} from '../../dynamic-reality-kernel';
+import { deriveStringUnionMembersFromTypeContract } from '../../dynamic-reality-kernel/__parts__/type-contract-labels';
+import { deriveZeroValue } from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 import { readDir } from '../../safe-fs';
 import { normalizePath } from '../../scope-state.codacy';
 

@@ -1,5 +1,5 @@
 import type { PulseAutonomousDirectiveUnit } from './autonomy-loop.types';
-import type { PulseActorKind, PulseTimeWindowMode } from './types';
+import type { PulseActorKind, PulseTimeWindowMode } from './types.health';
 import {
   inferSyntheticModeFromToken,
   inferSyntheticModesForScenario,

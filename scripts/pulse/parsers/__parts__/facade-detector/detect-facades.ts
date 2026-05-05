@@ -1,6 +1,7 @@
 import * as path from 'path';
 import * as ts from 'typescript';
-import type { FacadeEntry, PulseConfig } from '../../../types';
+import type { FacadeEntry } from '../../../types.core';
+import type { PulseConfig } from '../../../types.manifest';
 import { walkFiles } from '../../utils';
 import { readTextFile } from '../../../safe-fs';
 import { isSkippedSourcePath, hasCommentMarker } from './utils';

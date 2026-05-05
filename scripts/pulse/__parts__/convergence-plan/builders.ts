@@ -1,18 +1,18 @@
+import type { Break, PulseGateName } from '../../types.manifest';
 import type {
-  Break,
   PulseCapabilityState,
-  PulseCertification,
-  PulseConvergenceOwnerLane,
+  PulseFlowProjection,
+  PulseParityGapsArtifact,
+} from '../../types.capabilities';
+import type { PulseCertification } from '../../types.evidence';
+import type { PulseConvergenceOwnerLane, PulseGateFailureClass } from '../../types.gate-failure';
+import type {
   PulseConvergenceUnit,
   PulseConvergenceUnitPriority,
   PulseConvergenceUnitStatus,
   PulseEvidenceRecord,
-  PulseGateFailureClass,
-  PulseGateName,
-  PulseFlowProjection,
-  PulseParityGapsArtifact,
-  PulseScopeFile,
-} from '../../types';
+} from '../../types.convergence';
+import type { PulseScopeFile } from '../../types.truth.scope';
 import type {
   BuildPulseConvergencePlanInput,
   ScenarioAccumulator,
@@ -47,7 +47,7 @@ import {
   discoverGateLaneFromObservedStructure,
   derivePriorityFromObservedContext,
   discoverSourceLabelFromObservedContext,
-} from '../../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel/__parts__/token-evidence';
 import {
   buildCapabilityVisionDelta,
   buildCodacyVisionDelta,

@@ -1,5 +1,5 @@
 import * as path from 'path';
-import type { PulseExecutionMatrixPath } from '../../types';
+import type { PulseExecutionMatrixPath } from '../../types.execution-matrix';
 import type {
   PathClassification,
   PathCoverageExecutionMode,
@@ -13,7 +13,10 @@ import {
   normalizePath as normalizeGovernancePath,
   type GovernanceBoundary,
 } from '../../scope-state-classify';
-import { deriveZeroValue, deriveUnitValue } from '../../dynamic-reality-kernel';
+import {
+  deriveZeroValue,
+  deriveUnitValue,
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 import {
   _ARTIFACT_NAMES,
   isObservedPassClass,

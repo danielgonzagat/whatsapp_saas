@@ -19,23 +19,27 @@
 import type {
   PulseStructuralGraph,
   PulseStructuralNode,
-  PulseScopeState,
-  PulseResolvedManifest,
   PulseTruthMode,
+} from '../../types.structural';
+import type { PulseScopeState } from '../../types.truth.scope';
+import type { PulseResolvedManifest } from '../../types.resolved-manifest';
+import type {
   PulseProductGraph,
   PulseProductCapability,
   PulseProductFlow,
   PulseProductSurface,
-} from '../../types';
+} from '../../types.product-graph';
 import {
   discoverStructuralNodeKindLabels,
   discoverStructuralRoleLabels,
   discoverTruthModeLabels,
+} from '../../dynamic-reality-kernel/__parts__/type-contract-engines';
+import {
   deriveHttpStatusFromObservedCatalog,
   deriveUnitValue,
   deriveZeroValue,
   observeStatusTextLengthFromCatalog,
-} from '../../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 import {
   deriveRouteFamily,
   deriveStructuralFamilies,

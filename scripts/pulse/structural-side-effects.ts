@@ -1,6 +1,7 @@
 import * as path from 'path';
 import * as ts from 'typescript';
-import type { PulseScopeState, PulseStructuralNode, PulseTruthMode } from './types';
+import type { PulseScopeState } from './types.truth.scope';
+import type { PulseStructuralNode, PulseTruthMode } from './types.structural';
 import { readTextFile } from './safe-fs';
 
 type SideEffectSignal =

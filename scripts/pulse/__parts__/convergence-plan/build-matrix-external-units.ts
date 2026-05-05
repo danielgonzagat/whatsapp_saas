@@ -1,9 +1,6 @@
-import type {
-  PulseConvergenceUnit,
-  PulseConvergenceUnitPriority,
-  PulseExecutionMatrix,
-  PulseExternalSignalState,
-} from '../../types';
+import type { PulseConvergenceUnit, PulseConvergenceUnitPriority } from '../../types.convergence';
+import type { PulseExecutionMatrix } from '../../types.execution-matrix';
+import type { PulseExternalSignalState } from '../../types.capabilities';
 import type { BuildPulseConvergencePlanInput } from './types';
 import {
   takeEvidenceBatch,

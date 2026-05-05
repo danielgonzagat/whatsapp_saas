@@ -5,10 +5,9 @@ import type {
   ServiceTrace,
   UIElement,
   FacadeEntry,
-  Break,
-  PulseConfig,
   PrismaModel,
-} from '../../types';
+} from '../../types.core';
+import type { Break, PulseConfig } from '../../types.manifest';
 import { normalizeForMatch } from './graph-part1-core';
 import type { RouteKey } from './graph-part1-core';
 

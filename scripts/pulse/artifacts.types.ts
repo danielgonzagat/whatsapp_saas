@@ -4,28 +4,24 @@
  * helpers can both import the snapshot/paths shapes without forming a
  * circular dependency back to artifacts.ts.
  */
+import type { PulseAgentOrchestrationState, PulseAutonomyState } from './types.autonomy';
 import type {
-  PulseAgentOrchestrationState,
-  PulseAutonomyState,
   PulseCapabilityState,
-  PulseCertification,
-  PulseCodebaseTruth,
-  PulseCodacyEvidence,
-  PulseConvergencePlan,
-  PulseExecutionChainSet,
-  PulseExecutionMatrix,
   PulseExternalSignalState,
   PulseFlowProjection,
-  PulseHealth,
-  PulseManifest,
   PulseParityGapsArtifact,
-  PulseProductGraph,
-  PulseProductVision,
-  PulseResolvedManifest,
-  PulseScopeState,
-  PulseStructuralGraph,
-  PulseGateResult,
-} from './types';
+} from './types.capabilities';
+import type { PulseCertification, PulseGateResult } from './types.evidence';
+import type { PulseCodebaseTruth } from './types.truth';
+import type { PulseCodacyEvidence, PulseStructuralGraph } from './types.structural';
+import type { PulseConvergencePlan } from './types.convergence';
+import type { PulseExecutionChainSet, PulseProductGraph } from './types.product-graph';
+import type { PulseExecutionMatrix } from './types.execution-matrix';
+import type { PulseHealth } from './types.health';
+import type { PulseManifest } from './types.manifest';
+import type { PulseProductVision } from './types.product-vision';
+import type { PulseResolvedManifest } from './types.resolved-manifest';
+import type { PulseScopeState } from './types.truth.scope';
 
 /** Pulse artifact snapshot shape. */
 export interface PulseArtifactSnapshot {

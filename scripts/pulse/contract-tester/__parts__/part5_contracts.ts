@@ -4,7 +4,7 @@
 
 import * as ts from 'typescript';
 import type { ProviderContract } from '../../types.contract-tester';
-import { discoverSourceExtensionsFromObservedTypescript } from '../../dynamic-reality-kernel';
+import { discoverSourceExtensionsFromObservedTypescript } from '../../dynamic-reality-kernel/__parts__/token-evidence';
 import {
   findBackendDir,
   inferAuthType,

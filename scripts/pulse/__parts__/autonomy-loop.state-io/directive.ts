@@ -9,7 +9,7 @@ import type {
   PulseAutonomyMemoryState,
   PulseAutonomyState,
   PulseAutonomyUnitSnapshot,
-} from '../../types';
+} from '../../types.autonomy';
 import type {
   PulseAutonomousDirective,
   PulseAutonomousDirectiveUnit,
@@ -32,11 +32,13 @@ import {
 } from '../../autonomy-loop.utils';
 import {
   toUnitSnapshot,
+  buildStructuralQueueInfluence,
+} from '../../autonomy-loop.unit-ranking/__parts__/structural-rank';
+import {
   getPreferredAutomationSafeUnits,
   hasUnitConflict,
-  buildStructuralQueueInfluence,
-  buildRuntimeRealityQueueInfluence,
-} from '../../autonomy-loop.unit-ranking';
+} from '../../autonomy-loop.unit-ranking/__parts__/selection';
+import { buildRuntimeRealityQueueInfluence } from '../../autonomy-loop.unit-ranking/__parts__/runtime-rank';
 import { buildPulseAutonomyMemoryState } from '../../autonomy-loop.memory';
 import { fingerprintStrategy } from '../../structural-memory/__parts__/memory-core';
 import type { FalsePositiveAdjudicationState } from '../../types.false-positive-adjudicator';

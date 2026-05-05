@@ -1,14 +1,17 @@
 // PULSE — Span-to-path mapping & trace summary computation
 
 import * as path from 'path';
-import { deriveUnitValue, deriveZeroValue } from '../../dynamic-reality-kernel';
+import {
+  deriveUnitValue,
+  deriveZeroValue,
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 import type {
   OtelSpan,
   OtelTrace,
   OtelTraceSummary,
   SpanToPathMapping,
 } from '../../types.otel-runtime';
-import type { PulseStructuralEdge } from '../../types';
+import type { PulseStructuralEdge } from '../../types.structural';
 import { nowIso } from './constants';
 
 // ─── Span-to-path matching ───────────────────────────────────────────────────

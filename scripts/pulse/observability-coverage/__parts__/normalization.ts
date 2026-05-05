@@ -11,7 +11,7 @@ import {
   deriveZeroValue,
   deriveUnitValue,
   deriveCatalogPercentScaleFromObservedCatalog,
-} from '../../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 import type {
   ObservabilityPillar,
   ObservabilityStatus,
@@ -20,7 +20,7 @@ import type {
   CapabilityObservability,
   ObservabilityMachineImprovementSignal,
 } from '../../types.observability-coverage';
-import type { PulseFlowProjectionItem } from '../../types';
+import type { PulseFlowProjectionItem } from '../../types.capabilities';
 import {
   tokenizeObservabilityTerm,
   signalMatchesPillar,

@@ -1,5 +1,5 @@
-import type { PulseExternalSignalSource, PulseExternalSignalState } from '../../types';
-import type { PulseExternalAdapterProofBasis } from '../../types';
+import type { PulseExternalSignalSource, PulseExternalSignalState } from '../../types.capabilities';
+import type { PulseExternalAdapterProofBasis } from '../../types.capabilities';
 import type { BuildExternalSignalStateInput } from '../../signal-mapper';
 import {
   attachRecentChangeRefs,
@@ -10,11 +10,11 @@ import {
 import {
   deriveUnitValue,
   deriveZeroValue,
-  discoverExternalAdapterProofBasisLabels,
-  discoverExternalSignalSourceLabels,
-  discoverConvergenceExecutionModeLabels,
-  discoverTruthModeLabels,
-} from '../../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+import { discoverExternalAdapterProofBasisLabels } from '../../__kernel_additions__/discoverExternalAdapterProofBasisLabels';
+import { discoverExternalSignalSourceLabels } from '../../__kernel_additions__/discoverExternalSignalSourceLabels';
+import { discoverConvergenceExecutionModeLabels } from '../../__kernel_additions__/discoverConvergenceExecutionModeLabels';
+import { discoverTruthModeLabels } from '../../dynamic-reality-kernel/__parts__/type-contract-engines';
 import {
   isAdapterRequired,
   normalizeExternalSignalProfile,

@@ -1,10 +1,7 @@
-import type {
-  PulseActorEvidence,
-  PulseActorKind,
-  PulseManifestScenarioSpec,
-  PulseScenarioResult,
-  PulseWorldState,
-} from '../types';
+import type { PulseActorEvidence, PulseWorldState } from '../types.evidence';
+import type { PulseActorKind } from '../types.health';
+import type { PulseManifestScenarioSpec } from '../types.manifest';
+import type { PulseScenarioResult } from '../types.scenario-result';
 import {
   actorKindForWorldStateSession,
   getActorEvidenceKeys,

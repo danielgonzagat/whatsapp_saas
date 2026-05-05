@@ -1,15 +1,16 @@
 import type {
   PulseActorEvidence,
-  PulseBrowserEvidence,
-  PulseCodebaseTruth,
-  PulseEnvironment,
-  PulseFlowEvidence,
-  PulseManifest,
-  PulseResolvedManifest,
-  PulseRuntimeEvidence,
   PulseSyntheticCoverageEvidence,
   PulseWorldState,
-} from '../types';
+} from '../types.evidence';
+import type {
+  PulseBrowserEvidence,
+  PulseFlowEvidence,
+  PulseRuntimeEvidence,
+} from '../types.convergence';
+import type { PulseCodebaseTruth } from '../types.truth';
+import type { PulseEnvironment, PulseManifest } from '../types.manifest';
+import type { PulseResolvedManifest } from '../types.resolved-manifest';
 
 /** Pulse synthetic run mode type. */
 export type PulseSyntheticRunMode = 'customer' | 'operator' | 'admin' | 'shift' | 'soak';

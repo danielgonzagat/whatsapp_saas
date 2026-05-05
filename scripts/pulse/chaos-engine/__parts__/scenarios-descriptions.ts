@@ -6,7 +6,7 @@ import {
 } from './detection-core';
 import { dependencyLabel } from './blast-radius';
 import { generateInjectionConfig } from './injection-config';
-import { deriveHttpStatusFromObservedCatalog } from '../../dynamic-reality-kernel';
+import { deriveHttpStatusFromObservedCatalog } from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 
 export function buildDescription(
   kind: ChaosScenarioKind,

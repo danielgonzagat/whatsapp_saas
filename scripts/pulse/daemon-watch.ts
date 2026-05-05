@@ -1,12 +1,12 @@
 import * as path from 'path';
-import type { PulseConfig } from './types';
+import type { PulseConfig } from './types.manifest';
 import { generateArtifacts } from './__parts__/artifacts/generate';
 import { renderDashboard } from './dashboard';
 import { fullScan } from './daemon/__parts__/fullScan';
 import type { FullScanResult } from './daemon/__parts__/types';
 import { classifyWatchChange, shouldRescanForWatchChange } from './daemon-watch-classifier';
 import { refreshScanResultForWatchChange } from './daemon-watch-state';
-import { PULSE_EXTERNAL_INPUT_FILES } from './external-signals';
+import { PULSE_EXTERNAL_INPUT_FILES } from './external-signals/__parts__/snapshot-config';
 import { safeJoin } from './safe-path';
 
 function getWatchGlobs(config: PulseConfig): string[] {

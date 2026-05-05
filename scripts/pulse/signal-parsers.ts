@@ -3,7 +3,7 @@
  * Each parser accepts a rootDir + raw payload and returns PulseSignalDraft[].
  * Runtime parsers (sentry, datadog, prometheus) live in signal-parsers-runtime.ts.
  */
-import type { PulseExternalSignalSource } from './types';
+import type { PulseExternalSignalSource } from './types.capabilities';
 import {
   asObject,
   asArray,
@@ -23,7 +23,7 @@ export interface PulseSignalDraft {
   type: string;
   source: PulseExternalSignalSource;
   truthMode: 'observed' | 'inferred';
-  executionMode?: import('./types').PulseScopeExecutionMode;
+  executionMode?: import('./types.truth').PulseScopeExecutionMode;
   severity: number;
   impactScore: number;
   confidence: number;

@@ -4,7 +4,7 @@
 import * as path from 'path';
 import type { AstCallGraph, AstResolvedSymbol } from '../../types.ast-graph';
 import { ensureDir, writeTextFile } from '../../safe-fs';
-import { discoverAllObservedArtifactFilenames } from '../../dynamic-reality-kernel';
+import { discoverAllObservedArtifactFilenames } from '../../dynamic-reality-kernel/__parts__/token-evidence';
 import { buildAstCallGraph } from './call-graph';
 import { normalizePath } from './core-utils';
 

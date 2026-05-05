@@ -1,4 +1,4 @@
-import type { PulseActorEvidence, PulseExecutionEvidence } from './types';
+import type { PulseActorEvidence, PulseExecutionEvidence } from './types.evidence';
 import { getActorEvidenceKeys } from './scenario-mode-registry';
 
 type ActorEvidenceKey = 'customer' | 'operator' | 'admin' | 'soak';

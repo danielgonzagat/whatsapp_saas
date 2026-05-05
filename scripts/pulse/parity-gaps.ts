@@ -1,16 +1,16 @@
 import type {
   PulseCapability,
   PulseCapabilityState,
-  PulseCertification,
-  PulseCodebaseTruth,
   PulseFlowProjection,
   PulseFlowProjectionItem,
-  PulseHealth,
   PulseParityGap,
   PulseParityGapsArtifact,
   PulseParityGapSeverity,
-  PulseResolvedManifest,
-} from './types';
+} from './types.capabilities';
+import type { PulseCertification } from './types.evidence';
+import type { PulseCodebaseTruth } from './types.truth';
+import type { PulseHealth } from './types.health';
+import type { PulseResolvedManifest } from './types.resolved-manifest';
 import {
   deriveStructuralFamilies,
   familiesOverlap,

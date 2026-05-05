@@ -1,5 +1,5 @@
 import * as path from 'path';
-import type { PulseExecutionMatrixPath } from '../../types';
+import type { PulseExecutionMatrixPath } from '../../types.execution-matrix';
 import type { PathCoverageExecutionMode } from '../../types.path-coverage-engine';
 import {
   buildStructuralSafetyClassification,

@@ -5,11 +5,11 @@ import * as path from 'path';
 import { ensureDir, writeTextFile } from './safe-fs';
 import type {
   PulseCertificationTarget,
-  PulseEnvironment,
   PulseExecutionPhase,
   PulseExecutionPhaseStatus,
   PulseExecutionTrace,
-} from './types';
+} from './types.evidence';
+import type { PulseEnvironment } from './types.manifest';
 
 const EXECUTION_TRACE_ARTIFACT = 'PULSE_EXECUTION_TRACE.json';
 const HASH_ALGORITHM = 'sha256';

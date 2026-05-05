@@ -1,17 +1,15 @@
-import type {
-  PulseDiscoveredModule,
-  PulseManifest,
-  PulseModuleState,
-  PulseShellComplexity,
-  PulseTruthPageSummary,
-} from '../../types';
+import type { PulseDiscoveredModule, PulseTruthPageSummary } from '../../types.truth';
+import type { PulseManifest, PulseModuleState } from '../../types.manifest';
+import type { PulseShellComplexity } from '../../types.structural';
 import type { PageFunctionalMap } from '../../functional-map-types';
 import {
   deriveUnitValue,
   deriveZeroValue,
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+import {
   discoverShellComplexityLabels,
   discoverModuleStateLabels,
-} from '../../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel/__parts__/type-contract-engines';
 import {
   normalizeText,
   tokenize,

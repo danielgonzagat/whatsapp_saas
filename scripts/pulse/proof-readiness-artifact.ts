@@ -5,8 +5,8 @@ import {
   PATH_PROOF_TASKS_ARTIFACT,
   type PathProofEvidenceArtifact,
   type PathProofEvidenceEntry,
-} from './path-proof-evidence';
-import type { PathProofPlan } from './path-proof-runner';
+} from './__parts__/path-proof-evidence/main';
+import type { PathProofPlan } from './__parts__/path-proof-runner/main';
 import {
   buildProofReadinessGateInput,
   evaluateProofReadinessGate,

@@ -1,6 +1,6 @@
-import type { Break } from '../../types';
+import type { Break } from '../../types.manifest';
 import { manifestBreak, isStringArray, isStringRecord, isGateNameArray } from './helpers';
-import { deriveStringUnionMembersFromTypeContract } from '../../dynamic-reality-kernel';
+import { deriveStringUnionMembersFromTypeContract } from '../../dynamic-reality-kernel/__parts__/type-contract-labels';
 
 export function validateManifestShapePart2(
   manifest: Record<string, unknown>,

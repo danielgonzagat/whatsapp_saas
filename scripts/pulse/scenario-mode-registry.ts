@@ -1,13 +1,8 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import type {
-  PulseActorEvidence,
-  PulseActorKind,
-  PulseActorProfile,
-  PulseManifest,
-  PulseManifestScenarioSpec,
-  PulseTimeWindowMode,
-} from './types';
+import type { PulseActorEvidence } from './types.evidence';
+import type { PulseActorKind, PulseTimeWindowMode } from './types.health';
+import type { PulseActorProfile, PulseManifest, PulseManifestScenarioSpec } from './types.manifest';
 import type { PulseSyntheticRunMode } from './actors/types';
 
 export type PulseActorEvidenceKey = PulseActorEvidence['actorKind'];

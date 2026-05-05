@@ -7,7 +7,7 @@ import type {
   PulseAutonomyIterationRecord,
   PulseAutonomyState,
   PulseAutonomyValidationCommandResult,
-} from '../../types';
+} from '../../types.autonomy';
 import {
   DEFAULT_MAX_ITERATIONS,
   DEFAULT_INTERVAL_MS,
@@ -20,34 +20,38 @@ import {
   type PulseAutonomyRunOptions,
 } from '../../autonomy-loop.types';
 import { coercePositiveInt } from '../../autonomy-loop.utils';
-import { toUnitSnapshot } from '../../autonomy-loop.unit-ranking';
+import { toUnitSnapshot } from '../../autonomy-loop.unit-ranking/__parts__/structural-rank';
+import { directiveDigest } from '../../__parts__/autonomy-loop.state-io/directive';
 import {
-  directiveDigest,
   getMemoryAwarePreferredAutomationSafeUnits,
+  runPulseGuidance,
+} from '../../__parts__/autonomy-loop.state-io/unit-selection';
+import {
   buildPulseAutonomyStateSeed,
   buildPulseAgentOrchestrationStateSeed,
+} from '../../__parts__/autonomy-loop.state-io/seed-builders';
+import {
   writePulseAutonomyState,
   writePulseAgentOrchestrationState,
   loadPulseAutonomyState,
   loadPulseAgentOrchestrationState,
   appendHistory,
-  runPulseGuidance,
-} from '../../autonomy-loop.state-io';
+} from '../../__parts__/autonomy-loop.state-io/state-io';
 import { detectRollbackGuard } from '../../autonomy-loop.workspace';
+import { captureRegressionSnapshot } from '../../regression-guard/__parts__/snapshot';
+import { detectRegression } from '../../regression-guard/__parts__/core';
 import {
-  captureRegressionSnapshot,
-  detectRegression,
   detectChangedFilesSinceHead,
   rollbackRegression,
-  type PulseSnapshot,
-} from '../../regression-guard';
+} from '../../regression-guard/__parts__/rollback';
+import type { PulseSnapshot } from '../../regression-guard/__parts__/types';
 import type { ExecutorKind } from '../../executor';
+import { deriveStringUnionMembersFromTypeContract } from '../../dynamic-reality-kernel/__parts__/type-contract-labels';
 import {
-  deriveStringUnionMembersFromTypeContract,
   deriveUnitValue,
   deriveZeroValue,
-  discoverConvergenceUnitStatusLabels,
-} from '../../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+import { discoverConvergenceUnitStatusLabels } from '../../__kernel_additions__/discoverConvergenceUnitStatusLabels';
 
 // ── certifiedConvergenceLabel ──────────────────────────────────────────────────
 

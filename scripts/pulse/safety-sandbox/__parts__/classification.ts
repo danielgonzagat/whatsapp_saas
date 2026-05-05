@@ -4,7 +4,7 @@
 import * as path from 'path';
 import * as fs from 'fs';
 
-import { discoverDirectorySkipHintsFromEvidence } from '../../dynamic-reality-kernel';
+import { discoverDirectorySkipHintsFromEvidence } from '../../dynamic-reality-kernel/__parts__/token-evidence';
 import {
   _kindAtOrdinal,
   _riskAtOrdinal,

@@ -3,7 +3,7 @@
  * Exports: buildPulseMachineNextWork
  */
 import { unique } from '../../artifacts.io';
-import { deriveZeroValue } from '../../dynamic-reality-kernel';
+import { deriveZeroValue } from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 import type { PulseMachineReadiness } from '../../artifacts.types';
 import { OBSERVED_ARTIFACT_FILENAMES, type PulseMachineDirectiveUnit } from './directive-shared';
 import {

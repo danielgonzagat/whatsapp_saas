@@ -10,14 +10,16 @@ import { ensureDir, readDir } from '../../safe-fs';
 import { safeJoin } from '../../lib/safe-path';
 import {
   deriveCatalogPercentScaleFromObservedCatalog,
-  deriveStringUnionMembersFromTypeContract,
   deriveUnitValue,
   deriveZeroValue,
+  discoverPropertyPassedStatusFromTypeEvidence,
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+import { deriveStringUnionMembersFromTypeContract } from '../../dynamic-reality-kernel/__parts__/type-contract-labels';
+import {
   discoverAllObservedArtifactFilenames,
   discoverDirectorySkipHintsFromEvidence,
-  discoverPropertyPassedStatusFromTypeEvidence,
   discoverSourceExtensionsFromObservedTypescript,
-} from '../../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel/__parts__/token-evidence';
 
 type GeneratedExpectation = GeneratedPropertyTestInput['expected'];
 

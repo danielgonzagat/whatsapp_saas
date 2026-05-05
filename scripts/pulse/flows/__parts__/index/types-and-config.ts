@@ -1,13 +1,12 @@
 import type {
   Break,
   PulseEnvironment,
-  PulseFlowOracle,
-  PulseFlowResult,
-  PulseHealth,
   PulseManifest,
   PulseManifestFlowSpec,
   PulseParserInventory,
-} from '../../../types';
+} from '../../../types.manifest';
+import type { PulseFlowOracle, PulseHealth } from '../../../types.health';
+import type { PulseFlowResult } from '../../../types.convergence';
 import type { AuthCredentials } from '../../../browser-stress-tester/types';
 import { isBlockingDynamicFinding } from '../../../finding-identity';
 import { getRuntimeResolution } from '../../../parsers/runtime-utils';

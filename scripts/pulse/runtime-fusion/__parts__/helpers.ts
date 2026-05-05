@@ -1,18 +1,20 @@
 import { tokenize, unique } from '../../signal-normalizers';
+import { discoverAllObservedArtifactFilenames } from '../../dynamic-reality-kernel/__parts__/token-evidence';
+import { discoverExternalAdapterStatusLabels } from '../../__kernel_additions__/discoverExternalAdapterStatusLabels';
 import {
-  discoverAllObservedArtifactFilenames,
-  discoverExternalAdapterStatusLabels,
   discoverOperationalEvidenceKindLabels,
-  discoverRouteSeparatorFromRuntime,
   discoverRuntimeFusionEvidenceStatusLabels,
   discoverSignalActionLabels,
   discoverSignalSeverityLabels,
   discoverSignalSourceLabels,
   discoverSignalTypeLabels,
   discoverTruthModeLabels,
+} from '../../dynamic-reality-kernel/__parts__/type-contract-engines';
+import {
+  discoverRouteSeparatorFromRuntime,
   deriveUnitValue,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 import type { CanonicalExternalSignal } from './parsing';
 import { TREND_LABELS, isRecord, asNumber } from './parsing';
 import { computeImpactScore } from './mapping';

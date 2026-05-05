@@ -1,4 +1,4 @@
-import type { PathProofTask, PathProofTaskMode } from './path-proof-runner';
+import type { PathProofTask, PathProofTaskMode } from './__parts__/path-proof-runner/main';
 import { classifyExecutionReality } from './execution-reality-audit';
 import type {
   PulseExecutionRealityInput,

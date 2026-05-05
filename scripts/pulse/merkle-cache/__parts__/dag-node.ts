@@ -1,7 +1,7 @@
 import { readFileSync } from 'fs';
 import * as path from 'path';
 import type { MerkleDag, MerkleNode } from '../../types.merkle-cache';
-import { deriveZeroValue } from '../../dynamic-reality-kernel';
+import { deriveZeroValue } from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 import { MERKLE_FILE_KIND, isNonFileMerkleKind, computeSha256, deriveHash, nowISO } from './core';
 import { buildParentMap, addAncestors } from './dag-graph';
 

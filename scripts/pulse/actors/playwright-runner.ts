@@ -2,7 +2,9 @@ import * as path from 'path';
 import { spawnSync } from 'child_process';
 import { safeJoin } from '../safe-path';
 import { pathExists } from '../safe-fs';
-import type { PulseActorEvidence, PulseManifestScenarioSpec, PulseScenarioResult } from '../types';
+import type { PulseActorEvidence } from '../types.evidence';
+import type { PulseManifestScenarioSpec } from '../types.manifest';
+import type { PulseScenarioResult } from '../types.scenario-result';
 import { buildScenarioResult } from './scenario-result';
 import type { RunSyntheticActorsInput } from './types';
 

@@ -6,8 +6,8 @@ import * as path from 'path';
 import {
   deriveUnitValue,
   deriveZeroValue,
-  deriveStringUnionMembersFromTypeContract,
-} from '../../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+import { deriveStringUnionMembersFromTypeContract } from '../../dynamic-reality-kernel/__parts__/type-contract-labels';
 import type { DestructiveActionKind, SandboxRiskLevel } from '../../types.safety-sandbox';
 
 // ────────────────────────────────────────────────────────────────────────────

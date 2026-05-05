@@ -1,5 +1,5 @@
 import * as path from 'path';
-import type { PulseConfig } from '../../types';
+import type { PulseConfig } from '../../types.manifest';
 import type { HarnessTarget, HarnessTargetKind } from '../../types.execution-harness';
 import { parseBackendRoutes } from '../../parsers/backend-parser';
 import { walkFiles } from '../../parsers/utils';

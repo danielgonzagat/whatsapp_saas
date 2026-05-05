@@ -1,6 +1,6 @@
 import * as path from 'path';
 import { safeJoin } from '../../safe-path';
-import type { APICall, UIElement } from '../../types';
+import type { APICall, UIElement } from '../../types.core';
 import type { HookRegistry } from '../../parsers/hook-registry';
 import type { PageEntry } from '../../functional-map-types';
 import { normalizeForMatch } from '../../graph/__parts__/graph-part1-core';

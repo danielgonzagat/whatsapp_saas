@@ -5,7 +5,7 @@ import type { PulseScopeFile, PulseScopeState } from '../../../types.truth.scope
 import {
   deriveZeroValue,
   discoverRouteSeparatorFromRuntime,
-} from '../../../dynamic-reality-kernel';
+} from '../../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 import type { BrowserAuthStorageContract } from './types';
 
 export function discoverStorageKeyPatterns(): RegExp {

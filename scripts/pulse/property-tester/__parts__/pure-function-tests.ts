@@ -5,12 +5,12 @@ import type {
   PropertyKind,
   PureFunctionCandidate,
 } from '../../types.property-tester';
+import { deriveFuzzStrategyFromObservedPropertyShape } from '../../dynamic-reality-kernel/__parts__/profile-derivations';
 import {
-  deriveFuzzStrategyFromObservedPropertyShape,
   derivePropertyKindsFromObservedCategory,
   deriveUnitValue,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 import { fallbackGeneratedPath, dpe, dfa } from './core';
 import { discoverPureFunctionCandidates } from './pure-function-discovery';
 import {

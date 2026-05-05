@@ -1,4 +1,4 @@
-import type { PulseAutonomyState } from '../../types';
+import type { PulseAutonomyState } from '../../types.autonomy';
 import type {
   PulseAutonomousDirective,
   PulseAutonomousDirectiveUnit,
@@ -10,7 +10,7 @@ import {
   getFreshAutomationSafeUnits,
   getAutomationSafeUnits,
   hasAdaptiveRetryBeenExhausted,
-} from '../../autonomy-loop.unit-ranking';
+} from '../../autonomy-loop.unit-ranking/__parts__/selection';
 import { buildCodexPrompt, buildAdaptivePrompt } from './prompts';
 import { buildUnitValidationCommands } from './validation-commands';
 
@@ -55,15 +55,13 @@ export function buildPlannerPrompt(
             completedIterations: previousState.completedIterations,
             stopReason: previousState.stopReason,
             nextActionableUnit: previousState.nextActionableUnit,
-            recentHistory: previousState.history
-              .slice(-3)
-              .map((iteration) => ({
-                iteration: iteration.iteration,
-                status: iteration.status,
-                summary: iteration.summary,
-                unit: iteration.unit,
-                directiveAfter: iteration.directiveAfter,
-              })),
+            recentHistory: previousState.history.slice(-3).map((iteration) => ({
+              iteration: iteration.iteration,
+              status: iteration.status,
+              summary: iteration.summary,
+              unit: iteration.unit,
+              directiveAfter: iteration.directiveAfter,
+            })),
           }
         : null,
     },

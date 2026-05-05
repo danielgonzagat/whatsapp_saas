@@ -5,7 +5,10 @@
 
 import * as path from 'node:path';
 import { ensureDir, pathExists, readJsonFile, writeTextFile } from '../../safe-fs';
-import { deriveUnitValue, deriveZeroValue } from '../../dynamic-reality-kernel';
+import {
+  deriveUnitValue,
+  deriveZeroValue,
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 import type {
   ContinuousDaemonState,
   DaemonCycle,

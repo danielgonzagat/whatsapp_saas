@@ -6,18 +6,22 @@
  */
 
 import * as path from 'path';
+import { deriveStringUnionMembersFromTypeContract } from '../../dynamic-reality-kernel/__parts__/type-contract-labels';
 import {
-  deriveStringUnionMembersFromTypeContract,
   deriveUnitValue,
   deriveZeroValue,
-  discoverAllObservedArtifactFilenames,
-  discoverRuntimeProbeStatusLabels,
-  discoverScenarioStatusLabels,
-} from '../../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+import { discoverAllObservedArtifactFilenames } from '../../dynamic-reality-kernel/__parts__/token-evidence';
+import { discoverRuntimeProbeStatusLabels } from '../../__kernel_additions__/discoverRuntimeProbeStatusLabels';
+import { discoverScenarioStatusLabels } from '../../dynamic-reality-kernel/__parts__/type-contract-engines';
 import { safeJoin } from '../../lib/safe-path';
 import { pathExists, readJsonFile } from '../../safe-fs';
-import { isRuntimeProbeProofEligible, normalizeRuntimeProbesArtifact } from '../../runtime-probes';
-import type { PulseCapability, PulseCapabilityState, PulseProductGraph } from '../../types';
+import {
+  isRuntimeProbeProofEligible,
+  normalizeRuntimeProbesArtifact,
+} from '../../__parts__/runtime-probes/main';
+import type { PulseCapability, PulseCapabilityState } from '../../types.capabilities';
+import type { PulseProductGraph } from '../../types.product-graph';
 import type {
   ProductionProofDimension,
   ProductionProofDimensionEvidence,

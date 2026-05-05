@@ -1,10 +1,7 @@
-import type {
-  PulseCapability,
-  PulseExecutionEvidence,
-  PulseScopeState,
-  PulseStructuralGraph,
-  PulseStructuralRole,
-} from '../../types';
+import type { PulseCapability } from '../../types.capabilities';
+import type { PulseExecutionEvidence } from '../../types.evidence';
+import type { PulseScopeState } from '../../types.truth.scope';
+import type { PulseStructuralGraph, PulseStructuralRole } from '../../types.structural';
 import type { PulseObservationFootprint } from '../../execution-observation';
 import {
   deriveRouteFamily,
@@ -13,7 +10,10 @@ import {
   slugifyStructural,
 } from '../../structural-family';
 import { footprintMatchesFamilies } from '../../execution-observation';
-import { deriveUnitValue, deriveZeroValue } from '../../dynamic-reality-kernel';
+import {
+  deriveUnitValue,
+  deriveZeroValue,
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 import {
   buildCapabilityMaturity,
   chooseDominantLabel,

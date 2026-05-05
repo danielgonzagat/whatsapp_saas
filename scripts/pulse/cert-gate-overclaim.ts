@@ -7,8 +7,8 @@
  *
  * This gate is pure: callers supply the pre-loaded artifact data; no I/O here.
  */
-import type { PulseGateResult } from './types';
-import { gateFail } from './cert-gate-evaluators';
+import type { PulseGateResult } from './types.evidence';
+import { gateFail } from './__parts__/cert-gate-evaluators/gate-fail';
 
 /** Minimal shape of the cycleProof sub-object inside autonomyProof. */
 export interface PulseCycleProof {

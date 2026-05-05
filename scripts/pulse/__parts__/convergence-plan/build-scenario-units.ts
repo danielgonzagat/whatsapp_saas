@@ -1,17 +1,14 @@
+import type { PulseCapabilityState, PulseFlowProjection } from '../../types.capabilities';
+import type { PulseCertification, PulseWorldState } from '../../types.evidence';
 import type {
-  PulseCapabilityState,
-  PulseCertification,
   PulseConvergenceUnit,
   PulseConvergenceUnitPriority,
   PulseConvergenceUnitStatus,
-  PulseConvergenceOwnerLane,
-  PulseFlowProjection,
-  PulseGateName,
-  PulseManifestScenarioSpec,
-  PulseResolvedManifest,
-  PulseScenarioResult,
-  PulseWorldState,
-} from '../../types';
+} from '../../types.convergence';
+import type { PulseConvergenceOwnerLane } from '../../types.gate-failure';
+import type { PulseGateName, PulseManifestScenarioSpec } from '../../types.manifest';
+import type { PulseResolvedManifest } from '../../types.resolved-manifest';
+import type { PulseScenarioResult } from '../../types.scenario-result';
 import type {
   BuildPulseConvergencePlanInput,
   ScenarioAccumulator,

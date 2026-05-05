@@ -1,12 +1,11 @@
-import type {
-  PulseCodebaseTruth,
-  PulseConfig,
-  PulseDiscoveredModule,
-  PulseManifest,
-} from '../../types';
+import type { PulseCodebaseTruth, PulseDiscoveredModule } from '../../types.truth';
+import type { PulseConfig, PulseManifest } from '../../types.manifest';
 import type { CoreParserData } from '../../functional-map-types';
 import { buildFunctionalMap } from '../../functional-map';
-import { deriveUnitValue, deriveZeroValue } from '../../dynamic-reality-kernel';
+import {
+  deriveUnitValue,
+  deriveZeroValue,
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 import {
   isUserFacingGroup,
   unique,

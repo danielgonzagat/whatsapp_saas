@@ -4,7 +4,10 @@
  */
 import * as path from 'path';
 import { ensureDir, pathExists, readTextFile, renamePath, writeTextFile } from './safe-fs';
-import type { PulseArtifactDefinition, PulseArtifactRegistry } from './artifact-registry';
+import type {
+  PulseArtifactDefinition,
+  PulseArtifactRegistry,
+} from './artifact-registry/__parts__/discovery';
 import { injectRunIdentity, type PulseRunIdentity } from './run-identity';
 import { safeJoin } from './lib/safe-path';
 

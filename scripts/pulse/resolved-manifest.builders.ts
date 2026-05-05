@@ -1,11 +1,8 @@
 /** Flow group and scenario synthesis builders for resolved-manifest. */
 
-import type {
-  PulseDiscoveredFlowCandidate,
-  PulseManifest,
-  PulseResolvedFlowGroup,
-  PulseResolvedFlowKind,
-} from './types';
+import type { PulseDiscoveredFlowCandidate } from './types.truth';
+import type { PulseManifest } from './types.manifest';
+import type { PulseResolvedFlowGroup, PulseResolvedFlowKind } from './types.resolved-manifest';
 import {
   normalizeText,
   slugify,

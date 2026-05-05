@@ -1,7 +1,7 @@
 /**
  * Structural ranking: grammar matchers, unit ranking helpers, queue influence.
  */
-import type { PulseAutonomyUnitSnapshot } from '../../types';
+import type { PulseAutonomyUnitSnapshot } from '../../types.autonomy';
 import type {
   PulseAutonomousDirective,
   PulseAutonomousDirectiveUnit,
@@ -10,14 +10,14 @@ import { unique } from '../../autonomy-loop.utils';
 import {
   deriveUnitValue,
   deriveZeroValue,
-  discoverAutonomySuggestedStrategyLabels,
-  discoverConvergenceEvidenceConfidenceLabels,
-  discoverConvergenceExecutionModeLabels,
-  discoverConvergenceRiskLevelLabels,
-  discoverConvergenceUnitKindLabels,
-  discoverConvergenceUnitPriorityLabels,
-  discoverRuntimeFusionEvidenceStatusLabels,
-} from '../../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+import { discoverAutonomySuggestedStrategyLabels } from '../../__kernel_additions__/discoverAutonomySuggestedStrategyLabels';
+import { discoverConvergenceEvidenceConfidenceLabels } from '../../__kernel_additions__/discoverConvergenceEvidenceConfidenceLabels';
+import { discoverConvergenceExecutionModeLabels } from '../../__kernel_additions__/discoverConvergenceExecutionModeLabels';
+import { discoverConvergenceRiskLevelLabels } from '../../__kernel_additions__/discoverConvergenceRiskLevelLabels';
+import { discoverConvergenceUnitKindLabels } from '../../__kernel_additions__/discoverConvergenceUnitKindLabels';
+import { discoverConvergenceUnitPriorityLabels } from '../../__kernel_additions__/discoverConvergenceUnitPriorityLabels';
+import { discoverRuntimeFusionEvidenceStatusLabels } from '../../dynamic-reality-kernel/__parts__/type-contract-engines';
 import type { FalsePositiveAdjudicationState } from '../../types.false-positive-adjudicator';
 import type { OperationalEvidenceKind, SignalSource } from '../../types.runtime-fusion';
 import type { StructuralMemoryState, UnitMemory } from '../../types.structural-memory';

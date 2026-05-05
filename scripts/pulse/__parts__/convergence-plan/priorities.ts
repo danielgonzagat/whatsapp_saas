@@ -1,12 +1,11 @@
 import type {
   PulseCapabilityState,
-  PulseConvergenceOwnerLane,
-  PulseConvergenceUnit,
-  PulseConvergenceUnitPriority,
   PulseFlowProjection,
-  PulseGateName,
   PulseParityGapsArtifact,
-} from '../../types';
+} from '../../types.capabilities';
+import type { PulseConvergenceOwnerLane } from '../../types.gate-failure';
+import type { PulseConvergenceUnit, PulseConvergenceUnitPriority } from '../../types.convergence';
+import type { PulseGateName } from '../../types.manifest';
 import type { BuildPulseConvergencePlanInput, ScenarioPriorityContext } from './types';
 import {
   isSameState,

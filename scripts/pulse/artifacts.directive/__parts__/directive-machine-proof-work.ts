@@ -3,9 +3,11 @@
  * Exports: buildPulseCertificationProofDebtNextWork, buildPulseAutonomyProofDebtNextWork
  */
 import { unique } from '../../artifacts.io';
-import { deriveZeroValue } from '../../dynamic-reality-kernel';
-import type { PulseAutonomyState, PulseConvergencePlan } from '../../types';
-import type { PulseGateName, PulseGateResult } from '../../types';
+import { deriveZeroValue } from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+import type { PulseAutonomyState } from '../../types.autonomy';
+import type { PulseConvergencePlan } from '../../types.convergence';
+import type { PulseGateName } from '../../types.manifest';
+import type { PulseGateResult } from '../../types.evidence';
 import { buildAutonomyProof } from '../../artifacts.autonomy/__parts__/autonomy-proof';
 import { OBSERVED_ARTIFACT_FILENAMES, type PulseMachineDirectiveUnit } from './directive-shared';
 import {

@@ -1,13 +1,12 @@
 import type {
   Break,
   PulseEnvironment,
-  PulseHealth,
-  PulseInvariantEvidence,
-  PulseInvariantResult,
   PulseManifest,
   PulseManifestInvariantSpec,
   PulseParserInventory,
-} from '../types';
+} from '../types.manifest';
+import type { PulseHealth } from '../types.health';
+import type { PulseInvariantEvidence, PulseInvariantResult } from '../types.convergence';
 import { isBlockingDynamicFinding, summarizeDynamicFindingEvents } from '../finding-identity';
 
 interface RunDeclaredInvariantsInput {

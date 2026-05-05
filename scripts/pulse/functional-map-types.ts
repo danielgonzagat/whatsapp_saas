@@ -9,7 +9,7 @@ import type {
   ServiceTrace,
   ProxyRoute,
   FacadeEntry,
-} from './types';
+} from './types.core';
 import type { HookRegistry } from './parsers/hook-registry';
 
 // ===== Classification =====

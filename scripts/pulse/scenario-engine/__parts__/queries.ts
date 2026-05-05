@@ -16,22 +16,24 @@ import { pathExists, readJsonFile } from '../../safe-fs';
 import {
   deriveCatalogPercentScaleFromObservedCatalog,
   deriveHttpStatusFromObservedCatalog,
-  deriveLengthBoundariesFromObservedCatalog,
   deriveUnitValue,
   deriveZeroValue,
+  discoverPropertyUnexecutedStatusFromExecutionEvidence,
+  observeStatusTextLengthFromCatalog,
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+import { deriveLengthBoundariesFromObservedCatalog } from '../../dynamic-reality-kernel/__parts__/profile-derivations';
+import {
   discoverAllObservedArtifactFilenames,
   discoverDirectorySkipHintsFromEvidence,
-  discoverPropertyUnexecutedStatusFromExecutionEvidence,
   discoverSourceExtensionsFromObservedTypescript,
-  discoverTruthModeLabels,
-  observeStatusTextLengthFromCatalog,
-} from '../../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel/__parts__/token-evidence';
+import { discoverTruthModeLabels } from '../../dynamic-reality-kernel/__parts__/type-contract-engines';
 import type {
   PulseProductCapability,
   PulseProductFlow,
   PulseProductGraph,
   PulseProductSurface,
-} from '../../types';
+} from '../../types.product-graph';
 import type { BehaviorGraph, BehaviorNode } from '../../types.behavior-graph';
 import type { DataflowState, EntityLifecycle } from '../../types.dataflow-engine';
 import type { HarnessEvidence, HarnessTarget } from '../../types.execution-harness';

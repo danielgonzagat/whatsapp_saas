@@ -5,14 +5,14 @@
  */
 import * as path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { buildArtifactRegistry } from './artifact-registry';
+import { buildArtifactRegistry } from './artifact-registry/__parts__/registry';
 import { ensureDir, pathExists, readTextFile, removePath, writeTextFile } from './safe-fs';
 import type {
   PulseAgentOrchestrationState,
   PulseAutonomyMemoryConcept,
   PulseAutonomyMemoryState,
   PulseAutonomyState,
-} from './types';
+} from './types.autonomy';
 import {
   AUTONOMY_ARTIFACT,
   AUTONOMY_MEMORY_ARTIFACT,

@@ -1,10 +1,6 @@
-import type {
-  PulseActorEvidence,
-  PulseExecutionEvidence,
-  PulseFlowResult,
-  PulseResolvedManifest,
-  PulseRuntimeProbe,
-} from './types';
+import type { PulseActorEvidence, PulseExecutionEvidence } from './types.evidence';
+import type { PulseFlowResult, PulseRuntimeProbe } from './types.convergence';
+import type { PulseResolvedManifest } from './types.resolved-manifest';
 import { deriveStructuralFamilies, familiesOverlap } from './structural-family';
 
 /** Pulse observation footprint shape. */

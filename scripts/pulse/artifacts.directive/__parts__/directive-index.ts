@@ -5,7 +5,7 @@
 import { normalizeCanonicalArtifactValue } from '../../artifacts.queue';
 import { deriveAuthorityState } from '../../artifacts.autonomy/__parts__/authority';
 import type { PulseArtifactCleanupReport } from '../../artifact-gc';
-import type { PulseArtifactRegistry } from '../../artifact-registry';
+import type { PulseArtifactRegistry } from '../../artifact-registry/__parts__/discovery';
 import type { PulseRunIdentity } from '../../run-identity';
 import type { PulseMachineReadiness } from '../../artifacts.autonomy/__parts__/types';
 import { artifactJsonReplacer } from './directive-shared';

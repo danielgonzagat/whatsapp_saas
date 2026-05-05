@@ -13,10 +13,8 @@ import type {
 import { ensureDir, pathExists, readDir, readTextFile } from '../../safe-fs';
 import { safeJoin } from '../../lib/safe-path';
 import { walkFiles } from '../../parsers/utils';
-import {
-  deriveZeroValue,
-  discoverAllObservedArtifactFilenames,
-} from '../../dynamic-reality-kernel';
+import { deriveZeroValue } from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+import { discoverAllObservedArtifactFilenames } from '../../dynamic-reality-kernel/__parts__/token-evidence';
 import {
   CONTRACT_EVIDENCE_FILENAME,
   HTTP_METHOD_PATTERN,

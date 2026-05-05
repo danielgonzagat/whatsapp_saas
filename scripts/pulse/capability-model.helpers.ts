@@ -5,11 +5,10 @@ import type {
   PulseCapability,
   PulseCapabilityMaturity,
   PulseCapabilityState,
-  PulseStructuralRole,
-  PulseConvergenceOwnerLane,
-  PulseScopeExecutionMode,
-  PulseTruthMode,
-} from './types';
+} from './types.capabilities';
+import type { PulseStructuralRole, PulseTruthMode } from './types.structural';
+import type { PulseConvergenceOwnerLane } from './types.gate-failure';
+import type { PulseScopeExecutionMode } from './types.truth.scope';
 
 export function unique<T>(values: T[]): T[] {
   return [...new Set(values)];

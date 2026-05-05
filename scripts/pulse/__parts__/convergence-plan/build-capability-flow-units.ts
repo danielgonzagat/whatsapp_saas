@@ -1,9 +1,5 @@
-import type {
-  PulseCapabilityState,
-  PulseConvergenceUnit,
-  PulseConvergenceUnitPriority,
-  PulseFlowProjection,
-} from '../../types';
+import type { PulseCapabilityState, PulseFlowProjection } from '../../types.capabilities';
+import type { PulseConvergenceUnit, PulseConvergenceUnitPriority } from '../../types.convergence';
 import type { BuildPulseConvergencePlanInput } from './types';
 import {
   takeEvidenceBatch,

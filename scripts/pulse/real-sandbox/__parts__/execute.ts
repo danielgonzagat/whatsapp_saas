@@ -17,7 +17,7 @@ import {
 } from './kernel';
 import type { RealSandboxWorkspacePlan } from './types';
 import { ensureDir, pathExists } from '../../safe-fs';
-import { deriveZeroValue } from '../../dynamic-reality-kernel';
+import { deriveZeroValue } from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 
 function copyFileIntoWorkspace(rootDir: string, workspacePath: string, relativePath: string): void {
   const sourcePath = path.join(rootDir, relativePath);

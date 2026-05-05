@@ -3,7 +3,8 @@
 import * as path from 'path';
 import { pathExists, readTextFile } from './safe-fs';
 import { safeJoin } from './lib/safe-path';
-import type { PulseConvergenceOwnerLane, PulseScopeFileKind, PulseScopeSurface } from './types';
+import type { PulseConvergenceOwnerLane } from './types.gate-failure';
+import type { PulseScopeFileKind, PulseScopeSurface } from './types.truth.scope';
 import {
   SCANNABLE_EXTENSIONS,
   IGNORED_DIRECTORIES,

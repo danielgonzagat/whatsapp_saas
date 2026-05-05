@@ -4,9 +4,9 @@
  */
 import * as crypto from 'node:crypto';
 import * as path from 'node:path';
-import { buildArtifactRegistry } from './artifact-registry';
+import { buildArtifactRegistry } from './artifact-registry/__parts__/registry';
 import { ensureDir, renamePath, writeTextFile } from './safe-fs';
-import type { PulseAutonomyState, PulseAutonomyUnitSnapshot } from './types';
+import type { PulseAutonomyState, PulseAutonomyUnitSnapshot } from './types.autonomy';
 import {
   DEFAULT_VALIDATION_COMMANDS,
   type PulseAutonomousDirective,

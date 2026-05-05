@@ -5,22 +5,23 @@
 import { execSync } from 'child_process';
 import type {
   Break,
-  PulseCodacyIssue,
-  PulseCodacySummary,
-  PulseCertificationTarget,
   PulseEnvironment,
-  PulseExternalSignalState,
-  PulseExecutionEvidence,
-  PulseGateFailureClass,
   PulseGateName,
-  PulseGateResult,
   PulseManifest,
   PulseManifestCertificationTier,
   PulseManifestFinalReadinessCriteria,
   PulseParserInventory,
-  PulseResolvedManifest,
+} from './types.manifest';
+import type { PulseCodacyIssue, PulseCodacySummary } from './types.truth.codacy';
+import type {
+  PulseCertificationTarget,
+  PulseExecutionEvidence,
+  PulseGateResult,
   PulseActorEvidence,
-} from './types';
+} from './types.evidence';
+import type { PulseExternalSignalState } from './types.capabilities';
+import type { PulseGateFailureClass } from './types.gate-failure';
+import type { PulseResolvedManifest } from './types.resolved-manifest';
 import { CHECKER_GAP_TYPES } from './cert-constants';
 import { isBlockingDynamicFinding, summarizeDynamicFindingEvents } from './finding-identity';
 

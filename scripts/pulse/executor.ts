@@ -7,7 +7,7 @@
 
 import { spawnSync } from 'node:child_process';
 import * as path from 'node:path';
-import { buildArtifactRegistry } from './artifact-registry';
+import { buildArtifactRegistry } from './artifact-registry/__parts__/registry';
 import { ensureDir, pathExists, readTextFile } from './safe-fs';
 
 export interface ExecutorResult {

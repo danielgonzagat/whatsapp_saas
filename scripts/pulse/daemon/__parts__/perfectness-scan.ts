@@ -1,9 +1,10 @@
-import type { PulseConfig, PulseStructuralGraph } from '../../types';
+import type { PulseConfig } from '../../types.manifest';
+import type { PulseStructuralGraph } from '../../types.structural';
 import type { FullScanOptions } from './types';
 import { PASSED, FAILED, safeRun, isFailedExecutionStatusFromEvidence } from './types';
 import * as path from 'path';
 import { ensureDir, writeTextFile } from '../../safe-fs';
-import { deriveZeroValue } from '../../dynamic-reality-kernel';
+import { deriveZeroValue } from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 import { buildAstCallGraph } from '../../ast-graph/__parts__/call-graph';
 import { buildScopeEngineState } from '../../__parts__/scope-engine/engine';
 import { generateBehaviorGraph } from '../../behavior-graph/__parts__/graph-builder';
@@ -19,19 +20,19 @@ import { buildContractTestEvidence } from '../../contract-tester/__parts__/part2
 import { buildDoDEngineState } from '../../dod-engine';
 import { buildObservabilityCoverage } from '../../observability-coverage/__parts__/builder';
 import { buildScenarioCatalog } from '../../scenario-engine/__parts__/builder/__parts__/core';
-import { buildReplayState } from '../../replay-adapter';
-import { buildProductionProofState } from '../../production-proof';
+import { buildReplayState } from '../../__parts__/replay-adapter/main';
+import { buildProductionProofState } from '../../production-proof/__parts__/engine';
 import { buildChaosCatalog } from '../../chaos-engine/__parts__/scenarios';
 import { buildPathCoverageState } from '../../path-coverage-engine/__parts__/build-coverage-state';
 import { writePulseCommandGraphArtifact } from '../../command-graph-artifact';
 import { buildProofSynthesisState } from '../../proof-synthesis';
-import { buildProbabilisticRisk } from '../../probabilistic-risk';
+import { buildProbabilisticRisk } from '../../__parts__/probabilistic-risk/engine';
 import { buildStructuralMemory } from '../../structural-memory/__parts__/memory-patterns';
 import { buildFPAdjudicationState } from '../../false-positive-adjudicator';
 import { evaluateAuthorityState } from '../../authority-engine/__parts__/api';
-import { buildAuditChain } from '../../audit-chain';
+import { buildAuditChain } from '../../__parts__/audit-chain/main';
 import { checkGitNexusFreshness } from '../../gitnexus-freshness';
-import { loadPluginRegistry } from '../../plugin-system';
+import { loadPluginRegistry } from '../../__parts__/plugin-system/main';
 import { buildSandboxState } from '../../safety-sandbox/__parts__/sandbox';
 import { evaluatePerfectness } from '../../perfectness-test/__parts__/perfectness-eval';
 

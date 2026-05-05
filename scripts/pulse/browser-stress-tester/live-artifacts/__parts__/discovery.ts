@@ -6,8 +6,8 @@ import {
   deriveUnitValue,
   discoverRouteSeparatorFromRuntime,
   observeStatusTextLengthFromCatalog,
-} from '../../../dynamic-reality-kernel';
-import { deriveHttpStatusFromObservedCatalog } from '../../../dynamic-reality-kernel';
+} from '../../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+import { deriveHttpStatusFromObservedCatalog } from '../../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 import type { RouteCandidate, BrowserAuthRoutes, BrowserPageDiscovery } from './types';
 import type { ResolvedManifestOverlay } from './types';
 

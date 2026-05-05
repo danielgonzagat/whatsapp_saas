@@ -1,14 +1,19 @@
 import type {
   PulseCapability,
-  PulseExecutionChain,
-  PulseExecutionEvidence,
-  PulseExecutionMatrixPath,
-  PulseExecutionMatrixPathStatus,
   PulseExternalSignalState,
   PulseFlowProjectionItem,
-  PulseStructuralNode,
-} from '../../types';
-import { deriveUnitValue, deriveZeroValue } from '../../dynamic-reality-kernel';
+} from '../../types.capabilities';
+import type { PulseExecutionChain } from '../../types.product-graph';
+import type { PulseExecutionEvidence } from '../../types.evidence';
+import type {
+  PulseExecutionMatrixPath,
+  PulseExecutionMatrixPathStatus,
+} from '../../types.execution-matrix';
+import type { PulseStructuralNode } from '../../types.structural';
+import {
+  deriveUnitValue,
+  deriveZeroValue,
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 import {
   artifactGrammar,
   buildRequiredEvidence,

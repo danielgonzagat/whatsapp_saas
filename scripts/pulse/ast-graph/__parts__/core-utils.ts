@@ -3,7 +3,7 @@
 
 import * as path from 'path';
 import { type Node, type Decorator } from 'ts-morph';
-import { deriveUnitValue } from '../../dynamic-reality-kernel';
+import { deriveUnitValue } from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 
 // ── Types ───────────────────────────────────────────────────────────────
 

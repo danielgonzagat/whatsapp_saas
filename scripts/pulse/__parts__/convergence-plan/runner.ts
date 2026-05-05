@@ -1,4 +1,5 @@
-import type { PulseConvergencePlan, PulseGateName } from '../../types';
+import type { PulseConvergencePlan } from '../../types.convergence';
+import type { PulseGateName } from '../../types.manifest';
 import type { BuildPulseConvergencePlanInput } from './types';
 import {
   compareByObservedPressure,

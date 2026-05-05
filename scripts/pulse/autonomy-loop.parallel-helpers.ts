@@ -10,10 +10,13 @@ import type {
   PulseAutonomyState,
   PulseAutonomyUnitSnapshot,
   PulseAutonomyValidationCommandResult,
-} from './types';
+} from './types.autonomy';
 import type { PulseAutonomousDirective, PulseAutonomousDirectiveUnit } from './autonomy-types';
-import { toUnitSnapshot } from './autonomy-loop.unit-ranking';
-import { directiveDigest, getDirectiveSnapshot } from './autonomy-loop.state-io';
+import { toUnitSnapshot } from './autonomy-loop.unit-ranking/__parts__/structural-rank';
+import {
+  directiveDigest,
+  getDirectiveSnapshot,
+} from './__parts__/autonomy-loop.state-io/directive';
 import { summarizeBatchUnits } from './autonomy-loop.prompt';
 
 export function buildBatchRecord(

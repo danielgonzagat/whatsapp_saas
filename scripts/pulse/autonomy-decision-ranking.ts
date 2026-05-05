@@ -2,7 +2,7 @@
  * Private ranking, cost, and stall-detection helpers for autonomy-decision.ts.
  * All functions are pure — no I/O, no side effects.
  */
-import type { PulseAutonomyIterationRecord, PulseAutonomyState } from './types';
+import type { PulseAutonomyIterationRecord, PulseAutonomyState } from './types.autonomy';
 import { type PulseAutonomousDirectiveUnit } from './autonomy-types';
 import { unique } from './autonomy-memory';
 

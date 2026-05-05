@@ -5,7 +5,11 @@
  * produces a PulseSignal that flows into certification,
  * convergence plan, and the external-signal-state artifact.
  */
-import type { PulseExternalAdapterStatus, PulseExternalSignalSource, PulseSignal } from '../types';
+import type {
+  PulseExternalAdapterStatus,
+  PulseExternalSignalSource,
+  PulseSignal,
+} from '../types.capabilities';
 import { GitNexusCodeGraphProvider } from '../gitnexus/provider';
 
 let provider: GitNexusCodeGraphProvider | null = null;

@@ -3,8 +3,9 @@
  * and unit title builders. NOT re-exported from the shim.
  */
 import { unique } from '../../artifacts.io';
-import { deriveZeroValue, discoverGateFailureClassLabels } from '../../dynamic-reality-kernel';
-import { buildArtifactRegistry } from '../../artifact-registry';
+import { deriveZeroValue } from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+import { discoverGateFailureClassLabels } from '../../dynamic-reality-kernel/__parts__/type-contract-labels';
+import { buildArtifactRegistry } from '../../artifact-registry/__parts__/registry';
 import { normalizeArtifactExecutionMode } from '../../artifacts.queue';
 import { deriveRequiredValidations } from '../../autonomy-decision';
 import {
@@ -13,10 +14,14 @@ import {
   buildForbiddenActions,
   buildSuccessCriteria,
 } from '../../artifacts.directive.helpers';
-import type { PulseArtifactDefinition, PulseArtifactRegistry } from '../../artifact-registry';
+import type {
+  PulseArtifactDefinition,
+  PulseArtifactRegistry,
+} from '../../artifact-registry/__parts__/discovery';
 import type { PulseArtifactSnapshot, PulseMachineReadiness } from '../../artifacts.types';
 import type { QueueUnit } from '../../artifacts.queue';
-import type { PulseGateName, PulseGateResult } from '../../types';
+import type { PulseGateName } from '../../types.manifest';
+import type { PulseGateResult } from '../../types.evidence';
 import {
   buildDefaultExitCriteria,
   OBSERVED_ARTIFACT_FILENAMES,

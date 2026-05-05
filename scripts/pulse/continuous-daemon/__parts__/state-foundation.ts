@@ -16,12 +16,14 @@ import type { BehaviorGraph, BehaviorNode } from '../../types.behavior-graph';
 import {
   deriveUnitValue,
   deriveZeroValue,
-  deriveRuntimeStringBoundaryFromObservedCatalog,
-  discoverAllObservedArtifactFilenames,
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+import { deriveRuntimeStringBoundaryFromObservedCatalog } from '../../dynamic-reality-kernel/__parts__/profile-derivations';
+import { discoverAllObservedArtifactFilenames } from '../../dynamic-reality-kernel/__parts__/token-evidence';
+import {
   discoverDaemonCycleResultLabels,
   discoverDaemonPhaseLabels,
   discoverDaemonStatusLabels,
-} from '../../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel/__parts__/type-contract-engines';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 

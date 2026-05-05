@@ -8,13 +8,15 @@ import { METHODS as HTTP_METHODS } from 'node:http';
 import {
   deriveUnitValue,
   deriveZeroValue,
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+import {
   discoverAllObservedArtifactFilenames,
   discoverDirectorySkipHintsFromEvidence,
-  discoverGateFailureClassLabels,
-  discoverNestjsDecoratorNamesFromTypeEvidence,
-  discoverRuntimeProbeStatusLabels,
   discoverSourceExtensionsFromObservedTypescript,
-} from '../../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel/__parts__/token-evidence';
+import { discoverGateFailureClassLabels } from '../../dynamic-reality-kernel/__parts__/type-contract-labels';
+import { discoverNestjsDecoratorNamesFromTypeEvidence } from '../../dynamic-reality-kernel/__parts__/evidence-domain';
+import { discoverRuntimeProbeStatusLabels } from '../../__kernel_additions__/discoverRuntimeProbeStatusLabels';
 
 function getRuntimeEvidencePath(): string {
   return discoverAllObservedArtifactFilenames().runtimeEvidence || 'PULSE_RUNTIME_EVIDENCE.json';

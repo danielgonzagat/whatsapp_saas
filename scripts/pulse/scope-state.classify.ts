@@ -1,5 +1,6 @@
 import * as path from 'path';
-import type { PulseConvergenceOwnerLane, PulseScopeFileKind, PulseScopeSurface } from './types';
+import type { PulseConvergenceOwnerLane } from './types.gate-failure';
+import type { PulseScopeFileKind, PulseScopeSurface } from './types.truth.scope';
 import {
   ROOT_CONFIG_FILES,
   discoverWorkspaceStructure,

@@ -1,11 +1,10 @@
-import type {
-  PulseStructuralGraph,
-  PulseStructuralNode,
-  PulseResolvedManifest,
-  PulseProductCapability,
-  PulseProductFlow,
-} from '../../types';
-import { deriveUnitValue, deriveZeroValue } from '../../dynamic-reality-kernel';
+import type { PulseStructuralGraph, PulseStructuralNode } from '../../types.structural';
+import type { PulseResolvedManifest } from '../../types.resolved-manifest';
+import type { PulseProductCapability, PulseProductFlow } from '../../types.product-graph';
+import {
+  deriveUnitValue,
+  deriveZeroValue,
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 import {
   deriveStructuralFamilies,
   familiesOverlap,

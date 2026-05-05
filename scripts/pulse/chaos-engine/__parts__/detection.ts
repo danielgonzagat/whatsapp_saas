@@ -1,24 +1,23 @@
 import * as path from 'path';
 import { METHODS as HTTP_METHODS } from 'node:http';
 import type { ChaosTarget, ChaosScenarioKind } from '../../types.chaos-engine';
-import type {
-  PulseCapability,
-  PulseExecutionMatrix,
-  PulseExecutionTrace,
-  PulseRuntimeEvidence,
-  PulseRuntimeProbe,
-} from '../../types';
+import type { PulseCapability } from '../../types.capabilities';
+import type { PulseExecutionMatrix } from '../../types.execution-matrix';
+import type { PulseExecutionTrace } from '../../types.evidence';
+import type { PulseRuntimeEvidence, PulseRuntimeProbe } from '../../types.convergence';
 import { walkFiles } from '../../parsers/utils';
 import { readTextFile, readJsonFile, pathExists } from '../../safe-fs';
 import { safeJoin } from '../../safe-path';
 import {
   discoverAllObservedArtifactFilenames,
-  discoverChaosTargetLabels,
   discoverSourceExtensionsFromObservedTypescript,
   discoverExternalReceiverTokensFromEvidence,
+} from '../../dynamic-reality-kernel/__parts__/token-evidence';
+import { discoverChaosTargetLabels } from '../../dynamic-reality-kernel/__parts__/type-contract-engines';
+import {
   deriveUnitValue,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 
 export type ChaosProviderName = string;
 export type ChaosOperationalConcern =

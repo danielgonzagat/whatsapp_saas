@@ -4,7 +4,7 @@
  */
 import * as path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { buildArtifactRegistry } from './artifact-registry';
+import { buildArtifactRegistry } from './artifact-registry/__parts__/registry';
 import { copyPath, ensureDir, pathExists, removePath, symlinkDir, writeTextFile } from './safe-fs';
 import type { PulseWorkerWorkspace } from './autonomy-loop.types';
 import {

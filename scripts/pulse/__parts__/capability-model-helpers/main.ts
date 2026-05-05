@@ -1,14 +1,13 @@
 import * as path from 'path';
+import type { PulseCapability, PulseCapabilityMaturity } from '../../types.capabilities';
+import type { PulseConvergenceOwnerLane } from '../../types.gate-failure';
+import type { PulseExecutionEvidence } from '../../types.evidence';
+import type { PulseScopeExecutionMode } from '../../types.truth.scope';
 import type {
-  PulseCapability,
-  PulseCapabilityMaturity,
-  PulseConvergenceOwnerLane,
-  PulseExecutionEvidence,
-  PulseScopeExecutionMode,
   PulseStructuralNode,
   PulseStructuralRole,
   PulseTruthMode,
-} from '../../types';
+} from '../../types.structural';
 import {
   deriveRouteFamily,
   deriveStructuralFamilies,

@@ -8,7 +8,7 @@ import {
   discoverBoundaryStrategiesFromTypeEvidence,
   discoverPropertyPassedStatusFromTypeEvidence,
   discoverPropertyUnexecutedStatusFromExecutionEvidence,
-} from '../../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 import { canonicalArtifactFilename, mergeAndDedupe } from './core';
 import { discoverEndpoints } from './endpoint-discovery';
 import { generateFuzzCasesFromEndpoints } from './endpoint-fuzz';

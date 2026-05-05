@@ -1,5 +1,9 @@
-import type { Break, PulseExecutionTrace } from '../../types';
-import { deriveUnitValue, deriveZeroValue } from '../../dynamic-reality-kernel';
+import type { Break } from '../../types.manifest';
+import type { PulseExecutionTrace } from '../../types.evidence';
+import {
+  deriveUnitValue,
+  deriveZeroValue,
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 import {
   type SelfTrustCheckpoint,
   type SelfTrustReport,

@@ -4,13 +4,13 @@
  */
 import type {
   PulseActorEvidence,
-  PulseCodebaseTruth,
-  PulseEnvironment,
   PulseExecutionEvidence,
-  PulseResolvedManifest,
   PulseSyntheticCoverageEvidence,
   PulseWorldState,
-} from './types';
+} from './types.evidence';
+import type { PulseCodebaseTruth } from './types.truth';
+import type { PulseEnvironment } from './types.manifest';
+import type { PulseResolvedManifest } from './types.resolved-manifest';
 import { unique, routeMatches } from './cert-helpers';
 import {
   actorKindForWorldStateSession,

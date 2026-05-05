@@ -5,10 +5,10 @@ import type {
   PulseParityGapKind,
   PulseParityGapsArtifact,
   PulseParityGapSeverity,
-  PulseResolvedManifest,
-  PulseScopeExecutionMode,
-  PulseTruthMode,
-} from './types';
+} from './types.capabilities';
+import type { PulseResolvedManifest } from './types.resolved-manifest';
+import type { PulseScopeExecutionMode } from './types.truth.scope';
+import type { PulseTruthMode } from './types.structural';
 import { deriveStructuralFamilies, slugifyStructural } from './structural-family';
 import { isInterfaceOnlyWithoutRoutes } from './parity-capability-classifiers';
 import { unique } from './parity-utils';

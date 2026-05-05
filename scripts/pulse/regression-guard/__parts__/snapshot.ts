@@ -1,9 +1,7 @@
 import * as path from 'node:path';
 import * as fs from 'node:fs';
-import {
-  deriveZeroValue,
-  discoverAllObservedArtifactFilenames,
-} from '../../dynamic-reality-kernel';
+import { deriveZeroValue } from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+import { discoverAllObservedArtifactFilenames } from '../../dynamic-reality-kernel/__parts__/token-evidence';
 import type { PulseExecutionMatrixSummary } from '../../types.execution-matrix';
 import type { PulseSnapshot, PulseProofReadinessSummary } from './types';
 

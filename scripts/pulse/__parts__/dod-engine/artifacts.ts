@@ -1,6 +1,6 @@
 import { ensureDir, pathExists, readTextFile } from '../../safe-fs';
 import { safeJoin, resolveRoot } from '../../lib/safe-path';
-import type { PulseCapabilityState } from '../../types';
+import type { PulseCapabilityState } from '../../types.capabilities';
 
 export type DoDArtifactKind =
   | 'dod-engine'

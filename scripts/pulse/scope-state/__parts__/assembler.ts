@@ -1,4 +1,4 @@
-import { buildArtifactRegistry } from '../../artifact-registry';
+import { buildArtifactRegistry } from '../../artifact-registry/__parts__/registry';
 import { buildCodacySummary, normalizePath } from '../../scope-state.codacy';
 import { isUnknownFile } from '../../scope-state.classify';
 import type {
@@ -6,7 +6,7 @@ import type {
   PulseScopeExcludedFile,
   PulseScopeState,
   PulseScopeSurface,
-} from '../../types';
+} from '../../types.truth.scope';
 import {
   createKindCountRecord,
   createSurfaceCountRecord,

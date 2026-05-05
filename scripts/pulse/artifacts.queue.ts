@@ -3,7 +3,7 @@
  * Sorting and filtering logic for convergence plan units.
  */
 import { KIND_RANK, PRIORITY_RANK, PRODUCT_IMPACT_RANK } from './convergence-plan.constants';
-import type { PulseConvergencePlan } from './types';
+import type { PulseConvergencePlan } from './types.convergence';
 
 export type QueueUnit = PulseConvergencePlan['queue'][number];
 export type QueueExecutionMode = QueueUnit['executionMode'];

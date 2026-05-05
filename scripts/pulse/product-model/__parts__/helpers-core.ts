@@ -1,15 +1,12 @@
-import type {
-  PulseStructuralGraph,
-  PulseStructuralNode,
-  PulseScopeState,
-  PulseResolvedManifest,
-} from '../../types';
+import type { PulseStructuralGraph, PulseStructuralNode } from '../../types.structural';
+import type { PulseScopeState } from '../../types.truth.scope';
+import type { PulseResolvedManifest } from '../../types.resolved-manifest';
 import {
   deriveHttpStatusFromObservedCatalog,
   deriveUnitValue,
   deriveZeroValue,
   observeStatusTextLengthFromCatalog,
-} from '../../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 import {
   deriveRouteFamily,
   deriveStructuralFamilies,

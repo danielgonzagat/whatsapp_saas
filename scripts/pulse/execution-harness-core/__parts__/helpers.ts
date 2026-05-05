@@ -8,13 +8,15 @@ import type {
 import {
   deriveZeroValue,
   deriveUnitValue,
-  discoverHarnessExecutionFeasibilityLabels,
-  discoverHarnessExecutionStatusLabels,
-  discoverHarnessTargetKindLabels,
   discoverPropertyPassedStatusFromTypeEvidence,
   discoverPropertyUnexecutedStatusFromExecutionEvidence,
   discoverRouteSeparatorFromRuntime,
-} from '../../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+import {
+  discoverHarnessExecutionFeasibilityLabels,
+  discoverHarnessExecutionStatusLabels,
+  discoverHarnessTargetKindLabels,
+} from '../../dynamic-reality-kernel/__parts__/type-contract-engines';
 import {
   EXTERNAL_TOKENS,
   mutatingHttpVerbs,

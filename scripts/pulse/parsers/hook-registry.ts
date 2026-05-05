@@ -1,6 +1,6 @@
 import { safeJoin, safeResolve } from '../safe-path';
 import * as path from 'path';
-import type { PulseConfig } from '../types';
+import type { PulseConfig } from '../types.manifest';
 import { walkFiles } from './utils';
 import { pathExists, readTextFile } from '../safe-fs';
 

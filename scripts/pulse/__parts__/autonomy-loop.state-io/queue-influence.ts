@@ -3,13 +3,11 @@ import type {
   PulseAutonomyMemoryConcept,
   PulseAutonomyMemoryState,
   PulseAutonomyState,
-} from '../../types';
+} from '../../types.autonomy';
 import type { PulseAutonomousDirective } from '../../autonomy-loop.types';
 import { readOptionalArtifact, getAutonomyMemoryArtifactPath } from '../../autonomy-loop.utils';
-import {
-  buildStructuralQueueInfluence,
-  buildRuntimeRealityQueueInfluence,
-} from '../../autonomy-loop.unit-ranking';
+import { buildStructuralQueueInfluence } from '../../autonomy-loop.unit-ranking/__parts__/structural-rank';
+import { buildRuntimeRealityQueueInfluence } from '../../autonomy-loop.unit-ranking/__parts__/runtime-rank';
 import { buildPulseAutonomyMemoryState } from '../../autonomy-loop.memory';
 import { fingerprintStrategy } from '../../structural-memory/__parts__/memory-core';
 import type { FalsePositiveAdjudicationState } from '../../types.false-positive-adjudicator';

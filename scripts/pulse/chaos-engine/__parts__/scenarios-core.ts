@@ -5,7 +5,7 @@ import type {
   ChaosScenarioKind,
   ChaosTarget,
 } from '../../types.chaos-engine';
-import type { PulseCapability } from '../../types';
+import type { PulseCapability } from '../../types.capabilities';
 import {
   ChaosProviderName,
   ChaosOperationalConcern,
@@ -34,10 +34,8 @@ import { generateInjectionConfig } from './injection-config';
 import { buildDescription, buildExpectedBehavior } from './scenarios-descriptions';
 import { ensureDir, writeTextFile } from '../../safe-fs';
 import { safeJoin } from '../../safe-path';
-import {
-  discoverAllObservedArtifactFilenames,
-  discoverChaosResultLabels,
-} from '../../dynamic-reality-kernel';
+import { discoverAllObservedArtifactFilenames } from '../../dynamic-reality-kernel/__parts__/token-evidence';
+import { discoverChaosResultLabels } from '../../dynamic-reality-kernel/__parts__/type-contract-engines';
 
 let __chaosResultNotTestedCache: ChaosResult | undefined;
 function getChaosResultNotTested(): ChaosResult {

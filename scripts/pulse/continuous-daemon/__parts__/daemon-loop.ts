@@ -3,7 +3,10 @@
  * getDaemonStatus, planSummary, computeETA.
  */
 
-import { deriveUnitValue, deriveZeroValue } from '../../dynamic-reality-kernel';
+import {
+  deriveUnitValue,
+  deriveZeroValue,
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 import { resolveRoot } from '../../lib/safe-path';
 import { evaluateExecutorCycleMateriality } from '../../autonomous-executor-policy';
 import type {

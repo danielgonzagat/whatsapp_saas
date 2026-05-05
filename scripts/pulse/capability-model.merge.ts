@@ -1,4 +1,5 @@
-import type { PulseCapability, PulseStructuralRole } from './types';
+import type { PulseCapability } from './types.capabilities';
+import type { PulseStructuralRole } from './types.structural';
 import type { PulseCapabilityDoD } from './types.capabilities';
 import { evaluateDone } from './definition-of-done';
 import {

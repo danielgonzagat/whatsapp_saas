@@ -1,7 +1,7 @@
 // PULSE Wave 5 — Playwright Spec & Evidence Generator
 // Sub-part: spec generation, evidence links, preconditions, step builder
 
-import { deriveHttpStatusFromObservedCatalog } from '../../../../dynamic-reality-kernel';
+import { deriveHttpStatusFromObservedCatalog } from '../../../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 import {
   isObservedMutatingMethod,
   toPlaywrightHttpMethod,

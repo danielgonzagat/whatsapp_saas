@@ -2,7 +2,7 @@ import type {
   PulseAutonomyIterationRecord,
   PulseAutonomyState,
   PulseAutonomyUnitSnapshot,
-} from '../../types';
+} from '../../types.autonomy';
 import type {
   PulseAgentOrchestrationBatchRecord,
   PulseAgentOrchestrationState,
@@ -14,7 +14,7 @@ import {
   DEFAULT_PARALLEL_AGENTS,
   DEFAULT_MAX_WORKER_RETRIES,
 } from '../../autonomy-loop.types';
-import { toUnitSnapshot } from '../../autonomy-loop.unit-ranking';
+import { toUnitSnapshot } from '../../autonomy-loop.unit-ranking/__parts__/structural-rank';
 import { fingerprintStrategy } from '../../structural-memory/__parts__/memory-core';
 import { readDirectiveArtifact } from './directive';
 import { readQueueInfluence } from './queue-influence';

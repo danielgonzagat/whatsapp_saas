@@ -6,12 +6,14 @@
 import type {
   PulseActorEvidence,
   PulseExecutionEvidence,
-  PulseGateName,
   PulseGateResult,
+  PulseCertificationTierStatus,
+} from './types.evidence';
+import type {
+  PulseGateName,
   PulseManifest,
   PulseManifestCertificationTier,
-  PulseCertificationTierStatus,
-} from './types';
+} from './types.manifest';
 import {
   getAcceptedCriticalFlows,
   getPendingCriticalScenarios,
@@ -19,7 +21,7 @@ import {
   chooseStructuredFailureClass,
   deriveGateOrderFromResults,
 } from './cert-helpers';
-import { gateFail } from './cert-gate-evaluators';
+import { gateFail } from './__parts__/cert-gate-evaluators/gate-fail';
 
 export { chooseStructuredFailureClass };
 

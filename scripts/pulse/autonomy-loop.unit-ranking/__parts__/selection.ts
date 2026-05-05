@@ -2,12 +2,15 @@
  * Unit selection: stall detection, risk assessment, conflict detection,
  * and parallel unit assembly for automation.
  */
-import type { PulseAutonomyIterationRecord, PulseAutonomyState } from '../../types';
+import type { PulseAutonomyIterationRecord, PulseAutonomyState } from '../../types.autonomy';
 import type {
   PulseAutonomousDirective,
   PulseAutonomousDirectiveUnit,
 } from '../../autonomy-loop.types';
-import { deriveUnitValue, deriveZeroValue } from '../../dynamic-reality-kernel';
+import {
+  deriveUnitValue,
+  deriveZeroValue,
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 import type { StructuralQueueInfluence } from './structural-rank';
 import {
   getAiSafeUnits,

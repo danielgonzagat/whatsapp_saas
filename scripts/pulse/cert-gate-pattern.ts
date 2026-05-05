@@ -3,18 +3,15 @@
  * and withTemporaryGateAcceptance helper.
  * All functions are pure — no I/O, no side effects.
  */
+import type { PulseCodacyIssue } from './types.truth.codacy';
+import type { PulseEnvironment, PulseGateName, PulseManifest } from './types.manifest';
+import type { PulseExecutionEvidence, PulseGateResult } from './types.evidence';
 import type {
-  PulseCodacyIssue,
-  PulseEnvironment,
-  PulseExecutionEvidence,
   PulseExternalSignalState,
   PulseCapabilityState,
   PulseFlowProjection,
-  PulseGateName,
-  PulseGateResult,
-  PulseHealth,
-  PulseManifest,
-} from './types';
+} from './types.capabilities';
+import type { PulseHealth } from './types.health';
 import {
   filterBlockingBreaks,
   matchesAny,
@@ -26,7 +23,7 @@ import {
 } from './cert-helpers';
 import { CERTIFICATION_FINDING_PREDICATES } from './cert-constants';
 import type { CertificationFindingPredicate } from './cert-constants';
-import { gateFail } from './cert-gate-evaluators';
+import { gateFail } from './__parts__/cert-gate-evaluators/gate-fail';
 
 export function evaluatePatternGate(
   gateName: PulseGateName,

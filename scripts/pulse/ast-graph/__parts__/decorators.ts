@@ -4,10 +4,8 @@
 import { METHODS as NODE_HTTP_METHODS } from 'http';
 import { Node, type Decorator } from 'ts-morph';
 import type { AstCallEdgeKind, AstResolvedNodeKind } from '../../types.ast-graph';
-import {
-  deriveStringUnionMembersFromTypeContract,
-  discoverDirectorySkipHintsFromEvidence,
-} from '../../dynamic-reality-kernel';
+import { deriveStringUnionMembersFromTypeContract } from '../../dynamic-reality-kernel/__parts__/type-contract-labels';
+import { discoverDirectorySkipHintsFromEvidence } from '../../dynamic-reality-kernel/__parts__/token-evidence';
 import type {
   DecoratorSemanticRole,
   DecoratorTargetKind,

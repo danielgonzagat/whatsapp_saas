@@ -5,23 +5,22 @@
  */
 import type {
   PulseActorEvidence,
-  PulseBrowserEvidence,
   PulseCertificationTarget,
-  PulseCodebaseTruth,
-  PulseEnvironment,
   PulseExecutionEvidence,
   PulseExecutionTrace,
+} from './types.evidence';
+import type {
+  PulseBrowserEvidence,
   PulseFlowEvidence,
   PulseFlowResult,
-  PulseHealth,
   PulseInvariantEvidence,
   PulseInvariantResult,
-  PulseManifest,
-  PulseObservabilityEvidence,
-  PulseParserInventory,
-  PulseRecoveryEvidence,
-  PulseResolvedManifest,
-} from './types';
+} from './types.convergence';
+import type { PulseCodebaseTruth } from './types.truth';
+import type { PulseEnvironment, PulseManifest, PulseParserInventory } from './types.manifest';
+import type { PulseHealth } from './types.health';
+import type { PulseObservabilityEvidence, PulseRecoveryEvidence } from './types.scenario-result';
+import type { PulseResolvedManifest } from './types.resolved-manifest';
 import {
   filterBlockingBreaks,
   matchesAny,
@@ -32,7 +31,7 @@ import {
   getAcceptedTargetIds,
   getActiveTemporaryAcceptances,
 } from './cert-helpers';
-import { discoverRuntimeFindingEventPatternsFromEvidence } from './dynamic-reality-kernel';
+import { discoverRuntimeFindingEventPatternsFromEvidence } from './dynamic-reality-kernel/__parts__/token-evidence';
 import {
   buildDefaultActorEvidence,
   buildDefaultSyntheticCoverage,
@@ -232,7 +231,7 @@ function buildRuntimeEvidence(
   env: PulseEnvironment,
   parserInventory: PulseParserInventory,
   health: PulseHealth,
-  runtimeBreaks: import('./types').Break[],
+  runtimeBreaks: import('./types.health').Break[],
 ) {
   if (env === 'scan') {
     return {

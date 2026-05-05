@@ -7,10 +7,10 @@ import {
   deriveUnitValue,
   deriveZeroValue,
   deriveHttpStatusFromObservedCatalog,
-  deriveStringUnionMembersFromTypeContract,
   discoverRouteSeparatorFromRuntime,
   observeStatusTextLengthFromCatalog,
-} from '../../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+import { deriveStringUnionMembersFromTypeContract } from '../../dynamic-reality-kernel/__parts__/type-contract-labels';
 
 function observedEvidenceStatusSet(): Set<string> {
   return deriveStringUnionMembersFromTypeContract(

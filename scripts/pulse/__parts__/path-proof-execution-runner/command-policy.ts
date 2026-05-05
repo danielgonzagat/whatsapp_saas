@@ -1,8 +1,8 @@
-import type { PathProofTask } from '../../path-proof-runner';
+import type { PathProofTask } from '../path-proof-runner/main';
 import type {
   PathProofCommandPolicyDecision,
   ParsedPathProofCommand,
-} from '../../path-proof-execution-runner';
+} from '../path-proof-execution-runner/main';
 import {
   isProtectedFile as isGovernanceProtectedFile,
   loadGovernanceBoundary,

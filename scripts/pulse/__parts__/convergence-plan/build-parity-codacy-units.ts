@@ -2,8 +2,8 @@ import type {
   PulseConvergenceUnit,
   PulseConvergenceUnitPriority,
   PulseConvergenceUnitStatus,
-  PulseGateFailureClass,
-} from '../../types';
+} from '../../types.convergence';
+import type { PulseGateFailureClass } from '../../types.gate-failure';
 import type { BuildPulseConvergencePlanInput } from './types';
 import {
   takeEvidenceBatch,

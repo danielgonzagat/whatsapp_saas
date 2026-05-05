@@ -1,19 +1,21 @@
 import * as path from 'path';
 import * as fs from 'node:fs';
 import * as ts from 'typescript';
-import type { PulseStructuralGraph, PulseStructuralNode } from '../../types';
+import type { PulseStructuralGraph, PulseStructuralNode } from '../../types.structural';
 import { pathExists, readTextFile, readDir } from '../../safe-fs';
 import { safeJoin } from '../../lib/safe-path';
 import { isObservedHttpEntrypointMethod } from '../../dynamic-reality-grammar';
 import {
   deriveUnitValue,
   deriveZeroValue,
-  discoverAllObservedArtifactFilenames,
   discoverRouteSeparatorFromRuntime,
-  discoverStructuralNodeKindLabels,
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+import {
+  discoverAllObservedArtifactFilenames,
   hasObservedToken,
   splitIdentifierTokensFromObservedName,
-} from '../../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel/__parts__/token-evidence';
+import { discoverStructuralNodeKindLabels } from '../../dynamic-reality-kernel/__parts__/type-contract-engines';
 import {
   du8,
   isSourceFileName,

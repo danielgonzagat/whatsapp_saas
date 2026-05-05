@@ -4,14 +4,14 @@ import type {
   PrismaModel,
   ServiceTrace,
   ProxyRoute,
-  Break,
-} from '../../types';
+} from '../../types.core';
+import type { Break } from '../../types.manifest';
 import { deriveDynamicFindingIdentity } from '../../finding-identity';
 import {
   deriveZeroValue,
   deriveUnitValue,
-  deriveStringUnionMembersFromTypeContract,
-} from '../../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+import { deriveStringUnionMembersFromTypeContract } from '../../dynamic-reality-kernel/__parts__/type-contract-labels';
 
 export function normalizeForMatch(p: string): string {
   return p

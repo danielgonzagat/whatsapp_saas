@@ -1,7 +1,8 @@
 import * as path from 'path';
 import { pathExists, readDir, readTextFile } from '../../safe-fs';
 import { safeJoin } from '../../lib/safe-path';
-import type { PulseCodacySummary, PulseScopeExcludedFile, PulseScopeFile } from '../../types';
+import type { PulseCodacySummary } from '../../types.truth.codacy';
+import type { PulseScopeExcludedFile, PulseScopeFile } from '../../types.truth.scope';
 import {
   IGNORED_DIRECTORIES,
   ROOT_CONFIG_FILES,

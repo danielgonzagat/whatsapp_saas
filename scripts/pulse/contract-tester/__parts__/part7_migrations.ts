@@ -9,8 +9,8 @@ import { safeJoin } from '../../lib/safe-path';
 import {
   deriveUnitValue,
   deriveZeroValue,
-  discoverDirectorySkipHintsFromEvidence,
-} from '../../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+import { discoverDirectorySkipHintsFromEvidence } from '../../dynamic-reality-kernel/__parts__/token-evidence';
 import {
   DROP_TABLE_RE,
   DROP_COLUMN_RE,

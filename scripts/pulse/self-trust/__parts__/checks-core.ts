@@ -1,21 +1,22 @@
 import * as path from 'path';
 import * as ts from 'typescript';
-import type { Break, PulseExecutionTrace, PulseParserContract } from '../../types';
+import type { Break, PulseParserContract } from '../../types.manifest';
+import type { PulseExecutionTrace } from '../../types.evidence';
 import { pathExists, readTextFile } from '../../safe-fs';
 import { discoverParserContracts } from '../../parser-registry/__parts__/loader';
 import {
   getActiveExecutionTraceSnapshot,
   verifyExecutionTraceAuditTrail,
 } from '../../execution-trace';
+import { deriveStringUnionMembersFromTypeContract } from '../../dynamic-reality-kernel/__parts__/type-contract-labels';
 import {
-  deriveStringUnionMembersFromTypeContract,
   deriveUnitValue,
   deriveZeroValue,
-  discoverAllObservedArtifactFilenames,
-  discoverConvergenceEvidenceConfidenceLabels,
-  discoverConvergenceRiskLevelLabels,
-  discoverConvergenceSourceLabels,
-} from '../../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+import { discoverAllObservedArtifactFilenames } from '../../dynamic-reality-kernel/__parts__/token-evidence';
+import { discoverConvergenceEvidenceConfidenceLabels } from '../../__kernel_additions__/discoverConvergenceEvidenceConfidenceLabels';
+import { discoverConvergenceRiskLevelLabels } from '../../__kernel_additions__/discoverConvergenceRiskLevelLabels';
+import { discoverConvergenceSourceLabels } from '../../__kernel_additions__/discoverConvergenceSourceLabels';
 
 export interface SelfTrustCheckpoint {
   id: string;

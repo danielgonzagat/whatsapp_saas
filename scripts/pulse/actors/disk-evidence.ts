@@ -1,5 +1,6 @@
 import { createRequire } from 'node:module';
-import type { PulseActorEvidence, PulseScenarioResult } from '../types';
+import type { PulseActorEvidence } from '../types.evidence';
+import type { PulseScenarioResult } from '../types.scenario-result';
 
 const localRequire = createRequire(__filename);
 

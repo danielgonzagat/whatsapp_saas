@@ -1,12 +1,10 @@
-import type {
-  PulseCapability,
-  PulseExecutionMatrix,
-  PulseExecutionTrace,
-  PulseRuntimeEvidence,
-} from '../../types';
+import type { PulseCapability } from '../../types.capabilities';
+import type { PulseExecutionMatrix } from '../../types.execution-matrix';
+import type { PulseExecutionTrace } from '../../types.evidence';
+import type { PulseRuntimeEvidence } from '../../types.convergence';
 import { readJsonFile, pathExists } from '../../safe-fs';
 import { safeJoin } from '../../safe-path';
-import { discoverAllObservedArtifactFilenames } from '../../dynamic-reality-kernel';
+import { discoverAllObservedArtifactFilenames } from '../../dynamic-reality-kernel/__parts__/token-evidence';
 import { loadArtifactRecords } from './detection-core';
 
 export function loadCapabilities(rootDir: string): PulseCapability[] {

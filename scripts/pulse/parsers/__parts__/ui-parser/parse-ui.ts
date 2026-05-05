@@ -1,5 +1,6 @@
 import * as path from 'path';
-import type { UIElement, PulseConfig } from '../../../types';
+import type { UIElement } from '../../../types.core';
+import type { PulseConfig } from '../../../types.manifest';
 import type { HookRegistry } from '../../hook-registry';
 import { buildApiModuleMap } from '../../api-parser';
 import { extractSaveHandlerApiCalls } from '../../../ui-api-calls';

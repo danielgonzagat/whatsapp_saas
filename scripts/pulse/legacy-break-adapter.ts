@@ -1,4 +1,4 @@
-import type { Break } from './types';
+import type { Break } from './types.manifest';
 import { calculateDynamicRisk } from './dynamic-risk-model';
 import { synthesizeDiagnostic } from './diagnostic-synthesizer';
 import { buildPredicateGraph } from './predicate-graph';

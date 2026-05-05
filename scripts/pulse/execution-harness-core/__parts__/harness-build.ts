@@ -8,7 +8,7 @@ import type {
 import { detectConfig } from '../../config';
 import { safeJoin } from '../../safe-path';
 import { ensureDir, writeTextFile } from '../../safe-fs';
-import { deriveZeroValue } from '../../dynamic-reality-kernel';
+import { deriveZeroValue } from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 import { ALL_ARTIFACTS, harnessArtifactPath, UNEXECUTED_STATUSES } from './grammar';
 import {
   ALL_EXECUTION_STATUS_LABELS,

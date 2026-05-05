@@ -1,4 +1,4 @@
-import type { FacadeEntry } from '../../../types';
+import type { FacadeEntry } from '../../../types.core';
 import { buildParserDiagnosticBreak } from '../../diagnostic-break';
 import type { FacadeDiagnosticInput } from './types';
 

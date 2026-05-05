@@ -15,10 +15,12 @@ import {
   deriveCatalogPercentScaleFromObservedCatalog,
   deriveUnitValue,
   deriveZeroValue,
-  discoverAllObservedArtifactFilenames,
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+import { discoverAllObservedArtifactFilenames } from '../../dynamic-reality-kernel/__parts__/token-evidence';
+import {
   deriveMutantEstimateFromObservedFileEvidence,
   inferCoverageFromObservedFileCharacteristics,
-} from '../../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel/__parts__/profile-derivations';
 import { du8, isSourceFileName, shouldScanDirectory, isTestLikeFile } from './core';
 
 /**

@@ -8,19 +8,17 @@ import type {
   PulseMachineReadiness,
   PulseMachineReadinessCriterion,
 } from '../../artifacts.types';
-import type {
-  PulseAutonomyState,
-  PulseConvergencePlan,
-  PulseExecutionMatrixPath,
-} from '../../types';
+import type { PulseAutonomyState } from '../../types.autonomy';
+import type { PulseConvergencePlan } from '../../types.convergence';
+import type { PulseExecutionMatrixPath } from '../../types.execution-matrix';
+import { discoverAllObservedArtifactFilenames } from '../../dynamic-reality-kernel/__parts__/token-evidence';
+import { discoverConvergenceRiskLevelLabels } from '../../__kernel_additions__/discoverConvergenceRiskLevelLabels';
+import { discoverDoDGateStatusLabels } from '../../dynamic-reality-kernel/__parts__/type-contract-engines';
+import { discoverExecutionMatrixPathStatusLabels } from '../../__kernel_additions__/discoverExecutionMatrixPathStatusLabels';
 import {
-  discoverAllObservedArtifactFilenames,
-  discoverConvergenceRiskLevelLabels,
-  discoverDoDGateStatusLabels,
-  discoverExecutionMatrixPathStatusLabels,
   deriveUnitValue,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 
 export function getProductFacingCapabilities(
   snapshot: PulseArtifactSnapshot,

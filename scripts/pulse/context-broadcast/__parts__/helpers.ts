@@ -4,7 +4,10 @@ import * as path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { pathExists, readTextFile } from '../../safe-fs';
 import { safeJoin } from '../../safe-path';
-import { deriveZeroValue, discoverRouteSeparatorFromRuntime } from '../../dynamic-reality-kernel';
+import {
+  deriveZeroValue,
+  discoverRouteSeparatorFromRuntime,
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 import type { ProtectedGovernanceConfig } from './types';
 
 export function normalizeRepoPath(filePath: string): string {

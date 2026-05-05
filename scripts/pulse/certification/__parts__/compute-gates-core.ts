@@ -1,10 +1,9 @@
 import type {
   PulseCertificationTarget,
   PulseExecutionEvidence,
-  PulseGateName,
   PulseGateResult,
-  PulseManifest,
-} from '../../types';
+} from '../../types.evidence';
+import type { PulseGateName, PulseManifest } from '../../types.manifest';
 
 import type { ComputeCertificationInput } from './helpers';
 
@@ -18,15 +17,15 @@ import {
 
 import { CERTIFICATION_FINDING_PREDICATES } from '../../cert-constants';
 
+import { gateFail } from '../../__parts__/cert-gate-evaluators/gate-fail';
 import {
-  gateFail,
   evaluateScopeGate,
-  evaluateTruthExtractionGate,
   evaluateStaticGate,
   evaluateRuntimeGate,
   evaluateChangeRiskGate,
-  evaluateBrowserGate,
-} from '../../cert-gate-evaluators';
+} from '../../__parts__/cert-gate-evaluators/main';
+import { evaluateTruthExtractionGate } from '../../__parts__/cert-gate-evaluators/truth-gates';
+import { evaluateBrowserGate } from '../../cert-gate-browser';
 
 import {
   evaluatePatternGate,
@@ -38,7 +37,7 @@ import {
 
 import { evaluateFlowGate, evaluateInvariantGate } from '../../cert-gate-evaluators-actor';
 
-import { deriveZeroValue } from '../../dynamic-reality-kernel';
+import { deriveZeroValue } from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 
 import { certificationTargetRequiresGate } from './compute-helpers';
 

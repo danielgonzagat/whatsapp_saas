@@ -5,7 +5,7 @@
 import { safeJoin } from '../../safe-path';
 import { readOptionalJson } from '../../artifacts.io';
 import { normalizeArtifactStatus, normalizeArtifactExecutionMode } from '../../artifacts.queue';
-import { discoverAllObservedArtifactFilenames } from '../../dynamic-reality-kernel';
+import { discoverAllObservedArtifactFilenames } from '../../dynamic-reality-kernel/__parts__/token-evidence';
 import type { QueueUnit } from '../../artifacts.queue';
 
 export const CURRENT_PULSE_ARTIFACT_DIR = '.pulse/current';

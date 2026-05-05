@@ -1,10 +1,7 @@
-import type {
-  PulseActorEvidence,
-  PulseFlowEvidence,
-  PulseManifestScenarioSpec,
-  PulseRuntimeEvidence,
-  PulseScenarioResult,
-} from '../types';
+import type { PulseActorEvidence } from '../types.evidence';
+import type { PulseFlowEvidence, PulseRuntimeEvidence } from '../types.convergence';
+import type { PulseManifestScenarioSpec } from '../types.manifest';
+import type { PulseScenarioResult } from '../types.scenario-result';
 import { inferSyntheticModesForScenario } from '../scenario-mode-registry';
 import { matchesRoutePattern, normalizeModuleToken } from './coverage';
 import { buildScenarioResult, inferActorArtifact } from './scenario-result';

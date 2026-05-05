@@ -3,7 +3,7 @@
  * All functions are pure — no I/O, no side effects.
  */
 import * as path from 'path';
-import type { PulseScopeExecutionMode } from './types';
+import type { PulseScopeExecutionMode } from './types.truth.scope';
 
 const S_RE = /\s+/g;
 const WORD_RE = /[a-z0-9]+/g;

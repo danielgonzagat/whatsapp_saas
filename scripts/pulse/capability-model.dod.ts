@@ -1,4 +1,4 @@
-import type { PulseStructuralRole } from './types';
+import type { PulseStructuralRole } from './types.structural';
 import type { PulseDoDStatus } from './types.capabilities';
 import type {
   CapabilityRoleEvidence,

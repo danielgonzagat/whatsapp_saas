@@ -1,5 +1,5 @@
 import * as path from 'path';
-import type { PulseConfig } from './types';
+import type { PulseConfig } from './types.manifest';
 import { pathExists, readDir, readJsonFile } from './safe-fs';
 import { safeJoin } from './safe-path';
 import { detectSourceRoots } from './source-root-detector/__parts__/api';

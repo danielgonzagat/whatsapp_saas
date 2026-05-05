@@ -4,7 +4,8 @@
  */
 
 import * as https from 'https';
-import type { PulseSignal, PulseScopeFile } from '../types';
+import type { PulseSignal } from '../types.capabilities';
+import type { PulseScopeFile } from '../types.truth.scope';
 
 interface GitHubAdapterConfig {
   owner: string;

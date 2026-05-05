@@ -8,25 +8,31 @@ import type {
   PulseAgentOrchestrationWorkerResult,
   PulseAutonomyState,
   PulseAutonomyValidationCommandResult,
-} from '../../types';
+} from '../../types.autonomy';
 import type { PulseAutonomyRunOptions } from '../../autonomy-loop.types';
-import { toUnitSnapshot } from '../../autonomy-loop.unit-ranking';
+import { toUnitSnapshot } from '../../autonomy-loop.unit-ranking/__parts__/structural-rank';
 import {
   directiveDigest,
   getDirectiveSnapshot,
+} from '../../__parts__/autonomy-loop.state-io/directive';
+import {
   selectMemoryAwareParallelUnits,
+  runPulseGuidance,
+} from '../../__parts__/autonomy-loop.state-io/unit-selection';
+import {
   buildPulseAutonomyStateSeed,
   buildPulseAgentOrchestrationStateSeed,
+} from '../../__parts__/autonomy-loop.state-io/seed-builders';
+import {
   writePulseAutonomyState,
   loadPulseAutonomyState,
   writePulseAgentOrchestrationState,
   loadPulseAgentOrchestrationState,
   appendHistory,
   appendOrchestrationHistory,
-  runPulseGuidance,
-} from '../../autonomy-loop.state-io';
+} from '../../__parts__/autonomy-loop.state-io/state-io';
 import { detectRollbackGuard } from '../../autonomy-loop.workspace';
-import { captureRegressionSnapshot } from '../../regression-guard';
+import { captureRegressionSnapshot } from '../../regression-guard/__parts__/snapshot';
 import { shouldStopForDirective } from '../../autonomy-loop.planner';
 import { runValidationCommands, runParallelWorkerAssignment } from '../../autonomy-loop.execution';
 import { buildBatchValidationCommands } from '../../autonomy-loop.prompt';

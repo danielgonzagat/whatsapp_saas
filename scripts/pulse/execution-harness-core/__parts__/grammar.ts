@@ -10,18 +10,20 @@
 
 import type { HarnessFixtureKind, HarnessTargetKind } from '../../types.execution-harness';
 import * as fs from 'node:fs';
+import { deriveStringUnionMembersFromTypeContract } from '../../dynamic-reality-kernel/__parts__/type-contract-labels';
 import {
-  deriveStringUnionMembersFromTypeContract,
   deriveUnitValue,
   deriveZeroValue,
-  discoverAllObservedArtifactFilenames,
-  discoverConvergenceExecutionModeLabels,
-  discoverDirectorySkipHintsFromEvidence,
-  discoverExternalReceiverTokensFromEvidence,
-  discoverHarnessTargetKindLabels,
   discoverPropertyPassedStatusFromTypeEvidence,
   discoverPropertyUnexecutedStatusFromExecutionEvidence,
-} from '../../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+import {
+  discoverAllObservedArtifactFilenames,
+  discoverDirectorySkipHintsFromEvidence,
+  discoverExternalReceiverTokensFromEvidence,
+} from '../../dynamic-reality-kernel/__parts__/token-evidence';
+import { discoverConvergenceExecutionModeLabels } from '../../__kernel_additions__/discoverConvergenceExecutionModeLabels';
+import { discoverHarnessTargetKindLabels } from '../../dynamic-reality-kernel/__parts__/type-contract-engines';
 import {
   discoverMutatingHttpVerbsFromSourceEvidence,
   discoverReservedJsKeywordsFromRuntimeEvidence,

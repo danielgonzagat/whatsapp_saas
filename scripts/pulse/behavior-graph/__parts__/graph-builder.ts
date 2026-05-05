@@ -16,8 +16,8 @@ import {
 import {
   deriveZeroValue,
   deriveUnitValue,
-  discoverAllObservedArtifactFilenames,
-} from '../../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+import { discoverAllObservedArtifactFilenames } from '../../dynamic-reality-kernel/__parts__/token-evidence';
 import type { ParsedFunc } from './grammar-and-types';
 import type { BehaviorNodeArtifact } from './grammar-and-types';
 import { extractFunctionsFromSource } from './function-extraction';

@@ -1,11 +1,14 @@
 import * as path from 'path';
-import { deriveUnitValue, deriveZeroValue } from '../../dynamic-reality-kernel';
+import {
+  deriveUnitValue,
+  deriveZeroValue,
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+import type { PulseCertificationProfile } from '../../types.health';
+import type { PulseCodacyEvidence } from '../../types.structural';
 import type {
-  PulseCertificationProfile,
-  PulseCodacyEvidence,
   PulseExternalAdapterSnapshot,
   PulseExternalSignalSource,
-} from '../../types';
+} from '../../types.capabilities';
 import { pathExists, readTextFile } from '../../safe-fs';
 import { compact, normalizeDate, normalizePathValue } from '../../signal-normalizers';
 import {
@@ -25,7 +28,7 @@ import {
   getAdapterRequiredness,
   isAdapterRequired,
 } from '../../adapters/external-sources-orchestrator/__parts__/core';
-import type { PulseExternalAdapterProofBasis } from '../../types';
+import type { PulseExternalAdapterProofBasis } from '../../types.capabilities';
 import { PULSE_EXTERNAL_SNAPSHOT_FILES } from './snapshot-config';
 
 type AdapterClassificationFields =

@@ -1,4 +1,4 @@
-import type { UIElement } from '../types';
+import type { UIElement } from '../types.core';
 import { extractApiCallEndpoints, type ApiModuleMap } from '../ui-api-calls';
 import type { HookRegistry } from './hook-registry';
 import {

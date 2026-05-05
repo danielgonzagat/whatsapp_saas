@@ -8,11 +8,13 @@ import {
   deriveZeroValue,
   deriveCatalogPercentScaleFromObservedCatalog,
   observeStatusTextLengthFromCatalog,
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+import {
   discoverDoDGateStatusLabels,
-  discoverConvergenceUnitStatusLabels,
-  discoverConvergenceExecutionModeLabels,
   discoverCertificationProfileLabels,
-} from '../../dynamic-reality-kernel';
+} from '../../dynamic-reality-kernel/__parts__/type-contract-engines';
+import { discoverConvergenceUnitStatusLabels } from '../../__kernel_additions__/discoverConvergenceUnitStatusLabels';
+import { discoverConvergenceExecutionModeLabels } from '../../__kernel_additions__/discoverConvergenceExecutionModeLabels';
 
 export type AuthorityState = {
   mode: AuthorityMode;

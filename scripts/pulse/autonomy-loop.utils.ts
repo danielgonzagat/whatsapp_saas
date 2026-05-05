@@ -3,7 +3,7 @@
  */
 import * as path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { buildArtifactRegistry } from './artifact-registry';
+import { buildArtifactRegistry } from './artifact-registry/__parts__/registry';
 import { pathExists, readTextFile, renamePath, writeTextFile, ensureDir } from './safe-fs';
 import { AUTONOMY_ARTIFACT, AGENT_ORCHESTRATION_ARTIFACT } from './autonomy-loop.types';
 

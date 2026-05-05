@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto';
-import type { PulseManifest, PulseManifestFlowSpec } from '../../../types';
+import type { PulseManifest, PulseManifestFlowSpec } from '../../../types.manifest';
 import type { AuthCredentials } from '../../../browser-stress-tester/types';
 import { DEFAULT_REPLAY_TEST_PHONE, FLOW_ARTIFACT } from './types-and-config';
 
