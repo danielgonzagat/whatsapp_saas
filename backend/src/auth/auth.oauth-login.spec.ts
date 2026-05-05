@@ -6,6 +6,7 @@ import { AuthService } from './auth.service';
 import { EmailService } from './email.service';
 import { FacebookAuthService } from './facebook-auth.service';
 import { GoogleAuthService } from './google-auth.service';
+import { RateLimitService } from './rate-limit.service';
 import { TikTokAuthService } from './tiktok-auth.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ConnectService } from '../payments/connect/connect.service';
@@ -61,6 +62,7 @@ const mockConfigService = {
       META_ACCESS_TOKEN: 'mock-token',
       META_PHONE_NUMBER_ID: 'mock-phone-id',
       ENCRYPTION_KEY: '12345678901234567890123456789012',
+      APPLE_CLIENT_ID: 'com.kloel.web',
     };
     return config[key];
   }),
@@ -81,6 +83,10 @@ const mockTikTokAuthService = {
 
 const mockConnectService = {
   createCustomAccount: jest.fn(),
+};
+
+const mockRateLimitService = {
+  checkRateLimit: jest.fn().mockResolvedValue(undefined),
 };
 
 describe('AuthService OAuth login', () => {
@@ -109,6 +115,7 @@ describe('AuthService OAuth login', () => {
         { provide: FacebookAuthService, useValue: mockFacebookAuthService },
         { provide: TikTokAuthService, useValue: mockTikTokAuthService },
         { provide: ConnectService, useValue: mockConnectService },
+        { provide: RateLimitService, useValue: mockRateLimitService },
       ],
     }).compile();
 

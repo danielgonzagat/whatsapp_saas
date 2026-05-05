@@ -100,7 +100,7 @@ export default function TermsPageEn() {
       </LegalSection>
       <LegalSection id="third-party" title={kloelT(`9. Third-party APIs and services`)}>
         <p>
-          {kloelT(`Features involving Meta, Google, OpenAI, Anthropic, Stripe, Asaas, and other third parties
+          {kloelT(`Features involving Meta, Google, OpenAI, Anthropic, Stripe, and other third parties
           are also subject to those providers&apos; terms, policies, scope limitations, and platform
           requirements.`)}
         </p>

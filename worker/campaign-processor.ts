@@ -205,7 +205,8 @@ export const campaignWorker = new Worker(
 
       console.log(`✅ Campaign ${campaignId} dispatched successfully (${sentCount} sent)`);
     } catch (err) {
-      console.error('Campaign %s failed: %O', campaignId, err);
+      const safeErr = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
+      console.error('Campaign %s failed: %s', campaignId, safeErr);
       await prisma.campaign.updateMany({
         where: { id: campaignId, workspaceId },
         data: { status: 'CANCELLED' },

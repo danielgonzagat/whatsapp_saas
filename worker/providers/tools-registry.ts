@@ -84,7 +84,7 @@ async function createStripePaymentLink(
       stripeError instanceof Error
         ? stripeError
         : new Error(typeof stripeError === 'string' ? stripeError : 'unknown error');
-    console.error('Stripe Error:', stripeError);
+    console.error('Stripe Error:', err.message);
     return `Stripe Error: ${err.message}`;
   }
 }
@@ -302,7 +302,8 @@ async function execute(
   args: Record<string, unknown>,
   context: { workspaceId: string; user: string },
 ): Promise<string> {
-  console.log('[Tools] Executing %s with args: %O', name, args);
+  const safeArgKeys = Object.keys(args);
+  console.log('[Tools] Executing %s (args: %s)', name, safeArgKeys.join(', '));
 
   try {
     const handler = TOOL_HANDLERS[name];

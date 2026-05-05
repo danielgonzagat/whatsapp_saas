@@ -13,6 +13,7 @@ import { CheckoutSocialRecoveryService } from './checkout-social-recovery.servic
 import { CheckoutController } from './checkout.controller';
 import { CheckoutService } from './checkout.service';
 import { FacebookCAPIService } from './facebook-capi.service';
+import { MercadoPagoPixService } from './mercado-pago-pix.service';
 
 // Webhook ordering: CheckoutWebhookController validates event sequence via
 // validatePaymentTransition and WebhookEvent externalId unique constraint.
@@ -33,7 +34,14 @@ import { FacebookCAPIService } from './facebook-capi.service';
     CheckoutSocialLeadService,
     CheckoutSocialRecoveryService,
     FacebookCAPIService,
+    MercadoPagoPixService,
   ],
-  exports: [CheckoutService, CheckoutPaymentService, CheckoutSocialLeadService],
+  exports: [
+    CheckoutService,
+    CheckoutPaymentService,
+    CheckoutPostPaymentEffectsService,
+    CheckoutSocialLeadService,
+    FacebookCAPIService,
+  ],
 })
 export class CheckoutModule {}

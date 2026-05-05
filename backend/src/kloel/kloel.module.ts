@@ -6,6 +6,7 @@ import { GuestChatService } from './guest-chat.service';
 import { KloelController } from './kloel.controller';
 import { KloelService } from './kloel.service';
 import { OnboardingController } from './onboarding.controller';
+import { OnboardingProfileController } from './onboarding-profile.controller';
 import { OnboardingService } from './onboarding.service';
 import { PaymentController } from './payment.controller';
 import { PaymentService } from './payment.service';
@@ -89,6 +90,7 @@ import { WebinarController } from './webinar.controller';
     WhatsAppBrainController,
     PaymentController,
     OnboardingController,
+    OnboardingProfileController,
     MemoryController,
     PdfProcessorController,
     WalletController,
