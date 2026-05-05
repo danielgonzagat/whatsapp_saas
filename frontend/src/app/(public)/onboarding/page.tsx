@@ -3,6 +3,7 @@
 import { kloelT } from '@/lib/i18n/t';
 import { saveOnboardingProfile } from '@/lib/api/onboarding';
 import { useAuth } from '@/components/kloel/auth/auth-provider';
+import { colors, radius } from '@/lib/design-tokens';
 import { Bot, CreditCard, Mail, MessageCircle, Package, ShoppingBag, Users } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -373,7 +374,7 @@ export default function OnboardingPage() {
             <p
               style={{
                 marginTop: 16,
-                color: '#F87171',
+                color: colors.state.error,
                 fontSize: 13,
                 fontFamily: "'Sora', sans-serif",
               }}
@@ -474,8 +475,8 @@ export default function OnboardingPage() {
             style={{
               width: 64,
               height: 3,
-              borderRadius: 99,
-              background: '#E85D30',
+              borderRadius: radius.full,
+              background: colors.ember.primary,
               margin: '0 auto 32px',
             }}
           />
