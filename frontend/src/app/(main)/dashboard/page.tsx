@@ -3,6 +3,7 @@
 import HomeView from '@/components/kloel/home/HomeView';
 import { useDashboardPostPayment } from '@/hooks/useDashboardHome';
 import { kloelT } from '@/lib/i18n/t';
+import { radius } from '@/lib/design-tokens';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 
 const FONT_SANS = "'Sora', sans-serif";
@@ -108,7 +109,7 @@ function DashboardPostPaymentPanel() {
           </div>
           <span
             style={{
-              borderRadius: 999,
+              borderRadius: radius.full,
               border: `1px solid ${KLOEL_THEME.borderPrimary}`,
               padding: '6px 10px',
               color: error ? KLOEL_THEME.warning : KLOEL_THEME.success,
