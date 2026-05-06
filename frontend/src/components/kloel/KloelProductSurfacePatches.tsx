@@ -128,7 +128,7 @@ async function replaceWahaHintWithMetaConnect() {
 
   const title = document.createElement('strong');
   title.textContent = 'Conectar via Meta oficial';
-  title.style.color = '#E0DDD8';
+  title.style.color = AUTH_BRAND_COLORS.tiktokBase;
 
   const copy = document.createElement('span');
   copy.textContent =
@@ -180,6 +180,7 @@ export function KloelProductSurfacePatches() {
       patchMarketingSurfaces();
     };
 
+    run();
     const timeoutId = window.setTimeout(run, 1200);
     const observer = new MutationObserver(run);
     const observerTimeoutId = window.setTimeout(() => {
