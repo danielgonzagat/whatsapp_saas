@@ -17,7 +17,7 @@ export function checkAutoGen(path) {
 }
 
 export function escapeMdTable(str) {
-  return String(str).replace(/\|/g, '\\|').replace(/\n/g, ' ');
+  return String(str).replace(/\\/g, '\\\\').replace(/\|/g, '\\|').replace(/\n/g, ' ');
 }
 
 export function loadJson(path, label) {
