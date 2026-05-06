@@ -4,125 +4,17 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { apiFetch } from '@/lib/api';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
-
-type ChannelKey = 'whatsapp' | 'instagram' | 'facebook' | 'email' | 'tiktok';
+import {
+  CHANNEL_META,
+  type ChannelKey,
+  type ConnectStatus,
+  type TikTokStatus,
+  statusText,
+  trustedExternalUrl,
+} from './OfficialMarketingChannelPage.helpers';
 
 interface Props {
   channel: ChannelKey;
-}
-
-interface ConnectStatus {
-  channels?: {
-    whatsapp?: ChannelConnection;
-    instagram?: ChannelConnection;
-    facebook?: ChannelConnection;
-    email?: ChannelConnection & {
-      provider?: string;
-      providerAvailable?: boolean;
-      fromEmail?: string;
-      fromName?: string;
-    };
-  };
-}
-
-interface ChannelConnection {
-  connected?: boolean;
-  status?: string;
-  authUrl?: string;
-  phoneNumberId?: string | null;
-  whatsappBusinessId?: string | null;
-  phoneNumber?: string | null;
-  pageName?: string | null;
-  pageId?: string | null;
-  username?: string | null;
-  instagramAccountId?: string | null;
-}
-
-interface TikTokStatus {
-  connected?: boolean;
-  status?: string;
-  kind?: string | null;
-  openId?: string | null;
-  advertiserIds?: string[];
-  expiresAt?: string | null;
-  secretConfigured?: boolean;
-}
-
-const CHANNEL_META: Record<
-  ChannelKey,
-  { label: string; color: string; summary: string; proof: string[]; steps: string[] }
-> = {
-  whatsapp: {
-    label: 'WhatsApp',
-    color: 'rgb(37 211 102)',
-    summary: 'Conecte o WABA e o número do cliente pelo Embedded Signup oficial da Meta.',
-    proof: ['WABA do workspace', 'Número próprio', 'Envio e webhooks via Cloud API'],
-    steps: [
-      'Abrir Embedded Signup oficial da Meta',
-      'Selecionar ou criar WABA e número do cliente',
-      'Voltar para o KLOEL com Cloud API ativa',
-    ],
-  },
-  instagram: {
-    label: 'Instagram Direct',
-    color: 'rgb(225 48 108)',
-    summary: 'Conecte a conta Meta com Instagram Business para operar Direct e comentários.',
-    proof: ['Instagram Business', 'Permissões de mensagens', 'Perfil e insights reais'],
-    steps: [
-      'Abrir login oficial da Meta',
-      'Selecionar a Page com Instagram Business vinculado',
-      'Voltar para o KLOEL com Direct e comentários autorizados',
-    ],
-  },
-  facebook: {
-    label: 'Messenger Facebook',
-    color: 'rgb(24 119 242)',
-    summary: 'Conecte a Page Meta para automatizar conversas do Messenger.',
-    proof: ['Page vinculada', 'Page access token', 'Messenger API'],
-    steps: [
-      'Abrir login oficial da Meta',
-      'Selecionar a Page do cliente',
-      'Voltar para o KLOEL com Messenger autorizado',
-    ],
-  },
-  email: {
-    label: 'Email',
-    color: 'rgb(245 158 11)',
-    summary: 'Ative o provider configurado no backend para enviar testes e campanhas.',
-    proof: ['Provider server-side', 'Remetente configurado', 'Envio de teste'],
-    steps: [
-      'Validar provider configurado no backend',
-      'Ativar o canal de email do workspace',
-      'Enviar teste real para confirmar entrega',
-    ],
-  },
-  tiktok: {
-    label: 'TikTok',
-    color: 'rgb(254 44 85)',
-    summary: 'Conecte creator e advertiser pelos fluxos oficiais do TikTok.',
-    proof: ['Creator OAuth', 'Advertiser OAuth', 'Tokens salvos no workspace'],
-    steps: [
-      'Conectar a conta TikTok do usuário',
-      'Conectar o advertiser autorizado no Business API',
-      'Voltar para o KLOEL com tokens do workspace salvos',
-    ],
-  },
-};
-
-function trustedExternalUrl(value: string, allowedHosts: string[]) {
-  try {
-    const url = new URL(value);
-    return url.protocol === 'https:' && allowedHosts.includes(url.hostname);
-  } catch {
-    return false;
-  }
-}
-
-function statusText(connected?: boolean, status?: string) {
-  if (connected) {
-    return 'Conectado';
-  }
-  return status === 'server_not_configured' ? 'Configuração pendente' : 'Desconectado';
 }
 
 export function OfficialMarketingChannelPage({ channel }: Props) {
