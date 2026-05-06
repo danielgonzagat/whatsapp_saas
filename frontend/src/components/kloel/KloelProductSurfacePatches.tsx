@@ -20,6 +20,17 @@ const META_OAUTH_HOSTS = new Set([
   'api.instagram.com',
 ]);
 
+const AUTH_BRAND_COLORS = {
+  apple: 'rgb(163 170 174)',
+  facebook: 'rgb(24 119 242)',
+  tiktokBase: 'rgb(224 221 216)',
+  tiktokCyan: 'rgb(37 244 238)',
+  tiktokPink: 'rgb(254 44 85)',
+  metaBlue: 'rgb(24 119 242)',
+  textOnBrand: 'rgb(255 255 255)',
+  error: 'rgb(180 35 24)',
+} as const;
+
 function textOf(node: Element): string {
   return String(node.textContent || '')
     .replace(/\s+/g, ' ')
@@ -44,20 +55,20 @@ function paintAuthIcons() {
     }
     if (text === 'Facebook') {
       for (const path of Array.from(svg.querySelectorAll('path'))) {
-        path.setAttribute('fill', '#1877F2');
+        path.setAttribute('fill', AUTH_BRAND_COLORS.facebook);
       }
     }
     if (text === 'Apple') {
       for (const path of Array.from(svg.querySelectorAll('path'))) {
-        path.setAttribute('fill', '#A3AAAE');
+        path.setAttribute('fill', AUTH_BRAND_COLORS.apple);
       }
     }
     if (text === 'TikTok') {
       svg.setAttribute('data-kloel-brand-painted', 'true');
       for (const path of Array.from(svg.querySelectorAll('path'))) {
-        path.setAttribute('fill', '#E0DDD8');
+        path.setAttribute('fill', AUTH_BRAND_COLORS.tiktokBase);
       }
-      svg.style.filter = 'drop-shadow(-1px 1px 0 #25F4EE) drop-shadow(1px -1px 0 #FE2C55)';
+      svg.style.filter = `drop-shadow(-1px 1px 0 ${AUTH_BRAND_COLORS.tiktokCyan}) drop-shadow(1px -1px 0 ${AUTH_BRAND_COLORS.tiktokPink})`;
     }
   }
 }
@@ -130,8 +141,8 @@ async function replaceWahaHintWithMetaConnect() {
     border: '0',
     borderRadius: '6px',
     padding: '12px 18px',
-    background: '#1877F2',
-    color: '#fff',
+    background: AUTH_BRAND_COLORS.metaBlue,
+    color: AUTH_BRAND_COLORS.textOnBrand,
     fontWeight: '700',
     cursor: 'pointer',
   });
@@ -147,7 +158,7 @@ async function replaceWahaHintWithMetaConnect() {
       window.location.assign(url);
     } catch (error) {
       button.textContent = error instanceof Error ? error.message : 'Falha ao abrir Meta';
-      button.style.background = '#B42318';
+      button.style.background = AUTH_BRAND_COLORS.error;
     }
   };
 
