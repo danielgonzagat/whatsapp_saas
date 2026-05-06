@@ -101,7 +101,7 @@ export default function OnboardingPage() {
       return;
     }
 
-    completeOnboarding();
+    await completeOnboarding();
     router.push('/');
   };
 

@@ -10,6 +10,7 @@ import { StripeChargeService } from '../payments/stripe/stripe-charge.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 import { CheckoutSocialLeadService } from './checkout-social-lead.service';
+import { MercadoPagoPixService } from './mercado-pago-pix.service';
 
 type CheckoutPaymentMethod = 'CREDIT_CARD' | 'PIX' | 'BOLETO';
 type CheckoutPaymentStatus = 'APPROVED' | 'DECLINED' | 'PENDING' | 'PROCESSING' | 'CANCELED';
@@ -33,28 +34,14 @@ function mapStripePaymentStatus(status?: string | null): CheckoutPaymentStatus {
   }
 }
 
-function extractPixDisplayData(paymentIntent: {
-  next_action?: {
-    type?: string | null;
-    pix_display_qr_code?: {
-      data?: string | null;
-      image_url_png?: string | null;
-      expires_at?: number | null;
-    } | null;
-  } | null;
-}): PixDisplayData {
-  const nextAction = paymentIntent.next_action;
-  const pixAction =
-    nextAction?.type === 'pix_display_qr_code' ? nextAction.pix_display_qr_code : null;
-
-  return {
-    pixQrCode: pixAction?.image_url_png || null,
-    pixCopyPaste: pixAction?.data || null,
-    pixExpiresAt:
-      typeof pixAction?.expires_at === 'number'
-        ? new Date(pixAction.expires_at * 1000).toISOString()
-        : null,
-  };
+function mapMercadoPagoPaymentStatus(status?: string | null): CheckoutPaymentStatus {
+  return status === 'approved'
+    ? 'APPROVED'
+    : status === 'rejected'
+      ? 'DECLINED'
+      : status === 'cancelled'
+        ? 'CANCELED'
+        : 'PENDING';
 }
 
 function toJsonValue(value: unknown): Prisma.InputJsonValue {
@@ -78,6 +65,7 @@ export class CheckoutPaymentService {
     private readonly financialAlert: FinancialAlertService,
     private readonly auditService: AuditService,
     private readonly checkoutSocialLeadService: CheckoutSocialLeadService,
+    private readonly mercadoPagoPixService: MercadoPagoPixService,
   ) {}
 
   private async logFraudDecision(params: {
@@ -328,10 +316,84 @@ export class CheckoutPaymentService {
       throw new BadRequestException('Pagamento retido para revisão manual.');
     }
 
+    const amount = chargedTotalInCents / 100;
+
+    if (params.paymentMethod === 'PIX') {
+      if (!params.customerCPF) {
+        throw new BadRequestException('CPF/CNPJ é obrigatório para Pix via Mercado Pago.');
+      }
+      const pix = await this.mercadoPagoPixService.createPixPayment({
+        idempotencyKey: params.idempotencyKey || params.orderId,
+        orderMetadata: {
+          orderId: params.orderId,
+          workspaceId: params.workspaceId,
+          productName: order.plan?.product?.name,
+        },
+        buyerName: params.customerName,
+        buyerEmail: params.customerEmail,
+        buyerDocument: params.customerCPF,
+        buyerPhone: params.customerPhone,
+        amountInCents: chargedTotalInCents,
+        notificationUrl: process.env.MERCADOPAGO_WEBHOOK_URL,
+      });
+      const paymentStatus = mapMercadoPagoPaymentStatus(pix.status);
+      const approved = paymentStatus === 'APPROVED';
+      const payment = await this.prisma.$transaction(async (tx) => {
+        const createdPayment = await tx.checkoutPayment.create({
+          data: {
+            orderId: params.orderId,
+            gateway: 'mercado_pago',
+            externalId: pix.externalId,
+            pixQrCode: pix.qrCodeBase64,
+            pixCopyPaste: pix.copyPaste,
+            pixExpiresAt: pix.expiresAt ? new Date(pix.expiresAt) : null,
+            status: paymentStatus,
+            webhookData: toJsonValue({ provider: 'mercado_pago', payment: pix.providerRaw }),
+          },
+        });
+        if (approved) {
+          await this.transitionOrderToApproved(tx, params.orderId, params.workspaceId, {
+            paymentId: createdPayment.id,
+            provider: 'mercado_pago',
+            externalId: pix.externalId,
+          });
+        }
+        await this.auditService.logWithTx(tx, {
+          workspaceId: params.workspaceId,
+          action: 'CHECKOUT_PAYMENT_CREATED',
+          resource: 'CheckoutPayment',
+          resourceId: createdPayment.id,
+          details: {
+            method: params.paymentMethod,
+            amount,
+            orderId: params.orderId,
+            gateway: 'mercado_pago',
+            externalId: pix.externalId,
+            approved,
+            installments: params.installments,
+            paymentStatus: pix.status,
+          },
+        });
+        return createdPayment;
+      });
+      return {
+        payment,
+        type: params.paymentMethod,
+        approved,
+        clientSecret: null,
+        paymentIntentId: pix.externalId,
+        pixQrCode: pix.qrCodeBase64,
+        pixCopyPaste: pix.copyPaste,
+        pixExpiresAt: pix.expiresAt,
+        boletoUrl: null,
+        boletoBarcode: null,
+        boletoExpiresAt: null,
+      };
+    }
+
     const forceThreeDS =
       params.paymentMethod === 'CREDIT_CARD' && fraudDecision.action === 'require_3ds';
     const sellerStripeAccountId = await this.ensureSellerStripeAccountId(params.workspaceId);
-    const amount = chargedTotalInCents / 100;
 
     try {
       const charge = await this.stripeCharge.createSaleCharge(
@@ -348,10 +410,7 @@ export class CheckoutPaymentService {
 
       const paymentStatus = mapStripePaymentStatus(charge.stripePaymentIntent.status);
       const approved = paymentStatus === 'APPROVED';
-      const pixData =
-        params.paymentMethod === 'PIX'
-          ? extractPixDisplayData(charge.stripePaymentIntent)
-          : { pixQrCode: null, pixCopyPaste: null, pixExpiresAt: null };
+      const pixData = { pixQrCode: null, pixCopyPaste: null, pixExpiresAt: null };
 
       const payment = await this.persistPayment(params, charge, paymentStatus, pixData, amount);
 
@@ -463,7 +522,7 @@ export class CheckoutPaymentService {
     workspaceId: string,
     transitionContext: {
       paymentId: string;
-      provider: 'stripe';
+      provider: 'stripe' | 'mercado_pago';
       externalId: string;
     },
   ) {

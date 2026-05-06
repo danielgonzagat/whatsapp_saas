@@ -28,3 +28,22 @@ export async function saveOnboardingProfile(
     body: payload,
   });
 }
+
+export async function completeOnboardingProfile(workspaceId: string) {
+  return apiFetch<{ completed: boolean; completedAt: string }>(
+    `/kloel/onboarding/${encodeURIComponent(workspaceId)}/complete`,
+    {
+      method: 'POST',
+    },
+  );
+}
+
+export async function getOnboardingStatus(workspaceId: string) {
+  return apiFetch<{
+    completed: boolean;
+    messagesCount?: number;
+    hasStarted?: boolean;
+    step?: string;
+    data?: Record<string, unknown>;
+  }>(`/kloel/onboarding/${encodeURIComponent(workspaceId)}/status`);
+}

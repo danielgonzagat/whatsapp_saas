@@ -1,3 +1,4 @@
+import { createHmac, timingSafeEqual } from 'node:crypto';
 import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 
 export interface CreatePixPaymentInput {
@@ -26,7 +27,19 @@ export interface PixPaymentResult {
   providerRaw: Record<string, unknown>;
 }
 
+export interface MercadoPagoPaymentSnapshot extends PixPaymentResult {
+  metadata: Record<string, unknown>;
+}
+
+export interface VerifyMercadoPagoWebhookSignatureInput {
+  dataId: string;
+  requestId: string;
+  signatureHeader: string;
+  secret: string;
+}
+
 const MP_BASE_URL = 'https://api.mercadopago.com/v1';
+const WEBHOOK_SIGNATURE_TOLERANCE_SECONDS = 300;
 
 function nameParts(fullName: string): { firstName: string; lastName: string } {
   const trimmed = fullName.trim();
@@ -81,6 +94,36 @@ function extractExpiresAt(raw: Record<string, unknown>): string | null {
     return dateStr;
   }
   return null;
+}
+
+function parseSignatureHeader(header: string): { ts: string | null; v1: string | null } {
+  return header.split(',').reduce(
+    (acc, part) => {
+      const [rawKey, ...rawValue] = part.split('=');
+      const key = rawKey?.trim();
+      const value = rawValue.join('=').trim();
+      if (key === 'ts') {
+        acc.ts = value;
+      }
+      if (key === 'v1') {
+        acc.v1 = value;
+      }
+      return acc;
+    },
+    { ts: null, v1: null } as { ts: string | null; v1: string | null },
+  );
+}
+
+function safeCompareHex(left: string, right: string): boolean {
+  if (!/^[a-f0-9]+$/i.test(left) || !/^[a-f0-9]+$/i.test(right)) {
+    return false;
+  }
+  const leftBuffer = Buffer.from(left, 'hex');
+  const rightBuffer = Buffer.from(right, 'hex');
+  if (leftBuffer.length !== rightBuffer.length) {
+    return false;
+  }
+  return timingSafeEqual(leftBuffer, rightBuffer);
 }
 
 function extractQrData(raw: Record<string, unknown>): {
@@ -230,6 +273,92 @@ export class MercadoPagoPixService {
       status,
       ...qrData,
       expiresAt: extractExpiresAt(raw),
+      providerRaw: sanitizeResult(raw),
+    };
+  }
+
+  verifyWebhookSignature(input: VerifyMercadoPagoWebhookSignatureInput): boolean {
+    const { ts, v1 } = parseSignatureHeader(input.signatureHeader);
+    if (!ts || !v1 || !input.dataId || !input.requestId || !input.secret) {
+      return false;
+    }
+
+    const timestamp = Number(ts);
+    if (
+      !Number.isFinite(timestamp) ||
+      Math.abs(Math.floor(Date.now() / 1000) - timestamp) > WEBHOOK_SIGNATURE_TOLERANCE_SECONDS
+    ) {
+      return false;
+    }
+
+    const manifest = `id:${input.dataId};request-id:${input.requestId};ts:${ts};`;
+    const expected = createHmac('sha256', input.secret).update(manifest).digest('hex');
+    return safeCompareHex(v1, expected);
+  }
+
+  async getPayment(externalId: string): Promise<MercadoPagoPaymentSnapshot> {
+    const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN;
+    if (!accessToken) {
+      throw new ServiceUnavailableException('Mercado Pago não configurado.');
+    }
+
+    let response: Response;
+    try {
+      response = await fetch(`${MP_BASE_URL}/payments/${encodeURIComponent(externalId)}`, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        signal: AbortSignal.timeout(30000),
+      });
+    } catch (error) {
+      this.logger.error(
+        JSON.stringify({
+          event: 'mp_payment_lookup_network_error',
+          externalId,
+          error: error instanceof Error ? error.message : String(error),
+        }),
+      );
+      throw new ServiceUnavailableException('Falha de rede ao consultar Pix no Mercado Pago.');
+    }
+
+    let raw: Record<string, unknown>;
+    try {
+      raw = (await response.json()) as Record<string, unknown>;
+    } catch (error) {
+      this.logger.error(
+        JSON.stringify({
+          event: 'mp_payment_lookup_invalid_json',
+          externalId,
+          error: error instanceof Error ? error.message : String(error),
+        }),
+      );
+      throw new ServiceUnavailableException('Mercado Pago retornou uma resposta inválida.');
+    }
+
+    if (!response.ok) {
+      this.logger.error(
+        JSON.stringify({
+          event: 'mp_payment_lookup_api_error',
+          externalId,
+          status: response.status,
+          body: sanitizeForLog(raw),
+        }),
+      );
+      throw new ServiceUnavailableException('Mercado Pago rejeitou a consulta do Pix.');
+    }
+
+    return {
+      externalId:
+        typeof raw.id === 'number' || typeof raw.id === 'string' ? String(raw.id) : externalId,
+      status: normalizeStatus(raw.status),
+      ...extractQrData(raw),
+      expiresAt: extractExpiresAt(raw),
+      metadata:
+        raw.metadata && typeof raw.metadata === 'object' && !Array.isArray(raw.metadata)
+          ? (raw.metadata as Record<string, unknown>)
+          : {},
       providerRaw: sanitizeResult(raw),
     };
   }

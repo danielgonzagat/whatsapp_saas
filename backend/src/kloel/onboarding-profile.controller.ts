@@ -40,4 +40,10 @@ export class OnboardingProfileController {
       aiUseCase: readRequiredString(dto.aiUseCase, 'sales'),
     });
   }
+
+  @Post(':workspaceId/complete')
+  async complete(@Req() req: AuthenticatedRequest, @Param('workspaceId') workspaceId: string) {
+    const validatedWorkspaceId = resolveWorkspaceId(req, workspaceId);
+    return this.onboardingService.complete(validatedWorkspaceId);
+  }
 }

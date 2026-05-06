@@ -96,7 +96,10 @@ export {
   type DashboardHomeProduct,
   type DashboardHomeConversation,
   type DashboardHomeResponse,
+  type DashboardPostPaymentEvent,
+  type DashboardPostPaymentResponse,
   getDashboardHome,
+  getDashboardPostPayment,
 } from './home';
 
 // Kloel health, PDF, chat uploads, payments

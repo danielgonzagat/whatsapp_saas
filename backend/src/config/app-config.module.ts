@@ -130,6 +130,7 @@ import { redisInProductionValidator } from './redis-env-validator';
         // ============================================
         MERCADOPAGO_ACCESS_TOKEN: Joi.string().optional(),
         MERCADOPAGO_WEBHOOK_SECRET: Joi.string().optional(),
+        MERCADOPAGO_WEBHOOK_URL: Joi.string().uri().optional(),
         MERCADOPAGO_NOTIFICATION_URL: Joi.string().uri().optional(),
         MERCADOPAGO_API_BASE_URL: Joi.string().uri().optional(),
 

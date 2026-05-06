@@ -5,6 +5,7 @@ import { FollowUpModule } from '../followup/followup.module';
 import { PaymentsModule } from '../payments/payments.module';
 import { MarketplaceTreasuryModule } from '../marketplace-treasury/marketplace-treasury.module';
 import { PrismaModule } from '../prisma/prisma.module';
+import { WebhooksModule } from '../webhooks/webhooks.module';
 import { CheckoutPaymentService } from './checkout-payment.service';
 import { CheckoutPostPaymentEffectsService } from './checkout-post-payment-effects.service';
 import { CheckoutPublicController } from './checkout-public.controller';
@@ -14,6 +15,7 @@ import { CheckoutController } from './checkout.controller';
 import { CheckoutService } from './checkout.service';
 import { FacebookCAPIService } from './facebook-capi.service';
 import { MercadoPagoPixService } from './mercado-pago-pix.service';
+import { MercadoPagoWebhookController } from './mercado-pago-webhook.controller';
 
 // Webhook ordering: CheckoutWebhookController validates event sequence via
 // validatePaymentTransition and WebhookEvent externalId unique constraint.
@@ -25,8 +27,9 @@ import { MercadoPagoPixService } from './mercado-pago-pix.service';
     AuthModule,
     FollowUpModule,
     PaymentsModule,
+    WebhooksModule,
   ],
-  controllers: [CheckoutController, CheckoutPublicController],
+  controllers: [CheckoutController, CheckoutPublicController, MercadoPagoWebhookController],
   providers: [
     CheckoutService,
     CheckoutPaymentService,

@@ -1,0 +1,1233 @@
+{
+  "schema": "kloel.blocker-rank.v1",
+  "computedAt": "2026-05-06T00:18:38.695Z",
+  "totalFiles": 2817,
+  "totalRanked": 1918,
+  "topN": [
+    {
+      "file": "frontend/src/components/kloel/auth/auth-screen-data.ts",
+      "score": 300,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 10,
+        "user_impact": 5,
+        "effort_hours": 0.5
+      },
+      "tier": 2,
+      "phase": 0,
+      "module": "Auth",
+      "loc": 22,
+      "findingsCount": 0,
+      "severityCounts": {
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": null,
+      "evidence": ["dag:CLAUDE.md FASE 0 — Auth", "findings:0"],
+      "rank": 1
+    },
+    {
+      "file": "backend/src/auth/jwt-auth.helpers.ts",
+      "score": 300,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 10,
+        "user_impact": 5,
+        "effort_hours": 0.5
+      },
+      "tier": 2,
+      "phase": 0,
+      "module": "Auth",
+      "loc": 37,
+      "findingsCount": 0,
+      "severityCounts": {
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": null,
+      "evidence": ["dag:CLAUDE.md FASE 0 — Auth", "findings:0"],
+      "rank": 2
+    },
+    {
+      "file": "backend/src/auth/jwt-config.ts",
+      "score": 300,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 10,
+        "user_impact": 5,
+        "effort_hours": 0.5
+      },
+      "tier": 2,
+      "phase": 0,
+      "module": "Auth",
+      "loc": 36,
+      "findingsCount": 0,
+      "severityCounts": {
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": null,
+      "evidence": ["pulse:1 diagnostic break(s)", "dag:CLAUDE.md FASE 0 — Auth", "findings:0"],
+      "rank": 3
+    },
+    {
+      "file": "backend/src/auth/roles.guard.ts",
+      "score": 300,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 10,
+        "user_impact": 5,
+        "effort_hours": 0.5
+      },
+      "tier": 2,
+      "phase": 0,
+      "module": "Auth",
+      "loc": 21,
+      "findingsCount": 0,
+      "severityCounts": {
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": null,
+      "evidence": ["dag:CLAUDE.md FASE 0 — Auth", "findings:0"],
+      "rank": 4
+    },
+    {
+      "file": "backend/src/auth/user-name-derivation.service.ts",
+      "score": 300,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 10,
+        "user_impact": 5,
+        "effort_hours": 0.5
+      },
+      "tier": 2,
+      "phase": 0,
+      "module": "Auth",
+      "loc": 15,
+      "findingsCount": 0,
+      "severityCounts": {
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": null,
+      "evidence": ["dag:CLAUDE.md FASE 0 — Auth", "findings:0"],
+      "rank": 5
+    },
+    {
+      "file": "backend/src/auth/email-templates/data-deletion-confirmation.html",
+      "score": 300,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 10,
+        "user_impact": 5,
+        "effort_hours": 0.5
+      },
+      "tier": 2,
+      "phase": 0,
+      "module": "Auth",
+      "loc": 28,
+      "findingsCount": 0,
+      "severityCounts": {
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": null,
+      "evidence": ["dag:CLAUDE.md FASE 0 — Auth", "findings:0"],
+      "rank": 6
+    },
+    {
+      "file": "backend/src/auth/email-templates/team-invite.html",
+      "score": 300,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 10,
+        "user_impact": 5,
+        "effort_hours": 0.5
+      },
+      "tier": 2,
+      "phase": 0,
+      "module": "Auth",
+      "loc": 37,
+      "findingsCount": 0,
+      "severityCounts": {
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": null,
+      "evidence": ["dag:CLAUDE.md FASE 0 — Auth", "findings:0"],
+      "rank": 7
+    },
+    {
+      "file": "backend/src/auth/email-templates/verification.html",
+      "score": 300,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 10,
+        "user_impact": 5,
+        "effort_hours": 0.5
+      },
+      "tier": 2,
+      "phase": 0,
+      "module": "Auth",
+      "loc": 36,
+      "findingsCount": 0,
+      "severityCounts": {
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": null,
+      "evidence": ["dag:CLAUDE.md FASE 0 — Auth", "findings:0"],
+      "rank": 8
+    },
+    {
+      "file": "backend/src/auth/dto/apple-oauth.dto.ts",
+      "score": 300,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 10,
+        "user_impact": 5,
+        "effort_hours": 0.5
+      },
+      "tier": 2,
+      "phase": 0,
+      "module": "Auth",
+      "loc": 24,
+      "findingsCount": 0,
+      "severityCounts": {
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": null,
+      "evidence": ["dag:CLAUDE.md FASE 0 — Auth", "findings:0"],
+      "rank": 9
+    },
+    {
+      "file": "backend/src/auth/dto/register.dto.ts",
+      "score": 300,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 10,
+        "user_impact": 5,
+        "effort_hours": 0.5
+      },
+      "tier": 2,
+      "phase": 0,
+      "module": "Auth",
+      "loc": 14,
+      "findingsCount": 0,
+      "severityCounts": {
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": null,
+      "evidence": ["dag:CLAUDE.md FASE 0 — Auth", "findings:0"],
+      "rank": 10
+    },
+    {
+      "file": "backend/src/auth/dto/tiktok-oauth.dto.ts",
+      "score": 300,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 10,
+        "user_impact": 5,
+        "effort_hours": 0.5
+      },
+      "tier": 2,
+      "phase": 0,
+      "module": "Auth",
+      "loc": 21,
+      "findingsCount": 0,
+      "severityCounts": {
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": null,
+      "evidence": ["dag:CLAUDE.md FASE 0 — Auth", "findings:0"],
+      "rank": 11
+    },
+    {
+      "file": "backend/src/auth/dto/whatsapp-auth.dto.ts",
+      "score": 300,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 10,
+        "user_impact": 5,
+        "effort_hours": 0.5
+      },
+      "tier": 2,
+      "phase": 0,
+      "module": "Auth",
+      "loc": 15,
+      "findingsCount": 0,
+      "severityCounts": {
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": null,
+      "evidence": ["pulse:2 diagnostic break(s)", "dag:CLAUDE.md FASE 0 — Auth", "findings:0"],
+      "rank": 12
+    },
+    {
+      "file": "backend/src/auth/__companions__/apple-auth.service.companion.ts",
+      "score": 300,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 10,
+        "user_impact": 5,
+        "effort_hours": 0.5
+      },
+      "tier": 2,
+      "phase": 0,
+      "module": "Auth",
+      "loc": 25,
+      "findingsCount": 0,
+      "severityCounts": {
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": null,
+      "evidence": ["dag:CLAUDE.md FASE 0 — Auth", "findings:0"],
+      "rank": 13
+    },
+    {
+      "file": "backend/src/auth/email-templates/password-reset.html",
+      "score": 296.05263157894734,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 10,
+        "user_impact": 5,
+        "effort_hours": 0.5
+      },
+      "tier": 2,
+      "phase": 0,
+      "module": "Auth",
+      "loc": 38,
+      "findingsCount": 0,
+      "severityCounts": {
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": null,
+      "evidence": ["dag:CLAUDE.md FASE 0 — Auth", "findings:0"],
+      "rank": 14
+    },
+    {
+      "file": "backend/src/auth/email-templates/partner-invite.html",
+      "score": 267.85714285714283,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 10,
+        "user_impact": 5,
+        "effort_hours": 0.6
+      },
+      "tier": 2,
+      "phase": 0,
+      "module": "Auth",
+      "loc": 42,
+      "findingsCount": 0,
+      "severityCounts": {
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": null,
+      "evidence": ["dag:CLAUDE.md FASE 0 — Auth", "findings:0"],
+      "rank": 15
+    },
+    {
+      "file": "backend/src/checkout/checkout-product.types.ts",
+      "score": 240,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 8,
+        "user_impact": 5,
+        "effort_hours": 0.5
+      },
+      "tier": 2,
+      "phase": 1,
+      "module": "Checkout",
+      "loc": 20,
+      "findingsCount": 0,
+      "severityCounts": {
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": null,
+      "evidence": ["dag:CLAUDE.md FASE 1 — Checkout", "findings:0"],
+      "rank": 16
+    },
+    {
+      "file": "backend/src/checkout/dto/create-bump.dto.ts",
+      "score": 240,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 8,
+        "user_impact": 5,
+        "effort_hours": 0.5
+      },
+      "tier": 2,
+      "phase": 1,
+      "module": "Checkout",
+      "loc": 19,
+      "findingsCount": 0,
+      "severityCounts": {
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": null,
+      "evidence": ["dag:CLAUDE.md FASE 1 — Checkout", "findings:0"],
+      "rank": 17
+    },
+    {
+      "file": "backend/src/checkout/dto/create-coupon.dto.ts",
+      "score": 240,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 8,
+        "user_impact": 5,
+        "effort_hours": 0.5
+      },
+      "tier": 2,
+      "phase": 1,
+      "module": "Checkout",
+      "loc": 28,
+      "findingsCount": 0,
+      "severityCounts": {
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": null,
+      "evidence": ["pulse:1 diagnostic break(s)", "dag:CLAUDE.md FASE 1 — Checkout", "findings:0"],
+      "rank": 18
+    },
+    {
+      "file": "backend/src/checkout/dto/create-pixel.dto.ts",
+      "score": 240,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 8,
+        "user_impact": 5,
+        "effort_hours": 0.5
+      },
+      "tier": 2,
+      "phase": 1,
+      "module": "Checkout",
+      "loc": 24,
+      "findingsCount": 0,
+      "severityCounts": {
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": null,
+      "evidence": ["dag:CLAUDE.md FASE 1 — Checkout", "findings:0"],
+      "rank": 19
+    },
+    {
+      "file": "backend/src/checkout/dto/create-plan.dto.ts",
+      "score": 240,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 8,
+        "user_impact": 5,
+        "effort_hours": 0.5
+      },
+      "tier": 2,
+      "phase": 1,
+      "module": "Checkout",
+      "loc": 27,
+      "findingsCount": 0,
+      "severityCounts": {
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": null,
+      "evidence": ["dag:CLAUDE.md FASE 1 — Checkout", "findings:0"],
+      "rank": 20
+    },
+    {
+      "file": "backend/src/checkout/dto/create-product.dto.ts",
+      "score": 240,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 8,
+        "user_impact": 5,
+        "effort_hours": 0.5
+      },
+      "tier": 2,
+      "phase": 1,
+      "module": "Checkout",
+      "loc": 23,
+      "findingsCount": 0,
+      "severityCounts": {
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": null,
+      "evidence": ["pulse:1 diagnostic break(s)", "dag:CLAUDE.md FASE 1 — Checkout", "findings:0"],
+      "rank": 21
+    },
+    {
+      "file": "backend/src/checkout/dto/create-upsell.dto.ts",
+      "score": 240,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 8,
+        "user_impact": 5,
+        "effort_hours": 0.5
+      },
+      "tier": 2,
+      "phase": 1,
+      "module": "Checkout",
+      "loc": 27,
+      "findingsCount": 0,
+      "severityCounts": {
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": null,
+      "evidence": ["dag:CLAUDE.md FASE 1 — Checkout", "findings:0"],
+      "rank": 22
+    },
+    {
+      "file": "backend/src/checkout/dto/update-order-status.dto.ts",
+      "score": 240,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 8,
+        "user_impact": 5,
+        "effort_hours": 0.5
+      },
+      "tier": 2,
+      "phase": 1,
+      "module": "Checkout",
+      "loc": 16,
+      "findingsCount": 0,
+      "severityCounts": {
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": null,
+      "evidence": ["dag:CLAUDE.md FASE 1 — Checkout", "findings:0"],
+      "rank": 23
+    },
+    {
+      "file": "backend/src/checkout/dto/update-social-lead.dto.ts",
+      "score": 240,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 8,
+        "user_impact": 5,
+        "effort_hours": 0.5
+      },
+      "tier": 2,
+      "phase": 1,
+      "module": "Checkout",
+      "loc": 34,
+      "findingsCount": 0,
+      "severityCounts": {
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": null,
+      "evidence": ["dag:CLAUDE.md FASE 1 — Checkout", "findings:0"],
+      "rank": 24
+    },
+    {
+      "file": "backend/src/checkout/dto/validate-coupon.dto.ts",
+      "score": 240,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 8,
+        "user_impact": 5,
+        "effort_hours": 0.5
+      },
+      "tier": 2,
+      "phase": 1,
+      "module": "Checkout",
+      "loc": 13,
+      "findingsCount": 0,
+      "severityCounts": {
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": null,
+      "evidence": ["dag:CLAUDE.md FASE 1 — Checkout", "findings:0"],
+      "rank": 25
+    },
+    {
+      "file": "backend/src/checkout/__companions__/checkout-order.service.companion.ts",
+      "score": 240,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 8,
+        "user_impact": 5,
+        "effort_hours": 0.5
+      },
+      "tier": 2,
+      "phase": 1,
+      "module": "Checkout",
+      "loc": 30,
+      "findingsCount": 0,
+      "severityCounts": {
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": null,
+      "evidence": ["dag:CLAUDE.md FASE 1 — Checkout", "findings:0"],
+      "rank": 26
+    },
+    {
+      "file": "backend/src/checkout/__companions__/checkout-social-lead-candidate.ts",
+      "score": 240,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 8,
+        "user_impact": 5,
+        "effort_hours": 0.5
+      },
+      "tier": 2,
+      "phase": 1,
+      "module": "Checkout",
+      "loc": 31,
+      "findingsCount": 0,
+      "severityCounts": {
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": null,
+      "evidence": ["dag:CLAUDE.md FASE 1 — Checkout", "findings:0"],
+      "rank": 27
+    },
+    {
+      "file": "backend/src/billing/billing-webhook.types.ts",
+      "score": 240,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 8,
+        "user_impact": 5,
+        "effort_hours": 0.5
+      },
+      "tier": 2,
+      "phase": 1,
+      "module": "Billing",
+      "loc": 24,
+      "findingsCount": 0,
+      "severityCounts": {
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": null,
+      "evidence": ["dag:CLAUDE.md FASE 1 — Billing", "findings:0"],
+      "rank": 28
+    },
+    {
+      "file": "backend/src/auth/email-templates/onboarding-day3.html",
+      "score": 234.375,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 10,
+        "user_impact": 5,
+        "effort_hours": 0.6
+      },
+      "tier": 2,
+      "phase": 0,
+      "module": "Auth",
+      "loc": 48,
+      "findingsCount": 0,
+      "severityCounts": {
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": null,
+      "evidence": ["dag:CLAUDE.md FASE 0 — Auth", "findings:0"],
+      "rank": 29
+    },
+    {
+      "file": "backend/src/auth/auth.token.service.spec.helpers.ts",
+      "score": 229.59183673469389,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 10,
+        "user_impact": 5,
+        "effort_hours": 0.7
+      },
+      "tier": 2,
+      "phase": 0,
+      "module": "Auth",
+      "loc": 49,
+      "findingsCount": 0,
+      "severityCounts": {
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": null,
+      "evidence": ["dag:CLAUDE.md FASE 0 — Auth", "findings:0"],
+      "rank": 30
+    },
+    {
+      "file": "backend/src/auth/db-init-error.service.ts",
+      "score": 229.59183673469389,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 10,
+        "user_impact": 5,
+        "effort_hours": 0.7
+      },
+      "tier": 2,
+      "phase": 0,
+      "module": "Auth",
+      "loc": 49,
+      "findingsCount": 0,
+      "severityCounts": {
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": null,
+      "evidence": ["dag:CLAUDE.md FASE 0 — Auth", "findings:0"],
+      "rank": 31
+    },
+    {
+      "file": "backend/src/auth/email-templates/onboarding-day7.html",
+      "score": 220.58823529411762,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 10,
+        "user_impact": 5,
+        "effort_hours": 0.7
+      },
+      "tier": 2,
+      "phase": 0,
+      "module": "Auth",
+      "loc": 51,
+      "findingsCount": 0,
+      "severityCounts": {
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": null,
+      "evidence": ["dag:CLAUDE.md FASE 0 — Auth", "findings:0"],
+      "rank": 32
+    },
+    {
+      "file": "frontend/src/components/kloel/auth/google-sign-in-button.helpers.ts",
+      "score": 212.26415094339623,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 10,
+        "user_impact": 5,
+        "effort_hours": 0.7
+      },
+      "tier": 2,
+      "phase": 0,
+      "module": "Auth",
+      "loc": 53,
+      "findingsCount": 0,
+      "severityCounts": {
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": null,
+      "evidence": ["dag:CLAUDE.md FASE 0 — Auth", "findings:0"],
+      "rank": 33
+    },
+    {
+      "file": "backend/src/auth/email-templates/onboarding-day1.html",
+      "score": 208.33333333333334,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 10,
+        "user_impact": 5,
+        "effort_hours": 0.7
+      },
+      "tier": 2,
+      "phase": 0,
+      "module": "Auth",
+      "loc": 54,
+      "findingsCount": 0,
+      "severityCounts": {
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": null,
+      "evidence": ["dag:CLAUDE.md FASE 0 — Auth", "findings:0"],
+      "rank": 34
+    },
+    {
+      "file": "frontend/src/app/api/auth/verify-email/route.ts",
+      "score": 200,
+      "breakdown": {
+        "tier_weight": 4,
+        "phase_priority": 10,
+        "user_impact": 5,
+        "effort_hours": 1
+      },
+      "tier": 1,
+      "phase": 0,
+      "module": "Auth",
+      "loc": 25,
+      "findingsCount": 1,
+      "severityCounts": {
+        "critical": 0,
+        "high": 1,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": {
+        "line": 0,
+        "rule": "placebo_integration",
+        "engine": "pulse",
+        "message": "Node has orchestration/side-effect but lacks persistence — possible placebo integration."
+      },
+      "evidence": ["test:exists", "dag:CLAUDE.md FASE 0 — Auth", "findings:1"],
+      "rank": 35
+    },
+    {
+      "file": "frontend/src/app/api/auth/forgot-password/route.ts",
+      "score": 197.36842105263162,
+      "breakdown": {
+        "tier_weight": 4,
+        "phase_priority": 10,
+        "user_impact": 5,
+        "effort_hours": 1
+      },
+      "tier": 1,
+      "phase": 0,
+      "module": "Auth",
+      "loc": 26,
+      "findingsCount": 1,
+      "severityCounts": {
+        "critical": 0,
+        "high": 1,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": {
+        "line": 0,
+        "rule": "placebo_integration",
+        "engine": "pulse",
+        "message": "Node has orchestration/side-effect but lacks persistence — possible placebo integration."
+      },
+      "evidence": ["test:exists", "dag:CLAUDE.md FASE 0 — Auth", "findings:1"],
+      "rank": 36
+    },
+    {
+      "file": "backend/src/checkout/__companions__/checkout-product.service.companion.ts",
+      "score": 195.6521739130435,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 8,
+        "user_impact": 5,
+        "effort_hours": 0.6
+      },
+      "tier": 2,
+      "phase": 1,
+      "module": "Checkout",
+      "loc": 46,
+      "findingsCount": 0,
+      "severityCounts": {
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": null,
+      "evidence": ["dag:CLAUDE.md FASE 1 — Checkout", "findings:0"],
+      "rank": 37
+    },
+    {
+      "file": "frontend/src/app/api/auth/logout/route.ts",
+      "score": 189.87341772151902,
+      "breakdown": {
+        "tier_weight": 4,
+        "phase_priority": 10,
+        "user_impact": 5,
+        "effort_hours": 1.1
+      },
+      "tier": 1,
+      "phase": 0,
+      "module": "Auth",
+      "loc": 29,
+      "findingsCount": 1,
+      "severityCounts": {
+        "critical": 0,
+        "high": 1,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": {
+        "line": 0,
+        "rule": "placebo_integration",
+        "engine": "pulse",
+        "message": "Node has orchestration/side-effect but lacks persistence — possible placebo integration."
+      },
+      "evidence": ["pulse:1 diagnostic break(s)", "dag:CLAUDE.md FASE 0 — Auth", "findings:1"],
+      "rank": 38
+    },
+    {
+      "file": "frontend/src/app/api/auth/refresh/route.ts",
+      "score": 187.5,
+      "breakdown": {
+        "tier_weight": 4,
+        "phase_priority": 10,
+        "user_impact": 5,
+        "effort_hours": 1.1
+      },
+      "tier": 1,
+      "phase": 0,
+      "module": "Auth",
+      "loc": 30,
+      "findingsCount": 1,
+      "severityCounts": {
+        "critical": 0,
+        "high": 1,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": {
+        "line": 0,
+        "rule": "placebo_integration",
+        "engine": "pulse",
+        "message": "Node has orchestration/side-effect but lacks persistence — possible placebo integration."
+      },
+      "evidence": ["test:exists", "dag:CLAUDE.md FASE 0 — Auth", "findings:1"],
+      "rank": 39
+    },
+    {
+      "file": "frontend/src/app/api/auth/login/route.ts",
+      "score": 185.18518518518522,
+      "breakdown": {
+        "tier_weight": 4,
+        "phase_priority": 10,
+        "user_impact": 5,
+        "effort_hours": 1.1
+      },
+      "tier": 1,
+      "phase": 0,
+      "module": "Auth",
+      "loc": 31,
+      "findingsCount": 1,
+      "severityCounts": {
+        "critical": 0,
+        "high": 1,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": {
+        "line": 0,
+        "rule": "placebo_integration",
+        "engine": "pulse",
+        "message": "Node has orchestration/side-effect but lacks persistence — possible placebo integration."
+      },
+      "evidence": ["test:exists", "dag:CLAUDE.md FASE 0 — Auth", "findings:1"],
+      "rank": 40
+    },
+    {
+      "file": "backend/src/auth/apple-auth.support.ts",
+      "score": 184.4262295081967,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 10,
+        "user_impact": 5,
+        "effort_hours": 0.8
+      },
+      "tier": 2,
+      "phase": 0,
+      "module": "Auth",
+      "loc": 61,
+      "findingsCount": 0,
+      "severityCounts": {
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": null,
+      "evidence": ["dag:CLAUDE.md FASE 0 — Auth", "findings:0"],
+      "rank": 41
+    },
+    {
+      "file": "backend/src/auth/auth.password.service.spec.helpers.ts",
+      "score": 184.4262295081967,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 10,
+        "user_impact": 5,
+        "effort_hours": 0.8
+      },
+      "tier": 2,
+      "phase": 0,
+      "module": "Auth",
+      "loc": 61,
+      "findingsCount": 0,
+      "severityCounts": {
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": null,
+      "evidence": ["dag:CLAUDE.md FASE 0 — Auth", "findings:0"],
+      "rank": 42
+    },
+    {
+      "file": "backend/src/auth/__parts__/auth-service/social-account.ts",
+      "score": 181.4516129032258,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 10,
+        "user_impact": 5,
+        "effort_hours": 0.8
+      },
+      "tier": 2,
+      "phase": 0,
+      "module": "Auth",
+      "loc": 62,
+      "findingsCount": 0,
+      "severityCounts": {
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": null,
+      "evidence": ["pulse:2 diagnostic break(s)", "dag:CLAUDE.md FASE 0 — Auth", "findings:0"],
+      "rank": 43
+    },
+    {
+      "file": "backend/src/whatsapp/whatsapp-digits.util.ts",
+      "score": 180,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 6,
+        "user_impact": 5,
+        "effort_hours": 0.5
+      },
+      "tier": 2,
+      "phase": 2,
+      "module": "WhatsApp",
+      "loc": 36,
+      "findingsCount": 0,
+      "severityCounts": {
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": null,
+      "evidence": ["pulse:1 diagnostic break(s)", "dag:CLAUDE.md FASE 2 — WhatsApp", "findings:0"],
+      "rank": 44
+    },
+    {
+      "file": "backend/src/whatsapp/__companions__/cia-bootstrap.service.companion.ts",
+      "score": 180,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 6,
+        "user_impact": 5,
+        "effort_hours": 0.5
+      },
+      "tier": 2,
+      "phase": 2,
+      "module": "WhatsApp",
+      "loc": 19,
+      "findingsCount": 0,
+      "severityCounts": {
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": null,
+      "evidence": ["dag:CLAUDE.md FASE 2 — WhatsApp", "findings:0"],
+      "rank": 45
+    },
+    {
+      "file": "backend/src/whatsapp/__companions__/cia-runtime.service.fixtures.companion.ts",
+      "score": 180,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 6,
+        "user_impact": 5,
+        "effort_hours": 0.5
+      },
+      "tier": 2,
+      "phase": 2,
+      "module": "WhatsApp",
+      "loc": 36,
+      "findingsCount": 0,
+      "severityCounts": {
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": null,
+      "evidence": ["dag:CLAUDE.md FASE 2 — WhatsApp", "findings:0"],
+      "rank": 46
+    },
+    {
+      "file": "backend/src/checkout/checkout-product.helpers.ts",
+      "score": 180,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 8,
+        "user_impact": 5,
+        "effort_hours": 0.7
+      },
+      "tier": 2,
+      "phase": 1,
+      "module": "Checkout",
+      "loc": 50,
+      "findingsCount": 0,
+      "severityCounts": {
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": null,
+      "evidence": ["dag:CLAUDE.md FASE 1 — Checkout", "findings:0"],
+      "rank": 47
+    },
+    {
+      "file": "backend/src/checkout/checkout-public-url.util.ts",
+      "score": 180,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 8,
+        "user_impact": 5,
+        "effort_hours": 0.7
+      },
+      "tier": 2,
+      "phase": 1,
+      "module": "Checkout",
+      "loc": 50,
+      "findingsCount": 0,
+      "severityCounts": {
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": null,
+      "evidence": ["pulse:1 diagnostic break(s)", "dag:CLAUDE.md FASE 1 — Checkout", "findings:0"],
+      "rank": 48
+    },
+    {
+      "file": "backend/src/whatsapp/__companions__/whatsapp-watchdog-recovery.service.companion.ts",
+      "score": 173.07692307692307,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 6,
+        "user_impact": 5,
+        "effort_hours": 0.5
+      },
+      "tier": 2,
+      "phase": 2,
+      "module": "WhatsApp",
+      "loc": 39,
+      "findingsCount": 0,
+      "severityCounts": {
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": null,
+      "evidence": ["dag:CLAUDE.md FASE 2 — WhatsApp", "findings:0"],
+      "rank": 49
+    },
+    {
+      "file": "backend/src/billing/billing-plan-features.ts",
+      "score": 173.07692307692307,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 8,
+        "user_impact": 5,
+        "effort_hours": 0.7
+      },
+      "tier": 2,
+      "phase": 1,
+      "module": "Billing",
+      "loc": 52,
+      "findingsCount": 0,
+      "severityCounts": {
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": null,
+      "evidence": ["dag:CLAUDE.md FASE 1 — Billing", "findings:0"],
+      "rank": 50
+    }
+  ]
+}

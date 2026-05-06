@@ -233,20 +233,43 @@ export function ensureGraphLensSettings() {
     return false;
   }
 
+  // Race-fix (2026-05-05): graph-color-watchdog.mjs is the sole owner of
+  // colorGroups. Mirror-daemon used to overwrite colorGroups every cycle
+  // with CODE_STATE_COLOR_GROUPS (28 entries), erasing the 22 KLOEL HUD
+  // extension groups that the watchdog had just applied. The two daemons
+  // raced, looping every second forever. Now mirror-daemon ONLY seeds
+  // colorGroups if the file is empty (first-run bootstrap); otherwise it
+  // touches search/showOrphans/hideUnresolved only and leaves colorGroups
+  // alone.
+  const existingGroups = Array.isArray(currentSettings.colorGroups)
+    ? currentSettings.colorGroups
+    : [];
+  const colorGroups = existingGroups.length === 0 ? CODE_STATE_COLOR_GROUPS : existingGroups;
+
   const graphSettings = {
     ...currentSettings,
     search: WORKSPACE_GRAPH_SEARCH,
     showOrphans: true,
     hideUnresolved: true,
-    colorGroups: CODE_STATE_COLOR_GROUPS,
+    colorGroups,
   };
   const next = `${JSON.stringify(graphSettings, null, 2)}\n`;
   const current = `${JSON.stringify(currentSettings, null, 2)}\n`;
   if (current === next) return false;
 
   const tmp = `${GRAPH_SETTINGS_PATH}.tmp`;
-  writeFileSync(tmp, next, 'utf8');
-  renameSync(tmp, GRAPH_SETTINGS_PATH);
+  try {
+    writeFileSync(tmp, next, 'utf8');
+    renameSync(tmp, GRAPH_SETTINGS_PATH);
+  } catch (err) {
+    // Race against another writer that removed our tmp before rename.
+    // Non-fatal — next cycle will retry.
+    if (err && err.code === 'ENOENT') {
+      log('WARN', 'graph.json write race lost:', err.message);
+      return false;
+    }
+    throw err;
+  }
   return true;
 }
 
