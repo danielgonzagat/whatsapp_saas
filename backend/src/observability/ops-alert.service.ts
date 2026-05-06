@@ -3,6 +3,19 @@ import * as Sentry from '@sentry/node';
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
+type OpsEventCreateInput = {
+  type: string;
+  service: string;
+  error: string;
+  stack?: string | null;
+  workspaceId?: string | null;
+  metadata?: Prisma.InputJsonValue;
+};
+
+type OpsEventDelegate = {
+  create(args: { data: OpsEventCreateInput }): Promise<unknown>;
+};
+
 /**
  * Centralised alerting for runtime-critical errors that must not go unnoticed.
  *
@@ -18,6 +31,11 @@ export class OpsAlertService {
   private readonly logger = new Logger('OpsAlert');
 
   constructor(private readonly prisma?: PrismaService) {}
+
+  private getOpsEventDelegate(): OpsEventDelegate | null {
+    const candidate = this.prisma as unknown as { opsEvent?: OpsEventDelegate } | undefined;
+    return candidate?.opsEvent || null;
+  }
 
   /**
    * Alert on a critical error that could degrade the platform silently.
@@ -57,9 +75,10 @@ export class OpsAlertService {
     }
 
     // 3. Persist an OpsEvent row for the dashboard
-    if (this.prisma) {
+    const opsEvent = this.getOpsEventDelegate();
+    if (opsEvent) {
       try {
-        await this.prisma.opsEvent.create({
+        await opsEvent.create({
           data: {
             type: 'critical_error',
             service: context,
@@ -100,9 +119,10 @@ export class OpsAlertService {
       // Sentry may not be initialised
     }
 
-    if (this.prisma) {
+    const opsEvent = this.getOpsEventDelegate();
+    if (opsEvent) {
       try {
-        await this.prisma.opsEvent.create({
+        await opsEvent.create({
           data: {
             type: 'degradation',
             service: context,
@@ -132,9 +152,10 @@ export class OpsAlertService {
       `OPS_RECOVERY | ${context}${extra?.workspaceId ? ` | ws=${extra.workspaceId}` : ''} | ${message}`,
     );
 
-    if (this.prisma) {
+    const opsEvent = this.getOpsEventDelegate();
+    if (opsEvent) {
       try {
-        await this.prisma.opsEvent.create({
+        await opsEvent.create({
           data: {
             type: 'recovery',
             service: context,
