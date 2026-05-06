@@ -1,4 +1,5 @@
 import type { UIElement } from '../types.core';
+import { discoverReservedJsKeywords } from '../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 import { extractApiCallEndpoints, type ApiModuleMap } from '../ui-api-calls';
 import type { HookRegistry } from './hook-registry';
 import {
@@ -181,31 +182,7 @@ function extractCalledFunctionNames(value: string): string[] {
 }
 
 function isBuiltinOrControlCall(value: string): boolean {
-  return [
-    'if',
-    'for',
-    'while',
-    'return',
-    'await',
-    'catch',
-    'try',
-    'console',
-    'Math',
-    'JSON',
-    'Array',
-    'Object',
-    'String',
-    'Number',
-    'parseInt',
-    'parseFloat',
-    'setTimeout',
-    'clearTimeout',
-    'setInterval',
-    'Date',
-    'Promise',
-    'Error',
-    'require',
-  ].includes(value);
+  return discoverReservedJsKeywords().has(value) || value in globalThis;
 }
 
 /** Resolve handler. */

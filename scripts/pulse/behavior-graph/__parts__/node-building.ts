@@ -113,18 +113,39 @@ function extractInputs(
   return inputs;
 }
 
-function detectStateAccess(bodyText: string): BehaviorStateAccess[] {
-  if (!bodyText.includes('prisma')) {
+function detectStateAccess(
+  bodyText: string,
+  sourceContext: SourceExternalContext,
+): BehaviorStateAccess[] {
+  const ormBindings = sourceContext.importedBindingProviders.entries();
+  const ormClientNames = new Set<string>();
+  for (const [binding, provider] of ormBindings) {
+    if (
+      /\b(?:prisma|orm|drizzle|knex|sequelize|typeorm|mongoose|mikro|objection)\b/i.test(provider)
+    ) {
+      ormClientNames.add(binding);
+    }
+  }
+
+  if (ormClientNames.size === 0) {
     return [];
   }
 
   const accesses: BehaviorStateAccess[] = [];
   const seen = new Set<string>();
 
-  const prismaPatterns = [
-    new RegExp(String.raw`\bprisma\.(${IDENTIFIER_GRAMMAR})\.(${IDENTIFIER_GRAMMAR})\b`, 'g'),
-    new RegExp(String.raw`\bthis\.prisma\.(${IDENTIFIER_GRAMMAR})\.(${IDENTIFIER_GRAMMAR})\b`, 'g'),
-    new RegExp(String.raw`\bprismaClient\.(${IDENTIFIER_GRAMMAR})\.(${IDENTIFIER_GRAMMAR})\b`, 'g'),
+  const ormNamePattern = [...ormClientNames]
+    .map((n) => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+    .join('|');
+  const patterns = [
+    new RegExp(
+      String.raw`\b(${ormNamePattern})\.(${IDENTIFIER_GRAMMAR})\.(${IDENTIFIER_GRAMMAR})\b`,
+      'g',
+    ),
+    new RegExp(
+      String.raw`\bthis\.(${ormNamePattern})\.(${IDENTIFIER_GRAMMAR})\.(${IDENTIFIER_GRAMMAR})\b`,
+      'g',
+    ),
   ];
 
   const writeOps = [...discoverStateWriteOperationLabels()];
@@ -140,7 +161,7 @@ function detectStateAccess(bodyText: string): BehaviorStateAccess[] {
     return null;
   };
 
-  for (const pattern of prismaPatterns) {
+  for (const pattern of patterns) {
     let match: RegExpExecArray | null;
     while ((match = pattern.exec(bodyText)) !== null) {
       const model = match[1];

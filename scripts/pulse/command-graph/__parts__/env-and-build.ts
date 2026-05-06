@@ -2,13 +2,17 @@ import * as path from 'node:path';
 import { pathExists, readTextFile, statPath } from '../../safe-fs';
 import { safeJoin } from '../../lib/safe-path';
 import { deriveUnitValue } from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
-import { hasObservedToken } from '../../dynamic-reality-kernel/__parts__/token-evidence';
+import {
+  hasObservedToken,
+  splitIdentifierTokensFromObservedName,
+} from '../../dynamic-reality-kernel/__parts__/token-evidence';
 import type {
   PulseCommandGraph,
   PulseDiscoveredCommand,
   PulseDiscoveredEnvironmentVariable,
   CandidateSource,
 } from './types';
+import { discoverSourceFilePatternCatalog, discoverEnvContextCatalog } from './types';
 import {
   discoverStaticSources,
   inferInstallCommands,
@@ -19,6 +23,21 @@ import {
   toRelativePath,
   uniqueSorted,
 } from './discovery';
+
+const OBSERVED_SECRET_LIKE_TOKEN_CATALOG = [
+  'secret',
+  'token',
+  'password',
+  'private',
+  'webhook',
+] as const;
+
+const OBSERVED_SECRET_COMPOUND_TOKEN_CATALOG = [
+  { primary: 'api', secondary: 'key' },
+  { primary: 'access', secondary: 'key' },
+] as const;
+
+const ENV_CONTEXT_CATALOG = discoverEnvContextCatalog();
 
 function isEnvNameChar(char: string | undefined): boolean {
   if (!char) {
@@ -108,15 +127,31 @@ function collectUppercaseNames(text: string): string[] {
 
 function isSecretLikeName(name: string): boolean {
   const tokens = new Set(name.toLowerCase().split('_').filter(Boolean));
-  return (
-    hasObservedToken(tokens, ['secret']) ||
-    hasObservedToken(tokens, ['token']) ||
-    hasObservedToken(tokens, ['password']) ||
-    hasObservedToken(tokens, ['private']) ||
-    (hasObservedToken(tokens, ['api']) && hasObservedToken(tokens, ['key'])) ||
-    (hasObservedToken(tokens, ['access']) && hasObservedToken(tokens, ['key'])) ||
-    hasObservedToken(tokens, ['webhook'])
-  );
+  if (hasObservedToken(tokens, [...OBSERVED_SECRET_LIKE_TOKEN_CATALOG])) {
+    return true;
+  }
+  for (const { primary, secondary } of OBSERVED_SECRET_COMPOUND_TOKEN_CATALOG) {
+    if (hasObservedToken(tokens, [primary]) && hasObservedToken(tokens, [secondary])) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function classifyEnvContext(line: string, trimmed: string): string | null {
+  const upperTrimmed = trimmed.toUpperCase();
+  if (upperTrimmed.startsWith('ARG ')) {
+    const declaration = trimmed.slice(4).trim();
+    const [, defaultValue] = declaration.split('=', 2);
+    return defaultValue === undefined ? 'docker-arg-required' : 'docker-arg-default';
+  }
+  if (upperTrimmed.startsWith('ENV ')) {
+    return 'docker-env';
+  }
+  if (!trimmed.startsWith('- ') && trimmed.includes(':')) {
+    return 'workflow-env';
+  }
+  return null;
 }
 
 function collectEnvNames(text: string): Map<string, string[]> {
@@ -138,23 +173,23 @@ function collectEnvNames(text: string): Map<string, string[]> {
   }
   for (const line of text.split(/\r?\n/)) {
     const trimmed = line.trim();
-    const upperTrimmed = trimmed.toUpperCase();
-    if (upperTrimmed.startsWith('ARG ')) {
-      const declaration = trimmed.slice(4).trim();
-      const [name, defaultValue] = declaration.split('=', 2);
-      if (isLikelyEnvName(name)) {
-        add(name, defaultValue === undefined ? 'docker-arg-required' : 'docker-arg-default');
-      }
-    }
-    if (upperTrimmed.startsWith('ENV ')) {
-      for (const name of collectUppercaseNames(trimmed.slice(4))) {
-        add(name, 'docker-env');
-      }
-    }
-    if (!trimmed.startsWith('- ') && trimmed.includes(':')) {
-      const [candidate] = trimmed.split(':', 1);
-      if (isLikelyEnvName(candidate.trim())) {
-        add(candidate.trim(), 'workflow-env');
+    const dockerContext = classifyEnvContext(line, trimmed);
+    if (dockerContext) {
+      if (dockerContext.startsWith('docker-arg')) {
+        const declaration = trimmed.slice(4).trim();
+        const [name] = declaration.split('=', 2);
+        if (isLikelyEnvName(name)) {
+          add(name, dockerContext);
+        }
+      } else if (dockerContext === 'docker-env') {
+        for (const name of collectUppercaseNames(trimmed.slice(4))) {
+          add(name, dockerContext);
+        }
+      } else if (dockerContext === 'workflow-env') {
+        const [candidate] = trimmed.split(':', 1);
+        if (isLikelyEnvName(candidate.trim())) {
+          add(candidate.trim(), dockerContext);
+        }
       }
     }
   }

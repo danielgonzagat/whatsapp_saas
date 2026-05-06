@@ -375,8 +375,11 @@ export function isUrlTokenCharacter(char: string): boolean {
 }
 
 export function readMethodFromContext(context: Record<string, unknown>): string | null {
-  for (const key of ['method', 'httpMethod', 'httpVerb', 'verb']) {
-    const value = context[key];
+  for (const [key, value] of Object.entries(context)) {
+    const normalizedKey = key.toLowerCase();
+    if (!normalizedKey.includes('method') && !normalizedKey.includes('verb')) {
+      continue;
+    }
     if (typeof value === 'string' && HTTP_METHOD_PATTERN.test(value.toUpperCase())) {
       return value.toUpperCase();
     }
@@ -394,12 +397,11 @@ export function readSchemaFromContext(
   context: Record<string, unknown>,
   direction: 'request' | 'response',
 ): Record<string, unknown> | null {
-  const keys =
-    direction === 'request'
-      ? ['requestSchema', 'bodySchema', 'requestBody', 'payloadSchema']
-      : ['responseSchema', 'responseBody', 'resultSchema'];
-  for (const key of keys) {
-    const value = context[key];
+  for (const [key, value] of Object.entries(context)) {
+    const normalizedKey = key.toLowerCase();
+    if (!normalizedKey.includes(direction) && !normalizedKey.includes('schema')) {
+      continue;
+    }
     if (value && typeof value === 'object' && !Array.isArray(value)) {
       return value as Record<string, unknown>;
     }

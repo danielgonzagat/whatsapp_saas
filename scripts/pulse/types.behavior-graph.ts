@@ -58,6 +58,28 @@ export type BehaviorValidationRequirement =
   | 'observability_evidence'
   | 'governed_read_only_evidence';
 
+export type BehaviorDecoratorRole =
+  | 'http_route'
+  | 'queue_consumer'
+  | 'cron_job'
+  | 'event_listener'
+  | 'request_body'
+  | 'request_query'
+  | 'request_params'
+  | 'request_headers'
+  | 'request_context'
+  | 'auth_guard';
+
+export type BehaviorClassNameRole =
+  | 'controller_like'
+  | 'gateway_like'
+  | 'guard_like'
+  | 'validation_like'
+  | 'service_like'
+  | 'queue_like';
+
+export type GovernedEvidenceMode = 'read_only_evidence' | 'sandboxed_execution_with_validation';
+
 export interface BehaviorInput {
   kind: BehaviorInputKind;
   name: string;

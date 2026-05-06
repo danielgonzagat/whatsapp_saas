@@ -1,30 +1,14 @@
 import type { DetectedSourceRoot } from '../../source-root-detector/__parts__/types';
-import type { BehaviorNode, BehaviorValidationRequirement } from '../../types.behavior-graph';
+import type {
+  BehaviorNode,
+  BehaviorValidationRequirement,
+  BehaviorDecoratorRole,
+  BehaviorClassNameRole,
+  GovernedEvidenceMode,
+} from '../../types.behavior-graph';
 import { discoverExternalReceiverTokensFromEvidence } from '../../dynamic-reality-kernel/__parts__/token-evidence';
 import { discoverSourceExtensionsFromObservedTypescript } from '../../dynamic-reality-kernel/__parts__/token-evidence';
 import { discoverAllObservedHttpStatusCodes } from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
-
-type BehaviorDecoratorRole =
-  | 'http_route'
-  | 'queue_consumer'
-  | 'cron_job'
-  | 'event_listener'
-  | 'request_body'
-  | 'request_query'
-  | 'request_params'
-  | 'request_headers'
-  | 'request_context'
-  | 'auth_guard';
-
-type BehaviorClassNameRole =
-  | 'controller_like'
-  | 'gateway_like'
-  | 'guard_like'
-  | 'validation_like'
-  | 'service_like'
-  | 'queue_like';
-
-type GovernedEvidenceMode = 'read_only_evidence' | 'sandboxed_execution_with_validation';
 
 type BehaviorNodeArtifact = BehaviorNode & {
   governedEvidenceMode: GovernedEvidenceMode;
@@ -126,15 +110,8 @@ function isMemberChainTail(sourceText: string, matchIndex: number): boolean {
   return matchIndex > 0 && sourceText[matchIndex - 1] === '.';
 }
 
-export type {
-  BehaviorDecoratorRole,
-  BehaviorClassNameRole,
-  GovernedEvidenceMode,
-  BehaviorNodeArtifact,
-  ParsedFunc,
-  SourceExternalContext,
-  SourceFileTarget,
-};
+export type { BehaviorDecoratorRole, BehaviorClassNameRole, GovernedEvidenceMode };
+export type { BehaviorNodeArtifact, ParsedFunc, SourceExternalContext, SourceFileTarget };
 export {
   IDENTIFIER_GRAMMAR,
   UPPER_IDENTIFIER_GRAMMAR,

@@ -17,7 +17,10 @@ import {
   deriveZeroValue,
   deriveUnitValue,
 } from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
-import { discoverAllObservedArtifactFilenames } from '../../dynamic-reality-kernel/__parts__/token-evidence';
+import {
+  discoverAllObservedArtifactFilenames,
+  discoverSourceExtensionsFromObservedTypescript,
+} from '../../dynamic-reality-kernel/__parts__/token-evidence';
 import type { ParsedFunc } from './grammar-and-types';
 import type { BehaviorNodeArtifact } from './grammar-and-types';
 import { extractFunctionsFromSource } from './function-extraction';
@@ -35,9 +38,10 @@ function collectSourceFiles(
     if (!pathExists(dir)) continue;
 
     const entries = readDir(dir, { recursive: true }) as string[];
+    const sourceExtensions = discoverSourceExtensionsFromObservedTypescript();
     for (const entry of entries) {
       const ext = path.extname(entry);
-      if (ext !== '.ts' && ext !== '.tsx' && ext !== '.js' && ext !== '.jsx') continue;
+      if (!sourceExtensions.has(ext)) continue;
 
       const normalized = entry.split(path.sep).join('/');
       if (SKIP_DIRS.some((skip) => normalized.includes(skip))) continue;

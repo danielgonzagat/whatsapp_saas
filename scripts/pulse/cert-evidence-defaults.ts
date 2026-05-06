@@ -45,7 +45,7 @@ export {
   buildDefaultWorldState,
 } from './cert-evidence-actor';
 
-type ActorEvidenceKey = 'customer' | 'operator' | 'admin' | 'soak';
+type ActorEvidenceKey = PulseActorEvidence['actorKind'];
 
 function buildDefaultActorEvidenceByContract(
   resolvedManifest: PulseResolvedManifest,

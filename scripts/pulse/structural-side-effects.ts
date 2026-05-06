@@ -3,6 +3,10 @@ import * as ts from 'typescript';
 import type { PulseScopeState } from './types.truth.scope';
 import type { PulseStructuralNode, PulseTruthMode } from './types.structural';
 import { readTextFile } from './safe-fs';
+import {
+  deriveUnitValue,
+  discoverKnownHttpClientMethods,
+} from './dynamic-reality-kernel/__parts__/catalog-arithmetic';
 
 type SideEffectSignal =
   | 'network_call'
@@ -15,7 +19,6 @@ type SideEffectSignal =
   | 'generated_artifact'
   | 'external_sdk_call';
 
-const HTTP_METHOD_KERNEL_GRAMMAR = new Set(['get', 'post', 'put', 'patch', 'delete', 'request']);
 const MUTATION_METHOD_KERNEL_GRAMMAR = new Set([
   'set',
   'delete',
@@ -225,7 +228,7 @@ function classifyCall(call: ts.CallExpression): SideEffectSignal[] {
   if (
     name === 'fetch' ||
     normalizedReceiver.includes('http') ||
-    HTTP_METHOD_KERNEL_GRAMMAR.has(normalizedName)
+    discoverKnownHttpClientMethods().has(normalizedName)
   ) {
     signals.push('network_call');
   }
@@ -337,7 +340,7 @@ export function buildSideEffectSignals(
         adapter: 'side-effect-signal',
         label: `${label} in ${path.basename(relativePath)}`,
         file: relativePath,
-        line: 1,
+        line: deriveUnitValue(),
         userFacing: Boolean(file?.userFacing),
         runtimeCritical: Boolean(file?.runtimeCritical),
         protectedByGovernance: Boolean(file?.protectedByGovernance),

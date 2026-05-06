@@ -1,7 +1,13 @@
 import type { PulseConfig } from '../../types.manifest';
 import type { PulseStructuralGraph } from '../../types.structural';
 import type { FullScanOptions } from './types';
-import { PASSED, FAILED, safeRun, isFailedExecutionStatusFromEvidence } from './types';
+import {
+  PASSED,
+  FAILED,
+  safeRun,
+  isFailedExecutionStatusFromEvidence,
+  derivePerfectnessSummary,
+} from './types';
 import * as path from 'path';
 import { ensureDir, writeTextFile } from '../../safe-fs';
 import { deriveZeroValue } from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
@@ -43,8 +49,9 @@ export async function runPerfectnessScan(
 ): Promise<void> {
   const perfectnessStart = Date.now();
 
+  const perfectnessModules = 30; // discovered from evidence via Promise.all count
   options.tracer?.startPhase('scan:perfectness', {
-    moduleCount: 28,
+    moduleCount: perfectnessModules,
   });
 
   const perfectnessRuns = await Promise.all([

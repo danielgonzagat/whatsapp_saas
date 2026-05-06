@@ -38,13 +38,16 @@ export interface PulseAutonomousDirectiveUnit {
   exitCriteria?: string[];
   gateNames?: string[];
   scenarioIds?: string[];
-  /** Required validations that must ALL pass before the cycle counts as validated.
-   *  Populated by deriveRequiredValidations based on kind/affectedCapabilities/gateNames.
-   *  Categories: 'typecheck' | 'affected-tests' | 'flow-evidence' | 'scenario-evidence' | 'browser-evidence' */
-  requiredValidations?: Array<
-    'typecheck' | 'affected-tests' | 'flow-evidence' | 'scenario-evidence' | 'browser-evidence'
-  >;
+  /** Required validations that must ALL pass before the cycle counts as validated. */
+  requiredValidations?: PulseRequiredValidation[];
 }
+
+export type PulseRequiredValidation =
+  | 'typecheck'
+  | 'affected-tests'
+  | 'flow-evidence'
+  | 'scenario-evidence'
+  | 'browser-evidence';
 
 export interface PulseAutonomousDirective {
   autonomyVerdict?: 'SIM' | 'NAO';

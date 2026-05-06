@@ -269,7 +269,7 @@ function buildNodesFromParsedFunctions(
   return funcs.map((func) => {
     const kind = determineKind(func, sourceRoot, sourceContext);
     const inputs = extractInputs(func, sourceRoot, sourceContext);
-    const stateAccess = detectStateAccess(func.bodyText);
+    const stateAccess = detectStateAccess(func.bodyText, sourceContext);
     const externalCalls = detectExternalCalls(func.bodyText, sourceContext);
     const outputs = detectOutputs(func.bodyText, kind);
     const risk = determineRisk(

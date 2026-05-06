@@ -1,5 +1,10 @@
 import { normalizeEndpoint } from '../../parsers/api-parser';
 import type { HookRegistry } from '../../parsers/hook-registry';
+import {
+  deriveZeroValue,
+  discoverAllObservedHttpMethods,
+  discoverReservedJsKeywords,
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 
 function isIdentifierChar(value: string | undefined): boolean {
   if (!value) {
@@ -106,7 +111,11 @@ export function handlerCallsApiModule(handler: string, callName: string): boolea
   return handlerCallsFunction(handler, callName);
 }
 
-export function extractFunctionBody(fileContent: string, funcName: string, maxLines = 90): string {
+export function extractFunctionBody(
+  fileContent: string,
+  funcName: string,
+  maxLines = fileContent.split('\n').length,
+): string {
   const funcDefRe =
     /(?:const|let|function|async function)\s+([A-Za-z_$][A-Za-z0-9_$]*)\s*(?:=|\()/g;
   const defMatch = [...fileContent.matchAll(funcDefRe)].find((match) => match[1] === funcName);
@@ -153,23 +162,22 @@ export function extractFunctionBody(fileContent: string, funcName: string, maxLi
 }
 
 export function detectMethodFromBody(body: string): string {
-  const match = body.match(/method\s*:\s*['"`](GET|POST|PUT|PATCH|DELETE)['"`]/i);
+  const observedMethods = discoverAllObservedHttpMethods();
+  const methodPattern = observedMethods.map(escapeRegExp).join('|');
+  const match = body.match(new RegExp(`method\\s*:\\s*['"\`](${methodPattern})['"\`]`, 'i'));
   if (match) {
     return match[1].toUpperCase();
   }
-  if (/\.post\s*\(/i.test(body)) {
-    return 'POST';
+  for (const method of observedMethods) {
+    if (new RegExp(`\\.${escapeRegExp(method.toLowerCase())}\\s*\\(`, 'i').test(body)) {
+      return method.toUpperCase();
+    }
   }
-  if (/\.put\s*\(/i.test(body)) {
-    return 'PUT';
-  }
-  if (/\.patch\s*\(/i.test(body)) {
-    return 'PATCH';
-  }
-  if (/\.delete\s*\(/i.test(body)) {
-    return 'DELETE';
-  }
-  return 'POST';
+  return observedMethods[deriveZeroValue()] ?? '';
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 export function extractDirectApiFromBody(
@@ -192,7 +200,7 @@ export function extractDirectApiFromBody(
         endpoint,
         method: detectMethodFromBody(bodyText),
         file: '',
-        line: 0,
+        line: deriveZeroValue(),
       };
     }
   }
@@ -239,7 +247,7 @@ function findFunctionCallOpenParen(text: string, functionName: string, fromOffse
 
 function extractFirstStringLikeArgument(text: string, openParenIndex: number): string | null {
   let cursor = openParenIndex + 1;
-  const scanLimit = Math.min(text.length, openParenIndex + 260);
+  const scanLimit = text.length;
   while (cursor < scanLimit) {
     const ch = text[cursor];
     if (ch === ')' || ch === '\n') {
@@ -272,30 +280,7 @@ function normalizeStringLikeEndpoint(raw: string): string | null {
 }
 
 function isIgnorableLocalCall(calledFunc: string): boolean {
-  const ignoredCalls = [
-    'if',
-    'for',
-    'while',
-    'return',
-    'await',
-    'catch',
-    'try',
-    'console',
-    'Math',
-    'JSON',
-    'Array',
-    'Object',
-    'String',
-    'Number',
-    'Date',
-    'Promise',
-    'Error',
-    'URLSearchParams',
-    'AbortController',
-    'setTimeout',
-    'clearTimeout',
-  ];
-  if (ignoredCalls.includes(calledFunc)) {
+  if (discoverReservedJsKeywords().has(calledFunc) || calledFunc in globalThis) {
     return true;
   }
   return (

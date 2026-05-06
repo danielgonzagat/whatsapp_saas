@@ -3,6 +3,10 @@ import * as path from 'path';
 import type { PulseConfig } from '../types.manifest';
 import { walkFiles } from './utils';
 import { pathExists, readTextFile } from '../safe-fs';
+import {
+  discoverAllObservedHttpMethods,
+  discoverReservedJsKeywords,
+} from '../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 
 /** Hook function shape. */
 export interface HookFunction {
@@ -33,23 +37,22 @@ function normalizeEndpoint(raw: string): string {
 }
 
 function detectMethod(context: string): string {
-  const m = context.match(/method\s*:\s*['"`](GET|POST|PUT|PATCH|DELETE)['"`]/i);
+  const observedMethods = discoverAllObservedHttpMethods();
+  const methodPattern = observedMethods.map(escapeRegExp).join('|');
+  const m = context.match(new RegExp(`method\\s*:\\s*['"\`](${methodPattern})['"\`]`, 'i'));
   if (m) {
     return m[1].toUpperCase();
   }
-  if (/\.post\s*\(/i.test(context)) {
-    return 'POST';
-  }
-  if (/\.put\s*\(/i.test(context)) {
-    return 'PUT';
-  }
-  if (/\.patch\s*\(/i.test(context)) {
-    return 'PATCH';
-  }
-  if (/\.delete\s*\(/i.test(context)) {
-    return 'DELETE';
+  for (const method of observedMethods) {
+    if (new RegExp(`\\.${escapeRegExp(method.toLowerCase())}\\s*\\(`, 'i').test(context)) {
+      return method.toUpperCase();
+    }
   }
   return 'GET';
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 /**
@@ -128,7 +131,7 @@ export function buildHookRegistry(config: PulseConfig): HookRegistry {
           const funcName = innerMatch[1];
           // Get the function body (~20 lines after declaration)
           const funcStartLine = hookBody.substring(0, innerMatch.index).split('\n').length - 1;
-          const funcLines = hookBody.split('\n').slice(funcStartLine, funcStartLine + 25);
+          const funcLines = hookBody.split('\n').slice(funcStartLine);
           const funcBodyText = funcLines.join('\n');
 
           // Look for apiFetch call
@@ -254,17 +257,12 @@ export function buildHookRegistry(config: PulseConfig): HookRegistry {
           let methodMatch;
           while ((methodMatch = methodRe.exec(objBody)) !== null) {
             const methodName = methodMatch[1];
-            if (
-              ['const', 'let', 'var', 'return', 'if', 'else', 'try', 'catch'].includes(methodName)
-            ) {
+            if (discoverReservedJsKeywords().has(methodName)) {
               continue;
             }
 
             const methodStartLine = objBody.substring(0, methodMatch.index).split('\n').length - 1;
-            const methodBlock = objBody
-              .split('\n')
-              .slice(methodStartLine, methodStartLine + 20)
-              .join('\n');
+            const methodBlock = objBody.split('\n').slice(methodStartLine).join('\n');
 
             const apiMatch = methodBlock.match(
               /apiFetch\s*(?:<[^>]*>)?\s*\(\s*(?:['"`]([^'"`]+)['"`]|`([^`]+)`)/,

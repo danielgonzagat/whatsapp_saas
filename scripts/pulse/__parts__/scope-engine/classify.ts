@@ -5,6 +5,8 @@ import {
   type GovernanceBoundary,
 } from '../../scope-state-classify';
 import type { ScopeFileRole, ScopeExecutionMode } from '../../types.scope-engine';
+import { discoverSourceExtensionsFromObservedTypescript } from '../../dynamic-reality-kernel/__parts__/token-evidence';
+import { deriveStringUnionMembersFromTypeContract } from '../../dynamic-reality-kernel/__parts__/type-contract-labels';
 
 export const UNKNOWN_STATUS = 'unknown';
 export const HIGH_CONFIDENCE = 1;
@@ -46,18 +48,6 @@ const IMPORT_REGEX =
 
 const EXPORT_REGEX =
   /\bexport\s+(?:default\s+|const\s+|function\s+|class\s+|let\s+|var\s+|async\s+function\s+|type\s+|interface\s+|enum\s+|abstract\s+class\s+|\*)/g;
-
-const RESOLVE_EXTENSIONS = [
-  '.ts',
-  '.tsx',
-  '.js',
-  '.jsx',
-  '.mjs',
-  '.cjs',
-  '/index.ts',
-  '/index.tsx',
-  '/index.js',
-];
 
 export function classifyFileExtension(filePath: string): string {
   const ext = path.extname(filePath).toLowerCase();
@@ -117,78 +107,27 @@ export function isProtectedFile(
 }
 
 export function isSourceFile(filePath: string, extension: string, content = ''): boolean {
-  const sourceExtensions = new Set(['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs']);
+  const sourceExtensions = new Set(discoverSourceExtensionsFromObservedTypescript());
   return sourceExtensions.has(extension) && !isTestFile(filePath, content);
 }
 
 function roleFromPathSignal(filePath: string, content: string): ScopeFileRole | null {
   if (!hasExports(content)) return null;
-  const roleBySegment = new Map<string, ScopeFileRole>([
-    ['asset', 'asset'],
-    ['assets', 'asset'],
-    ['component', 'component'],
-    ['components', 'component'],
-    ['config', 'config'],
-    ['configs', 'config'],
-    ['controller', 'controller'],
-    ['controllers', 'controller'],
-    ['cron', 'cron_job'],
-    ['crons', 'cron_job'],
-    ['decorator', 'decorator'],
-    ['decorators', 'decorator'],
-    ['doc', 'doc'],
-    ['docs', 'doc'],
-    ['fixture', 'fixture'],
-    ['fixtures', 'fixture'],
-    ['gateway', 'gateway'],
-    ['gateways', 'gateway'],
-    ['guard', 'guard'],
-    ['guards', 'guard'],
-    ['hook', 'hook'],
-    ['hooks', 'hook'],
-    ['interface', 'interface'],
-    ['interfaces', 'interface'],
-    ['interceptor', 'interceptor'],
-    ['interceptors', 'interceptor'],
-    ['layout', 'layout'],
-    ['layouts', 'layout'],
-    ['lib', 'lib'],
-    ['middleware', 'middleware'],
-    ['middlewares', 'middleware'],
-    ['migration', 'migration'],
-    ['migrations', 'migration'],
-    ['module', 'module'],
-    ['modules', 'module'],
-    ['page', 'page'],
-    ['pages', 'page'],
-    ['provider', 'provider'],
-    ['providers', 'provider'],
-    ['queue', 'queue_processor'],
-    ['queues', 'queue_processor'],
-    ['resolver', 'resolver'],
-    ['resolvers', 'resolver'],
-    ['schema', 'schema'],
-    ['schemas', 'schema'],
-    ['script', 'script'],
-    ['scripts', 'script'],
-    ['seed', 'seed'],
-    ['seeds', 'seed'],
-    ['service', 'service'],
-    ['services', 'service'],
-    ['style', 'style'],
-    ['styles', 'style'],
-    ['type', 'type'],
-    ['types', 'type'],
-    ['util', 'util'],
-    ['utils', 'util'],
-    ['webhook', 'webhook_handler'],
-    ['webhooks', 'webhook_handler'],
-    ['worker', 'worker'],
-    ['workers', 'worker'],
-  ]);
+  const roleLabels = deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.scope-engine.ts',
+    'ScopeFileRole',
+  );
   for (const segment of filePath.split(path.sep)) {
-    const role = roleBySegment.get(segment.toLowerCase());
-    if (role) return role;
+    const normalizedSegment = segment.toLowerCase().replace(/s$/, '');
+    for (const role of roleLabels) {
+      const normalizedRole = role.replace(/_(processor|handler|job)$/, '').replace(/_/g, '-');
+      if (
+        normalizedSegment === normalizedRole ||
+        normalizedSegment === normalizedRole.replace(/-/g, '')
+      ) {
+        return role as ScopeFileRole;
+      }
+    }
   }
   return null;
 }
@@ -296,7 +235,7 @@ export function resolveImportPath(
 ): string | null {
   if (importSpec.startsWith('.')) {
     const rawCandidate = path.resolve(importerDir, importSpec);
-    for (const ext of RESOLVE_EXTENSIONS) {
+    for (const ext of discoverResolvableSourceExtensions()) {
       const candidate = rawCandidate + ext;
       if (allKnownPaths.has(candidate)) return candidate;
     }
@@ -304,6 +243,11 @@ export function resolveImportPath(
     return null;
   }
   return importSpec;
+}
+
+function discoverResolvableSourceExtensions(): string[] {
+  const extensions = discoverSourceExtensionsFromObservedTypescript();
+  return [...extensions, ...[...extensions].map((extension) => `/index${extension}`)];
 }
 
 export function classifyFileRolePublic(filePath: string, content: string): ScopeFileRole {

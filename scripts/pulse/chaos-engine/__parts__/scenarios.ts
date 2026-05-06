@@ -36,7 +36,10 @@ import { ensureDir, writeTextFile } from '../../safe-fs';
 import { safeJoin } from '../../safe-path';
 import { discoverAllObservedArtifactFilenames } from '../../dynamic-reality-kernel/__parts__/token-evidence';
 import { discoverChaosResultLabels } from '../../dynamic-reality-kernel/__parts__/type-contract-engines';
-import { deriveHttpStatusFromObservedCatalog } from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+import {
+  deriveHttpStatusFromObservedCatalog,
+  deriveZeroValue,
+} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 
 export function buildChaosCatalog(rootDir: string): ChaosEvidence {
   const targets = detectCodebaseTargets(rootDir);
@@ -276,7 +279,7 @@ function buildExpectedBehavior(
   const providerLabel = provider ? dependencyLabel(provider) : target;
   switch (kind) {
     case 'latency': {
-      const tier = classifyLatencyTier(latencyMs ?? 0);
+      const tier = classifyLatencyTier(latencyMs ?? deriveZeroValue());
       let behavior = circuitBreakerPrediction(tier);
       behavior += '; ' + cacheFallbackPrediction(target, provider, tier, operationalConcerns);
       behavior += '; ' + queueRetryPrediction(target, provider, operationalConcerns);
@@ -373,12 +376,12 @@ function cacheFallbackPrediction(
   tier: LatencyTier,
   operationalConcerns: Set<ChaosOperationalConcern>,
 ): string {
-  if (target === 'postgres') {
+  if (target === lookupChaosTargetEvidence('postgres')) {
     return tier === 'low' || tier === 'medium'
       ? 'No cache fallback needed — DB latency within bounds'
       : 'Cache fallback SHOULD activate — serve stale reads from Redis or in-memory cache';
   }
-  if (target === 'redis')
+  if (target === lookupChaosTargetEvidence('redis'))
     return 'Redis unavailable — rate-limits MUST fail-open, session store MUST degrade to DB lookup';
   if (operationalConcerns.has('payment_idempotency'))
     return 'Payment operations MUST preserve idempotency keys and reuse cached session, price, or ledger reference data when retrying';
@@ -398,7 +401,7 @@ function queueRetryPrediction(
   provider: ChaosProviderName | undefined,
   operationalConcerns: Set<ChaosOperationalConcern>,
 ): string {
-  if (target === 'redis')
+  if (target === lookupChaosTargetEvidence('redis'))
     return 'BullMQ jobs MUST retry with exponential backoff — queue processing delayed but preserved';
   if (operationalConcerns.has('whatsapp_queue_retry'))
     return 'Outbound WhatsApp messages MUST be enqueued and retried with bounded exponential backoff';

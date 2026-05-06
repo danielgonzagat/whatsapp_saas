@@ -5,6 +5,11 @@ import { pathExists, readTextFile } from './safe-fs';
 import { safeJoin } from './lib/safe-path';
 import type { PulseConvergenceOwnerLane } from './types.gate-failure';
 import type { PulseScopeFileKind, PulseScopeSurface } from './types.truth.scope';
+import { deriveStringUnionMembersFromTypeContract } from './dynamic-reality-kernel/__parts__/type-contract-labels';
+import {
+  classifyKind as classifyKindDynamic,
+  classifySurface as classifySurfaceDynamic,
+} from './scope-state.classify';
 import {
   SCANNABLE_EXTENSIONS,
   IGNORED_DIRECTORIES,
@@ -46,32 +51,25 @@ export function uniqueStrings(values: Array<string | null | undefined>): string[
 }
 
 export function createSurfaceCountRecord(): Record<PulseScopeSurface, number> {
-  return {
-    frontend: 0,
-    'frontend-admin': 0,
-    backend: 0,
-    worker: 0,
-    prisma: 0,
-    e2e: 0,
-    scripts: 0,
-    docs: 0,
-    infra: 0,
-    governance: 0,
-    'root-config': 0,
-    artifacts: 0,
-    misc: 0,
-  };
+  return Object.fromEntries(
+    [
+      ...deriveStringUnionMembersFromTypeContract(
+        'scripts/pulse/types.truth.scope.ts',
+        'PulseScopeSurface',
+      ),
+    ].map((surface) => [surface, 0]),
+  ) as Record<PulseScopeSurface, number>;
 }
 
 export function createKindCountRecord(): Record<PulseScopeFileKind, number> {
-  return {
-    source: 0,
-    spec: 0,
-    migration: 0,
-    config: 0,
-    document: 0,
-    artifact: 0,
-  };
+  return Object.fromEntries(
+    [
+      ...deriveStringUnionMembersFromTypeContract(
+        'scripts/pulse/types.truth.scope.ts',
+        'PulseScopeFileKind',
+      ),
+    ].map((kind) => [kind, 0]),
+  ) as Record<PulseScopeFileKind, number>;
 }
 
 export function loadGovernanceBoundary(rootDir: string): GovernanceBoundary {
@@ -148,96 +146,11 @@ export function classifySurface(
   relPath: string,
   protectedByGovernance: boolean,
 ): PulseScopeSurface {
-  const basename = path.basename(relPath);
-  if (relPath.startsWith('PULSE_')) {
-    return 'artifacts';
-  }
-  if (protectedByGovernance || relPath.startsWith('.github/')) {
-    return 'governance';
-  }
-  if (relPath.startsWith('frontend/src/')) {
-    return 'frontend';
-  }
-  if (relPath.startsWith('frontend-admin/src/')) {
-    return 'frontend-admin';
-  }
-  if (relPath.startsWith('backend/src/')) {
-    return 'backend';
-  }
-  if (relPath.startsWith('worker/src/') || relPath.startsWith('worker/')) {
-    return 'worker';
-  }
-  if (relPath.startsWith('backend/prisma/') || relPath.startsWith('prisma/')) {
-    return 'prisma';
-  }
-  if (relPath.startsWith('e2e/')) {
-    return 'e2e';
-  }
-  if (relPath.startsWith('scripts/')) {
-    return 'scripts';
-  }
-  if (relPath.startsWith('docs/')) {
-    return 'docs';
-  }
-  if (
-    relPath.startsWith('docker/') ||
-    relPath.startsWith('nginx/') ||
-    basename.startsWith('Dockerfile')
-  ) {
-    return 'infra';
-  }
-  if (
-    ROOT_CONFIG_FILES.has(basename) ||
-    relPath === '.codacy.yml' ||
-    relPath.startsWith('.husky/')
-  ) {
-    return 'root-config';
-  }
-  return 'misc';
+  return classifySurfaceDynamic(relPath, protectedByGovernance);
 }
 
 export function classifyKind(relPath: string, surface: PulseScopeSurface): PulseScopeFileKind {
-  const basename = path.basename(relPath);
-  if (surface === 'artifacts' || relPath.startsWith('PULSE_')) {
-    return 'artifact';
-  }
-  if (
-    relPath.startsWith('backend/prisma/migrations/') ||
-    relPath.startsWith('prisma/migrations/')
-  ) {
-    return 'migration';
-  }
-  if (
-    relPath.includes('/__tests__/') ||
-    /\.spec\.[jt]sx?$/.test(relPath) ||
-    /\.test\.[jt]sx?$/.test(relPath) ||
-    surface === 'e2e'
-  ) {
-    return 'spec';
-  }
-  if (surface === 'docs' || path.extname(relPath) === '.md') {
-    return 'document';
-  }
-  if (
-    path.extname(relPath) === '.ts' ||
-    path.extname(relPath) === '.tsx' ||
-    path.extname(relPath) === '.js' ||
-    path.extname(relPath) === '.jsx' ||
-    path.extname(relPath) === '.mjs' ||
-    path.extname(relPath) === '.cjs'
-  ) {
-    if (
-      relPath.includes('/src/') ||
-      relPath.startsWith('frontend/') ||
-      relPath.startsWith('backend/')
-    ) {
-      return 'source';
-    }
-  }
-  if (basename === 'Dockerfile' || basename.startsWith('Dockerfile.')) {
-    return 'config';
-  }
-  return 'config';
+  return classifyKindDynamic(relPath, surface);
 }
 
 export function classifyModuleCandidate(relPath: string): string | null {
@@ -281,62 +194,25 @@ export function classifyOwnerLane(
 ): PulseConvergenceOwnerLane {
   const normalized = relPath.toLowerCase();
   const moduleToken = moduleCandidate || '';
-  const hasAnySegment = (segments: ReadonlyArray<string>): boolean =>
-    segments.some((segment) => normalized.includes(segment));
-  const hasAnyModuleToken = (segments: ReadonlyArray<string>): boolean =>
-    segments.some((segment) => moduleToken.includes(segment.replace(/\//g, '')));
+  const laneLabels = deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.gate-failure.ts',
+    'PulseConvergenceOwnerLane',
+  ) as Set<PulseConvergenceOwnerLane>;
+  const laneMatchesObservedPath = (lane: PulseConvergenceOwnerLane): boolean => {
+    const tokens = lane.split('-').filter(Boolean);
+    return tokens.some(
+      (token) =>
+        normalized.includes(token) || moduleToken.includes(token) || surface.includes(token),
+    );
+  };
 
   if (protectedByGovernance || surface === 'governance' || surface === 'docs') {
     return 'platform';
   }
-  if (
-    normalized.includes('/auth/') ||
-    normalized.includes('/security/') ||
-    normalized.includes('/audit/') ||
-    normalized.includes('/rbac/') ||
-    normalized.includes('/permissions/') ||
-    normalized.includes('/policy/')
-  ) {
-    return 'security';
-  }
-  if (
-    surface === 'worker' ||
-    surface === 'prisma' ||
-    surface === 'infra' ||
-    surface === 'root-config' ||
-    normalized.includes('/health/') ||
-    normalized.includes('/metrics') ||
-    normalized.includes('/observability/') ||
-    normalized.includes('/alerts/') ||
-    normalized.includes('/telemetry/') ||
-    normalized.includes('/queue/') ||
-    normalized.includes('/jobs/') ||
-    normalized.includes('/logging/')
-  ) {
-    return 'reliability';
-  }
-  if (
-    hasAnySegment(['/admin/', '/internal/', '/operator/', '/backoffice/', '/dashboard/']) ||
-    hasAnyModuleToken(['/admin/', '/internal/', '/operator/', '/backoffice/', '/dashboard/'])
-  ) {
-    return 'operator-admin';
-  }
-  if (surface === 'frontend-admin') {
-    return 'operator-admin';
-  }
-  if (
-    surface === 'frontend' ||
-    hasAnySegment([
-      '/page.',
-      '/pages/',
-      '/route.',
-      '/routes/',
-      '/controller.',
-      '/controllers/',
-      '/public/',
-    ])
-  ) {
-    return 'customer';
+  for (const lane of laneLabels) {
+    if (lane !== 'platform' && laneMatchesObservedPath(lane)) {
+      return lane;
+    }
   }
   return 'platform';
 }

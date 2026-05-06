@@ -47,6 +47,48 @@ export interface PerfectnessModuleRun {
   error?: string;
 }
 
+/** Evidence-driven perfectness summary — no hardcoded module counts. */
+export interface PerfectnessEvidenceSummary {
+  totalModules: number;
+  passedModules: number;
+  failedModules: number;
+  /** Derived pass rate (0–1) from actual evidence. */
+  passRate: number;
+  /** Whether perfectness layer has converged based on evidence. */
+  converged: boolean;
+}
+
+/**
+ * Derive perfectness summary from actual module runs.
+ * Counts are derived from evidence, not hardcoded.
+ */
+export function derivePerfectnessSummary(runs: PerfectnessModuleRun[]): PerfectnessEvidenceSummary {
+  const totalModules = runs.length;
+  const failedModules = runs.filter((run) =>
+    isFailedExecutionStatusFromEvidence(run.status),
+  ).length;
+  const passedModules = totalModules - failedModules;
+  const passRate = totalModules > 0 ? passedModules / totalModules : 0;
+  const converged = failedModules === 0;
+
+  return { totalModules, passedModules, failedModules, passRate, converged };
+}
+
+/**
+ * Derive adaptive timeout from evidence — uses the 95th percentile of recent
+ * parser durations, or falls back to the observed default timeout baseline.
+ */
+export function deriveAdaptiveTimeoutFromEvidence(
+  recentDurationsMs: number[],
+  fallbackMs: number,
+): number {
+  if (recentDurationsMs.length === 0) return fallbackMs;
+  const sorted = [...recentDurationsMs].sort((a, b) => a - b);
+  const p95Index = Math.ceil(sorted.length * 0.95) - 1;
+  const p95 = sorted[Math.max(0, p95Index)];
+  return Math.max(fallbackMs, p95 * 2);
+}
+
 export function isFailedExecutionStatusFromEvidence(s: string): boolean {
   const all = discoverHarnessExecutionStatusLabels();
   if (!all.has(s)) return false;

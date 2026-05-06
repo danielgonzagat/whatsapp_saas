@@ -331,21 +331,9 @@ export function detectProviders(rootDir: string): Map<ChaosProviderName, string[
 
 export function detectCodebaseTargets(rootDir: string): Set<ChaosTarget> {
   const found = new Set<ChaosTarget>();
-  const backendDirs = [
-    safeJoin(rootDir, 'backend', 'src'),
-    safeJoin(rootDir, 'worker', 'src'),
-    safeJoin(rootDir, 'worker'),
-  ];
-  const allFiles: string[] = [];
-  for (const dir of backendDirs) {
-    if (pathExists(dir)) {
-      allFiles.push(
-        ...walkFiles(dir, [...discoverSourceExtensionsFromObservedTypescript()]).filter(
-          (f) => !/\.(spec|test)\.ts$|__tests__|__mocks__|dist\//.test(f),
-        ),
-      );
-    }
-  }
+  const allFiles = walkFiles(rootDir, [...discoverSourceExtensionsFromObservedTypescript()]).filter(
+    (f) => !/\.(spec|test)\.ts$|__tests__|__mocks__|dist\//.test(f),
+  );
   for (const file of allFiles) {
     const content = readSafe(file);
     for (const target of classifyTargetsFromSource(content)) found.add(target);

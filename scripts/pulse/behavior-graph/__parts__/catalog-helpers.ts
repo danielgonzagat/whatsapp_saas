@@ -132,7 +132,7 @@ let _decoratorRoleCatalog: Record<string, BehaviorDecoratorRole> | null = null;
 function requireDecoratorRoleCatalog(): Record<string, BehaviorDecoratorRole> {
   if (!_decoratorRoleCatalog) {
     _decoratorRoleCatalog = buildCatalogFromTypeContract(
-      'scripts/pulse/behavior-graph.ts',
+      'scripts/pulse/types.behavior-graph.ts',
       'BehaviorDecoratorRole',
     ) as Record<string, BehaviorDecoratorRole>;
   }
@@ -143,7 +143,7 @@ let _classNameRoleCatalog: Record<string, BehaviorClassNameRole> | null = null;
 function requireClassNameRoleCatalog(): Record<string, BehaviorClassNameRole> {
   if (!_classNameRoleCatalog) {
     _classNameRoleCatalog = buildCatalogFromTypeContract(
-      'scripts/pulse/behavior-graph.ts',
+      'scripts/pulse/types.behavior-graph.ts',
       'BehaviorClassNameRole',
     ) as Record<string, BehaviorClassNameRole>;
   }
@@ -238,7 +238,7 @@ let _governedEvidenceModeCatalog: Record<string, GovernedEvidenceMode> | null = 
 function requireGovernedEvidenceModeCatalog(): Record<string, GovernedEvidenceMode> {
   if (!_governedEvidenceModeCatalog) {
     _governedEvidenceModeCatalog = buildCatalogFromTypeContract(
-      'scripts/pulse/behavior-graph.ts',
+      'scripts/pulse/types.behavior-graph.ts',
       'GovernedEvidenceMode',
     ) as Record<string, GovernedEvidenceMode>;
   }

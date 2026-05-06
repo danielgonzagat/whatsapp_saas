@@ -31,7 +31,11 @@ function findMethodBodyStart(line: string): number {
   return -1;
 }
 
-export function extractMethodBlock(lines: string[], startIndex: number, maxLines = 80): string {
+export function extractMethodBlock(
+  lines: string[],
+  startIndex: number,
+  maxLines = lines.length - startIndex,
+): string {
   const block: string[] = [];
   let depth = 0;
   let parenDepth = 0;
@@ -220,13 +224,13 @@ export function extractWrappedCallContext(
     }
   }
   if (matchStart < 0) {
-    return lines.slice(startIndex, Math.min(startIndex + 8, lines.length)).join('\n');
+    return lines.slice(startIndex).join('\n');
   }
 
   let context = '';
   let parenDepth = 0;
   let started = false;
-  for (let i = startIndex; i < Math.min(startIndex + 8, lines.length); i++) {
+  for (let i = startIndex; i < lines.length; i++) {
     const line = lines[i] || '';
     const scanFrom = i === startIndex ? matchStart : 0;
     for (const ch of line.slice(scanFrom)) {
@@ -261,7 +265,7 @@ export function extractNamedCallContext(
   let context = '';
   let parenDepth = 0;
   let started = false;
-  for (let i = startIndex; i < Math.min(startIndex + 30, lines.length); i++) {
+  for (let i = startIndex; i < lines.length; i++) {
     const line = lines[i] || '';
     const scanFrom = i === startIndex ? matchStart : 0;
     for (const ch of line.slice(scanFrom)) {
@@ -358,7 +362,7 @@ export function findWrapperTemplatePrefix(content: string, wrapperName: string):
   if (start < 0) {
     return '';
   }
-  const bodyWindow = content.slice(start, start + 1500);
+  const bodyWindow = content.slice(start);
   const wrapperDef = bodyWindow.match(/apiFetch[^(]*\(\s*`([^$`]*?)\$\{/);
   return wrapperDef ? wrapperDef[1] : '';
 }

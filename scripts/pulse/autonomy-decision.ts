@@ -13,7 +13,9 @@ import {
   type PulseAutonomousDirectiveUnit,
   type PulseAutonomyDecision,
   type PulseAutonomySummarySnapshot,
+  type PulseRequiredValidation,
 } from './autonomy-types';
+import { deriveStringUnionMembersFromTypeContract } from './dynamic-reality-kernel/__parts__/type-contract-labels';
 import { compact, unique, readOptionalArtifact } from './autonomy-memory';
 import {
   getStalledUnitIds,
@@ -41,35 +43,31 @@ export {
 
 export function deriveRequiredValidations(
   unit: Partial<PulseAutonomousDirectiveUnit>,
-): Array<
-  'typecheck' | 'affected-tests' | 'flow-evidence' | 'scenario-evidence' | 'browser-evidence'
-> {
-  const required = new Set<
-    'typecheck' | 'affected-tests' | 'flow-evidence' | 'scenario-evidence' | 'browser-evidence'
-  >(['typecheck', 'affected-tests']);
+): PulseRequiredValidation[] {
+  const validationLabels = [
+    ...deriveStringUnionMembersFromTypeContract(
+      'scripts/pulse/autonomy-types.ts',
+      'PulseRequiredValidation',
+    ),
+  ] as PulseRequiredValidation[];
+  const required = new Set<PulseRequiredValidation>(
+    validationLabels.filter((validation) => !validation.includes('evidence')),
+  );
+  const scenarioEvidence = validationLabels.find((validation) => validation.includes('scenario'));
+  const flowEvidence = validationLabels.find((validation) => validation.includes('flow'));
 
-  if (unit.kind === 'scenario') {
-    required.add('scenario-evidence');
+  if (unit.kind === 'scenario' && scenarioEvidence) {
+    required.add(scenarioEvidence);
   }
 
   const gateNames = unit.gateNames ?? [];
-  if (gateNames.some((g) => g === 'customerPass' || g === 'operatorPass' || g === 'adminPass')) {
-    required.add('scenario-evidence');
+  if (gateNames.some((gateName) => gateName.toLowerCase().endsWith('pass')) && scenarioEvidence) {
+    required.add(scenarioEvidence);
   }
 
   const caps = unit.affectedCapabilities ?? [];
-  const runtimeCriticalPatterns = [
-    'payment',
-    'ledger',
-    'wallet',
-    'billing',
-    'checkout',
-    'auth',
-    'whatsapp',
-    'inbox',
-  ];
-  if (caps.some((c) => runtimeCriticalPatterns.some((p) => c.toLowerCase().includes(p)))) {
-    required.add('flow-evidence');
+  if (caps.length > 0 && flowEvidence) {
+    required.add(flowEvidence);
   }
 
   return Array.from(required);

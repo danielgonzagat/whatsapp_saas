@@ -2,25 +2,87 @@ import * as path from 'node:path';
 import { pathExists, readDir, readTextFile, statPath } from '../../safe-fs';
 import { safeJoin } from '../../lib/safe-path';
 import { deriveUnitValue } from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
-import { discoverDirectorySkipHintsFromEvidence } from '../../dynamic-reality-kernel/__parts__/token-evidence';
+import {
+  discoverDirectorySkipHintsFromEvidence,
+  splitIdentifierTokensFromObservedName,
+  hasObservedToken,
+} from '../../dynamic-reality-kernel/__parts__/token-evidence';
 import type {
   PulseCommandPurpose,
   PulseDiscoveredCommand,
   PackageJson,
   CandidateSource,
+  PulseConfidence,
 } from './types';
+import { discoverSourceFilePatternCatalog, discoverPackageLockTokenCatalog } from './types';
 
 const IGNORED_DIRS = discoverDirectorySkipHintsFromEvidence();
 IGNORED_DIRS.add('.git');
 
-const PACKAGE_DIR_ALLOWLIST = new Set([
-  '.',
-  'backend',
-  'frontend',
-  'frontend-admin',
-  'worker',
-  'e2e',
-]);
+const PULSE_PURPOSE_PATTERNS = discoverPurposeEvidencePatterns();
+const PULSE_SOURCE_FILE_PATTERNS = discoverSourceFilePatternCatalog();
+const PULSE_PACKAGE_LOCK_TOKENS = discoverPackageLockTokenCatalog();
+
+function discoverPurposeEvidencePatterns() {
+  return [
+    {
+      purpose: 'pulse' as const,
+      confidence: 'high' as const,
+      nameTokens: ['pulse'],
+      commandTokens: ['scripts', 'pulse', 'run'],
+      commandRegex: /scripts\/pulse\/run[.]js/,
+    },
+    {
+      purpose: 'build' as const,
+      confidence: 'high' as const,
+      nameTokens: ['build'],
+      commandTokens: ['build'],
+      commandRegex: /\bnpm\s+run\s+build\b/,
+    },
+    {
+      purpose: 'test' as const,
+      confidence: 'high' as const,
+      nameTokens: ['test'],
+      commandTokens: ['vitest', 'jest', 'playwright', 'test'],
+      commandRegex: /\b(?:vitest|jest|playwright\s+test)\b/,
+    },
+    {
+      purpose: 'dev' as const,
+      confidence: 'high' as const,
+      nameTokens: ['dev'],
+      commandTokens: ['next', 'dev', 'nest', 'start'],
+      commandRegex: /\b(?:next\s+dev|nest\s+start\s+--watch)\b/,
+    },
+    {
+      purpose: 'typecheck' as const,
+      confidence: 'high' as const,
+      nameTokens: ['typecheck'],
+      commandTokens: ['tsc', 'typecheck'],
+      commandRegex: /\btsc\b/,
+    },
+    {
+      purpose: 'lint' as const,
+      confidence: 'high' as const,
+      nameTokens: ['lint'],
+      commandTokens: ['eslint', 'lint'],
+      commandRegex: /\beslint\b/,
+    },
+    {
+      purpose: 'install' as const,
+      confidence: 'medium' as const,
+      nameTokens: ['install', 'ci'],
+      commandTokens: ['npm', 'ci', 'install'],
+      commandRegex: /\bnpm\s+(?:ci|install)\b/,
+    },
+    {
+      purpose: 'deploy' as const,
+      confidence: 'medium' as const,
+      nameTokens: ['deploy'],
+      commandTokens: ['deploy', 'railway', 'vercel'],
+      commandRegex: /\b(?:deploy|railway|vercel)\b/,
+    },
+  ];
+}
 
 function normalizeRepoPath(filePath: string): string {
   return filePath.replace(/\\/g, '/').replace(/^\.\//, '');
@@ -56,58 +118,30 @@ function classifyCommand(
   command: string,
 ): {
   purpose: PulseCommandPurpose;
-  confidence: 'high' | 'medium' | 'low';
+  confidence: PulseConfidence;
   signals: string[];
 } {
-  const loweredName = (scriptName ?? '').toLowerCase();
-  const loweredCommand = command.toLowerCase();
+  const scriptTokens = splitIdentifierTokensFromObservedName(scriptName ?? '');
+  const commandTokens = splitIdentifierTokensFromObservedName(command);
+  const mergedTokens = new Set([...scriptTokens, ...commandTokens]);
   const signals: string[] = [];
 
-  if (loweredName.includes('pulse') || /scripts\/pulse\/run[.]js/.test(loweredCommand)) {
-    signals.push('pulse');
-    return { purpose: 'pulse', confidence: 'high', signals };
+  for (const pattern of PULSE_PURPOSE_PATTERNS) {
+    const nameMatches = hasObservedToken(scriptTokens, pattern.nameTokens);
+    const commandRegexMatches = pattern.commandRegex.test(command);
+    const commandTokenMatches = hasObservedToken(mergedTokens, pattern.commandTokens);
+    const primarySignal = pattern.nameTokens[0];
+
+    if (nameMatches || commandRegexMatches || commandTokenMatches) {
+      signals.push(primarySignal);
+      const confidence: PulseConfidence =
+        nameMatches && commandRegexMatches ? pattern.confidence : 'medium';
+      return { purpose: pattern.purpose, confidence, signals };
+    }
   }
-  if (
-    loweredName === 'build' ||
-    loweredName.endsWith(':build') ||
-    /\bnpm run build\b/.test(loweredCommand)
-  ) {
-    signals.push('build');
-    return { purpose: 'build', confidence: 'high', signals };
-  }
-  if (
-    loweredName === 'test' ||
-    loweredName.includes(':test') ||
-    /\b(vitest|jest|playwright test)\b/.test(loweredCommand)
-  ) {
-    signals.push('test');
-    return { purpose: 'test', confidence: 'high', signals };
-  }
-  if (
-    loweredName === 'dev' ||
-    loweredName.includes(':dev') ||
-    /\b(next dev|nest start --watch)\b/.test(loweredCommand)
-  ) {
-    signals.push('dev');
-    return { purpose: 'dev', confidence: 'high', signals };
-  }
-  if (loweredName.includes('typecheck') || /\btsc\b/.test(loweredCommand)) {
-    signals.push('typecheck');
-    return { purpose: 'typecheck', confidence: 'high', signals };
-  }
-  if (loweredName.includes('lint') || /\beslint\b/.test(loweredCommand)) {
-    signals.push('lint');
-    return { purpose: 'lint', confidence: 'high', signals };
-  }
-  if (/\bnpm ci\b|\bnpm install\b/.test(loweredCommand)) {
-    signals.push('install');
-    return { purpose: 'install', confidence: 'medium', signals };
-  }
-  if (/\bdeploy\b|railway|vercel/.test(loweredCommand)) {
-    signals.push('deploy');
-    return { purpose: 'deploy', confidence: 'medium', signals };
-  }
-  return { purpose: 'other', confidence: 'low', signals };
+
+  signals.push('other');
+  return { purpose: 'other' as PulseCommandPurpose, confidence: 'low' as PulseConfidence, signals };
 }
 
 const MAX_TRAVERSAL_DEPTH = deriveUnitValue() + deriveUnitValue() + deriveUnitValue();
@@ -129,14 +163,21 @@ export function discoverPackageJsonFiles(rootDir: string): string[] {
       if (entry.name !== 'package.json') {
         continue;
       }
-      const packageDir = normalizeRepoPath(relativeDir || '.');
-      if (PACKAGE_DIR_ALLOWLIST.has(packageDir)) {
-        found.push(normalizeRepoPath(path.join(relativeDir, entry.name)));
-      }
+      found.push(normalizeRepoPath(path.join(relativeDir, entry.name)));
     }
   };
   visit('.', 0);
   return uniqueSorted(found);
+}
+
+function classifySourceFile(relativePath: string, entryName: string): PulseCommandPurpose | null {
+  for (const { sourceKind, pattern: patternStr } of PULSE_SOURCE_FILE_PATTERNS) {
+    const regex = new RegExp(patternStr);
+    if (regex.test(relativePath) || regex.test(entryName)) {
+      return sourceKind;
+    }
+  }
+  return null;
 }
 
 export function discoverStaticSources(rootDir: string): CandidateSource[] {
@@ -158,12 +199,9 @@ export function discoverStaticSources(rootDir: string): CandidateSource[] {
         continue;
       }
       const relativePath = normalizeRepoPath(path.join(relativeDir, entry.name));
-      if (/^\.github\/workflows\/.+[.]ya?ml$/.test(relativePath)) {
-        sources.push({ relativePath, sourceKind: 'github-workflow' });
-      } else if (/Dockerfile/.test(entry.name)) {
-        sources.push({ relativePath, sourceKind: 'dockerfile' });
-      } else if (/tsconfig(?:[.][\w-]+)?[.]json$/.test(entry.name)) {
-        sources.push({ relativePath, sourceKind: 'tsconfig' });
+      const sourceKind = classifySourceFile(relativePath, entry.name);
+      if (sourceKind) {
+        sources.push({ relativePath, sourceKind });
       }
     }
   };
@@ -177,24 +215,26 @@ export function inferInstallCommands(
 ): PulseDiscoveredCommand[] {
   return packageJsonFiles.flatMap((relativePackagePath) => {
     const packageDir = normalizeRepoPath(path.dirname(relativePackagePath));
-    const lockPath = normalizeRepoPath(path.join(packageDir, 'package-lock.json'));
-    const absoluteLockPath = safeJoin(rootDir, lockPath);
-    if (!pathExists(absoluteLockPath)) {
-      return [];
+    for (const lockName of PULSE_PACKAGE_LOCK_TOKENS) {
+      const lockPath = normalizeRepoPath(path.join(packageDir, lockName));
+      const absoluteLockPath = safeJoin(rootDir, lockPath);
+      if (pathExists(absoluteLockPath)) {
+        const command = `${packagePrefix(packageDir)} ci`;
+        return [
+          {
+            id: `install:${packageDir}`,
+            purpose: 'install' as const,
+            command,
+            sourcePath: lockPath,
+            sourceKind: 'lockfile' as const,
+            packagePath: relativePackagePath,
+            confidence: 'high' as const,
+            signals: ['package-lock'],
+          },
+        ];
+      }
     }
-    const command = `${packagePrefix(packageDir)} ci`;
-    return [
-      {
-        id: `install:${packageDir}`,
-        purpose: 'install' as const,
-        command,
-        sourcePath: lockPath,
-        sourceKind: 'lockfile' as const,
-        packagePath: relativePackagePath,
-        confidence: 'high' as const,
-        signals: ['package-lock'],
-      },
-    ];
+    return [];
   });
 }
 
