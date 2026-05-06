@@ -16,6 +16,10 @@ type OpsEventDelegate = {
   create(args: { data: OpsEventCreateInput }): Promise<unknown>;
 };
 
+function isOpsEventDelegate(value: unknown): value is OpsEventDelegate {
+  return Boolean(value && typeof value === 'object' && 'create' in value);
+}
+
 /**
  * Centralised alerting for runtime-critical errors that must not go unnoticed.
  *
@@ -33,8 +37,11 @@ export class OpsAlertService {
   constructor(private readonly prisma?: PrismaService) {}
 
   private getOpsEventDelegate(): OpsEventDelegate | null {
-    const candidate = this.prisma as unknown as { opsEvent?: OpsEventDelegate } | undefined;
-    return candidate?.opsEvent || null;
+    if (!this.prisma || !('opsEvent' in this.prisma)) {
+      return null;
+    }
+    const candidate = this.prisma.opsEvent;
+    return isOpsEventDelegate(candidate) ? candidate : null;
   }
 
   /**
