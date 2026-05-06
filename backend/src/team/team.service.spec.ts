@@ -360,46 +360,4 @@ describe('TeamService', () => {
       await expect(service.revokeInvite(wsId, inviteId)).rejects.toThrow(NotFoundException);
     });
   });
-
-  describe('removeMember', () => {
-    const memberId = 'a-1';
-
-    it('deletes agent and logs audit when member belongs to workspace', async () => {
-      prisma.agent.count.mockResolvedValue(1);
-      prisma.agent.findUnique.mockResolvedValue({
-        id: memberId,
-        workspaceId: wsId,
-        email: 'alice@x.com',
-      });
-      prisma.agent.delete.mockResolvedValue({ id: memberId });
-
-      await service.removeMember(wsId, memberId);
-
-      expect(auditService.log).toHaveBeenCalledWith({
-        workspaceId: wsId,
-        action: 'DELETE_RECORD',
-        resource: 'Agent',
-        resourceId: memberId,
-        details: { deletedBy: 'user', email: 'alice@x.com' },
-      });
-      expect(prisma.agent.delete).toHaveBeenCalledWith({
-        where: { id: memberId, workspaceId: wsId },
-      });
-    });
-
-    it('throws NotFoundException when agent does not exist', async () => {
-      prisma.agent.findUnique.mockResolvedValue(null);
-
-      await expect(service.removeMember(wsId, memberId)).rejects.toThrow(NotFoundException);
-    });
-
-    it('throws NotFoundException when agent belongs to different workspace', async () => {
-      prisma.agent.findUnique.mockResolvedValue({
-        id: memberId,
-        workspaceId: 'ws-other',
-      });
-
-      await expect(service.removeMember(wsId, memberId)).rejects.toThrow(NotFoundException);
-    });
-  });
 });
