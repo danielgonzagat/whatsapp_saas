@@ -1,3 +1,6 @@
+# Throwaway debug scripts (prefix _tmp_)
+scripts/_tmp_*
+
 # Logs
 *.log
 !.dr-test.log
