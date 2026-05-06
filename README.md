@@ -3,8 +3,14 @@
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/de45b0033ec04323b31a4a3ec49b1ce9)](https://app.codacy.com/gh/danielgonzagat/whatsapp_saas/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 [![Codacy Badge](https://app.codacy.com/project/badge/Coverage/de45b0033ec04323b31a4a3ec49b1ce9)](https://app.codacy.com/gh/danielgonzagat/whatsapp_saas/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_coverage)
 
-Plataforma AI-native de marketing digital e vendas. Monorepo com frontend
-(Next.js / Vercel), backend (NestJS / Railway), worker (BullMQ / Railway).
+Plataforma AI-native de marketing digital, vendas, checkout, WhatsApp,
+automacao e operacao financeira. O repositorio e um monorepo de producao com
+frontend (Next.js / Vercel), backend (NestJS / Railway), worker (BullMQ /
+Railway), suite E2E Playwright e a maquina PULSE de auditoria/autonomia.
+
+O `main` e a fonte de verdade de release. Cada mudanca relevante passa por
+gates de arquitetura, qualidade estatica, typecheck, testes, build, seguranca,
+regressao visual, E2E e PULSE.
 
 ## Arquitetura
 
@@ -16,16 +22,20 @@ Frontend (Next.js 16 / Vercel)
   ├─ WhatsApp Console (inbox, autopilot, flows)
   ├─ CRM Pipeline
   ├─ Kloel AI Assistant (SSE streaming)
+  ├─ Billing, Wallet, KYC e Settings
+  ├─ Area de membros publica pos-compra
   └─ Landing page (kloel.com)
 
 Backend (NestJS 11 / Railway)
-  ├─ 89 controllers, 107 models Prisma
+  ├─ 136 controllers, 135 models Prisma, 40 migrations
   ├─ Auth (JWT + Google OAuth + Apple + WhatsApp OTP)
-  ├─ Checkout (planos, pagamentos Stripe-only com Pix e card)
+  ├─ Checkout (planos, pagamentos Stripe com Pix e card)
+  ├─ Pos-pagamento (email, membro, pixel, WhatsApp, afiliacao)
   ├─ Wallet (saldo, saques, antecipacoes)
   ├─ Billing (setup de cobrança e meios de pagamento via Stripe)
   ├─ WhatsApp engine (WAHA + Meta Cloud API providers)
   ├─ Unified AI Agent (OpenAI + Anthropic)
+  ├─ PULSE API e artefatos de auditoria
   ├─ Sentry + Prometheus metrics
   └─ SSRF protection, rate limiting, RBAC
 
@@ -38,21 +48,24 @@ Worker (BullMQ / Railway)
 Infra
   ├─ PostgreSQL (pgvector)
   ├─ Redis
-  ├─ 10 GitHub Actions workflows
-  ├─ PULSE quality scanner (90+ parsers)
-  └─ Dependabot + CodeQL
+  ├─ 13 GitHub Actions workflows
+  ├─ Playwright E2E + visual regression
+  ├─ Codacy max-rigor + CodeQL + Semgrep
+  ├─ PULSE quality/autonomy machine
+  └─ Dependabot + release automation
 ```
 
 ## Stack
 
-| Camada     | Tecnologia                             | Escala                           |
+| Camada     | Tecnologia                             | Escala atual                     |
 | ---------- | -------------------------------------- | -------------------------------- |
-| Frontend   | Next.js 16, React 19, SWR, Vitest      | 448 arquivos, 15 test suites     |
-| Backend    | NestJS 11, Prisma 5, Jest              | 398 arquivos, 47 test suites     |
-| Worker     | BullMQ 5, mathjs, Prisma (symlinked)   | 70 arquivos, 20 test suites      |
-| Database   | PostgreSQL + pgvector                  | 107 models, 21 migrations        |
-| CI/CD      | GitHub Actions                         | 10 workflows, CodeQL, Dependabot |
-| Monitoring | Sentry, Prometheus, structured logging | 3 servicos instrumentados        |
+| Frontend   | Next.js 16, React 19, SWR, Vitest      | 797 arquivos TS/TSX, 50 suites   |
+| Backend    | NestJS 11, Prisma 5, Jest              | 1.149 arquivos TS, 259 specs     |
+| Worker     | BullMQ 5, mathjs, Prisma symlinked     | 347 arquivos TS, 182 specs       |
+| Database   | PostgreSQL + pgvector                  | 135 models, 40 migrations        |
+| E2E        | Playwright                             | Fluxos de produto, compra, auth  |
+| CI/CD      | GitHub Actions                         | 13 workflows, CodeQL, Dependabot |
+| Monitoring | Sentry, Prometheus, structured logging | Frontend, backend e worker       |
 
 ## Modulos
 
@@ -64,6 +77,9 @@ Infra
   URLs, comissionamento, cupons, campanhas, avaliacoes, after pay, IA)
 - **Checkout** — Temas Blanc/Noir com cores dinamicas do config, Stripe-only
   (Pix + card), coupon popup automatico
+- **Post-payment** — efeitos aprovados de compra com idempotencia, email de
+  confirmacao, area de membros, pixel/CAPI, notificacao WhatsApp e trilhas de
+  afiliacao/comissao
 - **WhatsApp** — Dual provider (Meta Cloud API + WAHA, configurable via
   WHATSAPP_PROVIDER_DEFAULT), inbox real, autopilot com LLM, flow engine. Ver
   `docs/adr/0001-whatsapp-source-of-truth.md` para a arquitetura completa.
@@ -76,10 +92,12 @@ Infra
 - **KYC** — Profile, fiscal, documents, bank, auto-approval
 - **Flows** — Builder visual + engine de execucao no worker
 - **Analytics** — Dashboard stats, daily activity, advanced analytics
+- **PULSE** — API, CLI, artefatos, autonomia, proof readiness, graph, Codacy
+  evidence, GitNexus adapter, external signals e gates de overclaim
 
 ### Parcialmente funcionais
 
-- Products partnerships, member area, affiliate system
+- Products partnerships e affiliate system
 - Marketing channels, campaigns
 
 ### Fachada (shell visual, dados honestos)
@@ -106,8 +124,12 @@ Infra
 ```
 Pre-commit:  lint-staged + prettier + ESLint
 Pre-push:    typecheck + build + testes + Prisma validate + guard db push
-CI:          typecheck + lint + test + build + PULSE certification + E2E Playwright
-Deploy:      staging automatico, production com health probes + DB backup + rollback
+CI:          arquitetura + format + qualidade + typecheck + lint + test + build
+E2E:         Playwright com servicos locais e mocks dedicados
+Visual:      Playwright Chromium com baselines Linux/Darwin versionadas
+Security:    CodeQL + Codacy max-rigor + Semgrep + guards anti-skip
+PULSE:       certificacao, readiness, artifacts e auditoria de overclaim
+Deploy:      staging/producao com health probes, DB backup e rollback
 ```
 
 ### Workflows
@@ -115,12 +137,48 @@ Deploy:      staging automatico, production com health probes + DB backup + roll
 | Workflow              | Trigger               |
 | --------------------- | --------------------- |
 | CI                    | push/PR to main       |
+| Visual Regression     | PRs                   |
 | CodeQL                | push/PR + weekly cron |
+| Codacy Analysis       | push/PR               |
 | Nightly Ops Audit     | daily 9 AM UTC        |
 | Deploy Staging        | CI completion         |
 | Deploy Production     | push to main + manual |
 | Dependabot Auto Merge | patch/minor PRs       |
 | Claude Code Review    | PRs                   |
+| Release Please        | release automation    |
+
+## Maquina PULSE
+
+PULSE e a maquina local/CI que transforma o repositorio em uma superficie
+auditavel. Ela nao e apenas um linter: coleta evidencias, monta grafos,
+classifica capacidades, cruza artefatos, mede readiness, gera diretivas,
+detecta overclaim e impede que uma IA declare conclusao sem prova.
+
+### Superficies principais
+
+- `scripts/pulse/run.js` e `scripts/pulse/index.ts` — entradas CLI da maquina
+- `backend/src/pulse/**` — API, servico, DTOs e testes do modulo PULSE
+- `PULSE_CERTIFICATE.json` — certificado atual da execucao PULSE
+- `PULSE_REPORT.md` — relatorio humano da auditoria
+- `PULSE_CLI_DIRECTIVE.json` — diretivas executaveis para agentes
+- `PULSE_WORLD_STATE.json` — estado agregado da realidade observada
+- `PULSE_CODACY_STATE.json` — snapshot de integracao Codacy
+- `pulse.manifest.json` — manifesto resolvido da maquina
+
+### Capacidades
+
+- Parser registry dinamico para backend, frontend, UI, schema, hooks e APIs
+- Evidence graph, behavior graph, AST graph, command graph e product model
+- Runtime fusion com OTEL, Sentry, Datadog, Prometheus e GitHub Actions adapters
+- Codacy evidence, false-positive adjudication e max-rigor lock
+- Scenario engine, Playwright generation, path coverage e execution harness
+- PULSE GitNexus para indexacao, status, impacto e freshness
+- Self-trust, overclaim guard, proof readiness e production-proof gates
+- Safety sandbox com leitura de arquivos protegidos e classificacao de efeitos
+
+O certificado versionado atual reporta `status: PARTIAL` e `score: 61`. Isso
+quer dizer que a maquina consegue operar e auditar, mas nao autoriza declarar
+producao perfeita sem os gates e artefatos correspondentes passarem.
 
 ## Design System — Terminator
 
@@ -144,10 +202,12 @@ cp backend/.env.example backend/.env
 ### 2. Instalar
 
 ```bash
-cd backend && npm install && npx prisma generate
-cd ../frontend && npm install
-cd ../worker && npm install
-cd ..
+npm install
+npm --prefix backend install
+npm --prefix frontend install
+npm --prefix worker install
+npm --prefix e2e install
+npm run prisma:generate
 ```
 
 ### 3. Database
@@ -181,14 +241,19 @@ cd worker && npm run start:watch
 ## Scripts
 
 ```bash
-npm run typecheck      # typecheck todos os workspaces
-npm run test           # testes de todos os workspaces
-npm run build          # build completo
-npm run lint           # lint backend + frontend
-npm run pulse          # scan de qualidade PULSE
-npm run pulse:report   # gera PULSE_REPORT.md
-npm run guard:db-push  # verifica que ninguem usa db push em prod
-npm run readiness:check # audit de production readiness
+npm run typecheck        # typecheck backend + frontend + worker
+npm run test             # testes backend + frontend + worker
+npm run build            # build backend + frontend + worker
+npm run lint             # lint backend + frontend
+npm run quality:static   # format, guard:new-code, arquitetura, seatbelt, ratchet
+npm run check:all        # suite agregada de gates locais
+npm run guard:new-code   # constituicao IA, ESLint changed, visual, arquitetura
+npm run pulse            # execucao PULSE
+npm run pulse:report     # gera PULSE_REPORT.md
+npm run pulse:certify    # certificacao PULSE
+npm run pulse:ci         # PULSE usado pelo CI
+npm run readiness:check  # audit de production readiness
+npm run prepush:scoped   # mesmo caminho do pre-push escopado
 ```
 
 ## Deploy
