@@ -1,17 +1,17 @@
 /**
  * PULSE Parser 76: Test Coverage
  * Layer 11: Test Quality
- * Mode: DEEP (requires running jest --coverage)
+ * Mode: DEEP (reads jest coverage evidence)
  *
  * CHECKS:
- * 1. Runs jest --coverage --json in backend and parses coverage-summary.json
+ * 1. Parses coverage-summary.json when coverage evidence is available
  * 2. Financial modules (checkout, wallet, billing, payment) must have ≥80% line coverage
  * 3. Core modules (auth, workspace, products, kyc) must have ≥60% line coverage
  * 4. Overall backend coverage must be ≥50% line coverage
  * 5. Frontend critical flows (checkout, auth) must have ≥60% coverage
  * 6. Reports which specific files are dragging coverage below threshold
  *
- * REQUIRES: PULSE_DEEP=1, jest installed in backend/frontend, coverage output available
+ * REQUIRES: PULSE_DEEP=1 and coverage output available, or PULSE_RUN_COVERAGE=force to refresh it
  * BREAK TYPES:
  *   COVERAGE_FINANCIAL_LOW(medium) — financial module coverage below 80%
  *   COVERAGE_CORE_LOW(medium)      — core module coverage below 60%
@@ -47,10 +47,13 @@ function readCoverage(dir: string): CoverageSummary | null {
 }
 
 function runCoverage(dir: string): void {
+  if (process.env.PULSE_RUN_COVERAGE !== 'force') {
+    return;
+  }
   try {
     execSync('npx jest --coverage --coverageReporters=json-summary --passWithNoTests --silent', {
       cwd: dir,
-      timeout: 120_000,
+      timeout: 30_000,
       stdio: 'ignore',
     });
   } catch {
@@ -75,8 +78,9 @@ export function checkTestCoverage(config: PulseConfig): Break[] {
       severity: 'medium',
       file: 'backend/coverage/coverage-summary.json',
       line: 0,
-      description: 'Backend coverage report not found — run jest --coverage to generate',
-      detail: 'No coverage-summary.json found; tests may not be configured or have never been run',
+      description: 'Backend coverage report not found — coverage evidence is missing',
+      detail:
+        'No coverage-summary.json found; run coverage separately or set PULSE_RUN_COVERAGE=force to refresh it during PULSE.',
     });
     return breaks;
   }

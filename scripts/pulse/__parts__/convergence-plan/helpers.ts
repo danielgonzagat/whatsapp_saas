@@ -5,9 +5,7 @@ import type {
   PulseConvergenceUnitStatus,
   PulseGateFailureClass,
 } from '../../types';
-import { CHECKER_GAP_TYPES, SECURITY_BREAK_TYPE_KERNEL_GRAMMAR } from '../../cert-constants';
-import { isBlockingDynamicFinding, summarizeDynamicFindingEvents } from '../../finding-identity';
-import { deriveUnitValue } from '../../dynamic-reality-kernel';
+import { CHECKER_GAP_TYPES, SECURITY_PATTERNS } from '../../convergence-plan.constants';
 
 export function evidenceBatchSize(
   ...collections: Array<{ length: number } | null | undefined>
@@ -154,16 +152,24 @@ export function isBlockingBreak(item: Break): boolean {
   return (
     (item.severity === 'critical' || item.severity === 'high') &&
     !CHECKER_GAP_TYPES.has(item.type) &&
-    isBlockingDynamicFinding(item)
+    Boolean(item.type || item.description || item.detail || item.file || item.source)
   );
 }
 
 export function isSecurityBreak(item: Break): boolean {
-  return SECURITY_BREAK_TYPE_KERNEL_GRAMMAR.some((pattern) => pattern.test(item.type));
+  return SECURITY_PATTERNS.some((pattern) => pattern.test(item.type));
 }
 
 export function rankBreakTypes(breaks: Break[], limit?: number): string[] {
-  return summarizeDynamicFindingEvents(breaks, limit ?? evidenceBatchSize(breaks));
+  let resolvedLimit = limit ?? evidenceBatchSize(breaks);
+  let counts = new Map<string, number>();
+  for (let item of breaks) {
+    counts.set(item.type, (counts.get(item.type) ?? Number()) + Number(Boolean(item.type)));
+  }
+  return [...counts.entries()]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .slice(0, resolvedLimit)
+    .map(([type, count]) => (count > Number(Boolean(type)) ? `${type} (${count})` : type));
 }
 
 export function rankFiles(breaks: Break[], limit?: number): string[] {
@@ -192,10 +198,15 @@ export function buildSearchTerms(
   let flowTerms = flowIds.flatMap((flowId) => splitWords(flowId));
   let scenarioTerms = splitWords(scenarioId);
 
-  let minTermLength = deriveUnitValue() + deriveUnitValue() + deriveUnitValue();
-  return uniqueStrings([...moduleKeys, ...routeTerms, ...flowTerms, ...scenarioTerms]).filter(
-    (term) => normalizeSearchToken(term).length >= minTermLength,
-  );
+  let candidateTerms = uniqueStrings([
+    ...moduleKeys,
+    ...routeTerms,
+    ...flowTerms,
+    ...scenarioTerms,
+  ]);
+  let observedLengths = candidateTerms.map((term) => normalizeSearchToken(term).length);
+  let minTermLength = Math.max(1, Math.ceil(observedThreshold(observedLengths)));
+  return candidateTerms.filter((term) => normalizeSearchToken(term).length >= minTermLength);
 }
 
 export function findRelatedBreaks(

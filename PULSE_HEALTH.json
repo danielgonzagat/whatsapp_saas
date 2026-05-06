@@ -1,29 +1,29 @@
 {
   "score": 64,
-  "totalNodes": 2826,
+  "totalNodes": 2869,
   "breaks": [
+    {
+      "type": "BACKUP_MISSING",
+      "severity": "critical",
+      "file": ".backup-manifest.json",
+      "line": 0,
+      "description": "No recent DB backup found — backup manifest missing or older than 24 h",
+      "detail": "Backup manifest exists but lastBackup timestamp is stale (>24 h) or missing",
+      "source": "backup-checker"
+    },
+    {
+      "type": "BACKUP_MISSING",
+      "severity": "critical",
+      "file": ".backup-validation.log",
+      "line": 0,
+      "description": "No backup restore-test validation log found — backup has never been verified",
+      "detail": "A restore test must be performed and logged; create .backup-validation.log with timestamp + result",
+      "source": "backup-checker"
+    },
     {
       "type": "RACE_CONDITION_FINANCIAL",
       "severity": "critical",
       "file": "backend/src/billing/stripe.service.ts",
-      "line": 0,
-      "description": "Wallet/balance operations without $transaction — double-spend race condition possible",
-      "detail": "All balance modifications must use prisma.$transaction with SELECT FOR UPDATE or atomic increment",
-      "source": "concurrency-tester"
-    },
-    {
-      "type": "RACE_CONDITION_DATA_CORRUPTION",
-      "severity": "critical",
-      "file": "backend/src/payments/connect/connect.service.ts",
-      "line": 240,
-      "description": "Read-modify-write without transaction or optimistic lock — race condition possible",
-      "detail": "findFirst/findUnique at line 240 followed by update at line 348 without $transaction or version check",
-      "source": "concurrency-tester"
-    },
-    {
-      "type": "RACE_CONDITION_FINANCIAL",
-      "severity": "critical",
-      "file": "backend/src/payments/connect/connect.service.ts",
       "line": 0,
       "description": "Wallet/balance operations without $transaction — double-spend race condition possible",
       "detail": "All balance modifications must use prisma.$transaction with SELECT FOR UPDATE or atomic increment",
@@ -68,26 +68,8 @@
     {
       "type": "FINANCIAL_ERROR_SWALLOWED",
       "severity": "critical",
-      "file": "backend/src/billing/billing.service.ts",
-      "line": 738,
-      "description": "catch block in financial code only logs — error swallowed without throw",
-      "detail": "} catch (err) {",
-      "source": "error-handler-auditor"
-    },
-    {
-      "type": "FINANCIAL_ERROR_SWALLOWED",
-      "severity": "critical",
       "file": "backend/src/checkout/checkout-post-payment-effects.service.ts",
-      "line": 109,
-      "description": "catch block in financial code only logs — error swallowed without throw",
-      "detail": "} catch (error) {",
-      "source": "error-handler-auditor"
-    },
-    {
-      "type": "FINANCIAL_ERROR_SWALLOWED",
-      "severity": "critical",
-      "file": "backend/src/checkout/checkout-post-payment-effects.service.ts",
-      "line": 125,
+      "line": 171,
       "description": "catch block in financial code only logs — error swallowed without throw",
       "detail": "} catch (error) {",
       "source": "error-handler-auditor"
@@ -96,7 +78,7 @@
       "type": "FINANCIAL_ERROR_SWALLOWED",
       "severity": "critical",
       "file": "backend/src/payments/connect/connect-payout-approval.service.ts",
-      "line": 260,
+      "line": 263,
       "description": "catch block in financial code does not rethrow — caller unaware of failure",
       "detail": "} catch (error) {",
       "source": "error-handler-auditor"
@@ -138,28 +120,10 @@
       "source": "error-handler-auditor"
     },
     {
-      "type": "FINANCIAL_ERROR_SWALLOWED",
-      "severity": "critical",
-      "file": "worker/processors/checkout-social-lead-enrichment.ts",
-      "line": 126,
-      "description": "catch block in financial code does not rethrow — caller unaware of failure",
-      "detail": "} catch (error: unknown) {",
-      "source": "error-handler-auditor"
-    },
-    {
-      "type": "SERVICE_NOT_PROVIDED",
-      "severity": "critical",
-      "file": "backend/src/auth/auth.service.ts",
-      "line": 61,
-      "description": "Injected service \"RateLimitService\" not found in any module's providers",
-      "detail": "\"RateLimitService\" is injected in auth.service.ts but does not appear in providers[] of any module. Add it to the appropriate module or import the module that exports it.",
-      "source": "nestjs-module-auditor"
-    },
-    {
       "type": "STATE_PAYMENT_INVALID",
       "severity": "critical",
       "file": "backend/src/checkout/checkout-payment.service.ts",
-      "line": 500,
+      "line": 559,
       "description": "Payment status set to PAID without verifying PROCESSING intermediate state",
       "detail": "data: { status: 'PAID', paidAt: new Date() }, — payment must transition PENDING → PROCESSING → PAID, never jump directly",
       "source": "state-machine-checker"
@@ -167,7 +131,7 @@
     {
       "type": "AUDIT_DELETION_NO_LOG",
       "severity": "high",
-      "file": "backend/src/admin/permissions/admin-permissions.service.ts",
+      "file": "backend/src/auth/__parts__/auth-service/partner-invite.ts",
       "line": 0,
       "description": "Data deletion/anonymization without audit log — cannot prove LGPD compliance",
       "detail": "Log every deletion: AuditLog.create({ action: \"USER_DATA_DELETED\", entityId, requestedBy, timestamp })",
@@ -462,6 +426,42 @@
       "source": "cache-invalidation-checker"
     },
     {
+      "type": "CACHE_STALE_AFTER_WRITE",
+      "severity": "high",
+      "file": "frontend/src/lib/api/member-area-public.ts",
+      "line": 0,
+      "description": "Write operation (POST/PUT/DELETE) without SWR cache invalidation — stale data shown after mutation",
+      "detail": "Add mutate(key) or useSWRConfig().mutate() after successful write to refresh affected cache keys",
+      "source": "cache-invalidation-checker"
+    },
+    {
+      "type": "CACHE_STALE_AFTER_WRITE",
+      "severity": "high",
+      "file": "frontend/src/lib/api/onboarding.ts",
+      "line": 0,
+      "description": "Write operation (POST/PUT/DELETE) without SWR cache invalidation — stale data shown after mutation",
+      "detail": "Add mutate(key) or useSWRConfig().mutate() after successful write to refresh affected cache keys",
+      "source": "cache-invalidation-checker"
+    },
+    {
+      "type": "CACHE_REDIS_STALE",
+      "severity": "high",
+      "file": "backend/src/auth/__parts__/auth-service/magic-link.ts",
+      "line": 0,
+      "description": "Service writes to both Redis and DB but never invalidates Redis cache — reads return stale data",
+      "detail": "After DB write, call redis.del(key) or redis.expire(key, 0) to invalidate affected cache entries",
+      "source": "cache-invalidation-checker"
+    },
+    {
+      "type": "CACHE_REDIS_STALE",
+      "severity": "high",
+      "file": "backend/src/auth/__parts__/auth-service/oauth-entry.ts",
+      "line": 0,
+      "description": "Service writes to both Redis and DB but never invalidates Redis cache — reads return stale data",
+      "detail": "After DB write, call redis.del(key) or redis.expire(key, 0) to invalidate affected cache entries",
+      "source": "cache-invalidation-checker"
+    },
+    {
       "type": "CACHE_REDIS_STALE",
       "severity": "high",
       "file": "backend/src/billing/payment-method.service.ts",
@@ -505,6 +505,15 @@
       "description": "CI workflow missing lint gate",
       "detail": ".github/workflows/ci-cd.yml: No lint step found (npm run lint). Code quality not enforced in CI.",
       "source": "cicd-checker"
+    },
+    {
+      "type": "NOTIFICATION_SALE_MISSING",
+      "severity": "high",
+      "file": "backend/src/",
+      "line": 0,
+      "description": "Missing transactional emails: payment failure",
+      "detail": "Implement the missing email templates; each is critical for user experience and trust",
+      "source": "communication-checker"
     },
     {
       "type": "RACE_CONDITION_OVERWRITE",
@@ -725,6 +734,15 @@
     {
       "type": "COST_LLM_NO_LIMIT",
       "severity": "high",
+      "file": "backend/src/prisma/checkout-paid-effects/whatsapp.ts",
+      "line": 0,
+      "description": "WhatsApp messages sent without per-workspace daily rate limit — Autopilot can send unlimited messages",
+      "detail": "Add a daily message counter per workspace; enforce plan-based limit (e.g., 1000 messages/day on free plan)",
+      "source": "cost-limit-checker"
+    },
+    {
+      "type": "COST_LLM_NO_LIMIT",
+      "severity": "high",
       "file": "backend/src/whatsapp/cia-runtime.service.ts",
       "line": 0,
       "description": "WhatsApp messages sent without per-workspace daily rate limit — Autopilot can send unlimited messages",
@@ -748,6 +766,15 @@
       "description": "WhatsApp messages sent without per-workspace daily rate limit — Autopilot can send unlimited messages",
       "detail": "Add a daily message counter per workspace; enforce plan-based limit (e.g., 1000 messages/day on free plan)",
       "source": "cost-limit-checker"
+    },
+    {
+      "type": "DATA_PRODUCT_NO_PLAN",
+      "severity": "high",
+      "file": "/Users/danielpenin/whatsapp_saas/backend/src/billing/billing.service.ts",
+      "line": 204,
+      "description": "Billing operation without plan validation in billing.service.ts",
+      "detail": "Function 'createCheckoutSession' creates a subscription or billing record without first checking the plan exists and is active. Subscriptions may reference deleted plans.",
+      "source": "data-consistency"
     },
     {
       "type": "DATA_PRODUCT_NO_PLAN",
@@ -909,6 +936,15 @@
       "line": 0,
       "description": "No Dockerfile found for backend",
       "detail": "backend/Dockerfile does not exist. Cannot build production Docker image.",
+      "source": "docker-build-tester"
+    },
+    {
+      "type": "DOCKER_BUILD_FAILS",
+      "severity": "high",
+      "file": "/Users/danielpenin/whatsapp_saas/docker-compose.yml",
+      "line": 220,
+      "description": "docker-compose.yml may contain hardcoded secrets",
+      "detail": "docker-compose.yml line 220: Found a long value that does not reference ${ENV_VAR}. Use env_file or ${SECRET} references — never hardcode tokens in compose files.",
       "source": "docker-build-tester"
     },
     {
@@ -1490,6 +1526,15 @@
     {
       "type": "DIVISION_BY_ZERO_RISK",
       "severity": "high",
+      "file": "backend/src/prisma/checkout-paid-effects/whatsapp.ts",
+      "line": 6,
+      "description": "Division by variable without zero-check — potential division by zero in financial code",
+      "detail": "const DIGITS_RE = /\\D/g;",
+      "source": "financial-arithmetic"
+    },
+    {
+      "type": "DIVISION_BY_ZERO_RISK",
+      "severity": "high",
       "file": "backend/src/webhooks/payment-webhook.controller.ts",
       "line": 47,
       "description": "Division by variable without zero-check — potential division by zero in financial code",
@@ -1635,9 +1680,18 @@
       "type": "JSON_PARSE_UNSAFE",
       "severity": "high",
       "file": "backend/src/checkout/checkout-payment.service.ts",
-      "line": 61,
+      "line": 48,
       "description": "JSON.parse() outside try/catch — throws SyntaxError on invalid input",
       "detail": "return JSON.parse(",
+      "source": "json-parse-safety"
+    },
+    {
+      "type": "JSON_PARSE_UNSAFE",
+      "severity": "high",
+      "file": "backend/src/checkout/mercado-pago-webhook.controller.ts",
+      "line": 50,
+      "description": "JSON.parse() outside try/catch — throws SyntaxError on invalid input",
+      "detail": "return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;",
       "source": "json-parse-safety"
     },
     {
@@ -1823,7 +1877,16 @@
     {
       "type": "OBSERVABILITY_NO_TRACING",
       "severity": "high",
-      "file": "backend/src/auth/auth.service.ts",
+      "file": "backend/src/auth/__parts__/auth-service/oauth-entry.ts",
+      "line": 0,
+      "description": "Outbound HTTP call without correlation ID header — cannot trace request through external services",
+      "detail": "Add X-Request-ID header to all outbound HTTP calls using the request context correlation ID",
+      "source": "observability-checker"
+    },
+    {
+      "type": "OBSERVABILITY_NO_TRACING",
+      "severity": "high",
+      "file": "backend/src/auth/__parts__/auth-service/whatsapp.ts",
       "line": 0,
       "description": "Outbound HTTP call without correlation ID header — cannot trace request through external services",
       "detail": "Add X-Request-ID header to all outbound HTTP calls using the request context correlation ID",
@@ -1878,6 +1941,15 @@
       "type": "OBSERVABILITY_NO_TRACING",
       "severity": "high",
       "file": "backend/src/checkout/facebook-capi.service.ts",
+      "line": 0,
+      "description": "Outbound HTTP call without correlation ID header — cannot trace request through external services",
+      "detail": "Add X-Request-ID header to all outbound HTTP calls using the request context correlation ID",
+      "source": "observability-checker"
+    },
+    {
+      "type": "OBSERVABILITY_NO_TRACING",
+      "severity": "high",
+      "file": "backend/src/checkout/mercado-pago-pix.service.ts",
       "line": 0,
       "description": "Outbound HTTP call without correlation ID header — cannot trace request through external services",
       "detail": "Add X-Request-ID header to all outbound HTTP calls using the request context correlation ID",
@@ -2102,6 +2174,15 @@
     {
       "type": "OBSERVABILITY_NO_ALERTING",
       "severity": "high",
+      "file": "backend/src/checkout/mercado-pago-pix.service.ts",
+      "line": 0,
+      "description": "Payment/financial error caught without external alert — payment failures may go unnoticed for hours",
+      "detail": "Add Sentry.captureException(err) or custom alert in payment error catch blocks",
+      "source": "observability-checker"
+    },
+    {
+      "type": "OBSERVABILITY_NO_ALERTING",
+      "severity": "high",
       "file": "backend/src/kloel/smart-payment.controller.ts",
       "line": 0,
       "description": "Payment/financial error caught without external alert — payment failures may go unnoticed for hours",
@@ -2165,6 +2246,15 @@
     {
       "type": "TIMEZONE_REPORT_MISMATCH",
       "severity": "high",
+      "file": "backend/src/checkout/checkout-payment.service.ts",
+      "line": 0,
+      "description": "Financial file stores dates without explicit UTC — reports will differ by server timezone",
+      "detail": "Ensure all date storage uses toISOString() or dayjs.utc(); display layer converts to user TZ",
+      "source": "ordering-timing-checker"
+    },
+    {
+      "type": "TIMEZONE_REPORT_MISMATCH",
+      "severity": "high",
       "file": "backend/src/checkout/checkout-social-recovery.service.ts",
       "line": 0,
       "description": "Financial file stores dates without explicit UTC — reports will differ by server timezone",
@@ -2193,6 +2283,15 @@
       "type": "TIMEZONE_REPORT_MISMATCH",
       "severity": "high",
       "file": "backend/src/payments/ledger/connect-ledger-maturation.service.ts",
+      "line": 0,
+      "description": "Financial file stores dates without explicit UTC — reports will differ by server timezone",
+      "detail": "Ensure all date storage uses toISOString() or dayjs.utc(); display layer converts to user TZ",
+      "source": "ordering-timing-checker"
+    },
+    {
+      "type": "TIMEZONE_REPORT_MISMATCH",
+      "severity": "high",
+      "file": "backend/src/prisma/checkout-paid-effects/social.ts",
       "line": 0,
       "description": "Financial file stores dates without explicit UTC — reports will differ by server timezone",
       "detail": "Ensure all date storage uses toISOString() or dayjs.utc(); display layer converts to user TZ",
@@ -2247,9 +2346,18 @@
       "type": "TRANSACTION_NO_ISOLATION",
       "severity": "high",
       "file": "backend/src/checkout/checkout-payment.service.ts",
-      "line": 200,
+      "line": 188,
       "description": "$transaction in financial file without isolationLevel specified",
       "detail": "return this.prisma.$transaction(",
+      "source": "prisma-safety-checker"
+    },
+    {
+      "type": "TRANSACTION_NO_ISOLATION",
+      "severity": "high",
+      "file": "backend/src/checkout/checkout-payment.service.ts",
+      "line": 341,
+      "description": "$transaction in financial file without isolationLevel specified",
+      "detail": "const payment = await this.prisma.$transaction(async (tx) => {",
       "source": "prisma-safety-checker"
     },
     {
@@ -2355,7 +2463,7 @@
       "type": "TRANSACTION_NO_ISOLATION",
       "severity": "high",
       "file": "backend/src/kloel/payment.service.ts",
-      "line": 342,
+      "line": 349,
       "description": "$transaction in financial file without isolationLevel specified",
       "detail": "await this.prisma.$transaction(",
       "source": "prisma-safety-checker"
@@ -2417,6 +2525,15 @@
     {
       "type": "TRANSACTION_NO_ISOLATION",
       "severity": "high",
+      "file": "backend/src/payments/connect/connect.service.ts",
+      "line": 240,
+      "description": "$transaction in financial file without isolationLevel specified",
+      "detail": "return this.prisma.$transaction(",
+      "source": "prisma-safety-checker"
+    },
+    {
+      "type": "TRANSACTION_NO_ISOLATION",
+      "severity": "high",
       "file": "backend/src/payments/ledger/ledger.service.ts",
       "line": 50,
       "description": "$transaction in financial file without isolationLevel specified",
@@ -2466,6 +2583,15 @@
       "line": 389,
       "description": "$transaction in financial file without isolationLevel specified",
       "detail": "return this.prisma.$transaction(async (tx) => {",
+      "source": "prisma-safety-checker"
+    },
+    {
+      "type": "TRANSACTION_NO_ISOLATION",
+      "severity": "high",
+      "file": "backend/src/prisma/checkout-paid-effects/affiliate.ts",
+      "line": 19,
+      "description": "$transaction in financial file without isolationLevel specified",
+      "detail": "await prisma.$transaction(async (tx) => {",
       "source": "prisma-safety-checker"
     },
     {
@@ -2920,6 +3046,22 @@
       "line": 679,
       "description": "clickable \"(sem texto)\" has dead handler",
       "detail": "Handler: handleSubmit"
+    },
+    {
+      "type": "UI_DEAD_HANDLER",
+      "severity": "medium",
+      "file": "frontend/src/components/products/ProductAfterPayTab.tsx",
+      "line": 359,
+      "description": "clickable \"(sem texto)\" has dead handler",
+      "detail": "Handler: save"
+    },
+    {
+      "type": "UI_DEAD_HANDLER",
+      "severity": "medium",
+      "file": "frontend/src/components/products/ProductIATab.tsx",
+      "line": 489,
+      "description": "clickable \"(sem texto)\" has dead handler",
+      "detail": "Handler: save"
     },
     {
       "type": "PROXY_NO_UPSTREAM",
@@ -3713,44 +3855,8 @@
     {
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
-      "file": "backend/src/auth/auth.service.ts",
-      "line": 191,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "approvedAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/auth/auth.service.ts",
-      "line": 194,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "inviteAcceptedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/auth/auth.service.ts",
-      "line": 277,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "lastUsedAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/auth/auth.service.ts",
-      "line": 296,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "lastUsedAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/auth/auth.service.ts",
-      "line": 1183,
+      "file": "backend/src/auth/__parts__/auth-service/magic-link.ts",
+      "line": 107,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "if (!magicLink || magicLink.usedAt || magicLink.expiresAt < new Date()) { — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -3758,8 +3864,8 @@
     {
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
-      "file": "backend/src/auth/auth.service.ts",
-      "line": 1227,
+      "file": "backend/src/auth/__parts__/auth-service/magic-link.ts",
+      "line": 151,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "usedAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -3767,8 +3873,8 @@
     {
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
-      "file": "backend/src/auth/auth.service.ts",
-      "line": 1244,
+      "file": "backend/src/auth/__parts__/auth-service/magic-link.ts",
+      "line": 168,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "data: { usedAt: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -3776,8 +3882,26 @@
     {
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
-      "file": "backend/src/auth/auth.service.ts",
-      "line": 1461,
+      "file": "backend/src/auth/__parts__/auth-service/partner-invite.ts",
+      "line": 111,
+      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
+      "detail": "approvedAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
+      "source": "edge-case-tester"
+    },
+    {
+      "type": "EDGE_CASE_DATE",
+      "severity": "medium",
+      "file": "backend/src/auth/__parts__/auth-service/partner-invite.ts",
+      "line": 114,
+      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
+      "detail": "inviteAcceptedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
+      "source": "edge-case-tester"
+    },
+    {
+      "type": "EDGE_CASE_DATE",
+      "severity": "medium",
+      "file": "backend/src/auth/__parts__/auth-service/password-verification.ts",
+      "line": 72,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "if (!resetToken || resetToken.used || resetToken.expiresAt < new Date()) { — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -3785,10 +3909,28 @@
     {
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
-      "file": "backend/src/auth/auth.service.ts",
-      "line": 1558,
+      "file": "backend/src/auth/__parts__/auth-service/password-verification.ts",
+      "line": 160,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "if (agent.emailVerificationExpiry && agent.emailVerificationExpiry < new Date()) { — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
+      "source": "edge-case-tester"
+    },
+    {
+      "type": "EDGE_CASE_DATE",
+      "severity": "medium",
+      "file": "backend/src/auth/__parts__/auth-service/social-account.ts",
+      "line": 58,
+      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
+      "detail": "lastUsedAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
+      "source": "edge-case-tester"
+    },
+    {
+      "type": "EDGE_CASE_DATE",
+      "severity": "medium",
+      "file": "backend/src/auth/__parts__/auth-service/social-account.ts",
+      "line": 77,
+      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
+      "detail": "lastUsedAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
     },
     {
@@ -4254,16 +4396,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/checkout/checkout-payment.service.ts",
-      "line": 55,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "? new Date(pixAction.expires_at * 1000).toISOString() — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/checkout/checkout-payment.service.ts",
-      "line": 209,
+      "line": 197,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "pixExpiresAt: pixData.pixExpiresAt ? new Date(pixData.pixExpiresAt) : null, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -4272,7 +4405,16 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/checkout/checkout-payment.service.ts",
-      "line": 500,
+      "line": 349,
+      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
+      "detail": "pixExpiresAt: pix.expiresAt ? new Date(pix.expiresAt) : null, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
+      "source": "edge-case-tester"
+    },
+    {
+      "type": "EDGE_CASE_DATE",
+      "severity": "medium",
+      "file": "backend/src/checkout/checkout-payment.service.ts",
+      "line": 559,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "data: { status: 'PAID', paidAt: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -4410,6 +4552,24 @@
       "line": 342,
       "description": "@IsArray() without @ArrayMaxSize — user can send array with 10k+ elements",
       "detail": "Add @ArrayMaxSize(100) or appropriate limit to prevent DoS via large array payloads",
+      "source": "edge-case-tester"
+    },
+    {
+      "type": "EDGE_CASE_DATE",
+      "severity": "medium",
+      "file": "backend/src/checkout/mercado-pago-webhook.controller.ts",
+      "line": 162,
+      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
+      "detail": "pixExpiresAt: payment.expiresAt ? new Date(payment.expiresAt) : undefined, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
+      "source": "edge-case-tester"
+    },
+    {
+      "type": "EDGE_CASE_DATE",
+      "severity": "medium",
+      "file": "backend/src/checkout/mercado-pago-webhook.controller.ts",
+      "line": 174,
+      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
+      "detail": "data: { status: 'CANCELED', canceledAt: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
     },
     {
@@ -4586,8 +4746,17 @@
     {
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
+      "file": "backend/src/dashboard/dashboard.controller.ts",
+      "line": 129,
+      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
+      "detail": "generatedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
+      "source": "edge-case-tester"
+    },
+    {
+      "type": "EDGE_CASE_DATE",
+      "severity": "medium",
       "file": "backend/src/dashboard/dashboard.service.ts",
-      "line": 78,
+      "line": 120,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "const todayStart = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -4596,7 +4765,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/dashboard/dashboard.service.ts",
-      "line": 149,
+      "line": 190,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "const snapshotNow = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -4605,7 +4774,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/dashboard/dashboard.service.ts",
-      "line": 155,
+      "line": 196,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "const startOfToday = new Date(snapshotNow); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -4614,7 +4783,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/dashboard/dashboard.service.ts",
-      "line": 157,
+      "line": 198,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "const startOfYesterday = new Date(startOfToday.getTime() - 24 * 60 * 60 * 1000); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -4623,7 +4792,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/dashboard/dashboard.service.ts",
-      "line": 158,
+      "line": 199,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "const endOfYesterday = new Date(startOfToday.getTime() - 1); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -4632,7 +4801,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/dashboard/dashboard.service.ts",
-      "line": 159,
+      "line": 200,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "const startOfMonth = new Date(startOfToday.getFullYear(), startOfToday.getMonth(), 1); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -4641,7 +4810,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/dashboard/dashboard.service.ts",
-      "line": 160,
+      "line": 201,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "const startOfPreviousMonth = new Date( — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -4650,7 +4819,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/dashboard/dashboard.service.ts",
-      "line": 165,
+      "line": 206,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "const endOfPreviousMonth = new Date(startOfMonth.getTime() - 1); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -4659,7 +4828,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/dashboard/dashboard.service.ts",
-      "line": 428,
+      "line": 491,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "generatedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -5405,6 +5574,24 @@
     {
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
+      "file": "backend/src/kloel/onboarding.service.ts",
+      "line": 106,
+      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
+      "detail": "savedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
+      "source": "edge-case-tester"
+    },
+    {
+      "type": "EDGE_CASE_DATE",
+      "severity": "medium",
+      "file": "backend/src/kloel/onboarding.service.ts",
+      "line": 231,
+      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
+      "detail": "const completedAt = new Date().toISOString(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
+      "source": "edge-case-tester"
+    },
+    {
+      "type": "EDGE_CASE_DATE",
+      "severity": "medium",
       "file": "backend/src/kloel/order-alerts.service.ts",
       "line": 231,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
@@ -5424,7 +5611,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/kloel/payment.service.ts",
-      "line": 360,
+      "line": 367,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "data: { status: 'paid', paidAt: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -5433,7 +5620,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/kloel/payment.service.ts",
-      "line": 378,
+      "line": 385,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "const startDate = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -6081,7 +6268,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/payments/connect/connect-payout-approval.service.ts",
-      "line": 265,
+      "line": 281,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "respondedAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -6090,7 +6277,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/payments/connect/connect-payout-approval.service.ts",
-      "line": 313,
+      "line": 329,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "respondedAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -6099,7 +6286,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/payments/connect/connect-payout-approval.service.ts",
-      "line": 390,
+      "line": 406,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "respondedAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -6129,6 +6316,24 @@
       "line": 165,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "scannedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
+      "source": "edge-case-tester"
+    },
+    {
+      "type": "EDGE_CASE_DATE",
+      "severity": "medium",
+      "file": "backend/src/prisma/checkout-paid-effects/social.ts",
+      "line": 36,
+      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
+      "detail": "convertedAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
+      "source": "edge-case-tester"
+    },
+    {
+      "type": "EDGE_CASE_DATE",
+      "severity": "medium",
+      "file": "backend/src/prisma/prisma.service.ts",
+      "line": 206,
+      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
+      "detail": "data: { status: 'PAID', paidAt: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
     },
     {
@@ -7017,9 +7222,18 @@
       "type": "ENV_NOT_DOCUMENTED",
       "severity": "medium",
       "file": "backend/src/auth/rate-limit.service.ts",
-      "line": 36,
+      "line": 45,
       "description": "Environment variable RATE_LIMIT_DISABLED is referenced but not documented in .env.example",
       "detail": "Add RATE_LIMIT_DISABLED= to .env.example with a description comment",
+      "source": "env-checker"
+    },
+    {
+      "type": "ENV_NOT_DOCUMENTED",
+      "severity": "medium",
+      "file": "backend/src/checkout/checkout-payment.service.ts",
+      "line": 337,
+      "description": "Environment variable MERCADOPAGO_WEBHOOK_URL is referenced but not documented in .env.example",
+      "detail": "Add MERCADOPAGO_WEBHOOK_URL= to .env.example with a description comment",
       "source": "env-checker"
     },
     {
@@ -7029,6 +7243,24 @@
       "line": 53,
       "description": "Environment variable CHECKOUT_DOMAIN is referenced but not documented in .env.example",
       "detail": "Add CHECKOUT_DOMAIN= to .env.example with a description comment",
+      "source": "env-checker"
+    },
+    {
+      "type": "ENV_NOT_DOCUMENTED",
+      "severity": "medium",
+      "file": "backend/src/checkout/mercado-pago-pix.service.ts",
+      "line": 150,
+      "description": "Environment variable MERCADOPAGO_ACCESS_TOKEN is referenced but not documented in .env.example",
+      "detail": "Add MERCADOPAGO_ACCESS_TOKEN= to .env.example with a description comment",
+      "source": "env-checker"
+    },
+    {
+      "type": "ENV_NOT_DOCUMENTED",
+      "severity": "medium",
+      "file": "backend/src/checkout/mercado-pago-webhook.controller.ts",
+      "line": 76,
+      "description": "Environment variable MERCADOPAGO_WEBHOOK_SECRET is referenced but not documented in .env.example",
+      "detail": "Add MERCADOPAGO_WEBHOOK_SECRET= to .env.example with a description comment",
       "source": "env-checker"
     },
     {
@@ -7173,6 +7405,24 @@
       "line": 186,
       "description": "Environment variable LLM_MAX_INPUT_CHARS is referenced but not documented in .env.example",
       "detail": "Add LLM_MAX_INPUT_CHARS= to .env.example with a description comment",
+      "source": "env-checker"
+    },
+    {
+      "type": "ENV_NOT_DOCUMENTED",
+      "severity": "medium",
+      "file": "backend/src/member-area/member-area-public.controller.ts",
+      "line": 61,
+      "description": "Environment variable MEMBER_AREA_ACCESS_SECRET is referenced but not documented in .env.example",
+      "detail": "Add MEMBER_AREA_ACCESS_SECRET= to .env.example with a description comment",
+      "source": "env-checker"
+    },
+    {
+      "type": "ENV_NOT_DOCUMENTED",
+      "severity": "medium",
+      "file": "backend/src/member-area/member-area-public.controller.ts",
+      "line": 63,
+      "description": "Environment variable SESSION_SECRET is referenced but not documented in .env.example",
+      "detail": "Add SESSION_SECRET= to .env.example with a description comment",
       "source": "env-checker"
     },
     {
@@ -7538,8 +7788,35 @@
     {
       "type": "CLOCK_SKEW_TOO_STRICT",
       "severity": "medium",
+      "file": "backend/src/auth/__parts__/auth-service/oauth-entry.ts",
+      "line": 78,
+      "description": "JWT verification without clock skew tolerance — users may be spuriously logged out",
+      "detail": "Add clockTolerance: 30 to jwt.verify() options to handle clock drift between servers",
+      "source": "ordering-timing-checker"
+    },
+    {
+      "type": "CLOCK_SKEW_TOO_STRICT",
+      "severity": "medium",
+      "file": "backend/src/auth/__parts__/auth-service/register-login.ts",
+      "line": 5,
+      "description": "JWT verification without clock skew tolerance — users may be spuriously logged out",
+      "detail": "Add clockTolerance: 30 to jwt.verify() options to handle clock drift between servers",
+      "source": "ordering-timing-checker"
+    },
+    {
+      "type": "CLOCK_SKEW_TOO_STRICT",
+      "severity": "medium",
+      "file": "backend/src/auth/__parts__/auth-service/tokens.ts",
+      "line": 3,
+      "description": "JWT verification without clock skew tolerance — users may be spuriously logged out",
+      "detail": "Add clockTolerance: 30 to jwt.verify() options to handle clock drift between servers",
+      "source": "ordering-timing-checker"
+    },
+    {
+      "type": "CLOCK_SKEW_TOO_STRICT",
+      "severity": "medium",
       "file": "backend/src/auth/auth.service.ts",
-      "line": 16,
+      "line": 3,
       "description": "JWT verification without clock skew tolerance — users may be spuriously logged out",
       "detail": "Add clockTolerance: 30 to jwt.verify() options to handle clock drift between servers",
       "source": "ordering-timing-checker"
@@ -7603,6 +7880,15 @@
       "severity": "medium",
       "file": "backend/src/inbox/inbox.gateway.ts",
       "line": 2,
+      "description": "JWT verification without clock skew tolerance — users may be spuriously logged out",
+      "detail": "Add clockTolerance: 30 to jwt.verify() options to handle clock drift between servers",
+      "source": "ordering-timing-checker"
+    },
+    {
+      "type": "CLOCK_SKEW_TOO_STRICT",
+      "severity": "medium",
+      "file": "backend/src/member-area/member-area-public.controller.ts",
+      "line": 80,
       "description": "JWT verification without clock skew tolerance — users may be spuriously logged out",
       "detail": "Add clockTolerance: 30 to jwt.verify() options to handle clock drift between servers",
       "source": "ordering-timing-checker"
@@ -7692,7 +7978,25 @@
       "type": "SLOW_QUERY",
       "severity": "medium",
       "file": "backend/src/admin/permissions/admin-permissions.service.ts",
-      "line": 86,
+      "line": 71,
+      "description": "findMany without select or include — returns all columns from DB",
+      "detail": "const beforeRows = await tx.adminPermission.findMany({ — Add a select: { ... } block to fetch only required fields, reducing payload size.",
+      "source": "performance-query-profiler"
+    },
+    {
+      "type": "UNBOUNDED_RESULT",
+      "severity": "medium",
+      "file": "backend/src/admin/permissions/admin-permissions.service.ts",
+      "line": 71,
+      "description": "findMany without take — may return all rows and cause OOM or slow response",
+      "detail": "const beforeRows = await tx.adminPermission.findMany({ — Add take: <N> (e.g., 100) and skip for pagination to cap result size.",
+      "source": "performance-query-profiler"
+    },
+    {
+      "type": "SLOW_QUERY",
+      "severity": "medium",
+      "file": "backend/src/admin/permissions/admin-permissions.service.ts",
+      "line": 112,
       "description": "findMany without select or include — returns all columns from DB",
       "detail": "return this.prisma.adminPermission.findMany({ — Add a select: { ... } block to fetch only required fields, reducing payload size.",
       "source": "performance-query-profiler"
@@ -7701,7 +8005,7 @@
       "type": "UNBOUNDED_RESULT",
       "severity": "medium",
       "file": "backend/src/admin/permissions/admin-permissions.service.ts",
-      "line": 86,
+      "line": 112,
       "description": "findMany without take — may return all rows and cause OOM or slow response",
       "detail": "return this.prisma.adminPermission.findMany({ — Add take: <N> (e.g., 100) and skip for pagination to cap result size.",
       "source": "performance-query-profiler"
@@ -7809,7 +8113,7 @@
       "type": "UNBOUNDED_RESULT",
       "severity": "medium",
       "file": "backend/src/dashboard/dashboard.service.ts",
-      "line": 184,
+      "line": 226,
       "description": "findMany without take — may return all rows and cause OOM or slow response",
       "detail": "this.prisma.checkoutOrder.findMany({ — Add take: <N> (e.g., 100) and skip for pagination to cap result size.",
       "source": "performance-query-profiler"
@@ -7908,7 +8212,7 @@
       "type": "SLOW_QUERY",
       "severity": "medium",
       "file": "backend/src/payments/connect/connect-payout-approval.service.ts",
-      "line": 439,
+      "line": 455,
       "description": "findMany without select or include — returns all columns from DB",
       "detail": "this.prisma.approvalRequest.findMany({ — Add a select: { ... } block to fetch only required fields, reducing payload size.",
       "source": "performance-query-profiler"
@@ -7917,7 +8221,7 @@
       "type": "UNBOUNDED_RESULT",
       "severity": "medium",
       "file": "backend/src/payments/connect/connect-payout-approval.service.ts",
-      "line": 439,
+      "line": 455,
       "description": "findMany without take — may return all rows and cause OOM or slow response",
       "detail": "this.prisma.approvalRequest.findMany({ — Add take: <N> (e.g., 100) and skip for pagination to cap result size.",
       "source": "performance-query-profiler"
@@ -7926,7 +8230,7 @@
       "type": "SLOW_QUERY",
       "severity": "medium",
       "file": "backend/src/payments/connect/connect.service.ts",
-      "line": 371,
+      "line": 376,
       "description": "findMany without select or include — returns all columns from DB",
       "detail": "return this.prisma.connectAccountBalance.findMany({ — Add a select: { ... } block to fetch only required fields, reducing payload size.",
       "source": "performance-query-profiler"
@@ -7935,7 +8239,7 @@
       "type": "UNBOUNDED_RESULT",
       "severity": "medium",
       "file": "backend/src/payments/connect/connect.service.ts",
-      "line": 371,
+      "line": 376,
       "description": "findMany without take — may return all rows and cause OOM or slow response",
       "detail": "return this.prisma.connectAccountBalance.findMany({ — Add take: <N> (e.g., 100) and skip for pagination to cap result size.",
       "source": "performance-query-profiler"
@@ -8205,6 +8509,15 @@
       "type": "TEST_NO_ASSERTION",
       "severity": "medium",
       "file": "backend/src/kloel/mercado-pago-order.util.spec.ts",
+      "line": 0,
+      "description": "Financial test file has no error/rejection case tests — happy path only is insufficient",
+      "detail": "Add tests for: insufficient funds, payment rejection, invalid coupon, concurrent writes",
+      "source": "test-quality"
+    },
+    {
+      "type": "TEST_NO_ASSERTION",
+      "severity": "medium",
+      "file": "backend/src/kloel/onboarding.service.spec.ts",
       "line": 0,
       "description": "Financial test file has no error/rejection case tests — happy path only is insufficient",
       "detail": "Add tests for: insufficient funds, payment rejection, invalid coupon, concurrent writes",
@@ -9483,7 +9796,7 @@
       "type": "VISUAL_CONTRACT_HEX_OUTSIDE_TOKENS",
       "severity": "medium",
       "file": "frontend/src/app/(public)/pay/[id]/page.tsx",
-      "line": 147,
+      "line": 149,
       "description": "Hardcoded hex color outside the approved visual token set.",
       "detail": "Replace raw colors #FFFFFF with design tokens/CSS variables so the screen converges to the Kloel visual contract.",
       "source": "visual-design-checker"
@@ -10401,7 +10714,7 @@
       "type": "VISUAL_CONTRACT_HEX_OUTSIDE_TOKENS",
       "severity": "medium",
       "file": "frontend/src/components/kloel/auth/auth-provider.tsx",
-      "line": 115,
+      "line": 104,
       "description": "Hardcoded hex color outside the approved visual token set.",
       "detail": "Replace raw colors #418 with design tokens/CSS variables so the screen converges to the Kloel visual contract.",
       "source": "visual-design-checker"
@@ -11983,11 +12296,11 @@
     }
   ],
   "stats": {
-    "uiElements": 1198,
-    "uiDeadHandlers": 6,
-    "apiCalls": 641,
+    "uiElements": 1203,
+    "uiDeadHandlers": 8,
+    "apiCalls": 644,
     "apiNoRoute": 0,
-    "backendRoutes": 737,
+    "backendRoutes": 744,
     "backendEmpty": 0,
     "prismaModels": 133,
     "modelOrphans": 0,
@@ -12000,10 +12313,10 @@
     "proxyRoutes": 74,
     "proxyNoUpstream": 12,
     "securityIssues": 0,
-    "dataSafetyIssues": 54,
-    "qualityIssues": 1261,
+    "dataSafetyIssues": 53,
+    "qualityIssues": 1295,
     "unavailableChecks": 0,
     "unknownSurfaces": 0
   },
-  "timestamp": "2026-04-23T05:04:10.921Z"
+  "timestamp": "2026-05-06T02:42:58.999Z"
 }

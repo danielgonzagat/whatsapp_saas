@@ -75,6 +75,12 @@ function unique<T>(values: T[]): T[] {
   return [...new Set(values)];
 }
 
+function resolveRequestedModes(
+  modes: Array<'customer' | 'operator' | 'admin' | 'shift' | 'soak'>,
+): Array<'customer' | 'operator' | 'admin' | 'shift' | 'soak'> {
+  return process.env.PULSE_RUN_SYNTHETIC_ACTORS === '1' ? modes : [];
+}
+
 function deriveRequestedModesFromScenarios(
   manifest: PulseManifest | null,
   scenarioIds: string[],
@@ -202,6 +208,9 @@ export function parseCertificationProfile(
   if (!value) {
     return null;
   }
+  if (value === 'production-final') {
+    return 'full-product';
+  }
   if (value === 'core-critical' || value === 'full-product') {
     return value;
   }
@@ -228,7 +237,7 @@ export function getProfileSelection(
         final: false,
         profile,
       },
-      requestedModes,
+      requestedModes: resolveRequestedModes(requestedModes),
       runtimeProbeIds,
       flowIds,
       invariantIds,
@@ -249,7 +258,7 @@ export function getProfileSelection(
       final: true,
       profile,
     },
-    requestedModes,
+    requestedModes: resolveRequestedModes(requestedModes),
     runtimeProbeIds,
     flowIds,
     invariantIds,

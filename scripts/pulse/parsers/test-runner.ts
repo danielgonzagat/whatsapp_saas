@@ -7,6 +7,7 @@ import { pathExists, readDir, readTextFile } from '../safe-fs';
 
 // Only run in DEEP/TOTAL mode — check for env var
 // Usage: PULSE_DEEP=1 npx ts-node scripts/pulse/index.ts
+// Set PULSE_RUN_TESTS=1 when the PULSE scan should actively execute Jest.
 
 const JEST_TIMEOUT_MS = 120_000;
 
@@ -95,6 +96,19 @@ function runJest(projectDir: string, rootDir: string, label: string): Break[] {
   }
   if (!hasTestFiles(projectDir)) {
     return [];
+  }
+  if (process.env.PULSE_RUN_TESTS !== '1') {
+    return [
+      {
+        type: 'CHECK_UNAVAILABLE',
+        severity: 'high',
+        file: path.relative(rootDir, projectDir),
+        line: 1,
+        description: `${label} test execution evidence was not refreshed during PULSE`,
+        detail:
+          'Set PULSE_RUN_TESTS=1 to let PULSE execute Jest, or provide test evidence from the normal test gate.',
+      },
+    ];
   }
 
   let output: string;

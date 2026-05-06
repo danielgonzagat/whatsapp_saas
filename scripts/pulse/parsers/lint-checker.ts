@@ -6,6 +6,7 @@ import { pathExists, readTextFile } from '../safe-fs';
 
 // Only run in DEEP/TOTAL mode — check for env var
 // Usage: PULSE_DEEP=1 npx ts-node scripts/pulse/index.ts
+// Set PULSE_RUN_LINT=1 when the PULSE scan should actively execute ESLint.
 
 const ESLINT_TIMEOUT_MS = 60_000;
 const MAX_ERRORS_PER_PROJECT = 50;
@@ -59,6 +60,19 @@ function runESLint(projectDir: string, rootDir: string, label: string): Break[] 
   }
   if (!hasSrcDir(projectDir)) {
     return [];
+  }
+  if (process.env.PULSE_RUN_LINT !== '1') {
+    return [
+      {
+        type: 'CHECK_UNAVAILABLE',
+        severity: 'high',
+        file: path.relative(rootDir, projectDir),
+        line: 1,
+        description: `${label} lint execution evidence was not refreshed during PULSE`,
+        detail:
+          'Set PULSE_RUN_LINT=1 to let PULSE execute ESLint, or provide lint evidence from the normal lint gate.',
+      },
+    ];
   }
 
   let output: string;
