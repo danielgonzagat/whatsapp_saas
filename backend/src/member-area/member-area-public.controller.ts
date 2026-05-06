@@ -15,7 +15,8 @@ import { Public } from '../auth/public.decorator';
 import { PrismaService } from '../prisma/prisma.service';
 
 const ACCESS_TTL_SECONDS = 60 * 60 * 24 * 7;
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MAX_EMAIL_LENGTH = 254;
+const MAX_EMAIL_LOCAL_LENGTH = 64;
 
 type AccessTokenPayload = {
   areaId: string;
@@ -33,10 +34,61 @@ function normalizeEmail(value: unknown): string {
     throw new BadRequestException('email_required');
   }
   const email = value.trim().toLowerCase();
-  if (!EMAIL_RE.test(email)) {
+  if (!isValidEmailAddress(email)) {
     throw new BadRequestException('invalid_email');
   }
   return email;
+}
+
+function isValidEmailAddress(email: string): boolean {
+  if (email.length === 0 || email.length > MAX_EMAIL_LENGTH) {
+    return false;
+  }
+
+  const atIndex = email.indexOf('@');
+  if (atIndex <= 0 || atIndex !== email.lastIndexOf('@')) {
+    return false;
+  }
+
+  const local = email.slice(0, atIndex);
+  const domain = email.slice(atIndex + 1);
+  if (local.length > MAX_EMAIL_LOCAL_LENGTH || domain.length === 0) {
+    return false;
+  }
+  if (!isValidEmailLocalPart(local) || domain.startsWith('.') || domain.endsWith('.')) {
+    return false;
+  }
+
+  const labels = domain.split('.');
+  return labels.length >= 2 && labels.every(isValidDomainLabel);
+}
+
+function isValidEmailLocalPart(local: string): boolean {
+  if (local.startsWith('.') || local.endsWith('.')) {
+    return false;
+  }
+  for (const char of local) {
+    const code = char.charCodeAt(0);
+    if (code <= 32 || code === 127 || char === '@') {
+      return false;
+    }
+  }
+  return true;
+}
+
+function isValidDomainLabel(label: string): boolean {
+  if (label.length === 0 || label.startsWith('-') || label.endsWith('-')) {
+    return false;
+  }
+  for (const char of label) {
+    const code = char.charCodeAt(0);
+    const isDigit = code >= 48 && code <= 57;
+    const isLowerAlpha = code >= 97 && code <= 122;
+    if (!isDigit && !isLowerAlpha && char !== '-') {
+      return false;
+    }
+  }
+  return true;
 }
 
 function base64urlJson(value: AccessTokenPayload): string {

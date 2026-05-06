@@ -1,4 +1,4 @@
-import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import type { PrismaService } from '../prisma/prisma.service';
 import { MemberAreaPublicController } from './member-area-public.controller';
 
@@ -79,6 +79,15 @@ describe('MemberAreaPublicController', () => {
     await expect(
       controller.requestAccess('curso', { email: 'buyer@example.com' }),
     ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('rejects malformed emails before querying enrollment data', async () => {
+    const { controller, prisma } = buildController();
+
+    await expect(
+      controller.requestAccess('curso', { email: '!@!.!.!.!.!.!.!' }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(prisma.memberEnrollment.findFirst).not.toHaveBeenCalled();
   });
 
   it('returns content only with a valid token for the enrollment', async () => {
