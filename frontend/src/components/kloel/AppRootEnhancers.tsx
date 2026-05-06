@@ -8,6 +8,7 @@ import { ThemeProvider } from '@/components/kloel/theme/ThemeProvider';
 import { ConversationHistoryProvider } from '@/hooks/useConversationHistory';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import type { ReactNode } from 'react';
+import { KloelProductSurfacePatches } from './KloelProductSurfacePatches';
 
 const speedInsightsEnabled = process.env.NEXT_PUBLIC_ENABLE_SPEED_INSIGHTS === 'true';
 
@@ -20,7 +21,10 @@ export function AppRootEnhancers({ children }: { children: ReactNode }) {
           <SWRProvider>
             <ConversationHistoryProvider>
               <ToastProvider>
-                <ThemeProvider>{children}</ThemeProvider>
+                <ThemeProvider>
+                  <KloelProductSurfacePatches />
+                  {children}
+                </ThemeProvider>
               </ToastProvider>
             </ConversationHistoryProvider>
           </SWRProvider>

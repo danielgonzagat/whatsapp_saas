@@ -2,10 +2,11 @@ import { Module } from '@nestjs/common';
 import { PrismaModule } from '../prisma/prisma.module';
 import { WhatsappModule } from '../whatsapp/whatsapp.module';
 import { MarketingController } from './marketing.controller';
+import { TikTokMarketingController } from './tiktok-marketing.controller';
 
 /** Marketing module. */
 @Module({
   imports: [PrismaModule, WhatsappModule],
-  controllers: [MarketingController],
+  controllers: [MarketingController, TikTokMarketingController],
 })
 export class MarketingModule {}
