@@ -93,7 +93,7 @@ export function createSendMessageHandler(ctx: SendMessageContext) {
     let finalized = false;
     let finalError: string | null = null;
     let hasExitedThinking = false;
-    const thinkingStartedAt = Date.now();
+    const thinkingStartedAt = performance.now();
     const minimumThinkingMs = 420;
     const playbackTimerRef: { current: ReturnType<typeof setTimeout> | null } = { current: null };
 
@@ -142,7 +142,7 @@ export function createSendMessageHandler(ctx: SendMessageContext) {
       }
 
       if (!hasExitedThinking && renderBuffer.length > 0) {
-        const remainingThinking = minimumThinkingMs - (Date.now() - thinkingStartedAt);
+        const remainingThinking = minimumThinkingMs - (performance.now() - thinkingStartedAt);
         if (remainingThinking > 0) {
           playbackTimerRef.current = setTimeout(drainBufferedReply, remainingThinking);
           return;
