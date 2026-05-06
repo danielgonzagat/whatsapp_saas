@@ -12,7 +12,7 @@ blocks: SP-12 (custom fees tier override)
 # SP-9 — Marketplace Treasury
 
 O maior épico financeiro do painel admin. Kloel opera como marketplace: o
-dinheiro entra via gateway (Asaas), é provisionado à carteira do produtor
+dinheiro entra via gateway, é provisionado à carteira do produtor
 (`KloelWallet`), e uma fração fica retida na tesouraria do marketplace. Hoje essa fração **não
 tem representação contábil** — o admin não consegue responder "quanto dinheiro a
 Kloel tem agora, onde ele está, e para onde ele vai".
@@ -31,7 +31,7 @@ SP-9 constrói:
    abaixo).
 4. `MarketplaceTreasuryPayout` — fila de saques aprovados pela operação para transferência
    do saldo disponível da `MarketplaceTreasury` para a conta operacional da Kloel.
-   **Fora de escopo**: automação de PIX via Asaas nessa fase; SP-9 inicia com
+   **Fora de escopo**: automação de PIX via gateway legado nessa fase; SP-9 inicia com
    saída manual + registro.
 5. Reconciliação — job diário que:
    - soma o ledger por bucket e compara com o saldo materializado,

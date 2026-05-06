@@ -126,7 +126,7 @@ export class PaymentService {
     amountInCents: number,
     idempotencyKey: string,
   ): Promise<StripePaymentIntent> {
-    return await this.stripeService.stripe.paymentIntents.create(
+    return this.stripeService.stripe.paymentIntents.create(
       {
         amount: amountInCents,
         currency: 'brl',
@@ -353,6 +353,12 @@ export class PaymentService {
           ? String(sale.status).toLowerCase()
           : '';
     const includePaymentDetails = status !== 'paid' && status !== 'pago' && status !== 'confirmed';
+    const activeMemberAreas = await this.prisma.memberArea.findMany({
+      where: { workspaceId: sale.workspaceId, active: true },
+      select: { slug: true },
+      take: 2,
+    });
+    const memberAreaSlug = activeMemberAreas.length === 1 ? activeMemberAreas[0].slug : undefined;
 
     return {
       id: sale.externalPaymentId || sale.id,
@@ -369,6 +375,7 @@ export class PaymentService {
         ? metadata.pixHostedInstructionsUrl || sale.paymentLink || undefined
         : undefined,
       companyName: metadata.companyName || undefined,
+      memberAreaUrl: memberAreaSlug ? `/area/${memberAreaSlug}` : undefined,
     };
   }
 

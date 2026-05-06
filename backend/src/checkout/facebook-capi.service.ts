@@ -26,8 +26,7 @@ export class FacebookCAPIService {
   }
 
   /** Send event. */
-  // PULSE_OK: rate-limited by CheckoutPublicController
-  async sendEvent(data: CAPIEventData): Promise<void> {
+  async sendEvent(data: CAPIEventData): Promise<boolean> {
     try {
       const userData: Record<string, unknown> = {};
       if (data.email) {
@@ -74,8 +73,10 @@ export class FacebookCAPIService {
         this.logger.warn(
           `Facebook CAPI failed for pixel ${data.pixelId}: ${response.status} ${text}`,
         );
+        return false;
       } else {
         this.logger.log(`Facebook CAPI Purchase event sent for pixel ${data.pixelId}`);
+        return true;
       }
       // PULSE:OK — CAPI is a best-effort analytics side-effect; webhook processing must not fail because of it
     } catch (error: unknown) {
@@ -90,6 +91,7 @@ export class FacebookCAPIService {
         level: 'warning',
       });
       // Never throw - webhook must not fail because of CAPI
+      return false;
     }
   }
 }

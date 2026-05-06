@@ -126,6 +126,15 @@ import { redisInProductionValidator } from './redis-env-validator';
         SHOPIFY_WEBHOOK_SECRET: Joi.string().optional(),
 
         // ============================================
+        // MERCADO PAGO
+        // ============================================
+        MERCADOPAGO_ACCESS_TOKEN: Joi.string().optional(),
+        MERCADOPAGO_WEBHOOK_SECRET: Joi.string().optional(),
+        MERCADOPAGO_WEBHOOK_URL: Joi.string().uri().optional(),
+        MERCADOPAGO_NOTIFICATION_URL: Joi.string().uri().optional(),
+        MERCADOPAGO_API_BASE_URL: Joi.string().uri().optional(),
+
+        // ============================================
         // FEATURES
         // ============================================
         GUEST_CHAT_ENABLED: Joi.string().valid('true', 'false').optional(),
@@ -141,6 +150,18 @@ import { redisInProductionValidator } from './redis-env-validator';
         META_REDIRECT_URI: Joi.string().optional(),
         TIKTOK_CLIENT_KEY: Joi.string().optional(),
         TIKTOK_CLIENT_SECRET: Joi.string().optional(),
+
+        // ============================================
+        // APPLE AUTH / PAY
+        // ============================================
+        APPLE_CLIENT_ID: Joi.string().optional(),
+        APPLE_TEAM_ID: Joi.string().optional(),
+        APPLE_KEY_ID: Joi.string().optional(),
+        APPLE_PRIVATE_KEY: Joi.string().optional(),
+        APPLE_CALLBACK_URL: Joi.string().uri().optional(),
+        APPLE_MERCHANT_ID: Joi.string().optional(),
+        APPLE_PAY_DOMAIN: Joi.string().optional(),
+        APPLE_PAY_DISPLAY_NAME: Joi.string().optional(),
 
         // ============================================
         // AI PROVIDERS

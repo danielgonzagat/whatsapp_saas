@@ -1528,7 +1528,7 @@ model Product {
   images   Json? // Array of image URLs
 
   // Payment Integration
-  paymentLink String? // Asaas, Stripe, etc
+  paymentLink String?  // Stripe, Mercado Pago, etc
 
   // Status
   active   Boolean @default(true)
@@ -1693,8 +1693,8 @@ model KloelSale {
   status            String    @default("pending") // "pending", "paid", "cancelled", "refunded", "overdue"
   paymentMethod     String? // "PIX", "CREDIT_CARD", "BOLETO"
   paymentLink       String?
-  externalPaymentId String?   @unique // ID do pagamento no gateway (Asaas, Stripe, etc)
-  externalId        String? // Legacy
+  externalPaymentId String?  @unique // ID do pagamento no gateway (Stripe, Mercado Pago, etc)
+  externalId        String?  // Legacy
   paidAt            DateTime?
   metadata          Json?
 

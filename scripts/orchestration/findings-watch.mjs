@@ -1,4 +1,4 @@
 #!/usr/bin/env node
-export * from './findings-watch/__parts__/helpers.mjs';
-export * from './findings-watch/__parts__/engine.mjs';
-export * from './findings-watch/__parts__/daemon.mjs';
+// Root entry-point — implementation lives in __parts__ (size-budget split).
+import './__parts__/findings-watch.mjs';
+export * from './__parts__/findings-watch.mjs';

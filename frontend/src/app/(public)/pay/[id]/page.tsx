@@ -10,6 +10,7 @@ import { apiUrl } from '@/lib/http';
 import Image from 'next/image';
 import {
   AlertCircle,
+  BookOpen,
   Building2,
   Check,
   CheckCircle2,
@@ -34,6 +35,7 @@ interface PaymentDetails {
   pixQrCodeUrl?: string;
   pixCopyPaste?: string;
   paymentLink?: string;
+  memberAreaUrl?: string;
   bankInfo?: {
     bank?: string;
     agency?: string;
@@ -381,6 +383,15 @@ export default function PaymentPage({ params }: { params: Promise<{ id: string }
               <p className="text-gray-600 text-sm mt-2">
                 {kloelT(`Pago em`)} {formatDate(payment.paidAt)}
               </p>
+              {payment.memberAreaUrl && (
+                <a
+                  href={payment.memberAreaUrl}
+                  className="mt-5 inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-600"
+                >
+                  <BookOpen className="h-4 w-4" aria-hidden="true" />
+                  {kloelT(`Acessar area de membros`)}
+                </a>
+              )}
             </div>
           )}
         </div>

@@ -113,6 +113,44 @@ export interface DashboardHomeResponse {
   };
 }
 
+/** Dashboard post-payment event shape. */
+export interface DashboardPostPaymentEvent {
+  /** Id property. */
+  id: string;
+  /** Action property. */
+  action: string;
+  /** Resource property. */
+  resource: string;
+  /** Resource id property. */
+  resourceId: string | null;
+  /** Created at property. */
+  createdAt: string;
+}
+
+/** Dashboard post-payment response shape. */
+export interface DashboardPostPaymentResponse {
+  /** Generated at property. */
+  generatedAt: string;
+  /** Payments property. */
+  payments: { approved: number; failed: number };
+  /** Orders property. */
+  orders: { paid: number; processing: number };
+  /** Member access property. */
+  memberAccess: { activeEnrollments: number; grants: number };
+  /** Notifications property. */
+  notifications: {
+    purchaseEmailsSent: number;
+    whatsappEnqueued: number;
+    whatsappSkipped: number;
+  };
+  /** Tracking property. */
+  tracking: { facebookCapiPurchases: number; convertedSocialLeads: number };
+  /** Affiliate commissions property. */
+  affiliateCommissions: { created: number; totalInCents: number };
+  /** Recent events property. */
+  recentEvents: DashboardPostPaymentEvent[];
+}
+
 /** Get dashboard home. */
 export async function getDashboardHome(params?: {
   period?: DashboardHomePeriod;
@@ -129,4 +167,13 @@ export async function getDashboardHome(params?: {
     throw new Error(response.error);
   }
   return response.data as DashboardHomeResponse;
+}
+
+/** Get dashboard post-payment snapshot. */
+export async function getDashboardPostPayment() {
+  const response = await apiFetch<DashboardPostPaymentResponse>('/dashboard/post-payment');
+  if (response.error) {
+    throw new Error(response.error);
+  }
+  return response.data as DashboardPostPaymentResponse;
 }

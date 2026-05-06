@@ -83,8 +83,34 @@ KLOEL é uma plataforma AI-native de marketing digital e vendas. Monorepo com:
   font, JetBrains Mono para números, sem gradientes, sem emojis, sem
   border-radius > 6px, SVG icons only
 
-**Estado atual**: 184k linhas, 812 arquivos, 107 models Prisma, 89 controllers.
-~40-50% funcionalidade real, resto é shell visual com dados fake.
+**Estado atual** (medido 2026-05-04 ~22:00 BRT, comando direto `find ... | wc -l`):
+
+- **844.087 linhas** TS/TSX/JS/MJS/JSX (sem node_modules / dist / .next / build)
+- **12.439 arquivos** de código (TS/JS/Prisma/SQL/JSON/MD untracked excluded)
+- **2.532 arquivos** rastreados pelo git
+- **131 models Prisma** em `backend/prisma/schema.prisma`
+- **111 controllers** + **150 services** em `backend/src/`
+- **105 pages** + **194 components** + **62 API proxy routes** em `frontend/src/`
+- **81 worker processors** em `worker/`
+- **482 spec/test files** total (Jest + Vitest + Playwright)
+- **PULSE certify**: 48% NOT_CERTIFIED, 320 critical/high breaks (1339 total)
+- **Codacy**: 1076 HIGH issues outstanding
+- **PRs ativas**: #198 (chore/codacy-tsdoc-pulse-updates-apr23, ~100 commits, macro target), #236 (chore/ai-constitution-obsidian-graph-lock, OUTRO orquestrador), #215 (dependabot)
+- **Funcionalidade real estimada**: ~50-60% (sobe a cada wave de fix; baseline era ~40-50%)
+
+> **Manter este bloco fresco**: ao detectar drift >20% em qualquer métrica,
+> atualize via medição direta. Comando canônico:
+>
+> ```sh
+> find . -type f \( -name "*.ts" -o -name "*.tsx" -o -name "*.js" -o -name "*.mjs" -o -name "*.jsx" \) \
+>   -not -path "*/node_modules/*" -not -path "*/dist/*" -not -path "*/.next/*" -not -path "*/.git/*" \
+>   -not -path "*/build/*" | xargs wc -l | tail -1
+> ```
+>
+> **Por quê isso importa**: agentes que dimensionam waves usando números velhos
+> sub-estimam escopo (ex.: mega-discovery wave foi sized pra 184k LOC quando o
+> real é 844k — 4,6× a mais). Resultado: prompts inadequados, cobertura
+> incompleta, decisões de concurrency erradas.
 
 **NÃO há global prefix** no NestJS. Rotas são como declaradas nos controllers.
 

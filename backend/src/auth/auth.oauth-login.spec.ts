@@ -3,9 +3,11 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { AuthOAuthService } from './auth-oauth.service';
-import { AuthPartnerService } from './auth-partner.service';
-import { AuthVerificationService } from './auth-verification.service';
+import { EmailService } from './email.service';
+import { FacebookAuthService } from './facebook-auth.service';
+import { GoogleAuthService } from './google-auth.service';
+import { RateLimitService } from './rate-limit.service';
+import { TikTokAuthService } from './tiktok-auth.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from './email.service';
 import { GoogleAuthService } from './google-auth.service';
@@ -95,7 +97,15 @@ const mockEmailService = {
 };
 
 const mockConfigService = {
-  get: jest.fn().mockReturnValue(undefined),
+  get: jest.fn((key: string) => {
+    const config: Record<string, string> = {
+      META_ACCESS_TOKEN: 'mock-token',
+      META_PHONE_NUMBER_ID: 'mock-phone-id',
+      ENCRYPTION_KEY: '12345678901234567890123456789012',
+      APPLE_CLIENT_ID: 'com.kloel.web',
+    };
+    return config[key];
+  }),
 };
 
 const mockGoogleAuthService = {
@@ -115,6 +125,10 @@ const mockConnectService = {};
 
 const mockRateLimitService = {
   checkRateLimit: jest.fn(),
+};
+
+const mockRateLimitService = {
+  checkRateLimit: jest.fn().mockResolvedValue(undefined),
 };
 
 describe('AuthService OAuth login', () => {
@@ -144,9 +158,6 @@ describe('AuthService OAuth login', () => {
         { provide: TikTokAuthService, useValue: mockTikTokAuthService },
         { provide: ConnectService, useValue: mockConnectService },
         { provide: RateLimitService, useValue: mockRateLimitService },
-        { provide: AuthOAuthService, useValue: mockAuthOAuthService },
-        { provide: AuthPartnerService, useValue: mockAuthPartnerService },
-        { provide: AuthVerificationService, useValue: mockAuthVerificationService },
       ],
     }).compile();
 

@@ -39,7 +39,7 @@
  *   artifacts/opencode-fleet/<runId>/ has full logs
  */
 
-import { spawn } from 'node:child_process';
+import { spawn, execFileSync } from 'node:child_process';
 import { mkdirSync, readFileSync, writeFileSync, createWriteStream, existsSync } from 'node:fs';
 import { resolve, join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -47,9 +47,63 @@ import { fileURLToPath } from 'node:url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(__dirname, '..', '..');
 
+function killZombiesBeforeFleet() {
+  try {
+    const out = execFileSync('node', [join(__dirname, 'kill-opencode-zombies.mjs')], {
+      encoding: 'utf8',
+      timeout: 15000,
+    });
+    const summary = JSON.parse(out);
+    if (summary.zombies > 0) {
+      process.stderr.write(
+        `fleet: pre-flight reaped ${summary.zombies} zombie(s) from prior runs\n`,
+      );
+    }
+  } catch (err) {
+    process.stderr.write(`fleet: pre-flight zombie sweep skipped (${err.message})\n`);
+  }
+}
+
 const REQUIRED_MODEL = 'deepseek/deepseek-v4-pro';
 const DEFAULT_TIMEOUT_SEC = 600;
 const ARTIFACTS_ROOT = join(REPO_ROOT, 'artifacts', 'opencode-fleet');
+
+/**
+ * Active-PID registry — written to <runDir>/pids.json so the zombie killer
+ * (kill-opencode-zombies.mjs) can exempt our live children from age-based
+ * reaping. Without this, any subagent running > maxAgeSec gets SIGKILLed
+ * mid-task by the Stop hook.
+ */
+const activePids = new Set();
+let pidsFile = null;
+
+function persistActivePids() {
+  if (!pidsFile) return;
+  try {
+    writeFileSync(
+      pidsFile,
+      JSON.stringify(
+        { writtenAt: new Date().toISOString(), parentPid: process.pid, pids: [...activePids] },
+        null,
+        2,
+      ),
+    );
+  } catch {
+    /* best-effort; do not crash the runner over a registry write */
+  }
+}
+
+function registerActivePid(pid) {
+  if (!Number.isFinite(pid)) return;
+  activePids.add(pid);
+  persistActivePids();
+}
+
+function unregisterActivePid(pid) {
+  if (!Number.isFinite(pid)) return;
+  activePids.delete(pid);
+  persistActivePids();
+}
 
 function readManifest(arg) {
   if (!arg || arg === '-') {
@@ -114,21 +168,41 @@ function runOne(task, runDir, opts) {
       cwd: opts.dir || REPO_ROOT,
       env: { ...process.env },
       stdio: ['ignore', 'pipe', 'pipe'],
+      detached: true,
     });
+
+    registerActivePid(child.pid);
 
     child.stdout.pipe(out);
     child.stderr.pipe(err);
+
+    // Reap the process group only on TIMEOUT — never on natural exit. On a
+    // clean exit, the OS reaps the pgroup as part of normal shutdown; the
+    // previous SIGKILL-after-100ms behavior was killing in-flight Write tool
+    // calls and MCP helpers that were still flushing to disk.
+    const reapTree = (sig) => {
+      try {
+        process.kill(-child.pid, sig);
+      } catch {
+        try {
+          child.kill(sig);
+        } catch {
+          /* already gone */
+        }
+      }
+    };
 
     const timeoutSec = opts.timeoutSec === undefined ? DEFAULT_TIMEOUT_SEC : opts.timeoutSec;
     const timeout =
       timeoutSec > 0
         ? setTimeout(() => {
-            child.kill('SIGKILL');
+            reapTree('SIGKILL');
           }, timeoutSec * 1000)
         : null;
 
     child.on('exit', (code, signal) => {
       if (timeout) clearTimeout(timeout);
+      unregisterActivePid(child.pid);
       const durationMs = nowMs() - start;
       writeFileSync(exitPath, String(code ?? -1));
       out.end();
@@ -147,6 +221,7 @@ function runOne(task, runDir, opts) {
 
     child.on('error', (e) => {
       clearTimeout(timeout);
+      unregisterActivePid(child.pid);
       err.write(`\nspawn error: ${e.message}\n`);
       const durationMs = nowMs() - start;
       writeFileSync(exitPath, '254');
@@ -171,6 +246,14 @@ async function runWithConcurrency(tasks, concurrency, runDir, opts) {
   const queue = [...tasks];
   const inflight = new Set();
 
+  // OpenCode session SQLite locks during the boot window (~2s per session).
+  // Spawning N subagents at once causes ~25% to fail at conc 8-10, ~70% at
+  // 2 overlapping fleets. Stagger gaps each spawn by `staggerMs` (default
+  // 8000ms — matches commit 3eede36ca on chore/ai-constitution-obsidian-graph-lock,
+  // empirically validated safe). Override via manifest.staggerMs.
+  // See: feedback_opencode_sqlite_boot_window memory.
+  const staggerMs = Number.isFinite(opts.staggerMs) ? opts.staggerMs : 8000;
+
   async function dispatch() {
     while (queue.length && inflight.size < concurrency) {
       const t = queue.shift();
@@ -179,6 +262,9 @@ async function runWithConcurrency(tasks, concurrency, runDir, opts) {
         results.push(r);
       });
       inflight.add(p);
+      if (queue.length && inflight.size < concurrency && staggerMs > 0) {
+        await new Promise((r) => setTimeout(r, staggerMs));
+      }
     }
   }
 
@@ -191,6 +277,7 @@ async function runWithConcurrency(tasks, concurrency, runDir, opts) {
 }
 
 async function main() {
+  killZombiesBeforeFleet();
   const arg = process.argv[2];
   const manifest = readManifest(arg);
 
@@ -215,15 +302,54 @@ async function main() {
   const runDir = join(ARTIFACTS_ROOT, runId);
   mkdirSync(runDir, { recursive: true });
 
+  pidsFile = join(runDir, 'pids.json');
+  persistActivePids();
+
+  // Graceful shutdown — when the parent (Claude wrapper, terminal, CI) is
+  // signaled, terminate live children with SIGTERM, write a partial summary,
+  // and exit. Without this, detached:true children become silent orphans and
+  // no summary.json is ever written ("morre sem entregar").
+  const shutdown = (sig) => {
+    process.stderr.write(`fleet: received ${sig}, terminating ${activePids.size} live children\n`);
+    for (const pid of activePids) {
+      try {
+        process.kill(-pid, 'SIGTERM');
+      } catch {
+        try {
+          process.kill(pid, 'SIGTERM');
+        } catch {
+          /* already gone */
+        }
+      }
+    }
+    try {
+      writeFileSync(
+        join(runDir, 'shutdown.json'),
+        JSON.stringify(
+          { signal: sig, at: new Date().toISOString(), terminatedPids: [...activePids] },
+          null,
+          2,
+        ),
+      );
+    } catch {
+      /* best-effort */
+    }
+    process.exit(130);
+  };
+  process.on('SIGINT', () => shutdown('SIGINT'));
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  process.on('SIGHUP', () => shutdown('SIGHUP'));
+
   const opts = {
     dir: manifest.dir || REPO_ROOT,
     timeoutSec: manifest.timeoutSec ?? DEFAULT_TIMEOUT_SEC,
     skipPermissions: manifest.skipPermissions !== false,
+    staggerMs: manifest.staggerMs ?? 8000,
   };
 
   const start = nowMs();
   process.stderr.write(
-    `fleet: runId=${runId} tasks=${manifest.tasks.length} concurrency=${concurrency} timeout=${opts.timeoutSec}s dir=${opts.dir}\n`,
+    `fleet: runId=${runId} tasks=${manifest.tasks.length} concurrency=${concurrency} timeout=${opts.timeoutSec}s stagger=${opts.staggerMs}ms dir=${opts.dir}\n`,
   );
 
   const results = await runWithConcurrency(manifest.tasks, concurrency, runDir, opts);
@@ -251,6 +377,10 @@ async function main() {
   };
 
   writeFileSync(join(runDir, 'summary.json'), JSON.stringify(summary, null, 2));
+  // Mark fleet inactive — kills the killer's exemption window for these PIDs
+  // so future runs don't see stale entries blocking real zombie cleanup.
+  activePids.clear();
+  persistActivePids();
   process.stdout.write(JSON.stringify(summary, null, 2) + '\n');
   process.exit(summary.error === 0 ? 0 : 1);
 }

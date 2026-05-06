@@ -208,14 +208,14 @@ modules).
   `checkout-webhook.controller.ts` (~1.029 LOC) com StripeChargeService +
   StripeWebhookProcessor. Atualmente o motor novo coexiste com legacy payment
   provider/MP; chamadas reais ainda passam pelo legado.
-- **FASE 8 UI integration**: trocar AsaasTokenizer por StripePaymentElement no
+- **FASE 8 UI integration**: trocar LegacyPaymentTokenizer por StripePaymentElement no
   `CheckoutShell.tsx` com feature flag, depois remover.
 - **FASE 9 cleanup**: deletar `legacy-payment.service.ts`,
   `mercado-pago.service.ts`, `mercado-pago-*.util.ts`, `payment.service.ts`,
   `smart-payment.service.ts`, `mercado-pago-wallet.controller.ts`,
   `frontend/src/app/webhook/payment/stripe/route.ts`,
   `frontend/src/lib/mercado-pago.ts`,
-  `frontend/src/app/(checkout)/components/AsaasTokenizer.tsx`. Deps
+  `frontend/src/app/(checkout)/components/LegacyPaymentTokenizer.tsx`. Deps
   `legacy-provider` em backend/package.json. Schema migration:
   `CheckoutPayment.gateway` + `Payment.provider` viram enum
   `PaymentProvider { STRIPE }` (DB vazia em prod, migration é noop em dados — só

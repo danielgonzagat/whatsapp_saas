@@ -44,7 +44,7 @@ within 24 hours.
 
 ### P0-2 — Webhook dedup atomic SET EX NX (webhook.atomicDedup, payment.failClosedUnknownState)
 
-**Symptoms of regression:** Asaas/Stripe/Shopify webhooks reporting high
+**Symptoms of regression:** Stripe/Shopify webhooks reporting high
 duplicate counts; `webhook:payment:*` keys in Redis growing without TTL; payment
 state transitions rejected unexpectedly.
 

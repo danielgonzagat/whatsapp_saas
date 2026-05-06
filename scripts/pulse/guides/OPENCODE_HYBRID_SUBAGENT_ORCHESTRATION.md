@@ -142,11 +142,6 @@ The prompt must include:
 A good prompt is narrow enough that another agent can finish without asking what
 it owns.
 
-Do not ask OpenCode subagents to write reports under `/tmp`. In this workspace,
-external directory writes can be auto-rejected. For read-only scouts, require the
-report in stdout. For writable scout reports, assign an explicit in-repo
-ownership path such as `scripts/pulse/guides/scout-reports/<lane>.md`.
-
 ## Subagent prompt template
 
 ```text
@@ -264,7 +259,6 @@ These patterns wasted time or created risk:
 
 - launching OpenCode in shell background mode
 - relying on redirected logs
-- asking OpenCode to write `/tmp` reports that the sandbox rejects
 - broad prompts with no ownership set
 - asking many subagents to reduce the same file
 - editing the auditor instead of eliminating real debt

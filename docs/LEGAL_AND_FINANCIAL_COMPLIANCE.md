@@ -67,7 +67,7 @@ Production is not ready if any of the following are missing:
 
 - public terms,
 - public privacy policy,
-- Asaas webhook verification,
+- payment webhook verification,
 - refund and chargeback policy,
 - nota fiscal owner/process,
 - staging validation for the payment flow.

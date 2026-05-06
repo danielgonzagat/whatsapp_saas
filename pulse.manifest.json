@@ -65,7 +65,7 @@
     {
       "name": "Billing",
       "state": "READY",
-      "notes": "Subscription, payment methods, MercadoPago + Asaas",
+      "notes": "Subscription, payment methods, Stripe + Mercado Pago",
       "critical": true
     },
     {
@@ -604,9 +604,9 @@
       "notes": "Agrupa superfícies operacionais especiais para cobertura sintética sem elevar criticidade."
     }
   ],
-  "externalIntegrations": ["Asaas", "MercadoPago", "Meta", "Google", "OpenAI", "WhatsApp"],
+  "externalIntegrations": ["MercadoPago", "Meta", "Google", "OpenAI", "WhatsApp"],
   "jobs": ["BullMQ", "Puppeteer"],
-  "webhooks": ["Asaas", "WhatsApp API"],
+  "webhooks": ["WhatsApp API"],
   "stateMachines": ["auth", "checkout", "wallet", "billing", "kyc", "whatsapp-session"],
   "criticalFlows": [
     "auth-login",
