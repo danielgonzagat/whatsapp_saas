@@ -199,9 +199,12 @@ export function KloelProductSurfacePatches() {
   const pathname = usePathname();
 
   useEffect(() => {
+    const isAuthSurface = pathname === '/login' || pathname === '/register';
     const run = () => {
-      paintAuthIcons();
-      paintAuthAccentPhrase();
+      if (isAuthSurface) {
+        paintAuthIcons();
+        paintAuthAccentPhrase();
+      }
       removeChatQuickActions();
       patchMarketingSurfaces();
     };

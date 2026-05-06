@@ -171,20 +171,38 @@ describe('public reduced-motion surfaces', () => {
   });
 
   it('disables cookie banner motion-specific chrome under reduced motion', async () => {
-    render(
-      <CookieProvider>
-        <div>cookie child</div>
-      </CookieProvider>,
-    );
+    const originalLocation = window.location;
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: {
+        ...originalLocation,
+        host: 'kloel.com',
+        hostname: 'kloel.com',
+        href: 'https://kloel.com/',
+      },
+    });
 
-    expect(await screen.findByText('Nós usamos cookies')).toBeInTheDocument();
+    try {
+      render(
+        <CookieProvider>
+          <div>cookie child</div>
+        </CookieProvider>,
+      );
 
-    const styles = Array.from(document.querySelectorAll('style'))
-      .map((node) => node.textContent ?? '')
-      .join('\n');
+      expect(await screen.findByText('Nós usamos cookies')).toBeInTheDocument();
 
-    expect(styles).toContain('@media (prefers-reduced-motion: reduce)');
-    expect(styles).toContain('animation: none !important;');
-    expect(styles).toContain('appearance: none;');
+      const styles = Array.from(document.querySelectorAll('style'))
+        .map((node) => node.textContent ?? '')
+        .join('\n');
+
+      expect(styles).toContain('@media (prefers-reduced-motion: reduce)');
+      expect(styles).toContain('animation: none !important;');
+      expect(styles).toContain('appearance: none;');
+    } finally {
+      Object.defineProperty(window, 'location', {
+        configurable: true,
+        value: originalLocation,
+      });
+    }
   });
 });

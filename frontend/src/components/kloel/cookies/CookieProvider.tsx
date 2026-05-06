@@ -33,12 +33,7 @@ function normalizeConsent(
 
 function isCookieConsentSurface(hostname: string): boolean {
   const normalized = hostname.toLowerCase();
-  return (
-    normalized === 'kloel.com' ||
-    normalized === 'www.kloel.com' ||
-    normalized === 'localhost' ||
-    normalized === '127.0.0.1'
-  );
+  return normalized === 'kloel.com' || normalized === 'www.kloel.com';
 }
 
 /** Open cookie preferences. */

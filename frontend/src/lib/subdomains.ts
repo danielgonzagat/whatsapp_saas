@@ -215,12 +215,20 @@ export function buildHostTargetUrl(
   currentHost?: string | null,
 ): string {
   const { hostname, port } = parseHost(currentHost);
+  const env = envOrigin(target);
+
+  if (target === 'auth' && env) {
+    return withPath(env, path);
+  }
+
+  if (target === 'auth' && isLocalHostname(hostname)) {
+    return withPath(`https://auth.${PROD_ROOT_DOMAIN}`, path);
+  }
 
   if (isLocalHostname(hostname)) {
     return withPath(`http://${localSubdomainHost(target, hostname || 'localhost', port)}`, path);
   }
 
-  const env = envOrigin(target);
   if (env) {
     return withPath(env, path);
   }

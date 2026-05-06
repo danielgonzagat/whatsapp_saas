@@ -149,7 +149,11 @@ test('Kloel chat preserves the new empty and active visual contract', async ({ p
   await expect(
     page.getByText('Kloel é uma IA e pode errar. Confira informações importantes.'),
   ).toHaveCount(0);
-  await expect(page.getByRole('button', { name: 'Criar Anúncio' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Criar Anúncio' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Escrever Copy' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Estratégia de Vendas' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Analisar Produto' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Criar Página' })).toHaveCount(0);
 
   await expect(page).toHaveScreenshot('kloel-chat-empty.png', {
     fullPage: true,

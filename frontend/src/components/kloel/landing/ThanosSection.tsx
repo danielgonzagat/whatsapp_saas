@@ -84,7 +84,6 @@ function usePrefersReducedMotion() {
     if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
       return;
     }
-
     const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
     const apply = () => setPrefersReducedMotion(mediaQuery.matches);
 
@@ -304,19 +303,21 @@ export default function ThanosSection() {
             pointerEvents: 'none',
           }}
         />
-        <div
-          className={showReveal ? 'thanos-icons thanos-icons--exit' : 'thanos-icons'}
-          aria-hidden={showReveal}
-        >
-          <h2>{kloelT(THANOS_TITLE)}</h2>
-          <div>
-            {THANOS_ICONS.map((icon, index) => (
-              <span key={icon.id} style={{ animationDelay: index * 55 + 'ms' }}>
-                <img src={icon.d} alt="" loading="lazy" decoding="async" />
-              </span>
-            ))}
+        {!prefersReducedMotion && (
+          <div
+            className={showReveal ? 'thanos-icons thanos-icons--exit' : 'thanos-icons'}
+            aria-hidden={showReveal}
+          >
+            <h2>{kloelT(THANOS_TITLE)}</h2>
+            <div>
+              {THANOS_ICONS.map((icon, index) => (
+                <span key={icon.id} style={{ animationDelay: index * 55 + 'ms' }}>
+                  <img src={icon.d} alt="" loading="lazy" decoding="async" />
+                </span>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
         {(prefersReducedMotion || showReveal) && (
           <div
             className="thanos-reveal"
