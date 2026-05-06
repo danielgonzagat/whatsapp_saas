@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.2.0](https://github.com/danielgonzagat/whatsapp_saas/compare/v0.1.0...v0.2.0) (2026-04-23)
+## [0.2.0](https://github.com/danielgonzagat/whatsapp_saas/compare/v0.1.0...v0.2.0) (2026-05-06)
 
 ### Features
 
@@ -27,12 +27,9 @@ All notable changes to this project will be documented in this file.
 - **auth:** add tiktok login flow ([edf693b](https://github.com/danielgonzagat/whatsapp_saas/commit/edf693b6510ba98e0941d1de0f6e10a8f52c7991))
 - **billing:** guard live stripe mode behind explicit confirmation ([e61cdd3](https://github.com/danielgonzagat/whatsapp_saas/commit/e61cdd397c329a462f8b31005370c1911eb67869))
 - **billing:** upgrade stripe sdk to 22.0.2 and add stripeservice wrapper ([d97437c](https://github.com/danielgonzagat/whatsapp_saas/commit/d97437c221c96950e7b9f29be8f49f402be9a746))
-- **chat:** persist image downloads and add real e2e validation ([84db89b](https://github.com/danielgonzagat/whatsapp_saas/commit/84db89b3b966d73dc8642fd100ff7ca99289a684))
-- **chat:** support drag-and-drop uploads across chat ([d13d7d5](https://github.com/danielgonzagat/whatsapp_saas/commit/d13d7d5e40aad60f188d1415730214ddc2ba63aa))
 - **checkout:** capture social identity leads ([07d2371](https://github.com/danielgonzagat/whatsapp_saas/commit/07d237114cb21beae4e42557f89ea2113ea282ec))
 - **checkout:** request google people scopes for extra prefill ([fc444d7](https://github.com/danielgonzagat/whatsapp_saas/commit/fc444d70124122d41b80e4a9fc045d362b32456f))
 - **codacy+e2e+pulse:** bundle concurrent hardening work ([97a5544](https://github.com/danielgonzagat/whatsapp_saas/commit/97a5544fcc9136979587f403d7ec4cd05b9ad3ef))
-- **codacy:** phase 1.5 — replace 151337 with curated standard, disable 7 biome noise ([1818e30](https://github.com/danielgonzagat/whatsapp_saas/commit/1818e308e6d9c04699167bbaff98d69a0c374e98))
 - **compliance:** finalize legal surface and social auth handoff ([59eb9b3](https://github.com/danielgonzagat/whatsapp_saas/commit/59eb9b3f5cb07ef847cf8b4abe5e7249073ef21f))
 - **connect,platform-wallet:** stripe connect payouts/reversals + platform wallet services ([2ca4720](https://github.com/danielgonzagat/whatsapp_saas/commit/2ca47201d5ef3a8e3071591f4764a1f21057d9b0))
 - **connect:** add payout approval and reconciliation tooling ([ab9fe1a](https://github.com/danielgonzagat/whatsapp_saas/commit/ab9fe1a255d27aa607662c39fbda1b294e274943))
@@ -40,10 +37,8 @@ All notable changes to this project will be documented in this file.
 - **conta:** surface seller connect status ([4977cf1](https://github.com/danielgonzagat/whatsapp_saas/commit/4977cf10e5ed869b2b4e9d3badb2580743c48ac4))
 - **frontend:** add stripepaymentelement scaffold + usestripecheckout hook ([4ec9ff9](https://github.com/danielgonzagat/whatsapp_saas/commit/4ec9ff9764ff76d3cddaf83c5dbb73c922c3c8f8))
 - **frontend:** add tiktok webhook endpoint ([dc98a6d](https://github.com/danielgonzagat/whatsapp_saas/commit/dc98a6d7ec2b529ade328774008669d2c291d920))
-- **governance:** codacy convergence wave 2 — 13.2k → 7.2k issues (grade C→B) ([f73d44a](https://github.com/danielgonzagat/whatsapp_saas/commit/f73d44a30446e775bf912dff96c0ac7153ec42f1))
 - **i18n:** wire next-intl gate + wrap JSX text/attrs via codemod ([7aafcee](https://github.com/danielgonzagat/whatsapp_saas/commit/7aafcee65c32f5d332cadf16688a50c57d44e68f))
 - **kloel:** add seller marketing skill routing ([7ec0d25](https://github.com/danielgonzagat/whatsapp_saas/commit/7ec0d25207060dc10874bd3fee8eebf814d83cb8))
-- **kloel:** overhaul chat composer and harden quality gates ([793193b](https://github.com/danielgonzagat/whatsapp_saas/commit/793193bcb5d02729bbb3fdbc81743814f48095e5))
 - **kyc:** sync seller onboarding into connect ([b7ba192](https://github.com/danielgonzagat/whatsapp_saas/commit/b7ba19207b6296bca7e16d6227d90559195c8f31))
 - **observability:** activate datadog tracing ([d627a64](https://github.com/danielgonzagat/whatsapp_saas/commit/d627a647371e86225ec819cd27487e88b9b1d997))
 - **parcerias:** close affiliate invite onboarding loop ([775332f](https://github.com/danielgonzagat/whatsapp_saas/commit/775332f851ecfcdb283c510a241833d205d638d3))
@@ -90,14 +85,9 @@ All notable changes to this project will be documented in this file.
 - **autopilot:** stabilize insight timeline summary ([96c411d](https://github.com/danielgonzagat/whatsapp_saas/commit/96c411d06ed1c9a987a405af1c2bfd827d031dd8))
 - avoid property access matches in pulse ui mapping ([9369de0](https://github.com/danielgonzagat/whatsapp_saas/commit/9369de03eaff25bbaa5b17808182f28fe32f9427))
 - avoid synthetic ui api attribution ([5a2c14f](https://github.com/danielgonzagat/whatsapp_saas/commit/5a2c14fe03d7474eb30659d2c21215c20437fcfb))
-- **backend,worker:** add workspaceId filter to unsafe queries — wave 9 ([ffb77d6](https://github.com/danielgonzagat/whatsapp_saas/commit/ffb77d6a4bd3854d5ebdfc5f8f20b3b6d231076e))
-- **billing:** restore config service injection ([1cf754d](https://github.com/danielgonzagat/whatsapp_saas/commit/1cf754d39c3cbbe31d3bbb4e014a308f12d333e3))
 - **campaigns:** align modal visual tokens ([09b13ee](https://github.com/danielgonzagat/whatsapp_saas/commit/09b13ee3d5a67d2a0ca53dc4a9a1a1d15d6bb34c))
 - **campaigns:** replace confirm and hardcoded props ([a1c80ac](https://github.com/danielgonzagat/whatsapp_saas/commit/a1c80ac62d29e21d4f9e0ed817a9832450d82ea8))
-- **chat:** align drag overlay radius with visual contract ([8603f56](https://github.com/danielgonzagat/whatsapp_saas/commit/8603f5640612190831e21d072221dec6b8cd1806))
 - **chat:** preserve visual attachment previews after upload ([a5f0f80](https://github.com/danielgonzagat/whatsapp_saas/commit/a5f0f801dea425eaa49b1127c1b4cb15b00e69db))
-- **chat:** remove upload shortcut hint from popover ([e6e8397](https://github.com/danielgonzagat/whatsapp_saas/commit/e6e839761c41e250c7cac8a877c7a5e8ced924ad))
-- **chat:** scale composer popover responsively ([87d6148](https://github.com/danielgonzagat/whatsapp_saas/commit/87d614878a75f17978d1107289f772d890a0d9df))
 - **checkout-config:** remove inline icon and hardcoded props ([ecd05da](https://github.com/danielgonzagat/whatsapp_saas/commit/ecd05dadc1333dbd28ac23876c1dff534417d201))
 - **checkout:** allow editing quick identity fields ([35660f1](https://github.com/danielgonzagat/whatsapp_saas/commit/35660f1cc27fc3850e128342ca62135e5d3a4b39))
 - **checkout:** gate google people scopes behind opt-in ([4ff30c5](https://github.com/danielgonzagat/whatsapp_saas/commit/4ff30c540039ccb4cfe75073101c0fd1b3d1e7f7))
@@ -107,10 +97,8 @@ All notable changes to this project will be documented in this file.
 - **checkouts:** replace browser delete confirm ([1675348](https://github.com/danielgonzagat/whatsapp_saas/commit/16753489b46f158ccf86035e4d568924717024de))
 - **checkouts:** surface product checkout errors ([da69a3d](https://github.com/danielgonzagat/whatsapp_saas/commit/da69a3df472e5c19de9a5a9475a5d00d161371e2))
 - **checkout:** wire Facebook identity props through lead sections ([14bde17](https://github.com/danielgonzagat/whatsapp_saas/commit/14bde176ca59b404568865163fee72066059c372))
-- **ci:** align architecture allowlist matcher ([8bfe3ef](https://github.com/danielgonzagat/whatsapp_saas/commit/8bfe3ef13afb3034831c1018d60ac104f6383508))
 - **ci:** align auth and wallet backend checks ([ef85968](https://github.com/danielgonzagat/whatsapp_saas/commit/ef859685547b0632a0d8e31dfd1a315ab4ae7c50))
 - **ci:** avoid false positive any matcher in connect approval spec ([90e741d](https://github.com/danielgonzagat/whatsapp_saas/commit/90e741d4d99a826c01145c5de22370bddd6b4033))
-- **ci:** satisfy architecture guardrails on chat branch ([8e5229e](https://github.com/danielgonzagat/whatsapp_saas/commit/8e5229e8a363c351a1792ef25fcbea19895d690c))
 - **ci:** satisfy production readiness codacy pin ([#157](https://github.com/danielgonzagat/whatsapp_saas/issues/157)) ([18fd0f3](https://github.com/danielgonzagat/whatsapp_saas/commit/18fd0f34e686f4ae8f00787091180f9688d0005b))
 - classify pulse external side effects ([de5b2f8](https://github.com/danielgonzagat/whatsapp_saas/commit/de5b2f8008410df4d0bd3f6c68b1a3fc8990988a))
 - classify pulse reliability gaps precisely ([e6d07a8](https://github.com/danielgonzagat/whatsapp_saas/commit/e6d07a88af5cbf0e6696c7e517e56e645c4e929c))
@@ -150,26 +138,20 @@ All notable changes to this project will be documented in this file.
 - **critical:** payment webhook transaction wraps and state validation ([9c7ece5](https://github.com/danielgonzagat/whatsapp_saas/commit/9c7ece51075cd314d22c314371725f6cf5ae87fc))
 - **deploy:** restore wallet module boot path ([abce409](https://github.com/danielgonzagat/whatsapp_saas/commit/abce409db755ac789889e15618617f0dc6a73551))
 - downgrade pulse interface-only parity noise ([7f9c8b2](https://github.com/danielgonzagat/whatsapp_saas/commit/7f9c8b2e0942f2aa8950f5650b5462f8a1461050))
-- enforce real seatbelt ratchet and close pulse gaps ([#118](https://github.com/danielgonzagat/whatsapp_saas/issues/118)) ([8fac171](https://github.com/danielgonzagat/whatsapp_saas/commit/8fac171966d9caa5ff5933b1732fbc2fd41e0f45))
 - escape pulse functional map regex matching ([891c15d](https://github.com/danielgonzagat/whatsapp_saas/commit/891c15da33e7040eae3a4d4a1d5af6b03746d287))
 - **frontend:** add i18n gate entrypoint ([96a836f](https://github.com/danielgonzagat/whatsapp_saas/commit/96a836f3f1a4e2c5a8c0d70a07c0dfe8fa085710))
-- **frontend:** align chat button radius with visual contract ([042328a](https://github.com/danielgonzagat/whatsapp_saas/commit/042328ad2da6c0fcbd57d1c346f49949fa805c59))
 - **frontend:** align extracted constants with visual contract ([f743735](https://github.com/danielgonzagat/whatsapp_saas/commit/f74373598110fbff00f5ab55bb84e6f223d3e889))
 - **frontend:** inline JSON-LD in legal-document without dangerouslySetInnerHTML ([d7e4a8c](https://github.com/danielgonzagat/whatsapp_saas/commit/d7e4a8c71378f30a34e8d115c619c0a09b7cf22c))
 - **frontend:** remove weak trace id randomness ([ed880b5](https://github.com/danielgonzagat/whatsapp_saas/commit/ed880b5e9129e9075492ee6520659734c4861d09))
 - **frontend:** restore middleware build compatibility ([bc063c9](https://github.com/danielgonzagat/whatsapp_saas/commit/bc063c9562e18b37ab226d8e3f3ad03b89525a72))
-- **frontend:** simplify chat shell and light theme behavior ([07b3298](https://github.com/danielgonzagat/whatsapp_saas/commit/07b3298e64b335125543b1ec2a658ea11af04660))
 - **guard:** ignore malformed plan ai limits ([fa70f04](https://github.com/danielgonzagat/whatsapp_saas/commit/fa70f0420c316214046dd0e72e749b963664b95d))
 - harden pulse api call extraction ([688c9bd](https://github.com/danielgonzagat/whatsapp_saas/commit/688c9bd7292cce9ba6140789f055676f91b87197))
 - **home:** simplify period filter options ([38bc252](https://github.com/danielgonzagat/whatsapp_saas/commit/38bc252d8a9d297324d143e5597a89ebd9f9cc43))
 - ignore framework shells in pulse parity gaps ([6d058e3](https://github.com/danielgonzagat/whatsapp_saas/commit/6d058e31774c3b61c38c2c28131fb4b687d9c73d))
 - improve pulse structural capability inference ([df42b89](https://github.com/danielgonzagat/whatsapp_saas/commit/df42b89999085fdb73aa8f7f80342148b67632ec))
 - keep pulse capability grouping within ratchet ([d2b636b](https://github.com/danielgonzagat/whatsapp_saas/commit/d2b636b9fa0a045b6463a22a00babe9252a705fd))
-- **kloel:** align composer rail with visual contract ([0239d72](https://github.com/danielgonzagat/whatsapp_saas/commit/0239d72ca3db5cc288a4aa8039e871020d919855))
-- **kloel:** satisfy ratchet on composer follow-up ([faafc49](https://github.com/danielgonzagat/whatsapp_saas/commit/faafc497fcf982a60bd37489f2e10178c7ef8de1))
 - **kyc:** break payments module cycle ([c959cc8](https://github.com/danielgonzagat/whatsapp_saas/commit/c959cc88ec96368500fac8e85999c29d263fe955))
 - merge pulse capability evidence accurately ([6f3d4b0](https://github.com/danielgonzagat/whatsapp_saas/commit/6f3d4b068e7d52660c25eed768461463e1080b96))
-- **ops:** run scoped validator on pre-push ([e16fb3f](https://github.com/danielgonzagat/whatsapp_saas/commit/e16fb3f490071d788ab4f71c671dfe8c3995c660))
 - **partnerships:** remove fake affiliate performance ([0e738f4](https://github.com/danielgonzagat/whatsapp_saas/commit/0e738f41617677d0011b064625f3c37704ac10c7))
 - **payments:** switch connect sales to separate charge fan-out ([197ea40](https://github.com/danielgonzagat/whatsapp_saas/commit/197ea40e34abffe3305ae76592b7d67022fb403f))
 - **plans:** harden plan tab copy and errors ([90c3e33](https://github.com/danielgonzagat/whatsapp_saas/commit/90c3e33f54f95249ee67716843873b6f92546bf7))
@@ -311,15 +293,3 @@ Executado em 2025-12-16:
   responses.
 - **Secrets**: `docker-compose` now uses environment placeholders (DB/JWT)
   instead of hardcoded secrets.
-
----
-
-## PULSE Auditor Immutability
-
-`scripts/pulse/no-hardcoded-reality-audit.ts` is a locked PULSE governance surface.
-
-No AI CLI may edit, weaken, bypass, rename, delete, chmod, unflag, move, or replace this auditor. This prohibition applies to Codex, Claude, OpenCode, and any autonomous or assisted AI agent.
-
-The auditor must keep scanning every source file inside `scripts/pulse/**` and must preserve hardcode debt when hardcode is deleted without a dynamic production replacement, including accumulated Git history debt.
-
-If the auditor itself needs to change, stop. The human owner must perform that change outside autonomous AI execution.
