@@ -19,7 +19,7 @@ type ToolMessage = {
 };
 
 /** Kloel tool execution receipt shape. */
-export interface KloelToolExecutionReceipt {
+interface KloelToolExecutionReceipt {
   /** Call id property. */
   callId: string;
   /** Name property. */

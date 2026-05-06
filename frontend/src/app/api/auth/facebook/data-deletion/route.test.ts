@@ -1,4 +1,4 @@
-import { type NextRequest } from 'next/server';
+import { NextRequest } from 'next/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
@@ -16,14 +16,15 @@ function createRequest(
   contentType = 'application/x-www-form-urlencoded',
   forwardedFor = '203.0.113.10',
 ) {
-  return {
-    headers: new Headers({
+  return new NextRequest('https://auth.kloel.com/api/auth/facebook/data-deletion', {
+    method: 'POST',
+    headers: {
       'content-type': contentType,
       'x-forwarded-for': forwardedFor,
       host: 'auth.kloel.com',
-    }),
-    text: vi.fn(async () => body),
-  } as unknown as NextRequest;
+    },
+    body,
+  });
 }
 
 describe('facebook data deletion proxy route', () => {

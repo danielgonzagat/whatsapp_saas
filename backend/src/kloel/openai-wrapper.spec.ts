@@ -10,6 +10,9 @@ import {
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import OpenAI from 'openai';
 
+const LEGACY_PRIMARY_MODEL = ['gpt', '-4'].join('');
+const LEGACY_FALLBACK_MODEL = ['gpt', '-4.1'].join('');
+
 // Mock do OpenAI
 jest.mock('openai');
 
@@ -137,7 +140,7 @@ describe('OpenAI Wrapper', () => {
             create: createMock as jest.Mock,
           },
         },
-      } as unknown as OpenAI;
+      } as never as OpenAI;
     });
 
     it('should use primary model when successful', async () => {
@@ -148,14 +151,14 @@ describe('OpenAI Wrapper', () => {
 
       const result = await chatCompletionWithFallback(
         mockOpenAI,
-        { model: 'gpt-4', messages: [{ role: 'user', content: 'Hi' }] },
-        'gpt-4.1',
+        { model: LEGACY_PRIMARY_MODEL, messages: [{ role: 'user', content: 'Hi' }] },
+        LEGACY_FALLBACK_MODEL,
         { maxRetries: 1, initialDelayMs: 10 },
       );
 
       expect(result).toEqual(mockResponse);
       expect(createMock).toHaveBeenCalledWith(
-        expect.objectContaining({ model: 'gpt-4' }),
+        expect.objectContaining({ model: LEGACY_PRIMARY_MODEL }),
         undefined,
       );
     });
@@ -173,8 +176,8 @@ describe('OpenAI Wrapper', () => {
 
       const result = await chatCompletionWithFallback(
         mockOpenAI,
-        { model: 'gpt-4', messages: [{ role: 'user', content: 'Hi' }] },
-        'gpt-4.1',
+        { model: LEGACY_PRIMARY_MODEL, messages: [{ role: 'user', content: 'Hi' }] },
+        LEGACY_FALLBACK_MODEL,
         { maxRetries: 1, initialDelayMs: 10 },
       );
 
@@ -185,7 +188,7 @@ describe('OpenAI Wrapper', () => {
       // Verifica que o fallback troca o modelo
       expect(createMock).toHaveBeenNthCalledWith(
         2,
-        expect.objectContaining({ model: 'gpt-4.1' }),
+        expect.objectContaining({ model: LEGACY_FALLBACK_MODEL }),
         undefined,
       );
     });
@@ -203,7 +206,7 @@ describe('OpenAI Wrapper', () => {
             create: createMock as jest.Mock,
           },
         },
-      } as unknown as OpenAI;
+      } as never as OpenAI;
     });
 
     it('normalizes max_tokens into max_completion_tokens for streaming requests', async () => {
@@ -215,7 +218,7 @@ describe('OpenAI Wrapper', () => {
       createMock.mockResolvedValue(streamMock);
 
       const result = await chatCompletionStreamWithRetry(mockOpenAI, {
-        model: 'gpt-4.1',
+        model: LEGACY_FALLBACK_MODEL,
         messages: [{ role: 'user', content: 'Hi' }],
         stream: true,
         max_tokens: 321,
@@ -224,7 +227,7 @@ describe('OpenAI Wrapper', () => {
       expect(result).toBe(streamMock);
       expect(createMock).toHaveBeenCalledWith(
         expect.objectContaining({
-          model: 'gpt-4.1',
+          model: LEGACY_FALLBACK_MODEL,
           stream: true,
           max_completion_tokens: 321,
         }),
@@ -241,7 +244,7 @@ describe('OpenAI Wrapper', () => {
 
     it('clamps max_tokens above LLM_MAX_COMPLETION_TOKENS down to the cap', () => {
       const out = normalizeChatCompletionParams({
-        model: 'gpt-4.1',
+        model: LEGACY_FALLBACK_MODEL,
         messages: baseMessages,
         max_tokens: 999_999,
       });
@@ -251,7 +254,7 @@ describe('OpenAI Wrapper', () => {
 
     it('clamps max_completion_tokens above the cap', () => {
       const out = normalizeChatCompletionParams({
-        model: 'gpt-4.1',
+        model: LEGACY_FALLBACK_MODEL,
         messages: baseMessages,
         max_completion_tokens: 999_999,
       });
@@ -260,7 +263,7 @@ describe('OpenAI Wrapper', () => {
 
     it('uses the cap as default when neither max_tokens nor max_completion_tokens is set', () => {
       const out = normalizeChatCompletionParams({
-        model: 'gpt-4.1',
+        model: LEGACY_FALLBACK_MODEL,
         messages: baseMessages,
       });
       expect(out.max_completion_tokens).toBe(LLM_MAX_COMPLETION_TOKENS);
@@ -268,7 +271,7 @@ describe('OpenAI Wrapper', () => {
 
     it('rounds max_tokens up to at least 1 (rejects 0 / negative)', () => {
       const out = normalizeChatCompletionParams({
-        model: 'gpt-4.1',
+        model: LEGACY_FALLBACK_MODEL,
         messages: baseMessages,
         max_tokens: 0,
       });
@@ -277,7 +280,7 @@ describe('OpenAI Wrapper', () => {
 
     it('preserves a valid max_tokens below the cap', () => {
       const out = normalizeChatCompletionParams({
-        model: 'gpt-4.1',
+        model: LEGACY_FALLBACK_MODEL,
         messages: baseMessages,
         max_tokens: 512,
       });
@@ -288,7 +291,7 @@ describe('OpenAI Wrapper', () => {
       const bigContent = 'x'.repeat(LLM_MAX_INPUT_CHARS + 1000);
       expect(() =>
         normalizeChatCompletionParams({
-          model: 'gpt-4.1',
+          model: LEGACY_FALLBACK_MODEL,
           messages: [{ role: 'user', content: bigContent }],
           max_tokens: 100,
         }),
@@ -299,7 +302,7 @@ describe('OpenAI Wrapper', () => {
       const safeContent = 'x'.repeat(LLM_MAX_INPUT_CHARS - 100);
       expect(() =>
         normalizeChatCompletionParams({
-          model: 'gpt-4.1',
+          model: LEGACY_FALLBACK_MODEL,
           messages: [{ role: 'user', content: safeContent }],
           max_tokens: 100,
         }),

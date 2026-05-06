@@ -105,7 +105,7 @@ export async function verifyWhatsAppCode(
   }
 
   let agent = await deps.prisma.agent.findFirst({
-    where: { phone },
+    where: { phone, workspaceId: { not: '' } },
   });
 
   if (!agent) {

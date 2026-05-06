@@ -7,18 +7,13 @@ import {
   normalizePath,
 } from '../../scope-state-classify';
 import { evaluatePathProofCommandPolicy } from './command-policy';
+import type { ParsedPathProofCommand } from './command-policy';
 
 export type PathProofExecutionStatus =
   | 'observed_pass'
   | 'observed_fail'
   | 'execution_skipped'
   | 'planned_only';
-
-export interface ParsedPathProofCommand {
-  executable: string;
-  args: string[];
-  displayCommand: string;
-}
 
 export interface PathProofCommandExecutionInput extends ParsedPathProofCommand {
   cwd: string;
@@ -74,12 +69,6 @@ export interface PathProofExecutionRun {
     observedTasks: number;
   };
   results: PathProofExecutionResult[];
-}
-
-export interface PathProofCommandPolicyDecision {
-  allowed: boolean;
-  reason: string;
-  parsed: ParsedPathProofCommand | null;
 }
 
 const DEFAULT_TIMEOUT_MS = 30_000;

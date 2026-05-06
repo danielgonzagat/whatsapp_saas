@@ -8,7 +8,7 @@ import { WhatsappService } from './whatsapp.service';
 const WHITESPACE_G_RE = /\s+/g;
 const PATTERN_RE = /[?!.;,]+$/g;
 const D_RE = /\D/g;
-const WHITESPACE_RE = /\s+/;
+export const WHITESPACE_RE = /\s+/;
 
 const PRE_C__O_QUANTO_VALOR_C_RE = /(pre[cç]o|quanto|valor|custa|comprar|boleto|pix|pagamento)/i;
 const AGENDAR_AGENDA_REUNI_A_RE = /(agendar|agenda|reuni[aã]o|hor[aá]rio|marcar)/i;

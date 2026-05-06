@@ -24,7 +24,7 @@ const CALENDAR_LINK_RE = /\{\{calendarLink\}\}/g;
  * substitution at use-site.
  */
 
-export const SALES_TEMPLATES: Readonly<Record<string, string>> = Object.freeze({
+const SALES_TEMPLATES: Readonly<Record<string, string>> = Object.freeze({
   SEND_PRICE: 'Posso te passar os valores e opções agora. Quer que eu envie o preço detalhado?',
   FOLLOW_UP:
     'Vi que não conseguimos concluir. Posso te ajudar em algo ou enviar uma condição especial?',
@@ -55,7 +55,7 @@ export const SALES_TEMPLATES: Readonly<Record<string, string>> = Object.freeze({
 });
 
 /** Template vars shape. */
-export interface TemplateVars {
+interface TemplateVars {
   /** Calendar link property. */
   calendarLink?: string;
   // Reserved for future placeholders (e.g. agentName, productName).

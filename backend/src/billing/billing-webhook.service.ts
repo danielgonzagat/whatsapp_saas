@@ -4,6 +4,7 @@ import { ModuleRef } from '@nestjs/core';
 import { Prisma } from '@prisma/client';
 import * as Sentry from '@sentry/node';
 import { FinancialAlertService } from '../common/financial-alert.service';
+import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { notifyOpsHelper, readInvoiceSubscriptionId } from './billing-webhook.helpers';
@@ -116,7 +117,7 @@ export class BillingWebhookService {
             provider: 'stripe',
             eventType: event.type,
             externalId: webhookIdempotencyKey,
-            payload: event as unknown as Prisma.InputJsonValue,
+            payload: toPrismaJsonValue(event),
             status: 'received',
           },
         });

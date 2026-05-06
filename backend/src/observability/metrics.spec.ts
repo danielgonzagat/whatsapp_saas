@@ -27,7 +27,7 @@ describe('metrics', () => {
   let ds: MockedDogStatsD;
 
   beforeEach(() => {
-    ds = tracer.dogstatsd as unknown as MockedDogStatsD;
+    ds = tracer.dogstatsd as never;
     jest.clearAllMocks();
   });
 

@@ -1,7 +1,7 @@
 import type { PrismaService } from '../../../prisma/prisma.service';
 
 /** Kyc queue row shape. */
-export interface KycQueueRow {
+interface KycQueueRow {
   /** Agent id property. */
   agentId: string;
   /** Agent name property. */

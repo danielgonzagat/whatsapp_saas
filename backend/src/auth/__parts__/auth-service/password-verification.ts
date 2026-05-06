@@ -20,7 +20,7 @@ export async function forgotPassword(
   await deps.rateLimitService.checkRateLimit(`forgot-password:${ip || 'ip-unknown'}`, 3, 60 * 1000);
 
   const agent = await deps.prisma.agent.findFirst({
-    where: { email },
+    where: { email, workspaceId: { not: '' } },
   });
 
   if (!agent) {
@@ -81,7 +81,7 @@ export async function resetPassword(
 
   await deps.prisma.$transaction([
     deps.prisma.agent.update({
-      where: { id: resetToken.agentId },
+      where: { id: resetToken.agentId, workspaceId: resetToken.agent.workspaceId },
       data: { password: hashedPassword },
     }),
     deps.prisma.passwordResetToken.update({
@@ -105,7 +105,7 @@ export async function sendVerificationEmail(
   agentId: string,
 ): Promise<AuthSuccessResult> {
   const agent = await deps.prisma.agent.findUnique({
-    where: { id: agentId },
+    where: { id: agentId, workspaceId: { not: '' } },
   });
 
   if (!agent) {
@@ -124,7 +124,7 @@ export async function sendVerificationEmail(
   const expiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
   await deps.prisma.agent.update({
-    where: { id: agentId },
+    where: { id: agentId, workspaceId: agent.workspaceId },
     data: {
       emailVerificationToken: token,
       emailVerificationExpiry: expiry,
@@ -150,7 +150,7 @@ export async function verifyEmail(
 
   try {
     const agent = await deps.prisma.agent.findFirst({
-      where: { emailVerificationToken: token },
+      where: { emailVerificationToken: token, workspaceId: { not: '' } },
     });
 
     if (!agent) {
@@ -162,7 +162,7 @@ export async function verifyEmail(
     }
 
     await deps.prisma.agent.update({
-      where: { id: agent.id },
+      where: { id: agent.id, workspaceId: agent.workspaceId },
       data: {
         emailVerified: true,
         emailVerificationToken: null,
@@ -191,7 +191,7 @@ export async function resendVerificationEmail(
   );
 
   const agent = await deps.prisma.agent.findFirst({
-    where: { email },
+    where: { email, workspaceId: { not: '' } },
   });
 
   if (!agent) {

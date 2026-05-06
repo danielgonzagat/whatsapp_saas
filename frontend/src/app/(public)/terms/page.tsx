@@ -11,7 +11,7 @@ export const metadata = buildLegalMetadata({
   locale: 'pt_BR',
 });
 
-const toc = [
+const toc = Object.freeze([
   { id: 'aceitacao', label: '1. Aceitação' },
   { id: 'descricao', label: '2. Descrição do serviço' },
   { id: 'elegibilidade', label: '3. Elegibilidade' },
@@ -27,7 +27,7 @@ const toc = [
   { id: 'rescisao', label: '13. Rescisão' },
   { id: 'lei-foro', label: '14. Lei aplicável e foro' },
   { id: 'contato', label: '15. Contato' },
-];
+]);
 
 /** Terms page. */
 export default function TermsPage() {

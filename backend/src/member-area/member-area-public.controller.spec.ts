@@ -22,7 +22,7 @@ function buildController() {
   };
   return {
     prisma,
-    controller: new MemberAreaPublicController(prisma as unknown as PrismaService),
+    controller: new MemberAreaPublicController(prisma as never as PrismaService),
   };
 }
 

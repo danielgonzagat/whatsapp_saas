@@ -279,15 +279,3 @@ export interface PulseManifestOverrides {
   /** Excluded flow candidates property. */
   excludedFlowCandidates?: string[];
 }
-
-// Re-export manifest types for backward compat (defined in types.manifest.ts)
-export type {
-  PulseManifestCertificationTier,
-  PulseManifestFinalReadinessCriteria,
-  PulseManifest,
-  PulseGateName,
-  PulseManifestLoadResult,
-  PulseParserUnavailable,
-  PulseParserDefinition,
-  PulseParserInventory,
-} from './types.manifest';

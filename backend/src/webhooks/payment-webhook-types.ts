@@ -143,9 +143,9 @@ export const FINANCIAL_TRANSACTION_OPTIONS = {
   isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
 } as const;
 
-export type CheckoutIntentStatus = 'APPROVED' | 'DECLINED' | 'PENDING' | 'PROCESSING' | 'CANCELED';
+type CheckoutIntentStatus = 'APPROVED' | 'DECLINED' | 'PENDING' | 'PROCESSING' | 'CANCELED';
 
-export const STRIPE_INTENT_STATUS_MAP: Array<{
+const STRIPE_INTENT_STATUS_MAP: Array<{
   event?: string;
   status?: string;
   result: CheckoutIntentStatus;

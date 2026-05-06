@@ -21,7 +21,7 @@ export interface ProcessedAttachment {
 }
 
 /** Channel discriminator for normalized messages. */
-export type OmniChannel = 'WHATSAPP' | 'INSTAGRAM' | 'MESSENGER' | 'EMAIL';
+type OmniChannel = 'WHATSAPP' | 'INSTAGRAM' | 'MESSENGER' | 'EMAIL';
 
 /** A normalized inbound message — the canonical input across adapters. */
 export interface NormalizedMessage {
@@ -113,7 +113,7 @@ export function buildProcessedAttachment(
 }
 
 /** Map an Instagram attachment type (image/video/audio) to a MIME type. */
-export function instagramAttachmentMimeType(attType: string): string {
+function instagramAttachmentMimeType(attType: string): string {
   return INSTAGRAM_ATTACHMENT_MIME[attType] || 'application/octet-stream';
 }
 
@@ -123,9 +123,7 @@ interface InstagramRawAttachment {
 }
 
 /** Convert raw Instagram attachments into the normalized MessageAttachment shape. */
-export function mapInstagramAttachments(
-  raw: InstagramRawAttachment[] | undefined,
-): MessageAttachment[] {
+function mapInstagramAttachments(raw: InstagramRawAttachment[] | undefined): MessageAttachment[] {
   if (!raw || !Array.isArray(raw)) {
     return [];
   }
@@ -159,7 +157,7 @@ interface InstagramMessaging {
 }
 
 /** Decoded Instagram messaging entry — extracted before normalization. */
-export interface InstagramExtraction {
+interface InstagramExtraction {
   senderId: string;
   senderName?: string;
   content: string;

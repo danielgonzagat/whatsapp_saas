@@ -1,13 +1,21 @@
 import type { PathProofTask } from '../path-proof-runner/main';
-import type {
-  PathProofCommandPolicyDecision,
-  ParsedPathProofCommand,
-} from '../path-proof-execution-runner/main';
 import {
   isProtectedFile as isGovernanceProtectedFile,
   loadGovernanceBoundary,
   normalizePath,
 } from '../../scope-state-classify';
+
+export interface ParsedPathProofCommand {
+  executable: string;
+  args: string[];
+  displayCommand: string;
+}
+
+export interface PathProofCommandPolicyDecision {
+  allowed: boolean;
+  reason: string;
+  parsed: ParsedPathProofCommand | null;
+}
 
 const SHELL_TOKENIZER_CONTROL_KERNEL_GRAMMAR_CHARS = ';&|<>`$';
 

@@ -6,7 +6,7 @@ import { notifyCustomerPaymentConfirmedHelper } from '../billing-webhook.helpers
 import type { StripeCheckoutSession } from '../stripe-types';
 import type { WhatsappNotifier } from '../billing-webhook.types';
 
-export interface FulfillCheckoutDeps {
+interface FulfillCheckoutDeps {
   prisma: PrismaService;
   logger: Logger;
   financialAlert: FinancialAlertService | undefined;

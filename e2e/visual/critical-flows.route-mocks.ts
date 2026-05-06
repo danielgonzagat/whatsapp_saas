@@ -24,6 +24,59 @@ function jsonBody(payload: unknown): string {
   return JSON.stringify(payload);
 }
 
+async function mockApprovedKyc(page: Page) {
+  await page.route(/\/api\/kyc\/status$|\/kyc\/status$/, async (requestRoute) => {
+    await requestRoute.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: jsonBody({ kycStatus: 'approved' }),
+    });
+  });
+  await page.route(/\/api\/kyc\/completion$|\/kyc\/completion$/, async (requestRoute) => {
+    await requestRoute.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: jsonBody({ percentage: 100 }),
+    });
+  });
+}
+
+async function seedAcceptedCookieConsent(page: Page) {
+  const consent = {
+    necessary: true,
+    analytics: false,
+    marketing: false,
+    updatedAt: '2026-01-01T00:00:00.000Z',
+  };
+
+  await page.route('**/v1/cookie-consent', async (requestRoute) => {
+    await requestRoute.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: jsonBody({ success: true, consent }),
+    });
+  });
+
+  await page.addInitScript(() => {
+    const consent = JSON.stringify({
+      necessary: true,
+      analytics: false,
+      marketing: false,
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    });
+    document.cookie = `kloel_consent=${encodeURIComponent(consent)}; path=/; max-age=31536000; SameSite=Lax`;
+    window.localStorage.setItem('cookie_consent', 'accepted');
+    const style = document.createElement('style');
+    style.textContent =
+      '.kloel-cookie-banner,.kloel-cookie-modal__overlay{display:none!important}' +
+      'html,body{scrollbar-color:#0a0a0c #0a0a0c!important}' +
+      'html::-webkit-scrollbar,body::-webkit-scrollbar{width:8px!important;height:8px!important}' +
+      'html::-webkit-scrollbar-track,body::-webkit-scrollbar-track,' +
+      'html::-webkit-scrollbar-thumb,body::-webkit-scrollbar-thumb{background:#0a0a0c!important}';
+    document.documentElement.appendChild(style);
+  });
+}
+
 export async function mockVisualRouteApis(page: Page, route: CriticalRoute) {
   if (route.name === 'dashboard') {
     await page.route('**/dashboard/home**', async (requestRoute) => {
@@ -169,6 +222,8 @@ export async function mockVisualRouteApis(page: Page, route: CriticalRoute) {
   }
 
   if (route.name === 'products-list') {
+    await mockApprovedKyc(page);
+    await seedAcceptedCookieConsent(page);
     // Lock the products list to a deterministic empty workspace so the visual
     // baseline (which captured the empty state) is stable regardless of whether
     // earlier specs in the e2e job leaked test products into the shared

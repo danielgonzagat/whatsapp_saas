@@ -23,7 +23,7 @@ describe('CookieConsentService', () => {
     };
 
     service = new CookieConsentService(
-      prisma as unknown as ConstructorParameters<typeof CookieConsentService>[0],
+      prisma as never as ConstructorParameters<typeof CookieConsentService>[0],
     );
   });
 

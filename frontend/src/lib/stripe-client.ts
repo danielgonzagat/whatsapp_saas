@@ -18,7 +18,7 @@ export function getStripeClient(): Promise<Stripe | null> {
   const publishableKey =
     process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ??
     (typeof window !== 'undefined'
-      ? (window as unknown as { __NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY__?: string })
+      ? (window as { __NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY__?: string })
           .__NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY__
       : undefined);
 

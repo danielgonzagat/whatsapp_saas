@@ -27,14 +27,14 @@ function renderUnsubscribeFooter(unsubscribeUrl: string): string {
   });
 }
 
-export interface UnsubscribeUrlOptions {
+interface UnsubscribeUrlOptions {
   email: string;
   workspaceId?: string;
   campaignId?: string;
 }
 
 /** Generate the full unsubscribe URL for a marketing email. */
-export function buildUnsubscribeUrl(opts: UnsubscribeUrlOptions): string {
+function buildUnsubscribeUrl(opts: UnsubscribeUrlOptions): string {
   const token = generateUnsubscribeToken({
     email: opts.email,
     workspaceId: opts.workspaceId,

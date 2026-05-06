@@ -58,7 +58,7 @@ import { z } from 'zod';
  * The user object returned alongside auth tokens. Matches what the
  * frontend's `tokenStorage.setWorkspaceId` and CRM/inbox views read.
  */
-export const AuthUserSchema = z.object({
+const AuthUserSchema = z.object({
   id: z.string(),
   email: z.string(),
   name: z.string().nullable(),
@@ -70,7 +70,7 @@ export const AuthUserSchema = z.object({
  * Single workspace summary returned in the auth payload. The frontend's
  * `resolveWorkspaceFromAuthPayload` reads from this list.
  */
-export const WorkspaceSummarySchema = z.object({
+const WorkspaceSummarySchema = z.object({
   id: z.string(),
   name: z.string(),
 });
@@ -86,7 +86,7 @@ export const WorkspaceSummarySchema = z.object({
  * backend currently emits snake_case. Do not change this without
  * coordinating both sides.
  */
-export const AuthTokenResponseSchema = z.object({
+const AuthTokenResponseSchema = z.object({
   access_token: z.string(),
   refresh_token: z.string(),
   user: AuthUserSchema,
@@ -264,28 +264,28 @@ export const WebhookDuplicateResponseSchema = z.object({
 
 // ─── Type exports ──────────────────────────────────────────────────────────
 
-export type AuthUser = z.infer<typeof AuthUserSchema>;
+type AuthUser = z.infer<typeof AuthUserSchema>;
 /** Auth token response type. */
-export type AuthTokenResponse = z.infer<typeof AuthTokenResponseSchema>;
+type AuthTokenResponse = z.infer<typeof AuthTokenResponseSchema>;
 /** Auth check email response type. */
-export type AuthCheckEmailResponse = z.infer<typeof AuthCheckEmailResponseSchema>;
+type AuthCheckEmailResponse = z.infer<typeof AuthCheckEmailResponseSchema>;
 /** Auth refresh response type. */
-export type AuthRefreshResponse = z.infer<typeof AuthRefreshResponseSchema>;
+type AuthRefreshResponse = z.infer<typeof AuthRefreshResponseSchema>;
 /** Billing subscription response type. */
-export type BillingSubscriptionResponse = z.infer<typeof BillingSubscriptionResponseSchema>;
+type BillingSubscriptionResponse = z.infer<typeof BillingSubscriptionResponseSchema>;
 /** Billing checkout response type. */
-export type BillingCheckoutResponse = z.infer<typeof BillingCheckoutResponseSchema>;
+type BillingCheckoutResponse = z.infer<typeof BillingCheckoutResponseSchema>;
 /** Workspace me response type. */
-export type WorkspaceMeResponse = z.infer<typeof WorkspaceMeResponseSchema>;
+type WorkspaceMeResponse = z.infer<typeof WorkspaceMeResponseSchema>;
 /** Whats app status response type. */
-export type WhatsAppStatusResponse = z.infer<typeof WhatsAppStatusResponseSchema>;
+type WhatsAppStatusResponse = z.infer<typeof WhatsAppStatusResponseSchema>;
 /** Whats app start session response type. */
-export type WhatsAppStartSessionResponse = z.infer<typeof WhatsAppStartSessionResponseSchema>;
+type WhatsAppStartSessionResponse = z.infer<typeof WhatsAppStartSessionResponseSchema>;
 /** Whats app qr response type. */
-export type WhatsAppQrResponse = z.infer<typeof WhatsAppQrResponseSchema>;
+type WhatsAppQrResponse = z.infer<typeof WhatsAppQrResponseSchema>;
 /** Health liveness response type. */
-export type HealthLivenessResponse = z.infer<typeof HealthLivenessResponseSchema>;
+type HealthLivenessResponse = z.infer<typeof HealthLivenessResponseSchema>;
 /** Health readiness response type. */
-export type HealthReadinessResponse = z.infer<typeof HealthReadinessResponseSchema>;
+type HealthReadinessResponse = z.infer<typeof HealthReadinessResponseSchema>;
 /** Webhook duplicate response type. */
-export type WebhookDuplicateResponse = z.infer<typeof WebhookDuplicateResponseSchema>;
+type WebhookDuplicateResponse = z.infer<typeof WebhookDuplicateResponseSchema>;

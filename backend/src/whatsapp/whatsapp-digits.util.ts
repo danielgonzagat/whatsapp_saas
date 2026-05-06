@@ -5,7 +5,7 @@
  * on its own by complexity scanners (Codacy / lizard bundles neighbouring TS
  * functions into a single inflated-CCN entry when they live together).
  */
-const WHITESPACE_RE = /\s+/g;
+export const WHITESPACE_RE = /\s+/g;
 
 /** Is digit. */
 export function isDigit(char: string): boolean {

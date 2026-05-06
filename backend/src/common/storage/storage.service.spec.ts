@@ -7,7 +7,7 @@ function createConfig(values: Record<string, unknown>) {
     get(key: string, defaultValue?: unknown) {
       return key in values ? values[key] : defaultValue;
     },
-  } as ConfigService;
+  } as never as ConfigService;
 }
 
 describe('StorageService', () => {

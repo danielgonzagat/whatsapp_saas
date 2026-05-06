@@ -52,38 +52,51 @@ interface MockedWorkerInstance {
 
 vi.mock('ioredis', () => {
   // Default export: a class-like function that records construction.
-  const RedisClass = function (this: MockedRedisInstance, ...args: unknown[]) {
-    mockRedisCtor(...args);
-    this.on = vi.fn().mockReturnThis();
-    this.quit = vi.fn().mockResolvedValue('OK');
-  } as unknown as new (...args: unknown[]) => unknown;
+  class RedisClass implements MockedRedisInstance {
+    on: ReturnType<typeof vi.fn>;
+    quit: ReturnType<typeof vi.fn>;
+
+    constructor(...args: unknown[]) {
+      mockRedisCtor(...args);
+      this.on = vi.fn().mockReturnThis();
+      this.quit = vi.fn().mockResolvedValue('OK');
+    }
+  }
   return { default: RedisClass };
 });
 
 vi.mock('bullmq', () => {
-  const QueueClass = function (
-    this: MockedQueueInstance,
-    name: string,
-    opts: Record<string, unknown>,
-  ) {
-    mockBullQueueCtor(name, opts);
-    this.name = name;
-    this.add = vi.fn().mockResolvedValue({ id: 'mock-job' });
-    this.getJob = vi.fn().mockResolvedValue(null);
-    this.close = vi.fn().mockResolvedValue(undefined);
-  } as unknown as new (...args: unknown[]) => unknown;
-  const QueueEventsClass = function (
-    this: MockedQueueEventsInstance,
-    name: string,
-    opts: Record<string, unknown>,
-  ) {
-    mockQueueEventsCtor(name, opts);
-    this.on = vi.fn();
-    this.close = vi.fn().mockResolvedValue(undefined);
-  } as unknown as new (...args: unknown[]) => unknown;
-  const WorkerClass = function (this: MockedWorkerInstance) {
-    this.close = mockWorkerClose;
-  } as unknown as new (...args: unknown[]) => unknown;
+  class QueueClass implements MockedQueueInstance {
+    name: string;
+    add: ReturnType<typeof vi.fn>;
+    getJob: ReturnType<typeof vi.fn>;
+    close: ReturnType<typeof vi.fn>;
+
+    constructor(name: string, opts: Record<string, unknown>) {
+      mockBullQueueCtor(name, opts);
+      this.name = name;
+      this.add = vi.fn().mockResolvedValue({ id: 'mock-job' });
+      this.getJob = vi.fn().mockResolvedValue(null);
+      this.close = vi.fn().mockResolvedValue(undefined);
+    }
+  }
+  class QueueEventsClass implements MockedQueueEventsInstance {
+    on: ReturnType<typeof vi.fn>;
+    close: ReturnType<typeof vi.fn>;
+
+    constructor(name: string, opts: Record<string, unknown>) {
+      mockQueueEventsCtor(name, opts);
+      this.on = vi.fn();
+      this.close = vi.fn().mockResolvedValue(undefined);
+    }
+  }
+  class WorkerClass implements MockedWorkerInstance {
+    close: ReturnType<typeof vi.fn>;
+
+    constructor() {
+      this.close = mockWorkerClose;
+    }
+  }
   return {
     Queue: QueueClass,
     QueueEvents: QueueEventsClass,

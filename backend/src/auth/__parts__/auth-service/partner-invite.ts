@@ -8,14 +8,14 @@ import type { PrismaService } from '../../../prisma/prisma.service';
 import type { ConnectService } from '../../../payments/connect/connect.service';
 import { hashOpaqueToken, asJsonObject } from './helpers';
 
-export const PARTNER_INVITE_ACCOUNT_TYPES: Record<string, ConnectAccountType> = {
+const PARTNER_INVITE_ACCOUNT_TYPES: Record<string, ConnectAccountType> = {
   AFFILIATE: 'AFFILIATE',
   SUPPLIER: 'SUPPLIER',
   COPRODUCER: 'COPRODUCER',
   MANAGER: 'MANAGER',
 };
 
-export function resolvePartnerInviteAccountType(type: string): ConnectAccountType {
+function resolvePartnerInviteAccountType(type: string): ConnectAccountType {
   const accountType =
     PARTNER_INVITE_ACCOUNT_TYPES[
       String(type || '')
@@ -83,6 +83,7 @@ export async function finalizePartnerInviteRegistration(
   input: {
     invite: {
       id: string;
+      workspaceId: string;
       metadata: Prisma.JsonValue | null;
       type: string;
     };
@@ -104,7 +105,7 @@ export async function finalizePartnerInviteRegistration(
 
     const metadata = asJsonObject(input.invite.metadata);
     await prisma.affiliatePartner.update({
-      where: { id: input.invite.id },
+      where: { id: input.invite.id, workspaceId: input.invite.workspaceId },
       data: {
         partnerWorkspaceId: input.workspace.id,
         status: 'ACTIVE',
@@ -118,7 +119,9 @@ export async function finalizePartnerInviteRegistration(
     });
   } catch (_error) {
     const rollbackOperations: Promise<unknown>[] = [
-      prisma.agent.delete({ where: { id: input.agent.id } }).catch(() => undefined),
+      prisma.agent
+        .delete({ where: { id: input.agent.id, workspaceId: input.agent.workspaceId } })
+        .catch(() => undefined),
       prisma.workspace.delete({ where: { id: input.workspace.id } }).catch(() => undefined),
     ];
 

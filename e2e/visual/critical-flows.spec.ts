@@ -25,18 +25,12 @@ import {
  * diff against the committed baselines for the 15 critical screens
  * across 3 viewports (mobile / tablet / desktop). A diff fails CI.
  *
- * ## How Playwright handles missing baselines
- *
  * On the first run for a given screen+viewport combination, the
  * baseline PNG does not exist on disk. Playwright's behavior:
  *   1. The test FAILS (loud signal that a new baseline is needed).
  *   2. The actual screenshot is written to the snapshot directory.
  *   3. The operator inspects the screenshot, decides if it is
  *      acceptable, then commits it as the baseline.
- *
- * Subsequent runs compare every screenshot against the committed
- * baseline byte-for-byte (with maxDiffPixelRatio: 0). Any diff fails.
- *
  * To intentionally update a baseline (e.g. an explicit visual change
  * that was approved out of band), run:
  *
@@ -90,7 +84,10 @@ const VISUAL_FREEZE_STYLE = [
   '}',
   "html[data-visual-capture='true'] {",
   'cursor: default !important;',
+  'scrollbar-color: #0a0a0c #0a0a0c !important;',
   '}',
+  "html[data-visual-capture='true']::-webkit-scrollbar, html[data-visual-capture='true'] body::-webkit-scrollbar { width: 8px !important; height: 8px !important; }",
+  "html[data-visual-capture='true']::-webkit-scrollbar-track, html[data-visual-capture='true']::-webkit-scrollbar-thumb, html[data-visual-capture='true'] body::-webkit-scrollbar-track, html[data-visual-capture='true'] body::-webkit-scrollbar-thumb { background: #0a0a0c !important; }",
   "html[data-visual-capture='true'] a,",
   "html[data-visual-capture='true'] button,",
   "html[data-visual-capture='true'] input,",

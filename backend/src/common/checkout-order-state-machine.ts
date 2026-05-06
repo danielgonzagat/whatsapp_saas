@@ -36,7 +36,7 @@ const QUERYABLE_ORDER_STATES = new Set([
 ]);
 
 /** Check if a transition between two order statuses is valid. */
-export function isValidOrderTransition(currentStatus: string, newStatus: string): boolean {
+function isValidOrderTransition(currentStatus: string, newStatus: string): boolean {
   const normalized = String(currentStatus || '').toUpperCase();
   const newNormalized = String(newStatus || '').toUpperCase();
   const allowed = VALID_ORDER_TRANSITIONS[normalized];

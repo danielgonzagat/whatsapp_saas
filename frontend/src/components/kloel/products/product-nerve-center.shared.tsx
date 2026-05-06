@@ -449,7 +449,7 @@ export function TabBar({
   onSelect,
   small,
 }: {
-  tabs: { k: string; l: string }[];
+  tabs: readonly { k: string; l: string }[];
   active: string;
   onSelect: (key: string) => void;
   small?: boolean;

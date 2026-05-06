@@ -19,7 +19,7 @@ import {
   type WahaSessionConfigShape,
 } from './waha-session-config.util';
 
-export type WahaSessionConfig = WahaSessionConfigShape;
+type WahaSessionConfig = WahaSessionConfigShape;
 
 /**
  * Session config and diagnostics layer for WAHA.

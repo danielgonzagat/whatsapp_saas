@@ -579,10 +579,12 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
   // ─── Focus chat input when entering chat phase ───
   useEffect(() => {
     if (phase === 'chat') {
-      setTimeout(() => {
+      const focusTimer = setTimeout(() => {
         chatInputRef.current?.focus();
       }, 600);
+      return () => clearTimeout(focusTimer);
     }
+    return undefined;
   }, [phase]);
 
   // ════════════════════════════════════════════

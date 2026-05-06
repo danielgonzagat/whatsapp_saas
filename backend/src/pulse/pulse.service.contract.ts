@@ -5,7 +5,7 @@ export type PulseOrganismStatus = 'UP' | 'DEGRADED' | 'DOWN' | 'STALE';
 /** Pulse advice level type. */
 export type PulseAdviceLevel = 'nominal' | 'watch' | 'critical';
 /** Pulse artifact freshness type. */
-export type PulseArtifactFreshness = 'fresh' | 'stale' | 'missing';
+type PulseArtifactFreshness = 'fresh' | 'stale' | 'missing';
 
 /** Pulse heartbeat record shape. */
 export interface PulseHeartbeatRecord {

@@ -63,7 +63,7 @@ describe('TranscriptionService', () => {
     mockExistsSync.mockReset();
 
     config = {
-      get: jest.fn().mockReturnValue('sk-test-openai-key'),
+      get: jest.fn().mockReturnValue('openai-spec-key'),
     };
 
     opsAlert = {
@@ -152,7 +152,7 @@ describe('TranscriptionService', () => {
         return Promise.resolve({
           ok: true,
           json: () => Promise.resolve({ text: 'retry success' }),
-        } as Response);
+        } as never as Response);
       });
       global.fetch = fetchMock as never;
 
@@ -174,12 +174,12 @@ describe('TranscriptionService', () => {
             ok: false,
             status: 400,
             text: () => Promise.resolve('bad request'),
-          } as Response);
+          } as never as Response);
         }
         return Promise.resolve({
           ok: true,
           json: () => Promise.resolve({ text: 'fallback model transcript' }),
-        } as Response);
+        } as never as Response);
       });
       global.fetch = fetchMock as never;
 

@@ -24,7 +24,7 @@ export type ConversationOperationalLike = {
 };
 
 /** Conversation owner type. */
-export type ConversationOwner = 'AGENT' | 'HUMAN';
+type ConversationOwner = 'AGENT' | 'HUMAN';
 
 /** Conversation operational state type. */
 export type ConversationOperationalState = {
@@ -133,7 +133,7 @@ export function resolveConversationOwner(
 }
 
 /** Get last conversation message. */
-export function getLastConversationMessage(
+function getLastConversationMessage(
   conversation?: Pick<ConversationOperationalLike, 'messages'> | null,
 ): ConversationMessageLike | null {
   const [message] = conversation?.messages || [];

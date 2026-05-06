@@ -14,7 +14,7 @@ type AnyChatParams = OpenAI.Chat.ChatCompletionCreateParams;
 /**
  * Configuração de retry para chamadas OpenAI
  */
-export interface RetryOptions {
+interface RetryOptions {
   /** Max retries property. */
   maxRetries?: number;
   /** Initial delay ms property. */

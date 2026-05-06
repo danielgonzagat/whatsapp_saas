@@ -15,7 +15,7 @@ export type TransactionPaymentInput = {
 } | null;
 
 /** Transaction payment projection type. */
-export type TransactionPaymentProjection = Pick<
+type TransactionPaymentProjection = Pick<
   AdminTransactionRow,
   'paymentStatus' | 'gateway' | 'cardBrand' | 'cardLast4'
 >;

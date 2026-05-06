@@ -365,14 +365,14 @@ const routes: Record<string, string> = {
 };
 
 // ── Tab config ──
-const TABS = [
+const TABS = Object.freeze([
   { id: 'visao', label: 'War Room', iconKey: 'zap', activeColor: EMBER },
   { id: 'meta', label: 'Meta Ads', iconKey: 'meta', activeColor: '#1877F2' },
   { id: 'google', label: 'Google Ads', iconKey: 'gads', activeColor: '#4285F4' },
   { id: 'tiktok', label: 'TikTok Ads', iconKey: 'tads', activeColor: '#FF0050' },
   { id: 'track', label: 'Rastreamento', iconKey: 'link', activeColor: EMBER },
   { id: 'rules', label: 'Regras IA', iconKey: 'shield', activeColor: EMBER },
-];
+]);
 
 function AnunciosTabBar({
   tab,

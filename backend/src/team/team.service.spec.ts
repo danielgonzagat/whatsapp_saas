@@ -11,7 +11,7 @@ jest.mock('bcrypt', () => ({
 }));
 
 jest.mock('uuid', () => ({
-  v4: jest.fn().mockReturnValue('invite-token-uuid'),
+  v4: jest.fn().mockReturnValue('invite-id'),
 }));
 
 describe('TeamService', () => {
@@ -154,7 +154,7 @@ describe('TeamService', () => {
         id: 'i-1',
         email,
         role,
-        token: 'invite-token-uuid',
+        token: 'invite-id',
         expiresAt: expect.anything(),
       });
 
@@ -166,7 +166,7 @@ describe('TeamService', () => {
         email,
         'Um membro',
         'Test Workspace',
-        'http://localhost:3000/invite/accept?token=invite-token-uuid',
+        'http://localhost:3000/invite/accept?token=invite-id',
       );
     });
 
@@ -183,13 +183,15 @@ describe('TeamService', () => {
         id: 'i-new',
         email,
         role,
-        token: 'invite-token-uuid',
+        token: 'invite-id',
         expiresAt: new Date(),
       });
 
       await service.inviteMember(wsId, email, role);
 
-      expect(prisma.invitation.delete).toHaveBeenCalledWith({ where: { id: 'old-i' } });
+      expect(prisma.invitation.delete).toHaveBeenCalledWith({
+        where: { id: 'old-i', workspaceId: wsId },
+      });
       expect(prisma.invitation.create).toHaveBeenCalled();
     });
 
@@ -202,7 +204,7 @@ describe('TeamService', () => {
         id: 'i-1',
         email,
         role,
-        token: 'invite-token-uuid',
+        token: 'invite-id',
         expiresAt: new Date(),
       });
 
@@ -225,7 +227,7 @@ describe('TeamService', () => {
         id: 'i-1',
         email,
         role,
-        token: 'invite-token-uuid',
+        token: 'invite-id',
         expiresAt: new Date(),
       });
 
@@ -275,7 +277,9 @@ describe('TeamService', () => {
           role: 'MEMBER',
         },
       });
-      expect(prisma.invitation.delete).toHaveBeenCalledWith({ where: { id: 'i-1' } });
+      expect(prisma.invitation.delete).toHaveBeenCalledWith({
+        where: { id: 'i-1', workspaceId: wsId },
+      });
     });
 
     it('throws BadRequestException when token does not exist', async () => {
@@ -336,7 +340,9 @@ describe('TeamService', () => {
         resourceId: inviteId,
         details: { deletedBy: 'user', email: 'b@x.com' },
       });
-      expect(prisma.invitation.delete).toHaveBeenCalledWith({ where: { id: inviteId } });
+      expect(prisma.invitation.delete).toHaveBeenCalledWith({
+        where: { id: inviteId, workspaceId: wsId },
+      });
     });
 
     it('throws NotFoundException when invitation does not exist', async () => {
@@ -376,7 +382,9 @@ describe('TeamService', () => {
         resourceId: memberId,
         details: { deletedBy: 'user', email: 'alice@x.com' },
       });
-      expect(prisma.agent.delete).toHaveBeenCalledWith({ where: { id: memberId } });
+      expect(prisma.agent.delete).toHaveBeenCalledWith({
+        where: { id: memberId, workspaceId: wsId },
+      });
     });
 
     it('throws NotFoundException when agent does not exist', async () => {

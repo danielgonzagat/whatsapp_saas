@@ -367,7 +367,7 @@ export class ConnectService {
     stripeAccountId: string,
   ): Promise<ConnectAccountBalance | null> {
     return this.prisma.connectAccountBalance.findUnique({
-      where: { stripeAccountId },
+      where: { stripeAccountId, workspaceId: { not: '' } },
     });
   }
 

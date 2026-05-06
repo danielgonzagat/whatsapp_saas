@@ -25,8 +25,8 @@ import {
   doAdminApprove,
   doAutoApproveIfComplete,
   syncSellerConnectOnboarding,
-} from './__companions__/kyc.service.companion';
-import type { UploadedFile, SubmitKycContext } from './__companions__/kyc.service.companion';
+} from './__parts__/kyc.service.companion';
+import type { UploadedFile, SubmitKycContext } from './__parts__/kyc.service.companion';
 export { trimToUndefined, digitsOnly, buildPersonName, buildDateOfBirth, buildConnectAddress };
 export type { UploadedFile, SubmitKycContext };
 
@@ -52,7 +52,7 @@ export class KycService {
 
   async getProfile(agentId: string) {
     return this.prisma.agent.findUnique({
-      where: { id: agentId },
+      where: { id: agentId, workspaceId: { not: '' } },
       select: {
         id: true,
         name: true,
@@ -82,14 +82,14 @@ export class KycService {
     return this.prisma.$transaction(
       async (tx) => {
         const agent = await tx.agent.findUnique({
-          where: { id: agentId },
-          select: { kycStatus: true },
+          where: { id: agentId, workspaceId: { not: '' } },
+          select: { kycStatus: true, workspaceId: true },
         });
         if (agent?.kycStatus === 'rejected') {
           data.kycStatus = 'pending';
           data.kycRejectedReason = null;
         }
-        return tx.agent.update({ where: { id: agentId }, data });
+        return tx.agent.update({ where: { id: agentId, workspaceId: agent.workspaceId }, data });
       },
       { isolationLevel: 'ReadCommitted' },
     );
@@ -105,7 +105,10 @@ export class KycService {
     const ext = file.originalname?.split('.').pop() || 'jpg';
     const filename = `kyc/avatars/avatar_${agentId}_${Date.now()}.${ext}`;
     const result = await this.storage.upload(file.buffer, { filename, mimeType: file.mimetype });
-    await this.prisma.agent.update({ where: { id: agentId }, data: { avatarUrl: result.url } });
+    await this.prisma.agent.update({
+      where: { id: agentId, workspaceId: { not: '' } },
+      data: { avatarUrl: result.url },
+    });
     return { avatarUrl: result.url };
   }
 
@@ -193,7 +196,9 @@ export class KycService {
       agentId,
       details: { deletedBy: 'user', type: doc.type },
     });
-    await this.prisma.kycDocument.delete({ where: { id: documentId } });
+    await this.prisma.kycDocument.delete({
+      where: { id: documentId, workspaceId: doc.workspaceId },
+    });
     return { success: true };
   }
 
@@ -221,7 +226,7 @@ export class KycService {
         });
         if (existing) {
           return tx.bankAccount.update({
-            where: { id: existing.id },
+            where: { id: existing.id, workspaceId },
             data: { ...dto, displayAccount },
           });
         }
@@ -239,8 +244,8 @@ export class KycService {
     return this.prisma.$transaction(
       async (tx) => {
         const agent = await tx.agent.findUnique({
-          where: { id: agentId },
-          select: { password: true, provider: true },
+          where: { id: agentId, workspaceId: { not: '' } },
+          select: { password: true, provider: true, workspaceId: true },
         });
         if (!agent) throw new NotFoundException('Agent not found');
         if (agent.provider && !agent.password)
@@ -248,7 +253,10 @@ export class KycService {
         const valid = await bcryptCompare(dto.currentPassword, agent.password);
         if (!valid) throw new UnauthorizedException('Current password is incorrect');
         const hashedPassword = await bcryptHash(dto.newPassword, BCRYPT_ROUNDS);
-        await tx.agent.update({ where: { id: agentId }, data: { password: hashedPassword } });
+        await tx.agent.update({
+          where: { id: agentId, workspaceId: agent.workspaceId },
+          data: { password: hashedPassword },
+        });
         return { success: true };
       },
       { isolationLevel: 'ReadCommitted' },
@@ -259,7 +267,7 @@ export class KycService {
 
   async getStatus(agentId: string) {
     return this.prisma.agent.findUnique({
-      where: { id: agentId },
+      where: { id: agentId, workspaceId: { not: '' } },
       select: {
         kycStatus: true,
         kycSubmittedAt: true,
@@ -273,7 +281,7 @@ export class KycService {
   async getCompletion(agentId: string, workspaceId: string) {
     const [agent, fiscal, documents, bankAccount] = await Promise.all([
       this.prisma.agent.findUnique({
-        where: { id: agentId },
+        where: { id: agentId, workspaceId },
         select: { name: true, phone: true, birthDate: true },
       }),
       this.prisma.fiscalData.findUnique({ where: { workspaceId } }),
@@ -335,7 +343,7 @@ export class KycService {
     await this.prisma.$transaction(
       async (tx) => {
         const agent = await tx.agent.findUnique({
-          where: { id: agentId },
+          where: { id: agentId, workspaceId },
           select: { kycStatus: true },
         });
         if (agent?.kycStatus === 'submitted')
@@ -343,7 +351,7 @@ export class KycService {
         if (agent?.kycStatus === 'approved') throw new BadRequestException('KYC already approved');
 
         await tx.agent.update({
-          where: { id: agentId },
+          where: { id: agentId, workspaceId },
           data: { kycStatus: 'submitted', kycSubmittedAt: new Date() },
         });
       },

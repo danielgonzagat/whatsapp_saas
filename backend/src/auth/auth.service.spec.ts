@@ -162,7 +162,7 @@ describe('AuthService', () => {
 
       expect(result).toEqual({ exists: true });
       expect(prisma.agent.findFirst).toHaveBeenCalledWith({
-        where: { email: 'test@test.com' },
+        where: { email: 'test@test.com', workspaceId: { not: '' } },
       });
     });
 
@@ -280,7 +280,7 @@ describe('AuthService', () => {
       });
       expect(prisma.affiliatePartner.update).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { id: 'partner-1' },
+          where: { id: 'partner-1', workspaceId: 'seller-ws' },
           data: expect.objectContaining({
             partnerWorkspaceId: 'ws-aff',
             status: 'ACTIVE',

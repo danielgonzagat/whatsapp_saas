@@ -8,7 +8,7 @@
 const ALLOWED_CONTROL_BYTES: ReadonlySet<number> = new Set([9, 10, 13]);
 
 /** Is text safe byte. */
-export function isTextSafeByte(byte: number): boolean {
+function isTextSafeByte(byte: number): boolean {
   if (ALLOWED_CONTROL_BYTES.has(byte)) {
     return true;
   }
@@ -19,12 +19,12 @@ export function isTextSafeByte(byte: number): boolean {
 }
 
 /** Is suspicious control byte. */
-export function isSuspiciousControlByte(byte: number): boolean {
+function isSuspiciousControlByte(byte: number): boolean {
   return !isTextSafeByte(byte);
 }
 
 /** Count suspicious control bytes. */
-export function countSuspiciousControlBytes(sample: Buffer): number {
+function countSuspiciousControlBytes(sample: Buffer): number {
   let count = 0;
   for (const byte of sample) {
     if (isSuspiciousControlByte(byte)) {

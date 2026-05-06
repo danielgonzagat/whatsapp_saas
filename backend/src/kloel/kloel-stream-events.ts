@@ -1,12 +1,8 @@
 /** Kloel stream status phase type. */
-export type KloelStreamStatusPhase =
-  | 'thinking'
-  | 'streaming_token'
-  | 'tool_calling'
-  | 'tool_result';
+type KloelStreamStatusPhase = 'thinking' | 'streaming_token' | 'tool_calling' | 'tool_result';
 
 /** Kloel thread event shape. */
-export interface KloelThreadEvent {
+interface KloelThreadEvent {
   /** Type property. */
   type: 'thread';
   /** Conversation id property. */
@@ -18,7 +14,7 @@ export interface KloelThreadEvent {
 }
 
 /** Kloel status event shape. */
-export interface KloelStatusEvent {
+interface KloelStatusEvent {
   /** Type property. */
   type: 'status';
   /** Phase property. */
@@ -32,7 +28,7 @@ export interface KloelStatusEvent {
 }
 
 /** Kloel content event shape. */
-export interface KloelContentEvent {
+interface KloelContentEvent {
   /** Type property. */
   type: 'content';
   /** Content property. */
@@ -42,7 +38,7 @@ export interface KloelContentEvent {
 }
 
 /** Kloel tool call event shape. */
-export interface KloelToolCallEvent {
+interface KloelToolCallEvent {
   /** Type property. */
   type: 'tool_call';
   /** Call id property. */
@@ -56,7 +52,7 @@ export interface KloelToolCallEvent {
 }
 
 /** Kloel tool result event shape. */
-export interface KloelToolResultEvent {
+interface KloelToolResultEvent {
   /** Type property. */
   type: 'tool_result';
   /** Call id property. */
@@ -74,7 +70,7 @@ export interface KloelToolResultEvent {
 }
 
 /** Kloel error event shape. */
-export interface KloelErrorEvent {
+interface KloelErrorEvent {
   /** Type property. */
   type: 'error';
   /** Error property. */
@@ -86,7 +82,7 @@ export interface KloelErrorEvent {
 }
 
 /** Kloel done event shape. */
-export interface KloelDoneEvent {
+interface KloelDoneEvent {
   /** Type property. */
   type: 'done';
   /** Done property. */

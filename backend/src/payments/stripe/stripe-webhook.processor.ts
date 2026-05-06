@@ -34,7 +34,7 @@ export interface ConnectPostSaleSnapshot {
 }
 
 /** Process sale succeeded result shape. */
-export interface ProcessSaleSucceededResult {
+interface ProcessSaleSucceededResult {
   /** Payment intent id property. */
   paymentIntentId: string;
   /** Transfers dispatched property. */

@@ -2,7 +2,7 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { Injectable } from '@nestjs/common';
 
 const FRONTMATTER_RE = /^---[\s\S]*?---\s*/;
-const WHITESPACE_RE = /\s+/g;
+export const WHITESPACE_RE = /\s+/g;
 
 /** Marketing skill loader. */
 @Injectable()

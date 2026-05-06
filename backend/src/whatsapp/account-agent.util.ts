@@ -7,7 +7,7 @@ import {
 import { formatBrlAmount } from '../kloel/money-format.util';
 
 /** Catalog gap detection shape. */
-export interface CatalogGapDetection {
+interface CatalogGapDetection {
   /** Buying intent property. */
   buyingIntent: boolean;
   /** Matched products property. */
@@ -17,7 +17,7 @@ export interface CatalogGapDetection {
 }
 
 /** Parsed offer line shape. */
-export interface ParsedOfferLine {
+interface ParsedOfferLine {
   /** Raw property. */
   raw: string;
   /** Title property. */
@@ -32,7 +32,7 @@ export interface ParsedOfferLine {
  * Lower-cases the supplied text and strips diacritics, punctuation and extra whitespace.
  * Used as the canonical normalization step before keyword/product comparisons.
  */
-export function normalizeCatalogText(value: string): string {
+function normalizeCatalogText(value: string): string {
   return String(value || '')
     .toLowerCase()
     .normalize('NFD')
@@ -57,7 +57,7 @@ export function slugifyCatalogKey(value: string): string {
  * Returns the unique product names whose normalized form is contained in the message.
  * Names shorter than 2 normalized characters are skipped to avoid trivial matches.
  */
-export function findProductMatches(messageContent: string, productNames: string[]): string[] {
+function findProductMatches(messageContent: string, productNames: string[]): string[] {
   const normalizedMessage = normalizeCatalogText(messageContent);
   if (!normalizedMessage) {
     return [];
@@ -161,7 +161,7 @@ function tokenizeCandidateMessage(messageContent: string): string[] {
  * explicit match. Tries uppercase SKU detection, cue-word capture, then a
  * generic non-stopword fallback.
  */
-export function extractMissingProductCandidate(messageContent: string): string | null {
+function extractMissingProductCandidate(messageContent: string): string | null {
   const rawTokens = tokenizeCandidateMessage(messageContent);
   if (!rawTokens.length) {
     return null;

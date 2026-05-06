@@ -1,9 +1,9 @@
 const D_4_____D_2_____D_2_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
 /** Dashboard home period type. */
-export type DashboardHomePeriod = 'today' | '7d' | '30d' | '90d' | 'custom';
+type DashboardHomePeriod = 'today' | '7d' | '30d' | '90d' | 'custom';
 
 /** Dashboard home bucket shape. */
-export interface DashboardHomeBucket {
+interface DashboardHomeBucket {
   /** Label property. */
   label: string;
   /** Start property. */
@@ -13,7 +13,7 @@ export interface DashboardHomeBucket {
 }
 
 /** Dashboard home range shape. */
-export interface DashboardHomeRange {
+interface DashboardHomeRange {
   /** Period property. */
   period: DashboardHomePeriod;
   /** Start property. */
@@ -33,7 +33,7 @@ export interface DashboardHomeRange {
 }
 
 /** Dashboard operational health shape. */
-export interface DashboardOperationalHealth {
+interface DashboardOperationalHealth {
   /** Operational score pct property. */
   operationalScorePct: number;
   /** Active checkpoints property. */

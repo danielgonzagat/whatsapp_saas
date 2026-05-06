@@ -37,7 +37,7 @@ export async function requestMagicLink(
   const redirectTo = String(data.redirectTo || '').trim() || '/dashboard';
 
   const existingAgent = await deps.prisma.agent.findFirst({
-    where: { email: normalizedEmail },
+    where: { email: normalizedEmail, workspaceId: { not: '' } },
     select: { id: true },
   });
 
@@ -170,7 +170,7 @@ export async function verifyMagicLink(
 
   if (!agent.emailVerified) {
     await deps.prisma.agent.update({
-      where: { id: agent.id },
+      where: { id: agent.id, workspaceId: agent.workspaceId },
       data: { emailVerified: true },
     });
   }

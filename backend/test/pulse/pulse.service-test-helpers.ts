@@ -17,7 +17,7 @@ export const expectNthBackgroundTaskCall = (spy: jest.SpyInstance, index: number
 /** Spy on run background task. */
 export const spyOnRunBackgroundTask = (service: object) =>
   jest.spyOn(
-    service as unknown as { runBackgroundTask: (label: string, task: () => Promise<void>) => void },
+    service as { runBackgroundTask: (label: string, task: () => Promise<void>) => void },
     'runBackgroundTask',
   );
 

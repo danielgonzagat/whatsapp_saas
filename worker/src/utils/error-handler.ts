@@ -38,8 +38,7 @@ export const handleError = (error: unknown, jobName: string) => {
 const PERMANENT_HTTP_STATUSES = new Set([400, 401, 402, 403, 404, 405, 409, 410, 422]);
 
 /** Determine if an error's HTTP status indicates a permanent failure. */
-export const isPermanentHttpError = (status: number): boolean =>
-  PERMANENT_HTTP_STATUSES.has(status);
+const isPermanentHttpError = (status: number): boolean => PERMANENT_HTTP_STATUSES.has(status);
 
 /** Determine if the error is retryable based on common error shapes. */
 export const isRetryableError = (error: unknown): boolean => {

@@ -238,7 +238,7 @@ export class MemberEnrollmentsController {
           : Math.max(0, Math.round((currentProgress - lessonWeight) * 100) / 100);
 
         await tx.memberEnrollment.update({
-          where: { id: enrollment.id },
+          where: { id: enrollment.id, workspaceId },
           data: { progress: computed },
         });
 

@@ -164,7 +164,7 @@ describe('SystemHealthService', () => {
     fetchMock.mockResolvedValue({
       ok: true,
       json: async () => payload,
-    } as Response);
+    } as never);
     global.fetch = fetchMock;
     return fetchMock;
   };

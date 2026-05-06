@@ -1,6 +1,6 @@
 import { KycService } from './kyc.service';
 
-export type Scenario = 'PF' | 'PJ';
+type Scenario = 'PF' | 'PJ';
 
 export function buildService(options?: {
   scenario?: Scenario;
@@ -119,6 +119,7 @@ export function buildService(options?: {
   const prisma = {
     agent: {
       findUnique: agentFindUnique,
+      findFirst: agentFindUnique,
       update: jest.fn().mockResolvedValue(undefined),
     },
     workspace: {

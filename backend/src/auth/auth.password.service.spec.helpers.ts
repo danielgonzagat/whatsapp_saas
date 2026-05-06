@@ -5,7 +5,7 @@ import type { PrismaService } from '../prisma/prisma.service';
 
 export const bcryptMock = bcrypt as jest.Mocked<typeof bcrypt>;
 
-export interface PrismaMock {
+interface PrismaMock {
   $transaction: jest.Mock;
   agent: {
     findFirst: jest.Mock;
@@ -18,19 +18,19 @@ export interface PrismaMock {
   };
 }
 
-export interface TokenServiceMock {
+interface TokenServiceMock {
   issueTokens: jest.Mock;
 }
 
-export interface AuthPartnerServiceMock {
+interface AuthPartnerServiceMock {
   resolvePartnerInvite: jest.Mock;
 }
 
-export interface RateLimitServiceMock {
+interface RateLimitServiceMock {
   checkRateLimit: jest.Mock;
 }
 
-export function createPrismaMock(): PrismaMock {
+function createPrismaMock(): PrismaMock {
   const mock = {
     agent: {
       findFirst: jest.fn(),

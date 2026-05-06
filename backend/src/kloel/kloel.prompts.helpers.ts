@@ -144,7 +144,7 @@ Isso conecta direto com integrações e automação. Posso te mostrar como isso 
 </few_shot_examples>`;
 
 /** Human-readable description for each tone token a producer can configure. */
-export const TONE_DESCRIPTIONS: Record<string, string> = {
+const TONE_DESCRIPTIONS: Record<string, string> = {
   CONSULTIVE: 'Consultivo — ajude a decidir com perguntas inteligentes',
   AGGRESSIVE: 'Agressivo — conduza com energia e CTA firme',
   DIRECT: 'Direto — vá ao ponto, sem rodeios',
@@ -158,7 +158,7 @@ export const TONE_DESCRIPTIONS: Record<string, string> = {
 };
 
 /** Shape of an entry in the producer-configured objection list. */
-export type ObjectionEntry = {
+type ObjectionEntry = {
   id?: string;
   label?: string;
   response?: string;
@@ -166,7 +166,7 @@ export type ObjectionEntry = {
 };
 
 /** Type guard distinguishing a usable objection entry from arbitrary JSON noise. */
-export function isObjectionEntry(value: unknown): value is ObjectionEntry {
+function isObjectionEntry(value: unknown): value is ObjectionEntry {
   return typeof value === 'object' && value !== null;
 }
 

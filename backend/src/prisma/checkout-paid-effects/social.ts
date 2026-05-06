@@ -30,7 +30,7 @@ export async function markCheckoutSocialLeadConvertedFromPaidUpdate(
   });
   if (!lead) return;
   await prisma.checkoutSocialLead.update({
-    where: { id: lead.id },
+    where: { id: lead.id, workspaceId: scope.workspaceId },
     data: {
       status: CheckoutSocialLeadStatus.CONVERTED,
       convertedAt: new Date(),

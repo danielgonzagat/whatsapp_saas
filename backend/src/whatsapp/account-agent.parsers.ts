@@ -24,7 +24,7 @@ export function readString(value: unknown): string | null {
   return typeof value === 'string' && value.trim() ? value : null;
 }
 
-export function readNullableString(value: unknown): string | null {
+function readNullableString(value: unknown): string | null {
   if (value === null || value === undefined) {
     return null;
   }

@@ -30,7 +30,7 @@ import {
 export type { ProviderBillingPolicy };
 
 /** Input shape for token-billed text quotes (OpenAI and Anthropic share it). */
-export interface TokenUsageQuoteInput {
+interface TokenUsageQuoteInput {
   /** Provider model id, raw or aliased (e.g. `gpt-5.4-nano-2026-03-17`). */
   model: string;
   /** Non-cached input tokens consumed by the request. */
@@ -44,7 +44,7 @@ export interface TokenUsageQuoteInput {
 }
 
 /** Input shape for OpenAI embedding quotes. */
-export interface OpenAiEmbeddingQuoteInput {
+interface OpenAiEmbeddingQuoteInput {
   /** OpenAI embedding model id. */
   model: 'text-embedding-3-small' | 'text-embedding-3-large' | 'text-embedding-ada-002';
   /** Tokens to be embedded. */

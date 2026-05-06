@@ -11,6 +11,10 @@ vi.mock('@/lib/api', () => ({
 const mockedApiFetch = vi.mocked(apiFetch);
 
 class MockFileReader {
+  static readonly EMPTY = 0;
+  static readonly LOADING = 1;
+  static readonly DONE = 2;
+
   result: string | ArrayBuffer | null = null;
   error: Error | null = null;
   onload: null | (() => void) = null;
@@ -29,7 +33,7 @@ describe('ImageUpload', () => {
   beforeEach(() => {
     mockedApiFetch.mockReset();
     sessionStorage.clear();
-    vi.stubGlobal('FileReader', MockFileReader as unknown as typeof FileReader);
+    vi.stubGlobal('FileReader', MockFileReader);
 
     container = document.createElement('div');
     document.body.appendChild(container);

@@ -7,6 +7,10 @@ import {
   updateVariantOutcome,
 } from '../processors/cia/self-improvement';
 
+function prismaClientMock(client: { kloelMemory: unknown }): PrismaClient {
+  return client as PrismaClient;
+}
+
 describe('cia-self-improvement', () => {
   it('picks the best stored variant while still supporting exploration defaults', async () => {
     const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.99);
@@ -23,9 +27,9 @@ describe('cia-self-improvement', () => {
           },
         ]),
       },
-    } as unknown as PrismaClient;
+    };
 
-    const variant = await pickVariant(prisma, 'ws-1', 'followup');
+    const variant = await pickVariant(prismaClientMock(prisma), 'ws-1', 'followup');
 
     expect(variant.text).toBe('variante melhor');
     expect(variant.score).toBe(8);
@@ -43,9 +47,11 @@ describe('cia-self-improvement', () => {
         upsert,
         findUnique,
       },
-    } as unknown as PrismaClient;
+    };
 
-    await recordDecisionLog(prisma, {
+    const prismaClient = prismaClientMock(prisma);
+
+    await recordDecisionLog(prismaClient, {
       workspaceId: 'ws-1',
       contactId: 'contact-1',
       variantKey: 'payment:pix_recovery',
@@ -55,7 +61,7 @@ describe('cia-self-improvement', () => {
       priority: 0.9,
     });
 
-    await updateVariantOutcome(prisma, {
+    await updateVariantOutcome(prismaClient, {
       workspaceId: 'ws-1',
       family: 'payment_recovery',
       variant: {
@@ -94,9 +100,9 @@ describe('cia-self-improvement', () => {
           { value: { variantKey: 'followup:proof', outcome: 'FAILED' } },
         ]),
       },
-    } as unknown as PrismaClient;
+    };
 
-    const snapshot = await computeLearningSnapshot(prisma, 'ws-1');
+    const snapshot = await computeLearningSnapshot(prismaClientMock(prisma), 'ws-1');
 
     expect(snapshot.totalLogs).toBe(3);
     expect(snapshot.soldCount).toBe(1);

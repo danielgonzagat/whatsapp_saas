@@ -8,7 +8,7 @@
 
 import type { RecommendedFlowTemplate } from './flow-template.recommended';
 
-export interface FlowTemplateBaseNode {
+interface FlowTemplateBaseNode {
   id: string;
   label: string;
 }
@@ -18,16 +18,13 @@ export interface FlowTemplateStartNode extends FlowTemplateBaseNode {
 export interface FlowTemplateEndNode extends FlowTemplateBaseNode {
   type: 'end';
 }
-export interface FlowTemplateMessageNode extends FlowTemplateBaseNode {
+interface FlowTemplateMessageNode extends FlowTemplateBaseNode {
   type: 'message';
   content: string;
 }
-export type FlowTemplateNode =
-  | FlowTemplateStartNode
-  | FlowTemplateEndNode
-  | FlowTemplateMessageNode;
+type FlowTemplateNode = FlowTemplateStartNode | FlowTemplateEndNode | FlowTemplateMessageNode;
 
-export interface FlowTemplateEdge {
+interface FlowTemplateEdge {
   id: string;
   source: string;
   target: string;

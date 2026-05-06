@@ -1,11 +1,7 @@
 import { Injectable, NotImplementedException } from '@nestjs/common';
 
 /** Status de cada fonte de scraping. */
-export type ScraperSourceStatus =
-  | 'available'
-  | 'available_direct'
-  | 'available_worker'
-  | 'unavailable';
+type ScraperSourceStatus = 'available' | 'available_direct' | 'available_worker' | 'unavailable';
 
 /** Descreve o estado real de uma fonte de scraping. */
 export interface ScraperSourceCapability {

@@ -24,7 +24,7 @@ function extractHostname(value: string): string | null {
 }
 
 /** Parse safe url. */
-export function parseSafeUrl(urlString: string): URL {
+function parseSafeUrl(urlString: string): URL {
   let url: URL;
   try {
     url = new URL(String(urlString || '').trim());

@@ -24,7 +24,7 @@ export function normalizePhone(phone: string): string {
  * and without the country code) so callers can compare loose user input
  * against canonical session phones.
  */
-export function expandComparablePhoneVariants(phone: string): string[] {
+function expandComparablePhoneVariants(phone: string): string[] {
   const digits = normalizePhone(phone);
   if (!digits) {
     return [];

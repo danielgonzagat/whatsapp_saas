@@ -3,7 +3,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import type { StripeClient, StripeSubscription } from '../stripe-types';
 
-export interface CancelSubscriptionDeps {
+interface CancelSubscriptionDeps {
   prisma: PrismaService;
   stripe: StripeClient | undefined;
   logger: Logger;

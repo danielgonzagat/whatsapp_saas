@@ -3,7 +3,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import type { StripeSubscription } from '../stripe-types';
 import type { StripeSubscriptionWithPeriodEnd } from '../billing-webhook.types';
 
-export interface SyncSubscriptionDeps {
+interface SyncSubscriptionDeps {
   prisma: PrismaService;
   resolveWorkspaceId: (subscription: StripeSubscription) => Promise<string | null>;
 }

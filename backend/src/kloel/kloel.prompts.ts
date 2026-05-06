@@ -25,7 +25,7 @@ import {
  * dashboard. Combines persona, dashboard-mode framing, reality guardrails,
  * and memory-tool rules.
  */
-export const KLOEL_SYSTEM_PROMPT = `${KLOEL_PERSONA_CORE}
+const KLOEL_SYSTEM_PROMPT = `${KLOEL_PERSONA_CORE}
 
 MODO DASHBOARD:
 - Aqui você conversa com o dono da operação, não com o lead final.
@@ -40,7 +40,7 @@ ${KLOEL_REALITY_GUARDRAILS}
 ${KLOEL_USER_MEMORY_RULES}`;
 
 /** Inputs that personalize the dashboard response-engine prompt for a session. */
-export interface KloelResponseEnginePromptInput {
+interface KloelResponseEnginePromptInput {
   /** Human-readable current date injected into the prompt. */
   currentDate: string;
   /** End-user's display name; falls back to a generic placeholder when missing. */

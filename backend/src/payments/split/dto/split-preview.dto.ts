@@ -9,7 +9,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 
-export class SupplierInputDto {
+class SupplierInputDto {
   @IsString()
   @MaxLength(255)
   accountId: string;
@@ -19,7 +19,7 @@ export class SupplierInputDto {
   amountCents: string;
 }
 
-export class PercentRoleInputDto {
+class PercentRoleInputDto {
   @IsString()
   @MaxLength(255)
   accountId: string;
@@ -31,7 +31,7 @@ export class PercentRoleInputDto {
   percentBp: number;
 }
 
-export class SellerInputDto {
+class SellerInputDto {
   @IsString()
   @MaxLength(255)
   accountId: string;

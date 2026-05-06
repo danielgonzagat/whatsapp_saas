@@ -19,7 +19,7 @@ export function makeMockWalletService(): jest.Mocked<WalletService> {
  * Build a minimal valid PrepaidWalletTransaction for tests.
  * Uses real Prisma model fields with deterministic values.
  */
-export function makePrepaidWalletTransaction(
+function makePrepaidWalletTransaction(
   overrides: Partial<PrepaidWalletTransaction> = {},
 ): PrepaidWalletTransaction {
   return {

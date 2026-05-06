@@ -61,19 +61,17 @@ describe('DataDeleteController', () => {
     );
 
     expect(prisma.agent.update).toHaveBeenCalledWith({
-      where: { id: 'u-1' },
+      where: { id: 'u-1', workspaceId: 'ws-1' },
       data: { name: '[DELETED]', email: 'deleted-u-1@removed.local' },
     });
   });
 
-  it('uses system as workspaceId when not provided', async () => {
+  it('rejects deletion when workspaceId is not provided', async () => {
     const req = {
       user: { sub: 'u-2' },
     } as never;
 
-    await controller.deleteData(req);
-
-    expect(audit.log).toHaveBeenCalledWith(expect.objectContaining({ workspaceId: 'system' }));
+    await expect(controller.deleteData(req)).rejects.toThrow('User identity required');
   });
 
   it('returns correct deletion note', async () => {

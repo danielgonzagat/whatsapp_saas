@@ -157,7 +157,7 @@ export async function buildDynamicRuntimeContextHelper(params: {
 type ChatCompletionMessageParam = OpenAI.Chat.ChatCompletionMessageParam;
 
 /** Deps injected into buildAssistantReplyImpl to avoid circular DI. */
-export interface BuildAssistantReplyDeps {
+interface BuildAssistantReplyDeps {
   openai: OpenAI;
   prisma: PrismaService;
   planLimits: PlanLimitsService;

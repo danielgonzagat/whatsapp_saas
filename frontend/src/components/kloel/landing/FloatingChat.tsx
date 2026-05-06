@@ -229,8 +229,10 @@ export function FloatingChat({
 
   useEffect(() => {
     if (isOpen) {
-      setTimeout(() => inputRef.current?.focus(), 100);
+      const focusTimer = setTimeout(() => inputRef.current?.focus(), 100);
+      return () => clearTimeout(focusTimer);
     }
+    return undefined;
   }, [isOpen]);
 
   useEffect(() => {

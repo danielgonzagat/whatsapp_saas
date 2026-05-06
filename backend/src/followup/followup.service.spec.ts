@@ -16,7 +16,7 @@ describe('FollowUpService', () => {
   let service: FollowUpService;
 
   beforeEach(() => {
-    prisma = Object.create(PrismaService.prototype) as PrismaService & FollowUpPrismaMock;
+    prisma = Object.create(PrismaService.prototype) as never as PrismaService & FollowUpPrismaMock;
     Object.defineProperties(prisma, {
       contact: {
         value: { findFirst: jest.fn() },

@@ -41,7 +41,7 @@ export async function processCheckoutSocialLeadEnrichment(leadId: string) {
 
   if (!lead?.email) {
     await prisma.checkoutSocialLead.updateMany({
-      where: { id: leadId },
+      where: { id: leadId, workspaceId: lead?.workspaceId ?? { not: '' } },
       data: {
         enrichmentStatus: CheckoutSocialLeadEnrichmentStatus.SKIPPED,
       },
@@ -52,7 +52,7 @@ export async function processCheckoutSocialLeadEnrichment(leadId: string) {
   const settings = parseEnrichmentSettings(lead.workspace?.providerSettings);
   if (!settings) {
     await prisma.checkoutSocialLead.updateMany({
-      where: { id: leadId },
+      where: { id: leadId, workspaceId: lead.workspaceId },
       data: {
         enrichmentStatus: CheckoutSocialLeadEnrichmentStatus.SKIPPED,
       },
@@ -88,7 +88,7 @@ export async function processCheckoutSocialLeadEnrichment(leadId: string) {
     const normalizedCpf = normalizeCpf(readStringField(raw, ['cpf', 'document', 'documentNumber']));
 
     await prisma.checkoutSocialLead.update({
-      where: { id: lead.id },
+      where: { id: lead.id, workspaceId: lead.workspaceId },
       data: {
         phone: normalizedPhone || undefined,
         cpf: normalizedCpf || undefined,
@@ -132,7 +132,7 @@ export async function processCheckoutSocialLeadEnrichment(leadId: string) {
       error: error instanceof Error ? error.message : String(error),
     });
     await prisma.checkoutSocialLead.updateMany({
-      where: { id: leadId },
+      where: { id: leadId, workspaceId: workspaceId ?? { not: '' } },
       data: {
         enrichmentStatus: CheckoutSocialLeadEnrichmentStatus.FAILED,
       },

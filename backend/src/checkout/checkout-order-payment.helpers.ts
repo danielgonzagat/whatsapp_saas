@@ -6,7 +6,7 @@ import { Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 /** Parameters for processOrderPostPayment. */
-export interface ProcessOrderPostPaymentParams {
+interface ProcessOrderPostPaymentParams {
   order: { id: string };
   orderNumber: string;
   correlationId: string;

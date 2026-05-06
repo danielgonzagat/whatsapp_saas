@@ -173,8 +173,7 @@ export function useBankAccounts() {
     swrFetcher,
     { keepPreviousData: true },
   );
-  const accounts =
-    ((data as Record<string, unknown>)?.accounts as unknown as WalletBankAccount[]) || [];
+  const accounts = ((data as Record<string, unknown>)?.accounts as WalletBankAccount[]) || [];
 
   const addBankAccount = async (dto: Record<string, unknown>) => {
     if (!wsId) {

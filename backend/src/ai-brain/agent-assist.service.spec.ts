@@ -53,7 +53,7 @@ describe('AgentAssistService', () => {
       get: jest.fn().mockReturnValue(undefined),
     };
     service = new AgentAssistService(
-      configStub as ConfigService,
+      configStub as never as ConfigService,
       prisma as never as PrismaService,
       planLimits as never,
       walletService as never,

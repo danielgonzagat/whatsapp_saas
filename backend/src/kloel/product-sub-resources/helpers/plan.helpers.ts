@@ -16,7 +16,7 @@ import {
 } from './__companions__/plan.helpers.companion';
 export { buildCheckoutData, serializeCheckout, buildCouponData, serializeCoupon, serializeReview };
 
-export function buildPlanExtraConfig(body: LooseObject, current: LooseObject) {
+function buildPlanExtraConfig(body: LooseObject, current: LooseObject) {
   const next = { ...current };
   const patches: LooseObject = {
     imageUrl: body.imageUrl,
@@ -52,7 +52,7 @@ export function buildPlanExtraConfig(body: LooseObject, current: LooseObject) {
   return next;
 }
 
-export function buildPackagingConfig(body: LooseObject, current: LooseObject) {
+function buildPackagingConfig(body: LooseObject, current: LooseObject) {
   const next = { ...current };
   const rawDimensions = parseObject(body.dimensions);
   const dimensions =
@@ -129,7 +129,7 @@ function applyDefinedPatches(target: LooseObject, patches: LooseObject) {
   }
 }
 
-export function buildShippingConfig(body: LooseObject, current: LooseObject) {
+function buildShippingConfig(body: LooseObject, current: LooseObject) {
   const next = { ...current };
   const freightType = resolveFreightType(body, current);
   const fixedFreight = parseNumber(body.fixedFreight) ?? parseNumber(body.shippingPrice);

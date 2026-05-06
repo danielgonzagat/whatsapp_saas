@@ -104,7 +104,7 @@ export class MemberAreaPublicController {
   @Get(':slug')
   async getPublicArea(@Param('slug') slug: string) {
     const area = await this.prisma.memberArea.findFirst({
-      where: { slug, active: true },
+      where: { slug, active: true, workspaceId: { not: '' } },
       select: {
         id: true,
         name: true,
@@ -131,6 +131,7 @@ export class MemberAreaPublicController {
       where: {
         studentEmail: { equals: email, mode: 'insensitive' },
         status: 'active',
+        workspaceId: { not: '' },
         memberArea: { slug, active: true },
       },
       select: {
@@ -167,6 +168,7 @@ export class MemberAreaPublicController {
     const enrollment = await this.prisma.memberEnrollment.findFirst({
       where: {
         id: payload.enrollmentId,
+        workspaceId: { not: '' },
         memberAreaId: payload.areaId,
         studentEmail: { equals: payload.email, mode: 'insensitive' },
         status: 'active',

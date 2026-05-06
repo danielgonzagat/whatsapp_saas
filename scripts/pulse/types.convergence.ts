@@ -1,7 +1,8 @@
 // PULSE — Live Codebase Nervous System
 // Convergence plan, gate types, and runtime/flow/invariant evidence types
 
-import type { PulseGateName, PulseProviderMode } from './types.health';
+import type { PulseProviderMode } from './types.health';
+import type { PulseGateName } from './types.manifest';
 import type { PulseTruthMode } from './types.structural';
 import type { PulseGateFailureClass, PulseConvergenceOwnerLane } from './types.gate-failure';
 

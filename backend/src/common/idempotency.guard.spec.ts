@@ -117,7 +117,7 @@ function makeContext(options: {
   return {
     request,
     response,
-    context: context as ExecutionContext,
+    context: context as never as ExecutionContext,
   };
 }
 

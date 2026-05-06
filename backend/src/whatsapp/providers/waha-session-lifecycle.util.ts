@@ -13,7 +13,7 @@ import { findFirstSequential } from '../../common/async-sequence';
 
 // ─── Callback-based deps (avoids protected/public conflicts) ──
 
-export interface SessionSetupDeps {
+interface SessionSetupDeps {
   requestFn: (
     method: 'GET' | 'POST' | 'PUT' | 'DELETE',
     path: string,
@@ -28,7 +28,7 @@ export interface SessionSetupDeps {
   logger: Logger;
 }
 
-export interface QrCodeDeps {
+interface QrCodeDeps {
   rawRequestFn: (
     method: 'GET' | 'POST',
     path: string,
@@ -39,7 +39,7 @@ export interface QrCodeDeps {
   logger: Logger;
 }
 
-export interface LidMappingDeps {
+interface LidMappingDeps {
   tryRequestFn: <T>(method: 'GET' | 'POST' | 'PUT' | 'DELETE', path: string) => Promise<T | null>;
   logger: Logger;
 }

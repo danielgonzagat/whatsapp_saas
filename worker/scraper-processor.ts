@@ -132,7 +132,7 @@ async function processScraperJob(job: Job): Promise<void> {
     await job.updateProgress(5);
     // Mark as running via stats JSON (schema does not have a dedicated status column)
     await prisma.scrapingJob.update({
-      where: { id: jobId },
+      where: { id: jobId, workspaceId },
       data: { stats: { status: 'running', found: 0, valid: 0, imported: 0 } },
     });
 
@@ -159,7 +159,7 @@ async function processScraperJob(job: Job): Promise<void> {
     await job.updateProgress(95);
 
     await prisma.scrapingJob.update({
-      where: { id: jobId },
+      where: { id: jobId, workspaceId },
       data: {
         stats: {
           status: 'completed',
@@ -177,7 +177,7 @@ async function processScraperJob(job: Job): Promise<void> {
   } catch (err) {
     console.error(`❌ [SCRAPER] Job ${jobId} failed:`, err);
     await prisma.scrapingJob.update({
-      where: { id: jobId },
+      where: { id: jobId, workspaceId },
       data: {
         stats: {
           status: 'failed',

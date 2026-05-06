@@ -44,7 +44,7 @@ export async function checkEmail(
 ): Promise<{ exists: boolean }> {
   try {
     const agent = await prisma.agent.findFirst({
-      where: { email },
+      where: { email, workspaceId: { not: '' } },
     });
     return { exists: !!agent };
   } catch (error: unknown) {
@@ -128,7 +128,7 @@ export async function register(
   let existing: Agent | null;
   try {
     existing = await deps.prisma.agent.findFirst({
-      where: { email: normalizedEmail },
+      where: { email: normalizedEmail, workspaceId: { not: '' } },
     });
   } catch (error: unknown) {
     DbInitErrorService.throwFriendlyDbInitError(error);
@@ -192,7 +192,7 @@ export async function login(
   let agent: Agent | null;
   try {
     agent = await deps.prisma.agent.findFirst({
-      where: { email },
+      where: { email, workspaceId: { not: '' } },
     });
   } catch (error: unknown) {
     DbInitErrorService.throwFriendlyDbInitError(error);

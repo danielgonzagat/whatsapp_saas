@@ -11,7 +11,7 @@ describe('webhook-challenge-response.util', () => {
     const status = jest.fn().mockReturnThis();
     const setHeader = jest.fn();
     const end = jest.fn();
-    const res = { status, setHeader, end } as unknown as Response;
+    const res = { status, setHeader, end } as never as Response;
 
     const returned = sendPlainTextResponse(res, 'challenge-token');
 

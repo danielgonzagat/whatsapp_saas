@@ -62,7 +62,7 @@ function signTamperEvidenceHmac(data: string): Buffer {
   return createHmac('sha256', key).update(data).digest();
 }
 
-export interface UnsubscribePayload {
+interface UnsubscribePayload {
   email: string;
   workspaceId?: string;
   campaignId?: string;

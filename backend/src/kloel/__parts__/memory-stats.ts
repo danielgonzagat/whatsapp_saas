@@ -10,8 +10,12 @@ interface MemoryStats {
 
 export type { MemoryStats };
 
+function hasKloelMemoryDelegate(prisma: PrismaService): boolean {
+  return 'kloelMemory' in prisma;
+}
+
 export async function computeMemoryStats(prisma: PrismaService): Promise<MemoryStats> {
-  if (!(prisma as unknown as { kloelMemory?: unknown }).kloelMemory) {
+  if (!hasKloelMemoryDelegate(prisma)) {
     return {
       total: 0,
       byCategory: {},

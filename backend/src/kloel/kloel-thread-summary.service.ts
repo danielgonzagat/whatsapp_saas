@@ -10,7 +10,7 @@ const WHITESPACE_G_RE = /\s+/g;
 const QUOTE_TRIM_RE = /^["'""'']+|["'""'']+$/g;
 const TRAILING_PUNCT_G_RE = /[.!?]+$/g;
 const NEWLINE_RE = /\n/;
-const WHITESPACE_RE = /\s+/;
+export const WHITESPACE_RE = /\s+/;
 const _COMO_ESTRATEGIA_F_RE =
   /[?]|como|estrat[eé]gia|funil|plano|relat[oó]rio|documento|vender|marketing|autom[aá]tica|copy|webhook|api|integra[cç][aã]o|whatsapp/i;
 

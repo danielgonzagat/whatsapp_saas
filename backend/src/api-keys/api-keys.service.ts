@@ -83,7 +83,7 @@ export class ApiKeysService {
     const rawKey = this.generateKey();
     const keyHash = this.hashKey(rawKey);
     await this.prisma.apiKey.update({
-      where: { id },
+      where: { id, workspaceId },
       data: { key: keyHash },
     });
     await this.auditService.log({
@@ -126,7 +126,7 @@ export class ApiKeysService {
       // Async update last used (fire and forget)
       this.prisma.apiKey
         .update({
-          where: { id: apiKey.id },
+          where: { id: apiKey.id, workspaceId: apiKey.workspaceId },
           data: { lastUsedAt: new Date() },
         })
         .catch((err) => this.logger.warn('Failed to update apiKey lastUsedAt', err.message));

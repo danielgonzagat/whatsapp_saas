@@ -1,1 +1,17 @@
-{"generatedAt":"2026-05-03T00:00:00.000Z","status":"PARTIAL","modules":[],"summary":{"total":0,"certified":0}}
+{
+  "generatedAt": "2026-05-06T13:44:14.694Z",
+  "status": "PARTIAL",
+  "modules": [],
+  "summary": {
+    "total": 0,
+    "certified": 0
+  },
+  "score": 61,
+  "rawScore": 61,
+  "evidenceSummary": {
+    "browser": {
+      "executed": false,
+      "passRate": 100
+    }
+  }
+}

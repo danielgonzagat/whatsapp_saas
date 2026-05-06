@@ -2,7 +2,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 /** Node/edge structures for sales funnel stage flows. */
-export function buildFunnelStageData(
+function buildFunnelStageData(
   stage: unknown,
   funnelName: string,
   productName: string,

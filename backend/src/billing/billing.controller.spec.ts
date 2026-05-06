@@ -50,7 +50,7 @@ describe('BillingController.handleWebhook', () => {
 
     await expect(
       controller.handleWebhook(
-        undefined as unknown as string,
+        undefined as string,
         { rawBody: Buffer.from('{"id":"evt_1"}') } as never,
       ),
     ).rejects.toThrow(BadRequestException);

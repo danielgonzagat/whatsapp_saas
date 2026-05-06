@@ -11,7 +11,7 @@ function buildFetchResponse(keys: Record<string, unknown>[]) {
       get: (name: string) =>
         name.toLowerCase() === 'cache-control' ? 'public, max-age=300' : null,
     },
-  } as Response;
+  } as never as Response;
 }
 
 describe('JwtSetValidator', () => {
@@ -27,7 +27,7 @@ describe('JwtSetValidator', () => {
   beforeEach(() => {
     validator = new JwtSetValidator({
       get: jest.fn((key: string) => (key === 'GOOGLE_CLIENT_ID' ? audience : undefined)),
-    } as unknown as ConfigService);
+    } as never as ConfigService);
 
     global.fetch = jest.fn(async () =>
       buildFetchResponse([

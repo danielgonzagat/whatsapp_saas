@@ -15,12 +15,12 @@ import {
   toStringList,
 } from './common.helpers';
 
-export type AffiliateCodeClient = Pick<
+type AffiliateCodeClient = Pick<
   PrismaService,
   'checkoutProductPlan' | 'checkoutPlanLink' | 'affiliateLink'
 >;
 
-export const COMMISSION_ROLE_VALUES = ['COPRODUCER', 'MANAGER', 'AFFILIATE'] as const;
+const COMMISSION_ROLE_VALUES = ['COPRODUCER', 'MANAGER', 'AFFILIATE'] as const;
 export const COMMISSION_PARTNER_INVITE_ROLES = new Set(['COPRODUCER', 'MANAGER']);
 export const PRODUCT_COMMISSION_TYPE_VALUES = [
   'first_click',

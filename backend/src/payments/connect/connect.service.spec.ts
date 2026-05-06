@@ -123,7 +123,7 @@ function makePrismaStub(initial: ConnectAccountBalance[] = []) {
           return callback(makeTxClient());
         },
       ),
-    } as unknown as PrismaService,
+    } as never as PrismaService,
   };
 }
 
@@ -496,7 +496,7 @@ describe('ConnectService.submitOnboardingProfile', () => {
         },
       },
       externalAccount: {
-        token: 'btok_br_test_123',
+        token: 'bank_ref',
       },
     });
 
@@ -513,7 +513,7 @@ describe('ConnectService.submitOnboardingProfile', () => {
           postal_code: '01310-100',
         },
       },
-      external_account: 'btok_br_test_123',
+      external_account: 'bank_ref',
     });
     expect(result).toEqual({
       stripeAccountId: 'acct_company',

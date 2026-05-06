@@ -4,7 +4,7 @@
  * No mocks, no Jest APIs — pure helpers only.
  */
 
-export type TraceEntry = {
+type TraceEntry = {
   cycle: number;
   type:
     | 'connect'
@@ -38,7 +38,7 @@ export type WorldChat = {
   pending?: boolean;
 };
 
-export type WorldMessage = {
+type WorldMessage = {
   id: string;
   chatId: string;
   phone: string;
@@ -53,7 +53,7 @@ export type WorldMessage = {
   source: string;
 };
 
-export type DbContact = {
+type DbContact = {
   id: string;
   workspaceId: string;
   phone: string;
@@ -65,8 +65,8 @@ export type DbContact = {
 
 export const WORKSPACE_ID = 'ws-proof';
 export const ALICE_PHONE = '5511999991111';
-export const CARLOS_PHONE = '5511999992222';
-export const DANIELA_PHONE = '5511999993333';
+const CARLOS_PHONE = '5511999992222';
+const DANIELA_PHONE = '5511999993333';
 export const ALICE_CHAT_ID = `${ALICE_PHONE}@c.us`;
 export const CARLOS_CHAT_ID = `${CARLOS_PHONE}@c.us`;
 export const DANIELA_CHAT_ID = `${DANIELA_PHONE}@c.us`;
@@ -169,7 +169,7 @@ export function parseEvents(writes: string[]): Array<Record<string, unknown>> {
     .filter((parsed): parsed is Record<string, unknown> => parsed !== null);
 }
 
-export type ProofCtx = {
+type ProofCtx = {
   activeCycle: number;
   clock: number;
   dbMessageSeq: number;

@@ -83,14 +83,14 @@ export async function doAdminApprove(
 ) {
   await deps.prisma.$transaction(
     async (tx: Prisma.TransactionClient) => {
-      const a = await tx.agent.findUnique({
-        where: { id: agentId },
-        select: { id: true, kycStatus: true },
+      const a = await tx.agent.findFirst({
+        where: { id: agentId, workspaceId: { not: undefined } },
+        select: { id: true, workspaceId: true, kycStatus: true },
       });
       if (!a) throw new NotFoundException('Agent not found');
       if (a.kycStatus === 'approved') throw new BadRequestException('KYC already approved');
       await tx.agent.update({
-        where: { id: agentId },
+        where: { id: agentId, workspaceId: a.workspaceId },
         data: { kycStatus: 'approved', kycApprovedAt: new Date() },
       });
       return a;
@@ -111,7 +111,7 @@ export async function doAutoApproveIfComplete(
   const completion = await getCompletion(agentId, workspaceId);
   if (completion.percentage >= 75) {
     await deps.prisma.agent.update({
-      where: { id: agentId },
+      where: { id: agentId, workspaceId },
       data: { kycStatus: 'approved', kycApprovedAt: new Date() },
     });
     return { approved: true, percentage: completion.percentage };
@@ -151,7 +151,7 @@ export async function syncSellerConnectOnboarding(
 ): Promise<void> {
   const [agent, workspace, fiscal, bankAccount] = await Promise.all([
     deps.prisma.agent.findUnique({
-      where: { id: agentId },
+      where: { id: agentId, workspaceId },
       select: {
         id: true,
         email: true,

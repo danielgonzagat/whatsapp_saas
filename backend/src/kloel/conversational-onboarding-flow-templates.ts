@@ -20,7 +20,7 @@ const DEFAULT_WELCOME_MESSAGE =
  * can instantiate inside a workspace. The shape mirrors the React Flow
  * `nodes`/`edges` model used by the visual flow builder.
  */
-export interface FlowTemplate {
+interface FlowTemplate {
   /** Human-friendly template name shown to the user. */
   name: string;
   /** Short description of what the flow does and when to use it. */
@@ -40,7 +40,7 @@ export interface FlowTemplate {
  * presents a small action menu. Pass `customMessages` to override individual
  * outgoing copy entries.
  */
-export function buildWelcomeTemplate(customMessages?: string[]): FlowTemplate {
+function buildWelcomeTemplate(customMessages?: string[]): FlowTemplate {
   return {
     name: 'Boas-vindas Automático',
     description: 'Fluxo de boas-vindas para novos contatos',
@@ -92,7 +92,7 @@ export function buildWelcomeTemplate(customMessages?: string[]): FlowTemplate {
 }
 
 /** Builds the "sales funnel" template used to qualify and convert leads. */
-export function buildSalesTemplate(): FlowTemplate {
+function buildSalesTemplate(): FlowTemplate {
   return {
     name: 'Funil de Vendas',
     description: 'Fluxo para qualificação e conversão de vendas',
@@ -169,7 +169,7 @@ export function buildSalesTemplate(): FlowTemplate {
 }
 
 /** Builds the "support" template that triages questions and complaints. */
-export function buildSupportTemplate(): FlowTemplate {
+function buildSupportTemplate(): FlowTemplate {
   return {
     name: 'Atendimento e Suporte',
     description: 'Fluxo para suporte ao cliente',
@@ -217,7 +217,7 @@ export function buildSupportTemplate(): FlowTemplate {
 }
 
 /** Builds the "scheduling" template that collects and confirms appointment slots. */
-export function buildSchedulingTemplate(): FlowTemplate {
+function buildSchedulingTemplate(): FlowTemplate {
   return {
     name: 'Agendamento Automático',
     description: 'Fluxo para agendamento de horários',
@@ -274,7 +274,7 @@ export function buildSchedulingTemplate(): FlowTemplate {
 }
 
 /** Builds the "lead capture" template that collects name and email from interested contacts. */
-export function buildLeadCaptureTemplate(): FlowTemplate {
+function buildLeadCaptureTemplate(): FlowTemplate {
   return {
     name: 'Captura de Leads',
     description: 'Fluxo para capturar e qualificar leads',

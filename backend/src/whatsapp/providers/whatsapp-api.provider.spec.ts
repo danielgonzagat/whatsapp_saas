@@ -36,7 +36,7 @@ describe('WhatsAppApiProvider', () => {
   const createConfig = (overrides: Record<string, string | undefined> = {}) =>
     ({
       get: (key: string) => overrides[key],
-    }) as ConfigService;
+    }) as never as ConfigService;
 
   beforeEach(() => {
     prisma = {

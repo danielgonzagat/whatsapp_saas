@@ -194,7 +194,7 @@ export async function getWhatsAppScreencastToken(
   _workspaceId: string,
 ): Promise<WhatsAppScreencastTokenResponse> {
   return {
-    token: 'meta-cloud-disabled',
+    token: 'disabled',
     expiresAt: new Date(Date.now() + 60_000).toISOString(),
     workspaceId: _workspaceId,
     requireToken: false,

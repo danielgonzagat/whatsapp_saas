@@ -62,7 +62,7 @@ describe('SiteController', () => {
           prompt_tokens_details: { cached_tokens: 0 },
         },
       }),
-    } as Response);
+    } as never);
 
     const result = await controller.generateSite({ user: { workspaceId: 'ws_1' } } as never, {
       prompt: 'Crie uma landing page',
@@ -104,7 +104,7 @@ describe('SiteController', () => {
           cache_creation_input_tokens: 0,
         },
       }),
-    } as Response);
+    } as never);
 
     const result = await controller.generateSite({ user: { workspaceId: 'ws_1' } } as never, {
       prompt: 'Crie uma landing page',
@@ -153,7 +153,7 @@ describe('SiteController', () => {
     fetchMock.mockResolvedValue({
       ok: false,
       text: async () => 'boom',
-    } as Response);
+    } as never);
 
     await expect(
       controller.generateSite({ user: { workspaceId: 'ws_1' } } as never, { prompt: 'Crie' }),

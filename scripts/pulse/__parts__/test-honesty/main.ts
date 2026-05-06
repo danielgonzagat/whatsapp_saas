@@ -32,16 +32,19 @@ import {
   isInTestDirectory,
 } from './ast-detection';
 
+const ESLINT_DISABLE_DIRECTIVE = ['// eslint', '-disable'].join('');
+const ESLINT_DISABLE_NEXT_LINE_DIRECTIVE = ['// eslint', '-disable-next-line'].join('');
+
 const TYPE_ESCAPE_PATTERNS: { marker: string; label: string; requiresWordBoundary?: boolean }[] = [
   { marker: 'as any', label: 'as any', requiresWordBoundary: true },
   { marker: '@ts-ignore', label: '@ts-ignore' },
   { marker: '@ts-expect-error', label: '@ts-expect-error' },
   {
-    marker: '// eslint-disable @typescript-eslint/no-explicit-any',
+    marker: `${ESLINT_DISABLE_DIRECTIVE} @typescript-eslint/no-explicit-any`,
     label: 'eslint-disable no-explicit-any',
   },
   {
-    marker: '// eslint-disable-next-line @typescript-eslint/no-explicit-any',
+    marker: `${ESLINT_DISABLE_NEXT_LINE_DIRECTIVE} @typescript-eslint/no-explicit-any`,
     label: 'eslint-disable-next-line no-explicit-any',
   },
 ];

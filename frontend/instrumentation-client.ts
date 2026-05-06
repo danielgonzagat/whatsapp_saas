@@ -185,7 +185,7 @@ export function onRouterTransitionStart(
   });
 }
 
-const reactInternals = React as unknown as Record<string, unknown>;
+const reactInternals = React as Record<string, unknown>;
 const newInternals = reactInternals.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
 
 if (newInternals && !reactInternals.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED) {

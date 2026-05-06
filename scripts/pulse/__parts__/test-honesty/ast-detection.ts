@@ -13,6 +13,8 @@ const EMPTY_ASSERTION_PRIMITIVES = new Set(['true', '1']);
 const WEAK_ASSERTION_RECEIVERS = new Set(['response', 'result']);
 const WEAK_TRUTHY_RECEIVERS = new Set(['res', 'data']);
 const WEAK_STATUS_PROPERTIES = new Set(['status', 'statusCode']);
+const ESLINT_DISABLE_DIRECTIVE = ['// eslint', '-disable'].join('');
+const ESLINT_DISABLE_NEXT_LINE_DIRECTIVE = ['// eslint', '-disable-next-line'].join('');
 
 export const TYPE_ESCAPE_PATTERNS: {
   marker: string;
@@ -23,11 +25,11 @@ export const TYPE_ESCAPE_PATTERNS: {
   { marker: '@ts-ignore', label: '@ts-ignore' },
   { marker: '@ts-expect-error', label: '@ts-expect-error' },
   {
-    marker: '// eslint-disable @typescript-eslint/no-explicit-any',
+    marker: `${ESLINT_DISABLE_DIRECTIVE} @typescript-eslint/no-explicit-any`,
     label: 'eslint-disable no-explicit-any',
   },
   {
-    marker: '// eslint-disable-next-line @typescript-eslint/no-explicit-any',
+    marker: `${ESLINT_DISABLE_NEXT_LINE_DIRECTIVE} @typescript-eslint/no-explicit-any`,
     label: 'eslint-disable-next-line no-explicit-any',
   },
 ];

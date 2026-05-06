@@ -335,11 +335,11 @@ describe('ApiKeysService', () => {
 
       expect(result).toEqual(apiKeyRecord);
       const callArg = mockApiKey.update.mock.calls[0][0] as {
-        where: { id: string };
+        where: { id: string; workspaceId: string };
         data: { lastUsedAt: Date };
       };
       expect(callArg.data.lastUsedAt).toBeInstanceOf(Date);
-      expect(callArg.where).toEqual({ id: 'ak-1' });
+      expect(callArg.where).toEqual({ id: 'ak-1', workspaceId: 'ws-1' });
     });
 
     it('não lança exceção se update de lastUsedAt falhar', async () => {

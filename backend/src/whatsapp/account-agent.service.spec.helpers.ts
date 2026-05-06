@@ -1,4 +1,4 @@
-export interface MemoryRecord {
+interface MemoryRecord {
   id?: string;
   workspaceId?: string;
   key?: string;
@@ -9,7 +9,7 @@ export interface MemoryRecord {
   [key: string]: unknown;
 }
 
-export interface ProductRecord {
+interface ProductRecord {
   id?: string;
   workspaceId?: string;
   name?: string;
@@ -18,27 +18,27 @@ export interface ProductRecord {
   [key: string]: unknown;
 }
 
-export interface ExternalLinkRecord {
+interface ExternalLinkRecord {
   id?: string;
   workspaceId?: string;
   [key: string]: unknown;
 }
 
-export interface ApprovalRecord {
-  id?: string;
-  workspaceId?: string;
-  kind?: string;
-  [key: string]: unknown;
-}
-
-export interface InputSessionRecord {
+interface ApprovalRecord {
   id?: string;
   workspaceId?: string;
   kind?: string;
   [key: string]: unknown;
 }
 
-export interface WorkItemRecord {
+interface InputSessionRecord {
+  id?: string;
+  workspaceId?: string;
+  kind?: string;
+  [key: string]: unknown;
+}
+
+interface WorkItemRecord {
   id?: string;
   workspaceId?: string;
   kind?: string;
@@ -139,8 +139,9 @@ export function createMockPrisma(stores: AccountAgentMockStores): MockPrisma {
         .mockImplementation(
           ({ where }: { where: { workspaceId_key: { workspaceId: string; key: string } } }) =>
             Promise.resolve(
-              memoryStore.get(memoryKey(where.workspaceId_key.workspaceId, where.workspaceId_key.key)) ||
-                null,
+              memoryStore.get(
+                memoryKey(where.workspaceId_key.workspaceId, where.workspaceId_key.key),
+              ) || null,
             ),
         ),
       findMany: jest.fn().mockImplementation(

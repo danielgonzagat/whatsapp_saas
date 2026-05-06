@@ -19,7 +19,7 @@ interface ServiceWithLogger {
 }
 
 function getLogger(service: OpsAlertService): MockLogger {
-  return (service as unknown as ServiceWithLogger).logger;
+  return (service as never as ServiceWithLogger).logger;
 }
 
 describe('OpsAlertService', () => {

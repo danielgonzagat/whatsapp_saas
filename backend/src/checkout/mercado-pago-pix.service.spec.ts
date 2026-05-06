@@ -387,5 +387,4 @@ describe('MercadoPagoPixService', () => {
       expect(init.signal).toBeDefined();
     });
   });
-
 });

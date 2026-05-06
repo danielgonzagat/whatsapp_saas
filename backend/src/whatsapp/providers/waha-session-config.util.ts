@@ -8,7 +8,7 @@
 import type { WahaLidMapping, WahaSessionConfigDiagnostics } from './waha-types';
 import { isWahaInboundMessageEvent } from './waha-message-event-name';
 
-export interface WahaWebhookConfig {
+interface WahaWebhookConfig {
   url?: string;
   events?: string[];
   hmac?: { key: string };

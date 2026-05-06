@@ -37,6 +37,7 @@ const THINK_STREAM_BODY = [
   'data: {"type":"content","content":"Estruture uma landing com headline forte, prova social e CTA único."}\n\n',
   'data: {"type":"done","done":true}\n\n',
 ].join('');
+const VISUAL_CHAT_FIXED_TIME_ISO = '2026-01-15T23:30:00.000Z';
 
 async function acceptCookiesIfVisible(page: Page) {
   const acceptCookiesButton = page.getByRole('button', { name: 'Aceitar tudo' });
@@ -75,10 +76,27 @@ test('Kloel chat preserves the new empty and active visual contract', async ({ p
 
   await mockVisualAuthApis(page, auth);
 
-  await page.addInitScript(() => {
+  await page.addInitScript((fixedTimeIso) => {
+    const fixedTimeMs = new Date(fixedTimeIso).valueOf();
+    const OriginalDate = Date;
+
+    class FixedDate extends OriginalDate {
+      constructor(...args: ConstructorParameters<typeof Date>) {
+        super(...(args.length ? args : [fixedTimeMs]));
+      }
+
+      static now() {
+        return fixedTimeMs;
+      }
+    }
+
+    FixedDate.parse = OriginalDate.parse.bind(OriginalDate);
+    FixedDate.UTC = OriginalDate.UTC.bind(OriginalDate);
+
+    globalThis.Date = FixedDate as DateConstructor;
     window.localStorage.removeItem('kloel:conversations');
     window.localStorage.removeItem('kloel:activeConv');
-  });
+  }, VISUAL_CHAT_FIXED_TIME_ISO);
 
   await page.route('**/kloel/threads', async (route) => {
     if (route.request().method() !== 'GET') {

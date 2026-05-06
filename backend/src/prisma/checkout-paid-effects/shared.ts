@@ -16,7 +16,7 @@ export type PaidCheckoutEffectClient = Pick<
 
 type AuditEventClient = Pick<PrismaClient, 'auditLog'>;
 
-export type PaidCheckoutScope = {
+type PaidCheckoutScope = {
   orderId: string;
   workspaceId: string;
 };

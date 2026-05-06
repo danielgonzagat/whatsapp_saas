@@ -25,7 +25,7 @@ describe('WorkspaceGuard', () => {
           getRequest: () => request,
         }) as ReturnType<ExecutionContext['switchToHttp']>,
     };
-    return partial as ExecutionContext;
+    return partial as never as ExecutionContext;
   }
 
   it('permite quando não há workspaceId no token', () => {

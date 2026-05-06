@@ -83,8 +83,8 @@ describe('WhatsAppProviderRegistry', () => {
     };
 
     registry = new WhatsAppProviderRegistry(
-      prisma as unknown as ConstructorParameters<typeof WhatsAppProviderRegistry>[0],
-      whatsappApi as unknown as ConstructorParameters<typeof WhatsAppProviderRegistry>[1],
+      prisma as never as ConstructorParameters<typeof WhatsAppProviderRegistry>[0],
+      whatsappApi as never,
     );
   });
 
@@ -302,9 +302,9 @@ describe('WhatsAppProviderRegistry', () => {
     };
 
     const wahaRegistry = new WhatsAppProviderRegistry(
-      prisma as unknown as ConstructorParameters<typeof WhatsAppProviderRegistry>[0],
-      whatsappApi as unknown as ConstructorParameters<typeof WhatsAppProviderRegistry>[1],
-      wahaProvider as unknown as ConstructorParameters<typeof WhatsAppProviderRegistry>[2],
+      prisma as never as ConstructorParameters<typeof WhatsAppProviderRegistry>[0],
+      whatsappApi as never,
+      wahaProvider as never,
     );
     const result = await wahaRegistry.getSessionStatus('ws-1');
 

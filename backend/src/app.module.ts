@@ -70,6 +70,7 @@ import { GdprModule } from './gdpr/gdpr.module';
 import { GrowthModule } from './growth/growth.module';
 import { I18nModule } from './i18n/i18n.module';
 import { KloelModule } from './kloel/kloel.module';
+import { AuditLogMiddleware } from './kloel/middleware';
 import { KycModule } from './kyc/kyc.module';
 import { MarketingModule } from './marketing/marketing.module';
 import { MarketplaceModule } from './marketplace/marketplace.module';
@@ -294,5 +295,6 @@ export class AppModule implements NestModule {
         'copilot/*path',
         'autopilot/*path',
       );
+    consumer.apply(AuditLogMiddleware).forRoutes('*path');
   }
 }

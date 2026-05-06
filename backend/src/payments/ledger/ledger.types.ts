@@ -63,7 +63,7 @@ export interface CreditAvailableAdjustmentInput {
 }
 
 /** Ledger reference shape. */
-export interface LedgerReference {
+interface LedgerReference {
   /** e.g. 'sale', 'payout', 'chargeback', 'refund', 'adjustment'. */
   type: string;
   /** External id (PaymentIntent id, payout id, dispute id, etc.). */

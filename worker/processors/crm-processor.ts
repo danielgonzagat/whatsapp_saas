@@ -100,12 +100,12 @@ async function checkInactivity(workspaceId: string) {
           lead.phone,
           engine.parseFlowDefinition(
             flow.id,
-            flow.nodes as unknown as Array<{
+            flow.nodes as Array<{
               id: string;
               type: string;
               data?: Record<string, unknown>;
             }>,
-            flow.edges as unknown as Array<{
+            flow.edges as Array<{
               source: string;
               target: string;
               sourceHandle?: string | null;

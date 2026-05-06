@@ -2,9 +2,9 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { AuthenticatedRequest } from '../../../common/interfaces';
 import { PrismaService } from '../../../prisma/prisma.service';
 
-export const U0300__U036F_RE = /[\u0300-\u036f]/g;
-export const A_Z0_9_RE = /[^a-z0-9]+/g;
-export const PATTERN_RE = /^-+|-+$/g;
+const U0300__U036F_RE = /[\u0300-\u036f]/g;
+const A_Z0_9_RE = /[^a-z0-9]+/g;
+const PATTERN_RE = /^-+|-+$/g;
 
 export function safeStr(v: unknown, fb = ''): string {
   return typeof v === 'string'
@@ -87,7 +87,7 @@ export function assertPercentageRange(
   }
 }
 
-export function findSingleAtIndex(email: string): number {
+function findSingleAtIndex(email: string): number {
   const atIndex = email.indexOf('@');
   if (atIndex <= 0) {
     return -1;
@@ -101,7 +101,7 @@ export function findSingleAtIndex(email: string): number {
   return atIndex;
 }
 
-export function isValidEmailDomain(domain: string): boolean {
+function isValidEmailDomain(domain: string): boolean {
   if (!domain || domain.startsWith('.') || domain.endsWith('.')) {
     return false;
   }

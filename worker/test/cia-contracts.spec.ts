@@ -172,7 +172,7 @@ describe('cia-contracts', () => {
       summary: '',
     };
 
-    const report = buildCiaGuaranteeReport(state, batch as unknown as CiaDecisionBatch, 5);
+    const report = buildCiaGuaranteeReport(state, batch as CiaDecisionBatch, 5);
 
     expect(report.guaranteed).toBe(false);
     expect(() => assertCiaGuarantees(report)).toThrow(/cia_contract_violation/);
@@ -203,11 +203,7 @@ describe('cia-contracts', () => {
       summary: 'Vou agir em um fantasma.',
     };
 
-    const exhaustionReport = buildCiaExhaustionReport(
-      state,
-      batch as unknown as CiaDecisionBatch,
-      5,
-    );
+    const exhaustionReport = buildCiaExhaustionReport(state, batch as CiaDecisionBatch, 5);
 
     expect(exhaustionReport.exhaustive).toBe(false);
     expect(exhaustionReport.orphanSelectedCount).toBe(1);

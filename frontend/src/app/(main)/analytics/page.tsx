@@ -2044,7 +2044,7 @@ function ExportacoesTab({
   router: ReturnType<typeof useRouter>;
   setActive: React.Dispatch<React.SetStateAction<string>>;
 }) {
-  const reportCards = [
+  const reportCards = Object.freeze([
     { key: 'vendas', label: 'Vendas', desc: 'Resumo completo de pedidos e receita do período.' },
     {
       key: 'assinaturas',
@@ -2067,7 +2067,7 @@ function ExportacoesTab({
       label: 'Satisfação',
       desc: 'NPS, comentários e visão de experiência do cliente.',
     },
-  ];
+  ]);
 
   return (
     <div

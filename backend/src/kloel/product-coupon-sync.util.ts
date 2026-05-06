@@ -96,6 +96,7 @@ export async function syncWorkspaceCheckoutCouponForProduct(
       await prisma.checkoutCoupon.delete({
         where: {
           id: existingCheckoutCoupon.id,
+          workspaceId,
         },
       });
     }

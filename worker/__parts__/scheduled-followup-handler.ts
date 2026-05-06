@@ -3,9 +3,29 @@ import { prisma } from '../db';
 import { buildQueueJobId } from '../job-id';
 import { WorkerLogger } from '../logger';
 import { dispatchOutboundThroughFlow } from '../providers/outbound-dispatcher';
-import { sendFallbackEmail } from './fallback-email.companion';
+import { sendFallbackEmail } from '../__companions__/fallback-email.companion';
 
 const log = new WorkerLogger('scheduled-followup');
+
+type AutopilotEventDelegate = {
+  updateMany: (args: unknown) => Promise<unknown>;
+};
+
+function getAutopilotEventDelegate(candidate: unknown): AutopilotEventDelegate | null {
+  if (!candidate || typeof candidate !== 'object' || !('autopilotEvent' in candidate)) {
+    return null;
+  }
+
+  const delegate = candidate.autopilotEvent;
+  if (!delegate || typeof delegate !== 'object' || !('updateMany' in delegate)) {
+    return null;
+  }
+
+  const updateMany = delegate.updateMany;
+  return typeof updateMany === 'function'
+    ? { updateMany: (args: unknown) => Promise.resolve(updateMany(args)) }
+    : null;
+}
 
 export async function handleScheduledFollowup(job: Job) {
   const { workspaceId, contactId, phone, message, scheduledFor } = job.data ?? {};
@@ -99,11 +119,9 @@ export async function handleScheduledFollowup(job: Job) {
 
     // Update autopilot event status
     try {
-      const prismaClient = prisma as unknown as Record<string, unknown>;
-      if (prismaClient.autopilotEvent) {
-        await (
-          prismaClient.autopilotEvent as { updateMany: (args: unknown) => Promise<unknown> }
-        ).updateMany({
+      const autopilotEvent = getAutopilotEventDelegate(prisma);
+      if (autopilotEvent) {
+        await autopilotEvent.updateMany({
           where: {
             workspaceId,
             contactId: contactId || undefined,

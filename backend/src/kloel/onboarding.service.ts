@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import { forEachSequential } from '../common/async-sequence';
+import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
 import { PrismaService } from '../prisma/prisma.service';
 
 /**
@@ -299,10 +300,10 @@ export class OnboardingService {
       create: {
         workspaceId,
         key: 'onboarding_state',
-        value: state as unknown as Prisma.InputJsonValue,
+        value: toPrismaJsonValue(state),
         category: 'system',
       },
-      update: { value: state as unknown as Prisma.InputJsonValue },
+      update: { value: toPrismaJsonValue(state) },
     });
   }
 

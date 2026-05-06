@@ -41,14 +41,14 @@ function makeContext(cacheKey: string | undefined) {
       getResponse: () => response,
     }),
     getHandler: () => ({}),
-  } as unknown as Parameters<IdempotencyInterceptor['intercept']>[0];
+  } as never as Parameters<IdempotencyInterceptor['intercept']>[0];
 }
 
 describe('IdempotencyInterceptor — invariant I1 (idempotency correctness)', () => {
   it('passes through unchanged when the request has no cache key', async () => {
     const redis = makeFakeRedis();
     const interceptor = new IdempotencyInterceptor(
-      redis as unknown as ConstructorParameters<typeof IdempotencyInterceptor>[0],
+      redis as never as ConstructorParameters<typeof IdempotencyInterceptor>[0],
     );
     const context = makeContext(undefined);
     const handler = { handle: () => of({ value: 'passthrough' }) };
@@ -64,7 +64,7 @@ describe('IdempotencyInterceptor — invariant I1 (idempotency correctness)', ()
     // response was sent before Redis stored the body, opening a race window.
     const redis = makeFakeRedis({ setDelayMs: 100 });
     const interceptor = new IdempotencyInterceptor(
-      redis as unknown as ConstructorParameters<typeof IdempotencyInterceptor>[0],
+      redis as never as ConstructorParameters<typeof IdempotencyInterceptor>[0],
     );
     const context = makeContext('idempotency:xyz');
     const handler = { handle: () => of({ id: 1 }) };
@@ -87,7 +87,7 @@ describe('IdempotencyInterceptor — invariant I1 (idempotency correctness)', ()
   it('cleans up the placeholder key when the handler throws', async () => {
     const redis = makeFakeRedis();
     const interceptor = new IdempotencyInterceptor(
-      redis as unknown as ConstructorParameters<typeof IdempotencyInterceptor>[0],
+      redis as never as ConstructorParameters<typeof IdempotencyInterceptor>[0],
     );
     const context = makeContext('idempotency:err');
     const handler = {
@@ -109,7 +109,7 @@ describe('IdempotencyInterceptor — invariant I1 (idempotency correctness)', ()
     // but should not break the user's request.
     const redis = makeFakeRedis({ setShouldThrow: true });
     const interceptor = new IdempotencyInterceptor(
-      redis as unknown as ConstructorParameters<typeof IdempotencyInterceptor>[0],
+      redis as never as ConstructorParameters<typeof IdempotencyInterceptor>[0],
     );
     const context = makeContext('idempotency:degraded');
     const handler = { handle: () => of({ ok: true }) };

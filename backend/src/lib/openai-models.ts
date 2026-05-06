@@ -1,7 +1,7 @@
 import { ConfigService } from '@nestjs/config';
 
 /** Backend open ai model role type. */
-export type BackendOpenAIModelRole =
+type BackendOpenAIModelRole =
   | 'brain'
   | 'brain_fallback'
   | 'writer'

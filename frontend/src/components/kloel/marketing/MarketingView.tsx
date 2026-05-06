@@ -2791,14 +2791,14 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
     [channelDataMap],
   );
 
-  const TABS = [
+  const TABS = Object.freeze([
     { id: 'conversas', label: 'Conversas', icon: IC.zap },
     { id: 'whatsapp', label: 'WhatsApp', icon: IC.wa },
     { id: 'instagram', label: 'Instagram', icon: IC.ig, soon: true },
     { id: 'tiktok', label: 'TikTok', icon: IC.tt, soon: true },
     { id: 'facebook', label: 'Facebook', icon: IC.fb, soon: true },
     { id: 'email', label: 'Email', icon: IC.em, soon: true },
-  ];
+  ]);
 
   const switchTab = useCallback(
     (id: string) => {

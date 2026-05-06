@@ -19,10 +19,10 @@ class MissingWahaProviderError extends Error {
 }
 
 /** Whats app provider type type. */
-export type WhatsAppProviderType = ResolvedWhatsAppProvider;
+type WhatsAppProviderType = ResolvedWhatsAppProvider;
 
 /** Send message options shape. */
-export interface SendMessageOptions {
+interface SendMessageOptions {
   /** Media url property. */
   mediaUrl?: string;
   /** Media type property. */
@@ -34,7 +34,7 @@ export interface SendMessageOptions {
 }
 
 /** Send result shape. */
-export interface SendResult {
+interface SendResult {
   /** Success property. */
   success: boolean;
   /** Message id property. */

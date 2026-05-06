@@ -1,9 +1,7 @@
 import { Prisma } from '@prisma/client';
 import { v4 as uuid } from 'uuid';
-import {
-  executeNode,
-  type FlowNodeExecutorDeps,
-} from './__companions__/flow-node-executor.companion';
+import { executeNode } from './__parts__/flow-node-executor';
+import type { FlowNodeExecutorDeps } from './__parts__/flow-node-executor.types';
 import { sendMessage as sendMessageCompanion } from './__companions__/flow-message-sender.companion';
 import { ContextStore } from './context-store';
 import { prisma } from './db';

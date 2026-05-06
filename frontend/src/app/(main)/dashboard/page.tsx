@@ -47,7 +47,7 @@ function DashboardPostPaymentPanel() {
   const notificationTotal =
     (postPayment?.notifications.purchaseEmailsSent || 0) +
     (postPayment?.notifications.whatsappEnqueued || 0);
-  const cards = [
+  const cards = Object.freeze([
     {
       label: 'Pagamentos aprovados',
       value: formatInteger(postPayment?.payments.approved || 0),
@@ -72,7 +72,7 @@ function DashboardPostPaymentPanel() {
       meta: `${formatInteger(postPayment?.affiliateCommissions.created || 0)} criada${postPayment?.affiliateCommissions.created === 1 ? '' : 's'}`,
       tone: KLOEL_THEME.warning,
     },
-  ];
+  ]);
 
   return (
     <section style={{ maxWidth: 1240, margin: '0 auto 40px', padding: '0 24px' }}>

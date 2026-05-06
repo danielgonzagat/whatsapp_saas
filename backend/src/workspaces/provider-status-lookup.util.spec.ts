@@ -14,10 +14,7 @@ describe('extractRawStatus', () => {
     const session = { rawStatus: 'CONNECTED', status: 'DISCONNECTED' };
     const settings = { connectionStatus: 'FAILED' };
     expect(
-      extractRawStatus(
-        session as unknown as Record<string, unknown>,
-        settings as unknown as Record<string, unknown>,
-      ),
+      extractRawStatus(session as Record<string, unknown>, settings as Record<string, unknown>),
     ).toBe('CONNECTED');
   });
 
@@ -25,10 +22,7 @@ describe('extractRawStatus', () => {
     const session = { rawStatus: '', status: 'WORKING' };
     const settings = { connectionStatus: '' };
     expect(
-      extractRawStatus(
-        session as unknown as Record<string, unknown>,
-        settings as unknown as Record<string, unknown>,
-      ),
+      extractRawStatus(session as Record<string, unknown>, settings as Record<string, unknown>),
     ).toBe('WORKING');
   });
 
@@ -36,10 +30,7 @@ describe('extractRawStatus', () => {
     const session = { rawStatus: '', status: '' };
     const settings = { connectionStatus: 'connected' };
     expect(
-      extractRawStatus(
-        session as unknown as Record<string, unknown>,
-        settings as unknown as Record<string, unknown>,
-      ),
+      extractRawStatus(session as Record<string, unknown>, settings as Record<string, unknown>),
     ).toBe('CONNECTED');
   });
 
@@ -47,10 +38,7 @@ describe('extractRawStatus', () => {
     const session = { rawStatus: '', status: '' };
     const settings = { connectionStatus: '' };
     expect(
-      extractRawStatus(
-        session as unknown as Record<string, unknown>,
-        settings as unknown as Record<string, unknown>,
-      ),
+      extractRawStatus(session as Record<string, unknown>, settings as Record<string, unknown>),
     ).toBe('');
   });
 });
@@ -58,14 +46,12 @@ describe('extractRawStatus', () => {
 describe('extractPhoneNumberId', () => {
   it('returns null for non-meta-cloud providers', () => {
     const session = { phoneNumberId: '123456789' };
-    expect(
-      extractPhoneNumberId('whatsapp-api', session as unknown as Record<string, unknown>),
-    ).toBeNull();
+    expect(extractPhoneNumberId('whatsapp-api', session as Record<string, unknown>)).toBeNull();
   });
 
   it('returns phoneNumberId for meta-cloud', () => {
     const session = { phoneNumberId: ' 123456789 ' };
-    expect(extractPhoneNumberId('meta-cloud', session as unknown as Record<string, unknown>)).toBe(
+    expect(extractPhoneNumberId('meta-cloud', session as Record<string, unknown>)).toBe(
       '123456789',
     );
   });

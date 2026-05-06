@@ -67,11 +67,11 @@ describe('KycService.submitKyc', () => {
       },
     });
     expect(prisma.agent.update).toHaveBeenNthCalledWith(1, {
-      where: { id: 'agent_1' },
+      where: { id: 'agent_1', workspaceId: 'ws_1' },
       data: { kycStatus: 'submitted', kycSubmittedAt: expect.any(Date) },
     });
     expect(prisma.agent.update).toHaveBeenNthCalledWith(2, {
-      where: { id: 'agent_1' },
+      where: { id: 'agent_1', workspaceId: 'ws_1' },
       data: { kycStatus: 'approved', kycApprovedAt: expect.any(Date) },
     });
     expect(result).toEqual({
@@ -367,7 +367,7 @@ describe('KycService.submitKyc', () => {
     expect(result.approved).toBe(true);
     expect(result.percentage).toBe(100);
     expect(prisma.agent.update).toHaveBeenCalledWith({
-      where: { id: 'agent_1' },
+      where: { id: 'agent_1', workspaceId: 'ws_1' },
       data: expect.objectContaining({
         kycStatus: 'approved',
         kycApprovedAt: expect.anything(),

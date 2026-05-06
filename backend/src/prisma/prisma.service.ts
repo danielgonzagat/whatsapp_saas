@@ -277,7 +277,7 @@ export class PrismaService
     if (existingEnrollment) {
       if (existingEnrollment.status !== 'active') {
         await tx.memberEnrollment.update({
-          where: { id: existingEnrollment.id },
+          where: { id: existingEnrollment.id, workspaceId },
           data: { status: 'active' },
         });
         await this.appendCheckoutEventIfMissing(tx, {
@@ -309,13 +309,13 @@ export class PrismaService
     });
 
     const enrollmentAgg = await tx.memberEnrollment.aggregate({
-      where: { memberAreaId: memberArea.id },
+      where: { workspaceId, memberAreaId: memberArea.id },
       _count: { _all: true },
       _avg: { progress: true },
     });
 
     await tx.memberArea.update({
-      where: { id: memberArea.id },
+      where: { id: memberArea.id, workspaceId },
       data: {
         totalStudents: enrollmentAgg._count._all,
         avgCompletion: Number(enrollmentAgg._avg.progress || 0),

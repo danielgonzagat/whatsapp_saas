@@ -25,7 +25,7 @@ export const OL__A__BOM_DIA_BOA_TARD_RE = /(ol[áa]|bom dia|boa tarde|boa noite|
  * cheapest, most reliable defense against ReDoS — even for linear-time regexes
  * like the single-codepoint `Extended_Pictographic` test below.
  */
-export const MAX_REGEX_INPUT_LEN = 4_096;
+const MAX_REGEX_INPUT_LEN = 4_096;
 
 /** Truncates user-supplied input before any regex scan to neutralize ReDoS surface. */
 export function safeForRegex(input: string | null | undefined): string {

@@ -153,7 +153,7 @@ export function createCertification(): PulseCertification {
     unavailableChecks: [],
     unsupportedStacks: [],
     criticalFailures: [],
-    gates: {} as PulseCertification['gates'],
+    gates: {},
     truthSummary: {
       totalPages: 2,
       userFacingPages: 2,

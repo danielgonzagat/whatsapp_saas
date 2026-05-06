@@ -76,7 +76,7 @@ export class ScrapersService {
   /** Find one. */
   async findOne(workspaceId: string, id: string) {
     const job = await this.prisma.scrapingJob.findUnique({
-      where: { id },
+      where: { id, workspaceId },
       include: { leads: true },
     });
 

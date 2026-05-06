@@ -48,7 +48,7 @@ describe('checkout-social-lead-enrichment', () => {
     );
 
     expect(mockPrisma.checkoutSocialLead.updateMany).toHaveBeenCalledWith({
-      where: { id: leadId },
+      where: { id: leadId, workspaceId },
       data: {
         enrichmentStatus: CheckoutSocialLeadEnrichmentStatus.FAILED,
       },
@@ -110,7 +110,7 @@ describe('checkout-social-lead-enrichment', () => {
 
     expect(mockPrisma.checkoutSocialLead.update).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { id: leadId },
+        where: { id: leadId, workspaceId },
         data: expect.objectContaining({
           enrichmentStatus: CheckoutSocialLeadEnrichmentStatus.COMPLETED,
           status: CheckoutSocialLeadStatus.ENRICHED,
@@ -134,7 +134,7 @@ describe('checkout-social-lead-enrichment', () => {
     await processCheckoutSocialLeadEnrichment(leadId);
 
     expect(mockPrisma.checkoutSocialLead.updateMany).toHaveBeenCalledWith({
-      where: { id: leadId },
+      where: { id: leadId, workspaceId },
       data: { enrichmentStatus: CheckoutSocialLeadEnrichmentStatus.SKIPPED },
     });
   });

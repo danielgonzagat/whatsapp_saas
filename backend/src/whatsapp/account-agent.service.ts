@@ -36,26 +36,14 @@ import { AgentEventsService } from './agent-events.service';
 import {
   detectCatalogGapExt,
   respondToInputSessionExt,
-  materializeAccountCapabilityGapsExt,
 } from './__companions__/account-agent.service.companion';
-
-type WorkItemUpsertInput = {
-  kind: string;
-  entityType: string;
-  entityId?: string | null;
-  state: string;
-  title: string;
-  summary?: string | null;
-  priority: number;
-  utility: number;
-  requiresApproval: boolean;
-  requiresInput: boolean;
-  approvalState?: string | null;
-  inputState?: string | null;
-  blockedBy?: Record<string, unknown> | null;
-  evidence?: Record<string, unknown> | null;
-  metadata?: Record<string, unknown> | null;
-};
+import {
+  listAccountWorkItems,
+  materializeAccountCapabilityGaps,
+  upsertAccountWorkItem,
+  upsertApprovalRequest,
+  upsertInputCollectionSession,
+} from './account-agent.work-items';
 
 @Injectable()
 export class AccountAgentService {
@@ -79,39 +67,43 @@ export class AccountAgentService {
       input,
     );
     if (result.approval) {
-      await this.upsertAccountWorkItem(input.workspaceId, {
-        kind: 'catalog_gap_detected',
-        entityType: 'product',
-        entityId: result.approval.normalizedProductName,
-        state:
-          result.approval.status === 'REJECTED'
-            ? 'BLOCKED'
-            : result.approval.status === 'COMPLETED'
-              ? 'COMPLETED'
-              : 'WAITING_APPROVAL',
-        title: `Criar produto ${result.approval.requestedProductName}`,
-        summary: result.approval.operatorPrompt,
-        priority: 95,
-        utility: 95,
-        requiresApproval: true,
-        requiresInput: result.approval.status === 'APPROVED' && !!result.approval.inputSessionId,
-        approvalState: result.approval.status,
-        inputState: result.approval.inputSessionId ? 'OPEN' : null,
-        blockedBy:
-          result.approval.status === 'REJECTED'
-            ? { reason: 'operator_rejected_product_creation', approvalId: result.approval.id }
-            : null,
-        evidence: {
-          approvalId: result.approval.id,
-          requestedProductName: result.approval.requestedProductName,
-          contactId: result.approval.contactId,
-          phone: result.approval.phone,
+      await upsertAccountWorkItem(
+        { prisma: this.prisma, agentEvents: this.agentEvents },
+        input.workspaceId,
+        {
+          kind: 'catalog_gap_detected',
+          entityType: 'product',
+          entityId: result.approval.normalizedProductName,
+          state:
+            result.approval.status === 'REJECTED'
+              ? 'BLOCKED'
+              : result.approval.status === 'COMPLETED'
+                ? 'COMPLETED'
+                : 'WAITING_APPROVAL',
+          title: `Criar produto ${result.approval.requestedProductName}`,
+          summary: result.approval.operatorPrompt,
+          priority: 95,
+          utility: 95,
+          requiresApproval: true,
+          requiresInput: result.approval.status === 'APPROVED' && !!result.approval.inputSessionId,
+          approvalState: result.approval.status,
+          inputState: result.approval.inputSessionId ? 'OPEN' : null,
+          blockedBy:
+            result.approval.status === 'REJECTED'
+              ? { reason: 'operator_rejected_product_creation', approvalId: result.approval.id }
+              : null,
+          evidence: {
+            approvalId: result.approval.id,
+            requestedProductName: result.approval.requestedProductName,
+            contactId: result.approval.contactId,
+            phone: result.approval.phone,
+          },
+          metadata: {
+            source: result.approval.source,
+            conversationId: result.approval.conversationId,
+          },
         },
-        metadata: {
-          source: result.approval.source,
-          conversationId: result.approval.conversationId,
-        },
-      });
+      );
     }
     return result;
   }
@@ -190,16 +182,22 @@ export class AccountAgentService {
   }
 
   async getWorkItems(workspaceId: string) {
-    await this.materializeAccountCapabilityGaps(workspaceId);
-    return this.listAccountWorkItems(workspaceId);
+    await materializeAccountCapabilityGaps(
+      { prisma: this.prisma, agentEvents: this.agentEvents },
+      workspaceId,
+    );
+    return listAccountWorkItems({ prisma: this.prisma }, workspaceId);
   }
 
   async getRuntime(workspaceId: string) {
-    await this.materializeAccountCapabilityGaps(workspaceId);
+    await materializeAccountCapabilityGaps(
+      { prisma: this.prisma, agentEvents: this.agentEvents },
+      workspaceId,
+    );
     const [approvals, inputSessions, workItems] = await Promise.all([
       this.listApprovals(workspaceId),
       this.listInputSessions(workspaceId),
-      this.listAccountWorkItems(workspaceId),
+      listAccountWorkItems({ prisma: this.prisma }, workspaceId),
     ]);
     const oa = approvals.filter((a) => a.status === 'OPEN');
     const pi = inputSessions.filter((a) => a.status !== 'COMPLETED');
@@ -256,29 +254,33 @@ export class AccountAgentService {
         },
       },
     });
-    await this.upsertApprovalRequest(workspaceId, next);
-    await this.upsertInputCollectionSession(workspaceId, session);
-    await this.upsertAccountWorkItem(workspaceId, {
-      kind: 'catalog_gap_detected',
-      entityType: 'product',
-      entityId: approval.normalizedProductName,
-      state: 'WAITING_INPUT',
-      title: `Criar produto ${approval.requestedProductName}`,
-      summary: approval.operatorPrompt,
-      priority: 95,
-      utility: 95,
-      requiresApproval: true,
-      requiresInput: true,
-      approvalState: next.status,
-      inputState: session.status,
-      blockedBy: null,
-      evidence: { approvalId, inputSessionId: session.id },
-      metadata: {
-        conversationId: approval.conversationId,
-        contactId: approval.contactId,
-        phone: approval.phone,
+    await upsertApprovalRequest({ prisma: this.prisma }, workspaceId, next);
+    await upsertInputCollectionSession({ prisma: this.prisma }, workspaceId, session);
+    await upsertAccountWorkItem(
+      { prisma: this.prisma, agentEvents: this.agentEvents },
+      workspaceId,
+      {
+        kind: 'catalog_gap_detected',
+        entityType: 'product',
+        entityId: approval.normalizedProductName,
+        state: 'WAITING_INPUT',
+        title: `Criar produto ${approval.requestedProductName}`,
+        summary: approval.operatorPrompt,
+        priority: 95,
+        utility: 95,
+        requiresApproval: true,
+        requiresInput: true,
+        approvalState: next.status,
+        inputState: session.status,
+        blockedBy: null,
+        evidence: { approvalId, inputSessionId: session.id },
+        metadata: {
+          conversationId: approval.conversationId,
+          contactId: approval.contactId,
+          phone: approval.phone,
+        },
       },
-    });
+    );
     const prompt = getPromptForStage(session.status, session.productName);
     await this.agentEvents.publish({
       type: 'prompt',
@@ -305,28 +307,32 @@ export class AccountAgentService {
         metadata: { ...(asRecord(record.metadata) ?? {}), status: next.status },
       },
     });
-    await this.upsertApprovalRequest(workspaceId, next);
-    await this.upsertAccountWorkItem(workspaceId, {
-      kind: 'catalog_gap_detected',
-      entityType: 'product',
-      entityId: approval.normalizedProductName,
-      state: 'BLOCKED',
-      title: `Criar produto ${approval.requestedProductName}`,
-      summary: approval.operatorPrompt,
-      priority: 95,
-      utility: 0,
-      requiresApproval: true,
-      requiresInput: false,
-      approvalState: next.status,
-      inputState: null,
-      blockedBy: { reason: 'operator_rejected_product_creation', approvalId: approval.id },
-      evidence: { approvalId: approval.id },
-      metadata: {
-        conversationId: approval.conversationId,
-        contactId: approval.contactId,
-        phone: approval.phone,
+    await upsertApprovalRequest({ prisma: this.prisma }, workspaceId, next);
+    await upsertAccountWorkItem(
+      { prisma: this.prisma, agentEvents: this.agentEvents },
+      workspaceId,
+      {
+        kind: 'catalog_gap_detected',
+        entityType: 'product',
+        entityId: approval.normalizedProductName,
+        state: 'BLOCKED',
+        title: `Criar produto ${approval.requestedProductName}`,
+        summary: approval.operatorPrompt,
+        priority: 95,
+        utility: 0,
+        requiresApproval: true,
+        requiresInput: false,
+        approvalState: next.status,
+        inputState: null,
+        blockedBy: { reason: 'operator_rejected_product_creation', approvalId: approval.id },
+        evidence: { approvalId: approval.id },
+        metadata: {
+          conversationId: approval.conversationId,
+          contactId: approval.contactId,
+          phone: approval.phone,
+        },
       },
-    });
+    );
     await this.agentEvents.publish({
       type: 'status',
       workspaceId,
@@ -447,7 +453,7 @@ export class AccountAgentService {
         }),
       },
     });
-    await this.upsertInputCollectionSession(workspaceId, session);
+    await upsertInputCollectionSession({ prisma: this.prisma }, workspaceId, session);
     return session;
   }
 
@@ -470,7 +476,7 @@ export class AccountAgentService {
         metadata: { ...(asRecord(record.metadata) ?? {}), status: next.status, productId },
       },
     });
-    await this.upsertApprovalRequest(workspaceId, next);
+    await upsertApprovalRequest({ prisma: this.prisma }, workspaceId, next);
   }
 
   private async enqueueContactResumption(workspaceId: string, session: AccountInputSessionPayload) {
@@ -510,201 +516,6 @@ export class AccountAgentService {
         tags: { type: 'whatsapp_alert', operation: 'enqueue_scan_contact' },
         extra: { workspaceId, contactId: session.contactId, phone: session.phone },
         level: 'warning',
-      });
-    }
-  }
-
-  private async listAccountWorkItems(workspaceId: string) {
-    return this.prisma.agentWorkItem.findMany({
-      where: { workspaceId },
-      orderBy: [{ priority: 'desc' }, { updatedAt: 'desc' }],
-      take: 100,
-      select: {
-        id: true,
-        workspaceId: true,
-        kind: true,
-        entityType: true,
-        entityId: true,
-        state: true,
-        owner: true,
-        title: true,
-        summary: true,
-        priority: true,
-        utility: true,
-        eligibleAt: true,
-        requiresApproval: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    });
-  }
-
-  private async materializeAccountCapabilityGaps(workspaceId: string) {
-    return materializeAccountCapabilityGapsExt(
-      { prisma: this.prisma, agentEvents: this.agentEvents },
-      workspaceId,
-    );
-  }
-
-  private async upsertApprovalRequest(workspaceId: string, approval: AccountApprovalPayload) {
-    return this.prisma.approvalRequest.upsert({
-      where: { id: approval.id },
-      create: {
-        id: approval.id,
-        workspaceId,
-        kind: approval.kind,
-        scope: 'account',
-        entityType: 'product',
-        entityId: approval.normalizedProductName,
-        state: approval.status,
-        title: `Criar produto ${approval.requestedProductName}`,
-        prompt: approval.operatorPrompt,
-        payload: this.toJson(approval),
-        respondedAt:
-          approval.status === 'APPROVED' ||
-          approval.status === 'REJECTED' ||
-          approval.status === 'COMPLETED'
-            ? new Date(approval.lastDetectedAt)
-            : undefined,
-      },
-      update: {
-        state: approval.status,
-        prompt: approval.operatorPrompt,
-        payload: this.toJson(approval),
-        respondedAt:
-          approval.status === 'APPROVED' ||
-          approval.status === 'REJECTED' ||
-          approval.status === 'COMPLETED'
-            ? new Date(approval.lastDetectedAt)
-            : null,
-      },
-    });
-  }
-
-  private async upsertInputCollectionSession(
-    workspaceId: string,
-    session: AccountInputSessionPayload,
-  ) {
-    return this.prisma.inputCollectionSession.upsert({
-      where: { id: session.id },
-      create: {
-        id: session.id,
-        workspaceId,
-        kind: session.kind,
-        state: session.status,
-        entityType: 'product',
-        entityId: session.normalizedProductName,
-        prompt: getPromptForStage(session.status, session.productName),
-        answers: this.toJson(session.answers || {}),
-        payload: this.toJson(session),
-        completedAt: session.completedAt ? new Date(session.completedAt) : undefined,
-      },
-      update: {
-        state: session.status,
-        prompt: getPromptForStage(session.status, session.productName),
-        answers: this.toJson(session.answers || {}),
-        payload: this.toJson(session),
-        completedAt: session.completedAt ? new Date(session.completedAt) : null,
-      },
-    });
-  }
-
-  private async findPreviousWorkItem(workspaceId: string, id: string) {
-    return this.prisma.agentWorkItem.findFirst({
-      where: { id, workspaceId },
-      select: {
-        id: true,
-        state: true,
-        title: true,
-        summary: true,
-        priority: true,
-        utility: true,
-        metadata: true,
-      },
-    });
-  }
-
-  private buildWorkItemUpdateData(
-    input: WorkItemUpsertInput,
-    missingValue: Prisma.InputJsonValue | null | undefined,
-  ) {
-    return {
-      state: input.state,
-      owner: input.state === 'BLOCKED' ? 'RULES' : 'AGENT',
-      title: input.title,
-      summary: input.summary || null,
-      priority: input.priority,
-      utility: input.utility,
-      blockedBy: input.blockedBy ? this.toJson(input.blockedBy) : missingValue,
-      requiresApproval: input.requiresApproval,
-      requiresInput: input.requiresInput,
-      approvalState: input.approvalState || null,
-      inputState: input.inputState || null,
-      evidence: input.evidence ? this.toJson(input.evidence) : missingValue,
-      metadata: input.metadata ? this.toJson(input.metadata) : missingValue,
-    };
-  }
-
-  private isWorkItemChanged(
-    prev: {
-      state: string;
-      title: string;
-      summary: string | null;
-      priority: number;
-      utility: number;
-    } | null,
-    input: WorkItemUpsertInput,
-  ): boolean {
-    if (!prev) return true;
-    return (
-      prev.state !== input.state ||
-      prev.title !== input.title ||
-      String(prev.summary || '') !== String(input.summary || '') ||
-      Number(prev.priority || 0) !== Number(input.priority || 0) ||
-      Number(prev.utility || 0) !== Number(input.utility || 0)
-    );
-  }
-
-  private async upsertAccountWorkItem(workspaceId: string, input: WorkItemUpsertInput) {
-    const entityKey = String(input.entityId || 'global');
-    const id = `${workspaceId}:${input.kind}:${input.entityType}:${entityKey}`;
-    const previous = await this.findPreviousWorkItem(workspaceId, id);
-    const updateData = this.buildWorkItemUpdateData(input, null);
-    const createData = {
-      id,
-      workspaceId,
-      kind: input.kind,
-      entityType: input.entityType,
-      entityId: input.entityId || null,
-      ...this.buildWorkItemUpdateData(input, undefined),
-    };
-    await this.prisma.agentWorkItem.upsert({
-      where: { id },
-      update: updateData,
-      create: createData,
-    });
-    if (this.isWorkItemChanged(previous, input)) {
-      await this.agentEvents.publish({
-        type: 'account',
-        workspaceId,
-        phase: previous ? 'account_work_item_updated' : 'account_work_item_created',
-        persistent: input.state === 'BLOCKED',
-        message: previous
-          ? `Atualizei ${input.title} para ${input.state}.`
-          : `Materializei ${input.title} no universo operacional da conta.`,
-        meta: {
-          workItemId: id,
-          kind: input.kind,
-          entityType: input.entityType,
-          entityId: input.entityId || null,
-          state: input.state,
-          previousState: previous?.state || null,
-          priority: input.priority,
-          utility: input.utility,
-          requiresApproval: input.requiresApproval,
-          requiresInput: input.requiresInput,
-          capabilityCode: input.metadata?.capabilityCode || null,
-        },
       });
     }
   }

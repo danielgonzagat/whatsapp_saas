@@ -92,7 +92,7 @@ export function applyCatchupEnvDefaults(): void {
 }
 
 /** Bundle of fresh catchup mocks ready to be wired into the service constructor. */
-export type CatchupMocks = {
+type CatchupMocks = {
   prisma: CatchupPrismaMock;
   providerRegistry: CatchupProviderRegistryMock;
   inboundProcessor: CatchupInboundProcessorMock;

@@ -137,7 +137,7 @@ const FONT = {
   mono: "'JetBrains Mono', monospace",
 };
 
-const MONTH_LABELS = [
+const MONTH_LABELS = Object.freeze([
   'jan',
   'feb',
   'mar',
@@ -150,7 +150,7 @@ const MONTH_LABELS = [
   'oct',
   'nov',
   'dec',
-] as const;
+] as const);
 
 /* ═══════════════════════════════════════════════
    INLINE SVG ICONS — extracted into ParceriasView.icons.tsx
@@ -951,7 +951,7 @@ function AffiliateDetailModal({
   const totalRevenue = perfData?.totalRevenue ?? a.revenue ?? 0;
   const commission = perfData?.commission ?? a.commission ?? 0;
 
-  const statCards = [
+  const statCards = Object.freeze([
     { label: 'Vendas', value: totalSales, icon: IC.box, color: C.text },
     { label: 'Comissao', value: `${commission}%`, icon: IC.dollar, color: C.ember },
     {
@@ -966,7 +966,7 @@ function AffiliateDetailModal({
       icon: IC.star,
       color: (a.temperature || 0) > 70 ? '#10B981' : '#F59E0B',
     },
-  ];
+  ]);
 
   // Performance chart — use real data from performance endpoint or fall back to empty
   const rawChartData: number[] =

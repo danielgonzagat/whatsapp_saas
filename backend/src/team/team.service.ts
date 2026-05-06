@@ -70,7 +70,7 @@ export class TeamService {
     if (existingInvite) {
       // Renew invite? Or fail? Let's renew/update.
       // Actually, for simplicity, let's delete old and create new or just update.
-      await this.prisma.invitation.delete({ where: { id: existingInvite.id } });
+      await this.prisma.invitation.delete({ where: { id: existingInvite.id, workspaceId } });
     }
 
     // 3. Create Invite
@@ -91,7 +91,7 @@ export class TeamService {
     // 4. Send invite email
     const inviter = inviterId
       ? await this.prisma.agent.findUnique({
-          where: { id: inviterId },
+          where: { id: inviterId, workspaceId },
           select: { name: true },
         })
       : null;
@@ -113,7 +113,7 @@ export class TeamService {
   /** Accept invite. */
   async acceptInvite(token: string, name: string, password: string) {
     const invite = await this.prisma.invitation.findUnique({
-      where: { token },
+      where: { token, workspaceId: { not: '' } },
     });
     if (!invite || invite.expiresAt < new Date()) {
       throw new BadRequestException('Invalid or expired invitation');
@@ -137,7 +137,9 @@ export class TeamService {
     });
 
     // Delete invite
-    await this.prisma.invitation.delete({ where: { id: invite.id } });
+    await this.prisma.invitation.delete({
+      where: { id: invite.id, workspaceId: invite.workspaceId },
+    });
 
     return agent;
   }
@@ -145,7 +147,7 @@ export class TeamService {
   /** Revoke invite. */
   async revokeInvite(workspaceId: string, inviteId: string) {
     const invite = await this.prisma.invitation.findUnique({
-      where: { id: inviteId },
+      where: { id: inviteId, workspaceId },
     });
     if (!invite || invite.workspaceId !== workspaceId) {
       throw new NotFoundException('Invitation not found');
@@ -157,7 +159,7 @@ export class TeamService {
       resourceId: inviteId,
       details: { deletedBy: 'user', email: invite.email },
     });
-    return this.prisma.invitation.delete({ where: { id: inviteId } });
+    return this.prisma.invitation.delete({ where: { id: inviteId, workspaceId } });
   }
 
   /** Remove member. */
@@ -167,7 +169,7 @@ export class TeamService {
     }
 
     const agent = await this.prisma.agent.findUnique({
-      where: { id: memberId },
+      where: { id: memberId, workspaceId },
     });
     if (!agent || agent.workspaceId !== workspaceId) {
       throw new NotFoundException('Member not found');
@@ -182,7 +184,7 @@ export class TeamService {
       resourceId: memberId,
       details: { deletedBy: 'user', email: agent.email },
     });
-    return this.prisma.agent.delete({ where: { id: memberId } });
+    return this.prisma.agent.delete({ where: { id: memberId, workspaceId } });
   }
 
   /** Update member role. */
@@ -192,7 +194,7 @@ export class TeamService {
     }
 
     const agent = await this.prisma.agent.findUnique({
-      where: { id: memberId },
+      where: { id: memberId, workspaceId },
     });
     if (!agent || agent.workspaceId !== workspaceId) {
       throw new NotFoundException('Member not found');
@@ -203,7 +205,7 @@ export class TeamService {
     }
 
     const updated = await this.prisma.agent.update({
-      where: { id: memberId },
+      where: { id: memberId, workspaceId },
       data: { role },
       select: { id: true, name: true, email: true, role: true },
     });

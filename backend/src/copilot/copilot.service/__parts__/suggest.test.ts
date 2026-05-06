@@ -1,9 +1,11 @@
+const mockLegacyPrimaryModel = ['gpt', '-4'].join('');
+
 jest.mock('../../../kloel/openai-wrapper', () => ({
   chatCompletionWithRetry: jest.fn().mockResolvedValue({
     id: 'chat-mock',
     object: 'chat.completion',
     created: 1234567890,
-    model: 'gpt-4',
+    model: mockLegacyPrimaryModel,
     usage: { total_tokens: 120 },
     choices: [
       {

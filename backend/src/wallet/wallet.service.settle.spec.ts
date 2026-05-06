@@ -158,7 +158,12 @@ function makePrismaStub(
     async <T>(callback: (tx: typeof stub) => Promise<T>): Promise<T> => callback(stub),
   );
 
-  return { wallets, walletsByWorkspace, transactions, prisma: stub as object as PrismaService };
+  return {
+    wallets,
+    walletsByWorkspace,
+    transactions,
+    prisma: stub as object as never as PrismaService,
+  };
 }
 
 async function buildService(
