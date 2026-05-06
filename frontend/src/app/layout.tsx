@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import type React from 'react';
+import Script from 'next/script';
 import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages } from 'next-intl/server';
 import { DatadogRumRouter } from '@/components/kloel/DatadogRumRouter';
@@ -79,6 +80,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           color: colors.background.void,
         }}
       >
+        <Script
+          id="kloel-public-landing-canvas-guard"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{
+            __html:
+              "(() => { const original = HTMLCanvasElement.prototype.getContext; HTMLCanvasElement.prototype.getContext = function(type, options) { if (type === '2d' && this && this.style && this.style.mixBlendMode === 'screen') return null; return original.call(this, type, options); }; })();",
+          }}
+        />
         <DatadogRumRouter />
         <NextIntlClientProvider locale={locale} messages={messages}>
           <AppRootEnhancers>{children}</AppRootEnhancers>
