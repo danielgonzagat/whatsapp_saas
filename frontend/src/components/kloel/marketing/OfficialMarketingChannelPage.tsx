@@ -54,31 +54,31 @@ const CHANNEL_META: Record<
 > = {
   whatsapp: {
     label: 'WhatsApp',
-    color: '#25D366',
+    color: 'rgb(37 211 102)',
     summary: 'Conecte o WABA e o número do cliente pelo Embedded Signup oficial da Meta.',
     proof: ['WABA do workspace', 'Número próprio', 'Envio e webhooks via Cloud API'],
   },
   instagram: {
     label: 'Instagram Direct',
-    color: '#E1306C',
+    color: 'rgb(225 48 108)',
     summary: 'Conecte a conta Meta com Instagram Business para operar Direct e comentários.',
     proof: ['Instagram Business', 'Permissões de mensagens', 'Perfil e insights reais'],
   },
   facebook: {
     label: 'Messenger Facebook',
-    color: '#1877F2',
+    color: 'rgb(24 119 242)',
     summary: 'Conecte a Page Meta para automatizar conversas do Messenger.',
     proof: ['Page vinculada', 'Page access token', 'Messenger API'],
   },
   email: {
     label: 'Email',
-    color: '#F59E0B',
+    color: 'rgb(245 158 11)',
     summary: 'Ative o provider configurado no backend para enviar testes e campanhas.',
     proof: ['Provider server-side', 'Remetente configurado', 'Envio de teste'],
   },
   tiktok: {
     label: 'TikTok',
-    color: '#FE2C55',
+    color: 'rgb(254 44 85)',
     summary: 'Conecte creator e advertiser pelos fluxos oficiais do TikTok.',
     proof: ['Creator OAuth', 'Advertiser OAuth', 'Tokens salvos no workspace'],
   },
@@ -251,9 +251,9 @@ export function OfficialMarketingChannelPage({ channel }: Props) {
           <span
             style={{
               height: 28,
-              borderRadius: 999,
+              borderRadius: 6,
               padding: '5px 10px',
-              color: connection?.connected ? '#10B981' : '#EF4444',
+              color: connection?.connected ? KLOEL_THEME.success : KLOEL_THEME.error,
               background: connection?.connected ? 'rgba(16,185,129,.12)' : 'rgba(239,68,68,.12)',
               fontSize: 12,
               fontFamily: "'JetBrains Mono', monospace",
@@ -358,7 +358,7 @@ function buttonStyle(color: string): React.CSSProperties {
     border: 'none',
     borderRadius: 6,
     background: color,
-    color: '#fff',
+    color: KLOEL_THEME.textOnAccent,
     padding: '12px 16px',
     fontWeight: 700,
     cursor: 'pointer',

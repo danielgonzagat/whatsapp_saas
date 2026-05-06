@@ -3,6 +3,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { apiFetch } from '@/lib/api';
+import { KLOEL_THEME } from '@/lib/kloel-theme';
+
+const TIKTOK_BRAND_COLOR = 'rgb(254 44 85)';
 
 export function TikTokIntegrationCallback({ kind }: { kind: 'creator' | 'advertiser' }) {
   const [status, setStatus] = useState('Finalizando conexão TikTok...');
@@ -39,8 +42,8 @@ export function TikTokIntegrationCallback({ kind }: { kind: 'creator' | 'adverti
         minHeight: '100vh',
         display: 'grid',
         placeItems: 'center',
-        background: '#0A0A0C',
-        color: '#E0DDD8',
+        background: KLOEL_THEME.bgPrimary,
+        color: KLOEL_THEME.textPrimary,
         fontFamily: "'Sora', sans-serif",
         padding: 24,
       }}
@@ -48,7 +51,7 @@ export function TikTokIntegrationCallback({ kind }: { kind: 'creator' | 'adverti
       <div style={{ maxWidth: 520, textAlign: 'center' }}>
         <h1>TikTok</h1>
         <p>{status}</p>
-        <Link href="/marketing/tiktok" style={{ color: '#FE2C55', fontWeight: 700 }}>
+        <Link href="/marketing/tiktok" style={{ color: TIKTOK_BRAND_COLOR, fontWeight: 700 }}>
           Voltar para TikTok Marketing
         </Link>
       </div>
