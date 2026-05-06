@@ -85,7 +85,7 @@ export class PlanLimitsService {
     });
 
     const normalizedStatus = this.normalizeSubscriptionStatus(subscription?.status);
-    if (!subscription || normalizedStatus !== 'ACTIVE') {
+    if (!subscription || !['ACTIVE', 'TRIAL', 'TRIALING'].includes(normalizedStatus)) {
       return 'FREE';
     }
     const plan = subscription.plan?.toUpperCase() as Plan;

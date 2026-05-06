@@ -13,6 +13,7 @@ import type {
   PackageJson,
   CandidateSource,
   PulseConfidence,
+  PulseCommandSourceKind,
 } from './types';
 import { discoverSourceFilePatternCatalog, discoverPackageLockTokenCatalog } from './types';
 
@@ -170,7 +171,10 @@ export function discoverPackageJsonFiles(rootDir: string): string[] {
   return uniqueSorted(found);
 }
 
-function classifySourceFile(relativePath: string, entryName: string): PulseCommandPurpose | null {
+function classifySourceFile(
+  relativePath: string,
+  entryName: string,
+): PulseCommandSourceKind | null {
   for (const { sourceKind, pattern: patternStr } of PULSE_SOURCE_FILE_PATTERNS) {
     const regex = new RegExp(patternStr);
     if (regex.test(relativePath) || regex.test(entryName)) {

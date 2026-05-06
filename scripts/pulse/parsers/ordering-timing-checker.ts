@@ -69,13 +69,15 @@ export function checkOrderingTiming(config: PulseConfig): Break[] {
       mutatesWebhookState
     ) {
       const hasTimestampCheck =
-        /event\.timestamp|createdAt|occurredAt|eventDate|sequence|order/i.test(content);
+        /\b(event\.(timestamp|createdAt)|createdAt|occurredAt|eventDate|sequence|orderedAt|processedAt)\b/i.test(
+          content,
+        );
       const hasAlreadyProcessed =
         /alreadyProcessed|isDuplicate|externalId.*unique|webhookEvent/i.test(content);
 
       if (!hasTimestampCheck && !hasAlreadyProcessed) {
         breaks.push({
-          type: 'ORDERING_WEBHOOK_OOO',
+          type: 'temporal-consistency-evidence-gap',
           severity: 'high',
           file: relFile,
           line: 0,
@@ -83,6 +85,8 @@ export function checkOrderingTiming(config: PulseConfig): Break[] {
             'Webhook handler does not check event timestamp or sequence — out-of-order events cause incorrect state',
           detail:
             'Check event.dateCreated/timestamp before applying; reject events older than current entity state',
+          source: 'parser:weak_signal:temporal-consistency',
+          surface: 'temporal-correctness',
         });
       }
     }

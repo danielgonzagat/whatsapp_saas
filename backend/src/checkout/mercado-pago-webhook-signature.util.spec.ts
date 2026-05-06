@@ -26,9 +26,10 @@ describe('checkout migration guard — webhook signature verification', () => {
     // Mercado Pago Pix webhook is intentionally allowed — the guard
     // only blocks retired provider on payment webhook surfaces.
     const webhookSource = readFileSync(
-      resolve(__dirname, '../webhooks/payment-webhook.controller.ts'),
+      resolve(__dirname, './mercado-pago-webhook.controller.ts'),
       'utf8',
     );
-    expect(webhookSource).toContain('pix_display_qr_code');
+    expect(webhookSource).toContain('MERCADOPAGO_WEBHOOK_SECRET');
+    expect(webhookSource).toContain('mercado_pago');
   });
 });

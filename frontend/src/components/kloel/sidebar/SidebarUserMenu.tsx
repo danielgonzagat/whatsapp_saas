@@ -232,6 +232,9 @@ export function SidebarUserMenu({ expanded }: SidebarUserMenuProps) {
       {/* User trigger button */}
       <button
         type="button"
+        aria-label={`Abrir menu do usuário ${displayName}`}
+        aria-expanded={open}
+        aria-haspopup="menu"
         onClick={() => setOpen(!open)}
         onMouseEnter={() => setAvatarHovered(true)}
         onMouseLeave={() => setAvatarHovered(false)}

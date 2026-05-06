@@ -22,7 +22,11 @@ describe('checkout migration guard — quality surface', () => {
   it('allows Mercado Pago Pix provider in checkout service when present', () => {
     // Mercado Pago Pix checkout is intentionally allowed — the guard
     // only blocks retired provider re-introduction in the checkout service surface.
-    const serviceSource = readFileSync(resolve(__dirname, './checkout.service.ts'), 'utf8');
-    expect(serviceSource).toContain('PIX');
+    const providerSource = readFileSync(
+      resolve(__dirname, './mercado-pago-pix.service.ts'),
+      'utf8',
+    );
+    expect(providerSource).toContain('MERCADOPAGO_ACCESS_TOKEN');
+    expect(providerSource).toContain('qr_code');
   });
 });

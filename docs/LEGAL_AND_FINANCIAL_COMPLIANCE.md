@@ -25,6 +25,9 @@ These pages are mandatory and must remain publicly accessible.
 - Production and staging must use distinct payment credentials.
 - Refund and chargeback handling must be documented and supportable.
 - Financial alerts must route into `OPS_WEBHOOK_URL` or `DLQ_WEBHOOK_URL`.
+- Legacy provider references such as Asaas must remain documented as migrated
+  or decommissioned surfaces, with Stripe Connect treated as the active
+  settlement path unless a new provider review is approved.
 
 ## Mandatory Business Policies
 
@@ -36,6 +39,7 @@ reviewable:
 - Refund policy
 - Chargeback handling process
 - Stripe account standing and capability status
+- Asaas legacy-provider migration status and residual operational ownership
 - Split and intermediary payment compliance review
 - Nota fiscal issuance flow
 
@@ -45,6 +49,8 @@ reviewable:
 - No unlogged refund or chargeback handling.
 - No launch without a clear owner for nota fiscal issuance.
 - No launch without a defined support path for refund and chargeback disputes.
+- No reactivation of Asaas payment flows without a fresh compliance review,
+  webhook verification, reconciliation owner, and support runbook.
 
 ## Refund and Chargeback Policy
 

@@ -21,6 +21,12 @@ test('flow with wait resumes on inbound message', async ({ request }) => {
       headers: { authorization: `Bearer ${token}` },
     })
     .catch(() => {});
+  await request
+    .post(`${API_URL}/billing/activate-trial`, {
+      headers: { authorization: `Bearer ${token}` },
+      params: { workspaceId },
+    })
+    .catch(() => {});
 
   const flowId = `e2e-wait-flow-${workspaceId}-${Date.now()}`;
   const flow = {

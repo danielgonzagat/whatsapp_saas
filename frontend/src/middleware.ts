@@ -69,6 +69,7 @@ function handlePayHost(request: NextRequest, host: string) {
   const segments = pathname.split('/').filter(Boolean);
   if (segments.length === 1 && isValidCheckoutCode(segments[0])) {
     const rewrittenUrl = request.nextUrl.clone();
+    rewrittenUrl.host = host;
     rewrittenUrl.pathname = `/r/${segments[0]}`;
     return NextResponse.rewrite(rewrittenUrl);
   }

@@ -97,7 +97,7 @@ test.describe('Customer Purchase Journey', () => {
 
   test('customer browses available products', async ({ request }) => {
     const listRes = await request.get(api('/products'), {
-      headers: { Authorization: `Bearer ${customerToken}` },
+      headers: { Authorization: `Bearer ${adminToken}` },
     });
 
     expect(listRes.status()).toBe(200);

@@ -11,6 +11,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { IS_PUBLIC_METADATA } from '../../auth/public.decorator';
 import { PrismaService } from '../../prisma/prisma.service';
 import { asProviderSettings } from '../../whatsapp/provider-settings.types';
 
@@ -81,10 +82,15 @@ export class KloelSecurityGuard implements CanActivate, OnModuleDestroy {
     const path = request.path;
 
     // 1. Rotas públicas
-    const isPublic = this.reflector.getAllAndOverride<boolean>(KLOEL_PUBLIC_METADATA, [
-      context.getHandler(),
-      context.getClass(),
-    ]);
+    const isPublic =
+      this.reflector.getAllAndOverride<boolean>(KLOEL_PUBLIC_METADATA, [
+        context.getHandler(),
+        context.getClass(),
+      ]) ||
+      this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_METADATA, [
+        context.getHandler(),
+        context.getClass(),
+      ]);
     if (isPublic) {
       return true;
     }

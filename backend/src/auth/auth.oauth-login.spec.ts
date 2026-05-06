@@ -9,12 +9,7 @@ import { GoogleAuthService } from './google-auth.service';
 import { RateLimitService } from './rate-limit.service';
 import { TikTokAuthService } from './tiktok-auth.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { EmailService } from './email.service';
-import { GoogleAuthService } from './google-auth.service';
-import { FacebookAuthService } from './facebook-auth.service';
-import { TikTokAuthService } from './tiktok-auth.service';
 import { ConnectService } from '../payments/connect/connect.service';
-import { RateLimitService } from './rate-limit.service';
 
 const mockPrismaService = {
   agent: {
@@ -58,7 +53,7 @@ const mockJwtService = {
   signAsync: jest.fn().mockResolvedValue('mock-jwt-token'),
 };
 
-const mockAuthOAuthService = {
+const _mockAuthOAuthService = {
   verifyGoogleCredential: jest.fn(),
   verifyFacebookAccessToken: jest.fn(),
   verifyAppleIdentityToken: jest.fn(),
@@ -67,13 +62,13 @@ const mockAuthOAuthService = {
   resolveAgentForProfile: jest.fn(),
 };
 
-const mockAuthPartnerService = {
+const _mockAuthPartnerService = {
   resolvePartnerInvite: jest.fn().mockResolvedValue(null),
   finalizePartnerInviteRegistration: jest.fn().mockResolvedValue(undefined),
   resolvePartnerInviteAccountType: jest.fn(),
 };
 
-const mockAuthVerificationService = {
+const _mockAuthVerificationService = {
   requestMagicLink: jest.fn(),
   verifyMagicLink: jest.fn(),
   sendWhatsAppCode: jest.fn(),
@@ -122,10 +117,6 @@ const mockTikTokAuthService = {
 };
 
 const mockConnectService = {};
-
-const mockRateLimitService = {
-  checkRateLimit: jest.fn(),
-};
 
 const mockRateLimitService = {
   checkRateLimit: jest.fn().mockResolvedValue(undefined),

@@ -146,6 +146,9 @@ export function buildService(options?: {
       ),
     },
   };
+  Object.assign(prisma, {
+    $transaction: jest.fn((callback: (tx: typeof prisma) => unknown) => callback(prisma)),
+  });
   const storage = {
     upload: jest.fn(),
   };

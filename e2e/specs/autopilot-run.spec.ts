@@ -15,6 +15,10 @@ test('autopilot run enqueues job', async ({ request }) => {
     data: { billingSuspended: false },
     headers: { authorization: `Bearer ${token}` },
   });
+  await request.post(`${API_URL}/billing/activate-trial`, {
+    headers: { authorization: `Bearer ${token}` },
+    params: { workspaceId },
+  });
 
   const payload = {
     workspaceId,

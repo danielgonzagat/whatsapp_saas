@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { getE2EBaseUrls, seedE2EAuthSession } from './e2e-helpers';
+import { dismissCookieBanner, getE2EBaseUrls, seedE2EAuthSession } from './e2e-helpers';
 
 const { appUrl: APP_URL } = getE2EBaseUrls();
 
@@ -24,9 +24,25 @@ const TEST_TOKEN = createTestJwt({
   name: 'E2E User',
 });
 
+type JsonRecord = Record<string, unknown>;
+type WhatsAppSetup = {
+  configuredAt?: string;
+  arsenal?: unknown[];
+  config?: {
+    tone?: string | null;
+    maxDiscount?: number | string | null;
+    followUp?: boolean | null;
+  };
+  selectedProducts?: JsonRecord[];
+};
+
+function asJsonRecord(value: unknown): JsonRecord {
+  return value && typeof value === 'object' && !Array.isArray(value) ? (value as JsonRecord) : {};
+}
+
 async function installMarketingWhatsAppFlowMocks(page: Page) {
   let sessionState: 'disconnected' | 'qr_pending' | 'connected' = 'disconnected';
-  let settingsState: Record<string, any> = {
+  let settingsState: JsonRecord = {
     providerSettings: {
       whatsappProvider: 'whatsapp-api',
       whatsappApiSession: {
@@ -35,7 +51,7 @@ async function installMarketingWhatsAppFlowMocks(page: Page) {
       },
     },
   };
-  let summaryState: Record<string, any> = {
+  let summaryState: JsonRecord = {
     configured: false,
     sessionName: TEST_WORKSPACE_ID,
     configuredAt: null,
@@ -97,6 +113,27 @@ async function installMarketingWhatsAppFlowMocks(page: Page) {
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify(authPayload),
+    });
+  });
+  await page.route('**/workspace/me', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(authPayload),
+    });
+  });
+  await page.route(`**/onboarding/${TEST_WORKSPACE_ID}/status`, async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ completed: true }),
+    });
+  });
+  await page.route('**/billing/subscription**', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ status: 'active', trialDaysLeft: 0, creditsBalance: 100 }),
     });
   });
 
@@ -210,17 +247,18 @@ async function installMarketingWhatsAppFlowMocks(page: Page) {
     syncSessionSnapshot();
 
     if (route.request().method() === 'POST') {
-      const body = route.request().postDataJSON() as Record<string, any>;
+      const body = route.request().postDataJSON() as JsonRecord;
       settingsState = {
         ...settingsState,
         providerSettings: {
-          ...(settingsState.providerSettings || {}),
+          ...asJsonRecord(settingsState.providerSettings),
           ...body,
         },
       };
 
-      const setup = body.whatsappSetup;
-      if (setup && body.autopilot?.enabled) {
+      const setup = body.whatsappSetup as WhatsAppSetup | undefined;
+      const autopilot = body.autopilot as { enabled?: boolean } | undefined;
+      if (setup && autopilot?.enabled) {
         const activatedAt = new Date().toISOString();
         summaryState = {
           configured: true,
@@ -232,7 +270,7 @@ async function installMarketingWhatsAppFlowMocks(page: Page) {
           maxDiscount: Number(setup.config?.maxDiscount || 0),
           followUpEnabled: Boolean(setup.config?.followUp),
           selectedProducts: Array.isArray(setup.selectedProducts)
-            ? setup.selectedProducts.map((product: Record<string, any>) => ({
+            ? setup.selectedProducts.map((product) => ({
                 ...product,
                 salesCount: 0,
                 revenue: 0,
@@ -256,7 +294,7 @@ async function installMarketingWhatsAppFlowMocks(page: Page) {
     });
   });
 
-  await page.route('**/api/whatsapp-api/session/start', async (route) => {
+  await page.route('**/whatsapp-api/session/start', async (route) => {
     sessionState = 'qr_pending';
     syncSessionSnapshot();
     await route.fulfill({
@@ -269,7 +307,7 @@ async function installMarketingWhatsAppFlowMocks(page: Page) {
     });
   });
 
-  await page.route('**/api/whatsapp-api/session/qr', async (route) => {
+  await page.route('**/whatsapp-api/session/qr', async (route) => {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -284,12 +322,12 @@ async function installMarketingWhatsAppFlowMocks(page: Page) {
     });
   });
 
-  await page.route('**/api/whatsapp-api/session/status', async (route) => {
+  await page.route('**/whatsapp-api/session/status', async (route) => {
     if (sessionState === 'qr_pending') {
       setTimeout(() => {
         sessionState = 'connected';
         syncSessionSnapshot();
-      }, 50);
+      }, 2_000);
     }
 
     syncSessionSnapshot();
@@ -325,8 +363,9 @@ test.describe('Marketing WhatsApp flow', () => {
     await page.goto(`${APP_URL}/marketing/whatsapp`, {
       waitUntil: 'domcontentloaded',
     });
+    await dismissCookieBanner(page);
 
-    await expect(page.getByText('Conectar WhatsApp')).toBeVisible();
+    await expect(page.getByText('Conectar WhatsApp')).toBeVisible({ timeout: 15_000 });
     await expect(page.getByAltText('QR Code do WhatsApp')).toBeVisible({ timeout: 15000 });
     await expect(page.getByText('QR Code pronto para leitura.')).toBeVisible();
 

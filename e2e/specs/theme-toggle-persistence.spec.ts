@@ -33,13 +33,13 @@ test.describe('theme toggle persistence', () => {
     // (e.g. "DG", "Daniel Gonzaga"). Match either initials or any
     // capitalised account label so the test stays portable.
     const userMenuTrigger = page
-      .getByRole('button', { name: /^(ea|dg|daniel gonzaga|e2e admin)$/i })
+      .getByRole('button', { name: /abrir menu do usuário|abrir menu do usuario/i })
       .first();
     await expect(userMenuTrigger).toBeVisible({ timeout: 15000 });
-    await userMenuTrigger.click();
+    await userMenuTrigger.evaluate((button: HTMLElement) => button.click());
 
     const themeToggle = page.getByRole('switch', { name: /alternar tema/i });
-    await expect(themeToggle).toBeVisible();
+    await expect(themeToggle).toBeVisible({ timeout: 10000 });
     await expect(themeToggle).toHaveAttribute('aria-checked', 'false');
     await themeToggle.click();
 

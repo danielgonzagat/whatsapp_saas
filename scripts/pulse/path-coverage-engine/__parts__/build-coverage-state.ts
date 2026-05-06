@@ -76,7 +76,9 @@ export function buildPathCoverageState(
   rootDir: string,
   matrixOverride?: PulseExecutionMatrix,
 ): PathCoverageState {
-  const matrixPath = safeJoin(rootDir, '.pulse', 'current', _ARTIFACT_NAMES.executionMatrix);
+  const executionMatrixArtifact = _ARTIFACT_NAMES.executionMatrix ?? 'PULSE_EXECUTION_MATRIX.json';
+  const pathCoverageArtifact = _ARTIFACT_NAMES.pathCoverage ?? 'PULSE_PATH_COVERAGE.json';
+  const matrixPath = safeJoin(rootDir, '.pulse', 'current', executionMatrixArtifact);
 
   let matrix = matrixOverride;
   let matrixPaths: PulseExecutionMatrixPath[] = matrix?.paths ?? [];
@@ -180,7 +182,7 @@ export function buildPathCoverageState(
 
   const outputDir = safeJoin(rootDir, '.pulse', 'current');
   ensureDir(outputDir, { recursive: true });
-  writeTextFile(safeJoin(outputDir, _ARTIFACT_NAMES.pathCoverage), JSON.stringify(state, null, 2));
+  writeTextFile(safeJoin(outputDir, pathCoverageArtifact), JSON.stringify(state, null, 2));
   if (matrix) {
     const pathProofPlan = buildPathProofPlan(rootDir, {
       matrix,

@@ -1,5 +1,10 @@
 import { expect, test } from '@playwright/test';
-import { ensureE2EAdmin, getE2EBaseUrls, seedE2EAuthSession } from './e2e-helpers';
+import {
+  dismissCookieBanner,
+  ensureE2EAdmin,
+  getE2EBaseUrls,
+  seedE2EAuthSession,
+} from './e2e-helpers';
 
 function toSubdomain(origin: string, subdomain: 'app' | 'pay') {
   const url = new URL(origin);
@@ -69,13 +74,9 @@ test('Kloel dashboard shows thinking and streamed content for the stable SSE con
 
   await seedE2EAuthSession(page, auth);
   await page.goto(`${appUrl}/chat`, { waitUntil: 'domcontentloaded' });
+  await dismissCookieBanner(page);
 
-  const acceptCookiesButton = page.getByRole('button', { name: 'Aceitar tudo' });
-  if (await acceptCookiesButton.isVisible().catch(() => false)) {
-    await acceptCookiesButton.click();
-  }
-
-  const input = page.getByPlaceholder('Como posso ajudar você hoje?');
+  const input = page.getByPlaceholder('Como posso ajudar você hoje?').first();
   await expect(page.getByRole('button', { name: 'Criar Anúncio' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Escrever Copy' })).toBeVisible();
   // The disclaimer is rendered conditionally once the conversation has

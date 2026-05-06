@@ -192,7 +192,7 @@ export function createCertification(): PulseCertification {
       runtime: {
         executed: false,
         executedChecks: [],
-        blockingBreakTypes: [],
+        blockingFindingEvents: [],
         artifactPaths: [],
         summary: '',
         probes: [],

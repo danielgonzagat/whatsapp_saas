@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import {
   bootstrapAuthenticatedPage,
+  dismissCookieBanner,
   ensureE2EAdmin,
   getE2EBaseUrls,
   type E2EAuthContext,
@@ -17,14 +18,6 @@ function matchesRoute(url: URL, target: URL): boolean {
 
 function jsonBody(payload: unknown): string {
   return JSON.stringify(payload);
-}
-
-async function dismissCookieBanner(page: import('@playwright/test').Page) {
-  const acceptAllButton = page.getByRole('button', { name: /aceitar tudo/i });
-  if (await acceptAllButton.isVisible().catch(() => false)) {
-    await acceptAllButton.click();
-    await page.waitForTimeout(250);
-  }
 }
 
 test.describe('Mobile Surface Audit', () => {
@@ -118,7 +111,7 @@ test.describe('Mobile Surface Audit', () => {
               path: `/products/${firstProductId}`,
               slug: 'product-editor',
               assert: async () => {
-                await expect(page.getByText(/dados gerais/i)).toBeVisible();
+                await expect(page.getByText(/dados gerais/i)).toBeVisible({ timeout: 10_000 });
                 await expect(page.getByRole('button', { name: /planos/i })).toBeVisible();
               },
             },

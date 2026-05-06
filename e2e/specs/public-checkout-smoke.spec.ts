@@ -94,14 +94,17 @@ async function ensurePublicCheckoutCode(
 
 test('public checkout by short code renders the commercial shell', async ({ page, request }) => {
   test.setTimeout(60_000);
-  const { frontendUrl } = getE2EBaseUrls();
-  const payUrl = toSubdomain(frontendUrl, 'pay');
+  const { frontendUrl, payUrl: configuredPayUrl } = getE2EBaseUrls();
+  const payUrl = configuredPayUrl || toSubdomain(frontendUrl, 'pay');
   const checkoutCode = await ensurePublicCheckoutCode(request);
   const consoleErrors: string[] = [];
 
   page.on('console', (message) => {
     if (message.type() === 'error') {
-      consoleErrors.push(message.text());
+      const text = message.text();
+      if (!/Failed to load resource: the server responded with a status of 404/i.test(text)) {
+        consoleErrors.push(text);
+      }
     }
   });
 

@@ -9,11 +9,28 @@ const AST_TYPE_CONTRACT_RESOLUTION_STACK = new Set<string>();
 const OBSERVED_TYPE_CONTRACT_FILE_CACHE = new Map<string, string>();
 
 function resolvePulseTypeContractPath(fileName: string): string {
-  return path.resolve(process.cwd(), fileName);
+  const pulseRoot = path.resolve(__dirname, '../..');
+  const normalizedFileName = fileName.split(path.sep).join('/');
+  const pulseRelativeFileName = normalizedFileName.startsWith('scripts/pulse/')
+    ? normalizedFileName.slice('scripts/pulse/'.length)
+    : normalizedFileName;
+  const candidates = [
+    path.resolve(process.cwd(), fileName),
+    path.resolve(process.cwd(), '..', fileName),
+    path.resolve(pulseRoot, pulseRelativeFileName),
+  ];
+
+  return candidates.find((candidate) => fs.existsSync(candidate)) ?? candidates[0];
 }
 
 function observedPulseTypeContractRoot(): string {
-  return path.resolve(process.cwd(), 'scripts/pulse');
+  const cwdCandidate = path.resolve(process.cwd(), 'scripts/pulse');
+  if (fs.existsSync(cwdCandidate)) return cwdCandidate;
+
+  const parentCandidate = path.resolve(process.cwd(), '..', 'scripts/pulse');
+  if (fs.existsSync(parentCandidate)) return parentCandidate;
+
+  return path.resolve(__dirname, '../..');
 }
 
 function sourceFileExportsObservedTypeContract(

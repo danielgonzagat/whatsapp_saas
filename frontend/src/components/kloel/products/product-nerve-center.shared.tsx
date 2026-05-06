@@ -56,6 +56,7 @@ export function NP({
   h?: number;
   intensity?: number;
 }) {
+  const [isMounted, setIsMounted] = useState(false);
   const prefersReducedMotion = usePrefersReducedMotion({ defaultValue: true });
   const cv = useRef<HTMLCanvasElement>(null);
   const staticWave = Array.from({ length: Math.max(2, Math.floor(w / 2)) }, (_, index) => {
@@ -66,7 +67,11 @@ export function NP({
   }).join(' ');
 
   useEffect(() => {
-    if (prefersReducedMotion) {
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isMounted || prefersReducedMotion) {
       return;
     }
 
@@ -101,9 +106,9 @@ export function NP({
     };
     raf = requestAnimationFrame(draw);
     return () => cancelAnimationFrame(raf);
-  }, [h, intensity, prefersReducedMotion, w]);
+  }, [h, intensity, isMounted, prefersReducedMotion, w]);
 
-  if (prefersReducedMotion) {
+  if (!isMounted || prefersReducedMotion) {
     return (
       <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} aria-hidden style={{ display: 'block' }}>
         <title>{kloelT(`Decorative waveform`)}</title>

@@ -1,7 +1,5 @@
 'use client';
 
-import { kloelT } from '@/lib/i18n/t';
-import { KloelChatComposer } from '@/components/kloel/dashboard/KloelChatComposer';
 import { useAuth } from '@/components/kloel/auth/auth-provider';
 import { useConversationHistory } from '@/hooks/useConversationHistory';
 import { affiliateApi } from '@/lib/api/affiliate';
@@ -9,7 +7,6 @@ import { productApi } from '@/lib/api/products';
 import {
   type KloelChatCapability,
   type KloelChatRequestMetadata,
-  KLOEL_CHAT_QUICK_ACTIONS,
   type KloelLinkedProduct,
 } from '@/lib/kloel-chat';
 import {
@@ -20,7 +17,6 @@ import {
 } from '@/lib/kloel-conversations';
 import { KLOEL_CHAT_ROUTE } from '@/lib/kloel-dashboard-context';
 import { getAssistantResponseVersions } from '@/lib/kloel-message-ui';
-import { AnimatePresence, motion } from 'framer-motion';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import useSWR from 'swr';
@@ -34,28 +30,12 @@ import {
   type OwnedProductsPayload,
   type AffiliateRequestRow,
 } from './KloelDashboard.helpers';
-import { type DashboardMessage, MessageBlock } from './KloelDashboard.message';
+import { type DashboardMessage } from './KloelDashboard.message';
+import { S_RE, SLOW_HINT_DELAY_MS } from './KloelDashboard.subcomponents';
 import {
-  S_RE,
-  F,
-  V,
-  TEXT,
-  MUTED,
-  DIVIDER,
-  EMBER,
-  SURFACE,
-  CHAT_MAX_WIDTH,
-  CHAT_INLINE_PADDING,
-  CHAT_SAFE_BOTTOM,
-  CHAT_SCROLL_BOTTOM_SPACE,
-  SLOW_HINT_DELAY_MS,
-  DashboardEmptyGreeting,
-  ChatDisclaimer,
-  ConversationHeaderBar,
-  DashboardGlobalStyles,
-  DropOverlay,
-  QuickActionIcon,
-} from './KloelDashboard.subcomponents';
+  KloelDashboardView,
+  type KloelDashboardQuickAction,
+} from './KloelDashboard/__parts__/KloelDashboard.view';
 import {
   useKloelFiles,
   useKloelDragDrop,
@@ -266,7 +246,7 @@ export default function KloelDashboard() {
   }, [attachments, handleSendMessage, input, setComposerNotice]);
 
   const handleQuickAction = useCallback(
-    (action: (typeof KLOEL_CHAT_QUICK_ACTIONS)[number]) => {
+    (action: KloelDashboardQuickAction) => {
       const linkedProductName = String(linkedProduct?.name || '').trim();
       setComposerNotice(null);
       setInput(linkedProductName ? `${action.prompt}${linkedProductName}` : action.prompt);
@@ -471,217 +451,45 @@ export default function KloelDashboard() {
   const composerPlaceholder = capabilityPromptLabel(activeCapability, hasMessages);
 
   return (
-    <section
-      aria-label="Área de chat"
+    <KloelDashboardView
+      isDragActive={isDragActive}
+      hasMessages={hasMessages}
+      messages={messages}
+      conversationTitle={conversationTitle}
+      streamingMessageId={streamingMessageId}
+      isThinking={isThinking}
+      isReplyInFlight={isReplyInFlight}
+      showSlowHint={showSlowHint}
+      greetingLine={greetingLine}
+      input={input}
+      composerPlaceholder={composerPlaceholder}
+      activeCapability={activeCapability}
+      attachments={attachments}
+      linkedProduct={linkedProduct}
+      selectableProducts={selectableProducts}
+      selectableProductsLoading={selectableProductsLoading}
+      composerNotice={composerNotice}
+      fileInputRef={fileInputRef}
+      inputRef={inputRef}
+      messagesEndRef={messagesEndRef}
       onDragEnter={handleDragEnter}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
-      onDrop={(event) => {
-        void handleDropFiles(event);
-      }}
-      style={{
-        position: 'relative',
-        background: V,
-        flex: 1,
-        minHeight: 0,
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        fontFamily: F,
-        color: TEXT,
-        overflow: 'hidden',
-      }}
-    >
-      <AnimatePresence initial={false}>{isDragActive ? <DropOverlay /> : null}</AnimatePresence>
-
-      <DashboardGlobalStyles />
-
-      <input
-        ref={fileInputRef}
-        type="file"
-        hidden
-        multiple
-        accept={kloelT(
-          `image/jpeg,image/png,image/gif,image/webp,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,text/csv,audio/mpeg,audio/wav,audio/webm,audio/ogg,audio/mp4,audio/x-m4a`,
-        )}
-        onChange={(event) => {
-          void queueFilesForUpload(event.currentTarget.files);
-          event.currentTarget.value = '';
-        }}
-      />
-
-      <div
-        style={{
-          flex: 1,
-          minHeight: 0,
-          display: 'flex',
-          flexDirection: 'column',
-          width: '100%',
-          overflow: 'hidden',
-        }}
-      >
-        {hasMessages ? (
-          <>
-            <ConversationHeaderBar title={conversationTitle} />
-
-            <div
-              style={{
-                flex: 1,
-                minHeight: 0,
-                overflowY: 'auto',
-                overflowX: 'hidden',
-                overscrollBehavior: 'contain',
-                WebkitOverflowScrolling: 'touch',
-                position: 'relative',
-              }}
-            >
-              <div
-                style={{
-                  width: '100%',
-                  maxWidth: CHAT_MAX_WIDTH,
-                  margin: '0 auto',
-                  padding: `28px ${CHAT_INLINE_PADDING} ${CHAT_SCROLL_BOTTOM_SPACE}px`,
-                  boxSizing: 'border-box',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 28,
-                  minHeight: '100%',
-                }}
-              >
-                {messages.map((message) => (
-                  <MessageBlock
-                    key={message.id}
-                    message={message}
-                    isStreaming={message.id === streamingMessageId && !isThinking}
-                    isThinking={message.id === streamingMessageId && isThinking}
-                    isBusy={isReplyInFlight}
-                    showSlowHint={message.id === streamingMessageId && showSlowHint}
-                    onUserEdit={handleUserEdit}
-                    onUserRetry={handleUserRetry}
-                    onAssistantFeedback={handleAssistantFeedback}
-                    onAssistantRegenerate={handleAssistantRegenerate}
-                    onCancelProcessing={
-                      message.id === streamingMessageId ? handleCancelActiveReply : undefined
-                    }
-                  />
-                ))}
-
-                <div ref={messagesEndRef} style={{ scrollMarginBottom: 96 }} />
-              </div>
-            </div>
-          </>
-        ) : null}
-
-        <div
-          style={{
-            flex: hasMessages ? '0 0 auto' : 1,
-            display: 'flex',
-            alignItems: hasMessages ? 'flex-end' : 'center',
-            justifyContent: 'center',
-            paddingTop: hasMessages ? 18 : 32,
-            paddingBottom: CHAT_SAFE_BOTTOM,
-            minHeight: 0,
-          }}
-        >
-          <motion.div
-            layout
-            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-            style={{
-              width: '100%',
-              maxWidth: CHAT_MAX_WIDTH,
-              margin: '0 auto',
-              padding: `0 ${CHAT_INLINE_PADDING}`,
-              boxSizing: 'border-box',
-            }}
-          >
-            <AnimatePresence initial={false}>
-              {!hasMessages ? <DashboardEmptyGreeting greetingLine={greetingLine} /> : null}
-            </AnimatePresence>
-
-            {!hasMessages ? (
-              <div
-                style={{
-                  display: 'flex',
-                  flexWrap: 'wrap',
-                  justifyContent: 'center',
-                  gap: 10,
-                  margin: '0 auto 16px',
-                  maxWidth: CHAT_MAX_WIDTH,
-                }}
-              >
-                {KLOEL_CHAT_QUICK_ACTIONS.map((action) => (
-                  <button
-                    key={action.id}
-                    type="button"
-                    onClick={() => handleQuickAction(action)}
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 8,
-                      borderRadius: 999,
-                      border: `1px solid color-mix(in srgb, ${DIVIDER} 74%, ${EMBER} 14%)`,
-                      background: `color-mix(in srgb, ${SURFACE} 94%, ${V})`,
-                      color: TEXT,
-                      padding: '10px 14px',
-                      fontSize: 13,
-                      fontWeight: 600,
-                      letterSpacing: '-0.01em',
-                      cursor: 'pointer',
-                      boxShadow: '0 10px 24px rgba(0, 0, 0, 0.12)',
-                    }}
-                  >
-                    <QuickActionIcon icon={action.icon} />
-                    <span>{action.label}</span>
-                  </button>
-                ))}
-              </div>
-            ) : null}
-
-            <motion.div layout transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}>
-              <KloelChatComposer
-                input={input}
-                placeholder={composerPlaceholder}
-                disabled={isReplyInFlight}
-                activeCapability={activeCapability}
-                attachments={attachments}
-                linkedProduct={linkedProduct}
-                selectableProducts={selectableProducts}
-                productsLoading={selectableProductsLoading}
-                popoverPlacement={hasMessages ? 'above' : 'below'}
-                inputRef={inputRef}
-                onInputChange={setInput}
-                onSend={handleSend}
-                onOpenFilePicker={() => fileInputRef.current?.click()}
-                onRemoveAttachment={clearAttachmentById}
-                onRetryAttachment={(attachmentId) => {
-                  void handleRetryAttachment(attachmentId);
-                }}
-                onSelectProduct={setLinkedProduct}
-                onRemoveLinkedProduct={() => setLinkedProduct(null)}
-                onCapabilityChange={setActiveCapability}
-              />
-            </motion.div>
-
-            <AnimatePresence initial={false}>
-              {hasMessages ? <ChatDisclaimer /> : null}
-            </AnimatePresence>
-
-            {composerNotice ? (
-              <p
-                style={{
-                  margin: hasMessages ? '10px auto 0' : '14px auto 0',
-                  fontSize: 12,
-                  lineHeight: 1.45,
-                  color: MUTED,
-                  textAlign: 'center',
-                }}
-              >
-                {composerNotice}
-              </p>
-            ) : null}
-          </motion.div>
-        </div>
-      </div>
-    </section>
+      onDropFiles={handleDropFiles}
+      onQueueFilesForUpload={queueFilesForUpload}
+      onQuickAction={handleQuickAction}
+      onUserEdit={handleUserEdit}
+      onUserRetry={handleUserRetry}
+      onAssistantFeedback={handleAssistantFeedback}
+      onAssistantRegenerate={handleAssistantRegenerate}
+      onCancelActiveReply={handleCancelActiveReply}
+      onInputChange={setInput}
+      onSend={handleSend}
+      onRemoveAttachment={clearAttachmentById}
+      onRetryAttachment={handleRetryAttachment}
+      onSelectProduct={setLinkedProduct}
+      onRemoveLinkedProduct={() => setLinkedProduct(null)}
+      onCapabilityChange={setActiveCapability}
+    />
   );
 }
