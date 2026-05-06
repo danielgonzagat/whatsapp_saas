@@ -112,7 +112,7 @@ export class CampaignsService {
   async launch(workspaceId: string, id: string, useSmartTime = false) {
     const campaign = await this.findOne(workspaceId, id);
 
-    await this.ensureWhatsAppConnected(workspaceId);
+    await this.ensureCampaignDeliveryReady(workspaceId);
 
     if (campaign.status === 'RUNNING' || campaign.status === 'COMPLETED') {
       throw new BadRequestException('Campaign already processed');
@@ -222,7 +222,7 @@ export class CampaignsService {
             workspaceId,
             campaignId,
           });
-          await emailService.sendEmail({
+          const delivered = await emailService.sendEmail({
             to: contact.email,
             subject: campaign.name,
             html: htmlWithUnsub,
@@ -231,6 +231,10 @@ export class CampaignsService {
               'List-Unsubscribe-Post': `List-Unsubscribe=One-Click`,
             },
           });
+          if (!delivered) {
+            failed++;
+            return;
+          }
           sent++;
           return;
         }
@@ -259,24 +263,37 @@ export class CampaignsService {
     );
   }
 
-  private async ensureWhatsAppConnected(workspaceId: string): Promise<void> {
+  private async ensureCampaignDeliveryReady(workspaceId: string): Promise<void> {
     const ws = await this.prisma.workspace.findUnique({
       where: { id: workspaceId },
       select: { providerSettings: true },
     });
 
     const settings =
-      (ws?.providerSettings as { whatsappApiSession?: { status?: string } } | null) || {};
+      (ws?.providerSettings as {
+        email?: { enabled?: boolean };
+        whatsappApiSession?: { status?: string };
+      } | null) || {};
     const missing: string[] = [];
 
-    const status = settings?.whatsappApiSession?.status;
-    if (status !== 'connected') {
-      missing.push('whatsappApiSession.status=connected');
+    const emailProviderReady = Boolean(
+      process.env.RESEND_API_KEY || process.env.SENDGRID_API_KEY || process.env.SMTP_HOST,
+    );
+    const emailReady = Boolean(settings.email?.enabled && emailProviderReady);
+    const whatsappReady = settings?.whatsappApiSession?.status === 'connected';
+
+    if (!emailReady && !whatsappReady) {
+      if (!emailReady) {
+        missing.push('email.enabled=true com provider configurado');
+      }
+      if (!whatsappReady) {
+        missing.push('whatsappApiSession.status=connected');
+      }
     }
 
     if (missing.length) {
       throw new BadRequestException(
-        `Conecte/configure o WhatsApp antes de lançar campanha. Faltando: ${missing.join(', ')}`,
+        `Conecte um canal de entrega antes de lançar campanha. Faltando: ${missing.join(', ')}`,
       );
     }
   }

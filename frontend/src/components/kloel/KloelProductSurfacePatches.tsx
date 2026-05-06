@@ -21,11 +21,16 @@ const META_OAUTH_HOSTS = new Set([
 ]);
 
 const AUTH_BRAND_COLORS = {
+  googleBlue: 'rgb(66 133 244)',
+  googleRed: 'rgb(234 67 53)',
+  googleYellow: 'rgb(251 188 5)',
+  googleGreen: 'rgb(52 168 83)',
   apple: 'rgb(163 170 174)',
   facebook: 'rgb(24 119 242)',
   tiktokBase: 'rgb(224 221 216)',
   tiktokCyan: 'rgb(37 244 238)',
   tiktokPink: 'rgb(254 44 85)',
+  kloelAccent: 'rgb(232 93 48)',
   metaBlue: 'rgb(24 119 242)',
   textOnBrand: 'rgb(255 255 255)',
   error: 'rgb(180 35 24)',
@@ -53,6 +58,18 @@ function paintAuthIcons() {
     if (!svg) {
       continue;
     }
+    if (text === 'Google') {
+      const paths = Array.from(svg.querySelectorAll('path'));
+      const colors = [
+        AUTH_BRAND_COLORS.googleRed,
+        AUTH_BRAND_COLORS.googleBlue,
+        AUTH_BRAND_COLORS.googleYellow,
+        AUTH_BRAND_COLORS.googleGreen,
+      ];
+      paths.forEach((path, index) => {
+        path.setAttribute('fill', colors[index] || AUTH_BRAND_COLORS.googleBlue);
+      });
+    }
     if (text === 'Facebook') {
       for (const path of Array.from(svg.querySelectorAll('path'))) {
         path.setAttribute('fill', AUTH_BRAND_COLORS.facebook);
@@ -69,6 +86,14 @@ function paintAuthIcons() {
         path.setAttribute('fill', AUTH_BRAND_COLORS.tiktokBase);
       }
       svg.style.filter = `drop-shadow(-1px 1px 0 ${AUTH_BRAND_COLORS.tiktokCyan}) drop-shadow(1px -1px 0 ${AUTH_BRAND_COLORS.tiktokPink})`;
+    }
+  }
+}
+
+function paintAuthAccentPhrase() {
+  for (const node of Array.from(document.querySelectorAll('span, strong, div'))) {
+    if (textOf(node) === 'o Kloel sabe.') {
+      (node as HTMLElement).style.color = AUTH_BRAND_COLORS.kloelAccent;
     }
   }
 }
@@ -176,6 +201,7 @@ export function KloelProductSurfacePatches() {
   useEffect(() => {
     const run = () => {
       paintAuthIcons();
+      paintAuthAccentPhrase();
       removeChatQuickActions();
       patchMarketingSurfaces();
     };

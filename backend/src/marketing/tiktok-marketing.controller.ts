@@ -17,6 +17,7 @@ interface TikTokCompleteBody {
   auth_code?: string;
   kind?: TikTokKind;
   redirectUri?: string;
+  state?: string;
 }
 
 interface TikTokTokenPayload {
@@ -50,6 +51,21 @@ function readTikTokSecret() {
 
 function encodeState(workspaceId: string, kind: TikTokKind) {
   return Buffer.from(JSON.stringify({ workspaceId, kind, ts: Date.now() })).toString('base64url');
+}
+
+function decodeState(rawState: unknown): { workspaceId: string; kind: TikTokKind } | null {
+  const state = typeof rawState === 'string' ? rawState.trim() : '';
+  if (!state) {
+    return null;
+  }
+  try {
+    const parsed = JSON.parse(Buffer.from(state, 'base64url').toString('utf8'));
+    const workspaceId = String(parsed?.workspaceId || '').trim();
+    const kind = resolveKind(parsed?.kind);
+    return workspaceId ? { workspaceId, kind } : null;
+  } catch {
+    return null;
+  }
 }
 
 function resolveKind(raw: unknown): TikTokKind {
@@ -126,6 +142,7 @@ export class TikTokMarketingController {
         'user.info.profile',
         'user.account.type',
         'user.insights',
+        'biz.brand.insights',
         'video.list',
         'video.insights',
         'comment.list',
@@ -133,6 +150,8 @@ export class TikTokMarketingController {
         'video.publish',
         'video.upload',
         'biz.spark.auth',
+        'discovery.search.words',
+        'biz.ads.recommend',
         'biz.creator.info',
         'biz.creator.insights',
         'tto.campaign.link',
@@ -154,9 +173,13 @@ export class TikTokMarketingController {
     const clientKey = readTikTokClientKey();
     const secret = readTikTokSecret();
     const redirectUri = resolveRedirectUri(kind, body.redirectUri);
+    const state = decodeState(body.state);
 
     if (!code) {
       return { connected: false, status: 'missing_code' };
+    }
+    if (!state || state.workspaceId !== req.user.workspaceId || state.kind !== kind) {
+      return { connected: false, status: 'invalid_state' };
     }
     if (!clientKey || !secret) {
       return { connected: false, status: 'server_not_configured' };

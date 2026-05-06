@@ -73,6 +73,7 @@ export class MetaWhatsAppService {
       redirect_uri: this.getOAuthRedirectUri(),
       scope: scopes,
       response_type: 'code',
+      override_default_response_type: 'true',
       state: JSON.stringify({
         workspaceId,
         channel: options?.channel || null,
@@ -82,6 +83,14 @@ export class MetaWhatsAppService {
 
     if (configId) {
       params.set('config_id', configId);
+    }
+
+    if (
+      String(options?.channel || '')
+        .trim()
+        .toLowerCase() === 'whatsapp'
+    ) {
+      params.set('extras', JSON.stringify({ sessionInfoVersion: '3', version: 'v3' }));
     }
 
     return `https://www.facebook.com/${version}/dialog/oauth?${params.toString()}`;

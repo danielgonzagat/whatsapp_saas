@@ -19,6 +19,7 @@ export function TikTokIntegrationCallback({ kind }: { kind: 'creator' | 'adverti
 
   useEffect(() => {
     const code = params.get('code') || params.get('auth_code') || '';
+    const state = params.get('state') || '';
     if (!code) {
       setStatus('TikTok não retornou código de autorização.');
       return;
@@ -30,7 +31,7 @@ export function TikTokIntegrationCallback({ kind }: { kind: 'creator' | 'adverti
 
     void apiFetch('/marketing/connect/tiktok/complete', {
       method: 'POST',
-      body: { code, auth_code: code, kind, redirectUri },
+      body: { code, auth_code: code, kind, redirectUri, state },
     }).then((response) => {
       setStatus(response.error || 'TikTok conectado com sucesso.');
     });
