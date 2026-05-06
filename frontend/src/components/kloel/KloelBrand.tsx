@@ -1,6 +1,5 @@
 import { kloelT } from '@/lib/i18n/t';
 import { colors } from '@/lib/design-tokens';
-import Image from 'next/image';
 import type { CSSProperties, ReactNode } from 'react';
 import { KLOEL_SPORES } from './kloel-brand-spores';
 
@@ -84,19 +83,25 @@ function MushroomStyles() {
         }
 
         .kloel-mushroom--animated .kloel-mushroom__circuit-cap {
-          animation: kloel-pump-cap 3000ms ease-in-out infinite;
+          animation: kloel-line-pulse 3000ms ease-in-out infinite;
         }
 
         .kloel-mushroom--animated .kloel-mushroom__node-cap {
-          animation: kloel-node-cap-pulse 3000ms ease-in-out infinite;
+          animation: kloel-node-pulse 3000ms ease-in-out infinite;
         }
 
         .kloel-mushroom--animated .kloel-mushroom__circuit-stem {
-          animation: kloel-pump-stem 3000ms ease-in-out infinite;
+          animation: kloel-line-pulse 3000ms ease-in-out infinite 180ms;
         }
 
         .kloel-mushroom--animated .kloel-mushroom__node-stem {
-          animation: kloel-node-stem-pulse 3000ms ease-in-out infinite;
+          animation: kloel-node-pulse 3000ms ease-in-out infinite 180ms;
+        }
+
+        .kloel-mushroom--animated .kloel-mushroom__spore {
+          animation: kloel-spore-float 3000ms ease-out infinite;
+          transform: translate3d(0, 0, 0);
+          will-change: opacity, transform;
         }
       }
 
@@ -132,60 +137,21 @@ function MushroomStyles() {
         100% { transform: scaleY(1) scaleX(1); }
       }
 
-      @keyframes kloel-pump-cap {
-        0% { stroke-opacity: 0.35; stroke-width: 1.2; }
-        33% { stroke-opacity: 0.4; stroke-width: 1.2; }
-        40% { stroke-opacity: 1; stroke-width: 2.4; }
-        50% { stroke-opacity: 1; stroke-width: 2.6; }
-        58% { stroke-opacity: 0.5; stroke-width: 1.4; }
-        68% { stroke-opacity: 0.35; stroke-width: 1.2; }
-        100% { stroke-opacity: 0.35; stroke-width: 1.2; }
+      @keyframes kloel-line-pulse {
+        0%, 33%, 68%, 100% { stroke-opacity: 0.35; transform: scale(1); }
+        42%, 55% { stroke-opacity: 1; transform: scale(1.04); }
       }
 
-      @keyframes kloel-node-cap-pulse {
-        0% { r: 2.5; fill-opacity: 0.55; }
-        33% { r: 2.5; fill-opacity: 0.55; }
-        40% { r: 4.2; fill-opacity: 1; }
-        50% { r: 4.5; fill-opacity: 1; }
-        58% { r: 3; fill-opacity: 0.7; }
-        68% { r: 2.5; fill-opacity: 0.55; }
-        100% { r: 2.5; fill-opacity: 0.55; }
+      @keyframes kloel-node-pulse {
+        0%, 33%, 68%, 100% { fill-opacity: 0.55; transform: scale(1); }
+        42%, 55% { fill-opacity: 1; transform: scale(1.45); }
       }
 
-      @keyframes kloel-pump-stem {
-        0% { stroke-opacity: 0.3; stroke-width: 1; }
-        40% { stroke-opacity: 0.3; stroke-width: 1; }
-        46% { stroke-opacity: 1; stroke-width: 2.5; }
-        55% { stroke-opacity: 1; stroke-width: 2.8; }
-        63% { stroke-opacity: 0.5; stroke-width: 1.3; }
-        72% { stroke-opacity: 0.3; stroke-width: 1; }
-        100% { stroke-opacity: 0.3; stroke-width: 1; }
+      @keyframes kloel-spore-float {
+        0%, 43% { opacity: 0; transform: translate3d(0, 0, 0) scale(0.8); }
+        49% { opacity: var(--spore-opacity, .65); }
+        100% { opacity: 0; transform: translate3d(var(--spore-x, 0), var(--spore-y, -40px), 0) scale(1); }
       }
-
-      @keyframes kloel-node-stem-pulse {
-        0% { r: 2; fill-opacity: 0.4; }
-        40% { r: 2; fill-opacity: 0.4; }
-        46% { r: 3.8; fill-opacity: 1; }
-        55% { r: 4.2; fill-opacity: 1; }
-        63% { r: 2.8; fill-opacity: 0.6; }
-        72% { r: 2; fill-opacity: 0.4; }
-        100% { r: 2; fill-opacity: 0.4; }
-      }
-
-      @keyframes kloel-sp-l1  { 0%,43%{ opacity:0; cx:38;  cy:96; } 49%{ opacity:.7; } 100%{ opacity:0; cx:-10; cy:90; } }
-      @keyframes kloel-sp-l2  { 0%,43%{ opacity:0; cx:36;  cy:88; } 49%{ opacity:.55; } 100%{ opacity:0; cx:-5;  cy:62; } }
-      @keyframes kloel-sp-ul1 { 0%,43%{ opacity:0; cx:48;  cy:75; } 49%{ opacity:.7; } 100%{ opacity:0; cx:10;  cy:22; } }
-      @keyframes kloel-sp-ul2 { 0%,43%{ opacity:0; cx:53;  cy:80; } 49%{ opacity:.5; } 100%{ opacity:0; cx:18;  cy:32; } }
-      @keyframes kloel-sp-tl1 { 0%,43%{ opacity:0; cx:70;  cy:58; } 49%{ opacity:.7; } 100%{ opacity:0; cx:45;  cy:-10; } }
-      @keyframes kloel-sp-tl2 { 0%,43%{ opacity:0; cx:78;  cy:62; } 49%{ opacity:.45; } 100%{ opacity:0; cx:55;  cy:-2; } }
-      @keyframes kloel-sp-t1  { 0%,43%{ opacity:0; cx:94;  cy:48; } 49%{ opacity:.8; } 100%{ opacity:0; cx:90;  cy:-25; } }
-      @keyframes kloel-sp-t2  { 0%,43%{ opacity:0; cx:106; cy:50; } 49%{ opacity:.6; } 100%{ opacity:0; cx:112; cy:-20; } }
-      @keyframes kloel-sp-tr1 { 0%,43%{ opacity:0; cx:122; cy:56; } 49%{ opacity:.7; } 100%{ opacity:0; cx:158; cy:-8; } }
-      @keyframes kloel-sp-tr2 { 0%,43%{ opacity:0; cx:128; cy:62; } 49%{ opacity:.5; } 100%{ opacity:0; cx:150; cy:0; } }
-      @keyframes kloel-sp-ur1 { 0%,43%{ opacity:0; cx:148; cy:75; } 49%{ opacity:.65; } 100%{ opacity:0; cx:195; cy:25; } }
-      @keyframes kloel-sp-ur2 { 0%,43%{ opacity:0; cx:152; cy:82; } 49%{ opacity:.45; } 100%{ opacity:0; cx:190; cy:38; } }
-      @keyframes kloel-sp-r1  { 0%,43%{ opacity:0; cx:160; cy:88; } 49%{ opacity:.6; } 100%{ opacity:0; cx:210; cy:65; } }
-      @keyframes kloel-sp-r2  { 0%,43%{ opacity:0; cx:163; cy:95; } 49%{ opacity:.7; } 100%{ opacity:0; cx:212; cy:90; } }
     `}</style>
   );
 }
@@ -217,9 +183,14 @@ function renderSpores(mode: MushroomVisualProps['spores']) {
         cy={spore.startCy}
         r={spore.radius}
         fill={ember}
-        style={{
-          animation: `${spore.animation} 3000ms ease-out infinite ${spore.delayMs}ms`,
-        }}
+        style={
+          {
+            '--spore-x': `${spore.endCx - spore.startCx}px`,
+            '--spore-y': `${spore.endCy - spore.startCy}px`,
+            '--spore-opacity': spore.opacity,
+            animationDelay: `${spore.delayMs}ms`,
+          } as CSSProperties
+        }
       />
     );
   });
@@ -236,44 +207,6 @@ export function KloelMushroomVisual({
   ariaHidden = false,
   fit = 'default',
 }: MushroomVisualProps) {
-  if (animated) {
-    return (
-      <span
-        aria-hidden={ariaHidden}
-        aria-label={ariaHidden ? undefined : title}
-        role={ariaHidden ? 'presentation' : 'img'}
-        style={{
-          width: size,
-          height: size,
-          display: 'inline-flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
-          ...style,
-        }}
-      >
-        <Image
-          src="/kloel-mushroom-animated.svg"
-          alt=""
-          aria-hidden
-          draggable={false}
-          unoptimized
-          width={size}
-          height={size}
-          sizes={`${size}px`}
-          style={{
-            width: '100%',
-            height: '100%',
-            display: 'block',
-            objectFit: 'contain',
-            pointerEvents: 'none',
-            userSelect: 'none',
-          }}
-        />
-      </span>
-    );
-  }
-
   const viewBox = fit === 'icon' ? '22 4 156 156' : '0 0 200 200';
 
   return (
@@ -286,7 +219,13 @@ export function KloelMushroomVisual({
       viewBox={viewBox}
       xmlns="http://www.w3.org/2000/svg"
       className={animated ? 'kloel-mushroom--animated' : undefined}
-      style={{ display: 'block', flexShrink: 0, overflow: 'visible', ...style }}
+      style={{
+        display: 'block',
+        flexShrink: 0,
+        overflow: 'visible',
+        transform: 'translate3d(0,0,0)',
+        ...style,
+      }}
     >
       <MushroomStyles />
       <g>
