@@ -10,6 +10,8 @@ const YOUTUBE_HOSTS = new Set([
 
 const VIMEO_HOSTS = new Set(['vimeo.com', 'www.vimeo.com', 'player.vimeo.com']);
 const VIMEO_ID_RE = /^\d+$/;
+const YOUTUBE_EMBED_ORIGIN = 'https://www.youtube.com';
+const VIMEO_EMBED_ORIGIN = 'https://player.vimeo.com';
 
 function coerceToString(value: unknown): string {
   return String(value || '');
@@ -152,31 +154,44 @@ function isSafeEmbedUrl(raw: string): boolean {
   }
 }
 
+function buildYouTubeEmbedUrl(videoId: string): string {
+  const embed = new URL(`/embed/${videoId}`, YOUTUBE_EMBED_ORIGIN);
+  embed.searchParams.set('autoplay', '1');
+  return embed.toString();
+}
+
+function buildVimeoEmbedUrl(videoId: string): string {
+  const embed = new URL(`/video/${videoId}`, VIMEO_EMBED_ORIGIN);
+  embed.searchParams.set('autoplay', '1');
+  return embed.toString();
+}
+
 /** To supported embed url. */
 export function toSupportedEmbedUrl(rawUrl: string): string | null {
-  const youtubeUrl = toYouTubeEmbedUrl(rawUrl);
-  if (youtubeUrl) {
-    const embed = new URL(youtubeUrl);
-    embed.searchParams.set('autoplay', '1');
-    const safe = embed.toString();
-    return isSafeEmbedUrl(safe) ? safe : null;
-  }
-
   try {
     const url = new URL(rawUrl);
     const host = normalizeHost(url.hostname);
+
+    if (YOUTUBE_HOSTS.has(host)) {
+      const videoId = extractYouTubeId(url, host);
+      if (!isValidYouTubeId(videoId)) {
+        return null;
+      }
+
+      const safe = buildYouTubeEmbedUrl(videoId);
+      return isSafeEmbedUrl(safe) ? safe : null;
+    }
+
     if (!VIMEO_HOSTS.has(host)) {
       return null;
     }
 
-    const videoId = extractVimeoId(url.pathname);
-    if (!isValidVimeoId(videoId)) {
+    const vimeoId = extractVimeoId(url.pathname);
+    if (!isValidVimeoId(vimeoId)) {
       return null;
     }
 
-    const embed = new URL(`https://player.vimeo.com/video/${videoId}`);
-    embed.searchParams.set('autoplay', '1');
-    const safe = embed.toString();
+    const safe = buildVimeoEmbedUrl(vimeoId);
     return isSafeEmbedUrl(safe) ? safe : null;
   } catch {
     return null;

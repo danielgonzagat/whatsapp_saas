@@ -38,7 +38,8 @@
     "cleanup:legacy-products": "ts-node scripts/remove-legacy-products.ts"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "3.1040.0",
+    "@aws-sdk/client-s3": "3.1042.0",
+    "@aws-sdk/s3-request-presigner": "3.1042.0",
     "@nestjs-modules/ioredis": "2.2.1",
     "@nestjs/common": "11.1.19",
     "@nestjs/config": "4.0.4",
@@ -57,17 +58,20 @@
     "@types/bcrypt": "6.0.0",
     "@types/cookie-parser": "1.4.10",
     "bcrypt": "6.0.0",
-    "bullmq": "5.76.4",
+    "bullmq": "5.76.5",
     "class-transformer": "0.5.1",
     "class-validator": "0.15.1",
     "cookie-parser": "1.4.7",
-    "dd-trace": "5.99.0",
+    "cors": "2.8.6",
+    "dd-trace": "5.100.0",
+    "dotenv": "17.4.2",
+    "facebook-nodejs-business-sdk": "24.0.1",
     "firebase-admin": "13.8.0",
     "helmet": "8.1.0",
     "htmlparser2": "10.1.0",
     "ioredis": "5.10.1",
-    "joi": "18.1.2",
-    "openai": "6.35.0",
+    "joi": "18.2.1",
+    "openai": "6.36.0",
     "otplib": "12.0.1",
     "pdf-parse": "2.4.5",
     "prisma": "5.22.0",
@@ -78,9 +82,10 @@
     "socket.io": "4.8.3",
     "stripe": "22.1.0",
     "swagger-ui-express": "5.0.1",
-    "zod": "4.4.1"
+    "zod": "4.4.3"
   },
   "devDependencies": {
+    "@eslint/eslintrc": "3.3.5",
     "@eslint/js": "9.39.4",
     "@nestjs/cli": "11.0.21",
     "@nestjs/schematics": "11.1.0",
@@ -101,12 +106,14 @@
     "jest": "30.3.0",
     "jest-junit": "16.0.0",
     "prettier": "3.8.3",
+    "source-map-support": "0.5.21",
     "supertest": "7.2.2",
     "ts-jest": "29.4.9",
+    "ts-loader": "9.5.7",
     "ts-node": "10.9.2",
     "tsconfig-paths": "4.2.0",
     "typescript": "5.9.3",
-    "typescript-eslint": "8.59.0"
+    "typescript-eslint": "8.59.1"
   },
   "jest": {
     "moduleFileExtensions": [

@@ -264,28 +264,28 @@ export const WebhookDuplicateResponseSchema = z.object({
 
 // ─── Type exports ──────────────────────────────────────────────────────────
 
-type AuthUser = z.infer<typeof AuthUserSchema>;
+export type AuthUser = z.infer<typeof AuthUserSchema>;
 /** Auth token response type. */
-type AuthTokenResponse = z.infer<typeof AuthTokenResponseSchema>;
+export type AuthTokenResponse = z.infer<typeof AuthTokenResponseSchema>;
 /** Auth check email response type. */
-type AuthCheckEmailResponse = z.infer<typeof AuthCheckEmailResponseSchema>;
+export type AuthCheckEmailResponse = z.infer<typeof AuthCheckEmailResponseSchema>;
 /** Auth refresh response type. */
-type AuthRefreshResponse = z.infer<typeof AuthRefreshResponseSchema>;
+export type AuthRefreshResponse = z.infer<typeof AuthRefreshResponseSchema>;
 /** Billing subscription response type. */
-type BillingSubscriptionResponse = z.infer<typeof BillingSubscriptionResponseSchema>;
+export type BillingSubscriptionResponse = z.infer<typeof BillingSubscriptionResponseSchema>;
 /** Billing checkout response type. */
-type BillingCheckoutResponse = z.infer<typeof BillingCheckoutResponseSchema>;
+export type BillingCheckoutResponse = z.infer<typeof BillingCheckoutResponseSchema>;
 /** Workspace me response type. */
-type WorkspaceMeResponse = z.infer<typeof WorkspaceMeResponseSchema>;
+export type WorkspaceMeResponse = z.infer<typeof WorkspaceMeResponseSchema>;
 /** Whats app status response type. */
-type WhatsAppStatusResponse = z.infer<typeof WhatsAppStatusResponseSchema>;
+export type WhatsAppStatusResponse = z.infer<typeof WhatsAppStatusResponseSchema>;
 /** Whats app start session response type. */
-type WhatsAppStartSessionResponse = z.infer<typeof WhatsAppStartSessionResponseSchema>;
+export type WhatsAppStartSessionResponse = z.infer<typeof WhatsAppStartSessionResponseSchema>;
 /** Whats app qr response type. */
-type WhatsAppQrResponse = z.infer<typeof WhatsAppQrResponseSchema>;
+export type WhatsAppQrResponse = z.infer<typeof WhatsAppQrResponseSchema>;
 /** Health liveness response type. */
-type HealthLivenessResponse = z.infer<typeof HealthLivenessResponseSchema>;
+export type HealthLivenessResponse = z.infer<typeof HealthLivenessResponseSchema>;
 /** Health readiness response type. */
-type HealthReadinessResponse = z.infer<typeof HealthReadinessResponseSchema>;
+export type HealthReadinessResponse = z.infer<typeof HealthReadinessResponseSchema>;
 /** Webhook duplicate response type. */
-type WebhookDuplicateResponse = z.infer<typeof WebhookDuplicateResponseSchema>;
+export type WebhookDuplicateResponse = z.infer<typeof WebhookDuplicateResponseSchema>;
