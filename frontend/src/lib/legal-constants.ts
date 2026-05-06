@@ -68,12 +68,7 @@ export const legalContentTables = {
       'US',
       'Legítimo interesse e cláusulas contratuais padrão',
     ],
-    [
-      'Asaas',
-      'Processamento de pagamentos no Brasil',
-      'BR',
-      'Execução de contrato e obrigação regulatória',
-    ],
+    ['Processamento de pagamentos no Brasil', 'BR', 'Execução de contrato e obrigação regulatória'],
     [
       'Stripe',
       'Pagamentos internacionais e métodos acelerados',

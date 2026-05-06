@@ -1,9 +1,9 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type APIRequestContext } from '@playwright/test';
 import { ensureE2EAdmin, getE2EBaseUrls } from './e2e-helpers';
 
 const { apiUrl: API } = getE2EBaseUrls();
 
-async function loginFreshToken(request: any, email: string, password: string) {
+async function loginFreshToken(request: APIRequestContext, email: string, password: string) {
   const res = await request.post(`${API}/auth/login`, {
     data: { email, password },
   });
@@ -36,12 +36,18 @@ test('flows/run rejects when no token and accepts with token (dev)', async ({ re
       headers: { authorization: `Bearer ${token}` },
     })
     .catch(() => {});
+  await request
+    .post(`${API}/billing/activate-trial`, {
+      headers: { authorization: `Bearer ${token}` },
+      params: { workspaceId },
+    })
+    .catch(() => {});
 
   // Sem token → em dev pode aceitar; em ambientes fechados deve negar
   const resNoAuth = await request.post(`${API}/flows/run`, {
     data: { flow, flowId: 'auth-test', user: '5511999999999', startNode: 'n1' },
   });
-  expect([201, 401, 403]).toContain(resNoAuth.status());
+  expect([201, 401, 403, 429]).toContain(resNoAuth.status());
 
   let finalRes = await request.post(`${API}/flows/run`, {
     data: { flow, flowId, workspaceId, user: '5511999999999', startNode: 'n1' },

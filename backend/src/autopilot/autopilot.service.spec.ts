@@ -1,17 +1,26 @@
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AutopilotService } from './autopilot.service';
-import { PrismaService } from '../prisma/prisma.service';
-import { ConfigService } from '@nestjs/config';
-import { InboxService } from '../inbox/inbox.service';
-import { SmartTimeService } from '../analytics/smart-time/smart-time.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { AutopilotAnalyticsService } from './autopilot-analytics.service';
+import { AutopilotCycleService } from './autopilot-cycle.service';
+import { AutopilotOpsService } from './autopilot-ops.service';
+import { AutopilotOpsConversionService } from './autopilot-ops-conversion.service';
 
-const mockQueueAdd: any = jest.fn();
-let mockAutopilotAdd: any;
-let mockRedisSet: any;
-let mockRedisGet: any;
-let mockQueueGetJobCounts: any;
+type AnyMock = jest.Mock & {
+  mockResolvedValue: (v: unknown) => AnyMock;
+  mockResolvedValueOnce: (v: unknown) => AnyMock;
+  mockRejectedValue: (err: unknown) => AnyMock;
+  mockReturnValue: (v: unknown) => AnyMock;
+  mockReturnValueOnce: (v: unknown) => AnyMock;
+  mockImplementation: (fn: (...args: unknown[]) => unknown) => AnyMock;
+};
+const mockQueueAdd: AnyMock = jest.fn() as AnyMock;
+let mockAutopilotAdd: AnyMock;
+let mockRedisSet: AnyMock;
+let mockRedisGet: AnyMock;
+let mockQueueGetJobCounts: AnyMock;
 
 jest.mock('../queue/queue', () => ({
   autopilotQueue: { add: jest.fn(), getJobCounts: jest.fn() },
@@ -33,7 +42,31 @@ jest.mock('bullmq', () => ({
 describe('AutopilotService', () => {
   let service: AutopilotService;
 
-  const mockPrisma: any = {
+  type FlexMock = jest.Mock & {
+    mockResolvedValue: (v: unknown) => FlexMock;
+    mockResolvedValueOnce: (v: unknown) => FlexMock;
+    mockRejectedValue: (err: unknown) => FlexMock;
+    mockReturnValue: (v: unknown) => FlexMock;
+    mockImplementation: (fn: (...args: unknown[]) => unknown) => FlexMock;
+  };
+  type MockedPrismaShape = {
+    $transaction: FlexMock;
+    workspace: { findUnique: FlexMock; update: FlexMock };
+    conversation: { findMany: FlexMock };
+    campaign: { create: FlexMock; update: FlexMock };
+    contact: { upsert: FlexMock };
+    message: { count: FlexMock; findFirst: FlexMock };
+    subscription: { findUnique: FlexMock };
+    autopilotEvent: {
+      create: FlexMock;
+      findMany: FlexMock;
+      count: FlexMock;
+      findFirst: FlexMock;
+    };
+    auditLog: { create: FlexMock };
+  };
+  const mockPrisma: MockedPrismaShape = {
+    $transaction: jest.fn(),
     workspace: {
       findUnique: jest.fn(),
       update: jest.fn(),
@@ -65,23 +98,58 @@ describe('AutopilotService', () => {
       create: jest.fn(),
     },
   };
+  mockPrisma.$transaction.mockImplementation((callback: (tx: MockedPrismaShape) => unknown) =>
+    callback(mockPrisma),
+  );
 
-  const mockConfig = {
-    get: jest.fn((key: string) => {
-      const map: Record<string, unknown> = {
-        OPENAI_API_KEY: null,
-      };
-      return map[key];
-    }),
+  const mockAnalytics = {};
+
+  const mockPlanLimits = {
+    ensureMessageRate: jest.fn<() => Promise<void>>().mockResolvedValue(undefined),
+    ensureSubscriptionActive: jest.fn<() => Promise<void>>().mockResolvedValue(undefined),
+    trackMessageSend: jest.fn<() => Promise<void>>().mockResolvedValue(undefined),
+    ensureFlowRunRate: jest.fn<() => Promise<void>>().mockResolvedValue(undefined),
+    ensureTokenBudget: jest.fn<() => Promise<void>>().mockResolvedValue(undefined),
+    trackAiUsage: jest.fn<() => Promise<void>>().mockResolvedValue(undefined),
+    ensureFlowLimit: jest.fn<() => Promise<void>>().mockResolvedValue(undefined),
+    ensureCampaignLimit: jest.fn<() => Promise<void>>().mockResolvedValue(undefined),
   };
 
-  const mockInbox = {};
-  const mockSmartTime = {};
+  const mockCycle: {
+    runAutopilotCycle: jest.Mock<(...args: unknown[]) => unknown>;
+    moneyMachine: jest.Mock<(...args: unknown[]) => unknown>;
+    getRuntimeConfig: jest.Mock<(...args: unknown[]) => unknown>;
+    getQueueStats: jest.Mock<(...args: unknown[]) => unknown>;
+    nextBestAction: jest.Mock<(...args: unknown[]) => unknown>;
+    ensureCompliance: jest.Mock<(...args: unknown[]) => unknown>;
+  } = {
+    runAutopilotCycle: jest.fn<() => Promise<unknown>>().mockResolvedValue({
+      status: 'disabled',
+      reason: 'legacy_backend_autopilot_disabled',
+    }),
+    moneyMachine: jest.fn<() => Promise<unknown>>().mockResolvedValue({
+      created: [],
+      segments: { hot: 0, warm: 0, cold: 0 },
+      autoSend: false,
+      scheduledAt: null,
+      status: 'disabled',
+      reason: 'legacy_backend_autopilot_disabled',
+    }),
+    getRuntimeConfig: jest.fn(),
+    getQueueStats: jest.fn(),
+    nextBestAction: jest.fn(),
+    ensureCompliance: jest.fn(),
+  };
 
   beforeEach(async () => {
-    const queueModule: any = jest.requireMock('../queue/queue');
+    const queueModule: {
+      autopilotQueue: { add: jest.Mock<(...args: unknown[]) => unknown>; getJobCounts: jest.Mock };
+      flowQueue: { add: jest.Mock };
+    } = jest.requireMock('../queue/queue');
 
-    const redisModule: any = jest.requireMock('../common/redis/redis.util');
+    const redisModule: { createRedisClient: jest.Mock } = jest.requireMock(
+      '../common/redis/redis.util',
+    );
     mockAutopilotAdd = queueModule.autopilotQueue.add;
     mockQueueGetJobCounts = queueModule.autopilotQueue.getJobCounts;
     void queueModule.flowQueue.add;
@@ -90,18 +158,18 @@ describe('AutopilotService', () => {
       providers: [
         AutopilotService,
         { provide: PrismaService, useValue: mockPrisma },
-        { provide: ConfigService, useValue: mockConfig },
-        { provide: InboxService, useValue: mockInbox },
-        { provide: SmartTimeService, useValue: mockSmartTime },
-        { provide: PlanLimitsService, useValue: { trackAiUsage: jest.fn() } },
+        { provide: AutopilotAnalyticsService, useValue: mockAnalytics },
+        { provide: AutopilotCycleService, useValue: mockCycle },
+        { provide: PlanLimitsService, useValue: mockPlanLimits },
+        AutopilotOpsConversionService,
+        AutopilotOpsService,
       ],
     }).compile();
 
     service = module.get<AutopilotService>(AutopilotService);
-    const redisClient =
-      redisModule.createRedisClient.mock.results[
-        redisModule.createRedisClient.mock.results.length - 1
-      ]?.value || {};
+    const redisClient = (redisModule.createRedisClient.mock.results[
+      redisModule.createRedisClient.mock.results.length - 1
+    ]?.value ?? {}) as { set: jest.Mock<(...args: unknown[]) => unknown>; get: jest.Mock };
     mockRedisSet = redisClient.set;
     mockRedisGet = redisClient.get;
   });

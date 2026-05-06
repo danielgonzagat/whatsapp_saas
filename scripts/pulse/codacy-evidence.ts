@@ -1,10 +1,26 @@
-import type {
-  PulseCodacyEvidence,
-  PulseCodacyEvidenceHotspot,
-  PulseConvergenceOwnerLane,
-  PulseScopeFile,
-  PulseScopeState,
-} from './types';
+import type { PulseCodacyEvidence, PulseCodacyEvidenceHotspot } from './types.structural';
+import type { PulseConvergenceOwnerLane } from './types.gate-failure';
+import type { PulseScopeFile, PulseScopeState } from './types.truth.scope';
+import { classifyCodacyIssues } from './codacy-false-positive-classifier';
+import type { CodacyClassification } from './types.codacy-classification';
+
+/**
+ * Pulse codacy evidence shape extended with the false-positive classification.
+ *
+ * This intersection keeps the upstream `PulseCodacyEvidence` shape unchanged
+ * (consumed by certification.ts owned by sibling agent B1) while exposing the
+ * actionable / non-actionable HIGH split alongside the hotspot summary so
+ * downstream consumers (certification staticPass gate, directive blockers)
+ * can distinguish real findings from Codacy demo/template noise.
+ */
+export interface PulseCodacyEvidenceWithClassification extends PulseCodacyEvidence {
+  /** Number of HIGH severity issues that this codebase can fix in product code. */
+  actionableHigh: number;
+  /** Number of HIGH severity issues raised by non-actionable demo/template patterns. */
+  nonActionableHigh: number;
+  /** Detailed classification record, including per-pattern counts and human action. */
+  classification: CodacyClassification;
+}
 
 function sortHotspots(hotspots: PulseCodacyEvidenceHotspot[]): PulseCodacyEvidenceHotspot[] {
   return [...hotspots].sort((left, right) => {
@@ -23,7 +39,9 @@ function getOwnerLane(file: PulseScopeFile | null): PulseConvergenceOwnerLane {
 }
 
 /** Build Codacy evidence from the current scope snapshot. */
-export function buildCodacyEvidence(scopeState: PulseScopeState): PulseCodacyEvidence {
+export function buildCodacyEvidence(
+  scopeState: PulseScopeState,
+): PulseCodacyEvidenceWithClassification {
   const fileByPath = new Map(scopeState.files.map((file) => [file.path, file] as const));
   const topFilesByPath = new Map(
     scopeState.codacy.topFiles.map((entry) => [entry.filePath, entry]),
@@ -63,6 +81,8 @@ export function buildCodacyEvidence(scopeState: PulseScopeState): PulseCodacyEvi
     }),
   );
 
+  const classification = classifyCodacyIssues(scopeState.codacy, { rootDir: scopeState.rootDir });
+
   return {
     generatedAt: new Date().toISOString(),
     summary: {
@@ -75,5 +95,8 @@ export function buildCodacyEvidence(scopeState: PulseScopeState): PulseCodacyEvi
       humanRequiredHotspots: hotspots.filter((item) => item.protectedByGovernance).length,
     },
     hotspots,
+    actionableHigh: classification.actionableHigh,
+    nonActionableHigh: classification.nonActionableHigh,
+    classification,
   };
 }

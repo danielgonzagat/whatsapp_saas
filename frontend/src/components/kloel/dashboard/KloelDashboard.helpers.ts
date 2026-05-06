@@ -6,7 +6,38 @@ import {
   KLOEL_CHAT_CAPABILITY_PLACEHOLDERS,
   type KloelChatAttachment,
   type KloelChatCapability,
+  type KloelLinkedProduct,
 } from '@/lib/kloel-chat';
+
+export interface OwnedProductSummary {
+  id?: string | null;
+  name?: string | null;
+  imageUrl?: string | null;
+  status?: string | null;
+  active?: boolean | null;
+  category?: string | null;
+}
+
+export interface OwnedProductsPayload {
+  products?: OwnedProductSummary[] | null;
+}
+
+export interface AffiliateCatalogProduct {
+  id?: string | null;
+  productId?: string | null;
+  name?: string | null;
+  imageUrl?: string | null;
+  thumbnailUrl?: string | null;
+  price?: number | null;
+  category?: string | null;
+}
+
+export type AffiliateRequestRow = {
+  id: string;
+  status?: string | null;
+  affiliateProductId?: string | null;
+  affiliateProduct?: AffiliateCatalogProduct | null;
+};
 
 /** Json record type. */
 export type JsonRecord = Record<string, unknown>;
@@ -110,4 +141,79 @@ export function computeDrainStep(bufferLength: number) {
     return 10;
   }
   return 5;
+}
+
+function resolveOwnedProductStatus(product: OwnedProductSummary): KloelLinkedProduct['status'] {
+  const rawStatus = String(product.status || '')
+    .trim()
+    .toUpperCase();
+  if (product.active || rawStatus === 'PUBLISHED' || rawStatus === 'APPROVED') {
+    return 'published';
+  }
+  return 'draft';
+}
+
+/** Map linkable products from API payloads. */
+export function mapLinkableProducts(payload: {
+  owned: OwnedProductsPayload | null;
+  affiliate: {
+    items?: AffiliateRequestRow[] | null;
+    products?: AffiliateRequestRow[] | null;
+  } | null;
+}): KloelLinkedProduct[] {
+  const ownedProducts = Array.isArray(payload.owned?.products) ? payload.owned?.products : [];
+  const affiliateItems = Array.isArray(payload.affiliate?.products)
+    ? payload.affiliate?.products
+    : Array.isArray(payload.affiliate?.items)
+      ? payload.affiliate?.items
+      : [];
+
+  const owned = ownedProducts.map((product) => ({
+    id: String(product.id || ''),
+    source: 'owned' as const,
+    name: String(product.name || 'Produto sem nome').trim() || 'Produto sem nome',
+    imageUrl: typeof product.imageUrl === 'string' ? product.imageUrl : null,
+    status: resolveOwnedProductStatus(product),
+    productId: String(product.id || ''),
+    subtitle:
+      typeof product.category === 'string' && product.category.trim()
+        ? product.category.trim()
+        : null,
+  }));
+
+  const affiliate = affiliateItems
+    .filter((request) => {
+      const status = String(request.status || '')
+        .trim()
+        .toUpperCase();
+      return status === 'APPROVED' || request.affiliateProduct;
+    })
+    .map((request) => {
+      const affiliateProduct = request.affiliateProduct || {};
+      const affiliateProductId = String(
+        affiliateProduct.id || request.affiliateProductId || '',
+      ).trim();
+      return {
+        id: affiliateProductId,
+        source: 'affiliate' as const,
+        name: String(affiliateProduct.name || 'Produto afiliado').trim() || 'Produto afiliado',
+        imageUrl:
+          typeof affiliateProduct.imageUrl === 'string'
+            ? affiliateProduct.imageUrl
+            : typeof affiliateProduct.thumbnailUrl === 'string'
+              ? affiliateProduct.thumbnailUrl
+              : null,
+        status: 'affiliate' as const,
+        productId:
+          typeof affiliateProduct.productId === 'string' ? affiliateProduct.productId : null,
+        affiliateProductId,
+        subtitle:
+          typeof affiliateProduct.category === 'string' && affiliateProduct.category.trim()
+            ? affiliateProduct.category.trim()
+            : 'Marketplace',
+      };
+    })
+    .filter((product) => product.id);
+
+  return [...owned, ...affiliate];
 }

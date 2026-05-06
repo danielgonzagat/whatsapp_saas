@@ -44,8 +44,13 @@ const sourceFiles = project.getSourceFiles();
 
 const TARGET_TAGS = new Set(['div', 'span', 'li', 'a']);
 
-const KEYDOWN_HANDLER =
-  "(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); (e.currentTarget as HTMLElement).click(); } }";
+// Keyboard values that should activate a clickable element.
+const ACTIVATION_VALUES = ['Enter', ' '];
+const KEYBOARD_HANDLER_ATTR_BODY = [
+  '(e) => { if (',
+  ACTIVATION_VALUES.map((value) => `e.key === '${value}'`).join(' || '),
+  ') { e.preventDefault(); (e.currentTarget as HTMLElement).click(); } }',
+].join('');
 
 let filesModified = 0;
 const patchedByTag = { div: 0, span: 0, li: 0, a: 0 };
@@ -88,68 +93,86 @@ function getTagName(element) {
   return tagNameNode ? tagNameNode.getText() : null;
 }
 
+function classifyTagAndClick(element, tag) {
+  return (
+    ((!tag || !TARGET_TAGS.has(tag)) && 'notTargetTag') ||
+    (!hasAttr(element, 'onClick') && 'noOnClick') ||
+    null
+  );
+}
+
+function classifyExistingHandlers(element) {
+  return (
+    (hasAttr(element, 'onKeyDown') && 'alreadyHasOnKeyDown') ||
+    (hasSpreadAttribute(element) && 'hasSpreadAttribute') ||
+    (hasAttr(element, 'role') && hasAttr(element, 'tabIndex') && 'alreadyRemediated') ||
+    null
+  );
+}
+
+function classifySkip(element, tag) {
+  return classifyTagAndClick(element, tag) ?? classifyExistingHandlers(element);
+}
+
 function processElement(element) {
   const tag = getTagName(element);
-  if (!tag || !TARGET_TAGS.has(tag)) {
-    skipReasons.notTargetTag += 1;
+  const skipKey = classifySkip(element, tag);
+  if (skipKey) {
+    skipReasons[skipKey] += 1;
     return false;
   }
-  if (!hasAttr(element, 'onClick')) {
-    skipReasons.noOnClick += 1;
-    return false;
-  }
-  if (hasAttr(element, 'onKeyDown')) {
-    skipReasons.alreadyHasOnKeyDown += 1;
-    return false;
-  }
-  if (hasSpreadAttribute(element)) {
-    skipReasons.hasSpreadAttribute += 1;
-    return false;
-  }
-  // Already remediated: has role="button" AND tabIndex
-  if (hasAttr(element, 'role') && hasAttr(element, 'tabIndex')) {
-    skipReasons.alreadyRemediated += 1;
-    return false;
-  }
-
   element.addAttribute({
     name: 'onKeyDown',
-    initializer: `{${KEYDOWN_HANDLER}}`,
+    initializer: `{${KEYBOARD_HANDLER_ATTR_BODY}}`,
   });
   patchedByTag[tag] += 1;
   return true;
 }
 
-for (const sourceFile of sourceFiles) {
-  let changed = 0;
-
-  const openings = sourceFile.getDescendantsOfKind(SyntaxKind.JsxOpeningElement);
-  for (const el of openings) {
-    if (processElement(el)) changed += 1;
+function tallyChangedElements(sourceFile, kind) {
+  let count = 0;
+  for (const el of sourceFile.getDescendantsOfKind(kind)) {
+    if (processElement(el)) {
+      count += 1;
+    }
   }
+  return count;
+}
 
-  const selfClosings = sourceFile.getDescendantsOfKind(SyntaxKind.JsxSelfClosingElement);
-  for (const el of selfClosings) {
-    if (processElement(el)) changed += 1;
-  }
+function persistChangedSourceFile(sourceFile, changed) {
+  sourceFile.saveSync();
+  filesModified += 1;
+  const rel = path.relative(repoRoot, sourceFile.getFilePath());
+  console.log(`  ${rel}: +${changed}`);
+}
 
+function processSourceFile(sourceFile) {
+  const changed =
+    tallyChangedElements(sourceFile, SyntaxKind.JsxOpeningElement) +
+    tallyChangedElements(sourceFile, SyntaxKind.JsxSelfClosingElement);
   if (changed > 0) {
-    sourceFile.saveSync();
-    filesModified += 1;
-    const rel = path.relative(repoRoot, sourceFile.getFilePath());
-    console.log(`  ${rel}: +${changed}`);
+    persistChangedSourceFile(sourceFile, changed);
   }
 }
 
+for (const sourceFile of sourceFiles) {
+  processSourceFile(sourceFile);
+}
+
+const reportLine = (label, value) => `${label.padEnd(40, ' ')}${value}`;
+
 console.log('');
 console.log('=== Summary ===');
-console.log(`Files modified:                         ${filesModified}`);
-console.log(`<div>   patched:                        ${patchedByTag.div}`);
-console.log(`<span>  patched:                        ${patchedByTag.span}`);
-console.log(`<li>    patched:                        ${patchedByTag.li}`);
-console.log(`<a>     patched:                        ${patchedByTag.a}`);
+console.log(reportLine('Files modified:', filesModified));
+console.log(reportLine('div     patched:', patchedByTag.div));
+console.log(reportLine('span    patched:', patchedByTag.span));
+console.log(reportLine('li      patched:', patchedByTag.li));
+console.log(reportLine('a       patched:', patchedByTag.a));
 console.log(
-  `Total patched:                          ${patchedByTag.div + patchedByTag.span + patchedByTag.li + patchedByTag.a}`,
+  reportLine(
+    'Total patched:',
+    patchedByTag.div + patchedByTag.span + patchedByTag.li + patchedByTag.a,
+  ),
 );
 console.log(`Skip: already has onKeyDown:            ${skipReasons.alreadyHasOnKeyDown}`);
 console.log(`Skip: has JSX spread attribute:         ${skipReasons.hasSpreadAttribute}`);

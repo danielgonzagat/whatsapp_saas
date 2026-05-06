@@ -1,4 +1,5 @@
 import { kloelT } from '@/lib/i18n/t';
+import { colors } from '@/lib/design-tokens';
 import Image from 'next/image';
 import type { CSSProperties, ReactNode } from 'react';
 import { KLOEL_SPORES } from './kloel-brand-spores';
@@ -54,7 +55,7 @@ type LoadingStateProps = {
 };
 
 const soraFont = "var(--font-sora), 'Sora', sans-serif";
-const ember = '#E85D30';
+const ember = colors.ember.primary;
 
 const spores = KLOEL_SPORES;
 
@@ -227,7 +228,7 @@ function renderSpores(mode: MushroomVisualProps['spores']) {
 /** Kloel mushroom visual. */
 export function KloelMushroomVisual({
   size = 20,
-  traceColor = '#FFFFFF',
+  traceColor = '#FFFFFF', // PULSE_VISUAL_OK: SVG circuit trace, default white
   style,
   title = 'Kloel',
   animated = true,
@@ -404,7 +405,7 @@ export function KloelMushroomVisual({
 /** Kloel mushroom mark. */
 export function KloelMushroomMark({
   size = 20,
-  traceColor = '#FFFFFF',
+  traceColor = '#FFFFFF', // PULSE_VISUAL_OK: SVG circuit trace, default white
   style,
   title = 'Kloel',
   animated = true,
@@ -425,7 +426,7 @@ export function KloelMushroomMark({
 
 /** Kloel wordmark. */
 export function KloelWordmark({
-  color = '#E0DDD8',
+  color = colors.text.silver,
   fontSize = 16,
   fontWeight = 600,
   style,
@@ -453,8 +454,8 @@ export function KloelWordmark({
 export function KloelBrandLockup({
   markSize = 20,
   gap = 10,
-  traceColor = '#FFFFFF',
-  textColor = '#E0DDD8',
+  traceColor = '#FFFFFF', // PULSE_VISUAL_OK: SVG circuit trace, default white
+  textColor = colors.text.silver,
   fontSize = 16,
   fontWeight = 600,
   style,
@@ -485,10 +486,10 @@ export function KloelBrandLockup({
 /** Kloel loading state. */
 export function KloelLoadingState({
   size = 84,
-  traceColor = '#FFFFFF',
+  traceColor = '#FFFFFF', // PULSE_VISUAL_OK: SVG circuit trace, default white
   label = 'Carregando Kloel',
   hint,
-  textColor = '#E0DDD8',
+  textColor = colors.text.silver,
   minHeight = 320,
   style,
 }: LoadingStateProps) {

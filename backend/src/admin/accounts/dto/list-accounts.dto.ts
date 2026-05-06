@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
+import { IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
 
 /** List accounts query dto. */
 export class ListAccountsQueryDto {
@@ -12,6 +12,7 @@ export class ListAccountsQueryDto {
   /** Filter by KYC status — accepts Agent.kycStatus values: pending/submitted/approved/rejected. */
   @IsOptional()
   @IsString()
+  @IsIn(['pending', 'submitted', 'approved', 'rejected'])
   kycStatus?: 'pending' | 'submitted' | 'approved' | 'rejected';
 
   /** Skip property. */

@@ -34,9 +34,9 @@ describe('NeuroCrmService', () => {
     };
 
     service = new NeuroCrmService(
-      prisma as unknown as ConstructorParameters<typeof NeuroCrmService>[0],
-      config as unknown as ConstructorParameters<typeof NeuroCrmService>[1],
-      planLimits as unknown as ConstructorParameters<typeof NeuroCrmService>[2],
+      prisma as never as ConstructorParameters<typeof NeuroCrmService>[0],
+      config as never as ConstructorParameters<typeof NeuroCrmService>[1],
+      planLimits as never,
     );
   });
 

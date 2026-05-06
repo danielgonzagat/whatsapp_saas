@@ -10,20 +10,19 @@ import type {
 } from './functional-map-types';
 import { escapeMarkdownTableCell } from './markdown-utils';
 import { writeTextFile } from './safe-fs';
+import { deriveStringUnionMembersFromTypeContract } from './dynamic-reality-kernel/__parts__/type-contract-labels';
 
 function statusEmoji(status: InteractionStatus): string {
-  switch (status) {
-    case 'FUNCIONA':
-      return 'FUNCIONA';
-    case 'FACHADA':
-      return 'FACHADA';
-    case 'QUEBRADO':
-      return 'QUEBRADO';
-    case 'INCOMPLETO':
-      return 'INCOMPLETO';
-    case 'AUSENTE':
-      return 'AUSENTE';
-  }
+  return status;
+}
+
+function discoverInteractionStatuses(): InteractionStatus[] {
+  return [
+    ...deriveStringUnionMembersFromTypeContract(
+      'scripts/pulse/functional-map-types.ts',
+      'InteractionStatus',
+    ),
+  ] as InteractionStatus[];
 }
 
 function healthBar(score: number): string {
@@ -69,13 +68,7 @@ export function generateFunctionalMapReport(result: FunctionalMapResult, rootDir
   lines.push('');
   lines.push(`| Status | Count | % |`);
   lines.push(`|--------|-------|---|`);
-  const statuses: InteractionStatus[] = [
-    'FUNCIONA',
-    'FACHADA',
-    'QUEBRADO',
-    'INCOMPLETO',
-    'AUSENTE',
-  ];
+  const statuses = discoverInteractionStatuses();
   for (const status of statuses) {
     const count = summary.byStatus[status] || 0;
     lines.push(`| ${statusEmoji(status)} | ${count} | ${pct(count, summary.totalInteractions)} |`);
@@ -100,8 +93,8 @@ export function generateFunctionalMapReport(result: FunctionalMapResult, rootDir
   }
   lines.push('');
 
-  // Per-page tables — organized by group
-  for (const group of ['main', 'public', 'checkout', 'e2e', 'other']) {
+  // Per-page tables — organized by groups discovered from the scan summary.
+  for (const group of groups) {
     const groupPages = pages.filter((p) => p.group === group);
     if (groupPages.length === 0) {
       continue;

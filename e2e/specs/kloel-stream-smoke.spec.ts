@@ -1,5 +1,10 @@
 import { expect, test } from '@playwright/test';
-import { ensureE2EAdmin, getE2EBaseUrls, seedE2EAuthSession } from './e2e-helpers';
+import {
+  dismissCookieBanner,
+  ensureE2EAdmin,
+  getE2EBaseUrls,
+  seedE2EAuthSession,
+} from './e2e-helpers';
 
 function toSubdomain(origin: string, subdomain: 'app' | 'pay') {
   const url = new URL(origin);
@@ -20,6 +25,9 @@ test('Kloel dashboard shows thinking and streamed content for the stable SSE con
   page,
   request,
 }) => {
+  // Cold-start auth + chat composer load + SSE round-trip exceed 30s on CI.
+  test.setTimeout(90_000);
+
   const auth = await ensureE2EAdmin(request);
   const { frontendUrl } = getE2EBaseUrls();
   const appUrl = toSubdomain(frontendUrl, 'app');
@@ -66,16 +74,15 @@ test('Kloel dashboard shows thinking and streamed content for the stable SSE con
 
   await seedE2EAuthSession(page, auth);
   await page.goto(`${appUrl}/chat`, { waitUntil: 'domcontentloaded' });
+  await dismissCookieBanner(page);
 
-  const acceptCookiesButton = page.getByRole('button', { name: 'Aceitar tudo' });
-  if (await acceptCookiesButton.isVisible().catch(() => false)) {
-    await acceptCookiesButton.click();
-  }
-
-  const input = page.getByPlaceholder('Como posso ajudar você hoje?');
+  const input = page.getByPlaceholder('Como posso ajudar você hoje?').first();
   await expect(page.getByRole('button', { name: 'Criar Anúncio' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Escrever Copy' })).toBeVisible();
-  await expect(page.getByText('Kloel é uma IA e pode cometer erros.')).toHaveCount(0);
+  // The disclaimer is rendered conditionally once the conversation has
+  // messages — see KloelDashboard's `hasMessages ? <ChatDisclaimer /> : null`.
+  // We assert it AFTER sending the first message (below) instead of on the
+  // empty state, since the empty state intentionally omits the disclaimer.
 
   await input.click();
   await input.fill('Oi');
@@ -85,6 +92,6 @@ test('Kloel dashboard shows thinking and streamed content for the stable SSE con
 
   await expect(page.getByText('Kloel está pensando')).toBeVisible();
   await expect(page.getByText('Resposta em streaming validada.')).toBeVisible();
-  await expect(page.getByText('Kloel é uma IA e pode cometer erros.')).toBeVisible();
+  await expect(page.getByText('Kloel é uma IA e pode errar.')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Criar Anúncio' })).toHaveCount(0);
 });

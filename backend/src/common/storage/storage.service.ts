@@ -2,21 +2,18 @@ import { safeJoin, safeResolve } from '../../common/safe-path';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {
-  DeleteObjectCommand,
-  GetObjectCommand,
-  HeadBucketCommand,
-  PutObjectCommand,
-  S3Client,
-} from '@aws-sdk/client-s3';
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { v4 as uuid } from 'uuid';
+import { getTraceHeaders } from '../trace-headers';
 import { validateNoInternalAccess } from '../utils/url-validator';
+import { StorageDriversService } from './storage-drivers.service';
+import { OpsAlertService } from '../../observability/ops-alert.service';
+
 const BACKSLASH_RE = /\\/g;
-const TRAILING_SLASHES_RE = /\/+$/;
 const LEADING_SLASHES_RE = /^\/+/;
 
+/** Storage service. */
 @Injectable()
 export class StorageService implements OnModuleInit {
   private readonly logger = new Logger(StorageService.name);
@@ -24,8 +21,12 @@ export class StorageService implements OnModuleInit {
   private readonly uploadsDir: string;
   private readonly baseUrl: string;
   private readonly signingSecret: string;
-  private r2Client: S3Client | null = null;
-  constructor(private config: ConfigService) {
+
+  constructor(
+    private config: ConfigService,
+    private readonly drivers: StorageDriversService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
+  ) {
     this.driver = this.config.get('STORAGE_DRIVER', 'local');
     this.uploadsDir = safeJoin(__dirname, '..', '..', '..', 'uploads');
     this.baseUrl =
@@ -42,27 +43,28 @@ export class StorageService implements OnModuleInit {
     }
     this.logger.log(`StorageService initialized with driver: ${this.driver}`);
   }
+
   /** On module init. */
   async onModuleInit() {
     if (this.driver === 'r2') {
       try {
-        const client = this.getR2Client();
-        if (client) {
-          const bucket = this.config.get('R2_BUCKET');
-          await client.send(new HeadBucketCommand({ Bucket: bucket }));
-          this.logger.log(`R2 connection verified (bucket: ${bucket})`);
-        }
+        await this.drivers.verifyR2Connection();
       } catch (error: unknown) {
-        const errorInstanceofError =
+        void this.opsAlert?.alertOnCriticalError(error, 'StorageService.verifyR2Connection');
+        const errorMsg =
           error instanceof Error
-            ? error
-            : new Error(typeof error === 'string' ? error : 'unknown error');
+            ? error.message
+            : typeof error === 'string'
+              ? error
+              : 'unknown error';
         this.logger.warn(
-          `R2 connection check failed: ${errorInstanceofError.message}. Uploads will fall back to local storage.`,
+          `R2 connection check failed: ${errorMsg}. Uploads will fall back to local storage.`,
         );
       }
     }
   }
+
+  /** Upload. */
   async upload(
     buffer: Buffer,
     options: {
@@ -78,13 +80,19 @@ export class StorageService implements OnModuleInit {
     const relativePath = safeJoin(folder, filename);
     switch (this.driver) {
       case 's3':
-        return this.uploadToS3(buffer, relativePath, options.mimeType);
+        return this.drivers.uploadToS3(buffer, relativePath, options.mimeType, (b, p) =>
+          this.uploadToLocal(b, p),
+        );
       case 'r2':
-        return this.uploadToR2(buffer, relativePath, options.mimeType);
+        return this.drivers.uploadToR2(buffer, relativePath, options.mimeType, (b, p) =>
+          this.uploadToLocal(b, p),
+        );
       default:
         return this.uploadToLocal(buffer, relativePath);
     }
   }
+
+  /** Upload audio. */
   async uploadAudio(buffer: Buffer, workspaceId: string): Promise<{ url: string; path: string }> {
     const filename = `audio_${workspaceId}_${Date.now()}.mp3`;
     const result = await this.upload(buffer, {
@@ -95,6 +103,8 @@ export class StorageService implements OnModuleInit {
     });
     return { url: result.url, path: result.path };
   }
+
+  /** Upload avatar. */
   async uploadAvatar(
     buffer: Buffer,
     entityId: string,
@@ -108,6 +118,8 @@ export class StorageService implements OnModuleInit {
       folder: 'avatars',
     });
   }
+
+  /** Upload product image. */
   async uploadProductImage(
     buffer: Buffer,
     productId: string,
@@ -121,6 +133,8 @@ export class StorageService implements OnModuleInit {
       folder: 'products',
     });
   }
+
+  /** Upload whats app media. */
   async uploadWhatsAppMedia(
     buffer: Buffer,
     workspaceId: string,
@@ -136,6 +150,8 @@ export class StorageService implements OnModuleInit {
       workspaceId,
     });
   }
+
+  /** Upload from url. */
   async uploadFromUrl(
     sourceUrl: string,
     options: {
@@ -149,6 +165,7 @@ export class StorageService implements OnModuleInit {
     const timeoutMs = options.timeoutMs || 30000;
     validateNoInternalAccess(sourceUrl);
     const response = await fetch(sourceUrl, {
+      headers: getTraceHeaders(),
       signal: AbortSignal.timeout(timeoutMs),
     });
     if (!response.ok) {
@@ -164,13 +181,15 @@ export class StorageService implements OnModuleInit {
       workspaceId: options.workspaceId,
     });
   }
+
+  /** Health check. */
   async healthCheck(): Promise<{
     status: 'UP' | 'DOWN' | 'DEGRADED';
     driver: string;
     details?: Record<string, unknown>;
   }> {
     if (this.isLocalDriver()) {
-      const writable = this.isLocalWritable();
+      const writable = this.drivers.isLocalWritable(this.uploadsDir);
       return {
         status: writable ? 'UP' : 'DOWN',
         driver: 'local',
@@ -178,66 +197,10 @@ export class StorageService implements OnModuleInit {
       };
     }
     if (this.driver === 'r2') {
-      try {
-        const client = this.getR2Client();
-        if (!client) {
-          return {
-            status: 'DEGRADED',
-            driver: 'r2',
-            details: { error: 'R2 not fully configured, using local fallback' },
-          };
-        }
-        const bucket = this.config.get('R2_BUCKET');
-        await client.send(new HeadBucketCommand({ Bucket: bucket }));
-        return {
-          status: 'UP',
-          driver: 'r2',
-          details: { bucket },
-        };
-      } catch (error: unknown) {
-        const errorInstanceofError =
-          error instanceof Error
-            ? error
-            : new Error(typeof error === 'string' ? error : 'unknown error');
-        const fallbackWritable = this.isLocalWritable();
-        return {
-          status: fallbackWritable ? 'DEGRADED' : 'DOWN',
-          driver: 'r2',
-          details: {
-            error: errorInstanceofError.message,
-            fallback: fallbackWritable ? 'local' : 'unavailable',
-            uploadsDir: this.uploadsDir,
-            writable: fallbackWritable,
-          },
-        };
-      }
+      return this.drivers.checkR2Health(this.uploadsDir);
     }
     if (this.driver === 's3') {
-      try {
-        const bucket = this.config.get('S3_BUCKET');
-        if (!bucket) {
-          return {
-            status: 'DEGRADED',
-            driver: 's3',
-            details: { error: 'S3_BUCKET not configured' },
-          };
-        }
-        const client = new S3Client({
-          region: this.config.get('S3_REGION', 'us-east-1'),
-        });
-        await client.send(new HeadBucketCommand({ Bucket: bucket }));
-        return { status: 'UP', driver: 's3', details: { bucket } };
-      } catch (error: unknown) {
-        const errorInstanceofError =
-          error instanceof Error
-            ? error
-            : new Error(typeof error === 'string' ? error : 'unknown error');
-        return {
-          status: 'DOWN',
-          driver: 's3',
-          details: { error: errorInstanceofError.message },
-        };
-      }
+      return this.drivers.checkS3Health();
     }
     return {
       status: 'DOWN',
@@ -245,10 +208,12 @@ export class StorageService implements OnModuleInit {
       details: { error: 'Unknown driver' },
     };
   }
+
   /** Is local driver. */
   isLocalDriver(): boolean {
     return this.driver === 'local';
   }
+
   /** Get public url. */
   getPublicUrl(relativePath: string): string {
     const normalized = this.normalizeRelativePath(relativePath);
@@ -257,6 +222,7 @@ export class StorageService implements OnModuleInit {
     }
     return this.buildRemotePublicUrl(normalized);
   }
+
   /** Get signed url. */
   getSignedUrl(
     relativePath: string,
@@ -271,6 +237,7 @@ export class StorageService implements OnModuleInit {
     }
     return this.buildLocalAccessUrl(normalized, options);
   }
+
   /** Resolve local access token. */
   resolveLocalAccessToken(token: string): {
     relativePath: string;
@@ -311,6 +278,7 @@ export class StorageService implements OnModuleInit {
       downloadName: payload.d || undefined,
     };
   }
+
   /** Get mime type for path. */
   getMimeTypeForPath(relativePath: string): string {
     const ext = path.extname(relativePath).toLowerCase();
@@ -335,11 +303,13 @@ export class StorageService implements OnModuleInit {
     };
     return mapping[ext] || 'application/octet-stream';
   }
+
   /** Read local file. */
   readLocalFile(relativePath: string): Buffer {
     const fullPath = this.resolveAbsolutePath(relativePath);
     return fs.readFileSync(fullPath);
   }
+
   /** Read access file. */
   async readAccessFile(relativePath: string): Promise<{ buffer: Buffer; mimeType: string } | null> {
     const normalized = this.normalizeRelativePath(relativePath);
@@ -352,13 +322,14 @@ export class StorageService implements OnModuleInit {
     }
     switch (this.driver) {
       case 'r2':
-        return this.readFromR2(normalized);
+        return this.drivers.readFromR2(normalized, (p) => this.getMimeTypeForPath(p));
       case 's3':
-        return this.readFromS3(normalized);
+        return this.drivers.readFromS3(normalized, (p) => this.getMimeTypeForPath(p));
       default:
         return null;
     }
   }
+
   private async uploadToLocal(
     buffer: Buffer,
     relativePath: string,
@@ -380,157 +351,31 @@ export class StorageService implements OnModuleInit {
       size: buffer.length,
     };
   }
-  private async uploadToS3(
-    buffer: Buffer,
-    relativePath: string,
-    mimeType?: string,
-  ): Promise<{ url: string; path: string; size: number }> {
-    const bucket = this.config.get('S3_BUCKET');
-    const region = this.config.get('S3_REGION', 'us-east-1');
-    if (!bucket) {
-      this.logger.warn('S3_BUCKET not configured, falling back to local storage');
-      return this.uploadToLocal(buffer, relativePath);
-    }
-    try {
-      const client = new S3Client({ region });
-      await client.send(
-        new PutObjectCommand({
-          Bucket: bucket,
-          Key: relativePath,
-          Body: buffer,
-          ContentType: mimeType || 'application/octet-stream',
-          ACL: 'public-read',
-        }),
-      );
-      const cdnBase = this.config.get('CDN_BASE_URL');
-      const url = cdnBase
-        ? `${cdnBase}/${relativePath}`
-        : `https://${bucket}.s3.${region}.amazonaws.com/${relativePath}`;
-      this.logger.debug(`Uploaded to S3: ${relativePath} (${buffer.length} bytes)`);
-      return {
-        url,
-        path: relativePath,
-        size: buffer.length,
-      };
-    } catch (error: unknown) {
-      const errorInstanceofError =
-        error instanceof Error
-          ? error
-          : new Error(typeof error === 'string' ? error : 'unknown error');
-      this.logger.error(`S3 upload failed: ${errorInstanceofError.message}, falling back to local`);
-      return this.uploadToLocal(buffer, relativePath);
-    }
-  }
-  private async uploadToR2(
-    buffer: Buffer,
-    relativePath: string,
-    mimeType?: string,
-  ): Promise<{ url: string; path: string; size: number }> {
-    const client = this.getR2Client();
-    if (!client) {
-      this.logger.warn('R2 not fully configured, falling back to local storage');
-      return this.uploadToLocal(buffer, relativePath);
-    }
-    const bucket = this.config.get('R2_BUCKET');
-    try {
-      await client.send(
-        new PutObjectCommand({
-          Bucket: bucket,
-          Key: relativePath,
-          Body: buffer,
-          ContentType: mimeType || 'application/octet-stream',
-        }),
-      );
-      const url = this.buildR2PublicUrl(relativePath);
-      this.logger.debug(`Uploaded to R2: ${relativePath} (${buffer.length} bytes)`);
-      return {
-        url,
-        path: relativePath,
-        size: buffer.length,
-      };
-    } catch (error: unknown) {
-      const errorInstanceofError =
-        error instanceof Error
-          ? error
-          : new Error(typeof error === 'string' ? error : 'unknown error');
-      this.logger.error(`R2 upload failed: ${errorInstanceofError.message}, falling back to local`);
-      return this.uploadToLocal(buffer, relativePath);
-    }
-  }
-  private getR2Client(): S3Client | null {
-    if (this.r2Client) {
-      return this.r2Client;
-    }
-    const bucket = this.config.get('R2_BUCKET');
-    const accountId = this.config.get('R2_ACCOUNT_ID');
-    const accessKeyId = this.config.get('R2_ACCESS_KEY_ID');
-    const secretAccessKey = this.config.get('R2_SECRET_ACCESS_KEY');
-    if (!bucket || !accountId || !accessKeyId || !secretAccessKey) {
-      return null;
-    }
-    try {
-      const endpoint =
-        this.config.get('R2_ENDPOINT') || `https://${accountId}.r2.cloudflarestorage.com`;
-      this.r2Client = new S3Client({
-        region: 'auto',
-        endpoint,
-        forcePathStyle: true,
-        credentials: {
-          accessKeyId,
-          secretAccessKey,
-        },
-      });
-      return this.r2Client;
-    } catch (error: unknown) {
-      const errorInstanceofError =
-        error instanceof Error
-          ? error
-          : new Error(typeof error === 'string' ? error : 'unknown error');
-      this.logger.error(`Failed to create R2 client: ${errorInstanceofError.message}`);
-      return null;
-    }
-  }
-  private buildR2PublicUrl(relativePath: string): string {
-    const r2PublicUrl = this.config.get('R2_PUBLIC_URL');
-    if (r2PublicUrl) {
-      return `${r2PublicUrl.replace(TRAILING_SLASHES_RE, '')}/${relativePath}`;
-    }
-    const cdnBase = this.config.get('CDN_BASE_URL');
-    if (cdnBase) {
-      return `${cdnBase}/${relativePath}`;
-    }
-    this.logger.warn('R2_PUBLIC_URL not configured. Falling back to signed backend access URL.');
-    return this.buildProxyAccessUrl(relativePath);
-  }
-  private isLocalWritable(): boolean {
-    try {
-      const testFile = safeJoin(this.uploadsDir, `.healthcheck_${Date.now()}`);
-      fs.writeFileSync(testFile, 'ok');
-      fs.unlinkSync(testFile);
-      return true;
-    } catch {
-      return false;
-    }
-  }
+
+  /** Delete. */
   async delete(relativePath: string): Promise<boolean> {
     try {
       switch (this.driver) {
         case 's3':
-          return this.deleteFromS3(relativePath);
+          return this.drivers.deleteFromS3(relativePath, (p) => this.deleteFromLocal(p));
         case 'r2':
-          return this.deleteFromR2(relativePath);
+          return this.drivers.deleteFromR2(relativePath, (p) => this.deleteFromLocal(p));
         default:
           return this.deleteFromLocal(relativePath);
       }
     } catch (error: unknown) {
-      const errorInstanceofError =
+      void this.opsAlert?.alertOnCriticalError(error, 'StorageService.deleteFromLocal');
+      const errorMsg =
         error instanceof Error
-          ? error
-          : new Error(typeof error === 'string' ? error : 'unknown error');
-      this.logger.warn(`Failed to delete ${relativePath}: ${errorInstanceofError.message}`);
+          ? error.message
+          : typeof error === 'string'
+            ? error
+            : 'unknown error';
+      this.logger.warn(`Failed to delete ${relativePath}: ${errorMsg}`);
       return false;
     }
   }
+
   private async deleteFromLocal(relativePath: string): Promise<boolean> {
     const fullPath = this.resolveAbsolutePath(relativePath);
     if (fs.existsSync(fullPath)) {
@@ -539,117 +384,7 @@ export class StorageService implements OnModuleInit {
     }
     return false;
   }
-  private async deleteFromS3(relativePath: string): Promise<boolean> {
-    const bucket = this.config.get('S3_BUCKET');
-    if (!bucket) {
-      return this.deleteFromLocal(relativePath);
-    }
-    try {
-      const client = new S3Client({
-        region: this.config.get('S3_REGION', 'us-east-1'),
-      });
-      await client.send(new DeleteObjectCommand({ Bucket: bucket, Key: relativePath }));
-      return true;
-    } catch {
-      return false;
-    }
-  }
-  private async deleteFromR2(relativePath: string): Promise<boolean> {
-    const client = this.getR2Client();
-    if (!client) {
-      return this.deleteFromLocal(relativePath);
-    }
-    try {
-      const bucket = this.config.get('R2_BUCKET');
-      await client.send(new DeleteObjectCommand({ Bucket: bucket, Key: relativePath }));
-      return true;
-    } catch {
-      return false;
-    }
-  }
-  private async readFromS3(
-    relativePath: string,
-  ): Promise<{ buffer: Buffer; mimeType: string } | null> {
-    const bucket = this.config.get('S3_BUCKET');
-    if (!bucket) {
-      return null;
-    }
-    try {
-      const client = new S3Client({
-        region: this.config.get('S3_REGION', 'us-east-1'),
-      });
-      const response = await client.send(
-        new GetObjectCommand({ Bucket: bucket, Key: relativePath }),
-      );
-      return {
-        buffer: await this.objectBodyToBuffer(response.Body),
-        mimeType: response.ContentType || this.getMimeTypeForPath(relativePath),
-      };
-    } catch (error: unknown) {
-      const errorInstanceofError =
-        error instanceof Error
-          ? error
-          : new Error(typeof error === 'string' ? error : 'unknown error');
-      this.logger.warn(
-        `S3 remote read failed for "${relativePath}": ${errorInstanceofError.message}`,
-      );
-      return null;
-    }
-  }
-  private async readFromR2(
-    relativePath: string,
-  ): Promise<{ buffer: Buffer; mimeType: string } | null> {
-    const client = this.getR2Client();
-    const bucket = this.config.get('R2_BUCKET');
-    if (!client || !bucket) {
-      return null;
-    }
-    try {
-      const response = await client.send(
-        new GetObjectCommand({ Bucket: bucket, Key: relativePath }),
-      );
-      return {
-        buffer: await this.objectBodyToBuffer(response.Body),
-        mimeType: response.ContentType || this.getMimeTypeForPath(relativePath),
-      };
-    } catch (error: unknown) {
-      const errorInstanceofError =
-        error instanceof Error
-          ? error
-          : new Error(typeof error === 'string' ? error : 'unknown error');
-      this.logger.warn(
-        `R2 remote read failed for "${relativePath}": ${errorInstanceofError.message}`,
-      );
-      return null;
-    }
-  }
-  private async objectBodyToBuffer(body: unknown): Promise<Buffer> {
-    if (!body) {
-      return Buffer.alloc(0);
-    }
-    if (Buffer.isBuffer(body)) {
-      return body;
-    }
-    if (typeof (body as Record<string, unknown>).transformToByteArray === 'function') {
-      return Buffer.from(
-        await (body as { transformToByteArray: () => Promise<Uint8Array> }).transformToByteArray(),
-      );
-    }
-    const chunks: Buffer[] = [];
-    const streamBody = body as AsyncIterable<Buffer | Uint8Array | string | ArrayBuffer>;
-    for await (const chunk of streamBody) {
-      if (Buffer.isBuffer(chunk)) {
-        chunks.push(chunk);
-        continue;
-      }
-      if (chunk instanceof ArrayBuffer) {
-        chunks.push(Buffer.from(new Uint8Array(chunk)));
-        continue;
-      }
-      chunks.push(Buffer.from(chunk));
-    }
-    return Buffer.concat(chunks);
-  }
+
   private getExtensionFromMime(mimeType: string): string {
     const mimeToExt: Record<string, string> = {
       'audio/mpeg': '.mp3',
@@ -669,6 +404,7 @@ export class StorageService implements OnModuleInit {
     };
     return mimeToExt[mimeType] || '';
   }
+
   private buildLocalAccessUrl(
     relativePath: string,
     options: {
@@ -693,6 +429,7 @@ export class StorageService implements OnModuleInit {
     const token = `${encodedPayload}.${this.sign(encodedPayload)}`;
     return `${this.baseUrl}/storage/local/${token}`;
   }
+
   private buildProxyAccessUrl(
     relativePath: string,
     options: {
@@ -717,6 +454,7 @@ export class StorageService implements OnModuleInit {
     const token = `${encodedPayload}.${this.sign(encodedPayload)}`;
     return `${this.baseUrl}/storage/access/${token}`;
   }
+
   private buildRemotePublicUrl(relativePath: string): string {
     const cdnBase = this.config.get('CDN_BASE_URL');
     if (cdnBase) {
@@ -730,16 +468,19 @@ export class StorageService implements OnModuleInit {
       }
     }
     if (this.driver === 'r2') {
-      return this.buildR2PublicUrl(relativePath);
+      const r2Url = this.drivers.buildR2PublicUrl(relativePath);
+      if (r2Url) return r2Url;
     }
     this.logger.warn(
       `Remote storage URL fallback used for "${relativePath}". Serving a signed local URL instead of exposing /uploads.`,
     );
-    return this.buildLocalAccessUrl(relativePath);
+    return this.buildProxyAccessUrl(relativePath);
   }
+
   private sign(value: string): string {
     return createHmac('sha256', this.signingSecret).update(value).digest('base64url');
   }
+
   private normalizeRelativePath(relativePath: string): string {
     const normalized = path.posix
       .normalize(String(relativePath || '').replace(BACKSLASH_RE, '/'))
@@ -754,6 +495,7 @@ export class StorageService implements OnModuleInit {
     }
     return normalized;
   }
+
   private resolveAbsolutePath(relativePath: string): string {
     const normalized = this.normalizeRelativePath(relativePath);
     const fullPath = safeResolve(this.uploadsDir, normalized);
@@ -762,5 +504,13 @@ export class StorageService implements OnModuleInit {
       throw new Error('invalid_storage_path');
     }
     return fullPath;
+  }
+
+  /** Build proxy access URL (exposed for controller use). */
+  buildProxyToken(
+    relativePath: string,
+    options: { expiresInSeconds?: number; downloadName?: string } = {},
+  ): string {
+    return this.buildProxyAccessUrl(relativePath, options);
   }
 }

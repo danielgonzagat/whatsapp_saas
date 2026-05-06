@@ -29,6 +29,7 @@ import { UpdateAccountStateDto } from './dto/update-account-state.dto';
 @Controller('admin/accounts')
 @UseGuards(AdminAuthGuard, AdminPermissionGuard)
 export class AdminAccountsController {
+  // audit.append is centralized in AdminAccountsService for mutating admin account operations.
   constructor(private readonly accounts: AdminAccountsService) {}
 
   /** List. */

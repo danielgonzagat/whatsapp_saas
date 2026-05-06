@@ -116,7 +116,28 @@ describe('Flow Templates (e2e)', () => {
     expect(res.body.length).toBeGreaterThan(0);
   });
 
-  it.skip('should create a flow from template (requires admin token)', async () => {
-    /* This route requires ADMIN role; keep skipped to avoid guard in e2e smoke. */
+  it('should get a template by ID', async () => {
+    const listRes = await request(app.getHttpServer()).get('/flow-templates/public').expect(200);
+    const templateId = listRes.body[0]?.id;
+    expect(templateId).toBeDefined();
+
+    const res = await request(app.getHttpServer()).get(`/flow-templates/${templateId}`).expect(200);
+    expect(res.body).toHaveProperty('id', templateId);
+    expect(res.body).toHaveProperty('name');
+    expect(res.body).toHaveProperty('category');
+    expect(res.body).toHaveProperty('nodes');
+    expect(res.body).toHaveProperty('edges');
+  });
+
+  it('should increment download count on a template', async () => {
+    const listRes = await request(app.getHttpServer()).get('/flow-templates/public').expect(200);
+    const templateId = listRes.body[0]?.id;
+    expect(templateId).toBeDefined();
+
+    const before = listRes.body[0].downloads ?? 0;
+    const res = await request(app.getHttpServer())
+      .post(`/flow-templates/${templateId}/download`)
+      .expect(201);
+    expect(res.body).toHaveProperty('downloads', before + 1);
   });
 });

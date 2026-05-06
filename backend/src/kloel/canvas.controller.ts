@@ -17,8 +17,12 @@ import OpenAI from 'openai';
 import { AuditService } from '../audit/audit.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PlanLimitsService } from '../billing/plan-limits.service';
+import { Idempotent } from '../common/idempotency.guard';
 import type { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
+import { resolveKloelCapabilityModel } from '../lib/ai-models';
 import { PrismaService } from '../prisma/prisma.service';
+
+const IMAGE_GEN_TOKEN_EQUIVALENT = 1000;
 
 interface CreateCanvasDesignDto {
   name?: string;
@@ -65,7 +69,7 @@ export class CanvasController {
       where.productId = productId;
     }
     const designs = await this.prisma.kloelDesign.findMany({
-      where,
+      where: { ...where, workspaceId },
       orderBy: { updatedAt: 'desc' },
     });
     return { designs, count: designs.length };
@@ -83,6 +87,7 @@ export class CanvasController {
 
   // POST /canvas/designs — create design
   @Post('designs')
+  @Idempotent()
   async createDesign(@Request() req: AuthenticatedRequest, @Body() dto: CreateCanvasDesignDto) {
     const workspaceId = req.user?.workspaceId;
     if (!workspaceId) {
@@ -142,7 +147,7 @@ export class CanvasController {
       resourceId: id,
       details: { deletedBy: 'user' },
     });
-    await this.prisma.kloelDesign.delete({ where: { id } });
+    await this.prisma.kloelDesign.deleteMany({ where: { id, workspaceId: workspaceId || '' } });
     return { success: true };
   }
 
@@ -181,14 +186,14 @@ Gere uma descricao visual detalhada para criacao de imagem de marketing. Dark th
       await this.planLimits.ensureTokenBudget(workspaceId);
     }
     const response = await openai.images.generate({
-      model: 'dall-e-3',
+      model: resolveKloelCapabilityModel('create_image'),
       prompt: enrichedPrompt || dto.prompt,
       n: 1,
       size: '1024x1024',
     });
     if (workspaceId) {
-      await this.planLimits.trackAiUsage(workspaceId, 1000).catch(() => {});
-    } // image generation ~1000 tokens equivalent
+      await this.planLimits.trackAiUsage(workspaceId, IMAGE_GEN_TOKEN_EQUIVALENT).catch(() => {});
+    }
     const imageUrl = response.data[0]?.url;
     return { success: true, imageUrl, prompt: enrichedPrompt };
   }

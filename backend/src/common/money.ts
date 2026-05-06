@@ -45,7 +45,7 @@ const PATTERN_RE = /\./g;
 declare const __cents: unique symbol;
 
 /** Branded integer-cents monetary value. */
-export type Cents = number & { readonly [__cents]: 'Cents' };
+type Cents = number & { readonly [__cents]: 'Cents' };
 
 /**
  * Safe constructor. Rejects non-integer, non-finite, or NaN inputs.

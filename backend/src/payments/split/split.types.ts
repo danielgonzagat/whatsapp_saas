@@ -58,7 +58,7 @@ export interface PercentRoleInput {
 }
 
 /** Seller input shape. */
-export interface SellerInput {
+interface SellerInput {
   /** Account id property. */
   accountId: string;
 }

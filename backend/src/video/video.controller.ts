@@ -29,6 +29,7 @@ export class VideoController {
   }
 
   /** Get job. */
+  // PULSE_OK: internal route, called by worker process for video job polling
   @Get('job/:id')
   async getJob(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     const workspaceId = resolveWorkspaceId(req);

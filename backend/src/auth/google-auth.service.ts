@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { LoginTicket, OAuth2Client, TokenPayload } from 'google-auth-library';
+import { getTraceHeaders } from '../common/trace-headers';
 
 const W_RE = /[\W_]+/g;
 
@@ -173,6 +174,7 @@ export class GoogleAuthService {
     // Not SSRF: hardcoded Google People API endpoint (static readonly constant)
     const response = await fetch(GoogleAuthService.PEOPLE_API_URL, {
       headers: {
+        ...getTraceHeaders(),
         Authorization: `Bearer ${token}`,
       },
       signal: AbortSignal.timeout(15000),

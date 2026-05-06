@@ -1,6 +1,7 @@
 import {
   IsArray,
   IsBoolean,
+  IsDateString,
   IsNumber,
   IsOptional,
   IsString,
@@ -85,7 +86,7 @@ export class CreateCouponDto {
   /** Max uses property. */
   @IsOptional() @IsNumber() @Min(0) @Max(999999) maxUses?: number;
   /** Expires at property. */
-  @IsOptional() @IsString() @MaxLength(255) expiresAt?: string;
+  @IsOptional() @IsDateString() @MaxLength(255) expiresAt?: string;
 }
 
 /** Validate coupon dto. */

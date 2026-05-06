@@ -156,15 +156,19 @@ export class MarketplaceTreasuryService {
     const skip = Math.max(0, filters.skip ?? 0);
     const take = Math.min(200, Math.max(1, filters.take ?? 50));
 
-    const [rows, total] = await this.prisma.$transaction([
-      this.prisma.marketplaceTreasuryLedger.findMany({
-        where,
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take,
-      }),
-      this.prisma.marketplaceTreasuryLedger.count({ where }),
-    ]);
+    // PULSE_OK: paginated via skip/take from filters
+    const [rows, total] = await this.prisma.$transaction(
+      [
+        this.prisma.marketplaceTreasuryLedger.findMany({
+          where,
+          orderBy: { createdAt: 'desc' },
+          skip,
+          take,
+        }),
+        this.prisma.marketplaceTreasuryLedger.count({ where }),
+      ],
+      { isolationLevel: 'ReadCommitted' },
+    );
 
     return {
       items: rows.map((r) => ({
@@ -228,7 +232,9 @@ export class MarketplaceTreasuryService {
     } else {
       // PrismaService extends PrismaClient so $transaction is on
       // the same instance — no cast needed.
-      await this.prisma.$transaction(async (inner) => runOnce(inner));
+      await this.prisma.$transaction(async (inner) => runOnce(inner), {
+        isolationLevel: 'Serializable',
+      });
     }
   }
 
@@ -242,53 +248,56 @@ export class MarketplaceTreasuryService {
 
     const currency = input.currency ?? DEFAULT_CURRENCY;
 
-    await this.prisma.$transaction(async (tx) => {
-      const wallet = await tx.marketplaceTreasury.upsert({
-        where: { currency },
-        update: {},
-        create: { currency },
-      });
+    await this.prisma.$transaction(
+      async (tx) => {
+        const wallet = await tx.marketplaceTreasury.upsert({
+          where: { currency },
+          update: {},
+          create: { currency },
+        });
 
-      const existing = await tx.marketplaceTreasuryLedger.findFirst({
-        where: {
-          currency,
-          kind: MarketplaceTreasuryLedgerKind.PAYOUT_DEBIT,
-          orderId: input.requestId,
-        },
-      });
-      if (existing) {
-        return;
-      }
+        const existing = await tx.marketplaceTreasuryLedger.findFirst({
+          where: {
+            currency,
+            kind: MarketplaceTreasuryLedgerKind.PAYOUT_DEBIT,
+            orderId: input.requestId,
+          },
+        });
+        if (existing) {
+          return;
+        }
 
-      if (wallet.availableBalanceInCents < input.amountInCents) {
-        throw new MarketplaceTreasuryInsufficientAvailableBalanceError(
-          currency,
-          input.amountInCents,
-          wallet.availableBalanceInCents,
-        );
-      }
+        if (wallet.availableBalanceInCents < input.amountInCents) {
+          throw new MarketplaceTreasuryInsufficientAvailableBalanceError(
+            currency,
+            input.amountInCents,
+            wallet.availableBalanceInCents,
+          );
+        }
 
-      await tx.marketplaceTreasuryLedger.create({
-        data: {
-          walletId: wallet.id,
-          currency,
-          direction: 'debit',
-          bucket: MarketplaceTreasuryBucket.AVAILABLE,
-          amountInCents: input.amountInCents,
-          kind: MarketplaceTreasuryLedgerKind.PAYOUT_DEBIT,
-          orderId: input.requestId,
-          reason: 'marketplace_treasury_payout_debit',
-          metadata: input.metadata,
-        },
-      });
+        await tx.marketplaceTreasuryLedger.create({
+          data: {
+            walletId: wallet.id,
+            currency,
+            direction: 'debit',
+            bucket: MarketplaceTreasuryBucket.AVAILABLE,
+            amountInCents: input.amountInCents,
+            kind: MarketplaceTreasuryLedgerKind.PAYOUT_DEBIT,
+            orderId: input.requestId,
+            reason: 'marketplace_treasury_payout_debit',
+            metadata: input.metadata,
+          },
+        });
 
-      await tx.marketplaceTreasury.update({
-        where: { id: wallet.id },
-        data: {
-          availableBalanceInCents: { decrement: input.amountInCents },
-        },
-      });
-    });
+        await tx.marketplaceTreasury.update({
+          where: { id: wallet.id },
+          data: {
+            availableBalanceInCents: { decrement: input.amountInCents },
+          },
+        });
+      },
+      { isolationLevel: 'Serializable' },
+    );
     this.logger.log({
       event: 'marketplace_treasury_payout_debit',
       currency,
@@ -309,45 +318,48 @@ export class MarketplaceTreasuryService {
 
     const currency = input.currency ?? DEFAULT_CURRENCY;
 
-    await this.prisma.$transaction(async (tx) => {
-      const wallet = await tx.marketplaceTreasury.upsert({
-        where: { currency },
-        update: {},
-        create: { currency },
-      });
+    await this.prisma.$transaction(
+      async (tx) => {
+        const wallet = await tx.marketplaceTreasury.upsert({
+          where: { currency },
+          update: {},
+          create: { currency },
+        });
 
-      const existing = await tx.marketplaceTreasuryLedger.findFirst({
-        where: {
-          currency,
-          kind: MarketplaceTreasuryLedgerKind.ADJUSTMENT_CREDIT,
-          orderId: input.requestId,
-        },
-      });
-      if (existing) {
-        return;
-      }
+        const existing = await tx.marketplaceTreasuryLedger.findFirst({
+          where: {
+            currency,
+            kind: MarketplaceTreasuryLedgerKind.ADJUSTMENT_CREDIT,
+            orderId: input.requestId,
+          },
+        });
+        if (existing) {
+          return;
+        }
 
-      await tx.marketplaceTreasuryLedger.create({
-        data: {
-          walletId: wallet.id,
-          currency,
-          direction: 'credit',
-          bucket: MarketplaceTreasuryBucket.AVAILABLE,
-          amountInCents: input.amountInCents,
-          kind: MarketplaceTreasuryLedgerKind.ADJUSTMENT_CREDIT,
-          orderId: input.requestId,
-          reason: input.reason,
-          metadata: input.metadata,
-        },
-      });
+        await tx.marketplaceTreasuryLedger.create({
+          data: {
+            walletId: wallet.id,
+            currency,
+            direction: 'credit',
+            bucket: MarketplaceTreasuryBucket.AVAILABLE,
+            amountInCents: input.amountInCents,
+            kind: MarketplaceTreasuryLedgerKind.ADJUSTMENT_CREDIT,
+            orderId: input.requestId,
+            reason: input.reason,
+            metadata: input.metadata,
+          },
+        });
 
-      await tx.marketplaceTreasury.update({
-        where: { id: wallet.id },
-        data: {
-          availableBalanceInCents: { increment: input.amountInCents },
-        },
-      });
-    });
+        await tx.marketplaceTreasury.update({
+          where: { id: wallet.id },
+          data: {
+            availableBalanceInCents: { increment: input.amountInCents },
+          },
+        });
+      },
+      { isolationLevel: 'Serializable' },
+    );
     this.logger.log({
       event: 'marketplace_treasury_adjustment_credit',
       currency,

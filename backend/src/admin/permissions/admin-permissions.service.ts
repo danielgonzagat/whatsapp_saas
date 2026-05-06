@@ -67,9 +67,35 @@ export class AdminPermissionsService {
     if (role === AdminRole.OWNER) {
       return;
     }
-    await this.prisma.$transaction([
-      this.prisma.adminPermission.deleteMany({ where: { adminUserId } }),
-      this.prisma.adminPermission.createMany({
+    await this.prisma.$transaction(async (tx) => {
+      const beforeRows = await tx.adminPermission.findMany({
+        where: { adminUserId },
+        orderBy: [{ module: 'asc' }, { action: 'asc' }],
+      });
+
+      await tx.adminAuditLog.create({
+        data: {
+          action: 'PERMISSION_REPLACE',
+          entityType: 'admin_permission',
+          entityId: adminUserId,
+          details: {
+            before: beforeRows.map((r) => ({
+              module: r.module,
+              action: r.action,
+              allowed: r.allowed,
+            })),
+            after: permissions.map((p) => ({
+              module: p.module,
+              action: p.action,
+              allowed: p.allowed,
+            })),
+          },
+        },
+      });
+
+      await tx.adminPermission.deleteMany({ where: { adminUserId } });
+
+      await tx.adminPermission.createMany({
         data: permissions.map((p) => ({
           adminUserId,
           module: p.module,
@@ -77,8 +103,8 @@ export class AdminPermissionsService {
           allowed: p.allowed,
         })),
         skipDuplicates: true,
-      }),
-    ]);
+      });
+    });
   }
 
   /** List for. */

@@ -1,3 +1,4 @@
+import { type NextRequest } from 'next/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
@@ -15,14 +16,20 @@ function createRequest(
   contentType = 'application/x-www-form-urlencoded',
   forwardedFor = '203.0.113.10',
 ) {
-  return {
-    headers: new Headers({
-      'content-type': contentType,
-      'x-forwarded-for': forwardedFor,
-      host: 'auth.kloel.com',
-    }),
-    text: vi.fn(async () => body),
-  } as any;
+  return Object.assign(
+    {
+      method: 'POST',
+      url: 'https://auth.kloel.com/api/auth/facebook/deauthorize',
+      headers: new Headers({
+        'content-type': contentType,
+        'x-forwarded-for': forwardedFor,
+        host: 'auth.kloel.com',
+      }),
+    } as NextRequest,
+    {
+      text: vi.fn(async () => body),
+    },
+  );
 }
 
 describe('facebook deauthorize proxy route', () => {

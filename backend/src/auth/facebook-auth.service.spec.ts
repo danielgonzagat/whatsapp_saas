@@ -21,7 +21,7 @@ describe('FacebookAuthService', () => {
         };
         return values[key];
       }),
-    } as unknown as ConfigService;
+    } as never as ConfigService;
 
     const fetchMock = jest
       .fn()
@@ -67,7 +67,7 @@ describe('FacebookAuthService', () => {
         };
         return values[key];
       }),
-    } as unknown as ConfigService;
+    } as never as ConfigService;
 
     const fetchMock = jest
       .fn()

@@ -3,9 +3,10 @@ import { IsArray, IsOptional, IsString, MaxLength } from 'class-validator';
 /** Create flow dto. */
 export class CreateFlowDto {
   /** Name property. */
+  @IsOptional()
   @IsString()
   @MaxLength(255)
-  name: string;
+  name?: string;
 
   /** Description property. */
   @IsOptional()

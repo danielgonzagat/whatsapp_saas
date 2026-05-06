@@ -14,7 +14,7 @@ export function isAuthOptionalInNonProd(): boolean {
 }
 
 /** Extract bearer token. */
-export function extractBearerToken(authHeader: string | undefined): string | undefined {
+function extractBearerToken(authHeader: string | undefined): string | undefined {
   if (!authHeader) {
     return undefined;
   }
@@ -26,7 +26,7 @@ export function extractBearerToken(authHeader: string | undefined): string | und
 }
 
 /** Extract cookie token. */
-export function extractCookieToken(
+function extractCookieToken(
   cookies: Record<string, string | undefined> | undefined,
 ): string | undefined {
   if (!cookies) {

@@ -14,7 +14,7 @@ function toSafeMoney(value: unknown) {
 }
 
 /** Checkout shipping profile type. */
-export type CheckoutShippingProfile = {
+type CheckoutShippingProfile = {
   mode: 'FREE' | 'FIXED' | 'VARIABLE';
   fixedShippingInCents: number;
   originZip: string;

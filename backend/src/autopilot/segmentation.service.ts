@@ -234,7 +234,7 @@ export class SegmentationService {
     // Buscar contatos com critérios básicos
     let contacts = await this.prisma.contact.findMany({
       take: criteria.limit || 1000,
-      where,
+      where: { ...where, workspaceId },
       select: {
         id: true,
         phone: true,
@@ -357,29 +357,38 @@ export class SegmentationService {
   /**
    * Calcula score de engajamento de um contato
    */
-  async calculateEngagementScore(contactId: string): Promise<{
+  async calculateEngagementScore(
+    contactId: string,
+    workspaceId: string,
+  ): Promise<{
     score: number;
     level: 'hot' | 'warm' | 'cold' | 'ghost';
     factors: Record<string, number>;
   }> {
-    const contact = await this.prisma.contact.findUnique({
-      where: { id: contactId },
+    // Tenant-safe lookup: include workspaceId in the predicate so a foreign
+    // contactId from another workspace returns null instead of leaking data.
+    const contactRow = await this.prisma.contact.findFirst({
+      where: { id: contactId, workspaceId },
+      include: { deals: true },
+    });
+
+    if (!contactRow) {
+      return { score: 0, level: 'ghost', factors: {} };
+    }
+
+    // Tenant-safe: scope conversation lookup to the contact's own workspaceId.
+    // Avoids relying on the implicit contactId relation as the only safety net.
+    const conversations = await this.prisma.conversation.findMany({
+      where: { contactId: contactRow.id, workspaceId: contactRow.workspaceId },
       include: {
-        conversations: {
-          include: {
-            messages: {
-              take: 20,
-              orderBy: { createdAt: 'desc' },
-            },
-          },
+        messages: {
+          take: 20,
+          orderBy: { createdAt: 'desc' },
         },
-        deals: true,
       },
     });
 
-    if (!contact) {
-      return { score: 0, level: 'ghost', factors: {} };
-    }
+    const contact = { ...contactRow, conversations };
 
     const factors: Record<string, number> = {};
     let totalScore = 0;
@@ -455,7 +464,7 @@ export class SegmentationService {
     const results = { hot: 0, warm: 0, cold: 0, ghost: 0, processed: 0 };
 
     await forEachSequential(contacts, async (contact) => {
-      const { level } = await this.calculateEngagementScore(contact.id);
+      const { level } = await this.calculateEngagementScore(contact.id, workspaceId);
       results[level]++;
       results.processed++;
     });

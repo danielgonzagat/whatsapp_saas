@@ -5,12 +5,12 @@ import { CheckoutOrderSupport } from './checkout-order-support';
 
 describe('CheckoutOrderSupport', () => {
   const support = new CheckoutOrderSupport(
-    {} as unknown as PrismaService,
+    {} as never as PrismaService,
     new Logger('CheckoutOrderSupportTest'),
   );
 
   it('normalizes email, phone and accepted bump ids for safe checkout processing', () => {
-    const acceptedBumpIds = [' bump-a ', '', null, 'bump-b'] as unknown as Prisma.InputJsonValue;
+    const acceptedBumpIds = [' bump-a ', '', null, 'bump-b'] as Prisma.InputJsonValue;
 
     expect(support.normalizeEmail('  DANIEL@Example.COM  ')).toBe('daniel@example.com');
     expect(support.normalizePhoneDigits('(64) 99999-1234')).toBe('64999991234');

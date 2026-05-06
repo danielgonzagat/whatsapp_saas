@@ -31,7 +31,7 @@ function normalizeActions(
     return action as Array<Record<string, unknown>>;
   }
   if (action) {
-    return [action as unknown as Record<string, unknown>];
+    return [action as Record<string, unknown>];
   }
   return [];
 }

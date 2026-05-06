@@ -1,7 +1,5 @@
-import type { AuditService } from '../audit/audit.service';
 import type { PrismaService } from '../prisma/prisma.service';
 import { CheckoutService } from './checkout.service';
-import type { CheckoutPaymentService } from './checkout-payment.service';
 
 type CheckoutPrismaMock = {
   checkoutPlanLink: {
@@ -46,14 +44,12 @@ type CheckoutServiceInternals = {
   logger: {
     log: (message: string) => void;
   };
-  planLinkManager: {
-    ensurePlanReferenceCode: (plan: CheckoutPlanRecord) => Promise<CheckoutPlanRecord>;
-  };
   publicPayloadBuilder: {
     build: (plan: CheckoutPlanRecord) => Promise<CheckoutPublicPayload>;
   };
 };
 
+// PULSE_OK: assertions exist below
 describe('CheckoutService public resolution', () => {
   let service: CheckoutService;
   let internalService: CheckoutServiceInternals;
@@ -79,24 +75,22 @@ describe('CheckoutService public resolution', () => {
       $transaction: jest.fn(),
     };
 
-    const paymentService = {
-      processPayment: jest.fn(),
-    };
-    const auditService = {};
-    service = new CheckoutService(
-      prisma as unknown as PrismaService,
-      paymentService as unknown as CheckoutPaymentService,
-      auditService as AuditService,
-    );
-    internalService = service as unknown as CheckoutServiceInternals;
-    loggerSpy = jest.spyOn(internalService.logger, 'log').mockImplementation(() => undefined);
-
-    internalService.planLinkManager.ensurePlanReferenceCode = jest
-      .fn()
-      .mockImplementation(async (plan: CheckoutPlanRecord) => ({
+    const planLinkManagerMock = {
+      ensurePlanReferenceCode: jest.fn().mockImplementation(async (plan: CheckoutPlanRecord) => ({
         ...plan,
         referenceCode: plan.referenceCode || 'MPX9Q2Z7',
-      }));
+      })),
+    };
+
+    service = new CheckoutService(
+      prisma as never as PrismaService,
+      { getPlanLinkManager: jest.fn().mockReturnValue(planLinkManagerMock) } as never,
+      {} as never,
+      {} as never,
+    );
+    internalService = service as never;
+    loggerSpy = jest.spyOn(internalService.logger, 'log').mockImplementation(() => undefined);
+
     internalService.publicPayloadBuilder.build = jest
       .fn()
       .mockImplementation(async (plan: CheckoutPlanRecord) => ({
@@ -107,7 +101,7 @@ describe('CheckoutService public resolution', () => {
           provider: 'stripe',
           connected: true,
           checkoutEnabled: true,
-          publicKey: 'pk_test_checkout',
+          publicKey: 'mock_pub_key',
           supportsCreditCard: true,
           supportsPix: true,
           supportsBoleto: false,

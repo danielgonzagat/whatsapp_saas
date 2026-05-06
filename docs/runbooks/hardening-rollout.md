@@ -95,7 +95,7 @@ these fire within the 30-minute observation window:
 - ledger reconciliation drift > 0
 - `/health/ready` returning DOWN for ≥ 1 minute
 - worker `[GONE]` log lines from deprecated routes (P4-4) suddenly spiking —
-  indicates Asaas reconfiguration broke
+  indicates payment provider reconfiguration broke
 
 ## Why this discipline matters
 

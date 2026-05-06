@@ -10,7 +10,7 @@ import type { AuthenticatedAdmin } from '../auth/admin-auth.types';
 import { sanitizeForAudit } from '../common/admin-sanitize';
 
 /** Resolve audit action. */
-export function resolveAuditAction(context: ExecutionContext): string {
+function resolveAuditAction(context: ExecutionContext): string {
   return `${context.getClass().name}.${context.getHandler().name}`;
 }
 
@@ -19,7 +19,7 @@ function resolveRequestPath(req: Request): string {
 }
 
 /** Build audit details. */
-export function buildAuditDetails(req: Request): Record<string, unknown> {
+function buildAuditDetails(req: Request): Record<string, unknown> {
   return {
     method: req.method,
     path: resolveRequestPath(req),
@@ -35,7 +35,7 @@ function extractForwardedForHeader(req: Request): string | null {
 }
 
 /** Resolve client ip. */
-export function resolveClientIp(req: Request): string | null {
+function resolveClientIp(req: Request): string | null {
   return extractForwardedForHeader(req) || req.ip || req.socket?.remoteAddress || null;
 }
 

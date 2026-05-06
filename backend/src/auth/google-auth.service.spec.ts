@@ -34,7 +34,7 @@ describe('GoogleAuthService', () => {
         }
         return undefined;
       }),
-    } as unknown as ConfigService);
+    } as never as ConfigService);
 
   it('should validate a Google credential and return trusted profile', async () => {
     const service = buildService();
@@ -180,7 +180,7 @@ describe('GoogleAuthService', () => {
         ],
       }),
       text: async () => '',
-    } as Response);
+    } as never);
 
     const profile = await service.fetchPeopleProfile('access-token');
 

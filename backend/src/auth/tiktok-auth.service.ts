@@ -1,11 +1,14 @@
 import {
   Injectable,
   Logger,
+  Optional,
   ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { getTraceHeaders } from '../common/trace-headers';
 import { GoogleVerifiedProfile } from './google-auth.service';
+import { OpsAlertService } from '../observability/ops-alert.service';
 
 const TIKTOK_AUTHORIZE_TOKEN_URL = 'https://open.tiktokapis.com/v2/oauth/token/';
 const TIKTOK_USER_INFO_URL =
@@ -68,8 +71,15 @@ function sanitizeTikTokError(error: unknown): string {
   return 'unknown_error';
 }
 
+/** Maximum provider ID length before ReDoS-safe truncation. */
+const MAX_PROVIDER_ID_LENGTH = 100;
+
 function buildSyntheticTikTokEmail(providerId: string): string {
-  const normalizedProviderId = providerId.trim().toLowerCase().replace(NON_ALPHA_NUMERIC_RE, '-');
+  // ReDoS barrier (CodeQL js/polynomial-redos): truncate to a safe
+  // upper bound so the downstream regex cannot trigger polynomial
+  // backtracking on pathological providerId strings.
+  const bounded = providerId.slice(0, MAX_PROVIDER_ID_LENGTH);
+  const normalizedProviderId = bounded.trim().toLowerCase().replace(NON_ALPHA_NUMERIC_RE, '-');
   const safeProviderId = normalizedProviderId.replace(/^-+|-+$/g, '') || 'user';
   return `tiktok-${safeProviderId}@oauth.kloel.local`;
 }
@@ -79,7 +89,10 @@ function buildSyntheticTikTokEmail(providerId: string): string {
 export class TikTokAuthService {
   private readonly logger = new Logger(TikTokAuthService.name);
 
-  constructor(private readonly config: ConfigService) {}
+  constructor(
+    private readonly config: ConfigService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
+  ) {}
 
   /** Verify authorization code. */
   async verifyAuthorizationCode(
@@ -182,6 +195,7 @@ export class TikTokAuthService {
     const response = await fetch(TIKTOK_AUTHORIZE_TOKEN_URL, {
       method: 'POST',
       headers: {
+        ...getTraceHeaders(),
         'Content-Type': 'application/x-www-form-urlencoded',
       },
       body,
@@ -211,6 +225,7 @@ export class TikTokAuthService {
     try {
       return await this.fetchUserInfo(accessToken);
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'TikTokAuthService.fetchUserInfo');
       const message = sanitizeTikTokError(error);
       this.logger.warn('tiktok_user_info_unavailable: ' + JSON.stringify({ message }));
       return null;
@@ -221,6 +236,7 @@ export class TikTokAuthService {
     const response = await fetch(TIKTOK_USER_INFO_URL, {
       method: 'GET',
       headers: {
+        ...getTraceHeaders(),
         Authorization: `Bearer ${accessToken}`,
       },
       signal: AbortSignal.timeout(15000),

@@ -58,7 +58,7 @@ export function bodyFingerprint(body: unknown): string {
 }
 
 /** Idempotency key parts shape. */
-export interface IdempotencyKeyParts {
+interface IdempotencyKeyParts {
   /** Workspace id property. */
   workspaceId: string;
   /** Actor id property. */

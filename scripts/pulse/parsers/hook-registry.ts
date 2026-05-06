@@ -1,8 +1,12 @@
 import { safeJoin, safeResolve } from '../safe-path';
 import * as path from 'path';
-import type { PulseConfig } from '../types';
+import type { PulseConfig } from '../types.manifest';
 import { walkFiles } from './utils';
 import { pathExists, readTextFile } from '../safe-fs';
+import {
+  discoverAllObservedHttpMethods,
+  discoverReservedJsKeywords,
+} from '../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 
 /** Hook function shape. */
 export interface HookFunction {
@@ -33,23 +37,22 @@ function normalizeEndpoint(raw: string): string {
 }
 
 function detectMethod(context: string): string {
-  const m = context.match(/method\s*:\s*['"`](GET|POST|PUT|PATCH|DELETE)['"`]/i);
+  const observedMethods = discoverAllObservedHttpMethods();
+  const methodPattern = observedMethods.map(escapeRegExp).join('|');
+  const m = context.match(new RegExp(`method\\s*:\\s*['"\`](${methodPattern})['"\`]`, 'i'));
   if (m) {
     return m[1].toUpperCase();
   }
-  if (/\.post\s*\(/i.test(context)) {
-    return 'POST';
-  }
-  if (/\.put\s*\(/i.test(context)) {
-    return 'PUT';
-  }
-  if (/\.patch\s*\(/i.test(context)) {
-    return 'PATCH';
-  }
-  if (/\.delete\s*\(/i.test(context)) {
-    return 'DELETE';
+  for (const method of observedMethods) {
+    if (new RegExp(`\\.${escapeRegExp(method.toLowerCase())}\\s*\\(`, 'i').test(context)) {
+      return method.toUpperCase();
+    }
   }
   return 'GET';
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 /**
@@ -121,14 +124,14 @@ export function buildHookRegistry(config: PulseConfig): HookRegistry {
         // Pattern: async function funcName(...) { ... apiFetch(...) ... }
         // Pattern: funcName: async (...) => apiFetch(...)
         const innerFuncRe =
-          /(?:const|let)\s+(\w+)\s*=\s*(?:async\s+)?\([^)]*\)\s*(?::\s*[\w<>\[\]|,\s]+)?\s*=>\s*\{?/g;
+          /(?:const|let)\s+(\w+)\s*=\s*(?:useCallback\s*\(\s*)?(?:async\s+)?\([^)]*\)\s*(?::\s*[\w<>\[\]|,\s]+)?\s*=>\s*\{?/g;
         let innerMatch;
 
         while ((innerMatch = innerFuncRe.exec(hookBody)) !== null) {
           const funcName = innerMatch[1];
           // Get the function body (~20 lines after declaration)
           const funcStartLine = hookBody.substring(0, innerMatch.index).split('\n').length - 1;
-          const funcLines = hookBody.split('\n').slice(funcStartLine, funcStartLine + 25);
+          const funcLines = hookBody.split('\n').slice(funcStartLine);
           const funcBodyText = funcLines.join('\n');
 
           // Look for apiFetch call
@@ -181,6 +184,11 @@ export function buildHookRegistry(config: PulseConfig): HookRegistry {
         // Check if any imported API objects are used in hooks
         for (const apiObj of imported) {
           if (!apiObj.endsWith('Api') && !apiObj.endsWith('api')) {
+            continue;
+          }
+          // Restrict apiObj to a plain JS identifier so the regex source
+          // below is bounded (no metachars, no ReDoS surface).
+          if (!/^[A-Za-z_$][A-Za-z0-9_$]*$/.test(apiObj)) {
             continue;
           }
           // Find methods called on this API object within hook bodies
@@ -249,17 +257,12 @@ export function buildHookRegistry(config: PulseConfig): HookRegistry {
           let methodMatch;
           while ((methodMatch = methodRe.exec(objBody)) !== null) {
             const methodName = methodMatch[1];
-            if (
-              ['const', 'let', 'var', 'return', 'if', 'else', 'try', 'catch'].includes(methodName)
-            ) {
+            if (discoverReservedJsKeywords().has(methodName)) {
               continue;
             }
 
             const methodStartLine = objBody.substring(0, methodMatch.index).split('\n').length - 1;
-            const methodBlock = objBody
-              .split('\n')
-              .slice(methodStartLine, methodStartLine + 20)
-              .join('\n');
+            const methodBlock = objBody.split('\n').slice(methodStartLine).join('\n');
 
             const apiMatch = methodBlock.match(
               /apiFetch\s*(?:<[^>]*>)?\s*\(\s*(?:['"`]([^'"`]+)['"`]|`([^`]+)`)/,

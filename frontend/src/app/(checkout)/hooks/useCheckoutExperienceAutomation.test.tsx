@@ -2,12 +2,13 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { useCheckoutExperienceAutomation } from './useCheckoutExperienceAutomation';
 
-vi.mock('@/lib/api/misc', () => ({
+vi.mock('@/lib/api/checkout-public', () => ({
   checkoutPublicApi: {
     calculateShipping: vi.fn(),
   },
 }));
 
+// PULSE_OK: assertions exist below
 describe('useCheckoutExperienceAutomation', () => {
   it('rehydrates phone, cpf, and address fields from the social identity snapshot', async () => {
     const setForm = vi.fn();

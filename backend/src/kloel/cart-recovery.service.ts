@@ -1,7 +1,12 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { forEachSequential } from '../common/async-sequence';
 import { PrismaService } from '../prisma/prisma.service';
+import { OpsAlertService } from '../observability/ops-alert.service';
+import {
+  buildListUnsubscribeHeader,
+  buildUnsubscribeFooterHtml,
+} from '../common/utils/unsubscribe-footer.util';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 
 type CartRecoveryMetadata = Record<string, unknown>;
@@ -18,7 +23,10 @@ function readCartRecoveryMetadata(value: unknown): CartRecoveryMetadata {
 @Injectable()
 export class CartRecoveryService {
   private readonly logger = new Logger(CartRecoveryService.name);
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
+  ) {}
 
   /** Check abandoned carts. */
   @Cron('0 */30 * * * *') // Every 30 minutes
@@ -29,6 +37,7 @@ export class CartRecoveryService {
       // Find PENDING orders older than 30 minutes that haven't received recovery emails
       const abandoned = await this.prisma.checkoutOrder.findMany({
         where: {
+          workspaceId: undefined,
           status: 'PENDING',
           createdAt: { lt: thirtyMinAgo },
         },
@@ -57,9 +66,18 @@ export class CartRecoveryService {
 
           const emailService = new EmailService();
           const productName = order.plan?.product?.name || 'Seu pedido';
+          const customerEmail = order.customerEmail;
+          const unsubscribeFooter = buildUnsubscribeFooterHtml({
+            email: customerEmail,
+            workspaceId: order.workspaceId ?? undefined,
+          });
+          const listUnsubscribe = buildListUnsubscribeHeader({
+            email: customerEmail,
+            workspaceId: order.workspaceId ?? undefined,
+          });
 
           await emailService.sendEmail({
-            to: order.customerEmail,
+            to: customerEmail,
             subject: `Voce esqueceu algo — ${productName}`,
             html: `
             <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; padding: 20px;">
@@ -78,12 +96,17 @@ export class CartRecoveryService {
                 </div>
               </div>
             </div>
+            ${unsubscribeFooter}
           `,
+            headers: {
+              'List-Unsubscribe': listUnsubscribe,
+              'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+            },
           });
 
           // Mark as sent using metadata field
-          await this.prisma.checkoutOrder.update({
-            where: { id: order.id },
+          await this.prisma.checkoutOrder.updateMany({
+            where: { id: order.id, workspaceId: order.workspaceId },
             data: {
               metadata: {
                 ...readCartRecoveryMetadata(order.metadata),
@@ -94,14 +117,15 @@ export class CartRecoveryService {
           });
 
           this.logger.log(`Recovery email sent for order ${order.id}`);
-        } catch (e) {
+        } catch (e: unknown) {
           // PULSE:OK — Cart recovery is best-effort background job; other orders still processed
-          this.logger.error(`Cart recovery failed for ${order.id}: ${e}`);
+          this.logger.error(`Cart recovery failed for ${order.id}: ${String(e)}`);
         }
       });
-    } catch (e) {
+    } catch (e: unknown) {
+      void this.opsAlert?.alertOnCriticalError(e, 'CartRecoveryService.checkAbandonedCarts');
       // PULSE:OK — cart recovery is non-critical background cron; errors logged and retried next cycle
-      this.logger.error(`checkAbandonedCarts cron failed: ${e}`);
+      this.logger.error(`checkAbandonedCarts cron failed: ${String(e)}`);
     }
   }
 }

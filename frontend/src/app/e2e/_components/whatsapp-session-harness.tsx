@@ -6,6 +6,7 @@ interface WhatsAppSessionHarnessProps {
   mode: 'session' | 'console';
 }
 
+/** Whats app session harness. */
 export function WhatsAppSessionHarness({ mode }: WhatsAppSessionHarnessProps) {
   const [drawerOpen, setDrawerOpen] = useState(mode === 'session');
   const [connecting, setConnecting] = useState(false);

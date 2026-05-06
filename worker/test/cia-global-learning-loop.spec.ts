@@ -1,19 +1,26 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import * as db from '../db';
 import { runCiaGlobalLearningAll } from '../processors/autopilot-processor';
 import { redis } from '../redis-client';
 
-vi.mock('../db', () => ({
-  prisma: {
-    workspace: { findMany: vi.fn() },
-    kloelMemory: { findMany: vi.fn() },
-    systemInsight: { findFirst: vi.fn(), create: vi.fn() },
-    conversation: { findMany: vi.fn(), count: vi.fn() },
-    contact: { findFirst: vi.fn(), findUnique: vi.fn() },
-    message: { findFirst: vi.fn(), findMany: vi.fn(), create: vi.fn() },
-    auditLog: { create: vi.fn() },
-    autopilotEvent: { findMany: vi.fn(), create: vi.fn() },
+type FlexMock = ReturnType<typeof vi.fn>;
+
+const mockPrisma = vi.hoisted(() => ({
+  workspace: { findMany: vi.fn() as FlexMock },
+  kloelMemory: { findMany: vi.fn() as FlexMock },
+  systemInsight: { findFirst: vi.fn() as FlexMock, create: vi.fn() as FlexMock },
+  conversation: { findMany: vi.fn() as FlexMock, count: vi.fn() as FlexMock },
+  contact: { findFirst: vi.fn() as FlexMock, findUnique: vi.fn() as FlexMock },
+  message: {
+    findFirst: vi.fn() as FlexMock,
+    findMany: vi.fn() as FlexMock,
+    create: vi.fn() as FlexMock,
   },
+  auditLog: { create: vi.fn() as FlexMock },
+  autopilotEvent: { findMany: vi.fn() as FlexMock, create: vi.fn() as FlexMock },
+}));
+
+vi.mock('../db', () => ({
+  prisma: mockPrisma,
 }));
 
 vi.mock('../providers/whatsapp-engine', () => ({
@@ -25,6 +32,7 @@ vi.mock('../providers/whatsapp-engine', () => ({
 
 vi.mock('../providers/plan-limits', () => ({
   PlanLimitsProvider: {
+    checkDailyMessageLimit: vi.fn(async () => ({ allowed: true })),
     checkMessageLimit: vi.fn(async () => ({ allowed: true })),
     checkSubscriptionStatus: vi.fn(async () => ({ active: true })),
   },
@@ -54,8 +62,6 @@ vi.mock('../providers/channel-dispatcher', () => ({
   logFallback: vi.fn(),
   sendEmail: vi.fn(),
 }));
-
-const mockPrisma: any = db.prisma;
 
 describe('cia-global-learning-loop', () => {
   beforeEach(() => {

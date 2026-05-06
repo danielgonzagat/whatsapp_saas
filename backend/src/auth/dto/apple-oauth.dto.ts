@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsNotEmpty, IsOptional, IsString, MaxLength, ValidateNested } from 'class-validator';
+import { IsOptional, IsString, MaxLength, ValidateNested } from 'class-validator';
 
 class AppleUserName {
   @IsOptional()
@@ -28,10 +28,22 @@ class AppleUser {
 /** Apple o auth dto. */
 export class AppleOAuthDto {
   /** Identity token property. */
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
   @MaxLength(4096)
-  identityToken: string;
+  identityToken?: string;
+
+  /** Authorization code property. */
+  @IsOptional()
+  @IsString()
+  @MaxLength(4096)
+  authorizationCode?: string;
+
+  /** Redirect uri property. */
+  @IsOptional()
+  @IsString()
+  @MaxLength(2048)
+  redirectUri?: string;
 
   /** User property. */
   @IsOptional()

@@ -13,6 +13,7 @@ import {
   queueOptions,
   scraperQueue,
   voiceQueue,
+  webhookQueue,
 } from '../queue/queue';
 
 const qhLogger = new Logger('QueueHealthService');
@@ -45,6 +46,7 @@ export class QueueHealthService {
       autopilotQueue,
       memoryQueue,
       crmQueue,
+      webhookQueue,
     ];
     this.threshold = Number(process.env.AUTOPILOT_QUEUE_WAITING_THRESHOLD || 200) || 200;
   }

@@ -1,6 +1,5 @@
 import type { PrismaService } from '../prisma/prisma.service';
 import { MetaWhatsAppService } from './meta-whatsapp.service';
-import type { MetaSdkService } from './meta-sdk.service';
 
 describe('MetaWhatsAppService', () => {
   let prisma: {
@@ -29,10 +28,7 @@ describe('MetaWhatsAppService', () => {
       graphApiGet: jest.fn(),
     };
 
-    service = new MetaWhatsAppService(
-      prisma as unknown as PrismaService,
-      metaSdk as unknown as MetaSdkService,
-    );
+    service = new MetaWhatsAppService(prisma as never as PrismaService, metaSdk as never);
   });
 
   it('falls back to connected when webhook heartbeat sees malformed persisted status', async () => {

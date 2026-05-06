@@ -14,12 +14,14 @@ import {
   Request,
   ServiceUnavailableException,
   UseGuards,
+  Optional,
 } from '@nestjs/common';
 import { AuditService } from '../audit/audit.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AuthenticatedRequest } from '../common/interfaces';
-import { PrismaService } from '../prisma/prisma.service';
+import { getTraceHeaders } from '../common/trace-headers';
 import { resolveKloelCapabilityModel } from '../lib/ai-models';
+import { PrismaService } from '../prisma/prisma.service';
 import {
   estimateAnthropicMessageQuoteCostCents,
   estimateOpenAiChatQuoteCostCents,
@@ -28,6 +30,7 @@ import {
 } from '../wallet/provider-llm-billing';
 import { UnknownProviderPricingModelError } from '../wallet/provider-pricing';
 import { WalletService } from '../wallet/wallet.service';
+import { OpsAlertService } from '../observability/ops-alert.service';
 import {
   InsufficientWalletBalanceError,
   UsagePriceNotFoundError,
@@ -51,6 +54,7 @@ export class SiteController {
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
     private readonly prepaidWalletService: WalletService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   private insufficientWalletMessage() {
@@ -81,7 +85,11 @@ export class SiteController {
         messages: [{ role: 'user', content: input.prompt }],
         maxOutputTokens: SITE_GENERATION_MAX_OUTPUT_TOKENS,
       });
-    } catch (error) {
+    } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(
+        error,
+        'SiteController.estimateAnthropicMessageQuoteCostCents',
+      );
       if (error instanceof UnknownProviderPricingModelError) {
         return undefined;
       }
@@ -120,7 +128,8 @@ export class SiteController {
         },
       });
       return true;
-    } catch (error) {
+    } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'SiteController.chargeForUsage');
       if (error instanceof UsagePriceNotFoundError) {
         return false;
       }
@@ -176,7 +185,8 @@ export class SiteController {
           model: input.model,
         },
       });
-    } catch (error) {
+    } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'SiteController.settleUsageCharge');
       if (!(error instanceof UnknownProviderPricingModelError)) {
         throw error;
       }
@@ -203,7 +213,8 @@ export class SiteController {
           capability: 'site_generation',
         },
       });
-    } catch (error) {
+    } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'SiteController.refundUsageCharge');
       this.logger.error(
         `Failed to refund site_generation workspace=${workspaceId} request=${requestId}: ${
           error instanceof Error ? error.message : String(error)
@@ -292,6 +303,7 @@ export class SiteController {
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
           headers: {
+            ...getTraceHeaders(),
             'Content-Type': 'application/json',
             Authorization: `Bearer ${openaiKey}`,
           },
@@ -338,6 +350,7 @@ export class SiteController {
       const response = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {
+          ...getTraceHeaders(),
           'Content-Type': 'application/json',
           'x-api-key': anthropicKey,
           'anthropic-version': '2023-06-01',
@@ -372,6 +385,7 @@ export class SiteController {
       const html = result.content?.[0]?.text?.trim() || null;
       return { success: true, html, message: 'Generated via Anthropic' };
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'SiteController.generateSite');
       if (usageCharged) {
         await this.refundSiteGenerationIfNeeded(
           workspaceId,

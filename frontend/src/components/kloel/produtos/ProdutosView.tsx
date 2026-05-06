@@ -8,9 +8,10 @@ import {
 } from '@/components/kloel/ui/subinterface-pill';
 import { useMemberAreaMutations, useMemberAreas } from '@/hooks/useMemberAreas';
 import { useProductMutations, useProducts } from '@/hooks/useProducts';
+import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
 import { apiFetch } from '@/lib/api';
-import { affiliateApi } from '@/lib/api/misc';
+import { affiliateApi } from '@/lib/api/affiliate';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 import { buildMemberAreaPreviewPath } from '@/lib/member-area-preview';
 import { toSupportedEmbedUrl } from '@/lib/video-embed';
@@ -35,34 +36,24 @@ const _TEXT_MUTED = KLOEL_THEME.textTertiary;
 const PURPLE = '#8B5CF6';
 const GREEN = EMBER;
 
-function usePrefersReducedMotion() {
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(true);
-
-  useEffect(() => {
-    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
-      return;
-    }
-
-    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const apply = () => setPrefersReducedMotion(mediaQuery.matches);
-
-    apply();
-    mediaQuery.addEventListener?.('change', apply);
-    return () => mediaQuery.removeEventListener?.('change', apply);
-  }, []);
-
-  return prefersReducedMotion;
-}
-
 // ── Icons (IC) ──
 // Extracted into a sibling module to keep this file focused on layout/logic.
 import { IC } from './ProdutosView.icons';
 import { normalizeDisplayProduct } from './ProdutosView.helpers';
 import { secureRandomFloat } from '@/lib/secure-random';
+import { colors } from '@/lib/design-tokens';
 
 // ── NeuralPulse (NP) — canvas 2D with sin() waves ──
-function NP({ w = 160, h = 28, color = '#E85D30' }: { w?: number; h?: number; color?: string }) {
-  const prefersReducedMotion = usePrefersReducedMotion();
+function NP({
+  w = 160,
+  h = 28,
+  color = 'colors.ember.primary',
+}: {
+  w?: number;
+  h?: number;
+  color?: string;
+}) {
+  const prefersReducedMotion = usePrefersReducedMotion({ defaultValue: true });
   const ref = useRef<HTMLCanvasElement>(null);
 
   const staticWave = Array.from({ length: Math.max(2, Math.floor(w / 2)) }, (_, index) => {
@@ -161,14 +152,14 @@ function NP({ w = 160, h = 28, color = '#E85D30' }: { w?: number; h?: number; co
 // ── Ticker — scrolling horizontal text ──
 function Ticker({
   items,
-  color = '#E85D30',
+  color = 'colors.ember.primary',
   duration = '22s',
 }: {
   items: string[];
   color?: string;
   duration?: string;
 }) {
-  const prefersReducedMotion = usePrefersReducedMotion();
+  const prefersReducedMotion = usePrefersReducedMotion({ defaultValue: true });
   const text = items.join('  ///  ');
   return (
     <div
@@ -202,7 +193,7 @@ function Ticker({
 // ── LiveFeed — small event list ──
 function LiveFeed({
   events,
-  color = '#E85D30',
+  color = 'colors.ember.primary',
 }: {
   events: { text: string; time: string }[];
   color?: string;
@@ -2830,7 +2821,7 @@ function AreaMembros({
                     <button
                       type="button"
                       onClick={() => openStudentDrawer(a.id, a.name)}
-                      style={{ ...iconBtn, color: '#E85D30' }}
+                      style={{ ...iconBtn, color: 'colors.ember.primary' }}
                       title={kloelT(`Gerenciar alunos`)}
                     >
                       <svg
@@ -2860,7 +2851,7 @@ function AreaMembros({
                       aria-disabled={!previewHref}
                       style={{
                         ...iconBtn,
-                        color: '#E85D30',
+                        color: 'colors.ember.primary',
                         opacity: previewHref ? 1 : 0.45,
                         textDecoration: 'none',
                       }}
@@ -3099,7 +3090,7 @@ function AreaMembros({
                           aria-disabled={!previewHref}
                           style={{
                             ...btnGhost,
-                            color: '#E85D30',
+                            color: 'colors.ember.primary',
                             opacity: previewHref ? 1 : 0.45,
                             textDecoration: 'none',
                           }}
@@ -3309,28 +3300,34 @@ function AreaMembros({
                                       placeholder={kloelT(`YouTube URL`)}
                                       style={{ ...inputStyle, fontSize: 11 }}
                                     />
-                                    {toEmbed(editLessonData.videoUrl) && (
-                                      <div
-                                        style={{
-                                          borderRadius: 6,
-                                          overflow: 'hidden',
-                                          marginTop: 4,
-                                        }}
-                                      >
-                                        <iframe
-                                          src={toEmbed(editLessonData.videoUrl)}
-                                          width="100%"
-                                          height="180"
-                                          allow={kloelT(
-                                            `accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share`,
-                                          )}
-                                          referrerPolicy="strict-origin-when-cross-origin"
-                                          style={{ border: 'none', borderRadius: 6 }}
-                                          allowFullScreen
-                                          title={kloelT(`Preview`)}
-                                        />
-                                      </div>
-                                    )}
+                                    {(() => {
+                                      const safeEditLessonEmbedUrl =
+                                        toSupportedEmbedUrl(editLessonData.videoUrl) ?? '';
+                                      return (
+                                        safeEditLessonEmbedUrl && (
+                                          <div
+                                            style={{
+                                              borderRadius: 6,
+                                              overflow: 'hidden',
+                                              marginTop: 4,
+                                            }}
+                                          >
+                                            <iframe
+                                              src={safeEditLessonEmbedUrl}
+                                              width="100%"
+                                              height="180"
+                                              allow={kloelT(
+                                                `accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share`,
+                                              )}
+                                              referrerPolicy="strict-origin-when-cross-origin"
+                                              style={{ border: 'none', borderRadius: 6 }}
+                                              allowFullScreen
+                                              title="Preview"
+                                            />
+                                          </div>
+                                        )
+                                      );
+                                    })()}
                                     <div style={{ display: 'flex', gap: 6 }}>
                                       <button
                                         type="button"
@@ -3501,7 +3498,7 @@ function AreaMembros({
                                       referrerPolicy="strict-origin-when-cross-origin"
                                       style={{ border: 'none', borderRadius: 6 }}
                                       allowFullScreen
-                                      title={kloelT(`Preview`)}
+                                      title="Preview"
                                     />
                                   </div>
                                 )}
@@ -3889,7 +3886,7 @@ function AreaMembros({
                     style={{
                       fontSize: 10,
                       fontWeight: 600,
-                      color: '#E85D30',
+                      color: 'colors.ember.primary',
                       letterSpacing: '.25em',
                       textTransform: 'uppercase' as const,
                       marginBottom: 8,
@@ -4014,7 +4011,7 @@ function AreaMembros({
                             justifyContent: 'center',
                             fontSize: 12,
                             fontWeight: 600,
-                            color: '#E85D30',
+                            color: 'colors.ember.primary',
                             fontFamily: SORA,
                             flexShrink: 0,
                           }}
@@ -5255,7 +5252,7 @@ function AfiliarSe({
               </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-              <span style={{ color: '#E85D30' }}>{IC.star(12)}</span>
+              <span style={{ color: 'colors.ember.primary' }}>{IC.star(12)}</span>
               <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--app-text-secondary)' }}>
                 {m.rating || 0}
               </span>

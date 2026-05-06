@@ -1,5 +1,5 @@
 /** Health score input shape. */
-export interface HealthScoreInput {
+interface HealthScoreInput {
   /** Gmv last30d in cents property. */
   gmvLast30dInCents: number;
   /** Previous gmv last30d in cents property. */

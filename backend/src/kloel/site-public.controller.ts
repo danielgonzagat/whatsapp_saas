@@ -16,7 +16,7 @@ export class SitePublicController {
   @Throttle({ default: { limit: 100, ttl: 60000 } })
   async serveSite(@Param('slug') slug: string, @Res() res: Response) {
     const site = await this.prisma.kloelSite.findFirst({
-      where: { slug, published: true },
+      where: { slug, published: true, workspaceId: undefined },
     });
 
     if (!site) {

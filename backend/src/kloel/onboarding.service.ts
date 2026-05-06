@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import { forEachSequential } from '../common/async-sequence';
+import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
 import { PrismaService } from '../prisma/prisma.service';
 
 /**
@@ -15,6 +16,29 @@ interface OnboardingState {
   completed: boolean;
 }
 
+type OnboardingCompletedMemory = {
+  completed: boolean;
+  completedAt?: string;
+};
+
+interface OnboardingProfileInput {
+  userType: string;
+  productType: string;
+  primaryChannel: string;
+  hasProduct: boolean;
+  hasCheckout: boolean;
+  aiUseCase: string;
+}
+
+const SETUP_CHECKLIST_KEYS = [
+  'profile',
+  'product',
+  'checkout',
+  'payment',
+  'channel',
+  'ai',
+] as const;
+
 function isOnboardingState(value: unknown): value is OnboardingState {
   if (value === null || typeof value !== 'object') {
     return false;
@@ -26,6 +50,16 @@ function isOnboardingState(value: unknown): value is OnboardingState {
     typeof v.data === 'object' &&
     v.data !== null
   );
+}
+
+function isCompletedMemory(value: unknown): value is OnboardingCompletedMemory {
+  if (value === true) {
+    return true;
+  }
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+    return false;
+  }
+  return (value as Record<string, unknown>).completed === true;
 }
 
 /** Onboarding service. */
@@ -61,6 +95,60 @@ export class OnboardingService {
   ];
 
   constructor(private readonly prisma: PrismaService) {}
+
+  async saveProfile(workspaceId: string, input: OnboardingProfileInput) {
+    const profile = {
+      userType: input.userType,
+      productType: input.productType,
+      primaryChannel: input.primaryChannel,
+      hasProduct: input.hasProduct,
+      hasCheckout: input.hasCheckout,
+      aiUseCase: input.aiUseCase,
+      savedAt: new Date().toISOString(),
+    };
+    const checklist = this.buildChecklist(profile);
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.kloelMemory.upsert({
+        where: { workspaceId_key: { workspaceId, key: 'onboarding_profile' } },
+        create: {
+          workspaceId,
+          key: 'onboarding_profile',
+          value: profile,
+          category: 'system',
+          type: 'onboarding_profile',
+        },
+        update: {
+          value: profile,
+          category: 'system',
+          type: 'onboarding_profile',
+        },
+      });
+
+      await tx.kloelMemory.upsert({
+        where: { workspaceId_key: { workspaceId, key: 'onboarding_setup_checklist' } },
+        create: {
+          workspaceId,
+          key: 'onboarding_setup_checklist',
+          value: checklist,
+          category: 'system',
+          type: 'setup_checklist',
+        },
+        update: {
+          value: checklist,
+          category: 'system',
+          type: 'setup_checklist',
+        },
+      });
+    });
+
+    return {
+      completed: false,
+      profile,
+      checklist,
+      nextMissingStep: checklist.find((item) => item.completed === false)?.key ?? null,
+    };
+  }
 
   /** Start onboarding. */
   async startOnboarding(workspaceId: string) {
@@ -116,13 +204,94 @@ export class OnboardingService {
 
   /** Get status. */
   async getStatus(workspaceId: string) {
-    const state = await this.getState(workspaceId);
+    const [state, profileMemory, checklistMemory, completedMemory] = await Promise.all([
+      this.getState(workspaceId),
+      this.prisma.kloelMemory.findUnique({
+        where: { workspaceId_key: { workspaceId, key: 'onboarding_profile' } },
+      }),
+      this.prisma.kloelMemory.findUnique({
+        where: { workspaceId_key: { workspaceId, key: 'onboarding_setup_checklist' } },
+      }),
+      this.prisma.kloelMemory.findUnique({
+        where: { workspaceId_key: { workspaceId, key: 'onboarding_completed' } },
+      }),
+    ]);
+    const completed =
+      state?.completed === true || isCompletedMemory(completedMemory?.value ?? null);
     return {
       started: !!state,
-      completed: state?.completed || false,
+      completed,
       currentStep: state?.currentStep || 0,
       totalSteps: this.steps.length,
+      profile: profileMemory?.value ?? null,
+      checklist: checklistMemory?.value ?? this.buildChecklist(null),
     };
+  }
+
+  async complete(workspaceId: string) {
+    const completedAt = new Date().toISOString();
+    await this.prisma.$transaction(async (tx) => {
+      const current = await tx.kloelMemory.findUnique({
+        where: { workspaceId_key: { workspaceId, key: 'onboarding_state' } },
+      });
+      const currentValue = current?.value;
+      const state: OnboardingState = isOnboardingState(currentValue)
+        ? { currentStep: this.steps.length, data: currentValue.data, completed: true }
+        : { currentStep: this.steps.length, data: {}, completed: true };
+      const stateValue: Prisma.InputJsonValue = {
+        currentStep: state.currentStep,
+        data: state.data,
+        completed: state.completed,
+      };
+
+      await tx.kloelMemory.upsert({
+        where: { workspaceId_key: { workspaceId, key: 'onboarding_state' } },
+        create: {
+          workspaceId,
+          key: 'onboarding_state',
+          value: stateValue,
+          category: 'system',
+        },
+        update: { value: stateValue },
+      });
+
+      await tx.kloelMemory.upsert({
+        where: { workspaceId_key: { workspaceId, key: 'onboarding_completed' } },
+        create: {
+          workspaceId,
+          key: 'onboarding_completed',
+          value: { completed: true, completedAt },
+          category: 'system',
+          type: 'onboarding_completed',
+        },
+        update: {
+          value: { completed: true, completedAt },
+          category: 'system',
+          type: 'onboarding_completed',
+        },
+      });
+    });
+    return { completed: true, completedAt };
+  }
+
+  private buildChecklist(profile: OnboardingProfileInput | null) {
+    const completed = {
+      profile: Boolean(profile),
+      product: Boolean(profile?.hasProduct),
+      checkout: Boolean(profile?.hasCheckout),
+      payment: this.hasConfiguredPaymentProvider(),
+      channel: Boolean(profile?.primaryChannel),
+      ai: Boolean(profile?.aiUseCase),
+    };
+
+    return SETUP_CHECKLIST_KEYS.map((key) => ({
+      key,
+      completed: completed[key],
+    }));
+  }
+
+  private hasConfiguredPaymentProvider(): boolean {
+    return Boolean(process.env.STRIPE_SECRET_KEY || process.env.MERCADOPAGO_ACCESS_TOKEN);
   }
 
   private async saveState(workspaceId: string, state: OnboardingState): Promise<void> {
@@ -131,10 +300,10 @@ export class OnboardingService {
       create: {
         workspaceId,
         key: 'onboarding_state',
-        value: state as unknown as Prisma.InputJsonValue,
+        value: toPrismaJsonValue(state),
         category: 'system',
       },
-      update: { value: state as unknown as Prisma.InputJsonValue },
+      update: { value: toPrismaJsonValue(state) },
     });
   }
 

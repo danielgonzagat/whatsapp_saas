@@ -6,12 +6,14 @@ import {
   Headers,
   Inject,
   Logger,
+  Optional,
   Post,
   Query,
   UnauthorizedException,
   forwardRef,
 } from '@nestjs/common';
 import { Public } from '../auth/public.decorator';
+import { OpsAlertService } from '../observability/ops-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { WorkspaceService } from '../workspaces/workspace.service';
 import { InboundMessage, InboundProcessorService } from './inbound-processor.service';
@@ -30,6 +32,7 @@ export class InternalWhatsAppRuntimeController {
     private readonly prisma: PrismaService,
     @Inject(forwardRef(() => WhatsappService))
     private readonly whatsappService: WhatsappService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   /** Ingest inbound. */
@@ -111,12 +114,15 @@ export class InternalWhatsAppRuntimeController {
 
       return { success: true, workspaceId, autopilotEnabled: true };
     } catch (err: unknown) {
-      const errInstanceofError =
-        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
-      this.logger.warn(
-        `Failed to auto-activate autopilot for ${workspaceId}: ${errInstanceofError?.message}`,
+      void this.opsAlert?.alertOnDegradation(
+        err instanceof Error ? err.message : 'unknown_error',
+        'InternalWhatsAppRuntimeController.sessionConnected.autopilot',
+        { workspaceId },
       );
-      return { success: false, reason: errInstanceofError?.message };
+      this.logger.warn(
+        `Failed to auto-activate autopilot for ${workspaceId}: ${err instanceof Error ? err.message : 'unknown_error'}`,
+      );
+      return { success: false, reason: err instanceof Error ? err.message : 'unknown_error' };
     }
   }
 
@@ -295,10 +301,15 @@ export class InternalWhatsAppRuntimeController {
         phone: normalizedPhone,
       };
     } catch (err: unknown) {
-      const errInstanceofError =
-        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
-      this.logger.warn(`Contact sync failed: ${errInstanceofError?.message}`);
-      return { success: false, reason: errInstanceofError?.message };
+      void this.opsAlert?.alertOnDegradation(
+        err instanceof Error ? err.message : 'unknown_error',
+        'InternalWhatsAppRuntimeController.sessionConnected.contactSync',
+        { workspaceId },
+      );
+      this.logger.warn(
+        `Contact sync failed: ${err instanceof Error ? err.message : 'unknown_error'}`,
+      );
+      return { success: false, reason: err instanceof Error ? err.message : 'unknown_error' };
     }
   }
 

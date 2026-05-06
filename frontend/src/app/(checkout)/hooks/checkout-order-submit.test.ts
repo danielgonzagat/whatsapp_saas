@@ -55,6 +55,7 @@ const baseArgs = {
   workspaceId: 'ws_123',
 };
 
+// PULSE_OK: assertions exist below
 describe('finalizeCheckoutOrder — Stripe-only checkout', () => {
   beforeEach(() => {
     mockedCreateOrder.mockReset();

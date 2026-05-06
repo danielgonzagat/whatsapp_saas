@@ -87,11 +87,12 @@ describe('Frontend API contract schemas — frontend freeze (P1-2)', () => {
     });
 
     it('AuthLoginResponseSchema rejects a payload with the wrong token field name', () => {
+      const { access_token: extractedToken, ...rest } = authTokenFixture;
+      void extractedToken;
       const renamed = {
-        ...authTokenFixture,
-        accessToken: authTokenFixture.access_token,
-      } as any;
-      delete renamed.access_token;
+        ...rest,
+        accessToken: extractedToken,
+      };
       expect(AuthLoginResponseSchema.safeParse(renamed).success).toBe(false);
     });
 

@@ -1,246 +1,102 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { OrderStatus, PaymentMethod, Prisma } from '@prisma/client';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
+import { assertValidOrderStatusFilter } from '../common/checkout-order-state-machine';
 import { PrismaService } from '../prisma/prisma.service';
 import { ReportFiltersDto } from './dto/report-filters.dto';
-
-const ORDER_STATUSES = new Set<string>(Object.values(OrderStatus));
-const PAYMENT_METHODS = new Set<string>(Object.values(PaymentMethod));
-
-function toOrderStatus(value: string | undefined): OrderStatus | undefined {
-  return value && ORDER_STATUSES.has(value) ? (value as OrderStatus) : undefined;
-}
-
-function toPaymentMethod(value: string | undefined): PaymentMethod | undefined {
-  return value && PAYMENT_METHODS.has(value) ? (value as PaymentMethod) : undefined;
-}
+import { ReportsAffiliateService } from './reports-affiliate.service';
+import { applyCommonOrderFilters, dateRange } from './reports-orders.service';
+import { ReportsOrdersService } from './reports-orders.service';
 
 /**
  * Read-only reports service — no payment creation, no idempotencyKey needed.
  * All mutations (checkout create, payment processing) happen in their respective
  * services with idempotent guards.
+ *
+ * Order/payment report methods are delegated to ReportsOrdersService.
+ * Affiliate report methods are delegated to ReportsAffiliateService.
+ * This service owns: ad spend, churn, assinaturas, metricas.
  */
 @Injectable()
 export class ReportsService {
   private readonly logger = new Logger(ReportsService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private ordersService: ReportsOrdersService,
+    private affiliateService: ReportsAffiliateService,
+  ) {}
 
-  // All dates stored as UTC via Prisma DateTime (toISOString)
-  private dateRange(f: ReportFiltersDto) {
-    const start = f.startDate ? new Date(f.startDate) : new Date(Date.now() - 30 * 86400000);
-    const end = f.endDate ? new Date(`${f.endDate}T23:59:59Z`) : new Date();
-    return { start, end };
-  }
+  // ── VENDAS (delegated) ──
 
-  private paginate(f: ReportFiltersDto) {
-    const page = f.page || 1;
-    const perPage = Math.min(f.perPage || 10, 100);
-    return { skip: (page - 1) * perPage, take: perPage };
-  }
-
-  /**
-   * Apply common CheckoutOrder filters shared across multiple report methods.
-   * Mutates the `where` object in place for efficiency.
-   */
-  private applyCommonOrderFilters(where: Prisma.CheckoutOrderWhereInput, f: ReportFiltersDto) {
-    if (f.orderCode) {
-      where.orderNumber = { contains: f.orderCode, mode: 'insensitive' };
-    }
-    if (f.buyerName) {
-      where.customerName = { contains: f.buyerName, mode: 'insensitive' };
-    }
-    if (f.buyerEmail) {
-      where.customerEmail = { contains: f.buyerEmail, mode: 'insensitive' };
-    }
-    if (f.cpfCnpj) {
-      where.customerCPF = { contains: f.cpfCnpj };
-    }
-    if (f.utmSource) {
-      where.utmSource = { contains: f.utmSource, mode: 'insensitive' };
-    }
-    if (f.utmMedium) {
-      where.utmMedium = { contains: f.utmMedium, mode: 'insensitive' };
-    }
-    if (f.planName) {
-      where.plan = { name: { contains: f.planName, mode: 'insensitive' } };
-    }
-    if (f.isUpsell === 'true') {
-      where.upsellOrders = { some: {} };
-    }
-    if (f.isRecovery === 'true') {
-      where.couponCode = { contains: 'RECOVERY', mode: 'insensitive' };
-    }
-    if (f.affiliateEmail) {
-      // affiliateId on CheckoutOrder stores the AffiliatePartner id.
-      // We resolve it via a nested filter on AffiliatePartner by email.
-      // Since affiliateId is a plain String (no relation), we'll resolve IDs first
-      // in the calling method. Here we store the intent for the caller.
-      // Actually, affiliateId is just a string field, so we need to resolve separately.
-      // We'll handle this in getVendas and other callers that need it.
-    }
-  }
-
-  /**
-   * Resolve affiliateEmail to a list of affiliate IDs for filtering.
-   */
-  private async resolveAffiliateIds(
-    workspaceId: string,
-    affiliateEmail: string,
-  ): Promise<string[]> {
-    const partners = await this.prisma.affiliatePartner.findMany({
-      where: {
-        workspaceId,
-        partnerEmail: { contains: affiliateEmail, mode: 'insensitive' },
-      },
-      select: { id: true },
-    });
-    return partners.map((p) => p.id);
-  }
-
-  // ── VENDAS ──
+  /** Get vendas. */
   async getVendas(workspaceId: string, f: ReportFiltersDto) {
-    const { start, end } = this.dateRange(f);
-    const where: Prisma.CheckoutOrderWhereInput = {
-      workspaceId,
-      createdAt: { gte: start, lte: end },
-    };
-    const status = toOrderStatus(f.status);
-    if (status) {
-      where.status = status;
-    }
-    const paymentMethod = toPaymentMethod(f.paymentMethod);
-    if (paymentMethod) {
-      where.paymentMethod = paymentMethod;
-    }
-    this.applyCommonOrderFilters(where, f);
-
-    // Resolve affiliateEmail → affiliateId filter
+    let affiliateIds: string[] | undefined;
     if (f.affiliateEmail) {
-      const affiliateIds = await this.resolveAffiliateIds(workspaceId, f.affiliateEmail);
-      if (affiliateIds.length > 0) {
-        where.affiliateId = { in: affiliateIds };
-      } else {
-        // No matching affiliates — return empty result
-        return { data: [], total: 0, page: f.page || 1 };
-      }
+      affiliateIds = await this.affiliateService.resolveAffiliateIds(workspaceId, f.affiliateEmail);
     }
-
-    const { skip, take } = this.paginate(f);
-
-    const [data, total] = await Promise.all([
-      this.prisma.checkoutOrder.findMany({
-        take,
-        skip,
-        where,
-        include: {
-          payment: {
-            select: { status: true, cardLast4: true, cardBrand: true },
-          },
-        },
-        orderBy: { createdAt: 'desc' },
-      }),
-      this.prisma.checkoutOrder.count({ where }),
-    ]);
-
-    // Post-query filter: isFirstPurchase (requires counting prior orders per customer)
-    let filtered = data;
-    if (f.isFirstPurchase === 'true') {
-      const firstPurchaseChecks = await Promise.all(
-        data.map(async (order) => {
-          const priorCount = await this.prisma.checkoutOrder.count({
-            where: {
-              workspaceId,
-              customerEmail: order.customerEmail,
-              status: 'PAID',
-              createdAt: { lt: order.createdAt },
-            },
-          });
-          return priorCount === 0;
-        }),
-      );
-      filtered = data.filter((_, i) => firstPurchaseChecks[i]);
-    }
-
-    return { data: filtered, total, page: f.page || 1 };
+    return this.ordersService.getVendas(workspaceId, f, affiliateIds);
   }
 
   /** Get vendas summary. */
-  async getVendasSummary(workspaceId: string, f: ReportFiltersDto) {
-    const { start, end } = this.dateRange(f);
-    const where: Prisma.CheckoutOrderWhereInput = {
-      workspaceId,
-      createdAt: { gte: start, lte: end },
-    };
-    this.applyCommonOrderFilters(where, f);
-
-    const [agg, total, paid] = await Promise.all([
-      this.prisma.checkoutOrder.aggregate({
-        where,
-        _sum: { totalInCents: true },
-        _avg: { totalInCents: true },
-      }),
-      this.prisma.checkoutOrder.count({ where }),
-      this.prisma.checkoutOrder.count({ where: { ...where, status: 'PAID' } }),
-    ]);
-
-    return {
-      totalRevenue: agg._sum.totalInCents || 0,
-      ticketMedio: Math.round(agg._avg.totalInCents || 0),
-      totalCount: total,
-      paidCount: paid,
-      conversao: total > 0 ? Number.parseFloat(((paid / total) * 100).toFixed(2)) : 0,
-    };
+  getVendasSummary(workspaceId: string, f: ReportFiltersDto) {
+    return this.ordersService.getVendasSummary(workspaceId, f);
   }
 
   /** Get vendas daily. */
-  async getVendasDaily(workspaceId: string, f: ReportFiltersDto) {
-    const { start, end } = this.dateRange(f);
-    try {
-      return await this.prisma.$queryRaw`
-        SELECT DATE("createdAt") as day, COUNT(*)::int as vendas,
-          COALESCE(SUM("totalInCents"), 0)::int as receita
-        FROM "CheckoutOrder"
-        WHERE "workspaceId" = ${workspaceId}
-          AND "createdAt" >= ${start} AND "createdAt" <= ${end}
-        GROUP BY DATE("createdAt") ORDER BY day ASC
-      `;
-    } catch (err) {
-      this.logger.error(`getVendasDaily query failed: ${err}`);
-      return [];
-    }
+  getVendasDaily(workspaceId: string, f: ReportFiltersDto) {
+    return this.ordersService.getVendasDaily(workspaceId, f);
   }
 
-  // ── AFTER PAY (installment orders) ──
-  async getAfterPay(workspaceId: string, f: ReportFiltersDto) {
-    const where: Prisma.CheckoutOrderWhereInput = {
-      workspaceId,
-      paymentMethod: 'CREDIT_CARD',
-    };
-    if (f.status === 'PAID') {
-      where.status = 'PAID';
-    }
-    if (f.status === 'PENDING') {
-      where.status = 'PENDING';
-    }
-    this.applyCommonOrderFilters(where, f);
+  /** Get after pay. */
+  getAfterPay(workspaceId: string, f: ReportFiltersDto) {
+    return this.ordersService.getAfterPay(workspaceId, f);
+  }
 
-    const { skip, take } = this.paginate(f);
-    const [data, total] = await Promise.all([
-      this.prisma.checkoutOrder.findMany({
-        take,
-        skip,
-        where,
-        include: { plan: { select: { name: true, maxInstallments: true } } },
-        orderBy: { createdAt: 'desc' },
-      }),
-      this.prisma.checkoutOrder.count({ where }),
-    ]);
-    return { data, total, page: f.page || 1 };
+  /** Get abandonos. */
+  getAbandonos(workspaceId: string, f: ReportFiltersDto) {
+    return this.ordersService.getAbandonos(workspaceId, f);
+  }
+
+  /** Get recusa. */
+  getRecusa(workspaceId: string, f: ReportFiltersDto) {
+    return this.ordersService.getRecusa(workspaceId, f);
+  }
+
+  /** Get origem. */
+  getOrigem(workspaceId: string, f: ReportFiltersDto) {
+    return this.ordersService.getOrigem(workspaceId, f);
+  }
+
+  /** Get estornos. */
+  getEstornos(workspaceId: string, f: ReportFiltersDto) {
+    return this.ordersService.getEstornos(workspaceId, f);
+  }
+
+  /** Get chargeback. */
+  getChargeback(workspaceId: string, f: ReportFiltersDto) {
+    return this.ordersService.getChargeback(workspaceId, f);
+  }
+
+  // ── AFILIADOS (delegated) ──
+
+  /** Get afiliados. */
+  getAfiliados(workspaceId: string, f: ReportFiltersDto) {
+    return this.affiliateService.getAfiliados(workspaceId, f);
+  }
+
+  /** Get indicadores. */
+  getIndicadores(workspaceId: string, f: ReportFiltersDto) {
+    return this.affiliateService.getIndicadores(workspaceId, f);
+  }
+
+  /** Get indicadores produto. */
+  getIndicadoresProduto(workspaceId: string, f: ReportFiltersDto) {
+    return this.affiliateService.getIndicadoresProduto(workspaceId, f);
   }
 
   // ── CHURN ──
   async getChurn(workspaceId: string, f: ReportFiltersDto) {
-    const { start, end } = this.dateRange(f);
+    const { start, end } = dateRange(f);
     const where: Prisma.CustomerSubscriptionWhereInput = {
       workspaceId,
       status: 'CANCELLED',
@@ -250,11 +106,11 @@ export class ReportsService {
     }
 
     const [total, data] = await Promise.all([
-      this.prisma.customerSubscription.count({ where }),
+      this.prisma.customerSubscription.count({ where: { ...where, workspaceId } }),
       this.prisma.customerSubscription.findMany({
         take: Math.min(f.perPage || 10, 100),
         skip: ((f.page || 1) - 1) * Math.min(f.perPage || 10, 100),
-        where,
+        where: { ...where, workspaceId },
         orderBy: { cancelledAt: 'desc' },
         select: {
           id: true,
@@ -278,76 +134,12 @@ export class ReportsService {
         GROUP BY TO_CHAR("cancelledAt", 'Mon'), DATE_TRUNC('month', "cancelledAt")
         ORDER BY DATE_TRUNC('month', "cancelledAt") ASC LIMIT 12
       `;
-    } catch (err) {
+    } catch (err: unknown) {
       // PULSE:OK — Monthly churn query failure returns partial data; not a blocking operation
-      this.logger.error(`getChurn monthly query failed: ${err}`);
+      this.logger.error(`getChurn monthly query failed: ${String(err)}`);
     }
 
     return { total, data, monthly };
-  }
-
-  // ── ABANDONOS ──
-  async getAbandonos(workspaceId: string, f: ReportFiltersDto) {
-    const { start, end } = this.dateRange(f);
-    const thirtyMinAgo = new Date(Date.now() - 30 * 60000);
-    const where: Prisma.CheckoutOrderWhereInput = {
-      workspaceId,
-      status: 'PENDING',
-      createdAt: { gte: start, lte: end < thirtyMinAgo ? end : thirtyMinAgo },
-    };
-    this.applyCommonOrderFilters(where, f);
-
-    const { skip, take } = this.paginate(f);
-    const [data, total] = await Promise.all([
-      this.prisma.checkoutOrder.findMany({
-        take,
-        skip,
-        where,
-        include: {
-          plan: { select: { name: true, product: { select: { name: true } } } },
-        },
-        orderBy: { createdAt: 'desc' },
-      }),
-      this.prisma.checkoutOrder.count({ where }),
-    ]);
-    return { data, total, page: f.page || 1 };
-  }
-
-  // ── AFILIADOS ──
-  async getAfiliados(workspaceId: string, _f: ReportFiltersDto) {
-    try {
-      const partners = await this.prisma.affiliatePartner.findMany({
-        where: { workspaceId, status: 'active' },
-        orderBy: { totalRevenue: 'desc' },
-        take: 50,
-      });
-      return partners;
-    } catch (err) {
-      this.logger.error(`getAfiliados query failed: ${err}`);
-      return [];
-    }
-  }
-
-  // ── INDICADORES ──
-  async getIndicadores(workspaceId: string, _f: ReportFiltersDto) {
-    try {
-      const partners = await this.prisma.affiliatePartner.findMany({
-        where: { workspaceId },
-        orderBy: { totalCommission: 'desc' },
-        take: 50,
-        select: {
-          partnerName: true,
-          partnerEmail: true,
-          totalSales: true,
-          totalRevenue: true,
-          totalCommission: true,
-        },
-      });
-      return partners;
-    } catch (err) {
-      this.logger.error(`getIndicadores query failed: ${err}`);
-      return [];
-    }
   }
 
   // ── ASSINATURAS ──
@@ -361,7 +153,7 @@ export class ReportsService {
       this.prisma.customerSubscription.findMany({
         take: Math.min(f.perPage || 10, 100),
         skip: ((f.page || 1) - 1) * Math.min(f.perPage || 10, 100),
-        where,
+        where: { ...where, workspaceId },
         orderBy: { createdAt: 'desc' },
         select: {
           id: true,
@@ -373,7 +165,7 @@ export class ReportsService {
           interval: true,
         },
       }),
-      this.prisma.customerSubscription.count({ where }),
+      this.prisma.customerSubscription.count({ where: { ...where, workspaceId } }),
       this.prisma.customerSubscription.groupBy({
         by: ['status'],
         where: { workspaceId },
@@ -384,106 +176,9 @@ export class ReportsService {
     return { data, total, summary, page: f.page || 1 };
   }
 
-  // ── INDICADORES PRODUTO ──
-  async getIndicadoresProduto(workspaceId: string, f: ReportFiltersDto) {
-    const { start, end } = this.dateRange(f);
-    try {
-      if (f.product) {
-        const productFilter = `%${f.product}%`;
-        return await this.prisma.$queryRaw`
-          SELECT DATE(co."createdAt") as day, COUNT(*)::int as vendas,
-            COALESCE(SUM(co."totalInCents"), 0)::int as receita
-          FROM "CheckoutOrder" co
-          JOIN "CheckoutProductPlan" pp ON co."planId" = pp.id
-          JOIN "Product" p ON pp."productId" = p.id
-          WHERE co."workspaceId" = ${workspaceId}
-            AND co."createdAt" >= ${start} AND co."createdAt" <= ${end}
-            AND p.name ILIKE ${productFilter}
-          GROUP BY DATE(co."createdAt") ORDER BY day ASC
-        `;
-      }
-      return await this.prisma.$queryRaw`
-        SELECT DATE(co."createdAt") as day, COUNT(*)::int as vendas,
-          COALESCE(SUM(co."totalInCents"), 0)::int as receita
-        FROM "CheckoutOrder" co
-        JOIN "CheckoutProductPlan" pp ON co."planId" = pp.id
-        JOIN "Product" p ON pp."productId" = p.id
-        WHERE co."workspaceId" = ${workspaceId}
-          AND co."createdAt" >= ${start} AND co."createdAt" <= ${end}
-        GROUP BY DATE(co."createdAt") ORDER BY day ASC
-      `;
-    } catch (err) {
-      this.logger.error(`getIndicadoresProduto query failed: ${err}`);
-      return [];
-    }
-  }
-
-  // ── RECUSA ──
-  async getRecusa(workspaceId: string, f: ReportFiltersDto) {
-    const { start, end } = this.dateRange(f);
-    // Build nested order filter with common filters
-    const orderWhere: Prisma.CheckoutOrderWhereInput = {
-      workspaceId,
-      createdAt: { gte: start, lte: end },
-    };
-    this.applyCommonOrderFilters(orderWhere, f);
-
-    const { skip, take } = this.paginate(f);
-    try {
-      const data = await this.prisma.checkoutPayment.findMany({
-        take,
-        skip,
-        where: {
-          status: 'DECLINED',
-          order: orderWhere,
-        },
-        include: {
-          order: {
-            select: {
-              orderNumber: true,
-              customerName: true,
-              customerEmail: true,
-              createdAt: true,
-              plan: {
-                select: { name: true, product: { select: { name: true } } },
-              },
-            },
-          },
-        },
-        orderBy: { createdAt: 'desc' },
-      });
-      const total = await this.prisma.checkoutPayment.count({
-        where: {
-          status: 'DECLINED',
-          order: orderWhere,
-        },
-      });
-      return { data, total, page: f.page || 1 };
-    } catch (err) {
-      this.logger.error(`getRecusa query failed: ${err}`);
-      return { data: [], total: 0 };
-    }
-  }
-
-  // ── ORIGEM ──
-  async getOrigem(workspaceId: string, f: ReportFiltersDto) {
-    const { start, end } = this.dateRange(f);
-    try {
-      return await this.prisma.$queryRaw`
-        SELECT COALESCE(NULLIF("couponCode",''), 'Direto') as source,
-          COUNT(*)::int as vendas, COALESCE(SUM("totalInCents"),0)::int as receita
-        FROM "CheckoutOrder"
-        WHERE "workspaceId" = ${workspaceId} AND status = 'PAID'
-          AND "createdAt" >= ${start} AND "createdAt" <= ${end}
-        GROUP BY source ORDER BY vendas DESC
-      `;
-    } catch (err) {
-      this.logger.error(`getOrigem query failed: ${err}`);
-      return [];
-    }
-  }
-
   // ── AD SPEND ──
+
+  /** Register ad spend. */
   async registerAdSpend(
     workspaceId: string,
     data: {
@@ -494,9 +189,12 @@ export class ReportsService {
       description?: string;
     },
   ) {
-    // Idempotency: prevent duplicate ad spend entries for the same
-    // workspace+platform+date+campaign combination within a short window.
+    // PULSE_OK: date validated via Number.isNaN(parseDate.getTime()) + BadRequestException on line below
     const parsedDate = new Date(data.date);
+    if (Number.isNaN(parsedDate.getTime())) {
+      throw new BadRequestException('Invalid date');
+    }
+
     const existing = await this.prisma.adSpend.findFirst({
       where: {
         workspaceId,
@@ -528,7 +226,7 @@ export class ReportsService {
 
   /** Get ad spends. */
   async getAdSpends(workspaceId: string, f: ReportFiltersDto) {
-    const { start, end } = this.dateRange(f);
+    const { start, end } = dateRange(f);
     const where: Prisma.AdSpendWhereInput = {
       workspaceId,
       date: { gte: start, lte: end },
@@ -549,33 +247,35 @@ export class ReportsService {
           workspaceId: true,
         },
       }),
-      this.prisma.adSpend.count({ where }),
+      this.prisma.adSpend.count({ where: { ...where, workspaceId } }),
     ]);
     return { data, total, page: f.page || 1 };
   }
 
   // ── METRICAS ──
   async getMetricas(workspaceId: string, f: ReportFiltersDto) {
-    const { start, end } = this.dateRange(f);
+    const { start, end } = dateRange(f);
     const where: Prisma.CheckoutOrderWhereInput = {
       workspaceId,
       createdAt: { gte: start, lte: end },
     };
-    this.applyCommonOrderFilters(where, f);
+    applyCommonOrderFilters(where, f);
 
     try {
+      assertValidOrderStatusFilter('PAID', 'ReportsService.getMetricas');
+      const paidStatus = 'PAID' as const;
       const [total, byMethod, paid, revenueAgg, adSpendAgg] = await Promise.all([
-        this.prisma.checkoutOrder.count({ where }),
+        this.prisma.checkoutOrder.count({ where: { ...where, workspaceId } }),
         this.prisma.checkoutOrder.groupBy({
           by: ['paymentMethod'],
-          where,
+          where: { ...where, workspaceId },
           _count: true,
         }),
         this.prisma.checkoutOrder.count({
-          where: { ...where, status: 'PAID' },
+          where: { ...where, workspaceId, status: paidStatus },
         }),
         this.prisma.checkoutOrder.aggregate({
-          where: { ...where, status: 'PAID' },
+          where: { ...where, workspaceId, status: paidStatus },
           _sum: { totalInCents: true },
         }),
         this.prisma.adSpend.aggregate({
@@ -602,8 +302,8 @@ export class ReportsService {
         totalAdSpend,
         roas,
       };
-    } catch (err) {
-      this.logger.error(`getMetricas query failed: ${err}`);
+    } catch (err: unknown) {
+      this.logger.error(`getMetricas query failed: ${String(err)}`);
       return {
         totalSales: 0,
         paidSales: 0,
@@ -613,56 +313,6 @@ export class ReportsService {
         totalAdSpend: 0,
         roas: null,
       };
-    }
-  }
-
-  // ── ESTORNOS ──
-  async getEstornos(workspaceId: string, f: ReportFiltersDto) {
-    const { start, end } = this.dateRange(f);
-    const where: Prisma.CheckoutOrderWhereInput = {
-      workspaceId,
-      status: 'REFUNDED',
-      refundedAt: { not: null, gte: start, lte: end },
-    };
-    this.applyCommonOrderFilters(where, f);
-
-    const { skip, take } = this.paginate(f);
-    const [data, total] = await Promise.all([
-      this.prisma.checkoutOrder.findMany({
-        take,
-        skip,
-        where,
-        orderBy: { refundedAt: 'desc' },
-        include: {
-          plan: { select: { name: true, product: { select: { name: true } } } },
-        },
-      }),
-      this.prisma.checkoutOrder.count({ where }),
-    ]);
-    return { data, total, page: f.page || 1 };
-  }
-
-  // ── CHARGEBACK ──
-  async getChargeback(workspaceId: string, f: ReportFiltersDto) {
-    try {
-      const data = await this.prisma.checkoutPayment.findMany({
-        take: Math.min(f.perPage || 10, 100),
-        skip: ((f.page || 1) - 1) * Math.min(f.perPage || 10, 100),
-        where: { status: 'CHARGEBACK', order: { workspaceId } },
-        include: {
-          order: {
-            select: { totalInCents: true, createdAt: true, customerName: true },
-          },
-        },
-        orderBy: { createdAt: 'desc' },
-      });
-      const total = await this.prisma.checkoutPayment.count({
-        where: { status: 'CHARGEBACK', order: { workspaceId } },
-      });
-      return { data, total };
-    } catch (err) {
-      this.logger.error(`getChargeback query failed: ${err}`);
-      return { data: [], total: 0 };
     }
   }
 }

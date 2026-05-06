@@ -9,6 +9,7 @@
  * REDIS_PUBLIC_URL/proxy público não é aceitável como caminho padrão
  * do backend/worker.
  */
+import Redis from 'ioredis';
 
 console.log('========================================');
 console.log('🔍 TESTE DE CONEXÃO REDIS');
@@ -24,9 +25,9 @@ if (redisVars.length === 0) {
   redisVars.forEach((k) => {
     const value = process.env[k] || '';
     const masked = value.replace(/:[^:@]+@/, ':***@');
-    const isInternal = value.includes('.railway.internal');
-    const isPublicProxy =
-      value.includes('mainline.proxy.rlwy.net') || value.includes('proxy.rlwy.net');
+    const hostname = getRedisUrlHostname(value);
+    const isInternal = hostname ? hostname.endsWith('.railway.internal') : false;
+    const isPublicProxy = hostname ? hostname.endsWith('.proxy.rlwy.net') : false;
     const icon = isInternal ? '✅ ' : isPublicProxy ? '⚠️ ' : '• ';
     console.log(`   ${icon}${k}: ${masked.substring(0, 70)}`);
     if (isInternal) {
@@ -43,6 +44,16 @@ if (redisVars.length === 0) {
 }
 console.log('');
 
+// --- helpers ---------------------------------------------------------
+function getRedisUrlHostname(raw: string): string | null {
+  try {
+    const urlStr = raw.includes('://') ? raw : `redis://${raw}`;
+    return new URL(urlStr).hostname;
+  } catch {
+    return null;
+  }
+}
+
 // Testar a resolução da URL
 import { resolveRedisUrl, maskRedisUrl } from '../src/common/redis/redis.util';
 
@@ -55,7 +66,8 @@ try {
   }
   console.log('   URL resolvida:', maskRedisUrl(url));
 
-  if (url.includes('.railway.internal')) {
+  const resolvedHostname = getRedisUrlHostname(url);
+  if (resolvedHostname && resolvedHostname.endsWith('.railway.internal')) {
     console.log('');
     console.log('   ✅ A URL resolvida usa a rede interna do Railway.');
     console.log('   ✅ Este é o formato correto para backend/worker rodando no mesmo projeto.');
@@ -64,7 +76,6 @@ try {
   console.log('');
   console.log('🔌 Tentando conectar ao Redis...');
 
-  const Redis = require('ioredis');
   const client = new Redis(url, {
     maxRetriesPerRequest: 3,
     connectTimeout: 10000,
@@ -78,24 +89,26 @@ try {
     console.log('   ❌ Erro:', err.message);
   });
 
-  client.on('ready', async () => {
-    console.log('   ✅ Conexão estabelecida com sucesso!');
+  client.on('ready', () => {
+    void (async () => {
+      console.log('   ✅ Conexão estabelecida com sucesso!');
 
-    // Testar ping
-    try {
-      const pong = await client.ping();
-      console.log('   ✅ PING:', pong);
-    } catch (err: any) {
-      console.log('   ❌ PING falhou:', err.message);
-    }
+      // Testar ping
+      try {
+        const pong = await client.ping();
+        console.log('   ✅ PING:', pong);
+      } catch (err: unknown) {
+        console.log('   ❌ PING falhou:', err instanceof Error ? err.message : String(err));
+      }
 
-    // Fechar conexão
-    await client.quit();
-    console.log('');
-    console.log('========================================');
-    console.log('✅ TESTE CONCLUÍDO COM SUCESSO');
-    console.log('========================================');
-    process.exit(0);
+      // Fechar conexão
+      await client.quit();
+      console.log('');
+      console.log('========================================');
+      console.log('✅ TESTE CONCLUÍDO COM SUCESSO');
+      console.log('========================================');
+      process.exit(0);
+    })();
   });
 
   // Timeout
@@ -115,8 +128,8 @@ try {
     console.log('');
     process.exit(1);
   }, 15000);
-} catch (err: any) {
-  console.log('   ❌ Erro ao resolver URL:', err.message);
+} catch (err: unknown) {
+  console.log('   ❌ Erro ao resolver URL:', err instanceof Error ? err.message : String(err));
   console.log('');
   console.log('   📋 Configure uma das variáveis:');
   console.log('      REDIS_URL=redis://...');

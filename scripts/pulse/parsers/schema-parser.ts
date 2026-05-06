@@ -1,4 +1,5 @@
-import type { PrismaModel, PrismaField, PrismaRelation, PulseConfig } from '../types';
+import type { PrismaModel, PrismaField, PrismaRelation } from '../types.core';
+import type { PulseConfig } from '../types.manifest';
 import { pathExists, readTextFile } from '../safe-fs';
 
 function toCamelCase(name: string): string {

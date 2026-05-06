@@ -10,7 +10,7 @@
  *    (too strict = users logged out spuriously; too loose = security risk)
  * 3. Timezone handling: financial reports and scheduling must use UTC storage
  *    with explicit timezone conversion at display layer — not mix of TZ
- * 4. Idempotent webhook processing with sequence numbers (Asaas sends events in order
+ * 4. Idempotent webhook processing with sequence numbers (payment providers send events in order
  *    but network can deliver out of order)
  * 5. Cron job timing: cron expressions verified against intended schedule
  *    (0 0 * * * = midnight UTC, not midnight local)
@@ -69,13 +69,15 @@ export function checkOrderingTiming(config: PulseConfig): Break[] {
       mutatesWebhookState
     ) {
       const hasTimestampCheck =
-        /event\.timestamp|createdAt|occurredAt|eventDate|sequence|order/i.test(content);
+        /\b(event\.(timestamp|createdAt)|createdAt|occurredAt|eventDate|sequence|orderedAt|processedAt)\b/i.test(
+          content,
+        );
       const hasAlreadyProcessed =
         /alreadyProcessed|isDuplicate|externalId.*unique|webhookEvent/i.test(content);
 
       if (!hasTimestampCheck && !hasAlreadyProcessed) {
         breaks.push({
-          type: 'ORDERING_WEBHOOK_OOO',
+          type: 'temporal-consistency-evidence-gap',
           severity: 'high',
           file: relFile,
           line: 0,
@@ -83,6 +85,8 @@ export function checkOrderingTiming(config: PulseConfig): Break[] {
             'Webhook handler does not check event timestamp or sequence — out-of-order events cause incorrect state',
           detail:
             'Check event.dateCreated/timestamp before applying; reject events older than current entity state',
+          source: 'parser:weak_signal:temporal-consistency',
+          surface: 'temporal-correctness',
         });
       }
     }

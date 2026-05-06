@@ -7,6 +7,7 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { MessageSquare } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { colors } from '@/lib/design-tokens';
 import {
   SettingsCard,
   SettingsHeader,
@@ -69,10 +70,14 @@ export function OpeningMessageCard({ value, saving = false, onSave }: OpeningMes
 
       {message && (
         <SettingsInset className="mb-6 border-[#1F2C33] bg-[#101B20] p-4">
-          <p className="mb-2 text-xs text-[#6E6E73]">{kloelT(`Pre-visualizacao no WhatsApp`)}</p>
+          <p className="mb-2 text-xs text-[colors.text.muted]">
+            {kloelT(`Pre-visualizacao no WhatsApp`)}
+          </p>
           <div className="inline-block max-w-[80%] rounded-lg border border-[#2A3942] bg-[#202C33] px-3 py-2">
-            <p className="text-sm text-[#E0DDD8]">{message}</p>
-            <p className="mt-1 text-right text-[10px] text-[#6E6E73]">{kloelT(`12:00`)}</p>
+            <p className="text-sm text-[colors.text.silver]">{message}</p>
+            <p className="mt-1 text-right text-[10px] text-[colors.text.muted]">
+              {kloelT(`12:00`)}
+            </p>
           </div>
         </SettingsInset>
       )}

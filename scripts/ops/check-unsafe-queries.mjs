@@ -53,8 +53,20 @@ if (files.length === 0) {
 
 const findings = [];
 
+// Structural boundaries that intrinsically operate across workspaces.
+// These files express an explicit, narrow contract in the code itself
+// (class name, directory, JSDoc) so the checker can accept their
+// prisma calls without a per-line allowlist entry. See the class JSDoc
+// in each listed file for the enforced invariants.
+const STRUCTURAL_BOUNDARY_FILES = new Set([
+  // Platform-level aggregate counts for Prometheus/diagnostics/health.
+  // Only scalar counters; no PII, no per-workspace data returned.
+  'backend/src/metrics/observability-queries.service.ts',
+]);
+
 for (const file of files) {
   const content = readRepoFile(file);
+  const isStructuralBoundary = STRUCTURAL_BOUNDARY_FILES.has(file);
   for (const finding of [
     ...findPrismaCalls(content, SIMPLE_RE),
     ...findPrismaCalls(content, TX_RE),
@@ -66,6 +78,9 @@ for (const file of files) {
       continue;
     }
     if (hasWorkspaceScopedWhereVariable(content, finding)) {
+      continue;
+    }
+    if (isStructuralBoundary) {
       continue;
     }
     if (

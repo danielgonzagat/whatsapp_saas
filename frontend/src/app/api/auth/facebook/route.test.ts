@@ -1,3 +1,4 @@
+import { type NextRequest } from 'next/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
@@ -23,8 +24,8 @@ import { POST } from './route';
 function createRequest(body: unknown, forwardedFor = '203.0.113.10') {
   return {
     headers: new Headers({ 'x-forwarded-for': forwardedFor, host: 'auth.kloel.com' }),
-    json: vi.fn(async () => body),
-  } as any;
+    json: async () => body,
+  } as NextRequest;
 }
 
 describe('facebook auth proxy route', () => {

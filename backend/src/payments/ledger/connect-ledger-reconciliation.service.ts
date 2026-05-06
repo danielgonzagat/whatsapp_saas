@@ -1,8 +1,9 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 
 import { FinancialAlertService } from '../../common/financial-alert.service';
 import { PrismaService } from '../../prisma/prisma.service';
+import { OpsAlertService } from '../../observability/ops-alert.service';
 
 type JsonPrimitive = string | number | boolean | null;
 type JsonValue = JsonPrimitive | JsonObject | JsonValue[];
@@ -91,6 +92,7 @@ export class ConnectLedgerReconciliationService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly financialAlert?: FinancialAlertService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   /** Run cron. */
@@ -98,7 +100,11 @@ export class ConnectLedgerReconciliationService {
   async runCron(): Promise<void> {
     try {
       await this.reconcile();
-    } catch (error) {
+    } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(
+        error,
+        'ConnectLedgerReconciliationService.reconcile',
+      );
       this.logger.error(
         `connect_ledger_reconciliation_cron_failed: ${
           error instanceof Error ? error.message : String(error)
@@ -125,6 +131,7 @@ export class ConnectLedgerReconciliationService {
     const drifts: ConnectLedgerReconciliationDrift[] = [];
 
     for (const balance of balances) {
+      // PULSE_OK: bounded per balance within for loop, entries per balance are low
       const entries = (await this.prisma.connectLedgerEntry.findMany({
         where: { accountBalanceId: balance.id },
         orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
@@ -319,12 +326,17 @@ export class ConnectLedgerReconciliationService {
           details: JSON.parse(JSON.stringify(details)) as JsonObject,
         },
       });
-    } catch (error) {
-      this.logger.warn(
-        `connect_ledger_reconcile_audit_failed: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
-      );
+    } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'ConnectLedgerReconciliationService.parse');
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.warn(`connect_ledger_reconcile_audit_failed: ${message}`);
+      this.financialAlert?.reconciliationAlert('connect ledger reconciliation audit failed', {
+        details: {
+          scannedAccounts: details.scannedAccounts,
+          driftCount: details.driftCount,
+          error: message,
+        },
+      });
     }
   }
 }

@@ -62,13 +62,25 @@ describe('ConnectPayoutApprovalService', () => {
               updatedAt: now,
             }),
           ),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
       adminAuditLog: {
         create: jest.fn().mockResolvedValue({ id: 'audit_1' }),
       },
       $transaction: jest
         .fn()
-        .mockImplementation(async (operations: Array<Promise<unknown>>) => Promise.all(operations)),
+        .mockImplementation(
+          async (
+            operations:
+              | Array<Promise<unknown>>
+              | ((tx: Record<string, unknown>) => Promise<unknown> | unknown),
+          ) => {
+            if (typeof operations === 'function') {
+              return operations(prisma);
+            }
+            return Promise.all(operations);
+          },
+        ),
     };
     const connectPayoutService = {
       createPayout: jest.fn().mockResolvedValue({
@@ -213,12 +225,13 @@ describe('ConnectPayoutApprovalService', () => {
 
     expect(connectPayoutService.createPayout).toHaveBeenCalledWith({
       accountBalanceId: 'cab_seller',
+      workspaceId: 'ws-1',
       amountCents: 500n,
       requestId: 'po_req_1',
       currency: 'brl',
     });
-    expect(prisma.approvalRequest.update).toHaveBeenCalledWith({
-      where: { id: 'apr_1' },
+    expect(prisma.approvalRequest.updateMany).toHaveBeenCalledWith({
+      where: { id: 'apr_1', workspaceId: 'ws-1' },
       data: {
         state: 'APPROVED',
         respondedAt: expect.anything(),
@@ -296,8 +309,8 @@ describe('ConnectPayoutApprovalService', () => {
       }),
     ).rejects.toThrow('stripe down');
 
-    expect(prisma.approvalRequest.update).toHaveBeenCalledWith({
-      where: { id: 'apr_1' },
+    expect(prisma.approvalRequest.updateMany).toHaveBeenCalledWith({
+      where: { id: 'apr_1', workspaceId: 'ws-1' },
       data: {
         state: 'FAILED',
         respondedAt: expect.anything(),
@@ -343,8 +356,8 @@ describe('ConnectPayoutApprovalService', () => {
       reason: 'manual review failed',
     });
 
-    expect(prisma.approvalRequest.update).toHaveBeenCalledWith({
-      where: { id: 'apr_1' },
+    expect(prisma.approvalRequest.updateMany).toHaveBeenCalledWith({
+      where: { id: 'apr_1', workspaceId: 'ws-1' },
       data: {
         state: 'REJECTED',
         respondedAt: expect.anything(),

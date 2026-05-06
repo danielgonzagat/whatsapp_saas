@@ -2,40 +2,20 @@
 // messageLimit/dailyLimit enforcement in WhatsappService.sendMessage().
 import { buildConnectEventsWebhookController as buildController } from '../../test/payment-webhook-connect-events-harness';
 
+function makeReq(evt: unknown) {
+  return { body: evt as never, rawBody: '', url: '/webhook/payment/stripe' };
+}
+
 describe('PaymentWebhookController.handleStripe — connect and treasury payout acknowledgements', () => {
   it('acks payout.paid without recrediting balances', async () => {
     const { controller, webhooksService, connectPayoutService, adminAudit } = buildController();
+    const evt = {
+      id: 'evt_payout_paid',
+      type: 'payout.paid',
+      data: { object: { id: 'po_2', amount: 9_010, status: 'paid' } },
+    };
 
-    const result = await controller.handleStripe(
-      {
-        body: {
-          id: 'evt_payout_paid',
-          type: 'payout.paid',
-          data: {
-            object: {
-              id: 'po_2',
-              amount: 9_010,
-              status: 'paid',
-            },
-          },
-        } as never,
-        rawBody: '',
-        url: '/webhook/payment/stripe',
-      },
-      undefined,
-      undefined,
-      {
-        id: 'evt_payout_paid',
-        type: 'payout.paid',
-        data: {
-          object: {
-            id: 'po_2',
-            amount: 9_010,
-            status: 'paid',
-          },
-        },
-      } as never,
-    );
+    const result = await controller.handleStripe(makeReq(evt), undefined, undefined, evt);
 
     expect(connectPayoutService.handleFailedPayout).not.toHaveBeenCalled();
     expect(adminAudit.append).not.toHaveBeenCalled();
@@ -45,45 +25,20 @@ describe('PaymentWebhookController.handleStripe — connect and treasury payout 
 
   it('writes a system audit row when payout.paid arrives for a connected account', async () => {
     const { controller, webhooksService, connectPayoutService, adminAudit } = buildController();
-
-    const result = await controller.handleStripe(
-      {
-        body: {
-          id: 'evt_connect_payout_paid',
-          type: 'payout.paid',
-          data: {
-            object: {
-              id: 'po_connect_2',
-              amount: 9_010,
-              status: 'paid',
-              metadata: {
-                accountBalanceId: 'cab_1',
-                requestId: 'req_2',
-              },
-            },
-          },
-        } as never,
-        rawBody: '',
-        url: '/webhook/payment/stripe',
-      },
-      undefined,
-      undefined,
-      {
-        id: 'evt_connect_payout_paid',
-        type: 'payout.paid',
-        data: {
-          object: {
-            id: 'po_connect_2',
-            amount: 9_010,
-            status: 'paid',
-            metadata: {
-              accountBalanceId: 'cab_1',
-              requestId: 'req_2',
-            },
-          },
+    const evt = {
+      id: 'evt_connect_payout_paid',
+      type: 'payout.paid',
+      data: {
+        object: {
+          id: 'po_connect_2',
+          amount: 9_010,
+          status: 'paid',
+          metadata: { accountBalanceId: 'cab_1', requestId: 'req_2' },
         },
-      } as never,
-    );
+      },
+    };
+
+    const result = await controller.handleStripe(makeReq(evt), undefined, undefined, evt);
 
     expect(connectPayoutService.handleFailedPayout).not.toHaveBeenCalled();
     expect(adminAudit.append).toHaveBeenCalledWith({
@@ -108,49 +63,25 @@ describe('PaymentWebhookController.handleStripe — connect and treasury payout 
   it('recredits the marketplace treasury when payout.failed arrives for the marketplace treasury account', async () => {
     const { controller, webhooksService, marketplaceTreasuryPayoutService, adminAudit } =
       buildController();
-
-    const result = await controller.handleStripe(
-      {
-        body: {
-          id: 'evt_marketplace_treasury_payout_failed',
-          type: 'payout.failed',
-          data: {
-            object: {
-              id: 'po_marketplace_treasury_123',
-              amount: 5_000,
-              status: 'failed',
-              currency: 'brl',
-              metadata: {
-                marketplaceTreasury: 'true',
-                marketplaceTreasuryCurrency: 'BRL',
-                requestId: 'marketplace_treasury_po_req_1',
-              },
-            },
-          },
-        } as never,
-        rawBody: '',
-        url: '/webhook/payment/stripe',
-      },
-      undefined,
-      undefined,
-      {
-        id: 'evt_marketplace_treasury_payout_failed',
-        type: 'payout.failed',
-        data: {
-          object: {
-            id: 'po_marketplace_treasury_123',
-            amount: 5_000,
-            status: 'failed',
-            currency: 'brl',
-            metadata: {
-              marketplaceTreasury: 'true',
-              marketplaceTreasuryCurrency: 'BRL',
-              requestId: 'marketplace_treasury_po_req_1',
-            },
+    const evt = {
+      id: 'evt_marketplace_treasury_payout_failed',
+      type: 'payout.failed',
+      data: {
+        object: {
+          id: 'po_marketplace_treasury_123',
+          amount: 5_000,
+          status: 'failed',
+          currency: 'brl',
+          metadata: {
+            marketplaceTreasury: 'true',
+            marketplaceTreasuryCurrency: 'BRL',
+            requestId: 'marketplace_treasury_po_req_1',
           },
         },
-      } as never,
-    );
+      },
+    };
+
+    const result = await controller.handleStripe(makeReq(evt), undefined, undefined, evt);
 
     expect(marketplaceTreasuryPayoutService.handleFailedPayout).toHaveBeenCalledWith({
       payoutId: 'po_marketplace_treasury_123',
@@ -177,49 +108,25 @@ describe('PaymentWebhookController.handleStripe — connect and treasury payout 
   it('writes a system audit row when payout.paid arrives for the marketplace treasury account', async () => {
     const { controller, webhooksService, marketplaceTreasuryPayoutService, adminAudit } =
       buildController();
-
-    const result = await controller.handleStripe(
-      {
-        body: {
-          id: 'evt_marketplace_treasury_payout_paid',
-          type: 'payout.paid',
-          data: {
-            object: {
-              id: 'po_marketplace_treasury_456',
-              amount: 5_000,
-              status: 'paid',
-              currency: 'brl',
-              metadata: {
-                marketplaceTreasury: 'true',
-                marketplaceTreasuryCurrency: 'BRL',
-                requestId: 'marketplace_treasury_po_req_2',
-              },
-            },
-          },
-        } as never,
-        rawBody: '',
-        url: '/webhook/payment/stripe',
-      },
-      undefined,
-      undefined,
-      {
-        id: 'evt_marketplace_treasury_payout_paid',
-        type: 'payout.paid',
-        data: {
-          object: {
-            id: 'po_marketplace_treasury_456',
-            amount: 5_000,
-            status: 'paid',
-            currency: 'brl',
-            metadata: {
-              marketplaceTreasury: 'true',
-              marketplaceTreasuryCurrency: 'BRL',
-              requestId: 'marketplace_treasury_po_req_2',
-            },
+    const evt = {
+      id: 'evt_marketplace_treasury_payout_paid',
+      type: 'payout.paid',
+      data: {
+        object: {
+          id: 'po_marketplace_treasury_456',
+          amount: 5_000,
+          status: 'paid',
+          currency: 'brl',
+          metadata: {
+            marketplaceTreasury: 'true',
+            marketplaceTreasuryCurrency: 'BRL',
+            requestId: 'marketplace_treasury_po_req_2',
           },
         },
-      } as never,
-    );
+      },
+    };
+
+    const result = await controller.handleStripe(makeReq(evt), undefined, undefined, evt);
 
     expect(marketplaceTreasuryPayoutService.handleFailedPayout).not.toHaveBeenCalled();
     expect(adminAudit.append).toHaveBeenCalledWith({
@@ -247,37 +154,15 @@ describe('PaymentWebhookController.handleStripe — connect and treasury payout 
       reservedInCents: 0,
       updatedAt: new Date('2026-04-19T00:00:00Z').toISOString(),
     });
-
-    await controller.handleStripe(
-      {
-        body: {
-          id: 'evt_refund_available',
-          type: 'refund.created',
-          data: {
-            object: {
-              id: 're_available',
-              payment_intent: 'pi_test_123',
-              amount: 13_990,
-            },
-          },
-        } as never,
-        rawBody: '',
-        url: '/webhook/payment/stripe',
+    const evt = {
+      id: 'evt_refund_available',
+      type: 'refund.created',
+      data: {
+        object: { id: 're_available', payment_intent: 'pi_test_123', amount: 13_990 },
       },
-      undefined,
-      undefined,
-      {
-        id: 'evt_refund_available',
-        type: 'refund.created',
-        data: {
-          object: {
-            id: 're_available',
-            payment_intent: 'pi_test_123',
-            amount: 13_990,
-          },
-        },
-      } as never,
-    );
+    };
+
+    await controller.handleStripe(makeReq(evt), undefined, undefined, evt);
 
     expect(marketplaceTreasury.append).toHaveBeenCalledWith({
       direction: 'debit',

@@ -4,6 +4,7 @@ import { kloelT } from '@/lib/i18n/t';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, CheckCircle2, Info, X, XCircle } from 'lucide-react';
 import { useState } from 'react';
+import { colors } from '@/lib/design-tokens';
 import {
   SettingsCard,
   SettingsHeader,
@@ -33,7 +34,7 @@ const ALERT_STYLES: Record<AlertType, AlertStyleTokens> = {
     iconColor: 'text-[#7FE2BC]',
   },
   warning: {
-    bg: 'bg-[#E85D30]/12',
+    bg: 'bg-[colors.ember.primary]/12',
     text: 'text-[#F2B29D]',
     icon: AlertTriangle,
     iconColor: 'text-[#F2B29D]',
@@ -75,7 +76,7 @@ export function SystemAlertsCard({ alerts: propAlerts }: SystemAlertsCardProps) 
 
         <div className="space-y-2">
           {alerts.length === 0 ? (
-            <SettingsInset className="p-4 text-sm text-[#6E6E73]">
+            <SettingsInset className="p-4 text-sm text-[colors.text.muted]">
               {kloelT(`Nenhum alerta operacional carregado nesta sessao.`)}
             </SettingsInset>
           ) : (
@@ -94,11 +95,13 @@ export function SystemAlertsCard({ alerts: propAlerts }: SystemAlertsCardProps) 
       {showResolveModal && selectedAlert && (
         <SettingsModal className="max-w-md">
           <div className="mb-4 flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-[#E0DDD8]">{kloelT(`Como resolver`)}</h3>
+            <h3 className="text-lg font-semibold text-[colors.text.silver]">
+              {kloelT(`Como resolver`)}
+            </h3>
             <button
               type="button"
               onClick={() => setShowResolveModal(false)}
-              className="flex h-8 w-8 items-center justify-center rounded-full text-[#6E6E73] hover:bg-[#19191C]"
+              className="flex h-8 w-8 items-center justify-center rounded-full text-[colors.text.muted] hover:bg-[colors.background.elevated]"
             >
               <X className="h-5 w-5" aria-hidden="true" />
             </button>
@@ -111,7 +114,7 @@ export function SystemAlertsCard({ alerts: propAlerts }: SystemAlertsCardProps) 
           </SettingsNotice>
           <Button
             onClick={() => setShowResolveModal(false)}
-            className="mt-4 w-full rounded-md border border-[#E85D30] bg-[#E85D30] text-[#0A0A0C] hover:opacity-95"
+            className="mt-4 w-full rounded-md border border-[colors.ember.primary] bg-[colors.ember.primary] text-[colors.background.void] hover:opacity-95"
           >
             {kloelT(`Entendi`)}
           </Button>

@@ -19,7 +19,7 @@ describe('TikTokAuthService', () => {
         };
         return values[key];
       }),
-    } as unknown as ConfigService;
+    } as never as ConfigService;
   }
 
   it('exchanges the code and enriches the profile with user info when available', async () => {
@@ -62,9 +62,11 @@ describe('TikTokAuthService', () => {
       'https://open.tiktokapis.com/v2/oauth/token/',
       expect.objectContaining({
         method: 'POST',
-        headers: {
+        headers: expect.objectContaining({
           'Content-Type': 'application/x-www-form-urlencoded',
-        },
+          'X-Request-ID': expect.stringMatching(/.+/),
+        }),
+        body: expect.objectContaining({ constructor: URLSearchParams }),
       }),
     );
     expect(fetchMock).toHaveBeenNthCalledWith(
@@ -72,9 +74,10 @@ describe('TikTokAuthService', () => {
       'https://open.tiktokapis.com/v2/user/info/?fields=open_id,union_id,display_name,avatar_url',
       expect.objectContaining({
         method: 'GET',
-        headers: {
+        headers: expect.objectContaining({
           Authorization: 'Bearer tt-access-token',
-        },
+          'X-Request-ID': expect.stringMatching(/.+/),
+        }),
       }),
     );
     expect(profile).toMatchObject({
@@ -152,7 +155,7 @@ describe('TikTokAuthService', () => {
   it('fails clearly when TikTok is not configured', async () => {
     const config = {
       get: jest.fn(() => ''),
-    } as unknown as ConfigService;
+    } as never as ConfigService;
 
     const service = new TikTokAuthService(config);
 

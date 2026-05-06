@@ -15,9 +15,7 @@ describe('LaunchService', () => {
       },
     };
 
-    service = new LaunchService(
-      prisma as unknown as ConstructorParameters<typeof LaunchService>[0],
-    );
+    service = new LaunchService(prisma as never as ConstructorParameters<typeof LaunchService>[0]);
   });
 
   it('ignores malformed workspace phone settings when generating a start link', async () => {

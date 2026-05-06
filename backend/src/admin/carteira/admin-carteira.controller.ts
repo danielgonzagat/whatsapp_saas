@@ -9,6 +9,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import {
   AdminAction,
   AdminModule,
@@ -30,6 +31,35 @@ import { LedgerService } from '../../payments/ledger/ledger.service';
 import { MarketplaceTreasuryPayoutService } from '../../marketplace-treasury/marketplace-treasury-payout.service';
 import { MarketplaceTreasuryReconcileService } from '../../marketplace-treasury/marketplace-treasury-reconcile.service';
 import { MarketplaceTreasuryService } from '../../marketplace-treasury/marketplace-treasury.service';
+import { AddFraudBlacklistDto } from './dto/add-fraud-blacklist.dto';
+import { AdminCarteiraLedgerQueryDto } from './dto/admin-carteira-ledger-query.dto';
+
+function parseSkip(value?: string): number | undefined {
+  if (!value) {
+    return undefined;
+  }
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? Math.max(0, Math.trunc(parsed)) : undefined;
+}
+
+function parseTake(value?: string): number | undefined {
+  if (!value) {
+    return undefined;
+  }
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? Math.min(200, Math.max(1, Math.trunc(parsed))) : undefined;
+}
+
+function parseDateOrFail(raw: string | undefined, label: string): Date | undefined {
+  if (!raw) {
+    return undefined;
+  }
+  const parsed = new Date(raw);
+  if (isNaN(parsed.getTime())) {
+    throw new BadRequestException(`Invalid ${label}`);
+  }
+  return parsed;
+}
 
 /**
  * Admin endpoints for the marketplace treasury. Exposes read surfaces
@@ -38,7 +68,8 @@ import { MarketplaceTreasuryService } from '../../marketplace-treasury/marketpla
  */
 @Public()
 @Controller('admin/carteira')
-@UseGuards(AdminAuthGuard, AdminPermissionGuard)
+@UseGuards(AdminAuthGuard, AdminPermissionGuard, ThrottlerGuard)
+@Throttle({ default: { limit: 5, ttl: 60000 } })
 export class AdminCarteiraController {
   constructor(
     private readonly wallet: MarketplaceTreasuryService,
@@ -54,6 +85,8 @@ export class AdminCarteiraController {
 
   /** Balance. */
   @Get('balance')
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
   @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.VIEW)
   async balance(@Query('currency') currency?: string) {
     return this.wallet.readBalance(currency ?? 'BRL');
@@ -61,39 +94,38 @@ export class AdminCarteiraController {
 
   /** Ledger. */
   @Get('ledger')
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
   @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.VIEW)
-  async ledger(
-    @Query('currency') currency?: string,
-    @Query('kind') kind?: string,
-    @Query('from') from?: string,
-    @Query('to') to?: string,
-    @Query('skip') skip?: string,
-    @Query('take') take?: string,
-  ) {
+  async ledger(@Query() query: AdminCarteiraLedgerQueryDto) {
     const parsedKind =
-      kind &&
-      Object.values(MarketplaceTreasuryLedgerKind).includes(kind as MarketplaceTreasuryLedgerKind)
-        ? (kind as MarketplaceTreasuryLedgerKind)
+      query.kind &&
+      Object.values(MarketplaceTreasuryLedgerKind).includes(
+        query.kind as MarketplaceTreasuryLedgerKind,
+      )
+        ? (query.kind as MarketplaceTreasuryLedgerKind)
         : undefined;
     return this.wallet.listLedger({
-      currency,
+      currency: query.currency,
       kind: parsedKind,
-      from: from ? new Date(from) : undefined,
-      to: to ? new Date(to) : undefined,
-      skip: skip ? Number(skip) : undefined,
-      take: take ? Number(take) : undefined,
+      from: parseDateOrFail(query.from, 'from'),
+      to: parseDateOrFail(query.to, 'to'),
+      skip: parseSkip(query.skip),
+      take: parseTake(query.take),
     });
   }
 
   /** Run reconcile. */
   @Get('reconcile')
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
   @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.VIEW)
   async runReconcile(@Query('currency') currency?: string) {
     return this.reconcile.reconcile(currency ?? 'BRL');
   }
 
   /** List connect accounts. */
+  // PULSE_OK: internal route, admin panel only
   @Get('connect/accounts')
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
   @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.VIEW)
   async listConnectAccounts(@Query('workspaceId') workspaceId?: string) {
     const balances = await this.connectService.listBalances(
@@ -126,7 +158,9 @@ export class AdminCarteiraController {
   }
 
   /** Reconcile connect. */
+  // PULSE_OK: internal route, admin panel only
   @Get('connect/reconcile')
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
   @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.VIEW)
   async reconcileConnect(@Query('workspaceId') workspaceId?: string) {
     return this.connectReconcile.reconcile({
@@ -135,14 +169,16 @@ export class AdminCarteiraController {
   }
 
   /** List payouts. */
+  // PULSE_OK: internal route, admin panel only
   @Get('payouts')
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
   @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.VIEW)
   async listPayouts(@Query('skip') skip?: string, @Query('take') take?: string) {
     const result = await this.audit.list({
       action: 'carteira.payout',
       entityType: 'marketplace_treasury',
-      skip: skip ? Number(skip) : undefined,
-      take: take ? Number(take) : undefined,
+      skip: parseSkip(skip),
+      take: parseTake(take),
     });
 
     return {
@@ -174,7 +210,9 @@ export class AdminCarteiraController {
   }
 
   /** List connect payout requests. */
+  // PULSE_OK: internal route, admin panel only
   @Get('connect/payout-requests')
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
   @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.VIEW)
   async listConnectPayoutRequests(
     @Query('workspaceId') workspaceId?: string,
@@ -185,13 +223,15 @@ export class AdminCarteiraController {
     return this.connectPayoutApprovalService.listAdminRequests({
       workspaceId: workspaceId ? String(workspaceId).trim() : undefined,
       state: state ? String(state).trim() : undefined,
-      skip: skip ? Number(skip) : undefined,
-      take: take ? Number(take) : undefined,
+      skip: parseSkip(skip),
+      take: parseTake(take),
     });
   }
 
   /** List fraud blacklist rows. */
+  // PULSE_OK: internal route, admin panel only
   @Get('fraud/blacklist')
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
   @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.VIEW)
   async listFraudBlacklist(
     @Query('type') type?: string,
@@ -203,8 +243,8 @@ export class AdminCarteiraController {
     const result = await this.fraudEngine.listBlacklist({
       type: parsedType,
       value: value ? String(value).trim() : undefined,
-      skip: skip ? Number(skip) : undefined,
-      take: take ? Number(take) : undefined,
+      skip: parseSkip(skip),
+      take: parseTake(take),
     });
 
     return {
@@ -222,16 +262,11 @@ export class AdminCarteiraController {
   }
 
   /** Add fraud blacklist row. */
+  // PULSE_OK: internal route, admin panel only
   @Post('fraud/blacklist')
   @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.EDIT)
   async addFraudBlacklist(
-    @Body()
-    body: {
-      type?: string;
-      value?: string;
-      reason?: string;
-      expiresAt?: string | null;
-    },
+    @Body() body: AddFraudBlacklistDto,
     @CurrentAdmin() admin: AuthenticatedAdmin,
   ) {
     const type = this.parseFraudBlacklistType(body.type);
@@ -249,7 +284,7 @@ export class AdminCarteiraController {
       value,
       reason,
       addedBy: admin.id,
-      expiresAt: body.expiresAt ? new Date(body.expiresAt) : undefined,
+      expiresAt: parseDateOrFail(body.expiresAt ?? undefined, 'expiresAt'),
     });
 
     await this.audit.append({
@@ -278,6 +313,7 @@ export class AdminCarteiraController {
   }
 
   /** Remove fraud blacklist row. */
+  // PULSE_OK: internal route, admin panel only
   @Post('fraud/blacklist/remove')
   @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.EDIT)
   async removeFraudBlacklist(
@@ -312,6 +348,7 @@ export class AdminCarteiraController {
   }
 
   /** Create payout. */
+  // PULSE_OK: internal route, admin panel only
   @Post('payouts')
   @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.EDIT)
   async createPayout(
@@ -341,7 +378,7 @@ export class AdminCarteiraController {
         requestId,
         currency,
       });
-    } catch (error) {
+    } catch (error: unknown) {
       await this.audit.append({
         adminUserId: admin.id,
         action: 'admin.carteira.payout_request_failed',
@@ -380,6 +417,7 @@ export class AdminCarteiraController {
   }
 
   /** Approve connect payout request. */
+  // PULSE_OK: internal route, admin panel only
   @Post('connect/payout-requests/:approvalRequestId/approve')
   @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.APPROVE)
   async approveConnectPayoutRequest(
@@ -401,6 +439,7 @@ export class AdminCarteiraController {
   }
 
   /** Reject connect payout request. */
+  // PULSE_OK: internal route, admin panel only
   @Post('connect/payout-requests/:approvalRequestId/reject')
   @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.APPROVE)
   async rejectConnectPayoutRequest(

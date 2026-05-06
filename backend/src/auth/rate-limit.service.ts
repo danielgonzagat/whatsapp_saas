@@ -1,4 +1,12 @@
-import { HttpException, HttpStatus, Logger, ServiceUnavailableException } from '@nestjs/common';
+import {
+  HttpException,
+  HttpStatus,
+  Injectable,
+  Logger,
+  Optional,
+  ServiceUnavailableException,
+} from '@nestjs/common';
+import { InjectRedis } from '@nestjs-modules/ioredis';
 import type { Redis } from 'ioredis';
 
 /**
@@ -9,10 +17,11 @@ import type { Redis } from 'ioredis';
  *
  * Invariant: rate limit must enforce across all instances consistently.
  */
+@Injectable()
 export class RateLimitService {
   private logger = new Logger(RateLimitService.name);
 
-  constructor(private readonly redis: Redis | null) {}
+  constructor(@Optional() @InjectRedis() private readonly redis: Redis | null = null) {}
 
   async checkRateLimit(key: string, limit = 5, windowMs = 5 * 60 * 1000) {
     const throwTooMany = () => {

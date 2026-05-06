@@ -95,8 +95,8 @@ update GitHub Actions so pinned SHAs stay current:
 
 ```yaml
 # .github/dependabot.yml (should already exist)
-- package-ecosystem: "github-actions"
-  directory: "/"
+- package-ecosystem: 'github-actions'
+  directory: '/'
   schedule:
-    interval: "weekly"
+    interval: 'weekly'
 ```

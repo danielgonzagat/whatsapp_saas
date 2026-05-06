@@ -87,12 +87,13 @@ async function sleep(ms) {
 }
 
 async function fetchWithRetry(url, init) {
+  if (!url.startsWith(API_BASE)) {
+    throw new Error(`SSRF guard: request URL must start with ${API_BASE}, got: ${url}`);
+  }
   let lastErr;
   for (let attempt = 0; attempt < MAX_RETRIES; attempt += 1) {
     try {
       // biome-ignore lint/performance/noAwaitInLoops: retry loop with exponential backoff — each attempt must observe the previous attempt's outcome before deciding to retry
-      // nosemgrep: javascript.lang.security.detect-node-ssrf.node-ssrf
-      // Safe: `url` is always built from the hardcoded API_BASE ('https://api.codacy.com/api/v3') plus env-var-derived org/repo path segments; never user input.
       const response = await fetch(url, init);
       if (response.status === 429 || response.status >= 500) {
         lastErr = new Error(`Codacy responded ${response.status} on attempt ${attempt + 1}`);
@@ -184,106 +185,171 @@ function toHighPrioritySample(issue) {
   };
 }
 
-async function syncCodacyIssues() {
-  const token = pickToken();
-  if (!token) {
-    console.warn(
-      '[codacy-sync] No CODACY_API_TOKEN / CODACY_PROJECT_TOKEN / CODACY_ACCOUNT_TOKEN in env — skipping.',
+function createAggregateState() {
+  return {
+    bySeverityRaw: new Map(),
+    bySeverityBucket: new Map([
+      ['HIGH', 0],
+      ['MEDIUM', 0],
+      ['LOW', 0],
+      ['UNKNOWN', 0],
+    ]),
+    byCategory: new Map(),
+    byPatternId: new Map(),
+    byTool: new Map(),
+    byFile: new Map(),
+    highSeverityIssues: [],
+    // Codacy's cursor-based pagination is not perfectly stable under concurrent
+    // analysis (observed drift of ~9% on repeated runs). Dedup by issueId to
+    // guarantee we count each issue exactly once regardless of cursor hiccups.
+    seenIssueIds: new Set(),
+    duplicateCount: 0,
+    seen: 0,
+  };
+}
+
+function logPaginationProgress({ pages, cursor, rows, pagination }) {
+  if (process.env.CODACY_SYNC_DEBUG === '1' || pages <= 2) {
+    console.log(
+      `[codacy-sync] page=${pages} cursor_in=${JSON.stringify(cursor)} rows=${rows.length} cursor_out=${JSON.stringify(pagination.cursor ?? null)} total=${pagination.total ?? 'n/a'}`,
     );
-    console.warn('[codacy-sync] PULSE_CODACY_STATE.json left untouched.');
-    return { skipped: true };
   }
+}
 
-  console.log(`[codacy-sync] Using token from ${token.name} (value hidden).`);
-  console.log(`[codacy-sync] Target: ${PROVIDER}/${ORGANIZATION}/${REPOSITORY} via ${API_BASE}`);
-
-  const startedAt = Date.now();
-  const summary = await fetchRepositorySummary(token.value);
-  const summaryData = summary?.data ?? {};
-
-  const bySeverityRaw = new Map();
-  const bySeverityBucket = new Map([
-    ['HIGH', 0],
-    ['MEDIUM', 0],
-    ['LOW', 0],
-    ['UNKNOWN', 0],
-  ]);
-  const byCategory = new Map();
-  const byPatternId = new Map();
-  const byTool = new Map();
-  const byFile = new Map();
-  const highSeverityIssues = [];
-  // Codacy's cursor-based pagination is not perfectly stable under concurrent
-  // analysis (observed drift of ~9% on repeated runs). Dedup by issueId to
-  // guarantee we count each issue exactly once regardless of cursor hiccups.
-  const seenIssueIds = new Set();
-  let duplicateCount = 0;
-
-  let cursor = '';
-  let totalFromApi = null;
-  let pages = 0;
-  let seen = 0;
-
-  while (pages < MAX_PAGES) {
-    // biome-ignore lint/performance/noAwaitInLoops: cursor pagination depends on the previous page's cursor, parallelism impossible
-    const page = await fetchIssuesPage(token.value, cursor);
-    pages += 1;
-    const rows = Array.isArray(page?.data) ? page.data : [];
-    const pagination = page?.pagination ?? {};
-    if (totalFromApi === null && typeof pagination.total === 'number') {
-      totalFromApi = pagination.total;
-    }
-    if (process.env.CODACY_SYNC_DEBUG === '1' || pages <= 2) {
-      console.log(
-        `[codacy-sync] page=${pages} cursor_in=${JSON.stringify(cursor)} rows=${rows.length} cursor_out=${JSON.stringify(pagination.cursor ?? null)} total=${pagination.total ?? 'n/a'}`,
-      );
-    }
-
-    for (const issue of rows) {
-      const issueId = typeof issue.issueId === 'string' ? issue.issueId : null;
-      if (issueId) {
-        if (seenIssueIds.has(issueId)) {
-          duplicateCount += 1;
-          continue;
-        }
-        seenIssueIds.add(issueId);
-      }
-      seen += 1;
-      const severityRaw = issue.patternInfo?.severityLevel ?? 'Unknown';
-      const bucket = SEVERITY_BUCKET[severityRaw] ?? 'UNKNOWN';
-      incrementKey(bySeverityRaw, severityRaw);
-      bySeverityBucket.set(bucket, (bySeverityBucket.get(bucket) ?? 0) + 1);
-
-      if (issue.patternInfo?.category) {
-        incrementKey(byCategory, issue.patternInfo.category);
-      }
-      if (issue.patternInfo?.id) {
-        incrementKey(byPatternId, issue.patternInfo.id);
-      }
-      if (issue.toolInfo?.name) {
-        incrementKey(byTool, issue.toolInfo.name);
-      }
-      if (typeof issue.filePath === 'string' && issue.filePath.length > 0) {
-        incrementKey(byFile, issue.filePath);
-      }
-
-      if (bucket === 'HIGH') {
-        highSeverityIssues.push(issue);
-      }
-    }
-
-    const nextCursor = typeof pagination.cursor === 'string' ? pagination.cursor : '';
-    if (!nextCursor || nextCursor === cursor || rows.length === 0) {
-      cursor = '';
-      break;
-    }
-    cursor = nextCursor;
+function isDuplicateIssue(agg, issue) {
+  const issueId = typeof issue.issueId === 'string' ? issue.issueId : null;
+  if (!issueId) {
+    return false;
   }
+  if (agg.seenIssueIds.has(issueId)) {
+    agg.duplicateCount += 1;
+    return true;
+  }
+  agg.seenIssueIds.add(issueId);
+  return false;
+}
 
+function bumpSeverityBucket(agg, bucket) {
+  agg.bySeverityBucket.set(bucket, (agg.bySeverityBucket.get(bucket) ?? 0) + 1);
+}
+
+function recordSeverityBucket(agg, issue) {
+  const severityRaw = issue.patternInfo?.severityLevel ?? 'Unknown';
+  const bucket = SEVERITY_BUCKET[severityRaw] ?? 'UNKNOWN';
+  incrementKey(agg.bySeverityRaw, severityRaw);
+  bumpSeverityBucket(agg, bucket);
+  return bucket;
+}
+
+function recordPatternIdentity(agg, patternInfo) {
+  if (patternInfo?.category) {
+    incrementKey(agg.byCategory, patternInfo.category);
+  }
+  if (patternInfo?.id) {
+    incrementKey(agg.byPatternId, patternInfo.id);
+  }
+}
+
+function recordPatternMetadata(agg, issue) {
+  recordPatternIdentity(agg, issue.patternInfo);
+  if (issue.toolInfo?.name) {
+    incrementKey(agg.byTool, issue.toolInfo.name);
+  }
+  if (typeof issue.filePath === 'string' && issue.filePath.length > 0) {
+    incrementKey(agg.byFile, issue.filePath);
+  }
+}
+
+function processIssue(agg, issue) {
+  if (isDuplicateIssue(agg, issue)) {
+    return;
+  }
+  agg.seen += 1;
+  const bucket = recordSeverityBucket(agg, issue);
+  recordPatternMetadata(agg, issue);
+  if (bucket === 'HIGH') {
+    agg.highSeverityIssues.push(issue);
+  }
+}
+
+function nextCursorOrNull(pagination, currentCursor, rowsLength) {
+  const candidate = typeof pagination.cursor === 'string' ? pagination.cursor : '';
+  if (!candidate || candidate === currentCursor || rowsLength === 0) {
+    return null;
+  }
+  return candidate;
+}
+
+function extractApiTotal(currentTotal, pagination) {
+  if (currentTotal !== null) {
+    return currentTotal;
+  }
+  return typeof pagination.total === 'number' ? pagination.total : null;
+}
+
+function processPageRows(rows, agg) {
+  for (const issue of rows) {
+    processIssue(agg, issue);
+  }
+}
+
+function extractPageData(page) {
+  const rows = Array.isArray(page?.data) ? page.data : [];
+  const pagination = page?.pagination ?? {};
+  return { rows, pagination };
+}
+
+function warnIfTruncated(pages, cursor) {
   if (pages >= MAX_PAGES && cursor !== '') {
     console.warn(`[codacy-sync] Hit MAX_PAGES=${MAX_PAGES}; some issues may be truncated.`);
   }
+}
 
+async function fetchAndApplyPage({ token, agg, cursor, totalFromApi, pages }) {
+  const page = await fetchIssuesPage(token.value, cursor);
+  const { rows, pagination } = extractPageData(page);
+  const newTotal = extractApiTotal(totalFromApi, pagination);
+  logPaginationProgress({ pages, cursor, rows, pagination });
+  processPageRows(rows, agg);
+  const next = nextCursorOrNull(pagination, cursor, rows.length);
+  return { newTotal, next };
+}
+
+function advanceCursor(cursor, next) {
+  return next === null ? { cursor: '', done: true } : { cursor: next, done: false };
+}
+
+async function paginateAllIssues(token, agg) {
+  let cursor = '';
+  let totalFromApi = null;
+  let pages = 0;
+
+  while (pages < MAX_PAGES) {
+    const { newTotal, next } = await fetchAndApplyPage({
+      token,
+      agg,
+      cursor,
+      totalFromApi,
+      pages,
+    });
+    pages += 1;
+    totalFromApi = newTotal;
+    const advance = advanceCursor(cursor, next);
+    cursor = advance.cursor;
+    if (advance.done) {
+      break;
+    }
+  }
+
+  warnIfTruncated(pages, cursor);
+  return { pages, totalFromApi };
+}
+
+function isPartialResponse(seen, totalFromApi) {
+  return typeof totalFromApi === 'number' && totalFromApi > 0 && seen > 0 && seen < totalFromApi * 0.9;
+}
+
+function failOnPartialResponse(seen, totalFromApi) {
   // Partial-response guard: Codacy's pagination sometimes terminates early
   // (cursor returns null or an empty page) before all issues have been
   // returned, which produces a snapshot where `seen` is much smaller than
@@ -291,31 +357,75 @@ async function syncCodacyIssues() {
   // committing partial PULSE_CODACY_STATE.json files and corrupting the
   // ratchet floor. Detect the case and either retry once or fail loud rather
   // than silently writing a wrong snapshot.
-  if (
-    typeof totalFromApi === 'number' &&
-    totalFromApi > 0 &&
-    seen > 0 &&
-    seen < totalFromApi * 0.9
-  ) {
-    console.warn(
-      `[codacy-sync] PARTIAL RESPONSE DETECTED: seen=${seen} apiTotal=${totalFromApi} ` +
-        `(${Math.round((seen / totalFromApi) * 100)}%). Refusing to write the truncated snapshot.`,
-    );
-    console.warn(
-      '[codacy-sync] Re-run codacy:sync to retry. Existing PULSE_CODACY_STATE.json was NOT touched.',
-    );
-    process.exit(3);
+  if (!isPartialResponse(seen, totalFromApi)) {
+    return;
   }
+  const percentSeen = Math.round((seen * 100) / totalFromApi);
+  console.warn(
+    `[codacy-sync] PARTIAL RESPONSE DETECTED: seen=${seen} apiTotal=${totalFromApi} ` +
+      `${percentSeen}%. Refusing to write the truncated snapshot.`,
+  );
+  console.warn(
+    '[codacy-sync] Re-run codacy:sync to retry. Existing PULSE_CODACY_STATE.json was NOT touched.',
+  );
+  process.exit(3);
+}
 
+function commitTimestampMs(issue) {
+  return Date.parse(issue.commitInfo?.timestamp ?? '') || 0;
+}
+
+function compareByCommitTimestampAsc(a, b) {
+  return commitTimestampMs(a) - commitTimestampMs(b);
+}
+
+function buildHighPriorityBatch(highSeverityIssues) {
   // Oldest HIGH-severity issues first — these are the priority batch.
-  highSeverityIssues.sort((a, b) => {
-    const ta = Date.parse(a.commitInfo?.timestamp ?? '') || 0;
-    const tb = Date.parse(b.commitInfo?.timestamp ?? '') || 0;
-    return ta - tb;
-  });
-  const highPriorityBatch = highSeverityIssues.slice(0, 50).map(toHighPrioritySample);
+  const sorted = [...highSeverityIssues].sort(compareByCommitTimestampAsc);
+  return sorted.slice(0, 50).map(toHighPrioritySample);
+}
 
-  const state = {
+function nullish(value) {
+  return value ?? null;
+}
+
+function buildLastAnalysedCommitSection(lastAnalysedCommit) {
+  if (!lastAnalysedCommit) {
+    return null;
+  }
+  return {
+    sha: nullish(lastAnalysedCommit.sha),
+    authorName: nullish(lastAnalysedCommit.authorName),
+    endedAnalysis: nullish(lastAnalysedCommit.endedAnalysis),
+  };
+}
+
+function buildRepositorySummarySection(summaryData) {
+  return {
+    grade: nullish(summaryData.grade),
+    gradeLetter: nullish(summaryData.gradeLetter),
+    issuesCount: nullish(summaryData.issuesCount),
+    issuesPercentage: nullish(summaryData.issuesPercentage),
+    loc: nullish(summaryData.loc),
+    lastAnalysedCommit: buildLastAnalysedCommitSection(summaryData.lastAnalysedCommit),
+  };
+}
+
+function buildSeverityBucketObject(bySeverityBucket) {
+  return Object.fromEntries(
+    ['HIGH', 'MEDIUM', 'LOW', 'UNKNOWN'].map((key) => [key, bySeverityBucket.get(key) ?? 0]),
+  );
+}
+
+function buildTopFilesList(byFile) {
+  return Array.from(byFile.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 50)
+    .map(([file, count]) => ({ file, count }));
+}
+
+function buildState({ agg, summaryData, startedAt, totalFromApi, pages }) {
+  return {
     version: 1,
     syncedAt: new Date().toISOString(),
     elapsedMs: Date.now() - startedAt,
@@ -326,49 +436,67 @@ async function syncCodacyIssues() {
       repository: REPOSITORY,
       endpoint: `${API_BASE}/analysis/organizations/${PROVIDER}/${ORGANIZATION}/repositories/${REPOSITORY}/issues/search`,
     },
-    repositorySummary: {
-      grade: summaryData.grade ?? null,
-      gradeLetter: summaryData.gradeLetter ?? null,
-      issuesCount: summaryData.issuesCount ?? null,
-      issuesPercentage: summaryData.issuesPercentage ?? null,
-      loc: summaryData.loc ?? null,
-      lastAnalysedCommit: summaryData.lastAnalysedCommit
-        ? {
-            sha: summaryData.lastAnalysedCommit.sha ?? null,
-            authorName: summaryData.lastAnalysedCommit.authorName ?? null,
-            endedAnalysis: summaryData.lastAnalysedCommit.endedAnalysis ?? null,
-          }
-        : null,
-    },
-    totalIssues: seen,
+    repositorySummary: buildRepositorySummarySection(summaryData),
+    totalIssues: agg.seen,
     totalIssuesFromApi: totalFromApi,
-    duplicatePagesSkipped: duplicateCount,
+    duplicatePagesSkipped: agg.duplicateCount,
     pagesFetched: pages,
-    bySeverity: Object.fromEntries(
-      ['HIGH', 'MEDIUM', 'LOW', 'UNKNOWN'].map((key) => [key, bySeverityBucket.get(key) ?? 0]),
-    ),
-    bySeverityRaw: mapToSortedObject(bySeverityRaw),
-    byCategory: mapToSortedObject(byCategory),
-    byPatternId: mapToSortedObject(byPatternId, { limit: 50 }),
-    byTool: mapToSortedObject(byTool),
-    topFiles: Array.from(byFile.entries())
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 50)
-      .map(([file, count]) => ({ file, count })),
-    highPriorityBatch,
+    bySeverity: buildSeverityBucketObject(agg.bySeverityBucket),
+    bySeverityRaw: mapToSortedObject(agg.bySeverityRaw),
+    byCategory: mapToSortedObject(agg.byCategory),
+    byPatternId: mapToSortedObject(agg.byPatternId, { limit: 50 }),
+    byTool: mapToSortedObject(agg.byTool),
+    topFiles: buildTopFilesList(agg.byFile),
+    highPriorityBatch: buildHighPriorityBatch(agg.highSeverityIssues),
   };
+}
 
+function persistStateAtomically(state) {
   writeFileSync(tmpOutputPath, `${JSON.stringify(state, null, 2)}\n`);
   renameSync(tmpOutputPath, outputPath);
+}
 
+function logSyncCompletion({ state, agg, totalFromApi, pages, startedAt }) {
+  const elapsedSeconds = ((Date.now() - startedAt) / 1000).toFixed(1);
   console.log(
-    `[codacy-sync] Wrote ${path.relative(repoRoot, outputPath)} — totalIssues=${seen}, apiTotal=${
+    `[codacy-sync] Wrote ${path.relative(repoRoot, outputPath)} — totalIssues=${agg.seen}, apiTotal=${
       totalFromApi ?? 'n/a'
-    }, duplicates=${duplicateCount}, HIGH=${state.bySeverity.HIGH}, MEDIUM=${state.bySeverity.MEDIUM}, LOW=${state.bySeverity.LOW}, pages=${pages}, elapsed=${(
-      (Date.now() - startedAt) /
-      1000
-    ).toFixed(1)}s.`,
+    }, duplicates=${agg.duplicateCount}, HIGH=${state.bySeverity.HIGH}, MEDIUM=${state.bySeverity.MEDIUM}, LOW=${state.bySeverity.LOW}, pages=${pages}, elapsed=${elapsedSeconds}s.`,
   );
+}
+
+function announceSyncSkipped() {
+  console.warn(
+    '[codacy-sync] No CODACY_API_TOKEN / CODACY_PROJECT_TOKEN / CODACY_ACCOUNT_TOKEN in env — skipping.',
+  );
+  console.warn('[codacy-sync] PULSE_CODACY_STATE.json left untouched.');
+}
+
+function announceSyncStart(token) {
+  console.log(`[codacy-sync] Using token from ${token.name} (value hidden).`);
+  console.log(`[codacy-sync] Target: ${PROVIDER}/${ORGANIZATION}/${REPOSITORY} via ${API_BASE}`);
+}
+
+async function syncCodacyIssues() {
+  const token = pickToken();
+  if (!token) {
+    announceSyncSkipped();
+    return { skipped: true };
+  }
+  announceSyncStart(token);
+
+  const startedAt = Date.now();
+  const summary = await fetchRepositorySummary(token.value);
+  const summaryData = summary?.data ?? {};
+
+  const agg = createAggregateState();
+  const { pages, totalFromApi } = await paginateAllIssues(token, agg);
+
+  failOnPartialResponse(agg.seen, totalFromApi);
+
+  const state = buildState({ agg, summaryData, startedAt, totalFromApi, pages });
+  persistStateAtomically(state);
+  logSyncCompletion({ state, agg, totalFromApi, pages, startedAt });
 
   return state;
 }
@@ -386,17 +514,25 @@ function stripSurroundingQuotes(value) {
 
 function parseEnvLine(rawLine) {
   const line = rawLine.trim();
-  if (!line || line.startsWith('#')) return null;
+  if (!line || line.startsWith('#')) {
+    return null;
+  }
   const eq = line.indexOf('=');
-  if (eq <= 0) return null;
+  if (eq <= 0) {
+    return null;
+  }
   const key = line.slice(0, eq).trim();
   const value = stripSurroundingQuotes(line.slice(eq + 1).trim());
   return { key, value };
 }
 
 function applyEnvPair(entry) {
-  if (!entry) return;
-  if (entry.key in process.env) return;
+  if (!entry) {
+    return;
+  }
+  if (entry.key in process.env) {
+    return;
+  }
   process.env[entry.key] = entry.value;
 }
 
@@ -404,9 +540,13 @@ async function loadLocalEnvFile() {
   // When run locally outside CI we opportunistically read .env.pulse.local so
   // the developer experience matches the nightly workflow without requiring
   // them to export vars into their shell. This is no-op in CI.
-  if (process.env.CI === 'true') return;
+  if (process.env.CI === 'true') {
+    return;
+  }
   const envPath = path.join(repoRoot, '.env.pulse.local');
-  if (!existsSync(envPath)) return;
+  if (!existsSync(envPath)) {
+    return;
+  }
   const content = readFileSync(envPath, 'utf8');
   for (const rawLine of content.split('\n')) {
     applyEnvPair(parseEnvLine(rawLine));

@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
 import { PlanLimitsService } from '../billing/plan-limits.service';
@@ -6,6 +6,7 @@ import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { OpsAlertService } from '../observability/ops-alert.service';
 
 /** Flow optimizer service. */
 @Injectable()
@@ -17,6 +18,7 @@ export class FlowOptimizerService {
     private prisma: PrismaService,
     private config: ConfigService,
     private readonly planLimits: PlanLimitsService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {
     const apiKey = this.config.get('OPENAI_API_KEY');
     this.openai = apiKey ? new OpenAI({ apiKey }) : null;
@@ -28,8 +30,8 @@ export class FlowOptimizerService {
       return;
     }
 
-    const flow = await this.prisma.flow.findUnique({
-      where: { id: flowId },
+    const flow = await this.prisma.flow.findFirst({
+      where: { id: flowId, workspaceId },
       include: { executions: { take: 50, orderBy: { createdAt: 'desc' } } },
     });
 

@@ -55,6 +55,7 @@ export interface AIConfigPayload {
   };
 }
 
+/** Product_ia_copy. */
 export const PRODUCT_IA_COPY = {
   loadError: kloelT(`Nao foi possivel carregar a configuracao da IA.`),
   idealCustomerPlaceholder: kloelT(`Mulheres 35-55 anos, preocupadas com envelhecimento...`),
@@ -73,6 +74,7 @@ export const PRODUCT_IA_COPY = {
   saveSuccess: kloelT(`IA atualizada!`),
 } as const;
 
+/** Tone_options. */
 export const TONE_OPTIONS = [
   kloelT(`Consultivo`),
   kloelT(`Agressivo`),
@@ -80,12 +82,14 @@ export const TONE_OPTIONS = [
   kloelT(`Urgente`),
 ] as const;
 
+/** Follow_up_options. */
 export const FOLLOW_UP_OPTIONS = [
   kloelT(`2h, 24h, 72h`),
   kloelT(`1h, 12h, 48h`),
   kloelT(`Desativado`),
 ] as const;
 
+/** Create default ai config. */
 export function createDefaultAIConfig(): AIConfig {
   return {
     objections: [],

@@ -6,7 +6,7 @@
  * CHECKS:
  * 1. Request tracing: verifies correlation IDs (X-Request-ID or X-Trace-ID) are:
  *    a. Generated at request entry (middleware or interceptor)
- *    b. Propagated to all outbound calls (Asaas, LLM, WhatsApp)
+ *    b. Propagated to all outbound calls (payment provider, LLM, WhatsApp)
  *    c. Returned in error responses (for support debugging)
  *    d. Logged in every log line within that request context
  * 2. Error alerting: verifies that critical errors trigger external alerts:

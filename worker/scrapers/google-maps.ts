@@ -10,7 +10,7 @@ const D_1_3__0__S__D_2_3_RE_2 = /(\+\d{1,3}|0)\s?\d{2,3}/;
 puppeteer.use(StealthPlugin());
 
 /** Scraped lead shape. */
-export interface ScrapedLead {
+interface ScrapedLead {
   /** Name property. */
   name: string;
   /** Phone property. */

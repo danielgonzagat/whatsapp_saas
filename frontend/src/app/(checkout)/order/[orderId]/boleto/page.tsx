@@ -1,6 +1,7 @@
 'use client';
 
 import { kloelT } from '@/lib/i18n/t';
+import { colors } from '@/lib/design-tokens';
 import { useParams } from 'next/navigation';
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useOrderStatus } from '../../../hooks/useCheckout';
@@ -55,7 +56,7 @@ export default function BoletoPaymentPage() {
     <div
       style={{
         minHeight: '100vh',
-        background: '#0A0A0C',
+        background: colors.background.void,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',

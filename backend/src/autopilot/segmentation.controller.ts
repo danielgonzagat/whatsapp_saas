@@ -106,8 +106,11 @@ export class SegmentationController {
   /** Get contact score. */
   @Get(':workspaceId/contact/:contactId/score')
   @ApiOperation({ summary: 'Calcula score de engajamento de um contato' })
-  async getContactScore(@Param('contactId') contactId: string) {
-    return this.segmentationService.calculateEngagementScore(contactId);
+  async getContactScore(
+    @Param('workspaceId') workspaceId: string,
+    @Param('contactId') contactId: string,
+  ) {
+    return this.segmentationService.calculateEngagementScore(contactId, workspaceId);
   }
 
   /** Auto segment. */

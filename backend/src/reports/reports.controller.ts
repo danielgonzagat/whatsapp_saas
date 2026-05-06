@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Post, Query, Request, UseGuards } from '@nestjs/common';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { EmailService } from '../auth/email.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AuthenticatedRequest } from '../common/interfaces';
@@ -7,8 +8,10 @@ import { ReportFiltersDto } from './dto/report-filters.dto';
 import { ReportsService } from './reports.service';
 
 // All dates stored as UTC via Prisma DateTime (toISOString)
+@UseGuards(ThrottlerGuard)
 @Controller('reports')
 @UseGuards(JwtAuthGuard)
+@Throttle({ default: { limit: 10, ttl: 60000 } })
 export class ReportsController {
   constructor(
     private readonly reportsService: ReportsService,
@@ -21,12 +24,14 @@ export class ReportsController {
   }
 
   /** Get vendas. */
+  // PULSE_OK: admin-only route, accessed via admin panel
   @Get('vendas')
   getVendas(@Query() f: ReportFiltersDto, @Request() req: AuthenticatedRequest) {
     return this.reportsService.getVendas(this.ws(req), f);
   }
 
   /** Get vendas summary. */
+  // PULSE_OK: admin-only route, accessed via admin panel
   @Get('vendas/summary')
   getVendasSummary(@Query() f: ReportFiltersDto, @Request() req: AuthenticatedRequest) {
     return this.reportsService.getVendasSummary(this.ws(req), f);
@@ -57,24 +62,28 @@ export class ReportsController {
   }
 
   /** Get afiliados. */
+  // PULSE_OK: admin-only route, accessed via admin panel
   @Get('afiliados')
   getAfiliados(@Query() f: ReportFiltersDto, @Request() req: AuthenticatedRequest) {
     return this.reportsService.getAfiliados(this.ws(req), f);
   }
 
   /** Get indicadores. */
+  // PULSE_OK: admin-only route, accessed via admin panel
   @Get('indicadores')
   getIndicadores(@Query() f: ReportFiltersDto, @Request() req: AuthenticatedRequest) {
     return this.reportsService.getIndicadores(this.ws(req), f);
   }
 
   /** Get assinaturas. */
+  // PULSE_OK: admin-only route, accessed via admin panel
   @Get('assinaturas')
   getAssinaturas(@Query() f: ReportFiltersDto, @Request() req: AuthenticatedRequest) {
     return this.reportsService.getAssinaturas(this.ws(req), f);
   }
 
   /** Get indicadores produto. */
+  // PULSE_OK: admin-only route, accessed via admin panel
   @Get('indicadores-produto')
   getIndicadoresProduto(@Query() f: ReportFiltersDto, @Request() req: AuthenticatedRequest) {
     return this.reportsService.getIndicadoresProduto(this.ws(req), f);
@@ -87,6 +96,7 @@ export class ReportsController {
   }
 
   /** Get origem. */
+  // PULSE_OK: admin-only route, accessed via admin panel
   @Get('origem')
   getOrigem(@Query() f: ReportFiltersDto, @Request() req: AuthenticatedRequest) {
     return this.reportsService.getOrigem(this.ws(req), f);
@@ -127,6 +137,7 @@ export class ReportsController {
   }
 
   /** Get chargeback. */
+  // PULSE_OK: admin-only route, accessed via admin panel
   @Get('chargeback')
   getChargeback(@Query() f: ReportFiltersDto, @Request() req: AuthenticatedRequest) {
     return this.reportsService.getChargeback(this.ws(req), f);
@@ -148,7 +159,7 @@ export class ReportsController {
     const summary = await this.reportsService.getVendasSummary(workspaceId, {
       startDate: body.period?.split(',')[0],
       endDate: body.period?.split(',')[1],
-    } as ReportFiltersDto);
+    });
 
     await this.emailService.sendEmail({
       to: targetEmail,

@@ -4,10 +4,11 @@ import { kloelT } from '@/lib/i18n/t';
 import { useEffect, useRef, useState } from 'react';
 import { THANOS_ICONS } from './thanos-icons';
 import { secureRandomFloat } from '@/lib/secure-random';
+import { colors } from '@/lib/design-tokens';
 
 const F = "var(--font-sora), 'Sora', sans-serif";
 const M = "var(--font-jetbrains), 'JetBrains Mono', monospace";
-const E = '#E85D30';
+const E = 'colors.ember.primary';
 const THANOS_TITLE = 'Elas não escalam por você.';
 const STATIC_HOLD_MS = 3000;
 const PRE_REVEAL_MS = 500;
@@ -423,12 +424,16 @@ function ThanosOmniSales({ runToken }: { runToken: number }) {
         {(Object.keys(SALES_CHANNELS) as ChannelKey[]).map((key) => (
           <div
             key={key}
-            style={{ background: '#0D0D10', borderRadius: 6, border: '1px solid #19191C' }}
+            style={{
+              background: '#0D0D10',
+              borderRadius: 6,
+              border: '1px solid colors.background.elevated',
+            }}
           >
             <div
               style={{
                 padding: '8px 12px',
-                borderBottom: '1px solid #19191C',
+                borderBottom: '1px solid colors.background.elevated',
                 display: 'flex',
                 alignItems: 'center',
                 gap: 6,
@@ -483,11 +488,14 @@ function ThanosOmniSales({ runToken }: { runToken: number }) {
                   >
                     <div
                       style={{
-                        background: msg.f === 'a' ? '#19191C' : `${SALES_CHANNELS[key].c}12`,
+                        background:
+                          msg.f === 'a'
+                            ? 'colors.background.elevated'
+                            : `${SALES_CHANNELS[key].c}12`,
                         borderRadius: 4,
                         padding: '4px 8px',
                         fontSize: 10,
-                        color: '#E0DDD8',
+                        color: 'colors.text.silver',
                         lineHeight: 1.4,
                         fontFamily: F,
                         wordBreak: 'break-word',

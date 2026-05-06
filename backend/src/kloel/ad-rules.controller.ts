@@ -10,12 +10,14 @@ import {
   Put,
   Request,
   UseGuards,
+  Optional,
 } from '@nestjs/common';
 import { AuditService } from '../audit/audit.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
+import { OpsAlertService } from '../observability/ops-alert.service';
 
 /** Ad rules controller. */
 @Controller('ad-rules')
@@ -25,6 +27,7 @@ export class AdRulesController {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   /** List. */
@@ -36,7 +39,8 @@ export class AdRulesController {
         where: { workspaceId },
         orderBy: { createdAt: 'desc' },
       });
-    } catch (e) {
+    } catch (e: unknown) {
+      void this.opsAlert?.alertOnCriticalError(e, 'AdRulesController.findMany');
       this.logger.warn(`AdRule table may not exist yet: ${(e as Error).message}`);
       return [];
     }
@@ -91,7 +95,8 @@ export class AdRulesController {
     if (!rule) {
       throw new NotFoundException('Rule not found');
     }
-    return this.prisma.adRule.update({ where: { id }, data: dto });
+    await this.prisma.adRule.updateMany({ where: { id, workspaceId }, data: dto });
+    return this.prisma.adRule.findFirstOrThrow({ where: { id, workspaceId } });
   }
 
   /** Remove. */
@@ -111,7 +116,7 @@ export class AdRulesController {
       resourceId: id,
       details: { deletedBy: 'user', name: rule.name },
     });
-    await this.prisma.adRule.delete({ where: { id } });
+    await this.prisma.adRule.deleteMany({ where: { id, workspaceId } });
     return { success: true };
   }
 
@@ -125,9 +130,10 @@ export class AdRulesController {
     if (!rule) {
       throw new NotFoundException('Rule not found');
     }
-    return this.prisma.adRule.update({
-      where: { id },
+    await this.prisma.adRule.updateMany({
+      where: { id, workspaceId },
       data: { active: !rule.active },
     });
+    return this.prisma.adRule.findFirstOrThrow({ where: { id, workspaceId } });
   }
 }

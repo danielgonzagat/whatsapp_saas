@@ -30,10 +30,5 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": [
-    "node_modules",
-    "frontend_perfeito/**",
-    "**/*.legacy.ts",
-    "**/*.legacy.tsx"
-  ]
+  "exclude": ["node_modules", "frontend_perfeito/**", "**/*.legacy.ts", "**/*.legacy.tsx"]
 }

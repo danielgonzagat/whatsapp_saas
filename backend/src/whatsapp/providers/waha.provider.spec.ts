@@ -6,7 +6,7 @@ function createConfig(values: Record<string, string>) {
     get(key: string) {
       return values[key];
     },
-  } as ConfigService;
+  } as never as ConfigService;
 }
 
 function createJsonResponse(payload: unknown) {
@@ -16,7 +16,7 @@ function createJsonResponse(payload: unknown) {
     headers: new Headers({ 'content-type': 'application/json' }),
     json: jest.fn().mockResolvedValue(payload),
     text: jest.fn().mockResolvedValue(JSON.stringify(payload)),
-  } as unknown as Response;
+  } as never as Response;
 }
 
 describe('WahaProvider', () => {

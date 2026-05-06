@@ -37,7 +37,7 @@ describe('LLMBudgetService — I16 fail-closed cost enforcement', () => {
   beforeEach(() => {
     delete process.env.LLM_BUDGET_DEFAULT_CENTS;
     redis = makeFakeRedis();
-    service = new LLMBudgetService(redis as any);
+    service = new LLMBudgetService(redis as never);
   });
 
   describe('assertBudget', () => {
@@ -48,20 +48,20 @@ describe('LLMBudgetService — I16 fail-closed cost enforcement', () => {
 
     it('rejects when estimated cost alone exceeds the budget (I16)', async () => {
       process.env.LLM_BUDGET_DEFAULT_CENTS = '1000';
-      service = new LLMBudgetService(redis as any);
+      service = new LLMBudgetService(redis as never);
       await expect(service.assertBudget('ws-1', 2000)).rejects.toThrow(ForbiddenException);
     });
 
     it('rejects when spent + estimated would exceed the budget', async () => {
       process.env.LLM_BUDGET_DEFAULT_CENTS = '1000';
-      service = new LLMBudgetService(redis as any);
+      service = new LLMBudgetService(redis as never);
       await service.recordSpend('ws-1', 900);
       await expect(service.assertBudget('ws-1', 200)).rejects.toThrow(ForbiddenException);
     });
 
     it('allows when spent + estimated exactly equals the budget', async () => {
       process.env.LLM_BUDGET_DEFAULT_CENTS = '1000';
-      service = new LLMBudgetService(redis as any);
+      service = new LLMBudgetService(redis as never);
       await service.recordSpend('ws-1', 500);
       // 500 + 500 = 1000, which is NOT greater than 1000.
       await expect(service.assertBudget('ws-1', 500)).resolves.toBeUndefined();
@@ -78,7 +78,7 @@ describe('LLMBudgetService — I16 fail-closed cost enforcement', () => {
 
     it("scopes by workspace — one workspace cannot burn another's budget", async () => {
       process.env.LLM_BUDGET_DEFAULT_CENTS = '1000';
-      service = new LLMBudgetService(redis as any);
+      service = new LLMBudgetService(redis as never);
       await service.recordSpend('ws-A', 900);
       // ws-B still has a full budget available.
       await expect(service.assertBudget('ws-B', 900)).resolves.toBeUndefined();
@@ -101,7 +101,7 @@ describe('LLMBudgetService — I16 fail-closed cost enforcement', () => {
 
     it('degrades gracefully on Redis failure — does NOT throw', async () => {
       // Swap incrby to throw; the method should swallow and log.
-      (redis as any).incrby = jest.fn().mockRejectedValue(new Error('redis down'));
+      redis.incrby = jest.fn().mockRejectedValue(new Error('redis down')) as typeof redis.incrby;
       await expect(service.recordSpend('ws-1', 100)).resolves.toBeUndefined();
     });
   });

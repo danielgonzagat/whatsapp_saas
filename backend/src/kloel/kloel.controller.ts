@@ -1,16 +1,10 @@
-import { extname } from 'node:path';
-import { buildTimestampedRuntimeId } from './kloel-id.util';
 import {
   BadRequestException,
   Body,
   Controller,
   Delete,
-  FileTypeValidator,
   Get,
-  MaxFileSizeValidator,
-  NotFoundException,
   Param,
-  ParseFilePipe,
   Post,
   Put,
   Query,
@@ -20,31 +14,40 @@ import {
   UploadedFile,
   UseGuards,
   UseInterceptors,
+  Optional,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
+import { SkipThrottle, Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { Prisma } from '@prisma/client';
 import { Response } from 'express';
 import { memoryStorage } from 'multer';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Public } from '../auth/public.decorator';
 import { resolveWorkspaceId } from '../auth/workspace-access';
-import { detectUploadedMime } from '../common/file-signature.util';
-import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { AuthenticatedRequest } from '../common/interfaces';
-import { normalizeStorageUrlForRequest } from '../common/storage/public-storage-url.util';
-import { StorageService } from '../common/storage/storage.service';
+import { MaxFileSizeValidator, ParseFilePipe, FileTypeValidator } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ConversationalOnboardingService } from './conversational-onboarding.service';
 import { KloelService } from './kloel.service';
-import { extractThreadSearchTags, stripHtmlTags } from './thread-search.util';
+import { KloelThreadSearchService } from './kloel-thread-search.service';
+import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import { StorageService } from '../common/storage/storage.service';
+import { OpsAlertService } from '../observability/ops-alert.service';
 
-// memoryStorage uploads below enforce fileSize/maxSize caps plus fileFilter/mimetype validation.
-const S_RE = /\s+/g;
-const KLOEL_UPLOAD_GENERIC_MIME_RE =
-  /^(image\/(jpeg|png|gif|webp)|application\/pdf|application\/msword|application\/vnd\.openxmlformats-officedocument\.wordprocessingml\.document)$/;
-const KLOEL_UPLOAD_CHAT_MIME_RE =
-  /^(image\/(jpeg|png|gif|webp)|application\/pdf|application\/msword|application\/vnd\.openxmlformats-officedocument\.wordprocessingml\.document|application\/vnd\.ms-excel|application\/vnd\.openxmlformats-officedocument\.spreadsheetml\.sheet|text\/plain|text\/csv|audio\/(mpeg|wav|webm|ogg|mp4|x-m4a))$/;
+import {
+  listThreads,
+  createThread,
+  updateThread,
+  deleteThread,
+  getThreadMessages,
+  addThreadMessage,
+  updateThreadMessage,
+  updateMessageFeedback,
+  handleUploadFile,
+  handleUploadChatFile,
+  requestDataDeletion,
+  exportData,
+} from './__companions__/kloel.controller.companion';
 
 interface ThinkDto {
   message: string;
@@ -53,37 +56,22 @@ interface ThinkDto {
   mode?: 'chat' | 'onboarding' | 'sales';
   metadata?: Record<string, unknown>;
 }
-
 interface MemoryDto {
   workspaceId: string;
   type: string;
   content: string;
   metadata?: Record<string, unknown>;
 }
-
 interface OnboardingChatDto {
   message: string;
 }
 
-interface ThreadSearchRow {
-  id: string;
-  title: string;
-  updatedAt: Date;
-  matchedContent: string | null;
-  contentPreview: string | null;
-  titlePreview: string | null;
-  rank: number | Prisma.Decimal | null;
-}
+const KLOEL_UPLOAD_GENERIC_MIME_RE =
+  /^(image\/(jpeg|png|gif|webp)|application\/pdf|application\/msword|application\/vnd\.openxmlformats-officedocument\.wordprocessingml\.document)$/;
+const KLOEL_UPLOAD_CHAT_MIME_RE =
+  /^(image\/(jpeg|png|gif|webp)|application\/pdf|application\/msword|application\/vnd\.openxmlformats-officedocument\.wordprocessingml\.document|application\/vnd\.ms-excel|application\/vnd\.openxmlformats-officedocument\.spreadsheetml\.sheet|text\/plain|text\/csv|audio\/(mpeg|wav|webm|ogg|mp4|x-m4a))$/;
 
-interface ThreadSearchResult {
-  id: string;
-  title: string;
-  updatedAt: Date;
-  matchedContent: string;
-  previewHtml: string;
-  tags: string[];
-  rank: number;
-}
+const UPLOAD_MAX = 25 * 1024 * 1024;
 
 /** Kloel controller. */
 @Controller('kloel')
@@ -93,158 +81,20 @@ export class KloelController {
     private readonly conversationalOnboarding: ConversationalOnboardingService,
     private readonly storageService: StorageService,
     private readonly prisma: PrismaService,
+    private readonly threadSearchService: KloelThreadSearchService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
-  private mapThreadSearchRows(rows: ThreadSearchRow[], query: string): ThreadSearchResult[] {
-    return rows.map((row) => {
-      const contentPreview = String(row.contentPreview || '').trim();
-      const titlePreview = String(row.titlePreview || '').trim();
-      const previewHtml = contentPreview.includes('<mark>')
-        ? contentPreview
-        : titlePreview.includes('<mark>')
-          ? titlePreview
-          : contentPreview || titlePreview || String(row.matchedContent || '').trim();
-      const matchedContent =
-        stripHtmlTags(previewHtml) ||
-        String(row.matchedContent || '')
-          .replace(S_RE, ' ')
-          .trim()
-          .slice(0, 200);
-
-      return {
-        id: row.id,
-        title: String(row.title || '').trim() || 'Nova conversa',
-        updatedAt: row.updatedAt,
-        matchedContent,
-        previewHtml,
-        tags: extractThreadSearchTags(
-          String(row.title || ''),
-          `${String(row.matchedContent || '')} ${matchedContent}`.trim(),
-          query,
-        ),
-        rank:
-          typeof row.rank === 'number'
-            ? row.rank
-            : row.rank instanceof Prisma.Decimal
-              ? row.rank.toNumber()
-              : 0,
-      };
-    });
-  }
-
-  private async searchThreadsContainsFallback(
-    workspaceId: string,
-    query: string,
-    limit: number,
-  ): Promise<ThreadSearchResult[]> {
-    const titleThreads = await this.prisma.chatThread.findMany({
-      take: limit,
-      where: {
-        workspaceId,
-        title: { contains: query, mode: 'insensitive' },
-        messages: { some: {} },
-      },
-      select: {
-        id: true,
-        title: true,
-        updatedAt: true,
-        messages: {
-          take: 1,
-          orderBy: { createdAt: 'desc' },
-          select: { content: true },
-        },
-      },
-      orderBy: { updatedAt: 'desc' },
-    });
-
-    const messages = await this.prisma.chatMessage.findMany({
-      take: limit * 2,
-      where: {
-        thread: { workspaceId },
-        content: { contains: query, mode: 'insensitive' },
-      },
-      select: {
-        threadId: true,
-        content: true,
-        createdAt: true,
-        thread: { select: { id: true, title: true, updatedAt: true } },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    const seen = new Set<string>();
-    const contentMatches = messages
-      .filter((message) => {
-        if (seen.has(message.threadId)) {
-          return false;
-        }
-        seen.add(message.threadId);
-        return true;
-      })
-      .map((message) => {
-        const matchedContent = String(message.content || '')
-          .replace(S_RE, ' ')
-          .trim();
-        return {
-          id: message.thread.id,
-          title: String(message.thread.title || '').trim() || 'Nova conversa',
-          updatedAt: message.thread.updatedAt,
-          matchedContent,
-          previewHtml: matchedContent.slice(0, 180),
-          tags: extractThreadSearchTags(String(message.thread.title || ''), matchedContent, query),
-          rank: 1,
-        };
-      });
-
-    const titleMatches = titleThreads
-      .filter((thread) => !seen.has(thread.id))
-      .map((thread) => {
-        const matchedContent = String(thread.messages?.[0]?.content || '')
-          .replace(S_RE, ' ')
-          .trim();
-        return {
-          id: thread.id,
-          title: String(thread.title || '').trim() || 'Nova conversa',
-          updatedAt: thread.updatedAt,
-          matchedContent,
-          previewHtml: matchedContent.slice(0, 180) || String(thread.title || '').trim(),
-          tags: extractThreadSearchTags(String(thread.title || ''), matchedContent, query),
-          rank: 0.5,
-        };
-      });
-
-    return [...contentMatches, ...titleMatches].slice(0, limit);
-  }
-
-  private normalizeMessageMetadata(metadata: Prisma.JsonValue | null | undefined) {
-    if (metadata && typeof metadata === 'object' && !Array.isArray(metadata)) {
-      return { ...(metadata as Record<string, unknown>) };
-    }
-
-    return {} as Record<string, unknown>;
-  }
-
   private readUserId(user: unknown) {
-    if (!user || typeof user !== 'object') {
-      return undefined;
-    }
-
+    if (!user || typeof user !== 'object') return undefined;
     const sub = 'sub' in user ? user.sub : undefined;
-    if (typeof sub === 'string' && sub.trim()) {
-      return sub;
-    }
-
+    if (typeof sub === 'string' && sub.trim()) return sub;
     const legacyId = 'id' in user ? user.id : undefined;
     return typeof legacyId === 'string' && legacyId.trim() ? legacyId : undefined;
   }
 
-  /**
-   * 🧠 KLOEL THINK - Endpoint principal de chat com streaming
-   * Retorna SSE (Server-Sent Events) em tempo real
-   *
-   * Requires authentication for multi-tenancy.
-   * workspaceId is extracted from JWT token if not provided.
-   */
+  // ═══ THINK ═══
+
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post('think')
   async think(
@@ -252,24 +102,17 @@ export class KloelController {
     @Res() res: Response,
     @Request() req: AuthenticatedRequest,
   ): Promise<void> {
-    // Workspace SEMPRE vem do token (WorkspaceGuard propaga req.workspaceId)
     const workspaceId = req.workspaceId || req.user?.workspaceId;
     const userId = this.readUserId(req.user);
     const userName = typeof req.user?.name === 'string' ? req.user.name : undefined;
-
     const abortController = new AbortController();
     const abortWithReason = (reason: string) => {
-      if (!abortController.signal.aborted) {
-        abortController.abort(reason);
-      }
+      if (!abortController.signal.aborted) abortController.abort(reason);
     };
     const timeoutMs = Number(process.env.KLOEL_THINK_TIMEOUT_MS || 240000);
     const timeout = setTimeout(() => abortWithReason('request_timeout'), timeoutMs);
-
-    // Se o cliente desconectar, aborta imediatamente para evitar vazamentos
     req.on('close', () => abortWithReason('client_disconnected'));
     res.on('close', () => abortWithReason('client_disconnected'));
-
     try {
       return await this.kloelService.think(
         {
@@ -280,61 +123,37 @@ export class KloelController {
           metadata: dto.metadata as Prisma.InputJsonValue | undefined,
         },
         res,
-        {
-          signal: abortController.signal,
-          timeoutMs,
-        },
+        { signal: abortController.signal, timeoutMs },
       );
     } finally {
       clearTimeout(timeout);
     }
   }
 
-  /**
-   * 📜 Obter histórico do chat
-   */
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Get('history')
   async getHistory(@Request() req: AuthenticatedRequest): Promise<unknown[]> {
-    const workspaceId = req.user?.workspaceId;
-    return this.kloelService.getHistory(workspaceId);
+    return this.kloelService.getHistory(req.user?.workspaceId);
   }
 
-  /**
-   * 🧠 KLOEL THINK SYNC - Versão sem streaming
-   */
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post('think/sync')
-  async thinkSync(
-    @Body() dto: ThinkDto,
-    @Request() req: AuthenticatedRequest,
-  ): Promise<{ response: string; conversationId?: string; title?: string }> {
+  async thinkSync(@Body() dto: ThinkDto, @Request() req: AuthenticatedRequest) {
     const workspaceId = req.workspaceId || req.user?.workspaceId;
-    const userId = this.readUserId(req.user);
-    const userName = typeof req.user?.name === 'string' ? req.user.name : undefined;
     return this.kloelService.thinkSync({
       ...dto,
       workspaceId,
-      userId,
-      userName,
+      userId: this.readUserId(req.user),
+      userName: typeof req.user?.name === 'string' ? req.user.name : undefined,
       metadata: dto.metadata as Prisma.InputJsonValue | undefined,
     });
   }
 
-  /**
-   * 💾 Salvar memória/aprendizado
-   * Requires authentication to prevent unauthorized memory injection.
-   */
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post('memory/save')
-  async saveMemory(
-    @Body() dto: MemoryDto,
-    @Request() req: AuthenticatedRequest,
-  ): Promise<{ success: boolean }> {
-    // Validate workspace access
-    const workspaceId = req.workspaceId || req.user?.workspaceId;
+  async saveMemory(@Body() dto: MemoryDto, @Request() req: AuthenticatedRequest) {
     await this.kloelService.saveMemory(
-      workspaceId,
+      req.workspaceId || req.user?.workspaceId,
       dto.type,
       dto.content,
       dto.metadata as Prisma.InputJsonValue | undefined,
@@ -342,46 +161,37 @@ export class KloelController {
     return { success: true };
   }
 
-  /**
-   * 📄 Processar PDF
-   */
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post('pdf/process')
   async processPdf(
     @Body() dto: { workspaceId: string; content: string },
     @Request() req: AuthenticatedRequest,
-  ): Promise<{ analysis: string }> {
-    const workspaceId = req.workspaceId || req.user?.workspaceId;
-    const analysis = await this.kloelService.processPdf(workspaceId, dto.content);
-    return { analysis };
-  }
-
-  /**
-   * 🔥 Health check da KLOEL
-   * Public endpoint for monitoring
-   */
-  @Public()
-  @Get('health')
-  health(): { status: string; identity: string } {
+  ) {
     return {
-      status: 'online',
-      identity: 'KLOEL - Inteligência Comercial Autônoma',
+      analysis: await this.kloelService.processPdf(
+        req.workspaceId || req.user?.workspaceId,
+        dto.content,
+      ),
     };
   }
 
-  /**
-   * 📎 Upload genérico de arquivo (imagens de produto, etc.)
-   * Aceita imagens, PDFs, documentos e áudio
-   * O campo "folder" no formData define a pasta de destino (default: "general")
-   */
+  @Public()
+  @Get('health')
+  @SkipThrottle()
+  health() {
+    return { status: 'online', identity: 'KLOEL - Inteligência Comercial Autônoma' };
+  }
+
+  // ═══ UPLOADS ═══
+
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post('upload-generic')
   @UseInterceptors(
     FileInterceptor('file', {
       storage: memoryStorage(),
-      limits: { fileSize: 25 * 1024 * 1024 },
+      limits: { fileSize: UPLOAD_MAX },
       fileFilter: (_req, file, cb) => {
-        const allowedMimes = [
+        const allowed = [
           'image/jpeg',
           'image/png',
           'image/gif',
@@ -390,11 +200,10 @@ export class KloelController {
           'application/msword',
           'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         ];
-        if (allowedMimes.includes(file.mimetype)) {
-          cb(null, true);
-        } else {
-          cb(new Error('Tipo de arquivo não permitido'), false);
-        }
+        cb(
+          allowed.includes(file.mimetype) ? null : new Error('Tipo de arquivo não permitido'),
+          allowed.includes(file.mimetype),
+        );
       },
     }),
   )
@@ -402,7 +211,7 @@ export class KloelController {
     @UploadedFile(
       new ParseFilePipe({
         validators: [
-          new MaxFileSizeValidator({ maxSize: 25 * 1024 * 1024 }),
+          new MaxFileSizeValidator({ maxSize: UPLOAD_MAX }),
           new FileTypeValidator({ fileType: KLOEL_UPLOAD_GENERIC_MIME_RE }),
         ],
         fileIsRequired: false,
@@ -411,53 +220,23 @@ export class KloelController {
     file: { buffer: Buffer; originalname?: string; mimetype?: string; size?: number },
     @Request() req: AuthenticatedRequest,
   ) {
-    if (!file) {
-      return { success: false, error: 'Nenhum arquivo enviado' };
-    }
-
-    const detectedMime = detectUploadedMime(file);
-    if (!detectedMime) {
-      return {
-        success: false,
-        error: 'Tipo de arquivo não permitido ou assinatura inválida',
-      };
-    }
-    file.mimetype = detectedMime;
-
-    const workspaceId = req.workspaceId || req.user?.workspaceId;
-    const folder = req.body?.folder || 'general';
-    const uniqueSuffix = buildTimestampedRuntimeId('upload');
-    const filename = `${uniqueSuffix}${extname(file.originalname || '')}`;
-    const stored = await this.storageService.upload(file.buffer, {
-      filename,
-      mimeType: detectedMime,
-      folder,
-      workspaceId,
-    });
-
-    return {
-      success: true,
-      url: normalizeStorageUrlForRequest(stored.url, req),
-      name: file.originalname,
-      size: file.size,
-      mimeType: detectedMime,
-    };
+    return handleUploadFile(
+      { storage: this.storageService },
+      file,
+      req.workspaceId || req.user?.workspaceId,
+      req.body?.folder || 'general',
+      req,
+    );
   }
 
-  /**
-   * 📎 Upload de arquivo para o chat
-   * Aceita imagens, PDFs, documentos e áudio
-   */
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post('upload-chat')
   @UseInterceptors(
     FileInterceptor('file', {
       storage: memoryStorage(),
-      limits: {
-        fileSize: 25 * 1024 * 1024, // 25MB max
-      },
+      limits: { fileSize: UPLOAD_MAX },
       fileFilter: (_req, file, cb) => {
-        const allowedMimes = [
+        const allowed = [
           'image/jpeg',
           'image/png',
           'image/gif',
@@ -476,11 +255,10 @@ export class KloelController {
           'audio/mp4',
           'audio/x-m4a',
         ];
-        if (allowedMimes.includes(file.mimetype)) {
-          cb(null, true);
-        } else {
-          cb(new Error('Tipo de arquivo não permitido'), false);
-        }
+        cb(
+          allowed.includes(file.mimetype) ? null : new Error('Tipo de arquivo não permitido'),
+          allowed.includes(file.mimetype),
+        );
       },
     }),
   )
@@ -488,7 +266,7 @@ export class KloelController {
     @UploadedFile(
       new ParseFilePipe({
         validators: [
-          new MaxFileSizeValidator({ maxSize: 25 * 1024 * 1024 }), // 25MB
+          new MaxFileSizeValidator({ maxSize: UPLOAD_MAX }),
           new FileTypeValidator({ fileType: KLOEL_UPLOAD_CHAT_MIME_RE }),
         ],
         fileIsRequired: false,
@@ -497,75 +275,28 @@ export class KloelController {
     file: { buffer: Buffer; originalname?: string; mimetype?: string; size?: number },
     @Request() req: AuthenticatedRequest,
   ) {
-    if (!file) {
-      return { success: false, error: 'Nenhum arquivo enviado' };
-    }
-
-    const detectedMime = detectUploadedMime(file);
-    if (!detectedMime) {
-      return {
-        success: false,
-        error: 'Tipo de arquivo não permitido ou assinatura inválida',
-      };
-    }
-    file.mimetype = detectedMime;
-
-    const workspaceId = req.workspaceId || req.user?.workspaceId;
-    const uniqueSuffix = buildTimestampedRuntimeId('upload');
-    const filename = `${uniqueSuffix}${extname(file.originalname || '')}`;
-    const stored = await this.storageService.upload(file.buffer, {
-      filename,
-      mimeType: detectedMime,
-      folder: 'chat',
-      workspaceId,
-    });
-
-    // Determinar tipo do arquivo
-    let fileType: 'image' | 'document' | 'audio' = 'document';
-    if (detectedMime.startsWith('image/')) {
-      fileType = 'image';
-    } else if (detectedMime.startsWith('audio/')) {
-      fileType = 'audio';
-    }
-
-    return {
-      success: true,
-      url: normalizeStorageUrlForRequest(stored.url, req),
-      type: fileType,
-      name: file.originalname,
-      size: file.size,
-      mimeType: detectedMime,
-    };
+    return handleUploadChatFile(
+      { storage: this.storageService },
+      file,
+      req.workspaceId || req.user?.workspaceId,
+      req,
+    );
   }
 
-  // ================================================
-  // ONBOARDING CONVERSACIONAL COM IA
-  // ================================================
+  // ═══ ONBOARDING ═══
 
-  /**
-   * 🚀 Iniciar onboarding conversacional
-   * A IA dá boas-vindas e começa a coletar informações
-   *
-   * Requer autenticação: onboarding persiste dados do workspace.
-   * Mantém workspaceId na URL apenas para compatibilidade,
-   * mas valida que pertence ao usuário autenticado.
-   */
   @UseGuards(JwtAuthGuard, WorkspaceGuard, ThrottlerGuard)
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('onboarding/:workspaceId/start')
   async startConversationalOnboarding(
     @Req() req: AuthenticatedRequest,
     @Param('workspaceId') workspaceId: string,
-  ): Promise<{ message: string }> {
-    const validatedWorkspaceId = resolveWorkspaceId(req, workspaceId);
-    const message = await this.conversationalOnboarding.start(validatedWorkspaceId);
-    return { message };
+  ) {
+    return {
+      message: await this.conversationalOnboarding.start(resolveWorkspaceId(req, workspaceId)),
+    };
   }
 
-  /**
-   * 💬 Enviar mensagem no onboarding conversacional
-   * A IA processa, extrai informações e configura automaticamente
-   */
   @UseGuards(JwtAuthGuard, WorkspaceGuard, ThrottlerGuard)
   @Throttle({ default: { limit: 20, ttl: 60000 } })
   @Post('onboarding/:workspaceId/chat')
@@ -573,17 +304,15 @@ export class KloelController {
     @Req() req: AuthenticatedRequest,
     @Param('workspaceId') workspaceId: string,
     @Body() dto: OnboardingChatDto,
-  ): Promise<{ message: string }> {
-    const validatedWorkspaceId = resolveWorkspaceId(req, workspaceId);
-    const response = await this.conversationalOnboarding.chat(validatedWorkspaceId, dto.message);
-    return { message: response as string };
+  ) {
+    return {
+      message: (await this.conversationalOnboarding.chat(
+        resolveWorkspaceId(req, workspaceId),
+        dto.message,
+      )) as string,
+    };
   }
 
-  /**
-   * 💬 Enviar mensagem no onboarding conversacional com SSE (streaming)
-   * A IA processa, extrai informações e configura automaticamente
-   * Retorna Server-Sent Events em tempo real
-   */
   @UseGuards(JwtAuthGuard, WorkspaceGuard, ThrottlerGuard)
   @Throttle({ default: { limit: 20, ttl: 60000 } })
   @Post('onboarding/:workspaceId/chat/stream')
@@ -592,14 +321,14 @@ export class KloelController {
     @Param('workspaceId') workspaceId: string,
     @Body() dto: OnboardingChatDto,
     @Res() res: Response,
-  ): Promise<void> {
-    const validatedWorkspaceId = resolveWorkspaceId(req, workspaceId);
-    await this.conversationalOnboarding.chat(validatedWorkspaceId, dto.message, res);
+  ) {
+    await this.conversationalOnboarding.chat(
+      resolveWorkspaceId(req, workspaceId),
+      dto.message,
+      res,
+    );
   }
 
-  /**
-   * 📊 Status do onboarding
-   */
   @UseGuards(JwtAuthGuard, WorkspaceGuard, ThrottlerGuard)
   @Throttle({ default: { limit: 30, ttl: 60000 } })
   @Get('onboarding/:workspaceId/status')
@@ -607,102 +336,43 @@ export class KloelController {
     @Req() req: AuthenticatedRequest,
     @Param('workspaceId') workspaceId: string,
   ) {
-    const validatedWorkspaceId = resolveWorkspaceId(req, workspaceId);
-    return this.conversationalOnboarding.getStatus(validatedWorkspaceId);
+    return this.conversationalOnboarding.getStatus(resolveWorkspaceId(req, workspaceId));
   }
 
-  /**
-   * 📅 Lista follow-ups programados do workspace
-   * Retorna todos os follow-ups agendados, pendentes e executados
-   */
+  // ═══ FOLLOWUPS ═══
+
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Get('followups')
   async listFollowups(@Req() req: AuthenticatedRequest) {
-    const workspaceId = resolveWorkspaceId(req);
-    return this.kloelService.listFollowups(workspaceId);
+    return this.kloelService.listFollowups(resolveWorkspaceId(req));
   }
 
-  /**
-   * 📅 Lista follow-ups de um contato específico
-   */
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Get('followups/:contactId')
   async listContactFollowups(
     @Req() req: AuthenticatedRequest,
     @Param('contactId') contactId: string,
   ) {
-    const workspaceId = resolveWorkspaceId(req);
-    return this.kloelService.listFollowups(workspaceId, contactId);
+    return this.kloelService.listFollowups(resolveWorkspaceId(req), contactId);
   }
 
-  // ═══ CHAT THREADS (dashboard persistence) ═══
+  // ═══ THREADS ═══
 
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Get('threads')
-  async listThreads(@Req() req: AuthenticatedRequest) {
-    try {
-      const workspaceId = resolveWorkspaceId(req);
-      await this.prisma.chatThread.deleteMany({
-        where: {
-          workspaceId,
-          messages: { none: {} },
-        },
-      });
-
-      const threads = await this.prisma.chatThread.findMany({
-        where: {
-          workspaceId,
-          messages: { some: {} },
-        },
-        orderBy: { updatedAt: 'desc' },
-        take: 50,
-        select: {
-          id: true,
-          title: true,
-          updatedAt: true,
-          messages: {
-            take: 5,
-            orderBy: { createdAt: 'desc' },
-            select: { content: true, role: true },
-          },
-        },
-      });
-
-      return threads
-        .filter((thread) =>
-          thread.messages.some((message) => String(message?.content || '').trim().length > 0),
-        )
-        .map((thread) => ({
-          id: thread.id,
-          title: String(thread.title || '').trim() || 'Nova conversa',
-          updatedAt: thread.updatedAt,
-          lastMessagePreview:
-            thread.messages.find((message) => String(message?.content || '').trim().length > 0)
-              ?.content || '',
-        }));
-    } catch {
-      return [];
-    }
+  async listChatThreads(@Req() req: AuthenticatedRequest) {
+    return listThreads({ prisma: this.prisma }, resolveWorkspaceId(req));
   }
 
-  /** Create thread. */
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post('threads')
-  async createThread(
+  async createChatThread(
     @Req() req: AuthenticatedRequest,
     @Body() dto: { title?: string; idempotencyKey?: string },
   ) {
-    try {
-      const workspaceId = resolveWorkspaceId(req);
-      return await this.prisma.chatThread.create({
-        data: { workspaceId, title: dto.title || 'Nova conversa' },
-      });
-    } catch {
-      return { id: `local_${Date.now()}`, title: dto.title || 'Nova conversa' };
-    }
+    return createThread({ prisma: this.prisma }, resolveWorkspaceId(req), dto);
   }
 
-  /** Search threads. */
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Get('threads/search')
   @Get('conversations/search')
@@ -711,162 +381,34 @@ export class KloelController {
     @Query('q') q: string,
     @Query('limit') limit?: string,
   ) {
-    const workspaceId = resolveWorkspaceId(req);
-    const normalizedQuery = String(q || '')
-      .replace(S_RE, ' ')
-      .trim();
-    const safeLimit = Math.min(Math.max(Number(limit) || 20, 1), 20);
-
-    if (!workspaceId || normalizedQuery.length < 2) {
-      return [];
-    }
-
-    try {
-      const rows = await this.prisma.$queryRaw<ThreadSearchRow[]>(Prisma.sql`
-        WITH search_input AS (
-          SELECT websearch_to_tsquery('portuguese', ${normalizedQuery}) AS query
-        ),
-        scored_matches AS (
-          SELECT
-            thread.id,
-            COALESCE(NULLIF(BTRIM(thread.title), ''), 'Nova conversa') AS title,
-            thread."updatedAt",
-            message.content AS "matchedContent",
-            message."createdAt" AS "messageCreatedAt",
-            ts_headline(
-              'portuguese',
-              COALESCE(NULLIF(BTRIM(message.content), ''), COALESCE(NULLIF(BTRIM(thread.title), ''), 'Nova conversa')),
-              search_input.query,
-              'StartSel=<mark>, StopSel=</mark>, MaxWords=22, MinWords=8, ShortWord=2, MaxFragments=1, FragmentDelimiter= … '
-            ) AS "contentPreview",
-            ts_headline(
-              'portuguese',
-              COALESCE(NULLIF(BTRIM(thread.title), ''), 'Nova conversa'),
-              search_input.query,
-              'StartSel=<mark>, StopSel=</mark>, MaxWords=8, MinWords=2, ShortWord=2, MaxFragments=1'
-            ) AS "titlePreview",
-            ts_rank_cd(
-              setweight(to_tsvector('portuguese', COALESCE(NULLIF(BTRIM(thread.title), ''), '')), 'A') ||
-              setweight(to_tsvector('portuguese', COALESCE(message.content, '')), 'B'),
-              search_input.query
-            ) AS rank
-          FROM "ChatThread" AS thread
-          INNER JOIN "ChatMessage" AS message
-            ON message."threadId" = thread.id
-          CROSS JOIN search_input
-          WHERE thread."workspaceId" = ${workspaceId}
-            AND (
-              setweight(to_tsvector('portuguese', COALESCE(NULLIF(BTRIM(thread.title), ''), '')), 'A') ||
-              setweight(to_tsvector('portuguese', COALESCE(message.content, '')), 'B')
-            ) @@ search_input.query
-        ),
-        ranked_matches AS (
-          SELECT
-            *,
-            ROW_NUMBER() OVER (
-              PARTITION BY id
-              ORDER BY rank DESC, "messageCreatedAt" DESC
-            ) AS row_num
-          FROM scored_matches
-        )
-        SELECT
-          id,
-          title,
-          "updatedAt",
-          "matchedContent",
-          "contentPreview",
-          "titlePreview",
-          rank
-        FROM ranked_matches
-        WHERE row_num = 1
-        ORDER BY rank DESC, "updatedAt" DESC
-        LIMIT ${safeLimit}
-      `);
-
-      return this.mapThreadSearchRows(rows, normalizedQuery);
-    } catch {
-      return this.searchThreadsContainsFallback(workspaceId, normalizedQuery, safeLimit);
-    }
+    return this.threadSearchService.search(resolveWorkspaceId(req), q, limit);
   }
 
-  /** Update thread. */
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Put('threads/:id')
-  async updateThread(
+  async updateChatThread(
     @Param('id') id: string,
     @Body() dto: { title: string },
     @Req() req: AuthenticatedRequest,
   ) {
-    try {
-      const workspaceId = resolveWorkspaceId(req);
-      await this.prisma.chatThread.findFirstOrThrow({
-        where: { id, workspaceId },
-        select: { id: true },
-      });
-      await this.prisma.chatThread.updateMany({
-        where: { id, workspaceId },
-        data: { title: dto.title },
-      });
-      return await this.prisma.chatThread.findFirst({
-        where: { id, workspaceId },
-      });
-    } catch {
-      return { success: false };
-    }
+    return updateThread({ prisma: this.prisma }, id, dto.title, resolveWorkspaceId(req));
   }
 
-  /** Delete thread. */
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Delete('threads/:id')
-  async deleteThread(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
-    try {
-      const workspaceId = resolveWorkspaceId(req);
-      await this.prisma.chatThread.findFirstOrThrow({
-        where: { id, workspaceId },
-        select: { id: true },
-      });
-      await this.prisma.chatThread.deleteMany({ where: { id, workspaceId } });
-      return { success: true };
-    } catch {
-      return { success: false };
-    }
+  async deleteChatThread(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
+    return deleteThread({ prisma: this.prisma }, id, resolveWorkspaceId(req));
   }
 
-  /** Get thread messages. */
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Get('threads/:id/messages')
-  async getThreadMessages(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
-    const workspaceId = resolveWorkspaceId(req);
-    const thread = await this.prisma.chatThread.findFirst({
-      where: { id, workspaceId },
-      select: { id: true },
-    });
-
-    if (!thread) {
-      throw new NotFoundException('Conversa não encontrada');
-    }
-
-    const messages = await this.prisma.chatMessage.findMany({
-      where: { threadId: id },
-      select: {
-        id: true,
-        threadId: true,
-        role: true,
-        content: true,
-        metadata: true,
-        createdAt: true,
-      },
-      orderBy: { createdAt: 'asc' },
-      take: 200,
-    });
-
-    return messages.filter((message) => String(message.content || '').trim().length > 0);
+  async getChatThreadMessages(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
+    return getThreadMessages({ prisma: this.prisma }, id, resolveWorkspaceId(req));
   }
 
-  /** Add thread message. */
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post('threads/:id/messages')
-  async addThreadMessage(
+  async addChatThreadMessage(
     @Param('id') id: string,
     @Body()
     dto: {
@@ -877,149 +419,29 @@ export class KloelController {
     },
     @Req() req: AuthenticatedRequest,
   ) {
-    try {
-      const workspaceId = resolveWorkspaceId(req);
-      await this.prisma.chatThread.findFirstOrThrow({
-        where: { id, workspaceId },
-        select: { id: true },
-      });
-      const msg = await this.prisma.chatMessage.create({
-        data: {
-          threadId: id,
-          role: dto.role,
-          content: dto.content,
-          metadata: dto.metadata as Prisma.InputJsonValue | undefined,
-        },
-      });
-      await this.prisma.chatThread.updateMany({
-        where: { id, workspaceId },
-        data: { updatedAt: new Date() },
-      });
-      return msg;
-    } catch {
-      return { success: false };
-    }
+    return addThreadMessage({ prisma: this.prisma }, id, dto, resolveWorkspaceId(req));
   }
 
-  /** Update thread message. */
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Put('messages/:id')
-  async updateThreadMessage(
+  async updateChatThreadMessage(
     @Param('id') id: string,
     @Body() dto: { content?: string },
     @Req() req: AuthenticatedRequest,
   ) {
-    const content = String(dto?.content || '').trim();
-    if (!content) {
-      throw new BadRequestException('Conteúdo da mensagem é obrigatório.');
-    }
-
-    const workspaceId = resolveWorkspaceId(req);
-    const existing = await this.prisma.chatMessage.findFirst({
-      where: {
-        id,
-        thread: { workspaceId },
-      },
-      select: {
-        id: true,
-        threadId: true,
-        role: true,
-        metadata: true,
-        createdAt: true,
-      },
-    });
-
-    if (!existing) {
-      throw new NotFoundException('Mensagem não encontrada.');
-    }
-
-    if (existing.role !== 'user') {
-      throw new BadRequestException('Somente mensagens do usuário podem ser editadas.');
-    }
-
-    const nextMetadata = {
-      ...this.normalizeMessageMetadata(existing.metadata),
-      editedAt: new Date().toISOString(),
-    };
-
-    const [message] = await this.prisma.$transaction([
-      this.prisma.chatMessage.update({
-        where: { id },
-        data: {
-          content,
-          metadata: nextMetadata,
-        },
-      }),
-      this.prisma.chatThread.updateMany({
-        where: { id: existing.threadId, workspaceId },
-        data: { updatedAt: new Date() },
-      }),
-    ]);
-
-    return message;
+    return updateThreadMessage({ prisma: this.prisma }, id, dto, resolveWorkspaceId(req));
   }
 
-  /** Update message feedback. */
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post('messages/:id/feedback')
-  async updateMessageFeedback(
+  async updateChatMessageFeedback(
     @Param('id') id: string,
     @Body() dto: { type?: 'positive' | 'negative' | null },
     @Req() req: AuthenticatedRequest,
   ) {
-    const type =
-      dto?.type === 'positive' || dto?.type === 'negative'
-        ? dto.type
-        : dto?.type === null
-          ? null
-          : undefined;
-
-    if (type === undefined) {
-      throw new BadRequestException('Feedback inválido. Use positive, negative ou null.');
-    }
-
-    const workspaceId = resolveWorkspaceId(req);
-    const existing = await this.prisma.chatMessage.findFirst({
-      where: {
-        id,
-        thread: { workspaceId },
-      },
-      select: {
-        id: true,
-        threadId: true,
-        role: true,
-        metadata: true,
-        createdAt: true,
-      },
-    });
-
-    if (!existing) {
-      throw new NotFoundException('Mensagem não encontrada.');
-    }
-
-    if (existing.role !== 'assistant') {
-      throw new BadRequestException('Feedback só pode ser salvo em mensagens do assistente.');
-    }
-
-    const nextMetadata = {
-      ...this.normalizeMessageMetadata(existing.metadata),
-      feedback: type
-        ? {
-            type,
-            updatedAt: new Date().toISOString(),
-          }
-        : null,
-    };
-
-    return this.prisma.chatMessage.update({
-      where: { id },
-      data: {
-        metadata: nextMetadata,
-      },
-    });
+    return updateMessageFeedback({ prisma: this.prisma }, id, dto, resolveWorkspaceId(req));
   }
 
-  /** Regenerate conversation message. */
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post('conversations/:id/regenerate')
   async regenerateConversationMessage(
@@ -1028,10 +450,7 @@ export class KloelController {
     @Req() req: AuthenticatedRequest,
   ) {
     const messageId = String(dto?.messageId || '').trim();
-    if (!messageId) {
-      throw new BadRequestException('messageId é obrigatório.');
-    }
-
+    if (!messageId) throw new BadRequestException('messageId é obrigatório.');
     return this.kloelService.regenerateThreadAssistantResponse({
       workspaceId: resolveWorkspaceId(req),
       conversationId: id,
@@ -1041,78 +460,22 @@ export class KloelController {
     });
   }
 
-  // ================================================
-  // LGPD / GDPR COMPLIANCE
-  // ================================================
+  // ═══ LGPD ═══
 
-  /**
-   * Solicitar exclusao de dados pessoais (LGPD Art. 18)
-   * Anonimiza contatos e mensagens do workspace
-   */
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post('data/request-deletion')
-  async requestDataDeletion(@Request() req: AuthenticatedRequest) {
-    const workspaceId = req.workspaceId || req.user?.workspaceId;
-    const agentId = req.user?.sub;
-    // Idempotent: LGPD deletion is safe to replay (updateMany + upsert audit log)
-
-    // Anonymize contacts
-    await this.prisma.contact.updateMany({
-      where: { workspaceId },
-      data: { name: 'DELETED', email: null, phone: 'DELETED', avatarUrl: null },
-    });
-
-    // Anonymize messages content (keep structure for audit)
-    await this.prisma.message.updateMany({
-      where: { workspaceId },
-      data: { content: '[DADOS REMOVIDOS POR SOLICITACAO LGPD]' },
-    });
-
-    // Log the request
-    await this.prisma.auditLog.create({
-      data: {
-        workspaceId,
-        action: 'lgpd_data_deletion',
-        resource: 'workspace',
-        resourceId: workspaceId,
-        agentId,
-        details: { requestedAt: new Date().toISOString() },
-      },
-    });
-
-    return {
-      success: true,
-      message: 'Dados pessoais anonimizados conforme LGPD',
-    };
+  async handleDataDeletion(@Request() req: AuthenticatedRequest) {
+    await requestDataDeletion(
+      { prisma: this.prisma },
+      req.workspaceId || req.user?.workspaceId,
+      req.user?.sub,
+    );
+    return { success: true, message: 'Dados pessoais anonimizados conforme LGPD' };
   }
 
-  /**
-   * Exportar dados pessoais (LGPD portabilidade - Art. 18)
-   * Retorna contatos, mensagens e vendas do workspace
-   */
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Get('data/export')
-  async exportData(@Request() req: AuthenticatedRequest) {
-    const workspaceId = req.workspaceId || req.user?.workspaceId;
-
-    const contacts = await this.prisma.contact.findMany({
-      where: { workspaceId },
-      select: { name: true, email: true, phone: true, createdAt: true },
-      take: 10000,
-    });
-
-    const messages = await this.prisma.message.findMany({
-      where: { workspaceId },
-      select: { content: true, direction: true, createdAt: true },
-      take: 10000,
-    });
-
-    const sales = await this.prisma.kloelSale.findMany({
-      where: { workspaceId },
-      select: { amount: true, status: true, createdAt: true },
-      take: 10000,
-    });
-
-    return { contacts, messages, sales, exportedAt: new Date().toISOString() };
+  async handleDataExport(@Request() req: AuthenticatedRequest) {
+    return exportData({ prisma: this.prisma }, req.workspaceId || req.user?.workspaceId);
   }
 }

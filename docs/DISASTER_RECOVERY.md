@@ -2,12 +2,12 @@
 
 ## RPO / RTO Targets
 
-| Store            | RPO (Recovery Point Objective) | RTO (Recovery Time Objective) |
-| ---------------- | ------------------------------ | ----------------------------- |
-| PostgreSQL       | 24 hours (daily backup)        | 4 hours                       |
-| Redis            | 1 hour (hourly snapshot)       | 30 minutes                    |
-| S3 Assets        | 0 (versioning, continuous)     | 1 hour                        |
-| Application Code | 0 (Git, immutable deploys)     | 30 minutes                    |
+| Store            | RPO (Recovery Point Objective)                   | RTO (Recovery Time Objective) |
+| ---------------- | ------------------------------------------------ | ----------------------------- |
+| PostgreSQL       | 1 hour (hourly pg_dump + daily Railway snapshot) | 4 hours                       |
+| Redis            | 1 hour (hourly snapshot + AOF persistence)       | 30 minutes                    |
+| S3 Assets        | 0 (versioning, continuous)                       | 1 hour                        |
+| Application Code | 0 (Git, immutable deploys)                       | 30 minutes                    |
 
 ---
 
@@ -326,9 +326,10 @@ Complete this for every P1 and P2 incident:
 
 ## Regular DR Testing Schedule
 
-| Test                        | Frequency     | Last Run   | Next Run   |
-| --------------------------- | ------------- | ---------- | ---------- |
-| Database restore to staging | Monthly       | 2026-04-01 | 2026-05-01 |
-| Redis failover simulation   | Quarterly     | 2026-04-01 | 2026-07-01 |
-| Full rebuild from scratch   | Quarterly     | 2026-04-01 | 2026-07-01 |
-| Tabletop exercise           | Semi-annually | 2026-04-01 | 2026-10-01 |
+| Test                                       | Frequency     | Last Run   | Next Run   |
+| ------------------------------------------ | ------------- | ---------- | ---------- |
+| Backup verification (pg_dump restore test) | Weekly        | —          | 2026-05-01 |
+| Database restore to staging                | Weekly        | 2026-04-01 | 2026-05-01 |
+| Redis failover simulation                  | Quarterly     | 2026-04-01 | 2026-07-01 |
+| Full rebuild from scratch                  | Quarterly     | 2026-04-01 | 2026-07-01 |
+| Tabletop exercise                          | Semi-annually | 2026-04-01 | 2026-10-01 |

@@ -1,5 +1,8 @@
 name: Legacy Deploy (disabled)
 
+permissions:
+  contents: read
+
 on:
   workflow_dispatch:
 

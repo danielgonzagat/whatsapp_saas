@@ -19,7 +19,7 @@ function readPeriod(args: Record<string, unknown>): OverviewPeriod {
 }
 
 function asRecord<T>(value: T): Record<string, unknown> {
-  return value as unknown as Record<string, unknown>;
+  return value as Record<string, unknown>;
 }
 
 /** Dashboard overview tool. */

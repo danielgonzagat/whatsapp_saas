@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { NextRequest } from 'next/server';
+import { NextRequest } from 'next/server';
 
 vi.mock('../_lib/backend-url', () => ({
   getBackendCandidateUrls: () => ['https://backend.example.com'],
@@ -13,18 +13,18 @@ function createRequest(options?: {
   body?: string;
 }) {
   const headers = new Headers(options?.headers);
-  const cookies = new Map(Object.entries(options?.cookies || {}));
+  const cookie = Object.entries(options?.cookies || {})
+    .map(([name, value]) => `${name}=${value}`)
+    .join('; ');
+  if (cookie) {
+    headers.set('cookie', cookie);
+  }
 
-  return {
+  return new NextRequest('https://app.kloel.com/api/whatsapp-api/proxy', {
+    method: 'POST',
     headers,
-    cookies: {
-      get: (name: string) => {
-        const value = cookies.get(name);
-        return value ? { name, value } : undefined;
-      },
-    },
-    text: vi.fn(async () => options?.body || ''),
-  } as unknown as NextRequest;
+    body: options?.body || '',
+  });
 }
 
 describe('proxyWhatsAppRequest', () => {

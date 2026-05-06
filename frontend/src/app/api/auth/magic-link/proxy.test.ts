@@ -1,3 +1,4 @@
+import { type NextRequest } from 'next/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
@@ -22,10 +23,16 @@ import { POST as requestMagicLink } from './request/route';
 import { POST as verifyMagicLink } from './verify/route';
 
 function createRequest(body: unknown, forwardedFor = '198.51.100.5') {
-  return {
-    headers: new Headers({ 'x-forwarded-for': forwardedFor, host: 'auth.kloel.com' }),
-    json: vi.fn(async () => body),
-  } as any;
+  return Object.assign(
+    {
+      method: 'POST',
+      url: 'https://auth.kloel.com/api/auth/magic-link',
+      headers: new Headers({ 'x-forwarded-for': forwardedFor, host: 'auth.kloel.com' }),
+    } as NextRequest,
+    {
+      json: vi.fn(async () => body),
+    },
+  );
 }
 
 describe('magic-link proxy routes', () => {

@@ -12,11 +12,13 @@ export class ListProductsQueryDto {
   /** Status property. */
   @IsOptional()
   @IsString()
+  @MaxLength(80)
   status?: string;
 
   /** Workspace id property. */
   @IsOptional()
   @IsString()
+  @MaxLength(255)
   workspaceId?: string;
 
   /** Skip property. */

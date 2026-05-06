@@ -3,7 +3,7 @@ import type { PrismaService } from '../../../prisma/prisma.service';
 import { asProviderSettings } from '../../../whatsapp/provider-settings.types';
 
 /** Admin account agent shape. */
-export interface AdminAccountAgent {
+interface AdminAccountAgent {
   /** Id property. */
   id: string;
   /** Name property. */
@@ -23,7 +23,7 @@ export interface AdminAccountAgent {
 }
 
 /** Admin account kyc document shape. */
-export interface AdminAccountKycDocument {
+interface AdminAccountKycDocument {
   /** Id property. */
   id: string;
   /** Type property. */

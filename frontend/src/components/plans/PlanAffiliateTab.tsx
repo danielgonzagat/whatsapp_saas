@@ -4,14 +4,15 @@ import { kloelT } from '@/lib/i18n/t';
 import { apiFetch } from '@/lib/api';
 import { useEffect, useRef, useState } from 'react';
 import { mutate } from 'swr';
+import { colors } from '@/lib/design-tokens';
 
 const FONT_BODY = "var(--font-sora), 'Sora', sans-serif";
 const FONT_MONO = "var(--font-jetbrains), 'JetBrains Mono', monospace";
-const EMBER = '#E85D30';
+const EMBER = 'colors.ember.primary';
 
 const card: React.CSSProperties = {
-  background: '#111113',
-  border: '1px solid #222226',
+  background: 'colors.background.surface',
+  border: '1px solid colors.border.space',
   borderRadius: '6px',
   padding: '20px',
 };
@@ -101,7 +102,14 @@ export function PlanAffiliateTab({
 
   if (loading) {
     return (
-      <div style={{ padding: 40, textAlign: 'center', color: '#6E6E73', fontFamily: FONT_BODY }}>
+      <div
+        style={{
+          padding: 40,
+          textAlign: 'center',
+          color: 'colors.text.muted',
+          fontFamily: FONT_BODY,
+        }}
+      >
         {kloelT(`Carregando...`)}
       </div>
     );
@@ -115,7 +123,7 @@ export function PlanAffiliateTab({
           fontFamily: FONT_BODY,
           fontSize: '16px',
           fontWeight: 600,
-          color: '#E0DDD8',
+          color: 'colors.text.silver',
           margin: 0,
         }}
       >
@@ -126,10 +134,24 @@ export function PlanAffiliateTab({
       <div style={card}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
-            <div style={{ fontSize: 14, fontWeight: 600, color: '#E0DDD8', fontFamily: FONT_BODY }}>
+            <div
+              style={{
+                fontSize: 14,
+                fontWeight: 600,
+                color: 'colors.text.silver',
+                fontFamily: FONT_BODY,
+              }}
+            >
               {kloelT(`Aceitar afiliados`)}
             </div>
-            <div style={{ fontSize: 11, color: '#6E6E73', fontFamily: FONT_BODY, marginTop: 4 }}>
+            <div
+              style={{
+                fontSize: 11,
+                color: 'colors.text.muted',
+                fontFamily: FONT_BODY,
+                marginTop: 4,
+              }}
+            >
               {kloelT(`Permitir que outros vendam este produto e recebam comissao`)}
             </div>
           </div>
@@ -140,7 +162,7 @@ export function PlanAffiliateTab({
               width: 44,
               height: 24,
               borderRadius: 12,
-              background: enabled ? '#10B981' : '#222226',
+              background: enabled ? '#10B981' : 'colors.border.space',
               border: 'none',
               position: 'relative',
               cursor: 'pointer',
@@ -172,7 +194,7 @@ export function PlanAffiliateTab({
               style={{
                 fontSize: 14,
                 fontWeight: 600,
-                color: '#E0DDD8',
+                color: 'colors.text.silver',
                 fontFamily: FONT_BODY,
                 marginBottom: 16,
               }}
@@ -186,7 +208,7 @@ export function PlanAffiliateTab({
                     display: 'block',
                     fontSize: 10,
                     fontWeight: 600,
-                    color: '#3A3A3F',
+                    color: 'colors.text.dim',
                     textTransform: 'uppercase' as const,
                     letterSpacing: '.08em',
                     marginBottom: 6,
@@ -207,10 +229,10 @@ export function PlanAffiliateTab({
                   style={{
                     width: '100%',
                     padding: '10px 14px',
-                    background: '#19191C',
-                    border: '1px solid #222226',
+                    background: 'colors.background.elevated',
+                    border: '1px solid colors.border.space',
                     borderRadius: 6,
-                    color: '#E0DDD8',
+                    color: 'colors.text.silver',
                     fontSize: 14,
                     fontFamily: FONT_MONO,
                     outline: 'none',
@@ -223,7 +245,7 @@ export function PlanAffiliateTab({
                     display: 'block',
                     fontSize: 10,
                     fontWeight: 600,
-                    color: '#3A3A3F',
+                    color: 'colors.text.dim',
                     textTransform: 'uppercase' as const,
                     letterSpacing: '.08em',
                     marginBottom: 6,
@@ -244,10 +266,10 @@ export function PlanAffiliateTab({
                   style={{
                     width: '100%',
                     padding: '10px 14px',
-                    background: '#19191C',
-                    border: '1px solid #222226',
+                    background: 'colors.background.elevated',
+                    border: '1px solid colors.border.space',
                     borderRadius: 6,
-                    color: '#E0DDD8',
+                    color: 'colors.text.silver',
                     fontSize: 14,
                     fontFamily: FONT_MONO,
                     outline: 'none',
@@ -260,10 +282,10 @@ export function PlanAffiliateTab({
                 style={{
                   marginTop: 16,
                   padding: 12,
-                  background: '#19191C',
+                  background: 'colors.background.elevated',
                   borderRadius: 6,
                   fontSize: 11,
-                  color: '#6E6E73',
+                  color: 'colors.text.muted',
                   fontFamily: FONT_BODY,
                 }}
               >
@@ -279,7 +301,7 @@ export function PlanAffiliateTab({
               style={{
                 fontSize: 14,
                 fontWeight: 600,
-                color: '#E0DDD8',
+                color: 'colors.text.silver',
                 fontFamily: FONT_BODY,
                 marginBottom: 16,
               }}
@@ -295,10 +317,14 @@ export function PlanAffiliateTab({
                   style={{
                     flex: 1,
                     padding: '12px',
-                    background: approvalMode === mode ? 'rgba(232,93,48,.08)' : '#19191C',
-                    border: approvalMode === mode ? `1px solid ${EMBER}` : '1px solid #222226',
+                    background:
+                      approvalMode === mode ? 'rgba(232,93,48,.08)' : 'colors.background.elevated',
+                    border:
+                      approvalMode === mode
+                        ? `1px solid ${EMBER}`
+                        : '1px solid colors.border.space',
                     borderRadius: 6,
-                    color: approvalMode === mode ? EMBER : '#6E6E73',
+                    color: approvalMode === mode ? EMBER : 'colors.text.muted',
                     fontSize: 12,
                     fontWeight: 600,
                     cursor: 'pointer',
@@ -321,10 +347,10 @@ export function PlanAffiliateTab({
         style={{
           width: '100%',
           padding: '14px',
-          background: saving ? '#222226' : EMBER,
+          background: saving ? 'colors.border.space' : EMBER,
           border: 'none',
           borderRadius: 6,
-          color: '#0A0A0C',
+          color: 'colors.background.void',
           fontSize: 14,
           fontWeight: 700,
           cursor: saving ? 'not-allowed' : 'pointer',

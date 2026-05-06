@@ -14,9 +14,10 @@ async function expectAuthenticatedShell(page: Page, options?: { navigate?: boole
   });
   await expect(page.getByRole('button', { name: /^Entrar$/ })).toHaveCount(0);
   await expect(page.getByRole('button', { name: /^Cadastrar-se$/ })).toHaveCount(0);
-  await expect(page.getByText(/Dashboard|Bem-vindo|Olá/i).first()).toBeVisible({
-    timeout: 15000,
-  });
+  await expect(page.getByTestId('home-dashboard-root')).toBeVisible({ timeout: 15000 });
+  await expect(
+    page.getByText('Operação, receita e conversas em um único plano de controle.'),
+  ).toBeVisible({ timeout: 15000 });
 }
 
 test.describe('Critical Flow: Login -> Create Flow -> Execute', () => {

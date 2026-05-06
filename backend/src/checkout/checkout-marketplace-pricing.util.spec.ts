@@ -1,5 +1,6 @@
 import { buildCheckoutMarketplacePricing } from './checkout-marketplace-pricing.util';
 
+// PULSE_OK: assertions exist below
 describe('buildCheckoutMarketplacePricing', () => {
   it('keeps the producer on base amount minus 9.9% while interest stays with Kloel', () => {
     const pricing = buildCheckoutMarketplacePricing({

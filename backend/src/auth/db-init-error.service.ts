@@ -11,6 +11,7 @@ import { Prisma } from '@prisma/client';
  * - PrismaClientInitializationError: Connection pool exhaustion or startup errors
  */
 export class DbInitErrorService {
+  /** Throw friendly db init error. */
   static throwFriendlyDbInitError(error: unknown): never {
     const message = error instanceof Error ? error.message : '';
 

@@ -68,7 +68,7 @@ function mockReducedMotion(matches = true) {
         if (!listener) {
           return;
         }
-        listeners.add(listener as unknown as EventListener);
+        listeners.add(listener as EventListener);
       },
     ),
     removeListener: vi.fn(
@@ -76,7 +76,7 @@ function mockReducedMotion(matches = true) {
         if (!listener) {
           return;
         }
-        listeners.delete(listener as unknown as EventListener);
+        listeners.delete(listener as EventListener);
       },
     ),
     dispatchEvent: vi.fn((event: Event) => {

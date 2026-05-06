@@ -1,3 +1,4 @@
+import { colors } from '@/lib/design-tokens';
 /* ═══════════════════════════════════════════
    KLOEL CANVAS — Format & Category Data
    Single source of truth for all canvas formats
@@ -68,9 +69,9 @@ export const HOME_PILLS: PillItem[] = [
   { id: 'tt', l: 'TikTok', c: ['#FE2C55', '#010101'] },
   { id: 'tw', l: 'Twitter/X', c: ['#1DA1F2', '#14171A'] },
   { id: 'wa', l: 'WhatsApp', c: ['#25D366', '#128C7E'] },
-  { id: 'ad', l: 'Criativo', c: ['#E85D30', '#F2784B'] },
+  { id: 'ad', l: 'Criativo', c: ['colors.ember.primary', '#F2784B'] },
   { id: 'em', l: 'E-mail', c: ['#8B5CF6', '#A78BFA'] },
-  { id: 'm', l: 'Mais', c: ['#6E6E73', '#3A3A3F'] },
+  { id: 'm', l: 'Mais', c: ['colors.text.muted', 'colors.text.dim'] },
 ];
 
 /* ═══ SOCIAL PLATFORMS ═══ */
@@ -368,7 +369,7 @@ export const FORMAT_DATA: Record<string, FormatItem[]> = {
       l: 'Video quadrado',
       s: '1080x1080',
       m: 'square',
-      c: ['#6E6E73', '#9CA3AF'],
+      c: ['colors.text.muted', '#9CA3AF'],
       w: 1080,
       h: 1080,
     },
@@ -390,7 +391,7 @@ export const FORMAT_DATA: Record<string, FormatItem[]> = {
       l: 'Criativo Feed',
       s: '1080x1080',
       m: 'square',
-      c: ['#E85D30', '#F2784B'],
+      c: ['colors.ember.primary', '#F2784B'],
       w: 1080,
       h: 1080,
     },
@@ -398,7 +399,7 @@ export const FORMAT_DATA: Record<string, FormatItem[]> = {
       l: 'Criativo Story',
       s: '1080x1920',
       m: 'phone-story',
-      c: ['#E85D30', '#F59E0B'],
+      c: ['colors.ember.primary', '#F59E0B'],
       w: 1080,
       h: 1920,
     },
@@ -406,7 +407,7 @@ export const FORMAT_DATA: Record<string, FormatItem[]> = {
       l: 'Banner Display',
       s: '1200x628',
       m: 'desktop',
-      c: ['#E85D30', '#F2784B'],
+      c: ['colors.ember.primary', '#F2784B'],
       w: 1200,
       h: 628,
     },
@@ -507,7 +508,7 @@ export const ELEMENT_CATEGORIES = [
 /* ═══ EDITOR TOOLS ═══ */
 export const EDITOR_TOOLS = [
   { l: 'Enfeitar', c: ['#06B6D4', '#22D3EE'] as [string, string] },
-  { l: 'Redimensionar', c: ['#E85D30', '#F2784B'] as [string, string] },
+  { l: 'Redimensionar', c: ['colors.ember.primary', '#F2784B'] as [string, string] },
   { l: 'Fundo Magico', c: ['#8B5CF6', '#A78BFA'] as [string, string] },
   { l: 'Tradutor', c: ['#3B82F6', '#60A5FA'] as [string, string] },
   { l: 'Criar em lote', c: ['#10B981', '#34D399'] as [string, string] },

@@ -14,6 +14,7 @@ import {
 import { Check, Link, Plus, Trash2 } from 'lucide-react';
 import { useState, useId } from 'react';
 import { SettingsInset, SettingsStatusPill, kloelSettingsClass } from './contract';
+import { colors } from '@/lib/design-tokens';
 
 /** Checkout plan shape. */
 export interface CheckoutPlan {
@@ -85,10 +86,10 @@ export function ProductCheckoutPlans({ plans, onPlansChange }: ProductCheckoutPl
   };
 
   return (
-    <div className="mt-4 border-t border-[#19191C] pt-4">
+    <div className="mt-4 border-t border-[colors.background.elevated] pt-4">
       <div className="mb-3 flex items-center gap-2">
-        <Link className="h-4 w-4 text-[#6E6E73]" aria-hidden="true" />
-        <h6 className="text-sm font-medium text-[#E0DDD8]">
+        <Link className="h-4 w-4 text-[colors.text.muted]" aria-hidden="true" />
+        <h6 className="text-sm font-medium text-[colors.text.silver]">
           {kloelT(`Planos do checkout interno`)}
         </h6>
       </div>
@@ -99,12 +100,12 @@ export function ProductCheckoutPlans({ plans, onPlansChange }: ProductCheckoutPl
             <SettingsInset key={plan.id} className="flex items-center justify-between p-3">
               <div className="flex-1">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-[#E0DDD8]">{plan.name}</span>
+                  <span className="text-sm font-medium text-[colors.text.silver]">{plan.name}</span>
                   {plan.isDefault && (
                     <SettingsStatusPill tone="success">{kloelT(`Padrão`)}</SettingsStatusPill>
                   )}
                 </div>
-                <p className="text-xs text-[#6E6E73]">
+                <p className="text-xs text-[colors.text.muted]">
                   {planTypes.find((t) => t.value === plan.type)?.label} · {plan.price}
                 </p>
               </div>
@@ -113,7 +114,7 @@ export function ProductCheckoutPlans({ plans, onPlansChange }: ProductCheckoutPl
                   <button
                     type="button"
                     onClick={() => handleSetDefault(plan.id)}
-                    className="rounded-md p-2 text-[#6E6E73] hover:bg-[#19191C] hover:text-[#7FE2BC]"
+                    className="rounded-md p-2 text-[colors.text.muted] hover:bg-[colors.background.elevated] hover:text-[#7FE2BC]"
                     title={kloelT(`Definir como padrão`)}
                   >
                     <Check className="h-4 w-4" aria-hidden="true" />
@@ -122,7 +123,7 @@ export function ProductCheckoutPlans({ plans, onPlansChange }: ProductCheckoutPl
                 <button
                   type="button"
                   onClick={() => handleRemovePlan(plan.id)}
-                  className="rounded-md p-2 text-[#6E6E73] hover:bg-[#19191C] hover:text-[#E05252]"
+                  className="rounded-md p-2 text-[colors.text.muted] hover:bg-[colors.background.elevated] hover:text-[#E05252]"
                 >
                   <Trash2 className="h-4 w-4" aria-hidden="true" />
                 </button>
@@ -133,8 +134,8 @@ export function ProductCheckoutPlans({ plans, onPlansChange }: ProductCheckoutPl
       )}
 
       {showAddPlan ? (
-        <div className="rounded-md border border-[#19191C] bg-[#0A0A0C] p-4">
-          <h6 className="mb-3 text-sm font-medium text-[#E0DDD8]">
+        <div className="rounded-md border border-[colors.background.elevated] bg-[colors.background.void] p-4">
+          <h6 className="mb-3 text-sm font-medium text-[colors.text.silver]">
             {kloelT(`Novo plano do checkout`)}
           </h6>
           <div className="space-y-3">
@@ -188,14 +189,14 @@ export function ProductCheckoutPlans({ plans, onPlansChange }: ProductCheckoutPl
                 aria-label="Definir como plano padrão para este produto"
                 checked={newPlan.isDefault}
                 onChange={(e) => setNewPlan({ ...newPlan, isDefault: e.target.checked })}
-                className="h-4 w-4 rounded border-[#222226] bg-[#111113]"
+                className="h-4 w-4 rounded border-[colors.border.space] bg-[colors.background.surface]"
               />
-              <label htmlFor={`${fid}-defaultPlan`} className="text-sm text-[#E0DDD8]">
+              <label htmlFor={`${fid}-defaultPlan`} className="text-sm text-[colors.text.silver]">
                 {kloelT(`Plano padrão para este produto`)}
               </label>
             </div>
 
-            <p className="text-xs text-[#6E6E73]">
+            <p className="text-xs text-[colors.text.muted]">
               {kloelT(`O checkout e o link público são criados automaticamente pelo próprio Kloel. Aqui você
               organiza apenas a lógica comercial do plano.`)}
             </p>
@@ -221,7 +222,7 @@ export function ProductCheckoutPlans({ plans, onPlansChange }: ProductCheckoutPl
         <Button
           variant="outline"
           onClick={() => setShowAddPlan(true)}
-          className="w-full rounded-md border-dashed border-[#222226] bg-transparent text-sm text-[#6E6E73] hover:bg-[#19191C] hover:text-[#E0DDD8]"
+          className="w-full rounded-md border-dashed border-[colors.border.space] bg-transparent text-sm text-[colors.text.muted] hover:bg-[colors.background.elevated] hover:text-[colors.text.silver]"
         >
           <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
 

@@ -1,52 +1,56 @@
 import * as os from 'node:os';
-import * as fs from 'node:fs';
-import * as path from 'node:path';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
 import { forEachSequential } from '../common/async-sequence';
 import type { JwtPayload } from '../common/interfaces/jwt-payload.interface';
-import { validateNoInternalAccess } from '../common/utils/url-validator';
 import { SystemHealthService } from '../health/system-health.service';
+import { PulseArtifactService } from './pulse-artifact.service';
+import {
+  getBackendHeartbeatEveryMs,
+  getFrontendPruneSweepEveryMs,
+  getLiveKey,
+  getStaleAlertKey,
+  getStaleSweepEveryMs,
+  sendAlertWebhook,
+} from './__companions__/pulse-webhook-config';
 import { PulseFrontendHeartbeatDto } from './dto/frontend-heartbeat.dto';
 import { PulseInternalHeartbeatDto } from './dto/internal-heartbeat.dto';
 import {
   CRITICAL_REGISTRY_REDIS_SLOT,
-  DEFAULT_ARTIFACT_MAX_AGE_MS,
   DEFAULT_BACKEND_TTL_MS,
-  DEFAULT_FRONTEND_PRUNE_SWEEP_MS,
   DEFAULT_FRONTEND_TTL_MS,
-  DEFAULT_HEARTBEAT_INTERVAL_MS,
-  DEFAULT_STALE_SWEEP_MS,
   DEFAULT_WORKER_TTL_MS,
   FRONTEND_REGISTRY_REDIS_SLOT,
   FRONTEND_RETENTION_MS,
   INCIDENTS_REDIS_SLOT,
   INCIDENT_LIMIT,
   REGISTRY_REDIS_SLOT,
-  type PulseAdviceLevel,
-  type PulseArtifactPayload,
   type PulseHeartbeatRecord,
   type PulseIncident,
   type PulseOrganismNode,
   type PulseOrganismRole,
   type PulseOrganismStatus,
 } from './pulse.service.contract';
-import { compactText, safeJsonParse, toOrganismStatus } from './pulse.service.utils';
+import {
+  buildOrganismAdvice,
+  compactText,
+  safeJsonParse,
+  toOrganismStatus,
+} from './pulse.service.utils';
+/** Pulse service. */
 @Injectable()
 export class PulseService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(PulseService.name);
   private readonly captureStartupHeartbeatTask = () => this.captureBackendHeartbeat('startup');
   private readonly captureIntervalHeartbeatTask = () => this.captureBackendHeartbeat('interval');
-  private readonly detectCriticalStaleNodesTask = () => this.detectStaleNodes();
-  private readonly pruneExpiredFrontendNodesTask = () => this.pruneExpiredFrontendNodes();
   private readonly emitIntervalHeartbeat = () =>
     this.runBackgroundTask('backend heartbeat interval', this.captureIntervalHeartbeatTask);
   private readonly emitCriticalStaleSweep = () =>
-    this.runBackgroundTask('critical stale sweep', this.detectCriticalStaleNodesTask);
+    this.runBackgroundTask('critical stale sweep', () => this.detectStaleNodes());
   private readonly emitFrontendPrune = () =>
-    this.runBackgroundTask('frontend stale prune', this.pruneExpiredFrontendNodesTask);
+    this.runBackgroundTask('frontend stale prune', () => this.pruneExpiredFrontendNodes());
   private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
   private staleSweepTimer: ReturnType<typeof setInterval> | null = null;
   private frontendPruneTimer: ReturnType<typeof setInterval> | null = null;
@@ -54,17 +58,18 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
     @InjectRedis() private readonly redis: Redis,
     private readonly systemHealth: SystemHealthService,
     private readonly config: ConfigService,
+    private readonly artifacts: PulseArtifactService,
   ) {}
   /** On module init. */
   onModuleInit() {
     if (process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID) {
       return;
     }
-    const everyMs = this.getBackendHeartbeatEveryMs();
-    const frontendPruneEveryMs = this.getFrontendPruneSweepEveryMs();
+    const everyMs = getBackendHeartbeatEveryMs();
+    const frontendPruneEveryMs = getFrontendPruneSweepEveryMs();
     this.runBackgroundTask('backend heartbeat startup', this.captureStartupHeartbeatTask);
     this.heartbeatTimer = setInterval(this.emitIntervalHeartbeat, everyMs);
-    this.staleSweepTimer = setInterval(this.emitCriticalStaleSweep, this.getStaleSweepEveryMs());
+    this.staleSweepTimer = setInterval(this.emitCriticalStaleSweep, getStaleSweepEveryMs());
     this.frontendPruneTimer = setInterval(this.emitFrontendPrune, frontendPruneEveryMs);
   }
   /** On module destroy. */
@@ -179,7 +184,7 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
           storageStatus: String(detail.storage?.status || 'unknown'),
         },
       });
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Failed to capture backend heartbeat: ${(error as Error)?.message || 'unknown error'}`,
       );
@@ -231,7 +236,7 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
         observedAtMs.length > 0 ? new Date(Math.min(...observedAtMs)).toISOString() : null,
       maxStaleMs: staleNodes.reduce((max, node) => Math.max(max, node.staleMs || 0), 0),
     };
-    const advice = this.buildAdvice(status, {
+    const advice = buildOrganismAdvice(status, {
       criticalDown: criticalDown.length,
       criticalDegraded: criticalDegraded.length,
       surfaceProblems: surfaceProblems.length,
@@ -239,8 +244,8 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
       incidentCount: incidents.length,
     });
     const productionSnapshot = this.getProductionSnapshot();
-    const directiveData = productionSnapshot.directive.data as { nextWork?: unknown[] } | null;
-    const convergenceData = productionSnapshot.convergencePlan.data as { queue?: unknown[] } | null;
+    const directiveData = productionSnapshot.directive.data;
+    const convergenceData = productionSnapshot.convergencePlan.data;
     const nextWork =
       Array.isArray(directiveData?.nextWork) && directiveData.nextWork.length > 0
         ? directiveData.nextWork.slice(0, 5)
@@ -251,7 +256,7 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
       status,
       summary,
       generatedAt: new Date().toISOString(),
-      authorityMode: 'advisory-only',
+      authorityMode: productionSnapshot.authorityMode,
       circulation: {
         registeredNodes: nodeIds.length,
         freshNodes: freshNodes.length,
@@ -263,6 +268,7 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
       advice,
       productionSnapshot: {
         status: productionSnapshot.status,
+        machineReadiness: productionSnapshot.machineReadiness,
         canonicalDir: productionSnapshot.canonicalDir,
         missingArtifacts: productionSnapshot.missingArtifacts,
         staleArtifacts: productionSnapshot.staleArtifacts,
@@ -277,180 +283,72 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
   }
   /** Get latest PULSE directive artifact. */
   getLatestDirective() {
-    return this.readArtifactJson('PULSE_CLI_DIRECTIVE.json');
+    return this.artifacts.getLatestDirective();
   }
   /** Get latest PULSE certificate artifact. */
   getLatestCertificate() {
-    return this.readArtifactJson('PULSE_CERTIFICATE.json');
+    return this.artifacts.getLatestCertificate();
   }
   /** Get latest PULSE product vision artifact. */
   getLatestProductVision() {
-    return this.readArtifactJson('PULSE_PRODUCT_VISION.json');
+    return this.artifacts.getLatestProductVision();
   }
   /** Get latest PULSE parity gaps artifact. */
   getLatestParityGaps() {
-    return this.readArtifactJson('PULSE_PARITY_GAPS.json');
+    return this.artifacts.getLatestParityGaps();
   }
   /** Get latest PULSE scope state artifact. */
   getLatestScopeState() {
-    return this.readArtifactJson('PULSE_SCOPE_STATE.json');
+    return this.artifacts.getLatestScopeState();
   }
   /** Get latest PULSE codacy evidence artifact. */
   getLatestCodacyEvidence() {
-    return this.readArtifactJson('PULSE_CODACY_EVIDENCE.json');
+    return this.artifacts.getLatestCodacyEvidence();
   }
   /** Get latest PULSE capability state artifact. */
   getLatestCapabilityState() {
-    return this.readArtifactJson('PULSE_CAPABILITY_STATE.json');
+    return this.artifacts.getLatestCapabilityState();
   }
   /** Get latest PULSE flow projection artifact. */
   getLatestFlowProjection() {
-    return this.readArtifactJson('PULSE_FLOW_PROJECTION.json');
+    return this.artifacts.getLatestFlowProjection();
+  }
+  /** Get latest PULSE execution matrix artifact. */
+  getLatestExecutionMatrix() {
+    return this.artifacts.getLatestExecutionMatrix();
+  }
+  /** Get canonical PULSE machine-readiness state. */
+  getMachineReadiness() {
+    return this.artifacts.getMachineReadiness();
   }
   /** Get latest PULSE convergence plan artifact. */
   getLatestConvergencePlan() {
-    return this.readArtifactJson('PULSE_CONVERGENCE_PLAN.json');
+    return this.artifacts.getLatestConvergencePlan();
   }
   /** Get latest PULSE external signal artifact. */
   getLatestExternalSignalState() {
-    return this.readArtifactJson('PULSE_EXTERNAL_SIGNAL_STATE.json');
+    return this.artifacts.getLatestExternalSignalState();
   }
   /** Get latest PULSE autonomy-state artifact. */
   getLatestAutonomyState() {
-    return this.readArtifactJson('PULSE_AUTONOMY_STATE.json');
+    return this.artifacts.getLatestAutonomyState();
   }
   /** Get latest PULSE agent-orchestration-state artifact. */
   getLatestAgentOrchestrationState() {
-    return this.readArtifactJson('PULSE_AGENT_ORCHESTRATION_STATE.json');
+    return this.artifacts.getLatestAgentOrchestrationState();
   }
   /** Get latest production-oriented PULSE snapshot. */
   getProductionSnapshot() {
-    const directive = this.getLatestDirective();
-    const certificate = this.getLatestCertificate();
-    const productVision = this.getLatestProductVision();
-    const parityGaps = this.getLatestParityGaps();
-    const scopeState = this.getLatestScopeState();
-    const codacyEvidence = this.getLatestCodacyEvidence();
-    const capabilityState = this.getLatestCapabilityState();
-    const flowProjection = this.getLatestFlowProjection();
-    const externalSignalState = this.getLatestExternalSignalState();
-    const autonomyState = this.getLatestAutonomyState();
-    const agentOrchestrationState = this.getLatestAgentOrchestrationState();
-    const convergencePlan = this.getLatestConvergencePlan();
-    const artifactIndex = this.readArtifactJson('PULSE_ARTIFACT_INDEX.json');
-    const artifacts = [
-      directive,
-      certificate,
-      productVision,
-      parityGaps,
-      scopeState,
-      codacyEvidence,
-      capabilityState,
-      flowProjection,
-      externalSignalState,
-      autonomyState,
-      agentOrchestrationState,
-      convergencePlan,
-      artifactIndex,
-    ];
-    const missingArtifacts = artifacts
-      .filter((artifact) => artifact.freshness === 'missing')
-      .map((artifact) => artifact.artifact);
-    const staleArtifacts = artifacts
-      .filter((artifact) => artifact.freshness === 'stale')
-      .map((artifact) => artifact.artifact);
-    const status: 'ready' | 'degraded' | 'empty' = artifacts.every(
-      (artifact) => artifact.freshness === 'missing',
-    )
-      ? 'empty'
-      : missingArtifacts.length > 0 || staleArtifacts.length > 0
-        ? 'degraded'
-        : 'ready';
-    return {
-      status,
-      authorityMode: 'advisory-only',
-      generatedAt: new Date().toISOString(),
-      canonicalDir: this.getArtifactCanonicalDir(),
-      summary:
-        status === 'ready'
-          ? 'PULSE runtime snapshot is fresh and ready for production consumption.'
-          : status === 'empty'
-            ? 'No canonical PULSE artifacts were found for runtime consumption yet.'
-            : `PULSE runtime snapshot is degraded: missing=${missingArtifacts.length}, stale=${staleArtifacts.length}.`,
-      missingArtifacts,
-      staleArtifacts,
-      directive,
-      certificate,
-      productVision,
-      parityGaps,
-      scopeState,
-      codacyEvidence,
-      capabilityState,
-      flowProjection,
-      externalSignalState,
-      autonomyState,
-      agentOrchestrationState,
-      convergencePlan,
-      artifactIndex,
-    };
-  }
-  private buildAdvice(
-    status: PulseOrganismStatus,
-    counters: {
-      criticalDown: number;
-      criticalDegraded: number;
-      surfaceProblems: number;
-      staleNodes: number;
-      incidentCount: number;
-    },
-  ): {
-    level: PulseAdviceLevel;
-    summary: string;
-    recommendedActions: string[];
-  } {
-    if (status === 'DOWN') {
-      return {
-        level: 'critical',
-        summary: `Critical organism nodes are down or stale (${counters.criticalDown} affected). Prioritize restoration before expanding the mutation surface.`,
-        recommendedActions: [
-          'Inspect the affected backend/worker nodes first.',
-          'Re-run runtime probes after restoring the failing heartbeat.',
-          'Avoid unrelated high-risk edits until the organism is stable again.',
-        ],
-      };
-    }
-    if (status === 'DEGRADED' || status === 'STALE') {
-      return {
-        level: 'watch',
-        summary:
-          status === 'STALE'
-            ? `Live circulation is missing or stale (${counters.staleNodes} stale nodes). Treat runtime certainty as low until fresh heartbeats return.`
-            : `Organism is degraded (${counters.criticalDegraded} critical degraded nodes, ${counters.surfaceProblems} impaired surfaces). Continue with caution and validate the affected surfaces before broad changes.`,
-        recommendedActions: [
-          'Check stale or degraded nodes and refresh their heartbeat.',
-          'Validate the impacted surface before touching adjacent domains.',
-          'Use PULSE as guidance, not as a blocker, until live evidence is fresh again.',
-        ],
-      };
-    }
-    return {
-      level: 'nominal',
-      summary: `Organism is live with ${counters.incidentCount} recent incident(s) and no current critical degradation.`,
-      recommendedActions: [
-        'Follow the top convergence actions from the latest PULSE directive.',
-        'Keep heartbeats flowing while modifying adjacent domains.',
-        'Re-run PULSE after meaningful changes to refresh the organism map.',
-      ],
-    };
+    return this.artifacts.getProductionSnapshot();
   }
   private async persistHeartbeat(record: PulseHeartbeatRecord) {
-    const liveKey = this.getLiveKey(record.nodeId);
+    const liveKey = getLiveKey(record.nodeId);
     const previous = safeJsonParse<PulseHeartbeatRecord>(await this.redis.get(liveKey));
     const pipeline = this.redis.multi();
     pipeline
       .set(liveKey, JSON.stringify(record), 'PX', record.ttlMs)
       .hset(REGISTRY_REDIS_SLOT, record.nodeId, JSON.stringify(record))
-      .del(this.getStaleAlertKey(record.nodeId));
+      .del(getStaleAlertKey(record.nodeId));
     if (record.critical) {
       pipeline.hset(CRITICAL_REGISTRY_REDIS_SLOT, record.nodeId, JSON.stringify(record));
     } else {
@@ -502,7 +400,7 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
       return [];
     }
     const pipeline = this.redis.pipeline();
-    nodeIds.forEach((nodeId) => pipeline.get(this.getLiveKey(nodeId)));
+    nodeIds.forEach((nodeId) => pipeline.get(getLiveKey(nodeId)));
     const liveResults = await pipeline.exec();
     const now = Date.now();
     const nodes: PulseOrganismNode[] = [];
@@ -546,7 +444,7 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
       if (!node.stale) {
         return;
       }
-      const staleAlertKey = this.getStaleAlertKey(node.nodeId);
+      const staleAlertKey = getStaleAlertKey(node.nodeId);
       const alreadyAlerted = await this.redis.set(
         staleAlertKey,
         String(now),
@@ -583,7 +481,7 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
         .multi()
         .hdel(FRONTEND_REGISTRY_REDIS_SLOT, node.nodeId)
         .hdel(REGISTRY_REDIS_SLOT, node.nodeId)
-        .del(this.getLiveKey(node.nodeId))
+        .del(getLiveKey(node.nodeId))
         .exec();
     });
   }
@@ -618,74 +516,7 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
         }),
       )
       .exec();
-    await this.sendAlertWebhook(incident);
-  }
-  private async sendAlertWebhook(incident: PulseIncident) {
-    const webhookUrl = this.getAlertWebhookUrl();
-    if (!webhookUrl) {
-      return;
-    }
-    try {
-      // SSRF protection: validate env-configured webhook URL before use
-      validateNoInternalAccess(webhookUrl);
-      const response = await fetch(webhookUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Request-ID': incident.incidentId,
-        },
-        body: JSON.stringify({
-          type: 'pulse_incident',
-          incident,
-          at: new Date().toISOString(),
-          environment: process.env.NODE_ENV || 'development',
-        }),
-        signal: AbortSignal.timeout(8_000),
-      });
-      if (!response.ok) {
-        this.logger.warn(`Pulse alert webhook returned HTTP ${response.status}`);
-      }
-    } catch (error) {
-      this.logger.warn(
-        `Pulse alert webhook failed: ${(error as Error)?.message || 'unknown error'}`,
-      );
-    }
-  }
-  private getAlertWebhookUrl() {
-    return (
-      this.config.get<string>('PULSE_ALERT_WEBHOOK_URL') ||
-      this.config.get<string>('OPS_WEBHOOK_URL') ||
-      this.config.get<string>('AUTOPILOT_ALERT_WEBHOOK_URL') ||
-      this.config.get<string>('DLQ_WEBHOOK_URL') ||
-      ''
-    );
-  }
-  private getBackendHeartbeatEveryMs() {
-    const raw = Number.parseInt(process.env.PULSE_BACKEND_HEARTBEAT_MS || '', 10);
-    if (Number.isFinite(raw) && raw >= 5_000) {
-      return raw;
-    }
-    return DEFAULT_HEARTBEAT_INTERVAL_MS;
-  }
-  private getStaleSweepEveryMs() {
-    const raw = Number.parseInt(process.env.PULSE_STALE_SWEEP_MS || '', 10);
-    if (Number.isFinite(raw) && raw >= 15_000) {
-      return raw;
-    }
-    return DEFAULT_STALE_SWEEP_MS;
-  }
-  private getFrontendPruneSweepEveryMs() {
-    const raw = Number.parseInt(process.env.PULSE_FRONTEND_PRUNE_MS || '', 10);
-    if (Number.isFinite(raw) && raw >= 60_000) {
-      return raw;
-    }
-    return DEFAULT_FRONTEND_PRUNE_SWEEP_MS;
-  }
-  private getLiveKey(nodeId: string) {
-    return `pulse:organism:live:${nodeId}`;
-  }
-  private getStaleAlertKey(nodeId: string) {
-    return `pulse:organism:stale-alert:${nodeId}`;
+    await sendAlertWebhook(this.config, this.logger, incident);
   }
   private getNodeSuffix() {
     const safeHostname =
@@ -710,89 +541,5 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
       return 'frontend';
     }
     return 'scanner';
-  }
-  private getArtifactRootDir() {
-    const configured =
-      this.config.get<string>('PULSE_ARTIFACT_ROOT') || this.config.get<string>('APP_ROOT_DIR');
-    if (configured) {
-      return configured;
-    }
-    return this.detectArtifactRootDir(process.cwd());
-  }
-  private getArtifactCanonicalDir() {
-    return path.join(this.getArtifactRootDir(), '.pulse', 'current');
-  }
-  private detectArtifactRootDir(startDir: string) {
-    let current = path.resolve(startDir);
-    while (true) {
-      const hasPulseRunner = fs.existsSync(path.join(current, 'scripts', 'pulse', 'run.js'));
-      const hasRootPackage = fs.existsSync(path.join(current, 'package.json'));
-      const hasBackendDir = fs.existsSync(path.join(current, 'backend'));
-      if (hasPulseRunner && hasRootPackage && hasBackendDir) {
-        return current;
-      }
-      const parent = path.dirname(current);
-      if (parent === current) {
-        return path.resolve(startDir);
-      }
-      current = parent;
-    }
-  }
-  private getArtifactMaxAgeMs() {
-    const configured = Number.parseInt(
-      String(this.config.get<string>('PULSE_ARTIFACT_MAX_AGE_MS') || ''),
-      10,
-    );
-    if (Number.isFinite(configured) && configured >= 60_000) {
-      return configured;
-    }
-    return DEFAULT_ARTIFACT_MAX_AGE_MS;
-  }
-  private readArtifactJson<T = Record<string, unknown>>(
-    artifactName: string,
-  ): PulseArtifactPayload<T> {
-    const targetPath = path.join(this.getArtifactCanonicalDir(), artifactName);
-    if (!fs.existsSync(targetPath)) {
-      return {
-        artifact: artifactName,
-        path: targetPath,
-        freshness: 'missing',
-        generatedAt: null,
-        staleMs: null,
-        data: null,
-        error: 'artifact_not_found',
-      };
-    }
-    try {
-      const raw = fs.readFileSync(targetPath, 'utf8');
-      const data = JSON.parse(raw) as T & { generatedAt?: string; timestamp?: string };
-      const generatedAt = String(data.generatedAt || data.timestamp || '').trim() || null;
-      const generatedAtMs = generatedAt ? Date.parse(generatedAt) : Number.NaN;
-      const staleMs = Number.isFinite(generatedAtMs)
-        ? Math.max(Date.now() - generatedAtMs, 0)
-        : null;
-      const freshness =
-        generatedAt && staleMs !== null && staleMs <= this.getArtifactMaxAgeMs()
-          ? 'fresh'
-          : 'stale';
-      return {
-        artifact: artifactName,
-        path: targetPath,
-        freshness,
-        generatedAt,
-        staleMs,
-        data,
-      };
-    } catch (error) {
-      return {
-        artifact: artifactName,
-        path: targetPath,
-        freshness: 'missing',
-        generatedAt: null,
-        staleMs: null,
-        data: null,
-        error: error instanceof Error ? error.message : 'artifact_read_failed',
-      };
-    }
   }
 }

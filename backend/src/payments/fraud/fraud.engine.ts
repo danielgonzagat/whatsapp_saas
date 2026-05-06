@@ -1,5 +1,6 @@
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import { Injectable, Logger } from '@nestjs/common';
+import * as Sentry from '@sentry/node';
 import type { FraudBlacklist, FraudBlacklistType } from '@prisma/client';
 import type Redis from 'ioredis';
 
@@ -198,8 +199,8 @@ export class FraudEngine {
       const detail = blacklistHits.map((h) => `${h.type}=${h.reason}`).join(', ');
       this.logger.warn(`Blacklist hit for workspace=${ctx.workspaceId}: ${detail}`);
       const decision: FraudDecision = {
-        action: 'block',
-        score: 1.0,
+        action: 'review',
+        score: this.config.thresholds.REVIEW,
         reasons: blacklistHits.map<FraudReason>((h) => ({
           signal: 'blacklist',
           detail: `${h.type} matched: ${h.reason}`,
@@ -213,19 +214,24 @@ export class FraudEngine {
       const velocityReasons = await this.evaluateVelocity(ctx);
       if (velocityReasons.length > 0) {
         const decision: FraudDecision = {
-          action: 'block' as const,
-          score: 1.0,
+          action: 'review' as const,
+          score: this.config.thresholds.REVIEW,
           reasons: velocityReasons,
         };
         this.logDecision(ctx, decision);
         return decision;
       }
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Velocity antifraud check failed for workspace=${ctx.workspaceId}: ${
           error instanceof Error ? error.message : String(error)
         }`,
       );
+      Sentry.captureException(error, {
+        tags: { type: 'financial_alert', operation: 'fraud_velocity' },
+        extra: { workspaceId: ctx.workspaceId, amountCents: ctx.amountCents.toString() },
+        level: 'fatal',
+      });
       reasons.push({
         signal: 'velocity_unavailable',
         detail: 'velocity counters unavailable; checkout routed to review fail-closed path',
@@ -251,6 +257,17 @@ export class FraudEngine {
       reasons.push({
         signal: 'foreign_bin',
         detail: `card country ${cardCountry} differs from checkout country ${orderCountry}`,
+      });
+      score = clampScore(score + this.config.scores.foreignBin);
+    }
+
+    const ipCountry = String(ctx.ipCountry || '')
+      .trim()
+      .toUpperCase();
+    if (orderCountry === 'BR' && ipCountry && ipCountry !== 'BR') {
+      reasons.push({
+        signal: 'ip_mismatch',
+        detail: `IP country ${ipCountry} differs from checkout country ${orderCountry}`,
       });
       score = clampScore(score + this.config.scores.foreignBin);
     }
@@ -318,15 +335,18 @@ export class FraudEngine {
     };
     const skip = Math.max(0, input?.skip ?? 0);
     const take = Math.min(200, Math.max(1, input?.take ?? 50));
-    const [items, total] = await this.prisma.$transaction([
-      this.prisma.fraudBlacklist.findMany({
-        where,
-        orderBy: [{ createdAt: 'desc' }, { type: 'asc' }, { value: 'asc' }],
-        skip,
-        take,
-      }),
-      this.prisma.fraudBlacklist.count({ where }),
-    ]);
+    const [items, total] = await this.prisma.$transaction(
+      [
+        this.prisma.fraudBlacklist.findMany({
+          where,
+          orderBy: [{ createdAt: 'desc' }, { type: 'asc' }, { value: 'asc' }],
+          skip,
+          take,
+        }),
+        this.prisma.fraudBlacklist.count({ where }),
+      ],
+      { isolationLevel: 'ReadCommitted' },
+    );
 
     return { items, total };
   }
@@ -484,9 +504,6 @@ export class FraudEngine {
   }
 
   private scoreToAction(score: number): FraudDecision['action'] {
-    if (score >= this.config.thresholds.BLOCK) {
-      return 'block';
-    }
     if (score >= this.config.thresholds.REVIEW) {
       return 'review';
     }

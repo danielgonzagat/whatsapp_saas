@@ -4,7 +4,7 @@
  * Extracted from queue.ts to keep each module's cyclomatic complexity low
  * (Codacy / lizard measures function bundles per-file). Logic is unchanged.
  */
-export type OpsWebhookKind = 'slack' | 'teams' | 'generic';
+type OpsWebhookKind = 'slack' | 'teams' | 'generic';
 
 /** Classify webhook. */
 export function classifyWebhook(webhook: string): OpsWebhookKind {

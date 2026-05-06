@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import useSWR from 'swr';
 import { Button } from '@/components/ui/button';
 import { MetricNumber } from '@/components/ui/metric-number';
@@ -44,6 +44,14 @@ function formatDate(value: string | null): string {
 export default function ClientesPage() {
   const [search, setSearch] = useState('');
   const [kycStatus, setKycStatus] = useState<'' | AdminClientKycStatus>('');
+  const [referenceNowMs, setReferenceNowMs] = useState<number | null>(null);
+
+  useEffect(() => {
+    const refreshReferenceTime = () => setReferenceNowMs(Date.now());
+    refreshReferenceTime();
+    const intervalId = window.setInterval(refreshReferenceTime, 60_000);
+    return () => window.clearInterval(intervalId);
+  }, []);
 
   const { data, error } = useSWR<ListClientsResponse>(['admin/clients', search, kycStatus], () =>
     adminClientsApi.list({
@@ -59,10 +67,15 @@ export default function ClientesPage() {
   const pendingKyc = items.filter(
     (row) => row.kycStatus === 'pending' || row.kycStatus === 'submitted',
   ).length;
-  const newClients = items.filter((row) => {
-    const createdAt = new Date(row.createdAt).getTime();
-    return Date.now() - createdAt <= 30 * 24 * 60 * 60 * 1000;
-  }).length;
+  const newClients =
+    referenceNowMs === null
+      ? null
+      : items.filter((row) => {
+          const createdAt = new Date(row.createdAt).getTime();
+          return (
+            Number.isFinite(createdAt) && referenceNowMs - createdAt <= 30 * 24 * 60 * 60 * 1000
+          );
+        }).length;
   const customDomains = items.filter((row) => Boolean(row.customDomain)).length;
   const enterpriseClients = items.filter(
     (row) => (row.plan || '').toUpperCase() === 'ENTERPRISE',

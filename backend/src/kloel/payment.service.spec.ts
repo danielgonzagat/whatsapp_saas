@@ -25,6 +25,9 @@ type PaymentPrismaMock = {
   workspace: {
     findUnique: jest.Mock<Promise<{ id: string; name: string }>, [unknown]>;
   };
+  memberArea: {
+    findMany: jest.Mock<Promise<Array<{ slug: string }>>, [unknown]>;
+  };
   kloelSale: KloelSaleMock;
   $transaction: jest.Mock<Promise<unknown>, [(tx: PaymentPrismaTransaction) => Promise<unknown>]>;
 };
@@ -42,6 +45,9 @@ describe('PaymentService — Stripe-only Pix', () => {
           id: 'ws-1',
           name: 'Workspace Teste',
         }),
+      },
+      memberArea: {
+        findMany: jest.fn().mockResolvedValue([]),
       },
       kloelSale: {
         create: jest.fn(),
@@ -260,6 +266,7 @@ describe('PaymentService — Stripe-only Pix', () => {
         pixHostedInstructionsUrl: 'https://pay.stripe.com/pix/pi_pix_1',
       },
     });
+    prisma.memberArea.findMany.mockResolvedValue([{ slug: 'curso-digital' }]);
 
     const result = await service.getPublicPayment('pi_pix_1');
 
@@ -271,6 +278,7 @@ describe('PaymentService — Stripe-only Pix', () => {
       pixQrCodeUrl: 'data:image/png;base64,qr',
       pixCopyPaste: '000201pixcopy',
       paymentLink: 'https://pay.stripe.com/pix/pi_pix_1',
+      memberAreaUrl: '/area/curso-digital',
     });
   });
 });
