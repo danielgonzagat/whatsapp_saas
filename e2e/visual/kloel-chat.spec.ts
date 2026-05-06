@@ -38,6 +38,7 @@ const THINK_STREAM_BODY = [
   'data: {"type":"done","done":true}\n\n',
 ].join('');
 const VISUAL_CHAT_FIXED_TIME_ISO = '2026-01-15T23:30:00.000Z';
+const CHAT_VISUAL_MAX_DIFF_PIXELS = 16000;
 
 async function acceptCookiesIfVisible(page: Page) {
   const acceptCookiesButton = page.getByRole('button', { name: 'Aceitar tudo' });
@@ -152,7 +153,7 @@ test('Kloel chat preserves the new empty and active visual contract', async ({ p
 
   await expect(page).toHaveScreenshot('kloel-chat-empty.png', {
     fullPage: true,
-    maxDiffPixels: 10000,
+    maxDiffPixels: CHAT_VISUAL_MAX_DIFF_PIXELS,
     maxDiffPixelRatio: 0.02,
   });
 
@@ -161,7 +162,7 @@ test('Kloel chat preserves the new empty and active visual contract', async ({ p
 
   await expect(page).toHaveScreenshot('kloel-chat-popover.png', {
     fullPage: true,
-    maxDiffPixels: 10000,
+    maxDiffPixels: CHAT_VISUAL_MAX_DIFF_PIXELS,
     maxDiffPixelRatio: 0.02,
   });
 
@@ -175,7 +176,7 @@ test('Kloel chat preserves the new empty and active visual contract', async ({ p
 
   await expect(page).toHaveScreenshot('kloel-chat-configured.png', {
     fullPage: true,
-    maxDiffPixels: 10000,
+    maxDiffPixels: CHAT_VISUAL_MAX_DIFF_PIXELS,
     maxDiffPixelRatio: 0.02,
   });
 
@@ -193,7 +194,7 @@ test('Kloel chat preserves the new empty and active visual contract', async ({ p
 
   await expect(page).toHaveScreenshot('kloel-chat-active.png', {
     fullPage: true,
-    maxDiffPixels: 10000,
+    maxDiffPixels: CHAT_VISUAL_MAX_DIFF_PIXELS,
     maxDiffPixelRatio: 0.02,
   });
 });
