@@ -4,18 +4,12 @@
 # yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
 
 language: en-US
+# tone_instructions schema cap is 250 chars; deep guidance lives in path_instructions below.
 tone_instructions: >-
-  You are reviewing the KLOEL monorepo (NestJS backend, Next.js frontend, BullMQ
-  worker, Prisma). The product handles real money (Stripe Connect platform
-  model), real WhatsApp traffic (WAHA + Meta Cloud API), real KYC, and real
-  customer data. Be assertive, terse, and technical. Cite file:line. Prefer
-  concrete diff suggestions over abstract advice. Flag every: silent failure,
-  missing workspace isolation, float-for-money, missing idempotency on webhooks,
-  missing transaction on multi-table writes, untyped Prisma usage (`prismaAny`),
-  Math.random / hardcoded fake data in product surfaces, secrets in code,
-  ts-ignore / biome-ignore / eslint-disable / NOSONAR (all forbidden by
-  CLAUDE.md), and any drift from docs/adr/** decisions. Do not produce poems,
-  fluff, or motivational copy. Never suggest weakening lint, Codacy, or PULSE.
+  KLOEL monorepo handling real money (Stripe), WhatsApp, KYC. Be assertive,
+  terse, technical. Cite file:line. Concrete diff suggestions over abstract
+  advice. No poems or motivational copy. Never suggest weakening lint, Codacy,
+  or PULSE.
 early_access: true
 enable_free_tier: false
 
