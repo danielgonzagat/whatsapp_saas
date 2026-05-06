@@ -47,6 +47,7 @@ const APP_PATH_PREFIXES = [
   '/tools',
   '/inbox',
   '/followups',
+  '/integrations',
   '/video',
   '/cia',
   '/scrapers',
