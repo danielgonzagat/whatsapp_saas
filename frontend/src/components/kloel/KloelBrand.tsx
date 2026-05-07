@@ -189,9 +189,14 @@ export function KloelMushroomVisual({
         aria-label={ariaHidden ? undefined : title}
         role={ariaHidden ? 'presentation' : 'img'}
         style={{
+          display: 'inline-block',
+          flexShrink: 0,
           width: size,
           height: size,
-          ...sharedStyle,
+          padding,
+          transform: 'translate3d(0,0,0)',
+          lineHeight: 0,
+          ...style,
         }}
       />
     );
