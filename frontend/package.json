@@ -59,7 +59,7 @@
     "babel-plugin-react-compiler": "1.0.0",
     "baseline-browser-mapping": "2.10.27",
     "eslint": "9.39.4",
-    "eslint-config-next": "16.2.4",
+    "eslint-config-next": "16.2.5",
     "eslint-seatbelt": "0.1.3",
     "jsdom": "29.1.1",
     "tailwindcss": "4.2.4",
