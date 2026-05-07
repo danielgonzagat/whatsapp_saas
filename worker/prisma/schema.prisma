@@ -407,6 +407,7 @@ model Flow {
   versions   FlowVersion[]
   followUps  FollowUp[]
 
+  @@index([workspaceId])
   @@map("RAC_Flow")
 }
 
@@ -450,6 +451,9 @@ model FlowExecution {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([contactId])
+  @@index([flowId])
+  @@index([workspaceId])
   @@map("RAC_FlowExecution")
 }
 
@@ -479,6 +483,8 @@ model Campaign {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([workspaceId])
+  @@index([parentId])
   @@map("RAC_Campaign")
 }
 
@@ -615,6 +621,7 @@ model KnowledgeBase {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([workspaceId])
   @@map("RAC_KnowledgeBase")
 }
 
@@ -860,6 +867,7 @@ model Pipeline {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([workspaceId])
   @@map("RAC_Pipeline")
 }
 
@@ -877,6 +885,7 @@ model Stage {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([pipelineId])
   @@map("RAC_Stage")
 }
 
@@ -939,6 +948,8 @@ model VoiceJob {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([profileId])
+  @@index([workspaceId])
   @@map("RAC_VoiceJob")
 }
 
@@ -1112,6 +1123,7 @@ model AgentQueue {
   updatedAt DateTime @updatedAt
 
   @@unique([agentId, queueId])
+  @@map("RAC_AgentQueue")
 }
 
 model RoutingRule {
@@ -1136,6 +1148,10 @@ model RoutingRule {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([queueId])
+  @@index([workspaceId])
+  @@map("RAC_RoutingRule")
 }
 
 // =========================================
@@ -1380,6 +1396,22 @@ model WebhookSubscription {
   updatedAt DateTime @updatedAt
 
   @@map("RAC_WebhookSubscription")
+}
+
+model OpsEvent {
+  id          String   @id @default(uuid())
+  type        String // "critical_error", "degradation", "recovery"
+  service     String
+  error       String
+  stack       String?
+  workspaceId String?
+  metadata    Json?    @default("{}")
+  createdAt   DateTime @default(now())
+
+  @@index([type, createdAt])
+  @@index([service, createdAt])
+  @@index([workspaceId, createdAt])
+  @@map("RAC_OpsEvent")
 }
 
 model WebhookEvent {
@@ -3609,4 +3641,31 @@ model FraudBlacklist {
   @@unique([type, value])
   @@index([expiresAt])
   @@map("fraud_blacklist")
+}
+
+// ============================================================================
+// DailyMessageCounter — per-workspace daily WhatsApp message quota.
+//
+// Each row tracks the number of outbound WhatsApp messages a workspace has
+// sent on a given UTC date. The counter is atomically upserted before every
+// send via INSERT ... ON CONFLICT ... DO UPDATE RETURNING (PostgreSQL).
+// PlanLimitsService.ensureDailyMessageQuota() reads the plan-based limit
+// from the subscription and compares against the running count.
+//
+// Invariants:
+//   * (workspaceId, date) is unique — one row per workspace per day.
+//   * The count is monotonically increasing; it is NEVER decremented.
+//   * Enterprise plans (messagesPerDay = null) skip the counter entirely.
+// ============================================================================
+model DailyMessageCounter {
+  id          String   @id @default(uuid())
+  workspaceId String
+  date        DateTime @db.Date
+  count       Int      @default(0)
+
+  createdAt DateTime @default(now())
+
+  @@unique([workspaceId, date])
+  @@index([workspaceId, date])
+  @@map("RAC_DailyMessageCounter")
 }

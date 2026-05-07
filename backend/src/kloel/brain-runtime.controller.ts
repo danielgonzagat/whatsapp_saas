@@ -110,10 +110,10 @@ export class BrainRuntimeController {
         content: decision.response || 'Ação processada pelo Kloel Brain.',
       });
       writeEvent({ type: 'done', done: true });
-    } catch (error: unknown) {
+    } catch {
       writeEvent({
         type: 'error',
-        error: error instanceof Error ? error.message : 'brain_stream_failed',
+        error: 'Nao consegui concluir esta resposta agora.',
         done: true,
       });
     } finally {
