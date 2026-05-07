@@ -19,6 +19,7 @@ import {
   extractSetupConfigField,
   normalizeWhatsAppSelectedProducts,
 } from './__companions__/marketing-connect.controller.companion';
+import { TikTokMarketingService } from './tiktok-marketing.service';
 
 /**
  * Marketing Connect Controller
@@ -35,6 +36,7 @@ export class MarketingConnectController {
     private readonly prisma: PrismaService,
     private readonly metaWhatsApp: MetaWhatsAppService,
     private readonly whatsappProviders: WhatsAppProviderRegistry,
+    private readonly tiktokMarketing: TikTokMarketingService,
   ) {}
 
   private getEmailProviderSnapshot() {
@@ -117,6 +119,18 @@ export class MarketingConnectController {
       }),
       this.whatsappProviders.getProviderType(workspaceId).catch(() => 'meta-cloud' as const),
       this.whatsappProviders.getSessionStatus(workspaceId).catch(() => null),
+      this.tiktokMarketing.getStatus(workspaceId).catch(() => ({
+        connected: false,
+        status: 'disconnected',
+        kind: null,
+        openId: null,
+        advertiserIds: [],
+        expiresAt: null,
+        expired: false,
+        clientConfigured: false,
+        secretConfigured: false,
+        configReady: false,
+      })),
     ]);
 
     const providerSettings = (workspace?.providerSettings as Record<string, unknown>) || {};
@@ -214,6 +228,7 @@ export class MarketingConnectController {
           pageId: metaConnection?.pageId || null,
           pageName: metaConnection?.pageName || null,
         },
+        tiktok: await this.tiktokMarketing.getStatus(workspaceId),
         email: {
           connected: Boolean(emailProvider.available && emailSettings.enabled),
           status: emailProvider.available
@@ -345,5 +360,58 @@ export class MarketingConnectController {
     );
 
     return { success: true, workspaceId, toEmail, provider: result.provider };
+  }
+
+  /** Get email connect status. */
+  @Get('connect/email/status')
+  async getEmailStatus(@Request() req: { user: { workspaceId: string } }) {
+    const workspaceId = req.user.workspaceId;
+    const workspace = await this.prisma.workspace.findUnique({
+      where: { id: workspaceId },
+      select: { providerSettings: true, name: true },
+    });
+    const providerSettings = (workspace?.providerSettings as Record<string, unknown>) || {};
+    const emailSettings = ((providerSettings.email || {}) as Record<string, unknown>) || {
+      enabled: false,
+    };
+    const emailProvider = this.getEmailProviderSnapshot();
+
+    return {
+      connected: Boolean(emailProvider.available && emailSettings.enabled),
+      status: emailProvider.available
+        ? emailSettings.enabled
+          ? 'connected'
+          : 'disconnected'
+        : 'unavailable',
+      enabled: Boolean(emailSettings.enabled),
+      provider: emailProvider.provider,
+      providerAvailable: emailProvider.available,
+      fromEmail: emailProvider.fromEmail,
+      fromName: emailProvider.fromName,
+      workspaceName: workspace?.name || null,
+    };
+  }
+
+  /** Disconnect email. */
+  @Post('connect/email/disconnect')
+  async disconnectEmail(@Request() req: { user: { workspaceId: string } }) {
+    const workspaceId = req.user.workspaceId;
+    const workspace = await this.prisma.workspace.findUnique({
+      where: { id: workspaceId },
+      select: { providerSettings: true },
+    });
+    const currentSettings = (workspace?.providerSettings as Record<string, unknown>) || {};
+
+    await this.prisma.workspace.update({
+      where: { id: workspaceId },
+      data: {
+        providerSettings: {
+          ...currentSettings,
+          email: { enabled: false },
+        },
+      },
+    });
+
+    return this.getEmailStatus({ user: { workspaceId } });
   }
 }

@@ -24,4 +24,9 @@ export class TikTokMarketingController {
   complete(@Request() req: { user: { workspaceId: string } }, @Body() body: TikTokCompleteBody) {
     return this.tiktokMarketing.completeOAuth(req.user.workspaceId, body);
   }
+
+  @Post('disconnect')
+  disconnect(@Request() req: { user: { workspaceId: string } }) {
+    return this.tiktokMarketing.disconnect(req.user.workspaceId);
+  }
 }

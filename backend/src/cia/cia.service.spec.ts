@@ -18,6 +18,12 @@ describe('CiaService', () => {
     conversationProofSnapshot: {
       findFirst: jest.Mock;
     };
+    metaConnection: {
+      findUnique: jest.Mock;
+    };
+    integration: {
+      findMany: jest.Mock;
+    };
   };
   let runtime: {
     getOperationalIntelligence: jest.Mock;
@@ -39,6 +45,9 @@ describe('CiaService', () => {
     getWorkItems: jest.Mock;
     respondToInputSession: jest.Mock;
   };
+  let mind: {
+    lift: jest.Mock;
+  };
   let service: CiaService;
 
   beforeEach(() => {
@@ -53,6 +62,12 @@ describe('CiaService', () => {
       },
       conversationProofSnapshot: {
         findFirst: jest.fn(),
+      },
+      metaConnection: {
+        findUnique: jest.fn().mockResolvedValue(null),
+      },
+      integration: {
+        findMany: jest.fn().mockResolvedValue([]),
       },
     };
     runtime = {
@@ -75,12 +90,16 @@ describe('CiaService', () => {
       getWorkItems: jest.fn(),
       respondToInputSession: jest.fn(),
     };
+    mind = {
+      lift: jest.fn().mockResolvedValue(null),
+    };
 
     service = new CiaService(
       prisma as never,
       runtime as never,
       agentEvents as never,
       accountAgent as never,
+      mind as never,
     );
   });
 
@@ -141,5 +160,211 @@ describe('CiaService', () => {
     const metadata = prisma.kloelMemory.update.mock.calls[0]?.[0]?.data?.metadata;
     expect(metadata).not.toHaveProperty('0');
     expect(metadata).not.toHaveProperty('1');
+  });
+
+  describe('getSurface subtitle', () => {
+    const baseIntelligence = {
+      workspaceName: 'Test Workspace',
+      runtime: { state: 'RUNNING' },
+      autonomy: null,
+      businessState: null,
+      marketSignals: [],
+      humanTasks: [],
+      demandStates: [],
+      insights: [],
+    };
+
+    beforeEach(() => {
+      runtime.getOperationalIntelligence.mockResolvedValue(baseIntelligence);
+      accountAgent.getRuntime.mockResolvedValue(null);
+      prisma.kloelMemory.findMany.mockResolvedValue([]);
+      prisma.kloelMemory.findUnique.mockResolvedValue(null);
+      prisma.accountProofSnapshot.findFirst.mockResolvedValue(null);
+      accountAgent.getCapabilityRegistry.mockReturnValue([]);
+      accountAgent.getConversationActionRegistry.mockReturnValue([]);
+    });
+
+    it('uses neutral subtitle when no channels are connected', async () => {
+      prisma.metaConnection.findUnique.mockResolvedValue(null);
+      prisma.integration.findMany.mockResolvedValue([]);
+
+      const surface = await service.getSurface('ws-1');
+
+      expect(surface.subtitle).toBe('Cuidando do seu negócio');
+    });
+
+    it('uses WhatsApp-specific subtitle when only WhatsApp is connected', async () => {
+      prisma.metaConnection.findUnique.mockResolvedValue({
+        whatsappPhoneNumberId: '5511999999999',
+        whatsappBusinessId: '123',
+        instagramAccountId: null,
+        pageId: null,
+      });
+      prisma.integration.findMany.mockResolvedValue([]);
+
+      const surface = await service.getSurface('ws-1');
+
+      expect(surface.subtitle).toBe('Cuidando do seu negócio no WhatsApp');
+    });
+
+    it('uses Instagram subtitle when only Instagram is connected', async () => {
+      prisma.metaConnection.findUnique.mockResolvedValue({
+        whatsappPhoneNumberId: null,
+        whatsappBusinessId: null,
+        instagramAccountId: '12345',
+        pageId: null,
+      });
+      prisma.integration.findMany.mockResolvedValue([]);
+
+      const surface = await service.getSurface('ws-1');
+
+      expect(surface.subtitle).toBe('Cuidando do seu negócio no Instagram');
+    });
+
+    it('uses Facebook subtitle when only Facebook is connected', async () => {
+      prisma.metaConnection.findUnique.mockResolvedValue({
+        whatsappPhoneNumberId: null,
+        whatsappBusinessId: null,
+        instagramAccountId: null,
+        pageId: 'fb-page-123',
+      });
+      prisma.integration.findMany.mockResolvedValue([]);
+
+      const surface = await service.getSurface('ws-1');
+
+      expect(surface.subtitle).toBe('Cuidando do seu negócio no Facebook');
+    });
+
+    it('uses omnichannel subtitle when multiple channels are connected', async () => {
+      prisma.metaConnection.findUnique.mockResolvedValue({
+        whatsappPhoneNumberId: '5511999999999',
+        whatsappBusinessId: '123',
+        instagramAccountId: '12345',
+        pageId: 'fb-page-123',
+      });
+      prisma.integration.findMany.mockResolvedValue([]);
+
+      const surface = await service.getSurface('ws-1');
+
+      expect(surface.subtitle).toBe('Orquestrando seus canais de venda');
+    });
+
+    it('combines MetaConnection and Integration channels without duplicates', async () => {
+      prisma.metaConnection.findUnique.mockResolvedValue({
+        whatsappPhoneNumberId: '5511999999999',
+        whatsappBusinessId: '123',
+        instagramAccountId: null,
+        pageId: null,
+      });
+      prisma.integration.findMany.mockResolvedValue([{ type: 'INSTAGRAM' }, { type: 'STRIPE' }]);
+
+      const surface = await service.getSurface('ws-1');
+
+      expect(surface.subtitle).toBe('Orquestrando seus canais de venda');
+    });
+
+    it('keeps subtitles channel neutral', async () => {
+      const subtitles: string[] = [];
+      const scenarios = [
+        { meta: null, integrations: [] },
+        { meta: { whatsappPhoneNumberId: 'x', pageId: 'y' }, integrations: [] },
+        { meta: { instagramAccountId: 'z' }, integrations: [] },
+        { meta: null, integrations: [{ type: 'INSTAGRAM' }] },
+      ];
+
+      for (const scenario of scenarios) {
+        prisma.metaConnection.findUnique.mockResolvedValue(scenario.meta);
+        prisma.integration.findMany.mockResolvedValue(scenario.integrations);
+        const surface = await service.getSurface('ws-1');
+        subtitles.push(surface.subtitle);
+      }
+
+      const hardcodedFound = subtitles.some((s) =>
+        s.toLowerCase().includes('trabalhando no seu whatsapp'),
+      );
+      expect(hardcodedFound).toBe(false);
+    });
+  });
+
+  describe('MIND delegation', () => {
+    const baseIntelligence = {
+      workspaceName: 'Test Workspace',
+      runtime: { state: 'RUNNING' },
+      autonomy: null,
+      businessState: null,
+      marketSignals: [],
+      humanTasks: [],
+      demandStates: [],
+      insights: [],
+    };
+
+    beforeEach(() => {
+      runtime.getOperationalIntelligence.mockResolvedValue(baseIntelligence);
+      accountAgent.getRuntime.mockResolvedValue(null);
+      prisma.kloelMemory.findMany.mockResolvedValue([]);
+      prisma.kloelMemory.findUnique.mockResolvedValue(null);
+      prisma.accountProofSnapshot.findFirst.mockResolvedValue(null);
+      prisma.metaConnection.findUnique.mockResolvedValue(null);
+      prisma.integration.findMany.mockResolvedValue([]);
+      accountAgent.getCapabilityRegistry.mockReturnValue([]);
+      accountAgent.getConversationActionRegistry.mockReturnValue([]);
+    });
+
+    it('includes mindLift in surface when MIND lift returns data', async () => {
+      mind.lift.mockResolvedValue({
+        n: 42,
+        mindMean: 0.78,
+        baselineMean: 0.65,
+        lift: 0.2,
+        pZScore: 1.96,
+      });
+
+      const surface = await service.getSurface('ws-1');
+
+      expect(surface).toHaveProperty('mindLift');
+      expect(surface.mindLift).toEqual({
+        decisionType: 'followup_timing',
+        n: 42,
+        mindMean: 0.78,
+        baselineMean: 0.65,
+        lift: 0.2,
+        pZScore: 1.96,
+      });
+    });
+
+    it('returns null mindLift when MIND lift fails gracefully', async () => {
+      mind.lift.mockRejectedValue(new Error('MIND not available'));
+
+      const surface = await service.getSurface('ws-1');
+
+      expect(surface).toHaveProperty('mindLift');
+      expect(surface.mindLift).toBeNull();
+    });
+
+    it('returns null mindLift when MIND lift returns null', async () => {
+      mind.lift.mockResolvedValue(null);
+
+      const surface = await service.getSurface('ws-1');
+
+      expect(surface.mindLift).toBeNull();
+    });
+
+    it('delegates to mind.lift with correct workspace id', async () => {
+      mind.lift.mockResolvedValue(null);
+
+      await service.getSurface('ws-42');
+
+      expect(mind.lift).toHaveBeenCalledWith('ws-42', 'followup_timing');
+    });
+
+    it('getSurface completes even when mind.lift throws', async () => {
+      mind.lift.mockRejectedValue(new Error('connection refused'));
+
+      const surface = await service.getSurface('ws-1');
+
+      expect(surface.title).toBe('KLOEL');
+      expect(surface.state).toBe('RUNNING');
+      expect(surface.mindLift).toBeNull();
+    });
   });
 });

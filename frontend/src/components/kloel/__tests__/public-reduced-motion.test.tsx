@@ -1,7 +1,7 @@
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { KloelBrandLockup } from '../KloelBrand';
+import { KloelBrandLockup, KloelMushroomVisual } from '../KloelBrand';
 import { KloelAuthScreen } from '../auth/kloel-auth-screen';
 import { CookieProvider } from '../cookies/CookieProvider';
 import KloelLanding from '../landing/KloelLanding';
@@ -120,8 +120,48 @@ describe('public reduced-motion surfaces', () => {
       <KloelBrandLockup animated={false} spores="none" markSize={48} fontSize={20} />,
     );
 
-    expect(container.querySelector('img')).toBeNull();
-    expect(container.querySelector('svg')).not.toBeNull();
+    const img = container.querySelector<HTMLImageElement>(
+      'img[src="/kloel-mushroom-animated.svg"]',
+    );
+    expect(img).not.toBeNull();
+    expect(img!.hasAttribute('data-reduced-motion')).toBe(false);
+    expect(img!.style.transform).toBe('translate3d(0,0,0)');
+  });
+
+  it('applies GPU transform layer when reduced motion is not preferred', () => {
+    mockReducedMotion(false);
+
+    const { container } = render(<KloelMushroomVisual size={32} />);
+
+    const img = container.querySelector<HTMLImageElement>(
+      'img[src="/kloel-mushroom-animated.svg"]',
+    );
+    expect(img).not.toBeNull();
+    expect(img!.hasAttribute('data-reduced-motion')).toBe(false);
+    expect(img!.style.transform).toBe('translate3d(0,0,0)');
+  });
+
+  it('uses canonical SVG path and supplies accessible alt text', () => {
+    const { container } = render(<KloelMushroomVisual size={48} title="Kloel Brain" />);
+
+    const img = container.querySelector<HTMLImageElement>(
+      'img[src="/kloel-mushroom-animated.svg"]',
+    );
+    expect(img).not.toBeNull();
+    expect(img!.getAttribute('alt')).toBe('Kloel Brain');
+    expect(img!.getAttribute('role')).toBe('img');
+  });
+
+  it('marks mushroom as presentational when ariaHidden is true', () => {
+    const { container } = render(<KloelMushroomVisual size={24} ariaHidden />);
+
+    const img = container.querySelector<HTMLImageElement>(
+      'img[src="/kloel-mushroom-animated.svg"]',
+    );
+    expect(img).not.toBeNull();
+    expect(img!.getAttribute('aria-hidden')).toBe('true');
+    expect(img!.getAttribute('alt')).toBe('');
+    expect(img!.getAttribute('role')).toBe('presentation');
   });
 
   it('keeps the auth screen deterministic under reduced motion without disabling Google auth', async () => {
@@ -160,7 +200,7 @@ describe('public reduced-motion surfaces', () => {
 
     expect(screen.getByText('O Kloel escala.')).toBeInTheDocument();
     expect(screen.getByText('O Marketing Artificial começou.')).toBeInTheDocument();
-    expect(container.querySelector('img[src="/kloel-mushroom-animated.svg"]')).toBeNull();
+    expect(container.querySelector('img[src="/kloel-mushroom-animated.svg"]')).not.toBeNull();
   });
 
   it('renders the thanos section in a static reveal state under reduced motion', () => {

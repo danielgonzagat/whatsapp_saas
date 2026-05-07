@@ -240,6 +240,34 @@ const resolveAggressiveness = (
   return 'LOW';
 };
 
+export interface MindAggressivenessOverride {
+  aggressiveness: string;
+  confidence: number;
+  fallback: boolean;
+}
+
+const VALID_AGGRESSIVENESS = new Set(['LOW', 'MEDIUM', 'HIGH']);
+
+export function resolveAggressivenessWithMind(
+  soldRate: number,
+  repliedRate: number,
+  revenuePerSignal: number,
+  mindOverride?: MindAggressivenessOverride | null,
+): Aggressiveness {
+  const baseline = resolveAggressiveness(soldRate, repliedRate, revenuePerSignal);
+
+  if (!mindOverride || mindOverride.fallback) {
+    return baseline;
+  }
+
+  const candidate = String(mindOverride.aggressiveness).toUpperCase();
+  if (VALID_AGGRESSIVENESS.has(candidate) && mindOverride.confidence >= 0.4) {
+    return candidate as Aggressiveness;
+  }
+
+  return baseline;
+}
+
 function buildPatternForGroup(key: string, items: GlobalLearningSignal[]): GlobalLearningPattern {
   const [domain, intent] = key.split(':');
   const samples = items.length;
@@ -294,6 +322,7 @@ export function buildGlobalStrategy(input: {
   patterns: GlobalLearningPattern[];
   domain: string;
   intent: string;
+  mindOverride?: MindAggressivenessOverride | null;
 }) {
   const domainKey = normalizeToken(input.domain);
   const intentKey = normalizeToken(input.intent);
@@ -304,23 +333,35 @@ export function buildGlobalStrategy(input: {
     null;
 
   if (!pattern) {
+    const baseline = input.mindOverride
+      ? resolveAggressivenessWithMind(0, 0, 0, input.mindOverride)
+      : 'LOW';
     return {
       domain: domainKey,
       intent: intentKey,
       preferredLength: 'medium' as const,
       bestHour: null,
-      aggressiveness: 'LOW' as const,
+      aggressiveness: baseline as Aggressiveness,
       preferredVariantFamily: null,
       confidence: 0,
     };
   }
+
+  const aggressiveness = input.mindOverride
+    ? resolveAggressivenessWithMind(
+        pattern.soldRate,
+        pattern.repliedRate,
+        pattern.revenuePerSignal,
+        input.mindOverride,
+      )
+    : pattern.aggressiveness;
 
   return {
     domain: pattern.domain,
     intent: pattern.intent,
     preferredLength: pattern.preferredLength,
     bestHour: pattern.bestHour,
-    aggressiveness: pattern.aggressiveness,
+    aggressiveness,
     preferredVariantFamily: pattern.preferredVariantFamily,
     confidence: Number(Math.min(pattern.samples / 25, 1).toFixed(3)),
   };

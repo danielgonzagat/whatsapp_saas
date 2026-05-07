@@ -8,7 +8,7 @@ import Link from 'next/link';
 import { type FormEvent, useCallback, useEffect, useId, useRef, useState } from 'react';
 import { useAuth } from './auth-provider';
 import { TheMachine } from './kloel-auth-screen.machine';
-import { useGoogleSignIn, useFacebookSignIn } from './kloel-auth-screen.hooks';
+import { useGoogleSignIn } from './kloel-auth-screen.hooks';
 import { SocialButtons } from './kloel-auth-screen.social-buttons';
 import { AuthFormFields } from './kloel-auth-screen.form-fields';
 
@@ -38,26 +38,16 @@ function resolveOAuthErrorMessage(errorCode: string, reason: string): string {
   if (errorCode === 'apple_auth_failed') {
     if (reason === 'missing_identity_token')
       return 'A Apple nao retornou o token de autenticacao. Tente novamente.';
+    if (reason === 'not_configured')
+      return 'Autenticacao com Apple nao esta disponivel no momento.';
+    if (reason === 'backend_not_configured')
+      return 'Servico indisponivel. Tente novamente mais tarde.';
+    if (reason === 'backend_rejected')
+      return 'Autenticacao com Apple foi recusada. Verifique suas credenciais.';
     if (reason === 'timeout') return 'A autenticacao com Apple expirou. Tente novamente.';
+    if (reason === 'unexpected_error')
+      return 'Erro inesperado ao autenticar com Apple. Tente novamente.';
     return 'Falha ao autenticar com Apple.';
-  }
-  if (errorCode === 'tiktok_auth_failed') {
-    if (reason === 'missing_code')
-      return 'O TikTok nao retornou o codigo de autorizacao. Tente novamente.';
-    if (reason === 'state_mismatch')
-      return 'A sessao de login com TikTok expirou ou ficou invalida. Tente novamente.';
-    if (reason === 'access_denied') return 'O login com TikTok foi cancelado ou negado.';
-    if (reason === 'timeout') return 'O TikTok demorou para responder. Tente novamente.';
-    if (
-      reason === 'client_key_missing' ||
-      reason === 'client_secret_missing' ||
-      reason === 'backend_not_configured'
-    ) {
-      return 'Login com TikTok indisponivel no momento.';
-    }
-    if (reason === 'token_exchange_failed')
-      return 'Nao foi possivel validar o login com TikTok. Tente novamente.';
-    return 'Falha ao autenticar com TikTok.';
   }
   return 'Nao foi possivel concluir a autenticacao social.';
 }
@@ -68,14 +58,7 @@ function resolveOAuthErrorMessage(errorCode: string, reason: string): string {
 // PULSE_OK: form state preserved in React state, connection errors shown to user
 export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps) {
   const fid = useId();
-  const {
-    signIn,
-    signUp,
-    signInWithGoogle,
-    signInWithFacebook,
-    requestMagicLink,
-    isAuthenticated,
-  } = useAuth();
+  const { signIn, signUp, signInWithGoogle, requestMagicLink, isAuthenticated } = useAuth();
   const redirectingRef = useRef(false);
 
   const [mode, setMode] = useState<Mode>(initialMode);
@@ -89,9 +72,6 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
   const [error, setError] = useState('');
   const [forgotSent, setForgotSent] = useState(false);
   const [magicLinkSent, setMagicLinkSent] = useState('');
-  const tikTokAvailable =
-    (typeof process !== 'undefined' ? process.env.NEXT_PUBLIC_TIKTOK_CLIENT_KEY?.trim() : '') || '';
-
   const shouldBypassExistingSessionRedirect = useCallback(() => {
     if (typeof window === 'undefined') return false;
     return new URLSearchParams(window.location.search).get('forceAuth') === '1';
@@ -209,28 +189,6 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
   const googleButtonRef = useRef<HTMLDivElement>(null);
   useGoogleSignIn(handleGoogleCredential, googleButtonRef);
 
-  const handleFacebookAuth = useCallback(
-    async ({ accessToken, userId }: { accessToken: string; userId?: string }) => {
-      setError('');
-      setMagicLinkSent('');
-      setIsLoading(true);
-      const result = await signInWithFacebook(accessToken, userId);
-      if (!result.success) {
-        setError(result.error || 'Falha ao autenticar com Facebook.');
-        setIsLoading(false);
-        return;
-      }
-      redirectToApp();
-    },
-    [redirectToApp, signInWithFacebook],
-  );
-
-  const {
-    available: facebookAvailable,
-    sdkReady: facebookSdkReady,
-    signIn: triggerFacebookSignIn,
-  } = useFacebookSignIn(handleFacebookAuth, isLoading);
-
   const handleForgotPassword = async () => {
     if (!email.trim()) {
       setError('Preencha o e-mail.');
@@ -273,43 +231,17 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
     }
   }, [email, requestMagicLink, resolveNextPath]);
 
-  const handleFacebookClick = useCallback(async () => {
-    setError('');
-    setForgotSent(false);
-    setMagicLinkSent('');
-    try {
-      await triggerFacebookSignIn();
-    } catch (facebookError: unknown) {
-      setError(
-        facebookError instanceof Error
-          ? facebookError.message
-          : 'Falha ao autenticar com Facebook.',
-      );
-      setIsLoading(false);
-    }
-  }, [triggerFacebookSignIn]);
-
   const handleApple = async () => {
     setIsLoading(true);
     try {
-      const appleAuthUrl = `https://appleid.apple.com/auth/authorize?client_id=${encodeURIComponent(process.env.NEXT_PUBLIC_APPLE_CLIENT_ID || 'com.kloel.web')}&redirect_uri=${encodeURIComponent(`${window.location.origin}/api/auth/callback/apple`)}&response_type=code id_token&scope=name email&response_mode=form_post`;
-      window.location.href = appleAuthUrl;
-    } catch (e) {
-      console.error('Apple Sign-In error:', e);
+      const destination = new URL('/api/auth/apple/start', window.location.origin);
+      destination.searchParams.set('next', resolveNextPath('/'));
+      window.location.href = destination.toString();
+    } catch {
+      setError('Login com Apple indisponível no momento.');
       setIsLoading(false);
     }
   };
-
-  const handleTikTok = useCallback(() => {
-    if (!tikTokAvailable || typeof window === 'undefined') return;
-    setError('');
-    setForgotSent(false);
-    setMagicLinkSent('');
-    setIsLoading(true);
-    const destination = new URL('/api/auth/tiktok/start', window.location.origin);
-    destination.searchParams.set('next', resolveNextPath('/'));
-    window.location.assign(destination.toString());
-  }, [resolveNextPath, tikTokAvailable]);
 
   const inputBase: React.CSSProperties = {
     width: '100%',
@@ -438,11 +370,6 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
             <SocialButtons
               googleButtonRef={googleButtonRef}
               isLoading={isLoading}
-              facebookAvailable={facebookAvailable}
-              facebookSdkReady={facebookSdkReady}
-              tikTokAvailable={tikTokAvailable}
-              onFacebookClick={() => void handleFacebookClick()}
-              onTikTokClick={() => void handleTikTok()}
               onAppleClick={handleApple}
             />
 

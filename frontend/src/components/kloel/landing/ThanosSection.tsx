@@ -22,6 +22,25 @@ import {
 } from './thanos-section.const';
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+const PARTICLES_PER_ICON = 150;
+const DUST_DURATION_MS = 3000;
+const ICON_STAGGER_MS = 140;
+
+type DustParticle = {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  size: number;
+  delay: number;
+  life: number;
+  alpha: number;
+};
+
+function seededUnit(seed: number) {
+  const value = Math.sin(seed * 12.9898) * 43758.5453;
+  return value - Math.floor(value);
+}
 
 function usePrefersReducedMotion() {
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(true);
@@ -162,10 +181,13 @@ function ThanosOmniSales({ runToken }: { runToken: number }) {
 export default function ThanosSection() {
   const prefersReducedMotion = usePrefersReducedMotion();
   const secRef = useRef<HTMLDivElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const iconRefs = useRef<Array<HTMLSpanElement | null>>([]);
   const [started, setStarted] = useState(false);
   const [showReveal, setShowReveal] = useState(false);
   const [showSales, setShowSales] = useState(false);
   const [salesRunToken, setSalesRunToken] = useState(0);
+  const [dustRunToken, setDustRunToken] = useState(0);
 
   useEffect(() => {
     if (prefersReducedMotion) {
@@ -202,10 +224,12 @@ export default function ThanosSection() {
       while (alive) {
         setShowReveal(false);
         setShowSales(false);
-        await wait(4200);
+        setDustRunToken((value) => value + 1);
+        await wait(DUST_DURATION_MS + THANOS_ICONS.length * ICON_STAGGER_MS);
         if (!alive) {
           return;
         }
+        await new Promise((r) => requestAnimationFrame(r));
         setShowReveal(true);
         await wait(SALES_DELAY_MS);
         if (!alive) {
@@ -223,6 +247,100 @@ export default function ThanosSection() {
     };
   }, [prefersReducedMotion, started]);
 
+  useEffect(() => {
+    if (prefersReducedMotion || !dustRunToken) {
+      return;
+    }
+
+    const canvas = canvasRef.current;
+    const section = secRef.current;
+    if (!canvas || !section) {
+      return;
+    }
+
+    const rect = section.getBoundingClientRect();
+
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = Math.max(1, Math.floor(rect.width * dpr));
+    canvas.height = Math.max(1, Math.floor(rect.height * dpr));
+    canvas.style.width = `${rect.width}px`;
+    canvas.style.height = `${rect.height}px`;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      return;
+    }
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    const particles: DustParticle[] = [];
+    iconRefs.current.forEach((node, iconIndex) => {
+      if (!node) {
+        return;
+      }
+      const iconRect = node.getBoundingClientRect();
+      const left = iconRect.left - rect.left;
+      const top = iconRect.top - rect.top;
+      for (let particleIndex = 0; particleIndex < PARTICLES_PER_ICON; particleIndex += 1) {
+        const seed = iconIndex * 1000 + particleIndex + 1;
+        const angle = -Math.PI / 2 + (seededUnit(seed + 31) - 0.5) * 1.35;
+        const speed = 18 + seededUnit(seed + 47) * 62;
+        particles.push({
+          x: left + seededUnit(seed) * iconRect.width,
+          y: top + seededUnit(seed + 17) * iconRect.height,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed - 16,
+          size: 0.7 + seededUnit(seed + 59) * 1.9,
+          delay: iconIndex * ICON_STAGGER_MS + seededUnit(seed + 71) * 120,
+          life: 1100 + seededUnit(seed + 83) * 980,
+          alpha: 0.34 + seededUnit(seed + 97) * 0.5,
+        });
+      }
+    });
+
+    if (particles.length === 0) {
+      return;
+    }
+
+    canvas.style.opacity = '1';
+    let frame = 0;
+    const startedAt = performance.now();
+
+    const animate = (now: number) => {
+      const elapsed = now - startedAt;
+      ctx.clearRect(0, 0, rect.width, rect.height);
+      ctx.fillStyle = colors.ember.primary;
+      particles.forEach((particle) => {
+        const local = elapsed - particle.delay;
+        if (local < 0 || local > particle.life) {
+          return;
+        }
+        const progress = local / particle.life;
+        const driftX = particle.x + particle.vx * progress;
+        const driftY = particle.y + particle.vy * progress - 44 * progress * progress;
+        ctx.globalAlpha = particle.alpha * (1 - progress);
+        ctx.beginPath();
+        ctx.arc(driftX, driftY, particle.size * (1 - progress * 0.35), 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.globalAlpha = 1;
+
+      if (elapsed < DUST_DURATION_MS + THANOS_ICONS.length * ICON_STAGGER_MS) {
+        frame = requestAnimationFrame(animate);
+        return;
+      }
+      ctx.clearRect(0, 0, rect.width, rect.height);
+      canvas.style.opacity = '0';
+    };
+
+    frame = requestAnimationFrame(animate);
+
+    return () => {
+      cancelAnimationFrame(frame);
+      ctx.clearRect(0, 0, rect.width, rect.height);
+      canvas.style.opacity = '0';
+    };
+  }, [dustRunToken, prefersReducedMotion]);
+
   return (
     <div ref={secRef} style={{ position: 'relative' }}>
       <section
@@ -239,25 +357,37 @@ export default function ThanosSection() {
         }}
       >
         <canvas
+          ref={canvasRef}
           aria-hidden="true"
           style={{
             position: 'absolute',
             inset: 0,
-            width: '100%',
-            height: '100%',
             opacity: 0,
             pointerEvents: 'none',
+            zIndex: 3,
           }}
         />
         {!prefersReducedMotion && (
           <div
-            className={showReveal ? 'thanos-icons thanos-icons--exit' : 'thanos-icons'}
+            className={
+              showReveal
+                ? 'thanos-icons thanos-icons--exit'
+                : dustRunToken
+                  ? 'thanos-icons thanos-icons--dusting'
+                  : 'thanos-icons'
+            }
             aria-hidden={showReveal}
           >
             <h2>{kloelT(THANOS_TITLE)}</h2>
             <div>
               {THANOS_ICONS.map((icon, index) => (
-                <span key={icon.id} style={{ animationDelay: index * 55 + 'ms' }}>
+                <span
+                  key={icon.id}
+                  ref={(node) => {
+                    iconRefs.current[index] = node;
+                  }}
+                  style={{ animationDelay: index * ICON_STAGGER_MS + 'ms' }}
+                >
                   <img src={icon.d} alt="" loading="lazy" decoding="async" />
                 </span>
               ))}
@@ -291,7 +421,7 @@ export default function ThanosSection() {
             </h2>
             {(prefersReducedMotion || showSales) && (
               <div style={{ width: '100%', maxWidth: 740 }}>
-                <ThanosOmniSales runToken={prefersReducedMotion ? 0 : salesRunToken} />
+                <ThanosOmniSales runToken={prefersReducedMotion ? 1 : salesRunToken} />
               </div>
             )}
           </div>

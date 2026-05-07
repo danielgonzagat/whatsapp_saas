@@ -3,6 +3,7 @@ import {
   BadRequestException,
   Injectable,
   Logger,
+  Optional,
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { AuditService } from '../audit/audit.service';
@@ -11,6 +12,8 @@ import type { StripePaymentIntent } from '../billing/stripe-types';
 import { FinancialAlertService } from '../common/financial-alert.service';
 import { FraudEngine } from '../payments/fraud/fraud.engine';
 import { PrismaService } from '../prisma/prisma.service';
+import { BrainEventSpineService } from './brain-event-spine.service';
+import type { SaleEventPayload } from './brain-event-taxonomy';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 
 interface PixDisplayQrCode {
@@ -114,6 +117,7 @@ export class PaymentService {
     private readonly auditService: AuditService,
     private readonly financialAlert: FinancialAlertService,
     private readonly fraudEngine: FraudEngine,
+    @Optional() private readonly events?: BrainEventSpineService,
   ) {
     // Verify kloelSale model exists at runtime
     if (typeof this.prisma.kloelSale?.create !== 'function') {
@@ -169,7 +173,7 @@ export class PaymentService {
     paymentLink?: string;
     pixData: PixDisplayQrCode | null;
   }): Promise<void> {
-    await this.prisma.$transaction(
+    const isReplay = await this.prisma.$transaction(
       async (tx) => {
         const existingSale = await tx.kloelSale.findFirst({
           where: {
@@ -179,7 +183,7 @@ export class PaymentService {
           select: { id: true },
         });
         if (existingSale) {
-          return;
+          return true;
         }
 
         await tx.kloelSale.create({
@@ -216,9 +220,30 @@ export class PaymentService {
             description: params.data.description,
           },
         });
+
+        return false;
       },
       { isolationLevel: 'ReadCommitted' },
     );
+
+    if (!isReplay) {
+      const saleEvent: SaleEventPayload = {
+        occurredAt: new Date(),
+        workspaceId: params.data.workspaceId,
+        subject: `lead:${params.data.leadId}`,
+        eventType: 'sale.created',
+        contactId: params.data.leadId,
+        idempotencyKey: `sale:${params.idempotencyKey}`,
+        payload: {
+          amount: params.data.amount,
+          externalPaymentId: params.paymentIntent.id,
+          leadId: params.data.leadId,
+          paymentMethod: 'PIX',
+          status: 'pending',
+        },
+      };
+      void this.events?.recordCommercial(saleEvent);
+    }
   }
 
   private buildCreatePaymentResponse(params: {

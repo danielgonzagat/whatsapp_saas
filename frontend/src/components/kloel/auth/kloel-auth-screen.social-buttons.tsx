@@ -1,17 +1,12 @@
 'use client';
 import { kloelT } from '@/lib/i18n/t';
-import { AppleIcon, FacebookIcon, GoogleIcon, TikTokIcon } from './kloel-auth-screen.icons';
+import { AppleIcon, GoogleIcon } from './kloel-auth-screen.icons';
 
 const sora = "var(--font-sora), 'Sora', sans-serif";
 
 interface SocialButtonsProps {
   googleButtonRef: React.RefObject<HTMLDivElement | null>;
   isLoading: boolean;
-  facebookAvailable: boolean;
-  facebookSdkReady: boolean;
-  tikTokAvailable: string;
-  onFacebookClick: () => void;
-  onTikTokClick: () => void;
   onAppleClick: () => void;
 }
 
@@ -30,16 +25,7 @@ const socialBtnBase: React.CSSProperties = {
   transition: 'border-color 150ms ease, opacity 150ms ease',
 };
 
-export function SocialButtons({
-  googleButtonRef,
-  isLoading,
-  facebookAvailable,
-  facebookSdkReady,
-  tikTokAvailable,
-  onFacebookClick,
-  onTikTokClick,
-  onAppleClick,
-}: SocialButtonsProps) {
+export function SocialButtons({ googleButtonRef, isLoading, onAppleClick }: SocialButtonsProps) {
   return (
     <div
       style={{
@@ -61,7 +47,7 @@ export function SocialButtons({
           }}
         >
           <GoogleIcon />
-          {kloelT(`Google`)}
+          {kloelT(`Continuar com Google`)}
         </div>
         {/* Real Google button on top (transparent, receives clicks) */}
         <div
@@ -75,56 +61,6 @@ export function SocialButtons({
           }}
         />
       </div>
-
-      <button
-        type="button"
-        onClick={onFacebookClick}
-        disabled={isLoading || !facebookAvailable}
-        style={{
-          ...socialBtnBase,
-          cursor: isLoading || !facebookAvailable ? 'default' : 'pointer',
-          opacity: facebookAvailable ? 1 : 0.45,
-        }}
-        onMouseEnter={(e) => {
-          if (!facebookAvailable || isLoading) return;
-          e.currentTarget.style.borderColor = '#333338';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.borderColor = '#222226';
-        }}
-        title={
-          facebookAvailable
-            ? facebookSdkReady
-              ? 'Continuar com Facebook'
-              : 'Carregando Facebook...'
-            : 'Facebook indisponível'
-        }
-      >
-        <FacebookIcon />
-        {kloelT(`Facebook`)}
-      </button>
-
-      <button
-        type="button"
-        onClick={onTikTokClick}
-        disabled={isLoading || !tikTokAvailable}
-        style={{
-          ...socialBtnBase,
-          cursor: isLoading || !tikTokAvailable ? 'default' : 'pointer',
-          opacity: tikTokAvailable ? 1 : 0.45,
-        }}
-        onMouseEnter={(e) => {
-          if (!tikTokAvailable || isLoading) return;
-          e.currentTarget.style.borderColor = '#333338';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.borderColor = '#222226';
-        }}
-        title={tikTokAvailable ? 'Continuar com TikTok' : 'TikTok indisponível'}
-      >
-        <TikTokIcon />
-        {kloelT(`TikTok`)}
-      </button>
 
       <button
         type="button"
@@ -142,7 +78,7 @@ export function SocialButtons({
         }}
       >
         <AppleIcon />
-        {kloelT(`Apple`)}
+        {kloelT(`Continuar com Apple`)}
       </button>
     </div>
   );

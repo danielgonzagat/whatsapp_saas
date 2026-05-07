@@ -1,5 +1,7 @@
 'use client';
 
+import { Check } from 'lucide-react';
+
 import { kloelT } from '@/lib/i18n/t';
 import { UI } from '@/lib/ui-tokens';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
@@ -134,7 +136,7 @@ export function resolveConnectedPhone(phoneNumber: unknown, phoneNumberId: unkno
     return phoneNumber;
   }
   if (typeof phoneNumberId === 'string' && phoneNumberId.trim()) {
-    return phoneNumberId;
+    return 'Número autorizado';
   }
   return 'Aguardando número';
 }
@@ -206,11 +208,8 @@ export function NonWahaProviderHint() {
         lineHeight: 1.7,
       }}
     >
-      {kloelT(`O provider ativo deste workspace nao esta em WAHA. O QR Code so aparece quando o runtime do
-      WhatsApp opera em`)}{' '}
-      <span style={{ color: E, fontWeight: 600 }}>WAHA</span>
-      {kloelT(`. Atualize o provider
-      do backend e recarregue esta tela para iniciar a conexao por QR.`)}
+      {kloelT(`A conexao por QR nao esta disponivel para este workspace. Use o botao de conexao
+      oficial para autorizar o WhatsApp Business e retornar para a Kloel.`)}
     </div>
   );
 }
@@ -231,7 +230,7 @@ export function ConnectedCelebration() {
           fontSize: 28,
         }}
       >
-        ✓
+        <Check aria-hidden="true" size={28} strokeWidth={2.4} />
       </div>
       <p style={{ fontSize: 15, fontWeight: 600, color: G, fontFamily: F }}>
         {kloelT(`WhatsApp conectado com sucesso!`)}

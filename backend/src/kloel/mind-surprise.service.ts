@@ -1,0 +1,78 @@
+import { Injectable, Logger } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+import { MindBeliefService } from './mind-belief.service';
+import { MindPredictorService } from './mind-predictor.service';
+import type { MindPrediction } from './mind.types';
+
+@Injectable()
+export class MindSurpriseService {
+  private readonly logger = new Logger(MindSurpriseService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly beliefs: MindBeliefService,
+    private readonly predictor: MindPredictorService,
+  ) {}
+
+  async resolveBinary(
+    workspaceId: string,
+    subject: string,
+    predicate: string,
+    outcome: 0 | 1,
+  ): Promise<number> {
+    const open = await this.predictor.findOpen(workspaceId, subject, predicate);
+    if (!open?.id) {
+      return 0;
+    }
+
+    const probability = this.clamp(open.predictedMean, 1e-6, 1 - 1e-6);
+    const surprise = outcome === 1 ? -Math.log(probability) : -Math.log(1 - probability);
+
+    await this.predictor.resolve(open.id, outcome, surprise);
+    await this.beliefs.observeBinary(workspaceId, subject, predicate, open.context, outcome);
+
+    if (surprise > 1.5) {
+      this.logger.warn(
+        `High surprise ws=${workspaceId} subject=${subject} predicate=${predicate} outcome=${outcome} p=${probability.toFixed(3)} surprise=${surprise.toFixed(2)}`,
+      );
+    }
+
+    return surprise;
+  }
+
+  async sweepExpired(workspaceId: string, asOf = new Date()): Promise<number> {
+    const rows = await this.prisma.$queryRaw<MindPrediction[]>`
+      SELECT *
+      FROM "RAC_MindPrediction"
+      WHERE "workspaceId" = ${workspaceId}
+        AND "resolvedAt" IS NULL
+        AND "deadline" < ${asOf}
+      LIMIT 500
+    `;
+
+    let surpriseTotal = 0;
+    for (const row of rows) {
+      if (!row.id) continue;
+      if (row.predicate.startsWith('P(')) {
+        const probabilityOfMiss = this.clamp(1 - row.predictedMean, 1e-6, 1);
+        const surprise = -Math.log(probabilityOfMiss);
+        await this.predictor.resolve(row.id, 0, surprise);
+        await this.beliefs.observeBinary(
+          row.workspaceId,
+          row.subject,
+          row.predicate,
+          row.context,
+          0,
+        );
+        surpriseTotal += surprise;
+      } else {
+        await this.predictor.resolve(row.id, 0, 0);
+      }
+    }
+    return surpriseTotal;
+  }
+
+  private clamp(value: number, min: number, max: number): number {
+    return Math.min(max, Math.max(min, value));
+  }
+}

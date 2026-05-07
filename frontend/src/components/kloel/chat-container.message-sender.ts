@@ -2,8 +2,10 @@
 // No React hooks — only accepts React setState callbacks as arguments.
 
 import { kloelError } from '@/lib/i18n/t';
+import { streamBrainMessage } from '@/lib/brain-client';
 import { streamAuthenticatedKloelMessage } from '@/lib/kloel-conversations';
 import { appendAssistantTraceFromEvent } from '@/lib/kloel-message-ui';
+import type { KloelStreamEvent } from '@/lib/kloel-stream-events';
 import { apiUrl } from '@/lib/http';
 import { mutate } from 'swr';
 import { parseGuestStreamLine } from './chat-container.helpers';
@@ -160,89 +162,102 @@ export function runAuthedChat(deps: AuthedChatDeps): void {
   let nextConversationId = activeConversationId || null;
   let nextTitle =
     conversations.find((c) => c.id === activeConversationId)?.title || 'Nova conversa';
+  const useBrainStream = process.env.NEXT_PUBLIC_KLOEL_BRAIN_CHAT === 'true';
 
   setIsCancelableReply(true);
-  authedChatStreamRef.current = streamAuthenticatedKloelMessage(
-    {
-      message: content.trim(),
-      conversationId: activeConversationId || undefined,
-      mode: 'chat',
-      metadata: { clientRequestId, source: 'kloel_chat_container' },
+  const streamOptions = {
+    onEvent: (event: KloelStreamEvent) => {
+      setMessages((prev) =>
+        prev.map((message) =>
+          message.id === assistantId
+            ? { ...message, meta: appendAssistantTraceFromEvent(message.meta, event) }
+            : message,
+        ),
+      );
     },
-    {
-      onEvent: (event) => {
-        setMessages((prev) =>
-          prev.map((message) =>
-            message.id === assistantId
-              ? { ...message, meta: appendAssistantTraceFromEvent(message.meta, event) }
-              : message,
-          ),
-        );
-      },
-      onChunk: (chunk) => {
-        streamedReply += chunk;
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === assistantId ? { ...m, content: streamedReply, isStreaming: true } : m,
-          ),
-        );
-      },
-      onThread: (thread) => {
-        nextConversationId = thread.conversationId;
-        nextTitle =
-          thread.title ||
-          conversations.find((c) => c.id === thread.conversationId)?.title ||
-          nextTitle ||
-          'Nova conversa';
-        loadedConversationIdRef.current = thread.conversationId;
-        setActiveConversationId(thread.conversationId);
-        setActiveConversation(thread.conversationId);
+    onChunk: (chunk: string) => {
+      streamedReply += chunk;
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === assistantId ? { ...m, content: streamedReply, isStreaming: true } : m,
+        ),
+      );
+    },
+    onThread: (thread: { conversationId: string; title?: string }) => {
+      nextConversationId = thread.conversationId;
+      nextTitle =
+        thread.title ||
+        conversations.find((c) => c.id === thread.conversationId)?.title ||
+        nextTitle ||
+        'Nova conversa';
+      loadedConversationIdRef.current = thread.conversationId;
+      setActiveConversationId(thread.conversationId);
+      setActiveConversation(thread.conversationId);
+      upsertConversation({
+        id: thread.conversationId,
+        title: nextTitle,
+        updatedAt: new Date().toISOString(),
+      });
+    },
+    onDone: () => {
+      authedChatStreamRef.current = null;
+      setIsCancelableReply(false);
+      setShowSlowHint(false);
+      setMessages((prev) =>
+        prev.map((m) => (m.id === assistantId ? { ...m, isStreaming: false } : m)),
+      );
+      if (nextConversationId) {
         upsertConversation({
-          id: thread.conversationId,
+          id: nextConversationId,
           title: nextTitle,
           updatedAt: new Date().toISOString(),
         });
-      },
-      onDone: () => {
-        authedChatStreamRef.current = null;
-        setIsCancelableReply(false);
-        setShowSlowHint(false);
-        setMessages((prev) =>
-          prev.map((m) => (m.id === assistantId ? { ...m, isStreaming: false } : m)),
-        );
-        if (nextConversationId) {
-          upsertConversation({
-            id: nextConversationId,
-            title: nextTitle,
-            updatedAt: new Date().toISOString(),
-          });
-          void refreshConversations();
-          void loadConversation(nextConversationId);
-        }
-        setIsTyping(false);
-      },
-      onError: (error) => {
-        authedChatStreamRef.current = null;
-        setIsCancelableReply(false);
-        setShowSlowHint(false);
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === assistantId
-              ? {
-                  ...m,
-                  content:
-                    streamedReply.trim() ||
-                    error ||
-                    'Desculpe, ocorreu um erro ao continuar sua conversa.',
-                  isStreaming: false,
-                }
-              : m,
-          ),
-        );
-        setIsTyping(false);
-      },
+        void refreshConversations();
+        void loadConversation(nextConversationId);
+      }
+      setIsTyping(false);
     },
-  );
+    onError: (error: string) => {
+      authedChatStreamRef.current = null;
+      setIsCancelableReply(false);
+      setShowSlowHint(false);
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === assistantId
+            ? {
+                ...m,
+                content:
+                  streamedReply.trim() ||
+                  error ||
+                  'Desculpe, ocorreu um erro ao continuar sua conversa.',
+                isStreaming: false,
+              }
+            : m,
+        ),
+      );
+      setIsTyping(false);
+    },
+  };
+  authedChatStreamRef.current = useBrainStream
+    ? streamBrainMessage(
+        {
+          message: content.trim(),
+          conversationId: activeConversationId || undefined,
+          source: 'chat',
+          intent: 'user_message',
+          metadata: { clientRequestId, source: 'kloel_chat_container' },
+        },
+        streamOptions,
+      )
+    : streamAuthenticatedKloelMessage(
+        {
+          message: content.trim(),
+          conversationId: activeConversationId || undefined,
+          mode: 'chat',
+          metadata: { clientRequestId, source: 'kloel_chat_container' },
+        },
+        streamOptions,
+      );
 }
 
 /** Synchronously extracts an error message from an unknown error value. */

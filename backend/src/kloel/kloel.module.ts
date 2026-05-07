@@ -101,6 +101,21 @@ import { UnifiedAgentController } from './unified-agent.controller';
 import { UnifiedAgentService } from './unified-agent.service';
 import { UploadController } from './upload.controller';
 import { WebinarController } from './webinar.controller';
+import { BrainCapabilityRegistryService } from './brain-capability-registry.service';
+import { BrainAutonomyService } from './brain-autonomy.service';
+import { BrainCommercialGraphService } from './brain-commercial-graph.service';
+import { BrainEventSpineService } from './brain-event-spine.service';
+import { BrainRuntimeController } from './brain-runtime.controller';
+import { BrainRuntimeService } from './brain-runtime.service';
+import { MindBeliefService } from './mind-belief.service';
+import { MindController } from './mind-controller';
+import { MindPerceptionService } from './mind-perception.service';
+import { MindPolicyService } from './mind-policy.service';
+import { MindPredictorService } from './mind-predictor.service';
+import { MindProcessorService } from './mind-processor.service';
+import { MindService } from './mind.service';
+import { MindSurpriseService } from './mind-surprise.service';
+import { MindVerbalizerService } from './mind-verbalizer.service';
 
 /** Kloel module. */
 @Module({
@@ -151,6 +166,8 @@ import { WebinarController } from './webinar.controller';
     LeadsController,
     AdRulesController,
     WebinarController,
+    BrainRuntimeController,
+    MindController,
   ],
   providers: [
     KloelService,
@@ -207,6 +224,19 @@ import { WebinarController } from './webinar.controller';
     AdRulesEngineService,
     EmailCampaignService,
     CartRecoveryService,
+    BrainAutonomyService,
+    BrainCapabilityRegistryService,
+    BrainCommercialGraphService,
+    BrainEventSpineService,
+    BrainRuntimeService,
+    MindBeliefService,
+    MindPerceptionService,
+    MindPolicyService,
+    MindPredictorService,
+    MindProcessorService,
+    MindService,
+    MindSurpriseService,
+    MindVerbalizerService,
   ],
   exports: [
     KloelService,
@@ -248,6 +278,9 @@ import { WebinarController } from './webinar.controller';
     OrderAlertsService,
     AdRulesEngineService,
     EmailCampaignService,
+    MindBeliefService,
+    MindPolicyService,
+    MindService,
   ],
 })
 export class KloelModule {}

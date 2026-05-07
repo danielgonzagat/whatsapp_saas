@@ -5,6 +5,7 @@ import { flowQueue } from '../queue/queue';
 import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
 import type { ToolArgs } from './unified-agent.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import { MindPolicyService } from './mind-policy.service';
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -20,6 +21,7 @@ export class UnifiedAgentActionsCrmService {
     private readonly prisma: PrismaService,
     private readonly providerRegistry: WhatsAppProviderRegistry,
     @Optional() private readonly opsAlert?: OpsAlertService,
+    @Optional() private readonly mindPolicy?: MindPolicyService,
   ) {}
 
   // ───────── helpers ─────────
@@ -105,7 +107,14 @@ export class UnifiedAgentActionsCrmService {
     args: ToolArgs,
   ) {
     try {
-      const delayHours = this.num(args.delayHours, 24);
+      const requestedDelayHours = this.num(args.delayHours, 24);
+      const mindDecision = await this.chooseFollowUpTiming({
+        workspaceId,
+        contactId,
+        channel: 'whatsapp',
+        requestedDelayHours,
+      });
+      const delayHours = mindDecision.delayHours;
       const scheduledFor = new Date(Date.now() + delayHours * 60 * 60 * 1000);
       const followMessage = this.str(args.message);
       const followReason = this.str(args.reason, 'scheduled_by_unified_agent');
@@ -153,7 +162,11 @@ export class UnifiedAgentActionsCrmService {
             status: 'scheduled',
             reason: `Agendado para ${scheduledFor.toISOString()}`,
             responseText: followMessage,
-            meta: { scheduledFor: scheduledFor.toISOString(), delayHours },
+            meta: {
+              scheduledFor: scheduledFor.toISOString(),
+              delayHours,
+              mind: mindDecision.meta,
+            },
           },
         })
         .catch(() => {});
@@ -163,6 +176,7 @@ export class UnifiedAgentActionsCrmService {
         scheduledFor: scheduledFor.toISOString(),
         message: followMessage,
         jobId: `followup_${workspaceId}_${contactId}_${scheduledFor.getTime()}`,
+        mind: mindDecision.meta,
       };
     } catch (error: unknown) {
       void this.opsAlert?.alertOnCriticalError(error, 'UnifiedAgentActionsCrmService.getTime');
@@ -171,6 +185,87 @@ export class UnifiedAgentActionsCrmService {
       this.logger.error(`Erro ao agendar follow-up: ${msg}`);
       return { success: false, error: msg };
     }
+  }
+
+  private async chooseFollowUpTiming(args: {
+    channel: 'whatsapp';
+    contactId: string;
+    requestedDelayHours: number;
+    workspaceId: string;
+  }): Promise<{
+    delayHours: number;
+    meta: {
+      baseline: string;
+      chosen: string;
+      outcomeKey?: string;
+      reasonInternal?: string;
+    };
+  }> {
+    const buckets: Record<string, number> = {
+      immediate: 0.08,
+      short: 0.5,
+      medium: 2,
+      long: 8,
+      next_day: 24,
+    };
+    const baseline = this.nearestFollowUpBucket(args.requestedDelayHours, buckets);
+
+    if (!this.mindPolicy || !args.contactId) {
+      return {
+        delayHours: args.requestedDelayHours,
+        meta: { baseline, chosen: 'legacy_requested_delay' },
+      };
+    }
+
+    const hour = new Date().getHours();
+    const outcomeKey = `followup:${args.workspaceId}:${args.contactId}:${Date.now()}`;
+    const options = Object.entries(buckets).map(([bucket]) => ({
+      action: bucket,
+      predicate: 'P(reply|template,hour,channel)',
+      context: { channel: args.channel, hour, template: `followup_${bucket}` },
+    }));
+
+    try {
+      const { chosen, decision } = await this.mindPolicy.choose({
+        workspaceId: args.workspaceId,
+        subject: `contact:${args.contactId}`,
+        decisionType: 'followup_timing',
+        context: { channel: args.channel, hour, requestedDelayHours: args.requestedDelayHours },
+        options,
+        baseline,
+        outcomeKey,
+        utilitySuccess: 1,
+        utilityFail: -0.05,
+        epsilon: 0.6,
+      });
+      return {
+        delayHours: buckets[chosen] ?? args.requestedDelayHours,
+        meta: {
+          baseline,
+          chosen,
+          outcomeKey,
+          reasonInternal: decision.reasonInternal,
+        },
+      };
+    } catch (error: unknown) {
+      const msg =
+        error instanceof Error ? error.message : typeof error === 'string' ? error : 'unknown';
+      this.logger.warn(`MIND follow-up timing fallback: ${msg}`);
+      return {
+        delayHours: args.requestedDelayHours,
+        meta: { baseline, chosen: 'legacy_requested_delay' },
+      };
+    }
+  }
+
+  private nearestFollowUpBucket(
+    requestedDelayHours: number,
+    buckets: Record<string, number>,
+  ): string {
+    return Object.entries(buckets).sort(
+      ([, left], [, right]) =>
+        Math.abs(left - requestedDelayHours) - Math.abs(right - requestedDelayHours),
+    )[0][0];
   }
 
   async actionTransferToHuman(workspaceId: string, contactId: string, args: ToolArgs) {

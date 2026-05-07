@@ -208,6 +208,7 @@ export class UnifiedAgentService {
    * Processa uma mensagem recebida e decide as ações a tomar.
    */
   async processMessage(params: {
+    allowedTools?: string[];
     workspaceId: string;
     contactId: string;
     phone: string;
@@ -282,6 +283,11 @@ export class UnifiedAgentService {
       message,
       conversationHistory.length,
     );
+    const allowedTools = params.allowedTools?.length
+      ? UNIFIED_AGENT_TOOLS.filter(
+          (tool) => tool.type !== 'function' || params.allowedTools?.includes(tool.function.name),
+        )
+      : UNIFIED_AGENT_TOOLS;
 
     const contactData: Record<string, unknown> = this.ctx.isRecord(contact) ? contact : {};
     const contactName = this.ctx.readText(contactData.name).trim() || phone;
@@ -318,7 +324,7 @@ Mensagem: ${message}`,
         {
           model: this.primaryBrainModel,
           messages,
-          tools: UNIFIED_AGENT_TOOLS,
+          tools: allowedTools,
           tool_choice: 'auto',
           temperature: 0.82,
           top_p: 0.9,

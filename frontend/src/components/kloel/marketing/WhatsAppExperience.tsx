@@ -54,6 +54,10 @@ export default function WhatsAppExperience(props: WhatsAppExperienceProps) {
     reconfigure,
     workspaceId,
     operator,
+    metaAuthUrl,
+    isMetaProvider,
+    metaConnecting,
+    setMetaConnecting,
   } = useWhatsAppExperienceController(props);
 
   if (!workspaceId) return null;
@@ -88,6 +92,13 @@ export default function WhatsAppExperience(props: WhatsAppExperienceProps) {
         onToggleFollowUp={toggleFollowUp}
         onActivateAi={() => void activateAi()}
         onRefreshQrCode={() => void refreshQrCode()}
+        metaAuthUrl={metaAuthUrl}
+        isMetaProvider={isMetaProvider}
+        metaConnecting={metaConnecting}
+        onConnectMeta={(url) => {
+          setMetaConnecting(true);
+          window.location.assign(url);
+        }}
       />
     );
   }

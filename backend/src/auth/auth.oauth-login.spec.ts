@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { AuthService } from './auth.service';
+import { AppleAuthService } from './apple-auth.service';
 import { EmailService } from './email.service';
 import { FacebookAuthService } from './facebook-auth.service';
 import { GoogleAuthService } from './google-auth.service';
@@ -116,6 +117,10 @@ const mockTikTokAuthService = {
   verifyAccessToken: jest.fn(),
 };
 
+const mockAppleAuthService = {
+  verifyCredential: jest.fn(),
+};
+
 const mockConnectService = {};
 
 const mockRateLimitService = {
@@ -145,6 +150,7 @@ describe('AuthService OAuth login', () => {
         { provide: EmailService, useValue: mockEmailService },
         { provide: ConfigService, useValue: mockConfigService },
         { provide: GoogleAuthService, useValue: mockGoogleAuthService },
+        { provide: AppleAuthService, useValue: mockAppleAuthService },
         { provide: FacebookAuthService, useValue: mockFacebookAuthService },
         { provide: TikTokAuthService, useValue: mockTikTokAuthService },
         { provide: ConnectService, useValue: mockConnectService },

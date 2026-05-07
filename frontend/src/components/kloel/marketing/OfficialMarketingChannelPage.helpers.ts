@@ -1,3 +1,5 @@
+import { colors } from '@/lib/design-tokens';
+
 export type ChannelKey = 'whatsapp' | 'instagram' | 'facebook' | 'email' | 'tiktok';
 
 export interface ChannelConnection {
@@ -45,11 +47,11 @@ export const CHANNEL_META: Record<
     label: 'WhatsApp',
     color: colors.ember.primary,
     summary: 'Conecte o WABA e o número do cliente pelo Embedded Signup oficial da Meta.',
-    proof: ['WABA do workspace', 'Número próprio', 'Envio e webhooks via Cloud API'],
+    proof: ['Conta comercial', 'Número próprio', 'Envio e respostas automáticas'],
     steps: [
       'Abrir Embedded Signup oficial da Meta',
       'Selecionar ou criar WABA e número do cliente',
-      'Voltar para o KLOEL com Cloud API ativa',
+      'Voltar para o KLOEL com WhatsApp ativo',
     ],
   },
   instagram: {
@@ -67,7 +69,7 @@ export const CHANNEL_META: Record<
     label: 'Messenger Facebook',
     color: colors.ember.primary,
     summary: 'Conecte a Page Meta para automatizar conversas do Messenger.',
-    proof: ['Page vinculada', 'Page access token', 'Messenger API'],
+    proof: ['Página vinculada', 'Caixa de entrada autorizada', 'Messenger ativo'],
     steps: [
       'Abrir login oficial da Meta',
       'Selecionar a Page do cliente',
@@ -77,10 +79,10 @@ export const CHANNEL_META: Record<
   email: {
     label: 'Email',
     color: colors.text.silver,
-    summary: 'Ative o provider configurado no backend para enviar testes e campanhas.',
-    proof: ['Provider server-side', 'Remetente configurado', 'Envio de teste'],
+    summary: 'Ative o canal configurado para enviar testes e campanhas.',
+    proof: ['Canal de envio', 'Remetente configurado', 'Envio de teste'],
     steps: [
-      'Validar provider configurado no backend',
+      'Validar canal de envio',
       'Ativar o canal de email do workspace',
       'Enviar teste real para confirmar entrega',
     ],
@@ -92,7 +94,7 @@ export const CHANNEL_META: Record<
     proof: ['Creator OAuth', 'Advertiser OAuth', 'Tokens salvos no workspace'],
     steps: [
       'Conectar a conta TikTok do usuário',
-      'Conectar o advertiser autorizado no Business API',
+      'Conectar a conta comercial autorizada',
       'Voltar para o KLOEL com tokens do workspace salvos',
     ],
   },
@@ -113,4 +115,3 @@ export function statusText(connected?: boolean, status?: string) {
   }
   return status === 'server_not_configured' ? 'Configuração pendente' : 'Desconectado';
 }
-import { colors } from '@/lib/design-tokens';
