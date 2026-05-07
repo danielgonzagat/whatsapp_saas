@@ -61,6 +61,7 @@ export class OpsAlertService {
     this.logger.error(
       {
         operation: input.operation,
+        provider: 'prisma',
         workspaceId: input.workspaceId,
         status: input.status,
         durationMs: Date.now() - input.startedAt,
