@@ -75,13 +75,22 @@ export function CookieProvider({ children }: CookieProviderProps) {
     }
 
     const loadConsent = async () => {
-      const response = await cookieConsentApi.get();
-      if (!mounted) {
-        return;
+      try {
+        const response = await cookieConsentApi.get();
+        if (!mounted) {
+          return;
+        }
+        setConsent(normalizeConsent(response.data?.consent ?? null));
+      } catch {
+        if (!mounted) {
+          return;
+        }
+        setConsent(normalizeConsent(null));
+      } finally {
+        if (mounted) {
+          setIsLoaded(true);
+        }
       }
-
-      setConsent(normalizeConsent(response.data?.consent ?? null));
-      setIsLoaded(true);
     };
 
     void loadConsent();

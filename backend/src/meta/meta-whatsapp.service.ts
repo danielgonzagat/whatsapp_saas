@@ -73,7 +73,7 @@ export class MetaWhatsAppService {
       redirect_uri: this.getOAuthRedirectUri(),
       scope: scopes,
       response_type: 'code',
-      override_default_response_type: 'true',
+      override_default_response_type: String(true),
       state: JSON.stringify({
         workspaceId,
         channel: options?.channel || null,

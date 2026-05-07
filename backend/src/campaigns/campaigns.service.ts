@@ -17,6 +17,7 @@ import {
 } from '../common/utils/unsubscribe-footer.util';
 import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
+import { MetaWhatsAppService } from '../meta/meta-whatsapp.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 
@@ -34,6 +35,7 @@ export class CampaignsService {
     private audit: AuditService,
     private smartTime: SmartTimeService,
     @Optional() private readonly opsAlert?: OpsAlertService,
+    @Optional() private readonly metaWhatsApp?: MetaWhatsAppService,
   ) {
     const connection = createRedisClient();
 
@@ -200,13 +202,13 @@ export class CampaignsService {
 
     let sent = 0;
     let failed = 0;
+    const delivery = await this.resolveCampaignDelivery(workspaceId);
     const EmailServiceClass = (await import('../auth/email.service')).EmailService;
     const emailService = new EmailServiceClass();
 
     await forEachSequential(contacts, async (contact) => {
       try {
-        // Try email first (always available if Resend configured)
-        if (contact.email) {
+        if (delivery.emailReady && contact.email) {
           const bodyHtml = (campaign.messageTemplate || '').replace(
             NAME_RE,
             contact.name || 'Cliente',
@@ -238,7 +240,25 @@ export class CampaignsService {
           sent++;
           return;
         }
-        // Fallback: log if no email and no WhatsApp — count as skipped, not sent
+
+        if (delivery.whatsappReady && contact.phone && this.metaWhatsApp) {
+          const bodyText = (campaign.messageTemplate || '').replace(
+            NAME_RE,
+            contact.name || 'Cliente',
+          );
+          const delivered = await this.metaWhatsApp.sendTextMessage(
+            workspaceId,
+            contact.phone,
+            bodyText,
+          );
+          if (!delivered.success) {
+            failed++;
+            return;
+          }
+          sent++;
+          return;
+        }
+
         this.logger.warn(
           `Campaign ${campaign.name}: no channel available for ${contact.name || contact.id}`,
         );
@@ -264,6 +284,29 @@ export class CampaignsService {
   }
 
   private async ensureCampaignDeliveryReady(workspaceId: string): Promise<void> {
+    const delivery = await this.resolveCampaignDelivery(workspaceId);
+    const missing: string[] = [];
+
+    if (!delivery.emailReady && !delivery.whatsappReady) {
+      if (!delivery.emailReady) {
+        missing.push('email.enabled=true com provider configurado');
+      }
+      if (!delivery.whatsappReady) {
+        missing.push('whatsappApiSession.status=connected');
+      }
+    }
+
+    if (missing.length) {
+      throw new BadRequestException(
+        `Conecte um canal de entrega antes de lançar campanha. Faltando: ${missing.join(', ')}`,
+      );
+    }
+  }
+
+  private async resolveCampaignDelivery(workspaceId: string): Promise<{
+    emailReady: boolean;
+    whatsappReady: boolean;
+  }> {
     const ws = await this.prisma.workspace.findUnique({
       where: { id: workspaceId },
       select: { providerSettings: true },
@@ -274,28 +317,16 @@ export class CampaignsService {
         email?: { enabled?: boolean };
         whatsappApiSession?: { status?: string };
       } | null) || {};
-    const missing: string[] = [];
 
     const emailProviderReady = Boolean(
       process.env.RESEND_API_KEY || process.env.SENDGRID_API_KEY || process.env.SMTP_HOST,
     );
     const emailReady = Boolean(settings.email?.enabled && emailProviderReady);
-    const whatsappReady = settings?.whatsappApiSession?.status === 'connected';
+    const whatsappReady = Boolean(
+      this.metaWhatsApp && settings?.whatsappApiSession?.status === 'connected',
+    );
 
-    if (!emailReady && !whatsappReady) {
-      if (!emailReady) {
-        missing.push('email.enabled=true com provider configurado');
-      }
-      if (!whatsappReady) {
-        missing.push('whatsappApiSession.status=connected');
-      }
-    }
-
-    if (missing.length) {
-      throw new BadRequestException(
-        `Conecte um canal de entrega antes de lançar campanha. Faltando: ${missing.join(', ')}`,
-      );
-    }
+    return { emailReady, whatsappReady };
   }
 
   /**

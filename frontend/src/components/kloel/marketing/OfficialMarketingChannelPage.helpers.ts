@@ -43,7 +43,7 @@ export const CHANNEL_META: Record<
 > = {
   whatsapp: {
     label: 'WhatsApp',
-    color: 'rgb(37 211 102)',
+    color: colors.ember.primary,
     summary: 'Conecte o WABA e o número do cliente pelo Embedded Signup oficial da Meta.',
     proof: ['WABA do workspace', 'Número próprio', 'Envio e webhooks via Cloud API'],
     steps: [
@@ -54,7 +54,7 @@ export const CHANNEL_META: Record<
   },
   instagram: {
     label: 'Instagram Direct',
-    color: 'rgb(225 48 108)',
+    color: colors.ember.primary,
     summary: 'Conecte a conta Meta com Instagram Business para operar Direct e comentários.',
     proof: ['Instagram Business', 'Permissões de mensagens', 'Perfil e insights reais'],
     steps: [
@@ -65,7 +65,7 @@ export const CHANNEL_META: Record<
   },
   facebook: {
     label: 'Messenger Facebook',
-    color: 'rgb(24 119 242)',
+    color: colors.ember.primary,
     summary: 'Conecte a Page Meta para automatizar conversas do Messenger.',
     proof: ['Page vinculada', 'Page access token', 'Messenger API'],
     steps: [
@@ -76,7 +76,7 @@ export const CHANNEL_META: Record<
   },
   email: {
     label: 'Email',
-    color: 'rgb(245 158 11)',
+    color: colors.text.silver,
     summary: 'Ative o provider configurado no backend para enviar testes e campanhas.',
     proof: ['Provider server-side', 'Remetente configurado', 'Envio de teste'],
     steps: [
@@ -87,7 +87,7 @@ export const CHANNEL_META: Record<
   },
   tiktok: {
     label: 'TikTok',
-    color: 'rgb(254 44 85)',
+    color: colors.ember.primary,
     summary: 'Conecte creator e advertiser pelos fluxos oficiais do TikTok.',
     proof: ['Creator OAuth', 'Advertiser OAuth', 'Tokens salvos no workspace'],
     steps: [
@@ -113,3 +113,4 @@ export function statusText(connected?: boolean, status?: string) {
   }
   return status === 'server_not_configured' ? 'Configuração pendente' : 'Desconectado';
 }
+import { colors } from '@/lib/design-tokens';

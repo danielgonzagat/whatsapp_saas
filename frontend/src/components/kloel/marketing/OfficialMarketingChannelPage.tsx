@@ -23,6 +23,8 @@ export function OfficialMarketingChannelPage({ channel }: Props) {
   const [tiktokStatus, setTikTokStatus] = useState<TikTokStatus | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const connection = useMemo(() => {
     if (channel === 'tiktok') {
@@ -35,15 +37,25 @@ export function OfficialMarketingChannelPage({ channel }: Props) {
   }, [channel, status, tiktokStatus]);
 
   const refresh = useCallback(async () => {
-    const nextStatus = await apiFetch<ConnectStatus>('/marketing/connect/status');
-    if (!nextStatus.error) {
+    setIsLoading(true);
+    setLoadError(null);
+    try {
+      const nextStatus = await apiFetch<ConnectStatus>('/marketing/connect/status');
+      if (nextStatus.error) {
+        throw new Error(nextStatus.error);
+      }
       setStatus(nextStatus.data || (nextStatus as ConnectStatus));
-    }
-    if (channel === 'tiktok') {
-      const nextTikTok = await apiFetch<TikTokStatus>('/marketing/connect/tiktok/status');
-      if (!nextTikTok.error) {
+      if (channel === 'tiktok') {
+        const nextTikTok = await apiFetch<TikTokStatus>('/marketing/connect/tiktok/status');
+        if (nextTikTok.error) {
+          throw new Error(nextTikTok.error);
+        }
         setTikTokStatus(nextTikTok.data || null);
       }
+    } catch (error) {
+      setLoadError(error instanceof Error ? error.message : 'Falha ao carregar status.');
+    } finally {
+      setIsLoading(false);
     }
   }, [channel]);
 
@@ -60,7 +72,17 @@ export function OfficialMarketingChannelPage({ channel }: Props) {
         `/meta/auth/url?channel=${encodeURIComponent(channel)}&returnTo=${encodeURIComponent(returnTo)}`,
       );
       const url = String(response.data?.url || '').trim();
-      if (!url || !trustedExternalUrl(url, ['facebook.com', 'www.facebook.com'])) {
+      if (
+        !url ||
+        !trustedExternalUrl(url, [
+          'facebook.com',
+          'www.facebook.com',
+          'business.facebook.com',
+          'instagram.com',
+          'www.instagram.com',
+          'api.instagram.com',
+        ])
+      ) {
         throw new Error('URL oficial da Meta indisponivel.');
       }
       window.location.assign(url);
@@ -123,6 +145,11 @@ export function OfficialMarketingChannelPage({ channel }: Props) {
   }, []);
 
   const details = channel === 'tiktok' ? tiktokStatus : connection;
+  const setupUnavailable =
+    connection?.status === 'server_not_configured' || connection?.status === 'unavailable';
+  const badgeStatus = isLoading
+    ? 'Carregando'
+    : statusText(connection?.connected, connection?.status);
 
   return (
     <main
@@ -176,7 +203,7 @@ export function OfficialMarketingChannelPage({ channel }: Props) {
               fontFamily: "'JetBrains Mono', monospace",
             }}
           >
-            {statusText(connection?.connected, connection?.status)}
+            {badgeStatus}
           </span>
         </div>
 
@@ -250,6 +277,20 @@ export function OfficialMarketingChannelPage({ channel }: Props) {
             </li>
           ))}
         </ol>
+
+        {isLoading ? (
+          <p style={{ color: KLOEL_THEME.textSecondary }}>Carregando status oficial...</p>
+        ) : loadError ? (
+          <p style={{ color: KLOEL_THEME.error }}>Falha ao carregar conexão: {loadError}</p>
+        ) : setupUnavailable ? (
+          <p style={{ color: KLOEL_THEME.textSecondary }}>
+            Configuração server-side pendente para este canal.
+          </p>
+        ) : !connection?.connected ? (
+          <p style={{ color: KLOEL_THEME.textSecondary }}>
+            Nenhuma conta conectada neste workspace.
+          </p>
+        ) : null}
 
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 18 }}>
           {channel === 'email' ? (

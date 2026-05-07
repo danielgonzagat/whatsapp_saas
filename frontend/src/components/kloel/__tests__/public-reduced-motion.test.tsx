@@ -170,15 +170,54 @@ describe('public reduced-motion surfaces', () => {
     expect(container.querySelector('canvas')).toHaveStyle({ opacity: '0' });
   });
 
-  it('disables cookie banner motion-specific chrome under reduced motion', async () => {
+  it.each(['kloel.com', 'www.kloel.com'])(
+    'disables cookie banner motion-specific chrome under reduced motion on %s',
+    async (hostname) => {
+      const originalLocation = window.location;
+      Object.defineProperty(window, 'location', {
+        configurable: true,
+        value: {
+          ...originalLocation,
+          host: hostname,
+          hostname,
+          href: `https://${hostname}/`,
+        },
+      });
+
+      try {
+        render(
+          <CookieProvider>
+            <div>cookie child</div>
+          </CookieProvider>,
+        );
+
+        expect(await screen.findByText('Nós usamos cookies')).toBeInTheDocument();
+
+        const styles = Array.from(document.querySelectorAll('style'))
+          .map((node) => node.textContent ?? '')
+          .join('\n');
+
+        expect(styles).toContain('@media (prefers-reduced-motion: reduce)');
+        expect(styles).toContain('animation: none !important;');
+        expect(styles).toContain('appearance: none;');
+      } finally {
+        Object.defineProperty(window, 'location', {
+          configurable: true,
+          value: originalLocation,
+        });
+      }
+    },
+  );
+
+  it('does not render cookie banner on non-marketing hosts', () => {
     const originalLocation = window.location;
     Object.defineProperty(window, 'location', {
       configurable: true,
       value: {
         ...originalLocation,
-        host: 'kloel.com',
-        hostname: 'kloel.com',
-        href: 'https://kloel.com/',
+        host: 'app.kloel.com',
+        hostname: 'app.kloel.com',
+        href: 'https://app.kloel.com/',
       },
     });
 
@@ -189,15 +228,7 @@ describe('public reduced-motion surfaces', () => {
         </CookieProvider>,
       );
 
-      expect(await screen.findByText('Nós usamos cookies')).toBeInTheDocument();
-
-      const styles = Array.from(document.querySelectorAll('style'))
-        .map((node) => node.textContent ?? '')
-        .join('\n');
-
-      expect(styles).toContain('@media (prefers-reduced-motion: reduce)');
-      expect(styles).toContain('animation: none !important;');
-      expect(styles).toContain('appearance: none;');
+      expect(screen.queryByText('Nós usamos cookies')).toBeNull();
     } finally {
       Object.defineProperty(window, 'location', {
         configurable: true,

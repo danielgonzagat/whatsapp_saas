@@ -3,14 +3,6 @@
 import { usePathname } from 'next/navigation';
 import { useEffect } from 'react';
 
-const QUICK_ACTION_LABELS = new Set([
-  'Criar Anúncio',
-  'Escrever Copy',
-  'Estratégia de Vendas',
-  'Analisar Produto',
-  'Criar Página',
-]);
-
 const META_OAUTH_HOSTS = new Set([
   'facebook.com',
   'www.facebook.com',
@@ -98,26 +90,12 @@ function paintAuthAccentPhrase() {
   }
 }
 
-function removeChatQuickActions() {
-  for (const button of Array.from(document.querySelectorAll('button'))) {
-    if (QUICK_ACTION_LABELS.has(textOf(button))) {
-      const group = button.parentElement;
-      if (
-        group &&
-        Array.from(group.querySelectorAll('button')).every((item) =>
-          QUICK_ACTION_LABELS.has(textOf(item)),
-        )
-      ) {
-        group.remove();
-      } else {
-        button.remove();
-      }
-    }
-  }
-}
-
 function removeComingSoonChrome() {
-  for (const node of Array.from(document.querySelectorAll('span, div'))) {
+  const root = document.querySelector('main');
+  if (!root) {
+    return;
+  }
+  for (const node of Array.from(root.querySelectorAll('span, div'))) {
     const text = textOf(node);
     if (text === 'soon') {
       node.remove();
@@ -134,7 +112,11 @@ function removeComingSoonChrome() {
 }
 
 async function replaceWahaHintWithMetaConnect() {
-  const hint = Array.from(document.querySelectorAll('div')).find((node) =>
+  const root = document.querySelector('main');
+  if (!root) {
+    return;
+  }
+  const hint = Array.from(root.querySelectorAll('div')).find((node) =>
     textOf(node).includes('O provider ativo deste workspace nao esta em WAHA'),
   );
   if (!hint || hint.getAttribute('data-kloel-meta-connect') === 'true') {
@@ -190,7 +172,10 @@ async function replaceWahaHintWithMetaConnect() {
   hint.append(title, copy, button);
 }
 
-function patchMarketingSurfaces() {
+function patchMarketingSurfaces(pathname: string | null) {
+  if (!pathname?.startsWith('/marketing')) {
+    return;
+  }
   removeComingSoonChrome();
   void replaceWahaHintWithMetaConnect();
 }
@@ -205,8 +190,7 @@ export function KloelProductSurfacePatches() {
         paintAuthIcons();
         paintAuthAccentPhrase();
       }
-      removeChatQuickActions();
-      patchMarketingSurfaces();
+      patchMarketingSurfaces(pathname);
     };
 
     run();

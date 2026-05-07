@@ -222,7 +222,7 @@ export function buildHostTargetUrl(
   }
 
   if (target === 'auth' && isLocalHostname(hostname)) {
-    return withPath(`https://auth.${PROD_ROOT_DOMAIN}`, path);
+    return withPath(`http://${localSubdomainHost('auth', hostname || 'localhost', port)}`, path);
   }
 
   if (isLocalHostname(hostname)) {

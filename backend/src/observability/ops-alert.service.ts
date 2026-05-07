@@ -4,12 +4,12 @@ import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 type OpsEventCreateInput = {
-  type: string;
-  service: string;
   error: string;
-  stack?: string | null;
-  workspaceId?: string | null;
   metadata?: Prisma.InputJsonValue;
+  service: string;
+  stack?: string | null;
+  type: string;
+  workspaceId?: string | null;
 };
 
 type OpsEventDelegate = {
@@ -40,8 +40,28 @@ export class OpsAlertService {
     if (!this.prisma || !('opsEvent' in this.prisma)) {
       return null;
     }
-    const candidate = this.prisma.opsEvent;
+    const candidate = (this.prisma as unknown as { opsEvent?: unknown }).opsEvent;
     return isOpsEventDelegate(candidate) ? candidate : null;
+  }
+
+  private logPersistenceFailure(
+    error: unknown,
+    input: { operation: string; workspaceId?: string | null; status: string; startedAt: number },
+  ) {
+    const safeError = error instanceof Error ? error : new Error(String(error));
+    const code =
+      typeof error === 'object' && error && 'code' in error ? String(error.code) : undefined;
+    this.logger.error(
+      {
+        operation: input.operation,
+        workspaceId: input.workspaceId,
+        status: input.status,
+        durationMs: Date.now() - input.startedAt,
+        error: safeError.message,
+        errorCode: code,
+      },
+      safeError.stack,
+    );
   }
 
   /**
@@ -84,6 +104,7 @@ export class OpsAlertService {
     // 3. Persist an OpsEvent row for the dashboard
     const opsEvent = this.getOpsEventDelegate();
     if (opsEvent) {
+      const startedAt = Date.now();
       try {
         await opsEvent.create({
           data: {
@@ -95,8 +116,13 @@ export class OpsAlertService {
             metadata: (extra?.metadata ?? {}) as Prisma.InputJsonValue,
           },
         });
-      } catch {
-        // Best effort
+      } catch (persistenceError) {
+        this.logPersistenceFailure(persistenceError, {
+          operation: 'persistCriticalOpsEvent',
+          workspaceId: extra?.workspaceId ?? null,
+          status: 'failed',
+          startedAt,
+        });
       }
     }
   }
@@ -128,6 +154,7 @@ export class OpsAlertService {
 
     const opsEvent = this.getOpsEventDelegate();
     if (opsEvent) {
+      const startedAt = Date.now();
       try {
         await opsEvent.create({
           data: {
@@ -138,8 +165,13 @@ export class OpsAlertService {
             metadata: (extra?.metadata ?? {}) as Prisma.InputJsonValue,
           },
         });
-      } catch {
-        // Best effort
+      } catch (persistenceError) {
+        this.logPersistenceFailure(persistenceError, {
+          operation: 'persistDegradationOpsEvent',
+          workspaceId: extra?.workspaceId ?? null,
+          status: 'failed',
+          startedAt,
+        });
       }
     }
   }
@@ -161,6 +193,7 @@ export class OpsAlertService {
 
     const opsEvent = this.getOpsEventDelegate();
     if (opsEvent) {
+      const startedAt = Date.now();
       try {
         await opsEvent.create({
           data: {
@@ -171,8 +204,13 @@ export class OpsAlertService {
             metadata: (extra?.metadata ?? {}) as Prisma.InputJsonValue,
           },
         });
-      } catch {
-        // Best effort
+      } catch (persistenceError) {
+        this.logPersistenceFailure(persistenceError, {
+          operation: 'persistRecoveryOpsEvent',
+          workspaceId: extra?.workspaceId ?? null,
+          status: 'failed',
+          startedAt,
+        });
       }
     }
   }

@@ -29,12 +29,30 @@ export function TikTokIntegrationCallback({ kind }: { kind: 'creator' | 'adverti
       kind === 'advertiser' ? '/integrations/tiktok/callback' : '/integrations/tiktok/auth/callback'
     }`;
 
-    void apiFetch('/marketing/connect/tiktok/complete', {
+    void apiFetch<{
+      connected?: boolean;
+      status?: string;
+      providerMessage?: string | null;
+    }>('/marketing/connect/tiktok/complete', {
       method: 'POST',
       body: { code, auth_code: code, kind, redirectUri, state },
-    }).then((response) => {
-      setStatus(response.error || 'TikTok conectado com sucesso.');
-    });
+    })
+      .then((response) => {
+        if (response.error) {
+          setStatus(response.error);
+          return;
+        }
+        if (response.data?.connected === true) {
+          setStatus('TikTok conectado com sucesso.');
+          return;
+        }
+        setStatus(
+          response.data?.providerMessage || response.data?.status || 'Falha ao conectar TikTok.',
+        );
+      })
+      .catch(() => {
+        setStatus('Falha ao finalizar conexão TikTok.');
+      });
   }, [kind, params]);
 
   return (
