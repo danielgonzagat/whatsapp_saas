@@ -2,6 +2,31 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.0](https://github.com/danielgonzagat/whatsapp_saas/compare/v0.2.0...v0.3.0) (2026-05-07)
+
+
+### Features
+
+* **marketing:** enable official channel integrations ([3857bac](https://github.com/danielgonzagat/whatsapp_saas/commit/3857bac3e565da6e1c0226913a89a635d05555a2))
+
+
+### Bug Fixes
+
+* address official integration review ([cdc3319](https://github.com/danielgonzagat/whatsapp_saas/commit/cdc33194b20c39221996589e2105061dda6624a9))
+* align visual baselines for chat shortcuts ([45d4002](https://github.com/danielgonzagat/whatsapp_saas/commit/45d400245fbc40e0835ea5b34e04bce289097fd2))
+* complete official marketing channel connections ([70d701e](https://github.com/danielgonzagat/whatsapp_saas/commit/70d701eefa81c61c8b1a79b58e1d2fb14a86c67a))
+* complete official marketing channel connections ([c6a1c89](https://github.com/danielgonzagat/whatsapp_saas/commit/c6a1c89408644db105bb4a038fc9f6ce38da359b))
+* extract thanos static config ([f6fb72d](https://github.com/danielgonzagat/whatsapp_saas/commit/f6fb72de284839b2fd1ce95c45ab6fdce7af5cbe))
+* improve landing animation performance ([#255](https://github.com/danielgonzagat/whatsapp_saas/issues/255)) ([ca58280](https://github.com/danielgonzagat/whatsapp_saas/commit/ca582803d9b33741e9a2a25d9be219f064ccf0dd))
+* include ops event provider in logs ([cd08f03](https://github.com/danielgonzagat/whatsapp_saas/commit/cd08f031969282d46f121cccfd7536bfce8b7c09))
+* remove ops alert unsafe cast ([6df499b](https://github.com/danielgonzagat/whatsapp_saas/commit/6df499be25217553686e9743602d11cc809998ff))
+* remove ops alert unsafe cast ([066160a](https://github.com/danielgonzagat/whatsapp_saas/commit/066160afe6cbe2ca6d36615b82ae6892bbc61124))
+* restrict cookie consent to marketing domain ([7ca17e9](https://github.com/danielgonzagat/whatsapp_saas/commit/7ca17e90794bbc136809c606ea3ff9a68795c60e))
+* satisfy marketing visual contract ([ec31abe](https://github.com/danielgonzagat/whatsapp_saas/commit/ec31abe052a422dc6abe9a5adf8db45d9e895a7a))
+* tolerate missing ops event delegate ([5473393](https://github.com/danielgonzagat/whatsapp_saas/commit/54733934b4f3782f35660140c585eefaacaaa876))
+* update signup desktop visual baseline ([d99d6f8](https://github.com/danielgonzagat/whatsapp_saas/commit/d99d6f8ba3547c87a02c4538417748da0b82838c))
+* update signup tablet visual baseline ([6126f2c](https://github.com/danielgonzagat/whatsapp_saas/commit/6126f2c212e0cf2f7de745760195a293361e701e))
+
 ## [0.2.0](https://github.com/danielgonzagat/whatsapp_saas/compare/v0.1.0...v0.2.0) (2026-05-06)
 
 ### Features
