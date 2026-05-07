@@ -7,7 +7,7 @@
 //   - git rm de fontes
 //   - chmod -x em hooks
 //   - --no-verify em git commit/push
-//   - sed -i / awk em arquivos PROTECTED_FILES
+//   - sed -i / awk/perl/python/redirect em arquivos PROTECTED_FILES
 //   - tentativa de editar .claude/settings.json, scripts/decomp/, .husky/pre-commit via cat/echo/sed/awk
 
 import { readFileSync } from 'node:fs';
@@ -96,13 +96,14 @@ if (/\bgit\s+rm\b[^|;&]*\b(?!.*node_modules)[^|;&\s]+\.(?:tsx?|mjs|cjs|jsx?)\b/.
   reasons.push('git rm de arquivo fonte. Decomposição/movimento deve passar por safe-decompose.');
 }
 
-// Regra: edição de settings.json/hooks/protected via sed/awk
+// Regra: edição de settings.json/hooks/protected via shell.
+// Leitura precisa continuar liberada para que Claude, Codex, OpenCode e outras
+// CLIs consigam carregar CLAUDE.md/AGENTS.md/CODEX.md antes de agir.
 const PROTECTED_PATHS_RE =
-  /(?:^|[\s'"`(])(\.claude\/settings\.json|\.husky\/pre-commit|\.husky\/pre-push|scripts\/decomp\/|scripts\/ops\/check-|scripts\/ops\/lib\/|backend\/eslint\.config\.mjs|frontend\/eslint\.config\.mjs|worker\/eslint\.config\.mjs|backend\/src\/lib\/ai-models\.ts|scripts\/pulse\/no-hardcoded-reality-audit\.ts|CLAUDE\.md|AGENTS\.md|\.github\/workflows\/ci-cd\.yml|ops\/[A-Za-z0-9_-]+\.json)\b/;
-if (
-  /\b(sed|awk|perl|python\s+-c|tee|>>|>|cat\s+>)[^|;&]*/.test(cmd) &&
-  PROTECTED_PATHS_RE.test(cmd)
-) {
+  /(?:^|[\s'\"`(])(\.claude\/settings\.json|\.husky\/pre-commit|\.husky\/pre-push|scripts\/decomp\/|scripts\/ops\/check-|scripts\/ops\/lib\/|backend\/eslint\.config\.mjs|frontend\/eslint\.config\.mjs|worker\/eslint\.config\.mjs|backend\/src\/lib\/ai-models\.ts|scripts\/pulse\/no-hardcoded-reality-audit\.ts|CLAUDE\.md|AGENTS\.md|CODEX\.md|\.github\/workflows\/ci-cd\.yml|ops\/[A-Za-z0-9_-]+\.json)\b/;
+const SHELL_WRITE_TO_PROTECTED_RE =
+  /(?:\b(?:sed\s+-i|perl\s+-p?i|python\s+-c[^|;&]*(?:write|open\(|Path\()[^|;&]*|tee\b|cat\s+>|awk\b[^|;&]*(?:>|-i\s+inplace))[^|;&]*|(?:>>|>)[^|;&]*)/;
+if (SHELL_WRITE_TO_PROTECTED_RE.test(cmd) && PROTECTED_PATHS_RE.test(cmd)) {
   reasons.push(
     'Tentativa de editar arquivo PROTECTED ou SELF-IMMUTABLE via shell. Apenas Daniel pode. Path detectado em: ' +
       cmd.slice(0, 240),

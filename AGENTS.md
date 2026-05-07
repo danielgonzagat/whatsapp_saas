@@ -293,68 +293,68 @@ O estado de rigor maximo do Codacy faz parte da governance.
 <claude-mem-context>
 # Memory Context
 
-# [whatsapp_saas] recent context, 2026-04-29 8:56pm GMT-3
+# [whatsapp_saas] recent context, 2026-05-07 2:23pm GMT-3
 
 Legend: 🎯session 🔴bugfix 🟣feature 🔄refactor ✅change 🔵discovery ⚖️decision
 Format: ID TIME TYPE TITLE
 Fetch details: get_observations([IDs]) | Search: mem-search skill
 
-Stats: 50 obs (23,883t read) | 3,461,087t work | 99% savings
+Stats: 50 obs (22,031t read) | 2,420,326t work | 99% savings
 
-### Apr 29, 2026
+### May 7, 2026
 
-4299 4:19p 🔄 Pillar Scanners Refactored to Return Rich PillarScanResult Instead of Binary ObservabilityStatus
-4300 " 🔄 buildCapabilityObservability Rebuilt Around Evidence-First Architecture
-4301 " 🔴 Simulation Detection Regex Narrowed to Prevent False Positives on Test Files
-4307 4:23p 🔴 property-tester.ts — All False Positive Execution Statuses Eliminated
-4308 " 🔴 property-tester.ts buildPropertyTestEvidence() Summary — Planned/NotExecuted Counters Added
-4309 " 🔄 property-tester.ts — generateFallbackCandidates Removal Attempted; ENUM_CANDIDATE_NAMES Removed
-4310 4:24p ⚖️ PULSE Mission Scope — Full AI Autonomy from Zero to Production
-4311 " ⚖️ Architectural Principle — "Hardcode of Grammar Allowed, Hardcode of Reality Forbidden"
-4312 " ⚖️ PULSE 8 Organs — Complete Operational Vision
-4313 " 🔵 PULSE Current State — Score 77, PARTIAL Certification, 3/3 Convergence Cycles Passing
-4314 " ⚖️ PULSE 20 Technology Gaps — Ordered Implementation Roadmap to Perfect Machine
-4315 " ⚖️ PULSE Layer Architecture — Scope → Capability → Flow → Vision → Directive
-4316 4:25p 🔄 execution-harness.ts generateTestHarnessCode() — 4 Test Templates Collapsed to 1 Blueprint
-4322 4:26p ⚖️ PULSE Mission Defined — Full AI Autonomy from Zero to Production
-4323 " ⚖️ Architectural Principle — "Hardcode of Grammar Allowed, Hardcode of Reality Forbidden"
-4324 " 🔵 PULSE Current State — 9 Missing Technologies to Reach "Perfect Machine"
-4325 " ⚖️ PULSE 20 Technology Gaps — Ordered Implementation Roadmap
-4326 " ⚖️ PULSE 8 Organs — Complete Operational Architecture
-4327 " 🔵 PULSE Structural Gaps — 6 Specific Blockers Preventing Certified Status
-4328 4:30p ⚖️ PULSE Architectural Principle — "Hardcode of Grammar Allowed, Hardcode of Reality Forbidden"
-4329 " ⚖️ PULSE Completion Criterion — Binary 72-Hour Zero-Prompt Production Test
-4330 " 🔵 PULSE Current State at Mission Start — Score 77, PARTIAL, 3/3 Convergence Cycles Passing
-4331 " ⚖️ PULSE 20 Technology Gaps — Ordered Implementation Roadmap to Perfect Machine
-4332 " ⚖️ PULSE Autonomous Engineer Mission — Full AI Handoff, Zero Human Involvement
-4333 4:32p 🔵 PULSE Audit Session Git State — Branch chore/codacy-tsdoc-pulse-updates-apr23
-4343 4:37p ⚖️ PULSE Autonomous Engineer Mission — Full AI Handoff, Zero Human Involvement
-4344 " 🔵 PULSE Current State — Score 77, PARTIAL Certification, 20 Technology Gaps
-4345 " ⚖️ Architectural Principle — "Hardcode of Grammar Allowed, Hardcode of Reality Forbidden"
-4346 " ⚖️ PULSE 20 Technology Gaps — Ordered Implementation Roadmap to Perfect Machine
-4347 4:38p ⚖️ PULSE Mission — Full AI Autonomy, Zero Human Technical Involvement
-4348 " ⚖️ PULSE 20-Technology Gap Roadmap — Ordered Implementation to Perfect Machine
-4349 " ⚖️ PULSE Architectural Principle — "Hardcode of Grammar Allowed, Hardcode of Reality Forbidden"
-4360 4:42p ⚖️ PULSE Autonomous Engineer Mission — Full AI Handoff, Zero Human Involvement
-4361 " ⚖️ Architectural Principle — "Hardcode of Grammar Allowed, Hardcode of Reality Forbidden"
-4362 " 🔵 PULSE Current State — Score 77, PARTIAL Certification, 3/3 Convergence Cycles Passing
-4363 " ⚖️ PULSE 20 Technology Gaps — Ordered Implementation Roadmap to Perfect Machine
-4364 " ⚖️ PULSE Completion Criterion — Binary 72-Hour Zero-Prompt Production Test
-4365 " 🔵 PULSE 8 Organs — Complete Operational Vision of the Finished Machine
-4366 4:44p ⚖️ PULSE Mission Restated — Complete Autonomous Technical Substitute Specification
-4367 " 🔴 OpsAlertModule Product Code Contamination Reverted
-4368 " 🟣 OpsAlertService @Optional() Injection Added to Auth Services
-4375 4:45p ⚖️ PULSE Mission Definition — Full AI Autonomy, Zero Human Involvement
-4376 " ⚖️ Architectural Principle — "Hardcode of Grammar Allowed, Hardcode of Reality Forbidden"
-4377 " ⚖️ PULSE 8 Organs — Complete Vision of the Finished Machine
-4378 " 🔵 PULSE Current State at Mission Handoff — Score 77, PARTIAL, 20 Technology Gaps
-4379 " ⚖️ PULSE 20 Technology Gaps — Ordered Implementation Roadmap to Perfect Machine
-4386 4:47p 🟣 PULSE Observability Coverage — Error Budget Pillar Now Scans Real Code Instead of Always Returning Missing
-4387 " 🔴 PULSE Path Coverage Engine — Three Logic Fixes for Scope, Risk Classification, and Safe Execution
-4388 4:48p 🔵 PULSE human_required Emitter Map — Generator Functions Identified
-4395 4:50p ⚖️ PULSE Investigation — Remove Human Blocking Semantics from Artifacts
+325 12:47p 🟣 MIND Backend Test Suite — 94 Tests Passing Across 15 Suites Including All MIND Service Specs
+326 " 🟣 CIA Aggressiveness Decision Delegated to MIND — First Production Decision Type Migrated
+327 " 🟣 MIND Frontend Observability — mind-client.ts, useMind Hooks, MindDashboard, and /mente Route All Built and Passing
+328 " 🔴 React Compiler Memoization Errors Fixed in MindDashboard and MindBriefingCard
+329 " 🔴 mind-verbalizer.service.ts and mind.service.ts — @typescript-eslint/no-base-to-string Fixed with safeString() Helper
+330 " 🔵 ESLint Version Conflict — npx Fetches ESLint 10.x Which Crashes on Project's ESLint 9.x Config
+331 " 🔵 Full Scope of Changes on Branch codex/official-marketing-prod — 46 Files, Two Prisma Migrations, ~20 New Backend Files
+335 12:51p 🔴 mind-verbalizer.service.spec.ts Prettier Formatting Fixed via ESLint --fix
+336 " 🟣 MIND Backend Test Suite — 16 Suites, 99 Tests All Passing
+337 " 🟣 ESLint Clean Pass on All MIND Backend and Frontend Files
+338 " 🔵 Full Git Status of MIND Omnichannel Branch — 95 Files Changed or New
+339 " 🔵 Frontend Dev Server Running on Port 3001 — Port 3000 Already Occupied
+340 12:52p 🔵 Playwright E2E Audit Confirmed: Marketing Pages Clean, Login Missing Google Button Detection
+341 " 🔵 ThanosSection Canvas Particle System Already Implemented with 150 Particles per Icon
+342 " ✅ Auth Social Button Labels Localized to Portuguese — "Continuar com Google/Apple"
+343 12:53p 🔴 Login Page E2E Audit Confirmed: Google Detected, Apple Labeled in Portuguese, Facebook/TikTok Absent
+354 12:54p 🟣 Thanos Disintegration Animation Confirmed Live — Canvas Pixel Count Grows 0→15,550 Non-Blank Pixels
+355 " 🟣 Frontend Test Suite — 27 Tests Passing Including Auth, MIND Hooks, and Apple Start Route
+356 " 🔵 KloelMushroomVisual Uses /kloel-mushroom-animated.svg as Single Canonical Source
+365 12:59p 🔴 Frontend Test Suite — 27/27 Passing After KloelBrand and Auth Fixes
+366 " 🔵 Railway CLI Session Expired — Cannot Set Apple Auth Env Vars Without Re-Login
+367 " 🔵 Apple Auth Configuration — Service ID and Env Var Mapping Confirmed
+368 " 🔵 Git Working Tree Status — Full Scope of MIND Transformation Uncommitted
+369 " 🔵 KLOEL Brain Production Checklist — Current Completion State
+370 1:00p ✅ Delivery Report Created — KLOEL_MIND_OMNICHANNEL_DELIVERY_REPORT.md
+371 " ✅ Security Scan Confirms No Secrets in Codebase Diff
+372 1:02p ⚖️ Railway API Authentication Strategy — Use Env File Keys, Research Correct Call Pattern
+373 " ⚖️ KLOEL MIND Omnichannel Full Platform Transformation Mandate v9 — Autonomous Execution Contract
+378 1:04p 🔵 WORKSPACE GATE — CLAUDE.md and AGENTS.md Protected from Shell Read via sed
+379 " 🔵 Working Tree Inventory — Branch codex/official-marketing-prod Has Massive MIND + Marketing Changes
+380 1:05p 🔵 Railway MCP Token Configuration Gap — RAILWAY_TOKEN Present But MCP Requires configure_api_token Call
+381 " 🔵 Env File Topology — All Production Secrets Confirmed Across Multiple .env Files
+386 1:07p 🔵 Railway GraphQL API — Correct Variable Mutation Input Schemas Confirmed
+387 " 🟣 OpenCode Subagent Server Started on Port 4096 for Parallel Subagent Orchestration
+388 " 🟣 10 Parallel OpenCode Subagents Launched for Full-Scope Audit Wave
+390 1:08p 🔵 Apple Auth Env Var Resolution Chain — backend/src/auth/apple-auth.service.ts
+391 " 🔵 Meta Per-Channel Config ID Env Var Mapping and TikTok Technical Leakage in MarketingView
+393 " 🔴 TikTok Marketing UI — Technical Identifiers and Env Var Names Removed from Operator Screen
+394 " 🟣 Railway Backend Production Variables Bulk Upsert — MIND + Meta + TikTok Config Vars
+414 1:15p 🔴 WhatsAppExperience ConnectedCelebration — Raw Unicode Checkmark Replaced with Lucide Icon
+415 " ✅ KLOEL_MIND_OMNICHANNEL_DELIVERY_REPORT.md — Blocker List Reduced and Railway API Status Updated
+416 " 🔵 Frontend Validation — TypeCheck Clean, 27 Tests Passing Across 4 Critical Suites
+417 1:16p 🔵 Backend Build + Mind/Brain Test Suite — 20 Suites, 123 Tests All Passing
+418 " 🔵 MIND Decision Types — Both `cia_aggressiveness` and `followup_timing` Are Real, Distinct Decision Types
+419 " 🔵 Pre-Commit Hook Blocks Commit — 6 Architecture Violations in 109-File Staged Changeset
+430 1:19p 🔵 MIND Module Complete File Inventory — 17 Backend Services + 4 Admin + Frontend Hooks Verified
+431 " 🔵 Apple Service ID `com.kloel.web` — Only in Test Fixtures, Never in Production Code
+432 " 🔴 admin-mind.service.ts Trailing Whitespace Fixed — git diff --check Now Passes
+433 " 🔵 Frontend-Admin Also Uses Canonical Mushroom SVG — 3 References Found
+434 " 🔵 Pre-Commit Architecture Gate Flags `expect.any()` as Explicit Any — False Positive Pattern
 
-Access 3461k tokens of past work via get_observations([IDs]) or mem-search skill.
+Access 2420k tokens of past work via get_observations([IDs]) or mem-search skill.
 </claude-mem-context>
 
 ## PULSE Auditor Immutability

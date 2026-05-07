@@ -29,14 +29,36 @@ function git(args) {
 const stagedRaw = git(['diff', '--cached', '--name-status', '--diff-filter=AM']);
 const lockedFiles = getLockedFiles(REPO_ROOT);
 
+function loadGovernanceApprovals() {
+  const approvalsPath = path.join(REPO_ROOT, 'ops', 'governance-change-approvals.json');
+  if (!existsSync(approvalsPath)) return [];
+  try {
+    const parsed = JSON.parse(readFileSync(approvalsPath, 'utf8'));
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function hasActiveGovernanceApproval(relPath, approvals, now = new Date()) {
+  return approvals.some(function (entry) {
+    if (!entry || entry.rule !== 'governanceChange') return false;
+    if (entry.expires && new Date(entry.expires) < now) return false;
+    if (entry.file === relPath) return true;
+    return typeof entry.filePrefix === 'string' && relPath.startsWith(entry.filePrefix);
+  });
+}
+
+const governanceApprovals = loadGovernanceApprovals();
+
 const violations = [];
 
 for (const line of stagedRaw.split('\n').filter(Boolean)) {
   const [status, relPath] = line.split('\t');
   if (!relPath) continue;
 
-  // Bloqueia commit que toque arquivos protegidos (sem authorization-marker)
-  if (isProtectedPath(relPath)) {
+  // Bloqueia commit que toque arquivos protegidos sem aprovacao ativa registrada.
+  if (isProtectedPath(relPath) && !hasActiveGovernanceApproval(relPath, governanceApprovals)) {
     violations.push(
       '[protected] ' + relPath + ' — arquivo protegido por CLAUDE.md, somente Daniel pode editar.',
     );
