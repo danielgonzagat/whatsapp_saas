@@ -75,9 +75,9 @@ Pronto:
 - Loop de processor em `MindProcessorService`.
 - Crenças, predicoes, surpresa, politica e lift persistidos.
 - Admin MIND criado em `backend/src/admin/mind/*` com telas/rotas para Estado da Mente, Surpresa Recente e Lift por Decisao.
-- Frontend `/mente` criado com hooks e client MIND.
-- Dashboard recebeu briefing e chat interno MIND.
-- CIA passou a expor subtitulo canal-aware e delegacoes iniciais para MIND: `followup_timing` na superficie operacional e `cia_aggressiveness` no override de agressividade do worker.
+- Frontend recebeu `useMind` e `mind-client` para consumir crenças, lift, tick e briefing MIND.
+- Dashboard do workspace ainda nao recebeu a UI completa de briefing e chat interno MIND no diff publicado.
+- CIA passou a expor subtitulo canal-aware e delegacao inicial para MIND: `followup_timing` na superficie operacional.
 - Event spine comercial tipado grava eventos em `RAC_AutopilotEvent`.
 
 Parcial:
@@ -85,6 +85,7 @@ Parcial:
 - Omnichannel real depende das conexoes reais de canais e webhooks externos.
 - Aprendizado por todos os canais ainda precisa de dados reais em producao.
 - Lift existe e e mensuravel, mas precisa janela real de eventos para significancia.
+- UI final de briefing diario e chat interno MIND do operador ainda precisa ser integrada ao dashboard do workspace.
 
 ## Parte C - Invariantes
 
@@ -125,8 +126,8 @@ Sem valores:
 
 - `npm --prefix backend run typecheck`: passou.
 - `npm --prefix frontend run typecheck`: passou.
-- Backend Jest focado: 16 suites, 99 testes, passou.
-- Frontend Vitest focado: 4 suites, 27 testes, passou.
+- Backend Jest focado: 20 suites, 123 testes, passou.
+- Frontend Vitest completo: 53 arquivos, 296 testes, passou.
 - ESLint focado backend/frontend: passou.
 - `git diff --check`: passou.
 - Railway Public API:
@@ -143,4 +144,5 @@ Sem valores:
 1. Confirmar dominios e redirect URIs no Meta Developers Console.
 2. Validar login Apple/Google real em `auth.kloel.com` com conta humana.
 3. Validar conexoes reais Meta/TikTok/Email em ambiente de producao ou staging com contas dos provedores.
-4. Rodar PULSE `production-final --final` apos deploy final.
+4. Integrar a UI final de briefing diario e chat interno MIND no dashboard do workspace.
+5. Rodar PULSE `production-final --final` apos deploy final.
