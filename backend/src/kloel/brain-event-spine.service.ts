@@ -1,10 +1,9 @@
 import { Injectable, Logger, Optional } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { randomUUID } from 'crypto';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 import type { CommercialEventPayload } from './brain-event-taxonomy';
-
-const IDEMPOTENCY_WINDOW_MS = 5000;
 
 type AutopilotEventIdRow = { id: string } | null;
 
@@ -93,6 +92,33 @@ export class BrainEventSpineService {
 
   async recordCommercial(event: CommercialEventPayload): Promise<string | null> {
     try {
+      const idempotencyKey =
+        event.idempotencyKey ??
+        `${event.eventType}:${event.subject}:${event.occurredAt.toISOString()}`;
+      await this.prisma.mindOutboxEvent.upsert({
+        where: {
+          workspaceId_idempotencyKey: {
+            workspaceId: event.workspaceId,
+            idempotencyKey,
+          },
+        },
+        update: {
+          eventType: event.eventType,
+          subject: event.subject,
+          payload: toInputJsonObject(event.payload),
+          occurredAt: event.occurredAt,
+        },
+        create: {
+          id: randomUUID(),
+          workspaceId: event.workspaceId,
+          eventType: event.eventType,
+          subject: event.subject,
+          payload: toInputJsonObject(event.payload),
+          idempotencyKey,
+          occurredAt: event.occurredAt,
+        },
+      });
+
       if (event.idempotencyKey) {
         const existing = await this.checkIdempotency(event.workspaceId, event.idempotencyKey);
         if (existing) {
@@ -111,7 +137,7 @@ export class BrainEventSpineService {
             commercial: true,
             subject: event.subject,
             occurredAt: event.occurredAt.toISOString(),
-            idempotencyKey: event.idempotencyKey ?? null,
+            idempotencyKey,
             payload: toInputJsonObject(event.payload),
           },
         },
@@ -134,6 +160,28 @@ export class BrainEventSpineService {
       if (id) recorded += 1;
     }
     return recorded;
+  }
+
+  async dispatchPending(limit = 100): Promise<{ dispatched: number }> {
+    const rows = await this.prisma.mindOutboxEvent.findMany({
+      where: { status: 'pending' },
+      orderBy: { createdAt: 'asc' },
+      take: limit,
+    });
+
+    for (const row of rows) {
+      await this.prisma.mindOutboxEvent.update({
+        where: { id: row.id },
+        data: {
+          status: 'dispatched',
+          dispatchedAt: new Date(),
+          attempts: { increment: 1 },
+          lastError: null,
+        },
+      });
+    }
+
+    return { dispatched: rows.length };
   }
 
   private resolveIntent(eventType: string): string {
@@ -173,7 +221,6 @@ export class BrainEventSpineService {
       SELECT id FROM "RAC_AutopilotEvent"
       WHERE "workspaceId" = ${workspaceId}
         AND "meta"->>'idempotencyKey' = ${idempotencyKey}
-        AND "createdAt" > NOW() - (${IDEMPOTENCY_WINDOW_MS} * INTERVAL '1 millisecond')
       LIMIT 1
     `;
     return rows[0] ?? null;

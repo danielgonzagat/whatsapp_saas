@@ -1,19 +1,18 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { MindBeliefService } from './mind-belief.service';
+import { MindEventProcessorService } from './mind-event-processor.service';
 import { MindPerceptionService } from './mind-perception.service';
 import { MindPolicyService } from './mind-policy.service';
-import { MindPredictorService } from './mind-predictor.service';
 import { MindSurpriseService } from './mind-surprise.service';
-import type { MindPerceptEvent, MindTick } from './mind.types';
+import type { MindTick } from './mind.types';
+import { MindWorkspaceStateService } from './mind-workspace-state.service';
 import {
   KNOWN_DECISION_TYPES,
   TONE_OPTIONS,
-  messageTemplate,
   resolveAggressivenessBaseline,
   resolveAudioBaseline,
   resolveCouponBaseline,
   resolveToneBaseline,
-  toStableString,
 } from './mind-decision-baselines';
 
 @Injectable()
@@ -24,10 +23,11 @@ export class MindService {
 
   constructor(
     private readonly perception: MindPerceptionService,
-    private readonly predictor: MindPredictorService,
     private readonly surprise: MindSurpriseService,
     private readonly beliefs: MindBeliefService,
     private readonly policy: MindPolicyService,
+    private readonly state: MindWorkspaceStateService,
+    private readonly events: MindEventProcessorService,
   ) {}
 
   async tick(workspaceId: string): Promise<MindTick> {
@@ -49,7 +49,9 @@ export class MindService {
 
     try {
       const startedAt = Date.now();
-      const watermark = this.watermarks.get(workspaceId) ?? new Date(Date.now() - 24 * 3600 * 1000);
+      const fallbackWatermark =
+        this.watermarks.get(workspaceId) ?? new Date(Date.now() - 24 * 3600 * 1000);
+      const watermark = await this.state.watermark(workspaceId, fallbackWatermark);
       const events = await this.perception.since(workspaceId, watermark);
 
       let predicted = 0;
@@ -58,7 +60,7 @@ export class MindService {
       let beliefsUpdated = 0;
 
       for (const event of events) {
-        const result = await this.processEvent(event);
+        const result = await this.events.process(event);
         predicted += result.predicted;
         resolved += result.resolved;
         surpriseTotal += result.surpriseTotal;
@@ -103,7 +105,19 @@ export class MindService {
         );
       }
 
+      await this.state.recordSuccess({
+        tick,
+        lastWatermark: events.length ? events[events.length - 1].occurredAt : new Date(),
+        health: {
+          status: 'ok',
+          expiredSurprise,
+          eventCount: events.length,
+        },
+      });
       return tick;
+    } catch (error: unknown) {
+      await this.state.recordFailure(workspaceId, error);
+      throw error;
     } finally {
       this.activeTicks.delete(workspaceId);
     }
@@ -265,122 +279,5 @@ export class MindService {
       confidence: result.decision.candidates[0]?.beliefMean ?? 0,
       fallback: result.decision.fallbackActive,
     };
-  }
-
-  private async processEvent(event: MindPerceptEvent): Promise<{
-    beliefsUpdated: number;
-    predicted: number;
-    resolved: number;
-    surpriseTotal: number;
-  }> {
-    let predicted = 0;
-    let resolved = 0;
-    let surpriseTotal = 0;
-    let beliefsUpdated = 0;
-
-    if (event.kind === 'message.sent' && event.subject.startsWith('contact:')) {
-      await this.predictor.predictReply(
-        {
-          workspaceId: event.workspaceId,
-          subject: event.subject,
-          features: {
-            channel: toStableString(event.payload.channel) || 'unknown',
-            hour: event.occurredAt.getHours(),
-            template: messageTemplate(event.payload),
-          },
-        },
-        24 * 3600,
-      );
-      predicted += 1;
-    }
-
-    if (event.kind === 'message.received' && event.subject.startsWith('contact:')) {
-      const surprise = await this.surprise.resolveBinary(
-        event.workspaceId,
-        event.subject,
-        'P(reply|template,hour,channel)',
-        1,
-      );
-      if (surprise > 0) {
-        resolved += 1;
-        beliefsUpdated += 1;
-        surpriseTotal += surprise;
-      }
-      const policyResolved = await this.policy.resolveOpenForSubject({
-        workspaceId: event.workspaceId,
-        subject: event.subject,
-        decisionType: 'followup_timing',
-        outcome: 1,
-      });
-      resolved += policyResolved;
-    }
-
-    if (event.kind === 'checkout.start' || event.kind === 'checkout.pending') {
-      await this.predictor.predictConversion(
-        {
-          workspaceId: event.workspaceId,
-          subject: event.subject,
-          features: {
-            channel: 'checkout',
-            hour: event.occurredAt.getHours(),
-            price_band: toStableString(event.payload.priceBand) || 'under_100',
-            segment: toStableString(event.payload.utmSource) || 'direct',
-          },
-        },
-        48 * 3600,
-      );
-      predicted += 1;
-    }
-
-    if (event.kind === 'checkout.paid' || event.kind === 'sale.completed') {
-      const surprise = await this.surprise.resolveBinary(
-        event.workspaceId,
-        event.subject,
-        'P(conversion|segment,price_band,channel,hour)',
-        1,
-      );
-      if (surprise > 0) {
-        resolved += 1;
-        beliefsUpdated += 1;
-        surpriseTotal += surprise;
-      }
-    }
-
-    if (event.kind.startsWith('checkout.') && event.kind !== 'checkout.paid') {
-      const status = toStableString(event.payload.status).toUpperCase();
-      if (['CANCELED', 'CANCELLED', 'EXPIRED', 'FAILED', 'REFUNDED'].includes(status)) {
-        const surprise = await this.surprise.resolveBinary(
-          event.workspaceId,
-          event.subject,
-          'P(conversion|segment,price_band,channel,hour)',
-          0,
-        );
-        if (surprise > 0) {
-          resolved += 1;
-          beliefsUpdated += 1;
-          surpriseTotal += surprise;
-        }
-      }
-    }
-
-    if (event.kind.startsWith('autopilot.')) {
-      const intent = toStableString(event.payload.intent) || 'unknown';
-      if (['lead_qualified', 'meeting_booked', 'purchase_intent'].includes(intent)) {
-        const outcome = intent === 'purchase_intent' ? 1 : 0;
-        const surprise = await this.surprise.resolveBinary(
-          event.workspaceId,
-          event.subject,
-          'P(reply|template,hour,channel)',
-          outcome,
-        );
-        if (surprise > 0) {
-          resolved += 1;
-          beliefsUpdated += 1;
-          surpriseTotal += surprise;
-        }
-      }
-    }
-
-    return { predicted, resolved, surpriseTotal, beliefsUpdated };
   }
 }

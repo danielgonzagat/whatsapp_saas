@@ -1,0 +1,106 @@
+import { Injectable } from '@nestjs/common';
+import type { Prisma } from '@prisma/client';
+import { randomUUID } from 'crypto';
+import { PrismaService } from '../prisma/prisma.service';
+
+function score(alpha: number, beta: number, pulls: number, totalPulls: number): number {
+  const mean = alpha / (alpha + beta);
+  const uncertainty = Math.sqrt(Math.log(Math.max(2, totalPulls + 1)) / Math.max(1, pulls));
+  return mean + uncertainty;
+}
+
+@Injectable()
+export class MindBanditService {
+  constructor(private readonly prisma: PrismaService) {}
+
+  async register(input: {
+    arms: string[];
+    context?: Record<string, unknown>;
+    decisionType: string;
+    workspaceId: string;
+  }) {
+    for (const arm of input.arms) {
+      await this.prisma.mindBanditArm.upsert({
+        where: {
+          workspaceId_decisionType_arm: {
+            workspaceId: input.workspaceId,
+            decisionType: input.decisionType,
+            arm,
+          },
+        },
+        update: { isActive: true, context: (input.context ?? {}) as Prisma.InputJsonValue },
+        create: {
+          id: randomUUID(),
+          workspaceId: input.workspaceId,
+          decisionType: input.decisionType,
+          arm,
+          context: (input.context ?? {}) as Prisma.InputJsonValue,
+        },
+      });
+    }
+    return this.status(input.workspaceId, input.decisionType);
+  }
+
+  async choose(workspaceId: string, decisionType: string) {
+    const arms = await this.prisma.mindBanditArm.findMany({
+      where: { workspaceId, decisionType, isActive: true },
+    });
+    const totalPulls = arms.reduce((sum, arm) => sum + arm.pulls, 0);
+    const chosen = [...arms].sort(
+      (left, right) =>
+        score(right.alpha, right.beta, right.pulls, totalPulls) -
+        score(left.alpha, left.beta, left.pulls, totalPulls),
+    )[0];
+    if (!chosen) return null;
+
+    await this.prisma.mindBanditArm.update({
+      where: { id: chosen.id },
+      data: { pulls: { increment: 1 } },
+    });
+    return { arm: chosen.arm, decisionType, workspaceId };
+  }
+
+  async recordOutcome(input: {
+    arm: string;
+    decisionType: string;
+    outcome: 0 | 1;
+    workspaceId: string;
+  }) {
+    await this.prisma.mindBanditArm.update({
+      where: {
+        workspaceId_decisionType_arm: {
+          workspaceId: input.workspaceId,
+          decisionType: input.decisionType,
+          arm: input.arm,
+        },
+      },
+      data: {
+        alpha: { increment: input.outcome },
+        beta: { increment: 1 - input.outcome },
+        wins: { increment: input.outcome },
+      },
+    });
+    return this.status(input.workspaceId, input.decisionType);
+  }
+
+  async status(workspaceId: string, decisionType: string) {
+    const arms = await this.prisma.mindBanditArm.findMany({
+      where: { workspaceId, decisionType },
+      orderBy: [{ isActive: 'desc' }, { pulls: 'desc' }],
+    });
+    const totalPulls = arms.reduce((sum, arm) => sum + arm.pulls, 0);
+    return {
+      workspaceId,
+      decisionType,
+      totalPulls,
+      arms: arms.map((arm) => ({
+        arm: arm.arm,
+        isActive: arm.isActive,
+        pulls: arm.pulls,
+        wins: arm.wins,
+        mean: arm.alpha / (arm.alpha + arm.beta),
+        score: score(arm.alpha, arm.beta, arm.pulls, totalPulls),
+      })),
+    };
+  }
+}

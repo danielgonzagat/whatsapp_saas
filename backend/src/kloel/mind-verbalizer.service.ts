@@ -6,6 +6,7 @@ import { LLMBudgetService, estimateChatCostCents } from './llm-budget.service';
 import { chatCompletionWithFallback, LLM_MAX_COMPLETION_TOKENS } from './openai-wrapper';
 import { MindBeliefService } from './mind-belief.service';
 import { MindPolicyService } from './mind-policy.service';
+import { MIND_DECISION_TYPES } from './mind-decision-catalog';
 import type { MindBelief } from './mind.types';
 
 interface VerbalizerBlock {
@@ -68,16 +69,7 @@ function predicateLabel(predicate: string): string {
 
 const HINT_RE = /[_-]+/g;
 
-const KNOWN_LIFT_TYPES = [
-  'followup_timing',
-  'conversion_optimization',
-  'send_window',
-  'offer_discount',
-  'cia_aggressiveness',
-  'audio_vs_text',
-  'tom',
-  'cupom',
-] as const;
+const KNOWN_LIFT_TYPES = MIND_DECISION_TYPES;
 
 interface LiftResult {
   decisionType: string;

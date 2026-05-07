@@ -1,5 +1,6 @@
-export const KNOWN_DECISION_TYPES = [
-  'followup_timing',
+import { MIND_DECISION_TYPES } from './mind-decision-catalog';
+
+export const LEGACY_DECISION_TYPES = [
   'send_window',
   'offer_discount',
   'cia_aggressiveness',
@@ -7,6 +8,10 @@ export const KNOWN_DECISION_TYPES = [
   'tom',
   'cupom',
 ] as const;
+
+export const KNOWN_DECISION_TYPES = [...MIND_DECISION_TYPES] as const;
+
+export const SUPPORTED_DECISION_TYPES = [...MIND_DECISION_TYPES, ...LEGACY_DECISION_TYPES] as const;
 
 export const TONE_OPTIONS = [
   'DIRECT',

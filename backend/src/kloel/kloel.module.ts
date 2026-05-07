@@ -108,14 +108,22 @@ import { BrainEventSpineService } from './brain-event-spine.service';
 import { BrainRuntimeController } from './brain-runtime.controller';
 import { BrainRuntimeService } from './brain-runtime.service';
 import { MindBeliefService } from './mind-belief.service';
+import { MindBanditService } from './mind-bandit.service';
+import { MindCaseMemoryService } from './mind-case-memory.service';
+import { MindConceptService } from './mind-concepts.service';
 import { MindController } from './mind-controller';
+import { MindEventProcessorService } from './mind-event-processor.service';
+import { MindGuardsService } from './mind-guards.service';
+import { MindObservabilityService } from './mind-observability.service';
 import { MindPerceptionService } from './mind-perception.service';
 import { MindPolicyService } from './mind-policy.service';
 import { MindPredictorService } from './mind-predictor.service';
 import { MindProcessorService } from './mind-processor.service';
+import { MindReportService } from './mind-report.service';
 import { MindService } from './mind.service';
 import { MindSurpriseService } from './mind-surprise.service';
 import { MindVerbalizerService } from './mind-verbalizer.service';
+import { MindWorkspaceStateService } from './mind-workspace-state.service';
 
 /** Kloel module. */
 @Module({
@@ -229,14 +237,22 @@ import { MindVerbalizerService } from './mind-verbalizer.service';
     BrainCommercialGraphService,
     BrainEventSpineService,
     BrainRuntimeService,
+    MindBanditService,
     MindBeliefService,
+    MindCaseMemoryService,
+    MindConceptService,
+    MindEventProcessorService,
+    MindGuardsService,
+    MindObservabilityService,
     MindPerceptionService,
     MindPolicyService,
     MindPredictorService,
     MindProcessorService,
+    MindReportService,
     MindService,
     MindSurpriseService,
     MindVerbalizerService,
+    MindWorkspaceStateService,
   ],
   exports: [
     KloelService,
@@ -279,6 +295,7 @@ import { MindVerbalizerService } from './mind-verbalizer.service';
     AdRulesEngineService,
     EmailCampaignService,
     MindBeliefService,
+    MindBanditService,
     MindPolicyService,
     MindService,
   ],

@@ -4,6 +4,7 @@ import type { MindPolicyService } from './mind-policy.service';
 import type { MindService } from './mind.service';
 import type { MindVerbalizerService } from './mind-verbalizer.service';
 import type { AggressivenessDto, DecideDto, ResolveDto } from './mind-controller.dto';
+import type { MindObservabilityService } from './mind-observability.service';
 
 function mockBeliefs(): jest.Mocked<MindBeliefService> {
   return { list: jest.fn() } as unknown as jest.Mocked<MindBeliefService>;
@@ -50,14 +51,39 @@ function mockVerbalizer(): jest.Mocked<MindVerbalizerService> {
   } as unknown as jest.Mocked<MindVerbalizerService>;
 }
 
+function mockObservability(): jest.Mocked<MindObservabilityService> {
+  return {
+    ask: jest.fn(),
+    bandit: jest.fn(),
+    briefing: jest.fn(),
+    concepts: jest.fn(),
+    health: jest.fn(),
+    lift: jest.fn(),
+    report: jest.fn(),
+    state: jest.fn(),
+    surprise: jest.fn(),
+    trace: jest.fn(),
+  } as unknown as jest.Mocked<MindObservabilityService>;
+}
+
+function buildController(params?: {
+  beliefs?: jest.Mocked<MindBeliefService>;
+  mind?: jest.Mocked<MindService>;
+  policy?: jest.Mocked<MindPolicyService>;
+  verbalizer?: jest.Mocked<MindVerbalizerService>;
+}): MindController {
+  return new MindController(
+    params?.beliefs ?? mockBeliefs(),
+    params?.policy ?? mockPolicy(),
+    params?.mind ?? mockMind(),
+    params?.verbalizer ?? mockVerbalizer(),
+    mockObservability(),
+  );
+}
+
 describe('MindController', () => {
   it('exposes tick and narration through the service layer', async () => {
-    const controller = new MindController(
-      mockBeliefs(),
-      mockPolicy(),
-      mockMind(),
-      mockVerbalizer(),
-    );
+    const controller = buildController();
 
     await expect(controller.tick('ws-1')).resolves.toEqual({ perceived: 1 });
     await expect(controller.narrate('ws-1')).resolves.toEqual({ briefing: 'briefing' });
@@ -71,7 +97,7 @@ describe('MindController', () => {
     mind.tick.mockRejectedValueOnce(tickError);
     verbalizer.narrate.mockRejectedValueOnce(narrateError);
 
-    const controller = new MindController(mockBeliefs(), mockPolicy(), mind, verbalizer);
+    const controller = buildController({ mind, verbalizer });
 
     await expect(controller.tick('ws-1')).rejects.toThrow(tickError);
     await expect(controller.narrate('ws-1')).rejects.toThrow(narrateError);
@@ -80,7 +106,7 @@ describe('MindController', () => {
   it('passes workspace id through tick and narrate exactly', async () => {
     const mind = mockMind();
     const verbalizer = mockVerbalizer();
-    const controller = new MindController(mockBeliefs(), mockPolicy(), mind, verbalizer);
+    const controller = buildController({ mind, verbalizer });
 
     await controller.tick('ws-exact');
     await controller.narrate('ws-exact');
@@ -99,7 +125,7 @@ describe('MindController', () => {
     };
     policy.choose.mockResolvedValue({ chosen: 'test', decision: {} as never });
 
-    const controller = new MindController(mockBeliefs(), policy, mockMind(), mockVerbalizer());
+    const controller = buildController({ policy });
     await controller.decide('ws-1', body);
 
     expect(policy.choose).toHaveBeenCalledWith({ workspaceId: 'ws-1', ...body });
@@ -109,7 +135,7 @@ describe('MindController', () => {
     const policy = mockPolicy();
     const body: ResolveDto = { outcome: 0.5, outcomeKey: 'k1' };
 
-    const controller = new MindController(mockBeliefs(), policy, mockMind(), mockVerbalizer());
+    const controller = buildController({ policy });
     const result = await controller.resolve('ws-1', body);
 
     expect(policy.resolveOutcome).toHaveBeenCalledWith('ws-1', 'k1', 0.5, undefined);
@@ -125,7 +151,7 @@ describe('MindController', () => {
       soldRate: 0.12,
     };
 
-    const controller = new MindController(mockBeliefs(), mockPolicy(), mind, mockVerbalizer());
+    const controller = buildController({ mind });
     const result = await controller.aggressiveness('ws-1', body);
 
     expect(mind.resolveAggressiveness).toHaveBeenCalledWith(
@@ -140,7 +166,7 @@ describe('MindController', () => {
 
   it('delegates additional MIND decisions through dedicated endpoints', async () => {
     const mind = mockMind();
-    const controller = new MindController(mockBeliefs(), mockPolicy(), mind, mockVerbalizer());
+    const controller = buildController({ mind });
 
     await controller.audioVsText('ws-1', { audioRatio: 0.2, channel: 'instagram' });
     await controller.tone('ws-1', {

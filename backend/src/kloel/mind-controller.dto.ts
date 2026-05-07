@@ -12,6 +12,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import type { MindJson, MindPolicyOption } from './mind.types';
+import { SUPPORTED_DECISION_TYPES } from './mind-decision-baselines';
 
 class MindPolicyOptionDto implements MindPolicyOption {
   @IsString()
@@ -33,16 +34,12 @@ export class DecideDto {
 
   @IsString()
   @IsIn([
-    'cia_aggressiveness',
-    'followup_timing',
+    ...SUPPORTED_DECISION_TYPES,
     'message_tone',
     'offer_selection',
     'retry_interval',
     'urgency_level',
     'commercial_prompt',
-    'audio_vs_text',
-    'tom',
-    'cupom',
   ])
   decisionType: string;
 

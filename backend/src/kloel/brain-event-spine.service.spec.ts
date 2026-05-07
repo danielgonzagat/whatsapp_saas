@@ -6,13 +6,22 @@ import type {
 } from './brain-event-taxonomy';
 
 describe('BrainEventSpineService', () => {
-  let prisma: { autopilotEvent: { create: jest.Mock }; $queryRaw: jest.Mock };
+  let prisma: {
+    autopilotEvent: { create: jest.Mock };
+    mindOutboxEvent: { findMany: jest.Mock; update: jest.Mock; upsert: jest.Mock };
+    $queryRaw: jest.Mock;
+  };
   let service: BrainEventSpineService;
 
   beforeEach(() => {
     prisma = {
       autopilotEvent: {
         create: jest.fn().mockResolvedValue({ id: 'event-1' }),
+      },
+      mindOutboxEvent: {
+        findMany: jest.fn().mockResolvedValue([]),
+        update: jest.fn(),
+        upsert: jest.fn().mockResolvedValue({ id: 'outbox-1' }),
       },
       $queryRaw: jest.fn().mockResolvedValue([]),
     };
@@ -53,7 +62,7 @@ describe('BrainEventSpineService', () => {
               commercial: true,
               subject: 'lead:lead-1',
               occurredAt: '2026-05-07T12:00:00.000Z',
-              idempotencyKey: null,
+              idempotencyKey: 'sale.created:lead:lead-1:2026-05-07T12:00:00.000Z',
               payload: expect.objectContaining({
                 amount: 147,
                 externalPaymentId: 'pi_abc123',
@@ -239,7 +248,7 @@ describe('BrainEventSpineService', () => {
       );
     });
 
-    it('enforces tenant-scoped idempotency via idempotencyKey within 5-second window', async () => {
+    it('enforces tenant-scoped idempotency via idempotencyKey permanently', async () => {
       prisma.$queryRaw.mockResolvedValue([{ id: 'existing-event-1' }]);
 
       const event: SaleEventPayload = {
@@ -265,7 +274,6 @@ describe('BrainEventSpineService', () => {
         ]),
         'ws-1',
         'idem-sale-1',
-        5000,
       );
       expect(prisma.autopilotEvent.create).not.toHaveBeenCalled();
     });
@@ -288,6 +296,25 @@ describe('BrainEventSpineService', () => {
       const id = await service.recordCommercial(event);
 
       expect(id).toBeNull();
+    });
+  });
+
+  describe('dispatchPending', () => {
+    it('marks pending outbox events as dispatched', async () => {
+      prisma.mindOutboxEvent.findMany.mockResolvedValueOnce([{ id: 'outbox-1' }]);
+
+      await expect(service.dispatchPending(10)).resolves.toEqual({ dispatched: 1 });
+
+      expect(prisma.mindOutboxEvent.update).toHaveBeenCalledWith({
+        where: { id: 'outbox-1' },
+        data: expect.objectContaining({
+          status: 'dispatched',
+          attempts: { increment: 1 },
+          lastError: null,
+        }),
+      });
+      const call = prisma.mindOutboxEvent.update.mock.calls[0][0];
+      expect(call.data.dispatchedAt).toBeInstanceOf(Date);
     });
   });
 
