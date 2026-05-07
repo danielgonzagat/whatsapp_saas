@@ -8,6 +8,50 @@ const IDEMPOTENCY_WINDOW_MS = 5000;
 
 type AutopilotEventIdRow = { id: string } | null;
 
+function isJsonRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function toInputJsonValue(value: unknown): Prisma.InputJsonValue {
+  if (value === null) {
+    return 'null';
+  }
+  if (typeof value === 'string' || typeof value === 'boolean') {
+    return value;
+  }
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : String(value);
+  }
+  if (Array.isArray(value)) {
+    return value.map((item) => toInputJsonValue(item));
+  }
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+  if (isJsonRecord(value)) {
+    return toInputJsonObject(value);
+  }
+  if (typeof value === 'undefined') {
+    return 'undefined';
+  }
+  if (typeof value === 'bigint') {
+    return value.toString();
+  }
+  if (typeof value === 'symbol') {
+    return value.description ?? 'symbol';
+  }
+  if (typeof value === 'function') {
+    return value.name || 'function';
+  }
+  return 'unsupported';
+}
+
+function toInputJsonObject(payload: Record<string, unknown>): Prisma.InputJsonObject {
+  return Object.fromEntries(
+    Object.entries(payload).map(([key, value]) => [key, toInputJsonValue(value)]),
+  );
+}
+
 @Injectable()
 export class BrainEventSpineService {
   private readonly logger = new Logger(BrainEventSpineService.name);
@@ -68,7 +112,7 @@ export class BrainEventSpineService {
             commercial: true,
             subject: event.subject,
             idempotencyKey: event.idempotencyKey ?? null,
-            payload: event.payload as unknown as Prisma.InputJsonValue,
+            payload: toInputJsonObject(event.payload),
           },
         },
         select: { id: true },

@@ -3,16 +3,22 @@ import { AdminMindController } from './admin-mind.controller';
 import { AdminMindService } from './admin-mind.service';
 
 describe('AdminMindController', () => {
+  type AdminMindServiceMock = AdminMindService & {
+    getLift: jest.MockedFunction<AdminMindService['getLift']>;
+    getRecentSurprise: jest.MockedFunction<AdminMindService['getRecentSurprise']>;
+    getState: jest.MockedFunction<AdminMindService['getState']>;
+  };
+
   function buildController() {
-    const service = {
+    const service = Object.assign(Object.create(AdminMindService.prototype) as AdminMindService, {
       getState: jest.fn(),
       getRecentSurprise: jest.fn(),
       getLift: jest.fn(),
-    };
+    }) as AdminMindServiceMock;
 
     return {
       service,
-      controller: new AdminMindController(service as unknown as AdminMindService),
+      controller: new AdminMindController(service),
     };
   }
 
@@ -109,8 +115,8 @@ describe('AdminMindController', () => {
             surprise: 1.2,
             severity: 'high',
             horizonSec: 86400,
-            resolvedAt: new Date().toISOString(),
-            createdAt: new Date().toISOString(),
+            resolvedAt: new Date(),
+            createdAt: new Date(),
           },
           {
             id: 'pred-2',
@@ -121,8 +127,8 @@ describe('AdminMindController', () => {
             surprise: 1.61,
             severity: 'high',
             horizonSec: 3600,
-            resolvedAt: new Date().toISOString(),
-            createdAt: new Date().toISOString(),
+            resolvedAt: new Date(),
+            createdAt: new Date(),
           },
         ],
         total: 2,
