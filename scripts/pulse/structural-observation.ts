@@ -1,9 +1,6 @@
-import type {
-  PulseExecutionEvidence,
-  PulseResolvedManifest,
-  PulseStructuralEdge,
-  PulseStructuralNode,
-} from './types';
+import type { PulseExecutionEvidence } from './types.evidence';
+import type { PulseResolvedManifest } from './types.resolved-manifest';
+import type { PulseStructuralEdge, PulseStructuralNode } from './types.structural';
 import { buildObservationFootprint, footprintMatchesFamilies } from './execution-observation';
 import { deriveStructuralFamilies } from './structural-family';
 
@@ -50,6 +47,7 @@ function shouldSeedObservedNode(
   return footprintMatchesFamilies(nodeFamilies(node), footprint);
 }
 
+/** Mark observed structural graph. */
 export function markObservedStructuralGraph(input: {
   nodes: PulseStructuralNode[];
   edges: PulseStructuralEdge[];

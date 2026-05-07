@@ -1,10 +1,11 @@
 import { Body, Controller, Delete, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { Throttle } from '@nestjs/throttler';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import { Idempotent } from '../common/idempotency.guard';
 import { AuthenticatedRequest } from '../common/interfaces';
 import { AttachPaymentMethodDto } from './dto/attach-payment-method.dto';
 import { PaymentMethodService } from './payment-method.service';
@@ -13,7 +14,7 @@ import { PaymentMethodService } from './payment-method.service';
 @ApiTags('Billing - Payment Methods')
 @ApiBearerAuth()
 @Controller('billing/payment-methods')
-@UseGuards(JwtAuthGuard, WorkspaceGuard)
+@UseGuards(JwtAuthGuard, WorkspaceGuard, ThrottlerGuard)
 @Throttle({ default: { limit: 20, ttl: 60000 } })
 export class PaymentMethodController {
   constructor(private readonly paymentMethodService: PaymentMethodService) {}
@@ -31,6 +32,7 @@ export class PaymentMethodController {
   @Post('setup-intent')
   @ApiOperation({ summary: 'Create a Stripe Setup Intent for adding a card' })
   @Roles('ADMIN', 'OWNER')
+  @Idempotent()
   async createSetupIntent(@Req() req: AuthenticatedRequest, @Body() body?: { returnUrl?: string }) {
     const workspaceId = resolveWorkspaceId(req);
     return this.paymentMethodService.createSetupIntent(workspaceId, body?.returnUrl);
@@ -40,6 +42,7 @@ export class PaymentMethodController {
   @Post('attach')
   @ApiOperation({ summary: 'Attach a payment method to the workspace' })
   @Roles('ADMIN', 'OWNER')
+  @Idempotent()
   async attachPaymentMethod(
     @Req() req: AuthenticatedRequest,
     @Body() body: AttachPaymentMethodDto,
@@ -52,6 +55,7 @@ export class PaymentMethodController {
   @Post(':paymentMethodId/default')
   @ApiOperation({ summary: 'Set a payment method as default' })
   @Roles('ADMIN', 'OWNER')
+  @Idempotent()
   async setDefault(
     @Req() req: AuthenticatedRequest,
     @Param('paymentMethodId') paymentMethodId: string,

@@ -1,6 +1,5 @@
 #!/usr/bin/env ts-node
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const { runPulseAutonomousLoop } = require('./pulse/autonomy-loop');
+import { runPulseAutonomousLoop } from './pulse/autonomy-loop';
 
 type RiskProfile = 'safe' | 'balanced' | 'dangerous';
 

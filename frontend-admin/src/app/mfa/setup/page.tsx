@@ -8,9 +8,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { adminAuthApi } from '@/lib/api/admin-auth-api';
-import { AdminApiClientError } from '@/lib/api/admin-errors';
 import { useAdminSession } from '@/lib/auth/admin-session-context';
 import type { MfaSetupPayload } from '@/lib/auth/admin-session-types';
+import {
+  MFA_SETUP_COPY,
+  isValidMfaCode,
+  loadMfaSetupPayload,
+  resolveAdminAuthError,
+  sanitizeMfaCode,
+} from './page.helpers';
 
 /** Mfa setup page. */
 export default function MfaSetupPage() {
@@ -35,30 +41,17 @@ function MfaSetupScreen() {
 
   useEffect(() => {
     if (!setupToken) {
-      setError('Token de configuração ausente. Faça login novamente.');
+      setError(MFA_SETUP_COPY.missingToken);
       setLoading(false);
       return;
     }
     let cancelled = false;
-    adminAuthApi
-      .setupMfa(setupToken)
-      .then((p) => {
-        if (!cancelled) {
-          setPayload(p);
-          setLoading(false);
-        }
-      })
-      .catch((err: unknown) => {
-        if (cancelled) {
-          return;
-        }
-        if (err instanceof AdminApiClientError) {
-          setError(err.message);
-        } else {
-          setError('Erro inesperado ao gerar o segredo.');
-        }
-        setLoading(false);
-      });
+    loadMfaSetupPayload(setupToken, {
+      isCancelled: () => cancelled,
+      onSuccess: setPayload,
+      onError: setError,
+      onSettled: () => setLoading(false),
+    });
     return () => {
       cancelled = true;
     };
@@ -67,8 +60,8 @@ function MfaSetupScreen() {
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
-    if (!/^\d{6}$/.test(code)) {
-      setError('Digite o código de 6 dígitos.');
+    if (!isValidMfaCode(code)) {
+      setError(MFA_SETUP_COPY.sixDigitCodeError);
       return;
     }
     setBusy(true);
@@ -77,11 +70,7 @@ function MfaSetupScreen() {
       persistSession(session);
       router.replace('/');
     } catch (err) {
-      if (err instanceof AdminApiClientError) {
-        setError(err.message);
-      } else {
-        setError('Erro inesperado.');
-      }
+      setError(resolveAdminAuthError(err, MFA_SETUP_COPY.verifyGenericError));
     } finally {
       setBusy(false);
     }
@@ -116,7 +105,7 @@ function MfaSetupScreen() {
             autoComplete="one-time-code"
             required
             value={code}
-            onChange={(e) => setCode(e.currentTarget.value.replace(/\D/g, ''))}
+            onChange={(e) => setCode(sanitizeMfaCode(e.currentTarget.value))}
             placeholder="000000"
             className="text-center text-lg tracking-[0.4em]"
           />

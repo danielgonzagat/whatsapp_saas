@@ -31,6 +31,11 @@ function normalizeConsent(
   };
 }
 
+function isCookieConsentSurface(hostname: string): boolean {
+  const normalized = hostname.toLowerCase();
+  return normalized === 'kloel.com' || normalized === 'www.kloel.com';
+}
+
 /** Open cookie preferences. */
 export function openCookiePreferences() {
   if (typeof window === 'undefined') {
@@ -42,6 +47,7 @@ export function openCookiePreferences() {
 /** Cookie provider. */
 export function CookieProvider({ children }: CookieProviderProps) {
   const [isLoaded, setIsLoaded] = useState(false);
+  const [isConsentSurface, setIsConsentSurface] = useState(false);
   const [consent, setConsent] = useState<CookieConsentPreferences | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isToastVisible, setIsToastVisible] = useState(false);
@@ -57,15 +63,34 @@ export function CookieProvider({ children }: CookieProviderProps) {
 
   useEffect(() => {
     let mounted = true;
+    const consentSurface =
+      typeof window !== 'undefined' && isCookieConsentSurface(window.location.hostname);
+    setIsConsentSurface(consentSurface);
+
+    if (!consentSurface) {
+      setIsLoaded(true);
+      return () => {
+        mounted = false;
+      };
+    }
 
     const loadConsent = async () => {
-      const response = await cookieConsentApi.get();
-      if (!mounted) {
-        return;
+      try {
+        const response = await cookieConsentApi.get();
+        if (!mounted) {
+          return;
+        }
+        setConsent(normalizeConsent(response.data?.consent ?? null));
+      } catch {
+        if (!mounted) {
+          return;
+        }
+        setConsent(normalizeConsent(null));
+      } finally {
+        if (mounted) {
+          setIsLoaded(true);
+        }
       }
-
-      setConsent(normalizeConsent(response.data?.consent ?? null));
-      setIsLoaded(true);
     };
 
     void loadConsent();
@@ -336,9 +361,9 @@ export function CookieProvider({ children }: CookieProviderProps) {
       `}</style>
 
       {children}
-      <CookieScriptManager consent={consent} />
+      {isConsentSurface ? <CookieScriptManager consent={consent} /> : null}
 
-      {isLoaded && !consent && !isModalOpen ? (
+      {isConsentSurface && isLoaded && !consent && !isModalOpen ? (
         <CookieBanner
           onAcceptAll={handleAcceptAll}
           onRejectNonEssential={handleRejectNonEssential}
@@ -347,7 +372,7 @@ export function CookieProvider({ children }: CookieProviderProps) {
         />
       ) : null}
 
-      {isModalOpen ? (
+      {isConsentSurface && isModalOpen ? (
         <CookiePreferencesModal
           onClose={() => setIsModalOpen(false)}
           onSave={handleSavePreferences}
@@ -356,7 +381,7 @@ export function CookieProvider({ children }: CookieProviderProps) {
         />
       ) : null}
 
-      {isToastVisible ? (
+      {isConsentSurface && isToastVisible ? (
         <div className="kloel-cookie-toast" role="status" aria-live="polite">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
             <circle cx="8" cy="8" r="8" fill={COOKIE_TOKENS.ember} opacity="0.15" />

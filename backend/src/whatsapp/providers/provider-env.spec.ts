@@ -15,19 +15,19 @@ describe('provider-env', () => {
     expect(
       resolveDefaultWhatsAppProvider({
         WAHA_API_URL: 'https://waha.kloel.test',
-      } as NodeJS.ProcessEnv),
+      }),
     ).toBe('meta-cloud');
   });
 
   it('defaults to meta-cloud when neither WAHA nor an explicit provider is configured', () => {
-    expect(resolveDefaultWhatsAppProvider({} as NodeJS.ProcessEnv)).toBe('meta-cloud');
+    expect(resolveDefaultWhatsAppProvider({})).toBe('meta-cloud');
   });
 
   it('prefers an explicit stored provider over the process default', () => {
     expect(
       resolveWhatsAppProvider('meta-cloud', {
         WAHA_API_URL: 'https://waha.kloel.test',
-      } as NodeJS.ProcessEnv),
+      }),
     ).toBe('meta-cloud');
   });
 });

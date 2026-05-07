@@ -1,10 +1,11 @@
 'use client';
 
 import { kloelFormatNumber, kloelT } from '@/lib/i18n/t';
+import { KloelMushroomMark } from '@/components/kloel/KloelBrand';
 import { DataTable } from '@/components/kloel/FormExtras';
 import { apiFetch } from '@/lib/api';
 import { colors } from '@/lib/design-tokens';
-import { Eye, Link2, Loader2, Pencil, Plus, X } from 'lucide-react';
+import { Eye, Link2, Pencil, Plus, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { mutate } from 'swr';
@@ -148,11 +149,7 @@ export function ProductPlansTab({ productId }: { productId: string }) {
   if (loading) {
     return (
       <div className="flex justify-center py-12">
-        <Loader2
-          className="h-6 w-6 animate-spin"
-          style={{ color: colors.ember.primary }}
-          aria-hidden="true"
-        />
+        <KloelMushroomMark size={28} title="Carregando planos" traceColor={colors.ember.primary} />
       </div>
     );
   }
@@ -562,7 +559,9 @@ export function ProductPlansTab({ productId }: { productId: string }) {
                   color: 'var(--app-text-on-accent)',
                 }}
               >
-                {creating ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : null}
+                {creating ? (
+                  <KloelMushroomMark size={18} title="Criando plano" traceColor="#ffffff" />
+                ) : null}
 
                 {kloelT(`Adicionar plano`)}
               </button>

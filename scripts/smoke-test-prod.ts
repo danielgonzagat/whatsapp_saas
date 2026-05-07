@@ -85,10 +85,7 @@ function createFacebookSignedRequest(secret: string, userId: string) {
     .replace(/\//g, '_')
     .replace(/=+$/g, '');
   const signature = createHmac('sha256', secret).update(encodedPayload).digest('base64');
-  const encodedSignature = signature
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=+$/g, '');
+  const encodedSignature = signature.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
   return `${encodedSignature}.${encodedPayload}`;
 }
 
@@ -187,12 +184,7 @@ async function main() {
         }
         assertContains(
           text,
-          [
-            'Continuar com Google',
-            'Continuar com Facebook',
-            'Continuar com Apple',
-            'link mágico',
-          ],
+          ['Continuar com Google', 'Continuar com Facebook', 'Continuar com Apple', 'link mágico'],
           'auth login surface',
         );
         return pass('auth:login-surface', 'social providers and magic-link CTA rendered');
@@ -299,14 +291,17 @@ async function main() {
     results.push(
       await runCheck('facebook:data-deletion', async () => {
         const signedRequest = createFacebookSignedRequest(metaAppSecret, facebookTestUserId);
-        const { response, json } = await fetchJson(buildUrl(apiUrl, '/auth/facebook/data-deletion'), {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            Accept: 'application/json',
+        const { response, json } = await fetchJson(
+          buildUrl(apiUrl, '/auth/facebook/data-deletion'),
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+              Accept: 'application/json',
+            },
+            body: new URLSearchParams({ signed_request: signedRequest }),
           },
-          body: new URLSearchParams({ signed_request: signedRequest }),
-        });
+        );
         if (!response.ok || !json || typeof json !== 'object') {
           return fail('facebook:data-deletion', `expected JSON success, got ${response.status}`);
         }
@@ -385,7 +380,10 @@ async function main() {
           return fail('google:risc-invalid', `expected 4xx, got ${response.status}`);
         }
         if (response.status < 400) {
-          return fail('google:risc-invalid', `expected malformed JWT rejection, got ${response.status}`);
+          return fail(
+            'google:risc-invalid',
+            `expected malformed JWT rejection, got ${response.status}`,
+          );
         }
         return pass('google:risc-invalid', `malformed SET rejected with ${response.status}`);
       }),

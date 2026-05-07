@@ -1,11 +1,13 @@
 import type { Metadata, Viewport } from 'next';
 import type React from 'react';
+import Script from 'next/script';
 import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages } from 'next-intl/server';
 import { DatadogRumRouter } from '@/components/kloel/DatadogRumRouter';
 import './globals.css';
 import { AppRootEnhancers } from '@/components/kloel/AppRootEnhancers';
 import { jetbrainsMono, sora } from './fonts';
+import { colors } from '@/lib/design-tokens';
 
 /** Metadata. */
 export const metadata: Metadata = {
@@ -52,7 +54,7 @@ export const metadata: Metadata = {
       { url: '/kloel-icon-16.png', sizes: '16x16', type: 'image/png' },
     ],
     apple: '/apple-touch-icon.png',
-    other: [{ rel: 'mask-icon', url: '/kloel-logo-mushroom.svg', color: '#E85D30' }],
+    other: [{ rel: 'mask-icon', url: '/kloel-logo-mushroom.svg', color: colors.ember.primary }],
   },
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://kloel.com'),
 };
@@ -75,9 +77,17 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         style={{
           fontFamily: "var(--font-sora), 'Sora', sans-serif",
           background: '#FFFFFF',
-          color: '#0A0A0C',
+          color: colors.background.void,
         }}
       >
+        <Script
+          id="kloel-public-landing-canvas-guard"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{
+            __html:
+              "(() => { const original = HTMLCanvasElement.prototype.getContext; HTMLCanvasElement.prototype.getContext = function(type, options) { if (type === '2d' && this && this.style && this.style.mixBlendMode === 'screen') return null; return original.call(this, type, options); }; })();",
+          }}
+        />
         <DatadogRumRouter />
         <NextIntlClientProvider locale={locale} messages={messages}>
           <AppRootEnhancers>{children}</AppRootEnhancers>

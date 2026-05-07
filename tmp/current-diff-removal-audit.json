@@ -1,0 +1,1607 @@
+{
+  "generatedAt": "2026-04-29T22:33:55.113Z",
+  "totalRemovedRows": 5985,
+  "riskyRows": 1658,
+  "riskySample": [
+    {
+      "kind": "staged",
+      "file": ".backup-manifest.json",
+      "removed": "  \"lastBackup\": \"2026-04-29T18:04:27.783Z\",",
+      "exactPresent": false,
+      "symbol": "T18",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": ".backup-manifest.json",
+      "removed": "  \"lastVerifiedAt\": \"2026-04-29T18:04:27.783Z\",",
+      "exactPresent": false,
+      "symbol": "T18",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": ".backup-manifest.json",
+      "removed": "  \"generatedAt\": \"2026-04-29T18:04:27.783Z\"",
+      "exactPresent": false,
+      "symbol": "T18",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "AGENTS.md",
+      "removed": "# [whatsapp_saas] recent context, 2026-04-29 5:09pm GMT-3",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_ARTIFACT_INDEX.json",
+      "removed": "  \"runId\": \"6bf525fc-1e8e-4820-a5cb-90aea5fdb379\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_ARTIFACT_INDEX.json",
+      "removed": "  \"generatedAt\": \"2026-04-29T19:50:07.070Z\",",
+      "exactPresent": false,
+      "symbol": "T19",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_ARTIFACT_INDEX.json",
+      "removed": "    \"Core trust/production gates are green; autonomous execution may proceed.\"",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_ARTIFACT_INDEX.json",
+      "removed": "    \"status\": \"READY\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_ARTIFACT_INDEX.json",
+      "removed": "    \"blockers\": []",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "  \"commitSha\": \"c74dae23729dce78a2f6fa0c7124a5ccb11c6e30\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "  \"status\": \"PARTIAL\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "  \"score\": 75,",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "  \"rawScore\": 75,",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "  \"blockingTier\": 1,",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"reason\": \"All critical matrix paths are observed pass/fail, human-blocked, or carry a precise terminal reason.\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"description\": \"104 parsers registered and available\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"description\": \"Evidence is 7 minutes old\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"score\": 99.49395131146466",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "    \"totalFiles\": 2849,",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "    \"totalLines\": 638715,",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "    \"runtimeCriticalFiles\": 2098,",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "    \"humanRequiredFiles\": 113,",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"backend\": 1099,",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"scripts\": 441,",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"docs\": 71,",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"infra\": 10,",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"root-config\": 22,",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"misc\": 54",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"source\": 1610,",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"spec\": 376,",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"document\": 88,",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"anti\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"architecture\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"audits\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"changed\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"core\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"cross\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"dangerously\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"deployment\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"email\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"gitnexus\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"google\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"governance\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"guard\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"helpers\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"live\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"model\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"normalize\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"protected\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"real\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"signed\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"skipped\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"sync\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"theme\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"unsafe\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"validate\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"validation\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"path\": \".beads/README.md\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"extension\": \".md\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"lineCount\": 82,",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"kind\": \"document\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"moduleCandidate\": \"beads\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"path\": \".beads/backup/backup_state.json\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"moduleCandidate\": \"beads\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"path\": \".beads/config.yaml\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"extension\": \".yaml\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"moduleCandidate\": \"beads\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"path\": \".beads/embeddeddolt/whatsapp_saas/.dolt/config.json\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"moduleCandidate\": \"beads\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"path\": \".beads/embeddeddolt/whatsapp_saas/.dolt/repo_state.json\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"lineCount\": 15,",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"moduleCandidate\": \"beads\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"path\": \".beads/export-state.json\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"moduleCandidate\": \"beads\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"path\": \".beads/metadata.json\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"lineCount\": 7,",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"moduleCandidate\": \"beads\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"moduleCandidate\": \"gitnexus\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "    \"ageMinutes\": 143,",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "    \"runtimeCriticalHotspots\": 44,",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "    \"humanRequiredHotspots\": 2",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "    \"totalSignals\": 8,",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "    \"runtimeSignals\": 2,",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "    \"changeSignals\": 1,",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "    \"mappedSignals\": 7,",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "    \"humanRequiredSignals\": 1,",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "    \"missingAdapters\": 0,",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "    \"optionalSkippedAdapters\": 1,",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "    \"missingAdaptersList\": [],",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"github\": 1,",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"sentry\": 1,",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"datadog\": 1,",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"gitnexus\": 1",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"executionMode\": \"human_required\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"id\": \"github-recent-commits-1777492194780\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"type\": \"code-change\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"source\": \"github\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"severity\": 0.35,",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"impactScore\": 0.4,",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"summary\": \"20 recent commits detected; latest: chore(deps): bump the worker-prod-patches group (#224) Bump\",",
+      "exactPresent": false,
+      "symbol": "latest",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"observedAt\": \"2026-04-29T07:13:39.000Z\",",
+      "exactPresent": false,
+      "symbol": "T07",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"relatedFiles\": [],",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"recent-change\"",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"id\": \"sentry-no-issues-1777492195459\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"type\": \"performance-metric\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"source\": \"sentry\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"severity\": 0.1,",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"impactScore\": 0.1,",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"summary\": \"No unresolved Sentry issues — project is clean\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"relatedFiles\": [],",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"healthy\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"no-errors\"",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"id\": \"datadog-no-monitors-1777492199326\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"type\": \"config-gap\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"source\": \"datadog\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"severity\": 1,",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"impactScore\": 0.2,",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"summary\": \"No Datadog monitors configured — add monitors for production visibility\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"relatedFiles\": [],",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"monitors\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"config-gap\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"missing\"",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"type\": \"codegraph\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"source\": \"gitnexus\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"severity\": 0.1,",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"impactScore\": 0.1,",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"confidence\": 0.9,",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"summary\": \"GitNexus index is fresh for commit c74dae23.\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"relatedFiles\": [],",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"gitnexus\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"code-graph\"",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "    \"totalNodes\": 5738,",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "    \"totalEdges\": 8238,",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"orchestration\": 2994,",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"persistence\": 134,",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"side_effect\": 234,",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "    \"completeChains\": 782,",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "    \"partialChains\": 1594,",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "    \"totalCapabilities\": 312,",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "    \"partialCapabilities\": 189,",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "    \"latentCapabilities\": 11,",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "    \"humanRequiredCapabilities\": 0,",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "    \"connectedCapabilities\": 72,",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "    \"operationalCapabilities\": 183,",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "    \"runtimeObservedCapabilities\": 239,",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "    \"scenarioCoveredCapabilities\": 204",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "    \"totalGaps\": 34,",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "    \"criticalGaps\": 32,",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "    \"highGaps\": 0,",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"ui_without_persistence\": 1,",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "      \"integration_without_observability\": 32,",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"backend/src/campaigns/campaigns.service.ts\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"backend/src/kloel/product-sub-resources/product-affiliate.controller.ts\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"backend/src/kloel/product-sub-resources/product-ai-config.controller.ts\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"backend/src/kloel/product-sub-resources/product-campaign.controller.ts\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"backend/src/kloel/product-sub-resources/product-checkout.controller.ts\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"backend/src/kloel/product-sub-resources/product-commission.controller.ts\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"backend/src/kloel/product-sub-resources/product-coupon.controller.ts\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"backend/src/kloel/product-sub-resources/product-plan.controller.ts\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"backend/src/kloel/product-sub-resources/product-review.controller.ts\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"backend/src/kloel/product-sub-resources/product-url.controller.ts\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"backend/src/kloel/product.controller.ts\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"frontend/src/app/(main)/products/[id]/plans/[planId]/page.tsx\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"frontend/src/app/(main)/products/new/page.tsx\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"frontend/src/components/kloel/products/ProductNerveCenter.tsx\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"frontend/src/components/kloel/products/ProductNerveCenterAvalTab.tsx\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"frontend/src/components/kloel/products/ProductNerveCenterCampanhasTab.tsx\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"frontend/src/components/kloel/products/ProductNerveCenterComissaoTab.afiliados.tsx\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"frontend/src/components/kloel/products/ProductNerveCenterComissaoTab.coprod.tsx\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"frontend/src/components/kloel/products/ProductNerveCenterComissaoTab.hooks.ts\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"frontend/src/components/kloel/products/ProductNerveCenterComissaoTab.richtext.tsx\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"frontend/src/components/kloel/products/ProductNerveCenterComissaoTab.tsx\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"frontend/src/components/kloel/products/ProductNerveCenterIATab.tsx\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"frontend/src/components/kloel/produtos/ProdutosView.tsx\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"frontend/src/components/kloel/settings/brain-settings-section.tsx\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"frontend/src/components/plans/PlanAIConfigTab.tsx\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"frontend/src/components/plans/PlanAffiliateTab.tsx\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"frontend/src/components/plans/PlanPaymentTab.tsx\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"frontend/src/components/plans/PlanShippingTab.tsx\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"frontend/src/components/plans/PlanStoreTab.tsx\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"frontend/src/components/plans/PlanThankYouTab.tsx\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"frontend/src/components/products/ProductAfterPayTab.tsx\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"frontend/src/components/products/ProductCampaignsTab.tsx\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"frontend/src/components/products/ProductCheckoutsTab.tsx\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"frontend/src/components/products/ProductCommissionsTab.tsx\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"frontend/src/components/products/ProductCouponsTab.tsx\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"frontend/src/components/products/ProductGeneralTab.tsx\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"frontend/src/components/products/ProductIATab.tsx\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"frontend/src/components/products/ProductPlansTab.tsx\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"frontend/src/components/products/ProductReviewsTab.tsx\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"frontend/src/components/products/ProductUrlsTab.tsx\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"frontend/src/hooks/useProducts.ts\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"frontend/src/lib/api/products.ts\"",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"Validate structural chain for /analytics/smart-time.\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"backend/src/auth/auth.password.service.ts\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"frontend/src/app/api/auth/anonymous/route.ts\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"frontend/src/lib/anonymous-session.ts\"",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"backend/src/auth/auth.password.service.ts\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"frontend/src/app/api/auth/check-email/route.ts\"",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    },
+    {
+      "kind": "staged",
+      "file": "PULSE_CERTIFICATE.json",
+      "removed": "        \"Validate structural chain for /api/auth/check-email.\",",
+      "exactPresent": false,
+      "symbol": "",
+      "symbolPresent": false
+    }
+  ]
+}

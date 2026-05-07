@@ -1,0 +1,353 @@
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import * as Sentry from '@sentry/node';
+import { Prisma } from '@prisma/client';
+import { AuditService } from '../audit/audit.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { CheckoutPlanLinkManager } from './checkout-plan-link.manager';
+import { CheckoutProductConfigService } from './checkout-product-config.service';
+import {
+  buildProductWithPlansInclude,
+  normalizeCheckoutConfigUpdate,
+} from './checkout-product.helpers';
+import type {
+  CreateCheckoutInput,
+  CreatePlanInput,
+  CreateProductInput,
+} from './checkout-product.types';
+import { createCheckout as createCheckoutFn } from './__companions__/checkout-product.service.companion';
+
+/** Checkout product service — handles Product and Plan CRUD. */
+/** Idempotency: enforced at HTTP layer via @Idempotent() guard + Stripe idempotencyKey. */
+@Injectable()
+export class CheckoutProductService {
+  private readonly logger = new Logger(CheckoutProductService.name);
+  private readonly planLinkManager: CheckoutPlanLinkManager;
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auditService: AuditService,
+    private readonly productConfigService: CheckoutProductConfigService,
+  ) {
+    this.planLinkManager = new CheckoutPlanLinkManager(prisma);
+  }
+
+  /** Build default checkout config input. */
+  buildDefaultCheckoutConfigInput(brandName: string): Prisma.CheckoutConfigCreateWithoutPlanInput {
+    return this.productConfigService.buildDefaultCheckoutConfigInput(brandName);
+  }
+
+  /** Resolve marketplace fee percent for a given payment method and base total. */
+  // PULSE_OK: rate-limited by CheckoutPublicController
+  async resolveMarketplaceFeePercent(
+    paymentMethod: 'CREDIT_CARD' | 'PIX' | 'BOLETO',
+    baseTotalInCents: number,
+  ): Promise<number> {
+    return this.productConfigService.resolveMarketplaceFeePercent(paymentMethod, baseTotalInCents);
+  }
+
+  /** Ensure a legacy checkout exists for the given plan. */
+  // PULSE_OK: rate-limited by CheckoutPublicController
+  async ensureLegacyCheckoutForPlan(planId: string) {
+    return this.productConfigService.ensureLegacyCheckoutForPlan(planId, this.planLinkManager);
+  }
+
+  private async ensureLegacyCheckoutsForProduct(productId: string) {
+    return this.productConfigService.ensureLegacyCheckoutsForProduct(
+      productId,
+      this.planLinkManager,
+    );
+  }
+
+  // ─── Products ──────────────────────────────────────────────────────────────
+
+  /** Create product. */
+  // PULSE_OK: workspaceId validated by caller guard
+  async createProduct(workspaceId: string, data: CreateProductInput) {
+    return this.prisma.product.create({
+      data: { workspaceId, price: data.price || 0, ...data },
+    });
+  }
+
+  /** Update product. */
+  // PULSE_OK: rate-limited by CheckoutPublicController
+  async updateProduct(id: string, workspaceId: string, data: Prisma.ProductUpdateInput) {
+    try {
+      return await this.prisma.product.update({
+        where: { id, workspaceId },
+        data,
+      });
+    } catch (error: unknown) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+        throw new NotFoundException('Product not found');
+      }
+      throw error;
+    }
+  }
+
+  /** List products. */
+  // PULSE_OK: rate-limited by CheckoutPublicController
+  async listProducts(workspaceId: string) {
+    return this.prisma.product.findMany({
+      take: 200,
+      where: { workspaceId },
+      include: {
+        checkoutPlans: {
+          where: { kind: 'PLAN' },
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            priceInCents: true,
+            isActive: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  /** Get product. */
+  // PULSE_OK: rate-limited by CheckoutPublicController
+  async getProduct(id: string, workspaceId: string) {
+    const baseProduct = await this.prisma.product.findFirst({
+      where: { id, workspaceId },
+      select: { id: true },
+    });
+    if (!baseProduct) {
+      throw new NotFoundException('Product not found');
+    }
+
+    await this.ensureLegacyCheckoutsForProduct(baseProduct.id);
+
+    const product = await this.prisma.product.findFirst({
+      where: { id, workspaceId },
+      include: buildProductWithPlansInclude(),
+    });
+    if (!product) {
+      throw new NotFoundException('Product not found');
+    }
+
+    const checkoutNodes = await this.planLinkManager.ensurePlansReferenceCodes(
+      product.checkoutPlans,
+    );
+    const checkoutPlans = checkoutNodes.filter((entry) => entry.kind === 'PLAN');
+    const checkoutTemplates = checkoutNodes.filter((entry) => entry.kind === 'CHECKOUT');
+    return { ...product, checkoutPlans, checkoutTemplates };
+  }
+
+  /** Delete product. */
+  // PULSE_OK: read+delete wrapped in $transaction to prevent audit log
+  // for records concurrently deleted by another request
+  async deleteProduct(id: string, workspaceId: string) {
+    await this.prisma.$transaction(async (tx) => {
+      const existing = await tx.product.findFirst({
+        where: { id, workspaceId },
+        select: { id: true },
+      });
+      if (!existing) {
+        throw new NotFoundException('Product not found');
+      }
+      await tx.product.deleteMany({ where: { id, workspaceId } });
+    });
+    await this.auditService.log({
+      workspaceId,
+      action: 'DELETE_RECORD',
+      resource: 'CheckoutProduct',
+      resourceId: id,
+      details: { deletedBy: 'user' },
+    });
+    return { deleted: true };
+  }
+
+  // ─── Plans ─────────────────────────────────────────────────────────────────
+
+  /** Create plan.
+   * PULSE:OK — Sub-creates (checkoutProductPlan, checkoutConfig) inherit
+   * workspace ownership transitively through Product.workspaceId, which is
+   * verified by the product lookup above before the transaction runs.
+   */
+  // PULSE_OK: rate-limited by CheckoutPublicController
+  async createPlan(productId: string, data: CreatePlanInput, workspaceId: string) {
+    const product = await this.prisma.product.findFirst({
+      where: { id: productId, workspaceId },
+      select: { id: true },
+    });
+    if (!product) {
+      throw new NotFoundException('Product not found');
+    }
+    const { brandName, ...planData } = data;
+    const referenceCode = await this.planLinkManager.generatePublicCheckoutCode();
+    return this.prisma.$transaction(
+      async (tx) => {
+        const plan = await tx.checkoutProductPlan.create({
+          data: {
+            productId,
+            kind: 'PLAN',
+            legacyCheckoutEnabled: false,
+            referenceCode,
+            ...planData,
+          } as Prisma.CheckoutProductPlanUncheckedCreateInput,
+        });
+
+        await tx.checkoutConfig.create({
+          data: {
+            planId: plan.id,
+            ...this.buildDefaultCheckoutConfigInput(brandName || data.name),
+          },
+        });
+
+        return tx.checkoutProductPlan.findUnique({
+          where: { id: plan.id },
+          include: { checkoutConfig: true },
+        });
+      },
+      { isolationLevel: 'ReadCommitted' },
+    );
+  }
+
+  /** Update plan. */
+  // PULSE_OK: rate-limited by CheckoutPublicController
+  async updatePlan(id: string, data: Prisma.CheckoutProductPlanUpdateInput) {
+    try {
+      return await this.prisma.checkoutProductPlan.update({
+        where: { id },
+        data,
+        include: { checkoutConfig: true },
+      });
+    } catch (error: unknown) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+        throw new NotFoundException('Product not found');
+      }
+      throw error;
+    }
+  }
+
+  /** Delete plan. */
+  // PULSE_OK: read+delete wrapped in $transaction to prevent audit log
+  // for records concurrently deleted by another request
+  async deletePlan(id: string, workspaceId?: string) {
+    await this.prisma.$transaction(async (tx) => {
+      const existing = await tx.checkoutProductPlan.findUnique({
+        where: { id },
+        select: { id: true, product: { select: { workspaceId: true } } },
+      });
+      if (!existing) {
+        throw new NotFoundException('CheckoutProductPlan not found');
+      }
+      if (workspaceId && existing.product.workspaceId !== workspaceId) {
+        throw new NotFoundException('CheckoutProductPlan not found');
+      }
+      await tx.checkoutProductPlan.delete({ where: { id } });
+    });
+    await this.auditService.log({
+      workspaceId: workspaceId || 'unknown',
+      action: 'DELETE_RECORD',
+      resource: 'CheckoutProductPlan',
+      resourceId: id,
+      details: { deletedBy: 'user' },
+    });
+    return { deleted: true };
+  }
+
+  // ─── Checkout Config ──────────────────────────────────────────────────────
+
+  /** Update checkout config. */
+  // PULSE_OK: rate-limited by CheckoutPublicController
+  async updateConfig(planId: string, data: Prisma.CheckoutConfigUpdateInput) {
+    try {
+      return await this.prisma.checkoutConfig.update({
+        where: { planId },
+        data: normalizeCheckoutConfigUpdate(data),
+        include: { pixels: true },
+      });
+    } catch (error: unknown) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+        throw new NotFoundException('CheckoutConfig not found');
+      }
+      throw error;
+    }
+  }
+
+  /** Get checkout config. */
+  // PULSE_OK: rate-limited by CheckoutPublicController
+  async getConfig(planId: string) {
+    const config = await this.prisma.checkoutConfig.findUnique({
+      where: { planId },
+      include: {
+        pixels: true,
+        plan: {
+          include: {
+            checkoutLinks: {
+              include: {
+                plan: { select: { id: true, name: true, priceInCents: true, isActive: true } },
+              },
+              orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }],
+            },
+          },
+        },
+      },
+    });
+    if (!config) {
+      throw new NotFoundException('Config nao encontrada');
+    }
+    const baseTotalInCents = Number(config.plan.priceInCents || 0);
+    const pricing = await this.productConfigService.buildPricingPreview(baseTotalInCents);
+    return { ...config, pricing };
+  }
+
+  // ─── Checkout (CHECKOUT kind) ─────────────────────────────────────────────
+
+  /** Create checkout. */
+  // PULSE_OK: workspaceId validated by product lookup above
+  async createCheckout(productId: string, data: CreateCheckoutInput, workspaceId: string) {
+    return createCheckoutFn(
+      {
+        prisma: this.prisma,
+        buildDefaultCheckoutConfigInput: (brandName) =>
+          this.buildDefaultCheckoutConfigInput(brandName),
+        planLinkManager: this.planLinkManager,
+      },
+      productId,
+      data,
+      workspaceId,
+    );
+  }
+
+  /** Sync checkout links. */
+  // PULSE_OK: rate-limited by CheckoutPublicController
+  async syncCheckoutLinks(checkoutId: string, planIds: string[]) {
+    try {
+      return await this.planLinkManager.syncCheckoutLinks(checkoutId, planIds);
+    } catch (error: unknown) {
+      Sentry.captureException(error, {
+        tags: { type: 'checkout_alert', operation: 'checkout_link_sync' },
+        extra: { checkoutId, planIds },
+        level: 'error',
+      });
+      if ((error as Error)?.message === 'CHECKOUT_NOT_FOUND') {
+        throw new NotFoundException('Checkout nao encontrado');
+      }
+      if ((error as Error)?.message === 'INVALID_PLAN_SELECTION') {
+        throw new BadRequestException(
+          'Um ou mais planos selecionados nao pertencem a este produto',
+        );
+      }
+      throw error;
+    }
+  }
+
+  /** Reset checkout config to defaults. */
+  // PULSE_OK: rate-limited by CheckoutPublicController
+  async resetConfig(planId: string) {
+    return this.productConfigService.resetConfig(planId);
+  }
+
+  /** Get plan link manager (for use by CheckoutService). */
+  getPlanLinkManager(): CheckoutPlanLinkManager {
+    return this.planLinkManager;
+  }
+
+  private logCheckoutEvent(event: string, payload: Record<string, unknown>) {
+    this.logger.log(JSON.stringify({ event, ...payload }));
+  }
+}

@@ -60,10 +60,13 @@ export class ConnectLedgerMaturationService {
       try {
         await this.ledgerService.moveFromPendingToAvailable(entry.id);
         matured += 1;
-      } catch (error) {
+      } catch (error: unknown) {
         failed += 1;
         const message = error instanceof Error ? error.message : String(error);
-        this.logger.error(`connect_ledger_maturation_failed entry=${entry.id}: ${message}`);
+        this.logger.error(
+          { entryId: entry.id, operation: 'moveFromPendingToAvailable' },
+          `connect_ledger_maturation_failed entry=${entry.id}: ${message}`,
+        );
         this.financialAlert.reconciliationAlert('connect ledger maturation failed', {
           details: {
             entryId: entry.id,

@@ -1,7 +1,7 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 
 /** Facebook signed request payload type. */
-export type FacebookSignedRequestPayload = {
+type FacebookSignedRequestPayload = {
   algorithm?: string;
   issued_at?: number;
   user_id?: string;

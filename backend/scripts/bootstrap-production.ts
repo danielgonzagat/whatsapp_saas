@@ -10,7 +10,11 @@ async function main() {
   const workspaceName = process.env.BOOTSTRAP_WORKSPACE_NAME || 'Kloel Production';
   const adminEmail = process.env.BOOTSTRAP_ADMIN_EMAIL || 'admin@kloel.com';
   const adminName = process.env.BOOTSTRAP_ADMIN_NAME || 'Kloel Admin';
-  const adminPassword = process.env.BOOTSTRAP_ADMIN_PASSWORD || 'Kloel@2026!';
+  if (!process.env.BOOTSTRAP_ADMIN_PASSWORD) {
+    console.error('BOOTSTRAP_ADMIN_PASSWORD environment variable is required');
+    process.exit(1);
+  }
+  const adminPassword = process.env.BOOTSTRAP_ADMIN_PASSWORD;
 
   // 1. Create workspace
   console.log('1. Creating workspace...');
@@ -64,13 +68,12 @@ async function main() {
   console.log(`  Workspace: ${workspace.name} (${workspace.id})`);
   console.log(`  Admin: ${agent.email}`);
   console.log(`  Products: users create their own via dashboard`);
-  console.log(`  Temp password: ${adminPassword}`);
   console.log(`\n⚠️  TROQUE A SENHA DO POSTGRES NO RAILWAY DASHBOARD!`);
 }
 
 main()
   .catch((e) => {
-    console.error('❌ Bootstrap failed:', e);
+    console.error('❌ Bootstrap failed:', e instanceof Error ? e.message : String(e));
     process.exit(1);
   })
   .finally(async () => {

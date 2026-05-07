@@ -1,6 +1,6 @@
 {
   "generatedAt": "2026-04-15T21:26:05.011Z",
-  "note": "Merged allowlist \u2014 SP-0..2 admin module landed; see CLAUDE.md for review policy.",
+  "note": "Merged allowlist — SP-0..2 admin module landed; see CLAUDE.md for review policy.",
   "entries": [
     {
       "file": "backend/src/auth/auth.service.ts",
@@ -8,7 +8,7 @@
       "model": "agent",
       "method": "findFirst",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/auth/auth.service.ts",
@@ -16,7 +16,7 @@
       "model": "agent",
       "method": "findFirst",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/auth/auth.service.ts",
@@ -24,7 +24,7 @@
       "model": "agent",
       "method": "findFirst",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/auth/auth.service.ts",
@@ -32,7 +32,7 @@
       "model": "agent",
       "method": "findFirst",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/auth/auth.service.ts",
@@ -40,7 +40,7 @@
       "model": "agent",
       "method": "findFirst",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/auth/auth.service.ts",
@@ -48,7 +48,7 @@
       "model": "agent",
       "method": "findFirst",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/auth/auth.service.ts",
@@ -56,7 +56,7 @@
       "model": "agent",
       "method": "findFirst",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/auth/auth.service.ts",
@@ -64,7 +64,7 @@
       "model": "agent",
       "method": "findFirst",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/autopilot/segmentation.service.ts",
@@ -72,7 +72,7 @@
       "model": "contact",
       "method": "findMany",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/campaigns/campaigns.service.ts",
@@ -80,7 +80,7 @@
       "model": "contact",
       "method": "findMany",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/checkout/checkout.service.ts",
@@ -88,7 +88,7 @@
       "model": "checkoutOrder",
       "method": "findMany",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/checkout/checkout.service.ts",
@@ -96,7 +96,7 @@
       "model": "checkoutOrder",
       "method": "count",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/checkout/checkout.service.ts",
@@ -104,7 +104,7 @@
       "model": "checkoutOrder",
       "method": "findMany",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/crm/crm.service.ts",
@@ -112,7 +112,7 @@
       "model": "contact",
       "method": "count",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/health/system-health.service.ts",
@@ -120,7 +120,7 @@
       "model": "metaConnection",
       "method": "count",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/kloel/canvas.controller.ts",
@@ -128,7 +128,7 @@
       "model": "kloelDesign",
       "method": "findMany",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/kloel/diagnostics.controller.ts",
@@ -136,7 +136,7 @@
       "model": "message",
       "method": "count",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/kloel/diagnostics.controller.ts",
@@ -144,7 +144,7 @@
       "model": "autopilotEvent",
       "method": "count",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/kloel/diagnostics.controller.ts",
@@ -152,7 +152,7 @@
       "model": "autopilotEvent",
       "method": "count",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/kloel/kloel.service.ts",
@@ -160,7 +160,7 @@
       "model": "product",
       "method": "findFirst",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/kloel/kloel.service.ts",
@@ -168,7 +168,7 @@
       "model": "contact",
       "method": "findMany",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/kloel/kloel.service.ts",
@@ -176,7 +176,7 @@
       "model": "contact",
       "method": "count",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/kloel/kloel.service.ts",
@@ -184,7 +184,7 @@
       "model": "product",
       "method": "findMany",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/kloel/kloel.service.ts",
@@ -192,7 +192,7 @@
       "model": "kloelMemory",
       "method": "findMany",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/kloel/memory-management.service.ts",
@@ -200,7 +200,7 @@
       "model": "kloelMemory",
       "method": "count",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/kloel/memory-management.service.ts",
@@ -208,7 +208,7 @@
       "model": "kloelMemory",
       "method": "count",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/kloel/memory-management.service.ts",
@@ -216,7 +216,7 @@
       "model": "kloelMemory",
       "method": "deleteMany",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/kloel/memory-management.service.ts",
@@ -224,7 +224,7 @@
       "model": "kloelMemory",
       "method": "deleteMany",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/kloel/memory-management.service.ts",
@@ -232,7 +232,7 @@
       "model": "kloelMemory",
       "method": "deleteMany",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/kloel/memory-management.service.ts",
@@ -240,7 +240,7 @@
       "model": "kloelMemory",
       "method": "count",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/kloel/memory-management.service.ts",
@@ -248,7 +248,7 @@
       "model": "kloelMemory",
       "method": "groupBy",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/kloel/memory-management.service.ts",
@@ -256,7 +256,7 @@
       "model": "kloelMemory",
       "method": "findFirst",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/kloel/memory-management.service.ts",
@@ -264,7 +264,7 @@
       "model": "kloelMemory",
       "method": "deleteMany",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/kloel/memory-management.service.ts",
@@ -272,7 +272,7 @@
       "model": "kloelMemory",
       "method": "deleteMany",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/kloel/memory.service.ts",
@@ -280,7 +280,7 @@
       "model": "kloelMemory",
       "method": "findMany",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/kloel/memory.service.ts",
@@ -288,7 +288,7 @@
       "model": "kloelMemory",
       "method": "count",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/kloel/payment.service.ts",
@@ -296,7 +296,7 @@
       "model": "kloelSale",
       "method": "findFirst",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/kloel/product.controller.ts",
@@ -304,7 +304,7 @@
       "model": "product",
       "method": "findMany",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/kloel/sales.controller.ts",
@@ -312,7 +312,7 @@
       "model": "physicalOrder",
       "method": "findMany",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/kloel/unified-agent.service.ts",
@@ -320,7 +320,7 @@
       "model": "message",
       "method": "findMany",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/kloel/unified-agent.service.ts",
@@ -328,7 +328,7 @@
       "model": "message",
       "method": "findMany",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/member-area/member-area.controller.ts",
@@ -336,7 +336,7 @@
       "model": "memberArea",
       "method": "findFirst",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/member-area/member-area.controller.ts",
@@ -344,7 +344,7 @@
       "model": "memberEnrollment",
       "method": "findMany",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/reports/reports.service.ts",
@@ -352,7 +352,7 @@
       "model": "checkoutOrder",
       "method": "findMany",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/reports/reports.service.ts",
@@ -360,7 +360,7 @@
       "model": "checkoutOrder",
       "method": "count",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/reports/reports.service.ts",
@@ -368,7 +368,7 @@
       "model": "checkoutOrder",
       "method": "aggregate",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/reports/reports.service.ts",
@@ -376,7 +376,7 @@
       "model": "checkoutOrder",
       "method": "count",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/reports/reports.service.ts",
@@ -384,7 +384,7 @@
       "model": "checkoutOrder",
       "method": "count",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/reports/reports.service.ts",
@@ -392,7 +392,7 @@
       "model": "checkoutOrder",
       "method": "findMany",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/reports/reports.service.ts",
@@ -400,7 +400,7 @@
       "model": "checkoutOrder",
       "method": "count",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/reports/reports.service.ts",
@@ -408,7 +408,7 @@
       "model": "customerSubscription",
       "method": "count",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/reports/reports.service.ts",
@@ -416,7 +416,7 @@
       "model": "customerSubscription",
       "method": "findMany",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/reports/reports.service.ts",
@@ -424,7 +424,7 @@
       "model": "checkoutOrder",
       "method": "findMany",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/reports/reports.service.ts",
@@ -432,7 +432,7 @@
       "model": "checkoutOrder",
       "method": "count",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/reports/reports.service.ts",
@@ -440,7 +440,7 @@
       "model": "customerSubscription",
       "method": "findMany",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/reports/reports.service.ts",
@@ -448,7 +448,7 @@
       "model": "customerSubscription",
       "method": "count",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/reports/reports.service.ts",
@@ -456,7 +456,7 @@
       "model": "adSpend",
       "method": "count",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/reports/reports.service.ts",
@@ -464,7 +464,7 @@
       "model": "checkoutOrder",
       "method": "count",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/reports/reports.service.ts",
@@ -472,7 +472,7 @@
       "model": "checkoutOrder",
       "method": "groupBy",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/reports/reports.service.ts",
@@ -480,7 +480,7 @@
       "model": "checkoutOrder",
       "method": "count",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/reports/reports.service.ts",
@@ -488,7 +488,7 @@
       "model": "checkoutOrder",
       "method": "aggregate",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/reports/reports.service.ts",
@@ -496,7 +496,7 @@
       "model": "checkoutOrder",
       "method": "findMany",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/reports/reports.service.ts",
@@ -504,7 +504,7 @@
       "model": "checkoutOrder",
       "method": "count",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/webhooks/webhooks.service.ts",
@@ -512,7 +512,7 @@
       "model": "message",
       "method": "findFirst",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "worker/campaign-processor.ts",
@@ -520,7 +520,7 @@
       "model": "contact",
       "method": "findMany",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "worker/processors/checkout-social-lead-enrichment.ts",
@@ -528,7 +528,7 @@
       "model": "checkoutSocialLead",
       "method": "updateMany",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "worker/processors/checkout-social-lead-enrichment.ts",
@@ -536,7 +536,7 @@
       "model": "checkoutSocialLead",
       "method": "updateMany",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "worker/processors/checkout-social-lead-enrichment.ts",
@@ -544,7 +544,7 @@
       "model": "checkoutSocialLead",
       "method": "updateMany",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/admin/audit/admin-audit.service.ts",
@@ -3600,7 +3600,7 @@
       "model": "agent",
       "method": "count",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/app.controller.ts",
@@ -3608,7 +3608,7 @@
       "model": "contact",
       "method": "count",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/app.controller.ts",
@@ -3616,7 +3616,7 @@
       "model": "conversation",
       "method": "count",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/crm/crm.service.ts",
@@ -3624,7 +3624,7 @@
       "model": "contact",
       "method": "findMany",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/gdpr/data-export.controller.ts",
@@ -3632,7 +3632,7 @@
       "model": "auditLog",
       "method": "findMany",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/growth/smart-time.service.ts",
@@ -3640,7 +3640,7 @@
       "model": "message",
       "method": "findMany",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/kloel/cart-recovery.service.ts",
@@ -3648,7 +3648,7 @@
       "model": "checkoutOrder",
       "method": "findMany",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/kloel/sales.controller.ts",
@@ -3656,7 +3656,7 @@
       "model": "kloelSale",
       "method": "findMany",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/kloel/sales.controller.ts",
@@ -3664,7 +3664,7 @@
       "model": "customerSubscription",
       "method": "findMany",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/kloel/site-public.controller.ts",
@@ -3672,7 +3672,7 @@
       "model": "kloelSite",
       "method": "findFirst",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/member-area/member-area.controller.ts",
@@ -3680,7 +3680,7 @@
       "model": "memberEnrollment",
       "method": "aggregate",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/member-area/member-area.controller.ts",
@@ -3688,7 +3688,7 @@
       "model": "memberArea",
       "method": "findMany",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "worker/providers/registry.ts",
@@ -3696,7 +3696,7 @@
       "model": "contact",
       "method": "findFirst",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "worker/providers/registry.ts",
@@ -3704,7 +3704,7 @@
       "model": "contact",
       "method": "findFirst",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/app.controller.ts",
@@ -4296,7 +4296,7 @@
       "model": "agentQueue",
       "method": "findMany",
       "kind": "UNKNOWN_MODEL",
-      "reason": "TODO \u2014 verify model is workspace-safe"
+      "reason": "TODO — verify model is workspace-safe"
     },
     {
       "file": "backend/src/inbox/smart-routing.service.ts",
@@ -4304,7 +4304,7 @@
       "model": "routingRule",
       "method": "findMany",
       "kind": "UNKNOWN_MODEL",
-      "reason": "TODO \u2014 verify model is workspace-safe"
+      "reason": "TODO — verify model is workspace-safe"
     },
     {
       "file": "backend/src/admin/accounts/kyc/admin-kyc.service.ts",
@@ -4312,7 +4312,7 @@
       "model": "kycDocument",
       "method": "updateMany",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/admin/accounts/kyc/admin-kyc.service.ts",
@@ -4320,7 +4320,7 @@
       "model": "kycDocument",
       "method": "updateMany",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/admin/accounts/queries/kyc-queue.query.ts",
@@ -4328,7 +4328,7 @@
       "model": "agent",
       "method": "findMany",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/admin/accounts/queries/kyc-queue.query.ts",
@@ -4336,7 +4336,7 @@
       "model": "agent",
       "method": "count",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/admin/dashboard/queries/breakdowns.query.ts",
@@ -4344,7 +4344,7 @@
       "model": "checkoutOrder",
       "method": "findMany",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/admin/dashboard/queries/breakdowns.query.ts",
@@ -4352,7 +4352,7 @@
       "model": "checkoutOrder",
       "method": "groupBy",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/admin/dashboard/queries/gmv.query.ts",
@@ -4360,7 +4360,7 @@
       "model": "checkoutOrder",
       "method": "aggregate",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/admin/dashboard/queries/transactions.query.ts",
@@ -4368,7 +4368,7 @@
       "model": "checkoutOrder",
       "method": "count",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/admin/dashboard/queries/transactions.query.ts",
@@ -4376,7 +4376,7 @@
       "model": "checkoutOrder",
       "method": "count",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/admin/dashboard/queries/transactions.query.ts",
@@ -4384,7 +4384,7 @@
       "model": "checkoutOrder",
       "method": "aggregate",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/admin/dashboard/queries/transactions.query.ts",
@@ -4392,7 +4392,7 @@
       "model": "checkoutOrder",
       "method": "aggregate",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/admin/transactions/queries/list-transactions.query.ts",
@@ -4400,7 +4400,7 @@
       "model": "checkoutOrder",
       "method": "count",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/admin/transactions/queries/list-transactions.query.ts",
@@ -4408,7 +4408,7 @@
       "model": "checkoutOrder",
       "method": "aggregate",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/admin/accounts/queries/detail-account.query.ts",
@@ -4472,7 +4472,7 @@
       "model": "product",
       "method": "count",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/admin/products/queries/list-products.query.ts",
@@ -4488,7 +4488,7 @@
       "model": "checkoutOrder",
       "method": "count",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/admin/products/queries/detail-product.query.ts",
@@ -4496,7 +4496,7 @@
       "model": "checkoutOrder",
       "method": "count",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/admin/products/queries/detail-product.query.ts",
@@ -4504,7 +4504,7 @@
       "model": "checkoutOrder",
       "method": "count",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/admin/products/queries/detail-product.query.ts",
@@ -4512,7 +4512,7 @@
       "model": "checkoutOrder",
       "method": "count",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/admin/products/queries/detail-product.query.ts",
@@ -4520,7 +4520,7 @@
       "model": "checkoutOrder",
       "method": "aggregate",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/admin/products/queries/detail-product.query.ts",
@@ -4528,7 +4528,7 @@
       "model": "checkoutOrder",
       "method": "aggregate",
       "kind": "BUG",
-      "reason": "TODO \u2014 review and either fix or document why cross-tenant"
+      "reason": "TODO — review and either fix or document why cross-tenant"
     },
     {
       "file": "backend/src/admin/products/queries/detail-product.query.ts",
@@ -4545,6 +4545,30 @@
       "method": "findMany",
       "kind": "TRANSITIVE_REVIEW",
       "reason": "transitively scoped via parent relation; verified safe"
+    },
+    {
+      "file": "backend/src/admin/products/queries/list-products.query.ts",
+      "line": 301,
+      "model": "product",
+      "method": "count",
+      "kind": "BUG",
+      "reason": "Admin endpoint counts products with optional workspace filter; cross-tenant by design (admin scope), where input.workspaceId narrows when provided."
+    },
+    {
+      "file": "backend/src/billing/billing-webhook.service.ts",
+      "line": 364,
+      "model": "subscription",
+      "method": "findFirst",
+      "kind": "BUG",
+      "reason": "scopedWhere = { stripeId, workspaceId } passed in by caller; static analyzer cannot trace the alias variable."
+    },
+    {
+      "file": "backend/src/billing/billing-webhook.service.ts",
+      "line": 374,
+      "model": "subscription",
+      "method": "updateMany",
+      "kind": "BUG",
+      "reason": "scopedWhere = { stripeId, workspaceId } passed in by caller; static analyzer cannot trace the alias variable."
     }
   ]
 }

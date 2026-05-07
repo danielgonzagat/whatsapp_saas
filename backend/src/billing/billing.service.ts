@@ -460,7 +460,7 @@ export class BillingService {
     });
   }
   private async resolveWorkspaceId(subscription: StripeSubscription): Promise<string | null> {
-    const metaWs = (subscription.metadata as Record<string, string> | null)?.workspaceId;
+    const metaWs = subscription.metadata?.workspaceId;
     if (metaWs) {
       return metaWs;
     }
@@ -541,7 +541,7 @@ export class BillingService {
         select: { providerSettings: true },
       });
       const settings = (ws?.providerSettings as Record<string, unknown>) || {};
-      const nextSettings = { ...settings } as Record<string, unknown>;
+      const nextSettings = { ...settings };
       if (settings.billingSuspended) {
         delete nextSettings.billingSuspended;
       }
@@ -716,7 +716,7 @@ export class BillingService {
             enabled: true, // Ativar autopilot por padrão em planos pagos
             monthlyLimit: limits.autopilotLimit,
           },
-        } as Prisma.InputJsonValue,
+        },
       },
     });
     this.logger.log(
@@ -736,7 +736,13 @@ export class BillingService {
           cancel_at_period_end: true,
         });
       } catch (err) {
-        this.logger.error(`Stripe cancel error: ${err}`);
+        const errMessage = err instanceof Error ? err.message : String(err);
+        this.logger.error(
+          `Stripe cancel failed — refusing to mark CANCELED in DB to avoid drift. workspaceId=${workspaceId} stripeId=${sub.stripeId} error=${errMessage}`,
+        );
+        throw new Error(
+          `Failed to cancel Stripe subscription ${sub.stripeId}; DB state preserved as ${sub.status}: ${errMessage}`,
+        );
       }
     }
     await this.prisma.subscription.update({

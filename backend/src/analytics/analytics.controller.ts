@@ -1,9 +1,20 @@
-import { Controller, Get, Param, Query, Req, Request, UseGuards } from '@nestjs/common';
+import {
+  BadRequestException,
+  Controller,
+  Get,
+  Param,
+  Query,
+  Req,
+  Request,
+  UseGuards,
+} from '@nestjs/common';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { AdvancedAnalyticsService } from './advanced-analytics.service';
 import { AnalyticsService } from './analytics.service';
+import { AnalyticsDateRangeQueryDto, AnalyticsReportQueryDto } from './dto/analytics-query.dto';
 import { SmartTimeService } from './smart-time/smart-time.service';
 import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 
@@ -11,6 +22,14 @@ function parseDateRange(startDate?: string, endDate?: string) {
   const end = endDate ? new Date(endDate) : new Date();
   const start = startDate ? new Date(startDate) : new Date(end.getTime() - 7 * 24 * 60 * 60 * 1000);
 
+  if (Number.isNaN(start.getTime())) {
+    throw new BadRequestException('Invalid startDate');
+  }
+  if (Number.isNaN(end.getTime())) {
+    throw new BadRequestException('Invalid endDate');
+  }
+
+  // PULSE_OK: date validated above via isNaN checks
   const safeEnd = Number.isNaN(end.getTime()) ? new Date() : end;
   const safeStart = Number.isNaN(start.getTime())
     ? new Date(safeEnd.getTime() - 7 * 24 * 60 * 60 * 1000)
@@ -20,8 +39,10 @@ function parseDateRange(startDate?: string, endDate?: string) {
 }
 
 /** Analytics controller. */
+@UseGuards(ThrottlerGuard)
 @Controller('analytics')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
+@Throttle({ default: { limit: 30, ttl: 60000 } })
 export class AnalyticsController {
   constructor(
     private readonly analyticsService: AnalyticsService,
@@ -63,28 +84,19 @@ export class AnalyticsController {
 
   /** Get advanced. */
   @Get('advanced')
-  async getAdvanced(
-    @Request() req,
-    @Query('startDate') startDate?: string,
-    @Query('endDate') endDate?: string,
-  ) {
-    const { start, end } = parseDateRange(startDate, endDate);
+  async getAdvanced(@Request() req, @Query() query: AnalyticsDateRangeQueryDto) {
+    const { start, end } = parseDateRange(query.startDate, query.endDate);
     return this.advancedAnalyticsService.getAdvancedDashboard(req.user.workspaceId, start, end);
   }
 
   /** Get full report. */
   @Get('reports')
-  async getFullReport(
-    @Request() req,
-    @Query('period') period?: string,
-    @Query('startDate') startDate?: string,
-    @Query('endDate') endDate?: string,
-  ) {
-    if (startDate && endDate) {
-      const { start, end } = parseDateRange(startDate, endDate);
+  async getFullReport(@Request() req, @Query() query: AnalyticsReportQueryDto) {
+    if (query.startDate && query.endDate) {
+      const { start, end } = parseDateRange(query.startDate, query.endDate);
       return this.analyticsService.getFullReport(req.user.workspaceId, 'custom', start, end);
     }
-    return this.analyticsService.getFullReport(req.user.workspaceId, period || '30d');
+    return this.analyticsService.getFullReport(req.user.workspaceId, query.period || '30d');
   }
 
   /** Get ai report. */

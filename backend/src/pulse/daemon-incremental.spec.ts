@@ -100,10 +100,12 @@ export class WidgetsController {
       path.join(tempDir, 'backend/src/widgets.service.ts'),
       `
 export class WidgetsService {
-  constructor(private readonly prisma: any) {}
+  constructor(
+    private readonly prisma: Record<string, { create(args: { data: Record<string, unknown> }): Promise<unknown> }>,
+  ) {}
 
   async save() {
-    return this.prisma.widget.create({ data: {} as any });
+    return this.prisma.widget.create({ data: {} as Record<string, unknown> });
   }
 }
 `,

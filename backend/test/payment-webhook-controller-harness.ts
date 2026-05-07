@@ -1,4 +1,5 @@
-import { PaymentWebhookController } from '../src/webhooks/payment-webhook.controller';
+import { PaymentWebhookStripeController as PaymentWebhookController } from '../src/webhooks/payment-webhook-stripe.controller';
+import { StripeWebhookLedgerService } from '../src/webhooks/stripe-webhook-ledger.service';
 
 export type PaymentWebhookPrismaMock = {
   workspace: {
@@ -9,6 +10,7 @@ export type PaymentWebhookPrismaMock = {
     updateMany: jest.Mock;
   };
   checkoutOrder: {
+    findFirst: jest.Mock;
     findUnique: jest.Mock;
     updateMany: jest.Mock;
   };
@@ -87,6 +89,7 @@ export function buildPaymentWebhookController() {
       updateMany: jest.fn().mockResolvedValue({ count: 1 }),
     },
     checkoutOrder: {
+      findFirst: jest.fn().mockResolvedValue({ status: 'PAID' }),
       findUnique: jest.fn().mockResolvedValue(null),
       updateMany: jest.fn().mockResolvedValue({ count: 1 }),
     },
@@ -150,6 +153,12 @@ export function buildPaymentWebhookController() {
     webhookProcessingFailed: jest.fn(),
   };
 
+  const ledger = new StripeWebhookLedgerService(
+    prisma as never,
+    marketplaceTreasury as never,
+    adminAudit as never,
+  );
+
   const controller = new PaymentWebhookController(
     autopilot as never,
     whatsapp as never,
@@ -159,10 +168,10 @@ export function buildPaymentWebhookController() {
     stripeWebhookProcessor as never,
     connectReversalService as never,
     connectPayoutService as never,
-    marketplaceTreasury as never,
     marketplaceTreasuryPayoutService as never,
     adminAudit as never,
     financialAlert as never,
+    ledger,
   );
 
   return {

@@ -1,3 +1,4 @@
+import { type NextRequest } from 'next/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../../_lib/backend-url', () => ({
@@ -29,8 +30,8 @@ function createRequest(options?: {
         return value ? { name, value } : undefined;
       },
     },
-    text: vi.fn(async () => options?.body || ''),
-  } as any;
+    text: async () => options?.body || '',
+  } as NextRequest;
 }
 
 describe('marketing proxy route', () => {

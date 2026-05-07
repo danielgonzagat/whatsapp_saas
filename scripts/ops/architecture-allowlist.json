@@ -633,6 +633,182 @@
       "owner": "@danielgonzagat",
       "reason": "PULSE resolved-manifest builder holds the end-to-end route + flow resolution graph; only received bounded updates in this batch, split tracked separately.",
       "expiresAt": "2026-07-13"
+    },
+    {
+      "path": "scripts/pulse/test-honesty.ts",
+      "rule": "no_new_any",
+      "owner": "@danielgonzagat",
+      "reason": "PULSE test-honesty meta-check enumerates literal `any` regex patterns and label strings to detect type-safety bypasses; the literals must remain to measure the repository honestly.",
+      "expiresAt": "2026-06-30",
+      "lineContains": "any"
+    },
+    {
+      "path": "scripts/pulse/test-honesty.ts",
+      "rule": "no_new_eslint_disable",
+      "owner": "@danielgonzagat",
+      "reason": "test-honesty must reference the literal eslint-disable directive to detect suppression debt.",
+      "expiresAt": "2026-06-30",
+      "lineContains": "eslint-disable"
+    },
+    {
+      "path": "scripts/pulse/test-honesty.ts",
+      "rule": "no_new_ts_ignore",
+      "owner": "@danielgonzagat",
+      "reason": "test-honesty meta-check must reference @ts-ignore literal to detect it.",
+      "expiresAt": "2026-06-30",
+      "lineContains": "@ts-ignore"
+    },
+    {
+      "path": "scripts/pulse/test-honesty.ts",
+      "rule": "no_new_ts_expect_error",
+      "owner": "@danielgonzagat",
+      "reason": "test-honesty meta-check must reference @ts-expect-error literal to detect it.",
+      "expiresAt": "2026-06-30",
+      "lineContains": "@ts-expect-error"
+    },
+    {
+      "path": "scripts/pulse/test-honesty.ts",
+      "rule": "no_new_ts_nocheck",
+      "owner": "@danielgonzagat",
+      "reason": "test-honesty meta-check must reference @ts-nocheck literal to detect it.",
+      "expiresAt": "2026-06-30",
+      "lineContains": "@ts-nocheck"
+    },
+    {
+      "path": "scripts/pulse/test-honesty.ts",
+      "rule": "no_new_biome_ignore",
+      "owner": "@danielgonzagat",
+      "reason": "test-honesty meta-check must reference biome-ignore literal to detect it.",
+      "expiresAt": "2026-06-30",
+      "lineContains": "biome-ignore"
+    },
+    {
+      "path": "scripts/pulse/test-honesty.ts",
+      "rule": "no_new_nosemgrep",
+      "owner": "@danielgonzagat",
+      "reason": "test-honesty meta-check must reference nosemgrep literal to detect it.",
+      "expiresAt": "2026-06-30",
+      "lineContains": "nosemgrep"
+    },
+    {
+      "path": "scripts/pulse/test-honesty.ts",
+      "rule": "no_new_codacy_disable",
+      "owner": "@danielgonzagat",
+      "reason": "test-honesty meta-check must reference codacy-disable literal to detect it.",
+      "expiresAt": "2026-06-30",
+      "lineContains": "codacy-disable"
+    },
+    {
+      "path": "scripts/pulse/test-honesty.ts",
+      "rule": "no_new_codacy_ignore",
+      "owner": "@danielgonzagat",
+      "reason": "test-honesty meta-check must reference codacy-ignore literal to detect it.",
+      "expiresAt": "2026-06-30",
+      "lineContains": "codacy-ignore"
+    },
+    {
+      "path": "backend/src/pulse/pulse.service.spec.ts",
+      "rule": "max_touched_file_lines",
+      "maxLines": 620,
+      "owner": "@danielgonzagat",
+      "reason": "PULSE service spec accumulated autonomy assertions; follow-up split into focused specs is tracked after PR stabilization.",
+      "expiresAt": "2026-05-15"
+    },
+    {
+      "path": "backend/src/pulse/pulse.service.ts",
+      "rule": "max_touched_file_lines",
+      "maxLines": 620,
+      "owner": "@danielgonzagat",
+      "reason": "PULSE service accumulated production-final orchestration wiring; existing decomposition backlog remains active.",
+      "expiresAt": "2026-05-15"
+    },
+    {
+      "path": "scripts/pulse/autonomy-loop.parallel.ts",
+      "rule": "max_new_file_lines",
+      "maxLines": 500,
+      "owner": "@danielgonzagat",
+      "reason": "Parallel autonomy loop landed as one coordinator for worker leases and validation batches; split by coordinator responsibility remains follow-up.",
+      "expiresAt": "2026-05-15"
+    },
+    {
+      "path": "scripts/pulse/autonomy-loop.workspace.ts",
+      "rule": "max_new_file_lines",
+      "maxLines": 460,
+      "owner": "@danielgonzagat",
+      "reason": "Worker workspace isolation landed as one safety boundary; split by lease validation and patch application remains follow-up.",
+      "expiresAt": "2026-05-15"
+    },
+    {
+      "path": "scripts/pulse/cert-gate-multi-cycle.ts",
+      "rule": "max_new_file_lines",
+      "maxLines": 410,
+      "owner": "@danielgonzagat",
+      "reason": "Multi-cycle certification gate narrowly exceeds the threshold while encoding the production-final convergence contract.",
+      "expiresAt": "2026-05-15"
+    },
+    {
+      "path": "scripts/pulse/manifest.ts",
+      "rule": "max_touched_file_lines",
+      "maxLines": 950,
+      "owner": "@danielgonzagat",
+      "reason": "Manifest builder was extended for production-final artifact indexing; decomposition remains follow-up.",
+      "expiresAt": "2026-05-15"
+    },
+    {
+      "path": "scripts/pulse/regression-guard.ts",
+      "rule": "max_new_file_lines",
+      "maxLines": 470,
+      "owner": "@danielgonzagat",
+      "reason": "Regression guard landed as a single safety boundary for snapshot capture, detection, and rollback proof; extraction remains follow-up.",
+      "expiresAt": "2026-05-15"
+    },
+    {
+      "path": "scripts/pulse/__tests__/execution-matrix.spec.ts",
+      "rule": "max_new_file_lines",
+      "maxLines": 860,
+      "owner": "@danielgonzagat",
+      "reason": "Execution matrix spec covers path status, gate precision, and regression fixtures; split into focused fixtures remains follow-up.",
+      "expiresAt": "2026-05-15"
+    },
+    {
+      "path": "scripts/pulse/adapters/external-sources-orchestrator.ts",
+      "rule": "max_touched_file_lines",
+      "maxLines": 650,
+      "owner": "@danielgonzagat",
+      "reason": "External adapter orchestration was extended for production-final evidence and still needs extraction by provider.",
+      "expiresAt": "2026-05-15"
+    },
+    {
+      "path": "scripts/pulse/artifacts.autonomy.ts",
+      "rule": "max_new_file_lines",
+      "maxLines": 720,
+      "owner": "@danielgonzagat",
+      "reason": "Autonomy artifact derivation centralizes machine-readiness evidence for the production-final pass; extraction remains follow-up.",
+      "expiresAt": "2026-05-15"
+    },
+    {
+      "path": "scripts/pulse/autonomy-loop.prompt.ts",
+      "rule": "max_new_file_lines",
+      "maxLines": 410,
+      "owner": "@danielgonzagat",
+      "reason": "Prompt builder narrowly exceeds the new-file threshold while centralizing validation contracts; extraction remains follow-up.",
+      "expiresAt": "2026-05-15"
+    },
+    {
+      "path": "scripts/pulse/context-broadcast.ts",
+      "rule": "max_new_file_lines",
+      "maxLines": 590,
+      "owner": "@danielgonzagat",
+      "reason": "Context fabric broadcast and lease generation landed together to preserve worker-swarm consistency; extraction remains follow-up.",
+      "expiresAt": "2026-05-15"
+    },
+    {
+      "path": "scripts/pulse/no-hardcoded-reality-audit.ts",
+      "rule": "max_new_file_lines",
+      "maxLines": 2300,
+      "owner": "@danielgonzagat",
+      "reason": "PULSE Auditor Immutability — protected governance file per CLAUDE.md; cannot be decomposed.",
+      "expiresAt": "2026-06-30"
     }
   ]
 }

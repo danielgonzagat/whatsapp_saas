@@ -1,3 +1,4 @@
+import { type NextRequest } from 'next/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
@@ -36,27 +37,34 @@ function createRequest(options?: {
   host?: string;
   forwardedFor?: string;
 }) {
-  return {
-    headers: new Headers({
-      host: options?.host || 'auth.kloel.com',
-      'x-forwarded-for': options?.forwardedFor || '203.0.113.10',
-    }),
-    nextUrl: new URL(
-      options?.url ||
-        'https://auth.kloel.com/api/auth/callback/tiktok?code=tiktok-code&state=tiktok-state',
-    ),
-    cookies: {
-      get: vi.fn((name: string) => {
-        if (name === 'kloel_tiktok_oauth_state' && options?.stateCookie) {
-          return { value: options.stateCookie };
-        }
-        if (name === 'kloel_tiktok_oauth_next' && options?.nextCookie) {
-          return { value: options.nextCookie };
-        }
-        return undefined;
+  const nextUrl = new URL(
+    options?.url ||
+      'https://auth.kloel.com/api/auth/callback/tiktok?code=tiktok-code&state=tiktok-state',
+  );
+  return Object.assign(
+    {
+      method: 'GET',
+      url: nextUrl.toString(),
+      headers: new Headers({
+        host: options?.host || 'auth.kloel.com',
+        'x-forwarded-for': options?.forwardedFor || '203.0.113.10',
       }),
+    } as NextRequest,
+    {
+      nextUrl,
+      cookies: {
+        get: vi.fn((name: string) => {
+          if (name === 'kloel_tiktok_oauth_state' && options?.stateCookie) {
+            return { value: options.stateCookie };
+          }
+          if (name === 'kloel_tiktok_oauth_next' && options?.nextCookie) {
+            return { value: options.nextCookie };
+          }
+          return undefined;
+        }),
+      },
     },
-  } as any;
+  );
 }
 
 describe('tiktok auth callback route', () => {

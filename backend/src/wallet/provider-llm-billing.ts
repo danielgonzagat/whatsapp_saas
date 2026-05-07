@@ -37,6 +37,7 @@ function resolveMaxOutputTokens(raw?: number): number {
   return 4096;
 }
 
+/** Estimate open ai chat quote cost cents. */
 export function estimateOpenAiChatQuoteCostCents(input: {
   model: string;
   messages: unknown;
@@ -49,6 +50,7 @@ export function estimateOpenAiChatQuoteCostCents(input: {
   });
 }
 
+/** Estimate anthropic message quote cost cents. */
 export function estimateAnthropicMessageQuoteCostCents(input: {
   model: string;
   system?: unknown;
@@ -69,6 +71,7 @@ export function estimateAnthropicMessageQuoteCostCents(input: {
   });
 }
 
+/** Quote open ai chat actual cost cents. */
 export function quoteOpenAiChatActualCostCents(input: {
   model: string;
   usage?: OpenAiChatUsageShape | null;
@@ -81,6 +84,7 @@ export function quoteOpenAiChatActualCostCents(input: {
   });
 }
 
+/** Quote anthropic message actual cost cents. */
 export function quoteAnthropicMessageActualCostCents(input: {
   model: string;
   usage?: AnthropicMessageUsageShape | null;

@@ -13,6 +13,7 @@ import {
 import Link from 'next/link';
 import type { AgentActivity } from '../AgentConsole';
 import { SettingsCard, kloelSettingsClass } from './contract';
+import { colors } from '@/lib/design-tokens';
 
 interface ActivityItem {
   id: string;
@@ -30,12 +31,12 @@ const ACTIVITY_ICON_MAP: Record<
   { icon: typeof MessageSquare; bg: string; color: string }
 > = {
   response: { icon: MessageSquare, bg: 'bg-[#3B82F6]/12', color: 'text-[#93C5FD]' },
-  sent: { icon: Send, bg: 'bg-[#E85D30]/12', color: 'text-[#F2B29D]' },
+  sent: { icon: Send, bg: 'bg-[colors.ember.primary]/12', color: 'text-[#F2B29D]' },
   error: { icon: XCircle, bg: 'bg-[#E05252]/12', color: 'text-[#F7A8A8]' },
   sale: { icon: ShoppingCart, bg: 'bg-[#10B981]/12', color: 'text-[#7FE2BC]' },
   checkout_click: { icon: CreditCard, bg: 'bg-[#3B82F6]/12', color: 'text-[#93C5FD]' },
   reconnect: { icon: Smartphone, bg: 'bg-[#10B981]/12', color: 'text-[#7FE2BC]' },
-  low_credits: { icon: AlertTriangle, bg: 'bg-[#E85D30]/12', color: 'text-[#F2B29D]' },
+  low_credits: { icon: AlertTriangle, bg: 'bg-[colors.ember.primary]/12', color: 'text-[#F2B29D]' },
 };
 
 const AGENT_ACTIVITY_TYPE_MAP: Partial<Record<AgentActivity['type'], ActivityItem['type']>> = {

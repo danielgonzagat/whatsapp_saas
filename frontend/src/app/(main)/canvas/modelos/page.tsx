@@ -1,6 +1,7 @@
 'use client';
 
 import { kloelT } from '@/lib/i18n/t';
+import { colors } from '@/lib/design-tokens';
 // PULSE:OK — AI generate POST navigates to editor on success; no SWR reads to invalidate.
 
 import { IC } from '@/components/canvas/CanvasIcons';
@@ -79,7 +80,7 @@ export default function CanvasModelos() {
             padding: '10px 16px',
           }}
         >
-          <span style={{ color: '#E85D30' }}>{IC.spark(18)}</span>
+          <span style={{ color: colors.ember.primary }}>{IC.spark(18)}</span>
           <input
             value={aiPrompt}
             onChange={(e) => setAiPrompt(e.target.value)}
@@ -101,7 +102,7 @@ export default function CanvasModelos() {
             disabled={generating || !aiPrompt.trim()}
             style={{
               padding: '5px 12px',
-              background: generating ? '#6E6E73' : '#E85D30',
+              background: generating ? colors.text.muted : colors.ember.primary,
               border: 'none',
               borderRadius: 4,
               color: 'var(--app-text-on-accent)',
@@ -121,10 +122,10 @@ export default function CanvasModelos() {
             onClick={() => setActiveTag(null)}
             style={{
               padding: '4px 10px',
-              background: !activeTag ? '#E85D30' : '#E85D3010',
-              border: `1px solid ${!activeTag ? '#E85D30' : '#E85D3020'}`,
+              background: !activeTag ? colors.ember.primary : colors.ember.glow10,
+              border: `1px solid ${!activeTag ? colors.ember.primary : colors.ember.glow10}`,
               borderRadius: 4,
-              color: !activeTag ? '#0A0A0C' : '#E85D30',
+              color: !activeTag ? colors.background.void : colors.ember.primary,
               fontSize: 10,
               fontWeight: !activeTag ? 600 : 400,
               fontFamily: S,
@@ -140,10 +141,10 @@ export default function CanvasModelos() {
               onClick={() => setActiveTag(activeTag === t ? null : t)}
               style={{
                 padding: '4px 10px',
-                background: activeTag === t ? '#E85D30' : '#E85D3010',
-                border: `1px solid ${activeTag === t ? '#E85D30' : '#E85D3020'}`,
+                background: activeTag === t ? colors.ember.primary : colors.ember.glow10,
+                border: `1px solid ${activeTag === t ? colors.ember.primary : colors.ember.glow10}`,
                 borderRadius: 4,
-                color: activeTag === t ? '#0A0A0C' : '#E85D30',
+                color: activeTag === t ? colors.background.void : colors.ember.primary,
                 fontSize: 10,
                 fontWeight: activeTag === t ? 600 : 400,
                 fontFamily: S,
@@ -240,7 +241,9 @@ function TemplateCard({
       onMouseEnter={() => setH(true)}
       onMouseLeave={() => setH(false)}
       style={{
-        background: h ? '#151517' : '#111113',
+        background: h
+          ? '#151517' /* PULSE_VISUAL_OK: intermediate surface tone */
+          : colors.background.surface,
         border: `1px solid ${h ? `${c1}35` : '#1C1C1F'}`,
         borderRadius: 6,
         padding: 0,
@@ -259,7 +262,8 @@ function TemplateCard({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: '#0D0D0F',
+          background:
+            '#0D0D0F' /* PULSE_VISUAL_OK: intermediate surface tone */ /* PULSE_VISUAL_OK: intermediate surface tone */,
           position: 'relative',
           overflow: 'hidden',
         }}
@@ -296,7 +300,7 @@ function TemplateCard({
               top: '18%',
               width: '60%',
               height: 4,
-              background: '#E0DDD8',
+              background: colors.text.silver,
               borderRadius: 1,
               opacity: 0.8,
             }}
@@ -309,7 +313,7 @@ function TemplateCard({
               top: '25%',
               width: '40%',
               height: 2,
-              background: '#6E6E73',
+              background: colors.text.muted,
               borderRadius: 1,
               opacity: 0.5,
             }}

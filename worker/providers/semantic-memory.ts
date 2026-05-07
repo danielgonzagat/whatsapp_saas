@@ -92,7 +92,7 @@ export class SemanticMemory {
       const vectorStr = `[${embedding.join(',')}]`;
 
       await prisma.$executeRaw`
-            INSERT INTO "Vector" ("id", "content", "embedding", "sourceId")
+            INSERT INTO "RAC_Vector" ("id", "content", "embedding", "sourceId")
             VALUES (gen_random_uuid(), ${fact}, ${vectorStr}::vector, ${source.id});
         `;
     });
@@ -115,9 +115,9 @@ export class SemanticMemory {
 
     const results = (await prisma.$queryRaw`
         SELECT v.content, 1 - (v.embedding <=> ${vectorStr}::vector) as similarity
-        FROM "Vector" v
-        JOIN "KnowledgeSource" s ON v."sourceId" = s.id
-        JOIN "KnowledgeBase" kb ON s."knowledgeBaseId" = kb.id
+        FROM "RAC_Vector" v
+        JOIN "RAC_KnowledgeSource" s ON v."sourceId" = s.id
+        JOIN "RAC_KnowledgeBase" kb ON s."knowledgeBaseId" = kb.id
         WHERE kb."workspaceId" = ${workspaceId}
         AND kb."name" = 'User Memory'
         AND s.content LIKE ${`[Contact:${contactId}]%`}

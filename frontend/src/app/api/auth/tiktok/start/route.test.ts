@@ -1,3 +1,4 @@
+import { type NextRequest } from 'next/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
@@ -16,7 +17,7 @@ function createRequest(url = 'https://auth.kloel.com/api/auth/tiktok/start?next=
   return {
     headers: new Headers({ host: 'auth.kloel.com' }),
     nextUrl: new URL(url),
-  } as any;
+  } as NextRequest;
 }
 
 describe('tiktok auth start route', () => {

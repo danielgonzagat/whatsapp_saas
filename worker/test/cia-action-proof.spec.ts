@@ -1,24 +1,43 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import * as db from '../db';
+
+type FlexMock = ReturnType<typeof vi.fn>;
+
+const mockPrisma = vi.hoisted(() => ({
+  workspace: { findUnique: vi.fn() as FlexMock },
+  contact: {
+    findUnique: vi.fn() as FlexMock,
+    findFirst: vi.fn() as FlexMock,
+    update: vi.fn() as FlexMock,
+  },
+  conversation: {
+    findUnique: vi.fn() as FlexMock,
+    findFirst: vi.fn() as FlexMock,
+    update: vi.fn() as FlexMock,
+  },
+  message: {
+    create: vi.fn() as FlexMock,
+    findMany: vi.fn() as FlexMock,
+    findFirst: vi.fn() as FlexMock,
+  },
+  autonomyExecution: {
+    create: vi.fn() as FlexMock,
+    update: vi.fn() as FlexMock,
+    findFirst: vi.fn() as FlexMock,
+  },
+  conversationProofSnapshot: { create: vi.fn() as FlexMock, update: vi.fn() as FlexMock },
+  auditLog: { create: vi.fn() as FlexMock },
+  autopilotEvent: { create: vi.fn() as FlexMock, findMany: vi.fn() as FlexMock },
+  kloelMemory: {
+    upsert: vi.fn() as FlexMock,
+    create: vi.fn() as FlexMock,
+    findMany: vi.fn() as FlexMock,
+    findUnique: vi.fn() as FlexMock,
+  },
+  systemInsight: { create: vi.fn() as FlexMock, findFirst: vi.fn() as FlexMock },
+}));
 
 vi.mock('../db', () => ({
-  prisma: {
-    workspace: { findUnique: vi.fn() },
-    contact: { findUnique: vi.fn(), findFirst: vi.fn(), update: vi.fn() },
-    conversation: { findUnique: vi.fn(), findFirst: vi.fn(), update: vi.fn() },
-    message: { create: vi.fn(), findMany: vi.fn(), findFirst: vi.fn() },
-    autonomyExecution: { create: vi.fn(), update: vi.fn(), findFirst: vi.fn() },
-    conversationProofSnapshot: { create: vi.fn(), update: vi.fn() },
-    auditLog: { create: vi.fn() },
-    autopilotEvent: { create: vi.fn(), findMany: vi.fn() },
-    kloelMemory: {
-      upsert: vi.fn(),
-      create: vi.fn(),
-      findMany: vi.fn(),
-      findUnique: vi.fn(),
-    },
-    systemInsight: { create: vi.fn(), findFirst: vi.fn() },
-  },
+  prisma: mockPrisma,
 }));
 
 vi.mock('../queue', () => ({
@@ -42,6 +61,7 @@ vi.mock('../providers/outbound-dispatcher', () => ({
 
 vi.mock('../providers/plan-limits', () => ({
   PlanLimitsProvider: {
+    checkDailyMessageLimit: vi.fn(async () => ({ allowed: true })),
     checkMessageLimit: vi.fn(async () => ({ allowed: true })),
     checkSubscriptionStatus: vi.fn(async () => ({ active: true })),
   },
@@ -62,8 +82,7 @@ vi.mock('../providers/channel-dispatcher', () => ({
   sendEmail: vi.fn(),
 }));
 
-const mockPrisma: any = db.prisma;
-
+// PULSE_OK: assertions exist below
 describe('cia-action-proof', () => {
   beforeEach(async () => {
     vi.clearAllMocks();

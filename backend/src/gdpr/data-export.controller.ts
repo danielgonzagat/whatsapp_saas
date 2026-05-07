@@ -16,6 +16,7 @@ export class DataExportController {
   constructor(private readonly prisma: PrismaService) {}
 
   /** Export data. */
+  // PULSE_TODO: verify if still needed, no caller detected
   @Post('export')
   @UseGuards(JwtAuthGuard)
   async exportData(@Req() req: AuthenticatedRequest) {
@@ -26,12 +27,13 @@ export class DataExportController {
 
     // Gather all user-related data from primary tables
     const [agent, workspace, auditLogs, messages] = await Promise.all([
-      this.prisma.agent.findUnique({
-        where: { id: userId },
+      this.prisma.agent.findFirst({
+        where: workspaceId ? { id: userId, workspaceId } : { id: userId },
         select: {
           id: true,
           email: true,
           name: true,
+          workspaceId: true,
           createdAt: true,
           updatedAt: true,
         },
@@ -47,7 +49,7 @@ export class DataExportController {
           })
         : null,
       this.prisma.auditLog.findMany({
-        where: { agentId: userId },
+        where: workspaceId ? { agentId: userId, workspaceId } : { agentId: userId },
         orderBy: { createdAt: 'desc' },
         take: 1000,
         select: {

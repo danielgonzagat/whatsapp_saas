@@ -208,14 +208,14 @@ modules).
   `checkout-webhook.controller.ts` (~1.029 LOC) com StripeChargeService +
   StripeWebhookProcessor. Atualmente o motor novo coexiste com legacy payment
   provider/MP; chamadas reais ainda passam pelo legado.
-- **FASE 8 UI integration**: trocar AsaasTokenizer por StripePaymentElement no
+- **FASE 8 UI integration**: trocar LegacyPaymentTokenizer por StripePaymentElement no
   `CheckoutShell.tsx` com feature flag, depois remover.
 - **FASE 9 cleanup**: deletar `legacy-payment.service.ts`,
   `mercado-pago.service.ts`, `mercado-pago-*.util.ts`, `payment.service.ts`,
   `smart-payment.service.ts`, `mercado-pago-wallet.controller.ts`,
   `frontend/src/app/webhook/payment/stripe/route.ts`,
   `frontend/src/lib/mercado-pago.ts`,
-  `frontend/src/app/(checkout)/components/AsaasTokenizer.tsx`. Deps
+  `frontend/src/app/(checkout)/components/LegacyPaymentTokenizer.tsx`. Deps
   `legacy-provider` em backend/package.json. Schema migration:
   `CheckoutPayment.gateway` + `Payment.provider` viram enum
   `PaymentProvider { STRIPE }` (DB vazia em prod, migration é noop em dados — só
@@ -225,3 +225,15 @@ modules).
   `feedback_pulse_readonly.md`); atualização exige Daniel ou outro humano.
 - **CLAUDE.md FASE 1 do DAG**: troca "via legacy payment provider" por "via
   Stripe Connect". É arquivo protegido; aguarda Daniel ou autorização explícita.
+
+---
+
+## PULSE Auditor Immutability
+
+`scripts/pulse/no-hardcoded-reality-audit.ts` is a locked PULSE governance surface.
+
+No AI CLI may edit, weaken, bypass, rename, delete, chmod, unflag, move, or replace this auditor. This prohibition applies to Codex, Claude, OpenCode, and any autonomous or assisted AI agent.
+
+The auditor must keep scanning every source file inside `scripts/pulse/**` and must preserve hardcode debt when hardcode is deleted without a dynamic production replacement, including accumulated Git history debt.
+
+If the auditor itself needs to change, stop. The human owner must perform that change outside autonomous AI execution.

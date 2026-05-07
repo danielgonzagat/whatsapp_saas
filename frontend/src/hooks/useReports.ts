@@ -8,25 +8,6 @@ import useSWR from 'swr';
  * declared explicitly as optional while extra keys remain permissive — this
  * keeps hooks typed without cascading forced edits through analytics views.
  */
-/**
- * Backend returns `messages` as either a scalar count OR a nested object with
- * breakdown. We model this as an intersection so both `.total` access and
- * numeric-coercion paths remain typed without forcing consumers to narrow.
- */
-type ReportMessages = number & { total?: number };
-interface ReportLeads {
-  newContacts?: number;
-  [key: string]: unknown;
-}
-interface ReportFlows {
-  executions?: number;
-  completed?: number;
-  [key: string]: unknown;
-}
-interface ReportSales {
-  revenue?: number;
-  [key: string]: unknown;
-}
 interface ReportSentiment {
   positive?: number;
   neutral?: number;
@@ -38,12 +19,72 @@ interface ReportLeadScore {
   low?: number;
 }
 
+/** Shape returned by GET /analytics/reports (getFullReport). */
+export interface FullReportKpi {
+  totalRevenue: number;
+  revenueTrend: number;
+  totalSales: number;
+  salesTrend: number;
+  totalLeads: number;
+  leadsTrend: number;
+  conversionRate: number;
+  avgTicket: number;
+  totalPending: number;
+  adSpend: number;
+  roas: number | null;
+}
+
+export interface FullReportResponse {
+  period: string;
+  kpi: FullReportKpi;
+  revenueChart: { current: number[]; previous: number[] };
+  topProducts: Array<{ name: string; sales: number; revenue: number }>;
+  funnel: {
+    visitors: number;
+    leads: number;
+    qualified: number;
+    negotiation: number;
+    converted: number;
+  };
+  paymentMethods: Array<{ method: string; count: number; revenue: number }>;
+  salesByHour: number[];
+  salesByWeekday: number[];
+  aiPerformance: { totalMessages: number; aiMessages: number };
+  financial: {
+    available: number;
+    pending: number;
+    refunds: number;
+    refundCount: number;
+  };
+}
+
 interface ReportResponse {
-  messages?: ReportMessages;
-  leads?: ReportLeads;
-  flows?: ReportFlows;
-  sales?: ReportSales;
+  messages?: { total: number; inbound: number; outbound: number };
+  leads?: { newContacts: number };
+  flows?: { executions: number; completed: number };
+  sales?: { revenue: number };
   [key: string]: unknown;
+}
+
+/** Map backend FullReportResponse to the legacy ReportResponse shape used by EngajamentoTab. */
+function mapFullReportToReportResponse(full: FullReportResponse): ReportResponse {
+  return {
+    messages: {
+      total: full.aiPerformance?.totalMessages ?? 0,
+      inbound: 0,
+      outbound: full.aiPerformance?.aiMessages ?? 0,
+    },
+    leads: {
+      newContacts: full.kpi?.totalLeads ?? 0,
+    },
+    flows: {
+      executions: 0,
+      completed: 0,
+    },
+    sales: {
+      revenue: full.kpi?.totalRevenue ?? 0,
+    },
+  };
 }
 
 interface AnalyticsStatsResponse {
@@ -60,9 +101,8 @@ interface AnalyticsStatsResponse {
 
 type AIReportResponse = Record<string, unknown>;
 
-/** Use reports. */
+/** Use reports — fetches GET /analytics/reports and maps to legacy shape. */
 export function useReports(period = '30d') {
-  // Support custom period format: "custom:YYYY-MM-DD:YYYY-MM-DD"
   const isCustom = period.startsWith('custom:');
   const url = isCustom
     ? (() => {
@@ -74,7 +114,9 @@ export function useReports(period = '30d') {
     refreshInterval: 120_000,
     keepPreviousData: true,
   });
-  return { report: (data || {}) as ReportResponse, isLoading, error, mutate };
+  const raw = data as FullReportResponse | null | undefined;
+  const report: ReportResponse | null = raw?.kpi ? mapFullReportToReportResponse(raw) : null;
+  return { report, isLoading, error, mutate };
 }
 
 /** Use ai report. */

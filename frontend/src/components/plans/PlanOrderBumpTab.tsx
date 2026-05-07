@@ -3,6 +3,7 @@
 import { kloelT } from '@/lib/i18n/t';
 import { useOrderBumps } from '@/hooks/useCheckoutPlans';
 import { useState, useId } from 'react';
+import { colors } from '@/lib/design-tokens';
 
 /* ── Inline SVG Icons ── */
 const GiftIcon = () => (
@@ -79,14 +80,14 @@ const PlusIcon = () => (
 );
 
 /* ── Design Tokens ── */
-const _BG_VOID = '#0A0A0C';
-const BG_SURFACE = '#111113';
-const BG_ELEVATED = '#19191C';
-const BORDER = '#222226';
-const TEXT_PRIMARY = '#E0DDD8';
-const TEXT_MUTED = '#6E6E73';
-const TEXT_DIM = '#3A3A3F';
-const EMBER = '#E85D30';
+const _BG_VOID = 'colors.background.void';
+const BG_SURFACE = 'colors.background.surface';
+const BG_ELEVATED = 'colors.background.elevated';
+const BORDER = 'colors.border.space';
+const TEXT_PRIMARY = 'colors.text.silver';
+const TEXT_MUTED = 'colors.text.muted';
+const TEXT_DIM = 'colors.text.dim';
+const EMBER = 'colors.ember.primary';
 const GREEN = '#10B981';
 const RED = '#EF4444';
 const FONT_BODY = "'Sora', sans-serif";

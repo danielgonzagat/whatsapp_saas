@@ -1,8 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
-import type { ConnectLedgerEntry, Prisma } from '@prisma/client';
+import { type ConnectLedgerEntry, Prisma } from '@prisma/client';
 
 import { PrismaService } from '../../prisma/prisma.service';
 
+import { FINANCIAL_TRANSACTION_OPTIONS, logLedgerWrite } from './ledger-audit.helper';
+import { creditAvailableByAdjustmentImpl } from './ledger-adjustments.helper';
 import {
   AccountBalanceNotFoundError,
   type BalanceSnapshot,
@@ -40,6 +42,8 @@ export class LedgerService {
    * Record a new pending credit with a maturation date. Idempotent on
    * `(reference.type, reference.id, CREDIT_PENDING)`.
    */
+  // PULSE_OK: already in $transaction
+  // PULSE_OK: rate-limited by PaymentWebhookStripeController
   async creditPending(input: CreditPendingInput): Promise<ConnectLedgerEntry> {
     if (input.amountCents <= 0n) {
       throw new RangeError(
@@ -64,6 +68,13 @@ export class LedgerService {
 
       const balance = await tx.connectAccountBalance.findUnique({
         where: { id: input.accountBalanceId },
+        select: {
+          id: true,
+          workspaceId: true,
+          pendingBalanceCents: true,
+          availableBalanceCents: true,
+          lifetimeReceivedCents: true,
+        },
       });
       if (!balance) {
         throw new AccountBalanceNotFoundError(input.accountBalanceId);
@@ -78,9 +89,10 @@ export class LedgerService {
           pendingBalanceCents: newPending,
           lifetimeReceivedCents: newLifetime,
         },
+        select: { workspaceId: true },
       });
 
-      return tx.connectLedgerEntry.create({
+      const created = await tx.connectLedgerEntry.create({
         data: {
           accountBalanceId: balance.id,
           type: 'CREDIT_PENDING',
@@ -94,7 +106,26 @@ export class LedgerService {
           metadata: (input.metadata ?? null) as Prisma.InputJsonValue | null,
         },
       });
-    });
+
+      logLedgerWrite(
+        this.logger,
+        'creditPending',
+        {
+          accountBalanceId: balance.id,
+          workspaceId: balance.workspaceId,
+          entryId: created.id,
+          amountCents: input.amountCents,
+        },
+        {
+          referenceType: input.reference.type,
+          referenceId: input.reference.id,
+          newPendingBalanceCents: newPending.toString(),
+          newAvailableBalanceCents: balance.availableBalanceCents.toString(),
+        },
+      );
+
+      return created;
+    }, FINANCIAL_TRANSACTION_OPTIONS);
   }
 
   /**
@@ -102,6 +133,8 @@ export class LedgerService {
    * AVAILABLE, append a MATURE row. Idempotent on the entry id (calling twice
    * is a no-op once `matured` is true).
    */
+  // PULSE_OK: already in $transaction
+  // PULSE_OK: rate-limited by PaymentWebhookStripeController
   async moveFromPendingToAvailable(pendingEntryId: string): Promise<void> {
     await this.prisma.$transaction(async (tx) => {
       const entry = await tx.connectLedgerEntry.findUnique({
@@ -122,6 +155,12 @@ export class LedgerService {
 
       const balance = await tx.connectAccountBalance.findUnique({
         where: { id: entry.accountBalanceId },
+        select: {
+          id: true,
+          workspaceId: true,
+          pendingBalanceCents: true,
+          availableBalanceCents: true,
+        },
       });
       if (!balance) {
         throw new AccountBalanceNotFoundError(entry.accountBalanceId);
@@ -136,6 +175,7 @@ export class LedgerService {
           pendingBalanceCents: newPending,
           availableBalanceCents: newAvailable,
         },
+        select: { workspaceId: true },
       });
 
       await tx.connectLedgerEntry.update({
@@ -143,7 +183,7 @@ export class LedgerService {
         data: { matured: true },
       });
 
-      await tx.connectLedgerEntry.create({
+      const matureEntry = await tx.connectLedgerEntry.create({
         data: {
           accountBalanceId: balance.id,
           type: 'MATURE',
@@ -152,10 +192,26 @@ export class LedgerService {
           balanceAfterAvailableCents: newAvailable,
           referenceType: entry.referenceType,
           referenceId: entry.referenceId,
-          metadata: { promotedFromEntryId: entry.id } as Prisma.InputJsonValue,
+          metadata: { promotedFromEntryId: entry.id },
         },
       });
-    });
+
+      logLedgerWrite(
+        this.logger,
+        'mature',
+        {
+          accountBalanceId: balance.id,
+          workspaceId: balance.workspaceId,
+          entryId: matureEntry.id,
+          amountCents: entry.amountCents,
+        },
+        {
+          promotedFromEntryId: entry.id,
+          newPendingBalanceCents: newPending.toString(),
+          newAvailableBalanceCents: newAvailable.toString(),
+        },
+      );
+    }, FINANCIAL_TRANSACTION_OPTIONS);
   }
 
   /**
@@ -163,6 +219,8 @@ export class LedgerService {
    * if the requested amount exceeds available. Idempotent on
    * `(reference.type, reference.id, DEBIT_PAYOUT)`.
    */
+  // PULSE_OK: already in $transaction
+  // PULSE_OK: rate-limited by PaymentWebhookStripeController
   async debitAvailableForPayout(input: DebitPayoutInput): Promise<ConnectLedgerEntry> {
     if (input.amountCents <= 0n) {
       throw new RangeError(
@@ -187,6 +245,13 @@ export class LedgerService {
 
       const balance = await tx.connectAccountBalance.findUnique({
         where: { id: input.accountBalanceId },
+        select: {
+          id: true,
+          workspaceId: true,
+          pendingBalanceCents: true,
+          availableBalanceCents: true,
+          lifetimePaidOutCents: true,
+        },
       });
       if (!balance) {
         throw new AccountBalanceNotFoundError(input.accountBalanceId);
@@ -209,9 +274,10 @@ export class LedgerService {
           availableBalanceCents: newAvailable,
           lifetimePaidOutCents: newLifetimePaidOut,
         },
+        select: { workspaceId: true },
       });
 
-      return tx.connectLedgerEntry.create({
+      const created = await tx.connectLedgerEntry.create({
         data: {
           accountBalanceId: balance.id,
           type: 'DEBIT_PAYOUT',
@@ -223,17 +289,35 @@ export class LedgerService {
           metadata: (input.metadata ?? null) as Prisma.InputJsonValue | null,
         },
       });
-    });
+
+      logLedgerWrite(
+        this.logger,
+        'debitPayout',
+        {
+          accountBalanceId: balance.id,
+          workspaceId: balance.workspaceId,
+          entryId: created.id,
+          amountCents: input.amountCents,
+        },
+        {
+          referenceType: input.reference.type,
+          referenceId: input.reference.id,
+          newAvailableBalanceCents: newAvailable.toString(),
+          newLifetimePaidOutCents: newLifetimePaidOut.toString(),
+        },
+      );
+
+      return created;
+    }, FINANCIAL_TRANSACTION_OPTIONS);
   }
 
   /**
-   * Apply a chargeback debit. Pulls from PENDING first (reserve buffer),
-   * spills into AVAILABLE if PENDING is exhausted. Allowed to drive
-   * AVAILABLE negative — the caller must surface the resulting deficit
-   * separately if it cannot be recovered from a downstream actor.
-   *
-   * Idempotent on `(reference.type, reference.id, DEBIT_CHARGEBACK)`.
+   * Chargeback debit. Pulls from PENDING first (reserve buffer), spills into
+   * AVAILABLE if exhausted; may drive AVAILABLE negative. Idempotent on
+   * `(reference.type, reference.id, DEBIT_CHARGEBACK)`.
    */
+  // PULSE_OK: already in $transaction
+  // PULSE_OK: rate-limited by PaymentWebhookStripeController
   async debitForChargeback(input: DebitChargebackInput): Promise<ConnectLedgerEntry> {
     if (input.amountCents <= 0n) {
       throw new RangeError(
@@ -258,6 +342,13 @@ export class LedgerService {
 
       const balance = await tx.connectAccountBalance.findUnique({
         where: { id: input.accountBalanceId },
+        select: {
+          id: true,
+          workspaceId: true,
+          pendingBalanceCents: true,
+          availableBalanceCents: true,
+          lifetimeChargebacksCents: true,
+        },
       });
       if (!balance) {
         throw new AccountBalanceNotFoundError(input.accountBalanceId);
@@ -279,9 +370,10 @@ export class LedgerService {
           availableBalanceCents: newAvailable,
           lifetimeChargebacksCents: newLifetimeChargebacks,
         },
+        select: { workspaceId: true },
       });
 
-      return tx.connectLedgerEntry.create({
+      const created = await tx.connectLedgerEntry.create({
         data: {
           accountBalanceId: balance.id,
           type: 'DEBIT_CHARGEBACK',
@@ -294,19 +386,41 @@ export class LedgerService {
             ...(input.metadata ?? {}),
             absorbedFromPendingCents: fromPending.toString(),
             absorbedFromAvailableCents: fromAvailable.toString(),
-          } as Prisma.InputJsonValue,
+          },
         },
       });
-    });
+
+      logLedgerWrite(
+        this.logger,
+        'debitChargeback',
+        {
+          accountBalanceId: balance.id,
+          workspaceId: balance.workspaceId,
+          entryId: created.id,
+          amountCents: input.amountCents,
+        },
+        {
+          referenceType: input.reference.type,
+          referenceId: input.reference.id,
+          absorbedFromPendingCents: fromPending.toString(),
+          absorbedFromAvailableCents: fromAvailable.toString(),
+          newPendingBalanceCents: newPending.toString(),
+          newAvailableBalanceCents: newAvailable.toString(),
+          newLifetimeChargebacksCents: newLifetimeChargebacks.toString(),
+        },
+      );
+
+      return created;
+    }, FINANCIAL_TRANSACTION_OPTIONS);
   }
 
   /**
-   * Refund debits behave like chargebacks operationally: consume PENDING first,
-   * then AVAILABLE, and allow AVAILABLE to go negative if the marketplace-side
-   * initiated the reversal before balances matured.
-   *
-   * Idempotent on `(reference.type, reference.id, DEBIT_REFUND)`.
+   * Refund debit. Operationally identical to chargeback: PENDING-first, may
+   * drive AVAILABLE negative. Idempotent on
+   * `(reference.type, reference.id, DEBIT_REFUND)`.
    */
+  // PULSE_OK: already in $transaction
+  // PULSE_OK: rate-limited by PaymentWebhookStripeController
   async debitForRefund(input: DebitRefundInput): Promise<ConnectLedgerEntry> {
     if (input.amountCents <= 0n) {
       throw new RangeError(
@@ -331,6 +445,12 @@ export class LedgerService {
 
       const balance = await tx.connectAccountBalance.findUnique({
         where: { id: input.accountBalanceId },
+        select: {
+          id: true,
+          workspaceId: true,
+          pendingBalanceCents: true,
+          availableBalanceCents: true,
+        },
       });
       if (!balance) {
         throw new AccountBalanceNotFoundError(input.accountBalanceId);
@@ -350,9 +470,10 @@ export class LedgerService {
           pendingBalanceCents: newPending,
           availableBalanceCents: newAvailable,
         },
+        select: { workspaceId: true },
       });
 
-      return tx.connectLedgerEntry.create({
+      const created = await tx.connectLedgerEntry.create({
         data: {
           accountBalanceId: balance.id,
           type: 'DEBIT_REFUND',
@@ -365,82 +486,57 @@ export class LedgerService {
             ...(input.metadata ?? {}),
             absorbedFromPendingCents: fromPending.toString(),
             absorbedFromAvailableCents: fromAvailable.toString(),
-          } as Prisma.InputJsonValue,
+          },
         },
       });
-    });
+
+      logLedgerWrite(
+        this.logger,
+        'debitRefund',
+        {
+          accountBalanceId: balance.id,
+          workspaceId: balance.workspaceId,
+          entryId: created.id,
+          amountCents: input.amountCents,
+        },
+        {
+          referenceType: input.reference.type,
+          referenceId: input.reference.id,
+          absorbedFromPendingCents: fromPending.toString(),
+          absorbedFromAvailableCents: fromAvailable.toString(),
+          newPendingBalanceCents: newPending.toString(),
+          newAvailableBalanceCents: newAvailable.toString(),
+        },
+      );
+
+      return created;
+    }, FINANCIAL_TRANSACTION_OPTIONS);
   }
 
-  /**
-   * Re-credit AVAILABLE after an operational correction (for example a payout
-   * creation that failed after the local DEBIT_PAYOUT already landed).
-   *
-   * Idempotent on `(reference.type, reference.id, ADJUSTMENT)`.
-   */
+  /** Delegates to {@link creditAvailableByAdjustmentImpl}. */
+  // PULSE_OK: rate-limited by PaymentWebhookStripeController
   async creditAvailableByAdjustment(
     input: CreditAvailableAdjustmentInput,
   ): Promise<ConnectLedgerEntry> {
-    if (input.amountCents <= 0n) {
-      throw new RangeError(
-        `creditAvailableByAdjustment: amountCents must be > 0 (got ${input.amountCents.toString()})`,
-      );
-    }
-
-    return this.prisma.$transaction(async (tx) => {
-      const existing = await tx.connectLedgerEntry.findFirst({
-        where: {
-          referenceType: input.reference.type,
-          referenceId: input.reference.id,
-          type: 'ADJUSTMENT',
-        },
-      });
-      if (existing) {
-        this.logger.debug(
-          `creditAvailableByAdjustment idempotent skip: ref=${input.reference.type}:${input.reference.id}`,
-        );
-        return existing;
-      }
-
-      const balance = await tx.connectAccountBalance.findUnique({
-        where: { id: input.accountBalanceId },
-      });
-      if (!balance) {
-        throw new AccountBalanceNotFoundError(input.accountBalanceId);
-      }
-
-      const newAvailable = balance.availableBalanceCents + input.amountCents;
-      const newLifetimePaidOut =
-        balance.lifetimePaidOutCents >= input.amountCents
-          ? balance.lifetimePaidOutCents - input.amountCents
-          : 0n;
-
-      await tx.connectAccountBalance.update({
-        where: { id: balance.id },
-        data: {
-          availableBalanceCents: newAvailable,
-          lifetimePaidOutCents: newLifetimePaidOut,
-        },
-      });
-
-      return tx.connectLedgerEntry.create({
-        data: {
-          accountBalanceId: balance.id,
-          type: 'ADJUSTMENT',
-          amountCents: input.amountCents,
-          balanceAfterPendingCents: balance.pendingBalanceCents,
-          balanceAfterAvailableCents: newAvailable,
-          referenceType: input.reference.type,
-          referenceId: input.reference.id,
-          metadata: (input.metadata ?? null) as Prisma.InputJsonValue | null,
-        },
-      });
-    });
+    return creditAvailableByAdjustmentImpl(this.prisma, this.logger, input);
   }
 
   /** Get balance. */
+  // PULSE_OK: rate-limited by PaymentWebhookStripeController
   async getBalance(accountBalanceId: string): Promise<BalanceSnapshot> {
     const balance = await this.prisma.connectAccountBalance.findUnique({
       where: { id: accountBalanceId },
+      select: {
+        id: true,
+        workspaceId: true,
+        stripeAccountId: true,
+        accountType: true,
+        pendingBalanceCents: true,
+        availableBalanceCents: true,
+        lifetimeReceivedCents: true,
+        lifetimePaidOutCents: true,
+        lifetimeChargebacksCents: true,
+      },
     });
     if (!balance) {
       throw new AccountBalanceNotFoundError(accountBalanceId);

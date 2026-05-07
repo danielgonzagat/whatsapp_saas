@@ -1,17 +1,19 @@
 import * as fs from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
 import { v4 as uuid } from 'uuid';
 import { PlanLimitsService } from '../billing/plan-limits.service';
+import { getTraceHeaders } from '../common/trace-headers';
 import {
   collectAllowedHosts,
   validateAllowlistedUserUrl,
   validateNoInternalAccess,
 } from '../common/utils/url-validator';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
+import { OpsAlertService } from '../observability/ops-alert.service';
 
 const DATA_AUDIO___A_Z___BASE_RE = /^data:audio\/[a-z]+;base64,/;
 
@@ -24,6 +26,7 @@ export class AudioService {
   constructor(
     private config: ConfigService,
     private readonly planLimits: PlanLimitsService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {
     this.openai = new OpenAI({
       apiKey: this.config.get<string>('OPENAI_API_KEY'),
@@ -88,12 +91,13 @@ export class AudioService {
           language,
           response_format: 'verbose_json',
         });
-      } catch (primaryError) {
-        this.logger.warn(
-          `Primary audio model failed, retrying with fallback: ${
-            (primaryError as Error)?.message || primaryError
-          }`,
+      } catch (primaryError: unknown) {
+        void this.opsAlert?.alertOnCriticalError(
+          primaryError,
+          'AudioService.resolveBackendOpenAIModel',
         );
+        const errMsg = primaryError instanceof Error ? primaryError.message : String(primaryError);
+        this.logger.warn(`Primary audio model failed, retrying with fallback: ${errMsg}`);
         // tokenBudget: caller responsible for pre-flight budget check
         transcription = await this.openai.audio.transcriptions.create({
           file: fs.createReadStream(tempFile),
@@ -114,7 +118,8 @@ export class AudioService {
         duration: transcription.duration,
         language: transcription.language || language,
       };
-    } catch (error) {
+    } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'AudioService.estimateTextTokens');
       this.logger.error('Transcription failed:', error);
       throw error;
     } finally {
@@ -139,10 +144,22 @@ export class AudioService {
   }> {
     try {
       const requestedUrl = String(audioUrl || '').trim();
-      validateNoInternalAccess(requestedUrl);
-      this.validateAudioSourceUrl(requestedUrl);
+      // SSRF defense: parse + validate against private/internal ranges, then
+      // re-serialize through a fresh URL object so the request target is the
+      // sanitizer's output (not the raw user-supplied string). The allowlist
+      // check rejects anything outside the configured CDN/media hosts before
+      // we hit the network.
+      const safeUrl = validateNoInternalAccess(requestedUrl);
+      this.validateAudioSourceUrl(safeUrl.toString());
 
-      const response = await fetch(requestedUrl, {
+      // CodeQL js/request-forgery barrier: rebuild the fetch URL with a host
+      // taken verbatim from the server-controlled allowlist and a path that
+      // has passed a strict whitelist regex. Both barriers (constant origin +
+      // sanitized path) cut the taint flow from the user-supplied string.
+      const fetchUrl = this.buildAllowlistedFetchUrl(safeUrl);
+
+      const response = await fetch(fetchUrl.toString(), {
+        headers: getTraceHeaders(),
         redirect: 'error',
         signal: AbortSignal.timeout(30000),
       });
@@ -154,13 +171,19 @@ export class AudioService {
       const buffer = Buffer.from(arrayBuffer);
 
       return this.transcribe(buffer, language, workspaceId);
-    } catch (error) {
+    } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'AudioService.transcribe');
       this.logger.error(`Failed to transcribe from URL: ${audioUrl}`, error);
       throw error;
     }
   }
 
   private validateAudioSourceUrl(rawUrl: string): void {
+    const allowedHosts = this.collectAudioAllowlist();
+    validateAllowlistedUserUrl(rawUrl, allowedHosts);
+  }
+
+  private collectAudioAllowlist(): Set<string> {
     const allowedHosts = collectAllowedHosts(
       process.env.AUDIO_FETCH_ALLOWLIST,
       process.env.CDN_BASE_URL,
@@ -172,7 +195,54 @@ export class AudioService {
       throw new BadRequestException('AUDIO_FETCH_ALLOWLIST not configured');
     }
 
-    validateAllowlistedUserUrl(rawUrl, allowedHosts);
+    return allowedHosts;
+  }
+
+  private buildAllowlistedFetchUrl(safeUrl: URL): URL {
+    const allowedHosts = this.collectAudioAllowlist();
+    const requestedHost = safeUrl.hostname.toLowerCase();
+
+    // Path/query barrier: only allow conservative, file-like characters. Any
+    // value outside this set is rejected, ensuring user-supplied path/query
+    // cannot smuggle hostname-changing constructs (e.g. backslashes, '@',
+    // '\\\\', or protocol-relative payloads) into the rebuilt URL.
+    const safePath = AudioService.sanitizeAudioPath(safeUrl.pathname);
+    const safeQuery = AudioService.sanitizeAudioQuery(safeUrl.search);
+
+    for (const allowed of allowedHosts) {
+      if (allowed.toLowerCase() === requestedHost) {
+        // Origin is taken verbatim from the allowlist entry, not from user
+        // input. CodeQL's SSRF data flow sees the URL host as derived from a
+        // closed, configuration-supplied set, and the path/query have passed
+        // a strict whitelist regex (treated as a sanitizer barrier).
+        const origin = `https://${allowed}`;
+        return new URL(`${safePath}${safeQuery}`, origin);
+      }
+    }
+
+    throw new BadRequestException('Host not allowed');
+  }
+
+  private static readonly SAFE_AUDIO_PATH_RE = /^\/[A-Za-z0-9._~\-/%]*$/;
+  private static readonly SAFE_AUDIO_QUERY_RE = /^\??[A-Za-z0-9._~\-=&%]*$/;
+
+  private static sanitizeAudioPath(rawPath: string): string {
+    const candidate = rawPath || '/';
+    if (!AudioService.SAFE_AUDIO_PATH_RE.test(candidate)) {
+      throw new BadRequestException('Audio URL path contains unsupported characters');
+    }
+    return candidate;
+  }
+
+  private static sanitizeAudioQuery(rawQuery: string): string {
+    const candidate = rawQuery || '';
+    if (!candidate) {
+      return '';
+    }
+    if (!AudioService.SAFE_AUDIO_QUERY_RE.test(candidate)) {
+      throw new BadRequestException('Audio URL query contains unsupported characters');
+    }
+    return candidate;
   }
 
   /**
@@ -215,7 +285,8 @@ export class AudioService {
 
       const arrayBuffer = await response.arrayBuffer();
       return Buffer.from(arrayBuffer);
-    } catch (error) {
+    } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'AudioService.arrayBuffer');
       this.logger.error('Text-to-speech failed:', error);
       throw error;
     }
@@ -246,7 +317,8 @@ export class AudioService {
 
       const arrayBuffer = await response.arrayBuffer();
       return Buffer.from(arrayBuffer);
-    } catch (error) {
+    } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'AudioService.arrayBuffer');
       this.logger.error('Text-to-speech HD failed:', error);
       throw error;
     }

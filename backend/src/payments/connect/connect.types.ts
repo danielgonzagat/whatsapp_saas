@@ -61,7 +61,7 @@ export interface ConnectAddressInput {
 }
 
 /** Date of birth shape. */
-export interface ConnectDateOfBirthInput {
+interface ConnectDateOfBirthInput {
   /** Day of month. */
   day?: number;
   /** Month of year. */

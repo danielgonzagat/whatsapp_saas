@@ -5,6 +5,7 @@ import { IC } from '@/components/canvas/CanvasIcons';
 import { CreateModal } from '@/components/canvas/CreateModal';
 import { usePathname, useRouter } from 'next/navigation';
 import { type ReactNode, useState } from 'react';
+import { colors } from '@/lib/design-tokens';
 
 const S = "var(--font-sora), 'Sora', sans-serif";
 
@@ -70,8 +71,9 @@ export default function CanvasLayout({ children }: { children: ReactNode }) {
               alignItems: 'center',
               background: 'none',
               border: 'none',
-              borderBottom: activeTab === t.id ? '2px solid #E85D30' : '2px solid transparent',
-              color: activeTab === t.id ? '#E0DDD8' : '#6E6E73',
+              borderBottom:
+                activeTab === t.id ? '2px solid colors.ember.primary' : '2px solid transparent',
+              color: activeTab === t.id ? 'colors.text.silver' : 'colors.text.muted',
               fontSize: 13,
               fontWeight: activeTab === t.id ? 600 : 400,
               fontFamily: S,
@@ -90,7 +92,7 @@ export default function CanvasLayout({ children }: { children: ReactNode }) {
             alignItems: 'center',
             gap: 6,
             padding: '7px 16px',
-            background: '#E85D30',
+            background: 'colors.ember.primary',
             border: 'none',
             borderRadius: 4,
             color: 'var(--app-text-on-accent)',

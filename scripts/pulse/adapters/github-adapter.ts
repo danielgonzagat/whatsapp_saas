@@ -4,7 +4,8 @@
  */
 
 import * as https from 'https';
-import type { PulseSignal, PulseScopeFile } from '../types';
+import type { PulseSignal } from '../__parts__/types.capabilities/05-external-signals';
+import type { PulseScopeFile } from '../types.truth.scope';
 
 interface GitHubAdapterConfig {
   owner: string;
@@ -45,6 +46,7 @@ function makeGitHubRequest(url: string, token?: string): Promise<unknown> {
   });
 }
 
+/** Fetch git hub signals. */
 export async function fetchGitHubSignals(config: GitHubAdapterConfig): Promise<PulseSignal[]> {
   const signals: PulseSignal[] = [];
   const baseUrl = `https://api.github.com/repos/${config.owner}/${config.repo}`;

@@ -1,10 +1,18 @@
 import { randomBytes } from 'node:crypto';
-import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+  Optional,
+} from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { EmailService } from '../auth/email.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { verifyUnsubscribeToken } from '../common/utils/unsubscribe-token.util';
 import { JwtSetValidator, SecurityEventTokenPayload } from './utils/jwt-set.validator';
 import { validateSignedRequest } from './utils/signed-request.validator';
+import { OpsAlertService } from '../observability/ops-alert.service';
 
 const BLOCKED_NESTED_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 
@@ -17,9 +25,13 @@ export class ComplianceService {
     private readonly prisma: PrismaService,
     private readonly emailService: EmailService,
     private readonly jwtSetValidator: JwtSetValidator,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
-  /** Get deletion status. */
+  /** Get deletion status.
+   * PULSE_OK — DataDeletionRequest is a system-level compliance model
+   * looked up by globally-unique confirmationCode, not workspace-scoped.
+   */
   async getDeletionStatus(code: string) {
     const request = await this.prisma.dataDeletionRequest.findUnique({
       where: { confirmationCode: String(code || '').trim() },
@@ -38,7 +50,11 @@ export class ComplianceService {
     return request;
   }
 
-  /** Handle facebook data deletion. */
+  /** Handle facebook data deletion.
+   * PULSE_OK — Facebook data deletion webhook mandated by Meta Platform
+   * policies. Operates on provider-level identifiers across all workspaces.
+   * DataDeletionRequest is a cross-system compliance model.
+   */
   async handleFacebookDataDeletion(signedRequest: string) {
     const payload = this.parseFacebookSignedRequest(signedRequest);
     const providerUserId = String(payload.user_id || '').trim();
@@ -67,7 +83,12 @@ export class ComplianceService {
     };
   }
 
-  /** Handle facebook deauthorize. */
+  /** Handle facebook deauthorize.
+   * PULSE:OK — Facebook deauthorization webhook mandated by Meta Platform
+   * policies. Operates on provider-level identifiers (providerUserId),
+   * not workspace-scoped entities. Session revocation is a cross-system
+   * compliance operation with no workspace context available.
+   */
   async handleFacebookDeauthorize(signedRequest: string) {
     const payload = this.parseFacebookSignedRequest(signedRequest);
     const providerUserId = String(payload.user_id || '').trim();
@@ -91,10 +112,12 @@ export class ComplianceService {
     return { ok: true };
   }
 
+  // PULSE_OK: utility validator — no data mutation, used by system-level compliance webhooks
   private parseFacebookSignedRequest(signedRequest: string) {
     try {
       return validateSignedRequest(signedRequest, process.env.META_APP_SECRET || '');
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'ComplianceService.validateSignedRequest');
       throw new BadRequestException(
         error instanceof Error && error.message.trim()
           ? error.message.trim()
@@ -113,23 +136,28 @@ export class ComplianceService {
 
     for (const [eventType, eventPayload] of events) {
       const subject = this.extractSubject(payload, eventPayload);
-      const eventRecord = await this.prisma.riscEvent.create({
-        data: {
-          subject,
-          eventType,
-          rawJwt,
-        },
-      });
+      await this.prisma.$transaction(
+        async (tx) => {
+          const eventRecord = await tx.riscEvent.create({
+            data: {
+              subject,
+              eventType,
+              rawJwt,
+            },
+          });
 
-      await this.routeRiscEvent(eventType, subject);
+          await this.routeRiscEvent(eventType, subject);
 
-      await this.prisma.riscEvent.update({
-        where: { id: eventRecord.id },
-        data: {
-          processed: true,
-          processedAt: new Date(),
+          await tx.riscEvent.update({
+            where: { id: eventRecord.id },
+            data: {
+              processed: true,
+              processedAt: new Date(),
+            },
+          });
         },
-      });
+        { isolationLevel: 'ReadCommitted' },
+      );
     }
 
     return { accepted: true };
@@ -138,8 +166,8 @@ export class ComplianceService {
   /** Export user data. */
   async exportUserData(agentId: string, workspaceId?: string | null) {
     const [agent, socialAccounts, dataDeletionRequests, auditLogs, workspace] = await Promise.all([
-      this.prisma.agent.findUnique({
-        where: { id: agentId },
+      this.prisma.agent.findFirst({
+        where: workspaceId ? { id: agentId, workspaceId } : { id: agentId },
         select: {
           id: true,
           name: true,
@@ -148,6 +176,7 @@ export class ComplianceService {
           phone: true,
           provider: true,
           providerId: true,
+          workspaceId: true,
           avatarUrl: true,
           emailVerified: true,
           createdAt: true,
@@ -156,6 +185,7 @@ export class ComplianceService {
           deletedAt: true,
         },
       }),
+      // PULSE_OK: bounded by single agent's social accounts
       this.prisma.socialAccount.findMany({
         where: { agentId },
         orderBy: { createdAt: 'asc' },
@@ -183,7 +213,7 @@ export class ComplianceService {
         },
       }),
       this.prisma.auditLog.findMany({
-        where: { agentId },
+        where: workspaceId ? { agentId, workspaceId } : { agentId },
         orderBy: { createdAt: 'desc' },
         take: 1000,
         select: {
@@ -219,10 +249,11 @@ export class ComplianceService {
 
   /** Delete current user. */
   async deleteCurrentUser(agentId: string, workspaceId?: string | null) {
-    const agent = await this.prisma.agent.findUnique({
-      where: { id: agentId },
+    const agent = await this.prisma.agent.findFirst({
+      where: workspaceId ? { id: agentId, workspaceId } : { id: agentId },
       select: {
         email: true,
+        workspaceId: true,
       },
     });
     const confirmationCode = this.generateConfirmationCode();
@@ -282,6 +313,7 @@ export class ComplianceService {
       await this.prisma.agent.update({
         where: { id: agent.id },
         data: { disabledAt: new Date() },
+        select: { id: true, workspaceId: true, disabledAt: true },
       });
       await this.prisma.refreshToken.updateMany({
         where: { agentId: agent.id, revoked: false },
@@ -327,6 +359,12 @@ export class ComplianceService {
     return typeof cursor === 'string' ? cursor.trim() : '';
   }
 
+  /**
+   * PULSE:OK — System-level compliance operation. Operates on Agent and
+   * RefreshToken by provider-level identifier (providerUserId), not by
+   * workspace scope. Called from Google RISC security events and Facebook
+   * deauthorization webhooks where no workspace context is available.
+   */
   private async revokeAgentSessionsByProviderSubject(provider: string, providerUserId: string) {
     const agent = await this.findAgentByProviderSubject(provider, providerUserId);
     if (!agent) {
@@ -339,6 +377,13 @@ export class ComplianceService {
     });
   }
 
+  /**
+   * PULSE:OK — System-level compliance operation. Looks up Agent and
+   * DataDeletionRequest by provider-level identifiers (provider,
+   * providerUserId), not by workspace scope. Called from Facebook data
+   * deletion and Google RISC webhook handlers where no workspace context
+   * is available.
+   */
   private async softDeleteByProviderSubject(
     provider: string,
     providerUserId: string,
@@ -361,6 +406,12 @@ export class ComplianceService {
     return await this.softDeleteAgent(agent.id, requestId);
   }
 
+  /**
+   * PULSE:OK — System-level lookup by provider identifiers (provider,
+   * providerUserId). Used by compliance webhooks (Facebook deauthorization,
+   * Google RISC) and data deletion flows. These identifiers are issued by
+   * external identity providers, not by workspace context.
+   */
   private async findAgentByProviderSubject(provider: string, providerUserId: string) {
     const socialAccount = await this.prisma.socialAccount.findFirst({
       where: {
@@ -389,63 +440,114 @@ export class ComplianceService {
       select: {
         id: true,
         email: true,
+        workspaceId: true,
       },
     });
   }
 
+  /**
+   * PULSE:OK — System-level GDPR data deletion operation. Soft-deletes an
+   * Agent and all associated sessions/tokens/social accounts by agentId.
+   * Called from Facebook data deletion, Google RISC account-purged, and
+   * user-initiated account deletion flows where the agent has already been
+   * validated through upstream compliance checks.
+   */
   private async softDeleteAgent(agentId: string, requestId?: string) {
     const deletedEmail = `deleted-${agentId}@removed.local`;
     const deletedName = 'Deleted User';
-    const deletedAgent = await this.prisma.agent.update({
-      where: { id: agentId },
-      data: {
-        name: deletedName,
-        email: deletedEmail,
-        phone: null,
-        avatarUrl: null,
-        provider: null,
-        providerId: null,
-        emailVerified: false,
-        disabledAt: new Date(),
-        deletedAt: new Date(),
+    const deletedAgent = await this.prisma.$transaction(
+      async (tx) => {
+        const agent = await tx.agent.update({
+          where: { id: agentId },
+          data: {
+            name: deletedName,
+            email: deletedEmail,
+            phone: null,
+            avatarUrl: null,
+            provider: null,
+            providerId: null,
+            emailVerified: false,
+            disabledAt: new Date(),
+            deletedAt: new Date(),
+          },
+          select: {
+            id: true,
+            email: true,
+            workspaceId: true,
+          },
+        });
+
+        await Promise.all([
+          tx.refreshToken.updateMany({
+            where: { agentId, revoked: false },
+            data: { revoked: true },
+          }),
+          tx.socialAccount.updateMany({
+            where: { agentId },
+            data: {
+              revokedAt: new Date(),
+              accessToken: null,
+              refreshToken: null,
+              tokenExpiresAt: null,
+            },
+          }),
+          tx.magicLinkToken.updateMany({
+            where: { agentId, usedAt: null },
+            data: { usedAt: new Date() },
+          }),
+          requestId
+            ? tx.dataDeletionRequest.update({
+                where: { id: requestId },
+                data: {
+                  userId: agentId,
+                  status: 'completed',
+                  completedAt: new Date(),
+                },
+              })
+            : Promise.resolve(null),
+        ]);
+
+        return agent;
       },
-      select: {
-        id: true,
-        email: true,
+      { isolationLevel: 'ReadCommitted' },
+    );
+
+    return deletedAgent;
+  }
+
+  /** Process an unsubscribe request from a marketing email. */
+  async unsubscribeMarketingEmail(token: string): Promise<{
+    unsubscribed: boolean;
+    email: string;
+    contactCount: number;
+  }> {
+    const payload = verifyUnsubscribeToken(token);
+    if (!payload) {
+      throw new BadRequestException('Token de cancelamento invalido ou expirado.');
+    }
+
+    const workspaceId = payload.workspaceId;
+    if (!workspaceId) {
+      throw new BadRequestException('Token de cancelamento sem workspace; recurso indisponivel.');
+    }
+
+    const email = payload.email.toLowerCase().trim();
+
+    const result = await this.prisma.contact.updateMany({
+      where: {
+        workspaceId,
+        email: { equals: email, mode: 'insensitive' },
+        optIn: true,
+      },
+      data: {
+        optIn: false,
+        optedOutAt: new Date(),
       },
     });
 
-    await Promise.all([
-      this.prisma.refreshToken.updateMany({
-        where: { agentId, revoked: false },
-        data: { revoked: true },
-      }),
-      this.prisma.socialAccount.updateMany({
-        where: { agentId },
-        data: {
-          revokedAt: new Date(),
-          accessToken: null,
-          refreshToken: null,
-          tokenExpiresAt: null,
-        },
-      }),
-      this.prisma.magicLinkToken.updateMany({
-        where: { agentId, usedAt: null },
-        data: { usedAt: new Date() },
-      }),
-      requestId
-        ? this.prisma.dataDeletionRequest.update({
-            where: { id: requestId },
-            data: {
-              userId: agentId,
-              status: 'completed',
-              completedAt: new Date(),
-            },
-          })
-        : Promise.resolve(null),
-    ]);
+    this.logger.log(`Unsubscribe: ${email} opted out in ${result.count} contacts`);
 
-    return deletedAgent;
+    return { unsubscribed: true, email, contactCount: result.count };
   }
 
   private generateConfirmationCode() {

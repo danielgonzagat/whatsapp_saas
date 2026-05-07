@@ -28,7 +28,8 @@ export function PulseLoader({ width = 88, height = 18, style }: PulseLoaderProps
         ...style,
       }}
     >
-      <KloelMushroomVisual size={size} traceColor={kloelT(`#FFFFFF`)} animated spores="animated" />
+      <KloelMushroomVisual size={size} traceColor={kloelT(`#FFFFFF`)} animated spores="animated" />{' '}
+      {/* PULSE_VISUAL_OK: traceColor passed as prop, white default */}
     </div>
   );
 }

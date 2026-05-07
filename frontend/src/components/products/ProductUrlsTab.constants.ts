@@ -1,5 +1,6 @@
 import { kloelT } from '@/lib/i18n/t';
 
+/** Ai_learn_badges. */
 export const AI_LEARN_BADGES: Record<string, { bg: string; text: string; label: string }> = {
   pending: { bg: 'var(--app-bg-hover)', text: 'var(--app-text-secondary)', label: 'Aguardando' },
   learning: { bg: 'var(--app-accent-light)', text: 'var(--app-accent)', label: 'Aprendendo...' },
@@ -7,6 +8,7 @@ export const AI_LEARN_BADGES: Record<string, { bg: string; text: string; label: 
   error: { bg: 'var(--app-error-bg)', text: 'var(--app-error)', label: 'Erro' },
 };
 
+/** Ai_learn_options. */
 export const AI_LEARN_OPTIONS = [
   'Preços',
   'Benefícios',
@@ -16,6 +18,7 @@ export const AI_LEARN_OPTIONS = [
   'Políticas',
 ];
 
+/** Update_freq. */
 export const UPDATE_FREQ = [
   { v: 'manual', l: 'Manual' },
   { v: 'weekly', l: 'Semanal' },
@@ -23,11 +26,13 @@ export const UPDATE_FREQ = [
   { v: 'monthly', l: 'Mensal' },
 ];
 
+/** Widget_positions. */
 export const WIDGET_POSITIONS = [
   { v: 'bottom-right', l: 'Canto inferior direito' },
   { v: 'bottom-left', l: 'Canto inferior esquerdo' },
 ];
 
+/** Trigger_timings. */
 export const TRIGGER_TIMINGS = [
   { v: '0', l: 'Imediato' },
   { v: '3000', l: '3 segundos' },
@@ -37,6 +42,7 @@ export const TRIGGER_TIMINGS = [
   { v: 'exit', l: 'Exit intent' },
 ];
 
+/** Product_urls_copy. */
 export const PRODUCT_URLS_COPY = {
   loadError: kloelT(`Falha ao carregar URLs do produto`),
   createError: kloelT(`Falha ao adicionar URL`),
@@ -65,6 +71,7 @@ export const PRODUCT_URLS_COPY = {
   chatOff: kloelT(`OFF`),
 } as const;
 
+/** To product url error message. */
 export function toProductUrlErrorMessage(error: unknown, fallback: string): string {
   return error instanceof Error && error.message ? error.message : fallback;
 }

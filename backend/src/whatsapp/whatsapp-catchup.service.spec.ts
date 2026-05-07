@@ -4,13 +4,8 @@ jest.mock('../queue/queue', () => ({
 
 const { autopilotQueue } = jest.requireMock('../queue/queue');
 
-import type { InboxService } from '../inbox/inbox.service';
 import type { PrismaService } from '../prisma/prisma.service';
 import { WhatsAppCatchupService } from './whatsapp-catchup.service';
-import type { AgentEventsService } from './agent-events.service';
-import type { CiaRuntimeService } from './cia-runtime.service';
-import type { InboundProcessorService } from './inbound-processor.service';
-import type { WhatsAppProviderRegistry } from './providers/provider-registry';
 import {
   type CatchupAgentEventsMock,
   type CatchupCiaRuntimeMock,
@@ -22,7 +17,6 @@ import {
   type CatchupWorkerRuntimeMock,
   runCatchup,
 } from './whatsapp-catchup.service.spec-helpers';
-import type { WorkerRuntimeService } from './worker-runtime.service';
 
 describe('WhatsAppCatchupService', () => {
   const originalEnv = { ...process.env };
@@ -38,14 +32,14 @@ describe('WhatsAppCatchupService', () => {
 
   const buildService = () =>
     new WhatsAppCatchupService(
-      prisma as unknown as PrismaService,
-      providerRegistry as unknown as WhatsAppProviderRegistry,
-      inboundProcessor as unknown as InboundProcessorService,
-      ciaRuntime as unknown as CiaRuntimeService,
-      inbox as unknown as InboxService,
-      workerRuntime as unknown as WorkerRuntimeService,
+      prisma as never as PrismaService,
+      providerRegistry as never,
+      inboundProcessor as never,
+      ciaRuntime as never,
+      inbox as never,
+      workerRuntime as never,
       redis as never,
-      agentEvents as unknown as AgentEventsService,
+      agentEvents as never,
     );
 
   beforeEach(() => {
@@ -60,6 +54,7 @@ describe('WhatsAppCatchupService', () => {
     process.env.WAHA_CATCHUP_MARK_READ_WITHOUT_REPLY = 'true';
 
     prisma = {
+      $transaction: jest.fn((cb: (tx: unknown) => unknown) => cb(prisma)),
       workspace: {
         findUnique: jest.fn().mockResolvedValue({
           name: 'Workspace Teste',
@@ -70,6 +65,8 @@ describe('WhatsAppCatchupService', () => {
       contact: {
         findUnique: jest.fn().mockResolvedValue(null),
         upsert: jest.fn().mockResolvedValue({ id: 'contact-1' }),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+        findFirst: jest.fn().mockResolvedValue(null),
       },
       conversation: {
         findFirst: jest.fn().mockResolvedValue(null),

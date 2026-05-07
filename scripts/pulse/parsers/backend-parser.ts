@@ -1,9 +1,20 @@
 import * as path from 'path';
-import type { BackendRoute, PulseConfig } from '../types';
+import type { BackendRoute } from '../types.core';
+import type { PulseConfig } from '../types.manifest';
 import { walkFiles } from './utils';
 import { readTextFile } from '../safe-fs';
+import { discoverAllObservedHttpMethods } from '../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 
-const HTTP_METHODS = ['Get', 'Post', 'Put', 'Patch', 'Delete'] as const;
+function discoverNestHttpDecoratorMethods(): string[] {
+  return discoverAllObservedHttpMethods().map(
+    (method) => method.charAt(0).toUpperCase() + method.slice(1).toLowerCase(),
+  );
+}
+
+function matchHttpDecorator(line: string, method: string): RegExpMatchArray | null {
+  const escapedMethod = method.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return line.match(new RegExp(`@${escapedMethod}\\(\\s*(?:['"\`]([^'"\`]*)['"\`])?\\s*\\)`));
+}
 
 function buildFullPath(controllerPath: string, methodPath: string): string {
   const cp = controllerPath.replace(/^\/|\/$/g, '');
@@ -22,9 +33,9 @@ function findControllerBlocks(
   const blocks: Array<{ path: string; startLine: number; endLine: number }> = [];
 
   for (let i = 0; i < lines.length; i++) {
-    const match = lines[i].match(/@Controller\(\s*['"`]([^'"`]*)['"`]\s*\)/);
+    const match = lines[i].match(/@Controller\(\s*(?:['"`]([^'"`]*)['"`])?\s*\)/);
     if (match) {
-      blocks.push({ path: match[1], startLine: i, endLine: lines.length });
+      blocks.push({ path: match[1] || '', startLine: i, endLine: lines.length });
     }
   }
 
@@ -148,9 +159,8 @@ export function parseBackendRoutes(config: PulseConfig): BackendRoute[] {
         for (let i = block.startLine; i < block.endLine; i++) {
           const line = lines[i].trim();
 
-          for (const method of HTTP_METHODS) {
-            const decoratorRe = new RegExp(`@${method}\\(\\s*(?:['"\`]([^'"\`]*)['"\`])?\\s*\\)`);
-            const match = line.match(decoratorRe);
+          for (const method of discoverNestHttpDecoratorMethods()) {
+            const match = matchHttpDecorator(line, method);
             if (!match) {
               continue;
             }

@@ -1,13 +1,25 @@
 import { Prisma } from '@prisma/client';
-import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+  Optional,
+} from '@nestjs/common';
 import { Queue, Worker } from 'bullmq';
 import { SmartTimeService } from '../analytics/smart-time/smart-time.service';
 import { AuditService } from '../audit/audit.service';
 import { forEachSequential } from '../common/async-sequence';
 import { createRedisClient } from '../common/redis/redis.util';
+import {
+  buildListUnsubscribeHeader,
+  buildUnsubscribeFooterHtml,
+} from '../common/utils/unsubscribe-footer.util';
 import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
+import { MetaWhatsAppService } from '../meta/meta-whatsapp.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { OpsAlertService } from '../observability/ops-alert.service';
 
 const NAME_RE = /\{\{name\}\}/g;
 
@@ -22,6 +34,8 @@ export class CampaignsService {
     private prisma: PrismaService,
     private audit: AuditService,
     private smartTime: SmartTimeService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
+    @Optional() private readonly metaWhatsApp?: MetaWhatsAppService,
   ) {
     const connection = createRedisClient();
 
@@ -61,7 +75,7 @@ export class CampaignsService {
         ...(data as Prisma.CampaignCreateInput),
         workspace: { connect: { id: workspaceId } },
         status: 'DRAFT',
-        stats: { sent: 0, delivered: 0, read: 0, failed: 0 } as Prisma.InputJsonValue,
+        stats: { sent: 0, delivered: 0, read: 0, failed: 0 },
       },
     });
   }
@@ -100,7 +114,7 @@ export class CampaignsService {
   async launch(workspaceId: string, id: string, useSmartTime = false) {
     const campaign = await this.findOne(workspaceId, id);
 
-    await this.ensureWhatsAppConnected(workspaceId);
+    await this.ensureCampaignDeliveryReady(workspaceId);
 
     if (campaign.status === 'RUNNING' || campaign.status === 'COMPLETED') {
       throw new BadRequestException('Campaign already processed');
@@ -112,7 +126,7 @@ export class CampaignsService {
       // Calculate ms until next best hour
       const now = new Date();
       const currentHour = now.getHours();
-      const targetHour = bestTime.bestHour;
+      const targetHour = bestTime.peakHour;
 
       let hoursToAdd = targetHour - currentHour;
       if (hoursToAdd <= 0) {
@@ -181,42 +195,77 @@ export class CampaignsService {
       contactWhere.tags = { some: { name: { in: filters.tags } } };
     }
     const contacts = await this.prisma.contact.findMany({
-      where: contactWhere,
+      where: { workspaceId, ...contactWhere },
       select: { id: true, name: true, email: true, phone: true },
       take: 10000,
     });
 
     let sent = 0;
     let failed = 0;
+    const delivery = await this.resolveCampaignDelivery(workspaceId);
     const EmailServiceClass = (await import('../auth/email.service')).EmailService;
     const emailService = new EmailServiceClass();
 
     await forEachSequential(contacts, async (contact) => {
       try {
-        // Try email first (always available if Resend configured)
-        if (contact.email) {
-          // unsubscribe: link included in email footer
-          const unsubscribeUrl = `${process.env.FRONTEND_URL || 'https://kloel.com'}/unsubscribe?email=${encodeURIComponent(contact.email)}&cid=${encodeURIComponent(campaignId)}`;
+        if (delivery.emailReady && contact.email) {
           const bodyHtml = (campaign.messageTemplate || '').replace(
             NAME_RE,
             contact.name || 'Cliente',
           );
-          const htmlWithUnsub = `${bodyHtml}<br/><hr style="margin:24px 0;border:none;border-top:1px solid #ddd"/><p style="font-size:11px;color:#888;text-align:center"><a href="${unsubscribeUrl}" style="color:#888">Cancelar inscricao</a></p>`;
-          await emailService.sendEmail({
+          const footerHtml = buildUnsubscribeFooterHtml({
+            email: contact.email,
+            workspaceId,
+            campaignId,
+          });
+          const htmlWithUnsub = bodyHtml + footerHtml;
+          const listUnsubscribe = buildListUnsubscribeHeader({
+            email: contact.email,
+            workspaceId,
+            campaignId,
+          });
+          const delivered = await emailService.sendEmail({
             to: contact.email,
             subject: campaign.name,
             html: htmlWithUnsub,
+            headers: {
+              'List-Unsubscribe': listUnsubscribe,
+              'List-Unsubscribe-Post': `List-Unsubscribe=One-Click`,
+            },
           });
+          if (!delivered) {
+            failed++;
+            return;
+          }
           sent++;
           return;
         }
-        // Fallback: log if no email and no WhatsApp
-        this.logger.log(
+
+        if (delivery.whatsappReady && contact.phone && this.metaWhatsApp) {
+          const bodyText = (campaign.messageTemplate || '').replace(
+            NAME_RE,
+            contact.name || 'Cliente',
+          );
+          const delivered = await this.metaWhatsApp.sendTextMessage(
+            workspaceId,
+            contact.phone,
+            bodyText,
+          );
+          if (!delivered.success) {
+            failed++;
+            return;
+          }
+          sent++;
+          return;
+        }
+
+        this.logger.warn(
           `Campaign ${campaign.name}: no channel available for ${contact.name || contact.id}`,
         );
-        sent++; // Count as "processed" even if no channel
-      } catch (e) {
-        this.logger.error(`Campaign send failed for contact ${contact.id}: ${e}`);
+        failed++;
+      } catch (e: unknown) {
+        void this.opsAlert?.alertOnCriticalError(e, 'CampaignsService.processCampaignJob');
+        this.logger.error(`Campaign send failed for contact ${contact.id}: ${String(e)}`);
         failed++;
       }
     });
@@ -234,26 +283,50 @@ export class CampaignsService {
     );
   }
 
-  private async ensureWhatsAppConnected(workspaceId: string): Promise<void> {
+  private async ensureCampaignDeliveryReady(workspaceId: string): Promise<void> {
+    const delivery = await this.resolveCampaignDelivery(workspaceId);
+    const missing: string[] = [];
+
+    if (!delivery.emailReady && !delivery.whatsappReady) {
+      if (!delivery.emailReady) {
+        missing.push('email.enabled=true com provider configurado');
+      }
+      if (!delivery.whatsappReady) {
+        missing.push('whatsappApiSession.status=connected');
+      }
+    }
+
+    if (missing.length) {
+      throw new BadRequestException(
+        `Conecte um canal de entrega antes de lançar campanha. Faltando: ${missing.join(', ')}`,
+      );
+    }
+  }
+
+  private async resolveCampaignDelivery(workspaceId: string): Promise<{
+    emailReady: boolean;
+    whatsappReady: boolean;
+  }> {
     const ws = await this.prisma.workspace.findUnique({
       where: { id: workspaceId },
       select: { providerSettings: true },
     });
 
     const settings =
-      (ws?.providerSettings as { whatsappApiSession?: { status?: string } } | null) || {};
-    const missing: string[] = [];
+      (ws?.providerSettings as {
+        email?: { enabled?: boolean };
+        whatsappApiSession?: { status?: string };
+      } | null) || {};
 
-    const status = settings?.whatsappApiSession?.status;
-    if (status !== 'connected') {
-      missing.push('whatsappApiSession.status=connected');
-    }
+    const emailProviderReady = Boolean(
+      process.env.RESEND_API_KEY || process.env.SENDGRID_API_KEY || process.env.SMTP_HOST,
+    );
+    const emailReady = Boolean(settings.email?.enabled && emailProviderReady);
+    const whatsappReady = Boolean(
+      this.metaWhatsApp && settings?.whatsappApiSession?.status === 'connected',
+    );
 
-    if (missing.length) {
-      throw new BadRequestException(
-        `Conecte/configure o WhatsApp antes de lançar campanha. Faltando: ${missing.join(', ')}`,
-      );
-    }
+    return { emailReady, whatsappReady };
   }
 
   /**

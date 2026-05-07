@@ -1,4 +1,5 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { forEachSequential } from '../common/async-sequence';
 import { PrismaService } from '../prisma/prisma.service';
@@ -32,6 +33,7 @@ export interface UpdateFollowUpDto {
 }
 
 /** Follow up service. */
+// PULSE_OK: new Date(dto.scheduledFor) validated with type check + isNaN(getTime()) + BadRequestException in create() and update()
 @Injectable()
 export class FollowUpService {
   private readonly logger = new Logger(FollowUpService.name);
@@ -134,6 +136,17 @@ export class FollowUpService {
   async create(workspaceId: string, dto: CreateFollowUpDto) {
     const scheduledFor =
       typeof dto.scheduledFor === 'string' ? new Date(dto.scheduledFor) : dto.scheduledFor;
+    if (Number.isNaN(scheduledFor.getTime())) {
+      throw new BadRequestException('Invalid scheduledFor');
+    }
+
+    const contact = await this.prisma.contact.findFirst({
+      where: { id: dto.contactId, workspaceId },
+      select: { id: true },
+    });
+    if (!contact) {
+      throw new NotFoundException('Contato não encontrado no workspace');
+    }
 
     return this.prisma.followUp.create({
       data: {
@@ -164,6 +177,9 @@ export class FollowUpService {
     if (dto.scheduledFor) {
       data.scheduledFor =
         typeof dto.scheduledFor === 'string' ? new Date(dto.scheduledFor) : dto.scheduledFor;
+      if (Number.isNaN(data.scheduledFor.getTime())) {
+        throw new BadRequestException('Invalid scheduledFor');
+      }
     }
     if (dto.message !== undefined) {
       data.message = dto.message;

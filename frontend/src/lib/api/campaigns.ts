@@ -89,6 +89,22 @@ export async function launchCampaign(
   return res.data;
 }
 
+/** Pause campaign. */
+export async function pauseCampaign(workspaceId: string, campaignId: string): Promise<unknown> {
+  const res = await apiFetch<Record<string, unknown>>(
+    `/campaigns/${encodeURIComponent(campaignId)}/pause`,
+    {
+      method: 'POST',
+      body: { workspaceId },
+    },
+  );
+  if (res.error) {
+    throw new Error(res.error);
+  }
+  invalidateCampaigns();
+  return res.data;
+}
+
 /** Create campaign variants. */
 export async function createCampaignVariants(
   workspaceId: string,

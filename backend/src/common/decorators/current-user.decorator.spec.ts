@@ -16,7 +16,7 @@ function buildMockContext(user: unknown): ExecutionContext {
     switchToHttp: () => ({
       getRequest: () => ({ user }),
     }),
-  } as unknown as ExecutionContext;
+  } as never as ExecutionContext;
 }
 
 describe('CurrentUser decorator', () => {

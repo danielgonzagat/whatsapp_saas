@@ -44,8 +44,10 @@ completion.
      `git fetch && git rebase origin/main && git add <file> && \  git commit -m "refactor(codacy): long-tail in <path>" && git push`
    - Sensitive:
      `gh pr create --label auto-merge \  --title "refactor(codacy): long-tail in <path>" \  --body "Phase 5 Ralph iteration. Validation green."`
-6. If red: `git restore <file>`, append to `/tmp/ralph-phase5-skipped.log`,
-   continue.
+6. If red: do **not** run `git restore`. Restore only from an explicit
+   pre-edit snapshot captured by the current iteration, or stop and report the
+   failing file. Append to `/tmp/ralph-phase5-skipped.log`, then continue only
+   after the file is back to a known safe state.
 7. Every 10 iterations: `npm run codacy:sync && npm run ratchet:update`. Then
    check completion: if `totalIssues ≤ 5000`, output the promise.
 
@@ -54,6 +56,7 @@ completion.
 Same as Phase 3:
 
 - Never force-push, never `--no-verify`.
+- Never run `git restore` in any form.
 - Never add suppression comments. Only real fixes.
 - Never push directly to sensitive paths.
 - Never increase any ratchet floor.

@@ -1,0 +1,35 @@
+{
+  "file": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
+  "syncedAt": "2026-05-03",
+  "totalHighIssues": 35,
+  "totalIssuesThisFile": 101,
+  "issuesAddressed": [
+    {
+      "category": "missing-comment",
+      "count": 2,
+      "fix": "Added RAC_ prefix historical context header (lines 1-16) and FK section documentation block (lines 962-978). These explain why unprefixed table names are correct for this historical baseline."
+    }
+  ],
+  "issuesRequiringGovernanceChange": [
+    {
+      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
+      "count": 35,
+      "severity": "High",
+      "category": "Security",
+      "linesFlagged": "962-1176 (all FK ALTER TABLE statements)",
+      "description": "All 35 HIGH issues are Semgrep rac-table-access false positives on the initial baseline migration. The migration creates tables with unprefixed names (Workspace, Agent, ...) and establishes FK constraints referencing those unprefixed names. This was correct at baseline time (2025-12-09) — the RAC_ prefix was applied later by migration 20260425013841_rac_table_rename.",
+      "whyCannotFix": "Rewriting FK target table names to use RAC_* prefix would break the DDL contract: at the point this migration executes, the referenced tables do NOT yet carry the RAC_ prefix (they were just created with unprefixed names in lines 6-809). Changing the FK REFERENCES targets would cause constraint creation failures.",
+      "governanceFixRequired": "The Semgrep rule (Opengrep tool, pattern rac-table-access) needs to recognize that FK constraints within the same migration that CREATES the tables with unprefixed names are legitimate references. Options: (a) make the rule context-aware — if a CREATE TABLE statement exists in the same file for the referenced table without RAC_ prefix, the FK reference is valid; (b) exclude the init_baseline migration file explicitly. Both options require governance approval since rac-table-access is a protected governance surface."
+    }
+  ],
+  "issuesNeedingNewMigration": [],
+  "prismaValidate": "exit 0 — prisma/schema.prisma is valid",
+  "ddlSemanticsChanged": false,
+  "commentsOnlyChanged": true,
+  "blockers": [
+    "The 35 HIGH issues cannot be resolved by editing this migration file without breaking DDL semantics for existing databases.",
+    "The rac-table-access Semgrep rule is a protected governance surface (codacy lock). Any relaxation of the rule requires human owner approval.",
+    "Per CLAUDE.md codacy lock: 'Do not add path exclusions for migrations' — so excluding this file from analysis is also a governance change."
+  ],
+  "summary": "Investigated 35 HIGH Codacy issues in the init_baseline migration. ALL 35 are from the Semgrep rac-table-access rule flagging FK constraint statements that reference unprefixed table names. These are FALSE POSITIVES because: (1) this is the initial baseline migration that CREATES the tables without RAC_ prefix, (2) a subsequent migration (20260425013841_rac_table_rename) handles the prefix rename, (3) changing FK targets here would break the migration for any database running through the migration history. Added documentation comments explaining the historical context. No DDL semantics were changed. Prisma validate passes. Resolution requires a governance-level change to the Semgrep pattern, not a code edit."
+}

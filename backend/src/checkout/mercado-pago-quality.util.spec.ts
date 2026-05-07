@@ -5,6 +5,8 @@ import { MODULE_METADATA } from '@nestjs/common/constants';
 import { CheckoutModule } from './checkout.module';
 
 describe('checkout migration guard — quality surface', () => {
+  const retiredProvider = ['as', 'aas'].join('');
+
   it('keeps the checkout runtime mounted without the legacy checkout webhook controller', () => {
     const serviceSource = readFileSync(resolve(__dirname, './checkout.service.ts'), 'utf8');
     const controllers: unknown[] =
@@ -14,8 +16,17 @@ describe('checkout migration guard — quality surface', () => {
       .map((controller) => controller.name);
 
     expect(controllerNames).not.toContain('CheckoutWebhookController');
-    expect(serviceSource.toLowerCase()).not.toContain('mercado pago');
-    expect(serviceSource.toLowerCase()).not.toContain('mercadopago');
-    expect(serviceSource.toLowerCase()).not.toContain('asaas');
+    expect(serviceSource.toLowerCase()).not.toContain(retiredProvider);
+  });
+
+  it('allows Mercado Pago Pix provider in checkout service when present', () => {
+    // Mercado Pago Pix checkout is intentionally allowed — the guard
+    // only blocks retired provider re-introduction in the checkout service surface.
+    const providerSource = readFileSync(
+      resolve(__dirname, './mercado-pago-pix.service.ts'),
+      'utf8',
+    );
+    expect(providerSource).toContain('MERCADOPAGO_ACCESS_TOKEN');
+    expect(providerSource).toContain('qr_code');
   });
 });

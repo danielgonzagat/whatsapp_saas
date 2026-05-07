@@ -30,6 +30,22 @@ function asBoolean(value: unknown, fallback = false) {
   return typeof value === 'boolean' ? value : fallback;
 }
 
+function asTimerType(value: unknown) {
+  const normalized = String(value || '')
+    .trim()
+    .toUpperCase();
+
+  if (normalized === 'COUNTDOWN' || normalized === 'EVERGREEN') {
+    return 'COUNTDOWN' as const;
+  }
+
+  if (normalized === 'EXPIRATION' || normalized === 'FIXED') {
+    return 'EXPIRATION' as const;
+  }
+
+  return undefined;
+}
+
 function asStringArray(value: unknown) {
   return Array.isArray(value)
     ? value.filter((entry): entry is string => typeof entry === 'string' && entry.trim().length > 0)
@@ -167,12 +183,7 @@ export function normalizePublicCheckoutResponse(input: unknown): PublicCheckoutR
             configRecord.enableTimer === undefined
               ? undefined
               : asBoolean(configRecord.enableTimer),
-          timerType:
-            configRecord.timerType === 'EXPIRATION'
-              ? 'EXPIRATION'
-              : configRecord.timerType === 'COUNTDOWN'
-                ? 'COUNTDOWN'
-                : undefined,
+          timerType: asTimerType(configRecord.timerType),
           timerMinutes:
             configRecord.timerMinutes === undefined
               ? undefined
@@ -180,6 +191,15 @@ export function normalizePublicCheckoutResponse(input: unknown): PublicCheckoutR
           timerMessage: asOptionalString(configRecord.timerMessage),
           timerExpiredMessage: asOptionalString(configRecord.timerExpiredMessage),
           timerPosition: asOptionalString(configRecord.timerPosition),
+          showStockCounter:
+            configRecord.showStockCounter === undefined
+              ? undefined
+              : asBoolean(configRecord.showStockCounter),
+          stockMessage: asOptionalString(configRecord.stockMessage),
+          fakeStockCount:
+            configRecord.fakeStockCount === undefined
+              ? undefined
+              : asNumber(configRecord.fakeStockCount, 0),
           shippingMode:
             configRecord.shippingMode === 'VARIABLE'
               ? 'VARIABLE'

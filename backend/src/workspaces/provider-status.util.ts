@@ -121,7 +121,7 @@ export function buildProviderSessionSnapshot(params: BuildSnapshotParams): Provi
     pushName: session.pushName || null,
     rawStatus: resolveRawStatusFallback(rawStatus, providerType, normalizedStatus, phoneNumberId),
     connectedAt: session.connectedAt || null,
-    lastUpdated: session.lastUpdated || null,
+    lastUpdated: session.lastUpdated,
     phoneNumber: session.phoneNumber || null,
     sessionName: resolveSessionName(session.sessionName, workspaceId),
     phoneNumberId,

@@ -89,33 +89,36 @@ export async function listAdminAccounts(
     };
   }
 
-  const [workspaces, total] = await prisma.$transaction([
-    prisma.workspace.findMany({
-      where: workspaceWhere,
-      orderBy: { createdAt: 'desc' },
-      skip,
-      take,
-      select: {
-        id: true,
-        name: true,
-        createdAt: true,
-        providerSettings: true,
-        agents: {
-          where: { role: 'ADMIN' },
-          orderBy: { createdAt: 'asc' },
-          take: 1,
-          select: {
-            email: true,
-            name: true,
-            kycStatus: true,
-            kycSubmittedAt: true,
+  const [workspaces, total] = await prisma.$transaction(
+    [
+      prisma.workspace.findMany({
+        where: workspaceWhere,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take,
+        select: {
+          id: true,
+          name: true,
+          createdAt: true,
+          providerSettings: true,
+          agents: {
+            where: { role: 'ADMIN' },
+            orderBy: { createdAt: 'asc' },
+            take: 1,
+            select: {
+              email: true,
+              name: true,
+              kycStatus: true,
+              kycSubmittedAt: true,
+            },
           },
+          _count: { select: { agents: true } },
         },
-        _count: { select: { agents: true } },
-      },
-    }),
-    prisma.workspace.count({ where: workspaceWhere }),
-  ]);
+      }),
+      prisma.workspace.count({ where: workspaceWhere }),
+    ],
+    { isolationLevel: 'ReadCommitted' },
+  );
 
   if (workspaces.length === 0) {
     return { items: [], total };

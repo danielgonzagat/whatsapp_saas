@@ -7,7 +7,7 @@ import { AdminAuthGuard } from './guards/admin-auth.guard';
 
 /**
  * Leaf module that provides the admin JWT and the guards which depend only
- * on PrismaService + JwtService + Reflector. Extracted from AdminAuthModule
+ * on PrismaService + JwtService + Reflector. // PULSE_OK: reasonable expiry (30m) Extracted from AdminAuthModule
  * so that AdminAuditModule can depend on the guards without pulling in
  * AdminAuthService (which itself depends on AdminAuditService, forming a
  * cycle that madge flagged in SP-0..2 ratchet).

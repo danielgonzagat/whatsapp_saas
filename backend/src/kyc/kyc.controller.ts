@@ -17,6 +17,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { memoryStorage } from 'multer';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
@@ -41,13 +42,15 @@ type UploadedKycFile = {
 
 /** Kyc controller. */
 @Controller('kyc')
-@UseGuards(JwtAuthGuard, WorkspaceGuard)
+@UseGuards(JwtAuthGuard, WorkspaceGuard, ThrottlerGuard)
+@Throttle({ default: { limit: 10, ttl: 60000 } })
 export class KycController {
   constructor(private readonly kycService: KycService) {}
 
   // ═══ PROFILE ═══
 
   @Get('profile')
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
   async getProfile(@Req() req: AuthenticatedRequest) {
     return this.kycService.getProfile(req.user.sub);
   }
@@ -88,6 +91,7 @@ export class KycController {
   // ═══ FISCAL ═══
 
   @Get('fiscal')
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
   async getFiscal(@Req() req: AuthenticatedRequest) {
     return this.kycService.getFiscal(req.user.workspaceId);
   }
@@ -101,6 +105,7 @@ export class KycController {
   // ═══ DOCUMENTS ═══
 
   @Get('documents')
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
   async getDocuments(@Req() req: AuthenticatedRequest) {
     return this.kycService.getDocuments(req.user.sub, req.user.workspaceId);
   }
@@ -138,12 +143,13 @@ export class KycController {
   /** Delete document. */
   @Delete('documents/:id')
   async deleteDocument(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
-    return this.kycService.deleteDocument(req.user.sub, id);
+    return this.kycService.deleteDocument(req.user.sub, id, req.user.workspaceId);
   }
 
   // ═══ BANK ═══
 
   @Get('bank')
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
   async getBankAccount(@Req() req: AuthenticatedRequest) {
     return this.kycService.getBankAccount(req.user.workspaceId);
   }
@@ -164,12 +170,14 @@ export class KycController {
   // ═══ KYC STATUS ═══
 
   @Get('status')
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
   async getStatus(@Req() req: AuthenticatedRequest) {
     return this.kycService.getStatus(req.user.sub);
   }
 
   /** Get completion. */
   @Get('completion')
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
   async getCompletion(@Req() req: AuthenticatedRequest) {
     return this.kycService.getCompletion(req.user.sub, req.user.workspaceId);
   }

@@ -24,7 +24,7 @@ export type ConversationOperationalLike = {
 };
 
 /** Conversation owner type. */
-export type ConversationOwner = 'AGENT' | 'HUMAN';
+type ConversationOwner = 'AGENT' | 'HUMAN';
 
 /** Conversation operational state type. */
 export type ConversationOperationalState = {
@@ -63,6 +63,7 @@ function toIsoTimestamp(value?: Date | string | null): string | null {
     return null;
   }
   if (typeof value === 'string') {
+    // PULSE_OK: date validated via Number.isNaN(parsed.getTime()) right below
     const parsed = new Date(value);
     return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
   }
@@ -132,7 +133,7 @@ export function resolveConversationOwner(
 }
 
 /** Get last conversation message. */
-export function getLastConversationMessage(
+function getLastConversationMessage(
   conversation?: Pick<ConversationOperationalLike, 'messages'> | null,
 ): ConversationMessageLike | null {
   const [message] = conversation?.messages || [];

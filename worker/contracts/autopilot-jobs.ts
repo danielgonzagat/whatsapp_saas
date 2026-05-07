@@ -6,17 +6,17 @@
 
 export const AUTOPILOT_SWEEP_UNREAD_CONVERSATIONS_JOB = 'sweep-unread-conversations';
 /** Autopilot_backlog_modes. */
-export const AUTOPILOT_BACKLOG_MODES = [
+const AUTOPILOT_BACKLOG_MODES = [
   'reply_all_recent_first',
   'reply_only_new',
   'prioritize_hot',
 ] as const;
 
 /** Autopilot backlog mode type. */
-export type AutopilotBacklogMode = (typeof AUTOPILOT_BACKLOG_MODES)[number];
+type AutopilotBacklogMode = (typeof AUTOPILOT_BACKLOG_MODES)[number];
 
 /** Sweep unread conversations job input shape. */
-export interface SweepUnreadConversationsJobInput {
+interface SweepUnreadConversationsJobInput {
   /** Workspace id property. */
   workspaceId: string;
   /** Run id property. */
@@ -30,7 +30,7 @@ export interface SweepUnreadConversationsJobInput {
 }
 
 /** Sweep unread conversations job data shape. */
-export interface SweepUnreadConversationsJobData {
+interface SweepUnreadConversationsJobData {
   /** Workspace id property. */
   workspaceId: string;
   /** Run id property. */

@@ -215,12 +215,10 @@ describe('apiFetch', () => {
 
     expect(fetchSpy).toHaveBeenCalledTimes(1);
     const request = getFetchRequest(fetchSpy);
-    expect(request.url).toBe(new URL('/api/marketing/connect/status', window.location.origin).href);
+    expect(request.url).toBe('http://localhost:3001/marketing/connect/status');
     expect(request.credentials).toBe('include');
     expect(request.headers.get('Authorization')).toBe('Bearer tok');
-    expect(request.headers.get('x-kloel-access-token')).toBe('tok');
     expect(request.headers.get('x-workspace-id')).toBe('ws-789');
-    expect(request.headers.get('x-kloel-workspace-id')).toBe('ws-789');
   });
 });
 
@@ -252,7 +250,7 @@ describe('authApi', () => {
 
     expect(result.error).toBeUndefined();
     const request = getFetchRequest(fetchSpy);
-    expect(request.url).toBe(new URL('/api/auth/facebook', window.location.origin).href);
+    expect(request.url).toBe('http://localhost:3001/auth/oauth/facebook');
     await expect(request.text()).resolves.toBe(
       JSON.stringify({ accessToken: 'meta-user-token', userId: 'fb-user-123' }),
     );
@@ -273,7 +271,7 @@ describe('authApi', () => {
 
     expect(result.error).toBeUndefined();
     const request = getFetchRequest(fetchSpy);
-    expect(request.url).toBe(new URL('/api/auth/magic-link/request', window.location.origin).href);
+    expect(request.url).toBe('http://localhost:3001/auth/magic-link/request');
     await expect(request.text()).resolves.toBe(
       JSON.stringify({ email: 'user@kloel.com', redirectTo: '/dashboard' }),
     );
@@ -300,7 +298,7 @@ describe('authApi', () => {
 
     expect(result.error).toBeUndefined();
     const request = getFetchRequest(fetchSpy);
-    expect(request.url).toBe(new URL('/api/auth/magic-link/verify', window.location.origin).href);
+    expect(request.url).toBe('http://localhost:3001/auth/magic-link/verify');
     await expect(request.text()).resolves.toBe(JSON.stringify({ token: 'magic-token' }));
     expect(tokenStorage.getToken()).toBe('magic-access-token');
     expect(tokenStorage.getRefreshToken()).toBe('magic-refresh-token');

@@ -36,10 +36,11 @@ async function notify(queue: string, waiting: number, failed: number) {
     });
     lastAlert[queue] = now;
   } catch (err: unknown) {
-    const errInstanceofError =
-      err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
     // PULSE:OK — DLQ alert webhook non-critical; queue still monitored on next interval
-    console.warn('[DLQ Monitor] notify failed:', errInstanceofError?.message);
+    console.warn(
+      '[DLQ Monitor] notify failed:',
+      err instanceof Error ? err.message : 'unknown_error',
+    );
   }
 }
 

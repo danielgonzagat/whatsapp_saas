@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { PNG } from 'pngjs';
-import { chromium, devices, test as base, type Locator, type Page } from '@playwright/test';
+import { chromium, devices, expect, test as base, type Locator, type Page } from '@playwright/test';
 import {
   AUTHENTICATED_ROUTES,
   PUBLIC_ROUTES,
@@ -25,18 +25,12 @@ import {
  * diff against the committed baselines for the 15 critical screens
  * across 3 viewports (mobile / tablet / desktop). A diff fails CI.
  *
- * ## How Playwright handles missing baselines
- *
  * On the first run for a given screen+viewport combination, the
  * baseline PNG does not exist on disk. Playwright's behavior:
  *   1. The test FAILS (loud signal that a new baseline is needed).
  *   2. The actual screenshot is written to the snapshot directory.
  *   3. The operator inspects the screenshot, decides if it is
  *      acceptable, then commits it as the baseline.
- *
- * Subsequent runs compare every screenshot against the committed
- * baseline byte-for-byte (with maxDiffPixelRatio: 0). Any diff fails.
- *
  * To intentionally update a baseline (e.g. an explicit visual change
  * that was approved out of band), run:
  *
@@ -90,7 +84,10 @@ const VISUAL_FREEZE_STYLE = [
   '}',
   "html[data-visual-capture='true'] {",
   'cursor: default !important;',
+  'scrollbar-color: #0a0a0c #0a0a0c !important;',
   '}',
+  "html[data-visual-capture='true']::-webkit-scrollbar, html[data-visual-capture='true'] body::-webkit-scrollbar { width: 8px !important; height: 8px !important; }",
+  "html[data-visual-capture='true']::-webkit-scrollbar-track, html[data-visual-capture='true']::-webkit-scrollbar-thumb, html[data-visual-capture='true'] body::-webkit-scrollbar-track, html[data-visual-capture='true'] body::-webkit-scrollbar-thumb { background: #0a0a0c !important; }",
   "html[data-visual-capture='true'] a,",
   "html[data-visual-capture='true'] button,",
   "html[data-visual-capture='true'] input,",
@@ -196,6 +193,8 @@ async function assertExactScreenshot(
     caret: 'hide',
     scale: 'css',
   });
+
+  expect(fs.existsSync(actualPath), `screenshot capture for ${snapshotName} succeeded`).toBe(true);
 
   if (!hasSnapshot) {
     if (!allowSnapshotCreate) {
@@ -325,7 +324,15 @@ async function ensureCookieConsentSettled(page: Page) {
     });
   }, VISUAL_COOKIE_CONSENT);
 
-  await page.reload({ waitUntil: 'networkidle' });
+  const bannerGone = await banner
+    .waitFor({ state: 'hidden', timeout: 5_000 })
+    .then(() => true)
+    .catch(() => false);
+  if (bannerGone) {
+    return;
+  }
+
+  await page.reload({ waitUntil: 'domcontentloaded' });
 
   const stillVisible = await banner.isVisible().catch(() => false);
   if (!stillVisible) {
@@ -472,6 +479,41 @@ test.describe('P6.5-1 — Visual regression baseline (I20)', () => {
   });
 
   test.describe('Public routes (no auth required)', () => {
+    test.beforeEach(async ({ page }) => {
+      await page.route('**/v1/cookie-consent', async (requestRoute) => {
+        const method = requestRoute.request().method();
+        if (method === 'GET') {
+          await requestRoute.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+              success: true,
+              consent: {
+                necessary: true,
+                analytics: false,
+                marketing: false,
+                updatedAt: VISUAL_FIXED_TIME_ISO,
+              },
+            }),
+          });
+        } else {
+          await requestRoute.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+              success: true,
+              consent: {
+                necessary: true,
+                analytics: false,
+                marketing: false,
+                updatedAt: VISUAL_FIXED_TIME_ISO,
+              },
+            }),
+          });
+        }
+      });
+    });
+
     for (const route of PUBLIC_ROUTES) {
       for (const viewport of VIEWPORTS) {
         test(`${route.name} @ ${viewport.name}`, async ({ page }) => {
@@ -512,6 +554,12 @@ test.describe('P6.5-1 — Visual regression baseline (I20)', () => {
   });
 
   test.describe('Authenticated routes', () => {
+    // Each authenticated visual scenario runs auth bootstrap +
+    // mockVisualAuthApis + page.goto + freeze CSS + readiness probes +
+    // surface stabilisation + full-page screenshot. Cold-start CI workers
+    // routinely overflow 30s — give the describe a 90s budget instead.
+    test.describe.configure({ timeout: 90_000 });
+
     let authContext: E2EAuthContext;
 
     test.beforeEach(async ({ page, request }) => {

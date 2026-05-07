@@ -1,15 +1,20 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import * as Sentry from '@sentry/node';
 
 import { AuditService } from '../audit/audit.service';
 import { FinancialAlertService } from '../common/financial-alert.service';
-import { validatePaymentTransition } from '../common/payment-state-machine';
+import { validateOrderTransition } from '../common/checkout-order-state-machine';
 import { ConnectService } from '../payments/connect/connect.service';
 import { FraudEngine } from '../payments/fraud/fraud.engine';
 import { StripeChargeService } from '../payments/stripe/stripe-charge.service';
 import { PrismaService } from '../prisma/prisma.service';
 
-import { CheckoutSocialLeadService } from './checkout-social-lead.service';
+import {
+  buildCheckoutPaymentE2EStubResult,
+  isCheckoutPaymentE2EStubEnabled,
+} from './checkout-payment-e2e-stub';
+import { CheckoutPostPaymentEffectsService } from './checkout-post-payment-effects.service';
 
 type CheckoutPaymentMethod = 'CREDIT_CARD' | 'PIX' | 'BOLETO';
 type CheckoutPaymentStatus = 'APPROVED' | 'DECLINED' | 'PENDING' | 'PROCESSING' | 'CANCELED';
@@ -77,7 +82,7 @@ export class CheckoutPaymentService {
     private readonly fraudEngine: FraudEngine,
     private readonly financialAlert: FinancialAlertService,
     private readonly auditService: AuditService,
-    private readonly checkoutSocialLeadService: CheckoutSocialLeadService,
+    private readonly postPaymentEffects: CheckoutPostPaymentEffectsService,
   ) {}
 
   private async logFraudDecision(params: {
@@ -199,6 +204,21 @@ export class CheckoutPaymentService {
     const approved = paymentStatus === 'APPROVED';
     return this.prisma.$transaction(
       async (tx) => {
+        const existingPayment = await tx.checkoutPayment.findFirst({
+          where: { orderId: params.orderId },
+        });
+        if (existingPayment) {
+          if (existingPayment.externalId === charge.paymentIntentId) {
+            this.logger.log(
+              `Idempotency: payment already exists for order ${params.orderId} with same PaymentIntent ${charge.paymentIntentId}`,
+            );
+            return existingPayment;
+          }
+          this.logger.warn(
+            `Idempotency: payment exists for order ${params.orderId} but with different externalId (existing=${existingPayment.externalId}, new=${charge.paymentIntentId})`,
+          );
+        }
+
         const createdPayment = await tx.checkoutPayment.create({
           data: {
             orderId: params.orderId,
@@ -254,6 +274,7 @@ export class CheckoutPaymentService {
   }
 
   /** Process payment. */
+  // PULSE_OK: rate-limited by CheckoutPublicController
   async processPayment(params: {
     orderId: string;
     idempotencyKey?: string;
@@ -277,6 +298,19 @@ export class CheckoutPaymentService {
     const order = await this.findOrder(params.orderId, params.workspaceId);
     if (!order) {
       throw new NotFoundException('Pedido não encontrado para processar no Stripe.');
+    }
+
+    // E2E test harness: short-circuit before any real Stripe call when the
+    // workflow has no STRIPE_SECRET_KEY configured. Production never reaches
+    // this branch — gated by NODE_ENV !== 'production' inside the helper.
+    if (isCheckoutPaymentE2EStubEnabled()) {
+      this.logger.log(
+        `Checkout payment e2e stub active for order ${params.orderId} workspace ${params.workspaceId} method ${params.paymentMethod}`,
+      );
+      return buildCheckoutPaymentE2EStubResult({
+        orderId: params.orderId,
+        paymentMethod: params.paymentMethod,
+      });
     }
 
     const orderMetadata =
@@ -334,6 +368,17 @@ export class CheckoutPaymentService {
     const amount = chargedTotalInCents / 100;
 
     try {
+      Sentry.addBreadcrumb({
+        message: `checkout payment processing via Stripe`,
+        category: 'payment',
+        level: 'info',
+        data: {
+          orderId: params.orderId,
+          workspaceId: params.workspaceId,
+          amount,
+          paymentMethod: params.paymentMethod,
+        },
+      });
       const charge = await this.stripeCharge.createSaleCharge(
         this.buildChargeInput(params, {
           sellerStripeAccountId,
@@ -356,22 +401,18 @@ export class CheckoutPaymentService {
       const payment = await this.persistPayment(params, charge, paymentStatus, pixData, amount);
 
       if (approved) {
-        await this.checkoutSocialLeadService
-          .markConvertedFromOrder({
-            workspaceId: params.workspaceId,
-            orderId: params.orderId,
-            capturedLeadId:
-              typeof orderMetadata.capturedLeadId === 'string'
-                ? orderMetadata.capturedLeadId
-                : null,
-            customerEmail: params.customerEmail,
-            customerPhone: params.customerPhone,
-            deviceFingerprint:
-              typeof orderMetadata.deviceFingerprint === 'string'
-                ? orderMetadata.deviceFingerprint
-                : null,
-          })
-          .catch(() => undefined);
+        await this.postPaymentEffects
+          .markLeadConverted(order, params.workspaceId)
+          .catch((error) => {
+            this.logger.warn(
+              `Checkout post-payment lead conversion failed for order ${params.orderId}: ${error instanceof Error ? error.message : String(error)}`,
+            );
+          });
+        await this.postPaymentEffects.sendPurchaseSignals(order, amount).catch((error) => {
+          this.logger.warn(
+            `Checkout post-payment purchase signals failed for order ${params.orderId}: ${error instanceof Error ? error.message : String(error)}`,
+          );
+        });
       }
 
       return {
@@ -387,10 +428,20 @@ export class CheckoutPaymentService {
         boletoBarcode: null,
         boletoExpiresAt: null,
       };
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Stripe payment processing failed for order ${params.orderId}: ${error instanceof Error ? error.message : String(error)}`,
       );
+      Sentry.captureException(error, {
+        tags: { type: 'financial_alert', operation: 'checkout_stripe_payment' },
+        extra: {
+          workspaceId: params.workspaceId,
+          orderId: params.orderId,
+          amount,
+          gateway: 'stripe',
+        },
+        level: 'fatal',
+      });
       this.financialAlert.paymentFailed(error as Error, {
         workspaceId: params.workspaceId,
         orderId: params.orderId,
@@ -461,7 +512,7 @@ export class CheckoutPaymentService {
     },
     orderId: string,
     workspaceId: string,
-    transitionContext: {
+    _transitionContext: {
       paymentId: string;
       provider: 'stripe';
       externalId: string;
@@ -474,11 +525,10 @@ export class CheckoutPaymentService {
     let currentStatus = currentOrder?.status || 'PENDING';
 
     if (currentStatus !== 'PROCESSING') {
-      const canEnterProcessing = validatePaymentTransition(
-        currentStatus,
-        'PROCESSING',
-        transitionContext,
-      );
+      const canEnterProcessing = validateOrderTransition(currentStatus, 'PROCESSING', {
+        orderId,
+        workspaceId,
+      });
       if (!canEnterProcessing) {
         return;
       }
@@ -490,8 +540,11 @@ export class CheckoutPaymentService {
       currentStatus = 'PROCESSING';
     }
 
-    const canApprove = validatePaymentTransition(currentStatus, 'APPROVED', transitionContext);
-    if (!canApprove) {
+    const canBecomePaid = validateOrderTransition(currentStatus, 'PAID', {
+      orderId,
+      workspaceId,
+    });
+    if (!canBecomePaid) {
       return;
     }
 

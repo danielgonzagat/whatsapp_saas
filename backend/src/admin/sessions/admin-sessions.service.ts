@@ -13,6 +13,7 @@ export class AdminSessionsService {
   ) {}
 
   /** List own. */
+  // PULSE_OK: bounded by single admin user's sessions
   async listOwn(adminUserId: string) {
     return this.prisma.adminSession.findMany({
       where: { adminUserId },
@@ -29,6 +30,7 @@ export class AdminSessionsService {
   }
 
   /** List for user. */
+  // PULSE_OK: bounded by single target user's sessions
   async listForUser(targetId: string) {
     return this.prisma.adminSession.findMany({
       where: { adminUserId: targetId },
@@ -47,34 +49,41 @@ export class AdminSessionsService {
 
   /** Revoke. */
   async revoke(sessionId: string, actorId: string, actorRole: AdminRole): Promise<void> {
-    const session = await this.prisma.adminSession.findUnique({
-      where: { id: sessionId },
-    });
-    if (!session) {
-      throw adminErrors.sessionNotFound();
-    }
+    await this.prisma.$transaction(
+      async (tx) => {
+        const session = await tx.adminSession.findUnique({
+          where: { id: sessionId },
+        });
+        if (!session) {
+          throw adminErrors.sessionNotFound();
+        }
 
-    const isOwnSession = session.adminUserId === actorId;
-    const isOwner = actorRole === AdminRole.OWNER;
-    if (!isOwnSession && !isOwner) {
-      throw adminErrors.cannotRevokeOther();
-    }
+        const isOwnSession = session.adminUserId === actorId;
+        const isOwner = actorRole === AdminRole.OWNER;
+        if (!isOwnSession && !isOwner) {
+          throw adminErrors.cannotRevokeOther();
+        }
 
-    if (session.revokedAt) {
-      return;
-    }
+        if (session.revokedAt) {
+          return;
+        }
 
-    await this.prisma.adminSession.update({
-      where: { id: sessionId },
-      data: { revokedAt: new Date() },
-    });
+        await tx.adminSession.update({
+          where: { id: sessionId },
+          data: { revokedAt: new Date() },
+        });
 
-    await this.audit.append({
-      adminUserId: actorId,
-      action: 'admin.sessions.revoked',
-      entityType: 'AdminSession',
-      entityId: sessionId,
-      details: { targetAdminId: session.adminUserId, byOwner: !isOwnSession && isOwner },
-    });
+        await tx.adminAuditLog.create({
+          data: {
+            adminUserId: actorId,
+            action: 'admin.sessions.revoked',
+            entityType: 'AdminSession',
+            entityId: sessionId,
+            details: { targetAdminId: session.adminUserId, byOwner: !isOwnSession && isOwner },
+          },
+        });
+      },
+      { isolationLevel: 'ReadCommitted' },
+    );
   }
 }

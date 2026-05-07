@@ -1,6 +1,7 @@
 'use client';
 
 import { mutate } from 'swr';
+import { API_BASE } from './http';
 import { tokenStorage } from './api';
 
 const GUEST_WORKSPACE_CLAIM_SLOT = ['kloel', 'guest', 'workspace', 'claim', 'candidate'].join('_');
@@ -49,7 +50,7 @@ export async function ensureAnonymousSession(): Promise<AnonymousSession> {
     };
   }
 
-  const response = await fetch('/api/auth/anonymous', { method: 'POST' });
+  const response = await fetch(`${API_BASE}/auth/anonymous`, { method: 'POST' });
   if (!response.ok) {
     throw new Error('Falha ao criar sessão anônima.');
   }

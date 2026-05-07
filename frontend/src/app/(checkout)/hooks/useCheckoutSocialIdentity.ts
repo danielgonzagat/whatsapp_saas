@@ -3,6 +3,24 @@
 import { requestFacebookAccessTokenWithEmailScope } from '@/lib/facebook-sdk';
 import { API_BASE } from '@/lib/http';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  ensureDeviceFingerprint,
+  mergeSnapshot,
+  persistIdentity,
+  readAttribution,
+  readResponseMessage,
+  readStoredIdentity,
+} from './useCheckoutSocialIdentity.helpers';
+import {
+  type CheckoutSocialIdentitySnapshot,
+  type CheckoutSocialProvider,
+  type PrefillResponse,
+} from './useCheckoutSocialIdentity.types';
+
+export type {
+  CheckoutSocialIdentitySnapshot,
+  CheckoutSocialProvider,
+} from './useCheckoutSocialIdentity.types';
 
 const GOOGLE_IDENTITY_SCRIPT_ID = 'google-identity-services';
 const GOOGLE_IDENTITY_SCRIPT_SRC = 'https://accounts.google.com/gsi/client';
@@ -12,46 +30,6 @@ const GOOGLE_PEOPLE_SCOPES = [
   'https://www.googleapis.com/auth/user.phonenumbers.read',
   'https://www.googleapis.com/auth/user.addresses.read',
 ].join(' ');
-const DEVICE_STORAGE_SLOT = 'kloel.checkout.device-id.v1';
-const IDENTITY_STORAGE_SLOT = 'kloel.checkout.identity.v1';
-
-/** Checkout social provider type. */
-export type CheckoutSocialProvider = 'google' | 'facebook' | 'apple';
-
-/** Checkout social identity snapshot shape. */
-export interface CheckoutSocialIdentitySnapshot {
-  /** Lead id property. */
-  leadId?: string;
-  /** Provider property. */
-  provider: CheckoutSocialProvider;
-  /** Name property. */
-  name: string;
-  /** Email property. */
-  email: string;
-  /** Avatar url property. */
-  avatarUrl?: string | null;
-  /** Device fingerprint property. */
-  deviceFingerprint: string;
-  /** Phone property. */
-  phone?: string | null;
-  /** Cpf property. */
-  cpf?: string | null;
-  /** Cep property. */
-  cep?: string | null;
-  /** Street property. */
-  street?: string | null;
-  /** Number property. */
-  number?: string | null;
-  /** Neighborhood property. */
-  neighborhood?: string | null;
-  /** City property. */
-  city?: string | null;
-  /** State property. */
-  state?: string | null;
-  /** Complement property. */
-  complement?: string | null;
-}
-
 type CaptureResponse = {
   leadId: string;
   provider: CheckoutSocialProvider;
@@ -59,24 +37,6 @@ type CaptureResponse = {
   email: string;
   avatarUrl?: string | null;
   deviceFingerprint?: string | null;
-};
-
-type PrefillResponse = {
-  leadId: string;
-  provider: CheckoutSocialProvider;
-  name?: string | null;
-  email?: string | null;
-  avatarUrl?: string | null;
-  deviceFingerprint?: string | null;
-  phone?: string | null;
-  cpf?: string | null;
-  cep?: string | null;
-  street?: string | null;
-  number?: string | null;
-  neighborhood?: string | null;
-  city?: string | null;
-  state?: string | null;
-  complement?: string | null;
 };
 
 type UseCheckoutSocialIdentityOptions = {
@@ -119,6 +79,7 @@ export function useCheckoutSocialIdentity({
     process.env.NEXT_PUBLIC_META_APP_ID?.trim() ||
     '';
   const metaGraphVersion = process.env.NEXT_PUBLIC_META_GRAPH_API_VERSION?.trim() || 'v21.0';
+  const appleClientId = process.env.NEXT_PUBLIC_APPLE_CLIENT_ID?.trim() || '';
   const googlePeopleScopesEnabled =
     (
       process.env.NEXT_PUBLIC_KLOEL_FEATURE_GOOGLE_PEOPLE_PREFILL ||
@@ -499,7 +460,29 @@ export function useCheckoutSocialIdentity({
   return {
     deviceFingerprint,
     facebookAvailable: enabled && Boolean(metaAppId),
+    appleAvailable: enabled && Boolean(appleClientId),
     googleButtonRef,
+    triggerAppleSignIn: () => {
+      if (!enabled || !appleClientId || !slug) {
+        setError('Apple indisponível no momento.');
+        return;
+      }
+
+      setError('');
+      setLoadingProvider('apple');
+      const currentFingerprint = deviceFingerprint || ensureDeviceFingerprint();
+      const destination = new URL('/api/checkout/social/apple/start', window.location.origin);
+      destination.searchParams.set('slug', slug);
+      destination.searchParams.set('deviceFingerprint', currentFingerprint);
+      destination.searchParams.set(
+        'returnTo',
+        `${window.location.pathname}${window.location.search}`,
+      );
+      if (checkoutCode?.trim()) {
+        destination.searchParams.set('checkoutCode', checkoutCode.trim());
+      }
+      window.location.assign(destination.toString());
+    },
     triggerFacebookSignIn: async () => {
       if (!enabled || !metaAppId || !facebookSdkReady || !window.FB) {
         setError('Facebook indisponível no momento.');
@@ -559,190 +542,4 @@ async function requestGoogleAccessToken(tokenClient: GoogleTokenClient, hint?: s
       finish(null);
     }
   });
-}
-
-function fallbackDeviceFingerprint(): string {
-  const bytes = new Uint8Array(16);
-  const webCrypto = globalThis.crypto;
-  if (webCrypto?.getRandomValues) {
-    webCrypto.getRandomValues(bytes);
-  } else {
-    for (let i = 0; i < bytes.length; i += 1) {
-      bytes[i] = (Date.now() + i) & 0xff;
-    }
-  }
-  return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
-}
-
-function ensureDeviceFingerprint() {
-  const existing = readFromStorage(DEVICE_STORAGE_SLOT);
-  if (existing) {
-    return existing;
-  }
-
-  const generated = globalThis.crypto?.randomUUID?.() || fallbackDeviceFingerprint();
-  writeToStorage(DEVICE_STORAGE_SLOT, generated);
-  return generated;
-}
-
-function readStoredIdentity() {
-  const raw = readFromStorage(IDENTITY_STORAGE_SLOT);
-  if (!raw) {
-    return null;
-  }
-
-  try {
-    const parsed = JSON.parse(raw) as CheckoutSocialIdentitySnapshot;
-    if (parsed?.name && parsed?.email && parsed?.provider) {
-      return parsed;
-    }
-  } catch {
-    return null;
-  }
-
-  return null;
-}
-
-function persistIdentity(value: CheckoutSocialIdentitySnapshot) {
-  writeToStorage(IDENTITY_STORAGE_SLOT, JSON.stringify(value));
-}
-
-function resolveIdentityProvider(
-  current: CheckoutSocialIdentitySnapshot | null,
-  incoming: PrefillResponse,
-): CheckoutSocialProvider {
-  return incoming.provider || current?.provider || 'google';
-}
-
-function resolveIdentityDisplayFields(
-  current: CheckoutSocialIdentitySnapshot | null,
-  incoming: PrefillResponse,
-): { name: string; email: string; avatarUrl: string | null } {
-  return {
-    name: incoming.name || current?.name || '',
-    email: incoming.email || current?.email || '',
-    avatarUrl: incoming.avatarUrl ?? current?.avatarUrl ?? null,
-  };
-}
-
-function mergeIdentityCore(
-  current: CheckoutSocialIdentitySnapshot | null,
-  incoming: PrefillResponse,
-  fallbackFingerprint: string,
-): Pick<
-  CheckoutSocialIdentitySnapshot,
-  'leadId' | 'provider' | 'name' | 'email' | 'avatarUrl' | 'deviceFingerprint'
-> {
-  return {
-    leadId: incoming.leadId || current?.leadId,
-    provider: resolveIdentityProvider(current, incoming),
-    ...resolveIdentityDisplayFields(current, incoming),
-    deviceFingerprint:
-      incoming.deviceFingerprint || current?.deviceFingerprint || fallbackFingerprint,
-  };
-}
-
-function mergeContactFields(
-  current: CheckoutSocialIdentitySnapshot | null,
-  incoming: PrefillResponse,
-): Pick<CheckoutSocialIdentitySnapshot, 'phone' | 'cpf'> {
-  return {
-    phone: incoming.phone ?? current?.phone ?? null,
-    cpf: incoming.cpf ?? current?.cpf ?? null,
-  };
-}
-
-function mergeAddressFields(
-  current: CheckoutSocialIdentitySnapshot | null,
-  incoming: PrefillResponse,
-): Pick<
-  CheckoutSocialIdentitySnapshot,
-  'cep' | 'street' | 'number' | 'neighborhood' | 'city' | 'state' | 'complement'
-> {
-  return {
-    cep: incoming.cep ?? current?.cep ?? null,
-    street: incoming.street ?? current?.street ?? null,
-    number: incoming.number ?? current?.number ?? null,
-    neighborhood: incoming.neighborhood ?? current?.neighborhood ?? null,
-    city: incoming.city ?? current?.city ?? null,
-    state: incoming.state ?? current?.state ?? null,
-    complement: incoming.complement ?? current?.complement ?? null,
-  };
-}
-
-function mergeSnapshot(
-  current: CheckoutSocialIdentitySnapshot | null,
-  incoming: PrefillResponse,
-  fallbackFingerprint: string,
-): CheckoutSocialIdentitySnapshot {
-  return {
-    ...mergeIdentityCore(current, incoming, fallbackFingerprint),
-    ...mergeContactFields(current, incoming),
-    ...mergeAddressFields(current, incoming),
-  };
-}
-
-async function readResponseMessage(response: Response, fallback: string) {
-  const raw = await response.text().catch(() => '');
-  const trimmed = raw.trim();
-  if (!trimmed) {
-    return fallback;
-  }
-
-  try {
-    const parsed = JSON.parse(trimmed) as { message?: string };
-    if (parsed?.message?.trim()) {
-      return parsed.message.trim();
-    }
-  } catch {
-    if (!trimmed.startsWith('<')) {
-      return trimmed;
-    }
-  }
-
-  if (response.status === 404) {
-    return 'Checkout social não encontrado para este link.';
-  }
-
-  return fallback;
-}
-
-function readAttribution(url: string) {
-  const parsed = new URL(url);
-  return {
-    utmSource: normalizeQueryValue(parsed.searchParams.get('utm_source')),
-    utmMedium: normalizeQueryValue(parsed.searchParams.get('utm_medium')),
-    utmCampaign: normalizeQueryValue(parsed.searchParams.get('utm_campaign')),
-    utmContent: normalizeQueryValue(parsed.searchParams.get('utm_content')),
-    utmTerm: normalizeQueryValue(parsed.searchParams.get('utm_term')),
-    fbclid: normalizeQueryValue(parsed.searchParams.get('fbclid')),
-    gclid: normalizeQueryValue(parsed.searchParams.get('gclid')),
-  };
-}
-
-function normalizeQueryValue(value: string | null) {
-  const normalized = String(value || '').trim();
-  return normalized || undefined;
-}
-
-function readFromStorage(key: string) {
-  if (typeof window === 'undefined') {
-    return '';
-  }
-  try {
-    return window.localStorage.getItem(key) || '';
-  } catch {
-    return '';
-  }
-}
-
-function writeToStorage(key: string, value: string) {
-  if (typeof window === 'undefined') {
-    return;
-  }
-  try {
-    window.localStorage.setItem(key, value);
-  } catch {
-    // Ignore storage failures in public checkout mode.
-  }
 }

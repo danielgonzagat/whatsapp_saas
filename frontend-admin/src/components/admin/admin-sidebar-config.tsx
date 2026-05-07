@@ -2,6 +2,7 @@
 
 import type { ComponentType, CSSProperties, SVGProps } from 'react';
 import {
+  Activity,
   BarChart3,
   Building2,
   FileText,
@@ -266,6 +267,7 @@ export const ADMIN_SIDEBAR_SECTIONS: readonly AdminSidebarSection[] = [
     items: [
       { key: 'contas', label: 'Contas', href: '/contas', icon: Building2 },
       { key: 'compliance', label: 'Compliance', href: '/compliance', icon: ShieldCheck },
+      { key: 'operacoes', label: 'Operações', href: '/operacoes/filas', icon: Activity },
       { key: 'clientes', label: 'Clientes', href: '/clientes', icon: Users },
     ],
   },

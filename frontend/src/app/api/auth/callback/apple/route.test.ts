@@ -1,3 +1,4 @@
+import { type NextRequest } from 'next/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
@@ -30,11 +31,15 @@ import { GET, POST } from './route';
 function createGetRequest(
   url = 'https://auth.kloel.com/api/auth/callback/apple?id_token=apple-token',
 ) {
-  return {
-    method: 'GET',
-    headers: new Headers({ host: 'auth.kloel.com' }),
-    nextUrl: new URL(url),
-  } as any;
+  const nextUrl = new URL(url);
+  return Object.assign(
+    {
+      method: 'GET',
+      url: nextUrl.toString(),
+      headers: new Headers({ host: 'auth.kloel.com' }),
+    } as NextRequest,
+    { nextUrl },
+  );
 }
 
 function createPostRequest(options?: { user?: string; idToken?: string; host?: string }) {
@@ -46,12 +51,15 @@ function createPostRequest(options?: { user?: string; idToken?: string; host?: s
     form.set('user', options.user);
   }
 
-  return {
-    method: 'POST',
-    headers: new Headers({ host: options?.host || 'auth.kloel.com' }),
-    nextUrl: new URL('https://auth.kloel.com/api/auth/callback/apple'),
-    formData: vi.fn(async () => form),
-  } as any;
+  const nextUrl = new URL('https://auth.kloel.com/api/auth/callback/apple');
+  return Object.assign(
+    {
+      method: 'POST',
+      url: nextUrl.toString(),
+      headers: new Headers({ host: options?.host || 'auth.kloel.com' }),
+    } as NextRequest,
+    { nextUrl, formData: vi.fn(async () => form) },
+  );
 }
 
 describe('apple auth callback route', () => {
@@ -104,6 +112,7 @@ describe('apple auth callback route', () => {
         }),
         body: JSON.stringify({
           identityToken: 'apple-token',
+          redirectUri: 'https://auth.kloel.com/api/auth/callback/apple',
           user: {
             email: 'apple@kloel.com',
             name: { firstName: 'Apple', lastName: 'User' },

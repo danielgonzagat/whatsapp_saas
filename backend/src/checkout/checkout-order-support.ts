@@ -1,5 +1,6 @@
-import { Logger } from '@nestjs/common';
+import { BadRequestException, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import * as Sentry from '@sentry/node';
 import { PrismaService } from '../prisma/prisma.service';
 import { normalizeCheckoutOrderQuantity } from './checkout-order-pricing.util';
 
@@ -291,9 +292,14 @@ export class CheckoutOrderSupport {
         synced: true,
         skipped: false,
       } as const;
-    } catch (error) {
+    } catch (error: unknown) {
       const message = String((error as Error)?.message || error);
       this.logger.warn(`Checkout contact sync failed for ${input.workspaceId}: ${message}`);
+      Sentry.captureException(error, {
+        tags: { type: 'checkout_contact_sync', component: 'checkout_order_support' },
+        extra: { workspaceId: input.workspaceId, email, phone },
+        level: 'warning',
+      });
       return {
         synced: false,
         skipped: false,
@@ -301,5 +307,99 @@ export class CheckoutOrderSupport {
         errorMessage: message,
       } as const;
     }
+  }
+
+  /** Resolve marketplace fee percent for a given payment method and base total. */
+  async resolveMarketplaceFeePercent(
+    paymentMethod: 'CREDIT_CARD' | 'PIX' | 'BOLETO',
+    baseTotalInCents: number,
+    defaultFeePercent: number,
+  ): Promise<number> {
+    const now = new Date();
+    const volumeInCents = BigInt(Math.max(0, Math.round(baseTotalInCents)));
+    const feeRows = await this.prisma.marketplaceFee.findMany({
+      where: {
+        method: { in: [paymentMethod, '*'] },
+        activeFrom: { lte: now },
+        volumeFloorInCents: { lte: volumeInCents },
+        AND: [
+          { OR: [{ activeTo: null }, { activeTo: { gt: now } }] },
+          {
+            OR: [{ volumeCeilingInCents: null }, { volumeCeilingInCents: { gte: volumeInCents } }],
+          },
+        ],
+      },
+      orderBy: [{ activeFrom: 'desc' }, { volumeFloorInCents: 'desc' }],
+      take: 10,
+    });
+    const selectedFee =
+      feeRows.find((row) => row.method === paymentMethod) ||
+      feeRows.find((row) => row.method === '*') ||
+      null;
+    return selectedFee ? selectedFee.feeBps / 100 : defaultFeePercent;
+  }
+
+  /** Load and validate an affiliate link for the given checkoutCode and planId. */
+  async resolveAffiliateLink(
+    checkoutCode: string,
+    planProductId: string,
+  ): Promise<{
+    id: string;
+    code: string;
+    affiliateWorkspaceId: string;
+    affiliateProductId: string;
+    affiliateProduct: { commissionPct: number; productId: string };
+  } | null> {
+    const normalizedCode = String(checkoutCode).trim().toUpperCase();
+    const link = await this.prisma.affiliateLink.findFirst({
+      where: { active: true, OR: [{ code: normalizedCode }, { code: checkoutCode }] },
+      include: { affiliateProduct: { select: { commissionPct: true, productId: true } } },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (link && link.affiliateProduct.productId !== planProductId) {
+      throw new BadRequestException('O link de afiliado não corresponde ao plano selecionado.');
+    }
+    return link;
+  }
+
+  /** Load plan record required for order creation, throwing on missing/workspace mismatch. */
+  async resolvePlanForOrder(planId: string, workspaceId: string) {
+    const planRecord = await this.prisma.checkoutProductPlan.findUnique({
+      where: { id: planId },
+      include: {
+        product: {
+          select: {
+            id: true,
+            workspaceId: true,
+            commissionPercent: true,
+            name: true,
+            description: true,
+            imageUrl: true,
+            images: true,
+            category: true,
+            format: true,
+          },
+        },
+        orderBumps: {
+          where: { isActive: true },
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            productName: true,
+            image: true,
+            priceInCents: true,
+          },
+        },
+        checkoutConfig: true,
+      },
+    });
+    if (!planRecord) {
+      throw new NotFoundException('Plano não encontrado para criar o pedido.');
+    }
+    if (planRecord.product?.workspaceId !== workspaceId) {
+      throw new BadRequestException('O plano informado não pertence ao workspace informado.');
+    }
+    return planRecord;
   }
 }

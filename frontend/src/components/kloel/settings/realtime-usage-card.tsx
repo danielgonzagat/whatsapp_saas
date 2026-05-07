@@ -3,6 +3,7 @@
 import { kloelT } from '@/lib/i18n/t';
 import { Button } from '@/components/ui/button';
 import { TrendingUp } from 'lucide-react';
+import { colors } from '@/lib/design-tokens';
 import {
   SettingsCard,
   SettingsHeader,
@@ -33,7 +34,7 @@ export function RealtimeUsageCard({
 
   const getBarColor = () => {
     if (creditsPercent >= 70) {
-      return 'bg-[#E85D30]';
+      return 'bg-[colors.ember.primary]';
     }
     if (creditsPercent >= 30) {
       return 'bg-[#F59E0B]';

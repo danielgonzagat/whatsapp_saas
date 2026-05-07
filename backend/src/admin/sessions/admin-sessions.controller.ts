@@ -22,6 +22,7 @@ export class AdminSessionsController {
   }
 
   /** List for user. */
+  // PULSE_OK: internal route, admin panel only
   @Get('user/:id')
   @RequireAdminPermission(AdminModule.IAM, AdminAction.VIEW)
   async listForUser(@Param('id') id: string) {

@@ -2,44 +2,26 @@ import { Injectable, Logger } from '@nestjs/common';
 import { forEachSequential } from '../common/async-sequence';
 import { StorageService } from '../common/storage/storage.service';
 import { InboxService } from './inbox.service';
+import {
+  buildAttachmentContent,
+  buildProcessedAttachment,
+  determineMessageType,
+  ensureError,
+  extractIdentifier,
+  extractInstagramMessage,
+  firstInstagramMessaging,
+  type MessageAttachment,
+  type NormalizedMessage,
+  type ProcessedAttachment,
+} from './omnichannel.helpers';
 import { SmartRoutingService } from './smart-routing.service';
 
-interface NormalizedMessage {
-  workspaceId: string;
-  channel: 'WHATSAPP' | 'INSTAGRAM' | 'MESSENGER' | 'EMAIL';
-  externalId: string;
-  from: string; // Phone or Username or Email
-  fromName?: string;
-  content: string;
-  attachments?: MessageAttachment[];
-  metadata?: Record<string, unknown>;
-}
+export type { MessageAttachment, NormalizedMessage, ProcessedAttachment };
 
-interface MessageAttachment {
-  url?: string;
-  mimeType?: string;
-  name?: string;
-  size?: number;
-  base64?: string;
-}
-
-interface ProcessedAttachment {
-  url: string;
-  mimeType: string;
-  name: string;
-  size?: number;
-}
-
-/** Omnichannel service. */
+/** Omnichannel ingestion service — normalizes messages from every channel. */
 @Injectable()
 export class OmnichannelService {
   private readonly logger = new Logger(OmnichannelService.name);
-
-  private ensureError(error: unknown): Error {
-    return error instanceof Error
-      ? error
-      : new Error(typeof error === 'string' ? error : 'unknown error');
-  }
 
   constructor(
     private readonly inbox: InboxService,
@@ -47,31 +29,15 @@ export class OmnichannelService {
     private readonly storage: StorageService,
   ) {}
 
-  /**
-   * Unified entry point for ALL channels
-   */
+  /** Unified entry point for ALL channels — saves and (optionally) routes the message. */
   async handleIncomingMessage(msg: NormalizedMessage) {
     this.logger.log(`[OMNI] Incoming from ${msg.channel}: ${msg.from}`);
 
-    // Determinar identificador - para canais sem telefone usar o externalId
-    const identifier = this.extractIdentifier(msg);
+    const identifier = extractIdentifier(msg);
+    const messageType = determineMessageType(msg);
+    const processedAttachments = await this.maybeProcessAttachments(msg);
+    const content = buildAttachmentContent(msg.content || '', messageType, processedAttachments);
 
-    // Determinar tipo de mensagem baseado em attachments
-    const messageType = this.determineMessageType(msg);
-
-    // Processar attachments se existirem
-    let processedAttachments: ProcessedAttachment[] = [];
-    if (msg.attachments && msg.attachments.length > 0) {
-      processedAttachments = await this.processAttachments(msg.workspaceId, msg.attachments);
-    }
-
-    // Construir conteúdo da mensagem
-    let content = msg.content || '';
-    if (processedAttachments.length > 0 && !content) {
-      content = `[${messageType}] ${processedAttachments[0].name || 'arquivo'}`;
-    }
-
-    // 1. Save to Inbox (creates Contact/Conversation if needed)
     const savedMsg = await this.inbox.saveMessageByPhone({
       workspaceId: msg.workspaceId,
       phone: identifier,
@@ -82,29 +48,19 @@ export class OmnichannelService {
       mediaUrl: processedAttachments.length > 0 ? processedAttachments[0].url : undefined,
     });
 
-    // 2. Trigger Smart Routing if it's a new conversation or re-opened
-    if (savedMsg.conversationId) {
-      // We can check if conversation is unassigned
-      // await this.routing.routeConversation(msg.workspaceId, savedMsg.conversationId, {
-      //   channel: msg.channel,
-      //   messageBody: msg.content
-      // });
-    }
+    // Smart routing hook — kept as a no-op until conversation re-routing is wired
+    // through this entry point. Reading the service prevents an unused-property
+    // warning while preserving the public DI surface.
+    void this.routing;
 
     return savedMsg;
   }
 
-  /**
-   * Processa e armazena attachments
-   * Retorna URLs públicas ou metadados para acesso posterior
-   */
-  private buildProcessed(url: string, attachment: MessageAttachment): ProcessedAttachment {
-    return {
-      url,
-      mimeType: attachment.mimeType || 'application/octet-stream',
-      name: attachment.name || 'attachment',
-      size: attachment.size,
-    };
+  private async maybeProcessAttachments(msg: NormalizedMessage): Promise<ProcessedAttachment[]> {
+    if (!msg.attachments || msg.attachments.length === 0) {
+      return [];
+    }
+    return this.processAttachments(msg.workspaceId, msg.attachments);
   }
 
   private async processBase64Attachment(
@@ -123,7 +79,7 @@ export class OmnichannelService {
     if (!uploadedUrl) {
       return null;
     }
-    return this.buildProcessed(uploadedUrl, attachment);
+    return buildProcessedAttachment(uploadedUrl, attachment);
   }
 
   private async processSingleAttachment(
@@ -132,14 +88,14 @@ export class OmnichannelService {
   ): Promise<ProcessedAttachment | null> {
     const directUrl = attachment.url;
     if (directUrl && directUrl.startsWith('http')) {
-      return this.buildProcessed(directUrl, attachment);
+      return buildProcessedAttachment(directUrl, attachment);
     }
-    return await this.processBase64Attachment(workspaceId, attachment);
+    return this.processBase64Attachment(workspaceId, attachment);
   }
 
   private logAttachmentError(error: unknown): void {
-    const errorInstanceofError = this.ensureError(error);
-    this.logger.error(`[OMNI] Erro ao processar attachment: ${errorInstanceofError.message}`);
+    const wrapped = ensureError(error);
+    this.logger.error(`[OMNI] Erro ao processar attachment: ${wrapped.message}`);
   }
 
   private async processAttachments(
@@ -147,7 +103,6 @@ export class OmnichannelService {
     attachments: MessageAttachment[],
   ): Promise<ProcessedAttachment[]> {
     const processed: ProcessedAttachment[] = [];
-
     await forEachSequential(attachments, async (attachment) => {
       try {
         const result = await this.processSingleAttachment(workspaceId, attachment);
@@ -158,13 +113,10 @@ export class OmnichannelService {
         this.logAttachmentError(error);
       }
     });
-
     return processed;
   }
 
-  /**
-   * Upload de base64 para storage (usa StorageService - local, S3 ou R2)
-   */
+  /** Upload a base64-encoded buffer to storage (local, S3 or R2). */
   private async uploadBase64ToStorage(
     workspaceId: string,
     base64: string,
@@ -175,97 +127,37 @@ export class OmnichannelService {
       this.logger.log(
         `[OMNI] Upload attachment: ${filename} (${mimeType}) for workspace ${workspaceId}`,
       );
-
       const buffer = Buffer.from(base64, 'base64');
-
-      // Usar StorageService para upload (local, S3 ou R2 conforme configuração)
       const result = await this.storage.upload(buffer, {
         filename,
         mimeType,
         folder: `attachments/${workspaceId}`,
         workspaceId,
       });
-
       this.logger.log(`[OMNI] Attachment uploaded: ${result.url}`);
       return result.url;
     } catch (error: unknown) {
-      const errorInstanceofError = this.ensureError(error);
-      this.logger.error(
-        `[OMNI] Falha ao fazer upload de attachment: ${errorInstanceofError.message}`,
-      );
-
-      // Fallback: retorna data URL para arquivos pequenos
-      if (base64.length < 1024 * 1024) {
-        // < 1MB
-        return `data:${mimeType};base64,${base64}`;
-      }
-
-      return null;
+      return this.fallbackBase64Upload(error, base64, mimeType);
     }
   }
 
-  /**
-   * Extrai identificador do remetente baseado no canal
-   */
-  private extractIdentifier(msg: NormalizedMessage): string {
-    // Para WhatsApp, usar telefone diretamente
-    if (msg.channel === 'WHATSAPP') {
-      return msg.from;
+  private fallbackBase64Upload(error: unknown, base64: string, mimeType: string): string | null {
+    const wrapped = ensureError(error);
+    this.logger.error(`[OMNI] Falha ao fazer upload de attachment: ${wrapped.message}`);
+    if (base64.length < 1024 * 1024) {
+      return `data:${mimeType};base64,${base64}`;
     }
-
-    // Para Instagram, usar externalId como identificador
-    if (msg.channel === 'INSTAGRAM') {
-      return `ig:${msg.externalId || msg.from}`;
-    }
-
-    // Para Messenger (Facebook)
-    if (msg.channel === 'MESSENGER') {
-      return `fb:${msg.externalId || msg.from}`;
-    }
-
-    // Para Email, usar o email como identificador
-    if (msg.channel === 'EMAIL') {
-      return msg.from;
-    }
-
-    // Fallback
-    return msg.from || msg.externalId || 'unknown';
-  }
-
-  /**
-   * Determina tipo de mensagem baseado em attachments
-   */
-  private determineMessageType(msg: NormalizedMessage): string {
-    if (!msg.attachments || msg.attachments.length === 0) {
-      return 'TEXT';
-    }
-
-    const mimeType = (msg.attachments[0].mimeType || '').toLowerCase();
-
-    const mimePatterns: Record<string, string> = {
-      'image/': 'IMAGE',
-      'video/': 'VIDEO',
-      'audio/': 'AUDIO',
-    };
-
-    for (const [pattern, type] of Object.entries(mimePatterns)) {
-      if (mimeType.startsWith(pattern)) {
-        return type;
-      }
-    }
-
-    if (mimeType.includes('pdf') || mimeType.includes('document')) {
-      return 'DOCUMENT';
-    }
-
-    return 'TEXT';
+    return null;
   }
 
   // --- ADAPTERS ---
 
   /**
-   * Processa webhook do Instagram - implementação completa
-   * Suporta texto, imagens, vídeos, stories replies e reactions
+   * Processes an Instagram webhook payload — text, attachments, story replies and reactions.
+   *
+   * @param workspaceId - Owning workspace id.
+   * @param payload - Raw Instagram webhook body.
+   * @returns The saved inbox message or a status indicator when no message was extracted.
    */
   async processInstagramWebhook(workspaceId: string, payload: Record<string, unknown>) {
     this.logger.log('[OMNI] Processing Instagram webhook', {
@@ -274,100 +166,37 @@ export class OmnichannelService {
     });
 
     try {
-      const entry = payload?.entry?.[0];
-      const messaging = entry?.messaging?.[0];
-
+      const messaging = firstInstagramMessaging(payload);
       if (!messaging) {
         this.logger.warn('[OMNI] Instagram webhook sem mensagem válida');
         return { status: 'no_message', channel: 'instagram' };
       }
 
-      // Extrair informações do remetente
-      const senderId = messaging.sender?.id || 'unknown';
-      const senderName = messaging.sender?.name;
-
-      // Processar diferentes tipos de mensagens
-      const attachments: MessageAttachment[] = [];
-      let content = '';
-
-      // 1. Mensagem de texto
-      if (messaging.message?.text) {
-        content = messaging.message.text;
-      }
-
-      // 2. Attachments (imagens, vídeos, áudios)
-      if (messaging.message?.attachments && Array.isArray(messaging.message.attachments)) {
-        for (const att of messaging.message.attachments) {
-          const attType = att.type; // image, video, audio, file
-          const url = att.payload?.url;
-
-          if (url) {
-            let mimeType = 'application/octet-stream';
-            if (attType === 'image') {
-              mimeType = 'image/jpeg';
-            } else if (attType === 'video') {
-              mimeType = 'video/mp4';
-            } else if (attType === 'audio') {
-              mimeType = 'audio/mp4';
-            }
-
-            attachments.push({
-              url,
-              mimeType,
-              name: `instagram_${attType}_${Date.now()}`,
-            });
-          }
-        }
-      }
-
-      // 3. Story reply
-      if (messaging.message?.reply_to?.story) {
-        const storyUrl = messaging.message.reply_to.story.url;
-        content = `[Resposta ao Story] ${content}`;
-        if (storyUrl) {
-          attachments.push({
-            url: storyUrl,
-            mimeType: 'image/jpeg',
-            name: 'story_reply',
-          });
-        }
-      }
-
-      // 4. Reactions
-      if (messaging.reaction) {
-        content = `[Reação: ${messaging.reaction.reaction}]`;
-      }
-
-      // 5. Story mentions
-      if (messaging.message?.story_mention) {
-        content = `[Mencionou você em um Story]`;
-      }
-
-      // Se não tem conteúdo nem attachments, ignorar
-      if (!content && attachments.length === 0) {
+      const extracted = extractInstagramMessage(messaging);
+      if (!extracted.content && extracted.attachments.length === 0) {
         return { status: 'empty_message', channel: 'instagram' };
       }
 
       const normalized: NormalizedMessage = {
         workspaceId,
         channel: 'INSTAGRAM',
-        externalId: senderId,
-        from: senderId,
-        fromName: senderName,
-        content,
-        attachments: attachments.length > 0 ? attachments : undefined,
+        externalId: extracted.senderId,
+        from: extracted.senderId,
+        fromName: extracted.senderName,
+        content: extracted.content,
+        attachments: extracted.attachments.length > 0 ? extracted.attachments : undefined,
         metadata: {
           raw: payload,
-          messageId: messaging.message?.mid,
-          timestamp: messaging.timestamp,
+          messageId: extracted.messageId,
+          timestamp: extracted.timestamp,
         },
       };
 
       return this.handleIncomingMessage(normalized);
     } catch (err: unknown) {
-      const errInstanceofError = this.ensureError(err);
-      this.logger.error('[OMNI] Erro ao processar Instagram webhook:', errInstanceofError.message);
-      return { status: 'error', channel: 'instagram', error: errInstanceofError.message };
+      const wrapped = ensureError(err);
+      this.logger.error('[OMNI] Erro ao processar Instagram webhook:', wrapped.message);
+      return { status: 'error', channel: 'instagram', error: wrapped.message };
     }
   }
 }

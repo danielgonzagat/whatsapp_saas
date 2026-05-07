@@ -1,8 +1,9 @@
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
 import {
-  bootstrapAuthenticatedPage,
+  dismissCookieBanner,
   ensureE2EAdmin,
   getE2EBaseUrls,
+  seedE2EAuthSession,
   type E2EAuthContext,
 } from './e2e-helpers';
 
@@ -42,41 +43,25 @@ async function createFreshAuth(request: APIRequestContext): Promise<E2EAuthConte
 
 async function openAuthenticatedChat(page: Page, auth: E2EAuthContext) {
   const { appUrl } = getE2EBaseUrls();
-  const composer = page.locator('textarea').first();
-
-  await bootstrapAuthenticatedPage(page, auth, { landingPath: '/chat' });
-
-  const composerReady = await composer
-    .waitFor({ state: 'visible', timeout: 5_000 })
-    .then(() => true)
-    .catch(() => false);
-
-  if (!composerReady) {
-    const emailField = page.getByRole('textbox', { name: 'E-mail' });
-    const passwordField = page.getByRole('textbox', { name: 'Senha' });
-    const loginVisible = await emailField
-      .waitFor({ state: 'visible', timeout: 5_000 })
-      .then(() => true)
-      .catch(() => false);
-
-    if (!loginVisible) {
-      throw new Error(
-        `Chat composer did not render and login form was not available. URL=${page.url()}`,
-      );
-    }
-
-    await page.getByRole('textbox', { name: 'E-mail' }).fill(auth.email);
-    await passwordField.fill(auth.password);
-
-    await Promise.all([
-      page.waitForURL(/\/(chat|dashboard|login)/, { timeout: 30_000 }).catch(() => null),
-      page.getByRole('button', { name: /^Entrar$/ }).click(),
-    ]);
-
-    await page.goto(`${appUrl}/chat`, { waitUntil: 'domcontentloaded' });
-  }
-
-  await expect(composer).toBeVisible({ timeout: 30_000 });
+  await page.route('**/cookie-consent**', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        data: {
+          consent: {
+            necessary: true,
+            analytics: false,
+            marketing: false,
+            updatedAt: new Date(0).toISOString(),
+          },
+        },
+      }),
+    });
+  });
+  await seedE2EAuthSession(page, auth);
+  await page.goto(`${appUrl}/chat`, { waitUntil: 'domcontentloaded' });
+  await dismissCookieBanner(page);
 }
 
 async function createProduct(
@@ -179,6 +164,7 @@ async function waitForAssistantMessage(
 }
 
 async function openComposerPopover(page: Page) {
+  await dismissCookieBanner(page);
   await page.getByRole('button', { name: 'Abrir capacidades do prompt' }).click();
 }
 
@@ -188,12 +174,100 @@ async function sendComposerMessage(page: Page, message: string) {
   await textarea.press('Enter');
 }
 
+async function stageChatPreviewFiles(page: Page) {
+  const fileInput = page.getByTestId('kloel-chat-file-input').first();
+  await expect(fileInput).toBeAttached({ timeout: 15_000 });
+  await fileInput.setInputFiles([
+    {
+      name: 'vision.png',
+      mimeType: 'image/png',
+      buffer: TINY_PNG_BUFFER,
+    },
+    {
+      name: 'brief.pdf',
+      mimeType: 'application/pdf',
+      buffer: TINY_PDF_BUFFER,
+    },
+  ]);
+}
+
+async function mockChatUpload(page: Page) {
+  let uploadCount = 0;
+  await page.route('**/kloel/upload-chat', async (route) => {
+    uploadCount += 1;
+    const isFirstUpload = uploadCount === 1;
+    const request = route.request();
+    const contentType = request.headers()['content-type'] || '';
+    expect(contentType).toContain('multipart/form-data');
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        success: true,
+        url: isFirstUpload
+          ? 'data:image/png;base64,iVBORw0KGgo='
+          : 'data:application/pdf;base64,JVBERi0xLjQK',
+        type: isFirstUpload ? 'image' : 'document',
+        name: isFirstUpload ? 'vision.png' : 'brief.pdf',
+        size: isFirstUpload ? TINY_PNG_BUFFER.length : TINY_PDF_BUFFER.length,
+        mimeType: isFirstUpload ? 'image/png' : 'application/pdf',
+      }),
+    });
+  });
+}
+
+async function expectChatPreviewFiles(page: Page) {
+  const imagePreview = page.locator('img[alt="vision.png"]').first();
+  await expect(imagePreview).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByText('brief.pdf')).toBeVisible({ timeout: 30_000 });
+  await page.waitForTimeout(2_000);
+  await expect(imagePreview).toBeVisible();
+  await expect(page.getByText('brief.pdf')).toBeVisible();
+
+  const naturalWidth = await imagePreview.evaluate(
+    (element) => (element as HTMLImageElement).naturalWidth,
+  );
+  expect(naturalWidth).toBeGreaterThan(0);
+}
+
+test.describe('Kloel chat upload preview', () => {
+  test.describe.configure({ timeout: 90_000 });
+
+  test('uploads image and document without losing the preview', async ({ page }) => {
+    const token = `header.${Buffer.from(
+      JSON.stringify({
+        sub: 'user-e2e-preview',
+        email: 'preview@example.com',
+        workspaceId: 'workspace-e2e-preview',
+        name: 'E2E',
+      }),
+    ).toString('base64url')}.signature`;
+
+    await mockChatUpload(page);
+    await openAuthenticatedChat(page, {
+      token,
+      workspaceId: 'workspace-e2e-preview',
+      email: 'preview@example.com',
+      password: 'password',
+    });
+    await stageChatPreviewFiles(page);
+    await expectChatPreviewFiles(page);
+  });
+});
+
 test.describe.serial('Kloel chat real e2e validation', () => {
+  test.describe.configure({ timeout: 180_000 });
+
   let auth: E2EAuthContext;
   const createdProductIds = new Set<string>();
 
   test.beforeAll(async ({ request }) => {
+    test.setTimeout(180_000);
     auth = await createFreshAuth(request);
+    await request.post(`${apiUrl}/billing/activate-trial`, {
+      headers: authHeaders(auth),
+      params: { workspaceId: auth.workspaceId },
+    });
     expect(auth.token).toBeTruthy();
     expect(auth.workspaceId).toBeTruthy();
   });
@@ -203,36 +277,6 @@ test.describe.serial('Kloel chat real e2e validation', () => {
       await deleteProduct(request, auth, productId);
       createdProductIds.delete(productId);
     }
-  });
-
-  test('uploads image and document without losing the preview', async ({ page, request }) => {
-    await openAuthenticatedChat(page, auth);
-
-    const fileInput = page.locator('input[type="file"]').first();
-    await fileInput.setInputFiles([
-      {
-        name: 'vision.png',
-        mimeType: 'image/png',
-        buffer: TINY_PNG_BUFFER,
-      },
-      {
-        name: 'brief.pdf',
-        mimeType: 'application/pdf',
-        buffer: TINY_PDF_BUFFER,
-      },
-    ]);
-
-    const imagePreview = page.locator('img[alt="vision.png"]').first();
-    await expect(imagePreview).toBeVisible({ timeout: 30_000 });
-    await expect(page.getByText('brief.pdf')).toBeVisible({ timeout: 30_000 });
-    await page.waitForTimeout(2_000);
-    await expect(imagePreview).toBeVisible();
-    await expect(page.getByText('brief.pdf')).toBeVisible();
-
-    const naturalWidth = await imagePreview.evaluate(
-      (element) => (element as HTMLImageElement).naturalWidth,
-    );
-    expect(naturalWidth).toBeGreaterThan(0);
   });
 
   test('linked product is sent with the prompt and influences the assistant reply', async ({
@@ -251,8 +295,9 @@ test.describe.serial('Kloel chat real e2e validation', () => {
 
     await openAuthenticatedChat(page, auth);
     await openComposerPopover(page);
+    await dismissCookieBanner(page);
     await page.getByRole('button', { name: 'Vincular Produto' }).hover();
-    await page.getByRole('button', { name: new RegExp(product.name) }).click();
+    await page.getByRole('button', { name: product.name }).click();
 
     await expect(page.getByLabel(`Remover vínculo com ${product.name}`)).toBeVisible();
 
@@ -318,7 +363,7 @@ test.describe.serial('Kloel chat real e2e validation', () => {
     );
 
     expect(assistantMessage.metadata?.webSources).toBeTruthy();
-    await expect(page.getByText('Fontes')).toBeVisible({ timeout: 180_000 });
+    await expect(page.getByText('Fontes', { exact: true })).toBeVisible({ timeout: 180_000 });
     await expect(page.getByRole('link', { name: /OpenAI|openai/i }).first()).toBeVisible();
   });
 
@@ -355,10 +400,16 @@ test.describe.serial('Kloel chat real e2e validation', () => {
     const generatedImage = page.locator('img[alt="Imagem criada pelo Kloel"]').first();
     await expect(generatedImage).toBeVisible({ timeout: 180_000 });
 
-    const [popup] = await Promise.all([page.waitForEvent('popup'), generatedImage.click()]);
-    await popup.waitForLoadState('domcontentloaded');
-    expect(popup.url()).toBeTruthy();
-    await popup.close();
+    const openImageLink = page.getByRole('link', { name: 'Abrir' });
+    await expect(openImageLink).toHaveAttribute('href', generatedImageUrl);
+    await expect(openImageLink).toHaveAttribute('target', '_blank');
+
+    if (!generatedImageUrl.startsWith('data:')) {
+      const [popup] = await Promise.all([page.waitForEvent('popup'), openImageLink.click()]);
+      await popup.waitForLoadState('domcontentloaded');
+      expect(popup.url()).toBe(generatedImageUrl);
+      await popup.close();
+    }
 
     const [download] = await Promise.all([
       page.waitForEvent('download'),

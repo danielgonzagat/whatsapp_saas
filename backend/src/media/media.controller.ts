@@ -40,8 +40,8 @@ interface UploadedFileType {
 }
 
 const JPG_JPEG_PNG_GIF_WEBP_RE = /\.(jpg|jpeg|png|gif|webp|pdf|doc|docx|txt|csv|json|xls|xlsx)$/i;
-const APPLICATION__PDF_TEXT_RE =
-  /^(application\/pdf|text\/plain|text\/csv|application\/json|image\/(jpeg|png|gif|webp))$/;
+const ALLOWED_DOCUMENT_MIME_RE =
+  /^(application\/(pdf|msword|vnd\.openxmlformats-officedocument\.wordprocessingml\.document|vnd\.ms-excel|vnd\.openxmlformats-officedocument\.spreadsheetml\.sheet)|text\/(plain|csv)|application\/json|image\/(jpeg|png|gif|webp))$/;
 
 const ALLOWED_DOCUMENT_MIMES = new Set([
   'application/pdf',
@@ -91,7 +91,7 @@ export class MediaController {
         const allowed = JPG_JPEG_PNG_GIF_WEBP_RE;
         cb(null, allowed.test(file.originalname));
       },
-      limits: { fileSize: 50 * 1024 * 1024 },
+      limits: { fileSize: 20 * 1024 * 1024 },
     }),
   )
   async uploadDocument(
@@ -101,7 +101,7 @@ export class MediaController {
         validators: [
           new MaxFileSizeValidator({ maxSize: 20 * 1024 * 1024 }), // 20MB
           new FileTypeValidator({
-            fileType: APPLICATION__PDF_TEXT_RE,
+            fileType: ALLOWED_DOCUMENT_MIME_RE,
           }),
         ],
       }),

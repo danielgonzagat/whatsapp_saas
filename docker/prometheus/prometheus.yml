@@ -1,19 +1,47 @@
 global:
   scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    environment: 'kloel'
+    repo: 'whatsapp_saas'
 
 scrape_configs:
-  - job_name: 'nestjs-backend'
+  - job_name: 'file-sd-backend'
     metrics_path: '/metrics'
-    static_configs:
-      - targets: ['backend:3001']
+    file_sd_configs:
+      - files:
+          - '/etc/prometheus/targets/backend.json'
+        refresh_interval: 30s
 
-  - job_name: 'worker'
+  - job_name: 'file-sd-worker'
     metrics_path: '/metrics'
-    static_configs:
-      - targets: ['worker:3003']
+    file_sd_configs:
+      - files:
+          - '/etc/prometheus/targets/worker.json'
+        refresh_interval: 30s
+
+  - job_name: 'file-sd-frontend'
+    metrics_path: '/metrics'
+    file_sd_configs:
+      - files:
+          - '/etc/prometheus/targets/frontend.json'
+        refresh_interval: 30s
+
+  - job_name: 'docker-sd'
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 60s
+        filters:
+          - name: label
+            values: ['kloel.metrics.enabled=true']
+    relabel_configs:
+      - source_labels: ['__meta_docker_container_name']
+        target_label: 'container'
+      - source_labels: ['__meta_docker_container_label_kloel_service']
+        target_label: 'service'
 
 rule_files:
-  - 'alerting-rules.promrules'
+  - '/etc/prometheus/rules/*.yml'
 
 alerting:
   alertmanagers:

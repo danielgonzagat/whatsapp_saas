@@ -24,7 +24,7 @@ export function CustomRangePopover({
   const rootRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    setDraft(value);
+    setDraft({ from: value.from, to: value.to });
   }, [value.from, value.to]);
 
   useEffect(() => {

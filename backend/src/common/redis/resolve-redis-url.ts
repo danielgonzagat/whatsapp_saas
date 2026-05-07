@@ -48,11 +48,23 @@ export class RedisConfigurationError extends Error {
 }
 
 function isLocalhost(url: string): boolean {
-  return url.includes('localhost') || url.includes('127.0.0.1');
+  try {
+    const parsed = new URL(url);
+    return parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1';
+  } catch {
+    return false;
+  }
 }
 
 function isRailwayPublicProxy(url: string): boolean {
-  return url.includes('mainline.proxy.rlwy.net') || url.includes('.proxy.rlwy.net');
+  try {
+    const parsed = new URL(url);
+    return (
+      parsed.hostname === 'mainline.proxy.rlwy.net' || parsed.hostname.endsWith('.proxy.rlwy.net')
+    );
+  } catch {
+    return false;
+  }
 }
 
 function isRailwayRuntime(): boolean {

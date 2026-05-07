@@ -4,7 +4,7 @@
  */
 
 import * as https from 'https';
-import type { PulseSignal } from '../types';
+import type { PulseSignal } from '../__parts__/types.capabilities/05-external-signals';
 
 interface CodecovAdapterConfig {
   token?: string;
@@ -44,6 +44,7 @@ function makeCodecovRequest(url: string, token?: string): Promise<unknown> {
   });
 }
 
+/** Fetch codecov signals. */
 export async function fetchCodecovSignals(config: CodecovAdapterConfig): Promise<PulseSignal[]> {
   const signals: PulseSignal[] = [];
 

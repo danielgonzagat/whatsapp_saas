@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react';
 
+/** Loading strip. */
 export function LoadingStrip({
   width = '100%',
   height = 12,
@@ -20,6 +21,7 @@ export function LoadingStrip({
   );
 }
 
+/** Deal card skeleton. */
 export function DealCardSkeleton() {
   return (
     <div
@@ -39,6 +41,7 @@ export function DealCardSkeleton() {
   );
 }
 
+/** Pipeline column skeleton. */
 export function PipelineColumnSkeleton() {
   return (
     <div
@@ -70,6 +73,7 @@ export function PipelineColumnSkeleton() {
   );
 }
 
+/** Detail row. */
 export function DetailRow({
   label,
   value,
@@ -112,6 +116,7 @@ export function DetailRow({
   );
 }
 
+/** Input style. */
 export const inputStyle: CSSProperties = {
   background: 'var(--app-bg-primary)',
   border: '1px solid var(--app-border-primary)',
@@ -124,6 +129,7 @@ export const inputStyle: CSSProperties = {
   width: '100%',
 };
 
+/** Btn style. */
 export const btnStyle: CSSProperties = {
   border: '1px solid var(--app-border-primary)',
   borderRadius: 5,

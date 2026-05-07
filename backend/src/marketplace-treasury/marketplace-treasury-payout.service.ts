@@ -85,7 +85,7 @@ export class MarketplaceTreasuryPayoutService {
         amountCents: input.amountCents,
         currency,
       };
-    } catch (error) {
+    } catch (error: unknown) {
       await this.wallet.creditAvailableByAdjustment({
         currency,
         amountInCents: input.amountCents,

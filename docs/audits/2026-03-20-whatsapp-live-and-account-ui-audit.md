@@ -84,7 +84,7 @@ Esta auditoria cruza:
 - [`account-settings-section.tsx`](/workspaces/whatsapp_saas/frontend/src/components/kloel/settings/account-settings-section.tsx)
   já carrega e persiste dados reais de conta, provider, jitter e canais.
 - [`billing-settings-section.tsx`](/workspaces/whatsapp_saas/frontend/src/components/kloel/settings/billing-settings-section.tsx)
-  já opera saldo, Asaas, resumo de vendas, links externos, tracking e
+  já opera saldo, gateway de pagamento, resumo de vendas, links externos, tracking e
   credenciais de plataforma.
 - [`brain-settings-section.tsx`](/workspaces/whatsapp_saas/frontend/src/components/kloel/settings/brain-settings-section.tsx)
   já persiste:
@@ -154,7 +154,7 @@ Conclusão:
 Estado atual:
 
 - [`billing-settings-section.tsx`](/workspaces/whatsapp_saas/frontend/src/components/kloel/settings/billing-settings-section.tsx)
-  já opera saldo, pendências, Asaas, PIX, boleto, relatório de vendas, links
+  já opera saldo, pendências, gateway de pagamento, PIX, boleto, relatório de vendas, links
   externos, tracking e credenciais por plataforma.
 - O módulo ainda precisa ser expandido se a meta for paridade total com todos os
   cenários de plataforma, mas não está mais fragmentado como antes.
@@ -245,7 +245,7 @@ Situação atual do frontend:
 
 O backend cobre:
 
-- Asaas
+- gateway de pagamento
 - payment links
 - wallet
 - relatório de vendas

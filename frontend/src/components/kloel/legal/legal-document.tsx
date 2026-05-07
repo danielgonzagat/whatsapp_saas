@@ -14,7 +14,7 @@ type LegalDocumentProps = {
   lastUpdatedLabel: string;
   alternateHref: string;
   alternateLabel: string;
-  toc: TocItem[];
+  toc: readonly TocItem[];
   schemaType: 'PrivacyPolicy' | 'TermsOfService' | 'WebPage';
   path: string;
   inLanguage: 'pt-BR' | 'en-US';

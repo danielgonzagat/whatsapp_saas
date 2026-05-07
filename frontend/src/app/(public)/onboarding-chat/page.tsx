@@ -12,18 +12,9 @@ import { useAuth } from '@/components/kloel/auth/auth-provider';
 import { tokenStorage } from '@/lib/api';
 import { apiUrl } from '@/lib/http';
 import { AnimatePresence, motion } from 'framer-motion';
-import {
-  ArrowRight,
-  Bot,
-  CheckCircle2,
-  Loader2,
-  LogIn,
-  MessageSquare,
-  Send,
-  User,
-} from 'lucide-react';
+import { ArrowRight, Bot, CheckCircle2, LogIn, MessageSquare, Send, User } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { mutate } from 'swr';
 
@@ -34,12 +25,38 @@ interface Message {
   timestamp: Date;
 }
 
+const ROLE_LABELS: Record<string, string> = {
+  subscriber: 'cliente assinante',
+  producer: 'produtor',
+  affiliate: 'afiliado',
+};
+
+function normalizeOnboardingRole(role: string | null): string | null {
+  if (!role) {
+    return null;
+  }
+  return Object.prototype.hasOwnProperty.call(ROLE_LABELS, role) ? role : null;
+}
+
 function OnboardingChatContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { isAuthenticated, isLoading: authLoading, workspace, userName, userEmail } = useAuth();
+  const queryRole = normalizeOnboardingRole(searchParams.get('role'));
+  const [storedRole, setStoredRole] = useState<string | null>(null);
+  const selectedRole = queryRole || storedRole;
 
   // Usa workspaceId da sessão; sem sessão, força login
   const [workspaceId, setWorkspaceId] = useState<string | null>(null);
+  const startedRef = useRef(false);
+  const roleSeededRef = useRef(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    setStoredRole(normalizeOnboardingRole(window.localStorage.getItem('kloel_onboarding_role')));
+  }, []);
 
   useEffect(() => {
     if (isAuthenticated && workspace?.id) {
@@ -48,9 +65,12 @@ function OnboardingChatContent() {
     }
 
     if (!isAuthenticated) {
-      router.push('/login?callbackUrl=/');
+      const callbackPath = queryRole
+        ? `/onboarding-chat?role=${encodeURIComponent(queryRole)}`
+        : '/onboarding-chat';
+      router.push(`/login?callbackUrl=${encodeURIComponent(callbackPath)}`);
     }
-  }, [isAuthenticated, workspace, router]);
+  }, [isAuthenticated, queryRole, workspace, router]);
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -90,9 +110,10 @@ function OnboardingChatContent() {
   }, []);
 
   const startOnboarding = useCallback(async () => {
-    if (!workspaceId) {
+    if (!workspaceId || startedRef.current) {
       return;
     }
+    startedRef.current = true;
     setLoading(true);
     try {
       const headers: HeadersInit = { 'Content-Type': 'application/json' };
@@ -112,6 +133,22 @@ function OnboardingChatContent() {
       if (data.message) {
         addMessage('assistant', data.message);
       }
+
+      if (selectedRole && !roleSeededRef.current) {
+        roleSeededRef.current = true;
+        const roleLabel = ROLE_LABELS[selectedRole] || selectedRole;
+        addMessage('user', `Meu perfil inicial no Kloel é: ${roleLabel}.`);
+        const roleRes = await fetch(apiUrl(`/kloel/onboarding/${workspaceId}/chat`), {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ message: `Meu perfil inicial no Kloel é: ${roleLabel}.` }),
+        });
+        const roleData = await roleRes.json();
+        mutate((key: unknown) => typeof key === 'string' && key.startsWith('/onboarding'));
+        if (roleData.message) {
+          addMessage('assistant', roleData.message);
+        }
+      }
     } catch (error) {
       console.error('Erro ao iniciar onboarding:', error);
       addMessage(
@@ -121,7 +158,7 @@ function OnboardingChatContent() {
     }
     setLoading(false);
     inputRef.current?.focus();
-  }, [addMessage, workspaceId]);
+  }, [addMessage, selectedRole, workspaceId]);
 
   // Iniciar onboarding automaticamente quando o workspaceId estiver definido
   useEffect(() => {
@@ -406,7 +443,7 @@ function OnboardingChatContent() {
                 className="bg-gradient-to-r from-teal-500 to-emerald-500 text-white px-6 py-3 rounded-xl font-medium flex items-center gap-2 hover:opacity-90 transition disabled:opacity-50"
               >
                 {loading ? (
-                  <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" />
+                  <KloelMushroomVisual size={22} title="Enviando" traceColor="#ffffff" fit="icon" />
                 ) : (
                   <Send className="w-5 h-5" aria-hidden="true" />
                 )}

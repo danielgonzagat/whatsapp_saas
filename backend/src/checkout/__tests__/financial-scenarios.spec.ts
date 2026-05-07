@@ -4,9 +4,17 @@ import { WalletLedgerService } from '../../kloel/wallet-ledger.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { FinancialAlertService } from '../../common/financial-alert.service';
 
+type MockPrisma = {
+  kloelWallet: Record<string, jest.Mock>;
+  kloelWalletTransaction: Record<string, jest.Mock>;
+  auditLog: Record<string, jest.Mock>;
+  checkoutPayment: Record<string, jest.Mock>;
+  $transaction: jest.Mock;
+};
+
 describe('Financial Scenarios', () => {
   let walletService: WalletService;
-  let prismaMock: any;
+  let prismaMock: MockPrisma;
 
   const mockWallet = {
     id: 'wallet-1',
@@ -141,7 +149,7 @@ describe('Financial Scenarios', () => {
       ]);
 
       const fulfilled = results.filter(
-        (r) => r.status === 'fulfilled' && (r.value as any)?.success,
+        (r) => r.status === 'fulfilled' && (r.value as { success?: boolean })?.success,
       );
       const rejected = results.filter((r) => r.status === 'rejected');
 

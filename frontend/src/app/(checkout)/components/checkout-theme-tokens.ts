@@ -1,6 +1,7 @@
 'use client';
 
 import type { CheckoutThemeInputTokens, CheckoutThemeStepTokens } from './checkout-theme-shared';
+import { colors } from '@/lib/design-tokens';
 
 /** Checkout visual theme shape. */
 export interface CheckoutVisualTheme {
@@ -111,7 +112,7 @@ export type CheckoutThemeOverrides = {
 const BLANC_BASE = {
   white: '#FFFFFF',
   dark: '#1A1A1A',
-  muted: '#6E6E73',
+  muted: colors.text.muted,
   softMuted: 'rgba(110, 110, 115, 0.72)',
   stroke: 'rgba(58, 58, 63, 0.18)',
   softLine: 'rgba(58, 58, 63, 0.12)',
@@ -120,20 +121,20 @@ const BLANC_BASE = {
   successBg: 'rgba(16, 185, 129, 0.08)',
   successBorder: 'rgba(16, 185, 129, 0.24)',
   successText: 'rgb(22, 101, 52)',
-  accent: '#E85D30',
+  accent: colors.ember.primary,
   totalAccent: 'rgba(232, 93, 48, 0.72)',
 } as const;
 
 const NOIR_BASE = {
-  void: '#0A0A0C',
-  surface: '#111113',
-  surface2: '#19191C',
+  void: colors.background.void,
+  surface: colors.background.surface,
+  surface2: colors.background.elevated,
   border: 'rgba(255,255,255,0.08)',
   border2: 'rgba(255,255,255,0.12)',
-  text: '#E0DDD8',
+  text: colors.text.silver,
   text2: 'rgba(255,255,255,0.62)',
   text3: 'rgba(255,255,255,0.36)',
-  accent: '#E85D30',
+  accent: colors.ember.primary,
   accent2: 'rgba(232, 93, 48, 0.72)',
   successBg: 'rgba(16,185,129,0.14)',
   successBorder: 'rgba(134,239,172,0.32)',

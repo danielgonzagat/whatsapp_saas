@@ -1,6 +1,7 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
 
+/** Runtime. */
 export const runtime = 'nodejs';
 
 interface ParsedTikTokSignature {
@@ -76,6 +77,7 @@ function matchesTikTokSignature(
   );
 }
 
+/** Get. */
 export async function GET() {
   return NextResponse.json({
     ok: true,
@@ -85,14 +87,17 @@ export async function GET() {
   });
 }
 
+/** Head. */
 export async function HEAD() {
   return new NextResponse(null, { status: 200 });
 }
 
+/** Options. */
 export async function OPTIONS() {
   return new NextResponse(null, { status: 204 });
 }
 
+/** Post. */
 export async function POST(request: NextRequest) {
   const rawBody = await request.text();
   const signatureHeader = request.headers.get('tiktok-signature');

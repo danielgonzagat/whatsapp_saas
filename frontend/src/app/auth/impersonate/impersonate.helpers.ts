@@ -46,7 +46,15 @@ export function applyImpersonationPayload(payload: ImpersonationPayload): void {
   tokenStorage.ensureAuthCookie();
 }
 
-/** Resolve next route. */
+/** Resolve next route. Must be relative path (not // or protocol-relative). */
 export function resolveNextRoute(candidate: string | undefined, fallback: string): string {
-  return candidate?.startsWith('/') ? candidate : fallback;
+  if (!candidate) {
+    return fallback;
+  }
+  // Block protocol-relative URLs (// and ///) and absolute URLs.
+  if (candidate.startsWith('//') || candidate.includes('://')) {
+    return fallback;
+  }
+  // Only allow paths starting with single /.
+  return candidate.startsWith('/') ? candidate : fallback;
 }

@@ -36,27 +36,31 @@ function WaitForReplyNodeComponent({ data, selected }: NodeProps<WaitForReplyNod
   return (
     <div
       className={`
-      px-4 py-3 rounded-lg border-2 bg-[#111113] shadow-md min-w-[200px] max-w-[280px]
-      ${selected ? 'border-[#8B5CF6] ring-2 ring-[#8B5CF6]/30' : 'border-[#222226]'}
+      px-4 py-3 rounded-lg border-2 bg-[colors.background.surface] shadow-md min-w-[200px] max-w-[280px]
+      ${selected ? 'border-[colors.ember.primary] ring-2 ring-[colors.ember.primary]/30' : 'border-[colors.border.space]'}
     `}
     >
-      <Handle type="target" position={Position.Top} className="!bg-[#8B5CF6] !w-3 !h-3" />
+      <Handle
+        type="target"
+        position={Position.Top}
+        className="!bg-[colors.ember.primary] !w-3 !h-3"
+      />
 
       <div className="flex items-center gap-2 mb-2">
-        <div className="p-1.5 bg-[#8B5CF6]/15 rounded-md">
-          <Hourglass className="w-4 h-4 text-[#8B5CF6]" aria-hidden="true" />
+        <div className="p-1.5 bg-[colors.ember.primary]/15 rounded-md">
+          <Hourglass className="w-4 h-4 text-[colors.ember.primary]" aria-hidden="true" />
         </div>
-        <span className="font-medium text-sm text-[#E0DDD8]">
+        <span className="font-medium text-sm text-[colors.text.silver]">
           {data.label || 'Aguardar Resposta'}
         </span>
       </div>
 
-      <div className="text-xs text-[#6E6E73] text-center py-1">
+      <div className="text-xs text-[colors.text.muted] text-center py-1">
         {kloelT(`Timeout:`)} {formatTimeout()}
       </div>
 
       {data.fallbackMessage && (
-        <div className="text-[10px] text-[#8B5CF6] bg-[#8B5CF6]/10 px-2 py-0.5 rounded-md mt-1 truncate">
+        <div className="text-[10px] text-[colors.ember.primary] bg-[colors.ember.primary]/10 px-2 py-0.5 rounded-md mt-1 truncate">
           {data.fallbackMessage}
         </div>
       )}
@@ -76,7 +80,7 @@ function WaitForReplyNodeComponent({ data, selected }: NodeProps<WaitForReplyNod
         />
       </div>
 
-      <div className="flex justify-between text-[10px] text-[#3A3A3F] mt-1 px-2">
+      <div className="flex justify-between text-[10px] text-[colors.text.dim] mt-1 px-2">
         <span>{kloelT(`Respondeu`)}</span>
         <span>{kloelT(`Timeout`)}</span>
       </div>

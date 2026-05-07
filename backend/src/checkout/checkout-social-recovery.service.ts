@@ -1,14 +1,31 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { CheckoutSocialLeadStatus } from '@prisma/client';
+import { CheckoutSocialLeadStatus, Prisma } from '@prisma/client';
 import { EmailService } from '../auth/email.service';
 import { forEachSequential } from '../common/async-sequence';
 import { FollowUpService } from '../followup/followup.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CheckoutSocialLeadService } from './checkout-social-lead.service';
+import { OpsAlertService } from '../observability/ops-alert.service';
+import {
+  buildListUnsubscribeHeader,
+  buildUnsubscribeFooterHtml,
+} from '../common/utils/unsubscribe-footer.util';
 
 const THIRTY_MINUTES_MS = 30 * 60 * 1000;
 const ONE_HOUR_MS = 60 * 60 * 1000;
+
+type RecoveryLead = {
+  id: string;
+  workspaceId: string;
+  checkoutSlug: string;
+  name: string | null;
+  email: string | null;
+  recoveryWhatsAppSentAt: Date | null;
+  recoveryEmailSentAt: Date | null;
+  abandonedAt: Date | null;
+  createdAt: Date;
+};
 
 /** Checkout social recovery service. */
 @Injectable()
@@ -20,10 +37,12 @@ export class CheckoutSocialRecoveryService {
     private readonly emailService: EmailService,
     private readonly followUpService: FollowUpService,
     private readonly socialLeadService: CheckoutSocialLeadService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   /** Recover abandoned leads. */
   @Cron(CronExpression.EVERY_10_MINUTES)
+  // PULSE_OK: bounded by LEAD status filter on social leads
   async recoverAbandonedLeads() {
     const now = Date.now();
     const leads = await this.prisma.checkoutSocialLead.findMany({
@@ -54,84 +73,148 @@ export class CheckoutSocialRecoveryService {
     await forEachSequential(leads, async (lead) => {
       const age = now - lead.createdAt.getTime();
 
-      if (!lead.abandonedAt && age >= THIRTY_MINUTES_MS) {
-        await this.prisma.checkoutSocialLead.update({
-          where: { id: lead.id },
-          data: {
-            status: CheckoutSocialLeadStatus.ABANDONED,
-            abandonedAt: new Date(),
-          },
-        });
-      }
+      await this.markAbandonedIfEligible(lead, age);
 
-      if (age >= THIRTY_MINUTES_MS && !lead.recoveryWhatsAppSentAt) {
+      if (this.shouldDispatchWhatsAppRecovery(lead, age)) {
         await this.dispatchWhatsAppRecovery(lead.id);
       }
 
-      if (age >= ONE_HOUR_MS && !lead.recoveryEmailSentAt && lead.email) {
-        await this.dispatchEmailRecovery(lead.id, lead.email, lead.name, lead.checkoutSlug);
+      if (this.shouldDispatchEmailRecovery(lead, age)) {
+        await this.dispatchEmailRecovery(
+          lead.id,
+          lead.workspaceId,
+          lead.email,
+          lead.name,
+          lead.checkoutSlug,
+        );
       }
     });
   }
 
-  private async dispatchWhatsAppRecovery(leadId: string) {
-    await this.prisma.$transaction(async (tx) => {
-      const l = await tx.checkoutSocialLead.findUnique({
-        where: { id: leadId },
-        select: {
-          id: true,
-          workspaceId: true,
-          name: true,
-          phone: true,
-          contactId: true,
-          recoveryWhatsAppSentAt: true,
+  private async markAbandonedIfEligible(lead: RecoveryLead, age: number) {
+    if (lead.abandonedAt || age < THIRTY_MINUTES_MS) {
+      return;
+    }
+
+    try {
+      await this.prisma.checkoutSocialLead.update({
+        where: { id: lead.id, workspaceId: lead.workspaceId },
+        data: {
+          status: CheckoutSocialLeadStatus.ABANDONED,
+          abandonedAt: new Date(),
         },
+        select: { id: true, workspaceId: true },
       });
-
-      if (!l?.phone || l.recoveryWhatsAppSentAt) {
-        return null;
+    } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(
+        error,
+        'CheckoutSocialRecoveryService.markAbandonedIfEligible',
+      );
+      if (!(error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025')) {
+        throw error;
       }
+    }
+  }
 
-      const contactId = l.contactId || (await this.socialLeadService.syncLeadContact(l.id));
-      if (!contactId) {
-        return null;
-      }
+  private shouldDispatchWhatsAppRecovery(lead: RecoveryLead, age: number) {
+    return age >= THIRTY_MINUTES_MS && !lead.recoveryWhatsAppSentAt;
+  }
 
-      await this.followUpService.create(l.workspaceId, {
-        contactId,
-        scheduledFor: new Date(),
-        reason: 'checkout_social_abandon_recovery',
-        message: `Oi${l.name ? `, ${l.name}` : ''}. Vi que você começou seu checkout no KLOEL e parou no meio. Posso te ajudar a concluir?`,
-      });
+  private shouldDispatchEmailRecovery(
+    lead: RecoveryLead,
+    age: number,
+  ): lead is RecoveryLead & { email: string } {
+    return age >= ONE_HOUR_MS && !lead.recoveryEmailSentAt && Boolean(lead.email);
+  }
 
-      return tx.checkoutSocialLead.update({
-        where: { id: l.id },
-        data: { recoveryWhatsAppSentAt: new Date() },
-      });
-    });
+  private async dispatchWhatsAppRecovery(leadId: string) {
+    await this.prisma.$transaction(
+      async (tx) => {
+        const l = await tx.checkoutSocialLead.findUnique({
+          where: { id: leadId },
+          select: {
+            id: true,
+            workspaceId: true,
+            name: true,
+            phone: true,
+            contactId: true,
+            recoveryWhatsAppSentAt: true,
+          },
+        });
+
+        if (!l?.phone || l.recoveryWhatsAppSentAt) {
+          return null;
+        }
+
+        const contactId = l.contactId || (await this.socialLeadService.syncLeadContact(l.id));
+        if (!contactId) {
+          return null;
+        }
+
+        await this.followUpService.create(l.workspaceId, {
+          contactId,
+          scheduledFor: new Date(),
+          reason: 'checkout_social_abandon_recovery',
+          message: `Oi${l.name ? `, ${l.name}` : ''}. Vi que você começou seu checkout no KLOEL e parou no meio. Posso te ajudar a concluir?`,
+        });
+
+        return tx.checkoutSocialLead.update({
+          where: { id: l.id },
+          data: { recoveryWhatsAppSentAt: new Date() },
+          select: { id: true, workspaceId: true },
+        });
+      },
+      { isolationLevel: 'ReadCommitted' },
+    );
   }
 
   private async dispatchEmailRecovery(
     leadId: string,
+    workspaceId: string,
     email: string,
     name: string | null,
     checkoutSlug: string,
   ) {
+    // PULSE_OK: advisory gate inside $transaction prevents two concurrent
+    // recovery runs from both sending email to the same lead
+    const alreadySent = await this.prisma.$transaction(async (tx) => {
+      const lead = await tx.checkoutSocialLead.findFirst({
+        where: { id: leadId, workspaceId },
+        select: { id: true, recoveryEmailSentAt: true },
+      });
+      if (!lead || lead.recoveryEmailSentAt) return true;
+
+      await tx.checkoutSocialLead.update({
+        where: { id: leadId },
+        data: { recoveryEmailSentAt: new Date() },
+        select: { id: true, workspaceId: true },
+      });
+      return false;
+    });
+
+    if (alreadySent) return;
+
+    const unsubscribeFooter = buildUnsubscribeFooterHtml({ email, workspaceId });
+    const listUnsubscribe = buildListUnsubscribeHeader({ email, workspaceId });
+
     const sent = await this.emailService.sendEmail({
       to: email,
       subject: 'Seu checkout no KLOEL ficou aberto',
-      html: this.renderRecoveryEmail(name, checkoutSlug),
+      html: `${this.renderRecoveryEmail(name, checkoutSlug)}${unsubscribeFooter}`,
+      headers: {
+        'List-Unsubscribe': listUnsubscribe,
+        'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+      },
     });
 
     if (!sent) {
       this.logger.warn(`Falha ao enviar recovery email para lead ${leadId}.`);
-      return;
+      await this.prisma.checkoutSocialLead.update({
+        where: { id: leadId },
+        data: { recoveryEmailSentAt: null },
+        select: { id: true, workspaceId: true },
+      });
     }
-
-    await this.prisma.checkoutSocialLead.update({
-      where: { id: leadId },
-      data: { recoveryEmailSentAt: new Date() },
-    });
   }
 
   private renderRecoveryEmail(name: string | null, checkoutSlug: string) {

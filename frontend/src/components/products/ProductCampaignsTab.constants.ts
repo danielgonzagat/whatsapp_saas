@@ -1,7 +1,10 @@
 import { kloelT } from '@/lib/i18n/t';
 
+/** Sora. */
 export const SORA = "var(--font-sora), 'Sora', sans-serif";
+/** Mono. */
 export const MONO = "var(--font-jetbrains), 'JetBrains Mono', monospace";
+/** V. */
 export const V = {
   s: 'var(--bg-space, #111113)',
   e: 'var(--bg-nebula, #19191C)',
@@ -16,6 +19,7 @@ export const V = {
   g: 'var(--app-success)',
 };
 
+/** Product_campaigns_copy. */
 export const PRODUCT_CAMPAIGNS_COPY = {
   loadError: kloelT(`Falha ao carregar campanhas`),
   createError: kloelT(`Falha ao criar campanha`),
@@ -36,24 +40,38 @@ export const PRODUCT_CAMPAIGNS_COPY = {
   create: kloelT(`Criar`),
 } as const;
 
+/** Campaign shape. */
 export interface Campaign {
+  /** Id property. */
   id: string;
+  /** Name property. */
   name: string;
+  /** Pixel id property. */
   pixelId?: string | null;
+  /** Status property. */
   status: string;
+  /** Linked campaign id property. */
   linkedCampaignId?: string | null;
+  /** Sent count property. */
   sentCount: number;
+  /** Delivered count property. */
   deliveredCount: number;
+  /** Read count property. */
   readCount: number;
+  /** Failed count property. */
   failedCount: number;
+  /** Replied count property. */
   repliedCount: number;
+  /** Created at property. */
   createdAt?: string;
 }
 
+/** To campaign error message. */
 export function toCampaignErrorMessage(error: unknown, fallback: string): string {
   return error instanceof Error && error.message ? error.message : fallback;
 }
 
+/** Build campaign create body. */
 export function buildCampaignCreateBody(name: string, pixelId: string) {
   return {
     name: name.trim(),
@@ -61,6 +79,7 @@ export function buildCampaignCreateBody(name: string, pixelId: string) {
   };
 }
 
+/** Get campaign status label. */
 export function getCampaignStatusLabel(status: string) {
   switch (status) {
     case 'ACTIVE':

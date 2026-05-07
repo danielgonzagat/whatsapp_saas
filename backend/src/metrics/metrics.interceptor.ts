@@ -1,7 +1,17 @@
 import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
+import { Metrics, gauge, histogram, increment } from '../observability/metrics';
+import {
+  addSentryBreadcrumb,
+  getSentryContext,
+  type KloelSentryContext,
+  setSentryWorkspaceContext,
+} from '../observability/sentry-context';
 import { MetricsService } from './metrics.service';
+
+const KLOEL_HTTP_INFLIGHT = 'http.requests_inflight';
+let inflightRequests = 0;
 
 /**
  * HTTP metrics emitter.
@@ -34,19 +44,59 @@ export class MetricsInterceptor implements NestInterceptor {
     const route: string = request.route?.path || 'unmatched';
     const start = process.hrtime.bigint();
 
+    // Mirror per-request workspace/user context into Sentry. Pulls from
+    // `request.user` shape populated by the auth guards (JwtAuthGuard /
+    // WorkspaceGuard); skipped for anonymous endpoints.
+    const authedUser = request?.user as { id?: string; workspaceId?: string } | undefined;
+    if (authedUser?.workspaceId) {
+      setSentryWorkspaceContext(authedUser.workspaceId, authedUser.id);
+    }
+
+    const ctxSnapshot: Readonly<KloelSentryContext> = getSentryContext();
+    addSentryBreadcrumb(`${method} ${route}`, 'http.request', {
+      method,
+      route,
+      runtime: ctxSnapshot.runtime,
+      workspaceId: ctxSnapshot.workspaceId,
+      userId: ctxSnapshot.userId,
+    });
+
+    inflightRequests += 1;
+    gauge(KLOEL_HTTP_INFLIGHT, inflightRequests, { method });
+
     return next.handle().pipe(
       tap({
         next: () => {
           const diff = Number(process.hrtime.bigint() - start) / 1e9;
           const status = context.switchToHttp().getResponse()?.statusCode || 200;
           this.metrics.observeHttp(method, route, status, diff);
+          recordRequestOutcome(method, route, status, diff);
         },
         error: () => {
           const diff = Number(process.hrtime.bigint() - start) / 1e9;
           const status = context.switchToHttp().getResponse()?.statusCode || 500;
           this.metrics.observeHttp(method, route, status, diff);
+          recordRequestOutcome(method, route, status, diff);
         },
       }),
     );
   }
+}
+
+function recordRequestOutcome(
+  method: string,
+  route: string,
+  status: number,
+  durationSec: number,
+): void {
+  inflightRequests = Math.max(0, inflightRequests - 1);
+  gauge(KLOEL_HTTP_INFLIGHT, inflightRequests, { method });
+
+  const durationMs = durationSec * 1000;
+  Metrics.api.request(route, status, durationMs);
+  histogram('http.request.size_factor', durationMs / Math.max(1, route.length), {
+    method,
+    status: String(status),
+  });
+  increment('http.request.outcome', { method, route, status: String(status) });
 }

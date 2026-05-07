@@ -8,6 +8,7 @@ import { FacebookAuthService } from './facebook-auth.service';
 import { GoogleAuthService } from './google-auth.service';
 import { ConnectService } from '../payments/connect/connect.service';
 import { TikTokAuthService } from './tiktok-auth.service';
+import { RateLimitService } from './rate-limit.service';
 import {
   BadRequestException,
   ConflictException,
@@ -51,7 +52,7 @@ const mockPrismaService = {
     updateMany: jest.fn(),
     update: jest.fn(),
   },
-  $transaction: jest.fn((arg: any) => {
+  $transaction: jest.fn((arg: unknown) => {
     if (typeof arg === 'function') {
       // Transação interativa
       return arg({
@@ -60,7 +61,7 @@ const mockPrismaService = {
       });
     }
     // Transação em batch (array de operações)
-    return Promise.all(arg);
+    return Promise.all(arg as Array<Promise<unknown>>);
   }),
 };
 
@@ -105,6 +106,10 @@ const mockConnectService = {
   }),
 };
 
+const mockRateLimitService = {
+  checkRateLimit: jest.fn().mockResolvedValue(undefined),
+};
+
 describe('AuthService', () => {
   let service: AuthService;
   let prisma: typeof mockPrismaService;
@@ -136,6 +141,7 @@ describe('AuthService', () => {
         { provide: FacebookAuthService, useValue: mockFacebookAuthService },
         { provide: TikTokAuthService, useValue: mockTikTokAuthService },
         { provide: ConnectService, useValue: mockConnectService },
+        { provide: RateLimitService, useValue: mockRateLimitService },
       ],
     }).compile();
 
@@ -156,7 +162,7 @@ describe('AuthService', () => {
 
       expect(result).toEqual({ exists: true });
       expect(prisma.agent.findFirst).toHaveBeenCalledWith({
-        where: { email: 'test@test.com' },
+        where: { email: 'test@test.com', workspaceId: { not: '' } },
       });
     });
 
@@ -274,7 +280,7 @@ describe('AuthService', () => {
       });
       expect(prisma.affiliatePartner.update).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { id: 'partner-1' },
+          where: { id: 'partner-1', workspaceId: 'seller-ws' },
           data: expect.objectContaining({
             partnerWorkspaceId: 'ws-aff',
             status: 'ACTIVE',
@@ -398,7 +404,7 @@ describe('AuthService', () => {
       delete process.env.RATE_LIMIT_DISABLED;
       try {
         const counters = new Map<string, number>();
-        const mockRedis: any = {
+        const mockRedis: unknown = {
           incr: jest.fn().mockImplementation(async (key: string) => {
             const next = (counters.get(key) || 0) + 1;
             counters.set(key, next);
@@ -408,14 +414,14 @@ describe('AuthService', () => {
         };
         const serviceWithRedis = new AuthService(
           mockPrismaService,
-          mockJwtService as any,
-          mockEmailService as any,
-          mockConfigService as any,
-          mockGoogleAuthService as any,
-          mockFacebookAuthService as unknown as FacebookAuthService,
-          mockTikTokAuthService as unknown as TikTokAuthService,
-          mockConnectService as unknown as ConnectService,
-          mockRedis,
+          mockJwtService as never,
+          mockEmailService as never,
+          mockConfigService as never,
+          mockGoogleAuthService as never,
+          mockFacebookAuthService as never,
+          mockTikTokAuthService as never,
+          mockConnectService as never,
+          new RateLimitService(mockRedis as never),
         );
 
         prisma.agent.findFirst.mockResolvedValue(null);
@@ -451,17 +457,17 @@ describe('AuthService', () => {
       try {
         const serviceWithRedisFailure = new AuthService(
           mockPrismaService,
-          mockJwtService as any,
-          mockEmailService as any,
-          mockConfigService as any,
-          mockGoogleAuthService as any,
-          mockFacebookAuthService as unknown as FacebookAuthService,
-          mockTikTokAuthService as unknown as TikTokAuthService,
-          mockConnectService as unknown as ConnectService,
-          {
+          mockJwtService as never,
+          mockEmailService as never,
+          mockConfigService as never,
+          mockGoogleAuthService as never,
+          mockFacebookAuthService as never,
+          mockTikTokAuthService as never,
+          mockConnectService as never,
+          new RateLimitService({
             incr: jest.fn().mockRejectedValue(new Error('redis down')),
             expire: jest.fn(),
-          } as any,
+          } as never),
         );
 
         prisma.agent.findFirst.mockResolvedValue(null);

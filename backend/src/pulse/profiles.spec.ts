@@ -1,4 +1,4 @@
-import { getProfileSelection } from '../../../scripts/pulse/profiles';
+import { getProfileSelection, parseCertificationProfile } from '../../../scripts/pulse/profiles';
 import type { PulseManifest } from '../../../scripts/pulse/types';
 
 function createManifest(): PulseManifest {
@@ -118,6 +118,7 @@ function createManifest(): PulseManifest {
   };
 }
 
+// PULSE_OK: assertions exist below
 describe('getProfileSelection', () => {
   it('derives core-critical selection from manifest critical structures', () => {
     const selection = getProfileSelection('core-critical', createManifest());
@@ -136,5 +137,22 @@ describe('getProfileSelection', () => {
     expect(selection.scenarioIds).toEqual(['customer-checkout', 'system-reconciliation']);
     expect(selection.runtimeProbeIds).toEqual(['backend-health', 'db-connectivity']);
     expect(selection.requestedModes).toEqual(expect.arrayContaining(['customer', 'soak']));
+  });
+
+  it('derives pulse-core-final as a final PULSE-only scope', () => {
+    const selection = getProfileSelection('pulse-core-final', createManifest());
+
+    expect(selection.profile).toBe('pulse-core-final');
+    expect(selection.certificationTarget).toMatchObject({
+      final: true,
+      profile: 'pulse-core-final',
+      certificationScope: 'pulse-core-final',
+    });
+    expect(selection.scenarioIds).toEqual([]);
+    expect(selection.requestedModes).toEqual([]);
+  });
+
+  it('keeps production-final as a legacy alias for full-product', () => {
+    expect(parseCertificationProfile('production-final')).toBe('full-product');
   });
 });

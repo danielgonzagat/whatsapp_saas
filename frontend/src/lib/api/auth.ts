@@ -75,7 +75,7 @@ export const authApi = {
     password: string,
     options?: { workspaceName?: string; affiliateInviteToken?: string },
   ) => {
-    const res = await apiFetch<AuthPayload>('/api/auth/register', {
+    const res = await apiFetch<AuthPayload>('/auth/register', {
       method: 'POST',
       body: {
         email,
@@ -92,7 +92,7 @@ export const authApi = {
   },
 
   signIn: async (email: string, password: string) => {
-    const res = await apiFetch<AuthPayload>('/api/auth/login', {
+    const res = await apiFetch<AuthPayload>('/auth/login', {
       method: 'POST',
       body: { email, password },
     });
@@ -103,7 +103,7 @@ export const authApi = {
   },
 
   signInWithGoogle: async (credential: string) => {
-    const res = await apiFetch<AuthPayload>('/api/auth/google', {
+    const res = await apiFetch<AuthPayload>('/auth/oauth/google', {
       method: 'POST',
       body: { credential },
     });
@@ -114,7 +114,7 @@ export const authApi = {
   },
 
   signInWithFacebook: async (accessToken: string, userId?: string) => {
-    const res = await apiFetch<AuthPayload>('/api/auth/facebook', {
+    const res = await apiFetch<AuthPayload>('/auth/oauth/facebook', {
       method: 'POST',
       body: { accessToken, userId },
     });
@@ -126,7 +126,7 @@ export const authApi = {
 
   requestMagicLink: async (email: string, redirectTo?: string) => {
     return apiFetch<{ success?: boolean; message?: string; redirectTo?: string }>(
-      '/api/auth/magic-link/request',
+      '/auth/magic-link/request',
       {
         method: 'POST',
         body: { email, redirectTo },
@@ -135,13 +135,10 @@ export const authApi = {
   },
 
   verifyMagicLink: async (token: string) => {
-    const res = await apiFetch<AuthPayload & { redirectTo?: string }>(
-      '/api/auth/magic-link/verify',
-      {
-        method: 'POST',
-        body: { token },
-      },
-    );
+    const res = await apiFetch<AuthPayload & { redirectTo?: string }>('/auth/magic-link/verify', {
+      method: 'POST',
+      body: { token },
+    });
 
     persistAuthPayload(res);
     mutate((key) => typeof key === 'string' && key.startsWith('/workspace'));
@@ -149,7 +146,7 @@ export const authApi = {
   },
 
   forgotPassword: async (email: string) => {
-    return apiFetch<{ ok?: boolean }>('/api/auth/forgot-password', {
+    return apiFetch<{ ok?: boolean }>('/auth/forgot-password', {
       method: 'POST',
       body: { email },
     });
@@ -157,9 +154,8 @@ export const authApi = {
 
   signOut: async () => {
     try {
-      await fetch('/api/auth/logout', {
+      await apiFetch('/auth/logout', {
         method: 'POST',
-        credentials: 'same-origin',
       });
     } catch {
       // ignore logout cookie cleanup failures
@@ -167,5 +163,5 @@ export const authApi = {
     tokenStorage.clear();
   },
 
-  getMe: () => apiFetch<AuthPayload>('/api/workspace/me'),
+  getMe: () => apiFetch<AuthPayload>('/workspace/me'),
 };

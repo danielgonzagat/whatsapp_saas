@@ -1,6 +1,7 @@
 import { InjectRedis } from '@nestjs-modules/ioredis';
-import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
+import { ForbiddenException, Injectable, Logger, Optional } from '@nestjs/common';
 import type Redis from 'ioredis';
+import { OpsAlertService } from '../observability/ops-alert.service';
 
 /**
  * LLMBudgetService — per-workspace LLM cost enforcement (P6-7, I16).
@@ -48,7 +49,10 @@ import type Redis from 'ioredis';
 export class LLMBudgetService {
   private readonly logger = new Logger(LLMBudgetService.name);
 
-  constructor(@InjectRedis() private readonly redis: Redis) {}
+  constructor(
+    @InjectRedis() private readonly redis: Redis,
+    @Optional() private readonly opsAlert?: OpsAlertService,
+  ) {}
 
   /**
    * Assert that the workspace can afford `estimatedCostCents`. Throws
@@ -74,10 +78,9 @@ export class LLMBudgetService {
         spent = 0;
       }
     } catch (err: unknown) {
-      const errInstanceofError =
-        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
+      void this.opsAlert?.alertOnCriticalError(err, 'LLMBudgetService.getWorkspaceBudgetCents');
       this.logger.error(
-        `LLM budget check failed for ws=${workspaceId}: ${errInstanceofError?.message}. Failing closed.`,
+        `LLM budget check failed for ws=${workspaceId}: ${err instanceof Error ? err.message : 'unknown_error'}. Failing closed.`,
       );
       throw new ForbiddenException({
         code: 'llm_budget_check_unavailable',
@@ -97,6 +100,8 @@ export class LLMBudgetService {
         meta: { spent, requested: estimatedCostCents, budget },
       });
     }
+
+    this.budgetAlert(workspaceId, spent, estimatedCostCents, budget);
   }
 
   /**
@@ -116,10 +121,9 @@ export class LLMBudgetService {
       // 35 days = generous ceiling over 1-month rolling window
       await this.redis.expire(key, 60 * 60 * 24 * 35);
     } catch (err: unknown) {
-      const errInstanceofError =
-        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
+      void this.opsAlert?.alertOnCriticalError(err, 'LLMBudgetService.expire');
       this.logger.warn(
-        `LLM budget recordSpend failed for ws=${workspaceId}: ${errInstanceofError?.message}`,
+        `LLM budget recordSpend failed for ws=${workspaceId}: ${err instanceof Error ? err.message : 'unknown_error'}`,
       );
     }
   }
@@ -135,6 +139,24 @@ export class LLMBudgetService {
     } catch {
       return 0;
     }
+  }
+
+  private budgetAlert(
+    workspaceId: string,
+    spentCents: number,
+    requestedCents: number,
+    budgetCents: number,
+  ): void {
+    const projectedCents = spentCents + requestedCents;
+    const ratio = budgetCents > 0 ? projectedCents / budgetCents : 1;
+    if (ratio < 0.8) {
+      return;
+    }
+
+    const threshold = ratio >= 0.95 ? '95%' : '80%';
+    this.logger.warn(
+      `llm_budget_approaching_limit ws=${workspaceId} threshold=${threshold} spent=${spentCents} requested=${requestedCents} projected=${projectedCents} budget=${budgetCents}`,
+    );
   }
 
   private currentWindowKey(workspaceId: string): string {

@@ -7,6 +7,7 @@ const {
   mockFallbackSendMedia,
   mockCheckSubscriptionStatus,
   mockCheckMessageLimit,
+  mockCheckDailyMessageLimit,
   mockApply,
   mockPushAlert,
   mockRedisSet,
@@ -19,6 +20,7 @@ const {
   mockFallbackSendMedia: vi.fn(),
   mockCheckSubscriptionStatus: vi.fn(),
   mockCheckMessageLimit: vi.fn(),
+  mockCheckDailyMessageLimit: vi.fn(),
   mockApply: vi.fn(),
   mockPushAlert: vi.fn(),
   mockRedisSet: vi.fn(),
@@ -44,6 +46,7 @@ vi.mock('../providers/plan-limits', () => ({
   PlanLimitsProvider: {
     checkSubscriptionStatus: mockCheckSubscriptionStatus,
     checkMessageLimit: mockCheckMessageLimit,
+    checkDailyMessageLimit: mockCheckDailyMessageLimit,
   },
 }));
 
@@ -75,6 +78,7 @@ describe('WhatsAppEngine', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockCheckSubscriptionStatus.mockResolvedValue({ active: true });
+    mockCheckDailyMessageLimit.mockResolvedValue({ allowed: true });
     mockCheckMessageLimit.mockResolvedValue({ allowed: true });
     mockApply.mockResolvedValue(undefined);
     mockPushAlert.mockResolvedValue(undefined);

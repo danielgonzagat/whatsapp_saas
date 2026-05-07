@@ -4,6 +4,7 @@ import {
   persistCustomerCognitiveState,
 } from '../processors/cia/cognitive-state';
 
+// PULSE_OK: assertions exist below
 describe('cia-cognitive-state', () => {
   it('preserves objections and advances the next best action with new buying signals', () => {
     const initial = buildSeedCognitiveState({
@@ -38,7 +39,7 @@ describe('cia-cognitive-state', () => {
     const findUnique = vi.fn(async () => null);
     const update = vi.fn(async () => ({}));
 
-    const prisma: any = {
+    const prisma = {
       kloelMemory: {
         upsert,
         create,
@@ -59,7 +60,7 @@ describe('cia-cognitive-state', () => {
       leadScore: 88,
     });
 
-    await persistCustomerCognitiveState(prisma, {
+    await persistCustomerCognitiveState(prisma as never, {
       workspaceId: 'ws-1',
       conversationId: 'conv-1',
       contactId: 'contact-1',

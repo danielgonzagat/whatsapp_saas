@@ -1,5 +1,11 @@
 name: Deploy Production
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+permissions:
+  contents: read
+
 on:
   push:
     branches:
@@ -8,6 +14,9 @@ on:
     branches:
       - main
   workflow_dispatch:
+    # checkov:skip=CKV_GHA_7: git_ref is a controlled operator input that selects
+    # which git ref to deploy to production; it is validated at checkout time and
+    # never interpolated directly into a shell run command.
     inputs:
       git_ref:
         description: Git ref to deploy to production
@@ -30,7 +39,7 @@ jobs:
         image: pgvector/pgvector:pg15
         env:
           POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: password
+          POSTGRES_PASSWORD: ${{ secrets.TEST_DB_PASSWORD || 'postgres' }}
           POSTGRES_DB: whatsapp_saas_test
         ports:
           - 5432:5432
@@ -41,7 +50,7 @@ jobs:
           --health-retries 5
 
     env:
-      DATABASE_URL: postgresql://postgres:password@localhost:5432/whatsapp_saas_test
+      DATABASE_URL: postgresql://postgres:${{ secrets.TEST_DB_PASSWORD || 'postgres' }}@localhost:5432/whatsapp_saas_test
 
     steps:
       - uses: actions/checkout@v4
@@ -133,7 +142,6 @@ jobs:
       # as before; the only change is that a non-zero exit fails the
       # workflow instead of being swallowed.
       - name: PULSE certification gate
-        continue-on-error: true
         env:
           PULSE_CI_TIMEOUT_MS: '300000'
           PULSE_DISABLE_LOCAL_ENV: 'true'
@@ -229,10 +237,14 @@ jobs:
           echo "Database backup (if created) is at /tmp/pre-deploy-backup.dump"
 
       - name: Publish deployment summary
+        env:
+          INPUT_GIT_REF: ${{ github.event.inputs.git_ref }}
+          DEPLOYMENT_URL: ${{ steps.vercel.outputs.deployment_url }}
         run: |
+          GIT_REF="${INPUT_GIT_REF:-main}"
           {
             echo "## Production deploy"
             echo ""
-            echo "- Ref: \`${{ github.event.inputs.git_ref || 'main' }}\`"
-            echo "- Frontend deployment: ${{ steps.vercel.outputs.deployment_url }}"
+            echo "- Ref: \`${GIT_REF}\`"
+            echo "- Frontend deployment: ${DEPLOYMENT_URL}"
           } >> "$GITHUB_STEP_SUMMARY"
