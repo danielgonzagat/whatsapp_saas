@@ -137,7 +137,7 @@ export function CampaignsView() {
             {kloelT('Campanhas')}
           </h1>
           <p style={{ fontFamily: SORA, fontSize: 12, color: TEXT_SECONDARY, margin: '4px 0 0' }}>
-            {kloelT('Crie, lance e acompanhe campanhas de email marketing')}
+            {kloelT('Crie, lance e acompanhe campanhas por Email e WhatsApp')}
           </p>
         </div>
         <button
@@ -210,7 +210,7 @@ export function CampaignsView() {
             {kloelT('Nenhuma campanha criada')}
           </p>
           <p style={{ fontFamily: SORA, fontSize: 11, color: TEXT_TERTIARY, margin: '4px 0 0' }}>
-            {kloelT('Crie sua primeira campanha para começar a enviar emails.')}
+            {kloelT('Crie sua primeira campanha para começar a vender nos canais conectados.')}
           </p>
         </div>
       ) : (

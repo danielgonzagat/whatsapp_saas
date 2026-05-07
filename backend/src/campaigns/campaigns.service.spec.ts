@@ -4,6 +4,7 @@ import { CampaignsService } from './campaigns.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { SmartTimeService } from '../analytics/smart-time/smart-time.service';
+import { MetaWhatsAppService } from '../meta/meta-whatsapp.service';
 
 const mockQueueAdd = jest.fn();
 const mockWorkerOn = jest.fn();
@@ -53,6 +54,9 @@ function buildMockPrisma(overrides: Record<string, unknown> = {}) {
         providerSettings: { whatsappApiSession: { status: 'connected' } },
       }),
     },
+    metaConnection: {
+      findUnique: jest.fn().mockResolvedValue(null),
+    },
     contact: {
       findMany: jest.fn().mockResolvedValue([]),
     },
@@ -65,6 +69,7 @@ describe('CampaignsService', () => {
   let mockPrisma: ReturnType<typeof buildMockPrisma>;
   let mockAudit: { log: jest.Mock; logWithTx: jest.Mock; getLogs: jest.Mock };
   let mockSmartTime: { getBestTime: jest.Mock };
+  let mockMetaWhatsApp: { sendTextMessage: jest.Mock };
 
   beforeEach(async () => {
     mockQueueAdd.mockResolvedValue(undefined);
@@ -78,6 +83,9 @@ describe('CampaignsService', () => {
     mockSmartTime = {
       getBestTime: jest.fn().mockResolvedValue({ bestHour: 10 }),
     };
+    mockMetaWhatsApp = {
+      sendTextMessage: jest.fn().mockResolvedValue({ success: true, messageId: 'wamid-1' }),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -85,6 +93,7 @@ describe('CampaignsService', () => {
         { provide: PrismaService, useValue: mockPrisma },
         { provide: AuditService, useValue: mockAudit },
         { provide: SmartTimeService, useValue: mockSmartTime },
+        { provide: MetaWhatsAppService, useValue: mockMetaWhatsApp },
       ],
     }).compile();
 
@@ -231,8 +240,29 @@ describe('CampaignsService', () => {
         id: 'ws-1',
         providerSettings: { whatsappApiSession: { status: 'disconnected' } },
       });
+      mockPrisma.metaConnection.findUnique.mockResolvedValue(null);
 
       await expect(service.launch('ws-1', 'camp-1')).rejects.toThrow(BadRequestException);
+    });
+
+    it('launches when the Meta official WhatsApp connection is ready', async () => {
+      mockPrisma.workspace.findUnique.mockResolvedValue({
+        id: 'ws-1',
+        providerSettings: {},
+      });
+      mockPrisma.metaConnection.findUnique.mockResolvedValue({
+        whatsappPhoneNumberId: 'phone-number-id',
+        status: 'connected',
+        tokenExpiresAt: new Date(Date.now() + 3_600_000),
+      });
+
+      await service.launch('ws-1', 'camp-1');
+
+      expect(mockQueueAdd).toHaveBeenCalledWith(
+        'process-campaign',
+        { campaignId: 'camp-1', workspaceId: 'ws-1' },
+        expect.any(Object),
+      );
     });
 
     it('throws BadRequestException when campaign is already RUNNING', async () => {

@@ -234,28 +234,40 @@ export class TikTokMarketingService {
   private tryReadTikTokClientKey() {
     return (
       String(process.env.TIKTOK_CLIENT_KEY || '').trim() ||
-      String(process.env.NEXT_PUBLIC_TIKTOK_CLIENT_KEY || '').trim()
+      String(process.env.TIKTOK_APP_ID || '').trim() ||
+      String(process.env.TIKTOK_CLIENT_ID || '').trim() ||
+      String(process.env.NEXT_PUBLIC_TIKTOK_CLIENT_KEY || '').trim() ||
+      String(process.env.NEXT_PUBLIC_TIKTOK_APP_ID || '').trim()
     );
   }
 
   private tryReadTikTokSecret() {
-    return String(process.env.TIKTOK_CLIENT_SECRET || '').trim();
+    return (
+      String(process.env.TIKTOK_CLIENT_SECRET || '').trim() ||
+      String(process.env.TIKTOK_APP_SECRET || '').trim()
+    );
   }
 
   private readTikTokClientKey() {
     return readRequiredEnv(
-      ['TIKTOK_CLIENT_KEY', 'NEXT_PUBLIC_TIKTOK_CLIENT_KEY'],
+      [
+        'TIKTOK_CLIENT_KEY',
+        'TIKTOK_APP_ID',
+        'TIKTOK_CLIENT_ID',
+        'NEXT_PUBLIC_TIKTOK_CLIENT_KEY',
+        'NEXT_PUBLIC_TIKTOK_APP_ID',
+      ],
       'tiktok_client_key',
     );
   }
 
   private readTikTokSecret() {
-    return readRequiredEnv(['TIKTOK_CLIENT_SECRET'], 'tiktok_client_secret');
+    return readRequiredEnv(['TIKTOK_CLIENT_SECRET', 'TIKTOK_APP_SECRET'], 'tiktok_client_secret');
   }
 
   private readStateSecret() {
     return readRequiredEnv(
-      ['TIKTOK_STATE_SECRET', 'JWT_SECRET', 'TIKTOK_CLIENT_SECRET'],
+      ['TIKTOK_STATE_SECRET', 'JWT_SECRET', 'TIKTOK_CLIENT_SECRET', 'TIKTOK_APP_SECRET'],
       'tiktok_state_secret',
     );
   }

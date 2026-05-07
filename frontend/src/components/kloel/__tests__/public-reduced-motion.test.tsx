@@ -209,31 +209,34 @@ describe('public reduced-motion surfaces', () => {
     },
   );
 
-  it('does not render cookie banner on non-marketing hosts', () => {
-    const originalLocation = window.location;
-    Object.defineProperty(window, 'location', {
-      configurable: true,
-      value: {
-        ...originalLocation,
-        host: 'app.kloel.com',
-        hostname: 'app.kloel.com',
-        href: 'https://app.kloel.com/',
-      },
-    });
-
-    try {
-      render(
-        <CookieProvider>
-          <div>cookie child</div>
-        </CookieProvider>,
-      );
-
-      expect(screen.queryByText('Nós usamos cookies')).toBeNull();
-    } finally {
+  it.each(['app.kloel.com', 'pay.kloel.com', 'adm.kloel.com'])(
+    'does not render cookie banner on %s',
+    (hostname) => {
+      const originalLocation = window.location;
       Object.defineProperty(window, 'location', {
         configurable: true,
-        value: originalLocation,
+        value: {
+          ...originalLocation,
+          host: hostname,
+          hostname,
+          href: `https://${hostname}/`,
+        },
       });
-    }
-  });
+
+      try {
+        render(
+          <CookieProvider>
+            <div>cookie child</div>
+          </CookieProvider>,
+        );
+
+        expect(screen.queryByText('Nós usamos cookies')).toBeNull();
+      } finally {
+        Object.defineProperty(window, 'location', {
+          configurable: true,
+          value: originalLocation,
+        });
+      }
+    },
+  );
 });

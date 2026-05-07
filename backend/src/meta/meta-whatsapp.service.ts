@@ -13,6 +13,10 @@ const PATTERN_RE = /\/+$/;
 const HTTPS_RE = /^https?:\/\//i;
 const LOCALHOST_127__0__0__1_RE = /^(localhost|127\.0\.0\.1)(:\d+)?$/i;
 
+function readFirstEnv(keys: string[]): string {
+  return keys.map((key) => String(process.env[key] || '').trim()).find(Boolean) || '';
+}
+
 type ResolvedMetaConnection = {
   workspaceId: string;
   accessToken: string;
@@ -43,8 +47,8 @@ export class MetaWhatsAppService {
     workspaceId: string,
     options?: { channel?: string | null; returnTo?: string | null },
   ): string {
-    const appId = String(process.env.META_APP_ID || '').trim();
-    const configId = String(process.env.META_CONFIG_ID || '').trim();
+    const appId = readFirstEnv(['META_APP_ID', 'FACEBOOK_APP_ID', 'META_CLIENT_ID']);
+    const configId = readFirstEnv(['META_CONFIG_ID', 'META_EMBEDDED_SIGNUP_CONFIG_ID']);
     const version = String(process.env.META_GRAPH_API_VERSION || 'v21.0').trim();
 
     if (!appId) {

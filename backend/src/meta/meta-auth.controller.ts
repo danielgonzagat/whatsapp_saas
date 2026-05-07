@@ -23,6 +23,10 @@ import { decryptMetaToken, encryptMetaToken } from './meta-token-crypto';
 import { MetaWhatsAppService } from './meta-whatsapp.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 
+function readFirstEnv(keys: string[]): string {
+  return keys.map((key) => String(process.env[key] || '').trim()).find(Boolean) || '';
+}
+
 /**
  * Meta Platform OAuth controller.
  *
@@ -36,9 +40,13 @@ import { OpsAlertService } from '../observability/ops-alert.service';
 export class MetaAuthController {
   private readonly logger = new Logger(MetaAuthController.name);
 
-  private readonly appId = process.env.META_APP_ID || '';
-  private readonly appSecret = process.env.META_APP_SECRET || '';
-  private readonly configId = process.env.META_CONFIG_ID || '';
+  private readonly appId = readFirstEnv(['META_APP_ID', 'FACEBOOK_APP_ID', 'META_CLIENT_ID']);
+  private readonly appSecret = readFirstEnv([
+    'META_APP_SECRET',
+    'FACEBOOK_APP_SECRET',
+    'META_CLIENT_SECRET',
+  ]);
+  private readonly configId = readFirstEnv(['META_CONFIG_ID', 'META_EMBEDDED_SIGNUP_CONFIG_ID']);
   private readonly frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
 
   constructor(

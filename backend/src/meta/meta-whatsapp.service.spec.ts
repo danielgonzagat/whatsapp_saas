@@ -15,6 +15,12 @@ describe('MetaWhatsAppService', () => {
   let service: MetaWhatsAppService;
 
   beforeEach(() => {
+    delete process.env.META_APP_ID;
+    delete process.env.FACEBOOK_APP_ID;
+    delete process.env.META_CLIENT_ID;
+    delete process.env.META_CONFIG_ID;
+    delete process.env.META_EMBEDDED_SIGNUP_CONFIG_ID;
+
     prisma = {
       metaConnection: {
         findUnique: jest.fn(),
@@ -29,6 +35,23 @@ describe('MetaWhatsAppService', () => {
     };
 
     service = new MetaWhatsAppService(prisma as never as PrismaService, metaSdk as never);
+  });
+
+  it('builds embedded signup URLs from accepted Meta env aliases', () => {
+    process.env.FACEBOOK_APP_ID = 'facebook-app-id';
+    process.env.META_EMBEDDED_SIGNUP_CONFIG_ID = 'embedded-config-id';
+
+    const url = new URL(
+      service.buildEmbeddedSignupUrl('workspace-1', {
+        channel: 'whatsapp',
+        returnTo: '/marketing/whatsapp',
+      }),
+    );
+
+    expect(url.hostname).toBe('www.facebook.com');
+    expect(url.searchParams.get('client_id')).toBe('facebook-app-id');
+    expect(url.searchParams.get('config_id')).toBe('embedded-config-id');
+    expect(url.searchParams.get('extras')).toContain('sessionInfoVersion');
   });
 
   it('falls back to connected when webhook heartbeat sees malformed persisted status', async () => {
