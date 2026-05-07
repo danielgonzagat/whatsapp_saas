@@ -3,9 +3,8 @@ import { BrainCommercialGraphService } from './brain-commercial-graph.service';
 describe('BrainCommercialGraphService', () => {
   it('builds a weighted commercial graph from workspace events', async () => {
     const prisma = {
-      $queryRaw: jest
-        .fn()
-        .mockResolvedValueOnce([
+      mindBelief: {
+        findMany: jest.fn().mockResolvedValue([
           {
             subject: 'contact:contact-1',
             predicate: 'P(reply|template,hour,channel)',
@@ -14,8 +13,10 @@ describe('BrainCommercialGraphService', () => {
             variance: 0.04,
             samples: 8,
           },
-        ])
-        .mockResolvedValueOnce([
+        ]),
+      },
+      mindPolicy: {
+        findMany: jest.fn().mockResolvedValue([
           {
             subject: 'contact:contact-1',
             decisionType: 'followup_timing',
@@ -24,6 +25,7 @@ describe('BrainCommercialGraphService', () => {
             outcome: 1,
           },
         ]),
+      },
       autopilotEvent: {
         findMany: jest.fn().mockResolvedValue([
           {
@@ -82,7 +84,8 @@ describe('BrainCommercialGraphService', () => {
 
   it('uses negative edge weight for failed outcomes', async () => {
     const prisma = {
-      $queryRaw: jest.fn().mockResolvedValue([]),
+      mindBelief: { findMany: jest.fn().mockResolvedValue([]) },
+      mindPolicy: { findMany: jest.fn().mockResolvedValue([]) },
       autopilotEvent: {
         findMany: jest.fn().mockResolvedValue([
           {
@@ -113,6 +116,7 @@ describe('BrainCommercialGraphService', () => {
 
   it('recommends fixes before scaling strong paths', async () => {
     const prisma = {
+      mindPolicy: { findMany: jest.fn().mockResolvedValue([]) },
       autopilotEvent: {
         findMany: jest.fn().mockResolvedValue([
           { action: 'send_message', status: 'error' },

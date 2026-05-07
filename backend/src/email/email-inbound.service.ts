@@ -133,8 +133,8 @@ export class EmailInboundService {
           updates.name = name;
         }
         if (Object.keys(updates).length > 0) {
-          await this.prisma.contact.update({
-            where: { id: existing.id },
+          await this.prisma.contact.updateMany({
+            where: { id: existing.id, workspaceId },
             data: updates,
           });
         }

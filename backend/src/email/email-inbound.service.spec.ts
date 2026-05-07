@@ -8,7 +8,12 @@ describe('EmailInboundService', () => {
   let service: EmailInboundService;
   let omnichannel: jest.Mocked<Partial<OmnichannelService>>;
   let inbox: jest.Mocked<Partial<InboxService>>;
-  let prisma: jest.Mocked<Partial<PrismaService>>;
+  let prisma: {
+    contact: {
+      findUnique: jest.Mock;
+      updateMany: jest.Mock;
+    };
+  };
 
   beforeEach(async () => {
     omnichannel = {
@@ -22,9 +27,9 @@ describe('EmailInboundService', () => {
     prisma = {
       contact: {
         findUnique: jest.fn().mockResolvedValue(null),
-        update: jest.fn().mockResolvedValue({}),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
-    } as unknown as jest.Mocked<Partial<PrismaService>>;
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -153,7 +158,7 @@ describe('EmailInboundService', () => {
     });
 
     it('enriches existing contact with email field when missing', async () => {
-      (prisma.contact!.findUnique as jest.Mock).mockResolvedValue({
+      prisma.contact.findUnique.mockResolvedValue({
         id: 'ct-1',
         email: null,
         name: null,
@@ -161,14 +166,14 @@ describe('EmailInboundService', () => {
 
       await service.processInboundEmail('ws-1', sampleEmail);
 
-      expect(prisma.contact!.update).toHaveBeenCalledWith({
-        where: { id: 'ct-1' },
+      expect(prisma.contact.updateMany).toHaveBeenCalledWith({
+        where: { id: 'ct-1', workspaceId: 'ws-1' },
         data: { email: 'cliente@example.com', name: 'Cliente Silva' },
       });
     });
 
     it('does not overwrite existing contact email field', async () => {
-      (prisma.contact!.findUnique as jest.Mock).mockResolvedValue({
+      prisma.contact.findUnique.mockResolvedValue({
         id: 'ct-1',
         email: 'old@example.com',
         name: 'Existing Name',
@@ -176,7 +181,7 @@ describe('EmailInboundService', () => {
 
       await service.processInboundEmail('ws-1', sampleEmail);
 
-      expect(prisma.contact!.update).not.toHaveBeenCalled();
+      expect(prisma.contact.updateMany).not.toHaveBeenCalled();
     });
   });
 });

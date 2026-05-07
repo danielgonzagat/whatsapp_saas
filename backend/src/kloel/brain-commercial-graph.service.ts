@@ -118,21 +118,45 @@ export class BrainCommercialGraphService {
     nodes.set(workspaceId, workspaceNode);
 
     for (const event of events) {
+      const intentId = `intent:${event.intent}`;
+      const actionId = `action:${event.action}`;
+      incrementNode(nodes, {
+        id: intentId,
+        kind: 'intent',
+        label: event.intent,
+        weight: 1,
+      });
+      incrementNode(nodes, {
+        id: actionId,
+        kind: 'action',
+        label: event.action,
+        weight: 1,
+      });
+      incrementEdge(edges, {
+        from: intentId,
+        label: 'triggered',
+        to: actionId,
+        weight: outcomeWeight(event.status),
+      });
+
       if (event.contactId) {
+        const contactNodeId = event.contactId.startsWith('contact:')
+          ? event.contactId
+          : `contact:${event.contactId}`;
         incrementNode(nodes, {
-          id: event.contactId,
+          id: contactNodeId,
           kind: 'contact',
-          label: event.contactId,
+          label: contactNodeId,
           weight: 1,
         });
         incrementEdge(edges, {
           from: workspaceId,
           label: 'contact',
-          to: event.contactId,
+          to: contactNodeId,
           weight: 1,
         });
         incrementEdge(edges, {
-          from: event.contactId,
+          from: contactNodeId,
           label: event.action,
           to: workspaceId,
           weight: outcomeWeight(event.status),
@@ -157,7 +181,7 @@ export class BrainCommercialGraphService {
     }
 
     for (const policy of policies) {
-      const nodeId = `policy:${policy.subject}:${policy.decisionType}`;
+      const nodeId = `policy:${policy.decisionType}:${policy.chosen}`;
       const weight = policy.outcome ?? 0.5;
       incrementNode(nodes, {
         id: nodeId,
@@ -227,7 +251,10 @@ export class BrainCommercialGraphService {
       recommendations.push({
         action,
         confidence,
-        reason: `${stat.wins}/${stat.total} successes`,
+        reason:
+          confidence === 0
+            ? `Priorizar correção: ${stat.wins}/${stat.total} successes`
+            : `${stat.wins}/${stat.total} successes`,
       });
     }
 
@@ -241,10 +268,10 @@ export class BrainCommercialGraphService {
       }
     }
 
-    recommendations.sort((left, right) => right.confidence - left.confidence).slice(0, 10);
+    recommendations.sort((left, right) => left.confidence - right.confidence);
 
     return {
-      recommendations,
+      recommendations: recommendations.slice(0, 10),
       window: { eventCount: events.length, take: 500 },
     };
   }

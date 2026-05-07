@@ -48,7 +48,7 @@ export class MindBeliefService {
       where: { workspaceId, subject, predicate, context: jsonFilter(context) },
     });
     if (existing) {
-      return existing as unknown as MindBelief;
+      return existing as MindBelief;
     }
 
     throw new Error('mind_belief_get_or_init_failed');
@@ -68,8 +68,8 @@ export class MindBeliefService {
     const variance = betaVariance(alpha, beta);
     const samples = current.samples + 1;
 
-    const updated = await this.prisma.mindBelief.update({
-      where: { id: current.id! },
+    await this.prisma.mindBelief.updateMany({
+      where: { id: current.id!, workspaceId, subject, predicate },
       data: {
         alpha,
         beta,
@@ -79,7 +79,10 @@ export class MindBeliefService {
         lastUpdate: new Date(),
       },
     });
-    return updated as unknown as MindBelief;
+    const updated = await this.prisma.mindBelief.findFirstOrThrow({
+      where: { id: current.id!, workspaceId, subject, predicate },
+    });
+    return updated as MindBelief;
   }
 
   async list(workspaceId: string, predicate: string, subject?: string): Promise<MindBelief[]> {
@@ -92,6 +95,6 @@ export class MindBeliefService {
       orderBy: { samples: 'desc' },
       take: 200,
     });
-    return rows as unknown as MindBelief[];
+    return rows as MindBelief[];
   }
 }

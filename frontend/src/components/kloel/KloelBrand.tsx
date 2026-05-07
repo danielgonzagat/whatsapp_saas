@@ -3,7 +3,7 @@
 import { kloelT } from '@/lib/i18n/t';
 import { colors } from '@/lib/design-tokens';
 import type { CSSProperties, ReactNode } from 'react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 type MushroomVisualProps = {
   size?: number;
@@ -136,14 +136,15 @@ export function KloelMushroomVisual({
   ariaHidden = false,
   fit = 'default',
 }: MushroomVisualProps) {
-  const [svgHtml, setSvgHtml] = useState<string | null>(null);
+  const [svgText, setSvgText] = useState<string | null>(null);
+  const svgHostRef = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
     let cancelled = false;
     fetchMushroomSvg()
       .then((raw) => {
         if (cancelled) return;
-        setSvgHtml(processSvg(raw, traceColor, animated, spores));
+        setSvgText(processSvg(raw, traceColor, animated, spores));
       })
       .catch(() => {});
     return () => {
@@ -152,46 +153,60 @@ export function KloelMushroomVisual({
   }, [traceColor, animated, spores]);
 
   const padding = fit === 'icon' ? Math.round(size * 0.04) : 0;
+  const sharedStyle: CSSProperties = {
+    display: 'block',
+    flexShrink: 0,
+    objectFit: 'contain',
+    objectPosition: 'center',
+    padding,
+    transform: 'translate3d(0,0,0)',
+    ...style,
+  };
 
-  if (!svgHtml) {
+  useEffect(() => {
+    const host = svgHostRef.current;
+    if (!host || !svgText || typeof DOMParser === 'undefined') return;
+
+    const parsed = new DOMParser().parseFromString(svgText, 'image/svg+xml');
+    const svg = parsed.documentElement;
+    if (svg.nodeName.toLowerCase() !== 'svg') return;
+
+    svg.setAttribute('aria-hidden', ariaHidden ? 'true' : 'false');
+    if (!ariaHidden) {
+      svg.setAttribute('aria-label', title);
+      svg.setAttribute('role', 'img');
+    } else {
+      svg.setAttribute('role', 'presentation');
+    }
+    host.replaceChildren(document.importNode(svg, true));
+  }, [ariaHidden, svgText, title]);
+
+  if (svgText) {
     return (
-      <img
-        src="/kloel-mushroom-animated.svg"
+      <span
+        ref={svgHostRef}
         aria-hidden={ariaHidden}
         aria-label={ariaHidden ? undefined : title}
-        alt={ariaHidden ? '' : title}
         role={ariaHidden ? 'presentation' : 'img'}
-        width={size}
-        height={size}
         style={{
-          display: 'block',
-          flexShrink: 0,
-          objectFit: 'contain',
-          objectPosition: 'center',
-          padding,
-          transform: 'translate3d(0,0,0)',
-          ...style,
+          width: size,
+          height: size,
+          ...sharedStyle,
         }}
       />
     );
   }
 
   return (
-    <span
+    <img
+      src="/kloel-mushroom-animated.svg"
       aria-hidden={ariaHidden}
       aria-label={ariaHidden ? undefined : title}
+      alt={ariaHidden ? '' : title}
       role={ariaHidden ? 'presentation' : 'img'}
-      style={{
-        display: 'inline-block',
-        flexShrink: 0,
-        width: size,
-        height: size,
-        padding,
-        transform: 'translate3d(0,0,0)',
-        lineHeight: 0,
-        ...style,
-      }}
-      dangerouslySetInnerHTML={{ __html: svgHtml }}
+      width={size}
+      height={size}
+      style={sharedStyle}
     />
   );
 }

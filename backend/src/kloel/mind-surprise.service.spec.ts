@@ -32,7 +32,7 @@ describe('MindSurpriseService', () => {
     );
 
     expect(surprise).toBeCloseTo(-Math.log(0.8));
-    expect(predictor.resolve).toHaveBeenCalledWith('prediction-1', 1, surprise);
+    expect(predictor.resolve).toHaveBeenCalledWith('ws-1', 'prediction-1', 1, surprise);
     expect(beliefs.observeBinary).toHaveBeenCalledWith(
       'ws-1',
       'contact:1',

@@ -28,7 +28,7 @@ export class MindSurpriseService {
     const probability = this.clamp(open.predictedMean, 1e-6, 1 - 1e-6);
     const surprise = outcome === 1 ? -Math.log(probability) : -Math.log(1 - probability);
 
-    await this.predictor.resolve(open.id, outcome, surprise);
+    await this.predictor.resolve(workspaceId, open.id, outcome, surprise);
     await this.beliefs.observeBinary(workspaceId, subject, predicate, open.context, outcome);
 
     if (surprise > 1.5) {

@@ -5,6 +5,17 @@ describe('MindPredictorService', () => {
     const prisma = {
       $executeRaw: jest.fn().mockResolvedValue(1),
       $queryRaw: jest.fn(),
+      mindPrediction: {
+        create: jest.fn().mockImplementation(({ data }) =>
+          Promise.resolve({
+            ...data,
+            createdAt: new Date('2026-05-07T12:00:00.000Z'),
+            resolvedAt: null,
+            actual: null,
+            surprise: null,
+          }),
+        ),
+      },
     };
     const beliefs = {
       getOrInit: jest.fn().mockResolvedValue({
@@ -26,6 +37,6 @@ describe('MindPredictorService', () => {
     expect(prediction.predicate).toBe('P(reply|template,hour,channel)');
     expect(prediction.context).toEqual({ template: 'audio', hour: 20, channel: 'whatsapp' });
     expect(prediction.predictedMean).toBe(0.7);
-    expect(prisma.$executeRaw).toHaveBeenCalled();
+    expect(prisma.mindPrediction.create).toHaveBeenCalled();
   });
 });

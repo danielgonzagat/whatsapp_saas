@@ -8,7 +8,7 @@ import type {
 describe('BrainEventSpineService', () => {
   let prisma: {
     autopilotEvent: { create: jest.Mock };
-    mindOutboxEvent: { findMany: jest.Mock; update: jest.Mock; upsert: jest.Mock };
+    mindOutboxEvent: { findMany: jest.Mock; updateMany: jest.Mock; upsert: jest.Mock };
     $queryRaw: jest.Mock;
   };
   let service: BrainEventSpineService;
@@ -20,7 +20,7 @@ describe('BrainEventSpineService', () => {
       },
       mindOutboxEvent: {
         findMany: jest.fn().mockResolvedValue([]),
-        update: jest.fn(),
+        updateMany: jest.fn(),
         upsert: jest.fn().mockResolvedValue({ id: 'outbox-1' }),
       },
       $queryRaw: jest.fn().mockResolvedValue([]),
@@ -303,17 +303,17 @@ describe('BrainEventSpineService', () => {
     it('marks pending outbox events as dispatched', async () => {
       prisma.mindOutboxEvent.findMany.mockResolvedValueOnce([{ id: 'outbox-1' }]);
 
-      await expect(service.dispatchPending(10)).resolves.toEqual({ dispatched: 1 });
+      await expect(service.dispatchPending('ws-1', 10)).resolves.toEqual({ dispatched: 1 });
 
-      expect(prisma.mindOutboxEvent.update).toHaveBeenCalledWith({
-        where: { id: 'outbox-1' },
+      expect(prisma.mindOutboxEvent.updateMany).toHaveBeenCalledWith({
+        where: { id: 'outbox-1', workspaceId: 'ws-1' },
         data: expect.objectContaining({
           status: 'dispatched',
           attempts: { increment: 1 },
           lastError: null,
         }),
       });
-      const call = prisma.mindOutboxEvent.update.mock.calls[0][0];
+      const call = prisma.mindOutboxEvent.updateMany.mock.calls[0][0];
       expect(call.data.dispatchedAt).toBeInstanceOf(Date);
     });
   });

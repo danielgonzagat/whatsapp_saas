@@ -106,7 +106,8 @@ describe('MindBeliefService', () => {
         mindBelief: {
           findFirst: jest.fn(),
           create: jest.fn().mockResolvedValue(existing),
-          update: jest.fn().mockResolvedValue({
+          updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+          findFirstOrThrow: jest.fn().mockResolvedValue({
             ...existing,
             alpha: 2,
             beta: 1,
@@ -152,7 +153,8 @@ describe('MindBeliefService', () => {
         mindBelief: {
           findFirst: jest.fn(),
           create: jest.fn().mockResolvedValue(existing),
-          update: jest.fn().mockResolvedValue({
+          updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+          findFirstOrThrow: jest.fn().mockResolvedValue({
             ...existing,
             beta: 4,
             mean: 7 / 11,

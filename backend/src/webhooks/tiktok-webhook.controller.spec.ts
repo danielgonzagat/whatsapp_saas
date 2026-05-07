@@ -7,15 +7,28 @@ import { TikTokWebhookController } from './tiktok-webhook.controller';
 describe('TikTokWebhookController', () => {
   let controller: TikTokWebhookController;
   let mockWebhooksService: { logWebhookEvent: jest.Mock };
+  let mockOmnichannelService: { processTikTokWebhook: jest.Mock };
+  let mockPrisma: { workspace: { findMany: jest.Mock } };
 
   beforeEach(() => {
     mockWebhooksService = {
       logWebhookEvent: jest.fn().mockResolvedValue({ id: 'we_mock' }),
     };
+    mockOmnichannelService = {
+      processTikTokWebhook: jest.fn().mockResolvedValue(undefined),
+    };
+    mockPrisma = {
+      workspace: { findMany: jest.fn().mockResolvedValue([]) },
+    };
     const redis = {
       set: jest.fn().mockResolvedValue('OK'),
     };
-    controller = new TikTokWebhookController(redis as never, mockWebhooksService as never);
+    controller = new TikTokWebhookController(
+      redis as never,
+      mockWebhooksService as never,
+      mockOmnichannelService as never,
+      mockPrisma as never,
+    );
     delete process.env.TIKTOK_CLIENT_SECRET;
   });
 
@@ -133,7 +146,12 @@ describe('TikTokWebhookController', () => {
       set: jest.fn().mockResolvedValue(null),
     };
     const wss = { logWebhookEvent: jest.fn().mockResolvedValue({ id: 'we_mock' }) };
-    const ctrl = new TikTokWebhookController(redis as never, wss as never);
+    const ctrl = new TikTokWebhookController(
+      redis as never,
+      wss as never,
+      mockOmnichannelService as never,
+      mockPrisma as never,
+    );
 
     const result = await ctrl.handleWebhook(
       { event: 'message' },
@@ -159,7 +177,12 @@ describe('TikTokWebhookController', () => {
       set: jest.fn().mockResolvedValue('OK'),
     };
     const wss = { logWebhookEvent: jest.fn().mockResolvedValue({ id: 'we_mock' }) };
-    const ctrl = new TikTokWebhookController(redis as never, wss as never);
+    const ctrl = new TikTokWebhookController(
+      redis as never,
+      wss as never,
+      mockOmnichannelService as never,
+      mockPrisma as never,
+    );
 
     const result = await ctrl.handleWebhook(
       { event: 'message' },

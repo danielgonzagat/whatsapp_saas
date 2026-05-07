@@ -14,6 +14,10 @@ import { mean, persistResolvedPolicyMemories, twoProportionZScore } from './mind
 
 const FALLBACK_MIN_SAMPLES = 30;
 
+function inputJson(value: unknown): Prisma.InputJsonValue {
+  return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
+}
+
 @Injectable()
 export class MindPolicyService {
   constructor(
@@ -173,7 +177,7 @@ export class MindPolicyService {
 
     if (rows.length > 0) {
       await this.prisma.mindPolicy.updateMany({
-        where: { id: { in: rows.map((r) => r.id) } },
+        where: { id: { in: rows.map((r) => r.id) }, workspaceId },
         data: {
           outcome,
           baselineOutcome: baselineOutcome ?? null,
@@ -219,7 +223,7 @@ export class MindPolicyService {
 
     if (rows.length > 0) {
       await this.prisma.mindPolicy.updateMany({
-        where: { id: { in: rows.map((r) => r.id) } },
+        where: { id: { in: rows.map((r) => r.id) }, workspaceId: input.workspaceId },
         data: {
           outcome: input.outcome,
           baselineOutcome: input.baselineOutcome ?? null,
@@ -268,7 +272,7 @@ export class MindPolicyService {
 
     if (rows.length > 0) {
       await this.prisma.mindPolicy.updateMany({
-        where: { id: { in: rows.map((r) => r.id) } },
+        where: { id: { in: rows.map((r) => r.id) }, workspaceId: input.workspaceId },
         data: {
           outcome: input.outcome,
           resolvedAt: new Date(),
@@ -369,13 +373,13 @@ export class MindPolicyService {
         workspaceId: decision.workspaceId,
         subject: decision.subject,
         decisionType: decision.decisionType,
-        context: decision.context as Prisma.InputJsonValue,
-        candidates: decision.candidates as unknown as Prisma.InputJsonValue,
+        context: inputJson(decision.context),
+        candidates: inputJson(decision.candidates),
         chosen: decision.chosen,
         baseline: decision.baseline,
         reasonInternal: decision.reasonInternal,
         outcomeKey: decision.outcomeKey ?? null,
-        calcSteps: decision.calcSteps as unknown as Prisma.InputJsonValue,
+        calcSteps: inputJson(decision.calcSteps),
         epsilon: decision.epsilon,
         utilitySuccess: decision.utilitySuccess,
         utilityFail: decision.utilityFail,

@@ -155,9 +155,9 @@ export class ChannelIdentifierService {
     return toChannelIdentifierResult(created);
   }
 
-  async findByContact(contactId: string): Promise<ChannelIdentifierResult[]> {
+  async findByContact(workspaceId: string, contactId: string): Promise<ChannelIdentifierResult[]> {
     const identifiers = await this.prisma.channelIdentifier.findMany({
-      where: { contactId },
+      where: { workspaceId, contactId },
       orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }],
     });
     return identifiers.map(toChannelIdentifierResult);
@@ -190,9 +190,9 @@ export class ChannelIdentifierService {
     };
   }
 
-  async setPrimary(identifierId: string): Promise<void> {
-    const identifier = await this.prisma.channelIdentifier.findUnique({
-      where: { id: identifierId },
+  async setPrimary(workspaceId: string, identifierId: string): Promise<void> {
+    const identifier = await this.prisma.channelIdentifier.findFirst({
+      where: { id: identifierId, workspaceId },
     });
 
     if (!identifier) {
@@ -201,11 +201,11 @@ export class ChannelIdentifierService {
 
     await this.prisma.$transaction([
       this.prisma.channelIdentifier.updateMany({
-        where: { contactId: identifier.contactId },
+        where: { workspaceId, contactId: identifier.contactId },
         data: { isPrimary: false },
       }),
-      this.prisma.channelIdentifier.update({
-        where: { id: identifierId },
+      this.prisma.channelIdentifier.updateMany({
+        where: { id: identifierId, workspaceId },
         data: { isPrimary: true },
       }),
     ]);

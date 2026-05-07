@@ -162,16 +162,16 @@ export class BrainEventSpineService {
     return recorded;
   }
 
-  async dispatchPending(limit = 100): Promise<{ dispatched: number }> {
+  async dispatchPending(workspaceId: string, limit = 100): Promise<{ dispatched: number }> {
     const rows = await this.prisma.mindOutboxEvent.findMany({
-      where: { status: 'pending' },
+      where: { workspaceId, status: 'pending' },
       orderBy: { createdAt: 'asc' },
       take: limit,
     });
 
     for (const row of rows) {
-      await this.prisma.mindOutboxEvent.update({
-        where: { id: row.id },
+      await this.prisma.mindOutboxEvent.updateMany({
+        where: { id: row.id, workspaceId },
         data: {
           status: 'dispatched',
           dispatchedAt: new Date(),

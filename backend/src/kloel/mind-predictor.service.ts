@@ -52,7 +52,7 @@ export class MindPredictorService {
       },
     });
 
-    return prediction as unknown as MindPrediction;
+    return prediction as MindPrediction;
   }
 
   async findOpen(
@@ -64,7 +64,7 @@ export class MindPredictorService {
       where: { workspaceId, subject, predicate, resolvedAt: null },
       orderBy: { createdAt: 'desc' },
     });
-    return (row as unknown as MindPrediction) ?? null;
+    return (row as MindPrediction) ?? null;
   }
 
   async listResolved(workspaceId: string, days = 7): Promise<MindPrediction[]> {
@@ -74,12 +74,17 @@ export class MindPredictorService {
       orderBy: { resolvedAt: 'desc' },
       take: 200,
     });
-    return rows as unknown as MindPrediction[];
+    return rows as MindPrediction[];
   }
 
-  async resolve(predictionId: string, actual: number, surprise: number): Promise<void> {
-    await this.prisma.mindPrediction.update({
-      where: { id: predictionId },
+  async resolve(
+    workspaceId: string,
+    predictionId: string,
+    actual: number,
+    surprise: number,
+  ): Promise<void> {
+    await this.prisma.mindPrediction.updateMany({
+      where: { id: predictionId, workspaceId },
       data: { actual, surprise, resolvedAt: new Date() },
     });
   }

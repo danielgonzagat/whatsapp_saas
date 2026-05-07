@@ -1,69 +1,75 @@
 import { MindController } from './mind-controller';
-import type { MindBeliefService } from './mind-belief.service';
-import type { MindPolicyService } from './mind-policy.service';
-import type { MindService } from './mind.service';
-import type { MindVerbalizerService } from './mind-verbalizer.service';
+import { MindBeliefService } from './mind-belief.service';
+import { MindPolicyService } from './mind-policy.service';
+import { MindService } from './mind.service';
+import { MindVerbalizerService } from './mind-verbalizer.service';
 import type { AggressivenessDto, DecideDto, ResolveDto } from './mind-controller.dto';
-import type { MindObservabilityService } from './mind-observability.service';
+import { MindObservabilityService } from './mind-observability.service';
 
 function mockBeliefs(): jest.Mocked<MindBeliefService> {
-  return { list: jest.fn() } as unknown as jest.Mocked<MindBeliefService>;
+  const service = Object.create(MindBeliefService.prototype) as jest.Mocked<MindBeliefService>;
+  service.list = jest.fn();
+  return service;
 }
 
 function mockPolicy(): jest.Mocked<MindPolicyService> {
-  return {
-    choose: jest.fn(),
-    harness: jest.fn(),
-    resolveOutcome: jest.fn(),
-  } as unknown as jest.Mocked<MindPolicyService>;
+  const service = Object.create(MindPolicyService.prototype) as jest.Mocked<MindPolicyService>;
+  service.choose = jest.fn();
+  service.harness = jest.fn();
+  service.resolveOutcome = jest.fn();
+  return service;
 }
 
 function mockMind(): jest.Mocked<MindService> {
-  return {
-    tick: jest.fn().mockResolvedValue({ perceived: 1 }),
-    lift: jest.fn(),
-    resolveAudioVsText: jest.fn().mockResolvedValue({
-      choice: 'text',
-      confidence: 0.5,
-      fallback: false,
-    }),
-    resolveCoupon: jest.fn().mockResolvedValue({
-      action: 'offer_coupon',
-      confidence: 0.5,
-      fallback: false,
-    }),
-    resolveAggressiveness: jest.fn().mockResolvedValue({
-      aggressiveness: 'MEDIUM',
-      confidence: 0.72,
-      fallback: false,
-    }),
-    resolveTone: jest.fn().mockResolvedValue({
-      confidence: 0.5,
-      fallback: false,
-      tone: 'DIRECT',
-    }),
-  } as unknown as jest.Mocked<MindService>;
+  const service = Object.create(MindService.prototype) as jest.Mocked<MindService>;
+  service.tick = jest.fn().mockResolvedValue({ perceived: 1 });
+  service.lift = jest.fn();
+  service.resolveAudioVsText = jest.fn().mockResolvedValue({
+    choice: 'text',
+    confidence: 0.5,
+    fallback: false,
+  });
+  service.resolveCoupon = jest.fn().mockResolvedValue({
+    action: 'offer_coupon',
+    confidence: 0.5,
+    fallback: false,
+  });
+  service.resolveAggressiveness = jest.fn().mockResolvedValue({
+    aggressiveness: 'MEDIUM',
+    confidence: 0.72,
+    fallback: false,
+  });
+  service.resolveTone = jest.fn().mockResolvedValue({
+    confidence: 0.5,
+    fallback: false,
+    tone: 'DIRECT',
+  });
+  return service;
 }
 
 function mockVerbalizer(): jest.Mocked<MindVerbalizerService> {
-  return {
-    narrate: jest.fn().mockResolvedValue('briefing'),
-  } as unknown as jest.Mocked<MindVerbalizerService>;
+  const service = Object.create(
+    MindVerbalizerService.prototype,
+  ) as jest.Mocked<MindVerbalizerService>;
+  service.narrate = jest.fn().mockResolvedValue('briefing');
+  return service;
 }
 
 function mockObservability(): jest.Mocked<MindObservabilityService> {
-  return {
-    ask: jest.fn(),
-    bandit: jest.fn(),
-    briefing: jest.fn(),
-    concepts: jest.fn(),
-    health: jest.fn(),
-    lift: jest.fn(),
-    report: jest.fn(),
-    state: jest.fn(),
-    surprise: jest.fn(),
-    trace: jest.fn(),
-  } as unknown as jest.Mocked<MindObservabilityService>;
+  const service = Object.create(
+    MindObservabilityService.prototype,
+  ) as jest.Mocked<MindObservabilityService>;
+  service.ask = jest.fn();
+  service.bandit = jest.fn();
+  service.briefing = jest.fn();
+  service.concepts = jest.fn();
+  service.health = jest.fn();
+  service.lift = jest.fn();
+  service.report = jest.fn();
+  service.state = jest.fn();
+  service.surprise = jest.fn();
+  service.trace = jest.fn();
+  return service;
 }
 
 function buildController(params?: {

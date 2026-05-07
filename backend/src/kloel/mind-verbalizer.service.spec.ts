@@ -271,11 +271,11 @@ describe('MindVerbalizerService', () => {
       await service.narrate('ws-1');
 
       const harnessCalls = policy.harness.mock.calls.map((call: string[]) => call[1]);
-      expect(harnessCalls).toContain('audio_vs_text');
-      expect(harnessCalls).toContain('tom');
-      expect(harnessCalls).toContain('cupom');
       expect(harnessCalls).toContain('followup_timing');
-      expect(harnessCalls).toContain('cia_aggressiveness');
+      expect(harnessCalls).toContain('message_format');
+      expect(harnessCalls).toContain('objection_response');
+      expect(harnessCalls).toContain('coupon_offer');
+      expect(harnessCalls).toContain('cart_recovery');
     });
   });
 });

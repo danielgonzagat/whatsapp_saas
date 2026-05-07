@@ -122,6 +122,7 @@ describe('code-native MIND services', () => {
           ])
           .mockResolvedValueOnce([]),
         update: jest.fn(),
+        updateMany: jest.fn(),
         upsert: jest.fn(),
       },
     };
@@ -139,8 +140,11 @@ describe('code-native MIND services', () => {
       outcome: 1,
     });
 
-    expect(prisma.mindBanditArm.update).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { id: 'a' }, data: { pulls: { increment: 1 } } }),
+    expect(prisma.mindBanditArm.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'a', workspaceId: 'ws-1', decisionType: 'cart_recovery' },
+        data: { pulls: { increment: 1 } },
+      }),
     );
     expect(prisma.mindBanditArm.update).toHaveBeenCalledWith(
       expect.objectContaining({

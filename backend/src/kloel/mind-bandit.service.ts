@@ -53,8 +53,8 @@ export class MindBanditService {
     )[0];
     if (!chosen) return null;
 
-    await this.prisma.mindBanditArm.update({
-      where: { id: chosen.id },
+    await this.prisma.mindBanditArm.updateMany({
+      where: { id: chosen.id, workspaceId, decisionType },
       data: { pulls: { increment: 1 } },
     });
     return { arm: chosen.arm, decisionType, workspaceId };

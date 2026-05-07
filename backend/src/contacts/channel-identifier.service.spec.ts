@@ -11,6 +11,7 @@ type FlexMock<T extends (...args: never[]) => unknown> = jest.Mock<ReturnType<T>
 interface MockPrisma {
   channelIdentifier: {
     findUnique: FlexMock<(args: unknown) => unknown>;
+    findFirst: FlexMock<(args: unknown) => unknown>;
     findMany: FlexMock<(args: unknown) => unknown>;
     create: FlexMock<(args: unknown) => unknown>;
     updateMany: FlexMock<(args: unknown) => unknown>;
@@ -54,6 +55,7 @@ describe('ChannelIdentifierService', () => {
     mockPrisma = {
       channelIdentifier: {
         findUnique: jest.fn(),
+        findFirst: jest.fn(),
         findMany: jest.fn(),
         create: jest.fn(),
         updateMany: jest.fn(),
@@ -214,13 +216,13 @@ describe('ChannelIdentifierService', () => {
       ];
       mockPrisma.channelIdentifier.findMany.mockResolvedValue(identifiers);
 
-      const result = await service.findByContact('contact-1');
+      const result = await service.findByContact('ws-1', 'contact-1');
 
       expect(result).toHaveLength(2);
       expect(result[0].channel).toBe('WHATSAPP');
       expect(result[1].channel).toBe('INSTAGRAM');
       expect(mockPrisma.channelIdentifier.findMany).toHaveBeenCalledWith({
-        where: { contactId: 'contact-1' },
+        where: { workspaceId: 'ws-1', contactId: 'contact-1' },
         orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }],
       });
     });
@@ -228,27 +230,27 @@ describe('ChannelIdentifierService', () => {
 
   describe('setPrimary', () => {
     it('sets the specified identifier as primary and clears others', async () => {
-      mockPrisma.channelIdentifier.findUnique.mockResolvedValue(
+      mockPrisma.channelIdentifier.findFirst.mockResolvedValue(
         makeIdentifierStub({ contactId: 'contact-1' }),
       );
       mockPrisma.$transaction.mockResolvedValue(undefined);
 
-      await service.setPrimary('ci-2');
+      await service.setPrimary('ws-1', 'ci-2');
 
       expect(mockPrisma.channelIdentifier.updateMany).toHaveBeenCalledWith({
-        where: { contactId: 'contact-1' },
+        where: { workspaceId: 'ws-1', contactId: 'contact-1' },
         data: { isPrimary: false },
       });
-      expect(mockPrisma.channelIdentifier.update).toHaveBeenCalledWith({
-        where: { id: 'ci-2' },
+      expect(mockPrisma.channelIdentifier.updateMany).toHaveBeenCalledWith({
+        where: { id: 'ci-2', workspaceId: 'ws-1' },
         data: { isPrimary: true },
       });
     });
 
     it('throws when identifier is not found', async () => {
-      mockPrisma.channelIdentifier.findUnique.mockResolvedValue(null);
+      mockPrisma.channelIdentifier.findFirst.mockResolvedValue(null);
 
-      await expect(service.setPrimary('nonexistent')).rejects.toThrow('not found');
+      await expect(service.setPrimary('ws-1', 'nonexistent')).rejects.toThrow('not found');
     });
   });
 });
