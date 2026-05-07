@@ -47,6 +47,7 @@ const APP_PATH_PREFIXES = [
   '/tools',
   '/inbox',
   '/followups',
+  '/integrations',
   '/video',
   '/cia',
   '/scrapers',
@@ -214,12 +215,20 @@ export function buildHostTargetUrl(
   currentHost?: string | null,
 ): string {
   const { hostname, port } = parseHost(currentHost);
+  const env = envOrigin(target);
+
+  if (target === 'auth' && env) {
+    return withPath(env, path);
+  }
+
+  if (target === 'auth' && isLocalHostname(hostname)) {
+    return withPath(`http://${localSubdomainHost('auth', hostname || 'localhost', port)}`, path);
+  }
 
   if (isLocalHostname(hostname)) {
     return withPath(`http://${localSubdomainHost(target, hostname || 'localhost', port)}`, path);
   }
 
-  const env = envOrigin(target);
   if (env) {
     return withPath(env, path);
   }

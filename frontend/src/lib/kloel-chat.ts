@@ -84,36 +84,13 @@ export const KLOEL_CHAT_CAPABILITY_PLACEHOLDERS: Record<KloelChatCapability, str
   search_web: 'Buscar na Web...',
 };
 
+/** Kloel chat quick action shape. */
+export interface KloelChatQuickAction {
+  id: 'create-ad' | 'write-copy' | 'sales-strategy' | 'analyze-product' | 'create-page';
+  label: string;
+  prompt: string;
+  icon: 'megaphone' | 'pen' | 'chart' | 'search' | 'layout';
+}
+
 /** Kloel_chat_quick_actions. */
-export const KLOEL_CHAT_QUICK_ACTIONS = [
-  {
-    id: 'create-ad',
-    label: 'Criar Anúncio',
-    prompt: 'Me ajude a criar um anúncio para ',
-    icon: 'megaphone',
-  },
-  {
-    id: 'write-copy',
-    label: 'Escrever Copy',
-    prompt: 'Escreva uma copy de vendas para ',
-    icon: 'pen',
-  },
-  {
-    id: 'sales-strategy',
-    label: 'Estratégia de Vendas',
-    prompt: 'Monte uma estratégia de vendas para ',
-    icon: 'chart',
-  },
-  {
-    id: 'analyze-product',
-    label: 'Analisar Produto',
-    prompt: 'Analise este produto e me diga como melhorar a oferta: ',
-    icon: 'search',
-  },
-  {
-    id: 'create-page',
-    label: 'Criar Página',
-    prompt: 'Crie a estrutura de uma página de vendas para ',
-    icon: 'layout',
-  },
-] as const;
+export const KLOEL_CHAT_QUICK_ACTIONS: KloelChatQuickAction[] = [];

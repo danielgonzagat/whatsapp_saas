@@ -3,6 +3,31 @@ import * as Sentry from '@sentry/node';
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
+type OpsEventCreateInput = {
+  error: string;
+  metadata?: Prisma.InputJsonValue;
+  service: string;
+  stack?: string | null;
+  type: string;
+  workspaceId?: string | null;
+};
+
+type OpsEventDelegate = {
+  create(args: { data: OpsEventCreateInput }): Promise<unknown>;
+};
+
+type PrismaWithOpsEvent = PrismaService & {
+  opsEvent?: unknown;
+};
+
+function isOpsEventDelegate(value: unknown): value is OpsEventDelegate {
+  return Boolean(value && typeof value === 'object' && 'create' in value);
+}
+
+function hasOpsEventDelegate(value: PrismaService): value is PrismaWithOpsEvent {
+  return 'opsEvent' in value;
+}
+
 /**
  * Centralised alerting for runtime-critical errors that must not go unnoticed.
  *
@@ -18,6 +43,34 @@ export class OpsAlertService {
   private readonly logger = new Logger('OpsAlert');
 
   constructor(private readonly prisma?: PrismaService) {}
+
+  private getOpsEventDelegate(): OpsEventDelegate | null {
+    if (!this.prisma || !hasOpsEventDelegate(this.prisma)) {
+      return null;
+    }
+    return isOpsEventDelegate(this.prisma.opsEvent) ? this.prisma.opsEvent : null;
+  }
+
+  private logPersistenceFailure(
+    error: unknown,
+    input: { operation: string; workspaceId?: string | null; status: string; startedAt: number },
+  ) {
+    const safeError = error instanceof Error ? error : new Error(String(error));
+    const code =
+      typeof error === 'object' && error && 'code' in error ? String(error.code) : undefined;
+    this.logger.error(
+      {
+        operation: input.operation,
+        provider: 'prisma',
+        workspaceId: input.workspaceId,
+        status: input.status,
+        durationMs: Date.now() - input.startedAt,
+        error: safeError.message,
+        errorCode: code,
+      },
+      safeError.stack,
+    );
+  }
 
   /**
    * Alert on a critical error that could degrade the platform silently.
@@ -57,9 +110,11 @@ export class OpsAlertService {
     }
 
     // 3. Persist an OpsEvent row for the dashboard
-    if (this.prisma) {
+    const opsEvent = this.getOpsEventDelegate();
+    if (opsEvent) {
+      const startedAt = Date.now();
       try {
-        await this.prisma.opsEvent.create({
+        await opsEvent.create({
           data: {
             type: 'critical_error',
             service: context,
@@ -69,8 +124,13 @@ export class OpsAlertService {
             metadata: (extra?.metadata ?? {}) as Prisma.InputJsonValue,
           },
         });
-      } catch {
-        // Best effort
+      } catch (persistenceError) {
+        this.logPersistenceFailure(persistenceError, {
+          operation: 'persistCriticalOpsEvent',
+          workspaceId: extra?.workspaceId ?? null,
+          status: 'failed',
+          startedAt,
+        });
       }
     }
   }
@@ -100,9 +160,11 @@ export class OpsAlertService {
       // Sentry may not be initialised
     }
 
-    if (this.prisma) {
+    const opsEvent = this.getOpsEventDelegate();
+    if (opsEvent) {
+      const startedAt = Date.now();
       try {
-        await this.prisma.opsEvent.create({
+        await opsEvent.create({
           data: {
             type: 'degradation',
             service: context,
@@ -111,8 +173,13 @@ export class OpsAlertService {
             metadata: (extra?.metadata ?? {}) as Prisma.InputJsonValue,
           },
         });
-      } catch {
-        // Best effort
+      } catch (persistenceError) {
+        this.logPersistenceFailure(persistenceError, {
+          operation: 'persistDegradationOpsEvent',
+          workspaceId: extra?.workspaceId ?? null,
+          status: 'failed',
+          startedAt,
+        });
       }
     }
   }
@@ -132,9 +199,11 @@ export class OpsAlertService {
       `OPS_RECOVERY | ${context}${extra?.workspaceId ? ` | ws=${extra.workspaceId}` : ''} | ${message}`,
     );
 
-    if (this.prisma) {
+    const opsEvent = this.getOpsEventDelegate();
+    if (opsEvent) {
+      const startedAt = Date.now();
       try {
-        await this.prisma.opsEvent.create({
+        await opsEvent.create({
           data: {
             type: 'recovery',
             service: context,
@@ -143,8 +212,13 @@ export class OpsAlertService {
             metadata: (extra?.metadata ?? {}) as Prisma.InputJsonValue,
           },
         });
-      } catch {
-        // Best effort
+      } catch (persistenceError) {
+        this.logPersistenceFailure(persistenceError, {
+          operation: 'persistRecoveryOpsEvent',
+          workspaceId: extra?.workspaceId ?? null,
+          status: 'failed',
+          startedAt,
+        });
       }
     }
   }
