@@ -4,6 +4,8 @@ import { bootstrapAuthenticatedPage, ensureE2EAdmin, getE2EBaseUrls } from './e2
 const { appUrl: APP_URL, apiUrl: API_URL } = getE2EBaseUrls();
 
 test.describe('Billing suspension flow', () => {
+  test.describe.configure({ mode: 'serial' });
+
   test('banner and blocked actions when billingSuspended', async ({ page, request }) => {
     const { token, workspaceId } = await ensureE2EAdmin(request);
 
@@ -23,7 +25,7 @@ test.describe('Billing suspension flow', () => {
         },
       );
       expect(statusRes.ok()).toBeTruthy();
-      const statusJson: any = await statusRes.json();
+      const statusJson = (await statusRes.json()) as { billingSuspended?: boolean };
       expect(statusJson?.billingSuspended).toBe(true);
 
       await bootstrapAuthenticatedPage(page, { token, workspaceId });

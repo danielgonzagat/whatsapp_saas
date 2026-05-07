@@ -28,13 +28,12 @@ export async function queryProducers(
   const activeWindowFrom = new Date(to.getTime() - 30 * 24 * 60 * 60 * 1000);
 
   const [activeRows, newInRange, total] = await Promise.all([
-    prisma.checkoutOrder.findMany({
+    prisma.checkoutOrder.groupBy({
+      by: ['workspaceId'],
       where: {
         status: { in: [OrderStatus.PAID, OrderStatus.SHIPPED, OrderStatus.DELIVERED] },
         paidAt: { gte: activeWindowFrom, lte: to },
       },
-      distinct: ['workspaceId'],
-      select: { workspaceId: true },
     }),
     prisma.workspace.count({ where: { createdAt: { gte: from, lte: to } } }),
     prisma.workspace.count(),

@@ -80,54 +80,63 @@ export class AdminAccountsService {
     action: AdminAccountStateAction,
     input: { reason?: string; frozenBalanceInCents?: number },
   ): Promise<void> {
-    const workspace = await this.prisma.workspace.findUnique({
-      where: { id: workspaceId },
-      select: { id: true, name: true, providerSettings: true },
-    });
-    if (!workspace) {
-      throw adminErrors.userNotFound();
-    }
+    await this.prisma.$transaction(
+      async (tx) => {
+        const workspace = await tx.workspace.findUnique({
+          where: { id: workspaceId },
+          select: { id: true, name: true, providerSettings: true },
+        });
+        if (!workspace) {
+          throw adminErrors.userNotFound();
+        }
 
-    const currentSettings = asProviderSettings(workspace.providerSettings);
-    const currentAccountState =
-      currentSettings.accountAdmin &&
-      typeof currentSettings.accountAdmin === 'object' &&
-      !Array.isArray(currentSettings.accountAdmin)
-        ? (currentSettings.accountAdmin as Record<string, unknown>)
-        : {};
+        const currentSettings = asProviderSettings(workspace.providerSettings);
+        const currentAccountState =
+          currentSettings.accountAdmin &&
+          typeof currentSettings.accountAdmin === 'object' &&
+          !Array.isArray(currentSettings.accountAdmin)
+            ? (currentSettings.accountAdmin as Record<string, unknown>)
+            : {};
 
-    const nextAccountState: Record<string, unknown> = {
-      ...currentAccountState,
-      updatedAt: new Date().toISOString(),
-      updatedBy: actorId,
-    };
+        const nextAccountState: Record<string, unknown> = {
+          ...currentAccountState,
+          updatedAt: new Date().toISOString(),
+          updatedBy: actorId,
+        };
 
-    this.applyAccountStateAction(nextAccountState, action, input);
+        this.applyAccountStateAction(nextAccountState, action, input);
 
-    const nextSettings = {
-      ...currentSettings,
-      accountAdmin: nextAccountState,
-    };
+        const nextSettings = {
+          ...currentSettings,
+          accountAdmin: nextAccountState,
+        };
 
-    await this.prisma.workspace.update({
-      where: { id: workspaceId },
-      data: {
-        providerSettings: JSON.parse(JSON.stringify(nextSettings)) as Prisma.InputJsonValue,
+        await tx.workspace.update({
+          where: { id: workspaceId },
+          data: {
+            providerSettings: JSON.parse(JSON.stringify(nextSettings)) as Prisma.InputJsonValue,
+          },
+        });
+
+        await tx.adminAuditLog.create({
+          data: {
+            adminUserId: actorId ?? null,
+            action: `admin.accounts.${action.toLowerCase()}`,
+            entityType: 'Workspace',
+            entityId: workspaceId,
+            details: {
+              workspaceName: workspace.name,
+              action,
+              reason: input.reason ?? null,
+              frozenBalanceInCents: input.frozenBalanceInCents ?? null,
+            },
+            ip: null,
+            userAgent: null,
+          },
+        });
       },
-    });
-
-    await this.audit.append({
-      adminUserId: actorId,
-      action: `admin.accounts.${action.toLowerCase()}`,
-      entityType: 'Workspace',
-      entityId: workspaceId,
-      details: {
-        workspaceName: workspace.name,
-        action,
-        reason: input.reason ?? null,
-        frozenBalanceInCents: input.frozenBalanceInCents ?? null,
-      },
-    });
+      { isolationLevel: 'ReadCommitted' },
+    );
   }
 
   private applyAccountStateAction(
@@ -210,22 +219,31 @@ export class AdminAccountsService {
       `Kloel${randomInt(1000, 9999)}!${randomUUID().replace(PATTERN_RE, '').slice(0, 8)}`;
 
     const passwordHash = await bcryptHash(nextPassword, BCRYPT_ROUNDS);
-    await this.prisma.agent.update({
-      where: { id: owner.id },
-      data: { password: passwordHash },
-    });
+    await this.prisma.$transaction(
+      async (tx) => {
+        await tx.agent.updateMany({
+          where: { id: owner.id, workspaceId },
+          data: { password: passwordHash },
+        });
 
-    await this.audit.append({
-      adminUserId: actorId,
-      action: 'admin.accounts.owner_password_reset',
-      entityType: 'Workspace',
-      entityId: workspaceId,
-      details: {
-        workspaceName: workspace.name,
-        ownerAgentId: owner.id,
-        ownerEmail: owner.email,
+        await tx.adminAuditLog.create({
+          data: {
+            adminUserId: actorId ?? null,
+            action: 'admin.accounts.owner_password_reset',
+            entityType: 'Workspace',
+            entityId: workspaceId,
+            details: {
+              workspaceName: workspace.name,
+              ownerAgentId: owner.id,
+              ownerEmail: owner.email,
+            },
+            ip: null,
+            userAgent: null,
+          },
+        });
       },
-    });
+      { isolationLevel: 'ReadCommitted' },
+    );
 
     return {
       ownerAgentId: owner.id,

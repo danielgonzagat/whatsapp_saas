@@ -1,7 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { MarketplaceTreasuryBucket, type Prisma } from '@prisma/client';
 import { FinancialAlertService } from '../common/financial-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { OpsAlertService } from '../observability/ops-alert.service';
 
 const DEFAULT_CURRENCY = 'BRL';
 
@@ -53,6 +54,7 @@ export class MarketplaceTreasuryReconcileService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly financialAlert: FinancialAlertService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   /** Reconcile. */
@@ -173,10 +175,11 @@ export class MarketplaceTreasuryReconcileService {
           action: 'system.carteira.reconcile_drift',
           entityType: 'marketplace_treasury',
           entityId: details.currency,
-          details: details as Prisma.InputJsonValue,
+          details: details,
         },
       });
-    } catch (error) {
+    } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'MarketplaceTreasuryReconcileService.create');
       this.logger.warn(
         `marketplace_treasury_reconcile_audit_failed currency=${details.currency}: ${
           error instanceof Error ? error.message : String(error)
@@ -191,6 +194,7 @@ export class MarketplaceTreasuryReconcileService {
    */
   static readonly reconcileInvariantMarker = 'I-ADMIN-W6';
   /** Reconcile invariant prisma property. */
-  static readonly reconcileInvariantPrisma: unknown =
-    null as unknown as Prisma.MarketplaceTreasuryLedgerGroupByOutputType;
+  // Marker for the invariant scanner — value never read at runtime.
+  static readonly reconcileInvariantPrisma: Prisma.MarketplaceTreasuryLedgerGroupByOutputType | null =
+    null;
 }

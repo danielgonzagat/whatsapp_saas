@@ -30,9 +30,9 @@ describe('ioredis-mock verification (PR P2-5)', () => {
 
   it('supports atomic SET NX (returns null on duplicate)', async () => {
     const client = createRedisClient();
-    const first = await (client as any).set('lock:1', 'tok1', 'EX', 60, 'NX');
+    const first = await client.set('lock:1', 'tok1', 'EX', 60, 'NX');
     expect(first).toBe('OK');
-    const second = await (client as any).set('lock:1', 'tok2', 'EX', 60, 'NX');
+    const second = await client.set('lock:1', 'tok2', 'EX', 60, 'NX');
     expect(second).toBeNull();
   });
 

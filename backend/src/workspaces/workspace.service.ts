@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Workspace } from '@prisma/client';
+import { CacheService } from '../common/cache/cache.service';
 import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { asProviderSettings } from '../whatsapp/provider-settings.types';
@@ -11,7 +12,10 @@ import {
 /** Workspace service. */
 @Injectable()
 export class WorkspaceService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private readonly cache: CacheService,
+  ) {}
 
   private getDefaultWhatsAppProvider(): 'meta-cloud' | 'whatsapp-api' {
     return resolveDefaultWhatsAppProvider();
@@ -21,11 +25,28 @@ export class WorkspaceService {
    * Obtém workspace (ou cria se não existir)
    */
   async getWorkspace(id: string): Promise<Workspace> {
-    const ws = await this.prisma.workspace.findUnique({ where: { id } });
-    if (!ws) {
-      throw new NotFoundException('Workspace não encontrado');
-    }
-    return ws;
+    return this.cache.wrap(
+      `cache:workspace:${id}`,
+      async () => {
+        const ws = await this.prisma.workspace.findUnique({ where: { id } });
+        if (!ws) {
+          throw new NotFoundException('Workspace não encontrado');
+        }
+        return ws;
+      },
+      { ttl: 30 },
+    );
+  }
+
+  /** Invalida cache do workspace após mutações. */
+  private async invalidateWorkspaceCache(id: string): Promise<void> {
+    await this.cache.del(`cache:workspace:${id}`);
+  }
+
+  /** Delete workspace and all cascaded data. */
+  async deleteWorkspace(id: string): Promise<void> {
+    await this.invalidateWorkspaceCache(id);
+    await this.prisma.workspace.delete({ where: { id } });
   }
 
   private async updateSettings(id: string, patch: Record<string, unknown>) {
@@ -92,6 +113,7 @@ export class WorkspaceService {
    */
   async setProvider(id: string, _provider: string) {
     const normalized = normalizeWhatsAppProvider(_provider) || this.getDefaultWhatsAppProvider();
+    await this.invalidateWorkspaceCache(id);
     return this.updateSettings(id, { whatsappProvider: normalized });
   }
 
@@ -99,6 +121,7 @@ export class WorkspaceService {
    * Ajusta jitter humano
    */
   async setJitter(id: string, min: number, max: number) {
+    await this.invalidateWorkspaceCache(id);
     return this.prisma.workspace.update({
       where: { id },
       data: { jitterMin: min, jitterMax: max },
@@ -119,6 +142,7 @@ export class WorkspaceService {
 
   /** Set channels. */
   async setChannels(id: string, email?: boolean) {
+    await this.invalidateWorkspaceCache(id);
     const ws = await this.getWorkspace(id);
     const settings = asProviderSettings(ws.providerSettings);
     return this.prisma.workspace.update({
@@ -166,6 +190,7 @@ export class WorkspaceService {
       notifications?: Record<string, boolean>;
     },
   ) {
+    await this.invalidateWorkspaceCache(id);
     const ws = await this.getWorkspace(id);
     const settings = asProviderSettings(ws.providerSettings);
 

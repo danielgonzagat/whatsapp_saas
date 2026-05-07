@@ -41,7 +41,7 @@ function normalizePayOrigin(candidate?: string | null) {
 }
 
 /** Resolve pay origin. */
-export function resolvePayOrigin(
+function resolvePayOrigin(
   req?: {
     get?: (name: string) => string | undefined;
     headers?: Record<string, string | string[] | undefined>;

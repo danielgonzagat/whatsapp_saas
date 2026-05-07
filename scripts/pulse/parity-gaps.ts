@@ -1,15 +1,20 @@
 import type {
   PulseCapability,
   PulseCapabilityState,
-  PulseCertification,
-  PulseCodebaseTruth,
+} from './__parts__/types.capabilities/03-capability';
+import type {
   PulseFlowProjection,
   PulseFlowProjectionItem,
+} from './__parts__/types.capabilities/04-flow-projection';
+import type {
   PulseParityGap,
   PulseParityGapsArtifact,
   PulseParityGapSeverity,
-  PulseResolvedManifest,
-} from './types';
+} from './types.capabilities.parity';
+import type { PulseCertification } from './types.evidence';
+import type { PulseCodebaseTruth } from './types.truth';
+import type { PulseHealth } from './types.health';
+import type { PulseResolvedManifest } from './types.resolved-manifest';
 import {
   deriveStructuralFamilies,
   familiesOverlap,
@@ -17,13 +22,18 @@ import {
 } from './structural-family';
 import {
   isCoveredByMaterializedAppBranch,
+  isCoveredByMaterializedEntryPoint,
   isCoveredByMaterializedRouteFamily,
+  isCoveredByProductSurfaceRouteFamily,
+  isIncludedInRoutedCapability,
+  isRoadmapCatalogCapability,
+} from './parity-capability-classifiers/__parts__/classifier-routes';
+import {
   isFrameworkShellCapability,
   isInterfaceOnlyWithoutRoutes,
   isMaterializedCapability,
   isOperationalReadinessCapability,
-  isRoadmapCatalogCapability,
-} from './parity-capability-classifiers';
+} from './parity-capability-classifiers/__parts__/classifier-helpers';
 import {
   buildGap,
   buildSummary,
@@ -40,6 +50,28 @@ interface BuildParityGapsInput {
   flowProjection: PulseFlowProjection;
   certification: PulseCertification;
   resolvedManifest: PulseResolvedManifest;
+  health: PulseHealth;
+}
+
+function isObservabilityFindingEvent(type: string): boolean {
+  return /(?:observability|audit|log|trace|metric|alert)/i.test(type);
+}
+
+function isInfrastructureOnlyRouteCapability(
+  capability: PulseCapability,
+  productModules: PulseResolvedManifest['modules'],
+): boolean {
+  const capabilityStructuralFamilies = capabilityFamilies(capability);
+  const matchesProductModule = productModules.some((moduleEntry) =>
+    familiesOverlap(moduleFamilies(moduleEntry), capabilityStructuralFamilies),
+  );
+  return (
+    capability.routePatterns.length > 0 &&
+    !capability.userFacing &&
+    !matchesProductModule &&
+    capability.ownerLane === 'reliability' &&
+    capability.rolesPresent.every((role) => role === 'interface' || role === 'orchestration')
+  );
 }
 
 /** Build a canonical structural parity gap artifact. */
@@ -51,6 +83,19 @@ export function buildParityGaps(input: BuildParityGapsInput): PulseParityGapsArt
   );
   const observabilitySignals = input.certification.evidenceSummary.observability.signals;
   const observabilityStrength = Object.values(observabilitySignals).filter(Boolean).length;
+  const globalObservabilityMissing =
+    !input.certification.evidenceSummary.observability.executed || observabilityStrength < 2;
+  const observabilityGateFailed = input.certification.gates.observabilityPass?.status === 'fail';
+  const observabilityFindingFiles = new Set(
+    input.health.breaks
+      .filter(
+        (item) =>
+          (item.severity === 'critical' || item.severity === 'high') &&
+          isObservabilityFindingEvent(item.type),
+      )
+      .map((item) => item.file)
+      .filter(Boolean),
+  );
   const gaps = new Map<string, PulseParityGap>();
 
   const findCapabilities = (value: string): PulseCapability[] => {
@@ -81,6 +126,7 @@ export function buildParityGaps(input: BuildParityGapsInput): PulseParityGapsArt
         (capability) =>
           isFrameworkShellCapability(capability) ||
           isRoadmapCatalogCapability(capability) ||
+          isCoveredByMaterializedEntryPoint(capability, capabilities) ||
           isCoveredByMaterializedAppBranch(capability, capabilities) ||
           isCoveredByMaterializedRouteFamily(capability, capabilities),
       )
@@ -109,8 +155,10 @@ export function buildParityGaps(input: BuildParityGapsInput): PulseParityGapsArt
     (item) =>
       item.userFacing &&
       item.status !== 'real' &&
+      !isInfrastructureOnlyRouteCapability(item, productModules) &&
       !isFrameworkShellCapability(item) &&
       !isRoadmapCatalogCapability(item) &&
+      !isCoveredByMaterializedEntryPoint(item, capabilities) &&
       !isCoveredByMaterializedAppBranch(item, capabilities) &&
       !isCoveredByMaterializedRouteFamily(item, capabilities) &&
       item.rolesPresent.includes('interface') &&
@@ -160,6 +208,8 @@ export function buildParityGaps(input: BuildParityGapsInput): PulseParityGapsArt
       item.status !== 'real' &&
       item.truthMode !== 'aspirational' &&
       item.routePatterns.length > 0 &&
+      !isInfrastructureOnlyRouteCapability(item, productModules) &&
+      !isCoveredByProductSurfaceRouteFamily(item, capabilities) &&
       (item.rolesPresent.includes('orchestration') ||
         item.rolesPresent.includes('persistence') ||
         item.rolesPresent.includes('side_effect')),
@@ -190,6 +240,7 @@ export function buildParityGaps(input: BuildParityGapsInput): PulseParityGapsArt
           (capability) =>
             isMaterializedCapability(capability) ||
             isRoadmapCatalogCapability(capability) ||
+            isCoveredByMaterializedEntryPoint(capability, capabilities) ||
             isCoveredByMaterializedAppBranch(capability, capabilities) ||
             isCoveredByMaterializedRouteFamily(capability, capabilities) ||
             isOperationalReadinessCapability(capability),
@@ -221,6 +272,7 @@ export function buildParityGaps(input: BuildParityGapsInput): PulseParityGapsArt
       item.status !== 'real' &&
       !isFrameworkShellCapability(item) &&
       !isRoadmapCatalogCapability(item) &&
+      !isCoveredByMaterializedEntryPoint(item, capabilities) &&
       !isCoveredByMaterializedAppBranch(item, capabilities) &&
       !isCoveredByMaterializedRouteFamily(item, capabilities) &&
       !isOperationalReadinessCapability(item) &&
@@ -267,7 +319,7 @@ export function buildParityGaps(input: BuildParityGapsInput): PulseParityGapsArt
     const matchingFlows = findFlows(entry);
     const hasExecutableCoverage = matchingFlows.some((flow) =>
       flow.evidenceSources.some((source) =>
-        ['execution-flow-evidence', 'scenario-coverage'].includes(source),
+        ['execution-flow-evidence', 'scenario-coverage', 'static-test-coverage'].includes(source),
       ),
     );
     if (hasExecutableCoverage) {
@@ -320,11 +372,7 @@ export function buildParityGaps(input: BuildParityGapsInput): PulseParityGapsArt
     );
   }
 
-  if (
-    !input.certification.evidenceSummary.observability.executed ||
-    observabilityStrength < 2 ||
-    input.certification.gates.observabilityPass?.status === 'fail'
-  ) {
+  if (globalObservabilityMissing || observabilityGateFailed) {
     for (const capability of capabilities.filter(
       (item) =>
         item.runtimeCritical &&
@@ -335,6 +383,12 @@ export function buildParityGaps(input: BuildParityGapsInput): PulseParityGapsArt
           item.highSeverityIssueCount > 0) &&
         (item.rolesPresent.includes('side_effect') || item.rolesPresent.includes('orchestration')),
     )) {
+      const hasLocalObservabilityFinding = capability.filePaths.some((filePath) =>
+        observabilityFindingFiles.has(filePath),
+      );
+      if (!globalObservabilityMissing && !hasLocalObservabilityFinding) {
+        continue;
+      }
       addGap(
         buildGap(
           'integration_without_observability',
@@ -408,6 +462,7 @@ export function buildParityGaps(input: BuildParityGapsInput): PulseParityGapsArt
       !item.userFacing &&
       item.routePatterns.length === 0 &&
       item.status !== 'real' &&
+      !isIncludedInRoutedCapability(item, capabilities) &&
       (item.maturity.dimensions.runtimeEvidencePresent || item.truthMode === 'observed'),
   )) {
     addGap(

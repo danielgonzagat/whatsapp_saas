@@ -120,8 +120,8 @@ export class KnowledgeBaseController {
       content: string;
     },
   ) {
-    resolveWorkspaceId(req, body.workspaceId);
-    return this.kb.addSource(body.knowledgeBaseId, body.type, body.content);
+    const workspaceId = resolveWorkspaceId(req, body.workspaceId);
+    return this.kb.addSource(body.knowledgeBaseId, body.type, body.content, workspaceId);
   }
 
   /** Upload source. */
@@ -152,7 +152,7 @@ export class KnowledgeBaseController {
     @Body() body: { kbId: string; workspaceId?: string }, // Corrected param name to kbId
   ) {
     const { kbId, workspaceId } = body;
-    resolveWorkspaceId(req, workspaceId);
+    const resolvedWorkspaceId = resolveWorkspaceId(req, workspaceId);
 
     if (!file) {
       throw new Error('Arquivo não enviado');
@@ -186,7 +186,7 @@ export class KnowledgeBaseController {
       }
     }
 
-    return this.kb.addSource(kbId, type, content);
+    return this.kb.addSource(kbId, type, content, resolvedWorkspaceId);
   }
 
   /** List sources. */

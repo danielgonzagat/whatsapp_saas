@@ -29,9 +29,7 @@ export async function processFactExtraction(job: Job) {
 
     log.info('extraction_complete', { workspaceId, contactId });
   } catch (err: unknown) {
-    const errInstanceofError =
-      err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
-    log.error('extraction_failed', { error: errInstanceofError.message });
+    log.error('extraction_failed', { error: err instanceof Error ? err.message : 'unknown_error' });
     throw err;
   }
 }

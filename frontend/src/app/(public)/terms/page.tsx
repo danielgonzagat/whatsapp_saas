@@ -11,7 +11,7 @@ export const metadata = buildLegalMetadata({
   locale: 'pt_BR',
 });
 
-const toc = [
+const toc = Object.freeze([
   { id: 'aceitacao', label: '1. Aceitação' },
   { id: 'descricao', label: '2. Descrição do serviço' },
   { id: 'elegibilidade', label: '3. Elegibilidade' },
@@ -27,7 +27,7 @@ const toc = [
   { id: 'rescisao', label: '13. Rescisão' },
   { id: 'lei-foro', label: '14. Lei aplicável e foro' },
   { id: 'contato', label: '15. Contato' },
-];
+]);
 
 /** Terms page. */
 export default function TermsPage() {
@@ -101,7 +101,7 @@ export default function TermsPage() {
             'fazer scraping ilícito, engenharia reversa proibida, exploração de vulnerabilidades ou tentativa de burlar limites técnicos;',
             'violar direitos autorais, marcas, segredos comerciais, privacidade, proteção de dados ou direitos de terceiros;',
             'enviar conteúdo ilegal, fraudulento, discriminatório, ameaçador, violento, sexualmente exploratório ou proibido pelas WhatsApp Commerce Policy e Meta Platform Terms;',
-            'operar campanhas, templates ou automações que burlem consentimento, opt-out, janelas de mensageria, regras de template ou limitações impostas por Google, Meta, Stripe, Asaas ou demais parceiros;',
+            'operar campanhas, templates ou automações que burlem consentimento, opt-out, janelas de mensageria, regras de template ou limitações impostas por Google, Meta, Stripe ou demais parceiros;',
             'usar a plataforma para atividades ilícitas, lavagem de dinheiro, fraude de pagamento, phishing, malware ou automações destinadas a dano.',
           ]}
         />
@@ -127,8 +127,7 @@ export default function TermsPage() {
 
       <LegalSection id="apis-terceiros" title={kloelT(`9. APIs e serviços de terceiros`)}>
         <p>
-          {kloelT(`O uso de integrações ou autenticações envolvendo Meta, Google, OpenAI, Anthropic, Stripe,
-          Asaas e outros serviços de terceiros depende também dos respectivos termos, políticas,
+          {kloelT(`O uso de integrações ou autenticações envolvendo Meta, Google, OpenAI, Anthropic, Stripe,          Serviços de terceiros dependem também dos respectivos termos, políticas,
           limites de plataforma, escopos concedidos e requisitos de uso. Você é responsável por
           manter ativos, contas e permissões externas em situação regular.`)}
         </p>

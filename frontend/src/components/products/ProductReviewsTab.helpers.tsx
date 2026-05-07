@@ -2,15 +2,23 @@ import { kloelFormatNumber, kloelT } from '@/lib/i18n/t';
 import { colors } from '@/lib/design-tokens';
 import { Star, X } from 'lucide-react';
 
+/** Review shape. */
 export interface Review {
+  /** Id property. */
   id: string;
+  /** Rating property. */
   rating: number;
+  /** Comment property. */
   comment: string | null;
+  /** Author name property. */
   authorName: string | null;
+  /** Verified property. */
   verified: boolean;
+  /** Created at property. */
   createdAt: string;
 }
 
+/** Product_reviews_copy. */
 export const PRODUCT_REVIEWS_COPY = {
   loadError: kloelT(`Falha ao carregar avaliações`),
   deleteError: kloelT(`Falha ao excluir avaliação`),
@@ -23,10 +31,12 @@ export const PRODUCT_REVIEWS_COPY = {
   deleting: kloelT(`Excluindo...`),
 } as const;
 
+/** To review error message. */
 export function toReviewErrorMessage(error: unknown, fallback: string): string {
   return error instanceof Error && error.message ? error.message : fallback;
 }
 
+/** Format average rating. */
 export function formatAverageRating(items: Review[]): string {
   if (items.length === 0) {
     return '0';
@@ -38,6 +48,7 @@ export function formatAverageRating(items: Review[]): string {
   });
 }
 
+/** Stars. */
 export function Stars({ rating }: { rating: number }) {
   return (
     <div className="flex gap-0.5">
@@ -56,6 +67,7 @@ export function Stars({ rating }: { rating: number }) {
   );
 }
 
+/** Empty reviews state. */
 export function EmptyReviewsState() {
   return (
     <div
@@ -70,6 +82,7 @@ export function EmptyReviewsState() {
   );
 }
 
+/** Delete review modal. */
 export function DeleteReviewModal({
   review,
   deleting,

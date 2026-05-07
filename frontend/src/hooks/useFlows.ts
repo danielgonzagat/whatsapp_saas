@@ -250,10 +250,10 @@ export function useFlows(workspaceId?: string) {
       setLoading(true);
       setError(null);
       try {
-        const response = await api.post<LibFlow>(`/flows/${workspaceId}/from-template`, {
-          templateId,
-          name,
-        });
+        const response = await api.post<LibFlow>(
+          `/flows/${workspaceId}/from-template/${encodeURIComponent(templateId)}`,
+          { name },
+        );
         return response.data;
       } catch (err) {
         setError(errorMessage(err, 'Erro ao criar fluxo a partir de template'));

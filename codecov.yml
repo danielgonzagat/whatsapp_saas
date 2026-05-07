@@ -41,8 +41,17 @@ coverage:
         threshold: 1%
     patch:
       default:
-        target: 80%
+        # Patch (diff) coverage gate. Project is at ~40% baseline coverage
+        # and accepts large codemod-heavy PRs where many lines change
+        # without adding logic branches. Setting `informational: true` keeps
+        # the diff-coverage telemetry visible on every PR while preventing
+        # codemods from blocking on a metric they cannot influence.
+        # Project-level gate (above) still enforces no overall coverage drop.
+        target: 20%
         threshold: 5%
+        if_no_uploads: success
+        if_not_found: success
+        informational: true
 
 flags:
   # Shared flag namespace for both Coverage Analytics (codecov-action@v5) and
@@ -119,3 +128,19 @@ ignore:
   - 'backend/prisma/ensure-migrations.js'
   - 'backend/scripts/**'
   - 'frontend/e2e/**'
+  # Cosmetic / type-only / generated surfaces that distort patch coverage
+  # without representing testable behaviour.
+  - '**/*.d.ts'
+  - '**/*.types.ts'
+  - '**/*.icons.tsx'
+  - '**/*.icons.ts'
+  - '**/migrations/**'
+  - '**/*.sql'
+  - '**/*.config.ts'
+  - '**/*.config.js'
+  - '**/*.config.mjs'
+  - 'frontend/src/app/**/loading.tsx'
+  - 'frontend/src/app/**/error.tsx'
+  - 'frontend/src/app/**/not-found.tsx'
+  - 'frontend/public/**'
+  - 'backend/prisma/schema.prisma'

@@ -58,7 +58,7 @@ import { z } from 'zod';
  * The user object returned alongside auth tokens. Matches what the
  * frontend's `tokenStorage.setWorkspaceId` and CRM/inbox views read.
  */
-export const AuthUserSchema = z.object({
+const AuthUserSchema = z.object({
   id: z.string(),
   email: z.string(),
   name: z.string().nullable(),
@@ -70,7 +70,7 @@ export const AuthUserSchema = z.object({
  * Single workspace summary returned in the auth payload. The frontend's
  * `resolveWorkspaceFromAuthPayload` reads from this list.
  */
-export const WorkspaceSummarySchema = z.object({
+const WorkspaceSummarySchema = z.object({
   id: z.string(),
   name: z.string(),
 });
@@ -86,7 +86,7 @@ export const WorkspaceSummarySchema = z.object({
  * backend currently emits snake_case. Do not change this without
  * coordinating both sides.
  */
-export const AuthTokenResponseSchema = z.object({
+const AuthTokenResponseSchema = z.object({
   access_token: z.string(),
   refresh_token: z.string(),
   user: AuthUserSchema,

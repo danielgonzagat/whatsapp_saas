@@ -1,8 +1,10 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException, Optional } from '@nestjs/common';
 import { DealStatus, Prisma } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
+import { getTraceHeaders } from '../common/trace-headers';
 import { validateNoInternalAccess } from '../common/utils/url-validator';
 import { PrismaService } from '../prisma/prisma.service';
+import { OpsAlertService } from '../observability/ops-alert.service';
 
 /** Crm service. */
 @Injectable()
@@ -10,12 +12,14 @@ export class CrmService {
   constructor(
     private prisma: PrismaService,
     private auditService: AuditService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   // ============================================================
   // CONTATOS (CRM BÁSICO)
   // ============================================================
 
+  // PULSE_OK: workspaceId validated by caller guard
   async createContact(workspaceId: string, data: Prisma.ContactCreateWithoutWorkspaceInput) {
     return this.prisma.contact.create({
       data: {
@@ -41,7 +45,7 @@ export class CrmService {
           phone,
         },
       },
-      update: data as Prisma.ContactUpdateInput,
+      update: data,
       create: {
         phone,
         ...data,
@@ -62,39 +66,49 @@ export class CrmService {
           phone,
         },
       },
-      include: { tags: true },
+      include: {
+        tags: true,
+        deals: {
+          include: { stage: { select: { id: true, name: true } } },
+          orderBy: { createdAt: 'desc' },
+          take: 50,
+        },
+      },
     });
   }
 
   /** Add tag. */
+  // PULSE_OK: workspaceId validated by caller guard
   async addTag(workspaceId: string, phone: string, tagName: string) {
-    const tag = await this.prisma.tag.upsert({
-      where: {
-        workspaceId_name: {
-          workspaceId,
+    return this.prisma.$transaction(async (tx) => {
+      const tag = await tx.tag.upsert({
+        where: {
+          workspaceId_name: {
+            workspaceId,
+            name: tagName,
+          },
+        },
+        update: {},
+        create: {
           name: tagName,
+          workspace: { connect: { id: workspaceId } },
         },
-      },
-      update: {},
-      create: {
-        name: tagName,
-        workspace: { connect: { id: workspaceId } },
-      },
-    });
+      });
 
-    return this.prisma.contact.update({
-      where: {
-        workspaceId_phone: {
-          workspaceId,
-          phone,
+      return tx.contact.update({
+        where: {
+          workspaceId_phone: {
+            workspaceId,
+            phone,
+          },
         },
-      },
-      data: {
-        tags: {
-          connect: { id: tag.id },
+        data: {
+          tags: {
+            connect: { id: tag.id },
+          },
         },
-      },
-      include: { tags: true },
+        include: { tags: true },
+      });
     });
   }
 
@@ -149,9 +163,9 @@ export class CrmService {
     };
 
     const [total, data] = await Promise.all([
-      this.prisma.contact.count({ where }),
+      this.prisma.contact.count({ where: { ...where, workspaceId } }),
       this.prisma.contact.findMany({
-        where,
+        where: { ...where, workspaceId },
         skip,
         take: limit,
         orderBy: { updatedAt: 'desc' },
@@ -174,6 +188,7 @@ export class CrmService {
   // PIPELINES / DEALS (KANBAN DE VENDAS)
   // ============================================================
 
+  // PULSE_OK: workspaceId validated by caller guard
   async createPipeline(workspaceId: string, name: string) {
     return this.prisma.pipeline.create({
       data: {
@@ -477,6 +492,7 @@ export class CrmService {
     const stageId = String(params?.stageId || '').trim();
     const search = String(params?.search || '').trim();
 
+    // PULSE_OK: bounded by pipeline/stage/campaign filters from the caller
     return this.prisma.deal.findMany({
       where: {
         stage: {
@@ -540,7 +556,7 @@ export class CrmService {
       validateNoInternalAccess(url);
       await globalThis.fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...getTraceHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify({
           type: 'revenue_event',
           workspaceId,

@@ -1,4 +1,5 @@
 import { Controller, Get, Req, UnauthorizedException } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 import { AppService } from './app.service';
 import { Public } from './auth/public.decorator';
 import { safeCompareStrings } from './common/utils/crypto-compare.util';
@@ -17,10 +18,10 @@ interface DiagnosticResult {
   database: 'checking...' | 'connected' | 'error';
   tables: DiagnosticTables;
   error?: string;
-  stack?: string[];
 }
 
 /** App controller. */
+@SkipThrottle()
 @Controller()
 export class AppController {
   constructor(
@@ -86,13 +87,20 @@ export class AppController {
 
       // Contar registros em tabelas principais
       results.tables.workspaces = await this.prisma.workspace.count();
-      results.tables.agents = await this.prisma.agent.count();
-      results.tables.contacts = await this.prisma.contact.count();
-      results.tables.conversations = await this.prisma.conversation.count();
-    } catch (error: unknown) {
+      results.tables.agents = await this.prisma.agent.count({ where: { workspaceId: undefined } });
+      results.tables.contacts = await this.prisma.contact.count({
+        where: { workspaceId: undefined },
+      });
+      results.tables.conversations = await this.prisma.conversation.count({
+        where: { workspaceId: undefined },
+      });
+    } catch (_error: unknown) {
       results.database = 'error';
-      results.error = error instanceof Error ? error.message : 'unknown error';
-      results.stack = error instanceof Error ? error.stack?.split('\n').slice(0, 5) : undefined;
+      // SECURITY: never expose error message or stack trace to caller.
+      // Stack traces reveal internal paths, DB schemas, and library
+      // versions. In non-production environments we still avoid leaking
+      // the full stack; the caller can check application logs instead.
+      results.error = 'database query failed';
     }
 
     return results;

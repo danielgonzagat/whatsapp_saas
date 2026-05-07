@@ -5,9 +5,11 @@ import { PaymentsModule } from '../payments/payments.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { AppleAuthService } from './apple-auth.service';
 import { EmailService } from './email.service';
 import { FacebookAuthService } from './facebook-auth.service';
 import { GoogleAuthService } from './google-auth.service';
+import { RateLimitService } from './rate-limit.service';
 import { TikTokAuthService } from './tiktok-auth.service';
 import { getJwtExpiresIn, getJwtSecret } from './jwt-config';
 // NOTA: RedisModule já é configurado globalmente no AppModule com REDIS_URL
@@ -31,7 +33,15 @@ import { getJwtExpiresIn, getJwtSecret } from './jwt-config';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, EmailService, GoogleAuthService, FacebookAuthService, TikTokAuthService],
+  providers: [
+    AuthService,
+    EmailService,
+    GoogleAuthService,
+    FacebookAuthService,
+    TikTokAuthService,
+    AppleAuthService,
+    RateLimitService,
+  ],
   exports: [
     AuthService,
     JwtModule,
@@ -39,6 +49,7 @@ import { getJwtExpiresIn, getJwtSecret } from './jwt-config';
     GoogleAuthService,
     FacebookAuthService,
     TikTokAuthService,
+    AppleAuthService,
   ],
 })
 export class AuthModule {}

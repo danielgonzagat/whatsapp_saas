@@ -5,6 +5,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { getTraceHeaders } from '../common/trace-headers';
 import { GoogleVerifiedProfile } from './google-auth.service';
 
 type FacebookDebugResponse = {
@@ -140,6 +141,7 @@ export class FacebookAuthService {
 
     const response = await fetch(url, {
       method: 'GET',
+      headers: getTraceHeaders(),
       signal: AbortSignal.timeout(15000),
     }).catch((error: unknown) => {
       throw new ServiceUnavailableException(
@@ -164,6 +166,7 @@ export class FacebookAuthService {
 
     const response = await fetch(url, {
       method: 'GET',
+      headers: getTraceHeaders(),
       signal: AbortSignal.timeout(15000),
     }).catch((error: unknown) => {
       throw new ServiceUnavailableException(

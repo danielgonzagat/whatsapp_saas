@@ -36,8 +36,8 @@ describe('CalendarService', () => {
       get: jest.fn(),
     };
     service = new CalendarService(
-      configService as unknown as ConstructorParameters<typeof CalendarService>[0],
-      prisma as unknown as ConstructorParameters<typeof CalendarService>[1],
+      configService as never as ConstructorParameters<typeof CalendarService>[0],
+      prisma as never as ConstructorParameters<typeof CalendarService>[1],
     );
   });
 

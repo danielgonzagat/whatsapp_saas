@@ -7,6 +7,12 @@ import { useEffect } from 'react';
 import { COOKIE_DATA } from './cookie-data';
 import type { CookieConsentPreferences } from './cookie-types';
 
+declare global {
+  interface Window {
+    [key: `ga-disable-${string}`]: boolean | undefined;
+  }
+}
+
 const PATTERN_RE = /\*+$/;
 const SCRIPT_IDS = {
   googleTagSrc: 'kloel-google-tag-src',
@@ -130,10 +136,10 @@ export function CookieScriptManager({ consent }: CookieScriptManagerProps) {
     if (!analyticsEnabled) {
       removeManagedCookies(analyticsCookiePatterns);
       if (gaMeasurementId && typeof window !== 'undefined') {
-        (window as unknown as Record<string, unknown>)[`ga-disable-${gaMeasurementId}`] = true;
+        window[`ga-disable-${gaMeasurementId}`] = true;
       }
     } else if (gaMeasurementId && typeof window !== 'undefined') {
-      (window as unknown as Record<string, unknown>)[`ga-disable-${gaMeasurementId}`] = false;
+      window[`ga-disable-${gaMeasurementId}`] = false;
     }
   }, [analyticsEnabled, gaMeasurementId]);
 

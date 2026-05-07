@@ -12,7 +12,7 @@ describe('WalletLedgerService — I12 append-only', () => {
   describe('appendWithinTx', () => {
     it('inserts a row with every required field forwarded verbatim', async () => {
       await service.appendWithinTx(
-        txClient as unknown as Parameters<WalletLedgerService['appendWithinTx']>[0],
+        txClient as never as Parameters<WalletLedgerService['appendWithinTx']>[0],
         {
           workspaceId: 'ws-1',
           walletId: 'wallet-1',
@@ -41,7 +41,7 @@ describe('WalletLedgerService — I12 append-only', () => {
 
     it('accepts a null transactionId for adjustments / corrections', async () => {
       await service.appendWithinTx(
-        txClient as unknown as Parameters<WalletLedgerService['appendWithinTx']>[0],
+        txClient as never as Parameters<WalletLedgerService['appendWithinTx']>[0],
         {
           workspaceId: 'ws-1',
           walletId: 'wallet-1',
@@ -61,7 +61,7 @@ describe('WalletLedgerService — I12 append-only', () => {
     it('rejects a negative amountInCents as a caller bug', async () => {
       await expect(
         service.appendWithinTx(
-          txClient as unknown as Parameters<WalletLedgerService['appendWithinTx']>[0],
+          txClient as never as Parameters<WalletLedgerService['appendWithinTx']>[0],
           {
             workspaceId: 'ws-1',
             walletId: 'wallet-1',
@@ -79,7 +79,7 @@ describe('WalletLedgerService — I12 append-only', () => {
     it('accepts BigInt(0) (a no-op write that still records intent)', async () => {
       await expect(
         service.appendWithinTx(
-          txClient as unknown as Parameters<WalletLedgerService['appendWithinTx']>[0],
+          txClient as never as Parameters<WalletLedgerService['appendWithinTx']>[0],
           {
             workspaceId: 'ws-1',
             walletId: 'wallet-1',
@@ -97,7 +97,7 @@ describe('WalletLedgerService — I12 append-only', () => {
     it('does not mutate the metadata object passed in (defensive copy)', async () => {
       const metadata = { saleId: 'sale-1', nested: { foo: 'bar' } };
       await service.appendWithinTx(
-        txClient as unknown as Parameters<WalletLedgerService['appendWithinTx']>[0],
+        txClient as never as Parameters<WalletLedgerService['appendWithinTx']>[0],
         {
           workspaceId: 'ws-1',
           walletId: 'wallet-1',

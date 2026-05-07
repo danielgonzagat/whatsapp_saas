@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { HealthModule } from '../health/health.module';
+import { PulseArtifactService } from './pulse-artifact.service';
 import { PulseController } from './pulse.controller';
 import { PulseService } from './pulse.service';
 
@@ -7,7 +8,7 @@ import { PulseService } from './pulse.service';
 @Module({
   imports: [HealthModule],
   controllers: [PulseController],
-  providers: [PulseService],
-  exports: [PulseService],
+  providers: [PulseService, PulseArtifactService],
+  exports: [PulseService, PulseArtifactService],
 })
 export class PulseModule {}

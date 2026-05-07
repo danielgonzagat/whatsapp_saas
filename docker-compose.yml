@@ -16,7 +16,7 @@ services:
       - 'no-new-privileges:true'
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB:-whatsapp_saas}
     ports:
       - '5432:5432'
@@ -55,10 +55,15 @@ services:
     restart: always
     security_opt:
       - 'no-new-privileges:true'
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
     ports:
       - '3001:3001'
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password}@postgres:5432/${POSTGRES_DB:-whatsapp_saas}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-whatsapp_saas}
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_URL: redis://redis:6379
@@ -69,7 +74,7 @@ services:
       WORKER_BROWSER_RUNTIME_URL: ${WORKER_BROWSER_RUNTIME_URL:-http://worker:3003}
       SCREENCAST_SHARED_SECRET: ${SCREENCAST_SHARED_SECRET:-}
       SCREENCAST_TOKEN_TTL_SECONDS: ${SCREENCAST_TOKEN_TTL_SECONDS:-120}
-      JWT_SECRET: ${JWT_SECRET:-change-me}
+      JWT_SECRET: ${JWT_SECRET}
       DD_SERVICE: ${DD_SERVICE:-kloel-backend}
       DD_ENV: ${DD_ENV:-development}
       DD_VERSION: ${DD_VERSION:-1.0.0}
@@ -95,8 +100,13 @@ services:
     restart: always
     security_opt:
       - 'no-new-privileges:true'
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password}@postgres:5432/${POSTGRES_DB:-whatsapp_saas}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-whatsapp_saas}
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_URL: redis://redis:6379
@@ -154,12 +164,17 @@ services:
     restart: always
     security_opt:
       - 'no-new-privileges:true'
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
     ports:
       - '3000:3000'
     environment:
       NODE_ENV: production
       NEXTAUTH_URL: http://localhost:3000
-      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-change-me}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
       AUTH_SECRET: ${AUTH_SECRET:-}
       NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
@@ -212,7 +227,7 @@ services:
     ports:
       - '3002:3000'
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
     depends_on:
       - prometheus
     volumes:

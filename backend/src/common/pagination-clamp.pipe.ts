@@ -38,7 +38,7 @@ import { ArgumentMetadata, Injectable, PipeTransform } from '@nestjs/common';
  * - Inputs below `min` are clamped UP to `min`.
  */
 
-export interface ClampOptions {
+interface ClampOptions {
   /** Minimum allowed value. Defaults to 1. */
   min?: number;
   /** Maximum allowed value. Defaults to 100 — the I17 ceiling. */

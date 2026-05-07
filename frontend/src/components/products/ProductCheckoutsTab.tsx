@@ -12,9 +12,60 @@ import {
   toCheckoutErrorMessage,
 } from '@/components/products/ProductCheckoutsTab.helpers';
 import { colors } from '@/lib/design-tokens';
-import { Loader2, Pencil, Plus, Trash2, X } from 'lucide-react';
+import { Pencil, Plus, Trash2, X } from 'lucide-react';
 import { useCallback, useEffect, useId, useState } from 'react';
 import { mutate } from 'swr';
+
+const CHECKOUT_FORM_DRAFT_VERSION = 1;
+
+type ProductCheckoutFormDraft = {
+  version: number;
+  productId: string;
+  savedAt: string;
+  form: CheckoutFormState;
+  editingCheckoutId: string | null;
+  showModal: boolean;
+};
+
+function buildCheckoutFormDraftKey(productId: string): string {
+  return `kloel:product-checkout-form-draft:${productId}`;
+}
+
+function readCheckoutFormDraft(
+  raw: string | null,
+  productId: string,
+): ProductCheckoutFormDraft | null {
+  if (!raw) {
+    return null;
+  }
+  try {
+    const parsed = JSON.parse(raw) as Partial<ProductCheckoutFormDraft>;
+    if (
+      parsed.version !== CHECKOUT_FORM_DRAFT_VERSION ||
+      parsed.productId !== productId ||
+      !parsed.form
+    ) {
+      return null;
+    }
+    return {
+      version: CHECKOUT_FORM_DRAFT_VERSION,
+      productId,
+      savedAt: typeof parsed.savedAt === 'string' ? parsed.savedAt : new Date().toISOString(),
+      form: {
+        ...createDefaultCheckoutForm(),
+        ...parsed.form,
+        paymentMethods: Array.isArray(parsed.form.paymentMethods)
+          ? parsed.form.paymentMethods
+          : createDefaultCheckoutForm().paymentMethods,
+      },
+      editingCheckoutId:
+        typeof parsed.editingCheckoutId === 'string' ? parsed.editingCheckoutId : null,
+      showModal: parsed.showModal === true,
+    };
+  } catch {
+    return null;
+  }
+}
 
 /** Product checkouts tab. */
 export function ProductCheckoutsTab({ productId }: { productId: string }) {
@@ -29,6 +80,8 @@ export function ProductCheckoutsTab({ productId }: { productId: string }) {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [checkoutPendingDelete, setCheckoutPendingDelete] = useState<Checkout | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [isOnline, setIsOnline] = useState(true);
+  const checkoutFormDraftKey = buildCheckoutFormDraftKey(productId);
 
   const fetch_ = useCallback(() => {
     setLoadError(null);
@@ -43,6 +96,51 @@ export function ProductCheckoutsTab({ productId }: { productId: string }) {
   useEffect(() => {
     fetch_();
   }, [fetch_]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    const syncNetworkState = () => setIsOnline(window.navigator.onLine);
+    syncNetworkState();
+    window.addEventListener('online', syncNetworkState);
+    window.addEventListener('offline', syncNetworkState);
+    return () => {
+      window.removeEventListener('online', syncNetworkState);
+      window.removeEventListener('offline', syncNetworkState);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    const savedDraft = readCheckoutFormDraft(
+      window.localStorage.getItem(checkoutFormDraftKey),
+      productId,
+    );
+    if (!savedDraft) {
+      return;
+    }
+    setForm(savedDraft.form);
+    setEditingCheckoutId(savedDraft.editingCheckoutId);
+    setShowModal(savedDraft.showModal);
+  }, [checkoutFormDraftKey, productId]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !showModal) {
+      return;
+    }
+    const payload: ProductCheckoutFormDraft = {
+      version: CHECKOUT_FORM_DRAFT_VERSION,
+      productId,
+      savedAt: new Date().toISOString(),
+      form,
+      editingCheckoutId,
+      showModal,
+    };
+    window.localStorage.setItem(checkoutFormDraftKey, JSON.stringify(payload));
+  }, [checkoutFormDraftKey, editingCheckoutId, form, productId, showModal]);
 
   const resetForm = () => {
     setForm(createDefaultCheckoutForm());
@@ -67,6 +165,7 @@ export function ProductCheckoutsTab({ productId }: { productId: string }) {
       } else {
         await apiFetch(`/products/${productId}/checkouts`, { method: 'POST', body });
       }
+      window.localStorage.removeItem(checkoutFormDraftKey);
       setShowModal(false);
       resetForm();
       mutate((key: unknown) => typeof key === 'string' && key.startsWith('/products'));
@@ -116,11 +215,17 @@ export function ProductCheckoutsTab({ productId }: { productId: string }) {
   if (loading) {
     return (
       <div className="flex justify-center py-12">
-        <Loader2
-          className="h-6 w-6 animate-spin"
-          style={{ color: colors.ember.primary }}
-          aria-hidden="true"
-        />
+        <div
+          className="rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em]"
+          style={{
+            color: colors.ember.primary,
+            border: `1px solid ${colors.border.space}`,
+            backgroundColor: 'rgba(232,93,48,0.08)',
+          }}
+          role="status"
+        >
+          {kloelT(`Carregando checkouts`)}
+        </div>
       </div>
     );
   }
@@ -344,6 +449,11 @@ export function ProductCheckoutsTab({ productId }: { productId: string }) {
             {submitError ? (
               <p className="mt-4 text-sm" style={{ color: colors.ember.primary }}>
                 {submitError}
+              </p>
+            ) : null}
+            {!isOnline ? (
+              <p className="mt-4 text-xs" style={{ color: colors.text.muted }}>
+                {kloelT(`Sem conexao agora. O rascunho deste checkout foi salvo localmente.`)}
               </p>
             ) : null}
             <div className="mt-6 flex justify-end gap-3">

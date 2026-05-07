@@ -20,8 +20,7 @@ export async function POST(request: NextRequest) {
       method: 'POST',
       headers: {
         Accept: 'application/json',
-        'Content-Type':
-          request.headers.get('content-type') || 'application/x-www-form-urlencoded',
+        'Content-Type': request.headers.get('content-type') || 'application/x-www-form-urlencoded',
         'X-Forwarded-For': request.headers.get('x-forwarded-for') || '',
       },
       body,

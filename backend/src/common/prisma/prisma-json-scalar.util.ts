@@ -1,7 +1,7 @@
 import { Prisma } from '@prisma/client';
 
 /** Is primitive json. */
-export function isPrimitiveJson(value: unknown): value is string | number | boolean {
+function isPrimitiveJson(value: unknown): value is string | number | boolean {
   return typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean';
 }
 

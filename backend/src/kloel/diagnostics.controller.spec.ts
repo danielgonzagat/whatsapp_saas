@@ -1,7 +1,17 @@
 import { DiagnosticsController } from './diagnostics.controller';
 
 describe('DiagnosticsController', () => {
-  let prisma: any;
+  let prisma: {
+    workspace: { findUnique: jest.Mock; findMany: jest.Mock; count: jest.Mock };
+    message: { count: jest.Mock };
+    autopilotEvent: { count: jest.Mock };
+    flow: { count: jest.Mock };
+  };
+  let observabilityQueries: {
+    countConnectedMetaWorkspaces: jest.Mock;
+    countAllMessagesSince: jest.Mock;
+    countAllAutopilotEventsSince: jest.Mock;
+  };
   let controller: DiagnosticsController;
 
   beforeEach(() => {
@@ -21,7 +31,15 @@ describe('DiagnosticsController', () => {
         count: jest.fn(),
       },
     };
-    controller = new DiagnosticsController(prisma);
+    observabilityQueries = {
+      countConnectedMetaWorkspaces: jest.fn().mockResolvedValue(0),
+      countAllMessagesSince: jest.fn().mockResolvedValue(0),
+      countAllAutopilotEventsSince: jest.fn().mockResolvedValue(0),
+    };
+    controller = new DiagnosticsController(
+      prisma as never as ConstructorParameters<typeof DiagnosticsController>[0],
+      observabilityQueries as never,
+    );
   });
 
   it('normalizes malformed workspace provider settings in diagnostics', async () => {

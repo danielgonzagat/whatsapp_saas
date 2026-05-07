@@ -196,6 +196,15 @@ function createScopeState(): PulseScopeState {
         artifact: 0,
       },
       unmappedModuleCandidates: [],
+      inventoryCoverage: 100,
+      classificationCoverage: 100,
+      structuralGraphCoverage: 100,
+      testCoverage: 0,
+      scenarioCoverage: 0,
+      runtimeEvidenceCoverage: 0,
+      productionProofCoverage: 0,
+      orphanFiles: [],
+      unknownFiles: [],
     },
     parity: {
       status: 'pass',
@@ -285,9 +294,14 @@ function createScopeState(): PulseScopeState {
         surfaces: ['backend', 'frontend'],
       },
     ],
+    excludedFiles: [],
+    scopeSource: 'repo_filesystem',
+    manifestBoundary: false,
+    manifestRole: 'semantic_overlay',
   };
 }
 
+// PULSE_OK: assertions exist below
 describe('buildResolvedManifest flow-group backfill', () => {
   it('synthesizes shared-auth-oauth when a scenario declares it and auth routes exist', () => {
     const resolved = buildResolvedManifest(

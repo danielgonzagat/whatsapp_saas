@@ -42,8 +42,10 @@ describe('CheckoutLeadSections', () => {
         socialLoadingProvider={null}
         socialError=""
         facebookAvailable={false}
+        appleAvailable={false}
         facebookSdkReady={false}
         triggerFacebookSignIn={vi.fn().mockResolvedValue(undefined)}
+        triggerAppleSignIn={vi.fn()}
         googleAvailable
         googleButtonRef={{ current: null }}
         shippingInCents={0}

@@ -1,17 +1,26 @@
 import { kloelT } from '@/lib/i18n/t';
 import type { CSSProperties } from 'react';
 
+/** Video job shape. */
 export interface VideoJob {
+  /** Id property. */
   id: string;
+  /** Status property. */
   status: string;
+  /** Input url property. */
   inputUrl?: string;
+  /** Prompt property. */
   prompt?: string;
+  /** Output url property. */
   outputUrl?: string;
+  /** Created at property. */
   createdAt: string;
 }
 
+/** Tab type. */
 export type Tab = 'jobs' | 'create' | 'voice' | 'media';
 
+/** Status_colors. */
 export const STATUS_COLORS: Record<string, string> = {
   PROCESSING: 'var(--app-info)',
   COMPLETED: 'var(--app-success)',
@@ -19,6 +28,7 @@ export const STATUS_COLORS: Record<string, string> = {
   PENDING: 'var(--app-warning)',
 };
 
+/** Input style. */
 export const inputStyle: CSSProperties = {
   width: '100%',
   background: 'rgba(255,255,255,0.04)',
@@ -32,6 +42,7 @@ export const inputStyle: CSSProperties = {
   boxSizing: 'border-box',
 };
 
+/** Btn primary. */
 export const btnPrimary: CSSProperties = {
   background: 'var(--app-accent)',
   color: 'var(--app-text-on-accent)',
@@ -45,6 +56,7 @@ export const btnPrimary: CSSProperties = {
   whiteSpace: 'nowrap',
 };
 
+/** Btn secondary. */
 export const btnSecondary: CSSProperties = {
   background: 'rgba(255,255,255,0.04)',
   color: 'var(--app-text-primary)',
@@ -57,6 +69,7 @@ export const btnSecondary: CSSProperties = {
   whiteSpace: 'nowrap',
 };
 
+/** Video job row. */
 export function VideoJobRow({
   job,
   onRefresh,

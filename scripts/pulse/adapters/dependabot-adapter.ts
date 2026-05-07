@@ -4,7 +4,7 @@
  */
 
 import * as https from 'https';
-import type { PulseSignal } from '../types';
+import type { PulseSignal } from '../__parts__/types.capabilities/05-external-signals';
 
 interface DependabotAdapterConfig {
   token?: string;
@@ -52,6 +52,7 @@ function makeDependabotRequest(url: string, token?: string): Promise<unknown> {
   });
 }
 
+/** Fetch dependabot signals. */
 export async function fetchDependabotSignals(
   config: DependabotAdapterConfig,
 ): Promise<PulseSignal[]> {

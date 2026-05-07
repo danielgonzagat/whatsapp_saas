@@ -24,8 +24,8 @@ describe('KloelSecurityGuard', () => {
       },
     };
     guard = new KloelSecurityGuard(
-      reflector as unknown as Reflector,
-      prisma as unknown as PrismaService,
+      reflector as never as Reflector,
+      prisma as never as PrismaService,
     );
   });
 
@@ -47,7 +47,7 @@ describe('KloelSecurityGuard', () => {
       }),
       getHandler: () => 'handler',
       getClass: () => 'class',
-    } as unknown as ExecutionContext;
+    } as never as ExecutionContext;
 
     prisma.workspace.findUnique.mockResolvedValue({
       id: 'ws-1',

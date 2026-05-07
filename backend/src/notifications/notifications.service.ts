@@ -1,8 +1,9 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as admin from 'firebase-admin';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { OpsAlertService } from '../observability/ops-alert.service';
 
 const N_RE = /\\n/g;
 
@@ -16,6 +17,7 @@ export class NotificationsService {
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
     private readonly config: ConfigService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {
     this.initFirebase();
   }
@@ -39,15 +41,14 @@ export class NotificationsService {
         this.logger.warn('⚠️ Firebase não configurado - push notifications desabilitadas');
       }
     } catch (error: unknown) {
-      const errorInstanceofError =
-        error instanceof Error
-          ? error
-          : new Error(typeof error === 'string' ? error : 'unknown error');
+      void this.opsAlert?.alertOnCriticalError(error, 'NotificationsService.initFirebase');
       if ((error as { code?: string } | null)?.code === 'app/duplicate-app') {
         this.firebaseApp = admin.app();
         this.logger.log('✅ Firebase Admin SDK já inicializado');
       } else {
-        this.logger.error(`❌ Erro ao inicializar Firebase: ${errorInstanceofError.message}`);
+        this.logger.error(
+          `❌ Erro ao inicializar Firebase: ${error instanceof Error ? error.message : 'unknown_error'}`,
+        );
       }
     }
   }
@@ -84,7 +85,11 @@ export class NotificationsService {
           agentId: device.agentId,
           details: { deletedBy: 'user' },
         })
-        .catch(() => {});
+        .catch((err: unknown) => {
+          this.logger.warn(
+            `Failed to log audit event for device token deletion: ${err instanceof Error ? err.message : String(err)}`,
+          );
+        });
     }
 
     return this.prisma.deviceToken
@@ -92,6 +97,7 @@ export class NotificationsService {
         where: { token },
       })
       .catch((err) => {
+        void this.opsAlert?.alertOnCriticalError(err, 'NotificationsService.unregisterDevice');
         this.logger.warn(`Failed to unregister device token: ${err?.message}`);
         return null;
       });
@@ -184,12 +190,15 @@ export class NotificationsService {
         failed: response.failureCount,
       };
     } catch (error: unknown) {
-      const errorInstanceofError =
-        error instanceof Error
-          ? error
-          : new Error(typeof error === 'string' ? error : 'unknown error');
-      this.logger.error(`❌ Erro ao enviar push: ${errorInstanceofError.message}`);
-      return { sent: 0, failed: devices.length, error: errorInstanceofError.message };
+      void this.opsAlert?.alertOnCriticalError(error, 'NotificationsService.sendPushNotification');
+      this.logger.error(
+        `❌ Erro ao enviar push: ${error instanceof Error ? error.message : 'unknown_error'}`,
+      );
+      return {
+        sent: 0,
+        failed: devices.length,
+        error: error instanceof Error ? error.message : 'unknown_error',
+      };
     }
   }
 

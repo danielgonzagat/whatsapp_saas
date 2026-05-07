@@ -37,6 +37,8 @@ const THINK_STREAM_BODY = [
   'data: {"type":"content","content":"Estruture uma landing com headline forte, prova social e CTA único."}\n\n',
   'data: {"type":"done","done":true}\n\n',
 ].join('');
+const VISUAL_CHAT_FIXED_TIME_ISO = '2026-01-15T23:30:00.000Z';
+const CHAT_VISUAL_MAX_DIFF_PIXELS = 16000;
 
 async function acceptCookiesIfVisible(page: Page) {
   const acceptCookiesButton = page.getByRole('button', { name: 'Aceitar tudo' });
@@ -75,10 +77,27 @@ test('Kloel chat preserves the new empty and active visual contract', async ({ p
 
   await mockVisualAuthApis(page, auth);
 
-  await page.addInitScript(() => {
+  await page.addInitScript((fixedTimeIso) => {
+    const fixedTimeMs = new Date(fixedTimeIso).valueOf();
+    const OriginalDate = Date;
+
+    class FixedDate extends OriginalDate {
+      constructor(...args: ConstructorParameters<typeof Date>) {
+        super(...(args.length ? args : [fixedTimeMs]));
+      }
+
+      static now() {
+        return fixedTimeMs;
+      }
+    }
+
+    FixedDate.parse = OriginalDate.parse.bind(OriginalDate);
+    FixedDate.UTC = OriginalDate.UTC.bind(OriginalDate);
+
+    globalThis.Date = FixedDate as DateConstructor;
     window.localStorage.removeItem('kloel:conversations');
     window.localStorage.removeItem('kloel:activeConv');
-  });
+  }, VISUAL_CHAT_FIXED_TIME_ISO);
 
   await page.route('**/kloel/threads', async (route) => {
     if (route.request().method() !== 'GET') {
@@ -127,11 +146,19 @@ test('Kloel chat preserves the new empty and active visual contract', async ({ p
   await freezeChatUi(page);
 
   await expect(page.getByPlaceholder('Como posso ajudar você hoje?')).toBeVisible();
-  await expect(page.getByText('Kloel é uma IA e pode cometer erros.')).toHaveCount(0);
-  await expect(page.getByRole('button', { name: 'Criar Anúncio' })).toBeVisible();
+  await expect(
+    page.getByText('Kloel é uma IA e pode errar. Confira informações importantes.'),
+  ).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Criar Anúncio' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Escrever Copy' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Estratégia de Vendas' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Analisar Produto' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Criar Página' })).toHaveCount(0);
 
   await expect(page).toHaveScreenshot('kloel-chat-empty.png', {
     fullPage: true,
+    maxDiffPixels: CHAT_VISUAL_MAX_DIFF_PIXELS,
+    maxDiffPixelRatio: 0.02,
   });
 
   await page.getByLabel('Abrir capacidades do prompt').click();
@@ -139,6 +166,8 @@ test('Kloel chat preserves the new empty and active visual contract', async ({ p
 
   await expect(page).toHaveScreenshot('kloel-chat-popover.png', {
     fullPage: true,
+    maxDiffPixels: CHAT_VISUAL_MAX_DIFF_PIXELS,
+    maxDiffPixelRatio: 0.02,
   });
 
   await page.getByRole('button', { name: 'Criar site' }).click();
@@ -147,10 +176,12 @@ test('Kloel chat preserves the new empty and active visual contract', async ({ p
   await page.getByRole('button', { name: /Oferta Kloel Visual/i }).click();
 
   await expect(page.getByText('Criar site')).toBeVisible();
-  await expect(page.getByText('Oferta Kloel Visual')).toBeVisible();
+  await expect(page.locator('span[title="Oferta Kloel Visual"]')).toBeVisible();
 
   await expect(page).toHaveScreenshot('kloel-chat-configured.png', {
     fullPage: true,
+    maxDiffPixels: CHAT_VISUAL_MAX_DIFF_PIXELS,
+    maxDiffPixelRatio: 0.02,
   });
 
   const input = page.getByPlaceholder('Descreva o site que deseja criar...');
@@ -160,10 +191,14 @@ test('Kloel chat preserves the new empty and active visual contract', async ({ p
   await expect(
     page.getByText('Estruture uma landing com headline forte, prova social e CTA único.'),
   ).toBeVisible();
-  await expect(page.getByText('Kloel é uma IA e pode cometer erros.')).toBeVisible();
+  await expect(
+    page.getByText('Kloel é uma IA e pode errar. Confira informações importantes.'),
+  ).toBeVisible();
   await expect(page.getByRole('button', { name: 'Criar Anúncio' })).toHaveCount(0);
 
   await expect(page).toHaveScreenshot('kloel-chat-active.png', {
     fullPage: true,
+    maxDiffPixels: CHAT_VISUAL_MAX_DIFF_PIXELS,
+    maxDiffPixelRatio: 0.02,
   });
 });

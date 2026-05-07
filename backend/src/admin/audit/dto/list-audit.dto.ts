@@ -1,26 +1,30 @@
 import { Type } from 'class-transformer';
-import { IsDate, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import { IsDate, IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
 
 /** List audit query dto. */
 export class ListAuditQueryDto {
   /** Admin user id property. */
   @IsOptional()
   @IsString()
+  @MaxLength(255)
   adminUserId?: string;
 
   /** Action property. */
   @IsOptional()
   @IsString()
+  @MaxLength(120)
   action?: string;
 
   /** Entity type property. */
   @IsOptional()
   @IsString()
+  @MaxLength(120)
   entityType?: string;
 
   /** Entity id property. */
   @IsOptional()
   @IsString()
+  @MaxLength(255)
   entityId?: string;
 
   /** From property. */

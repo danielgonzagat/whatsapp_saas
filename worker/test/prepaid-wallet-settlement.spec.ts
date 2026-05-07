@@ -49,12 +49,12 @@ describe('prepaid-wallet-settlement', () => {
         }),
       },
       prepaidWallet: {
-        findUnique: vi.fn().mockResolvedValue({
+        findFirst: vi.fn().mockResolvedValue({
           id: 'wallet_1',
           workspaceId: 'ws_1',
           balanceCents: BigInt(97),
         }),
-        update: vi.fn().mockResolvedValue(undefined),
+        updateMany: vi.fn().mockResolvedValue(undefined),
       },
     };
 
@@ -70,8 +70,8 @@ describe('prepaid-wallet-settlement', () => {
       buildDb(tx),
     );
 
-    expect(tx.prepaidWallet.update).toHaveBeenCalledWith({
-      where: { id: 'wallet_1' },
+    expect(tx.prepaidWallet.updateMany).toHaveBeenCalledWith({
+      where: { id: 'wallet_1', workspaceId: 'ws_1' },
       data: { balanceCents: BigInt(99) },
     });
     expect(tx.prepaidWalletTransaction.create).toHaveBeenCalledWith({
@@ -105,12 +105,12 @@ describe('prepaid-wallet-settlement', () => {
         create: vi.fn(),
       },
       prepaidWallet: {
-        findUnique: vi.fn().mockResolvedValue({
+        findFirst: vi.fn().mockResolvedValue({
           id: 'wallet_1',
           workspaceId: 'ws_1',
           balanceCents: BigInt(99),
         }),
-        update: vi.fn(),
+        updateMany: vi.fn(),
       },
     };
 
@@ -126,7 +126,7 @@ describe('prepaid-wallet-settlement', () => {
     );
 
     expect(adjustment).toBeNull();
-    expect(tx.prepaidWallet.update).not.toHaveBeenCalled();
+    expect(tx.prepaidWallet.updateMany).not.toHaveBeenCalled();
     expect(tx.prepaidWalletTransaction.create).not.toHaveBeenCalled();
   });
 
@@ -144,12 +144,12 @@ describe('prepaid-wallet-settlement', () => {
         create: vi.fn(),
       },
       prepaidWallet: {
-        findUnique: vi.fn().mockResolvedValue({
+        findFirst: vi.fn().mockResolvedValue({
           id: 'wallet_1',
           workspaceId: 'ws_1',
           balanceCents: BigInt(0),
         }),
-        update: vi.fn(),
+        updateMany: vi.fn(),
       },
     };
 

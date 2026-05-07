@@ -43,6 +43,7 @@ interface Plan {
 }
 
 function navigateCurrentWindow(url: string) {
+  if (typeof document === 'undefined') return;
   const link = document.createElement('a');
   link.href = url;
   link.rel = 'noopener noreferrer';
@@ -113,7 +114,13 @@ const PLANS: Plan[] = [
   },
 ];
 
-const BENEFITS = [
+interface Benefit {
+  icon: React.ElementType;
+  title: string;
+  description: string;
+}
+
+const BENEFITS: Benefit[] = [
   { icon: MessageCircle, title: 'WhatsApp Oficial', description: 'Conexão direta com API oficial' },
   { icon: Bot, title: 'IA que Vende', description: 'Autopilot responde e fecha vendas' },
   { icon: Users, title: 'CRM Integrado', description: 'Gerencie leads automaticamente' },
@@ -142,6 +149,10 @@ export default function PricingPage() {
     });
 
   const handleSelectPlan = async (plan: Plan) => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
     setIsLoading(plan.id);
     setError(null);
 

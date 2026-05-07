@@ -44,7 +44,7 @@ describe('admin-crypto', () => {
       expect(() => decryptAdminSecret(ct, key2)).toThrow();
     });
 
-    it('accepts non-hex passphrase keys by deriving via sha256', () => {
+    it('accepts non-hex passphrase keys by deriving via PBKDF2', () => {
       // The operator may set a human-friendly passphrase in Railway;
       // the crypto layer should still encrypt/decrypt round-trip.
       const ct = encryptAdminSecret('x', 'my-passphrase-shorter-than-64-chars');

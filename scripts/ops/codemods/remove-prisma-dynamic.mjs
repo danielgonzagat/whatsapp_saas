@@ -6,8 +6,8 @@
  *
  * Removes the PrismaDynamic type alias and rewrites prismaAny.X calls to
  * prisma.X across the backend. Uses per-file validation: transforms one
- * file at a time, runs typecheck, reverts the file via git restore if
- * typecheck fails, logs the skip.
+ * file at a time, runs typecheck, reverts the file from an explicit
+ * pre-edit snapshot if typecheck fails, logs the skip. Never uses git restore.
  *
  * Sensitive paths (checkout/, billing/, auth/, wallet*, webhooks/,
  * partnerships/, affiliate/, prisma/) are SKIPPED — they need PR review
@@ -20,7 +20,7 @@
  */
 
 import { execFileSync } from 'node:child_process';
-import { existsSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -69,15 +69,6 @@ function runBackendTypecheck() {
   }
 }
 
-function gitRestoreFile(absPath) {
-  try {
-    execFileSync('git', ['restore', absPath], { cwd: repoRoot, stdio: 'pipe' });
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 async function main() {
   ensureTsMorphInstalled();
   const { Project, SyntaxKind } = await import('ts-morph');
@@ -116,6 +107,7 @@ async function main() {
 
     const absPath = path.join(repoRoot, relPath);
     console.log(`[remove-prisma-dynamic] processing ${relPath}`);
+    const originalContent = readFileSync(absPath, 'utf8');
 
     let sourceFile;
     try {
@@ -194,8 +186,8 @@ async function main() {
     console.log(`[remove-prisma-dynamic]   ${mutationCount} mutations, running typecheck...`);
     const checkResult = runBackendTypecheck();
     if (!checkResult.ok) {
-      console.log(`[remove-prisma-dynamic]   typecheck FAILED, reverting`);
-      gitRestoreFile(absPath);
+      console.log(`[remove-prisma-dynamic]   typecheck FAILED, restoring pre-edit snapshot`);
+      writeFileSync(absPath, originalContent);
       failures.push({
         file: relPath,
         mutations: mutationCount,

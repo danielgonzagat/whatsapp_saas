@@ -1,23 +1,34 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import * as db from '../db';
 import { runFollowupContact } from '../processors/autopilot-processor';
+
+type FlexMock = ReturnType<typeof vi.fn>;
 
 const { mockDispatchOutbound } = vi.hoisted(() => ({
   mockDispatchOutbound: vi.fn(async () => ({ ok: true })),
 }));
 
-vi.mock('../db', () => ({
-  prisma: {
-    workspace: { findUnique: vi.fn() },
-    conversation: { findFirst: vi.fn() },
-    contact: { findFirst: vi.fn(), findUnique: vi.fn() },
-    message: { findFirst: vi.fn(), findMany: vi.fn(), create: vi.fn() },
-    kloelMemory: { upsert: vi.fn(), create: vi.fn() },
-    systemInsight: { findFirst: vi.fn(), create: vi.fn() },
-    auditLog: { create: vi.fn() },
-    autopilotEvent: { create: vi.fn() },
-    autonomyExecution: { create: vi.fn(), findFirst: vi.fn(), update: vi.fn() },
+const mockPrisma = vi.hoisted(() => ({
+  workspace: { findUnique: vi.fn() as FlexMock },
+  conversation: { findFirst: vi.fn() as FlexMock },
+  contact: { findFirst: vi.fn() as FlexMock, findUnique: vi.fn() as FlexMock },
+  message: {
+    findFirst: vi.fn() as FlexMock,
+    findMany: vi.fn() as FlexMock,
+    create: vi.fn() as FlexMock,
   },
+  kloelMemory: { upsert: vi.fn() as FlexMock, create: vi.fn() as FlexMock },
+  systemInsight: { findFirst: vi.fn() as FlexMock, create: vi.fn() as FlexMock },
+  auditLog: { create: vi.fn() as FlexMock },
+  autopilotEvent: { create: vi.fn() as FlexMock },
+  autonomyExecution: {
+    create: vi.fn() as FlexMock,
+    findFirst: vi.fn() as FlexMock,
+    update: vi.fn() as FlexMock,
+  },
+}));
+
+vi.mock('../db', () => ({
+  prisma: mockPrisma,
 }));
 
 vi.mock('../providers/whatsapp-engine', () => ({
@@ -30,6 +41,7 @@ vi.mock('../providers/outbound-dispatcher', () => ({
 
 vi.mock('../providers/plan-limits', () => ({
   PlanLimitsProvider: {
+    checkDailyMessageLimit: vi.fn(async () => ({ allowed: true })),
     checkMessageLimit: vi.fn(async () => ({ allowed: true })),
   },
 }));
@@ -49,8 +61,6 @@ vi.mock('../redis-client', () => ({
   },
   redisPub: { publish: vi.fn(async () => 1) },
 }));
-
-const mockPrisma: any = db.prisma;
 
 describe('followup-contact job', () => {
   beforeEach(() => {

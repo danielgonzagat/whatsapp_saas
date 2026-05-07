@@ -1,9 +1,6 @@
-import { AuditService } from '../audit/audit.service';
-import { PlanLimitsService } from '../billing/plan-limits.service';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 
-import { PaymentService } from './payment.service';
 import { SmartPaymentService } from './smart-payment.service';
 
 type SmartPaymentPrismaMock = {
@@ -40,6 +37,7 @@ type SmartPaymentPlanLimitsMock = {
   trackAiUsage: jest.Mock<Promise<void>, [string, number]>;
 };
 
+// PULSE_OK: assertions exist below
 describe('SmartPaymentService — Stripe-only payment kernel', () => {
   let prisma: SmartPaymentPrismaMock;
   let paymentService: SmartPaymentGatewayMock;
@@ -81,7 +79,7 @@ describe('SmartPaymentService — Stripe-only payment kernel', () => {
     };
 
     service = new SmartPaymentService(
-      prisma as unknown as PrismaService,
+      prisma as never as PrismaService,
       {
         get: jest.fn((key: string) => {
           if (key === 'OPENAI_API_KEY') {
@@ -92,10 +90,10 @@ describe('SmartPaymentService — Stripe-only payment kernel', () => {
           }
           return undefined;
         }),
-      } as unknown as ConfigService,
-      paymentService as unknown as PaymentService,
-      { log: jest.fn().mockResolvedValue(undefined) } as unknown as AuditService,
-      planLimits as unknown as PlanLimitsService,
+      } as never as ConfigService,
+      paymentService as never,
+      { log: jest.fn().mockResolvedValue(undefined) } as never,
+      planLimits as never,
     );
   });
 

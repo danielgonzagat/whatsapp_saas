@@ -1,12 +1,21 @@
 import { Type } from 'class-transformer';
-import { IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
+import {
+  IsDateString,
+  IsIn,
+  IsInt,
+  IsOptional,
+  IsString,
+  Max,
+  MaxLength,
+  Min,
+} from 'class-validator';
 
 /** Report filters dto. */
 export class ReportFiltersDto {
   /** Start date property. */
-  @IsOptional() @IsString() @MaxLength(255) startDate?: string;
+  @IsOptional() @IsDateString() @MaxLength(255) startDate?: string;
   /** End date property. */
-  @IsOptional() @IsString() @MaxLength(255) endDate?: string;
+  @IsOptional() @IsDateString() @MaxLength(255) endDate?: string;
   /** Product property. */
   @IsOptional() @IsString() @MaxLength(255) product?: string;
   /** Status property. */

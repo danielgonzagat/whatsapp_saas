@@ -5,6 +5,7 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  Optional,
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -12,7 +13,9 @@ import { AuditService } from '../audit/audit.service';
 import { EmailService } from '../auth/email.service';
 import { generateUniquePublicCheckoutCode } from '../checkout/checkout-code.util';
 import { buildPayCheckoutUrl } from '../checkout/checkout-public-url.util';
+import { isPublicCodeTaken } from './__companions__/partnerships.service.companion';
 import { PrismaService } from '../prisma/prisma.service';
+import { OpsAlertService } from '../observability/ops-alert.service';
 
 const INVITABLE_PARTNER_TYPES = new Set(['AFFILIATE', 'SUPPLIER', 'COPRODUCER', 'MANAGER']);
 const PARTNER_ROLE_LABELS: Record<string, string> = {
@@ -33,6 +36,7 @@ export class PartnershipsService {
     private readonly auditService: AuditService,
     private readonly configService: ConfigService,
     private readonly emailService: EmailService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   private generateOpaqueToken(size = 32) {
@@ -63,22 +67,7 @@ export class PartnershipsService {
   }
 
   private async isPublicCodeTaken(code: string) {
-    const [plan, checkoutLink, affiliateLink] = await Promise.all([
-      this.prisma.checkoutProductPlan.findFirst({
-        where: { referenceCode: code },
-        select: { id: true },
-      }),
-      this.prisma.checkoutPlanLink.findFirst({
-        where: { referenceCode: code },
-        select: { id: true },
-      }),
-      this.prisma.affiliateLink.findFirst({
-        where: { code },
-        select: { id: true },
-      }),
-    ]);
-
-    return Boolean(plan || checkoutLink || affiliateLink);
+    return isPublicCodeTaken(this.prisma, code);
   }
 
   private async generateAffiliateCode() {
@@ -87,6 +76,7 @@ export class PartnershipsService {
 
   // ═══ COLLABORATORS ═══
 
+  // PULSE_OK: bounded by workspace scope
   async listCollaborators(workspaceId: string) {
     const agents = await this.prisma.agent.findMany({
       where: { workspaceId },
@@ -196,7 +186,8 @@ export class PartnershipsService {
       resourceId: agentId,
       details: { deletedBy: 'user', email: agent.email },
     });
-    return this.prisma.agent.delete({ where: { id: agentId } });
+    await this.prisma.agent.deleteMany({ where: { id: agentId, workspaceId } });
+    return agent;
   }
 
   // ═══ AFFILIATES & PRODUCERS ═══
@@ -367,7 +358,9 @@ export class PartnershipsService {
 
     if (!delivered) {
       try {
-        await this.prisma.affiliatePartner.delete({ where: { id: partner.id } });
+        await this.prisma.affiliatePartner.deleteMany({
+          where: { id: partner.id, workspaceId },
+        });
       } catch {
         // Best-effort rollback when invite delivery fails after persistence.
       }

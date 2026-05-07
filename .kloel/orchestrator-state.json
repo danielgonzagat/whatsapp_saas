@@ -1,0 +1,16 @@
+{
+  "cycle": 1,
+  "startedAt": "2026-05-01T22:00:00Z",
+  "baseline": {
+    "graphNodes": 4653,
+    "graphLinks": 11760,
+    "markdownFiles": 3907,
+    "resolvedLinks": 10101,
+    "unresolvedLinks": 1685,
+    "dirtyFiles": 56,
+    "pulseStatus": "daemon_compilation_error"
+  },
+  "agents": {},
+  "filesModified": [],
+  "locks": {}
+}

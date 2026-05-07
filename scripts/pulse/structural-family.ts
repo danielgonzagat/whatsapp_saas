@@ -51,6 +51,7 @@ function unique<T>(values: T[]): T[] {
   return [...new Set(values)];
 }
 
+/** Normalize structural text. */
 export function normalizeStructuralText(value: string): string {
   return String(value || '')
     .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
@@ -85,14 +86,17 @@ function normalizeTokens(tokens: string[]): string[] {
   );
 }
 
+/** Tokenize structural text. */
 export function tokenizeStructuralText(value: string): string[] {
   return normalizeTokens(normalizeStructuralText(value).split(/\s+/));
 }
 
+/** Slugify structural. */
 export function slugifyStructural(value: string): string {
   return normalizeStructuralText(value).replace(/\s+/g, '-');
 }
 
+/** Title case structural. */
 export function titleCaseStructural(value: string): string {
   return value
     .split(/[\s-]+/)
@@ -116,6 +120,7 @@ function routeSegments(value: string): string[] {
   return normalized;
 }
 
+/** Derive route family. */
 export function deriveRouteFamily(value: string, maxSegments: number = 2): string | null {
   const segments = routeSegments(value);
   if (segments.length === 0) {
@@ -124,6 +129,7 @@ export function deriveRouteFamily(value: string, maxSegments: number = 2): strin
   return segments.slice(0, maxSegments).join('-') || null;
 }
 
+/** Derive text family. */
 export function deriveTextFamily(value: string, maxTokens: number = 2): string | null {
   const tokens = tokenizeStructuralText(value);
   if (tokens.length === 0) {
@@ -132,6 +138,7 @@ export function deriveTextFamily(value: string, maxTokens: number = 2): string |
   return tokens.slice(0, maxTokens).join('-') || null;
 }
 
+/** Derive structural families. */
 export function deriveStructuralFamilies(values: Array<string | null | undefined>): string[] {
   return unique(
     values
@@ -145,6 +152,7 @@ export function deriveStructuralFamilies(values: Array<string | null | undefined
   );
 }
 
+/** Get family tokens. */
 export function getFamilyTokens(value: string | string[] | null | undefined): string[] {
   if (Array.isArray(value)) {
     return normalizeTokens(value.flatMap((entry) => String(entry || '').split(/[-/\s]+/)));
@@ -152,6 +160,7 @@ export function getFamilyTokens(value: string | string[] | null | undefined): st
   return normalizeTokens(String(value || '').split(/[-/\s]+/));
 }
 
+/** Families overlap. */
 export function familiesOverlap(
   left: string | string[] | null | undefined,
   right: string | string[] | null | undefined,
@@ -202,6 +211,7 @@ export function familiesOverlap(
   return false;
 }
 
+/** Is meaningful ui label. */
 export function isMeaningfulUiLabel(value: string | null | undefined): boolean {
   if (!value) {
     return false;

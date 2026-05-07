@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
@@ -6,8 +7,10 @@ import type { AuthenticatedRequest } from '../common/interfaces/authenticated-re
 import { InboxService } from './inbox.service';
 
 /** Inbox controller. */
+@UseGuards(ThrottlerGuard)
 @Controller('inbox')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
+@Throttle({ default: { limit: 10, ttl: 60000 } })
 export class InboxController {
   constructor(private readonly inbox: InboxService) {}
 

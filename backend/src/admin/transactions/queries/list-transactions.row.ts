@@ -11,7 +11,7 @@ import {
 import type { AdminTransactionRow } from './list-transactions.types';
 
 /** Transaction row source type. */
-export type TransactionRowSource = {
+type TransactionRowSource = {
   id: string;
   orderNumber: string;
   workspaceId: string;

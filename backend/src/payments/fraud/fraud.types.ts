@@ -1,7 +1,7 @@
 import type { FraudBlacklistType } from '@prisma/client';
 
 /** Fraud action type. */
-export type FraudAction = 'allow' | 'review' | 'require_3ds' | 'block';
+type FraudAction = 'allow' | 'review' | 'require_3ds' | 'block';
 
 /** Fraud checkout context shape. */
 export interface FraudCheckoutContext {
@@ -21,6 +21,8 @@ export interface FraudCheckoutContext {
   cardCountry?: string | null;
   /** Order country property. */
   orderCountry?: string | null;
+  /** IP-derived country property. */
+  ipCountry?: string | null;
   /** Amount cents property. */
   amountCents: bigint;
   /** Workspace id property. */

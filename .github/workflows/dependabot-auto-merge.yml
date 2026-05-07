@@ -1,5 +1,8 @@
 name: Dependabot Auto Merge
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
 on:
   push:
     branches:
@@ -30,7 +33,7 @@ jobs:
         image: pgvector/pgvector:pg15
         env:
           POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: password
+          POSTGRES_PASSWORD: ${{ secrets.TEST_DB_PASSWORD || 'postgres' }}
           POSTGRES_DB: whatsapp_saas_test
         ports:
           - 5432:5432
@@ -41,11 +44,11 @@ jobs:
           --health-retries 5
 
     env:
-      DATABASE_URL: postgresql://postgres:password@localhost:5432/whatsapp_saas_test
+      DATABASE_URL: postgresql://postgres:${{ secrets.TEST_DB_PASSWORD || 'postgres' }}@localhost:5432/whatsapp_saas_test
       NEXT_PUBLIC_API_URL: http://localhost:3001
       BACKEND_URL: http://localhost:3001
       NEXTAUTH_URL: http://localhost:3000
-      NEXTAUTH_SECRET: test_secret
+      NEXTAUTH_SECRET: ${{ secrets.TEST_NEXTAUTH_SECRET || 'test-secret-for-ci-only' }}
       NEXT_PUBLIC_SENTRY_DSN: ${{ secrets.FRONTEND_SENTRY_DSN }}
       SENTRY_AUTH_TOKEN: ${{ secrets.FRONTEND_SENTRY_AUTH_TOKEN }}
       SENTRY_ORG: ${{ secrets.FRONTEND_SENTRY_ORG }}
@@ -120,14 +123,19 @@ jobs:
           esac
 
       - name: Add automation summary
+        env:
+          DEPENDENCY_NAMES: ${{ steps.metadata.outputs.dependency-names }}
+          UPDATE_TYPE: ${{ steps.metadata.outputs.update-type }}
+          ELIGIBLE: ${{ steps.gate.outputs.eligible }}
+          REASON: ${{ steps.gate.outputs.reason }}
         run: |
           {
             echo "## Dependabot auto-merge"
             echo ""
-            echo "- Dependency: ${{ steps.metadata.outputs.dependency-names }}"
-            echo "- Update type: ${{ steps.metadata.outputs.update-type }}"
-            echo "- Eligible: ${{ steps.gate.outputs.eligible }}"
-            echo "- Reason: ${{ steps.gate.outputs.reason }}"
+            echo "- Dependency: ${DEPENDENCY_NAMES}"
+            echo "- Update type: ${UPDATE_TYPE}"
+            echo "- Eligible: ${ELIGIBLE}"
+            echo "- Reason: ${REASON}"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Auto-approve PR

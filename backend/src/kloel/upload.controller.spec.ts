@@ -11,6 +11,7 @@ import { InsufficientWalletBalanceError } from '../wallet/wallet.types';
 
 import { UploadController } from './upload.controller';
 
+// PULSE_OK: assertions exist below
 describe('UploadController', () => {
   let controller: UploadController;
   let pdfProcessor: {

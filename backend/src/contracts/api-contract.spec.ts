@@ -94,11 +94,8 @@ describe('API contract schemas — frontend freeze (P1-1)', () => {
       // backend without coordinating the frontend. The frontend's apiFetch
       // accepts both forms, but the schema enforces snake_case as the
       // declared contract.
-      const renamed = {
-        ...authTokenFixture,
-        accessToken: authTokenFixture.access_token,
-      } as any;
-      delete renamed.access_token;
+      const { access_token, ...rest } = authTokenFixture;
+      const renamed = { ...rest, accessToken: access_token };
       expect(AuthLoginResponseSchema.safeParse(renamed).success).toBe(false);
     });
 

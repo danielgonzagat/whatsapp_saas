@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';
 import {
   type CheckoutExperienceForm,
@@ -17,6 +17,13 @@ import { finalizeCheckoutOrder } from './checkout-order-submit';
 import { validateCoupon } from './useCheckout';
 import { useCheckoutExperienceAutomation } from './useCheckoutExperienceAutomation';
 import { useCheckoutSocialIdentity } from './useCheckoutSocialIdentity';
+import {
+  buildCheckoutFormDraftKey,
+  readCheckoutFormDraft,
+  sanitizeCheckoutFormDraft,
+  CHECKOUT_FORM_DRAFT_VERSION,
+  type CheckoutFormDraft,
+} from './useCheckoutExperienceSocial.draft';
 
 const D_RE = /\D/g;
 
@@ -62,6 +69,39 @@ export function useCheckoutExperienceSocial({
 
   const { fmt } = helpers;
   const social = useCheckoutSocialIdentity({ slug, checkoutCode, enabled: Boolean(slug) });
+  const checkoutFormDraftKey = useMemo(
+    () => buildCheckoutFormDraftKey(slug, checkoutCode, plan?.id),
+    [checkoutCode, plan?.id, slug],
+  );
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    const savedDraft = readCheckoutFormDraft(window.localStorage.getItem(checkoutFormDraftKey));
+    if (!savedDraft) {
+      return;
+    }
+    setForm((prev) => ({ ...prev, ...savedDraft.form }));
+    setPayMethod(savedDraft.payMethod);
+    setQty(savedDraft.qty);
+    setCouponCode(savedDraft.couponCode);
+  }, [checkoutFormDraftKey]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    const payload: CheckoutFormDraft = {
+      version: CHECKOUT_FORM_DRAFT_VERSION,
+      savedAt: new Date().toISOString(),
+      form: sanitizeCheckoutFormDraft(form),
+      payMethod,
+      qty,
+      couponCode,
+    };
+    window.localStorage.setItem(checkoutFormDraftKey, JSON.stringify(payload));
+  }, [checkoutFormDraftKey, couponCode, form, payMethod, qty]);
 
   const derivedState = useMemo(
     () =>
@@ -321,11 +361,12 @@ export function useCheckoutExperienceSocial({
       return;
     }
 
+    window.localStorage.removeItem(checkoutFormDraftKey);
     setShowSuccess(true);
     redirectTimer.current = window.setTimeout(() => {
       window.location.href = stripeReturnUrl;
     }, 1200);
-  }, [stripeReturnUrl]);
+  }, [checkoutFormDraftKey, stripeReturnUrl]);
 
   const handleStripePaymentError = useCallback((message: string) => {
     setSubmitError(message || 'Erro ao confirmar o pagamento no Stripe.');
@@ -349,9 +390,10 @@ export function useCheckoutExperienceSocial({
         return;
       }
 
+      window.localStorage.removeItem(checkoutFormDraftKey);
       router.push(safePath);
     },
-    [router],
+    [checkoutFormDraftKey, router],
   );
 
   const runFinalizeOrderPrecheck = useCallback(
@@ -516,8 +558,10 @@ export function useCheckoutExperienceSocial({
     socialLoadingProvider: social.loadingProvider,
     socialError: social.socialError,
     facebookAvailable: social.facebookAvailable,
+    appleAvailable: social.appleAvailable,
     facebookSdkReady: social.facebookSdkReady,
     triggerFacebookSignIn: social.triggerFacebookSignIn,
+    triggerAppleSignIn: social.triggerAppleSignIn,
     googleAvailable: social.googleAvailable,
     googleButtonRef: social.googleButtonRef,
   };

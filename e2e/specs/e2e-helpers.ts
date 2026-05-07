@@ -29,7 +29,7 @@ type E2EAuthCacheFile = {
   createdAt?: string;
 };
 
-function decodeJwtPayload(token: string): Record<string, any> | null {
+function decodeJwtPayload(token: string): Record<string, unknown> | null {
   const [, payload = ''] = token.split('.');
   if (!payload) {
     return null;
@@ -201,9 +201,22 @@ export async function seedE2EAuthSession(
   page: Page,
   auth: Pick<E2EAuthContext, 'token' | 'workspaceId'>,
 ) {
-  const { appUrl } = getE2EBaseUrls();
+  const { appUrl, authUrl, frontendUrl, payUrl } = getE2EBaseUrls();
+  const consent = JSON.stringify({
+    necessary: true,
+    analytics: false,
+    marketing: false,
+    updatedAt: new Date(0).toISOString(),
+  });
+  const consentCookies = [...new Set([frontendUrl, authUrl, appUrl, payUrl])].map((url) => ({
+    name: 'kloel_consent',
+    value: consent,
+    url,
+    sameSite: 'Lax' as const,
+  }));
 
   await page.context().addCookies([
+    ...consentCookies,
     {
       name: 'kloel_auth',
       value: '1',
@@ -234,6 +247,57 @@ export async function seedE2EAuthSession(
     window.localStorage.setItem('kloel_access_token', token);
     window.localStorage.setItem('kloel_workspace_id', workspaceId);
   }, auth);
+}
+
+export async function dismissCookieBanner(page: Page) {
+  await page
+    .evaluate(() => {
+      const consent = JSON.stringify({
+        necessary: true,
+        analytics: true,
+        marketing: true,
+        updatedAt: new Date().toISOString(),
+      });
+      document.cookie = `kloel_consent=${encodeURIComponent(consent)}; path=/; max-age=31536000; SameSite=Lax`;
+      document
+        .querySelectorAll('.kloel-cookie-banner, .kloel-cookie-modal__overlay')
+        .forEach((node) => node.remove());
+    })
+    .catch(() => undefined);
+
+  const acceptAllButton = page.getByRole('button', { name: /aceitar tudo/i });
+  if (await acceptAllButton.isVisible({ timeout: 1_000 }).catch(() => false)) {
+    await acceptAllButton
+      .evaluate((button: HTMLElement) => button.click())
+      .catch(async () => {
+        await page
+          .locator('.kloel-cookie-banner')
+          .evaluateAll((nodes) => nodes.forEach((node) => node.remove()))
+          .catch(() => undefined);
+      });
+  }
+  await page
+    .locator('.kloel-cookie-banner')
+    .waitFor({ state: 'detached', timeout: 5_000 })
+    .catch(() => undefined);
+  await page
+    .locator('.kloel-cookie-banner')
+    .evaluateAll((nodes) => nodes.forEach((node) => node.remove()))
+    .catch(() => undefined);
+  const cookieDialog = page.getByRole('dialog', { name: /cookies/i });
+  if (await cookieDialog.isVisible({ timeout: 500 }).catch(() => false)) {
+    await cookieDialog.evaluate((node) => node.remove()).catch(() => undefined);
+  }
+  await page
+    .waitForTimeout(100)
+    .then(() =>
+      page.evaluate(() => {
+        document
+          .querySelectorAll('.kloel-cookie-banner, .kloel-cookie-modal__overlay')
+          .forEach((node) => node.remove());
+      }),
+    )
+    .catch(() => undefined);
 }
 
 export async function bootstrapAuthenticatedPage(
@@ -289,15 +353,7 @@ export async function bootstrapAuthenticatedPage(
     );
   }
 
-  const cookieAcceptButton = page.getByRole('button', { name: 'Aceitar tudo' });
-  const cookieBannerVisible = await cookieAcceptButton
-    .waitFor({ state: 'visible', timeout: 2_000 })
-    .then(() => true)
-    .catch(() => false);
-
-  if (cookieBannerVisible) {
-    await cookieAcceptButton.click();
-  }
+  await dismissCookieBanner(page);
 
   return probe;
 }
@@ -403,7 +459,10 @@ export async function ensureE2EAdmin(request: APIRequestContext): Promise<E2EAut
       res: Awaited<ReturnType<typeof request.post>>,
       email: string,
     ): Promise<E2EAuthContext> => {
-      const json: any = await res.json();
+      const json = (await res.json()) as {
+        access_token?: string;
+        user?: { workspaceId?: string };
+      };
       const token = json?.access_token;
       const workspaceId = json?.user?.workspaceId;
       if (!token || !workspaceId) {
@@ -444,7 +503,7 @@ export async function ensureE2EAdmin(request: APIRequestContext): Promise<E2EAut
         // Token expirado/invalidado: tenta login para renovar
         const relogin = await doLogin(cached.email);
         if (relogin.ok()) {
-          const ctx = await parseAuth(relogin as any, cached.email);
+          const ctx = await parseAuth(relogin, cached.email);
           writeCache({ ...ctx, createdAt: new Date().toISOString() });
           return ctx;
         }
@@ -478,20 +537,42 @@ export async function ensureE2EAdmin(request: APIRequestContext): Promise<E2EAut
           }
 
           if (!registerRes.ok()) {
-            // If email already exists (race or previous run), try login again.
-            if ([400, 409].includes(registerRes.status())) {
-              const retryLogin = await doLogin(effectiveEmail);
-              if (retryLogin.ok()) {
-                const ctx = await parseAuth(retryLogin as any, effectiveEmail);
-                writeCache({ ...ctx, createdAt: new Date().toISOString() });
-                return ctx;
+            // If email already exists (race or previous run), or register is
+            // still rate-limited after backoff (the account likely already
+            // exists from an earlier spec), try login again with retries.
+            // We retry on every non-2xx (not just 429) because the register
+            // transaction may still be committing in another worker, leading
+            // to a transient 401 even though the email is being registered.
+            if ([400, 409, 429].includes(registerRes.status())) {
+              const loginBackoffMs = [0, 500, 1000, 2000, 3500, 5000, 8000, 12000];
+              let lastLoginStatus = 0;
+              let lastLoginBody = '';
+              for (let attempt = 0; attempt < loginBackoffMs.length; attempt++) {
+                if (loginBackoffMs[attempt]) {
+                  await sleep(loginBackoffMs[attempt]);
+                }
+                const retryLogin = await doLogin(effectiveEmail);
+                if (retryLogin.ok()) {
+                  const ctx = await parseAuth(retryLogin, effectiveEmail);
+                  writeCache({ ...ctx, createdAt: new Date().toISOString() });
+                  return ctx;
+                }
+                lastLoginStatus = retryLogin.status();
+                try {
+                  lastLoginBody = await retryLogin.text();
+                } catch {
+                  lastLoginBody = '';
+                }
               }
+              throw new Error(
+                `E2E setup: register said ${registerRes.status()} (already exists or throttled) and login retries also failed (last=${lastLoginStatus}): ${lastLoginBody}`,
+              );
             }
             const body = await registerRes.text();
             throw new Error(`E2E setup: register failed (${registerRes.status()}): ${body}`);
           }
 
-          const ctx = await parseAuth(registerRes as any, effectiveEmail);
+          const ctx = await parseAuth(registerRes, effectiveEmail);
           writeCache({ ...ctx, createdAt: new Date().toISOString() });
           return ctx;
         }
@@ -500,7 +581,7 @@ export async function ensureE2EAdmin(request: APIRequestContext): Promise<E2EAut
         throw new Error(`E2E setup: login failed (${loginRes.status()}): ${body}`);
       }
 
-      const ctx = await parseAuth(loginRes as any, effectiveEmail);
+      const ctx = await parseAuth(loginRes, effectiveEmail);
       writeCache({ ...ctx, createdAt: new Date().toISOString() });
       return ctx;
     });

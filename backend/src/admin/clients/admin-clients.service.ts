@@ -69,37 +69,40 @@ export class AdminClientsService {
     const { skip, take } = resolveListClientsPagination(input);
     const workspaceWhere = buildListClientsWhere(input);
 
-    const [workspaces, total] = await this.prisma.$transaction([
-      this.prisma.workspace.findMany({
-        where: workspaceWhere,
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take,
-        select: {
-          id: true,
-          name: true,
-          customDomain: true,
-          createdAt: true,
-          agents: {
-            where: { role: 'ADMIN' },
-            orderBy: { createdAt: 'asc' },
-            take: 1,
-            select: {
-              email: true,
-              name: true,
-              kycStatus: true,
+    const [workspaces, total] = await this.prisma.$transaction(
+      [
+        this.prisma.workspace.findMany({
+          where: workspaceWhere,
+          orderBy: { createdAt: 'desc' },
+          skip,
+          take,
+          select: {
+            id: true,
+            name: true,
+            customDomain: true,
+            createdAt: true,
+            agents: {
+              where: { role: 'ADMIN' },
+              orderBy: { createdAt: 'asc' },
+              take: 1,
+              select: {
+                email: true,
+                name: true,
+                kycStatus: true,
+              },
+            },
+            subscription: {
+              select: {
+                plan: true,
+                status: true,
+              },
             },
           },
-          subscription: {
-            select: {
-              plan: true,
-              status: true,
-            },
-          },
-        },
-      }),
-      this.prisma.workspace.count({ where: workspaceWhere }),
-    ]);
+        }),
+        this.prisma.workspace.count({ where: workspaceWhere }),
+      ],
+      { isolationLevel: 'ReadCommitted' },
+    );
 
     if (workspaces.length === 0) {
       return { items: [], total };

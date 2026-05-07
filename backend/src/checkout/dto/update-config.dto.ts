@@ -18,7 +18,7 @@ enum CheckoutTheme {
 }
 
 /** Update config testimonial dto. */
-export class UpdateConfigTestimonialDto {
+class UpdateConfigTestimonialDto {
   /** Name property. */
   @IsOptional() @IsString() @MaxLength(255) name?: string;
   /** Text property. */
@@ -30,7 +30,7 @@ export class UpdateConfigTestimonialDto {
 }
 
 /** Update config trust badge dto. */
-export class UpdateConfigTrustBadgeDto {
+class UpdateConfigTrustBadgeDto {
   /** Label property. */
   @IsOptional() @IsString() @MaxLength(255) label?: string;
   /** Icon property. */
@@ -38,7 +38,7 @@ export class UpdateConfigTrustBadgeDto {
 }
 
 /** Update config order bump dto. */
-export class UpdateConfigOrderBumpDto {
+class UpdateConfigOrderBumpDto {
   /** Id property. */
   @IsOptional() @IsString() @MaxLength(255) id?: string;
   /** Title property. */
@@ -68,7 +68,7 @@ export class UpdateConfigOrderBumpDto {
 }
 
 /** Update config upsell dto. */
-export class UpdateConfigUpsellDto {
+class UpdateConfigUpsellDto {
   /** Id property. */
   @IsOptional() @IsString() @MaxLength(255) id?: string;
   /** Title property. */
@@ -102,7 +102,7 @@ export class UpdateConfigUpsellDto {
 }
 
 /** Update config pixel dto. */
-export class UpdateConfigPixelDto {
+class UpdateConfigPixelDto {
   /** Id property. */
   @IsOptional() @IsString() @MaxLength(255) id?: string;
   /** Type property. */

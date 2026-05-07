@@ -113,13 +113,13 @@ describe('WhatsAppApiWebhookController', () => {
     };
 
     controller = new WhatsAppApiWebhookController(
-      prisma as unknown as ConstructorParameters<typeof WhatsAppApiWebhookController>[0],
-      inboundProcessor as unknown as ConstructorParameters<typeof WhatsAppApiWebhookController>[1],
-      catchupService as unknown as ConstructorParameters<typeof WhatsAppApiWebhookController>[2],
-      agentEvents as unknown as ConstructorParameters<typeof WhatsAppApiWebhookController>[3],
-      ciaRuntime as unknown as ConstructorParameters<typeof WhatsAppApiWebhookController>[4],
-      whatsappApi as unknown as ConstructorParameters<typeof WhatsAppApiWebhookController>[5],
-      redis as unknown as ConstructorParameters<typeof WhatsAppApiWebhookController>[6],
+      prisma as never as ConstructorParameters<typeof WhatsAppApiWebhookController>[0],
+      inboundProcessor as never,
+      catchupService as never,
+      agentEvents as never,
+      ciaRuntime as never,
+      whatsappApi as never,
+      redis as never as ConstructorParameters<typeof WhatsAppApiWebhookController>[6],
     );
   });
 

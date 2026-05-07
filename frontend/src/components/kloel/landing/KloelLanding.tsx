@@ -1,5 +1,6 @@
 'use client';
 import { kloelT } from '@/lib/i18n/t';
+import { colors } from '@/lib/design-tokens';
 import { buildAuthUrl } from '@/lib/subdomains';
 import Link from 'next/link';
 import { useState, useEffect, useRef, useId } from 'react';
@@ -10,8 +11,8 @@ import { secureRandomFloat } from '@/lib/secure-random';
 
 const F = "var(--font-sora), 'Sora', sans-serif";
 const M = "var(--font-jetbrains), 'JetBrains Mono', monospace";
-const E = '#E85D30';
-const V = '#0A0A0C';
+const E = colors.ember.primary;
+const V = colors.background.void;
 const GC = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&!?<>{}|/\\~';
 const rc = () => GC[Math.floor(secureRandomFloat() * GC.length)];
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -524,15 +525,15 @@ function HeroLoop() {
               zIndex: 5,
             }}
           >
-            <div style={{ ...ts, color: '#E0DDD8', transform: `translateY(-${s.top}%)` }}>
+            <div style={{ ...ts, color: colors.text.silver, transform: `translateY(-${s.top}%)` }}>
               {gx.text}
             </div>
           </div>
         ))}
         {vis.phase !== 'hidden' && !resurrected && (
           <div style={{ position: 'relative', display: 'inline' }}>
-            <span style={{ ...ts, color: '#E0DDD8' }}>{vis.text}</span>
-            <span style={{ ...ts, color: '#E0DDD8' }}>{vis.suffix}</span>
+            <span style={{ ...ts, color: colors.text.silver }}>{vis.text}</span>
+            <span style={{ ...ts, color: colors.text.silver }}>{vis.suffix}</span>
             {vis.phase === 'typing' && (
               <span style={{ ...ts, color: E, animation: 'blink 1s ease infinite', marginLeft: 2 }}>
                 |
@@ -541,7 +542,7 @@ function HeroLoop() {
           </div>
         )}
         {gx.on && vis.phase === 'hidden' && !resurrected && (
-          <span style={{ ...ts, color: '#E0DDD8' }}>{gx.text}</span>
+          <span style={{ ...ts, color: colors.text.silver }}>{gx.text}</span>
         )}
         {gx.on && vis.phase !== 'hidden' && (
           <div
@@ -554,7 +555,7 @@ function HeroLoop() {
               zIndex: 6,
             }}
           >
-            <span style={{ ...ts, color: '#E0DDD8' }}>{gx.text}</span>
+            <span style={{ ...ts, color: colors.text.silver }}>{gx.text}</span>
           </div>
         )}
         {resurrected && !gx.on && (
@@ -626,7 +627,7 @@ function MultiChannel() {
       c = true;
     };
   }, [go, prefersReducedMotion]);
-  const colors: Record<MultiChannelKey, string> = { wa: '#25D366', ig: '#E1306C', em: E };
+  const channelColors: Record<MultiChannelKey, string> = { wa: '#25D366', ig: '#E1306C', em: E };
   const names: Record<MultiChannelKey, string> = {
     wa: 'WhatsApp',
     ig: 'Instagram DM',
@@ -635,8 +636,8 @@ function MultiChannel() {
   const renderPanel = (ch: MultiChannelKey) => (
     <div
       style={{
-        background: '#111113',
-        border: '1px solid #222226',
+        background: colors.background.surface,
+        border: `1px solid ${colors.border.space}`,
         borderRadius: 6,
         height: '100%',
       }}
@@ -644,7 +645,7 @@ function MultiChannel() {
       <div
         style={{
           padding: '7px 11px',
-          borderBottom: '1px solid #222226',
+          borderBottom: `1px solid ${colors.border.space}`,
           display: 'flex',
           alignItems: 'center',
           gap: 5,
@@ -655,14 +656,14 @@ function MultiChannel() {
             width: 5,
             height: 5,
             borderRadius: 3,
-            background: colors[ch],
-            boxShadow: `0 0 6px ${colors[ch]}50`,
+            background: channelColors[ch],
+            boxShadow: `0 0 6px ${channelColors[ch]}50`,
           }}
         />
-        <span style={{ fontSize: 10, fontWeight: 600, color: colors[ch], fontFamily: M }}>
+        <span style={{ fontSize: 10, fontWeight: 600, color: channelColors[ch], fontFamily: M }}>
           {names[ch]}
         </span>
-        <span style={{ marginLeft: 'auto', fontSize: 8, color: '#3A3A3F', fontFamily: M }}>
+        <span style={{ marginLeft: 'auto', fontSize: 8, color: colors.text.dim, fontFamily: M }}>
           {kloelT(`AO VIVO`)}
         </span>
       </div>
@@ -715,7 +716,7 @@ function MultiChannel() {
                 <div
                   style={{
                     fontSize: 7,
-                    color: '#6E6E73',
+                    color: colors.text.muted,
                     fontWeight: 600,
                     fontFamily: F,
                     marginBottom: 1,
@@ -726,12 +727,13 @@ function MultiChannel() {
               )}
               <div
                 style={{
-                  background: msg.f === 'ai' ? '#19191C' : `${colors[ch]}12`,
-                  border: `1px solid ${msg.f === 'ai' ? '#222226' : `${colors[ch]}25`}`,
+                  background:
+                    msg.f === 'ai' ? colors.background.elevated : `${channelColors[ch]}12`,
+                  border: `1px solid ${msg.f === 'ai' ? colors.border.space : `${channelColors[ch]}25`}`,
                   borderRadius: 4,
                   padding: '4px 7px',
                   fontSize: 10.5,
-                  color: '#E0DDD8',
+                  color: colors.text.silver,
                   lineHeight: 1.4,
                   fontFamily: F,
                 }}
@@ -752,7 +754,9 @@ function MultiChannel() {
         {renderPanel('em')}
       </div>
       <div style={{ textAlign: 'center', marginTop: 12 }}>
-        <span style={{ fontFamily: M, fontSize: 9, color: '#3A3A3F', letterSpacing: '.12em' }}>
+        <span
+          style={{ fontFamily: M, fontSize: 9, color: colors.text.dim, letterSpacing: '.12em' }}
+        >
           {kloelT(`3 CANAIS · 3 VENDAS · ZERO INTERVENÇÃO HUMANA`)}
         </span>
       </div>
@@ -816,7 +820,7 @@ function LivePulse() {
           animation: prefersReducedMotion ? 'none' : 'pulse 2s ease infinite',
         }}
       />
-      <span style={{ fontFamily: M, fontSize: 11, color: '#6E6E73' }}>
+      <span style={{ fontFamily: M, fontSize: 11, color: colors.text.muted }}>
         {kloelT(`Plataforma`)}{' '}
         <span style={{ color: '#10B981', fontWeight: 600 }}>operacional</span>{' '}
         {kloelT(`— vendas
@@ -922,7 +926,7 @@ function FinalManifestLoop() {
     }
 
     if (tone === 'light') {
-      return <span style={{ color: '#E0DDD8' }}>{text}</span>;
+      return <span style={{ color: colors.text.silver }}>{text}</span>;
     }
 
     const prefix = FINAL_MANIFEST_SECOND_PREFIX.slice(
@@ -936,14 +940,14 @@ function FinalManifestLoop() {
 
     return (
       <>
-        {prefix ? <span style={{ color: '#E0DDD8' }}>{prefix}</span> : null}
+        {prefix ? <span style={{ color: colors.text.silver }}>{prefix}</span> : null}
         {emphasis ? <span style={{ color: E }}>{emphasis}</span> : null}
       </>
     );
   };
 
   const cursorColor =
-    tone === 'ember' && text.length > FINAL_MANIFEST_SECOND_PREFIX.length ? E : '#E0DDD8';
+    tone === 'ember' && text.length > FINAL_MANIFEST_SECOND_PREFIX.length ? E : colors.text.silver;
 
   return (
     <div
@@ -957,7 +961,7 @@ function FinalManifestLoop() {
     >
       <KloelMushroomVisual
         size={136}
-        traceColor={kloelT(`#E0DDD8`)}
+        traceColor={kloelT(`colors.text.silver`)} // PULSE_VISUAL_OK: traceColor via i18n — stays as hex for the SVG
         animated={!prefersReducedMotion}
         spores={prefersReducedMotion ? 'none' : 'animated'}
         ariaHidden
@@ -1019,9 +1023,9 @@ export default function KloelLanding() {
   return (
     <div
       className="landing-shell"
-      style={{ background: V, color: '#E0DDD8', fontFamily: F, overflowX: 'hidden' }}
+      style={{ background: V, color: colors.text.silver, fontFamily: F, overflowX: 'hidden' }}
     >
-      <style>{`*{box-sizing:border-box}:root{--c2:1fr 1fr;--c3:1fr 1fr 1fr;--c4:repeat(4,1fr);--sp:100px 24px}@media(max-width:768px){:root{--c2:1fr;--c3:1fr;--c4:1fr;--sp:48px 16px}}@keyframes fm{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}::selection{background:rgba(232,93,48,.3)}::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:#222226;border-radius:2px}html{scroll-behavior:smooth}input::placeholder{color:#3A3A3F!important}.landing-header-inner{padding:0 clamp(14px,4vw,24px)}.landing-hero-section,.landing-final-cta{padding-left:clamp(16px,4vw,24px)!important;padding-right:clamp(16px,4vw,24px)!important}.landing-final-cta-row{display:flex;gap:10px;justify-content:center;max-width:440px;margin:48px auto 0;flex-wrap:wrap}.landing-final-cta-input{flex:1;min-width:0;width:100%}.landing-final-cta-button{white-space:nowrap}@media(max-width:640px){.landing-header-inner{height:56px}.landing-header-actions{gap:4px!important}.landing-header-login{padding:7px 10px!important}.landing-header-cta{padding:7px 12px!important}.landing-hero-section{padding-top:72px!important;padding-bottom:36px!important}.landing-hero-sub{font-size:14px!important;line-height:1.7!important;max-width:320px!important;margin-top:32px!important;padding:0 8px}.landing-final-cta-row{gap:12px}.landing-final-cta-row>*{width:100%!important}.landing-final-cta-button{width:100%!important}.landing-final-manifest-stack{gap:22px!important}.landing-final-manifest-line{font-size:clamp(18px,5.2vw,30px)!important;line-height:1.18!important}.thanos-stage{padding:40px 16px!important;min-height:620px!important}.thanos-reveal{padding:0 8px!important}}`}</style>
+      <style>{`*{box-sizing:border-box}:root{--c2:1fr 1fr;--c3:1fr 1fr 1fr;--c4:repeat(4,1fr);--sp:100px 24px}@media(max-width:768px){:root{--c2:1fr;--c3:1fr;--c4:1fr;--sp:48px 16px}}@keyframes fm{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}::selection{background:rgba(232,93,48,.3)}::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:colors.border.space;border-radius:2px}/* PULSE_VISUAL_OK: scrollbar, placeholder below — CSS pseudo-elements, no token access */html{scroll-behavior:smooth}input::placeholder{color:colors.text.dim!important}/* PULSE_VISUAL_OK: CSS pseudo-element, no token access */.landing-header-inner{padding:0 clamp(14px,4vw,24px)}.landing-hero-section,.landing-final-cta{padding-left:clamp(16px,4vw,24px)!important;padding-right:clamp(16px,4vw,24px)!important}.landing-final-cta-row{display:flex;gap:10px;justify-content:center;max-width:440px;margin:48px auto 0;flex-wrap:wrap}.landing-final-cta-input{flex:1;min-width:0;width:100%}.landing-final-cta-button{white-space:nowrap}@media(max-width:640px){.landing-header-inner{height:56px}.landing-header-actions{gap:4px!important}.landing-header-login{padding:7px 10px!important}.landing-header-cta{padding:7px 12px!important}.landing-hero-section{padding-top:72px!important;padding-bottom:36px!important}.landing-hero-sub{font-size:14px!important;line-height:1.7!important;max-width:320px!important;margin-top:32px!important;padding:0 8px}.landing-final-cta-row{gap:12px}.landing-final-cta-row>*{width:100%!important}.landing-final-cta-button{width:100%!important}.landing-final-manifest-stack{gap:22px!important}.landing-final-manifest-line{font-size:clamp(18px,5.2vw,30px)!important;line-height:1.18!important}.thanos-stage{padding:40px 16px!important;min-height:620px!important}.thanos-reveal{padding:0 8px!important}}`}</style>
       <header
         style={{
           position: 'fixed',
@@ -1031,7 +1035,7 @@ export default function KloelLanding() {
           zIndex: 50,
           background: 'rgba(10,10,12,.92)',
           backdropFilter: 'blur(16px)',
-          borderBottom: '1px solid #19191C',
+          borderBottom: `1px solid ${colors.border.void}`,
         }}
       >
         <div
@@ -1055,7 +1059,7 @@ export default function KloelLanding() {
               fontSize: 15,
               fontWeight: 700,
               letterSpacing: '-0.02em',
-              color: '#E0DDD8',
+              color: colors.text.silver,
               textDecoration: 'none',
               cursor: 'pointer',
             }}
@@ -1077,7 +1081,7 @@ export default function KloelLanding() {
               href={buildAuthUrl('/login?forceAuth=1', currentHost)}
               style={{
                 fontSize: 12,
-                color: '#6E6E73',
+                color: colors.text.muted,
                 textDecoration: 'none',
                 padding: '7px 12px',
               }}
@@ -1091,7 +1095,7 @@ export default function KloelLanding() {
                 fontSize: 12,
                 fontWeight: 600,
                 color: V,
-                background: '#E0DDD8',
+                background: colors.text.silver,
                 padding: '7px 16px',
                 borderRadius: 6,
                 textDecoration: 'none',
@@ -1124,7 +1128,7 @@ export default function KloelLanding() {
             position: 'relative',
             zIndex: 2,
             fontSize: 16,
-            color: '#6E6E73',
+            color: colors.text.muted,
             marginTop: 44,
             textAlign: 'center',
             maxWidth: 460,
@@ -1132,7 +1136,7 @@ export default function KloelLanding() {
         >
           {kloelT(`A IA que responde, negocia e fecha vendas por você.`)}
           <br />
-          <span style={{ color: '#3A3A3F' }}>{kloelT(`6 canais. 24/7. R$0/mês.`)}</span>
+          <span style={{ color: colors.text.dim }}>{kloelT(`6 canais. 24/7. R$0/mês.`)}</span>
         </p>
         <div style={{ position: 'absolute', bottom: '8%', left: 0, width: '100%', zIndex: 1 }}>
           <BrandDivider />
@@ -1144,7 +1148,7 @@ export default function KloelLanding() {
             left: '50%',
             transform: 'translateX(-50%)',
             animation: 'pulse 2.5s ease infinite',
-            color: '#3A3A3F',
+            color: colors.text.dim,
             zIndex: 2,
           }}
         >
@@ -1168,7 +1172,7 @@ export default function KloelLanding() {
             style={{
               textAlign: 'center',
               fontSize: 15,
-              color: '#6E6E73',
+              color: colors.text.muted,
               maxWidth: 460,
               margin: '0 auto 40px',
             }}
@@ -1186,7 +1190,7 @@ export default function KloelLanding() {
           <p
             style={{
               fontSize: 17,
-              color: '#6E6E73',
+              color: colors.text.muted,
               lineHeight: 1.8,
               maxWidth: 420,
               margin: '0 auto 52px',
@@ -1216,7 +1220,7 @@ export default function KloelLanding() {
         </Reveal>
       </section>
 
-      <div style={{ background: '#111113' }}>
+      <div style={{ background: colors.background.surface }}>
         <section style={{ padding: 'var(--sp)', maxWidth: 1000, margin: '0 auto' }}>
           <Reveal>
             <h2 style={{ fontSize: 24, fontWeight: 700, marginBottom: 48, textAlign: 'center' }}>
@@ -1251,7 +1255,7 @@ export default function KloelLanding() {
                 <div
                   style={{
                     background: V,
-                    border: '1px solid #222226',
+                    border: `1px solid ${colors.border.space}`,
                     borderRadius: 6,
                     padding: 22,
                     height: '100%',
@@ -1274,7 +1278,7 @@ export default function KloelLanding() {
                   <p
                     style={{
                       fontSize: 13,
-                      color: '#6E6E73',
+                      color: colors.text.muted,
                       lineHeight: 1.6,
                       marginBottom: 12,
                       wordBreak: 'break-word',
@@ -1282,11 +1286,11 @@ export default function KloelLanding() {
                   >
                     {s.d}
                   </p>
-                  <div style={{ borderTop: '1px solid #222226', paddingTop: 10 }}>
+                  <div style={{ borderTop: `1px solid ${colors.border.space}`, paddingTop: 10 }}>
                     <p
                       style={{
                         fontSize: 11,
-                        color: '#3A3A3F',
+                        color: colors.text.dim,
                         lineHeight: 1.5,
                         fontStyle: 'italic',
                         wordBreak: 'break-word',
@@ -1311,7 +1315,7 @@ export default function KloelLanding() {
             <p
               style={{
                 fontSize: 13,
-                color: '#6E6E73',
+                color: colors.text.muted,
                 textAlign: 'center',
                 maxWidth: 400,
                 margin: '0 auto 48px',
@@ -1373,8 +1377,8 @@ export default function KloelLanding() {
               <Reveal key={g.c} delay={gi * 80}>
                 <div
                   style={{
-                    background: '#111113',
-                    border: '1px solid #222226',
+                    background: colors.background.surface,
+                    border: `1px solid ${colors.border.space}`,
                     borderRadius: 6,
                     padding: 18,
                     height: '100%',
@@ -1399,7 +1403,7 @@ export default function KloelLanding() {
                         alignItems: 'center',
                         gap: 6,
                         padding: '5px 0',
-                        borderBottom: '1px solid #19191C',
+                        borderBottom: `1px solid ${colors.border.void}`,
                       }}
                     >
                       <svg
@@ -1441,12 +1445,12 @@ export default function KloelLanding() {
             }}
           >
             <Reveal>
-              <div style={{ background: '#111113', borderRadius: 6, padding: 20 }}>
+              <div style={{ background: colors.background.surface, borderRadius: 6, padding: 20 }}>
                 <div
                   style={{
                     fontFamily: M,
                     fontSize: 9,
-                    color: '#6E6E73',
+                    color: colors.text.muted,
                     letterSpacing: '.1em',
                     marginBottom: 12,
                   }}
@@ -1469,11 +1473,13 @@ export default function KloelLanding() {
                       display: 'flex',
                       justifyContent: 'space-between',
                       padding: '5px 0',
-                      borderBottom: '1px solid #19191C',
+                      borderBottom: `1px solid ${colors.border.void}`,
                     }}
                   >
-                    <span style={{ fontSize: 11, color: '#E0DDD8' }}>{t}</span>
-                    <span style={{ fontSize: 10, color: '#6E6E73', fontFamily: M }}>{p}</span>
+                    <span style={{ fontSize: 11, color: colors.text.silver }}>{t}</span>
+                    <span style={{ fontSize: 10, color: colors.text.muted, fontFamily: M }}>
+                      {p}
+                    </span>
                   </div>
                 ))}
                 <div
@@ -1484,7 +1490,7 @@ export default function KloelLanding() {
                     marginTop: 6,
                   }}
                 >
-                  <span style={{ fontSize: 12, fontWeight: 600, color: '#E0DDD8' }}>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: colors.text.silver }}>
                     {kloelT(`Total`)}
                   </span>
                   <span style={{ fontSize: 16, fontWeight: 800, color: '#EF4444', fontFamily: M }}>
@@ -1496,7 +1502,7 @@ export default function KloelLanding() {
             <Reveal delay={200}>
               <div
                 style={{
-                  background: '#111113',
+                  background: colors.background.surface,
                   border: `2px solid ${E}`,
                   borderRadius: 6,
                   padding: 22,
@@ -1532,13 +1538,13 @@ export default function KloelLanding() {
                   >
                     {kloelT(`R$ 0`)}
                   </div>
-                  <div style={{ fontSize: 14, color: '#6E6E73', marginTop: 4 }}>
+                  <div style={{ fontSize: 14, color: colors.text.muted, marginTop: 4 }}>
                     {kloelT(`por mês`)}
                   </div>
                   <div style={{ fontSize: 12, color: E, fontWeight: 600, marginTop: 10 }}>
                     {kloelT(`Taxa apenas sobre vendas.`)}
                   </div>
-                  <div style={{ fontSize: 11, color: '#3A3A3F', marginTop: 2 }}>
+                  <div style={{ fontSize: 11, color: colors.text.dim, marginTop: 2 }}>
                     {kloelT(`Sem venda, sem custo.`)}
                   </div>
                 </div>
@@ -1582,8 +1588,8 @@ export default function KloelLanding() {
               <Reveal key={p.n} delay={i * 100}>
                 <div
                   style={{
-                    background: '#111113',
-                    border: '1px solid #222226',
+                    background: colors.background.surface,
+                    border: `1px solid ${colors.border.space}`,
                     borderRadius: 6,
                     padding: 20,
                     height: '100%',
@@ -1613,13 +1619,13 @@ export default function KloelLanding() {
                     </div>
                     <div>
                       <div style={{ fontSize: 12, fontWeight: 600 }}>{p.n}</div>
-                      <div style={{ fontSize: 10, color: '#3A3A3F' }}>{p.r}</div>
+                      <div style={{ fontSize: 10, color: colors.text.dim }}>{p.r}</div>
                     </div>
                   </div>
                   <p
                     style={{
                       fontSize: 12,
-                      color: '#6E6E73',
+                      color: colors.text.muted,
                       lineHeight: 1.6,
                       flex: 1,
                       margin: 0,
@@ -1634,7 +1640,7 @@ export default function KloelLanding() {
                     style={{
                       marginTop: 12,
                       paddingTop: 8,
-                      borderTop: '1px solid #222226',
+                      borderTop: `1px solid ${colors.border.space}`,
                       display: 'flex',
                       alignItems: 'center',
                       gap: 4,
@@ -1677,7 +1683,7 @@ export default function KloelLanding() {
               <p
                 style={{
                   fontSize: 15,
-                  color: '#6E6E73',
+                  color: colors.text.muted,
                   lineHeight: 1.7,
                   maxWidth: 440,
                   margin: '48px auto 0',
@@ -1711,11 +1717,11 @@ export default function KloelLanding() {
                     flex: 1,
                     minWidth: 0,
                     width: '100%',
-                    background: '#111113',
-                    border: '1px solid #222226',
+                    background: colors.background.surface,
+                    border: `1px solid ${colors.border.space}`,
                     borderRadius: 6,
                     padding: '16px 20px',
-                    color: '#E0DDD8',
+                    color: colors.text.silver,
                     fontSize: 15,
                     fontFamily: F,
                     outline: 'none',
@@ -1752,7 +1758,7 @@ export default function KloelLanding() {
                   {kloelT(`Ativar minha IA`)}
                 </button>
               </div>
-              <p style={{ fontSize: 11, color: '#3A3A3F', marginTop: 14 }}>
+              <p style={{ fontSize: 11, color: colors.text.dim, marginTop: 14 }}>
                 {kloelT(`R$0/mês. Taxa só quando vender.`)}
               </p>
             </Reveal>
@@ -1799,7 +1805,7 @@ export default function KloelLanding() {
             { q: 'É seguro?', a: 'Criptografia ponta a ponta, servidores isolados, LGPD.' },
           ].map((f, i) => (
             <Reveal key={f.q} delay={30 * i}>
-              <div style={{ borderBottom: '1px solid #19191C' }}>
+              <div style={{ borderBottom: `1px solid ${colors.border.void}` }}>
                 <button
                   type="button"
                   onClick={() => setFaq(faq === i ? null : i)}
@@ -1815,10 +1821,12 @@ export default function KloelLanding() {
                     textAlign: 'left',
                   }}
                 >
-                  <span style={{ fontSize: 14, fontWeight: 500, color: '#E0DDD8' }}>{f.q}</span>
+                  <span style={{ fontSize: 14, fontWeight: 500, color: colors.text.silver }}>
+                    {f.q}
+                  </span>
                   <span
                     style={{
-                      color: '#3A3A3F',
+                      color: colors.text.dim,
                       fontSize: 16,
                       transform: faq === i ? 'rotate(45deg)' : 'none',
                       transition: 'transform .15s',
@@ -1831,7 +1839,7 @@ export default function KloelLanding() {
                 </button>
                 {faq === i && (
                   <div style={{ padding: '0 0 14px', animation: 'fadeIn .3s ease both' }}>
-                    <p style={{ fontSize: 13, color: '#6E6E73', lineHeight: 1.7 }}>{f.a}</p>
+                    <p style={{ fontSize: 13, color: colors.text.muted, lineHeight: 1.7 }}>{f.a}</p>
                   </div>
                 )}
               </div>
@@ -1850,20 +1858,23 @@ export default function KloelLanding() {
               gap: 8,
               fontSize: 14,
               fontWeight: 700,
-              color: '#E0DDD8',
+              color: colors.text.silver,
               textDecoration: 'none',
               cursor: 'pointer',
             }}
           >
-            <KloelWordmark color="#E0DDD8" fontSize={14} fontWeight={600} />
+            <KloelWordmark color={colors.text.silver} fontSize={14} fontWeight={600} />
           </Link>
           <div style={{ marginTop: 14, display: 'flex', justifyContent: 'center', gap: 20 }}>
-            <Link href="/terms" style={{ fontSize: 11, color: '#3A3A3F', textDecoration: 'none' }}>
+            <Link
+              href="/terms"
+              style={{ fontSize: 11, color: colors.text.dim, textDecoration: 'none' }}
+            >
               {kloelT(`Termos`)}
             </Link>
             <Link
               href="/privacy"
-              style={{ fontSize: 11, color: '#3A3A3F', textDecoration: 'none' }}
+              style={{ fontSize: 11, color: colors.text.dim, textDecoration: 'none' }}
             >
               {kloelT(`Privacidade`)}
             </Link>

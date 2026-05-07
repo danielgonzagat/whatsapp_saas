@@ -1,6 +1,10 @@
 'use client';
 
-import type { DashboardHomePeriod, DashboardHomeResponse } from '@/lib/api/home';
+import type {
+  DashboardHomePeriod,
+  DashboardHomeResponse,
+  DashboardPostPaymentResponse,
+} from '@/lib/api/home';
 import { swrFetcher } from '@/lib/fetcher';
 import useSWR from 'swr';
 
@@ -41,4 +45,18 @@ export function useDashboardHome(params?: {
     error,
     mutate,
   };
+}
+
+/** Use dashboard post-payment snapshot. */
+export function useDashboardPostPayment() {
+  const { data, error, isLoading, mutate } = useSWR<DashboardPostPaymentResponse>(
+    '/dashboard/post-payment',
+    swrFetcher,
+    {
+      refreshInterval: 60_000,
+      keepPreviousData: true,
+    },
+  );
+
+  return { postPayment: data, isLoading, error, mutate };
 }

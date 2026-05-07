@@ -9,7 +9,7 @@ function coerceObjectEntries(value: object): Prisma.InputJsonObject {
     }
     result[key] = toPrismaJsonValue(entry);
   }
-  return result as Prisma.InputJsonObject;
+  return result;
 }
 
 /** To prisma json value. */

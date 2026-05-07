@@ -181,10 +181,6 @@ export function validateExpression(expression: string): { valid: boolean; error?
     math.parse(sanitized);
     return { valid: true };
   } catch (error: unknown) {
-    const errorInstanceofError =
-      error instanceof Error
-        ? error
-        : new Error(typeof error === 'string' ? error : 'unknown error');
-    return { valid: false, error: errorInstanceofError.message };
+    return { valid: false, error: error instanceof Error ? error.message : 'unknown_error' };
   }
 }

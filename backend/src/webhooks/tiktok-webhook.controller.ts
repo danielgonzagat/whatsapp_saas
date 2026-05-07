@@ -1,4 +1,5 @@
-import { createHmac } from 'node:crypto';
+import { createHash, createHmac } from 'node:crypto';
+import { InjectRedis } from '@nestjs-modules/ioredis';
 import {
   Body,
   Controller,
@@ -9,11 +10,14 @@ import {
   Logger,
   Post,
   Req,
+  UseGuards,
 } from '@nestjs/common';
-import { Throttle } from '@nestjs/throttler';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
+import type { Redis } from 'ioredis';
 import { Public } from '../auth/public.decorator';
 import { RawBodyRequest } from '../common/interfaces/authenticated-request.interface';
 import { safeCompareStrings } from '../common/utils/crypto-compare.util';
+import { WebhooksService } from './webhooks.service';
 
 type TikTokWebhookPayload = Record<string, unknown> | Array<unknown> | string | number | null;
 
@@ -107,8 +111,14 @@ function describeEvent(body: TikTokWebhookPayload): string {
  * `TikTok-Signature` whenever TikTok sends one.
  */
 @Controller('webhooks/tiktok')
+@UseGuards(ThrottlerGuard)
 export class TikTokWebhookController {
   private readonly logger = new Logger(TikTokWebhookController.name);
+
+  constructor(
+    @InjectRedis() private readonly redis: Redis,
+    private readonly webhooksService: WebhooksService,
+  ) {}
 
   /** Simple health probe for manual verification in a browser/curl. */
   @Public()
@@ -127,9 +137,10 @@ export class TikTokWebhookController {
   @Post()
   @Throttle({ default: { limit: 2000, ttl: 60000 } })
   @HttpCode(200)
-  handleWebhook(
+  async handleWebhook(
     @Body() body: TikTokWebhookPayload,
     @Headers('tiktok-signature') signatureHeader?: string,
+    @Headers('x-event-id') eventId?: string,
     @Req() req?: RawBodyRequest,
   ) {
     const parsedSignature = parseTikTokSignatureHeader(signatureHeader);
@@ -173,6 +184,24 @@ export class TikTokWebhookController {
           throw new ForbiddenException('Invalid TikTok webhook signature');
         }
       }
+    }
+
+    // Idempotency: dedup via Redis SET NX using x-event-id or body hash (300s TTL)
+    const dedupeKey =
+      eventId ||
+      createHash('sha256').update(stringifyRawBody(req, body)).digest('hex').slice(0, 32);
+    const cacheKey = `webhook:tiktok:${dedupeKey}`;
+    const acquired = await this.redis.set(cacheKey, '1', 'EX', 300, 'NX');
+    if (acquired === null) {
+      this.logger.warn(`Duplicate TikTok webhook ignored: ${dedupeKey}`);
+      return { received: true, duplicate: true, skipped: true };
+    }
+
+    // Persist to WebhookEvent audit trail for observability (best-effort, non-blocking)
+    if (dedupeKey) {
+      await this.webhooksService
+        .logWebhookEvent('tiktok', describeEvent(body), dedupeKey, body as Record<string, unknown>)
+        .catch(() => {});
     }
 
     this.logger.log(`TikTok webhook acknowledged: event=${describeEvent(body)}`);

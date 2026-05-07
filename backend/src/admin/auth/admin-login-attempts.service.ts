@@ -19,14 +19,17 @@ export class AdminLoginAttemptsService {
   /** Is locked. */
   async isLocked(email: string, ip: string): Promise<boolean> {
     const since = new Date(Date.now() - WINDOW_MS);
-    const [emailFailures, ipFailures] = await this.prisma.$transaction([
-      this.prisma.adminLoginAttempt.count({
-        where: { email, success: false, createdAt: { gte: since } },
-      }),
-      this.prisma.adminLoginAttempt.count({
-        where: { ip, success: false, createdAt: { gte: since } },
-      }),
-    ]);
+    const [emailFailures, ipFailures] = await this.prisma.$transaction(
+      [
+        this.prisma.adminLoginAttempt.count({
+          where: { email, success: false, createdAt: { gte: since } },
+        }),
+        this.prisma.adminLoginAttempt.count({
+          where: { ip, success: false, createdAt: { gte: since } },
+        }),
+      ],
+      { isolationLevel: 'ReadCommitted' },
+    );
     return emailFailures >= MAX_ATTEMPTS || ipFailures >= MAX_ATTEMPTS;
   }
 

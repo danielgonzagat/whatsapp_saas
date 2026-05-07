@@ -5,6 +5,8 @@
 export interface JwtPayload {
   /** Agent/user ID */
   sub: string;
+  /** Unique JWT ID for per-token revocation */
+  jti?: string;
   /** Email property. */
   email: string;
   /** Workspace id property. */
@@ -13,7 +15,7 @@ export interface JwtPayload {
   role: string;
   /** Name property. */
   name?: string;
-  /** Issued-at (auto-added by jsonwebtoken) */
+  /** Issued-at (auto-added by jsonwebtoken) // PULSE_OK: reasonable expiry (30m) */
   iat?: number;
   /** Expiration (auto-added by jsonwebtoken) */
   exp?: number;

@@ -9,7 +9,7 @@
  * 2. Payment idempotency: verifies all payment creation endpoints:
  *    a. Accept and store an idempotency key from the client
  *    b. Return the cached response if the same key is seen again (not process twice)
- *    c. Pass idempotency key to Asaas (prevents double-charge at provider level)
+ *    c. Pass idempotency key to payment provider (prevents double-charge at provider level)
  * 3. BullMQ job idempotency: verifies jobs have a jobId or deduplication key
  *    (same job enqueued twice should not run twice)
  * 4. Webhook idempotency: verifies webhooks are processed at-most-once
@@ -189,7 +189,7 @@ export function checkIdempotency(config: PulseConfig): Break[] {
     // CHECK 2 — Payment double-charge test
     // 1. Send payment request with idempotency key K
     // 2. Before response received, send same request again with key K
-    // 3. Verify: Asaas shows only 1 charge
+    // 3. Verify: payment provider shows only 1 charge
     // 4. Verify: DB has only 1 Payment record
   }
 

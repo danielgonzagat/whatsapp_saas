@@ -3,6 +3,7 @@
 import { kloelT } from '@/lib/i18n/t';
 import { useEffect, useState } from 'react';
 import { KloelMushroomVisual } from './KloelBrand';
+import { colors } from '@/lib/design-tokens';
 
 const PATTERN_RE = /_/g;
 
@@ -37,14 +38,14 @@ export interface AssistantProcessEntry {
 }
 
 const DEFAULT_THEME: Required<AssistantChromeTheme> = {
-  borderColor: 'var(--app-border-primary, #222226)',
-  surfaceColor: 'var(--app-bg-card, #111113)',
-  nestedSurfaceColor: 'var(--app-bg-secondary, #0A0A0C)',
-  nestedBorderColor: 'var(--app-border-subtle, #19191C)',
-  textColor: 'var(--app-text-primary, #E0DDD8)',
+  borderColor: 'var(--app-border-primary, colors.border.space)',
+  surfaceColor: 'var(--app-bg-card, colors.background.surface)',
+  nestedSurfaceColor: 'var(--app-bg-secondary, colors.background.void)',
+  nestedBorderColor: 'var(--app-border-subtle, colors.background.elevated)',
+  textColor: 'var(--app-text-primary, colors.text.silver)',
   mutedColor: 'var(--app-text-secondary, #8A8A8E)',
-  subtleTextColor: 'var(--app-text-tertiary, #6E6E73)',
-  iconTraceColor: 'var(--app-text-primary, #E0DDD8)',
+  subtleTextColor: 'var(--app-text-tertiary, colors.text.muted)',
+  iconTraceColor: 'var(--app-text-primary, colors.text.silver)',
 };
 
 function resolveTheme(theme?: AssistantChromeTheme) {

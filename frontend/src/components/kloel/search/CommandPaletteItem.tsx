@@ -39,9 +39,8 @@ function decodeHtmlEntities(value: string): string {
     return value;
   }
 
-  const textarea = document.createElement('textarea');
-  textarea.innerHTML = value;
-  return textarea.value;
+  const doc = new DOMParser().parseFromString(value, 'text/html');
+  return doc.body.textContent || '';
 }
 
 function renderMarkedMarkup(markup: string): ReactNode[] {

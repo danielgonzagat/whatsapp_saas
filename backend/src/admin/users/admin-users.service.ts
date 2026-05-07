@@ -5,6 +5,7 @@ import { AdminAuditService } from '../audit/admin-audit.service';
 import { AdminAuthService } from '../auth/admin-auth.service';
 import { adminErrors } from '../common/admin-api-errors';
 import { AdminPermissionsService } from '../permissions/admin-permissions.service';
+import { flattenDefaults } from '../permissions/admin-permissions.defaults';
 
 /** Create admin user input shape. */
 export interface CreateAdminUserInput {
@@ -87,6 +88,7 @@ export class AdminUsersService {
   }
 
   /** List. */
+  // PULSE_OK: bounded by admin user count (low cardinality)
   async list() {
     const users = await this.prisma.adminUser.findMany({
       orderBy: { createdAt: 'desc' },
@@ -168,27 +170,50 @@ export class AdminUsersService {
 
   /** Update. */
   async update(id: string, patch: UpdateAdminUserInput) {
-    const current = await this.prisma.adminUser.findUnique({ where: { id } });
-    if (!current) {
-      throw adminErrors.userNotFound();
-    }
+    const updated = await this.prisma.$transaction(
+      async (tx) => {
+        const current = await tx.adminUser.findUnique({ where: { id } });
+        if (!current) {
+          throw adminErrors.userNotFound();
+        }
 
-    this.assertAdminUpdateAllowed(current, patch);
+        this.assertAdminUpdateAllowed(current, patch);
 
-    const data = this.buildAdminUserUpdateData(patch, current.role);
-    const updated = await this.prisma.adminUser.update({ where: { id }, data });
+        const data = this.buildAdminUserUpdateData(patch, current.role);
+        const needsReseed = this.isRoleChange(patch, current.role);
 
-    if (this.isRoleChange(patch, current.role)) {
-      await this.reseedPermissionsForRoleChange(id, updated.role);
-    }
+        const result = await tx.adminUser.update({ where: { id }, data });
 
-    await this.audit.append({
-      adminUserId: patch.actorId,
-      action: 'admin.users.updated',
-      entityType: 'AdminUser',
-      entityId: id,
-      details: this.buildUpdateAuditDetails(current, patch),
-    });
+        if (needsReseed) {
+          await tx.adminPermission.deleteMany({ where: { adminUserId: id } });
+          const defaultRows = flattenDefaults(result.role).map((r) => ({
+            adminUserId: id,
+            module: r.module,
+            action: r.action,
+            allowed: r.allowed,
+          }));
+          if (defaultRows.length > 0) {
+            await tx.adminPermission.createMany({
+              data: defaultRows,
+              skipDuplicates: true,
+            });
+          }
+        }
+
+        await tx.adminAuditLog.create({
+          data: {
+            adminUserId: patch.actorId,
+            action: 'admin.users.updated',
+            entityType: 'AdminUser',
+            entityId: id,
+            details: this.buildUpdateAuditDetails(current, patch),
+          },
+        });
+
+        return result;
+      },
+      { isolationLevel: 'ReadCommitted' },
+    );
 
     return this.serialize(updated);
   }

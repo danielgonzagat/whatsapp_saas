@@ -1,0 +1,234 @@
+{
+  "dashboard": {
+    "uid": "kloel-financial-golden-signals",
+    "title": "Kloel Financial System — Golden Signals",
+    "description": "Operational dashboard for the Kloel financial marketplace. Covers latency, traffic, errors, saturation, and business-critical payment metrics.",
+    "tags": ["kloel", "financial", "stripe-connect", "marketplace"],
+    "timezone": "America/Sao_Paulo",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Golden Signal: Request Latency (p95)",
+        "type": "graph",
+        "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{service=~\"backend|worker\"}[5m])) by (le, service, route))",
+            "legendFormat": "{{ service }} {{ route }} p95"
+          }
+        ],
+        "alert": {
+          "name": "High Latency",
+          "conditions": [
+            {
+              "evaluator": { "type": "gt", "params": [2.0] },
+              "query": "A",
+              "reducer": { "type": "avg" }
+            }
+          ],
+          "message": "p95 latency exceeded 2s on financial endpoint"
+        }
+      },
+      {
+        "id": 2,
+        "title": "Golden Signal: Request Rate (RPS)",
+        "type": "graph",
+        "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "sum(rate(http_requests_total{service=~\"backend|worker\"}[1m])) by (service, route)",
+            "legendFormat": "{{ service }} {{ route }}"
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Golden Signal: Error Rate (5xx / Total)",
+        "type": "graph",
+        "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "sum(rate(http_requests_total{status=~\"5..\"}[5m])) / sum(rate(http_requests_total[5m]))",
+            "legendFormat": "5xx ratio"
+          }
+        ],
+        "alert": {
+          "name": "High Error Rate",
+          "conditions": [
+            {
+              "evaluator": { "type": "gt", "params": [0.01] },
+              "query": "A",
+              "reducer": { "type": "avg" }
+            }
+          ],
+          "message": "Error rate exceeded 1% — investigate Stripe API, database, or wallet subsystem."
+        }
+      },
+      {
+        "id": 4,
+        "title": "Golden Signal: Saturation (DB Pool Usage)",
+        "type": "graph",
+        "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "db_pool_active_connections{service=\"backend\"} / db_pool_max_connections",
+            "legendFormat": "DB pool saturation"
+          }
+        ],
+        "alert": {
+          "name": "High DB Saturation",
+          "conditions": [
+            {
+              "evaluator": { "type": "gt", "params": [0.8] },
+              "query": "A",
+              "reducer": { "type": "avg" }
+            }
+          ],
+          "message": "Database pool over 80% — possible connection leak or query contention."
+        }
+      },
+      {
+        "id": 5,
+        "title": "Payment Intents by Status (last 1h)",
+        "type": "stat",
+        "gridPos": { "x": 0, "y": 16, "w": 6, "h": 6 },
+        "description": "Stripe PaymentIntent statuses: succeeded, failed, processing, canceled",
+        "targets": [
+          {
+            "expr": "sum(increase(payment_intent_total{status=\"succeeded\"}[1h]))",
+            "legendFormat": "Succeeded"
+          },
+          {
+            "expr": "sum(increase(payment_intent_total{status=\"failed\"}[1h]))",
+            "legendFormat": "Failed"
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Payouts: Requested vs Executed (last 24h)",
+        "type": "graph",
+        "gridPos": { "x": 6, "y": 16, "w": 9, "h": 6 },
+        "targets": [
+          {
+            "expr": "sum(increase(payout_approval_events_total{action=\"requested\"}[24h]))",
+            "legendFormat": "Requested"
+          },
+          {
+            "expr": "sum(increase(payout_approval_events_total{action=\"approved\"}[24h]))",
+            "legendFormat": "Approved"
+          },
+          {
+            "expr": "sum(increase(payout_approval_events_total{action=\"rejected\"}[24h]))",
+            "legendFormat": "Rejected"
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "title": "Wallet Prepaid: Insufficient Balance Errors (last 1h)",
+        "type": "stat",
+        "gridPos": { "x": 15, "y": 16, "w": 9, "h": 6 },
+        "description": "Count of InsufficientWalletBalanceError events — high count may indicate users hitting limits unexpectedly.",
+        "targets": [
+          {
+            "expr": "sum(increase(wallet_prepaid_insufficient_balance_total[1h]))",
+            "legendFormat": "Insufficient Balance"
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "title": "SplitEngine: Computations (last 1h)",
+        "type": "graph",
+        "gridPos": { "x": 0, "y": 22, "w": 8, "h": 6 },
+        "targets": [
+          {
+            "expr": "sum(rate(split_calculated_total[1h]))",
+            "legendFormat": "Split computations/s"
+          }
+        ]
+      },
+      {
+        "id": 9,
+        "title": "Ledger: Conservation Drifts Detected",
+        "type": "stat",
+        "gridPos": { "x": 8, "y": 22, "w": 8, "h": 6 },
+        "targets": [
+          {
+            "expr": "sum(increase(connect_ledger_drift_detected_total[1d]))",
+            "legendFormat": "Drifts"
+          }
+        ],
+        "alert": {
+          "name": "Ledger Drift",
+          "conditions": [
+            {
+              "evaluator": { "type": "gt", "params": [0] },
+              "query": "A",
+              "reducer": { "type": "last" }
+            }
+          ],
+          "message": "Ledger conservation drift detected — immediate investigation required."
+        }
+      },
+      {
+        "id": 10,
+        "title": "FraudEngine: Evaluations by Decision (last 24h)",
+        "type": "graph",
+        "gridPos": { "x": 16, "y": 22, "w": 8, "h": 6 },
+        "targets": [
+          {
+            "expr": "sum(increase(fraud_evaluation_total{action=\"allow\"}[24h]))",
+            "legendFormat": "Allow"
+          },
+          {
+            "expr": "sum(increase(fraud_evaluation_total{action=\"review\"}[24h]))",
+            "legendFormat": "Review"
+          },
+          {
+            "expr": "sum(increase(fraud_evaluation_total{action=\"require_3ds\"}[24h]))",
+            "legendFormat": "Require 3DS"
+          }
+        ]
+      },
+      {
+        "id": 11,
+        "title": "Webhook Processing: Events by Type (last 24h)",
+        "type": "graph",
+        "gridPos": { "x": 0, "y": 28, "w": 12, "h": 6 },
+        "targets": [
+          {
+            "expr": "sum(increase(stripe_webhook_events_processed_total[24h])) by (event_type)",
+            "legendFormat": "{{ event_type }}"
+          }
+        ]
+      },
+      {
+        "id": 12,
+        "title": "Stripe API Errors by Operation (last 1h)",
+        "type": "graph",
+        "gridPos": { "x": 12, "y": 28, "w": 12, "h": 6 },
+        "targets": [
+          {
+            "expr": "sum(rate(stripe_api_error_total[1h])) by (operation)",
+            "legendFormat": "{{ operation }}"
+          }
+        ],
+        "alert": {
+          "name": "Stripe API Errors Spiking",
+          "conditions": [
+            {
+              "evaluator": { "type": "gt", "params": [5] },
+              "query": "A",
+              "reducer": { "type": "avg" }
+            }
+          ],
+          "message": "Stripe API errors exceeding threshold — check Stripe status page."
+        }
+      }
+    ],
+    "refresh": "30s",
+    "editable": false
+  }
+}

@@ -1,8 +1,8 @@
 /** Checkout marketplace payment method type. */
-export type CheckoutMarketplacePaymentMethod = 'CREDIT_CARD' | 'PIX' | 'BOLETO';
+type CheckoutMarketplacePaymentMethod = 'CREDIT_CARD' | 'PIX' | 'BOLETO';
 
 /** Checkout marketplace pricing input type. */
-export type CheckoutMarketplacePricingInput = {
+type CheckoutMarketplacePricingInput = {
   baseTotalInCents: number;
   paymentMethod: CheckoutMarketplacePaymentMethod;
   installments?: number;
@@ -12,7 +12,7 @@ export type CheckoutMarketplacePricingInput = {
 };
 
 /** Checkout marketplace pricing summary type. */
-export type CheckoutMarketplacePricingSummary = {
+type CheckoutMarketplacePricingSummary = {
   baseTotalInCents: number;
   chargedTotalInCents: number;
   installments: number;

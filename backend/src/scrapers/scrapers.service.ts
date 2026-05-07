@@ -24,7 +24,7 @@ export class ScrapersService {
       data: {
         ...data,
         workspaceId,
-        stats: { found: 0, valid: 0, imported: 0 },
+        stats: { status: 'pending', found: 0, valid: 0, imported: 0 },
       },
     });
 
@@ -40,9 +40,17 @@ export class ScrapersService {
     return job;
   }
 
+  /** Extracts status string from stats JSON for API response. */
+  private extractStatus(stats: unknown): string | undefined {
+    if (stats && typeof stats === 'object' && 'status' in stats) {
+      return (stats as Record<string, unknown>).status as string | undefined;
+    }
+    return undefined;
+  }
+
   /** Find all. */
   async findAll(workspaceId: string) {
-    return this.prisma.scrapingJob.findMany({
+    const jobs = await this.prisma.scrapingJob.findMany({
       where: { workspaceId },
       select: {
         id: true,
@@ -57,12 +65,18 @@ export class ScrapersService {
       orderBy: { createdAt: 'desc' },
       take: 100,
     });
+
+    return jobs.map((job) => ({
+      ...job,
+      status: this.extractStatus(job.stats),
+      resultsCount: (job.stats as Record<string, unknown> | null)?.found as number | undefined,
+    }));
   }
 
   /** Find one. */
   async findOne(workspaceId: string, id: string) {
     const job = await this.prisma.scrapingJob.findUnique({
-      where: { id },
+      where: { id, workspaceId },
       include: { leads: true },
     });
 

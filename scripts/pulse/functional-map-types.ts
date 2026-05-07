@@ -9,7 +9,7 @@ import type {
   ServiceTrace,
   ProxyRoute,
   FacadeEntry,
-} from './types';
+} from './types.core';
 import type { HookRegistry } from './parsers/hook-registry';
 
 // ===== Classification =====
@@ -135,6 +135,8 @@ export interface FunctionalMapResult {
 export interface PageEntry {
   /** Page file property. */
   pageFile: string; // absolute path
+  /** Frontend dir property. */
+  frontendDir: string; // absolute source root
   /** Rel file property. */
   relFile: string; // relative path
   /** Route property. */

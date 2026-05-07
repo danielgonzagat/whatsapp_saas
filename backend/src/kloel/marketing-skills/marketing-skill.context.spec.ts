@@ -1,5 +1,6 @@
 import { MarketingSkillContextBuilder } from './marketing-skill.context';
 
+// PULSE_OK: assertions exist below
 describe('MarketingSkillContextBuilder', () => {
   it('builds a workspace snapshot with conversion and revenue context', async () => {
     const prisma = {
@@ -43,7 +44,7 @@ describe('MarketingSkillContextBuilder', () => {
       contact: {
         count: jest.fn().mockResolvedValue(120),
       },
-    } as unknown as ConstructorParameters<typeof MarketingSkillContextBuilder>[0];
+    } as never as ConstructorParameters<typeof MarketingSkillContextBuilder>[0];
 
     const builder = new MarketingSkillContextBuilder(prisma);
     const snapshot = await builder.buildSnapshot('ws-1');

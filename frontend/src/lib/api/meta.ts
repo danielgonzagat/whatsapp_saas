@@ -77,29 +77,25 @@ export interface MetaLead {
   created_time?: string;
 }
 
-/** Meta ads api. */
+/** Meta ads api. Access token resolved server-side from DB per workspace. */
 export const metaAdsApi = {
   /**
    * GET /meta/ads/campaigns — list campaigns for an ad account
    */
-  getCampaigns: (adAccountId: string, accessToken: string) =>
+  getCampaigns: (adAccountId?: string) =>
     apiFetch<{ data: MetaCampaign[] }>(`/meta/ads/campaigns`, {
-      params: { adAccountId, accessToken },
+      params: adAccountId ? { adAccountId } : undefined,
     }),
 
   /**
    * PATCH /meta/ads/campaigns/:id/status — toggle campaign active/paused
    */
-  updateCampaignStatus: async (
-    campaignId: string,
-    status: 'ACTIVE' | 'PAUSED',
-    accessToken: string,
-  ) => {
+  updateCampaignStatus: async (campaignId: string, status: 'ACTIVE' | 'PAUSED') => {
     const res = await apiFetch<{ success: boolean }>(
       `/meta/ads/campaigns/${encodeURIComponent(campaignId)}/status`,
       {
         method: 'PATCH',
-        body: { status, accessToken },
+        body: { status },
       },
     );
     invalidateMeta();
@@ -110,14 +106,12 @@ export const metaAdsApi = {
    * GET /meta/ads/insights/account — account-level aggregated insights
    */
   getAccountInsights: (
-    adAccountId: string,
-    accessToken: string,
+    adAccountId?: string,
     opts?: { since?: string; until?: string; level?: string },
   ) =>
     apiFetch<MetaInsight>(`/meta/ads/insights/account`, {
       params: {
         adAccountId,
-        accessToken,
         since: opts?.since,
         until: opts?.until,
         level: opts?.level,
@@ -127,26 +121,24 @@ export const metaAdsApi = {
   /**
    * GET /meta/ads/insights/daily — per-campaign daily insights
    */
-  getDailyInsights: (campaignId: string, accessToken: string, since?: string, until?: string) =>
+  getDailyInsights: (campaignId: string, since?: string, until?: string) =>
     apiFetch<MetaInsight>(`/meta/ads/insights/daily`, {
-      params: { campaignId, accessToken, since, until },
+      params: { campaignId, since, until },
     }),
 
   /**
    * GET /meta/ads/leads — list lead forms for a page
    */
-  getLeadForms: (pageId: string, accessToken: string) =>
+  getLeadForms: (pageId?: string) =>
     apiFetch<{ data: MetaLeadForm[] }>(`/meta/ads/leads`, {
-      params: { pageId, accessToken },
+      params: pageId ? { pageId } : undefined,
     }),
 
   /**
    * GET /meta/ads/leads/:formId — get leads from a specific form
    */
-  getFormLeads: (formId: string, accessToken: string) =>
-    apiFetch<{ data: MetaLead[] }>(`/meta/ads/leads/${encodeURIComponent(formId)}`, {
-      params: { accessToken },
-    }),
+  getFormLeads: (formId: string) =>
+    apiFetch<{ data: MetaLead[] }>(`/meta/ads/leads/${encodeURIComponent(formId)}`),
 };
 
 // ============================================

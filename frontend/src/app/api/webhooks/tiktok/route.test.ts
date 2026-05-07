@@ -1,5 +1,6 @@
 import { createHmac } from 'node:crypto';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { type NextRequest } from 'next/server';
+import { afterEach, describe, expect, it } from 'vitest';
 import { GET, HEAD, OPTIONS, POST } from './route';
 
 function createRequest(options?: { body?: string; signature?: string | null }) {
@@ -14,8 +15,8 @@ function createRequest(options?: { body?: string; signature?: string | null }) {
             'content-type': 'application/json',
           },
     ),
-    text: vi.fn(async () => options?.body || '{"ping":true}'),
-  } as any;
+    text: async () => options?.body || '{"ping":true}',
+  } as NextRequest;
 }
 
 describe('tiktok webhook route', () => {

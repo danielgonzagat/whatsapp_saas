@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { DestructiveIntentKind, DestructiveIntentStatus, type Prisma } from '@prisma/client';
 import { randomBytes, randomInt } from 'node:crypto';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -7,6 +7,7 @@ import { adminErrors } from '../common/admin-api-errors';
 import { DestructiveIntentRegistry, UnsupportedUndoError } from './destructive-handler.registry';
 import type { DestructiveIntentRecord, DestructiveIntentView } from './destructive-intent.types';
 import { toDestructiveIntentView } from './destructive-intent.types';
+import { OpsAlertService } from '../../observability/ops-alert.service';
 
 const DEFAULT_TTL_SECONDS = 300; // 5 min — I-ADMIN-D2
 const MAX_TTL_SECONDS = 900;
@@ -105,6 +106,7 @@ export class DestructiveIntentService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly registry: DestructiveIntentRegistry,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   /** Create. */
@@ -215,7 +217,11 @@ export class DestructiveIntentService {
         },
       });
       return toDestructiveIntentView(patched);
-    } catch (error) {
+    } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(
+        error,
+        'DestructiveIntentService.toDestructiveIntentView',
+      );
       if (error instanceof UnsupportedUndoError) {
         throw adminErrors.destructiveInvalidState(intent.id, error.message);
       }
@@ -305,13 +311,14 @@ export class DestructiveIntentService {
           resultSnapshot: {
             ...result.snapshot,
             ...(undoToken ? { undoToken } : {}),
-          } as Prisma.InputJsonValue,
+          },
           undoTokenHash: undoToken ? sha256Hex(undoToken) : null,
           undoExpiresAt,
         },
       });
       return patched;
-    } catch (error) {
+    } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'DestructiveIntentService.sha256Hex');
       const message = error instanceof Error ? error.message : String(error);
       return this.prisma.destructiveIntent.update({
         where: { id: intent.id },

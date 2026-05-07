@@ -11,20 +11,21 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { IS_PUBLIC_METADATA } from '../../auth/public.decorator';
 import { PrismaService } from '../../prisma/prisma.service';
 import { asProviderSettings } from '../../whatsapp/provider-settings.types';
 
 /**
  * Decorator para marcar rotas como públicas do KLOEL
  */
-export const KLOEL_PUBLIC_METADATA = ['kloel', 'public'].join('_');
+const KLOEL_PUBLIC_METADATA = ['kloel', 'public'].join('_');
 /** Kloel public. */
 export const KloelPublic = () => SetMetadata(KLOEL_PUBLIC_METADATA, true);
 
 /**
  * Decorator para definir rate limit customizado
  */
-export const KLOEL_RATE_LIMIT_METADATA = ['kloel', 'rate', 'limit'].join('_');
+const KLOEL_RATE_LIMIT_METADATA = ['kloel', 'rate', 'limit'].join('_');
 /** Kloel rate limit. */
 export const KloelRateLimit = (requests: number, windowMs: number) =>
   SetMetadata(KLOEL_RATE_LIMIT_METADATA, { requests, windowMs });
@@ -81,10 +82,15 @@ export class KloelSecurityGuard implements CanActivate, OnModuleDestroy {
     const path = request.path;
 
     // 1. Rotas públicas
-    const isPublic = this.reflector.getAllAndOverride<boolean>(KLOEL_PUBLIC_METADATA, [
-      context.getHandler(),
-      context.getClass(),
-    ]);
+    const isPublic =
+      this.reflector.getAllAndOverride<boolean>(KLOEL_PUBLIC_METADATA, [
+        context.getHandler(),
+        context.getClass(),
+      ]) ||
+      this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_METADATA, [
+        context.getHandler(),
+        context.getClass(),
+      ]);
     if (isPublic) {
       return true;
     }

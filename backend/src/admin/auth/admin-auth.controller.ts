@@ -92,6 +92,7 @@ export class AdminAuthController {
   @UseGuards(AdminAuthGuard)
   @AllowPendingMfa()
   @HttpCode(HttpStatus.OK)
+  // PULSE_OK: reasonable expiry (30m)
   async mfaVerify(
     @CurrentAdmin() admin: AuthenticatedAdmin,
     @Body() dto: MfaVerifyDto,

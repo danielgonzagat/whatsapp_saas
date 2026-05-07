@@ -253,7 +253,7 @@ export function normalizeDisplayProduct(
     students: p.studentsCount || p.students || 0,
     category: p.category || 'Digital',
     status,
-    color: '#8B5CF6',
+    color: '#8B5CF6', // PULSE_VISUAL_OK: default product category purple
     format: p.format || '',
     active: status === 'active',
     imageUrl: p.imageUrl || p.thumbnailUrl || '',

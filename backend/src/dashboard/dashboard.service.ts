@@ -12,6 +12,56 @@ import {
   sumByBuckets,
 } from './home-aggregation.util';
 
+type SetupChecklistItem = {
+  key: string;
+  completed: boolean;
+};
+
+const SETUP_CHECKPOINT_COPY: Record<string, { label: string; description: string }> = {
+  profile: {
+    label: 'Perfil comercial configurado',
+    description:
+      'O onboarding precisa salvar o tipo de usuário, canal principal e uso inicial da IA.',
+  },
+  product: {
+    label: 'Produto informado',
+    description:
+      'O workspace precisa ter produto próprio ou intenção clara de cadastrar um produto.',
+  },
+  checkout: {
+    label: 'Checkout informado',
+    description: 'O produtor precisa confirmar se já possui checkout ou criar um checkout Kloel.',
+  },
+  payment: {
+    label: 'Pagamentos conectados',
+    description: 'O workspace precisa ter provider de pagamento pronto para receber vendas reais.',
+  },
+  channel: {
+    label: 'Canal principal definido',
+    description: 'WhatsApp, Instagram, Messenger ou e-mail precisa estar definido no setup.',
+  },
+  ai: {
+    label: 'Uso da IA definido',
+    description: 'A IA precisa saber se começa em atendimento, venda ou recuperação.',
+  },
+};
+
+function readSetupChecklist(value: unknown): SetupChecklistItem[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return value.flatMap((item) => {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) {
+      return [];
+    }
+    const record = item as Record<string, unknown>;
+    if (typeof record.key !== 'string' || typeof record.completed !== 'boolean') {
+      return [];
+    }
+    return [{ key: record.key, completed: record.completed }];
+  });
+}
+
 /** Dashboard service. */
 @Injectable()
 export class DashboardService {
@@ -20,7 +70,6 @@ export class DashboardService {
     @InjectRedis() private readonly redis: Redis,
   ) {}
 
-  /** Get stats. */
   async getStats(workspaceId: string) {
     const workspace = await this.prisma.workspace.findUnique({
       where: { id: workspaceId },
@@ -29,15 +78,12 @@ export class DashboardService {
     const billingSuspended =
       asProviderSettings(workspace?.providerSettings).billingSuspended === true;
 
-    // 1. Basic Counts
     const [totalContacts, totalCampaigns, totalFlows] = await Promise.all([
       this.prisma.contact.count({ where: { workspaceId } }),
       this.prisma.campaign.count({ where: { workspaceId } }),
       this.prisma.flow.count({ where: { workspaceId } }),
     ]);
 
-    // 2. Message Metrics (Real Aggregation)
-    // Fetch counts by status for OUTBOUND messages
     const messageStats = await this.prisma.message.groupBy({
       by: ['status'],
       where: {
@@ -62,19 +108,15 @@ export class DashboardService {
     const failed = statsMap.FAILED || 0;
     const totalOutbound = sent + delivered + read + failed;
 
-    // Delivery Rate: (Delivered + Read) / Total Attempted
     const deliveryRate = totalOutbound > 0 ? ((delivered + read) / totalOutbound) * 100 : 0;
 
-    // Read Rate (Open Rate): Read / (Delivered + Read)
     const deliveredOrRead = delivered + read;
     const readRate = deliveredOrRead > 0 ? (read / deliveredOrRead) * 100 : 0;
 
-    // 3. Active Conversations
     const activeConversations = await this.prisma.conversation.count({
       where: { workspaceId, status: 'OPEN' },
     });
 
-    // 4. Flow Executions (Today)
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
 
@@ -95,7 +137,6 @@ export class DashboardService {
       {} as Record<string, number>,
     );
 
-    // 5. Health Metrics (Redis Rolling Window)
     const key = `metrics:${workspaceId}`;
     const events = await this.redis.lrange(key, 0, -1);
     let healthScore = 100;
@@ -177,6 +218,7 @@ export class DashboardService {
       waitingForHumanCount,
       recentConversations,
       responseMessages,
+      setupChecklistMemory,
     ] = await Promise.all([
       this.prisma.kloelWallet.findUnique({
         where: { workspaceId },
@@ -316,6 +358,10 @@ export class DashboardService {
         orderBy: { createdAt: 'asc' },
         take: 3000,
       }),
+      this.prisma.kloelMemory.findUnique({
+        where: { workspaceId_key: { workspaceId, key: 'onboarding_setup_checklist' } },
+        select: { value: true },
+      }),
     ]);
 
     const currentRevenueInCents = currentPaidOrders.reduce(
@@ -423,6 +469,23 @@ export class DashboardService {
         Number(wallet?.pendingBalanceInCents || 0) > 0,
       recentConversations.length > 0,
     ]);
+    const setupChecklist = readSetupChecklist(setupChecklistMemory?.value);
+    const setupCheckpoints = setupChecklist.map((item) => {
+      const copy = SETUP_CHECKPOINT_COPY[item.key] ?? {
+        label: `Setup: ${item.key}`,
+        description: 'Item de setup persistido pelo onboarding inicial.',
+      };
+      return {
+        id: `setup-${item.key}`,
+        label: copy.label,
+        description: copy.description,
+        active: item.completed,
+      };
+    });
+    const setupActiveCheckpoints = setupCheckpoints.filter(
+      (checkpoint) => checkpoint.active,
+    ).length;
+    const totalHealthCheckpoints = operationalHealth.totalCheckpoints + setupCheckpoints.length;
 
     return {
       generatedAt: new Date().toISOString(),
@@ -490,9 +553,10 @@ export class DashboardService {
       health: {
         operationalScorePct: operationalHealth.operationalScorePct,
         checkoutCompletionRatePct,
-        activeCheckpoints: operationalHealth.activeCheckpoints,
-        totalCheckpoints: operationalHealth.totalCheckpoints,
+        activeCheckpoints: operationalHealth.activeCheckpoints + setupActiveCheckpoints,
+        totalCheckpoints: totalHealthCheckpoints,
         checkpoints: [
+          ...setupCheckpoints,
           {
             id: 'paid-revenue',
             label: 'Receita paga no período',

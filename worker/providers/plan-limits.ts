@@ -4,12 +4,17 @@ import { redis } from '../redis-client';
 
 type Plan = 'FREE' | 'STARTER' | 'PRO' | 'ENTERPRISE';
 
+const DAILY_LIMIT_ENV_OVERRIDE = process.env.WORKSPACE_DAILY_MESSAGE_LIMIT
+  ? Number(process.env.WORKSPACE_DAILY_MESSAGE_LIMIT)
+  : null;
+
 const planConfig: Record<
   Plan,
   {
     flowLimit: number | null;
     campaignLimit: number | null;
     messagesPerMonth: number | null;
+    messagesPerDay: number | null;
     instances: number | null;
     flowRunsPerMinute: number | null;
   }
@@ -18,6 +23,7 @@ const planConfig: Record<
     flowLimit: 1,
     campaignLimit: 1,
     messagesPerMonth: 500,
+    messagesPerDay: DAILY_LIMIT_ENV_OVERRIDE ?? 50,
     instances: 1,
     flowRunsPerMinute: 20,
   },
@@ -25,6 +31,7 @@ const planConfig: Record<
     flowLimit: 5,
     campaignLimit: 5,
     messagesPerMonth: 5000,
+    messagesPerDay: DAILY_LIMIT_ENV_OVERRIDE ?? 200,
     instances: 1,
     flowRunsPerMinute: 100,
   },
@@ -32,6 +39,7 @@ const planConfig: Record<
     flowLimit: 50,
     campaignLimit: 50,
     messagesPerMonth: 50000,
+    messagesPerDay: DAILY_LIMIT_ENV_OVERRIDE ?? 2000,
     instances: 3,
     flowRunsPerMinute: 500,
   },
@@ -39,6 +47,7 @@ const planConfig: Record<
     flowLimit: null,
     campaignLimit: null,
     messagesPerMonth: null,
+    messagesPerDay: DAILY_LIMIT_ENV_OVERRIDE ?? null,
     instances: null,
     flowRunsPerMinute: null,
   },
@@ -96,6 +105,44 @@ export const PlanLimitsProvider = {
     }
 
     planLimitCounter.labels({ workspaceId, type: 'messages', result: 'allow', plan }).inc();
+    return { allowed: true };
+  },
+
+  /**
+   * Verifica limite diário de mensagens por workspace (Redis-based).
+   * Usa WORKSPACE_DAILY_MESSAGE_LIMIT env var como override global,
+   * ou o limite baseado no plano. Enterprise (null) é ilimitado.
+   */
+  async checkDailyMessageLimit(
+    workspaceId: string,
+  ): Promise<{ allowed: boolean; reason?: string }> {
+    const plan = await getPlan(workspaceId);
+    const cfg = planConfig[plan];
+
+    if (cfg.messagesPerDay === null) {
+      planLimitCounter.labels({ workspaceId, type: 'daily_messages', result: 'allow', plan }).inc();
+      return { allowed: true };
+    }
+
+    const now = new Date();
+    const dateStr = `${now.getUTCFullYear()}${String(now.getUTCMonth() + 1).padStart(2, '0')}${String(now.getUTCDate()).padStart(2, '0')}`;
+    const key = `plan:daily_messages:${workspaceId}:${dateStr}`;
+
+    const total = await redis.incr(key);
+
+    if (total === 1) {
+      await redis.expire(key, 48 * 60 * 60);
+    }
+
+    if (total > cfg.messagesPerDay) {
+      planLimitCounter.labels({ workspaceId, type: 'daily_messages', result: 'block', plan }).inc();
+      return {
+        allowed: false,
+        reason: `Daily message limit reached for plan ${plan} (${total}/${cfg.messagesPerDay})`,
+      };
+    }
+
+    planLimitCounter.labels({ workspaceId, type: 'daily_messages', result: 'allow', plan }).inc();
     return { allowed: true };
   },
 

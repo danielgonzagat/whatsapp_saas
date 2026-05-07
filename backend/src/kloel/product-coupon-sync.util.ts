@@ -64,7 +64,7 @@ export async function syncWorkspaceCheckoutCouponForProduct(
     return null;
   }
 
-  const [productCoupon, checkoutPlans, existingCheckoutCoupon] = await Promise.all([
+  const [productCoupon, checkoutPlans] = await Promise.all([
     prisma.productCoupon.findFirst({
       where: {
         productId,
@@ -81,21 +81,22 @@ export async function syncWorkspaceCheckoutCouponForProduct(
         id: true,
       },
     }),
-    prisma.checkoutCoupon.findUnique({
+  ]);
+
+  if (!productCoupon) {
+    const existingCheckoutCoupon = await prisma.checkoutCoupon.findUnique({
       where: {
         workspaceId_code: {
           workspaceId,
           code: normalizedCode,
         },
       },
-    }),
-  ]);
-
-  if (!productCoupon) {
+    });
     if (existingCheckoutCoupon) {
       await prisma.checkoutCoupon.delete({
         where: {
           id: existingCheckoutCoupon.id,
+          workspaceId,
         },
       });
     }
@@ -120,20 +121,18 @@ export async function syncWorkspaceCheckoutCouponForProduct(
     isActive: Boolean(productCoupon.active) && checkoutPlans.length > 0,
   };
 
-  if (existingCheckoutCoupon) {
-    return prisma.checkoutCoupon.update({
-      where: {
-        id: existingCheckoutCoupon.id,
+  return prisma.checkoutCoupon.upsert({
+    where: {
+      workspaceId_code: {
+        workspaceId,
+        code: normalizedCode,
       },
-      data: payload,
-    });
-  }
-
-  return prisma.checkoutCoupon.create({
-    data: {
+    },
+    create: {
       workspaceId,
       ...payload,
     },
+    update: payload,
   });
 }
 

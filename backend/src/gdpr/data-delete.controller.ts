@@ -20,13 +20,14 @@ export class DataDeleteController {
   ) {}
 
   /** Delete data. */
+  // PULSE_TODO: verify if still needed, no caller detected
   @Post('delete')
   @UseGuards(JwtAuthGuard)
   async deleteData(@Req() req: AuthenticatedRequest) {
     const userId = req.user?.sub;
     const workspaceId = req.user?.workspaceId;
 
-    if (!userId) {
+    if (!userId || !workspaceId) {
       throw new BadRequestException('User identity required for data deletion');
     }
 
@@ -44,7 +45,7 @@ export class DataDeleteController {
 
     // Anonymize user data (soft-delete approach for audit compliance)
     await this.prisma.agent.update({
-      where: { id: userId },
+      where: { id: userId, workspaceId },
       data: {
         name: '[DELETED]',
         email: `deleted-${userId}@removed.local`,

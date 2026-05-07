@@ -1,7 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { OpsAlertService } from '../observability/ops-alert.service';
 
 /** Memory item shape. */
 export interface MemoryItem {
@@ -39,6 +40,7 @@ export class MemoryService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   /**
@@ -75,8 +77,11 @@ export class MemoryService {
 
       this.logger.log(`Memória salva: ${key} (${category})`);
       return memory;
-    } catch (error) {
-      this.logger.error(`Erro salvando memória: ${error.message}`);
+    } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'MemoryService.saveMemory');
+      this.logger.error(
+        `Erro salvando memória: ${error instanceof Error ? error.message : String(error)}`,
+      );
       throw error;
     }
   }
@@ -127,8 +132,9 @@ export class MemoryService {
         totalFound: memories.length,
         searchTime: Date.now() - startTime,
       };
-    } catch (error) {
-      this.logger.error(`Erro na busca: ${error.message}`);
+    } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'MemoryService.now');
+      this.logger.error(`Erro na busca: ${error instanceof Error ? error.message : String(error)}`);
       return {
         memories: [],
         totalFound: 0,
@@ -170,8 +176,11 @@ export class MemoryService {
       }
 
       return contextParts.join('\n');
-    } catch (error) {
-      this.logger.error(`Erro buscando contexto: ${error.message}`);
+    } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'MemoryService.join');
+      this.logger.error(
+        `Erro buscando contexto: ${error instanceof Error ? error.message : String(error)}`,
+      );
       return '';
     }
   }
@@ -214,12 +223,12 @@ ${productData.benefits ? `BENEFÍCIOS: ${productData.benefits.join(', ')}` : ''}
 
     const [memories, total] = await Promise.all([
       this.prisma.kloelMemory.findMany({
-        where,
+        where: { ...where, workspaceId },
         skip: (page - 1) * limit,
         take: limit,
         orderBy: { updatedAt: 'desc' },
       }),
-      this.prisma.kloelMemory.count({ where }),
+      this.prisma.kloelMemory.count({ where: { ...where, workspaceId } }),
     ]);
 
     return { memories, total };
@@ -266,7 +275,8 @@ ${productData.benefits ? `BENEFÍCIOS: ${productData.benefits.join(', ')}` : ''}
         where: { workspaceId_key: { workspaceId, key } },
       });
       return true;
-    } catch (_error) {
+    } catch (_error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(_error, 'MemoryService.delete');
       return false;
     }
   }

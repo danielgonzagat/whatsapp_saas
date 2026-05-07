@@ -1,4 +1,28 @@
 import { CiaRuntimeService } from './cia-runtime.service';
+import {
+  makePrismaMock,
+  makeProviderRegistryMock,
+  makeCatchupServiceMock,
+  makeAgentEventsMock,
+  makeWorkerRuntimeMock,
+  makeRedisMock,
+  makeWhatsappServiceMock,
+  makeUnifiedAgentMock,
+  makeCiaRuntimeStateMock,
+  makeCiaBootstrapMock,
+  makeCiaBacklogRunMock,
+  type PrismaMock,
+  type ProviderRegistryMock,
+  type CatchupServiceMock,
+  type AgentEventsMock,
+  type WorkerRuntimeMock,
+  type RedisMock,
+  type WhatsappServiceMock,
+  type UnifiedAgentMock,
+  type CiaRuntimeStateMock,
+  type CiaBootstrapMock,
+  type CiaBacklogRunMock,
+} from './cia-runtime.service.fixtures';
 
 const { autopilotQueue } = jest.requireMock('../queue/queue');
 
@@ -7,200 +31,57 @@ jest.mock('../queue/queue', () => ({
 }));
 
 describe('CiaRuntimeService', () => {
-  let prisma: any;
-  let providerRegistry: any;
-  let catchupService: any;
-  let agentEvents: any;
-  let workerRuntime: any;
-  let redis: any;
-  let whatsappService: any;
-  let unifiedAgent: any;
+  let prisma: PrismaMock;
+  let providerRegistry: ProviderRegistryMock;
+  let catchupService: CatchupServiceMock;
+  let agentEvents: AgentEventsMock;
+  let workerRuntime: WorkerRuntimeMock;
+  let redis: RedisMock;
+  let whatsappService: WhatsappServiceMock;
+  let unifiedAgent: UnifiedAgentMock;
+  let runtimeState: CiaRuntimeStateMock;
+  let bootstrapService: CiaBootstrapMock;
+  let backlogRunService: CiaBacklogRunMock;
   let service: CiaRuntimeService;
 
   beforeEach(() => {
-    prisma = {
-      workspace: {
-        findUnique: jest.fn().mockResolvedValue({
-          providerSettings: {
-            autopilot: { enabled: false },
-            autonomy: { autoBootstrapOnConnected: true },
-            ciaRuntime: {},
-          },
-        }),
-        update: jest.fn().mockResolvedValue({}),
-      },
-      conversation: {
-        findMany: jest.fn().mockResolvedValue([
-          {
-            id: 'conv-1',
-            unreadCount: 5,
-            status: 'OPEN',
-            mode: 'AI',
-            assignedAgentId: null,
-            lastMessageAt: new Date(),
-            contactId: 'contact-1',
-            contact: {
-              id: 'contact-1',
-              name: 'Alice',
-              phone: '5511999991111',
-            },
-            messages: [
-              {
-                id: 'conv-1-msg-1',
-                direction: 'INBOUND',
-                createdAt: new Date(),
-                content: 'Quero saber o preço',
-              },
-            ],
-          },
-          {
-            id: 'conv-2',
-            unreadCount: 2,
-            status: 'OPEN',
-            mode: 'AI',
-            assignedAgentId: null,
-            lastMessageAt: new Date(Date.now() - 1_000),
-            contactId: 'contact-2',
-            contact: {
-              id: 'contact-2',
-              name: 'Bruno',
-              phone: '5511888888888',
-            },
-            messages: [
-              {
-                id: 'conv-2-msg-1',
-                direction: 'INBOUND',
-                createdAt: new Date(Date.now() - 1_000),
-                content: 'Tem composição?',
-              },
-            ],
-          },
-        ]),
-        findFirst: jest.fn().mockResolvedValue(null),
-        update: jest.fn().mockResolvedValue({}),
-      },
-      contact: {
-        findUnique: jest.fn().mockImplementation(async ({ where }: any) => {
-          if (where?.id === 'contact-1') {
-            return { id: 'contact-1', phone: '5511999991111' };
-          }
-          if (where?.id === 'contact-2') {
-            return { id: 'contact-2', phone: '5511888888888' };
-          }
-          return null;
-        }),
-        findFirst: jest.fn().mockImplementation(async ({ where }: any) => {
-          const phone = where?.phone || where?.contact?.phone;
-          if (phone === '5511999991111') {
-            return { id: 'contact-1', phone: '5511999991111' };
-          }
-          if (phone === '5511888888888') {
-            return { id: 'contact-2', phone: '5511888888888' };
-          }
-          return null;
-        }),
-      },
-      message: {
-        findFirst: jest.fn().mockResolvedValue(null),
-        findMany: jest.fn().mockImplementation(async ({ where }: any) => {
-          if (where?.contactId === 'contact-1') {
-            return [
-              {
-                content: 'Quero saber o preço',
-                externalId: 'quoted-contact-1',
-                createdAt: new Date().toISOString(),
-              },
-            ];
-          }
-          if (where?.contactId === 'contact-2') {
-            return [
-              {
-                content: 'Tem composição?',
-                externalId: 'quoted-contact-2',
-                createdAt: new Date(Date.now() - 1_000).toISOString(),
-              },
-            ];
-          }
-          return [];
-        }),
-      },
-      kloelMemory: {
-        findUnique: jest.fn().mockResolvedValue({
-          value: { openBacklog: 12, hotLeadCount: 3 },
-        }),
-        findMany: jest
-          .fn()
-          .mockResolvedValue([{ value: { normalizedKey: 'price_resistance', frequency: 5 } }]),
-      },
-      systemInsight: {
-        findMany: jest.fn().mockResolvedValue([{ id: 'insight-1', type: 'CIA_MARKET_SIGNAL' }]),
-      },
-    };
+    prisma = makePrismaMock();
+    providerRegistry = makeProviderRegistryMock();
+    catchupService = makeCatchupServiceMock();
+    agentEvents = makeAgentEventsMock();
+    workerRuntime = makeWorkerRuntimeMock();
+    redis = makeRedisMock();
+    whatsappService = makeWhatsappServiceMock();
+    unifiedAgent = makeUnifiedAgentMock();
 
-    providerRegistry = {
-      getSessionStatus: jest.fn().mockResolvedValue({
-        connected: true,
-        status: 'WORKING',
-      }),
-      getChats: jest.fn().mockResolvedValue([
-        { id: 'chat-1', unreadCount: 5, timestamp: Date.now() },
-        { id: 'chat-2', unreadCount: 2, timestamp: Date.now() - 1000 },
-        { id: 'chat-3', unreadCount: 0, timestamp: Date.now() - 2000 },
-      ]),
-      getChatMessages: jest.fn().mockResolvedValue([]),
-    };
-
-    catchupService = {
-      triggerCatchup: jest.fn().mockResolvedValue({
-        scheduled: true,
-        reason: 'cia_bootstrap',
-      }),
-      runCatchupNow: jest.fn().mockResolvedValue({
-        scheduled: true,
-        importedMessages: 0,
-        touchedChats: 0,
-        processedChats: 0,
-        overflow: false,
-      }),
-    };
-
-    agentEvents = {
-      publish: jest.fn().mockResolvedValue(undefined),
-    };
-    workerRuntime = {
-      isAvailable: jest.fn().mockResolvedValue(true),
-    };
-    redis = {
-      set: jest.fn().mockResolvedValue('OK'),
-      del: jest.fn().mockResolvedValue(1),
-    };
-    // messageLimit: enforced via PlanLimitsService.trackMessageSend
-    whatsappService = {
-      sendMessage: jest.fn().mockResolvedValue({
-        ok: true,
-        delivery: 'sent',
-        direct: true,
-      }),
-    };
-    unifiedAgent = {
-      processIncomingMessage: jest.fn().mockResolvedValue({
-        reply: 'Resposta automática',
-        response: 'Resposta automática',
-        actions: [],
-        intent: 'QUALIFY',
-        confidence: 0.9,
-      }),
-    };
-
-    service = new CiaRuntimeService(
+    runtimeState = makeCiaRuntimeStateMock(prisma, agentEvents);
+    bootstrapService = makeCiaBootstrapMock(
       prisma,
       providerRegistry,
-      catchupService,
       agentEvents,
+      runtimeState,
+      catchupService,
+    );
+    backlogRunService = makeCiaBacklogRunMock(
+      prisma,
+      providerRegistry,
+      agentEvents,
+      runtimeState,
       workerRuntime,
-      redis,
-      whatsappService,
+      bootstrapService,
+      catchupService,
       unifiedAgent,
+      whatsappService,
+      redis,
+    );
+
+    service = new CiaRuntimeService(
+      prisma as never,
+      providerRegistry as never,
+      agentEvents as never,
+      runtimeState,
+      bootstrapService,
+      backlogRunService,
     );
   });
 
@@ -578,10 +459,10 @@ describe('CiaRuntimeService', () => {
       },
     ]);
 
-    const pending = await (service as any).listPendingConversations('ws-1', 10);
+    const pending = await bootstrapService.listPendingConversations('ws-1', 10);
 
     expect(pending).toHaveLength(1);
-    expect(pending[0].operational).toEqual(
+    expect((pending[0] as { operational: Record<string, unknown> }).operational).toEqual(
       expect.objectContaining({
         pending: true,
         pendingMessages: 3,
@@ -608,8 +489,8 @@ describe('CiaRuntimeService', () => {
       mode: 'AI',
       resumed: true,
     });
-    expect(prisma.conversation.update).toHaveBeenCalledWith({
-      where: { id: 'conv-human-1' },
+    expect(prisma.conversation.updateMany).toHaveBeenCalledWith({
+      where: { id: 'conv-human-1', workspaceId: 'ws-1' },
       data: { mode: 'AI', assignedAgentId: null },
     });
     expect(agentEvents.publish).toHaveBeenCalledWith(

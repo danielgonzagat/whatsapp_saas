@@ -1,4 +1,4 @@
-import { Logger, OnModuleInit } from '@nestjs/common';
+import { Logger, OnModuleInit, Optional } from '@nestjs/common';
 import {
   OnGatewayConnection,
   OnGatewayDisconnect,
@@ -8,6 +8,7 @@ import {
 import Redis from 'ioredis';
 import { Server, Socket } from 'socket.io';
 import { createRedisClient } from '../common/redis/redis.util';
+import { OpsAlertService } from '../observability/ops-alert.service';
 
 /** Copilot gateway. */
 @WebSocketGateway({
@@ -24,7 +25,7 @@ export class CopilotGateway implements OnGatewayConnection, OnGatewayDisconnect,
   private readonly logger = new Logger('CopilotGateway');
   private readonly sub: Redis;
 
-  constructor() {
+  constructor(@Optional() private readonly opsAlert?: OpsAlertService) {
     this.sub = createRedisClient();
   }
 
@@ -40,9 +41,12 @@ export class CopilotGateway implements OnGatewayConnection, OnGatewayDisconnect,
         } else {
           this.server.emit('copilot:suggestion', payload);
         }
-      } catch (err) {
+      } catch (err: unknown) {
+        void this.opsAlert?.alertOnCriticalError(err, 'CopilotGateway.emit');
         // PULSE:OK — Redis pub/sub parse error; cannot propagate from event handler
-        this.logger.warn(`CopilotGateway parse error: ${err?.message}`);
+        this.logger.warn(
+          `CopilotGateway parse error: ${err instanceof Error ? err.message : 'unknown'}`,
+        );
       }
     });
   }

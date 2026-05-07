@@ -2,6 +2,7 @@ import { WhatsAppProviderRegistry } from './provider-registry';
 
 describe('WhatsAppProviderRegistry', () => {
   let prisma: {
+    $transaction: jest.Mock;
     workspace: {
       findUnique: jest.Mock;
       update: jest.Mock;
@@ -44,6 +45,7 @@ describe('WhatsAppProviderRegistry', () => {
     delete process.env.WAHA_BASE_URL;
     delete process.env.WAHA_URL;
     prisma = {
+      $transaction: jest.fn((callback: (tx: unknown) => unknown) => callback(prisma)),
       workspace: {
         findUnique: jest.fn().mockResolvedValue({
           providerSettings: {
@@ -81,8 +83,8 @@ describe('WhatsAppProviderRegistry', () => {
     };
 
     registry = new WhatsAppProviderRegistry(
-      prisma as unknown as ConstructorParameters<typeof WhatsAppProviderRegistry>[0],
-      whatsappApi as unknown as ConstructorParameters<typeof WhatsAppProviderRegistry>[1],
+      prisma as never as ConstructorParameters<typeof WhatsAppProviderRegistry>[0],
+      whatsappApi as never,
     );
   });
 
@@ -300,9 +302,9 @@ describe('WhatsAppProviderRegistry', () => {
     };
 
     const wahaRegistry = new WhatsAppProviderRegistry(
-      prisma as unknown as ConstructorParameters<typeof WhatsAppProviderRegistry>[0],
-      whatsappApi as unknown as ConstructorParameters<typeof WhatsAppProviderRegistry>[1],
-      wahaProvider as unknown as ConstructorParameters<typeof WhatsAppProviderRegistry>[2],
+      prisma as never as ConstructorParameters<typeof WhatsAppProviderRegistry>[0],
+      whatsappApi as never,
+      wahaProvider as never,
     );
     const result = await wahaRegistry.getSessionStatus('ws-1');
 

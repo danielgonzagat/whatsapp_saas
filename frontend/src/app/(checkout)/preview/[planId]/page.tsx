@@ -27,6 +27,6 @@ export default function CheckoutPreview({ params }: { params: Promise<{ planId: 
     config,
     product: plan?.product,
     plan,
-  } as unknown as React.ComponentProps<typeof Theme>;
+  } as React.ComponentProps<typeof Theme>;
   return <Theme {...themeProps} />;
 }

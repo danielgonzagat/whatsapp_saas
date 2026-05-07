@@ -6,33 +6,21 @@ export const dynamic = 'force-dynamic';
 
 import { useAuth } from '@/components/kloel/auth/auth-provider';
 import { useSocket } from '@/hooks/useSocket';
-import {
-  type Conversation,
-  type InboxAgent,
-  type Message,
-  apiFetch,
-  assignConversation,
-  closeConversation,
-  getConversationMessages,
-  listConversations,
-  listInboxAgents,
-} from '@/lib/api';
 import { buildDashboardHref } from '@/lib/kloel-dashboard-context';
 import { Bot, Loader2, MessageSquare, Send, User as UserIcon, XCircle } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
-import { mutate } from 'swr';
+import { type ReactNode } from 'react';
 import {
-  type ChannelFilter,
-  INBOX_DIGIT_RE as D_RE,
   INBOX_RESPONSIVE_VARS,
-  INBOX_SOURCE_LABELS,
   type StatusFilter,
-  extractErrorMessage,
+  type ChannelFilter,
   formatInboxTime as formatTime,
-  parseInboxMessagePayload,
 } from './inbox-workspace-utils';
+import { ConversationListItem } from './__parts__/conversation-list-item';
+import { NoWorkspaceView } from './__parts__/no-workspace-view';
+import { NotAuthenticatedView } from './__parts__/not-authenticated-view';
+import { useInboxData } from './__parts__/use-inbox-data';
+import { useInboxRealtime } from './__parts__/use-inbox-realtime';
 
 interface InboxWorkspaceProps {
   embedded?: boolean;
@@ -54,320 +42,68 @@ export function InboxWorkspace({
   showContextBanner = !embedded,
   headerActions,
 }: InboxWorkspaceProps) {
-  const router = useRouter();
-  const searchParams = useSearchParams();
   const { isAuthenticated, isLoading, workspace, user, openAuthModal } = useAuth();
+  const workspaceId = workspace?.id;
   const { isConnected, subscribe } = useSocket();
 
-  const workspaceId = workspace?.id;
+  const {
+    loadingConversations,
+    loadingMessages,
+    error,
+    conversations,
+    selectedConversationId,
+    messages,
+    setMessages,
+    agents,
+    assigning,
+    channelFilter,
+    setChannelFilter,
+    statusFilter,
+    setStatusFilter,
+    replyText,
+    setReplyText,
+    sending,
+    messagesEndRef,
+    sourceLabel,
+    selectedConversation,
+    filteredConversations,
+    matchedConversationByPhone,
+    visualReady,
+    handleAssumir,
+    handleDevolverIA,
+    handleSendReply,
+    handleAssignAgent,
+    refreshConversations,
+    handleSelectConversation,
+    handleCloseConversation,
+    source,
+    requestedPhone,
+    requestedConversationId,
+    requestedDraft,
+    router,
+  } = useInboxData({ workspaceId, isAuthenticated, isLoading, userId: user?.id ?? '' });
 
-  const [loadingConversations, setLoadingConversations] = useState(false);
-  const [loadingMessages, setLoadingMessages] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
-
-  const [agents, setAgents] = useState<InboxAgent[]>([]);
-  const [assigning, setAssigning] = useState(false);
-
-  const [channelFilter, setChannelFilter] = useState<ChannelFilter>('all');
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('open');
-
-  const [replyText, setReplyText] = useState('');
-  const [sending, setSending] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const requestedConversationId = searchParams?.get('conversationId');
-  const requestedPhone = searchParams?.get('phone');
-  const source = searchParams?.get('source') || '';
-  const requestedDraft = searchParams?.get('draft');
-
-  const sourceLabel = useMemo(() => INBOX_SOURCE_LABELS[source] || '', [source]);
-
-  const selectedConversation = useMemo(
-    () => conversations.find((c) => c.id === selectedConversationId) || null,
-    [conversations, selectedConversationId],
-  );
-
-  const filteredConversations = useMemo(() => {
-    return conversations.filter((c) => {
-      if (channelFilter !== 'all') {
-        const ch = (c.channel || 'whatsapp').toLowerCase();
-        if (ch !== channelFilter) {
-          return false;
-        }
-      }
-      if (statusFilter !== 'all') {
-        const st = (c.status || 'open').toLowerCase();
-        if (statusFilter === 'open' && st !== 'open') {
-          return false;
-        }
-        if (statusFilter === 'closed' && st !== 'closed') {
-          return false;
-        }
-      }
-      return true;
-    });
-  }, [conversations, channelFilter, statusFilter]);
-
-  const matchedConversationByPhone = useMemo(() => {
-    const normalize = (value?: string | null) => (value || '').replace(D_RE, '');
-    if (!requestedPhone) {
-      return null;
-    }
-    const target = normalize(requestedPhone);
-    if (!target) {
-      return null;
-    }
-    return (
-      conversations.find((conversation) =>
-        normalize(conversation.contact?.phone).includes(target),
-      ) || null
-    );
-  }, [conversations, requestedPhone]);
-
-  const visualReady =
-    !isLoading && !loadingConversations && (!selectedConversationId || !loadingMessages);
-
-  const handleAssumir = async () => {
-    if (!selectedConversationId || !user) {
-      return;
-    }
-    setAssigning(true);
-    setError(null);
-    try {
-      await assignConversation(selectedConversationId, user.id);
-      await refreshConversations();
-    } catch (err: unknown) {
-      setError(extractErrorMessage(err, 'Falha ao assumir conversa'));
-    } finally {
-      setAssigning(false);
-    }
-  };
-
-  const handleDevolverIA = async () => {
-    if (!selectedConversationId) {
-      return;
-    }
-    setAssigning(true);
-    setError(null);
-    try {
-      await assignConversation(selectedConversationId, '');
-      await refreshConversations();
-    } catch (err: unknown) {
-      setError(extractErrorMessage(err, 'Falha ao devolver para IA'));
-    } finally {
-      setAssigning(false);
-    }
-  };
-
-  const loadMessages = async (conversationId: string) => {
-    setError(null);
-    setLoadingMessages(true);
-    try {
-      const data = await getConversationMessages(conversationId);
-      setMessages(Array.isArray(data) ? data : []);
-    } catch (e: unknown) {
-      setError(extractErrorMessage(e, 'Falha ao carregar mensagens'));
-    } finally {
-      setLoadingMessages(false);
-    }
-  };
-
-  const handleSendReply = async () => {
-    if (!selectedConversationId || !replyText.trim()) {
-      return;
-    }
-    setSending(true);
-    setError(null);
-    try {
-      const res = await apiFetch(
-        `/inbox/conversations/${encodeURIComponent(selectedConversationId)}/reply`,
-        {
-          method: 'POST',
-          body: { content: replyText.trim() },
-        },
-      );
-      if (res.error) {
-        throw new Error(res.error);
-      }
-      setReplyText('');
-      mutate((key: unknown) => typeof key === 'string' && key.startsWith('/inbox'));
-      await loadMessages(selectedConversationId);
-    } catch (err: unknown) {
-      setError(extractErrorMessage(err, 'Falha ao enviar mensagem'));
-    } finally {
-      setSending(false);
-    }
-  };
-
-  const refreshConversations = async () => {
-    if (!workspaceId) {
-      return;
-    }
-    setError(null);
-    setLoadingConversations(true);
-    try {
-      const data = await listConversations(workspaceId);
-      const next = Array.isArray(data) ? data : [];
-      setConversations(next);
-      if (requestedConversationId) {
-        setSelectedConversationId(requestedConversationId);
-      } else if (requestedPhone) {
-        const normalize = (value?: string | null) => (value || '').replace(D_RE, '');
-        const target = normalize(requestedPhone);
-        const matched = next.find((conversation) =>
-          normalize(conversation.contact?.phone).includes(target),
-        );
-        if (matched?.id) {
-          setSelectedConversationId(matched.id);
-        }
-      } else if (!selectedConversationId && next[0]?.id) {
-        setSelectedConversationId(next[0].id);
-      }
-    } catch (e: unknown) {
-      setError(extractErrorMessage(e, 'Falha ao carregar conversas'));
-    } finally {
-      setLoadingConversations(false);
-    }
-  };
-
-  const refreshAgents = async () => {
-    if (!workspaceId) {
-      return;
-    }
-    try {
-      const data = await listInboxAgents(workspaceId);
-      setAgents(Array.isArray(data) ? data : []);
-    } catch {
-      setAgents([]);
-    }
-  };
-
-  const handleSelectConversation = async (conversationId: string) => {
-    setSelectedConversationId(conversationId);
-    await loadMessages(conversationId);
-    await refreshConversations();
-  };
-
-  const handleCloseConversation = async () => {
-    if (!selectedConversationId) {
-      return;
-    }
-    setError(null);
-    try {
-      await closeConversation(selectedConversationId);
-      await refreshConversations();
-    } catch (e: unknown) {
-      setError(extractErrorMessage(e, 'Falha ao fechar conversa'));
-    }
-  };
-
-  const refreshConversationsRef = useRef(refreshConversations);
-  refreshConversationsRef.current = refreshConversations;
-  const refreshAgentsRef = useRef(refreshAgents);
-  refreshAgentsRef.current = refreshAgents;
-  const loadMessagesRef = useRef(loadMessages);
-  loadMessagesRef.current = loadMessages;
-
-  useEffect(() => {
-    if (!isLoading && isAuthenticated && workspaceId) {
-      refreshConversationsRef.current();
-      refreshAgentsRef.current();
-    }
-  }, [isLoading, isAuthenticated, workspaceId]);
-
-  useEffect(() => {
-    if (!selectedConversationId) {
-      return;
-    }
-    loadMessagesRef.current(selectedConversationId);
-  }, [selectedConversationId]);
-
-  useEffect(() => {
-    if (requestedDraft && !replyText) {
-      setReplyText(requestedDraft);
-    }
-  }, [requestedDraft, replyText]);
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages.length]);
-
-  const selectedIdRef = useRef(selectedConversationId);
-  selectedIdRef.current = selectedConversationId;
-
-  useEffect(() => {
-    if (!isConnected || !workspaceId) {
-      return;
-    }
-
-    const unsubNewMsg = subscribe('message:new', (payload: Record<string, unknown>) => {
-      refreshConversations();
-      const { convId, messageId, newMsg } = parseInboxMessagePayload(payload);
-      if (convId && convId === selectedIdRef.current && messageId) {
-        const typedMsg: Message = newMsg as unknown as Message;
-        setMessages((prev) => {
-          if (prev.some((m) => m.id === messageId)) {
-            return prev;
-          }
-          return [...prev, typedMsg];
-        });
-      }
-    });
-
-    const unsubConvUpdate = subscribe('conversation:update', () => {
-      refreshConversations();
-    });
-
-    return () => {
-      unsubNewMsg();
-      unsubConvUpdate();
-    };
-  }, [isConnected, refreshConversations, subscribe, workspaceId]);
+  useInboxRealtime({
+    workspaceId,
+    isConnected,
+    subscribe,
+    selectedConversationId,
+    setMessages,
+    refreshConversations,
+  });
 
   if (!isLoading && !isAuthenticated) {
     return (
-      <div className={embedded ? 'w-full' : 'mx-auto max-w-3xl px-6 py-10'}>
-        <div className="rounded-2xl border border-[#222226] bg-[#111113] p-8 shadow-sm">
-          <h1 className="text-xl font-semibold text-[#E0DDD8]">{title}</h1>
-          <p className="mt-2 text-base text-[#6E6E73]">
-            {kloelT(`Faça login para visualizar e operar suas conversas.`)}
-          </p>
-          <div className="mt-6 flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => openAuthModal('login')}
-              className="rounded-xl bg-[#E85D30] px-4 py-2 text-base font-semibold text-[#0A0A0C]"
-            >
-              {kloelT(`Entrar`)}
-            </button>
-            <Link href="/" className="text-base font-medium text-[#6E6E73] hover:text-[#E0DDD8]">
-              {kloelT(`Voltar ao chat`)}
-            </Link>
-          </div>
-        </div>
-      </div>
+      <NotAuthenticatedView
+        embedded={embedded}
+        title={title}
+        onLogin={() => openAuthModal('login')}
+      />
     );
   }
 
   if (!isLoading && isAuthenticated && !workspaceId) {
-    return (
-      <div className={embedded ? 'w-full' : 'mx-auto max-w-3xl px-6 py-10'}>
-        <div className="rounded-2xl border border-[#222226] bg-[#111113] p-8 shadow-sm">
-          <h1 className="text-xl font-semibold text-[#E0DDD8]">{title}</h1>
-          <p className="mt-2 text-base text-[#6E6E73]">
-            {kloelT(`Workspace não configurado para esta sessão.`)}
-          </p>
-          <div className="mt-6">
-            <Link href="/" className="text-base font-medium text-[#6E6E73] hover:text-[#E0DDD8]">
-              {kloelT(`Voltar ao chat`)}
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
+    return <NoWorkspaceView embedded={embedded} title={title} />;
   }
 
   return (
@@ -587,91 +323,14 @@ export function InboxWorkspace({
                 </div>
               ) : (
                 <div className="divide-y divide-[#222226]">
-                  {filteredConversations.map((c) => {
-                    const isActive = c.id === selectedConversationId;
-                    const name = c.contact?.name || c.contact?.phone || 'Contato';
-                    const phone = c.contact?.phone || '';
-                    const isHandledByHuman = !!c.assignedAgent;
-                    return (
-                      <button
-                        type="button"
-                        key={c.id}
-                        onClick={() => handleSelectConversation(c.id)}
-                        className={`w-full px-[var(--inbox-panel-x)] py-[var(--inbox-panel-y)] text-left transition-colors ${isActive ? 'bg-[#19191C]' : 'hover:bg-[#19191C]'}`}
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0 flex items-center gap-2">
-                            {isHandledByHuman ? (
-                              <span
-                                className="flex shrink-0 items-center gap-1 rounded-full bg-[#E85D30]/15 px-[var(--inbox-chip-x)] py-[2px] text-[length:var(--inbox-body-xs)] font-semibold text-[#E85D30]"
-                                title={c.assignedAgent?.name || 'Agente'}
-                              >
-                                <UserIcon
-                                  style={{
-                                    width: 'calc(var(--inbox-icon-sm) - 2px)',
-                                    height: 'calc(var(--inbox-icon-sm) - 2px)',
-                                  }}
-                                  aria-hidden="true"
-                                />
-                              </span>
-                            ) : (
-                              <span
-                                className="flex shrink-0 items-center gap-1 rounded-full bg-emerald-500/15 px-[var(--inbox-chip-x)] py-[2px] text-[length:var(--inbox-body-xs)] font-semibold text-emerald-400"
-                                title="IA"
-                              >
-                                <Bot
-                                  style={{
-                                    width: 'calc(var(--inbox-icon-sm) - 2px)',
-                                    height: 'calc(var(--inbox-icon-sm) - 2px)',
-                                  }}
-                                  aria-hidden="true"
-                                />
-                              </span>
-                            )}
-                            <div className="min-w-0">
-                              <p className="truncate text-[length:var(--inbox-body)] font-semibold text-[#E0DDD8]">
-                                {name}
-                              </p>
-                              {phone ? (
-                                <p className="mt-0.5 truncate text-[length:var(--inbox-body-xs)] text-[#6E6E73]">
-                                  {phone}
-                                </p>
-                              ) : null}
-                            </div>
-                          </div>
-                          <div className="flex flex-col items-end gap-1">
-                            {c.unreadCount ? (
-                              <span className="rounded-full bg-[#E85D30] px-[var(--inbox-chip-x)] py-[2px] text-[length:var(--inbox-body-xs)] font-semibold text-[#0A0A0C]">
-                                {c.unreadCount}
-                              </span>
-                            ) : null}
-                            <span className="text-[length:var(--inbox-body-xs)] text-[#6E6E73]">
-                              {formatTime(c.lastMessageAt)}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="mt-2 flex flex-wrap items-center gap-2 text-[length:var(--inbox-body-xs)] text-[#6E6E73]">
-                          <span className="rounded-full bg-[#19191C] px-[var(--inbox-chip-x)] py-[2px]">
-                            {c.status || ''}
-                          </span>
-                          {c.channel ? (
-                            <span className="rounded-full bg-[#19191C] px-[var(--inbox-chip-x)] py-[2px]">
-                              {c.channel}
-                            </span>
-                          ) : null}
-                          {isHandledByHuman ? (
-                            <span className="rounded-full bg-[#E85D30]/10 px-[var(--inbox-chip-x)] py-[2px] text-[#E85D30]">
-                              {c.assignedAgent?.name || 'Agente'}
-                            </span>
-                          ) : (
-                            <span className="rounded-full bg-emerald-500/10 px-[var(--inbox-chip-x)] py-[2px] text-emerald-400">
-                              IA
-                            </span>
-                          )}
-                        </div>
-                      </button>
-                    );
-                  })}
+                  {filteredConversations.map((c) => (
+                    <ConversationListItem
+                      key={c.id}
+                      conversation={c}
+                      isActive={c.id === selectedConversationId}
+                      onSelect={handleSelectConversation}
+                    />
+                  ))}
                 </div>
               )}
             </div>
@@ -738,19 +397,7 @@ export function InboxWorkspace({
                     value={selectedConversation?.assignedAgent?.id || ''}
                     disabled={assigning}
                     onChange={async (e) => {
-                      if (!selectedConversationId) {
-                        return;
-                      }
-                      setAssigning(true);
-                      setError(null);
-                      try {
-                        await assignConversation(selectedConversationId, e.target.value);
-                        await refreshConversations();
-                      } catch (err: unknown) {
-                        setError(extractErrorMessage(err, 'Falha ao atribuir agente'));
-                      } finally {
-                        setAssigning(false);
-                      }
+                      await handleAssignAgent(e.target.value);
                     }}
                     className="hidden max-w-[180px] rounded-[var(--inbox-radius)] border border-[#222226] bg-[#111113] px-[var(--inbox-button-x)] py-[var(--inbox-button-y)] text-[length:var(--inbox-body-xs)] font-semibold text-[#E0DDD8] hover:bg-[#19191C] disabled:opacity-50 lg:block"
                     title={kloelT(`Atribuir agente`)}

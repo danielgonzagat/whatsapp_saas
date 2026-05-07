@@ -1,6 +1,7 @@
 import { kloelT } from '@/lib/i18n/t';
 import Link from 'next/link';
 import type { CSSProperties } from 'react';
+import { colors } from '@/lib/design-tokens';
 
 const shellStyle: CSSProperties = {
   minHeight: '100vh',
@@ -8,8 +9,8 @@ const shellStyle: CSSProperties = {
   alignItems: 'center',
   justifyContent: 'center',
   padding: '32px 20px',
-  background: '#0A0A0C',
-  color: '#E0DDD8',
+  background: 'colors.background.void',
+  color: 'colors.text.silver',
   fontFamily: "var(--font-sora), 'Sora', sans-serif",
 };
 
@@ -54,7 +55,7 @@ const ctaStyle: CSSProperties = {
   padding: '12px 18px',
   borderRadius: 8,
   border: 'none',
-  background: '#E85D30',
+  background: 'colors.ember.primary',
   color: '#FFFFFF',
   textDecoration: 'none',
   fontSize: 13,

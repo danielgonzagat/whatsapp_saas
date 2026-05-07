@@ -1,6 +1,6 @@
-import MarketingView from '@/components/kloel/marketing/MarketingView';
+import { OfficialMarketingChannelPage } from '@/components/kloel/marketing/OfficialMarketingChannelPage';
 
 /** Email page. */
 export default function EmailPage() {
-  return <MarketingView defaultTab="email" />;
+  return <OfficialMarketingChannelPage channel="email" />;
 }
