@@ -232,7 +232,6 @@ export class PaymentService {
         workspaceId: params.data.workspaceId,
         subject: `lead:${params.data.leadId}`,
         eventType: 'sale.created',
-        contactId: params.data.leadId,
         idempotencyKey: `sale:${params.idempotencyKey}`,
         payload: {
           amount: params.data.amount,

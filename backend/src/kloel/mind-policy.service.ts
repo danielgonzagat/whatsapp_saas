@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import type { Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { MindBeliefService } from './mind-belief.service';
@@ -53,9 +54,9 @@ export class MindPolicyService {
     const epsilon = input.epsilon ?? 0.5;
     const minSamples = input.fallbackMinSamples ?? FALLBACK_MIN_SAMPLES;
 
-    const harness = await this.harness(input.workspaceId, input.decisionType, 14);
+    const harnessResult = await this.harness(input.workspaceId, input.decisionType, 14);
 
-    if (harness.lift < 0 && harness.pZScore <= -1.96 && harness.n >= minSamples) {
+    if (harnessResult.lift < 0 && harnessResult.pZScore <= -1.96 && harnessResult.n >= minSamples) {
       const baselineAction =
         input.baselineActionQuiet ??
         input.baseline ??
@@ -75,14 +76,14 @@ export class MindPolicyService {
         epsilon,
         fallbackActive: true,
         fallbackReason: [
-          `lift=${harness.lift.toFixed(3)}`,
-          `z=${harness.pZScore.toFixed(2)}`,
-          `n=${harness.n}`,
-          `mindMean=${harness.mindMean.toFixed(3)}`,
-          `baselineMean=${harness.baselineMean.toFixed(3)}`,
+          `lift=${harnessResult.lift.toFixed(3)}`,
+          `z=${harnessResult.pZScore.toFixed(2)}`,
+          `n=${harnessResult.n}`,
+          `mindMean=${harnessResult.mindMean.toFixed(3)}`,
+          `baselineMean=${harnessResult.baselineMean.toFixed(3)}`,
         ].join(' '),
         outcomeKey: input.outcomeKey,
-        reasonInternal: `FALLBACK: MIND underperforming baseline (lift=${harness.lift.toFixed(3)} < 0)`,
+        reasonInternal: `FALLBACK: MIND underperforming baseline (lift=${harnessResult.lift.toFixed(3)} < 0)`,
         utilityFail,
         utilitySuccess,
       };
@@ -171,18 +172,38 @@ export class MindPolicyService {
     outcome: number,
     baselineOutcome?: number,
   ): Promise<void> {
-    const rows = await this.prisma.$queryRaw<ResolvedPolicyRow[]>`
-      UPDATE "RAC_MindPolicy"
-      SET "outcome" = ${outcome},
-          "baselineOutcome" = ${baselineOutcome ?? null},
-          "resolvedAt" = NOW(),
-          "updatedAt" = NOW()
-      WHERE "outcomeKey" = ${outcomeKey}
-        AND "workspaceId" = ${workspaceId}
-        AND "resolvedAt" IS NULL
-      RETURNING id, "workspaceId", subject, "decisionType", chosen, baseline, "outcomeKey", outcome
-    `;
-    await this.persistResolvedMemories(rows, baselineOutcome);
+    const rows = await this.prisma.mindPolicy.findMany({
+      where: { outcomeKey, workspaceId, resolvedAt: null },
+      select: {
+        id: true,
+        workspaceId: true,
+        subject: true,
+        decisionType: true,
+        chosen: true,
+        baseline: true,
+        outcomeKey: true,
+      },
+    });
+
+    if (rows.length > 0) {
+      await this.prisma.mindPolicy.updateMany({
+        where: { id: { in: rows.map((r) => r.id) } },
+        data: {
+          outcome,
+          baselineOutcome: baselineOutcome ?? null,
+          resolvedAt: new Date(),
+        },
+      });
+
+      await this.persistResolvedMemories(
+        rows.map((r) => ({
+          ...r,
+          outcomeKey: r.outcomeKey ?? null,
+          outcome,
+        })),
+        baselineOutcome,
+      );
+    }
   }
 
   async resolveOpenForSubject(input: {
@@ -192,19 +213,44 @@ export class MindPolicyService {
     subject: string;
     workspaceId: string;
   }): Promise<number> {
-    const rows = await this.prisma.$queryRaw<ResolvedPolicyRow[]>`
-      UPDATE "RAC_MindPolicy"
-      SET "outcome" = ${input.outcome},
-          "baselineOutcome" = ${input.baselineOutcome ?? null},
-          "resolvedAt" = NOW(),
-          "updatedAt" = NOW()
-      WHERE "workspaceId" = ${input.workspaceId}
-        AND "subject" = ${input.subject}
-        AND "decisionType" = ${input.decisionType}
-        AND "resolvedAt" IS NULL
-      RETURNING id, "workspaceId", subject, "decisionType", chosen, baseline, "outcomeKey", outcome
-    `;
-    await this.persistResolvedMemories(rows, input.baselineOutcome);
+    const rows = await this.prisma.mindPolicy.findMany({
+      where: {
+        workspaceId: input.workspaceId,
+        subject: input.subject,
+        decisionType: input.decisionType,
+        resolvedAt: null,
+      },
+      select: {
+        id: true,
+        workspaceId: true,
+        subject: true,
+        decisionType: true,
+        chosen: true,
+        baseline: true,
+        outcomeKey: true,
+      },
+    });
+
+    if (rows.length > 0) {
+      await this.prisma.mindPolicy.updateMany({
+        where: { id: { in: rows.map((r) => r.id) } },
+        data: {
+          outcome: input.outcome,
+          baselineOutcome: input.baselineOutcome ?? null,
+          resolvedAt: new Date(),
+        },
+      });
+
+      await this.persistResolvedMemories(
+        rows.map((r) => ({
+          ...r,
+          outcomeKey: r.outcomeKey ?? null,
+          outcome: input.outcome,
+        })),
+        input.baselineOutcome,
+      );
+    }
+
     return rows.length;
   }
 
@@ -214,18 +260,44 @@ export class MindPolicyService {
     outcome: number;
     workspaceId: string;
   }): Promise<number> {
-    const rows = await this.prisma.$queryRaw<ResolvedPolicyRow[]>`
-      UPDATE "RAC_MindPolicy"
-      SET "outcome" = ${input.outcome},
-          "resolvedAt" = NOW(),
-          "updatedAt" = NOW()
-      WHERE "workspaceId" = ${input.workspaceId}
-        AND "decisionType" = ${input.decisionType}
-        AND "resolvedAt" IS NULL
-        AND "createdAt" < NOW() - (${input.maxAgeHours} * INTERVAL '1 hour')
-      RETURNING id, "workspaceId", subject, "decisionType", chosen, baseline, "outcomeKey", outcome
-    `;
-    await this.persistResolvedMemories(rows);
+    const cutoff = new Date(Date.now() - input.maxAgeHours * 3600 * 1000);
+
+    const rows = await this.prisma.mindPolicy.findMany({
+      where: {
+        workspaceId: input.workspaceId,
+        decisionType: input.decisionType,
+        resolvedAt: null,
+        createdAt: { lt: cutoff },
+      },
+      select: {
+        id: true,
+        workspaceId: true,
+        subject: true,
+        decisionType: true,
+        chosen: true,
+        baseline: true,
+        outcomeKey: true,
+      },
+    });
+
+    if (rows.length > 0) {
+      await this.prisma.mindPolicy.updateMany({
+        where: { id: { in: rows.map((r) => r.id) } },
+        data: {
+          outcome: input.outcome,
+          resolvedAt: new Date(),
+        },
+      });
+
+      await this.persistResolvedMemories(
+        rows.map((r) => ({
+          ...r,
+          outcomeKey: r.outcomeKey ?? null,
+          outcome: input.outcome,
+        })),
+      );
+    }
+
     return rows.length;
   }
 
@@ -241,18 +313,20 @@ export class MindPolicyService {
     pZScore: number;
   }> {
     const since = new Date(Date.now() - sinceDays * 86400 * 1000);
-    const rawRows = await this.prisma.$queryRaw<
-      Array<{ baselineOutcome: number | null; outcome: number }>
-    >`
-      SELECT "baselineOutcome", "outcome"
-      FROM "RAC_MindPolicy"
-      WHERE "workspaceId" = ${workspaceId}
-        AND "decisionType" = ${decisionType}
-        AND "resolvedAt" >= ${since}
-        AND "outcome" IS NOT NULL
-    `;
+    const rawRows = await this.prisma.mindPolicy.findMany({
+      where: {
+        workspaceId,
+        decisionType,
+        resolvedAt: { gte: since },
+        outcome: { not: null },
+      },
+      select: {
+        baselineOutcome: true,
+        outcome: true,
+      },
+    });
     const rows = Array.isArray(rawRows) ? rawRows : [];
-    const outcomes = rows.map((row) => row.outcome);
+    const outcomes = rows.map((row) => row.outcome!);
     const baselineOutcomes = rows
       .map((row) => row.baselineOutcome)
       .filter((value): value is number => typeof value === 'number');
@@ -268,21 +342,61 @@ export class MindPolicyService {
   }
 
   private async persist(decision: MindPolicyDecision): Promise<void> {
-    await this.prisma.$executeRaw`
-      INSERT INTO "RAC_MindPolicy"
-        ("id","workspaceId","subject","decisionType","context","candidates",
-         "chosen","baseline","reasonInternal","outcomeKey",
-         "calcSteps","epsilon","utilitySuccess","utilityFail",
-         "fallbackActive","fallbackReason")
-      VALUES
-        (${randomUUID()}, ${decision.workspaceId}, ${decision.subject}, ${decision.decisionType},
-         ${JSON.stringify(decision.context)}::jsonb, ${JSON.stringify(decision.candidates)}::jsonb,
-         ${decision.chosen}, ${decision.baseline}, ${decision.reasonInternal},
-         ${decision.outcomeKey ?? null},
-         ${JSON.stringify(decision.calcSteps)}::jsonb, ${decision.epsilon},
-         ${decision.utilitySuccess}, ${decision.utilityFail},
-         ${decision.fallbackActive}, ${decision.fallbackReason ?? null})
-    `;
+    if (decision.outcomeKey) {
+      await this.prisma.$transaction(async (tx) => {
+        await tx.$executeRaw`
+          SELECT pg_advisory_xact_lock(hashtext(${`${decision.workspaceId}:${decision.outcomeKey}`}))
+        `;
+        const existing = await tx.mindPolicy.findFirst({
+          where: {
+            outcomeKey: decision.outcomeKey,
+            workspaceId: decision.workspaceId,
+          },
+          select: { id: true },
+        });
+        if (existing) {
+          return;
+        }
+        await this.createPolicyRow(tx, decision);
+      });
+      return;
+    }
+
+    try {
+      await this.createPolicyRow(this.prisma, decision);
+    } catch (error: unknown) {
+      const err = error as { code?: string };
+      if (err && typeof err === 'object' && err.code === 'P2002') {
+        return;
+      }
+      throw error;
+    }
+  }
+
+  private createPolicyRow(
+    prisma: Pick<PrismaService, 'mindPolicy'> | Prisma.TransactionClient,
+    decision: MindPolicyDecision,
+  ) {
+    return prisma.mindPolicy.create({
+      data: {
+        id: randomUUID(),
+        workspaceId: decision.workspaceId,
+        subject: decision.subject,
+        decisionType: decision.decisionType,
+        context: decision.context as Prisma.InputJsonValue,
+        candidates: decision.candidates as unknown as Prisma.InputJsonValue,
+        chosen: decision.chosen,
+        baseline: decision.baseline,
+        reasonInternal: decision.reasonInternal,
+        outcomeKey: decision.outcomeKey ?? null,
+        calcSteps: decision.calcSteps as unknown as Prisma.InputJsonValue,
+        epsilon: decision.epsilon,
+        utilitySuccess: decision.utilitySuccess,
+        utilityFail: decision.utilityFail,
+        fallbackActive: decision.fallbackActive,
+        fallbackReason: decision.fallbackReason ?? null,
+      },
+    });
   }
 
   private async persistResolvedMemories(

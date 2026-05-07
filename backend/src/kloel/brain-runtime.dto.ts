@@ -1,4 +1,13 @@
-import { IsArray, IsIn, IsObject, IsOptional, IsString, MaxLength } from 'class-validator';
+import { Type } from 'class-transformer';
+import {
+  IsArray,
+  IsIn,
+  IsObject,
+  IsOptional,
+  IsString,
+  MaxLength,
+  ValidateNested,
+} from 'class-validator';
 
 export type BrainSource =
   | 'chat'
@@ -36,6 +45,8 @@ export class BrainDecideDto {
 
   @IsOptional()
   @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => BrainMessageDto)
   messages?: BrainMessageDto[];
 
   @IsOptional()

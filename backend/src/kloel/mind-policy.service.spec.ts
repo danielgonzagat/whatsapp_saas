@@ -13,6 +13,16 @@ describe('MindPolicyService', () => {
   ) => ({
     $executeRaw: jest.fn().mockResolvedValue(1),
     $queryRaw: jest.fn().mockResolvedValue(harnessRows),
+    mindPolicy: {
+      findMany: jest
+        .fn()
+        .mockResolvedValue(
+          harnessRows.map((r) => ({ outcome: r.outcome, baselineOutcome: r.baselineOutcome })),
+        ),
+      create: jest.fn().mockResolvedValue(undefined),
+      updateMany: jest.fn().mockResolvedValue({ count: 0 }),
+      count: jest.fn().mockResolvedValue(0),
+    },
   });
 
   describe('choose', () => {
@@ -52,7 +62,7 @@ describe('MindPolicyService', () => {
       expect(result.decision.candidates[0].efe).toBeLessThan(
         result.decision.candidates[1].efe ?? 0,
       );
-      expect(prisma.$executeRaw).toHaveBeenCalled();
+      expect(prisma.mindPolicy.create).toHaveBeenCalled();
     });
 
     it('registra baseline explicitamente quando fornecido', async () => {
@@ -106,10 +116,18 @@ describe('MindPolicyService', () => {
         outcome: index === 0 ? 1 : 0,
         baselineOutcome: 1,
       }));
-      const $queryRaw = jest.fn().mockResolvedValue(harnessData);
       const prisma = {
         $executeRaw: jest.fn().mockResolvedValue(2),
-        $queryRaw,
+        $queryRaw: jest.fn().mockResolvedValue(harnessData),
+        mindPolicy: {
+          create: jest.fn().mockResolvedValue(undefined),
+          findMany: jest.fn().mockResolvedValue(
+            harnessData.map((row) => ({
+              baselineOutcome: row.baselineOutcome,
+              outcome: row.outcome,
+            })),
+          ),
+        },
       };
       const beliefs = {
         getOrInit: jest.fn(),
@@ -129,7 +147,7 @@ describe('MindPolicyService', () => {
         ],
       });
 
-      expect($queryRaw).toHaveBeenCalledTimes(1);
+      expect(prisma.mindPolicy.findMany).toHaveBeenCalledTimes(1);
       expect(result.chosen).toBe('safe_default');
       expect(result.decision.fallbackActive).toBe(true);
       expect(result.decision.fallbackReason).toContain('lift=');
@@ -303,6 +321,13 @@ describe('MindPolicyService', () => {
             { outcome: 1, baselineOutcome: 1 },
             { outcome: 0, baselineOutcome: 0 },
           ]),
+          mindPolicy: {
+            findMany: jest.fn().mockResolvedValue([
+              { outcome: 1, baselineOutcome: 0 },
+              { outcome: 1, baselineOutcome: 1 },
+              { outcome: 0, baselineOutcome: 0 },
+            ]),
+          },
         } as never,
         { getOrInit: jest.fn() } as never,
       );
@@ -323,6 +348,12 @@ describe('MindPolicyService', () => {
             { outcome: 0, baselineOutcome: null },
             { outcome: 1, baselineOutcome: null },
           ]),
+          mindPolicy: {
+            findMany: jest.fn().mockResolvedValue([
+              { outcome: 0, baselineOutcome: null },
+              { outcome: 1, baselineOutcome: null },
+            ]),
+          },
         } as never,
         { getOrInit: jest.fn() } as never,
       );
@@ -343,6 +374,14 @@ describe('MindPolicyService', () => {
             { outcome: 1, baselineOutcome: 1 },
             { outcome: 0, baselineOutcome: 1 },
           ]),
+          mindPolicy: {
+            findMany: jest.fn().mockResolvedValue([
+              { outcome: 0, baselineOutcome: 1 },
+              { outcome: 0, baselineOutcome: 1 },
+              { outcome: 1, baselineOutcome: 1 },
+              { outcome: 0, baselineOutcome: 1 },
+            ]),
+          },
         } as never,
         { getOrInit: jest.fn() } as never,
       );
@@ -373,6 +412,20 @@ describe('MindPolicyService', () => {
             outcome: 1,
           },
         ]),
+        mindPolicy: {
+          findMany: jest.fn().mockResolvedValue([
+            {
+              id: 'policy-1',
+              workspaceId: 'ws-1',
+              subject: 'contact:1',
+              decisionType: 'followup_timing',
+              chosen: 'short',
+              baseline: 'short',
+              outcomeKey: 'outcome-1',
+            },
+          ]),
+          updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+        },
       };
       const service = new MindPolicyService(prisma as never, { getOrInit: jest.fn() } as never);
 
@@ -384,7 +437,8 @@ describe('MindPolicyService', () => {
       });
 
       expect(count).toBe(1);
-      expect(prisma.$queryRaw).toHaveBeenCalled();
+      expect(prisma.mindPolicy.findMany).toHaveBeenCalled();
+      expect(prisma.mindPolicy.updateMany).toHaveBeenCalled();
       expect(prisma.$executeRaw).toHaveBeenCalled();
     });
   });

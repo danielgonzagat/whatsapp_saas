@@ -4,7 +4,7 @@ import { buildQueueJobId } from '../queue/job-id.util';
 import { flowQueue } from '../queue/queue';
 import { AccountAgentService } from '../whatsapp/account-agent.service';
 import { AgentEventsService } from '../whatsapp/agent-events.service';
-import { CiaRuntimeService } from '../whatsapp/cia-runtime.service';
+import { CiaRuntimeService } from './cia-runtime.service';
 import { MindService } from '../kloel/mind.service';
 
 type JsonRecord = Record<string, unknown>;

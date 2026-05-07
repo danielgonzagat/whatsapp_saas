@@ -11,7 +11,39 @@ const KNOWN_DECISION_TYPES = [
   'send_window',
   'offer_discount',
   'cia_aggressiveness',
+  'audio_vs_text',
+  'tom',
+  'cupom',
 ] as const;
+
+const TONE_OPTIONS = [
+  'DIRECT',
+  'CONSULTIVE',
+  'FRIENDLY',
+  'EMPATHETIC',
+  'CASUAL',
+  'EDUCATIVE',
+  'URGENT',
+  'TECHNICAL',
+  'AGGRESSIVE',
+] as const;
+
+function resolveToneBaseline(repliedRate: number, soldRate: number, channel: string): string {
+  if (channel === 'whatsapp' && repliedRate >= 0.4) return 'FRIENDLY';
+  if (soldRate >= 0.15) return 'CONSULTIVE';
+  return 'DIRECT';
+}
+
+function resolveAudioBaseline(channel: string, audioRatio: number): string {
+  if (channel === 'whatsapp' && audioRatio >= 0.2) return 'audio';
+  return 'text';
+}
+
+function resolveCouponBaseline(priceBand: string, soldRate: number): string {
+  const highBands = new Set(['over_300', 'over_500', 'over_1000']);
+  if (highBands.has(priceBand) && soldRate < 0.1) return 'offer_coupon';
+  return 'no_coupon';
+}
 
 function resolveAggressivenessBaseline(
   soldRate: number,
@@ -170,6 +202,110 @@ export class MindService {
     };
   }
 
+  async resolveAudioVsText(
+    workspaceId: string,
+    channel: string,
+    audioRatio: number,
+  ): Promise<{ choice: string; confidence: number; fallback: boolean }> {
+    const baseline = resolveAudioBaseline(channel, audioRatio);
+    const result = await this.policy.choose({
+      workspaceId,
+      subject: `workspace:${workspaceId}`,
+      decisionType: 'audio_vs_text',
+      context: { channel, audioRatio },
+      options: [
+        {
+          action: 'audio',
+          predicate: 'P(reply|message_type,hour,channel)',
+          context: { channel, message_type: 'audio' },
+        },
+        {
+          action: 'text',
+          predicate: 'P(reply|message_type,hour,channel)',
+          context: { channel, message_type: 'text' },
+        },
+      ],
+      baseline,
+      outcomeKey: `audio_vs_text:${workspaceId}:${Date.now()}`,
+    });
+
+    return {
+      choice: result.chosen,
+      confidence: result.decision.candidates[0]?.beliefMean ?? 0,
+      fallback: result.decision.fallbackActive,
+    };
+  }
+
+  async resolveTone(
+    workspaceId: string,
+    channel: string,
+    repliedRate: number,
+    soldRate: number,
+    segment?: string,
+  ): Promise<{ tone: string; confidence: number; fallback: boolean }> {
+    const baseline = resolveToneBaseline(repliedRate, soldRate, channel);
+    const context = segment ? { channel, segment } : { channel };
+    const result = await this.policy.choose({
+      workspaceId,
+      subject: `workspace:${workspaceId}`,
+      decisionType: 'tom',
+      context: { ...context, repliedRate, soldRate },
+      options: TONE_OPTIONS.map((tone) => ({
+        action: tone,
+        predicate: 'P(reply|tone,objection_type,channel)',
+        context: { ...context, tone },
+      })),
+      baseline,
+      outcomeKey: `tom:${workspaceId}:${Date.now()}`,
+      utilitySuccess: 1,
+      utilityFail: -0.1,
+    });
+
+    return {
+      tone: result.chosen,
+      confidence: result.decision.candidates[0]?.beliefMean ?? 0,
+      fallback: result.decision.fallbackActive,
+    };
+  }
+
+  async resolveCoupon(
+    workspaceId: string,
+    priceBand: string,
+    soldRate: number,
+    segment?: string,
+  ): Promise<{ action: string; confidence: number; fallback: boolean }> {
+    const baseline = resolveCouponBaseline(priceBand, soldRate);
+    const context = segment ? { priceBand, segment } : { priceBand };
+    const result = await this.policy.choose({
+      workspaceId,
+      subject: `workspace:${workspaceId}`,
+      decisionType: 'cupom',
+      context: { ...context, soldRate },
+      options: [
+        {
+          action: 'offer_coupon',
+          predicate: 'P(conversion|discount_offered,segment,price_band)',
+          context: { ...context, discount_offered: 'yes' },
+        },
+        {
+          action: 'no_coupon',
+          predicate: 'P(conversion|discount_offered,segment,price_band)',
+          context: { ...context, discount_offered: 'no' },
+        },
+      ],
+      baseline,
+      outcomeKey: `cupom:${workspaceId}:${Date.now()}`,
+      utilitySuccess: 1,
+      utilityFail: -0.2,
+    });
+
+    return {
+      action: result.chosen,
+      confidence: result.decision.candidates[0]?.beliefMean ?? 0,
+      fallback: result.decision.fallbackActive,
+    };
+  }
+
   private async processEvent(event: MindPerceptEvent): Promise<{
     beliefsUpdated: number;
     predicted: number;
@@ -187,7 +323,7 @@ export class MindService {
           workspaceId: event.workspaceId,
           subject: event.subject,
           features: {
-            channel: 'whatsapp',
+            channel: this.toStableString(event.payload.channel) || 'unknown',
             hour: event.occurredAt.getHours(),
             template: this.messageTemplate(event.payload),
           },

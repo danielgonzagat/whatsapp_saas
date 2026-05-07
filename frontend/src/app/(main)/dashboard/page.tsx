@@ -5,6 +5,8 @@ import { useDashboardPostPayment } from '@/hooks/useDashboardHome';
 import { kloelT } from '@/lib/i18n/t';
 import { radius } from '@/lib/design-tokens';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
+import { MindBriefingCard } from '@/components/kloel/dashboard/MindBriefingCard';
+import { MindChat } from '@/components/kloel/dashboard/MindChat';
 
 const FONT_SANS = "'Sora', sans-serif";
 
@@ -37,7 +39,9 @@ export default function DashboardPage() {
   return (
     <>
       <HomeView />
+      <MindBriefingCard />
       <DashboardPostPaymentPanel />
+      <MindChat />
     </>
   );
 }

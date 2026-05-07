@@ -3,6 +3,7 @@
 import { kloelT } from '@/lib/i18n/t';
 import { colors } from '@/lib/design-tokens';
 import type { CSSProperties, ReactNode } from 'react';
+import { useEffect, useState } from 'react';
 
 type MushroomVisualProps = {
   size?: number;
@@ -56,37 +57,141 @@ type LoadingStateProps = {
 
 const soraFont = "var(--font-sora), 'Sora', sans-serif";
 
+let cachedSvgText: string | null = null;
+let activeFetch: Promise<string> | null = null;
+
+function fetchMushroomSvg(): Promise<string> {
+  if (cachedSvgText) return Promise.resolve(cachedSvgText);
+  if (!activeFetch) {
+    activeFetch = fetch('/kloel-mushroom-animated.svg')
+      .then((r) => {
+        if (!r.ok) throw new Error(`Mushroom SVG fetch failed: ${r.status}`);
+        return r.text();
+      })
+      .then((text) => {
+        cachedSvgText = text;
+        activeFetch = null;
+        return text;
+      })
+      .catch((err) => {
+        activeFetch = null;
+        throw err;
+      });
+  }
+  return activeFetch;
+}
+
+function processSvg(
+  svgText: string,
+  traceColor: string,
+  animated: boolean,
+  spores: 'none' | 'animated' | 'static',
+): string {
+  let result = svgText;
+
+  result = result.replace(
+    'width="200" height="200"',
+    'width="100%" height="100%" style="display:block"',
+  );
+
+  if (traceColor !== '#FFFFFF') {
+    result = result.replace(/stroke="#FFFFFF"/g, `stroke="${traceColor}"`);
+    result = result.replace(/fill="#FFFFFF"/g, `fill="${traceColor}"`);
+  }
+
+  const injections: string[] = [];
+
+  if (!animated) {
+    injections.push(
+      '.cap-group,.stem-group,.circuit-cap,.node-cap,.circuit-stem,.node-stem,' +
+        '.sp-L1,.sp-L2,.sp-UL1,.sp-UL2,.sp-TL1,.sp-TL2,.sp-T1,.sp-T2,' +
+        '.sp-TR1,.sp-TR2,.sp-UR1,.sp-UR2,.sp-R1,.sp-R2{animation:none}',
+    );
+  }
+
+  if (spores === 'none') {
+    injections.push('.spore{display:none}');
+  } else if (spores === 'static') {
+    injections.push(
+      '.sp-L1,.sp-L2,.sp-UL1,.sp-UL2,.sp-TL1,.sp-TL2,.sp-T1,.sp-T2,' +
+        '.sp-TR1,.sp-TR2,.sp-UR1,.sp-UR2,.sp-R1,.sp-R2{opacity:.6;animation:none}',
+    );
+  }
+
+  if (injections.length > 0) {
+    result = result.replace('</style>', `${injections.join('')}</style>`);
+  }
+
+  return result;
+}
+
 /** Kloel mushroom visual. */
 export function KloelMushroomVisual({
   size = 20,
-  traceColor: _traceColor,
+  traceColor = '#FFFFFF',
   style,
   title = 'Kloel',
-  animated: _animated,
-  spores: _spores,
+  animated = true,
+  spores = 'animated',
   ariaHidden = false,
   fit = 'default',
 }: MushroomVisualProps) {
-  const src = '/kloel-mushroom-animated.svg';
+  const [svgHtml, setSvgHtml] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchMushroomSvg()
+      .then((raw) => {
+        if (cancelled) return;
+        setSvgHtml(processSvg(raw, traceColor, animated, spores));
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [traceColor, animated, spores]);
+
+  const padding = fit === 'icon' ? Math.round(size * 0.04) : 0;
+
+  if (!svgHtml) {
+    return (
+      <img
+        src="/kloel-mushroom-animated.svg"
+        aria-hidden={ariaHidden}
+        aria-label={ariaHidden ? undefined : title}
+        alt={ariaHidden ? '' : title}
+        role={ariaHidden ? 'presentation' : 'img'}
+        width={size}
+        height={size}
+        style={{
+          display: 'block',
+          flexShrink: 0,
+          objectFit: 'contain',
+          objectPosition: 'center',
+          padding,
+          transform: 'translate3d(0,0,0)',
+          ...style,
+        }}
+      />
+    );
+  }
 
   return (
-    <img
-      src={src}
+    <span
       aria-hidden={ariaHidden}
       aria-label={ariaHidden ? undefined : title}
-      alt={ariaHidden ? '' : title}
       role={ariaHidden ? 'presentation' : 'img'}
-      width={size}
-      height={size}
       style={{
-        display: 'block',
+        display: 'inline-block',
         flexShrink: 0,
-        objectFit: 'contain',
-        objectPosition: 'center',
-        padding: fit === 'icon' ? Math.round(size * 0.04) : 0,
+        width: size,
+        height: size,
+        padding,
         transform: 'translate3d(0,0,0)',
+        lineHeight: 0,
         ...style,
       }}
+      dangerouslySetInnerHTML={{ __html: svgHtml }}
     />
   );
 }

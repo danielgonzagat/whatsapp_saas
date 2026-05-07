@@ -77,8 +77,9 @@ model Workspace {
   stripeCustomerId String?
 
   // Relations
-  contacts        Contact[]
-  flows           Flow[]
+  contacts            Contact[]
+  channelIdentifiers  ChannelIdentifier[]
+  flows               Flow[]
   flowExecutions  FlowExecution[]
   tags            Tag[]
   campaigns       Campaign[]
@@ -172,6 +173,11 @@ model Workspace {
 
   // Meta Platform Connection
   metaConnection MetaConnection?
+
+  // MIND — Cognitive Bayesian Runtime
+  mindBeliefs     MindBelief[]
+  mindPredictions MindPrediction[]
+  mindPolicies    MindPolicy[]
 
   @@map("RAC_Workspace")
 }
@@ -300,7 +306,8 @@ model Contact {
   nextBestAction      String? // "Send Offer", "Wait 2 days"
   aiSummary           String? // Auto-generated summary
 
-  insights ContactInsight[]
+  insights            ContactInsight[]
+  channelIdentifiers  ChannelIdentifier[]
 
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
@@ -332,6 +339,28 @@ model ContactInsight {
   createdAt DateTime @default(now())
 
   @@map("RAC_ContactInsight")
+}
+
+model ChannelIdentifier {
+  id        String @id @default(uuid())
+  channel   String // WHATSAPP, INSTAGRAM, MESSENGER, EMAIL, TIKTOK
+  value     String // channel-specific identifier (phone, IG-SID, FB-PSID, email)
+  contactId String
+  contact   Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  isPrimary  Boolean   @default(false)
+  verifiedAt DateTime?
+  metadata   Json?     @default("{}")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([workspaceId, channel, value])
+  @@index([contactId])
+  @@map("RAC_ChannelIdentifier")
 }
 
 model SystemInsight {
@@ -3668,4 +3697,83 @@ model DailyMessageCounter {
   @@unique([workspaceId, date])
   @@index([workspaceId, date])
   @@map("RAC_DailyMessageCounter")
+}
+
+// ============================================================================
+// KLOEL MIND — Cognitive Bayesian Runtime
+// Tables created by migration 20260507010000_add_kloel_mind_runtime
+// and amended by 20260507120000_add_kloel_mind_updated_at.
+// These models replace raw queryRaw access with typed Prisma queries.
+// ============================================================================
+
+model MindBelief {
+  id          String   @id
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  subject     String
+  predicate   String
+  context     Json     @db.JsonB
+  mean        Float
+  variance    Float    @default(0.25)
+  samples     Int      @default(0)
+  alpha       Float    @default(1.0)
+  beta        Float    @default(1.0)
+  lastUpdate  DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([workspaceId, subject, predicate, context])
+  @@index([workspaceId, predicate])
+  @@index([workspaceId, subject])
+  @@map("RAC_MindBelief")
+}
+
+model MindPrediction {
+  id                String    @id
+  workspaceId       String
+  workspace         Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  subject           String
+  predicate         String
+  context           Json      @db.JsonB
+  predictedMean     Float
+  predictedVariance Float
+  horizonSec        Int
+  deadline          DateTime
+  actual            Float?
+  surprise          Float?
+  resolvedAt        DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([workspaceId, subject])
+  @@index([workspaceId, predicate, createdAt(sort: Desc)])
+  @@map("RAC_MindPrediction")
+}
+
+model MindPolicy {
+  id              String    @id
+  workspaceId     String
+  workspace       Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  subject         String
+  decisionType    String
+  context         Json      @db.JsonB
+  candidates      Json      @db.JsonB
+  chosen          String
+  baseline        String
+  reasonInternal  String?
+  outcomeKey      String?
+  outcome         Float?
+  baselineOutcome Float?
+  resolvedAt      DateTime?
+  calcSteps       Json      @db.JsonB
+  epsilon         Float
+  utilitySuccess  Float
+  utilityFail     Float
+  fallbackActive  Boolean
+  fallbackReason  String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([workspaceId, decisionType, createdAt(sort: Desc)])
+  @@map("RAC_MindPolicy")
 }

@@ -94,7 +94,7 @@ export class BrainEventSpineService {
   async recordCommercial(event: CommercialEventPayload): Promise<string | null> {
     try {
       if (event.idempotencyKey) {
-        const existing = await this.checkIdempotency(event.idempotencyKey);
+        const existing = await this.checkIdempotency(event.workspaceId, event.idempotencyKey);
         if (existing) {
           return existing.id;
         }
@@ -107,10 +107,10 @@ export class BrainEventSpineService {
           intent: this.resolveIntent(event.eventType),
           action: event.eventType,
           status: this.resolveStatus(event.eventType),
-          createdAt: event.occurredAt,
           meta: {
             commercial: true,
             subject: event.subject,
+            occurredAt: event.occurredAt.toISOString(),
             idempotencyKey: event.idempotencyKey ?? null,
             payload: toInputJsonObject(event.payload),
           },
@@ -165,10 +165,14 @@ export class BrainEventSpineService {
     return 'executed';
   }
 
-  private async checkIdempotency(idempotencyKey: string): Promise<AutopilotEventIdRow> {
+  private async checkIdempotency(
+    workspaceId: string,
+    idempotencyKey: string,
+  ): Promise<AutopilotEventIdRow> {
     const rows = await this.prisma.$queryRaw<Array<{ id: string }>>`
       SELECT id FROM "RAC_AutopilotEvent"
-      WHERE "meta"->>'idempotencyKey' = ${idempotencyKey}
+      WHERE "workspaceId" = ${workspaceId}
+        AND "meta"->>'idempotencyKey' = ${idempotencyKey}
         AND "createdAt" > NOW() - (${IDEMPOTENCY_WINDOW_MS} * INTERVAL '1 millisecond')
       LIMIT 1
     `;

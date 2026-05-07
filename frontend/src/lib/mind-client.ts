@@ -86,3 +86,28 @@ export async function getNarrate(workspaceId: string): Promise<MindNarrateOutput
   const result = await api.get<MindNarrateOutput>(mindUrl(workspaceId, '/narrate'));
   return result.data;
 }
+
+export interface MindChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+export interface MindChatRequest {
+  messages: MindChatMessage[];
+  context?: Record<string, unknown>;
+}
+
+export interface MindChatResponse {
+  message: MindChatMessage;
+  confidence: number;
+  beliefsUsed: string[];
+  ticketId: string;
+}
+
+export async function postChat(
+  workspaceId: string,
+  body: MindChatRequest,
+): Promise<MindChatResponse> {
+  const result = await api.post<MindChatResponse>(mindUrl(workspaceId, '/chat'), body);
+  return result.data;
+}

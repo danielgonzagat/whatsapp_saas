@@ -2,8 +2,8 @@ import { InjectRedis } from '@nestjs-modules/ioredis';
 import { Inject, Injectable, Logger, Optional, forwardRef } from '@nestjs/common';
 import type Redis from 'ioredis';
 import { OpsAlertService } from '../observability/ops-alert.service';
-import { AgentEventsService } from './agent-events.service';
-import { WhatsappService } from './whatsapp.service';
+import { AgentEventsService } from '../whatsapp/agent-events.service';
+import { WhatsappService } from '../whatsapp/whatsapp.service';
 
 const WHITESPACE_G_RE = /\s+/g;
 const PATTERN_RE = /[?!.;,]+$/g;

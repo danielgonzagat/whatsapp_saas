@@ -28,23 +28,6 @@ export interface CommercialGraphWindow {
   take: number;
 }
 
-type MindBeliefGraphRow = {
-  context: unknown;
-  mean: number;
-  predicate: string;
-  samples: number;
-  subject: string;
-  variance: number;
-};
-
-type MindPolicyGraphRow = {
-  baseline: string;
-  chosen: string;
-  decisionType: string;
-  outcome: number | null;
-  subject: string;
-};
-
 function incrementNode(nodes: Map<string, CommercialGraphNode>, node: CommercialGraphNode): void {
   const current = nodes.get(node.id);
   if (current) {
@@ -96,106 +79,103 @@ export class BrainCommercialGraphService {
           status: true,
         },
       }),
-      this.readMindBeliefs(workspaceId),
-      this.readMindPolicies(workspaceId),
+      this.prisma.mindBelief.findMany({
+        where: { workspaceId },
+        orderBy: [{ samples: 'desc' }, { lastUpdate: 'desc' }],
+        take: 100,
+        select: {
+          subject: true,
+          predicate: true,
+          context: true,
+          mean: true,
+          variance: true,
+          samples: true,
+        },
+      }),
+      this.prisma.mindPolicy.findMany({
+        where: { workspaceId },
+        orderBy: { createdAt: 'desc' },
+        take: 100,
+        select: {
+          subject: true,
+          decisionType: true,
+          chosen: true,
+          baseline: true,
+          outcome: true,
+        },
+      }),
     ]);
+
     const nodes = new Map<string, CommercialGraphNode>();
     const edges = new Map<string, CommercialGraphEdge>();
-    const workspaceNode = `workspace:${workspaceId}`;
 
-    incrementNode(nodes, {
-      id: workspaceNode,
+    const workspaceNode: CommercialGraphNode = {
+      id: workspaceId,
       kind: 'workspace',
-      label: 'workspace',
+      label: workspaceId,
       weight: 1,
-    });
+    };
+    nodes.set(workspaceId, workspaceNode);
 
     for (const event of events) {
-      const eventDay = event.createdAt.toISOString().slice(0, 10);
-      const eventNode = `event:${eventDay}`;
-      const intentNode = `intent:${event.intent}`;
-      const actionNode = `action:${event.action}`;
-      const statusNode = `status:${event.status}`;
-      const weight = outcomeWeight(event.status);
-
-      incrementNode(nodes, { id: eventNode, kind: 'event', label: eventDay, weight: 1 });
-      incrementNode(nodes, { id: intentNode, kind: 'intent', label: event.intent, weight });
-      incrementNode(nodes, { id: actionNode, kind: 'action', label: event.action, weight });
-      incrementNode(nodes, { id: statusNode, kind: 'status', label: event.status, weight: 1 });
-      incrementEdge(edges, { from: workspaceNode, label: 'observed', to: eventNode, weight: 1 });
-      incrementEdge(edges, { from: eventNode, label: 'intent', to: intentNode, weight });
-      incrementEdge(edges, { from: intentNode, label: 'triggered', to: actionNode, weight });
-      incrementEdge(edges, { from: actionNode, label: 'resulted_in', to: statusNode, weight });
-
       if (event.contactId) {
-        const contactNode = `contact:${event.contactId}`;
         incrementNode(nodes, {
-          id: contactNode,
+          id: event.contactId,
           kind: 'contact',
           label: event.contactId,
-          weight,
+          weight: 1,
         });
-        incrementEdge(edges, { from: contactNode, label: 'caused', to: intentNode, weight });
+        incrementEdge(edges, {
+          from: workspaceId,
+          label: 'contact',
+          to: event.contactId,
+          weight: 1,
+        });
+        incrementEdge(edges, {
+          from: event.contactId,
+          label: event.action,
+          to: workspaceId,
+          weight: outcomeWeight(event.status),
+        });
       }
     }
 
     for (const belief of beliefs) {
-      const beliefNode = `belief:${belief.subject}:${belief.predicate}:${JSON.stringify(
-        belief.context,
-      )}`;
-      const subjectNode = belief.subject;
-      const weight = Math.max(0.01, belief.mean) * Math.max(1, belief.samples);
-
+      const nodeId = `belief:${belief.subject}:${belief.predicate}`;
       incrementNode(nodes, {
-        id: beliefNode,
+        id: nodeId,
         kind: 'belief',
-        label: `${belief.predicate} mean=${belief.mean.toFixed(2)} var=${belief.variance.toFixed(3)}`,
-        weight,
+        label: belief.predicate,
+        weight: belief.samples,
       });
-      incrementNode(nodes, {
-        id: subjectNode,
-        kind: subjectNode.startsWith('contact:') ? 'contact' : 'workspace',
-        label: belief.subject,
-        weight,
+      incrementEdge(edges, {
+        from: workspaceId,
+        label: 'belief',
+        to: nodeId,
+        weight: belief.samples,
       });
-      incrementEdge(edges, { from: workspaceNode, label: 'believes', to: beliefNode, weight });
-      incrementEdge(edges, { from: subjectNode, label: 'conditioned_by', to: beliefNode, weight });
     }
 
     for (const policy of policies) {
-      const policyNode = `policy:${policy.decisionType}:${policy.chosen}`;
-      const subjectNode = policy.subject;
-      const outcome = policy.outcome ?? 0;
-      const weight = outcome > 0 ? outcome : -0.25;
-
+      const nodeId = `policy:${policy.subject}:${policy.decisionType}`;
+      const weight = policy.outcome ?? 0.5;
       incrementNode(nodes, {
-        id: policyNode,
+        id: nodeId,
         kind: 'policy',
-        label: `${policy.decisionType}:${policy.chosen}`,
+        label: policy.decisionType,
         weight,
       });
-      incrementNode(nodes, {
-        id: subjectNode,
-        kind: subjectNode.startsWith('contact:') ? 'contact' : 'workspace',
-        label: policy.subject,
-        weight,
-      });
-      incrementEdge(edges, { from: subjectNode, label: 'policy_chose', to: policyNode, weight });
       incrementEdge(edges, {
-        from: policyNode,
-        label: 'compared_to',
-        to: `action:${policy.baseline}`,
+        from: workspaceId,
+        label: 'policy',
+        to: nodeId,
         weight,
       });
     }
 
     return {
-      nodes: Array.from(nodes.values()).sort(
-        (left, right) => Math.abs(right.weight) - Math.abs(left.weight),
-      ),
-      edges: Array.from(edges.values()).sort(
-        (left, right) => Math.abs(right.weight) - Math.abs(left.weight),
-      ),
+      nodes: Array.from(nodes.values()),
+      edges: Array.from(edges.values()),
       window: {
         beliefCount: beliefs.length,
         eventCount: events.length,
@@ -205,51 +185,63 @@ export class BrainCommercialGraphService {
     };
   }
 
-  async recommendNextActions(workspaceId: string): Promise<{
+  async getRecommendations(workspaceId: string): Promise<{
     recommendations: CommercialGraphRecommendation[];
-    window: { eventCount: number; take: number };
+    window: CommercialGraphWindow;
   }> {
     const events = await this.prisma.autopilotEvent.findMany({
       where: { workspaceId },
       orderBy: { createdAt: 'desc' },
-      take: 500,
+      take: 200,
       select: {
         action: true,
         status: true,
       },
     });
-    const outcomes = new Map<string, { executed: number; failed: number; skipped: number }>();
+
+    const policies = await this.prisma.mindPolicy.findMany({
+      where: { workspaceId, resolvedAt: { not: null } },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+      select: {
+        decisionType: true,
+        chosen: true,
+        outcome: true,
+        baseline: true,
+      },
+    });
+
+    const actionStats = new Map<string, { wins: number; total: number }>();
     for (const event of events) {
-      const current = outcomes.get(event.action) ?? { executed: 0, failed: 0, skipped: 0 };
+      const stat = actionStats.get(event.action) ?? { wins: 0, total: 0 };
+      stat.total += 1;
       if (event.status === 'executed' || event.status === 'completed') {
-        current.executed += 1;
-      } else if (event.status === 'failed' || event.status === 'error') {
-        current.failed += 1;
-      } else {
-        current.skipped += 1;
+        stat.wins += 1;
       }
-      outcomes.set(event.action, current);
+      actionStats.set(event.action, stat);
     }
 
-    const recommendations = Array.from(outcomes.entries())
-      .map(([action, outcome]) => {
-        const total = outcome.executed + outcome.failed + outcome.skipped;
-        const confidence = total > 0 ? outcome.executed / total : 0;
-        const reason =
-          outcome.failed > outcome.executed
-            ? `Priorizar correção: ${outcome.failed} falha(s) recentes contra ${outcome.executed} execução(ões).`
-            : `Caminho forte: ${outcome.executed} execução(ões) recentes em ${total} evento(s).`;
-        return { action, confidence, reason };
-      })
-      .sort((left, right) => {
-        const leftIsFix = left.reason.startsWith('Priorizar');
-        const rightIsFix = right.reason.startsWith('Priorizar');
-        if (leftIsFix !== rightIsFix) {
-          return leftIsFix ? -1 : 1;
-        }
-        return right.confidence - left.confidence;
-      })
-      .slice(0, 10);
+    const recommendations: CommercialGraphRecommendation[] = [];
+    for (const [action, stat] of actionStats.entries()) {
+      const confidence = stat.total > 0 ? stat.wins / stat.total : 0;
+      recommendations.push({
+        action,
+        confidence,
+        reason: `${stat.wins}/${stat.total} successes`,
+      });
+    }
+
+    for (const policy of policies) {
+      if (policy.outcome !== null && policy.outcome > 0) {
+        recommendations.push({
+          action: policy.chosen,
+          confidence: policy.outcome,
+          reason: `MIND policy: ${policy.decisionType}`,
+        });
+      }
+    }
+
+    recommendations.sort((left, right) => right.confidence - left.confidence).slice(0, 10);
 
     return {
       recommendations,
@@ -257,23 +249,10 @@ export class BrainCommercialGraphService {
     };
   }
 
-  private readMindBeliefs(workspaceId: string): Promise<MindBeliefGraphRow[]> {
-    return this.prisma.$queryRaw<MindBeliefGraphRow[]>`
-      SELECT subject, predicate, context, mean, variance, samples
-      FROM "RAC_MindBelief"
-      WHERE "workspaceId" = ${workspaceId}
-      ORDER BY samples DESC, "lastUpdate" DESC
-      LIMIT 100
-    `;
-  }
-
-  private readMindPolicies(workspaceId: string): Promise<MindPolicyGraphRow[]> {
-    return this.prisma.$queryRaw<MindPolicyGraphRow[]>`
-      SELECT subject, "decisionType", chosen, baseline, outcome
-      FROM "RAC_MindPolicy"
-      WHERE "workspaceId" = ${workspaceId}
-      ORDER BY "createdAt" DESC
-      LIMIT 100
-    `;
+  recommendNextActions(workspaceId: string): Promise<{
+    recommendations: CommercialGraphRecommendation[];
+    window: CommercialGraphWindow;
+  }> {
+    return this.getRecommendations(workspaceId);
   }
 }

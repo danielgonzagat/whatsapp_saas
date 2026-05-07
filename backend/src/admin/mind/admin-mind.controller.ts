@@ -1,13 +1,11 @@
 import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
 import { AdminAction, AdminModule } from '@prisma/client';
-import { Public } from '../../auth/public.decorator';
 import { RequireAdminPermission } from '../auth/decorators/admin-permission.decorator';
 import { AdminAuthGuard } from '../auth/guards/admin-auth.guard';
 import { AdminPermissionGuard } from '../auth/guards/admin-permission.guard';
 import { AdminMindService } from './admin-mind.service';
 import { AdminMindSurpriseQueryDto, AdminMindLiftQueryDto } from './dto/admin-mind-query.dto';
 
-@Public()
 @Controller('admin/mind')
 @UseGuards(AdminAuthGuard, AdminPermissionGuard)
 export class AdminMindController {

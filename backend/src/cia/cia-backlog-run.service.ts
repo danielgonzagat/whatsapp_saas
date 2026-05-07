@@ -7,21 +7,21 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { buildQueueJobId } from '../queue/job-id.util';
 import { autopilotQueue } from '../queue/queue';
-import { AgentEventsService } from './agent-events.service';
+import { AgentEventsService } from '../whatsapp/agent-events.service';
 import { CiaChatFilterService } from './cia-chat-filter.service';
 import { CiaInlineFallbackService } from './cia-inline-fallback.service';
 import { CiaRemoteBacklogService } from './cia-remote-backlog.service';
 import { CiaRuntimeStateService } from './cia-runtime-state.service';
-import { asProviderSettings } from './provider-settings.types';
-import { WhatsAppProviderRegistry } from './providers/provider-registry';
-import { WhatsAppCatchupService } from './whatsapp-catchup.service';
-import { WorkerRuntimeService } from './worker-runtime.service';
+import { asProviderSettings } from '../whatsapp/provider-settings.types';
+import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
+import { WhatsAppCatchupService } from '../whatsapp/whatsapp-catchup.service';
+import { WorkerRuntimeService } from '../whatsapp/worker-runtime.service';
 import { CiaBootstrapService } from './cia-bootstrap.service';
 import type {
   BacklogMode,
   WorkspaceAutonomyMode,
-} from './__companions__/cia-backlog-run.service.companion';
-import { ensureBacklogCoverageHelper } from './__companions__/cia-backlog-run.service.companion';
+} from './__parts__/cia-backlog-run.service.companion';
+import { ensureBacklogCoverageHelper } from './__parts__/cia-backlog-run.service.companion';
 
 /**
  * Orchestrates the backlog run: decides between queue-based (BullMQ worker),

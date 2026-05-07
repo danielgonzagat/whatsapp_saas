@@ -49,10 +49,10 @@ describe('BrainEventSpineService', () => {
             intent: 'sale_lifecycle',
             action: 'sale.created',
             status: 'executed',
-            createdAt: occurredAt,
             meta: expect.objectContaining({
               commercial: true,
               subject: 'lead:lead-1',
+              occurredAt: '2026-05-07T12:00:00.000Z',
               idempotencyKey: null,
               payload: expect.objectContaining({
                 amount: 147,
@@ -239,7 +239,7 @@ describe('BrainEventSpineService', () => {
       );
     });
 
-    it('enforces idempotency via idempotencyKey within 5-second window', async () => {
+    it('enforces tenant-scoped idempotency via idempotencyKey within 5-second window', async () => {
       prisma.$queryRaw.mockResolvedValue([{ id: 'existing-event-1' }]);
 
       const event: SaleEventPayload = {
@@ -258,6 +258,15 @@ describe('BrainEventSpineService', () => {
       const id = await service.recordCommercial(event);
 
       expect(id).toBe('existing-event-1');
+      expect(prisma.$queryRaw).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.stringMatching(/workspaceId/),
+          expect.stringMatching(/idempotencyKey/),
+        ]),
+        'ws-1',
+        'idem-sale-1',
+        5000,
+      );
       expect(prisma.autopilotEvent.create).not.toHaveBeenCalled();
     });
 

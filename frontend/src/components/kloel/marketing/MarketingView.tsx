@@ -20,6 +20,7 @@ import type React from 'react';
 import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import useSWR, { mutate } from 'swr';
 import WhatsAppExperience from './WhatsAppExperience';
+import UniversalChannelWizard from './UniversalChannelWizard';
 import { secureRandomFloat } from '@/lib/secure-random';
 
 // ── Fonts ──
@@ -2252,18 +2253,31 @@ function ChannelTab({
     );
   }
   if (channelKey === 'email') {
+    if (connectionStatus?.channels?.email?.connected) {
+      return (
+        <EmailTab
+          channelData={channelData}
+          mode={mode}
+          connection={connectionStatus?.channels?.email}
+          onConnect={() => onConnectEmail?.()}
+          onDisconnect={() => onDisconnectEmail?.()}
+          onSendTest={() => onSendEmailTest?.()}
+          connecting={connectingKey === 'email'}
+          testSending={emailTestSending}
+          testResult={emailTestResult}
+          defaultRecipientEmail={operator || null}
+        />
+      );
+    }
     return (
-      <EmailTab
-        channelData={channelData}
-        mode={mode}
-        connection={connectionStatus?.channels?.email}
-        onConnect={() => onConnectEmail?.()}
-        onDisconnect={() => onDisconnectEmail?.()}
-        onSendTest={() => onSendEmailTest?.()}
+      <UniversalChannelWizard
+        channel="email"
         connecting={connectingKey === 'email'}
-        testSending={emailTestSending}
-        testResult={emailTestResult}
-        defaultRecipientEmail={operator || null}
+        connected={false}
+        error={
+          emailTestResult && !connectionStatus?.channels?.email?.connected ? emailTestResult : null
+        }
+        onConnect={() => onConnectEmail?.()}
       />
     );
   }
@@ -2281,11 +2295,12 @@ function ChannelTab({
       );
     }
     return (
-      <MetaConnectPrompt
-        channelKey={channelKey}
-        channelData={channelData}
-        onConnect={(key) => onConnectMeta?.(key)}
+      <UniversalChannelWizard
+        channel="instagram"
         connecting={connectingKey === 'instagram'}
+        connected={false}
+        error={null}
+        onConnect={() => onConnectMeta?.('instagram')}
       />
     );
   }
@@ -2301,22 +2316,35 @@ function ChannelTab({
       );
     }
     return (
-      <MetaConnectPrompt
-        channelKey={channelKey}
-        channelData={channelData}
-        onConnect={(key) => onConnectMeta?.(key)}
+      <UniversalChannelWizard
+        channel="facebook"
         connecting={connectingKey === 'facebook'}
+        connected={false}
+        error={null}
+        onConnect={() => onConnectMeta?.('facebook')}
       />
     );
   }
   if (channelKey === 'tiktok') {
+    if (connectionStatus?.channels?.tiktok?.connected) {
+      return (
+        <TikTokTab
+          channelData={channelData}
+          connection={connectionStatus?.channels?.tiktok}
+          onConnect={() => onConnectTikTok?.()}
+          onDisconnect={() => onDisconnectTikTok?.()}
+          connecting={connectingKey === 'tiktok'}
+        />
+      );
+    }
     return (
-      <TikTokTab
-        channelData={channelData}
-        connection={connectionStatus?.channels?.tiktok}
-        onConnect={() => onConnectTikTok?.()}
-        onDisconnect={() => onDisconnectTikTok?.()}
+      <UniversalChannelWizard
+        channel="tiktok"
         connecting={connectingKey === 'tiktok'}
+        connected={false}
+        error={null}
+        configReady={connectionStatus?.channels?.tiktok?.configReady}
+        onConnect={() => onConnectTikTok?.()}
       />
     );
   }

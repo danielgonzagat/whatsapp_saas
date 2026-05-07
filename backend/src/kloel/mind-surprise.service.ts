@@ -41,35 +41,46 @@ export class MindSurpriseService {
   }
 
   async sweepExpired(workspaceId: string, asOf = new Date()): Promise<number> {
-    const rows = await this.prisma.$queryRaw<MindPrediction[]>`
-      SELECT *
-      FROM "RAC_MindPrediction"
-      WHERE "workspaceId" = ${workspaceId}
-        AND "resolvedAt" IS NULL
-        AND "deadline" < ${asOf}
-      LIMIT 500
-    `;
+    return this.prisma.$transaction(async (tx) => {
+      const rows = await tx.$queryRaw<MindPrediction[]>`
+        SELECT *
+        FROM "RAC_MindPrediction"
+        WHERE "workspaceId" = ${workspaceId}
+          AND "resolvedAt" IS NULL
+          AND "deadline" < ${asOf}
+        LIMIT 500
+        FOR UPDATE SKIP LOCKED
+      `;
 
-    let surpriseTotal = 0;
-    for (const row of rows) {
-      if (!row.id) continue;
-      if (row.predicate.startsWith('P(')) {
-        const probabilityOfMiss = this.clamp(1 - row.predictedMean, 1e-6, 1);
-        const surprise = -Math.log(probabilityOfMiss);
-        await this.predictor.resolve(row.id, 0, surprise);
-        await this.beliefs.observeBinary(
-          row.workspaceId,
-          row.subject,
-          row.predicate,
-          row.context,
-          0,
-        );
-        surpriseTotal += surprise;
-      } else {
-        await this.predictor.resolve(row.id, 0, 0);
+      let surpriseTotal = 0;
+      for (const row of rows) {
+        if (!row.id) continue;
+        if (row.predicate.startsWith('P(')) {
+          const probabilityOfMiss = this.clamp(1 - row.predictedMean, 1e-6, 1);
+          const surprise = -Math.log(probabilityOfMiss);
+          await tx.$executeRaw`
+            UPDATE "RAC_MindPrediction"
+            SET "actual" = 0, "surprise" = ${surprise}, "resolvedAt" = NOW(), "updatedAt" = NOW()
+            WHERE "id" = ${row.id}
+          `;
+          await this.beliefs.observeBinary(
+            row.workspaceId,
+            row.subject,
+            row.predicate,
+            row.context,
+            0,
+          );
+          surpriseTotal += surprise;
+        } else {
+          await tx.$executeRaw`
+            UPDATE "RAC_MindPrediction"
+            SET "actual" = 0, "surprise" = 0, "resolvedAt" = NOW(), "updatedAt" = NOW()
+            WHERE "id" = ${row.id}
+          `;
+        }
       }
-    }
-    return surpriseTotal;
+      return surpriseTotal;
+    });
   }
 
   private clamp(value: number, min: number, max: number): number {

@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { randomUUID } from 'crypto';
+import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { MindBeliefService } from './mind-belief.service';
 import type { MindContext, MindJson, MindPrediction } from './mind.types';
@@ -36,29 +37,22 @@ export class MindPredictorService {
     horizonSec: number,
   ): Promise<MindPrediction> {
     const belief = await this.beliefs.getOrInit(ctx.workspaceId, ctx.subject, predicate, context);
-    const prediction: MindPrediction = {
-      id: randomUUID(),
-      workspaceId: ctx.workspaceId,
-      subject: ctx.subject,
-      predicate,
-      context,
-      predictedMean: belief.mean,
-      predictedVariance: belief.variance,
-      horizonSec,
-      deadline: new Date(Date.now() + horizonSec * 1000),
-    };
 
-    await this.prisma.$executeRaw`
-      INSERT INTO "RAC_MindPrediction"
-        ("id","workspaceId","subject","predicate","context","predictedMean",
-         "predictedVariance","horizonSec","deadline")
-      VALUES
-        (${prediction.id}, ${prediction.workspaceId}, ${prediction.subject}, ${prediction.predicate},
-         ${JSON.stringify(prediction.context)}::jsonb, ${prediction.predictedMean},
-         ${prediction.predictedVariance}, ${prediction.horizonSec}, ${prediction.deadline})
-    `;
+    const prediction = await this.prisma.mindPrediction.create({
+      data: {
+        id: randomUUID(),
+        workspaceId: ctx.workspaceId,
+        subject: ctx.subject,
+        predicate,
+        context: context as Prisma.InputJsonValue,
+        predictedMean: belief.mean,
+        predictedVariance: belief.variance,
+        horizonSec,
+        deadline: new Date(Date.now() + horizonSec * 1000),
+      },
+    });
 
-    return prediction;
+    return prediction as unknown as MindPrediction;
   }
 
   async findOpen(
@@ -66,40 +60,28 @@ export class MindPredictorService {
     subject: string,
     predicate: string,
   ): Promise<MindPrediction | null> {
-    const rows = await this.prisma.$queryRaw<MindPrediction[]>`
-      SELECT *
-      FROM "RAC_MindPrediction"
-      WHERE "workspaceId" = ${workspaceId}
-        AND "subject" = ${subject}
-        AND "predicate" = ${predicate}
-        AND "resolvedAt" IS NULL
-      ORDER BY "createdAt" DESC
-      LIMIT 1
-    `;
-    return rows[0] ?? null;
+    const row = await this.prisma.mindPrediction.findFirst({
+      where: { workspaceId, subject, predicate, resolvedAt: null },
+      orderBy: { createdAt: 'desc' },
+    });
+    return (row as unknown as MindPrediction) ?? null;
   }
 
   async listResolved(workspaceId: string, days = 7): Promise<MindPrediction[]> {
     const since = new Date(Date.now() - days * 86400 * 1000);
-    return this.prisma.$queryRaw<MindPrediction[]>`
-      SELECT *
-      FROM "RAC_MindPrediction"
-      WHERE "workspaceId" = ${workspaceId}
-        AND "resolvedAt" >= ${since}
-      ORDER BY "resolvedAt" DESC
-      LIMIT 200
-    `;
+    const rows = await this.prisma.mindPrediction.findMany({
+      where: { workspaceId, resolvedAt: { gte: since } },
+      orderBy: { resolvedAt: 'desc' },
+      take: 200,
+    });
+    return rows as unknown as MindPrediction[];
   }
 
   async resolve(predictionId: string, actual: number, surprise: number): Promise<void> {
-    await this.prisma.$executeRaw`
-      UPDATE "RAC_MindPrediction"
-      SET "actual" = ${actual},
-          "surprise" = ${surprise},
-          "resolvedAt" = NOW(),
-          "updatedAt" = NOW()
-      WHERE "id" = ${predictionId}
-    `;
+    await this.prisma.mindPrediction.update({
+      where: { id: predictionId },
+      data: { actual, surprise, resolvedAt: new Date() },
+    });
   }
 
   private normalizeContext(features: MindJson, keep: string[]): MindJson {

@@ -14,7 +14,7 @@ import type {
   CiaRuntimeStateMock,
   CiaBootstrapMock,
   CiaBacklogRunMock,
-} from './__companions__/cia-runtime.service.fixtures.companion';
+} from './__parts__/cia-runtime.service.fixtures.companion';
 
 export type {
   PrismaMock,

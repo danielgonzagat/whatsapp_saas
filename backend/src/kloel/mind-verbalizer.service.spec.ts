@@ -23,19 +23,28 @@ function buildBelief(
   };
 }
 
-describe('MindVerbalizerService', () => {
-  describe('narrate', () => {
-    it('says empty state when no beliefs exist', async () => {
-      const beliefs = {
-        list: jest.fn().mockResolvedValue([]),
-      };
-      const policy = {
-        harness: jest
-          .fn()
-          .mockResolvedValue({ lift: 0, baselineMean: 0, mindMean: 0, n: 0, pZScore: 0 }),
-      };
+function harnessZero() {
+  return { lift: 0, baselineMean: 0, mindMean: 0, n: 0, pZScore: 0 };
+}
 
-      const service = new MindVerbalizerService(beliefs as never, policy as never);
+describe('MindVerbalizerService', () => {
+  describe('narrate (rules-based fallback when no OpenAI client)', () => {
+    const config = { get: jest.fn().mockReturnValue(undefined) };
+    const budget = {
+      assertBudget: jest.fn().mockResolvedValue(undefined),
+      recordSpend: jest.fn().mockResolvedValue(undefined),
+    };
+
+    it('says empty state when no beliefs exist', async () => {
+      const beliefs = { list: jest.fn().mockResolvedValue([]) };
+      const policy = { harness: jest.fn().mockResolvedValue(harnessZero()) };
+
+      const service = new MindVerbalizerService(
+        beliefs as never,
+        policy as never,
+        config as never,
+        budget as never,
+      );
       const result = await service.narrate('ws-1');
 
       expect(result).toContain('A MIND ainda está formando');
@@ -83,13 +92,46 @@ describe('MindVerbalizerService', () => {
         }),
       };
 
-      const service = new MindVerbalizerService(beliefs as never, policy as never);
+      const service = new MindVerbalizerService(
+        beliefs as never,
+        policy as never,
+        config as never,
+        budget as never,
+      );
       const result = await service.narrate('ws-1');
 
       expect(result).toContain('Estado atual da MIND');
       expect(result).toContain('Probabilidade de resposta');
       expect(result).toContain('Probabilidade de conversão');
       expect(result).toContain('77 observações totais');
+    });
+
+    it('includes lift metrics when lifts are meaningful', async () => {
+      const beliefs = {
+        list: jest
+          .fn()
+          .mockResolvedValueOnce([buildBelief()])
+          .mockResolvedValueOnce([])
+          .mockResolvedValueOnce([]),
+      };
+      const policy = {
+        harness: jest.fn().mockResolvedValue({
+          lift: 0.12,
+          baselineMean: 0.3,
+          mindMean: 0.34,
+          n: 10,
+          pZScore: 1.2,
+        }),
+      };
+
+      const service = new MindVerbalizerService(
+        beliefs as never,
+        policy as never,
+        config as never,
+        budget as never,
+      );
+      const result = await service.narrate('ws-1');
+
       expect(result).toContain('Métricas de decisão');
       expect(result).toContain('melhoria');
       expect(result).toMatch(/\d+%/);
@@ -109,7 +151,12 @@ describe('MindVerbalizerService', () => {
           .mockResolvedValue({ lift: 0.02, baselineMean: 0.3, mindMean: 0.31, n: 8, pZScore: 0.5 }),
       };
 
-      const service = new MindVerbalizerService(beliefs as never, policy as never);
+      const service = new MindVerbalizerService(
+        beliefs as never,
+        policy as never,
+        config as never,
+        budget as never,
+      );
       const result = await service.narrate('ws-1');
 
       expect(result).not.toContain('Métricas de decisão');
@@ -133,7 +180,12 @@ describe('MindVerbalizerService', () => {
         }),
       };
 
-      const service = new MindVerbalizerService(beliefs as never, policy as never);
+      const service = new MindVerbalizerService(
+        beliefs as never,
+        policy as never,
+        config as never,
+        budget as never,
+      );
       const result = await service.narrate('ws-1');
 
       expect(result).toContain('queda');
@@ -151,17 +203,79 @@ describe('MindVerbalizerService', () => {
           .mockResolvedValueOnce([])
           .mockResolvedValueOnce([]),
       };
-      const policy = {
-        harness: jest
-          .fn()
-          .mockResolvedValue({ lift: 0, baselineMean: 0, mindMean: 0, n: 0, pZScore: 0 }),
-      };
+      const policy = { harness: jest.fn().mockResolvedValue(harnessZero()) };
 
-      const service = new MindVerbalizerService(beliefs as never, policy as never);
+      const service = new MindVerbalizerService(
+        beliefs as never,
+        policy as never,
+        config as never,
+        budget as never,
+      );
       const result = await service.narrate('ws-1');
 
       expect(result).toContain('muito baixa');
       expect(result).toContain('muito alta');
+    });
+  });
+
+  describe('narrate (LLM unavailable — falls back to rules-based)', () => {
+    it('falls back when LLM key is empty string', async () => {
+      const beliefs = {
+        list: jest
+          .fn()
+          .mockResolvedValueOnce([buildBelief()])
+          .mockResolvedValueOnce([])
+          .mockResolvedValueOnce([]),
+      };
+      const policy = { harness: jest.fn().mockResolvedValue(harnessZero()) };
+      const config = { get: jest.fn().mockReturnValue('') };
+      const budget = {
+        assertBudget: jest.fn().mockResolvedValue(undefined),
+        recordSpend: jest.fn().mockResolvedValue(undefined),
+      };
+
+      const service = new MindVerbalizerService(
+        beliefs as never,
+        policy as never,
+        config as never,
+        budget as never,
+      );
+      const result = await service.narrate('ws-1');
+
+      expect(result).toContain('Estado atual da MIND');
+    });
+  });
+
+  describe('buildLlmPrompt (via indirect coverage)', () => {
+    it('includes new decision types in lift query', async () => {
+      const beliefs = {
+        list: jest
+          .fn()
+          .mockResolvedValueOnce([buildBelief()])
+          .mockResolvedValueOnce([])
+          .mockResolvedValueOnce([]),
+      };
+      const policy = { harness: jest.fn().mockResolvedValue(harnessZero()) };
+      const config = { get: jest.fn().mockReturnValue(undefined) };
+      const budget = {
+        assertBudget: jest.fn().mockResolvedValue(undefined),
+        recordSpend: jest.fn().mockResolvedValue(undefined),
+      };
+
+      const service = new MindVerbalizerService(
+        beliefs as never,
+        policy as never,
+        config as never,
+        budget as never,
+      );
+      await service.narrate('ws-1');
+
+      const harnessCalls = policy.harness.mock.calls.map((call: string[]) => call[1]);
+      expect(harnessCalls).toContain('audio_vs_text');
+      expect(harnessCalls).toContain('tom');
+      expect(harnessCalls).toContain('cupom');
+      expect(harnessCalls).toContain('followup_timing');
+      expect(harnessCalls).toContain('cia_aggressiveness');
     });
   });
 });

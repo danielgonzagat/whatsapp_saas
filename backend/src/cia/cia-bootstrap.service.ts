@@ -1,19 +1,19 @@
 import { Inject, Injectable, Optional, forwardRef } from '@nestjs/common';
-import { buildConversationOperationalState } from './agent-conversation-state.util';
-import { AgentEventsService } from './agent-events.service';
+import { buildConversationOperationalState } from '../whatsapp/agent-conversation-state.util';
+import { AgentEventsService } from '../whatsapp/agent-events.service';
 import { CiaChatFilterService } from './cia-chat-filter.service';
 import { CiaRuntimeStateService } from './cia-runtime-state.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { WhatsAppProviderRegistry } from './providers/provider-registry';
-import { WhatsAppCatchupService } from './whatsapp-catchup.service';
-import { asProviderSettings } from './provider-settings.types';
+import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
+import { WhatsAppCatchupService } from '../whatsapp/whatsapp-catchup.service';
+import { asProviderSettings } from '../whatsapp/provider-settings.types';
 import {
   CIA_CONTACT_CATALOG_LOOKBACK_DAYS,
   CIA_BOOTSTRAP_IMMEDIATE_LIMIT,
   CIA_BOOTSTRAP_AUTO_CONTINUE,
   CIA_BOOTSTRAP_AUTO_CONTINUE_LIMIT,
-} from './__companions__/cia-bootstrap.service.companion';
+} from './__parts__/cia-bootstrap.service.companion';
 
 export { CIA_BOOTSTRAP_AUTO_CONTINUE_LIMIT };
 

@@ -1,4 +1,5 @@
 import { Module, forwardRef } from '@nestjs/common';
+import { CiaModule } from '../cia/cia.module';
 import { InboxModule } from '../inbox/inbox.module';
 import { PrismaService } from '../prisma/prisma.service';
 import { WorkspaceService } from '../workspaces/workspace.service';
@@ -14,7 +15,7 @@ import { WhatsAppApiWebhookController } from './whatsapp-api-webhook.controller'
 // Webhook ordering: Controllers use WebhookEvent externalId unique constraint
 // and checkIdempotencyOrThrow to prevent out-of-order/duplicate event processing.
 @Module({
-  imports: [InboxModule, forwardRef(() => WhatsappModule)],
+  imports: [InboxModule, CiaModule, forwardRef(() => WhatsappModule)],
   controllers: [
     WebhooksController,
     WebhookSettingsController,

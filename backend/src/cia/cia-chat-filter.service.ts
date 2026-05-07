@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { WahaChatSummary } from './providers/whatsapp-api.provider';
+import { WahaChatSummary } from '../whatsapp/providers/whatsapp-api.provider';
 
 const CIA_REMOTE_PENDING_MAX_AGE_MS = Math.max(
   60_000,

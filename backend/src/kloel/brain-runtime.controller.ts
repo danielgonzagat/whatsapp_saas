@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Request, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Logger, Post, Request, Res, UseGuards } from '@nestjs/common';
 import type { Response } from 'express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
@@ -11,6 +11,8 @@ import { BrainRuntimeService } from './brain-runtime.service';
 @Controller('brain')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class BrainRuntimeController {
+  private readonly logger = new Logger(BrainRuntimeController.name);
+
   constructor(
     private readonly brain: BrainRuntimeService,
     private readonly graph: BrainCommercialGraphService,
@@ -110,7 +112,16 @@ export class BrainRuntimeController {
         content: decision.response || 'Ação processada pelo Kloel Brain.',
       });
       writeEvent({ type: 'done', done: true });
-    } catch {
+    } catch (error: unknown) {
+      this.logger.error(
+        {
+          errorCode: error instanceof Error ? error.name : 'UnknownError',
+          operation: 'brain_stream',
+          status: 'failure',
+          workspaceId: req.workspaceId || req.user.workspaceId,
+        },
+        error instanceof Error ? error.stack : undefined,
+      );
       writeEvent({
         type: 'error',
         error: 'Nao consegui concluir esta resposta agora.',

@@ -2,7 +2,6 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { MindBeliefService } from '../../kloel/mind-belief.service';
 import { MindPolicyService } from '../../kloel/mind-policy.service';
-import type { MindPrediction, MindPolicyDecision } from '../../kloel/mind.types';
 
 type BeliefAggregateRow = {
   predicate: string;
@@ -27,9 +26,12 @@ type PolicyCountRow = {
   decisionTypes: string[];
 };
 
-type SurpriseRow = MindPrediction & {
-  severity: string;
-};
+function severityLabel(surprise: number): string {
+  if (surprise >= 2.0) return 'critical';
+  if (surprise >= 1.0) return 'high';
+  if (surprise >= 0.5) return 'moderate';
+  return 'low';
+}
 
 @Injectable()
 export class AdminMindService {
@@ -104,37 +106,33 @@ export class AdminMindService {
       throw new NotFoundException('Workspace não encontrado');
     }
 
-    const items = await this.prisma.$queryRaw<SurpriseRow[]>`
-      SELECT *,
-        CASE
-          WHEN "surprise" >= 2.0 THEN 'critical'
-          WHEN "surprise" >= 1.0 THEN 'high'
-          WHEN "surprise" >= 0.5 THEN 'moderate'
-          ELSE 'low'
-        END AS "severity"
-      FROM "RAC_MindPrediction"
-      WHERE "workspaceId" = ${workspaceId}
-        AND "resolvedAt" IS NOT NULL
-        AND "surprise" IS NOT NULL
-      ORDER BY "resolvedAt" DESC
-      LIMIT ${limit}
-    `;
+    const rows = await this.prisma.mindPrediction.findMany({
+      where: {
+        workspaceId,
+        resolvedAt: { not: null },
+        surprise: { not: null },
+      },
+      orderBy: { resolvedAt: 'desc' },
+      take: limit,
+    });
+
+    const items = rows.map((item) => ({
+      id: item.id,
+      subject: item.subject,
+      predicate: item.predicate,
+      predictedMean: item.predictedMean,
+      actual: item.actual,
+      surprise: item.surprise,
+      severity: severityLabel(item.surprise!),
+      horizonSec: item.horizonSec,
+      resolvedAt: item.resolvedAt,
+      createdAt: item.createdAt,
+    }));
 
     return {
       workspaceId: workspace.id,
       workspaceName: workspace.name,
-      items: items.map((item) => ({
-        id: item.id,
-        subject: item.subject,
-        predicate: item.predicate,
-        predictedMean: item.predictedMean,
-        actual: item.actual,
-        surprise: item.surprise,
-        severity: item.severity,
-        horizonSec: item.horizonSec,
-        resolvedAt: item.resolvedAt,
-        createdAt: item.createdAt,
-      })),
+      items,
       total: items.length,
     };
   }
@@ -148,10 +146,10 @@ export class AdminMindService {
       throw new NotFoundException('Workspace não encontrado');
     }
 
-    const harness = await this.policy.harness(workspaceId, decisionType, sinceDays);
+    const harnessResult = await this.policy.harness(workspaceId, decisionType, sinceDays);
 
-    const topDecisions = await this.prisma.$queryRaw<
-      Array<Pick<MindPolicyDecision, 'chosen' | 'baseline' | 'outcome'> & { count: bigint }>
+    const groupRows = await this.prisma.$queryRaw<
+      Array<{ chosen: string; baseline: string; outcome: number; count: bigint }>
     >`
       SELECT "chosen", "baseline", "outcome", COUNT(*)::bigint AS "count"
       FROM "RAC_MindPolicy"
@@ -164,16 +162,23 @@ export class AdminMindService {
       LIMIT 20
     `;
 
+    const topDecisions = groupRows.map((row) => ({
+      chosen: row.chosen,
+      baseline: row.baseline,
+      outcome: row.outcome,
+      count: row.count,
+    }));
+
     return {
       workspaceId: workspace.id,
       workspaceName: workspace.name,
       decisionType,
       sinceDays,
-      n: harness.n,
-      mindMean: harness.mindMean,
-      baselineMean: harness.baselineMean,
-      lift: harness.lift,
-      pZScore: harness.pZScore,
+      n: harnessResult.n,
+      mindMean: harnessResult.mindMean,
+      baselineMean: harnessResult.baselineMean,
+      lift: harnessResult.lift,
+      pZScore: harnessResult.pZScore,
       topChosenActions: topDecisions.map((row) => ({
         chosen: row.chosen,
         baseline: row.baseline,
@@ -184,7 +189,15 @@ export class AdminMindService {
   }
 
   private async queryBeliefAggregates(workspaceId: string): Promise<BeliefAggregateRow[]> {
-    return this.prisma.$queryRaw<BeliefAggregateRow[]>`
+    const rows = await this.prisma.$queryRaw<
+      Array<{
+        predicate: string;
+        total: bigint;
+        minSamples: number | null;
+        maxSamples: number | null;
+        avgMean: number | null;
+      }>
+    >`
       SELECT
         "predicate",
         COUNT(*)::bigint AS "total",
@@ -197,6 +210,14 @@ export class AdminMindService {
       ORDER BY "total" DESC
       LIMIT 50
     `;
+
+    return rows.map((row) => ({
+      predicate: row.predicate,
+      total: row.total,
+      minSamples: row.minSamples ?? 0,
+      maxSamples: row.maxSamples ?? 0,
+      avgMean: row.avgMean ?? 0,
+    }));
   }
 
   private async queryPredictionCounts(workspaceId: string): Promise<PredictionCountRow> {
@@ -210,33 +231,35 @@ export class AdminMindService {
       FROM "RAC_MindPrediction"
       WHERE "workspaceId" = ${workspaceId}
     `;
-    return rows[0];
+    return (
+      rows[0] ?? {
+        total: 0n,
+        resolved: 0n,
+        openCount: 0n,
+        avgSurprise: null,
+        highSurpriseCount: 0n,
+      }
+    );
   }
 
   private async queryPolicyCounts(workspaceId: string): Promise<PolicyCountRow> {
-    const countRows = await this.prisma.$queryRaw<
-      Array<{ total: bigint; resolved: bigint; unresolved: bigint }>
-    >`
-      SELECT
-        COUNT(*)::bigint AS "total",
-        COUNT(CASE WHEN "resolvedAt" IS NOT NULL THEN 1 END)::bigint AS "resolved",
-        COUNT(CASE WHEN "resolvedAt" IS NULL THEN 1 END)::bigint AS "unresolved"
-      FROM "RAC_MindPolicy"
-      WHERE "workspaceId" = ${workspaceId}
-    `;
-
-    const typeRows = await this.prisma.$queryRaw<Array<{ decisionType: string }>>`
-      SELECT DISTINCT "decisionType"
-      FROM "RAC_MindPolicy"
-      WHERE "workspaceId" = ${workspaceId}
-      ORDER BY "decisionType"
-      LIMIT 50
-    `;
+    const [total, resolved, unresolved, typeRows] = await Promise.all([
+      this.prisma.mindPolicy.count({ where: { workspaceId } }),
+      this.prisma.mindPolicy.count({ where: { workspaceId, resolvedAt: { not: null } } }),
+      this.prisma.mindPolicy.count({ where: { workspaceId, resolvedAt: null } }),
+      this.prisma.mindPolicy.findMany({
+        where: { workspaceId },
+        select: { decisionType: true },
+        distinct: ['decisionType'],
+        orderBy: { decisionType: 'asc' },
+        take: 50,
+      }),
+    ]);
 
     return {
-      total: countRows[0]?.total ?? 0n,
-      resolved: countRows[0]?.resolved ?? 0n,
-      unresolved: countRows[0]?.unresolved ?? 0n,
+      total: BigInt(total),
+      resolved: BigInt(resolved),
+      unresolved: BigInt(unresolved),
       decisionTypes: typeRows.map((row) => row.decisionType),
     };
   }

@@ -1,10 +1,10 @@
 import { CiaChatFilterService } from '../cia-chat-filter.service';
 import { CiaSendHelpersService } from '../cia-send-helpers.service';
 import { PrismaService } from '../../prisma/prisma.service';
-import { WhatsAppProviderRegistry } from '../providers/provider-registry';
-import { WahaChatSummary } from '../providers/whatsapp-api.provider';
-import { extractPhoneFromChatId as normalizePhoneFromChatId } from '../whatsapp-normalization.util';
-import { WhatsappService } from '../whatsapp.service';
+import { WhatsAppProviderRegistry } from '../../whatsapp/providers/provider-registry';
+import { WahaChatSummary } from '../../whatsapp/providers/whatsapp-api.provider';
+import { extractPhoneFromChatId as normalizePhoneFromChatId } from '../../whatsapp/whatsapp-normalization.util';
+import { WhatsappService } from '../../whatsapp/whatsapp.service';
 
 export type BacklogMode = 'reply_all_recent_first' | 'reply_only_new' | 'prioritize_hot';
 

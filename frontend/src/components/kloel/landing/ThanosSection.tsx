@@ -25,6 +25,9 @@ const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const PARTICLES_PER_ICON = 150;
 const DUST_DURATION_MS = 3000;
 const ICON_STAGGER_MS = 140;
+const CONTOUR_SAMPLE_SIZE = 40;
+const PARTICLE_COLOR = 'rgba(168, 168, 182, 0.7)';
+const CONTOUR_ALPHA_THRESHOLD = 30;
 
 type DustParticle = {
   x: number;
@@ -58,6 +61,39 @@ function usePrefersReducedMotion() {
   }, []);
 
   return prefersReducedMotion;
+}
+
+function sampleIconContour(
+  node: HTMLSpanElement,
+  sampleSize: number,
+): Array<{ x: number; y: number }> | null {
+  const img = node.querySelector('img');
+  if (!img || !img.complete || img.naturalWidth === 0) {
+    return null;
+  }
+  const offCanvas = document.createElement('canvas');
+  offCanvas.width = sampleSize;
+  offCanvas.height = sampleSize;
+  const offCtx = offCanvas.getContext('2d');
+  if (!offCtx) {
+    return null;
+  }
+  try {
+    offCtx.drawImage(img, 0, 0, sampleSize, sampleSize);
+    const imageData = offCtx.getImageData(0, 0, sampleSize, sampleSize);
+    const points: Array<{ x: number; y: number }> = [];
+    const { data } = imageData;
+    for (let py = 0; py < sampleSize; py += 1) {
+      for (let px = 0; px < sampleSize; px += 1) {
+        if (data[(py * sampleSize + px) * 4 + 3] > CONTOUR_ALPHA_THRESHOLD) {
+          points.push({ x: px / sampleSize, y: py / sampleSize });
+        }
+      }
+    }
+    return points.length > 0 ? points : null;
+  } catch {
+    return null;
+  }
 }
 
 function ThanosOmniSales({ runToken }: { runToken: number }) {
@@ -280,13 +316,24 @@ export default function ThanosSection() {
       const iconRect = node.getBoundingClientRect();
       const left = iconRect.left - rect.left;
       const top = iconRect.top - rect.top;
+      const contour = sampleIconContour(node, CONTOUR_SAMPLE_SIZE);
       for (let particleIndex = 0; particleIndex < PARTICLES_PER_ICON; particleIndex += 1) {
         const seed = iconIndex * 1000 + particleIndex + 1;
+        let px: number;
+        let py: number;
+        if (contour) {
+          const cp = contour[particleIndex % contour.length];
+          px = cp.x + (seededUnit(seed) - 0.5) * 0.07;
+          py = cp.y + (seededUnit(seed + 1) - 0.5) * 0.07;
+        } else {
+          px = seededUnit(seed);
+          py = seededUnit(seed + 17);
+        }
         const angle = -Math.PI / 2 + (seededUnit(seed + 31) - 0.5) * 1.35;
         const speed = 18 + seededUnit(seed + 47) * 62;
         particles.push({
-          x: left + seededUnit(seed) * iconRect.width,
-          y: top + seededUnit(seed + 17) * iconRect.height,
+          x: left + px * iconRect.width,
+          y: top + py * iconRect.height,
           vx: Math.cos(angle) * speed,
           vy: Math.sin(angle) * speed - 16,
           size: 0.7 + seededUnit(seed + 59) * 1.9,
@@ -308,7 +355,7 @@ export default function ThanosSection() {
     const animate = (now: number) => {
       const elapsed = now - startedAt;
       ctx.clearRect(0, 0, rect.width, rect.height);
-      ctx.fillStyle = colors.ember.primary;
+      ctx.fillStyle = PARTICLE_COLOR;
       particles.forEach((particle) => {
         const local = elapsed - particle.delay;
         if (local < 0 || local > particle.life) {
