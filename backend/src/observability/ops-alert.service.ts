@@ -16,8 +16,16 @@ type OpsEventDelegate = {
   create(args: { data: OpsEventCreateInput }): Promise<unknown>;
 };
 
+type PrismaWithOpsEvent = PrismaService & {
+  opsEvent?: unknown;
+};
+
 function isOpsEventDelegate(value: unknown): value is OpsEventDelegate {
   return Boolean(value && typeof value === 'object' && 'create' in value);
+}
+
+function hasOpsEventDelegate(value: PrismaService): value is PrismaWithOpsEvent {
+  return 'opsEvent' in value;
 }
 
 /**
@@ -37,11 +45,10 @@ export class OpsAlertService {
   constructor(private readonly prisma?: PrismaService) {}
 
   private getOpsEventDelegate(): OpsEventDelegate | null {
-    if (!this.prisma || !('opsEvent' in this.prisma)) {
+    if (!this.prisma || !hasOpsEventDelegate(this.prisma)) {
       return null;
     }
-    const candidate = (this.prisma as unknown as { opsEvent?: unknown }).opsEvent;
-    return isOpsEventDelegate(candidate) ? candidate : null;
+    return isOpsEventDelegate(this.prisma.opsEvent) ? this.prisma.opsEvent : null;
   }
 
   private logPersistenceFailure(
