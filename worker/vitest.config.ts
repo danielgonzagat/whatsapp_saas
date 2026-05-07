@@ -4,8 +4,10 @@ export default defineConfig({
   test: {
     include: ['test/**/*.spec.ts'],
     exclude: ['dist/**', 'node_modules/**'],
+    pool: 'forks',
+    fileParallelism: false,
     reporters: [
-      'default',
+      'verbose',
       [
         'junit',
         {
