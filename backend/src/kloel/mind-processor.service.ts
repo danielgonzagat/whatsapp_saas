@@ -7,6 +7,8 @@ import { MindService } from './mind.service';
 const DEFAULT_SCHEDULER_INTERVAL_MS = 30_000;
 const DEFAULT_TICK_CONCURRENCY = 4;
 const DEFAULT_TICK_ATTEMPTS = 3;
+const MIND_SCHEDULER_QUEUE = 'mind-scheduler';
+const MIND_TICK_QUEUE = 'mind-tick';
 
 @Injectable()
 export class MindProcessorService implements OnModuleInit, OnModuleDestroy {
@@ -47,8 +49,8 @@ export class MindProcessorService implements OnModuleInit, OnModuleDestroy {
     const schedulerConnection = createRedisClient({ maxRetriesPerRequest: null });
     const tickConnection = createRedisClient({ maxRetriesPerRequest: null });
 
-    this.schedulerQueue = new Queue('mind:scheduler', { connection: schedulerConnection });
-    this.tickQueue = new Queue('mind:tick', {
+    this.schedulerQueue = new Queue(MIND_SCHEDULER_QUEUE, { connection: schedulerConnection });
+    this.tickQueue = new Queue(MIND_TICK_QUEUE, {
       connection: tickConnection,
       defaultJobOptions: {
         attempts,
@@ -61,11 +63,11 @@ export class MindProcessorService implements OnModuleInit, OnModuleDestroy {
     await this.schedulerQueue.add(
       'fanout',
       {},
-      { jobId: 'mind:fanout', repeat: { every: interval } },
+      { jobId: 'mind-fanout', repeat: { every: interval } },
     );
 
     this.schedulerWorker = new Worker(
-      'mind:scheduler',
+      MIND_SCHEDULER_QUEUE,
       async () => this.enqueueActiveWorkspaces(),
       {
         connection: createRedisClient({ maxRetriesPerRequest: null }),
@@ -79,7 +81,7 @@ export class MindProcessorService implements OnModuleInit, OnModuleDestroy {
     });
 
     this.tickWorker = new Worker(
-      'mind:tick',
+      MIND_TICK_QUEUE,
       async (job) => this.mind.tick(String(job.data.workspaceId)),
       {
         connection: createRedisClient({ maxRetriesPerRequest: null }),
@@ -135,7 +137,7 @@ export class MindProcessorService implements OnModuleInit, OnModuleDestroy {
       await this.tickQueue.add(
         'tick',
         { workspaceId: workspace.id },
-        { jobId: `mind:tick:${workspace.id}:${bucket}` },
+        { jobId: `mind-tick-${workspace.id}-${bucket}` },
       );
     }
 
