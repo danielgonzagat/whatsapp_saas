@@ -10,21 +10,7 @@ import type {
   MindPolicyDecision,
   MindPolicyOption,
 } from './mind.types';
-
-type ResolvedPolicyRow = {
-  baseline: string;
-  chosen: string;
-  decisionType: string;
-  id: string;
-  outcome: number;
-  outcomeKey: string | null;
-  subject: string;
-  workspaceId: string;
-};
-
-function mean(values: number[]): number {
-  return values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0;
-}
+import { mean, persistResolvedPolicyMemories, twoProportionZScore } from './mind-policy.helpers';
 
 const FALLBACK_MIN_SAMPLES = 30;
 
@@ -335,7 +321,7 @@ export class MindPolicyService {
     const lift = baselineMean > 0 ? (mindMean - baselineMean) / baselineMean : 0;
     const pZScore =
       baselineOutcomes.length > 30
-        ? this.twoProportionZScore(mindMean, baselineMean, baselineOutcomes.length)
+        ? twoProportionZScore(mindMean, baselineMean, baselineOutcomes.length)
         : 0;
 
     return { n: rows.length, mindMean, baselineMean, lift, pZScore };
@@ -399,47 +385,10 @@ export class MindPolicyService {
     });
   }
 
-  private async persistResolvedMemories(
-    rows: ResolvedPolicyRow[],
+  private persistResolvedMemories(
+    rows: Parameters<typeof persistResolvedPolicyMemories>[1],
     baselineOutcome?: number,
   ): Promise<void> {
-    for (const row of rows) {
-      const value = {
-        baseline: row.baseline,
-        baselineOutcome,
-        chosen: row.chosen,
-        decisionType: row.decisionType,
-        outcome: row.outcome,
-        outcomeKey: row.outcomeKey,
-        subject: row.subject,
-      };
-      const content = [
-        `decision=${row.decisionType}`,
-        `subject=${row.subject}`,
-        `chosen=${row.chosen}`,
-        `baseline=${row.baseline}`,
-        `outcome=${row.outcome}`,
-      ].join(' ');
-
-      await this.prisma.$executeRaw`
-        INSERT INTO "RAC_KloelMemory"
-          ("id","workspaceId","key","value","category","type","content","metadata","createdAt","updatedAt")
-        VALUES
-          (${randomUUID()}, ${row.workspaceId}, ${`mind:policy:${row.id}`},
-           ${JSON.stringify(value)}::jsonb, 'mind_outcomes', 'policy_outcome',
-           ${content}, ${JSON.stringify({ policyId: row.id })}::jsonb, NOW(), NOW())
-        ON CONFLICT ("workspaceId", "key") DO UPDATE
-        SET "value" = EXCLUDED."value",
-            "content" = EXCLUDED."content",
-            "metadata" = EXCLUDED."metadata",
-            "updatedAt" = NOW()
-      `;
-    }
-  }
-
-  private twoProportionZScore(mindMean: number, baselineMean: number, n: number): number {
-    const pooled = (mindMean + baselineMean) / 2;
-    const standardError = Math.sqrt((2 * pooled * (1 - pooled)) / n);
-    return standardError > 0 ? (mindMean - baselineMean) / standardError : 0;
+    return persistResolvedPolicyMemories(this.prisma, rows, baselineOutcome);
   }
 }

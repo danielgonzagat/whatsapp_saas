@@ -5,55 +5,16 @@ import { MindPolicyService } from './mind-policy.service';
 import { MindPredictorService } from './mind-predictor.service';
 import { MindSurpriseService } from './mind-surprise.service';
 import type { MindPerceptEvent, MindTick } from './mind.types';
-
-const KNOWN_DECISION_TYPES = [
-  'followup_timing',
-  'send_window',
-  'offer_discount',
-  'cia_aggressiveness',
-  'audio_vs_text',
-  'tom',
-  'cupom',
-] as const;
-
-const TONE_OPTIONS = [
-  'DIRECT',
-  'CONSULTIVE',
-  'FRIENDLY',
-  'EMPATHETIC',
-  'CASUAL',
-  'EDUCATIVE',
-  'URGENT',
-  'TECHNICAL',
-  'AGGRESSIVE',
-] as const;
-
-function resolveToneBaseline(repliedRate: number, soldRate: number, channel: string): string {
-  if (channel === 'whatsapp' && repliedRate >= 0.4) return 'FRIENDLY';
-  if (soldRate >= 0.15) return 'CONSULTIVE';
-  return 'DIRECT';
-}
-
-function resolveAudioBaseline(channel: string, audioRatio: number): string {
-  if (channel === 'whatsapp' && audioRatio >= 0.2) return 'audio';
-  return 'text';
-}
-
-function resolveCouponBaseline(priceBand: string, soldRate: number): string {
-  const highBands = new Set(['over_300', 'over_500', 'over_1000']);
-  if (highBands.has(priceBand) && soldRate < 0.1) return 'offer_coupon';
-  return 'no_coupon';
-}
-
-function resolveAggressivenessBaseline(
-  soldRate: number,
-  repliedRate: number,
-  revenuePerSignal: number,
-): string {
-  if (soldRate >= 0.3 || revenuePerSignal >= 150) return 'HIGH';
-  if (soldRate >= 0.15 || repliedRate >= 0.4) return 'MEDIUM';
-  return 'LOW';
-}
+import {
+  KNOWN_DECISION_TYPES,
+  TONE_OPTIONS,
+  messageTemplate,
+  resolveAggressivenessBaseline,
+  resolveAudioBaseline,
+  resolveCouponBaseline,
+  resolveToneBaseline,
+  toStableString,
+} from './mind-decision-baselines';
 
 @Injectable()
 export class MindService {
@@ -323,9 +284,9 @@ export class MindService {
           workspaceId: event.workspaceId,
           subject: event.subject,
           features: {
-            channel: this.toStableString(event.payload.channel) || 'unknown',
+            channel: toStableString(event.payload.channel) || 'unknown',
             hour: event.occurredAt.getHours(),
-            template: this.messageTemplate(event.payload),
+            template: messageTemplate(event.payload),
           },
         },
         24 * 3600,
@@ -362,8 +323,8 @@ export class MindService {
           features: {
             channel: 'checkout',
             hour: event.occurredAt.getHours(),
-            price_band: this.toStableString(event.payload.priceBand) || 'under_100',
-            segment: this.toStableString(event.payload.utmSource) || 'direct',
+            price_band: toStableString(event.payload.priceBand) || 'under_100',
+            segment: toStableString(event.payload.utmSource) || 'direct',
           },
         },
         48 * 3600,
@@ -386,7 +347,7 @@ export class MindService {
     }
 
     if (event.kind.startsWith('checkout.') && event.kind !== 'checkout.paid') {
-      const status = this.toStableString(event.payload.status).toUpperCase();
+      const status = toStableString(event.payload.status).toUpperCase();
       if (['CANCELED', 'CANCELLED', 'EXPIRED', 'FAILED', 'REFUNDED'].includes(status)) {
         const surprise = await this.surprise.resolveBinary(
           event.workspaceId,
@@ -403,7 +364,7 @@ export class MindService {
     }
 
     if (event.kind.startsWith('autopilot.')) {
-      const intent = this.toStableString(event.payload.intent) || 'unknown';
+      const intent = toStableString(event.payload.intent) || 'unknown';
       if (['lead_qualified', 'meeting_booked', 'purchase_intent'].includes(intent)) {
         const outcome = intent === 'purchase_intent' ? 1 : 0;
         const surprise = await this.surprise.resolveBinary(
@@ -421,21 +382,5 @@ export class MindService {
     }
 
     return { predicted, resolved, surpriseTotal, beliefsUpdated };
-  }
-
-  private messageTemplate(payload: Record<string, unknown>): string {
-    const type = this.toStableString(payload.messageType ?? 'TEXT').toLowerCase();
-    if (type.includes('audio') || type.includes('voice')) return 'audio';
-    if (type.includes('template')) return 'template';
-    return 'text';
-  }
-
-  private toStableString(value: unknown): string {
-    if (typeof value === 'string') return value;
-    if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
-      return value.toString();
-    }
-    if (value === null || value === undefined) return '';
-    return JSON.stringify(value);
   }
 }
