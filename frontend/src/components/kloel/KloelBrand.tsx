@@ -184,12 +184,12 @@ export function KloelMushroomVisual({
   if (svgText) {
     return (
       <span
-        ref={svgHostRef}
         aria-hidden={ariaHidden}
         aria-label={ariaHidden ? undefined : title}
         role={ariaHidden ? 'presentation' : 'img'}
         style={{
           display: 'inline-block',
+          position: 'relative',
           flexShrink: 0,
           width: size,
           height: size,
@@ -198,7 +198,35 @@ export function KloelMushroomVisual({
           lineHeight: 0,
           ...style,
         }}
-      />
+      >
+        <img
+          src="/kloel-mushroom-animated.svg"
+          aria-hidden
+          alt=""
+          role="presentation"
+          width={size}
+          height={size}
+          style={{
+            display: 'block',
+            width: '100%',
+            height: '100%',
+            objectFit: 'contain',
+            objectPosition: 'center',
+            opacity: 0,
+          }}
+        />
+        <span
+          ref={svgHostRef}
+          aria-hidden
+          style={{
+            position: 'absolute',
+            inset: 0,
+            display: 'block',
+            lineHeight: 0,
+            pointerEvents: 'none',
+          }}
+        />
+      </span>
     );
   }
 
