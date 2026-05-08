@@ -18,7 +18,7 @@ export const THANOS_STYLES = [
   '.thanos-icons span{display:grid;place-items:center;aspect-ratio:1;border-radius:16px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.06);box-shadow:0 14px 38px rgba(0,0,0,.2);will-change:transform,opacity;transform:translate3d(0,0,0)}',
   '.thanos-icons span:nth-child(odd){--x:-18px}.thanos-icons span:nth-child(even){--x:18px}.thanos-icons img{width:72%;height:72%;object-fit:contain;display:block;opacity:.68;filter:saturate(.88)}',
   '.thanos-icons--dusting span,.thanos-icons--exit span{visibility:hidden}.thanos-icons--exit{opacity:0;transform:translate3d(0,-6px,0)}',
-  "html[data-visual-capture='true'] .thanos-sales-message{display:none!important}",
+  "html[data-visual-capture='true'] .thanos-sales-message{display:none}",
   '@media(max-width:640px){.thanos-icons{gap:28px}.thanos-icons>div{grid-template-columns:repeat(2,minmax(86px,1fr));gap:14px;max-width:260px}.thanos-icons span{border-radius:14px}.thanos-icons img{width:68%;height:68%}}',
   '@media(prefers-reduced-motion:reduce){.thanos-icons,.thanos-icons span,.thanos-reveal{animation:none;transition:none}.thanos-icons{display:none}}',
 ].join('\n');

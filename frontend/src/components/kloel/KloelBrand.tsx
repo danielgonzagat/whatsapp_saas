@@ -81,6 +81,25 @@ function fetchMushroomSvg(): Promise<string> {
   return activeFetch;
 }
 
+function useVisualCaptureMode(): boolean {
+  const [visualCapture, setVisualCapture] = useState(false);
+
+  useEffect(() => {
+    if (typeof document === 'undefined' || typeof MutationObserver === 'undefined') {
+      return;
+    }
+    const root = document.documentElement;
+    const apply = () => setVisualCapture(root.dataset.visualCapture === 'true');
+
+    apply();
+    const observer = new MutationObserver(apply);
+    observer.observe(root, { attributes: true, attributeFilter: ['data-visual-capture'] });
+    return () => observer.disconnect();
+  }, []);
+
+  return visualCapture;
+}
+
 function processSvg(
   svgText: string,
   traceColor: string,
@@ -138,19 +157,22 @@ export function KloelMushroomVisual({
 }: MushroomVisualProps) {
   const [svgText, setSvgText] = useState<string | null>(null);
   const svgHostRef = useRef<HTMLSpanElement>(null);
+  const visualCapture = useVisualCaptureMode();
+  const effectiveAnimated = visualCapture ? false : animated;
+  const effectiveSpores = visualCapture && spores === 'animated' ? 'static' : spores;
 
   useEffect(() => {
     let cancelled = false;
     fetchMushroomSvg()
       .then((raw) => {
         if (cancelled) return;
-        setSvgText(processSvg(raw, traceColor, animated, spores));
+        setSvgText(processSvg(raw, traceColor, effectiveAnimated, effectiveSpores));
       })
       .catch(() => {});
     return () => {
       cancelled = true;
     };
-  }, [traceColor, animated, spores]);
+  }, [traceColor, effectiveAnimated, effectiveSpores]);
 
   const padding = fit === 'icon' ? Math.round(size * 0.04) : 0;
   const sharedStyle: CSSProperties = {
