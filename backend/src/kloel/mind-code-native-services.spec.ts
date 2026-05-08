@@ -35,6 +35,26 @@ describe('code-native MIND services', () => {
     );
   });
 
+  it('returns no concepts and emits nothing for empty text', async () => {
+    const prisma = {
+      mindConceptDetection: {
+        create: jest.fn(async ({ data }) => data),
+      },
+    };
+    const events = { recordCommercial: jest.fn() };
+    const service = new MindConceptService(prisma as never, events as never);
+
+    await expect(
+      service.detect({
+        workspaceId: 'ws-1',
+        subject: 'contact:1',
+        text: '',
+      }),
+    ).resolves.toEqual([]);
+    expect(prisma.mindConceptDetection.create).not.toHaveBeenCalled();
+    expect(events.recordCommercial).not.toHaveBeenCalled();
+  });
+
   it('keeps case-memory similarity scoped to the workspace', async () => {
     const prisma = {
       mindCase: {
@@ -82,6 +102,26 @@ describe('code-native MIND services', () => {
     expect(similar[0].id).toBe('case-1');
   });
 
+  it('returns empty case-memory matches for a workspace with no rows', async () => {
+    const prisma = {
+      mindCase: {
+        findMany: jest.fn().mockResolvedValue([]),
+      },
+    };
+    const service = new MindCaseMemoryService(prisma as never);
+
+    await expect(
+      service.similar({
+        workspaceId: 'ws-2',
+        caseType: 'objection',
+        text: 'quero comprar no pix',
+      }),
+    ).resolves.toEqual([]);
+    expect(prisma.mindCase.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { workspaceId: 'ws-2', caseType: 'objection' } }),
+    );
+  });
+
   it('blocks forbidden actions through deterministic guards', async () => {
     const prisma = { mindGuardAudit: { create: jest.fn() } };
     const service = new MindGuardsService(prisma as never);
@@ -106,6 +146,29 @@ describe('code-native MIND services', () => {
           workspaceId: 'ws-1',
           guardName: 'max_discount',
           allowed: false,
+        }),
+      }),
+    );
+  });
+
+  it('allows safe guard decisions and audits the allow path', async () => {
+    const prisma = { mindGuardAudit: { create: jest.fn() } };
+    const service = new MindGuardsService(prisma as never);
+
+    await expect(
+      service.evaluate({
+        workspaceId: 'ws-1',
+        decisionType: 'coupon_offer',
+        action: 'coupon_10',
+        context: { discountPercent: 10, maxDiscountPercent: 20 },
+      }),
+    ).resolves.toEqual(expect.objectContaining({ allowed: true, decision: 'allow' }));
+    expect(prisma.mindGuardAudit.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          workspaceId: 'ws-1',
+          guardName: 'all_guards',
+          allowed: true,
         }),
       }),
     );
@@ -158,6 +221,20 @@ describe('code-native MIND services', () => {
         data: expect.objectContaining({ alpha: { increment: 1 }, wins: { increment: 1 } }),
       }),
     );
+  });
+
+  it('returns null when no active bandit arms are available', async () => {
+    const prisma = {
+      mindBanditArm: {
+        findMany: jest.fn().mockResolvedValue([]),
+        update: jest.fn(),
+        updateMany: jest.fn(),
+      },
+    };
+    const service = new MindBanditService(prisma as never);
+
+    await expect(service.choose('ws-1', 'cart_recovery')).resolves.toBeNull();
+    expect(prisma.mindBanditArm.updateMany).not.toHaveBeenCalled();
   });
 
   it('persists durable workspace tick state', async () => {
@@ -225,6 +302,32 @@ describe('code-native MIND services', () => {
 
     expect(report.content).toContain('# Relatorio diario MIND');
     expect(report.content).toContain('## Lift por decisao');
+    expect(policy.harness).toHaveBeenCalledWith('ws-1', 'followup_timing', 14);
+  });
+
+  it('surfaces daily report persistence failures after collecting lift evidence', async () => {
+    const prisma = {
+      mindWorkspaceState: {
+        findUnique: jest.fn().mockResolvedValue(null),
+      },
+      mindConceptDetection: { findMany: jest.fn().mockResolvedValue([]) },
+      mindDailyReport: { upsert: jest.fn().mockRejectedValue(new Error('report write failed')) },
+    };
+    const beliefs = { list: jest.fn().mockResolvedValue([]) };
+    const policy = {
+      harness: jest.fn().mockResolvedValue({
+        lift: 0,
+        mindMean: 0,
+        baselineMean: 0,
+        n: 0,
+        pZScore: 0,
+      }),
+    };
+    const service = new MindReportService(prisma as never, beliefs as never, policy as never);
+
+    await expect(service.generateDaily('ws-1', new Date('2026-05-07T00:00:00Z'))).rejects.toThrow(
+      'report write failed',
+    );
     expect(policy.harness).toHaveBeenCalledWith('ws-1', 'followup_timing', 14);
   });
 });
