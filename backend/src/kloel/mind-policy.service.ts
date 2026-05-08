@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
-import { randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { MindBeliefService } from './mind-belief.service';
 import type {
@@ -10,13 +9,14 @@ import type {
   MindPolicyDecision,
   MindPolicyOption,
 } from './mind.types';
-import { mean, persistResolvedPolicyMemories, twoProportionZScore } from './mind-policy.helpers';
+import {
+  createPolicyRow,
+  mean,
+  persistResolvedPolicyMemories,
+  twoProportionZScore,
+} from './mind-policy.helpers';
 
 const FALLBACK_MIN_SAMPLES = 30;
-
-function inputJson(value: unknown): Prisma.InputJsonValue {
-  return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
-}
 
 @Injectable()
 export class MindPolicyService {
@@ -357,13 +357,13 @@ export class MindPolicyService {
         if (existing) {
           return;
         }
-        await this.createPolicyRow(tx, decision);
+        await createPolicyRow(tx, decision);
       });
       return;
     }
 
     try {
-      await this.createPolicyRow(this.prisma, decision);
+      await createPolicyRow(this.prisma, decision);
     } catch (error: unknown) {
       const err = error as { code?: string };
       if (err && typeof err === 'object' && err.code === 'P2002') {
@@ -371,32 +371,6 @@ export class MindPolicyService {
       }
       throw error;
     }
-  }
-
-  private createPolicyRow(
-    prisma: Pick<PrismaService, 'mindPolicy'> | Prisma.TransactionClient,
-    decision: MindPolicyDecision,
-  ) {
-    return prisma.mindPolicy.create({
-      data: {
-        id: randomUUID(),
-        workspaceId: decision.workspaceId,
-        subject: decision.subject,
-        decisionType: decision.decisionType,
-        context: inputJson(decision.context),
-        candidates: inputJson(decision.candidates),
-        chosen: decision.chosen,
-        baseline: decision.baseline,
-        reasonInternal: decision.reasonInternal,
-        outcomeKey: decision.outcomeKey ?? null,
-        calcSteps: inputJson(decision.calcSteps),
-        epsilon: decision.epsilon,
-        utilitySuccess: decision.utilitySuccess,
-        utilityFail: decision.utilityFail,
-        fallbackActive: decision.fallbackActive,
-        fallbackReason: decision.fallbackReason ?? null,
-      },
-    });
   }
 
   private persistResolvedMemories(

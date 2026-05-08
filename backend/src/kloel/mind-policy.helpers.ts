@@ -1,5 +1,7 @@
+import type { Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import type { PrismaService } from '../prisma/prisma.service';
+import type { MindPolicyDecision } from './mind.types';
 
 export type ResolvedPolicyRow = {
   baseline: string;
@@ -30,6 +32,36 @@ export function twoProportionZScore(
     (mindMean * mindSamples + baselineMean * baselineSamples) / (mindSamples + baselineSamples);
   const standardError = Math.sqrt(pooled * (1 - pooled) * (1 / mindSamples + 1 / baselineSamples));
   return standardError > 0 ? (mindMean - baselineMean) / standardError : 0;
+}
+
+export function inputJson(value: unknown): Prisma.InputJsonValue {
+  return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
+}
+
+export function createPolicyRow(
+  prisma: Pick<PrismaService, 'mindPolicy'> | Prisma.TransactionClient,
+  decision: MindPolicyDecision,
+) {
+  return prisma.mindPolicy.create({
+    data: {
+      id: randomUUID(),
+      workspaceId: decision.workspaceId,
+      subject: decision.subject,
+      decisionType: decision.decisionType,
+      context: inputJson(decision.context),
+      candidates: inputJson(decision.candidates),
+      chosen: decision.chosen,
+      baseline: decision.baseline,
+      reasonInternal: decision.reasonInternal,
+      outcomeKey: decision.outcomeKey ?? null,
+      calcSteps: inputJson(decision.calcSteps),
+      epsilon: decision.epsilon,
+      utilitySuccess: decision.utilitySuccess,
+      utilityFail: decision.utilityFail,
+      fallbackActive: decision.fallbackActive,
+      fallbackReason: decision.fallbackReason ?? null,
+    },
+  });
 }
 
 export async function persistResolvedPolicyMemories(
