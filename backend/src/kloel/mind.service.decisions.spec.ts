@@ -9,6 +9,8 @@ function buildService(policy: unknown): MindService {
     {
       recordFailure: jest.fn(),
       recordSuccess: jest.fn(),
+      tryAcquireTickLease: jest.fn().mockResolvedValue(true),
+      releaseTickLease: jest.fn().mockResolvedValue(undefined),
       watermark: jest.fn(async (_workspaceId: string, fallback: Date) => fallback),
     } as never,
     { process: jest.fn() } as never,

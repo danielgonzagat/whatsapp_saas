@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   HttpCode,
+  ForbiddenException,
   Logger,
   Optional,
   Post,
@@ -10,11 +11,21 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
+import { randomUUID, timingSafeEqual } from 'node:crypto';
 import type { Request } from 'express';
 import { Public } from '../auth/public.decorator';
 import { OmnichannelService } from '../inbox/omnichannel.service';
 import { ensureError, type NormalizedMessage } from '../inbox/omnichannel.helpers';
 import { PrismaService } from '../prisma/prisma.service';
+
+function decodeHtmlEntities(raw: string): string {
+  return raw
+    .replaceAll('&lt;', '<')
+    .replaceAll('&gt;', '>')
+    .replaceAll('&quot;', '"')
+    .replaceAll('&#39;', "'")
+    .replaceAll('&amp;', '&');
+}
 
 function stripHtml(raw: string): string {
   let text = '';
@@ -43,14 +54,54 @@ function stripHtml(raw: string): string {
     text += char;
     lastWasWhitespace = false;
   }
-  return text.trim();
+  return decodeHtmlEntities(text).trim();
+}
+
+function redactEmailAddress(value: string): string {
+  const [local, domain] = value.trim().split('@');
+  if (!local || !domain) {
+    return '***';
+  }
+  return `${local.slice(0, 2)}***@${domain}`;
+}
+
+function verifyEmailInboundSecret(req: Request): boolean {
+  const expected = process.env.EMAIL_INBOUND_SECRET?.trim();
+  if (!expected) {
+    return false;
+  }
+  const header = req.headers['x-email-inbound-secret'];
+  const actual = Array.isArray(header) ? header[0] : header;
+  if (!actual) {
+    return false;
+  }
+  const expectedBuffer = Buffer.from(expected);
+  const actualBuffer = Buffer.from(actual);
+  return (
+    expectedBuffer.length === actualBuffer.length && timingSafeEqual(expectedBuffer, actualBuffer)
+  );
+}
+
+function safeMetadataSummary(body: Record<string, unknown>): Record<string, unknown> {
+  return {
+    hasHtml: typeof body.html === 'string' && body.html.length > 0,
+    hasText:
+      (typeof body.text === 'string' && body.text.length > 0) ||
+      (typeof body.plain === 'string' && body.plain.length > 0),
+    hasAttachments: Object.keys(body).some((key) => key.toLowerCase().includes('attachment')),
+    providerFields: Object.keys(body)
+      .filter((key) =>
+        ['from', 'to', 'recipient', 'sender', 'subject', 'message_id', 'Message-Id'].includes(key),
+      )
+      .sort(),
+  };
 }
 
 function parseForwardedEmailHeaders(req: Request) {
   const from = String(req.body?.from || req.body?.sender || '').trim();
   const to = String(req.body?.to || req.body?.recipient || '').trim();
   const subject = String(req.body?.subject || '').trim();
-  const textBody = String(req.body?.text || req.body?.plain || '').trim();
+  const textBody = decodeHtmlEntities(String(req.body?.text || req.body?.plain || '').trim());
   const htmlBody = String(req.body?.html || '').trim();
   const messageId = String(req.body?.message_id || req.body?.['Message-Id'] || '').trim();
   const inReplyTo = String(req.body?.in_reply_to || req.body?.['In-Reply-To'] || '').trim();
@@ -115,6 +166,15 @@ export class EmailInboundController {
       };
     }
 
+    if (!verifyEmailInboundSecret(req)) {
+      this.logger.warn({
+        operation: 'email.inbound.auth',
+        status: 'failed',
+        reason: 'invalid_secret',
+      });
+      throw new ForbiddenException('email_inbound_forbidden');
+    }
+
     const { from, to, subject, content, messageId, inReplyTo } = parseForwardedEmailHeaders(req);
 
     if (!from || !content) {
@@ -123,7 +183,12 @@ export class EmailInboundController {
 
     const resolved = resolveWorkspaceFromRecipient(to);
     if (!resolved) {
-      this.logger.warn(`Email inbound: cannot resolve workspace from recipient ${to}`);
+      this.logger.warn({
+        operation: 'email.inbound.resolve',
+        status: 'failed',
+        reason: 'unknown_workspace',
+        recipient: redactEmailAddress(to),
+      });
       return { received: true, skipped: true, reason: 'unknown_workspace' };
     }
 
@@ -139,7 +204,12 @@ export class EmailInboundController {
       });
 
       if (!match && resolved.username !== 'default') {
-        this.logger.warn(`Email inbound: workspace not found for ${resolved.username}`);
+        this.logger.warn({
+          operation: 'email.inbound.lookup',
+          status: 'failed',
+          reason: 'workspace_not_found',
+          username: resolved.username,
+        });
         return { received: true, skipped: true, reason: 'workspace_not_found' };
       }
 
@@ -153,16 +223,16 @@ export class EmailInboundController {
     const normalized: NormalizedMessage = {
       workspaceId,
       channel: 'EMAIL',
-      externalId: messageId || `email:${from}:${Date.now()}`,
+      externalId: messageId || `email:${randomUUID()}`,
       from,
       fromName: from.split('<')[0]?.trim() || from,
       content: subject ? `[${subject}] ${content}` : content,
       metadata: {
-        to,
+        to: redactEmailAddress(to),
         subject,
         messageId,
         inReplyTo,
-        raw: body,
+        raw: safeMetadataSummary(body),
       },
     };
 

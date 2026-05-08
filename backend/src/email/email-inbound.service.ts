@@ -1,7 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
+import type { Prisma } from '@prisma/client';
+import { randomUUID } from 'node:crypto';
 import { OmnichannelService, type NormalizedMessage } from '../inbox/omnichannel.service';
 import type { MessageAttachment } from '../inbox/omnichannel.helpers';
-import { InboxService } from '../inbox/inbox.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ensureError } from '../inbox/omnichannel.helpers';
 
@@ -24,6 +25,15 @@ export interface InboundEmailAttachment {
   url?: string;
 }
 
+function decodeHtmlEntities(raw: string): string {
+  return raw
+    .replaceAll('&lt;', '<')
+    .replaceAll('&gt;', '>')
+    .replaceAll('&quot;', '"')
+    .replaceAll('&#39;', "'")
+    .replaceAll('&amp;', '&');
+}
+
 function stripHtml(raw: string): string {
   let text = '';
   let insideTag = false;
@@ -40,7 +50,7 @@ function stripHtml(raw: string): string {
       text += char;
     }
   }
-  return text.replaceAll('&quot;', '"').replaceAll('&#39;', "'").trim();
+  return decodeHtmlEntities(text).trim();
 }
 
 function normalizeAttachments(attachments: InboundEmailAttachment[]): MessageAttachment[] {
@@ -59,13 +69,23 @@ function buildEmailContent(email: InboundEmail): string {
   return `${subjectLine}\n\n${body}`;
 }
 
+function maskEmail(value?: string): string | undefined {
+  if (!value) {
+    return value;
+  }
+  const [local, domain] = value.split('@');
+  if (!domain) {
+    return '***';
+  }
+  return `${local.slice(0, 2)}***@${domain}`;
+}
+
 @Injectable()
 export class EmailInboundService {
   private readonly logger = new Logger(EmailInboundService.name);
 
   constructor(
     private readonly omnichannel: OmnichannelService,
-    private readonly inbox: InboxService,
     private readonly prisma: PrismaService,
   ) {}
 
@@ -81,7 +101,15 @@ export class EmailInboundService {
     workspaceId: string,
     email: InboundEmail,
   ): Promise<{ status: string; messageId?: string }> {
-    this.logger.log(`[EMAIL] Inbound from ${email.from} to ${email.to} — "${email.subject}"`);
+    this.logger.log({
+      operation: 'email.inbound.process',
+      status: 'started',
+      workspaceId,
+      provider: this.getProvider(),
+      externalId: email.messageId ?? null,
+      from: maskEmail(email.from),
+      to: maskEmail(email.to),
+    });
 
     const content = buildEmailContent(email);
     const attachments = email.attachments?.length
@@ -93,7 +121,7 @@ export class EmailInboundService {
     const normalized: NormalizedMessage = {
       workspaceId,
       channel: 'EMAIL',
-      externalId: email.messageId || `email_${Date.now()}`,
+      externalId: email.messageId?.trim() || `email_${randomUUID()}`,
       from: email.from,
       fromName: email.fromName,
       content,
@@ -111,7 +139,13 @@ export class EmailInboundService {
       return { status: 'saved', messageId: saved.id };
     } catch (err: unknown) {
       const wrapped = ensureError(err);
-      this.logger.error(`[EMAIL] Failed to process inbound email: ${wrapped.message}`);
+      this.logger.error({
+        operation: 'email.inbound.process',
+        status: 'failed',
+        workspaceId,
+        provider: this.getProvider(),
+        errorCode: wrapped.name,
+      });
       throw wrapped;
     }
   }
@@ -128,7 +162,7 @@ export class EmailInboundService {
       });
 
       if (existing) {
-        const updates: Record<string, unknown> = {};
+        const updates: Prisma.ContactUpdateManyMutationInput = {};
         if (!existing.email) {
           updates.email = emailAddress;
         }
@@ -143,11 +177,12 @@ export class EmailInboundService {
         }
       }
     } catch (err: unknown) {
-      this.logger.warn(
-        `[EMAIL] Failed to enrich contact ${emailAddress}: ${
-          err instanceof Error ? err.message : 'unknown'
-        }`,
-      );
+      this.logger.warn({
+        operation: 'email.inbound.enrich_contact',
+        status: 'failed',
+        contact: maskEmail(emailAddress),
+        errorCode: err instanceof Error ? err.message : 'unknown',
+      });
     }
   }
 }

@@ -108,14 +108,23 @@ function processSvg(
 ): string {
   let result = svgText;
 
-  result = result.replace(
-    'width="200" height="200"',
-    'width="100%" height="100%" style="display:block"',
-  );
+  result = result.replace(/<svg\b([^>]*)>/i, (_match, attrs: string) => {
+    const normalizedAttrs = attrs
+      .replace(/\swidth=(["']).*?\1/i, '')
+      .replace(/\sheight=(["']).*?\1/i, '')
+      .replace(/\sstyle=(["']).*?\1/i, '');
+    return `<svg${normalizedAttrs} width="100%" height="100%" style="display:block">`;
+  });
 
-  if (traceColor !== '#FFFFFF') {
-    result = result.replace(/stroke="#FFFFFF"/g, `stroke="${traceColor}"`);
-    result = result.replace(/fill="#FFFFFF"/g, `fill="${traceColor}"`);
+  if (traceColor.toLowerCase() !== '#ffffff') {
+    result = result.replace(
+      /\bstroke=(["'])#?ffffff\1/gi,
+      (_match, quote: string) => `stroke=${quote}${traceColor}${quote}`,
+    );
+    result = result.replace(
+      /\bfill=(["'])#?ffffff\1/gi,
+      (_match, quote: string) => `fill=${quote}${traceColor}${quote}`,
+    );
   }
 
   const injections: string[] = [];
@@ -193,15 +202,8 @@ export function KloelMushroomVisual({
     const svg = parsed.documentElement;
     if (svg.nodeName.toLowerCase() !== 'svg') return;
 
-    svg.setAttribute('aria-hidden', ariaHidden ? 'true' : 'false');
-    if (!ariaHidden) {
-      svg.setAttribute('aria-label', title);
-      svg.setAttribute('role', 'img');
-    } else {
-      svg.setAttribute('role', 'presentation');
-    }
     host.replaceChildren(document.importNode(svg, true));
-  }, [ariaHidden, svgText, title]);
+  }, [svgText]);
 
   if (svgText) {
     return (

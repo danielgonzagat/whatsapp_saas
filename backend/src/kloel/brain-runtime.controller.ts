@@ -24,6 +24,11 @@ function escapeHtmlUnsafeJsonChars(json: string): string {
   return escaped;
 }
 
+function readOptionalStreamString(body: BrainDecideDto, key: string): string | undefined {
+  const value = body.context?.[key];
+  return typeof value === 'string' && value.trim() ? value.trim() : undefined;
+}
+
 @Controller('brain')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class BrainRuntimeController {
@@ -84,58 +89,48 @@ export class BrainRuntimeController {
     @Request() req: AuthenticatedRequest,
     @Res() res: Response,
   ): Promise<void> {
+    const startedAt = Date.now();
+    const workspaceId = req.workspaceId || req.user.workspaceId;
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache, no-transform');
     res.setHeader('Connection', 'keep-alive');
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.flushHeaders?.();
 
-    const writeEvent = (payload: Record<string, unknown>) => {
-      res.write(`data: ${escapeHtmlUnsafeJsonChars(JSON.stringify(payload))}\n\n`);
+    const writeEvent = (payload: Record<string, unknown>): boolean => {
+      if (res.writableEnded || res.destroyed) {
+        return false;
+      }
+      try {
+        res.write(`data: ${escapeHtmlUnsafeJsonChars(JSON.stringify(payload))}\n\n`);
+        return true;
+      } catch {
+        return false;
+      }
     };
 
     try {
-      writeEvent({
-        type: 'status',
-        phase: 'thinking',
-        message: 'Kloel Brain construindo contexto do workspace',
-      });
-      const decision = await this.brain.decide({
+      const events = await this.brain.streamDecisionEvents({
         body,
-        workspaceId: req.workspaceId || req.user.workspaceId,
+        workspaceId,
         userId: req.user.sub,
       });
-      if (decision.conversationId) {
-        writeEvent({
-          type: 'thread',
-          conversationId: decision.conversationId,
-          title: decision.title,
-        });
-      }
-      for (const action of decision.actions) {
-        if (!action || typeof action !== 'object') {
-          continue;
+      for (const event of events) {
+        if (!writeEvent(event)) {
+          break;
         }
-        const record = action as Record<string, unknown>;
-        writeEvent({
-          type: 'tool_result',
-          tool: typeof record.tool === 'string' ? record.tool : 'brain_action',
-          result: record.result,
-          success: true,
-        });
       }
-      writeEvent({
-        type: 'content',
-        content: decision.response || 'Ação processada pelo Kloel Brain.',
-      });
-      writeEvent({ type: 'done', done: true });
     } catch (error: unknown) {
       this.logger.error(
         {
+          durationMs: Date.now() - startedAt,
           errorCode: error instanceof Error ? error.name : 'UnknownError',
+          externalId: readOptionalStreamString(body, 'externalId'),
           operation: 'brain_stream',
+          provider: readOptionalStreamString(body, 'provider'),
           status: 'failure',
-          workspaceId: req.workspaceId || req.user.workspaceId,
+          userId: req.user.sub,
+          workspaceId,
         },
         error instanceof Error ? error.stack : undefined,
       );
@@ -145,7 +140,9 @@ export class BrainRuntimeController {
         done: true,
       });
     } finally {
-      res.end();
+      if (!res.writableEnded) {
+        res.end();
+      }
     }
   }
 }

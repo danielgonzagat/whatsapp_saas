@@ -162,22 +162,29 @@ export class MindPolicyService {
     outcome: number,
     baselineOutcome?: number,
   ): Promise<void> {
-    const rows = await this.prisma.mindPolicy.findMany({
-      where: { outcomeKey, workspaceId, resolvedAt: null },
-      select: {
-        id: true,
-        workspaceId: true,
-        subject: true,
-        decisionType: true,
-        chosen: true,
-        baseline: true,
-        outcomeKey: true,
-      },
-    });
+    await this.prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`
+        SELECT pg_advisory_xact_lock(hashtext(${`resolve:${workspaceId}:${outcomeKey}`}))
+      `;
+      const rows = await tx.mindPolicy.findMany({
+        where: { outcomeKey, workspaceId, resolvedAt: null },
+        select: {
+          id: true,
+          workspaceId: true,
+          subject: true,
+          decisionType: true,
+          chosen: true,
+          baseline: true,
+          outcomeKey: true,
+        },
+      });
 
-    if (rows.length > 0) {
-      await this.prisma.mindPolicy.updateMany({
-        where: { id: { in: rows.map((r) => r.id) }, workspaceId },
+      if (rows.length === 0) {
+        return;
+      }
+
+      const result = await tx.mindPolicy.updateMany({
+        where: { id: { in: rows.map((r) => r.id) }, workspaceId, resolvedAt: null },
         data: {
           outcome,
           baselineOutcome: baselineOutcome ?? null,
@@ -185,15 +192,18 @@ export class MindPolicyService {
         },
       });
 
-      await this.persistResolvedMemories(
-        rows.map((r) => ({
-          ...r,
-          outcomeKey: r.outcomeKey ?? null,
-          outcome,
-        })),
-        baselineOutcome,
-      );
-    }
+      if (result.count > 0) {
+        await this.persistResolvedMemories(
+          rows.map((r) => ({
+            ...r,
+            outcomeKey: r.outcomeKey ?? null,
+            outcome,
+          })),
+          baselineOutcome,
+          tx,
+        );
+      }
+    });
   }
 
   async resolveOpenForSubject(input: {
@@ -325,7 +335,7 @@ export class MindPolicyService {
     const lift = baselineMean > 0 ? (mindMean - baselineMean) / baselineMean : 0;
     const pZScore =
       baselineOutcomes.length > 30
-        ? twoProportionZScore(mindMean, baselineMean, baselineOutcomes.length)
+        ? twoProportionZScore(mindMean, baselineMean, outcomes.length, baselineOutcomes.length)
         : 0;
 
     return { n: rows.length, mindMean, baselineMean, lift, pZScore };
@@ -392,7 +402,8 @@ export class MindPolicyService {
   private persistResolvedMemories(
     rows: Parameters<typeof persistResolvedPolicyMemories>[1],
     baselineOutcome?: number,
+    prisma: Pick<PrismaService, '$executeRaw'> | Prisma.TransactionClient = this.prisma,
   ): Promise<void> {
-    return persistResolvedPolicyMemories(this.prisma, rows, baselineOutcome);
+    return persistResolvedPolicyMemories(prisma, rows, baselineOutcome);
   }
 }

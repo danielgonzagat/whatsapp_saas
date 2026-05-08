@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { randomUUID } from 'crypto';
 import { MindBeliefService } from './mind-belief.service';
 import { MindEventProcessorService } from './mind-event-processor.service';
 import { MindPerceptionService } from './mind-perception.service';
@@ -14,6 +15,18 @@ import {
   resolveCouponBaseline,
   resolveToneBaseline,
 } from './mind-decision-baselines';
+
+function chosenConfidence(result: {
+  chosen: string;
+  decision: { candidates: Array<{ action: string; beliefMean: number }> };
+}): number {
+  return (
+    result.decision.candidates.find((candidate) => candidate.action === result.chosen)
+      ?.beliefMean ??
+    result.decision.candidates[0]?.beliefMean ??
+    0
+  );
+}
 
 @Injectable()
 export class MindService {
@@ -42,10 +55,16 @@ export class MindService {
       durationMs: 0,
     };
 
+    const leaseOwner = randomUUID();
     if (this.activeTicks.has(workspaceId)) {
       return empty;
     }
     this.activeTicks.add(workspaceId);
+    const leaseAcquired = await this.state.tryAcquireTickLease(workspaceId, leaseOwner);
+    if (!leaseAcquired) {
+      this.activeTicks.delete(workspaceId);
+      return empty;
+    }
 
     try {
       const startedAt = Date.now();
@@ -83,10 +102,9 @@ export class MindService {
         });
       }
 
-      this.watermarks.set(
-        workspaceId,
-        events.length ? events[events.length - 1].occurredAt : new Date(),
-      );
+      const nextWatermark = events.length ? events[events.length - 1].occurredAt : watermark;
+
+      this.watermarks.set(workspaceId, nextWatermark);
 
       const tick: MindTick = {
         workspaceId,
@@ -107,7 +125,7 @@ export class MindService {
 
       await this.state.recordSuccess({
         tick,
-        lastWatermark: events.length ? events[events.length - 1].occurredAt : new Date(),
+        lastWatermark: nextWatermark,
         health: {
           status: 'ok',
           expiredSurprise,
@@ -120,6 +138,7 @@ export class MindService {
       throw error;
     } finally {
       this.activeTicks.delete(workspaceId);
+      await this.state.releaseTickLease(workspaceId, leaseOwner);
     }
   }
 
@@ -172,7 +191,7 @@ export class MindService {
 
     return {
       aggressiveness: result.chosen,
-      confidence: result.decision.candidates[0]?.beliefMean ?? 0,
+      confidence: chosenConfidence(result),
       fallback: result.decision.fallbackActive,
     };
   }
@@ -206,7 +225,7 @@ export class MindService {
 
     return {
       choice: result.chosen,
-      confidence: result.decision.candidates[0]?.beliefMean ?? 0,
+      confidence: chosenConfidence(result),
       fallback: result.decision.fallbackActive,
     };
   }
@@ -238,7 +257,7 @@ export class MindService {
 
     return {
       tone: result.chosen,
-      confidence: result.decision.candidates[0]?.beliefMean ?? 0,
+      confidence: chosenConfidence(result),
       fallback: result.decision.fallbackActive,
     };
   }
@@ -276,7 +295,7 @@ export class MindService {
 
     return {
       action: result.chosen,
-      confidence: result.decision.candidates[0]?.beliefMean ?? 0,
+      confidence: chosenConfidence(result),
       fallback: result.decision.fallbackActive,
     };
   }

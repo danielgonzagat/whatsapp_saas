@@ -103,6 +103,22 @@ describe('MindBeliefService', () => {
       };
       const prisma = {
         $queryRaw: jest.fn().mockResolvedValue([existing]),
+        $transaction: jest.fn((callback: (tx: unknown) => Promise<unknown>) =>
+          callback({
+            $queryRaw: jest.fn().mockResolvedValue([existing]),
+            mindBelief: {
+              updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+              findFirstOrThrow: jest.fn().mockResolvedValue({
+                ...existing,
+                alpha: 2,
+                beta: 1,
+                mean: 2 / 3,
+                variance: (2 * 1) / (3 * 3 * 4),
+                samples: 1,
+              }),
+            },
+          }),
+        ),
         mindBelief: {
           findFirst: jest.fn(),
           create: jest.fn().mockResolvedValue(existing),
@@ -150,6 +166,20 @@ describe('MindBeliefService', () => {
       };
       const prisma = {
         $queryRaw: jest.fn().mockResolvedValue([existing]),
+        $transaction: jest.fn((callback: (tx: unknown) => Promise<unknown>) =>
+          callback({
+            $queryRaw: jest.fn().mockResolvedValue([existing]),
+            mindBelief: {
+              updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+              findFirstOrThrow: jest.fn().mockResolvedValue({
+                ...existing,
+                beta: 4,
+                mean: 7 / 11,
+                samples: 11,
+              }),
+            },
+          }),
+        ),
         mindBelief: {
           findFirst: jest.fn(),
           create: jest.fn().mockResolvedValue(existing),

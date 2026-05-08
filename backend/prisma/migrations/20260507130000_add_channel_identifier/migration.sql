@@ -22,10 +22,13 @@ CREATE UNIQUE INDEX "RAC_ChannelIdentifier_workspaceId_channel_value_key"
 CREATE INDEX "RAC_ChannelIdentifier_contactId_idx"
     ON "RAC_ChannelIdentifier"("contactId");
 
+CREATE UNIQUE INDEX IF NOT EXISTS "RAC_Contact_id_workspaceId_key"
+    ON "RAC_Contact"("id", "workspaceId");
+
 -- Foreign keys
 ALTER TABLE "RAC_ChannelIdentifier"
     ADD CONSTRAINT "RAC_ChannelIdentifier_contactId_fkey"
-    FOREIGN KEY ("contactId") REFERENCES "RAC_Contact"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+    FOREIGN KEY ("contactId", "workspaceId") REFERENCES "RAC_Contact"("id", "workspaceId") ON DELETE CASCADE ON UPDATE CASCADE;
 
 ALTER TABLE "RAC_ChannelIdentifier"
     ADD CONSTRAINT "RAC_ChannelIdentifier_workspaceId_fkey"

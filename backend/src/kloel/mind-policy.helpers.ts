@@ -16,9 +16,19 @@ export function mean(values: number[]): number {
   return values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0;
 }
 
-export function twoProportionZScore(mindMean: number, baselineMean: number, n: number): number {
-  const pooled = (mindMean + baselineMean) / 2;
-  const standardError = Math.sqrt((2 * pooled * (1 - pooled)) / n);
+export function twoProportionZScore(
+  mindMean: number,
+  baselineMean: number,
+  mindSamples: number,
+  baselineSamples: number,
+): number {
+  const totalSamples = mindSamples + baselineSamples;
+  if (mindSamples <= 0 || baselineSamples <= 0 || totalSamples <= 0) {
+    return 0;
+  }
+  const pooled =
+    (mindMean * mindSamples + baselineMean * baselineSamples) / (mindSamples + baselineSamples);
+  const standardError = Math.sqrt(pooled * (1 - pooled) * (1 / mindSamples + 1 / baselineSamples));
   return standardError > 0 ? (mindMean - baselineMean) / standardError : 0;
 }
 

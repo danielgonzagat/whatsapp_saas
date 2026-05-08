@@ -73,7 +73,11 @@ function buildService(
     surprise as never,
     { list: jest.fn() } as never,
     policy as never,
-    state as never,
+    {
+      ...state,
+      tryAcquireTickLease: jest.fn().mockResolvedValue(true),
+      releaseTickLease: jest.fn().mockResolvedValue(undefined),
+    } as never,
     events as never,
   );
 }

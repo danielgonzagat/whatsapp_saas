@@ -44,6 +44,7 @@ describe('BrainCommercialGraphService', () => {
           },
         ]),
       },
+      $transaction: jest.fn((queries: Array<Promise<unknown>>) => Promise.all(queries)),
     };
     const service = new BrainCommercialGraphService(prisma as never);
 
@@ -97,6 +98,7 @@ describe('BrainCommercialGraphService', () => {
           },
         ]),
       },
+      $transaction: jest.fn((queries: Array<Promise<unknown>>) => Promise.all(queries)),
     };
     const service = new BrainCommercialGraphService(prisma as never);
 
@@ -125,6 +127,7 @@ describe('BrainCommercialGraphService', () => {
           { action: 'brain.decide', status: 'executed' },
         ]),
       },
+      $transaction: jest.fn((queries: Array<Promise<unknown>>) => Promise.all(queries)),
     };
     const service = new BrainCommercialGraphService(prisma as never);
 

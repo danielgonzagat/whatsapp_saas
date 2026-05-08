@@ -24,7 +24,7 @@ import {
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const PARTICLES_PER_ICON = 150;
 const DUST_DURATION_MS = 3000;
-const ICON_STAGGER_MS = 140;
+const ICON_STAGGER_MS = 0;
 const CONTOUR_SAMPLE_SIZE = 40;
 const PARTICLE_COLOR = 'rgba(168, 168, 182, 0.7)';
 const CONTOUR_ALPHA_THRESHOLD = 30;

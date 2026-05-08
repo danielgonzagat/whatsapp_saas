@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 export interface CommercialGraphNode {
@@ -59,6 +59,8 @@ function outcomeWeight(status: string): number {
 
 @Injectable()
 export class BrainCommercialGraphService {
+  private readonly logger = new Logger(BrainCommercialGraphService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   async buildWorkspaceGraph(workspaceId: string): Promise<{
@@ -66,7 +68,7 @@ export class BrainCommercialGraphService {
     nodes: CommercialGraphNode[];
     window: CommercialGraphWindow;
   }> {
-    const [events, beliefs, policies] = await Promise.all([
+    const [events, beliefs, policies] = await this.prisma.$transaction([
       this.prisma.autopilotEvent.findMany({
         where: { workspaceId },
         orderBy: { createdAt: 'desc' },
@@ -105,6 +107,14 @@ export class BrainCommercialGraphService {
         },
       }),
     ]);
+    this.logger.debug({
+      operation: 'brain.commercial_graph.build',
+      status: 'ok',
+      workspaceId,
+      eventCount: events.length,
+      beliefCount: beliefs.length,
+      policyCount: policies.length,
+    });
 
     const nodes = new Map<string, CommercialGraphNode>();
     const edges = new Map<string, CommercialGraphEdge>();
@@ -213,27 +223,28 @@ export class BrainCommercialGraphService {
     recommendations: CommercialGraphRecommendation[];
     window: CommercialGraphWindow;
   }> {
-    const events = await this.prisma.autopilotEvent.findMany({
-      where: { workspaceId },
-      orderBy: { createdAt: 'desc' },
-      take: 200,
-      select: {
-        action: true,
-        status: true,
-      },
-    });
-
-    const policies = await this.prisma.mindPolicy.findMany({
-      where: { workspaceId, resolvedAt: { not: null } },
-      orderBy: { createdAt: 'desc' },
-      take: 100,
-      select: {
-        decisionType: true,
-        chosen: true,
-        outcome: true,
-        baseline: true,
-      },
-    });
+    const [events, policies] = await this.prisma.$transaction([
+      this.prisma.autopilotEvent.findMany({
+        where: { workspaceId },
+        orderBy: { createdAt: 'desc' },
+        take: 200,
+        select: {
+          action: true,
+          status: true,
+        },
+      }),
+      this.prisma.mindPolicy.findMany({
+        where: { workspaceId, resolvedAt: { not: null } },
+        orderBy: { createdAt: 'desc' },
+        take: 100,
+        select: {
+          decisionType: true,
+          chosen: true,
+          outcome: true,
+          baseline: true,
+        },
+      }),
+    ]);
 
     const actionStats = new Map<string, { wins: number; total: number }>();
     for (const event of events) {
@@ -268,11 +279,21 @@ export class BrainCommercialGraphService {
       }
     }
 
-    recommendations.sort((left, right) => left.confidence - right.confidence);
+    const rankedRecommendations = recommendations
+      .sort((left, right) => left.confidence - right.confidence)
+      .slice(0, 10);
+    this.logger.debug({
+      operation: 'brain.commercial_graph.recommendations',
+      status: 'ok',
+      workspaceId,
+      eventCount: events.length,
+      policyCount: policies.length,
+      recommendationCount: rankedRecommendations.length,
+    });
 
     return {
-      recommendations: recommendations.slice(0, 10),
-      window: { eventCount: events.length, take: 500 },
+      recommendations: rankedRecommendations,
+      window: { eventCount: events.length, take: 200 },
     };
   }
 

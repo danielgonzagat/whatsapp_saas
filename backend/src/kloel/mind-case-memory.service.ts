@@ -4,6 +4,7 @@ import { randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 
 const TOKEN_RE = /[\p{L}\p{N}]+/gu;
+const MAX_OUTCOME_BOOST = 0.25;
 
 function tokenize(text: string): string[] {
   const matches: string[] = text.toLowerCase().match(TOKEN_RE) ?? [];
@@ -79,7 +80,10 @@ export class MindCaseMemoryService {
           input.features ?? {},
           row.features as Record<string, unknown>,
         );
-        const outcomeBoost = typeof row.outcome === 'number' ? Math.max(0, row.outcome) * 0.25 : 0;
+        const outcomeBoost =
+          typeof row.outcome === 'number'
+            ? Math.min(Math.max(0, row.outcome) * 0.25, MAX_OUTCOME_BOOST)
+            : 0;
         return { ...row, similarity: tokenScore * 0.65 + featureScore * 0.35 + outcomeBoost };
       })
       .sort((left, right) => right.similarity - left.similarity)

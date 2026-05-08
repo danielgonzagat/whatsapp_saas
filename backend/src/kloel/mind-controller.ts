@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import {
@@ -82,6 +91,9 @@ export class MindController {
     @Query('predicate') predicate: string,
     @Query('subject') subject?: string,
   ) {
+    if (!predicate?.trim()) {
+      throw new BadRequestException('predicate_required');
+    }
     return this.beliefs.list(workspaceId, predicate, subject);
   }
 

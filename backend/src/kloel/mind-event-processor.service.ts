@@ -128,10 +128,14 @@ export class MindEventProcessorService {
       const intent = toStableString(event.payload.intent) || 'unknown';
       if (['lead_qualified', 'meeting_booked', 'purchase_intent'].includes(intent)) {
         const outcome = intent === 'purchase_intent' ? 1 : 0;
+        const predicate =
+          intent === 'purchase_intent'
+            ? 'P(conversion|segment,price_band,channel,hour)'
+            : 'P(reply|template,hour,channel)';
         const surprise = await this.surprise.resolveBinary(
           event.workspaceId,
           event.subject,
-          'P(reply|template,hour,channel)',
+          predicate,
           outcome,
         );
         if (surprise > 0) {

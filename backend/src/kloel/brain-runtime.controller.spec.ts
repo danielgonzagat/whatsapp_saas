@@ -7,6 +7,7 @@ describe('BrainRuntimeController', () => {
     eventTaxonomy: jest.Mock;
     listCapabilities: jest.Mock;
     observe: jest.Mock;
+    streamDecisionEvents: jest.Mock;
   };
   let graph: { buildWorkspaceGraph: jest.Mock; recommendNextActions: jest.Mock };
   let controller: BrainRuntimeController;
@@ -36,6 +37,22 @@ describe('BrainRuntimeController', () => {
       eventTaxonomy: jest.fn().mockReturnValue({ count: 1, events: ['brain.decide'] }),
       listCapabilities: jest.fn().mockReturnValue({ capabilities: [], count: 0, domains: {} }),
       observe: jest.fn().mockResolvedValue({ mode: 'observe', insights: [] }),
+      streamDecisionEvents: jest.fn().mockResolvedValue([
+        {
+          type: 'status',
+          phase: 'thinking',
+          message: 'Kloel Brain construindo contexto do workspace',
+        },
+        { type: 'thread', conversationId: 'thread-1', title: 'Produto novo' },
+        {
+          type: 'tool_result',
+          tool: 'create_product',
+          result: { success: true },
+          success: true,
+        },
+        { type: 'content', content: 'Produto criado.' },
+        { type: 'done', done: true },
+      ]),
     };
     graph = {
       buildWorkspaceGraph: jest.fn().mockResolvedValue({ nodes: [], edges: [] }),

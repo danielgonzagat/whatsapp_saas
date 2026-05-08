@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
-import { randomUUID } from 'crypto';
+import { createHash, randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { BrainEventSpineService } from './brain-event-spine.service';
 
@@ -21,6 +21,24 @@ const RULES: ConceptRule[] = [
   { concept: 'high_ticket_product', patterns: [/premium/i, /alto valor/i, /mentoria/i] },
   { concept: 'tight_margin_product', patterns: [/menor valor/i, /sem margem/i] },
 ];
+
+function stableConceptKey(input: {
+  concept: string;
+  subject: string;
+  text: string;
+  workspaceId: string;
+}): string {
+  return createHash('sha256')
+    .update(input.workspaceId)
+    .update('\0')
+    .update(input.subject)
+    .update('\0')
+    .update(input.concept)
+    .update('\0')
+    .update(input.text)
+    .digest('hex')
+    .slice(0, 24);
+}
 
 @Injectable()
 export class MindConceptService {
@@ -69,7 +87,14 @@ export class MindConceptService {
         subject: input.subject,
         eventType: 'concept.detected',
         occurredAt: input.occurredAt ?? new Date(),
-        idempotencyKey: `concept:${input.workspaceId}:${input.subject}:${detection.concept}:${Date.now()}`,
+        idempotencyKey: `concept:${input.workspaceId}:${input.subject}:${
+          detection.concept
+        }:${stableConceptKey({
+          workspaceId: input.workspaceId,
+          subject: input.subject,
+          concept: detection.concept,
+          text: input.text,
+        })}`,
         payload: {
           concept: detection.concept,
           confidence: detection.confidence,

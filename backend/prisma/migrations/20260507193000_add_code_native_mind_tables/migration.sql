@@ -4,6 +4,8 @@ CREATE TABLE IF NOT EXISTS "RAC_MindWorkspaceState" (
   "lastWatermark" TIMESTAMP(3),
   "lastTickAt" TIMESTAMP(3),
   "lastTickMs" INTEGER NOT NULL DEFAULT 0,
+  "tickLeaseOwner" TEXT,
+  "tickLeaseUntil" TIMESTAMP(3),
   "tickCount" INTEGER NOT NULL DEFAULT 0,
   "lastError" TEXT,
   "perceivedWindow" INTEGER NOT NULL DEFAULT 0,
@@ -43,7 +45,8 @@ CREATE TABLE IF NOT EXISTS "RAC_MindConceptDetection" (
   "evidence" TEXT NOT NULL,
   "features" JSONB NOT NULL,
   "occurredAt" TIMESTAMP(3) NOT NULL,
-  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX IF NOT EXISTS "RAC_MindConceptDetection_workspaceId_concept_occurredAt_idx"
@@ -138,7 +141,8 @@ CREATE TABLE IF NOT EXISTS "RAC_MindGuardAudit" (
   "allowed" BOOLEAN NOT NULL,
   "reason" TEXT NOT NULL,
   "context" JSONB NOT NULL,
-  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX IF NOT EXISTS "RAC_MindGuardAudit_workspaceId_guardName_createdAt_idx"
@@ -151,7 +155,8 @@ CREATE TABLE IF NOT EXISTS "RAC_MindDailyReport" (
   "content" TEXT NOT NULL,
   "storageKey" TEXT,
   "metrics" JSONB NOT NULL,
-  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS "RAC_MindDailyReport_workspaceId_reportDate_key"

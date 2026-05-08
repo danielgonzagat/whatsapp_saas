@@ -201,6 +201,46 @@ export class BrainRuntimeService {
     };
   }
 
+  async streamDecisionEvents(params: {
+    body: BrainDecideDto;
+    userId?: string;
+    workspaceId: string;
+  }): Promise<Array<Record<string, unknown>>> {
+    const events: Array<Record<string, unknown>> = [
+      {
+        type: 'status',
+        phase: 'thinking',
+        message: 'Kloel Brain construindo contexto do workspace',
+      },
+    ];
+    const decision = await this.decide(params);
+    if (decision.conversationId) {
+      events.push({
+        type: 'thread',
+        conversationId: decision.conversationId,
+        title: decision.title,
+      });
+    }
+    for (const action of decision.actions) {
+      if (!action || typeof action !== 'object') {
+        continue;
+      }
+      const record = action as Record<string, unknown>;
+      events.push({
+        type: 'tool_result',
+        tool: typeof record.tool === 'string' ? record.tool : 'brain_action',
+        result: record.result,
+        success: true,
+      });
+    }
+    events.push({
+      type: 'content',
+      content: decision.response || 'Ação processada pelo Kloel Brain.',
+    });
+    events.push({ type: 'done', done: true });
+    return events;
+  }
+
   async observe(params: { body: BrainObserveDto; userId?: string; workspaceId: string }): Promise<{
     capabilities: number;
     dataKeys: string[];

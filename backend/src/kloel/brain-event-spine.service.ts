@@ -11,9 +11,9 @@ function isJsonRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-function toInputJsonValue(value: unknown): Prisma.InputJsonValue {
+function toInputJsonValue(value: unknown): Prisma.InputJsonValue | null {
   if (value === null) {
-    return 'null';
+    return null;
   }
   if (typeof value === 'string' || typeof value === 'boolean') {
     return value;
@@ -119,11 +119,9 @@ export class BrainEventSpineService {
         },
       });
 
-      if (event.idempotencyKey) {
-        const existing = await this.checkIdempotency(event.workspaceId, event.idempotencyKey);
-        if (existing) {
-          return existing.id;
-        }
+      const existing = await this.checkIdempotency(event.workspaceId, idempotencyKey);
+      if (existing) {
+        return existing.id;
       }
 
       const created = await this.prisma.autopilotEvent.create({
@@ -167,21 +165,24 @@ export class BrainEventSpineService {
       where: { workspaceId, status: 'pending' },
       orderBy: { createdAt: 'asc' },
       take: limit,
+      select: { id: true },
     });
 
-    for (const row of rows) {
-      await this.prisma.mindOutboxEvent.updateMany({
-        where: { id: row.id, workspaceId },
-        data: {
-          status: 'dispatched',
-          dispatchedAt: new Date(),
-          attempts: { increment: 1 },
-          lastError: null,
-        },
-      });
+    if (rows.length === 0) {
+      return { dispatched: 0 };
     }
 
-    return { dispatched: rows.length };
+    const result = await this.prisma.mindOutboxEvent.updateMany({
+      where: { id: { in: rows.map((row) => row.id) }, workspaceId, status: 'pending' },
+      data: {
+        status: 'dispatched',
+        dispatchedAt: new Date(),
+        attempts: { increment: 1 },
+        lastError: null,
+      },
+    });
+
+    return { dispatched: result.count };
   }
 
   private resolveIntent(eventType: string): string {

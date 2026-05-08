@@ -45,13 +45,14 @@ export class MindObservabilityService {
 
   async lift(workspaceId: string, sinceDays = 14) {
     const rows = await Promise.all(
-      MIND_DECISION_CATALOG.map((spec) =>
-        this.policy.harness(workspaceId, spec.decisionType, sinceDays).then((lift) => ({
+      MIND_DECISION_CATALOG.map(async (spec) => {
+        const lift = await this.policy.harness(workspaceId, spec.decisionType, sinceDays);
+        return {
           decisionType: spec.decisionType,
           fallbackActive: lift.lift < 0 && lift.pZScore <= -1.96 && lift.n >= 30,
           ...lift,
-        })),
-      ),
+        };
+      }),
     );
     return { workspaceId, sinceDays, decisions: rows };
   }
@@ -101,8 +102,9 @@ export class MindObservabilityService {
     return { policy, similarCases, graphEdges };
   }
 
-  briefing(workspaceId: string) {
-    return this.verbalizer.narrate(workspaceId).then((briefing) => ({ briefing }));
+  async briefing(workspaceId: string) {
+    const briefing = await this.verbalizer.narrate(workspaceId);
+    return { briefing };
   }
 
   async ask(workspaceId: string, question: string) {

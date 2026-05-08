@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
@@ -11,6 +11,8 @@ function score(alpha: number, beta: number, pulls: number, totalPulls: number): 
 
 @Injectable()
 export class MindBanditService {
+  private readonly logger = new Logger(MindBanditService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   async register(input: {
@@ -19,45 +21,88 @@ export class MindBanditService {
     decisionType: string;
     workspaceId: string;
   }) {
-    for (const arm of input.arms) {
-      await this.prisma.mindBanditArm.upsert({
-        where: {
-          workspaceId_decisionType_arm: {
+    const startedAt = Date.now();
+    try {
+      for (const arm of input.arms) {
+        await this.prisma.mindBanditArm.upsert({
+          where: {
+            workspaceId_decisionType_arm: {
+              workspaceId: input.workspaceId,
+              decisionType: input.decisionType,
+              arm,
+            },
+          },
+          update: { isActive: true, context: (input.context ?? {}) as Prisma.InputJsonValue },
+          create: {
+            id: randomUUID(),
             workspaceId: input.workspaceId,
             decisionType: input.decisionType,
             arm,
+            isActive: true,
+            context: (input.context ?? {}) as Prisma.InputJsonValue,
           },
-        },
-        update: { isActive: true, context: (input.context ?? {}) as Prisma.InputJsonValue },
-        create: {
-          id: randomUUID(),
-          workspaceId: input.workspaceId,
-          decisionType: input.decisionType,
-          arm,
-          context: (input.context ?? {}) as Prisma.InputJsonValue,
-        },
+        });
+      }
+      this.logger.debug({
+        operation: 'mind.bandit.register',
+        status: 'ok',
+        durationMs: Date.now() - startedAt,
+        workspaceId: input.workspaceId,
+        decisionType: input.decisionType,
+        armCount: input.arms.length,
       });
+      return this.status(input.workspaceId, input.decisionType);
+    } catch (error: unknown) {
+      this.logger.warn({
+        operation: 'mind.bandit.register',
+        status: 'error',
+        durationMs: Date.now() - startedAt,
+        workspaceId: input.workspaceId,
+        decisionType: input.decisionType,
+        errorCode: error instanceof Error ? error.message : 'unknown',
+      });
+      throw error;
     }
-    return this.status(input.workspaceId, input.decisionType);
   }
 
   async choose(workspaceId: string, decisionType: string) {
-    const arms = await this.prisma.mindBanditArm.findMany({
-      where: { workspaceId, decisionType, isActive: true },
-    });
-    const totalPulls = arms.reduce((sum, arm) => sum + arm.pulls, 0);
-    const chosen = [...arms].sort(
-      (left, right) =>
-        score(right.alpha, right.beta, right.pulls, totalPulls) -
-        score(left.alpha, left.beta, left.pulls, totalPulls),
-    )[0];
-    if (!chosen) return null;
+    const startedAt = Date.now();
+    try {
+      const arms = await this.prisma.mindBanditArm.findMany({
+        where: { workspaceId, decisionType, isActive: true },
+      });
+      const totalPulls = arms.reduce((sum, arm) => sum + arm.pulls, 0);
+      const chosen = [...arms].sort(
+        (left, right) =>
+          score(right.alpha, right.beta, right.pulls, totalPulls) -
+          score(left.alpha, left.beta, left.pulls, totalPulls),
+      )[0];
+      if (!chosen) return null;
 
-    await this.prisma.mindBanditArm.updateMany({
-      where: { id: chosen.id, workspaceId, decisionType },
-      data: { pulls: { increment: 1 } },
-    });
-    return { arm: chosen.arm, decisionType, workspaceId };
+      await this.prisma.mindBanditArm.updateMany({
+        where: { id: chosen.id, workspaceId, decisionType },
+        data: { pulls: { increment: 1 } },
+      });
+      this.logger.debug({
+        operation: 'mind.bandit.choose',
+        status: 'ok',
+        durationMs: Date.now() - startedAt,
+        workspaceId,
+        decisionType,
+        arm: chosen.arm,
+      });
+      return { arm: chosen.arm, decisionType, workspaceId };
+    } catch (error: unknown) {
+      this.logger.warn({
+        operation: 'mind.bandit.choose',
+        status: 'error',
+        durationMs: Date.now() - startedAt,
+        workspaceId,
+        decisionType,
+        errorCode: error instanceof Error ? error.message : 'unknown',
+      });
+      throw error;
+    }
   }
 
   async recordOutcome(input: {
@@ -66,21 +111,43 @@ export class MindBanditService {
     outcome: 0 | 1;
     workspaceId: string;
   }) {
-    await this.prisma.mindBanditArm.update({
-      where: {
-        workspaceId_decisionType_arm: {
-          workspaceId: input.workspaceId,
-          decisionType: input.decisionType,
-          arm: input.arm,
+    const startedAt = Date.now();
+    try {
+      await this.prisma.mindBanditArm.update({
+        where: {
+          workspaceId_decisionType_arm: {
+            workspaceId: input.workspaceId,
+            decisionType: input.decisionType,
+            arm: input.arm,
+          },
         },
-      },
-      data: {
-        alpha: { increment: input.outcome },
-        beta: { increment: 1 - input.outcome },
-        wins: { increment: input.outcome },
-      },
-    });
-    return this.status(input.workspaceId, input.decisionType);
+        data: {
+          alpha: { increment: input.outcome },
+          beta: { increment: 1 - input.outcome },
+          wins: { increment: input.outcome },
+        },
+      });
+      this.logger.debug({
+        operation: 'mind.bandit.record_outcome',
+        status: 'ok',
+        durationMs: Date.now() - startedAt,
+        workspaceId: input.workspaceId,
+        decisionType: input.decisionType,
+        arm: input.arm,
+      });
+      return this.status(input.workspaceId, input.decisionType);
+    } catch (error: unknown) {
+      this.logger.warn({
+        operation: 'mind.bandit.record_outcome',
+        status: 'error',
+        durationMs: Date.now() - startedAt,
+        workspaceId: input.workspaceId,
+        decisionType: input.decisionType,
+        arm: input.arm,
+        errorCode: error instanceof Error ? error.message : 'unknown',
+      });
+      throw error;
+    }
   }
 
   async status(workspaceId: string, decisionType: string) {

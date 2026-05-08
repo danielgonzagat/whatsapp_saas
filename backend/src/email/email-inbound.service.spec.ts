@@ -1,13 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { EmailInboundService, type InboundEmail } from './email-inbound.service';
 import { OmnichannelService } from '../inbox/omnichannel.service';
-import { InboxService } from '../inbox/inbox.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 describe('EmailInboundService', () => {
   let service: EmailInboundService;
   let omnichannel: jest.Mocked<Partial<OmnichannelService>>;
-  let inbox: jest.Mocked<Partial<InboxService>>;
   let prisma: {
     contact: {
       findUnique: jest.Mock;
@@ -18,10 +16,6 @@ describe('EmailInboundService', () => {
   beforeEach(async () => {
     omnichannel = {
       handleIncomingMessage: jest.fn().mockResolvedValue({ id: 'msg-01' }),
-    };
-
-    inbox = {
-      saveMessageByPhone: jest.fn().mockResolvedValue({ id: 'msg-02' }),
     };
 
     prisma = {
@@ -35,7 +29,6 @@ describe('EmailInboundService', () => {
       providers: [
         EmailInboundService,
         { provide: OmnichannelService, useValue: omnichannel },
-        { provide: InboxService, useValue: inbox },
         { provide: PrismaService, useValue: prisma },
       ],
     }).compile();
@@ -105,18 +98,18 @@ describe('EmailInboundService', () => {
       expect(result.messageId).toBe('msg-01');
     });
 
-    it('handles email with HTML body (strips tags to plain text)', async () => {
+    it('handles email with HTML body (strips tags and decodes entities)', async () => {
       const htmlEmail: InboundEmail = {
         from: 'cliente@example.com',
         to: 'suporte@kloel.com',
         subject: 'Teste HTML',
-        bodyHtml: '<p>Ola <b>mundo</b>!</p>',
+        bodyHtml: '<p>Ola <b>mundo</b> &amp; time &lt;3&gt;</p>',
       };
 
       await service.processInboundEmail('ws-1', htmlEmail);
 
       const call = (omnichannel.handleIncomingMessage as jest.Mock).mock.calls[0][0];
-      expect(call.content).toContain('Ola mundo!');
+      expect(call.content).toContain('Ola mundo & time <3>');
     });
 
     it('handles email with attachments', async () => {
@@ -182,6 +175,26 @@ describe('EmailInboundService', () => {
       await service.processInboundEmail('ws-1', sampleEmail);
 
       expect(prisma.contact.updateMany).not.toHaveBeenCalled();
+    });
+
+    it('rethrows when omnichannel processing fails', async () => {
+      (omnichannel.handleIncomingMessage as jest.Mock).mockRejectedValueOnce(
+        new Error('omnichannel down'),
+      );
+
+      await expect(service.processInboundEmail('ws-1', sampleEmail)).rejects.toThrow(
+        'omnichannel down',
+      );
+    });
+
+    it('continues processing when contact enrichment fails', async () => {
+      prisma.contact.findUnique.mockRejectedValueOnce(new Error('db timeout'));
+
+      await expect(service.processInboundEmail('ws-1', sampleEmail)).resolves.toEqual({
+        status: 'saved',
+        messageId: 'msg-01',
+      });
+      expect(omnichannel.handleIncomingMessage).toHaveBeenCalledTimes(1);
     });
   });
 });
