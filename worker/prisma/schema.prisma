@@ -334,6 +334,7 @@ model Contact {
   checkoutSocialLeads CheckoutSocialLead[]
 
   @@unique([workspaceId, phone])
+  @@unique([id, workspaceId])
   @@map("RAC_Contact")
 }
 
@@ -352,13 +353,12 @@ model ContactInsight {
 }
 
 model ChannelIdentifier {
-  id        String  @id @default(uuid())
-  channel   String // WHATSAPP, INSTAGRAM, MESSENGER, EMAIL, TIKTOK
-  value     String // channel-specific identifier (phone, IG-SID, FB-PSID, email)
-  contactId String
-  contact   Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
-
+  id          String    @id @default(uuid())
+  channel     String // WHATSAPP, INSTAGRAM, MESSENGER, EMAIL, TIKTOK
+  value       String // channel-specific identifier (phone, IG-SID, FB-PSID, email)
+  contactId   String
   workspaceId String
+  contact     Contact   @relation(fields: [contactId, workspaceId], references: [id, workspaceId], onDelete: Cascade)
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   isPrimary  Boolean   @default(false)
@@ -3795,6 +3795,8 @@ model MindWorkspaceState {
   lastWatermark   DateTime?
   lastTickAt      DateTime?
   lastTickMs      Int       @default(0)
+  tickLeaseOwner  String?
+  tickLeaseUntil  DateTime?
   tickCount       Int       @default(0)
   lastError       String?
   perceivedWindow Int       @default(0)
@@ -3838,6 +3840,7 @@ model MindConceptDetection {
   features    Json      @db.JsonB
   occurredAt  DateTime
   createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@index([workspaceId, concept, occurredAt(sort: Desc)])
   @@index([workspaceId, subject, occurredAt(sort: Desc)])
@@ -3932,6 +3935,7 @@ model MindGuardAudit {
   reason      String
   context     Json      @db.JsonB
   createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@index([workspaceId, guardName, createdAt(sort: Desc)])
   @@map("RAC_MindGuardAudit")
@@ -3946,6 +3950,7 @@ model MindDailyReport {
   storageKey  String?
   metrics     Json      @db.JsonB
   createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@unique([workspaceId, reportDate])
   @@map("RAC_MindDailyReport")
