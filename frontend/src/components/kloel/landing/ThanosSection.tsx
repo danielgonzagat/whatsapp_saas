@@ -172,6 +172,7 @@ function ThanosOmniSales({ runToken }: { runToken: number }) {
                 msg.f === '$' ? (
                   <div
                     key={key + '-' + msg.f + '-' + msg.t}
+                    className="thanos-sales-message"
                     style={{ textAlign: 'center', animation: 'thanosIn .18s ease both' }}
                   >
                     <span style={{ fontSize: 9, fontWeight: 700, color: SUCCESS, fontFamily: M }}>
@@ -181,6 +182,7 @@ function ThanosOmniSales({ runToken }: { runToken: number }) {
                 ) : (
                   <div
                     key={key + '-' + msg.f + '-' + msg.t}
+                    className="thanos-sales-message"
                     style={{
                       alignSelf: msg.f === 'a' ? 'flex-end' : 'flex-start',
                       maxWidth: '85%',
