@@ -19,7 +19,7 @@ describe('MindQualityService', () => {
       expect(result.invariant).toBe('no_cross_workspace_reads');
     });
 
-    it('fails when any record belongs to a foreign workspace', () => {
+    it('fails when a record belongs to a foreign workspace', () => {
       const result = service.checkCrossWorkspaceReads('ws-1', [
         { workspaceId: 'ws-1' },
         { workspaceId: 'ws-2' },
