@@ -5,6 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { AudioService } from './audio.service';
+import { ChannelTransportRegistry } from './channel-transport.registry';
 import {
   NON_DIGIT_RE,
   toolSendAudio as toolSendAudioFn,
@@ -45,6 +46,7 @@ export class KloelWhatsAppToolsService {
     private readonly prisma: PrismaService,
     private readonly whatsappService: WhatsappService,
     private readonly providerRegistry: WhatsAppProviderRegistry,
+    private readonly transports: ChannelTransportRegistry,
     private readonly audioService: AudioService,
     private readonly planLimits: PlanLimitsService,
     @Optional() private readonly opsAlert?: OpsAlertService,
@@ -145,7 +147,15 @@ export class KloelWhatsAppToolsService {
 
     try {
       await this.planLimits.ensureDailyMessageQuota(workspaceId);
-      await this.whatsappService.sendMessage(workspaceId, normalizedPhone, message);
+      const send = await this.transports.send(workspaceId, {
+        workspaceId,
+        channel: 'whatsapp',
+        recipientId: normalizedPhone,
+        content: message,
+      });
+      if (!send.success) {
+        throw new Error(send.blockedReason || send.error || 'Falha ao enviar mensagem');
+      }
       await this.prisma.message.updateMany({
         where: { id: msg.id, workspaceId },
         data: { status: 'SENT' },
@@ -292,7 +302,7 @@ export class KloelWhatsAppToolsService {
       {
         audioService: this.audioService,
         planLimits: this.planLimits,
-        whatsappService: this.whatsappService,
+        transports: this.transports,
         logger: this.logger,
         opsAlert: this.opsAlert,
       },
@@ -306,7 +316,7 @@ export class KloelWhatsAppToolsService {
       {
         prisma: this.prisma,
         planLimits: this.planLimits,
-        whatsappService: this.whatsappService,
+        transports: this.transports,
         logger: this.logger,
         opsAlert: this.opsAlert,
       },

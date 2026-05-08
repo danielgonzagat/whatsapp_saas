@@ -1,8 +1,9 @@
-import { Inject, Injectable, Logger, forwardRef, Optional } from '@nestjs/common';
-import { WhatsappService } from '../whatsapp/whatsapp.service';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { AudioService } from './audio.service';
 import type { ToolArgs } from './unified-agent.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import { ChannelTransportRegistry } from './channel-transport.registry';
+import type { ChannelName, ChannelSendResult } from './channel-transport.types';
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -15,8 +16,7 @@ export class UnifiedAgentActionsMessagingService {
   private readonly logger = new Logger(UnifiedAgentActionsMessagingService.name);
 
   constructor(
-    @Inject(forwardRef(() => WhatsappService))
-    private readonly whatsappService: WhatsappService,
+    private readonly transports: ChannelTransportRegistry,
     private readonly audioService: AudioService,
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
@@ -49,6 +49,24 @@ export class UnifiedAgentActionsMessagingService {
 
   resolveComplianceMode(context?: UnknownRecord): 'reactive' | 'proactive' {
     return context?.deliveryMode === 'reactive' ? 'reactive' : 'proactive';
+  }
+
+  private resolveChannel(context?: UnknownRecord): ChannelName {
+    const rawChannel =
+      this.readOptionalText(context?.channel) ||
+      this.readOptionalText(context?.sourceChannel) ||
+      this.readOptionalText(context?.provider);
+    const channel = rawChannel?.toLowerCase();
+    if (
+      channel === 'instagram' ||
+      channel === 'messenger' ||
+      channel === 'tiktok' ||
+      channel === 'email' ||
+      channel === 'whatsapp'
+    ) {
+      return channel;
+    }
+    return 'whatsapp';
   }
 
   buildWhatsAppSendOptions(
@@ -87,6 +105,40 @@ export class UnifiedAgentActionsMessagingService {
     };
   }
 
+  async sendViaTransport(
+    workspaceId: string,
+    recipientId: string,
+    content: string,
+    context?: UnknownRecord,
+    extra: UnknownRecord = {},
+  ): Promise<ChannelSendResult> {
+    const options = this.buildWhatsAppSendOptions(context, extra);
+    const result = await this.transports.send(workspaceId, {
+      workspaceId,
+      channel: this.resolveChannel(context),
+      recipientId,
+      content,
+      mediaUrl: options.mediaUrl,
+      mediaType: options.mediaType,
+    });
+
+    this.logger.log(
+      [
+        '[AGENT] Transport result',
+        `channel=${this.resolveChannel(context)}`,
+        `success=${result.success}`,
+        `blocked=${result.blocked}`,
+        result.messageId ? `messageId=${result.messageId}` : null,
+        result.error ? `error=${result.error}` : null,
+        result.blockedReason ? `blockedReason=${result.blockedReason}` : null,
+      ]
+        .filter(Boolean)
+        .join(' '),
+    );
+
+    return result;
+  }
+
   // ───────── send actions ─────────
 
   // messageLimit: enforced via PlanLimitsService.trackMessageSend
@@ -102,17 +154,13 @@ export class UnifiedAgentActionsMessagingService {
       if (!msgText) return { success: false, error: 'Mensagem é obrigatória' };
 
       this.logger.log(`[AGENT] Enviando mensagem para ${phone}: "${msgText.substring(0, 50)}..."`);
-      const result = await this.whatsappService.sendMessage(
-        workspaceId,
-        phone,
-        msgText,
-        this.buildWhatsAppSendOptions(context),
-      );
+      const result = await this.sendViaTransport(workspaceId, phone, msgText, context);
       const sendResult: Record<string, unknown> = this.isRecord(result) ? result : {};
 
-      if (result.error) {
-        if (!isTestEnv) this.logger.error(`[AGENT] Erro ao enviar: ${result.message}`);
-        return { success: false, error: result.message };
+      if (!result.success) {
+        const message = result.blockedReason || result.error || 'Falha ao enviar mensagem';
+        if (!isTestEnv) this.logger.error(`[AGENT] Erro ao enviar: ${message}`);
+        return { success: false, error: message };
       }
 
       const delivery = this.readText(sendResult.delivery).toLowerCase();
@@ -155,15 +203,15 @@ export class UnifiedAgentActionsMessagingService {
       const caption = this.str(args.caption);
       if (!url) return { success: false, error: 'URL da mídia é obrigatória' };
       this.logger.log(`[AGENT] Enviando mídia para ${phone}: ${type} - ${url.substring(0, 50)}...`);
-      const result = await this.whatsappService.sendMessage(
-        workspaceId,
-        phone,
+      const result = await this.sendViaTransport(workspaceId, phone, caption, context, {
+        mediaUrl: url,
+        mediaType: type,
         caption,
-        this.buildWhatsAppSendOptions(context, { mediaUrl: url, mediaType: type, caption }),
-      );
-      if (result.error) {
-        this.logger.error(`[AGENT] Erro ao enviar mídia: ${result.message}`);
-        return { success: false, error: result.message };
+      });
+      if (!result.success) {
+        const message = result.blockedReason || result.error || 'Falha ao enviar mídia';
+        this.logger.error(`[AGENT] Erro ao enviar mídia: ${message}`);
+        return { success: false, error: message };
       }
       this.logger.log(`[AGENT] Mídia enviada com sucesso para ${phone}`);
       return { success: true, type, url, caption, sent: true };
@@ -196,15 +244,14 @@ export class UnifiedAgentActionsMessagingService {
       const audioDataUrl = `data:audio/mp3;base64,${base64Audio}`;
       this.logger.log(`[AGENT] Enviando nota de voz para ${phone}...`);
       // messageLimit: enforced via PlanLimitsService.trackMessageSend
-      const result = await this.whatsappService.sendMessage(
-        workspaceId,
-        phone,
-        '',
-        this.buildWhatsAppSendOptions(context, { mediaUrl: audioDataUrl, mediaType: 'audio' }),
-      );
-      if (result.error) {
-        this.logger.error(`[AGENT] Erro ao enviar áudio: ${result.message}`);
-        return { success: false, error: result.message };
+      const result = await this.sendViaTransport(workspaceId, phone, '', context, {
+        mediaUrl: audioDataUrl,
+        mediaType: 'audio',
+      });
+      if (!result.success) {
+        const message = result.blockedReason || result.error || 'Falha ao enviar áudio';
+        this.logger.error(`[AGENT] Erro ao enviar áudio: ${message}`);
+        return { success: false, error: message };
       }
       this.logger.log(`[AGENT] Nota de voz enviada com sucesso para ${phone}`);
       return { success: true, text, voice, sent: true, audioSize: audioBuffer.length };
@@ -236,15 +283,14 @@ export class UnifiedAgentActionsMessagingService {
       const base64Audio = audioBuffer.toString('base64');
       const audioDataUrl = `data:audio/mp3;base64,${base64Audio}`;
       // messageLimit: enforced via PlanLimitsService.trackMessageSend
-      const result = await this.whatsappService.sendMessage(
-        workspaceId,
-        phone,
-        '',
-        this.buildWhatsAppSendOptions(context, { mediaUrl: audioDataUrl, mediaType: 'audio' }),
-      );
-      if (result.error) {
-        this.logger.error(`[AGENT] Erro ao enviar áudio: ${result.message}`);
-        return { success: false, error: result.message };
+      const result = await this.sendViaTransport(workspaceId, phone, '', context, {
+        mediaUrl: audioDataUrl,
+        mediaType: 'audio',
+      });
+      if (!result.success) {
+        const message = result.blockedReason || result.error || 'Falha ao enviar áudio';
+        this.logger.error(`[AGENT] Erro ao enviar áudio: ${message}`);
+        return { success: false, error: message };
       }
       this.logger.log(`[AGENT] Áudio enviado para ${phone}`);
       return { success: true, text, voice, sent: true, audioSize: audioBuffer.length };

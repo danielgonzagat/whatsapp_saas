@@ -16,6 +16,7 @@ describe('KloelService', () => {
   let service: KloelService;
   let prisma: KloelPrismaMock;
   let whatsappService: { listChats: jest.Mock };
+  let transportRegistry: { send: jest.Mock };
   let unifiedAgentService: { executeTool: jest.Mock };
   let threadService: KloelThreadService;
   let replyEngineService: KloelReplyEngineService;
@@ -89,6 +90,9 @@ describe('KloelService', () => {
         },
       ]),
     };
+    transportRegistry = {
+      send: jest.fn().mockResolvedValue({ success: true, blocked: false, messageId: 'msg-1' }),
+    };
 
     unifiedAgentService = {
       executeTool: jest.fn().mockResolvedValue({ error: 'Unknown tool' }),
@@ -159,6 +163,7 @@ describe('KloelService', () => {
       prisma as never as ConstructorParameters<typeof KloelWhatsAppToolsService>[0],
       whatsappService as never,
       { getSessionStatus: jest.fn(), startSession: jest.fn() } as never,
+      transportRegistry as never,
       { textToSpeech: jest.fn(), transcribeAudio: jest.fn() } as never,
       planLimitsMock as never,
     );

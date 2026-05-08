@@ -1,11 +1,10 @@
-import { Inject, Injectable, Logger, forwardRef, Optional } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import OpenAI from 'openai';
 import { AuditService } from '../audit/audit.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { StorageService } from '../common/storage/storage.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { UnifiedAgentActionsBillingService } from './unified-agent-actions-billing.service';
 import { UnifiedAgentActionsCommerceService } from './unified-agent-actions-commerce.service';
 import { UnifiedAgentActionsCrmService } from './unified-agent-actions-crm.service';
@@ -31,8 +30,6 @@ export class UnifiedAgentActionsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly storageService: StorageService,
-    @Inject(forwardRef(() => WhatsappService))
-    private readonly whatsappService: WhatsappService,
     private readonly planLimits: PlanLimitsService,
     private readonly messaging: UnifiedAgentActionsMessagingService,
     private readonly crm: UnifiedAgentActionsCrmService,
@@ -107,17 +104,23 @@ export class UnifiedAgentActionsService {
         }
       }
       if (!documentUrl) return { success: false, error: 'URL ou nome do documento é obrigatório' };
-      const result = await this.whatsappService.sendMessage(
+      const result = await this.messaging.sendViaTransport(
         workspaceId,
         phone,
         documentCaption || '',
-        this.messaging.buildWhatsAppSendOptions(context, {
+        context,
+        {
           mediaUrl: documentUrl,
           mediaType: 'document',
           caption: documentCaption || '',
-        }),
+        },
       );
-      if (result.error) return { success: false, error: result.message };
+      if (!result.success) {
+        return {
+          success: false,
+          error: result.blockedReason || result.error || 'Falha ao enviar documento',
+        };
+      }
       return {
         success: true,
         documentName: documentName || 'URL direta',

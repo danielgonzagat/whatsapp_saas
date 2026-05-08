@@ -19,6 +19,7 @@ type UnifiedAgentPrismaMock = {
 describe('UnifiedAgentService', () => {
   let prisma: UnifiedAgentPrismaMock;
   let whatsappService: { sendMessage: jest.Mock };
+  let transportRegistry: { send: jest.Mock };
   let paymentService: { createPayment: jest.Mock };
   let configMock: ConfigService;
   let service: UnifiedAgentService;
@@ -57,6 +58,9 @@ describe('UnifiedAgentService', () => {
     whatsappService = {
       sendMessage: jest.fn().mockResolvedValue({ error: false, delivery: 'sent', direct: true }),
     };
+    transportRegistry = {
+      send: jest.fn().mockResolvedValue({ success: true, blocked: false, messageId: 'msg-1' }),
+    };
 
     paymentService = {
       createPayment: jest.fn().mockResolvedValue({
@@ -84,7 +88,7 @@ describe('UnifiedAgentService', () => {
     ctx = new UnifiedAgentContextService(contextData);
     response = new UnifiedAgentResponseService({} as never);
     const messaging = new UnifiedAgentActionsMessagingService(
-      whatsappService as never,
+      transportRegistry as never,
       {} as never,
     );
     const commerce = new UnifiedAgentActionsCommerceService(
@@ -97,7 +101,6 @@ describe('UnifiedAgentService', () => {
     const actions = new UnifiedAgentActionsService(
       prisma as never,
       {} as never,
-      whatsappService as never,
       {} as never,
       messaging,
       {} as never,
@@ -151,14 +154,13 @@ describe('UnifiedAgentService', () => {
       },
     );
 
-    expect(whatsappService.sendMessage).toHaveBeenCalledWith(
+    expect(transportRegistry.send).toHaveBeenCalledWith(
       'ws-1',
-      '5511999999999',
-      expect.stringContaining('Test Product'),
-      {
-        complianceMode: 'proactive',
-        forceDirect: false,
-      },
+      expect.objectContaining({
+        channel: 'whatsapp',
+        recipientId: '5511999999999',
+        content: expect.stringContaining('Test Product'),
+      }),
     );
     expect(result).toEqual(
       expect.objectContaining({
@@ -277,13 +279,12 @@ describe('UnifiedAgentService', () => {
       description: 'Pagamento - Produto X',
       idempotencyKey: 'kloel-pix:ws-1:5511999999999:139.9:Produto X',
     });
-    expect(whatsappService.sendMessage).toHaveBeenCalledWith(
+    expect(transportRegistry.send).toHaveBeenCalledWith(
       'ws-1',
-      '5511999999999',
-      expect.stringContaining('000201pixcopy'),
       expect.objectContaining({
-        complianceMode: 'proactive',
-        forceDirect: false,
+        channel: 'whatsapp',
+        recipientId: '5511999999999',
+        content: expect.stringContaining('000201pixcopy'),
       }),
     );
     expect(result).toMatchObject({
