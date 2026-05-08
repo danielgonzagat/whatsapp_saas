@@ -1,4 +1,4 @@
-import { chromium, devices, test as base, type Page } from '@playwright/test';
+import { chromium, devices, expect, test as base, type Page } from '@playwright/test';
 import {
   AUTHENTICATED_ROUTES,
   PUBLIC_ROUTES,
@@ -419,10 +419,12 @@ test.describe('P6.5-1 — Visual regression baseline (I20)', () => {
           // Mask intentionally non-deterministic regions before the diff.
           const maskLocators = (route.mask ?? []).map((selector) => page.locator(selector));
 
-          await assertExactScreenshot(page, test.info(), `${route.name}-${viewport.name}.png`, {
-            fullPage: true,
-            mask: maskLocators,
-          });
+          await expect(
+            assertExactScreenshot(page, test.info(), `${route.name}-${viewport.name}.png`, {
+              fullPage: true,
+              mask: maskLocators,
+            }),
+          ).resolves.toBeUndefined();
         });
       }
     }
@@ -460,10 +462,12 @@ test.describe('P6.5-1 — Visual regression baseline (I20)', () => {
 
           const maskLocators = (route.mask ?? []).map((selector) => page.locator(selector));
 
-          await assertExactScreenshot(page, test.info(), `${route.name}-${viewport.name}.png`, {
-            fullPage: true,
-            mask: maskLocators,
-          });
+          await expect(
+            assertExactScreenshot(page, test.info(), `${route.name}-${viewport.name}.png`, {
+              fullPage: true,
+              mask: maskLocators,
+            }),
+          ).resolves.toBeUndefined();
         });
       }
     }
