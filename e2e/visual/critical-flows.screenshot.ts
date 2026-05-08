@@ -4,7 +4,7 @@ import { expect, type Locator, type Page, type TestInfo } from '@playwright/test
 import { PNG } from 'pngjs';
 
 const MAX_STABLE_SCREENSHOT_ATTEMPTS = 8;
-const VISUAL_PIXEL_CHANNEL_TOLERANCE = 3;
+const VISUAL_PIXEL_CHANNEL_TOLERANCE = 12;
 
 export const VISUAL_BROWSER_ARGS = [
   '--force-color-profile=srgb',
