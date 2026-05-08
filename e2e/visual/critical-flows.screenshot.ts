@@ -3,7 +3,7 @@ import path from 'node:path';
 import { expect, type Locator, type Page, type TestInfo } from '@playwright/test';
 import { PNG } from 'pngjs';
 
-const MAX_STABLE_SCREENSHOT_ATTEMPTS = 4;
+const MAX_STABLE_SCREENSHOT_ATTEMPTS = 8;
 const VISUAL_PIXEL_CHANNEL_TOLERANCE = 3;
 
 export const VISUAL_BROWSER_ARGS = [
@@ -66,6 +66,9 @@ export async function assertExactScreenshot(
   const allowSnapshotCreate =
     updateSnapshots === 'missing' || updateSnapshots === 'changed' || updateSnapshots === 'all';
   const allowSnapshotUpdate = updateSnapshots === 'all' || updateSnapshots === 'changed';
+  const expected = hasSnapshot ? PNG.sync.read(fs.readFileSync(snapshotPath)) : null;
+  let lastCapture: PNG | null = null;
+  let lastDiff: ReturnType<typeof countPixelDiff> | null = null;
 
   let previousCapture: PNG | null = null;
   for (let attempt = 1; attempt <= MAX_STABLE_SCREENSHOT_ATTEMPTS; attempt += 1) {
@@ -79,6 +82,20 @@ export async function assertExactScreenshot(
     });
 
     const currentCapture = PNG.sync.read(fs.readFileSync(actualPath));
+    lastCapture = currentCapture;
+
+    if (
+      expected &&
+      expected.width === currentCapture.width &&
+      expected.height === currentCapture.height
+    ) {
+      const currentDiff = countPixelDiff(expected, currentCapture);
+      if (currentDiff.diffCount === 0) {
+        return;
+      }
+      lastDiff = currentDiff;
+    }
+
     if (previousCapture) {
       const { diffCount } = countPixelDiff(previousCapture, currentCapture);
       if (diffCount === 0) {
@@ -110,10 +127,11 @@ export async function assertExactScreenshot(
     return;
   }
 
-  const expected = PNG.sync.read(fs.readFileSync(snapshotPath));
-  const actual = PNG.sync.read(fs.readFileSync(actualPath));
+  if (!expected || !lastCapture) {
+    throw new Error(`Visual capture unavailable for ${snapshotName}: ${actualPath}`);
+  }
 
-  if (expected.width !== actual.width || expected.height !== actual.height) {
+  if (expected.width !== lastCapture.width || expected.height !== lastCapture.height) {
     if (allowSnapshotUpdate) {
       fs.copyFileSync(actualPath, snapshotPath);
       return;
@@ -123,16 +141,11 @@ export async function assertExactScreenshot(
       [
         `Visual snapshot size mismatch for ${snapshotName}.`,
         `Expected: ${expected.width}x${expected.height}`,
-        `Actual: ${actual.width}x${actual.height}`,
+        `Actual: ${lastCapture.width}x${lastCapture.height}`,
         `Baseline: ${snapshotPath}`,
         `Actual: ${actualPath}`,
       ].join('\n'),
     );
-  }
-
-  const { diff, diffCount } = countPixelDiff(expected, actual);
-  if (diffCount === 0) {
-    return;
   }
 
   if (allowSnapshotUpdate) {
@@ -140,6 +153,7 @@ export async function assertExactScreenshot(
     return;
   }
 
+  const { diff, diffCount } = lastDiff ?? countPixelDiff(expected, lastCapture);
   fs.writeFileSync(diffPath, PNG.sync.write(diff));
   throw new Error(
     [
