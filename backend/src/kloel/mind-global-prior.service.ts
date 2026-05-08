@@ -209,7 +209,7 @@ export class MindGlobalPriorService {
 
     const predicate = `bandit:${decisionType}`;
     await this.prisma.mindGlobalPrior.deleteMany({
-      where: { domain: 'global_anonymous', predicate, workspaceId },
+where: { domain: 'global_anonymous', predicate, workspaceId },
     });
     await this.prisma.mindGlobalPrior.createMany({
       data: arms.map((arm) => ({
