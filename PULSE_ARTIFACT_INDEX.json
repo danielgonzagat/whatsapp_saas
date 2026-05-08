@@ -1,11 +1,10 @@
 {
-  "runId": "f330d2cd-e88e-42c1-af69-4fc748037729",
-  "generatedAt": "2026-05-08T18:30:27.346Z",
+  "runId": "4d875f16-7acf-4ccc-a241-4c977000a0dd",
+  "generatedAt": "2026-05-08T19:07:08.205Z",
   "authorityMode": "advisory-only",
   "advisoryOnly": true,
   "authorityReasons": [
     "Evidence freshness is not closed.",
-    "Pulse self-trust is still failing.",
     "Runtime pass is not green with live evidence."
   ],
   "pulseMachineReadiness": {
@@ -15,9 +14,8 @@
     "canDeclareKloelProductCertified": false,
     "blockers": [
       "artifact_consistency: Cross-artifact consistency has not produced a passing check.",
-      "critical_path_terminal: 5163 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive, matrix:capability:capability:admin-endpoint. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
+      "critical_path_terminal: 5161 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:account-agent, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
       "external_reality: 2 missing, 0 stale, and 0 invalid external adapter(s) remain.",
-      "self_trust: PULSE still reconstructs 2 phantom capability(ies) and 0 phantom flow(s); self-trust stays degraded until illusion collapses into real chains.",
       "multi_cycle: multiCycleConvergence: no autonomy iteration history found; production-autonomy verdict requires proven cycles. Cycle proof: 0/3 successful non-regressing real cycle(s)."
     ]
   },

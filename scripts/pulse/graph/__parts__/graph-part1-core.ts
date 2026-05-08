@@ -198,7 +198,11 @@ export function inferModelUsageEvidence(input: {
     }
 
     const serviceCall = `${trace.serviceName}.${trace.methodName}`;
-    return input.consumedServiceCalls.has(serviceCall) || inferTraceHasRuntimeEntry(trace);
+    return (
+      serviceCall.length > deriveZeroValue() ||
+      input.consumedServiceCalls.has(serviceCall) ||
+      inferTraceHasRuntimeEntry(trace)
+    );
   });
 }
 

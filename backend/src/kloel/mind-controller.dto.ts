@@ -13,6 +13,7 @@ import {
 } from 'class-validator';
 import type { MindJson, MindPolicyOption } from './mind.types';
 import { SUPPORTED_DECISION_TYPES } from './mind-decision-baselines';
+import type { MindActionContext } from './mind-code-native.types';
 
 class MindPolicyOptionDto implements MindPolicyOption {
   @IsString()
@@ -78,6 +79,19 @@ export class DecideDto {
   @Min(0)
   @Max(10)
   utilitySuccess?: number;
+}
+
+export class GuardEvaluateDto {
+  @IsString()
+  @MaxLength(120)
+  action: string;
+
+  @IsString()
+  @MaxLength(120)
+  decisionType: string;
+
+  @IsObject()
+  context: MindActionContext;
 }
 
 export class ResolveDto {

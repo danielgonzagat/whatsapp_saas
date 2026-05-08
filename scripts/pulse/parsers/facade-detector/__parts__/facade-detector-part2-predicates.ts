@@ -166,11 +166,14 @@ export function isServiceEmptyReturn(line: string): boolean {
 }
 
 export function contextAllowsEmptyReturn(context: string): boolean {
-  return includesAny(context, [
+  const compact = compactCode(context);
+  return includesAny(compact, [
     'catch',
     'default',
     'fallback',
     'if(!',
+    '<=0',
+    'length===0',
     'normalize',
     'sanitize',
     'safeparse',

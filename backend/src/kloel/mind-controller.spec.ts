@@ -5,6 +5,7 @@ import { MindService } from './mind.service';
 import { MindVerbalizerService } from './mind-verbalizer.service';
 import type { AggressivenessDto, DecideDto, ResolveDto } from './mind-controller.dto';
 import { MindObservabilityService } from './mind-observability.service';
+import { MindGuardsService } from './mind-guards.service';
 
 function mockBeliefs(): jest.Mocked<MindBeliefService> {
   const service = Object.create(MindBeliefService.prototype) as jest.Mocked<MindBeliefService>;
@@ -72,8 +73,23 @@ function mockObservability(): jest.Mocked<MindObservabilityService> {
   return service;
 }
 
+function mockGuards(): jest.Mocked<MindGuardsService> {
+  const service = Object.create(MindGuardsService.prototype) as jest.Mocked<MindGuardsService>;
+  service.evaluate = jest.fn().mockResolvedValue({
+    action: 'reply_text',
+    allowed: true,
+    context: {},
+    decision: 'allow',
+    guardName: 'all_guards',
+    reason: 'Ação aprovada pelas guardas determinísticas.',
+    reasonTag: 'all_guards_passed',
+  });
+  return service;
+}
+
 function buildController(params?: {
   beliefs?: jest.Mocked<MindBeliefService>;
+  guards?: jest.Mocked<MindGuardsService>;
   mind?: jest.Mocked<MindService>;
   policy?: jest.Mocked<MindPolicyService>;
   verbalizer?: jest.Mocked<MindVerbalizerService>;
@@ -84,6 +100,7 @@ function buildController(params?: {
     params?.mind ?? mockMind(),
     params?.verbalizer ?? mockVerbalizer(),
     mockObservability(),
+    params?.guards ?? mockGuards(),
   );
 }
 
@@ -146,6 +163,25 @@ describe('MindController', () => {
 
     expect(policy.resolveOutcome).toHaveBeenCalledWith('ws-1', 'k1', 0.5, undefined);
     expect(result).toEqual({ ok: true });
+  });
+
+  it('exposes deterministic MIND guard evaluation through an authenticated endpoint', async () => {
+    const guards = mockGuards();
+    const controller = buildController({ guards });
+
+    const result = await controller.evaluateGuard('ws-1', {
+      action: 'coupon_10',
+      context: { maxDiscountPercent: 20, discountPercent: 10 },
+      decisionType: 'coupon_offer',
+    });
+
+    expect(guards.evaluate).toHaveBeenCalledWith({
+      workspaceId: 'ws-1',
+      action: 'coupon_10',
+      context: { maxDiscountPercent: 20, discountPercent: 10 },
+      decisionType: 'coupon_offer',
+    });
+    expect(result).toEqual(expect.objectContaining({ allowed: true }));
   });
 
   it('delegates aggressiveness body to mind.resolveAggressiveness', async () => {

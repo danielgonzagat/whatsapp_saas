@@ -252,6 +252,9 @@ export async function fullScan(
     capabilityState,
     flowProjection,
     externalSignalState,
+    executionEvidence: options.tracer
+      ? { executionTrace: options.tracer.getSnapshot() }
+      : undefined,
   });
   const executionMatrix = buildExecutionMatrix({
     structuralGraph,
@@ -277,6 +280,9 @@ export async function fullScan(
     flowProjection,
     externalSignalState,
     executionMatrix,
+    executionEvidence: options.tracer
+      ? { executionTrace: options.tracer.getSnapshot() }
+      : undefined,
   });
   const parityGaps = buildParityGaps({
     codebaseTruth,

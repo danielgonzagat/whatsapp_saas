@@ -1,5 +1,5 @@
 {
-  "score": 93,
+  "score": 94,
   "totalNodes": 1895,
   "breaks": [
     {
@@ -2783,336 +2783,6 @@
       "surface": "route-connectivity"
     },
     {
-      "type": "graph-state-model-access-unobserved",
-      "severity": "medium",
-      "file": "backend/prisma/schema.prisma",
-      "line": 341,
-      "description": "Model ContactInsight has no service or controller accessing it",
-      "detail": "Fields: id, type, description, scoreChange, contactId...",
-      "source": "graph:confirmed_static:state_model_access_unobserved",
-      "surface": "state-access"
-    },
-    {
-      "type": "graph-state-model-access-unobserved",
-      "severity": "medium",
-      "file": "backend/prisma/schema.prisma",
-      "line": 355,
-      "description": "Model ChannelIdentifier has no service or controller accessing it",
-      "detail": "Fields: id, channel, value, contactId, workspaceId...",
-      "source": "graph:confirmed_static:state_model_access_unobserved",
-      "surface": "state-access"
-    },
-    {
-      "type": "graph-state-model-access-unobserved",
-      "severity": "medium",
-      "file": "backend/prisma/schema.prisma",
-      "line": 376,
-      "description": "Model SystemInsight has no service or controller accessing it",
-      "detail": "Fields: id, type, title, description, severity...",
-      "source": "graph:confirmed_static:state_model_access_unobserved",
-      "surface": "state-access"
-    },
-    {
-      "type": "graph-state-model-access-unobserved",
-      "severity": "medium",
-      "file": "backend/prisma/schema.prisma",
-      "line": 409,
-      "description": "Model Variable has no service or controller accessing it",
-      "detail": "Fields: id, key, value, type, workspaceId...",
-      "source": "graph:confirmed_static:state_model_access_unobserved",
-      "surface": "state-access"
-    },
-    {
-      "type": "graph-state-model-access-unobserved",
-      "severity": "medium",
-      "file": "backend/prisma/schema.prisma",
-      "line": 687,
-      "description": "Model Vector has no service or controller accessing it",
-      "detail": "Fields: id, content, sourceId",
-      "source": "graph:confirmed_static:state_model_access_unobserved",
-      "surface": "state-access"
-    },
-    {
-      "type": "graph-state-model-access-unobserved",
-      "severity": "medium",
-      "file": "backend/prisma/schema.prisma",
-      "line": 719,
-      "description": "Model MonitoredGroup has no service or controller accessing it",
-      "detail": "Fields: id, jid, name, inviteLink, settings...",
-      "source": "graph:confirmed_static:state_model_access_unobserved",
-      "surface": "state-access"
-    },
-    {
-      "type": "graph-state-model-access-unobserved",
-      "severity": "medium",
-      "file": "backend/prisma/schema.prisma",
-      "line": 740,
-      "description": "Model GroupMember has no service or controller accessing it",
-      "detail": "Fields: id, phone, isAdmin, groupId, createdAt...",
-      "source": "graph:confirmed_static:state_model_access_unobserved",
-      "surface": "state-access"
-    },
-    {
-      "type": "graph-state-model-access-unobserved",
-      "severity": "medium",
-      "file": "backend/prisma/schema.prisma",
-      "line": 754,
-      "description": "Model BannedKeyword has no service or controller accessing it",
-      "detail": "Fields: id, keyword, action, groupId, createdAt",
-      "source": "graph:confirmed_static:state_model_access_unobserved",
-      "surface": "state-access"
-    },
-    {
-      "type": "graph-state-model-access-unobserved",
-      "severity": "medium",
-      "file": "backend/prisma/schema.prisma",
-      "line": 784,
-      "description": "Model Invoice has no service or controller accessing it",
-      "detail": "Fields: id, amount, status, url, workspaceId...",
-      "source": "graph:confirmed_static:state_model_access_unobserved",
-      "surface": "state-access"
-    },
-    {
-      "type": "graph-state-model-access-unobserved",
-      "severity": "medium",
-      "file": "backend/prisma/schema.prisma",
-      "line": 802,
-      "description": "Model ExternalPaymentLink has no service or controller accessing it",
-      "detail": "Fields: id, workspaceId, platform, productName, price...",
-      "source": "graph:confirmed_static:state_model_access_unobserved",
-      "surface": "state-access"
-    },
-    {
-      "type": "graph-state-model-access-unobserved",
-      "severity": "medium",
-      "file": "backend/prisma/schema.prisma",
-      "line": 1168,
-      "description": "Model RoutingRule has no service or controller accessing it",
-      "detail": "Fields: id, name, isActive, channel, keyword...",
-      "source": "graph:confirmed_static:state_model_access_unobserved",
-      "surface": "state-access"
-    },
-    {
-      "type": "graph-state-model-access-unobserved",
-      "severity": "medium",
-      "file": "backend/prisma/schema.prisma",
-      "line": 1253,
-      "description": "Model AutonomyRun has no service or controller accessing it",
-      "detail": "Fields: id, workspaceId, mode, status, startedAt...",
-      "source": "graph:confirmed_static:state_model_access_unobserved",
-      "surface": "state-access"
-    },
-    {
-      "type": "graph-state-model-access-unobserved",
-      "severity": "medium",
-      "file": "backend/prisma/schema.prisma",
-      "line": 1268,
-      "description": "Model AutonomyExecution has no service or controller accessing it",
-      "detail": "Fields: id, workspaceId, contactId, conversationId, workItemId...",
-      "source": "graph:confirmed_static:state_model_access_unobserved",
-      "surface": "state-access"
-    },
-    {
-      "type": "graph-state-model-access-unobserved",
-      "severity": "medium",
-      "file": "backend/prisma/schema.prisma",
-      "line": 1293,
-      "description": "Model AgentWorkItem has no service or controller accessing it",
-      "detail": "Fields: id, workspaceId, kind, entityType, entityId...",
-      "source": "graph:confirmed_static:state_model_access_unobserved",
-      "surface": "state-access"
-    },
-    {
-      "type": "graph-state-model-access-unobserved",
-      "severity": "medium",
-      "file": "backend/prisma/schema.prisma",
-      "line": 1347,
-      "description": "Model InputCollectionSession has no service or controller accessing it",
-      "detail": "Fields: id, workspaceId, kind, state, entityType...",
-      "source": "graph:confirmed_static:state_model_access_unobserved",
-      "surface": "state-access"
-    },
-    {
-      "type": "graph-state-model-access-unobserved",
-      "severity": "medium",
-      "file": "backend/prisma/schema.prisma",
-      "line": 1440,
-      "description": "Model OpsEvent has no service or controller accessing it",
-      "detail": "Fields: id, type, service, error, stack...",
-      "source": "graph:confirmed_static:state_model_access_unobserved",
-      "surface": "state-access"
-    },
-    {
-      "type": "graph-state-model-access-unobserved",
-      "severity": "medium",
-      "file": "backend/prisma/schema.prisma",
-      "line": 1487,
-      "description": "Model Persona has no service or controller accessing it",
-      "detail": "Fields: id, name, role, basePrompt, voiceId...",
-      "source": "graph:confirmed_static:state_model_access_unobserved",
-      "surface": "state-access"
-    },
-    {
-      "type": "graph-state-model-access-unobserved",
-      "severity": "medium",
-      "file": "backend/prisma/schema.prisma",
-      "line": 1943,
-      "description": "Model ProductCheckout has no service or controller accessing it",
-      "detail": "Fields: id, productId, name, code, config...",
-      "source": "graph:confirmed_static:state_model_access_unobserved",
-      "surface": "state-access"
-    },
-    {
-      "type": "graph-state-model-access-unobserved",
-      "severity": "medium",
-      "file": "backend/prisma/schema.prisma",
-      "line": 1986,
-      "description": "Model ProductReview has no service or controller accessing it",
-      "detail": "Fields: id, productId, rating, comment, authorName...",
-      "source": "graph:confirmed_static:state_model_access_unobserved",
-      "surface": "state-access"
-    },
-    {
-      "type": "graph-state-model-access-unobserved",
-      "severity": "medium",
-      "file": "backend/prisma/schema.prisma",
-      "line": 2018,
-      "description": "Model ProductUrl has no service or controller accessing it",
-      "detail": "Fields: id, productId, description, url, isPrivate...",
-      "source": "graph:confirmed_static:state_model_access_unobserved",
-      "surface": "state-access"
-    },
-    {
-      "type": "graph-state-model-access-unobserved",
-      "severity": "medium",
-      "file": "backend/prisma/schema.prisma",
-      "line": 2413,
-      "description": "Model Payment has no service or controller accessing it",
-      "detail": "Fields: id, workspaceId, externalId, provider, status...",
-      "source": "graph:confirmed_static:state_model_access_unobserved",
-      "surface": "state-access"
-    },
-    {
-      "type": "graph-state-model-access-unobserved",
-      "severity": "medium",
-      "file": "backend/prisma/schema.prisma",
-      "line": 2524,
-      "description": "Model WalletAnticipation has no service or controller accessing it",
-      "detail": "Fields: id, workspaceId, originalAmount, feePercent, feeAmount...",
-      "source": "graph:confirmed_static:state_model_access_unobserved",
-      "surface": "state-access"
-    },
-    {
-      "type": "graph-state-model-access-unobserved",
-      "severity": "medium",
-      "file": "backend/prisma/schema.prisma",
-      "line": 2846,
-      "description": "Model CheckoutCoupon has no service or controller accessing it",
-      "detail": "Fields: id, workspaceId, code, discountType, discountValue...",
-      "source": "graph:confirmed_static:state_model_access_unobserved",
-      "surface": "state-access"
-    },
-    {
-      "type": "graph-state-model-access-unobserved",
-      "severity": "medium",
-      "file": "backend/prisma/schema.prisma",
-      "line": 3426,
-      "description": "Model MarketplaceFee has no service or controller accessing it",
-      "detail": "Fields: id, method, feeBps, fixedFeeInCents, volumeFloorInCents...",
-      "source": "graph:confirmed_static:state_model_access_unobserved",
-      "surface": "state-access"
-    },
-    {
-      "type": "graph-state-model-access-unobserved",
-      "severity": "medium",
-      "file": "backend/prisma/schema.prisma",
-      "line": 3622,
-      "description": "Model PrepaidWalletTransaction has no service or controller accessing it",
-      "detail": "Fields: id, walletId, type, amountCents, balanceAfterCents...",
-      "source": "graph:confirmed_static:state_model_access_unobserved",
-      "surface": "state-access"
-    },
-    {
-      "type": "graph-state-model-access-unobserved",
-      "severity": "medium",
-      "file": "backend/prisma/schema.prisma",
-      "line": 3639,
-      "description": "Model UsagePrice has no service or controller accessing it",
-      "detail": "Fields: id, operation, pricePerUnitCents, unit, active...",
-      "source": "graph:confirmed_static:state_model_access_unobserved",
-      "surface": "state-access"
-    },
-    {
-      "type": "graph-state-model-access-unobserved",
-      "severity": "medium",
-      "file": "backend/prisma/schema.prisma",
-      "line": 3671,
-      "description": "Model FraudBlacklist has no service or controller accessing it",
-      "detail": "Fields: id, type, value, reason, addedBy...",
-      "source": "graph:confirmed_static:state_model_access_unobserved",
-      "surface": "state-access"
-    },
-    {
-      "type": "graph-state-model-access-unobserved",
-      "severity": "medium",
-      "file": "backend/prisma/schema.prisma",
-      "line": 3699,
-      "description": "Model DailyMessageCounter has no service or controller accessing it",
-      "detail": "Fields: id, workspaceId, date, count, createdAt",
-      "source": "graph:confirmed_static:state_model_access_unobserved",
-      "surface": "state-access"
-    },
-    {
-      "type": "graph-state-model-access-unobserved",
-      "severity": "medium",
-      "file": "backend/prisma/schema.prisma",
-      "line": 3812,
-      "description": "Model MindCase has no service or controller accessing it",
-      "detail": "Fields: id, workspaceId, subject, caseType, text...",
-      "source": "graph:confirmed_static:state_model_access_unobserved",
-      "surface": "state-access"
-    },
-    {
-      "type": "graph-state-model-access-unobserved",
-      "severity": "medium",
-      "file": "backend/prisma/schema.prisma",
-      "line": 3850,
-      "description": "Model MindGraphNode has no service or controller accessing it",
-      "detail": "Fields: id, workspaceId, kind, label, weight...",
-      "source": "graph:confirmed_static:state_model_access_unobserved",
-      "surface": "state-access"
-    },
-    {
-      "type": "graph-state-model-access-unobserved",
-      "severity": "medium",
-      "file": "backend/prisma/schema.prisma",
-      "line": 3866,
-      "description": "Model MindGraphEdge has no service or controller accessing it",
-      "detail": "Fields: id, workspaceId, fromNode, toNode, relation...",
-      "source": "graph:confirmed_static:state_model_access_unobserved",
-      "surface": "state-access"
-    },
-    {
-      "type": "graph-state-model-access-unobserved",
-      "severity": "medium",
-      "file": "backend/prisma/schema.prisma",
-      "line": 3927,
-      "description": "Model MindGuardAudit has no service or controller accessing it",
-      "detail": "Fields: id, workspaceId, guardName, action, decision...",
-      "source": "graph:confirmed_static:state_model_access_unobserved",
-      "surface": "state-access"
-    },
-    {
-      "type": "graph-state-model-access-unobserved",
-      "severity": "medium",
-      "file": "backend/prisma/schema.prisma",
-      "line": 3959,
-      "description": "Model MindGlobalPrior has no service or controller accessing it",
-      "detail": "Fields: id, workspaceId, domain, predicate, context...",
-      "source": "graph:confirmed_static:state_model_access_unobserved",
-      "surface": "state-access"
-    },
-    {
       "type": "graph-ui-handler-effect-unobserved",
       "severity": "medium",
       "file": "frontend/src/app/(main)/vendas/gestao-vendas/page.tsx",
@@ -3371,46 +3041,6 @@
       "detail": "Handler: save",
       "source": "graph:confirmed_static:ui_handler_effect_unobserved",
       "surface": "ui-interaction"
-    },
-    {
-      "type": "graph-facade-evidence",
-      "severity": "medium",
-      "file": "backend/src/ai-brain/knowledge-base.service.ts",
-      "line": 83,
-      "description": "[hardcoded_data] Service method returns empty collection/object without guard evidence",
-      "detail": "Service method returns empty collection/object without guard evidence; predicates=truth_confirmed_static, source_facade_evidence_service_empty_return_static_predicate, detector_service_empty_return_static_predicate, evidence_service_method, evidence_method_returns, evidence_returns_empty, evidence_empty_collection, evidence_collection_object, evidence_object_without, evidence_without_guard, evidence_guard_evidence, evidence_evidence_backend, evidence_backend_service, evidence_service_return, evidence_return_statement, evidence_statement_emits, evidence_emits_outside, evidence_outside_catch, evidence_catch_fallback, evidence_fallback_normalizer, evidence_normalizer_guarded, evidence_guarded_empty, evidence_empty_context, evidence_context_evidence, evidence_evidence_return, evidence_return_truth, evidence_truth_confirmed, evidence_confirmed_static, evidence_static_source, evidence_source_facade, evidence_facade_evidence, evidence_evidence_service, evidence_service_empty, evidence_empty_return, evidence_return_static, evidence_static_predicate, evidence_predicate_detector, evidence_detector_service, evidence_predicate; evidence=75d9ef086ef8cdda; predicates=truth_confirmed_static,source_facade_evidence_service_empty_return_static_predicate,detector_service_empty_return_static_predicate,evidence_service_method,evidence_method_returns,evidence_returns_empty,evidence_empty_collection,evidence_collection_object,evidence_object_without,evidence_without_guard,evidence_guard_evidence,evidence_evidence_backend,evidence_backend_service,evidence_service_return,evidence_return_statement,evidence_statement_emits,evidence_emits_outside,evidence_outside_catch,evidence_catch_fallback,evidence_fallback_normalizer,evidence_normalizer_guarded,evidence_guarded_empty,evidence_empty_context,evidence_context_evidence,evidence_evidence_return,evidence_return_truth,evidence_truth_confirmed,evidence_confirmed_static,evidence_static_source,evidence_source_facade,evidence_facade_evidence,evidence_evidence_service,evidence_service_empty,evidence_empty_return,evidence_return_static,evidence_static_predicate,evidence_predicate_detector,evidence_detector_service,evidence_predicate; A backend service return statement emits [] or {} outside catch, fallback, normalizer, or guarded-empty context. Evidence: return [];",
-      "source": "graph:confirmed_static:facade_evidence",
-      "surface": "capability-materialization"
-    },
-    {
-      "type": "graph-facade-evidence",
-      "severity": "medium",
-      "file": "backend/src/calendar/calendar.service.ts",
-      "line": 344,
-      "description": "[hardcoded_data] Service method returns empty collection/object without guard evidence",
-      "detail": "Service method returns empty collection/object without guard evidence; predicates=truth_confirmed_static, source_facade_evidence_service_empty_return_static_predicate, detector_service_empty_return_static_predicate, evidence_service_method, evidence_method_returns, evidence_returns_empty, evidence_empty_collection, evidence_collection_object, evidence_object_without, evidence_without_guard, evidence_guard_evidence, evidence_evidence_backend, evidence_backend_service, evidence_service_return, evidence_return_statement, evidence_statement_emits, evidence_emits_outside, evidence_outside_catch, evidence_catch_fallback, evidence_fallback_normalizer, evidence_normalizer_guarded, evidence_guarded_empty, evidence_empty_context, evidence_context_evidence, evidence_evidence_return, evidence_return_truth, evidence_truth_confirmed, evidence_confirmed_static, evidence_static_source, evidence_source_facade, evidence_facade_evidence, evidence_evidence_service, evidence_service_empty, evidence_empty_return, evidence_return_static, evidence_static_predicate, evidence_predicate_detector, evidence_detector_service, evidence_predicate; evidence=7c77f28303d01572; predicates=truth_confirmed_static,source_facade_evidence_service_empty_return_static_predicate,detector_service_empty_return_static_predicate,evidence_service_method,evidence_method_returns,evidence_returns_empty,evidence_empty_collection,evidence_collection_object,evidence_object_without,evidence_without_guard,evidence_guard_evidence,evidence_evidence_backend,evidence_backend_service,evidence_service_return,evidence_return_statement,evidence_statement_emits,evidence_emits_outside,evidence_outside_catch,evidence_catch_fallback,evidence_fallback_normalizer,evidence_normalizer_guarded,evidence_guarded_empty,evidence_empty_context,evidence_context_evidence,evidence_evidence_return,evidence_return_truth,evidence_truth_confirmed,evidence_confirmed_static,evidence_static_source,evidence_source_facade,evidence_facade_evidence,evidence_evidence_service,evidence_service_empty,evidence_empty_return,evidence_return_static,evidence_static_predicate,evidence_predicate_detector,evidence_detector_service,evidence_predicate; A backend service return statement emits [] or {} outside catch, fallback, normalizer, or guarded-empty context. Evidence: return [];",
-      "source": "graph:confirmed_static:facade_evidence",
-      "surface": "capability-materialization"
-    },
-    {
-      "type": "graph-facade-evidence",
-      "severity": "medium",
-      "file": "backend/src/crm/neuro-crm.service.ts",
-      "line": 356,
-      "description": "[hardcoded_data] Service method returns empty collection/object without guard evidence",
-      "detail": "Service method returns empty collection/object without guard evidence; predicates=truth_confirmed_static, source_facade_evidence_service_empty_return_static_predicate, detector_service_empty_return_static_predicate, evidence_service_method, evidence_method_returns, evidence_returns_empty, evidence_empty_collection, evidence_collection_object, evidence_object_without, evidence_without_guard, evidence_guard_evidence, evidence_evidence_backend, evidence_backend_service, evidence_service_return, evidence_return_statement, evidence_statement_emits, evidence_emits_outside, evidence_outside_catch, evidence_catch_fallback, evidence_fallback_normalizer, evidence_normalizer_guarded, evidence_guarded_empty, evidence_empty_context, evidence_context_evidence, evidence_evidence_return, evidence_return_truth, evidence_truth_confirmed, evidence_confirmed_static, evidence_static_source, evidence_source_facade, evidence_facade_evidence, evidence_evidence_service, evidence_service_empty, evidence_empty_return, evidence_return_static, evidence_static_predicate, evidence_predicate_detector, evidence_detector_service, evidence_predicate; evidence=e560a2fb5bfdfc65; predicates=truth_confirmed_static,source_facade_evidence_service_empty_return_static_predicate,detector_service_empty_return_static_predicate,evidence_service_method,evidence_method_returns,evidence_returns_empty,evidence_empty_collection,evidence_collection_object,evidence_object_without,evidence_without_guard,evidence_guard_evidence,evidence_evidence_backend,evidence_backend_service,evidence_service_return,evidence_return_statement,evidence_statement_emits,evidence_emits_outside,evidence_outside_catch,evidence_catch_fallback,evidence_fallback_normalizer,evidence_normalizer_guarded,evidence_guarded_empty,evidence_empty_context,evidence_context_evidence,evidence_evidence_return,evidence_return_truth,evidence_truth_confirmed,evidence_confirmed_static,evidence_static_source,evidence_source_facade,evidence_facade_evidence,evidence_evidence_service,evidence_service_empty,evidence_empty_return,evidence_return_static,evidence_static_predicate,evidence_predicate_detector,evidence_detector_service,evidence_predicate; A backend service return statement emits [] or {} outside catch, fallback, normalizer, or guarded-empty context. Evidence: return [];",
-      "source": "graph:confirmed_static:facade_evidence",
-      "surface": "capability-materialization"
-    },
-    {
-      "type": "graph-facade-evidence",
-      "severity": "medium",
-      "file": "backend/src/payments/connect/connect-reversal.service.ts",
-      "line": 143,
-      "description": "[hardcoded_data] Service method returns empty collection/object without guard evidence",
-      "detail": "Service method returns empty collection/object without guard evidence; predicates=truth_confirmed_static, source_facade_evidence_service_empty_return_static_predicate, detector_service_empty_return_static_predicate, evidence_service_method, evidence_method_returns, evidence_returns_empty, evidence_empty_collection, evidence_collection_object, evidence_object_without, evidence_without_guard, evidence_guard_evidence, evidence_evidence_backend, evidence_backend_service, evidence_service_return, evidence_return_statement, evidence_statement_emits, evidence_emits_outside, evidence_outside_catch, evidence_catch_fallback, evidence_fallback_normalizer, evidence_normalizer_guarded, evidence_guarded_empty, evidence_empty_context, evidence_context_evidence, evidence_evidence_return, evidence_return_truth, evidence_truth_confirmed, evidence_confirmed_static, evidence_static_source, evidence_source_facade, evidence_facade_evidence, evidence_evidence_service, evidence_service_empty, evidence_empty_return, evidence_return_static, evidence_static_predicate, evidence_predicate_detector, evidence_detector_service, evidence_predicate; evidence=6ac48b2d509e806f; predicates=truth_confirmed_static,source_facade_evidence_service_empty_return_static_predicate,detector_service_empty_return_static_predicate,evidence_service_method,evidence_method_returns,evidence_returns_empty,evidence_empty_collection,evidence_collection_object,evidence_object_without,evidence_without_guard,evidence_guard_evidence,evidence_evidence_backend,evidence_backend_service,evidence_service_return,evidence_return_statement,evidence_statement_emits,evidence_emits_outside,evidence_outside_catch,evidence_catch_fallback,evidence_fallback_normalizer,evidence_normalizer_guarded,evidence_guarded_empty,evidence_empty_context,evidence_context_evidence,evidence_evidence_return,evidence_return_truth,evidence_truth_confirmed,evidence_confirmed_static,evidence_static_source,evidence_source_facade,evidence_facade_evidence,evidence_evidence_service,evidence_service_empty,evidence_empty_return,evidence_return_static,evidence_static_predicate,evidence_predicate_detector,evidence_detector_service,evidence_predicate; A backend service return statement emits [] or {} outside catch, fallback, normalizer, or guarded-empty context. Evidence: return [];",
-      "source": "graph:confirmed_static:facade_evidence",
-      "surface": "capability-materialization"
     },
     {
       "type": "graph-route-target-unmatched",
@@ -3439,24 +3069,24 @@
     "apiCalls": 748,
     "apiNoRoute": 2,
     "backendRoutes": 998,
-    "backendEmpty": 4,
+    "backendEmpty": 0,
     "prismaModels": 149,
-    "modelOrphans": 33,
-    "facades": 4,
+    "modelOrphans": 0,
+    "facades": 0,
     "facadesBySeverity": {
       "high": 0,
-      "medium": 4,
+      "medium": 0,
       "low": 0
     },
     "proxyRoutes": 83,
     "proxyNoUpstream": 0,
-    "securityIssues": 312,
-    "dataSafetyIssues": 9,
+    "securityIssues": 279,
+    "dataSafetyIssues": 5,
     "qualityIssues": 0,
     "unavailableChecks": 0,
     "unknownSurfaces": 0
   },
-  "timestamp": "2026-05-08T18:26:37.667Z",
-  "runId": "f330d2cd-e88e-42c1-af69-4fc748037729",
-  "generatedAt": "2026-05-08T18:30:27.346Z"
+  "timestamp": "2026-05-08T19:03:19.819Z",
+  "runId": "4d875f16-7acf-4ccc-a241-4c977000a0dd",
+  "generatedAt": "2026-05-08T19:07:08.205Z"
 }

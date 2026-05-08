@@ -15,6 +15,7 @@ import {
   AudioVsTextDto,
   CouponDto,
   DecideDto,
+  GuardEvaluateDto,
   ResolveDto,
   ToneDto,
 } from './mind-controller.dto';
@@ -23,6 +24,7 @@ import { MindPolicyService } from './mind-policy.service';
 import { MindService } from './mind.service';
 import { MindObservabilityService } from './mind-observability.service';
 import { MindVerbalizerService } from './mind-verbalizer.service';
+import { MindGuardsService } from './mind-guards.service';
 
 @Controller('mind')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
@@ -33,6 +35,7 @@ export class MindController {
     private readonly mind: MindService,
     private readonly verbalizer: MindVerbalizerService,
     private readonly observability: MindObservabilityService,
+    private readonly guards: MindGuardsService,
   ) {}
 
   @Post(':workspaceId/tick')
@@ -78,6 +81,11 @@ export class MindController {
   @Post(':workspaceId/ask')
   ask(@Param('workspaceId') workspaceId: string, @Body() body: { question?: string }) {
     return this.observability.ask(workspaceId, body.question ?? '');
+  }
+
+  @Post(':workspaceId/guards/evaluate')
+  evaluateGuard(@Param('workspaceId') workspaceId: string, @Body() body: GuardEvaluateDto) {
+    return this.guards.evaluate({ workspaceId, ...body });
   }
 
   @Post(':workspaceId/report')
