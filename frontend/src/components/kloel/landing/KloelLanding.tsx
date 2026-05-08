@@ -962,8 +962,8 @@ function FinalManifestLoop() {
       <KloelMushroomVisual
         size={136}
         traceColor={kloelT(`colors.text.silver`)} // PULSE_VISUAL_OK: traceColor via i18n — stays as hex for the SVG
-        animated={!prefersReducedMotion}
-        spores={prefersReducedMotion ? 'none' : 'animated'}
+        animated={false}
+        spores="static"
         ariaHidden
         style={{
           width: 'clamp(92px, 12vw, 136px)',
@@ -1068,8 +1068,8 @@ export default function KloelLanding() {
               markSize={20}
               fontSize={15}
               fontWeight={600}
-              animated={!prefersReducedMotion}
-              spores={prefersReducedMotion ? 'none' : 'animated'}
+              animated={false}
+              spores="static"
             />
           </Link>
           <div
