@@ -25,19 +25,22 @@ export interface InboundEmailAttachment {
 }
 
 function stripHtml(raw: string): string {
-  let previous: string;
-  let current = raw;
-  do {
-    previous = current;
-    current = current.replace(/<[^>]*>/g, '');
-  } while (current !== previous);
-  return current
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .trim();
+  let text = '';
+  let insideTag = false;
+  for (const char of raw) {
+    if (char === '<') {
+      insideTag = true;
+      continue;
+    }
+    if (char === '>') {
+      insideTag = false;
+      continue;
+    }
+    if (!insideTag) {
+      text += char;
+    }
+  }
+  return text.replaceAll('&quot;', '"').replaceAll('&#39;', "'").trim();
 }
 
 function normalizeAttachments(attachments: InboundEmailAttachment[]): MessageAttachment[] {

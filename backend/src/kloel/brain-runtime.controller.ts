@@ -8,6 +8,22 @@ import { BrainDecideDto, BrainObserveDto } from './brain-runtime.dto';
 import { BrainCommercialGraphService } from './brain-commercial-graph.service';
 import { BrainRuntimeService } from './brain-runtime.service';
 
+function escapeHtmlUnsafeJsonChars(json: string): string {
+  let escaped = '';
+  for (const char of json) {
+    if (char === '<') {
+      escaped += '\\u003c';
+    } else if (char === '>') {
+      escaped += '\\u003e';
+    } else if (char === '&') {
+      escaped += '\\u0026';
+    } else {
+      escaped += char;
+    }
+  }
+  return escaped;
+}
+
 @Controller('brain')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class BrainRuntimeController {
@@ -71,10 +87,11 @@ export class BrainRuntimeController {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache, no-transform');
     res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
     res.flushHeaders?.();
 
     const writeEvent = (payload: Record<string, unknown>) => {
-      res.write(`data: ${JSON.stringify(payload)}\n\n`);
+      res.write(`data: ${escapeHtmlUnsafeJsonChars(JSON.stringify(payload))}\n\n`);
     };
 
     try {

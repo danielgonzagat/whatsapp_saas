@@ -16,6 +16,36 @@ import { OmnichannelService } from '../inbox/omnichannel.service';
 import { ensureError, type NormalizedMessage } from '../inbox/omnichannel.helpers';
 import { PrismaService } from '../prisma/prisma.service';
 
+function stripHtml(raw: string): string {
+  let text = '';
+  let insideTag = false;
+  let lastWasWhitespace = false;
+  for (const char of raw) {
+    if (char === '<') {
+      insideTag = true;
+      continue;
+    }
+    if (char === '>') {
+      insideTag = false;
+      continue;
+    }
+    if (insideTag) {
+      continue;
+    }
+    const isWhitespace = char === ' ' || char === '\n' || char === '\r' || char === '\t';
+    if (isWhitespace) {
+      if (!lastWasWhitespace) {
+        text += ' ';
+      }
+      lastWasWhitespace = true;
+      continue;
+    }
+    text += char;
+    lastWasWhitespace = false;
+  }
+  return text.trim();
+}
+
 function parseForwardedEmailHeaders(req: Request) {
   const from = String(req.body?.from || req.body?.sender || '').trim();
   const to = String(req.body?.to || req.body?.recipient || '').trim();
@@ -25,12 +55,7 @@ function parseForwardedEmailHeaders(req: Request) {
   const messageId = String(req.body?.message_id || req.body?.['Message-Id'] || '').trim();
   const inReplyTo = String(req.body?.in_reply_to || req.body?.['In-Reply-To'] || '').trim();
 
-  const content =
-    textBody ||
-    htmlBody
-      .replace(/<[^>]*>/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
+  const content = textBody || stripHtml(htmlBody);
 
   return { from, to, subject, content, messageId, inReplyTo };
 }
