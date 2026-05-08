@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, OnModuleDestroy } from '@nestjs/common';
 import { Queue } from 'bullmq';
 import { createRedisClient } from '../common/redis/redis.util';
 
@@ -6,13 +6,17 @@ const D_RE = /\D/g;
 
 /** Mass send service. */
 @Injectable()
-export class MassSendService {
-  private queue: Queue;
+export class MassSendService implements OnModuleDestroy {
+  private readonly queue: Queue;
 
   constructor() {
     this.queue = new Queue('mass-send', {
       connection: createRedisClient(),
     });
+  }
+
+  async onModuleDestroy(): Promise<void> {
+    await this.queue.close();
   }
 
   /** Enqueue campaign. */
