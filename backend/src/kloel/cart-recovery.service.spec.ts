@@ -9,6 +9,9 @@ type FlexMock = jest.Mock & {
 };
 
 type MockPrisma = {
+  workspace: {
+    findMany: FlexMock;
+  };
   checkoutOrder: {
     findMany: FlexMock;
     update: FlexMock;
@@ -33,6 +36,9 @@ describe('CartRecoveryService', () => {
     process.env.JWT_SECRET = 'test-jwt-secret-for-cart-recovery-tests';
     sendEmail.mockClear();
     prisma = {
+      workspace: {
+        findMany: jest.fn().mockResolvedValue([{ id: 'ws-1' }]),
+      },
       checkoutOrder: {
         findMany: jest.fn(),
         update: jest.fn().mockResolvedValue(undefined),
@@ -64,6 +70,11 @@ describe('CartRecoveryService', () => {
 
     await service.checkAbandonedCarts();
 
+    expect(prisma.checkoutOrder.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ workspaceId: 'ws-1' }),
+      }),
+    );
     expect(sendEmail).toHaveBeenCalledTimes(1);
 
     const updatePayload = prisma.checkoutOrder.updateMany.mock.calls[0][0].data.metadata;

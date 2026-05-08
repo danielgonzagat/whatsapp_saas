@@ -24,20 +24,40 @@ export class MindGlobalPriorService {
 
   constructor(private readonly prisma: PrismaService) {}
 
+  private async listWorkspaceIds(): Promise<string[]> {
+    const workspaces = await this.prisma.workspace.findMany({
+      select: { id: true },
+      orderBy: { createdAt: 'asc' },
+    });
+    return workspaces.map((workspace) => workspace.id);
+  }
+
   async getPrior(decisionType: string): Promise<GlobalPrior> {
     const startedAt = Date.now();
 
-    const arms = await this.prisma.mindBanditArm.findMany({
-      where: { decisionType, pulls: { gt: 0 } },
-      select: {
-        workspaceId: true,
-        arm: true,
-        alpha: true,
-        beta: true,
-        pulls: true,
-        wins: true,
-      },
-    });
+    const arms: Array<{
+      workspaceId: string;
+      arm: string;
+      alpha: number;
+      beta: number;
+      pulls: number;
+      wins: number;
+    }> = [];
+    const workspaceIds = await this.listWorkspaceIds();
+    for (const workspaceId of workspaceIds) {
+      const workspaceArms = await this.prisma.mindBanditArm.findMany({
+        where: { workspaceId, decisionType, pulls: { gt: 0 } },
+        select: {
+          workspaceId: true,
+          arm: true,
+          alpha: true,
+          beta: true,
+          pulls: true,
+          wins: true,
+        },
+      });
+      arms.push(...workspaceArms);
+    }
 
     const grouped = new Map<
       string,
@@ -138,12 +158,21 @@ export class MindGlobalPriorService {
   }
 
   async listDecisionTypes(): Promise<string[]> {
-    const rows = await this.prisma.mindBanditArm.findMany({
-      where: { pulls: { gt: 0 } },
-      select: { decisionType: true },
-      distinct: ['decisionType'],
-      orderBy: { decisionType: 'asc' },
-    });
-    return rows.map((r) => r.decisionType);
+    const decisionTypes = new Set<string>();
+    const workspaceIds = await this.listWorkspaceIds();
+
+    for (const workspaceId of workspaceIds) {
+      const rows = await this.prisma.mindBanditArm.findMany({
+        where: { workspaceId, pulls: { gt: 0 } },
+        select: { decisionType: true },
+        distinct: ['decisionType'],
+        orderBy: { decisionType: 'asc' },
+      });
+      for (const row of rows) {
+        decisionTypes.add(row.decisionType);
+      }
+    }
+
+    return Array.from(decisionTypes).sort();
   }
 }
