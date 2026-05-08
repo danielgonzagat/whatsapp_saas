@@ -41,13 +41,34 @@ describe('BrainEventSpineService diagnostics', () => {
   });
 
   describe('markDispatchFailed', () => {
-    it('marks a dispatched outbox event as failed with error', async () => {
+    it('marks an acknowledged outbox event as dispatched', async () => {
+      prisma.mindOutboxEvent.updateMany.mockResolvedValueOnce({ count: 1 });
+
+      await service.markDispatchSucceeded('outbox-1', 'ws-1');
+
+      expect(prisma.mindOutboxEvent.updateMany).toHaveBeenCalledWith({
+        where: { id: 'outbox-1', workspaceId: 'ws-1', status: 'processing' },
+        data: {
+          status: 'dispatched',
+          dispatchedAt: expect.objectContaining({}),
+          lastError: null,
+        },
+      });
+      const call = prisma.mindOutboxEvent.updateMany.mock.calls[0][0];
+      expect(call.data.dispatchedAt).toBeInstanceOf(Date);
+    });
+
+    it('marks an in-flight outbox event as failed with error', async () => {
       prisma.mindOutboxEvent.updateMany.mockResolvedValueOnce({ count: 1 });
 
       await service.markDispatchFailed('outbox-1', 'ws-1', 'connection refused');
 
       expect(prisma.mindOutboxEvent.updateMany).toHaveBeenCalledWith({
-        where: { id: 'outbox-1', workspaceId: 'ws-1', status: 'dispatched' },
+        where: {
+          id: 'outbox-1',
+          workspaceId: 'ws-1',
+          status: { in: ['processing', 'dispatched'] },
+        },
         data: {
           status: 'failed',
           lastError: 'connection refused',

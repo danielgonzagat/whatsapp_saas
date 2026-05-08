@@ -310,7 +310,7 @@ describe('BrainEventSpineService', () => {
   });
 
   describe('dispatchPending', () => {
-    it('marks pending outbox events as dispatched', async () => {
+    it('claims pending outbox events without marking downstream dispatch success', async () => {
       prisma.mindOutboxEvent.findMany.mockResolvedValueOnce([{ id: 'outbox-1' }]);
       prisma.mindOutboxEvent.updateMany.mockResolvedValueOnce({ count: 1 });
 
@@ -319,13 +319,12 @@ describe('BrainEventSpineService', () => {
       expect(prisma.mindOutboxEvent.updateMany).toHaveBeenCalledWith({
         where: { id: { in: ['outbox-1'] }, workspaceId: 'ws-1', status: 'pending' },
         data: expect.objectContaining({
-          status: 'dispatched',
+          status: 'processing',
           attempts: { increment: 1 },
+          dispatchedAt: null,
           lastError: null,
         }),
       });
-      const call = prisma.mindOutboxEvent.updateMany.mock.calls[0][0];
-      expect(call.data.dispatchedAt).toBeInstanceOf(Date);
     });
   });
 

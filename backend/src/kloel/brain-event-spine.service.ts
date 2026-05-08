@@ -183,8 +183,8 @@ export class BrainEventSpineService {
     const result = await this.prisma.mindOutboxEvent.updateMany({
       where: { id: { in: rows.map((row) => row.id) }, workspaceId, status: 'pending' },
       data: {
-        status: 'dispatched',
-        dispatchedAt: new Date(),
+        status: 'processing',
+        dispatchedAt: null,
         attempts: { increment: 1 },
         lastError: null,
       },
@@ -193,9 +193,20 @@ export class BrainEventSpineService {
     return { dispatched: result.count };
   }
 
+  async markDispatchSucceeded(eventId: string, workspaceId: string): Promise<void> {
+    await this.prisma.mindOutboxEvent.updateMany({
+      where: { id: eventId, workspaceId, status: 'processing' },
+      data: {
+        status: 'dispatched',
+        dispatchedAt: new Date(),
+        lastError: null,
+      },
+    });
+  }
+
   async markDispatchFailed(eventId: string, workspaceId: string, error: string): Promise<void> {
     await this.prisma.mindOutboxEvent.updateMany({
-      where: { id: eventId, workspaceId, status: 'dispatched' },
+      where: { id: eventId, workspaceId, status: { in: ['processing', 'dispatched'] } },
       data: {
         status: 'failed',
         lastError: error,
