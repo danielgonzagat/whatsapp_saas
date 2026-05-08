@@ -7,10 +7,8 @@ import {
   readBrainActionName,
 } from './brain-action-event-mapper';
 import { BrainCapabilityRegistryService } from './brain-capability-registry.service';
-import {
-  BrainCommercialGraphService,
-  CommercialGraphRecommendation,
-} from './brain-commercial-graph.service';
+import { BrainCommercialGraphService } from './brain-commercial-graph.service';
+import type { CommercialGraphRecommendation } from './brain-commercial-graph.types';
 import { BrainEventSpineService } from './brain-event-spine.service';
 import { BRAIN_EVENT_TAXONOMY } from './brain-event-taxonomy';
 import { BrainDecideDto, BrainObserveDto } from './brain-runtime.dto';

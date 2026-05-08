@@ -1,7 +1,7 @@
 import type { Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
-import type { CommercialGraphEdge, CommercialGraphNode } from './brain-commercial-graph.service';
+import type { CommercialGraphEdge, CommercialGraphNode } from './brain-commercial-graph.types';
 
 type MindGraphNodeDelegate = {
   upsert(input: {
@@ -46,7 +46,7 @@ function hasGraphDelegates(prisma: PrismaService): prisma is PrismaService & {
   mindGraphNode: MindGraphNodeDelegate;
   mindGraphEdge: MindGraphEdgeDelegate;
 } {
-  const candidate = prisma as unknown as {
+  const candidate = Object(prisma) as {
     mindGraphEdge?: Partial<MindGraphEdgeDelegate>;
     mindGraphNode?: Partial<MindGraphNodeDelegate>;
   };

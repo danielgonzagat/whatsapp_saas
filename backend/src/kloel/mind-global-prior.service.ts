@@ -40,7 +40,7 @@ type MindGlobalPriorDelegate = {
 function hasGlobalPriorDelegate(
   prisma: PrismaService,
 ): prisma is PrismaService & { mindGlobalPrior: MindGlobalPriorDelegate } {
-  const candidate = prisma as unknown as { mindGlobalPrior?: Partial<MindGlobalPriorDelegate> };
+  const candidate = Object(prisma) as { mindGlobalPrior?: Partial<MindGlobalPriorDelegate> };
   return (
     typeof candidate.mindGlobalPrior?.createMany === 'function' &&
     typeof candidate.mindGlobalPrior?.deleteMany === 'function'
@@ -209,7 +209,7 @@ export class MindGlobalPriorService {
 
     const predicate = `bandit:${decisionType}`;
     await this.prisma.mindGlobalPrior.deleteMany({
-      where: { domain: 'global_anonymous', predicate },
+      where: { domain: 'global_anonymous', predicate, workspaceId },
     });
     await this.prisma.mindGlobalPrior.createMany({
       data: arms.map((arm) => ({

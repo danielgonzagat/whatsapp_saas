@@ -1,33 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { persistWorkspaceCommercialGraph } from './brain-commercial-graph.persistence';
-
-export interface CommercialGraphNode {
-  id: string;
-  kind: 'action' | 'belief' | 'contact' | 'event' | 'intent' | 'policy' | 'status' | 'workspace';
-  label: string;
-  weight: number;
-}
-
-export interface CommercialGraphEdge {
-  from: string;
-  label: string;
-  to: string;
-  weight: number;
-}
-
-export interface CommercialGraphRecommendation {
-  action: string;
-  confidence: number;
-  reason: string;
-}
-
-export interface CommercialGraphWindow {
-  beliefCount?: number;
-  eventCount: number;
-  policyCount?: number;
-  take: number;
-}
+import type {
+  CommercialGraphEdge,
+  CommercialGraphNode,
+  CommercialGraphRecommendation,
+  CommercialGraphWindow,
+} from './brain-commercial-graph.types';
 
 function incrementNode(nodes: Map<string, CommercialGraphNode>, node: CommercialGraphNode): void {
   const current = nodes.get(node.id);
