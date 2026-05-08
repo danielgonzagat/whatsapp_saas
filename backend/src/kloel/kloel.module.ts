@@ -65,6 +65,8 @@ import { CartRecoveryService } from './cart-recovery.service';
 import { DiagnosticsController } from './diagnostics.controller';
 import { EmailCampaignService } from './email-campaign.service';
 import { KloelAudioModule } from './kloel-audio.module';
+import { KloelRuleEngineService } from './rules/kloel-rule-engine.service';
+import { KloelRulesModule } from './rules/kloel-rules.module';
 import { LeadsController } from './leads.controller';
 import { LeadsService } from './leads.service';
 import { OrderAlertsService } from './order-alerts.service';
@@ -131,6 +133,8 @@ import { MindProcessorService } from './mind-processor.service';
 import { MindQualityService } from './mind-quality.service';
 import { MindReportService } from './mind-report.service';
 import { MindReplayService } from './mind-replay.service';
+import { MindSimulatorService } from './mind-simulator.service';
+import { MindSyntheticGeneratorService } from './mind-synthetic-generator.service';
 import { MindService } from './mind.service';
 import { MindSurpriseService } from './mind-surprise.service';
 import { MindVerbalizerService } from './mind-verbalizer.service';
@@ -151,6 +155,7 @@ import { MindWorkspaceStateService } from './mind-workspace-state.service';
     PartnershipsModule,
     MetricsModule,
     KloelAudioModule,
+    KloelRulesModule,
   ],
   controllers: [
     KloelController,
@@ -261,6 +266,7 @@ import { MindWorkspaceStateService } from './mind-workspace-state.service';
     MindGlobalPriorService,
     MindEventProcessorService,
     MindGuardsService,
+    KloelRuleEngineService,
     MindObservabilityService,
     MindPerceptionService,
     MindPolicyService,
@@ -269,6 +275,8 @@ import { MindWorkspaceStateService } from './mind-workspace-state.service';
     MindQualityService,
     MindReportService,
     MindReplayService,
+    MindSimulatorService,
+    MindSyntheticGeneratorService,
     MindService,
     MindSurpriseService,
     MindVerbalizerService,
@@ -320,6 +328,7 @@ import { MindWorkspaceStateService } from './mind-workspace-state.service';
     MindGlobalPriorService,
     MindPolicyService,
     MindService,
+    KloelRuleEngineService,
     MindObservabilityService,
     MindReportService,
     MindVerbalizerService,

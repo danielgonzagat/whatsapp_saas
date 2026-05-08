@@ -20,7 +20,7 @@ describe('UniversalChannelWizard.helpers', () => {
   });
 
   describe('channelWizardProfile', () => {
-    const channels = ['instagram', 'facebook', 'tiktok', 'email'] as const;
+    const channels = ['instagram', 'facebook', 'tiktok', 'email', 'whatsapp'] as const;
 
     it.each(channels)('returns profile with required fields for %s', (channel) => {
       const profile = channelWizardProfile(channel);
@@ -58,7 +58,7 @@ describe('UniversalChannelWizard.helpers', () => {
     it('returns unique labels per channel', () => {
       const labels = channels.map((c) => channelWizardProfile(c).label);
       const unique = new Set(labels);
-      expect(unique.size).toBeGreaterThanOrEqual(3);
+      expect(unique.size).toBeGreaterThanOrEqual(4);
     });
 
     it('returns empty profile for invalid channel', () => {
@@ -76,6 +76,10 @@ describe('UniversalChannelWizard.helpers', () => {
       expect(resolveConnectionMethod('facebook')).toBe('meta-oauth');
     });
 
+    it('returns meta-oauth for whatsapp', () => {
+      expect(resolveConnectionMethod('whatsapp')).toBe('meta-oauth');
+    });
+
     it('returns tiktok-oauth for tiktok', () => {
       expect(resolveConnectionMethod('tiktok')).toBe('tiktok-oauth');
     });
@@ -88,7 +92,7 @@ describe('UniversalChannelWizard.helpers', () => {
   describe('channelIcon', () => {
     it('returns valid JSX for each channel', async () => {
       const { channelIcon } = await import('./UniversalChannelWizard.helpers');
-      const channels = ['instagram', 'facebook', 'tiktok', 'email'] as const;
+      const channels = ['instagram', 'facebook', 'tiktok', 'email', 'whatsapp'] as const;
       for (const ch of channels) {
         const el = channelIcon(ch, 24);
         expect(el).toBeDefined();

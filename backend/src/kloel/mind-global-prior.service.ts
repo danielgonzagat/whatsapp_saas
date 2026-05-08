@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import type { MindJson } from './mind.types';
 
 export interface GlobalPriorArmEntry {
   arm: string;
@@ -179,6 +180,30 @@ export class MindGlobalPriorService {
       beta: input.fallbackBeta ?? 1,
       fromGlobal: false,
     };
+  }
+
+  async lookupPrior(
+    domain: string,
+    predicate: string,
+    context: MindJson,
+  ): Promise<{ alpha: number; beta: number } | null> {
+    const prior = await this.prisma.mindGlobalPrior.findFirst({
+      where: {
+        workspaceId: null,
+        domain,
+        predicate,
+        context: { equals: context as Prisma.InputJsonValue },
+      },
+    });
+    if (!prior) return null;
+
+    const { mean, variance } = prior;
+    if (variance <= 0 || mean <= 0 || mean >= 1) return null;
+
+    const k = (mean * (1 - mean)) / variance - 1;
+    if (k <= 0) return null;
+
+    return { alpha: mean * k, beta: (1 - mean) * k };
   }
 
   async listDecisionTypes(): Promise<string[]> {

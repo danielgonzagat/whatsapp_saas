@@ -12,9 +12,14 @@ import { resolveCaseMemoryAction } from './mind-case-memory-decision.helper';
 import {
   KNOWN_DECISION_TYPES,
   TONE_OPTIONS,
+  resolveAdAlertActionBaseline,
   resolveAggressivenessBaseline,
   resolveAudioBaseline,
+  resolveBroadcastWindowBaseline,
+  resolveChannelChoiceBaseline,
   resolveCouponBaseline,
+  resolveHumanTransferBaseline,
+  resolveProductOfferBaseline,
   resolveToneBaseline,
 } from './mind-decision-baselines';
 
@@ -333,6 +338,284 @@ export class MindService {
       outcomeKey: `cupom:${workspaceId}:${Date.now()}`,
       utilitySuccess: 1,
       utilityFail: -0.2,
+    });
+
+    return {
+      action: result.chosen,
+      confidence: chosenConfidence(result),
+      fallback: result.decision.fallbackActive,
+    };
+  }
+
+  async resolveHumanTransfer(
+    workspaceId: string,
+    channel: string,
+    concept: string,
+    ticketRisk: number,
+    options?: { escalationInProgress?: boolean; humanAvailable?: boolean },
+  ): Promise<{ action: string; confidence: number; fallback: boolean }> {
+    const baseline = resolveHumanTransferBaseline(channel, concept, ticketRisk);
+    const context: Record<string, unknown> = { channel, concept, ticketRisk };
+    if (options?.escalationInProgress !== undefined) {
+      context.escalationInProgress = options.escalationInProgress;
+    }
+    if (options?.humanAvailable !== undefined) {
+      context.humanAvailable = options.humanAvailable;
+    }
+
+    const decisionOptions = [
+      {
+        action: 'continue_ai',
+        predicate: 'P(conversion|handoff_policy,concept,channel,ticket)',
+        context: { channel, concept, ticketRisk, handoff: 'continue_ai' },
+      },
+      {
+        action: 'transfer_now',
+        predicate: 'P(conversion|handoff_policy,concept,channel,ticket)',
+        context: { channel, concept, ticketRisk, handoff: 'transfer_now' },
+      },
+      {
+        action: 'transfer_after_next_reply',
+        predicate: 'P(conversion|handoff_policy,concept,channel,ticket)',
+        context: { channel, concept, ticketRisk, handoff: 'transfer_after_next_reply' },
+      },
+      {
+        action: 'pause_wait',
+        predicate: 'P(conversion|handoff_policy,concept,channel,ticket)',
+        context: { channel, concept, ticketRisk, handoff: 'pause_wait' },
+      },
+    ];
+
+    const result = await this.policy.choose({
+      workspaceId,
+      subject: `workspace:${workspaceId}`,
+      decisionType: 'human_transfer',
+      context,
+      options: decisionOptions,
+      baseline,
+      outcomeKey: `human_transfer:${workspaceId}:${Date.now()}`,
+    });
+
+    return {
+      action: result.chosen,
+      confidence: chosenConfidence(result),
+      fallback: result.decision.fallbackActive,
+    };
+  }
+
+  async resolveChannelChoice(
+    workspaceId: string,
+    availableChannels: string[],
+    segment?: string,
+    hour?: number,
+    concept?: string,
+  ): Promise<{ channel: string; confidence: number; fallback: boolean }> {
+    const baseline = resolveChannelChoiceBaseline(availableChannels, segment);
+    const context: Record<string, unknown> = {
+      availableChannels: availableChannels.join(','),
+      segment: segment ?? 'unknown',
+      hour: hour ?? 12,
+      concept: concept ?? 'general',
+    };
+
+    const decisionOptions = availableChannels.map((ch) => ({
+      action: ch,
+      predicate: 'P(reply|preferred_channel,segment,hour,concept)',
+      context: {
+        channel: ch,
+        segment: segment ?? 'unknown',
+        hour: hour ?? 12,
+        concept: concept ?? 'general',
+      },
+    }));
+
+    const result = await this.policy.choose({
+      workspaceId,
+      subject: `workspace:${workspaceId}`,
+      decisionType: 'channel_choice',
+      context,
+      options: decisionOptions,
+      baseline,
+      outcomeKey: `channel_choice:${workspaceId}:${Date.now()}`,
+    });
+
+    return {
+      channel: result.chosen,
+      confidence: chosenConfidence(result),
+      fallback: result.decision.fallbackActive,
+    };
+  }
+
+  async resolveProductOffer(
+    workspaceId: string,
+    segment: string,
+    concept: string,
+    priceBand: string,
+    lastPurchase?: string,
+  ): Promise<{ offer: string; confidence: number; fallback: boolean }> {
+    const baseline = resolveProductOfferBaseline(segment, concept, priceBand);
+    const context: Record<string, unknown> = { segment, concept, priceBand };
+    if (lastPurchase) context.lastPurchase = lastPurchase;
+
+    const decisionOptions = [
+      {
+        action: 'top_seller',
+        predicate: 'P(conversion|product_offer,segment,concept,price_band)',
+        context: { segment, concept, priceBand, offer: 'top_seller' },
+      },
+      {
+        action: 'highest_margin',
+        predicate: 'P(conversion|product_offer,segment,concept,price_band)',
+        context: { segment, concept, priceBand, offer: 'highest_margin' },
+      },
+      {
+        action: 'entry_product',
+        predicate: 'P(conversion|product_offer,segment,concept,price_band)',
+        context: { segment, concept, priceBand, offer: 'entry_product' },
+      },
+      {
+        action: 'premium_product',
+        predicate: 'P(conversion|product_offer,segment,concept,price_band)',
+        context: { segment, concept, priceBand, offer: 'premium_product' },
+      },
+      {
+        action: 'upsell',
+        predicate: 'P(conversion|product_offer,segment,concept,price_band)',
+        context: { segment, concept, priceBand, offer: 'upsell' },
+      },
+    ];
+
+    const result = await this.policy.choose({
+      workspaceId,
+      subject: `workspace:${workspaceId}`,
+      decisionType: 'product_offer',
+      context,
+      options: decisionOptions,
+      baseline,
+      outcomeKey: `product_offer:${workspaceId}:${Date.now()}`,
+    });
+
+    return {
+      offer: result.chosen,
+      confidence: chosenConfidence(result),
+      fallback: result.decision.fallbackActive,
+    };
+  }
+
+  async resolveBroadcastWindow(
+    workspaceId: string,
+    channel: string,
+    segment: string,
+    weekday?: string,
+    fatigue?: number,
+  ): Promise<{ window: string; confidence: number; fallback: boolean }> {
+    const baseline = resolveBroadcastWindowBaseline(channel, weekday ?? 'monday', fatigue ?? 0);
+    const context: Record<string, unknown> = {
+      channel,
+      segment,
+      weekday: weekday ?? 'monday',
+      fatigue: fatigue ?? 0,
+    };
+
+    const decisionOptions = [
+      {
+        action: 'now',
+        predicate: 'P(conversion|broadcast_window,channel,segment)',
+        context: { channel, segment, weekday: weekday ?? 'monday', window: 'now' },
+      },
+      {
+        action: 'tonight_20h',
+        predicate: 'P(conversion|broadcast_window,channel,segment)',
+        context: { channel, segment, weekday: weekday ?? 'monday', window: 'tonight_20h' },
+      },
+      {
+        action: 'tomorrow_9h',
+        predicate: 'P(conversion|broadcast_window,channel,segment)',
+        context: { channel, segment, weekday: weekday ?? 'monday', window: 'tomorrow_9h' },
+      },
+      {
+        action: 'friday_21h',
+        predicate: 'P(conversion|broadcast_window,channel,segment)',
+        context: { channel, segment, weekday: weekday ?? 'monday', window: 'friday_21h' },
+      },
+    ];
+
+    if (fatigue !== undefined && fatigue >= 0.8) {
+      decisionOptions.push({
+        action: 'pause',
+        predicate: 'P(conversion|broadcast_window,channel,segment)',
+        context: { channel, segment, weekday: weekday ?? 'monday', window: 'pause' },
+      });
+    }
+
+    const result = await this.policy.choose({
+      workspaceId,
+      subject: `workspace:${workspaceId}`,
+      decisionType: 'broadcast_window',
+      context,
+      options: decisionOptions,
+      baseline,
+      outcomeKey: `broadcast_window:${workspaceId}:${Date.now()}`,
+    });
+
+    return {
+      window: result.chosen,
+      confidence: chosenConfidence(result),
+      fallback: result.decision.fallbackActive,
+    };
+  }
+
+  async resolveAdAlertAction(
+    workspaceId: string,
+    metric: string,
+    window: number,
+    threshold: string,
+    campaign?: string,
+  ): Promise<{ action: string; confidence: number; fallback: boolean }> {
+    const baseline = resolveAdAlertActionBaseline(metric, threshold);
+    const context: Record<string, unknown> = {
+      metric,
+      window,
+      threshold,
+      campaign: campaign ?? 'unknown',
+    };
+
+    const decisionOptions = [
+      {
+        action: 'alert_only',
+        predicate: 'P(success|ad_alert_action,metric,window)',
+        context: { metric, window, alertAction: 'alert_only' },
+      },
+      {
+        action: 'suggest_pause',
+        predicate: 'P(success|ad_alert_action,metric,window)',
+        context: { metric, window, alertAction: 'suggest_pause' },
+      },
+      {
+        action: 'suggest_budget_down',
+        predicate: 'P(success|ad_alert_action,metric,window)',
+        context: { metric, window, alertAction: 'suggest_budget_down' },
+      },
+      {
+        action: 'suggest_creative',
+        predicate: 'P(success|ad_alert_action,metric,window)',
+        context: { metric, window, alertAction: 'suggest_creative' },
+      },
+      {
+        action: 'ignore',
+        predicate: 'P(success|ad_alert_action,metric,window)',
+        context: { metric, window, alertAction: 'ignore' },
+      },
+    ];
+
+    const result = await this.policy.choose({
+      workspaceId,
+      subject: `workspace:${workspaceId}`,
+      decisionType: 'ad_alert_action',
+      context,
+      options: decisionOptions,
+      baseline,
+      outcomeKey: `ad_alert_action:${workspaceId}:${Date.now()}`,
     });
 
     return {

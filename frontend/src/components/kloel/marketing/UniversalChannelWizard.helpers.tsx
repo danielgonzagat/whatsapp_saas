@@ -3,7 +3,7 @@
 import { kloelT } from '@/lib/i18n/t';
 import type React from 'react';
 
-export type UniversalChannel = 'instagram' | 'facebook' | 'tiktok' | 'email';
+export type UniversalChannel = 'instagram' | 'facebook' | 'tiktok' | 'email' | 'whatsapp';
 
 export const WIZARD_STEPS = [
   kloelT('Conexao'),
@@ -68,7 +68,7 @@ export function channelWizardProfile(channel: UniversalChannel): ChannelWizardPr
           'Limite de 150 mensagens por dia por conta via API',
         ],
         activationSummary:
-          'Ao conectar o Instagram, voce podera ler e responder mensagens do Direct, gerenciar comentarios e acompanhar metricas de audiencia diretamente do painel da KLOEL.',
+          'Ao conectar o Instagram, voce podera ler e responder mensagens do Direct, gerenciar comentarios e acompanhar metricas de audiencia diretamente pelo painel da Kloel.',
       };
     case 'facebook':
       return {
@@ -78,7 +78,7 @@ export function channelWizardProfile(channel: UniversalChannel): ChannelWizardPr
         description:
           'Automatize conversas do Messenger, configure respostas rapidas e acompanhe o desempenho da sua Pagina em tempo real.',
         connectDescription:
-          'Conecte a Pagina do Facebook para liberar o Messenger dentro da KLOEL. O fluxo abre a autorizacao oficial da Meta e retorna para este canal automaticamente.',
+          'Conecte a Pagina do Facebook para liberar o Messenger dentro da Kloel. O fluxo abre a autorizacao oficial da Meta e retorna para este canal automaticamente.',
         profileCards: [
           { label: 'Conta necessaria', value: 'Pagina do Facebook com Messenger ativo' },
           {
@@ -97,7 +97,7 @@ export function channelWizardProfile(channel: UniversalChannel): ChannelWizardPr
         formatNotes: [
           {
             title: 'Texto simples',
-            body: 'Mensagens de ate 2000 caracteres com suporte a emojis nativos da plataforma.',
+            body: 'Mensagens de ate 2000 caracteres com texto nativo da plataforma.',
           },
           {
             title: 'Imagens e anexos',
@@ -138,7 +138,7 @@ export function channelWizardProfile(channel: UniversalChannel): ChannelWizardPr
           },
           {
             label: 'Chaves do app',
-            value: 'Client Key e Client Secret configurados no workspace KLOEL',
+            value: 'Client Key e Client Secret configurados no workspace Kloel',
           },
           {
             label: 'Metricas disponiveis',
@@ -160,7 +160,7 @@ export function channelWizardProfile(channel: UniversalChannel): ChannelWizardPr
           },
           {
             title: 'Comentarios',
-            body: 'Respostas automaticas ou manuais com limite de 150 caracteres e suporte a emojis.',
+            body: 'Respostas automaticas ou manuais com limite de 150 caracteres.',
           },
         ],
         restrictions: [
@@ -171,7 +171,61 @@ export function channelWizardProfile(channel: UniversalChannel): ChannelWizardPr
           'Conteudo publicado via API precisa seguir as diretrizes de comunidade do TikTok',
         ],
         activationSummary:
-          'Ao conectar o TikTok, voce podera gerenciar mensagens diretas, monitorar metricas de videos e automatizar respostas a comentarios diretamente da KLOEL.',
+          'Ao conectar o TikTok, voce podera gerenciar mensagens diretas, monitorar metricas de videos e automatizar respostas a comentarios diretamente pela Kloel.',
+      };
+    case 'whatsapp':
+      return {
+        label: 'WhatsApp',
+        connectionLabel: 'Conectar WhatsApp',
+        connectingLabel: 'Abrindo Meta...',
+        description:
+          'Conecte seu WhatsApp Business para automatizar conversas, enviar catalogos, processar pedidos e gerenciar o atendimento inteiro em um so lugar.',
+        connectDescription:
+          'Conecte seu numero WhatsApp Business pela autorizacao oficial da Meta. O fluxo abre a tela da Meta, voce autoriza, e volta para este canal automaticamente.',
+        profileCards: [
+          {
+            label: 'Conta necessaria',
+            value: 'Numero de WhatsApp Business vinculado a uma conta Meta Business',
+          },
+          {
+            label: 'Permissoes',
+            value: 'Leitura e envio de mensagens, gerenciamento de catalogos e templates',
+          },
+          {
+            label: 'Metodo de conexao',
+            value: 'Embedded Signup oficial da Meta com Cloud API ativa',
+          },
+          {
+            label: 'Recursos',
+            value: 'Catalogo de produtos, carrinho, pedidos, carrosseis e respostas rapidas',
+          },
+        ],
+        formatNotes: [
+          {
+            title: 'Texto e midia',
+            body: 'Mensagens de texto, imagens, videos, audio, documentos PDF e localizacao.',
+          },
+          {
+            title: 'Templates de mensagem',
+            body: 'Modelos pre-aprovados pela Meta para notificacoes, recuperacao de carrinho e ofertas. Variaveis personalizadas como nome e produto.',
+          },
+          {
+            title: 'Catalogo e carrinho',
+            body: 'Exiba produtos diretamente na conversa, permita que o cliente monte o carrinho e finalize o pedido sem sair do WhatsApp.',
+          },
+          {
+            title: 'Listas e botoes',
+            body: 'Mensagens interativas com ate 10 opcoes em lista e ate 3 botoes de acao para agilizar o atendimento automatizado.',
+          },
+        ],
+        restrictions: [
+          'O numero precisa ser um WhatsApp Business (nao pode ser WhatsApp pessoal)',
+          'Templates de mensagem precisam ser aprovados pela Meta antes do uso',
+          'Mensagens proativas para clientes fora da janela de 24h exigem template aprovado',
+          'Limite de envio conforme o tier da conta (50 a 1000 mensagens por segundo)',
+        ],
+        activationSummary:
+          'Ao conectar o WhatsApp, voce libera o chat omnichannel com IA, catalogo de produtos, carrinho integrado e automacao de vendas diretamente pela Kloel.',
       };
     case 'email':
       return {
@@ -220,7 +274,7 @@ export function channelWizardProfile(channel: UniversalChannel): ChannelWizardPr
           'Emojis no assunto podem reduzir a taxa de entrega em alguns provedores',
         ],
         activationSummary:
-          'Ao ativar o canal de email, voce podera criar e enviar campanhas, usar templates prontos e acompanhar metricas de desempenho diretamente da KLOEL.',
+          'Ao ativar o canal de email, voce podera criar e enviar campanhas, usar templates prontos e acompanhar metricas de desempenho diretamente pela Kloel.',
       };
     default:
       return {
@@ -251,6 +305,7 @@ export function resolveConnectionMethod(channel: UniversalChannel): WizardConnec
   switch (channel) {
     case 'instagram':
     case 'facebook':
+    case 'whatsapp':
       return 'meta-oauth';
     case 'tiktok':
       return 'tiktok-oauth';
@@ -278,6 +333,12 @@ export function channelIcon(channel: UniversalChannel, size: number): React.Reac
       return (
         <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
           <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1v-3.5a6.37 6.37 0 00-.79-.05A6.34 6.34 0 003.15 15.2a6.34 6.34 0 0010.86 4.48V13a8.28 8.28 0 005.58 2.15V11.7a4.83 4.83 0 01-3.58-1.43V6.69h3.58z" />
+        </svg>
+      );
+    case 'whatsapp':
+      return (
+        <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347zM12.05 21.785h-.01a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.981.998-3.648-.235-.374A9.86 9.86 0 012.16 12.01C2.16 6.579 6.58 2.16 12.06 2.16a9.84 9.84 0 016.982 2.892 9.84 9.84 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884zM20.52 3.449A11.8 11.8 0 0012.05.002C5.463.002.104 5.36.1 11.95a11.82 11.82 0 001.588 5.945L0 24l6.304-1.654a11.88 11.88 0 005.683 1.448h.005c6.585 0 11.946-5.36 11.95-11.95a11.84 11.84 0 00-3.498-8.395z" />
         </svg>
       );
     case 'email':

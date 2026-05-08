@@ -102,6 +102,7 @@ describe('MindPolicyService harness and outcome resolution', () => {
             outcome: 1,
           },
         ]),
+        kloelMemory: { upsert: jest.fn().mockResolvedValue({}) },
         mindPolicy: {
           findMany: jest.fn().mockResolvedValue([
             {
@@ -129,7 +130,7 @@ describe('MindPolicyService harness and outcome resolution', () => {
       expect(count).toBe(1);
       expect(prisma.mindPolicy.findMany).toHaveBeenCalled();
       expect(prisma.mindPolicy.updateMany).toHaveBeenCalled();
-      expect(prisma.$executeRaw).toHaveBeenCalled();
+      expect(prisma.kloelMemory.upsert).toHaveBeenCalled();
     });
   });
 });

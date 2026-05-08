@@ -120,6 +120,7 @@ export class UnifiedAgentActionsMessagingService {
       content,
       mediaUrl: options.mediaUrl,
       mediaType: options.mediaType,
+      guardContext: context ?? {},
     });
 
     this.logger.log(

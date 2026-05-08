@@ -2240,15 +2240,26 @@ function ChannelTab({
     return null;
   }
   if (channelKey === 'whatsapp') {
+    if (connectionStatus?.channels?.whatsapp?.connected && workspaceId) {
+      return (
+        <WhatsAppTab
+          channelData={channelData}
+          liveFeed={liveFeed}
+          mode={mode}
+          workspaceId={workspaceId}
+          operator={operator}
+          connection={connectionStatus?.channels?.whatsapp}
+          onRefreshConnectionStatus={onRefreshConnectionStatus}
+        />
+      );
+    }
     return (
-      <WhatsAppTab
-        channelData={channelData}
-        liveFeed={liveFeed}
-        mode={mode}
-        workspaceId={workspaceId}
-        operator={operator}
-        connection={connectionStatus?.channels?.whatsapp}
-        onRefreshConnectionStatus={onRefreshConnectionStatus}
+      <UniversalChannelWizard
+        channel="whatsapp"
+        connecting={connectingKey === 'whatsapp'}
+        connected={false}
+        error={null}
+        onConnect={() => onConnectMeta?.('whatsapp')}
       />
     );
   }

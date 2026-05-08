@@ -1,5 +1,5 @@
+import { randomUUID } from 'node:crypto';
 import type { Prisma } from '@prisma/client';
-import { randomUUID } from 'crypto';
 import type { PrismaService } from '../prisma/prisma.service';
 import type { MindPolicyDecision } from './mind.types';
 
@@ -65,7 +65,7 @@ export function createPolicyRow(
 }
 
 export async function persistResolvedPolicyMemories(
-  prisma: Pick<PrismaService, '$executeRaw'>,
+  prisma: Pick<PrismaService, 'kloelMemory'>,
   rows: ResolvedPolicyRow[],
   baselineOutcome?: number,
 ): Promise<void> {
@@ -87,18 +87,22 @@ export async function persistResolvedPolicyMemories(
       `outcome=${row.outcome}`,
     ].join(' ');
 
-    await prisma.$executeRaw`
-      INSERT INTO "RAC_KloelMemory"
-        ("id","workspaceId","key","value","category","type","content","metadata","createdAt","updatedAt")
-      VALUES
-        (${randomUUID()}, ${row.workspaceId}, ${`mind:policy:${row.id}`},
-         ${JSON.stringify(value)}::jsonb, 'mind_outcomes', 'policy_outcome',
-         ${content}, ${JSON.stringify({ policyId: row.id })}::jsonb, NOW(), NOW())
-      ON CONFLICT ("workspaceId", "key") DO UPDATE
-      SET "value" = EXCLUDED."value",
-          "content" = EXCLUDED."content",
-          "metadata" = EXCLUDED."metadata",
-          "updatedAt" = NOW()
-    `;
+    await prisma.kloelMemory.upsert({
+      where: { workspaceId_key: { workspaceId: row.workspaceId, key: `mind:policy:${row.id}` } },
+      create: {
+        workspaceId: row.workspaceId,
+        key: `mind:policy:${row.id}`,
+        value,
+        category: 'mind_outcomes',
+        type: 'policy_outcome',
+        content,
+        metadata: { policyId: row.id },
+      },
+      update: {
+        value,
+        content,
+        metadata: { policyId: row.id },
+      },
+    });
   }
 }

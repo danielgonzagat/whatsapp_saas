@@ -63,6 +63,54 @@ export function messageTemplate(payload: Record<string, unknown>): string {
   return 'text';
 }
 
+export function resolveHumanTransferBaseline(
+  _channel: string,
+  _concept: string,
+  ticketRisk: number,
+): string {
+  if (ticketRisk >= 0.7) return 'transfer_now';
+  if (ticketRisk >= 0.4) return 'transfer_after_next_reply';
+  return 'continue_ai';
+}
+
+export function resolveChannelChoiceBaseline(
+  availableChannels: string[],
+  _segment?: string,
+): string {
+  const priority = ['whatsapp', 'instagram', 'messenger', 'email', 'sms'];
+  for (const channel of priority) {
+    if (availableChannels.includes(channel)) return channel;
+  }
+  return availableChannels[0] ?? 'whatsapp';
+}
+
+export function resolveProductOfferBaseline(
+  segment: string,
+  _concept: string,
+  priceBand: string,
+): string {
+  if (segment === 'premium') return 'premium_product';
+  if (segment === 'new_lead' || segment === 'cold') return 'entry_product';
+  const highBands = new Set(['over_300', 'over_500', 'over_1000']);
+  if (highBands.has(priceBand)) return 'highest_margin';
+  return 'top_seller';
+}
+
+export function resolveBroadcastWindowBaseline(
+  _channel: string,
+  _weekday: string,
+  fatigue: number,
+): string {
+  if (fatigue >= 0.8) return 'pause';
+  return 'tomorrow_9h';
+}
+
+export function resolveAdAlertActionBaseline(_metric: string, threshold: string): string {
+  if (threshold === 'critical') return 'suggest_pause';
+  if (threshold === 'low') return 'suggest_budget_down';
+  return 'alert_only';
+}
+
 export function toStableString(value: unknown): string {
   if (typeof value === 'string') return value;
   if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {

@@ -3,6 +3,7 @@ import { InstagramService } from '../meta/instagram/instagram.service';
 import { MetaWhatsAppService } from '../meta/meta-whatsapp.service';
 import { MessengerService } from '../meta/messenger/messenger.service';
 import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
+import { EmailCampaignService } from './email-campaign.service';
 import type {
   ChannelCapability,
   ChannelName,
@@ -35,6 +36,15 @@ function availableCapability(channel: ChannelName): ChannelCapability {
 
 function blockedResult(reason: string): ChannelSendResult {
   return { success: false, blocked: true, blockedReason: reason };
+}
+
+function escapeEmailHtml(value: string): string {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
 }
 
 @Injectable()
@@ -217,45 +227,112 @@ export class TikTokChannelTransport implements ChannelTransportProvider {
   }
 }
 
+function hasEmailProvider(): 'resend' | 'sendgrid' | 'smtp' | null {
+  if (process.env.RESEND_API_KEY?.trim()) return 'resend';
+  if (process.env.SENDGRID_API_KEY?.trim()) return 'sendgrid';
+  if (process.env.EMAIL_OUTBOUND_SMTP_HOST?.trim() && process.env.EMAIL_OUTBOUND_SMTP_USER?.trim())
+    return 'smtp';
+  return null;
+}
+
 @Injectable()
 export class EmailChannelTransport implements ChannelTransportProvider {
   readonly channel: ChannelName = 'email';
   private readonly logger = new Logger(EmailChannelTransport.name);
 
+  constructor(@Optional() private readonly emailCampaign?: EmailCampaignService) {}
+
   isConfigured(): boolean {
-    return Boolean(
-      process.env.EMAIL_OUTBOUND_SMTP_HOST?.trim() && process.env.EMAIL_OUTBOUND_SMTP_USER?.trim(),
-    );
+    return hasEmailProvider() !== null;
   }
 
   capability(_workspaceId: string): Promise<ChannelCapability> {
+    const provider = hasEmailProvider();
+    if (provider === 'resend' || provider === 'sendgrid') {
+      return Promise.resolve(availableCapability('email'));
+    }
+    if (provider === 'smtp') {
+      return Promise.resolve(
+        blockedCapability(
+          'email',
+          'SMTP outbound transport ainda nao implementado no canal unificado. Configure RESEND_API_KEY ou SENDGRID_API_KEY para envio imediato.',
+          ['RESEND_API_KEY', 'SENDGRID_API_KEY'],
+        ),
+      );
+    }
     return Promise.resolve(
       blockedCapability(
         'email',
-        'Email outbound bloqueado ate o transporte SMTP/OAuth thread-aware ser implementado.',
-        ['EMAIL_OUTBOUND_SMTP_HOST', 'EMAIL_OUTBOUND_SMTP_USER', 'Email outbound transport'],
+        'Email outbound nao configurado. Configure RESEND_API_KEY, SENDGRID_API_KEY ou credenciais SMTP.',
+        [
+          'RESEND_API_KEY',
+          'SENDGRID_API_KEY',
+          'EMAIL_OUTBOUND_SMTP_HOST',
+          'EMAIL_OUTBOUND_SMTP_USER',
+        ],
       ),
     );
   }
 
-  send(_workspaceId: string, request: ChannelSendRequest): Promise<ChannelSendResult> {
-    if (!this.isConfigured()) {
-      return Promise.resolve(
-        blockedResult(
-          'Email outbound nao configurado. Configure EMAIL_OUTBOUND_SMTP_HOST e EMAIL_OUTBOUND_SMTP_USER.',
-        ),
+  async send(workspaceId: string, request: ChannelSendRequest): Promise<ChannelSendResult> {
+    if (!this.emailCampaign) {
+      return blockedResult(
+        'EmailCampaignService nao disponivel no modulo — verifique o registro de providers em kloel.module.ts.',
       );
     }
 
-    this.logger.warn(
-      `Email send bloqueado — SMTP transport nao implementado. ` +
-        `Requisição para recipient=${request.recipientId}`,
-    );
-    return Promise.resolve(
-      blockedResult(
-        'Email outbound SMTP transport ainda nao implementado. O canal esta disponivel apenas para recebimento de emails.',
-      ),
-    );
+    const provider = hasEmailProvider();
+    if (!provider) {
+      return blockedResult(
+        'Email outbound nao configurado. Configure RESEND_API_KEY, SENDGRID_API_KEY ou credenciais SMTP.',
+      );
+    }
+
+    if (provider === 'smtp') {
+      return blockedResult(
+        'SMTP outbound ainda nao implementado. Configure RESEND_API_KEY ou SENDGRID_API_KEY para envio imediato.',
+      );
+    }
+
+    try {
+      const { subject, html } = this.adaptContent(request.content);
+
+      const success = await this.emailCampaign.sendSingleEmail(request.recipientId, subject, html);
+
+      if (!success) {
+        this.logger.warn(
+          `Email send falhou workspace=${workspaceId} recipient=${request.recipientId}`,
+        );
+        return { success: false, blocked: false, error: 'email_send_failed' };
+      }
+
+      this.logger.log(
+        `Email send dispatched workspace=${workspaceId} recipient=${request.recipientId} via ${provider}`,
+      );
+
+      return { success: true, blocked: false };
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'unknown_error';
+      this.logger.error(`Email send erro workspace=${workspaceId}: ${message}`);
+      return { success: false, blocked: false, error: message };
+    }
+  }
+
+  private adaptContent(content: string): { subject: string; html: string } {
+    const lines = content.split('\n');
+    const firstLine = lines[0]?.trim() ?? '';
+    const subject = firstLine.length > 0 && firstLine.length <= 120 ? firstLine : 'Mensagem Kloel';
+    const bodyLines = firstLine.length > 0 && firstLine.length <= 120 ? lines.slice(1) : lines;
+
+    if (/<[a-z][\s\S]*>/i.test(content)) {
+      return { subject, html: content };
+    }
+
+    const htmlParagraphs = bodyLines
+      .map((line) => (line.trim() ? `<p>${escapeEmailHtml(line.trim())}</p>` : '<br/>'))
+      .join('\n');
+
+    return { subject, html: htmlParagraphs || `<p>${escapeEmailHtml(content)}</p>` };
   }
 }
 

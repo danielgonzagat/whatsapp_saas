@@ -42,6 +42,10 @@ export class MindSurpriseService {
 
   async sweepExpired(workspaceId: string, asOf = new Date()): Promise<number> {
     return this.prisma.$transaction(async (tx) => {
+      // Raw justified: SELECT … FOR UPDATE SKIP LOCKED provides concurrent-
+      // safe batch processing across workers. Prisma has no row-level lock
+      // primitives, and SKIP LOCKED avoids head-of-line blocking between
+      // parallel sweepExpired calls.
       const rows = await tx.$queryRaw<MindPrediction[]>`
         SELECT *
         FROM "RAC_MindPrediction"
@@ -58,11 +62,10 @@ export class MindSurpriseService {
         if (row.predicate.startsWith('P(')) {
           const probabilityOfMiss = this.clamp(1 - row.predictedMean, 1e-6, 1);
           const surprise = -Math.log(probabilityOfMiss);
-          await tx.$executeRaw`
-            UPDATE "RAC_MindPrediction"
-            SET "actual" = 0, "surprise" = ${surprise}, "resolvedAt" = NOW(), "updatedAt" = NOW()
-            WHERE "id" = ${row.id}
-          `;
+          await tx.mindPrediction.updateMany({
+            where: { id: row.id, workspaceId: row.workspaceId },
+            data: { actual: 0, surprise, resolvedAt: new Date() },
+          });
           await this.beliefs.observeBinary(
             row.workspaceId,
             row.subject,
@@ -72,11 +75,10 @@ export class MindSurpriseService {
           );
           surpriseTotal += surprise;
         } else {
-          await tx.$executeRaw`
-            UPDATE "RAC_MindPrediction"
-            SET "actual" = 0, "surprise" = 0, "resolvedAt" = NOW(), "updatedAt" = NOW()
-            WHERE "id" = ${row.id}
-          `;
+          await tx.mindPrediction.updateMany({
+            where: { id: row.id, workspaceId: row.workspaceId },
+            data: { actual: 0, surprise: 0, resolvedAt: new Date() },
+          });
         }
       }
       return surpriseTotal;

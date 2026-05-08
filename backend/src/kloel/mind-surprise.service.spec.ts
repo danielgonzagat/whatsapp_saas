@@ -84,10 +84,15 @@ describe('MindSurpriseService', () => {
       };
 
       prisma.$transaction.mockImplementation(
-        async (fn: (tx: { $queryRaw: jest.Mock; $executeRaw: jest.Mock }) => Promise<number>) => {
+        async (
+          fn: (tx: {
+            $queryRaw: jest.Mock;
+            mindPrediction: { updateMany: jest.Mock };
+          }) => Promise<number>,
+        ) => {
           const tx = {
             $queryRaw: jest.fn().mockResolvedValue([sweepRow]),
-            $executeRaw: jest.fn().mockResolvedValue(1),
+            mindPrediction: { updateMany: jest.fn().mockResolvedValue({ count: 1 }) },
           };
           return fn(tx);
         },
@@ -116,10 +121,15 @@ describe('MindSurpriseService', () => {
       };
 
       prisma.$transaction.mockImplementation(
-        async (fn: (tx: { $queryRaw: jest.Mock; $executeRaw: jest.Mock }) => Promise<number>) => {
+        async (
+          fn: (tx: {
+            $queryRaw: jest.Mock;
+            mindPrediction: { updateMany: jest.Mock };
+          }) => Promise<number>,
+        ) => {
           const tx = {
             $queryRaw: jest.fn().mockResolvedValue([]),
-            $executeRaw: jest.fn().mockResolvedValue(1),
+            mindPrediction: { updateMany: jest.fn().mockResolvedValue({ count: 1 }) },
           };
           return fn(tx);
         },

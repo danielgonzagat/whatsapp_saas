@@ -3,7 +3,10 @@ import { Cron } from '@nestjs/schedule';
 import { forEachSequential } from '../common/async-sequence';
 import { PrismaService } from '../prisma/prisma.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import { ChannelTransportRegistry } from './channel-transport.registry';
+import { MindBanditService } from './mind-bandit.service';
 import { MindCaseMemoryService } from './mind-case-memory.service';
+import { MindGuardsService } from './mind-guards.service';
 import { MindPolicyService } from './mind-policy.service';
 import {
   buildListUnsubscribeHeader,
@@ -86,6 +89,9 @@ export class CartRecoveryService {
     @Optional() private readonly opsAlert?: OpsAlertService,
     @Optional() private readonly mindPolicy?: MindPolicyService,
     @Optional() private readonly cases?: MindCaseMemoryService,
+    @Optional() private readonly guards?: MindGuardsService,
+    @Optional() private readonly transportRegistry?: ChannelTransportRegistry,
+    @Optional() private readonly bandit?: MindBanditService,
   ) {}
 
   /** Check abandoned carts and dispatch MIND-chosen recovery actions. */
@@ -122,15 +128,12 @@ export class CartRecoveryService {
       }
       this.logger.log(`Found ${toRecover.length} abandoned carts to recover`);
 
-      const { EmailService } = await import('../auth/email.service');
-
       await forEachSequential(toRecover, async (order) => {
         try {
           if (!order.customerEmail) {
             return;
           }
 
-          const emailService = new EmailService();
           const productName = order.plan?.product?.name || 'Seu pedido';
           const customerEmail = order.customerEmail;
           const wsId = order.workspaceId;
@@ -138,75 +141,109 @@ export class CartRecoveryService {
           const priceBand = resolvePriceBand(product?.price);
           const ageMinutes = Math.round((Date.now() - order.createdAt.getTime()) / 60000);
 
+          const emailCapable = await this.transportRegistry
+            ?.getCapability(wsId, 'email')
+            .then((cap) => cap.sendAvailable)
+            .catch(() => false);
+          if (this.transportRegistry && !emailCapable) {
+            this.logger.warn(
+              `Email channel not available for workspace ${wsId} — skipping cart recovery for order ${order.id}`,
+            );
+            return;
+          }
+
           let recoveryAction = 'help';
           let mindDecisionMeta: Record<string, unknown> = {};
+          const cartCaseType = 'cart_recovery';
+
+          let memoryAction: string | null = null;
+          if (wsId && this.cases) {
+            const similar = await this.cases.similar({
+              workspaceId: wsId,
+              caseType: cartCaseType,
+              text: `product ${productName} priceBand ${priceBand} ageMinutes ${ageMinutes}`,
+              features: { channel: 'email', price_band: priceBand },
+              limit: 30,
+            });
+
+            if (similar.length >= 3) {
+              const actionScores = new Map<
+                string,
+                { similaritySum: number; outcomeSum: number; count: number }
+              >();
+              const actions = ['proof', 'urgency', 'help', 'faq', 'discount', 'pause'];
+
+              for (const row of similar) {
+                if (!actions.includes(row.action)) {
+                  continue;
+                }
+
+                const entry = actionScores.get(row.action) ?? {
+                  similaritySum: 0,
+                  outcomeSum: 0,
+                  count: 0,
+                };
+
+                entry.similaritySum += row.similarity;
+                if (typeof row.outcome === 'number') {
+                  entry.outcomeSum += row.outcome;
+                }
+                entry.count += 1;
+
+                actionScores.set(row.action, entry);
+              }
+
+              if (actionScores.size > 0) {
+                const totalSimilarity = similar.reduce((sum, row) => sum + row.similarity, 0);
+
+                if (totalSimilarity >= 1.2) {
+                  let bestAction: string | null = null;
+                  let bestScore = -Infinity;
+
+                  for (const [action, entry] of actionScores) {
+                    const outcomeRate = entry.count > 0 ? entry.outcomeSum / entry.count : 0;
+                    const score = entry.similaritySum * 0.3 + outcomeRate * 0.7;
+
+                    if (score > bestScore) {
+                      bestScore = score;
+                      bestAction = action;
+                    }
+                  }
+
+                  memoryAction = bestAction;
+                }
+              }
+            }
+          }
+
+          let banditAction: string | null = null;
+          if (wsId && this.bandit) {
+            try {
+              await this.bandit.register({
+                arms: ['proof', 'urgency', 'help', 'faq', 'discount', 'pause'],
+                decisionType: cartCaseType,
+                workspaceId: wsId,
+              });
+              const banditChoice = await this.bandit.choose(wsId, cartCaseType);
+              if (banditChoice) {
+                banditAction = banditChoice.arm;
+              }
+            } catch (banditErr: unknown) {
+              this.logger.warn(
+                `Bandit choose failed for cart_recovery ws=${wsId}: ${String(banditErr)}`,
+              );
+            }
+          }
+
+          const effectiveBaseline = memoryAction ?? banditAction ?? 'help';
+          recoveryAction = effectiveBaseline;
+          mindDecisionMeta = {
+            ...(memoryAction ? { mindCaseMemoryAction: memoryAction } : {}),
+            ...(banditAction ? { banditArm: banditAction } : {}),
+          };
 
           if (wsId && this.mindPolicy) {
             try {
-              const cartCaseType = 'cart_recovery';
-
-              let memoryAction: string | null = null;
-              if (this.cases) {
-                const similar = await this.cases.similar({
-                  workspaceId: wsId,
-                  caseType: cartCaseType,
-                  text: `product ${productName} priceBand ${priceBand} ageMinutes ${ageMinutes}`,
-                  features: { channel: 'email', price_band: priceBand },
-                  limit: 30,
-                });
-
-                if (similar.length >= 3) {
-                  const actionScores = new Map<
-                    string,
-                    { similaritySum: number; outcomeSum: number; count: number }
-                  >();
-                  const actions = ['proof', 'urgency', 'help', 'faq', 'discount', 'pause'];
-
-                  for (const row of similar) {
-                    if (!actions.includes(row.action)) {
-                      continue;
-                    }
-
-                    const entry = actionScores.get(row.action) ?? {
-                      similaritySum: 0,
-                      outcomeSum: 0,
-                      count: 0,
-                    };
-
-                    entry.similaritySum += row.similarity;
-                    if (typeof row.outcome === 'number') {
-                      entry.outcomeSum += row.outcome;
-                    }
-                    entry.count += 1;
-
-                    actionScores.set(row.action, entry);
-                  }
-
-                  if (actionScores.size > 0) {
-                    const totalSimilarity = similar.reduce((sum, row) => sum + row.similarity, 0);
-
-                    if (totalSimilarity >= 1.2) {
-                      let bestAction: string | null = null;
-                      let bestScore = -Infinity;
-
-                      for (const [action, entry] of actionScores) {
-                        const outcomeRate = entry.count > 0 ? entry.outcomeSum / entry.count : 0;
-                        const score = entry.similaritySum * 0.3 + outcomeRate * 0.7;
-
-                        if (score > bestScore) {
-                          bestScore = score;
-                          bestAction = action;
-                        }
-                      }
-
-                      memoryAction = bestAction;
-                    }
-                  }
-                }
-              }
-
-              const effectiveBaseline = memoryAction ?? 'help';
-
               const recoveryResult = await this.mindPolicy.choose({
                 workspaceId: wsId,
                 subject: `order:${order.id}`,
@@ -256,13 +293,38 @@ export class CartRecoveryService {
               });
               recoveryAction = recoveryResult.chosen;
               mindDecisionMeta = {
+                ...mindDecisionMeta,
                 mindRecoveryAction: recoveryResult.chosen,
                 mindReason: recoveryResult.decision.reasonInternal,
-                ...(memoryAction ? { mindCaseMemoryAction: memoryAction } : {}),
               };
             } catch (mindErr: unknown) {
               this.logger.warn(
                 `MIND cart_recovery fallback for order ${order.id}: ${String(mindErr)}`,
+              );
+            }
+          }
+
+          if (this.guards) {
+            try {
+              const guardResult = await this.guards.evaluate({
+                workspaceId: wsId,
+                decisionType: 'cart_recovery',
+                action: `send_recovery_email:${recoveryAction}`,
+                context: {
+                  channel: 'email',
+                  withinComplianceWindow: true,
+                  productId: product?.id,
+                },
+              });
+              if (!guardResult.allowed) {
+                this.logger.warn(
+                  `Cart recovery blocked by guard ${guardResult.guardName} for order ${order.id}: ${guardResult.reason}`,
+                );
+                return;
+              }
+            } catch (guardErr: unknown) {
+              this.logger.warn(
+                `Guard evaluation failed for cart recovery order ${order.id}: ${String(guardErr)}`,
               );
             }
           }
@@ -277,15 +339,45 @@ export class CartRecoveryService {
             workspaceId: wsId,
           });
 
-          await emailService.sendEmail({
-            to: customerEmail,
-            subject: `Voce esqueceu algo — ${productName}`,
-            html: `${emailBody}${unsubscribeFooter}`,
-            headers: {
-              'List-Unsubscribe': listUnsubscribe,
-              'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
-            },
-          });
+          const subject = `Voce esqueceu algo — ${productName}`;
+          const html = `${emailBody}${unsubscribeFooter}`;
+
+          if (this.transportRegistry) {
+            const sendResult = await this.transportRegistry.send(wsId, {
+              workspaceId: wsId,
+              channel: 'email',
+              recipientId: customerEmail,
+              content: `${subject}\n${html}`,
+              guardContext: {
+                channel: 'email',
+                withinComplianceWindow: true,
+                productId: product?.id,
+                listUnsubscribe,
+              },
+            });
+
+            if (!sendResult.success) {
+              this.logger.warn(
+                `Cart recovery email blocked or failed by transport registry for order ${order.id}: ${
+                  sendResult.blockedReason ?? sendResult.error ?? 'unknown_error'
+                }`,
+              );
+              return;
+            }
+          } else {
+            const { EmailService } = await import('../auth/email.service');
+            const emailService = new EmailService();
+
+            await emailService.sendEmail({
+              to: customerEmail,
+              subject,
+              html,
+              headers: {
+                'List-Unsubscribe': listUnsubscribe,
+                'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+              },
+            });
+          }
 
           await this.prisma.checkoutOrder.updateMany({
             where: { id: order.id, workspaceId: order.workspaceId },
