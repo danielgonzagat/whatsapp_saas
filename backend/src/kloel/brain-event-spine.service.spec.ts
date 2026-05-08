@@ -60,29 +60,24 @@ describe('BrainEventSpineService', () => {
       const id = await service.recordCommercial(event);
 
       expect(id).toBe('event-1');
-      expect(prisma.autopilotEvent.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
-            workspaceId: 'ws-1',
-            contactId: 'contact-1',
-            intent: 'sale_lifecycle',
-            action: 'sale.created',
-            status: 'executed',
-            meta: expect.objectContaining({
-              commercial: true,
-              subject: 'lead:lead-1',
-              occurredAt: '2026-05-07T12:00:00.000Z',
-              idempotencyKey: 'sale.created:lead:lead-1:2026-05-07T12:00:00.000Z',
-              payload: expect.objectContaining({
-                amount: 147,
-                externalPaymentId: 'pi_abc123',
-                paymentMethod: 'PIX',
-                status: 'pending',
-              }),
-            }),
-          }),
-        }),
-      );
+      const createCall = prisma.autopilotEvent.create.mock.calls[0][0];
+      expect(createCall.data.workspaceId).toBe('ws-1');
+      expect(createCall.data.contactId).toBe('contact-1');
+      expect(createCall.data.intent).toBe('sale_lifecycle');
+      expect(createCall.data.action).toBe('sale.created');
+      expect(createCall.data.status).toBe('executed');
+      expect(createCall.data.meta).toMatchObject({
+        commercial: true,
+        subject: 'lead:lead-1',
+        occurredAt: '2026-05-07T12:00:00.000Z',
+        idempotencyKey: 'sale.created:lead:lead-1:2026-05-07T12:00:00.000Z',
+      });
+      expect(createCall.data.meta.payload).toMatchObject({
+        amount: 147,
+        externalPaymentId: 'pi_abc123',
+        paymentMethod: 'PIX',
+        status: 'pending',
+      });
     });
 
     it('records a sale.completed event with executed status', async () => {

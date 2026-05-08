@@ -11,6 +11,21 @@ function isJsonRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+function toUnsupportedJsonValue(value: unknown): string {
+  switch (typeof value) {
+    case 'undefined':
+      return 'undefined';
+    case 'bigint':
+      return value.toString();
+    case 'symbol':
+      return value.description ?? 'symbol';
+    case 'function':
+      return value.name || 'function';
+    default:
+      return 'unsupported';
+  }
+}
+
 function toInputJsonValue(value: unknown): Prisma.InputJsonValue | null {
   if (value === null) {
     return null;
@@ -30,19 +45,7 @@ function toInputJsonValue(value: unknown): Prisma.InputJsonValue | null {
   if (isJsonRecord(value)) {
     return toInputJsonObject(value);
   }
-  if (typeof value === 'undefined') {
-    return 'undefined';
-  }
-  if (typeof value === 'bigint') {
-    return value.toString();
-  }
-  if (typeof value === 'symbol') {
-    return value.description ?? 'symbol';
-  }
-  if (typeof value === 'function') {
-    return value.name || 'function';
-  }
-  return 'unsupported';
+  return toUnsupportedJsonValue(value);
 }
 
 function toInputJsonObject(payload: Record<string, unknown>): Prisma.InputJsonObject {
