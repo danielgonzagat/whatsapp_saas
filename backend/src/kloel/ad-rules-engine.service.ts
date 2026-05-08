@@ -1,11 +1,24 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import * as Sentry from '@sentry/node';
 import tracer from 'dd-trace';
 import { Counter, Histogram, register } from 'prom-client';
 import { forEachSequential } from '../common/async-sequence';
 import { PrismaService } from '../prisma/prisma.service';
+import { MindBanditService } from './mind-bandit.service';
+import type {
+  CampaignMetrics,
+  AdAlertContext,
+} from './product-sub-resources/helpers/campaign.helpers';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
+
+const AD_ALERT_ARMS = [
+  'alert_only',
+  'suggest_pause',
+  'suggest_budget_down',
+  'suggest_creative',
+  'ignore',
+] as const;
 
 interface AdRuleSnapshot {
   id: string;
@@ -16,6 +29,13 @@ interface AdRuleSnapshot {
   alertMethod: string | null;
   alertTarget: string | null;
   lastFiredAt: Date | null;
+}
+
+interface AdRuleEvaluation {
+  shouldFire: boolean;
+  metrics: CampaignMetrics | null;
+  context: AdAlertContext | null;
+  banditAction: string | null;
 }
 
 /** Ad rules engine service. */
@@ -38,7 +58,10 @@ export class AdRulesEngineService {
       buckets: [50, 100, 250, 500, 1000, 2500, 5000, 10000],
     });
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly bandit?: MindBanditService,
+  ) {}
 
   /** Evaluate rules. */
   @Cron(CronExpression.EVERY_5_MINUTES)
@@ -76,9 +99,9 @@ export class AdRulesEngineService {
 
       await forEachSequential(rules, async (rule) => {
         try {
-          const shouldFire = await this.shouldFireRule(rule);
-          if (shouldFire) {
-            await this.fireRule(rule);
+          const evaluation = await this.evaluateRule(rule);
+          if (evaluation.shouldFire) {
+            await this.fireRule(rule, evaluation.banditAction ?? 'alert_only', evaluation.metrics);
           }
         } catch (err: unknown) {
           // PULSE:OK — Per-rule failure is non-critical; other rules continue executing
@@ -105,48 +128,126 @@ export class AdRulesEngineService {
     }
   }
 
-  private async shouldFireRule(rule: AdRuleSnapshot): Promise<boolean> {
-    // Cooldown: don't fire same rule within 1 hour
+  private async evaluateRule(rule: AdRuleSnapshot): Promise<AdRuleEvaluation> {
+    const empty: AdRuleEvaluation = {
+      shouldFire: false,
+      metrics: null,
+      context: null,
+      banditAction: null,
+    };
+
     const lastFired = rule.lastFiredAt ? new Date(rule.lastFiredAt) : null;
     const cooldownMs = 60 * 60 * 1000;
     if (lastFired && Date.now() - lastFired.getTime() < cooldownMs) {
-      return false;
+      return empty;
     }
 
-    // Evaluate condition against real workspace data
     const condition = (rule.condition || '').toLowerCase();
+    const metrics = await this.collectMetrics(rule, condition);
 
-    if (condition.includes('roas') || condition.includes('conversao')) {
-      // Check sales performance
-      const salesCount = await this.prisma.kloelSale.count({
-        where: {
-          workspaceId: rule.workspaceId,
-          status: 'paid',
-          createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
-        },
-      });
-      // If condition mentions low performance and sales are low, fire
-      if (condition.includes('baixo') || condition.includes('caiu')) {
-        return salesCount < 5;
-      }
-      return salesCount > 0;
+    if (!metrics) {
+      return { ...empty, shouldFire: true };
     }
 
-    if (
-      condition.includes('gasto') ||
-      condition.includes('spend') ||
-      condition.includes('budget')
-    ) {
-      // Budget-related rules fire on schedule
-      return true;
+    const context: AdAlertContext = {
+      workspaceId: rule.workspaceId,
+      ruleId: rule.id,
+      ruleName: rule.name,
+      campaignBudgetExhausted: condition.includes('budget') || condition.includes('orçamento'),
+      metric: metrics,
+      threshold: condition.includes('baixo') || condition.includes('caiu') ? 'low' : 'normal',
+      windowHours: 24,
+      campaign: rule.name,
+    };
+
+    if (!this.bandit) {
+      return { shouldFire: true, metrics, context, banditAction: 'alert_only' };
     }
 
-    // Default: fire based on schedule + cooldown
-    return true;
+    await this.ensureBanditArms(rule.workspaceId);
+    const chosen = await this.bandit.choose(rule.workspaceId, 'ad_alert_action');
+
+    if (!chosen) {
+      return { shouldFire: true, metrics, context, banditAction: 'alert_only' };
+    }
+
+    if (chosen.arm === 'ignore') {
+      this.logger.debug(`MIND bandit chose ignore for rule ${rule.id} (${rule.name})`);
+      this.counter.inc({ event: 'rule', result: 'bandit_ignore' });
+      return { ...empty, metrics, context, banditAction: chosen.arm };
+    }
+
+    return { shouldFire: true, metrics, context, banditAction: chosen.arm };
   }
 
-  private async fireRule(rule: AdRuleSnapshot): Promise<void> {
-    this.logger.log(`Firing rule "${rule.name}" (id: ${rule.id}): ${rule.action}`);
+  private async collectMetrics(
+    rule: AdRuleSnapshot,
+    condition: string,
+  ): Promise<CampaignMetrics | null> {
+    const isRoas = condition.includes('roas') || condition.includes('conversao');
+    if (
+      !isRoas &&
+      !condition.includes('gasto') &&
+      !condition.includes('spend') &&
+      !condition.includes('budget')
+    ) {
+      return null;
+    }
+
+    const windowStart = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+    const salesCount = await this.prisma.kloelSale.count({
+      where: {
+        workspaceId: rule.workspaceId,
+        status: 'paid',
+        createdAt: { gte: windowStart },
+      },
+    });
+
+    const failedCount = await this.prisma.kloelSale.count({
+      where: {
+        workspaceId: rule.workspaceId,
+        status: 'failed',
+        createdAt: { gte: windowStart },
+      },
+    });
+
+    const total = salesCount + failedCount;
+
+    return {
+      sentCount: 0,
+      deliveredCount: 0,
+      readCount: 0,
+      failedCount: 0,
+      repliedCount: 0,
+      convertedCount: salesCount,
+      conversionRate: total > 0 ? salesCount / total : 0,
+      totalSpentCents: 0,
+      revenueCents: 0,
+      roas: 0,
+    };
+  }
+
+  private async ensureBanditArms(workspaceId: string): Promise<void> {
+    if (!this.bandit) return;
+    try {
+      await this.bandit.register({
+        workspaceId,
+        decisionType: 'ad_alert_action',
+        arms: [...AD_ALERT_ARMS],
+        context: { registeredBy: 'ad_rules_engine', registeredAt: new Date().toISOString() },
+      });
+    } catch (err: unknown) {
+      this.logger.warn(`Failed to register bandit arms for ${workspaceId}: ${String(err)}`);
+    }
+  }
+
+  private async fireRule(
+    rule: AdRuleSnapshot,
+    chosenAction: string,
+    metrics: CampaignMetrics | null,
+  ): Promise<void> {
+    this.logger.log(`Firing rule "${rule.name}" (id: ${rule.id}): action=${chosenAction}`);
     this.counter.inc({ event: 'rule', result: 'fired' });
 
     await this.prisma.adRule.updateMany({
@@ -158,18 +259,24 @@ export class AdRulesEngineService {
     });
 
     if (rule.alertMethod && rule.alertTarget) {
-      await this.sendAlert(rule);
+      await this.sendAlert(rule, chosenAction, metrics);
     }
   }
 
-  private sendAlert(rule: AdRuleSnapshot): Promise<void> {
+  private sendAlert(
+    rule: AdRuleSnapshot,
+    chosenAction: string,
+    metrics: CampaignMetrics | null,
+  ): Promise<void> {
+    const metricsSummary = metrics
+      ? `converted=${metrics.convertedCount} rate=${(metrics.conversionRate * 100).toFixed(1)}%`
+      : 'no metrics';
+
     this.logger.log(
-      `Alert [${rule.alertMethod}] → ${rule.alertTarget}: Rule "${rule.name}" fired — ${rule.action}`,
+      `Alert [${rule.alertMethod}] → ${rule.alertTarget}: ` +
+        `Rule "${rule.name}" fired — action=${chosenAction} (${metricsSummary})`,
     );
 
-    // Alert dispatch is handled by whatsapp/email services when integrated:
-    // alertMethod === 'whatsapp' → send via WhatsAppService
-    // alertMethod === 'email' → send via EmailService
     return Promise.resolve();
   }
 }

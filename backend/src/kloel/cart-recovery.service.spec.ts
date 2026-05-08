@@ -52,9 +52,11 @@ describe('CartRecoveryService', () => {
         status: 'PENDING',
         customerEmail: 'cliente@kloel.test',
         metadata: 'corrupted',
+        createdAt: new Date(Date.now() - 45 * 60 * 1000),
         plan: {
           product: {
             name: 'Plano Premium',
+            price: 97,
           },
         },
       },
@@ -80,9 +82,11 @@ describe('CartRecoveryService', () => {
         status: 'PENDING',
         customerEmail: 'cliente@kloel.test',
         metadata: { source: 'checkout' },
+        createdAt: new Date(Date.now() - 60 * 60 * 1000),
         plan: {
           product: {
             name: 'Plano Plus',
+            price: 197,
           },
         },
       },

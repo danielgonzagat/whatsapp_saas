@@ -108,10 +108,11 @@ export class UnifiedAgentActionsCrmService {
   ) {
     try {
       const requestedDelayHours = this.num(args.delayHours, 24);
+      const resolvedChannel = await this.resolveChannel(workspaceId, _phone);
       const mindDecision = await this.chooseFollowUpTiming({
         workspaceId,
         contactId,
-        channel: 'whatsapp',
+        channel: resolvedChannel,
         requestedDelayHours,
       });
       const delayHours = mindDecision.delayHours;
@@ -140,7 +141,9 @@ export class UnifiedAgentActionsCrmService {
         };
       }
 
-      this.logger.log(`[AGENT] Follow-up agendado para ${_phone} em ${delayHours}h`);
+      this.logger.log(
+        `[AGENT] Follow-up agendado para ${_phone} em ${delayHours}h (channel=${resolvedChannel})`,
+      );
       await this.prisma.followUp.create({
         data: {
           workspaceId,
@@ -165,6 +168,7 @@ export class UnifiedAgentActionsCrmService {
             meta: {
               scheduledFor: scheduledFor.toISOString(),
               delayHours,
+              channel: resolvedChannel,
               mind: mindDecision.meta,
             },
           },
@@ -188,7 +192,7 @@ export class UnifiedAgentActionsCrmService {
   }
 
   private async chooseFollowUpTiming(args: {
-    channel: 'whatsapp';
+    channel: string;
     contactId: string;
     requestedDelayHours: number;
     workspaceId: string;
@@ -266,6 +270,39 @@ export class UnifiedAgentActionsCrmService {
       ([, left], [, right]) =>
         Math.abs(left - requestedDelayHours) - Math.abs(right - requestedDelayHours),
     )[0][0];
+  }
+
+  private async resolveChannel(workspaceId: string, phone: string): Promise<string> {
+    try {
+      const workspace = await this.prisma.workspace.findUnique({
+        where: { id: workspaceId },
+        select: {
+          providerSettings: true,
+          channelIdentifiers: {
+            where: { channel: 'WHATSAPP' },
+            select: { value: true },
+            take: 1,
+          },
+        },
+      });
+      const settings = (workspace?.providerSettings ?? {}) as UnknownRecord;
+      const whatsappProvider = settings.whatsappProvider;
+      const connectionStatus = settings.connectionStatus;
+
+      if (typeof whatsappProvider === 'string' && connectionStatus === 'connected') {
+        return 'whatsapp';
+      }
+
+      const hasWhatsappChannel = (workspace?.channelIdentifiers?.length ?? 0) > 0;
+
+      if (phone && phone.startsWith('+') && hasWhatsappChannel) {
+        return 'whatsapp';
+      }
+
+      return 'email';
+    } catch {
+      return phone && phone.startsWith('+') ? 'whatsapp' : 'email';
+    }
   }
 
   async actionTransferToHuman(workspaceId: string, contactId: string, args: ToolArgs) {

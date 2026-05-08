@@ -14,3 +14,11 @@ export class AdminMindLiftQueryDto {
 
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(365) sinceDays?: number;
 }
+
+export class AdminMindConceptsQueryDto {
+  @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(168) hours?: number;
+}
+
+export class AdminMindAskBodyDto {
+  @IsString() @MaxLength(2000) question!: string;
+}

@@ -8,6 +8,8 @@ export const MIND_DECISION_CATALOG: MindDecisionSpec[] = [
     contextKeys: ['channel', 'hour', 'concept', 'fatigue'],
     baseline: '30m',
     outcomeEvent: 'message.received',
+    fallbackBehavior:
+      'resolves open outcomes as unanswered after 48h; reverts to baseline when MIND lift is negative with >=30 samples',
   },
   {
     decisionType: 'message_format',
@@ -16,6 +18,8 @@ export const MIND_DECISION_CATALOG: MindDecisionSpec[] = [
     contextKeys: ['channel', 'hour', 'concept', 'supports'],
     baseline: 'text',
     outcomeEvent: 'message.received',
+    fallbackBehavior:
+      'reverts to text when channel capabilities are unknown or MIND lift is negative with >=30 samples',
   },
   {
     decisionType: 'objection_response',
@@ -31,6 +35,8 @@ export const MIND_DECISION_CATALOG: MindDecisionSpec[] = [
     contextKeys: ['channel', 'concept', 'price_band', 'product'],
     baseline: 'value_focus',
     outcomeEvent: 'checkout.paid',
+    fallbackBehavior:
+      'reverts to value_focus when insufficient samples or MIND lift is negative; escalates to human on repeated objections',
   },
   {
     decisionType: 'coupon_offer',
@@ -39,6 +45,8 @@ export const MIND_DECISION_CATALOG: MindDecisionSpec[] = [
     contextKeys: ['segment', 'price_band', 'margin', 'coupon_history'],
     baseline: 'no_coupon',
     outcomeEvent: 'checkout.paid',
+    fallbackBehavior:
+      'reverts to no_coupon when margin is thin or MIND lift is negative; blocked by max_discount guard above configured threshold',
   },
   {
     decisionType: 'human_transfer',
@@ -47,14 +55,18 @@ export const MIND_DECISION_CATALOG: MindDecisionSpec[] = [
     contextKeys: ['channel', 'concept', 'ticket', 'risk'],
     baseline: 'continue_ai',
     outcomeEvent: 'lead.qualified',
+    fallbackBehavior:
+      'transfers now when risk or ticket urgency is high; otherwise continues with AI; reverts to baseline on negative MIND lift',
   },
   {
     decisionType: 'channel_choice',
     options: ['whatsapp', 'instagram', 'messenger', 'tiktok', 'email', 'sms'],
     predicate: 'P(reply|preferred_channel,segment,hour,concept)',
     contextKeys: ['available_channels', 'segment', 'hour', 'concept'],
-    baseline: 'whatsapp',
+    baseline: 'first_available',
     outcomeEvent: 'message.received',
+    fallbackBehavior:
+      'uses first available channel from the workspace active channel set; default re-evaluated per workspace onboarding state',
   },
   {
     decisionType: 'product_offer',
@@ -63,6 +75,8 @@ export const MIND_DECISION_CATALOG: MindDecisionSpec[] = [
     contextKeys: ['segment', 'concept', 'price_band', 'last_purchase'],
     baseline: 'top_seller',
     outcomeEvent: 'sale.completed',
+    fallbackBehavior:
+      'reverts to top_seller when MIND lift is negative or product catalog is incomplete; never recommends out-of-stock items',
   },
   {
     decisionType: 'broadcast_window',
@@ -71,6 +85,8 @@ export const MIND_DECISION_CATALOG: MindDecisionSpec[] = [
     contextKeys: ['channel', 'segment', 'weekday', 'fatigue'],
     baseline: 'tomorrow_9h',
     outcomeEvent: 'campaign.converted',
+    fallbackBehavior:
+      'reverts to tomorrow_9h when fatigue is high or MIND lift is negative; pauses when workspace-wide broadcast limit is exceeded',
   },
   {
     decisionType: 'cart_recovery',
@@ -79,6 +95,8 @@ export const MIND_DECISION_CATALOG: MindDecisionSpec[] = [
     contextKeys: ['channel', 'price_band', 'age_minutes', 'product'],
     baseline: 'help',
     outcomeEvent: 'checkout.paid',
+    fallbackBehavior:
+      'reverts to help when cart age is fresh (<30m) or MIND lift is negative; pauses when max recovery attempts per cart are exhausted',
   },
   {
     decisionType: 'ad_alert_action',
@@ -87,6 +105,8 @@ export const MIND_DECISION_CATALOG: MindDecisionSpec[] = [
     contextKeys: ['metric', 'window', 'threshold', 'campaign'],
     baseline: 'alert_only',
     outcomeEvent: 'campaign.converted',
+    fallbackBehavior:
+      'reverts to alert_only when confidence is low or ad platform reports stale metrics; never auto-executes budget or creative changes without operator confirmation',
   },
 ];
 

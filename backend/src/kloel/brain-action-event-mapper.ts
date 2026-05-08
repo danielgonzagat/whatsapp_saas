@@ -1,4 +1,6 @@
-export function mapBrainActionToDomainEvent(action: string): string | null {
+import type { BrainEventName } from './brain-event-taxonomy';
+
+export function mapBrainActionToDomainEvent(action: string): BrainEventName | null {
   switch (action) {
     case 'create_product':
       return 'product.created';

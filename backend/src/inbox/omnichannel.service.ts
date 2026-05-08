@@ -2,6 +2,7 @@ import { Inject, Injectable, Logger, Optional, forwardRef } from '@nestjs/common
 import { forEachSequential } from '../common/async-sequence';
 import { StorageService } from '../common/storage/storage.service';
 import { UnifiedAgentService } from '../kloel/unified-agent.service';
+import { ChannelInboundHookService } from '../omnichannel/channel-inbound-hook.service';
 import { OmnichannelContactResolutionService } from '../omnichannel/contact-resolution.service';
 import { InboxService } from './inbox.service';
 import {
@@ -33,6 +34,9 @@ export class OmnichannelService {
     @Optional()
     @Inject(forwardRef(() => UnifiedAgentService))
     private readonly unifiedAgent?: UnifiedAgentService,
+    @Optional()
+    @Inject(forwardRef(() => ChannelInboundHookService))
+    private readonly mindHook?: ChannelInboundHookService,
   ) {}
 
   /** Unified entry point for ALL channels — saves, triggers CIA, and (optionally) routes. */
@@ -74,6 +78,7 @@ export class OmnichannelService {
     void this.routing;
 
     this.triggerCia(msg, savedMsg, identifier);
+    this.triggerMindPercept(msg, savedMsg);
 
     return savedMsg;
   }
@@ -110,6 +115,21 @@ export class OmnichannelService {
           `[OMNI] CIA trigger failed for channel ${msg.channel}: ${wrapped.message}`,
         );
       });
+  }
+
+  /** Fire-and-forget MIND percept event push after message is persisted. */
+  private triggerMindPercept(
+    msg: NormalizedMessage,
+    savedMsg: { contactId?: string; id?: string },
+  ) {
+    if (!this.mindHook) return;
+
+    this.mindHook.onMessageReceived(msg, savedMsg.contactId, savedMsg.id).catch((err: unknown) => {
+      const wrapped = ensureError(err);
+      this.logger.error(
+        `[OMNI] MIND percept hook failed for channel ${msg.channel}: ${wrapped.message}`,
+      );
+    });
   }
 
   private async maybeProcessAttachments(msg: NormalizedMessage): Promise<ProcessedAttachment[]> {

@@ -2,11 +2,42 @@ import { NotFoundException } from '@nestjs/common';
 import { AdminMindController } from './admin-mind.controller';
 import { AdminMindService } from './admin-mind.service';
 
+interface GetHealthResult {
+  workspaceId: string;
+  workspaceName: string;
+  runtime: unknown;
+  pendingOutbox: number;
+  openPredictions: number;
+  openDecisions: number;
+}
+
+interface AskQuestionResult {
+  workspaceId: string;
+  workspaceName: string;
+  answer: string;
+  state: unknown;
+  lift: unknown;
+  concepts: unknown;
+}
+
+interface GenerateReportResult {
+  workspaceId: string;
+  workspaceName: string;
+  id: string;
+  content: string;
+  metrics: unknown;
+}
+
 describe('AdminMindController', () => {
   type AdminMindServiceMock = AdminMindService & {
     getLift: jest.MockedFunction<AdminMindService['getLift']>;
     getRecentSurprise: jest.MockedFunction<AdminMindService['getRecentSurprise']>;
     getState: jest.MockedFunction<AdminMindService['getState']>;
+    getConcepts: jest.MockedFunction<(ws: string, hours: number) => Promise<object>>;
+    getHealth: jest.MockedFunction<(ws: string) => Promise<GetHealthResult>>;
+    getBriefing: jest.MockedFunction<(ws: string) => Promise<object>>;
+    askQuestion: jest.MockedFunction<(ws: string, q: string) => Promise<AskQuestionResult>>;
+    generateReport: jest.MockedFunction<(ws: string) => Promise<GenerateReportResult>>;
   };
 
   function buildController() {
@@ -14,6 +45,11 @@ describe('AdminMindController', () => {
       getState: jest.fn(),
       getRecentSurprise: jest.fn(),
       getLift: jest.fn(),
+      getConcepts: jest.fn(),
+      getHealth: jest.fn(),
+      getBriefing: jest.fn(),
+      askQuestion: jest.fn(),
+      generateReport: jest.fn(),
     }) as AdminMindServiceMock;
 
     return {
@@ -214,6 +250,115 @@ describe('AdminMindController', () => {
       await expect(
         controller.lift('ws-nonexistent', { decisionType: 'followup_timing' }),
       ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('GET :workspaceId/concepts', () => {
+    it('returns concept detections for a workspace', async () => {
+      const { controller, service } = buildController();
+      service.getConcepts.mockResolvedValue({
+        workspaceId: 'ws-1',
+        workspaceName: 'Test',
+        hours: 24,
+        concepts: [{ concept: 'urgent_inquiry', count: 5 }],
+        examples: [],
+      });
+
+      const result = await controller.concepts('ws-1', { hours: 24 });
+
+      expect(service.getConcepts).toHaveBeenCalledWith('ws-1', 24);
+      expect(result.concepts).toHaveLength(1);
+      expect(result.concepts[0].concept).toBe('urgent_inquiry');
+    });
+
+    it('defaults hours to 24', async () => {
+      const { controller, service } = buildController();
+      service.getConcepts.mockResolvedValue({
+        workspaceId: 'ws-1',
+        workspaceName: 'Test',
+        hours: 24,
+        concepts: [],
+        examples: [],
+      });
+
+      await controller.concepts('ws-1', { hours: undefined });
+
+      expect(service.getConcepts).toHaveBeenCalledWith('ws-1', 24);
+    });
+  });
+
+  describe('GET :workspaceId/health', () => {
+    it('returns health dashboard for a workspace', async () => {
+      const { controller, service } = buildController();
+      service.getHealth.mockResolvedValue({
+        workspaceId: 'ws-1',
+        workspaceName: 'Test',
+        runtime: null,
+        pendingOutbox: 0,
+        openPredictions: 5,
+        openDecisions: 2,
+      });
+
+      const result = await controller.health('ws-1');
+
+      expect(service.getHealth).toHaveBeenCalledWith('ws-1');
+      expect(result.pendingOutbox).toBe(0);
+      expect(result.openPredictions).toBe(5);
+    });
+  });
+
+  describe('GET :workspaceId/briefing', () => {
+    it('returns MIND briefing narrative', async () => {
+      const { controller, service } = buildController();
+      service.getBriefing.mockResolvedValue({
+        workspaceId: 'ws-1',
+        workspaceName: 'Test',
+        briefing: 'MIND report summary text',
+      });
+
+      const result = await controller.briefing('ws-1');
+
+      expect(service.getBriefing).toHaveBeenCalledWith('ws-1');
+      expect(result.briefing).toBe('MIND report summary text');
+    });
+  });
+
+  describe('POST :workspaceId/ask', () => {
+    it('delegates question to service', async () => {
+      const { controller, service } = buildController();
+      const askPayload: AskQuestionResult = {
+        workspaceId: 'ws-1',
+        workspaceName: 'Test',
+        answer: 'Resposta da MIND aqui.',
+        state: {},
+        lift: {},
+        concepts: {},
+      };
+      service.askQuestion.mockResolvedValue(askPayload);
+
+      const result = await controller.ask('ws-1', { question: 'Qual o lift de followups?' });
+
+      expect(service.askQuestion).toHaveBeenCalledWith('ws-1', 'Qual o lift de followups?');
+      expect(result.answer).toBe('Resposta da MIND aqui.');
+    });
+  });
+
+  describe('POST :workspaceId/report', () => {
+    it('generates daily report through service', async () => {
+      const { controller, service } = buildController();
+      const reportPayload: GenerateReportResult = {
+        workspaceId: 'ws-1',
+        workspaceName: 'Test',
+        id: 'rpt-1',
+        content: '# Relatorio diario MIND',
+        metrics: {},
+      };
+      service.generateReport.mockResolvedValue(reportPayload);
+
+      const result = await controller.report('ws-1');
+
+      expect(service.generateReport).toHaveBeenCalledWith('ws-1');
+      expect(result.content).toContain('Relatorio diario MIND');
     });
   });
 });

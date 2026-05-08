@@ -28,15 +28,15 @@ export const TONE_OPTIONS = [
 export function resolveToneBaseline(
   repliedRate: number,
   soldRate: number,
-  channel: string,
+  _channel: string,
 ): string {
-  if (channel === 'whatsapp' && repliedRate >= 0.4) return 'FRIENDLY';
+  if (repliedRate >= 0.4) return 'FRIENDLY';
   if (soldRate >= 0.15) return 'CONSULTIVE';
   return 'DIRECT';
 }
 
-export function resolveAudioBaseline(channel: string, audioRatio: number): string {
-  if (channel === 'whatsapp' && audioRatio >= 0.2) return 'audio';
+export function resolveAudioBaseline(_channel: string, audioRatio: number): string {
+  if (audioRatio >= 0.2) return 'audio';
   return 'text';
 }
 

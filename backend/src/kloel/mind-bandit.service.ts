@@ -3,6 +3,25 @@ import type { Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 
+export interface MindBanditArmStatus {
+  arm: string;
+  isActive: boolean;
+  pulls: number;
+  wins: number;
+  mean: number;
+  score: number;
+  trafficShare: number;
+}
+
+export interface MindBanditStatus {
+  workspaceId: string;
+  decisionType: string;
+  totalPulls: number;
+  recommendation: string | null;
+  lift: number;
+  arms: MindBanditArmStatus[];
+}
+
 function score(alpha: number, beta: number, pulls: number, totalPulls: number): number {
   const mean = alpha / (alpha + beta);
   const uncertainty = Math.sqrt(Math.log(Math.max(2, totalPulls + 1)) / Math.max(1, pulls));
@@ -150,24 +169,42 @@ export class MindBanditService {
     }
   }
 
-  async status(workspaceId: string, decisionType: string) {
+  async status(workspaceId: string, decisionType: string): Promise<MindBanditStatus> {
     const arms = await this.prisma.mindBanditArm.findMany({
       where: { workspaceId, decisionType },
       orderBy: [{ isActive: 'desc' }, { pulls: 'desc' }],
     });
     const totalPulls = arms.reduce((sum, arm) => sum + arm.pulls, 0);
-    return {
-      workspaceId,
-      decisionType,
-      totalPulls,
-      arms: arms.map((arm) => ({
+    const totalWins = arms.reduce((sum, arm) => sum + arm.wins, 0);
+
+    const armStatuses: MindBanditArmStatus[] = arms.map((arm) => {
+      const mean = arm.pulls > 0 ? arm.alpha / (arm.alpha + arm.beta) : 0;
+      const trafficShare = totalPulls > 0 ? arm.pulls / totalPulls : 0;
+      return {
         arm: arm.arm,
         isActive: arm.isActive,
         pulls: arm.pulls,
         wins: arm.wins,
-        mean: arm.alpha / (arm.alpha + arm.beta),
+        mean,
         score: score(arm.alpha, arm.beta, arm.pulls, totalPulls),
-      })),
+        trafficShare,
+      };
+    });
+
+    const sortedByScore = [...armStatuses].sort((a, b) => b.score - a.score);
+    const recommendation = sortedByScore.length > 0 ? sortedByScore[0].arm : null;
+
+    const overallMean = totalPulls > 0 ? totalWins / totalPulls : 0;
+    const recommendationMean = sortedByScore.length > 0 ? sortedByScore[0].mean : 0;
+    const lift = overallMean > 0 ? (recommendationMean - overallMean) / overallMean : 0;
+
+    return {
+      workspaceId,
+      decisionType,
+      totalPulls,
+      recommendation,
+      lift,
+      arms: armStatuses,
     };
   }
 }

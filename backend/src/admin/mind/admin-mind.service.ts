@@ -2,22 +2,8 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { MindBeliefService } from '../../kloel/mind-belief.service';
 import { MindPolicyService } from '../../kloel/mind-policy.service';
-
-type BeliefAggregateRow = {
-  predicate: string;
-  total: bigint;
-  minSamples: number;
-  maxSamples: number;
-  avgMean: number;
-};
-
-type PredictionCountRow = {
-  total: bigint;
-  resolved: bigint;
-  openCount: bigint;
-  avgSurprise: number | null;
-  highSurpriseCount: bigint;
-};
+import { MindObservabilityService } from '../../kloel/mind-observability.service';
+import { MindReportService } from '../../kloel/mind-report.service';
 
 type PolicyCountRow = {
   total: bigint;
@@ -39,6 +25,8 @@ export class AdminMindService {
     private readonly prisma: PrismaService,
     private readonly beliefs: MindBeliefService,
     private readonly policy: MindPolicyService,
+    private readonly observability: MindObservabilityService,
+    private readonly reports: MindReportService,
   ) {}
 
   async getState(workspaceId: string, _decisionType?: string) {
@@ -188,7 +176,72 @@ export class AdminMindService {
     };
   }
 
-  private async queryBeliefAggregates(workspaceId: string): Promise<BeliefAggregateRow[]> {
+  async getConcepts(workspaceId: string, hours = 24) {
+    const workspace = await this.prisma.workspace.findUnique({
+      where: { id: workspaceId },
+      select: { id: true, name: true },
+    });
+    if (!workspace) {
+      throw new NotFoundException('Workspace não encontrado');
+    }
+
+    const result = await this.observability.concepts(workspaceId, hours);
+    return { ...result, workspaceId: workspace.id, workspaceName: workspace.name };
+  }
+
+  async getHealth(workspaceId: string) {
+    const workspace = await this.prisma.workspace.findUnique({
+      where: { id: workspaceId },
+      select: { id: true, name: true },
+    });
+    if (!workspace) {
+      throw new NotFoundException('Workspace não encontrado');
+    }
+
+    const result = await this.observability.health(workspaceId);
+    return { ...result, workspaceId: workspace.id, workspaceName: workspace.name };
+  }
+
+  async getBriefing(workspaceId: string) {
+    const workspace = await this.prisma.workspace.findUnique({
+      where: { id: workspaceId },
+      select: { id: true, name: true },
+    });
+    if (!workspace) {
+      throw new NotFoundException('Workspace não encontrado');
+    }
+
+    const result = await this.observability.briefing(workspaceId);
+    return { ...result, workspaceId: workspace.id, workspaceName: workspace.name };
+  }
+
+  async askQuestion(workspaceId: string, question: string) {
+    const workspace = await this.prisma.workspace.findUnique({
+      where: { id: workspaceId },
+      select: { id: true, name: true },
+    });
+    if (!workspace) {
+      throw new NotFoundException('Workspace não encontrado');
+    }
+
+    const result = await this.observability.ask(workspaceId, question);
+    return { ...result, workspaceId: workspace.id, workspaceName: workspace.name };
+  }
+
+  async generateReport(workspaceId: string) {
+    const workspace = await this.prisma.workspace.findUnique({
+      where: { id: workspaceId },
+      select: { id: true, name: true },
+    });
+    if (!workspace) {
+      throw new NotFoundException('Workspace não encontrado');
+    }
+
+    const result = await this.reports.generateDaily(workspaceId);
+    return { ...result, workspaceId: workspace.id, workspaceName: workspace.name };
+  }
+
+  private async queryBeliefAggregates(workspaceId: string) {
     const rows = await this.prisma.$queryRaw<
       Array<{
         predicate: string;
@@ -220,26 +273,25 @@ export class AdminMindService {
     }));
   }
 
-  private async queryPredictionCounts(workspaceId: string): Promise<PredictionCountRow> {
-    const rows = await this.prisma.$queryRaw<PredictionCountRow[]>`
-      SELECT
-        COUNT(*)::bigint AS "total",
-        COUNT(CASE WHEN "resolvedAt" IS NOT NULL THEN 1 END)::bigint AS "resolved",
-        COUNT(CASE WHEN "resolvedAt" IS NULL THEN 1 END)::bigint AS "openCount",
-        AVG(CASE WHEN "resolvedAt" IS NOT NULL THEN "surprise" END)::float AS "avgSurprise",
-        COUNT(CASE WHEN "surprise" >= 1.0 THEN 1 END)::bigint AS "highSurpriseCount"
-      FROM "RAC_MindPrediction"
-      WHERE "workspaceId" = ${workspaceId}
-    `;
-    return (
-      rows[0] ?? {
-        total: 0n,
-        resolved: 0n,
-        openCount: 0n,
-        avgSurprise: null,
-        highSurpriseCount: 0n,
-      }
-    );
+  private async queryPredictionCounts(workspaceId: string) {
+    const [total, resolved, openCount, highSurpriseCount, avgResult] = await Promise.all([
+      this.prisma.mindPrediction.count({ where: { workspaceId } }),
+      this.prisma.mindPrediction.count({ where: { workspaceId, resolvedAt: { not: null } } }),
+      this.prisma.mindPrediction.count({ where: { workspaceId, resolvedAt: null } }),
+      this.prisma.mindPrediction.count({ where: { workspaceId, surprise: { gte: 1.0 } } }),
+      this.prisma.mindPrediction.aggregate({
+        where: { workspaceId, resolvedAt: { not: null }, surprise: { not: null } },
+        _avg: { surprise: true },
+      }),
+    ]);
+
+    return {
+      total: BigInt(total),
+      resolved: BigInt(resolved),
+      openCount: BigInt(openCount),
+      avgSurprise: avgResult._avg.surprise ?? null,
+      highSurpriseCount: BigInt(highSurpriseCount),
+    };
   }
 
   private async queryPolicyCounts(workspaceId: string): Promise<PolicyCountRow> {

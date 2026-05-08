@@ -1,6 +1,7 @@
 export const BRAIN_EVENT_TAXONOMY = [
   'brain.decide',
   'brain.observe',
+  'brain.autonomy.propose',
   'capability.executed',
   'capability.failed',
   'sale.created',
@@ -12,6 +13,7 @@ export const BRAIN_EVENT_TAXONOMY = [
   'checkout.cancelled',
   'checkout.viewed',
   'checkout.abandoned',
+  'checkout.generated',
   'message.received',
   'message.sent',
   'message.delivered',
@@ -82,7 +84,8 @@ export interface CheckoutEventPayload extends CommercialEventPayload {
     | 'checkout.paid'
     | 'checkout.cancelled'
     | 'checkout.viewed'
-    | 'checkout.abandoned';
+    | 'checkout.abandoned'
+    | 'checkout.generated';
   payload: {
     customerEmail?: string;
     orderId: string;
@@ -91,5 +94,100 @@ export interface CheckoutEventPayload extends CommercialEventPayload {
     status: string;
     totalInCents: number;
     utmSource?: string;
+  };
+}
+
+export interface LeadEventPayload extends CommercialEventPayload {
+  eventType: 'lead.created' | 'lead.qualified' | 'lead.transferred' | 'lead.abandoned';
+  payload: {
+    leadId: string;
+    previousStatus?: string;
+    source?: string;
+    assignedTo?: string;
+    campaignId?: string;
+  };
+}
+
+export interface CampaignEventPayload extends CommercialEventPayload {
+  eventType: 'campaign.scheduled' | 'campaign.sent' | 'campaign.clicked' | 'campaign.converted';
+  payload: {
+    campaignId: string;
+    channel?: string;
+    recipientCount?: number;
+    templateId?: string;
+  };
+}
+
+export interface ProductEventPayload extends CommercialEventPayload {
+  eventType: 'product.created';
+  payload: {
+    productId: string;
+    name: string;
+    priceInCents?: number;
+  };
+}
+
+export interface BrainEventPayload extends CommercialEventPayload {
+  eventType: 'brain.decide' | 'brain.observe' | 'brain.autonomy.propose';
+  payload: Record<string, unknown>;
+}
+
+export interface MindEventPayload extends CommercialEventPayload {
+  eventType:
+    | 'mind.decision.created'
+    | 'mind.decision.resolved'
+    | 'mind.prediction.created'
+    | 'mind.prediction.resolved'
+    | 'mind.surprise.recorded';
+  payload: {
+    decisionId?: string;
+    predictionId?: string;
+    confidence?: number;
+    domain?: string;
+  };
+}
+
+export interface CapabilityEventPayload extends CommercialEventPayload {
+  eventType: 'capability.executed' | 'capability.failed';
+  payload: {
+    capabilityId: string;
+    errorMessage?: string;
+    durationMs?: number;
+  };
+}
+
+export interface ContactEventPayload extends CommercialEventPayload {
+  eventType: 'contact.segmented';
+  payload: {
+    contactId: string;
+    segmentKey: string;
+    segmentValue: string;
+  };
+}
+
+export interface ChannelEventPayload extends CommercialEventPayload {
+  eventType: 'channel.connected' | 'channel.disconnected' | 'channel.externally_blocked';
+  payload: {
+    channelId: string;
+    channelType: string;
+    reason?: string;
+  };
+}
+
+export interface IdentityEventPayload extends CommercialEventPayload {
+  eventType: 'identity.contact.merged' | 'identity.merge_candidate.created';
+  payload: {
+    sourceContactId: string;
+    targetContactId: string;
+    confidence?: number;
+  };
+}
+
+export interface ConceptEventPayload extends CommercialEventPayload {
+  eventType: 'concept.detected';
+  payload: {
+    concept: string;
+    confidence: number;
+    evidence?: string;
   };
 }

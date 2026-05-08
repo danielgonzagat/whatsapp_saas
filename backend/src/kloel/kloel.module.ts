@@ -107,10 +107,19 @@ import { BrainCommercialGraphService } from './brain-commercial-graph.service';
 import { BrainEventSpineService } from './brain-event-spine.service';
 import { BrainRuntimeController } from './brain-runtime.controller';
 import { BrainRuntimeService } from './brain-runtime.service';
+import {
+  EmailChannelTransport,
+  InstagramChannelTransport,
+  MessengerChannelTransport,
+  TikTokChannelTransport,
+  WhatsAppChannelTransport,
+} from './channel-transport.providers';
+import { ChannelTransportRegistry } from './channel-transport.registry';
 import { MindBeliefService } from './mind-belief.service';
 import { MindBanditService } from './mind-bandit.service';
 import { MindCaseMemoryService } from './mind-case-memory.service';
 import { MindConceptService } from './mind-concepts.service';
+import { MindGlobalPriorService } from './mind-global-prior.service';
 import { MindController } from './mind-controller';
 import { MindEventProcessorService } from './mind-event-processor.service';
 import { MindGuardsService } from './mind-guards.service';
@@ -119,7 +128,9 @@ import { MindPerceptionService } from './mind-perception.service';
 import { MindPolicyService } from './mind-policy.service';
 import { MindPredictorService } from './mind-predictor.service';
 import { MindProcessorService } from './mind-processor.service';
+import { MindQualityService } from './mind-quality.service';
 import { MindReportService } from './mind-report.service';
+import { MindReplayService } from './mind-replay.service';
 import { MindService } from './mind.service';
 import { MindSurpriseService } from './mind-surprise.service';
 import { MindVerbalizerService } from './mind-verbalizer.service';
@@ -232,6 +243,12 @@ import { MindWorkspaceStateService } from './mind-workspace-state.service';
     AdRulesEngineService,
     EmailCampaignService,
     CartRecoveryService,
+    ChannelTransportRegistry,
+    EmailChannelTransport,
+    InstagramChannelTransport,
+    MessengerChannelTransport,
+    TikTokChannelTransport,
+    WhatsAppChannelTransport,
     BrainAutonomyService,
     BrainCapabilityRegistryService,
     BrainCommercialGraphService,
@@ -241,6 +258,7 @@ import { MindWorkspaceStateService } from './mind-workspace-state.service';
     MindBeliefService,
     MindCaseMemoryService,
     MindConceptService,
+    MindGlobalPriorService,
     MindEventProcessorService,
     MindGuardsService,
     MindObservabilityService,
@@ -248,7 +266,9 @@ import { MindWorkspaceStateService } from './mind-workspace-state.service';
     MindPolicyService,
     MindPredictorService,
     MindProcessorService,
+    MindQualityService,
     MindReportService,
+    MindReplayService,
     MindService,
     MindSurpriseService,
     MindVerbalizerService,
@@ -294,10 +314,15 @@ import { MindWorkspaceStateService } from './mind-workspace-state.service';
     OrderAlertsService,
     AdRulesEngineService,
     EmailCampaignService,
+    ChannelTransportRegistry,
     MindBeliefService,
     MindBanditService,
+    MindGlobalPriorService,
     MindPolicyService,
     MindService,
+    MindObservabilityService,
+    MindReportService,
+    MindVerbalizerService,
   ],
 })
 export class KloelModule {}

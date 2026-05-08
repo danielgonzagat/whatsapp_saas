@@ -1,12 +1,91 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { MindPolicyService } from './mind-policy.service';
 
-/** Leads service. */
+type LeadRow = {
+  id: string;
+  phone: string;
+  name: string | null;
+  email: string | null;
+  status: string | null;
+  lastIntent: string | null;
+  totalMessages: number | null;
+  metadata: unknown;
+  createdAt: Date;
+  updatedAt: Date | null;
+};
+
+type LeadOutput = {
+  id: string;
+  phone: string;
+  name: string | null;
+  email: string | null;
+  status: string;
+  lastIntent: string;
+  totalMessages: number;
+  lastInteraction: Date;
+  metadata: unknown;
+  createdAt: Date;
+  updatedAt: Date | null;
+  commercialScore: number | null;
+};
+
+const COMMERCIAL_SCORE_SIGNALS: Record<string, number> = {
+  purchase_intent: 0.8,
+  checkout_started: 0.7,
+  consultation: 0.5,
+  support: 0.1,
+  general: 0.2,
+};
+
+function computeCommercialScore(lead: LeadRow): number | null {
+  const intent = (lead.lastIntent || 'general').toLowerCase();
+  const messages = lead.totalMessages ?? 0;
+  if (messages === 0) return null;
+
+  const intentScore =
+    COMMERCIAL_SCORE_SIGNALS[intent] ??
+    (intent.includes('purchase') || intent.includes('compra')
+      ? 0.75
+      : intent.includes('price') || intent.includes('preco')
+        ? 0.6
+        : 0.15);
+
+  const engagementBonus = Math.min((messages / 20) * 0.15, 0.15);
+  const recencyDays = (Date.now() - (lead.updatedAt ?? lead.createdAt).getTime()) / (86400 * 1000);
+  const recencyPenalty = Math.min(recencyDays / 90, 0.3);
+
+  return Math.round(Math.min(Math.max(intentScore + engagementBonus - recencyPenalty, 0), 1) * 100);
+}
+
+function mapLead(lead: LeadRow): LeadOutput {
+  return {
+    id: lead.id,
+    phone: lead.phone,
+    name: lead.name,
+    email: lead.email,
+    status: lead.status || 'new',
+    lastIntent: lead.lastIntent || 'general',
+    totalMessages: lead.totalMessages || 0,
+    lastInteraction: lead.updatedAt || lead.createdAt,
+    metadata: lead.metadata || {},
+    createdAt: lead.createdAt,
+    updatedAt: lead.updatedAt,
+    commercialScore: computeCommercialScore(lead),
+  };
+}
+
+/** Leads service with commercial scoring. */
 @Injectable()
 export class LeadsService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(LeadsService.name);
 
-  /** List leads. */
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly mindPolicy?: MindPolicyService,
+  ) {}
+
+  /** List leads with optional commercial scoring. */
   async listLeads(
     workspaceId: string,
     options?: { status?: string; search?: string; limit?: number },
@@ -46,18 +125,6 @@ export class LeadsService {
       },
     });
 
-    return leads.map((lead) => ({
-      id: lead.id,
-      phone: lead.phone,
-      name: lead.name,
-      email: lead.email,
-      status: lead.status || 'new',
-      lastIntent: lead.lastIntent || 'general',
-      totalMessages: lead.totalMessages || 0,
-      lastInteraction: lead.updatedAt || lead.createdAt,
-      metadata: lead.metadata || {},
-      createdAt: lead.createdAt,
-      updatedAt: lead.updatedAt,
-    }));
+    return leads.map((lead) => mapLead(lead));
   }
 }

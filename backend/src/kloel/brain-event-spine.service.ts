@@ -3,7 +3,7 @@ import { Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
-import type { CommercialEventPayload } from './brain-event-taxonomy';
+import type { BrainEventName, CommercialEventPayload } from './brain-event-taxonomy';
 
 type AutopilotEventIdRow = { id: string } | null;
 
@@ -61,7 +61,7 @@ export class BrainEventSpineService {
   ) {}
 
   async record(params: {
-    action: string;
+    action: BrainEventName;
     contactId?: string;
     intent: string;
     meta?: Prisma.InputJsonObject;
@@ -185,31 +185,140 @@ export class BrainEventSpineService {
     return { dispatched: result.count };
   }
 
-  private resolveIntent(eventType: string): string {
+  async markDispatchFailed(eventId: string, workspaceId: string, error: string): Promise<void> {
+    await this.prisma.mindOutboxEvent.updateMany({
+      where: { id: eventId, workspaceId, status: 'dispatched' },
+      data: {
+        status: 'failed',
+        lastError: error,
+        dispatchedAt: null,
+      },
+    });
+  }
+
+  async readReplayEvents(params: {
+    workspaceId: string;
+    eventTypes?: BrainEventName[];
+    since?: Date;
+    limit?: number;
+  }): Promise<{
+    events: Array<{
+      id: string;
+      eventType: string;
+      subject: string;
+      payload: Prisma.JsonValue;
+      idempotencyKey: string;
+      occurredAt: Date;
+      status: string;
+    }>;
+  }> {
+    const rows = await this.prisma.mindOutboxEvent.findMany({
+      where: {
+        workspaceId: params.workspaceId,
+        ...(params.eventTypes?.length ? { eventType: { in: params.eventTypes } } : {}),
+        ...(params.since ? { occurredAt: { gte: params.since } } : {}),
+        status: { in: ['dispatched', 'pending'] },
+      },
+      orderBy: { occurredAt: 'asc' },
+      take: params.limit ?? 500,
+      select: {
+        id: true,
+        eventType: true,
+        subject: true,
+        payload: true,
+        idempotencyKey: true,
+        occurredAt: true,
+        status: true,
+      },
+    });
+
+    return { events: rows };
+  }
+
+  async readPendingEvents(
+    workspaceId: string,
+    limit = 50,
+  ): Promise<{
+    events: Array<{
+      id: string;
+      eventType: string;
+      subject: string;
+      idempotencyKey: string;
+      occurredAt: Date;
+      attempts: number;
+      lastError: string | null;
+    }>;
+  }> {
+    const rows = await this.prisma.mindOutboxEvent.findMany({
+      where: { workspaceId, status: 'pending' },
+      orderBy: { createdAt: 'asc' },
+      take: limit,
+      select: {
+        id: true,
+        eventType: true,
+        subject: true,
+        idempotencyKey: true,
+        occurredAt: true,
+        attempts: true,
+        lastError: true,
+      },
+    });
+
+    return { events: rows };
+  }
+
+  async getOutboxStatus(workspaceId: string): Promise<{
+    pending: number;
+    dispatched: number;
+    failed: number;
+    total: number;
+  }> {
+    const [pending, dispatched, failed, total] = await Promise.all([
+      this.prisma.mindOutboxEvent.count({
+        where: { workspaceId, status: 'pending' },
+      }),
+      this.prisma.mindOutboxEvent.count({
+        where: { workspaceId, status: 'dispatched' },
+      }),
+      this.prisma.mindOutboxEvent.count({
+        where: { workspaceId, status: 'failed' },
+      }),
+      this.prisma.mindOutboxEvent.count({
+        where: { workspaceId },
+      }),
+    ]);
+
+    return { pending, dispatched, failed, total };
+  }
+
+  private resolveIntent(eventType: BrainEventName): string {
     if (eventType.startsWith('sale.')) return 'sale_lifecycle';
     if (eventType.startsWith('checkout.')) return 'checkout_lifecycle';
     if (eventType.startsWith('message.')) return 'message_lifecycle';
     if (eventType.startsWith('lead.')) return 'lead_lifecycle';
+    if (eventType.startsWith('campaign.')) return 'campaign_lifecycle';
+    if (eventType.startsWith('product.')) return 'product_lifecycle';
+    if (eventType.startsWith('brain.')) return 'brain_lifecycle';
+    if (eventType.startsWith('mind.')) return 'mind_lifecycle';
+    if (eventType.startsWith('capability.')) return 'capability_lifecycle';
+    if (eventType.startsWith('contact.')) return 'contact_lifecycle';
+    if (eventType.startsWith('channel.')) return 'channel_lifecycle';
+    if (eventType.startsWith('identity.')) return 'identity_lifecycle';
+    if (eventType.startsWith('concept.')) return 'concept_lifecycle';
     return 'commercial_lifecycle';
   }
 
-  private resolveStatus(eventType: string): string {
-    if (
-      eventType.endsWith('.created') ||
-      eventType.endsWith('.sent') ||
-      eventType.endsWith('.completed') ||
-      eventType.endsWith('.paid') ||
-      eventType.endsWith('.qualified') ||
-      eventType.endsWith('.converted')
-    ) {
-      return 'executed';
-    }
+  private resolveStatus(eventType: BrainEventName): string {
     if (
       eventType.endsWith('.cancelled') ||
       eventType.endsWith('.refunded') ||
-      eventType.endsWith('.abandoned')
+      eventType.endsWith('.abandoned') ||
+      eventType.endsWith('.disconnected')
     ) {
       return 'skipped';
+    }
+    if (eventType.endsWith('.failed') || eventType.endsWith('.externally_blocked')) {
+      return 'error';
     }
     return 'executed';
   }
