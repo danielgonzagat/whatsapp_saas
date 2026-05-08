@@ -70,8 +70,16 @@ function buildContextDigest(input: {
   return sha256(input);
 }
 
-function loadPreviousContextDigest(rootDir: string): string | null {
-  const previousPath = safeJoin(rootDir, '.pulse', 'current', artifactFilenames().contextBroadcast);
+function artifactRef(registry: PulseArtifactRegistry, artifactId: string): string {
+  const artifact = registry.artifacts.find((candidate) => candidate.id === artifactId);
+  if (!artifact) {
+    throw new Error(`PULSE artifact id is not registered: ${artifactId}`);
+  }
+  return artifact.relativePath;
+}
+
+function loadPreviousContextDigest(rootDir: string, contextBroadcastRef: string): string | null {
+  const previousPath = safeJoin(rootDir, '.pulse', 'current', contextBroadcastRef);
   const previous = readJsonRecord(previousPath);
   return typeof previous?.contextDigest === 'string' ? previous.contextDigest : null;
 }
@@ -113,6 +121,12 @@ export function buildPulseContextFabricBundle(input: {
   const expiresAt = new Date(Date.now() + CONTEXT_TTL_MINUTES * 60_000).toISOString();
   const assignedFiles = new Set<string>();
   const mutableOwners = new Map<string, string>();
+  const artifactRefs = {
+    contextBroadcast: artifactRef(input.registry, 'context-broadcast'),
+    workerLeases: artifactRef(input.registry, 'worker-leases'),
+    gitnexusState: artifactRef(input.registry, 'gitnexus-state'),
+    beadsState: artifactRef(input.registry, 'beads-state'),
+  };
 
   const leases: PulseWorkerLease[] = [];
   const workers: WorkerContextEnvelope[] = units.map((unit, index) => {
@@ -139,10 +153,10 @@ export function buildPulseContextFabricBundle(input: {
       ...unit.validationArtifacts,
       ...unit.artifactPaths,
       ...normalizedRelatedFiles.filter((filePath) => isProtectedFile(filePath, protectedConfig)),
-      af.contextBroadcast,
-      af.workerLeases,
-      af.gitnexusState,
-      af.beadsState,
+      artifactRefs.contextBroadcast,
+      artifactRefs.workerLeases,
+      artifactRefs.gitnexusState,
+      artifactRefs.beadsState,
     ]);
     const conflictReasons =
       duplicateReadOnly.length > deriveZeroValue()
@@ -184,12 +198,13 @@ export function buildPulseContextFabricBundle(input: {
     };
   });
 
-  const previousDigest = loadPreviousContextDigest(input.rootDir);
+  const previousDigest = loadPreviousContextDigest(input.rootDir, artifactRefs.contextBroadcast);
   const blockers = [
     gitnexusState.status !== 'ready' ? `gitnexus:${gitnexusState.status}` : '',
     beadsState.status !== 'ready' ? `beads:${beadsState.status}` : '',
   ].filter(Boolean);
   return {
+    artifactRefs,
     gitnexusState,
     beadsState,
     broadcast: {
@@ -243,8 +258,8 @@ export function buildDirectiveContextFabricPatch(
   bundle: PulseContextFabricBundle,
 ): Record<string, unknown> {
   return {
-    broadcastRef: artifactFilenames().contextBroadcast,
-    leasesRef: artifactFilenames().workerLeases,
+    broadcastRef: bundle.artifactRefs.contextBroadcast,
+    leasesRef: bundle.artifactRefs.workerLeases,
     gitnexusRef: bundle.broadcast.gitnexusRef,
     beadsRef: bundle.broadcast.beadsRef,
     contextDigest: bundle.broadcast.contextDigest,

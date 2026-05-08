@@ -151,7 +151,7 @@ export function inferKindFromFileEvidence(rootDir: string, relativeDir: string):
   let backendSignals = ZERO;
   let workerSignals = ZERO;
 
-  for (const entry of readDir(absoluteDir, { recursive: true }) as string[]) {
+  for (const entry of walkUnskippedFiles(absoluteDir)) {
     const normalized = normalizeRelative(entry);
     if (normalized.split('/').some((part) => SKIP_DIR_NAMES.has(part))) continue;
     const ext = path.extname(normalized);
@@ -207,7 +207,7 @@ export function inferFrameworksFromFileEvidence(rootDir: string, relativeDir: st
   if (!pathExists(absoluteDir)) return [];
 
   const frameworks: string[] = [];
-  for (const entry of readDir(absoluteDir, { recursive: true }) as string[]) {
+  for (const entry of walkUnskippedFiles(absoluteDir)) {
     const normalized = normalizeRelative(entry);
     if (normalized.split('/').some((part) => SKIP_DIR_NAMES.has(part))) continue;
     const ext = path.extname(normalized);
@@ -259,4 +259,30 @@ export function hasSkippedSegment(relativePath: string): boolean {
   return normalizeRelative(relativePath)
     .split('/')
     .some((part) => SKIP_DIR_NAMES.has(part));
+}
+
+export function walkUnskippedFiles(rootDir: string, relativeDir = ''): string[] {
+  const baseRelative = normalizeRelative(relativeDir);
+  const files: string[] = [];
+
+  function walk(currentRelative: string): void {
+    const absoluteDir = safeJoin(rootDir, baseRelative || '.', currentRelative || '.');
+    const entries = readDir(absoluteDir, { withFileTypes: true });
+
+    for (const entry of entries) {
+      const entryRelative = normalizeRelative(safeJoin(currentRelative || '.', entry.name));
+      const rootRelative = normalizeRelative(safeJoin(baseRelative || '.', entryRelative));
+      if (hasSkippedSegment(rootRelative)) continue;
+
+      if (entry.isDirectory()) {
+        walk(entryRelative);
+        continue;
+      }
+
+      files.push(entryRelative);
+    }
+  }
+
+  walk('');
+  return files.sort();
 }

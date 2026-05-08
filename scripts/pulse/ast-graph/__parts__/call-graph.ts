@@ -11,7 +11,6 @@ import { deriveStringUnionMembersFromTypeContract } from '../../dynamic-reality-
 import { deriveUnitValue } from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
 import {
   type FrameworkDecoratorMeta,
-  type AstTargetSymbol,
   shouldSkip,
   normalizePath,
   generateId,
@@ -23,12 +22,6 @@ import {
   classifySymbolKind,
   classifyCallEdgeKind,
 } from './decorators';
-import {
-  resolveCallExpression,
-  resolveNewExpression,
-  resolveDecorator,
-  resolveJsxElement,
-} from './resolution';
 import {
   extractDocComment,
   extractDecoratorNames,
@@ -60,6 +53,21 @@ function astEdgeKind(kind: string): string {
   return members.has(kind) ? kind : (members.values().next().value ?? 'direct_call');
 }
 
+interface DeferredCallEdge {
+  from: string;
+  toName: string;
+  filePath: string;
+  line: number;
+  kind: AstCallEdge['kind'];
+  genericArguments: string[];
+}
+
+function localCalleeName(calleeText: string): string {
+  const withoutOptional = calleeText.replace(/\?\./g, '.');
+  const segments = withoutOptional.split('.');
+  return segments[segments.length - 1]?.replace(/[^\w$]/g, '') || calleeText;
+}
+
 export async function buildAstCallGraph(rootDir: string): Promise<AstCallGraph> {
   const tsConfigFileName = 'tsconfig.json';
   const tsconfigCandidates = [
@@ -84,13 +92,12 @@ export async function buildAstCallGraph(rootDir: string): Promise<AstCallGraph> 
 
   const sourceFiles = project.getSourceFiles().filter((sf) => !shouldSkip(sf.getFilePath()));
 
-  const typeChecker = project.getTypeChecker();
-
   const symbols: AstResolvedSymbol[] = [];
   const edges: AstCallEdge[] = [];
   const moduleGraphs: ReturnType<typeof buildModuleGraph>[] = [];
   const unresolvedCalls: AstCallGraph['unresolvedCalls'] = [];
   const parseErrors: AstCallGraph['parseErrors'] = [];
+  const deferredCalls: DeferredCallEdge[] = [];
 
   const seenSymbolIds = new Set<string>();
   const seenEdgeIds = new Set<string>();
@@ -261,76 +268,71 @@ export async function buildAstCallGraph(rootDir: string): Promise<AstCallGraph> 
         ? buildSymbolId(fromSymbol.filePath, fromSymbol.name, fromSymbol.line)
         : buildSymbolId(filePath, '<toplevel>', line);
 
-      let resolved = false;
-      let targetSymbol: AstTargetSymbol | null = null;
       let genericArgs: string[] = [];
 
       try {
-        if (Node.isCallExpression(callNode)) {
-          const result = resolveCallExpression(callNode, typeChecker);
-          resolved = result.resolved;
-          targetSymbol = result.targetSymbol;
-          genericArgs = result.genericArgs;
-        } else if (Node.isNewExpression(callNode)) {
-          const result = resolveNewExpression(callNode, typeChecker);
-          resolved = result.resolved;
-          targetSymbol = result.targetSymbol;
-          genericArgs = result.genericArgs;
-        } else if (Node.isDecorator(callNode)) {
-          const result = resolveDecorator(callNode, typeChecker);
-          resolved = result.resolved;
-          targetSymbol = result.targetSymbol;
-          genericArgs = result.genericArgs;
-        } else {
-          const result = resolveJsxElement(
-            callNode as Parameters<typeof resolveJsxElement>[0],
-            typeChecker,
-          );
-          resolved = result.resolved;
-          targetSymbol = result.targetSymbol;
-          genericArgs = result.genericArgs;
+        if (Node.isCallExpression(callNode) || Node.isNewExpression(callNode)) {
+          const typeArgs = callNode.getTypeArguments();
+          genericArgs = typeArgs.map((typeArg) => typeArg.getText());
         }
       } catch {
-        // resolution error
+        genericArgs = [];
       }
 
-      const edgeKind = classifyCallEdgeKind(callNode, resolved);
+      const edgeKind = classifyCallEdgeKind(callNode, false);
+      deferredCalls.push({
+        from: fromId,
+        toName: extractCalleeText(callNode),
+        filePath,
+        line,
+        kind: edgeKind,
+        genericArguments: genericArgs,
+      });
+    });
+  }
 
-      if (targetSymbol) {
-        const toName = targetSymbol.getName();
-        const targetDecl = (
-          targetSymbol as unknown as { getDeclarations?(): Node[] }
-        ).getDeclarations?.()?.[0];
-        const targetLine = targetDecl ? targetDecl.getStartLineNumber() : 0;
-        const targetFile = targetDecl
-          ? normalizePath(targetDecl.getSourceFile().getFilePath())
-          : filePath;
-        const toId = buildSymbolId(targetFile, toName, targetLine);
+  const symbolIdsByLocalName = new Map<string, string[]>();
+  for (const symbol of symbols) {
+    for (const name of new Set([symbol.name, localCalleeName(symbol.name)])) {
+      const existing = symbolIdsByLocalName.get(name) ?? [];
+      existing.push(symbol.id);
+      symbolIdsByLocalName.set(name, existing);
+    }
+  }
 
-        const edgeId = buildEdgeId(fromId, toId);
-        if (seenEdgeIds.has(edgeId)) return;
+  for (const deferredCall of deferredCalls) {
+    const localName = localCalleeName(deferredCall.toName);
+    const candidateIds = symbolIdsByLocalName.get(localName) ?? [];
+    const uniqueCandidateIds = [...new Set(candidateIds)];
+
+    if (uniqueCandidateIds.length === deriveUnitValue()) {
+      const toId = uniqueCandidateIds[0];
+      const edgeId = buildEdgeId(deferredCall.from, toId);
+      if (!seenEdgeIds.has(edgeId)) {
         seenEdgeIds.add(edgeId);
-
         edges.push({
           id: generateId('edge'),
-          from: fromId,
+          from: deferredCall.from,
           to: toId,
-          kind: edgeKind,
-          filePath,
-          line,
-          resolved,
-          genericArguments: genericArgs,
-        });
-      } else {
-        const calleeText = extractCalleeText(callNode);
-        unresolvedCalls.push({
-          from: fromId,
-          toName: calleeText,
-          filePath,
-          line,
-          reason: 'symbol-not-resolved',
+          kind: deferredCall.kind,
+          filePath: deferredCall.filePath,
+          line: deferredCall.line,
+          resolved: true,
+          genericArguments: deferredCall.genericArguments,
         });
       }
+      continue;
+    }
+
+    unresolvedCalls.push({
+      from: deferredCall.from,
+      toName: deferredCall.toName,
+      filePath: deferredCall.filePath,
+      line: deferredCall.line,
+      reason:
+        uniqueCandidateIds.length > deriveUnitValue()
+          ? 'ambiguous-local-symbol'
+          : 'symbol-not-resolved',
     });
   }
 

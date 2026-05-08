@@ -1,5 +1,5 @@
 import * as path from 'path';
-import { pathExists, readDir, readTextFile } from '../../safe-fs';
+import { pathExists, readTextFile } from '../../safe-fs';
 import { safeJoin } from '../../safe-path';
 import {
   DetectedSourceRoot,
@@ -7,7 +7,6 @@ import {
   WEAK_FALLBACK_SEGMENTS,
   CONVENTIONAL_SOURCE_DIR_NAMES,
   sourceExtensionsSet,
-  SKIP_DIR_NAMES,
   ZERO,
   ONE,
 } from './types';
@@ -16,6 +15,7 @@ import {
   hasSkippedSegment,
   hasFrameworkFileSignal,
   inferKindFromFileEvidence,
+  walkUnskippedFiles,
 } from './helpers';
 import { addRoot } from './source-resolution';
 import { addPackageRoots, addTsConfigRoots, discoverBuildConfigRoots } from './scanners';
@@ -23,10 +23,9 @@ import { discoverPackageDirs } from './package-discovery';
 
 function addFileEvidenceRoots(roots: Map<string, DetectedSourceRoot>, rootDir: string): void {
   const candidates = new Set<string>();
-  for (const entry of readDir(rootDir, { recursive: true }) as string[]) {
+  for (const entry of walkUnskippedFiles(rootDir)) {
     const normalized = normalizeRelative(entry);
     const segments = normalized.split('/');
-    if (segments.some((part) => SKIP_DIR_NAMES.has(part))) continue;
     if (!sourceExtensionsSet.has(path.extname(normalized))) continue;
 
     const sourceIndex = segments.findIndex((segment) => CONVENTIONAL_SOURCE_DIR_NAMES.has(segment));
@@ -90,7 +89,7 @@ export function sourceGlobsForTsMorph(rootDir: string): string[] {
   const files = new Set<string>();
   for (const root of detectSourceRoots(rootDir)) {
     if (!pathExists(root.absolutePath)) continue;
-    for (const entry of readDir(root.absolutePath, { recursive: true }) as string[]) {
+    for (const entry of walkUnskippedFiles(root.absolutePath)) {
       const relativeEntry = normalizeRelative(entry);
       if (hasSkippedSegment(relativeEntry)) continue;
       const extension = path.extname(relativeEntry);

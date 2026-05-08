@@ -204,7 +204,10 @@ function sortArtifacts(artifacts: PulseArtifactDefinition[]): PulseArtifactDefin
 }
 
 function resolveDiscoveryRoot(rootDir: string): string {
-  if (fs.existsSync(path.join(rootDir, 'scripts', 'pulse', 'artifacts.ts'))) {
+  if (
+    fs.existsSync(path.join(rootDir, 'scripts', 'pulse', 'artifacts.ts')) ||
+    fs.existsSync(path.join(rootDir, 'scripts', 'pulse', '__parts__', 'artifacts', 'generate.ts'))
+  ) {
     return rootDir;
   }
   return path.resolve(__dirname, '..', '..');

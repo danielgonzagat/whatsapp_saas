@@ -206,37 +206,45 @@ export function discoverArtifactReferences(
 }
 
 export function discoverRegisteredWriters(pulseDir: string): RegisteredArtifactWriter[] {
-  const artifactsPath = path.join(pulseDir, 'artifacts.ts');
-  const sourceFile = readSourceFile(artifactsPath);
-  if (!sourceFile) {
-    return [];
-  }
   const writers: RegisteredArtifactWriter[] = [];
-  const variableInitializers = new Map<string, ts.Expression>();
-  const moduleRef = moduleRefFromPulseFile(pulseDir, artifactsPath);
-  const visit = (node: ts.Node): void => {
-    if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.initializer) {
-      variableInitializers.set(node.name.text, node.initializer);
+  const artifactWriterPaths = [
+    path.join(pulseDir, 'artifacts.ts'),
+    path.join(pulseDir, '__parts__', 'artifacts', 'generate.ts'),
+  ];
+
+  for (const artifactPath of artifactWriterPaths) {
+    const sourceFile = readSourceFile(artifactPath);
+    if (!sourceFile) {
+      continue;
     }
-    if (
-      ts.isCallExpression(node) &&
-      ts.isIdentifier(node.expression) &&
-      node.expression.text === 'writeRegisteredArtifact'
-    ) {
-      const artifactId = node.arguments[1];
-      if (artifactId && ts.isStringLiteralLike(artifactId)) {
-        writers.push({
-          id: artifactId.text,
-          moduleRef,
-          contentExpression: node.arguments[2] ?? null,
-          sourceFile,
-          variableInitializers,
-        });
+
+    const variableInitializers = new Map<string, ts.Expression>();
+    const moduleRef = moduleRefFromPulseFile(pulseDir, artifactPath);
+    const visit = (node: ts.Node): void => {
+      if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.initializer) {
+        variableInitializers.set(node.name.text, node.initializer);
       }
-    }
-    ts.forEachChild(node, visit);
-  };
-  visit(sourceFile);
+      if (
+        ts.isCallExpression(node) &&
+        ts.isIdentifier(node.expression) &&
+        node.expression.text === 'writeRegisteredArtifact'
+      ) {
+        const artifactId = node.arguments[1];
+        if (artifactId && ts.isStringLiteralLike(artifactId)) {
+          writers.push({
+            id: artifactId.text,
+            moduleRef,
+            contentExpression: node.arguments[2] ?? null,
+            sourceFile,
+            variableInitializers,
+          });
+        }
+      }
+      ts.forEachChild(node, visit);
+    };
+    visit(sourceFile);
+  }
+
   return writers;
 }
 
