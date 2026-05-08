@@ -17,6 +17,8 @@ describe('BrainEventSpineService diagnostics', () => {
       upsert: jest.Mock;
     };
     $queryRaw: jest.Mock;
+    $executeRaw: jest.Mock;
+    $transaction: jest.Mock;
   };
   let service: BrainEventSpineService;
 
@@ -32,6 +34,8 @@ describe('BrainEventSpineService diagnostics', () => {
         upsert: jest.fn().mockResolvedValue({ id: 'outbox-1' }),
       },
       $queryRaw: jest.fn().mockResolvedValue([]),
+      $executeRaw: jest.fn().mockResolvedValue(1),
+      $transaction: jest.fn(async (fn: (tx: unknown) => unknown) => fn(prisma)),
     };
     service = new BrainEventSpineService(prisma as never);
   });

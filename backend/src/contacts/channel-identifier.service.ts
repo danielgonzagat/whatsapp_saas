@@ -22,6 +22,25 @@ export interface ChannelIdentifierResult {
   metadata: Record<string, unknown> | null;
 }
 
+const CHANNEL_ALIASES: Record<string, string> = {
+  FACEBOOK: 'MESSENGER',
+  FB: 'MESSENGER',
+  IG: 'INSTAGRAM',
+};
+
+const VALID_CHANNELS = new Set(['WHATSAPP', 'INSTAGRAM', 'MESSENGER', 'EMAIL', 'TIKTOK']);
+
+export function normalizeChannelIdentifierChannel(channel: string): string {
+  const normalized = String(channel || '')
+    .trim()
+    .toUpperCase();
+  const aliased = CHANNEL_ALIASES[normalized] ?? normalized;
+  if (!VALID_CHANNELS.has(aliased)) {
+    throw new Error(`Unsupported channel identifier channel: ${channel}`);
+  }
+  return aliased;
+}
+
 function normalizeMetadata(value: Prisma.JsonValue | null): Record<string, unknown> | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return null;
@@ -71,9 +90,10 @@ export class ChannelIdentifierService {
     workspaceId: string,
     options?: { name?: string; isPrimary?: boolean; metadata?: Record<string, unknown> },
   ): Promise<ResolvedContact> {
+    const normalizedChannel = normalizeChannelIdentifierChannel(channel);
     const existing = await client.channelIdentifier.findUnique({
       where: {
-        workspaceId_channel_value: { workspaceId, channel, value },
+        workspaceId_channel_value: { workspaceId, channel: normalizedChannel, value },
       },
       include: { contact: true },
     });
@@ -93,14 +113,14 @@ export class ChannelIdentifierService {
     const contact = await client.contact.create({
       data: {
         workspaceId,
-        phone: `${channel.toLowerCase()}:${value}`,
+        phone: `${normalizedChannel.toLowerCase()}:${value}`,
         name: options?.name || null,
       },
     });
 
     const identifier = await client.channelIdentifier.create({
       data: {
-        channel,
+        channel: normalizedChannel,
         value,
         contactId: contact.id,
         workspaceId,
@@ -127,9 +147,10 @@ export class ChannelIdentifierService {
     workspaceId: string,
     options?: { isPrimary?: boolean; metadata?: Record<string, unknown> },
   ): Promise<ChannelIdentifierResult> {
+    const normalizedChannel = normalizeChannelIdentifierChannel(channel);
     const existing = await this.prisma.channelIdentifier.findUnique({
       where: {
-        workspaceId_channel_value: { workspaceId, channel, value },
+        workspaceId_channel_value: { workspaceId, channel: normalizedChannel, value },
       },
     });
 
@@ -144,7 +165,7 @@ export class ChannelIdentifierService {
 
     const created = await this.prisma.channelIdentifier.create({
       data: {
-        channel,
+        channel: normalizedChannel,
         value,
         contactId,
         workspaceId,
@@ -168,9 +189,10 @@ export class ChannelIdentifierService {
     value: string,
     workspaceId: string,
   ): Promise<ResolvedContact | null> {
+    const normalizedChannel = normalizeChannelIdentifierChannel(channel);
     const identifier = await this.prisma.channelIdentifier.findUnique({
       where: {
-        workspaceId_channel_value: { workspaceId, channel, value },
+        workspaceId_channel_value: { workspaceId, channel: normalizedChannel, value },
       },
       include: { contact: true },
     });

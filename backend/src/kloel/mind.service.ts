@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { MindBeliefService } from './mind-belief.service';
+import { MindCaseMemoryService } from './mind-case-memory.service';
 import { MindEventProcessorService } from './mind-event-processor.service';
 import { MindPerceptionService } from './mind-perception.service';
 import { MindPolicyService } from './mind-policy.service';
@@ -41,6 +42,7 @@ export class MindService {
     private readonly policy: MindPolicyService,
     private readonly state: MindWorkspaceStateService,
     private readonly events: MindEventProcessorService,
+    private readonly cases: MindCaseMemoryService,
   ) {}
 
   async tick(workspaceId: string): Promise<MindTick> {
@@ -202,6 +204,19 @@ export class MindService {
     audioRatio: number,
   ): Promise<{ choice: string; confidence: number; fallback: boolean }> {
     const baseline = resolveAudioBaseline(channel, audioRatio);
+
+    const memoryAction = await this.fetchCaseMemoryAction({
+      workspaceId,
+      caseType: 'audio_vs_text',
+      text: `channel ${channel} audioRatio ${audioRatio.toFixed(2)}`,
+      features: { channel },
+      options: ['audio', 'text'],
+      minSimilarCases: 3,
+      minSimilarityTotal: 1.2,
+    });
+
+    const effectiveBaseline = memoryAction ?? baseline;
+
     const result = await this.policy.choose({
       workspaceId,
       subject: `workspace:${workspaceId}`,
@@ -219,7 +234,7 @@ export class MindService {
           context: { channel, message_type: 'text' },
         },
       ],
-      baseline,
+      baseline: effectiveBaseline,
       outcomeKey: `audio_vs_text:${workspaceId}:${Date.now()}`,
     });
 
@@ -239,6 +254,19 @@ export class MindService {
   ): Promise<{ tone: string; confidence: number; fallback: boolean }> {
     const baseline = resolveToneBaseline(repliedRate, soldRate, channel);
     const context = segment ? { channel, segment } : { channel };
+
+    const memoryAction = await this.fetchCaseMemoryAction({
+      workspaceId,
+      caseType: 'tom',
+      text: `channel ${channel} repliedRate ${repliedRate.toFixed(2)} soldRate ${soldRate.toFixed(2)}${segment ? ` segment ${segment}` : ''}`,
+      features: { channel, ...(segment ? { segment } : {}) },
+      options: [...TONE_OPTIONS],
+      minSimilarCases: 3,
+      minSimilarityTotal: 1.2,
+    });
+
+    const effectiveBaseline = memoryAction ?? baseline;
+
     const result = await this.policy.choose({
       workspaceId,
       subject: `workspace:${workspaceId}`,
@@ -249,7 +277,7 @@ export class MindService {
         predicate: 'P(reply|tone,objection_type,channel)',
         context: { ...context, tone },
       })),
-      baseline,
+      baseline: effectiveBaseline,
       outcomeKey: `tom:${workspaceId}:${Date.now()}`,
       utilitySuccess: 1,
       utilityFail: -0.1,
@@ -270,6 +298,19 @@ export class MindService {
   ): Promise<{ action: string; confidence: number; fallback: boolean }> {
     const baseline = resolveCouponBaseline(priceBand, soldRate);
     const context = segment ? { priceBand, segment } : { priceBand };
+
+    const memoryAction = await this.fetchCaseMemoryAction({
+      workspaceId,
+      caseType: 'cupom',
+      text: `priceBand ${priceBand} soldRate ${soldRate.toFixed(2)}${segment ? ` segment ${segment}` : ''}`,
+      features: { priceBand, ...(segment ? { segment } : {}) },
+      options: ['offer_coupon', 'no_coupon'],
+      minSimilarCases: 3,
+      minSimilarityTotal: 1.2,
+    });
+
+    const effectiveBaseline = memoryAction ?? baseline;
+
     const result = await this.policy.choose({
       workspaceId,
       subject: `workspace:${workspaceId}`,
@@ -287,7 +328,7 @@ export class MindService {
           context: { ...context, discount_offered: 'no' },
         },
       ],
-      baseline,
+      baseline: effectiveBaseline,
       outcomeKey: `cupom:${workspaceId}:${Date.now()}`,
       utilitySuccess: 1,
       utilityFail: -0.2,
@@ -298,5 +339,76 @@ export class MindService {
       confidence: chosenConfidence(result),
       fallback: result.decision.fallbackActive,
     };
+  }
+
+  private async fetchCaseMemoryAction(input: {
+    caseType: string;
+    features: Record<string, unknown>;
+    minSimilarCases: number;
+    minSimilarityTotal: number;
+    options: readonly string[];
+    text: string;
+    workspaceId: string;
+  }): Promise<string | null> {
+    const similar = await this.cases.similar({
+      workspaceId: input.workspaceId,
+      caseType: input.caseType,
+      text: input.text,
+      features: input.features,
+      limit: 30,
+    });
+
+    if (similar.length < input.minSimilarCases) {
+      return null;
+    }
+
+    const actionScores = new Map<
+      string,
+      { similaritySum: number; outcomeSum: number; count: number }
+    >();
+
+    for (const row of similar) {
+      if (!input.options.includes(row.action)) {
+        continue;
+      }
+
+      const entry = actionScores.get(row.action) ?? {
+        similaritySum: 0,
+        outcomeSum: 0,
+        count: 0,
+      };
+
+      entry.similaritySum += row.similarity;
+      if (typeof row.outcome === 'number') {
+        entry.outcomeSum += row.outcome;
+      }
+      entry.count += 1;
+
+      actionScores.set(row.action, entry);
+    }
+
+    if (actionScores.size === 0) {
+      return null;
+    }
+
+    let bestAction: string | null = null;
+    let bestScore = -Infinity;
+
+    for (const [action, entry] of actionScores) {
+      const outcomeRate = entry.count > 0 ? entry.outcomeSum / entry.count : 0;
+      const score = entry.similaritySum * 0.3 + outcomeRate * 0.7;
+
+      if (score > bestScore) {
+        bestScore = score;
+        bestAction = action;
+      }
+    }
+
+    const totalSimilarity = similar.reduce((sum, row) => sum + row.similarity, 0);
+    if (totalSimilarity < input.minSimilarityTotal) {
+      return null;
+    }
+
+    return bestAction;
   }
 }

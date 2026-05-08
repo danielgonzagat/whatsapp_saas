@@ -23,7 +23,7 @@ type MindGlobalPriorDelegate = {
   createMany(input: {
     data: Array<{
       id: string;
-      workspaceId: string;
+      workspaceId?: string | null;
       domain: string;
       predicate: string;
       context: Prisma.InputJsonObject;
@@ -34,7 +34,9 @@ type MindGlobalPriorDelegate = {
     }>;
     skipDuplicates: boolean;
   }): Promise<unknown>;
-  deleteMany(input: { where: { domain: string; predicate: string } }): Promise<unknown>;
+  deleteMany(input: {
+    where: { domain: string; predicate: string; workspaceId?: null };
+  }): Promise<unknown>;
 };
 
 function hasGlobalPriorDelegate(
@@ -136,7 +138,7 @@ export class MindGlobalPriorService {
     armEntries.sort((a, b) => b.aggregatePulls - a.aggregatePulls);
 
     const meanSuccessRate = totalPulls > 0 ? totalWins / totalPulls : 0;
-    await this.persistPriorSnapshot(decisionType, workspaceIds[0], armEntries);
+    await this.persistPriorSnapshot(decisionType, armEntries);
 
     this.logger.debug({
       operation: 'mind.global_prior.get_prior',
@@ -200,21 +202,20 @@ export class MindGlobalPriorService {
 
   private async persistPriorSnapshot(
     decisionType: string,
-    workspaceId: string | undefined,
     arms: GlobalPriorArmEntry[],
   ): Promise<void> {
-    if (!workspaceId || arms.length === 0 || !hasGlobalPriorDelegate(this.prisma)) {
+    if (arms.length === 0 || !hasGlobalPriorDelegate(this.prisma)) {
       return;
     }
 
     const predicate = `bandit:${decisionType}`;
     await this.prisma.mindGlobalPrior.deleteMany({
-where: { domain: 'global_anonymous', predicate, workspaceId },
+      where: { domain: 'global_anonymous', predicate, workspaceId: null },
     });
     await this.prisma.mindGlobalPrior.createMany({
       data: arms.map((arm) => ({
         id: `${decisionType}:${arm.arm}`.slice(0, 191),
-        workspaceId,
+        workspaceId: null,
         domain: 'global_anonymous',
         predicate,
         context: { arm: arm.arm },

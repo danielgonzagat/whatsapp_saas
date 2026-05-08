@@ -3,6 +3,7 @@ import { Cron } from '@nestjs/schedule';
 import { forEachSequential } from '../common/async-sequence';
 import { PrismaService } from '../prisma/prisma.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import { MindCaseMemoryService } from './mind-case-memory.service';
 import { MindPolicyService } from './mind-policy.service';
 import {
   buildListUnsubscribeHeader,
@@ -84,6 +85,7 @@ export class CartRecoveryService {
     private readonly prisma: PrismaService,
     @Optional() private readonly opsAlert?: OpsAlertService,
     @Optional() private readonly mindPolicy?: MindPolicyService,
+    @Optional() private readonly cases?: MindCaseMemoryService,
   ) {}
 
   /** Check abandoned carts and dispatch MIND-chosen recovery actions. */
@@ -141,10 +143,74 @@ export class CartRecoveryService {
 
           if (wsId && this.mindPolicy) {
             try {
+              const cartCaseType = 'cart_recovery';
+
+              let memoryAction: string | null = null;
+              if (this.cases) {
+                const similar = await this.cases.similar({
+                  workspaceId: wsId,
+                  caseType: cartCaseType,
+                  text: `product ${productName} priceBand ${priceBand} ageMinutes ${ageMinutes}`,
+                  features: { channel: 'email', price_band: priceBand },
+                  limit: 30,
+                });
+
+                if (similar.length >= 3) {
+                  const actionScores = new Map<
+                    string,
+                    { similaritySum: number; outcomeSum: number; count: number }
+                  >();
+                  const actions = ['proof', 'urgency', 'help', 'faq', 'discount', 'pause'];
+
+                  for (const row of similar) {
+                    if (!actions.includes(row.action)) {
+                      continue;
+                    }
+
+                    const entry = actionScores.get(row.action) ?? {
+                      similaritySum: 0,
+                      outcomeSum: 0,
+                      count: 0,
+                    };
+
+                    entry.similaritySum += row.similarity;
+                    if (typeof row.outcome === 'number') {
+                      entry.outcomeSum += row.outcome;
+                    }
+                    entry.count += 1;
+
+                    actionScores.set(row.action, entry);
+                  }
+
+                  if (actionScores.size > 0) {
+                    const totalSimilarity = similar.reduce((sum, row) => sum + row.similarity, 0);
+
+                    if (totalSimilarity >= 1.2) {
+                      let bestAction: string | null = null;
+                      let bestScore = -Infinity;
+
+                      for (const [action, entry] of actionScores) {
+                        const outcomeRate = entry.count > 0 ? entry.outcomeSum / entry.count : 0;
+                        const score = entry.similaritySum * 0.3 + outcomeRate * 0.7;
+
+                        if (score > bestScore) {
+                          bestScore = score;
+                          bestAction = action;
+                        }
+                      }
+
+                      memoryAction = bestAction;
+                    }
+                  }
+                }
+              }
+
+              const effectiveBaseline = memoryAction ?? 'help';
+
               const recoveryResult = await this.mindPolicy.choose({
                 workspaceId: wsId,
                 subject: `order:${order.id}`,
-                decisionType: 'cart_recovery',
+                decisionType: cartCaseType,
                 context: {
                   channel: 'email',
                   price_band: priceBand,
@@ -183,7 +249,7 @@ export class CartRecoveryService {
                     context: {},
                   },
                 ],
-                baseline: 'help',
+                baseline: effectiveBaseline,
                 outcomeKey: `cart_recovery:${wsId}:${order.id}`,
                 utilitySuccess: 1,
                 utilityFail: -0.1,
@@ -192,6 +258,7 @@ export class CartRecoveryService {
               mindDecisionMeta = {
                 mindRecoveryAction: recoveryResult.chosen,
                 mindReason: recoveryResult.decision.reasonInternal,
+                ...(memoryAction ? { mindCaseMemoryAction: memoryAction } : {}),
               };
             } catch (mindErr: unknown) {
               this.logger.warn(

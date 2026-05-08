@@ -1,9 +1,9 @@
 import { InjectRedis } from '@nestjs-modules/ioredis';
-import { Inject, Injectable, Logger, Optional, forwardRef } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import type Redis from 'ioredis';
+import { ChannelTransportRegistry } from '../kloel/channel-transport.registry';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { AgentEventsService } from '../whatsapp/agent-events.service';
-import { WhatsappService } from '../whatsapp/whatsapp.service';
 
 const WHITESPACE_G_RE = /\s+/g;
 const PATTERN_RE = /[?!.;,]+$/g;
@@ -29,6 +29,20 @@ const CIA_SHARED_REPLY_LOCK_MS = Math.max(
 
 export { CIA_SHARED_REPLY_LOCK_MS };
 
+interface CiaSendOptions {
+  complianceMode?: string;
+  externalId?: string;
+  forceDirect?: boolean;
+  quotedMessageId?: string | null;
+}
+
+interface CiaSendResult {
+  error?: boolean;
+  message?: string;
+  messageId?: string;
+  success?: boolean;
+}
+
 /**
  * Shared sending helpers for CIA inline and remote backlog services:
  * daily message limits, reply locks, fallback reply generation,
@@ -41,8 +55,7 @@ export class CiaSendHelpersService {
   constructor(
     @InjectRedis() private readonly redis: Redis,
     private readonly agentEvents: AgentEventsService,
-    @Inject(forwardRef(() => WhatsappService))
-    private readonly whatsappService: WhatsappService,
+    private readonly transports: ChannelTransportRegistry,
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
@@ -97,8 +110,8 @@ export class CiaSendHelpersService {
     workspaceId: string,
     phone: string,
     text: string,
-    options: Parameters<WhatsappService['sendMessage']>[3],
-  ): Promise<Awaited<ReturnType<WhatsappService['sendMessage']>>> {
+    options: CiaSendOptions,
+  ): Promise<CiaSendResult> {
     const reserved = await this.reserveDailyMessageLimit(workspaceId);
     if (!reserved) {
       return {
@@ -108,16 +121,29 @@ export class CiaSendHelpersService {
     }
 
     try {
-      const sendResult = await this.whatsappService.sendMessage(workspaceId, phone, text, options);
-      if (
-        sendResult &&
-        typeof sendResult === 'object' &&
-        'error' in sendResult &&
-        sendResult.error
-      ) {
+      const sendResult = await this.transports.send(workspaceId, {
+        workspaceId,
+        channel: 'whatsapp',
+        recipientId: phone,
+        content: text,
+        guardContext: {
+          contactId: phone,
+          channel: 'whatsapp',
+          complianceMode: options.complianceMode,
+          externalId: options.externalId,
+          forceDirect: options.forceDirect,
+          quotedMessageId: options.quotedMessageId,
+        },
+      });
+      if (!sendResult.success) {
         await this.releaseDailyMessageLimit(workspaceId);
       }
-      return sendResult;
+      return {
+        error: !sendResult.success,
+        message: sendResult.error ?? sendResult.blockedReason,
+        messageId: sendResult.messageId,
+        success: sendResult.success,
+      };
     } catch (error: unknown) {
       void this.opsAlert?.alertOnCriticalError(error, 'CiaSendHelpersService.sendMessage', {
         workspaceId,

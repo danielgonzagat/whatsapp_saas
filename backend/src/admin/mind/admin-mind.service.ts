@@ -135,6 +135,7 @@ export class AdminMindService {
     }
 
     const harnessResult = await this.policy.harness(workspaceId, decisionType, sinceDays);
+    const since = new Date(Date.now() - sinceDays * 86400 * 1000);
 
     const groupRows = await this.prisma.$queryRaw<
       Array<{ chosen: string; baseline: string; outcome: number; count: bigint }>
@@ -144,6 +145,7 @@ export class AdminMindService {
       WHERE "workspaceId" = ${workspaceId}
         AND "decisionType" = ${decisionType}
         AND "resolvedAt" IS NOT NULL
+        AND "resolvedAt" >= ${since}
         AND "outcome" IS NOT NULL
       GROUP BY "chosen", "baseline", "outcome"
       ORDER BY "count" DESC

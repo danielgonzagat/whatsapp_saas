@@ -435,7 +435,6 @@ export default function ThanosSection() {
                   ref={(node) => {
                     iconRefs.current[index] = node;
                   }}
-                  style={{ animationDelay: index * ICON_STAGGER_MS + 'ms' }}
                 >
                   <img src={icon.d} alt="" loading="lazy" decoding="async" />
                 </span>

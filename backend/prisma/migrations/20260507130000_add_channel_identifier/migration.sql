@@ -60,7 +60,8 @@ SELECT
     NOW() AS created_at,
     NOW() AS updated_at
 FROM "RAC_Contact"
-WHERE phone ~ '^[0-9+]';
+WHERE phone ~ '^[0-9+]'
+ON CONFLICT ("workspaceId", channel, "value") DO NOTHING;
 
 -- Instagram contacts: phone starts with 'ig:'
 INSERT INTO "RAC_ChannelIdentifier" (
@@ -83,7 +84,8 @@ SELECT
     NOW() AS created_at,
     NOW() AS updated_at
 FROM "RAC_Contact"
-WHERE phone LIKE 'ig:%';
+WHERE phone LIKE 'ig:%'
+ON CONFLICT ("workspaceId", channel, "value") DO NOTHING;
 
 -- Messenger contacts: phone starts with 'fb:'
 INSERT INTO "RAC_ChannelIdentifier" (
@@ -106,7 +108,8 @@ SELECT
     NOW() AS created_at,
     NOW() AS updated_at
 FROM "RAC_Contact"
-WHERE phone LIKE 'fb:%';
+WHERE phone LIKE 'fb:%'
+ON CONFLICT ("workspaceId", channel, "value") DO NOTHING;
 
 -- Remaining contacts: store as-is under channel identified by prefix.
 INSERT INTO "RAC_ChannelIdentifier" (
@@ -135,4 +138,5 @@ FROM "RAC_Contact"
 WHERE
     phone NOT LIKE 'ig:%'
     AND phone NOT LIKE 'fb:%'
-    AND phone !~ '^[0-9+]';
+    AND phone !~ '^[0-9+]'
+ON CONFLICT ("workspaceId", channel, "value") DO NOTHING;

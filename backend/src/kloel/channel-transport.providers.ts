@@ -1,5 +1,6 @@
 import { Injectable, Logger, Optional } from '@nestjs/common';
 import { InstagramService } from '../meta/instagram/instagram.service';
+import { MetaWhatsAppService } from '../meta/meta-whatsapp.service';
 import { MessengerService } from '../meta/messenger/messenger.service';
 import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
 import type {
@@ -41,23 +42,32 @@ export class InstagramChannelTransport implements ChannelTransportProvider {
   readonly channel: ChannelName = 'instagram';
   private readonly logger = new Logger(InstagramChannelTransport.name);
 
-  constructor(@Optional() private readonly instagram?: InstagramService) {}
+  constructor(
+    @Optional() private readonly instagram?: InstagramService,
+    @Optional() private readonly metaConnection?: MetaWhatsAppService,
+  ) {}
 
   isConfigured(): boolean {
     return !!this.instagram;
   }
 
-  capability(_workspaceId: string): Promise<ChannelCapability> {
+  async capability(workspaceId: string): Promise<ChannelCapability> {
     if (!this.instagram) {
-      return Promise.resolve(
-        blockedCapability(
-          'instagram',
-          'InstagramService nao disponivel — verifique se META_APP_SECRET e META_APP_ID estao configurados',
-          ['META_APP_SECRET', 'META_APP_ID'],
-        ),
+      return blockedCapability(
+        'instagram',
+        'InstagramService nao disponivel — verifique se META_APP_SECRET e META_APP_ID estao configurados',
+        ['META_APP_SECRET', 'META_APP_ID'],
       );
     }
-    return Promise.resolve(availableCapability('instagram'));
+    const connection = await this.metaConnection?.resolveConnection(workspaceId);
+    if (!connection?.instagramAccountId || !connection.accessToken || connection.tokenExpired) {
+      return blockedCapability(
+        'instagram',
+        'Instagram outbound bloqueado ate existir uma conta profissional conectada com token valido.',
+        ['META_APP_ID', 'META_APP_SECRET', 'Instagram Professional Account'],
+      );
+    }
+    return availableCapability('instagram');
   }
 
   async send(workspaceId: string, request: ChannelSendRequest): Promise<ChannelSendResult> {
@@ -66,11 +76,18 @@ export class InstagramChannelTransport implements ChannelTransportProvider {
     }
 
     try {
+      const connection = await this.metaConnection?.resolveConnection(workspaceId);
+      if (!connection?.instagramAccountId || !connection.accessToken || connection.tokenExpired) {
+        return blockedResult(
+          'Instagram outbound bloqueado ate existir uma conta profissional conectada com token valido.',
+        );
+      }
+
       const response = await this.instagram.sendMessage(
-        request.recipientId,
+        connection.instagramAccountId,
         request.recipientId,
         request.content,
-        'access_token_placeholder',
+        connection.accessToken,
       );
 
       this.logger.log(
@@ -99,23 +116,32 @@ export class MessengerChannelTransport implements ChannelTransportProvider {
   readonly channel: ChannelName = 'messenger';
   private readonly logger = new Logger(MessengerChannelTransport.name);
 
-  constructor(@Optional() private readonly messenger?: MessengerService) {}
+  constructor(
+    @Optional() private readonly messenger?: MessengerService,
+    @Optional() private readonly metaConnection?: MetaWhatsAppService,
+  ) {}
 
   isConfigured(): boolean {
     return !!this.messenger;
   }
 
-  capability(_workspaceId: string): Promise<ChannelCapability> {
+  async capability(workspaceId: string): Promise<ChannelCapability> {
     if (!this.messenger) {
-      return Promise.resolve(
-        blockedCapability(
-          'messenger',
-          'MessengerService nao disponivel — verifique se META_APP_SECRET e META_APP_ID estao configurados',
-          ['META_APP_SECRET', 'META_APP_ID'],
-        ),
+      return blockedCapability(
+        'messenger',
+        'MessengerService nao disponivel — verifique se META_APP_SECRET e META_APP_ID estao configurados',
+        ['META_APP_SECRET', 'META_APP_ID'],
       );
     }
-    return Promise.resolve(availableCapability('messenger'));
+    const connection = await this.metaConnection?.resolveConnection(workspaceId);
+    if (!connection?.pageId || !connection.pageAccessToken || connection.tokenExpired) {
+      return blockedCapability(
+        'messenger',
+        'Messenger outbound bloqueado ate existir pagina conectada com page token valido.',
+        ['META_APP_ID', 'META_APP_SECRET', 'Facebook Page'],
+      );
+    }
+    return availableCapability('messenger');
   }
 
   async send(workspaceId: string, request: ChannelSendRequest): Promise<ChannelSendResult> {
@@ -124,11 +150,18 @@ export class MessengerChannelTransport implements ChannelTransportProvider {
     }
 
     try {
+      const connection = await this.metaConnection?.resolveConnection(workspaceId);
+      if (!connection?.pageId || !connection.pageAccessToken || connection.tokenExpired) {
+        return blockedResult(
+          'Messenger outbound bloqueado ate existir pagina conectada com page token valido.',
+        );
+      }
+
       const response = await this.messenger.sendTextMessage(
-        request.recipientId,
+        connection.pageId,
         request.recipientId,
         request.content,
-        'page_access_token_placeholder',
+        connection.pageAccessToken,
       );
 
       this.logger.log(
@@ -196,17 +229,13 @@ export class EmailChannelTransport implements ChannelTransportProvider {
   }
 
   capability(_workspaceId: string): Promise<ChannelCapability> {
-    const configured = this.isConfigured();
-    if (!configured) {
-      return Promise.resolve(
-        blockedCapability(
-          'email',
-          'SMTP outbound nao configurado. Configure EMAIL_OUTBOUND_SMTP_HOST e EMAIL_OUTBOUND_SMTP_USER.',
-          ['EMAIL_OUTBOUND_SMTP_HOST', 'EMAIL_OUTBOUND_SMTP_USER'],
-        ),
-      );
-    }
-    return Promise.resolve(availableCapability('email'));
+    return Promise.resolve(
+      blockedCapability(
+        'email',
+        'Email outbound bloqueado ate o transporte SMTP/OAuth thread-aware ser implementado.',
+        ['EMAIL_OUTBOUND_SMTP_HOST', 'EMAIL_OUTBOUND_SMTP_USER', 'Email outbound transport'],
+      ),
+    );
   }
 
   send(_workspaceId: string, request: ChannelSendRequest): Promise<ChannelSendResult> {

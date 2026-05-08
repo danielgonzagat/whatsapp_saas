@@ -5,8 +5,8 @@ import { kloelT } from '@/lib/i18n/t';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 import { UI } from '@/lib/ui-tokens';
 import { Steps } from './WhatsAppExperience.connection-panes';
-import { ConnectionStep, ProfileStep } from './UniversalChannelWizard.connection';
-import { FormatsStep, ReviewStep } from './UniversalChannelWizard.review';
+import { ConnectionStep, ProductsStep } from './UniversalChannelWizard.connection';
+import { ArsenalStep, ConfigStep } from './UniversalChannelWizard.review';
 import { E, F, G, M, S, V } from './UniversalChannelWizard.styles';
 import { StepDot } from './UniversalChannelWizard.ui';
 import {
@@ -106,13 +106,13 @@ export default function UniversalChannelWizard({
           />
         ) : null}
         {step === 1 ? (
-          <ProfileStep profile={profile} onPrev={handlePrev} onNext={handleNext} />
+          <ProductsStep profile={profile} onPrev={handlePrev} onNext={handleNext} />
         ) : null}
         {step === 2 ? (
-          <FormatsStep profile={profile} onPrev={handlePrev} onNext={handleNext} />
+          <ArsenalStep profile={profile} onPrev={handlePrev} onNext={handleNext} />
         ) : null}
         {step === 3 ? (
-          <ReviewStep
+          <ConfigStep
             channel={channel}
             profile={profile}
             method={method}

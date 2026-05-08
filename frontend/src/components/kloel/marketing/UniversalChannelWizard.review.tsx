@@ -11,7 +11,7 @@ import { PrimaryButton, SecondaryButton } from './UniversalChannelWizard.ui';
 
 type Profile = ReturnType<typeof channelWizardProfile>;
 
-export function FormatsStep({
+export function ArsenalStep({
   profile,
   onPrev,
   onNext,
@@ -23,7 +23,7 @@ export function FormatsStep({
   return (
     <div className="fade-in" key="step-2">
       <p style={{ fontSize: 13, color: S, lineHeight: 1.7, marginBottom: 20 }}>
-        {kloelT(`Conheca os formatos de mensagem e limites da plataforma ${profile.label}.`)}
+        {kloelT(`Conheca o arsenal de formatos, ferramentas e limites do canal ${profile.label}.`)}
       </p>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
         {profile.formatNotes.map((note) => (
@@ -113,7 +113,7 @@ export function FormatsStep({
   );
 }
 
-export function ReviewStep({
+export function ConfigStep({
   channel,
   profile,
   method,
@@ -172,7 +172,7 @@ export function ReviewStep({
             color: KLOEL_THEME.textPrimary,
           }}
         >
-          {kloelT(`Tudo pronto para ativar ${profile.label}`)}
+          {kloelT(`Configuracao final do canal ${profile.label}`)}
         </h3>
         <p
           style={{

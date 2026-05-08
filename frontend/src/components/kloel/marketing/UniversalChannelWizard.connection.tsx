@@ -65,7 +65,7 @@ export function ConnectionStep({
   );
 }
 
-export function ProfileStep({
+export function ProductsStep({
   profile,
   onPrev,
   onNext,
@@ -77,7 +77,7 @@ export function ProfileStep({
   return (
     <div className="fade-in" key="step-1">
       <p style={{ fontSize: 13, color: S, lineHeight: 1.7, marginBottom: 20 }}>
-        {kloelT(`Veja os detalhes do que sera ativado ao conectar o canal ${profile.label}.`)}
+        {kloelT(`Veja os produtos e servicos que voce libera ao ativar o canal ${profile.label}.`)}
       </p>
       <div
         className="wiz-profile-grid"

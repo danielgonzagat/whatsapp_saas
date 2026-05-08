@@ -13,6 +13,7 @@ import type {
   ChannelTransportProvider,
 } from './channel-transport.types';
 import { InstagramService } from '../meta/instagram/instagram.service';
+import { MetaWhatsAppService } from '../meta/meta-whatsapp.service';
 import { MessengerService } from '../meta/messenger/messenger.service';
 import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
 
@@ -28,16 +29,28 @@ class StubMessengerService {
   sendTextMessage = jest.fn();
 }
 
+class StubMetaConnectionService {
+  resolveConnection = jest.fn().mockResolvedValue({
+    accessToken: '',
+    instagramAccountId: null,
+    pageAccessToken: null,
+    pageId: null,
+    tokenExpired: false,
+  });
+}
+
 describe('ChannelTransportRegistry', () => {
   let registry: ChannelTransportRegistry;
   let stubWhatsApp: StubWhatsAppRegistry;
   let stubInstagram: StubInstagramService;
   let stubMessenger: StubMessengerService;
+  let stubMetaConnection: StubMetaConnectionService;
 
   beforeEach(async () => {
     stubWhatsApp = new StubWhatsAppRegistry();
     stubInstagram = new StubInstagramService();
     stubMessenger = new StubMessengerService();
+    stubMetaConnection = new StubMetaConnectionService();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -49,6 +62,7 @@ describe('ChannelTransportRegistry', () => {
         WhatsAppChannelTransport,
         { provide: InstagramService, useValue: stubInstagram },
         { provide: MessengerService, useValue: stubMessenger },
+        { provide: MetaWhatsAppService, useValue: stubMetaConnection },
         { provide: WhatsAppProviderRegistry, useValue: stubWhatsApp },
       ],
     }).compile();
@@ -91,10 +105,10 @@ describe('ChannelTransportRegistry', () => {
       expect(cap.sendBlockedReason).toContain('nao suporta envio outbound');
     });
 
-    it('reports email as blocked when SMTP is not configured', async () => {
+    it('reports email as blocked while outbound transport is not implemented', async () => {
       const cap = await registry.getCapability('ws-1', 'email');
       expect(cap.sendAvailable).toBe(false);
-      expect(cap.sendBlockedReason).toContain('SMTP');
+      expect(cap.sendBlockedReason).toContain('transporte SMTP/OAuth');
     });
 
     it('reports whatsapp as available when provider is present', async () => {
@@ -103,16 +117,16 @@ describe('ChannelTransportRegistry', () => {
       expect(cap.sendBlockedReason).toBeNull();
     });
 
-    it('reports instagram as available when Meta service is configured', async () => {
+    it('reports instagram as blocked without a real workspace account token', async () => {
       const cap = await registry.getCapability('ws-1', 'instagram');
-      expect(cap.sendAvailable).toBe(true);
-      expect(cap.sendBlockedReason).toBeNull();
+      expect(cap.sendAvailable).toBe(false);
+      expect(cap.sendBlockedReason).toContain('token valido');
     });
 
-    it('reports messenger as available when Meta service is configured', async () => {
+    it('reports messenger as blocked without a real workspace page token', async () => {
       const cap = await registry.getCapability('ws-1', 'messenger');
-      expect(cap.sendAvailable).toBe(true);
-      expect(cap.sendBlockedReason).toBeNull();
+      expect(cap.sendAvailable).toBe(false);
+      expect(cap.sendBlockedReason).toContain('page token valido');
     });
   });
 
@@ -220,22 +234,24 @@ describe('ChannelTransportRegistry', () => {
       expect(result.blocked).toBe(false);
     });
 
-    it('dispatches Instagram send to InstagramService', async () => {
+    it('blocks Instagram send without placeholder token dispatch', async () => {
       stubInstagram.sendMessage.mockResolvedValue({ message_id: 'ig-msg-456' });
 
       const result = await registry.send('ws-1', makeSendRequest('instagram'));
-      expect(result.success).toBe(true);
-      expect(result.messageId).toBe('ig-msg-456');
-      expect(result.blocked).toBe(false);
+      expect(result.success).toBe(false);
+      expect(result.blocked).toBe(true);
+      expect(result.blockedReason).toContain('token valido');
+      expect(stubInstagram.sendMessage).not.toHaveBeenCalled();
     });
 
-    it('dispatches Messenger send to MessengerService', async () => {
+    it('blocks Messenger send without placeholder token dispatch', async () => {
       stubMessenger.sendTextMessage.mockResolvedValue({ message_id: 'fb-msg-789' });
 
       const result = await registry.send('ws-1', makeSendRequest('messenger'));
-      expect(result.success).toBe(true);
-      expect(result.messageId).toBe('fb-msg-789');
-      expect(result.blocked).toBe(false);
+      expect(result.success).toBe(false);
+      expect(result.blocked).toBe(true);
+      expect(result.blockedReason).toContain('page token valido');
+      expect(stubMessenger.sendTextMessage).not.toHaveBeenCalled();
     });
   });
 

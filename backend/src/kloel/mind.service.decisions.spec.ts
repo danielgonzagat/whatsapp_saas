@@ -1,6 +1,6 @@
 import { MindService } from './mind.service';
 
-function buildService(policy: unknown): MindService {
+function buildService(policy: unknown, cases?: unknown): MindService {
   return new MindService(
     { since: jest.fn().mockResolvedValue([]) } as never,
     { sweepExpired: jest.fn().mockResolvedValue(0) } as never,
@@ -14,6 +14,7 @@ function buildService(policy: unknown): MindService {
       watermark: jest.fn(async (_workspaceId: string, fallback: Date) => fallback),
     } as never,
     { process: jest.fn() } as never,
+    (cases ?? { similar: jest.fn().mockResolvedValue([]) }) as never,
   );
 }
 

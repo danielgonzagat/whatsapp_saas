@@ -58,7 +58,7 @@ function computeEFE(
   utilitySuccess: number,
   utilityFail: number,
 ): { pragmatic: number; epistemic: number; efe: number; formula: string } {
-  const pessimisticSuccess = Math.max(0, beliefMean);
+  const pessimisticSuccess = Math.min(1, Math.max(0, beliefMean));
   const pragmatic = pessimisticSuccess * utilitySuccess + (1 - pessimisticSuccess) * utilityFail;
   const epistemic = epsilon * beliefVariance;
   const efe = -(pragmatic + epistemic);

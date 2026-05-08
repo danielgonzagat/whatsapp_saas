@@ -58,6 +58,11 @@ export class AdRulesEngineService {
       buckets: [50, 100, 250, 500, 1000, 2500, 5000, 10000],
     });
 
+  private readonly pendingBanditOutcomes = new Map<
+    string,
+    { arm: string; workspaceId: string; previousConvertedCount: number }
+  >();
+
   constructor(
     private readonly prisma: PrismaService,
     @Optional() private readonly bandit?: MindBanditService,
@@ -145,6 +150,26 @@ export class AdRulesEngineService {
     const condition = (rule.condition || '').toLowerCase();
     const metrics = await this.collectMetrics(rule, condition);
 
+    if (this.bandit && this.pendingBanditOutcomes.has(rule.id)) {
+      const pending = this.pendingBanditOutcomes.get(rule.id)!;
+      try {
+        if (metrics) {
+          const improved = metrics.convertedCount >= pending.previousConvertedCount;
+          await this.bandit.recordOutcome({
+            arm: pending.arm,
+            decisionType: 'ad_alert_action',
+            outcome: improved ? 1 : 0,
+            workspaceId: pending.workspaceId,
+          });
+          this.counter.inc({ event: 'bandit_outcome', result: 'recorded' });
+        }
+      } catch (err: unknown) {
+        this.logger.warn(`Failed to record bandit outcome for rule ${rule.id}: ${String(err)}`);
+      } finally {
+        this.pendingBanditOutcomes.delete(rule.id);
+      }
+    }
+
     if (!metrics) {
       return { ...empty, shouldFire: true };
     }
@@ -175,6 +200,14 @@ export class AdRulesEngineService {
       this.logger.debug(`MIND bandit chose ignore for rule ${rule.id} (${rule.name})`);
       this.counter.inc({ event: 'rule', result: 'bandit_ignore' });
       return { ...empty, metrics, context, banditAction: chosen.arm };
+    }
+
+    if (this.bandit && metrics) {
+      this.pendingBanditOutcomes.set(rule.id, {
+        arm: chosen.arm,
+        workspaceId: rule.workspaceId,
+        previousConvertedCount: metrics.convertedCount,
+      });
     }
 
     return { shouldFire: true, metrics, context, banditAction: chosen.arm };

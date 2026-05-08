@@ -5,9 +5,9 @@ import { colors } from '@/lib/design-tokens';
 import type { CSSProperties, ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
 
-const SVG_TAG_START = ['<', 'svg'].join('');
-const SVG_TAG_END = ['>'].join('');
-const STYLE_BLOCK_END = ['<', '/', 'style', '>'].join('');
+const SVG_TAG_START = '<svg';
+const SVG_TAG_END = '>';
+const STYLE_BLOCK_END = '</style>';
 
 type MushroomVisualProps = {
   size?: number;

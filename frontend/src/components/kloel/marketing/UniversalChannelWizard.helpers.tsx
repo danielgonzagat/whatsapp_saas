@@ -7,9 +7,9 @@ export type UniversalChannel = 'instagram' | 'facebook' | 'tiktok' | 'email';
 
 export const WIZARD_STEPS = [
   kloelT('Conexao'),
-  kloelT('Perfil'),
-  kloelT('Formatos'),
-  kloelT('Revisar'),
+  kloelT('Produtos'),
+  kloelT('Arsenal'),
+  kloelT('Configuracao'),
 ] as const;
 
 export interface ChannelWizardProfile {

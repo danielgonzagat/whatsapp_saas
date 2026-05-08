@@ -79,6 +79,7 @@ function buildService(
       releaseTickLease: jest.fn().mockResolvedValue(undefined),
     } as never,
     events as never,
+    { similar: jest.fn().mockResolvedValue([]) } as never,
   );
 }
 

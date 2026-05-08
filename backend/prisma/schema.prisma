@@ -3958,8 +3958,8 @@ model MindDailyReport {
 
 model MindGlobalPrior {
   id           String    @id
-  workspaceId  String
-  workspace    Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspaceId  String?
+  workspace    Workspace? @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
   domain       String
   predicate    String
   context      Json      @db.JsonB

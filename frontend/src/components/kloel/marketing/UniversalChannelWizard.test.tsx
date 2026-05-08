@@ -13,9 +13,9 @@ describe('UniversalChannelWizard.helpers', () => {
 
     it('steps are in correct order', () => {
       expect(WIZARD_STEPS[0]).toBe('Conexao');
-      expect(WIZARD_STEPS[1]).toBe('Perfil');
-      expect(WIZARD_STEPS[2]).toBe('Formatos');
-      expect(WIZARD_STEPS[3]).toBe('Revisar');
+      expect(WIZARD_STEPS[1]).toBe('Produtos');
+      expect(WIZARD_STEPS[2]).toBe('Arsenal');
+      expect(WIZARD_STEPS[3]).toBe('Configuracao');
     });
   });
 

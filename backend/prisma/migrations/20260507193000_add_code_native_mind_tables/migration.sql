@@ -191,9 +191,9 @@ ON "RAC_MindDailyReport" ("workspaceId", "reportDate");
 
 CREATE TABLE IF NOT EXISTS "RAC_MindGlobalPrior" (
     id TEXT PRIMARY KEY,
-    "workspaceId" TEXT NOT NULL REFERENCES "RAC_Workspace" (
+    "workspaceId" TEXT REFERENCES "RAC_Workspace" (
         id
-    ) ON DELETE CASCADE,
+    ) ON DELETE SET NULL,
     "domain" TEXT NOT NULL,
     predicate TEXT NOT NULL,
     context JSONB NOT NULL,

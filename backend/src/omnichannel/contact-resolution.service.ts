@@ -1,5 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ChannelIdentifierService, ResolvedContact } from '../contacts/channel-identifier.service';
+import {
+  ChannelIdentifierService,
+  ResolvedContact,
+  normalizeChannelIdentifierChannel,
+} from '../contacts/channel-identifier.service';
 import { type NormalizedMessage } from '../inbox/omnichannel.helpers';
 
 export { ResolvedContact };
@@ -52,10 +56,11 @@ export class OmnichannelContactResolutionService {
   }
 
   private extractChannelValue(channel: string, from: string, externalId: string): string {
-    if (channel === 'WHATSAPP' || channel === 'EMAIL') {
+    const normalizedChannel = normalizeChannelIdentifierChannel(channel);
+    if (normalizedChannel === 'WHATSAPP' || normalizedChannel === 'EMAIL') {
       return from;
     }
-    if (channel === 'INSTAGRAM' || channel === 'MESSENGER') {
+    if (normalizedChannel === 'INSTAGRAM' || normalizedChannel === 'MESSENGER') {
       return externalId || from;
     }
     return externalId || from || 'unknown';

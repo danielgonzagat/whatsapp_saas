@@ -100,6 +100,26 @@ describe('ChannelIdentifierService', () => {
       });
     });
 
+    it('canonicalizes lowercase channel names before lookup', async () => {
+      const contactStub = makeContactStub();
+      const identifierStub = makeIdentifierStub({ contact: contactStub });
+
+      mockPrisma.channelIdentifier.findUnique.mockResolvedValue(identifierStub);
+
+      await service.resolve('whatsapp', '5511999999999', 'ws-1');
+
+      expect(mockPrisma.channelIdentifier.findUnique).toHaveBeenCalledWith({
+        where: {
+          workspaceId_channel_value: {
+            workspaceId: 'ws-1',
+            channel: 'WHATSAPP',
+            value: '5511999999999',
+          },
+        },
+        include: { contact: true },
+      });
+    });
+
     it('creates new contact and identifier when none exists', async () => {
       mockPrisma.channelIdentifier.findUnique.mockResolvedValue(null);
 

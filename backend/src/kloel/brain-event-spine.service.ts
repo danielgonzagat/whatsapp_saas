@@ -95,54 +95,62 @@ export class BrainEventSpineService {
       const idempotencyKey =
         event.idempotencyKey ??
         `${event.eventType}:${event.subject}:${event.occurredAt.toISOString()}`;
-      await this.prisma.mindOutboxEvent.upsert({
-        where: {
-          workspaceId_idempotencyKey: {
-            workspaceId: event.workspaceId,
-            idempotencyKey,
+      const result = await this.prisma.$transaction(async (tx) => {
+        await tx.mindOutboxEvent.upsert({
+          where: {
+            workspaceId_idempotencyKey: {
+              workspaceId: event.workspaceId,
+              idempotencyKey,
+            },
           },
-        },
-        update: {
-          eventType: event.eventType,
-          subject: event.subject,
-          payload: toInputJsonObject(event.payload),
-          occurredAt: event.occurredAt,
-        },
-        create: {
-          id: randomUUID(),
-          workspaceId: event.workspaceId,
-          eventType: event.eventType,
-          subject: event.subject,
-          payload: toInputJsonObject(event.payload),
-          idempotencyKey,
-          occurredAt: event.occurredAt,
-        },
-      });
-
-      const existing = await this.checkIdempotency(event.workspaceId, idempotencyKey);
-      if (existing) {
-        return existing.id;
-      }
-
-      const created = await this.prisma.autopilotEvent.create({
-        data: {
-          workspaceId: event.workspaceId,
-          contactId: event.contactId ?? null,
-          intent: this.resolveIntent(event.eventType),
-          action: event.eventType,
-          status: this.resolveStatus(event.eventType),
-          meta: {
-            commercial: true,
+          update: {
+            eventType: event.eventType,
             subject: event.subject,
-            occurredAt: event.occurredAt.toISOString(),
-            idempotencyKey,
             payload: toInputJsonObject(event.payload),
+            occurredAt: event.occurredAt,
           },
-        },
-        select: { id: true },
+          create: {
+            id: randomUUID(),
+            workspaceId: event.workspaceId,
+            eventType: event.eventType,
+            subject: event.subject,
+            payload: toInputJsonObject(event.payload),
+            idempotencyKey,
+            occurredAt: event.occurredAt,
+          },
+        });
+
+        // raw justified: PostgreSQL advisory transaction lock serializes AutopilotEvent
+        // creation for JSONB idempotency keys, which Prisma cannot express as a unique index.
+        await tx.$executeRaw`
+          SELECT pg_advisory_xact_lock(hashtext(${`brain-spine:${event.workspaceId}:${idempotencyKey}`}))
+        `;
+
+        const existing = await this.checkIdempotency(tx, event.workspaceId, idempotencyKey);
+        if (existing) {
+          return existing;
+        }
+
+        return tx.autopilotEvent.create({
+          data: {
+            workspaceId: event.workspaceId,
+            contactId: event.contactId ?? null,
+            intent: this.resolveIntent(event.eventType),
+            action: event.eventType,
+            status: this.resolveStatus(event.eventType),
+            meta: {
+              commercial: true,
+              subject: event.subject,
+              occurredAt: event.occurredAt.toISOString(),
+              idempotencyKey,
+              payload: toInputJsonObject(event.payload),
+            },
+          },
+          select: { id: true },
+        });
       });
 
-      return created.id;
+      return result.id;
     } catch (error: unknown) {
       void this.opsAlert?.alertOnCriticalError(error, 'BrainEventSpineService.recordCommercial');
       const message = error instanceof Error ? error.message : 'unknown';
@@ -324,10 +332,11 @@ export class BrainEventSpineService {
   }
 
   private async checkIdempotency(
+    prisma: Pick<PrismaService, '$queryRaw'> | Prisma.TransactionClient,
     workspaceId: string,
     idempotencyKey: string,
   ): Promise<AutopilotEventIdRow> {
-    const rows = await this.prisma.$queryRaw<Array<{ id: string }>>`
+    const rows = await prisma.$queryRaw<Array<{ id: string }>>`
       SELECT id FROM "RAC_AutopilotEvent"
       WHERE "workspaceId" = ${workspaceId}
         AND "meta"->>'idempotencyKey' = ${idempotencyKey}
