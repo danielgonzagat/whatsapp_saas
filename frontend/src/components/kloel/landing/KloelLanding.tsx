@@ -4,7 +4,7 @@ import { colors } from '@/lib/design-tokens';
 import { buildAuthUrl } from '@/lib/subdomains';
 import Link from 'next/link';
 import { useState, useEffect, useRef, useId } from 'react';
-import { KloelBrandLockup, KloelMushroomVisual, KloelWordmark } from '../KloelBrand';
+import { KloelWordmark } from '../KloelBrand';
 import { delayForTypewriter, runSequentialList, runSequentialRange } from './KloelLanding.helpers';
 import ThanosSection from './ThanosSection';
 import { secureRandomFloat } from '@/lib/secure-random';
@@ -959,12 +959,10 @@ function FinalManifestLoop() {
         gap: 28,
       }}
     >
-      <KloelMushroomVisual
-        size={136}
-        traceColor={kloelT(`colors.text.silver`)} // PULSE_VISUAL_OK: traceColor via i18n — stays as hex for the SVG
-        animated={false}
-        spores="static"
-        ariaHidden
+      <img
+        src="/kloel-logo-mushroom-dark.svg"
+        alt=""
+        aria-hidden
         style={{
           width: 'clamp(92px, 12vw, 136px)',
           height: 'clamp(92px, 12vw, 136px)',
@@ -973,6 +971,7 @@ function FinalManifestLoop() {
           pointerEvents: 'none',
         }}
       />
+      <img src="/kloel-mushroom-animated.svg" alt="" aria-hidden style={{ display: 'none' }} />
 
       <div
         style={{
@@ -1064,13 +1063,17 @@ export default function KloelLanding() {
               cursor: 'pointer',
             }}
           >
-            <KloelBrandLockup
-              markSize={20}
-              fontSize={15}
-              fontWeight={600}
-              animated={false}
-              spores="static"
-            />
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
+              <img
+                src="/kloel-logo-mushroom-dark.svg"
+                alt=""
+                aria-hidden
+                width={20}
+                height={20}
+                style={{ display: 'block', width: 20, height: 20 }}
+              />
+              <KloelWordmark fontSize={15} fontWeight={600} />
+            </span>
           </Link>
           <div
             className="landing-header-actions"
