@@ -373,9 +373,9 @@ export class ConnectPayoutApprovalService {
     skip?: number;
     take?: number;
   }): Promise<{ items: ConnectPayoutApprovalSummary[]; total: number }> {
-    const where = {
+    const where: Prisma.ApprovalRequestWhereInput = {
       kind: CONNECT_PAYOUT_APPROVAL_KIND,
-      ...(input.workspaceId ? { workspaceId: input.workspaceId } : {}),
+      workspaceId: input.workspaceId ? input.workspaceId : { not: '' },
       ...(input.entityId ? { entityId: input.entityId } : {}),
       ...(input.state ? { state: input.state } : {}),
     };
@@ -385,12 +385,12 @@ export class ConnectPayoutApprovalService {
     const [items, total] = await this.prisma.$transaction(
       [
         this.prisma.approvalRequest.findMany({
-          where,
+          where: { ...where, workspaceId: where.workspaceId },
           orderBy: { createdAt: 'desc' },
           skip,
           take,
         }),
-        this.prisma.approvalRequest.count({ where }),
+        this.prisma.approvalRequest.count({ where: { ...where, workspaceId: where.workspaceId } }),
       ],
       { isolationLevel: 'ReadCommitted' },
     );
