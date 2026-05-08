@@ -55,9 +55,14 @@ describe('ThanosSection', () => {
       expect(THANOS_STYLES).not.toContain('@keyframes thanosIconExit');
     });
 
-    it('hides icon spans instantly during dusting without animation', () => {
+    it('keeps icon spans visible during dusting so particles emerge from them', () => {
+      expect(THANOS_STYLES).not.toContain('.thanos-icons--dusting span{visibility:hidden}');
+      expect(THANOS_STYLES).not.toContain('.thanos-icons--dusting span,.thanos-icons--exit span{visibility:hidden}');
+    });
+
+    it('hides icon spans on exit after dusting completes', () => {
       expect(THANOS_STYLES).toContain(
-        '.thanos-icons--dusting span,.thanos-icons--exit span{visibility:hidden}',
+        '.thanos-icons--exit span{visibility:hidden}',
       );
     });
 

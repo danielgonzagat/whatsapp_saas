@@ -15,7 +15,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { buildQueueJobId } from '../queue/job-id.util';
 import { autopilotQueue } from '../queue/queue';
 import { AgentEventsService } from './agent-events.service';
-import { CiaRuntimeService } from './cia-runtime.service';
+import { CiaRuntimeService } from '../cia/cia-runtime.abstract';
 import { InboundProcessorService, type InboundMessage } from './inbound-processor.service';
 import { asProviderSettings } from './provider-settings.types';
 import { WhatsAppProviderRegistry } from './providers/provider-registry';

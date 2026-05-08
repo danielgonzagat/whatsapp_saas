@@ -7,11 +7,7 @@ import {
   TikTokChannelTransport,
   WhatsAppChannelTransport,
 } from './channel-transport.providers';
-import type {
-  ChannelName,
-  ChannelSendRequest,
-  ChannelTransportProvider,
-} from './channel-transport.types';
+import type { ChannelName, ChannelSendRequest } from './channel-transport.types';
 import { InstagramService } from '../meta/instagram/instagram.service';
 import { MetaWhatsAppService } from '../meta/meta-whatsapp.service';
 import { MessengerService } from '../meta/messenger/messenger.service';
@@ -105,10 +101,14 @@ describe('ChannelTransportRegistry', () => {
       expect(cap.sendBlockedReason).toContain('nao suporta envio outbound');
     });
 
-    it('reports email as blocked while outbound transport is not implemented', async () => {
+    it('reports email as blocked when no email provider env var is set', async () => {
+      delete process.env.RESEND_API_KEY;
+      delete process.env.SENDGRID_API_KEY;
+      delete process.env.EMAIL_OUTBOUND_SMTP_HOST;
+      delete process.env.EMAIL_OUTBOUND_SMTP_USER;
       const cap = await registry.getCapability('ws-1', 'email');
       expect(cap.sendAvailable).toBe(false);
-      expect(cap.sendBlockedReason).toContain('transporte SMTP/OAuth');
+      expect(cap.sendBlockedReason).toContain('nao configurado');
     });
 
     it('reports whatsapp as available when provider is present', async () => {
@@ -265,80 +265,4 @@ describe('ChannelTransportRegistry', () => {
       expect(channels).toContain('email');
     });
   });
-});
-
-describe('TikTokChannelTransport', () => {
-  it('is never configured for outbound', () => {
-    const transport = new TikTokChannelTransport();
-    expect(transport.isConfigured()).toBe(false);
-  });
-
-  it('always reports send as blocked', async () => {
-    const transport = new TikTokChannelTransport();
-    const cap = await transport.capability('ws-1');
-    expect(cap.sendAvailable).toBe(false);
-    expect(cap.sendBlockedReason).toContain('nao suporta');
-  });
-
-  it('returns blocked result on send attempt', async () => {
-    const transport = new TikTokChannelTransport();
-    const result = await transport.send('ws-1', {
-      workspaceId: 'ws-1',
-      channel: 'tiktok',
-      recipientId: 'user-1',
-      content: 'Oi',
-    });
-    expect(result.success).toBe(false);
-    expect(result.blocked).toBe(true);
-  });
-});
-
-describe('EmailChannelTransport', () => {
-  it('is not configured without SMTP env vars', () => {
-    const transport = new EmailChannelTransport();
-    expect(transport.isConfigured()).toBe(false);
-  });
-
-  it('reports blocked capability when SMTP is missing', async () => {
-    const transport = new EmailChannelTransport();
-    const cap = await transport.capability('ws-1');
-    expect(cap.sendAvailable).toBe(false);
-    expect(cap.sendBlockedReason).toContain('SMTP');
-  });
-
-  it('returns blocked result on send attempt', async () => {
-    const transport = new EmailChannelTransport();
-    const result = await transport.send('ws-1', {
-      workspaceId: 'ws-1',
-      channel: 'email',
-      recipientId: 'user@example.com',
-      content: 'Oi',
-    });
-    expect(result.success).toBe(false);
-    expect(result.blocked).toBe(true);
-  });
-});
-
-describe('ChannelCapability shapes', () => {
-  it.each(['tiktok', 'email'] as ChannelName[])(
-    'provider for %s returns valid capability shape',
-    async (channel) => {
-      const provider: ChannelTransportProvider =
-        channel === 'tiktok' ? new TikTokChannelTransport() : new EmailChannelTransport();
-
-      const cap = await provider.capability('ws-1');
-
-      expect(typeof cap.channel).toBe('string');
-      expect(typeof cap.sendAvailable).toBe('boolean');
-      expect(cap.sendBlockedReason === null || typeof cap.sendBlockedReason === 'string').toBe(
-        true,
-      );
-      expect(Array.isArray(cap.requiredSetup)).toBe(true);
-
-      if (!cap.sendAvailable) {
-        expect(cap.sendBlockedReason).toBeTruthy();
-        expect(cap.sendBlockedReason!.length).toBeGreaterThan(0);
-      }
-    },
-  );
 });

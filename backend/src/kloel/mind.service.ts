@@ -8,27 +8,18 @@ import { MindPolicyService } from './mind-policy.service';
 import { MindSurpriseService } from './mind-surprise.service';
 import type { MindTick } from './mind.types';
 import { MindWorkspaceStateService } from './mind-workspace-state.service';
-import { resolveCaseMemoryAction } from './mind-case-memory-decision.helper';
 import {
-  KNOWN_DECISION_TYPES,
-  TONE_OPTIONS,
-  resolveAggressivenessBaseline,
-  resolveAudioBaseline,
-  resolveCouponBaseline,
-  resolveToneBaseline,
-} from './mind-decision-baselines';
-
-function chosenConfidence(result: {
-  chosen: string;
-  decision: { candidates: Array<{ action: string; beliefMean: number }> };
-}): number {
-  return (
-    result.decision.candidates.find((candidate) => candidate.action === result.chosen)
-      ?.beliefMean ??
-    result.decision.candidates[0]?.beliefMean ??
-    0
-  );
-}
+  resolveAdAlertActionDecision,
+  resolveAggressivenessDecision,
+  resolveAudioVsTextDecision,
+  resolveBroadcastWindowDecision,
+  resolveChannelChoiceDecision,
+  resolveCouponDecision,
+  resolveHumanTransferDecision,
+  resolveProductOfferDecision,
+  resolveToneDecision,
+} from './mind-catalog-decision-resolvers';
+import { KNOWN_DECISION_TYPES } from './mind-decision-baselines';
 
 @Injectable()
 export class MindService {
@@ -160,43 +151,14 @@ export class MindService {
     repliedRate: number,
     revenuePerSignal: number,
   ): Promise<{ aggressiveness: string; confidence: number; fallback: boolean }> {
-    const baseline = resolveAggressivenessBaseline(soldRate, repliedRate, revenuePerSignal);
-
-    const options = [
-      {
-        action: 'LOW',
-        predicate: 'P(outcome|aggressiveness)',
-        context: { domain, aggressiveness: 'LOW' },
-      },
-      {
-        action: 'MEDIUM',
-        predicate: 'P(outcome|aggressiveness)',
-        context: { domain, aggressiveness: 'MEDIUM' },
-      },
-      {
-        action: 'HIGH',
-        predicate: 'P(outcome|aggressiveness)',
-        context: { domain, aggressiveness: 'HIGH' },
-      },
-    ];
-
-    const outcomeKey = `cia_aggressiveness:${workspaceId}:${Date.now()}`;
-
-    const result = await this.policy.choose({
+    return resolveAggressivenessDecision(
+      this.policy,
       workspaceId,
-      subject: `workspace:${workspaceId}`,
-      decisionType: 'cia_aggressiveness',
-      context: { domain, soldRate, repliedRate, revenuePerSignal },
-      options,
-      baseline: baseline,
-      outcomeKey,
-    });
-
-    return {
-      aggressiveness: result.chosen,
-      confidence: chosenConfidence(result),
-      fallback: result.decision.fallbackActive,
-    };
+      domain,
+      soldRate,
+      repliedRate,
+      revenuePerSignal,
+    );
   }
 
   async resolveAudioVsText(
@@ -204,46 +166,7 @@ export class MindService {
     channel: string,
     audioRatio: number,
   ): Promise<{ choice: string; confidence: number; fallback: boolean }> {
-    const baseline = resolveAudioBaseline(channel, audioRatio);
-
-    const memoryAction = await resolveCaseMemoryAction(this.cases, {
-      workspaceId,
-      caseType: 'audio_vs_text',
-      text: `channel ${channel} audioRatio ${audioRatio.toFixed(2)}`,
-      features: { channel },
-      options: ['audio', 'text'],
-      minSimilarCases: 3,
-      minSimilarityTotal: 1.2,
-    });
-
-    const effectiveBaseline = memoryAction ?? baseline;
-
-    const result = await this.policy.choose({
-      workspaceId,
-      subject: `workspace:${workspaceId}`,
-      decisionType: 'audio_vs_text',
-      context: { channel, audioRatio },
-      options: [
-        {
-          action: 'audio',
-          predicate: 'P(reply|message_type,hour,channel)',
-          context: { channel, message_type: 'audio' },
-        },
-        {
-          action: 'text',
-          predicate: 'P(reply|message_type,hour,channel)',
-          context: { channel, message_type: 'text' },
-        },
-      ],
-      baseline: effectiveBaseline,
-      outcomeKey: `audio_vs_text:${workspaceId}:${Date.now()}`,
-    });
-
-    return {
-      choice: result.chosen,
-      confidence: chosenConfidence(result),
-      fallback: result.decision.fallbackActive,
-    };
+    return resolveAudioVsTextDecision(this.policy, this.cases, workspaceId, channel, audioRatio);
   }
 
   async resolveTone(
@@ -253,42 +176,15 @@ export class MindService {
     soldRate: number,
     segment?: string,
   ): Promise<{ tone: string; confidence: number; fallback: boolean }> {
-    const baseline = resolveToneBaseline(repliedRate, soldRate, channel);
-    const context = segment ? { channel, segment } : { channel };
-
-    const memoryAction = await resolveCaseMemoryAction(this.cases, {
+    return resolveToneDecision(
+      this.policy,
+      this.cases,
       workspaceId,
-      caseType: 'tom',
-      text: `channel ${channel} repliedRate ${repliedRate.toFixed(2)} soldRate ${soldRate.toFixed(2)}${segment ? ` segment ${segment}` : ''}`,
-      features: { channel, ...(segment ? { segment } : {}) },
-      options: [...TONE_OPTIONS],
-      minSimilarCases: 3,
-      minSimilarityTotal: 1.2,
-    });
-
-    const effectiveBaseline = memoryAction ?? baseline;
-
-    const result = await this.policy.choose({
-      workspaceId,
-      subject: `workspace:${workspaceId}`,
-      decisionType: 'tom',
-      context: { ...context, repliedRate, soldRate },
-      options: TONE_OPTIONS.map((tone) => ({
-        action: tone,
-        predicate: 'P(reply|tone,objection_type,channel)',
-        context: { ...context, tone },
-      })),
-      baseline: effectiveBaseline,
-      outcomeKey: `tom:${workspaceId}:${Date.now()}`,
-      utilitySuccess: 1,
-      utilityFail: -0.1,
-    });
-
-    return {
-      tone: result.chosen,
-      confidence: chosenConfidence(result),
-      fallback: result.decision.fallbackActive,
-    };
+      channel,
+      repliedRate,
+      soldRate,
+      segment,
+    );
   }
 
   async resolveCoupon(
@@ -297,48 +193,98 @@ export class MindService {
     soldRate: number,
     segment?: string,
   ): Promise<{ action: string; confidence: number; fallback: boolean }> {
-    const baseline = resolveCouponBaseline(priceBand, soldRate);
-    const context = segment ? { priceBand, segment } : { priceBand };
-
-    const memoryAction = await resolveCaseMemoryAction(this.cases, {
+    return resolveCouponDecision(
+      this.policy,
+      this.cases,
       workspaceId,
-      caseType: 'cupom',
-      text: `priceBand ${priceBand} soldRate ${soldRate.toFixed(2)}${segment ? ` segment ${segment}` : ''}`,
-      features: { priceBand, ...(segment ? { segment } : {}) },
-      options: ['offer_coupon', 'no_coupon'],
-      minSimilarCases: 3,
-      minSimilarityTotal: 1.2,
-    });
+      priceBand,
+      soldRate,
+      segment,
+    );
+  }
 
-    const effectiveBaseline = memoryAction ?? baseline;
-
-    const result = await this.policy.choose({
+  async resolveHumanTransfer(
+    workspaceId: string,
+    channel: string,
+    concept: string,
+    ticketRisk: number,
+    options?: { escalationInProgress?: boolean; humanAvailable?: boolean },
+  ): Promise<{ action: string; confidence: number; fallback: boolean }> {
+    return resolveHumanTransferDecision(
+      this.policy,
       workspaceId,
-      subject: `workspace:${workspaceId}`,
-      decisionType: 'cupom',
-      context: { ...context, soldRate },
-      options: [
-        {
-          action: 'offer_coupon',
-          predicate: 'P(conversion|discount_offered,segment,price_band)',
-          context: { ...context, discount_offered: 'yes' },
-        },
-        {
-          action: 'no_coupon',
-          predicate: 'P(conversion|discount_offered,segment,price_band)',
-          context: { ...context, discount_offered: 'no' },
-        },
-      ],
-      baseline: effectiveBaseline,
-      outcomeKey: `cupom:${workspaceId}:${Date.now()}`,
-      utilitySuccess: 1,
-      utilityFail: -0.2,
-    });
+      channel,
+      concept,
+      ticketRisk,
+      options,
+    );
+  }
 
-    return {
-      action: result.chosen,
-      confidence: chosenConfidence(result),
-      fallback: result.decision.fallbackActive,
-    };
+  async resolveChannelChoice(
+    workspaceId: string,
+    availableChannels: string[],
+    segment?: string,
+    hour?: number,
+    concept?: string,
+  ): Promise<{ channel: string; confidence: number; fallback: boolean }> {
+    return resolveChannelChoiceDecision(
+      this.policy,
+      workspaceId,
+      availableChannels,
+      segment,
+      hour,
+      concept,
+    );
+  }
+
+  async resolveProductOffer(
+    workspaceId: string,
+    segment: string,
+    concept: string,
+    priceBand: string,
+    lastPurchase?: string,
+  ): Promise<{ offer: string; confidence: number; fallback: boolean }> {
+    return resolveProductOfferDecision(
+      this.policy,
+      workspaceId,
+      segment,
+      concept,
+      priceBand,
+      lastPurchase,
+    );
+  }
+
+  async resolveBroadcastWindow(
+    workspaceId: string,
+    channel: string,
+    segment: string,
+    weekday?: string,
+    fatigue?: number,
+  ): Promise<{ window: string; confidence: number; fallback: boolean }> {
+    return resolveBroadcastWindowDecision(
+      this.policy,
+      workspaceId,
+      channel,
+      segment,
+      weekday,
+      fatigue,
+    );
+  }
+
+  async resolveAdAlertAction(
+    workspaceId: string,
+    metric: string,
+    window: number,
+    threshold: string,
+    campaign?: string,
+  ): Promise<{ action: string; confidence: number; fallback: boolean }> {
+    return resolveAdAlertActionDecision(
+      this.policy,
+      workspaceId,
+      metric,
+      window,
+      threshold,
+      campaign,
+    );
   }
 }

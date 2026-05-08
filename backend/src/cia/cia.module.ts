@@ -7,7 +7,7 @@ import { CiaChatFilterService } from './cia-chat-filter.service';
 import { CiaInlineFallbackService } from './cia-inline-fallback.service';
 import { CiaRemoteBacklogService } from './cia-remote-backlog.service';
 import { CiaRuntimeService } from './cia-runtime.service';
-import { CiaRuntimeService as WhatsappCiaRuntimeService } from '../whatsapp/cia-runtime.service';
+import { CiaRuntimeService as WhatsappCiaRuntimeService } from './cia-runtime.abstract';
 import { CiaRuntimeStateService } from './cia-runtime-state.service';
 import { CiaSendHelpersService } from './cia-send-helpers.service';
 import { CiaController } from './cia.controller';

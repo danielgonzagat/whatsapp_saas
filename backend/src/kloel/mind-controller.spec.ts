@@ -6,6 +6,8 @@ import { MindVerbalizerService } from './mind-verbalizer.service';
 import type { AggressivenessDto, DecideDto, ResolveDto } from './mind-controller.dto';
 import { MindObservabilityService } from './mind-observability.service';
 import { MindGuardsService } from './mind-guards.service';
+import { MindSimulatorService } from './mind-simulator.service';
+import { MindSyntheticGeneratorService } from './mind-synthetic-generator.service';
 
 function mockBeliefs(): jest.Mocked<MindBeliefService> {
   const service = Object.create(MindBeliefService.prototype) as jest.Mocked<MindBeliefService>;
@@ -81,9 +83,78 @@ function mockGuards(): jest.Mocked<MindGuardsService> {
     context: {},
     decision: 'allow',
     guardName: 'all_guards',
-    reason: 'Ação aprovada pelas guardas determinísticas.',
+    reason: 'Acao aprovada pelas guardas deterministicas.',
     reasonTag: 'all_guards_passed',
   });
+  return service;
+}
+
+function simulationReport() {
+  return {
+    decisionDetails: [
+      {
+        baseline: '30m',
+        candidateCount: 2,
+        chosen: '30m',
+        decisionType: 'followup_timing',
+        matchedBaseline: true,
+      },
+    ],
+    quality: { checks: [], failed: 0, passed: 5, total: 5 },
+    replay: {
+      baselineMatches: 1,
+      baselineMatchRate: 1,
+      outcomes: [{ baseline: '30m', chosen: '30m', decisionType: 'followup_timing' }],
+      totalDecisions: 1,
+      workspaceId: 'ws-test',
+    },
+    summary: {
+      baselineMatchRate: 1,
+      decisionsThatChoseBaseline: 1,
+      overallVerdict: 'clean' as const,
+      qualityFailed: 0,
+      qualityPassed: 5,
+      totalDecisions: 1,
+    },
+    workspaceId: 'ws-test',
+  };
+}
+
+function mockSimulator(): jest.Mocked<MindSimulatorService> {
+  const service = Object.create(
+    MindSimulatorService.prototype,
+  ) as jest.Mocked<MindSimulatorService>;
+  service.simulate = jest.fn().mockReturnValue(simulationReport());
+  service.simulateFromDecisions = jest.fn().mockReturnValue(simulationReport());
+  service.reportToMarkdown = jest.fn().mockReturnValue('# MIND Simulation Report\n\nmock');
+  service.reportToJson = jest.fn().mockReturnValue('{}');
+  return service;
+}
+
+function mockSynthetic(): jest.Mocked<MindSyntheticGeneratorService> {
+  const service = Object.create(
+    MindSyntheticGeneratorService.prototype,
+  ) as jest.Mocked<MindSyntheticGeneratorService>;
+  service.setSeed = jest.fn();
+  service.generateCandidates = jest.fn().mockReturnValue([]);
+  service.generateDecision = jest.fn().mockReturnValue({
+    baseline: '30m',
+    candidates: [
+      { action: '5m', beliefMean: 0.3, beliefVariance: 0.2 },
+      { action: '30m', beliefMean: 0.7, beliefVariance: 0.1 },
+    ],
+    decisionType: 'followup_timing',
+    epsilon: 0.5,
+    utilityFail: -0.2,
+    utilitySuccess: 1,
+    workspaceId: '',
+  });
+  service.generateActionContexts = jest.fn().mockReturnValue([
+    { action: '5m', context: { contactOptOut: false, supportsAudio: true } },
+    { action: '30m', context: { contactOptOut: false, supportsAudio: true } },
+  ]);
+  service.generateScenario = jest.fn().mockReturnValue({ decisions: [], workspaceId: 'ws-test' });
+  service.generateScenarios = jest.fn().mockReturnValue([]);
   return service;
 }
 
@@ -93,6 +164,8 @@ function buildController(params?: {
   mind?: jest.Mocked<MindService>;
   policy?: jest.Mocked<MindPolicyService>;
   verbalizer?: jest.Mocked<MindVerbalizerService>;
+  simulator?: jest.Mocked<MindSimulatorService>;
+  synthetic?: jest.Mocked<MindSyntheticGeneratorService>;
 }): MindController {
   return new MindController(
     params?.beliefs ?? mockBeliefs(),
@@ -101,6 +174,8 @@ function buildController(params?: {
     params?.verbalizer ?? mockVerbalizer(),
     mockObservability(),
     params?.guards ?? mockGuards(),
+    params?.simulator ?? mockSimulator(),
+    params?.synthetic ?? mockSynthetic(),
   );
 }
 

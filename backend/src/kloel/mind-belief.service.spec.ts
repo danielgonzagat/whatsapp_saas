@@ -1,8 +1,12 @@
 import { MindBeliefService } from './mind-belief.service';
 
+function mockGlobalPrior() {
+  return { lookupPrior: jest.fn().mockResolvedValue(null) };
+}
+
 describe('MindBeliefService', () => {
   describe('getOrInit', () => {
-    it('creates a new belief when none exists', async () => {
+    it('creates a new belief when none exists (no prior)', async () => {
       const created = {
         id: 'belief-new',
         workspaceId: 'ws-1',
@@ -24,7 +28,7 @@ describe('MindBeliefService', () => {
           findMany: jest.fn(),
         },
       };
-      const service = new MindBeliefService(prisma as never);
+      const service = new MindBeliefService(prisma as never, mockGlobalPrior() as never);
 
       const result = await service.getOrInit('ws-1', 'contact:new', 'P(reply)', {
         channel: 'sms',
@@ -33,6 +37,45 @@ describe('MindBeliefService', () => {
       expect(result.id).toBe('belief-new');
       expect(prisma.$queryRaw).toHaveBeenCalled();
       expect(prisma.mindBelief.findFirst).not.toHaveBeenCalled();
+    });
+
+    it('creates a new belief with non-uniform alpha/beta when global prior exists', async () => {
+      const created = {
+        id: 'belief-prior',
+        workspaceId: 'ws-1',
+        subject: 'contact:returning',
+        predicate: 'P(reply)',
+        context: { channel: 'email' },
+        mean: 7 / 10,
+        variance: 0.01,
+        samples: 0,
+        alpha: 7,
+        beta: 3,
+      };
+      const prisma = {
+        $queryRaw: jest.fn().mockResolvedValue([created]),
+        mindBelief: {
+          findFirst: jest.fn(),
+          create: jest.fn(),
+          update: jest.fn(),
+          findMany: jest.fn(),
+        },
+      };
+      const globalPrior = {
+        lookupPrior: jest.fn().mockResolvedValue({ alpha: 7, beta: 3 }),
+      };
+      const service = new MindBeliefService(prisma as never, globalPrior as never);
+
+      const result = await service.getOrInit('ws-1', 'contact:returning', 'P(reply)', {
+        channel: 'email',
+      });
+
+      expect(result.id).toBe('belief-prior');
+      expect(result.alpha).toBe(7);
+      expect(result.beta).toBe(3);
+      expect(globalPrior.lookupPrior).toHaveBeenCalledWith('contact:returning', 'P(reply)', {
+        channel: 'email',
+      });
     });
 
     it('falls back to findFirst when another insert wins the race', async () => {
@@ -57,7 +100,7 @@ describe('MindBeliefService', () => {
           findMany: jest.fn(),
         },
       };
-      const service = new MindBeliefService(prisma as never);
+      const service = new MindBeliefService(prisma as never, mockGlobalPrior() as never);
 
       const result = await service.getOrInit('ws-1', 'contact:1', 'P(reply)', {
         channel: 'sms',
@@ -66,6 +109,44 @@ describe('MindBeliefService', () => {
       expect(result.id).toBe('belief-existing');
       expect(prisma.$queryRaw).toHaveBeenCalled();
       expect(prisma.mindBelief.create).not.toHaveBeenCalled();
+      expect(prisma.mindBelief.findFirst).toHaveBeenCalled();
+    });
+
+    it('returns existing belief even when prior exists (prior skipped for existing)', async () => {
+      const existing = {
+        id: 'belief-existing',
+        workspaceId: 'ws-1',
+        subject: 'contact:1',
+        predicate: 'P(reply)',
+        context: { channel: 'sms' },
+        mean: 0.6,
+        variance: 0.04,
+        samples: 10,
+        alpha: 6,
+        beta: 4,
+      };
+      const prisma = {
+        $queryRaw: jest.fn().mockResolvedValue([]),
+        mindBelief: {
+          findFirst: jest.fn().mockResolvedValue(existing),
+          create: jest.fn(),
+          update: jest.fn(),
+          findMany: jest.fn(),
+        },
+      };
+      const globalPrior = {
+        lookupPrior: jest.fn().mockResolvedValue({ alpha: 7, beta: 3 }),
+      };
+      const service = new MindBeliefService(prisma as never, globalPrior as never);
+
+      const result = await service.getOrInit('ws-1', 'contact:1', 'P(reply)', {
+        channel: 'sms',
+      });
+
+      expect(result.id).toBe('belief-existing');
+      expect(result.alpha).toBe(6);
+      expect(result.beta).toBe(4);
+      expect(globalPrior.lookupPrior).toHaveBeenCalled();
       expect(prisma.mindBelief.findFirst).toHaveBeenCalled();
     });
 
@@ -79,7 +160,7 @@ describe('MindBeliefService', () => {
           findMany: jest.fn(),
         },
       };
-      const service = new MindBeliefService(prisma as never);
+      const service = new MindBeliefService(prisma as never, mockGlobalPrior() as never);
 
       await expect(service.getOrInit('ws-1', 'c:1', 'P(x)', {})).rejects.toThrow(
         'mind_belief_get_or_init_failed',
@@ -134,7 +215,7 @@ describe('MindBeliefService', () => {
           findMany: jest.fn(),
         },
       };
-      const service = new MindBeliefService(prisma as never);
+      const service = new MindBeliefService(prisma as never, mockGlobalPrior() as never);
 
       const belief = await service.observeBinary(
         'ws-1',
@@ -193,7 +274,7 @@ describe('MindBeliefService', () => {
           findMany: jest.fn(),
         },
       };
-      const service = new MindBeliefService(prisma as never);
+      const service = new MindBeliefService(prisma as never, mockGlobalPrior() as never);
 
       const belief = await service.observeBinary('ws-1', 'contact:2', 'P(reply)', {}, 0);
 

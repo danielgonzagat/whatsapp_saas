@@ -2,45 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import type { MindPerceptEvent } from './mind.types';
 
-type AutopilotEventRow = {
-  action: string;
-  contactId: string | null;
-  createdAt: Date;
-  intent: string;
-  meta: unknown;
-  status: string;
-};
-
-type MessageRow = {
-  channel: string | null;
-  contactId: string | null;
-  content: string;
-  createdAt: Date;
-  direction: string;
-  id: string;
-  type: string;
-};
-
-type SaleRow = {
-  amount: number;
-  createdAt: Date;
-  id: string;
-  leadId: string | null;
-  paymentMethod: string | null;
-  productName: string | null;
-  status: string;
-};
-
-type CheckoutOrderRow = {
-  createdAt: Date;
-  customerEmail: string | null;
-  id: string;
-  paymentMethod: string;
-  status: string;
-  totalInCents: number;
-  utmSource: string | null;
-};
-
 @Injectable()
 export class MindPerceptionService {
   constructor(private readonly prisma: PrismaService) {}
@@ -59,14 +20,19 @@ export class MindPerceptionService {
   }
 
   private async readAutopilotEvents(workspaceId: string, since: Date): Promise<MindPerceptEvent[]> {
-    const rows = await this.prisma.$queryRaw<AutopilotEventRow[]>`
-      SELECT "contactId", intent, action, status, meta, "createdAt"
-      FROM "RAC_AutopilotEvent"
-      WHERE "workspaceId" = ${workspaceId}
-        AND "createdAt" > ${since}
-      ORDER BY "createdAt" ASC
-      LIMIT 500
-    `;
+    const rows = await this.prisma.autopilotEvent.findMany({
+      where: { workspaceId, createdAt: { gt: since } },
+      orderBy: { createdAt: 'asc' },
+      take: 500,
+      select: {
+        contactId: true,
+        intent: true,
+        action: true,
+        status: true,
+        meta: true,
+        createdAt: true,
+      },
+    });
 
     return rows.map((row) => ({
       workspaceId,
@@ -83,15 +49,20 @@ export class MindPerceptionService {
   }
 
   private async readMessages(workspaceId: string, since: Date): Promise<MindPerceptEvent[]> {
-    const rows = await this.prisma.$queryRaw<MessageRow[]>`
-      SELECT m.id, m."contactId", m.direction, m.type, m.content, m."createdAt", c.channel
-      FROM "RAC_Message" m
-      LEFT JOIN "RAC_Conversation" c ON c.id = m."conversationId"
-      WHERE m."workspaceId" = ${workspaceId}
-        AND m."createdAt" > ${since}
-      ORDER BY m."createdAt" ASC
-      LIMIT 500
-    `;
+    const rows = await this.prisma.message.findMany({
+      where: { workspaceId, createdAt: { gt: since } },
+      orderBy: { createdAt: 'asc' },
+      take: 500,
+      select: {
+        id: true,
+        contactId: true,
+        direction: true,
+        type: true,
+        content: true,
+        createdAt: true,
+        conversation: { select: { channel: true } },
+      },
+    });
 
     return rows.map((row) => ({
       workspaceId,
@@ -99,7 +70,7 @@ export class MindPerceptionService {
       subject: row.contactId ? `contact:${row.contactId}` : `message:${row.id}`,
       payload: {
         contentPreview: row.content.slice(0, 240),
-        channel: this.normalizeChannel(row.channel),
+        channel: this.normalizeChannel(row.conversation?.channel ?? null),
         messageId: row.id,
         messageType: row.type,
       },
@@ -108,14 +79,20 @@ export class MindPerceptionService {
   }
 
   private async readSales(workspaceId: string, since: Date): Promise<MindPerceptEvent[]> {
-    const rows = await this.prisma.$queryRaw<SaleRow[]>`
-      SELECT id, "leadId", "productName", amount, status, "paymentMethod", "createdAt"
-      FROM "RAC_KloelSale"
-      WHERE "workspaceId" = ${workspaceId}
-        AND "createdAt" > ${since}
-      ORDER BY "createdAt" ASC
-      LIMIT 500
-    `;
+    const rows = await this.prisma.kloelSale.findMany({
+      where: { workspaceId, createdAt: { gt: since } },
+      orderBy: { createdAt: 'asc' },
+      take: 500,
+      select: {
+        id: true,
+        leadId: true,
+        productName: true,
+        amount: true,
+        status: true,
+        paymentMethod: true,
+        createdAt: true,
+      },
+    });
 
     return rows.map((row) => ({
       workspaceId,
@@ -132,14 +109,20 @@ export class MindPerceptionService {
   }
 
   private async readCheckoutOrders(workspaceId: string, since: Date): Promise<MindPerceptEvent[]> {
-    const rows = await this.prisma.$queryRaw<CheckoutOrderRow[]>`
-      SELECT id, status, "customerEmail", "paymentMethod", "totalInCents", "utmSource", "createdAt"
-      FROM "RAC_CheckoutOrder"
-      WHERE "workspaceId" = ${workspaceId}
-        AND "createdAt" > ${since}
-      ORDER BY "createdAt" ASC
-      LIMIT 500
-    `;
+    const rows = await this.prisma.checkoutOrder.findMany({
+      where: { workspaceId, createdAt: { gt: since } },
+      orderBy: { createdAt: 'asc' },
+      take: 500,
+      select: {
+        id: true,
+        status: true,
+        customerEmail: true,
+        paymentMethod: true,
+        totalInCents: true,
+        utmSource: true,
+        createdAt: true,
+      },
+    });
 
     return rows.map((row) => ({
       workspaceId,

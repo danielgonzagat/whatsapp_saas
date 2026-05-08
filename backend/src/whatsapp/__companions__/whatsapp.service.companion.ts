@@ -8,7 +8,7 @@ import type { InboxService } from '../../inbox/inbox.service';
 import type { NeuroCrmService } from '../../crm/neuro-crm.service';
 import type { OpsAlertService } from '../../observability/ops-alert.service';
 import type { WhatsAppCatchupService } from '../whatsapp-catchup.service';
-import type { CiaRuntimeService } from '../cia-runtime.service';
+import type { CiaRuntimeService } from '../../cia/cia-runtime.abstract';
 import type { WorkerRuntimeService } from '../worker-runtime.service';
 import type { WhatsAppApiProvider } from '../providers/whatsapp-api.provider';
 import { buildQueueDedupId, buildQueueJobId } from '../../queue/job-id.util';

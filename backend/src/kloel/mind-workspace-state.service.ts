@@ -14,6 +14,10 @@ export class MindWorkspaceStateService {
     ttlMs = 5 * 60 * 1000,
   ): Promise<boolean> {
     const leaseUntil = new Date(Date.now() + ttlMs);
+    // Raw justified: INSERT … ON CONFLICT DO UPDATE WHERE provides an
+    // atomic conditional upsert that Prisma's upsert cannot express —
+    // the WHERE clause on the DO UPDATE branch rejects stale or stolen
+    // leases in a single statement, avoiding a check-then-update race.
     const rows = await this.prisma.$queryRaw<Array<{ workspaceId: string }>>`
       INSERT INTO "RAC_MindWorkspaceState"
         ("id","workspaceId","tickLeaseOwner","tickLeaseUntil","createdAt","updatedAt")
@@ -32,14 +36,10 @@ export class MindWorkspaceStateService {
   }
 
   async releaseTickLease(workspaceId: string, owner: string): Promise<void> {
-    await this.prisma.$executeRaw`
-      UPDATE "RAC_MindWorkspaceState"
-      SET "tickLeaseOwner" = NULL,
-          "tickLeaseUntil" = NULL,
-          "updatedAt" = NOW()
-      WHERE "workspaceId" = ${workspaceId}
-        AND "tickLeaseOwner" = ${owner}
-    `;
+    await this.prisma.mindWorkspaceState.updateMany({
+      where: { workspaceId, tickLeaseOwner: owner },
+      data: { tickLeaseOwner: null, tickLeaseUntil: null },
+    });
   }
 
   async watermark(workspaceId: string, fallback: Date): Promise<Date> {

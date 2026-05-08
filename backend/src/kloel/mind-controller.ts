@@ -17,6 +17,7 @@ import {
   DecideDto,
   GuardEvaluateDto,
   ResolveDto,
+  SimulateDto,
   ToneDto,
 } from './mind-controller.dto';
 import { MindBeliefService } from './mind-belief.service';
@@ -25,6 +26,10 @@ import { MindService } from './mind.service';
 import { MindObservabilityService } from './mind-observability.service';
 import { MindVerbalizerService } from './mind-verbalizer.service';
 import { MindGuardsService } from './mind-guards.service';
+import { MindSimulatorService } from './mind-simulator.service';
+import { MindSyntheticGeneratorService } from './mind-synthetic-generator.service';
+import type { SimulateActionEntry } from './mind-simulator.service';
+import type { ReplayInput } from './mind-replay.service';
 
 @Controller('mind')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
@@ -36,6 +41,8 @@ export class MindController {
     private readonly verbalizer: MindVerbalizerService,
     private readonly observability: MindObservabilityService,
     private readonly guards: MindGuardsService,
+    private readonly simulator: MindSimulatorService,
+    private readonly synthetic: MindSyntheticGeneratorService,
   ) {}
 
   @Post(':workspaceId/tick')
@@ -160,5 +167,66 @@ export class MindController {
   @Post(':workspaceId/coupon')
   coupon(@Param('workspaceId') workspaceId: string, @Body() body: CouponDto) {
     return this.mind.resolveCoupon(workspaceId, body.priceBand, body.soldRate, body.segment);
+  }
+
+  @Post(':workspaceId/simulate')
+  simulate(@Param('workspaceId') workspaceId: string, @Body() body: SimulateDto) {
+    const seed = body.seed ?? 42;
+    this.synthetic.setSeed(seed);
+
+    let decisions: ReplayInput[];
+    if (body.decisions && body.decisions.length > 0) {
+      decisions = body.decisions.map((d) => ({
+        workspaceId,
+        decisionType: d.decisionType,
+        candidates: d.candidates.map((c) => ({
+          action: c.action,
+          beliefMean: c.beliefMean,
+          beliefVariance: c.beliefVariance,
+        })),
+        baseline: d.baseline,
+        epsilon: d.epsilon,
+        utilitySuccess: d.utilitySuccess,
+        utilityFail: d.utilityFail,
+      }));
+    } else {
+      const recipeKeys = body.recipeKeys ?? ['followup_timing', 'cart_recovery', 'coupon_offer'];
+      const recipes = MindSyntheticGeneratorService.builtinRecipes();
+      decisions = recipeKeys
+        .filter((key) => recipes[key])
+        .map((key, index) => this.synthetic.generateDecision(recipes[key], seed + index * 100));
+    }
+
+    let actions: SimulateActionEntry[];
+    if (body.actions && body.actions.length > 0) {
+      actions = body.actions.map((a) => ({
+        action: a.action,
+        decisionType: a.decisionType,
+        context: a.context,
+      }));
+    } else {
+      const allActions = decisions.flatMap((d) => d.candidates.map((c) => c.action));
+      const uniqueActions = [...new Set(allActions)];
+      const syntheticActions = this.synthetic.generateActionContexts(uniqueActions, seed + 500);
+      actions = syntheticActions.map((sa) => ({
+        action: sa.action,
+        decisionType: decisions[0]?.decisionType ?? 'followup_timing',
+        context: sa.context,
+      }));
+    }
+
+    const liftData = {
+      lift: body.lift ?? 0.05,
+      pZScore: body.pZScore ?? 0.8,
+      samples: body.samples ?? 100,
+      fallbackActive: body.fallbackActive ?? false,
+    };
+
+    const report = this.simulator.simulateFromDecisions(workspaceId, decisions, actions, liftData);
+
+    return {
+      report,
+      markdown: this.simulator.reportToMarkdown(report),
+    };
   }
 }

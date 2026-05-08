@@ -182,3 +182,110 @@ export class AggressivenessDto {
   @Min(0)
   revenuePerSignal: number;
 }
+
+export class SimulateActionDto {
+  @IsString()
+  @MaxLength(120)
+  action: string;
+
+  @IsString()
+  @MaxLength(120)
+  decisionType: string;
+
+  @IsObject()
+  context: MindActionContext;
+}
+
+export class SimulateCandidateDto {
+  @IsString()
+  @MaxLength(120)
+  action: string;
+
+  @IsNumber()
+  @Min(0)
+  @Max(1)
+  beliefMean: number;
+
+  @IsNumber()
+  @Min(0)
+  @Max(1)
+  beliefVariance: number;
+}
+
+export class SimulateDecisionDto {
+  @IsString()
+  @MaxLength(120)
+  decisionType: string;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => SimulateCandidateDto)
+  candidates: SimulateCandidateDto[];
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  baseline?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(1)
+  epsilon?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(10)
+  utilitySuccess?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(-1)
+  @Max(1)
+  utilityFail?: number;
+}
+
+export class SimulateDto {
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => SimulateDecisionDto)
+  decisions?: SimulateDecisionDto[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  @IsIn(['followup_timing', 'cart_recovery', 'coupon_offer', 'human_transfer', 'channel_choice'], {
+    each: true,
+  })
+  recipeKeys?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => SimulateActionDto)
+  actions?: SimulateActionDto[];
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  lift?: number;
+
+  @IsOptional()
+  @IsNumber()
+  pZScore?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  samples?: number;
+
+  @IsOptional()
+  fallbackActive?: boolean;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  seed?: number;
+}
