@@ -72,7 +72,7 @@ describe('CartRecoveryService', () => {
 
     expect(prisma.checkoutOrder.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: expect.objectContaining({ workspaceId: 'ws-1' }),
+        where: expect.objectContaining({ workspaceId: { in: ['ws-1'] } }),
       }),
     );
     expect(sendEmail).toHaveBeenCalledTimes(1);

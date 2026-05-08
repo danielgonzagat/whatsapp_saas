@@ -1,6 +1,7 @@
 import { MindBanditService } from './mind-bandit.service';
 import { MindCaseMemoryService } from './mind-case-memory.service';
 import { MindConceptService } from './mind-concepts.service';
+import { MindGlobalPriorService } from './mind-global-prior.service';
 import { MindGuardsService } from './mind-guards.service';
 import { MindReportService } from './mind-report.service';
 import { MindWorkspaceStateService } from './mind-workspace-state.service';
@@ -242,6 +243,59 @@ describe('code-native MIND services', () => {
 
     await expect(service.choose('ws-1', 'cart_recovery')).resolves.toBeNull();
     expect(prisma.mindBanditArm.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('aggregates global prior arms with a workspace-scoped batched query', async () => {
+    const prisma = {
+      workspace: {
+        findMany: jest.fn().mockResolvedValue([{ id: 'ws-1' }, { id: 'ws-2' }]),
+      },
+      mindBanditArm: {
+        findMany: jest.fn().mockResolvedValue([
+          {
+            workspaceId: 'ws-1',
+            arm: 'proof',
+            alpha: 3,
+            beta: 1,
+            pulls: 4,
+            wins: 3,
+          },
+          {
+            workspaceId: 'ws-2',
+            arm: 'proof',
+            alpha: 2,
+            beta: 2,
+            pulls: 4,
+            wins: 2,
+          },
+        ]),
+      },
+    };
+    const service = new MindGlobalPriorService(prisma as never);
+
+    await expect(service.getPrior('cart_recovery')).resolves.toEqual(
+      expect.objectContaining({
+        decisionType: 'cart_recovery',
+        totalPulls: 8,
+        arms: [
+          expect.objectContaining({
+            arm: 'proof',
+            aggregateAlpha: 5,
+            aggregateBeta: 3,
+            workspaceCount: 2,
+          }),
+        ],
+      }),
+    );
+    expect(prisma.mindBanditArm.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          workspaceId: { in: ['ws-1', 'ws-2'] },
+          decisionType: 'cart_recovery',
+          pulls: { gt: 0 },
+        },
+      }),
+    );
   });
 
   it('persists durable workspace tick state', async () => {

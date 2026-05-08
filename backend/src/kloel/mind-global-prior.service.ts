@@ -35,29 +35,21 @@ export class MindGlobalPriorService {
   async getPrior(decisionType: string): Promise<GlobalPrior> {
     const startedAt = Date.now();
 
-    const arms: Array<{
-      workspaceId: string;
-      arm: string;
-      alpha: number;
-      beta: number;
-      pulls: number;
-      wins: number;
-    }> = [];
     const workspaceIds = await this.listWorkspaceIds();
-    for (const workspaceId of workspaceIds) {
-      const workspaceArms = await this.prisma.mindBanditArm.findMany({
-        where: { workspaceId, decisionType, pulls: { gt: 0 } },
-        select: {
-          workspaceId: true,
-          arm: true,
-          alpha: true,
-          beta: true,
-          pulls: true,
-          wins: true,
-        },
-      });
-      arms.push(...workspaceArms);
-    }
+    const arms =
+      workspaceIds.length > 0
+        ? await this.prisma.mindBanditArm.findMany({
+            where: { workspaceId: { in: workspaceIds }, decisionType, pulls: { gt: 0 } },
+            select: {
+              workspaceId: true,
+              arm: true,
+              alpha: true,
+              beta: true,
+              pulls: true,
+              wins: true,
+            },
+          })
+        : [];
 
     const grouped = new Map<
       string,
@@ -161,9 +153,9 @@ export class MindGlobalPriorService {
     const decisionTypes = new Set<string>();
     const workspaceIds = await this.listWorkspaceIds();
 
-    for (const workspaceId of workspaceIds) {
+    if (workspaceIds.length > 0) {
       const rows = await this.prisma.mindBanditArm.findMany({
-        where: { workspaceId, pulls: { gt: 0 } },
+        where: { workspaceId: { in: workspaceIds }, pulls: { gt: 0 } },
         select: { decisionType: true },
         distinct: ['decisionType'],
         orderBy: { decisionType: 'asc' },

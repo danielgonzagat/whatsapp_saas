@@ -1,6 +1,5 @@
 import { Injectable, Logger, Optional } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
-import type { Prisma } from '@prisma/client';
 import { forEachSequential } from '../common/async-sequence';
 import { PrismaService } from '../prisma/prisma.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
@@ -11,9 +10,6 @@ import {
 } from '../common/utils/unsubscribe-footer.util';
 
 type CartRecoveryMetadata = Record<string, unknown>;
-type AbandonedCheckoutOrder = Prisma.CheckoutOrderGetPayload<{
-  include: { plan: { include: { product: true } } };
-}>;
 
 function readCartRecoveryMetadata(value: unknown): CartRecoveryMetadata {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
@@ -99,23 +95,20 @@ export class CartRecoveryService {
         select: { id: true },
         orderBy: { createdAt: 'asc' },
       });
-      const abandoned: AbandonedCheckoutOrder[] = [];
-
-      await forEachSequential(workspaces, async (workspace) => {
-        if (abandoned.length >= 50) {
-          return;
-        }
-        const workspaceAbandoned = await this.prisma.checkoutOrder.findMany({
-          where: {
-            workspaceId: workspace.id,
-            status: 'PENDING',
-            createdAt: { lt: thirtyMinAgo },
-          },
-          include: { plan: { include: { product: true } } },
-          take: 50 - abandoned.length,
-        });
-        abandoned.push(...workspaceAbandoned);
-      });
+      const workspaceIds = workspaces.map((workspace) => workspace.id);
+      const abandoned =
+        workspaceIds.length > 0
+          ? await this.prisma.checkoutOrder.findMany({
+              where: {
+                workspaceId: { in: workspaceIds },
+                status: 'PENDING',
+                createdAt: { lt: thirtyMinAgo },
+              },
+              include: { plan: { include: { product: true } } },
+              orderBy: { createdAt: 'asc' },
+              take: 50,
+            })
+          : [];
 
       const toRecover = abandoned.filter((order) => {
         const metadata = readCartRecoveryMetadata(order.metadata);
