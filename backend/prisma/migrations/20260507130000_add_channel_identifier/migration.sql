@@ -6,10 +6,10 @@ CREATE TABLE "RAC_ChannelIdentifier" (
     "contactId" TEXT NOT NULL,
     "workspaceId" TEXT NOT NULL,
     "isPrimary" BOOLEAN NOT NULL DEFAULT false,
-    "verifiedAt" TIMESTAMP(3),
+    "verifiedAt" TIMESTAMP (3),
     metadata JSONB DEFAULT '{}',
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMP (3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP (3) NOT NULL,
 
     CONSTRAINT "RAC_ChannelIdentifier_pkey" PRIMARY KEY (id)
 );
@@ -53,14 +53,14 @@ INSERT INTO "RAC_ChannelIdentifier" (
     "updatedAt"
 )
 SELECT
-    gen_random_uuid()::text,
-    'WHATSAPP',
-    phone,
-    id,
-    "workspaceId",
-    true,
-    NOW(),
-    NOW()
+    GEN_RANDOM_UUID()::TEXT AS generated_id,
+    'WHATSAPP' AS channel_name,
+    phone AS identifier_value,
+    id AS contact_id,
+    "workspaceId" AS workspace_id,
+    true AS primary_flag,
+    NOW() AS created_at,
+    NOW() AS updated_at
 FROM "RAC_Contact"
 WHERE phone ~ '^[0-9+]';
 
@@ -76,14 +76,14 @@ INSERT INTO "RAC_ChannelIdentifier" (
     "updatedAt"
 )
 SELECT
-    gen_random_uuid()::text,
-    'INSTAGRAM',
-    substring(phone from 4),
-    id,
-    "workspaceId",
-    true,
-    NOW(),
-    NOW()
+    GEN_RANDOM_UUID()::TEXT AS generated_id,
+    'INSTAGRAM' AS channel_name,
+    SUBSTRING(phone FROM 4) AS identifier_value,
+    id AS contact_id,
+    "workspaceId" AS workspace_id,
+    true AS primary_flag,
+    NOW() AS created_at,
+    NOW() AS updated_at
 FROM "RAC_Contact"
 WHERE phone LIKE 'ig:%';
 
@@ -99,18 +99,18 @@ INSERT INTO "RAC_ChannelIdentifier" (
     "updatedAt"
 )
 SELECT
-    gen_random_uuid()::text,
-    'MESSENGER',
-    substring(phone from 4),
-    id,
-    "workspaceId",
-    true,
-    NOW(),
-    NOW()
+    GEN_RANDOM_UUID()::TEXT AS generated_id,
+    'MESSENGER' AS channel_name,
+    SUBSTRING(phone FROM 4) AS identifier_value,
+    id AS contact_id,
+    "workspaceId" AS workspace_id,
+    true AS primary_flag,
+    NOW() AS created_at,
+    NOW() AS updated_at
 FROM "RAC_Contact"
 WHERE phone LIKE 'fb:%';
 
--- Remaining contacts (email, other): store as-is under channel identified by prefix
+-- Remaining contacts: store as-is under channel identified by prefix.
 INSERT INTO "RAC_ChannelIdentifier" (
     id,
     channel,
@@ -122,18 +122,19 @@ INSERT INTO "RAC_ChannelIdentifier" (
     "updatedAt"
 )
 SELECT
-    gen_random_uuid()::text,
+    GEN_RANDOM_UUID()::TEXT AS generated_id,
     CASE
         WHEN phone LIKE '%@%' THEN 'EMAIL'
         ELSE 'WHATSAPP'
-    END,
-    phone,
-    id,
-    "workspaceId",
-    true,
-    NOW(),
-    NOW()
+    END AS channel_name,
+    phone AS identifier_value,
+    id AS contact_id,
+    "workspaceId" AS workspace_id,
+    true AS primary_flag,
+    NOW() AS created_at,
+    NOW() AS updated_at
 FROM "RAC_Contact"
-WHERE phone NOT LIKE 'ig:%'
+WHERE
+    phone NOT LIKE 'ig:%'
     AND phone NOT LIKE 'fb:%'
     AND phone !~ '^[0-9+]';

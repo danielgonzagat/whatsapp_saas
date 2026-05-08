@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS "RAC_MindBelief" (
     "lastUpdate" TIMESTAMP NOT NULL DEFAULT NOW(),
     "createdAt" TIMESTAMP NOT NULL DEFAULT NOW(),
     CONSTRAINT "MindBelief_workspace_subject_predicate_context_unique"
-        UNIQUE ("workspaceId", subject, predicate, context)
+    UNIQUE ("workspaceId", subject, predicate, context)
 );
 
 CREATE INDEX IF NOT EXISTS "MindBelief_workspace_predicate_idx"
@@ -22,7 +22,7 @@ CREATE INDEX IF NOT EXISTS "MindBelief_workspace_subject_idx"
 ON "RAC_MindBelief" ("workspaceId", subject);
 
 CREATE INDEX IF NOT EXISTS "MindBelief_context_gin_idx"
-ON "RAC_MindBelief" USING GIN (context);
+ON "RAC_MindBelief" USING gin (context);
 
 CREATE TABLE IF NOT EXISTS "RAC_MindPrediction" (
     id TEXT PRIMARY KEY,
