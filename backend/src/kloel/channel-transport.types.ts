@@ -1,3 +1,5 @@
+import type { MindActionContext } from './mind-code-native.types';
+
 export type ChannelName = 'whatsapp' | 'instagram' | 'messenger' | 'tiktok' | 'email';
 
 export interface ChannelCapability {
@@ -14,6 +16,7 @@ export interface ChannelSendRequest {
   content: string;
   mediaUrl?: string;
   mediaType?: 'image' | 'video' | 'audio' | 'document';
+  guardContext?: MindActionContext;
 }
 
 export interface ChannelSendResult {

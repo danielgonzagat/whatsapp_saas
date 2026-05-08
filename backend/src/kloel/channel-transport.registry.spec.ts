@@ -172,6 +172,42 @@ describe('ChannelTransportRegistry', () => {
       );
     });
 
+    it('evaluates deterministic guards before dispatching a send', async () => {
+      const guards = {
+        evaluate: jest.fn().mockResolvedValue({
+          allowed: false,
+          guardName: 'opt_out',
+          reason: 'Contato possui opt-out registrado.',
+        }),
+      };
+      const guardedRegistry = new ChannelTransportRegistry(
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        new WhatsAppChannelTransport(stubWhatsApp as never),
+        guards as never,
+      );
+
+      const result = await guardedRegistry.send(
+        'ws-1',
+        makeSendRequest('whatsapp', { guardContext: { contactOptOut: true } }),
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.blocked).toBe(true);
+      expect(result.blockedReason).toContain('opt-out');
+      expect(guards.evaluate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          workspaceId: 'ws-1',
+          decisionType: 'send_message',
+          action: 'send_message',
+          context: expect.objectContaining({ contactOptOut: true, channel: 'whatsapp' }),
+        }),
+      );
+      expect(stubWhatsApp.sendMessage).not.toHaveBeenCalled();
+    });
+
     it('propagates WhatsApp send failure', async () => {
       stubWhatsApp.sendMessage.mockResolvedValue({
         success: false,

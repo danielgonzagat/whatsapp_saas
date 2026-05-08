@@ -13,6 +13,8 @@ import type {
   ChannelSendResult,
   ChannelTransportProvider,
 } from './channel-transport.types';
+import { MindGuardsService } from './mind-guards.service';
+import type { MindActionContext } from './mind-code-native.types';
 
 @Injectable()
 export class ChannelTransportRegistry {
@@ -25,6 +27,7 @@ export class ChannelTransportRegistry {
     @Optional() tiktok?: TikTokChannelTransport,
     @Optional() email?: EmailChannelTransport,
     @Optional() whatsapp?: WhatsAppChannelTransport,
+    @Optional() private readonly guards?: MindGuardsService,
   ) {
     [instagram, messenger, tiktok, email, whatsapp].forEach((provider) => {
       if (provider) this.register(provider);
@@ -78,6 +81,23 @@ export class ChannelTransportRegistry {
       };
     }
 
+    const guard = await this.guards?.evaluate({
+      workspaceId,
+      decisionType: 'send_message',
+      action: this.guardAction(request),
+      context: this.guardContext(request),
+    });
+    if (guard && !guard.allowed) {
+      this.logger.warn(
+        `Envio bloqueado por guarda ${guard.guardName} workspace=${workspaceId} channel=${request.channel}`,
+      );
+      return {
+        success: false,
+        blocked: true,
+        blockedReason: guard.reason,
+      };
+    }
+
     this.logger.log(
       `Enviando mensagem via ${request.channel} workspace=${workspaceId} recipient=${request.recipientId}`,
     );
@@ -87,5 +107,24 @@ export class ChannelTransportRegistry {
 
   getRegisteredChannels(): ChannelName[] {
     return Array.from(this.providers.keys());
+  }
+
+  private guardAction(request: ChannelSendRequest): string {
+    if (request.mediaType === 'audio') {
+      return 'send_audio_message';
+    }
+    if (request.mediaType === 'document') {
+      return 'send_document_message';
+    }
+    return 'send_message';
+  }
+
+  private guardContext(request: ChannelSendRequest): MindActionContext {
+    return {
+      ...request.guardContext,
+      channel: request.channel,
+      supportsAudio: request.channel !== 'email' && request.channel !== 'tiktok',
+      supportsDocument: request.channel === 'whatsapp' || request.channel === 'email',
+    };
   }
 }
