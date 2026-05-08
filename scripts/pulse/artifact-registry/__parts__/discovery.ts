@@ -208,8 +208,8 @@ export function discoverArtifactReferences(
 export function discoverRegisteredWriters(pulseDir: string): RegisteredArtifactWriter[] {
   const writers: RegisteredArtifactWriter[] = [];
   const artifactWriterPaths = [
-    path.join(pulseDir, 'artifacts.ts'),
-    path.join(pulseDir, '__parts__', 'artifacts', 'generate.ts'),
+    safeJoin(pulseDir, 'artifacts.ts'),
+    safeJoin(pulseDir, '__parts__', 'artifacts', 'generate.ts'),
   ];
 
   for (const artifactPath of artifactWriterPaths) {

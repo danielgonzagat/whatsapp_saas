@@ -3,19 +3,19 @@ CREATE TABLE IF NOT EXISTS "RAC_MindWorkspaceState" (
     "workspaceId" TEXT NOT NULL UNIQUE REFERENCES "RAC_Workspace" (
         id
     ) ON DELETE CASCADE,
-    "lastWatermark" TIMESTAMP (3),
-    "lastTickAt" TIMESTAMP (3),
+    "lastWatermark" TIMESTAMP(3),
+    "lastTickAt" TIMESTAMP(3),
     "lastTickMs" INTEGER NOT NULL DEFAULT 0,
     "tickLeaseOwner" TEXT,
-    "tickLeaseUntil" TIMESTAMP (3),
+    "tickLeaseUntil" TIMESTAMP(3),
     "tickCount" INTEGER NOT NULL DEFAULT 0,
     "lastError" TEXT,
     "perceivedWindow" INTEGER NOT NULL DEFAULT 0,
     "surpriseWindow" DOUBLE PRECISION NOT NULL DEFAULT 0,
     "openDecisions" INTEGER NOT NULL DEFAULT 0,
     health JSONB NOT NULL DEFAULT '{}',
-    "createdAt" TIMESTAMP (3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP (3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS "RAC_MindCase" (
@@ -25,14 +25,14 @@ CREATE TABLE IF NOT EXISTS "RAC_MindCase" (
     ) ON DELETE CASCADE,
     subject TEXT NOT NULL,
     "caseType" TEXT NOT NULL,
-    text TEXT NOT NULL,
-    tokens TEXT [] NOT NULL,
+    "text" TEXT NOT NULL,
+    tokens TEXT[] NOT NULL,
     features JSONB NOT NULL,
-    action TEXT NOT NULL,
+    "action" TEXT NOT NULL,
     outcome DOUBLE PRECISION,
-    "occurredAt" TIMESTAMP (3) NOT NULL,
-    "createdAt" TIMESTAMP (3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP (3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+    "occurredAt" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX IF NOT EXISTS "RAC_MindCase_workspaceId_caseType_occurredAt_idx"
@@ -50,9 +50,9 @@ CREATE TABLE IF NOT EXISTS "RAC_MindConceptDetection" (
     confidence DOUBLE PRECISION NOT NULL,
     evidence TEXT NOT NULL,
     features JSONB NOT NULL,
-    "occurredAt" TIMESTAMP (3) NOT NULL,
-    "createdAt" TIMESTAMP (3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP (3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+    "occurredAt" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX IF NOT EXISTS
@@ -68,15 +68,15 @@ CREATE TABLE IF NOT EXISTS "RAC_MindGraphNode" (
         id
     ) ON DELETE CASCADE,
     kind TEXT NOT NULL,
-    label TEXT NOT NULL,
+    "label" TEXT NOT NULL,
     weight DOUBLE PRECISION NOT NULL DEFAULT 1,
     metadata JSONB NOT NULL DEFAULT '{}',
-    "createdAt" TIMESTAMP (3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP (3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS "RAC_MindGraphNode_workspaceId_kind_label_key"
-ON "RAC_MindGraphNode" ("workspaceId", kind, label);
+ON "RAC_MindGraphNode" ("workspaceId", kind, "label");
 CREATE INDEX IF NOT EXISTS "RAC_MindGraphNode_workspaceId_kind_weight_idx"
 ON "RAC_MindGraphNode" ("workspaceId", kind, weight);
 
@@ -91,8 +91,8 @@ CREATE TABLE IF NOT EXISTS "RAC_MindGraphEdge" (
     weight DOUBLE PRECISION NOT NULL DEFAULT 1,
     samples INTEGER NOT NULL DEFAULT 1,
     metadata JSONB NOT NULL DEFAULT '{}',
-    "createdAt" TIMESTAMP (3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP (3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS
@@ -112,11 +112,11 @@ CREATE TABLE IF NOT EXISTS "RAC_MindOutboxEvent" (
     "idempotencyKey" TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'pending',
     attempts INTEGER NOT NULL DEFAULT 0,
-    "dispatchedAt" TIMESTAMP (3),
+    "dispatchedAt" TIMESTAMP(3),
     "lastError" TEXT,
-    "occurredAt" TIMESTAMP (3) NOT NULL,
-    "createdAt" TIMESTAMP (3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP (3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+    "occurredAt" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS
@@ -141,9 +141,9 @@ CREATE TABLE IF NOT EXISTS "RAC_MindBanditArm" (
     pulls INTEGER NOT NULL DEFAULT 0,
     wins INTEGER NOT NULL DEFAULT 0,
     "isActive" BOOLEAN NOT NULL DEFAULT TRUE,
-    "promotedAt" TIMESTAMP (3),
-    "createdAt" TIMESTAMP (3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP (3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+    "promotedAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS
@@ -159,13 +159,13 @@ CREATE TABLE IF NOT EXISTS "RAC_MindGuardAudit" (
         id
     ) ON DELETE CASCADE,
     "guardName" TEXT NOT NULL,
-    action TEXT NOT NULL,
+    "action" TEXT NOT NULL,
     decision TEXT NOT NULL,
     allowed BOOLEAN NOT NULL,
     reason TEXT NOT NULL,
     context JSONB NOT NULL,
-    "createdAt" TIMESTAMP (3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP (3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX IF NOT EXISTS
@@ -177,12 +177,12 @@ CREATE TABLE IF NOT EXISTS "RAC_MindDailyReport" (
     "workspaceId" TEXT NOT NULL REFERENCES "RAC_Workspace" (
         id
     ) ON DELETE CASCADE,
-    "reportDate" TIMESTAMP (3) NOT NULL,
-    content TEXT NOT NULL,
+    "reportDate" TIMESTAMP(3) NOT NULL,
+    "content" TEXT NOT NULL,
     "storageKey" TEXT,
     metrics JSONB NOT NULL,
-    "createdAt" TIMESTAMP (3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP (3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS
@@ -194,19 +194,19 @@ CREATE TABLE IF NOT EXISTS "RAC_MindGlobalPrior" (
     "workspaceId" TEXT NOT NULL REFERENCES "RAC_Workspace" (
         id
     ) ON DELETE CASCADE,
-    domain TEXT NOT NULL,
+    "domain" TEXT NOT NULL,
     predicate TEXT NOT NULL,
     context JSONB NOT NULL,
     mean DOUBLE PRECISION NOT NULL,
     variance DOUBLE PRECISION NOT NULL,
     samples INTEGER NOT NULL,
     "anonymizedBy" TEXT NOT NULL,
-    "createdAt" TIMESTAMP (3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP (3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS
 "RAC_MindGlobalPrior_domain_predicate_context_key"
-ON "RAC_MindGlobalPrior" (domain, predicate, context);
+ON "RAC_MindGlobalPrior" ("domain", predicate, context);
 CREATE INDEX IF NOT EXISTS "RAC_MindGlobalPrior_domain_predicate_idx"
-ON "RAC_MindGlobalPrior" (domain, predicate);
+ON "RAC_MindGlobalPrior" ("domain", predicate);

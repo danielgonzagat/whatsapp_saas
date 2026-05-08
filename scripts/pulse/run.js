@@ -43,6 +43,7 @@ if (!tsNodeBin) {
 }
 
 const args = [
+  '--transpile-only',
   '--project',
   path.join(rootDir, 'scripts', 'pulse', 'tsconfig.json'),
   path.join(rootDir, 'scripts', 'pulse', 'index.ts'),

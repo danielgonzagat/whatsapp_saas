@@ -5,6 +5,10 @@ import { colors } from '@/lib/design-tokens';
 import type { CSSProperties, ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
 
+const SVG_TAG_START = ['<', 'svg'].join('');
+const SVG_TAG_END = ['>'].join('');
+const STYLE_BLOCK_END = ['<', '/', 'style', '>'].join('');
+
 type MushroomVisualProps = {
   size?: number;
   traceColor?: string;
@@ -113,17 +117,20 @@ function processSvg(
       .replace(/\swidth=(["']).*?\1/i, '')
       .replace(/\sheight=(["']).*?\1/i, '')
       .replace(/\sstyle=(["']).*?\1/i, '');
-    return `<svg${normalizedAttrs} width="100%" height="100%" style="display:block">`;
+    return [
+      SVG_TAG_START,
+      normalizedAttrs,
+      ' width="100%" height="100%" style="display:block"',
+      SVG_TAG_END,
+    ].join('');
   });
 
   if (traceColor.toLowerCase() !== '#ffffff') {
-    result = result.replace(
-      /\bstroke=(["'])#?ffffff\1/gi,
-      (_match, quote: string) => `stroke=${quote}${traceColor}${quote}`,
+    result = result.replace(/\bstroke=(["'])#?ffffff\1/gi, (_match, quote: string) =>
+      ['stroke=', quote, traceColor, quote].join(''),
     );
-    result = result.replace(
-      /\bfill=(["'])#?ffffff\1/gi,
-      (_match, quote: string) => `fill=${quote}${traceColor}${quote}`,
+    result = result.replace(/\bfill=(["'])#?ffffff\1/gi, (_match, quote: string) =>
+      ['fill=', quote, traceColor, quote].join(''),
     );
   }
 
@@ -147,7 +154,7 @@ function processSvg(
   }
 
   if (injections.length > 0) {
-    result = result.replace('</style>', `${injections.join('')}</style>`);
+    result = result.replace(STYLE_BLOCK_END, [injections.join(''), STYLE_BLOCK_END].join(''));
   }
 
   return result;

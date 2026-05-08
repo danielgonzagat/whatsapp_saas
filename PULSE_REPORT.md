@@ -1,4 +1,4 @@
-# PULSE REPORT — 2026-05-08T19:05:19.171Z
+# PULSE REPORT — 2026-05-08T20:52:00.038Z
 
 ## PULSE VERDICT
 
@@ -19,8 +19,8 @@
 - Can declare Kloel product certified: NAO
 - bounded_run: PASS - Bounded next autonomous cycle exposes 8 ai_safe unit(s).
 - artifact_consistency: FAIL - Cross-artifact consistency has not produced a passing check.
-- execution_matrix: PASS - Execution matrix classified 6291 path(s) with zero unknown and zero non-terminal paths.
-- critical_path_terminal: FAIL - 5161 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:account-agent, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.
+- execution_matrix: PASS - Execution matrix classified 6293 path(s) with zero unknown and zero non-terminal paths.
+- critical_path_terminal: FAIL - 5163 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:account-agent, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.
 - breakpoint_precision: PASS - Every observed failure in the execution matrix has a breakpoint.
 - external_reality: FAIL - 2 missing, 0 stale, and 0 invalid external adapter(s) remain.
 - self_trust: PASS - All parsers loaded and no phantom capability/flow remains. 12 aspirational structure(s) remain explicitly marked as aspirational.
@@ -37,7 +37,7 @@
 - Capabilities: real=0, partial=387, latent=12, phantom=0
 - Capability maturity: foundational=1, connected=398, operational=0, productionReady=0
 - Flows: real=0, partial=75, latent=0, phantom=0
-- Execution matrix: paths=6291, observedPass=0, observedFail=248, criticalUnobserved=0, unknown=0
+- Execution matrix: paths=6293, observedPass=0, observedFail=248, criticalUnobserved=0, unknown=0
 - Structural parity gaps: total=52, critical=12, high=38
 - Finding events: totalSignals=306, uniqueEvents=248, observed=0, confirmedStatic=306, weakSignals=0
 - Codacy HIGH issues: 1076
@@ -60,10 +60,10 @@
 
 - Inventory Coverage: 100%
 - Classification Coverage: 99%
-- Structural Graph Coverage: 32% (942/2948 connected)
-  Reason: 942/2948 structural files connected.
+- Structural Graph Coverage: 32% (942/2950 connected)
+  Reason: 942/2950 structural files connected.
 - Test Coverage: 10%
-  Reason: 241/2460 source modules have spec files.
+  Reason: 241/2462 source modules have spec files.
 - Scenario Coverage: 100% (declared=100%, executed=100%, passed=0%)
 - Runtime Evidence Coverage: 0% (fresh=0%, stale=0%)
   Reason: No runtime probes executed.

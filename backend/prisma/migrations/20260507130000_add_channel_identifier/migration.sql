@@ -2,21 +2,21 @@
 CREATE TABLE "RAC_ChannelIdentifier" (
     id TEXT NOT NULL,
     channel TEXT NOT NULL,
-    value TEXT NOT NULL,
+    "value" TEXT NOT NULL,
     "contactId" TEXT NOT NULL,
     "workspaceId" TEXT NOT NULL,
     "isPrimary" BOOLEAN NOT NULL DEFAULT false,
-    "verifiedAt" TIMESTAMP (3),
+    "verifiedAt" TIMESTAMP(3),
     metadata JSONB DEFAULT '{}',
-    "createdAt" TIMESTAMP (3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP (3) NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "RAC_ChannelIdentifier_pkey" PRIMARY KEY (id)
 );
 
 -- Unique constraint: one identifier per channel per workspace
 CREATE UNIQUE INDEX "RAC_ChannelIdentifier_workspaceId_channel_value_key"
-ON "RAC_ChannelIdentifier" ("workspaceId", channel, value);
+ON "RAC_ChannelIdentifier" ("workspaceId", channel, "value");
 
 -- Lookup index by contact
 CREATE INDEX "RAC_ChannelIdentifier_contactId_idx"
@@ -36,16 +36,14 @@ ON UPDATE CASCADE;
 ALTER TABLE "RAC_ChannelIdentifier"
 ADD CONSTRAINT "RAC_ChannelIdentifier_workspaceId_fkey"
 FOREIGN KEY ("workspaceId")
-REFERENCES "RAC_Workspace" (id)
-ON DELETE CASCADE
-ON UPDATE CASCADE;
+REFERENCES "RAC_Workspace" (id) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- Backfill: create ChannelIdentifier rows for all existing contacts.
 -- WhatsApp contacts: phone starts with digit or +
 INSERT INTO "RAC_ChannelIdentifier" (
     id,
     channel,
-    value,
+    "value",
     "contactId",
     "workspaceId",
     "isPrimary",
@@ -68,7 +66,7 @@ WHERE phone ~ '^[0-9+]';
 INSERT INTO "RAC_ChannelIdentifier" (
     id,
     channel,
-    value,
+    "value",
     "contactId",
     "workspaceId",
     "isPrimary",
@@ -91,7 +89,7 @@ WHERE phone LIKE 'ig:%';
 INSERT INTO "RAC_ChannelIdentifier" (
     id,
     channel,
-    value,
+    "value",
     "contactId",
     "workspaceId",
     "isPrimary",
@@ -114,7 +112,7 @@ WHERE phone LIKE 'fb:%';
 INSERT INTO "RAC_ChannelIdentifier" (
     id,
     channel,
-    value,
+    "value",
     "contactId",
     "workspaceId",
     "isPrimary",

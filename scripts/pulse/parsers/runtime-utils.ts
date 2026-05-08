@@ -18,6 +18,13 @@ export function getBackendUrl(): string {
   return process.env.PULSE_BACKEND_URL || 'http://127.0.0.1:4000';
 }
 
+function toRuntimeUrl(path: string): URL {
+  if (!path.startsWith('/') || path.startsWith('//') || path.includes('\0')) {
+    throw new Error('Runtime HTTP path must be a local absolute path.');
+  }
+  return new URL(path, getBackendUrl());
+}
+
 function headers(options?: RuntimeHttpOptions): Record<string, string> {
   return {
     'content-type': 'application/json',
@@ -43,7 +50,7 @@ async function request(
   body?: unknown,
   options?: RuntimeHttpOptions,
 ): Promise<RuntimeHttpResponse> {
-  const response = await fetch(new URL(path, getBackendUrl()), {
+  const response = await fetch(toRuntimeUrl(path), {
     method,
     headers: headers(options),
     body: body === undefined ? undefined : JSON.stringify(body),

@@ -31,7 +31,9 @@ const lockedFiles = getLockedFiles(REPO_ROOT);
 
 function loadGovernanceApprovals() {
   const approvalsPath = path.join(REPO_ROOT, 'ops', 'governance-change-approvals.json');
-  if (!existsSync(approvalsPath)) return [];
+  if (!existsSync(approvalsPath)) {
+    return [];
+  }
   try {
     const parsed = JSON.parse(readFileSync(approvalsPath, 'utf8'));
     return Array.isArray(parsed) ? parsed : [];
@@ -42,9 +44,15 @@ function loadGovernanceApprovals() {
 
 function hasActiveGovernanceApproval(relPath, approvals, now = new Date()) {
   return approvals.some(function (entry) {
-    if (!entry || entry.rule !== 'governanceChange') return false;
-    if (entry.expires && new Date(entry.expires) < now) return false;
-    if (entry.file === relPath) return true;
+    if (!entry || entry.rule !== 'governanceChange') {
+      return false;
+    }
+    if (entry.expires && new Date(entry.expires) < now) {
+      return false;
+    }
+    if (entry.file === relPath) {
+      return true;
+    }
     return typeof entry.filePrefix === 'string' && relPath.startsWith(entry.filePrefix);
   });
 }
@@ -55,7 +63,9 @@ const violations = [];
 
 for (const line of stagedRaw.split('\n').filter(Boolean)) {
   const [status, relPath] = line.split('\t');
-  if (!relPath) continue;
+  if (!relPath) {
+    continue;
+  }
 
   // Bloqueia commit que toque arquivos protegidos sem aprovacao ativa registrada.
   if (isProtectedPath(relPath) && !hasActiveGovernanceApproval(relPath, governanceApprovals)) {
@@ -69,10 +79,14 @@ for (const line of stagedRaw.split('\n').filter(Boolean)) {
   // via direct terminal — the legitimate path for governance evolution.
   // PROTECTED_FILES still blocked (those are Daniel-only by spec).
 
-  if (!SOURCE_FILE_RE.test(relPath)) continue;
+  if (!SOURCE_FILE_RE.test(relPath)) {
+    continue;
+  }
 
   const absPath = path.join(REPO_ROOT, relPath);
-  if (!existsSync(absPath)) continue;
+  if (!existsSync(absPath)) {
+    continue;
+  }
   const content = readFileSync(absPath, 'utf8');
   const isNewFile = status === 'A';
   const fileViolations = evaluateContent({ relPath, content, isNewFile, lockedFiles });

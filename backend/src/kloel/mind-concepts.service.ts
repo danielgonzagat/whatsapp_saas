@@ -82,19 +82,25 @@ export class MindConceptService {
       });
       rows.push(row);
 
+      const conceptEventKey = [
+        'concept',
+        input.workspaceId,
+        input.subject,
+        detection.concept,
+        stableConceptKey({
+          workspaceId: input.workspaceId,
+          subject: input.subject,
+          concept: detection.concept,
+          text: input.text,
+        }),
+      ].join(':');
+
       await this.events.recordCommercial({
         workspaceId: input.workspaceId,
         subject: input.subject,
         eventType: 'concept.detected',
         occurredAt: input.occurredAt ?? new Date(),
-        idempotencyKey: `concept:${input.workspaceId}:${input.subject}:${
-          detection.concept
-        }:${stableConceptKey({
-          workspaceId: input.workspaceId,
-          subject: input.subject,
-          concept: detection.concept,
-          text: input.text,
-        })}`,
+        idempotencyKey: conceptEventKey,
         payload: {
           concept: detection.concept,
           confidence: detection.confidence,
