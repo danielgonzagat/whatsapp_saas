@@ -1,13 +1,11 @@
-import fs from 'node:fs';
-import path from 'node:path';
-import { PNG } from 'pngjs';
-import { chromium, devices, expect, test as base, type Locator, type Page } from '@playwright/test';
+import { chromium, devices, test as base, type Page } from '@playwright/test';
 import {
   AUTHENTICATED_ROUTES,
   PUBLIC_ROUTES,
   type CriticalRoute,
   VIEWPORTS,
 } from './critical-flows.routes';
+import { assertExactScreenshot, VISUAL_BROWSER_ARGS } from './critical-flows.screenshot';
 import { mockVisualAuthApis } from './critical-flows.auth-mocks';
 import { mockVisualRouteApis } from './critical-flows.route-mocks';
 import {
@@ -70,13 +68,6 @@ const VISUAL_CONSENT_COOKIE = JSON.stringify({
   updatedAt: '2026-01-01T00:00:00.000Z',
 });
 const MAX_SINGLE_PASS_CAPTURE_HEIGHT = 4_096;
-const VISUAL_BROWSER_ARGS = [
-  '--force-color-profile=srgb',
-  '--font-render-hinting=none',
-  '--disable-lcd-text',
-  '--disable-skia-runtime-opts',
-];
-const VISUAL_PIXEL_CHANNEL_TOLERANCE = 3;
 const VISUAL_FREEZE_STYLE = [
   'html, body {',
   'overflow-y: scroll !important;',
@@ -112,11 +103,6 @@ const VISUAL_FREEZE_STYLE = [
   '}',
 ].join('\n');
 
-type ScreenshotAssertionOptions = {
-  fullPage?: boolean;
-  mask?: Locator[];
-};
-
 async function waitForPublicSurfaceToSettle(page: Page) {
   await page.waitForFunction(() => {
     const banner = document.querySelector('.kloel-cookie-banner');
@@ -134,117 +120,6 @@ async function waitForPublicSurfaceToSettle(page: Page) {
   // Give Chromium one extra paint after the banner settles so rounded corners
   // rasterize consistently before the zero-diff screenshot gate runs.
   await page.waitForTimeout(100);
-}
-
-function countPixelDiff(expected: PNG, actual: PNG) {
-  const width = expected.width;
-  const height = expected.height;
-  const diff = new PNG({ width, height });
-  let diffCount = 0;
-
-  for (let index = 0; index < expected.data.length; index += 4) {
-    const matches =
-      Math.abs(expected.data[index] - actual.data[index]) <= VISUAL_PIXEL_CHANNEL_TOLERANCE &&
-      Math.abs(expected.data[index + 1] - actual.data[index + 1]) <=
-        VISUAL_PIXEL_CHANNEL_TOLERANCE &&
-      Math.abs(expected.data[index + 2] - actual.data[index + 2]) <=
-        VISUAL_PIXEL_CHANNEL_TOLERANCE &&
-      expected.data[index + 3] === actual.data[index + 3];
-
-    if (matches) {
-      diff.data[index] = 255;
-      diff.data[index + 1] = 255;
-      diff.data[index + 2] = 255;
-      diff.data[index + 3] = 0;
-      continue;
-    }
-
-    diffCount += 1;
-    diff.data[index] = 255;
-    diff.data[index + 1] = 208;
-    diff.data[index + 2] = 0;
-    diff.data[index + 3] = 255;
-  }
-
-  return { diff, diffCount };
-}
-
-async function assertExactScreenshot(
-  page: Page,
-  snapshotName: string,
-  options: ScreenshotAssertionOptions = {},
-) {
-  const info = test.info();
-  const snapshotPath = info.snapshotPath(snapshotName);
-  const actualPath = info.outputPath(snapshotName.replace(/\.png$/, '-actual.png'));
-  const diffPath = info.outputPath(snapshotName.replace(/\.png$/, '-diff.png'));
-  const updateSnapshots = ((info.config as { updateSnapshots?: string }).updateSnapshots ||
-    'missing') as string;
-  const hasSnapshot = fs.existsSync(snapshotPath);
-  const allowSnapshotCreate =
-    updateSnapshots === 'missing' || updateSnapshots === 'changed' || updateSnapshots === 'all';
-  const allowSnapshotUpdate = updateSnapshots === 'all' || updateSnapshots === 'changed';
-
-  await page.screenshot({
-    path: actualPath,
-    fullPage: options.fullPage,
-    mask: options.mask,
-    animations: 'disabled',
-    caret: 'hide',
-    scale: 'css',
-  });
-
-  expect(fs.existsSync(actualPath), `screenshot capture for ${snapshotName} succeeded`).toBe(true);
-
-  if (!hasSnapshot) {
-    if (!allowSnapshotCreate) {
-      throw new Error(`Missing visual baseline: ${snapshotPath}`);
-    }
-
-    fs.mkdirSync(path.dirname(snapshotPath), { recursive: true });
-    fs.copyFileSync(actualPath, snapshotPath);
-    return;
-  }
-
-  const expected = PNG.sync.read(fs.readFileSync(snapshotPath));
-  const actual = PNG.sync.read(fs.readFileSync(actualPath));
-
-  if (expected.width !== actual.width || expected.height !== actual.height) {
-    if (allowSnapshotUpdate) {
-      fs.copyFileSync(actualPath, snapshotPath);
-      return;
-    }
-
-    throw new Error(
-      [
-        `Visual snapshot size mismatch for ${snapshotName}.`,
-        `Expected: ${expected.width}x${expected.height}`,
-        `Actual: ${actual.width}x${actual.height}`,
-        `Baseline: ${snapshotPath}`,
-        `Actual: ${actualPath}`,
-      ].join('\n'),
-    );
-  }
-
-  const { diff, diffCount } = countPixelDiff(expected, actual);
-  if (diffCount === 0) {
-    return;
-  }
-
-  if (allowSnapshotUpdate) {
-    fs.copyFileSync(actualPath, snapshotPath);
-    return;
-  }
-
-  fs.writeFileSync(diffPath, PNG.sync.write(diff));
-  throw new Error(
-    [
-      `Visual diff beyond tolerance detected for ${snapshotName}: ${diffCount} pixels differ.`,
-      `Baseline: ${snapshotPath}`,
-      `Actual: ${actualPath}`,
-      `Diff: ${diffPath}`,
-    ].join('\n'),
-  );
 }
 
 async function applyVisualFreezeCss(page: Page) {
@@ -544,7 +419,7 @@ test.describe('P6.5-1 — Visual regression baseline (I20)', () => {
           // Mask intentionally non-deterministic regions before the diff.
           const maskLocators = (route.mask ?? []).map((selector) => page.locator(selector));
 
-          await assertExactScreenshot(page, `${route.name}-${viewport.name}.png`, {
+          await assertExactScreenshot(page, test.info(), `${route.name}-${viewport.name}.png`, {
             fullPage: true,
             mask: maskLocators,
           });
@@ -585,7 +460,7 @@ test.describe('P6.5-1 — Visual regression baseline (I20)', () => {
 
           const maskLocators = (route.mask ?? []).map((selector) => page.locator(selector));
 
-          await assertExactScreenshot(page, `${route.name}-${viewport.name}.png`, {
+          await assertExactScreenshot(page, test.info(), `${route.name}-${viewport.name}.png`, {
             fullPage: true,
             mask: maskLocators,
           });
