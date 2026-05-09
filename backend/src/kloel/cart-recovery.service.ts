@@ -8,6 +8,7 @@ import { MindBanditService } from './mind-bandit.service';
 import { MindCaseMemoryService } from './mind-case-memory.service';
 import { MindGuardsService } from './mind-guards.service';
 import { MindPolicyService } from './mind-policy.service';
+import { resolveCartRecoveryDecision } from './mind-recovery-decision-resolvers';
 import {
   buildListUnsubscribeHeader,
   buildUnsubscribeFooterHtml,
@@ -158,148 +159,27 @@ export class CartRecoveryService {
 
           let recoveryAction = 'help';
           let mindDecisionMeta: Record<string, unknown> = {};
-          const cartCaseType = 'cart_recovery';
-
-          let memoryAction: string | null = null;
-          if (wsId && this.cases) {
-            const similar = await this.cases.similar({
-              workspaceId: wsId,
-              caseType: cartCaseType,
-              text: `product ${productName} priceBand ${priceBand} ageMinutes ${ageMinutes}`,
-              features: { channel: 'email', price_band: priceBand },
-              limit: 30,
-            });
-
-            if (similar.length >= 3) {
-              const actionScores = new Map<
-                string,
-                { similaritySum: number; outcomeSum: number; count: number }
-              >();
-              const actions = ['proof', 'urgency', 'help', 'faq', 'discount', 'pause'];
-
-              for (const row of similar) {
-                if (!actions.includes(row.action)) {
-                  continue;
-                }
-
-                const entry = actionScores.get(row.action) ?? {
-                  similaritySum: 0,
-                  outcomeSum: 0,
-                  count: 0,
-                };
-
-                entry.similaritySum += row.similarity;
-                if (typeof row.outcome === 'number') {
-                  entry.outcomeSum += row.outcome;
-                }
-                entry.count += 1;
-
-                actionScores.set(row.action, entry);
-              }
-
-              if (actionScores.size > 0) {
-                const totalSimilarity = similar.reduce((sum, row) => sum + row.similarity, 0);
-
-                if (totalSimilarity >= 1.2) {
-                  let bestAction: string | null = null;
-                  let bestScore = -Infinity;
-
-                  for (const [action, entry] of actionScores) {
-                    const outcomeRate = entry.count > 0 ? entry.outcomeSum / entry.count : 0;
-                    const score = entry.similaritySum * 0.3 + outcomeRate * 0.7;
-
-                    if (score > bestScore) {
-                      bestScore = score;
-                      bestAction = action;
-                    }
-                  }
-
-                  memoryAction = bestAction;
-                }
-              }
-            }
-          }
-
-          let banditAction: string | null = null;
-          if (wsId && this.bandit) {
-            try {
-              await this.bandit.register({
-                arms: ['proof', 'urgency', 'help', 'faq', 'discount', 'pause'],
-                decisionType: cartCaseType,
-                workspaceId: wsId,
-              });
-              const banditChoice = await this.bandit.choose(wsId, cartCaseType);
-              if (banditChoice) {
-                banditAction = banditChoice.arm;
-              }
-            } catch (banditErr: unknown) {
-              this.logger.warn(
-                `Bandit choose failed for cart_recovery ws=${wsId}: ${String(banditErr)}`,
-              );
-            }
-          }
-
-          const effectiveBaseline = memoryAction ?? banditAction ?? 'help';
-          recoveryAction = effectiveBaseline;
-          mindDecisionMeta = {
-            ...(memoryAction ? { mindCaseMemoryAction: memoryAction } : {}),
-            ...(banditAction ? { banditArm: banditAction } : {}),
-          };
 
           if (wsId && this.mindPolicy) {
             try {
-              const recoveryResult = await this.mindPolicy.choose({
-                workspaceId: wsId,
-                subject: `order:${order.id}`,
-                decisionType: cartCaseType,
-                context: {
-                  channel: 'email',
-                  price_band: priceBand,
-                  age_minutes: ageMinutes,
-                  product: productName,
-                },
-                options: [
-                  {
-                    action: 'proof',
-                    predicate: 'P(payment|cart_recovery_action,channel,price_band)',
-                    context: {},
-                  },
-                  {
-                    action: 'urgency',
-                    predicate: 'P(payment|cart_recovery_action,channel,price_band)',
-                    context: {},
-                  },
-                  {
-                    action: 'help',
-                    predicate: 'P(payment|cart_recovery_action,channel,price_band)',
-                    context: {},
-                  },
-                  {
-                    action: 'faq',
-                    predicate: 'P(payment|cart_recovery_action,channel,price_band)',
-                    context: {},
-                  },
-                  {
-                    action: 'discount',
-                    predicate: 'P(payment|cart_recovery_action,channel,price_band)',
-                    context: {},
-                  },
-                  {
-                    action: 'pause',
-                    predicate: 'P(payment|cart_recovery_action,channel,price_band)',
-                    context: {},
-                  },
-                ],
-                baseline: effectiveBaseline,
-                outcomeKey: `cart_recovery:${wsId}:${order.id}`,
-                utilitySuccess: 1,
-                utilityFail: -0.1,
-              });
-              recoveryAction = recoveryResult.chosen;
+              const recoveryResult = await resolveCartRecoveryDecision(
+                this.mindPolicy,
+                this.cases,
+                this.bandit,
+                wsId,
+                order.id,
+                productName,
+                priceBand,
+                ageMinutes,
+              );
+              recoveryAction = recoveryResult.action;
               mindDecisionMeta = {
-                ...mindDecisionMeta,
-                mindRecoveryAction: recoveryResult.chosen,
-                mindReason: recoveryResult.decision.reasonInternal,
+                ...(recoveryResult.memoryAction
+                  ? { mindCaseMemoryAction: recoveryResult.memoryAction }
+                  : {}),
+                ...(recoveryResult.banditAction ? { banditArm: recoveryResult.banditAction } : {}),
+                mindRecoveryAction: recoveryResult.action,
+                mindReason: recoveryResult.reasonInternal,
               };
             } catch (mindErr: unknown) {
               this.logger.warn(

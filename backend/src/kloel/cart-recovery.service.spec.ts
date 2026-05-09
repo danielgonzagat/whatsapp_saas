@@ -66,6 +66,17 @@ const makeStubBandit = (overrides?: { arm?: string }) => {
   return { register, choose };
 };
 
+const makeStubMindPolicy = (chosen = 'help') => ({
+  choose: jest.fn().mockResolvedValue({
+    chosen,
+    decision: {
+      candidates: [{ action: chosen, beliefMean: 0.7 }],
+      fallbackActive: false,
+      reasonInternal: 'test policy',
+    },
+  }),
+});
+
 describe('CartRecoveryService', () => {
   let prisma: MockPrisma;
   let service: CartRecoveryService;
@@ -325,10 +336,11 @@ describe('CartRecoveryService', () => {
     it('registers bandit arms for cart_recovery and records bandit arm metadata', async () => {
       prisma.checkoutOrder.findMany.mockResolvedValue([pendingOrder()]);
       const stubBandit = makeStubBandit({ arm: 'proof' });
+      const stubMindPolicy = makeStubMindPolicy('proof');
       service = new CartRecoveryService(
         prisma as never,
         undefined,
-        undefined,
+        stubMindPolicy as never,
         undefined,
         undefined,
         undefined,
@@ -346,15 +358,17 @@ describe('CartRecoveryService', () => {
 
       const updatePayload = prisma.checkoutOrder.updateMany.mock.calls[0][0].data.metadata;
       expect(updatePayload.banditArm).toBe('proof');
+      expect(updatePayload.mindRecoveryAction).toBe('proof');
     });
 
     it('falls back gracefully when bandit choose returns null', async () => {
       prisma.checkoutOrder.findMany.mockResolvedValue([pendingOrder()]);
       const stubBandit = makeStubBandit();
+      const stubMindPolicy = makeStubMindPolicy('help');
       service = new CartRecoveryService(
         prisma as never,
         undefined,
-        undefined,
+        stubMindPolicy as never,
         undefined,
         undefined,
         undefined,
@@ -375,10 +389,11 @@ describe('CartRecoveryService', () => {
         register: jest.fn().mockRejectedValue(new Error('db unavailable')),
         choose: jest.fn(),
       };
+      const stubMindPolicy = makeStubMindPolicy('help');
       service = new CartRecoveryService(
         prisma as never,
         undefined,
-        undefined,
+        stubMindPolicy as never,
         undefined,
         undefined,
         undefined,
@@ -400,11 +415,12 @@ describe('CartRecoveryService', () => {
         reason: 'Limite diário de mensagens atingido.',
       });
       const stubBandit = makeStubBandit({ arm: 'discount' });
+      const stubMindPolicy = makeStubMindPolicy('discount');
       const stubTransport = makeStubTransport({ sendAvailable: true });
       service = new CartRecoveryService(
         prisma as never,
         undefined,
-        undefined,
+        stubMindPolicy as never,
         undefined,
         stubGuards as never,
         stubTransport as never,
@@ -423,10 +439,11 @@ describe('CartRecoveryService', () => {
       const stubTransport = makeStubTransport({ sendAvailable: false });
       const stubBandit = makeStubBandit();
       const stubGuards = makeStubGuards();
+      const stubMindPolicy = makeStubMindPolicy('help');
       service = new CartRecoveryService(
         prisma as never,
         undefined,
-        undefined,
+        stubMindPolicy as never,
         undefined,
         stubGuards as never,
         stubTransport as never,
@@ -446,10 +463,11 @@ describe('CartRecoveryService', () => {
       const stubGuards = makeStubGuards({ allowed: true });
       const stubTransport = makeStubTransport({ sendAvailable: true });
       const stubBandit = makeStubBandit({ arm: 'help' });
+      const stubMindPolicy = makeStubMindPolicy('help');
       service = new CartRecoveryService(
         prisma as never,
         undefined,
-        undefined,
+        stubMindPolicy as never,
         undefined,
         stubGuards as never,
         stubTransport as never,

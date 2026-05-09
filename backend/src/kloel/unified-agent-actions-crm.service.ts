@@ -7,6 +7,7 @@ import type { ToolArgs } from './unified-agent.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { MindPolicyService } from './mind-policy.service';
 import { MindService } from './mind.service';
+import { resolveFollowupTimingDecision } from './mind-recovery-decision-resolvers';
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -223,34 +224,22 @@ export class UnifiedAgentActionsCrmService {
       };
     }
 
-    const hour = new Date().getHours();
-    const outcomeKey = `followup:${args.workspaceId}:${args.contactId}:${Date.now()}`;
-    const options = Object.entries(buckets).map(([bucket]) => ({
-      action: bucket,
-      predicate: 'P(reply|template,hour,channel)',
-      context: { channel: args.channel, hour, template: `followup_${bucket}` },
-    }));
-
     try {
-      const { chosen, decision } = await this.mindPolicy.choose({
-        workspaceId: args.workspaceId,
-        subject: `contact:${args.contactId}`,
-        decisionType: 'followup_timing',
-        context: { channel: args.channel, hour, requestedDelayHours: args.requestedDelayHours },
-        options,
-        baseline,
-        outcomeKey,
-        utilitySuccess: 1,
-        utilityFail: -0.05,
-        epsilon: 0.6,
-      });
+      const timing = await resolveFollowupTimingDecision(
+        this.mindPolicy,
+        args.workspaceId,
+        args.contactId,
+        args.channel,
+        args.requestedDelayHours,
+        buckets,
+      );
       return {
-        delayHours: buckets[chosen] ?? args.requestedDelayHours,
+        delayHours: timing.delayHours,
         meta: {
           baseline,
-          chosen,
-          outcomeKey,
-          reasonInternal: decision.reasonInternal,
+          chosen: timing.bucket,
+          outcomeKey: timing.outcomeKey,
+          reasonInternal: timing.reasonInternal,
         },
       };
     } catch (error: unknown) {
