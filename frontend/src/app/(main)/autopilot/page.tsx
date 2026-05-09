@@ -587,7 +587,8 @@ export default function AutopilotPage() {
     try {
       const csv = await exportAutopilotActions(
         effectiveWorkspaceId,
-        statusFilter === 'all' ? undefined : status        token,
+        statusFilter === 'all' ? undefined : statusFilter,
+        token,
       );
       const blob = new Blob([csv], { type: 'text/csv' });
       const url = URL.createObjectURL(blob);
