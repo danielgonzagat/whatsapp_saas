@@ -2,7 +2,7 @@
 
 import { kloelT } from '@/lib/i18n/t';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
-import type { DashboardHomeResponse, DashboardHomePeriod } from '@/lib/api/home';
+import type { DashboardHomeResponse } from '@/lib/api/home';
 import { useMemo } from 'react';
 
 const FONT_MONO = "'JetBrains Mono', monospace";

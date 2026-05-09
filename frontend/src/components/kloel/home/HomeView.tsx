@@ -6,7 +6,6 @@ import { useDashboardHome } from '@/hooks/useDashboardHome';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
 import type { DashboardHomePeriod } from '@/lib/api/home';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
-import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import HomeKpiTiles from './HomeKpiTiles';
 import HomeRecentActivity from './HomeRecentActivity';
@@ -21,26 +20,6 @@ const PERIOD_OPTIONS: Array<{ key: DashboardHomePeriod; label: string }> = [
   { key: '30d', label: '30 dias' },
   { key: 'custom', label: 'Personalizado' },
 ];
-
-const HOME_HEADER_ACTION_BUTTON_STYLE = {
-  display: 'inline-flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  height: 'clamp(32px, 2.2vw, 36px)',
-  padding: '0 clamp(10px, 1vw, 14px)',
-  borderRadius: 6,
-  border: `1px solid ${KLOEL_THEME.borderPrimary}`,
-  background: 'transparent',
-  color: KLOEL_THEME.textSecondary,
-  fontFamily: FONT_SANS,
-  fontSize: 'clamp(11px, 0.72vw, 12px)',
-  fontWeight: 600,
-  cursor: 'pointer',
-  whiteSpace: 'nowrap' as const,
-  lineHeight: 1,
-  flexShrink: 0,
-  minWidth: 'fit-content',
-};
 
 function getGreeting(referenceDate?: Date | null) {
   if (!referenceDate) {
@@ -140,7 +119,6 @@ function PeriodTabs({
 }
 
 export function HomeView() {
-  const router = useRouter();
   const { userName } = useAuth();
   const { isMobile, isTablet } = useResponsiveViewport();
   const [period, setPeriod] = useState<DashboardHomePeriod>('30d');
@@ -428,7 +406,6 @@ export function HomeView() {
 
         <HomeRecentActivity
           home={home}
-          isLoading={isLoading}
           compact={compact}
           activeRangeLabel={activeRangeLabel}
         />

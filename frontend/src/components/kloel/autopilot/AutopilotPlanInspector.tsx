@@ -177,7 +177,7 @@ function statusTone(status?: string) {
   return { color: colors.brand.cyan, bg: `${colors.brand.cyan}18` };
 }
 
-function StatusPill({ label, status }: { label: string; status?: string }) {
+function StatusPill({ label, status }: { label: string; status?: string | undefined }) {
   const tone = statusTone(status);
   return (
     <div
@@ -234,18 +234,12 @@ export default function AutopilotPlanInspector({
           icon={TrendingUp}
           label={kloelT(`Taxa de Resposta`)}
           value={impact ? `${Math.round(impact.replyRate * 100)}%` : '—'}
-          subValue={impact?.repliedContacts ? `${impact.repliedContacts} resp.` : undefined}
           color={colors.brand.green}
         />
         <StatCard
           icon={Sparkles}
           label={kloelT(`Conversões`)}
           value={stats?.conversionsLast7d || 0}
-          subValue={
-            stats?.conversionsAmountLast7d
-              ? `R$ ${stats.conversionsAmountLast7d.toLocaleString('pt-BR')}`
-              : undefined
-          }
           color="#F59E0B"
         />
       </div>

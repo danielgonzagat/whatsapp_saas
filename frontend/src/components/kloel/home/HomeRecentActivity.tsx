@@ -196,12 +196,10 @@ function OperationalHealthGuide({ checkpoints, onClose }: { checkpoints: Dashboa
 
 export default function HomeRecentActivity({
   home,
-  isLoading,
   compact,
   activeRangeLabel,
 }: {
   home: DashboardHomeResponse | undefined;
-  isLoading: boolean;
   compact: boolean;
   activeRangeLabel: string;
 }) {

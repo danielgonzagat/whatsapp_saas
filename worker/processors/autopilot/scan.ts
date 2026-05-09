@@ -4,28 +4,113 @@ import { redis } from '../../redis-client';
 import { autopilotQueue, flowQueue } from '../../queue';
 import { buildQueueJobId } from '../../job-id';
 import { publishAgentEvent, finishBacklogRunTask } from '../../providers/agent-events';
-import { autopilotDecisionCounter, autopilotGhostCloserCounter, autopilotPipelineCounter } from '../../metrics';
+import {
+  autopilotDecisionCounter,
+  autopilotGhostCloserCounter,
+  autopilotPipelineCounter,
+} from '../../metrics';
 import { unifiedWhatsAppProvider as whatsappApiProvider } from '../../providers/unified-whatsapp-provider';
 import { dispatchOutboundThroughFlow } from '../../providers/outbound-dispatcher';
 import { channelEnabled, logFallback, sendEmail } from '../../providers/channel-dispatcher';
-import { buildBusinessStateSnapshot, buildDecisionEnvelope, buildHumanTask, buildMissionPlan, computeDemandState, extractMarketSignals, persistBusinessSnapshot, persistDemandState, persistHumanTask, persistMarketSignals, persistSystemInsight, shouldAutonomousSend } from '../../providers/commercial-intelligence';
-import { getDelayUntilWorkspaceWindowOpens, getWorkspaceLocalHour, isWithinWorkspaceWindow } from '../../providers/timezone';
-import { extractTextResponse, mapUnifiedActionsToAutopilot, processWithUnifiedAgent, shouldUseUnifiedAgent } from '../../providers/unified-agent-integrator';
+import {
+  buildBusinessStateSnapshot,
+  buildDecisionEnvelope,
+  buildHumanTask,
+  buildMissionPlan,
+  computeDemandState,
+  extractMarketSignals,
+  persistBusinessSnapshot,
+  persistDemandState,
+  persistHumanTask,
+  persistMarketSignals,
+  persistSystemInsight,
+  shouldAutonomousSend,
+} from '../../providers/commercial-intelligence';
+import {
+  getDelayUntilWorkspaceWindowOpens,
+  getWorkspaceLocalHour,
+  isWithinWorkspaceWindow,
+} from '../../providers/timezone';
+import {
+  extractTextResponse,
+  mapUnifiedActionsToAutopilot,
+  processWithUnifiedAgent,
+  shouldUseUnifiedAgent,
+} from '../../providers/unified-agent-integrator';
 import { planCiaActions, summarizeDecisionCognition } from '../cia/brain';
 import { buildCiaWorkspaceState, buildCiaWorkspaceStateFromSeed } from '../cia/build-state';
-import { buildSeedCognitiveState, loadCustomerCognitiveState, persistCustomerCognitiveState, recordDecisionOutcome } from '../cia/cognitive-state';
-import { assertCiaExhaustion, assertCiaGuarantees, buildCiaExhaustionReport, buildCiaGuaranteeReport } from '../cia/contracts';
-import { analyzeForActiveListening, buildWhatsAppConversationPrompt, detectAndFixAntiPatterns } from '../cia/conversation-policy';
-import { assertConversationTacticPlan, buildConversationTacticPlan } from '../cia/conversation-tactics';
+import {
+  buildSeedCognitiveState,
+  loadCustomerCognitiveState,
+  persistCustomerCognitiveState,
+  recordDecisionOutcome,
+} from '../cia/cognitive-state';
+import {
+  assertCiaExhaustion,
+  assertCiaGuarantees,
+  buildCiaExhaustionReport,
+  buildCiaGuaranteeReport,
+} from '../cia/contracts';
+import {
+  analyzeForActiveListening,
+  buildWhatsAppConversationPrompt,
+  detectAndFixAntiPatterns,
+} from '../cia/conversation-policy';
+import {
+  assertConversationTacticPlan,
+  buildConversationTacticPlan,
+} from '../cia/conversation-tactics';
 import { pickVariant, recordDecisionLog, updateVariantOutcome } from '../cia/self-improvement';
-import { log, normalizeJsonObject, isAutonomousEnabled, isCiaAutonomyMode, isExplicitProactiveOutreachAllowed, isCiaProactiveCycleEnabled, finalizeReplyStyle, isRecentLiveConversation, reportSmokeTest, findWorkspaceProductMatches, notifyBillingSuspended, PENDING_MESSAGE_LIMIT, SHARENON_DIGIT_REPLY_LOCK_MS, type UnknownRecord, type AutopilotDecision, type QuotedCustomerMessage, type WorkspaceSelfIdentity, CONVERSATION_HISTORY_LIMIT } from './shared';
+import {
+  log,
+  normalizeJsonObject,
+  isAutonomousEnabled,
+  isCiaAutonomyMode,
+  isExplicitProactiveOutreachAllowed,
+  isCiaProactiveCycleEnabled,
+  finalizeReplyStyle,
+  isRecentLiveConversation,
+  reportSmokeTest,
+  findWorkspaceProductMatches,
+  notifyBillingSuspended,
+  PENDING_MESSAGE_LIMIT,
+  SHARENON_DIGIT_REPLY_LOCK_MS,
+  type UnknownRecord,
+  type AutopilotDecision,
+  type QuotedCustomerMessage,
+  type WorkspaceSelfIdentity,
+  CONVERSATION_HISTORY_LIMIT,
+} from './shared';
 import { ensureTrustedContactProfile } from './profile';
 import { resolveLatestQuotedMessageId } from './safeguard';
 import { logAutopilotAction, checkRateLimits, buildWorkspaceConfig } from './safeguard';
-import { fetchConversationHistory, fetchCompressedContactContext, getKbContext, generateAutonomousFallbackResponse, computePersistentCognitiveState, computeCognitiveRewardSignal, buildCognitiveMessage, decideActionSafe, beginAutonomyExecution, buildAutonomyExecutionKey, finishAutonomyExecution } from './cognition';
+import {
+  fetchConversationHistory,
+  fetchCompressedContactContext,
+  getKbContext,
+  generateAutonomousFallbackResponse,
+  computePersistentCognitiveState,
+  computeCognitiveRewardSignal,
+  buildCognitiveMessage,
+  decideActionSafe,
+  beginAutonomyExecution,
+  buildAutonomyExecutionKey,
+  finishAutonomyExecution,
+} from './cognition';
 import { executeAction, sendDirectAutopilotText } from './execution';
-import { resolveWorkspaceSelfIdentity, isWorkspaceSelfTarget, resolveTrustedCatalogName, extractTrustedNameFromRemoteMessage } from './identity';
-import { finalizeBacklogIntoSilentCatalog, getSharedReplyLockKey, resolveScanDeliveryMode, findConversationAutomationState, maybeEscalateToHumanControl } from './backlog';
+import {
+  resolveWorkspaceSelfIdentity,
+  isWorkspaceSelfTarget,
+  resolveTrustedCatalogName,
+  extractTrustedNameFromRemoteMessage,
+} from './identity';
+import {
+  finalizeBacklogIntoSilentCatalog,
+  getSharedReplyLockKey,
+  resolveScanDeliveryMode,
+  findConversationAutomationState,
+  maybeEscalateToHumanControl,
+} from './backlog';
 import { resolveConversationOwner } from '../../conversation-agent-state';
 import { forEachSequential, findFirstSequential } from '../../utils/async-sequence';
 
@@ -201,7 +286,9 @@ async function buildPendingMessageBatch(params: {
             new Date(right.createdAt as string | number | Date).getTime(),
         );
 
-      for (const remoteMessage of Array.isArray(remoteMessages) ? remoteMessages : []) {
+      for (const remoteMessage of (Array.isArray(remoteMessages)
+        ? remoteMessages
+        : []) as UnknownRecord[]) {
         const remoteTrustedName = extractTrustedNameFromRemoteMessage(remoteMessage, resolvedPhone);
         if (remoteTrustedName) {
           resolvedContactName = remoteTrustedName;
@@ -275,7 +362,7 @@ async function buildPendingMessageBatch(params: {
       .map((message) => ({
         content: String(message.content || '').trim(),
         quotedMessageId: String(message.externalId || '').trim() || undefined,
-        createdAt: message.createdAt?.toISOString?.() || null,
+        createdAt: message.createdAt?.toISOString?.() || undefined,
       }))
       .filter((message: QuotedCustomerMessage) => message.content.length > 0),
   };
