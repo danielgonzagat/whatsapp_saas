@@ -95,7 +95,7 @@ const defaultBackoff = Math.max(
   Number.parseInt(process.env.QUEUE_BACKOFF_MS || '5000', 10) || 5000,
 );
 
-function buildQueueOptions() {
+export function buildQueueOptions() {
   return {
     connection: getConnection(),
     defaultJobOptions: {
@@ -152,6 +152,19 @@ function attachDlq(queue: BullQueue) {
           return;
         }
 
+        const workspaceId =
+          (job.data as Record<string, unknown> | undefined)?.workspaceId ??
+          (() => {
+            const d = job.data as Record<string, unknown> | undefined;
+            const ws = d?.workspace;
+            if (ws && typeof ws === 'object' && !Array.isArray(ws)) {
+              return (ws as Record<string, unknown>).id;
+            }
+            return undefined;
+          })();
+        const correlationId =
+          (job.data as Record<string, unknown> | undefined)?.correlationId;
+
         await dlq.add(
           'failed',
           {
@@ -161,6 +174,8 @@ function attachDlq(queue: BullQueue) {
             opts: job.opts,
             failedReason,
             failedAt: new Date().toISOString(),
+            ...(correlationId ? { correlationId } : {}),
+            ...(workspaceId ? { workspaceId } : {}),
           },
           { jobId: job.id, removeOnComplete: true },
         );

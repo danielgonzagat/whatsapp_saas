@@ -3,7 +3,7 @@ import { FlowEngineGlobal } from './flow-engine-global';
 import { WorkerLogger } from './logger';
 import { jobCounter, jobDuration } from './metrics';
 import { PlanLimitsProvider } from './providers/plan-limits';
-import { autopilotQueue, connection, shutdownQueueSystem } from './queue';
+import { autopilotQueue, buildQueueOptions, connection, shutdownQueueSystem } from './queue';
 import './campaign-processor'; // Start Campaign Worker
 import './scraper-processor'; // Start Scraper Worker
 import './media-processor'; // Start Media Worker
@@ -18,6 +18,15 @@ import { getErrorMessage } from './utils/error-message';
 import { handleScheduledFollowup } from './__parts__/scheduled-followup-handler';
 import { handleSendMessage } from './__companions__/send-message-handler.companion';
 import { autopilotScanner } from './__companions__/autopilot-scanner.companion';
+import {
+  checkIdempotent,
+  endJob,
+  extractWorkspaceId,
+  generateCorrelationId,
+  logError,
+  markCompleted,
+  startJob,
+} from './processor-base';
 
 /**
  * =======================================================
