@@ -11,7 +11,7 @@ import { UnifiedAgentActionsCrmService } from './unified-agent-actions-crm.servi
 import { UnifiedAgentActionsMessagingService } from './unified-agent-actions-messaging.service';
 import { UnifiedAgentActionsSalesService } from './unified-agent-actions-sales.service';
 import { UnifiedAgentActionsWorkspaceService } from './unified-agent-actions-workspace.service';
-import type { ToolArgs } from './unified-agent.service';
+import type { ToolArgs } from './unified-agent.types';
 import { actionStr, actionNum } from './__companions__/unified-agent-actions.service.companion';
 import { OpsAlertService } from '../observability/ops-alert.service';
 

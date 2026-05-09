@@ -3,7 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { actionImportContacts as actionImportContactsCompanion } from './__companions__/unified-agent-actions-crm.service.companion';
 import { flowQueue } from '../queue/queue';
 import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
-import type { ToolArgs } from './unified-agent.service';
+import type { ToolArgs } from './unified-agent.types';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { MindPolicyService } from './mind-policy.service';
 import { MindService } from './mind.service';

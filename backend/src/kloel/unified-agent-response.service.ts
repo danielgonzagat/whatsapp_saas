@@ -3,7 +3,7 @@ import OpenAI from 'openai';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { extractFallbackTopic as extractFallbackTopicValue } from '../whatsapp/whatsapp-normalization.util';
 import { chatCompletionWithFallback } from './openai-wrapper';
-import type { ActionEntry } from './unified-agent.service';
+import type { ActionEntry } from './unified-agent.types';
 import {
   AGENDAR_AGENDA_REUNI_A_RE,
   CANCEL_CANCELAR_REEMBOL_RE,

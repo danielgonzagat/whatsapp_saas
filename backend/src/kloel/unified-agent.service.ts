@@ -1,6 +1,5 @@
 import { Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Prisma } from '@prisma/client';
 import OpenAI from 'openai';
 import type { ChatCompletionMessageParam } from 'openai/resources/chat';
 import { PlanLimitsService } from '../billing/plan-limits.service';
@@ -14,7 +13,6 @@ import { AudioService } from './audio.service';
 import { PaymentService } from './payment.service';
 import { chatCompletionWithFallback } from './openai-wrapper';
 import { forEachSequential } from '../common/async-sequence';
-import { UNIFIED_AGENT_TOOLS } from './unified-agent-tools-def';
 import { UnifiedAgentContextService } from './unified-agent-context.service';
 import { UnifiedAgentResponseService } from './unified-agent-response.service';
 import { UnifiedAgentActionsService } from './unified-agent-actions.service';
@@ -22,6 +20,7 @@ import {
   buildPredecidedActionDraft,
   executePredecidedAgentActions,
 } from './__parts__/unified-agent-predecided-actions.part';
+import type { ActionEntry, PredecidedAction, ToolArgs } from './unified-agent.types';
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -45,97 +44,6 @@ function formatPromptValue(value: unknown): string {
     return 'undefined';
   }
   return Object.prototype.toString.call(value);
-}
-
-/** ToolArgs shape used by all action methods. */
-export interface ToolArgs {
-  active?: boolean;
-  amount?: number;
-  audioBase64?: string;
-  audioUrl?: string;
-  autoActivate?: boolean;
-  autoReplyEnabled?: boolean;
-  autoReplyMessage?: string;
-  businessHours?: Prisma.InputJsonValue;
-  businessName?: string;
-  campaignId?: string;
-  caption?: string;
-  category?: string;
-  code?: string;
-  csvData?: string;
-  daysSilent?: number;
-  delayHours?: number;
-  description?: string;
-  discountPercent?: number;
-  documentName?: string;
-  enabled?: boolean;
-  event?: string;
-  expiresIn?: string;
-  flowId?: string;
-  flowName?: string;
-  funnelName?: string;
-  imageUrl?: string;
-  includeConnections?: boolean;
-  includeHealth?: boolean;
-  includeFollowUps?: boolean;
-  includeLink?: boolean;
-  includeMetrics?: boolean;
-  includePrice?: boolean;
-  intent?: string;
-  language?: string;
-  message?: string;
-  metric?: string;
-  mode?: string;
-  name?: string;
-  objective?: string;
-  objectionType?: string;
-  offer?: string;
-  paymentLink?: string;
-  period?: string;
-  personality?: string;
-  plan?: string;
-  price?: number;
-  priority?: string;
-  productId?: string;
-  productName?: string;
-  properties?: Prisma.InputJsonValue;
-  query?: string;
-  questions?: string[];
-  reason?: string;
-  returnUrl?: string;
-  scheduleAt?: string;
-  source?: string;
-  stage?: string;
-  status?: string;
-  stages?: string[];
-  steps?: Prisma.InputJsonValue[];
-  strategy?: string;
-  suggestedTimes?: string[];
-  tag?: string;
-  targetTags?: string[];
-  technique?: string;
-  text?: string;
-  tone?: string;
-  trigger?: string;
-  triggerValue?: string;
-  type?: string;
-  url?: string;
-  useEmojis?: boolean;
-  variables?: Prisma.InputJsonValue;
-  voice?: string;
-  workingHoursOnly?: boolean;
-}
-
-/** Action entry shape. */
-export interface ActionEntry {
-  tool: string;
-  args: ToolArgs;
-  result?: unknown;
-}
-
-export interface PredecidedAction {
-  args: ToolArgs;
-  tool: string;
 }
 
 @Injectable()
@@ -277,12 +185,6 @@ export class UnifiedAgentService {
       message,
       conversationHistory.length,
     );
-    const allowedTools = params.allowedTools?.length
-      ? UNIFIED_AGENT_TOOLS.filter(
-          (tool) => tool.type !== 'function' || params.allowedTools?.includes(tool.function.name),
-        )
-      : UNIFIED_AGENT_TOOLS;
-
     const contactData: Record<string, unknown> = this.ctx.isRecord(contact) ? contact : {};
     const contactName = this.ctx.readText(contactData.name).trim() || phone;
     const contactSentiment = this.ctx.readText(contactData.sentiment).trim() || 'NEUTRAL';
@@ -342,7 +244,7 @@ Mensagem: ${message}`,
       };
     }
 
-    // 4. Call OpenAI with tools
+    // 4. Ask the LLM to verbalize only; code-native actions enter via predecidedActions.
     let llmResponse: OpenAI.Chat.ChatCompletion;
     try {
       await this.planLimits.ensureTokenBudget(params.workspaceId);
@@ -351,8 +253,6 @@ Mensagem: ${message}`,
         {
           model: this.primaryBrainModel,
           messages,
-          tools: allowedTools,
-          tool_choice: 'auto',
           temperature: 0.82,
           top_p: 0.9,
         },
