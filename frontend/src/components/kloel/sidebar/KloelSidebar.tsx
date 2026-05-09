@@ -268,8 +268,8 @@ export function KloelSidebar({
           gap: 0,
         }}
       >
-        <SBtn icon={Plus} label={kloelT(`Novo chat`)} expanded={expanded} onClick={onNewChat} />
-        <SBtn icon={Search} label={kloelT(`Buscar`)} expanded={expanded} onClick={onSearch} />
+        <SBtn icon={Plus} label={kloelT(`Novo chat`)} expanded={expanded} {...(onNewChat ? { onClick: onNewChat } : {})} />
+        <SBtn icon={Search} label={kloelT(`Buscar`)} expanded={expanded} {...(onSearch ? { onClick: onSearch } : {})} />
       </div>
 
       {/* ======== DIVIDER ======== */}

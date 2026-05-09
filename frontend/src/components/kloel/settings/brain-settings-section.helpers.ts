@@ -172,7 +172,7 @@ export async function invokeAiTool(
   tool: AiToolKind,
   text: string,
   workspaceId: string,
-): Promise<{ data?: AiToolData; error?: string }> {
+): Promise<{ data?: AiToolData | undefined; error?: string | undefined }> {
   if (tool === 'analyzeSentiment') {
     const res = await aiAssistantApi.analyzeSentiment(text);
     return { data: res.data as AiToolData | undefined, error: res.error };

@@ -16,7 +16,7 @@ export default function MeusProdutosRevenueHero({
   activeProducts: number;
   totalProductCount: number;
   onCreateProduct: () => void;
-  requestedFeature?: string;
+  requestedFeature?: string | undefined;
 }) {
   const { isMobile } = useResponsiveViewport();
   const flashElRef = useRef<HTMLDivElement>(null);

@@ -13,7 +13,7 @@ interface SidebarNavProps {
   expanded: boolean;
   nav: NavItem[];
   activeView: string;
-  activeSubView?: string | null;
+  activeSubView?: string | null | undefined;
   expandedNav: string | null;
   onNavClick: (key: string, sub?: string) => void;
   onToggleNav: (key: string) => void;

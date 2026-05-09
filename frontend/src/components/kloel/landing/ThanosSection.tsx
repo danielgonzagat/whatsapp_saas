@@ -7,7 +7,6 @@ import { colors } from '@/lib/design-tokens';
 import {
   E,
   ELEVATED,
-  EMPTY_MESSAGES,
   F,
   M,
   SALES_CHANNELS,
@@ -42,7 +41,10 @@ function usePrefersReducedMotion() {
 }
 
 function ThanosOmniSales({ runToken }: { runToken: number }) {
-  const [msgs, setMsgs] = useState<Record<ChannelKey, SalesMessage[]>>(() => ({ ...EMPTY_MESSAGES, wa: [], ig: [], fb: [], em: [], sms: [], tt: [] }));
+  const [msgs, setMsgs] = useState<Record<ChannelKey, SalesMessage[]>>(() => {
+    const init: Record<ChannelKey, SalesMessage[]> = { wa: [], ig: [], fb: [], em: [], sms: [], tt: [] };
+    return init;
+  });
   const { messages: flowMessages } = useSalesFlow();
 
   useEffect(() => {
@@ -51,7 +53,10 @@ function ThanosOmniSales({ runToken }: { runToken: number }) {
     }
 
     let cancelled = false;
-    setMsgs(() => ({ wa: [], ig: [], fb: [], em: [], sms: [], tt: [] }));
+    setMsgs(() => {
+      const empty: Record<ChannelKey, SalesMessage[]> = { wa: [], ig: [], fb: [], em: [], sms: [], tt: [] };
+      return empty;
+    });
 
     const run = async () => {
       for (const msg of flowMessages) {

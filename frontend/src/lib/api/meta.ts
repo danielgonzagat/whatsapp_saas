@@ -89,7 +89,7 @@ export const metaAdsApi = {
    */
   getCampaigns: (adAccountId?: string) =>
     apiFetch<{ data: MetaCampaign[] }>(`/meta/ads/campaigns`, {
-      params: adAccountId ? { adAccountId } : undefined,
+      params: adAccountId ? { adAccountId } : {},
     }),
 
   /**
@@ -136,7 +136,7 @@ export const metaAdsApi = {
    */
   getLeadForms: (pageId?: string) =>
     apiFetch<{ data: MetaLeadForm[] }>(`/meta/ads/leads`, {
-      params: pageId ? { pageId } : undefined,
+      params: pageId ? { pageId } : {},
     }),
 
   /**

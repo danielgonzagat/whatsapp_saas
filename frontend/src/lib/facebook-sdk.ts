@@ -20,7 +20,7 @@ type FacebookPermissionsResponse = {
 /** Facebook auth result type. */
 export type FacebookAuthResult = {
   accessToken: string;
-  userId?: string;
+  userId?: string | undefined;
 };
 
 const FACEBOOK_REQUIRED_SCOPE = 'email';

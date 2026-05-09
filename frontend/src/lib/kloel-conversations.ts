@@ -81,7 +81,7 @@ export interface KloelStreamThreadPayload {
   /** Conversation id property. */
   conversationId: string;
   /** Title property. */
-  title?: string;
+  title?: string | undefined;
 }
 
 /** Kloel stream options shape. */

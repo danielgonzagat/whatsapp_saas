@@ -15,8 +15,8 @@ import { mutate } from 'swr';
 interface Conversation {
   id: string;
   title: string;
-  updatedAt?: string;
-  lastMessagePreview?: string;
+  updatedAt?: string | undefined;
+  lastMessagePreview?: string | undefined;
 }
 
 interface ConversationHistoryContextType {

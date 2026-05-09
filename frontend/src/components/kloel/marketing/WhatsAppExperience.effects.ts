@@ -17,14 +17,14 @@ interface ConnectionShape {
 interface RequestQrResult {
   qrCode: string | null;
   connected: boolean;
-  status?: string;
-  message?: string;
+  status?: string | undefined;
+  message?: string | undefined;
 }
 
 type RequestQrCode = (opts?: { silent?: boolean }) => Promise<RequestQrResult | null>;
 
 interface WhatsAppConnectionEffectsProps {
-  mode?: string;
+  mode?: string | undefined;
   workspaceId: string;
   savedSetup: WhatsAppSetupState;
   savedSetupKey: string;

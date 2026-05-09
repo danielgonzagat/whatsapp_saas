@@ -26,7 +26,7 @@ export default function AfiliarSe({
   const [selectedMarketItem, setSelectedMarketItem] = useState<MarketplaceItem | null>(null);
   const [copiedAffiliate, setCopiedAffiliate] = useState(false);
   const [requestingId, setRequestingId] = useState<string | null>(null);
-  const copiedTimer = useRef<ReturnType<typeof setTimeout>>();
+  const copiedTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => {
     return () => {

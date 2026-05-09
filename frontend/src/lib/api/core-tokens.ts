@@ -22,7 +22,7 @@ export function resolveWorkspaceFromAuthPayload(
   payload: Record<string, unknown> | null | undefined,
 ): {
   id: string;
-  name?: string;
+  name?: string | undefined;
 } | null {
   const explicitWorkspace = payload?.workspace as { id?: string; name?: string } | undefined;
   if (explicitWorkspace?.id) {

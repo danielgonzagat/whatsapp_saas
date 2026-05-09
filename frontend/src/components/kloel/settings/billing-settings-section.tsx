@@ -88,7 +88,7 @@ export function BillingSettingsSection({
   const [billingError, setBillingError] = useState('');
   const [billingSuccess, setBillingSuccess] = useState('');
   const [cards, setCards] = useState<
-    Array<{ id: string; last4?: string; brand?: string; expiry?: string; isDefault?: boolean }>
+    Array<{ id: string; last4?: string | undefined; brand?: string | undefined; expiry?: string | undefined; isDefault?: boolean | undefined }>
   >([]);
   const [salesPeriod, setSalesPeriod] = useState<'week' | 'month'>('week');
   const [salesReport, setSalesReport] = useState<SalesReportSummary | null>(null);

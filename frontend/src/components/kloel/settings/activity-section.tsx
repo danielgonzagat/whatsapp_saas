@@ -23,7 +23,7 @@ interface ActivityItem {
 }
 
 interface ActivitySectionProps {
-  activities?: AgentActivity[];
+  activities?: AgentActivity[] | undefined;
 }
 
 const ACTIVITY_ICON_MAP: Record<

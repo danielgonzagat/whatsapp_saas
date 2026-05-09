@@ -54,7 +54,7 @@ export interface Message {
   /** Type property. */
   type?: string;
   /** Status property. */
-  status?: string;
+  status?: string | undefined;
   /** Media url property. */
   mediaUrl?: string | null;
   /** Created at property. */

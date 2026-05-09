@@ -25,8 +25,8 @@ export interface UseInstagramMarketingReturn {
   insightsHistory: IgInsightData[];
   insightsHistoryLoading: boolean;
   publishPost: (imageUrl: string, caption?: string) => Promise<{
-    post?: IgPostData;
-    error?: string;
+    post?: IgPostData | undefined;
+    error?: string | undefined;
   }>;
   refreshPosts: () => void;
   refreshInsights: () => void;

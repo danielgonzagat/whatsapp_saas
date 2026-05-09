@@ -416,7 +416,7 @@ export default function AreaMembrosAreaCard({
             { key: 'progressTrack', label: kloelT('Progresso') },
             { key: 'downloads', label: kloelT('Downloads') },
             { key: 'comments', label: kloelT('Comentarios') },
-          ].filter((f) => (area as Record<string, unknown>)[f.key]).length >
+          ].filter((f) => (area as unknown as Record<string, unknown>)[f.key]).length >
             0 && (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
               {[
@@ -428,7 +428,7 @@ export default function AreaMembrosAreaCard({
                 { key: 'downloads', label: kloelT('Downloads') },
                 { key: 'comments', label: kloelT('Comentarios') },
               ]
-                .filter((f) => (area as Record<string, unknown>)[f.key])
+                .filter((f) => (area as unknown as Record<string, unknown>)[f.key])
                 .map((f) => (
                   <span
                     key={f.key}

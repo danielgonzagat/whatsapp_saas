@@ -14,7 +14,7 @@ export interface ChatPreview {
   /** Subtitle property. */
   subtitle?: string;
   /** Last message at property. */
-  lastMessageAt?: string;
+  lastMessageAt?: string | undefined;
 }
 
 const DATE_CANDIDATE_FIELDS = [

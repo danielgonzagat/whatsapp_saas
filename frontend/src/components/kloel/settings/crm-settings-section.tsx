@@ -47,7 +47,7 @@ export function CrmSettingsSection() {
   const [selectedPipelineId, setSelectedPipelineId] = useState<string>('');
   const [selectedPreset, setSelectedPreset] = useState<string>('');
   const [presetContacts, setPresetContacts] = useState<
-    Array<{ id: string; phone: string; name?: string }>
+    Array<{ id: string; phone: string; name?: string | undefined }>
   >([]);
   const [presetTotal, setPresetTotal] = useState(0);
 
@@ -202,10 +202,10 @@ export function CrmSettingsSection() {
 
     try {
       await crmApi.createContact({
-        name: contactForm.name.trim() || undefined,
         phone: contactForm.phone.trim(),
-        email: contactForm.email.trim() || undefined,
-        notes: contactForm.notes.trim() || undefined,
+        ...(contactForm.name.trim() ? { name: contactForm.name.trim() } : {}),
+        ...(contactForm.email.trim() ? { email: contactForm.email.trim() } : {}),
+        ...(contactForm.notes.trim() ? { notes: contactForm.notes.trim() } : {}),
       });
       setContactForm({ name: '', phone: '', email: '', notes: '' });
       setSuccess('Contato criado no CRM.');

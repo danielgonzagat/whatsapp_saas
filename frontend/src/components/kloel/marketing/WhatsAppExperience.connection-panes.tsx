@@ -75,8 +75,8 @@ export function resolveEffectiveProvider(
 
 export function buildEffectiveConnection(params: {
   sessionSnapshot: ConnectionSnapshot;
-  liveStatus?: LiveStatusShape;
-  connection?: MarketingWhatsAppConnection;
+  liveStatus?: LiveStatusShape | undefined;
+  connection?: MarketingWhatsAppConnection | undefined;
   effectiveProvider: string;
   isWahaProvider: boolean;
 }) {

@@ -174,8 +174,8 @@ export function useWhatsAppExperienceController({
     (opts?: { silent?: boolean }) => Promise<{
       qrCode: string | null;
       connected: boolean;
-      status?: string;
-      message?: string;
+      status?: string | undefined;
+      message?: string | undefined;
     } | null>
   >(async () => null);
 

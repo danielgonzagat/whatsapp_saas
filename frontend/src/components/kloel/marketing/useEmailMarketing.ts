@@ -21,7 +21,7 @@ import type {
 const EMAIL_CAMPAIGNS_KEY = '/marketing/email/campaigns';
 
 function emailCampaignsFetcher(key: string): Promise<EmailCampaignListItem[]> {
-  return apiFetch<EmailCampaignListResponse>(key).then((res) => res.data?.campaigns ?? res.campaigns ?? []);
+  return apiFetch<EmailCampaignListResponse>(key).then((res) => res.data?.campaigns ?? []);
 }
 
 export interface UseEmailMarketingProps {

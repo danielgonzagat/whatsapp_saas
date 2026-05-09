@@ -216,7 +216,7 @@ export function MessageBubble({
                 summary={processingSummary}
                 isProcessing={isAssistantProcessing}
                 showSlowHint={showSlowHint}
-                onCancel={onCancelProcessing}
+                {...(onCancelProcessing ? { onCancel: onCancelProcessing } : {})}
                 theme={CHAT_THEME}
               />
             ) : null}
