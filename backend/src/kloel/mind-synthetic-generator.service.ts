@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import type { MindActionContext } from './mind-code-native.types';
 import type { ReplayInput, ReplayCandidate, ReplayScenarioInput } from './mind-replay.service';
 
@@ -93,8 +93,8 @@ const BUILTIN_RECIPES: Record<string, SyntheticDecisionRecipe> = {
 export class MindSyntheticGeneratorService {
   private _seed: number;
 
-  constructor(seed = 42) {
-    this._seed = seed;
+  constructor(@Optional() seed?: number) {
+    this._seed = seed ?? 42;
   }
 
   setSeed(seed: number): void {
