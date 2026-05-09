@@ -5,6 +5,46 @@ import type {
   SaleEventPayload,
 } from './brain-event-taxonomy';
 
+function buildSaleCreatedEvent(occurredAt: Date): SaleEventPayload {
+  return {
+    occurredAt,
+    workspaceId: 'ws-1',
+    subject: 'lead:lead-1',
+    eventType: 'sale.created',
+    contactId: 'contact-1',
+    payload: {
+      amount: 147,
+      externalPaymentId: 'pi_abc123',
+      leadId: 'lead-1',
+      paymentMethod: 'PIX',
+      productName: 'Curso Pro',
+      status: 'pending',
+    },
+  };
+}
+
+function assertSaleCreatedCall(createCall: { data: Record<string, unknown> }) {
+  expect(createCall.data).toMatchObject({
+    workspaceId: 'ws-1',
+    contactId: 'contact-1',
+    intent: 'sale_lifecycle',
+    action: 'sale.created',
+    status: 'executed',
+  });
+  expect(createCall.data.meta).toMatchObject({
+    commercial: true,
+    subject: 'lead:lead-1',
+    occurredAt: '2026-05-07T12:00:00.000Z',
+    idempotencyKey: 'sale.created:lead:lead-1:2026-05-07T12:00:00.000Z',
+  });
+  expect((createCall.data.meta as { payload: unknown }).payload).toMatchObject({
+    amount: 147,
+    externalPaymentId: 'pi_abc123',
+    paymentMethod: 'PIX',
+    status: 'pending',
+  });
+}
+
 describe('BrainEventSpineService', () => {
   let prisma: {
     autopilotEvent: { create: jest.Mock };
@@ -41,43 +81,11 @@ describe('BrainEventSpineService', () => {
   describe('recordCommercial', () => {
     it('records a sale.created event with typed payload, workspaceId, and timestamp', async () => {
       const occurredAt = new Date('2026-05-07T12:00:00Z');
-      const event: SaleEventPayload = {
-        occurredAt,
-        workspaceId: 'ws-1',
-        subject: 'lead:lead-1',
-        eventType: 'sale.created',
-        contactId: 'contact-1',
-        payload: {
-          amount: 147,
-          externalPaymentId: 'pi_abc123',
-          leadId: 'lead-1',
-          paymentMethod: 'PIX',
-          productName: 'Curso Pro',
-          status: 'pending',
-        },
-      };
 
-      const id = await service.recordCommercial(event);
+      const id = await service.recordCommercial(buildSaleCreatedEvent(occurredAt));
 
       expect(id).toBe('event-1');
-      const createCall = prisma.autopilotEvent.create.mock.calls[0][0];
-      expect(createCall.data.workspaceId).toBe('ws-1');
-      expect(createCall.data.contactId).toBe('contact-1');
-      expect(createCall.data.intent).toBe('sale_lifecycle');
-      expect(createCall.data.action).toBe('sale.created');
-      expect(createCall.data.status).toBe('executed');
-      expect(createCall.data.meta).toMatchObject({
-        commercial: true,
-        subject: 'lead:lead-1',
-        occurredAt: '2026-05-07T12:00:00.000Z',
-        idempotencyKey: 'sale.created:lead:lead-1:2026-05-07T12:00:00.000Z',
-      });
-      expect(createCall.data.meta.payload).toMatchObject({
-        amount: 147,
-        externalPaymentId: 'pi_abc123',
-        paymentMethod: 'PIX',
-        status: 'pending',
-      });
+      assertSaleCreatedCall(prisma.autopilotEvent.create.mock.calls[0][0]);
     });
 
     it('records a sale.completed event with executed status', async () => {
