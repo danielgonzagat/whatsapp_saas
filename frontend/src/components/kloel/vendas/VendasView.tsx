@@ -90,10 +90,12 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
   const [showShipModal, setShowShipModal] = useState<string | null>(null);
   const [showSmartPayment, setShowSmartPayment] = useState(false);
 
-  const { sales, mutate: mutateSales } = useSales({
-    status: tab === 'vendas' ? filterStatus : undefined,
-    search: tab === 'vendas' ? search : undefined,
-  });
+  const useSalesParams: { status?: string; search?: string } = {};
+  if (tab === 'vendas') {
+    useSalesParams.status = filterStatus;
+    useSalesParams.search = search;
+  }
+  const { sales, mutate: mutateSales } = useSales(useSalesParams);
   const { stats: salesStats } = useSalesStats();
   const { chart } = useSalesChart();
   const { subscriptions, mutate: mutateSubs } = useSubscriptions();

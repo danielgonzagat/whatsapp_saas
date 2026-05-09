@@ -2,7 +2,7 @@
 
 import { apiFetch } from '@/lib/api';
 import { useSearchParams } from 'next/navigation';
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { EditarSiteList } from './EditarSiteList';
 import { EditarSiteEditor } from './EditarSiteEditor';
 import type { SiteItem } from './SitesViewIcons';
@@ -76,8 +76,9 @@ export function EditarSite({ mode }: { mode?: string }) {
     setVariantLoading(false);
     const savedData = saveRes.data as { site?: SiteItem } | undefined;
     if (saveRes.error || !savedData?.site) { setError(saveRes.error || 'Falha ao salvar variante.'); return; }
-    setSavedSites((prev) => [savedData.site, ...prev]);
-    setSelectedSite(savedData.site);
+    const newSite = savedData.site;
+    setSavedSites((prev) => [newSite, ...prev]);
+    setSelectedSite(newSite);
     setVariantPrompt('');
     setVariantNotice(`Variante criada: ${variantName}`);
   };

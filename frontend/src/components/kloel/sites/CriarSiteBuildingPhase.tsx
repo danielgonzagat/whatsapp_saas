@@ -1,7 +1,6 @@
 'use client';
 
 import { kloelT } from '@/lib/i18n/t';
-import React from 'react';
 import { IC, SORA, MONO, EMBER, TEXT, BORDER } from './SitesViewIcons';
 
 export function CriarSiteBuildingPhase() {

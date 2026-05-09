@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 /** Cookie consent record type. */
@@ -18,7 +18,6 @@ type CookieConsentInput = {
 /** Cookie consent service. */
 @Injectable()
 export class CookieConsentService {
-  private readonly logger = new Logger(CookieConsentService.name);
   constructor(private readonly prisma: PrismaService) {}
 
   /** Normalize. */

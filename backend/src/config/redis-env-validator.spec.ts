@@ -120,6 +120,7 @@ describe('redisInProductionValidator', () => {
       const input = {
         NODE_ENV: 'production',
         REDIS_HOST: 'mainline.proxy.rlwy.net',
+        REDIS_PASSWORD: 'secret',
       };
 
       expect(() => redisInProductionValidator(input)).toThrow(
