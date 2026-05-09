@@ -34,6 +34,10 @@ const _CD = ['c', 'o', 'd', 'a', 'c', 'y', ':', 'd', 'i', 's', 'a', 'b', 'l', 'e
 const _CI = ['c', 'o', 'd', 'a', 'c', 'y', ':', 'i', 'g', 'n', 'o', 'r', 'e'].join('');
 const _NS = ['N', 'O', 'S', 'O', 'N', 'A', 'R'].join('');
 const _NQ = ['n', 'o', 'q', 'a'].join('');
+const _PUOK = ['P', 'U', 'L', 'S', 'E', '_', 'O', 'K'].join('');
+const _PVOK = ['P', 'U', 'L', 'S', 'E', '_', 'V', 'I', 'S', 'U', 'A', 'L', '_', 'O', 'K'].join('');
+const _PAW = ['P', 'U', 'L', 'S', 'E', '_', 'A', 'L', 'L', 'O', 'W'].join('');
+const _VBP = ['V', 'I', 'S', 'U', 'A', 'L', '_', 'B', 'Y', 'P', 'A', 'S', 'S'].join('');
 const _ANY = ['a', 'n', 'y'].join('');
 
 const TOK_TI = _AT + _TI;
@@ -51,6 +55,10 @@ export const FORBIDDEN_TOKENS = [
   { id: 'codacy-' + 'ignore', label: _CI, pattern: new RegExp(_CI + '\\b') },
   { id: 'no' + 'sonar', label: _NS, pattern: new RegExp('\\b' + _NS + '\\b') },
   { id: 'no' + 'qa', label: _NQ, pattern: new RegExp('\\b' + _NQ + '\\b') },
+  { id: 'pulse-' + 'ok', label: _PUOK, pattern: new RegExp('\\b' + _PUOK + '\\b') },
+  { id: 'pulse-' + 'visual-ok', label: _PVOK, pattern: new RegExp('\\b' + _PVOK + '\\b') },
+  { id: 'pulse-' + 'allow', label: _PAW, pattern: new RegExp('\\b' + _PAW + '\\b') },
+  { id: 'visual-' + 'bypass', label: _VBP, pattern: new RegExp('\\b' + _VBP + '\\b') },
 ];
 
 export const ANY_TYPE_PATTERN = new RegExp(
