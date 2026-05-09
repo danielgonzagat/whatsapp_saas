@@ -103,6 +103,51 @@ export const colors = {
     error: '#E85D30',
     info: '#6E6E73',
   },
+
+  // Semantic Colors — status indicators and alerts
+  semantic: {
+    success: '#10B981',
+    successText: '#7FE2BC',
+    successBg: 'rgba(16,185,129,0.12)',
+    error: '#EF4444',
+    errorSoft: '#E05252',
+    errorText: '#F7A8A8',
+    errorBg: 'rgba(224,82,82,0.12)',
+    warning: '#F59E0B',
+    info: '#3B82F6',
+    infoText: '#93C5FD',
+    infoBg: 'rgba(59,130,246,0.12)',
+    purple: '#8B5CF6',
+    purpleText: '#A78BFA',
+  },
+
+  // Checkout theme
+  checkout: {
+    accent: '#D4AF37',
+    textPrimary: '#E8E6E1',
+    textMuted: '#8A8A8E',
+    bg: '#141416',
+    border: '#2A2A2E',
+    surface: '#1A1A1E',
+    success: '#22C55E',
+    successBg: '#0F1F0F',
+    danger: '#FF6B6B',
+    dangerBg: '#2A1A1A',
+    dangerBorder: '#662222',
+  },
+
+  // Canvas surface tones (near-Monitor, editor-specific)
+  canvas: {
+    border: '#1C1C1F',
+    surface: '#161618',
+    surfaceAlt: '#151517',
+    void: '#0D0D0F',
+    hover: '#2A2A2E',
+    accent: '#F2784B',
+    pink: '#EC4899',
+    cyan: '#06B6D4',
+    lime: '#2DD4A0',
+  },
 } as const;
 
 // ════════════════════════════════════════════
