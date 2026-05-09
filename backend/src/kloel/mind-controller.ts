@@ -17,6 +17,7 @@ import {
   DecideDto,
   GuardEvaluateDto,
   ResolveDto,
+  SimilarCasesDto,
   SimulateDto,
   ToneDto,
 } from './mind-controller.dto';
@@ -28,6 +29,7 @@ import { MindVerbalizerService } from './mind-verbalizer.service';
 import { MindGuardsService } from './mind-guards.service';
 import { MindSimulatorService } from './mind-simulator.service';
 import { MindSyntheticGeneratorService } from './mind-synthetic-generator.service';
+import { MindGlobalPriorService } from './mind-global-prior.service';
 import type { SimulateActionEntry } from './mind-simulator.service';
 import type { ReplayInput } from './mind-replay.service';
 
@@ -43,6 +45,7 @@ export class MindController {
     private readonly guards: MindGuardsService,
     private readonly simulator: MindSimulatorService,
     private readonly synthetic: MindSyntheticGeneratorService,
+    private readonly globalPrior: MindGlobalPriorService,
   ) {}
 
   @Post(':workspaceId/tick')
@@ -83,6 +86,27 @@ export class MindController {
   @Get(':workspaceId/trace/:policyId')
   trace(@Param('workspaceId') workspaceId: string, @Param('policyId') policyId: string) {
     return this.observability.trace(workspaceId, policyId);
+  }
+
+  @Get(':workspaceId/bandit/:decisionType')
+  bandit(@Param('workspaceId') workspaceId: string, @Param('decisionType') decisionType: string) {
+    return this.observability.bandit(workspaceId, decisionType);
+  }
+
+  @Get(':workspaceId/global-prior/:decisionType')
+  globalPriorForDecision(@Param('decisionType') decisionType: string) {
+    return this.globalPrior.getPrior(decisionType);
+  }
+
+  @Post(':workspaceId/cases/similar')
+  similarCases(@Param('workspaceId') workspaceId: string, @Body() body: SimilarCasesDto) {
+    return this.mind.retrieveSimilar({
+      caseType: body.caseType,
+      features: body.features,
+      limit: body.limit,
+      text: body.text,
+      workspaceId,
+    });
   }
 
   @Post(':workspaceId/ask')

@@ -183,6 +183,27 @@ export class AggressivenessDto {
   revenuePerSignal: number;
 }
 
+export class SimilarCasesDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  caseType?: string;
+
+  @IsOptional()
+  @IsObject()
+  features?: Record<string, unknown>;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  @Max(50)
+  limit?: number;
+
+  @IsString()
+  @MaxLength(2000)
+  text: string;
+}
+
 export class SimulateActionDto {
   @IsString()
   @MaxLength(120)

@@ -8,6 +8,7 @@ import { MindObservabilityService } from './mind-observability.service';
 import { MindGuardsService } from './mind-guards.service';
 import { MindSimulatorService } from './mind-simulator.service';
 import { MindSyntheticGeneratorService } from './mind-synthetic-generator.service';
+import { MindGlobalPriorService } from './mind-global-prior.service';
 
 function mockBeliefs(): jest.Mocked<MindBeliefService> {
   const service = Object.create(MindBeliefService.prototype) as jest.Mocked<MindBeliefService>;
@@ -27,6 +28,7 @@ function mockMind(): jest.Mocked<MindService> {
   const service = Object.create(MindService.prototype) as jest.Mocked<MindService>;
   service.tick = jest.fn().mockResolvedValue({ perceived: 1 });
   service.lift = jest.fn();
+  service.retrieveSimilar = jest.fn().mockResolvedValue([{ id: 'case-1', similarity: 0.9 }]);
   service.resolveAudioVsText = jest.fn().mockResolvedValue({
     choice: 'text',
     confidence: 0.5,
@@ -46,6 +48,19 @@ function mockMind(): jest.Mocked<MindService> {
     confidence: 0.5,
     fallback: false,
     tone: 'DIRECT',
+  });
+  return service;
+}
+
+function mockGlobalPrior(): jest.Mocked<MindGlobalPriorService> {
+  const service = Object.create(
+    MindGlobalPriorService.prototype,
+  ) as jest.Mocked<MindGlobalPriorService>;
+  service.getPrior = jest.fn().mockResolvedValue({
+    arms: [],
+    decisionType: 'cart_recovery',
+    meanSuccessRate: 0,
+    totalPulls: 0,
   });
   return service;
 }
@@ -166,6 +181,7 @@ function buildController(params?: {
   verbalizer?: jest.Mocked<MindVerbalizerService>;
   simulator?: jest.Mocked<MindSimulatorService>;
   synthetic?: jest.Mocked<MindSyntheticGeneratorService>;
+  globalPrior?: jest.Mocked<MindGlobalPriorService>;
 }): MindController {
   return new MindController(
     params?.beliefs ?? mockBeliefs(),
@@ -176,6 +192,7 @@ function buildController(params?: {
     params?.guards ?? mockGuards(),
     params?.simulator ?? mockSimulator(),
     params?.synthetic ?? mockSynthetic(),
+    params?.globalPrior ?? mockGlobalPrior(),
   );
 }
 
@@ -301,5 +318,42 @@ describe('MindController', () => {
     expect(mind.resolveAudioVsText).toHaveBeenCalledWith('ws-1', 'instagram', 0.2);
     expect(mind.resolveTone).toHaveBeenCalledWith('ws-1', 'whatsapp', 0.4, 0.2, 'premium');
     expect(mind.resolveCoupon).toHaveBeenCalledWith('ws-1', 'over_300', 0.08, 'premium');
+  });
+
+  it('exposes backend-first MIND observability endpoints', async () => {
+    const mind = mockMind();
+    const observability = mockObservability();
+    const globalPrior = mockGlobalPrior();
+    observability.bandit.mockResolvedValue({ arms: [], decisionType: 'cart_recovery' } as never);
+    const controller = new MindController(
+      mockBeliefs(),
+      mockPolicy(),
+      mind,
+      mockVerbalizer(),
+      observability,
+      mockGuards(),
+      mockSimulator(),
+      mockSynthetic(),
+      globalPrior,
+    );
+
+    await controller.bandit('ws-1', 'cart_recovery');
+    await controller.globalPriorForDecision('cart_recovery');
+    await controller.similarCases('ws-1', {
+      caseType: 'cart_recovery',
+      features: { channel: 'email' },
+      limit: 5,
+      text: 'lead pediu desconto',
+    });
+
+    expect(observability.bandit).toHaveBeenCalledWith('ws-1', 'cart_recovery');
+    expect(globalPrior.getPrior).toHaveBeenCalledWith('cart_recovery');
+    expect(mind.retrieveSimilar).toHaveBeenCalledWith({
+      caseType: 'cart_recovery',
+      features: { channel: 'email' },
+      limit: 5,
+      text: 'lead pediu desconto',
+      workspaceId: 'ws-1',
+    });
   });
 });
