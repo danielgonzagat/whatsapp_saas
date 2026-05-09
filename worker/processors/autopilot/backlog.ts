@@ -1,12 +1,22 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { WorkerLogger } from '../../logger';
 import { prisma } from '../../db';
 import { redis, redisPub } from '../../redis-client';
 import { autopilotQueue } from '../../queue';
 import { buildQueueJobId } from '../../job-id';
+import { safeResolve } from '../../safe-path';
+import { forEachSequential } from '../../utils/async-sequence';
+import { publishAgentEvent } from '../../providers/agent-events';
+import { buildDecisionEnvelope, buildHumanTask, persistHumanTask, persistSystemInsight, shouldAutonomousSend } from '../../providers/commercial-intelligence';
+import { AUTOPILOT_SWEEP_UNREAD_CONVERSATIONS_JOB, buildSweepUnreadConversationsJobData } from '../../contracts/autopilot-jobs';
+import { isConversationPendingForAgent } from '../../conversation-agent-state';
+import { autopilotDecisionCounter } from '../../metrics';
 import { unifiedWhatsAppProvider as whatsappApiProvider } from '../../providers/unified-whatsapp-provider';
-import { log, normalizeJsonObject, type UnknownRecord, type WorkspaceSelfIdentity, CIA_BACKLOG_CONTINUATION_LIMIT, CIA_CONTACT_CATALOG_LOOKBACK_DAYS, CIA_REMOTE_PENDING_PROBE_LIMIT, PENDING_MESSAGE_LIMIT, SILENCE_HOURS, SHARENON_DIGIT_REPLY_LOCK_MS, NON_DIGIT_RE, LINON_DIGIT_RE, D__D_S____S_DOE_RE } from './shared';
+import { log, normalizeJsonObject, type UnknownRecord, type WorkspaceSelfIdentity, type RemoteChatSummary, CIA_BACKLOG_CONTINUATION_LIMIT, CIA_CONTACT_CATALOG_LOOKBACK_DAYS, CIA_REMOTE_PENDING_PROBE_LIMIT, PENDING_MESSAGE_LIMIT, SILENCE_HOURS, SHARENON_DIGIT_REPLY_LOCK_MS, NON_DIGIT_RE, LINON_DIGIT_RE, D__D_S____S_DOE_RE } from './shared';
 import { normalizeCatalogPhone, resolveCatalogPhoneFromChatId, resolveCanonicalChatId, buildLidMap, extractCatalogChatName, isIndividualWahaChatId, resolveLastMessageFromMe, resolveCatalogChatActivityTimestamp, isWorkspaceSelfTarget, resolveWorkspaceSelfIdentity } from './identity';
+import { upsertCatalogConversationShell } from './opportunity';
+import { beginAutonomyExecution, buildAutonomyExecutionKey, finishAutonomyExecution } from './cognition';
+import { logAutopilotAction } from './safeguard';
 
 async function scheduleCatalogContactsJob(
   workspaceId: string,
@@ -39,7 +49,7 @@ async function scheduleCatalogContactsJob(
   }
 }
 
-async function getRemoteUnreadChatSnapshot(
+export export async function getRemoteUnreadChatSnapshot(
   workspaceId: string,
   limit = CIA_BACKLOG_CONTINUATION_LIMIT,
   selfIdentity?: WorkspaceSelfIdentity | null,
@@ -160,7 +170,7 @@ async function getRemoteUnreadChatSnapshot(
     .slice(0, Math.max(1, limit));
 }
 
-async function seedRemoteUnreadConversationShells(input: {
+export export async function seedRemoteUnreadConversationShells(input: {
   workspaceId: string;
   selfIdentity?: WorkspaceSelfIdentity | null;
   chats: Array<{
@@ -243,7 +253,7 @@ async function seedRemoteUnreadConversationShells(input: {
   return seeded;
 }
 
-async function scheduleBacklogContinuation(input: {
+export async function scheduleBacklogContinuation(input: {
   workspaceId: string;
   reason: string;
   limit?: number;
@@ -280,7 +290,7 @@ async function scheduleBacklogContinuation(input: {
   }
 }
 
-async function setWorkspaceSilentLiveMode(input: {
+export async function setWorkspaceSilentLiveMode(input: {
   workspaceId: string;
   reason: string;
   catalogStatus?: string;
@@ -333,7 +343,7 @@ async function setWorkspaceSilentLiveMode(input: {
   });
 }
 
-async function finalizeBacklogIntoSilentCatalog(input: {
+export export async function finalizeBacklogIntoSilentCatalog(input: {
   workspaceId: string;
   runId?: string;
   reason: string;
@@ -462,7 +472,7 @@ async function finalizeBacklogIntoSilentCatalog(input: {
   });
 }
 
-async function maybeEscalateToHumanControl(input: {
+export export async function maybeEscalateToHumanControl(input: {
   workspaceId: string;
   contactId?: string;
   contactName?: string;
@@ -599,7 +609,7 @@ async function maybeEscalateToHumanControl(input: {
   };
 }
 
-async function findConversationAutomationState(input: {
+export export async function findConversationAutomationState(input: {
   workspaceId: string;
   contactId?: string;
   phone?: string;
@@ -627,7 +637,7 @@ async function findConversationAutomationState(input: {
   });
 }
 
-async function lockConversationForHumanReview(input: {
+export async function lockConversationForHumanReview(input: {
   workspaceId: string;
   contactId?: string;
   phone?: string;
@@ -648,7 +658,7 @@ async function lockConversationForHumanReview(input: {
   };
 }
 
-function resolveScanDeliveryMode(data: {
+export export function resolveScanDeliveryMode(data: {
   messageId?: string;
   runId?: string;
   deliveryMode?: 'reactive' | 'proactive';
@@ -659,7 +669,7 @@ function resolveScanDeliveryMode(data: {
   return data?.messageId && !data?.runId ? 'reactive' : 'proactive';
 }
 
-function getSharedReplyLockKey(
+export export function getSharedReplyLockKey(
   workspaceId: string,
   contactId?: string | null,
   phone?: string | null,

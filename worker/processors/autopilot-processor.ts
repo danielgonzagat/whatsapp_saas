@@ -5,22 +5,16 @@ import { buildQueueOptions } from '../queue';
 import { WorkerError, isRetryableError } from '../src/utils/error-handler';
 import { WorkerLogger } from '../logger';
 import { checkIdempotent, endJob, logError, markCompleted, startJob } from '../processor-base';
-import {
-  SHOULD_RUN_AUTOPILOT_WORKER,
-  runCatalogContacts,
-  runCiaAction,
-  runCiaCycleAll,
-  runCiaCycleWorkspace,
-  runCiaGlobalLearningAll,
-  runCiaSelfImproveAll,
-  runCiaSelfImproveWorkspace,
-  runCycleAll,
-  runCycleWorkspace,
-  runFollowupContact,
-  runScanContact,
-  runScoreContact,
-  runSweepUnreadConversations,
-} from './__companions__/autopilot-core.companion';
+import { SHOULD_RUN_AUTOPILOT_WORKER } from './autopilot/shared';
+import { runSweepUnreadConversations } from './autopilot/sweep';
+import { runScanContact } from './autopilot/scan';
+import { runFollowupContact } from './autopilot/followup';
+import { runCatalogContacts } from './autopilot/catalog';
+import { runScoreContact } from './autopilot/score';
+import { runCiaCycleAll, runCiaCycleWorkspace } from './autopilot/cia-cycle';
+import { runCiaAction } from './autopilot/cia-action';
+import { runCiaSelfImproveAll, runCiaSelfImproveWorkspace, runCiaGlobalLearningAll } from './autopilot/cia-learn';
+import { runCycleAll, runCycleWorkspace } from './autopilot/cycle';
 
 const autopilotLog = new WorkerLogger('autopilot-worker');
 

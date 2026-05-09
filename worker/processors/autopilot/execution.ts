@@ -50,71 +50,15 @@ import {
   lockConversationForHumanReview,
 } from './backlog';
 
-// ─── internal helpers referenced from companion (not yet extracted) ───
-declare function logAutopilotAction(input: {
-  workspaceId: string;
-  contactId?: string;
-  phone?: string;
-  action: string;
-  intent?: string;
-  status: string;
-  reason?: string;
-  latencyMs?: number;
-  intentConfidence?: number;
-  meta?: UnknownRecord;
-}): Promise<void>;
-
-declare function checkRateLimits(
-  workspaceId: string,
-  phone: string,
-  deliveryMode: 'reactive' | 'proactive',
-): Promise<{ allowed: boolean; reason?: string }>;
-
-declare function buildWorkspaceConfig(
-  workspaceId: string,
-  settings?: UnknownRecord,
-  workspaceRecord?: UnknownRecord,
-): UnknownRecord;
-
-declare function sendAudioResponse(
-  workspaceId: string,
-  phone: string,
-  chatId: string | undefined,
-  message: string,
-  settings?: UnknownRecord,
-  workspaceCfg?: UnknownRecord,
-  quotedMessageId?: string | null,
-): Promise<boolean>;
-
-declare function resolveLatestQuotedMessageId(input: {
-  workspaceId: string;
-  contactId?: string;
-  conversationId?: string;
-  phone: string;
-  providerMessageIds?: string[];
-}): Promise<string | null>;
-
-declare function isRecentLiveConversation(
-  customerMessages: QuotedCustomerMessage[],
-): boolean;
-
-declare function isExplicitProactiveOutreachAllowed(
-  settings: UnknownRecord,
-): boolean;
-
-declare function ensureTrustedContactProfile(input: {
-  workspaceId: string;
-  contactId?: string;
-  phone: string;
-  chatId?: string;
-  contactName: string;
-  existingContact?: UnknownRecord | null;
-}): Promise<{ contactId: string; trustedName: string; savedToWhatsapp: boolean }>;
-
-declare function reportSmokeTest(
-  smokeTestId: string | undefined,
-  payload: Record<string, unknown>,
-): Promise<void>;
+import {
+  logAutopilotAction,
+  checkRateLimits,
+  buildWorkspaceConfig,
+  resolveLatestQuotedMessageId,
+} from './safeguard';
+import { sendAudioResponse } from './cycle';
+import { isRecentLiveConversation, isExplicitProactiveOutreachAllowed, reportSmokeTest } from './shared';
+import { ensureTrustedContactProfile } from './profile';
 
 export async function executeAction(
   action: string,

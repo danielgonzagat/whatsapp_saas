@@ -16,7 +16,6 @@ import AutopilotDecisionLog from '@/components/kloel/autopilot/AutopilotDecision
 import AutopilotSafetyBrakes from '@/components/kloel/autopilot/AutopilotSafetyBrakes';
 import { useWorkspaceId } from '@/hooks/useWorkspaceId';
 import {
-  activateMoneyMachine,
   apiFetch,
   askAutopilotInsights,
   buildQuery,
@@ -32,32 +31,33 @@ import {
   getAutopilotStatus,
   getSystemHealth,
   runAutopilotSmokeTest,
-  sendAutopilotDirectMessage,
   toggleAutopilot,
   tokenStorage,
   updateAutopilotConfig,
 } from '@/lib/api';
-import type { AskInsightsResult, MoneyMachineResult, RuntimeConfig } from '@/lib/api';
+import type { AskInsightsResult, RuntimeConfig } from '@/lib/api';
 import { unwrapArrayEnvelope, unwrapDataEnvelope, unwrapSettled } from './page.helpers';
 import { colors } from '@/lib/design-tokens';
 import {
   Activity,
-  AlertCircle,  BarChart3,
+  AlertCircle,
+  BarChart3,
   Bot,
   Calendar,
   CheckCircle2,
   Clock,
-  Database,
-  DollarSign,  Layers,
+  DollarSign,
+  Layers,
   Lightbulb,
   MessageSquare,
   Pause,
   Play,
   RefreshCw,
-  Save,  Server,
   Settings2,
-  Sparkles,  TrendingUp,
-  Users,  XCircle,
+  Sparkles,
+  TrendingUp,
+  Users,
+  XCircle,
   Zap,
 } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
@@ -317,56 +317,6 @@ function formatDateTime(value?: string | null) {
   });
 }
 
-function statusTone(status?: string) {
-  const normalized = String(status || '').toUpperCase();
-  if (['UP', 'CONFIGURED', 'COMPLETED'].includes(normalized)) {
-    return { color: colors.brand.green, bg: `${colors.brand.green}20` };
-  }
-  if (['DEGRADED', 'PARTIAL', 'QUEUED', 'PROCESSING'].includes(normalized)) {
-    return {
-      color:
-        colors.semantic.warning,
-      bg: 'rgba(245, 158, 11, 0.15)',
-    };
-  }
-  if (
-    ['DOWN', 'FAILED', 'ERROR', 'SKIPPED', 'DISABLED', 'BILLING_SUSPENDED', 'MISSING'].includes(
-      normalized,
-    )
-  ) {
-    return {
-      color:
-        colors.semantic.error,
-      bg: 'rgba(239, 68, 68, 0.12)',
-    };
-  }
-  return { color: colors.brand.cyan, bg: `${colors.brand.cyan}18` };
-}
-
-function StatusPill({ label, status }: { label: string; status?: string }) {
-  const tone = statusTone(status);
-  return (
-    <div
-      className="px-3 py-2 rounded-lg border text-sm flex items-center justify-between gap-3"
-      style={{
-        backgroundColor: colors.background.surface2,
-        borderColor: colors.stroke,
-      }}
-    >
-      <span style={{ color: colors.text.secondary }}>{label}</span>
-      <span
-        className="px-2 py-1 rounded-md text-xs font-semibold uppercase tracking-wide"
-        style={{
-          color: tone.color,
-          backgroundColor: tone.bg,
-        }}
-      >
-        {status || 'unknown'}
-      </span>
-    </div>
-  );
-}
-
 /** Autopilot page. */
 export default function AutopilotPage() {
   const workspaceId = useWorkspaceId();
@@ -403,19 +353,25 @@ export default function AutopilotPage() {
     [pathname, router],
   );
 
-  // Money Machine
+  // Smoke Test
+  const [smokeResult, setSmokeResult] = useState<AutopilotSmokeTestResult | null>(null);
+
+  const [isTesting, setIsTesting] = useState(false);
+
+  const [testPhone, setTestPhone] = useState('');
+
+  const [testMessage, setTestMessage] = useState(
+
+    'Olá, quero validar se o Kloel está respondendo corretamente no WhatsApp.',
+
+  );
+
+  const [testLiveSend, setTestLiveSend] = useState(false);
 
   // Ask AI Insights
   const [askQuestion, setAskQuestion] = useState('');
   const [isAsking, setIsAsking] = useState(false);
   const [askResult, setAskResult] = useState<AskInsightsResult | null>(null);
-
-  // Direct Send
-  const [sendResult, setSendResult] = useState<{
-    success?: boolean;
-    messageId?: string;
-    error?: string;
-  } | null>(null);
 
   // Runtime Config
   const [runtimeConfig, setRuntimeConfig] = useState<RuntimeConfig | null>(null);
@@ -577,8 +533,38 @@ export default function AutopilotPage() {
     }
   };
 
-  const filteredActions = actions.filter((a) =>
-    statusFilter === 'all' ? true : a.status === status  );
+  const handleSmokeTest = async () => {
+    if (!effectiveWorkspaceId || !token) {
+      return;
+    }
+    try {
+      setIsTesting(true);
+      setError(null);
+      const params: Record<string, unknown> = {
+        workspaceId: effectiveWorkspaceId,
+        liveSend: testLiveSend,
+        waitMs: 12000,
+        token,
+      };
+      if (testPhone) { params.phone = testPhone; }
+      if (testMessage) { params.message = testMessage; }
+      const data = await runAutopilotSmokeTest(params as {
+        workspaceId: string;
+        phone?: string;
+        message?: string;
+        liveSend?: boolean;
+        waitMs?: number;
+        token?: string;
+      });
+      setSmokeResult(data as never as AutopilotSmokeTestResult);
+      await fetchAutopilotData();
+    } catch (err: unknown) {
+      console.error('Error running autopilot smoke test:', err);
+      setError(err instanceof Error ? err.message : 'Erro ao executar smoke test do Autopilot');
+    } finally {
+      setIsTesting(false);
+    }
+  };
 
   const handleExportActions = async () => {
     if (!effectiveWorkspaceId || !token) {
@@ -650,25 +636,6 @@ export default function AutopilotPage() {
     );
   };
 
-  const queueTotal = queueStats
-    ? (queueStats.waiting || 0) +
-      (queueStats.active || 0) +
-      (queueStats.delayed || 0) +
-      (queueStats.failed || 0)
-    : 0;
-
-  const queueHealthStatus = (() => {
-    if (!queueStats) {
-      return 'unknown';
-    }
-    if ((queueStats.failed || 0) > 10) {
-      return 'critical';
-    }
-    if ((queueStats.waiting || 0) > 50 || (queueStats.delayed || 0) > 20) {
-      return 'degraded';
-    }
-    return 'healthy';
-  })();
 
   const missionCards: MissionCardData[] = [
     {
@@ -883,7 +850,6 @@ export default function AutopilotPage() {
               icon={XCircle}
               label={kloelT(`Ignorados`)}
               value={stats?.skippedTotal || 0}
-              subValue={stats?.skippedOptin ? `${stats.skippedOptin} opt-in` : undefined}
               color={colors.text.muted}
             />
             <StatCard
@@ -904,14 +870,13 @@ export default function AutopilotPage() {
             impact={impact}
             statusFilter={statusFilter}
             onStatusFilterChange={setStatusFilter}
-            onRefresh={fetchAutopilotData}
-            onExport={handleExportActions}
+            onRefresh={() => { fetchAutopilotData().catch(() => {}); }}
+            onExport={() => { handleExportActions().catch(() => {}); }}
             isLoading={isLoading}
-            isEnabled={status?.enabled}
+            {...(status?.enabled !== undefined && { isEnabled: status.enabled })}
           />
         </CenterStage>
       </Section>
-)}
 
       {/* Money Report */}
       <Section spacing="lg">
@@ -1284,364 +1249,32 @@ export default function AutopilotPage() {
         </CenterStage>
       </Section>
 
-      {/* Queue Health + Config — side by side */}
+            {/* Safety Brakes */}
       <Section spacing="lg">
         <CenterStage size="XL">
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-            {/* Queue Stats */}
-            <div
-              className="p-5 rounded-xl border"
-              style={{
-                backgroundColor: colors.background.surface1,
-                borderColor: colors.stroke,
-              }}
-            >
-              <div className="flex items-center gap-3 mb-5">
-                <div
-                  className="p-2 rounded-lg"
-                  style={{ backgroundColor: `${colors.brand.cyan}20` }}
-                >
-                  <Server size={20} style={{ color: colors.brand.cyan }} aria-hidden="true" />
-                </div>
-                <div className="flex-1">
-                  <h2 className="text-lg font-semibold" style={{ color: colors.text.primary }}>
-                    {kloelT(`Saúde da Fila (BullMQ)`)}
-                  </h2>
-                  <p className="text-sm" style={{ color: colors.text.muted }}>
-                    {kloelT(`Status do processamento de mensagens`)}
-                  </p>
-                </div>
-                <div
-                  className="px-3 py-1 rounded-full text-xs font-semibold uppercase"
-                  style={{
-                    backgroundColor:
-                      queueHealthStatus === 'healthy'
-                        ? `${colors.brand.green}20`
-                        : queueHealthStatus === 'degraded'
-                          ? 'rgba(245, 158, 11, 0.15)'
-                          : queueHealthStatus === 'critical'
-                            ? 'rgba(239, 68, 68, 0.12)'
-                            : `${colors.brand.cyan}18`,
-                    color:
-                      queueHealthStatus === 'healthy'
-                        ? colors.brand.green
-                        : queueHealthStatus === 'degraded'
-                          ? colors.semantic.warning
-                          : queueHealthStatus === 'critical'
-                            ? colors.semantic.error
-                            : colors.brand.cyan,
-                  }}
-                >
-                  {queueHealthStatus === 'healthy'
-                    ? 'Saudável'
-                    : queueHealthStatus === 'degraded'
-                      ? 'Degradado'
-                      : queueHealthStatus === 'critical'
-                        ? 'Crítico'
-                        : 'Desconhecido'}
-                </div>
-              </div>
-
-              {queueStats ? (
-                <div className="space-y-3">
-                  <div className="grid grid-cols-2 gap-3">
-                    <StatusPill
-                      label={kloelT(`Esperando`)}
-                      status={String(queueStats.waiting ?? 0)}
-                    />
-                    <StatusPill label={kloelT(`Ativas`)} status={String(queueStats.active ?? 0)} />
-                    <StatusPill
-                      label={kloelT(`Atrasadas`)}
-                      status={String(queueStats.delayed ?? 0)}
-                    />
-                    <StatusPill label={kloelT(`Falhas`)} status={String(queueStats.failed ?? 0)} />
-                  </div>
-                  {(queueStats.completed != null || queueStats.paused != null) && (
-                    <div className="grid grid-cols-2 gap-3">
-                      {queueStats.completed != null && (
-                        <StatusPill
-                          label={kloelT(`Completadas`)}
-                          status={String(queueStats.completed)}
-                        />
-                      )}
-                      {queueStats.paused != null && (
-                        <StatusPill label={kloelT(`Pausadas`)} status={String(queueStats.paused)} />
-                      )}
-                    </div>
-                  )}
-                  <div
-                    className="flex items-center justify-between p-3 rounded-lg text-sm"
-                    style={{ backgroundColor: colors.background.surface2 }}
-                  >
-                    <span style={{ color: colors.text.secondary }}>{kloelT(`Total na fila`)}</span>
-                    <span
-                      className="font-semibold"
-                      style={{
-                        color: colors.text.primary,
-                        fontFamily: "'JetBrains Mono', monospace",
-                      }}
-                    >
-                      {queueTotal}
-                    </span>
-                  </div>
-                </div>
-              ) : (
-                <div
-                  className="p-6 rounded-lg text-center"
-                  style={{ backgroundColor: colors.background.surface2 }}
-                >
-                  <Server
-                    size={32}
-                    className="mx-auto mb-2"
-                    style={{ color: colors.text.muted }}
-                    aria-hidden="true"
-                  />
-                  <p className="text-sm" style={{ color: colors.text.muted }}>
-                    {kloelT(`Dados da fila indisponíveis`)}
-                  </p>
-                </div>
-              )}
-            </div>
-
-            {/* Runtime Config */}
-            <div
-              className="p-5 rounded-xl border"
-              style={{
-                backgroundColor: colors.background.surface1,
-                borderColor: colors.stroke,
-              }}
-            >
-              <div className="flex items-center gap-3 mb-5">
-                <div
-                  className="p-2 rounded-lg"
-                  style={{ backgroundColor: `${colors.brand.cyan}20` }}
-                >
-                  <Database size={20} style={{ color: colors.brand.cyan }} aria-hidden="true" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-semibold" style={{ color: colors.text.primary }}>
-                    {kloelT(`Configuracao de Runtime`)}
-                  </h2>
-                  <p className="text-sm" style={{ color: colors.text.muted }}>
-                    {kloelT(`Parametros de execucao do Autopilot`)}
-                  </p>
-                </div>
-              </div>
-
-              {runtimeConfig ? (
-                <div className="space-y-2">
-                  {Object.entries(runtimeConfig).map(([key, value]) => (
-                    <div
-                      key={key}
-                      className="flex items-center justify-between p-3 rounded-lg"
-                      style={{ backgroundColor: colors.background.surface2 }}
-                    >
-                      <span className="text-sm" style={{ color: colors.text.secondary }}>
-                        {key}
-                      </span>
-                      <span
-                        className="text-sm font-medium"
-                        style={{
-                          color:
-                            value === true
-                              ? colors.brand.green
-                              : value === false
-                                ? colors.semantic.error
-                                : colors.text.primary,
-                          fontFamily:
-                            typeof value === 'number' ? "'JetBrains Mono', monospace" : undefined,
-                        }}
-                      >
-                        {value === true ? 'true' : value === false ? 'false' : String(value ?? '—')}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div
-                  className="p-6 rounded-lg text-center"
-                  style={{ backgroundColor: colors.background.surface2 }}
-                >
-                  <Database
-                    size={32}
-                    className="mx-auto mb-2"
-                    style={{ color: colors.text.muted }}
-                    aria-hidden="true"
-                  />
-                  <p className="text-sm" style={{ color: colors.text.muted }}>
-                    {kloelT(`Configuracao de runtime indisponivel`)}
-                  </p>
-                </div>
-              )}
-            </div>
-
-            {/* Config Editor */}
-            <div
-              className="p-5 rounded-xl border"
-              style={{
-                backgroundColor: colors.background.surface1,
-                borderColor: colors.stroke,
-              }}
-            >
-              <div className="flex items-center justify-between gap-3 mb-5">
-                <div className="flex items-center gap-3">
-                  <div
-                    className="p-2 rounded-lg"
-                    style={{ backgroundColor: `${colors.brand.green}20` }}
-                  >
-                    <Settings2 size={20} style={{ color: colors.brand.green }} aria-hidden="true" />
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-semibold" style={{ color: colors.text.primary }}>
-                      {kloelT(`Configuração`)}
-                    </h2>
-                    <p className="text-sm" style={{ color: colors.text.muted }}>
-                      {kloelT(`Ajustes do Autopilot`)}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (isEditingConfig) {
-                      setConfigDraft(config || {});
-                    }
-                    setIsEditingConfig(!isEditingConfig);
-                  }}
-                  className="p-2 rounded-lg transition-colors hover:bg-white/5"
-                  style={{
-                    color: isEditingConfig
-                      ? colors.semantic.error
-                      : colors.text.muted,
-                  }}
-                >
-                  {isEditingConfig ? (
-                    <XCircle size={18} aria-hidden="true" />
-                  ) : (
-                    <Settings2 size={18} aria-hidden="true" />
-                  )}
-                </button>
-              </div>
-
-              {config ? (
-                <div className="space-y-3">
-                  <label className="flex flex-col gap-1.5 text-sm">
-                    <span style={{ color: colors.text.secondary }}>
-                      {kloelT(`Flow de Conversão (ID)`)}
-                    </span>
-                    <input
-                      value={configDraft.conversionFlowId || ''}
-                      onChange={(e) =>
-                        setConfigDraft((prev) => ({
-                          ...prev,
-                          conversionFlowId: e.target.value || null,
-                        }))
-                      }
-                      disabled={!isEditingConfig}
-                      placeholder={kloelT(`ID do flow`)}
-                      className="px-3 py-2.5 rounded-lg border outline-none text-sm"
-                      style={{
-                        backgroundColor: isEditingConfig
-                          ? colors.background.surface2
-                          : colors.background.obsidian,
-                        borderColor: colors.stroke,
-                        color: colors.text.primary,
-                        opacity: isEditingConfig ? 1 : 0.7,
-                      }}
-                    />
-                  </label>
-
-                  <label className="flex flex-col gap-1.5 text-sm">
-                    <span style={{ color: colors.text.secondary }}>{kloelT(`Moeda Padrão`)}</span>
-                    <input
-                      value={configDraft.currencyDefault || ''}
-                      onChange={(e) =>
-                        setConfigDraft((prev) => ({ ...prev, currencyDefault: e.target.value }))
-                      }
-                      disabled={!isEditingConfig}
-                      placeholder="BRL"
-                      className="px-3 py-2.5 rounded-lg border outline-none text-sm"
-                      style={{
-                        backgroundColor: isEditingConfig
-                          ? colors.background.surface2
-                          : colors.background.obsidian,
-                        borderColor: colors.stroke,
-                        color: colors.text.primary,
-                        opacity: isEditingConfig ? 1 : 0.7,
-                      }}
-                    />
-                  </label>
-
-                  <label className="flex flex-col gap-1.5 text-sm">
-                    <span style={{ color: colors.text.secondary }}>
-                      {kloelT(`Template de Recuperação`)}
-                    </span>
-                    <input
-                      value={configDraft.recoveryTemplateName || ''}
-                      onChange={(e) =>
-                        setConfigDraft((prev) => ({
-                          ...prev,
-                          recoveryTemplateName: e.target.value || null,
-                        }))
-                      }
-                      disabled={!isEditingConfig}
-                      placeholder={kloelT(`Nome do template`)}
-                      className="px-3 py-2.5 rounded-lg border outline-none text-sm"
-                      style={{
-                        backgroundColor: isEditingConfig
-                          ? colors.background.surface2
-                          : colors.background.obsidian,
-                        borderColor: colors.stroke,
-                        color: colors.text.primary,
-                        opacity: isEditingConfig ? 1 : 0.7,
-                      }}
-                    />
-                  </label>
-
-                  {isEditingConfig && (
-                    <div className="flex gap-3 pt-2">
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        onClick={handleSaveConfig}
-                        isLoading={isSavingConfig}
-                        leftIcon={
-                          !isSavingConfig ? <Save size={14} aria-hidden="true" /> : undefined
-                        }
-                      >
-                        {isSavingConfig ? 'Salvando...' : 'Salvar'}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setConfigDraft(config || {});
-                          setIsEditingConfig(false);
-                        }}
-                      >
-                        {kloelT(`Cancelar`)}
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div
-                  className="p-6 rounded-lg text-center"
-                  style={{ backgroundColor: colors.background.surface2 }}
-                >
-                  <Settings2
-                    size={32}
-                    className="mx-auto mb-2"
-                    style={{ color: colors.text.muted }}
-                    aria-hidden="true"
-                  />
-                  <p className="text-sm" style={{ color: colors.text.muted }}>
-                    {kloelT(`Configuração indisponível`)}
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
+          <AutopilotSafetyBrakes
+            queueStats={queueStats}
+            runtimeConfig={runtimeConfig}
+            smokeResult={smokeResult}
+            testPhone={testPhone}
+            testMessage={testMessage}
+            testLiveSend={testLiveSend}
+            isTesting={isTesting}
+            onTestPhoneChange={setTestPhone}
+            onTestMessageChange={setTestMessage}
+            onTestLiveSendChange={setTestLiveSend}
+            onSmokeTest={handleSmokeTest}
+            config={config}
+            isEditingConfig={isEditingConfig}
+            configDraft={configDraft}
+            isSavingConfig={isSavingConfig}
+            onConfigDraftChange={(updater) => setConfigDraft((prev) => updater(prev) as AutopilotConfigData)}
+            onToggleEditingConfig={() => {
+              if (isEditingConfig) { setConfigDraft(config || {}); }
+              setIsEditingConfig(!isEditingConfig);
+            }}
+            onSaveConfig={handleSaveConfig}
+          />
         </CenterStage>
       </Section>
 

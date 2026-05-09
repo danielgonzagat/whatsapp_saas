@@ -185,10 +185,7 @@ export type ConversationHistoryEntry = {
   direction: string | null;
   createdAt?: Date | string | null;
 };
-export const workspaceSelfIdentityCache = new Map<
-  string,
-  { expiresAt: number; identity: WorkspaceSelfIdentity }
->();
+
 
 export async function notifyBillingSuspended(workspaceId?: string) {
   if (!OPS_WEBHOOK || !(global as never as { fetch: typeof fetch }).fetch) {
