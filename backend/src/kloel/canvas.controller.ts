@@ -21,6 +21,7 @@ import { Idempotent } from '../common/idempotency.guard';
 import type { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { resolveKloelCapabilityModel } from '../lib/ai-models';
 import { PrismaService } from '../prisma/prisma.service';
+import { BRAND_COLORS, CANVAS_COLORS } from '../common/kloel-colors';
 
 const IMAGE_GEN_TOKEN_EQUIVALENT = 1000;
 
@@ -102,7 +103,7 @@ export class CanvasController {
         height: dto.height,
         productId: dto.productId || null,
         elements: dto.elements ?? [],
-        background: dto.background || '#0A0A0C',
+        background: dto.background || CANVAS_COLORS.DEFAULT_BG,
       },
     });
     return { design, success: true };
@@ -173,7 +174,7 @@ Formato: ${product.format || 'Digital'}
 ${dto.prompt}
 
 [INSTRUCOES]
-Gere uma descricao visual detalhada para criacao de imagem de marketing. Dark theme (#0A0A0C bg, #E85D30 accent, #E0DDD8 text). Font: Sora. Profissional e moderno.`;
+Gere uma descricao visual detalhada para criacao de imagem de marketing. Dark theme (${BRAND_COLORS.VOID} bg, ${BRAND_COLORS.EMBER} accent, ${BRAND_COLORS.SILVER} text). Font: Sora. Profissional e moderno.`;
       }
     }
 

@@ -16,15 +16,8 @@ import { asProviderSettings } from './provider-settings.types';
 import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
 import { WhatsAppWatchdogRecoveryService } from './whatsapp-watchdog-recovery.service';
 
-export interface SessionHealth {
-  workspaceId: string;
-  connected: boolean;
-  lastCheck: Date;
-  consecutiveFailures: number;
-  lastReconnectAttempt?: Date;
-  upSince?: Date;
-  reconnectBlockedReason?: string;
-}
+export type { SessionHealth } from './whatsapp-watchdog.types';
+import type { SessionHealth } from './whatsapp-watchdog.types';
 
 /** Manages per-workspace session health state and check logic. */
 @Injectable()

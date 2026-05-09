@@ -385,4 +385,4 @@ import {
   deleteCheckoutPixel,
   deleteCouponHelper,
   resetCatalogConfig,
-} from './__companions__/checkout-catalog.service.companion';
+} from './checkout-catalog.operations';

@@ -13,14 +13,14 @@ import { GoogleAuthService } from './google-auth.service';
 import { TikTokAuthService } from './tiktok-auth.service';
 import { RateLimitService } from './rate-limit.service';
 
-import type { AuthPartsDeps } from './__parts__/auth-service/register-login';
+import type { AuthPartsDeps } from './auth-service.register-login';
 import {
   checkEmail,
   createAnonymous,
   register,
   login,
-} from './__parts__/auth-service/register-login';
-import { issueTokensForAgentId, refreshToken } from './__parts__/auth-service/tokens';
+} from './auth-service.register-login';
+import { issueTokensForAgentId, refreshToken } from './auth-service.tokens';
 import {
   oauthLogin,
   loginWithGoogleCredential,
@@ -28,16 +28,16 @@ import {
   loginWithAppleCredential,
   loginWithTikTokAuthorizationCode,
   loginWithTikTokAccessToken,
-} from './__parts__/auth-service/oauth-entry';
-import { requestMagicLink, verifyMagicLink } from './__parts__/auth-service/magic-link';
-import { sendWhatsAppCode, verifyWhatsAppCode } from './__parts__/auth-service/whatsapp';
+} from './auth-service.oauth-entry';
+import { requestMagicLink, verifyMagicLink } from './auth-service.magic-link';
+import { sendWhatsAppCode, verifyWhatsAppCode } from './auth-service.whatsapp';
 import {
   forgotPassword,
   resetPassword,
   sendVerificationEmail,
   verifyEmail,
   resendVerificationEmail,
-} from './__parts__/auth-service/password-verification';
+} from './auth-service.password-verification';
 
 /** Auth service. */
 @Injectable()

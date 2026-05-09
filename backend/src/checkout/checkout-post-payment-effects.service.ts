@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import * as Sentry from '@sentry/node';
 import { forEachSequential } from '../common/async-sequence';
 import { escapeHtml } from '../common/utils/html-escape.util';
+import { BRAND_COLORS } from '../common/kloel-colors';
 import { formatBrlAmount } from '../kloel/money-format.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { CheckoutSocialLeadService } from './checkout-social-lead.service';
@@ -224,13 +225,13 @@ export class CheckoutPostPaymentEffectsService {
     const formattedAmount = escapeHtml(formatBrlAmount(amountSource));
 
     return [
-      '<div style="font-family:sans-serif;max-width:600px;margin:0 auto;background:#0A0A0C;color:#e0e0e0;padding:40px;">',
-      '<h1 style="color:#E85D30;">KLOEL</h1>',
+      '<div style="font-family:sans-serif;max-width:600px;margin:0 auto;background:' + BRAND_COLORS.VOID + ';color:' + BRAND_COLORS.LIGHT_TEXT + ';padding:40px;">',
+      '<h1 style="color:' + BRAND_COLORS.EMBER + ';">KLOEL</h1>',
       '<p>Ola ',
       safeCustomerName,
       ',</p>',
       '<p>Seu pagamento foi confirmado!</p>',
-      '<div style="background:#151517;padding:20px;border-radius:6px;margin:20px 0;">',
+      '<div style="background:' + BRAND_COLORS.CARD_SURFACE + ';padding:20px;border-radius:6px;margin:20px 0;">',
       '<p><strong>Produto:</strong> ',
       safeProductName,
       '</p>',

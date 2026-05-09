@@ -11,6 +11,7 @@ import {
   buildListUnsubscribeHeader,
   buildUnsubscribeFooterHtml,
 } from '../common/utils/unsubscribe-footer.util';
+import { EMAIL_COLORS } from '../common/kloel-colors';
 
 const THIRTY_MINUTES_MS = 30 * 60 * 1000;
 const ONE_HOUR_MS = 60 * 60 * 1000;
@@ -222,14 +223,14 @@ export class CheckoutSocialRecoveryService {
     const productLine = checkoutSlug ? `checkout ${checkoutSlug}` : 'checkout';
 
     return `
-      <div style="font-family:Arial,sans-serif;background:#f6f6f6;padding:24px;">
-        <div style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:16px;padding:32px;">
-          <p style="font-size:14px;color:#64748b;margin:0 0 12px;">KLOEL</p>
-          <h1 style="font-size:24px;color:#0f172a;margin:0 0 16px;">${safeName ? `Oi, ${safeName}.` : 'Oi.'}</h1>
-          <p style="font-size:16px;line-height:1.6;color:#334155;margin:0 0 12px;">
+      <div style="font-family:Arial,sans-serif;background:${EMAIL_COLORS.OUTER_BG_ALT};padding:24px;">
+        <div style="max-width:560px;margin:0 auto;background:${EMAIL_COLORS.CARD_BG};border-radius:16px;padding:32px;">
+          <p style="font-size:14px;color:${EMAIL_COLORS.LABEL_SLATE};margin:0 0 12px;">KLOEL</p>
+          <h1 style="font-size:24px;color:${EMAIL_COLORS.HEADING_DARK};margin:0 0 16px;">${safeName ? `Oi, ${safeName}.` : 'Oi.'}</h1>
+          <p style="font-size:16px;line-height:1.6;color:${EMAIL_COLORS.PARAGRAPH_SLATE};margin:0 0 12px;">
             Percebemos que você começou o ${productLine} e não terminou.
           </p>
-          <p style="font-size:16px;line-height:1.6;color:#334155;margin:0;">
+          <p style="font-size:16px;line-height:1.6;color:${EMAIL_COLORS.PARAGRAPH_SLATE};margin:0;">
             Se ainda quiser concluir sua compra, volte para o checkout e retome de onde parou.
           </p>
         </div>

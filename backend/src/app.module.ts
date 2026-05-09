@@ -58,6 +58,7 @@ import { AuditModule } from './audit/audit.module';
 import { getJwtSecret } from './auth/jwt-config';
 import { AutopilotModule } from './autopilot/autopilot.module';
 import { CalendarModule } from './calendar/calendar.module';
+import { ChatModule } from './chat/chat.module';
 import { CheckoutModule } from './checkout/checkout.module';
 import { CiaModule } from './cia/cia.module';
 import { PromptSanitizerMiddleware } from './common/middleware/prompt-sanitizer.middleware';
@@ -81,6 +82,7 @@ import { OpsAlertModule } from './observability/ops-alert.module';
 import { OpsModule } from './ops/ops.module';
 import { PartnershipsModule } from './partnerships/partnerships.module';
 import { PipelineModule } from './pipeline/pipeline.module';
+import { ProductCategoriesModule } from './product-categories/product-categories.module';
 import { PublicApiModule } from './public-api/public-api.module';
 import { PulseModule } from './pulse/pulse.module';
 import { ReportsModule } from './reports/reports.module';
@@ -208,6 +210,7 @@ const isProd = process.env.NODE_ENV === 'production';
     AiBrainModule,
     GrowthModule,
     CalendarModule, // 📅 Integração com calendários
+    ChatModule, // 💬 Chat conversation persistence
     KloelModule, // 🧠 KLOEL - IA Comercial Autônoma
     CiaModule, // 🧠 CIA Runtime Surface
     FollowUpModule, // 📅 Agendamento de follow-ups
@@ -222,6 +225,7 @@ const isProd = process.env.NODE_ENV === 'production';
     ReportsModule, // Reports & Analytics (Vendas, Assinaturas, Churn, etc.)
     MetaModule, // Meta Platform (OAuth, Graph API, Webhooks)
     PipelineModule, // 🧭 Sales pipeline / CRM board
+    ProductCategoriesModule, // 🏷️ Workspace-scoped product categories
     GdprModule, // LGPD/GDPR data export and deletion
     CookieConsentModule, // Cookie consent management
     ComplianceModule, // OAuth/Meta/LGPD compliance callbacks and user rights endpoints

@@ -6,12 +6,12 @@ import { PlanLimitsService } from '../billing/plan-limits.service';
 import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { PrismaService } from '../prisma/prisma.service';
-import { buildFallbackAnalysis, normalizeAnalysis } from './__companions__/neuro-crm-analysis';
+import { buildFallbackAnalysis, normalizeAnalysis } from './neuro-crm.helpers';
 import {
   type AnalysisContact,
   type AnalysisResult,
   type RawAnalysis,
-} from './__companions__/neuro-crm-analysis.shared';
+} from './neuro-crm.types';
 
 interface ClusterPoint {
   contact: {

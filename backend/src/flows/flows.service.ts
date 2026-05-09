@@ -10,12 +10,12 @@ import type {
   WaitForReplyNodeData,
   WaitState,
   ResumeResult,
-} from './__companions__/flows.service.companion';
+} from './flows.wait-for-reply';
 import {
   pauseForWaitNode as pauseForWaitNodeFn,
   resumeFromWait as resumeFromWaitFn,
   expireWaitTimeouts as expireWaitTimeoutsFn,
-} from './__companions__/flows.service.companion';
+} from './flows.wait-for-reply';
 export type { WaitForReplyNodeData, WaitState, ResumeResult };
 
 /** Flows service. */

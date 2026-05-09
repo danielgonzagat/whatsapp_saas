@@ -14,7 +14,7 @@ import { buildQueueJobId } from '../queue/job-id.util';
 import { crmQueue } from '../queue/queue';
 import { CaptureSocialLeadDto } from './dto/capture-social-lead.dto';
 import { UpdateSocialLeadDto } from './dto/update-social-lead.dto';
-import { findLatestCandidate as companionFindLatestCandidate } from './__companions__/checkout-social-lead-candidate';
+import { findLatestCandidate as companionFindLatestCandidate } from './checkout-social-lead.candidate';
 import {
   extractAddressFromEnrichment,
   mergeGooglePeopleProfile,

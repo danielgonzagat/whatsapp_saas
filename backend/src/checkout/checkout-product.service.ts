@@ -14,7 +14,7 @@ import type {
   CreatePlanInput,
   CreateProductInput,
 } from './checkout-product.types';
-import { createCheckout as createCheckoutFn } from './__companions__/checkout-product.service.companion';
+import { createCheckout as createCheckoutFn } from './checkout-product.create';
 
 /** Checkout product service — handles Product and Plan CRUD. */
 /** Idempotency: enforced at HTTP layer via @Idempotent() guard + Stripe idempotencyKey. */

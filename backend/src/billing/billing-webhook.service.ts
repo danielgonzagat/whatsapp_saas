@@ -16,10 +16,10 @@ import type {
   StripeSubscription,
 } from './stripe-types';
 import type { WhatsappNotifier } from './billing-webhook.types';
-import { markSubscriptionStatusHelper } from './__companions__/billing-webhook.service.companion';
-import { cancelSubscriptionByStripeId } from './__parts__/billing-webhook.cancel';
-import { fulfillCheckout } from './__parts__/billing-webhook.fulfillment';
-import { syncSubscriptionStatus } from './__parts__/billing-webhook.sync-subscription';
+import { markSubscriptionStatusHelper } from './billing-subscription-status.helper';
+import { cancelSubscriptionByStripeId } from './billing-webhook.cancel';
+import { fulfillCheckout } from './billing-webhook.fulfillment';
+import { syncSubscriptionStatus } from './billing-webhook.sync-subscription';
 
 /**
  * BillingWebhookService

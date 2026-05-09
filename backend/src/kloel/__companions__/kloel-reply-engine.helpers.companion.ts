@@ -1,5 +1,5 @@
 import { buildKloelResponseEnginePrompt } from '../kloel.prompts';
-import type { ExpertiseLevel } from '../kloel-reply-engine.service';
+import type { ExpertiseLevel } from '../kloel-reply-engine.types';
 
 export function buildKloelDashboardPrompt(params: {
   currentDate: string;

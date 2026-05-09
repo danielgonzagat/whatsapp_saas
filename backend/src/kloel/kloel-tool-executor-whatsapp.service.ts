@@ -4,9 +4,9 @@ import { PrismaService } from '../prisma/prisma.service';
 import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { AudioService } from './audio.service';
-import type { ToolResult } from './kloel-tool-executor.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import type {
+  ToolResult,
   ToolCreateWhatsAppContactArgs,
   ToolGetWhatsAppMessagesArgs,
   ToolPaginationArgs,
@@ -16,7 +16,7 @@ import type {
   ToolSetWhatsAppPresenceArgs,
   ToolSyncWhatsAppHistoryArgs,
   ToolTranscribeAudioArgs,
-} from './kloel-tool-executor.service';
+} from './kloel-tool-executor.types';
 
 const NON_DIGIT_RE = /\D/g;
 

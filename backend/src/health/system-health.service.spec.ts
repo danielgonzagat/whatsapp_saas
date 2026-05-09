@@ -1,5 +1,6 @@
 import { ConfigService } from '@nestjs/config';
 import { SystemHealthService } from './system-health.service';
+import { connection } from '../queue/queue';
 
 jest.mock('@sentry/node', () => ({
   captureException: jest.fn(),
@@ -25,6 +26,12 @@ jest.mock('ioredis', () => {
   }
   return { default: MockRedis, Redis: MockRedis };
 });
+
+jest.mock('../queue/queue', () => ({
+  connection: { ping: jest.fn().mockResolvedValue('PONG') },
+  queueRegistry: {},
+  queueOptions: {},
+}));
 
 jest.mock('fs', () => ({
   existsSync: jest.fn(),
@@ -99,6 +106,7 @@ describe('SystemHealthService', () => {
     redis = {
       ping: jest.fn().mockResolvedValue('PONG'),
     };
+    (connection.ping as jest.Mock).mockResolvedValue('PONG');
     config = {
       get: jest.fn((key: string) => {
         const values: Record<string, string | undefined> = {
@@ -151,6 +159,11 @@ describe('SystemHealthService', () => {
     };
     stripeService = {
       healthCheck: jest.fn().mockResolvedValue({ status: 'UP' }),
+      retrieveBalance: jest.fn().mockResolvedValue({
+        livemode: false,
+        pending: [],
+        available: [],
+      }),
     };
   });
 
@@ -410,6 +423,239 @@ describe('SystemHealthService', () => {
       expect(whatsappApi.ping).not.toHaveBeenCalled();
       expect(storageService.healthCheck).not.toHaveBeenCalled();
       expect(global.fetch).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('deepReadiness probe', () => {
+    const createSuccessFetchMock = () => {
+      const mock = jest.fn() as jest.MockedFunction<typeof fetch>;
+      mock.mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({}),
+        text: async () => '',
+      } as Response);
+      global.fetch = mock;
+      return mock;
+    };
+
+    it('returns UP when all six dependencies are healthy', async () => {
+      stubBackupManifest();
+      createSuccessFetchMock();
+
+      const service = createService();
+      const result = await service.deepReadiness();
+
+      expect(result.status).toBe('UP');
+      expect(result.failures).toHaveLength(0);
+      expect(result.details.postgres.status).toBe('UP');
+      expect(result.details.redis.status).toBe('UP');
+      expect(result.details.stripe.status).toBe('UP');
+      expect(result.details.metacloud.status).toBe('UP');
+      expect(result.details.openai.status).toBe('UP');
+      expect(result.details.anthropic.status).toBe('UP');
+    });
+
+    it('returns DOWN and lists postgres when database is unreachable', async () => {
+      stubBackupManifest();
+      createSuccessFetchMock();
+      prisma.$queryRaw = jest.fn().mockRejectedValue(new Error('connection refused'));
+
+      const service = createService();
+      const result = await service.deepReadiness();
+
+      expect(result.status).toBe('DOWN');
+      expect(result.failures).toContain('postgres');
+      expect(result.details.postgres.status).toBe('DOWN');
+      expect(result.details.postgres.error).toContain('connection refused');
+    });
+
+    it('returns DOWN and lists redis when BullMQ connection fails', async () => {
+      stubBackupManifest();
+      createSuccessFetchMock();
+      (connection.ping as jest.Mock).mockRejectedValue(new Error('ECONNREFUSED'));
+
+      const service = createService();
+      const result = await service.deepReadiness();
+
+      expect(result.status).toBe('DOWN');
+      expect(result.failures).toContain('redis');
+      expect(result.details.redis.status).toBe('DOWN');
+      expect(result.details.redis.error).toContain('ECONNREFUSED');
+    });
+
+    it('returns DOWN and lists stripe when Stripe SDK fails', async () => {
+      stubBackupManifest();
+      createSuccessFetchMock();
+      stripeService.retrieveBalance.mockRejectedValue(new Error('Stripe API error'));
+
+      const service = createService();
+      const result = await service.deepReadiness();
+
+      expect(result.status).toBe('DOWN');
+      expect(result.failures).toContain('stripe');
+      expect(result.details.stripe.status).toBe('DOWN');
+      expect(result.details.stripe.error).toContain('Stripe API error');
+    });
+
+    it('returns DOWN and lists metacloud when Meta app credentials are missing', async () => {
+      stubBackupManifest();
+      createSuccessFetchMock();
+      config.get = jest.fn((key: string) => {
+        const values: Record<string, string | undefined> = {
+          JWT_SECRET: 'secret',
+          REDIS_URL: 'redis://redis:6379',
+          OPENAI_API_KEY: 'openai-key',
+          ANTHROPIC_API_KEY: 'anthropic-key',
+          STRIPE_SECRET_KEY: 'stripe-key',
+        };
+        return values[key];
+      });
+
+      const service = createService();
+      const result = await service.deepReadiness();
+
+      expect(result.status).toBe('DOWN');
+      expect(result.failures).toContain('metacloud');
+      expect(result.details.metacloud.status).toBe('DOWN');
+      expect(result.details.metacloud.error).toContain('not configured');
+    });
+
+    it('returns DOWN and lists metacloud when Meta Graph API returns failure', async () => {
+      stubBackupManifest();
+      const fetchMock = jest.fn() as jest.MockedFunction<typeof fetch>;
+      fetchMock.mockResolvedValue({
+        ok: false,
+        status: 401,
+        text: async () => 'Invalid OAuth access token',
+      } as Response);
+      global.fetch = fetchMock;
+
+      const service = createService();
+      const result = await service.deepReadiness();
+
+      expect(result.status).toBe('DOWN');
+      expect(result.failures).toContain('metacloud');
+      expect(result.details.metacloud.status).toBe('DOWN');
+    });
+
+    it('returns DOWN and lists openai when OPENAI_API_KEY is missing', async () => {
+      stubBackupManifest();
+      createSuccessFetchMock();
+      config.get = jest.fn((key: string) => {
+        const values: Record<string, string | undefined> = {
+          JWT_SECRET: 'secret',
+          REDIS_URL: 'redis://redis:6379',
+          META_APP_ID: 'app-id',
+          META_APP_SECRET: 'app-secret',
+          ANTHROPIC_API_KEY: 'anthropic-key',
+          STRIPE_SECRET_KEY: 'stripe-key',
+        };
+        return values[key];
+      });
+
+      const service = createService();
+      const result = await service.deepReadiness();
+
+      expect(result.status).toBe('DOWN');
+      expect(result.failures).toContain('openai');
+      expect(result.details.openai.status).toBe('DOWN');
+      expect(result.details.openai.error).toContain('OPENAI_API_KEY not configured');
+    });
+
+    it('returns DOWN and lists openai when OpenAI API is unreachable', async () => {
+      stubBackupManifest();
+      const fetchMock = jest.fn() as jest.MockedFunction<typeof fetch>;
+      fetchMock.mockRejectedValue(new Error('fetch failed'));
+      global.fetch = fetchMock;
+
+      const service = createService();
+      const result = await service.deepReadiness();
+
+      expect(result.status).toBe('DOWN');
+      expect(result.failures).toContain('openai');
+      expect(result.details.openai.status).toBe('DOWN');
+    });
+
+    it('returns DOWN and lists anthropic when ANTHROPIC_API_KEY is missing', async () => {
+      stubBackupManifest();
+      createSuccessFetchMock();
+      config.get = jest.fn((key: string) => {
+        const values: Record<string, string | undefined> = {
+          JWT_SECRET: 'secret',
+          REDIS_URL: 'redis://redis:6379',
+          META_APP_ID: 'app-id',
+          META_APP_SECRET: 'app-secret',
+          OPENAI_API_KEY: 'openai-key',
+          STRIPE_SECRET_KEY: 'stripe-key',
+        };
+        return values[key];
+      });
+
+      const service = createService();
+      const result = await service.deepReadiness();
+
+      expect(result.status).toBe('DOWN');
+      expect(result.failures).toContain('anthropic');
+      expect(result.details.anthropic.status).toBe('DOWN');
+      expect(result.details.anthropic.error).toContain('ANTHROPIC_API_KEY not configured');
+    });
+
+    it('returns DOWN and lists multiple dependencies when several fail', async () => {
+      stubBackupManifest();
+      const fetchMock = jest.fn() as jest.MockedFunction<typeof fetch>;
+      fetchMock.mockRejectedValue(new Error('network error'));
+      global.fetch = fetchMock;
+
+      prisma.$queryRaw = jest.fn().mockRejectedValue(new Error('db down'));
+      (connection.ping as jest.Mock).mockRejectedValue(new Error('redis down'));
+      stripeService.retrieveBalance.mockRejectedValue(new Error('stripe down'));
+
+      const service = createService();
+      const result = await service.deepReadiness();
+
+      expect(result.status).toBe('DOWN');
+      expect(result.failures).toContain('postgres');
+      expect(result.failures).toContain('redis');
+      expect(result.failures).toContain('stripe');
+      expect(result.failures).toContain('metacloud');
+      expect(result.failures).toContain('openai');
+      expect(result.failures).toContain('anthropic');
+    });
+
+    it('includes latencyMs in every probe result', async () => {
+      stubBackupManifest();
+      createSuccessFetchMock();
+
+      const service = createService();
+      const result = await service.deepReadiness();
+
+      for (const dependency of Object.keys(result.details)) {
+        expect(typeof result.details[dependency].latencyMs).toBe('number');
+        expect(result.details[dependency].latencyMs).toBeGreaterThanOrEqual(0);
+      }
+    });
+
+    it('returns UP when stripeService is not injected (optional)', async () => {
+      stubBackupManifest();
+      createSuccessFetchMock();
+
+      const serviceWithoutStripe = new SystemHealthService(
+        prisma as never as ConstructorParameters<typeof SystemHealthService>[0],
+        redis as never as ConstructorParameters<typeof SystemHealthService>[1],
+        config as never as ConstructorParameters<typeof SystemHealthService>[2],
+        whatsappApi as never,
+        storageService as never,
+        observabilityQueries as never,
+        queueHealth as never,
+        undefined as never,
+      );
+
+      const result = await serviceWithoutStripe.deepReadiness();
+
+      expect(result.failures).toContain('stripe');
+      expect(result.details.stripe.status).toBe('DOWN');
+      expect(result.details.stripe.error).toContain('not configured');
     });
   });
 });

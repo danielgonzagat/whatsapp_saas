@@ -9,7 +9,7 @@ import {
   StoredProcessingTraceEntry,
   StoredResponseVersion,
 } from './kloel-thread.service';
-import type { ChatMessage, ThinkRequest, ThinkSyncResult } from './kloel-thinker.service';
+import type { ChatMessage, ThinkRequest, ThinkSyncResult } from './kloel-thinker.types';
 
 const ERR_THREAD_NOT_FOUND = 'Conversa não encontrada.';
 const ERR_ASSISTANT_MSG_NOT_FOUND = 'Mensagem do assistente não encontrada.';

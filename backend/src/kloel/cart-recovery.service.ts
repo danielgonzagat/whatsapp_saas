@@ -7,6 +7,7 @@ import {
   buildListUnsubscribeHeader,
   buildUnsubscribeFooterHtml,
 } from '../common/utils/unsubscribe-footer.util';
+import { BRAND_COLORS, EMAIL_COLORS } from '../common/kloel-colors';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 
 type CartRecoveryMetadata = Record<string, unknown>;
@@ -80,22 +81,22 @@ export class CartRecoveryService {
             to: customerEmail,
             subject: `Voce esqueceu algo — ${productName}`,
             html: `
-            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; padding: 20px;">
-              <div style="max-width: 500px; margin: 0 auto; background: white; border-radius: 12px; padding: 40px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
-                <div style="font-size: 24px; font-weight: bold; color: #E85D30; margin-bottom: 20px;">KLOEL</div>
-                <h1 style="font-size: 22px; color: #1a1a1a; margin-bottom: 16px;">Voce deixou algo no carrinho!</h1>
-                <p style="color: #666; line-height: 1.6; margin-bottom: 24px;">
-                  Notamos que voce iniciou a compra de <strong>${productName}</strong> mas nao finalizou.
-                  Seu pedido ainda esta disponivel — complete sua compra agora!
-                </p>
-                <p style="color: #666; line-height: 1.6; margin-bottom: 24px;">
-                  Pedido #${order.orderNumber}
-                </p>
-                <div style="margin-top: 32px; font-size: 12px; color: #999;">
-                  <p>KLOEL - Inteligencia Comercial Autonoma</p>
+              <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: ${EMAIL_COLORS.OUTER_BG}; padding: 20px;">
+                <div style="max-width: 500px; margin: 0 auto; background: white; border-radius: 12px; padding: 40px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+                  <div style="font-size: 24px; font-weight: bold; color: ${BRAND_COLORS.EMBER}; margin-bottom: 20px;">KLOEL</div>
+                  <h1 style="font-size: 22px; color: ${EMAIL_COLORS.HEADING}; margin-bottom: 16px;">Voce deixou algo no carrinho!</h1>
+                  <p style="color: ${EMAIL_COLORS.BODY_TEXT}; line-height: 1.6; margin-bottom: 24px;">
+                    Notamos que voce iniciou a compra de <strong>${productName}</strong> mas nao finalizou.
+                    Seu pedido ainda esta disponivel — complete sua compra agora!
+                  </p>
+                  <p style="color: ${EMAIL_COLORS.BODY_TEXT}; line-height: 1.6; margin-bottom: 24px;">
+                    Pedido #${order.orderNumber}
+                  </p>
+                  <div style="margin-top: 32px; font-size: 12px; color: ${EMAIL_COLORS.FOOTER_TEXT};">
+                    <p>KLOEL - Inteligencia Comercial Autonoma</p>
+                  </div>
                 </div>
               </div>
-            </div>
             ${unsubscribeFooter}
           `,
             headers: {

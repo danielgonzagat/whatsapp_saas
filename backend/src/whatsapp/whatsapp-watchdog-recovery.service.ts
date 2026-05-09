@@ -19,7 +19,7 @@ import { WhatsAppProviderRegistry } from './providers/provider-registry';
 import { asProviderSettings } from './provider-settings.types';
 import { WhatsAppCatchupService } from './whatsapp-catchup.service';
 import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
-import type { SessionHealth } from './whatsapp-watchdog-session.service';
+import type { SessionHealth } from './whatsapp-watchdog.types';
 import { alertOpsHelper } from './__companions__/whatsapp-watchdog-recovery.service.companion';
 
 /** Watchdog recovery and reconnect service. */

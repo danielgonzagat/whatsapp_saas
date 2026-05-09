@@ -5,6 +5,7 @@ import { getTraceHeaders } from '../common/trace-headers';
 import { validateNoInternalAccess } from '../common/utils/url-validator';
 import { PrismaService } from '../prisma/prisma.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import { PIPELINE_STAGE_COLORS } from '../common/kloel-colors';
 
 /** Crm service. */
 @Injectable()
@@ -197,9 +198,9 @@ export class CrmService {
         name,
         stages: {
           create: [
-            { name: 'Lead', order: 0, color: '#3b82f6' },
-            { name: 'Em Negociação', order: 1, color: '#facc15' },
-            { name: 'Fechado', order: 2, color: '#22c55e' },
+            { name: 'Lead', order: 0, color: PIPELINE_STAGE_COLORS.LEAD_BLUE },
+            { name: 'Em Negociação', order: 1, color: PIPELINE_STAGE_COLORS.NEGOTIATION_YELLOW },
+            { name: 'Fechado', order: 2, color: PIPELINE_STAGE_COLORS.WON_GREEN },
           ],
         },
       },

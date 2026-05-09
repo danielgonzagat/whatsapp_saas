@@ -32,6 +32,7 @@ import { CiaRuntimeService } from './cia-runtime.service';
 import { WhatsAppProviderRegistry, type SessionStatus } from './providers/provider-registry';
 import { WhatsAppApiProvider } from './providers/whatsapp-api.provider';
 import { WhatsAppCatchupService } from './whatsapp-catchup.service';
+import { TAG_DEFAULT_COLORS } from '../common/kloel-colors';
 import { isPlaceholderContactName as isPlaceholderName } from './whatsapp-normalization.util';
 import { WorkerRuntimeService } from './worker-runtime.service';
 import {
@@ -1017,7 +1018,7 @@ export class WhatsappService {
       const t = await tx.tag.upsert({
         where: { workspaceId_name: { workspaceId: ws, name: 'optin_whatsapp' } },
         update: {},
-        create: { workspaceId: ws, name: 'optin_whatsapp', color: '#16a34a' },
+        create: { workspaceId: ws, name: 'optin_whatsapp', color: TAG_DEFAULT_COLORS.WHATSAPP_OPTIN_GREEN },
       });
       await tx.contact.update({
         where: { workspaceId_phone: { workspaceId: ws, phone } },

@@ -3,7 +3,7 @@ import { Prisma } from '@prisma/client';
 import { StripeRuntime } from '../billing/stripe-runtime';
 import type { StripeClient, StripeSubscription } from '../billing/stripe-types';
 import { PrismaService } from '../prisma/prisma.service';
-import type { ToolArgs } from './unified-agent.service';
+import type { ToolArgs } from './unified-agent.types';
 import { createFunnelFlows } from './unified-agent-actions-billing.helpers';
 import {
   getProductPlans as getProductPlansCompanion,

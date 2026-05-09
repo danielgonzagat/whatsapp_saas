@@ -3,8 +3,9 @@ import { PrismaService } from '../prisma/prisma.service';
 import { actionImportContacts as actionImportContactsCompanion } from './__companions__/unified-agent-actions-crm.service.companion';
 import { flowQueue } from '../queue/queue';
 import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
-import type { ToolArgs } from './unified-agent.service';
+import type { ToolArgs } from './unified-agent.types';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import { TAG_DEFAULT_COLORS } from '../common/kloel-colors';
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -81,7 +82,7 @@ export class UnifiedAgentActionsCrmService {
       async (tx) => {
         let tag = await tx.tag.findFirst({ where: { workspaceId, name: tagName } });
         if (!tag) {
-          tag = await tx.tag.create({ data: { name: tagName, workspaceId, color: '#3B82F6' } });
+          tag = await tx.tag.create({ data: { name: tagName, workspaceId, color: TAG_DEFAULT_COLORS.CRM_AUTO_BLUE } });
         }
         const contact = await tx.contact.findFirst({
           where: { id: contactId, workspaceId },

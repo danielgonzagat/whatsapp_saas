@@ -3,6 +3,7 @@ import { Throttle } from '@nestjs/throttler';
 import { Response } from 'express';
 import { Public } from '../auth/public.decorator';
 import { PrismaService } from '../prisma/prisma.service';
+import { BRAND_COLORS } from '../common/kloel-colors';
 
 /** Site public controller. */
 @Controller('s')
@@ -23,7 +24,7 @@ export class SitePublicController {
       return res
         .status(HttpStatus.NOT_FOUND)
         .send(
-          '<html><body style="background:#0A0A0C;color:#E0DDD8;font-family:sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh"><h1>Pagina nao encontrada</h1></body></html>',
+          '<html><body style="background:' + BRAND_COLORS.VOID + ';color:' + BRAND_COLORS.SILVER + ';font-family:sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh"><h1>Pagina nao encontrada</h1></body></html>',
         );
     }
 

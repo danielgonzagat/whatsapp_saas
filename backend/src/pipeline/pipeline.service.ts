@@ -1,5 +1,6 @@
 import { ForbiddenException, Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { PIPELINE_STAGE_COLORS } from '../common/kloel-colors';
 
 /** Pipeline service. */
 @Injectable()
@@ -29,11 +30,11 @@ export class PipelineService {
           isDefault: true,
           stages: {
             create: [
-              { name: 'Lead', color: '#E5E7EB', order: 0 },
-              { name: 'Contacted', color: '#FEF3C7', order: 1 },
-              { name: 'Proposal', color: '#DBEAFE', order: 2 },
-              { name: 'Won', color: '#D1FAE5', order: 3 },
-              { name: 'Lost', color: '#FEE2E2', order: 4 },
+              { name: 'Lead', color: PIPELINE_STAGE_COLORS.LEAD_LIGHT, order: 0 },
+              { name: 'Contacted', color: PIPELINE_STAGE_COLORS.CONTACTED_LIGHT, order: 1 },
+              { name: 'Proposal', color: PIPELINE_STAGE_COLORS.PROPOSAL_LIGHT, order: 2 },
+              { name: 'Won', color: PIPELINE_STAGE_COLORS.WON_LIGHT, order: 3 },
+              { name: 'Lost', color: PIPELINE_STAGE_COLORS.LOST_LIGHT, order: 4 },
             ],
           },
         },

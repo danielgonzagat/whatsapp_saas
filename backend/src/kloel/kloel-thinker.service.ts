@@ -30,27 +30,8 @@ export type { LocalToolExecutor } from './kloel-reply-engine.service';
 
 type ComposerCapability = 'create_image' | 'create_site' | 'search_web';
 
-export interface ChatMessage {
-  role: 'system' | 'user' | 'assistant';
-  content: string;
-}
-
-export interface ThinkRequest {
-  message: string;
-  workspaceId?: string;
-  userId?: string;
-  userName?: string;
-  conversationId?: string;
-  mode?: 'chat' | 'onboarding' | 'sales';
-  companyContext?: string;
-  metadata?: Prisma.InputJsonValue;
-}
-
-export interface ThinkSyncResult {
-  response: string;
-  conversationId?: string;
-  title?: string;
-}
+export type { ChatMessage, ThinkRequest, ThinkSyncResult } from './kloel-thinker.types';
+import type { ChatMessage, ThinkRequest, ThinkSyncResult } from './kloel-thinker.types';
 
 /** Orchestrates the Kloel thinking loop — SSE streaming and sync variants. */
 @Injectable()

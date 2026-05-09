@@ -1,14 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import type { ToolResult } from './kloel-tool-executor.service';
 import type {
+  ToolResult,
   ToolCreateCampaignArgs,
   ToolGetLeadDetailsArgs,
   ToolListLeadsArgs,
   ToolSaveBusinessInfoArgs,
   ToolSetBusinessHoursArgs,
-} from './kloel-tool-executor.service';
+} from './kloel-tool-executor.types';
 
 const NON_DIGIT_RE = /\D/g;
 

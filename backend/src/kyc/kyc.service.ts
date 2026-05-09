@@ -20,13 +20,15 @@ import {
   buildPersonName,
   buildDateOfBirth,
   buildConnectAddress,
+} from './kyc.helpers';
+import type { UploadedFile, SubmitKycContext } from './kyc.helpers';
+export { trimToUndefined, digitsOnly, buildPersonName, buildDateOfBirth, buildConnectAddress };
+export type { UploadedFile, SubmitKycContext };
+import {
   doAdminApprove,
   doAutoApproveIfComplete,
   syncSellerConnectOnboarding,
-} from './__parts__/kyc.service.companion';
-import type { UploadedFile, SubmitKycContext } from './__parts__/kyc.service.companion';
-export { trimToUndefined, digitsOnly, buildPersonName, buildDateOfBirth, buildConnectAddress };
-export type { UploadedFile, SubmitKycContext };
+} from './kyc.connect-onboarding';
 
 /** Kyc service. */
 @Injectable()

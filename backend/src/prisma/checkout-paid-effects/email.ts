@@ -1,5 +1,6 @@
 import { Prisma } from '@prisma/client';
 import { escapeHtml } from '../../common/utils/html-escape.util';
+import { BRAND_COLORS } from '../../common/kloel-colors';
 import { formatBrlAmount } from '../../kloel/money-format.util';
 import { PaidCheckoutEffectClient, readPaidCheckoutOrderScope } from './shared';
 
@@ -92,13 +93,13 @@ function buildPurchaseConfirmationEmailHtml(input: {
 }) {
   const formattedAmount = formatBrlAmount(input.totalInCents / 100);
   return [
-    '<div style="font-family:sans-serif;max-width:600px;margin:0 auto;background:#0A0A0C;color:#e0e0e0;padding:40px;">',
-    '<h1 style="color:#E85D30;">KLOEL</h1>',
+    '<div style="font-family:sans-serif;max-width:600px;margin:0 auto;background:' + BRAND_COLORS.VOID + ';color:' + BRAND_COLORS.LIGHT_TEXT + ';padding:40px;">',
+    '<h1 style="color:' + BRAND_COLORS.EMBER + ';">KLOEL</h1>',
     '<p>Ola ',
     escapeHtml(input.customerName),
     ',</p>',
     '<p>Seu pagamento foi confirmado.</p>',
-    '<div style="background:#151517;padding:20px;border-radius:6px;margin:20px 0;">',
+    '<div style="background:' + BRAND_COLORS.CARD_SURFACE + ';padding:20px;border-radius:6px;margin:20px 0;">',
     '<p><strong>Produto:</strong> ',
     escapeHtml(input.productName),
     '</p>',
@@ -110,7 +111,7 @@ function buildPurchaseConfirmationEmailHtml(input: {
     '</p>',
     '</div>',
     input.memberAreaUrl
-      ? `<p>Acesse sua area de membros: <a href="${escapeHtml(input.memberAreaUrl)}" style="color:#E85D30;">${escapeHtml(input.memberAreaUrl)}</a></p>`
+      ? `<p>Acesse sua area de membros: <a href="${escapeHtml(input.memberAreaUrl)}" style="color:${BRAND_COLORS.EMBER};">${escapeHtml(input.memberAreaUrl)}</a></p>`
       : '<p>Se o produto tiver area de membros, seu acesso ja foi liberado automaticamente.</p>',
     '</div>',
   ].join('');

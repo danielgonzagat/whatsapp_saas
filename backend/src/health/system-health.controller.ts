@@ -1,28 +1,12 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, ServiceUnavailableException } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
-import { HealthCheck, HealthCheckResult, HealthCheckService } from '@nestjs/terminus';
 import { Public } from '../auth/public.decorator';
-import { BullMQHealthIndicator } from './indicators/bullmq.health-indicator';
-import { DatabaseBackupHealthIndicator } from './indicators/database-backup.health-indicator';
-import { EmailHealthIndicator } from './indicators/email.health-indicator';
-import { PrismaHealthIndicator } from './indicators/prisma.health-indicator';
-import { RedisHealthIndicator } from './indicators/redis.health-indicator';
-import { StripeHealthIndicator } from './indicators/stripe.health-indicator';
 import { SystemHealthService } from './system-health.service';
 
 @ApiTags('System')
 @Controller('health')
 export class SystemHealthController {
-  constructor(
-    private readonly health: SystemHealthService,
-    private readonly healthCheckService: HealthCheckService,
-    private readonly prismaIndicator: PrismaHealthIndicator,
-    private readonly redisIndicator: RedisHealthIndicator,
-    private readonly bullmqIndicator: BullMQHealthIndicator,
-    private readonly backupIndicator: DatabaseBackupHealthIndicator,
-    private readonly emailIndicator: EmailHealthIndicator,
-    private readonly stripeIndicator: StripeHealthIndicator,
-  ) {}
+  constructor(private readonly health: SystemHealthService) {}
 
   @Public()
   @Get()
@@ -39,18 +23,24 @@ export class SystemHealthController {
   }
 
   @Public()
+  @Get('liveness')
+  @ApiOperation({ summary: 'Liveness probe — process is alive' })
+  healthLiveness() {
+    return this.health.liveness();
+  }
+
+  @Public()
   @Get('readiness')
-  @HealthCheck()
-  @ApiOperation({ summary: 'Readiness probe — DB, Redis, BullMQ, email, Stripe, backup' })
-  async readiness(): Promise<HealthCheckResult> {
-    return this.healthCheckService.check([
-      () => this.prismaIndicator.isHealthy('database'),
-      () => this.redisIndicator.isHealthy('redis'),
-      () => this.bullmqIndicator.isHealthy('bullmq'),
-      () => this.emailIndicator.isHealthy('email'),
-      () => this.stripeIndicator.isHealthy('stripe'),
-      () => this.backupIndicator.isHealthy('backup'),
-    ]);
+  @ApiOperation({
+    summary:
+      'Readiness probe — Postgres, Redis (BullMQ), Stripe, Meta Cloud API, OpenAI, Anthropic',
+  })
+  async readiness() {
+    const result = await this.health.deepReadiness();
+    if (result.status === 'DOWN') {
+      throw new ServiceUnavailableException(result);
+    }
+    return result;
   }
 
   @Public()

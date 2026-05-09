@@ -11,7 +11,7 @@ import { buildKloelDashboardPrompt } from './__companions__/kloel-reply-engine.h
 import { KLOEL_ONBOARDING_PROMPT, KLOEL_SALES_PROMPT } from './kloel.prompts';
 import { chatCompletionWithFallback } from './openai-wrapper';
 import { KLOEL_CHAT_TOOLS } from './kloel-chat-tools.definition';
-import type { ExpertiseLevel, LocalToolExecutor, ReplyMessage } from './kloel-reply-engine.service';
+import type { ExpertiseLevel, LocalToolExecutor, ReplyMessage } from './kloel-reply-engine.types';
 
 export const KLOEL_STREAM_ABORT_REASON_TIMEOUT = 'request_timeout';
 export const KLOEL_STREAM_ABORT_REASON_CLIENT_DISCONNECTED = 'client_disconnected';

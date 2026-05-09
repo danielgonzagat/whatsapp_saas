@@ -1,7 +1,7 @@
 import { Inject, Injectable, Logger, forwardRef, Optional } from '@nestjs/common';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { AudioService } from './audio.service';
-import type { ToolArgs } from './unified-agent.service';
+import type { ToolArgs } from './unified-agent.types';
 import { OpsAlertService } from '../observability/ops-alert.service';
 
 type UnknownRecord = Record<string, unknown>;

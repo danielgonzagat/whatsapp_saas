@@ -22,6 +22,7 @@ import { AuthenticatedRequest } from '../common/interfaces';
 import { getTraceHeaders } from '../common/trace-headers';
 import { resolveKloelCapabilityModel } from '../lib/ai-models';
 import { PrismaService } from '../prisma/prisma.service';
+import { BRAND_COLORS } from '../common/kloel-colors';
 import {
   estimateAnthropicMessageQuoteCostCents,
   estimateOpenAiChatQuoteCostCents,
@@ -260,7 +261,7 @@ export class SiteController {
     const systemPrompt = [
       'You are a landing page generator. Return ONLY valid HTML (no markdown, no code fences).',
       'The HTML must be a complete, self-contained page with inline CSS.',
-      'Use modern design: dark background (#0A0A0C), light text (#E0DDD8), accent (#E85D30).',
+      `Use modern design: dark background (${BRAND_COLORS.VOID}), light text (${BRAND_COLORS.SILVER}), accent (${BRAND_COLORS.EMBER}).`,
       dto.currentHtml
         ? `The user wants to edit an existing page. Here is the current HTML:\n${dto.currentHtml}`
         : '',

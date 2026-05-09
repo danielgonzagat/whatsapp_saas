@@ -23,19 +23,8 @@ import {
 
 type ChatCompletionMessageParam = OpenAI.Chat.ChatCompletionMessageParam;
 
-export type ExpertiseLevel = 'INICIANTE' | 'INTERMEDIÁRIO' | 'AVANÇADO' | 'EXPERT';
-
-export interface ReplyMessage {
-  role: 'system' | 'user' | 'assistant';
-  content: string;
-}
-
-export type LocalToolExecutor = (
-  workspaceId: string,
-  toolName: string,
-  args: Record<string, unknown>,
-  userId?: string,
-) => Promise<{ success: boolean; message?: string; error?: string; [key: string]: unknown }>;
+export type { ExpertiseLevel, ReplyMessage, LocalToolExecutor } from './kloel-reply-engine.types';
+import type { ExpertiseLevel, ReplyMessage, LocalToolExecutor } from './kloel-reply-engine.types';
 
 /** Provides reply-building helpers: prompt assembly, expertise detection, context enrichment. */
 @Injectable()

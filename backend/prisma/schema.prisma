@@ -1670,15 +1670,20 @@ model ChatThread {
 }
 
 model ChatMessage {
-  id        String     @id @default(uuid())
-  threadId  String
-  thread    ChatThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
-  role      String
-  content   String
-  metadata  Json?
-  createdAt DateTime   @default(now())
+  id          String     @id @default(uuid())
+  threadId    String
+  thread      ChatThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  workspaceId String
+  userId      String?
+  role        String
+  content     String
+  metadata    Json?
+  createdAt   DateTime   @default(now())
+  deletedAt   DateTime?
 
   @@index([threadId, createdAt])
+  @@index([workspaceId, createdAt])
+  @@index([userId, createdAt])
   @@map("RAC_ChatMessage")
 }
 
@@ -3652,6 +3657,25 @@ model FraudBlacklist {
 // PlanLimitsService.ensureDailyMessageQuota() reads the plan-based limit
 // from the subscription and compares against the running count.
 //
+// ============================================================================
+// ProductCategory
+// ============================================================================
+// Workspace-scoped product categories for the product catalog.
+// ============================================================================
+model ProductCategory {
+  id          String   @id @default(uuid())
+  workspaceId String
+  name        String
+  sort        Int      @default(0)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([workspaceId, name])
+  @@index([workspaceId])
+  @@map("RAC_ProductCategory")
+}
+
 // Invariants:
 //   * (workspaceId, date) is unique — one row per workspace per day.
 //   * The count is monotonically increasing; it is NEVER decremented.

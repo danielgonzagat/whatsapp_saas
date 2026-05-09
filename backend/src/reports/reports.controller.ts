@@ -6,6 +6,7 @@ import { AuthenticatedRequest } from '../common/interfaces';
 import { PrismaService } from '../prisma/prisma.service';
 import { ReportFiltersDto } from './dto/report-filters.dto';
 import { ReportsService } from './reports.service';
+import { BRAND_COLORS } from '../common/kloel-colors';
 
 // All dates stored as UTC via Prisma DateTime (toISOString)
 @UseGuards(ThrottlerGuard)
@@ -164,8 +165,8 @@ export class ReportsController {
     await this.emailService.sendEmail({
       to: targetEmail,
       subject: 'Relatorio KLOEL — Resumo de Vendas',
-      html: `<div style="font-family:sans-serif;background:#0A0A0C;color:#e0e0e0;padding:40px;max-width:600px;margin:0 auto;">
-        <h1 style="color:#E85D30;">KLOEL — Relatorio</h1>
+      html: `<div style="font-family:sans-serif;background:${BRAND_COLORS.VOID};color:${BRAND_COLORS.LIGHT_TEXT};padding:40px;max-width:600px;margin:0 auto;">
+        <h1 style="color:${BRAND_COLORS.EMBER};">KLOEL — Relatorio</h1>
         <p>Receita: R$ ${(summary.totalRevenue / 100).toFixed(2)}</p>
         <p>Vendas: ${summary.totalCount}</p>
         <p>Ticket Medio: R$ ${(summary.ticketMedio / 100).toFixed(2)}</p>
