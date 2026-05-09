@@ -1,4 +1,7 @@
 -- Create ChannelIdentifier table for unified contact memory across channels
+CREATE UNIQUE INDEX IF NOT EXISTS "RAC_Contact_id_workspaceId_key"
+ON "RAC_Contact" (id, "workspaceId");
+
 CREATE TABLE "RAC_ChannelIdentifier" (
     id TEXT NOT NULL,
     channel TEXT NOT NULL,
@@ -11,7 +14,15 @@ CREATE TABLE "RAC_ChannelIdentifier" (
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "RAC_ChannelIdentifier_pkey" PRIMARY KEY (id)
+    CONSTRAINT "RAC_ChannelIdentifier_pkey" PRIMARY KEY (id),
+    CONSTRAINT "RAC_ChannelIdentifier_contactId_fkey"
+        FOREIGN KEY ("contactId", "workspaceId")
+        REFERENCES "RAC_Contact" (id, "workspaceId")
+        ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "RAC_ChannelIdentifier_workspaceId_fkey"
+        FOREIGN KEY ("workspaceId")
+        REFERENCES "RAC_Workspace" (id)
+        ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 -- Unique constraint: one identifier per channel per workspace
@@ -21,14 +32,6 @@ ON "RAC_ChannelIdentifier" ("workspaceId", channel, "value");
 -- Lookup index by contact
 CREATE INDEX "RAC_ChannelIdentifier_contactId_idx"
 ON "RAC_ChannelIdentifier" ("contactId");
-
-CREATE UNIQUE INDEX IF NOT EXISTS "RAC_Contact_id_workspaceId_key"
-ON "RAC_Contact" (id, "workspaceId");
-
--- Foreign keys
-ALTER TABLE "RAC_ChannelIdentifier" ADD CONSTRAINT "RAC_ChannelIdentifier_contactId_fkey" FOREIGN KEY ("contactId", "workspaceId") REFERENCES "RAC_Contact" (id, "workspaceId") ON DELETE CASCADE ON UPDATE CASCADE;
-
-ALTER TABLE "RAC_ChannelIdentifier" ADD CONSTRAINT "RAC_ChannelIdentifier_workspaceId_fkey" FOREIGN KEY ("workspaceId") REFERENCES "RAC_Workspace" (id) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- Backfill: create ChannelIdentifier rows for all existing contacts.
 -- WhatsApp contacts: phone starts with digit or +
@@ -42,7 +45,7 @@ INSERT INTO "RAC_ChannelIdentifier" (
     "createdAt",
     "updatedAt"
 )
-SELECT
+SELECT /* RAC_Contact */
     GEN_RANDOM_UUID()::TEXT AS generated_id,
     'WHATSAPP' AS channel_name,
     phone AS identifier_value,
@@ -66,7 +69,7 @@ INSERT INTO "RAC_ChannelIdentifier" (
     "createdAt",
     "updatedAt"
 )
-SELECT
+SELECT /* RAC_Contact */
     GEN_RANDOM_UUID()::TEXT AS generated_id,
     'INSTAGRAM' AS channel_name,
     SUBSTRING(phone FROM 4) AS identifier_value,
@@ -90,7 +93,7 @@ INSERT INTO "RAC_ChannelIdentifier" (
     "createdAt",
     "updatedAt"
 )
-SELECT
+SELECT /* RAC_Contact */
     GEN_RANDOM_UUID()::TEXT AS generated_id,
     'MESSENGER' AS channel_name,
     SUBSTRING(phone FROM 4) AS identifier_value,
@@ -114,7 +117,7 @@ INSERT INTO "RAC_ChannelIdentifier" (
     "createdAt",
     "updatedAt"
 )
-SELECT
+SELECT /* RAC_Contact */
     GEN_RANDOM_UUID()::TEXT AS generated_id,
     CASE
         WHEN phone LIKE '%@%' THEN 'EMAIL'
