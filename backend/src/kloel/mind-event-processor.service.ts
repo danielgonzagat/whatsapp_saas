@@ -112,7 +112,14 @@ export class MindEventProcessorService {
         subject: event.subject,
         decisionType: 'followup_timing',
         outcome: 1,
+        baselineOutcome: 1,
       });
+      await this.resolveWorkspacePolicies(
+        event,
+        result,
+        ['audio_vs_text', 'message_format', 'tom', 'channel_choice'],
+        1,
+      );
     }
   }
 
@@ -144,6 +151,13 @@ export class MindEventProcessorService {
   ): Promise<void> {
     if (event.kind === 'checkout.paid' || event.kind === 'sale.completed') {
       await this.addResolvedSurprise(result, this.resolveConversion(event, 1));
+      await this.resolveSubjectPolicies(event, result, ['cart_recovery'], 1);
+      await this.resolveWorkspacePolicies(
+        event,
+        result,
+        ['coupon_offer', 'product_offer', 'objection_response'],
+        1,
+      );
       return;
     }
 
@@ -151,6 +165,13 @@ export class MindEventProcessorService {
       const status = toStableString(event.payload.status).toUpperCase();
       if (CONVERSION_CLOSED_STATUSES.has(status)) {
         await this.addResolvedSurprise(result, this.resolveConversion(event, 0));
+        await this.resolveSubjectPolicies(event, result, ['cart_recovery'], 0);
+        await this.resolveWorkspacePolicies(
+          event,
+          result,
+          ['coupon_offer', 'product_offer', 'objection_response'],
+          0,
+        );
       }
     }
   }
@@ -174,7 +195,52 @@ export class MindEventProcessorService {
           outcome,
         );
         this.applySurprise(result, surprise);
+        if (intent === 'lead_qualified') {
+          await this.resolveWorkspacePolicies(event, result, ['human_transfer'], 1);
+        }
       }
+    }
+  }
+
+  private async resolveSubjectPolicies(
+    event: MindPerceptEvent,
+    result: MindEventProcessAccumulator,
+    decisionTypes: string[],
+    outcome: 0 | 1,
+  ): Promise<void> {
+    await this.resolvePolicies(event, result, event.subject, decisionTypes, outcome);
+  }
+
+  private async resolveWorkspacePolicies(
+    event: MindPerceptEvent,
+    result: MindEventProcessAccumulator,
+    decisionTypes: string[],
+    outcome: 0 | 1,
+  ): Promise<void> {
+    await this.resolvePolicies(
+      event,
+      result,
+      `workspace:${event.workspaceId}`,
+      decisionTypes,
+      outcome,
+    );
+  }
+
+  private async resolvePolicies(
+    event: MindPerceptEvent,
+    result: MindEventProcessAccumulator,
+    subject: string,
+    decisionTypes: string[],
+    outcome: 0 | 1,
+  ): Promise<void> {
+    for (const decisionType of decisionTypes) {
+      result.resolved += await this.policy.resolveOpenForSubject({
+        workspaceId: event.workspaceId,
+        subject,
+        decisionType,
+        outcome,
+        baselineOutcome: outcome,
+      });
     }
   }
 

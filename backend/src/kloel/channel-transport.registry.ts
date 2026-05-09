@@ -14,6 +14,7 @@ import type {
   ChannelTransportProvider,
 } from './channel-transport.types';
 import { MindGuardsService } from './mind-guards.service';
+import { MindGuardContextBuilderService } from './mind-guard-context-builder.service';
 import type { MindActionContext } from './mind-code-native.types';
 
 @Injectable()
@@ -28,6 +29,7 @@ export class ChannelTransportRegistry {
     @Optional() email?: EmailChannelTransport,
     @Optional() whatsapp?: WhatsAppChannelTransport,
     @Optional() private readonly guards?: MindGuardsService,
+    @Optional() private readonly guardContextBuilder?: MindGuardContextBuilderService,
   ) {
     [instagram, messenger, tiktok, email, whatsapp].forEach((provider) => {
       if (provider) this.register(provider);
@@ -81,11 +83,12 @@ export class ChannelTransportRegistry {
       };
     }
 
+    const guardContext = await this.buildGuardContext(workspaceId, request);
     const guard = await this.guards?.evaluate({
       workspaceId,
       decisionType: 'send_message',
       action: this.guardAction(request),
-      context: this.guardContext(request),
+      context: guardContext,
     });
     if (guard && !guard.allowed) {
       this.logger.warn(
@@ -126,5 +129,16 @@ export class ChannelTransportRegistry {
       supportsAudio: request.channel !== 'email' && request.channel !== 'tiktok',
       supportsDocument: request.channel === 'whatsapp' || request.channel === 'email',
     };
+  }
+
+  private async buildGuardContext(
+    workspaceId: string,
+    request: ChannelSendRequest,
+  ): Promise<MindActionContext> {
+    const baseContext = this.guardContext(request);
+    return (
+      (await this.guardContextBuilder?.buildForSend(workspaceId, request, baseContext)) ??
+      baseContext
+    );
   }
 }

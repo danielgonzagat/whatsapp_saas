@@ -124,6 +124,7 @@ import { MindConceptService } from './mind-concepts.service';
 import { MindGlobalPriorService } from './mind-global-prior.service';
 import { MindController } from './mind-controller';
 import { MindEventProcessorService } from './mind-event-processor.service';
+import { MindGuardContextBuilderService } from './mind-guard-context-builder.service';
 import { MindGuardsService } from './mind-guards.service';
 import { MindObservabilityService } from './mind-observability.service';
 import { MindPerceptionService } from './mind-perception.service';
@@ -265,6 +266,7 @@ import { MindWorkspaceStateService } from './mind-workspace-state.service';
     MindConceptService,
     MindGlobalPriorService,
     MindEventProcessorService,
+    MindGuardContextBuilderService,
     MindGuardsService,
     KloelRuleEngineService,
     MindObservabilityService,

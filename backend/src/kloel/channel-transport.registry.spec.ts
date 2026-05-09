@@ -227,6 +227,59 @@ describe('ChannelTransportRegistry', () => {
       expect(stubWhatsApp.sendMessage).not.toHaveBeenCalled();
     });
 
+    it('enriches guard context before deterministic guard evaluation', async () => {
+      const guards = {
+        evaluate: jest.fn().mockResolvedValue({
+          allowed: true,
+          guardName: 'all_guards',
+          reason: 'Ação aprovada pelas guardas determinísticas.',
+        }),
+      };
+      const guardContextBuilder = {
+        buildForSend: jest.fn().mockResolvedValue({
+          channel: 'whatsapp',
+          contactId: 'contact-1',
+          contactOptOut: false,
+          contactMessagesToday: 3,
+          withinComplianceWindow: true,
+          templateApproved: true,
+          supportsAudio: true,
+          supportsDocument: true,
+        }),
+      };
+      const guardedRegistry = new ChannelTransportRegistry(
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        new WhatsAppChannelTransport(stubWhatsApp as never),
+        guards as never,
+        guardContextBuilder as never,
+      );
+
+      await guardedRegistry.send(
+        'ws-1',
+        makeSendRequest('whatsapp', { guardContext: { contactId: 'contact-1' } }),
+      );
+
+      expect(guardContextBuilder.buildForSend).toHaveBeenCalledWith(
+        'ws-1',
+        expect.objectContaining({ channel: 'whatsapp', recipientId: 'recipient-1' }),
+        expect.objectContaining({ channel: 'whatsapp', contactId: 'contact-1' }),
+      );
+      expect(guards.evaluate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          context: expect.objectContaining({
+            contactId: 'contact-1',
+            contactMessagesToday: 3,
+            contactOptOut: false,
+            templateApproved: true,
+            withinComplianceWindow: true,
+          }),
+        }),
+      );
+    });
+
     it('propagates WhatsApp send failure', async () => {
       stubWhatsApp.sendMessage.mockResolvedValue({
         success: false,

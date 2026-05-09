@@ -13,6 +13,22 @@ const PATTERN_RE = /\/+$/;
 const HTTPS_RE = /^https?:\/\//i;
 const LOCALHOST_127__0__0__1_RE = /^(localhost|127\.0\.0\.1)(:\d+)?$/i;
 
+function resolveMetaConfigChannelSuffix(channel: string): string {
+  switch (channel) {
+    case 'facebook':
+    case 'messenger':
+      return 'MESSENGER';
+    case 'whatsapp':
+      return 'WHATSAPP';
+    case 'instagram':
+      return 'INSTAGRAM';
+    case 'ads':
+      return 'ADS';
+    default:
+      return channel.toUpperCase();
+  }
+}
+
 type ResolvedMetaConnection = {
   workspaceId: string;
   accessToken: string;
@@ -47,7 +63,7 @@ export class MetaWhatsAppService {
     const channel = String(options?.channel || '')
       .trim()
       .toLowerCase();
-    const channelSuffix = channel ? channel.toUpperCase() : '';
+    const channelSuffix = channel ? resolveMetaConfigChannelSuffix(channel) : '';
     const channelSpecific = channelSuffix
       ? String(process.env[`META_CONFIG_ID_${channelSuffix}`] || '').trim()
       : '';
