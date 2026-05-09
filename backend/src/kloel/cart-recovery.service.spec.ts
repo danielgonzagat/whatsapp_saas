@@ -129,7 +129,7 @@ describe('CartRecoveryService', () => {
       const updatePayload = prisma.checkoutOrder.updateMany.mock.calls[0][0].data.metadata;
       expect(updatePayload).toEqual({
         recoveryEmailSent: true,
-        recoveryEmailSentAt: expect.any(String),
+        recoveryEmailSentAt: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T/),
       });
     });
 
@@ -152,7 +152,7 @@ describe('CartRecoveryService', () => {
             metadata: expect.objectContaining({
               source: 'checkout',
               recoveryEmailSent: true,
-              recoveryEmailSentAt: expect.any(String),
+              recoveryEmailSentAt: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T/),
             }),
           },
         }),

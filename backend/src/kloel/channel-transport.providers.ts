@@ -11,7 +11,6 @@ import type {
   ChannelSendResult,
   ChannelTransportProvider,
 } from './channel-transport.types';
-
 function blockedCapability(
   channel: ChannelName,
   reason: string,
@@ -24,7 +23,6 @@ function blockedCapability(
     requiredSetup: setup,
   };
 }
-
 function availableCapability(channel: ChannelName): ChannelCapability {
   return {
     channel,
@@ -33,11 +31,9 @@ function availableCapability(channel: ChannelName): ChannelCapability {
     requiredSetup: [],
   };
 }
-
 function blockedResult(reason: string): ChannelSendResult {
   return { success: false, blocked: true, blockedReason: reason };
 }
-
 function escapeEmailHtml(value: string): string {
   return value
     .replaceAll('&', '&amp;')
@@ -46,7 +42,6 @@ function escapeEmailHtml(value: string): string {
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#39;');
 }
-
 @Injectable()
 export class InstagramChannelTransport implements ChannelTransportProvider {
   readonly channel: ChannelName = 'instagram';
