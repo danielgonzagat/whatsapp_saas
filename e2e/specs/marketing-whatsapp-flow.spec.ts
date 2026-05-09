@@ -319,9 +319,7 @@ test.describe('Marketing WhatsApp flow', () => {
     await dismissCookieBanner(page);
 
     await expect(page.getByText('Conectar WhatsApp')).toBeVisible({ timeout: 15_000 });
-    await expect(page.getByText('Embedded Signup oficial da Meta com Cloud API ativa')).toBeVisible(
-      { timeout: 15_000 },
-    );
+    await expect(page.getByText(/autorizacao oficial da Meta/)).toBeVisible({ timeout: 15_000 });
     await expect(page.getByAltText('QR Code do WhatsApp')).toHaveCount(0);
 
     await page.getByRole('button', { name: 'Proximo' }).click();
@@ -330,7 +328,7 @@ test.describe('Marketing WhatsApp flow', () => {
 
     await page.getByRole('button', { name: 'Proximo' }).click();
     await expect(page.getByText('Passo 3 de 4')).toBeVisible();
-    await expect(page.getByText('Templates de mensagem')).toBeVisible();
+    await expect(page.getByText('Templates de mensagem', { exact: true })).toBeVisible();
 
     await page.getByRole('button', { name: 'Proximo' }).click();
     await expect(page.getByText('Passo 4 de 4')).toBeVisible();
