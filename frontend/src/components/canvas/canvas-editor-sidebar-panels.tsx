@@ -90,7 +90,8 @@ export function SidebarPanels({
                 {kloelT('Nenhum modelo disponível.')}
               </p>
             ) : (
-              templates.map((tpl) => (
+              templates.map((tpl) => {
+                return (
               <button
                 type="button"
                 key={tpl.id}
@@ -102,7 +103,8 @@ export function SidebarPanels({
                   {tpl.name}
                 </span>
               </button>
-            ))
+                );
+              })
             )}
           </div>
           <div style={{ marginTop: 16 }}>

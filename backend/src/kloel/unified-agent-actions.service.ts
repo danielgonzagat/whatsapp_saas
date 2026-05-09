@@ -2,7 +2,6 @@ import { Inject, Injectable, Logger, forwardRef, Optional } from '@nestjs/common
 import { Prisma } from '@prisma/client';
 import OpenAI from 'openai';
 import { AuditService } from '../audit/audit.service';
-import { PlanLimitsService } from '../billing/plan-limits.service';
 import { StorageService } from '../common/storage/storage.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
@@ -44,7 +43,6 @@ export class UnifiedAgentActionsService {
     private readonly storageService: StorageService,
     @Inject(forwardRef(() => WhatsappService))
     private readonly whatsappService: WhatsappService,
-    private readonly planLimits: PlanLimitsService,
     private readonly messaging: UnifiedAgentActionsMessagingService,
     private readonly crm: UnifiedAgentActionsCrmService,
     private readonly sales: UnifiedAgentActionsSalesService,

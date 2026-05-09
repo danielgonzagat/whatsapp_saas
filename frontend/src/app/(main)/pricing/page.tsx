@@ -358,7 +358,7 @@ export default function PricingPage() {
                   </p>
                 </div>
               );
-            }})}
+            })}
           </div>
           )}
         </CenterStage>

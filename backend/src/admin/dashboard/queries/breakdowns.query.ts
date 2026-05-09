@@ -23,6 +23,12 @@ export interface MethodBreakdownRow {
 
 const PAID_STATUSES: OrderStatus[] = [OrderStatus.PAID, OrderStatus.SHIPPED, OrderStatus.DELIVERED];
 
+type PaymentMethodGroupByResult = {
+  paymentMethod: PaymentMethod;
+  _sum: { totalInCents: bigint | number | string | null };
+  _count: { _all: number };
+};
+
 /**
  * Convert a bigint/number/string aggregate value to a JS `number` while
  * refusing silent precision loss. Throws if the magnitude exceeds
@@ -98,11 +104,7 @@ export async function queryMethodBreakdown(
     },
     _sum: { totalInCents: true },
     _count: { _all: true },
-  }) as unknown as Array<{
-    paymentMethod: PaymentMethod;
-    _sum: { totalInCents: bigint | number | string | null };
-    _count: { _all: number };
-  }>;
+  }) as PaymentMethodGroupByResult[];
 
   return grouped
     .map((row) => ({

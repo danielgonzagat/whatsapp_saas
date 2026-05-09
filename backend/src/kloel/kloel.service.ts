@@ -2,13 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { Response } from 'express';
 import { PlanLimitsService } from '../billing/plan-limits.service';
-import { StorageService } from '../common/storage/storage.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
-import { WhatsappService } from '../whatsapp/whatsapp.service';
-import { AudioService } from './audio.service';
-import { KloelBusinessConfigToolsService } from './kloel-business-config-tools.service';
-import { KloelChatToolsService } from './kloel-chat-tools.service';
 import { KloelComposerService } from './kloel-composer.service';
 import { KloelConversationStore } from './kloel-conversation-store';
 import { KloelLeadBrainService } from './kloel-lead-brain.service';
@@ -16,10 +10,7 @@ import { KloelReplyEngineService } from './kloel-reply-engine.service';
 import { KloelThreadService } from './kloel-thread.service';
 import { KloelThinkerService, ThinkRequest, ThinkSyncResult } from './kloel-thinker.service';
 import { KloelToolDispatcherService } from './kloel-tool-dispatcher.service';
-import { KloelWhatsAppToolsService } from './kloel-whatsapp-tools.service';
 import { KloelWorkspaceContextService } from './kloel-workspace-context.service';
-import { SmartPaymentService } from './smart-payment.service';
-import { UnifiedAgentService } from './unified-agent.service';
 
 type ComposerCapability = 'create_image' | 'create_site' | 'search_web';
 type UnknownRecord = Record<string, unknown>;
@@ -71,18 +62,9 @@ export class KloelService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly smartPaymentService: SmartPaymentService,
-    private readonly whatsappService: WhatsappService,
-    private readonly providerRegistry: WhatsAppProviderRegistry,
-    private readonly unifiedAgentService: UnifiedAgentService,
-    private readonly audioService: AudioService,
     private readonly planLimits: PlanLimitsService,
-    private readonly storageService: StorageService,
     private readonly threadService: KloelThreadService,
     private readonly wsContextService: KloelWorkspaceContextService,
-    private readonly chatToolsService: KloelChatToolsService,
-    private readonly bizConfigToolsService: KloelBusinessConfigToolsService,
-    private readonly whatsappToolsService: KloelWhatsAppToolsService,
     private readonly leadBrainService: KloelLeadBrainService,
     private readonly composerService: KloelComposerService,
     private readonly thinkerService: KloelThinkerService,

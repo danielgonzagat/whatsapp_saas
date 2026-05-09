@@ -365,9 +365,9 @@ export class WahaSessionConfigProvider extends WahaTransport {
     };
 
     return {
-      webhooks,
       store: storeConfig,
       noweb: { store: storeConfig },
+      ...(webhooks !== undefined ? { webhooks } : {}),
     };
   }
 
