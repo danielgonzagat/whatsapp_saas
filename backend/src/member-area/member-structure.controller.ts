@@ -84,12 +84,7 @@ const COMMUNITY_MODULES: ModuleTemplate[] = [
 
 const HYBRID_MODULES: ModuleTemplate[] = [
   ...COURSE_MODULES,
-  {
-    name: COMMUNITY_MODULES[0].name,
-    description: COMMUNITY_MODULES[0].description,
-    position: 3,
-    lessons: [...COMMUNITY_MODULES[0].lessons],
-  },
+  { ...COMMUNITY_MODULES[0]!, position: 3 },
 ];
 
 const MEMBERSHIP_MODULES: ModuleTemplate[] = [
@@ -135,7 +130,7 @@ const MEMBERSHIP_MODULES: ModuleTemplate[] = [
   },
 ];
 
-function templateForAreaType(type: string): readonly ModuleTemplate[] {
+function templateForAreaType(type: string): ModuleTemplate[] {
   if (type === 'COURSE') return COURSE_MODULES;
   if (type === 'COMMUNITY') return COMMUNITY_MODULES;
   if (type === 'HYBRID') return HYBRID_MODULES;

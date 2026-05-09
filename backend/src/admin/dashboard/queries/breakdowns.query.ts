@@ -23,12 +23,6 @@ export interface MethodBreakdownRow {
 
 const PAID_STATUSES: OrderStatus[] = [OrderStatus.PAID, OrderStatus.SHIPPED, OrderStatus.DELIVERED];
 
-type PaymentMethodGroupByResult = {
-  paymentMethod: PaymentMethod;
-  _sum: { totalInCents: bigint | number | string | null };
-  _count: { _all: number };
-};
-
 /**
  * Convert a bigint/number/string aggregate value to a JS `number` while
  * refusing silent precision loss. Throws if the magnitude exceeds
@@ -96,7 +90,7 @@ export async function queryMethodBreakdown(
   // Platform-level admin aggregate: intentionally cross-workspace.
   // `workspaceId: undefined` is a Prisma-side no-op ("skip filter")
   // and keeps the unsafe-query scanner satisfied.
-  const grouped = await prisma.checkoutOrder.groupBy({
+  const grouped = (await prisma.checkoutOrder.groupBy({
     by: ['paymentMethod'],
     where: {
       status: { in: PAID_STATUSES },
@@ -104,7 +98,11 @@ export async function queryMethodBreakdown(
     },
     _sum: { totalInCents: true },
     _count: { _all: true },
-  }) as PaymentMethodGroupByResult[];
+  })) as unknown as Array<{
+    paymentMethod: PaymentMethod;
+    _sum: { totalInCents: bigint | number | string | null };
+    _count: { _all: number };
+  }>;
 
   return grouped
     .map((row) => ({

@@ -17,7 +17,7 @@ export interface AssistantResponseVersion {
   /** Content property. */
   content: string;
   /** Created at property. */
-  createdAt?: string;
+  createdAt?: string | undefined;
   /** Source property. */
   source: 'initial' | 'regenerated';
 }

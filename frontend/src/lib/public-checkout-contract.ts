@@ -10,7 +10,7 @@ export interface PixelConfig {
   /** Pixel id property. */
   pixelId: string;
   /** Access token property. */
-  accessToken?: string;
+  accessToken?: string | undefined;
   /** Track page view property. */
   trackPageView: boolean;
   /** Track initiate checkout property. */
@@ -21,6 +21,18 @@ export interface PixelConfig {
   trackPurchase: boolean;
   /** Is active property. */
   isActive: boolean;
+}
+
+/** Checkout display testimonial shape. */
+export interface CheckoutDisplayTestimonial {
+  /** Name property. */
+  name: string;
+  /** Stars property. */
+  stars: number;
+  /** Text property. */
+  text: string;
+  /** Avatar property. */
+  avatar: string;
 }
 
 /** Public checkout testimonial shape. */
@@ -60,15 +72,15 @@ export interface PublicCheckoutOrderBump {
   /** Product name property. */
   productName: string;
   /** Image property. */
-  image?: string;
+  image?: string | undefined;
   /** Price in cents property. */
   priceInCents: number;
   /** Compare at price property. */
-  compareAtPrice?: number;
+  compareAtPrice?: number | undefined;
   /** Highlight color property. */
-  highlightColor?: string;
+  highlightColor?: string | undefined;
   /** Checkbox label property. */
-  checkboxLabel?: string;
+  checkboxLabel?: string | undefined;
 }
 
 /** Public checkout product shape. */
@@ -108,149 +120,149 @@ export interface PublicCheckoutMerchantInfo {
 /** Public checkout config shape. */
 export interface PublicCheckoutConfig {
   /** Theme property. */
-  theme?: 'NOIR' | 'BLANC';
+  theme?: 'NOIR' | 'BLANC' | undefined;
   /** Accent color property. */
-  accentColor?: string;
+  accentColor?: string | undefined;
   /** Accent color2 property. */
-  accentColor2?: string;
+  accentColor2?: string | undefined;
   /** Background color property. */
-  backgroundColor?: string;
+  backgroundColor?: string | undefined;
   /** Card color property. */
-  cardColor?: string;
+  cardColor?: string | undefined;
   /** Text color property. */
-  textColor?: string;
+  textColor?: string | undefined;
   /** Muted text color property. */
-  mutedTextColor?: string;
+  mutedTextColor?: string | undefined;
   /** Font body property. */
-  fontBody?: string;
+  fontBody?: string | undefined;
   /** Font display property. */
-  fontDisplay?: string;
+  fontDisplay?: string | undefined;
   /** Brand name property. */
-  brandName?: string;
+  brandName?: string | undefined;
   /** Brand logo property. */
-  brandLogo?: string;
+  brandLogo?: string | undefined;
   /** Header message property. */
-  headerMessage?: string;
+  headerMessage?: string | undefined;
   /** Header sub message property. */
-  headerSubMessage?: string;
+  headerSubMessage?: string | undefined;
   /** Product image property. */
-  productImage?: string;
+  productImage?: string | undefined;
   /** Product display name property. */
-  productDisplayName?: string;
+  productDisplayName?: string | undefined;
   /** Btn step1 text property. */
-  btnStep1Text?: string;
+  btnStep1Text?: string | undefined;
   /** Btn step2 text property. */
-  btnStep2Text?: string;
+  btnStep2Text?: string | undefined;
   /** Btn finalize text property. */
-  btnFinalizeText?: string;
+  btnFinalizeText?: string | undefined;
   /** Btn finalize icon property. */
-  btnFinalizeIcon?: string;
+  btnFinalizeIcon?: string | undefined;
   /** Require cpf property. */
-  requireCPF?: boolean;
+  requireCPF?: boolean | undefined;
   /** Require phone property. */
-  requirePhone?: boolean;
+  requirePhone?: boolean | undefined;
   /** Phone label property. */
-  phoneLabel?: string;
+  phoneLabel?: string | undefined;
   /** Enable credit card property. */
-  enableCreditCard?: boolean;
+  enableCreditCard?: boolean | undefined;
   /** Enable pix property. */
-  enablePix?: boolean;
+  enablePix?: boolean | undefined;
   /** Enable boleto property. */
-  enableBoleto?: boolean;
+  enableBoleto?: boolean | undefined;
   /** Enable coupon property. */
-  enableCoupon?: boolean;
+  enableCoupon?: boolean | undefined;
   /** Show coupon popup property. */
-  showCouponPopup?: boolean;
+  showCouponPopup?: boolean | undefined;
   /** Coupon popup delay property. */
-  couponPopupDelay?: number;
+  couponPopupDelay?: number | undefined;
   /** Coupon popup title property. */
-  couponPopupTitle?: string;
+  couponPopupTitle?: string | undefined;
   /** Coupon popup desc property. */
-  couponPopupDesc?: string;
+  couponPopupDesc?: string | undefined;
   /** Coupon popup btn text property. */
-  couponPopupBtnText?: string;
+  couponPopupBtnText?: string | undefined;
   /** Coupon popup dismiss property. */
-  couponPopupDismiss?: string;
+  couponPopupDismiss?: string | undefined;
   /** Auto coupon code property. */
-  autoCouponCode?: string;
+  autoCouponCode?: string | undefined;
   /** Enable timer property. */
-  enableTimer?: boolean;
+  enableTimer?: boolean | undefined;
   /** Timer type property. */
-  timerType?: 'COUNTDOWN' | 'EXPIRATION';
+  timerType?: 'COUNTDOWN' | 'EXPIRATION' | undefined;
   /** Timer minutes property. */
-  timerMinutes?: number;
+  timerMinutes?: number | undefined;
   /** Timer message property. */
-  timerMessage?: string;
+  timerMessage?: string | undefined;
   /** Timer expired message property. */
-  timerExpiredMessage?: string;
+  timerExpiredMessage?: string | undefined;
   /** Timer position property. */
-  timerPosition?: string;
+  timerPosition?: string | undefined;
   /** Show stock counter property. */
-  showStockCounter?: boolean;
+  showStockCounter?: boolean | undefined;
   /** Stock message property. */
-  stockMessage?: string;
+  stockMessage?: string | undefined;
   /** Fake stock count property. */
-  fakeStockCount?: number;
+  fakeStockCount?: number | undefined;
   /** Shipping mode property. */
-  shippingMode?: 'FREE' | 'FIXED' | 'VARIABLE';
+  shippingMode?: 'FREE' | 'FIXED' | 'VARIABLE' | undefined;
   /** Shipping origin zip property. */
-  shippingOriginZip?: string;
+  shippingOriginZip?: string | undefined;
   /** Shipping variable min in cents property. */
-  shippingVariableMinInCents?: number;
+  shippingVariableMinInCents?: number | undefined;
   /** Shipping variable max in cents property. */
-  shippingVariableMaxInCents?: number;
+  shippingVariableMaxInCents?: number | undefined;
   /** Shipping use kloel calculator property. */
-  shippingUseKloelCalculator?: boolean;
+  shippingUseKloelCalculator?: boolean | undefined;
   /** Affiliate custom commission enabled property. */
-  affiliateCustomCommissionEnabled?: boolean;
+  affiliateCustomCommissionEnabled?: boolean | undefined;
   /** Affiliate custom commission type property. */
-  affiliateCustomCommissionType?: 'AMOUNT' | 'PERCENT';
+  affiliateCustomCommissionType?: 'AMOUNT' | 'PERCENT' | undefined;
   /** Affiliate custom commission amount in cents property. */
-  affiliateCustomCommissionAmountInCents?: number;
+  affiliateCustomCommissionAmountInCents?: number | undefined;
   /** Affiliate custom commission percent property. */
-  affiliateCustomCommissionPercent?: number;
+  affiliateCustomCommissionPercent?: number | undefined;
   /** Enable exit intent property. */
-  enableExitIntent?: boolean;
+  enableExitIntent?: boolean | undefined;
   /** Exit intent title property. */
-  exitIntentTitle?: string;
+  exitIntentTitle?: string | undefined;
   /** Exit intent description property. */
-  exitIntentDescription?: string;
+  exitIntentDescription?: string | undefined;
   /** Exit intent coupon code property. */
-  exitIntentCouponCode?: string;
+  exitIntentCouponCode?: string | undefined;
   /** Enable floating bar property. */
-  enableFloatingBar?: boolean;
+  enableFloatingBar?: boolean | undefined;
   /** Floating bar message property. */
-  floatingBarMessage?: string;
+  floatingBarMessage?: string | undefined;
   /** Enable testimonials property. */
-  enableTestimonials?: boolean;
+  enableTestimonials?: boolean | undefined;
   /** Testimonials property. */
-  testimonials?: PublicCheckoutTestimonial[];
+  testimonials?: PublicCheckoutTestimonial[] | undefined;
   /** Enable guarantee property. */
-  enableGuarantee?: boolean;
+  enableGuarantee?: boolean | undefined;
   /** Guarantee title property. */
-  guaranteeTitle?: string;
+  guaranteeTitle?: string | undefined;
   /** Guarantee text property. */
-  guaranteeText?: string;
+  guaranteeText?: string | undefined;
   /** Guarantee days property. */
-  guaranteeDays?: number;
+  guaranteeDays?: number | undefined;
   /** Enable trust badges property. */
-  enableTrustBadges?: boolean;
+  enableTrustBadges?: boolean | undefined;
   /** Trust badges property. */
-  trustBadges?: string[];
+  trustBadges?: string[] | undefined;
   /** Footer text property. */
-  footerText?: string;
+  footerText?: string | undefined;
   /** Show payment icons property. */
-  showPaymentIcons?: boolean;
+  showPaymentIcons?: boolean | undefined;
   /** Meta title property. */
-  metaTitle?: string;
+  metaTitle?: string | undefined;
   /** Meta description property. */
-  metaDescription?: string;
+  metaDescription?: string | undefined;
   /** Meta image property. */
-  metaImage?: string;
+  metaImage?: string | undefined;
   /** Favicon property. */
-  favicon?: string;
+  favicon?: string | undefined;
   /** Pixels property. */
-  pixels?: PixelConfig[];
+  pixels?: PixelConfig[] | undefined;
 }
 
 /** Public checkout payment provider shape. */
@@ -262,37 +274,37 @@ export interface PublicCheckoutPaymentProvider {
   /** Checkout enabled property. */
   checkoutEnabled: boolean;
   /** Public key property. */
-  publicKey?: string | null;
+  publicKey?: string | null | undefined;
   /** Unavailable reason property. */
-  unavailableReason?: string | null;
+  unavailableReason?: string | null | undefined;
   /** Marketplace fee percent property. */
-  marketplaceFeePercent?: number;
+  marketplaceFeePercent?: number | undefined;
   /** Installment interest monthly percent property. */
-  installmentInterestMonthlyPercent?: number;
+  installmentInterestMonthlyPercent?: number | undefined;
   /** Available payment method ids property. */
-  availablePaymentMethodIds?: string[];
+  availablePaymentMethodIds?: string[] | undefined;
   /** Available payment method types property. */
-  availablePaymentMethodTypes?: string[];
+  availablePaymentMethodTypes?: string[] | undefined;
   /** Supports credit card property. */
-  supportsCreditCard?: boolean;
+  supportsCreditCard?: boolean | undefined;
   /** Supports pix property. */
-  supportsPix?: boolean;
+  supportsPix?: boolean | undefined;
   /** Supports boleto property. */
-  supportsBoleto?: boolean;
+  supportsBoleto?: boolean | undefined;
 }
 
 /** Public checkout affiliate context shape. */
 export interface PublicCheckoutAffiliateContext {
   /** Affiliate link id property. */
-  affiliateLinkId?: string;
+  affiliateLinkId?: string | undefined;
   /** Affiliate workspace id property. */
-  affiliateWorkspaceId?: string;
+  affiliateWorkspaceId?: string | undefined;
   /** Affiliate product id property. */
-  affiliateProductId?: string;
+  affiliateProductId?: string | undefined;
   /** Affiliate code property. */
-  affiliateCode?: string;
+  affiliateCode?: string | undefined;
   /** Commission pct property. */
-  commissionPct?: number;
+  commissionPct?: number | undefined;
 }
 
 /** Public checkout plan shape. */
@@ -304,21 +316,21 @@ export interface PublicCheckoutPlan {
   /** Price in cents property. */
   priceInCents: number;
   /** Compare at price property. */
-  compareAtPrice?: number;
+  compareAtPrice?: number | undefined;
   /** Currency property. */
-  currency?: string;
+  currency?: string | undefined;
   /** Max installments property. */
-  maxInstallments?: number;
+  maxInstallments?: number | undefined;
   /** Installments fee property. */
-  installmentsFee?: boolean;
+  installmentsFee?: boolean | undefined;
   /** Quantity property. */
-  quantity?: number;
+  quantity?: number | undefined;
   /** Free shipping property. */
-  freeShipping?: boolean;
+  freeShipping?: boolean | undefined;
   /** Shipping price property. */
-  shippingPrice?: number;
+  shippingPrice?: number | undefined;
   /** Order bumps property. */
-  orderBumps?: PublicCheckoutOrderBump[];
+  orderBumps?: PublicCheckoutOrderBump[] | undefined;
 }
 
 /** Public checkout response shape. */
@@ -326,39 +338,39 @@ export interface PublicCheckoutResponse extends PublicCheckoutPlan {
   /** Slug property. */
   slug: string;
   /** Checkout code property. */
-  checkoutCode?: string;
+  checkoutCode?: string | undefined;
   /** Product property. */
   product: PublicCheckoutProduct;
   /** Merchant property. */
-  merchant?: PublicCheckoutMerchantInfo;
+  merchant?: PublicCheckoutMerchantInfo | undefined;
   /** Checkout config property. */
-  checkoutConfig?: PublicCheckoutConfig;
+  checkoutConfig?: PublicCheckoutConfig | undefined;
   /** Order bumps property. */
-  orderBumps?: PublicCheckoutOrderBump[];
+  orderBumps?: PublicCheckoutOrderBump[] | undefined;
   /** Payment provider property. */
-  paymentProvider?: PublicCheckoutPaymentProvider;
+  paymentProvider?: PublicCheckoutPaymentProvider | undefined;
   /** Affiliate context property. */
-  affiliateContext?: PublicCheckoutAffiliateContext | null;
+  affiliateContext?: PublicCheckoutAffiliateContext | null | undefined;
 }
 
 /** Public checkout theme props shape. */
 export interface PublicCheckoutThemeProps {
   /** Product property. */
-  product?: PublicCheckoutProduct;
+  product?: PublicCheckoutProduct | undefined;
   /** Config property. */
-  config?: PublicCheckoutConfig;
+  config?: PublicCheckoutConfig | undefined;
   /** Plan property. */
-  plan?: PublicCheckoutPlan;
+  plan?: PublicCheckoutPlan | undefined;
   /** Slug property. */
-  slug?: string;
+  slug?: string | undefined;
   /** Workspace id property. */
-  workspaceId?: string;
+  workspaceId?: string | undefined;
   /** Checkout code property. */
-  checkoutCode?: string;
+  checkoutCode?: string | undefined;
   /** Payment provider property. */
-  paymentProvider?: PublicCheckoutPaymentProvider;
+  paymentProvider?: PublicCheckoutPaymentProvider | undefined;
   /** Affiliate context property. */
-  affiliateContext?: PublicCheckoutAffiliateContext | null;
+  affiliateContext?: PublicCheckoutAffiliateContext | null | undefined;
   /** Merchant property. */
-  merchant?: PublicCheckoutMerchantInfo;
+  merchant?: PublicCheckoutMerchantInfo | undefined;
 }
