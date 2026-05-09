@@ -2,6 +2,7 @@ import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/commo
 import { Queue, Worker } from 'bullmq';
 import { createRedisClient, isRedisConfigured } from '../common/redis/redis.util';
 import { PrismaService } from '../prisma/prisma.service';
+import { MindReportService } from './mind-report.service';
 import { MindService } from './mind.service';
 
 const DEFAULT_SCHEDULER_INTERVAL_MS = 30_000;
@@ -17,10 +18,12 @@ export class MindProcessorService implements OnModuleInit, OnModuleDestroy {
   private tickQueue?: Queue;
   private schedulerWorker?: Worker;
   private tickWorker?: Worker;
+  private readonly dailyReportKeys = new Set<string>();
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly mind: MindService,
+    private readonly reports: MindReportService,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -82,7 +85,12 @@ export class MindProcessorService implements OnModuleInit, OnModuleDestroy {
 
     this.tickWorker = new Worker(
       MIND_TICK_QUEUE,
-      async (job) => this.mind.tick(String(job.data.workspaceId)),
+      async (job) => {
+        const workspaceId = String(job.data.workspaceId);
+        const tick = await this.mind.tick(workspaceId);
+        await this.maybeGenerateDailyReport(workspaceId);
+        return tick;
+      },
       {
         connection: createRedisClient({ maxRetriesPerRequest: null }),
         concurrency,
@@ -147,5 +155,25 @@ export class MindProcessorService implements OnModuleInit, OnModuleDestroy {
     }
 
     return { dispatched: workspaces.length };
+  }
+
+  private async maybeGenerateDailyReport(workspaceId: string): Promise<void> {
+    if (process.env.MIND_DISABLE_DAILY_REPORT === '1') {
+      return;
+    }
+
+    const reportDate = new Date();
+    const key = `${workspaceId}:${reportDate.toISOString().slice(0, 10)}`;
+    if (this.dailyReportKeys.has(key)) {
+      return;
+    }
+
+    try {
+      await this.reports.generateDaily(workspaceId);
+      this.dailyReportKeys.add(key);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.warn(`MIND daily report failed workspace=${workspaceId}: ${message}`);
+    }
   }
 }
