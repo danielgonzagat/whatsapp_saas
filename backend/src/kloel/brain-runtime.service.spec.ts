@@ -144,6 +144,7 @@ describe('BrainRuntimeService', () => {
       contactId: '',
       phone: '',
       message: 'cria um produto de 497',
+      predecidedActions: [],
       context: {
         brainSource: 'chat',
         brainIntent: 'user_message',
@@ -198,6 +199,34 @@ describe('BrainRuntimeService', () => {
       response: 'Produto criado.',
       actions: [{ tool: 'create_product', args: {}, result: { success: true } }],
     });
+  });
+
+  it('passes capability intents as predecided actions to the unified executor', async () => {
+    await service.decide({
+      workspaceId: 'ws-1',
+      userId: 'user-1',
+      body: {
+        source: 'chat',
+        intent: 'create_product',
+        context: {
+          actionArgs: { name: 'Produto MIND', price: 497 },
+          clientRequestId: 'req-2',
+        },
+        messages: [{ role: 'user', content: 'crie esse produto' }],
+      },
+    });
+
+    expect(unifiedAgent.processMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        allowedTools: ['create_product'],
+        predecidedActions: [
+          {
+            tool: 'create_product',
+            args: { name: 'Produto MIND', price: 497 },
+          },
+        ],
+      }),
+    );
   });
 
   it('observes workspace context without executing agent actions', async () => {

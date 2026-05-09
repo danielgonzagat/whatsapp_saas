@@ -15,6 +15,7 @@ import { BrainDecideDto, BrainObserveDto } from './brain-runtime.dto';
 import { KloelThreadService } from './kloel-thread.service';
 import { UnifiedAgentContextDataService } from './unified-agent-context-data.service';
 import { UnifiedAgentService } from './unified-agent.service';
+import type { PredecidedAction } from './unified-agent.types';
 
 function latestUserText(messages: BrainDecideDto['messages']): string | undefined {
   if (!messages?.length) {
@@ -31,6 +32,25 @@ function readOptionalString(value: unknown): string | undefined {
 
 function cloneJson(value: unknown): Prisma.InputJsonValue {
   return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
+}
+
+function readRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+function buildPredecidedActions(input: {
+  allowedTools: string[];
+  context?: Record<string, unknown>;
+  intent: string;
+}): PredecidedAction[] {
+  if (!input.allowedTools.includes(input.intent)) {
+    return [];
+  }
+
+  const args = readRecord(input.context?.actionArgs ?? input.context?.toolArgs);
+  return [{ tool: input.intent, args: args }];
 }
 
 @Injectable()
@@ -98,12 +118,20 @@ export class BrainRuntimeService {
       } satisfies Prisma.InputJsonObject);
     }
 
+    const allowedTools = this.capabilities.allowedFor(source);
+    const predecidedActions = buildPredecidedActions({
+      allowedTools,
+      context: params.body.context,
+      intent,
+    });
+
     const result = await this.unifiedAgent.processMessage({
-      allowedTools: this.capabilities.allowedFor(source),
+      allowedTools,
       workspaceId: params.workspaceId,
       contactId: params.body.contactId ?? '',
       phone: params.body.phone ?? '',
       message,
+      predecidedActions,
       context: {
         brainSource: source,
         brainRequestId: requestId,
