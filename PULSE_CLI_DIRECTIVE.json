@@ -1,11 +1,11 @@
 {
-  "generatedAt": "2026-05-09T01:39:15.385Z",
+  "generatedAt": "2026-05-09T02:21:17.036Z",
   "profile": null,
   "certificationScope": null,
   "pulseMachineReadiness": {
     "scope": "pulse_machine_not_kloel_product",
     "status": "NOT_READY",
-    "generatedAt": "2026-05-09T01:37:09.759Z",
+    "generatedAt": "2026-05-09T02:20:47.008Z",
     "productCertificationStatus": "NOT_CERTIFIED",
     "productCertificationExcludedFromVerdict": true,
     "canRunBoundedAutonomousCycle": false,
@@ -149,7 +149,7 @@
     {
       "gate": "evidenceFresh",
       "status": "fail",
-      "reason": "Codacy snapshot is stale (22749 minute(s) old)."
+      "reason": "Codacy snapshot is stale (22792 minute(s) old)."
     },
     {
       "gate": "noOverclaimPass",
@@ -178,7 +178,7 @@
       "readinessBlockers": 4,
       "criticalUnobservedPaths": 0,
       "criticalBlueprintReady": 0,
-      "coveragePercent": 100
+      "coveragePercent": 4
     },
     "executionMode": "ai_safe",
     "topExecutableUnprovedTasks": [
@@ -299,7 +299,7 @@
       }
     ],
     "evidenceFreshness": {
-      "generatedAt": "2026-05-09T01:37:09.637Z",
+      "generatedAt": "2026-05-09T02:21:14.847Z",
       "ageMinutes": 0,
       "stale": false,
       "source": "path_proof_plan",
@@ -872,7 +872,7 @@
   "zeroPromptProductionGuidanceVerdict": "NAO",
   "zeroPromptProductionGuidanceReason": "NAO: Authority is not automation-eligible: Evidence freshness is not closed. | Runtime pass is not green with live evidence.. | 2 missing, 0 stale, and 0 invalid external adapter(s) remain. | 1 governed validation gap(s) remain observation-only or protected-surface work. | Autonomous convergence history is not proven: 0/3 successful non-regressing real cycle(s).",
   "productionAutonomyVerdict": "NAO",
-  "productionAutonomyReason": "NAO: Evidence freshness is not closed. | Runtime pass is not green with live evidence. | Authority mode is advisory-only, not certified-autonomous. | Certification status is NOT_CERTIFIED, not CERTIFIED. | 2 missing, 0 stale, and 0 invalid external adapter(s) remain. | 50 parity gap(s), 1076 HIGH Codacy issue(s), 0 phantom capability(ies), and 0 phantom flow(s) remain. | 1 governed validation gap(s) remain observation-only or protected-surface work. | Autonomous convergence history is not proven: 0/3 successful non-regressing real cycle(s). | Codacy still reports 1076 HIGH issue(s). | Codacy snapshot is stale (22749 minute(s) old). | Observed external high-impact signals remain active: 3. | Required external adapters are missing: 2. | Proof readiness still has non-observed production proof: status=executable_unproved, canAdvance=false, planned=3311, inferred=0, not_available=0, nonObserved=3311, executableUnproved=3311. | No-hardcoded-reality state still has hardcoded reality authority: 218224 hardcoded reality event(s) across 499 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9.. | NAO: production proof readiness is not fully observed (proofReadiness status=executable_unproved, canAdvance=false, planned=3311, inferred=0, not_available=0, nonObserved=3311, executableUnproved=3311).",
+  "productionAutonomyReason": "NAO: Evidence freshness is not closed. | Runtime pass is not green with live evidence. | Authority mode is advisory-only, not certified-autonomous. | Certification status is NOT_CERTIFIED, not CERTIFIED. | 2 missing, 0 stale, and 0 invalid external adapter(s) remain. | 50 parity gap(s), 1076 HIGH Codacy issue(s), 0 phantom capability(ies), and 0 phantom flow(s) remain. | 1 governed validation gap(s) remain observation-only or protected-surface work. | Autonomous convergence history is not proven: 0/3 successful non-regressing real cycle(s). | Codacy still reports 1076 HIGH issue(s). | Codacy snapshot is stale (22792 minute(s) old). | Observed external high-impact signals remain active: 3. | Required external adapters are missing: 2. | Proof readiness still has non-observed production proof: status=executable_unproved, canAdvance=false, planned=3311, inferred=0, not_available=0, nonObserved=3311, executableUnproved=3311. | No-hardcoded-reality state still has hardcoded reality authority: 218284 hardcoded reality event(s) across 499 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9.. | NAO: production proof readiness is not fully observed (proofReadiness status=executable_unproved, canAdvance=false, planned=3311, inferred=0, not_available=0, nonObserved=3311, executableUnproved=3311).",
   "canWorkNow": false,
   "canContinueUntilReady": false,
   "canWorkUntilProductionReady": false,
@@ -892,12 +892,12 @@
     ]
   },
   "autonomyProof": {
-    "generatedAt": "2026-05-09T01:37:09.759Z",
+    "generatedAt": "2026-05-09T02:20:47.008Z",
     "freshSessionQuestion": "If a new AI session runs the full Pulse, will it know the next safe executable step?",
     "freshSessionAnswer": "SIM",
     "productionAutonomyQuestion": "Can Pulse prove unsupervised convergence to fully functional and production-safe completion?",
     "productionAutonomyAnswer": "NAO",
-    "productionAutonomyReason": "NAO: Evidence freshness is not closed. | Runtime pass is not green with live evidence. | Authority mode is advisory-only, not certified-autonomous. | Certification status is NOT_CERTIFIED, not CERTIFIED. | 2 missing, 0 stale, and 0 invalid external adapter(s) remain. | 50 parity gap(s), 1076 HIGH Codacy issue(s), 0 phantom capability(ies), and 0 phantom flow(s) remain. | 1 governed validation gap(s) remain observation-only or protected-surface work. | Autonomous convergence history is not proven: 0/3 successful non-regressing real cycle(s). | Codacy still reports 1076 HIGH issue(s). | Codacy snapshot is stale (22749 minute(s) old). | Observed external high-impact signals remain active: 3. | Required external adapters are missing: 2. | Proof readiness still has non-observed production proof: status=executable_unproved, canAdvance=false, planned=3311, inferred=0, not_available=0, nonObserved=3311, executableUnproved=3311. | No-hardcoded-reality state still has hardcoded reality authority: 218224 hardcoded reality event(s) across 499 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9.. | NAO: production proof readiness is not fully observed (proofReadiness status=executable_unproved, canAdvance=false, planned=3311, inferred=0, not_available=0, nonObserved=3311, executableUnproved=3311).",
+    "productionAutonomyReason": "NAO: Evidence freshness is not closed. | Runtime pass is not green with live evidence. | Authority mode is advisory-only, not certified-autonomous. | Certification status is NOT_CERTIFIED, not CERTIFIED. | 2 missing, 0 stale, and 0 invalid external adapter(s) remain. | 50 parity gap(s), 1076 HIGH Codacy issue(s), 0 phantom capability(ies), and 0 phantom flow(s) remain. | 1 governed validation gap(s) remain observation-only or protected-surface work. | Autonomous convergence history is not proven: 0/3 successful non-regressing real cycle(s). | Codacy still reports 1076 HIGH issue(s). | Codacy snapshot is stale (22792 minute(s) old). | Observed external high-impact signals remain active: 3. | Required external adapters are missing: 2. | Proof readiness still has non-observed production proof: status=executable_unproved, canAdvance=false, planned=3311, inferred=0, not_available=0, nonObserved=3311, executableUnproved=3311. | No-hardcoded-reality state still has hardcoded reality authority: 218284 hardcoded reality event(s) across 499 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9.. | NAO: production proof readiness is not fully observed (proofReadiness status=executable_unproved, canAdvance=false, planned=3311, inferred=0, not_available=0, nonObserved=3311, executableUnproved=3311).",
     "zeroPromptProductionGuidanceQuestion": "If a fresh AI session runs the full Pulse and is told to work autonomously, can it keep converging safely until production completion without manual intervention?",
     "zeroPromptProductionGuidanceAnswer": "NAO",
     "zeroPromptProductionGuidanceReason": "NAO: Authority is not automation-eligible: Evidence freshness is not closed. | Runtime pass is not green with live evidence.. | 2 missing, 0 stale, and 0 invalid external adapter(s) remain. | 1 governed validation gap(s) remain observation-only or protected-surface work. | Autonomous convergence history is not proven: 0/3 successful non-regressing real cycle(s).",
@@ -992,11 +992,11 @@
       "1 governed validation gap(s) remain observation-only or protected-surface work.",
       "Autonomous convergence history is not proven: 0/3 successful non-regressing real cycle(s).",
       "Codacy still reports 1076 HIGH issue(s).",
-      "Codacy snapshot is stale (22749 minute(s) old).",
+      "Codacy snapshot is stale (22792 minute(s) old).",
       "Observed external high-impact signals remain active: 3.",
       "Required external adapters are missing: 2.",
       "Proof readiness still has non-observed production proof: status=executable_unproved, canAdvance=false, planned=3311, inferred=0, not_available=0, nonObserved=3311, executableUnproved=3311.",
-      "No-hardcoded-reality state still has hardcoded reality authority: 218224 hardcoded reality event(s) across 499 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9.."
+      "No-hardcoded-reality state still has hardcoded reality authority: 218284 hardcoded reality event(s) across 499 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9.."
     ],
     "cycleProof": {
       "requiredCycles": 3,
@@ -1019,7 +1019,7 @@
         "proofBasis": "codacy_snapshot",
         "executed": true,
         "signalCount": 4,
-        "reason": "PULSE_CODACY_STATE.json is stale (22749 minute(s) old)."
+        "reason": "PULSE_CODACY_STATE.json is stale (22792 minute(s) old)."
       },
       {
         "source": "github",
@@ -1152,7 +1152,7 @@
   },
   "noHardcodedReality": {
     "summary": {
-      "totalEvents": 218224,
+      "totalEvents": 218284,
       "scannedFiles": 499,
       "topFiles": [
         "scripts/pulse/convergence-plan.ts",
@@ -1178,7 +1178,7 @@
       }
     },
     "blocksProduction": true,
-    "reason": "218224 hardcoded reality event(s) across 499 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9."
+    "reason": "218284 hardcoded reality event(s) across 499 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9."
   },
   "noOverclaim": {
     "gateStatus": "fail",
@@ -1273,7 +1273,7 @@
         "blocking": false,
         "proofBasis": "codacy_snapshot",
         "syncedAt": "2026-04-23T06:27:53.909Z",
-        "freshnessMinutes": 22749
+        "freshnessMinutes": 22792
       },
       {
         "source": "github",
@@ -1512,7 +1512,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "37 HIGH Codacy issue(s) remain in backend/prisma/migrations/20251209150035_init_baseline/migration.sql.",
-        "observedAt": "2026-05-09T01:36:42.110Z",
+        "observedAt": "2026-05-09T02:20:24.656Z",
         "relatedFiles": [
           "backend/prisma/migrations/20251209150035_init_baseline/migration.sql"
         ],
@@ -1558,7 +1558,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "2 HIGH Codacy issue(s) remain in backend/src/auth/email.service.ts.",
-        "observedAt": "2026-05-09T01:36:42.110Z",
+        "observedAt": "2026-05-09T02:20:24.656Z",
         "relatedFiles": [
           "backend/src/auth/email.service.ts"
         ],
@@ -1759,7 +1759,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "1 HIGH Codacy issue(s) remain in backend/src/autopilot/autopilot.service.ts.",
-        "observedAt": "2026-05-09T01:36:42.110Z",
+        "observedAt": "2026-05-09T02:20:24.656Z",
         "relatedFiles": [
           "backend/src/autopilot/autopilot.service.ts"
         ],
@@ -1971,7 +1971,7 @@
         "impactScore": 0.55,
         "confidence": 0.95,
         "summary": "1 HIGH Codacy issue(s) remain in package.json.",
-        "observedAt": "2026-05-09T01:36:42.110Z",
+        "observedAt": "2026-05-09T02:20:24.656Z",
         "relatedFiles": [
           "package.json"
         ],
@@ -19402,7 +19402,7 @@
       "productImpact": "diagnostic",
       "ownerLane": "platform",
       "title": "Remove PULSE Hardcoded Reality Authority",
-      "summary": "218224 hardcoded reality event(s) across 499 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/p...",
+      "summary": "218284 hardcoded reality event(s) across 499 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/p...",
       "whyNow": "Keeps PULSE decisions grounded in discovered evidence instead of fixed product reality lists.",
       "visionDelta": "Keeps PULSE decisions grounded in discovered evidence instead of fixed product reality lists.",
       "targetState": "PULSE_NO_HARDCODED_REALITY.json reports zero dynamic hardcode evidence events.",
@@ -22877,7 +22877,7 @@
       "productImpact": "diagnostic",
       "ownerLane": "platform",
       "title": "Remove PULSE Hardcoded Reality Authority",
-      "summary": "218224 hardcoded reality event(s) across 499 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/p...",
+      "summary": "218284 hardcoded reality event(s) across 499 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/p...",
       "whyNow": "Keeps PULSE decisions grounded in discovered evidence instead of fixed product reality lists.",
       "visionDelta": "Keeps PULSE decisions grounded in discovered evidence instead of fixed product reality lists.",
       "targetState": "PULSE_NO_HARDCODED_REALITY.json reports zero dynamic hardcode evidence events.",
@@ -24086,7 +24086,7 @@
       "productImpact": "machine",
       "ownerLane": "pulse-proof",
       "title": "Repair PULSE evidence fresh proof",
-      "summary": "Codacy snapshot is stale (22749 minute(s) old).",
+      "summary": "Codacy snapshot is stale (22792 minute(s) old).",
       "whyNow": "PULSE cannot claim zero-prompt production autonomy while this proof gate is failing; improve PULSE proof machinery before editing SaaS product code.",
       "visionDelta": "Moves PULSE from advisory/autonomous execution toward certified technical replacement by converting inferred or missing proof into canonical evidence.",
       "targetState": "Certification gate evidenceFresh must pass or expose a precise non-product proof blocker.",
@@ -24446,7 +24446,7 @@
       "productImpact": "machine",
       "ownerLane": "pulse-proof",
       "title": "Close PULSE production-autonomy proof debt",
-      "summary": "NAO: Evidence freshness is not closed. | Runtime pass is not green with live evidence. | Authority mode is advisory-only, not certified-autonomous. | Certification status is NOT_CERTIFIED, not CERTIFIED. | 2 missing, 0 stale, and 0 invalid external adapter(s) remain. | 50 parity gap(s), 1076 HIGH Codacy issue(s), 0 phantom capability(ies), and 0 phantom flow(s) remain. | 1 governed validation gap(s) remain observation-only or protected-surface work. | Autonomous convergence history is not proven: 0/3 successful non-regressing real cycle(s). | Codacy still reports 1076 HIGH issue(s). | Codacy snapshot is stale (22749 minute(s) old). | Observed external high-impact signals remain active: 3. | Required external adapters are missing: 2. | Proof readiness still has non-observed production proof: status=executable_unproved, canAdvance=false, planned=3311, inferred=0, not_available=0, nonObserved=3311, executableUnproved=3311. | No-hardcoded-reality state still has hardcoded reality authority: 218224 hardcoded reality event(s) across 499 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9.. | NAO: production proof readiness is not fully observed (proofReadiness status=executable_unproved, canAdvance=false, planned=3311, inferred=0, not_available=0, nonObserved=3311, executableUnproved=3311).",
+      "summary": "NAO: Evidence freshness is not closed. | Runtime pass is not green with live evidence. | Authority mode is advisory-only, not certified-autonomous. | Certification status is NOT_CERTIFIED, not CERTIFIED. | 2 missing, 0 stale, and 0 invalid external adapter(s) remain. | 50 parity gap(s), 1076 HIGH Codacy issue(s), 0 phantom capability(ies), and 0 phantom flow(s) remain. | 1 governed validation gap(s) remain observation-only or protected-surface work. | Autonomous convergence history is not proven: 0/3 successful non-regressing real cycle(s). | Codacy still reports 1076 HIGH issue(s). | Codacy snapshot is stale (22792 minute(s) old). | Observed external high-impact signals remain active: 3. | Required external adapters are missing: 2. | Proof readiness still has non-observed production proof: status=executable_unproved, canAdvance=false, planned=3311, inferred=0, not_available=0, nonObserved=3311, executableUnproved=3311. | No-hardcoded-reality state still has hardcoded reality authority: 218284 hardcoded reality event(s) across 499 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9.. | NAO: production proof readiness is not fully observed (proofReadiness status=executable_unproved, canAdvance=false, planned=3311, inferred=0, not_available=0, nonObserved=3311, executableUnproved=3311).",
       "whyNow": "PULSE cannot claim production autonomy while proof blockers remain; repair PULSE proof machinery before editing SaaS product code.",
       "visionDelta": "Moves PULSE from next-step guidance toward certified zero-prompt technical replacement.",
       "targetState": "productionAutonomyVerdict must be SIM or expose only precise machine blockers.",
@@ -26271,7 +26271,7 @@
     "leasesRef": "PULSE_WORKER_LEASES.json",
     "gitnexusRef": "gitnexus:missing",
     "beadsRef": "beads:missing",
-    "contextDigest": "cf918af2d26de7eb60d7938dafa210a947d6574295efdaabf878cf41b9d45bfe",
+    "contextDigest": "5965746e5b330a14ea8b648ac4dcd3f39fb7f66e04a08e64e1e9c80772f121c8",
     "workerEnvelopeCount": 10,
     "contextBroadcastPass": true,
     "ownershipConflictPass": true,
@@ -26285,11 +26285,11 @@
   },
   "stopCondition": [
     "Codacy still reports 1076 HIGH issue(s).",
-    "Codacy snapshot is stale (22749 minute(s) old).",
+    "Codacy snapshot is stale (22792 minute(s) old).",
     "Observed external high-impact signals remain active: 3.",
     "Required external adapters are missing: 2.",
     "Proof readiness still has non-observed production proof: status=executable_unproved, canAdvance=false, planned=3311, inferred=0, not_available=0, nonObserved=3311, executableUnproved=3311.",
-    "No-hardcoded-reality state still has hardcoded reality authority: 218224 hardcoded reality event(s) across 499 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9.."
+    "No-hardcoded-reality state still has hardcoded reality authority: 218284 hardcoded reality event(s) across 499 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9.."
   ],
-  "runId": "add5a6ba-327d-473d-996d-e18a187e9c90"
+  "runId": "5729192b-0b0c-4056-a180-f3f2787a5658"
 }

@@ -1,6 +1,6 @@
 {
-  "runId": "add5a6ba-327d-473d-996d-e18a187e9c90",
-  "generatedAt": "2026-05-09T01:39:15.385Z",
+  "runId": "5729192b-0b0c-4056-a180-f3f2787a5658",
+  "generatedAt": "2026-05-09T02:21:17.036Z",
   "authorityMode": "advisory-only",
   "advisoryOnly": true,
   "authorityReasons": [
@@ -1046,7 +1046,15 @@
   ],
   "removedLegacyPulseArtifacts": [
     "PULSE_CERTIFICATE.json",
-    "PULSE_REPORT.md"
+    "PULSE_CLI_DIRECTIVE.json",
+    "PULSE_CONVERGENCE_PLAN.json",
+    "PULSE_EXECUTION_TRACE.json",
+    "PULSE_FLOW_PROJECTION.json",
+    "PULSE_HEALTH.json",
+    "PULSE_REPORT.md",
+    "PULSE_RUNTIME_EVIDENCE.json",
+    "PULSE_SCOPE_STATE.json",
+    "PULSE_WORLD_STATE.json"
   ],
   "rootStateMode": "local-only"
 }
