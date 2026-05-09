@@ -5,7 +5,7 @@ import { KLOEL_THEME } from '@/lib/kloel-theme';
 import { secureRandomFloat } from '@/lib/secure-random';
 import { useRef, useEffect, useState } from 'react';
 import type React from 'react';
-import type { ChannelRealData, ChannelStatRow, FeedMessageLike, EmailTemplatePreset } from './MarketingTypes';
+import type { ChannelRealData, ChannelStatRow, FeedMessageLike } from './MarketingTypes';
 
 export const SORA = "'Sora',sans-serif";
 export const MONO = "'JetBrains Mono',monospace";
@@ -76,27 +76,6 @@ export function channelDataStats(channelData: ChannelRealData | null): ChannelSt
     { label: 'Vendas', value: (channelData?.sales ?? 0).toString() },
   ];
 }
-
-export const EMAIL_TEMPLATE_PRESETS: EmailTemplatePreset[] = [
-  {
-    id: 'boas-vindas',
-    label: 'Boas-vindas',
-    subject: 'Bem-vindo ao Kloel',
-    html: '<h1>Bem-vindo</h1><p>Seu acesso foi liberado e sua jornada começa agora.</p>',
-  },
-  {
-    id: 'recuperacao',
-    label: 'Recuperação',
-    subject: 'Seu checkout ainda está te esperando',
-    html: '<h1>Seu pedido ficou salvo</h1><p>Retome a compra com um clique e finalize em poucos segundos.</p>',
-  },
-  {
-    id: 'oferta',
-    label: 'Oferta relâmpago',
-    subject: 'Oferta por tempo limitado',
-    html: '<h1>Oferta ativa</h1><p>Condição especial liberada hoje para a sua base.</p>',
-  },
-];
 
 export const IC: Record<string, (s: number) => React.ReactElement> = {
   wa: (s) => (

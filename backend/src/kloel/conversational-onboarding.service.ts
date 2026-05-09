@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Response } from 'express';
 import OpenAI from 'openai';
 import { PlanLimitsService } from '../billing/plan-limits.service';
@@ -96,12 +96,11 @@ interface PrismaWithDynamicModels {
 /** Conversational onboarding service. */
 @Injectable()
 export class ConversationalOnboardingService {
-  private readonly logger = new Logger(ConversationalOnboardingService.name);
   private openai: OpenAI;
   private readonly prismaExt: PrismaWithDynamicModels;
 
   constructor(
-    private readonly prisma: PrismaService,
+    prisma: PrismaService,
     private readonly planLimits: PlanLimitsService,
     private readonly toolsService: ConversationalOnboardingToolsService,
   ) {

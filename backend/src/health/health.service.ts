@@ -100,7 +100,7 @@ export class HealthService {
     // DB ping (leve)
     let dbOk = true;
     try {
-      await this.prisma.$queryRaw`SELECT 1`;
+      await this.prisma.$queryRaw<{ '?column?': 1 }[]>`SELECT 1`;
     } catch {
       dbOk = false;
     }

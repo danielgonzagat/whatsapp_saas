@@ -4,8 +4,9 @@ import { kloelT } from '@/lib/i18n/t';
 import { useEmailMarketing } from './useEmailMarketing';
 import {
   CH_CONFIG, SORA, MONO, BG_CARD, BG_ELEVATED, BORDER, EMBER, IC, ConnBadge,
-  channelDataStats, EMAIL_TEMPLATE_PRESETS,
+  channelDataStats,
 } from './MarketingShared';
+import { useEmailPresets } from '@/hooks/useEmailPresets';
 import type { ChannelRealData, MarketingConnectStatus, EmailTemplatePreset } from './MarketingTypes';
 
 interface EmailMarketingTabProps {
@@ -44,6 +45,8 @@ export default function EmailMarketingTab({
     connection, emailSubject, setEmailSubject, emailBody, setEmailBody,
     emailSending, emailResult, canSubmit, handleSend, handleSelectTemplate,
   } = useEmailMarketing({ connectionStatus, defaultRecipientEmail });
+
+  const { presets: emailPresets, isLoading: presetsLoading } = useEmailPresets();
 
   const templateFocused = mode === 'templates';
   const connecting = connectingKey === 'email';
@@ -129,13 +132,23 @@ export default function EmailMarketingTab({
         <div style={cardBox}>
           <div style={sectionHeader}>{kloelT(`Templates de Mensagem`)}</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {EMAIL_TEMPLATE_PRESETS.map((template: EmailTemplatePreset) => (
+            {presetsLoading ? (
+              <div style={{ padding: 12, color: 'var(--app-text-muted)', fontSize: 12, textAlign: 'center' }}>
+                {kloelT('Carregando templates...')}
+              </div>
+            ) : emailPresets.length === 0 ? (
+              <div style={{ padding: 12, color: 'var(--app-text-muted)', fontSize: 12, textAlign: 'center' }}>
+                {kloelT('Nenhum template disponível.')}
+              </div>
+            ) : (
+              emailPresets.map((template: EmailTemplatePreset) => (
               <button type="button" key={template.id} onClick={() => handleSelectTemplate(template)} style={{ textAlign: 'left', background: BG_ELEVATED, border: `1px solid ${BORDER}`, borderRadius: 6, padding: '12px 14px', cursor: 'pointer' }}>
                 <div style={{ fontFamily: SORA, fontSize: 12, color: 'var(--app-text-primary)', marginBottom: 4 }}>{template.label}</div>
                 <div style={{ fontFamily: SORA, fontSize: 11, color: 'var(--app-text-secondary)', marginBottom: 6 }}>{template.subject}</div>
                 <div style={{ fontFamily: MONO, fontSize: 10, color: 'var(--app-text-tertiary)', lineHeight: 1.5 }}>{template.html}</div>
               </button>
-            ))}
+            ))
+            )}
           </div>
         </div>
       </div>

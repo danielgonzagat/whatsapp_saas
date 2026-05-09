@@ -127,7 +127,12 @@ export class AdminComplianceService {
 
   /** Overview. */
   async overview(period: AdminHomePeriod, from?: Date, to?: Date) {
-    const range = resolveAdminHomeRange({ period, compare: 'NONE', from, to });
+    const range = resolveAdminHomeRange({
+      period,
+      compare: 'NONE',
+      ...(from !== undefined ? { from } : {}),
+      ...(to !== undefined ? { to } : {}),
+    });
     const [chargebacks, refunds, auditItems, kycAgents] = await Promise.all([
       this.fetchChargebacks(range),
       this.fetchRefunds(range),

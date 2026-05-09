@@ -37,15 +37,15 @@ export class AdminTransactionsController {
   @RequireAdminPermission(AdminModule.VENDAS, AdminAction.VIEW)
   async list(@Query() query: ListTransactionsQueryDto) {
     return this.transactions.list({
-      search: query.search,
-      status: query.status,
-      method: query.method,
-      gateway: query.gateway,
-      workspaceId: query.workspaceId,
-      from: query.from,
-      to: query.to,
-      skip: query.skip,
-      take: query.take,
+      ...(query.search !== undefined ? { search: query.search } : {}),
+      ...(query.status !== undefined ? { status: query.status } : {}),
+      ...(query.method !== undefined ? { method: query.method } : {}),
+      ...(query.gateway !== undefined ? { gateway: query.gateway } : {}),
+      ...(query.workspaceId !== undefined ? { workspaceId: query.workspaceId } : {}),
+      ...(query.from !== undefined ? { from: query.from } : {}),
+      ...(query.to !== undefined ? { to: query.to } : {}),
+      ...(query.skip !== undefined ? { skip: query.skip } : {}),
+      ...(query.take !== undefined ? { take: query.take } : {}),
     });
   }
 

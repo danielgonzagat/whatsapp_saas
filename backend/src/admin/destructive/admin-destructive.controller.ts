@@ -63,7 +63,7 @@ export class AdminDestructiveController {
       reason: dto.reason,
       ip: extractClientIp(req),
       userAgent: extractUserAgent(req),
-      ttlSeconds: dto.ttlSeconds,
+      ...(dto.ttlSeconds !== undefined ? { ttlSeconds: dto.ttlSeconds } : {}),
     });
   }
 

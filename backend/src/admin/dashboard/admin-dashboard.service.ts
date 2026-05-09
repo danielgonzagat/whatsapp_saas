@@ -117,7 +117,12 @@ export class AdminDashboardService {
     from?: Date,
     to?: Date,
   ): Promise<HomeResponse> {
-    const range = resolveAdminHomeRange({ period, compare, from, to });
+    const range = resolveAdminHomeRange({
+      period,
+      compare,
+      ...(from !== undefined ? { from } : {}),
+      ...(to !== undefined ? { to } : {}),
+    });
     const current = await this.snapshot(range.from, range.to);
     const previousSnap = range.previous
       ? await this.snapshot(range.previous.from, range.previous.to)

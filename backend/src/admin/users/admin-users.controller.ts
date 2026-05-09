@@ -62,9 +62,9 @@ export class AdminUsersController {
     @CurrentAdmin() admin: AuthenticatedAdmin,
   ) {
     return this.users.update(id, {
-      name: dto.name,
-      role: dto.role,
-      status: dto.status,
+      ...(dto.name !== undefined ? { name: dto.name } : {}),
+      ...(dto.role !== undefined ? { role: dto.role } : {}),
+      ...(dto.status !== undefined ? { status: dto.status } : {}),
       actorRole: admin.role,
       actorId: admin.id,
     });

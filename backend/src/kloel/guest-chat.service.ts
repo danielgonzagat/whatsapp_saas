@@ -1,8 +1,7 @@
-import { Injectable, Logger, OnModuleDestroy, Optional } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Request, Response } from 'express';
 import OpenAI from 'openai';
-import { AuditService } from '../audit/audit.service';
 import { findFirstSequential } from '../common/async-sequence';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { KLOEL_GUEST_SYSTEM_PROMPT } from './kloel.prompts';
@@ -31,7 +30,6 @@ export class GuestChatService implements OnModuleDestroy {
 
   constructor(
     private readonly configService: ConfigService,
-    @Optional() private readonly auditService?: AuditService,
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {
     const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';

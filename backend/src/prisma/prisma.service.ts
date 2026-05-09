@@ -263,7 +263,7 @@ export class PrismaService
     }
 
     const lockKey = `${workspaceId}:${memberArea.id}:${order.customerEmail.toLowerCase()}`;
-    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${lockKey}, 0))`;
+    await tx.$executeRaw<number>`SELECT pg_advisory_xact_lock(hashtextextended(${lockKey}, 0))`;
 
     const existingEnrollment = await tx.memberEnrollment.findFirst({
       where: {

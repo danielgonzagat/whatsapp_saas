@@ -31,16 +31,9 @@ export class InstagramMarketingController {
   }
 
   @Post('posts')
-  async publishPost(
-    @Req() req: AuthenticatedRequest,
-    @Body() body: CreateInstagramPostDto,
-  ) {
+  async publishPost(@Req() req: AuthenticatedRequest, @Body() body: CreateInstagramPostDto) {
     const workspaceId = resolveWorkspaceId(req);
-    return this.instagramMarketingService.publishPost(
-      workspaceId,
-      body.imageUrl,
-      body.caption,
-    );
+    return this.instagramMarketingService.publishPost(workspaceId, body.imageUrl, body.caption);
   }
 
   @Get('posts')
@@ -52,18 +45,11 @@ export class InstagramMarketingController {
     const workspaceId = resolveWorkspaceId(req);
     const clampedLimit = Math.min(Math.max(Number(limit) || 25, 1), 100);
     const clampedOffset = Math.max(Number(offset) || 0, 0);
-    return this.instagramMarketingService.listPosts(
-      workspaceId,
-      clampedLimit,
-      clampedOffset,
-    );
+    return this.instagramMarketingService.listPosts(workspaceId, clampedLimit, clampedOffset);
   }
 
   @Get('insights')
-  async getInsights(
-    @Req() req: AuthenticatedRequest,
-    @Query() query: InstagramInsightsQueryDto,
-  ) {
+  async getInsights(@Req() req: AuthenticatedRequest, @Query() query: InstagramInsightsQueryDto) {
     const workspaceId = resolveWorkspaceId(req);
 
     const metricsList = query.metrics
@@ -79,11 +65,7 @@ export class InstagramMarketingController {
 
     const period = query.period ?? 'day';
 
-    return this.instagramMarketingService.getInsights(
-      workspaceId,
-      metricsList,
-      period,
-    );
+    return this.instagramMarketingService.getInsights(workspaceId, metricsList, period);
   }
 
   @Get('insights/history')
@@ -94,11 +76,6 @@ export class InstagramMarketingController {
     @Query('until') until?: string,
   ) {
     const workspaceId = resolveWorkspaceId(req);
-    return this.instagramMarketingService.listInsights(
-      workspaceId,
-      igAccountId,
-      since,
-      until,
-    );
+    return this.instagramMarketingService.listInsights(workspaceId, igAccountId, since, until);
   }
 }

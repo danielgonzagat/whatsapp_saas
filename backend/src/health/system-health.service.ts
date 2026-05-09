@@ -231,7 +231,7 @@ export class SystemHealthService {
     const startedAt = Date.now();
     try {
       await this.withTimeout(
-        this.prisma.$queryRaw`SELECT 1`,
+        this.prisma.$queryRaw<{ '?column?': 1 }[]>`SELECT 1`,
         2_000,
         'postgres',
       );
@@ -460,7 +460,7 @@ export class SystemHealthService {
 
   private async checkDatabase() {
     try {
-      await this.prisma.$queryRaw`SELECT 1`;
+      await this.prisma.$queryRaw<{ '?column?': 1 }[]>`SELECT 1`;
       return { status: 'UP', latency: 'OK' };
     } catch (e: unknown) {
       return { status: 'DOWN', error: e instanceof Error ? e.message : String(e) };

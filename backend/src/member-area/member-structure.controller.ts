@@ -28,7 +28,12 @@ interface ModuleTemplate {
   lessons: ModuleTemplateLesson[];
 }
 
-const COURSE_MODULES: ModuleTemplate[] = [
+/**
+ * Module templates catalog — fallback seed data for member area structure generation.
+ * Future: these should be fetched from a database-backed template service rather than
+ * hardcoded in the controller. Keep as readonly to prevent accidental mutation.
+ */
+const COURSE_MODULES: readonly ModuleTemplate[] = [
   {
     name: 'Fundamentos',
     description: 'Base teorica e conceitos essenciais',
@@ -64,7 +69,7 @@ const COURSE_MODULES: ModuleTemplate[] = [
   },
 ];
 
-const COMMUNITY_MODULES: ModuleTemplate[] = [
+const COMMUNITY_MODULES: readonly ModuleTemplate[] = [
   {
     name: 'Comunidade',
     description: 'Espaco de discussao e networking',
@@ -77,12 +82,12 @@ const COMMUNITY_MODULES: ModuleTemplate[] = [
   },
 ];
 
-const HYBRID_MODULES: ModuleTemplate[] = [
+const HYBRID_MODULES: readonly ModuleTemplate[] = [
   ...COURSE_MODULES,
   { ...COMMUNITY_MODULES[0], position: 3 },
 ];
 
-const MEMBERSHIP_MODULES: ModuleTemplate[] = [
+const MEMBERSHIP_MODULES: readonly ModuleTemplate[] = [
   {
     name: 'Semana 1 - Inicio',
     description: 'Conteudo da primeira semana',
@@ -125,7 +130,7 @@ const MEMBERSHIP_MODULES: ModuleTemplate[] = [
   },
 ];
 
-function templateForAreaType(type: string): ModuleTemplate[] {
+function templateForAreaType(type: string): readonly ModuleTemplate[] {
   if (type === 'COURSE') return COURSE_MODULES;
   if (type === 'COMMUNITY') return COMMUNITY_MODULES;
   if (type === 'HYBRID') return HYBRID_MODULES;

@@ -4,6 +4,14 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { AdminDashboardService } from '../dashboard/admin-dashboard.service';
 import { resolveAdminHomeRange, type AdminHomePeriod } from '../dashboard/range.util';
 
+type ConversationRow = {
+  id: string;
+  lastMessageAt: Date;
+  workspace: { name: string };
+  contact: { name: string | null; email: string | null; phone: string | null };
+  messages: Array<{ content: string | null }>;
+};
+
 const PAID_STATUSES: OrderStatus[] = [OrderStatus.PAID, OrderStatus.SHIPPED, OrderStatus.DELIVERED];
 
 const CHANNEL_LABELS: Record<string, string> = {
@@ -28,7 +36,12 @@ export class AdminMarketingService {
 
   /** Overview. */
   async overview(period: AdminHomePeriod, from?: Date, to?: Date) {
-    const range = resolveAdminHomeRange({ period, compare: 'NONE', from, to });
+    const range = resolveAdminHomeRange({
+      period,
+      compare: 'NONE',
+      ...(from !== undefined ? { from } : {}),
+      ...(to !== undefined ? { to } : {}),
+    });
 
     const [home, conversations, messageRows, socialLeads, recentConversations, orders] =
       await Promise.all([
@@ -80,7 +93,7 @@ export class AdminMarketingService {
               select: { content: true },
             },
           },
-        }),
+        }) as Promise<ConversationRow[]>,
         // PULSE_OK: bounded by date range and status filter
         this.prisma.checkoutOrder.findMany({
           where: {

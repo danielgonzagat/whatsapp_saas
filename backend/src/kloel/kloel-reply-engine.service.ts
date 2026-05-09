@@ -1,4 +1,4 @@
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import OpenAI from 'openai';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -9,7 +9,6 @@ import { KloelToolRouter } from './kloel-tool-router';
 import { KloelWorkspaceContextService } from './kloel-workspace-context.service';
 import { buildKloelResponseEnginePrompt } from './kloel.prompts';
 import { MarketingSkillService } from './marketing-skills/marketing-skill.service';
-import { UnifiedAgentService } from './unified-agent.service';
 import {
   WHITESPACE_RE,
   RELAT_O__RIO_DOCUMENTO_RE,
@@ -40,7 +39,6 @@ export class KloelReplyEngineService {
     private readonly planLimits: PlanLimitsService,
     private readonly threadService: KloelThreadService,
     private readonly wsContextService: KloelWorkspaceContextService,
-    private readonly unifiedAgentService: UnifiedAgentService,
     @Optional() private readonly marketingSkillService?: MarketingSkillService,
   ) {
     this.openai = new OpenAI({

@@ -5,7 +5,6 @@ import {
   Injectable,
   Logger,
   NotFoundException,
-  Optional,
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -15,7 +14,6 @@ import { generateUniquePublicCheckoutCode } from '../checkout/checkout-code.util
 import { buildPayCheckoutUrl } from '../checkout/checkout-public-url.util';
 import { isPublicCodeTaken } from './__companions__/partnerships.service.companion';
 import { PrismaService } from '../prisma/prisma.service';
-import { OpsAlertService } from '../observability/ops-alert.service';
 
 const INVITABLE_PARTNER_TYPES = new Set(['AFFILIATE', 'SUPPLIER', 'COPRODUCER', 'MANAGER']);
 const PARTNER_ROLE_LABELS: Record<string, string> = {
@@ -36,7 +34,6 @@ export class PartnershipsService {
     private readonly auditService: AuditService,
     private readonly configService: ConfigService,
     private readonly emailService: EmailService,
-    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   private generateOpaqueToken(size = 32) {

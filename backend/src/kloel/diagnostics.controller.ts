@@ -266,7 +266,7 @@ kloel_uptime_seconds ${process.uptime()}
     const start = Date.now();
 
     try {
-      await this.prisma.$queryRaw`SELECT 1`;
+      await this.prisma.$queryRaw<{ '?column?': 1 }[]>`SELECT 1`;
       return {
         connected: true,
         latencyMs: Date.now() - start,

@@ -133,7 +133,7 @@ export class ReportsOrdersService {
   async getVendasDaily(workspaceId: string, f: ReportFiltersDto) {
     const { start, end } = dateRange(f);
     try {
-      return await this.prisma.$queryRaw`
+      return await this.prisma.$queryRaw<{ day: Date; vendas: number; receita: number }[]>`
         SELECT DATE("createdAt") as day, COUNT(*)::int as vendas,
           COALESCE(SUM("totalInCents"), 0)::int as receita
         FROM "RAC_CheckoutOrder"
@@ -257,7 +257,7 @@ export class ReportsOrdersService {
     assertValidOrderStatusFilter('PAID', 'ReportsOrdersService.getOrigem');
     const paidStatus = 'PAID' as const;
     try {
-      return await this.prisma.$queryRaw`
+      return await this.prisma.$queryRaw<{ source: string; vendas: number; receita: number }[]>`
         SELECT COALESCE(NULLIF("couponCode",''), 'Direto') as source,
           COUNT(*)::int as vendas, COALESCE(SUM("totalInCents"),0)::int as receita
         FROM "RAC_CheckoutOrder"

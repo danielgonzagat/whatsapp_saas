@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { buildTimestampedRuntimeId } from './kloel-id.util';
@@ -41,7 +41,6 @@ export interface StoredResponseVersion {
 /** Manages chat thread persistence, conversation state. Summary/title logic delegated to KloelThreadSummaryService. */
 @Injectable()
 export class KloelThreadService {
-  private readonly logger = new Logger(KloelThreadService.name);
   readonly recentThreadMessageLimit = 20;
 
   constructor(

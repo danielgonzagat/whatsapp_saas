@@ -18,9 +18,11 @@ export const LOCK_POLL_MS = Number(process.env.KLOEL_MIRROR_LOCK_POLL_MS || '75'
 export const GRAPH_SETTINGS_PATH = join(VAULT_ROOT, '.obsidian', 'graph.json');
 export const WORKSPACE_GRAPH_SEARCH = '';
 export const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-export const DEBOUNCE_MS = 250;
-export const GIT_STATE_POLL_MS = 3000;
-export const GRAPH_LENS_ENFORCE_MS = 2000;
+export const DEBOUNCE_MS = Number(process.env.KLOEL_MIRROR_DEBOUNCE_MS || '250');
+export const GIT_STATE_POLL_MS = Number(process.env.KLOEL_MIRROR_GIT_STATE_POLL_MS || '15000');
+export const GRAPH_LENS_ENFORCE_MS = Number(
+  process.env.KLOEL_MIRROR_GRAPH_LENS_ENFORCE_MS || '60000',
+);
 export const MIRROR_FORMAT_VERSION = 21;
 export const SOURCE_BODY_MIRROR_MAX_BYTES = Number(
   process.env.KLOEL_SOURCE_BODY_MIRROR_MAX_BYTES || String(Number.MAX_SAFE_INTEGER),

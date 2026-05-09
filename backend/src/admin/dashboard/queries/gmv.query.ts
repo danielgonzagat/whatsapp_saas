@@ -23,7 +23,7 @@ export async function queryGmvInCents(
     },
     _sum: { totalInCents: true },
     _count: { _all: true },
-  });
+  }) as { _sum: { totalInCents: bigint | number | null }; _count: { _all: number } };
   return {
     gmvInCents: Number(result._sum.totalInCents ?? 0),
     approvedCount: result._count._all,

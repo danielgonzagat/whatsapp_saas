@@ -64,14 +64,9 @@ export function salesOverviewTool(service: AdminSalesService): ChatTool {
     async execute(args) {
       return asRecord(
         await service.overview({
-          search: typeof args.search === 'string' ? args.search : undefined,
+          ...(typeof args.search === 'string' ? { search: args.search } : {}),
         }),
       );
-    },
-  };
-}
-
-/** Compliance overview tool. */
 export function complianceOverviewTool(service: AdminComplianceService): ChatTool {
   return {
     name: 'complianceOverview',
@@ -165,7 +160,7 @@ export function clientsOverviewTool(service: AdminClientsService): ChatTool {
     async execute(args) {
       return asRecord(
         await service.list({
-          search: typeof args.search === 'string' ? args.search : undefined,
+          ...(typeof args.search === 'string' ? { search: args.search } : {}),
           take: 20,
         }),
       );
@@ -185,7 +180,7 @@ export function accountsOverviewTool(service: AdminAccountsService): ChatTool {
     async execute(args) {
       return asRecord(
         await service.list({
-          search: typeof args.search === 'string' ? args.search : undefined,
+          ...(typeof args.search === 'string' ? { search: args.search } : {}),
           take: 20,
         }),
       );
@@ -205,7 +200,7 @@ export function productsOverviewTool(service: AdminProductsService): ChatTool {
     async execute(args) {
       return asRecord(
         await service.list({
-          search: typeof args.search === 'string' ? args.search : undefined,
+          ...(typeof args.search === 'string' ? { search: args.search } : {}),
           take: 20,
         }),
       );

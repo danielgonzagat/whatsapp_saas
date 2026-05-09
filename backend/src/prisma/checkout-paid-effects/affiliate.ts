@@ -44,7 +44,7 @@ export async function createAffiliateCommissionFromPaidCheckoutUpdate(
     }
 
     const lockKey = `${scope.workspaceId}:${order.id}:affiliate_commission`;
-    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${lockKey}, 0))`;
+    await tx.$executeRaw<number>`SELECT pg_advisory_xact_lock(hashtextextended(${lockKey}, 0))`;
 
     const created = await appendAuditEventIfMissing(tx, {
       workspaceId: scope.workspaceId,

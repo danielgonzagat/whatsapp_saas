@@ -53,14 +53,14 @@ export async function queryTransactionCounts(
         createdAt: { gte: from, lte: to },
       },
     }),
-    prisma.checkoutOrder.aggregate({
+      prisma.checkoutOrder.aggregate({
       where: {
         status: OrderStatus.REFUNDED,
         refundedAt: { gte: from, lte: to },
       },
       _count: { _all: true },
       _sum: { totalInCents: true },
-    }),
+    }) as Promise<{ _count: { _all: number }; _sum: { totalInCents: bigint | number | null } }>,
     prisma.checkoutOrder.aggregate({
       where: {
         status: OrderStatus.CHARGEBACK,
@@ -68,16 +68,16 @@ export async function queryTransactionCounts(
       },
       _count: { _all: true },
       _sum: { totalInCents: true },
-    }),
+    }) as Promise<{ _count: { _all: number }; _sum: { totalInCents: bigint | number | null } }>,
   ]);
 
   return {
     approved,
     declined,
     pending,
-    refundCount: refundAgg._count._all,
+    refundCount: (refundAgg._count as { _all: number })._all,
     refundAmountInCents: Number(refundAgg._sum.totalInCents ?? 0),
-    chargebackCount: chargebackAgg._count._all,
+    chargebackCount: (chargebackAgg._count as { _all: number })._all,
     chargebackAmountInCents: Number(chargebackAgg._sum.totalInCents ?? 0),
   };
 }

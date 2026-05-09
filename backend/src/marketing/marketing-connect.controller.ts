@@ -3,7 +3,6 @@ import {
   Body,
   Controller,
   Get,
-  Logger,
   Post,
   Request,
   UseGuards,
@@ -37,7 +36,6 @@ type WhatsAppLifecycleRecord = Record<string, unknown>;
 @Controller('marketing')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class MarketingConnectController {
-  private readonly logger = new Logger(MarketingConnectController.name);
 
   constructor(
     private readonly prisma: PrismaService,

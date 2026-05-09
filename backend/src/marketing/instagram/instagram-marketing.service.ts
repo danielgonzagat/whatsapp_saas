@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { InstagramService } from '../../meta/instagram/instagram.service';
 import { MetaWhatsAppService } from '../../meta/meta-whatsapp.service';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -78,11 +79,7 @@ export class InstagramMarketingService {
     return { post, metaResponse: result };
   }
 
-  async getInsights(
-    workspaceId: string,
-    metrics: string[],
-    period: string,
-  ) {
+  async getInsights(workspaceId: string, metrics: string[], period: string) {
     const connection = await this.metaWhatsApp.resolveConnection(workspaceId);
 
     if (!connection.instagramAccountId) {
@@ -144,7 +141,7 @@ export class InstagramMarketingService {
         textMessageClicks: metricMap['text_message_clicks'] ?? 0,
         getDirectionsClicks: metricMap['get_directions_clicks'] ?? 0,
         onlineFollowers: metricMap['online_followers']
-          ? (metricMap['online_followers'] as unknown as Record<string, unknown>)
+          ? (metricMap['online_followers'] as Prisma.InputJsonValue)
           : undefined,
       },
       update: {
@@ -158,23 +155,17 @@ export class InstagramMarketingService {
         textMessageClicks: metricMap['text_message_clicks'] ?? 0,
         getDirectionsClicks: metricMap['get_directions_clicks'] ?? 0,
         onlineFollowers: metricMap['online_followers']
-          ? (metricMap['online_followers'] as unknown as Record<string, unknown>)
+          ? (metricMap['online_followers'] as Prisma.InputJsonValue)
           : undefined,
       },
     });
 
-    this.logger.log(
-      `Instagram insights fetched for workspace ${workspaceId}`,
-    );
+    this.logger.log(`Instagram insights fetched for workspace ${workspaceId}`);
 
     return { insight, metaResponse: result };
   }
 
-  async listPosts(
-    workspaceId: string,
-    limit: number,
-    offset: number,
-  ) {
+  async listPosts(workspaceId: string, limit: number, offset: number) {
     const [posts, total] = await Promise.all([
       this.prisma.igPost.findMany({
         where: { workspaceId },
@@ -188,31 +179,25 @@ export class InstagramMarketingService {
     return { posts, total };
   }
 
-  async listInsights(
-    workspaceId: string,
-    igAccountId?: string,
-    since?: string,
-    until?: string,
-  ) {
-    const where: Record<string, unknown> = { workspaceId };
+  async listInsights(workspaceId: string, igAccountId?: string, since?: string, until?: string) {
+    const where: Prisma.IgInsightWhereInput = { workspaceId };
 
     if (igAccountId) {
-      where['igAccountId'] = igAccountId;
+      where.igAccountId = igAccountId;
     }
 
     if (since || until) {
-      const dateFilter: Record<string, Date> = {};
+      where.date = {};
       if (since) {
-        dateFilter['gte'] = new Date(since);
+        where.date.gte = new Date(since);
       }
       if (until) {
-        dateFilter['lte'] = new Date(until);
+        where.date.lte = new Date(until);
       }
-      where['date'] = dateFilter;
     }
 
     const insights = await this.prisma.igInsight.findMany({
-      where: where as Parameters<typeof this.prisma.igInsight.findMany>[0],
+      where,
       orderBy: { date: 'desc' },
       take: 90,
     });

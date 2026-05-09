@@ -2,8 +2,6 @@ import {
   Body,
   Controller,
   Get,
-  Logger,
-  Optional,
   Param,
   Post,
   Request,
@@ -21,7 +19,6 @@ import {
 import { MetaWhatsAppService } from '../meta/meta-whatsapp.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
-import { OpsAlertService } from '../observability/ops-alert.service';
 
 const NAME_RE = /\{\{name\}\}/g;
 
@@ -40,13 +37,11 @@ const CHANNELS = ['WHATSAPP', 'INSTAGRAM', 'MESSENGER', 'EMAIL', 'TIKTOK'];
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 @Throttle({ default: { limit: 10, ttl: 60000 } })
 export class MarketingController {
-  private readonly logger = new Logger(MarketingController.name);
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly metaWhatsApp: MetaWhatsAppService,
     private readonly whatsappProviders: WhatsAppProviderRegistry,
-    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   /**

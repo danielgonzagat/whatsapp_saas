@@ -105,12 +105,16 @@ export class AdminCarteiraController {
         ? (query.kind as MarketplaceTreasuryLedgerKind)
         : undefined;
     return this.wallet.listLedger({
-      currency: query.currency,
-      kind: parsedKind,
-      from: parseDateOrFail(query.from, 'from'),
-      to: parseDateOrFail(query.to, 'to'),
-      skip: parseSkip(query.skip),
-      take: parseTake(query.take),
+      ...(query.currency !== undefined ? { currency: query.currency } : {}),
+      ...(parsedKind !== undefined ? { kind: parsedKind } : {}),
+      ...(parseDateOrFail(query.from, 'from') !== undefined
+        ? { from: parseDateOrFail(query.from, 'from') }
+        : {}),
+      ...(parseDateOrFail(query.to, 'to') !== undefined
+        ? { to: parseDateOrFail(query.to, 'to') }
+        : {}),
+      ...(parseSkip(query.skip) !== undefined ? { skip: parseSkip(query.skip) } : {}),
+      ...(parseTake(query.take) !== undefined ? { take: parseTake(query.take) } : {}),
     });
   }
 
@@ -164,7 +168,7 @@ export class AdminCarteiraController {
   @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.VIEW)
   async reconcileConnect(@Query('workspaceId') workspaceId?: string) {
     return this.connectReconcile.reconcile({
-      workspaceId: workspaceId ? String(workspaceId).trim() : undefined,
+      ...(workspaceId ? { workspaceId: String(workspaceId).trim() } : {}),
     });
   }
 
@@ -177,8 +181,8 @@ export class AdminCarteiraController {
     const result = await this.audit.list({
       action: 'carteira.payout',
       entityType: 'marketplace_treasury',
-      skip: parseSkip(skip),
-      take: parseTake(take),
+      ...(parseSkip(skip) !== undefined ? { skip: parseSkip(skip) } : {}),
+      ...(parseTake(take) !== undefined ? { take: parseTake(take) } : {}),
     });
 
     return {
@@ -221,10 +225,10 @@ export class AdminCarteiraController {
     @Query('take') take?: string,
   ) {
     return this.connectPayoutApprovalService.listAdminRequests({
-      workspaceId: workspaceId ? String(workspaceId).trim() : undefined,
-      state: state ? String(state).trim() : undefined,
-      skip: parseSkip(skip),
-      take: parseTake(take),
+      ...(workspaceId ? { workspaceId: String(workspaceId).trim() } : {}),
+      ...(state ? { state: String(state).trim() } : {}),
+      ...(parseSkip(skip) !== undefined ? { skip: parseSkip(skip) } : {}),
+      ...(parseTake(take) !== undefined ? { take: parseTake(take) } : {}),
     });
   }
 
@@ -241,10 +245,10 @@ export class AdminCarteiraController {
   ) {
     const parsedType = type ? this.parseFraudBlacklistType(type) : undefined;
     const result = await this.fraudEngine.listBlacklist({
-      type: parsedType,
-      value: value ? String(value).trim() : undefined,
-      skip: parseSkip(skip),
-      take: parseTake(take),
+      ...(parsedType !== undefined ? { type: parsedType } : {}),
+      ...(value !== undefined ? { value: String(value).trim() } : {}),
+      ...(parseSkip(skip) !== undefined ? { skip: parseSkip(skip) } : {}),
+      ...(parseTake(take) !== undefined ? { take: parseTake(take) } : {}),
     });
 
     return {
@@ -284,7 +288,9 @@ export class AdminCarteiraController {
       value,
       reason,
       addedBy: admin.id,
-      expiresAt: parseDateOrFail(body.expiresAt ?? undefined, 'expiresAt'),
+      ...(parseDateOrFail(body.expiresAt ?? undefined, 'expiresAt') !== undefined
+        ? { expiresAt: parseDateOrFail(body.expiresAt ?? undefined, 'expiresAt') }
+        : {}),
     });
 
     await this.audit.append({
@@ -457,8 +463,9 @@ export class AdminCarteiraController {
       ...(await this.connectPayoutApprovalService.rejectRequest({
         approvalRequestId: normalizedId,
         adminUserId: admin.id,
-        reason:
-          typeof body?.reason === 'string' && body.reason.trim() ? body.reason.trim() : undefined,
+        ...(typeof body?.reason === 'string' && body.reason.trim()
+          ? { reason: body.reason.trim() }
+          : {}),
       })),
     };
   }

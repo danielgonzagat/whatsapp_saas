@@ -26,7 +26,6 @@ function buildRegenerationError(message: string) {
 export async function thinkSyncImpl(
   request: ThinkRequest,
   composerCapability: 'create_image' | 'create_site' | 'search_web' | null,
-  enrichedCompanyContext: string | undefined,
   effectiveCompanyContext: string | undefined,
   deps: {
     replyEngine: KloelReplyEngineService;

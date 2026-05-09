@@ -54,7 +54,9 @@ export class FacebookMessengerService {
       pageAccessToken,
     );
 
-    const typed = result as unknown as FbSendResult;
+    const typed: FbSendResult = typeof result === 'object' && result !== null
+      ? (result as FbSendResult)
+      : { error: { code: -1, message: 'Invalid response' } };
 
     if (typed.error) {
       await this.prisma.fbMessage.create({
@@ -123,12 +125,12 @@ export class FacebookMessengerService {
         recipientPsid,
         text: text || null,
         deliveryStatus: 'DELIVERED',
-        metadata: msg as unknown as Record<string, unknown>,
+        metadata: msg as unknown as Prisma.InputJsonValue,
       },
       update: {
         text: text || undefined,
         deliveryStatus: 'DELIVERED',
-        metadata: msg as unknown as Record<string, unknown>,
+        metadata: msg as unknown as Prisma.InputJsonValue,
       },
     });
   }
@@ -203,7 +205,7 @@ export class FacebookMessengerService {
         recipientPsid,
         text: String(msg.message?.text || ''),
         deliveryStatus: 'SENT',
-        metadata: msg as unknown as Record<string, unknown>,
+        metadata: msg as unknown as Prisma.InputJsonValue,
       },
       update: {
         deliveryStatus: 'SENT',

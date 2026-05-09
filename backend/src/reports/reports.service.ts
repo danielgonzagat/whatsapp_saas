@@ -125,7 +125,7 @@ export class ReportsService {
 
     let monthly: unknown[] = [];
     try {
-      monthly = await this.prisma.$queryRaw`
+      monthly = await this.prisma.$queryRaw<{ month: string; total: number }[]>`
         SELECT TO_CHAR("cancelledAt", 'Mon') as month,
           COUNT(*)::int as total
         FROM "CustomerSubscription"

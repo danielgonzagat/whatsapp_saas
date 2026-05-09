@@ -51,7 +51,12 @@ export class AdminReportsService {
     from?: Date,
     to?: Date,
   ): Promise<Array<Record<string, unknown>>> {
-    const range = resolveAdminHomeRange({ period, compare: 'NONE', from, to });
+    const range = resolveAdminHomeRange({
+      period,
+      compare: 'NONE',
+      ...(from !== undefined ? { from } : {}),
+      ...(to !== undefined ? { to } : {}),
+    });
     const rows = await listAdminTransactions(this.prisma, {
       from: range.from,
       to: range.to,

@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { createHmac, timingSafeEqual } from 'crypto';
 import { Prisma } from '@prisma/client';
 import { encryptMetaToken } from '../meta/meta-token-crypto';
@@ -114,7 +114,6 @@ function verifyState(rawState: unknown, secret: string): SignedStatePayload | nu
 
 @Injectable()
 export class TikTokMarketingService {
-  private readonly logger = new Logger(TikTokMarketingService.name);
   constructor(private readonly prisma: PrismaService) {}
 
   async getStatus(workspaceId: string) {

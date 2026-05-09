@@ -98,7 +98,11 @@ export async function queryMethodBreakdown(
     },
     _sum: { totalInCents: true },
     _count: { _all: true },
-  });
+  }) as unknown as Array<{
+    paymentMethod: PaymentMethod;
+    _sum: { totalInCents: bigint | number | string | null };
+    _count: { _all: number };
+  }>;
 
   return grouped
     .map((row) => ({

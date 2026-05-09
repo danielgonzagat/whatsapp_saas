@@ -14,7 +14,6 @@ import {
   UploadedFile,
   UseGuards,
   UseInterceptors,
-  Optional,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { SkipThrottle, Throttle, ThrottlerGuard } from '@nestjs/throttler';
@@ -32,7 +31,6 @@ import { KloelService } from './kloel.service';
 import { KloelThreadSearchService } from './kloel-thread-search.service';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { StorageService } from '../common/storage/storage.service';
-import { OpsAlertService } from '../observability/ops-alert.service';
 
 import {
   listThreads,
@@ -84,7 +82,6 @@ export class KloelController {
     private readonly storageService: StorageService,
     private readonly prisma: PrismaService,
     private readonly threadSearchService: KloelThreadSearchService,
-    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   private readUserId(user: unknown) {

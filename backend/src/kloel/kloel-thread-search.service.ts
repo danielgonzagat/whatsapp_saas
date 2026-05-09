@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { extractThreadSearchTags, stripHtmlTags } from './thread-search.util';
@@ -27,7 +27,6 @@ export interface ThreadSearchResult {
 
 @Injectable()
 export class KloelThreadSearchService {
-  private readonly logger = new Logger(KloelThreadSearchService.name);
   constructor(private readonly prisma: PrismaService) {}
 
   async search(

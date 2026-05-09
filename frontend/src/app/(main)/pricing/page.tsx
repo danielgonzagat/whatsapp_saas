@@ -298,7 +298,7 @@ export default function PricingPage() {
                     ))}
                   </div>
                 </div>
-            )})
+            )})}
           </div>
           )}
         </CenterStage>
@@ -358,8 +358,9 @@ export default function PricingPage() {
                   </p>
                 </div>
               );
-            })}
+            }})}
           </div>
+          )}
         </CenterStage>
       </Section>
 

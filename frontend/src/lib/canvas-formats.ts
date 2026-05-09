@@ -493,7 +493,8 @@ export const EDITOR_TEMPLATES = [
 
 /* ═══ PRODUCT TEMPLATES (Fabric.js JSON) ═══ */
 export type { ProductTemplate } from './canvas-product-templates';
-export { PRODUCT_TEMPLATES } from './canvas-product-templates';
+// PRODUCT_TEMPLATES data is now served via useProductTemplates hook
+// Re-export retained for type compatibility; runtime import from '@/hooks/useProductTemplates'
 
 /* ═══ ELEMENT CATEGORIES ═══ */
 export const ELEMENT_CATEGORIES = [

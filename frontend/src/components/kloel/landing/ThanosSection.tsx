@@ -12,7 +12,6 @@ import {
   M,
   SALES_CHANNELS,
   SALES_DELAY_MS,
-  SALES_FLOW,
   SUCCESS,
   SURFACE,
   THANOS_STYLES,
@@ -20,6 +19,7 @@ import {
   type ChannelKey,
   type SalesMessage,
 } from './thanos-section.const';
+import { useSalesFlow } from '@/hooks/useSalesFlow';
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -43,6 +43,7 @@ function usePrefersReducedMotion() {
 
 function ThanosOmniSales({ runToken }: { runToken: number }) {
   const [msgs, setMsgs] = useState<Record<ChannelKey, SalesMessage[]>>(EMPTY_MESSAGES);
+  const { messages: flowMessages } = useSalesFlow();
 
   useEffect(() => {
     if (!runToken) {
@@ -53,7 +54,7 @@ function ThanosOmniSales({ runToken }: { runToken: number }) {
     setMsgs(EMPTY_MESSAGES);
 
     const run = async () => {
-      for (const msg of SALES_FLOW) {
+      for (const msg of flowMessages) {
         await wait(msg.f === '$' ? 520 : msg.f === 'a' ? 380 : 260);
         if (cancelled) {
           return;

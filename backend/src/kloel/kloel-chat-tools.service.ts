@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { filterLegacyProducts } from '../common/products/legacy-products.util';
 import { PrismaService } from '../prisma/prisma.service';
@@ -58,7 +58,6 @@ interface ToolDashboardSummaryArgs {
 /** Handles product, flow, dashboard, payment, and misc AI chat tools. */
 @Injectable()
 export class KloelChatToolsService {
-  private readonly logger = new Logger(KloelChatToolsService.name);
 
   constructor(
     private readonly prisma: PrismaService,

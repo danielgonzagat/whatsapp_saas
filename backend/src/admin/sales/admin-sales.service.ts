@@ -22,10 +22,10 @@ export class AdminSalesService {
     const [home, transactions] = await Promise.all([
       this.dashboard.getHome('30D', 'NONE'),
       listAdminTransactions(this.prisma, {
-        search: input.search,
-        status: input.status,
-        method: input.method,
-        gateway: input.gateway,
+        ...(input.search !== undefined ? { search: input.search } : {}),
+        ...(input.status !== undefined ? { status: input.status } : {}),
+        ...(input.method !== undefined ? { method: input.method } : {}),
+        ...(input.gateway !== undefined ? { gateway: input.gateway } : {}),
         take: 80,
       }),
     ]);

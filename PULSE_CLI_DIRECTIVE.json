@@ -1,11 +1,11 @@
 {
-  "generatedAt": "2026-05-09T18:28:37.994Z",
+  "generatedAt": "2026-05-09T19:04:22.769Z",
   "profile": null,
   "certificationScope": null,
   "pulseMachineReadiness": {
     "scope": "pulse_machine_not_kloel_product",
     "status": "NOT_READY",
-    "generatedAt": "2026-05-09T18:23:46.442Z",
+    "generatedAt": "2026-05-09T18:42:26.737Z",
     "productCertificationStatus": "NOT_CERTIFIED",
     "productCertificationExcludedFromVerdict": true,
     "canRunBoundedAutonomousCycle": false,
@@ -34,9 +34,9 @@
       {
         "id": "execution_matrix",
         "status": "pass",
-        "reason": "Execution matrix classified 5171 path(s) with zero unknown and zero non-terminal paths.",
+        "reason": "Execution matrix classified 5218 path(s) with zero unknown and zero non-terminal paths.",
         "evidence": {
-          "totalPaths": 5171,
+          "totalPaths": 5218,
           "unknownPaths": 0,
           "criticalUnobservedPaths": 0,
           "impreciseBreakpoints": 0,
@@ -46,12 +46,12 @@
       {
         "id": "critical_path_terminal",
         "status": "fail",
-        "reason": "3912 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive, matrix:capability:capability:admin-login. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
+        "reason": "3958 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive, matrix:capability:capability:admin-login. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
         "evidence": {
           "criticalUnobservedPaths": 0,
           "observedPass": 0,
           "observedFail": 222,
-          "terminalWithoutObservedEvidence": 3912,
+          "terminalWithoutObservedEvidence": 3958,
           "firstTerminalPathId": "matrix:capability:capability:ad-rules",
           "coverageArtifact": "PULSE_PATH_COVERAGE.json",
           "nextAiSafeAction": "node scripts/pulse/run.js --profile pulse-core-final --guidance --json # validate path matrix:capability:capability:ad-rules route /ad-rules"
@@ -109,7 +109,7 @@
     ],
     "blockers": [
       "artifact_consistency: Cross-artifact consistency has not produced a passing check.",
-      "critical_path_terminal: 3912 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive, matrix:capability:capability:admin-login. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
+      "critical_path_terminal: 3958 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive, matrix:capability:capability:admin-login. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
       "external_reality: 2 missing, 0 stale, and 0 invalid external adapter(s) remain.",
       "self_trust: PULSE still reconstructs 2 phantom capability(ies) and 15 phantom flow(s); self-trust stays degraded until illusion collapses into real chains.",
       "multi_cycle: multiCycleConvergence: no autonomy iteration history found; production-autonomy verdict requires proven cycles. Cycle proof: 3/3 successful non-regressing real cycle(s)."
@@ -119,7 +119,7 @@
     {
       "gate": "scopeClosed",
       "status": "fail",
-      "reason": "Observed Codacy files are missing from repo inventory: .agents/skills/marketing-psychology/SKILL.md, PULSE_REPORT.md, scripts/pulse/parsers/facade-detector.ts, scripts/pulse/parsers/runtime-utils.ts."
+      "reason": "Observed Codacy files are missing from repo inventory: .agents/skills/marketing-psychology/SKILL.md, scripts/pulse/parsers/facade-detector.ts, scripts/pulse/parsers/runtime-utils.ts."
     },
     {
       "gate": "truthExtractionPass",
@@ -184,12 +184,12 @@
     {
       "gate": "noOverclaimPass",
       "status": "fail",
-      "reason": "overclaim:completionProofReadiness — certification cannot complete while .pulse/current/PULSE_PROOF_READINESS.json has non-observed production proof (status=executable_unproved, canAdvance=false, planned=1971, inferred=0, not_available=0, nonObserved=1971, executableUnproved=1971)."
+      "reason": "overclaim:completionProofReadiness — certification cannot complete while .pulse/current/PULSE_PROOF_READINESS.json has non-observed production proof (status=executable_unproved, canAdvance=false, planned=2001, inferred=0, not_available=0, nonObserved=2001, executableUnproved=2001)."
     },
     {
       "gate": "criticalPathObservedPass",
       "status": "fail",
-      "reason": "3912 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive, matrix:capability:capability:admin-login. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json."
+      "reason": "3958 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive, matrix:capability:capability:admin-login. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json."
     },
     {
       "gate": "multiCycleConvergencePass",
@@ -198,17 +198,17 @@
     }
   ],
   "pathProofSurface": {
-    "summary": "1992 executable unproved path proof task(s) remain; next execution mode is ai_safe.",
+    "summary": "2001 executable unproved path proof task(s) remain; next execution mode is ai_safe.",
     "counts": {
-      "plannedTasks": 1992,
-      "unprovedTasks": 1992,
-      "executableUnprovedTasks": 1992,
+      "plannedTasks": 2001,
+      "unprovedTasks": 2001,
+      "executableUnprovedTasks": 2001,
       "governedValidationTasks": 0,
       "notExecutableTasks": 0,
       "readinessBlockers": 5,
       "criticalUnobservedPaths": 0,
       "criticalBlueprintReady": 0,
-      "coveragePercent": 4
+      "coveragePercent": 100
     },
     "executionMode": "ai_safe",
     "topExecutableUnprovedTasks": [
@@ -334,7 +334,7 @@
       }
     ],
     "evidenceFreshness": {
-      "generatedAt": "2026-05-09T18:28:40.222Z",
+      "generatedAt": "2026-05-09T18:42:26.533Z",
       "ageMinutes": 0,
       "stale": false,
       "source": "path_proof_plan",
@@ -353,7 +353,7 @@
       "canDeclareProductCertified": false,
       "blockers": [
         "artifact_consistency: Cross-artifact consistency has not produced a passing check.",
-        "critical_path_terminal: 3912 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive, matrix:capability:capability:admin-login. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
+        "critical_path_terminal: 3958 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive, matrix:capability:capability:admin-login. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
         "external_reality: 2 missing, 0 stale, and 0 invalid external adapter(s) remain.",
         "self_trust: PULSE still reconstructs 2 phantom capability(ies) and 15 phantom flow(s); self-trust stays degraded until illusion collapses into real chains.",
         "multi_cycle: multiCycleConvergence: no autonomy iteration history found; production-autonomy verdict requires proven cycles. Cycle proof: 3/3 successful non-regressing real cycle(s)."
@@ -906,7 +906,7 @@
   "zeroPromptProductionGuidanceVerdict": "NAO",
   "zeroPromptProductionGuidanceReason": "NAO: Authority is not automation-eligible: Evidence freshness is not closed. | Pulse self-trust is still failing. | Runtime pass is not green with live evidence.. | 2 missing, 0 stale, and 0 invalid external adapter(s) remain. | 1 governed validation gap(s) remain observation-only or protected-surface work.",
   "productionAutonomyVerdict": "NAO",
-  "productionAutonomyReason": "NAO: Evidence freshness is not closed. | Pulse self-trust is still failing. | Runtime pass is not green with live evidence. | Authority mode is advisory-only, not certified-autonomous. | Certification status is NOT_CERTIFIED, not CERTIFIED. | 2 missing, 0 stale, and 0 invalid external adapter(s) remain. | 50 parity gap(s), 1076 HIGH Codacy issue(s), 2 phantom capability(ies), and 15 phantom flow(s) remain. | 1 governed validation gap(s) remain observation-only or protected-surface work. | Observed Codacy files are missing from repo inventory: .agents/skills/marketing-psychology/SKILL.md, PULSE_REPORT.md, scripts/pulse/parsers/facade-detector.ts, scripts/pulse/parsers/runtime-utils.ts. | Codacy still reports 1076 HIGH issue(s). | Phantom capabilities remain: Knowledge Base, Neuro Crm. | Phantom flows remain: crm-delete-billing-payment-methods-payment-method-id, crm-delete-team-invite-id, crm-delete-team-member-id, crm-post-ai-kb-create, crm-post-ai-kb-source. | Codacy snapshot is stale (23753 minute(s) old). | Observed external high-impact signals remain active: 3. | Required external adapters are missing: 2. | Proof readiness still has non-observed production proof: status=executable_unproved, canAdvance=false, planned=1971, inferred=0, not_available=0, nonObserved=1971, executableUnproved=1971. | NAO: production proof readiness is not fully observed (proofReadiness status=executable_unproved, canAdvance=false, planned=1971, inferred=0, not_available=0, nonObserved=1971, executableUnproved=1971).",
+  "productionAutonomyReason": "NAO: Evidence freshness is not closed. | Pulse self-trust is still failing. | Runtime pass is not green with live evidence. | Authority mode is advisory-only, not certified-autonomous. | Certification status is NOT_CERTIFIED, not CERTIFIED. | 2 missing, 0 stale, and 0 invalid external adapter(s) remain. | 51 parity gap(s), 1076 HIGH Codacy issue(s), 2 phantom capability(ies), and 15 phantom flow(s) remain. | 1 governed validation gap(s) remain observation-only or protected-surface work. | Observed Codacy files are missing from repo inventory: .agents/skills/marketing-psychology/SKILL.md, scripts/pulse/parsers/facade-detector.ts, scripts/pulse/parsers/runtime-utils.ts. | Codacy still reports 1076 HIGH issue(s). | Phantom capabilities remain: Knowledge Base, Neuro Crm. | Phantom flows remain: crm-delete-billing-payment-methods-payment-method-id, crm-delete-team-invite-id, crm-delete-team-member-id, crm-post-ai-kb-create, crm-post-ai-kb-source. | Codacy snapshot is stale (23771 minute(s) old). | Observed external high-impact signals remain active: 3. | Required external adapters are missing: 2. | Proof readiness still has non-observed production proof: status=executable_unproved, canAdvance=false, planned=2001, inferred=0, not_available=0, nonObserved=2001, executableUnproved=2001. | NAO: production proof readiness is not fully observed (proofReadiness status=executable_unproved, canAdvance=false, planned=2001, inferred=0, not_available=0, nonObserved=2001, executableUnproved=2001).",
   "canWorkNow": false,
   "canContinueUntilReady": false,
   "canWorkUntilProductionReady": false,
@@ -923,16 +923,16 @@
     "warnings": [
       "2 external adapter(s) are missing; production reality is incomplete but local convergence can still proceed.",
       "PULSE still reconstructs 2 phantom capability(ies) and 15 phantom flow(s); self-trust stays degraded until illusion collapses into real chains.",
-      "NAO: production proof readiness is not fully observed (proofReadiness status=executable_unproved, canAdvance=false, planned=1971, inferred=0, not_available=0, nonObserved=1971, executableUnproved=1971)."
+      "NAO: production proof readiness is not fully observed (proofReadiness status=executable_unproved, canAdvance=false, planned=2001, inferred=0, not_available=0, nonObserved=2001, executableUnproved=2001)."
     ]
   },
   "autonomyProof": {
-    "generatedAt": "2026-05-09T18:23:46.442Z",
+    "generatedAt": "2026-05-09T18:42:26.737Z",
     "freshSessionQuestion": "If a new AI session runs the full Pulse, will it know the next safe executable step?",
     "freshSessionAnswer": "SIM",
     "productionAutonomyQuestion": "Can Pulse prove unsupervised convergence to fully functional and production-safe completion?",
     "productionAutonomyAnswer": "NAO",
-    "productionAutonomyReason": "NAO: Evidence freshness is not closed. | Pulse self-trust is still failing. | Runtime pass is not green with live evidence. | Authority mode is advisory-only, not certified-autonomous. | Certification status is NOT_CERTIFIED, not CERTIFIED. | 2 missing, 0 stale, and 0 invalid external adapter(s) remain. | 50 parity gap(s), 1076 HIGH Codacy issue(s), 2 phantom capability(ies), and 15 phantom flow(s) remain. | 1 governed validation gap(s) remain observation-only or protected-surface work. | Observed Codacy files are missing from repo inventory: .agents/skills/marketing-psychology/SKILL.md, PULSE_REPORT.md, scripts/pulse/parsers/facade-detector.ts, scripts/pulse/parsers/runtime-utils.ts. | Codacy still reports 1076 HIGH issue(s). | Phantom capabilities remain: Knowledge Base, Neuro Crm. | Phantom flows remain: crm-delete-billing-payment-methods-payment-method-id, crm-delete-team-invite-id, crm-delete-team-member-id, crm-post-ai-kb-create, crm-post-ai-kb-source. | Codacy snapshot is stale (23753 minute(s) old). | Observed external high-impact signals remain active: 3. | Required external adapters are missing: 2. | Proof readiness still has non-observed production proof: status=executable_unproved, canAdvance=false, planned=1971, inferred=0, not_available=0, nonObserved=1971, executableUnproved=1971. | NAO: production proof readiness is not fully observed (proofReadiness status=executable_unproved, canAdvance=false, planned=1971, inferred=0, not_available=0, nonObserved=1971, executableUnproved=1971).",
+    "productionAutonomyReason": "NAO: Evidence freshness is not closed. | Pulse self-trust is still failing. | Runtime pass is not green with live evidence. | Authority mode is advisory-only, not certified-autonomous. | Certification status is NOT_CERTIFIED, not CERTIFIED. | 2 missing, 0 stale, and 0 invalid external adapter(s) remain. | 51 parity gap(s), 1076 HIGH Codacy issue(s), 2 phantom capability(ies), and 15 phantom flow(s) remain. | 1 governed validation gap(s) remain observation-only or protected-surface work. | Observed Codacy files are missing from repo inventory: .agents/skills/marketing-psychology/SKILL.md, scripts/pulse/parsers/facade-detector.ts, scripts/pulse/parsers/runtime-utils.ts. | Codacy still reports 1076 HIGH issue(s). | Phantom capabilities remain: Knowledge Base, Neuro Crm. | Phantom flows remain: crm-delete-billing-payment-methods-payment-method-id, crm-delete-team-invite-id, crm-delete-team-member-id, crm-post-ai-kb-create, crm-post-ai-kb-source. | Codacy snapshot is stale (23771 minute(s) old). | Observed external high-impact signals remain active: 3. | Required external adapters are missing: 2. | Proof readiness still has non-observed production proof: status=executable_unproved, canAdvance=false, planned=2001, inferred=0, not_available=0, nonObserved=2001, executableUnproved=2001. | NAO: production proof readiness is not fully observed (proofReadiness status=executable_unproved, canAdvance=false, planned=2001, inferred=0, not_available=0, nonObserved=2001, executableUnproved=2001).",
     "zeroPromptProductionGuidanceQuestion": "If a fresh AI session runs the full Pulse and is told to work autonomously, can it keep converging safely until production completion without manual intervention?",
     "zeroPromptProductionGuidanceAnswer": "NAO",
     "zeroPromptProductionGuidanceReason": "NAO: Authority is not automation-eligible: Evidence freshness is not closed. | Pulse self-trust is still failing. | Runtime pass is not green with live evidence.. | 2 missing, 0 stale, and 0 invalid external adapter(s) remain. | 1 governed validation gap(s) remain observation-only or protected-surface work.",
@@ -993,7 +993,7 @@
       {
         "id": "structural_debt_closed",
         "status": "fail",
-        "evidence": "50 parity gap(s), 1076 HIGH Codacy issue(s), 2 phantom capability(ies), 15 phantom flow(s)."
+        "evidence": "51 parity gap(s), 1076 HIGH Codacy issue(s), 2 phantom capability(ies), 15 phantom flow(s)."
       },
       {
         "id": "multi_cycle_convergence",
@@ -1023,16 +1023,16 @@
       "Authority mode is advisory-only, not certified-autonomous.",
       "Certification status is NOT_CERTIFIED, not CERTIFIED.",
       "2 missing, 0 stale, and 0 invalid external adapter(s) remain.",
-      "50 parity gap(s), 1076 HIGH Codacy issue(s), 2 phantom capability(ies), and 15 phantom flow(s) remain.",
+      "51 parity gap(s), 1076 HIGH Codacy issue(s), 2 phantom capability(ies), and 15 phantom flow(s) remain.",
       "1 governed validation gap(s) remain observation-only or protected-surface work.",
-      "Observed Codacy files are missing from repo inventory: .agents/skills/marketing-psychology/SKILL.md, PULSE_REPORT.md, scripts/pulse/parsers/facade-detector.ts, scripts/pulse/parsers/runtime-utils.ts.",
+      "Observed Codacy files are missing from repo inventory: .agents/skills/marketing-psychology/SKILL.md, scripts/pulse/parsers/facade-detector.ts, scripts/pulse/parsers/runtime-utils.ts.",
       "Codacy still reports 1076 HIGH issue(s).",
       "Phantom capabilities remain: Knowledge Base, Neuro Crm.",
       "Phantom flows remain: crm-delete-billing-payment-methods-payment-method-id, crm-delete-team-invite-id, crm-delete-team-member-id, crm-post-ai-kb-create, crm-post-ai-kb-source.",
-      "Codacy snapshot is stale (23753 minute(s) old).",
+      "Codacy snapshot is stale (23771 minute(s) old).",
       "Observed external high-impact signals remain active: 3.",
       "Required external adapters are missing: 2.",
-      "Proof readiness still has non-observed production proof: status=executable_unproved, canAdvance=false, planned=1971, inferred=0, not_available=0, nonObserved=1971, executableUnproved=1971."
+      "Proof readiness still has non-observed production proof: status=executable_unproved, canAdvance=false, planned=2001, inferred=0, not_available=0, nonObserved=2001, executableUnproved=2001."
     ],
     "cycleProof": {
       "requiredCycles": 3,
@@ -1055,7 +1055,7 @@
         "proofBasis": "codacy_snapshot",
         "executed": true,
         "signalCount": 4,
-        "reason": "PULSE_CODACY_STATE.json is stale (23753 minute(s) old)."
+        "reason": "PULSE_CODACY_STATE.json is stale (23771 minute(s) old)."
       },
       {
         "source": "github",
@@ -1164,12 +1164,12 @@
     "proofReadiness": {
       "canAdvance": false,
       "status": "executable_unproved",
-      "plannedEvidence": 1971,
+      "plannedEvidence": 2001,
       "inferredEvidence": 0,
       "notAvailableEvidence": 0,
-      "nonObservedEvidence": 1971,
-      "executableUnproved": 1971,
-      "plannedOrUnexecutedEvidence": 1971,
+      "nonObservedEvidence": 2001,
+      "executableUnproved": 2001,
+      "plannedOrUnexecutedEvidence": 2001,
       "observationOnlyRequired": 0,
       "blockedNotExecutable": 0
     }
@@ -1177,19 +1177,19 @@
   "proofReadiness": {
     "canAdvance": false,
     "status": "executable_unproved",
-    "plannedEvidence": 1971,
+    "plannedEvidence": 2001,
     "inferredEvidence": 0,
     "notAvailableEvidence": 0,
-    "nonObservedEvidence": 1971,
-    "executableUnproved": 1971,
-    "plannedOrUnexecutedEvidence": 1971,
+    "nonObservedEvidence": 2001,
+    "executableUnproved": 2001,
+    "plannedOrUnexecutedEvidence": 2001,
     "observationOnlyRequired": 0,
     "blockedNotExecutable": 0
   },
   "noHardcodedReality": {
     "summary": {
-      "totalEvents": 218592,
-      "scannedFiles": 498,
+      "totalEvents": 218682,
+      "scannedFiles": 499,
       "topFiles": [
         "scripts/pulse/convergence-plan.ts",
         "scripts/pulse/__companions__/autopilot-processor.companion.ts",
@@ -1214,11 +1214,11 @@
       }
     },
     "blocksProduction": true,
-    "reason": "218592 hardcoded reality event(s) across 498 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9."
+    "reason": "218682 hardcoded reality event(s) across 499 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9."
   },
   "noOverclaim": {
     "gateStatus": "fail",
-    "gateReason": "overclaim:completionProofReadiness — certification cannot complete while .pulse/current/PULSE_PROOF_READINESS.json has non-observed production proof (status=executable_unproved, canAdvance=false, planned=1971, inferred=0, not_available=0, nonObserved=1971, executableUnproved=1971).",
+    "gateReason": "overclaim:completionProofReadiness — certification cannot complete while .pulse/current/PULSE_PROOF_READINESS.json has non-observed production proof (status=executable_unproved, canAdvance=false, planned=2001, inferred=0, not_available=0, nonObserved=2001, executableUnproved=2001).",
     "proofReadinessBlocksProduction": true,
     "proofReadinessReason": "proofReadiness canAdvance=false, status=executable_unproved"
   },
@@ -1244,7 +1244,7 @@
     "flowRealnessRatio": 0.74,
     "projectedProductionReadiness": "yellow"
   },
-  "visionGap": "Distance to projected readiness is driven by 0 product-facing phantom capability(ies), 2 system-wide phantom capability(ies), 15 phantom flow(s), 50 structural parity gap(s), and 1076 HIGH Codacy issue(s).",
+  "visionGap": "Distance to projected readiness is driven by 0 product-facing phantom capability(ies), 2 system-wide phantom capability(ies), 15 phantom flow(s), 51 structural parity gap(s), and 1076 HIGH Codacy issue(s).",
   "currentState": {
     "certificationStatus": "NOT_CERTIFIED",
     "blockingTier": 0,
@@ -1253,13 +1253,12 @@
       "status": "fail",
       "mode": "repo_inventory_with_codacy_spotcheck",
       "confidence": "low",
-      "reason": "Observed Codacy files are missing from repo inventory: .agents/skills/marketing-psychology/SKILL.md, PULSE_REPORT.md, scripts/pulse/parsers/facade-detector.ts, scripts/pulse/parsers/runtime-utils.ts.",
-      "inventoryFiles": 3851,
+      "reason": "Observed Codacy files are missing from repo inventory: .agents/skills/marketing-psychology/SKILL.md, scripts/pulse/parsers/facade-detector.ts, scripts/pulse/parsers/runtime-utils.ts.",
+      "inventoryFiles": 3874,
       "codacyObservedFiles": 60,
-      "codacyObservedFilesCovered": 56,
+      "codacyObservedFilesCovered": 57,
       "missingCodacyFiles": [
         ".agents/skills/marketing-psychology/SKILL.md",
-        "PULSE_REPORT.md",
         "scripts/pulse/parsers/facade-detector.ts",
         "scripts/pulse/parsers/runtime-utils.ts"
       ]
@@ -1334,7 +1333,7 @@
         "blocking": false,
         "proofBasis": "codacy_snapshot",
         "syncedAt": "2026-04-23T06:27:53.909Z",
-        "freshnessMinutes": 23753
+        "freshnessMinutes": 23771
       },
       {
         "source": "github",
@@ -1573,7 +1572,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "37 HIGH Codacy issue(s) remain in backend/prisma/migrations/20251209150035_init_baseline/migration.sql.",
-        "observedAt": "2026-05-09T18:21:02.179Z",
+        "observedAt": "2026-05-09T18:38:34.297Z",
         "relatedFiles": [
           "backend/prisma/migrations/20251209150035_init_baseline/migration.sql"
         ],
@@ -1615,7 +1614,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "2 HIGH Codacy issue(s) remain in backend/src/auth/email.service.ts.",
-        "observedAt": "2026-05-09T18:21:02.179Z",
+        "observedAt": "2026-05-09T18:38:34.297Z",
         "relatedFiles": [
           "backend/src/auth/email.service.ts"
         ],
@@ -1793,7 +1792,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "1 HIGH Codacy issue(s) remain in backend/src/autopilot/autopilot.service.ts.",
-        "observedAt": "2026-05-09T18:21:02.179Z",
+        "observedAt": "2026-05-09T18:38:34.297Z",
         "relatedFiles": [
           "backend/src/autopilot/autopilot.service.ts"
         ],
@@ -1981,7 +1980,7 @@
         "impactScore": 0.55,
         "confidence": 0.95,
         "summary": "1 HIGH Codacy issue(s) remain in package.json.",
-        "observedAt": "2026-05-09T18:21:02.179Z",
+        "observedAt": "2026-05-09T18:38:34.297Z",
         "relatedFiles": [
           "package.json"
         ],
@@ -2019,13 +2018,13 @@
   },
   "parityGaps": {
     "summary": {
-      "totalGaps": 50,
+      "totalGaps": 51,
       "criticalGaps": 12,
-      "highGaps": 36,
+      "highGaps": 37,
       "byKind": {
         "front_without_back": 5,
         "back_without_front": 4,
-        "ui_without_persistence": 25,
+        "ui_without_persistence": 26,
         "persistence_without_consumer": 0,
         "flow_without_validation": 4,
         "integration_without_observability": 12,
@@ -3014,13 +3013,13 @@
   },
   "executionMatrix": {
     "summary": {
-      "totalPaths": 5171,
+      "totalPaths": 5218,
       "bySource": {
         "execution_chain": 0,
-        "capability": 394,
+        "capability": 395,
         "flow": 58,
-        "structural_node": 1824,
-        "scope_file": 2895
+        "structural_node": 1853,
+        "scope_file": 2912
       },
       "byStatus": {
         "observed_pass": 0,
@@ -3028,16 +3027,16 @@
         "untested": 12,
         "observation_only": 0,
         "unreachable": 0,
-        "inferred_only": 1966,
-        "not_executable": 2971
+        "inferred_only": 1996,
+        "not_executable": 2988
       },
       "observedPass": 0,
       "observedFail": 222,
       "untested": 12,
       "unreachable": 0,
-      "inferredOnly": 1966,
-      "notExecutable": 2971,
-      "terminalPaths": 5171,
+      "inferredOnly": 1996,
+      "notExecutable": 2988,
+      "terminalPaths": 5218,
       "nonTerminalPaths": 0,
       "unknownPaths": 0,
       "criticalUnobservedPaths": 0,
@@ -12267,6 +12266,7 @@
         "capability:catch",
         "capability:checkout",
         "capability:checkout-bumps",
+        "capability:checkout-bundles",
         "capability:checkout-catalog",
         "capability:checkout-checkouts",
         "capability:checkout-code",
@@ -13923,6 +13923,7 @@
         "capability:chat-guest",
         "capability:checkout",
         "capability:checkout-bumps",
+        "capability:checkout-bundles",
         "capability:checkout-catalog",
         "capability:checkout-checkouts",
         "capability:checkout-code",
@@ -14283,6 +14284,7 @@
         "capability:chat-guest",
         "capability:checkout",
         "capability:checkout-bumps",
+        "capability:checkout-bundles",
         "capability:checkout-catalog",
         "capability:checkout-checkouts",
         "capability:checkout-code",
@@ -14643,6 +14645,7 @@
         "capability:chat-guest",
         "capability:checkout",
         "capability:checkout-bumps",
+        "capability:checkout-bundles",
         "capability:checkout-catalog",
         "capability:checkout-checkouts",
         "capability:checkout-code",
@@ -14992,6 +14995,7 @@
         "capability:chat-guest",
         "capability:checkout",
         "capability:checkout-bumps",
+        "capability:checkout-bundles",
         "capability:checkout-catalog",
         "capability:checkout-checkouts",
         "capability:checkout-code",
@@ -15352,6 +15356,7 @@
         "capability:chat-guest",
         "capability:checkout",
         "capability:checkout-bumps",
+        "capability:checkout-bundles",
         "capability:checkout-catalog",
         "capability:checkout-checkouts",
         "capability:checkout-code",
@@ -15715,6 +15720,7 @@
         "capability:chat-guest",
         "capability:checkout",
         "capability:checkout-bumps",
+        "capability:checkout-bundles",
         "capability:checkout-catalog",
         "capability:checkout-checkouts",
         "capability:checkout-code",
@@ -16078,6 +16084,7 @@
         "capability:chat-guest",
         "capability:checkout",
         "capability:checkout-bumps",
+        "capability:checkout-bundles",
         "capability:checkout-catalog",
         "capability:checkout-checkouts",
         "capability:checkout-code",
@@ -16442,6 +16449,7 @@
         "capability:chat-guest",
         "capability:checkout",
         "capability:checkout-bumps",
+        "capability:checkout-bundles",
         "capability:checkout-catalog",
         "capability:checkout-checkouts",
         "capability:checkout-code",
@@ -16730,6 +16738,24 @@
       "routePatterns": []
     },
     {
+      "id": "capability:checkout-bundles",
+      "name": "Checkout Bundles",
+      "status": "partial",
+      "stage": "connected",
+      "score": 0.3,
+      "missing": [
+        "api_surface",
+        "orchestration",
+        "persistence",
+        "side_effect",
+        "runtime_evidence",
+        "validation",
+        "scenario_coverage"
+      ],
+      "executionMode": "ai_safe",
+      "routePatterns": []
+    },
+    {
       "id": "capability:checkout-editor",
       "name": "Checkout Editor",
       "status": "partial",
@@ -16890,24 +16916,6 @@
       ],
       "executionMode": "ai_safe",
       "routePatterns": []
-    },
-    {
-      "id": "capability:review-section",
-      "name": "Review Section",
-      "status": "partial",
-      "stage": "connected",
-      "score": 0.3,
-      "missing": [
-        "api_surface",
-        "orchestration",
-        "persistence",
-        "side_effect",
-        "runtime_evidence",
-        "validation",
-        "scenario_coverage"
-      ],
-      "executionMode": "ai_safe",
-      "routePatterns": []
     }
   ],
   "topBlockers": [
@@ -16970,7 +16978,7 @@
     "UI without persistence: /canvas/editor: /canvas/editor (rich shell) still behaves like a shell or façade without durable persistence or real side effects.",
     "UI without persistence: /canvas/inicio: /canvas/inicio (rich shell) still behaves like a shell or façade without durable persistence or real side effects.",
     "UI without persistence: /canvas/modelos: /canvas/modelos (rich shell) still behaves like a shell or façade without durable persistence or real side effects.",
-    "UI without persistence: /cia: /cia (rich shell) still behaves like a shell or façade without durable persistence or real side effects."
+    "UI without persistence: /checkout/:planId: /checkout/:planId (rich shell) still behaves like a shell or façade without durable persistence or real side effects."
   ],
   "topProblems": [
     {
@@ -17709,6 +17717,8 @@
         "frontend/src/app/(checkout)/components/__parts__/CheckoutSummarySections/types.ts",
         "frontend/src/app/(checkout)/components/checkout-shared-parts.tsx",
         "frontend/src/app/(checkout)/components/checkout-shared-payment-parts.tsx",
+        "frontend/src/app/(checkout)/components/checkout-summary-helpers.ts",
+        "frontend/src/app/(checkout)/components/checkout-summary-types.ts",
         "frontend/src/app/(checkout)/components/checkout-theme-shared.test.ts",
         "frontend/src/app/(checkout)/components/checkout-theme-shared.tsx",
         "frontend/src/app/(checkout)/components/checkout-theme-tokens.ts",
@@ -17721,9 +17731,13 @@
         "frontend/src/app/(checkout)/components/CheckoutBlanc.payment-step.tsx",
         "frontend/src/app/(checkout)/components/CheckoutBlanc.tsx",
         "frontend/src/app/(checkout)/components/CheckoutBlancSocial.tsx",
+        "frontend/src/app/(checkout)/components/CheckoutCouponRow.tsx",
+        "frontend/src/app/(checkout)/components/CheckoutDesktopSidebar.tsx",
+        "frontend/src/app/(checkout)/components/CheckoutFooter.tsx",
         "frontend/src/app/(checkout)/components/CheckoutLeadSections.parts.tsx",
         "frontend/src/app/(checkout)/components/CheckoutLeadSections.test.tsx",
         "frontend/src/app/(checkout)/components/CheckoutLeadSections.tsx",
+        "frontend/src/app/(checkout)/components/CheckoutMobileSummary.tsx",
         "frontend/src/app/(checkout)/components/CheckoutNoir.address-step.tsx",
         "frontend/src/app/(checkout)/components/CheckoutNoir.defaults.ts",
         "frontend/src/app/(checkout)/components/CheckoutNoir.identity-step.tsx",
@@ -17736,9 +17750,13 @@
         "frontend/src/app/(checkout)/components/CheckoutNoirSocial.tsx",
         "frontend/src/app/(checkout)/components/CheckoutPaymentSection.test.tsx",
         "frontend/src/app/(checkout)/components/CheckoutPaymentSection.tsx",
+        "frontend/src/app/(checkout)/components/CheckoutProductThumb.tsx",
+        "frontend/src/app/(checkout)/components/CheckoutQuantityControl.tsx",
         "frontend/src/app/(checkout)/components/CheckoutShell.tsx",
         "frontend/src/app/(checkout)/components/CheckoutSocialIdentitySection.tsx",
+        "frontend/src/app/(checkout)/components/CheckoutSummaryProductRow.tsx",
         "frontend/src/app/(checkout)/components/CheckoutSummarySections.tsx",
+        "frontend/src/app/(checkout)/components/CheckoutSummaryTotals.tsx",
         "frontend/src/app/(checkout)/components/CheckoutThemePage.tsx",
         "frontend/src/app/(checkout)/components/CountdownTimer.tsx",
         "frontend/src/app/(checkout)/components/ExitIntentPopup.tsx",
@@ -17758,6 +17776,7 @@
         "frontend/src/app/(checkout)/hooks/useCheckoutExperience.utils.ts",
         "frontend/src/app/(checkout)/hooks/useCheckoutExperienceAutomation.test.tsx",
         "frontend/src/app/(checkout)/hooks/useCheckoutExperienceAutomation.ts",
+        "frontend/src/app/(checkout)/hooks/useCheckoutExperienceHelpers.ts",
         "frontend/src/app/(checkout)/hooks/useCheckoutExperienceSocial.draft.ts",
         "frontend/src/app/(checkout)/hooks/useCheckoutExperienceSocial.test.tsx",
         "frontend/src/app/(checkout)/hooks/useCheckoutExperienceSocial.ts",
@@ -18106,6 +18125,7 @@
         "frontend/src/components/kloel/dashboard/KloelDashboard.subcomponents.tsx",
         "frontend/src/components/kloel/dashboard/KloelDashboard.tsx",
         "frontend/src/components/kloel/dashboard/KloelDashboard/__parts__/KloelDashboard.view.tsx",
+        "frontend/src/components/kloel/dashboard/KloelDashboard/KloelDashboardView.tsx",
         "frontend/src/components/kloel/dashboard/KloelDashboardSendMessage.ts",
         "frontend/src/components/kloel/dashboard/useKloelDragDrop.ts",
         "frontend/src/components/kloel/dashboard/useKloelFiles.ts",
@@ -19214,7 +19234,7 @@
       "productImpact": "diagnostic",
       "ownerLane": "platform",
       "title": "Remove PULSE Hardcoded Reality Authority",
-      "summary": "218592 hardcoded reality event(s) across 498 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/p...",
+      "summary": "218682 hardcoded reality event(s) across 499 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/p...",
       "whyNow": "Keeps PULSE decisions grounded in discovered evidence instead of fixed product reality lists.",
       "visionDelta": "Keeps PULSE decisions grounded in discovered evidence instead of fixed product reality lists.",
       "targetState": "PULSE_NO_HARDCODED_REALITY.json reports zero dynamic hardcode evidence events.",
@@ -19290,7 +19310,7 @@
       ]
     },
     {
-      "order": 117,
+      "order": 134,
       "id": "scope-codacy-parity",
       "kind": "scope",
       "priority": "P3",
@@ -19302,7 +19322,7 @@
       "productImpact": "material",
       "ownerLane": "platform",
       "title": "Close Codacy Scope Parity Gaps",
-      "summary": "Observed Codacy files are missing from repo inventory: .agents/skills/marketing-psychology/SKILL.md, PULSE_REPORT.md, scripts/pulse/parsers/facade-detector.ts, scripts/pulse/parsers/runtime-utils.ts.",
+      "summary": "Observed Codacy files are missing from repo inventory: .agents/skills/marketing-psychology/SKILL.md, scripts/pulse/parsers/facade-detector.ts, scripts/pulse/parsers/runtime-utils.ts.",
       "whyNow": "Closes scope drift between what Codacy is flagging and what PULSE can actually inventory and classify.",
       "visionDelta": "Closes scope drift between what Codacy is flagging and what PULSE can actually inventory and classify.",
       "targetState": "Every observed Codacy hotspot file must exist in the dynamic repo inventory and be classifiable by PULSE.",
@@ -19311,14 +19331,12 @@
       "gateNames": [
         "scopeClosed",
         "staticPass",
-        "runtimePass",
         "invariantPass",
         "customerPass",
         "operatorPass",
         "adminPass",
         "soakPass",
         "evidenceFresh",
-        "pulseSelfTrustPass",
         "noOverclaimPass",
         "criticalPathObservedPass"
       ],
@@ -19335,7 +19353,6 @@
       ],
       "relatedFiles": [
         ".agents/skills/marketing-psychology/SKILL.md",
-        "PULSE_REPORT.md",
         "scripts/pulse/parsers/facade-detector.ts",
         "scripts/pulse/parsers/runtime-utils.ts"
       ],
@@ -21659,6 +21676,8 @@
         "frontend/src/app/(checkout)/components/__parts__/CheckoutSummarySections/types.ts",
         "frontend/src/app/(checkout)/components/checkout-shared-parts.tsx",
         "frontend/src/app/(checkout)/components/checkout-shared-payment-parts.tsx",
+        "frontend/src/app/(checkout)/components/checkout-summary-helpers.ts",
+        "frontend/src/app/(checkout)/components/checkout-summary-types.ts",
         "frontend/src/app/(checkout)/components/checkout-theme-shared.test.ts",
         "frontend/src/app/(checkout)/components/checkout-theme-shared.tsx",
         "frontend/src/app/(checkout)/components/checkout-theme-tokens.ts",
@@ -21671,9 +21690,13 @@
         "frontend/src/app/(checkout)/components/CheckoutBlanc.payment-step.tsx",
         "frontend/src/app/(checkout)/components/CheckoutBlanc.tsx",
         "frontend/src/app/(checkout)/components/CheckoutBlancSocial.tsx",
+        "frontend/src/app/(checkout)/components/CheckoutCouponRow.tsx",
+        "frontend/src/app/(checkout)/components/CheckoutDesktopSidebar.tsx",
+        "frontend/src/app/(checkout)/components/CheckoutFooter.tsx",
         "frontend/src/app/(checkout)/components/CheckoutLeadSections.parts.tsx",
         "frontend/src/app/(checkout)/components/CheckoutLeadSections.test.tsx",
         "frontend/src/app/(checkout)/components/CheckoutLeadSections.tsx",
+        "frontend/src/app/(checkout)/components/CheckoutMobileSummary.tsx",
         "frontend/src/app/(checkout)/components/CheckoutNoir.address-step.tsx",
         "frontend/src/app/(checkout)/components/CheckoutNoir.defaults.ts",
         "frontend/src/app/(checkout)/components/CheckoutNoir.identity-step.tsx",
@@ -21686,9 +21709,13 @@
         "frontend/src/app/(checkout)/components/CheckoutNoirSocial.tsx",
         "frontend/src/app/(checkout)/components/CheckoutPaymentSection.test.tsx",
         "frontend/src/app/(checkout)/components/CheckoutPaymentSection.tsx",
+        "frontend/src/app/(checkout)/components/CheckoutProductThumb.tsx",
+        "frontend/src/app/(checkout)/components/CheckoutQuantityControl.tsx",
         "frontend/src/app/(checkout)/components/CheckoutShell.tsx",
         "frontend/src/app/(checkout)/components/CheckoutSocialIdentitySection.tsx",
+        "frontend/src/app/(checkout)/components/CheckoutSummaryProductRow.tsx",
         "frontend/src/app/(checkout)/components/CheckoutSummarySections.tsx",
+        "frontend/src/app/(checkout)/components/CheckoutSummaryTotals.tsx",
         "frontend/src/app/(checkout)/components/CheckoutThemePage.tsx",
         "frontend/src/app/(checkout)/components/CountdownTimer.tsx",
         "frontend/src/app/(checkout)/components/ExitIntentPopup.tsx",
@@ -21708,6 +21735,7 @@
         "frontend/src/app/(checkout)/hooks/useCheckoutExperience.utils.ts",
         "frontend/src/app/(checkout)/hooks/useCheckoutExperienceAutomation.test.tsx",
         "frontend/src/app/(checkout)/hooks/useCheckoutExperienceAutomation.ts",
+        "frontend/src/app/(checkout)/hooks/useCheckoutExperienceHelpers.ts",
         "frontend/src/app/(checkout)/hooks/useCheckoutExperienceSocial.draft.ts",
         "frontend/src/app/(checkout)/hooks/useCheckoutExperienceSocial.test.tsx",
         "frontend/src/app/(checkout)/hooks/useCheckoutExperienceSocial.ts",
@@ -22056,6 +22084,7 @@
         "frontend/src/components/kloel/dashboard/KloelDashboard.subcomponents.tsx",
         "frontend/src/components/kloel/dashboard/KloelDashboard.tsx",
         "frontend/src/components/kloel/dashboard/KloelDashboard/__parts__/KloelDashboard.view.tsx",
+        "frontend/src/components/kloel/dashboard/KloelDashboard/KloelDashboardView.tsx",
         "frontend/src/components/kloel/dashboard/KloelDashboardSendMessage.ts",
         "frontend/src/components/kloel/dashboard/useKloelDragDrop.ts",
         "frontend/src/components/kloel/dashboard/useKloelFiles.ts",
@@ -23164,7 +23193,7 @@
       "productImpact": "diagnostic",
       "ownerLane": "platform",
       "title": "Remove PULSE Hardcoded Reality Authority",
-      "summary": "218592 hardcoded reality event(s) across 498 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/p...",
+      "summary": "218682 hardcoded reality event(s) across 499 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/p...",
       "whyNow": "Keeps PULSE decisions grounded in discovered evidence instead of fixed product reality lists.",
       "visionDelta": "Keeps PULSE decisions grounded in discovered evidence instead of fixed product reality lists.",
       "targetState": "PULSE_NO_HARDCODED_REALITY.json reports zero dynamic hardcode evidence events.",
@@ -23240,7 +23269,7 @@
       ]
     },
     {
-      "order": 117,
+      "order": 134,
       "id": "scope-codacy-parity",
       "kind": "scope",
       "priority": "P3",
@@ -23252,7 +23281,7 @@
       "productImpact": "material",
       "ownerLane": "platform",
       "title": "Close Codacy Scope Parity Gaps",
-      "summary": "Observed Codacy files are missing from repo inventory: .agents/skills/marketing-psychology/SKILL.md, PULSE_REPORT.md, scripts/pulse/parsers/facade-detector.ts, scripts/pulse/parsers/runtime-utils.ts.",
+      "summary": "Observed Codacy files are missing from repo inventory: .agents/skills/marketing-psychology/SKILL.md, scripts/pulse/parsers/facade-detector.ts, scripts/pulse/parsers/runtime-utils.ts.",
       "whyNow": "Closes scope drift between what Codacy is flagging and what PULSE can actually inventory and classify.",
       "visionDelta": "Closes scope drift between what Codacy is flagging and what PULSE can actually inventory and classify.",
       "targetState": "Every observed Codacy hotspot file must exist in the dynamic repo inventory and be classifiable by PULSE.",
@@ -23261,14 +23290,12 @@
       "gateNames": [
         "scopeClosed",
         "staticPass",
-        "runtimePass",
         "invariantPass",
         "customerPass",
         "operatorPass",
         "adminPass",
         "soakPass",
         "evidenceFresh",
-        "pulseSelfTrustPass",
         "noOverclaimPass",
         "criticalPathObservedPass"
       ],
@@ -23285,7 +23312,6 @@
       ],
       "relatedFiles": [
         ".agents/skills/marketing-psychology/SKILL.md",
-        "PULSE_REPORT.md",
         "scripts/pulse/parsers/facade-detector.ts",
         "scripts/pulse/parsers/runtime-utils.ts"
       ],
@@ -23434,7 +23460,7 @@
       ],
       "expectedGateShift": "Pass PULSE machine criterion artifact_consistency",
       "validationTargets": [
-        null,
+        "PULSE_MACHINE_READINESS.json",
         "PULSE_CLI_DIRECTIVE.json",
         "PULSE_CERTIFICATE.json",
         "PULSE_ADMIN_EVIDENCE.json",
@@ -23484,7 +23510,7 @@
         "PULSE_WORLD_STATE.json"
       ],
       "validationArtifacts": [
-        null,
+        "PULSE_MACHINE_READINESS.json",
         "PULSE_CLI_DIRECTIVE.json",
         "PULSE_CERTIFICATE.json",
         "PULSE_ADMIN_EVIDENCE.json",
@@ -23512,7 +23538,6 @@
         "PULSE_GITNEXUS_STATE.json",
         "PULSE_HEALTH.json",
         "PULSE_INVARIANT_EVIDENCE.json",
-        "PULSE_MACHINE_READINESS.json",
         "PULSE_NO_HARDCODED_REALITY_STATE.json",
         "PULSE_OBSERVABILITY_EVIDENCE.json",
         "PULSE_OPERATOR_EVIDENCE.json",
@@ -23601,7 +23626,7 @@
         "scripts/pulse/false-positive-adjudicator.ts"
       ],
       "exitCriteria": [
-        "{\"id\":\"pulse-machine-artifact_consistency-exit-0\",\"type\":\"artifact-assertion\",\"expected\":{\"criterion\":\"artifact_consistency\",\"status\":\"pass\"},\"comparison\":\"contains\"}"
+        "{\"id\":\"pulse-machine-artifact_consistency-exit-0\",\"type\":\"artifact-assertion\",\"target\":\"PULSE_MACHINE_READINESS.json\",\"expected\":{\"criterion\":\"artifact_consistency\",\"status\":\"pass\"},\"comparison\":\"contains\"}"
       ],
       "preconditions": [
         "Operate only on PULSE machine/proof code and generated PULSE artifacts."
@@ -23640,7 +23665,7 @@
       "productImpact": "machine",
       "ownerLane": "pulse-core",
       "title": "Close PULSE critical path terminal criterion",
-      "summary": "3912 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive, matrix:capability:capability:admin-login. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
+      "summary": "3958 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive, matrix:capability:capability:admin-login. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
       "whyNow": "PULSE machine readiness is the active target; do not spend this cycle materializing SaaS product capabilities.",
       "visionDelta": "Moves PULSE closer to zero-prompt technical autonomy by closing machine proof, adapter, or execution-evidence gaps.",
       "targetState": "PULSE machine criterion \"critical_path_terminal\" must pass with canonical evidence.",
@@ -23651,7 +23676,7 @@
       ],
       "expectedGateShift": "Pass PULSE machine criterion critical_path_terminal",
       "validationTargets": [
-        null,
+        "PULSE_MACHINE_READINESS.json",
         "PULSE_CLI_DIRECTIVE.json",
         "PULSE_CERTIFICATE.json",
         "PULSE_EXECUTION_MATRIX.json",
@@ -23659,10 +23684,11 @@
         "PULSE_PATH_COVERAGE.json"
       ],
       "validationArtifacts": [
-        null,
+        "PULSE_MACHINE_READINESS.json",
         "PULSE_CLI_DIRECTIVE.json",
         "PULSE_CERTIFICATE.json",
         "PULSE_EXECUTION_MATRIX.json",
+        null,
         "PULSE_PATH_COVERAGE.json"
       ],
       "proofAuthority": "artifact_registry",
@@ -23675,7 +23701,7 @@
         "scripts/pulse/proof-synthesis.ts"
       ],
       "exitCriteria": [
-        "{\"id\":\"pulse-machine-critical_path_terminal-exit-0\",\"type\":\"artifact-assertion\",\"expected\":{\"criterion\":\"critical_path_terminal\",\"status\":\"pass\"},\"comparison\":\"contains\"}",
+        "{\"id\":\"pulse-machine-critical_path_terminal-exit-0\",\"type\":\"artifact-assertion\",\"target\":\"PULSE_MACHINE_READINESS.json\",\"expected\":{\"criterion\":\"critical_path_terminal\",\"status\":\"pass\"},\"comparison\":\"contains\"}",
         "Refresh observed proof for matrix:capability:capability:ad-rules.",
         "node scripts/pulse/run.js --profile pulse-core-final --guidance --json # validate path matrix:capability:capability:ad-rules route /ad-rules"
       ],
@@ -23727,7 +23753,7 @@
       ],
       "expectedGateShift": "Pass PULSE machine criterion external_reality",
       "validationTargets": [
-        null,
+        "PULSE_MACHINE_READINESS.json",
         "PULSE_CLI_DIRECTIVE.json",
         "PULSE_CERTIFICATE.json",
         "PULSE_BEADS_STATE.json",
@@ -23740,7 +23766,7 @@
         "PULSE_EXTERNAL_SIGNAL_STATE.json"
       ],
       "validationArtifacts": [
-        null,
+        "PULSE_MACHINE_READINESS.json",
         "PULSE_CLI_DIRECTIVE.json",
         "PULSE_CERTIFICATE.json",
         "PULSE_BEADS_STATE.json",
@@ -23769,7 +23795,7 @@
         "scripts/pulse/adapters/gitnexus-adapter.ts"
       ],
       "exitCriteria": [
-        "{\"id\":\"pulse-machine-external_reality-exit-0\",\"type\":\"artifact-assertion\",\"expected\":{\"criterion\":\"external_reality\",\"status\":\"pass\"},\"comparison\":\"contains\"}"
+        "{\"id\":\"pulse-machine-external_reality-exit-0\",\"type\":\"artifact-assertion\",\"target\":\"PULSE_MACHINE_READINESS.json\",\"expected\":{\"criterion\":\"external_reality\",\"status\":\"pass\"},\"comparison\":\"contains\"}"
       ],
       "preconditions": [
         "Do not add secrets; use existing local credentials or write not_available evidence."
@@ -23819,12 +23845,12 @@
       ],
       "expectedGateShift": "Pass PULSE machine criterion self_trust",
       "validationTargets": [
-        null,
+        "PULSE_MACHINE_READINESS.json",
         "PULSE_CLI_DIRECTIVE.json",
         "PULSE_CERTIFICATE.json"
       ],
       "validationArtifacts": [
-        null,
+        "PULSE_MACHINE_READINESS.json",
         "PULSE_CLI_DIRECTIVE.json",
         "PULSE_CERTIFICATE.json"
       ],
@@ -23834,7 +23860,7 @@
       ],
       "relatedFiles": [],
       "exitCriteria": [
-        "{\"id\":\"pulse-machine-self_trust-exit-0\",\"type\":\"artifact-assertion\",\"expected\":{\"criterion\":\"self_trust\",\"status\":\"pass\"},\"comparison\":\"contains\"}"
+        "{\"id\":\"pulse-machine-self_trust-exit-0\",\"type\":\"artifact-assertion\",\"target\":\"PULSE_MACHINE_READINESS.json\",\"expected\":{\"criterion\":\"self_trust\",\"status\":\"pass\"},\"comparison\":\"contains\"}"
       ],
       "preconditions": [
         "Operate only on PULSE machine/proof code and generated PULSE artifacts."
@@ -23884,12 +23910,12 @@
       ],
       "expectedGateShift": "Pass PULSE machine criterion multi_cycle",
       "validationTargets": [
-        null,
+        "PULSE_MACHINE_READINESS.json",
         "PULSE_CLI_DIRECTIVE.json",
         "PULSE_CERTIFICATE.json"
       ],
       "validationArtifacts": [
-        null,
+        "PULSE_MACHINE_READINESS.json",
         "PULSE_CLI_DIRECTIVE.json",
         "PULSE_CERTIFICATE.json"
       ],
@@ -23899,7 +23925,7 @@
       ],
       "relatedFiles": [],
       "exitCriteria": [
-        "{\"id\":\"pulse-machine-multi_cycle-exit-0\",\"type\":\"artifact-assertion\",\"expected\":{\"criterion\":\"multi_cycle\",\"status\":\"pass\"},\"comparison\":\"contains\"}"
+        "{\"id\":\"pulse-machine-multi_cycle-exit-0\",\"type\":\"artifact-assertion\",\"target\":\"PULSE_MACHINE_READINESS.json\",\"expected\":{\"criterion\":\"multi_cycle\",\"status\":\"pass\"},\"comparison\":\"contains\"}"
       ],
       "preconditions": [
         "Operate only on PULSE machine/proof code and generated PULSE artifacts."
@@ -23938,7 +23964,7 @@
       "productImpact": "machine",
       "ownerLane": "pulse-proof",
       "title": "Repair PULSE scope closed proof",
-      "summary": "Observed Codacy files are missing from repo inventory: .agents/skills/marketing-psychology/SKILL.md, PULSE_REPORT.md, scripts/pulse/parsers/facade-detector.ts, scripts/pulse/parsers/runtime-utils.ts.",
+      "summary": "Observed Codacy files are missing from repo inventory: .agents/skills/marketing-psychology/SKILL.md, scripts/pulse/parsers/facade-detector.ts, scripts/pulse/parsers/runtime-utils.ts.",
       "whyNow": "PULSE cannot claim zero-prompt production autonomy while this proof gate is failing; improve PULSE proof machinery before editing SaaS product code.",
       "visionDelta": "Moves PULSE from advisory/autonomous execution toward certified technical replacement by converting inferred or missing proof into canonical evidence.",
       "targetState": "Certification gate scopeClosed must pass or expose a precise non-product proof blocker.",
@@ -23955,13 +23981,13 @@
       "validationTargets": [
         "PULSE_CERTIFICATE.json",
         "PULSE_CLI_DIRECTIVE.json",
-        null,
+        "PULSE_MACHINE_READINESS.json",
         "PULSE_SCOPE_STATE.json"
       ],
       "validationArtifacts": [
         "PULSE_CERTIFICATE.json",
         "PULSE_CLI_DIRECTIVE.json",
-        null,
+        "PULSE_MACHINE_READINESS.json",
         "PULSE_SCOPE_STATE.json"
       ],
       "relatedFiles": [
@@ -24028,13 +24054,13 @@
       "validationTargets": [
         "PULSE_CERTIFICATE.json",
         "PULSE_CLI_DIRECTIVE.json",
-        null,
+        "PULSE_MACHINE_READINESS.json",
         "PULSE_CODEBASE_TRUTH.json"
       ],
       "validationArtifacts": [
         "PULSE_CERTIFICATE.json",
         "PULSE_CLI_DIRECTIVE.json",
-        null,
+        "PULSE_MACHINE_READINESS.json",
         "PULSE_CODEBASE_TRUTH.json"
       ],
       "relatedFiles": [
@@ -24101,14 +24127,14 @@
       "validationTargets": [
         "PULSE_CERTIFICATE.json",
         "PULSE_CLI_DIRECTIVE.json",
-        null,
+        "PULSE_MACHINE_READINESS.json",
         "PULSE_RUNTIME_EVIDENCE.json",
         "PULSE_RUNTIME_PROBES.json"
       ],
       "validationArtifacts": [
         "PULSE_CERTIFICATE.json",
         "PULSE_CLI_DIRECTIVE.json",
-        null,
+        "PULSE_MACHINE_READINESS.json",
         "PULSE_RUNTIME_EVIDENCE.json",
         "PULSE_RUNTIME_PROBES.json"
       ],
@@ -24175,13 +24201,13 @@
       "validationTargets": [
         "PULSE_CERTIFICATE.json",
         "PULSE_CLI_DIRECTIVE.json",
-        null,
+        "PULSE_MACHINE_READINESS.json",
         "PULSE_INVARIANT_EVIDENCE.json"
       ],
       "validationArtifacts": [
         "PULSE_CERTIFICATE.json",
         "PULSE_CLI_DIRECTIVE.json",
-        null,
+        "PULSE_MACHINE_READINESS.json",
         "PULSE_INVARIANT_EVIDENCE.json"
       ],
       "relatedFiles": [
@@ -24248,13 +24274,13 @@
       "validationTargets": [
         "PULSE_CERTIFICATE.json",
         "PULSE_CLI_DIRECTIVE.json",
-        null,
+        "PULSE_MACHINE_READINESS.json",
         "PULSE_RECOVERY_EVIDENCE.json"
       ],
       "validationArtifacts": [
         "PULSE_CERTIFICATE.json",
         "PULSE_CLI_DIRECTIVE.json",
-        null,
+        "PULSE_MACHINE_READINESS.json",
         "PULSE_RECOVERY_EVIDENCE.json"
       ],
       "relatedFiles": [
@@ -24321,12 +24347,12 @@
       "validationTargets": [
         "PULSE_CERTIFICATE.json",
         "PULSE_CLI_DIRECTIVE.json",
-        null
+        "PULSE_MACHINE_READINESS.json"
       ],
       "validationArtifacts": [
         "PULSE_CERTIFICATE.json",
         "PULSE_CLI_DIRECTIVE.json",
-        null
+        "PULSE_MACHINE_READINESS.json"
       ],
       "relatedFiles": [],
       "exitCriteria": [
@@ -24387,13 +24413,13 @@
       "validationTargets": [
         "PULSE_CERTIFICATE.json",
         "PULSE_CLI_DIRECTIVE.json",
-        null,
+        "PULSE_MACHINE_READINESS.json",
         "PULSE_OBSERVABILITY_EVIDENCE.json"
       ],
       "validationArtifacts": [
         "PULSE_CERTIFICATE.json",
         "PULSE_CLI_DIRECTIVE.json",
-        null,
+        "PULSE_MACHINE_READINESS.json",
         "PULSE_OBSERVABILITY_EVIDENCE.json"
       ],
       "relatedFiles": [
@@ -24460,13 +24486,13 @@
       "validationTargets": [
         "PULSE_CERTIFICATE.json",
         "PULSE_CLI_DIRECTIVE.json",
-        null,
+        "PULSE_MACHINE_READINESS.json",
         "PULSE_CUSTOMER_EVIDENCE.json"
       ],
       "validationArtifacts": [
         "PULSE_CERTIFICATE.json",
         "PULSE_CLI_DIRECTIVE.json",
-        null,
+        "PULSE_MACHINE_READINESS.json",
         "PULSE_CUSTOMER_EVIDENCE.json"
       ],
       "relatedFiles": [
@@ -24533,13 +24559,13 @@
       "validationTargets": [
         "PULSE_CERTIFICATE.json",
         "PULSE_CLI_DIRECTIVE.json",
-        null,
+        "PULSE_MACHINE_READINESS.json",
         "PULSE_OPERATOR_EVIDENCE.json"
       ],
       "validationArtifacts": [
         "PULSE_CERTIFICATE.json",
         "PULSE_CLI_DIRECTIVE.json",
-        null,
+        "PULSE_MACHINE_READINESS.json",
         "PULSE_OPERATOR_EVIDENCE.json"
       ],
       "relatedFiles": [
@@ -24606,13 +24632,13 @@
       "validationTargets": [
         "PULSE_CERTIFICATE.json",
         "PULSE_CLI_DIRECTIVE.json",
-        null,
+        "PULSE_MACHINE_READINESS.json",
         "PULSE_ADMIN_EVIDENCE.json"
       ],
       "validationArtifacts": [
         "PULSE_CERTIFICATE.json",
         "PULSE_CLI_DIRECTIVE.json",
-        null,
+        "PULSE_MACHINE_READINESS.json",
         "PULSE_ADMIN_EVIDENCE.json"
       ],
       "relatedFiles": [
@@ -24679,13 +24705,13 @@
       "validationTargets": [
         "PULSE_CERTIFICATE.json",
         "PULSE_CLI_DIRECTIVE.json",
-        null,
+        "PULSE_MACHINE_READINESS.json",
         "PULSE_SOAK_EVIDENCE.json"
       ],
       "validationArtifacts": [
         "PULSE_CERTIFICATE.json",
         "PULSE_CLI_DIRECTIVE.json",
-        null,
+        "PULSE_MACHINE_READINESS.json",
         "PULSE_SOAK_EVIDENCE.json"
       ],
       "relatedFiles": [
@@ -24775,7 +24801,7 @@
       "validationTargets": [
         "PULSE_CERTIFICATE.json",
         "PULSE_CLI_DIRECTIVE.json",
-        null,
+        "PULSE_MACHINE_READINESS.json",
         "PULSE_ADMIN_EVIDENCE.json",
         "PULSE_BROWSER_EVIDENCE.json",
         "PULSE_CAPABILITY_STATE.json",
@@ -24803,7 +24829,7 @@
       "validationArtifacts": [
         "PULSE_CERTIFICATE.json",
         "PULSE_CLI_DIRECTIVE.json",
-        null,
+        "PULSE_MACHINE_READINESS.json",
         "PULSE_ADMIN_EVIDENCE.json",
         "PULSE_BROWSER_EVIDENCE.json",
         "PULSE_CAPABILITY_STATE.json",
@@ -24946,7 +24972,7 @@
       "validationTargets": [
         "PULSE_CERTIFICATE.json",
         "PULSE_CLI_DIRECTIVE.json",
-        null,
+        "PULSE_MACHINE_READINESS.json",
         "PULSE_ADMIN_EVIDENCE.json",
         "PULSE_AGENT_ORCHESTRATION_STATE.json",
         "PULSE_ARTIFACT_INDEX.json",
@@ -24972,7 +24998,6 @@
         "PULSE_GITNEXUS_STATE.json",
         "PULSE_HEALTH.json",
         "PULSE_INVARIANT_EVIDENCE.json",
-        "PULSE_MACHINE_READINESS.json",
         "PULSE_NO_HARDCODED_REALITY_STATE.json",
         "PULSE_OBSERVABILITY_EVIDENCE.json",
         "PULSE_OPERATOR_EVIDENCE.json",
@@ -24994,7 +25019,7 @@
       "validationArtifacts": [
         "PULSE_CERTIFICATE.json",
         "PULSE_CLI_DIRECTIVE.json",
-        null,
+        "PULSE_MACHINE_READINESS.json",
         "PULSE_ADMIN_EVIDENCE.json",
         "PULSE_AGENT_ORCHESTRATION_STATE.json",
         "PULSE_ARTIFACT_INDEX.json",
@@ -25020,7 +25045,6 @@
         "PULSE_GITNEXUS_STATE.json",
         "PULSE_HEALTH.json",
         "PULSE_INVARIANT_EVIDENCE.json",
-        "PULSE_MACHINE_READINESS.json",
         "PULSE_NO_HARDCODED_REALITY_STATE.json",
         "PULSE_OBSERVABILITY_EVIDENCE.json",
         "PULSE_OPERATOR_EVIDENCE.json",
@@ -25101,7 +25125,7 @@
       "productImpact": "machine",
       "ownerLane": "pulse-proof",
       "title": "Repair PULSE no overclaim proof",
-      "summary": "overclaim:completionProofReadiness — certification cannot complete while .pulse/current/PULSE_PROOF_READINESS.json has non-observed production proof (status=executable_unproved, canAdvance=false, planned=1971, inferred=0, not_available=0, nonObserved=1971, executableUnproved=1971).",
+      "summary": "overclaim:completionProofReadiness — certification cannot complete while .pulse/current/PULSE_PROOF_READINESS.json has non-observed production proof (status=executable_unproved, canAdvance=false, planned=2001, inferred=0, not_available=0, nonObserved=2001, executableUnproved=2001).",
       "whyNow": "PULSE cannot claim zero-prompt production autonomy while this proof gate is failing; improve PULSE proof machinery before editing SaaS product code.",
       "visionDelta": "Moves PULSE from advisory/autonomous execution toward certified technical replacement by converting inferred or missing proof into canonical evidence.",
       "targetState": "Certification gate noOverclaimPass must pass or expose a precise non-product proof blocker.",
@@ -25118,12 +25142,12 @@
       "validationTargets": [
         "PULSE_CERTIFICATE.json",
         "PULSE_CLI_DIRECTIVE.json",
-        null
+        "PULSE_MACHINE_READINESS.json"
       ],
       "validationArtifacts": [
         "PULSE_CERTIFICATE.json",
         "PULSE_CLI_DIRECTIVE.json",
-        null
+        "PULSE_MACHINE_READINESS.json"
       ],
       "relatedFiles": [],
       "exitCriteria": [
@@ -25167,7 +25191,7 @@
       "productImpact": "machine",
       "ownerLane": "pulse-proof",
       "title": "Repair PULSE critical path observed proof",
-      "summary": "3912 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive, matrix:capability:capability:admin-login. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
+      "summary": "3958 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive, matrix:capability:capability:admin-login. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
       "whyNow": "PULSE cannot claim zero-prompt production autonomy while this proof gate is failing; improve PULSE proof machinery before editing SaaS product code.",
       "visionDelta": "Moves PULSE from advisory/autonomous execution toward certified technical replacement by converting inferred or missing proof into canonical evidence.",
       "targetState": "Certification gate criticalPathObservedPass must pass or expose a precise non-product proof blocker.",
@@ -25184,13 +25208,13 @@
       "validationTargets": [
         "PULSE_CERTIFICATE.json",
         "PULSE_CLI_DIRECTIVE.json",
-        null,
+        "PULSE_MACHINE_READINESS.json",
         "PULSE_EXECUTION_MATRIX.json"
       ],
       "validationArtifacts": [
         "PULSE_CERTIFICATE.json",
         "PULSE_CLI_DIRECTIVE.json",
-        null,
+        "PULSE_MACHINE_READINESS.json",
         "PULSE_EXECUTION_MATRIX.json"
       ],
       "relatedFiles": [
@@ -25256,13 +25280,13 @@
       "validationTargets": [
         "PULSE_CERTIFICATE.json",
         "PULSE_CLI_DIRECTIVE.json",
-        null,
+        "PULSE_MACHINE_READINESS.json",
         "PULSE_CONVERGENCE_PLAN.json"
       ],
       "validationArtifacts": [
         "PULSE_CERTIFICATE.json",
         "PULSE_CLI_DIRECTIVE.json",
-        null,
+        "PULSE_MACHINE_READINESS.json",
         "PULSE_CONVERGENCE_PLAN.json"
       ],
       "relatedFiles": [
@@ -25313,7 +25337,7 @@
       "productImpact": "machine",
       "ownerLane": "pulse-proof",
       "title": "Close PULSE production-autonomy proof debt",
-      "summary": "NAO: Evidence freshness is not closed. | Pulse self-trust is still failing. | Runtime pass is not green with live evidence. | Authority mode is advisory-only, not certified-autonomous. | Certification status is NOT_CERTIFIED, not CERTIFIED. | 2 missing, 0 stale, and 0 invalid external adapter(s) remain. | 50 parity gap(s), 1076 HIGH Codacy issue(s), 2 phantom capability(ies), and 15 phantom flow(s) remain. | 1 governed validation gap(s) remain observation-only or protected-surface work. | Observed Codacy files are missing from repo inventory: .agents/skills/marketing-psychology/SKILL.md, PULSE_REPORT.md, scripts/pulse/parsers/facade-detector.ts, scripts/pulse/parsers/runtime-utils.ts. | Codacy still reports 1076 HIGH issue(s). | Phantom capabilities remain: Knowledge Base, Neuro Crm. | Phantom flows remain: crm-delete-billing-payment-methods-payment-method-id, crm-delete-team-invite-id, crm-delete-team-member-id, crm-post-ai-kb-create, crm-post-ai-kb-source. | Codacy snapshot is stale (23753 minute(s) old). | Observed external high-impact signals remain active: 3. | Required external adapters are missing: 2. | Proof readiness still has non-observed production proof: status=executable_unproved, canAdvance=false, planned=1971, inferred=0, not_available=0, nonObserved=1971, executableUnproved=1971. | NAO: production proof readiness is not fully observed (proofReadiness status=executable_unproved, canAdvance=false, planned=1971, inferred=0, not_available=0, nonObserved=1971, executableUnproved=1971).",
+      "summary": "NAO: Evidence freshness is not closed. | Pulse self-trust is still failing. | Runtime pass is not green with live evidence. | Authority mode is advisory-only, not certified-autonomous. | Certification status is NOT_CERTIFIED, not CERTIFIED. | 2 missing, 0 stale, and 0 invalid external adapter(s) remain. | 51 parity gap(s), 1076 HIGH Codacy issue(s), 2 phantom capability(ies), and 15 phantom flow(s) remain. | 1 governed validation gap(s) remain observation-only or protected-surface work. | Observed Codacy files are missing from repo inventory: .agents/skills/marketing-psychology/SKILL.md, scripts/pulse/parsers/facade-detector.ts, scripts/pulse/parsers/runtime-utils.ts. | Codacy still reports 1076 HIGH issue(s). | Phantom capabilities remain: Knowledge Base, Neuro Crm. | Phantom flows remain: crm-delete-billing-payment-methods-payment-method-id, crm-delete-team-invite-id, crm-delete-team-member-id, crm-post-ai-kb-create, crm-post-ai-kb-source. | Codacy snapshot is stale (23771 minute(s) old). | Observed external high-impact signals remain active: 3. | Required external adapters are missing: 2. | Proof readiness still has non-observed production proof: status=executable_unproved, canAdvance=false, planned=2001, inferred=0, not_available=0, nonObserved=2001, executableUnproved=2001. | NAO: production proof readiness is not fully observed (proofReadiness status=executable_unproved, canAdvance=false, planned=2001, inferred=0, not_available=0, nonObserved=2001, executableUnproved=2001).",
       "whyNow": "PULSE cannot claim production autonomy while proof blockers remain; repair PULSE proof machinery before editing SaaS product code.",
       "visionDelta": "Moves PULSE from next-step guidance toward certified zero-prompt technical replacement.",
       "targetState": "productionAutonomyVerdict must be SIM or expose only precise machine blockers.",
@@ -25501,7 +25525,7 @@
       ],
       "expectedGateShift": "Pass PULSE machine criterion artifact_consistency",
       "validationTargets": [
-        null,
+        "PULSE_MACHINE_READINESS.json",
         "PULSE_CLI_DIRECTIVE.json",
         "PULSE_CERTIFICATE.json",
         "PULSE_ADMIN_EVIDENCE.json",
@@ -25551,7 +25575,7 @@
         "PULSE_WORLD_STATE.json"
       ],
       "validationArtifacts": [
-        null,
+        "PULSE_MACHINE_READINESS.json",
         "PULSE_CLI_DIRECTIVE.json",
         "PULSE_CERTIFICATE.json",
         "PULSE_ADMIN_EVIDENCE.json",
@@ -25579,7 +25603,6 @@
         "PULSE_GITNEXUS_STATE.json",
         "PULSE_HEALTH.json",
         "PULSE_INVARIANT_EVIDENCE.json",
-        "PULSE_MACHINE_READINESS.json",
         "PULSE_NO_HARDCODED_REALITY_STATE.json",
         "PULSE_OBSERVABILITY_EVIDENCE.json",
         "PULSE_OPERATOR_EVIDENCE.json",
@@ -25668,7 +25691,7 @@
         "scripts/pulse/false-positive-adjudicator.ts"
       ],
       "exitCriteria": [
-        "{\"id\":\"pulse-machine-artifact_consistency-exit-0\",\"type\":\"artifact-assertion\",\"expected\":{\"criterion\":\"artifact_consistency\",\"status\":\"pass\"},\"comparison\":\"contains\"}"
+        "{\"id\":\"pulse-machine-artifact_consistency-exit-0\",\"type\":\"artifact-assertion\",\"target\":\"PULSE_MACHINE_READINESS.json\",\"expected\":{\"criterion\":\"artifact_consistency\",\"status\":\"pass\"},\"comparison\":\"contains\"}"
       ],
       "preconditions": [
         "Operate only on PULSE machine/proof code and generated PULSE artifacts."
@@ -25707,7 +25730,7 @@
       "productImpact": "machine",
       "ownerLane": "pulse-core",
       "title": "Close PULSE critical path terminal criterion",
-      "summary": "3912 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive, matrix:capability:capability:admin-login. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
+      "summary": "3958 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive, matrix:capability:capability:admin-login. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
       "whyNow": "PULSE machine readiness is the active target; do not spend this cycle materializing SaaS product capabilities.",
       "visionDelta": "Moves PULSE closer to zero-prompt technical autonomy by closing machine proof, adapter, or execution-evidence gaps.",
       "targetState": "PULSE machine criterion \"critical_path_terminal\" must pass with canonical evidence.",
@@ -25718,7 +25741,7 @@
       ],
       "expectedGateShift": "Pass PULSE machine criterion critical_path_terminal",
       "validationTargets": [
-        null,
+        "PULSE_MACHINE_READINESS.json",
         "PULSE_CLI_DIRECTIVE.json",
         "PULSE_CERTIFICATE.json",
         "PULSE_EXECUTION_MATRIX.json",
@@ -25726,10 +25749,11 @@
         "PULSE_PATH_COVERAGE.json"
       ],
       "validationArtifacts": [
-        null,
+        "PULSE_MACHINE_READINESS.json",
         "PULSE_CLI_DIRECTIVE.json",
         "PULSE_CERTIFICATE.json",
         "PULSE_EXECUTION_MATRIX.json",
+        null,
         "PULSE_PATH_COVERAGE.json"
       ],
       "proofAuthority": "artifact_registry",
@@ -25742,7 +25766,7 @@
         "scripts/pulse/proof-synthesis.ts"
       ],
       "exitCriteria": [
-        "{\"id\":\"pulse-machine-critical_path_terminal-exit-0\",\"type\":\"artifact-assertion\",\"expected\":{\"criterion\":\"critical_path_terminal\",\"status\":\"pass\"},\"comparison\":\"contains\"}",
+        "{\"id\":\"pulse-machine-critical_path_terminal-exit-0\",\"type\":\"artifact-assertion\",\"target\":\"PULSE_MACHINE_READINESS.json\",\"expected\":{\"criterion\":\"critical_path_terminal\",\"status\":\"pass\"},\"comparison\":\"contains\"}",
         "Refresh observed proof for matrix:capability:capability:ad-rules.",
         "node scripts/pulse/run.js --profile pulse-core-final --guidance --json # validate path matrix:capability:capability:ad-rules route /ad-rules"
       ],
@@ -25794,7 +25818,7 @@
       ],
       "expectedGateShift": "Pass PULSE machine criterion external_reality",
       "validationTargets": [
-        null,
+        "PULSE_MACHINE_READINESS.json",
         "PULSE_CLI_DIRECTIVE.json",
         "PULSE_CERTIFICATE.json",
         "PULSE_BEADS_STATE.json",
@@ -25807,7 +25831,7 @@
         "PULSE_EXTERNAL_SIGNAL_STATE.json"
       ],
       "validationArtifacts": [
-        null,
+        "PULSE_MACHINE_READINESS.json",
         "PULSE_CLI_DIRECTIVE.json",
         "PULSE_CERTIFICATE.json",
         "PULSE_BEADS_STATE.json",
@@ -25836,7 +25860,7 @@
         "scripts/pulse/adapters/gitnexus-adapter.ts"
       ],
       "exitCriteria": [
-        "{\"id\":\"pulse-machine-external_reality-exit-0\",\"type\":\"artifact-assertion\",\"expected\":{\"criterion\":\"external_reality\",\"status\":\"pass\"},\"comparison\":\"contains\"}"
+        "{\"id\":\"pulse-machine-external_reality-exit-0\",\"type\":\"artifact-assertion\",\"target\":\"PULSE_MACHINE_READINESS.json\",\"expected\":{\"criterion\":\"external_reality\",\"status\":\"pass\"},\"comparison\":\"contains\"}"
       ],
       "preconditions": [
         "Do not add secrets; use existing local credentials or write not_available evidence."
@@ -25886,12 +25910,12 @@
       ],
       "expectedGateShift": "Pass PULSE machine criterion self_trust",
       "validationTargets": [
-        null,
+        "PULSE_MACHINE_READINESS.json",
         "PULSE_CLI_DIRECTIVE.json",
         "PULSE_CERTIFICATE.json"
       ],
       "validationArtifacts": [
-        null,
+        "PULSE_MACHINE_READINESS.json",
         "PULSE_CLI_DIRECTIVE.json",
         "PULSE_CERTIFICATE.json"
       ],
@@ -25901,7 +25925,7 @@
       ],
       "relatedFiles": [],
       "exitCriteria": [
-        "{\"id\":\"pulse-machine-self_trust-exit-0\",\"type\":\"artifact-assertion\",\"expected\":{\"criterion\":\"self_trust\",\"status\":\"pass\"},\"comparison\":\"contains\"}"
+        "{\"id\":\"pulse-machine-self_trust-exit-0\",\"type\":\"artifact-assertion\",\"target\":\"PULSE_MACHINE_READINESS.json\",\"expected\":{\"criterion\":\"self_trust\",\"status\":\"pass\"},\"comparison\":\"contains\"}"
       ],
       "preconditions": [
         "Operate only on PULSE machine/proof code and generated PULSE artifacts."
@@ -25951,12 +25975,12 @@
       ],
       "expectedGateShift": "Pass PULSE machine criterion multi_cycle",
       "validationTargets": [
-        null,
+        "PULSE_MACHINE_READINESS.json",
         "PULSE_CLI_DIRECTIVE.json",
         "PULSE_CERTIFICATE.json"
       ],
       "validationArtifacts": [
-        null,
+        "PULSE_MACHINE_READINESS.json",
         "PULSE_CLI_DIRECTIVE.json",
         "PULSE_CERTIFICATE.json"
       ],
@@ -25966,7 +25990,7 @@
       ],
       "relatedFiles": [],
       "exitCriteria": [
-        "{\"id\":\"pulse-machine-multi_cycle-exit-0\",\"type\":\"artifact-assertion\",\"expected\":{\"criterion\":\"multi_cycle\",\"status\":\"pass\"},\"comparison\":\"contains\"}"
+        "{\"id\":\"pulse-machine-multi_cycle-exit-0\",\"type\":\"artifact-assertion\",\"target\":\"PULSE_MACHINE_READINESS.json\",\"expected\":{\"criterion\":\"multi_cycle\",\"status\":\"pass\"},\"comparison\":\"contains\"}"
       ],
       "preconditions": [
         "Operate only on PULSE machine/proof code and generated PULSE artifacts."
@@ -26005,7 +26029,7 @@
       "productImpact": "machine",
       "ownerLane": "pulse-proof",
       "title": "Repair PULSE scope closed proof",
-      "summary": "Observed Codacy files are missing from repo inventory: .agents/skills/marketing-psychology/SKILL.md, PULSE_REPORT.md, scripts/pulse/parsers/facade-detector.ts, scripts/pulse/parsers/runtime-utils.ts.",
+      "summary": "Observed Codacy files are missing from repo inventory: .agents/skills/marketing-psychology/SKILL.md, scripts/pulse/parsers/facade-detector.ts, scripts/pulse/parsers/runtime-utils.ts.",
       "whyNow": "PULSE cannot claim zero-prompt production autonomy while this proof gate is failing; improve PULSE proof machinery before editing SaaS product code.",
       "visionDelta": "Moves PULSE from advisory/autonomous execution toward certified technical replacement by converting inferred or missing proof into canonical evidence.",
       "targetState": "Certification gate scopeClosed must pass or expose a precise non-product proof blocker.",
@@ -26022,13 +26046,13 @@
       "validationTargets": [
         "PULSE_CERTIFICATE.json",
         "PULSE_CLI_DIRECTIVE.json",
-        null,
+        "PULSE_MACHINE_READINESS.json",
         "PULSE_SCOPE_STATE.json"
       ],
       "validationArtifacts": [
         "PULSE_CERTIFICATE.json",
         "PULSE_CLI_DIRECTIVE.json",
-        null,
+        "PULSE_MACHINE_READINESS.json",
         "PULSE_SCOPE_STATE.json"
       ],
       "relatedFiles": [
@@ -26095,13 +26119,13 @@
       "validationTargets": [
         "PULSE_CERTIFICATE.json",
         "PULSE_CLI_DIRECTIVE.json",
-        null,
+        "PULSE_MACHINE_READINESS.json",
         "PULSE_CODEBASE_TRUTH.json"
       ],
       "validationArtifacts": [
         "PULSE_CERTIFICATE.json",
         "PULSE_CLI_DIRECTIVE.json",
-        null,
+        "PULSE_MACHINE_READINESS.json",
         "PULSE_CODEBASE_TRUTH.json"
       ],
       "relatedFiles": [
@@ -26168,14 +26192,14 @@
       "validationTargets": [
         "PULSE_CERTIFICATE.json",
         "PULSE_CLI_DIRECTIVE.json",
-        null,
+        "PULSE_MACHINE_READINESS.json",
         "PULSE_RUNTIME_EVIDENCE.json",
         "PULSE_RUNTIME_PROBES.json"
       ],
       "validationArtifacts": [
         "PULSE_CERTIFICATE.json",
         "PULSE_CLI_DIRECTIVE.json",
-        null,
+        "PULSE_MACHINE_READINESS.json",
         "PULSE_RUNTIME_EVIDENCE.json",
         "PULSE_RUNTIME_PROBES.json"
       ],
@@ -26238,7 +26262,7 @@
       ],
       "expectedGateShift": "Pass PULSE machine criterion artifact_consistency",
       "validationTargets": [
-        null,
+        "PULSE_MACHINE_READINESS.json",
         "PULSE_CLI_DIRECTIVE.json",
         "PULSE_CERTIFICATE.json",
         "PULSE_ADMIN_EVIDENCE.json",
@@ -26288,7 +26312,7 @@
         "PULSE_WORLD_STATE.json"
       ],
       "validationArtifacts": [
-        null,
+        "PULSE_MACHINE_READINESS.json",
         "PULSE_CLI_DIRECTIVE.json",
         "PULSE_CERTIFICATE.json",
         "PULSE_ADMIN_EVIDENCE.json",
@@ -26316,7 +26340,6 @@
         "PULSE_GITNEXUS_STATE.json",
         "PULSE_HEALTH.json",
         "PULSE_INVARIANT_EVIDENCE.json",
-        "PULSE_MACHINE_READINESS.json",
         "PULSE_NO_HARDCODED_REALITY_STATE.json",
         "PULSE_OBSERVABILITY_EVIDENCE.json",
         "PULSE_OPERATOR_EVIDENCE.json",
@@ -26405,7 +26428,7 @@
         "scripts/pulse/false-positive-adjudicator.ts"
       ],
       "exitCriteria": [
-        "{\"id\":\"pulse-machine-artifact_consistency-exit-0\",\"type\":\"artifact-assertion\",\"expected\":{\"criterion\":\"artifact_consistency\",\"status\":\"pass\"},\"comparison\":\"contains\"}"
+        "{\"id\":\"pulse-machine-artifact_consistency-exit-0\",\"type\":\"artifact-assertion\",\"target\":\"PULSE_MACHINE_READINESS.json\",\"expected\":{\"criterion\":\"artifact_consistency\",\"status\":\"pass\"},\"comparison\":\"contains\"}"
       ],
       "preconditions": [
         "Operate only on PULSE machine/proof code and generated PULSE artifacts."
@@ -26444,7 +26467,7 @@
       "productImpact": "machine",
       "ownerLane": "pulse-core",
       "title": "Close PULSE critical path terminal criterion",
-      "summary": "3912 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive, matrix:capability:capability:admin-login. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
+      "summary": "3958 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive, matrix:capability:capability:admin-login. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
       "whyNow": "PULSE machine readiness is the active target; do not spend this cycle materializing SaaS product capabilities.",
       "visionDelta": "Moves PULSE closer to zero-prompt technical autonomy by closing machine proof, adapter, or execution-evidence gaps.",
       "targetState": "PULSE machine criterion \"critical_path_terminal\" must pass with canonical evidence.",
@@ -26455,7 +26478,7 @@
       ],
       "expectedGateShift": "Pass PULSE machine criterion critical_path_terminal",
       "validationTargets": [
-        null,
+        "PULSE_MACHINE_READINESS.json",
         "PULSE_CLI_DIRECTIVE.json",
         "PULSE_CERTIFICATE.json",
         "PULSE_EXECUTION_MATRIX.json",
@@ -26463,10 +26486,11 @@
         "PULSE_PATH_COVERAGE.json"
       ],
       "validationArtifacts": [
-        null,
+        "PULSE_MACHINE_READINESS.json",
         "PULSE_CLI_DIRECTIVE.json",
         "PULSE_CERTIFICATE.json",
         "PULSE_EXECUTION_MATRIX.json",
+        null,
         "PULSE_PATH_COVERAGE.json"
       ],
       "proofAuthority": "artifact_registry",
@@ -26479,7 +26503,7 @@
         "scripts/pulse/proof-synthesis.ts"
       ],
       "exitCriteria": [
-        "{\"id\":\"pulse-machine-critical_path_terminal-exit-0\",\"type\":\"artifact-assertion\",\"expected\":{\"criterion\":\"critical_path_terminal\",\"status\":\"pass\"},\"comparison\":\"contains\"}",
+        "{\"id\":\"pulse-machine-critical_path_terminal-exit-0\",\"type\":\"artifact-assertion\",\"target\":\"PULSE_MACHINE_READINESS.json\",\"expected\":{\"criterion\":\"critical_path_terminal\",\"status\":\"pass\"},\"comparison\":\"contains\"}",
         "Refresh observed proof for matrix:capability:capability:ad-rules.",
         "node scripts/pulse/run.js --profile pulse-core-final --guidance --json # validate path matrix:capability:capability:ad-rules route /ad-rules"
       ],
@@ -26531,7 +26555,7 @@
       ],
       "expectedGateShift": "Pass PULSE machine criterion external_reality",
       "validationTargets": [
-        null,
+        "PULSE_MACHINE_READINESS.json",
         "PULSE_CLI_DIRECTIVE.json",
         "PULSE_CERTIFICATE.json",
         "PULSE_BEADS_STATE.json",
@@ -26544,7 +26568,7 @@
         "PULSE_EXTERNAL_SIGNAL_STATE.json"
       ],
       "validationArtifacts": [
-        null,
+        "PULSE_MACHINE_READINESS.json",
         "PULSE_CLI_DIRECTIVE.json",
         "PULSE_CERTIFICATE.json",
         "PULSE_BEADS_STATE.json",
@@ -26573,7 +26597,7 @@
         "scripts/pulse/adapters/gitnexus-adapter.ts"
       ],
       "exitCriteria": [
-        "{\"id\":\"pulse-machine-external_reality-exit-0\",\"type\":\"artifact-assertion\",\"expected\":{\"criterion\":\"external_reality\",\"status\":\"pass\"},\"comparison\":\"contains\"}"
+        "{\"id\":\"pulse-machine-external_reality-exit-0\",\"type\":\"artifact-assertion\",\"target\":\"PULSE_MACHINE_READINESS.json\",\"expected\":{\"criterion\":\"external_reality\",\"status\":\"pass\"},\"comparison\":\"contains\"}"
       ],
       "preconditions": [
         "Do not add secrets; use existing local credentials or write not_available evidence."
@@ -26623,12 +26647,12 @@
       ],
       "expectedGateShift": "Pass PULSE machine criterion self_trust",
       "validationTargets": [
-        null,
+        "PULSE_MACHINE_READINESS.json",
         "PULSE_CLI_DIRECTIVE.json",
         "PULSE_CERTIFICATE.json"
       ],
       "validationArtifacts": [
-        null,
+        "PULSE_MACHINE_READINESS.json",
         "PULSE_CLI_DIRECTIVE.json",
         "PULSE_CERTIFICATE.json"
       ],
@@ -26638,7 +26662,7 @@
       ],
       "relatedFiles": [],
       "exitCriteria": [
-        "{\"id\":\"pulse-machine-self_trust-exit-0\",\"type\":\"artifact-assertion\",\"expected\":{\"criterion\":\"self_trust\",\"status\":\"pass\"},\"comparison\":\"contains\"}"
+        "{\"id\":\"pulse-machine-self_trust-exit-0\",\"type\":\"artifact-assertion\",\"target\":\"PULSE_MACHINE_READINESS.json\",\"expected\":{\"criterion\":\"self_trust\",\"status\":\"pass\"},\"comparison\":\"contains\"}"
       ],
       "preconditions": [
         "Operate only on PULSE machine/proof code and generated PULSE artifacts."
@@ -26688,12 +26712,12 @@
       ],
       "expectedGateShift": "Pass PULSE machine criterion multi_cycle",
       "validationTargets": [
-        null,
+        "PULSE_MACHINE_READINESS.json",
         "PULSE_CLI_DIRECTIVE.json",
         "PULSE_CERTIFICATE.json"
       ],
       "validationArtifacts": [
-        null,
+        "PULSE_MACHINE_READINESS.json",
         "PULSE_CLI_DIRECTIVE.json",
         "PULSE_CERTIFICATE.json"
       ],
@@ -26703,7 +26727,7 @@
       ],
       "relatedFiles": [],
       "exitCriteria": [
-        "{\"id\":\"pulse-machine-multi_cycle-exit-0\",\"type\":\"artifact-assertion\",\"expected\":{\"criterion\":\"multi_cycle\",\"status\":\"pass\"},\"comparison\":\"contains\"}"
+        "{\"id\":\"pulse-machine-multi_cycle-exit-0\",\"type\":\"artifact-assertion\",\"target\":\"PULSE_MACHINE_READINESS.json\",\"expected\":{\"criterion\":\"multi_cycle\",\"status\":\"pass\"},\"comparison\":\"contains\"}"
       ],
       "preconditions": [
         "Operate only on PULSE machine/proof code and generated PULSE artifacts."
@@ -26742,7 +26766,7 @@
       "productImpact": "machine",
       "ownerLane": "pulse-proof",
       "title": "Repair PULSE scope closed proof",
-      "summary": "Observed Codacy files are missing from repo inventory: .agents/skills/marketing-psychology/SKILL.md, PULSE_REPORT.md, scripts/pulse/parsers/facade-detector.ts, scripts/pulse/parsers/runtime-utils.ts.",
+      "summary": "Observed Codacy files are missing from repo inventory: .agents/skills/marketing-psychology/SKILL.md, scripts/pulse/parsers/facade-detector.ts, scripts/pulse/parsers/runtime-utils.ts.",
       "whyNow": "PULSE cannot claim zero-prompt production autonomy while this proof gate is failing; improve PULSE proof machinery before editing SaaS product code.",
       "visionDelta": "Moves PULSE from advisory/autonomous execution toward certified technical replacement by converting inferred or missing proof into canonical evidence.",
       "targetState": "Certification gate scopeClosed must pass or expose a precise non-product proof blocker.",
@@ -26759,13 +26783,13 @@
       "validationTargets": [
         "PULSE_CERTIFICATE.json",
         "PULSE_CLI_DIRECTIVE.json",
-        null,
+        "PULSE_MACHINE_READINESS.json",
         "PULSE_SCOPE_STATE.json"
       ],
       "validationArtifacts": [
         "PULSE_CERTIFICATE.json",
         "PULSE_CLI_DIRECTIVE.json",
-        null,
+        "PULSE_MACHINE_READINESS.json",
         "PULSE_SCOPE_STATE.json"
       ],
       "relatedFiles": [
@@ -26832,13 +26856,13 @@
       "validationTargets": [
         "PULSE_CERTIFICATE.json",
         "PULSE_CLI_DIRECTIVE.json",
-        null,
+        "PULSE_MACHINE_READINESS.json",
         "PULSE_CODEBASE_TRUTH.json"
       ],
       "validationArtifacts": [
         "PULSE_CERTIFICATE.json",
         "PULSE_CLI_DIRECTIVE.json",
-        null,
+        "PULSE_MACHINE_READINESS.json",
         "PULSE_CODEBASE_TRUTH.json"
       ],
       "relatedFiles": [
@@ -26905,14 +26929,14 @@
       "validationTargets": [
         "PULSE_CERTIFICATE.json",
         "PULSE_CLI_DIRECTIVE.json",
-        null,
+        "PULSE_MACHINE_READINESS.json",
         "PULSE_RUNTIME_EVIDENCE.json",
         "PULSE_RUNTIME_PROBES.json"
       ],
       "validationArtifacts": [
         "PULSE_CERTIFICATE.json",
         "PULSE_CLI_DIRECTIVE.json",
-        null,
+        "PULSE_MACHINE_READINESS.json",
         "PULSE_RUNTIME_EVIDENCE.json",
         "PULSE_RUNTIME_PROBES.json"
       ],
@@ -26991,14 +27015,14 @@
   ],
   "productTruth": {
     "capabilities": {
-      "totalCapabilities": 394,
+      "totalCapabilities": 395,
       "realCapabilities": 0,
-      "partialCapabilities": 378,
+      "partialCapabilities": 379,
       "latentCapabilities": 14,
       "phantomCapabilities": 2,
       "governedValidationCapabilities": 0,
       "foundationalCapabilities": 8,
-      "connectedCapabilities": 386,
+      "connectedCapabilities": 387,
       "operationalCapabilities": 0,
       "productionReadyCapabilities": 0,
       "runtimeObservedCapabilities": 0,
@@ -27012,13 +27036,13 @@
       "phantomFlows": 15
     },
     "parityGaps": {
-      "totalGaps": 50,
+      "totalGaps": 51,
       "criticalGaps": 12,
-      "highGaps": 36,
+      "highGaps": 37,
       "byKind": {
         "front_without_back": 5,
         "back_without_front": 4,
-        "ui_without_persistence": 25,
+        "ui_without_persistence": 26,
         "persistence_without_consumer": 0,
         "flow_without_validation": 4,
         "integration_without_observability": 12,
@@ -27027,18 +27051,18 @@
       }
     },
     "structuralGraph": {
-      "totalNodes": 7081,
-      "totalEdges": 14844,
+      "totalNodes": 7113,
+      "totalEdges": 14843,
       "roleCounts": {
-        "interface": 2729,
+        "interface": 2761,
         "orchestration": 3264,
         "persistence": 139,
         "side_effect": 945,
         "simulation": 4
       },
-      "interfaceChains": 2729,
-      "completeChains": 767,
-      "partialChains": 1962,
+      "interfaceChains": 2761,
+      "completeChains": 766,
+      "partialChains": 1995,
       "simulatedChains": 0
     },
     "codacy": {
@@ -27104,7 +27128,7 @@
     },
     "evidenceBasis": {
       "observed": 55,
-      "inferred": 367,
+      "inferred": 368,
       "projected": 0
     }
   },
@@ -27134,19 +27158,30 @@
     ]
   },
   "contextFabric": {
-    "requiredForParallelWorkers": true,
-    "status": "pending_artifact_generation"
+    "broadcastRef": "PULSE_CONTEXT_BROADCAST.json",
+    "gitnexusRef": "gitnexus:missing",
+    "beadsRef": "beads:60ac6e77ca29e058",
+    "contextDigest": "2582dd43a6b0047608ad9ac924b2a58f2e398e13313dbdca9241a645f7142076",
+    "workerEnvelopeCount": 10,
+    "contextBroadcastPass": true,
+    "ownershipConflictPass": true,
+    "protectedFilesForbiddenPass": true,
+    "workerContextCompletenessPass": true,
+    "staleContextBlocksExecution": true,
+    "blockers": [
+      "gitnexus:missing"
+    ]
   },
   "stopCondition": [
-    "Observed Codacy files are missing from repo inventory: .agents/skills/marketing-psychology/SKILL.md, PULSE_REPORT.md, scripts/pulse/parsers/facade-detector.ts, scripts/pulse/parsers/runtime-utils.ts.",
+    "Observed Codacy files are missing from repo inventory: .agents/skills/marketing-psychology/SKILL.md, scripts/pulse/parsers/facade-detector.ts, scripts/pulse/parsers/runtime-utils.ts.",
     "Codacy still reports 1076 HIGH issue(s).",
     "Phantom capabilities remain: Knowledge Base, Neuro Crm.",
     "Phantom flows remain: crm-delete-billing-payment-methods-payment-method-id, crm-delete-team-invite-id, crm-delete-team-member-id, crm-post-ai-kb-create, crm-post-ai-kb-source.",
-    "Codacy snapshot is stale (23753 minute(s) old).",
+    "Codacy snapshot is stale (23771 minute(s) old).",
     "Observed external high-impact signals remain active: 3.",
     "Required external adapters are missing: 2.",
-    "Proof readiness still has non-observed production proof: status=executable_unproved, canAdvance=false, planned=1971, inferred=0, not_available=0, nonObserved=1971, executableUnproved=1971.",
-    "No-hardcoded-reality state still has hardcoded reality authority: 218592 hardcoded reality event(s) across 498 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9.."
+    "Proof readiness still has non-observed production proof: status=executable_unproved, canAdvance=false, planned=2001, inferred=0, not_available=0, nonObserved=2001, executableUnproved=2001.",
+    "No-hardcoded-reality state still has hardcoded reality authority: 218682 hardcoded reality event(s) across 499 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9.."
   ],
-  "runId": "d94f1e9b-fbe4-4dcf-8967-30dcdbbdecd7"
+  "runId": "275d944f-23db-4419-be12-32134e02d7aa"
 }

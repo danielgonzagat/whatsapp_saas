@@ -1,8 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { Queue } from 'bullmq';
 import { SmartTimeService } from '../analytics/smart-time/smart-time.service';
-import { PlanLimitsService } from '../billing/plan-limits.service';
 import { forEachSequential } from '../common/async-sequence';
 import { createRedisClient } from '../common/redis/redis.util';
 import { PrismaService } from '../prisma/prisma.service';
@@ -18,9 +16,7 @@ export class AutopilotCycleMoneyService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly config: ConfigService,
     private readonly smartTime: SmartTimeService,
-    private readonly planLimits: PlanLimitsService,
   ) {
     const connection = createRedisClient();
     this.campaignQueue = new Queue('campaign-jobs', { connection });
