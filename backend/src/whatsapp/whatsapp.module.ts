@@ -6,6 +6,7 @@ import { BillingModule } from '../billing/billing.module';
 import { CrmModule } from '../crm/crm.module';
 import { InboxModule } from '../inbox/inbox.module';
 import { KloelModule } from '../kloel/kloel.module';
+import { OmnichannelModule } from '../omnichannel/omnichannel.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { WorkspaceModule } from '../workspaces/workspace.module';
 import { AccountAgentService } from './account-agent.service';
@@ -39,6 +40,7 @@ import { WorkerRuntimeService } from './worker-runtime.service';
     PrismaModule,
     forwardRef(() => KloelModule),
     forwardRef(() => CiaModule),
+    forwardRef(() => OmnichannelModule),
   ],
   controllers: [
     WhatsAppApiController,

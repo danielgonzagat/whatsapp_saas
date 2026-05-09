@@ -5,14 +5,20 @@ import Redis from 'ioredis';
 import { InboxService } from '../inbox/inbox.service';
 import { ChannelTransportRegistry } from '../kloel/channel-transport.registry';
 import { UnifiedAgentService } from '../kloel/unified-agent.service';
+import { ChannelInboundHookService } from '../omnichannel/channel-inbound-hook.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { buildQueueDedupId, buildQueueJobId } from '../queue/job-id.util';
 import { autopilotQueue, flowQueue, voiceQueue } from '../queue/queue';
 import { AccountAgentService } from './account-agent.service';
 import { resolveConversationOwner } from './agent-conversation-state.util';
-import { getDefaultContent, mapMessageType, normalizePhone } from './inbound-processor.helpers';
-import { isPlaceholderContactName as isPlaceholderContactNameValue } from './whatsapp-normalization.util';
+import { triggerWhatsappMindPercept } from './inbound-mind-percept';
+import {
+  getDefaultContent,
+  mapMessageType,
+  normalizePhone,
+  resolveTrustedContactName,
+} from './inbound-processor.helpers';
 import { WhatsappService } from './whatsapp.service';
 import { WorkerRuntimeService } from './worker-runtime.service';
 import type { ProviderSettings } from './provider-settings.types';
@@ -66,33 +72,11 @@ export class InboundProcessorService {
     private readonly unifiedAgent: UnifiedAgentService,
     @Inject(forwardRef(() => WhatsappService)) private readonly whatsappService: WhatsappService,
     private readonly transports: ChannelTransportRegistry,
+    @Optional()
+    @Inject(forwardRef(() => ChannelInboundHookService))
+    private readonly mindHook?: ChannelInboundHookService,
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
-
-  private isPlaceholderContactName(value: unknown, phone?: string | null): boolean {
-    return isPlaceholderContactNameValue(value, phone);
-  }
-
-  private resolveTrustedContactName(phone: string, ...candidates: unknown[]): string {
-    for (const c of candidates) {
-      const n =
-        typeof c === 'string'
-          ? c.trim()
-          : typeof c === 'number' || typeof c === 'boolean'
-            ? String(c).trim()
-            : '';
-      if (n && !this.isPlaceholderContactName(n, phone)) return n;
-    }
-    return '';
-  }
-
-  private isWorkspaceSelfInbound(
-    settings: Record<string, unknown>,
-    from: string,
-    phone: string,
-  ): boolean {
-    return isWorkspaceSelfInboundExt(settings, from, phone);
-  }
 
   // ═══ PROCESS (thin wrapper) ═══
   async process(msg: InboundMessage): Promise<ProcessResult> {
@@ -112,12 +96,12 @@ export class InboundProcessorService {
       select: { providerSettings: true },
     });
     const settings = (workspace?.providerSettings as Record<string, unknown>) || {};
-    if (this.isWorkspaceSelfInbound(settings, msg.from, phone)) {
+    if (isWorkspaceSelfInboundExt(settings, msg.from, phone)) {
       this.logger.warn(`[SELF_CONTACT] Ignorando mensagem da própria sessão: ${msg.from}`);
       return { deduped: true };
     }
     const raw = (msg.raw ?? {}) as Record<string, Record<string, unknown>>;
-    const trustedSenderName = this.resolveTrustedContactName(
+    const trustedSenderName = resolveTrustedContactName(
       phone,
       msg.senderName,
       raw?.pushName,
@@ -215,6 +199,15 @@ export class InboundProcessorService {
       phone,
       conversationId: savedMessage.conversationId || null,
       messageContent: processedContent,
+    });
+    triggerWhatsappMindPercept({
+      mindHook: this.mindHook,
+      logger: this.logger,
+      msg,
+      contactId: contact.id,
+      messageId: savedMessage.id,
+      phone,
+      content: processedContent,
     });
     await this.triggerAutopilot(
       msg.workspaceId,

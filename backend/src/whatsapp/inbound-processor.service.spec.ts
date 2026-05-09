@@ -58,6 +58,10 @@ type MockTransports = {
   send: FlexMock;
 };
 
+type MockMindHook = {
+  onMessageReceived: FlexMock;
+};
+
 describe('InboundProcessorService', () => {
   let service: InboundProcessorService;
   let prisma: MockPrisma;
@@ -68,6 +72,7 @@ describe('InboundProcessorService', () => {
   let unifiedAgent: MockUnifiedAgent;
   let whatsappService: MockWhatsappService;
   let transports: MockTransports;
+  let mindHook: MockMindHook;
   let mockAutopilotAdd: jest.Mock;
 
   beforeEach(() => {
@@ -166,6 +171,9 @@ describe('InboundProcessorService', () => {
     transports = {
       send: jest.fn().mockResolvedValue({ success: true, blocked: false }),
     };
+    mindHook = {
+      onMessageReceived: jest.fn().mockResolvedValue(undefined),
+    };
 
     service = new InboundProcessorService(
       prisma as never,
@@ -176,6 +184,7 @@ describe('InboundProcessorService', () => {
       unifiedAgent as never,
       whatsappService as never,
       transports as never,
+      mindHook as never,
     );
   });
 
@@ -234,6 +243,18 @@ describe('InboundProcessorService', () => {
       'ws-1',
       '5511999999999',
       'Alice App',
+    );
+    expect(mindHook.onMessageReceived).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workspaceId: 'ws-1',
+        channel: 'WHATSAPP',
+        externalId: 'waha-msg-1',
+        from: '5511999999999',
+        fromName: 'Alice App',
+        content: 'Oi, quero saber do produto',
+      }),
+      'contact-1',
+      'msg-1',
     );
     expect(mockAutopilotAdd).not.toHaveBeenCalled();
   });
