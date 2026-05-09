@@ -20,6 +20,12 @@ const AD_ALERT_ARMS = [
   'ignore',
 ] as const;
 
+const ONE_DECIMAL_PERCENT = new Intl.NumberFormat('en-US', {
+  maximumFractionDigits: 1,
+  minimumFractionDigits: 1,
+  useGrouping: false,
+});
+
 interface AdRuleSnapshot {
   id: string;
   workspaceId: string;
@@ -302,7 +308,7 @@ export class AdRulesEngineService {
     metrics: CampaignMetrics | null,
   ): Promise<void> {
     const metricsSummary = metrics
-      ? `converted=${metrics.convertedCount} rate=${(metrics.conversionRate * 100).toFixed(1)}%`
+      ? `converted=${metrics.convertedCount} rate=${ONE_DECIMAL_PERCENT.format(metrics.conversionRate * 100)}%`
       : 'no metrics';
 
     this.logger.log(

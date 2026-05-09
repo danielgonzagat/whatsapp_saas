@@ -25,6 +25,14 @@ function decisionConfidence(result: PolicyDecisionResult): number {
   );
 }
 
+function formatDecimal(value: number, fractionDigits: number): string {
+  return new Intl.NumberFormat('en-US', {
+    maximumFractionDigits: fractionDigits,
+    minimumFractionDigits: fractionDigits,
+    useGrouping: false,
+  }).format(value);
+}
+
 export async function resolveAggressivenessDecision(
   policy: MindPolicyService,
   workspaceId: string,
@@ -65,7 +73,7 @@ export async function resolveAudioVsTextDecision(
   const memoryAction = await resolveCaseMemoryAction(cases, {
     workspaceId,
     caseType: 'audio_vs_text',
-    text: `channel ${channel} audioRatio ${audioRatio.toFixed(2)}`,
+    text: `channel ${channel} audioRatio ${formatDecimal(audioRatio, 2)}`,
     features: { channel },
     options: ['audio', 'text'],
     minSimilarCases: 3,
@@ -105,7 +113,9 @@ export async function resolveToneDecision(
   const memoryAction = await resolveCaseMemoryAction(cases, {
     workspaceId,
     caseType: 'tom',
-    text: `channel ${channel} repliedRate ${repliedRate.toFixed(2)} soldRate ${soldRate.toFixed(2)}${segment ? ` segment ${segment}` : ''}`,
+    text:
+      `channel ${channel} repliedRate ${formatDecimal(repliedRate, 2)} ` +
+      `soldRate ${formatDecimal(soldRate, 2)}${segment ? ` segment ${segment}` : ''}`,
     features: { channel, ...(segment ? { segment } : {}) },
     options: [...TONE_OPTIONS],
     minSimilarCases: 3,

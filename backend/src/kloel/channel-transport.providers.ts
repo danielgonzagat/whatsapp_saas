@@ -34,13 +34,16 @@ function availableCapability(channel: ChannelName): ChannelCapability {
 function blockedResult(reason: string): ChannelSendResult {
   return { success: false, blocked: true, blockedReason: reason };
 }
+const HTML_ESCAPE_BY_CHARACTER: Record<string, string> = {
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#39;',
+};
+
 function escapeEmailHtml(value: string): string {
-  return value
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;');
+  return value.replace(/[&<>"']/g, (char) => HTML_ESCAPE_BY_CHARACTER[char] ?? char);
 }
 @Injectable()
 export class InstagramChannelTransport implements ChannelTransportProvider {
@@ -323,12 +326,15 @@ export class EmailChannelTransport implements ChannelTransportProvider {
       return { subject, html: content };
     }
 
-    const htmlParagraphs = bodyLines
-      .map((line) => (line.trim() ? `<p>${escapeEmailHtml(line.trim())}</p>` : '<br/>'))
-      .join('\n');
+    const htmlParagraphs = bodyLines.map((line) => renderEmailLine(line)).join('\n');
 
-    return { subject, html: htmlParagraphs || `<p>${escapeEmailHtml(content)}</p>` };
+    return { subject, html: htmlParagraphs || renderEmailLine(content) };
   }
+}
+
+function renderEmailLine(line: string): string {
+  const trimmed = line.trim();
+  return trimmed ? '<p>' + escapeEmailHtml(trimmed) + '</p>' : '<br/>';
 }
 
 @Injectable()
