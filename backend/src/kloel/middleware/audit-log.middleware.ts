@@ -6,6 +6,9 @@ import { validateNoInternalAccess } from '../../common/utils/url-validator';
 import { PrismaService } from '../../prisma/prisma.service';
 import { OpsAlertService } from '../../observability/ops-alert.service';
 
+type AuditResponseBody = Record<string, unknown>;
+type AuditRequestBody = Record<string, unknown>;
+
 interface AuditLogEntry {
   timestamp: Date;
   method: string;
@@ -28,10 +31,10 @@ interface AuditLogEntry {
  */
 function parseErrorPayload(responseBody: unknown): Record<string, unknown> | undefined {
   if (typeof responseBody !== 'string') {
-    return responseBody as Record<string, unknown>;
+    return responseBody as AuditResponseBody;
   }
   try {
-    return JSON.parse(responseBody) as Record<string, unknown>;
+    return JSON.parse(responseBody) as AuditResponseBody;
   } catch {
     return undefined;
   }
@@ -158,7 +161,7 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
   }): AuditLogEntry {
     const { req, method, path, ip, workspaceId, statusCode, responseTimeMs, responseBody } = params;
     const user = (req as Request & { user?: { userId?: string; sub?: string } }).user;
-    const sanitizedBody = sanitizePayload(req.body) as Record<string, unknown> | undefined;
+    const sanitizedBody = sanitizePayload(req.body) as AuditRequestBody | undefined;
 
     return {
       timestamp: new Date(),
@@ -265,7 +268,7 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
                   statusCode: log.statusCode,
                   responseTimeMs: log.responseTimeMs,
                   requestBody: log.requestBody
-                    ? (sanitizePayload(log.requestBody) as Record<string, unknown>)
+                      ? (sanitizePayload(log.requestBody) as AuditRequestBody)
                     : undefined,
                   error: log.error || undefined,
                 }),

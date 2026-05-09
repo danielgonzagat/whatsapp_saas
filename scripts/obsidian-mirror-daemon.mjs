@@ -312,6 +312,56 @@ function startWatch() {
   const pending = new Map();
   let timer = null;
 
+  function catchUpCurrentWorkspaceState() {
+    readGitDirtySources(true);
+    readGitLocalCommitSources(true);
+
+    const sources = collectAllSourceFiles();
+    const currentSources = new Set(sources.map((source) => relative(REPO_ROOT, source)));
+    let updatedCount = 0;
+    let staleCount = 0;
+
+    for (const [relMirror, entry] of Object.entries(manifest.files)) {
+      if (entry.source && !currentSources.has(entry.source)) {
+        delete manifest.files[relMirror];
+        staleCount++;
+      }
+    }
+
+    for (const absPath of sources) {
+      if (!existsSync(absPath) || !isMirrorableSourceFile(absPath)) continue;
+      const relMirror = relative(SOURCE_MIRROR_DIR, sourceToMirrorPath(absPath));
+      const entry = manifest.files[relMirror];
+      const sourceContent = readFileSync(absPath, 'utf8');
+      const currentHash = sha256(sourceContent);
+      const gitState = gitStateForSource(absPath);
+      if (
+        !entry ||
+        entry.hash !== currentHash ||
+        Boolean(entry.git_dirty) !== gitState.dirty ||
+        Boolean(entry.git_local_commit) !== gitState.localCommit
+      ) {
+        const result = mirrorFile(absPath, manifest);
+        if (result.status === 'updated') {
+          updatedCount++;
+        }
+      }
+    }
+
+    if (updatedCount > 0 || staleCount > 0) {
+      persistManifestState(manifest);
+      cleanupStaleMirrorFiles(manifest);
+      cleanupEmptyDirs(SOURCE_MIRROR_DIR);
+      log(
+        'INFO',
+        `Startup catch-up refreshed ${updatedCount} nodes and removed ${staleCount} stale manifest entries.`,
+      );
+    }
+  }
+
+  catchUpCurrentWorkspaceState();
+  lastGitSignature = gitDirtySignature();
+
   function flushPending() {
     readGitDirtySources(true);
     readGitLocalCommitSources(true);

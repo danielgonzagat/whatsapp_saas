@@ -29,6 +29,9 @@ const CIA_SHARED_REPLY_LOCK_MS = Math.max(
 
 export { CIA_SHARED_REPLY_LOCK_MS };
 
+type SendActionResult = { sent?: boolean; success?: boolean; messageId?: string | null; [key: string]: unknown };
+type SendIncomingPayloadData = { pushName?: string | null; notifyName?: string | null; verifiedBizName?: string | null; [key: string]: unknown };
+
 /**
  * Shared sending helpers for CIA inline and remote backlog services:
  * daily message limits, reply locks, fallback reply generation,
@@ -143,7 +146,7 @@ export class CiaSendHelpersService {
       if (!outboundTools.has(String(action?.tool || ''))) {
         return false;
       }
-      const result = action?.result as Record<string, unknown> | undefined;
+      const result = action?.result as SendActionResult | undefined;
       return result?.sent === true || result?.success === true || result?.messageId;
     });
   }
@@ -194,10 +197,10 @@ export class CiaSendHelpersService {
   }
 
   extractRemoteSenderName(
-    payload: Record<string, unknown> | null | undefined,
+    payload: SendIncomingPayloadData | null | undefined,
     fallbackName?: string | null,
   ): string | null {
-    const data = payload?._data as Record<string, unknown> | undefined;
+    const data = payload?._data as SendIncomingPayloadData | undefined;
     const candidates: unknown[] = [
       fallbackName,
       data?.pushName,

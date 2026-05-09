@@ -169,8 +169,8 @@ export class CiaInlineFallbackService {
     let skipped = 0;
 
     await forEachSequential(Array.from(conversations.entries()), async ([index, conversation]) => {
-      const messages = conversation.messages as Record<string, unknown>[] | undefined;
-      const contact = conversation.contact as Record<string, unknown> | undefined;
+      const messages = conversation.messages as InlineFallbackMessage[] | undefined;
+      const contact = conversation.contact as InlineFallbackContact | undefined;
       const lastMessage = messages?.[0];
       const pendingBatch = await this.buildPendingInboundBatch({
         workspaceId,

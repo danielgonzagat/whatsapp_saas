@@ -17,6 +17,7 @@ import { OpsAlertService } from '../observability/ops-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { WorkspaceService } from '../workspaces/workspace.service';
 import { InboundMessage, InboundProcessorService } from './inbound-processor.service';
+import type { ContactCustomFields } from '../contacts/contact-custom-fields.types';
 import { WhatsappService } from './whatsapp.service';
 
 const D_RE = /\D/g;
@@ -263,7 +264,7 @@ export class InternalWhatsAppRuntimeController {
       });
 
       const now = new Date().toISOString();
-      const existingFields = (existing?.customFields as Record<string, unknown>) || {};
+      const existingFields = (existing?.customFields as ContactCustomFields) || {};
 
       const contact = await this.prisma.contact.upsert({
         where: {

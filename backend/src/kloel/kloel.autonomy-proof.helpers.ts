@@ -4,6 +4,8 @@
  * No mocks, no Jest APIs — pure helpers only.
  */
 
+type SSEBlock = Record<string, unknown>;
+
 type TraceEntry = {
   cycle: number;
   type:
@@ -161,7 +163,7 @@ export function parseEvents(writes: string[]): Array<Record<string, unknown>> {
     .filter(Boolean)
     .map((block) => {
       try {
-        return JSON.parse(block.replace(/^data: /, '')) as Record<string, unknown>;
+        return JSON.parse(block.replace(/^data: /, '')) as SSEBlock;
       } catch {
         return null;
       }

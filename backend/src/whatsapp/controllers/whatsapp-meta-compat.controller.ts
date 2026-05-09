@@ -32,7 +32,7 @@ export class WhatsAppMetaCompatController {
   ) {
     void req;
     void body;
-    const status = await this.providerRegistry.getSessionStatus(req.workspaceId).catch(() => null);
+    const status = await this.providerRegistry.getSessionStatus(req.workspaceId!).catch(() => null);
     return this.buildMetaUnsupportedResponse('legacy_session_link', {
       authUrl: status?.authUrl || null,
     });
@@ -47,7 +47,7 @@ export class WhatsAppMetaCompatController {
   ) {
     void req;
     void body;
-    const status = await this.providerRegistry.getSessionStatus(req.workspaceId).catch(() => null);
+    const status = await this.providerRegistry.getSessionStatus(req.workspaceId!).catch(() => null);
     return this.buildMetaUnsupportedResponse('legacy_session_claim', {
       authUrl: status?.authUrl || null,
     });
@@ -118,7 +118,7 @@ export class WhatsAppMetaCompatController {
   /** Get session stream health. */
   @Get('session/stream-health')
   async getSessionStreamHealth(@Req() req: AuthenticatedRequest) {
-    const providerType = await this.providerRegistry.getProviderType(req.workspaceId);
+    const providerType = await this.providerRegistry.getProviderType(req.workspaceId!);
     return {
       success: true,
       provider: providerType,

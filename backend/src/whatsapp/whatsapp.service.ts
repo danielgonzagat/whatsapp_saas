@@ -52,6 +52,7 @@ import type {
   NormalizedChat,
 } from './__companions__/whatsapp.service.companion';
 import type { ContactCustomFields } from '../contacts/contact-custom-fields.types';
+import type { ProviderSettings } from './provider-settings.types';
 
 type ExternalProviderPayload = Record<string, unknown>;
 
@@ -105,7 +106,7 @@ export class WhatsappService {
     const v = String(c || '').trim();
     return v.endsWith('@c.us') || v.endsWith('@s.whatsapp.net');
   }
-  private normalizeJsonObject(v: unknown): Record<string, unknown> {
+  private normalizeJsonObject(v: unknown): ExternalProviderPayload {
     return normalizeJsonObjExt(v);
   }
   private normalizeDateValue(v: unknown): string | null {
@@ -127,7 +128,7 @@ export class WhatsappService {
   private normalizeHash(t: string): string {
     return normalizeHashExt(t);
   }
-  private isAutonomousEnabled(s: Record<string, unknown>): boolean {
+  private isAutonomousEnabled(s: ProviderSettings): boolean {
     return isAutonomousEnabledExt(s);
   }
   private sleep(ms: number): Promise<void> {
@@ -1139,13 +1140,13 @@ export class WhatsappService {
   }
 
   // ═══ INFRA ═══
-  private validateWorkspaceProvider(w: Record<string, unknown>): string[] {
+  private validateWorkspaceProvider(w: ProviderSettings): string[] {
     const p = w?.whatsappProvider || 'meta-cloud';
     return p !== 'meta-cloud' ? ['whatsapp_provider'] : [];
   }
   private async collectMessagingRuntimeIssues(
     ws: string,
-    workspace: Record<string, unknown>,
+    workspace: ProviderSettings,
     o?: { requireInboundWebhook?: boolean },
   ) {
     const issues = this.validateWorkspaceProvider(workspace);
@@ -1225,7 +1226,7 @@ export class WhatsappService {
   }
   async addMonitoredGroup(
     ws: string,
-    d: { jid: string; name?: string; inviteLink?: string; settings?: Record<string, unknown> },
+    d: { jid: string; name?: string; inviteLink?: string; settings?: ExternalProviderPayload },
   ) {
     return this.prisma.monitoredGroup.create({
       data: {

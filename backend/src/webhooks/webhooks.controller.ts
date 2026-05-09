@@ -21,6 +21,7 @@ import { Public } from '../auth/public.decorator';
 import { getTraceHeaders } from '../common/trace-headers';
 import { validateNoInternalAccess } from '../common/utils/url-validator';
 import { PrismaService } from '../prisma/prisma.service';
+import { asProviderSettings } from '../whatsapp/provider-settings.types';
 import { WebhooksService } from './webhooks.service';
 
 /**
@@ -224,7 +225,7 @@ export class WebhooksController {
     body: unknown,
   ): Promise<{ skipped: true; duplicate: true } | undefined> {
     try {
-      await this.webhooksService.logWebhookEvent(provider, eventType, externalId, body as Record<string, unknown>);
+      await this.webhooksService.logWebhookEvent(provider, eventType, externalId, body as WebhookJsonPayload);
     } catch (err: unknown) {
       const code = (err as { code?: string } | null)?.code;
       if (code === 'P2002') {
@@ -247,7 +248,7 @@ export class WebhooksController {
       where: { id: workspaceId },
       select: { providerSettings: true },
     });
-    if ((ws?.providerSettings as Record<string, unknown>)?.billingSuspended) {
+    if (asProviderSettings(ws?.providerSettings).billingSuspended) {
       throw new ForbiddenException('Workspace suspended (billing)');
     }
   }

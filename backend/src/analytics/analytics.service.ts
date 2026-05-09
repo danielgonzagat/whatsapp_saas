@@ -13,6 +13,8 @@ import {
   resolveReportWindow,
 } from './__companions__/analytics.service.companion';
 
+type ExecutionLog = Record<string, unknown>;
+
 /** Analytics service. */
 @Injectable()
 export class AnalyticsService {
@@ -200,7 +202,7 @@ export class AnalyticsService {
     const nodeVisits: Record<string, number> = {};
     executions.forEach((exec) => {
       if (Array.isArray(exec.logs)) {
-        const logs = exec.logs as Record<string, unknown>[];
+        const logs = exec.logs as ExecutionLog[];
         const visitedNodes = new Set<string>();
         logs.forEach((log) => {
           if (typeof log.nodeId === 'string') {

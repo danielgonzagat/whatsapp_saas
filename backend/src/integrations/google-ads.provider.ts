@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import type {
   AdProvider,
@@ -99,7 +100,7 @@ export class GoogleAdsProvider implements AdProvider {
       };
       await this.prisma.workspace.update({
         where: { id: workspaceId },
-        data: { providerSettings: nextSettings },
+        data: { providerSettings: JSON.parse(JSON.stringify(nextSettings)) as Prisma.InputJsonObject },
       });
 
       return { connected: true, status: 'connected' };

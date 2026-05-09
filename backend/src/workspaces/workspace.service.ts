@@ -9,6 +9,9 @@ import {
   resolveDefaultWhatsAppProvider,
 } from '../whatsapp/providers/provider-env';
 
+type SettingsPatch = Record<string, unknown>;
+type EmailSubSettings = Record<string, unknown> & { enabled?: boolean };
+
 /** Workspace service. */
 @Injectable()
 export class WorkspaceService {
@@ -68,7 +71,7 @@ export class WorkspaceService {
   async patchSettings(id: string, patch: Record<string, unknown>) {
     const ws = await this.getWorkspace(id);
     const current = asProviderSettings(ws.providerSettings);
-    const securePatch = { ...(patch || {}) } as Record<string, unknown> & {
+    const securePatch = { ...(patch || {}) } as SettingsPatch & {
       autonomy?: { mode?: string } & Record<string, unknown>;
       autopilot?: { enabled?: boolean } & Record<string, unknown>;
     };
@@ -137,7 +140,7 @@ export class WorkspaceService {
     const settings = asProviderSettings(ws.providerSettings);
     return {
       whatsapp: true,
-      email: !!(settings.email as Record<string, unknown> | undefined)?.enabled,
+      email: !!(settings.email as EmailSubSettings | undefined)?.enabled,
     };
   }
 
@@ -151,7 +154,7 @@ export class WorkspaceService {
       data: {
         providerSettings: toPrismaJsonValue({
           ...settings,
-          email: { ...((settings.email as Record<string, unknown>) || {}), enabled: !!email },
+          email: { ...((settings.email as EmailSubSettings) || {}), enabled: !!email },
         }),
       },
     });

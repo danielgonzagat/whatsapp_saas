@@ -4,6 +4,8 @@ import { forEachSequential } from '../common/async-sequence';
 import { createRedisClient } from '../common/redis/redis.util';
 import { PrismaService } from '../prisma/prisma.service';
 
+type ScraperStats = { status?: string; found?: number; [key: string]: unknown };
+
 /** Scrapers service. */
 @Injectable()
 export class ScrapersService {
@@ -44,7 +46,7 @@ export class ScrapersService {
   /** Extracts status string from stats JSON for API response. */
   private extractStatus(stats: unknown): string | undefined {
     if (stats && typeof stats === 'object' && 'status' in stats) {
-      return (stats as Record<string, unknown>).status as string | undefined;
+      return (stats as ScraperStats).status as string | undefined;
     }
     return undefined;
   }
@@ -70,7 +72,7 @@ export class ScrapersService {
     return jobs.map((job) => ({
       ...job,
       status: this.extractStatus(job.stats),
-      resultsCount: (job.stats as Record<string, unknown> | null)?.found as number | undefined,
+      resultsCount: (job.stats as ScraperStats | null)?.found as number | undefined,
     }));
   }
 

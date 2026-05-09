@@ -31,6 +31,8 @@ type KloelSaleMetadata = {
   pixHostedInstructionsUrl?: string | null;
 };
 
+type KloelSaleRow = { status?: string; amount?: number; [key: string]: unknown };
+
 interface PaymentWebhookPayload {
   id?: string;
   metadata?: {
@@ -344,7 +346,7 @@ export class PaymentService {
     if (!sale) {
       return null;
     }
-    const metadata = ((sale.metadata as Record<string, unknown> | null) || {}) as KloelSaleMetadata;
+    const metadata = (sale.metadata as KloelSaleMetadata) || {};
 
     const status =
       typeof sale.status === 'string'
@@ -444,11 +446,11 @@ export class PaymentService {
       take: 1000,
     });
 
-    const paid = sales.filter((s: Record<string, unknown>) => s.status === 'paid');
+    const paid = sales.filter((s: KloelSaleRow) => s.status === 'paid');
     return {
       totalSales: paid.length,
       totalAmount: paid.reduce(
-        (sum: number, s: Record<string, unknown>) => sum + ((s.amount as number) || 0),
+        (sum: number, s: KloelSaleRow) => sum + ((s.amount as number) || 0),
         0,
       ),
     };

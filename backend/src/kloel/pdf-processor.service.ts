@@ -12,6 +12,8 @@ const A_Z_A_Z0_9_RE = /[^a-zA-Z0-9]/g;
 export const PDF_ANALYSIS_SYSTEM_PROMPT =
   'Analista de documentos comerciais. Retorne apenas JSON válido.';
 
+type PdfAnalysis = Record<string, unknown>;
+
 type PdfProcessorUsage = {
   prompt_tokens?: number | null;
   completion_tokens?: number | null;
@@ -102,7 +104,7 @@ export class PdfProcessorService {
       const content = response.choices[0]?.message?.content || '{}';
       const cleanJson = content.replace(JSON_N___N_RE, '').trim();
       return {
-        analysis: JSON.parse(cleanJson) as Record<string, unknown>,
+        analysis: JSON.parse(cleanJson) as PdfAnalysis,
         usage: (response.usage ?? null) as PdfProcessorUsage,
       };
     } catch (error: unknown) {

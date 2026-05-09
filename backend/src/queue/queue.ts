@@ -151,7 +151,8 @@ async function notifyOps(input: {
   const webhookType = classifyWebhook(webhook);
   const isSlack = webhookType === 'slack';
   const isTeams = webhookType === 'teams';
-  const fetchFn = (globalThis as Record<string, unknown>).fetch as
+  type GlobalWithFetch = { fetch?: typeof fetch; [key: string]: unknown };
+  const fetchFn = (globalThis as GlobalWithFetch).fetch as
     | undefined
     | ((
         input: string,

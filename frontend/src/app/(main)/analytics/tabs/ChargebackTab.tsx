@@ -4,7 +4,8 @@ import { kloelT } from '@/lib/i18n/t';
 import { V, FONT_MONO, chartCardStyle } from '../analytics.design-tokens';
 import { R$ } from '../analytics.design-tokens';
 import { ICONS } from '../shared/Icons';
-import { MetricCard, StatusDot, NeuroPulse, Pagination, TableHeader, EmptyState, ChartTooltip } from '../shared/Components';
+import { MetricCard, StatusDot, Pagination, TableHeader, EmptyState, ChartTooltip } from '../shared/Components';
+import { NeuroPulse } from '../shared/NeuroPulse';
 import { useReport } from '../use-report';
 import type { ReportFilters, ReportRow, ChargebackResponse, SetPage } from '../analytics.types';
 import { Bar, ComposedChart, Line, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
@@ -22,7 +23,6 @@ export function ChargebackTab({
   const rows = data?.data || [];
   const monthly = data?.monthly || [];
   const ganhosTotal = monthly.reduce((acc: number, r: ReportRow) => acc + (Number(r.ganhos) || 0), 0);
-  const chargebacksTotal = monthly.reduce((acc: number, r: ReportRow) => acc + (Number(r.chargebacks) || 0), 0);
   const taxaMedia = monthly.length > 0
     ? monthly.reduce((acc: number, r: ReportRow) => acc + (Number(r.taxa) || 0), 0) / monthly.length
     : 0;

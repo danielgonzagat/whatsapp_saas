@@ -16,7 +16,8 @@ import { getDefaultContent, mapMessageType, normalizePhone } from './inbound-pro
 import { isPlaceholderContactName as isPlaceholderContactNameValue } from './whatsapp-normalization.util';
 import { WhatsappService } from './whatsapp.service';
 import { WorkerRuntimeService } from './worker-runtime.service';
-import type { ProviderSettings } from './provider-settings.types';
+import { asProviderSettings, type ProviderSettings } from './provider-settings.types';
+import type { ContactCustomFields } from '../contacts/contact-custom-fields.types';
 
 import {
   checkDuplicateExt,
@@ -36,6 +37,9 @@ import type {
   InboundIngestMode,
 } from './__companions__/inbound-processor.service.companion';
 export type { InboundMessage } from './__companions__/inbound-processor.service.companion';
+
+type InboundRawPayload = Record<string, unknown>;
+type InboundSkipMeta = Record<string, unknown>;
 
 interface ProcessResult {
   deduped: boolean;
@@ -84,7 +88,7 @@ export class InboundProcessorService {
   }
 
   private isWorkspaceSelfInbound(
-    settings: Record<string, unknown>,
+    settings: ProviderSettings,
     from: string,
     phone: string,
   ): boolean {
@@ -108,12 +112,12 @@ export class InboundProcessorService {
       where: { id: msg.workspaceId },
       select: { providerSettings: true },
     });
-    const settings = (workspace?.providerSettings as Record<string, unknown>) || {};
+    const settings = asProviderSettings(workspace?.providerSettings);
     if (this.isWorkspaceSelfInbound(settings, msg.from, phone)) {
       this.logger.warn(`[SELF_CONTACT] Ignorando mensagem da própria sessão: ${msg.from}`);
       return { deduped: true };
     }
-    const raw = (msg.raw ?? {}) as Record<string, Record<string, unknown>>;
+    const raw = (msg.raw ?? {}) as InboundRawPayload;
     const trustedSenderName = this.resolveTrustedContactName(
       phone,
       msg.senderName,
@@ -139,7 +143,7 @@ export class InboundProcessorService {
         contact.customFields &&
         typeof contact.customFields === 'object' &&
         !Array.isArray(contact.customFields)
-          ? { ...(contact.customFields as Record<string, unknown>) }
+          ? { ...(contact.customFields as ContactCustomFields) }
           : {};
       await this.prisma.contact.updateMany({
         where: { id: contact.id, workspaceId: msg.workspaceId },
@@ -610,7 +614,7 @@ export class InboundProcessorService {
     workspaceId: string,
     contactId: string,
     reason: string,
-    meta?: Record<string, unknown>,
+    meta?: InboundSkipMeta,
   ) {
     try {
       await this.prisma.autopilotEvent.create({

@@ -14,12 +14,15 @@ import { InboxGateway } from '../inbox/inbox.gateway';
 import { OmnichannelService } from '../inbox/omnichannel.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { asProviderSettings } from '../whatsapp/provider-settings.types';
 import { flowQueue } from '../queue/queue';
 
 const D_RE = /\D/g;
 
 /** Arbitrary JSON payload received on the generic catch-hook endpoint. */
 type WebhookJsonPayload = Record<string, unknown>;
+
+type WebhookLogDetails = { status?: string; phone?: string; [key: string]: unknown };
 
 /** Finance trigger body: status + phone + any extra provider-specific fields. */
 interface FinanceWebhookBody {
@@ -137,8 +140,8 @@ export class WebhooksService {
     if (!ws) {
       throw new ForbiddenException('Workspace not found');
     }
-    const settings = (ws.providerSettings as Record<string, unknown>) || {};
-    const finance = (settings.finance as Record<string, unknown>) || {};
+    const settings = asProviderSettings(ws.providerSettings);
+    const finance = (settings as Record<string, unknown>).finance as Record<string, unknown> || {};
 
     const status = String(payload?.status || '').toLowerCase();
     const map: Record<string, string | undefined> = {
@@ -217,7 +220,7 @@ export class WebhooksService {
       },
     });
     return logs.map((l) => {
-      const details = (l.details as Record<string, unknown>) || {};
+      const details = (l.details as WebhookLogDetails) || {};
       return {
         at: l.createdAt,
         flowId: l.resourceId,

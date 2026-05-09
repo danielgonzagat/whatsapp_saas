@@ -1,6 +1,7 @@
 import { ForbiddenException, Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { PIPELINE_STAGE_COLORS } from '../common/kloel-colors';
+import type { ContactCustomFields } from '../contacts/contact-custom-fields.types';
 
 /** Pipeline service. */
 @Injectable()
@@ -110,7 +111,7 @@ export class PipelineService {
       if (!contact || contact.workspaceId !== workspaceId) {
         throw new ForbiddenException('Contato não pertence a este workspace');
       }
-      const cf = (contact.customFields || {}) as Record<string, unknown>;
+      const cf = (contact.customFields || {}) as ContactCustomFields;
       const sourceCampaignId =
         typeof cf.lastCampaignId === 'string' ? cf.lastCampaignId : undefined;
 

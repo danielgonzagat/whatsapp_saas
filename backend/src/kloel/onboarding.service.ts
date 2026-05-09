@@ -30,6 +30,9 @@ interface OnboardingProfileInput {
   aiUseCase: string;
 }
 
+type OnboardingStateRecord = Record<string, unknown>;
+type CompletedMemoryRecord = Record<string, unknown>;
+
 const SETUP_CHECKLIST_KEYS = [
   'profile',
   'product',
@@ -43,7 +46,7 @@ function isOnboardingState(value: unknown): value is OnboardingState {
   if (value === null || typeof value !== 'object') {
     return false;
   }
-  const v = value as Record<string, unknown>;
+  const v = value as OnboardingStateRecord;
   return (
     typeof v.currentStep === 'number' &&
     typeof v.completed === 'boolean' &&
@@ -59,7 +62,7 @@ function isCompletedMemory(value: unknown): value is OnboardingCompletedMemory {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) {
     return false;
   }
-  return (value as Record<string, unknown>).completed === true;
+  return (value as CompletedMemoryRecord).completed === true;
 }
 
 /** Onboarding service. */

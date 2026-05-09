@@ -15,6 +15,10 @@ import { MetaWhatsAppService } from '../meta/meta-whatsapp.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
 import {
+  asProviderSettings,
+  type ProviderSettings,
+} from '../whatsapp/provider-settings.types';
+import {
   EMAIL_VALIDATION_HTML_BODY,
   extractSetupConfigField,
   normalizeWhatsAppSelectedProducts,
@@ -76,12 +80,8 @@ export class MarketingConnectController {
     return { provider: providerConfig.provider };
   }
 
-  private getWhatsAppSessionSnapshot(providerSettings: Record<string, unknown>) {
-    const snapshot =
-      providerSettings?.whatsappApiSession &&
-      typeof providerSettings.whatsappApiSession === 'object'
-        ? (providerSettings.whatsappApiSession as Record<string, unknown>)
-        : {};
+  private getWhatsAppSessionSnapshot(providerSettings: ProviderSettings) {
+    const snapshot = providerSettings.whatsappApiSession ?? {};
     const rawSnapshotStatus =
       typeof snapshot.rawStatus === 'string'
         ? snapshot.rawStatus
@@ -119,12 +119,10 @@ export class MarketingConnectController {
       this.whatsappProviders.getSessionStatus(workspaceId).catch(() => null),
     ]);
 
-    const providerSettings = (workspace?.providerSettings as Record<string, unknown>) || {};
-    const emailSettings = ((providerSettings.email || {}) as Record<string, unknown>) || {
-      enabled: false,
-    };
+    const providerSettings = asProviderSettings(workspace?.providerSettings);
+    const emailSettings = (providerSettings.email ?? { enabled: false }) as Record<string, unknown> & { enabled?: boolean };
     const emailProvider = this.getEmailProviderSnapshot();
-    const safeWhatsApp = (whatsappStatus || {}) as Record<string, unknown>;
+    const safeWhatsApp = whatsappStatus ?? ({} as Record<string, unknown>);
     const { snapshot, snapshotStatus, snapshotConnected } =
       this.getWhatsAppSessionSnapshot(providerSettings);
     const rawLiveStatus =
@@ -246,11 +244,8 @@ export class MarketingConnectController {
       where: { id: workspaceId },
       select: { providerSettings: true },
     });
-    const providerSettings = (workspace?.providerSettings as Record<string, unknown>) || {};
-    const setup =
-      providerSettings?.whatsappSetup && typeof providerSettings.whatsappSetup === 'object'
-        ? (providerSettings.whatsappSetup as Record<string, unknown>)
-        : {};
+    const providerSettings = asProviderSettings(workspace?.providerSettings);
+    const setup = providerSettings.whatsappLifecycle ?? ({} as Record<string, unknown>);
 
     const selectedProducts = normalizeWhatsAppSelectedProducts(setup.selectedProducts);
     const productNames = [
@@ -307,7 +302,7 @@ export class MarketingConnectController {
       where: { id: workspaceId },
       select: { providerSettings: true },
     });
-    const currentSettings = (workspace?.providerSettings as Record<string, unknown>) || {};
+    const currentSettings = asProviderSettings(workspace?.providerSettings);
     const nextEnabled = body.enabled !== false;
 
     await this.prisma.workspace.update({
@@ -316,7 +311,7 @@ export class MarketingConnectController {
         providerSettings: {
           ...currentSettings,
           email: {
-            ...((currentSettings.email || {}) as Record<string, unknown>),
+            ...(currentSettings.email ?? ({} as Record<string, unknown>)),
             enabled: nextEnabled,
           },
         },

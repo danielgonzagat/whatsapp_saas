@@ -10,37 +10,10 @@ import { useWorkspaceId } from '@/hooks/useWorkspaceId';
 import { createCheckoutSession, tokenStorage } from '@/lib/api';
 import { colors } from '@/lib/design-tokens';
 import { buildDashboardHref } from '@/lib/kloel-dashboard-context';
-import {
-  BarChart3,
-  Bot,
-  Check,
-  Crown,
-  Headphones,
-  MessageCircle,
-  Rocket,
-  Sparkles,
-  Users,
-  Zap,
-} from 'lucide-react';
+import { usePricingPlans, type Plan } from '@/hooks/usePricingPlans';
+import { Check } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-
-interface PlanFeature {
-  text: string;
-  included: boolean;
-}
-
-interface Plan {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  priceId?: string; // Internal plan identifier
-  icon: React.ElementType;
-  features: PlanFeature[];
-  popular?: boolean;
-  cta: string;
-}
 
 function navigateCurrentWindow(url: string) {
   if (typeof document === 'undefined') return;
@@ -53,81 +26,7 @@ function navigateCurrentWindow(url: string) {
   link.remove();
 }
 
-const PLANS: Plan[] = [
-  {
-    id: 'starter',
-    name: 'Starter',
-    description: 'Para quem está começando a vender pelo WhatsApp',
-    price: 97,
-    icon: Zap,
-    cta: 'Começar agora',
-    features: [
-      { text: '1.000 mensagens/mês', included: true },
-      { text: '1 número WhatsApp', included: true },
-      { text: 'IA de vendas básica', included: true },
-      { text: 'Autopilot (100 respostas/mês)', included: true },
-      { text: '3 fluxos de automação', included: true },
-      { text: 'Suporte por email', included: true },
-      { text: 'Campanhas ilimitadas', included: false },
-      { text: 'API de integração', included: false },
-      { text: 'Suporte prioritário', included: false },
-    ],
-  },
-  {
-    id: 'pro',
-    name: 'Pro',
-    description: 'Para negócios em crescimento que querem escalar',
-    price: 297,
-    icon: Crown,
-    popular: true,
-    cta: 'Escolher Pro',
-    features: [
-      { text: '10.000 mensagens/mês', included: true },
-      { text: '3 números WhatsApp', included: true },
-      { text: 'IA de vendas avançada', included: true },
-      { text: 'Autopilot ilimitado', included: true },
-      { text: 'Fluxos ilimitados', included: true },
-      { text: 'Suporte por chat', included: true },
-      { text: 'Campanhas ilimitadas', included: true },
-      { text: 'API de integração', included: true },
-      { text: 'Suporte prioritário', included: false },
-    ],
-  },
-  {
-    id: 'enterprise',
-    name: 'Enterprise',
-    description: 'Para empresas que precisam de escala e suporte dedicado',
-    price: 997,
-    icon: Rocket,
-    cta: 'Falar com vendas',
-    features: [
-      { text: 'Mensagens ilimitadas', included: true },
-      { text: 'Números ilimitados', included: true },
-      { text: 'IA personalizada', included: true },
-      { text: 'Autopilot ilimitado', included: true },
-      { text: 'Fluxos ilimitados', included: true },
-      { text: 'Suporte 24/7', included: true },
-      { text: 'Campanhas ilimitadas', included: true },
-      { text: 'API de integração', included: true },
-      { text: 'Suporte prioritário', included: true },
-    ],
-  },
-];
 
-interface Benefit {
-  icon: React.ElementType;
-  title: string;
-  description: string;
-}
-
-const BENEFITS: Benefit[] = [
-  { icon: MessageCircle, title: 'WhatsApp Oficial', description: 'Conexão direta com API oficial' },
-  { icon: Bot, title: 'IA que Vende', description: 'Autopilot responde e fecha vendas' },
-  { icon: Users, title: 'CRM Integrado', description: 'Gerencie leads automaticamente' },
-  { icon: BarChart3, title: 'Analytics', description: 'Métricas em tempo real' },
-  { icon: Headphones, title: 'Suporte Humano', description: 'Time pronto para ajudar' },
-  { icon: Sparkles, title: 'Updates Gratuitos', description: 'Novas features todo mês' },
-];
 
 /** Pricing page. */
 export default function PricingPage() {

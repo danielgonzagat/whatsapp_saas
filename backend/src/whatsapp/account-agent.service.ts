@@ -45,6 +45,8 @@ import {
   upsertInputCollectionSession,
 } from './account-agent.work-items';
 
+type AccountAgentMetadata = Record<string, unknown>;
+
 @Injectable()
 export class AccountAgentService {
   private readonly logger = new Logger(AccountAgentService.name);
@@ -396,7 +398,7 @@ export class AccountAgentService {
       key: record.key,
       metadata:
         record.metadata && typeof record.metadata === 'object' && !Array.isArray(record.metadata)
-          ? (record.metadata as Record<string, unknown>)
+          ? (record.metadata as AccountAgentMetadata)
           : null,
     };
     return { record: recordTyped, session: s };

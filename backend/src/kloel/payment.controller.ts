@@ -28,6 +28,8 @@ import { WebhooksService } from '../webhooks/webhooks.service';
 import { PaymentService } from './payment.service';
 import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 
+type PaymentWebhookMetadata = { workspaceId?: string; [key: string]: unknown };
+
 /** Payment controller. */
 @Controller('kloel/payments')
 @UseGuards(ThrottlerGuard)
@@ -97,7 +99,7 @@ export class PaymentController {
 
     const rawWsId =
       body.workspaceId ||
-      (body?.payment?.metadata as Record<string, unknown> | undefined)?.workspaceId ||
+      (body?.payment?.metadata as PaymentWebhookMetadata | undefined)?.workspaceId ||
       body?.payment?.workspaceId;
     const workspaceId = typeof rawWsId === 'string' ? rawWsId : undefined;
     if (!workspaceId) {

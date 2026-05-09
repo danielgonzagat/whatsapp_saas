@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { createHmac, timingSafeEqual } from 'crypto';
+import { Prisma } from '@prisma/client';
 import { encryptMetaToken } from '../meta/meta-token-crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { asProviderSettings, type ProviderSettings } from '../whatsapp/provider-settings.types';
@@ -241,7 +242,7 @@ export class TikTokMarketingService {
 
     await this.prisma.workspace.update({
       where: { id: workspaceId },
-      data: { providerSettings: nextSettings },
+      data: { providerSettings: JSON.parse(JSON.stringify(nextSettings)) as Prisma.InputJsonObject },
     });
 
     return { connected: true, status: 'connected', kind, advertiserIds };

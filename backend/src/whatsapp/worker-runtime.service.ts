@@ -1,6 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
+type WorkerRuntimePayload = { status?: string | number; [key: string]: unknown };
+
 /** Worker runtime service. */
 @Injectable()
 export class WorkerRuntimeService {
@@ -60,7 +62,7 @@ export class WorkerRuntimeService {
     if (!payload || typeof payload !== 'object') {
       return true;
     }
-    const status = this.readText((payload as Record<string, unknown>).status)
+    const status = this.readText((payload as WorkerRuntimePayload).status)
       .trim()
       .toLowerCase();
     if (!status) {

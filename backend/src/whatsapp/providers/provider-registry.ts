@@ -106,9 +106,11 @@ export class WhatsAppProviderRegistry {
 
   private readSessionSnapshot(value: unknown): ProviderSessionSnapshot {
     const snapshot = this.readRecord(value);
+    const status = this.readString(snapshot.status);
+    const provider = this.readString(snapshot.provider);
+    const lastUpdated = this.readString(snapshot.lastUpdated);
 
     return {
-      status: this.readString(snapshot.status),
       rawStatus: this.readString(snapshot.rawStatus) ?? null,
       phoneNumber: this.readString(snapshot.phoneNumber) ?? null,
       pushName: this.readString(snapshot.pushName) ?? null,
@@ -119,8 +121,9 @@ export class WhatsAppProviderRegistry {
       whatsappBusinessId: this.readString(snapshot.whatsappBusinessId) ?? null,
       sessionName: this.readString(snapshot.sessionName) ?? null,
       disconnectReason: this.readString(snapshot.disconnectReason) ?? null,
-      provider: this.readString(snapshot.provider),
-      lastUpdated: this.readString(snapshot.lastUpdated),
+      ...(status !== undefined ? { status } : {}),
+      ...(provider !== undefined ? { provider } : {}),
+      ...(lastUpdated !== undefined ? { lastUpdated } : {}),
     };
   }
 
@@ -269,16 +272,16 @@ export class WhatsAppProviderRegistry {
   async getSessionStatus(workspaceId: string): Promise<SessionStatus> {
     await this.getProviderType(workspaceId);
 
-    if (this.isWahaMode()) {
+    if (this.isWahaMode() && this.wahaProvider) {
       const wahaStatus = await this.wahaProvider.getSessionStatus(workspaceId);
       const connected = wahaStatus.state === 'CONNECTED';
       const snapshotStatus = this.normalizeWahaSnapshotStatus(wahaStatus.state);
       const status: SessionStatus = {
         connected,
         status: wahaStatus.state || 'DISCONNECTED',
-        phoneNumber: wahaStatus.phoneNumber || undefined,
-        pushName: wahaStatus.pushName || undefined,
         selfIds: wahaStatus.selfIds || [],
+        ...(wahaStatus.phoneNumber != null ? { phoneNumber: wahaStatus.phoneNumber } : {}),
+        ...(wahaStatus.pushName != null ? { pushName: wahaStatus.pushName } : {}),
       };
       await this.persistSessionSnapshot(workspaceId, {
         status: snapshotStatus,
@@ -310,16 +313,22 @@ export class WhatsAppProviderRegistry {
     const liveConnected = details.state === 'CONNECTED';
     const fallbackToSnapshot = !liveConnected && details.state === 'DEGRADED' && snapshotConnected;
 
+    const resolvedPhoneNumber = details.phoneNumber || snapshot.phoneNumber || undefined;
+    const resolvedPushName = details.pushName || snapshot.pushName || undefined;
+    const resolvedAuthUrl = details.authUrl || snapshot.authUrl || undefined;
+    const resolvedPhoneNumberId = details.phoneNumberId || snapshot.phoneNumberId || undefined;
+    const resolvedWhatsappBusinessId = details.whatsappBusinessId || snapshot.whatsappBusinessId || undefined;
+
     const status: SessionStatus = {
       connected: liveConnected || fallbackToSnapshot,
       status: fallbackToSnapshot ? 'CONNECTED' : details.state || 'DISCONNECTED',
-      phoneNumber: details.phoneNumber || snapshot.phoneNumber || undefined,
-      pushName: details.pushName || snapshot.pushName || undefined,
       selfIds: [],
-      authUrl: details.authUrl || snapshot.authUrl || undefined,
-      phoneNumberId: details.phoneNumberId || snapshot.phoneNumberId || undefined,
-      whatsappBusinessId: details.whatsappBusinessId || snapshot.whatsappBusinessId || undefined,
       degradedReason: fallbackToSnapshot ? null : details.error || null,
+      ...(resolvedPhoneNumber != null ? { phoneNumber: resolvedPhoneNumber } : {}),
+      ...(resolvedPushName != null ? { pushName: resolvedPushName } : {}),
+      ...(resolvedAuthUrl != null ? { authUrl: resolvedAuthUrl } : {}),
+      ...(resolvedPhoneNumberId != null ? { phoneNumberId: resolvedPhoneNumberId } : {}),
+      ...(resolvedWhatsappBusinessId != null ? { whatsappBusinessId: resolvedWhatsappBusinessId } : {}),
     };
 
     await this.persistSessionSnapshot(workspaceId, {
@@ -341,7 +350,7 @@ export class WhatsAppProviderRegistry {
   ): Promise<{ success: boolean; qr?: string; message?: string }> {
     await this.getProviderType(workspaceId);
 
-    if (this.isWahaMode()) {
+    if (this.isWahaMode() && this.wahaProvider) {
       return this.wahaProvider.getQrCode(workspaceId);
     }
     return this.metaCloudProvider.getQrCode(workspaceId);
@@ -392,7 +401,7 @@ export class WhatsAppProviderRegistry {
   // ═══════════════════════════════════════════════════
 
   async disconnect(workspaceId: string): Promise<{ success: boolean; message?: string }> {
-    if (this.isWahaMode()) {
+    if (this.isWahaMode() && this.wahaProvider) {
       const result = await this.wahaProvider.logoutSession(workspaceId);
       await this.persistSessionSnapshot(workspaceId, { status: 'disconnected', qrCode: null });
       return { success: Boolean(result?.success), message: 'disconnected' };
@@ -410,7 +419,7 @@ export class WhatsAppProviderRegistry {
   async restartSession(
     workspaceId: string,
   ): Promise<{ success: boolean; message?: string; qrCode?: string; authUrl?: string }> {
-    if (this.isWahaMode()) {
+    if (this.isWahaMode() && this.wahaProvider) {
       return this.wahaProvider.restartSession(workspaceId);
     }
     return this.metaCloudProvider.restartSession(workspaceId);
@@ -418,7 +427,7 @@ export class WhatsAppProviderRegistry {
 
   /** Delete session. */
   async deleteSession(workspaceId: string): Promise<boolean> {
-    if (this.isWahaMode()) {
+    if (this.isWahaMode() && this.wahaProvider) {
       return this.wahaProvider.deleteSession(workspaceId);
     }
     return this.metaCloudProvider.deleteSession(workspaceId);
@@ -426,7 +435,7 @@ export class WhatsAppProviderRegistry {
 
   /** Sync session config. */
   async syncSessionConfig(workspaceId: string): Promise<void> {
-    if (this.isWahaMode()) {
+    if (this.isWahaMode() && this.wahaProvider) {
       return this.wahaProvider.syncSessionConfig(workspaceId);
     }
     return this.metaCloudProvider.syncSessionConfig(workspaceId);
@@ -437,7 +446,7 @@ export class WhatsAppProviderRegistry {
   // ═══════════════════════════════════════════════════
 
   async isRegistered(workspaceId: string, phone: string): Promise<boolean> {
-    if (this.isWahaMode()) {
+    if (this.isWahaMode() && this.wahaProvider) {
       return this.wahaProvider.isRegisteredUser(workspaceId, phone);
     }
     return this.metaCloudProvider.isRegisteredUser(workspaceId, phone);
@@ -445,7 +454,7 @@ export class WhatsAppProviderRegistry {
 
   /** Get client info. */
   async getClientInfo(workspaceId: string): Promise<unknown> {
-    if (this.isWahaMode()) {
+    if (this.isWahaMode() && this.wahaProvider) {
       return this.wahaProvider.getClientInfo(workspaceId);
     }
     return this.metaCloudProvider.getClientInfo(workspaceId);
@@ -453,7 +462,7 @@ export class WhatsAppProviderRegistry {
 
   /** Get contacts. */
   async getContacts(workspaceId: string): Promise<unknown[]> {
-    if (this.isWahaMode()) {
+    if (this.isWahaMode() && this.wahaProvider) {
       const contacts = await this.wahaProvider.getContacts(workspaceId);
       return Array.isArray(contacts) ? contacts : [];
     }

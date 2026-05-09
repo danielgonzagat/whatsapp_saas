@@ -68,6 +68,7 @@ type CatchupLifecycle = { catchupEnabled?: boolean; autoManage?: boolean; autoCa
 type BackfillCursorData = { chatId?: string; activityTimestamp?: number; timestamp?: number; updatedAt?: unknown; [key: string]: unknown };
 type WahaMessagePayload = { _data?: { key?: { remoteJidAlt?: string }; [key: string]: unknown }; key?: { remoteJidAlt?: string }; [key: string]: unknown };
 type CatchupUpdatePayload = { status?: string; lastCatchupAt?: string | null; lastCatchupError?: string | null; lastCatchupFailedAt?: string | null; recoveryBlockedReason?: string | null; recoveryBlockedAt?: string | null; [key: string]: unknown };
+type NormalizedJsonObj = Record<string, unknown>;
 
 const CATCHUP_SWEEP_LIMIT = Math.max(
   1,
@@ -220,7 +221,7 @@ export class WhatsAppCatchupService {
   private normalizePhone(phone: string): string {
     return normalizePhoneExt(phone);
   }
-  private normalizeJsonObject(value: unknown): Record<string, unknown> {
+  private normalizeJsonObject(value: unknown): NormalizedJsonObj {
     return normalizeJsonObjExt(value);
   }
   private areEquivalentPhones(left: string, right: string): boolean {

@@ -10,6 +10,7 @@ import type { ToolArgs } from './unified-agent.types';
 import { OpsAlertService } from '../observability/ops-alert.service';
 
 type UnknownRecord = Record<string, unknown>;
+type ProductMemoryValue = { name?: string; price?: number; description?: string; paymentLink?: string; [key: string]: unknown };
 
 /**
  * Handles commerce tool actions: send product info, create payment link.
@@ -119,7 +120,7 @@ export class UnifiedAgentActionsCommerceService {
       return { success: false, error: 'Produto não encontrado' };
     }
 
-    const productData = product.value as Record<string, unknown>;
+    const productData = product.value as ProductMemoryValue;
     const message = this.buildProductInfoMessage(
       productData.name as string,
       productData.description as string,

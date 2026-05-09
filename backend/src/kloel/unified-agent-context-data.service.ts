@@ -3,6 +3,8 @@ import type { ChatCompletionMessageParam } from 'openai/resources/chat';
 import { PrismaService } from '../prisma/prisma.service';
 
 type UnknownRecord = Record<string, unknown>;
+type BrandVoiceValue = { style?: string; [key: string]: unknown };
+type ProductMemoryEntry = { name?: string; [key: string]: unknown };
 
 /**
  * Handles all database reads for the Unified Agent context:
@@ -47,7 +49,7 @@ export class UnifiedAgentContextDataService {
     });
     return {
       ...workspace,
-      brandVoice: (brandVoice?.value as Record<string, unknown>)?.style as string | undefined,
+      brandVoice: (brandVoice?.value as BrandVoiceValue)?.style as string | undefined,
     };
   }
 
@@ -228,7 +230,7 @@ export class UnifiedAgentContextDataService {
         (m) =>
           !dbProducts.some(
             (d) =>
-              (((m.value as Record<string, unknown>)?.name as string) || '').toLowerCase() ===
+              (((m.value as ProductMemoryEntry)?.name as string) || '').toLowerCase() ===
               d.name.toLowerCase(),
           ),
       ),
