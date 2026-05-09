@@ -94,6 +94,7 @@ describe('SystemHealthService', () => {
   };
   let stripeService: {
     healthCheck: jest.Mock;
+    retrieveBalance: jest.Mock;
   };
 
   beforeEach(() => {

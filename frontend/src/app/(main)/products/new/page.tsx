@@ -9,7 +9,7 @@ import { useToast } from '@/components/kloel/ToastProvider';
 import { usePersistentImagePreview } from '@/hooks/usePersistentImagePreview';
 import { useWorkspaceId } from '@/hooks/useWorkspaceId';
 import { apiFetch } from '@/lib/api';
-import { PRODUCT_CATEGORIES } from '@/lib/categories';
+import { useProductCategories } from '@/hooks/useProducts';
 import { colors, typography } from '@/lib/design-tokens';
 import { readFileAsDataUrl, uploadGenericMedia } from '@/lib/media-upload';
 import { buildProductCreatePayload, extractCreatedProductId } from './page.helpers';
@@ -389,6 +389,7 @@ export default function NewProductPage() {
   const [form, setForm] = useState<FormState>(initialForm);
   const [tagInput, setTagInput] = useState('');
   const [uploading, setUploading] = useState(false);
+  const { categories, isLoading: catLoading, error: catError } = useProductCategories();
   const {
     previewUrl: localPreviewUrl,
     clearPreview: clearLocalPreview,

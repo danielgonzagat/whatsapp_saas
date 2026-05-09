@@ -21,7 +21,6 @@ const RAILWAY__INTERNAL_RE = /\.railway\.internal(?::\d+)?$/i;
 /** System health service. */
 @Injectable()
 export class SystemHealthService {
-  private readonly logger = new Logger(SystemHealthService.name);
   constructor(
     private prisma: PrismaService,
     @InjectRedis() private redis: Redis,
