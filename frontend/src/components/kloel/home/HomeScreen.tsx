@@ -13,7 +13,9 @@ interface HomeScreenProps {
 }
 
 export function HomeScreen({ onSendMessage }: HomeScreenProps) {
-  const chat = useKloelChat({ onSendMessage });
+  const chat = useKloelChat(
+    onSendMessage !== undefined ? { onSendMessage } : {},
+  );
 
   if (chat.phase === 'home' || chat.phase === 'transitioning') {
     return (

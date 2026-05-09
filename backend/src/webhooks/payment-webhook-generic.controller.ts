@@ -195,6 +195,25 @@ export class PaymentWebhookGenericController {
     );
     if (shopifyDupe) return shopifyDupe;
 
+    const shopifyExternalId = eventId || body.id || `shopify_${Date.now()}`;
+    let shopifyWebhookEvent: WebhookEvent | undefined;
+    try {
+      shopifyWebhookEvent = await this.webhooksService.logWebhookEvent(
+        'shopify',
+        body.financial_status || 'unknown',
+        String(shopifyExternalId),
+        body,
+      );
+    } catch (err: unknown) {
+      const errMsg =
+        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
+      if ((err as { code?: string } | null)?.code === 'P2002') {
+        this.logger.log(`Duplicate Shopify webhook event ${shopifyExternalId}, returning 200`);
+        return { ok: true, skipped: true, reason: 'duplicate_webhook_event' };
+      }
+      this.logger.warn(`Failed to log Shopify webhook event: ${errMsg?.message}`);
+    }
+
     const status = (body.financial_status || '').toLowerCase();
     if (status !== 'paid') return { ok: true, ignored: true, reason: 'status_not_paid' };
     const workspaceId = body.workspaceId;
@@ -215,6 +234,17 @@ export class PaymentWebhookGenericController {
         provider: 'shopify',
       },
     });
+
+    if (shopifyWebhookEvent?.id) {
+      await this.webhooksService
+        .markWebhookProcessed(shopifyWebhookEvent.id)
+        .catch((err: unknown) => {
+          const errMsg = err instanceof Error ? err.message : 'unknown_error';
+          this.logger.error(
+            `[WEBHOOK] Failed to mark Shopify webhook ${shopifyWebhookEvent.id} as processed: ${errMsg}`,
+          );
+        });
+    }
     return { ok: true };
   }
 
@@ -247,6 +277,26 @@ export class PaymentWebhookGenericController {
     );
     if (paghiperDupe) return paghiperDupe;
 
+    const paghiperExternalId =
+      eventId || body?.transaction?.transaction_id || body?.transaction_id || `paghiper_${Date.now()}`;
+    let paghiperWebhookEvent: WebhookEvent | undefined;
+    try {
+      paghiperWebhookEvent = await this.webhooksService.logWebhookEvent(
+        'paghiper',
+        body?.status || body?.transaction?.status || 'unknown',
+        String(paghiperExternalId),
+        body,
+      );
+    } catch (err: unknown) {
+      const errMsg =
+        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
+      if ((err as { code?: string } | null)?.code === 'P2002') {
+        this.logger.log(`Duplicate PagHiper webhook event ${paghiperExternalId}, returning 200`);
+        return { ok: true, skipped: true, reason: 'duplicate_webhook_event' };
+      }
+      this.logger.warn(`Failed to log PagHiper webhook event: ${errMsg?.message}`);
+    }
+
     const status = (body?.status || body?.transaction?.status || '').toLowerCase();
     const isPaid = ['paid', 'completed', 'complete'].some((s) => status.includes(s));
     if (!isPaid) return { ok: true, ignored: true, reason: 'status_not_paid' };
@@ -272,6 +322,17 @@ export class PaymentWebhookGenericController {
         status,
       },
     });
+
+    if (paghiperWebhookEvent?.id) {
+      await this.webhooksService
+        .markWebhookProcessed(paghiperWebhookEvent.id)
+        .catch((err: unknown) => {
+          const errMsg = err instanceof Error ? err.message : 'unknown_error';
+          this.logger.error(
+            `[WEBHOOK] Failed to mark PagHiper webhook ${paghiperWebhookEvent.id} as processed: ${errMsg}`,
+          );
+        });
+    }
     return { ok: true };
   }
 

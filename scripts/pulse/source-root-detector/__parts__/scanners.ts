@@ -44,7 +44,7 @@ function collectConfigsInDir(absoluteDir: string, relativePrefix: string, maxDep
       configs.push(relPath);
     }
     try {
-      if (require('fs').statSync(entryPath).isDirectory()) {
+      if (statPath(entryPath).isDirectory()) {
         configs.push(...collectConfigsInDir(entryPath, relPath, maxDepth - 1));
       }
     } catch {
@@ -176,7 +176,7 @@ export function addTsConfigRoots(
     ]),
   );
 
-  for (const configPath of discoverProjectConfigs(rootDir)) {
+  for (const configPath of discoverProjectConfigs(rootDir, packages)) {
     const config = readJsonOrNull<TsConfigJson>(safeJoin(rootDir, configPath));
     if (!config) continue;
     const configDir = normalizeRelative(path.dirname(configPath));

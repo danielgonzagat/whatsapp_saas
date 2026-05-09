@@ -19,16 +19,16 @@ export function WarRoomDashboard({
   platforms,
   campaigns,
   onGoToRules,
-  onConnectMeta,
+  onConnectPlatform,
   onToggleCampaign,
-  metaAccessToken,
+  metaConnected,
 }: {
   platforms: Record<PlatformKey, PlatformData>;
   campaigns: Campaign[];
   onGoToRules: () => void;
-  onConnectMeta: () => void;
+  onConnectPlatform: (platformKey: PlatformKey) => void;
   onToggleCampaign: (campaign: Campaign) => void;
-  metaAccessToken?: string;
+  metaConnected: boolean;
 }) {
   const { data: rulesData } = useSWR<Record<string, unknown>[]>('/ad-rules', swrFetcher, {
     keepPreviousData: true,
@@ -110,13 +110,13 @@ export function WarRoomDashboard({
         ))}
       </div>
 
-      <AdAccountsBoard platforms={platforms} onConnectMeta={onConnectMeta} />
+      <AdAccountsBoard platforms={platforms} onConnectPlatform={onConnectPlatform} />
 
       <CampaignTimeline
         campaigns={campaigns}
         platforms={platforms}
         onToggleCampaign={onToggleCampaign}
-        hasAccessToken={Boolean(metaAccessToken)}
+        hasAccessToken={metaConnected}
       />
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>

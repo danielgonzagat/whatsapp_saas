@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-const { mockBullQueueCtor, mockJobCounts, mockRedisPing } = vi.hoisted(() => ({
+const { mockBullQueueCtor, mockJobCounts, mockRedisPing, mockEventOn } = vi.hoisted(() => ({
   mockBullQueueCtor: vi.fn(),
   mockJobCounts: vi.fn().mockResolvedValue({
     active: 0,
@@ -12,6 +12,7 @@ const { mockBullQueueCtor, mockJobCounts, mockRedisPing } = vi.hoisted(() => ({
     'waiting-children': 0,
   }),
   mockRedisPing: vi.fn().mockResolvedValue('PONG'),
+  mockEventOn: vi.fn(),
 }));
 
 vi.mock('ioredis', () => {
@@ -25,7 +26,6 @@ vi.mock('ioredis', () => {
 
 vi.mock('bullmq', () => {
   class QueueMock {
-    static capturedName: string | undefined;
     name: string;
 
     constructor(name: string) {
@@ -37,7 +37,17 @@ vi.mock('bullmq', () => {
       return mockJobCounts();
     }
   }
-  return { Queue: QueueMock, QueueEvents: class {}, Worker: class {} };
+
+  class QueueEventsMock {
+    on = mockEventOn;
+    close = vi.fn().mockResolvedValue(undefined);
+  }
+
+  class WorkerMock {
+    close = vi.fn().mockResolvedValue(undefined);
+  }
+
+  return { Queue: QueueMock, QueueEvents: QueueEventsMock, Worker: WorkerMock };
 });
 
 vi.mock('../resolve-redis-url', () => ({

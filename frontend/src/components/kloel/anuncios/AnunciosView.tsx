@@ -3,23 +3,52 @@
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect, useRef, startTransition, useCallback } from 'react';
-import useSWR from 'swr';
-import { swrFetcher } from '@/lib/fetcher';
 import { metaAdsApi } from '@/lib/api/meta';
 import {
-  emptyPlatformMetrics,
-  extractMetaPlatformMetrics,
-  extractMetaCampaignsFromResponse,
-  mapMetaCampaign,
-} from './AnunciosView.helpers';
+  useAnunciosStatus,
+  useAnunciosAccounts,
+  useAnunciosCampaigns,
+} from '@/hooks/useAnuncios';
+import type { AnunciosPlatformStatus, AnunciosAccount } from '@/hooks/useAnuncios';
 import { AnunciosTabBar, ROUTES } from './AnunciosTabBar';
 import { WarRoomDashboard } from './WarRoomDashboard';
 import { PlatformDetailTab } from './PlatformDetailTab';
 import { TrackingDashboard } from './TrackingDashboard';
 import { RuleEngineHub } from './RuleEngineHub';
 import { SORA } from './AnunciosShared';
-import type { Campaign, PlatformKey, PlatformData, TabId } from './anuncios-types';
+import type { Campaign, PlatformKey, PlatformData } from './anuncios-types';
 import { PLATFORM_DEFAULTS } from './anuncios-types';
+
+function mapApiCampaignToView(c: AnunciosAccount | Record<string, unknown>): Campaign {
+  const platform = (typeof c.platform === 'string' ? c.platform : 'meta') as PlatformKey;
+  const campaignId = typeof c.campaignId === 'string' ? c.campaignId : String(c.id || '');
+  return {
+    id: campaignId,
+    platform,
+    name: typeof c.campaignName === 'string' ? c.campaignName : campaignId,
+    status: typeof c.status === 'string' ? c.status.toLowerCase() : 'unknown',
+    spend: typeof c.spend === 'number' ? c.spend : 0,
+    revenue: typeof c.revenue === 'number' ? c.revenue : 0,
+    roas: typeof c.roas === 'number' ? c.roas : 0,
+    conv: typeof c.conversions === 'number' ? c.conversions : 0,
+    ctr: typeof c.ctr === 'number' ? c.ctr : 0,
+    cpc: typeof c.cpc === 'number' ? c.cpc : 0,
+    trend: (typeof c.roas === 'number' ? c.roas : 0) > 1 ? 'up' : 'down',
+  };
+}
+
+function buildPlatformsFromStatuses(statuses: AnunciosPlatformStatus[]): Record<PlatformKey, PlatformData> {
+  const result = { ...PLATFORM_DEFAULTS } as Record<PlatformKey, PlatformData>;
+  for (const s of statuses) {
+    if (s.platform === 'meta' || s.platform === 'google' || s.platform === 'tiktok') {
+      result[s.platform] = {
+        ...result[s.platform],
+        connected: s.connected,
+      };
+    }
+  }
+  return result;
+}
 
 export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: string }) {
   const { isMobile } = useResponsiveViewport();
@@ -43,45 +72,28 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
     }
   }, [requestedFocus, tab]);
 
+  const { statuses } = useAnunciosStatus();
+  const { accounts } = useAnunciosAccounts();
+  const { campaigns: apiCampaigns } = useAnunciosCampaigns();
+
   const [platforms, setPlatforms] = useState<Record<PlatformKey, PlatformData>>(PLATFORM_DEFAULTS);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
 
-  const { data: metaStatus } = useSWR<Record<string, unknown>>('/meta/auth/status', swrFetcher);
-  const metaConnected = metaStatus?.connected === true;
-
-  const { data: metaInsights } = useSWR<Record<string, unknown>>(
-    metaConnected ? '/meta/ads/insights/account' : null,
-    swrFetcher,
-  );
-  const { data: metaCampaigns } = useSWR<Record<string, unknown>>(
-    metaConnected ? '/meta/ads/campaigns' : null,
-    swrFetcher,
-  );
+  useEffect(() => {
+    if (statuses.length > 0) {
+      setPlatforms((prev) => buildPlatformsFromStatuses(statuses));
+    }
+  }, [statuses]);
 
   useEffect(() => {
-    const metaMetrics =
-      metaConnected && metaInsights
-        ? extractMetaPlatformMetrics(metaInsights as Record<string, unknown>)
-        : emptyPlatformMetrics();
-    setPlatforms((prev) => ({
-      ...prev,
-      meta: { ...prev.meta, ...metaMetrics },
-    }));
-  }, [metaConnected, metaInsights]);
-
-  useEffect(() => {
-    const raw = extractMetaCampaignsFromResponse(metaCampaigns);
     setCampaigns(
-      metaConnected && raw.length > 0 ? raw.map(mapMetaCampaign) : [],
+      apiCampaigns.length > 0
+        ? apiCampaigns.map((c) => mapApiCampaignToView(c as unknown as Record<string, unknown>))
+        : [],
     );
-  }, [metaConnected, metaCampaigns]);
+  }, [apiCampaigns]);
 
-  const metaAccessToken: string | undefined =
-    typeof metaStatus?.accessToken === 'string'
-      ? (metaStatus.accessToken as string)
-      : typeof metaStatus?.token === 'string'
-        ? (metaStatus.token as string)
-        : undefined;
+  const metaConnected = statuses.find((s) => s.platform === 'meta')?.connected ?? false;
 
   const navigateTo = useCallback(
     (nextRoute: string) => {
@@ -108,7 +120,7 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
 
   const handleCampaignToggle = useCallback(
     async (campaign: Campaign) => {
-      if (!metaAccessToken) return;
+      if (!metaConnected || campaign.platform !== 'meta') return;
       const newStatus = campaign.status === 'active' ? 'PAUSED' : 'ACTIVE';
       await metaAdsApi.updateCampaignStatus(campaign.id, newStatus);
       setCampaigns((prev) =>
@@ -119,12 +131,20 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
         ),
       );
     },
-    [metaAccessToken],
+    [metaConnected],
   );
 
-  const handleConnectMeta = useCallback(() => {
-    window.location.href = '/conta';
-  }, []);
+  const handleConnectPlatform = useCallback(
+    (platformKey: PlatformKey) => {
+      const routeMap: Record<PlatformKey, string> = {
+        meta: '/conta',
+        google: `/anuncios/google`,
+        tiktok: `/anuncios/tiktok`,
+      };
+      window.location.href = routeMap[platformKey];
+    },
+    [],
+  );
 
   return (
     <div style={{ fontFamily: SORA, color: 'var(--app-text-primary)', minHeight: '100vh' }}>
@@ -141,17 +161,17 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
             platforms={platforms}
             campaigns={campaigns}
             onGoToRules={goToRules}
-            onConnectMeta={handleConnectMeta}
+            onConnectPlatform={handleConnectPlatform}
             onToggleCampaign={handleCampaignToggle}
-            metaAccessToken={metaAccessToken}
+            metaConnected={metaConnected}
           />
         )}
         {tab === 'meta' && (
           <PlatformDetailTab
             platformKey="meta"
             platform={platforms.meta}
-            campaigns={campaigns}
-            metaAccessToken={metaAccessToken}
+            campaigns={campaigns.filter((c) => c.platform === 'meta')}
+            metaAccessToken={metaConnected ? 'connected' : undefined}
             onCampaignsChange={setCampaigns}
           />
         )}
@@ -159,7 +179,7 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
           <PlatformDetailTab
             platformKey="google"
             platform={platforms.google}
-            campaigns={campaigns}
+            campaigns={campaigns.filter((c) => c.platform === 'google')}
             onCampaignsChange={setCampaigns}
           />
         )}
@@ -167,7 +187,7 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
           <PlatformDetailTab
             platformKey="tiktok"
             platform={platforms.tiktok}
-            campaigns={campaigns}
+            campaigns={campaigns.filter((c) => c.platform === 'tiktok')}
             onCampaignsChange={setCampaigns}
           />
         )}

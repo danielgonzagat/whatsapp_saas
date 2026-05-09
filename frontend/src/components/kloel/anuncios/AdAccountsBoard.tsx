@@ -9,10 +9,10 @@ const LIVE = G;
 
 export function AdAccountsBoard({
   platforms,
-  onConnectMeta,
+  onConnectPlatform,
 }: {
   platforms: Record<PlatformKey, PlatformData>;
-  onConnectMeta: () => void;
+  onConnectPlatform: (platformKey: PlatformKey) => void;
 }) {
   const keys = Object.keys(platforms) as PlatformKey[];
 
@@ -156,9 +156,7 @@ export function AdAccountsBoard({
                   <NP color={colors.text.dim} intensity={0} width={200} height={28} />
                   <button
                     type="button"
-                    onClick={() => {
-                      if (key === 'meta') onConnectMeta();
-                    }}
+                    onClick={() => onConnectPlatform(key)}
                     style={{
                       marginTop: 12,
                       width: '100%',
@@ -170,7 +168,7 @@ export function AdAccountsBoard({
                       fontSize: 12,
                       fontFamily: SORA,
                       fontWeight: 600,
-                      cursor: key === 'meta' ? 'pointer' : 'default',
+                      cursor: 'pointer',
                       transition: 'background 150ms ease',
                     }}
                   >
