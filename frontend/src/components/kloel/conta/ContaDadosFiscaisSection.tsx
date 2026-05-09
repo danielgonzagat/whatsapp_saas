@@ -179,7 +179,7 @@ export default function DadosFiscaisSection({
         return;
       }
       const data: BrasilApiCnpjResponse = await res.json();
-      setForm((prev) => mergeCnpjIntoForm(prev, data));
+      setForm((prev: FiscalFormState) => mergeCnpjIntoForm(prev, data));
     } catch {
       /* API offline, don't block */
     } finally {
@@ -202,7 +202,7 @@ export default function DadosFiscaisSection({
       if (data.erro) {
         return;
       }
-      setForm((prev) => mergeCepIntoForm(prev, data));
+      setForm((prev: FiscalFormState) => mergeCepIntoForm(prev, data));
     } catch {
       /* API offline */
     } finally {

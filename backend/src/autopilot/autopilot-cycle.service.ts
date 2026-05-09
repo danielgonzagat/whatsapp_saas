@@ -1,8 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { Prisma } from '@prisma/client';
 import { SmartTimeService } from '../analytics/smart-time/smart-time.service';
-import { PlanLimitsService } from '../billing/plan-limits.service';
 import { forEachSequential } from '../common/async-sequence';
 import { PrismaService } from '../prisma/prisma.service';
 import { autopilotQueue } from '../queue/queue';
@@ -19,9 +17,7 @@ export class AutopilotCycleService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly config: ConfigService,
     private readonly smartTime: SmartTimeService,
-    private readonly planLimits: PlanLimitsService,
     private readonly money: AutopilotCycleMoneyService,
     private readonly executor: AutopilotCycleExecutorService,
   ) {}

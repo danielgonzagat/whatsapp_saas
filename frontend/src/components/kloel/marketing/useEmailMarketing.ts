@@ -12,8 +12,8 @@ import type {
 } from './MarketingTypes';
 
 export interface UseEmailMarketingProps {
-  connectionStatus?: MarketingConnectStatus | null;
-  defaultRecipientEmail?: string | null;
+  connectionStatus?: MarketingConnectStatus | null | undefined;
+  defaultRecipientEmail?: string | null | undefined;
 }
 
 export interface UseEmailMarketingReturn {

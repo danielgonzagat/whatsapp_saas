@@ -19,10 +19,10 @@ import type { ChannelRealData, MarketingConnectStatus } from './MarketingTypes';
 
 interface InstagramMarketingTabProps {
   channelData: ChannelRealData | null;
-  connectionStatus?: MarketingConnectStatus | null;
-  metaConnected?: boolean;
-  onConnectMeta?: (channelKey: 'instagram') => void;
-  connectingKey?: string | null;
+  connectionStatus?: MarketingConnectStatus | null | undefined;
+  metaConnected?: boolean | undefined;
+  onConnectMeta?: ((channelKey: 'instagram') => void) | undefined;
+  connectingKey?: string | null | undefined;
 }
 
 export default function InstagramMarketingTab({

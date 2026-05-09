@@ -257,7 +257,7 @@ export function normalizePublicCheckoutResponse(input: unknown): PublicCheckoutR
               : asBoolean(configRecord.enableTestimonials),
           testimonials: Array.isArray(configRecord.testimonials)
             ? configRecord.testimonials
-                .map<PublicCheckoutTestimonial | null>((entry) => {
+                .map<PublicCheckoutTestimonial | null>((entry: unknown) => {
                   const testimonial = asRecord(entry);
                   if (!testimonial) {
                     return null;
@@ -303,7 +303,7 @@ export function normalizePublicCheckoutResponse(input: unknown): PublicCheckoutR
       : undefined,
     orderBumps: Array.isArray(record.orderBumps)
       ? record.orderBumps
-          .map<PublicCheckoutOrderBump | null>((entry) => {
+          .map<PublicCheckoutOrderBump | null>((entry: unknown) => {
             const bump = asRecord(entry);
             if (!bump) {
               return null;

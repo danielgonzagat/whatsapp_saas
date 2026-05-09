@@ -14,10 +14,10 @@ import type { ChannelRealData, MarketingConnectStatus } from './MarketingTypes';
 
 interface FacebookMarketingTabProps {
   channelData: ChannelRealData | null;
-  connectionStatus?: MarketingConnectStatus | null;
-  metaConnected?: boolean;
-  onConnectMeta?: (channelKey: 'facebook') => void;
-  connectingKey?: string | null;
+  connectionStatus?: MarketingConnectStatus | null | undefined;
+  metaConnected?: boolean | undefined;
+  onConnectMeta?: ((channelKey: 'facebook') => void) | undefined;
+  connectingKey?: string | null | undefined;
 }
 
 export default function FacebookMarketingTab({

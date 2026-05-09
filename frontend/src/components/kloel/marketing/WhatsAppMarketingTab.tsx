@@ -1,17 +1,16 @@
 'use client';
 
-import React from 'react';
 import WhatsAppExperience from './WhatsAppExperience';
 import type { ChannelRealData, WhatsAppChannelConnection } from './MarketingTypes';
 
 interface WhatsAppMarketingTabProps {
   channelData: ChannelRealData | null;
   liveFeed: string[];
-  mode?: string;
-  workspaceId?: string | null;
-  operator?: string | null;
-  connection?: WhatsAppChannelConnection;
-  onRefreshConnectionStatus?: () => Promise<unknown> | unknown;
+  mode?: string | undefined;
+  workspaceId?: string | null | undefined;
+  operator?: string | null | undefined;
+  connection?: WhatsAppChannelConnection | undefined;
+  onRefreshConnectionStatus?: (() => Promise<unknown> | unknown) | undefined;
 }
 
 export default function WhatsAppMarketingTab({
@@ -27,15 +26,19 @@ export default function WhatsAppMarketingTab({
     return null;
   }
 
+  const optionalProps: Record<string, unknown> = {};
+  if (operator !== undefined) optionalProps.operator = operator;
+  if (mode !== undefined) optionalProps.mode = mode;
+  if (connection !== undefined) optionalProps.connection = connection;
+  if (onRefreshConnectionStatus !== undefined)
+    optionalProps.onConnectionRefresh = onRefreshConnectionStatus;
+
   return (
     <WhatsAppExperience
       workspaceId={workspaceId}
-      operator={operator}
-      mode={mode}
       channelData={channelData}
       liveFeed={liveFeed}
-      connection={connection}
-      onConnectionRefresh={onRefreshConnectionStatus}
+      {...optionalProps}
     />
   );
 }
