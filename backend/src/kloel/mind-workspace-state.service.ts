@@ -18,7 +18,9 @@ export class MindWorkspaceStateService {
     // atomic conditional upsert that Prisma's upsert cannot express —
     // the WHERE clause on the DO UPDATE branch rejects stale or stolen
     // leases in a single statement, avoiding a check-then-update race.
-    const rows = await this.prisma.$queryRaw<Array<{ workspaceId: string }>>`
+    const rows = await this.prisma.$queryRaw/* raw justified: atomic conditional lease upsert */ <
+      Array<{ workspaceId: string }>
+    >`
       INSERT INTO "RAC_MindWorkspaceState"
         ("id","workspaceId","tickLeaseOwner","tickLeaseUntil","createdAt","updatedAt")
       VALUES

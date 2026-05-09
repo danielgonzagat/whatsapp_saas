@@ -120,7 +120,9 @@ export class MindProcessorService implements OnModuleInit, OnModuleDestroy {
     // Raw justified: UNION across three heterogeneous tables (AutopilotEvent,
     // Message, Workspace) cannot be expressed with Prisma's type-safe API.
     // This single query is used to fan-out scheduled ticks to active workspaces.
-    const workspaces = await this.prisma.$queryRaw<Array<{ id: string }>>`
+    const workspaces = await this.prisma.$queryRaw/* raw justified: heterogeneous UNION fan-out */ <
+      Array<{ id: string }>
+    >`
       SELECT DISTINCT "workspaceId" AS id
       FROM "RAC_AutopilotEvent"
       WHERE "createdAt" > NOW() - INTERVAL '7 days'
