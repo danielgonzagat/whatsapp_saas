@@ -1,6 +1,5 @@
 import { Injectable, Logger, Optional } from '@nestjs/common';
 import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
-import { WhatsappService } from '../whatsapp/whatsapp.service';
 import type {
   ChannelCapability,
   ChannelName,
@@ -14,17 +13,14 @@ export class WhatsAppChannelTransport implements ChannelTransportProvider {
   readonly channel: ChannelName = 'whatsapp';
   private readonly logger = new Logger(WhatsAppChannelTransport.name);
 
-  constructor(
-    @Optional() private readonly whatsapp?: WhatsappService,
-    @Optional() private readonly whatsappRegistry?: WhatsAppProviderRegistry,
-  ) {}
+  constructor(@Optional() private readonly whatsappRegistry?: WhatsAppProviderRegistry) {}
 
   isConfigured(): boolean {
-    return !!this.whatsapp || !!this.whatsappRegistry;
+    return !!this.whatsappRegistry;
   }
 
   capability(_workspaceId: string): Promise<ChannelCapability> {
-    if (!this.whatsapp && !this.whatsappRegistry) {
+    if (!this.whatsappRegistry) {
       return Promise.resolve({
         channel: 'whatsapp',
         sendAvailable: false,
@@ -42,7 +38,7 @@ export class WhatsAppChannelTransport implements ChannelTransportProvider {
   }
 
   async send(workspaceId: string, request: ChannelSendRequest): Promise<ChannelSendResult> {
-    if (!this.whatsapp && !this.whatsappRegistry) {
+    if (!this.whatsappRegistry) {
       return {
         success: false,
         blocked: true,
@@ -51,29 +47,19 @@ export class WhatsAppChannelTransport implements ChannelTransportProvider {
     }
 
     try {
-      const result = this.whatsapp
-        ? await this.whatsapp.sendMessage(workspaceId, request.recipientId, request.content, {
-            mediaUrl: request.mediaUrl,
-            mediaType: request.mediaType,
-            caption: request.caption,
-            externalId: request.externalId,
-            complianceMode: request.complianceMode,
-            forceDirect: request.forceDirect,
-            quotedMessageId: request.quotedMessageId,
-          })
-        : await this.whatsappRegistry!.sendMessage(
-            workspaceId,
-            request.recipientId,
-            request.content,
-            {
-              mediaUrl: request.mediaUrl,
-              mediaType: request.mediaType,
-              caption: request.caption,
-              quotedMessageId: request.quotedMessageId,
-            },
-          );
+      const result = await this.whatsappRegistry.sendMessage(
+        workspaceId,
+        request.recipientId,
+        request.content,
+        {
+          mediaUrl: request.mediaUrl,
+          mediaType: request.mediaType,
+          caption: request.caption,
+          quotedMessageId: request.quotedMessageId,
+        },
+      );
 
-      const success = 'success' in result ? Boolean(result.success) : Boolean(result.ok);
+      const success = Boolean(result.success);
       const error =
         'error' in result && typeof result.error === 'string'
           ? result.error
