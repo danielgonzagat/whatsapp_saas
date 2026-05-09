@@ -122,6 +122,34 @@ describe('code-native MIND guards and composer', () => {
     expect(result.reasonTag).toBe('all_guards_passed');
   });
 
+  it('persists channel and native audio support in guard context', async () => {
+    const prisma = { mindGuardAudit: { create: jest.fn() } };
+    const service = new MindGuardsService(prisma as never, engine);
+
+    await service.evaluate({
+      workspaceId: 'ws-1',
+      decisionType: 'message_format',
+      action: 'send_audio_message',
+      context: {
+        channel: 'instagram',
+        supportsAudio: true,
+        supportsNativeAudio: true,
+      },
+    });
+
+    expect(prisma.mindGuardAudit.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          context: expect.objectContaining({
+            channel: 'instagram',
+            supportsAudio: true,
+            supportsNativeAudio: true,
+          }),
+        }),
+      }),
+    );
+  });
+
   it('blocks escalation when already in progress', async () => {
     const prisma = { mindGuardAudit: { create: jest.fn() } };
     const service = new MindGuardsService(prisma as never, engine);

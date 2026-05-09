@@ -36,6 +36,7 @@ export class MindGuardsService {
   }): Promise<MindGuardResult> {
     const ruleCtx: RuleContext = {
       action: input.action,
+      channel: input.context.channel,
       contactOptOut: input.context.contactOptOut,
       withinComplianceWindow: input.context.withinComplianceWindow,
       templateApproved: input.context.templateApproved,
@@ -53,6 +54,7 @@ export class MindGuardsService {
       productId: input.context.productId,
       supportsAudio: input.context.supportsAudio,
       supportsDocument: input.context.supportsDocument,
+      supportsNativeAudio: input.context.supportsNativeAudio,
     };
 
     const trace = this.engine.evaluate(ruleCtx);

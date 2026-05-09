@@ -8,6 +8,7 @@ export type RuleCategory =
 
 export interface RuleContext {
   action: string;
+  channel?: string;
   contactOptOut?: boolean;
   withinComplianceWindow?: boolean;
   templateApproved?: boolean;
@@ -25,6 +26,7 @@ export interface RuleContext {
   productId?: string;
   supportsAudio?: boolean;
   supportsDocument?: boolean;
+  supportsNativeAudio?: boolean;
   [key: string]: unknown;
 }
 
