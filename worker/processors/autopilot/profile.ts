@@ -79,7 +79,7 @@ export async function ensureTrustedContactProfile(input: {
     input = {
       ...input,
       contactId: seededContact.id,
-      existingContact: seededContact,
+      existingContact: seededContact as unknown as { id?: string | null; name?: string | null; customFields?: UnknownRecord } | null,
     };
   }
 
@@ -136,11 +136,11 @@ export async function ensureTrustedContactProfile(input: {
 
       for (const remoteMessage of remoteMessages) {
         const remoteTrustedName = extractTrustedNameFromRemoteMessage(
-          remoteMessage,
+          remoteMessage as UnknownRecord,
           normalizedPhone,
         );
         const textTrustedName = extractTrustedNameFromMessageText(
-          extractRemoteMessageText(remoteMessage),
+          extractRemoteMessageText(remoteMessage as UnknownRecord),
           normalizedPhone,
         );
         if (remoteTrustedName || textTrustedName) {

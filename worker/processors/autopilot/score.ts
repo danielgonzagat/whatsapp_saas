@@ -81,8 +81,8 @@ export async function runScoreContact(data: UnknownRecord) {
       })
       .catch(() => []);
     if (remoteMessages.length) {
-      messages = remoteMessages
-        .map((message) => ({
+      messages = (remoteMessages as UnknownRecord[])
+        .map((message: UnknownRecord) => ({
           direction:
             message?.fromMe === true ||
             message?.key?.fromMe === true ||
@@ -107,8 +107,8 @@ export async function runScoreContact(data: UnknownRecord) {
     .map((message) => `[${message.direction}] ${String(message.content || '').slice(0, 500)}`)
     .join('\n');
   const unreadCount = Number(contact.conversations?.[0]?.unreadCount || 0) || 0;
-  const latestWonDeal = Array.isArray((contact as never as { deals?: UnknownRecord[] }).deals)
-    ? (contact as never as { deals?: UnknownRecord[] }).deals[0]
+  const latestWonDeal = Array.isArray((contact as UnknownRecord).deals)
+    ? (contact as UnknownRecord).deals?.[0]
     : null;
   const heuristic = buildHeuristicCatalogScore({
     joinedText: history,
@@ -338,7 +338,7 @@ export async function refreshOpportunityUniverse(workspaceId: string) {
     workspaceId,
     conversations: conversations.map((conversation: UnknownRecord) => {
       const lastInbound =
-        conversation.messages.find((message) => message.direction === 'INBOUND') ||
+        conversation.messages.find((message: UnknownRecord) => message.direction === 'INBOUND') ||
         conversation.messages[0];
       const pending = isConversationPendingForAgent(conversation);
 
@@ -369,7 +369,7 @@ export async function refreshOpportunityUniverse(workspaceId: string) {
     }
 
     const joinedText = (conversation.messages || [])
-      .map((message) => String(message.content || ''))
+      .map((message: UnknownRecord) => String(message.content || ''))
       .join('\n');
     const classification = classifyOpportunityCandidate({
       candidate,

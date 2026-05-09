@@ -73,7 +73,7 @@ export async function runCatalogContacts(data: UnknownRecord) {
   const chats: RemoteChatSummary[] = (await whatsappApiProvider
     .getChats(workspaceId)
     .catch((): RemoteChatSummary[] => [])) as RemoteChatSummary[];
-  const lidMap = buildLidMap(await whatsappApiProvider.getLidMappings(workspaceId).catch(() => []));
+  const lidMap = buildLidMap((await whatsappApiProvider.getLidMappings(workspaceId).catch(() => [])) as Array<{ lid?: string | null; pn?: string | null }>);
   const eligibleChatMap = new Map<string, UnknownRecord>();
   for (const chat of Array.isArray(chats) ? chats : []) {
     const chatId = String(chat?.id || '').trim();

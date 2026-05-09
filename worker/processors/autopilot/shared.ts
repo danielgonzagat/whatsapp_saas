@@ -378,7 +378,7 @@ export function buildMirroredReplyPlanFallback(
   if (customerMessages.length === 1) {
     return [
       {
-        quotedMessageId: customerMessages[0].quotedMessageId,
+        quotedMessageId: customerMessages[0].quotedMessageId as string,
         text:
           finalizeReplyStyle(customerMessages[0].content, normalizedDraft, 0) || normalizedDraft,
       },
@@ -391,7 +391,7 @@ export function buildMirroredReplyPlanFallback(
       (index === customerMessages.length - 1 ? normalizedDraft : `Entendi. ${normalizedDraft}`);
 
     return {
-      quotedMessageId: message.quotedMessageId,
+      quotedMessageId: message.quotedMessageId as string,
       text: finalizeReplyStyle(message.content, sentence, 0) || sentence,
     };
   });

@@ -80,9 +80,9 @@ export async function resolveWorkspaceSelfIdentity(
 
   let remoteInfo: UnknownRecord | null = null;
   if (!testRuntime) {
-    remoteInfo = await whatsappApiProvider
+    remoteInfo = (await whatsappApiProvider
       .getClientInfo(workspaceId)
-      .catch(() => null /* not found */);
+      .catch(() => null /* not found */)) as UnknownRecord;
   }
 
   const remoteCandidates = [

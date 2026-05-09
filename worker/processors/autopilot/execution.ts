@@ -108,7 +108,7 @@ export async function executeAction(
         tags: { select: { name: true } },
       },
     });
-    contactRecord = contact;
+    contactRecord = contact as UnknownRecord | undefined;
     targetPhone = contact?.phone || input.contactId;
     contactEmail = contact?.email || undefined;
   }
@@ -175,7 +175,7 @@ export async function executeAction(
   const compliance = await ensureCompliance(
     input.workspaceId,
     targetPhone,
-    input.settings,
+    input.settings || {},
     contactRecord,
     input.deliveryMode || 'proactive',
   );
@@ -294,7 +294,7 @@ export async function executeAction(
     return 'skipped';
   }
 
-  const msg = await buildMessage(action, input.messageContent || '', input.settings);
+  const msg = await buildMessage(action, input.messageContent || '', input.settings || {});
   if (!msg) {
     return 'skipped';
   }
@@ -437,7 +437,7 @@ export async function executeAction(
     const started = Date.now();
     const workspaceCfg = buildWorkspaceConfig(
       input.workspaceId,
-      input.settings,
+      input.settings || {},
       input.workspaceRecord,
     );
 
@@ -447,7 +447,7 @@ export async function executeAction(
         targetPhone,
         input.chatId,
         msg,
-        input.settings,
+        input.settings || {},
         workspaceCfg,
         latestQuotedMessageId,
       );
@@ -543,7 +543,7 @@ export async function executeAction(
     }
     sent = true;
 
-    if (followupEligible && isExplicitProactiveOutreachAllowed(input.settings)) {
+    if (followupEligible && isExplicitProactiveOutreachAllowed(input.settings || {})) {
       await autopilotQueue.add(
         'followup-contact',
         {
@@ -836,7 +836,7 @@ export async function sendDirectAutopilotText(input: {
   const compliance = await ensureCompliance(
     input.workspaceId,
     targetPhone,
-    input.settings,
+    input.settings || {},
     contactRecord || undefined,
     input.deliveryMode || 'proactive',
   );
@@ -1442,7 +1442,7 @@ export async function ensureCompliance(
   deliveryMode: 'reactive' | 'proactive' = 'proactive',
 ) {
   if (!contact) {
-    contact = await prisma.contact.findFirst({
+    contact = (await prisma.contact.findFirst({
       where: { workspaceId, phone },
       select: {
         id: true,
@@ -1451,7 +1451,7 @@ export async function ensureCompliance(
         customFields: true,
         tags: { select: { name: true } },
       },
-    });
+    })) as unknown as typeof contact;
   }
 
   if (contact && contact.optIn === false) {
