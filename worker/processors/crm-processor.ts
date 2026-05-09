@@ -7,13 +7,7 @@ import { processCheckoutSocialLeadEnrichment } from './checkout-social-lead-enri
 import { PlanLimitsProvider } from '../providers/plan-limits';
 import { buildQueueOptions } from '../queue';
 import { isRetryableError, WorkerError } from '../src/utils/error-handler';
-import {
-  checkIdempotent,
-  endJob,
-  logError,
-  markCompleted,
-  startJob,
-} from '../processor-base';
+import { checkIdempotent, endJob, logError, markCompleted, startJob } from '../processor-base';
 
 const log = new WorkerLogger('ghost-closer');
 const engine = FlowEngineGlobal.get();
@@ -52,6 +46,7 @@ export const ghostCloserWorker = new Worker(
       await job.updateProgress(100);
       await markCompleted(job);
       endJob(meta, ctxLog, job.name, 'completed');
+      return;
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'unknown error';
       logError(meta, ctxLog, err, job.name);

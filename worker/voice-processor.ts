@@ -12,13 +12,7 @@ import { buildQueueOptions } from './queue';
 import { isRetryableError, WorkerError } from './src/utils/error-handler';
 import { safeRequest, validateUrl } from './utils/ssrf-protection';
 import { WorkerLogger } from './logger';
-import {
-  checkIdempotent,
-  endJob,
-  logError,
-  markCompleted,
-  startJob,
-} from './processor-base';
+import { checkIdempotent, endJob, logError, markCompleted, startJob } from './processor-base';
 
 const log = new WorkerLogger('voice-worker');
 
@@ -70,7 +64,11 @@ function resolvePublicBackendBaseUrl() {
   return configured.replace(PATTERN_RE, '');
 }
 
-async function handleGenerateAudio(job: Job, meta: ReturnType<typeof startJob>, ctxLog: WorkerLogger) {
+async function handleGenerateAudio(
+  job: Job,
+  meta: ReturnType<typeof startJob>,
+  ctxLog: WorkerLogger,
+) {
   const { jobId, workspaceId, text, profileId } = job.data as {
     jobId: string;
     workspaceId: string;
@@ -103,11 +101,7 @@ async function handleGenerateAudio(job: Job, meta: ReturnType<typeof startJob>, 
   });
 
   if (!profile) {
-    throw new WorkerError(
-      `Voice Profile ${profileId} not found`,
-      'VOICE_PROFILE_NOT_FOUND',
-      false,
-    );
+    throw new WorkerError(`Voice Profile ${profileId} not found`, 'VOICE_PROFILE_NOT_FOUND', false);
   }
 
   const openai = getOpenAIClient();
@@ -146,7 +140,11 @@ async function handleGenerateAudio(job: Job, meta: ReturnType<typeof startJob>, 
   return { success: true, outputUrl: publicUrl };
 }
 
-async function handleTranscription(job: Job, meta: ReturnType<typeof startJob>, ctxLog: WorkerLogger) {
+async function handleTranscription(
+  job: Job,
+  meta: ReturnType<typeof startJob>,
+  ctxLog: WorkerLogger,
+) {
   const { workspaceId, phone, mediaUrl, messageType } = job.data;
 
   ctxLog.info('transcription_start', { phone });

@@ -3,7 +3,7 @@ import { FlowEngineGlobal } from './flow-engine-global';
 import { WorkerLogger } from './logger';
 import { jobCounter, jobDuration } from './metrics';
 import { PlanLimitsProvider } from './providers/plan-limits';
-import { autopilotQueue, buildQueueOptions, connection, shutdownQueueSystem } from './queue';
+import { autopilotQueue, buildQueueOptions, shutdownQueueSystem } from './queue';
 import './campaign-processor'; // Start Campaign Worker
 import './scraper-processor'; // Start Scraper Worker
 import './media-processor'; // Start Media Worker
@@ -22,7 +22,6 @@ import {
   checkIdempotent,
   endJob,
   extractWorkspaceId,
-  generateCorrelationId,
   logError,
   markCompleted,
   startJob,
@@ -200,7 +199,7 @@ async function checkFlowSubscription(
     return null;
   }
   log.warn('flow_blocked_subscription', { jobId, workspaceId, reason: subStatus.reason });
-  return { ok: false, skipped: true, reason: subStatus.reason };
+  return { ok: false, skipped: true, reason: subStatus.reason ?? 'subscription_inactive' };
 }
 
 async function checkFlowRateLimit(
@@ -212,7 +211,7 @@ async function checkFlowRateLimit(
     return null;
   }
   log.warn('flow_blocked_rate', { jobId, workspaceId, reason: rate.reason });
-  return { ok: false, skipped: true, reason: rate.reason };
+  return { ok: false, skipped: true, reason: rate.reason ?? 'rate_limited' };
 }
 
 async function resolveFlowDefinition(
@@ -413,20 +412,8 @@ export const flowWorker = SHOULD_EXECUTE
           );
           jobCounter.inc({ queue: job.queueName, name: job.name, status: 'failed' });
 
-          const errorPayload = {
-            correlationId,
-            workspaceId: meta.workspaceId,
-            jobId: job.id,
-            name: job.name,
-            queue: job.queueName,
-            error: err instanceof Error ? err.message : String(err),
-            durationMs,
-          };
-          if (
-            typeof job.data === 'object' &&
-            job.data !== null &&
-            !Object.isFrozen(job.data)
-          ) {
+          const workspaceId = meta.workspaceId;
+          if (typeof job.data === 'object' && job.data !== null && !Object.isFrozen(job.data)) {
             (job.data as Record<string, unknown>).correlationId = correlationId;
           }
           throw err;
@@ -453,7 +440,7 @@ flowWorker?.on('failed', (job: Job | undefined, err: Error) => {
   const workspaceId = job ? extractWorkspaceId(job) : 'unknown';
   const correlationId =
     job?.data && typeof job.data === 'object'
-      ? (job.data as Record<string, unknown>)?.correlationId ?? 'unknown'
+      ? ((job.data as Record<string, unknown>)?.correlationId ?? 'unknown')
       : 'unknown';
   log.error('job_failed', {
     jobId: job?.id,

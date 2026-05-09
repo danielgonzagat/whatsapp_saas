@@ -99,12 +99,7 @@ export function endJob(
   return durationMs;
 }
 
-export function logError(
-  meta: JobMeta,
-  log: WorkerLogger,
-  err: unknown,
-  jobName: string,
-): number {
+export function logError(meta: JobMeta, log: WorkerLogger, err: unknown, jobName: string): number {
   const durationMs = Number(process.hrtime.bigint() - meta.start) / 1e6;
   log.error('job_error', {
     correlationId: meta.correlationId,

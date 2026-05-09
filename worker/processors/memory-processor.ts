@@ -12,13 +12,7 @@ import {
   settleQuotedUsageCharge,
 } from './prepaid-wallet-settlement';
 import { WorkerError } from '../src/utils/error-handler';
-import {
-  checkIdempotent,
-  endJob,
-  logError,
-  markCompleted,
-  startJob,
-} from '../processor-base';
+import { checkIdempotent, endJob, logError, markCompleted, startJob } from '../processor-base';
 
 const WHITESPACE_RE = /\s+/g;
 const SENTENCE_ENDINGS = ['. ', '? ', '! '];
@@ -280,7 +274,11 @@ const toError = (err: unknown): Error => {
  * @param job - BullMQ job instance.
  * @param err - Error thrown by the dispatcher.
  */
-const handleMemoryJobFailure = async (job: Job, err: unknown, ctxLog: WorkerLogger): Promise<void> => {
+const handleMemoryJobFailure = async (
+  job: Job,
+  err: unknown,
+  ctxLog: WorkerLogger,
+): Promise<void> => {
   const errInstance = toError(err);
   ctxLog.error('memory_job_failed', { error: errInstance.message, jobId: job.id });
 

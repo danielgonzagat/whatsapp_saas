@@ -4,15 +4,8 @@ import { autopilotDecisionCounter } from '../metrics';
 import { buildQueueOptions } from '../queue';
 import { WorkerError, isRetryableError } from '../src/utils/error-handler';
 import { WorkerLogger } from '../logger';
+import { checkIdempotent, endJob, logError, markCompleted, startJob } from '../processor-base';
 import {
-  checkIdempotent,
-  endJob,
-  logError,
-  markCompleted,
-  startJob,
-} from '../processor-base';
-import {
-  log,
   SHOULD_RUN_AUTOPILOT_WORKER,
   runCatalogContacts,
   runCiaAction,
@@ -148,6 +141,7 @@ export const autopilotWorker = SHOULD_RUN_AUTOPILOT_WORKER
           await runScanContact(job.data);
           await markCompleted(job);
           endJob(meta, ctxLog, job.name, 'completed');
+          return;
         } catch (err: unknown) {
           const msg = err instanceof Error ? err.message : String(err);
           logError(meta, ctxLog, err, job.name);

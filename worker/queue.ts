@@ -162,8 +162,7 @@ function attachDlq(queue: BullQueue) {
             }
             return undefined;
           })();
-        const correlationId =
-          (job.data as Record<string, unknown> | undefined)?.correlationId;
+        const correlationId = (job.data as Record<string, unknown> | undefined)?.correlationId;
 
         await dlq.add(
           'failed',

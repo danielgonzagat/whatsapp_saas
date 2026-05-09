@@ -7,13 +7,7 @@ import { triggerFlowForScrapedLeads } from './scrapers/auto-trigger';
 import { scrapeGoogleMaps } from './scrapers/google-maps';
 import { forEachSequential } from './utils/async-sequence';
 import { WorkerLogger } from './logger';
-import {
-  checkIdempotent,
-  endJob,
-  logError,
-  markCompleted,
-  startJob,
-} from './processor-base';
+import { checkIdempotent, endJob, logError, markCompleted, startJob } from './processor-base';
 
 /**
  * =======================================================
@@ -196,6 +190,7 @@ export const scraperWorker = new Worker(
       await markCompleted(job);
       endJob(meta, ctxLog, job.name, 'completed');
       ctxLog.info('scraper_job_complete', { jobId, savedCount });
+      return;
     } catch (err) {
       logError(meta, ctxLog, err, job.name);
       const { jobId, workspaceId } = job.data || {};

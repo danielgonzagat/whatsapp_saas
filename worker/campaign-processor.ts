@@ -8,7 +8,6 @@ import { WorkerLogger } from './logger';
 import {
   checkIdempotent,
   endJob,
-  extractWorkspaceId,
   logError,
   markCompleted,
   startJob,
@@ -226,6 +225,7 @@ export const campaignWorker = new Worker(
       await markCompleted(job);
       endJob(meta, ctxLog, job.name, 'completed');
       ctxLog.info('campaign_dispatched', { campaignId, sentCount });
+      return;
     } catch (err) {
       logError(meta, ctxLog, err, job.name);
       const campaignId = job.data?.campaignId;

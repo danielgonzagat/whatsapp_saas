@@ -5,13 +5,7 @@ import { buildQueueOptions } from '../queue';
 import { throwIfRetryable } from '../src/utils/error-handler';
 import { validateUrl } from '../utils/ssrf-protection';
 import { WorkerLogger } from '../logger';
-import {
-  checkIdempotent,
-  endJob,
-  logError,
-  markCompleted,
-  startJob,
-} from '../processor-base';
+import { checkIdempotent, endJob, logError, markCompleted, startJob } from '../processor-base';
 
 const log = new WorkerLogger('webhook-worker');
 
@@ -65,6 +59,7 @@ export const webhookWorker = new Worker(
       await job.updateProgress(100);
       await markCompleted(job);
       endJob(meta, ctxLog, job.name, 'completed');
+      return;
     } catch (err: unknown) {
       logError(meta, ctxLog, err, job.name);
       ctxLog.error('webhook_failed', {

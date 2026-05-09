@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 export interface ChatMessageResult {
@@ -16,7 +16,6 @@ export interface PaginatedMessages {
 
 @Injectable()
 export class ChatService {
-  private readonly logger = new Logger(ChatService.name);
   constructor(private readonly prisma: PrismaService) {}
 
   async getMessages(

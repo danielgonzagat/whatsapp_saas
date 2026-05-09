@@ -48,7 +48,12 @@ vi.mock('../queue', () => ({
   voiceQueue: { add: vi.fn() },
   buildQueueOptions: vi.fn(() => ({
     connection: { incr: vi.fn(async () => 1), expire: vi.fn(async () => null) },
-    defaultJobOptions: { attempts: 3, backoff: { type: 'exponential', delay: 5000 }, removeOnComplete: true, removeOnFail: 50 },
+    defaultJobOptions: {
+      attempts: 3,
+      backoff: { type: 'exponential', delay: 5000 },
+      removeOnComplete: true,
+      removeOnFail: 50,
+    },
   })),
 }));
 

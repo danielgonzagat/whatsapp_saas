@@ -89,9 +89,7 @@ describe('processor-base — idempotency & structured logging', () => {
     const { generateCorrelationId } = await import('../processor-base');
     const id1 = generateCorrelationId();
     const id2 = generateCorrelationId();
-    expect(id1).toMatch(
-      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
-    );
+    expect(id1).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
     expect(id1).not.toBe(id2);
   });
 
@@ -142,9 +140,7 @@ describe('processor-base — idempotency & structured logging', () => {
       data: { dedupKey: 'ext-key-42' },
     };
     await checkIdempotent(job as never);
-    expect(mockRedisGet).toHaveBeenCalledWith(
-      expect.stringContaining('ext-key-42'),
-    );
+    expect(mockRedisGet).toHaveBeenCalledWith(expect.stringContaining('ext-key-42'));
   });
 });
 

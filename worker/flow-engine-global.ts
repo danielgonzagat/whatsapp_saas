@@ -97,6 +97,10 @@ export class FlowEngineGlobal {
       await CRM.addContact(workspaceId, { phone: normalizedUser, name: normalizedUser });
       contact = await CRM.getContact(workspaceId, normalizedUser);
     }
+    if (!contact) {
+      this.log.error('contact_missing', { user: normalizedUser, workspaceId });
+      return;
+    }
 
     const contactVars = contact
       ? {
@@ -153,7 +157,7 @@ export class FlowEngineGlobal {
         data: {
           flowId: flow.id,
           workspaceId,
-          contactId: contact?.id ?? null,
+          contactId: contact.id,
           status: 'RUNNING',
           currentNodeId: flow.startNode,
           state: state.variables as Prisma.InputJsonValue,

@@ -43,11 +43,13 @@ import {
   addThreadMessage,
   updateThreadMessage,
   updateMessageFeedback,
+} from './kloel-thread.controller-helpers';
+import {
   handleUploadFile,
   handleUploadChatFile,
   requestDataDeletion,
   exportData,
-} from './__companions__/kloel.controller.companion';
+} from './kloel-upload.controller-helpers';
 
 interface ThinkDto {
   message: string;

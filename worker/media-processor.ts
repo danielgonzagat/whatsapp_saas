@@ -3,13 +3,7 @@ import { prisma } from './db';
 import { buildQueueOptions } from './queue';
 import { isRetryableError, WorkerError } from './src/utils/error-handler';
 import { WorkerLogger } from './logger';
-import {
-  checkIdempotent,
-  endJob,
-  logError,
-  markCompleted,
-  startJob,
-} from './processor-base';
+import { checkIdempotent, endJob, logError, markCompleted, startJob } from './processor-base';
 
 const log = new WorkerLogger('media-worker');
 
@@ -66,6 +60,7 @@ export const mediaWorker = new Worker(
       await markCompleted(job);
       endJob(meta, ctxLog, job.name, 'completed');
       ctxLog.info('media_job_complete', { jobId });
+      return;
     } catch (err) {
       logError(meta, ctxLog, err, job.name);
       if (job.data?.jobId) {

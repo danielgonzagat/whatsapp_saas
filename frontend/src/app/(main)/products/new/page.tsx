@@ -675,13 +675,28 @@ export default function NewProductPage() {
                 onBlur={handleInputBlur}
                 value={form.category}
                 onChange={(e) => updateForm({ category: e.target.value })}
+                disabled={catLoading}
               >
-                <option value="">{kloelT(`Selecione uma categoria`)}</option>
-                {PRODUCT_CATEGORIES.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat}
+                <option value="">
+                  {catLoading
+                    ? kloelT(`Carregando categorias...`)
+                    : kloelT(`Selecione uma categoria`)}
+                </option>
+                {catError ? (
+                  <option value="" disabled>
+                    {kloelT(`Erro ao carregar categorias`)}
                   </option>
-                ))}
+                ) : categories.length === 0 && !catLoading ? (
+                  <option value="" disabled>
+                    {kloelT(`Nenhuma categoria cadastrada ainda`)}
+                  </option>
+                ) : (
+                  categories.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat}
+                    </option>
+                  ))
+                )}
               </select>
             </MonitorInputField>
 
