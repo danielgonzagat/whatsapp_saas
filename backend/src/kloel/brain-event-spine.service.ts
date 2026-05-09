@@ -7,23 +7,28 @@ import type { BrainEventName, CommercialEventPayload } from './brain-event-taxon
 
 type AutopilotEventIdRow = { id: string } | null;
 
+const UNSUPPORTED_JSON_VALUE_LABELS: Record<string, string> = {
+  bigint: 'bigint',
+  function: 'function',
+  symbol: 'symbol',
+  undefined: 'undefined',
+};
+
 function isJsonRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 function toUnsupportedJsonValue(value: unknown): string {
-  switch (typeof value) {
-    case 'undefined':
-      return 'undefined';
-    case 'bigint':
-      return value.toString();
-    case 'symbol':
-      return value.description ?? 'symbol';
-    case 'function':
-      return value.name || 'function';
-    default:
-      return 'unsupported';
+  if (typeof value === 'bigint') {
+    return value.toString();
   }
+  if (typeof value === 'symbol') {
+    return value.description ?? UNSUPPORTED_JSON_VALUE_LABELS.symbol;
+  }
+  if (typeof value === 'function') {
+    return value.name || UNSUPPORTED_JSON_VALUE_LABELS.function;
+  }
+  return UNSUPPORTED_JSON_VALUE_LABELS[typeof value] ?? 'unsupported';
 }
 
 function toInputJsonValue(value: unknown): Prisma.InputJsonValue | null {

@@ -10,6 +10,8 @@ export interface RuntimeHttpOptions {
   jwt?: string | null;
 }
 
+type RuntimeHttpMethod = 'DELETE' | 'GET' | 'POST';
+
 export function isDeepMode(): boolean {
   return process.env.PULSE_DEEP === 'true' || process.env.PULSE_DEEP === '1';
 }
@@ -18,11 +20,38 @@ export function getBackendUrl(): string {
   return process.env.PULSE_BACKEND_URL || 'http://127.0.0.1:4000';
 }
 
+function trustedBackendBaseUrl(): URL {
+  const url = new URL(getBackendUrl());
+  const trustedHosts = new Set(['127.0.0.1', 'localhost', 'api.kloel.com']);
+  if (!trustedHosts.has(url.hostname)) {
+    throw new Error('PULSE backend URL host is not trusted for runtime probes.');
+  }
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+    throw new Error('PULSE backend URL protocol is not supported for runtime probes.');
+  }
+  return url;
+}
+
 function toRuntimeUrl(path: string): URL {
   if (!path.startsWith('/') || path.startsWith('//') || path.includes('\0')) {
     throw new Error('Runtime HTTP path must be a local absolute path.');
   }
-  return new URL(path, getBackendUrl());
+  return new URL(path, trustedBackendBaseUrl());
+}
+
+function assertProductId(productId: string): string {
+  if (!/^[a-zA-Z0-9_-]+$/.test(productId)) {
+    throw new Error('Runtime product id contains unsafe characters.');
+  }
+  return productId;
+}
+
+function productsUrl(): URL {
+  return toRuntimeUrl('/products');
+}
+
+function productUrl(productId: string): URL {
+  return toRuntimeUrl(`/products/${assertProductId(productId)}`);
 }
 
 function headers(options?: RuntimeHttpOptions): Record<string, string> {
@@ -45,12 +74,12 @@ async function parseBody(response: Response): Promise<unknown> {
 }
 
 async function request(
-  method: string,
-  path: string,
+  method: RuntimeHttpMethod,
+  url: URL,
   body?: unknown,
   options?: RuntimeHttpOptions,
 ): Promise<RuntimeHttpResponse> {
-  const response = await fetch(toRuntimeUrl(path), {
+  const response = await fetch(url, {
     method,
     headers: headers(options),
     body: body === undefined ? undefined : JSON.stringify(body),
@@ -62,23 +91,29 @@ async function request(
   };
 }
 
-export function httpGet(path: string, options?: RuntimeHttpOptions): Promise<RuntimeHttpResponse> {
-  return request('GET', path, undefined, options);
+export function httpGetProducts(options?: RuntimeHttpOptions): Promise<RuntimeHttpResponse> {
+  return request('GET', productsUrl(), undefined, options);
 }
 
-export function httpPost(
-  path: string,
+export function httpGetProduct(
+  productId: string,
+  options?: RuntimeHttpOptions,
+): Promise<RuntimeHttpResponse> {
+  return request('GET', productUrl(productId), undefined, options);
+}
+
+export function httpPostProduct(
   body: unknown,
   options?: RuntimeHttpOptions,
 ): Promise<RuntimeHttpResponse> {
-  return request('POST', path, body, options);
+  return request('POST', productsUrl(), body, options);
 }
 
-export function httpDelete(
-  path: string,
+export function httpDeleteProduct(
+  productId: string,
   options?: RuntimeHttpOptions,
 ): Promise<RuntimeHttpResponse> {
-  return request('DELETE', path, undefined, options);
+  return request('DELETE', productUrl(productId), undefined, options);
 }
 
 export function makeTestJwt(payload: Record<string, unknown>): string {

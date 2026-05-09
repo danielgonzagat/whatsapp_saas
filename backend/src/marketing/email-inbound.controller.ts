@@ -19,12 +19,14 @@ import { ensureError, type NormalizedMessage } from '../inbox/omnichannel.helper
 import { PrismaService } from '../prisma/prisma.service';
 
 function decodeHtmlEntities(raw: string): string {
-  return raw
-    .replaceAll('&lt;', '<')
-    .replaceAll('&gt;', '>')
-    .replaceAll('&quot;', '"')
-    .replaceAll('&#39;', "'")
-    .replaceAll('&amp;', '&');
+  const entities: Record<string, string> = {
+    '&amp;': '&',
+    '&#39;': "'",
+    '&gt;': '>',
+    '&lt;': '<',
+    '&quot;': '"',
+  };
+  return raw.replace(/&(amp|gt|lt|quot|#39);/g, (entity) => entities[entity] ?? entity);
 }
 
 function stripHtml(raw: string): string {
@@ -97,18 +99,28 @@ function safeMetadataSummary(body: Record<string, unknown>): Record<string, unkn
   };
 }
 
+function bodyString(req: Request, ...keys: string[]): string {
+  for (const key of keys) {
+    const value = req.body?.[key];
+    if (typeof value === 'string' && value.trim()) {
+      return value.trim();
+    }
+  }
+  return '';
+}
+
 function parseForwardedEmailHeaders(req: Request) {
-  const from = String(req.body?.from || req.body?.sender || '').trim();
-  const to = String(req.body?.to || req.body?.recipient || '').trim();
-  const subject = String(req.body?.subject || '').trim();
-  const textBody = decodeHtmlEntities(String(req.body?.text || req.body?.plain || '').trim());
-  const htmlBody = String(req.body?.html || '').trim();
-  const messageId = String(req.body?.message_id || req.body?.['Message-Id'] || '').trim();
-  const inReplyTo = String(req.body?.in_reply_to || req.body?.['In-Reply-To'] || '').trim();
+  const textBody = decodeHtmlEntities(bodyString(req, 'text', 'plain'));
+  const htmlBody = bodyString(req, 'html');
 
-  const content = textBody || stripHtml(htmlBody);
-
-  return { from, to, subject, content, messageId, inReplyTo };
+  return {
+    from: bodyString(req, 'from', 'sender'),
+    to: bodyString(req, 'to', 'recipient'),
+    subject: bodyString(req, 'subject'),
+    content: textBody || stripHtml(htmlBody),
+    messageId: bodyString(req, 'message_id', 'Message-Id'),
+    inReplyTo: bodyString(req, 'in_reply_to', 'In-Reply-To'),
+  };
 }
 
 function resolveWorkspaceFromRecipient(

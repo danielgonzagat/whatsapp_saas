@@ -204,19 +204,11 @@ function sortArtifacts(artifacts: PulseArtifactDefinition[]): PulseArtifactDefin
 }
 
 function resolveDiscoveryRoot(rootDir: string): string {
-  const artifactsPath = safeJoin(rootDir, 'scripts', 'pulse', 'artifacts.ts');
-  const generatorPath = safeJoin(
-    rootDir,
-    'scripts',
-    'pulse',
-    '__parts__',
-    'artifacts',
-    'generate.ts',
-  );
-  if (fs.existsSync(artifactsPath) || fs.existsSync(generatorPath)) {
-    return rootDir;
-  }
-  return path.resolve(__dirname, '..', '..');
+  const resolvedRoot = path.resolve(rootDir);
+  const currentRoot = path.resolve(process.cwd());
+  return resolvedRoot === currentRoot || resolvedRoot.startsWith(`${currentRoot}${path.sep}`)
+    ? resolvedRoot
+    : path.resolve(__dirname, '..', '..');
 }
 
 /** Build the canonical artifact registry for a PULSE run. */

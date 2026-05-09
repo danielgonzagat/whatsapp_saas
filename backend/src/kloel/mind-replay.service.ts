@@ -72,40 +72,52 @@ function computeEFE(
   return { pragmatic, epistemic, efe, formula };
 }
 
+function buildReplayStep(
+  candidate: ReplayCandidate,
+  epsilon: number,
+  utilitySuccess: number,
+  utilityFail: number,
+): ReplayStep {
+  const stats = computeEFE(
+    candidate.beliefMean,
+    candidate.beliefVariance,
+    epsilon,
+    utilitySuccess,
+    utilityFail,
+  );
+  return {
+    action: candidate.action,
+    beliefMean: candidate.beliefMean,
+    beliefVariance: candidate.beliefVariance,
+    pragmatic: stats.pragmatic,
+    epistemic: stats.epistemic,
+    efe: stats.efe,
+    formula: stats.formula,
+  };
+}
+
+function emptyReplayResult(input: ReplayInput): ReplayResult {
+  return {
+    chosen: 'pass',
+    steps: [],
+    baselineAction: input.baseline ?? 'pass',
+  };
+}
+
 @Injectable()
 export class MindReplayService {
   replayDecision(input: ReplayInput): ReplayResult {
+    if (input.candidates.length === 0) {
+      return emptyReplayResult(input);
+    }
+
     const epsilon = input.epsilon ?? 0.5;
     const utilitySuccess = input.utilitySuccess ?? 1;
     const utilityFail = input.utilityFail ?? -0.2;
 
-    const steps: ReplayStep[] = input.candidates.map((candidate) => {
-      const stats = computeEFE(
-        candidate.beliefMean,
-        candidate.beliefVariance,
-        epsilon,
-        utilitySuccess,
-        utilityFail,
-      );
-      return {
-        action: candidate.action,
-        beliefMean: candidate.beliefMean,
-        beliefVariance: candidate.beliefVariance,
-        pragmatic: stats.pragmatic,
-        epistemic: stats.epistemic,
-        efe: stats.efe,
-        formula: stats.formula,
-      };
-    });
-
-    if (steps.length === 0) {
-      return {
-        chosen: 'pass',
-        steps,
-        baselineAction: input.baseline ?? 'pass',
-      };
-    }
-
+    const steps = input.candidates.map((candidate) =>
+      buildReplayStep(candidate, epsilon, utilitySuccess, utilityFail),
+    );
     steps.sort((left, right) => left.efe - right.efe);
     const winner = steps[0];
     const baselineAction = input.baseline ?? steps[steps.length - 1]?.action ?? 'pass';

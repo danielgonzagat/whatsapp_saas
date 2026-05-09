@@ -14,6 +14,17 @@ interface MindEventProcessResult {
   surpriseTotal: number;
 }
 
+type MindEventProcessAccumulator = MindEventProcessResult;
+
+const CONVERSION_CLOSED_STATUSES = new Set([
+  'CANCELED',
+  'CANCELLED',
+  'EXPIRED',
+  'FAILED',
+  'REFUNDED',
+]);
+const AUTOPILOT_SUCCESS_INTENTS = new Set(['lead_qualified', 'meeting_booked', 'purchase_intent']);
+
 @Injectable()
 export class MindEventProcessorService {
   constructor(
@@ -25,11 +36,26 @@ export class MindEventProcessorService {
   ) {}
 
   async process(event: MindPerceptEvent): Promise<MindEventProcessResult> {
-    let predicted = 0;
-    let resolved = 0;
-    let surpriseTotal = 0;
-    let beliefsUpdated = 0;
+    const result: MindEventProcessAccumulator = {
+      predicted: 0,
+      resolved: 0,
+      surpriseTotal: 0,
+      beliefsUpdated: 0,
+    };
 
+    await this.processMessageSent(event, result);
+    await this.processMessageReceived(event, result);
+    await this.processCheckoutStarted(event, result);
+    await this.processCheckoutClosed(event, result);
+    await this.processAutopilotOutcome(event, result);
+
+    return result;
+  }
+
+  private async processMessageSent(
+    event: MindPerceptEvent,
+    result: MindEventProcessAccumulator,
+  ): Promise<void> {
     if (event.kind === 'message.sent' && event.subject.startsWith('contact:')) {
       await this.predictor.predictReply(
         {
@@ -43,9 +69,14 @@ export class MindEventProcessorService {
         },
         24 * 3600,
       );
-      predicted += 1;
+      result.predicted += 1;
     }
+  }
 
+  private async processMessageReceived(
+    event: MindPerceptEvent,
+    result: MindEventProcessAccumulator,
+  ): Promise<void> {
     if (event.kind === 'message.received' && event.subject.startsWith('contact:')) {
       const text = toStableString(event.payload.content ?? event.payload.message ?? '');
       if (text) {
@@ -67,25 +98,28 @@ export class MindEventProcessorService {
           features,
         });
       }
-      const surprise = await this.surprise.resolveBinary(
-        event.workspaceId,
-        event.subject,
-        'P(reply|template,hour,channel)',
-        1,
+      await this.addResolvedSurprise(
+        result,
+        this.surprise.resolveBinary(
+          event.workspaceId,
+          event.subject,
+          'P(reply|template,hour,channel)',
+          1,
+        ),
       );
-      if (surprise > 0) {
-        resolved += 1;
-        beliefsUpdated += 1;
-        surpriseTotal += surprise;
-      }
-      resolved += await this.policy.resolveOpenForSubject({
+      result.resolved += await this.policy.resolveOpenForSubject({
         workspaceId: event.workspaceId,
         subject: event.subject,
         decisionType: 'followup_timing',
         outcome: 1,
       });
     }
+  }
 
+  private async processCheckoutStarted(
+    event: MindPerceptEvent,
+    result: MindEventProcessAccumulator,
+  ): Promise<void> {
     if (event.kind === 'checkout.start' || event.kind === 'checkout.pending') {
       await this.predictor.predictConversion(
         {
@@ -100,33 +134,34 @@ export class MindEventProcessorService {
         },
         48 * 3600,
       );
-      predicted += 1;
+      result.predicted += 1;
     }
+  }
 
+  private async processCheckoutClosed(
+    event: MindPerceptEvent,
+    result: MindEventProcessAccumulator,
+  ): Promise<void> {
     if (event.kind === 'checkout.paid' || event.kind === 'sale.completed') {
-      const surprise = await this.resolveConversion(event, 1);
-      if (surprise > 0) {
-        resolved += 1;
-        beliefsUpdated += 1;
-        surpriseTotal += surprise;
-      }
+      await this.addResolvedSurprise(result, this.resolveConversion(event, 1));
+      return;
     }
 
     if (event.kind.startsWith('checkout.') && event.kind !== 'checkout.paid') {
       const status = toStableString(event.payload.status).toUpperCase();
-      if (['CANCELED', 'CANCELLED', 'EXPIRED', 'FAILED', 'REFUNDED'].includes(status)) {
-        const surprise = await this.resolveConversion(event, 0);
-        if (surprise > 0) {
-          resolved += 1;
-          beliefsUpdated += 1;
-          surpriseTotal += surprise;
-        }
+      if (CONVERSION_CLOSED_STATUSES.has(status)) {
+        await this.addResolvedSurprise(result, this.resolveConversion(event, 0));
       }
     }
+  }
 
+  private async processAutopilotOutcome(
+    event: MindPerceptEvent,
+    result: MindEventProcessAccumulator,
+  ): Promise<void> {
     if (event.kind.startsWith('autopilot.')) {
       const intent = toStableString(event.payload.intent) || 'unknown';
-      if (['lead_qualified', 'meeting_booked', 'purchase_intent'].includes(intent)) {
+      if (AUTOPILOT_SUCCESS_INTENTS.has(intent)) {
         const outcome = intent === 'purchase_intent' ? 1 : 0;
         const predicate =
           intent === 'purchase_intent'
@@ -138,15 +173,24 @@ export class MindEventProcessorService {
           predicate,
           outcome,
         );
-        if (surprise > 0) {
-          resolved += 1;
-          beliefsUpdated += 1;
-          surpriseTotal += surprise;
-        }
+        this.applySurprise(result, surprise);
       }
     }
+  }
 
-    return { predicted, resolved, surpriseTotal, beliefsUpdated };
+  private async addResolvedSurprise(
+    result: MindEventProcessAccumulator,
+    surprisePromise: Promise<number>,
+  ): Promise<void> {
+    this.applySurprise(result, await surprisePromise);
+  }
+
+  private applySurprise(result: MindEventProcessAccumulator, surprise: number): void {
+    if (surprise > 0) {
+      result.resolved += 1;
+      result.beliefsUpdated += 1;
+      result.surpriseTotal += surprise;
+    }
   }
 
   private resolveConversion(event: MindPerceptEvent, outcome: 0 | 1): Promise<number> {
