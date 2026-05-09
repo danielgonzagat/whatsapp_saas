@@ -257,7 +257,7 @@ export async function pickVariant(
     return a.uses - b.uses;
   });
 
-  if (ordered.length > 1 && secureRandomFraction() < epsilon) {
+  if (storedMap.size === 0 && ordered.length > 1 && secureRandomFraction() < epsilon) {
     const sampled = weightedSamplePick(ordered, rank);
     if (sampled) {
       return sampled;
