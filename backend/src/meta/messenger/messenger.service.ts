@@ -1,9 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { MetaSdkService } from '../meta-sdk.service';
 
 /** Messenger service. */
 @Injectable()
 export class MessengerService {
+  private readonly logger = new Logger(MessengerService.name);
+
   constructor(private readonly metaSdk: MetaSdkService) {}
 
   // messageLimit: enforced via PlanLimitsService.trackMessageSend
@@ -13,6 +15,7 @@ export class MessengerService {
     text: string,
     pageAccessToken: string,
   ) {
+    this.logger.log('Calling Messenger API', { context: 'MessengerService.sendTextMessage', pageId, endpoint: 'messages' });
     return this.metaSdk.graphApiPost(
       `${pageId}/messages`,
       { recipient: { id: recipientId }, message: { text } },
@@ -28,6 +31,7 @@ export class MessengerService {
     url: string,
     pageAccessToken: string,
   ) {
+    this.logger.log('Calling Messenger API', { context: 'MessengerService.sendMediaMessage', pageId, endpoint: 'messages', mediaType: type });
     return this.metaSdk.graphApiPost(
       `${pageId}/messages`,
       {
@@ -40,6 +44,7 @@ export class MessengerService {
 
   /** Get user profile. */
   async getUserProfile(userId: string, pageAccessToken: string) {
+    this.logger.log('Calling Messenger API', { context: 'MessengerService.getUserProfile', userId, endpoint: 'profile' });
     return this.metaSdk.graphApiGet(
       userId,
       { fields: 'first_name,last_name,profile_pic' },
@@ -49,6 +54,7 @@ export class MessengerService {
 
   /** Get conversations. */
   async getConversations(pageId: string, pageAccessToken: string) {
+    this.logger.log('Calling Messenger API', { context: 'MessengerService.getConversations', pageId, endpoint: 'conversations' });
     return this.metaSdk.graphApiGet(
       `${pageId}/conversations`,
       {

@@ -30,6 +30,10 @@ export class AdminNotificationsService {
 
   /** List. */
   async list(adminUserId: string) {
+    this.logger.log('Notifications list requested', {
+      context: 'AdminNotificationsService.list',
+    });
+
     const [chargebacks, pendingKyc, support, failedLogins, workspaceGrowth, readAudit, prefAudit] =
       await Promise.all([
         this.prisma.checkoutOrder.findMany({

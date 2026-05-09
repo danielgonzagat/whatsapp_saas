@@ -45,6 +45,11 @@ export class AdminMarketingService {
       ...(to !== undefined ? { to } : {}),
     });
 
+    this.logger.log('Marketing overview requested', {
+      context: 'AdminMarketingService.overview',
+      period: range.period,
+    });
+
     const [home, conversations, messageRows, socialLeads, recentConversations, orders] =
       await Promise.all([
         this.dashboard.getHome(period, 'NONE', from, to),

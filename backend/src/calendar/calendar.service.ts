@@ -409,31 +409,43 @@ export class CalendarService {
         config.credentials?.clientSecret || this.configService.get('GOOGLE_CLIENT_SECRET'),
       );
 
-      oauth2Client.setCredentials({
-        refresh_token: config.credentials?.refreshToken,
-        access_token: config.credentials?.accessToken,
-      });
+      const googleCredentials: { refresh_token?: string; access_token?: string } = {
+        refresh_token: config.credentials.refreshToken,
+      };
+      if (config.credentials?.accessToken) {
+        googleCredentials.access_token = config.credentials.accessToken;
+      }
+      oauth2Client.setCredentials(googleCredentials);
 
       const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
 
-      const response = await calendar.events.list({
+      const listParams: Record<string, unknown> = {
         calendarId: 'primary',
-        timeMin: startDate?.toISOString(),
-        timeMax: endDate?.toISOString(),
         maxResults: 100,
         singleEvents: true,
         orderBy: 'startTime',
-      });
+      };
+      if (startDate) {
+        listParams.timeMin = startDate.toISOString();
+      }
+      if (endDate) {
+        listParams.timeMax = endDate.toISOString();
+      }
+      const response = await calendar.events.list(
+        listParams as Parameters<typeof calendar.events.list>[0],
+      );
 
-      return (response.data.items || []).map((item) => ({
-        id: item.id || undefined,
-        summary: item.summary || '',
-        description: item.description || undefined,
-        startTime: item.start?.dateTime ? new Date(item.start.dateTime) : new Date(),
-        endTime: item.end?.dateTime ? new Date(item.end.dateTime) : new Date(),
-        location: item.location || undefined,
-        meetingLink: item.hangoutLink || undefined,
-      }));
+      return (response.data.items || []).map(
+        (item): CalendarEvent => ({
+          ...(item.id ? { id: item.id } : {}),
+          summary: item.summary || '',
+          ...(item.description ? { description: item.description } : {}),
+          startTime: item.start?.dateTime ? new Date(item.start.dateTime) : new Date(),
+          endTime: item.end?.dateTime ? new Date(item.end.dateTime) : new Date(),
+          ...(item.location ? { location: item.location } : {}),
+          ...(item.hangoutLink ? { meetingLink: item.hangoutLink } : {}),
+        }),
+      );
     } catch (error: unknown) {
       this.logger.error(
         `[Calendar] Google Calendar list error: ${error instanceof Error ? error.message : 'unknown_error'}`,
