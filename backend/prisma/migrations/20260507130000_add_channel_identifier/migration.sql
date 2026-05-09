@@ -17,12 +17,10 @@ CREATE TABLE "RAC_ChannelIdentifier" (
     CONSTRAINT "RAC_ChannelIdentifier_pkey" PRIMARY KEY (id),
     CONSTRAINT "RAC_ChannelIdentifier_contactId_fkey"
         FOREIGN KEY ("contactId", "workspaceId")
-        REFERENCES "RAC_Contact" (id, "workspaceId")
-        ON DELETE CASCADE ON UPDATE CASCADE,
+        REFERENCES "RAC_Contact" (id, "workspaceId") ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT "RAC_ChannelIdentifier_workspaceId_fkey"
         FOREIGN KEY ("workspaceId")
-        REFERENCES "RAC_Workspace" (id)
-        ON DELETE CASCADE ON UPDATE CASCADE
+        REFERENCES "RAC_Workspace" (id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 -- Unique constraint: one identifier per channel per workspace
