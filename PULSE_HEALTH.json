@@ -1,6 +1,6 @@
 {
   "score": 94,
-  "totalNodes": 1895,
+  "totalNodes": 1888,
   "breaks": [
     {
       "type": "graph-route-caller-unobserved",
@@ -3064,9 +3064,9 @@
     }
   ],
   "stats": {
-    "uiElements": 3618,
+    "uiElements": 3610,
     "uiDeadHandlers": 26,
-    "apiCalls": 748,
+    "apiCalls": 741,
     "apiNoRoute": 2,
     "backendRoutes": 998,
     "backendEmpty": 0,
@@ -3086,7 +3086,7 @@
     "unavailableChecks": 0,
     "unknownSurfaces": 0
   },
-  "timestamp": "2026-05-08T20:50:00.584Z",
-  "runId": "ac1d47fc-b7fd-47f9-b3ce-5dc9dccbd0ba",
-  "generatedAt": "2026-05-08T20:53:40.839Z"
+  "timestamp": "2026-05-09T01:36:33.439Z",
+  "runId": "add5a6ba-327d-473d-996d-e18a187e9c90",
+  "generatedAt": "2026-05-09T01:39:15.385Z"
 }

@@ -1,6 +1,6 @@
 {
-  "runId": "ac1d47fc-b7fd-47f9-b3ce-5dc9dccbd0ba",
-  "generatedAt": "2026-05-08T20:53:40.839Z",
+  "runId": "add5a6ba-327d-473d-996d-e18a187e9c90",
+  "generatedAt": "2026-05-09T01:39:15.385Z",
   "authorityMode": "advisory-only",
   "advisoryOnly": true,
   "authorityReasons": [
@@ -14,14 +14,14 @@
     "canDeclareKloelProductCertified": false,
     "blockers": [
       "artifact_consistency: Cross-artifact consistency has not produced a passing check.",
-      "critical_path_terminal: 5163 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:account-agent, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
+      "critical_path_terminal: 5150 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:account-agent, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
       "external_reality: 2 missing, 0 stale, and 0 invalid external adapter(s) remain.",
       "multi_cycle: multiCycleConvergence: no autonomy iteration history found; production-autonomy verdict requires proven cycles. Cycle proof: 0/3 successful non-regressing real cycle(s)."
     ]
   },
   "cleanupPolicy": "enforced-single-state",
-  "canonicalDir": "/Users/danielpenin/whatsapp_saas_pr266_sota/.pulse/current",
-  "tempDir": "/Users/danielpenin/whatsapp_saas_pr266_sota/.pulse/tmp",
+  "canonicalDir": "/private/tmp/kloel-pr266-current/.pulse/current",
+  "tempDir": "/private/tmp/kloel-pr266-current/.pulse/tmp",
   "officialArtifacts": [
     "PULSE_ADMIN_EVIDENCE.json",
     "PULSE_AGENT_ORCHESTRATION_STATE.json",
@@ -1046,15 +1046,7 @@
   ],
   "removedLegacyPulseArtifacts": [
     "PULSE_CERTIFICATE.json",
-    "PULSE_CLI_DIRECTIVE.json",
-    "PULSE_CONVERGENCE_PLAN.json",
-    "PULSE_EXECUTION_TRACE.json",
-    "PULSE_FLOW_PROJECTION.json",
-    "PULSE_HEALTH.json",
-    "PULSE_REPORT.md",
-    "PULSE_RUNTIME_EVIDENCE.json",
-    "PULSE_SCOPE_STATE.json",
-    "PULSE_WORLD_STATE.json"
+    "PULSE_REPORT.md"
   ],
   "rootStateMode": "local-only"
 }
