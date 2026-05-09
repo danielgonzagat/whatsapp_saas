@@ -2,12 +2,16 @@ import { Controller, Get, Post, Query, Req, Param } from '@nestjs/common';
 import type { Request } from 'express';
 import { AnunciosService } from './anuncios.service';
 
+interface WorkspaceRequest extends Request {
+  workspaceId?: string;
+}
+
 @Controller('api/anuncios')
 export class AnunciosController {
   constructor(private readonly anunciosService: AnunciosService) {}
 
   private workspaceId(req: Request): string {
-    return (req as unknown as Record<string, unknown>).workspaceId as string || '';
+    return (req as WorkspaceRequest).workspaceId || '';
   }
 
   @Get('status')

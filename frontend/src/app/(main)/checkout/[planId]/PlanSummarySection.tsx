@@ -23,7 +23,6 @@ import {
 export interface PlanSummarySectionProps {
   config: CheckoutConfig;
   patch: (p: Partial<CheckoutConfig>) => Promise<void>;
-  isLoading: boolean;
   source: string;
   requestedFocus: string;
   productName: string;
@@ -50,7 +49,6 @@ function sectionCardStyle(
 export function PlanSummarySection({
   config,
   patch,
-  isLoading,
   source,
   requestedFocus,
   productName: productNameProp,

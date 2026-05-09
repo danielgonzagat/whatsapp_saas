@@ -136,7 +136,14 @@ interface ApiResponse<T = unknown> {
   status: number;
 }
 
-function buildSuccessResponse<T>(payload: T, status: number): ApiResponse<T> {
+interface RefreshTokenResponse {
+  access_token?: string;
+  accessToken?: string;
+  refresh_token?: string;
+  refreshToken?: string;
+}
+
+function buildSuccessResponse<T>(payload: unknown, status: number): ApiResponse<T> {
   if (payload && typeof payload === 'object' && !Array.isArray(payload)) {
     return {
       ...(payload as Record<string, unknown>),
@@ -190,7 +197,7 @@ async function doRefreshAccessToken(): Promise<boolean> {
       return false;
     }
 
-    const data = await res.json();
+    const data: RefreshTokenResponse = await res.json();
     const newToken = data.access_token || data.accessToken;
     const newRefresh = data.refresh_token || data.refreshToken;
     if (newToken) {
@@ -328,11 +335,14 @@ function buildErrorResponse<T>(
 
 async function performApiRequest<T>(url: string, init: RequestInit): Promise<ApiResponse<T>> {
   const res = await fetch(createTrustedRequest(url, init));
-  const data = await res.json().catch(() => ({}));
+  const data: unknown = await res.json().catch(() => ({} as unknown));
   if (!res.ok) {
-    return buildErrorResponse<T>(data, res.status);
+    return buildErrorResponse<T>(
+      data as { message?: unknown; error?: string },
+      res.status,
+    );
   }
-  return buildSuccessResponse(data, res.status);
+  return buildSuccessResponse<T>(data, res.status);
 }
 
 async function retryApiRequestWithRefreshedToken<T>(

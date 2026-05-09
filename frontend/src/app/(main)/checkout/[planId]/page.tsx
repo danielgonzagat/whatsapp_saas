@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 import { type CheckoutConfig, useCheckoutEditor } from '@/hooks/useCheckoutEditor';
 import { buildPayUrl, isValidCheckoutCode } from '@/lib/subdomains';
 import { useParams, useSearchParams } from 'next/navigation';
-import { useCallback, useEffect, useRef, useState, useId } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { normalizeCheckoutCode } from './checkout-editor-utils';
 import {
   C,
@@ -23,7 +23,6 @@ import { BillingFormSection } from './BillingFormSection';
 import { OrderConfirmationSection } from './OrderConfirmationSection';
 
 export default function CheckoutEditorPage() {
-  const fid = useId();
   const params = useParams();
   const searchParams = useSearchParams();
   const planId = params?.planId as string;
@@ -239,7 +238,6 @@ export default function CheckoutEditorPage() {
             <PlanSummarySection
               config={config}
               patch={patch}
-              isLoading={isLoading}
               source={source}
               requestedFocus={requestedFocus}
               productName={productName}

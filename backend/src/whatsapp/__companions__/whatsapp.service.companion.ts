@@ -15,6 +15,35 @@ import { buildQueueDedupId, buildQueueJobId } from '../../queue/job-id.util';
 import { autopilotQueue, flowQueue } from '../../queue/queue';
 
 const D_RE = /\D/g;
+export interface ChatOwnerSummary {
+  id?: string;
+  name?: string | null;
+  phone?: string | null;
+}
+
+export interface ProviderMessageEnvelope {
+  id: string;
+  chatId: string;
+  phone: string;
+  body: string;
+  direction: 'INBOUND' | 'OUTBOUND';
+  fromMe: boolean;
+  type: string;
+  hasMedia: boolean;
+  mediaUrl: string | null;
+  mimetype: string | null;
+  timestamp: number;
+  isoTimestamp: string | null;
+  source: string;
+}
+interface MessageDeliveryReceipt {
+  error?: boolean;
+  message?: string;
+  ok?: boolean;
+  direct?: boolean;
+  delivery?: string;
+  messageId?: string | null;
+}
 
 // ── Types ──
 export type NormalizedContact = {
@@ -38,9 +67,9 @@ export type NormalizedChat = {
   pending: boolean;
   needsReply?: boolean;
   pendingMessages?: number;
-  owner?: any;
-  blockedReason?: any;
-  lastMessageDirection?: any;
+  owner?: ChatOwnerSummary | null;
+  blockedReason?: string | null;
+  lastMessageDirection?: 'INBOUND' | 'OUTBOUND' | null;
   timestamp: number;
   lastMessageAt: string | null;
   conversationId: string | null;
@@ -267,7 +296,7 @@ export function normalizeMessageEntry(
   msgRaw: unknown,
   fallbackChatId: string,
   deps: { extractPhone: (id: string) => string },
-): any {
+): ProviderMessageEnvelope | null {
   const message = msgRaw as Record<string, unknown>;
   const mId = message?.id as Record<string, unknown> | string | undefined;
   const mKey = message?.key as Record<string, unknown> | undefined;
@@ -613,7 +642,7 @@ export async function sendDirectlyViaProviderExt(
     Number.parseInt(process.env.WHATSAPP_ACTION_LOCK_MS || '45000', 10) || 45_000,
   );
   const deadline = Date.now() + ttlMs;
-  const tryAcquire = async (): Promise<any> => {
+  const tryAcquire = async (): Promise<MessageDeliveryReceipt> => {
     if (Date.now() >= deadline) {
       /* fall through */
     }

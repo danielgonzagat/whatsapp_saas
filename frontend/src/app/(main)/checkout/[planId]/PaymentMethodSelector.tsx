@@ -5,7 +5,6 @@ import { Copy } from 'lucide-react';
 import { type CSSProperties, type RefObject } from 'react';
 import {
   C,
-  FONT,
   labelStyle,
   MONO,
   sectionStyle,

@@ -169,6 +169,8 @@ export function buildScopeEngineState(
   let observationOnlyFiles = 0;
   let notExecutableFiles = 0;
 
+  const rawImportsMap = new Map<string, string[]>();
+
   for (const filePath of allFilePaths) {
     let content: string;
     try {
@@ -184,6 +186,8 @@ export function buildScopeEngineState(
     const isProtected = isProtectedFile(rootDir, filePath, governanceBoundary);
     const executionMode = computeExecutionMode(filePath, extension, isProtected, content);
     const contentHash = computeContentHash(content);
+    const rawImports = extractImports(filePath, content);
+    rawImportsMap.set(filePath, rawImports);
     const now = new Date().toISOString();
 
     let status: ScopeFileStatus = 'classified';
@@ -244,11 +248,11 @@ export function buildScopeEngineState(
   }
 
   for (const entry of entries) {
-    const content = readTextFile(entry.filePath);
-    const imports = extractImports(entry.filePath, content);
+    const rawImports = rawImportsMap.get(entry.filePath);
+    if (!rawImports || rawImports.length === 0) continue;
     const importerDir = path.dirname(entry.filePath);
 
-    for (const importSpec of imports) {
+    for (const importSpec of rawImports) {
       const resolved = resolveImportPath(importSpec, importerDir, knownPaths);
       if (resolved) {
         entry.connections.push(resolved);

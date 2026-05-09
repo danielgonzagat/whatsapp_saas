@@ -7,6 +7,10 @@ jest.mock('../common/redis/redis.util', () => ({
 
 import { createRedisClient } from '../common/redis/redis.util';
 
+function mockSocket(overrides?: Partial<Socket>): Socket {
+  return { id: 'test-socket-id', ...overrides } as Socket;
+}
+
 describe('CopilotGateway', () => {
   let gateway: CopilotGateway;
   let mockServer: {
@@ -119,40 +123,40 @@ describe('CopilotGateway', () => {
 
   describe('handleConnection', () => {
     it('joins client to workspace room when workspaceId is provided', () => {
-      const mockSocket = {
+      const socket = mockSocket({
         id: 'socket-cp-1',
         handshake: { query: { workspaceId: 'ws-1' } },
         join: jest.fn(),
-      } as unknown as Socket;
+      });
 
-      gateway.handleConnection(mockSocket);
+      gateway.handleConnection(socket);
 
       expect(mockSocket.join).toHaveBeenCalledWith('workspace:ws-1');
     });
 
     it('handles connection without workspaceId gracefully', () => {
-      const mockSocket = {
+      const socket = mockSocket({
         id: 'socket-cp-2',
         handshake: { query: {} },
         join: jest.fn(),
-      } as unknown as Socket;
+      });
 
       expect(() => {
-        gateway.handleConnection(mockSocket);
+        gateway.handleConnection(socket);
       }).not.toThrow();
 
-      expect(mockSocket.join).not.toHaveBeenCalled();
+      expect(socket.join).not.toHaveBeenCalled();
     });
 
     it('handles missing workspaceId in query gracefully', () => {
-      const mockSocket = {
+      const socket = mockSocket({
         id: 'socket-cp-3',
         handshake: { query: {} },
         join: jest.fn(),
-      } as unknown as Socket;
+      });
 
       expect(() => {
-        gateway.handleConnection(mockSocket);
+        gateway.handleConnection(socket);
       }).not.toThrow();
     });
   });
