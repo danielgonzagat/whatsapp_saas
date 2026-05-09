@@ -8,6 +8,8 @@ import { ReportFiltersDto } from './dto/report-filters.dto';
 import { ReportsService } from './reports.service';
 import { BRAND_COLORS } from '../common/kloel-colors';
 
+type ReportResponseDetails = { score?: number; [key: string]: unknown };
+
 // All dates stored as UTC via Prisma DateTime (toISOString)
 @UseGuards(ThrottlerGuard)
 @Controller('reports')
@@ -208,7 +210,7 @@ export class ReportsController {
       take: 100,
     });
     const scores = responses
-      .map((r) => (r.details as Record<string, unknown> | null)?.score as number | undefined)
+      .map((r) => (r.details as ReportResponseDetails | null)?.score as number | undefined)
       .filter(Boolean);
     const avg =
       scores.length > 0 ? scores.reduce((a: number, b: number) => a + b, 0) / scores.length : 0;

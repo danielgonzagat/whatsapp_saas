@@ -56,6 +56,38 @@ enum FlowExecutionStatus {
   WAITING_INPUT
 }
 
+enum EmailCampaignStatus {
+  DRAFT
+  SCHEDULED
+  SENDING
+  SENT
+  FAILED
+  CANCELLED
+}
+
+enum EmailRecipientStatus {
+  PENDING
+  SENT
+  DELIVERED
+  OPENED
+  CLICKED
+  REPLIED
+  FAILED
+  BOUNCED
+  UNSUBSCRIBED
+}
+
+enum EmailDeliveryEvent {
+  SENT
+  DELIVERED
+  OPENED
+  CLICKED
+  REPLIED
+  BOUNCED
+  COMPLAINT
+  UNSUBSCRIBED
+}
+
 model Workspace {
   id        String   @id @default(uuid())
   name      String
@@ -140,6 +172,9 @@ model Workspace {
   // Kloel & Commerce Relations
   documents             Document[]
   followUps             FollowUp[]
+  emailCampaigns         EmailCampaign[]
+  emailCampaignRecipients EmailCampaignRecipient[]
+  emailCampaignDeliveries EmailCampaignDelivery[]
   kloelMessages         KloelMessage[]
   kloelMemories         KloelMemory[]
   kloelLeads            KloelLead[]
@@ -177,6 +212,10 @@ model Workspace {
   adAccounts  AdAccount[]
   adCampaigns AdCampaign[]
   adInsights  AdInsight[]
+
+  // Instagram Marketing
+  igPosts    IgPost[]
+  igInsights IgInsight[]
 
   @@map("RAC_Workspace")
 }
@@ -1826,6 +1865,102 @@ model Document {
 // =========================================
 // FOLLOW-UP SCHEDULING
 // =========================================
+model EmailCampaign {
+  id          String             @id @default(uuid())
+  workspaceId String
+  workspace   Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  name        String
+  subject     String
+  htmlBody    String
+  fromEmail   String?
+  fromName    String?
+  replyTo     String?
+
+  status           EmailCampaignStatus @default(DRAFT)
+  totalRecipients  Int                 @default(0)
+  sentCount        Int                 @default(0)
+  deliveredCount   Int                 @default(0)
+  openedCount      Int                 @default(0)
+  clickedCount     Int                 @default(0)
+  repliedCount     Int                 @default(0)
+  failedCount      Int                 @default(0)
+  bouncedCount     Int                 @default(0)
+  unsubscribedCount Int                @default(0)
+
+  provider    String? // resend, sendgrid, smtp, log
+
+  scheduledAt DateTime?
+  startedAt   DateTime?
+  completedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  recipients EmailCampaignRecipient[]
+  deliveries EmailCampaignDelivery[]
+
+  @@index([workspaceId])
+  @@index([workspaceId, status])
+  @@map("RAC_EmailCampaign")
+}
+
+model EmailCampaignRecipient {
+  id         String  @id @default(uuid())
+  campaignId String
+  campaign   EmailCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  workspaceId String
+  workspace  Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  email String
+  name  String?
+
+  status            EmailRecipientStatus @default(PENDING)
+  providerMessageId String?
+  errorMessage      String?
+
+  sentAt        DateTime?
+  deliveredAt   DateTime?
+  openedAt      DateTime?
+  clickedAt     DateTime?
+  repliedAt     DateTime?
+  failedAt      DateTime?
+  bouncedAt     DateTime?
+  unsubscribedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  deliveries EmailCampaignDelivery[]
+
+  @@index([campaignId])
+  @@index([workspaceId, email])
+  @@index([providerMessageId])
+  @@map("RAC_EmailCampaignRecipient")
+}
+
+model EmailCampaignDelivery {
+  id          String  @id @default(uuid())
+  campaignId  String
+  campaign    EmailCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  recipientId String
+  recipient   EmailCampaignRecipient @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  event             EmailDeliveryEvent
+  providerMessageId String?
+  metadata          Json?
+
+  occurredAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  @@index([campaignId])
+  @@index([recipientId])
+  @@index([providerMessageId])
+  @@map("RAC_EmailCampaignDelivery")
+}
+
 model FollowUp {
   id          String    @id @default(uuid())
   workspaceId String
@@ -3124,6 +3259,32 @@ model MetaConnection {
   @@map("RAC_MetaConnection")
 }
 
+model FbMessage {
+  id              String    @id @default(uuid())
+  workspaceId     String
+  workspace       Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  mid             String?   // Facebook message ID (unique per workspace)
+  direction       String    // INBOUND | OUTBOUND
+  text            String?
+  senderPsid      String?   // Page-scoped ID of sender
+  recipientPsid   String?   // Page-scoped ID of recipient
+  pageId          String?
+  deliveryStatus  String    @default("SENT") // SENT | DELIVERED | READ | FAILED
+  errorCode       String?
+  errorMessage    String?
+  metadata        Json?     // Raw webhook payload for audit
+  deliveredAt     DateTime?
+  readAt          DateTime?
+  failedAt        DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@unique([workspaceId, mid])
+  @@index([workspaceId, pageId, createdAt])
+  @@index([workspaceId, senderPsid])
+  @@map("RAC_FbMessage")
+}
+
 model AdAccount {
   id          String   @id @default(uuid())
   workspaceId String
@@ -3762,4 +3923,48 @@ model DailyMessageCounter {
   @@unique([workspaceId, date])
   @@index([workspaceId, date])
   @@map("RAC_DailyMessageCounter")
+}
+
+model IgPost {
+  id            String    @id @default(uuid())
+  workspaceId   String
+  workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  igAccountId   String
+  igMediaId     String?
+  igContainerId String?
+  imageUrl      String
+  caption       String?
+  permalink     String?
+  status        String    @default("published")
+  publishedAt   DateTime  @default(now())
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([workspaceId, igAccountId])
+  @@index([workspaceId, createdAt])
+  @@map("RAC_IgPost")
+}
+
+model IgInsight {
+  id                  String    @id @default(uuid())
+  workspaceId         String
+  workspace           Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  igAccountId         String
+  date                DateTime
+  impressions         Int       @default(0)
+  reach               Int       @default(0)
+  followerCount       Int       @default(0)
+  profileViews        Int       @default(0)
+  websiteClicks       Int       @default(0)
+  emailContacts       Int       @default(0)
+  phoneCallClicks     Int       @default(0)
+  textMessageClicks   Int       @default(0)
+  getDirectionsClicks Int       @default(0)
+  onlineFollowers     Json?
+  createdAt           DateTime  @default(now())
+
+  @@unique([workspaceId, igAccountId, date])
+  @@index([workspaceId, igAccountId])
+  @@index([workspaceId, date])
+  @@map("RAC_IgInsight")
 }

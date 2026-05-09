@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { AdminAction, AdminModule, AdminRole } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { flattenDefaults } from './admin-permissions.defaults';
@@ -6,7 +6,6 @@ import { flattenDefaults } from './admin-permissions.defaults';
 /** Admin permissions service. */
 @Injectable()
 export class AdminPermissionsService {
-  private readonly logger = new Logger(AdminPermissionsService.name);
   constructor(private readonly prisma: PrismaService) {}
 
   /**

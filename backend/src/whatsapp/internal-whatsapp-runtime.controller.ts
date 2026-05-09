@@ -143,8 +143,8 @@ export class InternalWhatsAppRuntimeController {
   ) {
     this.assertInternalKey(internalKey);
     return this.whatsappService.sendMessage(body.workspaceId, body.to, body.message, {
-      quotedMessageId: body.quotedMessageId,
-      externalId: body.externalId,
+      ...(body.quotedMessageId !== undefined ? { quotedMessageId: body.quotedMessageId } : {}),
+      ...(body.externalId !== undefined ? { externalId: body.externalId } : {}),
       forceDirect: true,
     });
   }
@@ -168,10 +168,10 @@ export class InternalWhatsAppRuntimeController {
     this.assertInternalKey(internalKey);
     return this.whatsappService.sendMessage(body.workspaceId, body.to, body.caption || '', {
       mediaUrl: body.mediaUrl,
-      mediaType: body.mediaType,
-      caption: body.caption,
-      quotedMessageId: body.quotedMessageId,
-      externalId: body.externalId,
+      ...(body.mediaType !== undefined ? { mediaType: body.mediaType } : {}),
+      ...(body.caption !== undefined ? { caption: body.caption } : {}),
+      ...(body.quotedMessageId !== undefined ? { quotedMessageId: body.quotedMessageId } : {}),
+      ...(body.externalId !== undefined ? { externalId: body.externalId } : {}),
       forceDirect: true,
     });
   }

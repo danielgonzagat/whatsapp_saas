@@ -3,7 +3,7 @@
 import { kloelT } from '@/lib/i18n/t';
 import { useCallback, useEffect, useRef, useState, useId } from 'react';
 import { useBankMutations } from '@/hooks/useKyc';
-import { BRAZILIAN_BANKS, POPULAR_BANK_CODES, formatBankCode } from '@/data/brazilian-banks';
+import { useBrazilianBanks, formatBankCode, POPULAR_BANK_CODES, type BrazilianBank } from '@/hooks/useBrazilianBanks';
 import Icons from './ContaIcons';
 import { SORA, MONO, EMBER, U0300__U036F_RE } from './ContaConstants';
 import { cleanPayload, getErrorMessage, bankAccountToFormState } from './ContaHelpers';
@@ -16,10 +16,10 @@ function BankListItem({
   isSelected,
   onSelect,
 }: {
-  bank: (typeof BRAZILIAN_BANKS)[number];
+  bank: BrazilianBank;
   code3: string;
   isSelected: boolean;
-  onSelect: (bank: (typeof BRAZILIAN_BANKS)[number]) => void;
+  onSelect: (bank: BrazilianBank) => void;
 }) {
   return (
     <button

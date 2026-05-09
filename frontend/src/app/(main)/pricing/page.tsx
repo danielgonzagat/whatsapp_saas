@@ -33,6 +33,7 @@ export default function PricingPage() {
   const router = useRouter();
   const { userEmail } = useAuth();
   const workspaceId = useWorkspaceId();
+  const { plans: PLANS, benefits: BENEFITS, isLoading: plansLoading, error: plansError } = usePricingPlans();
   const [isLoading, setIsLoading] = useState<string | null>(null);
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
   const [_error, setError] = useState<string | null>(null);
@@ -157,7 +158,16 @@ export default function PricingPage() {
       {/* Plans */}
       <Section spacing="md">
         <CenterStage size="L">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {plansLoading ? (
+            <div className="text-center py-8" style={{ color: colors.text.muted }}>
+              {kloelT('Carregando planos...')}
+            </div>
+          ) : PLANS.length === 0 ? (
+            <div className="text-center py-8" style={{ color: colors.text.muted }}>
+              {kloelT('Nenhum plano disponível no momento.')}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {PLANS.map((plan) => {
               const Icon = plan.icon;
               const price = getPrice(plan.price);
@@ -288,15 +298,35 @@ export default function PricingPage() {
                     ))}
                   </div>
                 </div>
-              );
-            })}
+            )})
           </div>
+          )}
         </CenterStage>
       </Section>
 
       {/* Benefits */}
       <Section spacing="lg">
         <CenterStage size="L">
+          {plansError ? (
+            <div
+              className="text-center p-4 rounded-md mb-4"
+              style={{
+                color: colors.state.error,
+                backgroundColor: `${colors.state.error}10`,
+                border: `1px solid ${colors.state.error}30`,
+              }}
+            >
+              {kloelT('Erro ao carregar informações.')}{' '}
+              <button
+                type="button"
+                onClick={() => window.location.reload()}
+                style={{ color: colors.brand.green, textDecoration: 'underline' }}
+              >
+                {kloelT('Tentar novamente')}
+              </button>
+            </div>
+          ) : null}
+
           <h2
             className="text-2xl font-bold text-center mb-8"
             style={{ color: colors.text.primary }}
@@ -304,7 +334,8 @@ export default function PricingPage() {
             {kloelT(`Tudo que você precisa para vender mais`)}
           </h2>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          {plansLoading ? null : BENEFITS.length === 0 ? null : (
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {BENEFITS.map((benefit) => {
               const Icon = benefit.icon;
               return (

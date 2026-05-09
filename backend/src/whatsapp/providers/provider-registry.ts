@@ -391,8 +391,8 @@ export class WhatsAppProviderRegistry {
   ): Promise<SendResult> {
     return this.sendMessage(workspaceId, to, options?.caption || '', {
       mediaUrl,
-      caption: options?.caption,
-      mediaType: options?.mediaType,
+      ...(options?.caption !== undefined ? { caption: options.caption } : {}),
+      ...(options?.mediaType !== undefined ? { mediaType: options.mediaType } : {}),
     });
   }
 
@@ -475,7 +475,7 @@ export class WhatsAppProviderRegistry {
     workspaceId: string,
     contact: { phone: string; name?: string | null },
   ): Promise<boolean> {
-    if (this.isWahaMode()) {
+    if (this.isWahaMode() && this.wahaProvider) {
       return this.wahaProvider.upsertContactProfile(workspaceId, contact);
     }
     return this.metaCloudProvider.upsertContactProfile(workspaceId, contact);
@@ -483,7 +483,7 @@ export class WhatsAppProviderRegistry {
 
   /** Get chats. */
   async getChats(workspaceId: string): Promise<unknown[]> {
-    if (this.isWahaMode()) {
+    if (this.isWahaMode() && this.wahaProvider) {
       const chats = await this.wahaProvider.getChats(workspaceId);
       return Array.isArray(chats) ? chats : [];
     }
@@ -497,7 +497,7 @@ export class WhatsAppProviderRegistry {
     chatId: string,
     options?: { limit?: number; offset?: number; downloadMedia?: boolean },
   ): Promise<unknown[]> {
-    if (this.isWahaMode()) {
+    if (this.isWahaMode() && this.wahaProvider) {
       const msgs = await this.wahaProvider.getChatMessages(workspaceId, chatId, options);
       return Array.isArray(msgs) ? msgs : [];
     }
@@ -507,7 +507,7 @@ export class WhatsAppProviderRegistry {
 
   /** Read chat messages. */
   async readChatMessages(workspaceId: string, chatId: string): Promise<void> {
-    if (this.isWahaMode()) {
+    if (this.isWahaMode() && this.wahaProvider) {
       return this.wahaProvider.sendSeen(workspaceId, chatId);
     }
     return this.metaCloudProvider.readChatMessages(workspaceId, chatId);
@@ -543,7 +543,7 @@ export class WhatsAppProviderRegistry {
 
   /** Send seen. */
   async sendSeen(workspaceId: string, chatId: string): Promise<void> {
-    if (this.isWahaMode()) {
+    if (this.isWahaMode() && this.wahaProvider) {
       return this.wahaProvider.sendSeen(workspaceId, chatId);
     }
     return this.metaCloudProvider.sendSeen(workspaceId, chatId);
@@ -551,7 +551,7 @@ export class WhatsAppProviderRegistry {
 
   /** Health check. */
   async healthCheck(): Promise<{ whatsappApi: boolean; whatsappWebAgent: boolean }> {
-    if (this.isWahaMode()) {
+    if (this.isWahaMode() && this.wahaProvider) {
       const wahaHealthy = await this.wahaProvider.ping().catch(() => false);
       return { whatsappApi: wahaHealthy, whatsappWebAgent: false };
     }
@@ -563,7 +563,7 @@ export class WhatsAppProviderRegistry {
 
   /** Get session diagnostics. */
   async getSessionDiagnostics(workspaceId: string): Promise<Record<string, unknown>> {
-    if (this.isWahaMode()) {
+    if (this.isWahaMode() && this.wahaProvider) {
       const diag = await this.wahaProvider.getSessionConfigDiagnostics(workspaceId);
       return {
         ...diag,
@@ -581,7 +581,7 @@ export class WhatsAppProviderRegistry {
 
   /** List lid mappings. */
   async listLidMappings(workspaceId: string): Promise<Array<{ lid: string; pn: string }>> {
-    if (this.isWahaMode()) {
+    if (this.isWahaMode() && this.wahaProvider) {
       return this.wahaProvider.listLidMappings(workspaceId);
     }
     return this.metaCloudProvider.listLidMappings(workspaceId);

@@ -1,4 +1,4 @@
-# PULSE REPORT — 2026-05-09T18:35:03.175Z
+# PULSE REPORT — 2026-05-09T18:42:26.737Z
 
 ## PULSE VERDICT
 
@@ -19,8 +19,8 @@
 - Can declare Kloel product certified: NAO
 - bounded_run: PASS - Bounded next autonomous cycle exposes 8 ai_safe unit(s).
 - artifact_consistency: FAIL - Cross-artifact consistency has not produced a passing check.
-- execution_matrix: PASS - Execution matrix classified 5213 path(s) with zero unknown and zero non-terminal paths.
-- critical_path_terminal: FAIL - 3953 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive, matrix:capability:capability:admin-login. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.
+- execution_matrix: PASS - Execution matrix classified 5218 path(s) with zero unknown and zero non-terminal paths.
+- critical_path_terminal: FAIL - 3958 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive, matrix:capability:capability:admin-login. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.
 - breakpoint_precision: PASS - Every observed failure in the execution matrix has a breakpoint.
 - external_reality: FAIL - 2 missing, 0 stale, and 0 invalid external adapter(s) remain.
 - self_trust: FAIL - PULSE still reconstructs 2 phantom capability(ies) and 15 phantom flow(s); self-trust stays degraded until illusion collapses into real chains.
@@ -33,12 +33,12 @@
 - Score: 39/100
 - Blocking tier: 0
 - Scope parity: FAIL (low)
-- Structural chains: 767/2762 complete
+- Structural chains: 766/2761 complete
 - Capabilities: real=0, partial=379, latent=14, phantom=2
 - Capability maturity: foundational=8, connected=387, operational=0, productionReady=0
 - Flows: real=0, partial=43, latent=0, phantom=15
-- Execution matrix: paths=5213, observedPass=0, observedFail=222, criticalUnobserved=0, unknown=0
-- Structural parity gaps: total=50, critical=12, high=36
+- Execution matrix: paths=5218, observedPass=0, observedFail=222, criticalUnobserved=0, unknown=0
+- Structural parity gaps: total=51, critical=12, high=37
 - Finding events: totalSignals=323, uniqueEvents=279, observed=0, confirmedStatic=323, weakSignals=0
 - Codacy HIGH issues: 1076
 - GitNexus Code Graph: not configured
@@ -60,10 +60,10 @@
 
 - Inventory Coverage: 100%
 - Classification Coverage: 93%
-- Structural Graph Coverage: 33% (1057/3191 connected)
-  Reason: 1057/3191 structural files connected.
+- Structural Graph Coverage: 33% (1057/3196 connected)
+  Reason: 1057/3196 structural files connected.
 - Test Coverage: 9%
-  Reason: 234/2696 source modules have spec files.
+  Reason: 234/2701 source modules have spec files.
 - Scenario Coverage: 74% (declared=100%, executed=74%, passed=0%)
   Reason: 43/58 scenarios exercised, 0 passed.
 - Runtime Evidence Coverage: 0% (fresh=0%, stale=0%)
@@ -85,7 +85,7 @@
 - No-overclaim: FAIL
 
 ### Inferred (structural analysis)
-- 2762 structural chains
+- 2761 structural chains
 - 0 real capabilities
 - 0 real flows
 
@@ -105,7 +105,7 @@
 - Current checkpoint: The current product-facing system materializes 365 partial capability(ies), 0 latent capability(ies), 0 phantom capability(ies). System-wide phantom capability count is 2.
 - Inferred product: If the currently connected structures converge, the product resolves toward a unified operational platform centered on Scrapers, Video/Voice, Dashboard, Sales/Vendas, Followups, Anuncios/Ads, Autopilot, Inbox/Chat, Analytics, CIA/Agent, CRM, Campaigns, Checkout, Products, Auth, Partnerships, Onboarding, Billing, Marketing, Ferramentas, Launch, Sites, Webinarios.
 - Projected checkpoint: If the currently connected partial and latent structures converge without introducing new phantom paths, the product projects to 365/365 capability(ies) and 43/58 flow(s) at least partially real, with readiness yellow.
-- Distance: Distance to projected readiness is driven by 0 product-facing phantom capability(ies), 2 system-wide phantom capability(ies), 15 phantom flow(s), 50 structural parity gap(s), and 1076 HIGH Codacy issue(s).
+- Distance: Distance to projected readiness is driven by 0 product-facing phantom capability(ies), 2 system-wide phantom capability(ies), 15 phantom flow(s), 51 structural parity gap(s), and 1076 HIGH Codacy issue(s).
 
 ## Product Surfaces
 
@@ -271,7 +271,7 @@
 - UI without persistence: /canvas/editor: /canvas/editor (rich shell) still behaves like a shell or façade without durable persistence or real side effects.
 - UI without persistence: /canvas/inicio: /canvas/inicio (rich shell) still behaves like a shell or façade without durable persistence or real side effects.
 - UI without persistence: /canvas/modelos: /canvas/modelos (rich shell) still behaves like a shell or façade without durable persistence or real side effects.
-- UI without persistence: /cia: /cia (rich shell) still behaves like a shell or façade without durable persistence or real side effects.
+- UI without persistence: /checkout/:planId: /checkout/:planId (rich shell) still behaves like a shell or façade without durable persistence or real side effects.
 
 ## Next Work
 
@@ -292,7 +292,7 @@
 
 - Canonical dir: /Users/danielpenin/whatsapp_saas/.pulse/current
 - Mirrors: PULSE_ADMIN_EVIDENCE.json, PULSE_AGENT_ORCHESTRATION_STATE.json, PULSE_ARTIFACT_INDEX.json, PULSE_AUTONOMY_STATE.json, PULSE_BEADS_STATE.json, PULSE_BROWSER_EVIDENCE.json, PULSE_CAPABILITY_STATE.json, PULSE_CERTIFICATE.json, PULSE_CLI_DIRECTIVE.json, PULSE_CODACY_EVIDENCE.json, PULSE_CODEBASE_TRUTH.json, PULSE_CONTEXT_BROADCAST.json, PULSE_CONTEXT_DELTA.json, PULSE_CONVERGENCE_PLAN.json, PULSE_CUSTOMER_EVIDENCE.json, PULSE_EXECUTION_MATRIX.json, PULSE_EXECUTION_TRACE.json, PULSE_EXTERNAL_SIGNAL_STATE.json, PULSE_FLOW_EVIDENCE.json, PULSE_FLOW_PROJECTION.json, PULSE_GITNEXUS_STATE.json, PULSE_HEALTH.json, PULSE_INVARIANT_EVIDENCE.json, PULSE_MACHINE_READINESS.json, PULSE_OBSERVABILITY_EVIDENCE.json, PULSE_OPERATOR_EVIDENCE.json, PULSE_PARITY_GAPS.json, PULSE_PRODUCT_GRAPH.json, PULSE_PRODUCT_VISION.json, PULSE_RECOVERY_EVIDENCE.json, PULSE_REPORT.md, PULSE_RESOLVED_MANIFEST.json, PULSE_RUNTIME_EVIDENCE.json, PULSE_RUNTIME_PROBES.json, PULSE_SCENARIO_COVERAGE.json, PULSE_SCOPE_STATE.json, PULSE_SOAK_EVIDENCE.json, PULSE_STRUCTURAL_GRAPH.json, PULSE_WORKER_LEASES.json, PULSE_WORLD_STATE.json
-- Removed legacy artifacts this run: 3
+- Removed legacy artifacts this run: 2
 
 ## Truth Model
 

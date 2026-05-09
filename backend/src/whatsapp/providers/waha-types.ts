@@ -116,7 +116,7 @@ export interface WahaSessionConfigDiagnostics {
 interface WahaSessionRaw {
   engine?: { state?: unknown };
   state?: unknown;
-  session?: { state?: unknown; config?: unknown };
+  session?: { state?: unknown; config?: unknown; status?: unknown };
   status?: unknown;
   [key: string]: unknown;
 }

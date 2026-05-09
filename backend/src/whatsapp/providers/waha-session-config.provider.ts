@@ -334,18 +334,18 @@ export class WahaSessionConfigProvider extends WahaTransport {
       this.configService.get<string>('WAHA_WEBHOOK_SECRET') ||
       '';
 
+    const hmacKey = this.configService.get<string>('WHATSAPP_HOOK_HMAC_KEY');
+
     const webhooks =
       webhookUrl && events.length
         ? [
             {
               url: webhookUrl,
               events,
-              hmac: this.configService.get<string>('WHATSAPP_HOOK_HMAC_KEY')
-                ? { key: this.configService.get<string>('WHATSAPP_HOOK_HMAC_KEY') }
-                : undefined,
-              customHeaders: webhookSecret
-                ? [{ name: 'X-Api-Key', value: webhookSecret }]
-                : undefined,
+              ...(hmacKey ? { hmac: { key: hmacKey } } : {}),
+              ...(webhookSecret
+                ? { customHeaders: [{ name: 'X-Api-Key', value: webhookSecret }] }
+                : {}),
             },
           ]
         : undefined;

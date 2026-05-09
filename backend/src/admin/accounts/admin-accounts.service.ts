@@ -1,5 +1,5 @@
 import { randomInt, randomUUID } from 'node:crypto';
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { AdminRole, Prisma } from '@prisma/client';
 import { hash as bcryptHash } from 'bcrypt';
 import { AuthService } from '../../auth/auth.service';
@@ -32,7 +32,6 @@ export interface ListAccountsResponse {
 /** Admin accounts service. */
 @Injectable()
 export class AdminAccountsService {
-  private readonly logger = new Logger(AdminAccountsService.name);
   constructor(
     private readonly prisma: PrismaService,
     private readonly auth: AuthService,

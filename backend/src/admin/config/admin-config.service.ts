@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { asProviderSettings } from '../../whatsapp/provider-settings.types';
@@ -44,11 +44,7 @@ export interface AdminConfigOverviewResponse {
 /** Admin config service. */
 @Injectable()
 export class AdminConfigService {
-  private readonly logger = new Logger(AdminConfigService.name);
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly audit: AdminAuditService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   /** Overview. */
   async overview(search?: string): Promise<AdminConfigOverviewResponse> {

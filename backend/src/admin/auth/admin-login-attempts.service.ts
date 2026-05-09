@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 
 const WINDOW_MS = 15 * 60 * 1000;
@@ -14,7 +14,6 @@ const MAX_ATTEMPTS = 5;
  */
 @Injectable()
 export class AdminLoginAttemptsService {
-  private readonly logger = new Logger(AdminLoginAttemptsService.name);
   constructor(private readonly prisma: PrismaService) {}
 
   /** Is locked. */

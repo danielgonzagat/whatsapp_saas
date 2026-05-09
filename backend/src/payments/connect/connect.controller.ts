@@ -22,6 +22,8 @@ import { Idempotent } from '../../common/idempotency.guard';
 import { PrismaService } from '../../prisma/prisma.service';
 import { LedgerService } from '../ledger/ledger.service';
 
+type ConnectPayoutDetails = Record<string, unknown>;
+
 import { ConnectPayoutService } from './connect-payout.service';
 import { ConnectPayoutApprovalService } from './connect-payout-approval.service';
 import { ConnectLedgerReconciliationService } from '../ledger/connect-ledger-reconciliation.service';
@@ -293,7 +295,7 @@ export class ConnectController {
       items: items.map((item) => {
         const details =
           item.details && typeof item.details === 'object' && !Array.isArray(item.details)
-            ? (item.details as Record<string, unknown>)
+            ? (item.details as ConnectPayoutDetails)
             : {};
         const balance =
           item.entityId && typeof item.entityId === 'string'

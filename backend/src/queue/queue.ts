@@ -3,6 +3,8 @@ import { Queue as BullQueue, QueueEvents } from 'bullmq';
 import { createRedisClient, getRedisUrl, maskRedisUrl } from '../common/redis/redis.util';
 import { classifyWebhook } from './webhook-classifier';
 
+type GlobalWithFetch = { fetch?: typeof fetch; [key: string]: unknown };
+
 // ============================================================================
 // LAZY INITIALIZATION - Conexão só é criada quando acessada pela primeira vez
 // Isso garante que o bootstrap.ts já interceptou o ioredis antes da conexão
@@ -151,7 +153,6 @@ async function notifyOps(input: {
   const webhookType = classifyWebhook(webhook);
   const isSlack = webhookType === 'slack';
   const isTeams = webhookType === 'teams';
-  type GlobalWithFetch = { fetch?: typeof fetch; [key: string]: unknown };
   const fetchFn = (globalThis as GlobalWithFetch).fetch as
     | undefined
     | ((

@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { AdminRole } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AdminAuditService } from '../audit/admin-audit.service';
@@ -7,11 +7,7 @@ import { adminErrors } from '../common/admin-api-errors';
 /** Admin sessions service. */
 @Injectable()
 export class AdminSessionsService {
-  private readonly logger = new Logger(AdminSessionsService.name);
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly audit: AdminAuditService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   /** List own. */
   // PULSE_OK: bounded by single admin user's sessions

@@ -1,4 +1,4 @@
-import { Inject, Injectable, forwardRef, Logger } from '@nestjs/common';
+import { Inject, Injectable, forwardRef } from '@nestjs/common';
 import { findFirstSequential, forEachSequential } from '../common/async-sequence';
 import { UnifiedAgentService } from '../kloel/unified-agent.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -22,7 +22,6 @@ const safeStr = (v: unknown, fb = ''): string =>
  */
 @Injectable()
 export class CiaInlineFallbackService {
-  private readonly logger = new Logger(CiaInlineFallbackService.name);
   constructor(
     private readonly prisma: PrismaService,
     private readonly agentEvents: AgentEventsService,
@@ -127,7 +126,7 @@ export class CiaInlineFallbackService {
     return {
       aggregatedMessage:
         messages.length === 1
-          ? messages[0].content
+          ? messages[0]!.content
           : messages
               .map((message, index) => `[${index + 1}] ${String(message.content || '').trim()}`)
               .join('\n'),

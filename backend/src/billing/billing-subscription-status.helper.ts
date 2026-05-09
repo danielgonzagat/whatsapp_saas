@@ -2,6 +2,7 @@ import { Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { FinancialAlertService } from '../common/financial-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { asProviderSettings } from '../whatsapp/provider-settings.types';
 import type { StripeClient, StripeSubscription } from './stripe-types';
 
 export interface MarkSubscriptionStatusDeps {
@@ -41,8 +42,8 @@ export async function markSubscriptionStatusHelper(
       where: { id: workspaceId },
       select: { providerSettings: true },
     });
-    const settings = (ws?.providerSettings as Record<string, unknown>) || {};
-    const autopilot = (settings.autopilot ?? {}) as Record<string, unknown>;
+    const settings = asProviderSettings(ws?.providerSettings);
+    const autopilot = settings.autopilot ?? {};
     const nextSettings = {
       ...settings,
       autopilot: { ...autopilot, enabled: false },
@@ -87,7 +88,7 @@ export async function markSubscriptionStatusHelper(
       where: { id: workspaceId },
       select: { providerSettings: true },
     });
-    const settings = (ws?.providerSettings as Record<string, unknown>) || {};
+    const settings = asProviderSettings(ws?.providerSettings);
     const nextSettings = { ...settings };
     if (settings.billingSuspended) {
       delete nextSettings.billingSuspended;

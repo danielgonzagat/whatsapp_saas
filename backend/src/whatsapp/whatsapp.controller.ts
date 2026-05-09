@@ -48,10 +48,10 @@ export class WhatsappController {
     const resolvedWorkspaceId = this.resolveWorkspaceId(req, workspaceId);
     // messageLimit: enforced via PlanLimitsService.trackMessageSend
     return this.whatsappService.sendMessage(resolvedWorkspaceId, body?.to, body?.message, {
-      mediaUrl: body?.mediaUrl,
-      mediaType: body?.mediaType,
-      caption: body?.caption,
-      externalId: body?.externalId,
+      ...(body?.mediaUrl !== undefined ? { mediaUrl: body.mediaUrl } : {}),
+      ...(body?.mediaType !== undefined ? { mediaType: body.mediaType } : {}),
+      ...(body?.caption !== undefined ? { caption: body.caption } : {}),
+      ...(body?.externalId !== undefined ? { externalId: body.externalId } : {}),
     });
   }
 

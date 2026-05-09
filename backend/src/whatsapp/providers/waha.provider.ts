@@ -416,7 +416,7 @@ export class WahaProvider extends WahaSessionProvider {
     if (strMatch) {
       return strMatch.trim();
     }
-    const numMatch = candidates.find((v): v is number => typeof v === 'number');
+    const numMatch = candidates.find((v) => typeof v === 'number');
     return numMatch !== undefined ? String(numMatch) : '';
   }
 

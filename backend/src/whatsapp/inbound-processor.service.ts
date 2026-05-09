@@ -38,7 +38,15 @@ import type {
 } from './__companions__/inbound-processor.service.companion';
 export type { InboundMessage } from './__companions__/inbound-processor.service.companion';
 
-type InboundRawPayload = Record<string, unknown>;
+type InboundRawPayload = {
+  pushName?: string;
+  notifyName?: string;
+  _data?: { pushName?: string; notifyName?: string; [key: string]: unknown };
+  message?: { pushName?: string; notifyName?: string; [key: string]: unknown };
+  sender?: { pushName?: string; name?: string; [key: string]: unknown };
+  contact?: { pushName?: string; name?: string; [key: string]: unknown };
+  [key: string]: unknown;
+};
 type InboundSkipMeta = Record<string, unknown>;
 
 interface ProcessResult {

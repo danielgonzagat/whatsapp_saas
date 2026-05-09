@@ -21,7 +21,7 @@ export class WahaTransport {
   protected readonly logger: Logger;
   protected readonly baseUrl: string;
   protected readonly apiKey: string;
-  protected opsAlert?: OpsAlertService;
+  protected opsAlert: OpsAlertService | undefined;
   protected readonly defaultWebhookEvents = [
     'session.status',
     WAHA_MESSAGE_EVENT,
@@ -213,12 +213,15 @@ export class WahaTransport {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
-      const res = await fetch(url, {
+      const init: RequestInit = {
         method,
         headers,
-        body: body ? JSON.stringify(body) : undefined,
         signal: controller.signal,
-      });
+      };
+      if (body !== undefined) {
+        init.body = JSON.stringify(body);
+      }
+      const res = await fetch(url, init);
 
       clearTimeout(timeout);
       return res;
