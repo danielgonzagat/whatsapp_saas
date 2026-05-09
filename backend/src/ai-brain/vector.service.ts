@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
 
@@ -9,6 +9,7 @@ type EmbeddingResult = { embedding: number[]; tokensUsed: number };
 /** Vector service. */
 @Injectable()
 export class VectorService {
+  private readonly logger = new Logger(VectorService.name);
   private openai: OpenAI;
 
   constructor(private configService: ConfigService) {

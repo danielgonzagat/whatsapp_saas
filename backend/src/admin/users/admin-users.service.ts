@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { AdminRole, AdminUserStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AdminAuditService } from '../audit/admin-audit.service';
@@ -40,6 +40,7 @@ export interface UpdateAdminUserInput {
 /** Admin users service. */
 @Injectable()
 export class AdminUsersService {
+  private readonly logger = new Logger(AdminUsersService.name);
   constructor(
     private readonly prisma: PrismaService,
     private readonly permissions: AdminPermissionsService,

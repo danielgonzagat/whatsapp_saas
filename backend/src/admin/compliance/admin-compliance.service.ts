@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { OrderStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { resolveAdminHomeRange, type AdminHomePeriod } from '../dashboard/range.util';
@@ -123,6 +123,7 @@ function mapRecentKycEvents(auditItems: AuditItem[]) {
 /** Admin compliance service. */
 @Injectable()
 export class AdminComplianceService {
+  private readonly logger = new Logger(AdminComplianceService.name);
   constructor(private readonly prisma: PrismaService) {}
 
   /** Overview. */

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { AdminUser, AdminUserStatus } from '@prisma/client';
 import { compare as bcryptCompare, hash as bcryptHash } from 'bcrypt';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -38,6 +38,7 @@ export interface MfaSetupPayload {
 /** Admin auth service. */
 @Injectable()
 export class AdminAuthService {
+  private readonly logger = new Logger(AdminAuthService.name);
   constructor(
     private readonly prisma: PrismaService,
     private readonly mfa: AdminMfaService,

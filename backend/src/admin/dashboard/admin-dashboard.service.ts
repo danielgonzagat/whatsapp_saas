@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { queryGmvInCents } from './queries/gmv.query';
@@ -108,6 +108,7 @@ interface Snapshot {
 /** Admin dashboard service. */
 @Injectable()
 export class AdminDashboardService {
+  private readonly logger = new Logger(AdminDashboardService.name);
   constructor(private readonly prisma: PrismaService) {}
 
   /** Get home. */

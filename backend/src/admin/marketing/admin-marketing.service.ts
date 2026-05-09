@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { OrderStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AdminDashboardService } from '../dashboard/admin-dashboard.service';
@@ -21,6 +21,7 @@ function channelLabel(channel: string) {
 /** Admin marketing service. */
 @Injectable()
 export class AdminMarketingService {
+  private readonly logger = new Logger(AdminMarketingService.name);
   constructor(
     private readonly prisma: PrismaService,
     private readonly dashboard: AdminDashboardService,

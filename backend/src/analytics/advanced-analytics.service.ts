@@ -1,10 +1,11 @@
-import { Injectable, Optional } from '@nestjs/common';
+import { Injectable, Optional, Logger } from '@nestjs/common';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 // cache.invalidate — analytics queries are read-only aggregations; no cached writes to invalidate
 @Injectable()
 export class AdvancedAnalyticsService {
+  private readonly logger = new Logger(AdvancedAnalyticsService.name);
   constructor(
     private prisma: PrismaService,
     @Optional() private readonly auditService?: AuditService,

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { OrderStatus, PaymentMethod } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AdminDashboardService } from '../dashboard/admin-dashboard.service';
@@ -7,6 +7,7 @@ import { listAdminTransactions } from '../transactions/queries/list-transactions
 /** Admin sales service. */
 @Injectable()
 export class AdminSalesService {
+  private readonly logger = new Logger(AdminSalesService.name);
   constructor(
     private readonly prisma: PrismaService,
     private readonly dashboard: AdminDashboardService,

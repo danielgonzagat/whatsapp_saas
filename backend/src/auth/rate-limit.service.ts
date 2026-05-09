@@ -19,6 +19,7 @@ import type { Redis } from 'ioredis';
  */
 @Injectable()
 export class RateLimitService {
+  private readonly logger = new Logger(RateLimitService.name);
   private logger = new Logger(RateLimitService.name);
 
   constructor(@Optional() @InjectRedis() private readonly redis: Redis | null = null) {}

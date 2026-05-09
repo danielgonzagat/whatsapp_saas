@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { ConflictException, Optional, UnauthorizedException } from '@nestjs/common';
+import { ConflictException, Optional, UnauthorizedException, Logger } from '@nestjs/common';
 import { Agent, Prisma, Workspace } from '@prisma/client';
 import { compare as bcryptCompare, hash as bcryptHash } from 'bcrypt';
 import { BCRYPT_ROUNDS } from '../common/constants';
@@ -27,6 +27,7 @@ type LoginAgent = {
 /** Internal collaborator that owns email/password registration, login, anonymous
  *  guest creation, and identity-resolution lookups. */
 export class AuthPasswordService {
+  private readonly logger = new Logger(AuthPasswordService.name);
   constructor(
     private readonly prisma: PrismaService,
     private readonly tokenService: AuthTokenService,

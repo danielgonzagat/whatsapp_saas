@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AdminAuditService } from '../audit/admin-audit.service';
 
@@ -21,6 +21,7 @@ const DEFAULT_PREFERENCES: NotificationPreferences = {
 /** Admin notifications service. */
 @Injectable()
 export class AdminNotificationsService {
+  private readonly logger = new Logger(AdminNotificationsService.name);
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AdminAuditService,
