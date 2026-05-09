@@ -9,6 +9,7 @@ import { OpsAlertService } from '../observability/ops-alert.service';
 import { actionGetWorkspaceStatus as actionGetWorkspaceStatusFn } from './unified-agent-actions-workspace.helpers';
 
 type UnknownRecord = Record<string, unknown>;
+type MemoryValue = Record<string, unknown>;
 
 const WHITESPACE_G_RE = /\s+/g;
 
@@ -84,7 +85,7 @@ export class UnifiedAgentActionsWorkspaceService {
     if (
       existingMem?.value &&
       typeof existingMem.value === 'object' &&
-      (existingMem.value as Record<string, unknown>).name === args.name
+      (existingMem.value as MemoryValue).name === args.name
     ) {
       return {
         success: true,
@@ -148,7 +149,7 @@ export class UnifiedAgentActionsWorkspaceService {
           where: { workspaceId, key: args.productId, type: 'product' },
         });
         if (!product) return { success: false as const, error: 'Produto não encontrado' };
-        const currentValue = product.value as Record<string, unknown>;
+        const currentValue = product.value as MemoryValue;
         const updatedValue = {
           ...currentValue,
           ...(args.name && { name: args.name }),

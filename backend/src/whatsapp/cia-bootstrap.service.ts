@@ -8,6 +8,10 @@ import { PrismaService } from '../prisma/prisma.service';
 import { WhatsAppProviderRegistry } from './providers/provider-registry';
 import { WhatsAppCatchupService } from './whatsapp-catchup.service';
 import { asProviderSettings } from './provider-settings.types';
+
+type BootstrapConversation = Record<string, unknown>;
+type OperationalMetadata = { canTakeMore?: boolean; [key: string]: unknown };
+
 import {
   CIA_CONTACT_CATALOG_LOOKBACK_DAYS,
   CIA_BOOTSTRAP_IMMEDIATE_LIMIT,
@@ -81,9 +85,9 @@ export class CiaBootstrapService {
       .filter((conversation) => conversation.operational.pending);
   }
 
-  countPendingMessagesFromConversations(conversations: Record<string, unknown>[]): number {
+  countPendingMessagesFromConversations(conversations: BootstrapConversation[]): number {
     return conversations.reduce((sum, conversation) => {
-      const operational = conversation.operational as Record<string, unknown> | undefined;
+      const operational = conversation.operational as OperationalMetadata | undefined;
       return (
         sum +
         Math.max(1, Number(conversation.pendingMessages || operational?.pendingMessages || 0) || 0)

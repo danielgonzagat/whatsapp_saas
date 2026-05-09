@@ -11,6 +11,7 @@ import { KLOEL_SALES_PROMPT } from './kloel.prompts';
 import OpenAI from 'openai';
 import { OpsAlertService } from '../observability/ops-alert.service';
 
+import { asProviderSettings } from '../whatsapp/provider-settings.types';
 import {
   NON_DIGIT_RE,
   safeStr,
@@ -20,6 +21,8 @@ import {
 import type { ChatMessage } from './kloel-lead-brain.helpers';
 export { NON_DIGIT_RE, safeStr, asUnknownRecord, detectBuyIntent };
 export type { ChatMessage };
+
+type ProductMemoryValue = { name?: string; price?: number; [key: string]: unknown };
 
 /**
  * Handles WhatsApp autopilot lead processing, buy-intent detection,
@@ -139,7 +142,7 @@ export class KloelLeadBrainService {
       });
       const lowerMessage = message.toLowerCase();
       for (const product of products) {
-        const productData = product.value as Record<string, unknown>;
+        const productData = product.value as ProductMemoryValue;
         const productName = safeStr(productData.name).toLowerCase();
         if (productName && lowerMessage.includes(productName)) {
           return { name: safeStr(productData.name), price: Number(productData.price) || 0 };
@@ -213,7 +216,7 @@ export class KloelLeadBrainService {
         where: { id: workspaceId },
         select: { providerSettings: true, name: true },
       });
-      const providerSettings = (workspace?.providerSettings ?? {}) as Record<string, unknown>;
+      const providerSettings = asProviderSettings(workspace?.providerSettings);
       const autonomyMode = safeStr(asUnknownRecord(providerSettings.autonomy)?.mode).toUpperCase();
       const autopilotEnabled =
         autonomyMode === 'LIVE' ||

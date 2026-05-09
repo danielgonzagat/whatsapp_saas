@@ -112,7 +112,7 @@ export class CiaChatFilterService {
           chat.last_time,
         ]);
 
-        const lastMsgDataId = lastMsgData?.id as Record<string, unknown> | undefined;
+        const lastMsgDataId = lastMsgData?.id as RawCiaChatId | undefined;
 
         return {
           id:

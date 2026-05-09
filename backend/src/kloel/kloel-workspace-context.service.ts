@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { filterLegacyProducts, isLegacyProductName } from '../common/products/legacy-products.util';
 import { PrismaService } from '../prisma/prisma.service';
+import { asProviderSettings } from '../whatsapp/provider-settings.types';
 import { KloelContextFormatter } from './kloel-context-formatter';
 import type { KloelContextFormatterLimits } from './kloel-context-formatter.types';
 import { KloelWorkspaceContextDataService } from './kloel-workspace-context-data.service';
@@ -12,6 +13,8 @@ import {
   safeStr,
 } from './kloel-workspace-context.helpers';
 import type { WorkspaceProductContextInput } from './kloel-workspace-context.types';
+
+type WorkspaceBranding = Record<string, unknown>;
 
 const LIMITS: KloelContextFormatterLimits = {
   workspaceProductPlanLimit: 3,
@@ -52,14 +55,8 @@ export class KloelWorkspaceContextService {
       const products = filterLegacyProducts(
         Array.isArray(raw.rawProducts) ? (raw.rawProducts as WorkspaceProductContextInput[]) : [],
       );
-      const providerSettings =
-        raw.workspace?.providerSettings && typeof raw.workspace.providerSettings === 'object'
-          ? (raw.workspace.providerSettings as Record<string, unknown>)
-          : {};
-      const branding =
-        raw.workspace?.branding && typeof raw.workspace.branding === 'object'
-          ? (raw.workspace.branding as Record<string, unknown>)
-          : {};
+      const providerSettings = asProviderSettings(raw.workspace?.providerSettings);
+      const branding = (raw.workspace?.branding ?? {}) as WorkspaceBranding;
       const verifiedBusinessDescription = safeStr(providerSettings.businessDescription).trim();
       const verifiedBusinessSegment = safeStr(providerSettings.businessSegment).trim();
       const businessHours = this.contextFormatter.buildWorkspaceBusinessHoursContext(

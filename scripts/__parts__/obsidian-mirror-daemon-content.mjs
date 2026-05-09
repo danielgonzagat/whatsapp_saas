@@ -70,6 +70,7 @@ import {
   ensureDir,
   readManifest,
   writeManifest,
+  collectAllSourceFiles,
   readGitDirtySources,
   readGitLocalCommitSources,
   gitStateForSource,

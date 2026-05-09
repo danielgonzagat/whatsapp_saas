@@ -5,6 +5,8 @@ import type { KloelContextFormatterLimits } from './kloel-context-formatter.type
 import { buildWorkspaceProductSelect } from './kloel-workspace-context-product-select';
 import type { WorkspaceProductContextInput } from './kloel-workspace-context.types';
 
+type AffiliateProductRecord = Record<string, unknown>;
+
 /**
  * Handles linked-product context building (owned + affiliate) for AI prompts.
  * Extracted from KloelWorkspaceContextService to keep that file under 400 lines.
@@ -78,7 +80,7 @@ export class KloelWorkspaceContextLinkedProductService {
     ]);
 
     const affiliateProductRecord = request?.affiliateProduct || link?.affiliateProduct;
-    const affiliateProduct = affiliateProductRecord as Record<string, unknown> | null;
+    const affiliateProduct = affiliateProductRecord as AffiliateProductRecord | null;
     const contextFormatter = new KloelContextFormatter(limits);
     const affiliateProductProductId =
       typeof affiliateProduct?.productId === 'string' ? affiliateProduct.productId : null;
