@@ -1,24 +1,13 @@
-import { kloelError } from '@/lib/i18n/t';
 import { useConversationHistory } from '@/hooks/useConversationHistory';
-import { tokenStorage } from '@/lib/api';
-import { apiUrl } from '@/lib/http';
-import { readStreamSequential } from '@/lib/async-sequence';
-import { loadKloelThreadMessages, sendAuthenticatedKloelMessage } from '@/lib/kloel-conversations';
+import { loadKloelThreadMessages } from '@/lib/kloel-conversations';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { mutate } from 'swr';
-import { parseKloelChatStreamLine } from './HomeScreen.helpers';
-import { secureRandomFloat } from '@/lib/secure-random';
 import { useTypingSimulation } from './useTypingSimulation';
+import { useKloelSendMessage } from './useKloelSendMessage';
 import type { Phase, ChatMessage, UseKloelChatOptions, UseKloelChatReturn } from './HomeScreen.types';
 
-const IS_DEV = process.env.NODE_ENV === 'development';
-
-const DEV_FALLBACK_MESSAGE =
-  'Desculpe, nao consegui processar sua mensagem. Tente novamente em alguns instantes.';
+export type { Phase, ChatMessage, UseKloelChatOptions, UseKloelChatReturn } from './HomeScreen.types';
 
 const ERROR_MESSAGE = 'Nao foi possivel conectar ao servidor. Tente novamente.';
-
-export type { Phase, ChatMessage, UseKloelChatOptions, UseKloelChatReturn } from './HomeScreen.types';
 
 export function useKloelChat({ onSendMessage }: UseKloelChatOptions): UseKloelChatReturn {
   const { conversations, setActiveConversation, upsertConversation, refreshConversations } =
@@ -44,8 +33,32 @@ export function useKloelChat({ onSendMessage }: UseKloelChatOptions): UseKloelCh
     startTyping,
     cancel: cancelTyping,
   } = useTypingSimulation();
-  const typingMessageIdRef = useRef<string | null>(null);
-  const abortControllerRef = useRef<AbortController | null>(null);
+
+  const conversationTitleMap = useMemo(() => {
+    return new Map(conversations.map((conversation) => [conversation.id, conversation.title]));
+  }, [conversations]);
+
+  const generateId = useCallback(() => {
+    return `msg_${Date.now()}_${crypto.randomUUID().slice(0, 9)}`;
+  }, []);
+
+  const { sendToApi, handleStopResponse: stopResponse, typingMessageIdRef, abortControllerRef } =
+    useKloelSendMessage({
+      activeConversationId,
+      chatTitle,
+      conversationTitleMap,
+      generateId,
+      startTyping,
+      setMessages,
+      setThinkingText,
+      setActiveConversationId,
+      setChatTitle,
+      setIsWaitingForResponse,
+      setPhase,
+      setActiveConversation,
+      upsertConversation,
+      refreshConversations,
+    });
 
   useEffect(() => {
     if (isTyping && messagesEndRef.current) {
@@ -79,177 +92,6 @@ export function useKloelChat({ onSendMessage }: UseKloelChatOptions): UseKloelCh
       typingMessageIdRef.current = null;
     }
   }, [isDone]);
-
-  const conversationTitleMap = useMemo(() => {
-    return new Map(conversations.map((conversation) => [conversation.id, conversation.title]));
-  }, [conversations]);
-
-  const generateId = useCallback(() => {
-    return `msg_${Date.now()}_${crypto.randomUUID().slice(0, 9)}`;
-  }, []);
-
-  const sendToApi = useCallback(
-    async (messageText: string) => {
-      const token = tokenStorage.getToken();
-      const workspaceId = tokenStorage.getWorkspaceId();
-      const isGuest = !token || !workspaceId;
-
-      const assistantId = generateId();
-      typingMessageIdRef.current = assistantId;
-
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: assistantId,
-          role: 'assistant',
-          content: '',
-          displayedContent: '',
-          isThinking: true,
-          isTyping: false,
-          timestamp: new Date(),
-        },
-      ]);
-
-      const thinkDuration = 800 + secureRandomFloat() * 1200;
-      setThinkingText('Analisando...');
-
-      try {
-        abortControllerRef.current?.abort();
-        const ac = new AbortController();
-        abortControllerRef.current = ac;
-        let fullContent = '';
-        let nextConversationId = activeConversationId;
-        let nextTitle = chatTitle;
-
-        if (isGuest) {
-          const response = await fetch(apiUrl('/chat/guest'), {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Accept: 'text/event-stream',
-            },
-            body: JSON.stringify({ message: messageText }),
-            signal: ac.signal,
-          });
-
-          if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
-          }
-          mutate((key: unknown) => typeof key === 'string' && key.startsWith('/chat'));
-
-          const reader = response.body?.getReader();
-          if (!reader) {
-            throw kloelError('No reader');
-          }
-
-          const decoder = new TextDecoder();
-
-          await readStreamSequential(
-            () => reader.read(),
-            async ({ value }) => {
-              const chunk = decoder.decode(value, { stream: true });
-              const lines = chunk.split('\n');
-
-              for (const line of lines) {
-                const update = parseKloelChatStreamLine(line);
-                if (!update) {
-                  continue;
-                }
-                if (update.errorContent !== undefined) {
-                  fullContent = update.errorContent;
-                  break;
-                }
-                if (update.thinkingText) {
-                  setThinkingText(update.thinkingText);
-                }
-                if (update.contentDelta) {
-                  fullContent += update.contentDelta;
-                }
-              }
-              return false;
-            },
-          );
-        } else {
-          const response = await sendAuthenticatedKloelMessage({
-            message: messageText,
-            conversationId: activeConversationId,
-            mode: 'chat',
-          });
-          fullContent = String(response.response || '').trim();
-          nextConversationId = response.conversationId || activeConversationId;
-          nextTitle =
-            response.title || conversationTitleMap.get(nextConversationId || '') || chatTitle;
-        }
-
-        if (!fullContent.trim()) {
-          throw new Error('empty_response');
-        }
-
-        setTimeout(() => {
-          setMessages((prev) =>
-            prev.map((msg) => (msg.id === assistantId ? { ...msg, content: fullContent } : msg)),
-          );
-          startTyping(fullContent);
-        }, thinkDuration);
-
-        if (!isGuest && nextConversationId) {
-          setActiveConversationId(nextConversationId);
-          setActiveConversation(nextConversationId);
-          setChatTitle(nextTitle || 'Nova conversa');
-          upsertConversation({
-            id: nextConversationId,
-            title: nextTitle || 'Nova conversa',
-            updatedAt: new Date().toISOString(),
-          });
-          void refreshConversations();
-        }
-      } catch (error) {
-        if ((error as Error)?.name === 'AbortError') {
-          return;
-        }
-        if (IS_DEV) {
-          const fallbackText = DEV_FALLBACK_MESSAGE;
-
-          setTimeout(() => {
-            setMessages((prev) =>
-              prev.map((msg) =>
-                msg.id === assistantId ? { ...msg, content: fallbackText } : msg,
-              ),
-            );
-            startTyping(fallbackText);
-          }, thinkDuration);
-        } else {
-          setTimeout(() => {
-            setMessages((prev) =>
-              prev.map((msg) =>
-                msg.id === assistantId
-                  ? {
-                      ...msg,
-                      content: ERROR_MESSAGE,
-                      isThinking: false,
-                      isTyping: false,
-                      displayedContent: ERROR_MESSAGE,
-                    }
-                  : msg,
-              ),
-            );
-            setIsWaitingForResponse(false);
-            typingMessageIdRef.current = null;
-          }, thinkDuration);
-        }
-      }
-    },
-    [
-      activeConversationId,
-      chatTitle,
-      conversationTitleMap,
-      generateId,
-      refreshConversations,
-      setActiveConversation,
-      startTyping,
-      upsertConversation,
-    ],
-  );
 
   const handleHomeSubmit = useCallback(() => {
     if (!homeInput.trim()) {
@@ -313,29 +155,12 @@ export function useKloelChat({ onSendMessage }: UseKloelChatOptions): UseKloelCh
     setActiveConversation(null);
     setIsWaitingForResponse(false);
     typingMessageIdRef.current = null;
-  }, [cancelTyping, setActiveConversation]);
+  }, [cancelTyping, setActiveConversation, abortControllerRef, typingMessageIdRef]);
 
   const handleStopResponse = useCallback(() => {
-    abortControllerRef.current?.abort();
-    abortControllerRef.current = null;
     cancelTyping();
-    setIsWaitingForResponse(false);
-    if (typingMessageIdRef.current) {
-      setMessages((prev) =>
-        prev.map((msg) =>
-          msg.id === typingMessageIdRef.current
-            ? {
-                ...msg,
-                isThinking: false,
-                isTyping: false,
-                displayedContent: msg.content || msg.displayedContent || '',
-              }
-            : msg,
-        ),
-      );
-    }
-    typingMessageIdRef.current = null;
-  }, [cancelTyping]);
+    stopResponse();
+  }, [cancelTyping, stopResponse]);
 
   const handleCopyMessage = useCallback((msgId: string, content: string) => {
     navigator.clipboard.writeText(content).then(() => {

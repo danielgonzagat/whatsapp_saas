@@ -39,12 +39,6 @@ export interface PlatformStatusResponse {
   clientConfigured: boolean;
 }
 
-type PrismaProviderSettings = Record<string, unknown>;
-
-function isConnected(tiktok: Record<string, unknown>): boolean {
-  return Boolean(tiktok.connected);
-}
-
 @Injectable()
 export class AnunciosService {
   private readonly logger = new Logger(AnunciosService.name);

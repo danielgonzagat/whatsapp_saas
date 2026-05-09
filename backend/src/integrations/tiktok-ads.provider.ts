@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
 import { TikTokMarketingService } from '../marketing/tiktok-marketing.service';
 import type {
   AdProvider,
@@ -15,10 +14,7 @@ export class TikTokAdsProvider implements AdProvider {
   readonly platform = 'tiktok';
   private readonly logger = new Logger(TikTokAdsProvider.name);
 
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly tiktokMarketing: TikTokMarketingService,
-  ) {}
+  constructor(private readonly tiktokMarketing: TikTokMarketingService) {}
 
   async connect(workspaceId: string, _redirectUri: string): Promise<OAuthConnectResult> {
     try {
@@ -44,7 +40,6 @@ export class TikTokAdsProvider implements AdProvider {
       return {
         connected: result.connected,
         status: result.status,
-        providerMessage: (result as Record<string, unknown>).providerMessage as string | undefined,
       };
     } catch (err) {
       this.logger.error('TikTok Ads OAuth completion failed', err);

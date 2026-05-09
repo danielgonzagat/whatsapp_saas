@@ -84,11 +84,14 @@ export class MetaMarketingProvider implements AdProvider {
       where: { workspaceId },
       select: { status: true, adAccountId: true },
     });
-    return {
+    const result: OAuthStatusResult = {
       connected: conn?.status === 'connected',
       status: conn?.status || 'disconnected',
-      accountId: conn?.adAccountId ?? null,
     };
+    if (conn?.adAccountId) {
+      result.accountId = conn.adAccountId;
+    }
+    return result;
   }
 
   async syncAccounts(workspaceId: string): Promise<SyncAccountsResult> {
