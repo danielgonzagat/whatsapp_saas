@@ -130,7 +130,7 @@ export async function resolveCartRecoveryDecision(
       context: { action, channel: 'email', price_band: priceBand },
     })),
     baseline,
-    outcomeKey: `cart_recovery:${workspaceId}:${orderId}`,
+    outcomeKey: `cart_recovery:${workspaceId}:${orderId}:${Date.now()}`,
     utilitySuccess: 1,
     utilityFail: -0.1,
   });
