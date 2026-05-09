@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import type { ChatCompletionMessageParam } from 'openai/resources/chat';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -11,6 +11,7 @@ type UnknownRecord = Record<string, unknown>;
  */
 @Injectable()
 export class UnifiedAgentContextDataService {
+  private readonly logger = new Logger(UnifiedAgentContextDataService.name);
   constructor(private readonly prisma: PrismaService) {}
 
   // ───────── helpers ─────────

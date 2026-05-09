@@ -46,7 +46,8 @@ import { WhatsappModule } from './whatsapp/whatsapp.module';
 import { WorkspaceModule } from './workspaces/workspace.module';
 
 import { ThrottlerModule } from '@nestjs/throttler';
-import { TestModeThrottlerGuard } from './common/test-mode-throttler.guard';
+import { THROTTLE_TIERS } from './throttle/throttle.config';
+import { TenantThrottlerGuard } from './throttle/tenant-throttler.guard';
 
 import { AdminModule } from './admin/admin.module';
 import { AffiliateModule } from './affiliate/affiliate.module';
@@ -108,13 +109,11 @@ const isProd = process.env.NODE_ENV === 'production';
       }),
     }),
 
-    // Rate Limiting Global
-    ThrottlerModule.forRoot([
-      {
-        ttl: 60000,
-        limit: 60,
-      },
-    ]),
+    // Rate Limiting Global — calibrated tiers with per-tenant isolation
+    // Tier definitions and documentation: src/throttle/throttle.config.ts
+    ThrottlerModule.forRoot({
+      throttlers: THROTTLE_TIERS,
+    }),
 
     // Internacionalização global
     I18nModule,
@@ -249,7 +248,7 @@ const isProd = process.env.NODE_ENV === 'production';
     },
     {
       provide: APP_GUARD,
-      useClass: TestModeThrottlerGuard,
+      useClass: TenantThrottlerGuard,
     },
     {
       provide: APP_GUARD,

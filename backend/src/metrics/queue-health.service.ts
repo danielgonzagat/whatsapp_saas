@@ -33,6 +33,7 @@ export type QueueSummary = {
 /** Queue health service. */
 @Injectable()
 export class QueueHealthService {
+  private readonly logger = new Logger(QueueHealthService.name);
   private readonly queues: Queue[];
   private readonly threshold: number;
 

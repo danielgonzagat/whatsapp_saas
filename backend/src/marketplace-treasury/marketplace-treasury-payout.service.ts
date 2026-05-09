@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 
 import { StripeService } from '../billing/stripe.service';
 import { FinancialAlertService } from '../common/financial-alert.service';
@@ -42,6 +42,7 @@ export interface HandleFailedMarketplaceTreasuryPayoutInput {
 /** Marketplace treasury payout service. */
 @Injectable()
 export class MarketplaceTreasuryPayoutService {
+  private readonly logger = new Logger(MarketplaceTreasuryPayoutService.name);
   constructor(
     private readonly stripeService: StripeService,
     private readonly wallet: MarketplaceTreasuryService,

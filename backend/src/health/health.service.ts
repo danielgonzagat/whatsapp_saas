@@ -16,6 +16,7 @@ if (!process.env.JEST_WORKER_ID && process.env.NODE_ENV !== 'test') {
 /** Health service. */
 @Injectable()
 export class HealthService {
+  private readonly logger = new Logger(HealthService.name);
   constructor(
     @InjectRedis() private readonly redis: Redis,
     private readonly prisma: PrismaService,

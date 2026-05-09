@@ -1,4 +1,4 @@
-import { Inject, Injectable, Optional, forwardRef } from '@nestjs/common';
+import { Inject, Injectable, Optional, forwardRef, Logger } from '@nestjs/common';
 import { buildConversationOperationalState } from './agent-conversation-state.util';
 import { AgentEventsService } from './agent-events.service';
 import { CiaChatFilterService } from './cia-chat-filter.service';
@@ -24,6 +24,7 @@ export { CIA_BOOTSTRAP_AUTO_CONTINUE_LIMIT };
  */
 @Injectable()
 export class CiaBootstrapService {
+  private readonly logger = new Logger(CiaBootstrapService.name);
   constructor(
     private readonly prisma: PrismaService,
     private readonly providerRegistry: WhatsAppProviderRegistry,

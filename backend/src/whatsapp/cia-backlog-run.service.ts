@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { Inject, Injectable, forwardRef } from '@nestjs/common';
+import { Inject, Injectable, forwardRef, Logger } from '@nestjs/common';
 import {
   AUTOPILOT_SWEEP_UNREAD_CONVERSATIONS_JOB,
   buildSweepUnreadConversationsJobData,
@@ -30,6 +30,7 @@ import { ensureBacklogCoverageHelper } from './__companions__/cia-backlog-run.se
  */
 @Injectable()
 export class CiaBacklogRunService {
+  private readonly logger = new Logger(CiaBacklogRunService.name);
   constructor(
     private readonly prisma: PrismaService,
     private readonly providerRegistry: WhatsAppProviderRegistry,

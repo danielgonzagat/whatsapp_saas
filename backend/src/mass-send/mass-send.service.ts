@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { Queue } from 'bullmq';
 import { createRedisClient } from '../common/redis/redis.util';
 
@@ -7,6 +7,7 @@ const D_RE = /\D/g;
 /** Mass send service. */
 @Injectable()
 export class MassSendService {
+  private readonly logger = new Logger(MassSendService.name);
   private queue: Queue;
 
   constructor() {

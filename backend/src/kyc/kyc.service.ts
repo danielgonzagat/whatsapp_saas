@@ -1,9 +1,7 @@
-import {
-  BadRequestException,
+import { BadRequestException,
   Injectable,
   NotFoundException,
-  UnauthorizedException,
-} from '@nestjs/common';
+  UnauthorizedException, Logger } from '@nestjs/common';
 import { compare as bcryptCompare, hash as bcryptHash } from 'bcrypt';
 import { Prisma } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
@@ -33,6 +31,7 @@ export type { UploadedFile, SubmitKycContext };
 /** Kyc service. */
 @Injectable()
 export class KycService {
+  private readonly logger = new Logger(KycService.name);
   constructor(
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,

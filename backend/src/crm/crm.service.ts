@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable, NotFoundException, Optional } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException, Optional, Logger } from '@nestjs/common';
 import { DealStatus, Prisma } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { getTraceHeaders } from '../common/trace-headers';
@@ -9,6 +9,7 @@ import { OpsAlertService } from '../observability/ops-alert.service';
 /** Crm service. */
 @Injectable()
 export class CrmService {
+  private readonly logger = new Logger(CrmService.name);
   constructor(
     private prisma: PrismaService,
     private auditService: AuditService,

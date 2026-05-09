@@ -1,9 +1,10 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 /** Pipeline service. */
 @Injectable()
 export class PipelineService {
+  private readonly logger = new Logger(PipelineService.name);
   constructor(private prisma: PrismaService) {}
 
   /** Get pipeline. */

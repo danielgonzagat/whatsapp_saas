@@ -1,5 +1,5 @@
 import { InjectRedis } from '@nestjs-modules/ioredis';
-import { Injectable, Optional } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
 import { StripeService } from '../billing/stripe.service';
@@ -8,6 +8,7 @@ import { getTraceHeaders } from '../common/trace-headers';
 import { QueueHealthService } from '../metrics/queue-health.service';
 import { ObservabilityQueriesService } from '../metrics/observability-queries.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { connection } from '../queue/queue';
 import { WhatsAppApiProvider } from '../whatsapp/providers/whatsapp-api.provider';
 
 const HEALTH_RE = /\/health$/i;
@@ -20,6 +21,7 @@ const RAILWAY__INTERNAL_RE = /\.railway\.internal(?::\d+)?$/i;
 /** System health service. */
 @Injectable()
 export class SystemHealthService {
+  private readonly logger = new Logger(SystemHealthService.name);
   constructor(
     private prisma: PrismaService,
     @InjectRedis() private redis: Redis,
@@ -116,6 +118,345 @@ export class SystemHealthService {
       status: hasDownDependency ? 'DOWN' : isHealthy ? 'UP' : 'DEGRADED',
       details: status,
     };
+  }
+
+  /**
+   * Deep readiness probe: Postgres, Redis (via BullMQ), Stripe, Meta Cloud API,
+   * OpenAI, Anthropic — each with a 2-second timeout.
+   *
+   * Unlike the narrow readiness(), this checks every critical dependency the
+   * application needs to serve full traffic. Orchestrators should gate routing
+   * on this endpoint.
+   */
+  async deepReadiness(): Promise<{
+    status: 'UP' | 'DOWN';
+    timestamp: string;
+    failures: string[];
+    details: Record<
+      string,
+      { status: string; error?: string; latencyMs?: number }
+    >;
+  }> {
+    const logger = new Logger('ReadinessProbe');
+    const startedAt = Date.now();
+
+    const probes: Array<Promise<{
+      dependency: string;
+      status: 'UP' | 'DOWN';
+      error?: string;
+      latencyMs: number;
+    }>> = [
+      this.probePostgres(),
+      this.probeBullMQRedis(),
+      this.probeStripe(),
+      this.probeMetaCloud(),
+      this.probeOpenAI(),
+      this.probeAnthropic(),
+    ];
+
+    const settled = await Promise.allSettled(probes);
+    const failures: string[] = [];
+    const details: Record<
+      string,
+      { status: string; error?: string; latencyMs?: number }
+    > = {};
+
+    for (const result of settled) {
+      if (result.status === 'rejected') {
+        logger.error(
+          `Readiness probe crashed unexpectedly`,
+          String(result.reason),
+        );
+        continue;
+      }
+
+      const probe = result.value;
+      details[probe.dependency] = {
+        status: probe.status,
+        latencyMs: probe.latencyMs,
+      };
+
+      if (probe.status === 'DOWN') {
+        failures.push(probe.dependency);
+        details[probe.dependency].error = probe.error ?? 'unknown';
+      }
+    }
+
+    const status = failures.length === 0 ? 'UP' : 'DOWN';
+
+    logger.log(
+      JSON.stringify({
+        event: 'readiness_probe.completed',
+        status,
+        failures,
+        totalDurationMs: Date.now() - startedAt,
+      }),
+    );
+
+    return {
+      status,
+      timestamp: new Date().toISOString(),
+      failures,
+      details,
+    };
+  }
+
+  private async withTimeout<T>(
+    promise: Promise<T>,
+    ms: number,
+    label: string,
+  ): Promise<T> {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const timeout = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => {
+        reject(new Error(`${label} timed out after ${ms}ms`));
+      }, ms);
+    });
+
+    try {
+      const result = await Promise.race([promise, timeout]);
+      clearTimeout(timer);
+      return result;
+    } catch (err) {
+      clearTimeout(timer);
+      throw err;
+    }
+  }
+
+  private async probePostgres(): Promise<{
+    dependency: string;
+    status: 'UP' | 'DOWN';
+    error?: string;
+    latencyMs: number;
+  }> {
+    const startedAt = Date.now();
+    try {
+      await this.withTimeout(
+        this.prisma.$queryRaw`SELECT 1`,
+        2_000,
+        'postgres',
+      );
+      return { dependency: 'postgres', status: 'UP', latencyMs: Date.now() - startedAt };
+    } catch (err: unknown) {
+      return {
+        dependency: 'postgres',
+        status: 'DOWN',
+        error: err instanceof Error ? err.message : String(err),
+        latencyMs: Date.now() - startedAt,
+      };
+    }
+  }
+
+  private async probeBullMQRedis(): Promise<{
+    dependency: string;
+    status: 'UP' | 'DOWN';
+    error?: string;
+    latencyMs: number;
+  }> {
+    const startedAt = Date.now();
+    try {
+      await this.withTimeout(connection.ping(), 2_000, 'redis-bullmq');
+      return { dependency: 'redis', status: 'UP', latencyMs: Date.now() - startedAt };
+    } catch (err: unknown) {
+      return {
+        dependency: 'redis',
+        status: 'DOWN',
+        error: err instanceof Error ? err.message : String(err),
+        latencyMs: Date.now() - startedAt,
+      };
+    }
+  }
+
+  private async probeStripe(): Promise<{
+    dependency: string;
+    status: 'UP' | 'DOWN';
+    error?: string;
+    latencyMs: number;
+  }> {
+    const startedAt = Date.now();
+    try {
+      if (!this.stripeService) {
+        return {
+          dependency: 'stripe',
+          status: 'DOWN',
+          error: 'STRIPE_SECRET_KEY not configured',
+          latencyMs: Date.now() - startedAt,
+        };
+      }
+      await this.withTimeout(
+        this.stripeService.retrieveBalance(),
+        2_000,
+        'stripe',
+      );
+      return { dependency: 'stripe', status: 'UP', latencyMs: Date.now() - startedAt };
+    } catch (err: unknown) {
+      return {
+        dependency: 'stripe',
+        status: 'DOWN',
+        error: err instanceof Error ? err.message : String(err),
+        latencyMs: Date.now() - startedAt,
+      };
+    }
+  }
+
+  private async probeMetaCloud(): Promise<{
+    dependency: string;
+    status: 'UP' | 'DOWN';
+    error?: string;
+    latencyMs: number;
+  }> {
+    const startedAt = Date.now();
+    const appId = this.config.get<string>('META_APP_ID');
+    const appSecret = this.config.get<string>('META_APP_SECRET');
+
+    if (!appId || !appSecret) {
+      return {
+        dependency: 'metacloud',
+        status: 'DOWN',
+        error: 'META_APP_ID or META_APP_SECRET not configured',
+        latencyMs: Date.now() - startedAt,
+      };
+    }
+
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 2_000);
+
+      try {
+        const token = `${appId}|${appSecret}`;
+        const response = await fetch(
+          `https://graph.facebook.com/v21.0/${appId}?access_token=${encodeURIComponent(token)}&fields=id`,
+          { signal: controller.signal },
+        );
+        clearTimeout(timeout);
+
+        if (!response.ok) {
+          const body = await response.text().catch(() => '');
+          throw new Error(`Meta Graph API returned ${response.status}: ${body.slice(0, 200)}`);
+        }
+
+        return { dependency: 'metacloud', status: 'UP', latencyMs: Date.now() - startedAt };
+      } catch (err) {
+        clearTimeout(timeout);
+        throw err;
+      }
+    } catch (err: unknown) {
+      return {
+        dependency: 'metacloud',
+        status: 'DOWN',
+        error: err instanceof Error ? err.message : String(err),
+        latencyMs: Date.now() - startedAt,
+      };
+    }
+  }
+
+  private async probeOpenAI(): Promise<{
+    dependency: string;
+    status: 'UP' | 'DOWN';
+    error?: string;
+    latencyMs: number;
+  }> {
+    const startedAt = Date.now();
+    const apiKey = this.config.get<string>('OPENAI_API_KEY');
+
+    if (!apiKey) {
+      return {
+        dependency: 'openai',
+        status: 'DOWN',
+        error: 'OPENAI_API_KEY not configured',
+        latencyMs: Date.now() - startedAt,
+      };
+    }
+
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 2_000);
+
+      try {
+        const response = await fetch('https://api.openai.com/v1/models', {
+          method: 'GET',
+          headers: { Authorization: `Bearer ${apiKey}` },
+          signal: controller.signal,
+        });
+        clearTimeout(timeout);
+
+        if (!response.ok) {
+          const body = await response.text().catch(() => '');
+          throw new Error(`OpenAI API returned ${response.status}: ${body.slice(0, 200)}`);
+        }
+
+        return { dependency: 'openai', status: 'UP', latencyMs: Date.now() - startedAt };
+      } catch (err) {
+        clearTimeout(timeout);
+        throw err;
+      }
+    } catch (err: unknown) {
+      return {
+        dependency: 'openai',
+        status: 'DOWN',
+        error: err instanceof Error ? err.message : String(err),
+        latencyMs: Date.now() - startedAt,
+      };
+    }
+  }
+
+  private async probeAnthropic(): Promise<{
+    dependency: string;
+    status: 'UP' | 'DOWN';
+    error?: string;
+    latencyMs: number;
+  }> {
+    const startedAt = Date.now();
+    const apiKey = this.config.get<string>('ANTHROPIC_API_KEY');
+
+    if (!apiKey) {
+      return {
+        dependency: 'anthropic',
+        status: 'DOWN',
+        error: 'ANTHROPIC_API_KEY not configured',
+        latencyMs: Date.now() - startedAt,
+      };
+    }
+
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 2_000);
+
+      try {
+        const response = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'x-api-key': apiKey,
+            'anthropic-version': '2023-06-01',
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'claude-3-haiku-20240307',
+            max_tokens: 1,
+            messages: [{ role: 'user', content: 'ping' }],
+          }),
+          signal: controller.signal,
+        });
+        clearTimeout(timeout);
+
+        if (!response.ok) {
+          const body = await response.text().catch(() => '');
+          throw new Error(`Anthropic API returned ${response.status}: ${body.slice(0, 200)}`);
+        }
+
+        return { dependency: 'anthropic', status: 'UP', latencyMs: Date.now() - startedAt };
+      } catch (err) {
+        clearTimeout(timeout);
+        throw err;
+      }
+    } catch (err: unknown) {
+      return {
+        dependency: 'anthropic',
+        status: 'DOWN',
+        error: err instanceof Error ? err.message : String(err),
+        latencyMs: Date.now() - startedAt,
+      };
+    }
   }
 
   private async checkDatabase() {
