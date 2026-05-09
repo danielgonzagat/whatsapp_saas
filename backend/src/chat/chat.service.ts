@@ -40,9 +40,8 @@ export class ChatService {
 
     const hasNextPage = messages.length > limit;
     const items = hasNextPage ? messages.slice(0, limit) : messages;
-    const nextCursor = hasNextPage
-      ? items[items.length - 1].createdAt.toISOString()
-      : null;
+    const lastItem = items.length > 0 ? items[items.length - 1] : undefined;
+    const nextCursor = hasNextPage && lastItem ? lastItem.createdAt.toISOString() : null;
 
     return { items: items.reverse(), nextCursor };
   }

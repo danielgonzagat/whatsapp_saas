@@ -68,7 +68,11 @@ export function ProductNerveCenterComissaoTab() {
         />
       )}
       {comSub === 'coprod' && (
-        <CoprodSubTab productId={productId} initialFocus={initialFocus} router={router} />
+        <CoprodSubTab
+          productId={productId}
+          router={router}
+          {...(initialFocus ? { initialFocus } : {})}
+        />
       )}
     </>
   );

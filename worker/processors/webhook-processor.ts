@@ -67,6 +67,7 @@ export const webhookWorker = new Worker(
         error: err instanceof Error ? err.message : String(err),
       });
       throwIfRetryable(err, 'webhook');
+      return;
     }
   },
   { ...buildQueueOptions(), concurrency: 20, lockDuration: 60_000 },

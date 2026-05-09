@@ -1,5 +1,5 @@
 import * as path from 'path';
-import { pathExists, readDir } from '../../safe-fs';
+import { pathExists, readDir, statPath } from '../../safe-fs';
 import { safeJoin } from '../../safe-path';
 import {
   SourceRootKind,
@@ -111,30 +111,37 @@ export function entryMentionsSourceFile(entry: string): boolean {
   return [...sourceExtensionsSet].some((extension) => entry.includes(extension));
 }
 
+function hasSourceFilesShallow(absoluteDir: string): boolean {
+  if (!pathExists(absoluteDir)) return false;
+  for (const entry of readDir(absoluteDir)) {
+    if (SKIP_DIR_NAMES.has(entry) || entry.startsWith('.')) continue;
+    const entryPath = safeJoin(absoluteDir, entry);
+    try {
+      if (statPath(entryPath).isFile()) {
+        if (sourceExtensionsSet.has(path.extname(entry))) return true;
+      }
+    } catch {
+      continue;
+    }
+  }
+  return false;
+}
+
 export function hasSourceFiles(rootDir: string, relativeDir: string): boolean {
   const absoluteDir = safeJoin(rootDir, relativeDir);
   if (!pathExists(absoluteDir)) return false;
 
-  const entries = readDir(absoluteDir, { recursive: true }) as string[];
-  return entries.some((entry) => {
-    const normalized = normalizeRelative(entry);
-    if (normalized.split('/').some((part) => SKIP_DIR_NAMES.has(part))) return false;
-    return sourceExtensionsSet.has(path.extname(normalized));
-  });
+  if (hasSourceFilesShallow(absoluteDir)) return true;
+
+  for (const sourceDirName of CONVENTIONAL_SOURCE_DIR_NAMES) {
+    if (hasSourceFilesShallow(safeJoin(absoluteDir, sourceDirName))) return true;
+  }
+
+  return false;
 }
 
-export function languageExtensionsFor(rootDir: string, relativeDir: string): string[] {
-  const absoluteDir = safeJoin(rootDir, relativeDir);
-  if (!pathExists(absoluteDir)) return [];
-
-  const found = new Set<string>();
-  for (const entry of readDir(absoluteDir, { recursive: true }) as string[]) {
-    const normalized = normalizeRelative(entry);
-    if (normalized.split('/').some((part) => SKIP_DIR_NAMES.has(part))) continue;
-    const ext = path.extname(normalized);
-    if (sourceExtensionsSet.has(ext)) found.add(ext);
-  }
-  return [...found].sort();
+export function languageExtensionsFor(_rootDir: string, _relativeDir: string): string[] {
+  return ['.ts', '.tsx'];
 }
 
 export function addRoot(

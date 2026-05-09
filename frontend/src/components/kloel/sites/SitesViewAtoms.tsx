@@ -6,7 +6,6 @@ import {
   MONO,
   BORDER,
   BG_CARD,
-  BG_ELEVATED,
   EMBER,
   TEXT,
   TEXT_DIM,

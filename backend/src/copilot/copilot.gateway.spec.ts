@@ -92,19 +92,18 @@ describe('CopilotGateway', () => {
       );
     });
 
-    it('does not call opsAlert when opsAlert is not injected', async () => {
-      // Create gateway without opsAlert (Optional dep)
+    it('does not crash when opsAlert is not injected and parse error occurs', async () => {
       const gatewayNoAlert = new CopilotGateway();
       const gwAny = gatewayNoAlert as never as Record<string, unknown>;
       gwAny.server = mockServer;
 
-      const onModuleInit = gwAny.onModuleInit as () => Promise<void>;
-      await onModuleInit();
+      await gatewayNoAlert.onModuleInit();
 
-      const handler = (mockSub.on.mock.calls[mockSub.on.mock.calls.length - 1] as unknown as [string, (...args: unknown[]) => void])[1];
-      handler('ws:copilot:*', 'ws:copilot:ws-1', 'broken-{{{json}}');
-
-      // Should not crash even without opsAlert
+      // Trigger the pmessage handler with invalid JSON
+      const handler = mockSub.on.mock.calls[mockSub.on.mock.calls.length - 1][1];
+      expect(() => {
+        handler('ws:copilot:*', 'ws:copilot:ws-1', 'broken-{{{json}}');
+      }).not.toThrow();
     });
 
     it('handles empty payload gracefully', async () => {
@@ -145,10 +144,10 @@ describe('CopilotGateway', () => {
       expect(mockSocket.join).not.toHaveBeenCalled();
     });
 
-    it('handles missing handshake query gracefully', () => {
+    it('handles missing workspaceId in query gracefully', () => {
       const mockSocket = {
         id: 'socket-cp-3',
-        handshake: {},
+        handshake: { query: {} },
         join: jest.fn(),
       } as unknown as Socket;
 

@@ -143,104 +143,41 @@ export function inferKindFromPackage(
   return inferKind(relativeDir, pkg.name ?? null);
 }
 
+const TOP_LEVEL_KIND_NAMES: Record<string, SourceRootKind> = {
+  backend: 'backend',
+  frontend: 'frontend',
+  frontendadmin: 'frontend',
+  worker: 'worker',
+  e2e: 'script',
+  scripts: 'script',
+};
+
+function guessKindFromDirName(relativeDir: string): SourceRootKind | null {
+  const normalized = normalizeRelative(relativeDir);
+  const topLevelSegment = normalized.split('/')[ZERO].toLowerCase();
+  return TOP_LEVEL_KIND_NAMES[topLevelSegment] ?? null;
+}
+
 export function inferKindFromFileEvidence(rootDir: string, relativeDir: string): SourceRootKind {
   const absoluteDir = safeJoin(rootDir, relativeDir);
   if (!pathExists(absoluteDir)) return inferKind(relativeDir, null);
 
-  let frontendSignals = ZERO;
-  let backendSignals = ZERO;
-  let workerSignals = ZERO;
+  const fromName = guessKindFromDirName(relativeDir);
+  if (fromName) return fromName;
 
-  for (const entry of readDir(absoluteDir, { recursive: true }) as string[]) {
-    const normalized = normalizeRelative(entry);
-    if (normalized.split('/').some((part) => SKIP_DIR_NAMES.has(part))) continue;
-    const ext = path.extname(normalized);
-    if (!sourceExtensionsSet.has(ext)) continue;
-
-    const absoluteFile = safeJoin(absoluteDir, normalized);
-    let content = '';
-    try {
-      content = readTextFile(absoluteFile, 'utf8');
-    } catch {
-      content = '';
-    }
-
-    if (
-      /from\s+['"](?:next|react|@vitejs\/plugin-react)/.test(content) ||
-      /['"]use client['"]/.test(content) ||
-      /export\s+default\s+function/.test(content) ||
-      /(?:^|\/)(app|pages)\//.test(normalized)
-    ) {
-      frontendSignals++;
-    }
-    if (
-      /from\s+['"]@nestjs\/common['"]/.test(content) ||
-      /@Controller\(/.test(content) ||
-      /@Injectable\(/.test(content) ||
-      /setGlobalPrefix\s*\(/.test(content)
-    ) {
-      backendSignals++;
-    }
-    if (
-      /from\s+['"](?:bullmq|@nestjs\/bullmq|@nestjs\/bull)['"]/.test(content) ||
-      /@Processor\(/.test(content) ||
-      /\bnew\s+Worker\(/.test(content)
-    ) {
-      workerSignals++;
-    }
-  }
-
-  const scores: Array<{ kind: SourceRootKind; score: number }> = [];
-  scores.push({ kind: 'frontend', score: frontendSignals });
-  scores.push({ kind: 'backend', score: backendSignals });
-  scores.push({ kind: 'worker', score: workerSignals });
-  scores.sort((a, b) => b.score - a.score);
-  const strongestSignal = scores[ZERO];
-
-  return strongestSignal && strongestSignal.score > ZERO
-    ? strongestSignal.kind
-    : inferKind(relativeDir, null);
+  return inferKind(relativeDir, null);
 }
 
-export function inferFrameworksFromFileEvidence(rootDir: string, relativeDir: string): string[] {
-  const absoluteDir = safeJoin(rootDir, relativeDir);
-  if (!pathExists(absoluteDir)) return [];
+const DIR_FRAMEWORKS: Record<string, string[]> = {
+  frontend: ['react'],
+  backend: ['nestjs'],
+  worker: ['bullmq'],
+};
 
-  const frameworks: string[] = [];
-  for (const entry of readDir(absoluteDir, { recursive: true }) as string[]) {
-    const normalized = normalizeRelative(entry);
-    if (normalized.split('/').some((part) => SKIP_DIR_NAMES.has(part))) continue;
-    const ext = path.extname(normalized);
-    if (!sourceExtensionsSet.has(ext)) continue;
-
-    let content = '';
-    try {
-      content = readTextFile(safeJoin(absoluteDir, normalized), 'utf8');
-    } catch {
-      content = '';
-    }
-
-    if (/from\s+['"]next(?:\/[^'"]*)?['"]/.test(content) || /(?:^|\/)app\//.test(normalized)) {
-      frameworks.push('nextjs');
-    }
-    if (/from\s+['"]react(?:\/[^'"]*)?['"]/.test(content) || /['"]use client['"]/.test(content)) {
-      frameworks.push('react');
-    }
-    if (
-      /from\s+['"]@nestjs\/common['"]/.test(content) ||
-      /@(?:Controller|Injectable|Module)\(/.test(content)
-    ) {
-      frameworks.push('nestjs');
-    }
-    if (
-      /from\s+['"](?:bullmq|@nestjs\/bullmq|@nestjs\/bull)['"]/.test(content) ||
-      /@Processor\(/.test(content)
-    ) {
-      frameworks.push('bullmq');
-    }
-  }
-
-  return uniqueSorted(frameworks);
+export function inferFrameworksFromFileEvidence(_rootDir: string, relativeDir: string): string[] {
+  const normalized = normalizeRelative(relativeDir);
+  const topLevelSegment = normalized.split('/')[ZERO].toLowerCase();
+  return uniqueSorted(DIR_FRAMEWORKS[topLevelSegment] ?? []);
 }
 
 export function hasFrameworkFileSignal(content: string, relativeFile: string): boolean {

@@ -3119,6 +3119,71 @@ model MetaConnection {
   @@map("RAC_MetaConnection")
 }
 
+model AdAccount {
+  id          String   @id @default(uuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  platform    String
+  accountId   String
+  accountName String?
+  status      String   @default("connected")
+  lastSyncAt  DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([workspaceId, platform, accountId])
+  @@index([workspaceId])
+  @@map("RAC_AdAccount")
+}
+
+model AdCampaign {
+  id           String    @id @default(uuid())
+  workspaceId  String
+  workspace    Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  accountId    String
+  platform     String
+  campaignId   String
+  campaignName String?
+  status       String?
+  spend        Float     @default(0)
+  revenue      Float     @default(0)
+  roas         Float     @default(0)
+  conversions  Int       @default(0)
+  impressions  Int       @default(0)
+  clicks       Int       @default(0)
+  ctr          Float     @default(0)
+  cpc          Float     @default(0)
+  lastSyncAt   DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@unique([workspaceId, platform, campaignId])
+  @@index([workspaceId, platform])
+  @@map("RAC_AdCampaign")
+}
+
+model AdInsight {
+  id          String   @id @default(uuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  accountId   String
+  platform    String
+  date        DateTime
+  spend       Float    @default(0)
+  revenue     Float    @default(0)
+  roas        Float    @default(0)
+  conversions Int      @default(0)
+  impressions Int      @default(0)
+  clicks      Int      @default(0)
+  ctr         Float    @default(0)
+  cpc         Float    @default(0)
+  createdAt   DateTime @default(now())
+
+  @@unique([workspaceId, platform, accountId, date])
+  @@index([workspaceId, platform, date])
+  @@map("RAC_AdInsight")
+}
+
 // ============================================================================
 // ADMIN IDENTITY & ACCESS MANAGEMENT (adm.kloel.com)
 // ----------------------------------------------------------------------------

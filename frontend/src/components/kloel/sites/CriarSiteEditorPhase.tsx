@@ -2,7 +2,7 @@
 
 import { kloelT } from '@/lib/i18n/t';
 import { useRouter } from 'next/navigation';
-import React, { RefObject } from 'react';
+import type { RefObject } from 'react';
 import { IC, SORA, MONO, TEXT, TEXT_DIM, TEXT_MUTED, BORDER, BG_ELEVATED } from './SitesViewIcons';
 import { Btn, Card, Input } from './SitesViewAtoms';
 

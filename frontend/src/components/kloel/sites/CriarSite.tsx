@@ -193,7 +193,6 @@ export function CriarSite({ mode }: { mode?: string }) {
       dynamicMode={dynamicMode}
       source={source}
       productName={productName}
-      productId={productId}
     />
   );
 }

@@ -1,7 +1,6 @@
 'use client';
 
 import { kloelT } from '@/lib/i18n/t';
-import React from 'react';
 import { IC, SORA, MONO, EMBER, TEXT, TEXT_DIM } from './SitesViewIcons';
 import { Card, Badge, Btn, EmptyState } from './SitesViewAtoms';
 import type { SiteItem } from './SitesViewIcons';

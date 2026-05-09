@@ -79,13 +79,16 @@ describe('StripeService', () => {
 
   describe('liveness probe (real network call)', () => {
     const realKey = process.env.STRIPE_SECRET_KEY;
-    const isUsableTestKey =
-      typeof realKey === 'string' &&
-      (realKey.startsWith('sk_test_') || realKey.startsWith('rk_test_'));
+    if (!realKey) {
+      it('requires STRIPE_SECRET_KEY in environment', () => {
+        throw new Error(
+          'STRIPE_SECRET_KEY is not set in the environment. Provide an sk_test_* or rk_test_* key.',
+        );
+      });
+      return;
+    }
 
-    const maybeIt = isUsableTestKey ? it : it.skip;
-
-    maybeIt(
+    it(
       'retrieveBalance() succeeds against Stripe test mode',
       async () => {
         const moduleRef = await buildModule({ STRIPE_SECRET_KEY: realKey });

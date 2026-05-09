@@ -29,8 +29,8 @@ describe('CookieConsentController', () => {
   beforeEach(() => {
     consentService = {
       normalize: jest.fn(),
-      parseCookieValue: jest.fn(),
-      serializeCookieValue: jest.fn(),
+      parseCookieValue: jest.fn().mockReturnValue(null),
+      serializeCookieValue: jest.fn().mockReturnValue('{}'),
       getForAgent: jest.fn(),
       saveForAgent: jest.fn(),
     };

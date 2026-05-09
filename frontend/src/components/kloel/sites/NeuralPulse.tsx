@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useEffect } from 'react';
+import { useRef, useEffect } from 'react';
 import { secureRandomFloat } from '@/lib/secure-random';
 
 export function NeuralPulse({ w, h, color = '#f97316' }: { w: number; h: number; color?: string }) {

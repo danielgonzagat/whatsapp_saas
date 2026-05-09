@@ -1,5 +1,5 @@
 import * as path from 'path';
-import { pathExists, readDir, readTextFile } from '../../safe-fs';
+import { pathExists, readDir, statPath } from '../../safe-fs';
 import { safeJoin } from '../../safe-path';
 import {
   DetectedSourceRoot,
@@ -14,41 +14,41 @@ import {
 import {
   normalizeRelative,
   hasSkippedSegment,
-  hasFrameworkFileSignal,
   inferKindFromFileEvidence,
 } from './helpers';
 import { addRoot } from './source-resolution';
 import { addPackageRoots, addTsConfigRoots, discoverBuildConfigRoots } from './scanners';
 import { discoverPackageDirs } from './package-discovery';
 
-function addFileEvidenceRoots(roots: Map<string, DetectedSourceRoot>, rootDir: string): void {
+function discoverConventionalSourceDirsFromTopLevel(rootDir: string): string[] {
   const candidates = new Set<string>();
-  for (const entry of readDir(rootDir, { recursive: true }) as string[]) {
-    const normalized = normalizeRelative(entry);
-    const segments = normalized.split('/');
-    if (segments.some((part) => SKIP_DIR_NAMES.has(part))) continue;
-    if (!sourceExtensionsSet.has(path.extname(normalized))) continue;
-
-    const sourceIndex = segments.findIndex((segment) => CONVENTIONAL_SOURCE_DIR_NAMES.has(segment));
-    if (sourceIndex >= ZERO) {
-      candidates.add(segments.slice(ZERO, sourceIndex + ONE).join('/'));
+  for (const entry of readDir(rootDir)) {
+    if (SKIP_DIR_NAMES.has(entry) || entry.startsWith('.')) continue;
+    const entryPath = safeJoin(rootDir, entry);
+    try {
+      if (!statPath(entryPath).isDirectory()) continue;
+    } catch {
       continue;
     }
+    for (const sourceDirName of CONVENTIONAL_SOURCE_DIR_NAMES) {
+      if (pathExists(safeJoin(entryPath, sourceDirName))) {
+        candidates.add(normalizeRelative(safeJoin(entry, sourceDirName)));
+      }
+    }
+  }
+  return [...candidates];
+}
 
-    let content = '';
-    try {
-      content = readTextFile(safeJoin(rootDir, normalized), 'utf8');
-    } catch {
-      content = '';
-    }
-    if (hasFrameworkFileSignal(content, normalized)) {
-      const dynamicRoot = normalizeRelative(path.dirname(normalized));
-      if (dynamicRoot && dynamicRoot !== '.') candidates.add(dynamicRoot);
-    }
+function addFileEvidenceRoots(roots: Map<string, DetectedSourceRoot>, rootDir: string): void {
+  const candidates = new Set<string>();
+
+  for (const relativeDir of discoverConventionalSourceDirsFromTopLevel(rootDir)) {
+    candidates.add(relativeDir);
   }
 
   for (const relativePath of candidates) {
-    const kind = inferKindFromFileEvidence(rootDir, relativePath);
+    const segments = relativePath.split('/');
+    const kind = inferKindFromFileEvidence(rootDir, segments[ZERO] ?? relativePath);
     const basis: SourceRootEvidenceBasis = kind === 'unknown' ? 'file-evidence' : 'import-graph';
     addRoot(roots, rootDir, relativePath, null, `${basis}:source-files`, basis, { kind });
   }

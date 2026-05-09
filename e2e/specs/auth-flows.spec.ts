@@ -2,6 +2,11 @@ import { test, expect } from '@playwright/test';
 import { randomInt } from 'node:crypto';
 import { getE2EBaseUrls } from './e2e-helpers';
 
+interface AuthRegisterResponse {
+  access_token: string;
+  user?: { email: string; workspaceId: string };
+}
+
 test('auth: check-email, register duplicate, legacy oauth blocked', async ({ request }) => {
   const { apiUrl } = getE2EBaseUrls();
   const email = `pw_auth_${Date.now()}_${randomInt(1_000_000_000)}@example.com`;
@@ -15,8 +20,8 @@ test('auth: check-email, register duplicate, legacy oauth blocked', async ({ req
     data: { name: 'PW', email, password: authCredential, workspaceName: 'PW Workspace' },
   });
   expect([200, 201]).toContain(register.status());
-  const regJson: any = await register.json();
-  expect(regJson?.access_token).toBeTruthy();
+  const regJson: AuthRegisterResponse = await register.json();
+  expect(regJson.access_token).toBeTruthy();
 
   const check2 = await request.get(`${apiUrl}/auth/check-email?email=${encodeURIComponent(email)}`);
   expect(check2.ok()).toBeTruthy();

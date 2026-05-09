@@ -3,8 +3,8 @@
 import { kloelT } from '@/lib/i18n/t';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
 import { apiFetch } from '@/lib/api';
-import React, { useState, useEffect } from 'react';
-import { IC, Fmt, EMBER, TEXT, TEXT_DIM, BORDER } from './SitesViewIcons';
+import { useState, useEffect } from 'react';
+import { IC, TEXT, TEXT_DIM, BORDER } from './SitesViewIcons';
 import { Card, Badge, Stat, SectionLabel, StatusDot, Btn } from './SitesViewAtoms';
 import { NeuralPulse } from './NeuralPulse';
 import type { SiteItem } from './SitesViewIcons';

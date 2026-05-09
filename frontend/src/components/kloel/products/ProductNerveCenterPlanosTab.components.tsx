@@ -3,7 +3,6 @@
 import { kloelT } from '@/lib/i18n/t';
 import {
   Bg,
-  Bt,
   IconActionButton,
   M,
   V,
@@ -23,7 +22,6 @@ interface PlanoCardProps {
 
 export function PlanoCardMobile({
   plan,
-  selPlan,
   setSelPlan,
   setModal,
   copied,
@@ -194,7 +192,6 @@ export function PlanoCardMobile({
 
 export function PlanoRowDesktop({
   plan,
-  selPlan,
   setSelPlan,
   setModal,
   copied,

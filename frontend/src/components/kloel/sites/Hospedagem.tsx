@@ -1,8 +1,7 @@
 'use client';
 
 import { kloelT } from '@/lib/i18n/t';
-import React from 'react';
-import { IC, SORA, MONO, EMBER, TEXT, TEXT_DIM, TEXT_MUTED, BORDER, BG_ELEVATED } from './SitesViewIcons';
+import { IC, SORA, MONO, EMBER, TEXT, TEXT_DIM, TEXT_MUTED, BG_ELEVATED } from './SitesViewIcons';
 import { Card, Badge, Stat, SectionLabel, ProgressBar } from './SitesViewAtoms';
 
 export function Hospedagem() {
