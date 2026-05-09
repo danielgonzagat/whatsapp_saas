@@ -182,6 +182,7 @@ export class MindEventProcessorService {
   ): Promise<void> {
     if (event.kind.startsWith('autopilot.')) {
       const intent = toStableString(event.payload.intent) || 'unknown';
+      const action = toStableString(event.payload.action);
       if (AUTOPILOT_SUCCESS_INTENTS.has(intent)) {
         const outcome = intent === 'purchase_intent' ? 1 : 0;
         const predicate =
@@ -198,6 +199,17 @@ export class MindEventProcessorService {
         if (intent === 'lead_qualified') {
           await this.resolveWorkspacePolicies(event, result, ['human_transfer'], 1);
         }
+      }
+      if (intent === 'lead_lifecycle' && action === 'lead.qualified') {
+        await this.resolveWorkspacePolicies(event, result, ['human_transfer'], 1);
+      }
+      if (intent === 'campaign_lifecycle' && action === 'campaign.converted') {
+        await this.resolveWorkspacePolicies(
+          event,
+          result,
+          ['broadcast_window', 'ad_alert_action'],
+          1,
+        );
       }
     }
   }

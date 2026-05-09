@@ -108,4 +108,42 @@ describe('MindEventProcessorService', () => {
       baselineOutcome: 1,
     });
   });
+
+  it('closes human transfer when commercial lead events arrive through the event spine', async () => {
+    await service.process({
+      kind: 'autopilot.lead_lifecycle.executed',
+      workspaceId: 'ws-1',
+      subject: 'contact:lead-1',
+      payload: { action: 'lead.qualified', intent: 'lead_lifecycle' },
+      occurredAt: new Date('2026-05-09T12:00:00.000Z'),
+    });
+
+    expect(policy.resolveOpenForSubject).toHaveBeenCalledWith({
+      workspaceId: 'ws-1',
+      subject: 'workspace:ws-1',
+      decisionType: 'human_transfer',
+      outcome: 1,
+      baselineOutcome: 1,
+    });
+  });
+
+  it('closes campaign decisions when commercial campaign conversion events arrive', async () => {
+    await service.process({
+      kind: 'autopilot.campaign_lifecycle.executed',
+      workspaceId: 'ws-1',
+      subject: 'campaign:campaign-1',
+      payload: { action: 'campaign.converted', intent: 'campaign_lifecycle' },
+      occurredAt: new Date('2026-05-09T12:00:00.000Z'),
+    });
+
+    for (const decisionType of ['broadcast_window', 'ad_alert_action']) {
+      expect(policy.resolveOpenForSubject).toHaveBeenCalledWith({
+        workspaceId: 'ws-1',
+        subject: 'workspace:ws-1',
+        decisionType,
+        outcome: 1,
+        baselineOutcome: 1,
+      });
+    }
+  });
 });
