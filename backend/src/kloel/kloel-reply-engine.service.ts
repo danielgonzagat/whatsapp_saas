@@ -265,7 +265,7 @@ export class KloelReplyEngineService {
     try {
       const channel = 'kloel_chat';
       const segment = params.expertiseLevel.toLowerCase();
-      const [tone, aggressiveness, format] = await Promise.all([
+      const [tone, aggressiveness, format, objection] = await Promise.all([
         this.mindService.resolveTone(params.workspaceId, channel, 0.5, 0.5, segment),
         this.mindService.resolveAggressiveness(
           params.workspaceId,
@@ -274,14 +274,16 @@ export class KloelReplyEngineService {
           0.5,
           1,
         ),
-        this.mindService.resolveAudioVsText(params.workspaceId, channel, 0),
+        this.mindService.resolveMessageFormat(params.workspaceId, channel, segment, ['text']),
+        this.mindService.resolveObjectionResponse(params.workspaceId, channel, segment, 'unknown'),
       ]);
 
       return [
         'Contexto operacional interno do Kloel:',
         `- Tom recomendado: ${tone.tone}.`,
         `- Intensidade comercial recomendada: ${aggressiveness.aggressiveness}.`,
-        `- Formato recomendado nesta superfície: ${format.choice === 'audio' ? 'texto claro, sem áudio' : 'texto claro'}.`,
+        `- Formato recomendado nesta superfície: ${format.format === 'text' ? 'texto claro' : format.format}.`,
+        `- Estratégia comercial recomendada: ${objection.strategy}.`,
         '- Use essas diretrizes apenas como ajuste interno da resposta oficial do Kloel.',
         '- Nunca apresente outro agente, outro chat, outro motor ou outra voz ao usuário.',
       ].join('\n');

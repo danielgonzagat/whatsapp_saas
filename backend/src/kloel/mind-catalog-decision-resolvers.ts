@@ -9,6 +9,8 @@ import {
   resolveChannelChoiceBaseline,
   resolveCouponBaseline,
   resolveHumanTransferBaseline,
+  resolveMessageFormatBaseline,
+  resolveObjectionResponseBaseline,
   resolveProductOfferBaseline,
   resolveToneBaseline,
 } from './mind-decision-baselines';
@@ -140,6 +142,103 @@ export async function resolveToneDecision(
 
   return {
     tone: result.chosen,
+    confidence: decisionConfidence(result),
+    fallback: result.decision.fallbackActive,
+  };
+}
+
+export async function resolveMessageFormatDecision(
+  policy: MindPolicyChooser,
+  cases: CaseMemoryLookup,
+  workspaceId: string,
+  channel: string,
+  concept: string,
+  supports: string[] = ['text'],
+): Promise<{ format: string; confidence: number; fallback: boolean }> {
+  const allowed = ['text', 'audio', 'image', 'video', 'template', 'html_rich'].filter((format) =>
+    supports.includes(format),
+  );
+  const options = allowed.length ? allowed : ['text'];
+  const memoryAction = await resolveCaseMemoryAction(cases, {
+    workspaceId,
+    caseType: 'message_format',
+    text: `channel ${channel} concept ${concept} supports ${options.join(',')}`,
+    features: { channel, concept },
+    options,
+    minSimilarCases: 3,
+    minSimilarityTotal: 1.2,
+  });
+  const baseline = memoryAction ?? resolveMessageFormatBaseline(channel, options);
+  const result = await policy.choose({
+    workspaceId,
+    subject: `workspace:${workspaceId}`,
+    decisionType: 'message_format',
+    context: { channel, concept, supports: options.join(',') },
+    options: options.map((format) => ({
+      action: format,
+      predicate: 'P(reply|message_type,hour,channel,concept)',
+      context: { channel, concept, message_type: format },
+    })),
+    baseline: options.includes(baseline) ? baseline : options[0],
+    outcomeKey: `message_format:${workspaceId}:${Date.now()}`,
+  });
+
+  return {
+    format: result.chosen,
+    confidence: decisionConfidence(result),
+    fallback: result.decision.fallbackActive,
+  };
+}
+
+export async function resolveObjectionResponseDecision(
+  policy: MindPolicyChooser,
+  cases: CaseMemoryLookup,
+  workspaceId: string,
+  channel: string,
+  concept: string,
+  priceBand: string,
+  product?: string,
+): Promise<{ strategy: string; confidence: number; fallback: boolean }> {
+  const options = [
+    'value_focus',
+    'social_proof',
+    'guarantee',
+    'direct_comparison',
+    'diagnostic_question',
+    'human_transfer',
+  ];
+  const context: Record<string, unknown> = { channel, concept, priceBand };
+  if (product) context.product = product;
+  const memoryAction = await resolveCaseMemoryAction(cases, {
+    workspaceId,
+    caseType: 'objection_response',
+    text:
+      `channel ${channel} concept ${concept} priceBand ${priceBand}` +
+      `${product ? ` product ${product}` : ''}`,
+    features: context,
+    options,
+    minSimilarCases: 3,
+    minSimilarityTotal: 1.2,
+  });
+  const baseline = memoryAction ?? resolveObjectionResponseBaseline(concept, priceBand);
+  const result = await policy.choose({
+    workspaceId,
+    subject: `workspace:${workspaceId}`,
+    decisionType: 'objection_response',
+    context,
+    options: options.map((strategy) => ({
+      action: strategy,
+      predicate: 'P(conversion|objection_strategy,concept,channel,price_band)',
+      context: { ...context, objection_strategy: strategy },
+    })),
+    baseline,
+    outcomeKey: `objection_response:${workspaceId}:${Date.now()}`,
+    utilitySuccess: 1,
+    utilityFail: -0.2,
+  });
+
+  return {
+    strategy: result.chosen,
     confidence: decisionConfidence(result),
     fallback: result.decision.fallbackActive,
   };

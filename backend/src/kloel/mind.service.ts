@@ -16,6 +16,8 @@ import {
   resolveChannelChoiceDecision,
   resolveCouponDecision,
   resolveHumanTransferDecision,
+  resolveMessageFormatDecision,
+  resolveObjectionResponseDecision,
   resolveProductOfferDecision,
   resolveToneDecision,
 } from './mind-catalog-decision-resolvers';
@@ -194,6 +196,40 @@ export class MindService {
       repliedRate,
       soldRate,
       segment,
+    );
+  }
+
+  async resolveMessageFormat(
+    workspaceId: string,
+    channel: string,
+    concept: string,
+    supports: string[] = ['text'],
+  ): Promise<{ format: string; confidence: number; fallback: boolean }> {
+    return resolveMessageFormatDecision(
+      this.policy,
+      this.cases,
+      workspaceId,
+      channel,
+      concept,
+      supports,
+    );
+  }
+
+  async resolveObjectionResponse(
+    workspaceId: string,
+    channel: string,
+    concept: string,
+    priceBand: string,
+    product?: string,
+  ): Promise<{ strategy: string; confidence: number; fallback: boolean }> {
+    return resolveObjectionResponseDecision(
+      this.policy,
+      this.cases,
+      workspaceId,
+      channel,
+      concept,
+      priceBand,
+      product,
     );
   }
 

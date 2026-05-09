@@ -38,6 +38,22 @@ export function resolveAudioBaseline(_channel: string, audioRatio: number): stri
   return 'text';
 }
 
+export function resolveMessageFormatBaseline(channel: string, supports: string[]): string {
+  if (channel === 'email' && supports.includes('html_rich')) return 'html_rich';
+  if (supports.includes('audio') && (channel === 'whatsapp' || channel === 'instagram')) {
+    return 'audio';
+  }
+  return supports.includes('text') ? 'text' : (supports[0] ?? 'text');
+}
+
+export function resolveObjectionResponseBaseline(concept: string, priceBand: string): string {
+  const normalized = `${concept} ${priceBand}`.toLowerCase();
+  if (normalized.includes('confian') || normalized.includes('trust')) return 'social_proof';
+  if (normalized.includes('risco') || normalized.includes('garantia')) return 'guarantee';
+  if (normalized.includes('premium') || normalized.includes('over_')) return 'direct_comparison';
+  return 'value_focus';
+}
+
 export function resolveCouponBaseline(priceBand: string, soldRate: number): string {
   const highBands = new Set(['over_300', 'over_500', 'over_1000']);
   if (highBands.has(priceBand) && soldRate < 0.1) return 'offer_coupon';

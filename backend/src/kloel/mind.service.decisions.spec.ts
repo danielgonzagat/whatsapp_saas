@@ -155,6 +155,78 @@ describe('MindService decision delegation', () => {
     });
   });
 
+  describe('resolveMessageFormat', () => {
+    it('delegates to policy.choose with message_format decision type', async () => {
+      const policy = {
+        choose: jest.fn().mockResolvedValue({
+          chosen: 'text',
+          decision: {
+            candidates: [{ beliefMean: 0.7 }],
+            fallbackActive: false,
+          },
+        }),
+        harness: jest.fn(),
+      };
+
+      const result = await buildService(policy).resolveMessageFormat('ws-1', 'whatsapp', 'lead', [
+        'text',
+        'audio',
+      ]);
+
+      expect(policy.choose).toHaveBeenCalledWith(
+        expect.objectContaining({
+          workspaceId: 'ws-1',
+          decisionType: 'message_format',
+          baseline: 'audio',
+          options: expect.arrayContaining([
+            expect.objectContaining({ action: 'text' }),
+            expect.objectContaining({ action: 'audio' }),
+          ]),
+        }),
+      );
+      expect(result.format).toBe('text');
+      expect(result.confidence).toBe(0.7);
+    });
+  });
+
+  describe('resolveObjectionResponse', () => {
+    it('delegates to policy.choose with objection_response decision type', async () => {
+      const policy = {
+        choose: jest.fn().mockResolvedValue({
+          chosen: 'social_proof',
+          decision: {
+            candidates: [{ beliefMean: 0.63 }],
+            fallbackActive: false,
+          },
+        }),
+        harness: jest.fn(),
+      };
+
+      const result = await buildService(policy).resolveObjectionResponse(
+        'ws-1',
+        'instagram',
+        'confianca',
+        'over_300',
+        'produto-1',
+      );
+
+      expect(policy.choose).toHaveBeenCalledWith(
+        expect.objectContaining({
+          workspaceId: 'ws-1',
+          decisionType: 'objection_response',
+          baseline: 'social_proof',
+          options: expect.arrayContaining([
+            expect.objectContaining({ action: 'value_focus' }),
+            expect.objectContaining({ action: 'social_proof' }),
+            expect.objectContaining({ action: 'guarantee' }),
+          ]),
+        }),
+      );
+      expect(result.strategy).toBe('social_proof');
+      expect(result.confidence).toBe(0.63);
+    });
+  });
+
   describe('resolveCoupon', () => {
     it('delegates to policy.choose with cupom decision type', async () => {
       const policy = {
