@@ -6,6 +6,12 @@ jest.mock('../whatsapp/inbound-processor.service', () => ({
   })),
 }));
 
+jest.mock('../whatsapp/whatsapp.service', () => ({
+  WhatsappService: jest.fn().mockImplementation(() => ({
+    sendMessage: jest.fn().mockResolvedValue(undefined),
+  })),
+}));
+
 jest.mock('../autopilot/autopilot.service', () => ({
   AutopilotService: jest.fn().mockImplementation(() => ({
     markConversion: jest.fn().mockResolvedValue(undefined),

@@ -7,7 +7,7 @@ import {
   getWhatsAppStatus,
   tokenStorage,
 } from '@/lib/api';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 type StreamEvent = {
   type: string;
@@ -22,6 +22,7 @@ interface UseCiaSurfaceReturn {
   loading: boolean;
   activating: boolean;
   error: string | null;
+  setError: React.Dispatch<React.SetStateAction<string | null>>;
   moneyEvents: StreamEvent[];
   loadSurface: () => Promise<void>;
   handleAutopilotTotal: () => Promise<void>;
@@ -194,6 +195,7 @@ export function useCiaSurface(workspaceId: string, workspaceLoading: boolean): U
     loading,
     activating,
     error,
+    setError,
     moneyEvents,
     loadSurface,
     handleAutopilotTotal,

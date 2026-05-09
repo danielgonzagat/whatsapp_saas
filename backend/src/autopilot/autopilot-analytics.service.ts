@@ -1,6 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { PlanLimitsService } from '../billing/plan-limits.service';
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AutopilotAnalyticsInsightsService } from './autopilot-analytics-insights.service';
 import { AutopilotAnalyticsReportService } from './autopilot-analytics-report.service';
@@ -9,12 +7,8 @@ import { AutopilotAnalyticsReportService } from './autopilot-analytics-report.se
 // PULSE_OK: new Date() calls in getStats operate on Date.getTime() values or .toISOString() round-trips — metadata string (line ~102) has null-guard fallback
 @Injectable()
 export class AutopilotAnalyticsService {
-  private readonly logger = new Logger(AutopilotAnalyticsService.name);
-
   constructor(
     private readonly prisma: PrismaService,
-    private readonly config: ConfigService,
-    private readonly planLimits: PlanLimitsService,
     private readonly report: AutopilotAnalyticsReportService,
     private readonly insights: AutopilotAnalyticsInsightsService,
   ) {}
