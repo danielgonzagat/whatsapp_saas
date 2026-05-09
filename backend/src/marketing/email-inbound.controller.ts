@@ -18,20 +18,13 @@ import { OmnichannelService } from '../inbox/omnichannel.service';
 import { ensureError, type NormalizedMessage } from '../inbox/omnichannel.helpers';
 import { PrismaService } from '../prisma/prisma.service';
 
-const HTML_ENTITY_REPLACEMENTS = new Map<string, string>([
-  ['&amp;', '&'],
-  ['&#39;', String.fromCharCode(39)],
-  ['&gt;', String.fromCharCode(62)],
-  ['&lt;', String.fromCharCode(60)],
-  ['&quot;', String.fromCharCode(34)],
-]);
-
-function decodeHtmlEntity(entity: string): string {
-  return HTML_ENTITY_REPLACEMENTS.get(entity) ?? entity;
-}
-
 function decodeHtmlEntities(raw: string): string {
-  return raw.replace(/&(amp|gt|lt|quot|#39);/g, decodeHtmlEntity);
+  return raw
+    .replace(/&lt;/g, String.fromCharCode(60))
+    .replace(/&gt;/g, String.fromCharCode(62))
+    .replace(/&quot;/g, String.fromCharCode(34))
+    .replace(/&#39;/g, String.fromCharCode(39))
+    .replace(/&amp;/g, '&');
 }
 
 function stripHtml(raw: string): string {

@@ -1,4 +1,6 @@
 import { createHmac } from 'crypto';
+import { request as httpRequest } from 'node:http';
+import { request as httpsRequest } from 'node:https';
 
 export interface RuntimeHttpResponse {
   body: unknown;
@@ -53,8 +55,7 @@ function headers(options?: RuntimeHttpOptions): Record<string, string> {
   };
 }
 
-async function parseBody(response: Response): Promise<unknown> {
-  const text = await response.text();
+function parseBodyText(text: string): unknown {
   if (!text) {
     return null;
   }
@@ -65,6 +66,10 @@ async function parseBody(response: Response): Promise<unknown> {
   }
 }
 
+function runtimeRequestClient(url: URL): typeof httpRequest {
+  return url.protocol === 'https:' ? httpsRequest : httpRequest;
+}
+
 async function fetchRuntime(
   method: RuntimeHttpMethod,
   path: '/products' | `/products/${string}`,
@@ -72,16 +77,31 @@ async function fetchRuntime(
   options?: RuntimeHttpOptions,
 ): Promise<RuntimeHttpResponse> {
   const url = toRuntimeUrl(path);
-  const response = await fetch(url.toString(), {
-    method,
-    headers: headers(options),
-    body: body === undefined ? undefined : JSON.stringify(body),
+  const payload = body === undefined ? undefined : JSON.stringify(body);
+  return new Promise((resolve, reject) => {
+    const req = runtimeRequestClient(url)(
+      url,
+      { method, headers: headers(options) },
+      (response) => {
+        const chunks: Buffer[] = [];
+        response.on('data', (chunk: Buffer) => chunks.push(chunk));
+        response.on('end', () => {
+          const text = Buffer.concat(chunks).toString('utf8');
+          const status = response.statusCode ?? 0;
+          resolve({
+            body: parseBodyText(text),
+            ok: status >= 200 && status < 300,
+            status,
+          });
+        });
+      },
+    );
+    req.on('error', reject);
+    if (payload !== undefined) {
+      req.write(payload);
+    }
+    req.end();
   });
-  return {
-    body: await parseBody(response),
-    ok: response.ok,
-    status: response.status,
-  };
 }
 
 export function httpGetProducts(options?: RuntimeHttpOptions): Promise<RuntimeHttpResponse> {

@@ -7,24 +7,16 @@ import type { BrainEventName, CommercialEventPayload } from './brain-event-taxon
 
 type AutopilotEventIdRow = { id: string } | null;
 
-const UNSUPPORTED_JSON_VALUE_LABELS: Record<string, string> = {
-  undefined: 'undefined',
-};
-
-const UNSUPPORTED_JSON_SERIALIZERS: Record<string, (value: unknown) => string> = {
-  bigint: (value) => String(value),
-  function: (value) => (typeof value === 'function' && value.name ? value.name : 'function'),
-  symbol: (value) =>
-    typeof value === 'symbol' && value.description ? value.description : 'symbol',
-};
-
 function isJsonRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 function toUnsupportedJsonValue(value: unknown): string {
-  const serializer = UNSUPPORTED_JSON_SERIALIZERS[typeof value];
-  return serializer?.(value) ?? UNSUPPORTED_JSON_VALUE_LABELS[typeof value] ?? 'unsupported';
+  if (typeof value === 'bigint') return value.toString();
+  if (typeof value === 'function') return value.name || 'function';
+  if (typeof value === 'symbol') return value.description ?? 'symbol';
+  if (typeof value === 'undefined') return 'undefined';
+  return 'unsupported';
 }
 
 function toInputJsonValue(value: unknown): Prisma.InputJsonValue | null {

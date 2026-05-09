@@ -73,10 +73,6 @@ function buildProductModelCache(graph: PulseStructuralGraph): ProductModelCache 
   };
 }
 
-function cachedNodeFamilies(cache: ProductModelCache, node: PulseStructuralNode): string[] {
-  return cache.nodeFamiliesById.get(node.id) || [];
-}
-
 function cachedFamilyTokens(cache: ProductModelCache, family: string): string[] {
   const existing = cache.familyTokensByValue.get(family);
   if (existing) {
@@ -157,10 +153,7 @@ function cachedNodeHasLayer(
   return cachedNodeLayers(cache, node).has(layer);
 }
 
-function cachedHasValidationEvidence(
-  cache: ProductModelCache,
-  node: PulseStructuralNode,
-): boolean {
+function cachedHasValidationEvidence(cache: ProductModelCache, node: PulseStructuralNode): boolean {
   const existing = cache.validationById.get(node.id);
   if (existing !== undefined) {
     return existing;
@@ -292,7 +285,9 @@ function discoverSurfaces(
     ]);
     const artifactIds = limitSorted(
       graph.nodes
-        .filter((node) => cachedFamiliesOverlap(cache, cachedNodeFamilies(cache, node), families))
+        .filter((node) =>
+          cachedFamiliesOverlap(cache, cache.nodeFamiliesById.get(node.id) || [], families),
+        )
         .map((node) => node.id),
       MAX_SURFACE_ARTIFACT_IDS,
     );
@@ -330,7 +325,7 @@ function discoverSurfaces(
     const artifactIds = limitSorted(
       graph.nodes
         .filter((node) =>
-          cachedFamiliesOverlap(cache, cachedNodeFamilies(cache, node), surfaceId),
+          cachedFamiliesOverlap(cache, cache.nodeFamiliesById.get(node.id) || [], surfaceId),
         )
         .map((node) => node.id),
       MAX_SURFACE_ARTIFACT_IDS,
