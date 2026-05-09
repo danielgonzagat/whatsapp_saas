@@ -1406,8 +1406,8 @@ function EmailTemplatesPanel({
   );
 }
 
-// ── EmailTab — campaign send form ──
-function EmailTab({
+// ── EmailOperationalPanel — campaign send form after the universal wizard ──
+function EmailOperationalPanel({
   channelData,
   mode,
   connection,
@@ -1663,8 +1663,8 @@ function EmailTab({
   );
 }
 
-// ── InstagramTab — real data when Meta connected ──
-function InstagramTab({
+// ── InstagramOperationalPanel — real data after the universal wizard ──
+function InstagramOperationalPanel({
   channelData,
   igProfile,
   igInsights,
@@ -1860,8 +1860,8 @@ function InstagramTab({
   );
 }
 
-// ── TikTokTab — TikTok connection status with config detection ──
-function TikTokTab({
+// ── TikTokOperationalPanel — TikTok status after the universal wizard ──
+function TikTokOperationalPanel({
   channelData,
   connection,
   onConnect,
@@ -2020,8 +2020,8 @@ function TikTokTab({
   );
 }
 
-// ── FacebookTab — Messenger real data when Meta connected ──
-function FacebookTab({
+// ── FacebookOperationalPanel — Messenger data after the universal wizard ──
+function FacebookOperationalPanel({
   channelData,
   connection,
   onConnect,
@@ -2266,7 +2266,7 @@ function ChannelTab({
   if (channelKey === 'email') {
     if (connectionStatus?.channels?.email?.connected) {
       return (
-        <EmailTab
+        <EmailOperationalPanel
           channelData={channelData}
           mode={mode}
           connection={connectionStatus?.channels?.email}
@@ -2295,7 +2295,7 @@ function ChannelTab({
   if (channelKey === 'instagram') {
     if (metaConnected) {
       return (
-        <InstagramTab
+        <InstagramOperationalPanel
           channelData={channelData}
           igProfile={igProfile ?? null}
           igInsights={igInsights ?? null}
@@ -2318,7 +2318,7 @@ function ChannelTab({
   if (channelKey === 'facebook') {
     if (metaConnected) {
       return (
-        <FacebookTab
+        <FacebookOperationalPanel
           channelData={channelData}
           connection={connectionStatus?.channels?.facebook}
           onConnect={(key) => onConnectMeta?.(key)}
@@ -2339,7 +2339,7 @@ function ChannelTab({
   if (channelKey === 'tiktok') {
     if (connectionStatus?.channels?.tiktok?.connected) {
       return (
-        <TikTokTab
+        <TikTokOperationalPanel
           channelData={channelData}
           connection={connectionStatus?.channels?.tiktok}
           onConnect={() => onConnectTikTok?.()}
