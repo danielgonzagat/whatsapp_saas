@@ -46,7 +46,9 @@ export class MindSurpriseService {
       // safe batch processing across workers. Prisma has no row-level lock
       // primitives, and SKIP LOCKED avoids head-of-line blocking between
       // parallel sweepExpired calls.
-      const rows = await tx.$queryRaw<MindPrediction[]>`
+      const rows = await tx.$queryRaw/* raw justified: SKIP LOCKED batch claim */ <
+        MindPrediction[]
+      >`
         SELECT *
         FROM "RAC_MindPrediction"
         WHERE "workspaceId" = ${workspaceId}

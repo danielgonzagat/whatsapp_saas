@@ -6,6 +6,7 @@ import { Counter, Histogram, register } from 'prom-client';
 import { forEachSequential } from '../common/async-sequence';
 import { PrismaService } from '../prisma/prisma.service';
 import { MindBanditService } from './mind-bandit.service';
+import { MindService } from './mind.service';
 import type {
   CampaignMetrics,
   AdAlertContext,
@@ -72,6 +73,7 @@ export class AdRulesEngineService {
   constructor(
     private readonly prisma: PrismaService,
     @Optional() private readonly bandit?: MindBanditService,
+    @Optional() private readonly mind?: MindService,
   ) {}
 
   /** Evaluate rules. */
@@ -190,6 +192,25 @@ export class AdRulesEngineService {
       windowHours: 24,
       campaign: rule.name,
     };
+
+    if (this.mind) {
+      try {
+        const decision = await this.mind.resolveAdAlertAction(
+          rule.workspaceId,
+          'conversion_rate',
+          context.windowHours,
+          context.threshold,
+          rule.name,
+        );
+        if (decision.action === 'ignore') {
+          this.counter.inc({ event: 'rule', result: 'mind_ignore' });
+          return { ...empty, metrics, context, banditAction: decision.action };
+        }
+        return { shouldFire: true, metrics, context, banditAction: decision.action };
+      } catch (err: unknown) {
+        this.logger.warn(`MIND ad alert fallback for rule ${rule.id}: ${String(err)}`);
+      }
+    }
 
     if (!this.bandit) {
       return { shouldFire: true, metrics, context, banditAction: 'alert_only' };

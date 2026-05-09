@@ -5,6 +5,7 @@ import { MindGlobalPriorService } from './mind-global-prior.service';
 import { MindGuardsService } from './mind-guards.service';
 import { MindReportService } from './mind-report.service';
 import { MindWorkspaceStateService } from './mind-workspace-state.service';
+import { KloelRuleEngineService } from './rules/kloel-rule-engine.service';
 
 describe('code-native MIND services', () => {
   it('detects commercial concepts and emits concept events', async () => {
@@ -125,7 +126,8 @@ describe('code-native MIND services', () => {
 
   it('blocks forbidden actions through deterministic guards', async () => {
     const prisma = { mindGuardAudit: { create: jest.fn() } };
-    const service = new MindGuardsService(prisma as never);
+    const engine = new KloelRuleEngineService();
+    const service = new MindGuardsService(prisma as never, engine);
 
     await expect(
       service.evaluate({
@@ -155,7 +157,8 @@ describe('code-native MIND services', () => {
 
   it('allows safe guard decisions and audits the allow path with reasonTag', async () => {
     const prisma = { mindGuardAudit: { create: jest.fn() } };
-    const service = new MindGuardsService(prisma as never);
+    const engine = new KloelRuleEngineService();
+    const service = new MindGuardsService(prisma as never, engine);
 
     await expect(
       service.evaluate({

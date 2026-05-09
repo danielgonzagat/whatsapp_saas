@@ -44,7 +44,14 @@ export class MetaWhatsAppService {
     options?: { channel?: string | null; returnTo?: string | null },
   ): string {
     const appId = String(process.env.META_APP_ID || '').trim();
-    const configId = String(process.env.META_CONFIG_ID || '').trim();
+    const channel = String(options?.channel || '')
+      .trim()
+      .toLowerCase();
+    const channelSuffix = channel ? channel.toUpperCase() : '';
+    const channelSpecific = channelSuffix
+      ? String(process.env[`META_CONFIG_ID_${channelSuffix}`] || '').trim()
+      : '';
+    const configId = channelSpecific || String(process.env.META_CONFIG_ID || '').trim();
     const version = String(process.env.META_GRAPH_API_VERSION || 'v21.0').trim();
 
     if (!appId) {
@@ -85,11 +92,7 @@ export class MetaWhatsAppService {
       params.set('config_id', configId);
     }
 
-    if (
-      String(options?.channel || '')
-        .trim()
-        .toLowerCase() === 'whatsapp'
-    ) {
+    if (channel === 'whatsapp') {
       params.set('extras', JSON.stringify({ sessionInfoVersion: '3', version: 'v3' }));
     }
 

@@ -1,5 +1,4 @@
-import type { MindCaseMemoryService } from './mind-case-memory.service';
-import { resolveCaseMemoryAction } from './mind-case-memory-decision.helper';
+import { resolveCaseMemoryAction, type CaseMemoryLookup } from './mind-case-memory-decision.helper';
 import type { MindPolicyService } from './mind-policy.service';
 import {
   TONE_OPTIONS,
@@ -65,7 +64,7 @@ export async function resolveAggressivenessDecision(
 
 export async function resolveAudioVsTextDecision(
   policy: MindPolicyService,
-  cases: MindCaseMemoryService,
+  cases: CaseMemoryLookup,
   workspaceId: string,
   channel: string,
   audioRatio: number,
@@ -102,7 +101,7 @@ export async function resolveAudioVsTextDecision(
 
 export async function resolveToneDecision(
   policy: MindPolicyService,
-  cases: MindCaseMemoryService,
+  cases: CaseMemoryLookup,
   workspaceId: string,
   channel: string,
   repliedRate: number,
@@ -146,7 +145,7 @@ export async function resolveToneDecision(
 
 export async function resolveCouponDecision(
   policy: MindPolicyService,
-  cases: MindCaseMemoryService,
+  cases: CaseMemoryLookup,
   workspaceId: string,
   priceBand: string,
   soldRate: number,

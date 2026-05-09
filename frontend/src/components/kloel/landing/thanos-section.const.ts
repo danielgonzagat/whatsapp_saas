@@ -11,6 +11,8 @@ export const SALES_DELAY_MS = 1400;
 
 export const THANOS_STYLES = [
   '@keyframes thanosIn{from{opacity:0;transform:translate3d(0,8px,0)}to{opacity:1;transform:translate3d(0,0,0)}}',
+  '@keyframes thanosDustFade{from{opacity:1}to{opacity:0}}',
+  '.thanos-icons--dusting{animation:thanosDustFade 1s cubic-bezier(.55,0,.7,.2) forwards}',
   '.thanos-icons{position:absolute;inset:0;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:40px;pointer-events:none;contain:layout paint}',
   ".thanos-icons h2{margin:0;color:rgba(224,221,216,.75);font-family:var(--font-sora), 'Sora', sans-serif;font-size:clamp(18px,4.5vw,38px);font-weight:800;letter-spacing:0;text-align:center}",
   '.thanos-icons>div{display:grid;grid-template-columns:repeat(5,minmax(72px,1fr));gap:22px;width:min(100%,760px)}',

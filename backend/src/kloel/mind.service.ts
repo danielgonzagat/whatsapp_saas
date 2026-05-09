@@ -140,6 +140,16 @@ export class MindService {
     return this.beliefs.list(workspaceId, predicate, subject);
   }
 
+  async retrieveSimilar(input: {
+    caseType?: string;
+    features?: Record<string, unknown>;
+    limit?: number;
+    text: string;
+    workspaceId: string;
+  }) {
+    return this.cases.similar(input);
+  }
+
   lift(workspaceId: string, decisionType: string, sinceDays = 14) {
     return this.policy.harness(workspaceId, decisionType, sinceDays);
   }

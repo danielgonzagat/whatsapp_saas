@@ -167,7 +167,7 @@ export class MindPolicyService {
       // lightweight session lock. Prisma has no equivalent advisory-lock
       // primitive. This prevents concurrent resolveOutcome calls from
       // double-updating the same outcome-key set.
-      await tx.$executeRaw`
+      await tx.$executeRaw /* raw justified: PostgreSQL advisory lock for outcome resolution */ `
         SELECT pg_advisory_xact_lock(hashtext(${`resolve:${workspaceId}:${outcomeKey}`}))
       `;
       const rows = await tx.mindPolicy.findMany({
@@ -350,7 +350,7 @@ export class MindPolicyService {
       await this.prisma.$transaction(async (tx) => {
         // Raw justified: pg_advisory_xact_lock prevents concurrent persist
         // calls from racing on the same outcomeKey deduplication check.
-        await tx.$executeRaw`
+        await tx.$executeRaw /* raw justified: PostgreSQL advisory lock for outcome deduplication */ `
           SELECT pg_advisory_xact_lock(hashtext(${`${decision.workspaceId}:${decision.outcomeKey}`}))
         `;
         const existing = await tx.mindPolicy.findFirst({

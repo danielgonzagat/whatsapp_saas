@@ -1,4 +1,5 @@
 import { MindSyntheticGeneratorService } from './mind-synthetic-generator.service';
+import { MIND_DECISION_CATALOG } from './mind-decision-catalog';
 
 describe('MindSyntheticGeneratorService', () => {
   let service: MindSyntheticGeneratorService;
@@ -231,11 +232,21 @@ describe('MindSyntheticGeneratorService', () => {
       const recipes = MindSyntheticGeneratorService.builtinRecipes();
       const keys = Object.keys(recipes);
 
-      expect(keys).toContain('followup_timing');
-      expect(keys).toContain('cart_recovery');
-      expect(keys).toContain('coupon_offer');
-      expect(keys).toContain('human_transfer');
-      expect(keys).toContain('channel_choice');
+      expect(keys.sort()).toEqual(MIND_DECISION_CATALOG.map((spec) => spec.decisionType).sort());
+    });
+
+    it('uses candidate actions that match the decision catalog options', () => {
+      const recipes = MindSyntheticGeneratorService.builtinRecipes();
+
+      for (const spec of MIND_DECISION_CATALOG) {
+        const recipe = recipes[spec.decisionType];
+        expect(recipe).toBeDefined();
+        const actions = recipe.candidates.map((candidate) => candidate.action);
+        expect(actions).toEqual(expect.arrayContaining(spec.options));
+        if (spec.options.includes(spec.baseline)) {
+          expect(actions).toContain(spec.baseline);
+        }
+      }
     });
 
     it('returns a frozen copy', () => {

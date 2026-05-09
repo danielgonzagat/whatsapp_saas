@@ -1,7 +1,9 @@
 import { MindCaseMemoryService } from './mind-case-memory.service';
 
+export type CaseMemoryLookup = Pick<MindCaseMemoryService, 'similar'>;
+
 export async function resolveCaseMemoryAction(
-  cases: MindCaseMemoryService,
+  cases: CaseMemoryLookup,
   input: {
     caseType: string;
     features: Record<string, unknown>;

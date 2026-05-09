@@ -7,6 +7,7 @@ import { chatCompletionWithFallback } from './openai-wrapper';
 import type { ToolArgs } from './unified-agent.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { actionGetWorkspaceStatus as actionGetWorkspaceStatusFn } from './__companions__/unified-agent-actions-workspace.service.companion';
+import { MindService } from './mind.service';
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -25,6 +26,7 @@ export class UnifiedAgentActionsWorkspaceService {
     private readonly prisma: PrismaService,
     private readonly planLimits: PlanLimitsService,
     @Optional() private readonly opsAlert?: OpsAlertService,
+    @Optional() private readonly mind?: MindService,
   ) {}
 
   // ───────── helpers ─────────
@@ -230,6 +232,21 @@ export class UnifiedAgentActionsWorkspaceService {
   // PULSE_OK: workspaceId validated by caller guard
   async actionCreateBroadcast(workspaceId: string, args: ToolArgs) {
     const broadcastKey = `broadcast_${Date.now()}`;
+    const segment = this.str(args.stage, 'general');
+    const availableChannels = this.resolveBroadcastChannels(args);
+    const channelChoice = this.mind
+      ? await this.mind.resolveChannelChoice(
+          workspaceId,
+          availableChannels,
+          segment,
+          new Date().getHours(),
+          'broadcast',
+        )
+      : { channel: availableChannels[0] ?? 'whatsapp', confidence: 0, fallback: true };
+    const broadcastWindow = this.mind
+      ? await this.mind.resolveBroadcastWindow(workspaceId, channelChoice.channel, segment)
+      : { window: args.scheduleAt ? 'operator_fixed' : 'now', confidence: 0, fallback: true };
+    const scheduleAt = args.scheduleAt || this.resolveBroadcastScheduleAt(broadcastWindow.window);
     let contactCount = 0;
     if (args.targetTags && args.targetTags.length > 0) {
       contactCount = await this.prisma.contact.count({
@@ -248,9 +265,11 @@ export class UnifiedAgentActionsWorkspaceService {
           name: args.name,
           message: args.message,
           targetTags: args.targetTags || [],
-          scheduleAt: args.scheduleAt || null,
+          scheduleAt,
           contactCount,
           status: 'pending',
+          channel: channelChoice.channel,
+          mind: { channelChoice, broadcastWindow },
           createdAt: new Date().toISOString(),
         },
       },
@@ -259,8 +278,39 @@ export class UnifiedAgentActionsWorkspaceService {
       success: true,
       broadcastId: broadcastKey,
       contactCount,
+      channel: channelChoice.channel,
+      scheduleAt,
+      mind: { channelChoice, broadcastWindow },
       message: `Broadcast "${args.name}" criado para ${contactCount} contatos`,
     };
+  }
+
+  private resolveBroadcastChannels(args: ToolArgs): string[] {
+    const requested = this.str(args.source).toLowerCase();
+    if (requested) return [requested];
+    return ['whatsapp', 'instagram', 'messenger', 'email'];
+  }
+
+  private resolveBroadcastScheduleAt(window: string): string | null {
+    const now = new Date();
+    if (window === 'pause') return null;
+    if (window === 'now') return now.toISOString();
+    const scheduled = new Date(now);
+    if (window === 'tonight_20h') {
+      scheduled.setHours(20, 0, 0, 0);
+      if (scheduled <= now) scheduled.setDate(scheduled.getDate() + 1);
+      return scheduled.toISOString();
+    }
+    if (window === 'friday_21h') {
+      const friday = 5;
+      const daysUntilFriday = (friday - scheduled.getDay() + 7) % 7 || 7;
+      scheduled.setDate(scheduled.getDate() + daysUntilFriday);
+      scheduled.setHours(21, 0, 0, 0);
+      return scheduled.toISOString();
+    }
+    scheduled.setDate(scheduled.getDate() + 1);
+    scheduled.setHours(9, 0, 0, 0);
+    return scheduled.toISOString();
   }
 
   async actionConfigureAIPersona(workspaceId: string, args: ToolArgs) {

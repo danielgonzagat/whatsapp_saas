@@ -1,10 +1,17 @@
 import { KloelComposerService } from './kloel-composer.service';
 import { MindGuardsService } from './mind-guards.service';
+import { KloelRuleEngineService } from './rules/kloel-rule-engine.service';
 
 describe('code-native MIND guards and composer', () => {
+  let engine: KloelRuleEngineService;
+
+  beforeEach(() => {
+    engine = new KloelRuleEngineService();
+  });
+
   it('blocks duplicate payment guard when paymentProcessed is true', async () => {
     const prisma = { mindGuardAudit: { create: jest.fn() } };
-    const service = new MindGuardsService(prisma as never);
+    const service = new MindGuardsService(prisma as never, engine);
 
     const result = await service.evaluate({
       workspaceId: 'ws-1',
@@ -25,7 +32,7 @@ describe('code-native MIND guards and composer', () => {
 
   it('blocks payment amount exceeded guard', async () => {
     const prisma = { mindGuardAudit: { create: jest.fn() } };
-    const service = new MindGuardsService(prisma as never);
+    const service = new MindGuardsService(prisma as never, engine);
 
     const result = await service.evaluate({
       workspaceId: 'ws-1',
@@ -47,7 +54,7 @@ describe('code-native MIND guards and composer', () => {
 
   it('allows payment when amount is within limit', async () => {
     const prisma = { mindGuardAudit: { create: jest.fn() } };
-    const service = new MindGuardsService(prisma as never);
+    const service = new MindGuardsService(prisma as never, engine);
 
     const result = await service.evaluate({
       workspaceId: 'ws-1',
@@ -62,7 +69,7 @@ describe('code-native MIND guards and composer', () => {
 
   it('blocks campaign action when budget is exhausted', async () => {
     const prisma = { mindGuardAudit: { create: jest.fn() } };
-    const service = new MindGuardsService(prisma as never);
+    const service = new MindGuardsService(prisma as never, engine);
 
     const result = await service.evaluate({
       workspaceId: 'ws-1',
@@ -82,7 +89,7 @@ describe('code-native MIND guards and composer', () => {
 
   it('blocks campaign action when campaign is not active', async () => {
     const prisma = { mindGuardAudit: { create: jest.fn() } };
-    const service = new MindGuardsService(prisma as never);
+    const service = new MindGuardsService(prisma as never, engine);
 
     const result = await service.evaluate({
       workspaceId: 'ws-1',
@@ -102,7 +109,7 @@ describe('code-native MIND guards and composer', () => {
 
   it('allows campaign action when active and budget available', async () => {
     const prisma = { mindGuardAudit: { create: jest.fn() } };
-    const service = new MindGuardsService(prisma as never);
+    const service = new MindGuardsService(prisma as never, engine);
 
     const result = await service.evaluate({
       workspaceId: 'ws-1',
@@ -117,7 +124,7 @@ describe('code-native MIND guards and composer', () => {
 
   it('blocks escalation when already in progress', async () => {
     const prisma = { mindGuardAudit: { create: jest.fn() } };
-    const service = new MindGuardsService(prisma as never);
+    const service = new MindGuardsService(prisma as never, engine);
 
     const result = await service.evaluate({
       workspaceId: 'ws-1',
@@ -137,7 +144,7 @@ describe('code-native MIND guards and composer', () => {
 
   it('blocks escalation when no human is available', async () => {
     const prisma = { mindGuardAudit: { create: jest.fn() } };
-    const service = new MindGuardsService(prisma as never);
+    const service = new MindGuardsService(prisma as never, engine);
 
     const result = await service.evaluate({
       workspaceId: 'ws-1',
@@ -157,7 +164,7 @@ describe('code-native MIND guards and composer', () => {
 
   it('allows escalation when human is available and not in progress', async () => {
     const prisma = { mindGuardAudit: { create: jest.fn() } };
-    const service = new MindGuardsService(prisma as never);
+    const service = new MindGuardsService(prisma as never, engine);
 
     const result = await service.evaluate({
       workspaceId: 'ws-1',

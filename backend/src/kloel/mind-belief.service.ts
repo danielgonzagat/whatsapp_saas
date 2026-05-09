@@ -43,7 +43,8 @@ export class MindBeliefService {
       // Raw justified: INSERT ... ON CONFLICT DO NOTHING RETURNING is the
       // atomic insert-or-read race guard Prisma cannot express for this JSONB
       // unique key without a read-before-write window.
-      const rows = await this.prisma.$queryRaw<MindBelief[]>`
+      const rows = await this.prisma
+        .$queryRaw/* raw justified: atomic insert-or-read for JSONB composite key */ <MindBelief[]>`
         INSERT INTO "RAC_MindBelief"
           ("id","workspaceId","subject","predicate","context","mean","variance","samples","alpha","beta")
         VALUES
@@ -95,7 +96,9 @@ export class MindBeliefService {
         // locking that Prisma has no equivalent for. This guarantees atomic
         // read-modify-write on a single belief row inside a concurrent
         // observeBinary call.
-        const lockedRows = await tx.$queryRaw<MindBelief[]>`
+        const lockedRows = await tx.$queryRaw/* raw justified: row-level lock for belief update */ <
+          MindBelief[]
+        >`
           SELECT * FROM "RAC_MindBelief"
           WHERE "id" = ${current.id!}
             AND "workspaceId" = ${workspaceId}

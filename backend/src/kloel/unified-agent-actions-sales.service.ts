@@ -5,6 +5,7 @@ import { UnifiedAgentActionsMessagingService } from './unified-agent-actions-mes
 import type { ToolArgs } from './unified-agent.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { actionHandleObjection as actionHandleObjectionFn } from './__companions__/unified-agent-actions-sales.service.companion';
+import { MindService } from './mind.service';
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -16,6 +17,18 @@ function describeUnknownError(error: unknown): string {
     return error.trim();
   }
   return 'Unknown error';
+}
+
+function readString(value: unknown, fallback = ''): string {
+  return typeof value === 'string' && value.trim() ? value.trim() : fallback;
+}
+
+function priceBandFor(price: number): string {
+  if (price >= 1000) return 'over_1000';
+  if (price >= 500) return 'over_500';
+  if (price >= 300) return 'over_300';
+  if (price >= 100) return 'over_100';
+  return 'under_100';
 }
 
 /**
@@ -30,6 +43,7 @@ export class UnifiedAgentActionsSalesService {
     private readonly prisma: PrismaService,
     private readonly messaging: UnifiedAgentActionsMessagingService,
     @Optional() private readonly opsAlert?: OpsAlertService,
+    @Optional() private readonly mind?: MindService,
   ) {}
 
   async actionApplyDiscount(
@@ -57,6 +71,32 @@ export class UnifiedAgentActionsSalesService {
         originalPrice = ((productData as UnknownRecord).price as number) || 0;
         productName = ((productData as UnknownRecord).name as string) || 'produto';
       }
+      const segment = readString(context?.segment, readString(args.stage, 'general'));
+      const priceBand = priceBandFor(originalPrice);
+      const productOffer = this.mind
+        ? await this.mind.resolveProductOffer(workspaceId, segment, 'discount', priceBand)
+        : null;
+      const couponDecision = this.mind
+        ? await this.mind.resolveCoupon(workspaceId, priceBand, 0, segment)
+        : null;
+      if (couponDecision?.action === 'no_coupon') {
+        await this.prisma.autopilotEvent.create({
+          data: {
+            workspaceId,
+            contactId,
+            intent: 'NEGOTIATION',
+            action: 'DISCOUNT_SKIPPED',
+            status: 'completed',
+            meta: { priceBand, productOffer, couponDecision },
+          },
+        });
+        return {
+          success: true,
+          discountApplied: false,
+          messageSent: false,
+          mind: { couponDecision, productOffer },
+        };
+      }
       const finalPrice = originalPrice * (1 - discountPercent / 100);
       await this.prisma.autopilotEvent.create({
         data: {
@@ -65,7 +105,16 @@ export class UnifiedAgentActionsSalesService {
           intent: 'NEGOTIATION',
           action: 'DISCOUNT_APPLIED',
           status: 'executed',
-          meta: { discountPercent, reason, expiresIn, originalPrice, finalPrice, productName },
+          meta: {
+            discountPercent,
+            reason,
+            expiresIn,
+            originalPrice,
+            finalPrice,
+            productName,
+            priceBand,
+            mind: { couponDecision, productOffer },
+          },
         },
       });
       const priceFormatted = new Intl.NumberFormat('pt-BR', {
@@ -112,6 +161,16 @@ export class UnifiedAgentActionsSalesService {
     args: ToolArgs,
     context?: UnknownRecord,
   ) {
+    if (this.mind) {
+      try {
+        const segment = readString(context?.segment, readString(args.stage, 'general'));
+        const concept = readString(args.objectionType, 'objection');
+        await this.mind.resolveProductOffer(workspaceId, segment, concept, 'unknown');
+      } catch (error: unknown) {
+        const msg = describeUnknownError(error);
+        this.logger.warn(`MIND product offer fallback for objection: ${msg}`);
+      }
+    }
     return actionHandleObjectionFn({
       workspaceId,
       contactId,

@@ -6,6 +6,7 @@ import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registr
 import type { ToolArgs } from './unified-agent.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { MindPolicyService } from './mind-policy.service';
+import { MindService } from './mind.service';
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -22,6 +23,7 @@ export class UnifiedAgentActionsCrmService {
     private readonly providerRegistry: WhatsAppProviderRegistry,
     @Optional() private readonly opsAlert?: OpsAlertService,
     @Optional() private readonly mindPolicy?: MindPolicyService,
+    @Optional() private readonly mind?: MindService,
   ) {}
 
   // ───────── helpers ─────────
@@ -308,6 +310,22 @@ export class UnifiedAgentActionsCrmService {
   async actionTransferToHuman(workspaceId: string, contactId: string, args: ToolArgs) {
     const reason = this.str(args.reason, 'Not specified');
     const priority = this.str(args.priority, 'normal');
+    const handoff = await this.chooseHumanTransfer(workspaceId, reason, priority);
+    if (handoff.action === 'continue_ai' || handoff.action === 'pause_wait') {
+      await this.prisma.autopilotEvent
+        .create({
+          data: {
+            workspaceId,
+            contactId,
+            intent: 'HUMAN_TRANSFER',
+            action: 'TRANSFER_SKIPPED_BY_MIND',
+            status: 'completed',
+            meta: { reason, priority, handoff },
+          },
+        })
+        .catch(() => {});
+      return { success: true, transferred: false, reason, priority, mind: handoff };
+    }
     if (contactId) {
       await this.prisma.$transaction(
         async (tx) => {
@@ -359,7 +377,25 @@ export class UnifiedAgentActionsCrmService {
         { isolationLevel: 'ReadCommitted' },
       );
     }
-    return { success: true, reason, priority };
+    return { success: true, reason, priority, transferred: true, mind: handoff };
+  }
+
+  private async chooseHumanTransfer(
+    workspaceId: string,
+    reason: string,
+    priority: string,
+  ): Promise<{ action: string; confidence?: number; fallback?: boolean }> {
+    if (!this.mind) {
+      return { action: 'transfer_now' };
+    }
+    try {
+      const ticketRisk = priority === 'urgent' || priority === 'high' ? 0.8 : 0.35;
+      return await this.mind.resolveHumanTransfer(workspaceId, 'agent', reason, ticketRisk);
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : this.str(error, 'unknown');
+      this.logger.warn(`MIND human transfer fallback: ${msg}`);
+      return { action: 'transfer_now' };
+    }
   }
 
   async actionSearchKnowledgeBase(workspaceId: string, args: ToolArgs) {
