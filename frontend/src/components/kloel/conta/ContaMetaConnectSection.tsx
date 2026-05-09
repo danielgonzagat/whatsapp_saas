@@ -1,15 +1,13 @@
 'use client';
-import { colors } from '@/lib/design-tokens';
 
+import { colors } from '@/lib/design-tokens';
 import { kloelT } from '@/lib/i18n/t';
 import { useState, useEffect } from 'react';
 import { apiFetch } from '@/lib/api';
 import { mutate as globalMutate } from 'swr';
-import Icons from './ContaIcons';
 import { SORA, EMBER } from './ContaConstants';
 import { SectionCard } from './ContaShared';
 import { MetaAuthStatus, MetaAuthUrlResponse } from './ContaTypes';
-import { getErrorMessage } from './ContaHelpers';
 
 export function MetaConnectSection() {
   const [status, setStatus] = useState<MetaAuthStatus | null>(null);

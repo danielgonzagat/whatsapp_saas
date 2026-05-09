@@ -2,6 +2,7 @@
 
 // Legacy shell kept compatible with the published dashboard thread model.
 import { useConversationHistory } from '@/hooks/useConversationHistory';
+import { useToast } from '@/components/kloel/ToastProvider';
 import { billingApi, tokenStorage, whatsappApi } from '@/lib/api';
 import { loadKloelThreadMessages } from '@/lib/kloel-conversations';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
@@ -89,6 +90,7 @@ export function ChatContainer({
     refreshSubscription,
     userName,
   } = useAuth();
+  const { showToast } = useToast();
   const {
     activeConv,
     conversations,
@@ -479,6 +481,7 @@ export function ChatContainer({
         prev.map((m) => (m.id === assistantId ? { ...m, content: errMsg, isStreaming: false } : m)),
       );
       setIsTyping(false);
+      showToast(errMsg, 'error');
     }
   };
   handleSendMessageRef.current = handleSendMessage;

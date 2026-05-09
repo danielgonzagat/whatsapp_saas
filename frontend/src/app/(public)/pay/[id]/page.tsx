@@ -21,8 +21,6 @@ import {
   XCircle,
 } from 'lucide-react';
 import { use, useEffect, useRef, useState } from 'react';
-import { colors } from '@/lib/design-tokens';
-
 interface PaymentDetails {
   id: string;
   amount: number;

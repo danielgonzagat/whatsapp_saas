@@ -140,7 +140,7 @@ function useFiscalForm(fiscal: KycFiscal | null) {
 
   const set = (k: string, v: string) => setForm((prev) => ({ ...prev, [k]: v }));
 
-  return { tipo, setTipo, form, set };
+  return { tipo, setTipo, form, set, setForm };
 }
 
 export default function DadosFiscaisSection({
@@ -168,7 +168,7 @@ export default function DadosFiscaisSection({
     [],
   );
 
-  const { tipo, setTipo, form, set } = useFiscalForm(fiscal);
+  const { tipo, setTipo, form, set, setForm } = useFiscalForm(fiscal);
 
   const lookupCnpj = async (cnpj: string) => {
     const clean = cnpj.replace(D_RE, '');

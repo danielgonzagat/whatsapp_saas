@@ -5,8 +5,6 @@ import { IC } from '@/components/canvas/CanvasIcons';
 import { CreateModal } from '@/components/canvas/CreateModal';
 import { usePathname, useRouter } from 'next/navigation';
 import { type ReactNode, useState } from 'react';
-import { colors } from '@/lib/design-tokens';
-
 const S = "var(--font-sora), 'Sora', sans-serif";
 
 const TABS = [

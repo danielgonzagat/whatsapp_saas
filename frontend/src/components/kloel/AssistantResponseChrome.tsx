@@ -3,8 +3,6 @@
 import { kloelT } from '@/lib/i18n/t';
 import { useEffect, useState } from 'react';
 import { KloelMushroomVisual } from './KloelBrand';
-import { colors } from '@/lib/design-tokens';
-
 const PATTERN_RE = /_/g;
 
 /** Assistant chrome theme shape. */

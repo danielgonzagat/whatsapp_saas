@@ -3,7 +3,6 @@ import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { useCallback, useEffect, useRef, useState, useId } from 'react';
-import { useToast } from '@/components/kloel/ToastProvider';
 import { useBankMutations } from '@/hooks/useKyc';
 import { useToast } from '@/components/kloel/ToastProvider';
 import { useBrazilianBanks, formatBankCode, POPULAR_BANK_CODES, type BrazilianBank } from '@/hooks/useBrazilianBanks';

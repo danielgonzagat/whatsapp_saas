@@ -4,8 +4,7 @@ import { colors } from '@/lib/design-tokens';
 import { kloelT } from '@/lib/i18n/t';
 import { useState } from 'react';
 import { useSecurityMutations } from '@/hooks/useKyc';
-import Icons from './ContaIcons';
-import { SORA, EMBER } from './ContaConstants';
+import { SORA } from './ContaConstants';
 import { getErrorMessage } from './ContaHelpers';
 import { Field, SaveButton, SectionCard } from './ContaShared';
 

@@ -1,7 +1,5 @@
 import { kloelT } from '@/lib/i18n/t';
 import { KloelLoadingState } from '@/components/kloel/KloelBrand';
-import { colors } from '@/lib/design-tokens';
-
 /** Root loading. */
 export default function RootLoading() {
   return (

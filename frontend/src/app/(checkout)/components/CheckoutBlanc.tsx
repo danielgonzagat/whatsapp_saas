@@ -1,6 +1,5 @@
 'use client';
-import { colors } from '@/lib/design-tokens';
-
+import { colors as designTokens } from '@/lib/design-tokens';
 import { kloelT } from '@/lib/i18n/t';
 import type {
   PublicCheckoutTestimonial,
@@ -158,10 +157,10 @@ export default function CheckoutBlanc({
   const colors: BlancColors = {
     accent: config?.accentColor || BLANC.accent,
     accent2: config?.accentColor2 || config?.accentColor || BLANC.accent,
-    bg: config?.backgroundColor || colors.background.void,
+    bg: config?.backgroundColor || designTokens.background.void,
     card: config?.cardColor || BLANC.white,
-    text: config?.textColor || colors.background.void,
-    muted: config?.mutedTextColor || colors.text.muted,
+    text: config?.textColor || designTokens.background.void,
+    muted: config?.mutedTextColor || designTokens.text.muted,
   };
 
   const stepTheme: CheckoutThemeStepTokens = { ...DEFAULT_STEP_THEME, lineActive: colors.accent };
@@ -303,7 +302,7 @@ export default function CheckoutBlanc({
 
       <div
         style={{
-          background: colors.background.surface,
+          background: designTokens.background.surface,
           padding: '10px 24px',
           textAlign: 'center',
           borderBottom: '1px solid #f0e6c0',
@@ -451,7 +450,7 @@ export default function CheckoutBlanc({
 
       <footer
         style={{
-          background: colors.background.void,
+          background: designTokens.background.void,
           borderTop: `1px solid ${BLANC.softLine}`,
           padding: '40px 24px',
           textAlign: 'center',
@@ -486,7 +485,7 @@ export default function CheckoutBlanc({
                       borderRadius: 6,
                       fontSize: 11,
                       fontWeight: 700,
-                      color: colors.text.muted,
+                      color: designTokens.text.muted,
                     }}
                   >
                     {code}
@@ -507,7 +506,7 @@ export default function CheckoutBlanc({
               width="15"
               height="15"
               viewBox="0 0 24 24"
-              fill={colors.text.muted}
+              fill={designTokens.text.muted}
               stroke="none"
               aria-hidden="true"
             >
@@ -515,7 +514,7 @@ export default function CheckoutBlanc({
               <path
                 d={kloelT(`M7 11V7a5 5 0 0110 0v4`)}
                 fill="none"
-                stroke={colors.text.muted}
+                stroke={designTokens.text.muted}
                 strokeWidth="2"
               />
             </svg>
@@ -524,7 +523,7 @@ export default function CheckoutBlanc({
                 style={{
                   fontSize: 11,
                   fontWeight: 700,
-                  color: colors.text.muted,
+                  color: designTokens.text.muted,
                   letterSpacing: '0.1em',
                   lineHeight: 1.1,
                 }}
