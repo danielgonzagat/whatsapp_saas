@@ -10,12 +10,12 @@ import {
   setBrowserAuthCookie,
   setBrowserCookie,
   WORKSPACE_BROWSER_SLOT,
-} from './__parts__/core-tokens.storage';
+} from './core-tokens-storage';
 import {
   reconcileFreshSharedAuthSession,
   syncBrowserStorageFromCookies,
   syncWorkspaceFromToken,
-} from './__parts__/core-tokens.sync';
+} from './core-tokens-sync';
 
 /** Resolve workspace from auth payload. */
 export function resolveWorkspaceFromAuthPayload(

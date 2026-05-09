@@ -41,8 +41,9 @@ export function useCiaTasks(
       return;
     }
     setTaskPendingId(task.id);
+    const msg = taskDrafts[task.id] || task.suggestedReply || '';
     const res = await ciaApi.approveHumanTask(workspaceId, task.id, {
-      message: taskDrafts[task.id] || task.suggestedReply,
+      message: msg,
       resume: true,
     });
     if (res.error) {

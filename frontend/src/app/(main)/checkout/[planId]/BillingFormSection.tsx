@@ -24,8 +24,6 @@ import {
 export interface BillingFormSectionProps {
   config: CheckoutConfig;
   patch: (p: Partial<CheckoutConfig>) => Promise<void>;
-  isLoading: boolean;
-  fid: string;
   highlightedSection: string | null;
   highlightActive: boolean;
   couponRef: RefObject<HTMLDivElement | null>;
@@ -49,8 +47,6 @@ function sectionCardStyle(
 export function BillingFormSection({
   config,
   patch,
-  isLoading,
-  fid,
   highlightedSection,
   highlightActive,
   couponRef,

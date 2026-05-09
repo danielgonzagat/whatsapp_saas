@@ -3,7 +3,7 @@
 import { kloelT } from '@/lib/i18n/t';
 import { Surface } from '@/components/kloel';
 import { colors } from '@/lib/design-tokens';
-import type { CiaInsight } from '@/lib/api';
+import type { CiaInsight } from '@/lib/api/cia';
 
 interface CiaInsightsProps {
   insights: CiaInsight[];

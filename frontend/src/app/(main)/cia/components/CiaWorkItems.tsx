@@ -63,7 +63,7 @@ export function CiaWorkItems({ items, activeWorkItems }: CiaWorkItemsProps) {
                 </p>
               </div>
               <div className="flex-shrink-0">
-                <Badge variant={workItemStateBadgeVariant(item.state)}>
+                <Badge variant={workItemStateBadgeVariant(item.state) ?? 'info'}>
                   {item.state.replace(PATTERN_RE_2, ' ')}
                 </Badge>
               </div>

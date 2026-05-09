@@ -12,7 +12,7 @@ import {
   cs,
 } from './product-nerve-center.shared';
 import { formatOneDecimalPercent } from './ProductNerveCenterComissaoTab.helpers';
-import { CoprodDeleteDialog } from './__companions__/ProductNerveCenterComissaoTab.coprod.DeleteDialog';
+import { CoprodDeleteDialog } from './CoprodDeleteDialog';
 import { useCoprodState } from './ProductNerveCenterComissaoTab.coprod.hooks';
 
 export function CoprodSubTab({

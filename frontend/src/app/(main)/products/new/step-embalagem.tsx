@@ -4,7 +4,7 @@ import { useId } from 'react';
 import { kloelT } from '@/lib/i18n/t';
 import { colors, typography } from '@/lib/design-tokens';
 import { MonitorInputField } from './monitor-input-field';
-import { inputProps, monitorCard, selectStyle, monitorInput } from './shared-styles';
+import { inputProps, monitorCard, selectStyle } from './shared-styles';
 import { PACKAGE_TYPES, type StepCommonProps } from './types';
 
 export function StepEmbalagem({ form, updateForm }: StepCommonProps) {

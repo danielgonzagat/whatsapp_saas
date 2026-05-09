@@ -10,7 +10,6 @@ import {
   Star,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { type CSSProperties } from 'react';
 import {
   C,
   DEVICES,

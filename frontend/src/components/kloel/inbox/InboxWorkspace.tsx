@@ -16,11 +16,11 @@ import {
   type ChannelFilter,
   formatInboxTime as formatTime,
 } from './inbox-workspace-utils';
-import { ConversationListItem } from './__parts__/conversation-list-item';
-import { NoWorkspaceView } from './__parts__/no-workspace-view';
-import { NotAuthenticatedView } from './__parts__/not-authenticated-view';
-import { useInboxData } from './__parts__/use-inbox-data';
-import { useInboxRealtime } from './__parts__/use-inbox-realtime';
+import { InboxConversationListItem } from './InboxConversationListItem';
+import { InboxNoWorkspaceView } from './InboxNoWorkspaceView';
+import { InboxNotAuthenticatedView } from './InboxNotAuthenticatedView';
+import { useInboxData } from './useInboxData';
+import { useInboxRealtime } from './useInboxRealtime';
 
 interface InboxWorkspaceProps {
   embedded?: boolean;
@@ -94,7 +94,7 @@ export function InboxWorkspace({
 
   if (!isLoading && !isAuthenticated) {
     return (
-      <NotAuthenticatedView
+      <InboxNotAuthenticatedView
         embedded={embedded}
         title={title}
         onLogin={() => openAuthModal('login')}
@@ -103,7 +103,7 @@ export function InboxWorkspace({
   }
 
   if (!isLoading && isAuthenticated && !workspaceId) {
-    return <NoWorkspaceView embedded={embedded} title={title} />;
+    return <InboxNoWorkspaceView embedded={embedded} title={title} />;
   }
 
   return (
@@ -324,7 +324,7 @@ export function InboxWorkspace({
               ) : (
                 <div className="divide-y divide-[#222226]">
                   {filteredConversations.map((c) => (
-                    <ConversationListItem
+                    <InboxConversationListItem
                       key={c.id}
                       conversation={c}
                       isActive={c.id === selectedConversationId}

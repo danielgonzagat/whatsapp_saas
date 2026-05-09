@@ -148,7 +148,7 @@ export function useCiaSurface(workspaceId: string, workspaceLoading: boolean): U
                   message: event.message,
                   phase: event.phase || null,
                   type: event.type,
-                  ts: event.ts,
+                  ...(event.ts ? { ts: event.ts } : {}),
                 },
                 recent,
               };
