@@ -46,14 +46,6 @@ function assertProductId(productId: string): string {
   return productId;
 }
 
-function productsUrl(): URL {
-  return toRuntimeUrl('/products');
-}
-
-function productUrl(productId: string): URL {
-  return toRuntimeUrl(`/products/${assertProductId(productId)}`);
-}
-
 function headers(options?: RuntimeHttpOptions): Record<string, string> {
   return {
     'content-type': 'application/json',
@@ -73,13 +65,14 @@ async function parseBody(response: Response): Promise<unknown> {
   }
 }
 
-async function request(
+async function fetchRuntime(
   method: RuntimeHttpMethod,
-  url: URL,
-  body?: unknown,
+  path: '/products' | `/products/${string}`,
+  body: unknown,
   options?: RuntimeHttpOptions,
 ): Promise<RuntimeHttpResponse> {
-  const response = await fetch(url, {
+  const url = toRuntimeUrl(path);
+  const response = await fetch(url.toString(), {
     method,
     headers: headers(options),
     body: body === undefined ? undefined : JSON.stringify(body),
@@ -92,28 +85,28 @@ async function request(
 }
 
 export function httpGetProducts(options?: RuntimeHttpOptions): Promise<RuntimeHttpResponse> {
-  return request('GET', productsUrl(), undefined, options);
+  return fetchRuntime('GET', '/products', undefined, options);
 }
 
 export function httpGetProduct(
   productId: string,
   options?: RuntimeHttpOptions,
 ): Promise<RuntimeHttpResponse> {
-  return request('GET', productUrl(productId), undefined, options);
+  return fetchRuntime('GET', `/products/${assertProductId(productId)}`, undefined, options);
 }
 
 export function httpPostProduct(
   body: unknown,
   options?: RuntimeHttpOptions,
 ): Promise<RuntimeHttpResponse> {
-  return request('POST', productsUrl(), body, options);
+  return fetchRuntime('POST', '/products', body, options);
 }
 
 export function httpDeleteProduct(
   productId: string,
   options?: RuntimeHttpOptions,
 ): Promise<RuntimeHttpResponse> {
-  return request('DELETE', productUrl(productId), undefined, options);
+  return fetchRuntime('DELETE', `/products/${assertProductId(productId)}`, undefined, options);
 }
 
 export function makeTestJwt(payload: Record<string, unknown>): string {

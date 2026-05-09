@@ -104,6 +104,15 @@ function emptyReplayResult(input: ReplayInput): ReplayResult {
   };
 }
 
+function replaySteps(input: ReplayInput): ReplayStep[] {
+  const epsilon = input.epsilon ?? 0.5;
+  const utilitySuccess = input.utilitySuccess ?? 1;
+  const utilityFail = input.utilityFail ?? -0.2;
+  return input.candidates
+    .map((candidate) => buildReplayStep(candidate, epsilon, utilitySuccess, utilityFail))
+    .sort((left, right) => left.efe - right.efe);
+}
+
 @Injectable()
 export class MindReplayService {
   replayDecision(input: ReplayInput): ReplayResult {
@@ -111,14 +120,7 @@ export class MindReplayService {
       return emptyReplayResult(input);
     }
 
-    const epsilon = input.epsilon ?? 0.5;
-    const utilitySuccess = input.utilitySuccess ?? 1;
-    const utilityFail = input.utilityFail ?? -0.2;
-
-    const steps = input.candidates.map((candidate) =>
-      buildReplayStep(candidate, epsilon, utilitySuccess, utilityFail),
-    );
-    steps.sort((left, right) => left.efe - right.efe);
+    const steps = replaySteps(input);
     const winner = steps[0];
     const baselineAction = input.baseline ?? steps[steps.length - 1]?.action ?? 'pass';
 

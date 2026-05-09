@@ -204,11 +204,10 @@ function sortArtifacts(artifacts: PulseArtifactDefinition[]): PulseArtifactDefin
 }
 
 function resolveDiscoveryRoot(rootDir: string): string {
-  const resolvedRoot = path.resolve(rootDir);
-  const currentRoot = path.resolve(process.cwd());
-  return resolvedRoot === currentRoot || resolvedRoot.startsWith(`${currentRoot}${path.sep}`)
-    ? resolvedRoot
-    : path.resolve(__dirname, '..', '..');
+  if (rootDir === process.cwd()) {
+    return rootDir;
+  }
+  return process.cwd();
 }
 
 /** Build the canonical artifact registry for a PULSE run. */
