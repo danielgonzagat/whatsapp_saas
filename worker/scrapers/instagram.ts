@@ -95,6 +95,9 @@ export async function scrapeInstagram(query: string, limit = 5): Promise<Scraped
 
     await forEachSequential(postLinks, async (link) => {
       try {
+        if (!browser) {
+          throw new Error('Browser not initialized');
+        }
         const newPage = await browser.newPage();
         await newPage.setUserAgent(randomUA);
         await newPage.goto(link, { waitUntil: 'networkidle2' });

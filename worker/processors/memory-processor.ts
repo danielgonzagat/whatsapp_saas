@@ -3,7 +3,7 @@ import OpenAI from 'openai';
 import { prisma } from '../db';
 import { WorkerLogger } from '../logger';
 import { LeadScorer } from '../providers/lead-scorer';
-import { connection } from '../queue';
+import { buildQueueOptions } from '../queue';
 import { forEachSequential } from '../utils/async-sequence';
 import { processFactExtraction } from './fact-extractor';
 import {
@@ -12,6 +12,13 @@ import {
   settleQuotedUsageCharge,
 } from './prepaid-wallet-settlement';
 import { WorkerError } from '../src/utils/error-handler';
+import {
+  checkIdempotent,
+  endJob,
+  logError,
+  markCompleted,
+  startJob,
+} from '../processor-base';
 
 const WHITESPACE_RE = /\s+/g;
 const SENTENCE_ENDINGS = ['. ', '? ', '! '];
@@ -69,11 +76,6 @@ const resolveOpenAIKey = (workspace: { providerSettings: unknown } | null): stri
 /**
  * Embed a single chunk and persist its vector. Returns the token count
  * reported by the provider, or `0` if the response omits usage info.
- *
- * @param openai - Provider client.
- * @param chunk - Text chunk to embed.
- * @param sourceId - Knowledge source identifier.
- * @returns Total tokens billed for the embedding call.
  */
 const insertChunkVector = async (
   openai: OpenAI,
@@ -100,8 +102,6 @@ const insertChunkVector = async (
 
 /**
  * Settle the wallet usage that was quoted before embedding started.
- *
- * @param input - Settlement input bundle.
  */
 const settleIngestUsage = async (input: {
   workspaceId: string;
@@ -151,10 +151,10 @@ const markSourceFailed = async (sourceId: string): Promise<void> => {
  *
  * @param job - BullMQ job instance.
  */
-const processIngestSource = async (job: Job): Promise<void> => {
+const processIngestSource = async (job: Job, ctxLog: WorkerLogger): Promise<void> => {
   const data = job.data as IIngestSourceJobData;
   const { workspaceId, sourceId, content, type: sourceType, maxChunks, walletUsage } = data;
-  log.info('ingest_source_start', { sourceId, type: sourceType });
+  ctxLog.info('ingest_source_start', { sourceId, type: sourceType });
 
   const workspace = await prisma.workspace.findUnique({ where: { id: workspaceId } });
   const apiKey = resolveOpenAIKey(workspace);
@@ -197,7 +197,7 @@ const processIngestSource = async (job: Job): Promise<void> => {
     where: { id: sourceId },
   });
   await job.updateProgress(100);
-  log.info('ingest_source_complete', {
+  ctxLog.info('ingest_source_complete', {
     actualInputTokens: actualInputTokens.toString(),
     chunks: chunks.length,
     sourceId,
@@ -210,7 +210,7 @@ const processIngestSource = async (job: Job): Promise<void> => {
  *
  * @param job - BullMQ job instance.
  */
-const dispatchMemoryJob = async (job: Job): Promise<void> => {
+const dispatchMemoryJob = async (job: Job, ctxLog: WorkerLogger): Promise<void> => {
   switch (job.name) {
     // PULSE:OK - extract-facts is enqueued by unified-agent and inbound-processor via memory queue
     case 'extract-facts':
@@ -225,12 +225,12 @@ const dispatchMemoryJob = async (job: Job): Promise<void> => {
       return;
 
     case 'ingest-source':
-      await processIngestSource(job);
+      await processIngestSource(job, ctxLog);
 
       return;
 
     default:
-      log.warn('unknown_memory_job', { name: job.name });
+      ctxLog.warn('unknown_memory_job', { name: job.name });
   }
 };
 
@@ -280,9 +280,9 @@ const toError = (err: unknown): Error => {
  * @param job - BullMQ job instance.
  * @param err - Error thrown by the dispatcher.
  */
-const handleMemoryJobFailure = async (job: Job, err: unknown): Promise<void> => {
+const handleMemoryJobFailure = async (job: Job, err: unknown, ctxLog: WorkerLogger): Promise<void> => {
   const errInstance = toError(err);
-  log.error('memory_job_failed', { error: errInstance.message, jobId: job.id });
+  ctxLog.error('memory_job_failed', { error: errInstance.message, jobId: job.id });
 
   if (job.name === 'ingest-source' && job.data.sourceId) {
     await cleanupFailedIngest(String(job.data.sourceId), errInstance.message);
@@ -295,15 +295,27 @@ const handleMemoryJobFailure = async (job: Job, err: unknown): Promise<void> => 
 export const memoryWorker = new Worker(
   'memory-jobs',
   async (job: Job) => {
-    log.info('memory_job_start', { jobId: job.id, name: job.name });
+    const meta = startJob(job, log);
+    const ctxLog = log.withContext(meta.correlationId, meta.workspaceId);
+
     try {
-      await dispatchMemoryJob(job);
+      const dedup = await checkIdempotent(job);
+      if (dedup) {
+        ctxLog.info('job_skipped_idempotent', { jobId: job.id });
+        endJob(meta, ctxLog, job.name, 'skipped');
+        return;
+      }
+
+      await dispatchMemoryJob(job, ctxLog);
+      await markCompleted(job);
+      endJob(meta, ctxLog, job.name, 'completed');
     } catch (err: unknown) {
-      await handleMemoryJobFailure(job, err);
+      logError(meta, ctxLog, err, job.name);
+      await handleMemoryJobFailure(job, err, ctxLog);
       throw err;
     }
   },
-  { concurrency: WORKER_CONCURRENCY, connection, lockDuration: 300_000 },
+  { concurrency: WORKER_CONCURRENCY, ...buildQueueOptions(), lockDuration: 300_000 },
 );
 
 /**

@@ -3,13 +3,9 @@
 import React, { useRef, useEffect } from 'react';
 import { secureRandomFloat } from '@/lib/secure-random';
 
-export function NeuralPulse({ w, h, color }: { w: number; h: number; color?: string }) {
+export function NeuralPulse({ w, h, color = '#f97316' }: { w: number; h: number; color?: string }) {
   const ref = useRef<HTMLCanvasElement>(null);
-  const effectiveColor =
-    color ||
-    (typeof window !== 'undefined'
-      ? getComputedStyle(document.documentElement).getPropertyValue('--kloel-accent')
-      : '#f97316');
+  const effectiveColor = color;
 
   useEffect(() => {
     const c = ref.current;

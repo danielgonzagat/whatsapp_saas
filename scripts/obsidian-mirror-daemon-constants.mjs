@@ -1,4 +1,5 @@
 import { resolve, join, dirname } from 'node:path';
+import { OBSIDIAN_TAG_COLORS } from './shared/severity-tokens.mjs';
 
 // ── Configuration ───────────────────────────────────────────────────────────
 
@@ -27,12 +28,12 @@ export const SOURCE_BODY_MIRROR_MAX_BYTES = Number(
 export const GENERATED_PAGE_SIZE = Number(process.env.KLOEL_GRAPH_PAGE_SIZE || '120');
 export const DIRTY_WORKSPACE_TAG = 'workspace/dirty';
 export const DIRTY_WORKSPACE_QUERY = 'tag:#workspace/dirty';
-export const DIRTY_WORKSPACE_COLOR_RGB = 14724096; // Obsidian yellow #e0ac00.
+export const DIRTY_WORKSPACE_COLOR_RGB = OBSIDIAN_TAG_COLORS.DIRTY_WORKSPACE.rgb; // see OBSIDIAN_TAG_COLORS.DIRTY_WORKSPACE in shared/severity-tokens.mjs
 export const LOCAL_COMMIT_TAG = 'workspace/local-commit';
 export const LOCAL_COMMIT_QUERY = 'tag:#workspace/local-commit';
 export const METADATA_ONLY_TAG = 'mirror/metadata-only';
 export const METADATA_ONLY_QUERY = 'tag:#mirror/metadata-only';
-export const METADATA_ONLY_COLOR_RGB = 8421504; // Obsidian gray #808080.
+export const METADATA_ONLY_COLOR_RGB = OBSIDIAN_TAG_COLORS.METADATA_ONLY.rgb; // see OBSIDIAN_TAG_COLORS.METADATA_ONLY in shared/severity-tokens.mjs
 export const GRAPH_ACTION_REQUIRED_TAG = 'graph/action-required';
 export const GRAPH_ACTION_REQUIRED_QUERY = 'tag:#graph/action-required';
 export const GRAPH_ACTION_REQUIRED_COLOR_RGB = 16711680; // red.

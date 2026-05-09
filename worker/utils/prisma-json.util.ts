@@ -30,7 +30,7 @@ function coerceObject(value: Record<string, unknown>): Prisma.InputJsonObject {
  * Mirrors backend/src/common/prisma/prisma-json.util.ts so worker code does not
  * need cross-package imports.
  */
-export function toPrismaJsonValue(value: unknown): Prisma.InputJsonValue {
+export function toPrismaJsonValue(value: unknown): Prisma.InputJsonValue | null {
   if (value === null) return null;
   const scalar = coerceScalar(value);
   if (scalar !== undefined) return scalar;

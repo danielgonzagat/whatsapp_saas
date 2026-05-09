@@ -1,8 +1,6 @@
 'use client';
 
 import { kloelT } from '@/lib/i18n/t';
-import { apiFetch } from '@/lib/api';
-import { useState } from 'react';
 import {
   Bg,
   Bt,
@@ -10,8 +8,6 @@ import {
   PanelLoadingState,
   V,
   cs,
-  unwrapApiPayload,
-  type JsonRecord,
 } from './product-nerve-center.shared';
 import { formatBrlAmount, formatOneDecimalPercent } from './ProductNerveCenterComissaoTab.helpers';
 import type {
@@ -20,6 +16,8 @@ import type {
   AffiliateStatsRecord,
   SubTabProps,
 } from './ProductNerveCenterComissaoTab.types';
+import type { JsonRecord } from './product-nerve-center.shared';
+import { useAfiliadoActions } from './ProductNerveCenterComissaoTab.afiliados.hooks';
 
 export function AfiliadosSubTab({
   productId,
@@ -40,43 +38,8 @@ export function AfiliadosSubTab({
   const affiliateProduct = affiliateSummary?.affiliateProduct as
     | { listed?: boolean; approvalMode?: string; commissionPct?: number; cookieDays?: number }
     | undefined;
-  const [requestActionId, setRequestActionId] = useState<string | null>(null);
-  const [linkActionId, setLinkActionId] = useState<string | null>(null);
-
-  const handleRequestAction = async (requestId: string, action: 'approve' | 'reject') => {
-    setRequestActionId(`${action}-${requestId}`);
-    try {
-      const summary = unwrapApiPayload<JsonRecord | null>(
-        await apiFetch(`/products/${productId}/affiliates/requests/${requestId}/${action}`, {
-          method: 'POST',
-        }),
-      );
-      // PULSE_OK: cache invalidation handled by auto-revalidation
-      setAffiliateSummary(summary);
-    } catch (e) {
-      console.error('Affiliate request action error', { action, error: e });
-    } finally {
-      setRequestActionId(null);
-    }
-  };
-
-  const handleLinkToggle = async (linkId: string, active: boolean) => {
-    setLinkActionId(linkId);
-    try {
-      const summary = unwrapApiPayload<JsonRecord | null>(
-        await apiFetch(`/products/${productId}/affiliates/links/${linkId}`, {
-          method: 'PUT',
-          body: { active },
-        }),
-      );
-      // PULSE_OK: cache invalidation handled by auto-revalidation
-      setAffiliateSummary(summary);
-    } catch (e) {
-      console.error('Affiliate link toggle error:', e);
-    } finally {
-      setLinkActionId(null);
-    }
-  };
+  const { requestActionId, linkActionId, handleRequestAction, handleLinkToggle } =
+    useAfiliadoActions(productId, setAffiliateSummary);
 
   return (
     <div style={{ ...cs, padding: 24 }}>

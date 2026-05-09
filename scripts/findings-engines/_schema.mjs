@@ -10,13 +10,17 @@
  * .ts to stay in pure Node ESM and avoid extra build steps.
  *
  * NOT constitution-locked. Edit freely as the contract evolves.
+ *
+ * Severity rendering colors are defined in ../shared/severity-tokens.mjs.
  */
 
 /**
  * @typedef {'critical' | 'high' | 'medium' | 'low'} Severity
  *
  * Severity ordering (rendering precedence):
- *   critical (#FF0000) > high (#FF6B00) > medium (#FFC400) > low (#3B82F6)
+ *   critical > high > medium > low
+ *
+ * See SEVERITY_COLORS in ../shared/severity-tokens.mjs for the assigned hex values.
  *
  * Mapping:
  *   - critical: build break, security exploit, data loss risk

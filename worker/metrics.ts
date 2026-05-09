@@ -126,7 +126,7 @@ async function refreshQueueMetrics() {
     queueGauge.reset();
     const queueNames = Object.keys(queueRegistry);
     await forEachSequential(queueNames, async (name) => {
-      const q = queueRegistry[name];
+      const q = queueRegistry[Number(name)];
       const mainCounts = await q.getJobCounts();
       Object.entries(mainCounts).forEach(([state, value]) => {
         queueGauge.labels(name, state, 'main').set(typeof value === 'number' ? value : 0);

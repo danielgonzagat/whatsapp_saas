@@ -203,12 +203,10 @@ export function PlanoRowDesktop({
 }: PlanoCardProps) {
   return (
     <div
-      key={plan.id}
       style={{
         display: 'grid',
         gridTemplateColumns: '1fr 2fr .6fr .8fr .7fr .7fr .7fr 1.2fr',
         padding: '12px 16px',
-        borderBottom: 'none',
         alignItems: 'center',
       }}
     >

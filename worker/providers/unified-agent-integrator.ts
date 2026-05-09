@@ -22,13 +22,13 @@ function resolveBackendUrl(): string | null {
 }
 
 interface UnifiedAgentResult {
-  response: string;
+  response?: string;
   actions: Array<{
     tool: string;
     args: Record<string, unknown>;
     result?: unknown;
   }>;
-  model: string;
+  model?: string;
 }
 
 /**

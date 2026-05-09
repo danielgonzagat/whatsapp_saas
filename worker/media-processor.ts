@@ -1,16 +1,35 @@
 import { type Job, Worker } from 'bullmq';
 import { prisma } from './db';
-import { connection } from './queue';
+import { buildQueueOptions } from './queue';
 import { isRetryableError, WorkerError } from './src/utils/error-handler';
+import { WorkerLogger } from './logger';
+import {
+  checkIdempotent,
+  endJob,
+  logError,
+  markCompleted,
+  startJob,
+} from './processor-base';
+
+const log = new WorkerLogger('media-worker');
 
 /** Media worker. */
 export const mediaWorker = new Worker(
   'media-jobs',
   async (job: Job) => {
-    console.log(`\n🎬 [MEDIA] Processing job ${job.id}`);
+    const meta = startJob(job, log);
+    const ctxLog = log.withContext(meta.correlationId, meta.workspaceId);
 
     try {
+      const dedup = await checkIdempotent(job);
+      if (dedup) {
+        ctxLog.info('job_skipped_idempotent', { jobId: job.id });
+        endJob(meta, ctxLog, job.name, 'skipped');
+        return { ok: true, skipped: true, reason: 'idempotent' };
+      }
+
       const { jobId, prompt } = job.data || {};
+      ctxLog.info('media_job_start', { jobId });
 
       await job.updateProgress(5);
       const record = await prisma.mediaJob.findUnique({
@@ -27,7 +46,6 @@ export const mediaWorker = new Worker(
         data: { status: 'PROCESSING' },
       });
 
-      // Placeholder de geração: em prod, chamar provedor de vídeo/IA
       await job.updateProgress(50);
       await new Promise((resolve) => setTimeout(resolve, 2000));
       const outputUrl = process.env.CDN_BASE_URL
@@ -45,21 +63,18 @@ export const mediaWorker = new Worker(
       });
 
       await job.updateProgress(100);
-      console.log(`✅ [MEDIA] Job ${jobId} completed`);
+      await markCompleted(job);
+      endJob(meta, ctxLog, job.name, 'completed');
+      ctxLog.info('media_job_complete', { jobId });
     } catch (err) {
-      console.error(`❌ [MEDIA] Job ${job.id} failed:`, err);
+      logError(meta, ctxLog, err, job.name);
       if (job.data?.jobId) {
         await prisma.mediaJob
           .update({
             where: { id: job.data.jobId },
             data: { status: 'FAILED' },
           })
-          .catch((updateErr) =>
-            console.error(
-              '[media-processor] mark_job_failed_error',
-              updateErr?.message || String(updateErr),
-            ),
-          );
+          .catch(() => {});
       }
 
       if (!isRetryableError(err)) {
@@ -73,5 +88,5 @@ export const mediaWorker = new Worker(
       throw err;
     }
   },
-  { connection, concurrency: 5, lockDuration: 120_000 },
+  { ...buildQueueOptions(), concurrency: 5, lockDuration: 120_000 },
 );

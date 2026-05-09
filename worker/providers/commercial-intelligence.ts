@@ -84,7 +84,7 @@ function clamp(value: number, min = 0, max = 1) {
   return Math.max(min, Math.min(max, value));
 }
 
-function normalized(text?: string) {
+function normalized(text?: string | null) {
   return String(text || '').toLowerCase();
 }
 

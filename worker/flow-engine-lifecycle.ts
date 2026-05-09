@@ -50,7 +50,7 @@ export async function appendLog(
   await context.publish(`flow:log:${state.workspaceId}`, {
     id: entry.id,
     timestamp: entry.ts,
-    type: typeMap[logEntry.event] || logEntry.event || 'flow_log',
+    type: typeMap[logEntry.event ?? ''] || logEntry.event || 'flow_log',
     nodeId: logEntry.nodeId,
     nodeType: logEntry.nodeType,
     message: logEntry.message || (logEntry.result ? JSON.stringify(logEntry.result) : undefined),

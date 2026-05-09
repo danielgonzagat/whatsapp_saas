@@ -192,7 +192,7 @@ process.on('SIGINT', () => {
 type SkippedFlowResult = { ok: false; skipped: true; reason: string };
 
 async function checkFlowSubscription(
-  jobId: Job['id'],
+  jobId: string | undefined,
   workspaceId: string,
 ): Promise<SkippedFlowResult | null> {
   const subStatus = await PlanLimitsProvider.checkSubscriptionStatus(workspaceId);
@@ -204,7 +204,7 @@ async function checkFlowSubscription(
 }
 
 async function checkFlowRateLimit(
-  jobId: Job['id'],
+  jobId: string | undefined,
   workspaceId: string,
 ): Promise<SkippedFlowResult | null> {
   const rate = await PlanLimitsProvider.checkFlowRunRate(workspaceId);
@@ -343,62 +343,96 @@ export const flowWorker = SHOULD_EXECUTE
   ? new Worker(
       'flow-jobs',
       async (job: Job) => {
-        const start = process.hrtime.bigint();
+        const meta = startJob(job, log);
+        const correlationId = meta.correlationId;
+        const ctxLog = log.withContext(correlationId, meta.workspaceId);
+
         try {
+          const dedup = await checkIdempotent(job);
+          if (dedup) {
+            ctxLog.info('job_skipped_idempotent', { jobId: job.id });
+            const durationMs = endJob(meta, ctxLog, job.name, 'skipped');
+            jobDuration.observe(
+              { queue: job.queueName, name: job.name, status: 'skipped' },
+              durationMs / 1000,
+            );
+            jobCounter.inc({ queue: job.queueName, name: job.name, status: 'skipped' });
+            return { ok: true, skipped: true, reason: 'idempotent' };
+          }
+
+          let result: unknown;
           switch (job.name) {
             case 'run-flow':
-              return await handleRunFlow(job);
-
+              result = await handleRunFlow(job);
+              break;
             case 'resume-flow':
               if (job.data?.user && job.data?.message) {
                 await engine.onUserResponse(job.data.user, job.data.message, job.data.workspaceId);
-                return { ok: true };
+                result = { ok: true };
+              } else {
+                ctxLog.warn('resume_invalid_job', { jobId: job.id, data: job.data });
+                result = { error: true, reason: 'invalid_resume_job' };
               }
-              log.warn('resume_invalid_job', { jobId: job.id, data: job.data });
-              return { error: true, reason: 'invalid_resume_job' };
-
+              break;
             case 'send-message':
-              return await handleSendMessage(job);
-
+              result = await handleSendMessage(job);
+              break;
             case 'incoming-message': {
               const { user, message, workspaceId } = job.data || {};
               if (user && message) {
                 await engine.onUserResponse(user, message, workspaceId);
-                log.info('incoming_routed', { user, workspaceId });
+                ctxLog.info('incoming_routed', { user, workspaceId });
               } else {
-                log.warn('incoming_invalid_payload', { data: job.data });
+                ctxLog.warn('incoming_invalid_payload', { data: job.data });
               }
-              return { ok: true };
+              result = { ok: true };
+              break;
             }
-
             case 'scheduled-followup':
-              return await handleScheduledFollowup(job);
-
+              result = await handleScheduledFollowup(job);
+              break;
             default:
-              log.warn('unknown_job', { name: job.name, jobId: job.id });
-              return null;
+              ctxLog.warn('unknown_job', { name: job.name, jobId: job.id });
+              result = null;
           }
+
+          await markCompleted(job);
+          const durationMs = endJob(meta, ctxLog, job.name, 'completed');
+          jobDuration.observe(
+            { queue: job.queueName, name: job.name, status: 'processed' },
+            durationMs / 1000,
+          );
+          jobCounter.inc({ queue: job.queueName, name: job.name, status: 'processed' });
+          return result;
         } catch (err) {
-          log.error('job_error', {
+          logError(meta, ctxLog, err, job.name);
+          const durationMs = endJob(meta, ctxLog, job.name, 'failed');
+          jobDuration.observe(
+            { queue: job.queueName, name: job.name, status: 'failed' },
+            durationMs / 1000,
+          );
+          jobCounter.inc({ queue: job.queueName, name: job.name, status: 'failed' });
+
+          const errorPayload = {
+            correlationId,
+            workspaceId: meta.workspaceId,
             jobId: job.id,
-            error: getErrorMessage(err),
-          });
-          throw err;
-        } finally {
-          const duration = Number(process.hrtime.bigint() - start) / 1e9;
-          const labels: { queue: string; name: string } = {
-            queue: job.queueName,
             name: job.name,
+            queue: job.queueName,
+            error: err instanceof Error ? err.message : String(err),
+            durationMs,
           };
-          jobDuration.observe({ ...labels, status: 'processed' }, duration);
-          jobCounter.inc({ ...labels, status: 'processed' });
+          if (
+            typeof job.data === 'object' &&
+            job.data !== null &&
+            !Object.isFrozen(job.data)
+          ) {
+            (job.data as Record<string, unknown>).correlationId = correlationId;
+          }
+          throw err;
         }
       },
-      {
-        connection,
-        concurrency: 1,
-        lockDuration: 60000,
-      },
+      { ...buildQueueOptions(), concurrency: 1, lockDuration: 60000 },
     )
   : null;
 
@@ -416,30 +450,27 @@ flowWorker?.on('completed', (job: Job) => {
 });
 
 flowWorker?.on('failed', (job: Job | undefined, err: Error) => {
-  log.error('job_failed', { jobId: job?.id, error: err?.message });
+  const workspaceId = job ? extractWorkspaceId(job) : 'unknown';
+  const correlationId =
+    job?.data && typeof job.data === 'object'
+      ? (job.data as Record<string, unknown>)?.correlationId ?? 'unknown'
+      : 'unknown';
+  log.error('job_failed', {
+    jobId: job?.id,
+    error: err?.message,
+    correlationId,
+    workspaceId,
+  });
   const labels: { queue: string; name: string } = {
     queue: job?.queueName || 'flow-jobs',
     name: job?.name || 'unknown',
   };
   jobCounter.inc({ ...labels, status: 'failed' });
 
-  const workspaceId = (() => {
-    const d = job?.data as Record<string, unknown> | undefined;
-    const ws = d?.workspace;
-    if (ws && typeof ws === 'object' && !Array.isArray(ws)) {
-      const wsId = (ws as Record<string, unknown>).id;
-      if (typeof wsId === 'string') {
-        return wsId;
-      }
-    }
-    if (typeof d?.workspaceId === 'string') {
-      return d.workspaceId;
-    }
-    return 'global';
-  })();
   const payload = {
     type: 'job_failed',
     workspaceId,
+    correlationId,
     jobId: job?.id,
     queue: job?.queueName,
     name: job?.name,

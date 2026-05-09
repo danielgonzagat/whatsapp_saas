@@ -1,8 +1,16 @@
 import { type Job, Worker } from 'bullmq';
 import { AUTOPILOT_SWEEP_UNREAD_CONVERSATIONS_JOB } from '../contracts/autopilot-jobs';
 import { autopilotDecisionCounter } from '../metrics';
-import { connection } from '../queue';
+import { buildQueueOptions } from '../queue';
 import { WorkerError, isRetryableError } from '../src/utils/error-handler';
+import { WorkerLogger } from '../logger';
+import {
+  checkIdempotent,
+  endJob,
+  logError,
+  markCompleted,
+  startJob,
+} from '../processor-base';
 import {
   log,
   SHOULD_RUN_AUTOPILOT_WORKER,
@@ -21,79 +29,128 @@ import {
   runSweepUnreadConversations,
 } from './__companions__/autopilot-core.companion';
 
+const autopilotLog = new WorkerLogger('autopilot-worker');
+
 /** Autopilot worker. */
 export const autopilotWorker = SHOULD_RUN_AUTOPILOT_WORKER
   ? new Worker(
       'autopilot-jobs',
       async (job: Job) => {
+        const meta = startJob(job, autopilotLog);
+        const ctxLog = autopilotLog.withContext(meta.correlationId, meta.workspaceId);
+
         try {
+          const dedup = await checkIdempotent(job);
+          if (dedup) {
+            ctxLog.info('job_skipped_idempotent', { jobId: job.id });
+            endJob(meta, ctxLog, job.name, 'skipped');
+            return { ok: true, skipped: true, reason: 'idempotent' };
+          }
+
           await job.updateProgress(10);
 
           if (job.name === 'cycle-all') {
-            return await runCycleAll();
+            await runCycleAll();
+            await markCompleted(job);
+            endJob(meta, ctxLog, job.name, 'completed');
+            return;
           }
 
           if (job.name === 'cia-cycle-all') {
-            return await runCiaCycleAll();
+            await runCiaCycleAll();
+            await markCompleted(job);
+            endJob(meta, ctxLog, job.name, 'completed');
+            return;
           }
 
           if (job.name === 'cycle-workspace') {
             const workspaceId = job.data?.workspaceId;
             if (workspaceId) {
-              return await runCycleWorkspace(workspaceId);
+              await runCycleWorkspace(workspaceId);
             }
+            await markCompleted(job);
+            endJob(meta, ctxLog, job.name, 'completed');
             return;
           }
 
           if (job.name === 'cia-cycle-workspace') {
             const workspaceId = job.data?.workspaceId;
             if (workspaceId) {
-              return await runCiaCycleWorkspace(workspaceId);
+              await runCiaCycleWorkspace(workspaceId);
             }
+            await markCompleted(job);
+            endJob(meta, ctxLog, job.name, 'completed');
             return;
           }
 
           if (job.name === 'followup-contact') {
-            return await runFollowupContact(job.data);
+            await runFollowupContact(job.data);
+            await markCompleted(job);
+            endJob(meta, ctxLog, job.name, 'completed');
+            return;
           }
 
           if (job.name === 'scan-contact') {
-            return await runScanContact(job.data);
+            await runScanContact(job.data);
+            await markCompleted(job);
+            endJob(meta, ctxLog, job.name, 'completed');
+            return;
           }
 
           if (job.name === AUTOPILOT_SWEEP_UNREAD_CONVERSATIONS_JOB) {
-            return await runSweepUnreadConversations(job.data);
+            await runSweepUnreadConversations(job.data);
+            await markCompleted(job);
+            endJob(meta, ctxLog, job.name, 'completed');
+            return;
           }
 
           if (job.name === 'catalog-contacts-30d') {
-            return await runCatalogContacts(job.data);
+            await runCatalogContacts(job.data);
+            await markCompleted(job);
+            endJob(meta, ctxLog, job.name, 'completed');
+            return;
           }
 
           if (job.name === 'score-contact') {
-            return await runScoreContact(job.data);
+            await runScoreContact(job.data);
+            await markCompleted(job);
+            endJob(meta, ctxLog, job.name, 'completed');
+            return;
           }
 
           if (job.name === 'cia-action') {
-            return await runCiaAction(job.data);
+            await runCiaAction(job.data);
+            await markCompleted(job);
+            endJob(meta, ctxLog, job.name, 'completed');
+            return;
           }
 
           if (job.name === 'cia-self-improve') {
             const workspaceId = job.data?.workspaceId;
             if (workspaceId) {
-              return await runCiaSelfImproveWorkspace(workspaceId);
+              await runCiaSelfImproveWorkspace(workspaceId);
+            } else {
+              await runCiaSelfImproveAll();
             }
-            return await runCiaSelfImproveAll();
+            await markCompleted(job);
+            endJob(meta, ctxLog, job.name, 'completed');
+            return;
           }
 
           if (job.name === 'cia-global-learn') {
-            return await runCiaGlobalLearningAll();
+            await runCiaGlobalLearningAll();
+            await markCompleted(job);
+            endJob(meta, ctxLog, job.name, 'completed');
+            return;
           }
 
           await job.updateProgress(90);
-          return await runScanContact(job.data);
+          await runScanContact(job.data);
+          await markCompleted(job);
+          endJob(meta, ctxLog, job.name, 'completed');
         } catch (err: unknown) {
           const msg = err instanceof Error ? err.message : String(err);
-          log.error('autopilot_error', { error: msg, jobId: job.id, name: job.name });
+          logError(meta, ctxLog, err, job.name);
           autopilotDecisionCounter.inc({
             workspaceId: job.data?.workspaceId || 'unknown',
             intent: 'ERROR',
@@ -108,7 +165,7 @@ export const autopilotWorker = SHOULD_RUN_AUTOPILOT_WORKER
           throw err;
         }
       },
-      { connection, concurrency: 4, lockDuration: 60000 },
+      { ...buildQueueOptions(), concurrency: 4, lockDuration: 60000 },
     )
   : null;
 

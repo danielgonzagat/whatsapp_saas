@@ -43,29 +43,6 @@ const ConversationHistoryContext = createContext<ConversationHistoryContextType>
   clearAll: () => {},
 });
 
-const CONVERSATIONS_CACHE_SLOT = 'kloel:conversations';
-const ACTIVE_CONVERSATION_CACHE_SLOT = 'kloel:activeConv';
-
-function readCache<T>(key: string, fallback: T): T {
-  try {
-    const raw = localStorage.getItem(key);
-    if (raw === null) {
-      return fallback;
-    }
-    return JSON.parse(raw) as T;
-  } catch {
-    return fallback;
-  }
-}
-
-function writeCache<T>(key: string, value: T): void {
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-  } catch {
-    // Storage full or unavailable
-  }
-}
-
 function isValidConversationId(value?: string | null): boolean {
   const normalized = String(value || '').trim();
   return Boolean(normalized) && !normalized.startsWith('local_');
@@ -76,7 +53,6 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
   const { isAuthenticated, isLoading } = useAuth();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConv, setActiveConv] = useState<string | null>(null);
-  const [cacheHydrated, setCacheHydrated] = useState(false);
   const didSyncRef = useRef(false);
 
   const applyConversations = useCallback((nextConversations: Conversation[]) => {
@@ -96,7 +72,6 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
       .slice(0, 50);
 
     setConversations(normalized);
-    writeCache(CONVERSATIONS_CACHE_SLOT, normalized);
     setActiveConv((current) =>
       current && !normalized.some((conversation) => conversation.id === current) ? null : current,
     );
@@ -117,24 +92,9 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
       }));
       applyConversations(mapped);
     } catch {
-      // Keep cached conversations when backend is temporarily unavailable
+      // Keep current conversations when backend is temporarily unavailable
     }
   }, [applyConversations, isAuthenticated]);
-
-  useEffect(() => {
-    const cachedConversations = readCache<Conversation[]>(CONVERSATIONS_CACHE_SLOT, []).filter(
-      (conversation) => isValidConversationId(conversation?.id),
-    );
-    const cachedActiveConversation = readCache<string | null>(ACTIVE_CONVERSATION_CACHE_SLOT, null);
-
-    setConversations(cachedConversations);
-    setActiveConv(
-      cachedActiveConversation && isValidConversationId(cachedActiveConversation)
-        ? cachedActiveConversation
-        : null,
-    );
-    setCacheHydrated(true);
-  }, []);
 
   useEffect(() => {
     if (isLoading) {
@@ -145,10 +105,6 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
       didSyncRef.current = false;
       setConversations([]);
       setActiveConv(null);
-      try {
-        localStorage.removeItem(CONVERSATIONS_CACHE_SLOT);
-        localStorage.removeItem(ACTIVE_CONVERSATION_CACHE_SLOT);
-      } catch {}
       return;
     }
 
@@ -185,21 +141,6 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
       document.removeEventListener('visibilitychange', handleVisibilityRefresh);
     };
   }, [isAuthenticated, isLoading, refreshConversations]);
-
-  // Update cache whenever conversations change (write-through cache)
-  useEffect(() => {
-    if (!cacheHydrated) {
-      return;
-    }
-    writeCache(CONVERSATIONS_CACHE_SLOT, conversations);
-  }, [cacheHydrated, conversations]);
-
-  useEffect(() => {
-    if (!cacheHydrated) {
-      return;
-    }
-    writeCache(ACTIVE_CONVERSATION_CACHE_SLOT, activeConv);
-  }, [activeConv, cacheHydrated]);
 
   const addConversation = useCallback(async (title?: string): Promise<string | null> => {
     try {
@@ -259,7 +200,6 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
         ...prev.filter((entry) => entry.id !== conversation.id),
       ].slice(0, 50);
 
-      writeCache(CONVERSATIONS_CACHE_SLOT, next);
       return next;
     });
   }, []);
@@ -267,10 +207,6 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
   const clearAll = useCallback(() => {
     setConversations([]);
     setActiveConv(null);
-    try {
-      localStorage.removeItem(CONVERSATIONS_CACHE_SLOT);
-      localStorage.removeItem(ACTIVE_CONVERSATION_CACHE_SLOT);
-    } catch {}
   }, []);
 
   return (

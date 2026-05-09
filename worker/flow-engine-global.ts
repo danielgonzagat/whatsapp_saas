@@ -153,7 +153,7 @@ export class FlowEngineGlobal {
         data: {
           flowId: flow.id,
           workspaceId,
-          contactId: contact?.id,
+          contactId: contact?.id ?? null,
           status: 'RUNNING',
           currentNodeId: flow.startNode,
           state: state.variables as Prisma.InputJsonValue,
@@ -220,8 +220,9 @@ export class FlowEngineGlobal {
         }
       })();
     } catch (e) {
-      this.log.warn('NeuroTrigger Failed', e);
-      this.log.warn('Context', e);
+      const details = e instanceof Error ? { error: e.message } : { error: String(e) };
+      this.log.warn('NeuroTrigger Failed', details);
+      this.log.warn('Context', details);
     }
     // -------------------------
 
@@ -265,7 +266,7 @@ export class FlowEngineGlobal {
     const executeNodeWithTimeout = async (
       currentState: ExecutionState,
       node: FlowNode,
-    ): Promise<string | 'WAIT' | 'END'> => {
+    ): Promise<string | 'WAIT' | 'END' | undefined> => {
       const timeout = new Promise<never>((_, reject) =>
         setTimeout(
           () =>
