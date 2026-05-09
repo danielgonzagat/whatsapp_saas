@@ -26,6 +26,8 @@ export class RateLimitService {
   private isExplicitE2ETestHarness(): boolean {
     return (
       process.env.NODE_ENV !== 'production' &&
+      !process.env.JEST_WORKER_ID &&
+      process.env.NODE_ENV !== 'test' &&
       (process.env.E2E_TEST_MODE === 'true' || process.env.OPENAI_API_KEY === 'e2e-dummy-key')
     );
   }
