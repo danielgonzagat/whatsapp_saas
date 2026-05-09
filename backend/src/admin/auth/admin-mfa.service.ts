@@ -69,9 +69,13 @@ export class AdminMfaService {
     try {
       secret = decryptAdminSecret(encryptedSecret, this.encryptionKey);
     } catch (err) {
-      this.logger.error('Failed to decrypt MFA secret during resume', err instanceof Error ? err.message : String(err), {
-        context: 'AdminMfaService.resumeSetup',
-      });
+      this.logger.error(
+        'Failed to decrypt MFA secret during resume',
+        err instanceof Error ? err.message : String(err),
+        {
+          context: 'AdminMfaService.resumeSetup',
+        },
+      );
       throw adminErrors.cryptoFailure();
     }
     return this.buildSetup(accountLabel, secret, encryptedSecret);
@@ -104,9 +108,13 @@ export class AdminMfaService {
     try {
       secret = decryptAdminSecret(encryptedSecret, this.encryptionKey);
     } catch (err) {
-      this.logger.error('Failed to decrypt MFA secret during verify', err instanceof Error ? err.message : String(err), {
-        context: 'AdminMfaService.verifyCode',
-      });
+      this.logger.error(
+        'Failed to decrypt MFA secret during verify',
+        err instanceof Error ? err.message : String(err),
+        {
+          context: 'AdminMfaService.verifyCode',
+        },
+      );
       throw adminErrors.cryptoFailure();
     }
     const ok = authenticator.check(code, secret);

@@ -16,13 +16,16 @@ const eslintConfig = defineConfig([
   ]),
   {
     rules: {
+      '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-unused-vars': [
         'error',
         { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
       ],
-      'react-hooks/exhaustive-deps': 'warn',
-      'react-hooks/set-state-in-effect': 'off',
-      '@next/next/no-img-element': 'off',
+      'react-hooks/purity': 'error',
+      'react-hooks/set-state-in-effect': 'error',
+      'react-hooks/exhaustive-deps': 'error',
+      '@next/next/no-img-element': 'error',
+      'jsx-a11y/alt-text': 'error',
     },
   },
 ]);
