@@ -4,7 +4,6 @@ import type { ComponentType, CSSProperties, SVGProps } from 'react';
 import {
   Activity,
   BarChart3,
-  Brain,
   Building2,
   FileText,
   Megaphone,
@@ -261,7 +260,6 @@ export const ADMIN_SIDEBAR_SECTIONS: readonly AdminSidebarSection[] = [
         ],
       },
       { key: 'relatorios', label: 'Relatórios', href: '/relatorios', icon: BarChart3 },
-      { key: 'mente', label: 'Mente', href: '/mente', icon: Brain },
     ],
   },
   {

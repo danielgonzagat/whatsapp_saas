@@ -2,7 +2,6 @@
 // No React hooks — only accepts React setState callbacks as arguments.
 
 import { kloelError } from '@/lib/i18n/t';
-import { streamBrainMessage } from '@/lib/brain-client';
 import { streamAuthenticatedKloelMessage } from '@/lib/kloel-conversations';
 import { appendAssistantTraceFromEvent } from '@/lib/kloel-message-ui';
 import type { KloelStreamEvent } from '@/lib/kloel-stream-events';
@@ -162,8 +161,6 @@ export function runAuthedChat(deps: AuthedChatDeps): void {
   let nextConversationId = activeConversationId || null;
   let nextTitle =
     conversations.find((c) => c.id === activeConversationId)?.title || 'Nova conversa';
-  const useBrainStream = process.env.NEXT_PUBLIC_KLOEL_BRAIN_CHAT === 'true';
-
   setIsCancelableReply(true);
   const streamOptions = {
     onEvent: (event: KloelStreamEvent) => {
@@ -238,26 +235,15 @@ export function runAuthedChat(deps: AuthedChatDeps): void {
       setIsTyping(false);
     },
   };
-  authedChatStreamRef.current = useBrainStream
-    ? streamBrainMessage(
-        {
-          message: content.trim(),
-          conversationId: activeConversationId || undefined,
-          source: 'chat',
-          intent: 'user_message',
-          metadata: { clientRequestId, source: 'kloel_chat_container' },
-        },
-        streamOptions,
-      )
-    : streamAuthenticatedKloelMessage(
-        {
-          message: content.trim(),
-          conversationId: activeConversationId || undefined,
-          mode: 'chat',
-          metadata: { clientRequestId, source: 'kloel_chat_container' },
-        },
-        streamOptions,
-      );
+  authedChatStreamRef.current = streamAuthenticatedKloelMessage(
+    {
+      message: content.trim(),
+      conversationId: activeConversationId || undefined,
+      mode: 'chat',
+      metadata: { clientRequestId, source: 'kloel_chat_container' },
+    },
+    streamOptions,
+  );
 }
 
 /** Synchronously extracts an error message from an unknown error value. */

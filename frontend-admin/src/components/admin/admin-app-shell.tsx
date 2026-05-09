@@ -19,7 +19,6 @@ const MOBILE_LABELS: Record<string, string> = {
   '/vendas': 'Vendas',
   '/carteira': 'Carteira',
   '/relatorios': 'Relatórios',
-  '/mente': 'Mente',
   '/contas': 'Contas',
   '/compliance': 'Compliance',
   '/operacoes': 'Operações',
@@ -44,9 +43,6 @@ function labelForPath(pathname: string) {
   }
   if (pathname.startsWith('/relatorios')) {
     return MOBILE_LABELS['/relatorios'];
-  }
-  if (pathname.startsWith('/mente')) {
-    return MOBILE_LABELS['/mente'];
   }
   if (pathname.startsWith('/contas')) {
     return MOBILE_LABELS['/contas'];
