@@ -1,6 +1,6 @@
 import type { CaseMemoryLookup } from './mind-case-memory-decision.helper';
-import type { MindPolicyService } from './mind-policy.service';
 import {
+  type MindPolicyChooser,
   resolveAudioVsTextDecision,
   resolveCouponDecision,
   resolveToneDecision,
@@ -10,13 +10,13 @@ function mockCases(rows: Array<Record<string, unknown>>): CaseMemoryLookup {
   return { similar: jest.fn().mockResolvedValue(rows) };
 }
 
-function mockPolicy(chosen: string, beliefMean = 0.7): MindPolicyService {
+function mockPolicy(chosen: string, beliefMean = 0.7): MindPolicyChooser {
   return {
     choose: jest.fn().mockResolvedValue({
       chosen,
       decision: { candidates: [{ action: chosen, beliefMean }], fallbackActive: false },
     }),
-  } as unknown as MindPolicyService;
+  };
 }
 
 describe('resolveAudioVsTextDecision with memory', () => {

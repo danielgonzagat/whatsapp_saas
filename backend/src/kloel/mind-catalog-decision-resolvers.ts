@@ -13,7 +13,9 @@ import {
   resolveToneBaseline,
 } from './mind-decision-baselines';
 
-type PolicyDecisionResult = Awaited<ReturnType<MindPolicyService['choose']>>;
+export type MindPolicyChooser = Pick<MindPolicyService, 'choose'>;
+
+type PolicyDecisionResult = Awaited<ReturnType<MindPolicyChooser['choose']>>;
 
 function decisionConfidence(result: PolicyDecisionResult): number {
   return (
@@ -33,7 +35,7 @@ function formatDecimal(value: number, fractionDigits: number): string {
 }
 
 export async function resolveAggressivenessDecision(
-  policy: MindPolicyService,
+  policy: MindPolicyChooser,
   workspaceId: string,
   domain: string,
   soldRate: number,
@@ -63,7 +65,7 @@ export async function resolveAggressivenessDecision(
 }
 
 export async function resolveAudioVsTextDecision(
-  policy: MindPolicyService,
+  policy: MindPolicyChooser,
   cases: CaseMemoryLookup,
   workspaceId: string,
   channel: string,
@@ -100,7 +102,7 @@ export async function resolveAudioVsTextDecision(
 }
 
 export async function resolveToneDecision(
-  policy: MindPolicyService,
+  policy: MindPolicyChooser,
   cases: CaseMemoryLookup,
   workspaceId: string,
   channel: string,
@@ -144,7 +146,7 @@ export async function resolveToneDecision(
 }
 
 export async function resolveCouponDecision(
-  policy: MindPolicyService,
+  policy: MindPolicyChooser,
   cases: CaseMemoryLookup,
   workspaceId: string,
   priceBand: string,
@@ -185,7 +187,7 @@ export async function resolveCouponDecision(
 }
 
 export async function resolveHumanTransferDecision(
-  policy: MindPolicyService,
+  policy: MindPolicyChooser,
   workspaceId: string,
   channel: string,
   concept: string,
@@ -225,7 +227,7 @@ export async function resolveHumanTransferDecision(
 }
 
 export async function resolveChannelChoiceDecision(
-  policy: MindPolicyService,
+  policy: MindPolicyChooser,
   workspaceId: string,
   availableChannels: string[],
   segment?: string,
@@ -262,7 +264,7 @@ export async function resolveChannelChoiceDecision(
 }
 
 export async function resolveProductOfferDecision(
-  policy: MindPolicyService,
+  policy: MindPolicyChooser,
   workspaceId: string,
   segment: string,
   concept: string,
@@ -297,7 +299,7 @@ export async function resolveProductOfferDecision(
 }
 
 export async function resolveBroadcastWindowDecision(
-  policy: MindPolicyService,
+  policy: MindPolicyChooser,
   workspaceId: string,
   channel: string,
   segment: string,
@@ -331,7 +333,7 @@ export async function resolveBroadcastWindowDecision(
 }
 
 export async function resolveAdAlertActionDecision(
-  policy: MindPolicyService,
+  policy: MindPolicyChooser,
   workspaceId: string,
   metric: string,
   window: number,
