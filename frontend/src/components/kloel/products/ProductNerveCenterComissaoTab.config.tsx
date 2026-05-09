@@ -5,12 +5,11 @@ import { useToast } from '@/components/kloel/ToastProvider';
 import { apiFetch } from '@/lib/api';
 import { formatPercentInput, parseLocalePercent } from './ProductNerveCenterComissaoTab.helpers';
 import { useCommissionConfigState } from './ProductNerveCenterComissaoTab.hooks';
+import { IntegerStepperField, PercentStepperField } from './product-nerve-center.inputs';
 import {
   Bt,
   Dv,
   Fd,
-  IntegerStepperField,
-  PercentStepperField,
   Tg,
   V,
   cs,
