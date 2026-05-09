@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import type { AdInsightSyncResult } from '../ad-provider.interface';
@@ -6,6 +6,8 @@ import type { AdInsightSyncResult } from '../ad-provider.interface';
 /** Ad insight service. */
 @Injectable()
 export class AdInsightService {
+  private readonly logger = new Logger(AdInsightService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   async list(

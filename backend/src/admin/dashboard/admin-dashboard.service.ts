@@ -388,10 +388,10 @@ export class AdminDashboardService {
         churnRate: {
           value: current.churnRate,
           previous: previous?.churnRate ?? null,
-            deltaPct:
-                current.churnRate === null || !previous || previous.churnRate === null
-                  ? null
-                  : deltaPct(current.churnRate, previous.churnRate),
+          deltaPct:
+            current.churnRate === null || !previous || previous.churnRate === null
+              ? null
+              : deltaPct(current.churnRate, previous.churnRate),
         },
         conversations: makeNumberKpi(
           current.conversationCount,

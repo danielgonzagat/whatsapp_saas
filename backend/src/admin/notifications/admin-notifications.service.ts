@@ -65,7 +65,14 @@ export class AdminNotificationsService {
             updatedAt: true,
             workspace: { select: { id: true, name: true } },
           },
-        }) as Promise<Array<{ id: string; name: string; updatedAt: Date; workspace: { id: string; name: string } }>>,
+        }) as Promise<
+          Array<{
+            id: string;
+            name: string;
+            updatedAt: Date;
+            workspace: { id: string; name: string };
+          }>
+        >,
         this.prisma.conversation.findMany({
           where: { unreadCount: { gt: 0 }, workspaceId: undefined },
           orderBy: { lastMessageAt: 'desc' },
@@ -76,7 +83,14 @@ export class AdminNotificationsService {
             workspace: { select: { id: true, name: true } },
             contact: { select: { name: true } },
           },
-        }) as Promise<Array<{ id: string; lastMessageAt: Date; workspace: { id: string; name: string }; contact: { name: string | null } }>>,
+        }) as Promise<
+          Array<{
+            id: string;
+            lastMessageAt: Date;
+            workspace: { id: string; name: string };
+            contact: { name: string | null };
+          }>
+        >,
         this.prisma.adminLoginAttempt.count({
           where: {
             success: false,
