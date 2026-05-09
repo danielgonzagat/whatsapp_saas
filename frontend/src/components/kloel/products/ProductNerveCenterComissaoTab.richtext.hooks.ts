@@ -80,6 +80,7 @@ export function useRichTextContent(
     linkValue,
     setLinkValue,
     linkError,
+    setLinkError,
     linkInputId,
     editorRef,
     handleSave,

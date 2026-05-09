@@ -1,107 +1,151 @@
 {
-  "report": "KLOEL Final Production Readiness Checklist",
-  "timestamp": "2026-05-01T00:00:00Z",
-  "readinessAudit": {
-    "passes": 231,
-    "failures": 0,
-    "status": "ALL_CHECKS_PASSED",
-    "highlights": [
-      "CI workflow exists",
-      "CodeQL workflow exists",
-      "Codacy analysis workflow exists",
-      "Dependabot auto-merge workflow exists",
-      "Staging deploy workflow exists",
-      "Production deploy workflow exists",
-      "Nightly ops audit workflow exists",
-      "Release Please workflow exists",
-      "Dependabot config exists",
-      "CODEOWNERS policy exists",
-      "Branch protection policy doc exists",
-      "Copilot review instructions exist"
-    ]
+  "generatedAt": "2026-05-09T17:13:43.331Z",
+  "sourceArtifacts": {
+    "pulseHealth": "/Users/danielpenin/whatsapp_saas/PULSE_HEALTH.json",
+    "pulseWorldState": "/Users/danielpenin/whatsapp_saas/PULSE_WORLD_STATE.json",
+    "pulseCodacyState": "/Users/danielpenin/whatsapp_saas/PULSE_CODACY_STATE.json"
   },
-  "testCoverage": {
-    "totalTestFiles": 758,
-    "untestedModules": [
-      "alerts",
-      "api-keys",
-      "audio",
-      "config",
-      "cookie-consent",
-      "copilot",
-      "gdpr",
-      "logging",
-      "marketplace",
-      "observability",
-      "ops",
-      "prisma",
-      "public-api",
-      "test-results",
-      "video",
-      "voice"
-    ],
-    "untestedModuleCount": 16,
-    "totalModules": 64,
-    "testedPercentage": "75.0%"
+  "summary": {
+    "total": 15,
+    "pass": 6,
+    "fail": 7,
+    "warn": 2
   },
-  "linkHealth": {
-    "totalLinks": 11776,
-    "resolvedLinks": 10087,
-    "unresolvedLinks": 1689,
-    "unresolvedPercentage": "14.3%",
-    "status": "NEEDS_ATTENTION"
-  },
-  "authCoverage": {
-    "globalGuards": ["JwtAuthGuard", "RolesGuard", "IdempotencyGuard", "TestModeThrottlerGuard"],
-    "totalControllers": 133,
-    "controllersWithPublicAccess": 1,
-    "publicController": "auth/auth.controller.ts (login/register routes)",
-    "status": "OK",
-    "notes": "All 133 controllers are covered by APP_GUARD global JwtAuthGuard. Only auth endpoints use @Public() decorator for login/register routes."
-  },
-  "observabilityCoverage": {
-    "totalServices": 222,
-    "servicesWithLogger": 155,
-    "servicesWithoutLogger": 67,
-    "loggingCoveragePercentage": "69.8%",
-    "status": "NEEDS_ATTENTION",
-    "recommendation": "67 services lack NestJS Logger injection. Add Logger to all services for error traceability."
-  },
-  "graphDelta": {
-    "before": {
-      "nodeCount": 4649,
-      "linkCount": 11735,
-      "active": true,
-      "id": "a47e8a73dd247cdc"
+  "categories": [
+    {
+      "category": "Build & CI",
+      "items": [
+        {
+          "id": "build-artifacts",
+          "label": "Build artifacts present for all packages",
+          "status": "pass",
+          "detail": "backend/dist, frontend/.next, worker/dist all present",
+          "priority": "P0"
+        },
+        {
+          "id": "ci-commits",
+          "label": "No recent CI breakage commits",
+          "status": "warn",
+          "detail": "5 CI-related commit(s) in last 20: 2c4c70aa feat(decomp/tokens): subagents wave-1 outputs - anuncios decomp",
+          "priority": "P1"
+        },
+        {
+          "id": "git-clean",
+          "label": "Working tree is clean",
+          "status": "warn",
+          "detail": "29 modified/deleted, 15 untracked file(s)",
+          "priority": "P2"
+        }
+      ]
     },
-    "after": {
-      "nodeCount": 4665,
-      "linkCount": 11764,
-      "active": true,
-      "id": "a47e8a73dd247cdc"
+    {
+      "category": "Testing",
+      "items": [
+        {
+          "id": "coverage",
+          "label": "Test coverage meets threshold (>=60%)",
+          "status": "fail",
+          "detail": "No coverage-summary.json found in backend, frontend, or worker",
+          "priority": "P0"
+        }
+      ]
     },
-    "delta": {
-      "nodesAdded": 16,
-      "linksAdded": 29
+    {
+      "category": "Environment",
+      "items": [
+        {
+          "id": "env-files",
+          "label": "Environment template files present",
+          "status": "pass",
+          "detail": "All .env.example files present",
+          "priority": "P0"
+        },
+        {
+          "id": "hooks",
+          "label": "Git hooks integrity verified",
+          "status": "pass",
+          "detail": "All Husky hooks present",
+          "priority": "P0"
+        }
+      ]
+    },
+    {
+      "category": "PULSE Health",
+      "items": [
+        {
+          "id": "pulse-score",
+          "label": "PULSE health score >= 70",
+          "status": "pass",
+          "detail": "Current PULSE score: 77/100 (PARTIAL)",
+          "priority": "P0"
+        },
+        {
+          "id": "pulse-certification",
+          "label": "PULSE certification status is CERTIFIED",
+          "status": "fail",
+          "detail": "Status: PARTIAL, gaps: pre-existing-pulse-gap",
+          "priority": "P0"
+        },
+        {
+          "id": "observability",
+          "label": "Observability coverage is adequate",
+          "status": "fail",
+          "detail": "Observability score: 0, status: PARTIAL",
+          "priority": "P1"
+        }
+      ]
+    },
+    {
+      "category": "World State",
+      "items": [
+        {
+          "id": "scenario-execution",
+          "label": "All declared scenarios are executed",
+          "status": "fail",
+          "detail": "9/17 scenarios executed",
+          "priority": "P1"
+        },
+        {
+          "id": "scenario-passing",
+          "label": "All executed scenarios pass",
+          "status": "pass",
+          "detail": "9/9 scenarios passing",
+          "priority": "P1"
+        },
+        {
+          "id": "async-evidence",
+          "label": "No missing async expectations evidence",
+          "status": "fail",
+          "detail": "11 expectations with missing evidence",
+          "priority": "P1"
+        }
+      ]
+    },
+    {
+      "category": "Codacy",
+      "items": [
+        {
+          "id": "codacy-high",
+          "label": "Zero HIGH-severity Codacy issues",
+          "status": "fail",
+          "detail": "1076 HIGH issues (2180 medium, 4292 low)",
+          "priority": "P0"
+        },
+        {
+          "id": "codacy-grade",
+          "label": "Codacy grade is A",
+          "status": "pass",
+          "detail": "Grade: A (90)",
+          "priority": "P1"
+        },
+        {
+          "id": "codacy-security",
+          "label": "Zero Codacy security issues",
+          "status": "fail",
+          "detail": "452 security issues",
+          "priority": "P0"
+        }
+      ]
     }
-  },
-  "productionBlockers": [
-    {
-      "severity": "HIGH",
-      "issue": "1689 unresolved wiki/obsidian links (14.3%)",
-      "fix": "Audit and resolve broken internal doc links under docs/"
-    },
-    {
-      "severity": "MEDIUM",
-      "issue": "16 backend modules have zero test files",
-      "fix": "Add at least one spec file to: alerts, api-keys, audio, config, cookie-consent, copilot, gdpr, logging, marketplace, observability, ops, prisma, public-api, test-results, video, voice"
-    },
-    {
-      "severity": "MEDIUM",
-      "issue": "67 services (30.2%) lack NestJS Logger injection",
-      "fix": "Add `private readonly logger = new Logger(ClassName.name)` to each service"
-    }
-  ],
-  "finalVerdict": "READY_FOR_PRODUCTION",
-  "notes": "All 231 CI/ops/security gates pass. Auth is globally enforced. Main gaps are documentation link health (14.3% unresolved) and observability coverage (69.8% logging coverage). Neither is a production blocker but both should be addressed before declaring gold-standard readiness."
+  ]
 }

@@ -44,7 +44,7 @@
       "ignore": ["src/**/*.spec.ts", "src/**/*.test.ts", "src/**/*.test.tsx", ".next/**"]
     },
     "worker": {
-      "entry": [
+              "entry": [
         "bootstrap.ts",
         "processor.ts",
         "campaign-processor.ts",
@@ -53,6 +53,8 @@
         "scraper-processor.ts",
         "voice-processor.ts",
         "queue.ts",
+        "reprocess-dlq.ts",
+        "retry-jobs.ts",
         "providers/**/*.ts",
         "processors/**/*.ts",
         "utils/**/*.ts"

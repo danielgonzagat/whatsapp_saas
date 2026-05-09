@@ -1,7 +1,6 @@
 'use client';
 
 import { kloelT } from '@/lib/i18n/t';
-import type React from 'react';
 import {
   Bg,
   Bt,

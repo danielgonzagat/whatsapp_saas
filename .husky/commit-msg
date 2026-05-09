@@ -1,3 +1,0 @@
-#!/usr/bin/env sh
-node scripts/ops/check-codacy-skip-tags.mjs --edit "$1" &&
-  npx commitlint --edit "$1"

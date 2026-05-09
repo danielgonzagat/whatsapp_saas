@@ -5,7 +5,7 @@ import { CheckoutCatalogService } from './checkout-catalog.service';
 import { CheckoutOrderService } from './checkout-order.service';
 import { CheckoutProductService } from './checkout-product.service';
 import { CheckoutPublicPayloadBuilder } from './checkout-public-payload.builder';
-import { getCheckoutByCode as companionGetCheckoutByCode } from './__companions__/checkout-code-lookup';
+import { getCheckoutByCode as companionGetCheckoutByCode } from './checkout-code-lookup.helper';
 
 export type { CheckoutOrderStatusValue } from './checkout-order-status';
 

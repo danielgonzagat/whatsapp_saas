@@ -9,7 +9,7 @@ import { Save } from 'lucide-react';
 import { useEffect, useRef, useState, useId } from 'react';
 import { mutate } from 'swr';
 
-import { PRODUCT_CATEGORIES as CATEGORIES } from '@/lib/categories';
+import { useProductCategories } from '@/hooks/useProducts';
 
 const SHIPPING_TYPES = [
   { value: 'VARIABLE', label: 'Variavel/Gratis' },
@@ -49,6 +49,7 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { categories, isLoading: catLoading, error: catError } = useProductCategories();
 
   useEffect(
     () => () => {
@@ -225,13 +226,26 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
               className={inputClass}
               style={inputStyle}
               id={`${fid}-cat`}
+              disabled={catLoading}
             >
-              <option value="">{kloelT(`Selecione`)}</option>
-              {CATEGORIES.map((c) => (
-                <option key={c} value={c}>
-                  {c}
+              <option value="">
+                {catLoading ? kloelT(`Carregando...`) : kloelT(`Selecione`)}
+              </option>
+              {catError ? (
+                <option value="" disabled>
+                  {kloelT(`Erro ao carregar categorias`)}
                 </option>
-              ))}
+              ) : categories.length === 0 && !catLoading ? (
+                <option value="" disabled>
+                  {kloelT(`Nenhuma categoria — crie um produto primeiro`)}
+                </option>
+              ) : (
+                categories.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))
+              )}
             </select>
           </div>
 

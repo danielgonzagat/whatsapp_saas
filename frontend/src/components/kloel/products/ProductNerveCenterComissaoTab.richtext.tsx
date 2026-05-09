@@ -209,6 +209,7 @@ export function RichTextContentSubTab({
     linkValue,
     setLinkValue,
     linkError,
+    setLinkError,
     linkInputId,
     editorRef,
     handleSave,

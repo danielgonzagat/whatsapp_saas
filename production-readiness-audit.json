@@ -1,44 +1,102 @@
 {
+  "generatedAt": "2026-05-09T17:13:43.331Z",
+  "pipeline": "scripts/pulse/unified-readiness-report.ts",
   "failures": [
-    "ai-constitution gate failed: 4 violations in obsidian scripts (hideUnresolved, writeGeneratedIndexes, codex-obsidian-bridge)"
+    "Test coverage: No coverage-summary.json found in backend, frontend, or worker"
   ],
-  "readiness_status": "pass (231 passes, 0 failures)",
-  "health_check_modules": [],
-  "idempotency_count": 152,
-  "rate_limit_modules": [],
-  "dlq_modules": [],
-  "unsafe_patterns_count": 0,
-  "skipped_tests_count": 3,
-  "critical_gaps": [
+  "readinessStatus": "fail (6 passes, 7 failures, 2 warnings)",
+  "healthScore": 77,
+  "certificationStatus": "PARTIAL",
+  "codacySummary": {
+    "grade": "A",
+    "totalIssues": 7548,
+    "highIssues": 1076,
+    "mediumIssues": 2180
+  },
+  "worldState": {
+    "totalScenarios": 17,
+    "executedScenarios": 9,
+    "pendingExpectations": 11,
+    "missingEvidence": 11,
+    "sessionSummary": [
+      {
+        "kind": "customer",
+        "passed": 1,
+        "total": 4
+      },
+      {
+        "kind": "system",
+        "passed": 0,
+        "total": 3
+      },
+      {
+        "kind": "admin",
+        "passed": 1,
+        "total": 3
+      },
+      {
+        "kind": "operator",
+        "passed": 7,
+        "total": 7
+      }
+    ]
+  },
+  "runtimeChecks": {
+    "build": {
+      "pass": true,
+      "label": "Build artifacts exist",
+      "detail": "backend/dist, frontend/.next, worker/dist all present"
+    },
+    "ciLastRun": {
+      "pass": false,
+      "label": "Recent CI-related commits found",
+      "detail": "5 CI-related commit(s) in last 20: 2c4c70aa feat(decomp/tokens): subagents wave-1 outputs - anuncios decomp"
+    },
+    "gitStatus": {
+      "pass": false,
+      "label": "Working tree dirty",
+      "detail": "29 modified/deleted, 15 untracked file(s)"
+    },
+    "testCoverage": {
+      "pass": false,
+      "label": "Test coverage unavailable",
+      "detail": "No coverage-summary.json found in backend, frontend, or worker"
+    },
+    "envFiles": {
+      "pass": true,
+      "label": "Environment file templates exist",
+      "detail": "All .env.example files present"
+    },
+    "hooksIntegrity": {
+      "pass": true,
+      "label": "Git hooks integrity",
+      "detail": "All Husky hooks present"
+    }
+  },
+  "criticalGaps": [
     {
       "rank": 1,
-      "issue": "Zero health check endpoints in backend/src",
-      "impact": "No way for orchestrators, load balancers, or monitoring to verify service liveness/readiness",
-      "fix": "Add @nestjs/terminus health endpoint with DB/Redis/WhatsApp connectivity checks"
+      "issue": "1076 HIGH-severity Codacy issues remain",
+      "impact": "Code quality and potential security risks blocking production readiness",
+      "fix": "Address HIGH Codacy issues, starting with Security and ErrorProne categories"
     },
     {
       "rank": 2,
-      "issue": "Zero rate limiting implementations in backend",
-      "impact": "All API endpoints exposed to abuse, DDoS, and brute-force attacks",
-      "fix": "Add @nestjs/throttler guard globally and per-route for auth/payment endpoints"
+      "issue": "PULSE certification is PARTIAL",
+      "impact": "System lacks production certification evidence",
+      "fix": "Close certification gaps: pre-existing-pulse-gap"
     },
     {
       "rank": 3,
-      "issue": "Zero dead-letter queue or retry/backoff patterns in worker",
-      "impact": "Failed jobs can be silently lost with no recovery mechanism",
-      "fix": "Implement BullMQ backoff strategies, failure event handlers, and DLQ routing"
+      "issue": "11 async expectations have missing evidence",
+      "impact": "World state cannot be verified for key scenarios",
+      "fix": "Run governed scenario evidence collection for pending expectations"
     },
     {
       "rank": 4,
-      "issue": "AI constitution gate failing in check:all pipeline",
-      "impact": "CI gate can't pass, blocking deployment confidence; obsidian scripts have config violations",
-      "fix": "Restore hideUnresolved:true and showOrphans config in obsidian scripts"
-    },
-    {
-      "rank": 5,
-      "issue": "3 skipped tests (1 backend conditional, 2 e2e)",
-      "impact": "Reduced test coverage confidence; e2e auth-flows and worker-health skipped by design",
-      "fix": "Ensure e2e tests run in CI, gate skipped e2e tests to prevent silent coverage drop"
+      "issue": "Test coverage below threshold",
+      "impact": "Insufficient test coverage for production confidence",
+      "fix": "Increase test coverage to >=60% across all packages"
     }
   ]
 }

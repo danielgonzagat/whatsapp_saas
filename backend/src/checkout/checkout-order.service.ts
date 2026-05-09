@@ -19,7 +19,7 @@ import { buildCheckoutOrderMetadata } from './checkout-order-metadata.util';
 import {
   executeProcessOrderPostPayment,
   type ProcessOrderPostPaymentParams,
-} from './__companions__/checkout-order.service.companion';
+} from './checkout-order.post-payment';
 import type { CheckoutOrderStatusValue } from './checkout-order-status';
 
 const D_RE = /\D/g;
