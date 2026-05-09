@@ -1,7 +1,5 @@
-import { Logger } from '@nestjs/common';
 /** User name derivation service. */
 export class UserNameDerivationService {
-  private readonly logger = new Logger(UserNameDerivationService.name);
   /**
    * Derive user display name from email local part.
    * Replaces separators with spaces, capitalizes first letter.

@@ -9,6 +9,7 @@ import { mutate } from 'swr';
 import { parseKloelChatStreamLine } from './HomeScreen.helpers';
 import { secureRandomFloat } from '@/lib/secure-random';
 import { useTypingSimulation } from './useTypingSimulation';
+import type { Phase, ChatMessage, UseKloelChatOptions, UseKloelChatReturn } from './HomeScreen.types';
 
 const IS_DEV = process.env.NODE_ENV === 'development';
 
@@ -17,45 +18,7 @@ const DEV_FALLBACK_MESSAGE =
 
 const ERROR_MESSAGE = 'Nao foi possivel conectar ao servidor. Tente novamente.';
 
-export type Phase = 'home' | 'transitioning' | 'chat';
-
-export interface ChatMessage {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  displayedContent?: string;
-  isTyping?: boolean;
-  isThinking?: boolean;
-  timestamp: Date;
-}
-
-export interface UseKloelChatOptions {
-  onSendMessage?: (text: string) => void;
-}
-
-export interface UseKloelChatReturn {
-  phase: Phase;
-  homeInput: string;
-  chatInput: string;
-  messages: ChatMessage[];
-  activeConversationId: string | null;
-  thinkingText: string;
-  chatTitle: string;
-  isWaitingForResponse: boolean;
-  copiedId: string | null;
-  setHomeInput: (value: string) => void;
-  setChatInput: (value: string) => void;
-  handleHomeSubmit: () => void;
-  handleChatSubmit: () => void;
-  handleNewChat: () => void;
-  handleStopResponse: () => void;
-  handleCopyMessage: (msgId: string, content: string) => void;
-  handleEditMessage: (content: string) => void;
-  messagesEndRef: React.RefObject<HTMLDivElement | null>;
-  chatContainerRef: React.RefObject<HTMLDivElement | null>;
-  chatInputRef: React.RefObject<HTMLInputElement | null>;
-  ERROR_MESSAGE: string;
-}
+export type { Phase, ChatMessage, UseKloelChatOptions, UseKloelChatReturn } from './HomeScreen.types';
 
 export function useKloelChat({ onSendMessage }: UseKloelChatOptions): UseKloelChatReturn {
   const { conversations, setActiveConversation, upsertConversation, refreshConversations } =

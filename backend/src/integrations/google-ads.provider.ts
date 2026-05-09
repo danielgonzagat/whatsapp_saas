@@ -65,7 +65,6 @@ export class GoogleAdsProvider implements AdProvider {
         return { connected: false, status: 'token_exchange_failed' };
       }
 
-      // Store token in providerSettings.google
       const workspace = await this.prisma.workspace.findUnique({
         where: { id: workspaceId },
         select: { providerSettings: true },
@@ -106,30 +105,18 @@ export class GoogleAdsProvider implements AdProvider {
     };
   }
 
-  async syncAccounts(workspaceId: string): Promise<SyncAccountsResult> {
-    const workspace = await this.prisma.workspace.findUnique({
-      where: { id: workspaceId },
-      select: { providerSettings: true },
-    });
-    const settings = (workspace?.providerSettings as Record<string, unknown>) || {};
-    const google = (settings.google || {}) as Record<string, unknown>;
-    if (!google.accessToken) {
-      return { accounts: [] };
-    }
-    // TODO: Call Google Ads API customer.listAccessibleCustomers() when Google Ads client library is added
-    this.logger.warn('Google Ads syncAccounts not fully implemented — requires google-ads-api client library');
+  async syncAccounts(_workspaceId: string): Promise<SyncAccountsResult> {
+    this.logger.warn('Google Ads syncAccounts scaffold — requires google-ads-api client library');
     return { accounts: [] };
   }
 
-  async syncCampaigns(workspaceId: string): Promise<SyncCampaignsResult> {
-    // TODO: Call Google Ads API GoogleAdsService.Search() when Google Ads client library is added
-    this.logger.warn('Google Ads syncCampaigns not fully implemented — requires google-ads-api client library');
+  async syncCampaigns(_workspaceId: string): Promise<SyncCampaignsResult> {
+    this.logger.warn('Google Ads syncCampaigns scaffold — requires google-ads-api client library');
     return { campaigns: [] };
   }
 
   async syncInsights(_workspaceId: string, _since: Date, _until: Date): Promise<SyncInsightsResult> {
-    // TODO: Call Google Ads API GoogleAdsService.Search() for campaign metrics
-    this.logger.warn('Google Ads syncInsights not fully implemented — requires google-ads-api client library');
+    this.logger.warn('Google Ads syncInsights scaffold — requires google-ads-api client library');
     return { insights: [] };
   }
 }

@@ -173,6 +173,11 @@ model Workspace {
   // Meta Platform Connection
   metaConnection MetaConnection?
 
+  // Ad Accounts, Campaigns & Insights
+  adAccounts  AdAccount[]
+  adCampaigns AdCampaign[]
+  adInsights  AdInsight[]
+
   @@map("RAC_Workspace")
 }
 

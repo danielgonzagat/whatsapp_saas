@@ -3,6 +3,7 @@
 import { useSaleDetail } from '@/hooks/useSales';
 import { IC } from './VendasView.icons';
 import { Badge } from './Badge';
+import { DetailActions } from './DetailActions';
 import { SORA, MONO, SALE_STATUS, SUB_STATUS, ORDER_STATUS, fmtBRL, fmtDate } from './utils';
 import type { SaleItem, SubscriptionItem, OrderItem, DetailItemData } from './types';
 
@@ -247,188 +248,24 @@ export function DetailModal({
             ))}
           </div>
 
-          <div style={{ display: 'flex', gap: 8 }}>
-            {detailType === 'sale' && item.status === 'paid' && (
-              <button
-                type="button"
-                onClick={() => onRefund(item.id)}
-                disabled={actionLoading}
-                style={{
-                  flex: 1,
-                  padding: '10px 16px',
-                  background: 'none',
-                  border: '1px solid var(--app-border-primary)',
-                  borderRadius: 6,
-                  color: 'var(--app-text-secondary)',
-                  fontSize: 12,
-                  cursor: 'pointer',
-                  fontFamily: SORA,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 6,
-                  opacity: actionLoading ? 0.5 : 1,
-                }}
-              >
-                {IC.undo(12)} {actionLoading ? 'Processando...' : 'Reembolsar'}
-              </button>
-            )}
-            {detailType === 'sub' && item.status === 'ACTIVE' && (
-              <>
-                <ActionButton
-                  onClick={() => onPauseSub(item.id)}
-                  disabled={actionLoading}
-                  icon={IC.pause(12)}
-                  label="Pausar"
-                />
-                <button
-                  type="button"
-                  onClick={() => onChangePlan(item.id)}
-                  disabled={actionLoading}
-                  style={{
-                    flex: 1,
-                    padding: '10px 16px',
-                    background: 'none',
-                    border: '1px solid colors.ember.primary',
-                    borderRadius: 6,
-                    color: 'colors.ember.primary',
-                    fontSize: 12,
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    fontFamily: SORA,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 6,
-                  }}
-                >
-                  Mudar plano
-                </button>
-                <ActionButton
-                  onClick={() => onCancelSub(item.id)}
-                  disabled={actionLoading}
-                  icon={IC.x(12)}
-                  label="Cancelar"
-                  color="#EF4444"
-                />
-              </>
-            )}
-            {detailType === 'sub' && item.status === 'PAUSED' && (
-              <button
-                type="button"
-                onClick={() => onResumeSub(item.id)}
-                disabled={actionLoading}
-                style={{
-                  flex: 1,
-                  padding: '10px 16px',
-                  background: 'colors.ember.primary',
-                  border: 'none',
-                  borderRadius: 6,
-                  color: 'var(--app-text-on-accent)',
-                  fontSize: 12,
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  fontFamily: SORA,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 6,
-                }}
-              >
-                {IC.play(12)} Retomar
-              </button>
-            )}
-            {detailType === 'order' && item.status === 'PROCESSING' && (
-              <button
-                type="button"
-                onClick={() => {
-                  onOpenShipModal(item.id);
-                  onClose();
-                }}
-                style={{
-                  flex: 1,
-                  padding: '10px 16px',
-                  background: 'colors.ember.primary',
-                  border: 'none',
-                  borderRadius: 6,
-                  color: 'var(--app-text-on-accent)',
-                  fontSize: 12,
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  fontFamily: SORA,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 6,
-                }}
-              >
-                {IC.truck(12)} Marcar como enviado
-              </button>
-            )}
-            {detailType === 'order' &&
-              (item.status === 'SHIPPED' || item.status === 'DELIVERED') && (
-                <ActionButton
-                  onClick={() => onReturnOrder(item.id)}
-                  disabled={actionLoading}
-                  icon={IC.undo(12)}
-                  label="Devolver"
-                />
-              )}
-            {detailType === 'order' && item.trackingCode && (
-              <ActionButton
-                onClick={() =>
-                  window.open(
-                    `https://www.linkcorreios.com.br/?id=${item.trackingCode}`,
-                    '_blank',
-                  )
-                }
-                icon={IC.map(12)}
-                label="Rastrear"
-              />
-            )}
-          </div>
+          <DetailActions
+            detailType={detailType}
+            itemStatus={item.status || ''}
+            itemId={item.id}
+            hasTrackingCode={Boolean(item.trackingCode)}
+            trackingCode={item.trackingCode}
+            actionLoading={actionLoading}
+            onRefund={onRefund}
+            onPauseSub={onPauseSub}
+            onResumeSub={onResumeSub}
+            onCancelSub={onCancelSub}
+            onChangePlan={onChangePlan}
+            onOpenShipModal={onOpenShipModal}
+            onReturnOrder={onReturnOrder}
+          />
         </div>
       </div>
     </div>
   );
 }
 
-function ActionButton({
-  onClick,
-  disabled,
-  icon,
-  label,
-  color,
-}: {
-  onClick: () => void;
-  disabled?: boolean;
-  icon: React.ReactNode;
-  label: string;
-  color?: string;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      style={{
-        flex: 1,
-        padding: '10px 16px',
-        background: 'none',
-        border: `1px solid var(--app-border-primary)`,
-        borderRadius: 6,
-        color: color || 'var(--app-text-secondary)',
-        fontSize: 12,
-        cursor: 'pointer',
-        fontFamily: SORA,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 6,
-        opacity: disabled ? 0.5 : 1,
-      }}
-    >
-      {icon} {label}
-    </button>
-  );
-}

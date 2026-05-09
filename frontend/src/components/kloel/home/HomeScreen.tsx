@@ -1,6 +1,7 @@
 'use client';
 
-import { useKloelChat, type Phase, type ChatMessage } from './useKloelChat';
+import { useKloelChat } from './useKloelChat';
+import type { Phase, ChatMessage } from './HomeScreen.types';
 import { HomeLanding } from './HomeLanding';
 import { ChatTitleBar } from './ChatTitleBar';
 import { ChatMessageBubble } from './ChatMessageBubble';

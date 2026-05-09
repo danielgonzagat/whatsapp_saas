@@ -29,15 +29,28 @@ const mockPrisma = {
   },
   refreshToken: {
     create: jest.fn(),
+    findUnique: jest.fn(),
+    updateMany: jest.fn(),
   },
   socialAccount: {
     findUnique: jest.fn(),
+    upsert: jest.fn(),
   },
   passwordResetToken: {
     create: jest.fn(),
     findUnique: jest.fn(),
     updateMany: jest.fn(),
+    update: jest.fn(),
   },
+  $transaction: jest.fn((arg: unknown) => {
+    if (typeof arg === 'function') {
+      return arg({
+        agent: mockPrisma.agent,
+        workspace: mockPrisma.workspace,
+      } as unknown as typeof mockPrisma);
+    }
+    return Promise.all(arg as Array<Promise<unknown>>);
+  }),
 };
 
 const mockJwt = {
@@ -80,7 +93,10 @@ describe('AuthFlows', () => {
     jest.clearAllMocks();
     process.env.RATE_LIMIT_DISABLED = 'true';
     mockPrisma.agent.findFirst.mockResolvedValue(null);
-    mockPrisma.workspace.findUnique.mockResolvedValue(null);
+    mockPrisma.workspace.findUnique.mockImplementation(
+      async ({ where }: { where: { id: string } }) =>
+        where?.id ? { id: where.id, name: 'Workspace' } : null,
+    );
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [

@@ -14,6 +14,7 @@ import {
   ChannelStatsList,
   ChannelInfoGridCard,
   channelDataStats,
+  RegisteredDataList,
 } from './MarketingShared';
 import type { ChannelRealData, MarketingConnectStatus } from './MarketingTypes';
 
@@ -281,4 +282,3 @@ function MetaConnectPrompt({
   );
 }
 
-import { RegisteredDataList } from './MarketingShared';

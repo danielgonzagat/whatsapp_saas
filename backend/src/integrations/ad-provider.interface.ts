@@ -1,5 +1,3 @@
-import type { AdAccount, AdCampaign, AdInsight } from '@prisma/client';
-
 export interface AdAccountSyncResult {
   platform: string;
   accountId: string;

@@ -23,7 +23,6 @@ export class MetaMarketingProvider implements AdProvider {
   ) {}
 
   async connect(_workspaceId: string, redirectUri: string): Promise<OAuthConnectResult> {
-    // TODO: Use META_APP_ID and META_APP_SECRET env vars for OAuth
     const appId = String(process.env.META_APP_ID || '').trim();
     if (!appId) {
       return { connected: false, status: 'meta_app_id_not_configured' };
@@ -61,12 +60,12 @@ export class MetaMarketingProvider implements AdProvider {
         create: {
           workspaceId,
           accessToken,
-          adAccountId: primaryAccount?.id as string | undefined,
+          adAccountId: (primaryAccount?.id as string) ?? null,
           status: 'connected',
         },
         update: {
           accessToken,
-          adAccountId: primaryAccount?.id as string | undefined,
+          adAccountId: (primaryAccount?.id as string) ?? null,
           status: 'connected',
         },
       });
@@ -88,7 +87,7 @@ export class MetaMarketingProvider implements AdProvider {
     return {
       connected: conn?.status === 'connected',
       status: conn?.status || 'disconnected',
-      accountId: conn?.adAccountId ?? undefined,
+      accountId: conn?.adAccountId ?? null,
     };
   }
 
@@ -105,12 +104,13 @@ export class MetaMarketingProvider implements AdProvider {
         fields: 'id,name,account_status',
       }, conn.accessToken);
       const data = response as Record<string, unknown>;
-      const account = {
-        platform: 'meta' as const,
-        accountId: `act_${conn.adAccountId}`,
-        accountName: (data.name as string) || `Meta Ad Account ${conn.adAccountId}`,
+      return {
+        accounts: [{
+          platform: 'meta',
+          accountId: `act_${conn.adAccountId}`,
+          accountName: (data.name as string) || `Meta Ad Account ${conn.adAccountId}`,
+        }],
       };
-      return { accounts: [account] };
     } catch (err) {
       this.logger.error('Meta account sync failed', err);
       return { accounts: [] };
@@ -139,7 +139,7 @@ export class MetaMarketingProvider implements AdProvider {
           try {
             insights = await this.metaAds.getCampaignInsights(campaignId, conn.accessToken, '2024-01-01', '2099-12-31');
           } catch {
-            // Insights may fail for new campaigns; use zeros
+            // Insights may fail for new campaigns
           }
           const insightData = ((insights as Record<string, unknown>).data as Array<Record<string, unknown>>)?.[0] || {};
           return {

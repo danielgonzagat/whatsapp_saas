@@ -314,6 +314,13 @@ export const CH_CONFIG: Record<
     backendKey: 'EMAIL',
     hasIntegration: true,
   },
+  sms: {
+    icon: IC.send,
+    label: 'SMS',
+    color: '#8B5CF6',
+    backendKey: 'SMS',
+    hasIntegration: false,
+  },
 };
 
 function drawNeuralFrame(

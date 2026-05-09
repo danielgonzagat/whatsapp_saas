@@ -5,7 +5,6 @@ import { PulseLoader } from '@/components/kloel/PulseLoader';
 import { Button } from '@/components/ui/button';
 import { Upload } from 'lucide-react';
 import React, { useRef, useState } from 'react';
-import { tokenStorage } from '@/lib/api';
 import { uploadKnowledgeBase } from '@/lib/api/ai-assistant';
 
 interface KbFileUploadProps {

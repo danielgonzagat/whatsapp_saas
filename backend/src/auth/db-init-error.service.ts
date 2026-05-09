@@ -1,4 +1,4 @@
-import { ServiceUnavailableException, Logger } from '@nestjs/common';
+import { ServiceUnavailableException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
 /**
@@ -11,7 +11,6 @@ import { Prisma } from '@prisma/client';
  * - PrismaClientInitializationError: Connection pool exhaustion or startup errors
  */
 export class DbInitErrorService {
-  private readonly logger = new Logger(DbInitErrorService.name);
   /** Throw friendly db init error. */
   static throwFriendlyDbInitError(error: unknown): never {
     const message = error instanceof Error ? error.message : '';

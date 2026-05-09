@@ -35,8 +35,14 @@ export interface PlatformStatusResponse {
   platform: string;
   connected: boolean;
   status: string;
-  accountId?: string;
+  accountId: string;
   clientConfigured: boolean;
+}
+
+type PrismaProviderSettings = Record<string, unknown>;
+
+function isConnected(tiktok: Record<string, unknown>): boolean {
+  return Boolean(tiktok.connected);
 }
 
 @Injectable()
@@ -46,9 +52,9 @@ export class AnunciosService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly metaProvider: MetaMarketingProvider,
-    private readonly googleProvider: GoogleAdsProvider,
-    private readonly tiktokProvider: TikTokAdsProvider,
+    metaProvider: MetaMarketingProvider,
+    googleProvider: GoogleAdsProvider,
+    tiktokProvider: TikTokAdsProvider,
   ) {
     this.providers = [metaProvider, googleProvider, tiktokProvider];
   }
@@ -59,25 +65,23 @@ export class AnunciosService {
 
   async getPlatformStatuses(workspaceId: string): Promise<PlatformStatusResponse[]> {
     const results = await Promise.all(
-      this.providers.map(async (provider) => {
+      this.providers.map(async (provider): Promise<PlatformStatusResponse> => {
         try {
           const status = await provider.getStatus(workspaceId);
           let clientConfigured = true;
           if (provider.platform === 'meta') {
-            clientConfigured = Boolean(String(process.env.META_APP_ID || '').trim());
+            clientConfigured = String(process.env.META_APP_ID || '').trim().length > 0;
           } else if (provider.platform === 'google') {
-            clientConfigured = Boolean(String(process.env.GOOGLE_ADS_CLIENT_ID || '').trim());
+            clientConfigured = String(process.env.GOOGLE_ADS_CLIENT_ID || '').trim().length > 0;
           } else if (provider.platform === 'tiktok') {
-            clientConfigured = Boolean(
-              String(process.env.TIKTOK_CLIENT_KEY || '').trim() ||
-              String(process.env.TIKTOK_CLIENT_SECRET || '').trim(),
-            );
+            clientConfigured =
+              String(process.env.TIKTOK_CLIENT_KEY || '').trim().length > 0;
           }
           return {
             platform: provider.platform,
             connected: status.connected,
             status: status.status,
-            accountId: status.accountId,
+            accountId: status.accountId ?? '',
             clientConfigured,
           };
         } catch {
@@ -85,6 +89,7 @@ export class AnunciosService {
             platform: provider.platform,
             connected: false,
             status: 'error',
+            accountId: '',
             clientConfigured: false,
           };
         }
@@ -93,15 +98,15 @@ export class AnunciosService {
     return results;
   }
 
-  async getConnectUrl(workspaceId: string, platform: string): Promise<{ authUrl?: string }> {
+  async getConnectUrl(workspaceId: string, platform: string): Promise<{ authUrl: string }> {
     const frontendUrl = String(process.env.FRONTEND_URL || 'https://app.kloel.com').replace(/\/+$/, '');
     const redirectUri = `${frontendUrl}/api/anuncios/callback/${platform}`;
     const provider = this.providerFor(platform);
     if (!provider) {
-      return {};
+      return { authUrl: '' };
     }
     const result = await provider.connect(workspaceId, redirectUri);
-    return { authUrl: result.authUrl };
+    return { authUrl: result.authUrl ?? '' };
   }
 
   async completeOAuth(
@@ -185,12 +190,12 @@ export class AnunciosService {
               workspaceId,
               platform: acc.platform,
               accountId: acc.accountId,
-              accountName: acc.accountName,
+              accountName: acc.accountName ?? null,
               status: 'connected',
               lastSyncAt: new Date(),
             },
             update: {
-              accountName: acc.accountName,
+              accountName: acc.accountName ?? null,
               status: 'connected',
               lastSyncAt: new Date(),
             },
@@ -199,11 +204,11 @@ export class AnunciosService {
       }),
     );
 
-    results.forEach((r) => {
+    for (const r of results) {
       if (r.status === 'rejected') {
         this.logger.error('Account sync failed for a provider', r.reason);
       }
-    });
+    }
 
     return this.getAccounts(workspaceId);
   }
@@ -226,8 +231,8 @@ export class AnunciosService {
               accountId: camp.accountId,
               platform: camp.platform,
               campaignId: camp.campaignId,
-              campaignName: camp.campaignName,
-              status: camp.status,
+              campaignName: camp.campaignName ?? null,
+              status: camp.status ?? null,
               spend: camp.spend,
               revenue: camp.revenue,
               roas: camp.roas,
@@ -239,8 +244,8 @@ export class AnunciosService {
               lastSyncAt: new Date(),
             },
             update: {
-              campaignName: camp.campaignName,
-              status: camp.status,
+              campaignName: camp.campaignName ?? null,
+              status: camp.status ?? null,
               spend: camp.spend,
               revenue: camp.revenue,
               roas: camp.roas,
@@ -256,11 +261,11 @@ export class AnunciosService {
       }),
     );
 
-    results.forEach((r) => {
+    for (const r of results) {
       if (r.status === 'rejected') {
         this.logger.error('Campaign sync failed for a provider', r.reason);
       }
-    });
+    }
 
     return this.getCampaigns(workspaceId);
   }

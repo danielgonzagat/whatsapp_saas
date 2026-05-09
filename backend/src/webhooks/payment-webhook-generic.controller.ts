@@ -361,6 +361,25 @@ export class PaymentWebhookGenericController {
     );
     if (wooDupe) return wooDupe;
 
+    const wooExternalId = eventId || body?.id || body?.number || `woocommerce_${Date.now()}`;
+    let wooWebhookEvent: WebhookEvent | undefined;
+    try {
+      wooWebhookEvent = await this.webhooksService.logWebhookEvent(
+        'woocommerce',
+        body?.status || 'unknown',
+        String(wooExternalId),
+        body,
+      );
+    } catch (err: unknown) {
+      const errMsg =
+        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
+      if ((err as { code?: string } | null)?.code === 'P2002') {
+        this.logger.log(`Duplicate WooCommerce webhook event ${wooExternalId}, returning 200`);
+        return { ok: true, skipped: true, reason: 'duplicate_webhook_event' };
+      }
+      this.logger.warn(`Failed to log WooCommerce webhook event: ${errMsg?.message}`);
+    }
+
     const status = (body?.status || '').toLowerCase();
     const isPaid = status === 'completed' || status === 'processing' || status === 'paid';
     if (!isPaid) return { ok: true, ignored: true, reason: 'status_not_paid' };
@@ -386,6 +405,17 @@ export class PaymentWebhookGenericController {
         status,
       },
     });
+
+    if (wooWebhookEvent?.id) {
+      await this.webhooksService
+        .markWebhookProcessed(wooWebhookEvent.id)
+        .catch((err: unknown) => {
+          const errMsg = err instanceof Error ? err.message : 'unknown_error';
+          this.logger.error(
+            `[WEBHOOK] Failed to mark WooCommerce webhook ${wooWebhookEvent.id} as processed: ${errMsg}`,
+          );
+        });
+    }
     return { ok: true };
   }
 
