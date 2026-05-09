@@ -8,7 +8,6 @@ import {
   Button,
   CenterStage,
   type MissionCardData,
-  MissionCards,
   Section,
   StageHeadline,
 } from '@/components/kloel';
@@ -43,32 +42,22 @@ import { unwrapArrayEnvelope, unwrapDataEnvelope, unwrapSettled } from './page.h
 import { colors } from '@/lib/design-tokens';
 import {
   Activity,
-  AlertCircle,
-  ArrowUpRight,
-  BarChart3,
+  AlertCircle,  BarChart3,
   Bot,
   Calendar,
   CheckCircle2,
   Clock,
   Database,
-  DollarSign,
-  Filter,
-  Layers,
+  DollarSign,  Layers,
   Lightbulb,
   MessageSquare,
   Pause,
   Play,
   RefreshCw,
-  Save,
-  Send,
-  Server,
+  Save,  Server,
   Settings2,
-  Sparkles,
-  Stethoscope,
-  TrendingUp,
-  Users,
-  Workflow,
-  XCircle,
+  Sparkles,  TrendingUp,
+  Users,  XCircle,
   Zap,
 } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
@@ -311,68 +300,6 @@ function StatCard({
   );
 }
 
-function ActionRow({ action }: { action: AutopilotAction }) {
-  const statusColors: Record<string, string> = {
-    success: colors.brand.green,
-    error:
-      colors.semantic.error,
-    skipped: colors.brand.cyan,
-    scheduled:
-      colors.semantic.warning,
-  };
-
-  const statusIcons: Record<string, React.ElementType> = {
-    success: CheckCircle2,
-    error: XCircle,
-    skipped: Clock,
-    scheduled: Calendar,
-  };
-  const statusKey = action.status || 'unknown';
-  const StatusIcon = statusIcons[statusKey] || Activity;
-  const statusColor = statusColors[statusKey] || colors.text.muted;
-
-  return (
-    <div
-      className="flex items-center gap-4 p-4 rounded-lg border transition-all hover:bg-white/5"
-      style={{
-        backgroundColor: colors.background.surface2,
-        borderColor: colors.stroke,
-      }}
-    >
-      <div className="p-2 rounded-full" style={{ backgroundColor: `${statusColor}20` }}>
-        <StatusIcon size={16} style={{ color: statusColor }} />
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <span className="font-medium truncate" style={{ color: colors.text.primary }}>
-            {action.contact || action.contactId?.slice(0, 8)}
-          </span>
-          <span
-            className="px-2 py-0.5 rounded text-xs font-medium"
-            style={{
-              backgroundColor: `${colors.brand.cyan}20`,
-              color: colors.brand.cyan,
-            }}
-          >
-            {action.intent}
-          </span>
-        </div>
-        <div className="text-sm truncate" style={{ color: colors.text.muted }}>
-          {action.action}
-          {action.reason && ` — ${action.reason}`}
-        </div>
-      </div>
-      <div className="text-xs whitespace-nowrap" style={{ color: colors.text.muted }}>
-        {new Date(action.createdAt).toLocaleString('pt-BR', {
-          day: '2-digit',
-          month: '2-digit',
-          hour: '2-digit',
-          minute: '2-digit',
-        })}
-      </div>
-    </div>
-  );
-}
 
 function formatDateTime(value?: string | null) {
   if (!value) {
@@ -447,18 +374,11 @@ export default function AutopilotPage() {
   const pathname = usePathname();
   const [isLoading, setIsLoading] = useState(true);
   const [isToggling, setIsToggling] = useState(false);
-  const [isTesting, setIsTesting] = useState(false);
   const [status, setStatus] = useState<AutopilotStatus | null>(null);
   const [stats, setStats] = useState<AutopilotStats | null>(null);
   const [impact, setImpact] = useState<AutopilotImpact | null>(null);
   const [pipeline, setPipeline] = useState<AutopilotPipeline | null>(null);
   const [systemHealth, setSystemHealth] = useState<SystemHealth | null>(null);
-  const [smokeResult, setSmokeResult] = useState<AutopilotSmokeTestResult | null>(null);
-  const [testPhone, setTestPhone] = useState('');
-  const [testMessage, setTestMessage] = useState(
-    'Olá, quero validar se o Kloel está respondendo corretamente no WhatsApp.',
-  );
-  const [testLiveSend, setTestLiveSend] = useState(false);
   const [actions, setActions] = useState<AutopilotAction[]>([]);
   const [moneyReport, setMoneyReport] = useState<MoneyReport | null>(null);
   const [revenueEvents, setRevenueEvents] = useState<RevenueEvent[]>([]);
@@ -484,11 +404,6 @@ export default function AutopilotPage() {
   );
 
   // Money Machine
-  const [isRunningMoneyMachine, setIsRunningMoneyMachine] = useState(false);
-  const [moneyMachineResult, setMoneyMachineResult] = useState<MoneyMachineResult | null>(null);
-  const [moneyMachineTopN, setMoneyMachineTopN] = useState(200);
-  const [moneyMachineAutoSend, setMoneyMachineAutoSend] = useState(false);
-  const [moneyMachineSmartTime, setMoneyMachineSmartTime] = useState(false);
 
   // Ask AI Insights
   const [askQuestion, setAskQuestion] = useState('');
@@ -496,9 +411,6 @@ export default function AutopilotPage() {
   const [askResult, setAskResult] = useState<AskInsightsResult | null>(null);
 
   // Direct Send
-  const [sendContactId, setSendContactId] = useState('');
-  const [sendMessage, setSendMessage] = useState('');
-  const [isSending, setIsSending] = useState(false);
   const [sendResult, setSendResult] = useState<{
     success?: boolean;
     messageId?: string;
@@ -666,8 +578,7 @@ export default function AutopilotPage() {
   };
 
   const filteredActions = actions.filter((a) =>
-    statusFilter === 'all' ? true : a.status === statusFilter,
-  );
+    statusFilter === 'all' ? true : a.status === status  );
 
   const handleExportActions = async () => {
     if (!effectiveWorkspaceId || !token) {
@@ -676,8 +587,7 @@ export default function AutopilotPage() {
     try {
       const csv = await exportAutopilotActions(
         effectiveWorkspaceId,
-        statusFilter === 'all' ? undefined : statusFilter,
-        token,
+        statusFilter === 'all' ? undefined : status        token,
       );
       const blob = new Blob([csv], { type: 'text/csv' });
       const url = URL.createObjectURL(blob);
@@ -692,30 +602,6 @@ export default function AutopilotPage() {
     }
   };
 
-  const handleSmokeTest = async () => {
-    if (!effectiveWorkspaceId || !token) {
-      return;
-    }
-    try {
-      setIsTesting(true);
-      setError(null);
-      const data = await runAutopilotSmokeTest({
-        workspaceId: effectiveWorkspaceId,
-        phone: testPhone || undefined,
-        message: testMessage || undefined,
-        liveSend: testLiveSend,
-        waitMs: 12000,
-        token,
-      });
-      setSmokeResult(data as never as AutopilotSmokeTestResult);
-      await fetchAutopilotData();
-    } catch (err: unknown) {
-      console.error('Error running autopilot smoke test:', err);
-      setError(err instanceof Error ? err.message : 'Erro ao executar smoke test do Autopilot');
-    } finally {
-      setIsTesting(false);
-    }
-  };
 
   const handleSaveConfig = async () => {
     if (!effectiveWorkspaceId || !token) {
@@ -736,26 +622,6 @@ export default function AutopilotPage() {
     }
   };
 
-  const handleMoneyMachine = async () => {
-    if (!effectiveWorkspaceId) {
-      return;
-    }
-    try {
-      setIsRunningMoneyMachine(true);
-      setMoneyMachineResult(null);
-      const result = await activateMoneyMachine({
-        workspaceId: effectiveWorkspaceId,
-        topN: moneyMachineTopN,
-        autoSend: moneyMachineAutoSend,
-        smartTime: moneyMachineSmartTime,
-      });
-      setMoneyMachineResult(result);
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Erro ao executar Money Machine');
-    } finally {
-      setIsRunningMoneyMachine(false);
-    }
-  };
 
   const handleAskInsights = async () => {
     if (!effectiveWorkspaceId || !askQuestion.trim()) {
@@ -773,29 +639,6 @@ export default function AutopilotPage() {
     }
   };
 
-  const handleSendDirect = async () => {
-    if (!effectiveWorkspaceId || !sendContactId.trim() || !sendMessage.trim()) {
-      return;
-    }
-    try {
-      setIsSending(true);
-      setSendResult(null);
-      const result = await sendAutopilotDirectMessage({
-        workspaceId: effectiveWorkspaceId,
-        contactId: sendContactId.trim(),
-        message: sendMessage.trim(),
-      });
-      setSendResult({ success: true, messageId: result.messageId });
-      setSendMessage('');
-    } catch (err: unknown) {
-      setSendResult({
-        success: false,
-        error: err instanceof Error ? err.message : 'Erro ao enviar mensagem',
-      });
-    } finally {
-      setIsSending(false);
-    }
-  };
 
   const formatCurrency = (value?: number) => {
     if (value == null) {
@@ -1067,50 +910,7 @@ export default function AutopilotPage() {
           />
         </CenterStage>
       </Section>
-{/* Impact Samples */}
-      {impact && impact.samples.length > 0 && (
-        <Section spacing="lg">
-          <CenterStage size="XL">
-            <h2 className="text-lg font-semibold mb-4" style={{ color: colors.text.primary }}>
-              {kloelT(`Exemplos de Impacto`)}
-            </h2>
-            <div
-              className="p-4 rounded-xl"
-              style={{
-                backgroundColor: colors.background.surface1,
-                border: `1px solid ${colors.stroke}`,
-              }}
-            >
-              <div className="space-y-3">
-                {impact.samples.map((sample) => (
-                  <div
-                    key={sample.contact}
-                    className="flex items-center justify-between p-3 rounded-lg"
-                    style={{ backgroundColor: colors.background.surface2 }}
-                  >
-                    <div>
-                      <span className="font-medium" style={{ color: colors.text.primary }}>
-                        {sample.contact}
-                      </span>
-                      <span className="text-sm ml-2" style={{ color: colors.text.muted }}>
-                        {kloelT(`respondeu em`)} {sample.delayMinutes} min
-                      </span>
-                    </div>
-                    <span className="text-xs" style={{ color: colors.text.muted }}>
-                      {new Date(sample.replyAt).toLocaleString('pt-BR', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </CenterStage>
-        </Section>
-      )}
+)}
 
       {/* Money Report */}
       <Section spacing="lg">
