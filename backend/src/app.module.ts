@@ -53,6 +53,7 @@ import { AdminModule } from './admin/admin.module';
 import { AffiliateModule } from './affiliate/affiliate.module';
 import { AiBrainModule } from './ai-brain/ai-brain.module';
 import { AnalyticsModule } from './analytics/analytics.module';
+import { AnunciosModule } from './anuncios/anuncios.module';
 import { AudioModule } from './audio/audio.module';
 import { AuditModule } from './audit/audit.module';
 import { getJwtSecret } from './auth/jwt-config';

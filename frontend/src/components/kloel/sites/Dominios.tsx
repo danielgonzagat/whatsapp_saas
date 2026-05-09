@@ -4,7 +4,8 @@ import { kloelT } from '@/lib/i18n/t';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
 import React, { useState } from 'react';
 import { IC, SORA, MONO, EMBER, TEXT, TEXT_DIM, TEXT_MUTED, BORDER, BG_ELEVATED } from './SitesViewIcons';
-import { Card, Badge, SectionLabel, Btn, Input } from './SitesViewAtoms';
+import { Card, Badge, SectionLabel, Btn } from './SitesViewAtoms';
+import { Input } from './SitesViewControls';
 
 type DomainItem = {
   name: string;

@@ -47,45 +47,26 @@ export function BrainSettingsSection() {
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileError, setProfileError] = useState('');
   const [profileSuccess, setProfileSuccess] = useState('');
-
   const [personas, setPersonas] = useState<string[]>([]);
-
   const [voiceTone, setVoiceTone] = useState<VoiceToneProfile>({
-    style: '',
-    customInstructions: '',
-    useProfessional: true,
-    useFriendly: false,
-    usePersuasive: false,
+    style: '', customInstructions: '', useProfessional: true, useFriendly: false, usePersuasive: false,
   });
-
   const [rules, setRules] = useState<string[]>([]);
-
   const [faqs, setFaqs] = useState<FaqItem[]>([]);
   const [openingMessage, setOpeningMessage] = useState<OpeningMessageProfile>({
-    message: '',
-    useEmojis: true,
-    isFormal: false,
-    isFriendly: true,
+    message: '', useEmojis: true, isFormal: false, isFriendly: true,
   });
   const [emergencyMode, setEmergencyMode] = useState<EmergencyModeProfile>({
-    emergencyAction: '',
-    fixedMessage: '',
+    emergencyAction: '', fixedMessage: '',
   });
-
   const [productCount, setProductCount] = useState(0);
   const [productsWithCheckoutCount, setProductsWithCheckoutCount] = useState(0);
   const [knowledgeSourceCount, setKnowledgeSourceCount] = useState(0);
 
-  const handleProductsLoaded = useCallback(
-    (products: { activePlansCount?: number }[]) => {
-      setProductCount(products.length);
-      setProductsWithCheckoutCount(
-        products.filter((p) => (p.activePlansCount ?? 0) > 0).length,
-      );
-    },
-    [],
-  );
-
+  const handleProductsLoaded = useCallback((products: { activePlansCount?: number }[]) => {
+    setProductCount(products.length);
+    setProductsWithCheckoutCount(products.filter((p) => (p.activePlansCount ?? 0) > 0).length);
+  }, []);
   const handleSourcesLoaded = useCallback((count: number) => {
     setKnowledgeSourceCount(count);
   }, []);

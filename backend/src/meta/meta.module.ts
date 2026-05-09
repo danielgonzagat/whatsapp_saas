@@ -2,6 +2,7 @@ import { Global, Module, forwardRef } from '@nestjs/common';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { InboxModule } from '../inbox/inbox.module';
 import { PrismaModule } from '../prisma/prisma.module';
+import { WebhooksModule } from '../webhooks/webhooks.module';
 import { WhatsappModule } from '../whatsapp/whatsapp.module';
 import { MetaAdsController } from './ads/meta-ads.controller';
 import { MetaAdsService } from './ads/meta-ads.service';
@@ -18,7 +19,7 @@ import { MetaWebhookController } from './webhooks/meta-webhook.controller';
 // timestamps from Meta Graph API; duplicate entries skipped by externalId.
 @Global()
 @Module({
-  imports: [PrismaModule, InboxModule, forwardRef(() => WhatsappModule)],
+  imports: [PrismaModule, InboxModule, WebhooksModule, forwardRef(() => WhatsappModule)],
   controllers: [
     MetaAuthController,
     MetaWebhookController,

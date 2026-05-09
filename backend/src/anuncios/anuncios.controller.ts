@@ -1,0 +1,54 @@
+import { Controller, Get, Post, Query, Req, Param } from '@nestjs/common';
+import type { Request } from 'express';
+import { AnunciosService } from './anuncios.service';
+
+@Controller('api/anuncios')
+export class AnunciosController {
+  constructor(private readonly anunciosService: AnunciosService) {}
+
+  private workspaceId(req: Request): string {
+    return (req as unknown as Record<string, unknown>).workspaceId as string || '';
+  }
+
+  @Get('status')
+  async getStatus(@Req() req: Request) {
+    const wsId = this.workspaceId(req);
+    const statuses = await this.anunciosService.getPlatformStatuses(wsId);
+    return { data: statuses };
+  }
+
+  @Get('accounts')
+  async getAccounts(@Req() req: Request, @Query('platform') platform?: string) {
+    const wsId = this.workspaceId(req);
+    const accounts = await this.anunciosService.getAccounts(wsId, platform);
+    return { data: accounts };
+  }
+
+  @Get('campaigns')
+  async getCampaigns(@Req() req: Request, @Query('platform') platform?: string) {
+    const wsId = this.workspaceId(req);
+    const campaigns = await this.anunciosService.getCampaigns(wsId, platform);
+    return { data: campaigns };
+  }
+
+  @Get('connect/:platform')
+  async getConnectUrl(@Req() req: Request, @Param('platform') platform: string) {
+    const wsId = this.workspaceId(req);
+    const result = await this.anunciosService.getConnectUrl(wsId, platform);
+    return { data: result };
+  }
+
+  @Post('sync/accounts')
+  async syncAccounts(@Req() req: Request) {
+    const wsId = this.workspaceId(req);
+    const accounts = await this.anunciosService.syncAccounts(wsId);
+    return { data: accounts };
+  }
+
+  @Post('sync/campaigns')
+  async syncCampaigns(@Req() req: Request) {
+    const wsId = this.workspaceId(req);
+    const campaigns = await this.anunciosService.syncCampaigns(wsId);
+    return { data: campaigns };
+  }
+}

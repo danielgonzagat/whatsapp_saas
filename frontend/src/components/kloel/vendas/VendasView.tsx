@@ -34,6 +34,7 @@ import { GestaoVendas } from './GestaoVendas';
 import { GestaoAssinaturas } from './GestaoAssinaturas';
 import { GestaoFisicos } from './GestaoFisicos';
 import { EstrategiasTab } from './EstrategiasTab';
+import { OrderAlertsBanner } from './OrderAlertsBanner';
 import type {
   SaleItem,
   SubscriptionItem,

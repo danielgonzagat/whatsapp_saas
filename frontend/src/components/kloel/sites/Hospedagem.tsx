@@ -2,7 +2,8 @@
 
 import { kloelT } from '@/lib/i18n/t';
 import { IC, SORA, MONO, EMBER, TEXT, TEXT_DIM, TEXT_MUTED, BG_ELEVATED } from './SitesViewIcons';
-import { Card, Badge, Stat, SectionLabel, ProgressBar } from './SitesViewAtoms';
+import { Card, Badge, Stat, SectionLabel } from './SitesViewAtoms';
+import { ProgressBar } from './SitesViewControls';
 
 export function Hospedagem() {
   return (

@@ -3,7 +3,8 @@
 import { kloelT } from '@/lib/i18n/t';
 import React, { useState } from 'react';
 import { IC, SORA, MONO, EMBER, TEXT, TEXT_DIM, TEXT_MUTED, BORDER, BG_ELEVATED } from './SitesViewIcons';
-import { Card, Badge, SectionLabel, ProgressBar, Toggle } from './SitesViewAtoms';
+import { Card, Badge, SectionLabel } from './SitesViewAtoms';
+import { ProgressBar, Toggle } from './SitesViewControls';
 
 export function Protecao() {
   const [sslEnabled, setSslEnabled] = useState(true);
