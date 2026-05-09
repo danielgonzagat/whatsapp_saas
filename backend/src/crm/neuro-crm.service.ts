@@ -353,7 +353,7 @@ Return strictly JSON with:
       select: { id: true },
     });
     if (!contact) {
-      return [];
+      throw new NotFoundException('Contact not found');
     }
 
     return this.prisma.contactInsight.findMany({

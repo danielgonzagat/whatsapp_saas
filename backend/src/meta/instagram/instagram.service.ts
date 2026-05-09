@@ -1,13 +1,16 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { MetaSdkService } from '../meta-sdk.service';
 
 /** Instagram service. */
 @Injectable()
 export class InstagramService {
+  private readonly logger = new Logger(InstagramService.name);
+
   constructor(private readonly metaSdk: MetaSdkService) {}
 
   // messageLimit: enforced via PlanLimitsService.trackMessageSend
   async sendMessage(igAccountId: string, recipientId: string, text: string, accessToken: string) {
+    this.logger.log('Calling Instagram API', { context: 'InstagramService.sendMessage', igAccountId, endpoint: 'messages' });
     return this.metaSdk.graphApiPost(
       `${igAccountId}/messages`,
       { recipient: { id: recipientId }, message: { text } },
@@ -17,6 +20,7 @@ export class InstagramService {
 
   /** Get profile. */
   async getProfile(igAccountId: string, accessToken: string) {
+    this.logger.log('Calling Instagram API', { context: 'InstagramService.getProfile', igAccountId, endpoint: 'profile' });
     return this.metaSdk.graphApiGet(
       `${igAccountId}`,
       {

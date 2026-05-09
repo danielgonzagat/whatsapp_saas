@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import type { AdInsightSyncResult } from '../ad-provider.interface';
@@ -6,8 +6,6 @@ import type { AdInsightSyncResult } from '../ad-provider.interface';
 /** Ad insight service. */
 @Injectable()
 export class AdInsightService {
-  private readonly logger = new Logger(AdInsightService.name);
-
   constructor(private readonly prisma: PrismaService) {}
 
   async list(
@@ -34,9 +32,9 @@ export class AdInsightService {
     };
 
     const [total, data] = await this.prisma.$transaction([
-      this.prisma.adInsight.count({ where }),
+      this.prisma.adInsight.count({ where: { workspaceId, ...where } }),
       this.prisma.adInsight.findMany({
-        where,
+        where: { workspaceId, ...where },
         skip,
         take: limit,
         orderBy: { date: 'desc' },
@@ -196,7 +194,7 @@ export class AdInsightService {
     };
 
     const result = await this.prisma.adInsight.aggregate({
-      where,
+      where: { workspaceId, ...where },
       _sum: {
         spend: true,
         revenue: true,

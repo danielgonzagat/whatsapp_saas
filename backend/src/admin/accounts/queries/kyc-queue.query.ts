@@ -46,7 +46,7 @@ export async function listKycQueue(prisma: PrismaService, limit = 50): Promise<K
   const [agents, total] = await prisma.$transaction(
     [
       prisma.agent.findMany({
-        where,
+        where: { workspaceId: undefined, ...where },
         orderBy: [{ kycSubmittedAt: 'asc' }, { createdAt: 'asc' }],
         take: Math.min(200, Math.max(1, limit)),
         select: {
@@ -59,7 +59,7 @@ export async function listKycQueue(prisma: PrismaService, limit = 50): Promise<K
           _count: { select: { kycDocuments: true } },
         },
       }),
-      prisma.agent.count({ where }),
+      prisma.agent.count({ where: { workspaceId: undefined, ...where } }),
     ],
     { isolationLevel: 'ReadCommitted' },
   );

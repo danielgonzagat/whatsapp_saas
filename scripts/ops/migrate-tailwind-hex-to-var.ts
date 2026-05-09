@@ -5,7 +5,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-const ROOT = path.resolve(import.meta.dirname, '../..');
+const ROOT = process.cwd();
 const SRC = path.join(ROOT, 'frontend', 'src');
 
 // ── Mapping: lowercase hex → CSS variable name ──
@@ -70,7 +70,7 @@ const MAP: Record<string, string> = {
   'fbbc04': '--brand-google-yellow',
   '34a853': '--brand-google-green',
   '34c759': '--brand-apple-green',
-  'ff6b6b': '--brand-apple-red',
+  'ff6b6b': '--checkout-danger',
   'e05252': '--semantic-error-soft',
   'f7a8a8': '--semantic-error-text',
   'f2b29d': '--semantic-ember-text',
@@ -97,7 +97,6 @@ const MAP: Record<string, string> = {
   'f0f0f0': '--text-soft-white',
   '1a1a1a': '--text-dark-heading',
   '4b4b50': '--icon-disabled',
-  'e05252': '--semantic-error-soft',
 };
 
 // Walk all .tsx/.ts files in frontend/src

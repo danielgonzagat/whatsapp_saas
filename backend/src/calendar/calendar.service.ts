@@ -346,47 +346,99 @@ export class CalendarService {
     startDate?: Date,
     endDate?: Date,
   ): Promise<CalendarEvent[]> {
-    try {
-      const appointmentModel = this.getAppointmentModel();
-      if (!appointmentModel?.findMany) {
-        return [];
-      }
+    const appointmentModel = this.getAppointmentModel();
+    if (appointmentModel?.findMany) {
+      try {
+        const appointments = await appointmentModel.findMany({
+          where: {
+            workspaceId,
+            ...(startDate && { startAt: { gte: startDate } }),
+            ...(endDate && { endAt: { lte: endDate } }),
+          },
+          orderBy: { startAt: 'asc' },
+          take: 100,
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            startAt: true,
+            endAt: true,
+            location: true,
+            meetingUrl: true,
+            status: true,
+            contactId: true,
+          },
+        });
 
-      const appointments = await appointmentModel.findMany({
-        where: {
-          workspaceId,
-          ...(startDate && { startAt: { gte: startDate } }),
-          ...(endDate && { endAt: { lte: endDate } }),
-        },
-        orderBy: { startAt: 'asc' },
-        take: 100,
-        select: {
-          id: true,
-          title: true,
-          description: true,
-          startAt: true,
-          endAt: true,
-          location: true,
-          meetingUrl: true,
-          status: true,
-          contactId: true,
-        },
+        return appointments.map((apt) => ({
+          id: apt.id,
+          summary: apt.title,
+          description: apt.description || undefined,
+          startTime: apt.startAt,
+          endTime: apt.endAt,
+          location: apt.location || undefined,
+          meetingLink: apt.meetingUrl || undefined,
+        }));
+      } catch (error: unknown) {
+        this.logger.error(
+          `Failed to fetch events: ${error instanceof Error ? error.message : 'unknown_error'}`,
+        );
+        throw error;
+      }
+    }
+
+    return this.listFromCalendarProvider(workspaceId, startDate, endDate);
+  }
+
+  private async listFromCalendarProvider(
+    workspaceId: string,
+    startDate?: Date,
+    endDate?: Date,
+  ): Promise<CalendarEvent[]> {
+    const config = await this.getCalendarConfig(workspaceId);
+    if (!config || config.provider !== 'google' || !config.credentials?.refreshToken) {
+      return [];
+    }
+
+    try {
+      const googleCalendarModuleName = 'googleapis';
+      const { google } = (await import(googleCalendarModuleName)) as GoogleCalendarModule;
+
+      const oauth2Client = new google.auth.OAuth2(
+        config.credentials?.clientId || this.configService.get('GOOGLE_CLIENT_ID'),
+        config.credentials?.clientSecret || this.configService.get('GOOGLE_CLIENT_SECRET'),
+      );
+
+      oauth2Client.setCredentials({
+        refresh_token: config.credentials?.refreshToken,
+        access_token: config.credentials?.accessToken,
       });
 
-      return appointments.map((apt) => ({
-        id: apt.id,
-        summary: apt.title,
-        description: apt.description || undefined,
-        startTime: apt.startAt,
-        endTime: apt.endAt,
-        location: apt.location || undefined,
-        meetingLink: apt.meetingUrl || undefined,
+      const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
+
+      const response = await calendar.events.list({
+        calendarId: 'primary',
+        timeMin: startDate?.toISOString(),
+        timeMax: endDate?.toISOString(),
+        maxResults: 100,
+        singleEvents: true,
+        orderBy: 'startTime',
+      });
+
+      return (response.data.items || []).map((item) => ({
+        id: item.id || undefined,
+        summary: item.summary || '',
+        description: item.description || undefined,
+        startTime: item.start?.dateTime ? new Date(item.start.dateTime) : new Date(),
+        endTime: item.end?.dateTime ? new Date(item.end.dateTime) : new Date(),
+        location: item.location || undefined,
+        meetingLink: item.hangoutLink || undefined,
       }));
     } catch (error: unknown) {
       this.logger.error(
-        `Failed to fetch events: ${error instanceof Error ? error.message : 'unknown_error'}`,
+        `[Calendar] Google Calendar list error: ${error instanceof Error ? error.message : 'unknown_error'}`,
       );
-      throw error;
+      return [];
     }
   }
 

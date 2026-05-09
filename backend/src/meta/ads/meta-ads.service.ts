@@ -71,6 +71,7 @@ export class MetaAdsService {
 
   /** Get leads. */
   async getLeads(formId: string, accessToken: string) {
+    this.logger.log('Calling Meta Ads API', { context: 'MetaAdsService.getLeads', formId, endpoint: 'leads' });
     return this.metaSdk.graphApiGet(
       `${formId}/leads`,
       { fields: 'id,created_time,field_data' },
