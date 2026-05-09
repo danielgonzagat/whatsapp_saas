@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 import { kloelT } from '@/lib/i18n/t';
 import { apiFetch } from '@/lib/api';
 import { Save } from 'lucide-react';
@@ -50,7 +51,7 @@ const SECONDARY = 'var(--text-moonlight, colors.text.muted)';
 const FAINT = 'var(--text-dust, colors.text.dim)';
 const TEXT_ON_ACCENT = 'var(--app-text-on-accent, #FFFFFF)';
 const EMBER = 'colors.ember.primary';
-const GREEN = '#10B981';
+const GREEN = colors.semantic.success;
 
 /* ── Shared Styles ── */
 
@@ -537,7 +538,7 @@ function PixelAddPanel({
             style={{
               fontFamily: "'Sora', sans-serif",
               fontSize: 12,
-              color: '#EF4444',
+              color: colors.semantic.error,
               margin: 0,
             }}
           >

@@ -15,7 +15,6 @@ jest.mock('./db-init-error.service', () => ({
   },
 }));
 
-// PULSE_OK: assertions exist below
 describe('AuthPasswordService — login', () => {
   let ctx: AuthPasswordSpecContext;
 

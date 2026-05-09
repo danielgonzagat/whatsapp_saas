@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import type { WhatsAppProofEntry } from '@/lib/api';
@@ -328,7 +329,7 @@ export function AgentCursor({
           <g filter={`url(#${svgFilterId}-shadow)`}>
             <path
               d={kloelT(`M3 2L3 28L9.5 21.5L15.5 31L19.5 29L13.5 19L22 17L3 2Z`)}
-              fill="#111111"
+              fill={colors.background.surface}
               stroke="white"
               strokeWidth="1.8"
               strokeLinejoin="round"

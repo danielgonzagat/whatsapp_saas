@@ -117,7 +117,7 @@ const embedContainerStyle: React.CSSProperties = {
   paddingBottom: '56.25%',
   borderRadius: 8,
   overflow: 'hidden',
-  background: '#111',
+  background: colors.background.surface,
 };
 
 const iframeStyle: React.CSSProperties = {
@@ -150,7 +150,7 @@ const fallbackTextStyle: React.CSSProperties = {
 
 const fallbackLinkStyle: React.CSSProperties = {
   background: colors.ember.primary,
-  color: '#fff',
+  color: colors.text.silver,
   padding: '10px 24px',
   borderRadius: 6,
   textDecoration: 'none',
@@ -160,7 +160,7 @@ const fallbackLinkStyle: React.CSSProperties = {
 };
 
 const descriptionStyle: React.CSSProperties = {
-  color: '#999',
+  color: colors.text.muted,
   fontSize: 13,
   marginTop: 16,
   lineHeight: 1.6,

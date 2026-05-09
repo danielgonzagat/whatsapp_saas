@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { apiFetch } from '@/lib/api';
@@ -162,7 +163,7 @@ export function PlanAffiliateTab({
               width: 44,
               height: 24,
               borderRadius: 12,
-              background: enabled ? '#10B981' : 'colors.border.space',
+              background: enabled ? colors.semantic.success : 'colors.border.space',
               border: 'none',
               position: 'relative',
               cursor: 'pointer',
@@ -174,7 +175,7 @@ export function PlanAffiliateTab({
                 width: 18,
                 height: 18,
                 borderRadius: 9,
-                background: '#fff',
+                background: colors.text.silver,
                 position: 'absolute',
                 top: 3,
                 left: enabled ? 23 : 3,

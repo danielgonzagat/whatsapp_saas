@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { useState } from 'react';
 import { kloelT } from '@/lib/i18n/t';
@@ -52,7 +53,7 @@ export default function AffiliateMarketplaceSearch() {
           onBlur={(e) => { (e.target as HTMLInputElement).style.borderColor = C.border; }}
         />
         <button type="button" onClick={handleSearch} disabled={!searchQuery.trim() || searchLoading}
-          style={{ padding: '10px 14px', background: C.ember, border: 'none', borderRadius: 6, color: '#fff', fontFamily: FONT.sans, fontSize: 13, fontWeight: 600, cursor: !searchQuery.trim() || searchLoading ? 'not-allowed' : 'pointer', opacity: !searchQuery.trim() || searchLoading ? 0.5 : 1 }}>
+          style={{ padding: '10px 14px', background: C.ember, border: 'none', borderRadius: 6, color: colors.text.silver, fontFamily: FONT.sans, fontSize: 13, fontWeight: 600, cursor: !searchQuery.trim() || searchLoading ? 'not-allowed' : 'pointer', opacity: !searchQuery.trim() || searchLoading ? 0.5 : 1 }}>
           {IC.search(14)}
         </button>
       </div>

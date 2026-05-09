@@ -62,7 +62,9 @@ export interface WorkspaceContextRawData {
 export class KloelWorkspaceContextDataService {
   private readonly logger = new Logger(KloelWorkspaceContextDataService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) {
+    this.logger.log('KloelWorkspaceContextDataService initialized');
+  }
 
   async fetchAll(
     workspaceId: string,

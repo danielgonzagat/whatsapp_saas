@@ -6,12 +6,14 @@ export const dynamic = 'force-dynamic';
 
 import { Card } from '@/components/kloel/Card';
 import { PageTitle } from '@/components/kloel/PageTitle';
+import { useToast } from '@/components/kloel/ToastProvider';
 import { useCRMMutations, useContacts } from '@/hooks/useCRM';
 import { colors, typography } from '@/lib/design-tokens';
 import { useState } from 'react';
 
 /** Gestao vendas page. */
 export default function GestaoVendasPage() {
+  const { showToast } = useToast();
   const [search, setSearch] = useState('');
   const [tagFilter, setTagFilter] = useState('');
   const [page, setPage] = useState('1');
@@ -45,8 +47,9 @@ export default function GestaoVendasPage() {
     try {
       await removeTag(phone, tag);
       mutate();
+      showToast('Tag removida', 'success');
     } catch (e) {
-      console.error('Failed to remove tag', e);
+      showToast('Erro ao remover tag', 'error');
     }
   };
 

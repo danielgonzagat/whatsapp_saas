@@ -18,7 +18,7 @@ const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 type MultiChannelState = Record<MultiChannelKey, MultiChannelMessage[]>;
 
-const channelColors: Record<MultiChannelKey, string> = { wa: '#25D366', ig: '#E1306C', em: E };
+const channelColors: Record<MultiChannelKey, string> = { wa: colors.canvas.lime, ig: colors.canvas.pink, em: E };
 const channelNames: Record<MultiChannelKey, string> = {
   wa: 'WhatsApp',
   ig: 'Instagram DM',
@@ -140,7 +140,7 @@ export function MultiChannel({
                   padding: '2px 8px',
                   fontSize: 9,
                   fontWeight: 600,
-                  color: '#10B981',
+                  color: colors.semantic.success,
                   fontFamily: M,
                 }}
               >

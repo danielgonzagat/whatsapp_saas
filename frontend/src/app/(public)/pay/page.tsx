@@ -1,3 +1,4 @@
+import { colors } from '@/lib/design-tokens';
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
@@ -90,7 +91,7 @@ export default async function PayPage({ searchParams }: PayPageProps) {
           style={{
             display: 'inline-block',
             background: colors.ember.primary,
-            color: '#FFFFFF',
+            color: colors.text.silver,
             fontFamily: typography.fontFamily.display,
             fontSize: 14,
             fontWeight: 600,

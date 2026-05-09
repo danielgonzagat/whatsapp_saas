@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { type CSSProperties, type ReactNode, useState } from 'react';
 
@@ -15,7 +16,7 @@ export function Card({ children, style, onClick, className }: CardProps) {
   const interactive = typeof onClick === 'function';
   const sharedStyle: CSSProperties = {
     background: 'var(--app-bg-card)',
-    border: `1px solid ${hovered ? '#333338' : '#222226'}`,
+    border: `1px solid ${hovered ? colors.border.glow : colors.background.border}`,
     borderRadius: 6,
     padding: 18,
     boxShadow: 'none',

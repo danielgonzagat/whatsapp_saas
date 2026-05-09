@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { type KeyboardEvent, useCallback, useState } from 'react';
@@ -14,7 +15,7 @@ const C = {
   bg: 'var(--bg-void, #0A0A0C)',
   elevated: 'var(--bg-elevated, #19191C)',
   border: 'var(--border-space, #222226)',
-  accent: '#E85D30',
+  accent: colors.ember.primary,
   text: 'var(--text-silver, #E0DDD8)',
   muted: 'var(--text-muted, #6E6E73)',
   sora: "var(--font-sora), 'Sora', sans-serif",
@@ -117,7 +118,7 @@ export function ContactTagsSection({ tags, onAddTag, onRemoveTag }: ContactTagsS
             borderRadius: 6,
             padding: '6px 10px',
             cursor: 'pointer',
-            color: '#fff',
+            color: colors.text.silver,
             display: 'flex',
             alignItems: 'center',
             gap: 4,

@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { useRouter } from 'next/navigation';
@@ -66,8 +67,8 @@ export function CriarSiteEditorPhase({
 
       {publishedUrl && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', marginBottom: 12, background: 'rgba(16,185,129,0.08)', borderRadius: 6, border: '1px solid rgba(16,185,129,0.2)' }}>
-          <span style={{ color: '#10B981' }}>{IC.check(16)}</span>
-          <span style={{ fontFamily: SORA, fontSize: 13, color: '#10B981' }}>{kloelT(`Publicado em:`)}</span>
+          <span style={{ color: colors.semantic.success }}>{IC.check(16)}</span>
+          <span style={{ fontFamily: SORA, fontSize: 13, color: colors.semantic.success }}>{kloelT(`Publicado em:`)}</span>
           <span style={{ fontFamily: MONO, fontSize: 12, color: TEXT }}>{publishedUrl}</span>
         </div>
       )}
@@ -113,10 +114,10 @@ export function CriarSiteEditorPhase({
         <div style={{ background: BG_ELEVATED, padding: '6px 12px', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', gap: 6 }}>
           <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#ef4444' }} />
           <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#f59e0b' }} />
-          <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#10B981' }} />
+          <div style={{ width: 8, height: 8, borderRadius: '50%', background: colors.semantic.success }} />
           <span style={{ fontFamily: MONO, fontSize: 10, color: TEXT_MUTED, marginLeft: 8 }}>{kloelT(`Preview`)}</span>
         </div>
-        <iframe ref={iframeRef} srcDoc={generatedHtml} sandbox="allow-scripts" style={{ width: '100%', height: 500, border: 'none', background: '#fff' }} title={kloelT(`Site Preview`)} />
+        <iframe ref={iframeRef} srcDoc={generatedHtml} sandbox="allow-scripts" style={{ width: '100%', height: 500, border: 'none', background: colors.text.silver }} title={kloelT(`Site Preview`)} />
       </Card>
     </div>
   );

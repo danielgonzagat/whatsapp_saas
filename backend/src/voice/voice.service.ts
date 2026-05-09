@@ -10,6 +10,7 @@ export class VoiceService {
   private voiceQueue: Queue;
 
   constructor(private prisma: PrismaService) {
+    this.logger.log('VoiceService initialized');
     const connection = createRedisClient();
     this.voiceQueue = new Queue('voice-jobs', { connection });
   }

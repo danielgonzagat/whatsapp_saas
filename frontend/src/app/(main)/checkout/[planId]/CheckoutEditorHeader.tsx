@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { type CheckoutConfig } from '@/hooks/useCheckoutEditor';
@@ -111,7 +112,7 @@ export function CheckoutEditorHeader({
               : saveFeedback === 'saving'
                 ? C.ember
                 : saveFeedback === 'saved'
-                  ? '#4ADE80'
+                  ? colors.semantic.successText
                   : C.dim,
           }}
         >
@@ -200,7 +201,7 @@ export function CheckoutEditorHeader({
           }}
         >
           {copied ? (
-            <Check style={{ width: 14, height: 14, color: '#4ADE80' }} aria-hidden="true" />
+            <Check style={{ width: 14, height: 14, color: colors.semantic.successText }} aria-hidden="true" />
           ) : (
             <Copy style={{ width: 14, height: 14 }} aria-hidden="true" />
           )}
@@ -217,7 +218,7 @@ export function CheckoutEditorHeader({
           }}
         >
           {embedCopied ? (
-            <Check style={{ width: 14, height: 14, color: '#4ADE80' }} aria-hidden="true" />
+            <Check style={{ width: 14, height: 14, color: colors.semantic.successText }} aria-hidden="true" />
           ) : (
             <Copy style={{ width: 14, height: 14 }} aria-hidden="true" />
           )}

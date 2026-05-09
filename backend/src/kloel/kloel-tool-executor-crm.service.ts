@@ -18,7 +18,9 @@ const NON_DIGIT_RE = /\D/g;
 export class KloelToolExecutorCrmService {
   private readonly logger = new Logger(KloelToolExecutorCrmService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) {
+    this.logger.log('KloelToolExecutorCrmService initialized');
+  }
 
   async toolListLeads(workspaceId: string, args: ToolListLeadsArgs): Promise<ToolResult> {
     const { limit = 10, status } = args;

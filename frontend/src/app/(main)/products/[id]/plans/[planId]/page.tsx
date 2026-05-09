@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 /** Dynamic. */
@@ -160,7 +161,7 @@ export default function PlanDetailPage() {
                 style={{
                   fontSize: 10,
                   fontWeight: 600,
-                  color: '#E85D30',
+                  color: colors.ember.primary,
                   letterSpacing: '.25em',
                   textTransform: 'uppercase' as const,
                   marginBottom: 12,

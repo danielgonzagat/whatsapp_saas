@@ -42,8 +42,6 @@ export class LedgerService {
    * Record a new pending credit with a maturation date. Idempotent on
    * `(reference.type, reference.id, CREDIT_PENDING)`.
    */
-  // PULSE_OK: already in $transaction
-  // PULSE_OK: rate-limited by PaymentWebhookStripeController
   async creditPending(input: CreditPendingInput): Promise<ConnectLedgerEntry> {
     if (input.amountCents <= 0n) {
       throw new RangeError(
@@ -133,8 +131,6 @@ export class LedgerService {
    * AVAILABLE, append a MATURE row. Idempotent on the entry id (calling twice
    * is a no-op once `matured` is true).
    */
-  // PULSE_OK: already in $transaction
-  // PULSE_OK: rate-limited by PaymentWebhookStripeController
   async moveFromPendingToAvailable(pendingEntryId: string): Promise<void> {
     await this.prisma.$transaction(async (tx) => {
       const entry = await tx.connectLedgerEntry.findUnique({
@@ -219,8 +215,6 @@ export class LedgerService {
    * if the requested amount exceeds available. Idempotent on
    * `(reference.type, reference.id, DEBIT_PAYOUT)`.
    */
-  // PULSE_OK: already in $transaction
-  // PULSE_OK: rate-limited by PaymentWebhookStripeController
   async debitAvailableForPayout(input: DebitPayoutInput): Promise<ConnectLedgerEntry> {
     if (input.amountCents <= 0n) {
       throw new RangeError(
@@ -316,8 +310,6 @@ export class LedgerService {
    * AVAILABLE if exhausted; may drive AVAILABLE negative. Idempotent on
    * `(reference.type, reference.id, DEBIT_CHARGEBACK)`.
    */
-  // PULSE_OK: already in $transaction
-  // PULSE_OK: rate-limited by PaymentWebhookStripeController
   async debitForChargeback(input: DebitChargebackInput): Promise<ConnectLedgerEntry> {
     if (input.amountCents <= 0n) {
       throw new RangeError(
@@ -419,8 +411,6 @@ export class LedgerService {
    * drive AVAILABLE negative. Idempotent on
    * `(reference.type, reference.id, DEBIT_REFUND)`.
    */
-  // PULSE_OK: already in $transaction
-  // PULSE_OK: rate-limited by PaymentWebhookStripeController
   async debitForRefund(input: DebitRefundInput): Promise<ConnectLedgerEntry> {
     if (input.amountCents <= 0n) {
       throw new RangeError(
@@ -514,7 +504,6 @@ export class LedgerService {
   }
 
   /** Delegates to {@link creditAvailableByAdjustmentImpl}. */
-  // PULSE_OK: rate-limited by PaymentWebhookStripeController
   async creditAvailableByAdjustment(
     input: CreditAvailableAdjustmentInput,
   ): Promise<ConnectLedgerEntry> {
@@ -522,7 +511,6 @@ export class LedgerService {
   }
 
   /** Get balance. */
-  // PULSE_OK: rate-limited by PaymentWebhookStripeController
   async getBalance(accountBalanceId: string): Promise<BalanceSnapshot> {
     const balance = await this.prisma.connectAccountBalance.findUnique({
       where: { id: accountBalanceId },

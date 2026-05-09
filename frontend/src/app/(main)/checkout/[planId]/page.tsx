@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 
@@ -291,7 +292,7 @@ export default function CheckoutEditorPage() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: '#18181B',
+            backgroundColor: colors.background.surface,
             overflow: 'hidden',
             padding: 20,
             position: 'relative',
@@ -305,7 +306,7 @@ export default function CheckoutEditorPage() {
               borderRadius: 6,
               overflow: 'hidden',
               border: `1px solid ${C.border}`,
-              backgroundColor: '#000',
+              backgroundColor: colors.background.void,
               transition: 'width 300ms ease',
               opacity: showPreviewLoading ? 0 : 1,
               pointerEvents: showPreviewLoading ? 'none' : 'auto',

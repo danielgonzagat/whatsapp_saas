@@ -199,7 +199,7 @@ function renderSpores(mode: MushroomVisualProps['spores']) {
 /** Kloel mushroom visual. */
 export function KloelMushroomVisual({
   size = 20,
-  traceColor = '#FFFFFF', // PULSE_VISUAL_OK: SVG circuit trace, default white
+  traceColor = colors.text.silver,
   style,
   title = 'Kloel',
   animated = true,
@@ -344,7 +344,7 @@ export function KloelMushroomVisual({
 /** Kloel mushroom mark. */
 export function KloelMushroomMark({
   size = 20,
-  traceColor = '#FFFFFF', // PULSE_VISUAL_OK: SVG circuit trace, default white
+  traceColor = colors.text.silver,
   style,
   title = 'Kloel',
   animated = true,
@@ -393,7 +393,7 @@ export function KloelWordmark({
 export function KloelBrandLockup({
   markSize = 20,
   gap = 10,
-  traceColor = '#FFFFFF', // PULSE_VISUAL_OK: SVG circuit trace, default white
+  traceColor = colors.text.silver,
   textColor = colors.text.silver,
   fontSize = 16,
   fontWeight = 600,
@@ -425,7 +425,7 @@ export function KloelBrandLockup({
 /** Kloel loading state. */
 export function KloelLoadingState({
   size = 84,
-  traceColor = '#FFFFFF', // PULSE_VISUAL_OK: SVG circuit trace, default white
+  traceColor = colors.text.silver,
   label = 'Carregando Kloel',
   hint,
   textColor = colors.text.silver,

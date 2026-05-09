@@ -91,7 +91,6 @@ vi.mock('../providers/channel-dispatcher', () => ({
   sendEmail: vi.fn(),
 }));
 
-// PULSE_OK: assertions exist below
 describe('cia-action-proof', () => {
   beforeEach(async () => {
     vi.clearAllMocks();

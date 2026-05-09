@@ -17,7 +17,7 @@ function AnimatedCheck() {
           cy="40"
           r="36"
           fill="none"
-          stroke="#22c55e"
+          stroke={colors.checkout.success}
           strokeWidth="3"
           strokeDasharray="226"
           strokeDashoffset="226"
@@ -26,7 +26,7 @@ function AnimatedCheck() {
         <polyline
           points="26,42 36,52 56,30"
           fill="none"
-          stroke="#22c55e"
+          stroke={colors.checkout.success}
           strokeWidth="3.5"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -53,14 +53,14 @@ export default function SuccessPage() {
   }, []);
 
   const font = "'DM Sans', sans-serif";
-  const accent = '#22c55e';
+  const accent = colors.checkout.success;
   const orderNumber = data?.orderNumber || '...';
 
   return (
     <div
       style={{
         minHeight: '100vh',
-        background: colors.background.void /* PULSE_VISUAL_OK: replaced below */,
+        background: colors.background.void,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -82,17 +82,17 @@ export default function SuccessPage() {
         <AnimatedCheck />
 
         {/* Title */}
-        <h1 style={{ color: '#E8E6E1', fontSize: '24px', fontWeight: 700, margin: '0 0 8px' }}>
+        <h1 style={{ color: colors.checkout.textPrimary, fontSize: '24px', fontWeight: 700, margin: '0 0 8px' }}>
           {kloelT(`Pedido confirmado!`)}
         </h1>
-        <p style={{ color: '#8A8A8E', fontSize: '14px', margin: '0 0 28px' }}>
+        <p style={{ color: colors.text.muted, fontSize: '14px', margin: '0 0 28px' }}>
           {kloelT(`Obrigado pela sua compra`)}
         </p>
 
         {/* Order number */}
         <div
           style={{
-            background: '#141416',
+            background: colors.checkout.bg,
             border: '1px solid #2A2A2E',
             borderRadius: '12px',
             padding: '20px',
@@ -102,7 +102,7 @@ export default function SuccessPage() {
           <div
             style={{
               fontSize: '12px',
-              color: '#8A8A8E',
+              color: colors.text.muted,
               textTransform: 'uppercase',
               marginBottom: '6px',
               fontWeight: 500,
@@ -118,7 +118,7 @@ export default function SuccessPage() {
         {/* Summary */}
         <div
           style={{
-            background: '#141416',
+            background: colors.checkout.bg,
             border: '1px solid #2A2A2E',
             borderRadius: '12px',
             padding: '20px',
@@ -129,7 +129,7 @@ export default function SuccessPage() {
           <div
             style={{
               fontSize: '13px',
-              color: '#8A8A8E',
+              color: colors.text.muted,
               marginBottom: '12px',
               fontWeight: 600,
               textTransform: 'uppercase',
@@ -142,7 +142,7 @@ export default function SuccessPage() {
               display: 'flex',
               justifyContent: 'space-between',
               fontSize: '14px',
-              color: '#E8E6E1',
+              color: colors.checkout.textPrimary,
               marginBottom: '8px',
             }}
           >
@@ -160,11 +160,11 @@ export default function SuccessPage() {
               display: 'flex',
               justifyContent: 'space-between',
               fontSize: '14px',
-              color: '#E8E6E1',
+              color: colors.checkout.textPrimary,
             }}
           >
             <span>{kloelT(`Metodo`)}</span>
-            <span style={{ color: '#8A8A8E' }}>
+            <span style={{ color: colors.text.muted }}>
               {data?.payment?.status === 'APPROVED' ? 'Aprovado' : data?.payment?.status || '...'}
             </span>
           </div>
@@ -173,14 +173,14 @@ export default function SuccessPage() {
         {/* Email notice */}
         <div
           style={{
-            background: '#0F1F0F',
+            background: colors.checkout.successBg,
             border: '1px solid #22c55e33',
             borderRadius: '10px',
             padding: '14px 16px',
             marginBottom: '20px',
           }}
         >
-          <p style={{ color: '#22c55e', fontSize: '13px', margin: 0, lineHeight: '1.5' }}>
+          <p style={{ color: colors.checkout.success, fontSize: '13px', margin: 0, lineHeight: '1.5' }}>
             {kloelT(`Voce recebera os detalhes por e-mail com informacoes de acompanhamento.`)}
           </p>
         </div>
@@ -188,14 +188,14 @@ export default function SuccessPage() {
         {/* Delivery estimate */}
         <div
           style={{
-            color: '#8A8A8E',
+            color: colors.text.muted,
             fontSize: '12px',
             lineHeight: '1.5',
           }}
         >
           <p style={{ margin: 0 }}>
             {kloelT(`Prazo estimado de entrega:`)}{' '}
-            <strong style={{ color: '#E8E6E1' }}>{kloelT(`5 a 10 dias uteis`)}</strong>
+            <strong style={{ color: colors.checkout.textPrimary }}>{kloelT(`5 a 10 dias uteis`)}</strong>
           </p>
         </div>
 

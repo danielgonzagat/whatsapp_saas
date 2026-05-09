@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { useState } from 'react';
@@ -71,7 +72,7 @@ export default function SegurancaSection() {
         </div>
         {pwError && (
           <span
-            style={{ fontSize: 11, color: '#EF4444', marginTop: 8, display: 'block', fontFamily: SORA }}
+            style={{ fontSize: 11, color: colors.semantic.error, marginTop: 8, display: 'block', fontFamily: SORA }}
           >
             {pwError}
           </span>
@@ -86,7 +87,7 @@ export default function SegurancaSection() {
           }}
         >
           {pwSuccess && (
-            <span style={{ fontSize: 12, fontWeight: 600, color: '#10B981', fontFamily: SORA }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: colors.semantic.success, fontFamily: SORA }}>
               {kloelT(`Senha alterada!`)}
             </span>
           )}

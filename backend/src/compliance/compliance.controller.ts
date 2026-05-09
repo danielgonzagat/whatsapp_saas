@@ -43,7 +43,6 @@ export class ComplianceController {
   }
 
   /** Deletion status. */
-  // PULSE_OK: called from frontend/src/app/api/compliance/deletion-status/[code]/route.ts
   @Get('compliance/deletion-status/:code')
   async deletionStatus(@Param('code') code: string) {
     return this.complianceService.getDeletionStatus(code);

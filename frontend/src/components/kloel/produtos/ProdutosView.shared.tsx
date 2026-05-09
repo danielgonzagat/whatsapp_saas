@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
@@ -16,7 +17,7 @@ export const BG_CARD = KLOEL_THEME.bgCard;
 export const BG_ELEVATED = KLOEL_THEME.bgSecondary;
 export const BORDER = KLOEL_THEME.borderPrimary;
 export const EMBER = KLOEL_THEME.accent;
-export const PURPLE = '#8B5CF6';
+export const PURPLE = colors.semantic.purple;
 export const GREEN = EMBER;
 
 // ── CSS Animations ──
@@ -122,7 +123,7 @@ export const btnPrimary = (color: string): React.CSSProperties => ({
   background: color,
   border: 'none',
   borderRadius: 6,
-  color: '#fff',
+  color: colors.text.silver,
   fontFamily: SORA,
   fontSize: 12,
   fontWeight: 600,

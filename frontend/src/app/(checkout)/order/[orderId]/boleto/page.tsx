@@ -42,7 +42,7 @@ export default function BoletoPaymentPage() {
   }, [barcode]);
 
   const font = "'DM Sans', sans-serif";
-  const accent = '#D4AF37';
+  const accent = colors.checkout.accent;
 
   const formattedExpiry = expiresAt
     ? new Date(expiresAt).toLocaleDateString('pt-BR', {
@@ -68,10 +68,10 @@ export default function BoletoPaymentPage() {
         {/* Header */}
         <div style={{ marginBottom: '24px' }}>
           <div style={{ fontSize: '40px', marginBottom: '8px' }}>{kloelT(`&#128196;`)}</div>
-          <h1 style={{ color: '#E8E6E1', fontSize: '22px', fontWeight: 700, margin: '0 0 4px' }}>
+          <h1 style={{ color: colors.checkout.textPrimary, fontSize: '22px', fontWeight: 700, margin: '0 0 4px' }}>
             {kloelT(`Boleto gerado`)}
           </h1>
-          <p style={{ color: '#8A8A8E', fontSize: '14px', margin: 0 }}>
+          <p style={{ color: colors.text.muted, fontSize: '14px', margin: 0 }}>
             {kloelT(`Copie o codigo de barras ou abra o PDF para pagar`)}
           </p>
         </div>
@@ -83,12 +83,12 @@ export default function BoletoPaymentPage() {
               display: 'inline-flex',
               alignItems: 'center',
               gap: '8px',
-              background: '#1A1A1E',
+              background: colors.checkout.surface,
               border: '1px solid #2A2A2E',
               borderRadius: '10px',
               padding: '10px 20px',
               marginBottom: '24px',
-              color: '#8A8A8E',
+              color: colors.text.muted,
               fontSize: '13px',
             }}
           >
@@ -100,7 +100,7 @@ export default function BoletoPaymentPage() {
         {/* Barcode display */}
         <div
           style={{
-            background: '#141416',
+            background: colors.checkout.bg,
             border: '1px solid #2A2A2E',
             borderRadius: '12px',
             padding: '20px',
@@ -108,7 +108,7 @@ export default function BoletoPaymentPage() {
           }}
         >
           {loading || !barcode ? (
-            <div style={{ color: '#8A8A8E', fontSize: '14px', padding: '20px 0' }}>
+            <div style={{ color: colors.text.muted, fontSize: '14px', padding: '20px 0' }}>
               {kloelT(`Carregando boleto...`)}
             </div>
           ) : (
@@ -116,7 +116,7 @@ export default function BoletoPaymentPage() {
               style={{
                 fontFamily: 'monospace',
                 fontSize: '13px',
-                color: '#E8E6E1',
+                color: colors.checkout.textPrimary,
                 wordBreak: 'break-all',
                 lineHeight: '1.6',
                 letterSpacing: '1px',
@@ -136,10 +136,10 @@ export default function BoletoPaymentPage() {
             style={{
               width: '100%',
               padding: '14px',
-              background: copied ? '#1A2E1A' : `${accent}18`,
-              border: `1px solid ${copied ? '#22c55e' : accent}44`,
+              background: copied ? colors.checkout.successBg : `${accent}18`,
+              border: `1px solid ${copied ? colors.checkout.success : accent}44`,
               borderRadius: '10px',
-              color: copied ? '#22c55e' : accent,
+              color: copied ? colors.checkout.success : accent,
               fontSize: '14px',
               fontWeight: 600,
               cursor: 'pointer',
@@ -158,10 +158,10 @@ export default function BoletoPaymentPage() {
               style={{
                 width: '100%',
                 padding: '14px',
-                background: '#141416',
+                background: colors.checkout.bg,
                 border: '1px solid #2A2A2E',
                 borderRadius: '10px',
-                color: '#E8E6E1',
+                color: colors.checkout.textPrimary,
                 fontSize: '14px',
                 fontWeight: 600,
                 cursor: 'pointer',
@@ -178,7 +178,7 @@ export default function BoletoPaymentPage() {
         </div>
 
         {/* Info */}
-        <p style={{ color: '#8A8A8E', fontSize: '12px', marginTop: '20px', lineHeight: '1.5' }}>
+        <p style={{ color: colors.text.muted, fontSize: '12px', marginTop: '20px', lineHeight: '1.5' }}>
           {kloelT(`O pagamento pode levar ate 3 dias uteis para ser compensado. Voce recebera uma confirmacao
           por e-mail.`)}
         </p>

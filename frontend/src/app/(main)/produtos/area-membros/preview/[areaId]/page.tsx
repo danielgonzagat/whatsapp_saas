@@ -348,7 +348,7 @@ export default function MemberAreaPreviewPage() {
                 style={{
                   fontSize: 11,
                   fontWeight: 700,
-                  color: '#EF4444',
+                  color: colors.semantic.error,
                   letterSpacing: '.08em',
                   marginBottom: 10,
                 }}

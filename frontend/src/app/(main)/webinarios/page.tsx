@@ -272,7 +272,7 @@ const authMessageStyle: React.CSSProperties = {
 
 const loginBtnStyle: React.CSSProperties = {
   background: colors.ember.primary,
-  color: '#fff',
+  color: colors.text.silver,
   border: 'none',
   borderRadius: 6,
   padding: '10px 24px',
@@ -315,7 +315,7 @@ const pageTitleStyle: React.CSSProperties = {
 
 const createBtnStyle: React.CSSProperties = {
   background: colors.ember.primary,
-  color: '#fff',
+  color: colors.text.silver,
   border: 'none',
   borderRadius: 6,
   padding: '8px 18px',
@@ -358,17 +358,17 @@ const emptyStateStyle: React.CSSProperties = {
 };
 
 const emptyIconStyle: React.CSSProperties = {
-  color: '#444',
+  color: colors.text.dim,
   marginBottom: 12,
 };
 
 const emptyTextStyle: React.CSSProperties = {
-  color: '#666',
+  color: colors.text.muted,
   fontSize: 14,
 };
 
 const emptyHintStyle: React.CSSProperties = {
-  color: '#555',
+  color: colors.text.muted,
   fontSize: 12,
 };
 

@@ -60,7 +60,7 @@ const primaryButtonStyle: CSSProperties = {
   borderRadius: 8,
   border: 'none',
   background: 'colors.ember.primary',
-  color: '#FFFFFF',
+  color: colors.text.silver,
   fontSize: 13,
   fontWeight: 600,
   cursor: 'pointer',

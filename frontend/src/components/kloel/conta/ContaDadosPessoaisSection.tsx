@@ -4,6 +4,7 @@ import { kloelT } from '@/lib/i18n/t';
 import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
 import { useProfileMutations } from '@/hooks/useKyc';
+import { useToast } from '@/components/kloel/ToastProvider';
 import { usePersistentImagePreview } from '@/hooks/usePersistentImagePreview';
 import { readFileAsDataUrl } from '@/lib/media-upload';
 import Icons from './ContaIcons';
@@ -135,6 +136,7 @@ export default function DadosPessoaisSection({
   mutate: () => void;
 }) {
   const { updateProfile, uploadAvatar } = useProfileMutations();
+  const { showToast } = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [saving, setSaving] = useState(false);
@@ -187,6 +189,7 @@ export default function DadosPessoaisSection({
           birthDate: form.birthDate,
         }),
       );
+      showToast('Dados pessoais salvos', 'success');
       setSaveStatus('success');
       if (saveTimer.current) {
         clearTimeout(saveTimer.current);
@@ -195,6 +198,7 @@ export default function DadosPessoaisSection({
       mutate();
     } catch (e) {
       setError(getErrorMessage(e) || 'Erro ao salvar. Tente novamente.');
+      showToast(getErrorMessage(e) || 'Erro ao salvar dados pessoais', 'error');
       setSaveStatus('error');
       if (saveTimer.current) {
         clearTimeout(saveTimer.current);

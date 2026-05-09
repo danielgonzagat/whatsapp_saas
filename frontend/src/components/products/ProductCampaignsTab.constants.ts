@@ -1,3 +1,4 @@
+import { colors } from '@/lib/design-tokens';
 import { kloelT } from '@/lib/i18n/t';
 
 /** Sora. */
@@ -9,7 +10,7 @@ export const V = {
   s: 'var(--bg-space, #111113)',
   e: 'var(--bg-nebula, #19191C)',
   b: 'var(--border-space, #222226)',
-  em: '#E85D30',
+  em: colors.ember.primary,
   t: 'var(--text-starlight, #E0DDD8)',
   t2: 'var(--text-moonlight, #6E6E73)',
   t3: 'var(--text-dust, #3A3A3F)',

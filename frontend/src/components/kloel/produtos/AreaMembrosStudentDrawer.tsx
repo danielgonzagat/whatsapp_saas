@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { useCallback, useEffect, useState } from 'react';
 import type { MemberAreaStudent } from './ProdutosView.types';
@@ -155,7 +156,7 @@ export default function AreaMembrosStudentDrawer({
         width: 7,
         height: 7,
         borderRadius: '50%',
-        background: status === 'active' || !status ? EMBER : '#EF4444',
+        background: status === 'active' || !status ? EMBER : colors.semantic.error,
         flexShrink: 0,
       }}
     />
@@ -507,7 +508,7 @@ export default function AreaMembrosStudentDrawer({
                         fontFamily: SORA,
                         fontSize: 13,
                         fontWeight: 700,
-                        color: '#fff',
+                        color: colors.text.silver,
                         flexShrink: 0,
                       }}
                     >
@@ -582,7 +583,7 @@ export default function AreaMembrosStudentDrawer({
                     </button>
                     <button
                       type="button"
-                      style={{ ...iconBtn, color: '#EF4444' }}
+                      style={{ ...iconBtn, color: colors.semantic.error }}
                       title={kloelT('Remover')}
                       disabled={actionLoading === `delete-${student.id}`}
                       onClick={() => handleDelete(student.id)}

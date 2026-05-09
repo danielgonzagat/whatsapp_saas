@@ -24,7 +24,6 @@ jest.mock('../auth/email.service', () => ({
   })),
 }));
 
-// PULSE_OK: assertions exist below
 describe('CartRecoveryService', () => {
   let prisma: MockPrisma;
   let service: CartRecoveryService;

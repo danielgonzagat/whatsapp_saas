@@ -102,7 +102,7 @@ export default function WebinarCard({ webinar, onView, onEdit, onDelete }: Webin
               borderRadius: 4,
               padding: '4px 6px',
               cursor: 'pointer',
-              color: '#888',
+              color: colors.text.muted,
               display: 'flex',
               alignItems: 'center',
             }}
@@ -136,7 +136,7 @@ export default function WebinarCard({ webinar, onView, onEdit, onDelete }: Webin
           display: 'flex',
           alignItems: 'center',
           gap: 6,
-          color: '#777',
+          color: colors.text.muted,
           fontSize: 12,
           marginBottom: 6,
         }}
@@ -145,7 +145,7 @@ export default function WebinarCard({ webinar, onView, onEdit, onDelete }: Webin
         {formatDate(webinar.date)}
       </div>
       {webinar.description && (
-        <p style={{ color: '#888', fontSize: 12, margin: 0, lineHeight: 1.5, marginTop: 4 }}>
+        <p style={{ color: colors.text.muted, fontSize: 12, margin: 0, lineHeight: 1.5, marginTop: 4 }}>
           {webinar.description.length > 100
             ? `${webinar.description.slice(0, 100)}...`
             : webinar.description}
@@ -153,7 +153,7 @@ export default function WebinarCard({ webinar, onView, onEdit, onDelete }: Webin
       )}
       <div
         style={{
-          color: '#555',
+          color: colors.text.muted,
           fontSize: 11,
           marginTop: 8,
           overflow: 'hidden',

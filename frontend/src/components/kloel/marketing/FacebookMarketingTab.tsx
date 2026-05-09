@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import {
@@ -70,7 +71,7 @@ export default function FacebookMarketingTab({
             borderRadius: 6,
             border: 'none',
             background: ch.color,
-            color: '#fff',
+            color: colors.text.silver,
             cursor: connectingKey === 'facebook' ? 'wait' : 'pointer',
             fontWeight: 600,
             display: 'flex',

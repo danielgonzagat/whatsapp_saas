@@ -1,8 +1,10 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { useEffect, useRef, useState } from 'react';
 import { useFiscalMutations } from '@/hooks/useKyc';
+import { useToast } from '@/components/kloel/ToastProvider';
 import Icons from './ContaIcons';
 import { SORA, EMBER, D_RE } from './ContaConstants';
 import { cleanPayload, getErrorMessage, fiscalToFormState } from './ContaHelpers';
@@ -149,6 +151,7 @@ export default function DadosFiscaisSection({
   mutate: () => void;
 }) {
   const { updateFiscal } = useFiscalMutations();
+  const { showToast } = useToast();
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -235,6 +238,7 @@ export default function DadosFiscaisSection({
         state: form.uf,
       });
       await updateFiscal(payload);
+      showToast('Dados fiscais salvos', 'success');
       setSaveStatus('success');
       if (saveTimer.current) {
         clearTimeout(saveTimer.current);
@@ -243,6 +247,7 @@ export default function DadosFiscaisSection({
       mutate();
     } catch (e) {
       setError(getErrorMessage(e) || 'Erro ao salvar. Tente novamente.');
+      showToast(getErrorMessage(e) || 'Erro ao salvar dados fiscais', 'error');
       setSaveStatus('error');
       if (saveTimer.current) {
         clearTimeout(saveTimer.current);
@@ -307,7 +312,7 @@ export default function DadosFiscaisSection({
                 gap: 10,
               }}
             >
-              <span style={{ color: '#F59E0B', marginTop: 2, flexShrink: 0 }}>
+              <span style={{ color: colors.semantic.warning, marginTop: 2, flexShrink: 0 }}>
                 {Icons.alert(16)}
               </span>
               <div>

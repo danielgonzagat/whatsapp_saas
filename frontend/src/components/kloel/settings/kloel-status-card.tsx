@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
@@ -87,10 +88,10 @@ export function KloelStatusCard({
               fill="none"
               stroke={
                 preparationPercent >= 80
-                  ? '#22C55E'
+                  ? colors.checkout.success
                   : preparationPercent >= 50
-                    ? '#F59E0B'
-                    : '#EF4444'
+                    ? colors.semantic.warning
+                    : colors.semantic.error
               }
               strokeWidth="8"
               strokeLinecap="round"

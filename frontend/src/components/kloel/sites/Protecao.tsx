@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import React, { useState } from 'react';
@@ -22,7 +23,7 @@ export function Protecao() {
 
       <Card style={{ textAlign: 'center' }}>
         <div style={{ fontFamily: SORA, fontSize: 10, color: TEXT_MUTED, textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: 8 }}>{kloelT(`Pontuacao de Seguranca`)}</div>
-        <div style={{ fontFamily: MONO, fontSize: 48, color: '#10B981', fontWeight: 700 }}>96</div>
+        <div style={{ fontFamily: MONO, fontSize: 48, color: colors.semantic.success, fontWeight: 700 }}>96</div>
         <div style={{ fontFamily: SORA, fontSize: 12, color: TEXT_DIM }}>{kloelT(`de 100 pontos`)}</div>
         <div style={{ marginTop: 12, maxWidth: 300, margin: '12px auto 0' }}><ProgressBar value={96} color="#10B981" /></div>
       </Card>
@@ -31,9 +32,9 @@ export function Protecao() {
         <SectionLabel>{kloelT(`Configuracoes de Seguranca`)}</SectionLabel>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {[
-            { icon: IC.lock, iconColor: '#10B981', title: 'SSL/TLS (HTTPS)', desc: 'Criptografia de dados em transito', checked: sslEnabled, onChange: setSslEnabled },
-            { icon: IC.shield, iconColor: '#3B82F6', title: 'Protecao DDoS', desc: 'Mitigacao de ataques distribuidos', checked: ddosProtection, onChange: setDdosProtection },
-            { icon: IC.key, iconColor: '#F59E0B', title: 'Firewall (WAF)', desc: 'Bloqueio de requisicoes maliciosas', checked: firewallEnabled, onChange: setFirewallEnabled },
+            { icon: IC.lock, iconColor: colors.semantic.success, title: 'SSL/TLS (HTTPS)', desc: 'Criptografia de dados em transito', checked: sslEnabled, onChange: setSslEnabled },
+            { icon: IC.shield, iconColor: colors.semantic.info, title: 'Protecao DDoS', desc: 'Mitigacao de ataques distribuidos', checked: ddosProtection, onChange: setDdosProtection },
+            { icon: IC.key, iconColor: colors.semantic.warning, title: 'Firewall (WAF)', desc: 'Bloqueio de requisicoes maliciosas', checked: firewallEnabled, onChange: setFirewallEnabled },
             { icon: IC.cloud, iconColor: EMBER, title: 'Backups Automaticos', desc: 'Backup diario com 7 dias de retencao', checked: autoBackups, onChange: setAutoBackups },
           ].map((item, i, arr) => (
             <React.Fragment key={item.title}>
@@ -62,12 +63,12 @@ export function Protecao() {
             { domain: 'blog.meusite.com.br', issuer: '--', expires: '--', status: 'pendente' },
           ].map((cert) => (
             <div key={cert.domain} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', background: BG_ELEVATED, borderRadius: 6 }}>
-              <span style={{ color: cert.status === 'valido' ? '#10B981' : '#F59E0B' }}>{IC.lock(14)}</span>
+              <span style={{ color: cert.status === 'valido' ? colors.semantic.success : colors.semantic.warning }}>{IC.lock(14)}</span>
               <div style={{ flex: 1 }}>
                 <div style={{ fontFamily: MONO, fontSize: 12, color: TEXT }}>{cert.domain}</div>
                 <div style={{ fontFamily: MONO, fontSize: 10, color: TEXT_DIM }}>{cert.issuer}</div>
               </div>
-              <Badge color={cert.status === 'valido' ? '#10B981' : '#F59E0B'}>{cert.status}</Badge>
+              <Badge color={cert.status === 'valido' ? colors.semantic.success : colors.semantic.warning}>{cert.status}</Badge>
               <span style={{ fontFamily: MONO, fontSize: 10, color: TEXT_DIM }}>{cert.expires}</span>
             </div>
           ))}
@@ -86,8 +87,8 @@ export function Protecao() {
           ].map((item) => {
             const sevColor =
               item.severity === 'alta' ? '#ef4444'
-              : item.severity === 'media' ? '#F59E0B'
-              : item.severity === 'baixa' ? '#3B82F6'
+              : item.severity === 'media' ? colors.semantic.warning
+              : item.severity === 'baixa' ? colors.semantic.info
               : TEXT_DIM;
             return (
               <div key={item.event} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', background: BG_ELEVATED, borderRadius: 6 }}>

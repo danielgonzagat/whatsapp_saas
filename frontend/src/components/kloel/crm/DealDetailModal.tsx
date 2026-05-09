@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { CRM_ICONS } from './crm-pipeline-icons';
@@ -8,8 +9,8 @@ import { DetailRow } from './CRMPipelineView.parts';
 const IC = CRM_ICONS;
 
 const PRIORITY_CFG: Record<string, { label: string; color: string }> = {
-  high: { label: 'Alta', color: '#EF4444' },
-  medium: { label: 'Média', color: '#F59E0B' },
+  high: { label: 'Alta', color: colors.semantic.error },
+  medium: { label: 'Média', color: colors.semantic.warning },
   low: { label: 'Baixa', color: 'var(--app-text-secondary)' },
 };
 

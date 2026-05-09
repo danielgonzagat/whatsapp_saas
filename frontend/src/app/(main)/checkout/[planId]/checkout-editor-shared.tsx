@@ -129,7 +129,7 @@ export function Toggle({
             width: 18,
             height: 18,
             borderRadius: 9,
-            backgroundColor: '#fff',
+            backgroundColor: colors.text.silver,
             transition: 'left 150ms ease',
           }}
         />
@@ -158,7 +158,7 @@ export function ColorField({
           id={`${colorId}-color`}
           aria-label={`${lbl} (seletor de cor)`}
           type="color"
-          value={value || '#000000'}
+          value={value || colors.background.void}
           onChange={(e) => onChange(e.target.value)}
           style={{
             width: 36,
@@ -176,7 +176,7 @@ export function ColorField({
           value={value || ''}
           onChange={(e) => onChange(e.target.value)}
           style={{ ...inputStyle, flex: 1, fontFamily: MONO, fontSize: 13 }}
-          placeholder={kloelT('#000000')}
+          placeholder={kloelT(colors.background.void)}
         />
       </div>
     </div>

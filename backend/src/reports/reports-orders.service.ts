@@ -53,7 +53,6 @@ export class ReportsOrdersService {
 
     const { skip, take } = paginate(f);
 
-    // PULSE_OK: paginated via skip/take from filters
     const [data, total] = await Promise.all([
       this.prisma.checkoutOrder.findMany({
         take,
@@ -165,7 +164,6 @@ export class ReportsOrdersService {
     applyCommonOrderFilters(where, f);
 
     const { skip, take } = paginate(f);
-    // PULSE_OK: paginated via skip/take from filters
     const [data, total] = await Promise.all([
       this.prisma.checkoutOrder.findMany({
         take,
@@ -190,7 +188,6 @@ export class ReportsOrdersService {
     applyCommonOrderFilters(where, f);
 
     const { skip, take } = paginate(f);
-    // PULSE_OK: paginated via skip/take from filters
     const [data, total] = await Promise.all([
       this.prisma.checkoutOrder.findMany({
         take,
@@ -216,7 +213,6 @@ export class ReportsOrdersService {
 
     const { skip, take } = paginate(f);
     try {
-      // PULSE_OK: paginated via skip/take from filters
       const data = await this.prisma.checkoutPayment.findMany({
         take,
         skip,

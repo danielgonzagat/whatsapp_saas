@@ -24,7 +24,6 @@ export class WhatsAppMetaCompatController {
   }
 
   /** Link session. */
-  // PULSE_OK: internal route, Meta Cloud API compatibility — returns unsupported for cloud-based providers
   @Post('session/link')
   async linkSession(
     @Req() req: AuthenticatedRequest,
@@ -39,7 +38,6 @@ export class WhatsAppMetaCompatController {
   }
 
   /** Claim session. */
-  // PULSE_OK: internal route, Meta Cloud API compatibility — returns unsupported for cloud-based providers
   @Post('session/claim')
   async claimSession(
     @Req() req: AuthenticatedRequest,
@@ -79,7 +77,6 @@ export class WhatsAppMetaCompatController {
   }
 
   /** Pause agent. */
-  // PULSE_OK: internal route, Meta Cloud API compatibility — returns unsupported for cloud-based providers
   @Post('session/pause-agent')
   pauseAgent(@Req() req: AuthenticatedRequest, @Body() body: { paused?: boolean }) {
     void req;
@@ -88,7 +85,6 @@ export class WhatsAppMetaCompatController {
   }
 
   /** Reconcile session. */
-  // PULSE_OK: internal route, Meta Cloud API compatibility — returns unsupported for cloud-based providers
   @Post('session/reconcile')
   reconcileSession(@Req() req: AuthenticatedRequest, @Body() body: { objective?: string }) {
     void req;
@@ -97,7 +93,6 @@ export class WhatsAppMetaCompatController {
   }
 
   /** Get session proofs. */
-  // PULSE_OK: internal route, Meta Cloud API compatibility — returns unsupported for cloud-based providers
   @Get('session/proofs')
   getSessionProofs(@Req() req: AuthenticatedRequest) {
     void req;
@@ -108,7 +103,6 @@ export class WhatsAppMetaCompatController {
   }
 
   /** Get session stream token. */
-  // PULSE_OK: internal route, Meta Cloud API compatibility — returns unsupported for cloud-based providers
   @Post('session/stream-token')
   getSessionStreamToken(@Req() req: AuthenticatedRequest) {
     void req;
@@ -129,7 +123,6 @@ export class WhatsAppMetaCompatController {
   }
 
   /** Run session action turn. */
-  // PULSE_OK: internal route, Meta Cloud API compatibility — returns unsupported for cloud-based providers
   @Post('session/action-turn')
   runSessionActionTurn(
     @Req() req: AuthenticatedRequest,

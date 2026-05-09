@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import type { DisplayArea, DisplayProduct } from './ProdutosView.types';
 import {
@@ -340,7 +341,7 @@ export default function AreaMembrosAreaCard({
                 </button>
                 <button
                   type="button"
-                  style={{ ...iconBtn, color: '#EF4444' }}
+                  style={{ ...iconBtn, color: colors.semantic.error }}
                   onClick={() => onDelete(area.id)}
                 >
                   {IC.trash(16)}
@@ -590,7 +591,7 @@ export default function AreaMembrosAreaCard({
                       </button>
                       <button
                         type="button"
-                        style={{ ...iconBtn, color: '#EF4444' }}
+                        style={{ ...iconBtn, color: colors.semantic.error }}
                         onClick={() => onDeleteModule(area.id, mod.id)}
                       >
                         {IC.trash(14)}
@@ -704,7 +705,7 @@ export default function AreaMembrosAreaCard({
                               </button>
                               <button
                                 type="button"
-                                style={{ ...iconBtn, color: '#EF4444' }}
+                                style={{ ...iconBtn, color: colors.semantic.error }}
                                 onClick={() =>
                                   onDeleteLesson(area.id, lsn.id)
                                 }

@@ -27,14 +27,12 @@ export class ReportsController {
   }
 
   /** Get vendas. */
-  // PULSE_OK: admin-only route, accessed via admin panel
   @Get('vendas')
   getVendas(@Query() f: ReportFiltersDto, @Request() req: AuthenticatedRequest) {
     return this.reportsService.getVendas(this.ws(req), f);
   }
 
   /** Get vendas summary. */
-  // PULSE_OK: admin-only route, accessed via admin panel
   @Get('vendas/summary')
   getVendasSummary(@Query() f: ReportFiltersDto, @Request() req: AuthenticatedRequest) {
     return this.reportsService.getVendasSummary(this.ws(req), f);
@@ -65,28 +63,24 @@ export class ReportsController {
   }
 
   /** Get afiliados. */
-  // PULSE_OK: admin-only route, accessed via admin panel
   @Get('afiliados')
   getAfiliados(@Query() f: ReportFiltersDto, @Request() req: AuthenticatedRequest) {
     return this.reportsService.getAfiliados(this.ws(req), f);
   }
 
   /** Get indicadores. */
-  // PULSE_OK: admin-only route, accessed via admin panel
   @Get('indicadores')
   getIndicadores(@Query() f: ReportFiltersDto, @Request() req: AuthenticatedRequest) {
     return this.reportsService.getIndicadores(this.ws(req), f);
   }
 
   /** Get assinaturas. */
-  // PULSE_OK: admin-only route, accessed via admin panel
   @Get('assinaturas')
   getAssinaturas(@Query() f: ReportFiltersDto, @Request() req: AuthenticatedRequest) {
     return this.reportsService.getAssinaturas(this.ws(req), f);
   }
 
   /** Get indicadores produto. */
-  // PULSE_OK: admin-only route, accessed via admin panel
   @Get('indicadores-produto')
   getIndicadoresProduto(@Query() f: ReportFiltersDto, @Request() req: AuthenticatedRequest) {
     return this.reportsService.getIndicadoresProduto(this.ws(req), f);
@@ -99,7 +93,6 @@ export class ReportsController {
   }
 
   /** Get origem. */
-  // PULSE_OK: admin-only route, accessed via admin panel
   @Get('origem')
   getOrigem(@Query() f: ReportFiltersDto, @Request() req: AuthenticatedRequest) {
     return this.reportsService.getOrigem(this.ws(req), f);
@@ -140,7 +133,6 @@ export class ReportsController {
   }
 
   /** Get chargeback. */
-  // PULSE_OK: admin-only route, accessed via admin panel
   @Get('chargeback')
   getChargeback(@Query() f: ReportFiltersDto, @Request() req: AuthenticatedRequest) {
     return this.reportsService.getChargeback(this.ws(req), f);

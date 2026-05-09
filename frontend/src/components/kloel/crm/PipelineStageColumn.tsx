@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { type DragEvent as ReactDragEvent, useCallback, useState } from 'react';
@@ -109,7 +110,7 @@ export function PipelineStageColumn({
             {deals.length}
           </span>
         </div>
-        <span style={{ fontFamily: MONO, fontSize: 11, color: '#E85D30' }}>
+        <span style={{ fontFamily: MONO, fontSize: 11, color: colors.ember.primary }}>
           {fmtBRL(total)}
         </span>
       </div>
@@ -176,10 +177,10 @@ export function PipelineStageColumn({
               transition: 'border-color 150ms',
             }}
             onMouseEnter={(e) => {
-              (e.currentTarget as HTMLButtonElement).style.borderColor = '#E85D30';
+              (e.currentTarget as HTMLButtonElement).style.borderColor = colors.ember.primary;
             }}
             onMouseLeave={(e) => {
-              (e.currentTarget as HTMLButtonElement).style.borderColor = '#222226';
+              (e.currentTarget as HTMLButtonElement).style.borderColor = colors.background.border;
             }}
           >
             {IC.plus(12)} {kloelT('Novo deal')}

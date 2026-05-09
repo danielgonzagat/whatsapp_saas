@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { useEffect, useRef } from 'react';
 import { kloelT } from '@/lib/i18n/t';
@@ -74,16 +75,16 @@ export default function ChatMessageArea({
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: C.bg }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 20px', borderBottom: `1px solid ${C.divider}`, background: C.card }}>
-        <div style={{ width: 36, height: 36, borderRadius: '50%', background: selectedChat.type === 'producer' ? 'rgba(139,92,246,0.12)' : C.elevated, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: FONT.sans, fontSize: 14, fontWeight: 600, color: selectedChat.type === 'producer' ? '#8B5CF6' : C.text }}>
+        <div style={{ width: 36, height: 36, borderRadius: '50%', background: selectedChat.type === 'producer' ? 'rgba(139,92,246,0.12)' : C.elevated, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: FONT.sans, fontSize: 14, fontWeight: 600, color: selectedChat.type === 'producer' ? colors.semantic.purple : C.text }}>
           {(selectedChat.name || '?')[0].toUpperCase()}
         </div>
         <div>
           <div style={{ fontFamily: FONT.sans, fontSize: 14, fontWeight: 600, color: C.text }}>{selectedChat.name}</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 4, fontSize: 10, fontWeight: 600, fontFamily: FONT.sans, color: selectedChat.type === 'producer' ? '#8B5CF6' : C.ember, background: selectedChat.type === 'producer' ? 'rgba(139,92,246,0.15)' : C.emberStrong, letterSpacing: '0.02em', textTransform: 'uppercase' as const }}>
+            <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 4, fontSize: 10, fontWeight: 600, fontFamily: FONT.sans, color: selectedChat.type === 'producer' ? colors.semantic.purple : C.ember, background: selectedChat.type === 'producer' ? 'rgba(139,92,246,0.15)' : C.emberStrong, letterSpacing: '0.02em', textTransform: 'uppercase' as const }}>
               {selectedChat.type === 'producer' ? 'Produtor' : 'Afiliado'}
             </span>
-            {selectedChat.online && <span style={{ fontFamily: FONT.sans, fontSize: 11, color: '#10B981' }}>online</span>}
+            {selectedChat.online && <span style={{ fontFamily: FONT.sans, fontSize: 11, color: colors.semantic.success }}>online</span>}
           </div>
         </div>
       </div>
@@ -99,7 +100,7 @@ export default function ChatMessageArea({
           <div key={msg.id} style={{ display: 'flex', justifyContent: msg.isMe ? 'flex-end' : 'flex-start' }}>
             <div style={{ maxWidth: '70%', padding: '10px 14px', borderRadius: 6, background: msg.isMe ? C.ember : C.card, border: msg.isMe ? 'none' : `1px solid ${C.border}` }}>
               {!msg.isMe && <div style={{ fontFamily: FONT.sans, fontSize: 11, fontWeight: 600, color: C.ember, marginBottom: 4 }}>{msg.sender}</div>}
-              <div style={{ fontFamily: FONT.sans, fontSize: 13, color: msg.isMe ? '#fff' : C.text, lineHeight: 1.5 }}>{msg.content}</div>
+              <div style={{ fontFamily: FONT.sans, fontSize: 13, color: msg.isMe ? colors.text.silver : C.text, lineHeight: 1.5 }}>{msg.content}</div>
               <div style={{ fontFamily: FONT.sans, fontSize: 10, color: msg.isMe ? 'rgba(255,255,255,0.6)' : C.muted, textAlign: 'right' as const, marginTop: 4 }}>{msg.time}</div>
             </div>
           </div>
@@ -113,7 +114,7 @@ export default function ChatMessageArea({
           style={{ flex: 1, padding: '10px 14px', background: C.bg, border: `1px solid ${C.border}`, borderRadius: 6, color: C.text, fontFamily: FONT.sans, fontSize: 13, outline: 'none' }} />
         <button type="button" onClick={handleSend} disabled={!chatInput.trim()}
           style={{ width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', background: chatInput.trim() ? C.ember : C.elevated, border: 'none', borderRadius: 6, cursor: chatInput.trim() ? 'pointer' : 'default', transition: 'background 150ms ease', flexShrink: 0 }}>
-          <span style={{ color: chatInput.trim() ? '#fff' : C.muted }}>{IC.send(16)}</span>
+          <span style={{ color: chatInput.trim() ? colors.text.silver : C.muted }}>{IC.send(16)}</span>
         </button>
       </div>
     </div>

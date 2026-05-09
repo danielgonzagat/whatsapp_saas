@@ -1,3 +1,4 @@
+import { colors } from '@/lib/design-tokens';
 import { type Canvas, Circle, Line, Polygon, Rect, Triangle } from 'fabric';
 import type { HistoryManager } from './HistoryManager';
 
@@ -37,7 +38,7 @@ export class ShapeManager {
     const cx = this.canvas.width / 2;
     const cy = this.canvas.height / 2;
     const line = new Line([cx - 150, cy, cx + 150, cy], {
-      stroke: '#000000',
+      stroke: colors.background.void,
       strokeWidth: 2,
     });
     this.canvas.add(line);

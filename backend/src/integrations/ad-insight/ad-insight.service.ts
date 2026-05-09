@@ -8,7 +8,9 @@ import type { AdInsightSyncResult } from '../ad-provider.interface';
 export class AdInsightService {
   private readonly logger = new Logger(AdInsightService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) {
+    this.logger.log('AdInsightService initialized');
+  }
 
   async list(
     workspaceId: string,
@@ -214,9 +216,7 @@ export class AdInsightService {
       totalImpressions: result._sum.impressions ?? 0,
       totalClicks: result._sum.clicks ?? 0,
       roas:
-        (result._sum.spend ?? 0) > 0
-          ? (result._sum.revenue ?? 0) / (result._sum.spend ?? 0)
-          : 0,
+        (result._sum.spend ?? 0) > 0 ? (result._sum.revenue ?? 0) / (result._sum.spend ?? 0) : 0,
       totalRecords: result._count,
     };
   }

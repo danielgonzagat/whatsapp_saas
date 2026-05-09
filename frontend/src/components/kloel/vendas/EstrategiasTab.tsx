@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { Stat } from './Stat';
@@ -113,7 +114,7 @@ export function EstrategiasTab({
         <Stat
           label={kloelT('Alertas')}
           value={String(orderAlertsCount)}
-          color={orderAlertsCount > 0 ? '#EF4444' : 'var(--app-text-secondary)'}
+          color={orderAlertsCount > 0 ? colors.semantic.error : 'var(--app-text-secondary)'}
           sub={kloelT('Pontos de atenção')}
         />
       </div>

@@ -21,7 +21,9 @@ export class TeamService {
     private configService: ConfigService,
     private emailService: EmailService,
     private auditService: AuditService,
-  ) {}
+  ) {
+    this.logger.log('TeamService initialized');
+  }
 
   /** List members. */
   async listMembers(workspaceId: string) {

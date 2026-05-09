@@ -76,7 +76,7 @@ export const IC: Record<string, (s: number) => React.ReactElement> = {
     </svg>
   ),
   fire: (s) => (
-    <svg width={s} height={s} viewBox="0 0 24 24" fill="#E85D30" stroke="none" aria-hidden="true">
+    <svg width={s} height={s} viewBox="0 0 24 24" fill={colors.ember.primary} stroke="none" aria-hidden="true">
       <path
         d={kloelT(
           `M12 23c-4.97 0-8-3.58-8-7.5 0-3.07 1.74-5.44 3.28-7.17.56-.63 1.12-1.2 1.58-1.73.32-.37.6-.72.82-1.08C10.37 4.4 10.73 3 11.2 1.5c.12-.38.62-.42.8-.07.68 1.31 1.56 3.15 2.2 4.85.31.83.56 1.62.7 2.32.07.35.36.63.72.67.36.04.7-.16.85-.48.24-.52.44-1.09.6-1.69.1-.38.56-.5.78-.17C19.5 9.62 20 12.09 20 15.5 20 19.42 16.97 23 12 23Z`,
@@ -135,8 +135,8 @@ export const IC: Record<string, (s: number) => React.ReactElement> = {
       width={s}
       height={s}
       viewBox="0 0 24 24"
-      fill="#E85D30"
-      stroke="#E85D30"
+      fill={colors.ember.primary}
+      stroke={colors.ember.primary}
       strokeWidth={2}
       aria-hidden="true"
     >

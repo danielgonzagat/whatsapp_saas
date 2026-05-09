@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
@@ -261,42 +262,42 @@ export const CH_CONFIG: Record<
   whatsapp: {
     icon: IC.wa,
     label: 'WhatsApp',
-    color: '#25D366',
+    color: colors.canvas.lime,
     backendKey: 'WHATSAPP',
     hasIntegration: true,
   },
   instagram: {
     icon: IC.ig,
     label: 'Instagram',
-    color: '#E1306C',
+    color: colors.canvas.pink,
     backendKey: 'INSTAGRAM',
     hasIntegration: false,
   },
   tiktok: {
     icon: IC.tt,
     label: 'TikTok',
-    color: '#ff0050',
+    color: colors.semantic.error,
     backendKey: 'TIKTOK',
     hasIntegration: false,
   },
   facebook: {
     icon: IC.fb,
     label: 'Facebook',
-    color: '#1877F2',
+    color: colors.semantic.info,
     backendKey: 'MESSENGER',
     hasIntegration: false,
   },
   email: {
     icon: IC.em,
     label: 'Email',
-    color: '#F59E0B',
+    color: colors.semantic.warning,
     backendKey: 'EMAIL',
     hasIntegration: true,
   },
   sms: {
     icon: IC.send,
     label: 'SMS',
-    color: '#8B5CF6',
+    color: colors.semantic.purple,
     backendKey: 'SMS',
     hasIntegration: false,
   },
@@ -454,7 +455,7 @@ export function ConnBadge({ connected }: { connected: boolean }) {
         gap: 4,
         fontSize: 10,
         fontFamily: MONO,
-        color: connected ? '#10B981' : '#ef4444',
+        color: connected ? colors.semantic.success : '#ef4444',
         background: connected ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
         padding: '2px 8px',
         borderRadius: 99,
@@ -465,7 +466,7 @@ export function ConnBadge({ connected }: { connected: boolean }) {
           width: 6,
           height: 6,
           borderRadius: '50%',
-          background: connected ? '#10B981' : '#ef4444',
+          background: connected ? colors.semantic.success : '#ef4444',
           animation: connected ? 'mktPulse 2s infinite' : 'none',
         }}
       />
@@ -665,13 +666,13 @@ export function ChannelConnectBadge({
         gap: 4,
         fontSize: 10,
         fontFamily: MONO,
-        color: '#F59E0B',
+        color: colors.semantic.warning,
         background: 'rgba(245,158,11,0.1)',
         padding: '2px 8px',
         borderRadius: 99,
       }}
     >
-      <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#F59E0B' }} />
+      <span style={{ width: 6, height: 6, borderRadius: '50%', background: colors.semantic.warning }} />
       {kloelT(`Conectar`)}
     </span>
   );

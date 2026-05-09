@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { Button } from '@/components/ui/button';
@@ -57,7 +58,7 @@ export function PlanActivationSuccessModal({
                 cy="50"
                 r="45"
                 fill="none"
-                stroke="#22C55E"
+                stroke={colors.checkout.success}
                 strokeWidth="6"
                 strokeLinecap="round"
                 strokeDasharray={`${showCheck ? 283 : 0} 283`}

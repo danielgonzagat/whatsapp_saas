@@ -1,3 +1,4 @@
+import { colors } from '@/lib/design-tokens';
 import { kloelT } from '@/lib/i18n/t';
 import { SORA, MONO } from './utils';
 
@@ -88,7 +89,7 @@ export function SmartPaymentFormView({
           />
         </div>
       </div>
-      {error && <span style={{ fontSize: 12, color: '#EF4444', fontFamily: SORA }}>{error}</span>}
+      {error && <span style={{ fontSize: 12, color: colors.semantic.error, fontFamily: SORA }}>{error}</span>}
       <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
         <button type="button" onClick={onCancel} style={secondaryBtnStyle}>
           {kloelT('Cancelar')}

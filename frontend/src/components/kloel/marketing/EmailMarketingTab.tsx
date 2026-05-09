@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { useEmailMarketing } from './useEmailMarketing';
@@ -122,7 +123,7 @@ export default function EmailMarketingTab({
               {emailSending ? 'Enviando...' : <>{IC.send(16)} {kloelT(`Enviar`)}</>}
             </button>
             {emailResult && (
-              <div style={{ fontFamily: MONO, fontSize: 13, padding: '10px 16px', borderRadius: 6, background: emailResult.failed === 0 ? 'rgba(16,185,129,0.1)' : 'rgba(245,158,11,0.1)', border: `1px solid ${emailResult.failed === 0 ? 'rgba(16,185,129,0.2)' : 'rgba(245,158,11,0.2)'}`, color: emailResult.failed === 0 ? '#10B981' : '#F59E0B' }}>
+              <div style={{ fontFamily: MONO, fontSize: 13, padding: '10px 16px', borderRadius: 6, background: emailResult.failed === 0 ? 'rgba(16,185,129,0.1)' : 'rgba(245,158,11,0.1)', border: `1px solid ${emailResult.failed === 0 ? 'rgba(16,185,129,0.2)' : 'rgba(245,158,11,0.2)'}`, color: emailResult.failed === 0 ? colors.semantic.success : colors.semantic.warning }}>
                 {emailResult.sent} {kloelT(`enviados,`)} {emailResult.failed} falharam
               </div>
             )}

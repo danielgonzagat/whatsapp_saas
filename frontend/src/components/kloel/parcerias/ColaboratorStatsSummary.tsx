@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { useCollaborators, useCollaboratorStats } from '@/hooks/usePartnerships';
@@ -18,7 +19,7 @@ export default function ColaboratorStatsSummary() {
 
   const cards = [
     { label: kloelT(`Total Colaboradores`), value: total, icon: IC.users(16), iconStyle: { color: C.muted } },
-    { label: kloelT(`Online Agora`), value: online, icon: <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#10B981' }} />, iconStyle: {} },
+    { label: kloelT(`Online Agora`), value: online, icon: <div style={{ width: 8, height: 8, borderRadius: '50%', background: colors.semantic.success }} />, iconStyle: {} },
     { label: kloelT(`Convites Pendentes`), value: pendingInvites, icon: IC.mail(16), iconStyle: { color: C.muted } },
     { label: kloelT(`Funcoes Ativas`), value: rolesUsed, icon: IC.shield(16), iconStyle: { color: C.muted } },
   ];

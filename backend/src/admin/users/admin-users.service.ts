@@ -46,7 +46,9 @@ export class AdminUsersService {
     private readonly prisma: PrismaService,
     private readonly permissions: AdminPermissionsService,
     private readonly audit: AdminAuditService,
-  ) {}
+  ) {
+    this.logger.log('AdminUsersService initialized');
+  }
 
   /** Create. */
   async create(input: CreateAdminUserInput) {
@@ -90,7 +92,6 @@ export class AdminUsersService {
   }
 
   /** List. */
-  // PULSE_OK: bounded by admin user count (low cardinality)
   async list() {
     const users = await this.prisma.adminUser.findMany({
       orderBy: { createdAt: 'desc' },

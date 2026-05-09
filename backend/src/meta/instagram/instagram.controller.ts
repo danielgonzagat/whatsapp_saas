@@ -49,7 +49,6 @@ export class InstagramController {
   }
 
   /** Get profile. */
-  // PULSE_OK: admin-only route, accessed via admin panel (Meta Instagram integration)
   @Get('profile')
   async getProfile(
     @Req() req: AuthenticatedRequest,
@@ -80,7 +79,6 @@ export class InstagramController {
   }
 
   /** Get account insights. */
-  // PULSE_OK: admin-only route, accessed via admin panel (Meta Instagram integration)
   @Get('insights/account')
   async getAccountInsights(
     @Req() req: AuthenticatedRequest,

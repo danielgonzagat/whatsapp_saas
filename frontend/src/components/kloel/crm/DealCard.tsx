@@ -1,11 +1,12 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { type DragEvent as ReactDragEvent } from 'react';
 import { type CRMDeal, fmtBRL, MONO } from './crm-pipeline-utils';
 
 const PRIORITY_CFG: Record<string, { label: string; color: string }> = {
-  high: { label: 'Alta', color: '#EF4444' },
-  medium: { label: 'Média', color: '#F59E0B' },
+  high: { label: 'Alta', color: colors.semantic.error },
+  medium: { label: 'Média', color: colors.semantic.warning },
   low: { label: 'Baixa', color: 'var(--app-text-secondary)' },
 };
 
@@ -66,7 +67,7 @@ export function DealCard({ deal, isDragging, onDragStart, onClick }: DealCardPro
           style={{
             fontFamily: MONO,
             fontSize: 11,
-            color: '#E85D30',
+            color: colors.ember.primary,
             fontWeight: 600,
           }}
         >

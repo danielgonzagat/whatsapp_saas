@@ -1,8 +1,11 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { useCallback, useEffect, useRef, useState, useId } from 'react';
+import { useToast } from '@/components/kloel/ToastProvider';
 import { useBankMutations } from '@/hooks/useKyc';
+import { useToast } from '@/components/kloel/ToastProvider';
 import { useBrazilianBanks, formatBankCode, POPULAR_BANK_CODES, type BrazilianBank } from '@/hooks/useBrazilianBanks';
 import Icons from './ContaIcons';
 import { SORA, MONO, EMBER, U0300__U036F_RE } from './ContaConstants';
@@ -384,6 +387,7 @@ export default function DadosBancariosSection({
   const fid = useId();
   const { banks, isLoading: banksLoading, error: banksError } = useBrazilianBanks();
   const { updateBank } = useBankMutations();
+  const { showToast } = useToast();
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -487,6 +491,7 @@ export default function DadosBancariosSection({
       }
       saveTimer.current = setTimeout(() => setSaveStatus('idle'), 3000);
       mutate();
+      showToast('Dados bancarios salvos', 'success');
     } catch (e) {
       setError(getErrorMessage(e) || 'Erro ao salvar. Tente novamente.');
       setSaveStatus('error');
@@ -494,6 +499,7 @@ export default function DadosBancariosSection({
         clearTimeout(saveTimer.current);
       }
       saveTimer.current = setTimeout(() => setSaveStatus('idle'), 4000);
+      showToast('Erro ao salvar dados bancarios', 'error');
     }
     setSaving(false);
   };
@@ -697,7 +703,7 @@ export default function DadosBancariosSection({
           gap: 10,
         }}
       >
-        <span style={{ color: isPJ ? '#10B981' : '#F59E0B', marginTop: 2, flexShrink: 0 }}>
+        <span style={{ color: isPJ ? colors.semantic.success : colors.semantic.warning, marginTop: 2, flexShrink: 0 }}>
           {isPJ ? Icons.check(16) : Icons.alert(16)}
         </span>
         <div>

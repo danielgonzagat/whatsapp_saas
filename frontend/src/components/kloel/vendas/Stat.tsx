@@ -1,3 +1,4 @@
+import { colors } from '@/lib/design-tokens';
 import { IC } from './VendasView.icons';
 import { SORA, MONO } from './utils';
 
@@ -48,7 +49,7 @@ export function Stat({
               alignItems: 'center',
               gap: 2,
               fontSize: 10,
-              color: trend > 0 ? '#10B981' : '#EF4444',
+              color: trend > 0 ? colors.semantic.success : colors.semantic.error,
             }}
           >
             {trend > 0 ? IC.trend(10) : IC.trendD(10)} {Math.abs(trend)}%

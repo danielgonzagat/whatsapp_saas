@@ -51,7 +51,7 @@ function RecentSkeletonGrid() {
                 height: 10,
                 borderRadius: 999,
                 background:
-                  '#1C1C1F' /* PULSE_VISUAL_OK: intermediate surface tone, near elevated */,
+                  colors.canvas.border,
               }}
             />
             <div
@@ -292,7 +292,7 @@ function DesignCard({
           background: 'var(--app-bg-primary)',
           border: '1px solid #2A2A2E',
           color:
-            '#FF6B6B' /* PULSE_VISUAL_OK: soft error red, non-Monitor */ /* PULSE_VISUAL_OK: soft error red, non-Monitor */,
+            colors.checkout.danger,
           cursor: 'pointer',
           display: 'flex',
           alignItems: 'center',

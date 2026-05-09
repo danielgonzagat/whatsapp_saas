@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { KloelMushroomMark } from '@/components/kloel/KloelBrand';
@@ -534,7 +535,7 @@ export function CrmSettingsSection() {
                   <div className="flex items-center gap-2">
                     <span
                       className="h-3 w-3 rounded-full"
-                      style={{ backgroundColor: stage.color || '#d1d5db' }}
+                      style={{ backgroundColor: stage.color || colors.background.surface }}
                     />
                     <div>
                       <p className="text-sm font-semibold text-[var(--app-text-primary)]">

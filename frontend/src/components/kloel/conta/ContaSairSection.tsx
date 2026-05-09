@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { useRouter } from 'next/navigation';
@@ -26,7 +27,7 @@ export default function SairSection() {
           padding: '20px 0',
         }}
       >
-        <span style={{ color: '#EF4444' }}>{Icons.logout(32)}</span>
+        <span style={{ color: colors.semantic.error }}>{Icons.logout(32)}</span>
         <p
           style={{
             fontSize: 13,
@@ -45,10 +46,10 @@ export default function SairSection() {
           onClick={handleLogout}
           style={{
             padding: '12px 32px',
-            background: '#EF4444',
+            background: colors.semantic.error,
             border: 'none',
             borderRadius: 6,
-            color: '#fff',
+            color: colors.text.silver,
             fontSize: 13,
             fontWeight: 600,
             cursor: 'pointer',

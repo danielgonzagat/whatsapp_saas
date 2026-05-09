@@ -85,7 +85,7 @@ export function RuleNerveFiber({
             onClick={() => onToggle(rule.id)}
             style={{ width: 36, height: 20, borderRadius: 10, border: 'none', background: rule.active ? EMBER : colors.text.dim, cursor: 'pointer', position: 'relative' as const, transition: 'background 150ms ease', flexShrink: 0 }}
           >
-            <span style={{ position: 'absolute' as const, top: 3, left: rule.active ? 19 : 3, width: 14, height: 14, borderRadius: '50%', background: '#fff', transition: 'left 150ms ease' } as React.CSSProperties} />
+            <span style={{ position: 'absolute' as const, top: 3, left: rule.active ? 19 : 3, width: 14, height: 14, borderRadius: '50%', background: colors.text.silver, transition: 'left 150ms ease' } as React.CSSProperties} />
           </button>
           <button
             type="button"

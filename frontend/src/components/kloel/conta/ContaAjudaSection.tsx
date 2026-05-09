@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { useState } from 'react';
@@ -190,7 +191,7 @@ export default function AjudaSection() {
             background: 'rgba(37,211,102,.06)',
             border: '1px solid rgba(37,211,102,.2)',
             borderRadius: 6,
-            color: '#25D366',
+            color: colors.canvas.lime,
             fontSize: 13,
             fontWeight: 600,
             fontFamily: SORA,

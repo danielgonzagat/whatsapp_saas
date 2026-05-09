@@ -5,7 +5,7 @@ import {
   ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt'; // PULSE_OK: reasonable expiry (30m)
+import { JwtService } from '@nestjs/jwt';
 import { Prisma } from '@prisma/client';
 import type { Redis } from 'ioredis';
 import { OpsAlertService } from '../observability/ops-alert.service';

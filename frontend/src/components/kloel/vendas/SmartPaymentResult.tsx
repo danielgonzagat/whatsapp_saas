@@ -1,3 +1,4 @@
+import { colors } from '@/lib/design-tokens';
 import { kloelT } from '@/lib/i18n/t';
 import { SORA, MONO } from './utils';
 
@@ -33,7 +34,7 @@ export function SmartPaymentResultView({ result, onNewCharge, onClose }: SmartPa
           style={{
             fontSize: 13,
             fontWeight: 600,
-            color: '#10B981',
+            color: colors.semantic.success,
             display: 'block',
             marginBottom: 12,
             fontFamily: SORA,

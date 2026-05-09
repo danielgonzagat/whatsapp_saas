@@ -1,6 +1,7 @@
 'use client';
 
 import { useAuth } from '@/components/kloel/auth/auth-provider';
+import { useToast } from '@/components/kloel/ToastProvider';
 import { useConversationHistory } from '@/hooks/useConversationHistory';
 import { affiliateApi } from '@/lib/api/affiliate';
 import { productApi } from '@/lib/api/products';
@@ -48,7 +49,8 @@ export default function KloelDashboard() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { userName } = useAuth();
-  const { conversations, setActiveConversation, upsertConversation, refreshConversations } =
+  const { showToast } = useToast();
+  const { conversations, setActiveConversation, upsertConversation, refreshConversations, updateConversationTitle } =
     useConversationHistory();
 
   const requestedConversationId = searchParams.get('conversationId');
@@ -170,6 +172,17 @@ export default function KloelDashboard() {
       }
     },
     [clearAllAttachments, router, setActiveConversation],
+  );
+
+  const onTitle = useCallback(
+    (newTitle: string) => {
+      const trimmed = newTitle.trim();
+      if (!trimmed || !activeConversationId) return;
+      setConversationTitle(trimmed);
+      updateConversationTitle(activeConversationId, trimmed);
+      showToast('Titulo atualizado', 'success');
+    },
+    [activeConversationId, setConversationTitle, updateConversationTitle, showToast],
   );
 
   const handleCancelActiveReply = useCallback(() => {
@@ -456,6 +469,7 @@ export default function KloelDashboard() {
       hasMessages={hasMessages}
       messages={messages}
       conversationTitle={conversationTitle}
+      onTitle={onTitle}
       streamingMessageId={streamingMessageId}
       isThinking={isThinking}
       isReplyInFlight={isReplyInFlight}

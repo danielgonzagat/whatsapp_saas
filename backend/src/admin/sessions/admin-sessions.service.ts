@@ -8,10 +8,11 @@ import { adminErrors } from '../common/admin-api-errors';
 export class AdminSessionsService {
   private readonly logger = new Logger(AdminSessionsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) {
+    this.logger.log('AdminSessionsService initialized');
+  }
 
   /** List own. */
-  // PULSE_OK: bounded by single admin user's sessions
   async listOwn(adminUserId: string) {
     return this.prisma.adminSession.findMany({
       where: { adminUserId },
@@ -28,7 +29,6 @@ export class AdminSessionsService {
   }
 
   /** List for user. */
-  // PULSE_OK: bounded by single target user's sessions
   async listForUser(targetId: string) {
     return this.prisma.adminSession.findMany({
       where: { adminUserId: targetId },

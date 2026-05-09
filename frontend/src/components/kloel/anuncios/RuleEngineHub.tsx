@@ -196,7 +196,7 @@ export function RuleEngineHub() {
               <button type="button" onClick={() => { setShowForm(false); setNewCondition(''); setNewAction(''); }} style={{ background: 'none', border: '1px solid colors.text.dim', borderRadius: 6, padding: '8px 16px', color: 'var(--app-text-secondary)', fontSize: 12, fontFamily: SORA, cursor: 'pointer' }}>
                 {kloelT(`Cancelar`)}
               </button>
-              <button type="button" onClick={handleCreateRule} disabled={!newCondition.trim() || !newAction.trim()} style={{ background: EMBER, border: 'none', borderRadius: 6, padding: '8px 20px', color: '#fff', fontSize: 12, fontFamily: SORA, fontWeight: 600, cursor: newCondition.trim() && newAction.trim() ? 'pointer' : 'not-allowed', opacity: newCondition.trim() && newAction.trim() ? 1 : 0.5, transition: 'opacity 150ms ease' }}>
+              <button type="button" onClick={handleCreateRule} disabled={!newCondition.trim() || !newAction.trim()} style={{ background: EMBER, border: 'none', borderRadius: 6, padding: '8px 20px', color: colors.text.silver, fontSize: 12, fontFamily: SORA, fontWeight: 600, cursor: newCondition.trim() && newAction.trim() ? 'pointer' : 'not-allowed', opacity: newCondition.trim() && newAction.trim() ? 1 : 0.5, transition: 'opacity 150ms ease' }}>
                 {kloelT(`Criar Regra`)}
               </button>
             </div>

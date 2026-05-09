@@ -14,13 +14,13 @@ export function LivePulse() {
           width: 6,
           height: 6,
           borderRadius: 3,
-          background: '#10B981',
+          background: colors.semantic.success,
           animation: prefersReducedMotion ? 'none' : 'pulse 2s ease infinite',
         }}
       />
       <span style={{ fontFamily: 'var(--font-jetbrains)', fontSize: 11, color: colors.text.muted }}>
         {kloelT('Plataforma')}{' '}
-        <span style={{ color: '#10B981', fontWeight: 600 }}>operacional</span>{' '}
+        <span style={{ color: colors.semantic.success, fontWeight: 600 }}>operacional</span>{' '}
         {kloelT('— vendas automáticas 24/7')}
       </span>
     </div>

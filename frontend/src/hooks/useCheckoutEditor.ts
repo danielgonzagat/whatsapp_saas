@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { apiFetch } from '@/lib/api';
 import { swrFetcher } from '@/lib/fetcher';
@@ -245,7 +246,7 @@ export interface CheckoutConfig {
 export const DEFAULT_CONFIG: CheckoutConfig = {
   theme: 'NOIR',
   accentColor: 'colors.ember.primary',
-  accentColor2: '#D14E25',
+  accentColor2: colors.ember.primary,
   backgroundColor: 'colors.background.void',
   cardColor: 'colors.background.surface',
   textColor: 'colors.text.silver',

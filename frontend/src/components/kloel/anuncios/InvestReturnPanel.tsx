@@ -5,7 +5,7 @@ import { colors } from '@/lib/design-tokens';
 import { IC, G, SORA, MONO } from './AnunciosShared';
 import type { PlatformKey, PlatformData, KeywordEntry } from './anuncios-types';
 
-const R = '#EF4444';
+const R = colors.semantic.error;
 
 export function InvestReturnPanel({
   platforms,

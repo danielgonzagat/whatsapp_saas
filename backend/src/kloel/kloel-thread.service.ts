@@ -47,7 +47,9 @@ export class KloelThreadService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly summaryService: KloelThreadSummaryService,
-  ) {}
+  ) {
+    this.logger.log('KloelThreadService initialized');
+  }
 
   async resolveThread(
     workspaceId: string,

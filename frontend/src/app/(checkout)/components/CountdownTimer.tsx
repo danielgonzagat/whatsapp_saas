@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { useEffect, useRef, useState } from 'react';
 
@@ -45,8 +46,8 @@ export default function CountdownTimer({
   message = 'Oferta expira em:',
   expiredMessage = 'Oferta expirada',
   position = 'top',
-  accentColor = '#D4AF37',
-  textColor = '#E8E6E1',
+  accentColor = colors.checkout.accent,
+  textColor = colors.checkout.textPrimary,
 }: CountdownTimerProps) {
   const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -116,8 +117,8 @@ export default function CountdownTimer({
         gap: '8px',
         padding: '10px 16px',
         borderRadius: '10px',
-        background: expired ? '#441111' : `${accentColor}12`,
-        border: `1px solid ${expired ? '#662222' : `${accentColor}30`}`,
+        background: expired ? colors.checkout.dangerBg : `${accentColor}12`,
+        border: `1px solid ${expired ? colors.checkout.dangerBorder : `${accentColor}30`}`,
         ...positionStyles,
       }}
     >
@@ -151,7 +152,7 @@ export default function CountdownTimer({
           </span>
         </>
       ) : (
-        <span style={{ fontSize: '13px', color: '#ff6b6b', fontWeight: 600 }}>
+        <span style={{ fontSize: '13px', color: colors.checkout.danger, fontWeight: 600 }}>
           {expiredMessage}
         </span>
       )}

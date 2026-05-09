@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
@@ -145,7 +146,7 @@ export function CampaignsView() {
           onClick={() => setShowCreate(!showCreate)}
           style={{
             background: ACCENT,
-            color: '#0A0A0C',
+            color: colors.background.void,
             border: 'none',
             borderRadius: 6,
             padding: '10px 20px',
@@ -180,7 +181,7 @@ export function CampaignsView() {
             style={{
               marginTop: 12,
               background: ACCENT,
-              color: '#0A0A0C',
+              color: colors.background.void,
               border: 'none',
               borderRadius: 6,
               padding: '8px 16px',

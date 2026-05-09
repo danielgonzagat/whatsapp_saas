@@ -4,6 +4,7 @@ export { RECUPERE_CAPABILITIES } from './recupere';
 export { FALE_CAPABILITIES } from './fale';
 export { GERENCIE_CAPABILITIES } from './gerencie';
 
+import { colors } from '@/lib/design-tokens';
 import type { CapabilityCategory, FrontendCapability } from './types';
 import { IMPULSIONE_CAPABILITIES } from './impulsione';
 import { RECUPERE_CAPABILITIES } from './recupere';
@@ -14,10 +15,10 @@ export const CAPABILITY_CATEGORY_META: Record<
   CapabilityCategory,
   { icon: string; title: string; color: string }
 > = {
-  impulsione: { icon: '\u{1F680}', title: 'Impulsione', color: '#4E7AE0' },
-  recupere: { icon: '\u{1F504}', title: 'Recupere', color: '#2DD4A0' },
-  fale: { icon: '\u{1F4AC}', title: 'Fale', color: '#C9A84C' },
-  gerencie: { icon: '\u{2699}\u{FE0F}', title: 'Gerencie', color: '#7B5EA7' },
+  impulsione: { icon: '\u{1F680}', title: 'Impulsione', color: colors.semantic.info },
+  recupere: { icon: '\u{1F504}', title: 'Recupere', color: colors.canvas.lime },
+  fale: { icon: '\u{1F4AC}', title: 'Fale', color: colors.semantic.warning },
+  gerencie: { icon: '\u{2699}\u{FE0F}', title: 'Gerencie', color: colors.semantic.purple },
 };
 
 export const FRONTEND_CAPABILITIES: FrontendCapability[] = [

@@ -42,7 +42,6 @@ function buildIssueTokensResult(overrides: TokenOverrides = {}) {
   };
 }
 
-// PULSE_OK: assertions exist below
 describe('AuthPasswordService — lookup, anonymous, register', () => {
   let ctx: AuthPasswordSpecContext;
 

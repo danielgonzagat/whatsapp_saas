@@ -171,7 +171,7 @@ export function CreateModal({ open, onClose }: CreateModalProps) {
                 onMouseEnter={(e) => {
                   if (cat !== c.id) {
                     e.currentTarget.style.background =
-                      '#151517' /* PULSE_VISUAL_OK: intermediate surface tone */;
+                      colors.canvas.surfaceAlt;
                     e.currentTarget.style.color = colors.text.silver;
                   }
                 }}

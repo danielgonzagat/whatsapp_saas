@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { type DragEvent, useCallback, useEffect, useRef, useState } from 'react';
@@ -246,17 +247,17 @@ export default function FlowBuilder({
   const nodeColor = useCallback((node: Node) => {
     const colors: Record<string, string> = {
       start:
-        '#10b981' /* PULSE_VISUAL_OK: success emerald, non-Monitor status indicator */ /* PULSE_VISUAL_OK: success emerald, non-Monitor status indicator */,
-      message: '#22c55e',
+        'var(--app-success)',
+      message: colors.checkout.success,
       input: '#3b82f6',
       condition: '#eab308',
       delay: '#f97316',
       waitForReply: '#8b5cf6',
       action: '#a855f7',
       ai: '#6366f1',
-      end: '#ef4444' /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */ /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */,
+      end: 'var(--app-error)',
     };
-    return colors[node.type || 'default'] || '#94a3b8';
+    return colors[node.type || 'default'] || colors.text.muted;
   }, []);
 
   return (

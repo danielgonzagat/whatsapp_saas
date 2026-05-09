@@ -13,6 +13,7 @@ export class ScrapersService {
   private scraperQueue: Queue;
 
   constructor(private prisma: PrismaService) {
+    this.logger.log('ScrapersService initialized');
     const connection = createRedisClient();
 
     this.scraperQueue = new Queue('scraper-jobs', { connection });

@@ -1,11 +1,12 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { useSmsMarketing } from './useSmsMarketing';
 import { SORA, MONO, BG_CARD, BORDER, Fmt } from './MarketingShared';
 import type { ChannelRealData } from './MarketingTypes';
 
-const SMS_COLOR = '#8B5CF6';
+const SMS_COLOR = colors.semantic.purple;
 const SMS_LABEL = 'SMS';
 
 interface SmsMarketingTabProps {
@@ -112,7 +113,7 @@ export default function SmsMarketingTab({ channelData }: SmsMarketingTabProps) {
           : kloelT(`O canal SMS requer configuracao do provider no backend. Entre em contato com o suporte para ativar este canal.`)}
       </div>
       {!isConfigured && (
-        <div style={{ fontFamily: MONO, fontSize: 12, color: '#F59E0B', background: 'rgba(245,158,11,0.1)', padding: '10px 16px', borderRadius: 6, border: '1px solid rgba(245,158,11,0.2)', maxWidth: 420, textAlign: 'center' }}>
+        <div style={{ fontFamily: MONO, fontSize: 12, color: colors.semantic.warning, background: 'rgba(245,158,11,0.1)', padding: '10px 16px', borderRadius: 6, border: '1px solid rgba(245,158,11,0.2)', maxWidth: 420, textAlign: 'center' }}>
           Setup pendente — provider SMS nao configurado no backend
         </div>
       )}
@@ -123,8 +124,8 @@ export default function SmsMarketingTab({ channelData }: SmsMarketingTabProps) {
 
 function ConnectedBadge() {
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, fontFamily: MONO, color: '#10B981', background: 'rgba(16,185,129,0.1)', padding: '2px 8px', borderRadius: 99 }}>
-      <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10B981', animation: 'mktPulse 2s infinite' }} />
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, fontFamily: MONO, color: colors.semantic.success, background: 'rgba(16,185,129,0.1)', padding: '2px 8px', borderRadius: 99 }}>
+      <span style={{ width: 6, height: 6, borderRadius: '50%', background: colors.semantic.success, animation: 'mktPulse 2s infinite' }} />
       Conectado
     </span>
   );

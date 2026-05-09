@@ -14,7 +14,9 @@ export class AdminReportsService {
     private readonly prisma: PrismaService,
     private readonly dashboard: AdminDashboardService,
     private readonly audit: AdminAuditService,
-  ) {}
+  ) {
+    this.logger.log('AdminReportsService initialized');
+  }
 
   /** Overview. */
   async overview(period: AdminHomePeriod, from?: Date, to?: Date) {

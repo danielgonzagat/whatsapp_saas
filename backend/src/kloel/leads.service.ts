@@ -6,7 +6,9 @@ import { PrismaService } from '../prisma/prisma.service';
 export class LeadsService {
   private readonly logger = new Logger(LeadsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) {
+    this.logger.log('LeadsService initialized');
+  }
 
   /** List leads. */
   async listLeads(

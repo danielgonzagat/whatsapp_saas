@@ -29,6 +29,7 @@ import {
 } from '@/hooks/useKyc';
 import { usePersistentImagePreview } from '@/hooks/usePersistentImagePreview';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
+import { useToast } from '@/components/kloel/ToastProvider';
 import { useWorkspaceId } from '@/hooks/useWorkspaceId';
 import { billingApi } from '@/lib/api';
 import { apiFetch, tokenStorage } from '@/lib/api/core';
@@ -542,10 +543,10 @@ const Icons = {
 // ═══ STATUS CONFIG ═══
 
 const STATUS_CONFIG = {
-  pending: { label: 'Pendente', color: '#F59E0B', bg: 'rgba(245,158,11,.06)', icon: Icons.clock },
-  submitted: { label: 'Em analise', color: '#3B82F6', bg: 'rgba(59,130,246,.06)', icon: Icons.eye },
-  approved: { label: 'Aprovado', color: '#10B981', bg: 'rgba(16,185,129,.06)', icon: Icons.check },
-  rejected: { label: 'Reprovado', color: '#EF4444', bg: 'rgba(239,68,68,.06)', icon: Icons.alert },
+  pending: { label: 'Pendente', color: colors.semantic.warning, bg: 'rgba(245,158,11,.06)', icon: Icons.clock },
+  submitted: { label: 'Em analise', color: colors.semantic.info, bg: 'rgba(59,130,246,.06)', icon: Icons.eye },
+  approved: { label: 'Aprovado', color: colors.semantic.success, bg: 'rgba(16,185,129,.06)', icon: Icons.check },
+  rejected: { label: 'Reprovado', color: colors.semantic.error, bg: 'rgba(239,68,68,.06)', icon: Icons.alert },
 };
 
 const CONNECT_STATE_CONFIG: Record<
@@ -849,14 +850,14 @@ function SaveButton({
 function SaveStatusLabel({ status }: { status: 'idle' | 'success' | 'error' }) {
   if (status === 'success') {
     return (
-      <span style={{ fontSize: 12, fontWeight: 600, color: '#10B981', fontFamily: SORA }}>
+      <span style={{ fontSize: 12, fontWeight: 600, color: colors.semantic.success, fontFamily: SORA }}>
         {kloelT(`Salvo!`)}
       </span>
     );
   }
   if (status === 'error') {
     return (
-      <span style={{ fontSize: 12, fontWeight: 600, color: '#EF4444', fontFamily: SORA }}>
+      <span style={{ fontSize: 12, fontWeight: 600, color: colors.semantic.error, fontFamily: SORA }}>
         {kloelT(`Erro ao salvar`)}
       </span>
     );
@@ -872,7 +873,7 @@ function ErrorText({ message }: { message: string | null | undefined }) {
     <span
       style={{
         fontSize: 11,
-        color: '#EF4444',
+        color: colors.semantic.error,
         marginTop: 8,
         display: 'block',
         fontFamily: SORA,
@@ -1454,6 +1455,7 @@ function DadosPessoaisSection({
           birthDate: form.birthDate,
         }),
       );
+      showToast('Dados pessoais salvos', 'success');
       setSaveStatus('success');
       if (saveTimer.current) {
         clearTimeout(saveTimer.current);
@@ -1462,6 +1464,7 @@ function DadosPessoaisSection({
       mutate();
     } catch (e) {
       setError(getErrorMessage(e) || 'Erro ao salvar. Tente novamente.');
+      showToast(getErrorMessage(e) || 'Erro ao salvar dados pessoais', 'error');
       setSaveStatus('error');
       if (saveTimer.current) {
         clearTimeout(saveTimer.current);
@@ -1692,6 +1695,7 @@ function DadosFiscaisSection({ fiscal, mutate }: { fiscal: KycFiscal | null; mut
         state: form.uf,
       });
       await updateFiscal(payload);
+      showToast('Dados fiscais salvos', 'success');
       setSaveStatus('success');
       if (saveTimer.current) {
         clearTimeout(saveTimer.current);
@@ -1700,6 +1704,7 @@ function DadosFiscaisSection({ fiscal, mutate }: { fiscal: KycFiscal | null; mut
       mutate();
     } catch (e) {
       setError(getErrorMessage(e) || 'Erro ao salvar. Tente novamente.');
+      showToast(getErrorMessage(e) || 'Erro ao salvar dados fiscais', 'error');
       setSaveStatus('error');
       if (saveTimer.current) {
         clearTimeout(saveTimer.current);
@@ -1766,7 +1771,7 @@ function DadosFiscaisSection({ fiscal, mutate }: { fiscal: KycFiscal | null; mut
                 gap: 10,
               }}
             >
-              <span style={{ color: '#F59E0B', marginTop: 2, flexShrink: 0 }}>
+              <span style={{ color: colors.semantic.warning, marginTop: 2, flexShrink: 0 }}>
                 {Icons.alert(16)}
               </span>
               <div>
@@ -2010,7 +2015,7 @@ function UploadZone({
             style={{
               background: 'none',
               border: 'none',
-              color: '#EF4444',
+              color: colors.semantic.error,
               cursor: 'pointer',
               padding: 4,
             }}
@@ -2164,7 +2169,7 @@ function DocumentosSection({
           gap: 10,
         }}
       >
-        <span style={{ color: '#3B82F6', marginTop: 2, flexShrink: 0 }}>{Icons.clock(16)}</span>
+        <span style={{ color: colors.semantic.info, marginTop: 2, flexShrink: 0 }}>{Icons.clock(16)}</span>
         <span style={{ fontSize: 11, color: 'var(--app-text-secondary)', fontFamily: SORA }}>
           {kloelT(`A analise dos documentos pode levar ate 48 horas uteis. Voce sera notificado por e-mail
           quando o resultado estiver disponivel.`)}
@@ -2175,7 +2180,7 @@ function DocumentosSection({
         <span
           style={{
             fontSize: 11,
-            color: '#EF4444',
+            color: colors.semantic.error,
             marginTop: 8,
             display: 'block',
             fontFamily: SORA,
@@ -2588,6 +2593,7 @@ function DadosBancariosSection({
     setSaving(true);
     try {
       await updateBank(cleanPayload(form));
+      showToast('Dados bancarios salvos', 'success');
       setSaveStatus('success');
       if (saveTimer.current) {
         clearTimeout(saveTimer.current);
@@ -2596,6 +2602,7 @@ function DadosBancariosSection({
       mutate();
     } catch (e) {
       setError(getErrorMessage(e) || 'Erro ao salvar. Tente novamente.');
+      showToast(getErrorMessage(e) || 'Erro ao salvar dados bancarios', 'error');
       setSaveStatus('error');
       if (saveTimer.current) {
         clearTimeout(saveTimer.current);
@@ -2908,7 +2915,7 @@ function DadosBancariosSection({
           gap: 10,
         }}
       >
-        <span style={{ color: isPJ ? '#10B981' : '#F59E0B', marginTop: 2, flexShrink: 0 }}>
+        <span style={{ color: isPJ ? colors.semantic.success : colors.semantic.warning, marginTop: 2, flexShrink: 0 }}>
           {isPJ ? Icons.check(16) : Icons.alert(16)}
         </span>
         <div>
@@ -3004,7 +3011,7 @@ function SegurancaSection() {
           <span
             style={{
               fontSize: 11,
-              color: '#EF4444',
+              color: colors.semantic.error,
               marginTop: 8,
               display: 'block',
               fontFamily: SORA,
@@ -3023,7 +3030,7 @@ function SegurancaSection() {
           }}
         >
           {pwSuccess && (
-            <span style={{ fontSize: 12, fontWeight: 600, color: '#10B981', fontFamily: SORA }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: colors.semantic.success, fontFamily: SORA }}>
               {kloelT(`Senha alterada!`)}
             </span>
           )}
@@ -3125,7 +3132,7 @@ function NotificacoesSection() {
     >
       <div style={{ padding: '16px 0' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-          <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10B981' }} />
+          <span style={{ width: 8, height: 8, borderRadius: '50%', background: colors.semantic.success }} />
           <span
             style={{
               fontSize: 13,
@@ -3213,6 +3220,7 @@ function PerfilPublicoSection({
           instagram: form.instagram,
         }),
       );
+      showToast('Perfil publico salvo', 'success');
       setSaveStatus('success');
       if (saveTimer.current) {
         clearTimeout(saveTimer.current);
@@ -3221,6 +3229,7 @@ function PerfilPublicoSection({
       mutate();
     } catch (err) {
       setError(getErrorMessage(err) || 'Erro ao salvar. Tente novamente.');
+      showToast(getErrorMessage(err) || 'Erro ao salvar perfil publico', 'error');
       setSaveStatus('error');
       if (saveTimer.current) {
         clearTimeout(saveTimer.current);
@@ -3476,7 +3485,7 @@ function LanguageOption({
           lineHeight: '16px',
           letterSpacing: '0.08em',
           textTransform: 'uppercase' as const,
-          color: '#8A8A91',
+          color: colors.text.muted,
           minWidth: 24,
           flexShrink: 0,
         }}
@@ -3557,7 +3566,7 @@ function IdiomasSection() {
           gap: 10,
         }}
       >
-        <span style={{ color: '#3B82F6', marginTop: 2, flexShrink: 0 }}>{Icons.clock(16)}</span>
+        <span style={{ color: colors.semantic.info, marginTop: 2, flexShrink: 0 }}>{Icons.clock(16)}</span>
         <span style={{ fontSize: 11, color: 'var(--app-text-secondary)', fontFamily: SORA }}>
           {kloelT(`A traducao completa da plataforma esta em andamento. Algumas secoes podem permanecer em
           portugues temporariamente.`)}
@@ -3756,7 +3765,7 @@ function AjudaSection() {
             background: 'rgba(37,211,102,.06)',
             border: '1px solid rgba(37,211,102,.2)',
             borderRadius: 6,
-            color: '#25D366',
+            color: colors.canvas.lime,
             fontSize: 13,
             fontWeight: 600,
             fontFamily: SORA,
@@ -3910,13 +3919,13 @@ function MetaConnectSection() {
             marginBottom: 16,
           }}
         >
-          <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#10B981' }} />
+          <div style={{ width: 8, height: 8, borderRadius: '50%', background: colors.semantic.success }} />
           <div style={{ flex: 1 }}>
             <span
               style={{
                 fontSize: 13,
                 fontWeight: 600,
-                color: '#10B981',
+                color: colors.semantic.success,
                 fontFamily: SORA,
                 display: 'block',
               }}
@@ -3943,7 +3952,7 @@ function MetaConnectSection() {
               gap: 8,
             }}
           >
-            <span style={{ fontSize: 11, color: '#F59E0B', fontFamily: SORA }}>
+            <span style={{ fontSize: 11, color: colors.semantic.warning, fontFamily: SORA }}>
               {kloelT(`Token expirado. Reconecte para renovar.`)}
             </span>
             <button
@@ -3954,7 +3963,7 @@ function MetaConnectSection() {
                 background: EMBER,
                 border: 'none',
                 borderRadius: 6,
-                color: '#fff',
+                color: colors.text.silver,
                 fontSize: 11,
                 fontWeight: 600,
                 cursor: 'pointer',
@@ -3975,7 +3984,7 @@ function MetaConnectSection() {
               background: 'transparent',
               border: '1px solid rgba(239,68,68,.3)',
               borderRadius: 6,
-              color: '#EF4444',
+              color: colors.semantic.error,
               fontSize: 12,
               fontWeight: 600,
               cursor: disconnecting ? 'not-allowed' : 'pointer',
@@ -4005,7 +4014,7 @@ function MetaConnectSection() {
           padding: '16px 0',
         }}
       >
-        <div style={{ color: '#1877F2', opacity: 0.3 }}>
+        <div style={{ color: colors.semantic.info, opacity: 0.3 }}>
           <svg width={48} height={48} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
             <path
               d={kloelT(
@@ -4032,10 +4041,10 @@ function MetaConnectSection() {
           onClick={handleConnect}
           style={{
             padding: '11px 28px',
-            background: '#1877F2',
+            background: colors.semantic.info,
             border: 'none',
             borderRadius: 6,
-            color: '#fff',
+            color: colors.text.silver,
             fontSize: 13,
             fontWeight: 600,
             cursor: 'pointer',
@@ -4239,7 +4248,7 @@ function TeamSection() {
               background: inviting || !inviteEmail.trim() ? 'var(--app-text-placeholder)' : EMBER,
               border: 'none',
               borderRadius: 6,
-              color: '#fff',
+              color: colors.text.silver,
               fontSize: 12,
               fontWeight: 600,
               cursor: inviting || !inviteEmail.trim() ? 'not-allowed' : 'pointer',
@@ -4253,12 +4262,12 @@ function TeamSection() {
           </button>
         </div>
         {inviteError && (
-          <p style={{ fontSize: 11, color: '#EF4444', margin: '8px 0 0', fontFamily: SORA }}>
+          <p style={{ fontSize: 11, color: colors.semantic.error, margin: '8px 0 0', fontFamily: SORA }}>
             {inviteError}
           </p>
         )}
         {inviteSuccess && (
-          <p style={{ fontSize: 11, color: '#10B981', margin: '8px 0 0', fontFamily: SORA }}>
+          <p style={{ fontSize: 11, color: colors.semantic.success, margin: '8px 0 0', fontFamily: SORA }}>
             {inviteSuccess}
           </p>
         )}
@@ -4336,7 +4345,7 @@ function TeamSection() {
                     padding: '2px 8px',
                     borderRadius: 4,
                     fontFamily: SORA,
-                    color: m.status === 'active' ? '#10B981' : '#F59E0B',
+                    color: m.status === 'active' ? colors.semantic.success : colors.semantic.warning,
                     background:
                       m.status === 'active' ? 'rgba(16,185,129,.08)' : 'rgba(245,158,11,.08)',
                   }}
@@ -4352,7 +4361,7 @@ function TeamSection() {
                     background: 'none',
                     border: '1px solid var(--app-border-primary)',
                     borderRadius: 4,
-                    color: '#EF4444',
+                    color: colors.semantic.error,
                     cursor: 'pointer',
                     display: 'flex',
                     opacity: removingId === m.id ? 0.5 : 1,
@@ -4408,7 +4417,7 @@ function TeamSection() {
                       fontWeight: 600,
                       padding: '2px 8px',
                       borderRadius: 4,
-                      color: '#F59E0B',
+                      color: colors.semantic.warning,
                       background: 'rgba(245,158,11,.08)',
                       fontFamily: SORA,
                     }}
@@ -4463,7 +4472,7 @@ function SairSection() {
           padding: '20px 0',
         }}
       >
-        <span style={{ color: '#EF4444' }}>{Icons.logout(32)}</span>
+        <span style={{ color: colors.semantic.error }}>{Icons.logout(32)}</span>
         <p
           style={{
             fontSize: 13,
@@ -4482,10 +4491,10 @@ function SairSection() {
           onClick={handleLogout}
           style={{
             padding: '12px 32px',
-            background: '#EF4444',
+            background: colors.semantic.error,
             border: 'none',
             borderRadius: 6,
-            color: '#fff',
+            color: colors.text.silver,
             fontSize: 13,
             fontWeight: 600,
             cursor: 'pointer',
@@ -4503,6 +4512,7 @@ function SairSection() {
 // ═══ MAIN COMPONENT ═══
 
 export default function ContaView() {
+  const { showToast } = useToast();
   const { isMobile } = useResponsiveViewport();
   const router = useRouter();
   const pathname = usePathname();
@@ -4684,7 +4694,7 @@ export default function ContaView() {
               gap: 12,
             }}
           >
-            <span style={{ color: '#F59E0B' }}>{Icons.alert(20)}</span>
+            <span style={{ color: colors.semantic.warning }}>{Icons.alert(20)}</span>
             <div style={{ flex: 1 }}>
               <span
                 style={{
@@ -4707,7 +4717,7 @@ export default function ContaView() {
                   fontFamily: MONO,
                   fontSize: 24,
                   fontWeight: 700,
-                  color: pct === 100 ? '#10B981' : '#F59E0B',
+                  color: pct === 100 ? colors.semantic.success : colors.semantic.warning,
                 }}
               >
                 {pct}%
@@ -4733,7 +4743,7 @@ export default function ContaView() {
               gap: 12,
             }}
           >
-            <span style={{ color: '#3B82F6', flexShrink: 0 }}>{Icons.clock(18)}</span>
+            <span style={{ color: colors.semantic.info, flexShrink: 0 }}>{Icons.clock(18)}</span>
             <div style={{ flex: 1 }}>
               <span
                 style={{
@@ -4774,7 +4784,7 @@ export default function ContaView() {
             style={{
               height: '100%',
               width: `${pct}%`,
-              background: pct === 100 ? '#10B981' : EMBER,
+              background: pct === 100 ? colors.semantic.success : EMBER,
               borderRadius: 2,
               transition: 'width .3s',
             }}
@@ -4811,7 +4821,7 @@ export default function ContaView() {
                 >
                   <span
                     style={{
-                      color: active ? EMBER : done ? '#10B981' : 'var(--app-text-placeholder)',
+                      color: active ? EMBER : done ? colors.semantic.success : 'var(--app-text-placeholder)',
                     }}
                   >
                     {sec.icon(16)}
@@ -4826,7 +4836,7 @@ export default function ContaView() {
                   >
                     {sec.label}
                   </span>
-                  {done ? <span style={{ color: '#10B981' }}>{Icons.check(12)}</span> : null}
+                  {done ? <span style={{ color: colors.semantic.success }}>{Icons.check(12)}</span> : null}
                 </button>
               );
             })}
@@ -4858,7 +4868,7 @@ export default function ContaView() {
                   background: 'transparent',
                   border: 'none',
                   cursor: 'pointer',
-                  color: '#EF4444',
+                  color: colors.semantic.error,
                   fontSize: 11,
                   fontFamily: SORA,
                 }}
@@ -5003,7 +5013,7 @@ export default function ContaView() {
                             width: 8,
                             height: 8,
                             borderRadius: '50%',
-                            background: app.connected ? '#10B981' : 'var(--app-text-placeholder)',
+                            background: app.connected ? colors.semantic.success : 'var(--app-text-placeholder)',
                           }}
                         />
                         <div>
@@ -5229,7 +5239,7 @@ export default function ContaView() {
               <span
                 style={{
                   fontSize: 12,
-                  color: '#EF4444',
+                  color: colors.semantic.error,
                   display: 'block',
                   marginBottom: 8,
                   fontFamily: SORA,
@@ -5256,7 +5266,7 @@ export default function ContaView() {
                 background: EMBER,
                 border: 'none',
                 borderRadius: 6,
-                color: '#fff',
+                color: colors.text.silver,
                 fontSize: 14,
                 fontWeight: 700,
                 cursor: 'pointer',

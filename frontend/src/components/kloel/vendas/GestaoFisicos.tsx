@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { Stat } from './Stat';
@@ -15,8 +16,8 @@ interface GestaoFisicosProps {
 }
 
 const PIPELINE_LEGEND = [
-  { l: 'Processando', c: '#F59E0B', key: 'processing' as const },
-  { l: 'Enviados', c: '#3B82F6', key: 'shipped' as const },
+  { l: 'Processando', c: colors.semantic.warning, key: 'processing' as const },
+  { l: 'Enviados', c: colors.semantic.info, key: 'shipped' as const },
   { l: 'Entregues', c: 'colors.ember.primary', key: 'delivered' as const },
 ];
 
@@ -83,14 +84,14 @@ export function GestaoFisicos({
           <div
             style={{
               width: `${((pl.processing || 0) / total) * 100}%`,
-              background: '#F59E0B',
+              background: colors.semantic.warning,
               borderRadius: '4px 0 0 4px',
             }}
           />
           <div
             style={{
               width: `${((pl.shipped || 0) / total) * 100}%`,
-              background: '#3B82F6',
+              background: colors.semantic.info,
             }}
           />
           <div

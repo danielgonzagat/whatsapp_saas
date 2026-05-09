@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { IC } from './ParceriasView.icons';
@@ -7,9 +8,9 @@ import type { Agent } from './partnershipTypes';
 
 const ROLES: { value: string; label: string; color: string }[] = [
   { value: 'admin', label: 'Admin', color: 'colors.ember.primary' },
-  { value: 'manager', label: 'Manager', color: '#3B82F6' },
-  { value: 'support', label: 'Support', color: '#10B981' },
-  { value: 'finance', label: 'Finance', color: '#F59E0B' },
+  { value: 'manager', label: 'Manager', color: colors.semantic.info },
+  { value: 'support', label: 'Support', color: colors.semantic.success },
+  { value: 'finance', label: 'Finance', color: colors.semantic.warning },
   { value: 'viewer', label: 'Viewer', color: 'var(--app-text-secondary)' },
 ];
 
@@ -61,7 +62,7 @@ export default function ColaboratorList({
               <div style={{ width: 40, height: 40, borderRadius: '50%', background: C.elevated, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: FONT.sans, fontSize: 15, fontWeight: 600, color: C.text }}>
                 {(c.name || c.email || '?')[0].toUpperCase()}
               </div>
-              <div style={{ width: 8, height: 8, borderRadius: '50%', background: c.status === 'online' ? '#10B981' : C.muted, border: `2px solid ${C.card}`, position: 'absolute' as const, bottom: 0, right: 0 }} />
+              <div style={{ width: 8, height: 8, borderRadius: '50%', background: c.status === 'online' ? colors.semantic.success : C.muted, border: `2px solid ${C.card}`, position: 'absolute' as const, bottom: 0, right: 0 }} />
             </div>
             <div style={{ minWidth: 0 }}>
               <div style={{ fontFamily: FONT.sans, fontSize: 14, fontWeight: 600, color: C.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{c.name}</div>
@@ -69,8 +70,8 @@ export default function ColaboratorList({
             <div style={{ fontFamily: FONT.sans, fontSize: 12, color: C.secondary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{c.email}</div>
             <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 4, fontSize: 10, fontWeight: 600, fontFamily: FONT.sans, color: roleConf.color, background: `${roleConf.color}15`, letterSpacing: '0.02em', textTransform: 'uppercase' as const, width: 'fit-content' }}>{roleConf.label}</span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <div style={{ width: 6, height: 6, borderRadius: '50%', background: c.status === 'online' ? '#10B981' : C.muted }} />
-              <span style={{ fontFamily: FONT.sans, fontSize: 12, color: c.status === 'online' ? '#10B981' : C.muted }}>{c.status === 'online' ? 'Online' : 'Offline'}</span>
+              <div style={{ width: 6, height: 6, borderRadius: '50%', background: c.status === 'online' ? colors.semantic.success : C.muted }} />
+              <span style={{ fontFamily: FONT.sans, fontSize: 12, color: c.status === 'online' ? colors.semantic.success : C.muted }}>{c.status === 'online' ? 'Online' : 'Offline'}</span>
             </div>
             <span style={{ fontFamily: FONT.sans, fontSize: 11, color: C.muted, whiteSpace: 'nowrap' as const }}>{c.lastActive || ''}</span>
           </div>

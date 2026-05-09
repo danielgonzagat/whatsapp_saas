@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 interface Step {
   id: number;
@@ -65,8 +66,8 @@ export function Stepper({ steps, currentStep, onStepClick }: StepperProps) {
                   fontWeight: 600,
                   fontFamily: "'Sora', sans-serif",
                   transition: 'all 150ms ease',
-                  background: isActive ? '#E85D30' : isCompleted ? '#E0DDD8' : '#19191C',
-                  color: isActive || isCompleted ? '#0A0A0C' : '#3A3A3F',
+                  background: isActive ? colors.ember.primary : isCompleted ? colors.text.silver : colors.background.elevated,
+                  color: isActive || isCompleted ? colors.background.void : colors.text.dim,
                   boxShadow: 'none',
                 }}
               >
@@ -77,7 +78,7 @@ export function Stepper({ steps, currentStep, onStepClick }: StepperProps) {
                   fontSize: 10,
                   fontWeight: 500,
                   fontFamily: "'Sora', sans-serif",
-                  color: isActive ? '#E0DDD8' : isCompleted ? '#6E6E73' : '#3A3A3F',
+                  color: isActive ? colors.text.silver : isCompleted ? colors.text.muted : colors.text.dim,
                   textAlign: 'center',
                   lineHeight: 1.2,
                   maxWidth: 70,
@@ -97,7 +98,7 @@ export function Stepper({ steps, currentStep, onStepClick }: StepperProps) {
                   width: 24,
                   height: 2,
                   borderRadius: 1,
-                  background: isCompleted ? '#E0DDD8' : '#19191C',
+                  background: isCompleted ? colors.text.silver : colors.background.elevated,
                   transition: 'background 150ms ease',
                 }}
               />

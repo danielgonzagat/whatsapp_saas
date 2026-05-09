@@ -34,7 +34,6 @@ type LatestChargeWebhookPrismaMock = {
   $transaction: jest.Mock;
 };
 
-// PULSE_OK: assertions exist below
 describe('PaymentWebhookController.handleStripe latest_charge normalization', () => {
   function buildController() {
     const stripeWebhookProcessor = {

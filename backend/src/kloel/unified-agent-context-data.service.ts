@@ -15,7 +15,9 @@ type ProductMemoryEntry = { name?: string; [key: string]: unknown };
 export class UnifiedAgentContextDataService {
   private readonly logger = new Logger(UnifiedAgentContextDataService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) {
+    this.logger.log('UnifiedAgentContextDataService initialized');
+  }
 
   // ───────── helpers ─────────
 

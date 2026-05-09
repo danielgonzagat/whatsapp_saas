@@ -8,7 +8,6 @@ vi.mock('@/lib/api/checkout-public', () => ({
   },
 }));
 
-// PULSE_OK: assertions exist below
 describe('useCheckoutExperienceAutomation', () => {
   it('rehydrates phone, cpf, and address fields from the social identity snapshot', async () => {
     const setForm = vi.fn();

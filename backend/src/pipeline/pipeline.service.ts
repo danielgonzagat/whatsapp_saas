@@ -8,7 +8,9 @@ import type { ContactCustomFields } from '../contacts/contact-custom-fields.type
 export class PipelineService {
   private readonly logger = new Logger(PipelineService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) {
+    this.logger.log('PipelineService initialized');
+  }
 
   /** Get pipeline. */
   async getPipeline(workspaceId: string) {

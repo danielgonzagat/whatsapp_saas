@@ -71,7 +71,6 @@ export async function handlePaymentIntentEvent(
   if (workspaceId && intent.id && !isApprovedSaleIntent) {
     if (checkoutPaymentStatus === 'APPROVED') {
       await deps.prisma
-        // PULSE_OK: already in $transaction
         .$transaction(async (tx) => {
           await tx.kloelSale.updateMany({
             where: { workspaceId, externalPaymentId: intent.id },
@@ -81,7 +80,6 @@ export async function handlePaymentIntentEvent(
         .catch(() => undefined);
     } else if (checkoutPaymentStatus === 'CANCELED') {
       await deps.prisma
-        // PULSE_OK: already in $transaction
         .$transaction(async (tx) => {
           await tx.kloelSale.updateMany({
             where: { workspaceId, externalPaymentId: intent.id },
@@ -107,7 +105,6 @@ export async function handlePaymentIntentEvent(
         await deps.ledger.persistConnectPostSaleSnapshot(intent.id, postSaleResult.connectPostSale);
         await deps.ledger.appendMarketplaceTreasurySaleCredit(intent.id);
         await deps.prisma
-          // PULSE_OK: already in $transaction
           .$transaction(async (tx) => {
             await tx.checkoutPayment.updateMany({
               where: { externalId: intent.id },

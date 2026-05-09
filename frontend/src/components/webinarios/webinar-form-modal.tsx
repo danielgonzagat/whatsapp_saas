@@ -166,7 +166,7 @@ const backdropStyle: React.CSSProperties = {
 };
 
 const modalPanelStyle: React.CSSProperties = {
-  background: '#141416',
+  background: colors.checkout.bg,
   border: '1px solid rgba(255,255,255,0.08)',
   borderRadius: 10,
   padding: 28,
@@ -191,13 +191,13 @@ const modalTitleStyle: React.CSSProperties = {
 const closeBtnStyle: React.CSSProperties = {
   background: 'none',
   border: 'none',
-  color: '#666',
+  color: colors.text.muted,
   cursor: 'pointer',
   padding: 4,
 };
 
 const fieldLabelStyle: React.CSSProperties = {
-  color: '#999',
+  color: colors.text.muted,
   fontSize: 12,
   display: 'block',
   marginBottom: 4,
@@ -223,8 +223,8 @@ const textareaStyle: React.CSSProperties = {
 
 function submitBtnStyle(saving: boolean): React.CSSProperties {
   return {
-    background: saving ? '#666' : colors.ember.primary,
-    color: '#fff',
+    background: saving ? colors.text.muted : colors.ember.primary,
+    color: colors.text.silver,
     border: 'none',
     borderRadius: 6,
     padding: '10px 20px',

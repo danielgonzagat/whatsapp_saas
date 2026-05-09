@@ -83,7 +83,6 @@ vi.mock('../providers/channel-dispatcher', () => ({
   sendEmail: vi.fn(),
 }));
 
-// PULSE_OK: assertions exist below
 describe('cycle-workspace job', () => {
   beforeEach(() => {
     vi.useFakeTimers();

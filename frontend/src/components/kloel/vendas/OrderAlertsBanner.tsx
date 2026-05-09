@@ -1,3 +1,4 @@
+import { colors } from '@/lib/design-tokens';
 import { kloelT } from '@/lib/i18n/t';
 import { SORA } from './utils';
 
@@ -49,7 +50,7 @@ export function OrderAlertsBanner({
           height={16}
           viewBox="0 0 24 24"
           fill="none"
-          stroke="#EF4444"
+          stroke={colors.semantic.error}
           strokeWidth={2}
           aria-hidden="true"
         >
@@ -59,7 +60,7 @@ export function OrderAlertsBanner({
           <line x1={12} y1={9} x2={12} y2={13} />
           <line x1={12} y1={17} x2={12.01} y2={17} />
         </svg>
-        <span style={{ fontSize: 12, color: '#EF4444', fontFamily: SORA, flex: 1 }}>
+        <span style={{ fontSize: 12, color: colors.semantic.error, fontFamily: SORA, flex: 1 }}>
           {alerts.length} alerta{alerts.length > 1 ? 's' : ''}:
           {alertCounts?.missingTracking ? ` ${alertCounts.missingTracking} sem rastreio` : ''}
           {alertCounts?.possibleLost ? ` ${alertCounts.possibleLost} possivel extravio` : ''}
@@ -72,7 +73,7 @@ export function OrderAlertsBanner({
             background: 'none',
             border: '1px solid rgba(239,68,68,0.3)',
             borderRadius: 6,
-            color: '#EF4444',
+            color: colors.semantic.error,
             fontSize: 10,
             fontWeight: 600,
             padding: '4px 10px',
@@ -94,7 +95,7 @@ export function OrderAlertsBanner({
             borderTop: '1px solid rgba(239,68,68,0.1)',
           }}
         >
-          <span style={{ fontSize: 11, color: '#EF4444', fontFamily: SORA, flex: 1 }}>
+          <span style={{ fontSize: 11, color: colors.semantic.error, fontFamily: SORA, flex: 1 }}>
             {alert.message}
           </span>
           <button

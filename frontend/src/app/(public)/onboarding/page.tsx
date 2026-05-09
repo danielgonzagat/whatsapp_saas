@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { saveOnboardingProfile } from '@/lib/api/onboarding';
@@ -106,7 +107,7 @@ export default function OnboardingPage() {
   };
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: '#0A0A0C' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', background: colors.background.void }}>
       {/* LEFT — Selection */}
       <div
         style={{
@@ -128,7 +129,7 @@ export default function OnboardingPage() {
               fontSize: 24,
               fontWeight: 700,
               letterSpacing: '0.12em',
-              color: '#E0DDD8',
+              color: colors.text.silver,
             }}
           >
             KLOEL
@@ -140,7 +141,7 @@ export default function OnboardingPage() {
               fontFamily: "'Sora', sans-serif",
               fontSize: 28,
               fontWeight: 600,
-              color: '#E0DDD8',
+              color: colors.text.silver,
               letterSpacing: '0.02em',
               marginBottom: 8,
             }}
@@ -151,7 +152,7 @@ export default function OnboardingPage() {
             style={{
               fontFamily: "'Sora', sans-serif",
               fontSize: 15,
-              color: '#6E6E73',
+              color: colors.text.muted,
               marginBottom: 32,
               maxWidth: 360,
             }}
@@ -176,8 +177,8 @@ export default function OnboardingPage() {
                     width: '100%',
                     padding: '16px 20px',
                     borderRadius: 6,
-                    border: `1px solid ${isSelected ? '#E85D30' : '#222226'}`,
-                    background: isSelected ? 'rgba(232, 93, 48, 0.06)' : '#111113',
+                    border: `1px solid ${isSelected ? colors.ember.primary : colors.background.border}`,
+                    background: isSelected ? 'rgba(232, 93, 48, 0.06)' : colors.background.surface,
                     boxShadow: 'none',
                     textAlign: 'left',
                     cursor: 'pointer',
@@ -193,11 +194,11 @@ export default function OnboardingPage() {
                       alignItems: 'center',
                       justifyContent: 'center',
                       flexShrink: 0,
-                      background: isSelected ? 'rgba(232, 93, 48, 0.12)' : '#19191C',
-                      border: `1px solid ${isSelected ? 'rgba(232, 93, 48, 0.3)' : '#222226'}`,
+                      background: isSelected ? 'rgba(232, 93, 48, 0.12)' : colors.background.elevated,
+                      border: `1px solid ${isSelected ? 'rgba(232, 93, 48, 0.3)' : colors.background.border}`,
                     }}
                   >
-                    <Icon size={24} style={{ color: isSelected ? '#E85D30' : '#6E6E73' }} />
+                    <Icon size={24} style={{ color: isSelected ? colors.ember.primary : colors.text.muted }} />
                   </div>
                   <div>
                     <p
@@ -205,7 +206,7 @@ export default function OnboardingPage() {
                         fontFamily: "'Sora', sans-serif",
                         fontSize: 15,
                         fontWeight: 600,
-                        color: '#E0DDD8',
+                        color: colors.text.silver,
                         margin: 0,
                       }}
                     >
@@ -215,7 +216,7 @@ export default function OnboardingPage() {
                       style={{
                         fontFamily: "'Sora', sans-serif",
                         fontSize: 13,
-                        color: '#6E6E73',
+                        color: colors.text.muted,
                         margin: '2px 0 0',
                       }}
                     >
@@ -229,7 +230,7 @@ export default function OnboardingPage() {
 
           <div style={{ marginTop: 24, display: 'grid', gap: 16 }}>
             <div>
-              <p style={{ margin: '0 0 8px', color: '#E0DDD8', fontSize: 13, fontWeight: 600 }}>
+              <p style={{ margin: '0 0 8px', color: colors.text.silver, fontSize: 13, fontWeight: 600 }}>
                 Tipo de produto
               </p>
               <div
@@ -246,9 +247,9 @@ export default function OnboardingPage() {
                     onClick={() => setProductType(item.id)}
                     style={{
                       borderRadius: 6,
-                      border: `1px solid ${productType === item.id ? '#E85D30' : '#222226'}`,
-                      background: productType === item.id ? 'rgba(232, 93, 48, 0.08)' : '#111113',
-                      color: '#E0DDD8',
+                      border: `1px solid ${productType === item.id ? colors.ember.primary : colors.background.border}`,
+                      background: productType === item.id ? 'rgba(232, 93, 48, 0.08)' : colors.background.surface,
+                      color: colors.text.silver,
                       padding: '10px 12px',
                       fontSize: 13,
                     }}
@@ -260,7 +261,7 @@ export default function OnboardingPage() {
             </div>
 
             <div>
-              <p style={{ margin: '0 0 8px', color: '#E0DDD8', fontSize: 13, fontWeight: 600 }}>
+              <p style={{ margin: '0 0 8px', color: colors.text.silver, fontSize: 13, fontWeight: 600 }}>
                 Canal principal
               </p>
               <div
@@ -280,10 +281,10 @@ export default function OnboardingPage() {
                       style={{
                         alignItems: 'center',
                         borderRadius: 6,
-                        border: `1px solid ${primaryChannel === item.id ? '#E85D30' : '#222226'}`,
+                        border: `1px solid ${primaryChannel === item.id ? colors.ember.primary : colors.background.border}`,
                         background:
-                          primaryChannel === item.id ? 'rgba(232, 93, 48, 0.08)' : '#111113',
-                        color: '#E0DDD8',
+                          primaryChannel === item.id ? 'rgba(232, 93, 48, 0.08)' : colors.background.surface,
+                        color: colors.text.silver,
                         display: 'flex',
                         gap: 8,
                         justifyContent: 'center',
@@ -300,7 +301,7 @@ export default function OnboardingPage() {
             </div>
 
             <div>
-              <p style={{ margin: '0 0 8px', color: '#E0DDD8', fontSize: 13, fontWeight: 600 }}>
+              <p style={{ margin: '0 0 8px', color: colors.text.silver, fontSize: 13, fontWeight: 600 }}>
                 Estrutura atual
               </p>
               <label
@@ -308,7 +309,7 @@ export default function OnboardingPage() {
                   display: 'flex',
                   alignItems: 'center',
                   gap: 8,
-                  color: '#E0DDD8',
+                  color: colors.text.silver,
                   fontSize: 13,
                 }}
               >
@@ -324,7 +325,7 @@ export default function OnboardingPage() {
                   display: 'flex',
                   alignItems: 'center',
                   gap: 8,
-                  color: '#E0DDD8',
+                  color: colors.text.silver,
                   fontSize: 13,
                   marginTop: 8,
                 }}
@@ -339,7 +340,7 @@ export default function OnboardingPage() {
             </div>
 
             <div>
-              <p style={{ margin: '0 0 8px', color: '#E0DDD8', fontSize: 13, fontWeight: 600 }}>
+              <p style={{ margin: '0 0 8px', color: colors.text.silver, fontSize: 13, fontWeight: 600 }}>
                 Uso inicial da IA
               </p>
               <div
@@ -356,9 +357,9 @@ export default function OnboardingPage() {
                     onClick={() => setAiUseCase(item.id)}
                     style={{
                       borderRadius: 6,
-                      border: `1px solid ${aiUseCase === item.id ? '#E85D30' : '#222226'}`,
-                      background: aiUseCase === item.id ? 'rgba(232, 93, 48, 0.08)' : '#111113',
-                      color: '#E0DDD8',
+                      border: `1px solid ${aiUseCase === item.id ? colors.ember.primary : colors.background.border}`,
+                      background: aiUseCase === item.id ? 'rgba(232, 93, 48, 0.08)' : colors.background.surface,
+                      color: colors.text.silver,
                       padding: '10px 8px',
                       fontSize: 13,
                     }}
@@ -394,8 +395,8 @@ export default function OnboardingPage() {
               padding: '14px 0',
               borderRadius: 6,
               border: 'none',
-              background: selected ? '#E0DDD8' : '#19191C',
-              color: selected ? '#0A0A0C' : '#3A3A3F',
+              background: selected ? colors.text.silver : colors.background.elevated,
+              color: selected ? colors.background.void : colors.text.dim,
               fontSize: 15,
               fontWeight: 600,
               fontFamily: "'Sora', sans-serif",
@@ -414,14 +415,14 @@ export default function OnboardingPage() {
               marginTop: 16,
               textAlign: 'center',
               fontSize: 14,
-              color: '#6E6E73',
+              color: colors.text.muted,
               fontFamily: "'Sora', sans-serif",
             }}
           >
             {kloelT(`Já tem uma conta?`)}{' '}
             <Link
               href="/login"
-              style={{ fontWeight: 600, color: '#E0DDD8', textDecoration: 'none' }}
+              style={{ fontWeight: 600, color: colors.text.silver, textDecoration: 'none' }}
             >
               {kloelT(`Acesse já`)}
             </Link>
@@ -434,15 +435,15 @@ export default function OnboardingPage() {
               display: 'flex',
               gap: 16,
               fontSize: 12,
-              color: '#3A3A3F',
+              color: colors.text.dim,
               fontFamily: "'Sora', sans-serif",
             }}
           >
-            <Link href="/terms" style={{ color: '#3A3A3F', textDecoration: 'none' }}>
+            <Link href="/terms" style={{ color: colors.text.dim, textDecoration: 'none' }}>
               {kloelT(`Central de ajuda`)}
             </Link>
             <span>•</span>
-            <Link href="/terms" style={{ color: '#3A3A3F', textDecoration: 'none' }}>
+            <Link href="/terms" style={{ color: colors.text.dim, textDecoration: 'none' }}>
               {kloelT(`Termos e condições`)}
             </Link>
           </div>
@@ -457,7 +458,7 @@ export default function OnboardingPage() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: '#0A0A0C',
+          background: colors.background.void,
           overflow: 'hidden',
         }}
       >
@@ -485,7 +486,7 @@ export default function OnboardingPage() {
               fontFamily: "'Sora', sans-serif",
               fontSize: 32,
               fontWeight: 700,
-              color: '#E0DDD8',
+              color: colors.text.silver,
               lineHeight: 1.15,
               marginBottom: 16,
               letterSpacing: '0.02em',
@@ -497,7 +498,7 @@ export default function OnboardingPage() {
             style={{
               fontFamily: "'Sora', sans-serif",
               fontSize: 15,
-              color: '#6E6E73',
+              color: colors.text.muted,
               lineHeight: 1.6,
             }}
           >

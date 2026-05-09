@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import React from 'react';
 import {
@@ -32,9 +33,9 @@ export function Badge({ children, color = EMBER }: { children: React.ReactNode; 
 
 export function StatusDot({ status }: { status: 'online' | 'offline' | 'warning' | 'building' }) {
   const colors = {
-    online: '#10B981',
+    online: colors.semantic.success,
     offline: 'colors.text.muted',
-    warning: '#F59E0B',
+    warning: colors.semantic.warning,
     building: '#8b5cf6',
   };
   return (
@@ -65,7 +66,7 @@ export function Btn({
   small?: boolean;
 }) {
   const styles: Record<string, React.CSSProperties> = {
-    primary: { background: EMBER, color: '#fff', border: 'none' },
+    primary: { background: EMBER, color: colors.text.silver, border: 'none' },
     ghost: { background: 'transparent', color: TEXT, border: `1px solid ${BORDER}` },
     danger: {
       background: 'transparent',

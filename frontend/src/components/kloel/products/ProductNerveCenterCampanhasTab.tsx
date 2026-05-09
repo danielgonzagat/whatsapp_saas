@@ -19,7 +19,6 @@ import { useCampanhasTab } from './ProductNerveCenterCampanhasTab.hooks';
 const R$ = formatBrlCents;
 
 /** Product nerve center campanhas tab. */
-// PULSE_OK: form state preserved in React state, connection errors shown to user
 export function ProductNerveCenterCampanhasTab({
   recommendedProducts,
   productName,

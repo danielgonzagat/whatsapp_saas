@@ -7,6 +7,7 @@ export class AppService {
 
   /** Get hello. */
   getHello(): string {
+    this.logger.log('AppService initialized');
     return 'Hello World!';
   }
 }

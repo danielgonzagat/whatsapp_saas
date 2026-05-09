@@ -225,7 +225,7 @@ export class AppleAuthService {
   private verifySignature(signingInput: string, signatureSegment: string, jwk: AppleJwk) {
     const signature = Buffer.from(signatureSegment, 'base64url');
     const publicKey = createPublicKey({ key: jwk, format: 'jwk' });
-    const verifier = createVerify('RSA-SHA256'); // PULSE_OK: not JWT, RSA sign verify
+    const verifier = createVerify('RSA-SHA256');
     verifier.update(signingInput);
     verifier.end();
     if (!verifier.verify(publicKey, signature)) {

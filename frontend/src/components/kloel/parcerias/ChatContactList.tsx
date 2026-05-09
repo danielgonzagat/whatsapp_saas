@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { usePartnerChatContacts, markPartnerAsRead } from '@/hooks/usePartnerships';
@@ -48,7 +49,7 @@ export default function ChatContactList({
             <span style={{ fontFamily: FONT.sans, fontSize: 14, fontWeight: 600, color: C.text }}>{kloelT(`Conversas`)}</span>
           </div>
           {totalUnread > 0 && (
-            <span style={{ padding: '2px 8px', background: C.ember, borderRadius: 10, fontFamily: FONT.mono, fontSize: 11, fontWeight: 600, color: '#fff' }}>{totalUnread}</span>
+            <span style={{ padding: '2px 8px', background: C.ember, borderRadius: 10, fontFamily: FONT.mono, fontSize: 11, fontWeight: 600, color: colors.text.silver }}>{totalUnread}</span>
           )}
         </div>
         <div style={{ position: 'relative' }}>
@@ -70,10 +71,10 @@ export default function ChatContactList({
               onMouseLeave={(e) => { if (!isSelected) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
               onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); (e.currentTarget as HTMLElement).click(); } }}>
               <div style={{ position: 'relative', flexShrink: 0 }}>
-                <div style={{ width: 38, height: 38, borderRadius: '50%', background: contact.type === 'producer' ? 'rgba(139,92,246,0.12)' : C.elevated, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: FONT.sans, fontSize: 14, fontWeight: 600, color: contact.type === 'producer' ? '#8B5CF6' : C.text }}>
+                <div style={{ width: 38, height: 38, borderRadius: '50%', background: contact.type === 'producer' ? 'rgba(139,92,246,0.12)' : C.elevated, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: FONT.sans, fontSize: 14, fontWeight: 600, color: contact.type === 'producer' ? colors.semantic.purple : C.text }}>
                   {(contact.name || '?')[0].toUpperCase()}
                 </div>
-                {contact.online && <div style={{ position: 'absolute', bottom: 0, right: 0, width: 8, height: 8, borderRadius: '50%', background: '#10B981', border: `2px solid ${C.card}` }} />}
+                {contact.online && <div style={{ position: 'absolute', bottom: 0, right: 0, width: 8, height: 8, borderRadius: '50%', background: colors.semantic.success, border: `2px solid ${C.card}` }} />}
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
@@ -83,7 +84,7 @@ export default function ChatContactList({
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   <span style={{ fontFamily: FONT.sans, fontSize: 12, color: contact.unread ? C.secondary : C.muted, fontWeight: contact.unread ? 500 : 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const, flex: 1 }}>{contact.lastMessage}</span>
                   {(contact.unread || 0) > 0 && (
-                    <span style={{ minWidth: 18, height: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 9, background: C.ember, fontFamily: FONT.mono, fontSize: 10, fontWeight: 600, color: '#fff', padding: '0 4px', flexShrink: 0 }}>{contact.unread}</span>
+                    <span style={{ minWidth: 18, height: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 9, background: C.ember, fontFamily: FONT.mono, fontSize: 10, fontWeight: 600, color: colors.text.silver, padding: '0 4px', flexShrink: 0 }}>{contact.unread}</span>
                   )}
                 </div>
               </div>

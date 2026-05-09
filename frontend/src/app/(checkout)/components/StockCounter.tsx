@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 interface StockCounterProps {
   message?: string | undefined;
@@ -10,7 +11,7 @@ interface StockCounterProps {
 export default function StockCounter({
   message = 'Restam apenas {n} unidades',
   count,
-  accentColor = '#EF4444',
+  accentColor = colors.semantic.error,
 }: StockCounterProps) {
   if (count <= 0) {
     return null;

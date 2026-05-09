@@ -84,7 +84,6 @@ export class ConnectController {
   }
 
   /** Create account. */
-  // PULSE_OK: internal route, called by worker process for Stripe Connect account creation
   @Post(':workspaceId/accounts')
   async createAccount(
     @Param('workspaceId') workspaceId: string,
@@ -132,7 +131,6 @@ export class ConnectController {
   }
 
   /** Submit onboarding data directly from Kloel's UI. */
-  // PULSE_OK: internal route, called by worker process for Stripe Connect onboarding submission
   @Post(':workspaceId/accounts/:accountBalanceId/onboarding')
   async submitOnboardingProfile(
     @Param('workspaceId') workspaceId: string,
@@ -202,14 +200,12 @@ export class ConnectController {
   }
 
   /** Reconcile workspace. */
-  // PULSE_OK: webhook endpoint, called by worker process after Stripe Connect reconciliation
   @Get(':workspaceId/reconcile')
   async reconcileWorkspace(@Param('workspaceId') workspaceId: string) {
     return this.connectLedgerReconciliationService.reconcile({ workspaceId });
   }
 
   /** List payout requests. */
-  // PULSE_OK: internal route, called by worker process for Stripe Connect payout request listing
   @Get(':workspaceId/payout-requests')
   async listPayoutRequests(
     @Param('workspaceId') workspaceId: string,
@@ -228,7 +224,6 @@ export class ConnectController {
   }
 
   /** List payouts. */
-  // PULSE_OK: internal route, called by worker process for Stripe Connect payout listing
   @Get(':workspaceId/payouts')
   async listPayouts(
     @Param('workspaceId') workspaceId: string,
@@ -321,7 +316,6 @@ export class ConnectController {
   }
 
   /** List ledger. */
-  // PULSE_OK: internal route, called by worker process for Stripe Connect ledger listing
   @Get(':workspaceId/ledger')
   async listLedger(
     @Param('workspaceId') workspaceId: string,
@@ -411,7 +405,6 @@ export class ConnectController {
   }
 
   /** Create payout. */
-  // PULSE_OK: internal route, called by worker process for Stripe Connect payout creation
   @Post(':workspaceId/payouts')
   @Idempotent()
   async createPayout(
@@ -501,7 +494,6 @@ export class ConnectController {
   }
 
   /** Create payout request. */
-  // PULSE_OK: internal route, called by worker process for Stripe Connect payout request creation
   @Post(':workspaceId/payout-requests')
   @Idempotent()
   async createPayoutRequest(

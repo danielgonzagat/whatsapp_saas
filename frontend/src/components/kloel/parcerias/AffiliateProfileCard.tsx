@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import type { Affiliate } from './partnershipTypes';
@@ -6,7 +7,7 @@ import { C, FONT, TempBar } from './ParceriasDesignTokens';
 
 export default function AffiliateProfileCard({ affiliate }: { affiliate: Affiliate }) {
   const a = affiliate;
-  const tempColor = (a.temperature || 0) > 70 ? '#10B981' : '#F59E0B';
+  const tempColor = (a.temperature || 0) > 70 ? colors.semantic.success : colors.semantic.warning;
 
   return (
     <>
@@ -17,7 +18,7 @@ export default function AffiliateProfileCard({ affiliate }: { affiliate: Affilia
             background: a.type === 'producer' ? 'rgba(139,92,246,0.12)' : C.emberBg,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontFamily: FONT.sans, fontSize: 22, fontWeight: 700,
-            color: a.type === 'producer' ? '#8B5CF6' : C.ember,
+            color: a.type === 'producer' ? colors.semantic.purple : C.ember,
           }}
         >
           {(a.name || '?')[0].toUpperCase()}
@@ -29,7 +30,7 @@ export default function AffiliateProfileCard({ affiliate }: { affiliate: Affilia
             <span
               style={{
                 display: 'inline-block', padding: '2px 8px', borderRadius: 4, fontSize: 10, fontWeight: 600,
-                fontFamily: FONT.sans, color: a.type === 'producer' ? '#8B5CF6' : C.ember,
+                fontFamily: FONT.sans, color: a.type === 'producer' ? colors.semantic.purple : C.ember,
                 background: a.type === 'producer' ? 'rgba(139,92,246,0.15)' : C.emberStrong,
                 letterSpacing: '0.02em', textTransform: 'uppercase' as const,
               }}
@@ -39,7 +40,7 @@ export default function AffiliateProfileCard({ affiliate }: { affiliate: Affilia
             <span
               style={{
                 display: 'inline-block', padding: '2px 8px', borderRadius: 4, fontSize: 10, fontWeight: 600,
-                fontFamily: FONT.sans, color: a.status === 'active' ? '#10B981' : '#F59E0B',
+                fontFamily: FONT.sans, color: a.status === 'active' ? colors.semantic.success : colors.semantic.warning,
                 background: a.status === 'active' ? 'rgba(16,185,129,0.15)' : 'rgba(245,158,11,0.15)',
                 letterSpacing: '0.02em', textTransform: 'uppercase' as const,
               }}

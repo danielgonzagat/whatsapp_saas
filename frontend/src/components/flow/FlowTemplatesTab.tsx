@@ -145,7 +145,7 @@ export function FlowTemplatesTab({
                         ? 'rgba(16,185,129,0.15)'
                         : 'rgba(232,93,48,0.15)',
                       border: `1px solid ${isDownloaded ? 'rgba(16,185,129,0.3)' : 'rgba(232,93,48,0.3)'}`,
-                      color: isDownloaded ? '#10B981' : colors.ember.primary,
+                      color: isDownloaded ? colors.semantic.success : colors.ember.primary,
                       cursor: isDownloading ? 'wait' : 'pointer',
                     }}
                   >

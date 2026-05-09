@@ -60,7 +60,6 @@ export class ApiKeysService {
   }
 
   /** Create. */
-  // PULSE_OK: workspaceId validated by caller guard
   async create(workspaceId: string, name: string) {
     const rawKey = this.generateKey();
     const keyHash = this.hashKey(rawKey);

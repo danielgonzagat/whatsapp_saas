@@ -6,9 +6,9 @@ import type { TabId } from './anuncios-types';
 
 export const TABS: { id: TabId; label: string; iconKey: string; activeColor: string }[] = [
   { id: 'visao', label: 'War Room', iconKey: 'zap', activeColor: EMBER },
-  { id: 'meta', label: 'Meta Ads', iconKey: 'meta', activeColor: '#1877F2' },
-  { id: 'google', label: 'Google Ads', iconKey: 'gads', activeColor: '#4285F4' },
-  { id: 'tiktok', label: 'TikTok Ads', iconKey: 'tads', activeColor: '#FF0050' },
+  { id: 'meta', label: 'Meta Ads', iconKey: 'meta', activeColor: colors.semantic.info },
+  { id: 'google', label: 'Google Ads', iconKey: 'gads', activeColor: colors.semantic.info },
+  { id: 'tiktok', label: 'TikTok Ads', iconKey: 'tads', activeColor: colors.semantic.error },
   { id: 'track', label: 'Rastreamento', iconKey: 'link', activeColor: EMBER },
   { id: 'rules', label: 'Regras IA', iconKey: 'shield', activeColor: EMBER },
 ];

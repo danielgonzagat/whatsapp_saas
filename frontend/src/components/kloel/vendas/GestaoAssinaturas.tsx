@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { Stat } from './Stat';
@@ -14,9 +15,9 @@ interface GestaoAssinaturasProps {
 }
 
 const LIFECYCLE_BARS = [
-  { label: 'Trial', key: 'trial' as const, color: '#3B82F6' },
+  { label: 'Trial', key: 'trial' as const, color: colors.semantic.info },
   { label: 'Ativas', key: 'active' as const, color: 'colors.ember.primary' },
-  { label: 'Atrasadas', key: 'past_due' as const, color: '#F59E0B' },
+  { label: 'Atrasadas', key: 'past_due' as const, color: colors.semantic.warning },
   { label: 'Pausadas', key: 'paused' as const, color: 'var(--app-text-secondary)' },
   { label: 'Canceladas', key: 'cancelled' as const, color: 'var(--app-text-tertiary)' },
 ];
@@ -49,7 +50,7 @@ export function GestaoAssinaturas({
         <Stat
           label={kloelT('Churn rate')}
           value={`${st.churnRate || 0}%`}
-          color={(st.churnRate || 0) > 5 ? '#EF4444' : '#10B981'}
+          color={(st.churnRate || 0) > 5 ? colors.semantic.error : colors.semantic.success}
         />
         <Stat label={kloelT('LTV medio')} value={fmtBRL(st.avgLtv || 0)} />
         <Stat

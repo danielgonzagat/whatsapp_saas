@@ -8,7 +8,9 @@ export class AdvancedAnalyticsService {
 
   constructor(
     private prisma: PrismaService,
-  ) {}
+  ) {
+    this.logger.log('AdvancedAnalyticsService initialized');
+  }
 
   private toDayKey(date: Date): string {
     const yyyy = date.getFullYear();

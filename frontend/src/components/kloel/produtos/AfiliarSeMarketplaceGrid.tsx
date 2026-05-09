@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { useState, useMemo } from 'react';
 import { SORA, MONO, BG_CARD, BG_ELEVATED, BORDER, GREEN, EMBER, fmtBRL, NP } from './ProdutosView.shared';
@@ -174,7 +175,7 @@ export default function AfiliarSeMarketplaceGrid({
             cursor: 'pointer',
             fontWeight: 600,
             background: catFilter === null ? GREEN : BG_ELEVATED,
-            color: catFilter === null ? '#fff' : 'var(--app-text-secondary)',
+            color: catFilter === null ? colors.text.silver : 'var(--app-text-secondary)',
           }}
         >
           Todos
@@ -192,7 +193,7 @@ export default function AfiliarSeMarketplaceGrid({
               cursor: 'pointer',
               fontWeight: 600,
               background: catFilter === cat ? GREEN : BG_ELEVATED,
-              color: catFilter === cat ? '#fff' : 'var(--app-text-secondary)',
+              color: catFilter === cat ? colors.text.silver : 'var(--app-text-secondary)',
             }}
           >
             {cat}
@@ -297,7 +298,7 @@ export default function AfiliarSeMarketplaceGrid({
                       background: GREEN,
                       border: 'none',
                       borderRadius: 4,
-                      color: '#fff',
+                      color: colors.text.silver,
                       fontFamily: SORA,
                       fontSize: 11,
                       fontWeight: 600,

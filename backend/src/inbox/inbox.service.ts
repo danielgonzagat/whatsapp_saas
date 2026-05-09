@@ -363,7 +363,6 @@ export class InboxService {
       return Number.isNaN(value.getTime()) ? null : value;
     }
 
-    // PULSE_OK: date validated via Number.isNaN(parsed.getTime()) right below — returns null on invalid
     const parsed = new Date(value);
     return Number.isNaN(parsed.getTime()) ? null : parsed;
   }

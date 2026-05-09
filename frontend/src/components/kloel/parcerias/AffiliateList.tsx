@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { IC } from './ParceriasView.icons';
@@ -46,7 +47,7 @@ export default function AffiliateList({
       </div>
 
       {filtered.map((a) => {
-        const tempColor = (a.temperature || 0) > 70 ? '#10B981' : (a.temperature || 0) > 40 ? '#F59E0B' : C.muted;
+        const tempColor = (a.temperature || 0) > 70 ? colors.semantic.success : (a.temperature || 0) > 40 ? colors.semantic.warning : C.muted;
         return (
           <button
             type="button" key={a.id || a.email}
@@ -61,14 +62,14 @@ export default function AffiliateList({
             onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = `${C.ember}40`; }}
             onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = C.border; }}
           >
-            <div style={{ width: 42, height: 42, borderRadius: '50%', background: a.type === 'producer' ? 'rgba(139,92,246,0.12)' : C.emberBg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: FONT.sans, fontSize: 16, fontWeight: 600, color: a.type === 'producer' ? '#8B5CF6' : C.ember, flexShrink: 0 }}>
+            <div style={{ width: 42, height: 42, borderRadius: '50%', background: a.type === 'producer' ? 'rgba(139,92,246,0.12)' : C.emberBg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: FONT.sans, fontSize: 16, fontWeight: 600, color: a.type === 'producer' ? colors.semantic.purple : C.ember, flexShrink: 0 }}>
               {(a.name || '?')[0].toUpperCase()}
             </div>
             <div style={{ minWidth: 0 }}>
               <div style={{ fontFamily: FONT.sans, fontSize: 14, fontWeight: 600, color: C.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{a.name}</div>
               <div style={{ fontFamily: FONT.sans, fontSize: 11, color: C.secondary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{a.email}</div>
             </div>
-            <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 4, fontSize: 10, fontWeight: 600, fontFamily: FONT.sans, width: 'fit-content', color: a.type === 'producer' ? '#8B5CF6' : C.ember, background: a.type === 'producer' ? 'rgba(139,92,246,0.15)' : C.emberStrong, letterSpacing: '0.02em', textTransform: 'uppercase' as const }}>
+            <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 4, fontSize: 10, fontWeight: 600, fontFamily: FONT.sans, width: 'fit-content', color: a.type === 'producer' ? colors.semantic.purple : C.ember, background: a.type === 'producer' ? 'rgba(139,92,246,0.15)' : C.emberStrong, letterSpacing: '0.02em', textTransform: 'uppercase' as const }}>
               {a.type === 'producer' ? 'Produtor' : 'Afiliado'}
             </span>
             <div style={{ textAlign: 'right' as const }}><span style={{ fontFamily: FONT.mono, fontSize: 14, fontWeight: 600, color: C.text }}>{a.totalSales || 0}</span></div>

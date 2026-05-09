@@ -71,7 +71,7 @@ export function AdAccountsBoard({
                       <div style={{ fontSize: 10, fontFamily: MONO, color: 'var(--app-text-secondary)' }}>
                         SPEND
                       </div>
-                      <div style={{ fontSize: 16, fontFamily: MONO, color: '#EF4444', fontWeight: 600 }}>
+                      <div style={{ fontSize: 16, fontFamily: MONO, color: colors.semantic.error, fontWeight: 600 }}>
                         {FmtMoney(p.spend)}
                       </div>
                     </div>

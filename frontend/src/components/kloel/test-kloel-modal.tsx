@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { KloelMushroomMark } from '@/components/kloel/KloelBrand';
@@ -92,7 +93,7 @@ export function TestKloelModal({ isOpen, onClose }: TestKloelModalProps) {
             >
               {status === 'sending' ? (
                 <>
-                  <KloelMushroomMark size={18} title="Enviando teste" traceColor="#E85D30" />
+                  <KloelMushroomMark size={18} title="Enviando teste" traceColor={colors.ember.primary} />
 
                   {kloelT(`Enviando...`)}
                 </>

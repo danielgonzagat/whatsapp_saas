@@ -28,7 +28,6 @@ export class LaunchController {
   constructor(private readonly launchService: LaunchService) {}
 
   /** List launchers. */
-  // PULSE_OK: admin-only route, accessed via admin panel
   @Get('launchers')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'List all launchers for the workspace' })

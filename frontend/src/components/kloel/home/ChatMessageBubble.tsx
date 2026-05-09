@@ -121,7 +121,7 @@ function UserMessage({
       </div>
       <div
         style={{
-          background: '#1A1A1E',
+          background: colors.checkout.surface,
           color: 'var(--app-text-primary)',
           borderRadius: 20,
           padding: '12px 18px',

@@ -1,3 +1,4 @@
+import { colors } from '@/lib/design-tokens';
 import { ReactNode } from 'react';
 
 interface LabeledFormFieldProps {
@@ -15,7 +16,7 @@ const labelStyle = {
   display: 'block',
   fontSize: 10,
   fontWeight: 600,
-  color: '#ADA5A5',
+  color: colors.text.muted,
   marginBottom: 4,
   textTransform: 'uppercase',
   letterSpacing: '.08em',
@@ -30,7 +31,7 @@ const inputStyle = {
   fontWeight: 600,
   border: '1px solid #2C2C2C',
   borderRadius: 4,
-  backgroundColor: '#1A1A1A',
+  backgroundColor: colors.background.void,
   color: '#F5F5F5',
   fontFamily: 'JetBrains Mono, monospace',
 } as const;

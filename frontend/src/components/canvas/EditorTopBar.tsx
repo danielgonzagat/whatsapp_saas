@@ -52,7 +52,7 @@ const ddShortcut: React.CSSProperties = {
 const ddSep: React.CSSProperties = {
   height: 1,
   background:
-    '#1C1C1F' /* PULSE_VISUAL_OK: intermediate surface tone, near elevated */ /* PULSE_VISUAL_OK: intermediate surface tone, near elevated */,
+    colors.canvas.border,
   margin: '4px 0',
 };
 
@@ -112,7 +112,7 @@ export function EditorTopBar({
   const toggleDropdown = (id: DropdownId) => setDropdown((prev) => (prev === id ? null : id));
 
   const handleItemHover = (e: React.MouseEvent) =>
-    setRowBackground(e, '#1C1C1F' /* PULSE_VISUAL_OK: intermediate surface tone, near elevated */);
+    setRowBackground(e, colors.canvas.border);
   const handleItemLeave = (e: React.MouseEvent) => setRowBackground(e, 'none');
 
   const closeAndRun = (fn?: () => void) => {
@@ -148,7 +148,7 @@ export function EditorTopBar({
       >
         {IC.home(16)}
       </button>
-      <span style={{ color: '#2A2A2E' }}>|</span>
+      <span style={{ color: colors.canvas.hover }}>|</span>
 
       {/* ── Arquivo dropdown ── */}
       <div style={{ position: 'relative' }} data-dropdown>
@@ -158,7 +158,7 @@ export function EditorTopBar({
           style={{
             background:
               dropdown === 'file'
-                ? '#1C1C1F' /* PULSE_VISUAL_OK: intermediate surface tone, near elevated */
+                ? colors.canvas.border
                 : 'none',
             border: 'none',
             color: colors.text.silver,
@@ -245,7 +245,7 @@ export function EditorTopBar({
           style={{
             background:
               dropdown === 'resize'
-                ? '#1C1C1F' /* PULSE_VISUAL_OK: intermediate surface tone, near elevated */
+                ? colors.canvas.border
                 : 'none',
             border: 'none',
             color: colors.text.silver,
@@ -354,7 +354,7 @@ export function EditorTopBar({
           style={{
             background:
               dropdown === 'edit'
-                ? '#1C1C1F' /* PULSE_VISUAL_OK: intermediate surface tone, near elevated */
+                ? colors.canvas.border
                 : 'none',
             border: 'none',
             color: colors.text.silver,

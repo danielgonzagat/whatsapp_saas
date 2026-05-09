@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import React from 'react';
 import { SORA, MONO, BG_CARD, BG_ELEVATED, BORDER, GREEN, fmt, fmtBRL, NP } from './ProdutosView.shared';
@@ -326,7 +327,7 @@ export default function AfiliarSeProductDetail({
               background: GREEN,
               border: 'none',
               borderRadius: 6,
-              color: '#fff',
+              color: colors.text.silver,
               fontFamily: SORA,
               fontSize: 12,
               fontWeight: 600,
@@ -378,7 +379,7 @@ export default function AfiliarSeProductDetail({
               background: GREEN,
               border: 'none',
               borderRadius: 8,
-              color: '#fff',
+              color: colors.text.silver,
               fontFamily: SORA,
               fontSize: 14,
               fontWeight: 700,
@@ -396,7 +397,7 @@ export default function AfiliarSeProductDetail({
               background: isPending || isRequesting ? BG_ELEVATED : GREEN,
               border: 'none',
               borderRadius: 8,
-              color: isPending || isRequesting ? 'var(--app-text-tertiary)' : '#fff',
+              color: isPending || isRequesting ? 'var(--app-text-tertiary)' : colors.text.silver,
               fontFamily: SORA,
               fontSize: 14,
               fontWeight: 700,

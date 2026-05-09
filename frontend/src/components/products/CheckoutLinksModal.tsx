@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 import { kloelT } from '@/lib/i18n/t';
 import { buildPayUrl, isValidCheckoutCode } from '@/lib/subdomains';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -267,7 +268,7 @@ export function CheckoutLinksModal({ isOpen, onClose, planName, planSlug, refere
                     borderRadius: 6,
                     padding: '10px 14px',
                     cursor: 'pointer',
-                    color: copiedIndex === index ? '#10B981' : TEXT,
+                    color: copiedIndex === index ? colors.semantic.success : TEXT,
                     fontFamily: "'Sora', sans-serif",
                     fontSize: 12,
                     fontWeight: 500,

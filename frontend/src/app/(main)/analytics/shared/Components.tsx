@@ -1,3 +1,4 @@
+import { colors } from '@/lib/design-tokens';
 import type { ReactNode } from 'react';
 import { V, FONT_MONO, FONT_SORA, chartCardStyle, labelStyle } from '../analytics.design-tokens';
 import { NeuroPulse } from './NeuroPulse';
@@ -82,7 +83,7 @@ export function Button({
         display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px',
         background: primary ? V.em : accent || 'transparent',
         border: primary || accent ? 'none' : `1px solid ${V.b}`, borderRadius: 6,
-        color: primary ? V.void : accent ? '#fff' : V.t2,
+        color: primary ? V.void : accent ? colors.text.silver : V.t2,
         fontSize: 11, fontWeight: 600, cursor: 'pointer', fontFamily: FONT_SORA, ...sx,
       }}
     >

@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { apiFetch } from '@/lib/api';
@@ -15,7 +16,7 @@ const TEXT_PRIMARY = 'colors.text.silver';
 const TEXT_MUTED = 'colors.text.muted';
 const TEXT_DIM = 'colors.text.dim';
 const EMBER = 'colors.ember.primary';
-const GREEN = '#10B981';
+const GREEN = colors.semantic.success;
 const FONT_BODY = "'Sora', sans-serif";
 
 
@@ -331,7 +332,7 @@ export function PlanThankYouTab({ planId, productId }: { planId: string; product
             justifyContent: 'center',
             gap: '8px',
             background: EMBER,
-            color: '#FFFFFF',
+            color: colors.text.silver,
             border: 'none',
             borderRadius: '6px',
             padding: '12px 20px',
@@ -410,7 +411,7 @@ export function PlanThankYouTab({ planId, productId }: { planId: string; product
           disabled={saving}
           style={{
             background: EMBER,
-            color: '#FFFFFF',
+            color: colors.text.silver,
             border: 'none',
             borderRadius: '6px',
             padding: '10px 24px',

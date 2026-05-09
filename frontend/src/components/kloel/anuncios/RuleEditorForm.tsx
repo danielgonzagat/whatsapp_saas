@@ -74,7 +74,7 @@ export function RuleEditorForm({
           type="button"
           onClick={onSave}
           disabled={!condition.trim() || !action.trim()}
-          style={{ background: EMBER, border: 'none', borderRadius: 6, padding: '6px 14px', color: '#fff', fontSize: 11, fontFamily: SORA, fontWeight: 600, cursor: 'pointer', opacity: condition.trim() && action.trim() ? 1 : 0.5 }}
+          style={{ background: EMBER, border: 'none', borderRadius: 6, padding: '6px 14px', color: colors.text.silver, fontSize: 11, fontFamily: SORA, fontWeight: 600, cursor: 'pointer', opacity: condition.trim() && action.trim() ? 1 : 0.5 }}
         >
           {saveLabel}
         </button>

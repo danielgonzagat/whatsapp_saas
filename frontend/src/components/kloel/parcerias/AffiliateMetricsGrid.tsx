@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import type { Affiliate, AffiliatePerformance } from './partnershipTypes';
@@ -23,7 +24,7 @@ export default function AffiliateMetricsGrid({
     { label: kloelT(`Vendas`), value: totalSales, icon: IC.box, color: C.text },
     { label: kloelT(`Comissao`), value: `${commission}%`, icon: IC.dollar, color: C.ember },
     { label: kloelT(`Receita`), value: 'R$ ' + Number(totalRevenue).toLocaleString('pt-BR', { minimumFractionDigits: 0 }), icon: IC.trend, color: C.text },
-    { label: kloelT(`Temperatura`), value: `${a.temperature || 0}`, icon: IC.star, color: (a.temperature || 0) > 70 ? '#10B981' : '#F59E0B' },
+    { label: kloelT(`Temperatura`), value: `${a.temperature || 0}`, icon: IC.star, color: (a.temperature || 0) > 70 ? colors.semantic.success : colors.semantic.warning },
   ];
 
   return (

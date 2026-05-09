@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import type { CheckoutConfig } from '@/hooks/useCheckoutEditor';
@@ -245,8 +246,8 @@ export function BillingFormSection({
                       style={{
                         width: 18,
                         height: 18,
-                        color: s <= t.stars ? '#FBBF24' : C.dim,
-                        fill: s <= t.stars ? '#FBBF24' : 'transparent',
+                        color: s <= t.stars ? colors.semantic.warning : C.dim,
+                        fill: s <= t.stars ? colors.semantic.warning : 'transparent',
                       }}
                       aria-hidden="true"
                     />

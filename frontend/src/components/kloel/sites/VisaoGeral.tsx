@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
@@ -18,7 +19,7 @@ function OverviewSiteCard({ site, isMobile }: { site: SiteItem; isMobile: boolea
         <div style={{ fontFamily: "'Sora',sans-serif", fontSize: 14, color: TEXT }}>{site.name || 'Site sem titulo'}</div>
         {site.slug && <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 11, color: TEXT_DIM }}>{site.slug}</div>}
       </div>
-      <Badge color={status === 'online' ? '#10B981' : '#8b5cf6'}>{status === 'online' ? 'Online' : 'Construindo'}</Badge>
+      <Badge color={status === 'online' ? colors.semantic.success : '#8b5cf6'}>{status === 'online' ? 'Online' : 'Construindo'}</Badge>
       {site.updatedAt && (
         <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 11, color: TEXT_DIM }}>
           {new Date(site.updatedAt).toLocaleDateString('pt-BR')}

@@ -1,6 +1,8 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
+import { useToast } from '@/components/kloel/ToastProvider';
 import { useOrderBumps } from '@/hooks/useCheckoutPlans';
 import { useState, useId } from 'react';
 
@@ -88,8 +90,8 @@ const TEXT_PRIMARY = 'colors.text.silver';
 const TEXT_MUTED = 'colors.text.muted';
 const TEXT_DIM = 'colors.text.dim';
 const EMBER = 'colors.ember.primary';
-const GREEN = '#10B981';
-const RED = '#EF4444';
+const GREEN = colors.semantic.success;
+const RED = colors.semantic.error;
 const FONT_BODY = "'Sora', sans-serif";
 const FONT_MONO = "'JetBrains Mono', monospace";
 
@@ -154,6 +156,7 @@ const cardStyle: React.CSSProperties = {
 /** Plan order bump tab. */
 export function PlanOrderBumpTab({ planId }: { planId: string }) {
   const fid = useId();
+  const { showToast } = useToast();
   const { bumps, isLoading, createBump, updateBump, deleteBump } = useOrderBumps(planId);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -175,8 +178,9 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
       setShowForm(false);
       setEditingId(null);
       setForm(defaultForm);
-    } catch (e) {
-      console.error('Failed to save bump', e);
+      showToast(editingId ? 'Bump atualizado' : 'Bump criado', 'success');
+    } catch {
+      showToast('Erro ao salvar bump', 'error');
     } finally {
       setSaving(false);
     }
@@ -198,8 +202,9 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
   const handleDelete = async (id: string) => {
     try {
       await deleteBump(id);
-    } catch (e) {
-      console.error('Failed to delete bump', e);
+      showToast('Bump removido', 'success');
+    } catch {
+      showToast('Erro ao remover bump', 'error');
     }
   };
 
@@ -238,7 +243,7 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
             alignItems: 'center',
             gap: '6px',
             background: EMBER,
-            color: '#FFFFFF',
+            color: colors.text.silver,
             border: 'none',
             borderRadius: '6px',
             padding: '8px 16px',
@@ -392,7 +397,7 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
               disabled={saving}
               style={{
                 background: EMBER,
-                color: '#FFFFFF',
+                color: colors.text.silver,
                 border: 'none',
                 borderRadius: '6px',
                 padding: '10px 24px',

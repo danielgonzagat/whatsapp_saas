@@ -48,9 +48,9 @@ export function statusColor(status: string) {
     case 'LIVE':
       return colors.ember.primary;
     case 'COMPLETED':
-      return '#666';
+      return colors.text.muted;
     default:
-      return '#4CAF50';
+      return colors.semantic.success;
   }
 }
 

@@ -28,7 +28,9 @@ import { PrismaService } from '../prisma/prisma.service';
 export class ObservabilityQueriesService {
   private readonly logger = new Logger(ObservabilityQueriesService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) {
+    this.logger.log('ObservabilityQueriesService initialized');
+  }
 
   /**
    * Count Meta (Facebook/Instagram/WhatsApp) connections currently in

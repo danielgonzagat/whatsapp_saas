@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelError } from '@/lib/i18n/t';
 import {
@@ -33,10 +34,10 @@ interface ToastContextType {
 // ============================================
 
 const TOAST_COLORS: Record<ToastType, string> = {
-  success: '#E0DDD8',
-  error: '#E85D30',
-  info: '#6E6E73',
-  warning: '#6E6E73',
+  success: colors.text.silver,
+  error: colors.ember.primary,
+  info: colors.text.muted,
+  warning: colors.text.muted,
 };
 
 const TOAST_LABELS: Record<ToastType, string> = {

@@ -54,7 +54,7 @@ function ProjectSkeletonGrid() {
                 height: 10,
                 borderRadius: 999,
                 background:
-                  '#1C1C1F' /* PULSE_VISUAL_OK: intermediate surface tone, near elevated */,
+                  colors.canvas.border,
               }}
             />
             <div
@@ -192,7 +192,7 @@ function ProjectCard({
       onMouseLeave={() => setH(false)}
       style={{
         background: 'var(--app-bg-card)',
-        border: `1px solid ${h ? colors.ember.primary : '#1C1C1F'}`,
+        border: `1px solid ${h ? colors.ember.primary : colors.canvas.border}`,
         borderRadius: 6,
         overflow: 'hidden',
         textAlign: 'left',

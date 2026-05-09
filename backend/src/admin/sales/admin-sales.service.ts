@@ -12,7 +12,9 @@ export class AdminSalesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly dashboard: AdminDashboardService,
-  ) {}
+  ) {
+    this.logger.log('AdminSalesService initialized');
+  }
 
   /** Overview. */
   async overview(input: {

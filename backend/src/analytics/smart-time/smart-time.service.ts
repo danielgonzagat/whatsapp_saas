@@ -6,7 +6,9 @@ import { PrismaService } from '../../prisma/prisma.service';
 export class SmartTimeService {
   private readonly logger = new Logger(SmartTimeService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) {
+    this.logger.log('SmartTimeService initialized');
+  }
 
   /**
    * Calculates the best time of day (0-23) and day of week (0-6) to send messages

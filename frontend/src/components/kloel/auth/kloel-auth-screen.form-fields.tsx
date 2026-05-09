@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 import { kloelT } from '@/lib/i18n/t';
 import Link from 'next/link';
 import { type FormEvent } from 'react';
@@ -54,10 +55,10 @@ export function AuthFormFields({
   onSwitchMode,
 }: AuthFormFieldsProps) {
   const inputFocusHandler = (e: React.FocusEvent<HTMLInputElement>) => {
-    e.target.style.borderColor = '#333338';
+    e.target.style.borderColor = colors.border.glow;
   };
   const inputBlurHandler = (e: React.FocusEvent<HTMLInputElement>) => {
-    e.target.style.borderColor = '#222226';
+    e.target.style.borderColor = colors.background.border;
   };
 
   return (
@@ -71,7 +72,7 @@ export function AuthFormFields({
                 display: 'block',
                 fontFamily: sora,
                 fontSize: 12,
-                color: '#6E6E73',
+                color: colors.text.muted,
                 marginBottom: 6,
               }}
               htmlFor={`${fid}-nome`}
@@ -99,7 +100,7 @@ export function AuthFormFields({
               display: 'block',
               fontFamily: sora,
               fontSize: 12,
-              color: '#6E6E73',
+              color: colors.text.muted,
               marginBottom: 6,
             }}
             htmlFor={`${fid}-email`}
@@ -128,7 +129,7 @@ export function AuthFormFields({
               display: 'block',
               fontFamily: sora,
               fontSize: 12,
-              color: '#6E6E73',
+              color: colors.text.muted,
               marginBottom: 6,
             }}
           >
@@ -174,7 +175,7 @@ export function AuthFormFields({
       {/* forgot password — login only */}
       {mode === 'login' &&
         (forgotSent ? (
-          <p style={{ fontFamily: sora, fontSize: 12, color: '#6E6E73', marginTop: 12 }}>
+          <p style={{ fontFamily: sora, fontSize: 12, color: colors.text.muted, marginTop: 12 }}>
             {kloelT(`E-mail de recuperacao enviado. Verifique sua caixa de entrada.`)}
           </p>
         ) : (
@@ -185,7 +186,7 @@ export function AuthFormFields({
             style={{
               fontFamily: sora,
               fontSize: 12,
-              color: '#E85D30',
+              color: colors.ember.primary,
               background: 'none',
               border: 'none',
               cursor: isLoading ? 'default' : 'pointer',
@@ -204,7 +205,7 @@ export function AuthFormFields({
           style={{
             fontFamily: sora,
             fontSize: 12,
-            color: '#6E6E73',
+            color: colors.text.muted,
             marginTop: 12,
             lineHeight: 1.6,
           }}
@@ -214,7 +215,7 @@ export function AuthFormFields({
       ) : null}
 
       {error && (
-        <p style={{ fontSize: 12, color: '#E85D30', marginTop: 12, fontFamily: sora }}>{error}</p>
+        <p style={{ fontSize: 12, color: colors.ember.primary, marginTop: 12, fontFamily: sora }}>{error}</p>
       )}
 
       {/* submit */}
@@ -225,8 +226,8 @@ export function AuthFormFields({
           width: '100%',
           height: 44,
           marginTop: 20,
-          background: '#E85D30',
-          color: '#0A0A0C',
+          background: colors.ember.primary,
+          color: colors.background.void,
           border: 'none',
           borderRadius: 6,
           fontSize: 14,
@@ -254,8 +255,8 @@ export function AuthFormFields({
           width: '100%',
           height: 44,
           marginTop: 12,
-          background: '#111113',
-          color: '#E0DDD8',
+          background: colors.background.surface,
+          color: colors.text.silver,
           border: '1px solid #222226',
           borderRadius: 6,
           fontSize: 14,
@@ -267,10 +268,10 @@ export function AuthFormFields({
         }}
         onMouseEnter={(e) => {
           if (isLoading) return;
-          e.currentTarget.style.borderColor = '#333338';
+          e.currentTarget.style.borderColor = colors.border.glow;
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.borderColor = '#222226';
+          e.currentTarget.style.borderColor = colors.background.border;
         }}
       >
         {isLoading
@@ -285,7 +286,7 @@ export function AuthFormFields({
         style={{
           fontFamily: sora,
           fontSize: 13,
-          color: '#6E6E73',
+          color: colors.text.muted,
           textAlign: 'center',
           marginTop: 24,
         }}
@@ -299,7 +300,7 @@ export function AuthFormFields({
               style={{
                 fontFamily: sora,
                 fontSize: 13,
-                color: '#E85D30',
+                color: colors.ember.primary,
                 background: 'none',
                 border: 'none',
                 cursor: 'pointer',
@@ -319,7 +320,7 @@ export function AuthFormFields({
               style={{
                 fontFamily: sora,
                 fontSize: 13,
-                color: '#E85D30',
+                color: colors.ember.primary,
                 background: 'none',
                 border: 'none',
                 cursor: 'pointer',
@@ -339,18 +340,18 @@ export function AuthFormFields({
           style={{
             fontFamily: sora,
             fontSize: 11,
-            color: '#3A3A3F',
+            color: colors.text.dim,
             textAlign: 'center',
             marginTop: 16,
             lineHeight: 1.6,
           }}
         >
           {kloelT(`Ao criar sua conta, voce concorda com os`)}{' '}
-          <Link href="/terms" style={{ color: '#6E6E73', textDecoration: 'underline' }}>
+          <Link href="/terms" style={{ color: colors.text.muted, textDecoration: 'underline' }}>
             {kloelT(`Termos de Uso`)}
           </Link>{' '}
           {kloelT(`e a`)}{' '}
-          <Link href="/privacy" style={{ color: '#6E6E73', textDecoration: 'underline' }}>
+          <Link href="/privacy" style={{ color: colors.text.muted, textDecoration: 'underline' }}>
             {kloelT(`Politica de Privacidade`)}
           </Link>
           .

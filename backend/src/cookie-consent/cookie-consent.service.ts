@@ -20,7 +20,9 @@ type CookieConsentInput = {
 export class CookieConsentService {
   private readonly logger = new Logger(CookieConsentService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) {
+    this.logger.log('CookieConsentService initialized');
+  }
 
   /** Normalize. */
   normalize(input?: CookieConsentInput | null): CookieConsentRecord {

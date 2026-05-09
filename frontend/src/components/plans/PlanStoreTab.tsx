@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 import { kloelT } from '@/lib/i18n/t';
 import { CurrencyInput, ImageUpload } from '@/components/kloel/FormExtras';
 import { useToast } from '@/components/kloel/ToastProvider';
@@ -379,7 +380,7 @@ export function PlanStoreTab({ planId, productId }: { planId: string; productId:
           onClick={handleSave}
           disabled={saving}
           className="rounded-xl px-8 py-3 text-sm font-semibold text-white transition-all disabled:opacity-50"
-          style={{ backgroundColor: '#E0DDD8', color: '#0A0A0C', boxShadow: 'none' }}
+          style={{ backgroundColor: colors.text.silver, color: colors.background.void, boxShadow: 'none' }}
         >
           {saving ? 'Salvando...' : 'Salvar'}
         </button>

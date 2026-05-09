@@ -1,7 +1,9 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { useCallback, useState } from 'react';
 import type { DisplayArea, DisplayProduct } from './ProdutosView.types';
+import { useToast } from '@/components/kloel/ToastProvider';
 import { useMemberAreaMutations } from '@/hooks/useMemberAreas';
 import { Ticker, LiveFeed, PURPLE, ANIMATIONS } from './ProdutosView.shared';
 import { kloelT } from '@/lib/i18n/t';
@@ -44,6 +46,7 @@ export default function AreaMembros({
   mutateAreas,
   productOptions,
 }: Props) {
+  const { showToast } = useToast();
   const m = useMemberAreaMutations();
 
   const [showCreateArea, setShowCreateArea] = useState(false);
@@ -122,8 +125,13 @@ export default function AreaMembros({
 
   const handleDeleteArea = async (id: string) => {
     if (!window.confirm(kloelT('Remover esta area?'))) return;
-    await m.deleteArea(id);
-    await invalidate();
+    try {
+      await m.deleteArea(id);
+      await invalidate();
+      showToast('Area removida', 'success');
+    } catch {
+      showToast('Erro ao remover area', 'error');
+    }
   };
 
   const handleGenerateStructure = async (areaId: string) => {
@@ -152,8 +160,13 @@ export default function AreaMembros({
 
   const handleDeleteModule = async (areaId: string, moduleId: string) => {
     if (!window.confirm(kloelT('Remover este modulo?'))) return;
-    await m.deleteModule(areaId, moduleId);
-    await invalidate();
+    try {
+      await m.deleteModule(areaId, moduleId);
+      await invalidate();
+      showToast('Modulo removido', 'success');
+    } catch {
+      showToast('Erro ao remover modulo', 'error');
+    }
   };
 
   const handleCreateLesson = async (areaId: string, moduleId: string) => {
@@ -172,8 +185,13 @@ export default function AreaMembros({
 
   const handleDeleteLesson = async (areaId: string, lessonId: string) => {
     if (!window.confirm(kloelT('Remover esta aula?'))) return;
-    await m.deleteLesson(areaId, lessonId);
-    await invalidate();
+    try {
+      await m.deleteLesson(areaId, lessonId);
+      await invalidate();
+      showToast('Aula removida', 'success');
+    } catch {
+      showToast('Erro ao remover aula', 'error');
+    }
   };
 
   const openStudentDrawer = (areaId: string, areaName: string) => {
@@ -212,7 +230,7 @@ export default function AreaMembros({
             background: PURPLE,
             border: 'none',
             borderRadius: 8,
-            color: '#fff',
+            color: colors.text.silver,
             fontFamily: "'Sora',sans-serif",
             fontSize: 13,
             fontWeight: 600,

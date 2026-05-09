@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { IC } from './ParceriasView.icons';
@@ -31,7 +32,7 @@ export default function AffiliateFilterToolbar({
             style={{
               padding: '7px 14px', background: filterType === opt.value ? C.ember : C.card,
               border: `1px solid ${filterType === opt.value ? C.ember : C.border}`, borderRadius: 6,
-              color: filterType === opt.value ? '#fff' : C.secondary, fontFamily: FONT.sans, fontSize: 12, fontWeight: 500,
+              color: filterType === opt.value ? colors.text.silver : C.secondary, fontFamily: FONT.sans, fontSize: 12, fontWeight: 500,
               cursor: 'pointer', transition: 'all 150ms ease',
             }}>
             {opt.label}

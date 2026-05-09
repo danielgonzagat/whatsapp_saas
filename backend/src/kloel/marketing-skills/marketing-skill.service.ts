@@ -18,7 +18,9 @@ export class MarketingSkillService {
     private readonly loader: MarketingSkillLoader,
     private readonly router: MarketingSkillRouter,
     private readonly contextBuilder: MarketingSkillContextBuilder,
-  ) {}
+  ) {
+    this.logger.log('MarketingSkillService initialized');
+  }
 
   /** List installed skill ids. */
   listInstalledSkillIds(): string[] {

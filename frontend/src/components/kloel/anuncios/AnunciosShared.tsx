@@ -7,8 +7,8 @@ import { useRef, useEffect, useState } from 'react';
 export const SORA = "'Sora', sans-serif";
 export const MONO = "'JetBrains Mono', monospace";
 export const EMBER = colors.ember.primary;
-export const G = '#10B981';
-export const R = '#EF4444';
+export const G = colors.semantic.success;
+export const R = colors.semantic.error;
 
 function svg(w: number, h: number, d: string, opts: { stroke?: boolean; fill?: boolean } = {}) {
   return (
@@ -104,14 +104,14 @@ export function FmtMoney(n: number): string {
 export function roasColor(r: number): string {
   if (r > 4) return G;
   if (r > 2) return colors.text.silver;
-  if (r > 1.5) return '#F59E0B';
+  if (r > 1.5) return colors.semantic.warning;
   return R;
 }
 
 export function fiberColor(r: number): string {
   if (r > 10) return G;
   if (r > 3) return colors.text.silver;
-  if (r > 1.5) return '#F59E0B';
+  if (r > 1.5) return colors.semantic.warning;
   return R;
 }
 

@@ -6,7 +6,7 @@ import { metaAdsApi } from '@/lib/api/meta';
 import { IC, FmtMoney, Fmt, roasColor, G, SORA, MONO } from './AnunciosShared';
 import type { Campaign, PlatformKey, PlatformData } from './anuncios-types';
 
-const R = '#EF4444';
+const R = colors.semantic.error;
 
 export function PlatformDetailTab({
   platformKey,
@@ -76,7 +76,7 @@ export function PlatformDetailTab({
             }}
             style={{
               padding: '10px 24px', background: platform.color, border: 'none', borderRadius: 6,
-              color: '#fff', fontSize: 13, fontFamily: SORA, fontWeight: 600, cursor: 'pointer',
+              color: colors.text.silver, fontSize: 13, fontFamily: SORA, fontWeight: 600, cursor: 'pointer',
               transition: 'opacity 150ms ease',
             }}
           >
@@ -90,7 +90,7 @@ export function PlatformDetailTab({
           { label: 'GASTO', value: isConnected ? FmtMoney(platform.spend) : '\u2014', color: isConnected ? R : colors.text.dim },
           { label: 'RETORNO', value: isConnected ? FmtMoney(platform.revenue) : '\u2014', color: isConnected ? G : colors.text.dim },
           { label: 'ROAS', value: isConnected ? `${platform.roas.toFixed(2)}x` : '\u2014', color: isConnected ? roasColor(platform.roas) : colors.text.dim },
-          { label: 'CONV', value: isConnected ? String(platform.conversions) : '\u2014', color: isConnected ? '#E85D30' : colors.text.dim },
+          { label: 'CONV', value: isConnected ? String(platform.conversions) : '\u2014', color: isConnected ? colors.ember.primary : colors.text.dim },
           { label: 'CTR', value: isConnected ? `${platform.ctr.toFixed(2)}%` : '\u2014', color: isConnected ? colors.text.silver : colors.text.dim },
           { label: 'CPC', value: isConnected ? `R$ ${platform.cpc.toFixed(2)}` : '\u2014', color: 'var(--app-text-secondary)' },
         ].map((m) => (

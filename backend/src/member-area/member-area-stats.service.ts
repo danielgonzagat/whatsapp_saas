@@ -13,7 +13,9 @@ import { PrismaService } from '../prisma/prisma.service';
 export class MemberAreaStatsService {
   private readonly logger = new Logger(MemberAreaStatsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) {
+    this.logger.log('MemberAreaStatsService initialized');
+  }
 
   async recalculate(areaId: string, workspaceId: string) {
     const [enrollmentAgg, moduleCount, lessonCount] = await Promise.all([

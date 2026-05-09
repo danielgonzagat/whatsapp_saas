@@ -43,7 +43,6 @@ export class CheckoutSocialRecoveryService {
 
   /** Recover abandoned leads. */
   @Cron(CronExpression.EVERY_10_MINUTES)
-  // PULSE_OK: bounded by LEAD status filter on social leads
   async recoverAbandonedLeads() {
     const now = Date.now();
     const leads = await this.prisma.checkoutSocialLead.findMany({
@@ -176,7 +175,6 @@ export class CheckoutSocialRecoveryService {
     name: string | null,
     checkoutSlug: string,
   ) {
-    // PULSE_OK: advisory gate inside $transaction prevents two concurrent
     // recovery runs from both sending email to the same lead
     const alreadySent = await this.prisma.$transaction(async (tx) => {
       const lead = await tx.checkoutSocialLead.findFirst({

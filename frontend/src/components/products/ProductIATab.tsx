@@ -1,7 +1,9 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { apiFetch } from '@/lib/api';
+import { useToast } from '@/components/kloel/ToastProvider';
 import { useEffect, useRef, useState } from 'react';
 import { mutate } from 'swr';
 
@@ -26,8 +28,8 @@ const V = {
   t2: 'var(--text-moonlight, colors.text.muted)',
   t3: 'var(--text-dust, colors.text.dim)',
   ta: 'var(--app-text-on-accent, colors.background.void)',
-  g2: '#10B981',
-  r: '#EF4444',
+  g2: colors.semantic.success,
+  r: colors.semantic.error,
 };
 const is: React.CSSProperties = {
   width: '100%',
@@ -78,7 +80,7 @@ function Toggle({
           width: 36,
           height: 20,
           borderRadius: 10,
-          background: checked ? '#10B981' : V.b,
+          background: checked ? colors.semantic.success : V.b,
           position: 'relative',
           transition: 'background .2s',
         }}
@@ -88,7 +90,7 @@ function Toggle({
             width: 16,
             height: 16,
             borderRadius: 8,
-            background: '#fff',
+            background: colors.text.silver,
             position: 'absolute',
             top: 2,
             left: checked ? 18 : 2,
@@ -102,6 +104,7 @@ function Toggle({
 
 /** Product ia tab. */
 export function ProductIATab({ productId }: { productId: string }) {
+  const { showToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -150,8 +153,9 @@ export function ProductIATab({ productId }: { productId: string }) {
         clearTimeout(savedTimer.current);
       }
       savedTimer.current = setTimeout(() => setSaved(false), 2000);
-    } catch (e) {
-      console.error('Erro ao salvar config IA:', e);
+      showToast('Configuracao IA salva', 'success');
+    } catch {
+      showToast('Erro ao salvar configuracao IA', 'error');
     } finally {
       setSaving(false);
     }

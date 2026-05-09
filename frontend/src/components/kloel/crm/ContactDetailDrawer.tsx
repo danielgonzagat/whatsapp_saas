@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { useCRMMutations, useContact } from '@/hooks/useCRM';
@@ -46,7 +47,7 @@ const C = {
   bg: 'var(--bg-void, #0A0A0C)',
   surface: 'var(--bg-surface, #111113)',
   border: 'var(--border-space, #222226)',
-  accent: '#E85D30',
+  accent: colors.ember.primary,
   text: 'var(--text-silver, #E0DDD8)',
   muted: 'var(--text-muted, #6E6E73)',
   sora: "var(--font-sora), 'Sora', sans-serif",
@@ -242,7 +243,7 @@ export function ContactDetailDrawer({ phone, onClose }: ContactDetailDrawerProps
               cursor: 'pointer',
               border: 'none',
               background: C.accent,
-              color: '#fff',
+              color: colors.text.silver,
               fontFamily: C.sora,
               transition: 'opacity .15s',
             }}

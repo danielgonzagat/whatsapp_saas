@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
@@ -79,7 +80,7 @@ export default function MeusProdutosRevenueHero({
               background: EMBER,
               border: 'none',
               borderRadius: 10,
-              color: '#fff',
+              color: colors.text.silver,
               fontFamily: SORA,
               fontSize: 13,
               fontWeight: 600,
@@ -88,7 +89,7 @@ export default function MeusProdutosRevenueHero({
               boxShadow: '0 18px 32px rgba(232,93,48,0.18)',
             }}
           >
-            <span style={{ color: '#fff' }}>{IC.plus(16)}</span> {kloelT(`Novo produto`)}
+            <span style={{ color: colors.text.silver }}>{IC.plus(16)}</span> {kloelT(`Novo produto`)}
           </button>
         )}
         <div>
@@ -152,7 +153,7 @@ export default function MeusProdutosRevenueHero({
               background: EMBER,
               border: 'none',
               borderRadius: 12,
-              color: '#fff',
+              color: colors.text.silver,
               fontFamily: SORA,
               fontSize: 13,
               fontWeight: 700,
@@ -160,7 +161,7 @@ export default function MeusProdutosRevenueHero({
               boxShadow: '0 18px 32px rgba(232,93,48,0.16)',
             }}
           >
-            <span style={{ color: '#fff' }}>{IC.plus(16)}</span> {kloelT(`Novo produto`)}
+            <span style={{ color: colors.text.silver }}>{IC.plus(16)}</span> {kloelT(`Novo produto`)}
           </button>
         )}
       </div>

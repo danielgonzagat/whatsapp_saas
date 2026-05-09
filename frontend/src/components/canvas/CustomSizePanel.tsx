@@ -153,7 +153,7 @@ export function CustomSizePanel({
               l: 'Personalizado',
               w: Number.parseInt(customW, 10) || 1080,
               h: Number.parseInt(customH, 10) || 1080,
-              c: [colors.ember.primary, '#F2784B'],
+              c: [colors.ember.primary, colors.canvas.accent],
               m: 'square',
             })
           }
@@ -204,7 +204,7 @@ export function CustomSizePanel({
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.borderColor =
-                '#1C1C1F';
+                colors.canvas.border;
             }}
             style={{
               display: 'flex',

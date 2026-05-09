@@ -312,10 +312,10 @@ function ActionRow({ action }: { action: AutopilotAction }) {
   const statusColors: Record<string, string> = {
     success: colors.brand.green,
     error:
-      '#EF4444' /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */ /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */,
+      colors.semantic.error,
     skipped: colors.brand.cyan,
     scheduled:
-      '#F59E0B' /* PULSE_VISUAL_OK: warning amber, non-Monitor status indicator */ /* PULSE_VISUAL_OK: warning amber, non-Monitor status indicator */,
+      colors.semantic.warning,
   };
 
   const statusIcons: Record<string, React.ElementType> = {
@@ -395,7 +395,7 @@ function statusTone(status?: string) {
   if (['DEGRADED', 'PARTIAL', 'QUEUED', 'PROCESSING'].includes(normalized)) {
     return {
       color:
-        '#F59E0B' /* PULSE_VISUAL_OK: warning amber, non-Monitor status indicator */ /* PULSE_VISUAL_OK: warning amber, non-Monitor status indicator */,
+        colors.semantic.warning,
       bg: 'rgba(245, 158, 11, 0.15)',
     };
   }
@@ -406,7 +406,7 @@ function statusTone(status?: string) {
   ) {
     return {
       color:
-        '#EF4444' /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */ /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */,
+        colors.semantic.error,
       bg: 'rgba(239, 68, 68, 0.12)',
     };
   }
@@ -945,7 +945,7 @@ export default function AutopilotPage() {
                   className="text-xs flex items-center gap-1"
                   style={{
                     color:
-                      '#EF4444' /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */,
+                      colors.semantic.error,
                   }}
                 >
                   <AlertCircle size={12} aria-hidden="true" />
@@ -973,14 +973,14 @@ export default function AutopilotPage() {
                 size={20}
                 style={{
                   color:
-                    '#EF4444' /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */,
+                    colors.semantic.error,
                 }}
                 aria-hidden="true"
               />
               <span
                 style={{
                   color:
-                    '#EF4444' /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */,
+                    colors.semantic.error,
                 }}
               >
                 {error}
@@ -1030,7 +1030,7 @@ export default function AutopilotPage() {
                   ? `R$ ${stats.conversionsAmountLast7d.toLocaleString('pt-BR')}`
                   : undefined
               }
-              color="#F59E0B"
+              color="var(--app-warning)"
             />
           </div>
         </CenterStage>
@@ -1090,13 +1090,13 @@ export default function AutopilotPage() {
                   icon={AlertCircle}
                   label={kloelT(`Pendentes`)}
                   value={pipeline?.messages?.unansweredEstimate || 0}
-                  color="#F59E0B"
+                  color="var(--app-warning)"
                 />
                 <StatCard
                   icon={XCircle}
                   label={kloelT(`Falhas`)}
                   value={pipeline?.autopilot?.failed || 0}
-                  color="#EF4444"
+                  color="var(--app-error)"
                 />
               </div>
 
@@ -1381,7 +1381,7 @@ export default function AutopilotPage() {
               icon={AlertCircle}
               label={kloelT(`Erros`)}
               value={stats?.errorsLast7d || 0}
-              color="#EF4444"
+              color="var(--app-error)"
             />
             <StatCard
               icon={XCircle}
@@ -1394,7 +1394,7 @@ export default function AutopilotPage() {
               icon={Calendar}
               label={kloelT(`Agendados`)}
               value={stats?.scheduledCount || 0}
-              color="#F59E0B"
+              color="var(--app-warning)"
             />
           </div>
         </CenterStage>
@@ -1430,7 +1430,7 @@ export default function AutopilotPage() {
                     size={20}
                     style={{
                       color:
-                        '#F59E0B' /* PULSE_VISUAL_OK: warning amber, non-Monitor status indicator */,
+                        colors.semantic.warning,
                     }}
                     aria-hidden="true"
                   />
@@ -1531,7 +1531,7 @@ export default function AutopilotPage() {
                       icon={Calendar}
                       label={kloelT(`Agendados`)}
                       value={moneyMachineResult.scheduled}
-                      color="#F59E0B"
+                      color="var(--app-warning)"
                     />
                   )}
                   {moneyMachineResult.skipped != null && (
@@ -1547,7 +1547,7 @@ export default function AutopilotPage() {
                       icon={AlertCircle}
                       label={kloelT(`Erros`)}
                       value={moneyMachineResult.errors}
-                      color="#EF4444"
+                      color="var(--app-error)"
                     />
                   )}
                 </div>
@@ -1639,7 +1639,7 @@ export default function AutopilotPage() {
                       : 'rgba(239, 68, 68, 0.1)',
                     color: sendResult.success
                       ? colors.brand.green
-                      : '#EF4444' /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */ /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */,
+                      : colors.semantic.error,
                   }}
                 >
                   {sendResult.success ? (
@@ -1834,7 +1834,7 @@ export default function AutopilotPage() {
                   icon={Activity}
                   label={kloelT(`Custos`)}
                   value={formatCurrency(moneyReport.totalCosts)}
-                  color="#EF4444"
+                  color="var(--app-error)"
                 />
                 <StatCard
                   icon={BarChart3}
@@ -1853,7 +1853,7 @@ export default function AutopilotPage() {
                   icon={Sparkles}
                   label={kloelT(`Ticket Médio`)}
                   value={formatCurrency(moneyReport.avgTicket)}
-                  color="#F59E0B"
+                  color="var(--app-warning)"
                 />
               </div>
             ) : (
@@ -1907,7 +1907,7 @@ export default function AutopilotPage() {
                     event.type === 'sale'
                       ? colors.brand.green
                       : event.type === 'conversion'
-                        ? '#F59E0B' /* PULSE_VISUAL_OK: warning amber, non-Monitor status indicator */
+                        ? colors.semantic.warning
                         : colors.brand.cyan;
                   return (
                     <div
@@ -2077,9 +2077,9 @@ export default function AutopilotPage() {
                     success: colors.brand.green,
                     info: colors.brand.cyan,
                     warning:
-                      '#F59E0B' /* PULSE_VISUAL_OK: warning amber, non-Monitor status indicator */ /* PULSE_VISUAL_OK: warning amber, non-Monitor status indicator */,
+                      colors.semantic.warning,
                     critical:
-                      '#EF4444' /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */ /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */,
+                      colors.semantic.error,
                   };
                   const severityIcons: Record<string, React.ElementType> = {
                     success: CheckCircle2,
@@ -2208,9 +2208,9 @@ export default function AutopilotPage() {
                       queueHealthStatus === 'healthy'
                         ? colors.brand.green
                         : queueHealthStatus === 'degraded'
-                          ? '#F59E0B' /* PULSE_VISUAL_OK: warning amber, non-Monitor status indicator */
+                          ? colors.semantic.warning
                           : queueHealthStatus === 'critical'
-                            ? '#EF4444' /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */
+                            ? colors.semantic.error
                             : colors.brand.cyan,
                   }}
                 >
@@ -2328,7 +2328,7 @@ export default function AutopilotPage() {
                             value === true
                               ? colors.brand.green
                               : value === false
-                                ? '#EF4444' /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */
+                                ? colors.semantic.error
                                 : colors.text.primary,
                           fontFamily:
                             typeof value === 'number' ? "'JetBrains Mono', monospace" : undefined,
@@ -2393,7 +2393,7 @@ export default function AutopilotPage() {
                   className="p-2 rounded-lg transition-colors hover:bg-white/5"
                   style={{
                     color: isEditingConfig
-                      ? '#EF4444' /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */
+                      ? colors.semantic.error
                       : colors.text.muted,
                   }}
                 >

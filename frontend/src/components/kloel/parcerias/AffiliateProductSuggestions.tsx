@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { useState } from 'react';
 import { kloelT } from '@/lib/i18n/t';
@@ -40,7 +41,7 @@ export default function AffiliateProductSuggestions() {
         {kloelT(`Sugestoes por IA`)}
       </div>
       <button type="button" onClick={handleSuggest} disabled={suggestLoading}
-        style={{ width: '100%', padding: '10px 0', background: C.ember, border: 'none', borderRadius: 6, color: '#fff', fontFamily: FONT.sans, fontSize: 13, fontWeight: 600, cursor: suggestLoading ? 'wait' : 'pointer', marginBottom: 12, opacity: suggestLoading ? 0.7 : 1 }}>
+        style={{ width: '100%', padding: '10px 0', background: C.ember, border: 'none', borderRadius: 6, color: colors.text.silver, fontFamily: FONT.sans, fontSize: 13, fontWeight: 600, cursor: suggestLoading ? 'wait' : 'pointer', marginBottom: 12, opacity: suggestLoading ? 0.7 : 1 }}>
         {suggestLoading ? 'Buscando...' : 'Ver sugestoes para meu nicho'}
       </button>
       {suggestions.length > 0 && (

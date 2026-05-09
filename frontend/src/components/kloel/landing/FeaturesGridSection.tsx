@@ -74,7 +74,7 @@ export function FeaturesGridSection({
                       height={12}
                       viewBox="0 0 24 24"
                       fill="none"
-                      stroke="#10B981"
+                      stroke={colors.semantic.success}
                       strokeWidth={2}
                       style={{ flexShrink: 0 }}
                       aria-hidden="true"

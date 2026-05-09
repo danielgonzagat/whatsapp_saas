@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { useRouter } from 'next/navigation';
@@ -71,7 +72,7 @@ export function EditarSiteEditor({
               {variantLoading ? 'Gerando...' : 'Gerar Variante B'}
             </Btn>
           </div>
-          {variantNotice && <div style={{ fontFamily: MONO, fontSize: 11, color: '#10B981', marginTop: 8 }}>{variantNotice}</div>}
+          {variantNotice && <div style={{ fontFamily: MONO, fontSize: 11, color: colors.semantic.success, marginTop: 8 }}>{variantNotice}</div>}
         </div>
       )}
 
@@ -103,10 +104,10 @@ export function EditarSiteEditor({
         <div style={{ background: BG_ELEVATED, padding: '6px 12px', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', gap: 6 }}>
           <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#ef4444' }} />
           <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#f59e0b' }} />
-          <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#10B981' }} />
+          <div style={{ width: 8, height: 8, borderRadius: '50%', background: colors.semantic.success }} />
           <span style={{ fontFamily: MONO, fontSize: 10, color: TEXT_MUTED, marginLeft: 8 }}>{kloelT(`Preview`)}</span>
         </div>
-        <iframe ref={iframeRef} srcDoc={selectedSite.htmlContent || ''} sandbox="allow-scripts" style={{ width: '100%', height: 500, border: 'none', background: '#fff' }} title={kloelT(`Site Preview`)} />
+        <iframe ref={iframeRef} srcDoc={selectedSite.htmlContent || ''} sandbox="allow-scripts" style={{ width: '100%', height: 500, border: 'none', background: colors.text.silver }} title={kloelT(`Site Preview`)} />
       </Card>
     </div>
   );

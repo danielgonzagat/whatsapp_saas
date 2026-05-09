@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { IC, SORA, MONO, EMBER, TEXT, TEXT_DIM, TEXT_MUTED, BG_ELEVATED } from './SitesViewIcons';
@@ -25,9 +26,9 @@ export function Hospedagem() {
         <SectionLabel>{kloelT(`Uso de Recursos`)}</SectionLabel>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {[
-            { label: 'CPU', value: 23, max: 100, color: '#10B981' },
-            { label: 'Memoria RAM', value: 512, max: 1024, color: '#3B82F6' },
-            { label: 'Disco', value: 2.4, max: 10, color: '#F59E0B' },
+            { label: 'CPU', value: 23, max: 100, color: colors.semantic.success },
+            { label: 'Memoria RAM', value: 512, max: 1024, color: colors.semantic.info },
+            { label: 'Disco', value: 2.4, max: 10, color: colors.semantic.warning },
             { label: 'Bandwidth', value: 45, max: 100, color: EMBER },
           ].map((r) => (
             <div key={r.label}>
@@ -66,7 +67,7 @@ export function Hospedagem() {
         <SectionLabel>{kloelT(`Uptime (30 dias)`)}</SectionLabel>
         <div style={{ display: 'flex', gap: 2, alignItems: 'flex-end', height: 40 }}>
           {Array.from({ length: 30 }, (_, i) => (
-            <div key={`uptime-${i}`} style={{ flex: 1, height: 40, background: '#10B981', borderRadius: 2, opacity: 0.3 }} />
+            <div key={`uptime-${i}`} style={{ flex: 1, height: 40, background: colors.semantic.success, borderRadius: 2, opacity: 0.3 }} />
           ))}
         </div>
         <div style={{ fontFamily: MONO, fontSize: 12, color: 'var(--app-text-secondary)', marginTop: 8, textAlign: 'center' }}>

@@ -1,7 +1,6 @@
 import { SplitController } from './split.controller';
 import { SplitPreviewDto } from './dto/split-preview.dto';
 
-// PULSE_OK: assertions exist below
 describe('SplitController', () => {
   const controller = new SplitController();
 

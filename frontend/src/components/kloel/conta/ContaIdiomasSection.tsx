@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { useState } from 'react';
@@ -71,7 +72,7 @@ function LanguageOption({
           lineHeight: '16px',
           letterSpacing: '0.08em',
           textTransform: 'uppercase' as const,
-          color: '#8A8A91',
+          color: colors.text.muted,
           minWidth: 24,
           flexShrink: 0,
         }}
@@ -152,7 +153,7 @@ export default function IdiomasSection() {
           gap: 10,
         }}
       >
-        <span style={{ color: '#3B82F6', marginTop: 2, flexShrink: 0 }}>{Icons.clock(16)}</span>
+        <span style={{ color: colors.semantic.info, marginTop: 2, flexShrink: 0 }}>{Icons.clock(16)}</span>
         <span style={{ fontSize: 11, color: 'var(--app-text-secondary)', fontFamily: SORA }}>
           {kloelT(`A traducao completa da plataforma esta em andamento. Algumas secoes podem permanecer em
           portugues temporariamente.`)}

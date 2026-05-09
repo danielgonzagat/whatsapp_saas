@@ -43,7 +43,6 @@ export function useCampanhasTab(productId: string) {
           messageTemplate: campMessage.trim() || undefined,
         },
       });
-      // PULSE_OK: cache invalidation handled by auto-revalidation
       const created = unwrapApiPayload<JsonRecord>(res);
       setCamps((prev) => [created, ...prev]);
       setCampName('');
@@ -66,7 +65,6 @@ export function useCampanhasTab(productId: string) {
           body: { smartTime },
         }),
       );
-      // PULSE_OK: cache invalidation handled by auto-revalidation
       await loadCampaigns();
       showToast('Campanha lançada', 'success');
     } catch (e) {
@@ -85,7 +83,6 @@ export function useCampanhasTab(productId: string) {
           method: 'POST',
         }),
       );
-      // PULSE_OK: cache invalidation handled by auto-revalidation
       await loadCampaigns();
       showToast('Campanha pausada', 'success');
     } catch (e) {
@@ -101,7 +98,6 @@ export function useCampanhasTab(productId: string) {
       await unwrapApiPayload(
         await apiFetch(`/products/${productId}/campaigns/${id}`, { method: 'DELETE' }),
       );
-      // PULSE_OK: cache invalidation handled by auto-revalidation
       setCamps((prev) => prev.filter((c: JsonRecord) => c.id !== id));
       showToast('Campanha removida', 'success');
     } catch (e) {

@@ -40,15 +40,15 @@ export type TabId = 'visao' | 'meta' | 'google' | 'tiktok' | 'track' | 'rules';
 
 export const PLATFORM_DEFAULTS: Record<PlatformKey, PlatformData> = {
   meta: {
-    name: 'Meta Ads', color: '#1877F2', spend: 0, revenue: 0, roas: 0,
+    name: 'Meta Ads', color: colors.semantic.info, spend: 0, revenue: 0, roas: 0,
     conversions: 0, impressions: 0, clicks: 0, ctr: 0, cpc: 0, connected: false,
   },
   google: {
-    name: 'Google Ads', color: '#4285F4', spend: 0, revenue: 0, roas: 0,
+    name: 'Google Ads', color: colors.semantic.info, spend: 0, revenue: 0, roas: 0,
     conversions: 0, impressions: 0, clicks: 0, ctr: 0, cpc: 0, connected: false,
   },
   tiktok: {
-    name: 'TikTok Ads', color: '#FF0050', spend: 0, revenue: 0, roas: 0,
+    name: 'TikTok Ads', color: colors.semantic.error, spend: 0, revenue: 0, roas: 0,
     conversions: 0, impressions: 0, clicks: 0, ctr: 0, cpc: 0, connected: false,
   },
 };

@@ -127,7 +127,6 @@ export class KnowledgeBaseService {
   ) {}
 
   /** Create. */
-  // PULSE_OK: workspaceId validated by caller guard
   async create(workspaceId: string, name: string) {
     return this.prisma.knowledgeBase.create({
       data: { workspaceId, name },

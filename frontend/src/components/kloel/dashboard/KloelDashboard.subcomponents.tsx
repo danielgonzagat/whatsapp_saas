@@ -7,6 +7,7 @@ import { KLOEL_CHAT_QUICK_ACTIONS } from '@/lib/kloel-chat';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 import { AnimatePresence, motion } from 'framer-motion';
 import { BarChart3, LayoutTemplate, Megaphone, PenLine, Search } from 'lucide-react';
+import { useState, useRef, useCallback } from 'react';
 
 export const S_RE = /\s+/;
 export const F = "'Sora', sans-serif";
@@ -197,7 +198,30 @@ export function ChatDisclaimer() {
   );
 }
 
-export function ConversationHeaderBar({ title }: { title: string }) {
+export function ConversationHeaderBar({ title, onTitle }: { title: string; onTitle?: (title: string) => void }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(title);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const commitTitle = useCallback(() => {
+    const trimmed = draft.trim();
+    if (trimmed && trimmed !== title && onTitle) {
+      onTitle(trimmed);
+    } else {
+      setDraft(title);
+    }
+    setEditing(false);
+  }, [draft, title, onTitle]);
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      commitTitle();
+    } else if (e.key === 'Escape') {
+      setDraft(title);
+      setEditing(false);
+    }
+  };
+
   return (
     <div style={{ width: '100%', flexShrink: 0 }}>
       <div
@@ -213,19 +237,49 @@ export function ConversationHeaderBar({ title }: { title: string }) {
           borderBottom: '1px solid var(--app-border-subtle)',
         }}
       >
-        <span
-          style={{
-            fontSize: 14,
-            fontWeight: 600,
-            color: TEXT,
-            letterSpacing: '-0.01em',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-          }}
-        >
-          {title}
-        </span>
+        {editing ? (
+          <input
+            ref={inputRef}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onBlur={commitTitle}
+            onKeyDown={handleKeyDown}
+            style={{
+              fontSize: 14,
+              fontWeight: 600,
+              color: TEXT,
+              letterSpacing: '-0.01em',
+              background: 'transparent',
+              border: `1px solid ${EMBER}`,
+              borderRadius: 4,
+              padding: '2px 6px',
+              outline: 'none',
+              width: '100%',
+            }}
+          />
+        ) : (
+          <span
+            onClick={() => {
+              if (onTitle) {
+                setDraft(title);
+                setEditing(true);
+                setTimeout(() => inputRef.current?.focus(), 0);
+              }
+            }}
+            style={{
+              fontSize: 14,
+              fontWeight: 600,
+              color: TEXT,
+              letterSpacing: '-0.01em',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              cursor: onTitle ? 'pointer' : 'default',
+            }}
+          >
+            {title}
+          </span>
+        )}
       </div>
     </div>
   );

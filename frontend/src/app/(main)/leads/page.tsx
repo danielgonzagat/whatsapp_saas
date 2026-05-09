@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 /** Dynamic. */
@@ -329,7 +330,7 @@ export default function LeadsPage() {
             <div className="max-h-[70vh] overflow-y-auto">
               {loadingLeads && leads.length === 0 ? (
                 <div className="flex items-center justify-center px-5 py-10">
-                  <KloelMushroomMark size={22} title="Carregando leads" traceColor="#E85D30" />
+                  <KloelMushroomMark size={22} title="Carregando leads" traceColor={colors.ember.primary} />
                 </div>
               ) : filteredLeads.length === 0 ? (
                 <div className="px-5 py-10 text-center">

@@ -199,13 +199,33 @@ for (const file of files) {
   let content = fs.readFileSync(file, 'utf8');
   let fileChanges = 0;
 
-  for (const [regex, replacement] of MAP) {
-    const newContent = content.replace(regex, replacement);
-    const count = (content.length - newContent.length) / (replacement.length + 1); // rough
-    if (newContent !== content) {
-      content = newContent;
-      fileChanges++;
+  // First, collect positions of ALL matches to skip ones inside kloelT()
+  const skipRanges: Array<[number, number]> = [];
+  const kloelTRe = /kloelT\(/g;
+  let m: RegExpExecArray | null;
+  while ((m = kloelTRe.exec(content)) !== null) {
+    // Find matching closing paren
+    let depth = 1;
+    let end = m.index + 7;
+    while (depth > 0 && end < content.length) {
+      if (content[end] === '(') depth++;
+      else if (content[end] === ')') depth--;
+      end++;
     }
+    skipRanges.push([m.index, end]);
+  }
+
+  function isSkipped(pos: number): boolean {
+    return skipRanges.some(([s, e]) => pos >= s && pos < e);
+  }
+
+  for (const [regex, replacement] of MAP) {
+    const beforeLen = content.length;
+    content = content.replace(regex, (match: string, offset: number) => {
+      if (isSkipped(offset)) return match;
+      fileChanges++;
+      return replacement;
+    });
   }
 
   if (fileChanges > 0 && content.includes('colors.')) {

@@ -102,7 +102,7 @@ export function TrackingDashboard({ focus }: { focus?: string }) {
               onClick={() => router.push('/analytics?tab=abandonos')}
               style={{
                 background: EMBER, border: 'none', borderRadius: 6, padding: '8px 14px',
-                color: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: SORA,
+                color: colors.text.silver, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: SORA,
               }}
             >
               {kloelT(`Ver abandonos`)}
@@ -277,7 +277,7 @@ export function TrackingDashboard({ focus }: { focus?: string }) {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ color: '#25D366' }}>{IC.zap(16)}</span>
+          <span style={{ color: colors.canvas.lime }}>{IC.zap(16)}</span>
           <div>
             <div style={{ fontSize: 13, fontFamily: SORA, color: 'var(--app-text-primary)', fontWeight: 600 }}>
               {kloelT(`WhatsApp X1 Tracking`)}

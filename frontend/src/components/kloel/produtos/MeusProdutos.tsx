@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
@@ -123,14 +124,14 @@ export default function MeusProdutos({
                 background: EMBER,
                 border: 'none',
                 borderRadius: 6,
-                color: '#fff',
+                color: colors.text.silver,
                 fontFamily: SORA,
                 fontSize: 13,
                 fontWeight: 600,
                 cursor: 'pointer',
               }}
             >
-              <span style={{ color: '#fff' }}>{IC.plus(16)}</span>
+              <span style={{ color: colors.text.silver }}>{IC.plus(16)}</span>
               {requestedFeature ? 'Criar produto e continuar' : 'Criar produto'}
             </button>
           </div>

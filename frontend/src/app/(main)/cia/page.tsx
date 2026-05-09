@@ -4,6 +4,7 @@
 export const dynamic = 'force-dynamic';
 
 import { CenterStage, Grid, Section } from '@/components/kloel';
+import { useToast } from '@/components/kloel/ToastProvider';
 import { useWorkspace } from '@/hooks/useWorkspaceId';
 import { useCiaSurface } from '@/hooks/useCiaSurface';
 import { useCiaAdvanced } from '@/hooks/useCiaAdvanced';
@@ -25,6 +26,7 @@ import { CiaProofs } from './components/CiaProofs';
 import { CiaRegistries } from './components/CiaRegistries';
 
 export default function CiaPage() {
+  const { showToast } = useToast();
   const { workspaceId, isLoading: workspaceLoading } = useWorkspace();
   const {
     surface,
@@ -71,6 +73,7 @@ export default function CiaPage() {
   const onRefresh = () => {
     void loadSurface();
     void loadAdvancedData();
+    showToast('Dados atualizados', 'success');
   };
 
   return (

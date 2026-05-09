@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 /** Dynamic. */
@@ -36,7 +37,7 @@ type AssignedFilter = 'ALL' | 'UNASSIGNED' | 'ASSIGNED';
 const FUNNELS_REFRESH_TITLE = kloelT(`Atualizando funis`);
 const FUNNELS_LOADING_CONVERSATIONS_TITLE = kloelT(`Carregando conversas`);
 const FUNNELS_LOADING_EXECUTIONS_TITLE = kloelT(`Carregando execucoes`);
-const FUNNELS_BRAND_TRACE_COLOR = '#E85D30';
+const FUNNELS_BRAND_TRACE_COLOR = colors.ember.primary;
 
 /** Funnels page. */
 export default function FunnelsPage() {

@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { useRef, useState } from 'react';
@@ -71,7 +72,7 @@ function UploadZone({
             style={{
               background: 'none',
               border: 'none',
-              color: '#EF4444',
+              color: colors.semantic.error,
               cursor: 'pointer',
               padding: 4,
             }}
@@ -225,7 +226,7 @@ export default function DocumentosSection({
           gap: 10,
         }}
       >
-        <span style={{ color: '#3B82F6', marginTop: 2, flexShrink: 0 }}>{Icons.clock(16)}</span>
+        <span style={{ color: colors.semantic.info, marginTop: 2, flexShrink: 0 }}>{Icons.clock(16)}</span>
         <span style={{ fontSize: 11, color: 'var(--app-text-secondary)', fontFamily: SORA }}>
           {kloelT(`A analise dos documentos pode levar ate 48 horas uteis. Voce sera notificado por e-mail
           quando o resultado estiver disponivel.`)}
@@ -236,7 +237,7 @@ export default function DocumentosSection({
         <span
           style={{
             fontSize: 11,
-            color: '#EF4444',
+            color: colors.semantic.error,
             marginTop: 8,
             display: 'block',
             fontFamily: SORA,

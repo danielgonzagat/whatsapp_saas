@@ -71,7 +71,7 @@ export function PricingSection({
                 <span style={{ fontSize: 12, fontWeight: 600, color: colors.text.silver }}>
                   {kloelT('Total')}
                 </span>
-                <span style={{ fontSize: 16, fontWeight: 800, color: '#EF4444', fontFamily: M }}>
+                <span style={{ fontSize: 16, fontWeight: 800, color: colors.semantic.error, fontFamily: M }}>
                   {kloelT('R$1.519+/mês')}
                 </span>
               </div>

@@ -7,6 +7,7 @@ export class VideoService {
 
   // Placeholder para futura implementação (AI Video Studio)
   generate() {
+    this.logger.log('VideoService initialized');
     return { ok: true };
   }
 }

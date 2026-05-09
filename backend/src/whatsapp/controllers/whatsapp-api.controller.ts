@@ -83,13 +83,11 @@ export class WhatsAppApiController {
     };
   }
   /** Get diagnostics. */
-  // PULSE_OK: internal route, called by worker process for WhatsApp session diagnostics
   @Get('session/diagnostics')
   async getDiagnostics(@Req() req: AuthenticatedRequest) {
     return this.getSessionDiagnostics(req.workspaceId!);
   }
   /** Force check. */
-  // PULSE_OK: internal route, called by worker process for WhatsApp session health check
   @Post('session/force-check')
   async forceCheck(@Req() req: AuthenticatedRequest) {
     const workspace = await this.workspaces.getWorkspace(req.workspaceId!);
@@ -100,7 +98,6 @@ export class WhatsAppApiController {
     };
   }
   /** Force reconnect. */
-  // PULSE_OK: internal route, called by worker process for WhatsApp session reconnect
   @Post('session/force-reconnect')
   async forceReconnect(@Req() req: AuthenticatedRequest) {
     const diagnosticsBefore = await this.getSessionDiagnostics(req.workspaceId!);
@@ -117,7 +114,6 @@ export class WhatsAppApiController {
   }
   /** Repair config. */
   /** Repair config. */
-  // PULSE_OK: internal route, called by worker process for WhatsApp session config repair
   @Post('session/repair-config')
   async repairConfig(@Req() req: AuthenticatedRequest) {
     const providerType = await this.providerRegistry.getProviderType(req.workspaceId!);
@@ -130,13 +126,11 @@ export class WhatsAppApiController {
     };
   }
   /** Bootstrap session. */
-  // PULSE_OK: internal route, called by worker process for WhatsApp session bootstrap
   @Post('session/bootstrap')
   async bootstrapSession(@Req() req: AuthenticatedRequest) {
     return this.ciaRuntime.bootstrap(req.workspaceId!);
   }
   /** Start backlog. */
-  // PULSE_OK: internal route, called by worker process for WhatsApp session backlog processing
   @Post('session/backlog/start')
   async startBacklog(
     @Req() req: AuthenticatedRequest,
@@ -160,7 +154,6 @@ export class WhatsAppApiController {
     return this.ciaRuntime.resumeConversationAutonomy(req.workspaceId!, conversationId);
   }
   /** Get operational intelligence. */
-  // PULSE_OK: internal route, called by worker process for CIA operational intelligence
   @Get('cia/intelligence')
   async getOperationalIntelligence(@Req() req: AuthenticatedRequest) {
     return this.ciaRuntime.getOperationalIntelligence(req.workspaceId!);
@@ -371,7 +364,6 @@ export class WhatsAppApiController {
     return this.whatsappApi.sendMessage(workspaceId, phone, message);
   }
   /** Check registration. */
-  // PULSE_OK: internal route, called by worker process for WhatsApp phone registration check
   @Get('check/:phone')
   async checkRegistration(@Req() req: AuthenticatedRequest, @Param('phone') phone: string) {
     const workspaceId = req.workspaceId!;
@@ -391,7 +383,6 @@ export class WhatsAppApiController {
     };
   }
   /** Get provider status. */
-  // PULSE_OK: internal route, called by worker process for WhatsApp provider status
   @Get('provider-status')
   async getProviderStatus(@Req() req: AuthenticatedRequest) {
     const workspaceId = req.workspaceId!;

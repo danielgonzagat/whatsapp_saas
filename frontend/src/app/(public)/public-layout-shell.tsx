@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { AuthProvider } from '@/components/kloel/auth/auth-provider';
 import type React from 'react';
@@ -9,12 +10,12 @@ export function PublicLayoutShell({ children }: { children: React.ReactNode }) {
     <AuthProvider>
       <div
         style={{
-          backgroundColor: '#0A0A0C',
+          backgroundColor: colors.background.void,
           margin: 0,
           padding: 0,
           minHeight: '100vh',
           fontFamily: "var(--font-sora), 'Sora', sans-serif",
-          color: '#E0DDD8',
+          color: colors.text.silver,
         }}
       >
         {children}

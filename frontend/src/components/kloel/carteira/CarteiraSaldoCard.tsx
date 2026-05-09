@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
@@ -411,7 +412,7 @@ export default function CarteiraSaldoCard({
               fontFamily: "'JetBrains Mono',monospace",
               fontSize: 22,
               fontWeight: 600,
-              color: '#F59E0B',
+              color: colors.semantic.warning,
             }}
           >
             {kloelT(`R$`)} {Fmt(bal.pending)}

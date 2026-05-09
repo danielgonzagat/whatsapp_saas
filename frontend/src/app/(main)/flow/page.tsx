@@ -22,10 +22,10 @@ import type { Edge, Node } from 'reactflow';
 
 const CATEGORY_COLORS: Record<string, string> = {
   Vendas: colors.ember.primary,
-  Suporte: '#3B82F6',
-  Captacao: '#10B981',
-  Onboarding: '#8B5CF6',
-  Qualificacao: '#F59E0B',
+  Suporte: colors.semantic.info,
+  Captacao: colors.semantic.success,
+  Onboarding: colors.semantic.purple,
+  Qualificacao: colors.semantic.warning,
 };
 
 const SOURCE_LABELS: Record<string, string> = {

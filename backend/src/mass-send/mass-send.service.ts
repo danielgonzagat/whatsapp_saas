@@ -11,6 +11,7 @@ export class MassSendService {
   private queue: Queue;
 
   constructor() {
+    this.logger.log('MassSendService initialized');
     this.queue = new Queue('mass-send', {
       connection: createRedisClient(),
     });

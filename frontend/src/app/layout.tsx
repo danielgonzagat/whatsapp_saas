@@ -61,7 +61,7 @@ export const metadata: Metadata = {
 
 /** Viewport. */
 export const viewport: Viewport = {
-  themeColor: '#FFFFFF',
+  themeColor: colors.text.silver,
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
@@ -76,7 +76,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         className={`${sora.variable} ${jetbrainsMono.variable} antialiased`}
         style={{
           fontFamily: "var(--font-sora), 'Sora', sans-serif",
-          background: '#FFFFFF',
+          background: colors.text.silver,
           color: colors.background.void,
         }}
       >

@@ -47,7 +47,7 @@ interface MediaPreviewBoxProps {
 const defaultTheme: Required<Theme> = {
   accentColor: colors.ember.primary,
   borderColor: colors.border.space,
-  frameBackground: 'rgba(255,255,255,0.04)', // PULSE_VISUAL_OK: translucent overlay
+  frameBackground: 'rgba(255,255,255,0.04)',
   labelColor: colors.text.muted,
   mutedColor: colors.text.dim,
   textColor: colors.text.silver,
@@ -187,7 +187,7 @@ export function MediaPreviewBox({
                   alignItems: 'center',
                   justifyContent: 'center',
                   cursor: 'pointer',
-                  color: '#fff',
+                  color: colors.text.silver,
                 }}
               >
                 <X className="h-4 w-4" aria-hidden="true" />

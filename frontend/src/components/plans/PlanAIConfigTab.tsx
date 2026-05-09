@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 import { kloelT } from '@/lib/i18n/t';
 import { KloelMushroomMark } from '@/components/kloel/KloelBrand';
 import { apiFetch } from '@/lib/api';
@@ -507,7 +508,7 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
           }}
         >
           {saving ? (
-            <KloelMushroomMark size={18} title="Salvando IA do plano" traceColor="#ffffff" />
+            <KloelMushroomMark size={18} title="Salvando IA do plano" traceColor={colors.text.silver} />
           ) : showSaved ? (
             <CheckCircle className="h-4 w-4" aria-hidden="true" />
           ) : (

@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 export const dynamic = 'force-dynamic';
@@ -349,7 +350,7 @@ export default function NewProductPage() {
                     width: 20,
                     height: 20,
                     border: '2px solid transparent',
-                    borderTopColor: '#E85D30',
+                    borderTopColor: colors.ember.primary,
                     borderRadius: '50%',
                     animation: 'spin 1s linear infinite',
                   }}

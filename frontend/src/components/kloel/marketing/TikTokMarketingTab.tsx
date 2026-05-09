@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { useCallback, useState } from 'react';
 import { kloelT } from '@/lib/i18n/t';
@@ -67,7 +68,7 @@ export default function TikTokMarketingTab({ channelData }: TikTokMarketingTabPr
 
   const btnStyle: React.CSSProperties = {
     fontFamily: SORA, fontSize: 14, padding: '12px 32px', borderRadius: 6, border: 'none',
-    color: '#fff', cursor: busyKind !== null ? 'wait' : 'pointer', fontWeight: 600, opacity: busyKind !== null ? 0.7 : 1,
+    color: colors.text.silver, cursor: busyKind !== null ? 'wait' : 'pointer', fontWeight: 600, opacity: busyKind !== null ? 0.7 : 1,
   };
   const secondaryBtnStyle: React.CSSProperties = {
     ...btnStyle, background: `${ch.color}10`, color: ch.color, border: `1px solid ${ch.color}40`,
@@ -98,8 +99,8 @@ export default function TikTokMarketingTab({ channelData }: TikTokMarketingTabPr
 
 function ConnectedBadge() {
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, fontFamily: MONO, color: '#10B981', background: 'rgba(16,185,129,0.1)', padding: '2px 8px', borderRadius: 99 }}>
-      <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10B981', animation: 'mktPulse 2s infinite' }} />
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, fontFamily: MONO, color: colors.semantic.success, background: 'rgba(16,185,129,0.1)', padding: '2px 8px', borderRadius: 99 }}>
+      <span style={{ width: 6, height: 6, borderRadius: '50%', background: colors.semantic.success, animation: 'mktPulse 2s infinite' }} />
       Conectado
     </span>
   );

@@ -6,7 +6,9 @@ import { PrismaService } from '../prisma/prisma.service';
 export class VideoService {
   private readonly logger = new Logger(VideoService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) {
+    this.logger.log('VideoService initialized');
+  }
 
   /** Create job. */
   async createJob(workspaceId: string, inputUrl: string, prompt: string) {

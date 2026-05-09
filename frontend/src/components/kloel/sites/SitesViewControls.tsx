@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import React from 'react';
 import { SORA, BORDER, BG_CARD, EMBER, TEXT } from './SitesViewIcons';
@@ -53,7 +54,7 @@ export function Toggle({ checked, onChange, label }: { checked: boolean; onChang
   return (
     <button type="button" onClick={() => onChange(!checked)} style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
       <div style={{ width: 36, height: 20, borderRadius: 10, background: checked ? EMBER : BORDER, transition: 'all .2s', position: 'relative', padding: 2 }}>
-        <div style={{ width: 16, height: 16, borderRadius: '50%', background: '#fff', transform: checked ? 'translateX(16px)' : 'translateX(0)', transition: 'transform .2s' }} />
+        <div style={{ width: 16, height: 16, borderRadius: '50%', background: colors.text.silver, transform: checked ? 'translateX(16px)' : 'translateX(0)', transition: 'transform .2s' }} />
       </div>
       {label && <span style={{ fontFamily: SORA, fontSize: 12, color: TEXT }}>{label}</span>}
     </button>

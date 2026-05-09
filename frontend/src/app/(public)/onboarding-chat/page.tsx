@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 // PULSE:OK — Onboarding chat uses one-shot POST calls (start, stream). No SWR reads to invalidate on this page.
@@ -443,7 +444,7 @@ function OnboardingChatContent() {
                 className="bg-gradient-to-r from-teal-500 to-emerald-500 text-white px-6 py-3 rounded-xl font-medium flex items-center gap-2 hover:opacity-90 transition disabled:opacity-50"
               >
                 {loading ? (
-                  <KloelMushroomVisual size={22} title="Enviando" traceColor="#ffffff" fit="icon" />
+                  <KloelMushroomVisual size={22} title="Enviando" traceColor={colors.text.silver} fit="icon" />
                 ) : (
                   <Send className="w-5 h-5" aria-hidden="true" />
                 )}

@@ -71,7 +71,7 @@ const backdropStyle: React.CSSProperties = {
 };
 
 const dialogPanelStyle: React.CSSProperties = {
-  background: '#141416',
+  background: colors.checkout.bg,
   border: '1px solid rgba(232,93,48,0.2)',
   borderRadius: 10,
   padding: 28,
@@ -88,7 +88,7 @@ const titleStyle: React.CSSProperties = {
 };
 
 const descriptionStyle: React.CSSProperties = {
-  color: '#888',
+  color: colors.text.muted,
   fontSize: 13,
   marginBottom: 24,
 };
@@ -107,7 +107,7 @@ const cancelBtnStyle: React.CSSProperties = {
 function confirmBtnStyle(deleting: boolean): React.CSSProperties {
   return {
     background: colors.ember.primary,
-    color: '#fff',
+    color: colors.text.silver,
     border: 'none',
     borderRadius: 6,
     padding: '8px 20px',

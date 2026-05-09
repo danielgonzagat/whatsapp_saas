@@ -43,7 +43,7 @@ export function TestimonialsSection({
                       justifyContent: 'center',
                       fontSize: 11,
                       fontWeight: 600,
-                      color: '#fff',
+                      color: colors.text.silver,
                     }}
                   >
                     {p.n
@@ -80,8 +80,8 @@ export function TestimonialsSection({
                     gap: 4,
                   }}
                 >
-                  <div style={{ width: 4, height: 4, borderRadius: 2, background: '#10B981' }} />
-                  <span style={{ fontSize: 10, fontWeight: 600, color: '#10B981', fontFamily: M }}>
+                  <div style={{ width: 4, height: 4, borderRadius: 2, background: colors.semantic.success }} />
+                  <span style={{ fontSize: 10, fontWeight: 600, color: colors.semantic.success, fontFamily: M }}>
                     {p.m}
                   </span>
                 </div>

@@ -4,7 +4,6 @@ import { AutopilotAnalyticsInsightsService } from './autopilot-analytics-insight
 import { AutopilotAnalyticsReportService } from './autopilot-analytics-report.service';
 
 /** Analytics for Autopilot: stats delegated to report/insights companion services. */
-// PULSE_OK: new Date() calls in getStats operate on Date.getTime() values or .toISOString() round-trips — metadata string (line ~102) has null-guard fallback
 @Injectable()
 export class AutopilotAnalyticsService {
   private readonly logger = new Logger(AutopilotAnalyticsService.name);
@@ -13,7 +12,9 @@ export class AutopilotAnalyticsService {
     private readonly prisma: PrismaService,
     private readonly report: AutopilotAnalyticsReportService,
     private readonly insights: AutopilotAnalyticsInsightsService,
-  ) {}
+  ) {
+    this.logger.log('AutopilotAnalyticsService initialized');
+  }
 
   private readRecord(value: unknown): Record<string, unknown> {
     return typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : {};

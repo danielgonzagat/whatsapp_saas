@@ -74,7 +74,7 @@ export class KloelWorkspaceContextService {
       }
 
       const affiliateCatalogProducts = affiliateProductIds.size
-        ? // PULSE_OK: bounded by in-clause from affiliate product IDs set
+        ?
           await this.prisma.product.findMany({
             where: { id: { in: Array.from(affiliateProductIds) } },
             // Cross-workspace affiliate catalog lookup by product IDs. The

@@ -29,7 +29,7 @@ export class ComplianceService {
   ) {}
 
   /** Get deletion status.
-   * PULSE_OK — DataDeletionRequest is a system-level compliance model
+   * DataDeletionRequest is a system-level compliance model
    * looked up by globally-unique confirmationCode, not workspace-scoped.
    */
   async getDeletionStatus(code: string) {
@@ -51,7 +51,7 @@ export class ComplianceService {
   }
 
   /** Handle facebook data deletion.
-   * PULSE_OK — Facebook data deletion webhook mandated by Meta Platform
+   * Facebook data deletion webhook mandated by Meta Platform
    * policies. Operates on provider-level identifiers across all workspaces.
    * DataDeletionRequest is a cross-system compliance model.
    */
@@ -112,7 +112,6 @@ export class ComplianceService {
     return { ok: true };
   }
 
-  // PULSE_OK: utility validator — no data mutation, used by system-level compliance webhooks
   private parseFacebookSignedRequest(signedRequest: string) {
     try {
       return validateSignedRequest(signedRequest, process.env.META_APP_SECRET || '');
@@ -185,7 +184,6 @@ export class ComplianceService {
           deletedAt: true,
         },
       }),
-      // PULSE_OK: bounded by single agent's social accounts
       this.prisma.socialAccount.findMany({
         where: { agentId },
         orderBy: { createdAt: 'asc' },

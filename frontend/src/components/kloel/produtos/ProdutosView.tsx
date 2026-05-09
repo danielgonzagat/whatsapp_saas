@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { IconActionButton } from '@/components/kloel/products/product-nerve-center.shared';
@@ -29,7 +30,7 @@ const BG_CARD = KLOEL_THEME.bgCard;
 const BG_ELEVATED = KLOEL_THEME.bgSecondary;
 const BORDER = KLOEL_THEME.borderPrimary;
 const EMBER = KLOEL_THEME.accent;
-const PURPLE = '#8B5CF6';
+const PURPLE = colors.semantic.purple;
 const GREEN = EMBER;
 
 // ── Icons (IC) ──
@@ -533,7 +534,7 @@ const btnPrimary = (color: string): React.CSSProperties => ({
   background: color,
   border: 'none',
   borderRadius: 6,
-  color: '#fff',
+  color: colors.text.silver,
   fontFamily: SORA,
   fontSize: 12,
   fontWeight: 600,
@@ -675,7 +676,7 @@ function MeusProdutos({
                 background: EMBER,
                 border: 'none',
                 borderRadius: 10,
-                color: '#fff',
+                color: colors.text.silver,
                 fontFamily: SORA,
                 fontSize: 13,
                 fontWeight: 600,
@@ -684,7 +685,7 @@ function MeusProdutos({
                 boxShadow: '0 18px 32px rgba(232,93,48,0.18)',
               }}
             >
-              <span style={{ color: '#fff' }}>{IC.plus(16)}</span> {kloelT(`Novo produto`)}
+              <span style={{ color: colors.text.silver }}>{IC.plus(16)}</span> {kloelT(`Novo produto`)}
             </button>
           )}
           <div>
@@ -748,7 +749,7 @@ function MeusProdutos({
                 background: EMBER,
                 border: 'none',
                 borderRadius: 12,
-                color: '#fff',
+                color: colors.text.silver,
                 fontFamily: SORA,
                 fontSize: 13,
                 fontWeight: 700,
@@ -756,7 +757,7 @@ function MeusProdutos({
                 boxShadow: '0 18px 32px rgba(232,93,48,0.16)',
               }}
             >
-              <span style={{ color: '#fff' }}>{IC.plus(16)}</span> {kloelT(`Novo produto`)}
+              <span style={{ color: colors.text.silver }}>{IC.plus(16)}</span> {kloelT(`Novo produto`)}
             </button>
           )}
         </div>
@@ -824,14 +825,14 @@ function MeusProdutos({
                 background: EMBER,
                 border: 'none',
                 borderRadius: 6,
-                color: '#fff',
+                color: colors.text.silver,
                 fontFamily: SORA,
                 fontSize: 13,
                 fontWeight: 600,
                 cursor: 'pointer',
               }}
             >
-              <span style={{ color: '#fff' }}>{IC.plus(16)}</span>
+              <span style={{ color: colors.text.silver }}>{IC.plus(16)}</span>
               {requestedFeature ? 'Criar produto e continuar' : 'Criar produto'}
             </button>
           </div>
@@ -2126,7 +2127,7 @@ function AreaMembros({
             }}
             disabled={saving}
           >
-            <span style={{ color: '#fff' }}>{IC.plus(14)}</span> {kloelT(`Criar area`)}
+            <span style={{ color: colors.text.silver }}>{IC.plus(14)}</span> {kloelT(`Criar area`)}
           </button>
         </div>
 
@@ -2904,7 +2905,7 @@ function AreaMembros({
                     <button
                       type="button"
                       onClick={() => handleDeleteArea(a.id)}
-                      style={{ ...iconBtn, color: '#EF4444' }}
+                      style={{ ...iconBtn, color: colors.semantic.error }}
                       title={kloelT(`Excluir area`)}
                     >
                       {IC.trash(16)}
@@ -3236,7 +3237,7 @@ function AreaMembros({
                                 <button
                                   type="button"
                                   onClick={() => handleDeleteModule(a.id, mod.id)}
-                                  style={{ ...iconBtn, color: '#EF4444' }}
+                                  style={{ ...iconBtn, color: colors.semantic.error }}
                                   title={kloelT(`Excluir modulo`)}
                                 >
                                   {IC.trash(14)}
@@ -3416,7 +3417,7 @@ function AreaMembros({
                                     <button
                                       type="button"
                                       onClick={() => handleDeleteLesson(a.id, lesson.id)}
-                                      style={{ ...iconBtn, color: '#EF4444' }}
+                                      style={{ ...iconBtn, color: colors.semantic.error }}
                                       title={kloelT(`Excluir aula`)}
                                     >
                                       {IC.trash(14)}
@@ -4061,13 +4062,13 @@ function AreaMembros({
                               width: 6,
                               height: 6,
                               borderRadius: '50%',
-                              background: s.status === 'active' ? '#10B981' : '#EF4444',
+                              background: s.status === 'active' ? colors.semantic.success : colors.semantic.error,
                             }}
                           />
                           <span
                             style={{
                               fontSize: 10,
-                              color: s.status === 'active' ? '#10B981' : '#EF4444',
+                              color: s.status === 'active' ? colors.semantic.success : colors.semantic.error,
                               fontFamily: SORA,
                             }}
                           >
@@ -4091,7 +4092,7 @@ function AreaMembros({
                           disabled={saving}
                           style={{
                             ...iconBtn,
-                            color: s.status === 'active' ? '#F59E0B' : '#10B981',
+                            color: s.status === 'active' ? colors.semantic.warning : colors.semantic.success,
                           }}
                           title={s.status === 'active' ? 'Suspender aluno' : 'Reativar aluno'}
                         >
@@ -4102,7 +4103,7 @@ function AreaMembros({
                           aria-label="Remover aluno"
                           onClick={() => handleRemoveStudent(s.id)}
                           disabled={saving}
-                          style={{ ...iconBtn, color: '#EF4444' }}
+                          style={{ ...iconBtn, color: colors.semantic.error }}
                           title={kloelT(`Remover aluno`)}
                         >
                           <svg
@@ -4614,7 +4615,7 @@ function AfiliarSe({
                 style={{
                   padding: '10px 16px',
                   background: GREEN,
-                  color: '#fff',
+                  color: colors.text.silver,
                   border: 'none',
                   borderRadius: 6,
                   fontFamily: SORA,
@@ -4687,7 +4688,7 @@ function AfiliarSe({
               style={{
                 padding: '14px 40px',
                 background: GREEN,
-                color: '#fff',
+                color: colors.text.silver,
                 border: 'none',
                 borderRadius: 6,
                 fontFamily: SORA,
@@ -4707,7 +4708,7 @@ function AfiliarSe({
               style={{
                 padding: '14px 40px',
                 background: item.requestStatus === 'PENDING' ? BG_ELEVATED : GREEN,
-                color: '#fff',
+                color: colors.text.silver,
                 border: 'none',
                 borderRadius: 6,
                 fontFamily: SORA,

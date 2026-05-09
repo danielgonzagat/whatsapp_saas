@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { useEffect, useState } from 'react';
 import { kloelT } from '@/lib/i18n/t';
@@ -60,8 +61,8 @@ export default function AffiliateDetailSheet({
 
         <div style={{ display: 'flex', gap: 8 }}>
           <button type="button" onClick={onChat}
-            style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '10px 16px', background: C.ember, border: 'none', borderRadius: 6, color: '#fff', fontFamily: FONT.sans, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-            <span style={{ color: '#fff' }}>{IC.chat(14)}</span>
+            style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '10px 16px', background: C.ember, border: 'none', borderRadius: 6, color: colors.text.silver, fontFamily: FONT.sans, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+            <span style={{ color: colors.text.silver }}>{IC.chat(14)}</span>
             {kloelT(`Abrir chat`)}
           </button>
           <button type="button" onClick={handleCopyLink}
@@ -70,8 +71,8 @@ export default function AffiliateDetailSheet({
             {kloelT(`Copiar link`)}
           </button>
           <button type="button" onClick={onRevoke}
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '10px 16px', background: 'none', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 6, color: '#EF4444', fontFamily: FONT.sans, fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
-            <span style={{ color: '#EF4444' }}>{IC.ban(14)}</span>
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '10px 16px', background: 'none', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 6, color: colors.semantic.error, fontFamily: FONT.sans, fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
+            <span style={{ color: colors.semantic.error }}>{IC.ban(14)}</span>
             {kloelT(`Revogar`)}
           </button>
         </div>

@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { IC } from './ParceriasView.icons';
@@ -25,8 +26,8 @@ export default function ColaboratorSearchToolbar({
         />
       </div>
       <button type="button" onClick={onInvite}
-        style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 18px', background: C.ember, border: 'none', borderRadius: 6, color: '#fff', fontFamily: FONT.sans, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-        <span style={{ color: '#fff' }}>{IC.plus(14)}</span>
+        style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 18px', background: C.ember, border: 'none', borderRadius: 6, color: colors.text.silver, fontFamily: FONT.sans, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+        <span style={{ color: colors.text.silver }}>{IC.plus(14)}</span>
         {kloelT(`Convidar`)}
       </button>
     </div>

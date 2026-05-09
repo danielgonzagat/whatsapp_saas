@@ -1,3 +1,4 @@
+import { colors } from '@/lib/design-tokens';
 import { kloelT } from '@/lib/i18n/t';
 import { IC } from './carteira.icons';
 import type { TransactionItem } from './carteira.types';
@@ -12,17 +13,17 @@ export const TYPE_CONFIG: Record<
   { label: string; color: string; icon: (s: number) => React.ReactElement; sign: string }
 > = {
   sale: { label: 'Venda', color: 'colors.ember.primary', icon: IC.arrowDown, sign: '+' },
-  commission: { label: 'Comissão', color: '#10B981', icon: IC.arrowDown, sign: '+' },
+  commission: { label: 'Comissão', color: colors.semantic.success, icon: IC.arrowDown, sign: '+' },
   withdrawal: { label: 'Saque', color: 'var(--app-text-secondary)', icon: IC.arrowUp, sign: '' },
-  refund: { label: 'Reembolso', color: '#EF4444', icon: IC.arrowUp, sign: '' },
-  anticipation: { label: 'Antecipação', color: '#3B82F6', icon: IC.spark, sign: '+' },
+  refund: { label: 'Reembolso', color: colors.semantic.error, icon: IC.arrowUp, sign: '' },
+  anticipation: { label: 'Antecipação', color: colors.semantic.info, icon: IC.spark, sign: '+' },
 };
 
 export const STATUS_COLOR: Record<string, string> = {
   completed: 'colors.ember.primary',
-  pending: '#F59E0B',
-  processing: '#3B82F6',
-  failed: '#EF4444',
+  pending: colors.semantic.warning,
+  processing: colors.semantic.info,
+  failed: colors.semantic.error,
 };
 
 export const STATUS_LABEL: Record<string, string> = {

@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { useState, useId } from 'react';
@@ -15,9 +16,9 @@ function Fmt(v: number) {
 
 const STATUS_COLOR: Record<string, string> = {
   completed: 'colors.ember.primary',
-  pending: '#F59E0B',
-  processing: '#3B82F6',
-  failed: '#EF4444',
+  pending: colors.semantic.warning,
+  processing: colors.semantic.info,
+  failed: colors.semantic.error,
 };
 
 const STATUS_LABEL: Record<string, string> = {
@@ -204,7 +205,7 @@ function AddBankAccountForm({
             borderRadius: 6,
           }}
         >
-          <span style={{ fontSize: 11, color: '#EF4444' }}>{addError}</span>
+          <span style={{ fontSize: 11, color: colors.semantic.error }}>{addError}</span>
         </div>
       )}
       <button

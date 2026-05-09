@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
@@ -266,7 +267,7 @@ export default function CarteiraExtratoTable({
 
 const STATUS_COLOR: Record<string, string> = {
   completed: 'colors.ember.primary',
-  pending: '#F59E0B',
-  processing: '#3B82F6',
-  failed: '#EF4444',
+  pending: colors.semantic.warning,
+  processing: colors.semantic.info,
+  failed: colors.semantic.error,
 };

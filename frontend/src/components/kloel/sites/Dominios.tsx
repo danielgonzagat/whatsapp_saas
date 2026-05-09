@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
@@ -61,8 +62,8 @@ export function Dominios() {
                   {d.primary && <Badge color="#10B981">{kloelT(`Principal`)}</Badge>}
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 8 }}>
-                  <Badge color={d.dns === 'Configurado' ? '#10B981' : '#F59E0B'}>{d.dns}</Badge>
-                  <Badge color={d.status === 'ativo' ? '#10B981' : '#F59E0B'}>{d.status}</Badge>
+                  <Badge color={d.dns === 'Configurado' ? colors.semantic.success : colors.semantic.warning}>{d.dns}</Badge>
+                  <Badge color={d.status === 'ativo' ? colors.semantic.success : colors.semantic.warning}>{d.status}</Badge>
                   <span style={{ fontFamily: MONO, fontSize: 11, color: TEXT_DIM }}>{kloelT(`SSL:`)} {d.ssl ? 'Ativo' : 'Pendente'}</span>
                   <span style={{ fontFamily: MONO, fontSize: 11, color: TEXT_DIM }}>{d.expires}</span>
                 </div>
@@ -81,13 +82,13 @@ export function Dominios() {
                 </div>
                 <div>
                   {d.ssl ? (
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#10B981' }}>{IC.lock(12)} <span style={{ fontFamily: MONO, fontSize: 11 }}>{kloelT(`Ativo`)}</span></span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: colors.semantic.success }}>{IC.lock(12)} <span style={{ fontFamily: MONO, fontSize: 11 }}>{kloelT(`Ativo`)}</span></span>
                   ) : (
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#F59E0B' }}>{IC.alert(12)} <span style={{ fontFamily: MONO, fontSize: 11 }}>{kloelT(`Pendente`)}</span></span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: colors.semantic.warning }}>{IC.alert(12)} <span style={{ fontFamily: MONO, fontSize: 11 }}>{kloelT(`Pendente`)}</span></span>
                   )}
                 </div>
-                <div><Badge color={d.dns === 'Configurado' ? '#10B981' : '#F59E0B'}>{d.dns}</Badge></div>
-                <div><Badge color={d.status === 'ativo' ? '#10B981' : '#F59E0B'}>{d.status}</Badge></div>
+                <div><Badge color={d.dns === 'Configurado' ? colors.semantic.success : colors.semantic.warning}>{d.dns}</Badge></div>
+                <div><Badge color={d.status === 'ativo' ? colors.semantic.success : colors.semantic.warning}>{d.status}</Badge></div>
                 <div style={{ fontFamily: MONO, fontSize: 11, color: TEXT_DIM }}>{d.expires}</div>
                 <div style={{ display: 'flex', gap: 4 }}>
                   <button type="button" style={{ background: 'none', border: 'none', cursor: 'pointer', color: TEXT_DIM, padding: 4 }}>{IC.edit(14)}</button>

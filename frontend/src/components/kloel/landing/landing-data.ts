@@ -138,14 +138,14 @@ export const DEFAULT_LANDING_CONTENT: LandingContent = {
       r: 'Mentor',
       t: 'Economizei R$1.400/mes. As vendas subiram porque a IA nunca esquece o follow-up.',
       m: 'R$1.400/mes economizados',
-      c: '#7F66FF',
+      c: colors.semantic.purple,
     },
     {
       n: 'Fernanda L.',
       r: 'E-commerce',
       t: 'Monitorei 3 dias. No terceiro entendi: a IA responde melhor do que eu. Mais rapido, mais consistente.',
       m: 'Conversao +40%',
-      c: '#00A884',
+      c: colors.semantic.success,
     },
   ],
 

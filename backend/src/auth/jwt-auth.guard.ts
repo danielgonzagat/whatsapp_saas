@@ -9,7 +9,7 @@ import {
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import { Reflector } from '@nestjs/core';
 import type { Redis } from 'ioredis';
-import { verify } from 'jsonwebtoken'; // PULSE_OK: reasonable expiry (30m)
+import { verify } from 'jsonwebtoken';
 import { getJwtSecret } from './jwt-config';
 import {
   describeJwtVerifyError,

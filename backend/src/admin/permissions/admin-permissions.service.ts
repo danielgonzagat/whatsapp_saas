@@ -8,7 +8,9 @@ import { flattenDefaults } from './admin-permissions.defaults';
 export class AdminPermissionsService {
   private readonly logger = new Logger(AdminPermissionsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) {
+    this.logger.log('AdminPermissionsService initialized');
+  }
 
   /**
    * Returns `true` if the given admin can perform `(module, action)`.

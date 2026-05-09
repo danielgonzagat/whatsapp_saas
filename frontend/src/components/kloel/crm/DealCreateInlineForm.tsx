@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { type FormEvent, useState } from 'react';
@@ -86,8 +87,8 @@ export function DealCreateInlineForm({
           disabled={submitting}
           style={{
             ...btnStyle,
-            background: '#E85D30',
-            color: '#fff',
+            background: colors.ember.primary,
+            color: colors.text.silver,
             flex: 1,
             opacity: submitting ? 0.6 : 1,
           }}

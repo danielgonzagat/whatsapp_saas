@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { KloelMushroomMark } from '@/components/kloel/KloelBrand';
@@ -236,7 +237,7 @@ export function UniversalComposer({
               className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all"
               style={{
                 backgroundColor: colors.state.error,
-                color: '#fff', // PULSE_VISUAL_OK: white text on error button
+                color: colors.text.silver,
               }}
             >
               <Square className="w-4 h-4" aria-hidden="true" />

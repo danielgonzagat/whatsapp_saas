@@ -560,7 +560,7 @@ export function ProductPlansTab({ productId }: { productId: string }) {
                 }}
               >
                 {creating ? (
-                  <KloelMushroomMark size={18} title="Criando plano" traceColor="#ffffff" />
+                  <KloelMushroomMark size={18} title="Criando plano" traceColor={colors.text.silver} />
                 ) : null}
 
                 {kloelT(`Adicionar plano`)}

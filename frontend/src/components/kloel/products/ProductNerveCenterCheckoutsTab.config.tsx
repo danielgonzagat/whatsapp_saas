@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { useToast } from '@/components/kloel/ToastProvider';
@@ -305,7 +306,7 @@ export function CheckoutConfigPanel({
                 type="color"
                 value={String(
                   ckLocal.backgroundColor ||
-                    (ckLocal.theme === 'NOIR' ? 'colors.background.void' : '#ffffff'),
+                    (ckLocal.theme === 'NOIR' ? 'colors.background.void' : colors.text.silver),
                 )}
                 onChange={(e) => patch('backgroundColor', e.target.value)}
                 style={{
@@ -322,7 +323,7 @@ export function CheckoutConfigPanel({
                 type="text"
                 value={String(
                   ckLocal.backgroundColor ||
-                    (ckLocal.theme === 'NOIR' ? 'colors.background.void' : '#ffffff'),
+                    (ckLocal.theme === 'NOIR' ? 'colors.background.void' : colors.text.silver),
                 )}
                 onChange={(e) => patch('backgroundColor', e.target.value)}
                 style={{
@@ -335,7 +336,7 @@ export function CheckoutConfigPanel({
                   fontSize: 13,
                   fontFamily: 'JetBrains Mono, monospace',
                 }}
-                placeholder={ckLocal.theme === 'NOIR' ? 'colors.background.void' : '#ffffff'}
+                placeholder={ckLocal.theme === 'NOIR' ? 'colors.background.void' : colors.text.silver}
               />
             </div>
           </div>

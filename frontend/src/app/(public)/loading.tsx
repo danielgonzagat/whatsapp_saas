@@ -5,7 +5,7 @@ export default function PublicLoading() {
       aria-hidden="true"
       style={{
         minHeight: '100vh',
-        background: '#0A0A0C',
+        background: colors.background.void,
       }}
     />
   );

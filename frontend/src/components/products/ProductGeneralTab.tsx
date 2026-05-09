@@ -409,7 +409,7 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
           }}
         >
           {saving ? (
-            <KloelMushroomMark size={18} title="Salvando produto" traceColor="#ffffff" />
+            <KloelMushroomMark size={18} title="Salvando produto" traceColor={colors.text.silver} />
           ) : (
             <Save className="h-4 w-4" aria-hidden="true" />
           )}

@@ -21,7 +21,6 @@ export class StripeChargeService {
   constructor(private readonly stripeService: StripeService) {}
 
   /** Create sale charge. */
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async createSaleCharge(input: CreateSaleChargeInput): Promise<CreateSaleChargeResult> {
     const splitInput: SplitInput = {
       buyerPaidCents: input.buyerPaidCents,

@@ -4,6 +4,7 @@ import { kloelT } from '@/lib/i18n/t';
 import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
 import { useProfileMutations } from '@/hooks/useKyc';
+import { useToast } from '@/components/kloel/ToastProvider';
 import { usePersistentImagePreview } from '@/hooks/usePersistentImagePreview';
 import Icons from './ContaIcons';
 import { SORA, MONO, EMBER, HTTPS_RE } from './ContaConstants';
@@ -19,6 +20,7 @@ export default function PerfilPublicoSection({
   mutate: () => void;
 }) {
   const { updateProfile } = useProfileMutations();
+  const { showToast } = useToast();
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -68,6 +70,7 @@ export default function PerfilPublicoSection({
           instagram: form.instagram,
         }),
       );
+      showToast('Perfil público salvo', 'success');
       setSaveStatus('success');
       if (saveTimer.current) {
         clearTimeout(saveTimer.current);
@@ -76,6 +79,7 @@ export default function PerfilPublicoSection({
       mutate();
     } catch (err) {
       setError(getErrorMessage(err) || 'Erro ao salvar. Tente novamente.');
+      showToast(getErrorMessage(err) || 'Erro ao salvar perfil público', 'error');
       setSaveStatus('error');
       if (saveTimer.current) {
         clearTimeout(saveTimer.current);

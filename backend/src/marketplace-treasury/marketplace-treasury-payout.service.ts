@@ -66,7 +66,12 @@ export class MarketplaceTreasuryPayoutService {
     });
 
     try {
-      this.logger.log('Payment operation', { context: 'MarketplaceTreasuryPayoutService.createPayout', action: 'stripePayoutCreate', currency, amountCents: Number(input.amountCents) });
+      this.logger.log('Payment operation', {
+        context: 'MarketplaceTreasuryPayoutService.createPayout',
+        action: 'stripePayoutCreate',
+        currency,
+        amountCents: Number(input.amountCents),
+      });
       const payout = await this.stripeService.stripe.payouts.create(
         {
           amount: Number(input.amountCents),
@@ -89,7 +94,15 @@ export class MarketplaceTreasuryPayoutService {
         currency,
       };
     } catch (error: unknown) {
-      this.logger.error('Stripe payout creation failed', error instanceof Error ? error.message : String(error), { context: 'MarketplaceTreasuryPayoutService.createPayout', currency, amountCents: Number(input.amountCents) });
+      this.logger.error(
+        'Stripe payout creation failed',
+        error instanceof Error ? error.message : String(error),
+        {
+          context: 'MarketplaceTreasuryPayoutService.createPayout',
+          currency,
+          amountCents: Number(input.amountCents),
+        },
+      );
       await this.wallet.creditAvailableByAdjustment({
         currency,
         amountInCents: input.amountCents,
@@ -113,7 +126,13 @@ export class MarketplaceTreasuryPayoutService {
   async handleFailedPayout(input: HandleFailedMarketplaceTreasuryPayoutInput): Promise<void> {
     const currency = (input.currency ?? 'BRL').toUpperCase();
 
-    this.logger.log('Payment operation', { context: 'MarketplaceTreasuryPayoutService.handleFailedPayout', action: 'payoutFailed', payoutId: input.payoutId, currency, amountCents: Number(input.amountCents) });
+    this.logger.log('Payment operation', {
+      context: 'MarketplaceTreasuryPayoutService.handleFailedPayout',
+      action: 'payoutFailed',
+      payoutId: input.payoutId,
+      currency,
+      amountCents: Number(input.amountCents),
+    });
     await this.wallet.creditAvailableByAdjustment({
       currency,
       amountInCents: input.amountCents,

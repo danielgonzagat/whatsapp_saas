@@ -18,7 +18,9 @@ export interface PaginatedMessages {
 export class ChatService {
   private readonly logger = new Logger(ChatService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) {
+    this.logger.log('ChatService initialized');
+  }
 
   async getMessages(
     workspaceId: string,

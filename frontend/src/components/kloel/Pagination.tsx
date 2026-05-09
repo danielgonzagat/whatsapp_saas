@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -58,7 +59,7 @@ export function Pagination({
             borderRadius: 6,
             border: '1px solid var(--app-border-primary)',
             background: 'var(--app-bg-card)',
-            color: page <= 1 ? '#3A3A3F' : '#6E6E73',
+            color: page <= 1 ? colors.text.dim : colors.text.muted,
             cursor: page <= 1 ? 'default' : 'pointer',
             display: 'flex',
             alignItems: 'center',
@@ -93,8 +94,8 @@ export function Pagination({
                 height: 32,
                 borderRadius: 6,
                 border: isActive ? '1px solid #E85D30' : '1px solid #222226',
-                background: isActive ? 'rgba(232, 93, 48, 0.06)' : '#111113',
-                color: isActive ? '#E85D30' : '#6E6E73',
+                background: isActive ? 'rgba(232, 93, 48, 0.06)' : colors.background.surface,
+                color: isActive ? colors.ember.primary : colors.text.muted,
                 fontSize: 12,
                 fontWeight: isActive ? 600 : 400,
                 fontFamily: "'Sora', sans-serif",
@@ -117,7 +118,7 @@ export function Pagination({
             borderRadius: 6,
             border: '1px solid var(--app-border-primary)',
             background: 'var(--app-bg-card)',
-            color: page >= totalPages ? '#3A3A3F' : '#6E6E73',
+            color: page >= totalPages ? colors.text.dim : colors.text.muted,
             cursor: page >= totalPages ? 'default' : 'pointer',
             display: 'flex',
             alignItems: 'center',

@@ -19,13 +19,13 @@ import { useId, useMemo, useState } from 'react';
 
 const STATUS_COLORS: Record<string, string> = {
   RUNNING:
-    '#3B82F6' /* PULSE_VISUAL_OK: info blue, non-Monitor status indicator */ /* PULSE_VISUAL_OK: info blue, non-Monitor status indicator */,
+    colors.semantic.info,
   COMPLETED:
-    '#10B981' /* PULSE_VISUAL_OK: success emerald, non-Monitor status indicator */ /* PULSE_VISUAL_OK: success emerald, non-Monitor status indicator */,
+    colors.semantic.success,
   FAILED:
-    '#EF4444' /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */ /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */,
+    colors.semantic.error,
   PENDING:
-    '#F59E0B' /* PULSE_VISUAL_OK: warning amber, non-Monitor status indicator */ /* PULSE_VISUAL_OK: warning amber, non-Monitor status indicator */,
+    colors.semantic.warning,
 };
 
 const TYPE_LABELS: Record<string, string> = {
@@ -54,7 +54,7 @@ function JobRow({
         alignItems: 'center',
         gap: 16,
         padding: '14px 16px',
-        borderBottom: '1px solid colors.border.space',
+        borderBottom: '1px solid var(--border-space)',
       }}
     >
       <div
@@ -111,7 +111,7 @@ function JobRow({
             borderRadius: 6,
             color: importing
               ? colors.text.muted
-              : '#fff' /* PULSE_VISUAL_OK: universal white shorthand */ /* PULSE_VISUAL_OK: universal white shorthand */,
+              : colors.text.silver,
             fontSize: 12,
             fontFamily: SORA,
             fontWeight: 600,
@@ -341,7 +341,7 @@ function NewJobModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
               border: '1px solid rgba(239,68,68,0.3)',
               borderRadius: 6,
               color:
-                '#EF4444' /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */ /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */,
+                colors.semantic.error,
               fontFamily: SORA,
               fontSize: 13,
             }}
@@ -378,7 +378,7 @@ function NewJobModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
               border: 'none',
               borderRadius: 6,
               color:
-                '#fff' /* PULSE_VISUAL_OK: universal white shorthand */ /* PULSE_VISUAL_OK: universal white shorthand */,
+                colors.text.silver,
               fontFamily: SORA,
               fontSize: 13,
               fontWeight: 600,
@@ -577,7 +577,7 @@ export default function ScrapersPage() {
             border: 'none',
             borderRadius: 6,
             color:
-              '#fff' /* PULSE_VISUAL_OK: universal white shorthand */ /* PULSE_VISUAL_OK: universal white shorthand */,
+              colors.text.silver,
             fontFamily: SORA,
             fontSize: 13,
             fontWeight: 600,
@@ -596,7 +596,7 @@ export default function ScrapersPage() {
             border: '1px solid rgba(16,185,129,0.3)',
             borderRadius: 6,
             color:
-              '#10B981' /* PULSE_VISUAL_OK: success emerald, non-Monitor status indicator */ /* PULSE_VISUAL_OK: success emerald, non-Monitor status indicator */,
+              colors.semantic.success,
             fontFamily: SORA,
             fontSize: 13,
           }}
@@ -622,7 +622,7 @@ export default function ScrapersPage() {
                   border: '1px solid rgba(16,185,129,0.24)',
                   borderRadius: 6,
                   color:
-                    '#10B981' /* PULSE_VISUAL_OK: success emerald, non-Monitor status indicator */ /* PULSE_VISUAL_OK: success emerald, non-Monitor status indicator */,
+                    colors.semantic.success,
                   fontFamily: SORA,
                   fontSize: 12,
                   fontWeight: 600,
@@ -689,7 +689,7 @@ export default function ScrapersPage() {
               padding: 32,
               textAlign: 'center',
               color:
-                '#EF4444' /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */ /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */,
+                colors.semantic.error,
               fontFamily: SORA,
             }}
           >

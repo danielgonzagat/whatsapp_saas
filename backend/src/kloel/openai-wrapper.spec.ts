@@ -16,7 +16,6 @@ const LEGACY_FALLBACK_MODEL = ['gpt', '-4.1'].join('');
 // Mock do OpenAI
 jest.mock('openai');
 
-// PULSE_OK: assertions exist below
 describe('OpenAI Wrapper', () => {
   type RetryableTestError = Error & { status: number };
 

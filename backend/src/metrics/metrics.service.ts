@@ -13,6 +13,7 @@ export class MetricsService implements OnModuleDestroy {
   private billingGauge: Gauge<string>;
 
   constructor() {
+    this.logger.log('MetricsService initialized');
     this.registry = new Registry();
     const enableDefaultMetrics = process.env.NODE_ENV !== 'test' && !process.env.JEST_WORKER_ID;
     if (enableDefaultMetrics) {

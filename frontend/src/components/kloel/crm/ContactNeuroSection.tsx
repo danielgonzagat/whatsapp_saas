@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { neuroCrmApi } from '@/lib/api/crm';
@@ -20,7 +21,7 @@ const C = {
   bg: 'var(--bg-void, #0A0A0C)',
   elevated: 'var(--bg-elevated, #19191C)',
   border: 'var(--border-space, #222226)',
-  accent: '#E85D30',
+  accent: colors.ember.primary,
   text: 'var(--text-silver, #E0DDD8)',
   muted: 'var(--text-muted, #6E6E73)',
   sora: "var(--font-sora), 'Sora', sans-serif",
@@ -67,7 +68,7 @@ export function ContactNeuroSection({ contactId, onMutate }: ContactNeuroSection
           fontSize: 12,
           fontWeight: 600,
           cursor: neuroLoading || !contactId ? 'not-allowed' : 'pointer',
-          color: '#fff',
+          color: colors.text.silver,
           opacity: neuroLoading || !contactId ? 0.6 : 1,
           fontFamily: C.sora,
           marginBottom: 10,

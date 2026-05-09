@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 import { kloelT } from '@/lib/i18n/t';
 import { apiFetch } from '@/lib/api';
 import { colors, typography } from '@/lib/design-tokens';
@@ -62,7 +63,7 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
 
   // Chat Widget fields
   const [widgetPosition, setWidgetPosition] = useState('bottom-right');
-  const [widgetColor, setWidgetColor] = useState('#E85D30');
+  const [widgetColor, setWidgetColor] = useState(colors.ember.primary);
   const [widgetMessage, setWidgetMessage] = useState('Olá! Como posso ajudar?');
   const [widgetTrigger, setWidgetTrigger] = useState('5000');
   const [codeCopied, setCodeCopied] = useState(false);

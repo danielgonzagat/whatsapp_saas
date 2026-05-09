@@ -41,6 +41,7 @@ export class CiaChatFilterService {
 
   /** Resolve the best activity timestamp from a list of raw timestamp candidates. */
   resolveChatTimestamp(candidates: unknown[]): number {
+    this.logger.log('CiaChatFilterService initialized');
     for (const candidate of candidates) {
       if (typeof candidate === 'number' && Number.isFinite(candidate)) {
         return candidate > 1e12 ? candidate : candidate * 1000;

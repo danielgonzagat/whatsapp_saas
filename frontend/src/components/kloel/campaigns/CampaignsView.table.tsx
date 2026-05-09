@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
@@ -166,7 +167,7 @@ export function CampaignsTable({ campaigns, busyId, onLaunch, onPause }: Campaig
                   disabled={!!busyId}
                   style={{
                     background: ACCENT,
-                    color: '#0A0A0C',
+                    color: colors.background.void,
                     border: 'none',
                     borderRadius: 6,
                     padding: '4px 10px',

@@ -62,7 +62,6 @@ export class UnifiedAgentActionsWorkspaceService {
 
   // ───────── product actions ─────────
 
-  // PULSE_OK: workspaceId validated by caller guard
   async actionCreateProduct(workspaceId: string, args: ToolArgs) {
     const existingDb = await this.prisma.product.findFirst({
       where: { workspaceId, name: args.name, active: true },
@@ -170,7 +169,6 @@ export class UnifiedAgentActionsWorkspaceService {
     return { success: true, message: 'Produto atualizado com sucesso' };
   }
 
-  // PULSE_OK: workspaceId validated by caller guard
   async actionCreateFlow(workspaceId: string, args: ToolArgs) {
     const flowKey = `flow_${Date.now()}_${args.name.toLowerCase().replace(WHITESPACE_G_RE, '_')}`;
     await this.prisma.kloelMemory.create({
@@ -196,7 +194,6 @@ export class UnifiedAgentActionsWorkspaceService {
     };
   }
 
-  // PULSE_OK: workspaceId validated by caller guard
   async actionUpdateWorkspaceSettings(workspaceId: string, args: ToolArgs) {
     const updates: UnknownRecord = {};
     if (args.businessName) updates.name = args.businessName;
@@ -228,7 +225,6 @@ export class UnifiedAgentActionsWorkspaceService {
     return { success: true, message: 'Configurações atualizadas com sucesso' };
   }
 
-  // PULSE_OK: workspaceId validated by caller guard
   async actionCreateBroadcast(workspaceId: string, args: ToolArgs) {
     const broadcastKey = `broadcast_${Date.now()}`;
     let contactCount = 0;

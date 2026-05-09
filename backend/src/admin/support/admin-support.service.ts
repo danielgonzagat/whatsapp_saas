@@ -31,7 +31,9 @@ type ConversationDetailRow = ConversationSelectRow & {
 export class AdminSupportService {
   private readonly logger = new Logger(AdminSupportService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) {
+    this.logger.log('AdminSupportService initialized');
+  }
 
   /** Overview. */
   async overview(search?: string) {

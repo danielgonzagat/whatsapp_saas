@@ -30,7 +30,7 @@ export default function UpsellPage() {
   const [countdown, setCountdown] = useState<number | null>(null);
 
   const font = "'DM Sans', sans-serif";
-  const accent = '#22c55e';
+  const accent = colors.checkout.success;
 
   // Load upsells from query or API
   useEffect(() => {
@@ -122,14 +122,14 @@ export default function UpsellPage() {
       <div
         style={{
           minHeight: '100vh',
-          background: colors.background.void /* PULSE_VISUAL_OK: replaced below */,
+          background: colors.background.void,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           fontFamily: font,
         }}
       >
-        <div style={{ color: '#8A8A8E', fontSize: '14px' }}>{kloelT(`Carregando oferta...`)}</div>
+        <div style={{ color: colors.text.muted, fontSize: '14px' }}>{kloelT(`Carregando oferta...`)}</div>
       </div>
     );
   }
@@ -140,7 +140,7 @@ export default function UpsellPage() {
     <div
       style={{
         minHeight: '100vh',
-        background: colors.background.void /* PULSE_VISUAL_OK: replaced below */,
+        background: colors.background.void,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -156,12 +156,12 @@ export default function UpsellPage() {
               display: 'inline-flex',
               alignItems: 'center',
               gap: '8px',
-              background: '#2A1A1A',
+              background: colors.checkout.dangerBg,
               border: '1px solid #ef444444',
               borderRadius: '10px',
               padding: '8px 16px',
               marginBottom: '20px',
-              color: '#ef4444',
+              color: 'var(--app-error)',
               fontSize: '14px',
               fontWeight: 600,
               fontFamily: 'monospace',
@@ -174,7 +174,7 @@ export default function UpsellPage() {
         {/* Headline */}
         <h1
           style={{
-            color: '#E8E6E1',
+            color: colors.checkout.textPrimary,
             fontSize: '28px',
             fontWeight: 700,
             margin: '0 0 8px',
@@ -183,7 +183,7 @@ export default function UpsellPage() {
         >
           {currentUpsell.headline}
         </h1>
-        <p style={{ color: '#8A8A8E', fontSize: '14px', margin: '0 0 24px', lineHeight: '1.5' }}>
+        <p style={{ color: colors.text.muted, fontSize: '14px', margin: '0 0 24px', lineHeight: '1.5' }}>
           {currentUpsell.description}
         </p>
 
@@ -207,14 +207,14 @@ export default function UpsellPage() {
         )}
 
         {/* Product name */}
-        <div style={{ fontSize: '16px', fontWeight: 600, color: '#E8E6E1', marginBottom: '12px' }}>
+        <div style={{ fontSize: '16px', fontWeight: 600, color: colors.checkout.textPrimary, marginBottom: '12px' }}>
           {currentUpsell.productName}
         </div>
 
         {/* Price comparison */}
         <div style={{ marginBottom: '24px' }}>
           {currentUpsell.compareAtPrice != null && (
-            <div style={{ fontSize: '14px', color: '#8A8A8E' }}>
+            <div style={{ fontSize: '14px', color: colors.text.muted }}>
               de{' '}
               <span style={{ textDecoration: 'line-through' }}>
                 {formatBRL(currentUpsell.compareAtPrice)}
@@ -223,7 +223,7 @@ export default function UpsellPage() {
           )}
           <div style={{ fontSize: '32px', fontWeight: 700, color: accent }}>
             {currentUpsell.compareAtPrice != null && (
-              <span style={{ fontSize: '14px', fontWeight: 400, color: '#8A8A8E' }}>por </span>
+              <span style={{ fontSize: '14px', fontWeight: 400, color: colors.text.muted }}>por </span>
             )}
             {formatBRL(currentUpsell.priceInCents)}
           </div>
@@ -233,13 +233,13 @@ export default function UpsellPage() {
         {currentUpsell.chargeType === 'ONE_CLICK' && (
           <div
             style={{
-              background: '#141416',
+              background: colors.checkout.bg,
               border: '1px solid #2A2A2E',
               borderRadius: '8px',
               padding: '10px 14px',
               marginBottom: '20px',
               fontSize: '12px',
-              color: '#8A8A8E',
+              color: colors.text.muted,
             }}
           >
             {kloelT(`Sera cobrado no mesmo cartao utilizado na compra`)}
@@ -257,7 +257,7 @@ export default function UpsellPage() {
             background: `linear-gradient(135deg, ${accent}, #16a34a)`,
             border: 'none',
             borderRadius: '12px',
-            color: '#FFFFFF',
+            color: colors.text.silver,
             fontSize: '17px',
             fontWeight: 700,
             cursor: submitting ? 'not-allowed' : 'pointer',
@@ -279,7 +279,7 @@ export default function UpsellPage() {
           style={{
             background: 'none',
             border: 'none',
-            color: '#8A8A8E',
+            color: colors.text.muted,
             fontSize: '13px',
             cursor: submitting ? 'not-allowed' : 'pointer',
             fontFamily: font,

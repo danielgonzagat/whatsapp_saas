@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { TrendingUp } from 'lucide-react';
@@ -10,15 +11,15 @@ interface ContactScoreSentimentSectionProps {
 
 const C = {
   elevated: 'var(--bg-elevated, #19191C)',
-  accent: '#E85D30',
+  accent: colors.ember.primary,
   text: 'var(--text-silver, #E0DDD8)',
   muted: 'var(--text-muted, #6E6E73)',
   mono: "var(--font-jetbrains), 'JetBrains Mono', monospace",
 } as const;
 
 const sentimentColors: Record<string, { bg: string; text: string }> = {
-  positive: { bg: 'rgba(52,199,89,0.15)', text: '#34C759' },
-  neutral: { bg: 'rgba(110,110,115,0.15)', text: '#8E8E93' },
+  positive: { bg: 'rgba(52,199,89,0.15)', text: colors.semantic.success },
+  neutral: { bg: 'rgba(110,110,115,0.15)', text: colors.text.muted },
   negative: { bg: 'rgba(255,69,58,0.15)', text: '#FF453A' },
 };
 

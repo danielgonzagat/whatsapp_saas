@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
@@ -101,7 +102,7 @@ export function GestaoVendas({
                 style={{
                   fontFamily: MONO,
                   fontSize: 12,
-                  color: st.revenueTrend > 0 ? '#10B981' : '#EF4444',
+                  color: st.revenueTrend > 0 ? colors.semantic.success : colors.semantic.error,
                 }}
               >
                 {st.revenueTrend > 0 ? '+' : ''}

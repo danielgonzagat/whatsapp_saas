@@ -242,9 +242,9 @@ function TemplateCard({
       onMouseLeave={() => setH(false)}
       style={{
         background: h
-          ? '#151517' /* PULSE_VISUAL_OK: intermediate surface tone */
+          ? colors.canvas.surfaceAlt
           : colors.background.surface,
-        border: `1px solid ${h ? `${c1}35` : '#1C1C1F'}`,
+        border: `1px solid ${h ? `${c1}35` : colors.canvas.border}`,
         borderRadius: 6,
         padding: 0,
         cursor: 'pointer',
@@ -263,7 +263,7 @@ function TemplateCard({
           alignItems: 'center',
           justifyContent: 'center',
           background:
-            '#0D0D0F' /* PULSE_VISUAL_OK: intermediate surface tone */ /* PULSE_VISUAL_OK: intermediate surface tone */,
+            colors.canvas.void,
           position: 'relative',
           overflow: 'hidden',
         }}

@@ -13,7 +13,7 @@ import { IC, Ticker, Fmt, roasColor, EMBER, G, SORA, MONO } from './AnunciosShar
 import type { AdRule } from './anuncios-types';
 import type { Campaign, PlatformKey, PlatformData } from './anuncios-types';
 
-const R = '#EF4444';
+const R = colors.semantic.error;
 
 export function WarRoomDashboard({
   platforms,

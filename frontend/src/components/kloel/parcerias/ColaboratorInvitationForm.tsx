@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { inviteCollaborator } from '@/hooks/usePartnerships';
@@ -8,9 +9,9 @@ import { C, FONT } from './ParceriasDesignTokens';
 
 const ROLES: { value: string; label: string; color: string }[] = [
   { value: 'admin', label: 'Admin', color: 'colors.ember.primary' },
-  { value: 'manager', label: 'Manager', color: '#3B82F6' },
-  { value: 'support', label: 'Support', color: '#10B981' },
-  { value: 'finance', label: 'Finance', color: '#F59E0B' },
+  { value: 'manager', label: 'Manager', color: colors.semantic.info },
+  { value: 'support', label: 'Support', color: colors.semantic.success },
+  { value: 'finance', label: 'Finance', color: colors.semantic.warning },
   { value: 'viewer', label: 'Viewer', color: 'var(--app-text-secondary)' },
 ];
 
@@ -97,7 +98,7 @@ export default function ColaboratorInvitationForm({ onClose }: { onClose: () => 
             {kloelT(`Cancelar`)}
           </button>
           <button type="button" onClick={handleSubmit} disabled={sending || !email.trim()}
-            style={{ padding: '9px 22px', background: C.ember, border: 'none', borderRadius: 6, color: '#fff', fontFamily: FONT.sans, fontSize: 13, fontWeight: 600, cursor: sending ? 'wait' : 'pointer', opacity: !email.trim() ? 0.5 : 1 }}>
+            style={{ padding: '9px 22px', background: C.ember, border: 'none', borderRadius: 6, color: colors.text.silver, fontFamily: FONT.sans, fontSize: 13, fontWeight: 600, cursor: sending ? 'wait' : 'pointer', opacity: !email.trim() ? 0.5 : 1 }}>
             {sending ? 'Enviando...' : 'Enviar Convite'}
           </button>
         </div>

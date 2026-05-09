@@ -4,7 +4,6 @@ import { kloelT, kloelError } from '@/lib/i18n/t';
 /** Dynamic. */
 export const dynamic = 'force-dynamic';
 
-// PULSE_VISUAL_OK: Tailwind bracket hex values are intentional Meta integration
 // design colors. Token colors (colors.background.void, colors.background.surface, colors.border.space, colors.text.silver) are the
 // Monitor palette. Remaining hexes are custom Meta channel UI surface colors.
 

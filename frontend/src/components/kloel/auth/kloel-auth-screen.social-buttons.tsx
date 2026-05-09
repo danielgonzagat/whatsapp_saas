@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 import { kloelT } from '@/lib/i18n/t';
 import { AppleIcon, FacebookIcon, GoogleIcon, TikTokIcon } from './kloel-auth-screen.icons';
 
@@ -21,10 +22,10 @@ const socialBtnBase: React.CSSProperties = {
   justifyContent: 'center',
   gap: 10,
   height: 44,
-  background: '#111113',
+  background: colors.background.surface,
   border: '1px solid #222226',
   borderRadius: 6,
-  color: '#E0DDD8',
+  color: colors.text.silver,
   fontSize: 13,
   fontFamily: sora,
   transition: 'border-color 150ms ease, opacity 150ms ease',
@@ -87,10 +88,10 @@ export function SocialButtons({
         }}
         onMouseEnter={(e) => {
           if (!facebookAvailable || isLoading) return;
-          e.currentTarget.style.borderColor = '#333338';
+          e.currentTarget.style.borderColor = colors.border.glow;
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.borderColor = '#222226';
+          e.currentTarget.style.borderColor = colors.background.border;
         }}
         title={
           facebookAvailable
@@ -115,10 +116,10 @@ export function SocialButtons({
         }}
         onMouseEnter={(e) => {
           if (!tikTokAvailable || isLoading) return;
-          e.currentTarget.style.borderColor = '#333338';
+          e.currentTarget.style.borderColor = colors.border.glow;
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.borderColor = '#222226';
+          e.currentTarget.style.borderColor = colors.background.border;
         }}
         title={tikTokAvailable ? 'Continuar com TikTok' : 'TikTok indisponível'}
       >
@@ -135,10 +136,10 @@ export function SocialButtons({
           cursor: 'pointer',
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.borderColor = '#333338';
+          e.currentTarget.style.borderColor = colors.border.glow;
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.borderColor = '#222226';
+          e.currentTarget.style.borderColor = colors.background.border;
         }}
       >
         <AppleIcon />

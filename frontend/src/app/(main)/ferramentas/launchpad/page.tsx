@@ -39,7 +39,7 @@ function LauncherRow({
         alignItems: 'center',
         gap: 16,
         padding: '14px 16px',
-        borderBottom: '1px solid colors.border.space',
+        borderBottom: '1px solid var(--border-space)',
       }}
     >
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -284,7 +284,7 @@ function NewLauncherModal({ onClose, onCreated }: { onClose: () => void; onCreat
               border: '1px solid rgba(239,68,68,0.3)',
               borderRadius: 6,
               color:
-                '#EF4444' /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */ /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */,
+                colors.semantic.error,
               fontFamily: SORA,
               fontSize: 13,
             }}
@@ -321,7 +321,7 @@ function NewLauncherModal({ onClose, onCreated }: { onClose: () => void; onCreat
               border: 'none',
               borderRadius: 6,
               color:
-                '#fff' /* PULSE_VISUAL_OK: universal white shorthand */ /* PULSE_VISUAL_OK: universal white shorthand */,
+                colors.text.silver,
               fontFamily: SORA,
               fontSize: 13,
               fontWeight: 600,
@@ -472,7 +472,7 @@ function AddGroupModal({
               border: '1px solid rgba(239,68,68,0.3)',
               borderRadius: 6,
               color:
-                '#EF4444' /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */ /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */,
+                colors.semantic.error,
               fontFamily: SORA,
               fontSize: 13,
             }}
@@ -509,7 +509,7 @@ function AddGroupModal({
               border: 'none',
               borderRadius: 6,
               color:
-                '#fff' /* PULSE_VISUAL_OK: universal white shorthand */ /* PULSE_VISUAL_OK: universal white shorthand */,
+                colors.text.silver,
               fontFamily: SORA,
               fontSize: 13,
               fontWeight: 600,
@@ -558,7 +558,7 @@ export default function LaunchpadPage() {
             border: 'none',
             borderRadius: 6,
             color:
-              '#fff' /* PULSE_VISUAL_OK: universal white shorthand */ /* PULSE_VISUAL_OK: universal white shorthand */,
+              colors.text.silver,
             fontFamily: SORA,
             fontSize: 13,
             fontWeight: 600,
@@ -589,7 +589,7 @@ export default function LaunchpadPage() {
               padding: 32,
               textAlign: 'center',
               color:
-                '#EF4444' /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */ /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */,
+                colors.semantic.error,
               fontFamily: SORA,
             }}
           >

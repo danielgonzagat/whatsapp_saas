@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { useCallback, useEffect, useState } from 'react';
@@ -26,9 +27,9 @@ export default function ExitIntentPopup({
   description = 'Use o cupom abaixo e garanta um desconto especial.',
   couponCode,
   onApplyCoupon,
-  accentColor = '#D4AF37',
-  textColor = '#E8E6E1',
-  cardColor = '#141416',
+  accentColor = colors.checkout.accent,
+  textColor = colors.checkout.textPrimary,
+  cardColor = colors.checkout.bg,
 }: ExitIntentPopupProps) {
   const [visible, setVisible] = useState(false);
 
@@ -161,7 +162,7 @@ export default function ExitIntentPopup({
             borderRadius: '10px',
             border: 'none',
             background: accentColor,
-            color: '#000',
+            color: colors.background.void,
             fontSize: '15px',
             fontWeight: 700,
             cursor: 'pointer',

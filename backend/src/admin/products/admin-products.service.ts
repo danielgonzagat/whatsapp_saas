@@ -19,7 +19,9 @@ export class AdminProductsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AdminAuditService,
-  ) {}
+  ) {
+    this.logger.log('AdminProductsService initialized');
+  }
 
   /** List. */
   async list(input: ListProductsInput): Promise<ListProductsResult> {

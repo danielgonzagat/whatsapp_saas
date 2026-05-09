@@ -380,7 +380,7 @@ export default function CanvasEditor() {
                     margin: '0 auto',
                     borderRadius: 8,
                     border: 'none',
-                    background: active ? '#1C1C1F' : 'transparent',
+                    background: active ? colors.canvas.border : 'transparent',
                     color: active ? 'colors.ember.primary' : 'colors.text.muted',
                     cursor: 'pointer',
                     display: 'flex',

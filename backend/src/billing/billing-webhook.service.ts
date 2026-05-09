@@ -103,7 +103,6 @@ export class BillingWebhookService {
 
     const webhookIdempotencyKey = `stripe:${event.id}`;
 
-    // PULSE_OK: atomic idempotency gate — read-then-create race fixed via
     // $transaction + unique-constraint fallback
     const idempotent = await this.prisma.$transaction(async (tx) => {
       const alreadyProcessed = await tx.webhookEvent.findFirst({

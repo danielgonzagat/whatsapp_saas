@@ -40,7 +40,7 @@ export function FormatGrid({
               style={{
                 padding: '5px 12px',
                 background: sf === s ? 'colors.ember.glow10' : 'none',
-                border: `1px solid ${sf === s ? 'colors.ember.glow30' : '#1C1C1F'}`,
+                border: `1px solid ${sf === s ? 'colors.ember.glow30' : colors.canvas.border}`,
                 borderRadius: 4,
                 color: sf === s ? colors.ember.primary : colors.text.muted,
                 fontSize: 11,
@@ -90,7 +90,7 @@ export function FormatGrid({
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.borderColor =
-                    '#1C1C1F';
+                    colors.canvas.border;
                 }}
                 style={{
                   display: 'flex',
@@ -184,7 +184,7 @@ export function FormatGrid({
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.borderColor =
-                '#1C1C1F';
+                colors.canvas.border;
             }}
             style={{
               display: 'flex',

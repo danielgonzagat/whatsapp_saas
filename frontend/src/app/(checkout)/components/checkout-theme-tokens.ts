@@ -110,8 +110,8 @@ export type CheckoutThemeOverrides = {
 };
 
 const BLANC_BASE = {
-  white: '#FFFFFF',
-  dark: '#1A1A1A',
+  white: colors.text.silver,
+  dark: colors.background.void,
   muted: colors.text.muted,
   softMuted: 'rgba(110, 110, 115, 0.72)',
   stroke: 'rgba(58, 58, 63, 0.18)',

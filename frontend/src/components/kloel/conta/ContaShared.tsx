@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import React, { useId } from 'react';
@@ -6,10 +7,10 @@ import Icons from './ContaIcons';
 import { SORA, MONO, EMBER } from './ContaConstants';
 
 const STATUS_CONFIG = {
-  pending: { label: 'Pendente', color: '#F59E0B', bg: 'rgba(245,158,11,.06)', icon: Icons.clock },
-  submitted: { label: 'Em analise', color: '#3B82F6', bg: 'rgba(59,130,246,.06)', icon: Icons.eye },
-  approved: { label: 'Aprovado', color: '#10B981', bg: 'rgba(16,185,129,.06)', icon: Icons.check },
-  rejected: { label: 'Reprovado', color: '#EF4444', bg: 'rgba(239,68,68,.06)', icon: Icons.alert },
+  pending: { label: 'Pendente', color: colors.semantic.warning, bg: 'rgba(245,158,11,.06)', icon: Icons.clock },
+  submitted: { label: 'Em analise', color: colors.semantic.info, bg: 'rgba(59,130,246,.06)', icon: Icons.eye },
+  approved: { label: 'Aprovado', color: colors.semantic.success, bg: 'rgba(16,185,129,.06)', icon: Icons.check },
+  rejected: { label: 'Reprovado', color: colors.semantic.error, bg: 'rgba(239,68,68,.06)', icon: Icons.alert },
 };
 
 export function StatusBadge({ status }: { status: string }) {
@@ -189,14 +190,14 @@ export function SaveButton({
 export function SaveStatusLabel({ status }: { status: 'idle' | 'success' | 'error' }) {
   if (status === 'success') {
     return (
-      <span style={{ fontSize: 12, fontWeight: 600, color: '#10B981', fontFamily: SORA }}>
+      <span style={{ fontSize: 12, fontWeight: 600, color: colors.semantic.success, fontFamily: SORA }}>
         {kloelT(`Salvo!`)}
       </span>
     );
   }
   if (status === 'error') {
     return (
-      <span style={{ fontSize: 12, fontWeight: 600, color: '#EF4444', fontFamily: SORA }}>
+      <span style={{ fontSize: 12, fontWeight: 600, color: colors.semantic.error, fontFamily: SORA }}>
         {kloelT(`Erro ao salvar`)}
       </span>
     );
@@ -212,7 +213,7 @@ export function ErrorText({ message }: { message: string | null | undefined }) {
     <span
       style={{
         fontSize: 11,
-        color: '#EF4444',
+        color: colors.semantic.error,
         marginTop: 8,
         display: 'block',
         fontFamily: SORA,

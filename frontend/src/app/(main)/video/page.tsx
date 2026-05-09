@@ -235,7 +235,7 @@ export default function VideoPage() {
         style={{
           display: 'flex',
           gap: 0,
-          borderBottom: '1px solid colors.border.space',
+          borderBottom: '1px solid var(--border-space)',
           marginBottom: 20,
         }}
       >
@@ -285,7 +285,7 @@ export default function VideoPage() {
                 padding: 32,
                 textAlign: 'center',
                 color:
-                  '#EF4444' /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */ /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */,
+                  colors.semantic.error,
                 fontFamily: "'Sora', sans-serif",
               }}
             >
@@ -361,7 +361,7 @@ export default function VideoPage() {
                   borderRadius: 6,
                   padding: '10px 14px',
                   color:
-                    '#EF4444' /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */ /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */,
+                    colors.semantic.error,
                   fontSize: 13,
                 }}
               >
@@ -376,7 +376,7 @@ export default function VideoPage() {
                   borderRadius: 6,
                   padding: '10px 14px',
                   color:
-                    '#10B981' /* PULSE_VISUAL_OK: success emerald, non-Monitor status indicator */ /* PULSE_VISUAL_OK: success emerald, non-Monitor status indicator */,
+                    colors.semantic.success,
                   fontSize: 13,
                 }}
               >
@@ -446,7 +446,7 @@ export default function VideoPage() {
                   <div
                     style={{
                       color:
-                        '#EF4444' /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */ /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */,
+                        colors.semantic.error,
                       fontSize: 12,
                     }}
                   >
@@ -570,7 +570,7 @@ export default function VideoPage() {
                   <div
                     style={{
                       color:
-                        '#EF4444' /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */ /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */,
+                        colors.semantic.error,
                       fontSize: 12,
                     }}
                   >
@@ -589,7 +589,7 @@ export default function VideoPage() {
                     <p
                       style={{
                         color:
-                          '#10B981' /* PULSE_VISUAL_OK: success emerald, non-Monitor status indicator */ /* PULSE_VISUAL_OK: success emerald, non-Monitor status indicator */,
+                          colors.semantic.success,
                         fontSize: 12,
                         marginBottom: 4,
                       }}
@@ -703,7 +703,7 @@ export default function VideoPage() {
                   borderRadius: 6,
                   padding: '10px 14px',
                   color:
-                    '#EF4444' /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */ /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */,
+                    colors.semantic.error,
                   fontSize: 13,
                 }}
               >

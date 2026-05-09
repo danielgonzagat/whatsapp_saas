@@ -72,7 +72,6 @@ export class CheckoutSocialLeadService {
   ) {}
 
   /** Capture lead. */
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async captureLead(dto: CaptureSocialLeadDto) {
     const plan = await this.resolvePlanBySlug(dto.slug);
     const provider = this.parseProvider(dto.provider);
@@ -134,7 +133,6 @@ export class CheckoutSocialLeadService {
   }
 
   /** Get lead prefill. */
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async getLeadPrefill(input: {
     slug: string;
     checkoutCode?: string | null;
@@ -197,7 +195,6 @@ export class CheckoutSocialLeadService {
   }
 
   /** Hydrate google profile. */
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async hydrateGoogleProfile(leadId: string, accessToken: string) {
     const updatedLead = await this.prisma.$transaction(
       async (tx) => {
@@ -296,7 +293,6 @@ export class CheckoutSocialLeadService {
   }
 
   /** Update lead. */
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async updateLead(leadId: string, dto: UpdateSocialLeadDto) {
     const result = await this.prisma.$transaction(
       async (tx) => {
@@ -376,7 +372,6 @@ export class CheckoutSocialLeadService {
   }
 
   /** Mark converted from order. */
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async markConvertedFromOrder(input: ConversionInput) {
     const target = input.capturedLeadId
       ? await this.prisma.checkoutSocialLead.findFirst({
@@ -408,7 +403,6 @@ export class CheckoutSocialLeadService {
   }
 
   /** Sync lead contact. */
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async syncLeadContact(leadId: string) {
     const lead = await this.prisma.checkoutSocialLead.findUnique({
       where: { id: leadId },

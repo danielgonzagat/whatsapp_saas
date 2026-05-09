@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import type {
@@ -267,7 +268,7 @@ export default function CheckoutNoir({
             style={{
               fontSize: 32,
               fontWeight: 300,
-              color: '#fff',
+              color: colors.text.silver,
               letterSpacing: '0.02em',
               fontFamily: "'DM Sans',sans-serif",
             }}
@@ -281,7 +282,7 @@ export default function CheckoutNoir({
               display: 'flex',
               alignItems: 'center',
               gap: 8,
-              color: '#fff',
+              color: colors.text.silver,
             }}
           >
             <svg
@@ -307,7 +308,7 @@ export default function CheckoutNoir({
                   fontWeight: 700,
                   letterSpacing: '0.1em',
                   lineHeight: 1.1,
-                  color: '#fff',
+                  color: colors.text.silver,
                 }}
               >
                 PAGAMENTO
