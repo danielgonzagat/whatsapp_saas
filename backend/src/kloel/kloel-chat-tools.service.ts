@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { filterLegacyProducts } from '../common/products/legacy-products.util';
 import { PrismaService } from '../prisma/prisma.service';

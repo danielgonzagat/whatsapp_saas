@@ -5,8 +5,6 @@ import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended'
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
-const strictLint = process.env.KLOEL_STRICT_LINT === 'true';
-
 export default tseslint.config(
   {
     ignores: ['eslint.config.mjs', 'prisma/ensure-migrations.js', 'scripts/**/*.js'],
@@ -30,20 +28,20 @@ export default tseslint.config(
   },
   {
     rules: {
-      '@typescript-eslint/no-explicit-any': strictLint ? 'error' : 'off',
+      '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-floating-promises': 'error',
-      '@typescript-eslint/no-unsafe-argument': 'off',
-      '@typescript-eslint/no-unsafe-assignment': 'off',
-      '@typescript-eslint/no-unsafe-call': 'off',
-      '@typescript-eslint/no-unsafe-member-access': 'off',
-      '@typescript-eslint/no-unsafe-return': 'off',
-      '@typescript-eslint/no-redundant-type-constituents': 'off',
+      '@typescript-eslint/no-unsafe-argument': 'error',
+      '@typescript-eslint/no-unsafe-assignment': 'error',
+      '@typescript-eslint/no-unsafe-call': 'error',
+      '@typescript-eslint/no-unsafe-member-access': 'error',
+      '@typescript-eslint/no-unsafe-return': 'error',
+      '@typescript-eslint/no-redundant-type-constituents': 'error',
       '@typescript-eslint/no-base-to-string': 'error',
       '@typescript-eslint/no-require-imports': 'error',
       '@typescript-eslint/no-misused-promises': 'error',
       '@typescript-eslint/restrict-template-expressions': 'error',
       '@typescript-eslint/ban-ts-comment': 'error',
-      '@typescript-eslint/unbound-method': 'off',
+      '@typescript-eslint/unbound-method': 'error',
       '@typescript-eslint/require-await': 'error',
       '@typescript-eslint/no-unused-vars': [
         'error',

@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { Injectable, Optional } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
 import { PlanLimitsService } from '../billing/plan-limits.service';

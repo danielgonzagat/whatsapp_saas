@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AutopilotAnalyticsInsightsService } from './autopilot-analytics-insights.service';
 import { AutopilotAnalyticsReportService } from './autopilot-analytics-report.service';
