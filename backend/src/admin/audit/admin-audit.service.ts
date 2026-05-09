@@ -65,10 +65,9 @@ export class AdminAuditService {
           action: input.action,
           entityType: input.entityType ?? null,
           entityId: input.entityId ?? null,
-          details:
-            input.details === undefined || input.details === null
-              ? undefined
-              : (input.details as Prisma.InputJsonValue),
+          ...(input.details === undefined || input.details === null
+            ? {}
+            : { details: input.details as Prisma.InputJsonValue }),
           ip: input.ip ?? null,
           userAgent: input.userAgent ?? null,
         },

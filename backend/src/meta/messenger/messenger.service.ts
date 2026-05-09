@@ -1,10 +1,9 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { MetaSdkService } from '../meta-sdk.service';
 
 /** Messenger service. */
 @Injectable()
 export class MessengerService {
-  private readonly logger = new Logger(MessengerService.name);
   constructor(private readonly metaSdk: MetaSdkService) {}
 
   // messageLimit: enforced via PlanLimitsService.trackMessageSend

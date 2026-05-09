@@ -2,7 +2,6 @@ import {
   Body,
   Controller,
   Get,
-  Logger,
   Param,
   Patch,
   Post,
@@ -24,7 +23,6 @@ import { InsufficientWalletBalanceError } from './wallet.types';
 @UseGuards(JwtAuthGuard, WorkspaceGuard, ThrottlerGuard)
 @Throttle({ default: { limit: 5, ttl: 60000 } })
 export class PrepaidWalletController {
-  private readonly logger = new Logger(PrepaidWalletController.name);
 
   constructor(
     private readonly walletService: WalletService,

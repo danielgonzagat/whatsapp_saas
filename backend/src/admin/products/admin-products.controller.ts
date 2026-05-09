@@ -33,11 +33,11 @@ export class AdminProductsController {
   @RequireAdminPermission(AdminModule.PRODUTOS, AdminAction.VIEW)
   async list(@Query() query: ListProductsQueryDto) {
     return this.products.list({
-      search: query.search,
-      status: query.status,
-      workspaceId: query.workspaceId,
-      skip: query.skip,
-      take: query.take,
+      ...(query.search !== undefined ? { search: query.search } : {}),
+      ...(query.status !== undefined ? { status: query.status } : {}),
+      ...(query.workspaceId !== undefined ? { workspaceId: query.workspaceId } : {}),
+      ...(query.skip !== undefined ? { skip: query.skip } : {}),
+      ...(query.take !== undefined ? { take: query.take } : {}),
     });
   }
 
@@ -58,8 +58,8 @@ export class AdminProductsController {
     @CurrentAdmin() admin: AuthenticatedAdmin,
   ) {
     await this.products.approve(productId, admin.id, {
-      note: dto.note,
-      checklist: dto.checklist,
+      ...(dto.note !== undefined ? { note: dto.note } : {}),
+      ...(dto.checklist !== undefined ? { checklist: dto.checklist } : {}),
     });
   }
 
@@ -74,7 +74,7 @@ export class AdminProductsController {
   ) {
     await this.products.reject(productId, admin.id, {
       reason: dto.reason,
-      checklist: dto.checklist,
+      ...(dto.checklist !== undefined ? { checklist: dto.checklist } : {}),
     });
   }
 

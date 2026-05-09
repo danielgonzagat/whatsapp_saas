@@ -1,6 +1,6 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { DEFAULT_ARTIFACT_MAX_AGE_MS, type PulseArtifactPayload } from './pulse.service.contract';
 import type { RuntimeMachineReadinessStatus } from './__companions__/pulse-artifact.service.types';
@@ -22,7 +22,6 @@ import {
  */
 @Injectable()
 export class PulseArtifactService {
-  private readonly logger = new Logger(PulseArtifactService.name);
 
   constructor(private readonly config: ConfigService) {}
 

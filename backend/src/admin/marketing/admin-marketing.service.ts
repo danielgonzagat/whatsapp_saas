@@ -66,7 +66,7 @@ export class AdminMarketingService {
           where: { createdAt: { gte: range.from, lte: range.to } },
         }),
         this.prisma.conversation.findMany({
-          where: { lastMessageAt: { gte: range.from, lte: range.to }, workspaceId: undefined },
+          where: { lastMessageAt: { gte: range.from, lte: range.to } },
           orderBy: { lastMessageAt: 'desc' },
           take: 8,
           select: {

@@ -47,7 +47,7 @@ const mockPrisma = {
       return arg({
         agent: mockPrisma.agent,
         workspace: mockPrisma.workspace,
-      } as unknown as typeof mockPrisma);
+      } as Partial<typeof mockPrisma>);
     }
     return Promise.all(arg as Array<Promise<unknown>>);
   }),

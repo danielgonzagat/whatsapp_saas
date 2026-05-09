@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { PIPELINE_STAGE_COLORS } from '../common/kloel-colors';
 import type { ContactCustomFields } from '../contacts/contact-custom-fields.types';
@@ -6,7 +6,6 @@ import type { ContactCustomFields } from '../contacts/contact-custom-fields.type
 /** Pipeline service. */
 @Injectable()
 export class PipelineService {
-  private readonly logger = new Logger(PipelineService.name);
   constructor(private prisma: PrismaService) {}
 
   /** Get pipeline. */

@@ -37,10 +37,10 @@ export class AdminAccountsController {
   @RequireAdminPermission(AdminModule.CONTAS, AdminAction.VIEW)
   async list(@Query() query: ListAccountsQueryDto) {
     return this.accounts.list({
-      search: query.search,
-      kycStatus: query.kycStatus,
-      skip: query.skip,
-      take: query.take,
+      ...(query.search !== undefined ? { search: query.search } : {}),
+      ...(query.kycStatus !== undefined ? { kycStatus: query.kycStatus } : {}),
+      ...(query.skip !== undefined ? { skip: query.skip } : {}),
+      ...(query.take !== undefined ? { take: query.take } : {}),
     });
   }
 
@@ -66,8 +66,10 @@ export class AdminAccountsController {
     @CurrentAdmin() admin: AuthenticatedAdmin,
   ) {
     return this.accounts.bulkUpdateState(dto.workspaceIds, admin.id, dto.action, {
-      reason: dto.reason,
-      frozenBalanceInCents: dto.frozenBalanceInCents,
+      ...(dto.reason !== undefined ? { reason: dto.reason } : {}),
+      ...(dto.frozenBalanceInCents !== undefined
+        ? { frozenBalanceInCents: dto.frozenBalanceInCents }
+        : {}),
     });
   }
 
@@ -81,8 +83,10 @@ export class AdminAccountsController {
     @CurrentAdmin() admin: AuthenticatedAdmin,
   ) {
     await this.accounts.updateState(workspaceId, admin.id, dto.action, {
-      reason: dto.reason,
-      frozenBalanceInCents: dto.frozenBalanceInCents,
+      ...(dto.reason !== undefined ? { reason: dto.reason } : {}),
+      ...(dto.frozenBalanceInCents !== undefined
+        ? { frozenBalanceInCents: dto.frozenBalanceInCents }
+        : {}),
     });
   }
 

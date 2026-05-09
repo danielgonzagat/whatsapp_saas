@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
 import { Queue } from 'bullmq';
 import { createRedisClient } from '../common/redis/redis.util';
 import { PrismaService } from '../prisma/prisma.service';
@@ -6,7 +6,6 @@ import { PrismaService } from '../prisma/prisma.service';
 /** Voice service. */
 @Injectable()
 export class VoiceService {
-  private readonly logger = new Logger(VoiceService.name);
   private voiceQueue: Queue;
 
   constructor(private prisma: PrismaService) {

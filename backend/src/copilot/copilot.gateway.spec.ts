@@ -163,24 +163,24 @@ describe('CopilotGateway', () => {
 
   describe('handleDisconnect', () => {
     it('handles disconnection without errors', () => {
-      const mockSocket = {
+      const socket = mockSocket({
         id: 'socket-cp-4',
         handshake: { query: { workspaceId: 'ws-1' } },
-      } as unknown as Socket;
+      });
 
       expect(() => {
-        gateway.handleDisconnect(mockSocket);
+        gateway.handleDisconnect(socket);
       }).not.toThrow();
     });
 
     it('handles disconnection with missing handshake gracefully', () => {
-      const mockSocket = {
+      const socket = mockSocket({
         id: 'socket-cp-5',
         handshake: undefined,
-      } as unknown as Socket;
+      });
 
       expect(() => {
-        gateway.handleDisconnect(mockSocket);
+        gateway.handleDisconnect(socket);
       }).not.toThrow();
     });
   });

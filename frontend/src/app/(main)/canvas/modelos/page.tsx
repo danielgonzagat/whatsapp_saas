@@ -10,10 +10,9 @@ import { apiFetch } from '@/lib/api';
 import {
   FORMAT_DATA,
   type FormatItem,
-  PRODUCT_TEMPLATES,
-  type ProductTemplate,
   TEMPLATE_TAGS,
 } from '@/lib/canvas-formats';
+import { useProductTemplates, type ProductTemplate } from '@/hooks/useProductTemplates';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { mutate } from 'swr';
@@ -23,6 +22,7 @@ const S = "var(--font-sora), 'Sora', sans-serif";
 /** Canvas modelos. */
 export default function CanvasModelos() {
   const router = useRouter();
+  const { templates: PRODUCT_TEMPLATES, isLoading: tplLoading } = useProductTemplates();
 
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [aiPrompt, setAiPrompt] = useState('');

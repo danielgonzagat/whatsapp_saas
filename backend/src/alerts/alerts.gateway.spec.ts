@@ -7,6 +7,10 @@ jest.mock('../common/redis/redis.util', () => ({
 
 import { createRedisClient } from '../common/redis/redis.util';
 
+function mockSocket(overrides?: Partial<Socket>): Socket {
+  return { id: 'test-socket-id', ...overrides } as Socket;
+}
+
 describe('AlertsGateway', () => {
   let gateway: AlertsGateway;
   let mockServer: {
@@ -94,62 +98,62 @@ describe('AlertsGateway', () => {
 
   describe('handleConnection', () => {
     it('joins client to workspace room when workspaceId is provided', () => {
-      const mockSocket = {
+      const socket = mockSocket({
         id: 'socket-1',
         handshake: { query: { workspaceId: 'ws-1' } },
         join: jest.fn(),
-      } as unknown as Socket;
+      });
 
-      gateway.handleConnection(mockSocket);
+      gateway.handleConnection(socket);
 
-      expect(mockSocket.join).toHaveBeenCalledWith('workspace:ws-1');
+      expect(socket.join).toHaveBeenCalledWith('workspace:ws-1');
     });
 
     it('handles connection without workspaceId gracefully', () => {
-      const mockSocket = {
+      const socket = mockSocket({
         id: 'socket-2',
         handshake: { query: {} },
         join: jest.fn(),
-      } as unknown as Socket;
+      });
 
       expect(() => {
-        gateway.handleConnection(mockSocket);
+        gateway.handleConnection(socket);
       }).not.toThrow();
     });
 
     it('does not join room when workspaceId is empty string', () => {
-      const mockSocket = {
+      const socket = mockSocket({
         id: 'socket-3',
         handshake: { query: { workspaceId: '' } },
         join: jest.fn(),
-      } as unknown as Socket;
+      });
 
-      gateway.handleConnection(mockSocket);
+      gateway.handleConnection(socket);
 
-      expect(mockSocket.join).not.toHaveBeenCalled();
+      expect(socket.join).not.toHaveBeenCalled();
     });
   });
 
   describe('handleDisconnect', () => {
     it('handles disconnection without errors', () => {
-      const mockSocket = {
+      const socket = mockSocket({
         id: 'socket-4',
         handshake: { query: { workspaceId: 'ws-1' } },
-      } as unknown as Socket;
+      });
 
       expect(() => {
-        gateway.handleDisconnect(mockSocket);
+        gateway.handleDisconnect(socket);
       }).not.toThrow();
     });
 
     it('handles disconnection with missing handshake gracefully', () => {
-      const mockSocket = {
+      const socket = mockSocket({
         id: 'socket-5',
         handshake: undefined,
-      } as unknown as Socket;
+      });
 
       expect(() => {
-        gateway.handleDisconnect(mockSocket);
+        gateway.handleDisconnect(socket);
       }).not.toThrow();
     });
   });

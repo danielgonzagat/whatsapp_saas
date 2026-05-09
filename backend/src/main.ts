@@ -118,7 +118,7 @@ function handleSchemaError(schemaErr: unknown): void {
 async function runStartupDbCheck(app: NestExpressApplication): Promise<void> {
   try {
     const prisma = app.get(PrismaService);
-    await prisma.$queryRaw`SELECT 1`;
+    await prisma.$queryRaw<{ '?column?': 1 }[]>`SELECT 1`;
     console.log('[STARTUP] DB conectado');
 
     try {

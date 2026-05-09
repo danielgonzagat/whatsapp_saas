@@ -79,7 +79,7 @@ export class AdminSessionFactory {
     const payload: Omit<AdminJwtPayload, 'iat' | 'exp' | 'aud'> = {
       sub: options.sub,
       scope: options.scope,
-      sid: options.sessionId,
+      ...(options.sessionId !== undefined ? { sid: options.sessionId } : {}),
     };
     return this.jwt.signAsync(payload, { expiresIn: options.ttlSeconds });
   }

@@ -440,6 +440,8 @@ export default function CanvasEditor() {
                 resizeFidPrefix={fid}
                 initialW={w}
                 initialH={h}
+                templates={PRODUCT_TEMPLATES}
+                tplLoading={tplLoading}
               />
             </div>
           )}

@@ -56,7 +56,6 @@ export class MetaAuthController {
 
   private readonly appId = process.env.META_APP_ID || '';
   private readonly appSecret = process.env.META_APP_SECRET || '';
-  private readonly configId = process.env.META_CONFIG_ID || '';
   private readonly frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
 
   constructor(

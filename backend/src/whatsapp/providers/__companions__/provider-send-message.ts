@@ -65,9 +65,10 @@ export async function sendMessage(
             ? { quotedMessageId: options.quotedMessageId }
             : {}),
         });
+    const metaMsgId = result?.message?.id;
     return {
       success: Boolean(result?.success),
-      messageId: result?.message?.id || undefined,
+      ...(typeof metaMsgId === 'string' ? { messageId: metaMsgId } : {}),
     };
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : 'unknown error';

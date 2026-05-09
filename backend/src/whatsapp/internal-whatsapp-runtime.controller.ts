@@ -273,24 +273,24 @@ export class InternalWhatsAppRuntimeController {
         },
         update: {
           name,
-          customFields: {
+          customFields: toPrismaJsonValue({
             ...existingFields,
             remotePushName: name,
             remotePushNameUpdatedAt: now,
             whatsappSavedAt: now,
             nameResolutionStatus: 'resolved',
-          },
+          }),
         },
         create: {
           workspaceId,
           phone: normalizedPhone,
           name,
-          customFields: {
+          customFields: toPrismaJsonValue({
             remotePushName: name,
             remotePushNameUpdatedAt: now,
             whatsappSavedAt: now,
             nameResolutionStatus: 'resolved',
-          },
+          }),
         },
       });
 

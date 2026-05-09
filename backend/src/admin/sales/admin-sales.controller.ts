@@ -22,6 +22,11 @@ export class AdminSalesController {
     @Query('method') method?: PaymentMethod,
     @Query('gateway') gateway?: string,
   ) {
-    return this.sales.overview({ search, status, method, gateway });
+    return this.sales.overview({
+      ...(search !== undefined ? { search } : {}),
+      ...(status !== undefined ? { status } : {}),
+      ...(method !== undefined ? { method } : {}),
+      ...(gateway !== undefined ? { gateway } : {}),
+    });
   }
 }

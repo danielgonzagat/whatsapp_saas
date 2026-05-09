@@ -34,9 +34,6 @@ const SENDGRID_EVENT_MAP: Record<string, 'DELIVERED' | 'OPENED' | 'CLICKED' | 'R
   group_resubscribe: 'CLICKED',
 };
 
-const KNOWN_RESEND_EVENTS = new Set(Object.keys(RESEND_EVENT_MAP));
-const KNOWN_SENDGRID_EVENTS = new Set(Object.keys(SENDGRID_EVENT_MAP));
-
 @Controller('marketing/email/webhook')
 export class EmailMarketingWebhookController {
   private readonly logger = new Logger(EmailMarketingWebhookController.name);

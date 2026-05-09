@@ -102,7 +102,8 @@ export function SidebarPanels({
                   {tpl.name}
                 </span>
               </button>
-            ))}
+            ))
+            )}
           </div>
           <div style={{ marginTop: 16 }}>
             <p style={{ ...panelSubtext, fontSize: 10 }}>

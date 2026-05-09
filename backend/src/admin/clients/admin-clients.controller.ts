@@ -19,10 +19,10 @@ export class AdminClientsController {
   @RequireAdminPermission(AdminModule.CLIENTES, AdminAction.VIEW)
   async list(@Query() query: ListClientsQueryDto) {
     return this.clients.list({
-      search: query.search,
-      kycStatus: query.kycStatus,
-      skip: query.skip,
-      take: query.take,
+      ...(query.search !== undefined ? { search: query.search } : {}),
+      ...(query.kycStatus !== undefined ? { kycStatus: query.kycStatus } : {}),
+      ...(query.skip !== undefined ? { skip: query.skip } : {}),
+      ...(query.take !== undefined ? { take: query.take } : {}),
     });
   }
 }
