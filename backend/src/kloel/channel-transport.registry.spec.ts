@@ -182,7 +182,12 @@ describe('ChannelTransportRegistry', () => {
         'ws-1',
         'recipient-1',
         'Hello from KLOEL',
-        undefined,
+        expect.objectContaining({
+          mediaUrl: undefined,
+          mediaType: undefined,
+          caption: undefined,
+          quotedMessageId: undefined,
+        }),
       );
     });
 

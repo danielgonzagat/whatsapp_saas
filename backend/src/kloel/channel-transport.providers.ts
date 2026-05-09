@@ -3,6 +3,7 @@ import { InstagramService } from '../meta/instagram/instagram.service';
 import { MetaWhatsAppService } from '../meta/meta-whatsapp.service';
 import { MessengerService } from '../meta/messenger/messenger.service';
 import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
+import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { EmailCampaignService } from './email-campaign.service';
 import { renderEmailLine } from './email-html';
 import type {
@@ -327,14 +328,17 @@ export class WhatsAppChannelTransport implements ChannelTransportProvider {
   readonly channel: ChannelName = 'whatsapp';
   private readonly logger = new Logger(WhatsAppChannelTransport.name);
 
-  constructor(@Optional() private readonly whatsappRegistry?: WhatsAppProviderRegistry) {}
+  constructor(
+    @Optional() private readonly whatsapp?: WhatsappService,
+    @Optional() private readonly whatsappRegistry?: WhatsAppProviderRegistry,
+  ) {}
 
   isConfigured(): boolean {
-    return !!this.whatsappRegistry;
+    return !!this.whatsapp || !!this.whatsappRegistry;
   }
 
   capability(_workspaceId: string): Promise<ChannelCapability> {
-    if (!this.whatsappRegistry) {
+    if (!this.whatsapp && !this.whatsappRegistry) {
       return Promise.resolve(
         blockedCapability(
           'whatsapp',
@@ -347,36 +351,60 @@ export class WhatsAppChannelTransport implements ChannelTransportProvider {
   }
 
   async send(workspaceId: string, request: ChannelSendRequest): Promise<ChannelSendResult> {
-    if (!this.whatsappRegistry) {
+    if (!this.whatsapp && !this.whatsappRegistry) {
       return blockedResult('WhatsApp nao configurado. Configure WHATSAPP_PROVIDER.');
     }
 
     try {
-      const result = await this.whatsappRegistry.sendMessage(
-        workspaceId,
-        request.recipientId,
-        request.content,
-        request.mediaUrl ? { mediaUrl: request.mediaUrl, mediaType: request.mediaType } : undefined,
-      );
+      const result = this.whatsapp
+        ? await this.whatsapp.sendMessage(workspaceId, request.recipientId, request.content, {
+            mediaUrl: request.mediaUrl,
+            mediaType: request.mediaType,
+            caption: request.caption,
+            externalId: request.externalId,
+            complianceMode: request.complianceMode,
+            forceDirect: request.forceDirect,
+            quotedMessageId: request.quotedMessageId,
+          })
+        : await this.whatsappRegistry!.sendMessage(
+            workspaceId,
+            request.recipientId,
+            request.content,
+            {
+              mediaUrl: request.mediaUrl,
+              mediaType: request.mediaType,
+              caption: request.caption,
+              quotedMessageId: request.quotedMessageId,
+            },
+          );
 
-      if (!result.success) {
+      const success = 'success' in result ? Boolean(result.success) : Boolean(result.ok);
+      const error =
+        'error' in result && typeof result.error === 'string'
+          ? result.error
+          : 'message' in result && typeof result.message === 'string'
+            ? result.message
+            : undefined;
+      const messageId = 'messageId' in result ? result.messageId : undefined;
+
+      if (!success) {
         this.logger.warn(
-          `WhatsApp send falhou workspace=${workspaceId} recipient=${request.recipientId}: ${result.error ?? 'unknown'}`,
+          `WhatsApp send falhou workspace=${workspaceId} recipient=${request.recipientId}: ${error ?? 'unknown'}`,
         );
         return {
           success: false,
           blocked: false,
-          error: result.error ?? 'send_failed',
+          error: error ?? 'send_failed',
         };
       }
 
       this.logger.log(
-        `WhatsApp send dispatched workspace=${workspaceId} recipient=${request.recipientId} messageId=${result.messageId}`,
+        `WhatsApp send dispatched workspace=${workspaceId} recipient=${request.recipientId} messageId=${messageId}`,
       );
 
       return {
         success: true,
-        messageId: result.messageId,
+        messageId,
         blocked: false,
       };
     } catch (err: unknown) {

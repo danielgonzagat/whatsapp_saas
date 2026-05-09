@@ -16,6 +16,11 @@ export interface ChannelSendRequest {
   content: string;
   mediaUrl?: string;
   mediaType?: 'image' | 'video' | 'audio' | 'document';
+  caption?: string;
+  externalId?: string;
+  complianceMode?: 'reactive' | 'proactive';
+  forceDirect?: boolean;
+  quotedMessageId?: string;
   guardContext?: MindActionContext;
 }
 
