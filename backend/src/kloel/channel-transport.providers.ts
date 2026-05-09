@@ -4,6 +4,7 @@ import { MetaWhatsAppService } from '../meta/meta-whatsapp.service';
 import { MessengerService } from '../meta/messenger/messenger.service';
 import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
 import { EmailCampaignService } from './email-campaign.service';
+import { renderEmailLine } from './email-html';
 import type {
   ChannelCapability,
   ChannelName,
@@ -33,17 +34,6 @@ function availableCapability(channel: ChannelName): ChannelCapability {
 }
 function blockedResult(reason: string): ChannelSendResult {
   return { success: false, blocked: true, blockedReason: reason };
-}
-const HTML_ESCAPE_BY_CHARACTER: Record<string, string> = {
-  '&': '&amp;',
-  '<': '&lt;',
-  '>': '&gt;',
-  '"': '&quot;',
-  "'": '&#39;',
-};
-
-function escapeEmailHtml(value: string): string {
-  return value.replace(/[&<>"']/g, (char) => HTML_ESCAPE_BY_CHARACTER[char] ?? char);
 }
 @Injectable()
 export class InstagramChannelTransport implements ChannelTransportProvider {
@@ -330,11 +320,6 @@ export class EmailChannelTransport implements ChannelTransportProvider {
 
     return { subject, html: htmlParagraphs || renderEmailLine(content) };
   }
-}
-
-function renderEmailLine(line: string): string {
-  const trimmed = line.trim();
-  return trimmed ? '<p>' + escapeEmailHtml(trimmed) + '</p>' : '<br/>';
 }
 
 @Injectable()
