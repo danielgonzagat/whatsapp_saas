@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from 'next/server';
+import { writeAuthAppleState } from '../state';
 
 function readAppleClientId(): string {
   return (
@@ -20,12 +21,16 @@ export async function GET(request: NextRequest) {
   }
 
   const redirectUri = new URL('/api/auth/callback/apple', request.nextUrl.origin);
+  const nonce = crypto.randomUUID();
   const appleUrl = new URL('https://appleid.apple.com/auth/authorize');
   appleUrl.searchParams.set('client_id', clientId);
   appleUrl.searchParams.set('redirect_uri', redirectUri.toString());
   appleUrl.searchParams.set('response_type', 'code id_token');
   appleUrl.searchParams.set('scope', 'name email');
   appleUrl.searchParams.set('response_mode', 'form_post');
+  appleUrl.searchParams.set('state', nonce);
 
-  return NextResponse.redirect(appleUrl);
+  const response = NextResponse.redirect(appleUrl);
+  writeAuthAppleState(response, { nonce });
+  return response;
 }

@@ -58,6 +58,7 @@ describe('apple auth start route', () => {
     expect(appleUrl.searchParams.get('response_type')).toBe('code id_token');
     expect(appleUrl.searchParams.get('scope')).toBe('name email');
     expect(appleUrl.searchParams.get('response_mode')).toBe('form_post');
+    expect(appleUrl.searchParams.get('state')).toBeTruthy();
   });
 
   it('uses NEXT_PUBLIC_APPLE_CLIENT_ID as fallback when APPLE_CLIENT_ID is empty', async () => {

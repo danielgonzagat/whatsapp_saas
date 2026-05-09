@@ -87,4 +87,62 @@ describe('AppleAuthService', () => {
 
     await expect(service.verifyIdentityToken(token)).rejects.toThrow('Audience Apple invalida.');
   });
+
+  it('rejects authorization code exchange for unregistered redirect uris', async () => {
+    const service = buildService({
+      APPLE_CLIENT_ID: clientId,
+      APPLE_CLIENT_SECRET: 'static-secret',
+      APPLE_CALLBACK_URL: 'https://auth.kloel.com/api/auth/callback/apple',
+    });
+
+    await expect(
+      service.verifyAuthorizationCode({
+        code: 'apple-code',
+        redirectUri: 'https://attacker.example.com/api/auth/callback/apple',
+      }),
+    ).rejects.toThrow('Redirect URI Apple nao autorizado.');
+    const tokenCalls = jest
+      .mocked(globalThis.fetch)
+      .mock.calls.filter(([url]) => url === 'https://appleid.apple.com/auth/token');
+    expect(tokenCalls).toHaveLength(0);
+  });
+
+  it('allows authorization code exchange only through configured Apple callback urls', async () => {
+    const service = buildService({
+      APPLE_CLIENT_ID: clientId,
+      APPLE_CLIENT_SECRET: 'static-secret',
+      APPLE_CALLBACK_URL: 'https://auth.kloel.com/api/auth/callback/apple',
+    });
+    const token = signJwt({
+      privateKey,
+      kid: testKeyId,
+      payload: {
+        iss: 'https://appleid.apple.com',
+        aud: clientId,
+        sub: 'apple-user-2',
+        iat: Math.floor(Date.now() / 1000) - 10,
+        exp: Math.floor(Date.now() / 1000) + 600,
+      },
+    });
+    jest.spyOn(globalThis, 'fetch').mockImplementation(async (url) => {
+      if (url === 'https://appleid.apple.com/auth/token') {
+        return new Response(JSON.stringify({ id_token: token }), {
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+      if (url === 'https://appleid.apple.com/auth/keys') {
+        return new Response(
+          JSON.stringify({ keys: [{ ...publicJwk, kid: testKeyId, alg: 'RS256' }] }),
+        );
+      }
+      return new Response(JSON.stringify({ error: 'unexpected_url' }), { status: 500 });
+    });
+
+    const result = await service.verifyAuthorizationCode({
+      code: 'apple-code',
+      redirectUri: 'https://auth.kloel.com/api/auth/callback/apple',
+    });
+
+    expect(result.payload.sub).toBe('apple-user-2');
+  });
 });

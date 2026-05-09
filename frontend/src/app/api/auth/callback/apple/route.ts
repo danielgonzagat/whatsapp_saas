@@ -3,10 +3,12 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { buildAppUrl, buildAuthUrl } from '@/lib/subdomains';
 import { getBackendUrl } from '../../../_lib/backend-url';
 import { setSharedAuthCookies } from '../../_lib/shared-auth-cookies';
+import { clearAuthAppleState, readAuthAppleState } from '../../apple/state';
 
 type AppleCallbackPayload = {
   identityToken?: string;
   authorizationCode?: string;
+  state?: string;
   redirectUri: string;
   user?: {
     name?: {
@@ -43,6 +45,7 @@ async function readAppleCallbackPayload(
     return {
       identityToken: identityToken || undefined,
       authorizationCode: authorizationCode || undefined,
+      state: request.nextUrl.searchParams.get('state')?.trim() || undefined,
       redirectUri: new URL(request.nextUrl.pathname, request.nextUrl.origin).toString(),
       user: parseAppleUser(request.nextUrl.searchParams.get('user')),
     };
@@ -58,6 +61,7 @@ async function readAppleCallbackPayload(
   return {
     identityToken: identityToken || undefined,
     authorizationCode: authorizationCode || undefined,
+    state: String(formData.get('state') || '').trim() || undefined,
     redirectUri: new URL(request.nextUrl.pathname, request.nextUrl.origin).toString(),
     user: parseAppleUser(formData.get('user')),
   };
@@ -68,13 +72,19 @@ function buildErrorRedirect(request: NextRequest, reason: string) {
   const destination = new URL(buildAuthUrl('/login', currentHost));
   destination.searchParams.set('error', 'apple_auth_failed');
   destination.searchParams.set('reason', reason);
-  return NextResponse.redirect(destination);
+  const response = NextResponse.redirect(destination);
+  clearAuthAppleState(response);
+  return response;
 }
 
 async function handleAppleCallback(request: NextRequest) {
   const payload = await readAppleCallbackPayload(request);
   if (!payload?.identityToken && !payload?.authorizationCode) {
     return buildErrorRedirect(request, 'missing_identity_token');
+  }
+  const storedState = readAuthAppleState(request);
+  if (!storedState || !payload.state || payload.state !== storedState.nonce) {
+    return buildErrorRedirect(request, 'state_mismatch');
   }
 
   const backendUrl = getBackendUrl();
@@ -90,7 +100,12 @@ async function handleAppleCallback(request: NextRequest) {
         Accept: 'application/json',
         'X-Forwarded-For': request.headers.get('x-forwarded-for') || '',
       },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({
+        identityToken: payload.identityToken,
+        authorizationCode: payload.authorizationCode,
+        redirectUri: payload.redirectUri,
+        user: payload.user,
+      }),
       cache: 'no-store',
       signal: AbortSignal.timeout(15000),
     });
@@ -104,6 +119,7 @@ async function handleAppleCallback(request: NextRequest) {
     const currentHost = request.headers.get('host') || request.nextUrl.host;
     const successRedirect = NextResponse.redirect(new URL(buildAppUrl('/', currentHost)));
     setSharedAuthCookies(request, successRedirect, data);
+    clearAuthAppleState(successRedirect);
     return successRedirect;
   } catch (error: unknown) {
     const errorName =
