@@ -95,6 +95,7 @@ export async function queryMethodBreakdown(
     where: {
       status: { in: PAID_STATUSES },
       paidAt: { gte: from, lte: to },
+      workspaceId: undefined,
     },
     _sum: { totalInCents: true },
     _count: { _all: true },

@@ -1,6 +1,7 @@
 import { BadRequestException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { hash as bcryptHash } from 'bcrypt';
@@ -13,6 +14,8 @@ import { PrismaService } from '../prisma/prisma.service';
 /** Team service. */
 @Injectable()
 export class TeamService {
+  private readonly logger = new Logger(TeamService.name);
+
   constructor(
     private prisma: PrismaService,
     private configService: ConfigService,

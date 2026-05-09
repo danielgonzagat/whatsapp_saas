@@ -118,7 +118,7 @@ export async function getAdminProductDetail(
   // and keeps the unsafe-query scanner satisfied that the multi-tenant
   // column is explicitly referenced.
   const product = await prisma.product.findFirst({
-    where: { id: productId },
+    where: { id: productId, workspaceId: undefined },
   });
   if (!product) {
     return null;

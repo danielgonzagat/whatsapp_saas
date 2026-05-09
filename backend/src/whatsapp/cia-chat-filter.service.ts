@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { WahaChatSummary } from './providers/whatsapp-api.provider';
 
 type RawCiaChat = Record<string, unknown>;
@@ -37,6 +37,8 @@ const CIA_INLINE_BACKLOG_FALLBACK_LIMIT = Math.max(
  */
 @Injectable()
 export class CiaChatFilterService {
+  private readonly logger = new Logger(CiaChatFilterService.name);
+
   /** Resolve the best activity timestamp from a list of raw timestamp candidates. */
   resolveChatTimestamp(candidates: unknown[]): number {
     for (const candidate of candidates) {

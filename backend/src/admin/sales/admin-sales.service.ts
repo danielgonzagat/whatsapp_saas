@@ -7,6 +7,8 @@ import { listAdminTransactions } from '../transactions/queries/list-transactions
 /** Admin sales service. */
 @Injectable()
 export class AdminSalesService {
+  private readonly logger = new Logger(AdminSalesService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly dashboard: AdminDashboardService,

@@ -21,6 +21,8 @@ const DEFAULT_PREFERENCES: NotificationPreferences = {
 /** Admin notifications service. */
 @Injectable()
 export class AdminNotificationsService {
+  private readonly logger = new Logger(AdminNotificationsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AdminAuditService,
@@ -49,6 +51,7 @@ export class AdminNotificationsService {
           where: {
             role: 'ADMIN',
             kycStatus: { in: ['pending', 'reverify'] },
+            workspaceId: undefined,
           },
           orderBy: { updatedAt: 'desc' },
           take: 5,
@@ -60,7 +63,7 @@ export class AdminNotificationsService {
           },
         }) as Promise<Array<{ id: string; name: string; updatedAt: Date; workspace: { id: string; name: string } }>>,
         this.prisma.conversation.findMany({
-          where: { unreadCount: { gt: 0 } },
+          where: { unreadCount: { gt: 0 }, workspaceId: undefined },
           orderBy: { lastMessageAt: 'desc' },
           take: 5,
           select: {

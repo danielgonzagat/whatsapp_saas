@@ -197,7 +197,7 @@ export class InstagramMarketingService {
     }
 
     const insights = await this.prisma.igInsight.findMany({
-      where,
+      where: { workspaceId, ...where },
       orderBy: { date: 'desc' },
       take: 90,
     });

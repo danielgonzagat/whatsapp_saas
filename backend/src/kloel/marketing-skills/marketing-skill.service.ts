@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { MARKETING_SKILL_CATALOG } from './marketing-skill.catalog';
 import { MarketingSkillContextBuilder } from './marketing-skill.context';
 import { MarketingSkillLoader } from './marketing-skill.loader';
@@ -12,6 +12,8 @@ import type {
 /** Marketing skill service. */
 @Injectable()
 export class MarketingSkillService {
+  private readonly logger = new Logger(MarketingSkillService.name);
+
   constructor(
     private readonly loader: MarketingSkillLoader,
     private readonly router: MarketingSkillRouter,

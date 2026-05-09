@@ -108,6 +108,8 @@ interface Snapshot {
 /** Admin dashboard service. */
 @Injectable()
 export class AdminDashboardService {
+  private readonly logger = new Logger(AdminDashboardService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   /** Get home. */
@@ -127,6 +129,12 @@ export class AdminDashboardService {
     const previousSnap = range.previous
       ? await this.snapshot(range.previous.from, range.previous.to)
       : null;
+
+    this.logger.log('Dashboard home data fetched', {
+      context: 'AdminDashboardService.getHome',
+      period: range.period,
+      gmvInCents: current.gmvInCents,
+    });
 
     const [
       byGateway,
@@ -250,6 +258,7 @@ export class AdminDashboardService {
       this.prisma.conversation.count({
         where: {
           lastMessageAt: { gte: from, lte: to },
+          workspaceId: undefined,
         },
       }),
       this.prisma.$queryRaw<Array<{ avg_minutes: number | string | null }>>(Prisma.sql`

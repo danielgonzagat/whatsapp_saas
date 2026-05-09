@@ -1,5 +1,6 @@
 import { BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
   UnauthorizedException } from '@nestjs/common';
 import { compare as bcryptCompare, hash as bcryptHash } from 'bcrypt';
@@ -33,6 +34,8 @@ import {
 /** Kyc service. */
 @Injectable()
 export class KycService {
+  private readonly logger = new Logger(KycService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
@@ -358,6 +361,10 @@ export class KycService {
       { isolationLevel: 'ReadCommitted' },
     );
 
+    this.logger.log('Calling Stripe Connect', {
+      context: 'KycService.submitKyc',
+      action: 'syncSellerConnectOnboarding',
+    });
     await syncSellerConnectOnboarding(this.syncDeps, agentId, workspaceId, context);
 
     const autoResult = await this.autoApproveIfComplete(agentId, workspaceId);

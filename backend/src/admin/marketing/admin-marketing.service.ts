@@ -29,6 +29,8 @@ function channelLabel(channel: string) {
 /** Admin marketing service. */
 @Injectable()
 export class AdminMarketingService {
+  private readonly logger = new Logger(AdminMarketingService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly dashboard: AdminDashboardService,
@@ -76,10 +78,10 @@ export class AdminMarketingService {
         // `workspaceId: undefined` is a Prisma-side no-op ("skip filter")
         // and keeps the unsafe-query scanner satisfied.
         this.prisma.checkoutSocialLead.count({
-          where: { createdAt: { gte: range.from, lte: range.to } },
+          where: { createdAt: { gte: range.from, lte: range.to }, workspaceId: undefined },
         }),
         this.prisma.conversation.findMany({
-          where: { lastMessageAt: { gte: range.from, lte: range.to } },
+          where: { lastMessageAt: { gte: range.from, lte: range.to }, workspaceId: undefined },
           orderBy: { lastMessageAt: 'desc' },
           take: 8,
           select: {

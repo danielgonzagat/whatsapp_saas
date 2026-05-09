@@ -120,7 +120,7 @@ export function buildHookRegistry(config: PulseConfig): HookRegistry {
         const hookBody = lines.slice(hookBodyStart, hookBodyEnd + 1).join('\n');
 
         // Find all inner functions that call apiFetch
-        // Pattern: const funcName = async (...) => { ... apiFetch('/endpoint', { method: 'POST' }) ... }
+        // Pattern: const funcName = async (...) => { ... apiFetch('/api/v1/resource', { method: 'POST' }) ... }
         // Pattern: async function funcName(...) { ... apiFetch(...) ... }
         // Pattern: funcName: async (...) => apiFetch(...)
         const innerFuncRe =

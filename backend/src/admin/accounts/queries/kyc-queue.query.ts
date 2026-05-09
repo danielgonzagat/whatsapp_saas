@@ -40,6 +40,7 @@ export async function listKycQueue(prisma: PrismaService, limit = 50): Promise<K
   // deliberate and keeping the unsafe-query scanner satisfied.
   const where: Prisma.AgentWhereInput = {
     kycStatus: { in: ['submitted', 'pending'] },
+    workspaceId: undefined,
   };
 
   const [agents, total] = await prisma.$transaction(

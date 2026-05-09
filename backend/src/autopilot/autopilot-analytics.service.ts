@@ -7,6 +7,8 @@ import { AutopilotAnalyticsReportService } from './autopilot-analytics-report.se
 // PULSE_OK: new Date() calls in getStats operate on Date.getTime() values or .toISOString() round-trips — metadata string (line ~102) has null-guard fallback
 @Injectable()
 export class AutopilotAnalyticsService {
+  private readonly logger = new Logger(AutopilotAnalyticsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly report: AutopilotAnalyticsReportService,

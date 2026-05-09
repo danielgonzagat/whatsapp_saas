@@ -123,6 +123,8 @@ function mapRecentKycEvents(auditItems: AuditItem[]) {
 /** Admin compliance service. */
 @Injectable()
 export class AdminComplianceService {
+  private readonly logger = new Logger(AdminComplianceService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   /** Overview. */
@@ -133,6 +135,12 @@ export class AdminComplianceService {
       ...(from !== undefined ? { from } : {}),
       ...(to !== undefined ? { to } : {}),
     });
+
+    this.logger.log('Compliance overview requested', {
+      context: 'AdminComplianceService.overview',
+      period: range.period,
+    });
+
     const [chargebacks, refunds, auditItems, kycAgents] = await Promise.all([
       this.fetchChargebacks(range),
       this.fetchRefunds(range),
@@ -218,6 +226,7 @@ export class AdminComplianceService {
       where: {
         role: 'ADMIN',
         kycStatus: { in: ['pending', 'reverify', 'rejected'] },
+        workspaceId: undefined,
       },
       orderBy: { updatedAt: 'desc' },
       take: 20,

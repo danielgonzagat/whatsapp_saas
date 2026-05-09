@@ -14,6 +14,8 @@ import {
 /** Admin products service. */
 @Injectable()
 export class AdminProductsService {
+  private readonly logger = new Logger(AdminProductsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AdminAuditService,

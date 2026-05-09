@@ -7,6 +7,7 @@ import { resolveBackendOpenAIModel } from '../lib/openai-models';
 /** Hidden data extractor service. */
 @Injectable()
 export class HiddenDataExtractorService {
+  private readonly logger = new Logger(HiddenDataExtractorService.name);
   private openai: OpenAI | null;
 
   constructor(private config: ConfigService) {
@@ -33,6 +34,7 @@ export class HiddenDataExtractorService {
     `;
 
     // tokenBudget: non-workspace context, budget tracked at caller level
+    this.logger.log('Calling OpenAI', { context: 'HiddenDataExtractorService.extract', model: 'brain' });
     const completion = await chatCompletionWithRetry(this.openai, {
       model: resolveBackendOpenAIModel('brain'),
       messages: [{ role: 'user', content: prompt }],
@@ -42,8 +44,8 @@ export class HiddenDataExtractorService {
     let result: Record<string, unknown> = {};
     try {
       result = JSON.parse(completion.choices[0]?.message?.content || '{}');
-    } catch {
-      /* invalid JSON from model */
+    } catch (error: unknown) {
+      this.logger.error('Failed to parse OpenAI JSON response', error instanceof Error ? error.message : String(error), { context: 'HiddenDataExtractorService.extract' });
     }
     return result;
   }

@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { DealStatus, Prisma } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { getTraceHeaders } from '../common/trace-headers';
@@ -9,6 +9,8 @@ import { PIPELINE_STAGE_COLORS } from '../common/kloel-colors';
 /** Crm service. */
 @Injectable()
 export class CrmService {
+  private readonly logger = new Logger(CrmService.name);
+
   constructor(
     private prisma: PrismaService,
     private auditService: AuditService,
@@ -552,6 +554,12 @@ export class CrmService {
       return;
     }
     try {
+      this.logger.log('Sending revenue webhook notification', {
+        context: 'CrmService.notifyRevenue',
+        workspaceId,
+        campaignId,
+        source,
+      });
       validateNoInternalAccess(url);
       await globalThis.fetch(url, {
         method: 'POST',
@@ -567,7 +575,12 @@ export class CrmService {
         }),
         signal: AbortSignal.timeout(10000),
       });
-    } catch {
+    } catch (error: unknown) {
+      this.logger.error(
+        'Failed to send revenue webhook notification',
+        error instanceof Error ? error.message : String(error),
+        { context: 'CrmService.notifyRevenue', workspaceId, campaignId },
+      );
       // PULSE:OK — CRM webhook notification non-critical; contact event still recorded
     }
   }

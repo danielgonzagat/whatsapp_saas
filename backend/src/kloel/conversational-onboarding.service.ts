@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { Response } from 'express';
 import OpenAI from 'openai';
 import { PlanLimitsService } from '../billing/plan-limits.service';
@@ -96,6 +96,7 @@ interface PrismaWithDynamicModels {
 /** Conversational onboarding service. */
 @Injectable()
 export class ConversationalOnboardingService {
+  private readonly logger = new Logger(ConversationalOnboardingService.name);
   private openai: OpenAI;
   private readonly prismaExt: PrismaWithDynamicModels;
 
@@ -128,6 +129,13 @@ export class ConversationalOnboardingService {
     role: 'brain' | 'writer',
   ): Promise<OpenAI.Chat.ChatCompletion> {
     await this.planLimits.ensureTokenBudget(workspaceId);
+    this.logger.log('Calling OpenAI for onboarding', {
+      context: 'ConversationalOnboardingService.runOnboardingCompletion',
+      workspaceId,
+      role,
+      model: resolveBackendOpenAIModel(role),
+      messageCount: messages.length,
+    });
     const response = await chatCompletionWithRetry(this.openai, {
       model: resolveBackendOpenAIModel(role),
       messages: messages as OpenAI.ChatCompletionMessageParam[],
@@ -138,7 +146,13 @@ export class ConversationalOnboardingService {
     });
     await this.planLimits
       .trackAiUsage(workspaceId, response?.usage?.total_tokens ?? 500)
-      .catch(() => {});
+      .catch((err: unknown) => {
+        this.logger.warn(
+          'Failed to track AI usage for onboarding',
+          err instanceof Error ? err.message : String(err),
+          { context: 'ConversationalOnboardingService.runOnboardingCompletion', workspaceId },
+        );
+      });
     return response;
   }
 
@@ -230,7 +244,11 @@ export class ConversationalOnboardingService {
 
       return responseText;
     } catch (error: unknown) {
-      this.logger.error('Erro no onboarding conversacional:', error);
+      this.logger.error(
+        'Erro no onboarding conversacional',
+        error instanceof Error ? error.message : String(error),
+        { context: 'ConversationalOnboardingService.chat', workspaceId },
+      );
       throw error;
     }
   }

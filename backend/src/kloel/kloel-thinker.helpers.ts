@@ -196,7 +196,7 @@ export async function regenerateThreadAssistantResponseImpl(
 
   const messages = (
     await prisma.chatMessage.findMany({
-      where: { threadId: conversationId },
+      where: { threadId: conversationId, workspaceId },
       orderBy: { createdAt: 'desc' },
       take: 500,
       select: {
@@ -290,7 +290,7 @@ export async function regenerateThreadAssistantResponseImpl(
   if (deletedMessageIds.length > 0) {
     operations.push(
       prisma.chatMessage.deleteMany({
-        where: { id: { in: deletedMessageIds } },
+        where: { id: { in: deletedMessageIds }, workspaceId },
       }) as Prisma.PrismaPromise<unknown>,
       prisma.auditLog.create({
         data: {

@@ -4,6 +4,8 @@ import { PrismaService } from '../prisma/prisma.service';
 // cache.invalidate — analytics queries are read-only aggregations; no cached writes to invalidate
 @Injectable()
 export class AdvancedAnalyticsService {
+  private readonly logger = new Logger(AdvancedAnalyticsService.name);
+
   constructor(
     private prisma: PrismaService,
   ) {}

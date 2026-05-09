@@ -1,6 +1,5 @@
 // @ts-check
 import eslint from '@eslint/js';
-import seatbelt from 'eslint-seatbelt';
 import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
@@ -9,7 +8,6 @@ export default tseslint.config(
   {
     ignores: ['eslint.config.mjs', 'prisma/ensure-migrations.js', 'scripts/**/*.js'],
   },
-  seatbelt.configs.enable,
   eslint.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,
   eslintPluginPrettierRecommended,

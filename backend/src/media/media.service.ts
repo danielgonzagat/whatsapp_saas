@@ -1,5 +1,5 @@
 import { extname } from 'node:path';
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Queue } from 'bullmq';
 import { v4 as uuid } from 'uuid';
@@ -13,6 +13,7 @@ import { PrismaService } from '../prisma/prisma.service';
 /** Media service. */
 @Injectable()
 export class MediaService {
+  private readonly logger = new Logger(MediaService.name);
   private mediaQueue: Queue;
   private readonly baseUrl: string;
   private readonly allowedStorageHosts: Set<string>;
@@ -80,6 +81,8 @@ export class MediaService {
     if (!file?.buffer) {
       throw new BadRequestException('Arquivo inválido');
     }
+
+    this.logger.log('Uploading document to storage', { context: 'MediaService.uploadDocument', fileName: file.originalname, mimeType: file.mimetype, fileSize: file.size });
 
     const stored = await this.storage.upload(file.buffer, {
       filename: `${uuid()}${extname(file.originalname || '')}`,
@@ -208,6 +211,7 @@ export class MediaService {
     const signedUrl = this.storage.getSignedUrl(doc.filePath, {
       downloadName: doc.fileName,
     });
+    this.logger.log('Fetching document from remote storage', { context: 'MediaService.getDocumentFile', documentId: doc.id });
     const response = await safeStorageFetch(signedUrl, {
       allowedHosts: this.allowedStorageHosts,
       allowHttp: this.allowHttpStorage,

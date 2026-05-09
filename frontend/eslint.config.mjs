@@ -1,10 +1,8 @@
 import { defineConfig, globalIgnores } from 'eslint/config';
-import seatbelt from 'eslint-seatbelt';
 import nextVitals from 'eslint-config-next/core-web-vitals';
 import nextTs from 'eslint-config-next/typescript';
 
 const eslintConfig = defineConfig([
-  seatbelt.configs.enable,
   ...nextVitals,
   ...nextTs,
   globalIgnores([

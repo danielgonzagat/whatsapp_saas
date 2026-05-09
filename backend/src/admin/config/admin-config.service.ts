@@ -43,6 +43,8 @@ export interface AdminConfigOverviewResponse {
 /** Admin config service. */
 @Injectable()
 export class AdminConfigService {
+  private readonly logger = new Logger(AdminConfigService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   /** Overview. */
@@ -79,11 +81,13 @@ export class AdminConfigService {
           this.prisma.apiKey.count({
             where: {
               workspace: where,
+              workspaceId: undefined,
             },
           }),
           this.prisma.webhookSubscription.count({
             where: {
               workspace: where,
+              workspaceId: undefined,
             },
           }),
           this.prisma.workspace.findMany({
@@ -150,6 +154,12 @@ export class AdminConfigService {
       authMode?: string;
     },
   ): Promise<AdminConfigWorkspaceRow> {
+    this.logger.log('Workspace config update', {
+      context: 'AdminConfigService.updateWorkspaceConfig',
+      workspaceId,
+      changes: Object.keys(input).filter((k) => input[k as keyof typeof input] !== undefined),
+    });
+
     const updated = await this.prisma.$transaction(
       async (tx) => {
         const workspace = await tx.workspace.findUnique({
@@ -186,6 +196,15 @@ export class AdminConfigService {
               }
             : {}),
         };
+
+        if (input.autopilotEnabled !== undefined) {
+          this.logger.log('Autopilot decision', {
+            context: 'AdminConfigService.updateWorkspaceConfig',
+            workspaceId,
+            decision: input.autopilotEnabled ? 'enabled' : 'disabled',
+            previousState: currentAutopilot.enabled === true,
+          });
+        }
 
         const result = await tx.workspace.update({
           where: { id: workspaceId },

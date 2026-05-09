@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { asProviderSettings } from '../whatsapp/provider-settings.types';
@@ -16,6 +16,7 @@ const NON_DIGIT_RE = /\D/g;
 /** CRM, campaign, and business-config tool implementations for KloelToolExecutorService. */
 @Injectable()
 export class KloelToolExecutorCrmService {
+  private readonly logger = new Logger(KloelToolExecutorCrmService.name);
 
   constructor(private readonly prisma: PrismaService) {}
 

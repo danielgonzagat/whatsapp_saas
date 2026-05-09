@@ -16,6 +16,8 @@ export interface PaginatedMessages {
 
 @Injectable()
 export class ChatService {
+  private readonly logger = new Logger(ChatService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   async getMessages(
@@ -24,15 +26,13 @@ export class ChatService {
     cursor?: string,
     limit = 50,
   ): Promise<PaginatedMessages> {
-    const where = {
-      threadId: conversationId,
-      workspaceId,
-      deletedAt: null,
-      ...(cursor ? { createdAt: { lt: new Date(cursor) } } : {}),
-    };
-
     const messages = await this.prisma.chatMessage.findMany({
-      where,
+      where: {
+        threadId: conversationId,
+        workspaceId,
+        deletedAt: null,
+        ...(cursor ? { createdAt: { lt: new Date(cursor) } } : {}),
+      },
       orderBy: { createdAt: 'desc' },
       take: limit + 1,
       select: { id: true, role: true, content: true, createdAt: true, userId: true },

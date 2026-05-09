@@ -1,4 +1,4 @@
-import { Inject, Injectable, forwardRef } from '@nestjs/common';
+import { Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
 import { findFirstSequential, forEachSequential } from '../common/async-sequence';
 import { UnifiedAgentService } from '../kloel/unified-agent.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -22,6 +22,8 @@ const safeStr = (v: unknown, fb = ''): string =>
  */
 @Injectable()
 export class CiaInlineFallbackService {
+  private readonly logger = new Logger(CiaInlineFallbackService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly agentEvents: AgentEventsService,
@@ -221,6 +223,12 @@ export class CiaInlineFallbackService {
 
       let keepReplyLock = false;
       try {
+        this.logger.log('Calling unifiedAgent.processIncomingMessage', {
+          context: 'CiaInlineFallbackService.runBacklogInlineFallback',
+          deliveryMode: this.chatFilter.isRecentRemoteBatch(pendingBatch?.messages || []) ? 'reactive' : 'proactive',
+          backlogIndex: index + 1,
+          backlogTotal: conversations.length,
+        });
         const resultContactId = safeStr(conversation.contactId);
         const result = await this.unifiedAgent.processIncomingMessage({
           workspaceId,
@@ -286,6 +294,12 @@ export class CiaInlineFallbackService {
         await findFirstSequential(
           Array.from(replyPlan.entries()),
           async ([replyIndex, replyItem]) => {
+            this.logger.log('Sending WhatsApp message via inline fallback', {
+              context: 'CiaInlineFallbackService.runBacklogInlineFallback',
+              complianceMode: shouldMirrorReplies ? 'reactive' : 'proactive',
+              replyIndex: replyIndex + 1,
+              replyTotal: replyPlan.length,
+            });
             const sendResult = await this.sendHelpers.sendCiaMessageWithDailyLimit(
               workspaceId,
               phone,
@@ -318,7 +332,11 @@ export class CiaInlineFallbackService {
 
         keepReplyLock = true;
         processed += 1;
-      } catch {
+      } catch (error: unknown) {
+        this.logger.error('Inline fallback per-conversation processing failed', error instanceof Error ? error.message : String(error), {
+          context: 'CiaInlineFallbackService.runBacklogInlineFallback',
+          conversationId: safeStr(conversation.id) || undefined,
+        });
         // PULSE:OK — Per-conversation processing failure is isolated; others still processed
         skipped += 1;
       } finally {

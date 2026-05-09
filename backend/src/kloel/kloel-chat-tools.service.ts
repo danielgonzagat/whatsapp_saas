@@ -58,6 +58,7 @@ interface ToolDashboardSummaryArgs {
 /** Handles product, flow, dashboard, payment, and misc AI chat tools. */
 @Injectable()
 export class KloelChatToolsService {
+  private readonly logger = new Logger(KloelChatToolsService.name);
 
   constructor(
     private readonly prisma: PrismaService,
@@ -138,6 +139,12 @@ export class KloelChatToolsService {
       select: { providerSettings: true },
     });
     const currentSettings = (settingsSnapshot?.providerSettings as Record<string, unknown>) || {};
+    this.logger.log('Autopilot decision', {
+      context: 'KloelChatTools.toolToggleAutopilot',
+      decision: args.enabled ? 'enable' : 'disable',
+      billingSuspended: currentSettings.billingSuspended === true,
+    });
+
     if (args.enabled && currentSettings.billingSuspended === true) {
       return {
         success: false,
@@ -342,6 +349,12 @@ export class KloelChatToolsService {
     workspaceId: string,
     args: { amount: number; description: string; customerName?: string },
   ): Promise<ToolResult> {
+    this.logger.log('Payment operation', {
+      context: 'KloelChatTools.toolCreatePaymentLink',
+      action: 'createSmartPayment',
+      amount: Number(args.amount) || 0,
+      hasDescription: !!args.description,
+    });
     const paymentResult = await this.smartPaymentService.createSmartPayment({
       workspaceId,
       amount: Number(args.amount) || 0,

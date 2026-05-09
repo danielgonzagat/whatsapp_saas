@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Queue } from 'bullmq';
 import { forEachSequential } from '../common/async-sequence';
 import { createRedisClient } from '../common/redis/redis.util';
@@ -9,6 +9,7 @@ type ScraperStats = { status?: string; found?: number; [key: string]: unknown };
 /** Scrapers service. */
 @Injectable()
 export class ScrapersService {
+  private readonly logger = new Logger(ScrapersService.name);
   private scraperQueue: Queue;
 
   constructor(private prisma: PrismaService) {

@@ -48,7 +48,7 @@ interface CalendarConfig {
   };
 }
 
-type GoogleCalendarCreatedEvent = {
+type GoogleCalendarEventItem = {
   id?: string | null;
   summary?: string | null;
   description?: string | null;
@@ -94,7 +94,15 @@ type GoogleCalendarModule = {
               | undefined;
           };
           conferenceDataVersion: number;
-        }): Promise<{ data: GoogleCalendarCreatedEvent }>;
+        }): Promise<{ data: GoogleCalendarEventItem }>;
+        list(args: {
+          calendarId: string;
+          timeMin?: string;
+          timeMax?: string;
+          maxResults?: number;
+          singleEvents?: boolean;
+          orderBy?: string;
+        }): Promise<{ data: { items?: GoogleCalendarEventItem[] } }>;
       };
     };
   };

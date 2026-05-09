@@ -100,7 +100,7 @@ export async function getThreadMessages(
   });
   if (!thread) throw new NotFoundException('Conversa não encontrada');
   const messages = await deps.prisma.chatMessage.findMany({
-    where: { threadId: id },
+    where: { threadId: id, workspaceId },
     select: {
       id: true,
       threadId: true,

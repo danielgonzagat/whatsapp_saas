@@ -170,6 +170,12 @@ export class AdminClientsService {
 
     const items = workspaces.map((workspace) => buildAdminClientRow(workspace, maps));
 
+    this.logger.log('Clients list retrieved', {
+      context: 'AdminClientsService.list',
+      total,
+      returned: items.length,
+    });
+
     return { items, total };
   }
 }

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { createHmac, timingSafeEqual } from 'crypto';
 import { Prisma } from '@prisma/client';
 import { encryptMetaToken } from '../meta/meta-token-crypto';
@@ -114,6 +114,8 @@ function verifyState(rawState: unknown, secret: string): SignedStatePayload | nu
 
 @Injectable()
 export class TikTokMarketingService {
+  private readonly logger = new Logger(TikTokMarketingService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   async getStatus(workspaceId: string) {
@@ -199,7 +201,8 @@ export class TikTokMarketingService {
     try {
       clientKey = this.readTikTokClientKey();
       secret = this.readTikTokSecret();
-    } catch {
+    } catch (error) {
+      this.logger.error('Failed to read TikTok client credentials', error instanceof Error ? error.message : String(error), { context: 'TikTokMarketingService.completeOAuth' });
       return { connected: false, status: 'server_not_configured' };
     }
 
@@ -296,6 +299,7 @@ export class TikTokMarketingService {
     secret: string;
     redirectUri: string;
   }): Promise<TikTokTokenPayload> {
+    this.logger.log('Calling TikTok API', { context: 'TikTokMarketingService.exchangeToken', kind: input.kind });
     const response =
       input.kind === 'advertiser'
         ? await fetch(ADVERTISER_TOKEN_URL, {
@@ -312,7 +316,8 @@ export class TikTokMarketingService {
 
     try {
       return (await response.json()) as TikTokTokenPayload;
-    } catch {
+    } catch (error) {
+      this.logger.error('Failed to parse TikTok token response', error instanceof Error ? error.message : String(error), { context: 'TikTokMarketingService.exchangeToken' });
       return { error: 'invalid_token_response' };
     }
   }

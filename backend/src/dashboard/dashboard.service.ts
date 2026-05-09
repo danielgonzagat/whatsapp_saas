@@ -1,5 +1,5 @@
 import { InjectRedis } from '@nestjs-modules/ioredis';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { OrderStatus } from '@prisma/client';
 import Redis from 'ioredis';
 import { PrismaService } from '../prisma/prisma.service';
@@ -65,6 +65,8 @@ function readSetupChecklist(value: unknown): SetupChecklistItem[] {
 /** Dashboard service. */
 @Injectable()
 export class DashboardService {
+  private readonly logger = new Logger(DashboardService.name);
+
   constructor(
     private prisma: PrismaService,
     @InjectRedis() private readonly redis: Redis,
@@ -138,6 +140,10 @@ export class DashboardService {
     );
 
     const key = `metrics:${workspaceId}`;
+    this.logger.log('Fetching Redis operational metrics', {
+      context: 'DashboardService.getStats',
+      workspaceId,
+    });
     const events = await this.redis.lrange(key, 0, -1);
     let healthScore = 100;
     let avgLatency = 0;

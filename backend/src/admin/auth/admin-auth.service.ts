@@ -61,6 +61,9 @@ export class AdminAuthService {
     const normalizedEmail = email.trim().toLowerCase();
 
     if (await this.attempts.isLocked(normalizedEmail, ip)) {
+      this.logger.warn('Login rate limited', {
+        context: 'AdminAuthService.login',
+      });
       await this.audit.append({
         action: 'admin.auth.login.rate_limited',
         details: { email: normalizedEmail },
@@ -74,6 +77,9 @@ export class AdminAuthService {
       where: { email: normalizedEmail },
     });
     if (!user) {
+      this.logger.warn('Login with unknown email', {
+        context: 'AdminAuthService.login',
+      });
       await this.prisma.$transaction(
         async (tx) => {
           await tx.adminLoginAttempt.create({
@@ -99,6 +105,9 @@ export class AdminAuthService {
 
     const ok = await bcryptCompare(password, user.passwordHash);
     if (!ok) {
+      this.logger.warn('Login with bad password', {
+        context: 'AdminAuthService.login',
+      });
       await this.prisma.$transaction(
         async (tx) => {
           await tx.adminLoginAttempt.create({
@@ -123,9 +132,15 @@ export class AdminAuthService {
     }
 
     if (user.status === AdminUserStatus.SUSPENDED) {
+      this.logger.warn('Suspended user login attempt', {
+        context: 'AdminAuthService.login',
+      });
       throw adminErrors.userSuspended();
     }
     if (user.status === AdminUserStatus.DEACTIVATED) {
+      this.logger.warn('Deactivated user login attempt', {
+        context: 'AdminAuthService.login',
+      });
       throw adminErrors.userDeactivated();
     }
 
@@ -141,6 +156,10 @@ export class AdminAuthService {
       },
       { isolationLevel: 'ReadCommitted' },
     );
+
+    this.logger.log('Login successful', {
+      context: 'AdminAuthService.login',
+    });
 
     return this.nextStateFor(user, ip, userAgent);
   }
@@ -209,6 +228,9 @@ export class AdminAuthService {
     }
 
     const hash = await bcryptHash(newPassword, BCRYPT_WORK_FACTOR);
+    this.logger.log('Password change initiated', {
+      context: 'AdminAuthService.changePassword',
+    });
     const user = await this.prisma.$transaction(
       async (tx) => {
         const result = await tx.adminUser.update({
@@ -239,6 +261,10 @@ export class AdminAuthService {
     if (admin.scope !== 'mfa_setup') {
       throw adminErrors.invalidToken();
     }
+
+    this.logger.log('MFA setup started', {
+      context: 'AdminAuthService.setupMfa',
+    });
 
     // If the user already has a pending MFA secret (from a previous
     // setup call that they're still in the middle of), reuse it.
@@ -318,6 +344,9 @@ export class AdminAuthService {
       },
       { isolationLevel: 'ReadCommitted' },
     );
+    this.logger.log('MFA verified and enabled', {
+      context: 'AdminAuthService.verifyInitialMfa',
+    });
     return this.sessionFactory.createFullSession(updated, ip, userAgent);
   }
 
@@ -355,6 +384,9 @@ export class AdminAuthService {
       },
       { isolationLevel: 'ReadCommitted' },
     );
+    this.logger.log('MFA login verified', {
+      context: 'AdminAuthService.verifyMfa',
+    });
     return this.sessionFactory.createFullSession(updated, ip, userAgent);
   }
 
@@ -406,6 +438,10 @@ export class AdminAuthService {
       { isolationLevel: 'ReadCommitted' },
     );
 
+    this.logger.log('Session refreshed', {
+      context: 'AdminAuthService.refresh',
+    });
+
     return newSession;
   }
 
@@ -431,6 +467,9 @@ export class AdminAuthService {
       },
       { isolationLevel: 'ReadCommitted' },
     );
+    this.logger.log('Logout', {
+      context: 'AdminAuthService.logout',
+    });
   }
 
   /** Hash a password with the service's configured work factor. */

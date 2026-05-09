@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { KloelContextFormatter } from './kloel-context-formatter';
 import type { KloelContextFormatterLimits } from './kloel-context-formatter.types';
@@ -16,6 +16,8 @@ type AffiliateProductRecord = Record<string, unknown>;
  */
 @Injectable()
 export class KloelWorkspaceContextLinkedProductService {
+  private readonly logger = new Logger(KloelWorkspaceContextLinkedProductService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   private async fetchWorkspaceProductPromptRecord(
@@ -93,7 +95,12 @@ export class KloelWorkspaceContextLinkedProductService {
               where: { id: targetProductId },
               select: { workspaceId: true },
             })
-            .catch(() => null)
+            .catch((err) => {
+              this.logger.error('Failed to resolve producer workspace for linked product',
+                err instanceof Error ? err.message : String(err),
+                { context: 'KloelWorkspaceContextLinkedProduct.buildLinkedProductPromptContext', targetProductId });
+              return null;
+            })
         )?.workspaceId || null
       : null;
     const catalogProduct =
@@ -102,7 +109,12 @@ export class KloelWorkspaceContextLinkedProductService {
             producerWorkspaceId,
             targetProductId,
             limits,
-          ).catch(() => null)
+          ).catch((err) => {
+            this.logger.error('Failed to fetch catalog product for linked context',
+              err instanceof Error ? err.message : String(err),
+              { context: 'KloelWorkspaceContextLinkedProduct.buildLinkedProductPromptContext', producerWorkspaceId, targetProductId });
+            return null;
+          })
         : null;
 
     const affiliateLines = [

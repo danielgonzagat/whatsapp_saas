@@ -82,6 +82,12 @@ export class AdminAccountsService {
     action: AdminAccountStateAction,
     input: { reason?: string; frozenBalanceInCents?: number },
   ): Promise<void> {
+    this.logger.log('Account state update requested', {
+      context: 'AdminAccountsService.updateState',
+      workspaceId,
+      action,
+    });
+
     await this.prisma.$transaction(
       async (tx) => {
         const workspace = await tx.workspace.findUnique({
@@ -216,6 +222,11 @@ export class AdminAccountsService {
       throw adminErrors.userNotFound();
     }
 
+    this.logger.log('Owner password reset', {
+      context: 'AdminAccountsService.resetOwnerPassword',
+      workspaceId,
+    });
+
     const nextPassword =
       temporaryPassword?.trim() ||
       `Kloel${randomInt(1000, 9999)}!${randomUUID().replace(PATTERN_RE, '').slice(0, 8)}`;
@@ -285,6 +296,12 @@ export class AdminAccountsService {
     if (!owner) {
       throw adminErrors.userNotFound();
     }
+
+    this.logger.log('Impersonation session issued', {
+      context: 'AdminAccountsService.impersonateOwner',
+      workspaceId,
+      targetAgentId: owner.id,
+    });
 
     const session = await this.auth.issueTokensForAgentId(owner.id);
 

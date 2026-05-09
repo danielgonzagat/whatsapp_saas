@@ -32,7 +32,16 @@ export class AdminLoginAttemptsService {
       ],
       { isolationLevel: 'ReadCommitted' },
     );
-    return emailFailures >= MAX_ATTEMPTS || ipFailures >= MAX_ATTEMPTS;
+    if (emailFailures >= MAX_ATTEMPTS || ipFailures >= MAX_ATTEMPTS) {
+      this.logger.warn('Login attempts lock threshold reached', {
+        context: 'AdminLoginAttemptsService.isLocked',
+        emailFailures,
+        ipFailures,
+        maxAttempts: MAX_ATTEMPTS,
+      });
+      return true;
+    }
+    return false;
   }
 
   /** Record. */

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 
 import { StripeService } from '../billing/stripe.service';
 import { FinancialAlertService } from '../common/financial-alert.service';
@@ -42,6 +42,8 @@ export interface HandleFailedMarketplaceTreasuryPayoutInput {
 /** Marketplace treasury payout service. */
 @Injectable()
 export class MarketplaceTreasuryPayoutService {
+  private readonly logger = new Logger(MarketplaceTreasuryPayoutService.name);
+
   constructor(
     private readonly stripeService: StripeService,
     private readonly wallet: MarketplaceTreasuryService,
@@ -64,6 +66,7 @@ export class MarketplaceTreasuryPayoutService {
     });
 
     try {
+      this.logger.log('Payment operation', { context: 'MarketplaceTreasuryPayoutService.createPayout', action: 'stripePayoutCreate', currency, amountCents: Number(input.amountCents) });
       const payout = await this.stripeService.stripe.payouts.create(
         {
           amount: Number(input.amountCents),
@@ -86,6 +89,7 @@ export class MarketplaceTreasuryPayoutService {
         currency,
       };
     } catch (error: unknown) {
+      this.logger.error('Stripe payout creation failed', error instanceof Error ? error.message : String(error), { context: 'MarketplaceTreasuryPayoutService.createPayout', currency, amountCents: Number(input.amountCents) });
       await this.wallet.creditAvailableByAdjustment({
         currency,
         amountInCents: input.amountCents,
@@ -109,6 +113,7 @@ export class MarketplaceTreasuryPayoutService {
   async handleFailedPayout(input: HandleFailedMarketplaceTreasuryPayoutInput): Promise<void> {
     const currency = (input.currency ?? 'BRL').toUpperCase();
 
+    this.logger.log('Payment operation', { context: 'MarketplaceTreasuryPayoutService.handleFailedPayout', action: 'payoutFailed', payoutId: input.payoutId, currency, amountCents: Number(input.amountCents) });
     await this.wallet.creditAvailableByAdjustment({
       currency,
       amountInCents: input.amountCents,

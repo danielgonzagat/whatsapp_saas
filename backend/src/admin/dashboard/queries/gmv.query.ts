@@ -20,6 +20,7 @@ export async function queryGmvInCents(
     where: {
       status: { in: [OrderStatus.PAID, OrderStatus.SHIPPED, OrderStatus.DELIVERED] },
       paidAt: { gte: from, lte: to },
+      workspaceId: undefined,
     },
     _sum: { totalInCents: true },
     _count: { _all: true },

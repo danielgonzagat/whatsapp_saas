@@ -55,6 +55,13 @@ export class AdminKycService {
       { isolationLevel: 'ReadCommitted' },
     );
 
+    this.logger.log('KYC agent approved', {
+      context: 'AdminKycService.approveAgent',
+      agentId,
+      workspaceId: agent.workspaceId,
+      previousStatus: agent.kycStatus,
+    });
+
     await this.audit.append({
       adminUserId: actorId,
       action: 'admin.kyc.approved',
@@ -100,6 +107,13 @@ export class AdminKycService {
       { isolationLevel: 'ReadCommitted' },
     );
 
+    this.logger.log('KYC agent rejected', {
+      context: 'AdminKycService.rejectAgent',
+      agentId,
+      workspaceId: agent.workspaceId,
+      previousStatus: agent.kycStatus,
+    });
+
     await this.audit.append({
       adminUserId: actorId,
       action: 'admin.kyc.rejected',
@@ -131,6 +145,13 @@ export class AdminKycService {
         kycApprovedAt: null,
         kycRejectedReason: reason,
       },
+    });
+
+    this.logger.log('KYC reverification requested', {
+      context: 'AdminKycService.reverifyAgent',
+      agentId,
+      workspaceId: agent.workspaceId,
+      previousStatus: agent.kycStatus,
     });
 
     await this.audit.append({

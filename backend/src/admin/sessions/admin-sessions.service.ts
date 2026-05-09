@@ -6,6 +6,8 @@ import { adminErrors } from '../common/admin-api-errors';
 /** Admin sessions service. */
 @Injectable()
 export class AdminSessionsService {
+  private readonly logger = new Logger(AdminSessionsService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   /** List own. */

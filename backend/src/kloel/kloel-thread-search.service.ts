@@ -27,6 +27,8 @@ export interface ThreadSearchResult {
 
 @Injectable()
 export class KloelThreadSearchService {
+  private readonly logger = new Logger(KloelThreadSearchService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   async search(
@@ -106,7 +108,10 @@ export class KloelThreadSearchService {
       `);
 
       return this.mapRows(rows, normalizedQuery);
-    } catch {
+    } catch (err) {
+      this.logger.error('Full-text search failed, falling back to contains search',
+        err instanceof Error ? err.message : String(err),
+        { context: 'KloelThreadSearch.search', queryLength: normalizedQuery.length });
       return this.containsFallback(workspaceId, normalizedQuery, safeLimit);
     }
   }

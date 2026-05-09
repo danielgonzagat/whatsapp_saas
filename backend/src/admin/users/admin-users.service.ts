@@ -40,6 +40,8 @@ export interface UpdateAdminUserInput {
 /** Admin users service. */
 @Injectable()
 export class AdminUsersService {
+  private readonly logger = new Logger(AdminUsersService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly permissions: AdminPermissionsService,

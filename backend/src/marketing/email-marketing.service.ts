@@ -246,7 +246,7 @@ export class EmailMarketingService implements OnModuleInit, OnModuleDestroy {
       this.logger.warn('Queue not available — sending campaign directly');
       await this.processCampaignSend(campaignId, workspaceId);
       return this.prisma.emailCampaign.findFirstOrThrow({
-        where: { id: campaignId },
+        where: { id: campaignId, workspaceId },
         include: { recipients: true },
       });
     }
@@ -255,7 +255,7 @@ export class EmailMarketingService implements OnModuleInit, OnModuleDestroy {
     this.logger.log(`Campaign "${campaign.name}" enqueued for sending`);
 
     return this.prisma.emailCampaign.findFirstOrThrow({
-      where: { id: campaignId },
+      where: { id: campaignId, workspaceId },
       include: { recipients: true },
     });
   }
@@ -412,7 +412,7 @@ export class EmailMarketingService implements OnModuleInit, OnModuleDestroy {
     const { providerMessageId, event, metadata } = params;
 
     const recipient = await this.prisma.emailCampaignRecipient.findFirst({
-      where: { providerMessageId },
+      where: { providerMessageId, workspaceId: undefined },
       include: { campaign: true },
     });
 

@@ -7,6 +7,7 @@ import { resolveBackendOpenAIModel } from '../lib/openai-models';
 /** Media factory service. */
 @Injectable()
 export class MediaFactoryService {
+  private readonly logger = new Logger(MediaFactoryService.name);
   private openai: OpenAI | null;
 
   constructor(private config: ConfigService) {
@@ -21,6 +22,7 @@ export class MediaFactoryService {
     }
 
     // tokenBudget: non-workspace context, budget tracked at caller level
+    this.logger.log('Calling OpenAI image generation', { context: 'MediaFactoryService.generateImage', model: 'dall-e-3' });
     const response = await this.openai.images.generate({
       model: 'dall-e-3',
       prompt: prompt,
@@ -54,6 +56,7 @@ export class MediaFactoryService {
     `;
 
     // tokenBudget: non-workspace context, budget tracked at caller level
+    this.logger.log('Calling OpenAI', { context: 'MediaFactoryService.generateSocialContent', model: 'writer', platform });
     const completion = await chatCompletionWithRetry(this.openai, {
       model: resolveBackendOpenAIModel('writer'),
       messages: [{ role: 'user', content: prompt }],
