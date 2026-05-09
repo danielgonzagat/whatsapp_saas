@@ -7,7 +7,7 @@ import { useCallback, useRef } from 'react';
 import { mutate } from 'swr';
 import { parseKloelChatStreamLine } from './HomeScreen.helpers';
 import { secureRandomFloat } from '@/lib/secure-random';
-import type { ChatMessage, Phase } from './HomeScreen.types';
+import type { ChatMessage } from './HomeScreen.types';
 
 const IS_DEV = process.env.NODE_ENV === 'development';
 
@@ -27,7 +27,6 @@ interface UseKloelSendMessageDeps {
   setActiveConversationId: React.Dispatch<React.SetStateAction<string | null>>;
   setChatTitle: React.Dispatch<React.SetStateAction<string>>;
   setIsWaitingForResponse: React.Dispatch<React.SetStateAction<boolean>>;
-  setPhase: React.Dispatch<React.SetStateAction<Phase>>;
   setActiveConversation: (id: string) => void;
   upsertConversation: (conv: { id: string; title: string; updatedAt: string }) => void;
   refreshConversations: () => Promise<void>;
@@ -228,7 +227,6 @@ export function useKloelSendMessage(deps: UseKloelSendMessageDeps) {
     }
     typingMessageIdRef.current = null;
     deps.setIsWaitingForResponse(false);
-    deps.startTyping('', () => {}); // cancel typing
   }, [deps]);
 
   return { sendToApi, handleStopResponse, typingMessageIdRef, abortControllerRef };

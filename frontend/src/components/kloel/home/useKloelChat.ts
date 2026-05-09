@@ -54,7 +54,6 @@ export function useKloelChat({ onSendMessage }: UseKloelChatOptions): UseKloelCh
       setActiveConversationId,
       setChatTitle,
       setIsWaitingForResponse,
-      setPhase,
       setActiveConversation,
       upsertConversation,
       refreshConversations,
