@@ -41,7 +41,10 @@ const makeStubGuards = (overrides?: { allowed?: boolean; guardName?: string; rea
   return { evaluate };
 };
 
-const makeStubTransport = (overrides?: { sendAvailable?: boolean }) => {
+const makeStubTransport = (overrides?: {
+  sendAvailable?: boolean;
+  sendResult?: { blocked: boolean; blockedReason?: string; success: boolean };
+}) => {
   const capability = {
     channel: 'email' as const,
     sendAvailable: overrides?.sendAvailable ?? true,
@@ -50,7 +53,9 @@ const makeStubTransport = (overrides?: { sendAvailable?: boolean }) => {
     requiredSetup: [],
   };
   const getCapability = jest.fn().mockResolvedValue(capability);
-  const send = jest.fn().mockResolvedValue({ success: true, blocked: false });
+  const send = jest
+    .fn()
+    .mockResolvedValue(overrides?.sendResult ?? { success: true, blocked: false });
   return { getCapability, send };
 };
 
@@ -407,22 +412,24 @@ describe('CartRecoveryService', () => {
   });
 
   describe('full stack', () => {
-    it('respects guard over bandit: blocks when guard says no even if bandit chose', async () => {
+    it('delegates cart recovery guard blocking to the transport registry', async () => {
       prisma.checkoutOrder.findMany.mockResolvedValue([pendingOrder()]);
-      const stubGuards = makeStubGuards({
-        allowed: false,
-        guardName: 'daily_contact_limit',
-        reason: 'Limite diário de mensagens atingido.',
-      });
       const stubBandit = makeStubBandit({ arm: 'discount' });
       const stubMindPolicy = makeStubMindPolicy('discount');
-      const stubTransport = makeStubTransport({ sendAvailable: true });
+      const stubTransport = makeStubTransport({
+        sendAvailable: true,
+        sendResult: {
+          success: false,
+          blocked: true,
+          blockedReason: 'Limite diário de mensagens atingido.',
+        },
+      });
       service = new CartRecoveryService(
         prisma as never,
         undefined,
         stubMindPolicy as never,
         undefined,
-        stubGuards as never,
+        undefined,
         stubTransport as never,
         stubBandit as never,
       );
@@ -430,8 +437,9 @@ describe('CartRecoveryService', () => {
       await service.checkAbandonedCarts();
 
       expect(sendEmail).not.toHaveBeenCalled();
+      expect(prisma.checkoutOrder.updateMany).not.toHaveBeenCalled();
       expect(stubBandit.register).toHaveBeenCalledTimes(1);
-      expect(stubGuards.evaluate).toHaveBeenCalledTimes(1);
+      expect(stubTransport.send).toHaveBeenCalledTimes(1);
     });
 
     it('checks email capability before bandit and guard evaluation', async () => {
@@ -458,7 +466,7 @@ describe('CartRecoveryService', () => {
       expect(sendEmail).not.toHaveBeenCalled();
     });
 
-    it('sends when all guards pass and transport is available', async () => {
+    it('sends through transport without a duplicate direct guard evaluation', async () => {
       prisma.checkoutOrder.findMany.mockResolvedValue([pendingOrder()]);
       const stubGuards = makeStubGuards({ allowed: true });
       const stubTransport = makeStubTransport({ sendAvailable: true });
@@ -478,7 +486,7 @@ describe('CartRecoveryService', () => {
 
       expect(stubTransport.getCapability).toHaveBeenCalledWith('ws-1', 'email');
       expect(stubBandit.register).toHaveBeenCalledTimes(1);
-      expect(stubGuards.evaluate).toHaveBeenCalledTimes(1);
+      expect(stubGuards.evaluate).not.toHaveBeenCalled();
       expect(stubTransport.send).toHaveBeenCalledTimes(1);
       expect(sendEmail).not.toHaveBeenCalled();
       expect(prisma.checkoutOrder.updateMany).toHaveBeenCalledTimes(1);

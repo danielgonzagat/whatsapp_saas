@@ -188,7 +188,7 @@ export class CartRecoveryService {
             }
           }
 
-          if (this.guards) {
+          if (this.guards && !this.transportRegistry) {
             try {
               const guardResult = await this.guards.evaluate({
                 workspaceId: wsId,
