@@ -101,12 +101,12 @@ export interface CheckoutVisualTheme {
 
 /** Checkout theme overrides type. */
 export type CheckoutThemeOverrides = {
-  accentColor?: string;
-  accentColor2?: string;
-  backgroundColor?: string;
-  cardColor?: string;
-  textColor?: string;
-  mutedTextColor?: string;
+  accentColor?: string | undefined;
+  accentColor2?: string | undefined;
+  backgroundColor?: string | undefined;
+  cardColor?: string | undefined;
+  textColor?: string | undefined;
+  mutedTextColor?: string | undefined;
 };
 
 const BLANC_BASE = {

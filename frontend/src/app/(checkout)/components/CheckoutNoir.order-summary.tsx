@@ -40,7 +40,7 @@ interface NoirOrderSummaryProps {
   testimonials: NoirTestimonial[];
   C: NoirColors;
   inputTheme: NoirInputTheme;
-  enableCoupon?: boolean;
+  enableCoupon?: boolean | undefined;
 }
 
 /** Mobile collapsible summary for CheckoutNoir */

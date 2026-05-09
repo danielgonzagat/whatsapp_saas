@@ -40,7 +40,7 @@ interface OrderSummaryProps {
   testimonials: BlancTestimonial[];
   colors: BlancColors;
   inputTheme: BlancInputTheme;
-  enableCoupon?: boolean;
+  enableCoupon?: boolean | undefined;
 }
 
 /** Mobile collapsible summary (ck-mobile-only) */

@@ -4,14 +4,14 @@ import type { CSSProperties, ReactNode } from 'react';
 import { KLOEL_SPORES } from './kloel-brand-spores';
 
 type MushroomVisualProps = {
-  size?: number;
-  traceColor?: string;
-  style?: CSSProperties;
-  title?: string;
-  animated?: boolean;
-  spores?: 'none' | 'animated' | 'static';
-  ariaHidden?: boolean;
-  fit?: 'default' | 'icon';
+  size?: number | undefined;
+  traceColor?: string | undefined;
+  style?: CSSProperties | undefined;
+  title?: string | undefined;
+  animated?: boolean | undefined;
+  spores?: 'none' | 'animated' | 'static' | undefined;
+  ariaHidden?: boolean | undefined;
+  fit?: 'default' | 'icon' | undefined;
 };
 
 type MarkProps = {

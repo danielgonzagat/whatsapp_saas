@@ -31,7 +31,7 @@ export interface BuildOrderPayloadParams {
   couponApplied: boolean;
   couponCode: string;
   installments: number;
-  affiliateWorkspaceId?: string;
+  affiliateWorkspaceId?: string | undefined;
 }
 
 export function buildOrderPayload(

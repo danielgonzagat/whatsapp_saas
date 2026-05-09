@@ -19,13 +19,13 @@ export interface OrderStatusData {
   /** Payment property. */
   payment?: {
     status: string;
-    pixQrCode?: string;
-    pixCopyPaste?: string;
-    pixExpiresAt?: string;
-    boletoUrl?: string;
-    boletoBarcode?: string;
-    boletoExpiresAt?: string;
-  };
+    pixQrCode?: string | undefined;
+    pixCopyPaste?: string | undefined;
+    pixExpiresAt?: string | undefined;
+    boletoUrl?: string | undefined;
+    boletoBarcode?: string | undefined;
+    boletoExpiresAt?: string | undefined;
+  } | undefined;
 }
 
 /** Create order data shape. */
@@ -35,59 +35,59 @@ export interface CreateOrderData {
   /** Workspace id property. */
   workspaceId: string;
   /** Checkout code property. */
-  checkoutCode?: string;
+  checkoutCode?: string | undefined;
   /** Captured lead id property. */
-  capturedLeadId?: string;
+  capturedLeadId?: string | undefined;
   /** Device fingerprint property. */
-  deviceFingerprint?: string;
+  deviceFingerprint?: string | undefined;
   /** Customer name property. */
   customerName: string;
   /** Customer email property. */
   customerEmail: string;
   /** Customer cpf property. */
-  customerCPF?: string;
+  customerCPF?: string | undefined;
   /** Customer phone property. */
-  customerPhone?: string;
+  customerPhone?: string | undefined;
   /** Shipping address property. */
   shippingAddress: Record<string, unknown>;
   /** Shipping method property. */
-  shippingMethod?: string;
+  shippingMethod?: string | undefined;
   /** Shipping price property. */
-  shippingPrice?: number;
+  shippingPrice?: number | undefined;
   /** Order quantity property. */
-  orderQuantity?: number;
+  orderQuantity?: number | undefined;
   /** Subtotal in cents property. */
   subtotalInCents: number;
   /** Discount in cents property. */
-  discountInCents?: number;
+  discountInCents?: number | undefined;
   /** Bump total in cents property. */
-  bumpTotalInCents?: number;
+  bumpTotalInCents?: number | undefined;
   /** Total in cents property. */
   totalInCents: number;
   /** Coupon code property. */
-  couponCode?: string;
+  couponCode?: string | undefined;
   /** Coupon discount property. */
-  couponDiscount?: number;
+  couponDiscount?: number | undefined;
   /** Accepted bumps property. */
-  acceptedBumps?: string[];
+  acceptedBumps?: string[] | undefined;
   /** Payment method property. */
   paymentMethod: 'CREDIT_CARD' | 'PIX' | 'BOLETO';
   /** Installments property. */
-  installments?: number;
+  installments?: number | undefined;
   /** Card holder name property. */
-  cardHolderName?: string;
+  cardHolderName?: string | undefined;
   /** Affiliate id property. */
-  affiliateId?: string;
+  affiliateId?: string | undefined;
   /** Utm source property. */
-  utmSource?: string;
+  utmSource?: string | undefined;
   /** Utm medium property. */
-  utmMedium?: string;
+  utmMedium?: string | undefined;
   /** Utm campaign property. */
-  utmCampaign?: string;
+  utmCampaign?: string | undefined;
   /** Utm content property. */
-  utmContent?: string;
+  utmContent?: string | undefined;
   /** Utm term property. */
-  utmTerm?: string;
+  utmTerm?: string | undefined;
 }
 
 /** Coupon result shape. */

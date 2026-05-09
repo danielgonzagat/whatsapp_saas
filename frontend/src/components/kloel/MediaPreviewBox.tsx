@@ -24,11 +24,11 @@ type Layout = {
 };
 
 interface MediaPreviewBoxProps {
-  accept?: string;
-  alt?: string;
-  emptyContent?: ReactNode;
-  emptySubtitle?: string;
-  emptyTitle?: string;
+  accept?: string | undefined;
+  alt?: string | undefined;
+  emptyContent?: ReactNode | undefined;
+  emptySubtitle?: string | undefined;
+  emptyTitle?: string | undefined;
   fallbackUrl?: string | null;
   hint?: string;
   inputAriaLabel?: string;
@@ -36,12 +36,12 @@ interface MediaPreviewBoxProps {
   layout?: Layout;
   onClear?: () => void;
   onSelectFile: (file: File) => void;
-  previewFit?: 'contain' | 'cover';
-  previewUrl?: string | null;
-  removeButtonAriaLabel?: string;
-  showRemoveButton?: boolean;
-  theme?: Theme;
-  uploading?: boolean;
+  previewFit?: 'contain' | 'cover' | undefined;
+  previewUrl?: string | null | undefined;
+  removeButtonAriaLabel?: string | undefined;
+  showRemoveButton?: boolean | undefined;
+  theme?: Theme | undefined;
+  uploading?: boolean | undefined;
 }
 
 const defaultTheme: Required<Theme> = {

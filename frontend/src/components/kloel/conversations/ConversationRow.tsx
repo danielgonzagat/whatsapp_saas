@@ -18,9 +18,9 @@ import {
 
 interface ConversationLike {
   id: string;
-  title?: string;
-  updatedAt?: string;
-  lastMessagePreview?: string;
+  title?: string | undefined;
+  updatedAt?: string | undefined;
+  lastMessagePreview?: string | undefined;
 }
 
 interface ConversationRowProps {

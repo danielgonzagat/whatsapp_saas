@@ -44,7 +44,7 @@ interface PaymentStepProps {
   finalizeOrder: () => Promise<void>;
   colors: BlancColors;
   inputTheme: BlancInputTheme;
-  btnFinalizeText?: string;
+  btnFinalizeText?: string | undefined;
   fmt: { brl: (v: number) => string };
 }
 

@@ -7,9 +7,9 @@ interface ToolCardProps {
   icon: string;
   title: string;
   desc: string;
-  badge?: string;
-  disabled?: boolean;
-  onClick?: () => void;
+  badge?: string | undefined;
+  disabled?: boolean | undefined;
+  onClick?: (() => void) | undefined;
 }
 
 /** Tool card. */

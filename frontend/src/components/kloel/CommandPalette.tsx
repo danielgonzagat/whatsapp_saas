@@ -60,15 +60,11 @@ export interface CommandPaletteProps {
   /** On select property. */
   onSelect: (command: CommandItem) => void;
   /** Commands property. */
-  commands?: CommandItem[];
-  /** Initial category property. */
-  initialCategory?: CommandCategory;
-  /** Initial search property. */
-  initialSearch?: string;
-  /** Class name property. */
-  className?: string;
-  /** Mode property. */
-  mode?: 'full' | 'conversations';
+  commands?: CommandItem[] | undefined;
+  initialCategory?: CommandCategory | undefined;
+  initialSearch?: string | undefined;
+  className?: string | undefined;
+  mode?: 'full' | 'conversations' | undefined;
 }
 
 /** Command palette. */

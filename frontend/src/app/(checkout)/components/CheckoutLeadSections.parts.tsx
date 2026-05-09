@@ -152,7 +152,7 @@ export function LeadField({
 
 interface IdentityPanelProps {
   theme: CheckoutVisualTheme;
-  config?: PublicCheckoutConfig;
+  config?: PublicCheckoutConfig | undefined;
   fid: string;
   form: LeadFormState;
   updateField: LeadFieldChange;
@@ -293,7 +293,7 @@ export function IdentityPanel({
 
 interface DeliveryPanelProps {
   theme: CheckoutVisualTheme;
-  config?: PublicCheckoutConfig;
+  config?: PublicCheckoutConfig | undefined;
   fid: string;
   form: LeadFormState;
   updateField: LeadFieldChange;

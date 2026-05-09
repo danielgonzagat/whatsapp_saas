@@ -80,8 +80,8 @@ export function StripePaymentElement(props: StripePaymentElementProps): ReactEle
 
 interface PaymentFormProps {
   returnUrl: string;
-  onSuccess?: () => void;
-  onError?: (message: string) => void;
+  onSuccess?: (() => void) | undefined;
+  onError?: ((message: string) => void) | undefined;
 }
 
 function PaymentForm({ returnUrl, onSuccess, onError }: PaymentFormProps): ReactElement {

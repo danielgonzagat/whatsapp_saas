@@ -40,7 +40,7 @@ interface Subscription {
   status: 'none' | 'trial' | 'active' | 'expired' | 'suspended';
   trialDaysLeft: number;
   creditsBalance: number;
-  plan?: string;
+  plan?: string | undefined;
 }
 interface AuthState {
   isAuthenticated: boolean;

@@ -10,10 +10,10 @@ interface NoirCouponPopupProps {
   couponError: string | null;
   C: NoirColors;
   inputTheme: NoirInputTheme;
-  couponPopupTitle?: string;
-  couponPopupDesc?: string;
-  couponPopupDismiss?: string;
-  couponPopupBtnText?: string;
+  couponPopupTitle?: string | undefined;
+  couponPopupDesc?: string | undefined;
+  couponPopupDismiss?: string | undefined;
+  couponPopupBtnText?: string | undefined;
   setShowCouponPopup: (v: boolean) => void;
   setCouponPopupHandled: (v: boolean) => void;
   applyCoupon: (code?: string) => Promise<void>;

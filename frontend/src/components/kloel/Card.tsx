@@ -4,9 +4,9 @@ import { type CSSProperties, type ReactNode, useState } from 'react';
 
 interface CardProps {
   children: ReactNode;
-  style?: CSSProperties;
-  onClick?: () => void;
-  className?: string;
+  style?: CSSProperties | undefined;
+  onClick?: (() => void) | undefined;
+  className?: string | undefined;
 }
 
 /** Card. */

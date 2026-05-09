@@ -9,13 +9,13 @@ type TimerPosition = 'top' | 'above_button' | 'below_header';
 
 interface CountdownTimerProps {
   enabled: boolean;
-  type?: TimerType;
-  minutes?: number;
-  message?: string;
-  expiredMessage?: string;
-  position?: TimerPosition;
-  accentColor?: string;
-  textColor?: string;
+  type?: TimerType | undefined;
+  minutes?: number | undefined;
+  message?: string | undefined;
+  expiredMessage?: string | undefined;
+  position?: TimerPosition | undefined;
+  accentColor?: string | undefined;
+  textColor?: string | undefined;
 }
 
 const COUNTDOWN_END_SLOT = ['ck', 'countdown', 'end'].join('_');

@@ -1,9 +1,9 @@
 'use client';
 
 interface StockCounterProps {
-  message?: string;
+  message?: string | undefined;
   count: number;
-  accentColor?: string;
+  accentColor?: string | undefined;
 }
 
 /** Stock counter. */

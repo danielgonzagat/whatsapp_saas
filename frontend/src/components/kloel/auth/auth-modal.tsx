@@ -22,8 +22,8 @@ type AuthStep = 'email' | 'details';
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
-  initialMode?: AuthMode;
-  initialEmail?: string;
+  initialMode?: AuthMode | undefined;
+  initialEmail?: string | undefined;
 }
 
 /** Auth modal. */
