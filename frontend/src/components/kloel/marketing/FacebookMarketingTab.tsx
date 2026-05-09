@@ -1,14 +1,9 @@
 'use client';
 
-import React from 'react';
 import { kloelT } from '@/lib/i18n/t';
-import { useFacebookMarketing } from './useFacebookMarketing';
 import {
   CH_CONFIG,
   SORA,
-  MONO,
-  BG_CARD,
-  BORDER,
   ConnBadge,
   ChannelStatsList,
   ChannelInfoGridCard,
@@ -33,7 +28,6 @@ export default function FacebookMarketingTab({
   connectingKey,
 }: FacebookMarketingTabProps) {
   const ch = CH_CONFIG.facebook;
-  const { isConnected } = useFacebookMarketing(connectionStatus);
 
   if (!metaConnected) {
     return (

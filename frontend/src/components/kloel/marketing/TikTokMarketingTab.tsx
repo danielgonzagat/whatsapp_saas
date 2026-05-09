@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { kloelT } from '@/lib/i18n/t';
 import { useTikTokMarketing } from './useTikTokMarketing';
 import { CH_CONFIG, SORA, MONO, BG_CARD, BORDER, Fmt, RegisteredDataList } from './MarketingShared';

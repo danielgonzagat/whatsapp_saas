@@ -15,16 +15,14 @@ import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
 import { apiFetch } from '@/lib/api';
 import { swrFetcher } from '@/lib/fetcher';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import type React from 'react';
 import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import useSWR, { mutate } from 'swr';
+import useSWR from 'swr';
 
 import {
   IC,
   NP,
   Ticker,
   LiveStream,
-  ConnBadge,
   ChannelConnectBadge,
   CH_CONFIG,
   SORA,

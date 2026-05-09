@@ -1,5 +1,5 @@
 import * as crypto from 'node:crypto';
-import { HttpException, HttpStatus, ForbiddenException } from '@nestjs/common';
+import { ForbiddenException } from '@nestjs/common';
 
 // ── WebhooksController replay tests ──
 
@@ -57,23 +57,15 @@ describe('WebhooksController — replay safety', () => {
   it('catchHook returns 200 response on Redis dedup (replay)', async () => {
     redis.setnx.mockResolvedValueOnce(0);
 
-    let caught: HttpException | undefined;
-    try {
-      await controller.catchHook(
-        'ws-1',
-        'flow-1',
-        { phone: '5511999999999', status: 'paid' },
-        {},
-        createTestSignature({ phone: '5511999999999', status: 'paid' }, 'test-hooks-secret'),
-        undefined,
-        { body: { phone: '5511999999999', status: 'paid' }, rawBody: JSON.stringify({ phone: '5511999999999', status: 'paid' }) },
-      );
-    } catch (err) {
-      caught = err as HttpException;
-    }
+    const body = { phone: '5511999999999', status: 'paid' };
+    const promise = controller.catchHook(
+      'ws-1', 'flow-1', body, {},
+      createTestSignature(body, 'test-hooks-secret'),
+      undefined,
+      { body, rawBody: JSON.stringify(body) },
+    );
 
-    expect(caught).toBeDefined();
-    expect(caught!.getStatus()).toBe(200);
+    await expect(promise).rejects.toThrow('Duplicate webhook');
     expect(webhooksService.processWebhook).not.toHaveBeenCalled();
   });
 

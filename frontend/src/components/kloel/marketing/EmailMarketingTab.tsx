@@ -1,6 +1,5 @@
 'use client';
 
-import React from 'react';
 import { kloelT } from '@/lib/i18n/t';
 import { useEmailMarketing } from './useEmailMarketing';
 import {
@@ -11,7 +10,6 @@ import {
   BG_ELEVATED,
   BORDER,
   EMBER,
-  Fmt,
   IC,
   ConnBadge,
   channelDataStats,

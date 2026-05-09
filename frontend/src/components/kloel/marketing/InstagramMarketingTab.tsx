@@ -1,6 +1,5 @@
 'use client';
 
-import React from 'react';
 import { kloelT } from '@/lib/i18n/t';
 import { useInstagramMarketing } from './useInstagramMarketing';
 import {
@@ -41,7 +40,7 @@ export default function InstagramMarketingTab({
       <MetaConnectPrompt
         channelKey="instagram"
         channelData={channelData}
-        onConnect={(key) => onConnectMeta?.(key)}
+        onConnect={() => onConnectMeta?.('instagram')}
         connecting={connectingKey === 'instagram'}
       />
     );
@@ -217,7 +216,7 @@ function MetaConnectPrompt({
 }: {
   channelKey: string;
   channelData: ChannelRealData | null;
-  onConnect: (channelKey: 'instagram' | 'facebook' | 'whatsapp') => void;
+  onConnect: () => void;
   connecting?: boolean;
 }) {
   const ch = CH_CONFIG[channelKey];
@@ -254,7 +253,7 @@ function MetaConnectPrompt({
       </div>
       <button
         type="button"
-        onClick={() => onConnect(channelKey as 'instagram' | 'facebook' | 'whatsapp')}
+        onClick={() => onConnect()}
         disabled={connecting}
         style={{
           fontFamily: SORA,

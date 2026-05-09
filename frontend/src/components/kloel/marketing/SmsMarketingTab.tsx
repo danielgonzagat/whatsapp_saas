@@ -1,6 +1,5 @@
 'use client';
 
-import React from 'react';
 import { kloelT } from '@/lib/i18n/t';
 import { useSmsMarketing } from './useSmsMarketing';
 import { SORA, MONO, BG_CARD, BORDER, Fmt } from './MarketingShared';
