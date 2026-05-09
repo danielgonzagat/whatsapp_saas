@@ -1,16 +1,19 @@
 import { MindQualityService } from './mind-quality.service';
 import { MindReplayService } from './mind-replay.service';
 import { MindSimulatorService } from './mind-simulator.service';
+import { MindSyntheticGeneratorService } from './mind-synthetic-generator.service';
 
 describe('MindSimulatorService', () => {
   let service: MindSimulatorService;
   let replay: MindReplayService;
   let quality: MindQualityService;
+  let synthetic: MindSyntheticGeneratorService;
 
   beforeEach(() => {
     replay = new MindReplayService();
     quality = new MindQualityService();
-    service = new MindSimulatorService(replay, quality);
+    synthetic = new MindSyntheticGeneratorService();
+    service = new MindSimulatorService(replay, quality, synthetic);
   });
 
   describe('simulate', () => {
@@ -226,6 +229,17 @@ describe('MindSimulatorService', () => {
 
       expect(report.workspaceId).toBe('ws-1');
       expect(report.replay.totalDecisions).toBe(1);
+    });
+  });
+
+  describe('simulateSyntheticWorkspace', () => {
+    it('generates a deterministic synthetic scenario through the simulator', () => {
+      const first = service.simulateSyntheticWorkspace('ws-1', 123);
+      const second = service.simulateSyntheticWorkspace('ws-1', 123);
+
+      expect(first.workspaceId).toBe('ws-1');
+      expect(first.replay.totalDecisions).toBeGreaterThan(0);
+      expect(first.decisionDetails).toEqual(second.decisionDetails);
     });
   });
 

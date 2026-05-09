@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { MIND_DECISION_CATALOG } from './mind-decision-catalog';
 import { MindBeliefService } from './mind-belief.service';
 import { MindPolicyService } from './mind-policy.service';
+import { MindSimulatorService } from './mind-simulator.service';
 
 function startOfDay(date: Date): Date {
   return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
@@ -15,6 +16,7 @@ export class MindReportService {
     private readonly prisma: PrismaService,
     private readonly beliefs: MindBeliefService,
     private readonly policy: MindPolicyService,
+    private readonly simulator: MindSimulatorService,
   ) {}
 
   async generateDaily(workspaceId: string, reportDate = startOfDay(new Date())) {
@@ -36,6 +38,10 @@ export class MindReportService {
       ),
     );
     const replyBeliefs = await this.beliefs.list(workspaceId, 'P(reply|template,hour,channel)');
+    const syntheticSimulation = this.simulator.simulateSyntheticWorkspace(
+      workspaceId,
+      Number.parseInt(reportDate.toISOString().slice(0, 10).replace(/-/g, ''), 10),
+    );
 
     const content = [
       `# Relatorio diario MIND — ${reportDate.toISOString().slice(0, 10)}`,
@@ -66,12 +72,20 @@ export class MindReportService {
           (belief) =>
             `- ${belief.subject}: mean=${(belief.mean * 100).toFixed(1)}%, variance=${belief.variance.toFixed(4)}, n=${belief.samples}`,
         ),
+      '',
+      '## Simulacao sintetica',
+      `- verdict=${syntheticSimulation.summary.overallVerdict}, decisoes=${syntheticSimulation.summary.totalDecisions}, quality_failed=${syntheticSimulation.summary.qualityFailed}`,
     ].join('\n');
 
     const metrics = {
       lifts,
       concepts: concepts.length,
       replyBeliefs: replyBeliefs.length,
+      syntheticSimulation: {
+        verdict: syntheticSimulation.summary.overallVerdict,
+        totalDecisions: syntheticSimulation.summary.totalDecisions,
+        qualityFailed: syntheticSimulation.summary.qualityFailed,
+      },
       state: state
         ? {
             lastTickAt: state.lastTickAt?.toISOString() ?? null,

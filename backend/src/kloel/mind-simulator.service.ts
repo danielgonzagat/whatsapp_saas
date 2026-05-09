@@ -4,6 +4,7 @@ import type { QualityReport } from './mind-quality.service';
 import { MindReplayService } from './mind-replay.service';
 import type { ReplayScenarioInput, ReplayInput, ReplayReport } from './mind-replay.service';
 import type { MindActionContext } from './mind-code-native.types';
+import { MindSyntheticGeneratorService } from './mind-synthetic-generator.service';
 
 export interface SimulateActionEntry {
   action: string;
@@ -53,6 +54,7 @@ export class MindSimulatorService {
   constructor(
     private readonly replay: MindReplayService,
     private readonly quality: MindQualityService,
+    private readonly synthetic: MindSyntheticGeneratorService,
   ) {}
 
   simulate(input: SimulateInput): SimulateReport {
@@ -141,6 +143,35 @@ export class MindSimulatorService {
       scenario: { workspaceId, decisions },
       actions,
       liftData,
+    });
+  }
+
+  simulateSyntheticWorkspace(workspaceId: string, seed = 42): SimulateReport {
+    this.synthetic.setSeed(seed);
+    const scenario = this.synthetic.generateScenario(workspaceId, seed);
+    const uniqueActions = [
+      ...new Set(
+        scenario.decisions.flatMap((decision) => decision.candidates.map((c) => c.action)),
+      ),
+    ];
+    const actions = this.synthetic
+      .generateActionContexts(uniqueActions, seed + 500)
+      .map((entry) => ({
+        action: entry.action,
+        decisionType: scenario.decisions[0]?.decisionType ?? 'followup_timing',
+        context: entry.context,
+      }));
+
+    return this.simulate({
+      workspaceId,
+      scenario,
+      actions,
+      liftData: {
+        lift: 0.05,
+        pZScore: 0.8,
+        samples: 100,
+        fallbackActive: false,
+      },
     });
   }
 

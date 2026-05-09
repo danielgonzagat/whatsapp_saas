@@ -360,12 +360,24 @@ describe('code-native MIND services', () => {
         pZScore: 0,
       }),
     };
-    const service = new MindReportService(prisma as never, beliefs as never, policy as never);
+    const simulator = {
+      simulateSyntheticWorkspace: jest.fn().mockReturnValue({
+        summary: { overallVerdict: 'clean', totalDecisions: 3, qualityFailed: 0 },
+      }),
+    };
+    const service = new MindReportService(
+      prisma as never,
+      beliefs as never,
+      policy as never,
+      simulator as never,
+    );
 
     const report = await service.generateDaily('ws-1', new Date('2026-05-07T00:00:00Z'));
 
     expect(report.content).toContain('# Relatorio diario MIND');
     expect(report.content).toContain('## Lift por decisao');
+    expect(report.content).toContain('## Simulacao sintetica');
+    expect(simulator.simulateSyntheticWorkspace).toHaveBeenCalledWith('ws-1', 20260507);
     expect(policy.harness).toHaveBeenCalledWith('ws-1', 'followup_timing', 14);
   });
 
@@ -387,7 +399,17 @@ describe('code-native MIND services', () => {
         pZScore: 0,
       }),
     };
-    const service = new MindReportService(prisma as never, beliefs as never, policy as never);
+    const simulator = {
+      simulateSyntheticWorkspace: jest.fn().mockReturnValue({
+        summary: { overallVerdict: 'clean', totalDecisions: 3, qualityFailed: 0 },
+      }),
+    };
+    const service = new MindReportService(
+      prisma as never,
+      beliefs as never,
+      policy as never,
+      simulator as never,
+    );
 
     await expect(service.generateDaily('ws-1', new Date('2026-05-07T00:00:00Z'))).rejects.toThrow(
       'report write failed',

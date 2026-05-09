@@ -189,12 +189,18 @@ export class MindController {
         utilitySuccess: d.utilitySuccess,
         utilityFail: d.utilityFail,
       }));
-    } else {
+    } else if (body.actions && body.actions.length > 0) {
       const recipeKeys = body.recipeKeys ?? ['followup_timing', 'cart_recovery', 'coupon_offer'];
       const recipes = MindSyntheticGeneratorService.builtinRecipes();
       decisions = recipeKeys
         .filter((key) => recipes[key])
         .map((key, index) => this.synthetic.generateDecision(recipes[key], seed + index * 100));
+    } else {
+      const report = this.simulator.simulateSyntheticWorkspace(workspaceId, seed);
+      return {
+        report,
+        markdown: this.simulator.reportToMarkdown(report),
+      };
     }
 
     let actions: SimulateActionEntry[];
