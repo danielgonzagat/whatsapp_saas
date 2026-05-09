@@ -3,7 +3,13 @@
 import { useState, useCallback } from 'react';
 import { apiFetch } from '@/lib/api';
 import { mutate } from 'swr';
-import type { MarketingConnectStatus, EmailSendResult, EmailSendResponsePayload, EmailTemplatePreset } from './MarketingTypes';
+import type {
+  MarketingConnectStatus,
+  EmailSendResult,
+  EmailSendResponsePayload,
+  EmailTemplatePreset,
+  EmailChannelConnection,
+} from './MarketingTypes';
 
 export interface UseEmailMarketingProps {
   connectionStatus?: MarketingConnectStatus | null;
@@ -11,7 +17,7 @@ export interface UseEmailMarketingProps {
 }
 
 export interface UseEmailMarketingReturn {
-  connection: MarketingConnectStatus['channels'] extends { email?: infer T } ? T : undefined;
+  connection: EmailChannelConnection | undefined;
   emailSubject: string;
   setEmailSubject: (value: string) => void;
   emailBody: string;

@@ -1,4 +1,5 @@
 import * as crypto from 'node:crypto';
+import { HttpException, HttpStatus, ForbiddenException } from '@nestjs/common';
 
 // ── WebhooksController replay tests ──
 
@@ -14,12 +15,16 @@ describe('WebhooksController — replay safety', () => {
   };
   let prisma: { workspace: { findUnique: jest.Mock }; auditLog: { create: jest.Mock } };
 
-  beforeEach(async () => {
-    jest.resetModules();
+  beforeAll(async () => {
     process.env.HOOKS_WEBHOOK_SECRET = 'test-hooks-secret';
     process.env.NODE_ENV = 'test';
-    delete process.env.META_APP_SECRET;
+    const { WebhooksController } = await import('./webhooks.controller');
+    ControllerClass = WebhooksController;
+  });
 
+  let ControllerClass: typeof import('./webhooks.controller').WebhooksController;
+
+  beforeEach(() => {
     redis = {
       setnx: jest.fn(),
       expire: jest.fn(),
@@ -38,34 +43,38 @@ describe('WebhooksController — replay safety', () => {
       auditLog: { create: jest.fn().mockResolvedValue({}) },
     };
 
-    const { WebhooksController } = await import('./webhooks.controller');
-    controller = new WebhooksController(
+    controller = new ControllerClass(
       webhooksService as never,
       redis as never,
       prisma as never,
     );
   });
 
-  afterEach(() => {
+  afterAll(() => {
     delete process.env.HOOKS_WEBHOOK_SECRET;
-    delete process.env.NODE_ENV;
   });
 
-  it('catchHook returns 200 on Redis dedup (replay)', async () => {
+  it('catchHook returns 200 response on Redis dedup (replay)', async () => {
     redis.setnx.mockResolvedValueOnce(0);
 
-    const result = await controller.catchHook(
-      'ws-1',
-      'flow-1',
-      { phone: '5511999999999', status: 'paid' },
-      {},
-      createTestSignature({ phone: '5511999999999', status: 'paid' }, 'test-hooks-secret'),
-      undefined,
-      { body: { phone: '5511999999999', status: 'paid' }, rawBody: JSON.stringify({ phone: '5511999999999', status: 'paid' }) },
-    );
+    let caught: HttpException | undefined;
+    try {
+      await controller.catchHook(
+        'ws-1',
+        'flow-1',
+        { phone: '5511999999999', status: 'paid' },
+        {},
+        createTestSignature({ phone: '5511999999999', status: 'paid' }, 'test-hooks-secret'),
+        undefined,
+        { body: { phone: '5511999999999', status: 'paid' }, rawBody: JSON.stringify({ phone: '5511999999999', status: 'paid' }) },
+      );
+    } catch (err) {
+      caught = err as HttpException;
+    }
 
-    expect(redis.setnx).toHaveBeenCalled();
-    expect(result).toBeDefined();
+    expect(caught).toBeDefined();
+    expect(caught!.getStatus()).toBe(200);
+    expect(webhooksService.processWebhook).not.toHaveBeenCalled();
   });
 
   it('catchHook returns 200 on WebhookEvent P2002 duplicate', async () => {
@@ -151,15 +160,15 @@ describe('PaymentWebhookGenericController — replay safety', () => {
   let webhooksService: { logWebhookEvent: jest.Mock; markWebhookProcessed: jest.Mock };
   let autopilot: { markConversion: jest.Mock; triggerPostPurchaseFlow: jest.Mock };
   let prisma: { workspace: { findUnique: jest.Mock }; contact: { findFirst: jest.Mock } };
+  let ControllerClass: typeof import('./payment-webhook-generic.controller').PaymentWebhookGenericController;
 
-  beforeEach(async () => {
-    jest.resetModules();
+  beforeAll(async () => {
     process.env.NODE_ENV = 'test';
-    process.env.PAYMENT_WEBHOOK_SECRET = 'test-payment-secret';
-    process.env.SHOPIFY_WEBHOOK_SECRET = 'test-shopify-secret';
-    process.env.PAGHIPER_WEBHOOK_TOKEN = 'test-paghiper-token';
-    process.env.WC_WEBHOOK_SECRET = 'test-wc-secret';
+    const { PaymentWebhookGenericController } = await import('./payment-webhook-generic.controller');
+    ControllerClass = PaymentWebhookGenericController;
+  });
 
+  beforeEach(() => {
     redis = { set: jest.fn() };
     webhooksService = {
       logWebhookEvent: jest.fn().mockResolvedValue({ id: 'we-1', status: 'received' }),
@@ -174,8 +183,7 @@ describe('PaymentWebhookGenericController — replay safety', () => {
       contact: { findFirst: jest.fn().mockResolvedValue(null) },
     };
 
-    const { PaymentWebhookGenericController } = await import('./payment-webhook-generic.controller');
-    controller = new PaymentWebhookGenericController(
+    controller = new ControllerClass(
       autopilot as never,
       {} as never,
       prisma as never,
@@ -184,20 +192,13 @@ describe('PaymentWebhookGenericController — replay safety', () => {
     );
   });
 
-  afterEach(() => {
-    delete process.env.PAYMENT_WEBHOOK_SECRET;
-    delete process.env.SHOPIFY_WEBHOOK_SECRET;
-    delete process.env.PAGHIPER_WEBHOOK_TOKEN;
-    delete process.env.WC_WEBHOOK_SECRET;
-  });
-
   it('handlePayment returns 200 on WebhookEvent P2002 duplicate', async () => {
     redis.set.mockResolvedValueOnce('OK');
     const p2002Err = Object.assign(new Error('Unique constraint'), { code: 'P2002' });
     webhooksService.logWebhookEvent.mockRejectedValueOnce(p2002Err);
 
     const result = await controller.handlePayment(
-      'test-payment-secret',
+      process.env.PAYMENT_WEBHOOK_SECRET || 'test',
       undefined,
       undefined,
       undefined,
@@ -210,6 +211,7 @@ describe('PaymentWebhookGenericController — replay safety', () => {
   });
 
   it('handleShopify returns 200 on WebhookEvent P2002 duplicate', async () => {
+    process.env.SHOPIFY_WEBHOOK_SECRET = 'test-shopify-secret';
     redis.set.mockResolvedValueOnce('OK');
     const p2002Err = Object.assign(new Error('Unique constraint'), { code: 'P2002' });
     webhooksService.logWebhookEvent.mockRejectedValueOnce(p2002Err);
@@ -227,9 +229,11 @@ describe('PaymentWebhookGenericController — replay safety', () => {
 
     expect(result).toHaveProperty('skipped', true);
     expect(result).toHaveProperty('reason', 'duplicate_webhook_event');
+    delete process.env.SHOPIFY_WEBHOOK_SECRET;
   });
 
   it('handlePagHiper returns 200 on WebhookEvent P2002 duplicate', async () => {
+    process.env.PAGHIPER_WEBHOOK_TOKEN = 'test-paghiper-token';
     redis.set.mockResolvedValueOnce('OK');
     const p2002Err = Object.assign(new Error('Unique constraint'), { code: 'P2002' });
     webhooksService.logWebhookEvent.mockRejectedValueOnce(p2002Err);
@@ -244,9 +248,11 @@ describe('PaymentWebhookGenericController — replay safety', () => {
 
     expect(result).toHaveProperty('skipped', true);
     expect(result).toHaveProperty('reason', 'duplicate_webhook_event');
+    delete process.env.PAGHIPER_WEBHOOK_TOKEN;
   });
 
   it('handleWoo returns 200 on WebhookEvent P2002 duplicate', async () => {
+    process.env.WC_WEBHOOK_SECRET = 'test-wc-secret';
     redis.set.mockResolvedValueOnce('OK');
     const p2002Err = Object.assign(new Error('Unique constraint'), { code: 'P2002' });
     webhooksService.logWebhookEvent.mockRejectedValueOnce(p2002Err);
@@ -264,6 +270,7 @@ describe('PaymentWebhookGenericController — replay safety', () => {
 
     expect(result).toHaveProperty('skipped', true);
     expect(result).toHaveProperty('reason', 'duplicate_webhook_event');
+    delete process.env.WC_WEBHOOK_SECRET;
   });
 });
 
@@ -282,12 +289,15 @@ describe('MetaWebhookController — replay safety', () => {
     message: { updateMany: jest.Mock };
     metaConnection: { findFirst: jest.Mock };
   };
+  let ControllerClass: typeof import('../meta/webhooks/meta-webhook.controller').MetaWebhookController;
 
-  beforeEach(async () => {
-    jest.resetModules();
+  beforeAll(async () => {
     process.env.NODE_ENV = 'test';
-    delete process.env.META_APP_SECRET;
+    const { MetaWebhookController } = await import('../meta/webhooks/meta-webhook.controller');
+    ControllerClass = MetaWebhookController;
+  });
 
+  beforeEach(() => {
     redis = { set: jest.fn() };
     webhooksService = {
       logWebhookEvent: jest.fn().mockResolvedValue({ id: 'we-meta-1', status: 'received' }),
@@ -303,8 +313,7 @@ describe('MetaWebhookController — replay safety', () => {
       metaConnection: { findFirst: jest.fn().mockResolvedValue(null) },
     };
 
-    const { MetaWebhookController } = await import('../meta/webhooks/meta-webhook.controller');
-    controller = new MetaWebhookController(
+    controller = new ControllerClass(
       metaWhatsApp as never,
       inboundProcessor as never,
       {} as never,
@@ -340,13 +349,9 @@ describe('MetaWebhookController — replay safety', () => {
     expect(inboundProcessor.process).not.toHaveBeenCalled();
   });
 
-  it('throws ForbiddenException on invalid signature in production', async () => {
-    process.env.NODE_ENV = 'production';
+  it('throws ForbiddenException on invalid signature', async () => {
     process.env.META_APP_SECRET = 'meta-secret';
-
-    const { ForbiddenException } = await import('@nestjs/common');
-    const { MetaWebhookController: MetaWC } = await import('../meta/webhooks/meta-webhook.controller');
-    const ctrl = new MetaWC(
+    const ctrl = new ControllerClass(
       metaWhatsApp as never,
       inboundProcessor as never,
       {} as never,
@@ -377,13 +382,15 @@ describe('WhatsAppBrainController — replay safety', () => {
     markWebhookFailed: jest.Mock;
   };
   let whatsappBrain: { processWebhook: jest.Mock };
+  let ControllerClass: typeof import('../kloel/whatsapp-brain.controller').WhatsAppBrainController;
 
-  beforeEach(async () => {
-    jest.resetModules();
+  beforeAll(async () => {
     process.env.NODE_ENV = 'test';
-    delete process.env.WHATSAPP_API_WEBHOOK_SECRET;
-    delete process.env.META_APP_SECRET;
+    const { WhatsAppBrainController } = await import('../kloel/whatsapp-brain.controller');
+    ControllerClass = WhatsAppBrainController;
+  });
 
+  beforeEach(() => {
     redis = { set: jest.fn() };
     webhooksService = {
       logWebhookEvent: jest.fn().mockResolvedValue({ id: 'we-wb-1', status: 'received' }),
@@ -392,8 +399,7 @@ describe('WhatsAppBrainController — replay safety', () => {
     };
     whatsappBrain = { processWebhook: jest.fn().mockResolvedValue(undefined) };
 
-    const { WhatsAppBrainController } = await import('../kloel/whatsapp-brain.controller');
-    controller = new WhatsAppBrainController(
+    controller = new ControllerClass(
       whatsappBrain as never,
       webhooksService as never,
       redis as never,
@@ -404,9 +410,7 @@ describe('WhatsAppBrainController — replay safety', () => {
     redis.set.mockResolvedValueOnce(null);
 
     const payload = { messages: [{ from: '5511999999999', text: 'hello' }] };
-    const req = {
-      headers: {},
-    };
+    const req = { headers: {} };
 
     const result = await controller.receiveWebhook(req as never, payload);
 
@@ -428,13 +432,9 @@ describe('WhatsAppBrainController — replay safety', () => {
     expect(whatsappBrain.processWebhook).not.toHaveBeenCalled();
   });
 
-  it('throws ForbiddenException on invalid signature in production', async () => {
-    process.env.NODE_ENV = 'production';
+  it('throws ForbiddenException on invalid signature', async () => {
     process.env.WHATSAPP_API_WEBHOOK_SECRET = 'wb-secret';
-
-    const { ForbiddenException } = await import('@nestjs/common');
-    const { WhatsAppBrainController: WBC } = await import('../kloel/whatsapp-brain.controller');
-    const ctrl = new WBC(whatsappBrain as never, webhooksService as never, redis as never);
+    const ctrl = new ControllerClass(whatsappBrain as never, webhooksService as never, redis as never);
 
     const payload = { messages: [{ from: '5511999999999', text: 'hello' }] };
     const req = { headers: { 'x-hub-signature-256': 'sha256=badsignature' } };
@@ -455,12 +455,15 @@ describe('PaymentController — replay safety', () => {
     markWebhookProcessed: jest.Mock;
   };
   let paymentService: { processPaymentWebhook: jest.Mock };
+  let ControllerClass: typeof import('../kloel/payment.controller').PaymentController;
 
-  beforeEach(async () => {
-    jest.resetModules();
+  beforeAll(async () => {
     process.env.NODE_ENV = 'test';
-    process.env.PAYMENT_WEBHOOK_SECRET = 'test-kloel-secret';
+    const { PaymentController } = await import('../kloel/payment.controller');
+    ControllerClass = PaymentController;
+  });
 
+  beforeEach(() => {
     redis = { set: jest.fn() };
     webhooksService = {
       logWebhookEvent: jest.fn().mockResolvedValue({ id: 'we-pay-1', status: 'received' }),
@@ -468,16 +471,11 @@ describe('PaymentController — replay safety', () => {
     };
     paymentService = { processPaymentWebhook: jest.fn().mockResolvedValue(undefined) };
 
-    const { PaymentController } = await import('../kloel/payment.controller');
-    controller = new PaymentController(
+    controller = new ControllerClass(
       paymentService as never,
       webhooksService as never,
       redis as never,
     );
-  });
-
-  afterEach(() => {
-    delete process.env.PAYMENT_WEBHOOK_SECRET;
   });
 
   it('returns {received:true, duplicate:true} on Redis dedup (replay)', async () => {
@@ -505,12 +503,8 @@ describe('PaymentController — replay safety', () => {
   });
 
   it('throws ForbiddenException on invalid webhook secret', async () => {
-    process.env.NODE_ENV = 'production';
     process.env.PAYMENT_WEBHOOK_SECRET = 'real-secret';
-
-    const { ForbiddenException } = await import('@nestjs/common');
-    const { PaymentController: PC } = await import('../kloel/payment.controller');
-    const ctrl = new PC(paymentService as never, webhooksService as never, redis as never);
+    const ctrl = new ControllerClass(paymentService as never, webhooksService as never, redis as never);
 
     const body = { event: 'payment.created', payment: { workspaceId: 'ws-1' } };
 

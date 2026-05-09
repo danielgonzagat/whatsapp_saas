@@ -6,12 +6,13 @@ import type {
   MarketingConnectStatus,
   IgProfileData,
   IgInsightsData,
+  InstagramChannelConnection,
 } from './MarketingTypes';
 
 export interface UseInstagramMarketingReturn {
   igProfile: IgProfileData | null;
   igInsights: IgInsightsData | null;
-  connection: MarketingConnectStatus['channels'] extends { instagram?: infer T } ? T : undefined;
+  connection: InstagramChannelConnection | undefined;
   isConnected: boolean;
 }
 

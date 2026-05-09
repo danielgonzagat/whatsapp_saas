@@ -6,34 +6,31 @@ import { useState, useEffect, useRef, startTransition, useCallback } from 'react
 import { metaAdsApi } from '@/lib/api/meta';
 import {
   useAnunciosStatus,
-  useAnunciosAccounts,
   useAnunciosCampaigns,
 } from '@/hooks/useAnuncios';
-import type { AnunciosPlatformStatus, AnunciosAccount } from '@/hooks/useAnuncios';
+import type { AnunciosPlatformStatus, AnunciosCampaign } from '@/hooks/useAnuncios';
 import { AnunciosTabBar, ROUTES } from './AnunciosTabBar';
 import { WarRoomDashboard } from './WarRoomDashboard';
 import { PlatformDetailTab } from './PlatformDetailTab';
 import { TrackingDashboard } from './TrackingDashboard';
 import { RuleEngineHub } from './RuleEngineHub';
 import { SORA } from './AnunciosShared';
-import type { Campaign, PlatformKey, PlatformData } from './anuncios-types';
+import type { Campaign, PlatformKey, PlatformData, TabId } from './anuncios-types';
 import { PLATFORM_DEFAULTS } from './anuncios-types';
 
-function mapApiCampaignToView(c: AnunciosAccount | Record<string, unknown>): Campaign {
-  const platform = (typeof c.platform === 'string' ? c.platform : 'meta') as PlatformKey;
-  const campaignId = typeof c.campaignId === 'string' ? c.campaignId : String(c.id || '');
+function mapApiCampaignToView(c: AnunciosCampaign): Campaign {
   return {
-    id: campaignId,
-    platform,
-    name: typeof c.campaignName === 'string' ? c.campaignName : campaignId,
-    status: typeof c.status === 'string' ? c.status.toLowerCase() : 'unknown',
-    spend: typeof c.spend === 'number' ? c.spend : 0,
-    revenue: typeof c.revenue === 'number' ? c.revenue : 0,
-    roas: typeof c.roas === 'number' ? c.roas : 0,
-    conv: typeof c.conversions === 'number' ? c.conversions : 0,
-    ctr: typeof c.ctr === 'number' ? c.ctr : 0,
-    cpc: typeof c.cpc === 'number' ? c.cpc : 0,
-    trend: (typeof c.roas === 'number' ? c.roas : 0) > 1 ? 'up' : 'down',
+    id: c.campaignId,
+    platform: (c.platform || 'meta') as PlatformKey,
+    name: c.campaignName || c.campaignId,
+    status: c.status.toLowerCase(),
+    spend: c.spend,
+    revenue: c.revenue,
+    roas: c.roas,
+    conv: c.conversions,
+    ctr: c.ctr,
+    cpc: c.cpc,
+    trend: c.roas > 1 ? 'up' : 'down',
   };
 }
 
@@ -73,7 +70,6 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
   }, [requestedFocus, tab]);
 
   const { statuses } = useAnunciosStatus();
-  const { accounts } = useAnunciosAccounts();
   const { campaigns: apiCampaigns } = useAnunciosCampaigns();
 
   const [platforms, setPlatforms] = useState<Record<PlatformKey, PlatformData>>(PLATFORM_DEFAULTS);
@@ -81,19 +77,20 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
 
   useEffect(() => {
     if (statuses.length > 0) {
-      setPlatforms((prev) => buildPlatformsFromStatuses(statuses));
+      setPlatforms(buildPlatformsFromStatuses(statuses));
     }
   }, [statuses]);
 
   useEffect(() => {
     setCampaigns(
       apiCampaigns.length > 0
-        ? apiCampaigns.map((c) => mapApiCampaignToView(c as unknown as Record<string, unknown>))
+        ? apiCampaigns.map(mapApiCampaignToView)
         : [],
     );
   }, [apiCampaigns]);
 
   const metaConnected = statuses.find((s) => s.platform === 'meta')?.connected ?? false;
+  const metaTokenProp = metaConnected ? 'connected' : '';
 
   const navigateTo = useCallback(
     (nextRoute: string) => {
@@ -171,7 +168,7 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
             platformKey="meta"
             platform={platforms.meta}
             campaigns={campaigns.filter((c) => c.platform === 'meta')}
-            metaAccessToken={metaConnected ? 'connected' : undefined}
+            metaAccessToken={metaTokenProp}
             onCampaignsChange={setCampaigns}
           />
         )}
@@ -191,7 +188,7 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
             onCampaignsChange={setCampaigns}
           />
         )}
-        {tab === 'track' && <TrackingDashboard focus={requestedFocus} />}
+        {tab === 'track' && <TrackingDashboard focus={requestedFocus ?? ''} />}
         {tab === 'rules' && <RuleEngineHub />}
       </div>
     </div>

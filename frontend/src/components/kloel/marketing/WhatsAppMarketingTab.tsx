@@ -2,7 +2,7 @@
 
 import React from 'react';
 import WhatsAppExperience from './WhatsAppExperience';
-import type { ChannelRealData, MarketingConnectStatus } from './MarketingTypes';
+import type { ChannelRealData, WhatsAppChannelConnection } from './MarketingTypes';
 
 interface WhatsAppMarketingTabProps {
   channelData: ChannelRealData | null;
@@ -10,9 +10,7 @@ interface WhatsAppMarketingTabProps {
   mode?: string;
   workspaceId?: string | null;
   operator?: string | null;
-  connection?: MarketingConnectStatus['channels'] extends { whatsapp?: infer T }
-    ? T
-    : undefined;
+  connection?: WhatsAppChannelConnection;
   onRefreshConnectionStatus?: () => Promise<unknown> | unknown;
 }
 

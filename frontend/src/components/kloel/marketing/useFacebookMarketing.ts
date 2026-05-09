@@ -1,9 +1,12 @@
 'use client';
 
-import type { MarketingConnectStatus } from './MarketingTypes';
+import type {
+  MarketingConnectStatus,
+  FacebookChannelConnection,
+} from './MarketingTypes';
 
 export interface UseFacebookMarketingReturn {
-  connection: MarketingConnectStatus['channels'] extends { facebook?: infer T } ? T : undefined;
+  connection: FacebookChannelConnection | undefined;
   isConnected: boolean;
 }
 
