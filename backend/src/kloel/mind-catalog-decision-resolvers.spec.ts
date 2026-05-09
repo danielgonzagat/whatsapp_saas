@@ -117,18 +117,18 @@ describe('resolveToneDecision with memory', () => {
 describe('resolveCouponDecision with memory', () => {
   it('passes memory-based baseline to policy when memory returns an action', async () => {
     const cases = mockCases([
-      { action: 'offer_coupon', similarity: 0.8, outcome: 1 },
-      { action: 'offer_coupon', similarity: 0.7, outcome: 0.9 },
+      { action: 'coupon_10', similarity: 0.8, outcome: 1 },
+      { action: 'coupon_10', similarity: 0.7, outcome: 0.9 },
       { action: 'no_coupon', similarity: 0.3, outcome: 0.1 },
     ]);
-    const policy = mockPolicy('offer_coupon');
+    const policy = mockPolicy('coupon_10');
 
     const result = await resolveCouponDecision(policy, cases, 'ws-1', 'over_500', 0.05);
 
     expect(policy.choose).toHaveBeenCalledWith(
-      expect.objectContaining({ baseline: 'offer_coupon', decisionType: 'cupom' }),
+      expect.objectContaining({ baseline: 'coupon_10', decisionType: 'coupon_offer' }),
     );
-    expect(result.action).toBe('offer_coupon');
+    expect(result.action).toBe('coupon_10');
   });
 
   it('falls back to resolveCouponBaseline when memory returns null', async () => {
@@ -138,7 +138,7 @@ describe('resolveCouponDecision with memory', () => {
     const result = await resolveCouponDecision(policy, cases, 'ws-1', 'under_100', 0.05);
 
     expect(policy.choose).toHaveBeenCalledWith(
-      expect.objectContaining({ baseline: 'no_coupon', decisionType: 'cupom' }),
+      expect.objectContaining({ baseline: 'no_coupon', decisionType: 'coupon_offer' }),
     );
     expect(result.action).toBe('no_coupon');
   });

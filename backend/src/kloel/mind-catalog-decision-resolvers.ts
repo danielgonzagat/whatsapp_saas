@@ -253,27 +253,35 @@ export async function resolveCouponDecision(
   segment?: string,
 ): Promise<{ action: string; confidence: number; fallback: boolean }> {
   const context = segment ? { priceBand, segment } : { priceBand };
+  const options = [
+    'no_coupon',
+    'coupon_5',
+    'coupon_10',
+    'coupon_15',
+    'coupon_20',
+    'human_negotiate',
+  ];
   const memoryAction = await resolveCaseMemoryAction(cases, {
     workspaceId,
-    caseType: 'cupom',
+    caseType: 'coupon_offer',
     text: `priceBand ${priceBand} soldRate ${soldRate.toFixed(2)}${segment ? ` segment ${segment}` : ''}`,
     features: { priceBand, ...(segment ? { segment } : {}) },
-    options: ['offer_coupon', 'no_coupon'],
+    options,
     minSimilarCases: 3,
     minSimilarityTotal: 1.2,
   });
   const result = await policy.choose({
     workspaceId,
     subject: `workspace:${workspaceId}`,
-    decisionType: 'cupom',
+    decisionType: 'coupon_offer',
     context: { ...context, soldRate },
-    options: ['offer_coupon', 'no_coupon'].map((action) => ({
+    options: options.map((action) => ({
       action,
       predicate: 'P(conversion|discount_offered,segment,price_band)',
-      context: { ...context, discount_offered: action === 'offer_coupon' ? 'yes' : 'no' },
+      context: { ...context, discount_offered: action },
     })),
     baseline: memoryAction ?? resolveCouponBaseline(priceBand, soldRate),
-    outcomeKey: `cupom:${workspaceId}:${Date.now()}`,
+    outcomeKey: `coupon_offer:${workspaceId}:${Date.now()}`,
     utilitySuccess: 1,
     utilityFail: -0.2,
   });

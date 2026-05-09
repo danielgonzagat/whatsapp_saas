@@ -228,7 +228,7 @@ describe('MindService decision delegation', () => {
   });
 
   describe('resolveCoupon', () => {
-    it('delegates to policy.choose with cupom decision type', async () => {
+    it('delegates to policy.choose with coupon_offer decision type', async () => {
       const policy = {
         choose: jest.fn().mockResolvedValue({
           chosen: 'no_coupon',
@@ -245,11 +245,13 @@ describe('MindService decision delegation', () => {
       expect(policy.choose).toHaveBeenCalledWith(
         expect.objectContaining({
           workspaceId: 'ws-1',
-          decisionType: 'cupom',
-          baseline: 'offer_coupon',
+          decisionType: 'coupon_offer',
+          baseline: 'coupon_10',
           options: expect.arrayContaining([
-            expect.objectContaining({ action: 'offer_coupon' }),
             expect.objectContaining({ action: 'no_coupon' }),
+            expect.objectContaining({ action: 'coupon_5' }),
+            expect.objectContaining({ action: 'coupon_10' }),
+            expect.objectContaining({ action: 'human_negotiate' }),
           ]),
         }),
       );
@@ -277,10 +279,10 @@ describe('MindService decision delegation', () => {
       );
     });
 
-    it('defaults to offer_coupon when high price and low soldRate', async () => {
+    it('defaults to coupon_10 when high price and low soldRate', async () => {
       const policy = {
         choose: jest.fn().mockResolvedValue({
-          chosen: 'offer_coupon',
+          chosen: 'coupon_10',
           decision: {
             candidates: [{ beliefMean: 0.45 }],
             fallbackActive: false,
@@ -292,14 +294,14 @@ describe('MindService decision delegation', () => {
       await buildService(policy).resolveCoupon('ws-1', 'over_500', 0.05);
 
       expect(policy.choose).toHaveBeenCalledWith(
-        expect.objectContaining({ baseline: 'offer_coupon' }),
+        expect.objectContaining({ baseline: 'coupon_10' }),
       );
     });
 
     it('passes segment to policy context when provided', async () => {
       const policy = {
         choose: jest.fn().mockResolvedValue({
-          chosen: 'offer_coupon',
+          chosen: 'coupon_10',
           decision: {
             candidates: [{ beliefMean: 0.55 }],
             fallbackActive: false,

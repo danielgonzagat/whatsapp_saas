@@ -31,6 +31,14 @@ function priceBandFor(price: number): string {
   return 'under_100';
 }
 
+function discountPercentFromMind(action: string | undefined, requestedPercent: number): number {
+  if (action === 'coupon_5') return 5;
+  if (action === 'coupon_10') return 10;
+  if (action === 'coupon_15') return 15;
+  if (action === 'coupon_20') return 20;
+  return requestedPercent;
+}
+
 /**
  * Handles sales/negotiation tool actions: discount, objection handling,
  * lead qualification, meeting scheduling, anti-churn, and ghost reactivation.
@@ -54,7 +62,10 @@ export class UnifiedAgentActionsSalesService {
     context?: UnknownRecord,
   ) {
     try {
-      const discountPercent = Math.min(Math.max(Number(args?.discountPercent) || 10, 1), 30);
+      const requestedDiscountPercent = Math.min(
+        Math.max(Number(args?.discountPercent) || 10, 1),
+        30,
+      );
       const reason = args?.reason || 'Oferta especial';
       const expiresIn = args?.expiresIn || '24h';
       const recentMemory = await this.prisma.kloelMemory.findFirst({
@@ -79,13 +90,16 @@ export class UnifiedAgentActionsSalesService {
       const couponDecision = this.mind
         ? await this.mind.resolveCoupon(workspaceId, priceBand, 0, segment)
         : null;
-      if (couponDecision?.action === 'no_coupon') {
+      if (couponDecision?.action === 'no_coupon' || couponDecision?.action === 'human_negotiate') {
         await this.prisma.autopilotEvent.create({
           data: {
             workspaceId,
             contactId,
             intent: 'NEGOTIATION',
-            action: 'DISCOUNT_SKIPPED',
+            action:
+              couponDecision?.action === 'human_negotiate'
+                ? 'DISCOUNT_HUMAN_NEGOTIATION'
+                : 'DISCOUNT_SKIPPED',
             status: 'completed',
             meta: { priceBand, productOffer, couponDecision },
           },
@@ -97,6 +111,10 @@ export class UnifiedAgentActionsSalesService {
           mind: { couponDecision, productOffer },
         };
       }
+      const discountPercent = discountPercentFromMind(
+        couponDecision?.action,
+        requestedDiscountPercent,
+      );
       const finalPrice = originalPrice * (1 - discountPercent / 100);
       await this.prisma.autopilotEvent.create({
         data: {

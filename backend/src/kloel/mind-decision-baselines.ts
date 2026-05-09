@@ -56,7 +56,9 @@ export function resolveObjectionResponseBaseline(concept: string, priceBand: str
 
 export function resolveCouponBaseline(priceBand: string, soldRate: number): string {
   const highBands = new Set(['over_300', 'over_500', 'over_1000']);
-  if (highBands.has(priceBand) && soldRate < 0.1) return 'offer_coupon';
+  if (priceBand === 'over_1000' && soldRate < 0.08) return 'coupon_15';
+  if (highBands.has(priceBand) && soldRate < 0.1) return 'coupon_10';
+  if (priceBand === 'over_100' && soldRate < 0.05) return 'coupon_5';
   return 'no_coupon';
 }
 
