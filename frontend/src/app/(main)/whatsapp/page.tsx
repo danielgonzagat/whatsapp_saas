@@ -53,6 +53,34 @@ function readErrorMessage(error: unknown, fallback: string): string {
   return fallback;
 }
 
+function formatConnectionState(connected?: boolean, rawStatus?: string | null): string {
+  if (connected) {
+    return 'Conectado';
+  }
+  const normalized = String(rawStatus || '').toLowerCase();
+  if (normalized.includes('reconnect')) {
+    return 'Reconectando';
+  }
+  return 'Desconectado';
+}
+
+function formatOperatorReason(value?: string | null): string {
+  const raw = String(value || '').toLowerCase();
+  if (!raw) {
+    return 'Tudo pronto para conectar.';
+  }
+  if (raw.includes('expired') || raw.includes('token')) {
+    return 'A autorização expirou. Conecte novamente.';
+  }
+  if (raw.includes('permission') || raw.includes('scope')) {
+    return 'A autorização precisa ser renovada com as permissões corretas.';
+  }
+  if (raw.includes('rate') || raw.includes('limit')) {
+    return 'O canal atingiu um limite temporário. Tente novamente em alguns minutos.';
+  }
+  return 'A conexão precisa ser revisada. Conecte novamente quando quiser.';
+}
+
 function ChannelCard({
   title,
   description,
@@ -212,19 +240,7 @@ export default function WhatsAppPage() {
             )}
             connected={whatsappConnected}
             meta={[
-              `Status: ${String(whatsAppStatus?.status || 'desconectado')}`,
-              `Phone Number ID: ${String(
-                whatsAppStatus?.phoneNumberId ||
-                  metaStatus?.channels?.whatsapp?.phoneNumberId ||
-                  metaStatus?.whatsappPhoneNumberId ||
-                  'nao informado',
-              )}`,
-              `WABA ID: ${String(
-                whatsAppStatus?.whatsappBusinessId ||
-                  metaStatus?.channels?.whatsapp?.whatsappBusinessId ||
-                  metaStatus?.whatsappBusinessId ||
-                  'nao informado',
-              )}`,
+              `Status: ${formatConnectionState(whatsappConnected, whatsAppStatus?.status)}`,
               `Numero: ${String(whatsAppStatus?.phone || 'nao resolvido')}`,
             ]}
           />
@@ -283,13 +299,13 @@ export default function WhatsAppPage() {
               </div>
               <div className="rounded-2xl border border-[colors.border.space] bg-[#0E0E10] px-4 py-3">
                 <div className="text-xs uppercase tracking-[0.14em] text-[#7E7E85]">
-                  {kloelT(`Provider ativo`)}
+                  {kloelT(`Canal oficial`)}
                 </div>
-                <div className="mt-2">{String(whatsAppStatus?.provider || 'meta-cloud')}</div>
+                <div className="mt-2">API oficial da Meta</div>
               </div>
               <div className="rounded-2xl border border-[colors.border.space] bg-[#0E0E10] px-4 py-3">
                 <div className="text-xs uppercase tracking-[0.14em] text-[#7E7E85]">
-                  {kloelT(`Runtime degradado`)}
+                  {kloelT(`Atencao necessaria`)}
                 </div>
                 <div className="mt-2">{whatsAppStatus?.degraded ? 'Sim' : 'Nao'}</div>
               </div>
@@ -298,11 +314,7 @@ export default function WhatsAppPage() {
                   {kloelT(`Motivo atual`)}
                 </div>
                 <div className="mt-2">
-                  {String(
-                    whatsAppStatus?.message ||
-                      whatsAppStatus?.degradedReason ||
-                      'integracao pronta',
-                  )}
+                  {formatOperatorReason(whatsAppStatus?.message || whatsAppStatus?.degradedReason)}
                 </div>
               </div>
             </div>
