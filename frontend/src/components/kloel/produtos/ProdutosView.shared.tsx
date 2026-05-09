@@ -3,7 +3,7 @@
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 import { secureRandomFloat } from '@/lib/secure-random';
-import { useCallback, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import type React from 'react';
 import type { LiveFeedEvent } from './ProdutosView.types';
 

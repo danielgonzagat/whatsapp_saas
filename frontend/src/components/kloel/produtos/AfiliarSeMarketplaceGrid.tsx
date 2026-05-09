@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { SORA, MONO, BG_CARD, BG_ELEVATED, BORDER, GREEN, EMBER, fmt, fmtBRL, NP } from './ProdutosView.shared';
+
 import { IC } from './ProdutosView.icons';
 import type { MarketplaceItem, MarketplaceStats, AffiliateLink, AffiliateProductItem } from './ProdutosView.types';
 
@@ -20,7 +21,7 @@ interface Props {
   copiedAffiliate: boolean;
 }
 
-function StatPill({ label, value }: { label: string; value: string }) {
+function _StatPill({ label, value }: { label: string; value: string }) {
   return (
     <div
       style={{
@@ -63,7 +64,7 @@ function HeartIcon({ filled, size }: { filled: boolean; size: number }) {
 export default function AfiliarSeMarketplaceGrid({
   earnings,
   marketplace,
-  marketplaceStats,
+  _marketplaceStats,
   affiliateLinks,
   affiliateProducts,
   onSelectItem,

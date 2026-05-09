@@ -185,7 +185,7 @@ export class CiaRuntimeStateService {
     await this.agentEvents.publish({
       type: 'status',
       workspaceId,
-      runId,
+      ...(runId !== undefined ? { runId } : {}),
       phase: 'live_ready',
       persistent: true,
       message: catalog.scheduled

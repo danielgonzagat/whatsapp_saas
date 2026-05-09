@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { asProviderSettings } from '../whatsapp/provider-settings.types';
 
@@ -30,7 +30,6 @@ function resolveLaunchInviteLink(data: AddGroupInput): string {
 /** Launch service. */
 @Injectable()
 export class LaunchService {
-  private readonly logger = new Logger(LaunchService.name);
   constructor(private prisma: PrismaService) {}
 
   /** List launchers. */

@@ -1,7 +1,8 @@
 'use client';
 
 import { apiFetch } from '@/lib/api';
-import { PRODUCT_TEMPLATES } from '@/lib/canvas-formats';
+import { TEMPLATE_TAGS } from '@/lib/canvas-formats';
+import { useProductTemplates, type ProductTemplate } from '@/hooks/useProductTemplates';
 import { KloelEditor } from '@/lib/fabric';
 import type { ContextMenuItem } from '@/lib/fabric/ContextMenuManager';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -36,6 +37,7 @@ export default function CanvasEditor() {
 
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const { templates: PRODUCT_TEMPLATES, isLoading: tplLoading, error: tplError } = useProductTemplates();
   const [zoom, setZoom] = useState(100);
   const [sidebarTab, setSidebarTab] = useState<SidebarTabId>('templates');
   const [selectedObj, setSelectedObj] = useState<
@@ -258,7 +260,7 @@ export default function CanvasEditor() {
     [handleUpload],
   );
 
-  const handleApplyTemplate = useCallback((tpl: (typeof PRODUCT_TEMPLATES)[number]) => {
+  const handleApplyTemplate = useCallback((tpl: ProductTemplate) => {
     if (!editorRef.current) return;
     editorRef.current.loadJSON(tpl.json).catch(() => {});
     setDesignName(tpl.name);

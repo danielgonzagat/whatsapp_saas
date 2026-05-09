@@ -34,7 +34,7 @@ export class CiaRemoteBacklogService {
   ) {}
 
   async listRemotePendingChats(
-    workspaceId: string,
+    _workspaceId: string,
     sessionKey: string,
     limit: number,
   ): Promise<WahaChatSummary[]> {
@@ -150,7 +150,7 @@ export class CiaRemoteBacklogService {
 
         const result = await this.unifiedAgent.processIncomingMessage({
           workspaceId,
-          contactId: remoteBatch.contactId || undefined,
+          ...(remoteBatch.contactId ? { contactId: remoteBatch.contactId } : {}),
           phone,
           message: remoteBatch.aggregatedMessage,
           channel: 'whatsapp',
@@ -180,7 +180,7 @@ export class CiaRemoteBacklogService {
             ? remoteBatch.shouldMirrorReplies
               ? await this.unifiedAgent.buildQuotedReplyPlan({
                   workspaceId,
-                  contactId: remoteBatch.contactId || undefined,
+                  ...(remoteBatch.contactId ? { contactId: remoteBatch.contactId } : {}),
                   phone,
                   draftReply: reply,
                   customerMessages: remoteBatch.customerMessages,

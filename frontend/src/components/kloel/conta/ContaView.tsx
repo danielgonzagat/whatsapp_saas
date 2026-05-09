@@ -2486,6 +2486,7 @@ function DadosBancariosSection({
   mutate: () => void;
 }) {
   const fid = useId();
+  const { banks, isLoading: banksLoading, error: banksError } = useBrazilianBanks();
   const { updateBank } = useBankMutations();
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [saving, setSaving] = useState(false);
@@ -2524,7 +2525,7 @@ function DadosBancariosSection({
   const searchTerm = bankSearch.trim();
   const filteredBanks = bankDropdownOpen
     ? searchTerm
-      ? BRAZILIAN_BANKS.filter((b) => {
+      ? banks.filter((b) => {
           const q = normalize(searchTerm);
           return (
             normalize(b.fullName).includes(q) ||
@@ -2534,8 +2535,8 @@ function DadosBancariosSection({
           );
         })
       : showAllBanks
-        ? BRAZILIAN_BANKS
-        : BRAZILIAN_BANKS.filter((b) => POPULAR_BANK_CODES.has(b.code))
+        ? banks
+        : banks.filter((b) => POPULAR_BANK_CODES.has(b.code))
     : [];
 
   useEffect(() => {
@@ -2663,10 +2664,12 @@ function DadosBancariosSection({
             </span>
             <button
               type="button"
-              onClick={() => setBankDropdownOpen(true)}
+              onClick={() => { if (!banksLoading) setBankDropdownOpen(true); }}
+              disabled={banksLoading}
               aria-haspopup="listbox"
               aria-expanded={bankDropdownOpen}
               aria-label="Selecionar banco"
+              aria-busy={banksLoading}
               style={{
                 width: '100%',
                 padding: '11px 14px',
@@ -2676,8 +2679,9 @@ function DadosBancariosSection({
                 borderRadius: 6,
                 fontSize: 13,
                 fontFamily: SORA,
-                color: 'var(--app-text-primary)',
-                cursor: 'pointer',
+                color: banksLoading ? 'var(--app-text-placeholder)' : 'var(--app-text-primary)',
+                cursor: banksLoading ? 'not-allowed' : 'pointer',
+                opacity: banksLoading ? 0.6 : 1,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
@@ -2694,7 +2698,7 @@ function DadosBancariosSection({
                   color: form.bankName ? 'var(--app-text-primary)' : 'var(--app-text-placeholder)',
                 }}
               >
-                {form.bankName ? `${form.bankCode} — ${form.bankName}` : 'Selecione o banco'}
+                {banksLoading ? 'Carregando bancos...' : banksError ? 'Erro ao carregar' : form.bankName ? `${form.bankCode} — ${form.bankName}` : 'Selecione o banco'}
               </span>
               <svg
                 width={12}

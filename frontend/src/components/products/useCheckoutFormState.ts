@@ -4,7 +4,6 @@ import { useState, useCallback, useEffect } from 'react';
 import {
   CheckoutFormState,
   createDefaultCheckoutForm,
-  Checkout,
 } from '@/components/products/ProductCheckoutsTab.helpers';
 
 const CHECKOUT_FORM_DRAFT_VERSION = 1;

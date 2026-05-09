@@ -58,6 +58,8 @@ export function resolveEffectiveProvider(
   sessionProvider: unknown,
   phoneNumberId: unknown,
 ): { providerToken: string; isWahaProvider: boolean; effectiveProvider: string } {
+  void phoneNumberId;
+
   const providerToken = String(
     liveProvider || connectionProvider || workspaceProvider || sessionProvider || '',
   )

@@ -42,7 +42,7 @@ export function SidebarNav({
         const isActive = activeView === item.key;
         const isExpanded = expandedNav === item.key;
         const activeSubParent = activeSubView?.split(':')[0];
-        const _parentHasActiveSub = activeSubParent === item.key;
+
         const isHovered = hoveredItem === item.key;
         const hasSubs = item.sub.length > 0;
 

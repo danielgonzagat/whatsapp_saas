@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { affiliateApi } from '@/lib/api/affiliate';
 import AfiliarSeProductDetail from './AfiliarSeProductDetail';
 import AfiliarSeMarketplaceGrid from './AfiliarSeMarketplaceGrid';

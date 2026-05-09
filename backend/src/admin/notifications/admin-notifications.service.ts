@@ -49,7 +49,6 @@ export class AdminNotificationsService {
           where: {
             role: 'ADMIN',
             kycStatus: { in: ['pending', 'reverify'] },
-            workspaceId: undefined,
           },
           orderBy: { updatedAt: 'desc' },
           take: 5,
@@ -61,7 +60,7 @@ export class AdminNotificationsService {
           },
         }),
         this.prisma.conversation.findMany({
-          where: { unreadCount: { gt: 0 }, workspaceId: undefined },
+          where: { unreadCount: { gt: 0 } },
           orderBy: { lastMessageAt: 'desc' },
           take: 5,
           select: {

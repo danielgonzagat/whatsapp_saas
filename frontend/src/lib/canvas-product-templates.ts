@@ -1,4 +1,4 @@
-import { colors } from '@/lib/design-tokens';
+
 /** Product template shape. */
 export interface ProductTemplate {
   /** Id property. */

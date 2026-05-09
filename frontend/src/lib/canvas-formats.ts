@@ -1,4 +1,4 @@
-import { colors } from '@/lib/design-tokens';
+
 /* ═══════════════════════════════════════════
    KLOEL CANVAS — Format & Category Data
    Single source of truth for all canvas formats

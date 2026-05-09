@@ -1,5 +1,5 @@
 import { extname } from 'node:path';
-import { BadRequestException, Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Queue } from 'bullmq';
 import { v4 as uuid } from 'uuid';
@@ -13,7 +13,6 @@ import { PrismaService } from '../prisma/prisma.service';
 /** Media service. */
 @Injectable()
 export class MediaService {
-  private readonly logger = new Logger(MediaService.name);
   private mediaQueue: Queue;
   private readonly baseUrl: string;
   private readonly allowedStorageHosts: Set<string>;

@@ -81,10 +81,13 @@ export class WhatsAppCatalogController {
     @Body()
     body: { presence?: 'typing' | 'paused' | 'seen' | 'available' | 'offline' },
   ) {
+    if (!body?.presence) {
+      return { success: false, reason: 'presence is required' };
+    }
     return this.whatsappService.setPresence(
       req.workspaceId!,
       decodeURIComponent(chatId),
-      body?.presence,
+      body.presence,
     );
   }
 
@@ -157,7 +160,7 @@ export class WhatsAppCatalogController {
   ) {
     const contactId = this.readText(body?.contactId).trim() || undefined;
     return this.whatsappService.triggerCatalogRescore(req.workspaceId!, {
-      contactId,
+      ...(contactId !== undefined ? { contactId } : {}),
       days: this.readNumberQuery(body?.days, 30, 1, 365),
       limit: this.readNumberQuery(body?.limit, 100, 1, 500),
       reason: this.readText(body?.reason, 'manual_catalog_rescore'),

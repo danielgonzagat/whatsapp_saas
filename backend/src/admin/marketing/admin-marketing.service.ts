@@ -63,7 +63,7 @@ export class AdminMarketingService {
         // `workspaceId: undefined` is a Prisma-side no-op ("skip filter")
         // and keeps the unsafe-query scanner satisfied.
         this.prisma.checkoutSocialLead.count({
-          where: { createdAt: { gte: range.from, lte: range.to }, workspaceId: undefined },
+          where: { createdAt: { gte: range.from, lte: range.to } },
         }),
         this.prisma.conversation.findMany({
           where: { lastMessageAt: { gte: range.from, lte: range.to }, workspaceId: undefined },

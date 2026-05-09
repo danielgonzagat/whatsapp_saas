@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { SORA, MONO, BG_CARD, BG_ELEVATED, BORDER, GREEN, EMBER, fmt, fmtBRL, NP } from './ProdutosView.shared';
+import { SORA, MONO, BG_CARD, BG_ELEVATED, BORDER, GREEN, fmt, fmtBRL, NP } from './ProdutosView.shared';
 import { IC } from './ProdutosView.icons';
 import type { MarketplaceItem } from './ProdutosView.types';
 

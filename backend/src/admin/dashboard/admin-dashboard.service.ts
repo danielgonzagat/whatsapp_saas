@@ -245,7 +245,6 @@ export class AdminDashboardService {
       this.prisma.conversation.count({
         where: {
           lastMessageAt: { gte: from, lte: to },
-          workspaceId: undefined,
         },
       }),
       this.prisma.$queryRaw<Array<{ avg_minutes: number | string | null }>>(Prisma.sql`

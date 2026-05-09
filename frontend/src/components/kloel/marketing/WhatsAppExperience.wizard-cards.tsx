@@ -4,7 +4,7 @@ import { kloelT } from '@/lib/i18n/t';
 import { UI } from '@/lib/ui-tokens';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 import Image from 'next/image';
-import type * as React from 'react';
+
 import type { ArsenalItem, SelectableProduct, ToneMode } from './WhatsAppExperience.helpers';
 import { MEDIA_TYPES } from './WhatsAppExperience.helpers';
 import { selectInputStyle } from './WhatsAppExperience.dashboard-cards';

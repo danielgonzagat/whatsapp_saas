@@ -213,7 +213,6 @@ export class AdminComplianceService {
       where: {
         role: 'ADMIN',
         kycStatus: { in: ['pending', 'reverify', 'rejected'] },
-        workspaceId: undefined,
       },
       orderBy: { updatedAt: 'desc' },
       take: 20,

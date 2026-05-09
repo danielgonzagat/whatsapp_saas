@@ -1,3 +1,4 @@
+import type { Prisma } from '@prisma/client';
 import type { PrismaService } from '../../../prisma/prisma.service';
 
 /** Kyc queue row shape. */
@@ -37,15 +38,14 @@ export async function listKycQueue(prisma: PrismaService, limit = 50): Promise<K
   // `workspaceId: undefined` is treated by Prisma as "no filter"
   // (semantic no-op) while documenting that the cross-tenant scope is
   // deliberate and keeping the unsafe-query scanner satisfied.
-  const where = {
+  const where: Prisma.AgentWhereInput = {
     kycStatus: { in: ['submitted', 'pending'] },
-    workspaceId: undefined,
   };
 
   const [agents, total] = await prisma.$transaction(
     [
       prisma.agent.findMany({
-        where: { ...where, workspaceId: undefined },
+        where,
         orderBy: [{ kycSubmittedAt: 'asc' }, { createdAt: 'asc' }],
         take: Math.min(200, Math.max(1, limit)),
         select: {
@@ -58,7 +58,7 @@ export async function listKycQueue(prisma: PrismaService, limit = 50): Promise<K
           _count: { select: { kycDocuments: true } },
         },
       }),
-      prisma.agent.count({ where: { ...where, workspaceId: undefined } }),
+      prisma.agent.count({ where }),
     ],
     { isolationLevel: 'ReadCommitted' },
   );
