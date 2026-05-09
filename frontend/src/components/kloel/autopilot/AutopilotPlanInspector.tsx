@@ -7,8 +7,6 @@ import { colors } from '@/lib/design-tokens';
 import {
   Activity,
   AlertCircle,
-  BarChart3,
-  CheckCircle2,
   MessageSquare,
   RefreshCw,
   Send,
@@ -18,7 +16,6 @@ import {
   Users,
   Workflow,
   XCircle,
-  Zap,
 } from 'lucide-react';
 
 export interface AutopilotStatsLike {

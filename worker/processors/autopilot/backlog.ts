@@ -49,7 +49,7 @@ async function scheduleCatalogContactsJob(
   }
 }
 
-export export async function getRemoteUnreadChatSnapshot(
+export async function getRemoteUnreadChatSnapshot(
   workspaceId: string,
   limit = CIA_BACKLOG_CONTINUATION_LIMIT,
   selfIdentity?: WorkspaceSelfIdentity | null,
@@ -170,7 +170,7 @@ export export async function getRemoteUnreadChatSnapshot(
     .slice(0, Math.max(1, limit));
 }
 
-export export async function seedRemoteUnreadConversationShells(input: {
+export async function seedRemoteUnreadConversationShells(input: {
   workspaceId: string;
   selfIdentity?: WorkspaceSelfIdentity | null;
   chats: Array<{
@@ -343,7 +343,7 @@ export async function setWorkspaceSilentLiveMode(input: {
   });
 }
 
-export export async function finalizeBacklogIntoSilentCatalog(input: {
+export async function finalizeBacklogIntoSilentCatalog(input: {
   workspaceId: string;
   runId?: string;
   reason: string;
@@ -472,7 +472,7 @@ export export async function finalizeBacklogIntoSilentCatalog(input: {
   });
 }
 
-export export async function maybeEscalateToHumanControl(input: {
+export async function maybeEscalateToHumanControl(input: {
   workspaceId: string;
   contactId?: string;
   contactName?: string;
@@ -609,7 +609,7 @@ export export async function maybeEscalateToHumanControl(input: {
   };
 }
 
-export export async function findConversationAutomationState(input: {
+export async function findConversationAutomationState(input: {
   workspaceId: string;
   contactId?: string;
   phone?: string;
@@ -658,7 +658,7 @@ export async function lockConversationForHumanReview(input: {
   };
 }
 
-export export function resolveScanDeliveryMode(data: {
+export function resolveScanDeliveryMode(data: {
   messageId?: string;
   runId?: string;
   deliveryMode?: 'reactive' | 'proactive';
@@ -669,7 +669,7 @@ export export function resolveScanDeliveryMode(data: {
   return data?.messageId && !data?.runId ? 'reactive' : 'proactive';
 }
 
-export export function getSharedReplyLockKey(
+export function getSharedReplyLockKey(
   workspaceId: string,
   contactId?: string | null,
   phone?: string | null,
