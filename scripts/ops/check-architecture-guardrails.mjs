@@ -133,13 +133,15 @@ function isRelevantPath(relPath) {
 }
 
 function loadAllowlist() {
+  // chore/purga-total-debt: allowlist eliminada por autorizacao do dono do repo.
+  // Arquivo ausente = zero excecoes; gate roda sem mascaras.
   if (!existsSync(ALLOWLIST_PATH)) {
-    fail(`Allowlist missing: ${ALLOWLIST_PATH}`);
+    return [];
   }
 
   const raw = JSON.parse(readFileSync(ALLOWLIST_PATH, 'utf8'));
   if (!Array.isArray(raw.entries)) {
-    fail('architecture-allowlist.json must contain an entries array.');
+    return [];
   }
 
   const today = new Date().toISOString().slice(0, 10);
