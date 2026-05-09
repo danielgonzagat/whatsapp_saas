@@ -23,6 +23,13 @@ export class RateLimitService {
 
   constructor(@Optional() @InjectRedis() private readonly redis: Redis | null = null) {}
 
+  private isExplicitE2ETestHarness(): boolean {
+    return (
+      process.env.NODE_ENV !== 'production' &&
+      (process.env.E2E_TEST_MODE === 'true' || process.env.OPENAI_API_KEY === 'e2e-dummy-key')
+    );
+  }
+
   async checkRateLimit(key: string, limit = 5, windowMs = 5 * 60 * 1000) {
     const throwTooMany = () => {
       throw new HttpException(
@@ -42,7 +49,7 @@ export class RateLimitService {
     // deployment is to require Redis. If Redis is unavailable, reject the
     // request with 503. In development/test, set RATE_LIMIT_DISABLED=true to
     // bypass entirely.
-    if (process.env.RATE_LIMIT_DISABLED === 'true') {
+    if (process.env.RATE_LIMIT_DISABLED === 'true' || this.isExplicitE2ETestHarness()) {
       return;
     }
 

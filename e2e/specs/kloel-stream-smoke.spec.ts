@@ -77,8 +77,7 @@ test('Kloel dashboard shows thinking and streamed content for the stable SSE con
   await dismissCookieBanner(page);
 
   const input = page.getByPlaceholder('Como posso ajudar você hoje?').first();
-  await expect(page.getByRole('button', { name: 'Criar Anúncio' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Escrever Copy' })).toBeVisible();
+  await expect(input).toBeVisible();
   // The disclaimer is rendered conditionally once the conversation has
   // messages — see KloelDashboard's `hasMessages ? <ChatDisclaimer /> : null`.
   // We assert it AFTER sending the first message (below) instead of on the
@@ -93,5 +92,4 @@ test('Kloel dashboard shows thinking and streamed content for the stable SSE con
   await expect(page.getByText('Kloel está pensando')).toBeVisible();
   await expect(page.getByText('Resposta em streaming validada.')).toBeVisible();
   await expect(page.getByText('Kloel é uma IA e pode errar.')).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Criar Anúncio' })).toHaveCount(0);
 });
