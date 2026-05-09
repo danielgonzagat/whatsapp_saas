@@ -62,22 +62,26 @@ function renderRecoveryEmail(productName: string, orderNumber: string, action: s
   };
 
   const body = bodyByAction[action] ?? bodyByAction.help ?? '';
+  const outerStyle =
+    "font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; padding: 20px;";
+  const containerStyle =
+    'max-width: 500px; margin: 0 auto; background: white; border-radius: 12px; padding: 40px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);';
+  const brandStyle = 'font-size: 24px; font-weight: bold; color: #E85D30; margin-bottom: 20px;';
+  const titleStyle = 'font-size: 22px; color: #1a1a1a; margin-bottom: 16px;';
+  const orderStyle = 'color: #666; line-height: 1.6; margin-bottom: 24px;';
+  const footerStyle = 'margin-top: 32px; font-size: 12px; color: #999;';
 
-  return `
-    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; padding: 20px;">
-      <div style="max-width: 500px; margin: 0 auto; background: white; border-radius: 12px; padding: 40px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
-        <div style="font-size: 24px; font-weight: bold; color: #E85D30; margin-bottom: 20px;">KLOEL</div>
-        <h1 style="font-size: 22px; color: #1a1a1a; margin-bottom: 16px;">Voce deixou algo no carrinho!</h1>
-        ${body}
-        <p style="color: #666; line-height: 1.6; margin-bottom: 24px;">
-          Pedido #${orderNumber}
-        </p>
-        <div style="margin-top: 32px; font-size: 12px; color: #999;">
-          <p>KLOEL - Inteligencia Comercial Autonoma</p>
-        </div>
-      </div>
-    </div>
-  `;
+  return [
+    '<div style="' + outerStyle + '">',
+    '<div style="' + containerStyle + '">',
+    '<div style="' + brandStyle + '">KLOEL</div>',
+    '<h1 style="' + titleStyle + '">Voce deixou algo no carrinho!</h1>',
+    body,
+    '<p style="' + orderStyle + '">Pedido #' + orderNumber + '</p>',
+    '<div style="' + footerStyle + '"><p>KLOEL - Inteligencia Comercial Autonoma</p></div>',
+    '</div>',
+    '</div>',
+  ].join('');
 }
 
 /** Cart recovery service with MIND-driven recovery action decisions. */
