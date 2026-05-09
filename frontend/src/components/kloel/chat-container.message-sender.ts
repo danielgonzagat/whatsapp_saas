@@ -84,7 +84,7 @@ export async function runGuestChat(deps: GuestChatDeps): Promise<void> {
         body: JSON.stringify({ message: content.trim(), sessionId: guestSessionId }),
       });
       if (syncResponse.ok) {
-        const data = await syncResponse.json();
+        const data: { reply?: string; response?: string } = await syncResponse.json();
         const reply = data.reply ?? data.response ?? 'Sem resposta';
         setMessages((prev) =>
           prev.map((m) =>

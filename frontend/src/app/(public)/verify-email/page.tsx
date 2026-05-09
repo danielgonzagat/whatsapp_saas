@@ -43,7 +43,7 @@ function VerifyEmailContent() {
           body: JSON.stringify({ token }),
         });
 
-        const data = await res.json().catch(() => ({}));
+        const data: { message?: string } = await res.json().catch(() => ({}));
 
         if (!res.ok) {
           setState('error');

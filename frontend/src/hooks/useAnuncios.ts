@@ -93,7 +93,7 @@ export function useAnunciosConnectUrl(platform: string) {
 }
 
 export function useSyncAnunciosAccounts() {
-  const { trigger, isMutating } = useSWRMutation(
+  const { trigger, isMutating } = useSWRMutation<{ success?: boolean }>(
     '/api/anuncios/sync/accounts',
     swrMutator,
   );
@@ -101,7 +101,7 @@ export function useSyncAnunciosAccounts() {
 }
 
 export function useSyncAnunciosCampaigns() {
-  const { trigger, isMutating } = useSWRMutation(
+  const { trigger, isMutating } = useSWRMutation<{ success?: boolean }>(
     '/api/anuncios/sync/campaigns',
     swrMutator,
   );

@@ -143,7 +143,7 @@ export function useAffiliates(params?: { type?: string; search?: string }) {
     qs.set('search', params.search);
   }
   const q = qs.toString();
-  const { data, isLoading, mutate } = useSWR(
+  const { data, isLoading, mutate } = useSWR<AffiliatesResponse>(
     `/partnerships/affiliates${q ? `?${q}` : ''}`,
     swrFetcher,
   );
@@ -157,7 +157,7 @@ export function useAffiliates(params?: { type?: string; search?: string }) {
 
 /** Use affiliate stats. */
 export function useAffiliateStats() {
-  const { data, isLoading } = useSWR('/partnerships/affiliates/stats', swrFetcher, {
+  const { data, isLoading } = useSWR<AffiliateStats>('/partnerships/affiliates/stats', swrFetcher, {
     refreshInterval: 60000,
   });
   return {
@@ -178,35 +178,36 @@ export function useAffiliateStats() {
 
 /** Use affiliate detail. */
 export function useAffiliateDetail(id: string | null) {
-  const { data, isLoading } = useSWR(id ? `/partnerships/affiliates/${id}` : null, swrFetcher);
+  const { data, isLoading } = useSWR<AffiliateDetailResponse>(
+    id ? `/partnerships/affiliates/${id}` : null,
+    swrFetcher,
+  );
   const d = data as AffiliateDetailResponse | undefined;
   return { affiliate: d?.affiliate || null, isLoading };
 }
 
 /** Use partner chat contacts. */
 export function usePartnerChatContacts() {
-  const { data, isLoading, mutate } = useSWR('/partnerships/chat/contacts', swrFetcher, {
-    refreshInterval: 15000,
-  });
-  const contacts = Array.isArray((data as Record<string, unknown> | undefined)?.contacts)
-    ? ((data as Record<string, unknown>).contacts as Record<string, unknown>[]).map(
-        normalizeContact,
-      )
+  const { data, isLoading, mutate } = useSWR<PartnerChatContactsResponse>(
+    '/partnerships/chat/contacts',
+    swrFetcher,
+    { refreshInterval: 15000 },
+  );
+  const contacts = Array.isArray(data?.contacts)
+    ? data.contacts.map(normalizeContact)
     : [];
   return { contacts, isLoading, mutate };
 }
 
 /** Use partner messages. */
 export function usePartnerMessages(partnerId: string | null) {
-  const { data, isLoading, mutate } = useSWR(
+  const { data, isLoading, mutate } = useSWR<PartnerMessagesResponse>(
     partnerId ? `/partnerships/chat/${partnerId}/messages` : null,
     swrFetcher,
     { refreshInterval: 15000 },
   );
-  const messages = Array.isArray((data as Record<string, unknown> | undefined)?.messages)
-    ? ((data as Record<string, unknown>).messages as Record<string, unknown>[]).map(
-        normalizeMessage,
-      )
+  const messages = Array.isArray(data?.messages)
+    ? data.messages.map(normalizeMessage)
     : [];
   return { messages, isLoading, mutate };
 }

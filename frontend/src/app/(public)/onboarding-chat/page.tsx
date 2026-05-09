@@ -127,7 +127,7 @@ function OnboardingChatContent() {
         method: 'POST',
         headers,
       });
-      const data = await res.json();
+      const data: { message?: string } = await res.json();
       mutate((key: unknown) => typeof key === 'string' && key.startsWith('/onboarding'));
 
       if (data.message) {
@@ -143,7 +143,7 @@ function OnboardingChatContent() {
           headers,
           body: JSON.stringify({ message: `Meu perfil inicial no Kloel é: ${roleLabel}.` }),
         });
-        const roleData = await roleRes.json();
+        const roleData: { message?: string } = await roleRes.json();
         mutate((key: unknown) => typeof key === 'string' && key.startsWith('/onboarding'));
         if (roleData.message) {
           addMessage('assistant', roleData.message);
@@ -243,7 +243,7 @@ function OnboardingChatContent() {
       const statusRes = await fetch(apiUrl(`/kloel/onboarding/${workspaceId}/status`), {
         headers: statusHeaders,
       });
-      const statusData = await statusRes.json();
+      const statusData: { messagesCount?: number; completed?: boolean } = await statusRes.json();
       setStatus(statusData);
 
       if (statusData.completed) {

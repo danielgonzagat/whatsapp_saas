@@ -166,7 +166,7 @@ export function useOrderStatus(orderId: string, pollIntervalMs = 3000) {
 
 /* ─── createOrder ──────────────────────────────────────────────────────────── */
 
-export async function createOrder(data: CreateOrderData) {
+export async function createOrder(data: CreateOrderData): Promise<OrderStatusData> {
   const res = await fetchCheckoutApi('/checkout/public/order', {
     method: 'POST',
     headers: {
@@ -176,11 +176,11 @@ export async function createOrder(data: CreateOrderData) {
   });
 
   if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
+    const body: { message?: string } = await res.json().catch(() => ({}));
     throw new Error(body.message || 'Erro ao criar pedido');
   }
 
-  const result = await res.json();
+  const result: OrderStatusData = await res.json();
   mutate((key: unknown) => typeof key === 'string' && key.startsWith('/checkout'));
   return result;
 }
@@ -200,11 +200,11 @@ export async function validateCoupon(
   });
 
   if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
+    const body: { message?: string } = await res.json().catch(() => ({}));
     throw new Error(body.message || 'Cupom invalido');
   }
 
-  return res.json();
+  return res.json() as Promise<CouponResult>;
 }
 
 /* ─── acceptUpsell / declineUpsell ─────────────────────────────────────────── */

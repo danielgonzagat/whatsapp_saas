@@ -191,7 +191,7 @@ export function KloelChatBubble({
             context: checkoutContext || undefined,
           }),
         });
-        const data = await res.json();
+        const data: { response?: string; message?: string; content?: string; title?: string } = await res.json();
         mutate((key: unknown) => typeof key === 'string' && key.startsWith('/chat'));
         reply =
           data?.response ||

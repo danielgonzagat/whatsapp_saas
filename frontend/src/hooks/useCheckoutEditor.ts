@@ -464,7 +464,7 @@ function normalizeConfigForEditor(data: Record<string, unknown>): CheckoutConfig
 /* ── Hook ── */
 
 export function useCheckoutEditor(planId: string | null) {
-  const { data, error, isLoading, mutate } = useSWR(
+  const { data, error, isLoading, mutate } = useSWR<Record<string, unknown>>(
     planId ? `/checkout/plans/${planId}/config` : null,
     swrFetcher,
   );

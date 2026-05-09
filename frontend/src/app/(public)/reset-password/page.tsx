@@ -110,7 +110,7 @@ function ResetPasswordContent() {
         body: JSON.stringify({ token, password }),
       });
 
-      const data = await res.json().catch(() => ({}));
+      const data: { message?: string } = await res.json().catch(() => ({}));
 
       if (!res.ok) {
         setError(data.message || 'Erro ao redefinir senha. Tente novamente.');
