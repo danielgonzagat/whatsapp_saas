@@ -176,12 +176,12 @@ function FlowPageContent() {
           {/* AI Optimize button */}
           <div className="ml-auto flex items-center pr-2">
             {optimizeResult && (
-              <span className="text-xs text-[#10B981] mr-3">
+              <span className="text-xs text-[var(--semantic-success)] mr-3">
                 {kloelT('Sugestoes:')} {optimizeResult.suggestions?.length ?? 0} melhorias
               </span>
             )}
             {optimizeError && (
-              <span className="text-xs text-[#EF4444] mr-3">{optimizeError}</span>
+              <span className="text-xs text-[var(--semantic-error)] mr-3">{optimizeError}</span>
             )}
             <button
               type="button"

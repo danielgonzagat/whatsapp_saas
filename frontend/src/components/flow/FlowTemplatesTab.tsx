@@ -68,7 +68,7 @@ export function FlowTemplatesTab({
           {kloelT('Carregando templates...')}
         </div>
       ) : error ? (
-        <div className="p-4 rounded-md border border-[#EF4444]/30 bg-[#EF4444]/5 text-[#EF4444] text-sm">
+        <div className="p-4 rounded-md border border-[var(--semantic-error)]/30 bg-[var(--semantic-error)]/5 text-[var(--semantic-error)] text-sm">
           {error}
         </div>
       ) : templates.length === 0 ? (

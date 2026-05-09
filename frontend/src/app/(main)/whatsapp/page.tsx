@@ -72,7 +72,7 @@ function ChannelCard({
         </h2>
         <span
           className={`rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] ${
-            connected ? 'bg-[#17331F] text-[#8EE39A]' : 'bg-[#2A1A1A] text-[#FF9B9B]'
+            connected ? 'bg-[#17331F] text-[#8EE39A]' : 'bg-[var(--checkout-danger-bg)] text-[#FF9B9B]'
           }`}
         >
           {connected ? 'Conectado' : 'Nao conectado'}

@@ -30,7 +30,7 @@ export const kloelSettingsClass = {
   outlineButton:
     'rounded-md border-[var(--app-border-primary)] bg-transparent text-[var(--app-text-secondary)] hover:bg-[var(--app-bg-hover)] hover:text-[var(--app-text-primary)]',
   dangerButton:
-    'rounded-md border-[#E05252]/35 bg-transparent text-[#E05252] hover:bg-[#E05252]/10 hover:text-[#E05252]',
+    'rounded-md border-[var(--semantic-error-soft)]/35 bg-transparent text-[var(--semantic-error-soft)] hover:bg-[var(--semantic-error-soft)]/10 hover:text-[var(--semantic-error-soft)]',
   modalSurface:
     'w-full rounded-md border border-[var(--app-border-primary)] bg-[var(--app-bg-card)] p-6 shadow-2xl',
   modalOverlay:
@@ -136,13 +136,13 @@ export function SettingsNotice({
 }) {
   const toneClass =
     tone === 'info'
-      ? 'border-[#3B82F6]/25 bg-[#3B82F6]/10 text-[#93C5FD]'
+      ? 'border-[var(--semantic-info)]/25 bg-[var(--semantic-info)]/10 text-[var(--semantic-info-text)]'
       : tone === 'success'
-        ? 'border-[#10B981]/25 bg-[#10B981]/10 text-[#7FE2BC]'
+        ? 'border-[var(--semantic-success)]/25 bg-[var(--semantic-success)]/10 text-[var(--semantic-success-text)]'
         : tone === 'warning'
-          ? 'border-[colors.ember.primary]/25 bg-[colors.ember.primary]/10 text-[#F2B29D]'
+          ? 'border-[colors.ember.primary]/25 bg-[colors.ember.primary]/10 text-[var(--semantic-ember-text)]'
           : tone === 'danger'
-            ? 'border-[#E05252]/25 bg-[#E05252]/10 text-[#F7A8A8]'
+            ? 'border-[var(--semantic-error-soft)]/25 bg-[var(--semantic-error-soft)]/10 text-[var(--semantic-error-text)]'
             : 'border-[var(--app-border-subtle)] bg-[var(--app-bg-primary)] text-[var(--app-text-secondary)]';
 
   return (
@@ -164,13 +164,13 @@ export function SettingsStatusPill({
 }) {
   const toneClass =
     tone === 'info'
-      ? 'bg-[#3B82F6]/12 text-[#93C5FD]'
+      ? 'bg-[var(--semantic-info)]/12 text-[var(--semantic-info-text)]'
       : tone === 'success'
-        ? 'bg-[#10B981]/12 text-[#7FE2BC]'
+        ? 'bg-[var(--semantic-success)]/12 text-[var(--semantic-success-text)]'
         : tone === 'warning'
-          ? 'bg-[colors.ember.primary]/12 text-[#F2B29D]'
+          ? 'bg-[colors.ember.primary]/12 text-[var(--semantic-ember-text)]'
           : tone === 'danger'
-            ? 'bg-[#E05252]/12 text-[#F7A8A8]'
+            ? 'bg-[var(--semantic-error-soft)]/12 text-[var(--semantic-error-text)]'
             : 'bg-[var(--app-bg-secondary)] text-[var(--app-text-secondary)]';
 
   return (

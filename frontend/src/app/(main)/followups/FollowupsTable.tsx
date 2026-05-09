@@ -85,18 +85,18 @@ export function FollowupsTable({
   const router = useRouter();
 
   return (
-    <div className="bg-[#111113] rounded-xl border border-[#222226] overflow-hidden">
-      <div className="px-6 py-4 border-b border-[#222226] flex items-center justify-between gap-4">
-        <div className="text-sm text-[#6E6E73]">
+    <div className="bg-[var(--bg-surface)] rounded-xl border border-[var(--bg-border)] overflow-hidden">
+      <div className="px-6 py-4 border-b border-[var(--bg-border)] flex items-center justify-between gap-4">
+        <div className="text-sm text-[var(--text-muted)]">
           {kloelT(`Exibindo`)}{' '}
-          <span className="text-[#E0DDD8] font-medium">{filteredFollowups.length}</span> de{' '}
-          <span className="text-[#E0DDD8] font-medium">{totalCount}</span> follow-ups
+          <span className="text-[var(--text-silver)] font-medium">{filteredFollowups.length}</span> de{' '}
+          <span className="text-[var(--text-silver)] font-medium">{totalCount}</span> follow-ups
         </div>
         {(search || statusFilter !== 'all') && (
           <button
             type="button"
             onClick={onClearFilters}
-            className="text-xs text-[#E85D30] font-medium"
+            className="text-xs text-[var(--ember-primary)] font-medium"
           >
             {kloelT(`Limpar filtros`)}
           </button>
@@ -105,23 +105,23 @@ export function FollowupsTable({
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-[#222226]">
-              <th className="text-left px-6 py-4 text-sm font-medium text-[#6E6E73]">
+            <tr className="border-b border-[var(--bg-border)]">
+              <th className="text-left px-6 py-4 text-sm font-medium text-[var(--text-muted)]">
                 {kloelT(`Status`)}
               </th>
-              <th className="text-left px-6 py-4 text-sm font-medium text-[#6E6E73]">
+              <th className="text-left px-6 py-4 text-sm font-medium text-[var(--text-muted)]">
                 {kloelT(`Telefone`)}
               </th>
-              <th className="text-left px-6 py-4 text-sm font-medium text-[#6E6E73]">
+              <th className="text-left px-6 py-4 text-sm font-medium text-[var(--text-muted)]">
                 {kloelT(`Mensagem`)}
               </th>
-              <th className="text-left px-6 py-4 text-sm font-medium text-[#6E6E73]">
+              <th className="text-left px-6 py-4 text-sm font-medium text-[var(--text-muted)]">
                 {kloelT(`Agendado para`)}
               </th>
-              <th className="text-left px-6 py-4 text-sm font-medium text-[#6E6E73]">
+              <th className="text-left px-6 py-4 text-sm font-medium text-[var(--text-muted)]">
                 {kloelT(`Criado em`)}
               </th>
-              <th className="text-left px-6 py-4 text-sm font-medium text-[#6E6E73]">
+              <th className="text-left px-6 py-4 text-sm font-medium text-[var(--text-muted)]">
                 {kloelT(`Ações`)}
               </th>
             </tr>
@@ -130,20 +130,20 @@ export function FollowupsTable({
             {filteredFollowups.map((followup) => (
               <tr
                 key={followup.id}
-                className="border-b border-[#222226]/60 hover:bg-[#19191C] transition-colors"
+                className="border-b border-[var(--bg-border)]/60 hover:bg-[var(--bg-elevated)] transition-colors"
               >
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-2">
                     {getStatusIcon(followup.status)}
-                    <span className="text-sm text-[#E0DDD8]">
+                    <span className="text-sm text-[var(--text-silver)]">
                       {getStatusLabel(followup.status)}
                     </span>
                   </div>
                 </td>
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-2">
-                    <Phone className="w-4 h-4 text-[#6E6E73]" aria-hidden="true" />
-                    <span className="text-sm text-[#E0DDD8] font-mono">
+                    <Phone className="w-4 h-4 text-[var(--text-muted)]" aria-hidden="true" />
+                    <span className="text-sm text-[var(--text-silver)] font-mono">
                       {formatPhone(followup.phone)}
                     </span>
                   </div>
@@ -151,21 +151,21 @@ export function FollowupsTable({
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-2 max-w-xs">
                     <MessageSquare
-                      className="w-4 h-4 text-[#6E6E73] flex-shrink-0"
+                      className="w-4 h-4 text-[var(--text-muted)] flex-shrink-0"
                       aria-hidden="true"
                     />
-                    <span className="text-sm text-[#E0DDD8] truncate" title={followup.message}>
+                    <span className="text-sm text-[var(--text-silver)] truncate" title={followup.message}>
                       {followup.message || '-'}
                     </span>
                   </div>
                 </td>
                 <td className="px-6 py-4">
-                  <span className="text-sm text-[#E0DDD8]">
+                  <span className="text-sm text-[var(--text-silver)]">
                     {formatDate(followup.scheduledFor)}
                   </span>
                 </td>
                 <td className="px-6 py-4">
-                  <span className="text-sm text-[#6E6E73]">{formatDate(followup.createdAt)}</span>
+                  <span className="text-sm text-[var(--text-muted)]">{formatDate(followup.createdAt)}</span>
                 </td>
                 <td className="px-6 py-4">
                   <div className="flex flex-wrap items-center gap-2">
@@ -180,7 +180,7 @@ export function FollowupsTable({
                           }),
                         )
                       }
-                      className="px-3 py-1.5 bg-[#19191C] border border-[#222226] rounded-lg text-[11px] font-semibold text-[#E0DDD8] hover:bg-[#222226]"
+                      className="px-3 py-1.5 bg-[var(--bg-elevated)] border border-[var(--bg-border)] rounded-lg text-[11px] font-semibold text-[var(--text-silver)] hover:bg-[var(--bg-border)]"
                     >
                       IA
                     </button>
@@ -191,7 +191,7 @@ export function FollowupsTable({
                           `/inbox?source=followups&phone=${encodeURIComponent(followup.phone)}&draft=${encodeURIComponent(followup.message || '')}`,
                         )
                       }
-                      className="px-3 py-1.5 bg-[#19191C] border border-[#222226] rounded-lg text-[11px] font-semibold text-[#E0DDD8] hover:bg-[#222226]"
+                      className="px-3 py-1.5 bg-[var(--bg-elevated)] border border-[var(--bg-border)] rounded-lg text-[11px] font-semibold text-[var(--text-silver)] hover:bg-[var(--bg-border)]"
                     >
                       {kloelT(`Inbox`)}
                     </button>
@@ -202,7 +202,7 @@ export function FollowupsTable({
                           `/flow?source=followups&phone=${encodeURIComponent(followup.phone)}&leadId=${encodeURIComponent(followup.contactId)}&purpose=recovery&tab=editor`,
                         )
                       }
-                      className="px-3 py-1.5 bg-[#19191C] border border-[#222226] rounded-lg text-[11px] font-semibold text-[#E0DDD8] hover:bg-[#222226]"
+                      className="px-3 py-1.5 bg-[var(--bg-elevated)] border border-[var(--bg-border)] rounded-lg text-[11px] font-semibold text-[var(--text-silver)] hover:bg-[var(--bg-border)]"
                     >
                       {kloelT(`Flow`)}
                     </button>
@@ -213,7 +213,7 @@ export function FollowupsTable({
                           `/leads?source=followups&phone=${encodeURIComponent(followup.phone)}&leadId=${encodeURIComponent(followup.contactId)}`,
                         )
                       }
-                      className="px-3 py-1.5 bg-[#19191C] border border-[#222226] rounded-lg text-[11px] font-semibold text-[#E0DDD8] hover:bg-[#222226]"
+                      className="px-3 py-1.5 bg-[var(--bg-elevated)] border border-[var(--bg-border)] rounded-lg text-[11px] font-semibold text-[var(--text-silver)] hover:bg-[var(--bg-border)]"
                     >
                       {kloelT(`Lead`)}
                     </button>

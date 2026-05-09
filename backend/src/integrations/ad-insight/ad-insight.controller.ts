@@ -16,6 +16,7 @@ import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { resolveWorkspaceId } from '../../auth/workspace-access';
 import { WorkspaceGuard } from '../../common/guards/workspace.guard';
 import { AuthenticatedRequest } from '../../common/interfaces/authenticated-request.interface';
+import type { AdInsightSyncResult } from '../ad-provider.interface';
 import { AdInsightService } from './ad-insight.service';
 
 /** Ad insight controller. */
@@ -41,10 +42,10 @@ export class AdInsightController {
   ) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.adInsightService.list(effectiveWorkspaceId, {
-      accountId,
-      platform,
-      since: since ? new Date(since) : undefined,
-      until: until ? new Date(until) : undefined,
+      ...(accountId ? { accountId } : {}),
+      ...(platform ? { platform } : {}),
+      ...(since ? { since: new Date(since) } : {}),
+      ...(until ? { until: new Date(until) } : {}),
       page: Number(page) || 1,
       limit: Number(limit) || 20,
     });
@@ -61,10 +62,10 @@ export class AdInsightController {
   ) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.adInsightService.getSummary(effectiveWorkspaceId, {
-      accountId,
-      platform,
-      since: since ? new Date(since) : undefined,
-      until: until ? new Date(until) : undefined,
+      ...(accountId ? { accountId } : {}),
+      ...(platform ? { platform } : {}),
+      ...(since ? { since: new Date(since) } : {}),
+      ...(until ? { until: new Date(until) } : {}),
     });
   }
 
@@ -117,11 +118,24 @@ export class AdInsightController {
     },
   ) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, body.workspaceId);
+    const mappedInsights: AdInsightSyncResult[] = body.insights.map((i) => ({
+      date: new Date(i.date),
+      accountId: body.accountId,
+      platform: body.platform,
+      spend: i.spend ?? 0,
+      revenue: i.revenue ?? 0,
+      roas: i.roas ?? 0,
+      conversions: i.conversions ?? 0,
+      impressions: i.impressions ?? 0,
+      clicks: i.clicks ?? 0,
+      ctr: i.ctr ?? 0,
+      cpc: i.cpc ?? 0,
+    }));
     return this.adInsightService.syncInsights(
       effectiveWorkspaceId,
       body.accountId,
       body.platform,
-      body.insights.map((i) => ({ ...i, date: new Date(i.date) })),
+      mappedInsights,
     );
   }
 

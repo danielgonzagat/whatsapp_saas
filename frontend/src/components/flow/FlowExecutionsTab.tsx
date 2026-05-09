@@ -28,7 +28,7 @@ export function FlowExecutionsTab({
           {kloelT('Historico de Execucoes')}
         </h2>
         <div className="flex items-center gap-3">
-          {error && <span className="text-sm text-[#EF4444]">{error}</span>}
+          {error && <span className="text-sm text-[var(--semantic-error)]">{error}</span>}
           <button
             type="button"
             onClick={onRefresh}
@@ -75,9 +75,9 @@ export function FlowExecutionsTab({
                   <span
                     className={`text-xs px-2 py-1 rounded-full ${
                       exec.status === 'COMPLETED'
-                        ? 'bg-[#10B981]/10 text-[#10B981]'
+                        ? 'bg-[var(--semantic-success)]/10 text-[var(--semantic-success)]'
                         : exec.status === 'FAILED'
-                          ? 'bg-[#EF4444]/10 text-[#EF4444]'
+                          ? 'bg-[var(--semantic-error)]/10 text-[var(--semantic-error)]'
                           : 'bg-muted text-muted-foreground'
                     }`}
                   >

@@ -120,7 +120,7 @@ export function InboxWorkspace({
         <div className="mb-[var(--inbox-shell-gap)] flex flex-wrap items-center justify-between gap-[var(--inbox-item-gap)]">
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-[length:var(--inbox-title)] font-semibold text-[#E0DDD8]">
+              <h1 className="text-[length:var(--inbox-title)] font-semibold text-[var(--text-silver)]">
                 {title}
               </h1>
               {isConnected && (
@@ -131,7 +131,7 @@ export function InboxWorkspace({
                 </span>
               )}
             </div>
-            <p className="mt-1 text-[length:var(--inbox-body)] text-[#6E6E73]">{description}</p>
+            <p className="mt-1 text-[length:var(--inbox-body)] text-[var(--text-muted)]">{description}</p>
           </div>
 
           <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
@@ -141,25 +141,25 @@ export function InboxWorkspace({
                 <>
                   <Link
                     href="/followups"
-                    className="text-[length:var(--inbox-body)] font-medium text-[#6E6E73] hover:text-[#E0DDD8]"
+                    className="text-[length:var(--inbox-body)] font-medium text-[var(--text-muted)] hover:text-[var(--text-silver)]"
                   >
                     {kloelT(`Follow-ups`)}
                   </Link>
                   <Link
                     href="/marketing/whatsapp?mode=broadcast"
-                    className="text-[length:var(--inbox-body)] font-medium text-[#6E6E73] hover:text-[#E0DDD8]"
+                    className="text-[length:var(--inbox-body)] font-medium text-[var(--text-muted)] hover:text-[var(--text-silver)]"
                   >
                     {kloelT(`Broadcast`)}
                   </Link>
                   <Link
                     href="/leads"
-                    className="text-[length:var(--inbox-body)] font-medium text-[#6E6E73] hover:text-[#E0DDD8]"
+                    className="text-[length:var(--inbox-body)] font-medium text-[var(--text-muted)] hover:text-[var(--text-silver)]"
                   >
                     {kloelT(`Leads`)}
                   </Link>
                   <Link
                     href="/"
-                    className="text-[length:var(--inbox-body)] font-medium text-[#6E6E73] hover:text-[#E0DDD8]"
+                    className="text-[length:var(--inbox-body)] font-medium text-[var(--text-muted)] hover:text-[var(--text-silver)]"
                   >
                     {kloelT(`Voltar ao chat`)}
                   </Link>
@@ -170,7 +170,7 @@ export function InboxWorkspace({
               type="button"
               onClick={refreshConversations}
               disabled={loadingConversations}
-              className="self-start rounded-[var(--inbox-radius)] border border-[#222226] bg-[#111113] px-[var(--inbox-button-x)] py-[var(--inbox-button-y)] text-[length:var(--inbox-body)] font-semibold text-[#E0DDD8] hover:bg-[#19191C] disabled:opacity-50 sm:self-auto"
+              className="self-start rounded-[var(--inbox-radius)] border border-[var(--bg-border)] bg-[var(--bg-surface)] px-[var(--inbox-button-x)] py-[var(--inbox-button-y)] text-[length:var(--inbox-body)] font-semibold text-[var(--text-silver)] hover:bg-[var(--bg-elevated)] disabled:opacity-50 sm:self-auto"
             >
               {kloelT(`Atualizar`)}
             </button>
@@ -179,13 +179,13 @@ export function InboxWorkspace({
       ) : null}
 
       {showContextBanner && (sourceLabel || requestedPhone || requestedConversationId) ? (
-        <div className="mb-[var(--inbox-shell-gap)] rounded-[var(--inbox-radius)] border border-[#222226] bg-[#111113] px-[var(--inbox-panel-x)] py-[var(--inbox-panel-y)]">
+        <div className="mb-[var(--inbox-shell-gap)] rounded-[var(--inbox-radius)] border border-[var(--bg-border)] bg-[var(--bg-surface)] px-[var(--inbox-panel-x)] py-[var(--inbox-panel-y)]">
           <div className="flex flex-wrap items-center justify-between gap-[var(--inbox-item-gap)]">
             <div>
-              <p className="text-[length:var(--inbox-body-xs)] font-semibold uppercase tracking-[0.12em] text-[#6E6E73]">
+              <p className="text-[length:var(--inbox-body-xs)] font-semibold uppercase tracking-[0.12em] text-[var(--text-muted)]">
                 {kloelT(`Contexto operacional`)}
               </p>
-              <p className="mt-1 text-[length:var(--inbox-body)] text-[#E0DDD8]">
+              <p className="mt-1 text-[length:var(--inbox-body)] text-[var(--text-silver)]">
                 {sourceLabel
                   ? `Voce chegou aqui via ${sourceLabel.toLowerCase()}.`
                   : 'Conversa destacada para acao.'}{' '}
@@ -195,13 +195,13 @@ export function InboxWorkspace({
             <div className="flex flex-wrap items-center gap-2">
               <Link
                 href="/flow"
-                className="rounded-[var(--inbox-radius)] border border-[#222226] bg-[#19191C] px-[var(--inbox-button-x)] py-[var(--inbox-button-y)] text-[length:var(--inbox-body-xs)] font-semibold text-[#E0DDD8] hover:bg-[#222226]"
+                className="rounded-[var(--inbox-radius)] border border-[var(--bg-border)] bg-[var(--bg-elevated)] px-[var(--inbox-button-x)] py-[var(--inbox-button-y)] text-[length:var(--inbox-body-xs)] font-semibold text-[var(--text-silver)] hover:bg-[var(--bg-border)]"
               >
                 {kloelT(`Abrir Flow`)}
               </Link>
               <Link
                 href="/analytics?tab=abandonos"
-                className="rounded-[var(--inbox-radius)] border border-[#222226] bg-[#19191C] px-[var(--inbox-button-x)] py-[var(--inbox-button-y)] text-[length:var(--inbox-body-xs)] font-semibold text-[#E0DDD8] hover:bg-[#222226]"
+                className="rounded-[var(--inbox-radius)] border border-[var(--bg-border)] bg-[var(--bg-elevated)] px-[var(--inbox-button-x)] py-[var(--inbox-button-y)] text-[length:var(--inbox-body-xs)] font-semibold text-[var(--text-silver)] hover:bg-[var(--bg-border)]"
               >
                 {kloelT(`Ver abandonos`)}
               </Link>
@@ -223,24 +223,24 @@ export function InboxWorkspace({
 
       <div className="grid grid-cols-1 gap-[var(--inbox-shell-gap)] lg:grid-cols-12">
         <div className="lg:col-span-4">
-          <div className="rounded-[var(--inbox-radius)] border border-[#222226] bg-[#111113] shadow-sm">
-            <div className="flex items-center justify-between border-b border-[#222226] px-[var(--inbox-panel-x)] py-[var(--inbox-panel-y)]">
+          <div className="rounded-[var(--inbox-radius)] border border-[var(--bg-border)] bg-[var(--bg-surface)] shadow-sm">
+            <div className="flex items-center justify-between border-b border-[var(--bg-border)] px-[var(--inbox-panel-x)] py-[var(--inbox-panel-y)]">
               <div className="flex items-center gap-2">
                 <MessageSquare
-                  className="text-[#6E6E73]"
+                  className="text-[var(--text-muted)]"
                   style={{ width: 'var(--inbox-icon-sm)', height: 'var(--inbox-icon-sm)' }}
                   aria-hidden="true"
                 />
-                <span className="text-[length:var(--inbox-section-title)] font-semibold text-[#E0DDD8]">
+                <span className="text-[length:var(--inbox-section-title)] font-semibold text-[var(--text-silver)]">
                   {kloelT(`Conversas`)}
                 </span>
               </div>
-              <span className="text-[length:var(--inbox-body-xs)] text-[#6E6E73]">
+              <span className="text-[length:var(--inbox-body-xs)] text-[var(--text-muted)]">
                 {filteredConversations.length}/{conversations.length}
               </span>
             </div>
 
-            <div className="flex flex-wrap items-center gap-1 border-b border-[#222226] px-[var(--inbox-panel-x)] py-[calc(var(--inbox-chip-y)+2px)]">
+            <div className="flex flex-wrap items-center gap-1 border-b border-[var(--bg-border)] px-[var(--inbox-panel-x)] py-[calc(var(--inbox-chip-y)+2px)]">
               {(
                 [
                   ['all', 'Todos'],
@@ -255,8 +255,8 @@ export function InboxWorkspace({
                   onClick={() => setChannelFilter(value)}
                   className={`rounded-[calc(var(--inbox-radius)-10px)] px-[var(--inbox-chip-x)] py-[var(--inbox-chip-y)] text-[length:var(--inbox-body-xs)] font-semibold transition-colors ${
                     channelFilter === value
-                      ? 'bg-[#E85D30] text-[#0A0A0C]'
-                      : 'bg-[#19191C] text-[#6E6E73] hover:text-[#E0DDD8]'
+                      ? 'bg-[var(--ember-primary)] text-[var(--bg-void)]'
+                      : 'bg-[var(--bg-elevated)] text-[var(--text-muted)] hover:text-[var(--text-silver)]'
                   }`}
                 >
                   {label}
@@ -264,7 +264,7 @@ export function InboxWorkspace({
               ))}
             </div>
 
-            <div className="flex flex-wrap items-center gap-1 border-b border-[#222226] px-[var(--inbox-panel-x)] py-[calc(var(--inbox-chip-y)+2px)]">
+            <div className="flex flex-wrap items-center gap-1 border-b border-[var(--bg-border)] px-[var(--inbox-panel-x)] py-[calc(var(--inbox-chip-y)+2px)]">
               {(
                 [
                   ['open', 'Abertas'],
@@ -278,8 +278,8 @@ export function InboxWorkspace({
                   onClick={() => setStatusFilter(value)}
                   className={`rounded-[calc(var(--inbox-radius)-10px)] px-[var(--inbox-chip-x)] py-[var(--inbox-chip-y)] text-[length:var(--inbox-body-xs)] font-semibold transition-colors ${
                     statusFilter === value
-                      ? 'bg-[#E85D30] text-[#0A0A0C]'
-                      : 'bg-[#19191C] text-[#6E6E73] hover:text-[#E0DDD8]'
+                      ? 'bg-[var(--ember-primary)] text-[var(--bg-void)]'
+                      : 'bg-[var(--bg-elevated)] text-[var(--text-muted)] hover:text-[var(--text-silver)]'
                   }`}
                 >
                   {label}
@@ -291,17 +291,17 @@ export function InboxWorkspace({
               {loadingConversations ? (
                 <div className="flex items-center justify-center px-[var(--inbox-panel-x)] py-10">
                   <Loader2
-                    className="animate-spin text-[#6E6E73]"
+                    className="animate-spin text-[var(--text-muted)]"
                     style={{ width: 'var(--inbox-icon-md)', height: 'var(--inbox-icon-md)' }}
                     aria-hidden="true"
                   />
                 </div>
               ) : filteredConversations.length === 0 ? (
                 <div className="px-[var(--inbox-panel-x)] py-10 text-center">
-                  <p className="text-[length:var(--inbox-body)] font-medium text-[#E0DDD8]">
+                  <p className="text-[length:var(--inbox-body)] font-medium text-[var(--text-silver)]">
                     {kloelT(`Sem conversas`)}
                   </p>
-                  <p className="mt-1 text-[length:var(--inbox-body-xs)] text-[#6E6E73]">
+                  <p className="mt-1 text-[length:var(--inbox-body-xs)] text-[var(--text-muted)]">
                     {requestedPhone
                       ? 'Nao encontramos uma conversa ativa para este contato ainda.'
                       : 'Quando mensagens chegarem, elas aparecem aqui.'}
@@ -309,20 +309,20 @@ export function InboxWorkspace({
                   <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
                     <Link
                       href="/leads"
-                      className="rounded-[var(--inbox-radius)] border border-[#222226] bg-[#19191C] px-[var(--inbox-button-x)] py-[var(--inbox-button-y)] text-[length:var(--inbox-body-xs)] font-semibold text-[#E0DDD8] hover:bg-[#222226]"
+                      className="rounded-[var(--inbox-radius)] border border-[var(--bg-border)] bg-[var(--bg-elevated)] px-[var(--inbox-button-x)] py-[var(--inbox-button-y)] text-[length:var(--inbox-body-xs)] font-semibold text-[var(--text-silver)] hover:bg-[var(--bg-border)]"
                     >
                       {kloelT(`Revisar leads`)}
                     </Link>
                     <Link
                       href="/marketing/whatsapp?mode=broadcast"
-                      className="rounded-[var(--inbox-radius)] border border-[#222226] bg-[#19191C] px-[var(--inbox-button-x)] py-[var(--inbox-button-y)] text-[length:var(--inbox-body-xs)] font-semibold text-[#E0DDD8] hover:bg-[#222226]"
+                      className="rounded-[var(--inbox-radius)] border border-[var(--bg-border)] bg-[var(--bg-elevated)] px-[var(--inbox-button-x)] py-[var(--inbox-button-y)] text-[length:var(--inbox-body-xs)] font-semibold text-[var(--text-silver)] hover:bg-[var(--bg-border)]"
                     >
                       {kloelT(`Abrir broadcast`)}
                     </Link>
                   </div>
                 </div>
               ) : (
-                <div className="divide-y divide-[#222226]">
+                <div className="divide-y divide-[var(--bg-border)]">
                   {filteredConversations.map((c) => (
                     <InboxConversationListItem
                       key={c.id}
@@ -338,22 +338,22 @@ export function InboxWorkspace({
         </div>
 
         <div className="lg:col-span-8">
-          <div className="rounded-[var(--inbox-radius)] border border-[#222226] bg-[#111113] shadow-sm">
-            <div className="flex flex-wrap items-center justify-between gap-[var(--inbox-item-gap)] border-b border-[#222226] px-[var(--inbox-panel-x)] py-[var(--inbox-panel-y)]">
+          <div className="rounded-[var(--inbox-radius)] border border-[var(--bg-border)] bg-[var(--bg-surface)] shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-[var(--inbox-item-gap)] border-b border-[var(--bg-border)] px-[var(--inbox-panel-x)] py-[var(--inbox-panel-y)]">
               <div className="min-w-0">
-                <p className="truncate text-[length:var(--inbox-section-title)] font-semibold text-[#E0DDD8]">
+                <p className="truncate text-[length:var(--inbox-section-title)] font-semibold text-[var(--text-silver)]">
                   {selectedConversation?.contact?.name ||
                     selectedConversation?.contact?.phone ||
                     'Selecione uma conversa'}
                 </p>
-                <p className="mt-0.5 truncate text-[length:var(--inbox-body-xs)] text-[#6E6E73]">
+                <p className="mt-0.5 truncate text-[length:var(--inbox-body-xs)] text-[var(--text-muted)]">
                   {selectedConversation?.contact?.phone || ''}
                 </p>
               </div>
               <div className="flex flex-wrap items-center justify-end gap-2">
                 {selectedConversation ? (
                   selectedConversation.assignedAgent ? (
-                    <span className="flex items-center gap-1.5 rounded-[calc(var(--inbox-radius)-10px)] bg-[#E85D30]/10 px-[var(--inbox-chip-x)] py-[var(--inbox-chip-y)] text-[length:var(--inbox-body-xs)] font-semibold text-[#E85D30]">
+                    <span className="flex items-center gap-1.5 rounded-[calc(var(--inbox-radius)-10px)] bg-[var(--ember-primary)]/10 px-[var(--inbox-chip-x)] py-[var(--inbox-chip-y)] text-[length:var(--inbox-body-xs)] font-semibold text-[var(--ember-primary)]">
                       <UserIcon
                         style={{ width: 'var(--inbox-icon-sm)', height: 'var(--inbox-icon-sm)' }}
                         aria-hidden="true"
@@ -376,7 +376,7 @@ export function InboxWorkspace({
                     type="button"
                     onClick={handleAssumir}
                     disabled={assigning}
-                    className="rounded-[var(--inbox-radius)] border border-[#E85D30]/30 bg-[#E85D30]/10 px-[var(--inbox-button-x)] py-[var(--inbox-button-y)] text-[length:var(--inbox-body-xs)] font-semibold text-[#E85D30] hover:bg-[#E85D30]/20 disabled:opacity-50"
+                    className="rounded-[var(--inbox-radius)] border border-[var(--ember-primary)]/30 bg-[var(--ember-primary)]/10 px-[var(--inbox-button-x)] py-[var(--inbox-button-y)] text-[length:var(--inbox-body-xs)] font-semibold text-[var(--ember-primary)] hover:bg-[var(--ember-primary)]/20 disabled:opacity-50"
                   >
                     {assigning ? '...' : 'Assumir conversa'}
                   </button>
@@ -399,7 +399,7 @@ export function InboxWorkspace({
                     onChange={async (e) => {
                       await handleAssignAgent(e.target.value);
                     }}
-                    className="hidden max-w-[180px] rounded-[var(--inbox-radius)] border border-[#222226] bg-[#111113] px-[var(--inbox-button-x)] py-[var(--inbox-button-y)] text-[length:var(--inbox-body-xs)] font-semibold text-[#E0DDD8] hover:bg-[#19191C] disabled:opacity-50 lg:block"
+                    className="hidden max-w-[180px] rounded-[var(--inbox-radius)] border border-[var(--bg-border)] bg-[var(--bg-surface)] px-[var(--inbox-button-x)] py-[var(--inbox-button-y)] text-[length:var(--inbox-body-xs)] font-semibold text-[var(--text-silver)] hover:bg-[var(--bg-elevated)] disabled:opacity-50 lg:block"
                     title={kloelT(`Atribuir agente`)}
                   >
                     <option value="">{kloelT(`Não atribuído`)}</option>
@@ -426,7 +426,7 @@ export function InboxWorkspace({
                     router.push(href);
                   }}
                   disabled={!selectedConversation && !requestedPhone}
-                  className="rounded-[var(--inbox-radius)] border border-[#222226] bg-[#111113] px-[var(--inbox-button-x)] py-[var(--inbox-button-y)] text-[length:var(--inbox-body-xs)] font-semibold text-[#E0DDD8] hover:bg-[#19191C] disabled:opacity-50"
+                  className="rounded-[var(--inbox-radius)] border border-[var(--bg-border)] bg-[var(--bg-surface)] px-[var(--inbox-button-x)] py-[var(--inbox-button-y)] text-[length:var(--inbox-body-xs)] font-semibold text-[var(--text-silver)] hover:bg-[var(--bg-elevated)] disabled:opacity-50"
                 >
                   {kloelT(`Abrir com IA`)}
                 </button>
@@ -434,7 +434,7 @@ export function InboxWorkspace({
                   type="button"
                   onClick={handleCloseConversation}
                   disabled={!selectedConversationId}
-                  className="rounded-[var(--inbox-radius)] border border-[#222226] bg-[#111113] px-[var(--inbox-button-x)] py-[var(--inbox-button-y)] text-[length:var(--inbox-body-xs)] font-semibold text-[#E0DDD8] hover:bg-[#19191C] disabled:opacity-50"
+                  className="rounded-[var(--inbox-radius)] border border-[var(--bg-border)] bg-[var(--bg-surface)] px-[var(--inbox-button-x)] py-[var(--inbox-button-y)] text-[length:var(--inbox-body-xs)] font-semibold text-[var(--text-silver)] hover:bg-[var(--bg-elevated)] disabled:opacity-50"
                 >
                   {kloelT(`Fechar`)}
                 </button>
@@ -445,17 +445,17 @@ export function InboxWorkspace({
               {loadingMessages ? (
                 <div className="flex items-center justify-center py-10">
                   <Loader2
-                    className="animate-spin text-[#6E6E73]"
+                    className="animate-spin text-[var(--text-muted)]"
                     style={{ width: 'var(--inbox-icon-md)', height: 'var(--inbox-icon-md)' }}
                     aria-hidden="true"
                   />
                 </div>
               ) : !selectedConversationId ? (
                 <div className="py-10 text-center">
-                  <p className="text-[length:var(--inbox-body)] font-medium text-[#E0DDD8]">
+                  <p className="text-[length:var(--inbox-body)] font-medium text-[var(--text-silver)]">
                     {kloelT(`Selecione uma conversa`)}
                   </p>
-                  <p className="mt-1 text-[length:var(--inbox-body-xs)] text-[#6E6E73]">
+                  <p className="mt-1 text-[length:var(--inbox-body-xs)] text-[var(--text-muted)]">
                     {requestedPhone && !matchedConversationByPhone
                       ? 'Nao existe conversa ativa para este telefone. Voce pode voltar ao lead, abrir um broadcast ou preparar um flow.'
                       : 'Escolha uma conversa à esquerda para ver as mensagens.'}
@@ -463,7 +463,7 @@ export function InboxWorkspace({
                   <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
                     <Link
                       href="/leads"
-                      className="rounded-[var(--inbox-radius)] border border-[#222226] bg-[#19191C] px-[var(--inbox-button-x)] py-[var(--inbox-button-y)] text-[length:var(--inbox-body-xs)] font-semibold text-[#E0DDD8] hover:bg-[#222226]"
+                      className="rounded-[var(--inbox-radius)] border border-[var(--bg-border)] bg-[var(--bg-elevated)] px-[var(--inbox-button-x)] py-[var(--inbox-button-y)] text-[length:var(--inbox-body-xs)] font-semibold text-[var(--text-silver)] hover:bg-[var(--bg-border)]"
                     >
                       {kloelT(`Voltar para Leads`)}
                     </Link>
@@ -475,19 +475,19 @@ export function InboxWorkspace({
                         purpose: 'handoff',
                         draft: requestedDraft || '',
                       })}
-                      className="rounded-[var(--inbox-radius)] border border-[#222226] bg-[#19191C] px-[var(--inbox-button-x)] py-[var(--inbox-button-y)] text-[length:var(--inbox-body-xs)] font-semibold text-[#E0DDD8] hover:bg-[#222226]"
+                      className="rounded-[var(--inbox-radius)] border border-[var(--bg-border)] bg-[var(--bg-elevated)] px-[var(--inbox-button-x)] py-[var(--inbox-button-y)] text-[length:var(--inbox-body-xs)] font-semibold text-[var(--text-silver)] hover:bg-[var(--bg-border)]"
                     >
                       {kloelT(`Pedir plano para IA`)}
                     </Link>
                     <Link
                       href="/followups"
-                      className="rounded-[var(--inbox-radius)] border border-[#222226] bg-[#19191C] px-[var(--inbox-button-x)] py-[var(--inbox-button-y)] text-[length:var(--inbox-body-xs)] font-semibold text-[#E0DDD8] hover:bg-[#222226]"
+                      className="rounded-[var(--inbox-radius)] border border-[var(--bg-border)] bg-[var(--bg-elevated)] px-[var(--inbox-button-x)] py-[var(--inbox-button-y)] text-[length:var(--inbox-body-xs)] font-semibold text-[var(--text-silver)] hover:bg-[var(--bg-border)]"
                     >
                       {kloelT(`Abrir follow-ups`)}
                     </Link>
                     <Link
                       href="/marketing/whatsapp?mode=broadcast"
-                      className="rounded-[var(--inbox-radius)] border border-[#222226] bg-[#19191C] px-[var(--inbox-button-x)] py-[var(--inbox-button-y)] text-[length:var(--inbox-body-xs)] font-semibold text-[#E0DDD8] hover:bg-[#222226]"
+                      className="rounded-[var(--inbox-radius)] border border-[var(--bg-border)] bg-[var(--bg-elevated)] px-[var(--inbox-button-x)] py-[var(--inbox-button-y)] text-[length:var(--inbox-body-xs)] font-semibold text-[var(--text-silver)] hover:bg-[var(--bg-border)]"
                     >
                       {kloelT(`Acionar marketing`)}
                     </Link>
@@ -495,10 +495,10 @@ export function InboxWorkspace({
                 </div>
               ) : messages.length === 0 ? (
                 <div className="py-10 text-center">
-                  <p className="text-[length:var(--inbox-body)] font-medium text-[#E0DDD8]">
+                  <p className="text-[length:var(--inbox-body)] font-medium text-[var(--text-silver)]">
                     {kloelT(`Sem mensagens`)}
                   </p>
-                  <p className="mt-1 text-[length:var(--inbox-body-xs)] text-[#6E6E73]">
+                  <p className="mt-1 text-[length:var(--inbox-body-xs)] text-[var(--text-muted)]">
                     {kloelT(`Esta conversa ainda não possui mensagens.`)}
                   </p>
                 </div>
@@ -514,13 +514,13 @@ export function InboxWorkspace({
                         <div
                           className={`max-w-[90%] rounded-[calc(var(--inbox-radius)-4px)] px-[var(--inbox-message-x)] py-[var(--inbox-message-y)] text-[length:var(--inbox-body)] ${
                             isInbound
-                              ? 'bg-[#19191C] text-[#E0DDD8]'
-                              : 'bg-[#E85D30] text-[#0A0A0C]'
+                              ? 'bg-[var(--bg-elevated)] text-[var(--text-silver)]'
+                              : 'bg-[var(--ember-primary)] text-[var(--bg-void)]'
                           }`}
                         >
                           <p className="whitespace-pre-wrap break-words">{m.content || ''}</p>
                           <div
-                            className={`mt-1 text-[length:var(--inbox-body-xs)] ${isInbound ? 'text-[#6E6E73]' : 'text-[#0A0A0C]/70'}`}
+                            className={`mt-1 text-[length:var(--inbox-body-xs)] ${isInbound ? 'text-[var(--text-muted)]' : 'text-[var(--bg-void)]/70'}`}
                           >
                             {formatTime(m.createdAt)}
                           </div>
@@ -534,7 +534,7 @@ export function InboxWorkspace({
             </div>
 
             {selectedConversationId ? (
-              <div className="border-t border-[#222226] px-[var(--inbox-panel-x)] py-[var(--inbox-panel-y)]">
+              <div className="border-t border-[var(--bg-border)] px-[var(--inbox-panel-x)] py-[var(--inbox-panel-y)]">
                 <form
                   onSubmit={(e) => {
                     e.preventDefault();
@@ -548,12 +548,12 @@ export function InboxWorkspace({
                     onChange={(e) => setReplyText(e.target.value)}
                     placeholder={kloelT(`Escreva uma resposta...`)}
                     disabled={sending}
-                    className="flex-1 rounded-[var(--inbox-radius)] border border-[#222226] bg-[#19191C] px-[var(--inbox-input-x)] py-[var(--inbox-input-y)] text-[length:var(--inbox-body)] text-[#E0DDD8] placeholder-[#6E6E73] outline-none focus:border-[#E85D30]/50 focus:ring-1 focus:ring-[#E85D30]/30 disabled:opacity-50"
+                    className="flex-1 rounded-[var(--inbox-radius)] border border-[var(--bg-border)] bg-[var(--bg-elevated)] px-[var(--inbox-input-x)] py-[var(--inbox-input-y)] text-[length:var(--inbox-body)] text-[var(--text-silver)] placeholder-[var(--text-muted)] outline-none focus:border-[var(--ember-primary)]/50 focus:ring-1 focus:ring-[var(--ember-primary)]/30 disabled:opacity-50"
                   />
                   <button
                     type="submit"
                     disabled={sending || !replyText.trim()}
-                    className="flex shrink-0 items-center justify-center rounded-[var(--inbox-radius)] bg-[#E85D30] px-[var(--inbox-button-x)] py-[var(--inbox-button-y)] text-[#0A0A0C] transition-colors hover:bg-[#E85D30]/90 disabled:opacity-40"
+                    className="flex shrink-0 items-center justify-center rounded-[var(--inbox-radius)] bg-[var(--ember-primary)] px-[var(--inbox-button-x)] py-[var(--inbox-button-y)] text-[var(--bg-void)] transition-colors hover:bg-[var(--ember-primary)]/90 disabled:opacity-40"
                     title={kloelT(`Enviar`)}
                   >
                     {sending ? (

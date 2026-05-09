@@ -114,7 +114,7 @@ export function ProductCheckoutPlans({ plans, onPlansChange }: ProductCheckoutPl
                   <button
                     type="button"
                     onClick={() => handleSetDefault(plan.id)}
-                    className="rounded-md p-2 text-[colors.text.muted] hover:bg-[colors.background.elevated] hover:text-[#7FE2BC]"
+                    className="rounded-md p-2 text-[colors.text.muted] hover:bg-[colors.background.elevated] hover:text-[var(--semantic-success-text)]"
                     title={kloelT(`Definir como padrão`)}
                   >
                     <Check className="h-4 w-4" aria-hidden="true" />
@@ -123,7 +123,7 @@ export function ProductCheckoutPlans({ plans, onPlansChange }: ProductCheckoutPl
                 <button
                   type="button"
                   onClick={() => handleRemovePlan(plan.id)}
-                  className="rounded-md p-2 text-[colors.text.muted] hover:bg-[colors.background.elevated] hover:text-[#E05252]"
+                  className="rounded-md p-2 text-[colors.text.muted] hover:bg-[colors.background.elevated] hover:text-[var(--semantic-error-soft)]"
                 >
                   <Trash2 className="h-4 w-4" aria-hidden="true" />
                 </button>

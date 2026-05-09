@@ -147,7 +147,7 @@ export function KloelStatusCard({
           <div>
             <p className="text-xs text-[var(--app-text-secondary)]">{kloelT(`Tom de voz`)}</p>
             <p
-              className={`font-semibold ${voiceToneDefined ? 'text-[#10B981]' : 'text-[var(--app-text-tertiary)]'}`}
+              className={`font-semibold ${voiceToneDefined ? 'text-[var(--semantic-success)]' : 'text-[var(--app-text-tertiary)]'}`}
             >
               {voiceToneDefined ? 'Definido' : 'Nao definido'}
             </p>
@@ -158,7 +158,7 @@ export function KloelStatusCard({
           <div>
             <p className="text-xs text-[var(--app-text-secondary)]">{kloelT(`Checkout`)}</p>
             <p
-              className={`font-semibold ${checkoutConfigured ? 'text-[#10B981]' : 'text-[var(--app-text-tertiary)]'}`}
+              className={`font-semibold ${checkoutConfigured ? 'text-[var(--semantic-success)]' : 'text-[var(--app-text-tertiary)]'}`}
             >
               {checkoutConfigured ? 'Configurado' : 'Nao configurado'}
             </p>

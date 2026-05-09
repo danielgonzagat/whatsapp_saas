@@ -128,8 +128,8 @@ export default function PricingPage() {
               onClick={() => setBillingCycle('monthly')}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 billingCycle === 'monthly'
-                  ? 'bg-[#222226] text-[#E0DDD8]'
-                  : 'text-[#6E6E73] hover:text-[#E0DDD8]'
+                  ? 'bg-[var(--bg-border)] text-[var(--text-silver)]'
+                  : 'text-[var(--text-muted)] hover:text-[var(--text-silver)]'
               }`}
             >
               {kloelT(`Mensal`)}
@@ -139,8 +139,8 @@ export default function PricingPage() {
               onClick={() => setBillingCycle('yearly')}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
                 billingCycle === 'yearly'
-                  ? 'bg-[#222226] text-[#E0DDD8]'
-                  : 'text-[#6E6E73] hover:text-[#E0DDD8]'
+                  ? 'bg-[var(--bg-border)] text-[var(--text-silver)]'
+                  : 'text-[var(--text-muted)] hover:text-[var(--text-silver)]'
               }`}
             >
               {kloelT(`Anual`)}
@@ -176,7 +176,7 @@ export default function PricingPage() {
                 <div
                   key={plan.id}
                   className={`relative rounded-md p-6 transition-all ${
-                    plan.popular ? 'ring-2 ring-[#E85D30]' : ''
+                    plan.popular ? 'ring-2 ring-[var(--ember-primary)]' : ''
                   }`}
                   style={{
                     backgroundColor: colors.background.surface1,
@@ -241,7 +241,7 @@ export default function PricingPage() {
                     onClick={() => handleSelectPlan(plan)}
                     disabled={isLoading === plan.id}
                     className={`w-full py-3 rounded-md font-medium transition-all ${
-                      plan.popular ? 'hover:opacity-90' : 'hover:bg-[#19191C]'
+                      plan.popular ? 'hover:opacity-90' : 'hover:bg-[var(--bg-elevated)]'
                     }`}
                     style={{
                       backgroundColor: plan.popular ? colors.brand.green : 'transparent',
@@ -254,7 +254,7 @@ export default function PricingPage() {
                   <button
                     type="button"
                     onClick={() => router.push(buildPlanDashboardHref(plan))}
-                    className="mt-3 w-full rounded-md border px-4 py-3 text-sm font-medium transition-colors hover:bg-[#19191C]"
+                    className="mt-3 w-full rounded-md border px-4 py-3 text-sm font-medium transition-colors hover:bg-[var(--bg-elevated)]"
                     style={{
                       borderColor: colors.stroke,
                       color: colors.text.primary,

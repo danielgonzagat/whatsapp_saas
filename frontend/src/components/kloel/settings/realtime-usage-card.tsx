@@ -37,9 +37,9 @@ export function RealtimeUsageCard({
       return 'bg-[colors.ember.primary]';
     }
     if (creditsPercent >= 30) {
-      return 'bg-[#F59E0B]';
+      return 'bg-[var(--semantic-warning)]';
     }
-    return 'bg-[#E05252]';
+    return 'bg-[var(--semantic-error-soft)]';
   };
 
   return (

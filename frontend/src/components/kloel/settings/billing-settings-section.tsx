@@ -237,7 +237,7 @@ export function BillingSettingsSection({
         <div
           className={`rounded-md border px-4 py-3 text-sm ${
             billingError
-              ? 'border-[#E05252]/25 bg-[#E05252]/10 text-[#F7A8A8]'
+              ? 'border-[var(--semantic-error-soft)]/25 bg-[var(--semantic-error-soft)]/10 text-[var(--semantic-error-text)]'
               : 'border-[var(--app-border-primary)] bg-[var(--app-bg-card)] text-[var(--app-text-primary)]'
           }`}
         >

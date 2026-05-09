@@ -284,7 +284,7 @@ export function AgentCursor({
 
       {bubbleVisible ? (
         <div
-          className="absolute max-w-[240px] rounded-2xl border border-white/10 bg-[rgba(17,17,17,0.88)] px-3 py-2 text-xs text-[#f0f0f0] shadow-[0_4px_16px_rgba(0,0,0,0.3)] backdrop-blur-md"
+          className="absolute max-w-[240px] rounded-2xl border border-white/10 bg-[rgba(17,17,17,0.88)] px-3 py-2 text-xs text-[var(--text-soft-white)] shadow-[0_4px_16px_rgba(0,0,0,0.3)] backdrop-blur-md"
           style={{
             ...bubbleStyle,
             willChange: 'left, top, opacity, transform',

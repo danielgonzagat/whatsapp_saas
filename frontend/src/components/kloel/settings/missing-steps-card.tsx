@@ -64,16 +64,16 @@ export function MissingStepsCard({
             <SettingsInset
               key={step.label}
               className={`flex items-center gap-3 rounded-xl p-3 transition-colors ${
-                step.done ? 'border-[#10B981]/20 bg-[#10B981]/10' : ''
+                step.done ? 'border-[var(--semantic-success)]/20 bg-[var(--semantic-success)]/10' : ''
               }`}
             >
               {step.done ? (
-                <CheckCircle2 className="h-5 w-5 text-[#10B981]" aria-hidden="true" />
+                <CheckCircle2 className="h-5 w-5 text-[var(--semantic-success)]" aria-hidden="true" />
               ) : (
                 <Circle className="h-5 w-5 text-[var(--app-text-tertiary)]" aria-hidden="true" />
               )}
               <Icon
-                className={`h-4 w-4 ${step.done ? 'text-[#10B981]' : 'text-[var(--app-text-secondary)]'}`}
+                className={`h-4 w-4 ${step.done ? 'text-[var(--semantic-success)]' : 'text-[var(--app-text-secondary)]'}`}
               />
               <span
                 className={`text-sm ${step.done ? 'text-[var(--app-text-primary)]' : 'text-[var(--app-text-secondary)]'}`}

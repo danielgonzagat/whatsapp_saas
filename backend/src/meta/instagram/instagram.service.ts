@@ -33,6 +33,7 @@ export class InstagramService {
 
   /** Get media. */
   async getMedia(igAccountId: string, limit: number, accessToken: string) {
+    this.logger.log('Calling Instagram API', { context: 'InstagramService.getMedia', igAccountId, limit, endpoint: 'media' });
     return this.metaSdk.graphApiGet(
       `${igAccountId}/media`,
       {
@@ -50,6 +51,7 @@ export class InstagramService {
     period: string,
     accessToken: string,
   ) {
+    this.logger.log('Calling Instagram API', { context: 'InstagramService.getAccountInsights', igAccountId, endpoint: 'insights' });
     return this.metaSdk.graphApiGet(
       `${igAccountId}/insights`,
       { metric: metrics.join(','), period },
@@ -59,11 +61,13 @@ export class InstagramService {
 
   /** Publish photo. */
   async publishPhoto(igAccountId: string, imageUrl: string, caption: string, accessToken: string) {
+    this.logger.log('Calling Instagram API', { context: 'InstagramService.publishPhoto', igAccountId, endpoint: 'media/create' });
     const container = await this.metaSdk.graphApiPost(
       `${igAccountId}/media`,
       { image_url: imageUrl, caption },
       accessToken,
     );
+    this.logger.log('Calling Instagram API', { context: 'InstagramService.publishPhoto', igAccountId, endpoint: 'media_publish' });
     return this.metaSdk.graphApiPost(
       `${igAccountId}/media_publish`,
       { creation_id: container.id },
@@ -73,6 +77,7 @@ export class InstagramService {
 
   /** Get comments. */
   async getComments(mediaId: string, accessToken: string) {
+    this.logger.log('Calling Instagram API', { context: 'InstagramService.getComments', mediaId, endpoint: 'comments' });
     return this.metaSdk.graphApiGet(
       `${mediaId}/comments`,
       { fields: 'id,text,username,timestamp' },
@@ -82,6 +87,7 @@ export class InstagramService {
 
   /** Reply to comment. */
   async replyToComment(commentId: string, text: string, accessToken: string) {
+    this.logger.log('Calling Instagram API', { context: 'InstagramService.replyToComment', commentId, endpoint: 'replies' });
     return this.metaSdk.graphApiPost(`${commentId}/replies`, { message: text }, accessToken);
   }
 }
