@@ -24,7 +24,11 @@ import { uploadKnowledgeBase } from '@/lib/api/ai-assistant';
 import { FileText, Plus, Upload } from 'lucide-react';
 import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
 
-export function KnowledgeBaseSection() {
+interface KnowledgeBaseSectionProps {
+  onSourcesLoaded?: (count: number) => void;
+}
+
+export function KnowledgeBaseSection({ onSourcesLoaded }: KnowledgeBaseSectionProps) {
   const fid = useId();
   const kbFileRef = useRef<HTMLInputElement>(null);
   const workspaceId = tokenStorage.getWorkspaceId();
@@ -65,9 +69,12 @@ export function KnowledgeBaseSection() {
 
       if (nextSelectedId) {
         const sourcesResponse = await knowledgeBaseApi.listSources(nextSelectedId);
-        setKnowledgeSources((sourcesResponse.data as KnowledgeSourceItem[]) || []);
+        const sources = (sourcesResponse.data as KnowledgeSourceItem[]) || [];
+        setKnowledgeSources(sources);
+        onSourcesLoaded?.(sources.length);
       } else {
         setKnowledgeSources([]);
+        onSourcesLoaded?.(0);
       }
     } catch (error: unknown) {
       setKnowledgeError(

@@ -59,7 +59,7 @@ test('auth: secure google oauth endpoint accepts a real Google credential', asyn
   });
 
   expect([200, 201]).toContain(googleAuth.status());
-  const json: any = await googleAuth.json();
-  expect(json?.access_token).toBeTruthy();
-  expect(json?.user?.email).toBeTruthy();
+  const json: AuthRegisterResponse = await googleAuth.json();
+  expect(json.access_token).toBeTruthy();
+  expect(json.user?.email).toBeTruthy();
 });

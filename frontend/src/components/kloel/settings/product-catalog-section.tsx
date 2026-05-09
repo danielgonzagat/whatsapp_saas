@@ -85,6 +85,7 @@ export function ProductCatalogSection({
       });
 
       setProducts(nextProducts);
+      onProductsLoaded?.(nextProducts);
     } catch (error: unknown) {
       setCatalogError(
         error instanceof Error ? error.message : 'Nao foi possivel carregar o catalogo do Kloel.',
@@ -92,7 +93,7 @@ export function ProductCatalogSection({
     } finally {
       setCatalogLoading(false);
     }
-  }, [workspaceId]);
+  }, [workspaceId, onProductsLoaded]);
 
   useEffect(() => {
     void hydrateCatalog();
