@@ -132,15 +132,10 @@ async function fetchCommerceGroups(
   prisma: PrismaService,
   planIds: string[],
 ): Promise<{
-    orderGroups: Array<{
-      planId: string;
-      status: OrderStatus;
-      _count: { _all: number };
-      _sum: { totalInCents: number | null };
-    }>;
-    last30dGroups: Array<{ planId: string; _sum: { totalInCents: number | null } }>;
+    orderGroups: OrderGroupRow[];
+    last30dGroups: Last30dGroupRow[];
   }> {
-  const [orderGroups, last30dGroups]: [typeof orderGroups, typeof last30dGroups] = await Promise.all([
+  const [orderGroups, last30dGroups] = await Promise.all([
     // Platform-level admin aggregate: intentionally cross-workspace.
     // `workspaceId: undefined` is a Prisma-side no-op ("skip filter")
     // and keeps the unsafe-query scanner satisfied.
@@ -229,6 +224,8 @@ type OrderGroupRow = {
   _sum: { totalInCents: number | null };
 };
 type Last30dGroupRow = { planId: string; _sum: { totalInCents: number | null } };
+
+type ProductRow = {
   id: string;
   workspaceId: string;
   name: string;

@@ -31,9 +31,9 @@ interface ModuleTemplate {
 /**
  * Module templates catalog — fallback seed data for member area structure generation.
  * Future: these should be fetched from a database-backed template service rather than
- * hardcoded in the controller. Keep as readonly to prevent accidental mutation.
+ * hardcoded in the controller.
  */
-const COURSE_MODULES: readonly ModuleTemplate[] = [
+const COURSE_MODULES: ModuleTemplate[] = [
   {
     name: 'Fundamentos',
     description: 'Base teorica e conceitos essenciais',
@@ -69,7 +69,7 @@ const COURSE_MODULES: readonly ModuleTemplate[] = [
   },
 ];
 
-const COMMUNITY_MODULES: readonly ModuleTemplate[] = [
+const COMMUNITY_MODULES: ModuleTemplate[] = [
   {
     name: 'Comunidade',
     description: 'Espaco de discussao e networking',
@@ -83,8 +83,13 @@ const COMMUNITY_MODULES: readonly ModuleTemplate[] = [
 ];
 
 const HYBRID_MODULES: ModuleTemplate[] = [
-  ...COURSE_MODULES.map((m) => ({ ...m })),
-  { ...COMMUNITY_MODULES[0], position: 3 },
+  ...COURSE_MODULES,
+  {
+    name: COMMUNITY_MODULES[0].name,
+    description: COMMUNITY_MODULES[0].description,
+    position: 3,
+    lessons: [...COMMUNITY_MODULES[0].lessons],
+  },
 ];
 
 const MEMBERSHIP_MODULES: ModuleTemplate[] = [

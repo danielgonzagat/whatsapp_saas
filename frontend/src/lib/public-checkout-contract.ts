@@ -26,15 +26,15 @@ export interface PixelConfig {
 /** Public checkout testimonial shape. */
 export interface PublicCheckoutTestimonial {
   /** Name property. */
-  name?: string;
+  name?: string | undefined;
   /** Text property. */
-  text?: string;
+  text?: string | undefined;
   /** Rating property. */
-  rating?: number;
+  rating?: number | undefined;
   /** Stars property. */
-  stars?: number;
+  stars?: number | undefined;
   /** Avatar property. */
-  avatar?: string;
+  avatar?: string | undefined;
 }
 
 /** Checkout display testimonial shape. */
@@ -78,31 +78,31 @@ export interface PublicCheckoutProduct {
   /** Name property. */
   name: string;
   /** Description property. */
-  description?: string;
+  description?: string | undefined;
   /** Image url property. */
-  imageUrl?: string;
+  imageUrl?: string | undefined;
   /** Images property. */
-  images?: string[];
+  images?: string[] | undefined;
   /** Workspace id property. */
-  workspaceId?: string;
+  workspaceId?: string | undefined;
 }
 
 /** Public checkout merchant info shape. */
 export interface PublicCheckoutMerchantInfo {
   /** Workspace id property. */
-  workspaceId?: string;
+  workspaceId?: string | undefined;
   /** Workspace name property. */
-  workspaceName?: string;
+  workspaceName?: string | undefined;
   /** Company name property. */
-  companyName?: string;
+  companyName?: string | undefined;
   /** Brand logo property. */
-  brandLogo?: string | null;
+  brandLogo?: string | null | undefined;
   /** Custom domain property. */
-  customDomain?: string | null;
+  customDomain?: string | null | undefined;
   /** Cnpj property. */
-  cnpj?: string | null;
+  cnpj?: string | null | undefined;
   /** Address line property. */
-  addressLine?: string | null;
+  addressLine?: string | null | undefined;
 }
 
 /** Public checkout config shape. */
