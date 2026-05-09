@@ -1,4 +1,6 @@
+import * as crypto from 'node:crypto';
 import { createHmac } from 'node:crypto';
+import { InjectRedis } from '@nestjs-modules/ioredis';
 import { safeCompareStrings } from '../../common/utils/crypto-compare.util';
 import {
   Body,
@@ -13,6 +15,8 @@ import {
   Req,
   Res,
 } from '@nestjs/common';
+import { type WebhookEvent } from '@prisma/client';
+import type { Redis } from 'ioredis';
 import { Response } from 'express';
 import { Public } from '../../auth/public.decorator';
 import { forEachSequential } from '../../common/async-sequence';
@@ -24,6 +28,7 @@ import {
 import { OmnichannelService } from '../../inbox/omnichannel.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { InboundProcessorService } from '../../whatsapp/inbound-processor.service';
+import { WebhooksService } from '../../webhooks/webhooks.service';
 import { MetaWhatsAppService } from '../meta-whatsapp.service';
 
 /**
@@ -98,8 +103,10 @@ interface MetaWhatsAppStatus {
 
 /**
  * Meta Graph API webhookEvent receiver (Instagram, Messenger, WhatsApp Cloud).
- * Deduplication: each message carries a unique externalId (msg.id/mid);
- * InboundProcessorService skips isDuplicate providerMessageId entries.
+ * Deduplication: double-layered — Redis SET NX (fast gate) + WebhookEvent
+ * @@unique([provider, externalId]) (permanent audit). Replay-safe: returns
+ * 200 on duplicate events. Signature verification via X-Hub-Signature-256
+ * (HMAC-SHA256); invalid signatures are rejected with 403.
  */
 @Controller('webhooks/meta')
 export class MetaWebhookController {
@@ -110,6 +117,8 @@ export class MetaWebhookController {
     private readonly inboundProcessor: InboundProcessorService,
     private readonly omnichannelService: OmnichannelService,
     private readonly prisma: PrismaService,
+    private readonly webhooksService: WebhooksService,
+    @InjectRedis() private readonly redis: Redis,
   ) {}
 
   /** Verify webhook. */
@@ -142,6 +151,7 @@ export class MetaWebhookController {
   async handleWebhook(
     @Body() body: MetaWebhookBody,
     @Headers('x-hub-signature-256') signature: string,
+    @Headers('x-event-id') eventId: string | undefined,
     @Req() req?: RawBodyRequest,
   ) {
     // Validate signature
@@ -153,9 +163,37 @@ export class MetaWebhookController {
         )
         .digest('hex')}`;
       if (!safeCompareStrings(signature, expected)) {
-        this.logger.warn('Invalid Meta webhook signature');
+        this.logger.warn('Invalid Meta webhook signature — rejecting');
+        throw new ForbiddenException('Invalid Meta webhook signature');
+      }
+    }
+
+    // Double-layer idempotency: Redis SET NX + WebhookEvent unique constraint
+    const redisKey = this.buildMetaIdempotencyKey(eventId, req, body);
+    const acquired = await this.redis.set(redisKey, '1', 'EX', 300, 'NX');
+    if (!acquired) {
+      this.logger.warn(`Duplicate Meta webhook (Redis): ${redisKey}`);
+      return 'ok';
+    }
+
+    const metaExternalId = eventId || `meta_${crypto.createHash('sha256').update(JSON.stringify(body)).digest('hex').slice(0, 32)}`;
+    let webhookEvent: WebhookEvent | undefined;
+    try {
+      webhookEvent = await this.webhooksService.logWebhookEvent(
+        'meta',
+        String(body.object || 'unknown'),
+        metaExternalId,
+        body,
+      );
+    } catch (err: unknown) {
+      const code = (err as { code?: string } | null)?.code;
+      if (code === 'P2002') {
+        this.logger.log(`Duplicate Meta webhook event ${metaExternalId}, returning 200`);
         return 'ok';
       }
+      this.logger.warn(
+        `Failed to log Meta webhook event: ${err instanceof Error ? err.message : 'unknown'}`,
+      );
     }
 
     const object = body.object;
@@ -180,7 +218,30 @@ export class MetaWebhookController {
       }
     });
 
+    if (webhookEvent?.id) {
+      await this.webhooksService.markWebhookProcessed(webhookEvent.id).catch((err: unknown) => {
+        this.logger.error(
+          `Failed to mark Meta webhook ${webhookEvent.id} as processed: ${err instanceof Error ? err.message : 'unknown'}`,
+        );
+      });
+    }
+
     return 'ok';
+  }
+
+  private buildMetaIdempotencyKey(
+    eventId: string | undefined,
+    req: RawBodyRequest | undefined,
+    body: MetaWebhookBody,
+  ): string {
+    if (eventId) return `webhook:meta:${eventId}`;
+    const raw = req?.rawBody || JSON.stringify(body || {});
+    const hash = crypto
+      .createHash('sha256')
+      .update(Buffer.isBuffer(raw) ? raw : Buffer.from(String(raw)))
+      .digest('hex')
+      .slice(0, 32);
+    return `webhook:meta:${hash}`;
   }
 
   private async handleInstagram(entry: MetaWebhookEntry) {

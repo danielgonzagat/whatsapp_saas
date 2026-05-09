@@ -6,10 +6,8 @@ import {
   SourceRootEvidenceBasis,
   WEAK_FALLBACK_SEGMENTS,
   CONVENTIONAL_SOURCE_DIR_NAMES,
-  sourceExtensionsSet,
   SKIP_DIR_NAMES,
   ZERO,
-  ONE,
 } from './types';
 import {
   normalizeRelative,

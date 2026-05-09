@@ -203,10 +203,10 @@ export function KnowledgeBaseSection({ onSourcesLoaded }: KnowledgeBaseSectionPr
         <div className="grid gap-4 md:grid-cols-[220px,1fr]">
           <div className="space-y-2">
             <Label className="text-sm text-gray-700">{kloelT(`Base selecionada`)}</Label>
-            <Select
-              value={selectedKnowledgeBaseId || undefined}
-              onValueChange={setSelectedKnowledgeBaseId}
-            >
+              <Select
+                value={selectedKnowledgeBaseId}
+                onValueChange={setSelectedKnowledgeBaseId}
+              >
               <SelectTrigger className="rounded-xl border-gray-200">
                 <SelectValue placeholder={kloelT(`Selecione a base`)} />
               </SelectTrigger>

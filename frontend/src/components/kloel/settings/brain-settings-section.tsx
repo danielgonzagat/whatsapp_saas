@@ -31,7 +31,7 @@ import { ProductCatalogSection } from './product-catalog-section';
 import { VoiceToneSection } from './voice-tone-section';
 import { SettingsNotice, kloelSettingsClass } from './contract';
 import { tokenStorage, workspaceApi } from '@/lib/api';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 export function BrainSettingsSection() {
   const workspaceId = tokenStorage.getWorkspaceId();

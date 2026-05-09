@@ -31,7 +31,7 @@ interface ProductCatalogSectionProps {
 }
 
 export function ProductCatalogSection({
-  knowledgeSources = [],
+  knowledgeSources: _knowledgeSources = [],
   onProductsLoaded,
 }: ProductCatalogSectionProps) {
   const router = useRouter();
@@ -152,8 +152,6 @@ export function ProductCatalogSection({
     () => products.reduce((total, product) => total + product.activePlansCount, 0),
     [products],
   );
-
-  const hasProducts = products.length > 0;
 
   return (
     <AccordionSection icon={Package} title={kloelT(`Produtos e ofertas`)}>

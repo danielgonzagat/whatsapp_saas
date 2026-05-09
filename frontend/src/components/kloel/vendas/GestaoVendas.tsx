@@ -4,10 +4,10 @@ import { kloelT } from '@/lib/i18n/t';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
 import { IC } from './VendasView.icons';
 import { Stat } from './Stat';
-import { Badge } from './Badge';
 import { TH } from './TH';
 import { MiniChart } from './MiniChart';
-import { SORA, MONO, SALE_STATUS, PAY_METHODS, fmtBRL, fmtDate } from './utils';
+import { SORA, MONO, SALE_STATUS, fmtBRL } from './utils';
+import { MobileSaleRow, DesktopSaleRow } from './SaleRow';
 import type { SalesStatsData, SaleItem } from './types';
 
 interface GestaoVendasProps {

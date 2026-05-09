@@ -96,7 +96,7 @@ export function AutopilotSection() {
     try {
       await updateAutopilotConfig(workspaceId, {
         conversionFlowId: autopilotConfig.conversionFlowId || null,
-        currencyDefault: autopilotConfig.currencyDefault || undefined,
+        currencyDefault: autopilotConfig.currencyDefault,
         recoveryTemplateName: autopilotConfig.recoveryTemplateName || null,
       });
       setAutopilotSuccess('Configuracao operacional do autopilot salva.');

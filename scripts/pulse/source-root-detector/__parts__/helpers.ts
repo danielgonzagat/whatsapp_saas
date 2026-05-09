@@ -1,10 +1,9 @@
 import * as path from 'path';
-import { pathExists, readDir, readTextFile } from '../../safe-fs';
+import { pathExists } from '../../safe-fs';
 import { safeJoin } from '../../safe-path';
 import {
   SourceRootKind,
   SourceRootLanguage,
-  sourceExtensionsSet,
   ZERO,
   SKIP_DIR_NAMES,
 } from './types';
