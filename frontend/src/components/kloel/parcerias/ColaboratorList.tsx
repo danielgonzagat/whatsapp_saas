@@ -38,7 +38,7 @@ export default function ColaboratorList({
   filtered: Agent[];
   hasData: boolean;
 }) {
-  const gridCols = HEADER_COLS.map((c, i) => (c ? `${c}px` : '1fr')).join(' ');
+  const gridCols = HEADER_COLS.map((c) => (c ? `${c}px` : '1fr')).join(' ');
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>

@@ -13,7 +13,7 @@ import {
   flattenSalesArguments,
   flattenUpsellDownsell,
   flattenFollowUpTechnical,
-} from './__companions__/ai-config.helpers.companion';
+} from './ai-config.flatten-helpers';
 
 function normalizeAiTone(value: unknown): string | undefined {
   const normalized = safeStr(value).trim();

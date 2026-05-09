@@ -356,13 +356,15 @@ export async function updateVariantOutcome(
         .catch(() => null /* not found */)
     : null;
 
-  const current: MessageVariant = existing?.value
+  const existingRecord = existing?.value as Record<string, unknown> | undefined;
+
+  const current: MessageVariant = existingRecord
     ? {
-        key: String(existing.value.key || input.variant.key),
+        key: String(existingRecord.key || input.variant.key),
         family: input.family,
-        text: String(existing.value.text || input.variant.text),
-        score: Number(existing.value.score || input.variant.score) || 1,
-        uses: Number(existing.value.uses || input.variant.uses) || 0,
+        text: String(existingRecord.text || input.variant.text),
+        score: Number(existingRecord.score || input.variant.score) || 1,
+        uses: Number(existingRecord.uses || input.variant.uses) || 0,
       }
     : input.variant;
 

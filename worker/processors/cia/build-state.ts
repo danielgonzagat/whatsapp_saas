@@ -477,7 +477,7 @@ export async function buildCiaWorkspaceState(
         conversationId: conversation.id,
         contactId: conversation.contact?.id,
         phone: conversation.contact?.phone,
-        contactName: conversation.contact?.name,
+        contactName: conversation.contact?.name ?? undefined,
         unreadCount: deriveOperationalUnreadCount(conversation),
         pending,
         lastMessageAt: conversation.lastMessageAt,

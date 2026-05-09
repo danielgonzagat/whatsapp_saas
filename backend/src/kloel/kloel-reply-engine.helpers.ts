@@ -363,4 +363,11 @@ export async function buildAssistantReplyImpl(
   return assistantMessage;
 }
 
-export { buildKloelDashboardPrompt };
+export function buildKloelDashboardPrompt(params: {
+  currentDate: string;
+  userName?: string | null;
+  workspaceName?: string | null;
+  expertiseLevel?: ExpertiseLevel;
+}): string {
+  return buildKloelResponseEnginePrompt(params);
+}

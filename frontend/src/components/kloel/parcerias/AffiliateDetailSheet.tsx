@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { kloelT } from '@/lib/i18n/t';
-import { buildPayUrl } from '@/lib/subdomains';
+
 import { partnershipsApi } from '@/lib/api/partnerships';
 import type { Affiliate, AffiliatePerformance } from './partnershipTypes';
 import { IC } from './ParceriasView.icons';

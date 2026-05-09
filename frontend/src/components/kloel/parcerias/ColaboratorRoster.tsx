@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useCollaborators } from '@/hooks/usePartnerships';
 import type { Agent } from './partnershipTypes';
-import { C } from './ParceriasDesignTokens';
+
 import ColaboratorStatsSummary from './ColaboratorStatsSummary';
 import ColaboratorSearchToolbar from './ColaboratorSearchToolbar';
 import ColaboratorList from './ColaboratorList';

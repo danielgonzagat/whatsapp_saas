@@ -67,7 +67,7 @@ describe('CopilotController', () => {
 
       const req = { user: {} } as never;
 
-      const result = await controller.suggest(req, undefined as never);
+      const result = await controller.suggest(req, {} as never);
 
       expect(result).toEqual({ suggestion: 'Fallback' });
       expect(copilot.suggest).toHaveBeenCalledWith({

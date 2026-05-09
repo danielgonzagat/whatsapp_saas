@@ -164,7 +164,6 @@ describe('redisInProductionValidator', () => {
 
     it('handles boolean REDIS_MODE disabled truthy value', () => {
       const input = { NODE_ENV: 'production', REDIS_MODE: true };
-      const result = redisInProductionValidator(input);
 
       // Boolean true → "true" as string !== "disabled" → proceeds to assert Redis
       expect(() => redisInProductionValidator(input)).toThrow(
@@ -174,7 +173,6 @@ describe('redisInProductionValidator', () => {
 
     it('handles numeric REDIS_MODE value', () => {
       const input = { NODE_ENV: 'production', REDIS_MODE: 0 };
-      const result = redisInProductionValidator(input);
 
       // Numeric 0 → "0" as string !== "disabled" → proceeds to assert Redis
       expect(() => redisInProductionValidator(input)).toThrow(
