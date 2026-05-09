@@ -9,18 +9,20 @@ import { MindSurpriseService } from './mind-surprise.service';
 import type { MindTick } from './mind.types';
 import { MindWorkspaceStateService } from './mind-workspace-state.service';
 import {
-  resolveAdAlertActionDecision,
   resolveAggressivenessDecision,
   resolveAudioVsTextDecision,
-  resolveBroadcastWindowDecision,
-  resolveChannelChoiceDecision,
   resolveCouponDecision,
-  resolveHumanTransferDecision,
   resolveMessageFormatDecision,
   resolveObjectionResponseDecision,
-  resolveProductOfferDecision,
   resolveToneDecision,
 } from './mind-catalog-decision-resolvers';
+import {
+  resolveAdAlertActionDecision,
+  resolveBroadcastWindowDecision,
+  resolveChannelChoiceDecision,
+  resolveHumanTransferDecision,
+  resolveProductOfferDecision,
+} from './mind-commercial-decision-resolvers';
 import { KNOWN_DECISION_TYPES } from './mind-decision-baselines';
 
 @Injectable()
