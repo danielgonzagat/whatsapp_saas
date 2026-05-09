@@ -47,7 +47,7 @@ import {
   deleteStoredFileIfNeeded as companionDeleteStored,
   insufficientWalletMessage as companionInsufficientWallet,
   storeUploadedFile as companionStoreFile,
-} from './__companions__/upload-helpers';
+} from './upload-helpers';
 
 const JPG_JPEG_PNG_GIF_WEBP_RE = /\.(jpg|jpeg|png|gif|webp|pdf|txt|doc|docx|xls|xlsx)$/i;
 const IMAGE___JPEG_PNG_GIF_W_RE = /^(image\/(jpeg|png|gif|webp)|application\/pdf|text\/plain)$/;

@@ -16,8 +16,8 @@ import {
   safeStr,
   asUnknownRecord,
   detectBuyIntent,
-} from './__companions__/kloel-lead-brain.service.companion';
-import type { ChatMessage } from './__companions__/kloel-lead-brain.service.companion';
+} from './kloel-lead-brain.helpers';
+import type { ChatMessage } from './kloel-lead-brain.helpers';
 export { NON_DIGIT_RE, safeStr, asUnknownRecord, detectBuyIntent };
 export type { ChatMessage };
 

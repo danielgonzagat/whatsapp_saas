@@ -1,5 +1,3 @@
-import type { CSSProperties } from 'react';
-
 const C = {
   elevated: 'var(--bg-elevated, #19191C)',
   border: 'var(--border-space, #222226)',

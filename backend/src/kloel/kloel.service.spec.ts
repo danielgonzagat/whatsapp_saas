@@ -10,7 +10,7 @@ import { KloelThreadService } from './kloel-thread.service';
 import { KloelWhatsAppToolsService } from './kloel-whatsapp-tools.service';
 import { chatCompletionStreamWithRetry, chatCompletionWithFallback } from './openai-wrapper';
 
-import type { KloelPrismaMock } from './__companions__/kloel.service.spec.companion';
+import type { KloelPrismaMock } from './kloel.service.spec.types';
 
 describe('KloelService', () => {
   let service: KloelService;

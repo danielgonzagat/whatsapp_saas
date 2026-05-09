@@ -9,7 +9,7 @@ import { AuditService } from '../audit/audit.service';
 import { forEachSequential } from '../common/async-sequence';
 import { PrismaService } from '../prisma/prisma.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
-import { computeMemoryStats, type MemoryStats } from './__parts__/memory-stats';
+import { computeMemoryStats, type MemoryStats } from './memory-stats';
 
 interface MemoryCleanupResult {
   expiredRemoved: number;

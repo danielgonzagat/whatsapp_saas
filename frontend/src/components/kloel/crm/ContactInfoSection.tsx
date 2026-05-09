@@ -4,7 +4,7 @@ import { Mail, Phone } from 'lucide-react';
 
 interface ContactInfoSectionProps {
   phone: string;
-  email?: string;
+  email: string | null | undefined;
 }
 
 const C = {

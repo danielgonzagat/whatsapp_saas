@@ -13,7 +13,18 @@ import { UnifiedAgentActionsMessagingService } from './unified-agent-actions-mes
 import { UnifiedAgentActionsSalesService } from './unified-agent-actions-sales.service';
 import { UnifiedAgentActionsWorkspaceService } from './unified-agent-actions-workspace.service';
 import type { ToolArgs } from './unified-agent.types';
-import { actionStr, actionNum } from './__companions__/unified-agent-actions.service.companion';
+function actionStr(v: unknown, fb = ''): string {
+  return typeof v === 'string'
+    ? v
+    : typeof v === 'number' || typeof v === 'boolean'
+      ? String(v)
+      : fb;
+}
+
+function actionNum(v: unknown, fb = 0): number {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : fb;
+}
 import { OpsAlertService } from '../observability/ops-alert.service';
 
 type UnknownRecord = Record<string, unknown>;

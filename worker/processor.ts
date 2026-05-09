@@ -412,7 +412,6 @@ export const flowWorker = SHOULD_EXECUTE
           );
           jobCounter.inc({ queue: job.queueName, name: job.name, status: 'failed' });
 
-          const workspaceId = meta.workspaceId;
           if (typeof job.data === 'object' && job.data !== null && !Object.isFrozen(job.data)) {
             (job.data as Record<string, unknown>).correlationId = correlationId;
           }

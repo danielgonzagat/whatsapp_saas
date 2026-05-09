@@ -1,5 +1,5 @@
 import { CopilotGateway } from './copilot.gateway';
-import type { Server, Socket } from 'socket.io';
+import type { Socket } from 'socket.io';
 
 jest.mock('../common/redis/redis.util', () => ({
   createRedisClient: jest.fn(),
@@ -41,7 +41,7 @@ describe('CopilotGateway', () => {
     (createRedisClient as jest.Mock).mockReturnValue(mockSub);
 
     gateway = new CopilotGateway(mockOpsAlert as never);
-    (gateway as Record<string, unknown>).server = mockServer;
+    (gateway as never as Record<string, unknown>).server = mockServer;
   });
 
   describe('onModuleInit', () => {
@@ -95,7 +95,7 @@ describe('CopilotGateway', () => {
     it('does not call opsAlert when opsAlert is not injected', async () => {
       // Create gateway without opsAlert (Optional dep)
       const gatewayNoAlert = new CopilotGateway();
-      const gwAny = gatewayNoAlert as Record<string, unknown>;
+      const gwAny = gatewayNoAlert as never as Record<string, unknown>;
       gwAny.server = mockServer;
 
       const onModuleInit = gwAny.onModuleInit as () => Promise<void>;

@@ -4,7 +4,7 @@ import { formatBrlAmount } from './money-format.util';
 import { UnifiedAgentActionsMessagingService } from './unified-agent-actions-messaging.service';
 import type { ToolArgs } from './unified-agent.types';
 import { OpsAlertService } from '../observability/ops-alert.service';
-import { actionHandleObjection as actionHandleObjectionFn } from './__companions__/unified-agent-actions-sales.service.companion';
+import { actionHandleObjection as actionHandleObjectionFn } from './unified-agent-actions-sales.helpers';
 
 type UnknownRecord = Record<string, unknown>;
 

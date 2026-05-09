@@ -9,7 +9,7 @@ import {
   NON_DIGIT_RE,
   toolSendAudio as toolSendAudioFn,
   toolSendDocument as toolSendDocumentFn,
-} from './__companions__/kloel-whatsapp-tools.service.companion';
+} from './kloel-whatsapp-tools.helpers';
 import type {
   ToolResult,
   ToolSendWhatsAppMessageArgs,
@@ -21,7 +21,7 @@ import type {
   ToolSendAudioArgs,
   ToolSendDocumentArgs,
   ToolTranscribeAudioArgs,
-} from './__companions__/kloel-whatsapp-tools.service.companion';
+} from './kloel-whatsapp-tools.helpers';
 export { NON_DIGIT_RE };
 export type {
   ToolResult,

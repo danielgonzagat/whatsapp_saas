@@ -1,5 +1,5 @@
 import { AlertsGateway } from './alerts.gateway';
-import type { Server, Socket } from 'socket.io';
+import type { Socket } from 'socket.io';
 
 jest.mock('../common/redis/redis.util', () => ({
   createRedisClient: jest.fn(),
@@ -32,7 +32,7 @@ describe('AlertsGateway', () => {
     (createRedisClient as jest.Mock).mockReturnValue(mockSub);
 
     gateway = new AlertsGateway();
-    (gateway as Record<string, unknown>).server = mockServer;
+    (gateway as never as Record<string, unknown>).server = mockServer;
   });
 
   describe('onModuleInit', () => {

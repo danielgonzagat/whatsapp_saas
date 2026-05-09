@@ -21,7 +21,7 @@ import {
   countResponseWords,
   computeReplyStyleBudget,
   buildReplyStyleInstruction,
-} from './__companions__/unified-agent-response.service.companion';
+} from './unified-agent-response.helpers';
 
 /**
  * Handles response generation, reply style, and fallback logic

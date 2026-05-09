@@ -5,13 +5,7 @@ import { buildQueueOptions, flowQueue } from './queue';
 import { isRetryableError, WorkerError } from './src/utils/error-handler';
 import { forEachSequential } from './utils/async-sequence';
 import { WorkerLogger } from './logger';
-import {
-  checkIdempotent,
-  endJob,
-  logError,
-  markCompleted,
-  startJob,
-} from './processor-base';
+import { checkIdempotent, endJob, logError, markCompleted, startJob } from './processor-base';
 
 /**
  * =======================================================

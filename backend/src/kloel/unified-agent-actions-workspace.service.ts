@@ -6,7 +6,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { chatCompletionWithFallback } from './openai-wrapper';
 import type { ToolArgs } from './unified-agent.types';
 import { OpsAlertService } from '../observability/ops-alert.service';
-import { actionGetWorkspaceStatus as actionGetWorkspaceStatusFn } from './__companions__/unified-agent-actions-workspace.service.companion';
+import { actionGetWorkspaceStatus as actionGetWorkspaceStatusFn } from './unified-agent-actions-workspace.helpers';
 
 type UnknownRecord = Record<string, unknown>;
 

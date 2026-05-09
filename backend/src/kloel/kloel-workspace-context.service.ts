@@ -10,7 +10,7 @@ import {
   listWorkspaceIntegrations,
   createWorkspaceIntegration,
   safeStr,
-} from './__companions__/kloel-workspace-context.service.companion';
+} from './kloel-workspace-context.helpers';
 import type { WorkspaceProductContextInput } from './kloel-workspace-context.types';
 
 const LIMITS: KloelContextFormatterLimits = {

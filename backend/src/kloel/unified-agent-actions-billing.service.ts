@@ -11,7 +11,7 @@ import {
   getProductReviews as getProductReviewsCompanion,
   getProductUrls as getProductUrlsCompanion,
   validateCoupon as validateCouponCompanion,
-} from './__companions__/unified-agent-actions-billing.service.companion';
+} from './unified-agent-actions-billing.helpers';
 
 type AnalyticsResult = Record<string, unknown>;
 
