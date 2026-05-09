@@ -18,6 +18,10 @@ import { UNIFIED_AGENT_TOOLS } from './unified-agent-tools-def';
 import { UnifiedAgentContextService } from './unified-agent-context.service';
 import { UnifiedAgentResponseService } from './unified-agent-response.service';
 import { UnifiedAgentActionsService } from './unified-agent-actions.service';
+import {
+  buildPredecidedActionDraft,
+  executePredecidedAgentActions,
+} from './__parts__/unified-agent-predecided-actions.part';
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -124,23 +128,16 @@ export interface ToolArgs {
 
 /** Action entry shape. */
 export interface ActionEntry {
-  /** Tool property. */
   tool: string;
-  /** Args property. */
   args: ToolArgs;
-  /** Result property. */
   result?: unknown;
 }
 
-/**
- * KLOEL Unified Agent Service — orchestrator.
- *
- * This service coordinates context loading, LLM calls, tool dispatch, and
- * response composition. All heavy logic lives in the sub-services injected
- * here. The constructor, processMessage, and executeToolAction router are the
- * only concerns of this file.
- */
-/** Idempotency: enforced at HTTP layer via @Idempotent() guard + Stripe idempotencyKey. */
+export interface PredecidedAction {
+  args: ToolArgs;
+  tool: string;
+}
+
 @Injectable()
 export class UnifiedAgentService {
   private readonly logger = new Logger(UnifiedAgentService.name);
@@ -173,9 +170,6 @@ export class UnifiedAgentService {
     this.fallbackWriterModel = resolveBackendOpenAIModel('writer_fallback', this.config);
   }
 
-  /**
-   * API simplificada para processar mensagem inbound (WhatsApp/omnichannel).
-   */
   async processIncomingMessage(params: {
     workspaceId: string;
     phone: string;
@@ -204,11 +198,9 @@ export class UnifiedAgentService {
     return { ...result, reply: result.response };
   }
 
-  /**
-   * Processa uma mensagem recebida e decide as ações a tomar.
-   */
   async processMessage(params: {
     allowedTools?: string[];
+    predecidedActions?: PredecidedAction[];
     workspaceId: string;
     contactId: string;
     phone: string;
@@ -222,7 +214,9 @@ export class UnifiedAgentService {
   }> {
     const { workspaceId, contactId, phone, message, context } = params;
 
-    if (!this.openai) {
+    const predecidedActions = params.predecidedActions ?? [];
+
+    if (!this.openai && predecidedActions.length === 0) {
       this.logger.warn('OpenAI not configured');
       return this.response.buildFallbackResult(message);
     }
@@ -314,6 +308,39 @@ export class UnifiedAgentService {
 Mensagem: ${message}`,
       },
     ];
+
+    if (predecidedActions.length > 0) {
+      const actionsList = await executePredecidedAgentActions({
+        allowedTools: params.allowedTools,
+        contactId,
+        context,
+        executeTool: this.executeToolAction.bind(this),
+        logAutopilotEvent: this.actions.logAutopilotEvent.bind(this.actions),
+        phone,
+        predecidedActions,
+        workspaceId,
+      });
+      const intent = this.response.extractIntent(actionsList, message);
+      const draftedReply = await this.response.composeWriterReply(
+        this.openai,
+        this.writerModel,
+        this.fallbackWriterModel,
+        {
+          workspaceId,
+          customerMessage: message,
+          assistantDraft: buildPredecidedActionDraft(actionsList),
+          actions: actionsList,
+          historyTurns: conversationHistory.length,
+        },
+      );
+
+      return {
+        actions: actionsList,
+        response: draftedReply,
+        intent,
+        confidence: actionsList.length > 0 ? 0.85 : 0.55,
+      };
+    }
 
     // 4. Call OpenAI with tools
     let llmResponse: OpenAI.Chat.ChatCompletion;
