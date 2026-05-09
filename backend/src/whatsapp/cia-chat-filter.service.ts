@@ -1,6 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { WahaChatSummary } from './providers/whatsapp-api.provider';
 
+type RawCiaChat = Record<string, unknown>;
+type RawCiaChatId = Record<string, unknown> | string;
+type RawCiaLastMessage = Record<string, unknown> | null;
+type RawCiaLastMessageData = Record<string, unknown>;
+type RawCiaChatMetadata = Record<string, unknown>;
+
 const CIA_REMOTE_PENDING_MAX_AGE_MS = Math.max(
   60_000,
   Number.parseInt(
@@ -56,7 +62,7 @@ export class CiaChatFilterService {
 
   /** Normalise a raw provider chat list into typed WahaChatSummary[]. */
   normalizeChats(raw: unknown): WahaChatSummary[] {
-    const rawObj = raw as Record<string, unknown> | unknown[] | null;
+    const rawObj = raw as RawCiaChat | unknown[] | null;
     const candidates: unknown[] = Array.isArray(rawObj)
       ? rawObj
       : rawObj && typeof rawObj === 'object' && Array.isArray(rawObj.chats)
@@ -69,15 +75,12 @@ export class CiaChatFilterService {
 
     return candidates
       .map((chatRaw: unknown) => {
-        const chat = (chatRaw && typeof chatRaw === 'object' ? chatRaw : {}) as Record<
-          string,
-          unknown
-        >;
-        const chatIdObj = chat.id as Record<string, unknown> | string | undefined;
-        const lastMessage = chat.lastMessage as Record<string, unknown> | null | undefined;
-        const lastMsgData = lastMessage?._data as Record<string, unknown> | undefined;
-        const lastMsgId = lastMessage?.id as Record<string, unknown> | undefined;
-        const chatChat = chat._chat as Record<string, unknown> | undefined;
+        const chat = (chatRaw && typeof chatRaw === 'object' ? chatRaw : {}) as RawCiaChat;
+        const chatIdObj = chat.id as RawCiaChatId | undefined;
+        const lastMessage = chat.lastMessage as RawCiaLastMessage | undefined;
+        const lastMsgData = lastMessage?._data as RawCiaLastMessageData | undefined;
+        const lastMsgId = lastMessage?.id as RawCiaChatId | undefined;
+        const chatChat = chat._chat as RawCiaChatMetadata | undefined;
 
         const activityTimestamp = this.resolveChatTimestamp([
           lastMessage?.timestamp,

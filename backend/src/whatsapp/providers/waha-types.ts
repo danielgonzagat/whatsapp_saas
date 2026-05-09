@@ -113,6 +113,14 @@ export interface WahaSessionConfigDiagnostics {
   error?: string;
 }
 
+interface WahaSessionRaw {
+  engine?: { state?: unknown };
+  state?: unknown;
+  session?: { state?: unknown; config?: unknown };
+  status?: unknown;
+  [key: string]: unknown;
+}
+
 // ─── Status mapping ───────────────────────────────────────────────────────────
 
 const WAHA_SESSION_STATUS_MAP: Record<string, NonNullable<SessionStatus['state']>> = {
@@ -151,9 +159,10 @@ export function resolveWahaSessionState(data: Record<string, unknown>): {
   rawStatus: string;
   state: SessionStatus['state'];
 } {
-  const engine = data?.engine as Record<string, unknown> | undefined;
-  const session = data?.session as Record<string, unknown> | undefined;
-  const rawCandidates = [engine?.state, data?.state, session?.state, data?.status, session?.status]
+  const raw = data as WahaSessionRaw;
+  const engine = raw.engine;
+  const session = raw.session;
+  const rawCandidates = [engine?.state, raw.state, session?.state, raw.status, session?.status]
     .map((value) => normalizeWahaSessionStatus(value))
     .filter((value): value is string => Boolean(value));
 

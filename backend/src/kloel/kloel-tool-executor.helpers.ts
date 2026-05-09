@@ -9,6 +9,8 @@ import type {
   ToolCreateFlowArgs,
 } from './kloel-tool-executor.types';
 
+type WorkItemMetadata = Record<string, unknown>;
+
 const NON_SLUG_CHAR_RE = /[^a-z0-9_:-]+/g;
 
 /** Safely coerce unknown values to string. */
@@ -158,7 +160,7 @@ export async function toolRememberUserInfo(
       type: 'user_profile',
       content,
       metadata: {
-        ...((existing?.metadata as Record<string, unknown>) || {}),
+        ...((existing?.metadata as WorkItemMetadata) || {}),
         userId: userId || null,
         source: 'remember_user_info',
       },

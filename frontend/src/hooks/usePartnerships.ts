@@ -31,6 +31,14 @@ interface AffiliateDetailResponse {
   affiliate?: unknown;
 }
 
+interface PartnerChatContactsResponse {
+  contacts?: Record<string, unknown>[];
+}
+
+interface PartnerMessagesResponse {
+  messages?: Record<string, unknown>[];
+}
+
 function normalizeContact(raw: Record<string, unknown>): Record<string, unknown> {
   return {
     ...raw,

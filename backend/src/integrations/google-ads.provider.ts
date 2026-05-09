@@ -8,6 +8,23 @@ import type {
   SyncCampaignsResult,
   SyncInsightsResult,
 } from './ad-provider.interface';
+import { asProviderSettings } from '../whatsapp/provider-settings.types';
+
+interface GoogleTokenResponse {
+  access_token?: string;
+  refresh_token?: string;
+  expires_in?: number;
+  [key: string]: unknown;
+}
+
+interface GoogleSubsettings {
+  connected?: boolean;
+  status?: string;
+  accessToken?: string;
+  refreshToken?: string | null;
+  connectedAt?: string;
+  [key: string]: unknown;
+}
 
 const GOOGLE_ADS_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
 const GOOGLE_ADS_TOKEN_URL = 'https://oauth2.googleapis.com/token';
@@ -58,7 +75,7 @@ export class GoogleAdsProvider implements AdProvider {
       if (!res.ok) {
         return { connected: false, status: 'token_exchange_failed' };
       }
-      const tokenData = (await res.json()) as Record<string, unknown>;
+      const tokenData = (await res.json()) as GoogleTokenResponse;
       const accessToken = tokenData.access_token as string | undefined;
       const refreshToken = tokenData.refresh_token as string | undefined;
       if (!accessToken) {
@@ -69,7 +86,7 @@ export class GoogleAdsProvider implements AdProvider {
         where: { id: workspaceId },
         select: { providerSettings: true },
       });
-      const current = (workspace?.providerSettings as Record<string, unknown>) || {};
+      const current = asProviderSettings(workspace?.providerSettings);
       const nextSettings = {
         ...current,
         google: {
@@ -97,8 +114,8 @@ export class GoogleAdsProvider implements AdProvider {
       where: { id: workspaceId },
       select: { providerSettings: true },
     });
-    const settings = (workspace?.providerSettings as Record<string, unknown>) || {};
-    const google = (settings.google || {}) as Record<string, unknown>;
+    const settings = asProviderSettings(workspace?.providerSettings);
+    const google = (settings.google || {}) as GoogleSubsettings;
     return {
       connected: Boolean(google.connected),
       status: google.connected ? 'connected' : 'disconnected',

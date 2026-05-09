@@ -8,6 +8,19 @@
 import type { WahaLidMapping, WahaSessionConfigDiagnostics } from './waha-types';
 import { isWahaInboundMessageEvent } from './waha-message-event-name';
 
+type WahaLidPayload = {
+  items?: WahaLidMappingRaw[];
+  data?: WahaLidMappingRaw[];
+  [key: string]: unknown;
+};
+
+type WahaLidMappingRaw = {
+  id?: string;
+  lid?: string;
+  pn?: string;
+  [key: string]: unknown;
+};
+
 interface WahaWebhookConfig {
   url?: string;
   events?: string[];
@@ -118,7 +131,7 @@ export function resolveSessionConfigMismatch(
 }
 
 export function extractLidMappingsPayload(payload: unknown): WahaLidMapping[] {
-  const p = payload as Record<string, unknown> | undefined;
+  const p = payload as WahaLidPayload | undefined;
   const candidates: unknown[] = Array.isArray(payload)
     ? payload
     : Array.isArray(p?.items)
@@ -129,7 +142,7 @@ export function extractLidMappingsPayload(payload: unknown): WahaLidMapping[] {
 
   return candidates
     .map((entry: unknown) => {
-      const e = entry as Record<string, unknown>;
+      const e = entry as WahaLidMappingRaw;
       return {
         lid: (typeof e?.lid === 'string'
           ? e.lid

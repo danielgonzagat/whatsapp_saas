@@ -156,11 +156,14 @@ export const CODE_STATE_COLOR_GROUPS = [
 
 /** Directories to mirror from the repo root into _source/. */
 export const SOURCE_DIRECTORIES = [
+  '.github',
+  '.husky',
   'backend',
+  'docker',
   'frontend',
+  'frontend-admin',
   'worker',
   'scripts',
-  '.github',
   'docs',
   'prisma',
   'nginx',
@@ -170,7 +173,10 @@ export const SOURCE_DIRECTORIES = [
 
 /** Root-level files eligible for mirroring. Supports glob-like wildcards. */
 export const ROOT_FILE_PATTERNS = [
+  { pattern: /^[^.][^/]*\.(?:md|json|ya?ml|toml|cjs|mjs|js)$/ },
+  { pattern: /^\.[^/]+\.(?:json|ya?ml|toml|cjs|mjs|js)$/ },
   { pattern: /^package\.json$/, target: 'package.json' },
+  { pattern: /^package-lock\.json$/, target: 'package-lock.json' },
   { pattern: /^pnpm-lock\.yaml$/, target: 'pnpm-lock.yaml' },
   { pattern: /^pnpm-workspace\.yaml$/, target: 'pnpm-workspace.yaml' },
   { pattern: /^tsconfig(\.\w+)?\.json$/, target: null }, // keep original name

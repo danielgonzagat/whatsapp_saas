@@ -11,6 +11,60 @@ import type {
   SyncInsightsResult,
 } from './ad-provider.interface';
 
+interface MetaTokenResponse {
+  access_token?: string;
+  [key: string]: unknown;
+}
+
+interface MetaAdAccount {
+  id?: string;
+  name?: string;
+  account_id?: string;
+  [key: string]: unknown;
+}
+
+interface MetaAdAccountsResponse {
+  data?: MetaAdAccount[];
+  [key: string]: unknown;
+}
+
+interface MetaAccountInfo {
+  name?: string;
+  id?: string;
+  account_status?: string;
+  [key: string]: unknown;
+}
+
+interface MetaCampaignResponse {
+  data?: MetaCampaignData[];
+  [key: string]: unknown;
+}
+
+interface MetaCampaignData {
+  id?: string;
+  name?: string;
+  status?: string;
+  objective?: string;
+  [key: string]: unknown;
+}
+
+interface MetaInsightData {
+  impressions?: string;
+  clicks?: string;
+  spend?: string;
+  ctr?: string;
+  cpc?: string;
+  reach?: string;
+  conversions?: string;
+  actions?: string;
+  [key: string]: unknown;
+}
+
+interface MetaInsightsResponse {
+  data?: MetaInsightData[];
+  [key: string]: unknown;
+}
+
 @Injectable()
 export class MetaMarketingProvider implements AdProvider {
   readonly platform = 'meta';
@@ -46,14 +100,14 @@ export class MetaMarketingProvider implements AdProvider {
         client_secret: appSecret,
         code,
       }, '');
-      const accessToken = (tokenResponse as Record<string, unknown>).access_token as string | undefined;
+      const accessToken = (tokenResponse as MetaTokenResponse).access_token;
       if (!accessToken) {
         return { connected: false, status: 'token_exchange_failed' };
       }
       const adAccounts = await this.metaSdk.graphApiGet('me/adaccounts', {
         fields: 'id,name',
       }, accessToken);
-      const accounts = ((adAccounts as Record<string, unknown>).data as Array<Record<string, unknown>>) || [];
+      const accounts = (adAccounts as MetaAdAccountsResponse).data || [];
       const primaryAccount = accounts[0];
       await this.prisma.metaConnection.upsert({
         where: { workspaceId },
@@ -106,12 +160,12 @@ export class MetaMarketingProvider implements AdProvider {
       const response = await this.metaSdk.graphApiGet(`act_${conn.adAccountId}`, {
         fields: 'id,name,account_status',
       }, conn.accessToken);
-      const data = response as Record<string, unknown>;
+      const data = response as MetaAccountInfo;
       return {
         accounts: [{
           platform: 'meta',
           accountId: `act_${conn.adAccountId}`,
-          accountName: (data.name as string) || `Meta Ad Account ${conn.adAccountId}`,
+          accountName: data.name || `Meta Ad Account ${conn.adAccountId}`,
         }],
       };
     } catch (err) {
@@ -134,7 +188,7 @@ export class MetaMarketingProvider implements AdProvider {
         conn.accessToken,
         { fields: 'id,name,status' },
       );
-      const campaigns = ((response as Record<string, unknown>).data as Array<Record<string, unknown>>) || [];
+      const campaigns = (response as MetaCampaignResponse).data || [];
       const result = await Promise.all(
         campaigns.map(async (c) => {
           const campaignId = String(c.id || '');
@@ -144,7 +198,7 @@ export class MetaMarketingProvider implements AdProvider {
           } catch {
             // Insights may fail for new campaigns
           }
-          const insightData = ((insights as Record<string, unknown>).data as Array<Record<string, unknown>>)?.[0] || {};
+          const insightData = (insights as MetaInsightsResponse).data?.[0] || {};
           return {
             platform: 'meta' as const,
             accountId: `act_${conn.adAccountId}`,
@@ -182,7 +236,7 @@ export class MetaMarketingProvider implements AdProvider {
         since: since.toISOString().slice(0, 10),
         until: until.toISOString().slice(0, 10),
       });
-      const data = ((response as Record<string, unknown>).data as Array<Record<string, unknown>>) || [];
+      const data = (response as MetaInsightsResponse).data || [];
       return {
         insights: data.map((d) => ({
           platform: 'meta' as const,

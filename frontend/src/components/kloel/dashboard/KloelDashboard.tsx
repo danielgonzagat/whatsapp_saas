@@ -88,7 +88,7 @@ export default function KloelDashboard() {
   const { isDragActive, handleDragEnter, handleDragOver, handleDragLeave, handleDropFiles } =
     useKloelDragDrop({ isReplyInFlight, queueFilesForUpload, setComposerNotice, inputRef });
 
-  const { data: selectableProductsData, isLoading: selectableProductsLoading } = useSWR(
+  const { data: selectableProductsData, isLoading: selectableProductsLoading } = useSWR<KloelLinkedProduct[]>(
     'kloel:chat-selectable-products',
     async () => {
       const [ownedResponse, affiliateResponse] = await Promise.all([

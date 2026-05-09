@@ -21,6 +21,8 @@ import {
 
 type WahaSessionConfig = WahaSessionConfigShape;
 
+type UnknownRecord = Record<string, unknown>;
+
 /**
  * Session config and diagnostics layer for WAHA.
  * Handles: session identity resolution, config building, webhook/store diagnostics,
@@ -146,9 +148,9 @@ export class WahaSessionConfigProvider extends WahaTransport {
     return this.resolveSessionName(workspaceSessionId);
   }
 
-  protected readRecord(value: unknown): Record<string, unknown> {
+  protected readRecord(value: unknown): UnknownRecord {
     return typeof value === 'object' && value !== null && !Array.isArray(value)
-      ? (value as Record<string, unknown>)
+      ? (value as UnknownRecord)
       : {};
   }
 
@@ -224,7 +226,7 @@ export class WahaSessionConfigProvider extends WahaTransport {
   }
 
   protected extractSessionConfig(payload: Record<string, unknown>): WahaSessionConfig | null {
-    const payloadSession = payload?.session as Record<string, unknown> | undefined;
+    const payloadSession = payload?.session as UnknownRecord | undefined;
     const candidate = payload?.config || payloadSession?.config || null;
     if (!candidate || typeof candidate !== 'object') {
       return null;

@@ -21,6 +21,7 @@ import {
   type ProcessOrderPostPaymentParams,
 } from './checkout-order.post-payment';
 import type { CheckoutOrderStatusValue } from './checkout-order-status';
+import type { ShippingAddress } from './checkout-shipping.types';
 
 const D_RE = /\D/g;
 const DEFAULT_MARKETPLACE_FEE_PERCENT = 9.9;
@@ -110,14 +111,13 @@ export class CheckoutOrderService {
     const normalizedOrderQuantity = normalizeCheckoutOrderQuantity(orderQuantity);
     const acceptedBumpIds = this.orderSupport.parseAcceptedBumpIds(orderData.acceptedBumps);
     const shippingAddress = orderData.shippingAddress;
+    const address = shippingAddress && typeof shippingAddress === 'object' ? shippingAddress as ShippingAddress : null;
     const destinationZip =
-      shippingAddress && typeof shippingAddress === 'object'
-        ? typeof (shippingAddress as Record<string, unknown>).cep === 'string'
-          ? ((shippingAddress as Record<string, unknown>).cep as string)
-          : typeof (shippingAddress as Record<string, unknown>).zipCode === 'string'
-            ? ((shippingAddress as Record<string, unknown>).zipCode as string)
-            : ''
-        : '';
+      typeof address?.cep === 'string'
+        ? address.cep
+        : typeof address?.zipCode === 'string'
+          ? address.zipCode
+          : '';
     const shippingQuote = buildCheckoutShippingQuote({
       plan: planRecord,
       checkoutConfig: planRecord.checkoutConfig,
@@ -155,10 +155,7 @@ export class CheckoutOrderService {
     const qualityGate = {
       documentDigits: String(orderData.customerCPF || '').replace(D_RE, ''),
       phoneDigits: this.orderSupport.normalizePhoneDigits(orderData.customerPhone),
-      payerAddress:
-        orderData.shippingAddress && typeof orderData.shippingAddress === 'object'
-          ? (orderData.shippingAddress as Record<string, unknown>)
-          : null,
+      payerAddress: address as Prisma.InputJsonValue,
     };
     const lineItems = this.orderSupport.buildCheckoutLineItems(
       planRecord,

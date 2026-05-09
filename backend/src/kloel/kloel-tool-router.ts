@@ -9,6 +9,8 @@ import {
   createKloelToolResultEvent,
 } from './kloel-stream-events';
 
+type UnknownRecord = Record<string, unknown>;
+
 const PATTERN_RE = /[_-]+/g;
 const S_RE = /\s+/g;
 type ToolMessage = {
@@ -79,7 +81,7 @@ function toResultRecord(value: unknown): Record<string, unknown> | null {
     return null;
   }
   if (typeof value === 'object' && !Array.isArray(value)) {
-    return value as Record<string, unknown>;
+    return value as UnknownRecord;
   }
   return { value };
 }

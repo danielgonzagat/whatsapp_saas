@@ -23,6 +23,24 @@ import { decryptMetaToken, encryptMetaToken } from './meta-token-crypto';
 import { MetaWhatsAppService } from './meta-whatsapp.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 
+interface MetaAuthPage {
+  id?: string;
+  name?: string;
+  access_token?: string;
+  instagram_business_account?: {
+    id?: string;
+    username?: string;
+    [key: string]: unknown;
+  };
+  [key: string]: unknown;
+}
+
+interface MetaAuthAdAccount {
+  id?: string;
+  name?: string;
+  [key: string]: unknown;
+}
+
 /**
  * Meta Platform OAuth controller.
  *
@@ -217,7 +235,7 @@ export class MetaAuthController {
 
       const pages = Array.isArray(pagesRes.data) ? pagesRes.data : [];
       if (pages.length > 0) {
-        const page = pages[0] as Record<string, unknown>; // Use first page
+        const page = pages[0] as MetaAuthPage; // Use first page
         pageId = typeof page.id === 'string' ? page.id : null;
         pageName = typeof page.name === 'string' ? page.name : null;
         pageAccessToken = typeof page.access_token === 'string' ? page.access_token : null;
@@ -226,7 +244,7 @@ export class MetaAuthController {
           page.instagram_business_account &&
           typeof page.instagram_business_account === 'object' &&
           !Array.isArray(page.instagram_business_account)
-            ? (page.instagram_business_account as Record<string, unknown>)
+            ? (page.instagram_business_account as MetaAuthPage['instagram_business_account'])
             : null;
         if (instagramBusinessAccount) {
           instagramAccountId =
@@ -248,7 +266,7 @@ export class MetaAuthController {
       let adAccountId: string | null = null;
       const adAccounts = Array.isArray(adAccountsRes.data) ? adAccountsRes.data : [];
       if (adAccounts.length > 0) {
-        const firstAdAccount = adAccounts[0] as Record<string, unknown>;
+        const firstAdAccount = adAccounts[0] as MetaAuthAdAccount;
         adAccountId = typeof firstAdAccount.id === 'string' ? firstAdAccount.id : null;
       }
 

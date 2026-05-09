@@ -102,7 +102,7 @@ export interface ProviderCiaRuntime {
 }
 
 /** Provider autopilot settings shape. */
-interface ProviderAutopilotSettings {
+export interface ProviderAutopilotSettings {
   /** Enabled property. */
   enabled?: boolean;
   /** Paused at property. */
@@ -136,7 +136,7 @@ export interface ProviderCalendarSettings {
 }
 
 /** Provider plan limit settings shape. */
-interface ProviderPlanLimitSettings {
+export interface ProviderPlanLimitSettings {
   /** Plan property. */
   plan?: string;
   /** Ai requests per day property. */

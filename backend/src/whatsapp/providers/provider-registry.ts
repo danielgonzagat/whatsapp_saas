@@ -11,6 +11,8 @@ import { WahaProvider } from './waha.provider';
 import { WhatsAppApiProvider } from './whatsapp-api.provider';
 import { sendMessage as companionSendMessage } from './__companions__/provider-send-message';
 
+type UnknownRecord = Record<string, unknown>;
+
 class MissingWahaProviderError extends Error {
   constructor() {
     super(['WAHA', 'provider', 'not', 'configured'].join(' '));
@@ -83,8 +85,8 @@ export class WhatsAppProviderRegistry {
     this.logger.log(`WhatsApp provider default: ${this.defaultProvider}`);
   }
 
-  private readRecord(value: unknown): Record<string, unknown> {
-    return typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : {};
+  private readRecord(value: unknown): UnknownRecord {
+    return typeof value === 'object' && value !== null ? (value as UnknownRecord) : {};
   }
 
   private readString(value: unknown): string | undefined {

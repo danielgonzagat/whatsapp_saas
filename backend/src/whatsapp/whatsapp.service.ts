@@ -51,6 +51,9 @@ import type {
   NormalizedContact,
   NormalizedChat,
 } from './__companions__/whatsapp.service.companion';
+import type { ContactCustomFields } from '../contacts/contact-custom-fields.types';
+
+type ExternalProviderPayload = Record<string, unknown>;
 
 const D_RE = /\D/g;
 const PATTERN_RE = /-/g;
@@ -169,7 +172,7 @@ export class WhatsappService {
 
   // ═══ NORMALIZE (thin wrappers) ═══
   private normalizeContacts(raw: unknown): NormalizedContact[] {
-    const r = raw as Record<string, unknown> | undefined;
+    const r = raw as ExternalProviderPayload | undefined;
     const candidates: unknown[] = Array.isArray(raw)
       ? raw
       : Array.isArray(r?.contacts)
@@ -190,7 +193,7 @@ export class WhatsappService {
       .filter((c): c is NormalizedContact => c !== null);
   }
   private normalizeChats(raw: unknown): NormalizedChat[] {
-    const r = raw as Record<string, unknown> | undefined;
+    const r = raw as ExternalProviderPayload | undefined;
     const cs: unknown[] = Array.isArray(raw)
       ? raw
       : Array.isArray(r?.chats)
@@ -211,7 +214,7 @@ export class WhatsappService {
       .filter((c): c is NormalizedChat => c !== null);
   }
   private normalizeMessages(raw: unknown, fallbackChatId: string) {
-    const r = raw as Record<string, unknown> | undefined;
+    const r = raw as ExternalProviderPayload | undefined;
     const cs = Array.isArray(raw)
       ? raw
       : Array.isArray(r?.messages)
@@ -1116,7 +1119,7 @@ export class WhatsappService {
     if (complianceMode === 'reactive') return;
     if (eo) {
       if (!c) throw new ForbiddenException('Contato sem opt-in para WhatsApp');
-      const cf = (c.customFields as Record<string, unknown>) || {};
+      const cf = (c.customFields as ContactCustomFields) || {};
       const has =
         c.optIn === true ||
         c.tags.some((t: { name: string }) => t.name === 'optin_whatsapp') ||

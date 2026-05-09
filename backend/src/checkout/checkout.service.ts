@@ -9,6 +9,8 @@ import { getCheckoutByCode as companionGetCheckoutByCode } from './checkout-code
 
 export type { CheckoutOrderStatusValue } from './checkout-order-status';
 
+type CheckoutConfigRecord = Record<string, unknown>;
+
 /**
  * Checkout façade — delegates product/plan, catalog, and order concerns to
  * focused sub-services and owns the public-lookup (slug / code) flows that
@@ -373,7 +375,7 @@ export class CheckoutService {
         createdAt: _ca,
         updatedAt: _ua,
         ...configRest
-      } = checkout.checkoutConfig as Record<string, unknown>;
+      } = checkout.checkoutConfig as CheckoutConfigRecord;
       await this.productService.updateConfig(duplicatedId, configRest);
 
       if (checkout.checkoutConfig.pixels?.length) {

@@ -105,7 +105,7 @@ export function useWhatsAppExperienceController({
   const [uploadingCount, setUploadingCount] = useState(0);
   const [sessionExpired, setSessionExpired] = useState(false);
 
-  const { data: affiliateResponse } = useSWR(
+  const { data: affiliateResponse } = useSWR<unknown[] | undefined>(
     workspaceId ? `affiliate/my-products/${workspaceId}` : null,
     async () => {
       const response = await affiliateApi.myProducts();

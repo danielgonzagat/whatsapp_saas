@@ -16,6 +16,20 @@ import {
 } from './waha-types';
 import { WahaSessionProvider } from './waha-session.provider';
 
+type WahaChatPayload = {
+  chats?: unknown[];
+  [key: string]: unknown;
+};
+
+type WahaChatEntry = {
+  id?: string;
+  chatId?: string;
+  contactId?: string;
+  phone?: string;
+  contact?: { phone?: string; [key: string]: unknown };
+  [key: string]: unknown;
+};
+
 export type {
   SessionStatus,
   QrCodeResponse,
@@ -387,7 +401,7 @@ export class WahaProvider extends WahaSessionProvider {
     if (Array.isArray(payload)) {
       return payload;
     }
-    const p = payload as Record<string, unknown> | undefined;
+    const p = payload as WahaChatPayload | undefined;
     if (Array.isArray(p?.chats)) {
       return p.chats as unknown[];
     }
@@ -395,8 +409,8 @@ export class WahaProvider extends WahaSessionProvider {
   }
 
   private getChatDedupKey(chat: unknown): string {
-    const c = chat as Record<string, unknown>;
-    const cContact = c?.contact as Record<string, unknown> | undefined;
+    const c = chat as WahaChatEntry;
+    const cContact = c?.contact as WahaChatEntry['contact'] | undefined;
     const candidates = [c?.id, c?.chatId, c?.contactId, c?.phone, cContact?.phone];
     const strMatch = candidates.find((v): v is string => typeof v === 'string' && v.trim() !== '');
     if (strMatch) {

@@ -23,6 +23,7 @@ import { UnifiedAgentService } from './unified-agent.service';
 
 type ComposerCapability = 'create_image' | 'create_site' | 'search_web';
 type UnknownRecord = Record<string, unknown>;
+type FollowupMetadata = { phone?: string; contactId?: string; message?: string; scheduledFor?: unknown; delayMinutes?: unknown; status?: string; executedAt?: unknown; [key: string]: unknown };
 
 interface ComposerAttachmentMetadata {
   id?: string;
@@ -408,7 +409,7 @@ export class KloelService {
       return {
         total: followups.length,
         followups: followups.map((f): FollowupListItem => {
-          const meta = (f.metadata as Record<string, unknown>) || {};
+          const meta = (f.metadata as FollowupMetadata) || {};
           return {
             id: f.id,
             key: f.key,

@@ -26,6 +26,8 @@ import {
   WORKSPACE_GRAPH_SEARCH,
   MIRROR_FORMAT_VERSION,
   CODE_STATE_COLOR_GROUPS,
+  SOURCE_DIRECTORIES,
+  ROOT_FILE_PATTERNS,
   SKIP_DIR_PATTERNS,
   SKIP_FILE_PATTERNS,
   SKIP_SECRET_PATTERNS,
@@ -361,6 +363,29 @@ export function isMirrorableSourceFile(fullPath) {
   }
 }
 
+export function isConfiguredRootSourceFile(fullPath) {
+  const rel = normalizePath(relative(REPO_ROOT, fullPath));
+  if (!rel || rel.includes('/')) {
+    return false;
+  }
+  if (shouldSkipFile(basename(fullPath), fullPath)) {
+    return false;
+  }
+  return ROOT_FILE_PATTERNS.some(({ pattern }) => pattern.test(rel));
+}
+
+export function isConfiguredSourcePath(fullPath) {
+  const rel = normalizePath(relative(REPO_ROOT, fullPath));
+  if (!rel || rel.startsWith('..')) {
+    return false;
+  }
+  if (!rel.includes('/')) {
+    return isConfiguredRootSourceFile(fullPath);
+  }
+  const [topLevel] = rel.split('/');
+  return SOURCE_DIRECTORIES.includes(topLevel) && isCandidateSourcePath(fullPath);
+}
+
 // ── File System Helpers ─────────────────────────────────────────────────────
 
 export function ensureDir(dirPath) {
@@ -465,9 +490,39 @@ export function scanDirectory(dir, entries) {
 export function collectAllSourceFiles() {
   const entries = [];
 
-  if (existsSync(REPO_ROOT) && statSync(REPO_ROOT).isDirectory()) {
-    scanDirectory(REPO_ROOT, entries);
+  if (!existsSync(REPO_ROOT) || !statSync(REPO_ROOT).isDirectory()) {
+    return entries;
   }
 
-  return entries.sort();
+  for (const sourceDir of SOURCE_DIRECTORIES) {
+    const fullPath = join(REPO_ROOT, sourceDir);
+    if (!existsSync(fullPath)) {
+      continue;
+    }
+    try {
+      if (statSync(fullPath).isDirectory()) {
+        scanDirectory(fullPath, entries);
+      }
+    } catch (e) {
+      log('WARN', `Cannot inspect source directory ${sourceDir}:`, e.message);
+    }
+  }
+
+  let rootItems = [];
+  try {
+    rootItems = readdirSync(REPO_ROOT, { withFileTypes: true });
+  } catch (e) {
+    log('WARN', `Cannot read repo root ${REPO_ROOT}:`, e.message);
+  }
+  for (const item of rootItems) {
+    if (!item.isFile()) {
+      continue;
+    }
+    const fullPath = join(REPO_ROOT, item.name);
+    if (isConfiguredRootSourceFile(fullPath)) {
+      entries.push(fullPath);
+    }
+  }
+
+  return [...new Set(entries)].sort();
 }

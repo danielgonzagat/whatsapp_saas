@@ -32,6 +32,8 @@ import type {
   ToolChangePlanArgs,
 } from './kloel-tool-executor.types';
 
+import { asProviderSettings } from '../whatsapp/provider-settings.types';
+
 type UnknownRecord = Record<string, unknown>;
 
 /** Service that executes all AI-chat tool calls on behalf of KloelService. */
@@ -195,7 +197,7 @@ export class KloelToolExecutorService {
       where: { id: workspaceId },
       select: { providerSettings: true },
     });
-    const currentSettings = (settingsSnapshot?.providerSettings as Record<string, unknown>) || {};
+    const currentSettings = asProviderSettings(settingsSnapshot?.providerSettings);
     if (args.enabled && currentSettings.billingSuspended === true) {
       return {
         success: false,
@@ -209,11 +211,11 @@ export class KloelToolExecutorService {
         where: { id: workspaceId },
         select: { providerSettings: true },
       });
-      const settings = (workspace?.providerSettings as Record<string, unknown>) || {};
+      const settings = asProviderSettings(workspace?.providerSettings);
       const newSettings = {
         ...settings,
         autopilot: {
-          ...((settings.autopilot as Record<string, unknown>) || {}),
+          ...(settings.autopilot || {}),
           enabled: args.enabled,
         },
         autopilotEnabled: args.enabled,

@@ -40,6 +40,7 @@ import {
   DEBOUNCE_MS,
   GIT_STATE_POLL_MS,
   GRAPH_LENS_ENFORCE_MS,
+  SOURCE_DIRECTORIES,
 } from './obsidian-mirror-daemon-constants.mjs';
 
 import {
@@ -48,7 +49,6 @@ import {
   ensureSourceDir,
   readManifest,
   sourceToMirrorPath,
-  isCandidateSourcePath,
   isMirrorableSourceFile,
   collectAllSourceFiles,
   readGitDirtySources,
@@ -56,6 +56,7 @@ import {
   gitDirtySignature,
   gitStateForSource,
   ensureGraphLensSettings,
+  isConfiguredSourcePath,
 } from './__parts__/obsidian-mirror-daemon-utils.mjs';
 
 import { mirrorFile } from './__parts__/obsidian-mirror-daemon-content.mjs';
@@ -325,7 +326,7 @@ function startWatch() {
       const rel = relative(REPO_ROOT, absPath);
 
       if (rel.startsWith('..') || rel === '') continue;
-      if (!isCandidateSourcePath(absPath)) continue;
+      if (!isConfiguredSourcePath(absPath)) continue;
 
       if (event === 'unlink') {
         toRemove.push(absPath);
@@ -410,9 +411,10 @@ function startWatch() {
     ensureGraphLensSettings();
   }
 
-  const watcher = watch(REPO_ROOT, { recursive: true }, (event, filename) => {
-    if (!filename) return;
-    const absPath = join(REPO_ROOT, filename);
+  function queueFsEvent(event, absPath) {
+    if (!isConfiguredSourcePath(absPath)) {
+      return;
+    }
 
     if (event === 'rename') {
       // Could be add or remove
@@ -428,7 +430,25 @@ function startWatch() {
     // Debounce
     if (timer) clearTimeout(timer);
     timer = setTimeout(flushPending, DEBOUNCE_MS);
-  });
+  }
+
+  const watchTargets = [
+    { path: REPO_ROOT, recursive: false },
+    ...SOURCE_DIRECTORIES.map((sourceDir) => join(REPO_ROOT, sourceDir))
+      .filter((target) => existsSync(target) && statSync(target).isDirectory())
+      .map((target) => ({ path: target, recursive: true })),
+  ];
+
+  const watchers = watchTargets.map((target) =>
+    watch(target.path, { recursive: target.recursive }, (event, filename) => {
+      if (!filename) return;
+      queueFsEvent(event, join(target.path, filename));
+    }),
+  );
+  log(
+    'INFO',
+    `Watching ${watchTargets.length} configured source roots instead of the full repo tree.`,
+  );
 
   const gitStateTimer = setInterval(flushGitState, GIT_STATE_POLL_MS);
   const graphLensTimer = setInterval(enforceGraphLens, GRAPH_LENS_ENFORCE_MS);
@@ -441,7 +461,7 @@ function startWatch() {
     flushGitState();
     clearInterval(gitStateTimer);
     clearInterval(graphLensTimer);
-    watcher.close();
+    for (const watcher of watchers) watcher.close();
     process.exit(0);
   });
 
@@ -451,7 +471,7 @@ function startWatch() {
     flushGitState();
     clearInterval(gitStateTimer);
     clearInterval(graphLensTimer);
-    watcher.close();
+    for (const watcher of watchers) watcher.close();
     process.exit(0);
   });
 }

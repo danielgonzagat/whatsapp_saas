@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { asProviderSettings } from '../whatsapp/provider-settings.types';
 import type {
   ToolResult,
   ToolCreateCampaignArgs,
@@ -113,7 +114,7 @@ export class KloelToolExecutorCrmService {
     if (description || segment) {
       await this.prisma.$transaction(async (tx) => {
         const workspace = await tx.workspace.findUnique({ where: { id: workspaceId } });
-        const currentSettings = (workspace?.providerSettings as Record<string, unknown>) || {};
+        const currentSettings = asProviderSettings(workspace?.providerSettings);
         await tx.workspace.update({
           where: { id: workspaceId },
           data: {
@@ -143,7 +144,7 @@ export class KloelToolExecutorCrmService {
     };
     await this.prisma.$transaction(async (tx) => {
       const workspace = await tx.workspace.findUnique({ where: { id: workspaceId } });
-      const currentSettings = (workspace?.providerSettings as Record<string, unknown>) || {};
+      const currentSettings = asProviderSettings(workspace?.providerSettings);
       await tx.workspace.update({
         where: { id: workspaceId },
         data: { providerSettings: { ...currentSettings, businessHours } },

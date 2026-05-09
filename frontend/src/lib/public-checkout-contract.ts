@@ -241,6 +241,14 @@ export interface PublicCheckoutConfig {
   footerText?: string;
   /** Show payment icons property. */
   showPaymentIcons?: boolean;
+  /** Meta title property. */
+  metaTitle?: string;
+  /** Meta description property. */
+  metaDescription?: string;
+  /** Meta image property. */
+  metaImage?: string;
+  /** Favicon property. */
+  favicon?: string;
   /** Pixels property. */
   pixels?: PixelConfig[];
 }

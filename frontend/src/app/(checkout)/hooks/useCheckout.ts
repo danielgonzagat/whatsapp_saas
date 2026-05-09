@@ -209,31 +209,31 @@ export async function validateCoupon(
 
 /* ─── acceptUpsell / declineUpsell ─────────────────────────────────────────── */
 
-export async function acceptUpsell(orderId: string, upsellId: string) {
+export async function acceptUpsell(orderId: string, upsellId: string): Promise<OrderStatusData> {
   const res = await fetchCheckoutApi(`/checkout/public/upsell/${orderId}/accept/${upsellId}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
   });
 
   if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
+    const body: { message?: string } = await res.json().catch(() => ({}));
     throw new Error(body.message || 'Erro ao aceitar oferta');
   }
 
-  return res.json();
+  return res.json() as Promise<OrderStatusData>;
 }
 
 /** Decline upsell. */
-export async function declineUpsell(orderId: string, upsellId: string) {
+export async function declineUpsell(orderId: string, upsellId: string): Promise<OrderStatusData> {
   const res = await fetchCheckoutApi(`/checkout/public/upsell/${orderId}/decline/${upsellId}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
   });
 
   if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
+    const body: { message?: string } = await res.json().catch(() => ({}));
     throw new Error(body.message || 'Erro ao recusar oferta');
   }
 
-  return res.json();
+  return res.json() as Promise<OrderStatusData>;
 }

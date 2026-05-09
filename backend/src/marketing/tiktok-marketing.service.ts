@@ -2,6 +2,21 @@ import { Injectable, Logger } from '@nestjs/common';
 import { createHmac, timingSafeEqual } from 'crypto';
 import { encryptMetaToken } from '../meta/meta-token-crypto';
 import { PrismaService } from '../prisma/prisma.service';
+import { asProviderSettings, type ProviderSettings } from '../whatsapp/provider-settings.types';
+
+interface TikTokProviderSubsettings {
+  connected?: boolean;
+  status?: string;
+  kind?: string;
+  accessToken?: string;
+  refreshToken?: string | null;
+  openId?: string | null;
+  advertiserIds?: string[];
+  scope?: string | null;
+  expiresAt?: string | null;
+  connectedAt?: string;
+  [key: string]: unknown;
+}
 
 const CREATOR_AUTH_URL = 'https://www.tiktok.com/v2/auth/authorize/';
 const CREATOR_TOKEN_URL = 'https://open.tiktokapis.com/v2/oauth/token/';
@@ -106,8 +121,8 @@ export class TikTokMarketingService {
       where: { id: workspaceId },
       select: { providerSettings: true },
     });
-    const settings = (workspace?.providerSettings as Record<string, unknown>) || {};
-    const tiktok = (settings.tiktok || {}) as Record<string, unknown>;
+    const settings = asProviderSettings(workspace?.providerSettings);
+    const tiktok = (settings.tiktok || {}) as TikTokProviderSubsettings;
 
     return {
       connected: Boolean(tiktok.connected),
@@ -207,7 +222,7 @@ export class TikTokMarketingService {
       where: { id: workspaceId },
       select: { providerSettings: true },
     });
-    const currentSettings = (workspace?.providerSettings as Record<string, unknown>) || {};
+    const currentSettings = asProviderSettings(workspace?.providerSettings);
     const nextSettings = {
       ...currentSettings,
       tiktok: {
@@ -222,7 +237,7 @@ export class TikTokMarketingService {
         expiresAt: expiresAtFromSeconds(tokenData.expires_in || token.expires_in),
         connectedAt: new Date().toISOString(),
       },
-    } satisfies Record<string, unknown>;
+    } satisfies ProviderSettings;
 
     await this.prisma.workspace.update({
       where: { id: workspaceId },

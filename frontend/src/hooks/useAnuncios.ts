@@ -93,17 +93,21 @@ export function useAnunciosConnectUrl(platform: string) {
 }
 
 export function useSyncAnunciosAccounts() {
-  const { trigger, isMutating } = useSWRMutation<{ success?: boolean }>(
-    '/api/anuncios/sync/accounts',
-    swrMutator,
-  );
+  const { trigger, isMutating } = useSWRMutation<
+    { success?: boolean },
+    Error,
+    string,
+    { method?: string }
+  >('/api/anuncios/sync/accounts', swrMutator);
   return { syncAccounts: () => trigger({ method: 'POST' }), isSyncing: isMutating };
 }
 
 export function useSyncAnunciosCampaigns() {
-  const { trigger, isMutating } = useSWRMutation<{ success?: boolean }>(
-    '/api/anuncios/sync/campaigns',
-    swrMutator,
-  );
+  const { trigger, isMutating } = useSWRMutation<
+    { success?: boolean },
+    Error,
+    string,
+    { method?: string }
+  >('/api/anuncios/sync/campaigns', swrMutator);
   return { syncCampaigns: () => trigger({ method: 'POST' }), isSyncing: isMutating };
 }

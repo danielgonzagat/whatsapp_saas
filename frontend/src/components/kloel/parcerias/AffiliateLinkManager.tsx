@@ -10,8 +10,14 @@ import AffiliateLinkList from './AffiliateLinkList';
 import AffiliateProductSuggestions from './AffiliateProductSuggestions';
 import AffiliateMarketplaceSearch from './AffiliateMarketplaceSearch';
 
+interface AffiliateLinksResponse {
+  links: AffiliateLink[];
+  count: number;
+  totals: AffiliateLinksTotals;
+}
+
 export default function AffiliateLinkManager() {
-  const { data: linksData, isLoading: linksLoading } = useSWR(
+  const { data: linksData, isLoading: linksLoading } = useSWR<AffiliateLinksResponse | undefined>(
     '/affiliate/my-links',
     () => affiliateApi.myLinks().then((r) => r.data),
     { revalidateOnFocus: false },
