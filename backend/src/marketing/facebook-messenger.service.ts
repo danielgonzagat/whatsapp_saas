@@ -126,12 +126,12 @@ export class FacebookMessengerService {
         recipientPsid,
         text: text || null,
         deliveryStatus: 'DELIVERED',
-        metadata: msg as unknown as Prisma.InputJsonValue,
+        metadata: JSON.parse(JSON.stringify(msg)) as Prisma.InputJsonValue,
       },
       update: {
         text: text || undefined,
         deliveryStatus: 'DELIVERED',
-        metadata: msg as unknown as Prisma.InputJsonValue,
+        metadata: JSON.parse(JSON.stringify(msg)) as Prisma.InputJsonValue,
       },
     });
   }
@@ -206,7 +206,7 @@ export class FacebookMessengerService {
         recipientPsid,
         text: String(msg.message?.text || ''),
         deliveryStatus: 'SENT',
-        metadata: msg as unknown as Prisma.InputJsonValue,
+        metadata: JSON.parse(JSON.stringify(msg)) as Prisma.InputJsonValue,
       },
       update: {
         deliveryStatus: 'SENT',

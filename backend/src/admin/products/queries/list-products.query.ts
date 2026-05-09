@@ -222,7 +222,13 @@ async function fetchWorkspaceNameMap(
   return new Map(workspaces.map((w) => [w.id, w.name]));
 }
 
-type ProductRow = {
+type OrderGroupRow = {
+  planId: string;
+  status: OrderStatus;
+  _count: { _all: number };
+  _sum: { totalInCents: number | null };
+};
+type Last30dGroupRow = { planId: string; _sum: { totalInCents: number | null } };
   id: string;
   workspaceId: string;
   name: string;

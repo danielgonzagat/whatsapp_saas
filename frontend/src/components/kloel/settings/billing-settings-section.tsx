@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { BillingLegacyProvidersSection } from './billing-legacy-providers-section';
-import { colors } from '@/lib/design-tokens';
+
 import {
   SettingsCard,
   SettingsHeader,

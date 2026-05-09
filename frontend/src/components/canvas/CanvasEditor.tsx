@@ -1,7 +1,6 @@
 'use client';
 
 import { apiFetch } from '@/lib/api';
-import { TEMPLATE_TAGS } from '@/lib/canvas-formats';
 import { useProductTemplates, type ProductTemplate } from '@/hooks/useProductTemplates';
 import { KloelEditor } from '@/lib/fabric';
 import type { ContextMenuItem } from '@/lib/fabric/ContextMenuManager';
@@ -37,7 +36,7 @@ export default function CanvasEditor() {
 
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const { templates: PRODUCT_TEMPLATES, isLoading: tplLoading, error: tplError } = useProductTemplates();
+  const { templates: PRODUCT_TEMPLATES, isLoading: tplLoading } = useProductTemplates();
   const [zoom, setZoom] = useState(100);
   const [sidebarTab, setSidebarTab] = useState<SidebarTabId>('templates');
   const [selectedObj, setSelectedObj] = useState<

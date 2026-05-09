@@ -63,7 +63,7 @@ export class AdminSupportService {
         workspace: { select: { id: true, name: true } },
         contact: { select: { id: true, name: true, email: true, phone: true } },
       },
-    }) as Promise<ConversationSelectRow[]>;
+    }) as unknown as ConversationSelectRow[];
 
     return {
       items: conversations.map((conversation) => ({
@@ -117,7 +117,7 @@ export class AdminSupportService {
           },
         },
       },
-    }) as ConversationDetailRow | null;
+    })) as ConversationDetailRow | null;
     if (!conversation) {
       throw adminErrors.userNotFound();
     }

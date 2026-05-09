@@ -104,17 +104,17 @@ export class AdminCarteiraController {
       )
         ? (query.kind as MarketplaceTreasuryLedgerKind)
         : undefined;
+    const parsedFrom = parseDateOrFail(query.from, 'from');
+    const parsedTo = parseDateOrFail(query.to, 'to');
+    const parsedSkip = parseSkip(query.skip);
+    const parsedTake = parseTake(query.take);
     return this.wallet.listLedger({
       ...(query.currency !== undefined ? { currency: query.currency } : {}),
       ...(parsedKind !== undefined ? { kind: parsedKind } : {}),
-      ...(parseDateOrFail(query.from, 'from') !== undefined
-        ? { from: parseDateOrFail(query.from, 'from') }
-        : {}),
-      ...(parseDateOrFail(query.to, 'to') !== undefined
-        ? { to: parseDateOrFail(query.to, 'to') }
-        : {}),
-      ...(parseSkip(query.skip) !== undefined ? { skip: parseSkip(query.skip) } : {}),
-      ...(parseTake(query.take) !== undefined ? { take: parseTake(query.take) } : {}),
+      ...(parsedFrom !== undefined ? { from: parsedFrom } : {}),
+      ...(parsedTo !== undefined ? { to: parsedTo } : {}),
+      ...(parsedSkip !== undefined ? { skip: parsedSkip } : {}),
+      ...(parsedTake !== undefined ? { take: parsedTake } : {}),
     });
   }
 
@@ -178,11 +178,13 @@ export class AdminCarteiraController {
   @Throttle({ default: { limit: 30, ttl: 60000 } })
   @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.VIEW)
   async listPayouts(@Query('skip') skip?: string, @Query('take') take?: string) {
+    const parsedSkip = parseSkip(skip);
+    const parsedTake = parseTake(take);
     const result = await this.audit.list({
       action: 'carteira.payout',
       entityType: 'marketplace_treasury',
-      ...(parseSkip(skip) !== undefined ? { skip: parseSkip(skip) } : {}),
-      ...(parseTake(take) !== undefined ? { take: parseTake(take) } : {}),
+      ...(parsedSkip !== undefined ? { skip: parsedSkip } : {}),
+      ...(parsedTake !== undefined ? { take: parsedTake } : {}),
     });
 
     return {
@@ -224,11 +226,13 @@ export class AdminCarteiraController {
     @Query('skip') skip?: string,
     @Query('take') take?: string,
   ) {
+    const parsedSkip = parseSkip(skip);
+    const parsedTake = parseTake(take);
     return this.connectPayoutApprovalService.listAdminRequests({
       ...(workspaceId ? { workspaceId: String(workspaceId).trim() } : {}),
       ...(state ? { state: String(state).trim() } : {}),
-      ...(parseSkip(skip) !== undefined ? { skip: parseSkip(skip) } : {}),
-      ...(parseTake(take) !== undefined ? { take: parseTake(take) } : {}),
+      ...(parsedSkip !== undefined ? { skip: parsedSkip } : {}),
+      ...(parsedTake !== undefined ? { take: parsedTake } : {}),
     });
   }
 
@@ -244,11 +248,13 @@ export class AdminCarteiraController {
     @Query('take') take?: string,
   ) {
     const parsedType = type ? this.parseFraudBlacklistType(type) : undefined;
+    const parsedSkip = parseSkip(skip);
+    const parsedTake = parseTake(take);
     const result = await this.fraudEngine.listBlacklist({
       ...(parsedType !== undefined ? { type: parsedType } : {}),
       ...(value !== undefined ? { value: String(value).trim() } : {}),
-      ...(parseSkip(skip) !== undefined ? { skip: parseSkip(skip) } : {}),
-      ...(parseTake(take) !== undefined ? { take: parseTake(take) } : {}),
+      ...(parsedSkip !== undefined ? { skip: parsedSkip } : {}),
+      ...(parsedTake !== undefined ? { take: parsedTake } : {}),
     });
 
     return {
@@ -283,14 +289,13 @@ export class AdminCarteiraController {
       throw new BadRequestException('reason is required');
     }
 
+    const expiresAt = parseDateOrFail(body.expiresAt ?? undefined, 'expiresAt');
     const row = await this.fraudEngine.addToBlacklist({
       type,
       value,
       reason,
       addedBy: admin.id,
-      ...(parseDateOrFail(body.expiresAt ?? undefined, 'expiresAt') !== undefined
-        ? { expiresAt: parseDateOrFail(body.expiresAt ?? undefined, 'expiresAt') }
-        : {}),
+      ...(expiresAt !== undefined ? { expiresAt } : {}),
     });
 
     await this.audit.append({

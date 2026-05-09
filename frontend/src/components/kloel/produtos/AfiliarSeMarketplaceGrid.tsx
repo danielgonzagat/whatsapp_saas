@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { SORA, MONO, BG_CARD, BG_ELEVATED, BORDER, GREEN, EMBER, fmt, fmtBRL, NP } from './ProdutosView.shared';
+import { SORA, MONO, BG_CARD, BG_ELEVATED, BORDER, GREEN, EMBER, fmtBRL, NP } from './ProdutosView.shared';
 
 import { IC } from './ProdutosView.icons';
 import type { MarketplaceItem, MarketplaceStats, AffiliateLink, AffiliateProductItem } from './ProdutosView.types';
@@ -21,29 +21,6 @@ interface Props {
   copiedAffiliate: boolean;
 }
 
-function _StatPill({ label, value }: { label: string; value: string }) {
-  return (
-    <div
-      style={{
-        background: BG_CARD,
-        border: `1px solid ${BORDER}`,
-        borderRadius: 8,
-        padding: '10px 12px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 2,
-        alignItems: 'center',
-      }}
-    >
-      <span style={{ fontFamily: SORA, fontSize: 10, color: 'var(--app-text-tertiary)', textTransform: 'uppercase' }}>
-        {label}
-      </span>
-      <span style={{ fontFamily: MONO, fontSize: 16, fontWeight: 600, color: 'var(--app-text-primary)' }}>
-        {value}
-      </span>
-    </div>
-  );
-}
 
 function HeartIcon({ filled, size }: { filled: boolean; size: number }) {
   return (
@@ -64,7 +41,7 @@ function HeartIcon({ filled, size }: { filled: boolean; size: number }) {
 export default function AfiliarSeMarketplaceGrid({
   earnings,
   marketplace,
-  _marketplaceStats,
+  marketplaceStats,
   affiliateLinks,
   affiliateProducts,
   onSelectItem,

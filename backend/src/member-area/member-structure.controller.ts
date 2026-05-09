@@ -82,12 +82,12 @@ const COMMUNITY_MODULES: readonly ModuleTemplate[] = [
   },
 ];
 
-const HYBRID_MODULES: readonly ModuleTemplate[] = [
-  ...COURSE_MODULES,
+const HYBRID_MODULES: ModuleTemplate[] = [
+  ...COURSE_MODULES.map((m) => ({ ...m })),
   { ...COMMUNITY_MODULES[0], position: 3 },
 ];
 
-const MEMBERSHIP_MODULES: readonly ModuleTemplate[] = [
+const MEMBERSHIP_MODULES: ModuleTemplate[] = [
   {
     name: 'Semana 1 - Inicio',
     description: 'Conteudo da primeira semana',

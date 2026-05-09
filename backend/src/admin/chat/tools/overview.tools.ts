@@ -67,6 +67,11 @@ export function salesOverviewTool(service: AdminSalesService): ChatTool {
           ...(typeof args.search === 'string' ? { search: args.search } : {}),
         }),
       );
+    },
+  };
+}
+
+/** Compliance overview tool. */
 export function complianceOverviewTool(service: AdminComplianceService): ChatTool {
   return {
     name: 'complianceOverview',

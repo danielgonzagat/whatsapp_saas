@@ -357,7 +357,7 @@ export default function PricingPage() {
                     {benefit.description}
                   </p>
                 </div>
-              );
+              )
             })}
           </div>
           )}

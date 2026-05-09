@@ -16,11 +16,9 @@ import { KloelMushroomVisual } from './KloelBrand';
 import { colors } from '@/lib/design-tokens';
 import {
   type ChatPreview,
-  extractPreviewText,
   formatClock,
   normalizeChats,
   normalizeMessages,
-  toIsoDateLike,
 } from './WhatsAppConsole.helpers';
 
 /** Whats app console props shape. */

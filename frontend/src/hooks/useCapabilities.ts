@@ -2,38 +2,13 @@
 
 import { swrFetcher } from '@/lib/fetcher';
 import useSWR from 'swr';
-import type { CapabilityCategory, CapabilityRole, CapabilityStatus } from '@/lib/capability-data/types';
-
-export interface FrontendCapability {
-  icon: string;
-  title: string;
-  desc: string;
-  badge?: string;
-  category: CapabilityCategory;
-  roles: CapabilityRole[];
-  status: CapabilityStatus;
-  route: string;
-  roadmapActions?: string[];
-}
-
+import type { FrontendCapability } from '@/lib/capability-data/types';
 import { FRONTEND_CAPABILITIES as STATIC_CAPABILITIES } from '@/lib/capability-data';
-import type { FrontendCapability as StaticCapability } from '@/lib/capability-data';
 
-function toFrontendCapability(c: StaticCapability): FrontendCapability {
-  return {
-    icon: c.icon,
-    title: c.title,
-    desc: c.desc,
-    badge: c.badge,
-    category: c.category,
-    roles: [...c.roles],
-    status: c.status,
-    route: c.route,
-    roadmapActions: c.roadmapActions ? [...c.roadmapActions] : undefined,
-  };
-}
+export type { CapabilityCategory, CapabilityStatus } from '@/lib/capability-data/types';
+export type { FrontendCapability } from '@/lib/capability-data/types';
 
-const FALLBACK_CAPABILITIES: FrontendCapability[] = STATIC_CAPABILITIES.map(toFrontendCapability);
+const FALLBACK_CAPABILITIES: FrontendCapability[] = STATIC_CAPABILITIES.map((c) => ({ ...c, roles: [...c.roles] }));
 
 export function useCapabilities() {
   const { data, error, isLoading } = useSWR<FrontendCapability[]>(

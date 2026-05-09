@@ -25,14 +25,10 @@ const SORA = "'Sora',sans-serif";
 const MONO = "'JetBrains Mono',monospace";
 
 // ── DNA Colors ──
-const _BG = KLOEL_THEME.bgPrimary;
 const BG_CARD = KLOEL_THEME.bgCard;
 const BG_ELEVATED = KLOEL_THEME.bgSecondary;
 const BORDER = KLOEL_THEME.borderPrimary;
 const EMBER = KLOEL_THEME.accent;
-const _TEXT = KLOEL_THEME.textPrimary;
-const _TEXT_DIM = KLOEL_THEME.textSecondary;
-const _TEXT_MUTED = KLOEL_THEME.textTertiary;
 const PURPLE = '#8B5CF6';
 const GREEN = EMBER;
 
@@ -41,7 +37,7 @@ const GREEN = EMBER;
 import { IC } from './ProdutosView.icons';
 import { normalizeDisplayProduct } from './ProdutosView.helpers';
 import { secureRandomFloat } from '@/lib/secure-random';
-import { colors } from '@/lib/design-tokens';
+
 
 // ── NeuralPulse (NP) — canvas 2D with sin() waves ──
 function NP({
@@ -577,7 +573,7 @@ function MeusProdutos({
   totalRevenue,
   totalSales,
   activeProducts,
-  onDeleteProduct,
+  _onDeleteProduct,
   onCreateProduct,
   requestedFeature,
 }: {

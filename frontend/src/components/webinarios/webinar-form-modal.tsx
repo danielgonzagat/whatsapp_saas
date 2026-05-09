@@ -4,7 +4,7 @@ import { useCallback, useState } from 'react';
 import { kloelT } from '@/lib/i18n/t';
 import { colors } from '@/lib/design-tokens';
 
-import type { Webinar } from './types';
+
 
 export interface WebinarFormData {
   title: string;

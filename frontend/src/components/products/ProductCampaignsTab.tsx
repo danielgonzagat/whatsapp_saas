@@ -95,7 +95,7 @@ export function ProductCampaignsTab({ productId }: { productId: string }) {
     async (
       campaignId: string,
       endpointSuffix: '' | '/launch' | '/pause',
-      fallbackError: string,
+      _fallbackError: string,
       method: 'DELETE' | 'POST' = 'POST',
     ) => {
       const res = await apiFetch(

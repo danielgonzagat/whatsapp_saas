@@ -41,7 +41,6 @@ export function SidebarNav({
         const Icon = getIconComponent(item.icon);
         const isActive = activeView === item.key;
         const isExpanded = expandedNav === item.key;
-        const activeSubParent = activeSubView?.split(':')[0];
 
         const isHovered = hoveredItem === item.key;
         const hasSubs = item.sub.length > 0;

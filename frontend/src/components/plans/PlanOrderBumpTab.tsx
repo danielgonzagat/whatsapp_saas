@@ -3,7 +3,7 @@
 import { kloelT } from '@/lib/i18n/t';
 import { useOrderBumps } from '@/hooks/useCheckoutPlans';
 import { useState, useId } from 'react';
-import { colors } from '@/lib/design-tokens';
+
 
 /* ── Inline SVG Icons ── */
 const GiftIcon = () => (
@@ -80,7 +80,7 @@ const PlusIcon = () => (
 );
 
 /* ── Design Tokens ── */
-const _BG_VOID = 'colors.background.void';
+
 const BG_SURFACE = 'colors.background.surface';
 const BG_ELEVATED = 'colors.background.elevated';
 const BORDER = 'colors.border.space';

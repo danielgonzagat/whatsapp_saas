@@ -361,7 +361,7 @@ export {
 
 // Default export: the apiClient composite object
 import { authApi } from './auth';
-import { affiliateApi } from './affiliate';
+
 import { billingApi } from './billing';
 import { crmApi, segmentationApi } from './crm';
 import { kycApi } from './kyc';

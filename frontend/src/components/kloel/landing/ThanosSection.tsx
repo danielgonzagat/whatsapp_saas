@@ -42,7 +42,7 @@ function usePrefersReducedMotion() {
 }
 
 function ThanosOmniSales({ runToken }: { runToken: number }) {
-  const [msgs, setMsgs] = useState<Record<ChannelKey, SalesMessage[]>>(EMPTY_MESSAGES);
+  const [msgs, setMsgs] = useState<Record<ChannelKey, SalesMessage[]>>(() => ({ ...EMPTY_MESSAGES, wa: [], ig: [], fb: [], em: [], sms: [], tt: [] }));
   const { messages: flowMessages } = useSalesFlow();
 
   useEffect(() => {
@@ -51,7 +51,7 @@ function ThanosOmniSales({ runToken }: { runToken: number }) {
     }
 
     let cancelled = false;
-    setMsgs(EMPTY_MESSAGES);
+    setMsgs(() => ({ wa: [], ig: [], fb: [], em: [], sms: [], tt: [] }));
 
     const run = async () => {
       for (const msg of flowMessages) {

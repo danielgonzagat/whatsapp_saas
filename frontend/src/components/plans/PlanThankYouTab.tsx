@@ -7,7 +7,7 @@ import { mutate } from 'swr';
 
 
 /* ── Design Tokens ── */
-const _BG_VOID = 'colors.background.void';
+
 const BG_SURFACE = 'colors.background.surface';
 const BG_ELEVATED = 'colors.background.elevated';
 const BORDER = 'colors.border.space';
@@ -17,7 +17,8 @@ const TEXT_DIM = 'colors.text.dim';
 const EMBER = 'colors.ember.primary';
 const GREEN = '#10B981';
 const FONT_BODY = "'Sora', sans-serif";
-const _FONT_MONO = "'JetBrains Mono', monospace";
+
+
 
 /* ── Inline SVG Icons ── */
 const LinkIcon = () => (

@@ -22,7 +22,7 @@ const S = "var(--font-sora), 'Sora', sans-serif";
 /** Canvas modelos. */
 export default function CanvasModelos() {
   const router = useRouter();
-  const { templates: PRODUCT_TEMPLATES, isLoading: tplLoading } = useProductTemplates();
+  const { templates: PRODUCT_TEMPLATES } = useProductTemplates();
 
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [aiPrompt, setAiPrompt] = useState('');

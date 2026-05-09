@@ -7,7 +7,7 @@ import useSWR from 'swr';
 import type {
   MarketingConnectStatus,
   EmailSendResult,
-  EmailSendResponsePayload,
+
   EmailTemplatePreset,
   EmailChannelConnection,
   EmailCampaignListItem,
