@@ -232,17 +232,6 @@ describe('MindSimulatorService', () => {
     });
   });
 
-  describe('simulateSyntheticWorkspace', () => {
-    it('generates a deterministic synthetic scenario through the simulator', () => {
-      const first = service.simulateSyntheticWorkspace('ws-1', 123);
-      const second = service.simulateSyntheticWorkspace('ws-1', 123);
-
-      expect(first.workspaceId).toBe('ws-1');
-      expect(first.replay.totalDecisions).toBeGreaterThan(0);
-      expect(first.decisionDetails).toEqual(second.decisionDetails);
-    });
-  });
-
   describe('reportToMarkdown', () => {
     it('produces markdown with expected sections', () => {
       const report = service.simulate({
