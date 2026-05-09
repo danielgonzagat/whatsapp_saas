@@ -431,42 +431,6 @@ function drawNeuralFrame(
   }
 }
 
-const ComingSoonOverlay = ({ title, description }: { title: string; description: string }) => (
-  <div
-    style={{
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      background: KLOEL_THEME.bgOverlay,
-      backdropFilter: 'blur(2px)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      borderRadius: 6,
-      zIndex: 10,
-    }}
-  >
-    <div style={{ textAlign: 'center' }}>
-      <div
-        style={{
-          fontFamily: SORA,
-          fontSize: 18,
-          fontWeight: 700,
-          color: 'var(--app-text-primary)',
-          marginBottom: 8,
-        }}
-      >
-        {title}
-      </div>
-      <div style={{ fontFamily: SORA, fontSize: 12, color: 'var(--app-text-secondary)' }}>
-        {description}
-      </div>
-    </div>
-  </div>
-);
-
 interface ChannelStatRow {
   label: string;
   value: string;
@@ -2949,10 +2913,6 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
               emailTestSending={emailTestSending}
               emailTestResult={emailTestResult}
             />
-            <ComingSoonOverlay
-              title={kloelT(`Em breve`)}
-              description={kloelT(`Instagram Marketing esta sendo finalizado.`)}
-            />
           </div>
         )}
         {tab === 'tiktok' && (
@@ -2961,10 +2921,6 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
               channelKey="tiktok"
               channelData={getChannelData('tiktok')}
               liveFeed={feed.filter((m) => m.includes('[tiktok]'))}
-            />
-            <ComingSoonOverlay
-              title={kloelT(`Em breve`)}
-              description={kloelT(`TikTok Marketing esta sendo finalizado.`)}
             />
           </div>
         )}
@@ -2984,10 +2940,6 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
               emailTestSending={emailTestSending}
               emailTestResult={emailTestResult}
             />
-            <ComingSoonOverlay
-              title={kloelT(`Em breve`)}
-              description={kloelT(`Facebook Messenger esta sendo finalizado.`)}
-            />
           </div>
         )}
         {tab === 'email' && (
@@ -3006,10 +2958,6 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
               connectingKey={connectingKey}
               emailTestSending={emailTestSending}
               emailTestResult={emailTestResult}
-            />
-            <ComingSoonOverlay
-              title={kloelT(`Em breve`)}
-              description={kloelT(`Email Marketing esta sendo finalizado.`)}
             />
           </div>
         )}
