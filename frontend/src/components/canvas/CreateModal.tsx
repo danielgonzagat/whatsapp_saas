@@ -6,14 +6,13 @@ import {
   CATEGORIES,
   FORMAT_DATA,
   type FormatItem,
-  QUICK_ACTIONS,
-  RECENT_DIMENSIONS,
-  SOCIAL_PLATFORMS,
 } from '@/lib/canvas-formats';
 import { useRouter } from 'next/navigation';
-import { useState, useId } from 'react';
+import { useState } from 'react';
 import { IC, getIcon } from './CanvasIcons';
-import { FormatCard } from './FormatCard';
+import { CustomSizePanel } from './CustomSizePanel';
+import { UploadPanel } from './UploadPanel';
+import { FormatGrid } from './FormatGrid';
 
 const S = "var(--font-sora), 'Sora', sans-serif";
 const M = "var(--font-jetbrains), 'JetBrains Mono', monospace";

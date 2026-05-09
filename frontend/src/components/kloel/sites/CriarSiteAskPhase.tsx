@@ -1,7 +1,6 @@
 'use client';
 
 import { kloelT } from '@/lib/i18n/t';
-import React from 'react';
 import { useRouter } from 'next/navigation';
 import { IC, FmtMoney, SORA, MONO, EMBER, TEXT, TEXT_DIM, BORDER, BG_CARD } from './SitesViewIcons';
 import { Btn, Card, SectionLabel, Badge } from './SitesViewAtoms';
@@ -20,7 +19,6 @@ interface AskPhaseProps {
   dynamicMode: boolean;
   source: string;
   productName: string;
-  productId: string;
 }
 
 export function CriarSiteAskPhase({
@@ -36,10 +34,7 @@ export function CriarSiteAskPhase({
   dynamicMode,
   source,
   productName,
-  productId,
 }: AskPhaseProps) {
-  const router = useRouter();
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, gap: 20 }}>
       <div style={{ color: EMBER, opacity: 0.3 }}>{IC.globe(80)}</div>

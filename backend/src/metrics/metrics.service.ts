@@ -5,13 +5,11 @@ import type { QueueSummary } from './queue-health.service';
 /** Metrics service. */
 @Injectable()
 export class MetricsService implements OnModuleDestroy {
-  private readonly logger = new Logger(MetricsService.name);
   private registry: Registry;
   private httpCounter: Counter<string>;
   private httpDuration: Histogram<string>;
   private queueGauge: Gauge<string>;
   private billingGauge: Gauge<string>;
-  private metricsInterval?: ReturnType<typeof setInterval>;
 
   constructor() {
     this.registry = new Registry();

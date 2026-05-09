@@ -1,5 +1,3 @@
-import { colors } from '@/lib/design-tokens';
-
 export const SORA = "var(--font-sora), 'Sora', sans-serif";
 export const MONO = "var(--font-jetbrains), 'JetBrains Mono', monospace";
 

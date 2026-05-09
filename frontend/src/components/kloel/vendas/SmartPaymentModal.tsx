@@ -54,15 +54,28 @@ export function SmartPaymentModal({ workspaceId, onClose }: SmartPaymentModalPro
     setLoading(true);
     setError('');
     try {
-      const res = await smartPaymentApi.create(workspaceId, {
+      const payload: {
+        amount: number;
+        description: string;
+        customerName: string;
+        customerPhone: string;
+        customerEmail?: string;
+        method?: string;
+        dueDate?: string;
+      } = {
         amount: Number.parseFloat(form.amount.replace(',', '.')),
         description: form.description || 'Cobranca',
         customerName: form.customerName,
         customerPhone: form.customerPhone,
-        customerEmail: form.customerEmail || undefined,
         method: form.method,
-        dueDate: form.dueDate || undefined,
-      });
+      };
+      if (form.customerEmail) {
+        payload.customerEmail = form.customerEmail;
+      }
+      if (form.dueDate) {
+        payload.dueDate = form.dueDate;
+      }
+      const res = await smartPaymentApi.create(workspaceId, payload);
       if (res.error) {
         throw new Error(res.error);
       }

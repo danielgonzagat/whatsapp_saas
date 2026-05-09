@@ -1,7 +1,6 @@
 'use client';
 
 import { kloelT } from '@/lib/i18n/t';
-import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
 import { Stat } from './Stat';
 import { SORA, MONO } from './utils';
 import type { SalesStatsData, SubStatsData, OrderStatsData, PipelineStage } from './types';

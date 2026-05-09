@@ -1,12 +1,12 @@
-import { IC } from '../VendasView.icons';
-import { SORA, MONO } from '../utils';
+import { IC } from './VendasView.icons';
+import { SORA, MONO } from './utils';
 
 interface StatProps {
   label: string;
   value: string;
   color?: string;
   sub?: string;
-  trend?: number;
+  trend?: number | undefined;
 }
 
 export function Stat({

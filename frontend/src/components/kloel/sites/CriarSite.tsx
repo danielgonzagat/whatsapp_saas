@@ -3,7 +3,7 @@
 import { apiFetch } from '@/lib/api';
 import { useProducts } from '@/hooks/useProducts';
 import { useSearchParams } from 'next/navigation';
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { mutate } from 'swr';
 import { CriarSiteAskPhase } from './CriarSiteAskPhase';
 import { CriarSiteBuildingPhase } from './CriarSiteBuildingPhase';
