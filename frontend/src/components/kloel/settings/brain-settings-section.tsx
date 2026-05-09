@@ -80,89 +80,60 @@ export function BrainSettingsSection() {
       setFaqs([]);
       return;
     }
-
     setProfileLoading(true);
     setProfileError('');
-
     try {
       const response = await workspaceApi.getMe();
-      const workspace = response.data as Record<string, unknown> | undefined;
-      const provSettings = workspace?.providerSettings as Record<string, unknown> | undefined;
+      const ws = response.data as Record<string, unknown> | undefined;
+      const provSettings = ws?.providerSettings as Record<string, unknown> | undefined;
       const profile = (provSettings?.kloelProfile || {}) as Record<string, unknown>;
-
       setCompany(normalizeCompanyProfile(profile.company));
-      setPersonas(
-        Array.isArray(profile.personas)
-          ? profile.personas.filter((value: unknown) => typeof value === 'string')
-          : [],
-      );
+      setPersonas(Array.isArray(profile.personas) ? profile.personas.filter((v: unknown) => typeof v === 'string') : []);
       setVoiceTone(normalizeVoiceToneProfile(profile.voiceTone));
-      setRules(
-        Array.isArray(profile.rules)
-          ? profile.rules.filter((value: unknown) => typeof value === 'string')
-          : [],
-      );
+      setRules(Array.isArray(profile.rules) ? profile.rules.filter((v: unknown) => typeof v === 'string') : []);
       setFaqs(normalizeFaqs(profile.faqs));
       setOpeningMessage(normalizeOpeningMessage(profile.openingMessage));
       setEmergencyMode(normalizeEmergencyMode(profile.emergencyMode));
     } catch (error: unknown) {
-      setProfileError(
-        error instanceof Error ? error.message : 'Nao foi possivel carregar o perfil do Kloel.',
-      );
+      setProfileError(error instanceof Error ? error.message : 'Nao foi possivel carregar o perfil.');
     } finally {
       setProfileLoading(false);
     }
   }, [workspaceId]);
 
   const saveKloelProfile = useCallback(
-    async (
-      successMessage: string,
-      overrides?: Partial<{
-        company: CompanyProfile;
-        personas: string[];
-        voiceTone: VoiceToneProfile;
-        rules: string[];
-        faqs: FaqItem[];
-        openingMessage: OpeningMessageProfile;
-        emergencyMode: EmergencyModeProfile;
-      }>,
-    ) => {
-      if (!workspaceId) {
-        return;
-      }
+    async (successMessage: string, overrides?: Partial<{
+      company: CompanyProfile; personas: string[]; voiceTone: VoiceToneProfile;
+      rules: string[]; faqs: FaqItem[]; openingMessage: OpeningMessageProfile;
+      emergencyMode: EmergencyModeProfile;
+    }>) => {
+      if (!workspaceId) return;
 
       setProfileSaving(true);
       setProfileError('');
       setProfileSuccess('');
-
       try {
-        const nextCompany = overrides?.company || company;
-        const nextPersonas = overrides?.personas || personas;
-        const nextVoiceTone = overrides?.voiceTone || voiceTone;
-        const nextRules = overrides?.rules || rules;
-        const nextFaqs = overrides?.faqs || faqs;
-        const nextOpeningMessage = overrides?.openingMessage || openingMessage;
-        const nextEmergencyMode = overrides?.emergencyMode || emergencyMode;
-
+        const nc = overrides?.company || company;
+        const np = overrides?.personas || personas;
+        const nv = overrides?.voiceTone || voiceTone;
+        const nr = overrides?.rules || rules;
+        const nf = overrides?.faqs || faqs;
+        const no = overrides?.openingMessage || openingMessage;
+        const ne = overrides?.emergencyMode || emergencyMode;
         await workspaceApi.updateSettings({
           kloelProfile: {
-            company: {
-              ...nextCompany,
-              differentials: nextCompany.differentials.filter((item) => item.trim().length > 0),
-            },
-            personas: nextPersonas.filter((item) => item.trim().length > 0),
-            voiceTone: nextVoiceTone,
-            rules: nextRules.filter((item) => item.trim().length > 0),
-            faqs: nextFaqs.filter((faq) => faq.question.trim() || faq.answer.trim()),
-            openingMessage: nextOpeningMessage,
-            emergencyMode: nextEmergencyMode,
+            company: { ...nc, differentials: nc.differentials.filter((d) => d.trim().length > 0) },
+            personas: np.filter((d) => d.trim().length > 0),
+            voiceTone: nv,
+            rules: nr.filter((d) => d.trim().length > 0),
+            faqs: nf.filter((f) => f.question.trim() || f.answer.trim()),
+            openingMessage: no,
+            emergencyMode: ne,
           },
         });
         setProfileSuccess(successMessage);
       } catch (error: unknown) {
-        setProfileError(
-          error instanceof Error ? error.message : 'Nao foi possivel salvar o perfil do Kloel.',
-        );
+        setProfileError(error instanceof Error ? error.message : 'Nao foi possivel salvar o perfil.');
       } finally {
         setProfileSaving(false);
       }
@@ -226,84 +197,34 @@ export function BrainSettingsSection() {
       />
 
       <OpeningMessageCard
-        value={openingMessage}
-        saving={profileSaving}
-        onSave={(payload) => {
-          setOpeningMessage(payload);
-          return saveKloelProfile('Mensagem de abertura salva.', {
-            openingMessage: payload,
-          });
-        }}
+        value={openingMessage} saving={profileSaving}
+        onSave={(payload) => { setOpeningMessage(payload); return saveKloelProfile('Mensagem de abertura salva.', { openingMessage: payload }); }}
       />
-
       <CompanyIdentitySection
-        value={company}
-        saving={profileSaving}
-        disabled={!workspaceId}
-        onSave={(payload) => {
-          setCompany(payload);
-          return saveKloelProfile('Identidade da empresa salva.', { company: payload });
-        }}
+        value={company} saving={profileSaving} disabled={!workspaceId}
+        onSave={(payload) => { setCompany(payload); return saveKloelProfile('Identidade da empresa salva.', { company: payload }); }}
       />
-
-      <ProductCatalogSection
-        knowledgeSources={[]}
-        onProductsLoaded={handleProductsLoaded}
-      />
-
+      <ProductCatalogSection knowledgeSources={[]} onProductsLoaded={handleProductsLoaded} />
       <CustomerPersonasSection
-        value={personas}
-        saving={profileSaving}
-        disabled={!workspaceId}
-        onSave={(payload) => {
-          setPersonas(payload);
-          return saveKloelProfile('Personas salvas.', { personas: payload });
-        }}
+        value={personas} saving={profileSaving} disabled={!workspaceId}
+        onSave={(payload) => { setPersonas(payload); return saveKloelProfile('Personas salvas.', { personas: payload }); }}
       />
-
       <VoiceToneSection
-        value={voiceTone}
-        saving={profileSaving}
-        disabled={!workspaceId}
-        onSave={(payload) => {
-          setVoiceTone(payload);
-          return saveKloelProfile('Tom de voz salvo.', { voiceTone: payload });
-        }}
+        value={voiceTone} saving={profileSaving} disabled={!workspaceId}
+        onSave={(payload) => { setVoiceTone(payload); return saveKloelProfile('Tom de voz salvo.', { voiceTone: payload }); }}
       />
-
       <AttendanceRulesSection
-        value={rules}
-        saving={profileSaving}
-        disabled={!workspaceId}
-        onSave={(payload) => {
-          setRules(payload);
-          return saveKloelProfile('Regras de atendimento salvas.', { rules: payload });
-        }}
+        value={rules} saving={profileSaving} disabled={!workspaceId}
+        onSave={(payload) => { setRules(payload); return saveKloelProfile('Regras de atendimento salvas.', { rules: payload }); }}
       />
-
       <FaqSection
-        value={faqs}
-        saving={profileSaving}
-        disabled={!workspaceId}
-        onSave={(payload) => {
-          setFaqs(payload);
-          return saveKloelProfile('FAQ salvo no perfil do Kloel.', { faqs: payload });
-        }}
+        value={faqs} saving={profileSaving} disabled={!workspaceId}
+        onSave={(payload) => { setFaqs(payload); return saveKloelProfile('FAQ salvo no perfil do Kloel.', { faqs: payload }); }}
       />
-
-      <KnowledgeBaseSection
-        onSourcesLoaded={handleSourcesLoaded}
-      />
-
+      <KnowledgeBaseSection onSourcesLoaded={handleSourcesLoaded} />
       <EmergencyModeCard
-        value={emergencyMode}
-        saving={profileSaving}
-        onSave={(payload) => {
-          setEmergencyMode(payload);
-          return saveKloelProfile('Configuracao de emergencia salva.', {
-            emergencyMode: payload,
-          });
-        }}
+        value={emergencyMode} saving={profileSaving}
+        onSave={(payload) => { setEmergencyMode(payload); return saveKloelProfile('Configuracao de emergencia salva.', { emergencyMode: payload }); }}
       />
 
       <AutopilotSection />

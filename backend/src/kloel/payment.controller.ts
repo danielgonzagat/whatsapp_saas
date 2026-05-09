@@ -1,3 +1,5 @@
+import * as crypto from 'node:crypto';
+import { InjectRedis } from '@nestjs-modules/ioredis';
 import {
   BadRequestException,
   Body,
@@ -6,6 +8,7 @@ import {
   Get,
   Headers,
   HttpCode,
+  Logger,
   NotFoundException,
   Param,
   Post,
@@ -13,11 +16,15 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
+import { type WebhookEvent } from '@prisma/client';
+import type { Redis } from 'ioredis';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Public } from '../auth/public.decorator';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import { safeCompareStrings } from '../common/utils/crypto-compare.util';
+import { WebhooksService } from '../webhooks/webhooks.service';
 import { PaymentService } from './payment.service';
 import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 
@@ -25,7 +32,13 @@ import { AuthenticatedRequest } from '../common/interfaces/authenticated-request
 @Controller('kloel/payments')
 @UseGuards(ThrottlerGuard)
 export class PaymentController {
-  constructor(private readonly paymentService: PaymentService) {}
+  private readonly logger = new Logger(PaymentController.name);
+
+  constructor(
+    private readonly paymentService: PaymentService,
+    private readonly webhooksService: WebhooksService,
+    @InjectRedis() private readonly redis: Redis,
+  ) {}
 
   /** Payment webhook. */
   @Public()
@@ -34,6 +47,7 @@ export class PaymentController {
   @Throttle({ default: { limit: 100, ttl: 60000 } }) // Webhooks precisam de limite alto
   async paymentWebhook(
     @Headers('x-webhook-secret') secret: string | undefined,
+    @Headers('x-event-id') eventId: string | undefined,
     @Body()
     body: {
       event: string;
@@ -46,9 +60,39 @@ export class PaymentController {
       throw new ForbiddenException('PAYMENT_WEBHOOK_SECRET not configured');
     }
     if (expected) {
-      if (!secret || secret !== expected) {
+      if (!secret || !safeCompareStrings(secret, expected)) {
         throw new ForbiddenException('invalid_webhook_secret');
       }
+    }
+
+    // Double-layer idempotency: Redis SET NX + WebhookEvent unique constraint
+    const redisKey =
+      eventId ||
+      `webhook:payment_kloel:${crypto.createHash('sha256').update(JSON.stringify(body)).digest('hex').slice(0, 32)}`;
+    const acquired = await this.redis.set(redisKey, '1', 'EX', 300, 'NX');
+    if (!acquired) {
+      this.logger.warn(`Duplicate Kloel payment webhook (Redis): ${redisKey}`);
+      return { received: true, duplicate: true };
+    }
+
+    const externalId = eventId || `kloel_payment_${crypto.createHash('sha256').update(JSON.stringify(body)).digest('hex').slice(0, 32)}`;
+    let webhookEvent: WebhookEvent | undefined;
+    try {
+      webhookEvent = await this.webhooksService.logWebhookEvent(
+        'kloel_payment',
+        body.event || 'unknown',
+        externalId,
+        body,
+      );
+    } catch (err: unknown) {
+      const code = (err as { code?: string } | null)?.code;
+      if (code === 'P2002') {
+        this.logger.log(`Duplicate Kloel payment webhook event ${externalId}, returning 200`);
+        return { received: true, duplicate: true };
+      }
+      this.logger.warn(
+        `Failed to log Kloel payment webhook event: ${err instanceof Error ? err.message : 'unknown'}`,
+      );
     }
 
     const rawWsId =
@@ -61,6 +105,17 @@ export class PaymentController {
     }
 
     await this.paymentService.processPaymentWebhook(workspaceId, body.event, body.payment);
+
+    if (webhookEvent?.id) {
+      await this.webhooksService
+        .markWebhookProcessed(webhookEvent.id)
+        .catch((err: unknown) =>
+          this.logger.error(
+            `Failed to mark webhook ${webhookEvent.id} as processed: ${err instanceof Error ? err.message : 'unknown'}`,
+          ),
+        );
+    }
+
     return { received: true };
   }
 

@@ -233,6 +233,7 @@ const isProd = process.env.NODE_ENV === 'production';
     FinancialAlertModule, // Financial alerting (global)
     OpsAlertModule, // OPS critical error alerting (global)
     PulseModule, // PULSE live organism collector
+    AnunciosModule, // 📊 Anuncios — Meta/Google/TikTok ad accounts, campaigns, insights
     AdminModule, // adm.kloel.com identity, audit, permissions (SP-0..2)
     PaymentsModule, // 💳 Stripe Connect — split, ledger, fraud, charge, webhook (FASES 1-7)
     MarketplaceTreasuryModule, // 💼 Marketplace treasury ledger / reconciliation

@@ -1,5 +1,5 @@
 import * as path from 'path';
-import { pathExists, readDir } from '../../safe-fs';
+import { pathExists, readDir, statPath } from '../../safe-fs';
 import { safeJoin } from '../../safe-path';
 import {
   DetectedSourceRoot,
@@ -27,14 +27,45 @@ import {
 } from './source-resolution';
 import { readJsonOrNull } from './package-discovery';
 
-export function discoverProjectConfigs(rootDir: string): string[] {
+function collectConfigsInDir(absoluteDir: string, relativePrefix: string, maxDepth: number): string[] {
+  if (maxDepth <= 0) return [];
   const configs: string[] = [];
-  for (const entry of readDir(rootDir, { recursive: true }) as string[]) {
-    const normalized = normalizeRelative(entry);
-    if (normalized.split('/').some((part) => SKIP_DIR_NAMES.has(part))) continue;
-    if (/^[tj]sconfig(?:\.[\w-]+)?\.json$/.test(path.basename(normalized))) {
-      configs.push(normalized);
+  let entries: string[];
+  try {
+    entries = readDir(absoluteDir);
+  } catch {
+    return [];
+  }
+  for (const entry of entries) {
+    if (SKIP_DIR_NAMES.has(entry) || entry.startsWith('.')) continue;
+    const entryPath = safeJoin(absoluteDir, entry);
+    const relPath = relativePrefix ? `${relativePrefix}/${entry}` : entry;
+    if (/^[tj]sconfig(?:\.[\w-]+)?\.json$/.test(entry)) {
+      configs.push(relPath);
     }
+    try {
+      if (require('fs').statSync(entryPath).isDirectory()) {
+        configs.push(...collectConfigsInDir(entryPath, relPath, maxDepth - 1));
+      }
+    } catch {
+      continue;
+    }
+  }
+  return configs;
+}
+
+export function discoverProjectConfigs(rootDir: string, packages?: Map<string, unknown>): string[] {
+  const configDirs = new Set<string>([rootDir]);
+  if (packages) {
+    for (const relativeDir of packages.keys()) {
+      if (relativeDir) configDirs.add(safeJoin(rootDir, relativeDir));
+    }
+  }
+  const configs: string[] = [];
+  for (const dir of configDirs) {
+    const prefix = path.relative(rootDir, dir);
+    const relativePrefix = prefix === '' ? '' : normalizeRelative(prefix);
+    configs.push(...collectConfigsInDir(dir, relativePrefix, 2));
   }
   return configs;
 }
