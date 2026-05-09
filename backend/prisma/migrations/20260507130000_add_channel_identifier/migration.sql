@@ -26,9 +26,17 @@ CREATE UNIQUE INDEX IF NOT EXISTS "RAC_Contact_id_workspaceId_key"
 ON "RAC_Contact" (id, "workspaceId");
 
 -- Foreign keys
-ALTER TABLE "RAC_ChannelIdentifier" ADD CONSTRAINT "RAC_ChannelIdentifier_contactId_fkey" FOREIGN KEY ("contactId", "workspaceId") REFERENCES "RAC_Contact" (id, "workspaceId") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "RAC_ChannelIdentifier"
+ADD CONSTRAINT "RAC_ChannelIdentifier_contactId_fkey"
+FOREIGN KEY ("contactId", "workspaceId")
+REFERENCES "RAC_Contact" (id, "workspaceId")
+ON DELETE CASCADE
+ON UPDATE CASCADE;
 
-ALTER TABLE "RAC_ChannelIdentifier" ADD CONSTRAINT "RAC_ChannelIdentifier_workspaceId_fkey" FOREIGN KEY ("workspaceId") REFERENCES "RAC_Workspace" (id) ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "RAC_ChannelIdentifier"
+ADD CONSTRAINT "RAC_ChannelIdentifier_workspaceId_fkey"
+FOREIGN KEY ("workspaceId")
+REFERENCES "RAC_Workspace" (id) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- Backfill: create ChannelIdentifier rows for all existing contacts.
 -- WhatsApp contacts: phone starts with digit or +
