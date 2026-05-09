@@ -16,9 +16,10 @@ import { type Contact, type WebhookEvent } from '@prisma/client';
 import type { Redis } from 'ioredis';
 import { Public } from '../auth/public.decorator';
 import { AutopilotService } from '../autopilot/autopilot.service';
+import { ChannelTransportRegistry } from '../kloel/channel-transport.registry';
 import { PrismaService } from '../prisma/prisma.service';
-import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { WebhooksService } from './webhooks.service';
+import type { PaymentWebhookNotifier } from './payment-webhook-stripe.deps';
 import {
   D_RE,
   type WebhookRequest,
@@ -34,10 +35,8 @@ import {
   ensureIdempotent,
   sendOpsAlert,
 } from './payment-webhook-generic.helpers';
-import {
-  updateSaleAndPaymentHelper,
-  sendGenericConfirmationHelper,
-} from './__companions__/payment-webhook-generic.controller.companion';
+import { updateSaleAndPaymentHelper } from './__companions__/payment-webhook-generic.controller.companion';
+import { sendGenericConfirmationViaTransport } from './__parts__/payment-webhook-generic.confirmation';
 
 /**
  * Handles generic, Shopify, PagHiper, and WooCommerce payment webhooks.
@@ -51,11 +50,30 @@ export class PaymentWebhookGenericController {
 
   constructor(
     private readonly autopilot: AutopilotService,
-    private readonly whatsapp: WhatsappService,
+    private readonly channelTransports: ChannelTransportRegistry,
     private readonly prisma: PrismaService,
     @InjectRedis() private readonly redis: Redis,
     private readonly webhooksService: WebhooksService,
   ) {}
+
+  private get whatsappNotifier(): PaymentWebhookNotifier {
+    return {
+      sendMessage: (workspaceId, phone, message) => {
+        const transport = this.channelTransports as ChannelTransportRegistry & {
+          sendMessage?: (workspaceId: string, phone: string, message: string) => Promise<unknown>;
+        };
+        if (typeof transport.send === 'function') {
+          return transport.send(workspaceId, {
+            workspaceId,
+            channel: 'whatsapp',
+            recipientId: phone,
+            content: message,
+          });
+        }
+        return transport.sendMessage?.(workspaceId, phone, message) ?? Promise.resolve(null);
+      },
+    };
+  }
 
   /** Generic payment webhook — POST /webhook/payment */
   @Public()
@@ -343,8 +361,8 @@ export class PaymentWebhookGenericController {
     normalizedPhone: string,
     body: GenericPaymentWebhookBody,
   ): Promise<void> {
-    return sendGenericConfirmationHelper(
-      this.whatsapp,
+    return sendGenericConfirmationViaTransport(
+      this.whatsappNotifier,
       this.logger,
       workspaceId,
       normalizedPhone,

@@ -1,6 +1,6 @@
 import { ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { ModuleRef } from '@nestjs/core';
 import { Prisma } from '@prisma/client';
+import { ChannelTransportRegistry } from '../kloel/channel-transport.registry';
 import { PrismaService } from '../prisma/prisma.service';
 import { WebhookDispatcherService } from '../webhooks/webhook-dispatcher.service';
 import {
@@ -35,7 +35,7 @@ export class InboxService {
     private prisma: PrismaService,
     private gateway: InboxGateway,
     private webhookDispatcher: WebhookDispatcherService,
-    private moduleRef: ModuleRef,
+    private channelTransports: ChannelTransportRegistry,
   ) {}
 
   /** List agents. */
@@ -529,15 +529,22 @@ export class InboxService {
       throw new NotFoundException('Contato sem telefone associado');
     }
 
-    // Send via WhatsApp (lazy-resolve to avoid circular dependency)
-    const { WhatsappService } = await import('../whatsapp/whatsapp.service');
-    const whatsapp = this.moduleRef.get(WhatsappService, { strict: false });
-    // messageLimit: enforced via PlanLimitsService.trackMessageSend
-    const result = await whatsapp.sendMessage(workspaceId, phone, content);
+    const result = await this.channelTransports.send(workspaceId, {
+      workspaceId,
+      channel: 'whatsapp',
+      recipientId: phone,
+      content,
+    });
 
-    // Direct sends persist the message internally; for queued sends,
-    // persist immediately so the inbox reflects the reply right away.
-    if (isQueuedSendResult(result)) {
+    if (!result.success) {
+      throw new ForbiddenException(
+        result.blockedReason || result.error || 'Mensagem bloqueada pelas regras do canal',
+      );
+    }
+
+    // Persist after the transport accepts the send so the inbox reflects the
+    // human reply immediately, including queued provider deliveries.
+    if (isQueuedSendResult(result) || result.success) {
       await this.saveMessage({
         workspaceId,
         contactId: conversation.contactId,
