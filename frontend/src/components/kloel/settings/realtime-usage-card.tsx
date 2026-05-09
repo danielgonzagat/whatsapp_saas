@@ -3,7 +3,7 @@
 import { kloelT } from '@/lib/i18n/t';
 import { Button } from '@/components/ui/button';
 import { TrendingUp } from 'lucide-react';
-import { colors } from '@/lib/design-tokens';
+
 import {
   SettingsCard,
   SettingsHeader,

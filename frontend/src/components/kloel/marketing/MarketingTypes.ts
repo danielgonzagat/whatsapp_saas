@@ -136,3 +136,129 @@ export interface EmailTemplatePreset {
   subject: string;
   html: string;
 }
+
+export type EmailCampaignStatus =
+  | 'DRAFT'
+  | 'SCHEDULED'
+  | 'SENDING'
+  | 'SENT'
+  | 'FAILED'
+  | 'CANCELLED';
+
+export type EmailRecipientStatus =
+  | 'PENDING'
+  | 'SENT'
+  | 'DELIVERED'
+  | 'OPENED'
+  | 'CLICKED'
+  | 'REPLIED'
+  | 'FAILED'
+  | 'BOUNCED'
+  | 'UNSUBSCRIBED';
+
+export type EmailDeliveryEventKind =
+  | 'SENT'
+  | 'DELIVERED'
+  | 'OPENED'
+  | 'CLICKED'
+  | 'REPLIED'
+  | 'BOUNCED'
+  | 'COMPLAINT'
+  | 'UNSUBSCRIBED';
+
+export interface EmailCampaignRecipient {
+  id: string;
+  campaignId: string;
+  email: string;
+  name: string | null;
+  status: EmailRecipientStatus;
+  providerMessageId: string | null;
+  errorMessage: string | null;
+  sentAt: string | null;
+  deliveredAt: string | null;
+  openedAt: string | null;
+  clickedAt: string | null;
+  repliedAt: string | null;
+  failedAt: string | null;
+  bouncedAt: string | null;
+  unsubscribedAt: string | null;
+  deliveries: EmailCampaignDelivery[];
+}
+
+export interface EmailCampaignDelivery {
+  id: string;
+  campaignId: string;
+  recipientId: string;
+  event: EmailDeliveryEventKind;
+  providerMessageId: string | null;
+  metadata: Record<string, unknown> | null;
+  occurredAt: string;
+}
+
+export interface EmailCampaign {
+  id: string;
+  workspaceId: string;
+  name: string;
+  subject: string;
+  htmlBody: string;
+  fromEmail: string | null;
+  fromName: string | null;
+  replyTo: string | null;
+  status: EmailCampaignStatus;
+  totalRecipients: number;
+  sentCount: number;
+  deliveredCount: number;
+  openedCount: number;
+  clickedCount: number;
+  repliedCount: number;
+  failedCount: number;
+  bouncedCount: number;
+  unsubscribedCount: number;
+  provider: string | null;
+  scheduledAt: string | null;
+  startedAt: string | null;
+  completedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  recipients?: EmailCampaignRecipient[];
+}
+
+export interface EmailCampaignListItem {
+  id: string;
+  name: string;
+  subject: string;
+  status: EmailCampaignStatus;
+  totalRecipients: number;
+  sentCount: number;
+  deliveredCount: number;
+  openedCount: number;
+  clickedCount: number;
+  repliedCount: number;
+  failedCount: number;
+  provider: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateEmailCampaignInput {
+  name: string;
+  subject: string;
+  htmlBody: string;
+  fromEmail?: string;
+  fromName?: string;
+  replyTo?: string;
+  recipients: { email: string; name?: string }[];
+}
+
+export interface EmailCampaignSendResponse {
+  campaign: EmailCampaign;
+  message: string;
+}
+
+export interface EmailCampaignListResponse {
+  campaigns: EmailCampaignListItem[];
+}
+
+export interface EmailCampaignDetailResponse {
+  campaign: EmailCampaign;
+}

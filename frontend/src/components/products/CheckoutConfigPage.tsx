@@ -4,7 +4,7 @@ import { apiFetch } from '@/lib/api';
 import { Save } from 'lucide-react';
 import { type CSSProperties, useCallback, useEffect, useState, useId } from 'react';
 import { mutate } from 'swr';
-import { colors } from '@/lib/design-tokens';
+
 
 interface CheckoutConfigState {
   checkoutName: string;

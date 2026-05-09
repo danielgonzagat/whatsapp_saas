@@ -22,7 +22,9 @@ const D_RE = /\D/g;
 /** Arbitrary JSON payload received on the generic catch-hook endpoint. */
 type WebhookJsonPayload = Record<string, unknown>;
 
+type UnknownRecord = Record<string, unknown>;
 type WebhookLogDetails = { status?: string; phone?: string; [key: string]: unknown };
+type WebhookFinanceSettings = Record<string, unknown>;
 
 /** Finance trigger body: status + phone + any extra provider-specific fields. */
 interface FinanceWebhookBody {
@@ -52,8 +54,8 @@ interface MessageStatusTarget {
 }
 
 /** Runtime-narrow helper: returns an object when `value` is a non-null record. */
-function asRecord(value: unknown): Record<string, unknown> | null {
-  return typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : null;
+function asRecord(value: unknown): UnknownRecord | null {
+  return typeof value === 'object' && value !== null ? (value as UnknownRecord) : null;
 }
 
 function toPrismaJsonValue(value: unknown): Prisma.InputJsonValue {
@@ -141,7 +143,7 @@ export class WebhooksService {
       throw new ForbiddenException('Workspace not found');
     }
     const settings = asProviderSettings(ws.providerSettings);
-    const finance = (settings as Record<string, unknown>).finance as Record<string, unknown> || {};
+    const finance = ((settings as UnknownRecord).finance as WebhookFinanceSettings) || {};
 
     const status = String(payload?.status || '').toLowerCase();
     const map: Record<string, string | undefined> = {

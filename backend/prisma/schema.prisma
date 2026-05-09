@@ -208,6 +208,9 @@ model Workspace {
   // Meta Platform Connection
   metaConnection MetaConnection?
 
+  // Facebook Messenger Messages
+  fbMessages FbMessage[]
+
   // Ad Accounts, Campaigns & Insights
   adAccounts  AdAccount[]
   adCampaigns AdCampaign[]

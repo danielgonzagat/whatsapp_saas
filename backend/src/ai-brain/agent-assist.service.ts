@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { Injectable, Optional, Logger } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
 import { PlanLimitsService } from '../billing/plan-limits.service';
@@ -36,7 +36,6 @@ interface ExecuteAiOperationArgs<T> {
 /** Agent assist service — sentiment, summary, reply suggestions and pitch generation. */
 @Injectable()
 export class AgentAssistService {
-  private readonly logger = new Logger(AgentAssistService.name);
   private openai: OpenAI | null;
 
   constructor(

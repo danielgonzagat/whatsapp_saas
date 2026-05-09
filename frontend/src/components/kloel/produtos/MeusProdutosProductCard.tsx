@@ -10,7 +10,7 @@ import { IC } from './ProdutosView.icons';
 export default function MeusProdutosProductCard({
   product,
   isMobile,
-  onDelete,
+  onDelete: _onDelete,
 }: {
   product: DisplayProduct;
   isMobile: boolean;

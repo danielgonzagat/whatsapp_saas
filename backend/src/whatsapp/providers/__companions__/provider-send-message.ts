@@ -44,9 +44,10 @@ export async function sendMessage(
           )
         : await deps.wahaProvider!.sendMessage(workspaceId, to, message);
       const messageRecord = deps.readRecord(deps.readRecord(result).message);
+      const msgId = typeof messageRecord.id === 'string' ? messageRecord.id : undefined;
       return {
         success: Boolean(deps.readRecord(result).success),
-        messageId: typeof messageRecord.id === 'string' ? messageRecord.id : undefined,
+        ...(msgId !== undefined ? { messageId: msgId } : {}),
       };
     }
 
@@ -57,10 +58,12 @@ export async function sendMessage(
           options.mediaUrl,
           options.caption || message,
           options.mediaType || 'image',
-          { quotedMessageId: options.quotedMessageId },
+          { ...(options.quotedMessageId !== undefined ? { quotedMessageId: options.quotedMessageId } : {}) },
         )
       : await deps.metaCloudProvider.sendMessage(workspaceId, to, message, {
-          quotedMessageId: options?.quotedMessageId,
+          ...(options?.quotedMessageId !== undefined
+            ? { quotedMessageId: options.quotedMessageId }
+            : {}),
         });
     return {
       success: Boolean(result?.success),

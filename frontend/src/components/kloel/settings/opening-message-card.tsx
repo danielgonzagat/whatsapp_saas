@@ -7,7 +7,7 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { MessageSquare } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { colors } from '@/lib/design-tokens';
+
 import {
   SettingsCard,
   SettingsHeader,

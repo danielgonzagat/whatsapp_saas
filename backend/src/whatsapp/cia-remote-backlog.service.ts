@@ -1,4 +1,4 @@
-import { Inject, Injectable, forwardRef, Logger } from '@nestjs/common';
+import { Inject, Injectable, forwardRef } from '@nestjs/common';
 import { findFirstSequential, forEachSequential } from '../common/async-sequence';
 import { UnifiedAgentService } from '../kloel/unified-agent.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -20,7 +20,6 @@ import { loadRemotePendingBatchHelper } from './__companions__/cia-remote-backlo
  */
 @Injectable()
 export class CiaRemoteBacklogService {
-  private readonly logger = new Logger(CiaRemoteBacklogService.name);
   constructor(
     private readonly prisma: PrismaService,
     private readonly providerRegistry: WhatsAppProviderRegistry,

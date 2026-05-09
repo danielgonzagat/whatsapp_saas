@@ -1,5 +1,5 @@
 import { InjectRedis } from '@nestjs-modules/ioredis';
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Queue } from 'bullmq';
 import type { Redis } from 'ioredis';
 import { forEachSequential } from '../common/async-sequence';
@@ -16,7 +16,6 @@ if (!process.env.JEST_WORKER_ID && process.env.NODE_ENV !== 'test') {
 /** Health service. */
 @Injectable()
 export class HealthService {
-  private readonly logger = new Logger(HealthService.name);
   constructor(
     @InjectRedis() private readonly redis: Redis,
     private readonly prisma: PrismaService,

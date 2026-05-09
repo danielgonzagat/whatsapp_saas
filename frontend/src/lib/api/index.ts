@@ -351,6 +351,10 @@ export {
   type InstagramMedia,
   type InstagramComment,
   instagramApi,
+  type IgAccount,
+  type IgPostData,
+  type IgInsightData,
+  instagramMarketingApi,
   type MessengerConversation,
   messengerApi,
 } from './meta';

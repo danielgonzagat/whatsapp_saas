@@ -16,7 +16,7 @@ function readForwardedForIp(header: string | string[] | undefined): string | nul
   if (typeof header !== 'string' || header.length === 0) {
     return null;
   }
-  const first = header.split(',')[0].trim();
+  const first = header.split(',')[0]!.trim();
   return first.length > 0 ? first : null;
 }
 

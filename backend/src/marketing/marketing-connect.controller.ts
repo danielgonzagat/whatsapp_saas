@@ -24,6 +24,10 @@ import {
   normalizeWhatsAppSelectedProducts,
 } from './__companions__/marketing-connect.controller.companion';
 
+type EmailSubSettings = Record<string, unknown> & { enabled?: boolean };
+type WhatsAppStatusValue = Record<string, unknown>;
+type WhatsAppLifecycleRecord = Record<string, unknown>;
+
 /**
  * Marketing Connect Controller
  *
@@ -120,9 +124,9 @@ export class MarketingConnectController {
     ]);
 
     const providerSettings = asProviderSettings(workspace?.providerSettings);
-    const emailSettings = (providerSettings.email ?? { enabled: false }) as Record<string, unknown> & { enabled?: boolean };
+    const emailSettings = (providerSettings.email ?? { enabled: false }) as EmailSubSettings;
     const emailProvider = this.getEmailProviderSnapshot();
-    const safeWhatsApp = whatsappStatus ?? ({} as Record<string, unknown>);
+    const safeWhatsApp = whatsappStatus ?? ({} as WhatsAppStatusValue);
     const { snapshot, snapshotStatus, snapshotConnected } =
       this.getWhatsAppSessionSnapshot(providerSettings);
     const rawLiveStatus =
@@ -245,7 +249,7 @@ export class MarketingConnectController {
       select: { providerSettings: true },
     });
     const providerSettings = asProviderSettings(workspace?.providerSettings);
-    const setup = providerSettings.whatsappLifecycle ?? ({} as Record<string, unknown>);
+    const setup = providerSettings.whatsappLifecycle ?? ({} as WhatsAppLifecycleRecord);
 
     const selectedProducts = normalizeWhatsAppSelectedProducts(setup.selectedProducts);
     const productNames = [
@@ -311,7 +315,7 @@ export class MarketingConnectController {
         providerSettings: {
           ...currentSettings,
           email: {
-            ...(currentSettings.email ?? ({} as Record<string, unknown>)),
+            ...(currentSettings.email ?? ({} as EmailSubSettings)),
             enabled: nextEnabled,
           },
         },

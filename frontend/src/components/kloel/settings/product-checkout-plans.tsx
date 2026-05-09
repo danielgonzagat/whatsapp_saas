@@ -14,7 +14,7 @@ import {
 import { Check, Link, Plus, Trash2 } from 'lucide-react';
 import { useState, useId } from 'react';
 import { SettingsInset, SettingsStatusPill, kloelSettingsClass } from './contract';
-import { colors } from '@/lib/design-tokens';
+
 
 /** Checkout plan shape. */
 export interface CheckoutPlan {

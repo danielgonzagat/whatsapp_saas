@@ -1,4 +1,4 @@
-import { Injectable, ServiceUnavailableException, Logger } from '@nestjs/common';
+import { Injectable, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
 import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
@@ -7,7 +7,6 @@ import { resolveBackendOpenAIModel } from '../lib/openai-models';
 /** Media factory service. */
 @Injectable()
 export class MediaFactoryService {
-  private readonly logger = new Logger(MediaFactoryService.name);
   private openai: OpenAI | null;
 
   constructor(private config: ConfigService) {

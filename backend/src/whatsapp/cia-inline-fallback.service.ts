@@ -221,9 +221,10 @@ export class CiaInlineFallbackService {
 
       let keepReplyLock = false;
       try {
+        const resultContactId = safeStr(conversation.contactId);
         const result = await this.unifiedAgent.processIncomingMessage({
           workspaceId,
-          contactId: safeStr(conversation.contactId) || undefined,
+          ...(resultContactId ? { contactId: resultContactId } : {}),
           phone,
           message: messageContent,
           channel: 'whatsapp',
@@ -262,7 +263,7 @@ export class CiaInlineFallbackService {
             ? shouldMirrorReplies
               ? await this.unifiedAgent.buildQuotedReplyPlan({
                   workspaceId,
-                  contactId: safeStr(conversation.contactId) || undefined,
+                  ...(resultContactId ? { contactId: resultContactId } : {}),
                   phone,
                   draftReply: reply,
                   customerMessages: pendingBatch.messages,

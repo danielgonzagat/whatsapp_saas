@@ -4,7 +4,7 @@ import { kloelT } from '@/lib/i18n/t';
 import { apiFetch } from '@/lib/api';
 import { useEffect, useRef, useState } from 'react';
 import { mutate } from 'swr';
-import { colors } from '@/lib/design-tokens';
+
 
 const FONT_BODY = "var(--font-sora), 'Sora', sans-serif";
 const FONT_MONO = "var(--font-jetbrains), 'JetBrains Mono', monospace";

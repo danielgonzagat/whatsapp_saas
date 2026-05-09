@@ -9,7 +9,7 @@ import { BillingSettingsSection } from '@/components/kloel/settings/billing-sett
 import { BrainSettingsSection } from '@/components/kloel/settings/brain-settings-section';
 import { CrmSettingsSection } from '@/components/kloel/settings/crm-settings-section';
 import { SystemAlertsCard } from '@/components/kloel/settings/system-alerts-card';
-import { BRAZILIAN_BANKS, POPULAR_BANK_CODES, formatBankCode } from '@/data/brazilian-banks';
+import { useBrazilianBanks, formatBankCode, POPULAR_BANK_CODES, type BrazilianBank } from '@/hooks/useBrazilianBanks';
 import { useSellerConnectAccount } from '@/hooks/useConnectAccounts';
 import {
   useBankAccount,
@@ -2220,10 +2220,10 @@ function BankListItem({
   isSelected,
   onSelect,
 }: {
-  bank: (typeof BRAZILIAN_BANKS)[number];
+  bank: BrazilianBank;
   code3: string;
   isSelected: boolean;
-  onSelect: (bank: (typeof BRAZILIAN_BANKS)[number]) => void;
+  onSelect: (bank: BrazilianBank) => void;
 }) {
   return (
     <button
@@ -2328,9 +2328,9 @@ function BankDropdownPanel({
   searchTerm: string;
   showAllBanks: boolean;
   onShowAllBanks: () => void;
-  filteredBanks: typeof BRAZILIAN_BANKS;
+  filteredBanks: BrazilianBank[];
   selectedCode: string;
-  onSelectBank: (bank: (typeof BRAZILIAN_BANKS)[number]) => void;
+  onSelectBank: (bank: BrazilianBank) => void;
 }) {
   const autoFocusRef = useCallback((element: HTMLInputElement | null) => {
     if (!element) {
@@ -2550,7 +2550,7 @@ function DadosBancariosSection({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const selectBank = (bank: (typeof BRAZILIAN_BANKS)[number]) => {
+  const selectBank = (bank: BrazilianBank) => {
     setForm((prev) => ({ ...prev, bankName: bank.fullName, bankCode: formatBankCode(bank.code) }));
     setBankSearch('');
     setBankDropdownOpen(false);

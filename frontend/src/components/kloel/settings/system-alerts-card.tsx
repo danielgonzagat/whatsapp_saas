@@ -4,7 +4,7 @@ import { kloelT } from '@/lib/i18n/t';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, CheckCircle2, Info, X, XCircle } from 'lucide-react';
 import { useState } from 'react';
-import { colors } from '@/lib/design-tokens';
+
 import {
   SettingsCard,
   SettingsHeader,

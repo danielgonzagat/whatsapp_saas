@@ -13,7 +13,7 @@ import {
 import Link from 'next/link';
 import type { AgentActivity } from '../AgentConsole';
 import { SettingsCard, kloelSettingsClass } from './contract';
-import { colors } from '@/lib/design-tokens';
+
 
 interface ActivityItem {
   id: string;

@@ -5,6 +5,11 @@ import { apiFetch } from './core';
 const invalidateMeta = () =>
   mutate((key: string) => typeof key === 'string' && key.startsWith('/meta'));
 
+const invalidateMarketingInstagram = () =>
+  mutate((key: string) =>
+    typeof key === 'string' && key.startsWith('/marketing/instagram'),
+  );
+
 // ============================================
 // Meta Ads
 // ============================================
@@ -244,6 +249,93 @@ export const instagramApi = {
     });
     invalidateMeta();
     return res;
+  },
+};
+
+// ============================================
+// Instagram Marketing (Persisted Posts + Insights)
+// ============================================
+
+export interface IgAccount {
+  instagramAccountId: string;
+  username: string | null;
+  pageName: string | null;
+  status: string;
+}
+
+export interface IgPostData {
+  id: string;
+  workspaceId: string;
+  igAccountId: string;
+  igMediaId: string | null;
+  igContainerId: string | null;
+  imageUrl: string;
+  caption: string | null;
+  permalink: string | null;
+  status: string;
+  publishedAt: string;
+  createdAt: string;
+}
+
+export interface IgInsightData {
+  id: string;
+  workspaceId: string;
+  igAccountId: string;
+  date: string;
+  impressions: number;
+  reach: number;
+  followerCount: number;
+  profileViews: number;
+  websiteClicks: number;
+  emailContacts: number;
+  phoneCallClicks: number;
+  textMessageClicks: number;
+  getDirectionsClicks: number;
+  onlineFollowers: Record<string, unknown> | null;
+  createdAt: string;
+}
+
+export const instagramMarketingApi = {
+  listAccounts: () =>
+    apiFetch<{ accounts: IgAccount[] }>(`/marketing/instagram/accounts`),
+
+  listPosts: (limit = 25, offset = 0) =>
+    apiFetch<{ posts: IgPostData[]; total: number }>(
+      `/marketing/instagram/posts?limit=${limit}&offset=${offset}`,
+    ),
+
+  publishPost: async (imageUrl: string, caption?: string) => {
+    const res = await apiFetch<{
+      post: IgPostData;
+      metaResponse: Record<string, unknown>;
+    }>(`/marketing/instagram/posts`, {
+      method: 'POST',
+      body: { imageUrl, caption },
+    });
+    invalidateMarketingInstagram();
+    return res;
+  },
+
+  getInsights: (metrics?: string, period?: string) => {
+    const params: Record<string, string> = {};
+    if (metrics) params.metrics = metrics;
+    if (period) params.period = period;
+    const qs = new URLSearchParams(params).toString();
+    return apiFetch<{
+      insight: IgInsightData;
+      metaResponse: Record<string, unknown>;
+    }>(`/marketing/instagram/insights${qs ? `?${qs}` : ''}`);
+  },
+
+  listInsights: (igAccountId?: string, since?: string, until?: string) => {
+    const params: Record<string, string> = {};
+    if (igAccountId) params.igAccountId = igAccountId;
+    if (since) params.since = since;
+    if (until) params.until = until;
+    const qs = new URLSearchParams(params).toString();
+    return apiFetch<{ insights: IgInsightData[] }>(
+      `/marketing/instagram/insights/history${qs ? `?${qs}` : ''}`,
+    );
   },
 };
 

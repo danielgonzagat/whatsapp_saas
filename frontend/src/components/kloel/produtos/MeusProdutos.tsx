@@ -2,7 +2,7 @@
 
 import { kloelT } from '@/lib/i18n/t';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
-import { useRef } from 'react';
+
 import type { DisplayProduct } from './ProdutosView.types';
 import { SORA, BG_CARD, BORDER, EMBER, Ticker, timeAgo } from './ProdutosView.shared';
 import { IC } from './ProdutosView.icons';

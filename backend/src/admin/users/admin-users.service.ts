@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { AdminRole, AdminUserStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AdminAuditService } from '../audit/admin-audit.service';
@@ -40,7 +40,6 @@ export interface UpdateAdminUserInput {
 /** Admin users service. */
 @Injectable()
 export class AdminUsersService {
-  private readonly logger = new Logger(AdminUsersService.name);
   constructor(
     private readonly prisma: PrismaService,
     private readonly permissions: AdminPermissionsService,
@@ -148,11 +147,6 @@ export class AdminUsersService {
       data.role = patch.role;
     }
     return data;
-  }
-
-  private async reseedPermissionsForRoleChange(id: string, role: AdminRole): Promise<void> {
-    await this.prisma.adminPermission.deleteMany({ where: { adminUserId: id } });
-    await this.permissions.seedDefaults(id, role);
   }
 
   private buildUpdateAuditDetails(

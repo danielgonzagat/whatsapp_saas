@@ -39,7 +39,7 @@ function extractBearerToken(header: string | undefined): string | null {
   if (parts.length !== 2) {
     return null;
   }
-  if (parts[0].toLowerCase() !== 'bearer') {
+  if (parts[0]!.toLowerCase() !== 'bearer') {
     return null;
   }
   return parts[1] || null;

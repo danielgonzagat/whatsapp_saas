@@ -2,7 +2,7 @@
 import { kloelT } from '@/lib/i18n/t';
 import { buildPayUrl, isValidCheckoutCode } from '@/lib/subdomains';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { colors } from '@/lib/design-tokens';
+
 
 interface Props {
   isOpen: boolean;

@@ -279,6 +279,7 @@ export class AdminAuthService {
       );
       return { otpauthUrl, qrDataUrl };
     }
+    return { otpauthUrl, qrDataUrl };
   }
 
   /** Verify initial mfa. */

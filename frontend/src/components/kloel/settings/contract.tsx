@@ -2,7 +2,7 @@
 
 import { cn } from '@/lib/utils';
 import type { HTMLAttributes, ReactNode } from 'react';
-import { colors } from '@/lib/design-tokens';
+
 
 /** Kloel settings class. */
 export const kloelSettingsClass = {

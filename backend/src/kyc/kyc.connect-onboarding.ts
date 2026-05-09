@@ -8,7 +8,6 @@ import {
   buildPersonName,
   buildDateOfBirth,
   buildConnectAddress,
-  type UploadedFile,
   type SubmitKycContext,
   type ConnectAddressInput,
 } from './kyc.helpers';

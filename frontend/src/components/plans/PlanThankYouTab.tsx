@@ -4,7 +4,7 @@ import { kloelT } from '@/lib/i18n/t';
 import { apiFetch } from '@/lib/api';
 import { useEffect, useId, useRef, useState } from 'react';
 import { mutate } from 'swr';
-import { colors } from '@/lib/design-tokens';
+
 
 /* ── Design Tokens ── */
 const _BG_VOID = 'colors.background.void';

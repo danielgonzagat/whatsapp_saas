@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { AdminRole } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
-import { AdminAuditService } from '../audit/admin-audit.service';
 import { adminErrors } from '../common/admin-api-errors';
 
 /** Admin sessions service. */
