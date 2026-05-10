@@ -129,6 +129,7 @@ export const colors = {
     bg: '#141416',
     border: '#2A2A2E',
     surface: '#1A1A1E',
+    surfaceLight: '#F5F5F5',
     success: '#22C55E',
     successBg: '#0F1F0F',
     danger: '#FF6B6B',

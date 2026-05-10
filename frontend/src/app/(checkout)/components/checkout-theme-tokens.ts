@@ -116,7 +116,7 @@ const BLANC_BASE = {
   softMuted: 'rgba(110, 110, 115, 0.72)',
   stroke: 'rgba(58, 58, 63, 0.18)',
   softLine: 'rgba(58, 58, 63, 0.12)',
-  surface: '#F5F5F5',
+  surface: colors.checkout.surfaceLight,
   surface2: 'rgba(255, 255, 255, 0.72)',
   successBg: 'rgba(16, 185, 129, 0.08)',
   successBorder: 'rgba(16, 185, 129, 0.24)',

@@ -21,5 +21,5 @@
     "outDir": "dist"
   },
   "include": ["./**/*.ts"],
-  "exclude": ["node_modules", "media-processor.ts", "__companions__/**", "**/__companions__/**"]
+  "exclude": ["node_modules", "media-processor.ts"]
 }

@@ -92,7 +92,7 @@ export async function getRemoteUnreadChatSnapshot(
         !isWorkspaceSelfTarget({
           phone: item.phone,
           chatId: item.chatId,
-          selfIdentity,
+          ...(selfIdentity != null ? { selfIdentity } : {}),
         }) &&
         isIndividualWahaChatId(item.chatId) &&
         item.activityTimestamp > 0,
@@ -186,7 +186,7 @@ export async function seedRemoteUnreadConversationShells(input: {
       isWorkspaceSelfTarget({
         phone: item.phone,
         chatId: item.chatId,
-        selfIdentity: input.selfIdentity,
+        ...(input.selfIdentity != null ? { selfIdentity: input.selfIdentity } : {}),
       })
     ) {
       return;
@@ -492,17 +492,17 @@ export async function maybeEscalateToHumanControl(input: {
 
   const humanTask = buildHumanTask({
     workspaceId: input.workspaceId,
-    contactId: input.contactId,
-    phone: input.phone,
+    ...(input.contactId !== undefined ? { contactId: input.contactId } : {}),
+    ...(input.phone !== undefined ? { phone: input.phone } : {}),
     decision: input.decisionEnvelope,
-    messageContent: input.messageContent,
+    ...(input.messageContent !== undefined ? { messageContent: input.messageContent } : {}),
   });
 
   if (humanTask) {
     const lockedConversation = await lockConversationForHumanReview({
       workspaceId: input.workspaceId,
-      contactId: input.contactId,
-      phone: input.phone,
+      ...(input.contactId !== undefined ? { contactId: input.contactId } : {}),
+      ...(input.phone !== undefined ? { phone: input.phone } : {}),
     });
     const taskPayload = {
       ...humanTask,
@@ -533,12 +533,12 @@ export async function maybeEscalateToHumanControl(input: {
     const transferExecution = await beginAutonomyExecution({
       workspaceId: input.workspaceId,
       actionType: 'TRANSFER_HUMAN',
-      contactId: input.contactId,
+      ...(input.contactId !== undefined ? { contactId: input.contactId } : {}),
       idempotencyKey: buildAutonomyExecutionKey({
         workspaceId: input.workspaceId,
         actionType: 'TRANSFER_HUMAN',
-        contactId: input.contactId,
-        phone: input.phone,
+        ...(input.contactId !== undefined ? { contactId: input.contactId } : {}),
+        ...(input.phone !== undefined ? { phone: input.phone } : {}),
         payload: {
           reason: humanTask.reason,
           urgency: humanTask.urgency,

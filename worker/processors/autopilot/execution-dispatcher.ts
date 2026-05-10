@@ -51,17 +51,17 @@ export interface DispatchResult {
 export async function checkIdempotencyAndDuplicates(params: {
   workspaceId: string;
   action: string;
-  contactId?: string;
-  contactRecordId?: string;
-  conversationId?: string;
+  contactId?: string | undefined;
+  contactRecordId?: string | undefined;
+  conversationId?: string | undefined;
   phone: string;
   message: string;
-  intent?: string;
-  reason?: string;
+  intent?: string | undefined;
+  reason?: string | undefined;
   deliveryMode: string;
-  customerMessages?: QuotedCustomerMessage[];
-  idempotencyContext?: Record<string, unknown>;
-  smokeTestId?: string;
+  customerMessages?: QuotedCustomerMessage[] | undefined;
+  idempotencyContext?: Record<string, unknown> | undefined;
+  smokeTestId?: string | undefined;
 }) {
   const {
     workspaceId, action, contactId, contactRecordId, conversationId,
@@ -123,6 +123,90 @@ export async function dispatchAutopilotAction(input: DispatchInput): Promise<Dis
     idempotencyContext, latestQuotedMessageId,
     hasEmailFallback, contactEmail, followupEligible, isAudioAction,
   } = input;
+
+  const displayName = contactName || (contactRecord?.name as string | undefined) || phone || 'contato';
+
+  const idemKeyCtx = idempotencyContext || {};
+  const idemKeySource = idemKeyCtx.source || 'dispatch';
+  const idempotencyKey = buildAutonomyExecutionKey({
+    workspaceId, actionType: action,
+    ...(contactId !== undefined ? { contactId } : {}),
+    ...(conversationId !== undefined ? { conversationId } : {}),
+    phone,
+    payload: {
+      source: idemKeySource,
+      message, intent, reason, deliveryMode,
+      customerMessages: customerMessages || null,
+      context: idempotencyContext || null,
+    },
+  });
+
+  const capCode = (idempotencyContext?.capabilityCode as string | null) || action;
+  const tacCode = (idempotencyContext?.conversationTactic as string | null) || null;
+  const convProof = (idempotencyContext?.conversationProofId as string | null) || null;
+  const acctProof = (idempotencyContext?.accountProofId as string | null) || null;
+  const cycProof = (idempotencyContext?.cycleProofId as string | null) || null;
+  const proofId = convProof || acctProof || cycProof || null;
+
+  const execution = await beginAutonomyExecution({
+    workspaceId, actionType: action,
+    ...(contactId !== undefined ? { contactId } : {}),
+    ...(conversationId !== undefined ? { conversationId } : {}),
+    workItemId: (idemKeyCtx.workItemId as string | null) || null,
+    proofId,
+    capabilityCode: capCode,
+    tacticCode: tacCode,
+    idempotencyKey,
+    request: { phone, message, intent, reason, deliveryMode, customerMessages: customerMessages || null, context: idempotencyContext || null },
+  });
+
+  if (!execution.allowed) {
+    await logAutopilotAction({
+      workspaceId, ...(contactId !== undefined ? { contactId } : {}),
+      phone, action, ...(intent !== undefined ? { intent } : {}),
+      status: 'skipped', reason: execution.reason,
+      meta: { duplicateExecution: true, idempotencyKey },
+    });
+    autopilotPipelineCounter.inc({ workspaceId, stage: 'reply', result: 'duplicate_execution' });
+    await reportSmokeTest(smokeTestId, { status: 'skipped', workspaceId, ...(contactId !== undefined ? { contactId } : {}), phone, action, reason: execution.reason });
+    return { status: 'skipped' };
+  }
+
+  const contactSearchId = contactId || (input.contactRecordId as string | undefined) || null;
+  const recentDuplicate = await findRecentDuplicateOutbound({
+    workspaceId, contactId: contactSearchId, content: message,
+  });
+  if (recentDuplicate) {
+    await finishAutonomyExecution(execution.record?.id, 'SKIPPED', {
+      response: { duplicateMessageId: recentDuplicate.id, duplicateCreatedAt: recentDuplicate.createdAt?.toISOString?.() || null, mode: 'recent_duplicate_outbound' },
+      error: 'recent_duplicate_outbound',
+    });
+    await logAutopilotAction({
+      workspaceId, ...(contactId !== undefined ? { contactId } : {}),
+      phone, action, ...(intent !== undefined ? { intent } : {}),
+      status: 'skipped', reason: 'recent_duplicate_outbound',
+      meta: { duplicateExecution: true, idempotencyKey, duplicateMessageId: recentDuplicate.id },
+    });
+    autopilotPipelineCounter.inc({ workspaceId, stage: 'reply', result: 'recent_duplicate_outbound' });
+    return { status: 'skipped' };
+  }
+
+  const contactNameVal = contactName || (contactRecord?.name as string | undefined) || null;
+  await publishAgentEvent({
+    type: 'typing', workspaceId, runId, phase: 'typing',
+    message: `Digitando resposta para ${displayName}.`,
+    meta: {
+      ...(contactId !== undefined ? { contactId } : {}),
+      ...(contactNameVal !== null ? { contactName: contactNameVal } : {}),
+      ...(conversationId !== undefined ? { conversationId } : {}),
+      phone, action,
+      capabilityCode: (idempotencyContext?.capabilityCode as string | null) || action,
+      tacticCode: (idempotencyContext?.conversationTactic as string | null) || null,
+      conversationProofId: (idempotencyContext?.conversationProofId as string | null) || null,
+      accountProofId: (idempotencyContext?.accountProofId as string | null) || null,
+      cycleProofId: (idempotencyContext?.cycleProofId as string | null) || null,
+    },
+  });
   const displayName = contactName || (contactRecord?.name as string | undefined) || phone || 'contato';
 
   const idempotencyResult = await checkIdempotencyAndDuplicates({
