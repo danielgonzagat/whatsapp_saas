@@ -3,7 +3,7 @@ import type { PrismaService } from '../prisma/prisma.service';
 import type { WhatsAppProviderRegistry } from './providers/provider-registry';
 import type { PlanLimitsService } from '../billing/plan-limits.service';
 import type { WorkspaceService } from '../workspaces/workspace.service';
-import type { InboxService } from '../inbox/inbox.service';
+import type { IInboxService } from '../inbox/inbox.interface';
 import type { NeuroCrmService } from '../crm/neuro-crm.service';
 import type { OpsAlertService } from '../observability/ops-alert.service';
 import type { WhatsAppCatchupService } from './whatsapp-catchup.service';
@@ -82,7 +82,7 @@ export type WsDeps = {
   providerRegistry: WhatsAppProviderRegistry;
   planLimits: PlanLimitsService;
   workspaces: WorkspaceService;
-  inbox: InboxService;
+  inbox: IInboxService;
   neuroCrm: NeuroCrmService;
   opsAlert?: OpsAlertService;
   catchupService: WhatsAppCatchupService;

@@ -1,7 +1,6 @@
 import * as p from 'path';
 import { pathExists as existsAt, readTextFile } from '../safe-fs';
 import { unique } from '../signal-normalizers';
-import { deriveStringUnionMembersFromTypeContract } from '../dynamic-reality-kernel/type-contract-labels';
 import { discoverSignalSourceLabels } from '../dynamic-reality-kernel/type-contract-engines';
 import type { RuntimeCallGraphEvidence } from '../types.otel-runtime';
 import type {
@@ -30,7 +29,25 @@ import {
   positiveSignal,
   tokenizeEvidenceTerm,
   trendSignal,
-} from './helpers';
+  CanonicalExternalSignal,
+  CanonicalExternalAdapter,
+  CanonicalExternalSignalState,
+  TREND_LABELS,
+  UNKNOWN_TREND,
+  TREND_WORSENING,
+  TREND_IMPROVING,
+  asNumber,
+  isRecord,
+} from './fusion-shared';
+export type { CanonicalExternalSignal, CanonicalExternalAdapter, CanonicalExternalSignalState };
+export {
+  TREND_LABELS,
+  UNKNOWN_TREND,
+  TREND_WORSENING,
+  TREND_IMPROVING,
+  asNumber,
+  isRecord,
+};
 
 // ─── JSON Parsing ───────────────────────────────────────────────────────────
 
@@ -61,11 +78,6 @@ function asString(value: unknown): string {
   return typeof value === 'string' ? value : '';
 }
 
-function asNumber(value: unknown, fallback: number = 0): number {
-  if (typeof value === 'number' && Number.isFinite(value)) return value;
-  return fallback;
-}
-
 function asOptionalNumber(value: unknown): number | null {
   if (typeof value === 'number' && Number.isFinite(value)) return value;
   return null;
@@ -77,10 +89,6 @@ function asStringArray(value: unknown): string[] {
     .filter((e): e is string => typeof e === 'string')
     .map((s) => s.trim())
     .filter(Boolean);
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
 
 function resolvePulseCurrentDir(rootDir: string): string {
@@ -126,39 +134,6 @@ function emptySourceCounts(): Record<SignalSource, number> {
     counts[source] = 0;
   }
   return counts as Record<SignalSource, number>;
-}
-
-export interface CanonicalExternalSignal {
-  id: string;
-  source: SignalSource;
-  type: string;
-  truthMode: 'observed' | 'inferred';
-  severity: number;
-  impactScore: number;
-  baselineValue: number;
-  blastRadiusValue: number;
-  summary: string;
-  observedAt: string | null;
-  relatedFiles: string[];
-  capabilityIds: string[];
-  flowIds: string[];
-  confidence: number;
-  frequency: number;
-  affectedUsers: number;
-  trend: RuntimeSignal['trend'];
-  observedPayload: Record<string, unknown>;
-}
-
-export interface CanonicalExternalAdapter {
-  source: string;
-  status: string;
-}
-
-export interface CanonicalExternalSignalState {
-  generatedAt: string;
-  truthMode: 'observed' | 'inferred';
-  signals: CanonicalExternalSignal[];
-  adapters: CanonicalExternalAdapter[];
 }
 
 function parseCanonicalExternalSignal(value: unknown): CanonicalExternalSignal | null {
@@ -209,14 +184,6 @@ function parseCanonicalExternalSignal(value: unknown): CanonicalExternalSignal |
     observedPayload: parseObservedPayload(value),
   };
 }
-
-let TREND_LABELS = deriveStringUnionMembersFromTypeContract(
-  'scripts/pulse/types.runtime-fusion.ts',
-  'trend',
-);
-let UNKNOWN_TREND = [...TREND_LABELS].find((l) => l === 'unknown') || 'unknown';
-let TREND_WORSENING = [...TREND_LABELS].find((l) => l === 'worsening')!;
-let TREND_IMPROVING = [...TREND_LABELS].find((l) => l === 'improving')!;
 
 function parseTrend(value: unknown): RuntimeSignal['trend'] {
   if (typeof value === 'string' && TREND_LABELS.has(value) && value !== UNKNOWN_TREND)
@@ -301,7 +268,7 @@ function canonicalExternalSignalToRuntimeSignal(
 
   return {
     id: signal.id,
-    source: signal.source,
+    source: signal.source as RuntimeSignal['source'],
     type,
     severity,
     action: deriveAction(severity, type),
@@ -411,15 +378,9 @@ export function loadCanonicalExternalSignals(currentDir: string): {
 }
 
 export {
-  TREND_IMPROVING,
-  TREND_LABELS,
-  TREND_WORSENING,
-  UNKNOWN_TREND,
   asArray,
-  asNumber,
   asString,
   emptySourceCounts,
-  isRecord,
   isRuntimeCallGraphEvidence,
   resolvePulseCurrentDir,
   safeJsonParseFile,

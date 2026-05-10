@@ -3,6 +3,16 @@
 import type { PulseDiscoveredFlowCandidate } from './types.truth';
 import type { PulseManifest } from './types.manifest';
 import type { PulseResolvedFlowGroup, PulseResolvedFlowKind } from './types.resolved-manifest';
+export {
+  normalizeText,
+  slugify,
+  tokenize,
+  unique,
+  titleCase,
+  matchesOverride,
+} from './resolved-manifest.module-helpers';
+export type { SemanticFlowDescriptor } from './resolved-manifest.types';
+import type { SemanticFlowDescriptor } from './resolved-manifest.types';
 import {
   normalizeText,
   slugify,
@@ -12,22 +22,6 @@ import {
 } from './resolved-manifest.module-helpers';
 import { discoverAllObservedHttpMethods } from './dynamic-reality-kernel/catalog-arithmetic';
 import { deriveStringUnionMembersFromTypeContract } from './dynamic-reality-kernel/type-contract-labels';
-
-export {
-  normalizeText,
-  slugify,
-  tokenize,
-  unique,
-  titleCase,
-  matchesOverride,
-} from './resolved-manifest.module-helpers';
-
-export interface SemanticFlowDescriptor {
-  id: string;
-  canonicalName: string;
-  flowKind: PulseResolvedFlowKind;
-  aliases: string[];
-}
 
 function getPath(flow: PulseDiscoveredFlowCandidate): string {
   return (flow.backendRoute || flow.endpoint || '').toLowerCase();
@@ -253,5 +247,3 @@ export function inferFlowSpecMatch(
   }
   return bestMatch?.id || null;
 }
-
-export { synthesizeScenarioFlowGroups, buildFlowGroups } from './resolved-manifest.flow-groups';

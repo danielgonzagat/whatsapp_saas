@@ -4,7 +4,8 @@ import OpenAI from 'openai';
 import { AuditService } from '../audit/audit.service';
 import { StorageService } from '../common/storage/storage.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { WhatsappService } from '../whatsapp/whatsapp.service';
+import { WHATSAPP_MESSAGING } from '../whatsapp/whatsapp.tokens';
+import type { IWhatsappMessaging } from '../whatsapp/whatsapp.interfaces';
 import { UnifiedAgentActionsBillingService } from './unified-agent-actions-billing.service';
 import { UnifiedAgentActionsCommerceService } from './unified-agent-actions-commerce.service';
 import { UnifiedAgentActionsCrmService } from './unified-agent-actions-crm.service';
@@ -41,8 +42,8 @@ export class UnifiedAgentActionsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly storageService: StorageService,
-    @Inject(forwardRef(() => WhatsappService))
-    private readonly whatsappService: WhatsappService,
+    @Inject(forwardRef(() => WHATSAPP_MESSAGING))
+    private readonly whatsappService: IWhatsappMessaging,
     private readonly messaging: UnifiedAgentActionsMessagingService,
     private readonly crm: UnifiedAgentActionsCrmService,
     private readonly sales: UnifiedAgentActionsSalesService,

@@ -1,5 +1,4 @@
 import { CIA_BOOTSTRAP_AUTO_CONTINUE_LIMIT } from './cia-bootstrap.constants';
-import type { CiaBootstrapService } from './cia-bootstrap.service';
 import type { CiaChatFilterService } from './cia-chat-filter.service';
 import type { CiaRuntimeStateService } from './cia-runtime-state.service';
 import type { PrismaService } from '../prisma/prisma.service';
@@ -25,12 +24,16 @@ type StartBacklogRunFn = (
   options: { autoStarted: boolean; runtimeState: string; triggeredBy: string },
 ) => Promise<{ runId?: string; totalQueued?: number }>;
 
+type BootstrapListDeps = {
+  listPendingConversations(workspaceId: string, limit: number): Promise<unknown[]>;
+};
+
 export async function ensureBacklogCoverageHelper(
   deps: {
     prisma: PrismaService;
     providerRegistry: WhatsAppProviderRegistry;
     chatFilter: CiaChatFilterService;
-    bootstrapService: CiaBootstrapService;
+    bootstrapService: BootstrapListDeps;
     runtimeState: CiaRuntimeStateService;
     startBacklogRun: StartBacklogRunFn;
   },

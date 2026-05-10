@@ -1,14 +1,17 @@
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import {
+  Inject,
   Injectable,
   Logger,
   Optional,
+  forwardRef,
 } from '@nestjs/common';
 import Redis from 'ioredis';
 import { forEachSequential } from '../common/async-sequence';
 import { createRedisClient } from '../common/redis/redis.util';
 import { NeuroCrmService } from '../crm/neuro-crm.service';
-import { InboxService } from '../inbox/inbox.service';
+import { INBOX_SERVICE } from '../inbox/inbox.token';
+import type { IInboxService } from '../inbox/inbox.interface';
 import { StructuredLogger } from '../logging/structured-logger';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -40,7 +43,7 @@ export class WhatsappReconcilerService {
 
   constructor(
     private readonly workspaces: WorkspaceService,
-    private readonly inbox: InboxService,
+    @Inject(forwardRef(() => INBOX_SERVICE)) private readonly inbox: IInboxService,
     @InjectRedis() private readonly redis: Redis,
     private readonly neuroCrm: NeuroCrmService,
     private readonly prisma: PrismaService,

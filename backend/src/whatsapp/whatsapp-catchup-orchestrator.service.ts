@@ -13,8 +13,6 @@ import { PrismaService } from '../prisma/prisma.service';
 import { buildQueueJobId } from '../queue/job-id.util';
 import { autopilotQueue } from '../queue/queue';
 import { AgentEventsService } from './agent-events.service';
-import { CiaRuntimeService } from './cia-runtime.service';
-import { InboundProcessorService } from './inbound-processor.service';
 import { asProviderSettings, type ProviderSessionSnapshot } from './provider-settings.types';
 import { WhatsAppProviderRegistry } from './providers/provider-registry';
 import { type WahaChatMessage, type WahaChatSummary } from './providers/whatsapp-api.provider';
@@ -32,7 +30,8 @@ import {
   normalizeChatsExt,
   normalizeMessagesExt,
 } from './whatsapp-catchup.normalizers';
-import { WhatsappCatchupHistoryService, type CatchupBackfillCursor } from './whatsapp-catchup-history.service';
+import { INBOUND_PROCESSOR, CIA_RUNTIME, CATCHUP_HISTORY } from './whatsapp.tokens';
+import type { IInboundProcessor, ICiaRuntime, ICatchupHistory, CatchupBackfillCursor } from './whatsapp.interfaces';
 
 type CatchupRunSummary = {
   importedMessages: number;
@@ -77,12 +76,12 @@ export class WhatsappCatchupOrchestratorService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly providerRegistry: WhatsAppProviderRegistry,
-    @Inject(forwardRef(() => InboundProcessorService)) private readonly inboundProcessor: InboundProcessorService,
-    @Inject(forwardRef(() => CiaRuntimeService)) private readonly ciaRuntime: CiaRuntimeService,
+    @Inject(forwardRef(() => INBOUND_PROCESSOR)) private readonly inboundProcessor: IInboundProcessor,
+    @Inject(forwardRef(() => CIA_RUNTIME)) private readonly ciaRuntime: ICiaRuntime,
     private readonly workerRuntime: WorkerRuntimeService,
     @InjectRedis() private readonly redis: Redis,
     private readonly agentEvents: AgentEventsService,
-    @Inject(forwardRef(() => WhatsappCatchupHistoryService)) private readonly history: WhatsappCatchupHistoryService,
+    @Inject(forwardRef(() => CATCHUP_HISTORY)) private readonly history: ICatchupHistory,
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 

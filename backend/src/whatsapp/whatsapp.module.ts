@@ -4,9 +4,10 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { BillingModule } from '../billing/billing.module';
 import { CrmModule } from '../crm/crm.module';
 import { InboxModule } from '../inbox/inbox.module';
-import { KloelModule } from '../kloel/kloel.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { WorkspaceModule } from '../workspaces/workspace.module';
+
+const { KloelModule } = require('../kloel/kloel.module');
 import { AccountAgentService } from './account-agent.service';
 import { AgentEventsService } from './agent-events.service';
 import { CiaBacklogRunService } from './cia-backlog-run.service';
@@ -39,6 +40,12 @@ import { WhatsappMessageDispatcherService } from './whatsapp-message-dispatcher.
 import { WhatsappMediaService } from './whatsapp-media.service';
 import { WhatsappReconcilerService } from './whatsapp-reconciler.service';
 import { WorkerRuntimeService } from './worker-runtime.service';
+import {
+  WHATSAPP_MESSAGING,
+  INBOUND_PROCESSOR,
+  CIA_RUNTIME,
+  CATCHUP_HISTORY,
+} from './whatsapp.tokens';
 
 /** Whatsapp module. */
 @Module({
@@ -87,23 +94,20 @@ import { WorkerRuntimeService } from './worker-runtime.service';
     CiaSendHelpersService,
     AccountAgentService,
     WorkerRuntimeService,
+    { provide: WHATSAPP_MESSAGING, useExisting: WhatsappService },
+    { provide: INBOUND_PROCESSOR, useExisting: InboundProcessorService },
+    { provide: CIA_RUNTIME, useExisting: CiaRuntimeService },
+    { provide: CATCHUP_HISTORY, useExisting: WhatsappCatchupHistoryService },
   ],
   exports: [
     WhatsappService,
-    WhatsappSessionService,
-    WhatsappMessageDispatcherService,
-    WhatsappMediaService,
-    WhatsappReconcilerService,
+    WHATSAPP_MESSAGING,
     InboundProcessorService,
-    WhatsAppApiProvider,
-    WahaProvider,
-    WhatsAppProviderRegistry,
-    WhatsAppWatchdogService,
-    WhatsAppWatchdogRecoveryService,
-    WhatsAppWatchdogSessionService,
-    WhatsAppCatchupService,
-    WhatsappCatchupOrchestratorService,
+    INBOUND_PROCESSOR,
+    CiaRuntimeService,
+    CIA_RUNTIME,
     WhatsappCatchupHistoryService,
+    CATCHUP_HISTORY,
     AgentEventsService,
     CiaChatFilterService,
     CiaRuntimeService,

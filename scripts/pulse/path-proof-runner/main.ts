@@ -1,71 +1,14 @@
-import type { PulseExecutionMatrix, PulseExecutionMatrixPath } from '../types.execution-matrix';
+import type { PulseExecutionMatrix } from '../types.execution-matrix';
 import type {
   PathCoverageEntry,
-  PathCoverageExpectedEvidence,
   PathCoverageState,
 } from '../types.path-coverage-engine';
 import { ensureDir, pathExists, readJsonFile, writeTextFile } from '../safe-fs';
 import { safeJoin } from '../safe-path';
 import { isTerminalProofCandidate, buildPathProofTask } from './task-builders';
 import { loadGovernanceBoundary } from '../scope-state-classify';
-
-export type PathProofTaskMode =
-  | 'endpoint'
-  | 'ui'
-  | 'worker'
-  | 'webhook'
-  | 'function'
-  | 'not_executable'
-  | 'human_required';
-
-export interface PathProofTaskArtifactLink {
-  artifactPath: string;
-  relationship:
-    | 'source_matrix'
-    | 'coverage_state'
-    | 'probe_blueprint'
-    | 'observed_evidence'
-    | 'proof_task_plan';
-}
-
-export interface PathProofTask {
-  taskId: string;
-  pathId: string;
-  capabilityId: string | null;
-  flowId: string | null;
-  mode: PathProofTaskMode;
-  status: 'planned';
-  executed: false;
-  coverageCountsAsObserved: false;
-  autonomousExecutionAllowed: boolean;
-  command: string;
-  reason: string;
-  sourceStatus: PulseExecutionMatrixPath['status'];
-  risk: PulseExecutionMatrixPath['risk'];
-  entrypoint: PulseExecutionMatrixPath['entrypoint'];
-  breakpoint: PulseExecutionMatrixPath['breakpoint'];
-  expectedEvidence: PathCoverageExpectedEvidence[];
-  artifactLinks: PathProofTaskArtifactLink[];
-}
-
-export interface PathProofPlan {
-  generatedAt: string;
-  summary: {
-    terminalWithoutObservedEvidence: number;
-    plannedTasks: number;
-    executableTasks: number;
-    humanRequiredTasks: number;
-    notExecutableTasks: number;
-  };
-  tasks: PathProofTask[];
-}
-
-export interface BuildPathProofPlanInput {
-  matrix?: PulseExecutionMatrix;
-  pathCoverage?: PathCoverageState;
-  generatedAt?: string;
-  writeArtifact?: boolean;
-}
+import type { PathProofTaskMode, PathProofTaskArtifactLink, PathProofTask, PathProofPlan, BuildPathProofPlanInput } from './types';
+export type { PathProofTaskMode, PathProofTaskArtifactLink, PathProofTask, PathProofPlan, BuildPathProofPlanInput };
 
 const OUTPUT_ARTIFACT = '.pulse/current/PULSE_PATH_PROOF_TASKS.json';
 const MATRIX_ARTIFACT = '.pulse/current/PULSE_EXECUTION_MATRIX.json';

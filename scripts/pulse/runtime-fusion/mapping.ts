@@ -1,14 +1,10 @@
 import { tokenize, unique } from '../signal-normalizers';
 import { deriveUnitValue } from '../dynamic-reality-kernel/catalog-arithmetic';
-import { discoverSignalSeverityLabels } from '../dynamic-reality-kernel/type-contract-engines';
-import type { RuntimeSignal, SignalSeverity } from '../types.runtime-fusion';
+import type { RuntimeSignal } from '../types.runtime-fusion';
 import {
-  ACTION_BLOCK_DEPLOY,
-  ACTION_BLOCK_MERGE,
-  bound01,
   normalizePathSeparators,
-} from './helpers';
-import { TREND_LABELS } from './parsing';
+} from './fusion-shared';
+export { computeImpactScore } from './fusion-shared';
 
 // ─── Mapping Signals to Capabilities ────────────────────────────────────────
 
@@ -107,40 +103,4 @@ export function mapCapabilitiesFromFlows(
       .filter((flow) => signal.affectedFlowIds.includes(flow.id))
       .flatMap((flow) => flow.capabilityIds ?? []),
   );
-}
-
-// ─── Impact Score Computation ───────────────────────────────────────────────
-
-/**
- * Compute an impact score (0..1) for a runtime signal based on observed load,
- * users, trend, and action semantics. Severity only contributes ordinal
- * pressure; it is not a fixed authority table.
- *
- * @param signal - The runtime signal to score.
- * @returns Impact score in the range 0..1.
- */
-export function computeImpactScore(signal: RuntimeSignal): number {
-  return deriveMagnitude(signal);
-}
-
-function deriveMagnitude(signal: RuntimeSignal): number {
-  let levels: SignalSeverity[] = [...discoverSignalSeverityLabels()]
-    .slice()
-    .reverse() as SignalSeverity[];
-  let ordinal = levels.indexOf(signal.severity);
-  let ordinalForce =
-    ordinal >= 0 ? (ordinal + deriveUnitValue()) / levels.length : signal.impactScore;
-  let freqLog = Math.log10(Math.max(signal.frequency, deriveUnitValue()) + deriveUnitValue());
-  let userLog = Math.log10(Math.max(signal.affectedUsers, deriveUnitValue()) + deriveUnitValue());
-  let worseningLabel = [...TREND_LABELS].find((l) => l === 'worsening')!;
-  let improvingLabel = [...TREND_LABELS].find((l) => l === 'improving')!;
-  let trendForce =
-    signal.trend === worseningLabel ? 0.2 : signal.trend === improvingLabel ? -0.1 : 0;
-  let actionForce =
-    signal.action === ACTION_BLOCK_DEPLOY ? 0.25 : signal.action === ACTION_BLOCK_MERGE ? 0.15 : 0;
-
-  let observedMagnitude = (freqLog + userLog) / Math.max(freqLog + userLog, 12);
-  let raw = observedMagnitude + ordinalForce * 0.2 + trendForce + actionForce;
-
-  return bound01(raw);
 }

@@ -1,5 +1,5 @@
-import type { PulseSignalDraft } from './signal-parsers';
-import { normalizeSignalDraft } from './signal-parsers';
+import type { PulseSignalDraft } from './signal-parsers.types';
+import { normalizeSignalDraft } from './signal-parsers.types';
 import {
   asArray,
   asObject,

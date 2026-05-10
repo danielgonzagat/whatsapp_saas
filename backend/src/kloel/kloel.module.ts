@@ -57,10 +57,13 @@ import { KycModule } from '../kyc/kyc.module';
 import { FraudModule } from '../payments/fraud/fraud.module';
 import { MetricsModule } from '../metrics/metrics.module';
 import { PartnershipsModule } from '../partnerships/partnerships.module';
-import { WebhooksModule } from '../webhooks/webhooks.module';
+import { PartnershipsModule } from '../partnerships/partnerships.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { WalletModule } from '../wallet/wallet.module';
 import { WhatsappModule } from '../whatsapp/whatsapp.module';
+import { InboxModule } from '../inbox/inbox.module';
+import { WebhooksService } from '../webhooks/webhooks.service';
+import { WebhookDispatcherService } from '../webhooks/webhook-dispatcher.service';
 import { AdRulesEngineService } from './ad-rules-engine.service';
 import { AdRulesController } from './ad-rules.controller';
 import { CanvasController } from './canvas.controller';
@@ -119,8 +122,9 @@ import { WebinarController } from './webinar.controller';
     FraudModule,
     PartnershipsModule,
     MetricsModule,
+    PartnershipsModule,
     KloelAudioModule,
-    forwardRef(() => WebhooksModule),
+    InboxModule,
   ],
   controllers: [
     KloelController,
@@ -213,6 +217,8 @@ import { WebinarController } from './webinar.controller';
     AdRulesEngineService,
     EmailCampaignService,
     CartRecoveryService,
+    WebhooksService,
+    WebhookDispatcherService,
   ],
   exports: [
     KloelService,

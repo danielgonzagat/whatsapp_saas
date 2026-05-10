@@ -9,7 +9,8 @@ import { CIA_SHARED_REPLY_LOCK_MS, CiaSendHelpersService } from './cia-send-help
 import { WhatsAppProviderRegistry } from './providers/provider-registry';
 import { WahaChatSummary } from './providers/whatsapp-api.provider';
 import { extractPhoneFromChatId as normalizePhoneFromChatId } from './whatsapp-normalization.util';
-import { WhatsappService } from './whatsapp.service';
+import { WHATSAPP_MESSAGING } from './whatsapp.tokens';
+import type { IWhatsappMessaging } from './whatsapp.interfaces';
 import type { BacklogMode } from './cia-remote-backlog.helpers';
 import { loadRemotePendingBatchHelper } from './cia-remote-backlog.helpers';
 
@@ -31,8 +32,8 @@ export class CiaRemoteBacklogService {
     private readonly sendHelpers: CiaSendHelpersService,
     @Inject(forwardRef(() => UnifiedAgentService))
     private readonly unifiedAgent: UnifiedAgentService,
-    @Inject(forwardRef(() => WhatsappService))
-    private readonly whatsappService: WhatsappService,
+    @Inject(forwardRef(() => WHATSAPP_MESSAGING))
+    private readonly whatsappService: IWhatsappMessaging,
   ) {}
 
   async listRemotePendingChats(

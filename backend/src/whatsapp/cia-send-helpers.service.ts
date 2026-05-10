@@ -3,7 +3,8 @@ import { Inject, Injectable, Logger, Optional, forwardRef } from '@nestjs/common
 import type Redis from 'ioredis';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { AgentEventsService } from './agent-events.service';
-import { WhatsappService } from './whatsapp.service';
+import { WHATSAPP_MESSAGING } from './whatsapp.tokens';
+import type { IWhatsappMessaging } from './whatsapp.interfaces';
 
 const WHITESPACE_G_RE = /\s+/g;
 const PATTERN_RE = /[?!.;,]+$/g;
@@ -44,8 +45,8 @@ export class CiaSendHelpersService {
   constructor(
     @InjectRedis() private readonly redis: Redis,
     private readonly agentEvents: AgentEventsService,
-    @Inject(forwardRef(() => WhatsappService))
-    private readonly whatsappService: WhatsappService,
+    @Inject(forwardRef(() => WHATSAPP_MESSAGING))
+    private readonly whatsappService: IWhatsappMessaging,
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 

@@ -4,10 +4,9 @@ import type {
   PathProofEvidenceFreshness,
   PathProofObservedEvidenceLink,
   PathProofEvidenceEntry,
-} from './main';
+} from './types';
+import { PATH_PROOF_EVIDENCE_ARTIFACT } from './types';
 import type { PathProofTask } from '../path-proof-runner/main';
-
-const PATH_PROOF_EVIDENCE_ARTIFACT = '.pulse/current/PULSE_PATH_PROOF_EVIDENCE.json';
 
 function isPassFailStatus(status: PathProofRunnerResult['status']): boolean {
   return status === 'pass' || status === 'passed' || status === 'fail' || status === 'failed';
@@ -227,7 +226,7 @@ export function summarize(
   plan: import('../path-proof-runner/main').PathProofPlan,
   runnerResults: PathProofRunnerResult[],
   tasks: PathProofEvidenceEntry[],
-): import('../path-proof-evidence/main').PathProofEvidenceArtifact['summary'] {
+): import('../path-proof-evidence/types').PathProofEvidenceArtifact['summary'] {
   return {
     totalTasks: tasks.length,
     runnerResults: runnerResults.length,

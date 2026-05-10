@@ -1,8 +1,9 @@
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Inject, Injectable, Logger, Optional, forwardRef } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { forEachSequential } from '../common/async-sequence';
 import { OpsAlertService } from '../observability/ops-alert.service';
-import { InboxService } from '../inbox/inbox.service';
+import { INBOX_SERVICE } from '../inbox/inbox.token';
+import type { IInboxService } from '../inbox/inbox.interface';
 import { PrismaService } from '../prisma/prisma.service';
 import { type ProviderSettings } from './provider-settings.types';
 import { WhatsAppProviderRegistry } from './providers/provider-registry';
@@ -50,7 +51,7 @@ export class WhatsappCatchupHistoryService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly providerRegistry: WhatsAppProviderRegistry,
-    private readonly inbox: InboxService,
+    @Inject(forwardRef(() => INBOX_SERVICE)) private readonly inbox: IInboxService,
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 

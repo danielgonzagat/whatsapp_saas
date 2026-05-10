@@ -2,7 +2,7 @@
  * Runtime signal parsers: sentry, datadog, prometheus.
  * Companion to signal-parsers.ts — handles observability-platform sources.
  */
-import type { PulseSignalDraft } from './signal-parsers';
+import type { PulseSignalDraft } from './signal-parsers.types';
 import {
   asObject,
   asArray,

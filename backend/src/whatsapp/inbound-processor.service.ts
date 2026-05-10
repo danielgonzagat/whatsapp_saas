@@ -2,16 +2,18 @@ import { InjectRedis } from '@nestjs-modules/ioredis';
 import { Inject, Injectable, Logger, Optional, forwardRef } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import Redis from 'ioredis';
-import { InboxService } from '../inbox/inbox.service';
+import { INBOX_SERVICE } from '../inbox/inbox.token';
+import type { IInboxService } from '../inbox/inbox.interface';
 import { UnifiedAgentService } from '../kloel/unified-agent.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { buildQueueDedupId, buildQueueJobId } from '../queue/job-id.util';
 import { autopilotQueue, flowQueue, voiceQueue } from '../queue/queue';
 import { AccountAgentService } from './account-agent.service';
-import { getDefaultContent, mapMessageType, normalizePhone } from './inbound-processor.helpers';
+import { InboundMessage, getDefaultContent, mapMessageType } from './inbound-processor.helpers';
 import { isPlaceholderContactName as isPlaceholderContactNameValue } from './whatsapp-normalization.util';
-import { WhatsappService } from './whatsapp.service';
+import { WHATSAPP_MESSAGING } from './whatsapp.tokens';
+import type { IWhatsappMessaging } from './whatsapp.interfaces';
 import { WorkerRuntimeService } from './worker-runtime.service';
 import { asProviderSettings, type ProviderSettings } from './provider-settings.types';
 import type { ContactCustomFields } from '../contacts/contact-custom-fields.types';
@@ -57,12 +59,12 @@ export class InboundProcessorService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly inbox: InboxService,
+    @Inject(forwardRef(() => INBOX_SERVICE)) private readonly inbox: IInboxService,
     @InjectRedis() private readonly redis: Redis,
     private readonly accountAgent: AccountAgentService,
     private readonly workerRuntime: WorkerRuntimeService,
     private readonly unifiedAgent: UnifiedAgentService,
-    @Inject(forwardRef(() => WhatsappService)) private readonly whatsappService: WhatsappService,
+    @Inject(forwardRef(() => WHATSAPP_MESSAGING)) private readonly whatsappService: IWhatsappMessaging,
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 

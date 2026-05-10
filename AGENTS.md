@@ -293,30 +293,19 @@ O estado de rigor maximo do Codacy faz parte da governance.
 <claude-mem-context>
 # Memory Context
 
-# [whatsapp_saas] recent context, 2026-05-10 4:31pm GMT-3
+# [whatsapp_saas] recent context, 2026-05-10 5:51pm GMT-3
 
 Legend: 🎯session 🔴bugfix 🟣feature 🔄refactor ✅change 🔵discovery ⚖️decision
 Format: ID TIME TYPE TITLE
 Fetch details: get_observations([IDs]) | Search: mem-search skill
 
-Stats: 50 obs (19,053t read) | 821,139t work | 98% savings
+Stats: 50 obs (19,917t read) | 628,671t work | 97% savings
 
 ### May 7, 2026
-390 1:08p 🔵 Apple Auth Env Var Resolution Chain — backend/src/auth/apple-auth.service.ts
-391 " 🔵 Meta Per-Channel Config ID Env Var Mapping and TikTok Technical Leakage in MarketingView
-393 " 🔴 TikTok Marketing UI — Technical Identifiers and Env Var Names Removed from Operator Screen
-394 " 🟣 Railway Backend Production Variables Bulk Upsert — MIND + Meta + TikTok Config Vars
-414 1:15p 🔴 WhatsAppExperience ConnectedCelebration — Raw Unicode Checkmark Replaced with Lucide Icon
-415 " ✅ KLOEL_MIND_OMNICHANNEL_DELIVERY_REPORT.md — Blocker List Reduced and Railway API Status Updated
-416 " 🔵 Frontend Validation — TypeCheck Clean, 27 Tests Passing Across 4 Critical Suites
-417 1:16p 🔵 Backend Build + Mind/Brain Test Suite — 20 Suites, 123 Tests All Passing
-418 " 🔵 MIND Decision Types — Both `cia_aggressiveness` and `followup_timing` Are Real, Distinct Decision Types
-419 " 🔵 Pre-Commit Hook Blocks Commit — 6 Architecture Violations in 109-File Staged Changeset
 430 1:19p 🔵 MIND Module Complete File Inventory — 17 Backend Services + 4 Admin + Frontend Hooks Verified
 431 " 🔵 Apple Service ID `com.kloel.web` — Only in Test Fixtures, Never in Production Code
 432 " 🔴 admin-mind.service.ts Trailing Whitespace Fixed — git diff --check Now Passes
 433 " 🔵 Frontend-Admin Also Uses Canonical Mushroom SVG — 3 References Found
-434 " 🔵 Pre-Commit Architecture Gate Flags `expect.any()` as Explicit Any — False Positive Pattern
 ### May 9, 2026
 627 3:42p 🔵 Obsidian Mirror Debug Session Boot — Workspace State Snapshot
 633 3:45p 🔵 Obsidian Mirror Real-Time Sync Investigation Initiated — RAM and Graph Staleness Bugs Scoped
@@ -353,8 +342,20 @@ Stats: 50 obs (19,053t read) | 821,139t work | 98% savings
 689 " 🔵 Daemon Stabilized at 144MB RSS After Multiple Restarts — 192MB Threshold Working
 691 4:29p 🔴 Duplicate Daemon Instances Killed — Two Watchdog Trees Running Simultaneously
 695 4:30p 🔵 Obsidian Mirror Daemon Stable at 40MB RSS — Clean Single-Watchdog Configuration Confirmed
+### May 10, 2026
+706 5:43p 🔵 Kloel Project — AI Constitution Anti-Cheat Gate System
+708 5:45p 🔵 check-ai-constitution.mjs Full Architecture — Three Enforcement Pillars
+709 " 🔵 kloel-ai-constitution.json — Full Content of the Machine-Readable Constitution
+710 " 🔵 Governance Approval System — ops/governance-change-approvals.json Is Currently Empty
+711 " 🔵 Current Repo State — Branch chore/purga-total-debt with 804 Deletions Across PULSE Scripts
+715 5:49p 🔵 Kloel AI Constitution System — Existing Gate Architecture Mapped
+722 " 🟣 New Worktree Created — chore/ai-constitution-convergence-gates Branched from main
+723 " 🔵 check-ai-constitution.mjs — Full Implementation Architecture Mapped
+724 " 🔵 ops/kloel-ai-constitution.json — Declarative Constitution Full Content Mapped
+725 " 🔵 Kloel Governance Layer Full Stack — AGENTS.md, CLAUDE.md, CODEX.md, AGENT_RUNBOOK.md All Read
+726 " 🔵 Kloel Quality Gate Ecosystem — 30+ npm Scripts Form Multi-Layer Enforcement Pipeline
 
-Access 821k tokens of past work via get_observations([IDs]) or mem-search skill.
+Access 629k tokens of past work via get_observations([IDs]) or mem-search skill.
 </claude-mem-context>
 
 ## PULSE Auditor Immutability

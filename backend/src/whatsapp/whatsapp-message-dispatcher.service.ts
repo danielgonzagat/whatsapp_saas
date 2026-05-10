@@ -2,8 +2,10 @@ import { randomInt, randomUUID } from 'node:crypto';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import {
   ForbiddenException,
+  Inject,
   Injectable,
   Optional,
+  forwardRef,
 } from '@nestjs/common';
 import Redis from 'ioredis';
 import { PlanLimitsService } from '../billing/plan-limits.service';
@@ -12,7 +14,8 @@ import { OpsAlertService } from '../observability/ops-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { flowQueue } from '../queue/queue';
 import { WorkspaceService } from '../workspaces/workspace.service';
-import { InboxService } from '../inbox/inbox.service';
+import { INBOX_SERVICE } from '../inbox/inbox.token';
+import type { IInboxService } from '../inbox/inbox.interface';
 import { WhatsAppProviderRegistry } from './providers/provider-registry';
 import { WorkerRuntimeService } from './worker-runtime.service';
 import { WhatsappSessionService } from './whatsapp-session.service';
@@ -29,7 +32,7 @@ export class WhatsappMessageDispatcherService {
     private readonly workspaces: WorkspaceService,
     private readonly prisma: PrismaService,
     private readonly providerRegistry: WhatsAppProviderRegistry,
-    private readonly inbox: InboxService,
+    @Inject(forwardRef(() => INBOX_SERVICE)) private readonly inbox: IInboxService,
     private readonly workerRuntime: WorkerRuntimeService,
     private readonly sessionService: WhatsappSessionService,
     @InjectRedis() private readonly redis: Redis,

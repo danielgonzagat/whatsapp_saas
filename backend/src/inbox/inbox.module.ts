@@ -9,6 +9,7 @@ import { InboxGateway } from './inbox.gateway';
 import { InboxService } from './inbox.service';
 import { OmnichannelService } from './omnichannel.service';
 import { SmartRoutingService } from './smart-routing.service';
+import { INBOX_SERVICE } from './inbox.token';
 
 /** Inbox module. */
 @Module({
@@ -24,12 +25,13 @@ import { SmartRoutingService } from './smart-routing.service';
   controllers: [InboxController],
   providers: [
     InboxService,
+    { provide: INBOX_SERVICE, useExisting: InboxService },
     InboxGateway,
     SmartRoutingService,
     OmnichannelService,
     WebhookDispatcherService,
     InboxEventsService,
   ],
-  exports: [InboxService, InboxGateway, SmartRoutingService, OmnichannelService],
+  exports: [InboxService, INBOX_SERVICE, InboxGateway, SmartRoutingService, OmnichannelService],
 })
 export class InboxModule {}

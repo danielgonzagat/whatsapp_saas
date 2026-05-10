@@ -1,4 +1,4 @@
-import type { InboxService } from '../inbox/inbox.service';
+import type { IInboxService } from '../inbox/inbox.interface';
 import type { PrismaService } from '../prisma/prisma.service';
 import type { UnifiedAgentService } from '../kloel/unified-agent.service';
 import type { AccountAgentService } from './account-agent.service';
@@ -59,7 +59,7 @@ export interface InboundMessage {
 
 export type ProcessDeps = {
   prisma: PrismaService;
-  inbox: InboxService;
+  inbox: IInboxService;
   redis: Redis;
   accountAgent: AccountAgentService;
   workerRuntime: WorkerRuntimeService;

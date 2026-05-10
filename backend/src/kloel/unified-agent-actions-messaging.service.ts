@@ -1,5 +1,6 @@
 import { Inject, Injectable, Logger, forwardRef, Optional } from '@nestjs/common';
-import { WhatsappService } from '../whatsapp/whatsapp.service';
+import { WHATSAPP_MESSAGING } from '../whatsapp/whatsapp.tokens';
+import type { IWhatsappMessaging } from '../whatsapp/whatsapp.interfaces';
 import { AudioService } from './audio.service';
 import type { ToolArgs } from './unified-agent.types';
 import { OpsAlertService } from '../observability/ops-alert.service';
@@ -15,8 +16,8 @@ export class UnifiedAgentActionsMessagingService {
   private readonly logger = new Logger(UnifiedAgentActionsMessagingService.name);
 
   constructor(
-    @Inject(forwardRef(() => WhatsappService))
-    private readonly whatsappService: WhatsappService,
+    @Inject(forwardRef(() => WHATSAPP_MESSAGING))
+    private readonly whatsappService: IWhatsappMessaging,
     private readonly audioService: AudioService,
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}

@@ -6,7 +6,7 @@ import {
   deriveZeroValue,
 } from '../dynamic-reality-kernel/catalog-arithmetic';
 import type { OtelSpan } from '../types.otel-runtime';
-import type { AstGraphContext, StructuralGraphContext } from './generation';
+import type { AstGraphContext, StructuralGraphContext } from './types';
 import {
   stableHex,
   stableNumber,

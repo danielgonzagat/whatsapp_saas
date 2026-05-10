@@ -2,15 +2,19 @@ import * as path from 'path';
 import * as fs from 'node:fs';
 import * as ts from 'typescript';
 import {
+  splitIdentifierTokensFromObservedName,
+  hashStringToObservedSeed,
   deriveUnitValue,
   deriveZeroValue,
   deriveHttpStatusFromObservedCatalog,
   deriveCatalogPercentScaleFromObservedCatalog,
   observeStatusTextLengthFromCatalog,
-} from './catalog-arithmetic';
+} from './catalog-token-shared';
 import { deriveStringUnionMembersFromTypeContract } from './type-contract-labels';
 import { discoverConvergenceRiskLevelLabels } from './type-contract-labels';
 import type { PulseConvergenceSource } from '../types.convergence';
+
+export { splitIdentifierTokensFromObservedName, hasObservedToken, hashStringToObservedSeed } from './catalog-token-shared';
 
 // ── Enum discovery ─────────────────────────────────────────────────────────
 
@@ -51,44 +55,7 @@ export function deriveStringIdentitySeedsFromCandidate(
 }
 
 // ── Token utilities ────────────────────────────────────────────────────────
-
-export function splitIdentifierTokensFromObservedName(value: string): Set<string> {
-  let tokens = new Set<string>();
-  let cur = '';
-  for (let ch of value) {
-    let up = ch >= 'A' && ch <= 'Z';
-    let lo = ch >= 'a' && ch <= 'z';
-    let dg = ch >= '0' && ch <= '9';
-    if (up && cur && cur.toLowerCase() === cur) {
-      tokens.add(cur.toLowerCase());
-      cur = '';
-    }
-    if (up || lo || dg) {
-      cur += ch;
-      continue;
-    }
-    if (cur) {
-      tokens.add(cur.toLowerCase());
-      cur = '';
-    }
-  }
-  if (cur) tokens.add(cur.toLowerCase());
-  tokens.add(value.toLowerCase());
-  return tokens;
-}
-
-export function hasObservedToken(tokens: Set<string>, values: string[]): boolean {
-  return values.some((v) => tokens.has(v));
-}
-
-export function hashStringToObservedSeed(value: string): number {
-  let hash = 0;
-  for (let i = 0; i < value.length; i++) {
-    hash = (hash << 5) - hash + value.charCodeAt(i);
-    hash |= 0;
-  }
-  return Math.abs(hash);
-}
+// (splitIdentifierTokensFromObservedName, hasObservedToken, hashStringToObservedSeed are in catalog-token-shared.ts)
 
 // ── Break type patterns ────────────────────────────────────────────────────
 

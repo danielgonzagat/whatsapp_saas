@@ -26,24 +26,7 @@ import {
 
 // ─── AST Graph Context ────────────────────────────────────────────────────────
 
-export interface AstGraphContext {
-  edges: AstCallEdge[];
-  symbols: Map<
-    string,
-    {
-      name: string;
-      kind: string;
-      filePath: string;
-      httpMethod?: string | null;
-      routePath?: string | null;
-    }
-  >;
-}
-
-export interface StructuralGraphContext {
-  edges: PulseStructuralEdge[];
-  nodeFiles: Record<string, string>;
-}
+export { type AstGraphContext, type StructuralGraphContext } from './types';
 
 /**
  * Load the AST call graph from the canonical artifact directory.

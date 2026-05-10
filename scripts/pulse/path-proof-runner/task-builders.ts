@@ -9,7 +9,7 @@ import {
   normalizePath,
   type GovernanceBoundary,
 } from '../scope-state-classify';
-import type { PathProofTask, PathProofTaskMode } from './main';
+import type { PathProofTask, PathProofTaskMode } from './types';
 
 function hasPreciseTerminalReason(path: PulseExecutionMatrixPath): boolean {
   if (path.status === 'observed_pass' || path.status === 'observed_fail') {

@@ -6,7 +6,8 @@ import { PlanLimitsService } from '../billing/plan-limits.service';
 import { AuditService } from '../audit/audit.service';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { PrismaService } from '../prisma/prisma.service';
-import { WhatsappService } from '../whatsapp/whatsapp.service';
+import { WHATSAPP_MESSAGING } from '../whatsapp/whatsapp.tokens';
+import type { IWhatsappMessaging } from '../whatsapp/whatsapp.interfaces';
 import { chatCompletionWithFallback } from './openai-wrapper';
 import { forEachSequential } from '../common/async-sequence';
 import { UNIFIED_AGENT_TOOLS } from './unified-agent-tools-def';
@@ -63,8 +64,8 @@ export class UnifiedAgentService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
-    @Inject(forwardRef(() => WhatsappService))
-    private readonly whatsappService: WhatsappService,
+    @Inject(forwardRef(() => WHATSAPP_MESSAGING))
+    private readonly whatsappService: IWhatsappMessaging,
     private readonly planLimits: PlanLimitsService,
     private readonly auditService: AuditService,
     private readonly ctx: UnifiedAgentContextService,

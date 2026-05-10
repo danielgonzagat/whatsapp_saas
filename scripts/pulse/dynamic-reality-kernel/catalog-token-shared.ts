@@ -1,4 +1,4 @@
-import { METHODS, STATUS_CODES } from 'node:http';
+import { STATUS_CODES } from 'node:http';
 
 export { STATUS_CODES } from 'node:http';
 
@@ -18,6 +18,11 @@ export function deriveHttpStatusFromObservedCatalog(statusText: string): number 
 
 export function observeStatusTextLengthFromCatalog(statusCode: number): number {
   return STATUS_CODES[statusCode]?.length ?? deriveUnitValue();
+}
+
+export function deriveCatalogPercentScaleFromObservedCatalog(): number {
+  const okLen = observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('OK'));
+  return Math.max(deriveUnitValue(), okLen * deriveUnitValue());
 }
 
 export function splitIdentifierTokensFromObservedName(value: string): Set<string> {
