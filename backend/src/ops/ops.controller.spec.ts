@@ -22,7 +22,9 @@ jest.mock('bullmq', () => ({
 
 jest.mock('../queue/queue', () => ({
   queueRegistry: {
-    default: mockMainQueue,
+    get default() {
+      return mockMainQueue;
+    },
     notifications: { name: 'notifications', add: jest.fn() },
   },
   queueOptions: {
