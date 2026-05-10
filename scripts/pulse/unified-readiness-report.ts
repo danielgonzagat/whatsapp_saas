@@ -21,7 +21,6 @@ import { writeFileSync, readFileSync } from 'node:fs';
 import {
   safeRepoPath,
   readJsonOptional,
-  readJson,
   runAllRuntimeChecks,
   type RuntimeChecks,
 } from './readiness-runtime-checks';
@@ -287,6 +286,103 @@ function validateArtifactConsistency(verdicts: ArtifactVerdict[]): boolean {
 }
 
 // ---------------------------------------------------------------------------
+// Raw PULSE file types (actual on-disk schemas)
+// ---------------------------------------------------------------------------
+
+interface RawPulseHealth {
+  score: number;
+  totalNodes: number;
+  breaks: Array<{ type: string; severity: string; file: string; line: number; description: string }>;
+}
+
+interface RawPulseWorldState {
+  generatedAt: string;
+  actorProfiles: string[];
+  executedScenarios: string[];
+  pendingAsyncExpectations: string[];
+  entities: Record<string, unknown>;
+  asyncExpectationsStatus: Array<{
+    scenarioId: string;
+    expectation: string;
+    status: string;
+  }>;
+}
+
+interface RawPulseCodacyState {
+  version: number;
+  syncedAt: string;
+  totalIssues: number;
+  bySeverity: Record<string, number>;
+  byCategory: Record<string, number>;
+  repositorySummary: {
+    grade: number;
+    gradeLetter: string;
+    issuesCount: number;
+    issuesPercentage: number;
+  };
+}
+
+function adaptHealth(raw: RawPulseHealth | null, cert: PulseCertificate, generatedAt: string): PulseHealth {
+  const score = raw?.score ?? cert.score;
+  return {
+    generatedAt: raw ? cert.timestamp : generatedAt,
+    overall: { score, status: cert.status === 'CERTIFIED' ? 'HEALTHY' : 'PARTIAL', summary: {} },
+    observability: { score: 0, status: 'UNKNOWN', summary: {} },
+    certification: { status: cert.status, gaps: cert.criticalFailures },
+  };
+}
+
+function adaptWorldState(raw: RawPulseWorldState | null, generatedAt: string): PulseWorldState {
+  if (!raw) {
+    return { generatedAt, executedScenarios: [], pendingAsyncExpectations: [], asyncExpectationsStatus: [], sessions: [] };
+  }
+
+  const scenarioIds = new Set(raw.asyncExpectationsStatus.map((e) => e.scenarioId));
+  const sessions = Array.from(scenarioIds).map((sid) => {
+    const items = raw.asyncExpectationsStatus.filter((e) => e.scenarioId === sid);
+    const pending = items.filter((e) => e.status === 'pending').length;
+    const resolved = items.length - pending;
+    return {
+      kind: sid,
+      declaredScenarios: items.length,
+      executedScenarios: resolved,
+      passedScenarios: resolved,
+    };
+  });
+
+  return {
+    generatedAt: raw.generatedAt,
+    executedScenarios: raw.executedScenarios,
+    pendingAsyncExpectations: raw.pendingAsyncExpectations,
+    asyncExpectationsStatus: raw.asyncExpectationsStatus.map((e) => ({
+      scenarioId: e.scenarioId,
+      expectation: e.expectation,
+      status: e.status === 'pending' ? 'missing_evidence' : e.status,
+    })),
+    sessions,
+  };
+}
+
+function adaptCodacyState(raw: RawPulseCodacyState | null, generatedAt: string): PulseCodacyState {
+  if (!raw) {
+    return {
+      syncedAt: generatedAt,
+      totalIssues: 0,
+      bySeverity: { HIGH: 0, MEDIUM: 0, LOW: 0 },
+      byCategory: { Security: 0 },
+      repositorySummary: { grade: 0, gradeLetter: '?', issuesCount: 0, issuesPercentage: 0 },
+    };
+  }
+  return {
+    syncedAt: raw.syncedAt,
+    totalIssues: raw.totalIssues,
+    bySeverity: raw.bySeverity,
+    byCategory: raw.byCategory,
+    repositorySummary: raw.repositorySummary,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 
@@ -300,9 +396,9 @@ function main(): void {
   const codacyStatePath = safeRepoPath('PULSE_CODACY_STATE.json');
 
   const cert = readJsonOptional<PulseCertificate>(certPath);
-  const health = readJsonOptional<PulseHealth>(healthPath);
-  const worldState = readJsonOptional<PulseWorldState>(worldStatePath);
-  const codacyState = readJsonOptional<PulseCodacyState>(codacyStatePath);
+  const rawHealth = readJsonOptional<RawPulseHealth>(healthPath);
+  const rawWorldState = readJsonOptional<RawPulseWorldState>(worldStatePath);
+  const rawCodacyState = readJsonOptional<RawPulseCodacyState>(codacyStatePath);
 
   if (!cert) {
     console.error(`FATAL: Canonical source ${certPath} not found. Cannot generate readiness report.`);
@@ -321,29 +417,10 @@ function main(): void {
   console.log(`Score:            ${cert.score}/100`);
   console.log(`Gates:            ${Object.keys(cert.gates).filter((g) => cert.gates[g].status === 'pass').length}/${Object.keys(cert.gates).length} passing`);
 
-  // --------------- resolve supplemental data ---------------
-  const resolvedHealth: PulseHealth = health ?? {
-    generatedAt,
-    overall: { score: cert.score, status: cert.status, summary: {} },
-    observability: { score: 0, status: 'UNKNOWN', summary: {} },
-    certification: { status: cert.status, gaps: cert.criticalFailures },
-  };
-
-  const resolvedWorldState: PulseWorldState = worldState ?? {
-    generatedAt,
-    executedScenarios: [],
-    pendingAsyncExpectations: [],
-    asyncExpectationsStatus: [],
-    sessions: [],
-  };
-
-  const resolvedCodacyState: PulseCodacyState = codacyState ?? {
-    syncedAt: generatedAt,
-    totalIssues: 0,
-    bySeverity: { HIGH: 0, MEDIUM: 0, LOW: 0 },
-    byCategory: { Security: 0 },
-    repositorySummary: { grade: 0, gradeLetter: '?', issuesCount: 0, issuesPercentage: 0 },
-  };
+  // --------------- adapt real file data → builder-expected shapes ---------------
+  const resolvedHealth = adaptHealth(rawHealth, cert, generatedAt);
+  const resolvedWorldState = adaptWorldState(rawWorldState, generatedAt);
+  const resolvedCodacyState = adaptCodacyState(rawCodacyState, generatedAt);
 
   // --------------- artifact 2: final-production-checklist.json ---------------
   const categories: ChecklistCategory[] = buildChecklistCategories(
@@ -358,9 +435,9 @@ function main(): void {
     generatedAt,
     unifiedVerdict: verdict,
     sourceArtifacts: {
-      pulseHealth: health ? healthPath : '(missing)',
-      pulseWorldState: worldState ? worldStatePath : '(missing)',
-      pulseCodacyState: codacyState ? codacyStatePath : '(missing)',
+      pulseHealth: rawHealth ? healthPath : '(missing)',
+      pulseWorldState: rawWorldState ? worldStatePath : '(missing)',
+      pulseCodacyState: rawCodacyState ? codacyStatePath : '(missing)',
     },
     summary: checklistSummary,
     categories,

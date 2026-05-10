@@ -306,37 +306,10 @@ jobs:
   pulse-deep:
     needs: quality
     runs-on: ubuntu-latest
-    timeout-minutes: 35
-
-    services:
-      postgres:
-        image: pgvector/pgvector:pg15
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: password
-          POSTGRES_DB: whatsapp_saas_test
-        ports:
-          - 55432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 20
-
-      redis:
-        image: redis:7-alpine
-        ports:
-          - 56379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 20
+    timeout-minutes: 45
 
     env:
       PULSE_BACKEND_URL: http://localhost:3099
-      DATABASE_URL: postgresql://postgres:password@localhost:55432/whatsapp_saas_test
-      REDIS_URL: redis://localhost:56379
       JWT_SECRET: pulse-deep-ci-test-secret
       AUTH_OPTIONAL: 'true'
       OPENAI_API_KEY: e2e-dummy-key
@@ -362,84 +335,62 @@ jobs:
       - name: Build backend
         run: |
           npx prisma generate
-          npx prisma migrate deploy
           npm run build
         working-directory: backend
 
-      - name: Start backend on test port
-        run: |
-          NODE_ENV=production \
-          PORT=3099 \
-          DATABASE_URL="${DATABASE_URL}" \
-          REDIS_URL="${REDIS_URL}" \
-          JWT_SECRET="${JWT_SECRET}" \
-          AUTH_OPTIONAL=true \
-          ENABLE_LEGACY_BACKEND_AUTOPILOT=false \
-          GLOBAL_AUTONOMY_KILL_SWITCH=false \
-          ENABLE_LEGACY_AUTOPILOT_SCANNER=false \
-          OPENAI_API_KEY="${OPENAI_API_KEY}" \
-          node backend/dist/src/bootstrap.js > /tmp/pulse-backend.log 2>&1 &
-          echo $! > /tmp/pulse-backend.pid
-
-      - name: Wait for backend health
-        run: |
-          for i in {1..60}; do
-            if curl -sf http://localhost:3099/health/liveness >/dev/null 2>&1; then
-              echo "Backend healthy"
-              exit 0
-            fi
-            sleep 2
-          done
-          echo "Backend did not become healthy"
-          tail -n 100 /tmp/pulse-backend.log || true
-          exit 1
-
-      - name: Run PULSE with --deep flag
+      - name: Run PULSE deep triple-cycle (docker compose + 3x certify + assertions)
         env:
-          PULSE_CI_TIMEOUT_MS: '600000'
-          PULSE_DEEP: '1'
-          PULSE_BACKEND_URL: http://localhost:3099
-        run: npm run pulse:ci
-        continue-on-error: true
+          PULSE_CI_TIMEOUT_MS: '1800000'
+        run: node scripts/ops/run-pulse-deep-ci.mjs --triple-cycle
 
-      - name: Collect PULSE runtime evidence results
+      - name: Print assertion report
         if: always()
         run: |
-          echo "=== PULSE Runtime Evidence ==="
-          if [ -f PULSE_RUNTIME_EVIDENCE.json ]; then
-            cat PULSE_RUNTIME_EVIDENCE.json | node -e "
+          if [ -f PULSE_CERTIFICATE_ASSERTIONS.json ]; then
+            echo "=== Triple-Cycle Assertion Report ==="
+            cat PULSE_CERTIFICATE_ASSERTIONS.json | node -e "
               const d = JSON.parse(require('fs').readFileSync(0,'utf-8'));
-              console.log('Executed:', d.executed);
-              console.log('Probes executed:', d.probes?.filter(p=>p.executed).length ?? 0);
-              console.log('Probes passed:', d.probes?.filter(p=>p.status==='passed').length ?? 0);
-              console.log('Coverage:', d.runtime_evidence_coverage ?? '0%');
-            "
-          elif [ -f .pulse/current/PULSE_RUNTIME_EVIDENCE.json ]; then
-            cat .pulse/current/PULSE_RUNTIME_EVIDENCE.json | node -e "
-              const d = JSON.parse(require('fs').readFileSync(0,'utf-8'));
-              console.log('Executed:', d.executed);
-              console.log('Probes executed:', d.probes?.filter(p=>p.executed).length ?? 0);
-              console.log('Probes passed:', d.probes?.filter(p=>p.status==='passed').length ?? 0);
+              console.log('Overall:', d.overall);
+              console.log('Cycles:', d.cycles);
+              console.log('');
+              for (const [key, a] of Object.entries(d.assertions)) {
+                console.log(key + ':', a.passed ? 'PASS' : 'FAIL');
+                if (a.detail) console.log('  ' + a.detail);
+              }
+              console.log('');
+              for (const cd of (d.cycles_detail || [])) {
+                console.log('Cycle ' + cd.cycle + ': ' +
+                  'probes=' + cd.runtime_probes_executed + ' ' +
+                  'gates=' + cd.gates_passed + '/' + cd.gates_total + ' PASS ' +
+                  (cd.all_gates_pass ? '' : 'FAILING: ' + (cd.failing_gates || []).join(', ')));
+              }
             "
           else
-            echo 'No runtime evidence found.'
-          fi
-          echo "=== PULSE Certificate ==="
-          if [ -f PULSE_CERTIFICATE.json ]; then
-            node -e "
-              const d = JSON.parse(require('fs').readFileSync('PULSE_CERTIFICATE.json','utf-8'));
-              const mc = d.gates?.multiCycleConvergencePass;
-              if (mc) {
-                console.log('multiCycleConvergencePass:', mc.status, '-', mc.reason);
-              }
-              const runtime = d.gates?.runtimePass;
-              if (runtime) {
-                console.log('runtimePass:', runtime.status, '-', runtime.reason);
-              }
-            "
+            echo 'No assertion report found.'
           fi
 
-      - name: Upload PULSE deep artifacts
+      - name: Print certificate gate summary for each cycle
+        if: always()
+        run: |
+          for i in 1 2 3; do
+            cert="PULSE_CERTIFICATE_CYCLE_${i}.json"
+            if [ -f "$cert" ]; then
+              echo "=== $cert ==="
+              cat "$cert" | node -e "
+                const d = JSON.parse(require('fs').readFileSync(0,'utf-8'));
+                console.log('status:', d.status);
+                console.log('score:', d.score);
+                console.log('environment:', d.environment);
+                const failing = Object.entries(d.gates||{}).filter(([,g])=>g.status!=='pass').map(([n])=>n);
+                if (failing.length) console.log('failing_gates:', failing.join(', '));
+                else console.log('all gates PASS');
+              "
+            else
+              echo "$cert: not found"
+            fi
+          done
+
+      - name: Upload PULSE deep triple-cycle artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -450,19 +401,12 @@ jobs:
             PULSE_*
             PULSE_REPORT.md
             PULSE_CERTIFICATE.json
+            PULSE_CERTIFICATE_CYCLE_*.json
+            PULSE_CERTIFICATE_ASSERTIONS.json
             .pulse/current/PULSE_RUNTIME_EVIDENCE.json
             .pulse/current/PULSE_RUNTIME_PROBES.json
+            .pulse/current/PULSE_CERTIFICATE_CYCLE_*.json
           if-no-files-found: ignore
-
-      - name: Stop backend
-        if: always()
-        run: |
-          if [ -f /tmp/pulse-backend.pid ]; then
-            pid=$(cat /tmp/pulse-backend.pid)
-            kill "$pid" 2>/dev/null || true
-          fi
-          echo "--- backend.log ---"
-          tail -n 100 /tmp/pulse-backend.log || true
 
   e2e:
     needs: quality

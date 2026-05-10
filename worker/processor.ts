@@ -2,7 +2,13 @@ import { type Job, Worker } from 'bullmq';
 import { FlowEngineGlobal } from './flow-engine-global';
 import { WorkerLogger } from './logger';
 import { jobCounter, jobDuration } from './metrics';
-import { PlanLimitsProvider } from './providers/plan-limits';
+import {
+  checkFlowSubscription,
+  checkIdempotentCompletion,
+  executeResolvedFlow,
+  resolveFlowDefinition,
+  runSubscriptionAndRateGuards,
+} from './processor-flow-guards';
 import { autopilotQueue, buildQueueOptions, shutdownQueueSystem } from './queue';
 import './campaign-processor'; // Start Campaign Worker
 import './scraper-processor'; // Start Scraper Worker
@@ -26,6 +32,7 @@ import {
   markCompleted,
   startJob,
 } from './processor-base';
+import { checkAutopilotQueueHealth, startAutopilotHealthMonitor } from './processor-health-monitor';
 
 /**
  * =======================================================
@@ -94,71 +101,10 @@ if (SHOULD_SCHEDULE) {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Queue health monitor                                               */
+/*  Queue health monitor (extracted → processor-health-monitor.ts)      */
 /* ------------------------------------------------------------------ */
 
-const QUEUE_THRESHOLD =
-  Number.parseInt(process.env.AUTOPILOT_QUEUE_WAITING_THRESHOLD || '200', 10) || 200;
-const ALERT_WEBHOOK =
-  process.env.AUTOPILOT_ALERT_WEBHOOK || process.env.OPS_WEBHOOK_URL || process.env.DLQ_WEBHOOK_URL;
-let lastQueueAlert = 0;
-const QUEUE_ALERT_COOLDOWN_MS = 5 * 60_000;
-
-async function sendOpsAlert(message: string, meta: Record<string, unknown> = {}): Promise<void> {
-  if (!ALERT_WEBHOOK || typeof globalThis.fetch !== 'function') {
-    return;
-  }
-  try {
-    await globalThis.fetch(ALERT_WEBHOOK, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        type: 'autopilot_alert',
-        message,
-        meta,
-        at: new Date().toISOString(),
-        env: process.env.NODE_ENV || 'dev',
-      }),
-      signal: AbortSignal.timeout(10000),
-    });
-  } catch (err: unknown) {
-    log.warn('autopilot_alert_failed', { error: getErrorMessage(err) });
-  }
-}
-
-async function maybeAlertHighQueue(waiting: number, failed: number, now: number): Promise<void> {
-  if (waiting <= QUEUE_THRESHOLD || now - lastQueueAlert <= QUEUE_ALERT_COOLDOWN_MS) {
-    return;
-  }
-  lastQueueAlert = now;
-  log.warn('autopilot_queue_high', { waiting, failed, threshold: QUEUE_THRESHOLD });
-  await sendOpsAlert('Autopilot queue high', { waiting, failed, threshold: QUEUE_THRESHOLD });
-}
-
-async function maybeAlertFailedJobs(failed: number, waiting: number, now: number): Promise<void> {
-  if (failed <= 0 || now - lastQueueAlert <= QUEUE_ALERT_COOLDOWN_MS) {
-    return;
-  }
-  lastQueueAlert = now;
-  log.warn('autopilot_queue_failed', { failed, waiting });
-  await sendOpsAlert('Autopilot queue has failed jobs', { failed, waiting });
-}
-
-async function checkAutopilotQueueHealth(): Promise<void> {
-  try {
-    const counts = await autopilotQueue.getJobCounts();
-    const waiting = (counts.waiting || 0) + (counts.delayed || 0);
-    const failed = counts.failed || 0;
-    const now = Date.now();
-
-    await maybeAlertHighQueue(waiting, failed, now);
-    await maybeAlertFailedJobs(failed, waiting, now);
-  } catch (err: unknown) {
-    log.warn('autopilot_queue_monitor_error', { error: getErrorMessage(err) });
-  }
-}
-
-const autopilotMonitorInterval = setInterval(checkAutopilotQueueHealth, 60_000);
+const autopilotMonitorInterval = startAutopilotHealthMonitor(log);
 
 /* ------------------------------------------------------------------ */
 /*  Graceful shutdown                                                  */
@@ -185,110 +131,8 @@ process.on('SIGINT', () => {
 });
 
 /* ------------------------------------------------------------------ */
-/*  Flow guard helpers                                                 */
+/*  Flow guard helpers (extracted → processor-flow-guards.ts)          */
 /* ------------------------------------------------------------------ */
-
-type SkippedFlowResult = { ok: false; skipped: true; reason: string };
-
-async function checkFlowSubscription(
-  jobId: string | undefined,
-  workspaceId: string,
-): Promise<SkippedFlowResult | null> {
-  const subStatus = await PlanLimitsProvider.checkSubscriptionStatus(workspaceId);
-  if (subStatus.active) {
-    return null;
-  }
-  log.warn('flow_blocked_subscription', { jobId, workspaceId, reason: subStatus.reason });
-  return { ok: false, skipped: true, reason: subStatus.reason ?? 'subscription_inactive' };
-}
-
-async function checkFlowRateLimit(
-  jobId: string | undefined,
-  workspaceId: string,
-): Promise<SkippedFlowResult | null> {
-  const rate = await PlanLimitsProvider.checkFlowRunRate(workspaceId);
-  if (rate.allowed) {
-    return null;
-  }
-  log.warn('flow_blocked_rate', { jobId, workspaceId, reason: rate.reason });
-  return { ok: false, skipped: true, reason: rate.reason ?? 'rate_limited' };
-}
-
-async function resolveFlowDefinition(
-  job: Job,
-  flowId: string,
-  workspaceId: string | undefined,
-): Promise<Awaited<ReturnType<FlowEngineGlobal['loadFlow']>>> {
-  if (!job.data.flow?.nodes) {
-    return engine.loadFlow(flowId, workspaceId);
-  }
-  const flowDef = engine.parseFlowDefinition(
-    flowId || 'temp-run',
-    job.data.flow.nodes,
-    job.data.flow.edges,
-    job.data.workspace?.id || 'default',
-  );
-  if (job.data.startNode) {
-    flowDef.startNode = job.data.startNode;
-  }
-  return flowDef;
-}
-
-async function checkIdempotentCompletion(
-  jobId: Job['id'],
-  executionId: string | undefined,
-  workspaceId: string | undefined,
-): Promise<{ ok: true; skipped: true; reason: 'already_completed' } | null> {
-  if (!executionId) {
-    return null;
-  }
-  const existingExec = await engine.getExecution(executionId, workspaceId);
-  if (!existingExec) {
-    return null;
-  }
-  if (existingExec.status !== 'COMPLETED' && existingExec.status !== 'FAILED') {
-    return null;
-  }
-  log.warn('flow_already_completed', { jobId, executionId, status: existingExec.status });
-  return { ok: true, skipped: true, reason: 'already_completed' };
-}
-
-async function runSubscriptionAndRateGuards(
-  jobId: Job['id'],
-  workspaceId: string | undefined,
-  subscriptionChecked: boolean,
-): Promise<SkippedFlowResult | null> {
-  if (!subscriptionChecked && workspaceId) {
-    const blocked = await checkFlowSubscription(jobId, workspaceId);
-    if (blocked) {
-      return blocked;
-    }
-  }
-
-  if (workspaceId) {
-    const blocked = await checkFlowRateLimit(jobId, workspaceId);
-    if (blocked) {
-      return blocked;
-    }
-  }
-  return null;
-}
-
-async function executeResolvedFlow(
-  job: Job,
-  flowDef: Awaited<ReturnType<typeof resolveFlowDefinition>>,
-  user: string,
-  flowId: string | undefined,
-  initialVars: Parameters<typeof engine.startFlow>[2],
-  executionId: string | undefined,
-): Promise<void> {
-  if (flowDef) {
-    await engine.startFlow(user, flowDef, initialVars, executionId);
-    log.info('flow_completed', { jobId: job.id, flowId, user });
-  } else {
-    log.error('flow_not_found', { jobId: job.id, flowId });
-  }
-}
 
 /* ------------------------------------------------------------------ */
 /*  Job handler: run-flow                                              */
@@ -302,24 +146,23 @@ async function handleRunFlow(job: Job) {
   let workspaceId = job.data.workspaceId || workspace?.id;
   let subscriptionChecked = false;
 
-  // 1. Check Subscription Status (if workspace known)
   if (workspace?.id) {
     const blocked = await checkFlowSubscription(job.id, workspace.id);
     subscriptionChecked = true;
     if (blocked) {
+      log.warn('flow_blocked_subscription', { jobId: job.id, workspaceId: workspace.id, reason: blocked.reason });
       return blocked;
     }
   }
 
-  // Idempotency Check
-  const alreadyCompleted = await checkIdempotentCompletion(job.id, executionId, workspaceId);
+  const alreadyCompleted = await checkIdempotentCompletion(engine, job.id, executionId, workspaceId);
   if (alreadyCompleted) {
+    log.warn('flow_already_completed', { jobId: job.id, executionId, workspaceId, reason: alreadyCompleted.reason });
     return alreadyCompleted;
   }
 
-  const flowDef = await resolveFlowDefinition(job, flowId, workspaceId);
+  const flowDef = await resolveFlowDefinition(engine, job, flowId, workspaceId);
 
-  // Derive workspaceId if not provided
   if (!workspaceId && flowDef?.workspaceId) {
     workspaceId = flowDef.workspaceId;
   }
@@ -329,7 +172,7 @@ async function handleRunFlow(job: Job) {
     return guarded;
   }
 
-  await executeResolvedFlow(job, flowDef, user, flowId, initialVars, executionId);
+  await executeResolvedFlow(engine, log, job, flowDef, user, flowId, initialVars, executionId);
 
   return { ok: true };
 }
