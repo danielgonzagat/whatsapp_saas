@@ -1,9 +1,25 @@
-import { Body, Controller, Delete, Get, Param, Post, Request, UseGuards } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Request,
+  UploadedFile,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AuthenticatedRequest } from '../common/interfaces';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import {
+  ChannelArsenalUploadFile,
   ChannelSetupService,
+  isAllowedDeclaredArsenalMime,
   SaveArsenalInput,
   SaveConfigInput,
   SaveProductsInput,
@@ -29,11 +45,28 @@ export class ChannelSetupController {
   }
 
   @Post(':channel/arsenal')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: memoryStorage(),
+      limits: { fileSize: 25 * 1024 * 1024 },
+      fileFilter: (_req, file, callback) => {
+        if (isAllowedDeclaredArsenalMime(file.mimetype)) {
+          callback(null, true);
+          return;
+        }
+        callback(new BadRequestException('tipo_de_upload_nao_suportado'), false);
+      },
+    }),
+  )
   addArsenal(
     @Request() req: AuthenticatedRequest,
     @Param('channel') channel: string,
     @Body() body: SaveArsenalInput,
+    @UploadedFile() file?: ChannelArsenalUploadFile,
   ) {
+    if (file) {
+      return this.setup.addArsenalUpload(req.user.workspaceId, channel, body, file);
+    }
     return this.setup.addArsenal(req.user.workspaceId, channel, body);
   }
 

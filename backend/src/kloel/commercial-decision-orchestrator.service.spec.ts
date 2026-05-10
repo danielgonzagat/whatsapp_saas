@@ -94,8 +94,13 @@ describe('CommercialDecisionOrchestratorService', () => {
     expect(mind.resolveCoupon).toHaveBeenCalledWith('ws-1', 'over_300', 0.05, 'price_objection');
     expect(decision.actions).toEqual([
       {
-        tool: 'send_message',
-        args: { message: expect.stringContaining('coupon_10') },
+        tool: 'apply_discount',
+        args: expect.objectContaining({
+          couponDecision: expect.objectContaining({ action: 'coupon_10' }),
+          discountPercent: 10,
+          productOffer: undefined,
+          segment: 'price_objection',
+        }),
       },
     ]);
     expect(events.recordCommercial).toHaveBeenCalledWith(

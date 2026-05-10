@@ -63,6 +63,19 @@ export class MindController {
     return this.observability.state(workspaceId);
   }
 
+  @Get('runtime-evidence')
+  runtimeEvidenceByQuery(@Query('workspaceId') workspaceId?: string) {
+    if (!workspaceId?.trim()) {
+      throw new BadRequestException('workspaceId_required');
+    }
+    return this.observability.runtimeEvidence(workspaceId);
+  }
+
+  @Get(':workspaceId/runtime-evidence')
+  runtimeEvidence(@Param('workspaceId') workspaceId: string) {
+    return this.observability.runtimeEvidence(workspaceId);
+  }
+
   @Get(':workspaceId/surprise')
   surprise(@Param('workspaceId') workspaceId: string, @Query('take') take?: string) {
     return this.observability.surprise(workspaceId, take ? Number(take) : 50);

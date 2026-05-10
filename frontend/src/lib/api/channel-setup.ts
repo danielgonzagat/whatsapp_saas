@@ -54,12 +54,28 @@ export async function saveChannelProducts(channel: string, productIds: string[])
 
 export async function addChannelArsenal(
   channel: string,
-  asset: { type: string; label?: string; storageRef: string },
+  asset: { file?: File | null; label?: string; storageRef?: string; type: string },
 ) {
+  if (asset.file) {
+    const form = new FormData();
+    form.set('file', asset.file);
+    form.set('type', asset.type);
+    if (asset.label?.trim()) form.set('label', asset.label.trim());
+    return payload(
+      await apiFetch<ChannelSetupState>(`/channel-setup/${channel}/arsenal`, {
+        method: 'POST',
+        body: form,
+      }),
+    );
+  }
   return payload(
     await apiFetch<ChannelSetupState>(`/channel-setup/${channel}/arsenal`, {
       method: 'POST',
-      body: asset,
+      body: {
+        label: asset.label,
+        storageRef: asset.storageRef,
+        type: asset.type,
+      },
     }),
   );
 }

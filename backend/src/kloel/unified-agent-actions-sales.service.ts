@@ -1,4 +1,5 @@
 import { Injectable, Logger, Optional } from '@nestjs/common';
+import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { formatBrlAmount } from './money-format.util';
 import { UnifiedAgentActionsMessagingService } from './unified-agent-actions-messaging.service';
@@ -24,6 +25,36 @@ function describeUnknownError(error: unknown): string {
 
 function readString(value: unknown, fallback = ''): string {
   return typeof value === 'string' && value.trim() ? value.trim() : fallback;
+}
+
+function isRecord(value: unknown): value is UnknownRecord {
+  return typeof value === 'object' && value !== null;
+}
+
+function isDeterministicPipeline(context?: UnknownRecord): boolean {
+  return context?.deterministicPipeline === true;
+}
+
+function toJsonValue(value: unknown): Prisma.InputJsonValue | null {
+  if (value === null) return null;
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    return value;
+  }
+  if (Array.isArray(value)) {
+    const output: Prisma.InputJsonValue[] = [];
+    for (const item of value) {
+      output.push(toJsonValue(item));
+    }
+    return output;
+  }
+  if (isRecord(value)) {
+    const output: { [key: string]: Prisma.InputJsonValue | null } = {};
+    for (const [key, item] of Object.entries(value)) {
+      output[key] = toJsonValue(item);
+    }
+    return output;
+  }
+  return null;
 }
 
 function priceBandFor(price: number): string {
@@ -87,26 +118,45 @@ export class UnifiedAgentActionsSalesService {
         originalPrice = ((productData as UnknownRecord).price as number) || 0;
         productName = ((productData as UnknownRecord).name as string) || 'produto';
       }
-      const segment = readString(context?.segment, readString(args.stage, 'general'));
-      const priceBand = priceBandFor(originalPrice);
-      const productOffer = this.mind
-        ? await this.mind.resolveProductOffer(workspaceId, segment, 'discount', priceBand)
-        : null;
-      const couponDecision = this.mind
-        ? await this.mind.resolveCoupon(workspaceId, priceBand, 0, segment)
-        : null;
-      if (couponDecision?.action === 'no_coupon' || couponDecision?.action === 'human_negotiate') {
+      const predecided = isDeterministicPipeline(context);
+      const segment = readString(
+        args.segment,
+        readString(context?.segment, readString(args.stage, 'general')),
+      );
+      const priceBand = readString(args.priceBand, priceBandFor(originalPrice));
+      const productOffer = predecided
+        ? args.productOffer
+        : this.mind
+          ? await this.mind.resolveProductOffer(workspaceId, segment, 'discount', priceBand)
+          : null;
+      const couponDecision = predecided
+        ? args.couponDecision
+        : this.mind
+          ? await this.mind.resolveCoupon(workspaceId, priceBand, 0, segment)
+          : null;
+      const couponAction = isRecord(couponDecision) ? readString(couponDecision.action) : undefined;
+      const metaSource = predecided ? 'orchestrator_predecided' : 'legacy_action_decision';
+      const couponJson = toJsonValue(couponDecision);
+      const productJson = toJsonValue(productOffer);
+      if (couponAction === 'no_coupon' || couponAction === 'human_negotiate') {
         await this.prisma.autopilotEvent.create({
           data: {
             workspaceId,
             contactId,
             intent: 'NEGOTIATION',
             action:
-              couponDecision?.action === 'human_negotiate'
+              couponAction === 'human_negotiate'
                 ? 'DISCOUNT_HUMAN_NEGOTIATION'
                 : 'DISCOUNT_SKIPPED',
             status: 'completed',
-            meta: { priceBand, productOffer, couponDecision },
+            meta: {
+              priceBand,
+              productOffer: productJson,
+              couponDecision: couponJson,
+              decisionTraceId: args.decisionTraceId || null,
+              inboundCorrelationId: args.inboundCorrelationId || null,
+              source: metaSource,
+            },
           },
         });
         return {
@@ -116,10 +166,7 @@ export class UnifiedAgentActionsSalesService {
           mind: { couponDecision, productOffer },
         };
       }
-      const discountPercent = discountPercentFromMind(
-        couponDecision?.action,
-        requestedDiscountPercent,
-      );
+      const discountPercent = discountPercentFromMind(couponAction, requestedDiscountPercent);
       const discountContext = await this.buildDiscountGuardContext(workspaceId, {
         ...(context || {}),
         contactId,
@@ -160,7 +207,10 @@ export class UnifiedAgentActionsSalesService {
             finalPrice,
             productName,
             priceBand,
-            mind: { couponDecision, productOffer },
+            decisionTraceId: args.decisionTraceId || null,
+            inboundCorrelationId: args.inboundCorrelationId || null,
+            mind: { couponDecision: couponJson, productOffer: productJson },
+            source: metaSource,
           },
         },
       });
@@ -215,7 +265,7 @@ export class UnifiedAgentActionsSalesService {
     args: ToolArgs,
     context?: UnknownRecord,
   ) {
-    if (this.mind) {
+    if (this.mind && !isDeterministicPipeline(context)) {
       try {
         const segment = readString(context?.segment, readString(args.stage, 'general'));
         const concept = readString(args.objectionType, 'objection');

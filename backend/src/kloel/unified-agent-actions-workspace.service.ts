@@ -16,6 +16,18 @@ type UnknownRecord = Record<string, unknown>;
 
 const WHITESPACE_G_RE = /\s+/g;
 
+function isDeterministicPipeline(context?: UnknownRecord): boolean {
+  return context?.deterministicPipeline === true;
+}
+
+function readString(value: unknown, fallback = ''): string {
+  return typeof value === 'string' && value.trim() ? value.trim() : fallback;
+}
+
+function readRecord(value: unknown): UnknownRecord | null {
+  return typeof value === 'object' && value !== null ? (value as UnknownRecord) : null;
+}
+
 /**
  * Handles workspace, product, flow, and AI persona tool actions for the Unified Agent.
  * Analytics are in UnifiedAgentActionsBillingService;
@@ -235,22 +247,46 @@ export class UnifiedAgentActionsWorkspaceService {
   }
 
   // PULSE_OK: workspaceId validated by caller guard
-  async actionCreateBroadcast(workspaceId: string, args: ToolArgs) {
+  async actionCreateBroadcast(workspaceId: string, args: ToolArgs, context?: UnknownRecord) {
     const broadcastKey = `broadcast_${Date.now()}`;
     const segment = this.str(args.stage, 'general');
     const availableChannels = this.resolveBroadcastChannels(args);
-    const channelChoice = this.mind
-      ? await this.mind.resolveChannelChoice(
-          workspaceId,
-          availableChannels,
-          segment,
-          new Date().getHours(),
-          'broadcast',
-        )
-      : { channel: availableChannels[0] ?? 'whatsapp', confidence: 0, fallback: true };
-    const broadcastWindow = this.mind
-      ? await this.mind.resolveBroadcastWindow(workspaceId, channelChoice.channel, segment)
-      : { window: args.scheduleAt ? 'operator_fixed' : 'now', confidence: 0, fallback: true };
+    const predecided = isDeterministicPipeline(context);
+    const predecidedChannelChoice = readRecord(args.channelChoice);
+    const predecidedBroadcastWindow = readRecord(args.broadcastWindow);
+    const channelChoice = predecided
+      ? {
+          channel: readString(predecidedChannelChoice?.channel, availableChannels[0] ?? 'whatsapp'),
+          confidence:
+            typeof predecidedChannelChoice?.confidence === 'number'
+              ? predecidedChannelChoice.confidence
+              : 0,
+          fallback: predecidedChannelChoice?.fallback === true,
+        }
+      : this.mind
+        ? await this.mind.resolveChannelChoice(
+            workspaceId,
+            availableChannels,
+            segment,
+            new Date().getHours(),
+            'broadcast',
+          )
+        : { channel: availableChannels[0] ?? 'whatsapp', confidence: 0, fallback: true };
+    const broadcastWindow = predecided
+      ? {
+          window: readString(
+            predecidedBroadcastWindow?.window,
+            args.scheduleAt ? 'operator_fixed' : 'now',
+          ),
+          confidence:
+            typeof predecidedBroadcastWindow?.confidence === 'number'
+              ? predecidedBroadcastWindow.confidence
+              : 0,
+          fallback: predecidedBroadcastWindow?.fallback === true,
+        }
+      : this.mind
+        ? await this.mind.resolveBroadcastWindow(workspaceId, channelChoice.channel, segment)
+        : { window: args.scheduleAt ? 'operator_fixed' : 'now', confidence: 0, fallback: true };
     const scheduleAt = args.scheduleAt || this.resolveBroadcastScheduleAt(broadcastWindow.window);
     const broadcastContext = await this.buildBroadcastGuardContext(workspaceId, {
       campaignActive: true,
@@ -297,6 +333,9 @@ export class UnifiedAgentActionsWorkspaceService {
           status: 'pending',
           channel: channelChoice.channel,
           mind: { channelChoice, broadcastWindow },
+          source: predecided ? 'orchestrator_predecided' : 'legacy_action_decision',
+          decisionTraceId: args.decisionTraceId || null,
+          inboundCorrelationId: args.inboundCorrelationId || null,
           createdAt: new Date().toISOString(),
         },
       },
@@ -308,6 +347,7 @@ export class UnifiedAgentActionsWorkspaceService {
       channel: channelChoice.channel,
       scheduleAt,
       mind: { channelChoice, broadcastWindow },
+      source: predecided ? 'orchestrator_predecided' : 'legacy_action_decision',
       message: `Broadcast "${args.name}" criado para ${contactCount} contatos`,
     };
   }

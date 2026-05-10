@@ -51,6 +51,14 @@ function priceBandFor(text: string): string {
   return 'unknown';
 }
 
+function discountPercentFromCoupon(action?: string): number | undefined {
+  if (action === 'coupon_5') return 5;
+  if (action === 'coupon_10') return 10;
+  if (action === 'coupon_15') return 15;
+  if (action === 'coupon_20') return 20;
+  return undefined;
+}
+
 function buildReplyDraft(input: {
   aggressiveness: string;
   concept: string;
@@ -119,6 +127,7 @@ export class CommercialDecisionOrchestratorService {
       confidence: Number(row.confidence ?? 0),
     }));
     const concept = primaryConcept(conceptRows);
+    const decisionTraceId = inboundKey;
     const similarCases = await this.mind.retrieveSimilar({
       workspaceId: input.workspaceId,
       caseType: concept,
@@ -169,6 +178,7 @@ export class CommercialDecisionOrchestratorService {
     };
 
     let couponAction: string | undefined;
+    let couponDecision: Record<string, unknown> | undefined;
     if (hasConcept(conceptRows, 'price_objection')) {
       const coupon = await this.mind.resolveCoupon(input.workspaceId, priceBand, soldRate, concept);
       const objection = await this.mind.resolveObjectionResponse(
@@ -179,10 +189,12 @@ export class CommercialDecisionOrchestratorService {
       );
       decisions.coupon_offer = coupon;
       decisions.objection_response = objection;
+      couponDecision = coupon;
       couponAction = coupon.action;
     }
 
     let productOffer: string | undefined;
+    let productOfferDecision: Record<string, unknown> | undefined;
     if (hasConcept(conceptRows, 'imminent_purchase') || hasConcept(conceptRows, 'hot_lead')) {
       const product = await this.mind.resolveProductOffer(
         input.workspaceId,
@@ -191,42 +203,83 @@ export class CommercialDecisionOrchestratorService {
         priceBand,
       );
       decisions.product_offer = product;
+      productOfferDecision = product;
       productOffer = product.offer;
     }
 
+    let humanTransferDecision: Record<string, unknown> | undefined;
     if (hasConcept(conceptRows, 'trust_objection') || hasConcept(conceptRows, 'fatigue_risk')) {
       const transferConcept = hasConcept(conceptRows, 'trust_objection')
         ? 'trust_objection'
         : 'fatigue_risk';
-      decisions.human_transfer = await this.mind.resolveHumanTransfer(
+      const transfer = await this.mind.resolveHumanTransfer(
         input.workspaceId,
         channel,
         transferConcept,
         0.7,
       );
+      decisions.human_transfer = transfer;
+      humanTransferDecision = transfer;
     }
 
-    const actions: PredecidedAction[] = [
-      {
+    const setupContext = channelSetup
+      ? {
+          arsenalCount: channelSetup.arsenal.length,
+          productCount: channelSetup.selectedProductIds.length,
+          tone: channelSetup.config?.tone,
+        }
+      : undefined;
+    const replyDraft = buildReplyDraft({
+      aggressiveness: aggressiveness.aggressiveness,
+      concept,
+      couponAction,
+      productOffer,
+      setup: setupContext,
+      tone: tone.tone,
+    });
+    const actions: PredecidedAction[] = [];
+    const couponPercent = discountPercentFromCoupon(couponAction);
+    if (couponDecision && couponPercent) {
+      actions.push({
+        tool: 'apply_discount',
+        args: {
+          couponDecision,
+          decisionTraceId,
+          discountPercent: couponPercent,
+          expiresIn: '24h',
+          inboundCorrelationId: inboundKey,
+          priceBand,
+          productOffer: productOfferDecision,
+          reason: 'Política MIND decidida no pipeline determinístico.',
+          segment: concept,
+        },
+      });
+    } else {
+      actions.push({
         tool: 'send_message',
         args: {
-          message: buildReplyDraft({
-            aggressiveness: aggressiveness.aggressiveness,
-            concept,
-            couponAction,
-            productOffer,
-            setup: channelSetup
-              ? {
-                  arsenalCount: channelSetup.arsenal.length,
-                  productCount: channelSetup.selectedProductIds.length,
-                  tone: channelSetup.config?.tone,
-                }
-              : undefined,
-            tone: tone.tone,
-          }),
+          decisionTraceId,
+          inboundCorrelationId: inboundKey,
+          message: replyDraft,
         },
-      },
-    ];
+      });
+    }
+    if (
+      humanTransferDecision &&
+      humanTransferDecision.action !== 'continue_ai' &&
+      humanTransferDecision.action !== 'pause_wait'
+    ) {
+      actions.push({
+        tool: 'transfer_to_human',
+        args: {
+          decisionTraceId,
+          handoffDecision: humanTransferDecision,
+          inboundCorrelationId: inboundKey,
+          priority: 'high',
+          reason: 'Pipeline determinístico detectou risco comercial.',
+        },
+      });
+    }
 
     await this.events.recordCommercial({
       workspaceId: input.workspaceId,

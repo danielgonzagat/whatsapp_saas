@@ -16,6 +16,7 @@ type Profile = ReturnType<typeof channelWizardProfile>;
 export function ArsenalStep({
   arsenal,
   assetDraft,
+  channel,
   saving,
   onAssetDraftChange,
   onAddAsset,
@@ -24,9 +25,15 @@ export function ArsenalStep({
   onNext,
 }: {
   arsenal: ChannelSetupArsenal[];
-  assetDraft: { type: string; label: string; storageRef: string };
+  assetDraft: { file: File | null; type: string; label: string; storageRef: string };
+  channel: UniversalChannel;
   saving: boolean;
-  onAssetDraftChange: (draft: { type: string; label: string; storageRef: string }) => void;
+  onAssetDraftChange: (draft: {
+    file: File | null;
+    type: string;
+    label: string;
+    storageRef: string;
+  }) => void;
   onAddAsset: () => void;
   onRemoveAsset: (assetId: string) => void;
   onPrev: () => void;
@@ -51,12 +58,23 @@ export function ArsenalStep({
           style={inputStyle}
           value={assetDraft.type}
         >
-          {['text', 'audio', 'image', 'video', 'document', 'template'].map((type) => (
+          {acceptedAssetTypes(channel).map((type) => (
             <option key={type} value={type}>
               {type}
             </option>
           ))}
         </select>
+        <input
+          aria-label={kloelT('Arquivo do arsenal')}
+          onChange={(event) =>
+            onAssetDraftChange({
+              ...assetDraft,
+              file: event.target.files?.[0] ?? null,
+            })
+          }
+          style={inputStyle}
+          type="file"
+        />
         <textarea
           aria-label={kloelT('Referencia do arquivo ou template')}
           onChange={(event) =>
@@ -66,7 +84,10 @@ export function ArsenalStep({
           style={{ ...inputStyle, minHeight: 86, resize: 'vertical' }}
           value={assetDraft.storageRef}
         />
-        <SecondaryButton onClick={onAddAsset} disabled={saving || !assetDraft.storageRef.trim()}>
+        <SecondaryButton
+          onClick={onAddAsset}
+          disabled={saving || (!assetDraft.file && !assetDraft.storageRef.trim())}
+        >
           {saving ? kloelT('Salvando...') : kloelT('Adicionar material')}
         </SecondaryButton>
       </div>
@@ -178,20 +199,40 @@ export function ConfigStep({
         </p>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 24 }}>
-        <input
+        <select
           aria-label={kloelT('Tom')}
           onChange={(event) => onConfigChange({ ...config, tone: event.target.value })}
-          placeholder={kloelT('Tom default')}
           style={inputStyle}
           value={config.tone}
-        />
-        <input
+        >
+          {['consultivo', 'urgente', 'educativo', 'espelho', 'direto'].map((tone) => (
+            <option key={tone} value={tone}>
+              {kloelT(tone)}
+            </option>
+          ))}
+        </select>
+        <select
           aria-label={kloelT('Agressividade')}
           onChange={(event) => onConfigChange({ ...config, aggressiveness: event.target.value })}
-          placeholder={kloelT('Agressividade default')}
           style={inputStyle}
           value={config.aggressiveness}
-        />
+        >
+          {['low', 'normal', 'high'].map((level) => (
+            <option key={level} value={level}>
+              {kloelT(level)}
+            </option>
+          ))}
+        </select>
+        <label style={toggleRowStyle}>
+          <span>{kloelT('Follow-up automatico')}</span>
+          <input
+            checked={config.followupEnabled}
+            onChange={(event) =>
+              onConfigChange({ ...config, followupEnabled: event.target.checked })
+            }
+            type="checkbox"
+          />
+        </label>
         <input
           aria-label={kloelT('Limite diario')}
           min={1}
@@ -202,6 +243,16 @@ export function ConfigStep({
           type="number"
           value={config.dailyMessageLimit}
         />
+        <select
+          aria-label={kloelT('Idioma default')}
+          onChange={(event) => onConfigChange({ ...config, language: event.target.value })}
+          style={inputStyle}
+          value={config.language}
+        >
+          <option value="pt-BR">{kloelT('Portugues')}</option>
+          <option value="en-US">{kloelT('Ingles')}</option>
+          <option value="es-ES">{kloelT('Espanhol')}</option>
+        </select>
         {rows.map((row) => (
           <div
             key={row.label}
@@ -281,3 +332,16 @@ const rowStyle: React.CSSProperties = {
   justifyContent: 'space-between',
   padding: '10px 12px',
 };
+
+const toggleRowStyle: React.CSSProperties = {
+  ...inputStyle,
+  alignItems: 'center',
+  display: 'flex',
+  justifyContent: 'space-between',
+};
+
+function acceptedAssetTypes(channel: UniversalChannel): string[] {
+  if (channel === 'tiktok') return ['text', 'audio', 'image', 'video'];
+  if (channel === 'email') return ['text', 'image', 'document', 'template'];
+  return ['text', 'audio', 'image', 'video', 'document', 'template'];
+}

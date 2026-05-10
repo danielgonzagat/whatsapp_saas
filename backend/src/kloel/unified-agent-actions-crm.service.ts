@@ -7,12 +7,20 @@ import type { ToolArgs } from './unified-agent.types';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { MindPolicyService } from './mind-policy.service';
 import { MindService } from './mind.service';
-import { resolveFollowupTimingDecision } from './mind-recovery-decision-resolvers';
 import { MindGuardContextBuilderService } from './mind-guard-context-builder.service';
 import { MindGuardsService } from './mind-guards.service';
 import type { MindActionContext } from './mind-code-native.types';
+import {
+  chooseFollowUpTiming,
+  predecidedFollowUpTiming,
+  predecidedHumanTransfer,
+} from './unified-agent-actions-crm-predecided.helpers';
 
 type UnknownRecord = Record<string, unknown>;
+
+function isDeterministicPipeline(context?: UnknownRecord): boolean {
+  return context?.deterministicPipeline === true;
+}
 
 /**
  * Handles CRM tool actions: lead status updates, tags, follow-ups, human transfer,
@@ -113,16 +121,22 @@ export class UnifiedAgentActionsCrmService {
     contactId: string,
     _phone: string,
     args: ToolArgs,
+    context?: UnknownRecord,
   ) {
     try {
       const requestedDelayHours = this.num(args.delayHours, 24);
       const resolvedChannel = await this.resolveChannel(workspaceId, _phone);
-      const mindDecision = await this.chooseFollowUpTiming({
-        workspaceId,
-        contactId,
-        channel: resolvedChannel,
-        requestedDelayHours,
-      });
+      const predecided = isDeterministicPipeline(context);
+      const mindDecision = predecided
+        ? predecidedFollowUpTiming(args, requestedDelayHours)
+        : await chooseFollowUpTiming({
+            workspaceId,
+            contactId,
+            channel: resolvedChannel,
+            logger: this.logger,
+            mindPolicy: this.mindPolicy,
+            requestedDelayHours,
+          });
       const delayHours = mindDecision.delayHours;
       const scheduledFor = new Date(Date.now() + delayHours * 60 * 60 * 1000);
       const followMessage = this.str(args.message);
@@ -177,7 +191,10 @@ export class UnifiedAgentActionsCrmService {
               scheduledFor: scheduledFor.toISOString(),
               delayHours,
               channel: resolvedChannel,
+              decisionTraceId: args.decisionTraceId,
+              inboundCorrelationId: args.inboundCorrelationId,
               mind: mindDecision.meta,
+              source: predecided ? 'orchestrator_predecided' : 'legacy_action_decision',
             },
           },
         })
@@ -197,75 +214,6 @@ export class UnifiedAgentActionsCrmService {
       this.logger.error(`Erro ao agendar follow-up: ${msg}`);
       return { success: false, error: msg };
     }
-  }
-
-  private async chooseFollowUpTiming(args: {
-    channel: string;
-    contactId: string;
-    requestedDelayHours: number;
-    workspaceId: string;
-  }): Promise<{
-    delayHours: number;
-    meta: {
-      baseline: string;
-      chosen: string;
-      outcomeKey?: string;
-      reasonInternal?: string;
-    };
-  }> {
-    const buckets: Record<string, number> = {
-      immediate: 0.08,
-      short: 0.5,
-      medium: 2,
-      long: 8,
-      next_day: 24,
-    };
-    const baseline = this.nearestFollowUpBucket(args.requestedDelayHours, buckets);
-
-    if (!this.mindPolicy || !args.contactId) {
-      return {
-        delayHours: args.requestedDelayHours,
-        meta: { baseline, chosen: 'legacy_requested_delay' },
-      };
-    }
-
-    try {
-      const timing = await resolveFollowupTimingDecision(
-        this.mindPolicy,
-        args.workspaceId,
-        args.contactId,
-        args.channel,
-        args.requestedDelayHours,
-        buckets,
-      );
-      return {
-        delayHours: timing.delayHours,
-        meta: {
-          baseline,
-          chosen: timing.bucket,
-          outcomeKey: timing.outcomeKey,
-          reasonInternal: timing.reasonInternal,
-        },
-      };
-    } catch (error: unknown) {
-      const msg =
-        error instanceof Error ? error.message : typeof error === 'string' ? error : 'unknown';
-      this.logger.warn(`MIND follow-up timing fallback: ${msg}`);
-      return {
-        delayHours: args.requestedDelayHours,
-        meta: { baseline, chosen: 'legacy_requested_delay' },
-      };
-    }
-  }
-
-  private nearestFollowUpBucket(
-    requestedDelayHours: number,
-    buckets: Record<string, number>,
-  ): string {
-    return Object.entries(buckets).sort(
-      ([, left], [, right]) =>
-        Math.abs(left - requestedDelayHours) - Math.abs(right - requestedDelayHours),
-    )[0][0];
   }
 
   private async resolveChannel(workspaceId: string, phone: string): Promise<string> {
@@ -301,10 +249,18 @@ export class UnifiedAgentActionsCrmService {
     }
   }
 
-  async actionTransferToHuman(workspaceId: string, contactId: string, args: ToolArgs) {
+  async actionTransferToHuman(
+    workspaceId: string,
+    contactId: string,
+    args: ToolArgs,
+    context?: UnknownRecord,
+  ) {
     const reason = this.str(args.reason, 'Not specified');
     const priority = this.str(args.priority, 'normal');
-    const handoff = await this.chooseHumanTransfer(workspaceId, reason, priority);
+    const predecided = isDeterministicPipeline(context);
+    const handoff = predecided
+      ? predecidedHumanTransfer(args)
+      : await this.chooseHumanTransfer(workspaceId, reason, priority);
     if (handoff.action === 'continue_ai' || handoff.action === 'pause_wait') {
       await this.prisma.autopilotEvent
         .create({
@@ -314,7 +270,14 @@ export class UnifiedAgentActionsCrmService {
             intent: 'HUMAN_TRANSFER',
             action: 'TRANSFER_SKIPPED_BY_MIND',
             status: 'completed',
-            meta: { reason, priority, handoff },
+            meta: {
+              reason,
+              priority,
+              handoff,
+              decisionTraceId: args.decisionTraceId,
+              inboundCorrelationId: args.inboundCorrelationId,
+              source: predecided ? 'orchestrator_predecided' : 'legacy_action_decision',
+            },
           },
         })
         .catch(() => {});

@@ -400,9 +400,9 @@ Mensagem: ${message}`,
       case 'add_tag':
         return this.actions.actionAddTag(workspaceId, contactId, args);
       case 'schedule_followup':
-        return this.actions.actionScheduleFollowup(workspaceId, contactId, phone, args);
+        return this.actions.actionScheduleFollowup(workspaceId, contactId, phone, args, context);
       case 'transfer_to_human':
-        return this.actions.actionTransferToHuman(workspaceId, contactId, args);
+        return this.actions.actionTransferToHuman(workspaceId, contactId, args, context);
       case 'search_knowledge_base':
         return this.actions.actionSearchKnowledgeBase(workspaceId, args);
       case 'trigger_flow':
@@ -441,7 +441,7 @@ Mensagem: ${message}`,
       case 'update_workspace_settings':
         return this.actions.actionUpdateWorkspaceSettings(workspaceId, args);
       case 'create_broadcast':
-        return this.actions.actionCreateBroadcast(workspaceId, args);
+        return this.actions.actionCreateBroadcast(workspaceId, args, context);
       case 'get_analytics':
         return this.actions.actionGetAnalytics(workspaceId, args);
       case 'configure_ai_persona':

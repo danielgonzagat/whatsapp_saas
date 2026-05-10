@@ -84,6 +84,7 @@ function mockObservability(): jest.Mocked<MindObservabilityService> {
   service.health = jest.fn();
   service.lift = jest.fn();
   service.report = jest.fn();
+  service.runtimeEvidence = jest.fn();
   service.state = jest.fn();
   service.surprise = jest.fn();
   service.trace = jest.fn();
@@ -355,5 +356,25 @@ describe('MindController', () => {
       text: 'lead pediu desconto',
       workspaceId: 'ws-1',
     });
+  });
+
+  it('exposes runtime evidence by query and workspace route', async () => {
+    const observability = mockObservability();
+    observability.runtimeEvidence.mockResolvedValue({
+      deterministicPipeline: { percentDeterministic: 100 },
+      workspace: { id: 'ws-1' },
+    } as never);
+    const controller = buildController({});
+    Object.assign(controller, { observability });
+
+    await expect(controller.runtimeEvidenceByQuery('ws-1')).resolves.toEqual({
+      deterministicPipeline: { percentDeterministic: 100 },
+      workspace: { id: 'ws-1' },
+    });
+    await controller.runtimeEvidence('ws-2');
+
+    expect(observability.runtimeEvidence).toHaveBeenNthCalledWith(1, 'ws-1');
+    expect(observability.runtimeEvidence).toHaveBeenNthCalledWith(2, 'ws-2');
+    expect(() => controller.runtimeEvidenceByQuery('')).toThrow('workspaceId_required');
   });
 });

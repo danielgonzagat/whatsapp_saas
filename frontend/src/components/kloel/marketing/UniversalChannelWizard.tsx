@@ -51,7 +51,12 @@ export default function UniversalChannelWizard({
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState(false);
   const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
-  const [assetDraft, setAssetDraft] = useState({ label: '', storageRef: '', type: 'text' });
+  const [assetDraft, setAssetDraft] = useState<AssetDraft>({
+    file: null,
+    label: '',
+    storageRef: '',
+    type: 'text',
+  });
   const [channelConfig, setChannelConfig] = useState<ChannelSetupConfig>(defaultChannelConfig);
   const profile = channelWizardProfile(channel);
   const method = resolveConnectionMethod(channel);
@@ -94,7 +99,7 @@ export default function UniversalChannelWizard({
     try {
       const state = await addChannelArsenal(channel, assetDraft);
       setSetup(state);
-      setAssetDraft({ label: '', storageRef: '', type: 'text' });
+      setAssetDraft({ file: null, label: '', storageRef: '', type: 'text' });
     } finally {
       setSaving(false);
     }
@@ -223,6 +228,7 @@ export default function UniversalChannelWizard({
           <ArsenalStep
             arsenal={setup?.arsenal ?? []}
             assetDraft={assetDraft}
+            channel={channel}
             saving={saving}
             onAssetDraftChange={setAssetDraft}
             onAddAsset={addAsset}
@@ -268,6 +274,13 @@ const defaultChannelConfig: ChannelSetupConfig = {
   tone: 'consultivo',
   transferCriteria: {},
 };
+
+interface AssetDraft {
+  file: File | null;
+  label: string;
+  storageRef: string;
+  type: string;
+}
 
 function ChannelOperationalPanel({
   channel,

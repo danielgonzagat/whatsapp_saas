@@ -1,11 +1,57 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { Prisma } from '@prisma/client';
+import { StorageService } from '../common/storage/storage.service';
+import { detectUploadedMime } from '../common/file-signature.util';
 import { PrismaService } from '../prisma/prisma.service';
 
 const CHANNELS = new Set(['whatsapp', 'instagram', 'facebook', 'messenger', 'tiktok', 'email']);
 const ARSENAL_TYPES = new Set(['text', 'audio', 'image', 'video', 'document', 'template']);
 const CHANNEL_ALIAS: Record<string, string> = { messenger: 'facebook' };
+const MIME_BY_ARSENAL_TYPE: Record<string, ReadonlySet<string>> = {
+  audio: new Set([
+    'audio/mpeg',
+    'audio/ogg',
+    'audio/wav',
+    'audio/webm',
+    'audio/mp4',
+    'audio/x-m4a',
+  ]),
+  document: new Set([
+    'application/msword',
+    'application/pdf',
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'text/csv',
+    'text/plain',
+  ]),
+  image: new Set(['image/gif', 'image/jpeg', 'image/png', 'image/webp']),
+  template: new Set(['text/csv', 'text/plain']),
+  text: new Set(['text/csv', 'text/plain']),
+  video: new Set(['video/webm', 'audio/mp4']),
+};
+
+const EXTENSION_BY_MIME_TYPE: Record<string, string> = {
+  'application/msword': '.doc',
+  'application/pdf': '.pdf',
+  'application/vnd.ms-excel': '.xls',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': '.xlsx',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '.docx',
+  'audio/mpeg': '.mp3',
+  'audio/mp4': '.mp4',
+  'audio/ogg': '.ogg',
+  'audio/wav': '.wav',
+  'audio/webm': '.webm',
+  'audio/x-m4a': '.m4a',
+  'image/gif': '.gif',
+  'image/jpeg': '.jpg',
+  'image/png': '.png',
+  'image/webp': '.webp',
+  'text/csv': '.csv',
+  'text/plain': '.txt',
+  'video/webm': '.webm',
+};
 
 export interface SaveProductsInput {
   productIds?: string[];
@@ -17,6 +63,13 @@ export interface SaveArsenalInput {
   label?: string;
   storageRef?: string;
   metadata?: Prisma.InputJsonValue;
+}
+
+export interface ChannelArsenalUploadFile {
+  buffer: Buffer;
+  mimetype?: string;
+  originalname?: string;
+  size?: number;
 }
 
 export interface SaveConfigInput {
@@ -31,7 +84,10 @@ export interface SaveConfigInput {
 
 @Injectable()
 export class ChannelSetupService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly storage: StorageService,
+  ) {}
 
   async getState(workspaceId: string, channel: string) {
     const normalizedChannel = normalizeSetupChannel(channel);
@@ -123,6 +179,38 @@ export class ChannelSetupService {
     return this.getState(workspaceId, normalizedChannel);
   }
 
+  async addArsenalUpload(
+    workspaceId: string,
+    channel: string,
+    input: SaveArsenalInput,
+    file: ChannelArsenalUploadFile,
+  ) {
+    const normalizedChannel = normalizeSetupChannel(channel);
+    const type = normalizeArsenalType(input.type);
+    const assetId = input.assetId?.trim() || randomUUID();
+    if (!file?.buffer?.length) {
+      throw new BadRequestException('arquivo_do_arsenal_obrigatorio');
+    }
+    const mimeType = validateArsenalUploadMime(type, file);
+    const stored = await this.storage.upload(file.buffer, {
+      filename: `${assetId}${EXTENSION_BY_MIME_TYPE[mimeType] ?? ''}`,
+      folder: `channel-arsenal/${workspaceId}/${normalizedChannel}`,
+      mimeType,
+      workspaceId,
+    });
+    return this.addArsenal(workspaceId, normalizedChannel, {
+      ...input,
+      assetId,
+      storageRef: stored.path,
+      metadata: {
+        originalName: file.originalname || null,
+        publicUrl: stored.url,
+        size: file.size ?? stored.size,
+      },
+      type,
+    });
+  }
+
   async removeArsenal(workspaceId: string, channel: string, assetId: string) {
     const normalizedChannel = normalizeSetupChannel(channel);
     await this.prisma.channelArsenal.deleteMany({
@@ -193,6 +281,30 @@ export class ChannelSetupService {
       throw new BadRequestException('configuracao_do_canal_obrigatoria');
     }
   }
+}
+
+function validateArsenalUploadMime(type: string, file: ChannelArsenalUploadFile): string {
+  const detectedMime = detectUploadedMime({
+    buffer: file.buffer,
+    mimetype: file.mimetype,
+    originalname: file.originalname,
+  });
+  if (!detectedMime) {
+    throw new BadRequestException('assinatura_do_arquivo_invalida');
+  }
+  const allowed = MIME_BY_ARSENAL_TYPE[type];
+  if (!allowed?.has(detectedMime)) {
+    throw new BadRequestException('tipo_de_arquivo_incompativel_com_arsenal');
+  }
+  return detectedMime;
+}
+
+export function isAllowedDeclaredArsenalMime(mimetype?: string): boolean {
+  const normalized = mimetype?.trim().toLowerCase();
+  if (!normalized) {
+    return false;
+  }
+  return Object.values(MIME_BY_ARSENAL_TYPE).some((allowed) => allowed.has(normalized));
 }
 
 export function normalizeSetupChannel(channel: string): string {

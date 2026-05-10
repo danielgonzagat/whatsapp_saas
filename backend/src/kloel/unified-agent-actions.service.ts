@@ -224,11 +224,17 @@ export class UnifiedAgentActionsService {
     contactId: string,
     phone: string,
     args: ToolArgs,
+    context?: UnknownRecord,
   ) {
-    return this.crm.actionScheduleFollowup(workspaceId, contactId, phone, args);
+    return this.crm.actionScheduleFollowup(workspaceId, contactId, phone, args, context);
   }
-  async actionTransferToHuman(workspaceId: string, contactId: string, args: ToolArgs) {
-    return this.crm.actionTransferToHuman(workspaceId, contactId, args);
+  async actionTransferToHuman(
+    workspaceId: string,
+    contactId: string,
+    args: ToolArgs,
+    context?: UnknownRecord,
+  ) {
+    return this.crm.actionTransferToHuman(workspaceId, contactId, args, context);
   }
   async actionSearchKnowledgeBase(workspaceId: string, args: ToolArgs) {
     return this.crm.actionSearchKnowledgeBase(workspaceId, args);
@@ -257,8 +263,8 @@ export class UnifiedAgentActionsService {
   async actionUpdateWorkspaceSettings(workspaceId: string, args: ToolArgs) {
     return this.workspace.actionUpdateWorkspaceSettings(workspaceId, args);
   }
-  async actionCreateBroadcast(workspaceId: string, args: ToolArgs) {
-    return this.workspace.actionCreateBroadcast(workspaceId, args);
+  async actionCreateBroadcast(workspaceId: string, args: ToolArgs, context?: UnknownRecord) {
+    return this.workspace.actionCreateBroadcast(workspaceId, args, context);
   }
   async actionConfigureAIPersona(workspaceId: string, args: ToolArgs) {
     return this.workspace.actionConfigureAIPersona(workspaceId, args);
