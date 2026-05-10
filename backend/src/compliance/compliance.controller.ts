@@ -2,7 +2,6 @@ import { Body, Controller, Get, HttpCode, Param, Post, Query, Req } from '@nestj
 import { Throttle } from '@nestjs/throttler';
 import type { Request } from 'express';
 import { Public } from '../auth/public.decorator';
-import type { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { ComplianceService } from './compliance.service';
 
 type RawBodyRequest = Request & {

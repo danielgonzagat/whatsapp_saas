@@ -7,7 +7,6 @@ import {
   Optional,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { EmailService } from '../auth/email.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { verifyUnsubscribeToken } from '../common/utils/unsubscribe-token.util';
 import { JwtSetValidator, SecurityEventTokenPayload } from './utils/jwt-set.validator';
@@ -23,7 +22,6 @@ export class ComplianceService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly emailService: EmailService,
     private readonly jwtSetValidator: JwtSetValidator,
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
