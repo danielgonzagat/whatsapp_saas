@@ -47,6 +47,7 @@ export class MindEventProcessorService {
     await this.processMessageReceived(event, result);
     await this.processCheckoutStarted(event, result);
     await this.processCheckoutClosed(event, result);
+    await this.processExplicitCommercialOutcome(event, result);
     await this.processAutopilotOutcome(event, result);
 
     return result;
@@ -77,7 +78,10 @@ export class MindEventProcessorService {
     event: MindPerceptEvent,
     result: MindEventProcessAccumulator,
   ): Promise<void> {
-    if (event.kind === 'message.received' && event.subject.startsWith('contact:')) {
+    if (
+      (event.kind === 'message.received' || event.kind === 'message.replied') &&
+      event.subject.startsWith('contact:')
+    ) {
       const text = toStableString(event.payload.content ?? event.payload.message ?? '');
       if (text) {
         const features = { channel: event.payload.channel ?? 'unknown' };
@@ -163,7 +167,7 @@ export class MindEventProcessorService {
 
     if (event.kind.startsWith('checkout.') && event.kind !== 'checkout.paid') {
       const status = toStableString(event.payload.status).toUpperCase();
-      if (CONVERSION_CLOSED_STATUSES.has(status)) {
+      if (event.kind === 'checkout.expired' || CONVERSION_CLOSED_STATUSES.has(status)) {
         await this.addResolvedSurprise(result, this.resolveConversion(event, 0));
         await this.resolveSubjectPolicies(event, result, ['cart_recovery'], 0);
         await this.resolveWorkspacePolicies(
@@ -173,6 +177,36 @@ export class MindEventProcessorService {
           0,
         );
       }
+    }
+  }
+
+  private async processExplicitCommercialOutcome(
+    event: MindPerceptEvent,
+    result: MindEventProcessAccumulator,
+  ): Promise<void> {
+    if (event.kind === 'conversation.transferred') {
+      await this.resolveWorkspacePolicies(
+        event,
+        result,
+        ['human_transfer'],
+        outcomeFromPayload(event),
+      );
+    }
+    if (event.kind === 'campaign.converted') {
+      await this.resolveWorkspacePolicies(
+        event,
+        result,
+        ['broadcast_window'],
+        outcomeFromPayload(event),
+      );
+    }
+    if (event.kind === 'ad.metric.improved' || event.kind === 'ad.metric.worsened') {
+      await this.resolveWorkspacePolicies(
+        event,
+        result,
+        ['ad_alert_action'],
+        event.kind === 'ad.metric.improved' ? 1 : 0,
+      );
     }
   }
 
@@ -279,4 +313,11 @@ export class MindEventProcessorService {
       outcome,
     );
   }
+}
+
+function outcomeFromPayload(event: MindPerceptEvent): 0 | 1 {
+  if (event.payload.outcome === 0 || event.payload.outcome === false) return 0;
+  const status = toStableString(event.payload.status).toLowerCase();
+  if (['failed', 'cancelled', 'canceled', 'lost', 'unresolved'].includes(status)) return 0;
+  return 1;
 }

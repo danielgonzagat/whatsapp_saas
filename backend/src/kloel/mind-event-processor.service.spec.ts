@@ -146,4 +146,79 @@ describe('MindEventProcessorService', () => {
       });
     }
   });
+
+  it('closes checkout outcomes as failed when checkout expires', async () => {
+    await service.process({
+      kind: 'checkout.expired',
+      workspaceId: 'ws-1',
+      subject: 'order:order-1',
+      payload: {},
+      occurredAt: new Date('2026-05-09T12:00:00.000Z'),
+    });
+
+    expect(policy.resolveOpenForSubject).toHaveBeenCalledWith({
+      workspaceId: 'ws-1',
+      subject: 'order:order-1',
+      decisionType: 'cart_recovery',
+      outcome: 0,
+      baselineOutcome: 0,
+    });
+    expect(policy.resolveOpenForSubject).toHaveBeenCalledWith({
+      workspaceId: 'ws-1',
+      subject: 'workspace:ws-1',
+      decisionType: 'coupon_offer',
+      outcome: 0,
+      baselineOutcome: 0,
+    });
+  });
+
+  it('closes human transfer and campaign outcomes from explicit commercial events', async () => {
+    await service.process({
+      kind: 'conversation.transferred',
+      workspaceId: 'ws-1',
+      subject: 'contact:lead-1',
+      payload: { status: 'resolved' },
+      occurredAt: new Date('2026-05-09T12:00:00.000Z'),
+    });
+    await service.process({
+      kind: 'campaign.converted',
+      workspaceId: 'ws-1',
+      subject: 'campaign:campaign-1',
+      payload: { outcome: 1 },
+      occurredAt: new Date('2026-05-09T13:00:00.000Z'),
+    });
+
+    expect(policy.resolveOpenForSubject).toHaveBeenCalledWith({
+      workspaceId: 'ws-1',
+      subject: 'workspace:ws-1',
+      decisionType: 'human_transfer',
+      outcome: 1,
+      baselineOutcome: 1,
+    });
+    expect(policy.resolveOpenForSubject).toHaveBeenCalledWith({
+      workspaceId: 'ws-1',
+      subject: 'workspace:ws-1',
+      decisionType: 'broadcast_window',
+      outcome: 1,
+      baselineOutcome: 1,
+    });
+  });
+
+  it('closes ad alert outcomes from metric movement events', async () => {
+    await service.process({
+      kind: 'ad.metric.worsened',
+      workspaceId: 'ws-1',
+      subject: 'ad:ad-1',
+      payload: {},
+      occurredAt: new Date('2026-05-09T12:00:00.000Z'),
+    });
+
+    expect(policy.resolveOpenForSubject).toHaveBeenCalledWith({
+      workspaceId: 'ws-1',
+      subject: 'workspace:ws-1',
+      decisionType: 'ad_alert_action',
+      outcome: 0,
+      baselineOutcome: 0,
+    });
+  });
 });
