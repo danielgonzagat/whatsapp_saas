@@ -195,11 +195,14 @@ export function AdminChatHistoryProvider({ children }: { children: ReactNode }) 
   }, [admin, refresh]);
 
   useEffect(() => {
-    writeCache(ACTIVE_SESSION_CACHE_SLOT, activeSessionId);
+    writeSessionCache(ACTIVE_SESSION_CACHE_SLOT, activeSessionId);
   }, [activeSessionId]);
 
-  const setActiveSessionId = useCallback((sessionId: string | null) => {
-    setActiveSessionIdRaw(sessionId);
+  useEffect(() => {
+    const cachedSessions = readCache<AdminChatSessionSummary[]>(SESSION_CACHE_SLOT, []);
+    sessionsRef.current = cachedSessions;
+    setSessions(cachedSessions);
+    setActiveSessionIdRaw(readSessionCache<string | null>(ACTIVE_SESSION_CACHE_SLOT, null));
   }, []);
 
   const upsertSession = useCallback((session: AdminChatSessionView) => {

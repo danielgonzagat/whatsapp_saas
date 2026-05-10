@@ -34,11 +34,7 @@ import type { AskInsightsResult, RuntimeConfig } from '@/lib/api';
 import { unwrapArrayEnvelope, unwrapDataEnvelope, unwrapSettled } from './page.helpers';
 import { colors } from '@/lib/design-tokens';
 import {
-  BarChart3,
-  MessageSquare,
   RefreshCw,
-  Users,
-  Zap,
 } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import { startTransition, useCallback, useEffect, useState } from 'react';

@@ -230,7 +230,7 @@ export function buildDefaultExecutionTrace(
 function buildRuntimeEvidence(
   env: PulseEnvironment,
   parserInventory: PulseParserInventory,
-  health: PulseHealth,
+  _health: PulseHealth,
   runtimeBreaks: import('./types.health').Break[],
 ) {
   if (env === 'scan') {
@@ -278,7 +278,6 @@ export function buildDefaultEvidence(
           executed: false,
           artifactPaths: [],
           summary: 'Total mode requires browser evidence, but none has been attached yet.',
-          failureCode: undefined,
         }
       : {
           attempted: false,

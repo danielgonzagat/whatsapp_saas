@@ -694,7 +694,10 @@ export class SystemHealthService {
       const provider = hasResend ? 'resend' : hasSendGrid ? 'sendgrid' : 'smtp';
       return { status: 'CONFIGURED', provider };
     }
-    return { status: 'NOT_CONFIGURED', missing: ['RESEND_API_KEY', 'SENDGRID_API_KEY', 'SMTP_HOST'] };
+    return {
+      status: 'NOT_CONFIGURED',
+      missing: ['RESEND_API_KEY', 'SENDGRID_API_KEY', 'SMTP_HOST'],
+    };
   }
 
   private checkGoogleAuth() {

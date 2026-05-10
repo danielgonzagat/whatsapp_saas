@@ -10,8 +10,6 @@ import type {
 import type { PulseExecutionChain, PulseExecutionChainSet } from '../types.product-graph';
 import type { PulseExecutionEvidence } from '../types.evidence';
 import type {
-  PulseExecutionMatrix,
-  PulseExecutionMatrixBreakpoint,
   PulseExecutionMatrixEvidenceRequirement,
   PulseExecutionMatrixObservedEvidence,
   PulseExecutionMatrixPath,
@@ -46,8 +44,6 @@ export interface BuildExecutionMatrixInput {
 
 type MatrixEvidence = PulseExecutionMatrixObservedEvidence;
 type MatrixArtifactGrammar = MatrixEvidence['source'];
-type StructuralGraphKind = PulseStructuralNode['kind'];
-type MatrixChainRole = PulseExecutionMatrixPath['chain'][number]['role'];
 type MatrixPathRisk = PulseExecutionMatrixPath['risk'];
 
 export function terminalStatusGrammar(): PulseExecutionMatrixPathStatus[] {
@@ -171,10 +167,10 @@ export function normalizeExecutionMode(
   risk: PulseExecutionMatrixPath['risk'],
 ): PulseExecutionMatrixPath['executionMode'] {
   const execModes = discoverConvergenceExecutionModeLabels();
-  if (execModes.has(mode) && (mode === 'human_required' || mode === 'observation_only')) {
+  if (mode && execModes.has(mode) && (mode === 'human_required' || mode === 'observation_only')) {
     return 'observation_only';
   }
-  if ((execModes.has(mode) && mode === 'governed_validation') || isElevatedRiskGrammar(risk)) {
+  if ((mode && execModes.has(mode) && mode === 'governed_validation') || isElevatedRiskGrammar(risk)) {
     return 'governed_validation';
   }
   return mode ?? 'ai_safe';

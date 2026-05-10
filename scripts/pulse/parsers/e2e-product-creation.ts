@@ -38,8 +38,6 @@ import {
   httpDelete,
   makeTestJwt,
   dbQuery,
-  isDeepMode,
-  getBackendUrl,
 } from './runtime-utils';
 
 type ProductRow = { id?: string; name?: string };

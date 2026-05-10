@@ -1,7 +1,5 @@
 'use client';
 
-import { kloelT } from '@/lib/i18n/t';
-import { KloelMushroomVisual } from '@/components/kloel/KloelBrand';
 import { MessageActionBar } from '@/components/kloel/MessageActionBar';
 import { useAuth } from '@/components/kloel/auth/auth-provider';
 import { tokenStorage } from '@/lib/api/core';
@@ -18,6 +16,10 @@ import {
   persistGuestSession,
   pickGuestChunk,
 } from './FloatingChat.helpers';
+import { FloatingChatHeader } from './FloatingChatHeader';
+import { FloatingChatInput } from './FloatingChatInput';
+import { FloatingChatMessages } from './FloatingChatMessages';
+import { FloatingChatButton } from './FloatingChatButton';
 
 interface FloatingChatProps {
   isOpen?: boolean;
@@ -26,7 +28,7 @@ interface FloatingChatProps {
   onInitialMessageConsumed?: () => void;
 }
 
-interface Message {
+export interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
@@ -71,7 +73,7 @@ function useRotatingLabel(labels: string[], intervalMs = 2500) {
   return labels[index];
 }
 
-function UserMessageRow({
+export function UserMessageRow({
   msg,
   isStreaming,
   hoveredMessageId,
@@ -125,7 +127,7 @@ function UserMessageRow({
   );
 }
 
-function AssistantMessageRow({
+export function AssistantMessageRow({
   msg,
   isStreaming,
   onFeedback,
@@ -177,7 +179,6 @@ function AssistantMessageRow({
   );
 }
 
-/** Floating chat. */
 export function FloatingChat({
   isOpen: controlledOpen,
   onToggle,
@@ -540,241 +541,33 @@ export function FloatingChat({
             overflow: 'hidden',
           }}
         >
-          {/* Header — close only */}
-          <div
-            style={{
-              height: 32,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'flex-end',
-              padding: '0 8px',
-              flexShrink: 0,
-            }}
-          >
-            <button
-              type="button"
-              onClick={() => toggle(false)}
-              style={{
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                color: colors.text.dim,
-                padding: 4,
-                display: 'flex',
-                alignItems: 'center',
-              }}
-            >
-              <svg
-                aria-hidden="true"
-                width={14}
-                height={14}
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            </button>
-          </div>
-
-          {/* Messages */}
-          <div
-            style={{
-              flex: 1,
-              overflowY: 'auto',
-              padding: '4px 14px 16px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 14,
-            }}
-          >
-            {messages.length === 0 && !isStreaming && (
-              <div
-                style={{
-                  flex: 1,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  opacity: 0.3,
-                }}
-              >
-                <span style={{ fontFamily: S, fontSize: 12, color: colors.text.muted }}>
-                  {kloelT(`Digite sua mensagem`)}
-                </span>
-              </div>
-            )}
-
-            {messages.map((msg) =>
-              msg.role === 'user' ? (
-                <UserMessageRow
-                  key={msg.id}
-                  msg={msg}
-                  isStreaming={isStreaming}
-                  hoveredMessageId={hoveredMessageId}
-                  onHoverEnter={setHoveredMessageId}
-                  onHoverLeave={(id) =>
-                    setHoveredMessageId((current) => (current === id ? null : current))
-                  }
-                  onEdit={handleUserEdit}
-                  onRetry={handleUserRetry}
-                />
-              ) : (
-                <AssistantMessageRow
-                  key={msg.id}
-                  msg={msg}
-                  isStreaming={isStreaming}
-                  onFeedback={handleAssistantFeedback}
-                  onRegenerate={handleAssistantRegenerate}
-                />
-              ),
-            )}
-
-            {isStreaming && messages[messages.length - 1]?.content === '' && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <KloelMushroomVisual
-                  size={18}
-                  traceColor={colors.text.silver}
-                  animated
-                  spores="animated"
-                />
-                <span style={{ fontFamily: S, fontSize: 12, color: colors.text.muted }}>
-                  {thinkingLabel}
-                </span>
-              </div>
-            )}
-
-            <div ref={messagesEndRef} />
-          </div>
-
-          {/* Input */}
-          <div
-            style={{
-              padding: 12,
-              borderTop: `1px solid ${colors.background.elevated}`,
-              flexShrink: 0,
-            }}
-          >
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                background: colors.background.surface,
-                border: `1px solid ${colors.border.space}`,
-                borderRadius: 6,
-                padding: '8px 12px',
-              }}
-            >
-              <input
-                ref={inputRef}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-                placeholder={kloelT(`Digite sua mensagem...`)}
-                style={{
-                  flex: 1,
-                  background: 'none',
-                  border: 'none',
-                  outline: 'none',
-                  color: colors.text.silver,
-                  fontSize: 14,
-                  fontFamily: S,
-                }}
-              />
-              <button
-                type="button"
-                onClick={handleSubmit}
-                disabled={!input.trim() || isStreaming}
-                style={{
-                  width: 28,
-                  height: 28,
-                  borderRadius: 6,
-                  background: input.trim() ? colors.ember.primary : colors.background.elevated,
-                  border: 'none',
-                  cursor: input.trim() ? 'pointer' : 'default',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: input.trim() ? colors.background.void : colors.text.dim,
-                  transition: 'all 150ms ease',
-                  flexShrink: 0,
-                }}
-              >
-                <svg
-                  aria-hidden="true"
-                  width={14}
-                  height={14}
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <line x1="22" y1="2" x2="11" y2="13" />
-                  <polygon points="22 2 15 22 11 13 2 9 22 2" />
-                </svg>
-              </button>
-            </div>
-          </div>
+          <FloatingChatHeader onClose={() => toggle(false)} />
+          <FloatingChatMessages
+            messages={messages}
+            isStreaming={isStreaming}
+            thinkingLabel={thinkingLabel}
+            hoveredMessageId={hoveredMessageId}
+            onHoverEnter={setHoveredMessageId}
+            onHoverLeave={(id) =>
+              setHoveredMessageId((current) => (current === id ? null : current))
+            }
+            onEdit={handleUserEdit}
+            onRetry={handleUserRetry}
+            onFeedback={handleAssistantFeedback}
+            onRegenerate={handleAssistantRegenerate}
+            messagesEndRef={messagesEndRef}
+          />
+          <FloatingChatInput
+            inputRef={inputRef}
+            input={input}
+            onInputChange={(e) => setInput(e.target.value)}
+            onSubmit={handleSubmit}
+            isStreaming={isStreaming}
+          />
         </div>
       )}
 
-      {/* Floating button — chat bubble SVG */}
-      <button
-        type="button"
-        onClick={() => toggle(!isOpen)}
-        style={{
-          position: 'fixed',
-          bottom: 24,
-          right: 'clamp(12px, 2vw, 24px)',
-          width: 48,
-          height: 48,
-          borderRadius: 6,
-          background: colors.ember.primary,
-          border: 'none',
-          cursor: 'pointer',
-          boxShadow: '0 4px 20px rgba(232,93,48,0.3)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 9999,
-          transition: 'opacity 150ms ease',
-        }}
-      >
-        {isOpen ? (
-          <svg
-            width={20}
-            height={20}
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="colors.background.void"
-            strokeWidth={2}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <line x1="18" y1="6" x2="6" y2="18" />
-            <line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
-        ) : (
-          <svg
-            width={22}
-            height={22}
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="colors.background.void"
-            strokeWidth={2}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <path d={kloelT(`M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z`)} />
-          </svg>
-        )}
-      </button>
+      <FloatingChatButton isOpen={isOpen} onToggle={() => toggle(!isOpen)} />
 
       <style>{`
         @keyframes floatingChatFadeIn {

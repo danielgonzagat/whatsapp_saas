@@ -3,6 +3,7 @@ import { Worker, type Job } from 'bullmq';
 import { PrismaService } from '../prisma/prisma.service';
 import { GoogleAdsProvider } from './google-ads.provider';
 import { googleAdsSyncQueue } from '../queue/queue';
+import { createRedisClient } from '../common/redis/redis.util';
 import type {
   AdAccountSyncResult,
   AdCampaignSyncResult,
@@ -36,7 +37,7 @@ export class AdsSyncProcessor implements OnModuleDestroy {
 
   private startWorker() {
     const queueName = 'google-ads-sync-jobs';
-    const connection = (googleAdsSyncQueue as unknown as { opts?: { connection?: { redis: unknown } } }).opts?.connection || {};
+    const redisConnection = createRedisClient();
 
     this.worker = new Worker(
       queueName,
@@ -60,8 +61,9 @@ export class AdsSyncProcessor implements OnModuleDestroy {
         }
       },
       {
-        connection: connection as NonNullable<typeof connection>,
+        connection: redisConnection,
         concurrency: MAX_CONCURRENCY,
+        autorun: true,
         limiter: {
           max: 1,
           duration: 2000,

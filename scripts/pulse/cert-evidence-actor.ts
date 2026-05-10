@@ -115,10 +115,8 @@ export function buildDefaultWorldState(
     soak: PulseActorEvidence;
   },
 ): PulseWorldState {
-  return {
+  const worldState: PulseWorldState = {
     generatedAt: new Date().toISOString(),
-    backendUrl: evidence.runtime.backendUrl,
-    frontendUrl: evidence.runtime.frontendUrl,
     actorProfiles: resolvedManifest.actorProfiles.map((profile) => profile.id),
     executedScenarios: [],
     pendingAsyncExpectations: resolvedManifest.scenarioSpecs
@@ -146,6 +144,13 @@ export function buildDefaultWorldState(
       };
     }),
   };
+  if (evidence.runtime.backendUrl !== undefined) {
+    worldState.backendUrl = evidence.runtime.backendUrl;
+  }
+  if (evidence.runtime.frontendUrl !== undefined) {
+    worldState.frontendUrl = evidence.runtime.frontendUrl;
+  }
+  return worldState;
 }
 
 function evidenceKeysFromManifest(

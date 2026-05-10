@@ -39,9 +39,7 @@ export function evaluateNoOverclaimPassForCurrentRun(
   const currentCycleProof = autonomyState
     ? {
         proven: currentCycleProofProven,
-        successfulNonRegressingCycles: currentCycleProofProven
-          ? REQUIRED_NON_REGRESSING_CYCLES
-          : undefined,
+        ...(currentCycleProofProven ? { successfulNonRegressingCycles: REQUIRED_NON_REGRESSING_CYCLES } : {}),
       }
     : { proven: false };
   const currentProofAllowsProduction =

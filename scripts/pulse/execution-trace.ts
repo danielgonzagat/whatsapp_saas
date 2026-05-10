@@ -1,4 +1,4 @@
-import { safeJoin, safeResolve } from './safe-path';
+import { safeJoin } from './safe-path';
 import { createHash } from 'node:crypto';
 import * as os from 'os';
 import * as path from 'path';

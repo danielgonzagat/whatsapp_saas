@@ -1,6 +1,5 @@
 // PULSE — AST/Structural Graph Context & Trace Generation Core
 
-import * as path from 'path';
 import { safeJoin } from '../safe-path';
 import { pathExists, readJsonFile } from '../safe-fs';
 import {
@@ -15,21 +14,12 @@ import {
   stableHex,
   stableNumber,
   stableChoice,
-  stableIso,
-  clampDuration,
-  OTEL_STATUS_OK,
   OTEL_STATUS_ERROR,
-  HTTP_STATUS_OK,
-  HTTP_STATUS_BAD_REQUEST,
-  HTTP_STATUS_INTERNAL_SERVER_ERROR,
-  HTTP_STATUS_TEXT_LEN_OK,
-  HTTP_STATUS_TEXT_LEN_FORBIDDEN,
 } from './constants';
 import {
   buildChildSpanName,
   buildSiblingSpanName,
   buildStructuralFallbackSpanName,
-  inferServiceFromAvailableSymbols,
   inferServiceFromSpanName,
   createManualSpanForTrace,
 } from './span-gen';
@@ -85,8 +75,8 @@ export function loadAstGraphContext(rootDir: string): AstGraphContext {
           name: symbol.name,
           kind: symbol.kind,
           filePath: symbol.filePath,
-          httpMethod: symbol.httpMethod,
-          routePath: symbol.routePath,
+          ...(symbol.httpMethod !== undefined ? { httpMethod: symbol.httpMethod } : {}),
+          ...(symbol.routePath !== undefined ? { routePath: symbol.routePath } : {}),
         });
       }
     }

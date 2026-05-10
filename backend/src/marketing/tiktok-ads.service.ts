@@ -137,7 +137,11 @@ export class TikTokAdsService {
       if (value === undefined || value === null) continue;
       if (Array.isArray(value) || typeof value === 'object') {
         url.searchParams.set(key, JSON.stringify(value));
-      } else if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+      } else if (
+        typeof value === 'string' ||
+        typeof value === 'number' ||
+        typeof value === 'boolean'
+      ) {
         url.searchParams.set(key, String(value));
       }
     }

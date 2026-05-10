@@ -15,9 +15,9 @@ export function gateFail(
     status: 'fail',
     reason,
     failureClass,
-    affectedCapabilityIds: options?.affectedCapabilityIds,
-    affectedFlowIds: options?.affectedFlowIds,
-    evidenceMode: options?.evidenceMode,
-    confidence: options?.confidence,
+    ...(options?.affectedCapabilityIds !== undefined ? { affectedCapabilityIds: options.affectedCapabilityIds } : {}),
+    ...(options?.affectedFlowIds !== undefined ? { affectedFlowIds: options.affectedFlowIds } : {}),
+    ...(options?.evidenceMode !== undefined ? { evidenceMode: options.evidenceMode } : {}),
+    ...(options?.confidence !== undefined ? { confidence: options.confidence } : {}),
   };
 }
