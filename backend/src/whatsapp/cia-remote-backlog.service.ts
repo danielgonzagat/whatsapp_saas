@@ -71,16 +71,23 @@ export class CiaRemoteBacklogService {
     historySummary: string;
     shouldMirrorReplies: boolean;
   } | null> {
-    return loadRemotePendingBatchHelper(
+    const result = await loadRemotePendingBatchHelper(
       {
         prisma: this.prisma,
         providerRegistry: this.providerRegistry,
         chatFilter: this.chatFilter,
         sendHelpers: this.sendHelpers,
-        whatsappService: this.whatsappService,
       },
       params,
     );
+
+    if (result) {
+      await this.whatsappService
+        .syncRemoteContactProfile(params.workspaceId, result.phone, result.contactName)
+        .catch(() => undefined);
+    }
+
+    return result;
   }
 
   async runRemoteBacklogInlineFallback(

@@ -7,8 +7,8 @@ jest.mock('../common/redis/redis.util', () => ({
 
 import { createRedisClient } from '../common/redis/redis.util';
 
-function mockSocket(overrides?: Partial<Socket>): Socket {
-  return { id: 'test-socket-id', ...overrides } as Socket;
+function mockSocket(overrides: Record<string, any> = {}): Socket {
+  return { id: 'test-socket-id', ...overrides } as any as Socket;
 }
 
 describe('AlertsGateway', () => {

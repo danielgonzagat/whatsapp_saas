@@ -2,6 +2,7 @@ import { ForbiddenException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { VoiceController } from './voice.controller';
 import { VoiceService } from './voice.service';
+import { VoiceProvider } from './dto/create-voice-profile.dto';
 
 jest.mock('../auth/jwt-auth.guard', () => ({
   JwtAuthGuard: class MockJwtAuthGuard {
@@ -52,10 +53,10 @@ describe('VoiceController', () => {
 
   describe('createProfile', () => {
     it('creates a voice profile via service', async () => {
-      const profile = { id: 'vp-1', name: 'Voice A', provider: 'OPENAI', voiceId: 'v1' };
+      const profile = { id: 'vp-1', name: 'Voice A', provider: VoiceProvider.OPENAI, voiceId: 'v1' };
       service.createVoiceProfile.mockResolvedValue(profile);
       const req = { user: { workspaceId: 'ws-1' } } as never;
-      const body = { name: 'Voice A', provider: 'OPENAI' as const, voiceId: 'v1' };
+      const body = { name: 'Voice A', provider: VoiceProvider.OPENAI, voiceId: 'v1' };
 
       const result = await controller.createProfile(req, body);
 
@@ -66,7 +67,7 @@ describe('VoiceController', () => {
     it('propagates error when service fails to create profile', async () => {
       service.createVoiceProfile.mockRejectedValue(new Error('Duplicate voiceId'));
       const req = { user: { workspaceId: 'ws-1' } } as never;
-      const body = { name: 'Dup', provider: 'OPENAI' as const, voiceId: 'v1' };
+      const body = { name: 'Dup', provider: VoiceProvider.OPENAI, voiceId: 'v1' };
 
       await expect(controller.createProfile(req, body)).rejects.toThrow('Duplicate voiceId');
     });

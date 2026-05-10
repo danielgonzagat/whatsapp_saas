@@ -49,7 +49,6 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { THROTTLE_TIERS } from './throttle/throttle.config';
 import { TenantThrottlerGuard } from './throttle/tenant-throttler.guard';
 
-import { AdInsightModule } from './integrations/ad-insight/ad-insight.module';
 import { AdminModule } from './admin/admin.module';
 import { AffiliateModule } from './affiliate/affiliate.module';
 import { AiBrainModule } from './ai-brain/ai-brain.module';
@@ -209,7 +208,6 @@ const isProd = process.env.NODE_ENV === 'production';
     AuditModule,
     AutopilotModule,
     CopilotModule,
-    AdInsightModule,
     AiBrainModule,
     GrowthModule,
     CalendarModule, // 📅 Integração com calendários

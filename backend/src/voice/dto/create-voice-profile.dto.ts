@@ -1,7 +1,7 @@
 import { IsEnum, IsNotEmpty, IsOptional, IsString, IsUrl, MaxLength } from 'class-validator';
 
 /** Voice provider enum. */
-enum VoiceProvider {
+export enum VoiceProvider {
   OPENAI = 'OPENAI',
 }
 

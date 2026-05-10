@@ -38,7 +38,7 @@ export interface APICall {
   /** Method property. */
   method: string;
   /** Call pattern property. */
-  callPattern: 'apiFetch' | 'useSWR' | 'fetch' | 'objectApi';
+  callPattern: 'apiFetch' | 'useSWR' | 'fetch' | 'objectApi' | 'adminFetch';
   /** Is proxy property. */
   isProxy: boolean;
   /** Proxy target property. */

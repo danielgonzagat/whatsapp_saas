@@ -122,7 +122,7 @@ describe('OpsController', () => {
     });
 
     it('throws BadRequestException for unknown queue name', () => {
-      expect(() => (controller as Record<string, unknown>)['getQueue']('nonexistent')).toThrow(
+      expect(() => (controller as any)['getQueue']('nonexistent')).toThrow(
         BadRequestException,
       );
     });
@@ -148,7 +148,7 @@ describe('OpsController', () => {
       mockDlqQueue.getJobs.mockResolvedValue([job]);
       mockMainQueue.add.mockResolvedValue({ id: 'retried' });
 
-      const result = await controller.retryDlq('default', '10');
+      const result = await controller.retryDlq('default', 10);
 
       expect(result).toEqual({ queue: 'default', retried: 1 });
       expect(mockMainQueue.add).toHaveBeenCalledWith(

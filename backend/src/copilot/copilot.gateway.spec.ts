@@ -7,8 +7,8 @@ jest.mock('../common/redis/redis.util', () => ({
 
 import { createRedisClient } from '../common/redis/redis.util';
 
-function mockSocket(overrides?: Partial<Socket>): Socket {
-  return { id: 'test-socket-id', ...overrides } as Socket;
+function mockSocket(overrides: Record<string, any> = {}): Socket {
+  return { id: 'test-socket-id', ...overrides } as any as Socket;
 }
 
 describe('CopilotGateway', () => {
@@ -131,7 +131,7 @@ describe('CopilotGateway', () => {
 
       gateway.handleConnection(socket);
 
-      expect(mockSocket.join).toHaveBeenCalledWith('workspace:ws-1');
+      expect(socket.join).toHaveBeenCalledWith('workspace:ws-1');
     });
 
     it('handles connection without workspaceId gracefully', () => {

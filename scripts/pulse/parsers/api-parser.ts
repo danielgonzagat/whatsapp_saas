@@ -229,6 +229,90 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
           });
         }
 
+        // Pattern 1b: adminFetch('/endpoint', ...) — admin API prefix is /admin
+        const adminFetchMatches = [
+          ...line.matchAll(/adminFetch\s*(?:<[^(]*>)?\s*\(\s*['"`]([^'"`]+)['"`]/g),
+          ...line.matchAll(/adminFetch\s*(?:<[^(]*>)?\s*\(\s*`([^`]+)`/g),
+        ];
+        for (const m of adminFetchMatches) {
+          const raw = m[1];
+          let endpoint = normalizeEndpoint(raw);
+          if (endpoint.length < deriveUnitValue() + deriveUnitValue()) {
+            continue;
+          }
+          // adminFetch prepends API_URL which ends with /admin
+          endpoint = `/admin${endpoint}`;
+          endpoint = endpoint.replace(/\/+/g, '/');
+          const key = `${relFile}:${i + 1}:${endpoint}`;
+          if (seen.has(key)) {
+            continue;
+          }
+          seen.add(key);
+
+          const matchStart = m.index || 0;
+          let stmtContext = '';
+          let parenDepth = 0;
+          let started = false;
+          for (let ci = matchStart; ci < line.length; ci++) {
+            const ch = line[ci];
+            stmtContext += ch;
+            if (ch === '(') {
+              parenDepth++;
+              started = true;
+            }
+            if (ch === ')') {
+              parenDepth--;
+              if (started && parenDepth === 0) {
+                break;
+              }
+            }
+          }
+          if (started && parenDepth > 0) {
+            for (
+              let j = i + 1;
+              j <
+              Math.min(
+                i +
+                  deriveUnitValue() +
+                  deriveUnitValue() +
+                  deriveUnitValue() +
+                  deriveUnitValue() +
+                  deriveUnitValue(),
+                lines.length,
+              );
+              j++
+            ) {
+              for (const ch of lines[j]) {
+                stmtContext += ch;
+                if (ch === '(') {
+                  parenDepth++;
+                }
+                if (ch === ')') {
+                  parenDepth--;
+                  if (parenDepth === 0) {
+                    break;
+                  }
+                }
+              }
+              if (parenDepth === 0) {
+                break;
+              }
+            }
+          }
+
+          calls.push({
+            file: relFile,
+            line: i + 1,
+            endpoint: raw,
+            normalizedPath: endpoint,
+            method: detectMethod(stmtContext),
+            callPattern: 'adminFetch',
+            isProxy: false,
+            proxyTarget: null,
+            callerFunction: null,
+          });
+        }
+
         const wrappedContext = startsWrappedFetchCall(line, wrapperPrefixes)
           ? extractWrappedCallContext(lines, i, wrapperPrefixes)
           : '';

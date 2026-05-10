@@ -43,9 +43,21 @@ export class PrismaService
 {
   private readonly logger = new Logger(PrismaService.name);
 
+  private checkoutEmailSender?: (input: {
+    to: string;
+    subject: string;
+    html: string;
+  }) => Promise<boolean>;
+
   constructor() {
     super();
     this.installCheckoutPaidMemberAccessHook();
+  }
+
+  setCheckoutEmailSender(
+    sendEmail: (input: { to: string; subject: string; html: string }) => Promise<boolean>,
+  ) {
+    this.checkoutEmailSender = sendEmail;
   }
 
   private installCheckoutPaidMemberAccessHook() {
@@ -406,7 +418,12 @@ export class PrismaService
   async sendPurchaseConfirmationEmailFromPaidCheckoutUpdate(
     args: Prisma.CheckoutOrderUpdateManyArgs,
   ) {
-    await sendPurchaseConfirmationEmailFromPaidCheckoutUpdate(this, args);
+    if (!this.checkoutEmailSender) return;
+    await sendPurchaseConfirmationEmailFromPaidCheckoutUpdate(
+      this,
+      args,
+      this.checkoutEmailSender,
+    );
   }
 
   async createAffiliateCommissionFromPaidCheckoutUpdate(args: Prisma.CheckoutOrderUpdateManyArgs) {

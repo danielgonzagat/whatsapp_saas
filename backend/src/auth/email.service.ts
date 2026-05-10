@@ -4,6 +4,7 @@ import { connect as tlsConnect } from 'node:tls';
 import { join } from 'node:path';
 import { Injectable, Logger, Optional } from '@nestjs/common';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { getTraceHeaders } from '../common/trace-headers';
 import { escapeHtml } from '../common/utils/html-escape.util';
 import {
@@ -64,9 +65,16 @@ export class EmailService {
   private readonly logger = new Logger(EmailService.name);
   private readonly fromEmail = process.env.EMAIL_FROM || 'noreply@kloel.com';
 
-  constructor(@Optional() private readonly opsAlert?: OpsAlertService) {
+  constructor(
+    @Optional() private readonly opsAlert?: OpsAlertService,
+    @Optional() private readonly prismaService?: PrismaService,
+  ) {
     const provider = this.getProvider();
     this.logger.log(`EmailService initialized with provider: ${provider}`);
+
+    if (this.prismaService) {
+      this.prismaService.setCheckoutEmailSender(this.sendEmail.bind(this));
+    }
 
     if (process.env.NODE_ENV === 'production' && provider === 'log') {
       throw new Error(

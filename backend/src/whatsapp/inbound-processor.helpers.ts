@@ -11,7 +11,7 @@ import { extractFallbackTopic as extractFallbackTopicValue } from './whatsapp-no
 
 const PHONE_NON_DIGIT_RE = /\D/g;
 
-function normalizePhone(phone: string): string {
+export function normalizePhone(phone: string): string {
   return String(phone || '')
     .replace(PHONE_NON_DIGIT_RE, '')
     .replace('@c.us', '')

@@ -44,81 +44,14 @@ export class AutopilotAnalyticsService {
         workspaceId,
         createdAt: { gte: new Date(now - days7) },
       },
-      select: {
-        createdAt: true,
-        status: true,
-        action: true,
-        intent: true,
-        reason: true,
-        meta: true,
-      },
+      select: { createdAt: true, status: true, action: true, intent: true, reason: true, meta: true },
       orderBy: { createdAt: 'desc' },
       take: 5000,
     });
 
-    const actionsByType: Record<string, number> = {};
-    const timeline: Record<string, number> = {};
-    let lastActionAt: string | null = null;
-    let errorsLast7d = 0;
-    let lastErrorAt: string | null = null;
-    const errorReasons: Record<string, number> = {};
-    let scheduledCount = 0;
-    let nextRetryAt: string | null = null;
-    let conversionsLast7d = 0;
-    let lastConversionAt: string | null = null;
-    let conversionsAmountLast7d = 0;
-    let skippedTotal = 0;
-    let skippedOptin = 0;
-    let skipped24h = 0;
-
+    const acc = this.createStatsAccumulator();
     for (const ev of events) {
-      const action = ev.action || 'UNKNOWN';
-      actionsByType[action] = (actionsByType[action] || 0) + 1;
-      if (ev.status === 'error') {
-        errorsLast7d += 1;
-        const reason = ev.reason || 'error';
-        errorReasons[reason] = (errorReasons[reason] || 0) + 1;
-        const tsError = ev.createdAt.getTime();
-        if (!lastErrorAt || tsError > new Date(lastErrorAt).getTime()) {
-          lastErrorAt = ev.createdAt.toISOString();
-        }
-      }
-      if (ev.status === 'skipped') {
-        skippedTotal += 1;
-        const reason = (ev.reason || '').toLowerCase();
-        if (reason.includes('optin')) {
-          skippedOptin += 1;
-        }
-        if (reason.includes('24h') || reason.includes('session')) {
-          skipped24h += 1;
-        }
-      }
-
-      if (ev.status === 'scheduled') {
-        scheduledCount += 1;
-        const cf = this.readOptionalText(this.readRecord(ev.meta).nextRetryAt);
-        if (cf && (!nextRetryAt || new Date(cf).getTime() < new Date(nextRetryAt).getTime())) {
-          nextRetryAt = cf;
-        }
-      }
-      if (ev.action === 'CONVERSION') {
-        conversionsLast7d += 1;
-        const tsConv = ev.createdAt.getTime();
-        if (!lastConversionAt || tsConv > new Date(lastConversionAt).getTime()) {
-          lastConversionAt = ev.createdAt.toISOString();
-        }
-        const amt = (ev.meta as Record<string, unknown>)?.amount;
-        if (amt && !isNaN(Number(amt))) {
-          conversionsAmountLast7d += Number(amt);
-        }
-      }
-
-      const ts = ev.createdAt.getTime();
-      const day = ev.createdAt.toISOString().slice(0, 10);
-      timeline[day] = (timeline[day] || 0) + 1;
-      if (!lastActionAt || ts > new Date(lastActionAt).getTime()) {
-        lastActionAt = ev.createdAt.toISOString();
-      }
+      this.processStatsEvent(ev, acc);
     }
 
     const contacts = await this.prisma.contact.findMany({
@@ -127,29 +60,119 @@ export class AutopilotAnalyticsService {
       take: 2000,
     });
 
-    const actionsLast7d = events.length;
-
     return {
       workspaceId,
       enabled,
       billingSuspended,
       contactsTracked: contacts.length,
-      actionsLast7d,
-      actionsByType,
-      lastActionAt,
-      errorsLast7d,
-      lastErrorAt,
-      errorReasons,
-      scheduledCount,
-      nextRetryAt,
-      conversionsLast7d,
-      lastConversionAt,
-      conversionsAmountLast7d,
-      skippedTotal,
-      skippedOptin,
-      skipped24h,
-      timeline,
+      actionsLast7d: events.length,
+      actionsByType: acc.actionsByType,
+      lastActionAt: acc.lastActionAt,
+      errorsLast7d: acc.errorsLast7d,
+      lastErrorAt: acc.lastErrorAt,
+      errorReasons: acc.errorReasons,
+      scheduledCount: acc.scheduledCount,
+      nextRetryAt: acc.nextRetryAt,
+      conversionsLast7d: acc.conversionsLast7d,
+      lastConversionAt: acc.lastConversionAt,
+      conversionsAmountLast7d: acc.conversionsAmountLast7d,
+      skippedTotal: acc.skippedTotal,
+      skippedOptin: acc.skippedOptin,
+      skipped24h: acc.skipped24h,
+      timeline: acc.timeline,
     };
+  }
+
+  private createStatsAccumulator() {
+    return {
+      actionsByType: {} as Record<string, number>,
+      timeline: {} as Record<string, number>,
+      lastActionAt: null as string | null,
+      errorsLast7d: 0,
+      lastErrorAt: null as string | null,
+      errorReasons: {} as Record<string, number>,
+      scheduledCount: 0,
+      nextRetryAt: null as string | null,
+      conversionsLast7d: 0,
+      lastConversionAt: null as string | null,
+      conversionsAmountLast7d: 0,
+      skippedTotal: 0,
+      skippedOptin: 0,
+      skipped24h: 0,
+    };
+  }
+
+  private processStatsEvent(
+    ev: { createdAt: Date; status?: string | null; action?: string | null; reason?: string | null; meta?: unknown },
+    acc: ReturnType<AutopilotAnalyticsService['createStatsAccumulator']>,
+  ) {
+    const action = ev.action || 'UNKNOWN';
+    acc.actionsByType[action] = (acc.actionsByType[action] || 0) + 1;
+
+    this.processStatsError(ev, acc);
+    this.processStatsSkip(ev, acc);
+    this.processStatsScheduled(ev, acc);
+    this.processStatsConversion(ev, acc);
+
+    const ts = ev.createdAt.getTime();
+    const day = ev.createdAt.toISOString().slice(0, 10);
+    acc.timeline[day] = (acc.timeline[day] || 0) + 1;
+    if (!acc.lastActionAt || ts > new Date(acc.lastActionAt).getTime()) {
+      acc.lastActionAt = ev.createdAt.toISOString();
+    }
+  }
+
+  private processStatsError(
+    ev: { createdAt: Date; status?: string | null; reason?: string | null },
+    acc: ReturnType<AutopilotAnalyticsService['createStatsAccumulator']>,
+  ) {
+    if (ev.status !== 'error') return;
+    acc.errorsLast7d += 1;
+    const reason = ev.reason || 'error';
+    acc.errorReasons[reason] = (acc.errorReasons[reason] || 0) + 1;
+    const tsError = ev.createdAt.getTime();
+    if (!acc.lastErrorAt || tsError > new Date(acc.lastErrorAt).getTime()) {
+      acc.lastErrorAt = ev.createdAt.toISOString();
+    }
+  }
+
+  private processStatsSkip(
+    ev: { reason?: string | null; status?: string | null },
+    acc: ReturnType<AutopilotAnalyticsService['createStatsAccumulator']>,
+  ) {
+    if (ev.status !== 'skipped') return;
+    acc.skippedTotal += 1;
+    const reason = (ev.reason || '').toLowerCase();
+    if (reason.includes('optin')) acc.skippedOptin += 1;
+    if (reason.includes('24h') || reason.includes('session')) acc.skipped24h += 1;
+  }
+
+  private processStatsScheduled(
+    ev: { status?: string | null; meta?: unknown },
+    acc: ReturnType<AutopilotAnalyticsService['createStatsAccumulator']>,
+  ) {
+    if (ev.status !== 'scheduled') return;
+    acc.scheduledCount += 1;
+    const cf = this.readOptionalText(this.readRecord(ev.meta).nextRetryAt);
+    if (cf && (!acc.nextRetryAt || new Date(cf).getTime() < new Date(acc.nextRetryAt).getTime())) {
+      acc.nextRetryAt = cf;
+    }
+  }
+
+  private processStatsConversion(
+    ev: { status?: string | null; action?: string | null; createdAt: Date; meta?: unknown },
+    acc: ReturnType<AutopilotAnalyticsService['createStatsAccumulator']>,
+  ) {
+    if (ev.action !== 'CONVERSION') return;
+    acc.conversionsLast7d += 1;
+    const tsConv = ev.createdAt.getTime();
+    if (!acc.lastConversionAt || tsConv > new Date(acc.lastConversionAt).getTime()) {
+      acc.lastConversionAt = ev.createdAt.toISOString();
+    }
+    const amt = (ev.meta as Record<string, unknown>)?.amount;
+    if (amt && !isNaN(Number(amt))) {
+      acc.conversionsAmountLast7d += Number(amt);
+    }
   }
 
   /**

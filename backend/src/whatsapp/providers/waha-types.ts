@@ -116,7 +116,7 @@ function normalizeWahaSessionStatus(raw: unknown): string | null {
 }
 
 /** Map waha session status. */
-export function mapWahaSessionStatus(rawStatus: string | null): SessionStatus['state'] {
+function mapWahaSessionStatus(rawStatus: string | null): SessionStatus['state'] {
   if (!rawStatus) {
     return null;
   }

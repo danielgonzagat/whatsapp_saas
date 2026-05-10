@@ -1,4 +1,4 @@
-import { MODULE_METADATA } from '@nestjs/common/constants';
+import { MODULE_METADATA, GLOBAL_MODULE_METADATA } from '@nestjs/common/constants';
 import { OpsAlertModule } from './ops-alert.module';
 import { OpsAlertService } from './ops-alert.service';
 
@@ -18,7 +18,7 @@ describe('OpsAlertModule', () => {
   });
 
   it('is declared as a global module', () => {
-    const isGlobal = Reflect.getMetadata('__global__', OpsAlertModule);
+    const isGlobal = Reflect.getMetadata(GLOBAL_MODULE_METADATA, OpsAlertModule);
 
     expect(isGlobal).toBe(true);
   });

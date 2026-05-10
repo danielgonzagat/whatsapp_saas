@@ -4,7 +4,6 @@ import { PrismaService } from '../prisma/prisma.service';
 import { WhatsAppProviderRegistry } from './providers/provider-registry';
 import { WahaChatSummary } from './providers/whatsapp-api.provider';
 import { extractPhoneFromChatId as normalizePhoneFromChatId } from './whatsapp-normalization.util';
-import { WhatsappService } from './whatsapp.service';
 
 export type BacklogMode = 'reply_all_recent_first' | 'reply_only_new' | 'prioritize_hot';
 
@@ -16,7 +15,6 @@ export interface RemoteBacklogLoadDeps {
   providerRegistry: WhatsAppProviderRegistry;
   chatFilter: CiaChatFilterService;
   sendHelpers: CiaSendHelpersService;
-  whatsappService: WhatsappService;
 }
 
 export async function loadRemotePendingBatchHelper(
@@ -146,10 +144,6 @@ export async function loadRemotePendingBatchHelper(
       phone: true,
     },
   });
-
-  await deps.whatsappService
-    .syncRemoteContactProfile(params.workspaceId, phone, detectedName)
-    .catch(() => undefined);
 
   const customerMessages = effectivePending.map((message) => ({
     content: message.content,
