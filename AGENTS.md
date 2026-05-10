@@ -293,47 +293,15 @@ O estado de rigor maximo do Codacy faz parte da governance.
 <claude-mem-context>
 # Memory Context
 
-# [whatsapp_saas] recent context, 2026-05-10 5:51pm GMT-3
+# [whatsapp_saas] recent context, 2026-05-10 6:38pm GMT-3
 
 Legend: 🎯session 🔴bugfix 🟣feature 🔄refactor ✅change 🔵discovery ⚖️decision
 Format: ID TIME TYPE TITLE
 Fetch details: get_observations([IDs]) | Search: mem-search skill
 
-Stats: 50 obs (19,917t read) | 628,671t work | 97% savings
+Stats: 50 obs (24,622t read) | 641,033t work | 96% savings
 
-### May 7, 2026
-430 1:19p 🔵 MIND Module Complete File Inventory — 17 Backend Services + 4 Admin + Frontend Hooks Verified
-431 " 🔵 Apple Service ID `com.kloel.web` — Only in Test Fixtures, Never in Production Code
-432 " 🔴 admin-mind.service.ts Trailing Whitespace Fixed — git diff --check Now Passes
-433 " 🔵 Frontend-Admin Also Uses Canonical Mushroom SVG — 3 References Found
 ### May 9, 2026
-627 3:42p 🔵 Obsidian Mirror Debug Session Boot — Workspace State Snapshot
-633 3:45p 🔵 Obsidian Mirror Real-Time Sync Investigation Initiated — RAM and Graph Staleness Bugs Scoped
-635 3:47p 🔴 Obsidian Mirror Daemon — Missing `collectAllSourceFiles` Import Fixed
-636 " 🔵 Obsidian Mirror Daemon — Full Rebuild Now Running, 3666 Source Files Detected
-639 3:48p 🔵 Obsidian Mirror Real-Time Sync Bug — Session Boot
-641 3:49p 🔴 Obsidian Mirror Full Rebuild — 1483 Stale Files Removed, 3666 Files Re-synced
-642 " 🔴 Graph Lens Active Mode Fixed — "Custom" Replaced by "factory"
-643 " 🔵 Post-Rebuild Validation — 14 Files Changed Since Manifest, Mirror Now In-Sync
-644 " 🟣 Obsidian Mirror Daemon Launched in Watch Mode — PID 88841
-645 3:51p 🔴 Daemon Watch Mode Crash Bug Discovered — Process Exits Seconds After Launch
-646 " 🔵 Daemon Watch Mode Uses 13 Scoped Source Roots — Not Full Repo Tree
-648 " 🔵 Watch Mode Daemon Confirmed Working — Real-Time Mirroring Active When Run Foreground
-649 " 🔵 Validate Drift Growing — 19 Changed Files vs 14 Earlier, Mirror Falling Behind Active Dev
-652 3:52p 🔵 Daemon Watch Loop Fully Functional — Git Dirty State Refresh, Real-Time Mirror, Stable at 143MB RSS
-653 " 🔵 Terminal Multiplexer Availability — Only `screen` Present, No `tmux` or `dtach`
-656 " 🔵 Screen Daemon Container Survives but Node Child Still Exits — Bug Is In Daemon Code, Not Process Management
-657 3:55p 🔵 Obsidian Mirror Real-Time Sync Bug — Session Boot Context
-658 " 🔵 Obsidian Mirror Daemon Runtime State — PID 28855 Confirmed Active at Low RAM
-659 3:57p 🔵 Mirror Daemon Validate Exit Code 1 — 1 Changed File Per Run, Different File Each Time
-660 " 🔵 Obsidian Mirror Daemon Live Throughput — 13 Mirror Events in 2.5 Minutes Across Backend + Frontend
-662 4:00p 🔵 Graph Lens HTTP Server (port 37779) Not Running — Active Lens Corrected to "factory"
-663 " 🔴 Stale PID File Fixed — tmp/obsidian-mirror-daemon.pid Updated from 98907 to 28855
-664 " 🔵 Mirror Daemon Status Snapshot — 3670 Files, 56MB Source, 70MB Mirror, Live Since 18:46
-678 4:24p ⚖️ Obsidian Mirror Daemon — RAM Efficiency Mandate Issued
-679 4:25p 🔵 Obsidian Mirror Daemon RAM Profile — 100MB RSS on 16GB System at 71% Pressure
-680 " 🔄 Obsidian Mirror Daemon Constants — Polling Intervals Slowed and Made Env-Configurable
-681 " ✅ Obsidian Mirror Daemon Restarted with 64MB Heap Cap and Slower Polls
 684 4:26p 🔵 Daemon RAM Profile Post-Restart — Startup Spike to 154MB Then GC Down to 40MB at Idle
 685 " 🟣 Obsidian Mirror Watchdog Script Created — Auto-Restarts Daemon if RSS Exceeds 128MB
 686 4:27p 🔵 Watchdog Triggered First Restart — Daemon Startup Consistently Exceeds 128MB RSS Threshold
@@ -354,8 +322,39 @@ Stats: 50 obs (19,917t read) | 628,671t work | 97% savings
 724 " 🔵 ops/kloel-ai-constitution.json — Declarative Constitution Full Content Mapped
 725 " 🔵 Kloel Governance Layer Full Stack — AGENTS.md, CLAUDE.md, CODEX.md, AGENT_RUNBOOK.md All Read
 726 " 🔵 Kloel Quality Gate Ecosystem — 30+ npm Scripts Form Multi-Layer Enforcement Pipeline
+728 5:51p 🔵 Wave-15 OpenCode Fleet Running — 2 Active Subagents and Monitor Process Confirmed Live
+729 " 🔵 OpenCode Subagent Delegation Rules — Comprehensive Anti-Deception Protocol for PULSE Debt Work
+730 5:53p 🔵 Deepseek Auditor Subagent Launched — Reads All CI/CD and Governance Files in Parallel
+733 5:54p 🟣 AI Constitution Enrichment Written — 268 Insertions Across Both Core Files
+734 " 🔴 collectChangedFiles() Path Bug — ops/ Prefix Loses Leading 'o' in Fallback Branch
+735 " 🔵 ops/governance-change-approvals.json — Full Audit Trail of All Protected File Change Approvals
+737 5:56p 🟣 AI Constitution v2 — Four New Enforcement Functions and 10+ New Forbidden Patterns Added
+738 " 🟣 AI Constitution JSON v2 — convergenceContract and evidenceContract Sections Added
+739 5:57p 🔴 addedTextForFile Fixed — All Diff Strategies Now Merged Instead of First-Match-Wins
+740 " 🟣 checkSelfIntegrity() Added — Constitution Checker Now Verifies Its Own Critical Code Paths Survive
+741 " 🟣 Three Regex Pattern Fixes — Broader Success Return, Parameterless Catch, and Empty Arrow Catch
+742 " 🔵 Deepseek Auditor Identified False Positive Risks in New Constitution Patterns
+752 6:04p ⚖️ Kloel AI Constitution Enrichment Mandate — Wave-4 Convergence Gate Expansion
+754 6:07p 🔵 Backend Test Suite — SplitEngine Invariant Validation Confirmed via Property-Based Tests
+755 6:09p 🔵 Backend Test Suite Passing — TranscriptionService Retry Logic and SSRF Guard Confirmed
+756 6:10p 🔵 Backend Full Test Suite — 247/247 Suites Pass on ai-constitution-convergence Worktree
+759 6:14p 🔵 Backend Tests Exit Code 1 Despite Zero Failures — 1 Skipped Test Drives Non-Zero Exit
+762 6:18p 🔵 check-all Suite on ai-constitution-convergence — 6/7 Gates Green, backend-test In Progress
+764 6:20p 🔵 UnifiedAgentService Audit Bug — auditService.logWithTx Not a Function
+765 " 🔵 TikTok Webhook Controller — New Channel Integration With Signature Validation
+766 " 🔵 LedgerReconciliationService — Active Drift Detection Between Wallet Balance and Ledger Sum
+767 6:22p 🔵 Kloel AI Constitution System — Current Gate Architecture Documented
+768 " ⚖️ AI Constitution Total Enrichment Mandate Issued — Mathematical Convergence Goal
+770 6:24p 🔵 Kloel check:all Gate Suite — Full 12-Gate Architecture Confirmed Running
+771 6:27p 🔵 check:all Suite — Full Typecheck, Lint, and Test Gates All Passing in ai-constitution-convergence Worktree
+773 6:28p 🔵 check:all Suite — All 21 Gates Pass with Exit Code 0 in ai-constitution-convergence Worktree
+775 " 🟣 AI Constitution Enriched — convergenceContract, evidenceContract, and 4 New Checker Functions Added
+776 " 🔴 MassSendService — BullMQ Queue Leak Fixed via OnModuleDestroy Lifecycle Hook
+777 " 🔵 Pre-Commit Hook Blocks Constitution Commit — Protected Files and Self-Referential False Positive
+783 6:30p 🔵 gate-rules.mjs Anti-Self-Trip Pattern — Forbidden Strings Built via Per-Character Joins
+784 " 🔴 Self-Integrity Snippet Name Changed — False Positive in Architecture Gate Resolved
 
-Access 629k tokens of past work via get_observations([IDs]) or mem-search skill.
+Access 641k tokens of past work via get_observations([IDs]) or mem-search skill.
 </claude-mem-context>
 
 ## PULSE Auditor Immutability
