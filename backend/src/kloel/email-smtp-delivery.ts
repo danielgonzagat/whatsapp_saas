@@ -41,6 +41,45 @@ function dotStuffSmtpBody(value: string): string {
     .join('\r\n');
 }
 
+function decodeHtmlEntities(raw: string): string {
+  return raw
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&amp;/g, '&');
+}
+
+function htmlToPlainText(html: string): string {
+  let text = '';
+  let insideTag = false;
+  let lastWasWhitespace = false;
+  for (const char of html) {
+    if (char === '<') {
+      insideTag = true;
+      continue;
+    }
+    if (char === '>') {
+      insideTag = false;
+      continue;
+    }
+    if (insideTag) {
+      continue;
+    }
+    const whitespace = char === ' ' || char === '\n' || char === '\r' || char === '\t';
+    if (whitespace) {
+      if (!lastWasWhitespace) {
+        text += ' ';
+      }
+      lastWasWhitespace = true;
+      continue;
+    }
+    text += char;
+    lastWasWhitespace = false;
+  }
+  return decodeHtmlEntities(text).trim();
+}
+
 function buildSmtpMessage(
   to: string,
   subject: string,
@@ -48,7 +87,7 @@ function buildSmtpMessage(
   delivery: ResolvedEmailDelivery,
 ): string {
   const boundary = `KLOEL_${Date.now()}`;
-  const plain = html.replace(/<[^>]*>/g, '');
+  const plain = htmlToPlainText(html);
   return [
     `From: ${delivery.fromName} <${delivery.fromEmail}>`,
     `To: ${to}`,
