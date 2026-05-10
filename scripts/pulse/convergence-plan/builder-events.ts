@@ -1,5 +1,4 @@
 import type { PulseGateName } from '../types.manifest';
-import type { PulseCertification } from '../types.evidence';
 import type { PulseConvergenceUnit } from '../types.convergence';
 import type { BuildPulseConvergencePlanInput } from './kernel';
 import {
@@ -7,7 +6,6 @@ import {
 } from './kernel';
 import {
   observedPulseSource,
-  observedAiSafeExecutionMode,
   observedScenarioKind,
   observedGateKind,
   observedOpenStatus,

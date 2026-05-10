@@ -6,7 +6,6 @@ import {
   FAILED,
   safeRun,
   isFailedExecutionStatusFromEvidence,
-  derivePerfectnessSummary,
 } from './types';
 import * as path from 'path';
 import { ensureDir, writeTextFile } from '../safe-fs';

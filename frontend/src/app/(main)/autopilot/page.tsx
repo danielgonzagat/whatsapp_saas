@@ -4,7 +4,6 @@ import { kloelT } from '@/lib/i18n/t';
 /** Dynamic. */
 export const dynamic = 'force-dynamic';
 
-import { type MissionCardData } from '@/components/kloel';
 import { AutopilotOverview } from './AutopilotOverview';
 import { AutopilotRulesPanel } from './AutopilotRulesPanel';
 import { AutopilotPlanList } from './AutopilotPlanList';
@@ -532,41 +531,6 @@ export default function AutopilotPage() {
   };
 
 
-  const missionCards: MissionCardData[] = [
-    {
-      id: 'auto-responses',
-      title: 'Respostas Automáticas',
-      description: 'IA responde leads em segundos',
-      icon: MessageSquare,
-      status: status?.enabled ? 'completed' : 'pending',
-      action: () => navigate('/whatsapp'),
-    },
-    {
-      id: 'lead-qualification',
-      title: 'Qualificação de Leads',
-      description: 'Identifica intenção de compra',
-      icon: Users,
-      status: stats?.actionsLast7d ? 'completed' : 'pending',
-      action: () => navigate('/vendas/pipeline'),
-    },
-    {
-      id: 'sales-flows',
-      title: 'Fluxos de Vendas',
-      description: 'Direciona para conversão',
-      icon: Zap,
-      status: 'completed',
-      action: () => navigate('/flow'),
-    },
-    {
-      id: 'analytics',
-      title: 'Analytics',
-      description: 'Métricas em tempo real',
-      icon: BarChart3,
-      status: 'completed',
-      action: () => navigate('/analytics'),
-    },
-  ];
-
   if (isLoading && !stats) {
     return (
       <div
@@ -594,7 +558,7 @@ export default function AutopilotPage() {
         impact={impact}
         pipeline={pipeline}
         systemHealth={systemHealth}
-        missionCards={missionCards}
+        missionCards={[]}
         isLoading={isLoading}
         error={error}
         isToggling={isToggling}

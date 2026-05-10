@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Inject, Logger } from '@nestjs/common';
 import type { ImagesResponse, ImageGenerateParamsNonStreaming } from 'openai/resources/images';
 import OpenAI from 'openai';
 import { Prisma } from '@prisma/client';
@@ -7,10 +7,9 @@ import { StorageService } from '../common/storage/storage.service';
 import { getTraceHeaders } from '../common/trace-headers';
 import { resolveKloelCapabilityModel } from '../lib/ai-models';
 import {
-  buildComposerImageE2EStub,
-  buildComposerWebSearchE2EStub,
-  isComposerWebSearchE2EStubEnabled,
-} from './kloel-composer-web-search-e2e-stub';
+  KloelComposerE2EGuard,
+  KLOEL_COMPOSER_E2E_GUARD,
+} from './kloel-composer-e2e-guard';
 
 const MODEL_RE = /model/i;
 const INVALID_RE = /invalid/i;
@@ -81,6 +80,7 @@ export class KloelComposerService {
   constructor(
     private readonly planLimits: PlanLimitsService,
     private readonly storageService: StorageService,
+    @Inject(KLOEL_COMPOSER_E2E_GUARD) private readonly e2EGuard: KloelComposerE2EGuard,
   ) {
     this.openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
   }
@@ -110,8 +110,8 @@ export class KloelComposerService {
     // a deterministic digest keeps the rest of the pipeline (capability
     // dispatcher, token accounting, message metadata) intact.
     // Production never reaches this branch — guarded by NODE_ENV.
-    if (isComposerWebSearchE2EStubEnabled()) {
-      return buildComposerWebSearchE2EStub(normalizedQuery);
+    if (this.e2EGuard.isEnabled()) {
+      return this.e2EGuard.buildSearchResult(normalizedQuery);
     }
 
     const response = await this.openai.responses.create({
@@ -219,8 +219,8 @@ export class KloelComposerService {
     }
 
     if (capability === 'create_image') {
-      if (isComposerWebSearchE2EStubEnabled()) {
-        return buildComposerImageE2EStub();
+      if (this.e2EGuard.isEnabled()) {
+        return this.e2EGuard.buildImageResult();
       }
       if (!process.env.OPENAI_API_KEY) {
         throw new Error(ERR_IMAGE_API_KEY_MISSING);

@@ -12,7 +12,6 @@ import {
 } from '../dynamic-reality-kernel/token-evidence';
 import {
   observedPulseSource,
-  observedAiSafeExecutionMode,
   observedOpenStatus,
   observedWatchStatus,
   observedP0Priority,
@@ -38,7 +37,6 @@ import {
   selectDominantOwnerLane,
   slugify,
   takeEvidenceBatch,
-  uniqueStrings,
 } from './utils';
 
 export function getCapabilityPriority(

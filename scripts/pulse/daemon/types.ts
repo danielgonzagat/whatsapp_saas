@@ -30,10 +30,9 @@ import {
   discoverPropertyPassedStatusFromTypeEvidence,
   discoverPropertyUnexecutedStatusFromExecutionEvidence,
 } from '../dynamic-reality-kernel/catalog-arithmetic';
-import { discoverDoDStatusLabels } from '../__kernel_additions__/discoverDoDStatusLabels';
 import { discoverHarnessExecutionStatusLabels } from '../dynamic-reality-kernel/type-contract-engines';
 
-export const PASSED = discoverPropertyPassedStatusFromTypeEvidence().values().next().value;
+export const PASSED = discoverPropertyPassedStatusFromTypeEvidence().values().next().value!;
 export const FAILED = [...discoverHarnessExecutionStatusLabels()].find(
   (s) =>
     !discoverPropertyPassedStatusFromTypeEvidence().has(s) &&

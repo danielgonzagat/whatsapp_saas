@@ -157,6 +157,8 @@ import { WebinarController } from './webinar.controller';
     WebinarController,
   ],
   providers: [
+    { provide: KLOEL_COMPOSER_E2E_GUARD, useClass: NoopKloelComposerE2EGuard },
+    { provide: KLOEL_LLM_E2E_GUARD, useClass: NoopKloelLLME2EGuard },
     KloelService,
     KloelThinkerService,
     KloelReplyEngineService,

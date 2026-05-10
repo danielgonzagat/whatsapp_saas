@@ -5,6 +5,7 @@ import { MarketingConnectController } from './marketing-connect.controller';
 import { MarketingController } from './marketing.controller';
 import { TikTokMarketingController } from './tiktok-marketing.controller';
 import { TikTokMarketingService } from './tiktok-marketing.service';
+import { TikTokAdsService } from './tiktok-ads.service';
 import { FacebookMessengerController } from './facebook-messenger.controller';
 import { FacebookMessengerService } from './facebook-messenger.service';
 
@@ -17,7 +18,7 @@ import { FacebookMessengerService } from './facebook-messenger.service';
     TikTokMarketingController,
     FacebookMessengerController,
   ],
-  providers: [TikTokMarketingService, FacebookMessengerService],
-  exports: [FacebookMessengerService],
+  providers: [TikTokMarketingService, TikTokAdsService, FacebookMessengerService],
+  exports: [TikTokMarketingService, TikTokAdsService, FacebookMessengerService],
 })
 export class MarketingModule {}

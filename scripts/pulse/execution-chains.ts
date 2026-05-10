@@ -104,7 +104,7 @@ function buildChainFromPath(
     providersInvolved: extractProvidersFromMetadata(node.metadata),
   }));
 
-  const sideEffects = extractSideEffects(path, graph);
+  const sideEffects = extractSideEffects(path);
   const completeness = calculateChainCompleteness(steps);
   const failurePoints = identifyFailurePoints(steps);
 
@@ -189,7 +189,6 @@ function extractProvidersFromMetadata(metadata: StructuralMetadata | undefined):
 
 function extractSideEffects(
   path: PulseStructuralNode[],
-  graph: PulseStructuralGraph,
 ): Array<{
   type:
     | 'network_call'

@@ -402,3 +402,5 @@ export const memoryQueue = lazyQueueProxy('memory-jobs');
 export const crmQueue = lazyQueueProxy('crm-jobs');
 /** Webhook queue. */
 export const webhookQueue = lazyQueueProxy('webhook-jobs');
+/** Google Ads sync queue. */
+export const googleAdsSyncQueue = lazyQueueProxy('google-ads-sync-jobs');

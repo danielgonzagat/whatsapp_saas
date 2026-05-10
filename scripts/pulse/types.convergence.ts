@@ -108,7 +108,7 @@ export interface PulseConvergenceUnit {
   /** Exit criteria property. */
   exitCriteria: string[];
   /** Expected gate shift property. */
-  expectedGateShift?: string;
+  expectedGateShift?: string | undefined;
 }
 
 /** Pulse convergence plan summary shape. */

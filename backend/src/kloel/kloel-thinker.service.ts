@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Inject, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { Response } from 'express';
 import { LLMBudgetService, estimateChatCostCents } from './llm-budget.service';
@@ -6,6 +6,7 @@ import { PlanLimitsService } from '../billing/plan-limits.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { KloelComposerService } from './kloel-composer.service';
 import { KloelConversationStore } from './kloel-conversation-store';
+import { KLOEL_LLM_E2E_GUARD, KloelLLME2EGuard } from './kloel-llm-e2e-guard';
 import {
   createKloelErrorEvent,
   createKloelStatusEvent,
@@ -47,6 +48,7 @@ export class KloelThinkerService {
     private readonly wsContextService: KloelWorkspaceContextService,
     private readonly composerService: KloelComposerService,
     private readonly replyEngine: KloelReplyEngineService,
+    @Inject(KLOEL_LLM_E2E_GUARD) private readonly llmE2EGuard: KloelLLME2EGuard,
   ) {
     this.conversationStore = new KloelConversationStore(prisma, this.logger);
   }
@@ -74,7 +76,7 @@ export class KloelThinkerService {
     const isAborted = () => !!signal?.aborted;
     const abortReason = () => signal?.reason;
     const isClientDisconnected = () => this.replyEngine.isClientDisconnected(abortReason());
-    const streamWriter = new KloelStreamWriter(res, { signal, logger: this.logger });
+    const streamWriter = new KloelStreamWriter(res, { signal, logger: this.logger, llmE2EGuard: this.llmE2EGuard });
     const processingTraceEntries: StoredProcessingTraceEntry[] = [];
     const safeWrite = (event: KloelStreamEvent) => {
       this.threadService.appendStoredProcessingTraceEntry(processingTraceEntries, event);

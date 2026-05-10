@@ -48,7 +48,7 @@ export class BackgroundManager {
   /** Remove background. */
   removeBackground(): void {
     this.canvas.backgroundColor = colors.text.silver;
-    this.canvas.backgroundImage = undefined;
+    delete this.canvas.backgroundImage;
     this.canvas.requestRenderAll();
   }
 }

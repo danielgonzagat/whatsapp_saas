@@ -1,8 +1,12 @@
-import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import * as Sentry from '@sentry/node';
 
 import { AuditService } from '../audit/audit.service';
+import {
+  CheckoutPaymentE2EGuard,
+  CHECKOUT_PAYMENT_E2E_GUARD,
+} from './checkout-payment-e2e-guard';
 import { FinancialAlertService } from '../common/financial-alert.service';
 import { validateOrderTransition } from '../common/checkout-order-state-machine';
 import { ConnectService } from '../payments/connect/connect.service';
@@ -10,10 +14,6 @@ import { FraudEngine } from '../payments/fraud/fraud.engine';
 import { StripeChargeService } from '../payments/stripe/stripe-charge.service';
 import { PrismaService } from '../prisma/prisma.service';
 
-import {
-  buildCheckoutPaymentE2EStubResult,
-  isCheckoutPaymentE2EStubEnabled,
-} from './checkout-payment-e2e-stub';
 import { CheckoutPostPaymentEffectsService } from './checkout-post-payment-effects.service';
 
 type CheckoutPaymentMethod = 'CREDIT_CARD' | 'PIX' | 'BOLETO';
@@ -83,6 +83,7 @@ export class CheckoutPaymentService {
     private readonly financialAlert: FinancialAlertService,
     private readonly auditService: AuditService,
     private readonly postPaymentEffects: CheckoutPostPaymentEffectsService,
+    @Inject(CHECKOUT_PAYMENT_E2E_GUARD) private readonly e2EGuard: CheckoutPaymentE2EGuard,
   ) {}
 
   private async logFraudDecision(params: {
@@ -302,11 +303,11 @@ export class CheckoutPaymentService {
     // E2E test harness: short-circuit before any real Stripe call when the
     // workflow has no STRIPE_SECRET_KEY configured. Production never reaches
     // this branch — gated by NODE_ENV !== 'production' inside the helper.
-    if (isCheckoutPaymentE2EStubEnabled()) {
+    if (this.e2EGuard.isEnabled()) {
       this.logger.log(
         `Checkout payment e2e stub active for order ${params.orderId} workspace ${params.workspaceId} method ${params.paymentMethod}`,
       );
-      return buildCheckoutPaymentE2EStubResult({
+      return this.e2EGuard.buildResult({
         orderId: params.orderId,
         paymentMethod: params.paymentMethod,
       });

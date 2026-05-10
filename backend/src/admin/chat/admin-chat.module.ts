@@ -3,6 +3,7 @@ import { PrismaModule } from '../../prisma/prisma.module';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AdminAccountsModule } from '../accounts/admin-accounts.module';
 import { AdminAccountsService } from '../accounts/admin-accounts.service';
+import { AdminAuditModule } from '../audit/admin-audit.module';
 import { AdminClientsModule } from '../clients/admin-clients.module';
 import { AdminClientsService } from '../clients/admin-clients.service';
 import { AdminComplianceModule } from '../compliance/admin-compliance.module';
@@ -26,6 +27,7 @@ import { AdminSupportModule } from '../support/admin-support.module';
 import { AdminSupportService } from '../support/admin-support.service';
 import { AdminChatController } from './admin-chat.controller';
 import { AdminChatService } from './admin-chat.service';
+import { AdminChatSessionService } from './admin-chat-session.service';
 import { ChatToolRegistry } from './chat-tool.registry';
 import {
   accountsOverviewTool,
@@ -46,6 +48,7 @@ import { searchWorkspacesTool } from './tools/search-workspaces.tool';
 @Module({
   imports: [
     PrismaModule,
+    AdminAuditModule,
     AdminPermissionsModule,
     AdminDashboardModule,
     AdminMarketingModule,
@@ -60,8 +63,8 @@ import { searchWorkspacesTool } from './tools/search-workspaces.tool';
     AdminProductsModule,
   ],
   controllers: [AdminChatController],
-  providers: [AdminChatService, ChatToolRegistry],
-  exports: [AdminChatService, ChatToolRegistry],
+  providers: [AdminChatService, AdminChatSessionService, ChatToolRegistry],
+  exports: [AdminChatService, AdminChatSessionService, ChatToolRegistry],
 })
 export class AdminChatModule implements OnModuleInit {
   constructor(

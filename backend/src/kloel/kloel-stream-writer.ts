@@ -9,7 +9,7 @@ import {
   createKloelStatusEvent,
 } from './kloel-stream-events';
 import { chatCompletionStreamWithRetry } from './openai-wrapper';
-import { buildKloelLlmTestStubStream, isKloelLlmTestStubEnabled } from './kloel-llm-test-stub';
+import { KloelLLME2EGuard } from './kloel-llm-e2e-guard';
 
 const U2028_U2029_RE = /[<>&\u2028\u2029]/g;
 type ChatCompletionStream = AsyncIterable<OpenAI.ChatCompletionChunk>;
@@ -19,6 +19,7 @@ interface KloelStreamWriterOptions {
   logger: {
     warn(message: string): void;
   };
+  llmE2EGuard?: KloelLLME2EGuard;
 }
 
 interface StreamWriterModelResponseInput {
@@ -201,10 +202,8 @@ export class KloelStreamWriter {
     // already-budgeted chatCompletionStreamWithRetry() invocation above.
     let stream: ChatCompletionStream;
 
-    if (isKloelLlmTestStubEnabled()) {
-      // Deterministic e2e/test stub. Production never reaches this branch
-      // (gated by NODE_ENV !== 'production' inside isKloelLlmTestStubEnabled).
-      stream = buildKloelLlmTestStubStream(input.writerMessages);
+    if (this.options.llmE2EGuard?.isEnabled()) {
+      stream = this.options.llmE2EGuard.buildStream(input.writerMessages);
     } else {
       try {
         stream = await openWriterStream(resolveBackendOpenAIModel('writer'));

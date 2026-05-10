@@ -52,7 +52,7 @@ export function graphFinding(input: {
     description: input.description,
     detail: input.detail,
     source: `graph:confirmed_static:${input.kind}`,
-    surface: input.surface,
+    ...(input.surface !== undefined ? { surface: input.surface } : {}),
   };
 }
 

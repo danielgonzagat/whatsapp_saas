@@ -88,6 +88,19 @@ enum EmailDeliveryEvent {
   UNSUBSCRIBED
 }
 
+enum GdprType {
+  EXPORT
+  DELETE
+}
+
+enum GdprStatus {
+  PENDING
+  VERIFYING
+  PROCESSING
+  COMPLETE
+  FAILED
+}
+
 model Workspace {
   id        String   @id @default(uuid())
   name      String
@@ -148,6 +161,7 @@ model Workspace {
   voiceProfiles VoiceProfile[]
 
   auditLogs                  AuditLog[]
+  gdprRequests               GdprRequest[]
   autopilotEvents            AutopilotEvent[]
   autonomyRuns               AutonomyRun[]
   autonomyExecutions         AutonomyExecution[]
@@ -282,6 +296,7 @@ model Agent {
   magicLinkTokens      MagicLinkToken[]
   socialAccounts       SocialAccount[]
   dataDeletionRequests DataDeletionRequest[]
+  gdprRequests         GdprRequest[]
 
   assignedConversations Conversation[]
   messages              Message[]
@@ -1102,6 +1117,25 @@ model DataDeletionRequest {
   @@index([confirmationCode])
   @@index([providerUserId, provider])
   @@map("RAC_DataDeletionRequest")
+}
+
+model GdprRequest {
+  id          String      @id @default(cuid())
+  workspaceId String
+  workspace   Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  userId      String
+  user        Agent       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type        GdprType
+  code        String      @unique
+  status      GdprStatus  @default(PENDING)
+  requestedAt DateTime    @default(now())
+  completedAt DateTime?
+  evidenceUrl String?     @db.Text
+
+  @@index([code])
+  @@index([workspaceId, userId])
+  @@index([userId])
+  @@map("RAC_GdprRequest")
 }
 
 model RiscEvent {

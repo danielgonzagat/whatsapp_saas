@@ -68,7 +68,7 @@ export function hasExportedExecutableDeclaration(sourceFile: ts.SourceFile): boo
       for (const declaration of node.declarationList.declarations) {
         if (
           initializerIsCallable(declaration) ||
-          ts.isObjectLiteralExpression(declaration.initializer)
+          (declaration.initializer && ts.isObjectLiteralExpression(declaration.initializer))
         ) {
           found = true;
           return;

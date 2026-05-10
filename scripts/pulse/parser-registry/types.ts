@@ -1,5 +1,5 @@
 export interface LoadParserInventoryOptions {
-  includeParser?: (name: string) => boolean;
+  includeParser?: ((name: string) => boolean) | undefined;
 }
 
 export const PARSER_NAME_RE = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;

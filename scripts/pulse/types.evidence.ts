@@ -2,12 +2,11 @@
 // Actor evidence, execution traces, world state, gate results, and certification types
 
 import type {
-  PulseGateName,
   PulseEnvironment,
-  PulseManifestFinalReadinessCriteria,
   PulseCertificationProfile,
   PulseActorKind,
 } from './types.health';
+import type { PulseGateName, PulseManifestFinalReadinessCriteria } from './types.manifest';
 import type { PulseTruthMode } from './types.structural';
 import type { PulseCapabilityStateSummary } from './types.capabilities/03-capability';
 import type { PulseFlowProjectionSummary } from './types.capabilities/04-flow-projection';
@@ -161,13 +160,13 @@ export interface PulseExecutionPhase {
   /** Started at property. */
   startedAt: string;
   /** Finished at property. */
-  finishedAt?: string;
+  finishedAt?: string | undefined;
   /** Duration ms property. */
-  durationMs?: number;
+  durationMs?: number | undefined;
   /** Error summary property. */
-  errorSummary?: string;
+  errorSummary?: string | undefined;
   /** Metadata property. */
-  metadata?: Record<string, string | number | boolean>;
+  metadata?: Record<string, string | number | boolean> | undefined;
 }
 
 /** Pulse certification target shape. */
@@ -177,9 +176,9 @@ export interface PulseCertificationTarget {
   /** Final property. */
   final: boolean;
   /** Profile property. */
-  profile?: PulseCertificationProfile | null;
+  profile?: PulseCertificationProfile | null | undefined;
   /** Certification scope property. */
-  certificationScope?: PulseCertificationProfile | null;
+  certificationScope?: PulseCertificationProfile | null | undefined;
 }
 
 /** Pulse execution trace shape. */
@@ -191,9 +190,9 @@ export interface PulseExecutionTrace {
   /** Updated at property. */
   updatedAt: string;
   /** Environment property. */
-  environment?: PulseEnvironment;
+  environment?: PulseEnvironment | undefined;
   /** Certification target property. */
-  certificationTarget?: PulseCertificationTarget;
+  certificationTarget?: PulseCertificationTarget | undefined;
   /** Phases property. */
   phases: PulseExecutionPhase[];
   /** Summary property. */

@@ -79,3 +79,5 @@ export const RUNTIME_FINDING_EVENT_KERNEL_GRAMMAR =
   discoverRuntimeFindingEventPatternsFromEvidence();
 
 export const CHECKER_GAP_TYPES = discoverCheckerGapTypesFromEvidence() as Set<Break['type']>;
+
+export const SECURITY_BREAK_TYPE_KERNEL_GRAMMAR = SECURITY_FINDING_EVENT_KERNEL_GRAMMAR;
