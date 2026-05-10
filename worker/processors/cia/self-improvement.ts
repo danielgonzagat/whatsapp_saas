@@ -1,5 +1,8 @@
-import { randomInt, randomUUID } from 'node:crypto';
+import { randomInt } from 'node:crypto';
 import type { Prisma, PrismaClient } from '@prisma/client';
+import { computeLearningSnapshot, recordDecisionLog } from './cia-decision-log';
+
+export { computeLearningSnapshot, recordDecisionLog } from './cia-decision-log';
 
 /** Variant family type. */
 export type VariantFamily = 'followup' | 'payment_recovery';
