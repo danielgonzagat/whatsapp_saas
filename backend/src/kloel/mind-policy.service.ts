@@ -178,10 +178,6 @@ export class MindPolicyService {
     baselineOutcome?: number,
   ): Promise<void> {
     await this.prisma.$transaction(async (tx) => {
-      // Raw justified: pg_advisory_xact_lock is a PostgreSQL-specific
-      // lightweight session lock. Prisma has no equivalent advisory-lock
-      // primitive. This prevents concurrent resolveOutcome calls from
-      // double-updating the same outcome-key set.
       await tx.$executeRaw /* raw justified: PostgreSQL advisory lock for outcome resolution */ `
         SELECT pg_advisory_xact_lock(hashtext(${`resolve:${workspaceId}:${outcomeKey}`}))
       `;
@@ -363,8 +359,6 @@ export class MindPolicyService {
   private async persist(decision: MindPolicyDecision): Promise<void> {
     if (decision.outcomeKey) {
       await this.prisma.$transaction(async (tx) => {
-        // Raw justified: pg_advisory_xact_lock prevents concurrent persist
-        // calls from racing on the same outcomeKey deduplication check.
         await tx.$executeRaw /* raw justified: PostgreSQL advisory lock for outcome deduplication */ `
           SELECT pg_advisory_xact_lock(hashtext(${`${decision.workspaceId}:${decision.outcomeKey}`}))
         `;
