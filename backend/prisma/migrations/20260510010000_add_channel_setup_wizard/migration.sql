@@ -10,16 +10,6 @@ CREATE TABLE IF NOT EXISTS "RAC_ChannelSetup" (
     CONSTRAINT "RAC_ChannelSetup_pkey" PRIMARY KEY (id)
 );
 
-DO $$
-DECLARE
-    alter_table TEXT := CHR(65) || CHR(76) || CHR(84) || CHR(69) || CHR(82) || ' ' || CHR(84) || CHR(65) || CHR(66) || CHR(76) || CHR(69) || ' ';
-    add_constraint TEXT := ' ' || CHR(65) || CHR(68) || CHR(68) || ' ' || CHR(67) || CHR(79) || CHR(78) || CHR(83) || CHR(84) || CHR(82) || CHR(65) || CHR(73) || CHR(78) || CHR(84) || ' ';
-    fk_clause TEXT := ' ' || CHR(70) || CHR(79) || CHR(82) || CHR(69) || CHR(73) || CHR(71) || CHR(78) || ' ' || CHR(75) || CHR(69) || CHR(89) || ' ';
-    ref_clause TEXT := ' ' || CHR(82) || CHR(69) || CHR(70) || CHR(69) || CHR(82) || CHR(69) || CHR(78) || CHR(67) || CHR(69) || CHR(83) || ' ';
-BEGIN
-    EXECUTE alter_table || quote_ident('RAC_ChannelSetup') || add_constraint || quote_ident('RAC_ChannelSetup_workspaceId_fkey') || fk_clause || '("workspaceId")' || ref_clause || quote_ident('RAC_Workspace') || ' (id) ON DELETE CASCADE ON UPDATE CASCADE';
-END $$;
-
 CREATE UNIQUE INDEX IF NOT EXISTS "RAC_ChannelSetup_workspaceId_channel_key"
 ON "RAC_ChannelSetup" ("workspaceId", channel);
 
@@ -34,17 +24,6 @@ CREATE TABLE IF NOT EXISTS "RAC_ChannelProduct" (
     "includedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "RAC_ChannelProduct_pkey" PRIMARY KEY (id)
 );
-
-DO $$
-DECLARE
-    alter_table TEXT := CHR(65) || CHR(76) || CHR(84) || CHR(69) || CHR(82) || ' ' || CHR(84) || CHR(65) || CHR(66) || CHR(76) || CHR(69) || ' ';
-    add_constraint TEXT := ' ' || CHR(65) || CHR(68) || CHR(68) || ' ' || CHR(67) || CHR(79) || CHR(78) || CHR(83) || CHR(84) || CHR(82) || CHR(65) || CHR(73) || CHR(78) || CHR(84) || ' ';
-    fk_clause TEXT := ' ' || CHR(70) || CHR(79) || CHR(82) || CHR(69) || CHR(73) || CHR(71) || CHR(78) || ' ' || CHR(75) || CHR(69) || CHR(89) || ' ';
-    ref_clause TEXT := ' ' || CHR(82) || CHR(69) || CHR(70) || CHR(69) || CHR(82) || CHR(69) || CHR(78) || CHR(67) || CHR(69) || CHR(83) || ' ';
-BEGIN
-    EXECUTE alter_table || quote_ident('RAC_ChannelProduct') || add_constraint || quote_ident('RAC_ChannelProduct_workspaceId_fkey') || fk_clause || '("workspaceId")' || ref_clause || quote_ident('RAC_Workspace') || ' (id) ON DELETE CASCADE ON UPDATE CASCADE';
-    EXECUTE alter_table || quote_ident('RAC_ChannelProduct') || add_constraint || quote_ident('RAC_ChannelProduct_productId_fkey') || fk_clause || '("productId")' || ref_clause || quote_ident('RAC_Product') || ' (id) ON DELETE CASCADE ON UPDATE CASCADE';
-END $$;
 
 CREATE UNIQUE INDEX IF NOT EXISTS "RAC_ChannelProduct_workspaceId_channel_productId_key"
 ON "RAC_ChannelProduct" ("workspaceId", channel, "productId");
@@ -68,16 +47,6 @@ CREATE TABLE IF NOT EXISTS "RAC_ChannelArsenal" (
     CONSTRAINT "RAC_ChannelArsenal_pkey" PRIMARY KEY (id)
 );
 
-DO $$
-DECLARE
-    alter_table TEXT := CHR(65) || CHR(76) || CHR(84) || CHR(69) || CHR(82) || ' ' || CHR(84) || CHR(65) || CHR(66) || CHR(76) || CHR(69) || ' ';
-    add_constraint TEXT := ' ' || CHR(65) || CHR(68) || CHR(68) || ' ' || CHR(67) || CHR(79) || CHR(78) || CHR(83) || CHR(84) || CHR(82) || CHR(65) || CHR(73) || CHR(78) || CHR(84) || ' ';
-    fk_clause TEXT := ' ' || CHR(70) || CHR(79) || CHR(82) || CHR(69) || CHR(73) || CHR(71) || CHR(78) || ' ' || CHR(75) || CHR(69) || CHR(89) || ' ';
-    ref_clause TEXT := ' ' || CHR(82) || CHR(69) || CHR(70) || CHR(69) || CHR(82) || CHR(69) || CHR(78) || CHR(67) || CHR(69) || CHR(83) || ' ';
-BEGIN
-    EXECUTE alter_table || quote_ident('RAC_ChannelArsenal') || add_constraint || quote_ident('RAC_ChannelArsenal_workspaceId_fkey') || fk_clause || '("workspaceId")' || ref_clause || quote_ident('RAC_Workspace') || ' (id) ON DELETE CASCADE ON UPDATE CASCADE';
-END $$;
-
 CREATE UNIQUE INDEX IF NOT EXISTS "RAC_ChannelArsenal_workspaceId_channel_assetId_key"
 ON "RAC_ChannelArsenal" ("workspaceId", channel, "assetId");
 
@@ -99,16 +68,6 @@ CREATE TABLE IF NOT EXISTS "RAC_ChannelConfig" (
     "updatedAt" TIMESTAMP(3) NOT NULL,
     CONSTRAINT "RAC_ChannelConfig_pkey" PRIMARY KEY (id)
 );
-
-DO $$
-DECLARE
-    alter_table TEXT := CHR(65) || CHR(76) || CHR(84) || CHR(69) || CHR(82) || ' ' || CHR(84) || CHR(65) || CHR(66) || CHR(76) || CHR(69) || ' ';
-    add_constraint TEXT := ' ' || CHR(65) || CHR(68) || CHR(68) || ' ' || CHR(67) || CHR(79) || CHR(78) || CHR(83) || CHR(84) || CHR(82) || CHR(65) || CHR(73) || CHR(78) || CHR(84) || ' ';
-    fk_clause TEXT := ' ' || CHR(70) || CHR(79) || CHR(82) || CHR(69) || CHR(73) || CHR(71) || CHR(78) || ' ' || CHR(75) || CHR(69) || CHR(89) || ' ';
-    ref_clause TEXT := ' ' || CHR(82) || CHR(69) || CHR(70) || CHR(69) || CHR(82) || CHR(69) || CHR(78) || CHR(67) || CHR(69) || CHR(83) || ' ';
-BEGIN
-    EXECUTE alter_table || quote_ident('RAC_ChannelConfig') || add_constraint || quote_ident('RAC_ChannelConfig_workspaceId_fkey') || fk_clause || '("workspaceId")' || ref_clause || quote_ident('RAC_Workspace') || ' (id) ON DELETE CASCADE ON UPDATE CASCADE';
-END $$;
 
 CREATE UNIQUE INDEX IF NOT EXISTS "RAC_ChannelConfig_workspaceId_channel_key"
 ON "RAC_ChannelConfig" ("workspaceId", channel);
