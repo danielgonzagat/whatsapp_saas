@@ -209,6 +209,7 @@ export default function UniversalChannelWizard({
         ) : null}
         {step === 1 ? (
           <ProductsStep
+            profile={profile}
             products={setup?.products ?? []}
             saving={saving}
             selectedProductIds={selectedProductIds}

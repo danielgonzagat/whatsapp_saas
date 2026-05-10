@@ -67,6 +67,7 @@ export function ConnectionStep({
 }
 
 export function ProductsStep({
+  profile,
   products,
   saving,
   selectedProductIds,
@@ -75,6 +76,7 @@ export function ProductsStep({
   onSave,
   onPrev,
 }: {
+  profile: Profile;
   products: ChannelSetupProduct[];
   saving: boolean;
   selectedProductIds: string[];
@@ -88,6 +90,31 @@ export function ProductsStep({
       <p style={{ fontSize: 13, color: S, lineHeight: 1.7, marginBottom: 20 }}>
         {kloelT('Escolha os produtos que este canal pode oferecer automaticamente.')}
       </p>
+      <div
+        style={{
+          background: C,
+          border: `1px solid ${B}`,
+          borderRadius: UI.radiusSm,
+          marginBottom: 16,
+          padding: '12px 14px',
+        }}
+      >
+        <div
+          style={{
+            color: E,
+            fontFamily: M,
+            fontSize: 9,
+            letterSpacing: '0.2em',
+            marginBottom: 8,
+            textTransform: 'uppercase',
+          }}
+        >
+          {kloelT(profile.profileCards[0]?.label ?? 'Conta necessaria')}
+        </div>
+        <div style={{ color: KLOEL_THEME.textPrimary, fontFamily: F, fontSize: 13 }}>
+          {kloelT(profile.profileCards[0]?.value ?? 'Canal conectado e autorizado')}
+        </div>
+      </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
         {products.length === 0 ? <EmptyState label="Nenhum produto cadastrado" /> : null}
         {products.map((product) => (
