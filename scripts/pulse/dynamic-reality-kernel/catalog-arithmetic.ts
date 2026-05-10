@@ -16,6 +16,16 @@ import {
 } from './catalog-token-shared';
 import { deriveStringUnionMembersFromTypeContract } from './type-contract-labels';
 
+export {
+  deriveUnitValue,
+  deriveZeroValue,
+  deriveHttpStatusFromObservedCatalog,
+  observeStatusTextLengthFromCatalog,
+  splitIdentifierTokensFromObservedName,
+  hasObservedToken,
+  STATUS_CODES,
+} from './catalog-token-shared';
+
 // ── Observed catalog derivation ────────────────────────────────────────────
 
 export function discoverAllObservedHttpStatusCodes(): number[] {
@@ -53,12 +63,6 @@ export function discoverReservedJsKeywords(): Set<string> {
   }
   return keywords;
 }
-
-import {
-  deriveUnitValue,
-  deriveHttpStatusFromObservedCatalog,
-  observeStatusTextLengthFromCatalog,
-} from './catalog-token-shared';
 
 export function deriveCatalogPercentScaleFromObservedCatalog(): number {
   const okLen = observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('OK'));
