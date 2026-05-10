@@ -399,7 +399,7 @@ export function HeroLoop() {
                 position: 'absolute',
                 left: -gx.chr,
                 top: 0,
-                color: '#FF000055',
+                color: 'rgba(255,0,0,0.33)',
                 zIndex: 1,
               }}
             >
@@ -411,7 +411,7 @@ export function HeroLoop() {
                 position: 'absolute',
                 left: gx.chr,
                 top: 0,
-                color: '#0000FF45',
+                color: 'rgba(0,0,255,0.27)',
                 zIndex: 1,
               }}
             >

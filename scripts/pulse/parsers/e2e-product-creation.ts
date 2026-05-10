@@ -108,9 +108,11 @@ export async function checkE2eProductCreation(_config: PulseConfig): Promise<Bre
       return breaks; // Can't test further without a product
     }
 
-    const body = createRes.body ?? {};
-    const product = (body as Record<string, unknown>).product as Record<string, unknown> | undefined ?? body;
-    productId = ((product as Record<string, unknown>).id as string | undefined) ?? null;
+    const body = (createRes.body ?? {}) as Record<string, unknown>;
+    const product = (typeof body.product === 'object' && body.product !== null
+      ? body.product
+      : body) as Record<string, unknown>;
+    productId = (product.id as string | undefined) ?? null;
 
     if (!productId) {
       breaks.push({
@@ -136,15 +138,18 @@ export async function checkE2eProductCreation(_config: PulseConfig): Promise<Bre
         detail: `Body: ${JSON.stringify(getRes.body).slice(0, 200)}`,
       });
     } else {
-      const fetchedProduct = getRes.body?.product || getRes.body;
-      if (fetchedProduct?.name !== '__pulse_test__product') {
+      const fetchedBody = (getRes.body ?? {}) as Record<string, unknown>;
+      const fetchedProduct = (typeof fetchedBody.product === 'object' && fetchedBody.product !== null
+        ? fetchedBody.product
+        : fetchedBody) as Record<string, unknown>;
+      if (fetchedProduct.name !== '__pulse_test__product') {
         breaks.push({
           type: 'E2E_PRODUCT_BROKEN',
           severity: 'critical',
           file: 'backend/src/kloel/product.controller.ts',
           line: 150,
           description: 'GET /products/:id returned product with wrong name — data mismatch',
-          detail: `Expected: __pulse_test__product, Got: ${fetchedProduct?.name}`,
+          detail: `Expected: __pulse_test__product, Got: ${String(fetchedProduct.name)}`,
         });
       }
     }

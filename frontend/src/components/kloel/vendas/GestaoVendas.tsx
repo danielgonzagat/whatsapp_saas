@@ -61,7 +61,7 @@ export function GestaoVendas({
         <Stat
           label={kloelT('Pendentes')}
           value={fmtBRL(st.totalPending || 0)}
-          color="#F59E0B"
+          color={colors.semantic.warning}
           sub={`${st.pendingCount || 0} transacoes`}
         />
         <Stat label={kloelT('Ticket medio')} value={fmtBRL(st.avgTicket || 0)} />

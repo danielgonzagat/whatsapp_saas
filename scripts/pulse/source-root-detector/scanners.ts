@@ -198,9 +198,11 @@ export function addTsConfigRoots(
         sourceRootFromPathEntry(configDir === '.' ? '.' : configDir, entry);
       if (root) {
         const packageDir = configDir === '.' ? '' : configDir;
+        const pkgKind = kindByDir.get(packageDir);
+        const pkgFrameworks = frameworksByDir.get(packageDir);
         addRoot(roots, rootDir, root, packageName, `${basis}:${configPath}`, basis, {
-          kind: kindByDir.get(packageDir),
-          frameworks: frameworksByDir.get(packageDir),
+          ...(pkgKind !== undefined ? { kind: pkgKind } : {}),
+          ...(pkgFrameworks !== undefined ? { frameworks: pkgFrameworks } : {}),
         });
       }
     }

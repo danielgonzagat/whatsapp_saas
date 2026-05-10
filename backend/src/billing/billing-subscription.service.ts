@@ -1,22 +1,20 @@
 import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ModuleRef } from '@nestjs/core';
-import { FinancialAlertService } from '../common/financial-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
-import type { StripeClient, StripeSubscription } from './stripe-types';
-import type { WhatsappNotifier } from './billing-webhook.types';
+import type { StripeClient } from './stripe-types';
+import { BillingCheckoutHelperService } from './billing-checkout-helper.service';
 
 export class BillingSubscriptionService {
   private readonly logger = new Logger(BillingSubscriptionService.name);
   private stripe: StripeClient | undefined;
-  private whatsappService: WhatsappNotifier | null = null;
 
   constructor(
     private prisma: PrismaService,
     private configService: ConfigService,
     private readonly moduleRef: ModuleRef,
     stripe: StripeClient | undefined,
-    private readonly financialAlert?: FinancialAlertService,
+    private readonly helper: BillingCheckoutHelperService,
   ) {
     this.stripe = stripe;
   }
@@ -25,37 +23,6 @@ export class BillingSubscriptionService {
     return String(status || '')
       .trim()
       .toUpperCase();
-  }
-
-  readInvoiceSubscriptionId(invoice: {
-    subscription?: string | { id?: string | null } | null;
-  }): string | null {
-    const subscriptionRef = invoice.subscription;
-    if (typeof subscriptionRef === 'string' && subscriptionRef.trim()) {
-      return subscriptionRef;
-    }
-    if (
-      subscriptionRef &&
-      typeof subscriptionRef === 'object' &&
-      typeof (subscriptionRef as { id?: string | null }).id === 'string' &&
-      (subscriptionRef as { id: string }).id.trim()
-    ) {
-      return (subscriptionRef as { id: string }).id;
-    }
-    return null;
-  }
-
-  async resolveWhatsappService(): Promise<WhatsappNotifier | null> {
-    if (this.whatsappService) {
-      return this.whatsappService;
-    }
-    try {
-      const { WhatsappService } = await import('../whatsapp/whatsapp.service');
-      this.whatsappService = this.moduleRef.get(WhatsappService, { strict: false }) ?? null;
-      return this.whatsappService;
-    } catch {
-      return null;
-    }
   }
 
   async getSubscription(workspaceId: string) {
@@ -294,77 +261,5 @@ export class BillingSubscriptionService {
     this.logger.log(
       `Plan features activated for ${workspaceId}: ${plan} ${JSON.stringify(limits)}`,
     );
-  }
-
-  async notifyCustomerPaymentConfirmed(
-    session: { customer_email?: string | null; customer_details?: { email?: string | null } | null; amount_total?: number | null; id: string; payment_intent?: string | { id?: string } | null },
-    plan: string,
-    workspaceId: string,
-  ): Promise<void> {
-    const whatsappService = await this.resolveWhatsappService();
-    if (!whatsappService) {
-      this.logger.log('WhatsappService não disponível para notificação');
-      return;
-    }
-    try {
-      const customerEmail = session.customer_email || session.customer_details?.email;
-      let phone: string | null = null;
-      if (customerEmail) {
-        const contact = await this.prisma.contact.findFirst({
-          where: { workspaceId, email: customerEmail },
-          select: { phone: true },
-        });
-        phone = contact?.phone || null;
-      }
-      if (!phone) {
-        this.logger.log(`Nenhum telefone encontrado para notificar workspace ${workspaceId}`);
-        return;
-      }
-      const fallbackPrices: Record<string, number> = {
-        STARTER: 97,
-        PRO: 297,
-        ENTERPRISE: 997,
-      };
-      let amount = session.amount_total ? session.amount_total / 100 : 0;
-      if (!amount) {
-        amount = fallbackPrices[plan.toUpperCase()] || 0;
-      }
-      const formattedAmount = amount.toLocaleString('pt-BR', {
-        minimumFractionDigits: 2,
-      });
-      const paymentIntentId =
-        typeof session.payment_intent === 'string' ? session.payment_intent : session.id;
-      const message = `Pagamento confirmado.\n\nObrigado por assinar o plano *${plan}*!\n\nValor: R$ ${formattedAmount}\nID: ${paymentIntentId}\n\nSua conta já está ativa com todas as funcionalidades do plano. Se precisar de ajuda, é só me chamar aqui.`;
-      await whatsappService.sendMessage(workspaceId, phone, message);
-      this.logger.log(`Notificação de pagamento enviada para ${phone}`);
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'unknown_error';
-      this.logger.warn(`Erro ao notificar cliente: ${errorMessage}`);
-    }
-  }
-
-  async notifyOps(event: string, payload: Record<string, unknown>): Promise<void> {
-    const webhook = process.env.OPS_WEBHOOK_URL || process.env.DLQ_WEBHOOK_URL || '';
-    const globalFetch = (globalThis as Record<string, unknown>).fetch as
-      | ((url: string, init?: Record<string, unknown>) => Promise<unknown>)
-      | undefined;
-    if (!webhook || !globalFetch) {
-      return;
-    }
-    try {
-      await globalFetch(webhook, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: event,
-          ...payload,
-          at: new Date().toISOString(),
-          env: process.env.NODE_ENV || 'dev',
-        }),
-      });
-    } catch (err: unknown) {
-      const errMsg = err instanceof Error ? err.message : 'unknown_error';
-      this.logger.warn(`notifyOps billing error: ${errMsg}`);
-    }
   }
 }

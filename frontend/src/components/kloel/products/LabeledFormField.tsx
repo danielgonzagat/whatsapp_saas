@@ -29,10 +29,10 @@ const inputStyle = {
   marginBottom: 0,
   fontSize: 11,
   fontWeight: 600,
-  border: '1px solid #2C2C2C',
+  border: `1px solid ${colors.border.glow}`,
   borderRadius: 4,
   backgroundColor: colors.background.void,
-  color: '#F5F5F5',
+  color: colors.text.silver,
   fontFamily: 'JetBrains Mono, monospace',
 } as const;
 

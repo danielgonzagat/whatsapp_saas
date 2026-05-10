@@ -78,6 +78,16 @@ export function makeTestJwt(payload: JwtPayload): string {
   return `${header}.${body}.${signature}`;
 }
 
+interface PgPool {
+  query(sql: string, params?: Array<string | number>): Promise<{ rows: Array<Record<string, unknown>> }>;
+  end(): Promise<void>;
+}
+
+function createPgPool(connectionString: string, max: number): PgPool {
+  const pg = require('pg') as { Pool: new (config: Record<string, unknown>) => PgPool };
+  return new pg.Pool({ connectionString, max });
+}
+
 export async function dbQuery(
   sql: string,
   params?: Array<string | number>,
@@ -85,11 +95,10 @@ export async function dbQuery(
   const dbUrl = process.env.PULSE_DATABASE_URL ?? process.env.DATABASE_URL;
   if (!dbUrl) return [];
   try {
-    const { Pool } = await import('pg');
-    const pool = new Pool({ connectionString: dbUrl, max: 1 });
+    const pool = createPgPool(dbUrl, 1);
     const result = await pool.query(sql, params ?? []);
     await pool.end();
-    return result.rows as Array<Record<string, unknown>>;
+    return result.rows;
   } catch {
     return [];
   }

@@ -1,4 +1,5 @@
 import { kloelT } from '@/lib/i18n/t';
+import { colors } from '@/lib/design-tokens';
 import { IC } from './VendasView.icons';
 import { SORA } from './utils';
 
@@ -64,7 +65,7 @@ export function DetailActions({
             disabled={actionLoading}
             icon={IC.x(12)}
             label={kloelT('Cancelar')}
-            color="#EF4444"
+            color={colors.semantic.error}
           />
         </>
       )}

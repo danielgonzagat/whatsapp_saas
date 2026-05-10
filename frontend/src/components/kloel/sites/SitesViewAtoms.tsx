@@ -34,9 +34,9 @@ export function Badge({ children, color = EMBER }: { children: React.ReactNode; 
 export function StatusDot({ status }: { status: 'online' | 'offline' | 'warning' | 'building' }) {
   const colors = {
     online: colors.semantic.success,
-    offline: 'colors.text.muted',
+    offline: colors.text.muted,
     warning: colors.semantic.warning,
-    building: '#8b5cf6',
+    building: colors.semantic.purple,
   };
   return (
     <span
@@ -70,7 +70,7 @@ export function Btn({
     ghost: { background: 'transparent', color: TEXT, border: `1px solid ${BORDER}` },
     danger: {
       background: 'transparent',
-      color: '#ef4444',
+      color: colors.semantic.error,
       border: '1px solid rgba(239,68,68,0.3)',
     },
   };

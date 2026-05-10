@@ -7,10 +7,7 @@ import {
 import { Prisma } from '@prisma/client';
 import { StructuredLogger } from '../logging/structured-logger';
 import { OpsAlertService } from '../observability/ops-alert.service';
-import { forEachSequential } from '../common/async-sequence';
 import { PrismaService } from '../prisma/prisma.service';
-import { buildQueueJobId } from '../queue/job-id.util';
-import { autopilotQueue } from '../queue/queue';
 import {
   buildConversationOperationalState,
   type ConversationOperationalLike,
@@ -31,10 +28,9 @@ import {
   normalizeContactsArray,
   normalizeChatsArray,
   normalizeMessagesArray,
-  unwrapProviderArray,
 } from './whatsapp.service.normalizers';
-import { rankByPurchaseProbability } from './whatsapp.service.ranking';
-import { collectCatalogContactEntriesExt } from './whatsapp-catalog-contact-collector';
+import * as catalogOps from './whatsapp.service.catalog';
+import type { CatalogDeps } from './whatsapp.service.catalog';
 import type {
   NormalizedContact,
   NormalizedChat,
@@ -157,28 +153,20 @@ export class WhatsappService {
     });
   }
 
-  // ═══ LIST CATALOG, PROBABILITY, REFRESH, RESCORE, BACKLOG ═══
+  // ═══ CATALOG (thin wrappers) ═══
+  private get catalogDeps(): CatalogDeps {
+    return {
+      prisma: this.prisma,
+      catchupService: this.catchupService,
+      ciaRuntime: this.ciaRuntime,
+      resolveTrustedContactName: (p, ...cs) => this.resolveTrustedContactName(p, ...cs),
+    };
+  }
   async listCatalogContacts(
     ws: string,
     o?: { days?: number; page?: number; limit?: number; onlyCataloged?: boolean },
   ) {
-    const days = Math.max(1, Math.min(365, Number(o?.days || 30) || 30));
-    const page = Math.max(1, Number(o?.page || 1) || 1);
-    const limit = Math.max(1, Math.min(200, Number(o?.limit || 50) || 50));
-    const oc = o?.onlyCataloged !== false;
-    const entries = await this.collectCatalogContactEntries(ws, { days, onlyCataloged: oc });
-    const total = entries.length;
-    const offset = (page - 1) * limit;
-    return {
-      workspaceId: ws,
-      generatedAt: new Date().toISOString(),
-      days,
-      page,
-      limit,
-      total,
-      onlyCataloged: oc,
-      items: entries.slice(offset, offset + limit),
-    };
+    return catalogOps.listCatalogContacts(this.catalogDeps, ws, o);
   }
   async listPurchaseProbabilityRanking(
     ws: string,
@@ -191,141 +179,19 @@ export class WhatsappService {
       excludeBuyers?: boolean;
     },
   ) {
-    const days = Math.max(1, Math.min(365, Number(o?.days || 30) || 30));
-    const limit = Math.max(1, Math.min(200, Number(o?.limit || 50) || 50));
-    const mls = Math.max(0, Math.min(100, Number(o?.minLeadScore || 0) || 0));
-    const mps = Math.max(0, Math.min(1, Number(o?.minProbabilityScore || 0) || 0));
-    const oc = o?.onlyCataloged !== false;
-    const eb = o?.excludeBuyers === true;
-    const entries = await this.collectCatalogContactEntries(ws, { days, onlyCataloged: oc });
-    const filtered = entries.filter(
-      (e) =>
-        (!eb || e.buyerStatus !== 'BOUGHT') &&
-        e.leadScore >= mls &&
-        e.purchaseProbabilityScore >= mps,
-    );
-    const ranked = rankByPurchaseProbability(filtered)
-      .slice(0, limit)
-      .map((e, i) => ({ rank: i + 1, ...e }));
-    return {
-      workspaceId: ws,
-      generatedAt: new Date().toISOString(),
-      days,
-      limit,
-      minLeadScore: mls,
-      minProbabilityScore: mps,
-      onlyCataloged: oc,
-      excludeBuyers: eb,
-      total: ranked.length,
-      items: ranked,
-    };
+    return catalogOps.listPurchaseProbabilityRanking(this.catalogDeps, ws, o);
   }
   async triggerCatalogRefresh(ws: string, o?: { days?: number; reason?: string }) {
-    const days = Math.max(1, Math.min(365, Number(o?.days || 30) || 30));
-    const reason = String(o?.reason || 'manual_catalog_refresh').trim();
-    const jid = buildQueueJobId('catalog-contacts-30d', ws);
-    await autopilotQueue.add(
-      'catalog-contacts-30d',
-      { workspaceId: ws, days, reason },
-      { jobId: jid, removeOnComplete: true },
-    );
-    return {
-      scheduled: true,
-      workspaceId: ws,
-      days,
-      reason,
-      jobName: 'catalog-contacts-30d',
-      jobId: jid,
-    };
+    return catalogOps.triggerCatalogRefresh(ws, o);
   }
   async triggerCatalogRescore(
     ws: string,
     o?: { contactId?: string; days?: number; limit?: number; reason?: string },
   ) {
-    const reason = String(o?.reason || 'manual_catalog_rescore').trim();
-    const limit = Math.max(1, Math.min(500, Number(o?.limit || 100) || 100));
-    let targets: { contactId: string; phone: string; contactName: string; chatId: string }[] = [];
-    if (o?.contactId) {
-      const c = await this.prisma.contact.findFirst({
-        where: { id: o.contactId, workspaceId: ws },
-        select: { id: true, phone: true, name: true, customFields: true },
-      });
-      if (!c) throw new BadRequestException('contactId inválido');
-      const cf = this.normalizeJsonObject(c.customFields);
-      targets = [
-        {
-          contactId: c.id,
-          phone: c.phone,
-          contactName: c.name || c.phone,
-          chatId:
-            this.readText(cf.lastRemoteChatId) ||
-            this.readText(cf.lastResolvedChatId) ||
-            `${c.phone}@c.us`,
-        },
-      ];
-    } else {
-      const entries = await this.collectCatalogContactEntries(ws, {
-        days: o?.days || 30,
-        onlyCataloged: false,
-      });
-      targets = entries.slice(0, limit).map((e) => ({
-        contactId: e.id,
-        phone: e.phone,
-        contactName: e.name || e.phone,
-        chatId: e.lastRemoteChatId || e.lastResolvedChatId || `${e.phone}@c.us`,
-      }));
-    }
-    let sched = 0;
-    await forEachSequential(targets, async (t) => {
-      await autopilotQueue.add(
-        'score-contact',
-        {
-          workspaceId: ws,
-          contactId: t.contactId,
-          phone: t.phone,
-          contactName: t.contactName,
-          chatId: t.chatId || `${t.phone}@c.us`,
-          reason,
-        },
-        { jobId: buildQueueJobId('score-contact', ws, t.contactId), removeOnComplete: true },
-      );
-      sched += 1;
-    });
-    return {
-      scheduled: true,
-      workspaceId: ws,
-      reason,
-      count: sched,
-      contactId: o?.contactId || null,
-      days: o?.days || 30,
-      limit,
-    };
+    return catalogOps.triggerCatalogRescore(this.catalogDeps, ws, o);
   }
   async triggerBacklogRebuild(ws: string, o?: { limit?: number; reason?: string }) {
-    const reason = String(o?.reason || 'manual_backlog_rebuild').trim();
-    const limit = Math.max(1, Math.min(2000, Number(o?.limit || 500) || 500));
-    const catchup = await this.catchupService.runCatchupNow(ws, reason).catch((e: unknown) => ({
-      scheduled: false,
-      reason: String(e instanceof Error ? e.message : 'catchup_failed'),
-    }));
-    const run = await this.ciaRuntime.startBacklogRun(ws, 'reply_all_recent_first', limit, {
-      autoStarted: true,
-      runtimeState: 'EXECUTING_BACKLOG',
-      triggeredBy: reason,
-    });
-    return { workspaceId: ws, reason, limit, catchup, run };
-  }
-
-  // ═══ CATALOG (thin wrapper to companion) ═══
-  private async collectCatalogContactEntries(
-    ws: string,
-    o?: { days?: number; onlyCataloged?: boolean },
-  ) {
-    return collectCatalogContactEntriesExt(
-      { prisma: this.prisma, resolveName: (p: string, ...cs: unknown[]) => this.resolveTrustedContactName(p, ...cs) },
-      ws,
-      o,
-    );
+    return catalogOps.triggerBacklogRebuild(this.catalogDeps, ws, o);
   }
 
   // ═══ DELEGATION: Reconciler ═══

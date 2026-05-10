@@ -299,8 +299,9 @@ export function AgentCursor({
               {[0, 1, 2].map((dot) => (
                 <span
                   key={dot}
-                  className="inline-block h-1 w-1 rounded-full bg-[#888]"
+                  className="inline-block h-1 w-1 rounded-full"
                   style={{
+                    backgroundColor: colors.text.muted,
                     animation: `agent-thinking-dots 900ms ease-in-out ${dot * 200}ms infinite`,
                   }}
                 />
@@ -348,7 +349,7 @@ export function AgentCursor({
                 dx="0"
                 dy="1"
                 stdDeviation="1.5"
-                floodColor={kloelT(`#000000`)}
+                floodColor="black"
                 floodOpacity="0.4"
               />
             </filter>

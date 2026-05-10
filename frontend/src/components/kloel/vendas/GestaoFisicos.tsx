@@ -49,9 +49,9 @@ export function GestaoFisicos({
         <Stat
           label={kloelT('Aguardando envio')}
           value={String(st.processing || 0)}
-          color="#F59E0B"
+          color={colors.semantic.warning}
         />
-        <Stat label={kloelT('Em transito')} value={String(st.shipped || 0)} color="#3B82F6" />
+        <Stat label={kloelT('Em transito')} value={String(st.shipped || 0)} color={colors.semantic.info} />
         <Stat
           label={kloelT('Entregues')}
           value={String(st.delivered || 0)}

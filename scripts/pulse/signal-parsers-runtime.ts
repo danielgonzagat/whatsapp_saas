@@ -151,7 +151,7 @@ export function parseDatadogSignals(
 
   const monitors = asArray(data.monitors || data.incidents || data.endpoints)
     .map((entry) => asObject(entry))
-    .filter(Boolean);
+    .filter((entry): entry is Record<string, unknown> => Boolean(entry));
   return monitors
     .filter((monitor) => {
       const status = String(monitor.status || monitor.state || '').toLowerCase();
@@ -248,7 +248,7 @@ export function parsePrometheusSignals(
     ...asArray(asObject(data.data)?.result),
   ]
     .map((entry) => asObject(entry))
-    .filter(Boolean);
+    .filter((entry): entry is Record<string, unknown> => Boolean(entry));
 
   return alerts
     .filter((alert) => {

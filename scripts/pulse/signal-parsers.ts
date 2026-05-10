@@ -69,6 +69,8 @@ export function normalizeSignalDraft(
     (typeof record.pullRequestId === 'string' && record.pullRequestId.trim()) ||
     `${source}:${fallbackType}:${normalizeSummary(record.summary || record.message || record.title, fallbackSummary)}`;
 
+  const executionMode = normalizeExecutionMode(record.executionMode || record.mode);
+
   return {
     id,
     type:
@@ -78,7 +80,7 @@ export function normalizeSignalDraft(
       fallbackType,
     source,
     truthMode: record.truthMode === 'inferred' ? 'inferred' : ('observed' as const),
-    executionMode: normalizeExecutionMode(record.executionMode || record.mode),
+    ...(executionMode !== undefined ? { executionMode } : {}),
     severity: normalizeScore(record.severity || record.level || record.priority, 0.5),
     impactScore: normalizeScore(record.impactScore || record.impact || record.weight, 0.55),
     confidence: normalizeScore(record.confidence, 0.8),
@@ -116,10 +118,10 @@ export function parseGithubSignals(
   }
   const commits = asArray(data.commits)
     .map((e) => asObject(e))
-    .filter(Boolean);
+    .filter((e): e is Record<string, unknown> => Boolean(e));
   const pullRequests = asArray(data.pullRequests || data.prs)
     .map((e) => asObject(e))
-    .filter(Boolean);
+    .filter((e): e is Record<string, unknown> => Boolean(e));
   const commitSignals = commits.map((commit, index) => ({
     id:
       (typeof commit.sha === 'string' && commit.sha) ||
@@ -191,7 +193,7 @@ export function parseGithubActionsSignals(
 
   const runs = asArray(data.runs || data.workflowRuns || data.jobs)
     .map((entry) => asObject(entry))
-    .filter(Boolean);
+    .filter((entry): entry is Record<string, unknown> => Boolean(entry));
 
   return runs
     .filter((run) => {
@@ -252,7 +254,7 @@ export function parseCodecovSignals(
 
   const files = asArray(data.files || data.impacts)
     .map((entry) => asObject(entry))
-    .filter(Boolean);
+    .filter((entry): entry is Record<string, unknown> => Boolean(entry));
   return files
     .filter((file) => {
       const delta = Number(file.deltaCoverage ?? file.coverageDelta ?? file.delta ?? 0);

@@ -2,7 +2,7 @@
 import { colors, typography } from '@/lib/design-tokens';
 import { kloelT } from '@/lib/i18n/t';
 import { Check, Copy, MessageCircle } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import {
   PRODUCT_URLS_COPY,
   TRIGGER_TIMINGS,
@@ -15,20 +15,29 @@ export function ProductUrlWidgetConfig({
   labelStyle,
   inputStyle,
   selectClass,
+  widgetPosition,
+  widgetColor,
+  widgetMessage,
+  widgetTrigger,
+  onPositionChange,
+  onColorChange,
+  onMessageChange,
+  onTriggerChange,
 }: {
   productId: string;
   fid: string;
   labelStyle: React.CSSProperties;
   inputStyle: React.CSSProperties;
   selectClass: string;
+  widgetPosition: string;
+  widgetColor: string;
+  widgetMessage: string;
+  widgetTrigger: string;
+  onPositionChange: (v: string) => void;
+  onColorChange: (v: string) => void;
+  onMessageChange: (v: string) => void;
+  onTriggerChange: (v: string) => void;
 }) {
-  const [widgetPosition, setWidgetPosition] = useState<string>('bottom-right');
-  const [widgetColor, setWidgetColor] = useState<string>(colors.ember.primary);
-  const [widgetMessage, setWidgetMessage] = useState('Olá! Como posso ajudar?');
-  const [widgetTrigger, setWidgetTrigger] = useState('5000');
-  const [codeCopied, setCodeCopied] = useState(false);
-  const codeCopiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
   const WIDGET_URL = process.env.NEXT_PUBLIC_WIDGET_URL || 'https://widget.kloel.com';
   const widgetCode = [
     '<script src="',
@@ -53,13 +62,12 @@ export function ProductUrlWidgetConfig({
     '\n</script>',
   ].join('');
 
+  const [codeCopied, setCodeCopied] = useState(false);
+
   const handleCopyCode = () => {
     navigator.clipboard.writeText(widgetCode);
     setCodeCopied(true);
-    if (codeCopiedTimer.current) {
-      clearTimeout(codeCopiedTimer.current);
-    }
-    codeCopiedTimer.current = setTimeout(() => setCodeCopied(false), 2000);
+    setTimeout(() => setCodeCopied(false), 2000);
   };
 
   return (
@@ -89,7 +97,7 @@ export function ProductUrlWidgetConfig({
                   type="radio"
                   name="widgetPos"
                   checked={widgetPosition === p.v}
-                  onChange={() => setWidgetPosition(p.v)}
+                  onChange={() => onPositionChange(p.v)}
                   style={{ accentColor: colors.accent.webb }}
                 />
                 {p.l}
@@ -107,14 +115,14 @@ export function ProductUrlWidgetConfig({
               aria-label={PRODUCT_URLS_COPY.widgetColorPickerAria}
               type="color"
               value={widgetColor}
-              onChange={(e) => setWidgetColor(e.target.value)}
+              onChange={(e) => onColorChange(e.target.value)}
               className="h-9 w-9 cursor-pointer rounded-lg border-0 p-0"
             />
             <input
               aria-label={PRODUCT_URLS_COPY.widgetColorHexAria}
               type="text"
               value={widgetColor}
-              onChange={(e) => setWidgetColor(e.target.value)}
+              onChange={(e) => onColorChange(e.target.value)}
               className="rounded-lg px-3 py-2 text-sm font-mono w-28 focus:outline-none"
               style={inputStyle}
             />
@@ -129,7 +137,7 @@ export function ProductUrlWidgetConfig({
             aria-label={PRODUCT_URLS_COPY.widgetMessageAria}
             type="text"
             value={widgetMessage}
-            onChange={(e) => setWidgetMessage(e.target.value)}
+            onChange={(e) => onMessageChange(e.target.value)}
             className={selectClass}
             style={inputStyle}
             placeholder={kloelT(`Olá! Como posso ajudar?`)}
@@ -142,7 +150,7 @@ export function ProductUrlWidgetConfig({
           </label>
           <select
             value={widgetTrigger}
-            onChange={(e) => setWidgetTrigger(e.target.value)}
+            onChange={(e) => onTriggerChange(e.target.value)}
             className={selectClass}
             style={inputStyle}
             id={`${fid}-quando`}

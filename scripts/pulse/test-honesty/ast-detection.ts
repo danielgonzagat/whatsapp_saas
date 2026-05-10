@@ -71,7 +71,7 @@ function isSourceFile(fileName: string): boolean {
   return SOURCE_EXTENSIONS.has(path.extname(fileName));
 }
 
-function isTestFileName(fileName: string): boolean {
+function _isTestFileName(fileName: string): boolean {
   if (!isSourceFile(fileName)) {
     return false;
   }
@@ -123,7 +123,7 @@ export function walkSourceFiles(
   return files;
 }
 
-function parseTypeScriptFile(filePath: string): ts.SourceFile {
+function _parseTypeScriptFile(filePath: string): ts.SourceFile {
   const content = fs.readFileSync(filePath, 'utf-8');
   return ts.createSourceFile(filePath, content, ts.ScriptTarget.Latest, true);
 }
@@ -300,7 +300,7 @@ function isWeakTruthyAssertion(call: ts.CallExpression): boolean {
     return false;
   }
   const argument = expectArgument(receiver);
-  return ts.isIdentifier(argument) && WEAK_TRUTHY_RECEIVERS.has(argument.text);
+  return argument !== null && ts.isIdentifier(argument) && WEAK_TRUTHY_RECEIVERS.has(argument.text);
 }
 
 export function hasWeakAssertionEvidence(sourceFile: ts.SourceFile): boolean {

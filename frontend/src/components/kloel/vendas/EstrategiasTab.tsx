@@ -102,13 +102,13 @@ export function EstrategiasTab({
         <Stat
           label={kloelT('Assinaturas ativas')}
           value={String(subStats.activeCount || 0)}
-          color="#10B981"
+          color={colors.semantic.success}
           sub={kloelT('Base recorrente')}
         />
         <Stat
           label={kloelT('Pedidos a enviar')}
           value={String(orderStats.processing || 0)}
-          color="#F59E0B"
+          color={colors.semantic.warning}
           sub={kloelT('Fulfillment pendente')}
         />
         <Stat

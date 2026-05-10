@@ -159,7 +159,7 @@ export function isBlockingBreak(item: Break): boolean {
 }
 
 export function isSecurityBreak(item: Break): boolean {
-  return SECURITY_BREAK_TYPE_KERNEL_GRAMMAR.some((pattern) => pattern.test(item.type));
+  return (SECURITY_BREAK_TYPE_KERNEL_GRAMMAR as ReadonlyArray<RegExp>).some((pattern: RegExp) => pattern.test(item.type));
 }
 
 export function rankBreakTypes(breaks: Break[], limit?: number): string[] {

@@ -73,7 +73,7 @@ export function getDirectiveUnitArray(
     const title = asString(unit.title);
     if (title !== undefined) result.title = title;
     return result;
-  }));
+  });
 }
 
 const _routeSep = discoverRouteSeparatorFromRuntime();

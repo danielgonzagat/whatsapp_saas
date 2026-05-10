@@ -5,6 +5,7 @@ import { FinancialAlertService } from '../common/financial-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { StripeRuntime } from './stripe-runtime';
 import type { StripeClient } from './stripe-types';
+import { BillingCheckoutHelperService } from './billing-checkout-helper.service';
 import { BillingCheckoutWebhookService } from './billing-checkout-webhook.service';
 import { BillingSubscriptionService } from './billing-subscription.service';
 
@@ -14,6 +15,7 @@ export class BillingService {
   private stripe: StripeClient;
   private subsService: BillingSubscriptionService;
   private checkoutWebhook: BillingCheckoutWebhookService;
+  private helper: BillingCheckoutHelperService;
 
   constructor(
     private prisma: PrismaService,
@@ -32,19 +34,26 @@ export class BillingService {
         );
       }
     }
-    this.subsService = new BillingSubscriptionService(
+    this.helper = new BillingCheckoutHelperService(
       this.prisma,
       this.configService,
       this.moduleRef,
       this.stripe,
       this.financialAlert,
     );
+    this.subsService = new BillingSubscriptionService(
+      this.prisma,
+      this.configService,
+      this.moduleRef,
+      this.stripe,
+      this.helper,
+    );
     this.checkoutWebhook = new BillingCheckoutWebhookService(
       this.prisma,
       this.configService,
       this.moduleRef,
       this.stripe,
-      this.subsService,
+      this.helper,
       this.financialAlert,
     );
   }

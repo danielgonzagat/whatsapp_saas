@@ -9,6 +9,21 @@ import { PrismaService } from '../prisma/prisma.service';
 import { GdprController } from './gdpr.controller';
 import { GdprService } from './gdpr.service';
 
+jest.mock('../common/redis/redis.util', () => {
+  const actual = jest.requireActual(
+    '../common/redis/redis.util',
+  ) as typeof import('../common/redis/redis.util');
+  return {
+    ...actual,
+    createRedisClient: jest.fn(() => {
+      const { RedisConfigurationError } = jest.requireActual(
+        '../common/redis/resolve-redis-url',
+      ) as typeof import('../common/redis/resolve-redis-url');
+      throw new RedisConfigurationError('Redis not available in test');
+    }),
+  };
+});
+
 describe('GdprController', () => {
   let app: INestApplication;
 
@@ -40,6 +55,7 @@ describe('GdprController', () => {
     gdprRequest: {
       create: jest.fn(),
       findUnique: jest.fn(),
+      findUniqueOrThrow: jest.fn(),
       findFirst: jest.fn(),
       update: jest.fn(),
     },
@@ -105,6 +121,7 @@ describe('GdprController', () => {
     jwtMock.verify.mockReturnValue({ sub: 'agent_1', requestId: 'gdpr_1' });
     prismaMock.gdprRequest.create.mockResolvedValue(gdprRecord);
     prismaMock.gdprRequest.findUnique.mockResolvedValue(gdprRecord);
+    prismaMock.gdprRequest.findUniqueOrThrow.mockResolvedValue(gdprRecord);
     prismaMock.gdprRequest.findFirst.mockResolvedValue(null);
     prismaMock.gdprRequest.update.mockResolvedValue({ ...gdprRecord, status: GdprStatus.PROCESSING });
     prismaMock.agent.findUnique.mockResolvedValue(agentRecord);
