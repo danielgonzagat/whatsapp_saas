@@ -1,7 +1,6 @@
 import type { Break } from '../types.manifest';
 import type { PulseExecutionTrace } from '../types.evidence';
 import {
-  deriveUnitValue,
   deriveZeroValue,
 } from '../dynamic-reality-kernel/catalog-arithmetic';
 import {
@@ -49,8 +48,10 @@ export function runSelfTrustChecks(config: {
     checkEvidenceFreshness(config.evidenceFile),
     checkCrossArtifactConsistency(config.repoRoot, config.artifactsOverride),
     checkExecutionTraceAuditTrail({
-      repoRoot: config.repoRoot,
-      executionTrace: config.executionTrace,
+      ...(config.repoRoot !== undefined ? { repoRoot: config.repoRoot } : {}),
+      ...(config.executionTrace !== undefined
+        ? { executionTrace: config.executionTrace }
+        : {}),
     }),
   ];
 

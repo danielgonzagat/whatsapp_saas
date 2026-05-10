@@ -91,7 +91,7 @@ export function checkIdempotence(lastOutput: unknown, currentOutput: unknown): S
       name: 'Output Idempotence',
       description: 'Multiple PULSE runs must produce identical results',
       pass: match,
-      reason: match ? undefined : 'Output differs between runs (non-deterministic)',
+      ...(match ? {} : { reason: 'Output differs between runs (non-deterministic)' }),
       severity: riskLabelHigh(),
       score: checkpointScore(match),
     };
@@ -370,9 +370,9 @@ export function checkExecutionTraceAuditTrail(config: {
       name: 'Execution Trace Audit Trail',
       description: 'Execution trace phase history must match its immutable audit digest',
       pass,
-      reason: pass
-        ? undefined
-        : 'Execution trace audit digest does not match current phase history',
+      ...(pass
+        ? {}
+        : { reason: 'Execution trace audit digest does not match current phase history' }),
       severity: riskLabelCritical(),
       score: checkpointScore(pass),
     };

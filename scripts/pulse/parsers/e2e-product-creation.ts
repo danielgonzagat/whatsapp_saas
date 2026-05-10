@@ -43,7 +43,7 @@ import {
 type ProductRow = { id?: string; name?: string };
 
 /** Check e2e product creation. */
-export async function checkE2eProductCreation(config: PulseConfig): Promise<Break[]> {
+export async function checkE2eProductCreation(_config: PulseConfig): Promise<Break[]> {
   // DEEP mode only — requires running backend + DB
   if (!process.env.PULSE_DEEP) {
     return [];

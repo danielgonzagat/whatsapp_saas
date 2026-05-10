@@ -169,10 +169,10 @@ function statusTone(status?: string) {
     return { color: colors.brand.green, bg: `${colors.brand.green}20` };
   }
   if (['DEGRADED', 'PARTIAL', 'QUEUED', 'PROCESSING'].includes(normalized)) {
-    return { color: '#F59E0B', bg: 'rgba(245, 158, 11, 0.15)' };
+    return { color: colors.semantic.warning, bg: 'rgba(245, 158, 11, 0.15)' };
   }
   if (['DOWN', 'FAILED', 'ERROR', 'SKIPPED', 'DISABLED', 'BILLING_SUSPENDED', 'MISSING'].includes(normalized)) {
-    return { color: '#EF4444', bg: 'rgba(239, 68, 68, 0.12)' };
+    return { color: colors.semantic.error, bg: 'rgba(239, 68, 68, 0.12)' };
   }
   return { color: colors.brand.cyan, bg: `${colors.brand.cyan}18` };
 }
@@ -240,7 +240,7 @@ export default function AutopilotPlanInspector({
           icon={Sparkles}
           label={kloelT(`Conversões`)}
           value={stats?.conversionsLast7d || 0}
-          color="#F59E0B"
+          color={colors.semantic.warning}
         />
       </div>
 
@@ -275,8 +275,8 @@ export default function AutopilotPlanInspector({
           <div className="grid grid-cols-2 gap-4 mb-4">
             <StatCard icon={MessageSquare} label={kloelT(`Recebidas (24h)`)} value={pipeline?.messages?.received || 0} color={colors.brand.cyan} />
             <StatCard icon={Send} label={kloelT(`Respondidas (24h)`)} value={pipeline?.messages?.responded || 0} color={colors.brand.green} />
-            <StatCard icon={AlertCircle} label={kloelT(`Pendentes`)} value={pipeline?.messages?.unansweredEstimate || 0} color="#F59E0B" />
-            <StatCard icon={XCircle} label={kloelT(`Falhas`)} value={pipeline?.autopilot?.failed || 0} color="#EF4444" />
+            <StatCard icon={AlertCircle} label={kloelT(`Pendentes`)} value={pipeline?.messages?.unansweredEstimate || 0} color={colors.semantic.warning} />
+            <StatCard icon={XCircle} label={kloelT(`Falhas`)} value={pipeline?.autopilot?.failed || 0} color={colors.semantic.error} />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
@@ -347,7 +347,7 @@ export default function AutopilotPlanInspector({
                 style={{
                   backgroundColor: 'rgba(239, 68, 68, 0.08)',
                   border: '1px solid rgba(239, 68, 68, 0.18)',
-                  color: '#FCA5A5',
+                  color: colors.semantic.errorText,
                 }}
               >
                 {kloelT(`Configurações ausentes:`)} {systemHealth.details.config.missing.join(', ')}

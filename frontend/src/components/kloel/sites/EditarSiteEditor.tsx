@@ -88,7 +88,7 @@ export function EditarSiteEditor({
       )}
 
       {error && (
-        <div style={{ fontFamily: MONO, fontSize: 12, color: '#ef4444', padding: '8px 16px', marginBottom: 12, background: 'rgba(239,68,68,0.1)', borderRadius: 6 }}>
+        <div style={{ fontFamily: MONO, fontSize: 12, color: colors.semantic.error, padding: '8px 16px', marginBottom: 12, background: colors.semantic.errorBg, borderRadius: 6 }}>
           {error}
         </div>
       )}

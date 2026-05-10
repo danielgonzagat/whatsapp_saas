@@ -46,9 +46,9 @@ export interface AutopilotImpactLike {
 function ActionRow({ action }: { action: AutopilotActionLike }) {
   const statusColors: Record<string, string> = {
     success: colors.brand.green,
-    error: '#EF4444',
+    error: colors.semantic.error,
     skipped: colors.brand.cyan,
-    scheduled: '#F59E0B',
+    scheduled: colors.semantic.warning,
   };
 
   const statusIcons: Record<string, React.ElementType> = {

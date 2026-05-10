@@ -59,7 +59,7 @@ export function Dominios() {
               <div key={d.name} style={{ padding: '14px 16px', borderBottom: i < domains.length - 1 ? `1px solid ${BORDER}` : 'none', display: 'flex', flexDirection: 'column', gap: 12 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                   <span style={{ fontFamily: MONO, fontSize: 13, color: TEXT }}>{d.name}</span>
-                  {d.primary && <Badge color="#10B981">{kloelT(`Principal`)}</Badge>}
+                  {d.primary && <Badge color={colors.semantic.success}>{kloelT(`Principal`)}</Badge>}
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 8 }}>
                   <Badge color={d.dns === 'Configurado' ? colors.semantic.success : colors.semantic.warning}>{d.dns}</Badge>
@@ -69,7 +69,7 @@ export function Dominios() {
                 </div>
                 <div style={{ display: 'flex', gap: 4 }}>
                   <button type="button" style={{ background: 'none', border: 'none', cursor: 'pointer', color: TEXT_DIM, padding: 4 }}>{IC.edit(14)}</button>
-                  <button type="button" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: 4 }}>{IC.trash(14)}</button>
+                  <button type="button" style={{ background: 'none', border: 'none', cursor: 'pointer', color: colors.semantic.error, padding: 4 }}>{IC.trash(14)}</button>
                 </div>
               </div>
             ) : (
@@ -77,7 +77,7 @@ export function Dominios() {
                 <div>
                   <div style={{ fontFamily: MONO, fontSize: 13, color: TEXT, display: 'flex', alignItems: 'center', gap: 6 }}>
                     {d.name}
-                    {d.primary && <Badge color="#10B981">{kloelT(`Principal`)}</Badge>}
+                    {d.primary && <Badge color={colors.semantic.success}>{kloelT(`Principal`)}</Badge>}
                   </div>
                 </div>
                 <div>
@@ -92,7 +92,7 @@ export function Dominios() {
                 <div style={{ fontFamily: MONO, fontSize: 11, color: TEXT_DIM }}>{d.expires}</div>
                 <div style={{ display: 'flex', gap: 4 }}>
                   <button type="button" style={{ background: 'none', border: 'none', cursor: 'pointer', color: TEXT_DIM, padding: 4 }}>{IC.edit(14)}</button>
-                  <button type="button" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: 4 }}>{IC.trash(14)}</button>
+                  <button type="button" style={{ background: 'none', border: 'none', cursor: 'pointer', color: colors.semantic.error, padding: 4 }}>{IC.trash(14)}</button>
                 </div>
               </div>
             ),

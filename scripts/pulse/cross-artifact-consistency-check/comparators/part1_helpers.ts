@@ -6,11 +6,8 @@ import * as path from 'path';
 import type { LoadedArtifact } from '../../types';
 import { deepGet } from '../loaders';
 import {
-  deriveUnitValue,
-  deriveZeroValue,
   discoverRouteSeparatorFromRuntime,
 } from '../../dynamic-reality-kernel/catalog-arithmetic';
-import { discoverAllObservedArtifactFilenames } from '../../dynamic-reality-kernel/token-evidence';
 import { discoverConvergenceExecutionModeLabels } from '../../__kernel_additions__/discoverConvergenceExecutionModeLabels';
 import { discoverGateFailureClassLabels } from '../../dynamic-reality-kernel/type-contract-labels';
 
@@ -54,18 +51,28 @@ export function getDirectiveUnitArray(
 ): DirectiveUnitView[] {
   const rawUnits = deepGet(artifact.data, field);
   if (!Array.isArray(rawUnits)) return [];
-  return rawUnits.filter(isRecord).map((unit) => ({
-    id: asString(unit.id),
-    kind: asString(unit.kind),
-    source: asString(unit.source),
-    executionMode: asString(unit.executionMode),
-    productImpact: asString(unit.productImpact),
-    ownerLane: asString(unit.ownerLane),
-    title: asString(unit.title),
-    relatedFiles: asStringArray(unit.relatedFiles),
-    ownedFiles: asStringArray(unit.ownedFiles),
-    validationTargets: asStringArray(unit.validationTargets),
-    validationArtifacts: asStringArray(unit.validationArtifacts),
+  return rawUnits.filter(isRecord).map((unit) => {
+    const result: DirectiveUnitView = {
+      relatedFiles: asStringArray(unit.relatedFiles),
+      ownedFiles: asStringArray(unit.ownedFiles),
+      validationTargets: asStringArray(unit.validationTargets),
+      validationArtifacts: asStringArray(unit.validationArtifacts),
+    };
+    const id = asString(unit.id);
+    if (id !== undefined) result.id = id;
+    const kind = asString(unit.kind);
+    if (kind !== undefined) result.kind = kind;
+    const source = asString(unit.source);
+    if (source !== undefined) result.source = source;
+    const executionMode = asString(unit.executionMode);
+    if (executionMode !== undefined) result.executionMode = executionMode;
+    const productImpact = asString(unit.productImpact);
+    if (productImpact !== undefined) result.productImpact = productImpact;
+    const ownerLane = asString(unit.ownerLane);
+    if (ownerLane !== undefined) result.ownerLane = ownerLane;
+    const title = asString(unit.title);
+    if (title !== undefined) result.title = title;
+    return result;
   }));
 }
 

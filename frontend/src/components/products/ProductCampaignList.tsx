@@ -1,6 +1,6 @@
 'use client';
 import { kloelT } from '@/lib/i18n/t';
-import { MONO, PRODUCT_CAMPAIGNS_COPY, type Campaign, getCampaignStatusLabel, SORA, V } from './ProductCampaignsTab.constants';
+import { MONO, type Campaign, getCampaignStatusLabel, SORA, V } from './ProductCampaignsTab.constants';
 
 export function ProductCampaignList({
   campaigns,

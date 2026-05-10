@@ -53,10 +53,10 @@ function statusTone(status?: string) {
     return { color: colors.brand.green, bg: `${colors.brand.green}20` };
   }
   if (['DEGRADED', 'PARTIAL', 'QUEUED', 'PROCESSING'].includes(normalized)) {
-    return { color: '#F59E0B', bg: 'rgba(245, 158, 11, 0.15)' };
+    return { color: colors.semantic.warning, bg: 'rgba(245, 158, 11, 0.15)' };
   }
   if (['DOWN', 'FAILED', 'ERROR', 'SKIPPED', 'DISABLED', 'BILLING_SUSPENDED', 'MISSING'].includes(normalized)) {
-    return { color: '#EF4444', bg: 'rgba(239, 68, 68, 0.12)' };
+    return { color: colors.semantic.error, bg: 'rgba(239, 68, 68, 0.12)' };
   }
   return { color: colors.brand.cyan, bg: `${colors.brand.cyan}18` };
 }
@@ -227,7 +227,7 @@ export default function AutopilotSafetyBrakes({
                 </p>
               )}
               {smokeResult.result?.error && (
-                <p style={{ color: '#FCA5A5' }}>
+                <p style={{ color: colors.semantic.errorText }}>
                   <strong>{kloelT(`Erro:`)}</strong> {smokeResult.result.error}
                 </p>
               )}
@@ -263,8 +263,8 @@ export default function AutopilotSafetyBrakes({
                         : `${colors.brand.cyan}18`,
                 color:
                   queueHealthStatus === 'healthy' ? colors.brand.green
-                    : queueHealthStatus === 'degraded' ? '#F59E0B'
-                      : queueHealthStatus === 'critical' ? '#EF4444'
+                    : queueHealthStatus === 'degraded' ? colors.semantic.warning
+                      : queueHealthStatus === 'critical' ? colors.semantic.error
                         : colors.brand.cyan,
               }}
             >
@@ -337,7 +337,7 @@ export default function AutopilotSafetyBrakes({
                     className="text-sm font-medium"
                     style={{
                       color: value === true ? colors.brand.green
-                        : value === false ? '#EF4444'
+                        : value === false ? colors.semantic.error
                           : colors.text.primary,
                       fontFamily: typeof value === 'number' ? "'JetBrains Mono', monospace" : undefined,
                     }}
@@ -379,7 +379,7 @@ export default function AutopilotSafetyBrakes({
               type="button"
               onClick={onToggleEditingConfig}
               className="p-2 rounded-lg transition-colors hover:bg-white/5"
-              style={{ color: isEditingConfig ? '#EF4444' : colors.text.muted }}
+              style={{ color: isEditingConfig ? colors.semantic.error : colors.text.muted }}
             >
               {isEditingConfig ? <XCircle size={18} aria-hidden="true" /> : <Settings2 size={18} aria-hidden="true" />}
             </button>

@@ -18,14 +18,14 @@ export function Protecao() {
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <span style={{ color: EMBER }}>{IC.shield(24)}</span>
         <span style={{ fontFamily: SORA, fontSize: 18, color: TEXT }}>{kloelT(`Protecao & Seguranca`)}</span>
-        <Badge color="#10B981">{kloelT(`Seguro`)}</Badge>
+        <Badge color={colors.semantic.success}>{kloelT(`Seguro`)}</Badge>
       </div>
 
       <Card style={{ textAlign: 'center' }}>
         <div style={{ fontFamily: SORA, fontSize: 10, color: TEXT_MUTED, textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: 8 }}>{kloelT(`Pontuacao de Seguranca`)}</div>
         <div style={{ fontFamily: MONO, fontSize: 48, color: colors.semantic.success, fontWeight: 700 }}>96</div>
         <div style={{ fontFamily: SORA, fontSize: 12, color: TEXT_DIM }}>{kloelT(`de 100 pontos`)}</div>
-        <div style={{ marginTop: 12, maxWidth: 300, margin: '12px auto 0' }}><ProgressBar value={96} color="#10B981" /></div>
+        <div style={{ marginTop: 12, maxWidth: 300, margin: '12px auto 0' }}><ProgressBar value={96} color={colors.semantic.success} /></div>
       </Card>
 
       <Card>
@@ -86,7 +86,7 @@ export function Protecao() {
             { time: '6h', event: 'Bot crawler bloqueado', severity: 'baixa' },
           ].map((item) => {
             const sevColor =
-              item.severity === 'alta' ? '#ef4444'
+              item.severity === 'alta' ? colors.semantic.error
               : item.severity === 'media' ? colors.semantic.warning
               : item.severity === 'baixa' ? colors.semantic.info
               : TEXT_DIM;

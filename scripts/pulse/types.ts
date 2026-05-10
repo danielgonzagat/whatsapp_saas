@@ -11,4 +11,5 @@ export type * from './types.capabilities/02-maturity-dod';
 export type * from './types.capabilities/03-capability';
 export type * from './types.capabilities/04-flow-projection';
 export type * from './types.capabilities/05-external-signals';
+export type * from './types.convergence';
 export type * from './cross-artifact-consistency-check/types';

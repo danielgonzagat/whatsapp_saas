@@ -224,17 +224,27 @@ export function buildSignalState(
     );
 
     return {
-      ...draft,
+      id: draft.id,
+      type: draft.type,
+      source: draft.source,
+      truthMode: draft.truthMode,
       severity: Math.max(0, Math.min(1, draft.severity)),
       impactScore: Math.max(0, Math.min(1, draft.impactScore)),
       confidence: Math.max(0, Math.min(1, draft.confidence)),
+      summary: draft.summary,
+      observedAt: draft.observedAt,
+      relatedFiles: draft.relatedFiles,
+      routePatterns: draft.routePatterns,
+      tags: draft.tags,
       capabilityIds: unique(capabilityMatches.map((capability) => capability.id)),
       flowIds: unique(flowMatches.map((flow) => flow.id)),
       recentChangeRefs: [],
       ownerLane,
       executionMode,
-      governanceDisposition,
       protectedByGovernance,
+      ...(governanceDisposition !== undefined
+        ? { governanceDisposition }
+        : {}),
       validationTargets: unique(
         [
           'PULSE_EXTERNAL_SIGNAL_STATE.json',
@@ -244,6 +254,7 @@ export function buildSignalState(
           flowMatches.length > 0 ? 'PULSE_FLOW_PROJECTION.json' : null,
         ].filter(Boolean) as string[],
       ),
+      ...(draft.rawRef !== undefined ? { rawRef: draft.rawRef } : {}),
     } satisfies PulseSignal;
   });
 
@@ -261,6 +272,11 @@ export function buildSignalState(
       merged.set(key, signal);
       continue;
     }
+    const mergedGovernance: PulseSignal['governanceDisposition'] =
+      existing.governanceDisposition === 'governed_validation' ||
+      signal.governanceDisposition === 'governed_validation'
+        ? 'governed_validation'
+        : existing.governanceDisposition || signal.governanceDisposition;
     merged.set(key, {
       ...existing,
       severity: Math.max(existing.severity, signal.severity),
@@ -274,11 +290,7 @@ export function buildSignalState(
       recentChangeRefs: unique([...existing.recentChangeRefs, ...signal.recentChangeRefs]),
       validationTargets: unique([...existing.validationTargets, ...signal.validationTargets]),
       protectedByGovernance: existing.protectedByGovernance || signal.protectedByGovernance,
-      governanceDisposition:
-        existing.governanceDisposition === 'governed_validation' ||
-        signal.governanceDisposition === 'governed_validation'
-          ? 'governed_validation'
-          : existing.governanceDisposition || signal.governanceDisposition,
+      ...(mergedGovernance !== undefined ? { governanceDisposition: mergedGovernance } : {}),
       executionMode:
         existing.executionMode === 'observation_only' ||
         existing.executionMode === 'human_required' ||

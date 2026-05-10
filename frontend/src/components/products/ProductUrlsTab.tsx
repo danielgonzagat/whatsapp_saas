@@ -1,6 +1,5 @@
 'use client';
 import { colors } from '@/lib/design-tokens';
-import { kloelT } from '@/lib/i18n/t';
 import { apiFetch } from '@/lib/api';
 import { Loader2, X } from 'lucide-react';
 import { useCallback, useEffect, useId, useState } from 'react';

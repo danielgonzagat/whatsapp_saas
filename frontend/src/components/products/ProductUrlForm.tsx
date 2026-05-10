@@ -52,7 +52,7 @@ export function ProductUrlForm({
   const [aiLearnTopics, setAiLearnTopics] = useState<string[]>([]);
   const [aiUpdateFreq, setAiUpdateFreq] = useState('manual');
   const [widgetPosition, setWidgetPosition] = useState('bottom-right');
-  const [widgetColor, setWidgetColor] = useState(colors.ember.primary);
+  const [widgetColor, setWidgetColor] = useState<string>(colors.ember.primary);
   const [widgetMessage, setWidgetMessage] = useState('Olá! Como posso ajudar?');
   const [widgetTrigger, setWidgetTrigger] = useState('5000');
   const [codeCopied, setCodeCopied] = useState(false);

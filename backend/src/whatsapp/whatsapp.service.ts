@@ -28,10 +28,12 @@ import {
   toIsoTimestamp,
 } from './whatsapp-service.helpers';
 import {
-  normalizeContactEntry,
-  normalizeChatEntry,
-  normalizeMessageEntry,
-} from './whatsapp-service.normalizers';
+  normalizeContactsArray,
+  normalizeChatsArray,
+  normalizeMessagesArray,
+  unwrapProviderArray,
+} from './whatsapp.service.normalizers';
+import { rankByPurchaseProbability } from './whatsapp.service.ranking';
 import { collectCatalogContactEntriesExt } from './whatsapp-catalog-contact-collector';
 import type {
   NormalizedContact,
