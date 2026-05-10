@@ -32,7 +32,7 @@ import {
   ConnectAccountAlreadyExistsError,
   type SubmitOnboardingProfileInput,
 } from './connect.types';
-import { CONNECT_LEDGER_ENTRY_TYPES, parseSkip, parseTake } from './__companions__/connect-helpers';
+import { CONNECT_LEDGER_ENTRY_TYPES, parseSkip, parseTake } from './connect-helpers';
 
 const CONNECT_ACCOUNT_TYPES = Object.values(ConnectAccountType);
 

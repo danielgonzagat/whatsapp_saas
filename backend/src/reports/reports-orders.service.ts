@@ -9,12 +9,13 @@ import {
   applyCommonOrderFilters,
   toOrderStatus,
   toPaymentMethod,
-} from './__companions__/reports-orders.service.companion';
+} from './reports-orders.helpers';
 
 export {
   dateRange,
-  applyCommonOrderFilters,
-} from './__companions__/reports-orders.service.companion';
+  validatedPaidOrderStatus,
+  paginate,
+} from './reports-orders.helpers';
 
 /**
  * Handles CheckoutOrder and CheckoutPayment report queries:

@@ -13,8 +13,8 @@ import {
 
 // ── Re-exports from parts ───────────────────────────────────────────────────
 
-export { determineRiskLevel } from './__parts__/dod-engine/classification';
-export { buildDoDEngineState } from './__parts__/dod-engine/engine';
+export { determineRiskLevel } from './dod-engine/classification';
+export { buildDoDEngineState } from './dod-engine/engine';
 
 // ── Derived gate status labels (dynamic-reality kernel grammar) ─────────────
 

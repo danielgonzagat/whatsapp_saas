@@ -1,4 +1,4 @@
-import type { SourceRootKind, SourceRootLanguage } from './source-root-detector/__parts__/types';
+import type { SourceRootKind, SourceRootLanguage } from './source-root-detector/types';
 
 // PULSE — Live Codebase Nervous System
 // Universal Code Behavior Graph types — per-function analysis

@@ -38,7 +38,7 @@ import {
   derivePriorityFromObservedContext,
   deriveProductImpactFromObservedScope,
 } from '../../dynamic-reality-kernel/__parts__/token-evidence';
-import { deriveUnitValue } from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+import { deriveUnitValue } from '../../dynamic-reality-kernel/catalog-arithmetic';
 
 export function evidenceBatchSize(
   ...collections: Array<{ length: number } | null | undefined>

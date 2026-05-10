@@ -13,7 +13,7 @@ import {
 import {
   testStaleOrganismState,
   testMissingCanonicalArtifacts,
-} from './__companions__/pulse.spec-companions';
+} from './pulse.spec.helpers';
 
 function buildExpectedIntervalHandlerError() {
   const error = new Error();

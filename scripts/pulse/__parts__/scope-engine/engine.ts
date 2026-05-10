@@ -12,7 +12,7 @@ import {
 } from '../../safe-fs';
 import { IGNORED_DIRECTORIES } from '../scope-state.constants/main';
 import { loadGovernanceBoundary } from '../../scope-state-classify';
-import { detectSourceRoots } from '../../source-root-detector/__parts__/api';
+import { detectSourceRoots } from '../../source-root-detector/api';
 import {
   discoverAllObservedArtifactFilenames,
   discoverDirectorySkipHintsFromEvidence,

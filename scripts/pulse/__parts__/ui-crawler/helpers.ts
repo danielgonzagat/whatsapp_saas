@@ -1,7 +1,7 @@
 import * as path from 'path';
 import * as ts from 'typescript';
 import type { CrawlerRole, UIElementKind, UIElementRisk } from '../../types.ui-crawler';
-import { deriveStringUnionMembersFromTypeContract } from '../../dynamic-reality-kernel/__parts__/type-contract-labels';
+import { deriveStringUnionMembersFromTypeContract } from '../../dynamic-reality-kernel/type-contract-labels';
 import {
   AUTH_BOUNDARY_RE,
   DOM_ELEMENTS,

@@ -70,10 +70,10 @@ describe('worker health — autopilot queue info', () => {
 
     expect(health.status).toBe('ok');
     expect(health.redis).toBe('PONG');
-    expect(health.queues.autopilot).toBeDefined();
-    expect(health.queues.autopilot.waiting).toBe(3);
-    expect(typeof health.queues.autopilot.waiting).toBe('number');
-    expect(typeof health.queues.autopilot.active).toBe('number');
+    expect(health.queues?.autopilot).toBeDefined();
+    expect(health.queues?.autopilot.waiting).toBe(3);
+    expect(typeof health.queues?.autopilot.waiting).toBe('number');
+    expect(typeof health.queues?.autopilot.active).toBe('number');
   });
 
   it('getHealth() returns degraded when redis ping fails', async () => {

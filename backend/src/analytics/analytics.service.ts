@@ -11,7 +11,7 @@ import {
   buildSalesSummary,
   computeTrendPct,
   resolveReportWindow,
-} from './__companions__/analytics.service.companion';
+} from './analytics.helpers';
 
 type ExecutionLog = Record<string, unknown>;
 

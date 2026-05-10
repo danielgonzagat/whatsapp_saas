@@ -5,8 +5,8 @@ import { ConfigService } from '@nestjs/config';
 import { ConflictException, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
 import { AuditService } from '../audit/audit.service';
 import { EmailService } from '../auth/email.service';
-import type { PartnershipsPrismaMock } from './__companions__/partnerships.service.spec.companion';
-import { createPartnershipsPrismaMock } from './__companions__/partnerships.service.spec.companion';
+import type { PartnershipsPrismaMock } from './partnerships.service.spec.fixtures';
+import { createPartnershipsPrismaMock } from './partnerships.service.spec.fixtures';
 
 describe('PartnershipsService', () => {
   let service: PartnershipsService;

@@ -3,7 +3,7 @@ import * as path from 'path';
 import type { PulseConfig, PulseManifest, PulseManifestLoadResult, Break } from './types.manifest';
 import type { CoreParserData } from './functional-map-types';
 import { pathExists, readTextFile } from './safe-fs';
-import { deriveStringUnionMembersFromTypeContract } from './dynamic-reality-kernel/__parts__/type-contract-labels';
+import { deriveStringUnionMembersFromTypeContract } from './dynamic-reality-kernel/type-contract-labels';
 import {
   discoverActorKindLabels,
   discoverEnvironmentLabels,

@@ -12,7 +12,7 @@ import { AuditService } from '../audit/audit.service';
 import { EmailService } from '../auth/email.service';
 import { generateUniquePublicCheckoutCode } from '../checkout/checkout-code.util';
 import { buildPayCheckoutUrl } from '../checkout/checkout-public-url.util';
-import { isPublicCodeTaken } from './__companions__/partnerships.service.companion';
+import { isPublicCodeTaken } from './partnerships.helpers';
 import { PrismaService } from '../prisma/prisma.service';
 
 const INVITABLE_PARTNER_TYPES = new Set(['AFFILIATE', 'SUPPLIER', 'COPRODUCER', 'MANAGER']);

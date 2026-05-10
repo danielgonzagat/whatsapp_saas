@@ -8,17 +8,17 @@ import {
   buildArtifactRegistry,
   resolveArtifactRelativePath,
 } from '../../artifact-registry/__parts__/registry';
-import type { PulseArtifactRegistry } from '../../artifact-registry/__parts__/discovery';
+import type { PulseArtifactRegistry } from '../../artifact-registry/discovery';
 import { cleanupPulseArtifacts } from '../../artifact-gc';
-import { buildConvergencePlan } from '../../__parts__/convergence-plan/plan';
+import { buildConvergencePlan } from '../../convergence-plan/plan';
 import { readOptionalJson, writeArtifact } from '../../artifacts.io';
-import { buildPulseMachineReadiness } from '../../artifacts.report/__parts__/machine-readiness';
-import { buildReport } from '../../artifacts.report/__parts__/report-build';
-import { buildCertificate } from '../../artifacts.report/__parts__/certificate-build';
-import { buildDirective } from '../../artifacts.directive/__parts__/directive-core';
-import { buildArtifactIndex } from '../../artifacts.directive/__parts__/directive-index';
+import { buildPulseMachineReadiness } from '../../artifacts.report/machine-readiness';
+import { buildReport } from '../../artifacts.report/report-build';
+import { buildCertificate } from '../../artifacts.report/certificate-build';
+import { buildDirective } from '../../artifacts.directive/directive-core';
+import { buildArtifactIndex } from '../../artifacts.directive/directive-index';
 import { normalizeCanonicalArtifactValue } from '../../artifacts.queue';
-import { deriveAuthorityState } from '../../artifacts.autonomy/__parts__/authority';
+import { deriveAuthorityState } from '../../artifacts.autonomy/authority';
 import { buildRuntimeProbesArtifact } from '../runtime-probes/main';
 import { createRunIdentity, type PulseRunIdentity } from '../../run-identity';
 import { buildFindingEventSurface } from '../../finding-event-surface';
@@ -32,7 +32,7 @@ import {
   discoverAllObservedHttpStatusCodes,
   observeStatusTextLengthFromCatalog,
 } from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
-import { deriveStringUnionMembersFromTypeContract } from '../../dynamic-reality-kernel/__parts__/type-contract-labels';
+import { deriveStringUnionMembersFromTypeContract } from '../../dynamic-reality-kernel/type-contract-labels';
 import {
   discoverAllObservedArtifactFilenames,
   discoverDirectorySkipHintsFromEvidence,

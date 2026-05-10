@@ -1,1 +1,1 @@
-export { buildExternalSignalState } from './external-signals/__parts__/signal-state';
+export { buildExternalSignalState } from './external-signals/signal-state';

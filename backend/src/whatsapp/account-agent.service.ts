@@ -33,10 +33,8 @@ export type {
   AccountInputSessionPayload,
 } from './account-agent.types';
 import { AgentEventsService } from './agent-events.service';
-import {
-  detectCatalogGapExt,
-  respondToInputSessionExt,
-} from './__companions__/account-agent.service.companion';
+import { detectCatalogGapExt } from './account-agent.gap-detector';
+import { respondToInputSessionExt } from './account-agent.input-session';
 import {
   listAccountWorkItems,
   materializeAccountCapabilityGaps,

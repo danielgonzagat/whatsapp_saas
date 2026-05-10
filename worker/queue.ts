@@ -388,7 +388,7 @@ function classifyWebhook(webhook: string): 'slack' | 'teams' | 'generic' {
 export class Queue {
   private queue: BullQueue;
   private name: string;
-  private worker?: Worker;
+  private worker?: Worker | undefined;
   private closed = false;
 
   constructor(name: string) {

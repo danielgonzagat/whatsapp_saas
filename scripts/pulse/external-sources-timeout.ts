@@ -1,4 +1,4 @@
-import type { ExternalSourcesConfig } from './adapters/external-sources-orchestrator/__parts__/core';
+import type { ExternalSourcesConfig } from './adapters/external-sources-orchestrator/core';
 
 const DEFAULT_BASE_BUDGET_MS = 15_000;
 const DEFAULT_ADAPTER_BUDGET_MS = 30_000;

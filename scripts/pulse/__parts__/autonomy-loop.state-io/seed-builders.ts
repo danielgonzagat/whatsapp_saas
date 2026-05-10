@@ -14,8 +14,8 @@ import {
   DEFAULT_PARALLEL_AGENTS,
   DEFAULT_MAX_WORKER_RETRIES,
 } from '../../autonomy-loop.types';
-import { toUnitSnapshot } from '../../autonomy-loop.unit-ranking/__parts__/structural-rank';
-import { fingerprintStrategy } from '../../structural-memory/__parts__/memory-core';
+import { toUnitSnapshot } from '../../autonomy-loop.unit-ranking/structural-rank';
+import { fingerprintStrategy } from '../../structural-memory/memory-core';
 import { readDirectiveArtifact } from './directive';
 import { readQueueInfluence } from './queue-influence';
 import {

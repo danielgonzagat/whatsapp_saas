@@ -14,15 +14,10 @@ async function getProviderForUser(user: string, workspaceId?: string) {
   if (user.includes('@')) {
     // It's an email target
     // Prefer explicit workspace context to avoid crossing tenants.
-    const contact = workspaceId
-      ? await prisma.contact.findFirst({
-          where: { email: user, workspaceId },
-          include: { workspace: true },
-        })
-      : await prisma.contact.findFirst({
-          where: { email: user, workspaceId: undefined },
-          include: { workspace: true },
-        });
+    const contact = await prisma.contact.findFirst({
+      where: { email: user, ...(workspaceId ? { workspaceId } : {}) },
+      include: { workspace: true },
+    });
 
     const workspaceConfig = contact
       ? { id: contact.workspace.id }
@@ -50,7 +45,7 @@ async function getProviderForUser(user: string, workspaceId?: string) {
         include: { workspace: true },
       })
     : await prisma.contact.findFirst({
-        where: { phone: normalized, workspaceId: undefined },
+        where: { phone: normalized },
         include: { workspace: true },
       });
 

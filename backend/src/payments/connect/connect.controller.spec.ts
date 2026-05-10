@@ -1,7 +1,7 @@
 import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 
 import { ConnectAccountAlreadyExistsError } from './connect.types';
-import { buildController } from './__companions__/connect.controller-mocks';
+import { buildController } from './connect.controller.mocks';
 
 describe('ConnectController', () => {
   it('lists local connect balances with ledger snapshots and onboarding state', async () => {

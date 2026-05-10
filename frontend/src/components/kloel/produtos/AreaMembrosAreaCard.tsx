@@ -90,7 +90,7 @@ export default function AreaMembrosAreaCard(props: Props) {
   const isEditing = editingArea === area.id;
   const isGenerating = generatingAreaId === area.id;
   const activeFeatures = FEATURE_TAGS.filter(
-    (f) => (area as Record<string, unknown>)[f.key],
+    (f) => (area as unknown as Record<string, unknown>)[f.key],
   );
 
   const courseEditorProps = {

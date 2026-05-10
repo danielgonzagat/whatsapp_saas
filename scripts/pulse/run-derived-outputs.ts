@@ -4,29 +4,29 @@
  * models (structural graph, capabilities, flows, signals, parity gaps, vision),
  * then renders or emits output based on the active flags.
  */
-import type { FullScanResult } from './daemon/__parts__/types';
+import type { FullScanResult } from './daemon/types';
 import type { PulseCertification } from './types.evidence';
 import type { PulseConfig } from './types.manifest';
 import { buildStructuralGraph } from './structural-graph';
 import { buildExecutionChains } from './execution-chains';
-import { buildExecutionMatrix } from './execution-matrix/__parts__/matrix';
-import { buildCapabilityState } from './capability-model/__parts__/builder';
-import { buildFlowProjection } from './flow-projection/__parts__/builder';
+import { buildExecutionMatrix } from './execution-matrix/matrix';
+import { buildCapabilityState } from './capability-model/builder';
+import { buildFlowProjection } from './flow-projection/builder';
 import { buildParityGaps } from './parity-gaps';
-import { buildProductVision } from './product-vision/__parts__/builder';
-import { buildProductModel } from './product-model/__parts__/model-builder';
-import { buildExternalSignalState } from './external-signals/__parts__/signal-state';
-import { runExternalSourcesOrchestrator } from './adapters/external-sources-orchestrator/__parts__/orchestration';
-import type { ExternalSourcesConfig } from './adapters/external-sources-orchestrator/__parts__/core';
+import { buildProductVision } from './product-vision/builder';
+import { buildProductModel } from './product-model/model-builder';
+import { buildExternalSignalState } from './external-signals/signal-state';
+import { runExternalSourcesOrchestrator } from './adapters/external-sources-orchestrator/orchestration';
+import type { ExternalSourcesConfig } from './adapters/external-sources-orchestrator/core';
 import { deriveExternalSourcesTimeoutMs } from './external-sources-timeout';
 import { buildFunctionalMap } from './functional-map';
 import { generateFunctionalMapReport, renderFunctionalMapSummary } from './functional-map-report';
 import { PulseExecutionTracer, runPhaseWithTrace } from './execution-trace';
 import { renderDashboard } from './dashboard';
-import { generateArtifacts } from './__parts__/artifacts/generate';
-import type { PulseArtifactPaths, PulseArtifactSnapshot } from './__parts__/artifacts/types';
-import type { SelfTrustReport } from './self-trust/__parts__/checks-core';
-import { formatSelfTrustReport } from './self-trust/__parts__/runner';
+import { generateArtifacts } from './artifacts/generate';
+import type { PulseArtifactPaths, PulseArtifactSnapshot } from './artifacts/types';
+import type { SelfTrustReport } from './self-trust/checks-core';
+import { formatSelfTrustReport } from './self-trust/runner';
 import { readTextFile } from './safe-fs';
 import type { flags } from './cli-args';
 import { refreshProofReadinessArtifact } from './proof-readiness-artifact';

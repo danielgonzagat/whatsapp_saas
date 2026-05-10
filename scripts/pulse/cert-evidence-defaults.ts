@@ -31,7 +31,7 @@ import {
   getAcceptedTargetIds,
   getActiveTemporaryAcceptances,
 } from './cert-helpers';
-import { discoverRuntimeFindingEventPatternsFromEvidence } from './dynamic-reality-kernel/__parts__/token-evidence';
+import { discoverRuntimeFindingEventPatternsFromEvidence } from './dynamic-reality-kernel/token-evidence';
 import {
   buildDefaultActorEvidence,
   buildDefaultSyntheticCoverage,

@@ -3,7 +3,7 @@ import * as path from 'node:path';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { DEFAULT_ARTIFACT_MAX_AGE_MS, type PulseArtifactPayload } from './pulse.service.contract';
-import type { RuntimeMachineReadinessStatus } from './__companions__/pulse-artifact.service.types';
+import type { RuntimeMachineReadinessStatus } from './pulse-artifact.types';
 import {
   getBoolean,
   getJsonObject,
@@ -12,7 +12,7 @@ import {
   getStringArray,
   normalizeAuthorityMode,
   normalizeVerdict,
-} from './__companions__/pulse-artifact.service.companion';
+} from './pulse-artifact.helpers';
 
 /**
  * PulseArtifactService

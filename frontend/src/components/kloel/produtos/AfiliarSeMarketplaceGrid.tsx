@@ -2,10 +2,10 @@
 import { colors } from '@/lib/design-tokens';
 
 import { useState, useMemo } from 'react';
-import { SORA, MONO, BG_CARD, BG_ELEVATED, BORDER, GREEN, EMBER, fmtBRL, NP } from './ProdutosView.shared';
-
-import { IC } from './ProdutosView.icons';
+import { SORA, MONO, BG_CARD, BORDER, GREEN, fmtBRL, NP } from './ProdutosView.shared';
 import type { MarketplaceItem, MarketplaceStats, AffiliateLink, AffiliateProductItem } from './ProdutosView.types';
+import MarketplaceFilters from './MarketplaceFilters';
+import MarketplaceProductGrid from './MarketplaceProductGrid';
 
 interface Props {
   earnings: number;
@@ -22,27 +22,10 @@ interface Props {
   copiedAffiliate: boolean;
 }
 
-
-function HeartIcon({ filled, size }: { filled: boolean; size: number }) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill={filled ? EMBER : 'none'}
-      stroke={filled ? EMBER : 'var(--app-text-tertiary)'}
-      strokeWidth={2}
-      aria-hidden="true"
-    >
-      <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
-    </svg>
-  );
-}
-
 export default function AfiliarSeMarketplaceGrid({
   earnings,
   marketplace,
-  marketplaceStats,
+  marketplaceStats: _marketplaceStats,
   affiliateLinks,
   affiliateProducts,
   onSelectItem,
@@ -75,13 +58,15 @@ export default function AfiliarSeMarketplaceGrid({
     [marketplace, search, catFilter],
   );
 
-  const approvedLinks = useMemo(() => affiliateLinks.filter((l) => l.active !== false), [affiliateLinks]);
+  const approvedLinks = useMemo(
+    () => affiliateLinks.filter((l) => l.active !== false),
+    [affiliateLinks],
+  );
 
   const savedProducts = useMemo(
     () =>
       affiliateProducts.filter(
-        (item) =>
-          item.status === 'SAVED' || item.affiliateProduct?.isSaved,
+        (item) => item.status === 'SAVED' || item.affiliateProduct?.isSaved,
       ),
     [affiliateProducts],
   );
@@ -115,7 +100,9 @@ export default function AfiliarSeMarketplaceGrid({
           }}
         />
         <div style={{ position: 'relative', zIndex: 1 }}>
-          <div style={{ fontFamily: SORA, fontSize: 13, color: 'var(--app-text-secondary)' }}>Ganhos Totais</div>
+          <div style={{ fontFamily: SORA, fontSize: 13, color: 'var(--app-text-secondary)' }}>
+            Ganhos Totais
+          </div>
           <div style={{ fontFamily: MONO, fontSize: 48, fontWeight: 700, color: GREEN, lineHeight: 1.1 }}>
             {fmtBRL(earnings)}
           </div>
@@ -128,78 +115,14 @@ export default function AfiliarSeMarketplaceGrid({
         </div>
       </div>
 
-      {/* Search */}
-      <div style={{ position: 'relative' }}>
-        <div
-          style={{
-            position: 'absolute',
-            left: 12,
-            top: '50%',
-            transform: 'translateY(-50%)',
-            color: 'var(--app-text-tertiary)',
-            display: 'flex',
-          }}
-        >
-          {IC.search(16)}
-        </div>
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Buscar produtos para se afiliar..."
-          style={{
-            width: '100%',
-            padding: '8px 12px 8px 36px',
-            background: BG_ELEVATED,
-            border: `1px solid ${BORDER}`,
-            borderRadius: 8,
-            color: 'var(--app-text-primary)',
-            fontFamily: SORA,
-            fontSize: 13,
-            outline: 'none',
-            boxSizing: 'border-box',
-          }}
-        />
-      </div>
-
-      {/* Category Chips */}
-      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-        <button
-          onClick={() => setCatFilter(null)}
-          style={{
-            padding: '6px 14px',
-            borderRadius: 20,
-            border: 'none',
-            fontFamily: SORA,
-            fontSize: 12,
-            cursor: 'pointer',
-            fontWeight: 600,
-            background: catFilter === null ? GREEN : BG_ELEVATED,
-            color: catFilter === null ? colors.text.silver : 'var(--app-text-secondary)',
-          }}
-        >
-          Todos
-        </button>
-        {categories.map((cat) => (
-          <button
-            key={cat}
-            onClick={() => setCatFilter(catFilter === cat ? null : cat)}
-            style={{
-              padding: '6px 14px',
-              borderRadius: 20,
-              border: 'none',
-              fontFamily: SORA,
-              fontSize: 12,
-              cursor: 'pointer',
-              fontWeight: 600,
-              background: catFilter === cat ? GREEN : BG_ELEVATED,
-              color: catFilter === cat ? colors.text.silver : 'var(--app-text-secondary)',
-            }}
-          >
-            {cat}
-          </button>
-        ))}
-      </div>
+      {/* Search + Category Filters */}
+      <MarketplaceFilters
+        search={search}
+        catFilter={catFilter}
+        categories={categories}
+        onSearchChange={setSearch}
+        onCatFilterChange={setCatFilter}
+      />
 
       {/* Marketplace Stat Cards */}
       <div style={{ display: 'flex', gap: 10 }}>
@@ -373,122 +296,11 @@ export default function AfiliarSeMarketplaceGrid({
         <div style={{ fontFamily: SORA, fontSize: 15, fontWeight: 700, color: 'var(--app-text-primary)', marginBottom: 12 }}>
           Marketplace ({filteredMarket.length} produtos)
         </div>
-        {filteredMarket.length === 0 ? (
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '48px 16px',
-              background: BG_CARD,
-              borderRadius: 12,
-              border: `1px solid ${BORDER}`,
-              gap: 10,
-              color: 'var(--app-text-tertiary)',
-            }}
-          >
-            {IC.store(32)}
-            <div style={{ fontFamily: SORA, fontSize: 14, fontWeight: 600 }}>Nenhum produto disponivel</div>
-            <div style={{ fontFamily: SORA, fontSize: 12 }}>
-              Nenhum produto encontrado com os filtros atuais.
-            </div>
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {filteredMarket.map((item) => (
-              <div
-                key={item.id}
-                onClick={() => onSelectItem(item)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 12,
-                  padding: '12px 12px 12px 0',
-                  background: BG_CARD,
-                  border: `1px solid ${BORDER}`,
-                  borderLeft: `3px solid ${GREEN}`,
-                  borderRadius: 8,
-                  cursor: 'pointer',
-                }}
-              >
-                <div
-                  style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 6,
-                    overflow: 'hidden',
-                    flexShrink: 0,
-                    background: BG_ELEVATED,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    marginLeft: 12,
-                  }}
-                >
-                  {item.thumbnailUrl || item.imageUrl ? (
-                    <img
-                      src={item.thumbnailUrl || item.imageUrl}
-                      alt=""
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                    />
-                  ) : (
-                    IC.box(20)
-                  )}
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <span
-                      style={{
-                        fontFamily: SORA,
-                        fontSize: 13,
-                        fontWeight: 600,
-                        color: 'var(--app-text-primary)',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      {item.name}
-                    </span>
-                    {(item.temperature || 0) >= 90 && IC.fire(14)}
-                  </div>
-                  <div style={{ fontFamily: SORA, fontSize: 11, color: 'var(--app-text-tertiary)', marginTop: 2 }}>
-                    {item.category}{item.producer ? ` · ${item.producer}` : ''}
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
-                    <NP w={60} h={14} color={GREEN} />
-                    <span style={{ fontFamily: MONO, fontSize: 12, fontWeight: 600, color: GREEN }}>
-                      {item.commission || 0}%
-                    </span>
-                    <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--app-text-secondary)' }}>
-                      {fmtBRL(item.price || 0)}
-                    </span>
-                  </div>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
-                  {IC.star(12)}
-                  <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--app-text-secondary)' }}>
-                    {item.rating || 0}
-                  </span>
-                </div>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onToggleSave(item.id, !item.isSaved);
-                  }}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'flex', flexShrink: 0 }}
-                  aria-label={item.isSaved ? 'Remover dos salvos' : 'Salvar produto'}
-                >
-                  <HeartIcon filled={!!item.isSaved} size={16} />
-                </button>
-                <div style={{ color: 'var(--app-text-tertiary)', fontSize: 18, flexShrink: 0, paddingRight: 4 }}>
-                  {IC.chevRight(14)}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+        <MarketplaceProductGrid
+          items={filteredMarket}
+          onSelectItem={onSelectItem}
+          onToggleSave={onToggleSave}
+        />
       </div>
     </div>
   );

@@ -542,7 +542,7 @@ async function upsertMemory(
   }
 
   const jsonValue = toJsonValue(input.value);
-  const jsonMetadata = input.metadata ? toJsonValue(input.metadata) : undefined;
+  const jsonMetadata = input.metadata ? toJsonValue(input.metadata) : null;
 
   return prisma.kloelMemory.upsert({
     where: {
@@ -555,8 +555,8 @@ async function upsertMemory(
       value: jsonValue,
       category: input.category,
       type: input.type,
-      content: input.content,
-      metadata: jsonMetadata,
+      ...(input.content !== undefined ? { content: input.content } : {}),
+      ...(jsonMetadata !== null ? { metadata: jsonMetadata } : {}),
     },
     create: {
       workspaceId: input.workspaceId,
@@ -564,8 +564,8 @@ async function upsertMemory(
       value: jsonValue,
       category: input.category,
       type: input.type,
-      content: input.content,
-      metadata: jsonMetadata,
+      ...(input.content !== undefined ? { content: input.content } : {}),
+      ...(jsonMetadata !== null ? { metadata: jsonMetadata } : {}),
     },
   });
 }
@@ -708,7 +708,7 @@ export async function persistSystemInsight(
       title: input.title,
       description: input.description,
       severity: input.severity,
-      metadata: input.metadata ? toJsonValue(input.metadata) : undefined,
+      ...(input.metadata ? { metadata: toJsonValue(input.metadata) } : {}),
     },
   });
 }

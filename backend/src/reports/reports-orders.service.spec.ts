@@ -1,7 +1,7 @@
 import { BadRequestException } from '@nestjs/common';
 import { OrderStatus } from '@prisma/client';
-import { dateRange } from './__companions__/reports-orders.service.companion';
-import { validatedPaidOrderStatus } from './__companions__/reports-orders.service.companion';
+import { dateRange } from './reports-orders.helpers';
+import { validatedPaidOrderStatus } from './reports-orders.helpers';
 
 describe('reports order filters', () => {
   it('rejects invalid report dates instead of querying with Invalid Date', () => {

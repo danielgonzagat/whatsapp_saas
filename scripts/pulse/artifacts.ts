@@ -7,11 +7,11 @@
  * This file is never imported at runtime — it exists purely for the
  * TypeScript AST scanner to discover artifact IDs.
  */
-export { PulseArtifactSnapshot, PulseArtifactPaths } from './__parts__/artifacts/types';
-export type { PulseArtifactRegistry } from './__parts__/artifacts/types';
-export { generateArtifacts } from './__parts__/artifacts/generate';
+export { PulseArtifactSnapshot, PulseArtifactPaths } from './artifacts/types';
+export type { PulseArtifactRegistry } from './artifacts/types';
+export { generateArtifacts } from './artifacts/generate';
 
-import type { PulseArtifactRegistry } from './artifact-registry/__parts__/discovery';
+import type { PulseArtifactRegistry } from './artifact-registry/discovery';
 
 declare function writeRegisteredArtifact(
   registry: PulseArtifactRegistry,

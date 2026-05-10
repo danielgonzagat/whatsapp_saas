@@ -14,7 +14,7 @@ import {
   getStaleAlertKey,
   getStaleSweepEveryMs,
   sendAlertWebhook,
-} from './__companions__/pulse-webhook-config';
+} from './pulse-webhook.helpers';
 import { PulseFrontendHeartbeatDto } from './dto/frontend-heartbeat.dto';
 import { PulseInternalHeartbeatDto } from './dto/internal-heartbeat.dto';
 import {

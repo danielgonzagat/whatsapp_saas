@@ -25,7 +25,7 @@ import {
   deriveUnitIdFromObservedKind,
   deriveProductImpactFromObservedScope,
 } from '../../dynamic-reality-kernel/__parts__/token-evidence';
-import { deriveUnitValue } from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+import { deriveUnitValue } from '../../dynamic-reality-kernel/catalog-arithmetic';
 import { discoverConvergenceUnitKindLabels } from '../../__kernel_additions__/discoverConvergenceUnitKindLabels';
 import { discoverConvergenceUnitStatusLabels } from '../../__kernel_additions__/discoverConvergenceUnitStatusLabels';
 import { discoverConvergenceUnitPriorityLabels } from '../../__kernel_additions__/discoverConvergenceUnitPriorityLabels';

@@ -5,8 +5,8 @@ import type { PulseConfig } from '../types.manifest';
 import { walkFiles } from './utils';
 import { pathExists, readTextFile } from '../safe-fs';
 import { getFrontendSourceDirs } from '../frontend-roots';
-import { deriveUnitValue } from '../dynamic-reality-kernel/__parts__/catalog-arithmetic';
-import { discoverSourceExtensionsFromObservedTypescript } from '../dynamic-reality-kernel/__parts__/token-evidence';
+import { deriveUnitValue } from '../dynamic-reality-kernel/catalog-arithmetic';
+import { discoverSourceExtensionsFromObservedTypescript } from '../dynamic-reality-kernel/token-evidence';
 
 function removeLeadingRouteSegment(routePath: string, segment: string): string {
   const normalized = routePath.replace(/^\/+/, '').split('/');

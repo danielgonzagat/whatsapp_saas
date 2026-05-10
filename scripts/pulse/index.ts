@@ -2,7 +2,7 @@
 
 import { detectConfig } from './config';
 import { fullScan } from './daemon';
-import { generateArtifacts } from './__parts__/artifacts/generate';
+import { generateArtifacts } from './artifacts/generate';
 import { renderDashboard } from './dashboard';
 
 const args = process.argv.slice(2);

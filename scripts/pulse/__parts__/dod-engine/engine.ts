@@ -19,7 +19,7 @@ import {
   dodStructuralEvidenceKernelGrammar,
 } from './grammar';
 import type { CheckRequirement } from './grammar';
-import { deriveStringUnionMembersFromTypeContract } from '../../dynamic-reality-kernel/__parts__/type-contract-labels';
+import { deriveStringUnionMembersFromTypeContract } from '../../dynamic-reality-kernel/type-contract-labels';
 import {
   determineRiskLevel,
   zero,

@@ -1,0 +1,403 @@
+import type {
+  BehaviorNodeKind,
+  BehaviorInput,
+  BehaviorInputKind,
+  BehaviorOutputKind,
+  BehaviorStateAccess,
+  BehaviorExternalCall,
+  BehaviorOutput,
+} from '../../types.behavior-graph';
+import type { DetectedSourceRoot } from '../../source-root-detector/types';
+import type { ParsedFunc, SourceExternalContext, GovernedEvidenceMode } from './grammar-and-types';
+import {
+  requireDecoratorRoleCatalog,
+  requireClassNameRoleCatalog,
+  requireBehaviorNodeKindCatalog,
+  requireBehaviorInputKindCatalog,
+  requireBehaviorOutputKindCatalog,
+  requireOperationCatalog,
+  discoverStateWriteOperationLabels,
+} from './catalog-helpers';
+import { hasDecoratorRole, inputKindFromDecorator, classNameRole } from './decorator-roles';
+import {
+  IDENTIFIER_GRAMMAR,
+  GENERIC_EXTERNAL_CALL_PATTERNS,
+  EXTERNAL_RECEIVER_PATTERN,
+  EXTERNAL_PACKAGE_IMPORT_PATTERN,
+  IMPORT_BINDING_PATTERN,
+  EXTERNAL_SDK_OPERATION_PATTERN,
+  EXTERNAL_SDK_CHAIN_PATTERN,
+  CONSTRUCTOR_CALL_PATTERN,
+  isMemberChainTail,
+  looksLikeExternalReceiverName,
+  looksLikeHttpOperation,
+} from './grammar-and-types';
+
+function determineKind(
+  func: ParsedFunc,
+  sourceRoot: DetectedSourceRoot | null,
+  sourceContext: SourceExternalContext,
+): BehaviorNodeKind {
+  const { decorators, className, name } = func;
+
+  const kinds = requireBehaviorNodeKindCatalog();
+  const dr = requireDecoratorRoleCatalog();
+  const cr = requireClassNameRoleCatalog();
+  if (hasDecoratorRole(decorators, dr.httpRoute, sourceRoot, sourceContext))
+    return kinds.apiEndpoint;
+  if (hasDecoratorRole(decorators, dr.cronJob, sourceRoot, sourceContext)) return kinds.cronJob;
+  if (hasDecoratorRole(decorators, dr.queueConsumer, sourceRoot, sourceContext)) {
+    return kinds.queueConsumer;
+  }
+  if (hasDecoratorRole(decorators, dr.eventListener, sourceRoot, sourceContext)) {
+    return kinds.eventListener;
+  }
+
+  if (className) {
+    const role = classNameRole(className, sourceRoot, sourceContext, func.classDecorators);
+    if (role === cr.controllerLike) {
+      if (hasDecoratorRole(decorators, dr.httpRoute, sourceRoot, sourceContext)) {
+        return kinds.apiEndpoint;
+      }
+      return kinds.handler;
+    }
+    if (role === cr.gatewayLike) return kinds.eventListener;
+    if (role === cr.guardLike) return kinds.authCheck;
+    if (role === cr.validationLike) return kinds.validation;
+    if (role === cr.serviceLike) {
+      if (/^use[A-Z]/.test(name) || /^on[A-Z]/.test(name)) return kinds.lifecycleHook;
+      return kinds.handler;
+    }
+    if (role === cr.queueLike) return kinds.queueConsumer;
+  }
+
+  if (/^use[A-Z]/.test(name)) return kinds.lifecycleHook;
+  if (/^validate/i.test(name)) return kinds.validation;
+  return kinds.functionDefinition;
+}
+
+function extractInputs(
+  func: ParsedFunc,
+  sourceRoot: DetectedSourceRoot | null,
+  sourceContext: SourceExternalContext,
+): BehaviorInput[] {
+  const inputs: BehaviorInput[] = [];
+  const { parameters, decorators } = func;
+  const inputKinds = requireBehaviorInputKindCatalog();
+
+  for (const param of parameters) {
+    const input: BehaviorInput = {
+      kind: inputKinds.body,
+      name: param.name,
+      type: param.typeText,
+      required: !param.typeText.includes('?') && !param.name.includes('?'),
+      validated: false,
+      source: param.name,
+    };
+
+    const nestedInputKind = decorators
+      .map((decorator) => inputKindFromDecorator(decorator, sourceRoot, sourceContext))
+      .filter(Boolean)
+      .pop();
+    if (nestedInputKind) {
+      input.kind = nestedInputKind;
+    }
+
+    if (func.bodyText.includes(`validate`) && func.bodyText.includes(param.name)) {
+      input.validated = Boolean(requireBehaviorInputKindCatalog());
+    }
+
+    inputs.push(input);
+  }
+
+  return inputs;
+}
+
+function detectStateAccess(
+  bodyText: string,
+  sourceContext: SourceExternalContext,
+): BehaviorStateAccess[] {
+  const ormBindings = sourceContext.importedBindingProviders.entries();
+  const ormClientNames = new Set<string>();
+  for (const [binding, provider] of ormBindings) {
+    if (
+      /\b(?:prisma|orm|drizzle|knex|sequelize|typeorm|mongoose|mikro|objection)\b/i.test(provider)
+    ) {
+      ormClientNames.add(binding);
+    }
+  }
+
+  if (ormClientNames.size === 0) {
+    return [];
+  }
+
+  const accesses: BehaviorStateAccess[] = [];
+  const seen = new Set<string>();
+
+  const ormNamePattern = [...ormClientNames]
+    .map((n) => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+    .join('|');
+  const patterns = [
+    new RegExp(
+      String.raw`\b(${ormNamePattern})\.(${IDENTIFIER_GRAMMAR})\.(${IDENTIFIER_GRAMMAR})\b`,
+      'g',
+    ),
+    new RegExp(
+      String.raw`\bthis\.(${ormNamePattern})\.(${IDENTIFIER_GRAMMAR})\.(${IDENTIFIER_GRAMMAR})\b`,
+      'g',
+    ),
+  ];
+
+  const writeOps = [...discoverStateWriteOperationLabels()];
+  const readOperation = (operation: string): boolean => {
+    const lowered = operation.toLowerCase();
+    return !writeOps.some((op) => lowered.startsWith(op));
+  };
+  const writeOperation = (operation: string): BehaviorStateAccess['operation'] | null => {
+    const lowered = operation.toLowerCase();
+    for (const op of writeOps) {
+      if (lowered.startsWith(op)) return op as BehaviorStateAccess['operation'];
+    }
+    return null;
+  };
+
+  for (const pattern of patterns) {
+    let match: RegExpExecArray | null;
+    while ((match = pattern.exec(bodyText)) !== null) {
+      const model = match[1];
+      const op = match[2];
+      const writeKind = writeOperation(op);
+      const isRead = readOperation(op);
+      if (!writeKind && !isRead) continue;
+
+      const key = `${model}.${op}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+
+      accesses.push({
+        model,
+        operation:
+          writeKind ?? (requireOperationCatalog().read as BehaviorStateAccess['operation']),
+        fieldPaths: [],
+        whereClause: bodyText.includes('where') ? 'present' : null,
+      });
+    }
+  }
+
+  return accesses;
+}
+
+function packageProviderName(packageName: string): string {
+  const parts = packageName.split('/').filter(Boolean);
+  if (packageName.startsWith('@') && parts.length >= 2) {
+    return `${parts[0]}/${parts[1]}`;
+  }
+  return parts[0] || packageName;
+}
+
+function parseNamedImportBindings(namedImports: string): string[] {
+  return namedImports
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter(Boolean)
+    .map(
+      (entry) =>
+        entry
+          .split(/\s+as\s+/i)
+          .pop()
+          ?.trim() || '',
+    )
+    .filter(Boolean);
+}
+
+function collectSourceExternalContext(
+  sourceText: string,
+  sourceRoot: DetectedSourceRoot | null,
+): SourceExternalContext {
+  const packageProviders = new Set<string>();
+  const importedBindings = new Set<string>();
+  const importedBindingProviders = new Map<string, string>();
+  const frameworkDecoratorBindings = new Set<string>();
+
+  EXTERNAL_PACKAGE_IMPORT_PATTERN.lastIndex = 0;
+  let packageMatch: RegExpExecArray | null;
+  while ((packageMatch = EXTERNAL_PACKAGE_IMPORT_PATTERN.exec(sourceText)) !== null) {
+    const packageName = packageMatch[1] ?? packageMatch[2] ?? '';
+    if (packageName) {
+      packageProviders.add(packageProviderName(packageName));
+    }
+  }
+
+  IMPORT_BINDING_PATTERN.lastIndex = 0;
+  let bindingMatch: RegExpExecArray | null;
+  while ((bindingMatch = IMPORT_BINDING_PATTERN.exec(sourceText)) !== null) {
+    const defaultBinding = bindingMatch[1];
+    const namespaceBinding = bindingMatch[2];
+    const namedBindings = bindingMatch[3];
+    const packageName = bindingMatch[4];
+    const providerName = packageProviderName(packageName);
+    const observedBindings: string[] = [];
+    if (defaultBinding) observedBindings.push(defaultBinding);
+    if (namespaceBinding) observedBindings.push(namespaceBinding);
+    if (namedBindings) {
+      for (const binding of parseNamedImportBindings(namedBindings)) {
+        observedBindings.push(binding);
+      }
+    }
+    for (const binding of observedBindings) {
+      importedBindings.add(binding);
+      importedBindingProviders.set(binding, providerName);
+      const packageLooksLikeDetectedFramework = (sourceRoot?.frameworks ?? []).some((framework) =>
+        providerName.toLowerCase().includes(framework.toLowerCase().replace(/js$/, '')),
+      );
+      if (packageLooksLikeDetectedFramework) {
+        frameworkDecoratorBindings.add(binding);
+      }
+    }
+  }
+
+  return {
+    packageProviders: [...packageProviders],
+    importedBindings,
+    importedBindingProviders,
+    frameworkDecoratorBindings,
+  };
+}
+
+function pushExternalCall(
+  calls: BehaviorExternalCall[],
+  seen: Set<string>,
+  provider: string,
+  operation: string,
+  bodyText: string,
+): void {
+  const key = `${provider}:${operation}`;
+  if (seen.has(key)) return;
+  seen.add(key);
+
+  calls.push({
+    provider,
+    operation,
+    hasTimeout: /\btimeout\b/i.test(bodyText) || /\bAbortSignal\b/i.test(bodyText),
+    hasRetry: /\bretry\b/i.test(bodyText) || /\bmaxRetries\b/i.test(bodyText),
+    hasCircuitBreaker: /\bcircuitBreaker\b/i.test(bodyText),
+    hasFallback: /\bfallback\b/i.test(bodyText),
+  });
+}
+
+function detectExternalCalls(
+  bodyText: string,
+  sourceContext: SourceExternalContext,
+): BehaviorExternalCall[] {
+  const calls: BehaviorExternalCall[] = [];
+  const seen = new Set<string>();
+
+  for (const { provider, pattern } of GENERIC_EXTERNAL_CALL_PATTERNS) {
+    let match: RegExpExecArray | null;
+    pattern.lastIndex = 0;
+    while ((match = pattern.exec(bodyText)) !== null) {
+      if (provider !== 'fetch') {
+        const receiver = match[1] ?? '';
+        const operation = match[2] ?? '';
+        if (!looksLikeExternalReceiverName(receiver) || !looksLikeHttpOperation(operation)) {
+          continue;
+        }
+      }
+      pushExternalCall(calls, seen, provider, 'call', bodyText);
+    }
+  }
+
+  EXTERNAL_RECEIVER_PATTERN.lastIndex = 0;
+  let receiverMatch: RegExpExecArray | null;
+  while ((receiverMatch = EXTERNAL_RECEIVER_PATTERN.exec(bodyText)) !== null) {
+    if (isMemberChainTail(bodyText, receiverMatch.index)) continue;
+
+    const receiver = receiverMatch[1];
+    const operation = receiverMatch[2];
+    const normalized = receiver.replace(/^this\./, '');
+    if (!looksLikeExternalReceiverName(normalized)) {
+      continue;
+    }
+    pushExternalCall(calls, seen, normalized, operation, bodyText);
+  }
+
+  EXTERNAL_SDK_OPERATION_PATTERN.lastIndex = 0;
+  let sdkMatch: RegExpExecArray | null;
+  while ((sdkMatch = EXTERNAL_SDK_OPERATION_PATTERN.exec(bodyText)) !== null) {
+    const receiver = sdkMatch[1];
+    const operation = sdkMatch[2];
+    if (!sourceContext.importedBindings.has(receiver)) continue;
+    pushExternalCall(calls, seen, receiver, operation, bodyText);
+  }
+
+  EXTERNAL_SDK_CHAIN_PATTERN.lastIndex = 0;
+  let chainMatch: RegExpExecArray | null;
+  while ((chainMatch = EXTERNAL_SDK_CHAIN_PATTERN.exec(bodyText)) !== null) {
+    const receiver = chainMatch[1];
+    const operation = chainMatch[3];
+    if (!sourceContext.importedBindings.has(receiver)) continue;
+    pushExternalCall(calls, seen, receiver, operation, bodyText);
+  }
+
+  CONSTRUCTOR_CALL_PATTERN.lastIndex = 0;
+  let constructorMatch: RegExpExecArray | null;
+  while ((constructorMatch = CONSTRUCTOR_CALL_PATTERN.exec(bodyText)) !== null) {
+    const constructorName = constructorMatch[1];
+    if (!sourceContext.importedBindings.has(constructorName)) continue;
+    pushExternalCall(calls, seen, constructorName, 'instantiate', bodyText);
+  }
+
+  if (calls.length === 0 && /\bprocess\.env\.[A-Z][A-Z0-9_]*\b/.test(bodyText)) {
+    for (const provider of sourceContext.packageProviders) {
+      pushExternalCall(calls, seen, provider, 'configured_dependency', bodyText);
+    }
+  }
+
+  return calls;
+}
+
+function detectOutputs(bodyText: string, kind: BehaviorNodeKind): BehaviorOutput[] {
+  const outputs: BehaviorOutput[] = [];
+
+  const ok = requireBehaviorOutputKindCatalog();
+  const nk = requireBehaviorNodeKindCatalog();
+  if (bodyText.includes('return') && kind === nk.apiEndpoint) {
+    outputs.push({ kind: ok.response, target: 'client', type: 'json', conditional: false });
+  }
+
+  if (bodyText.includes('prisma')) {
+    const writeOps = [...discoverStateWriteOperationLabels()];
+    for (const op of writeOps) {
+      if (bodyText.includes(`.${op}`)) {
+        outputs.push({ kind: ok.dbWrite, target: 'prisma', type: op, conditional: false });
+        break;
+      }
+    }
+  }
+
+  if (bodyText.includes('eventEmitter.emit(')) {
+    outputs.push({ kind: ok.event, target: 'event_emitter', type: 'emit', conditional: true });
+  }
+
+  if (bodyText.includes('.queue.add(') || bodyText.includes('.bullQueue.add(')) {
+    outputs.push({ kind: ok.queueMessage, target: 'queue', type: 'add', conditional: true });
+  }
+
+  if (bodyText.includes('console.')) {
+    outputs.push({ kind: ok.log, target: 'console', type: 'text', conditional: false });
+  }
+
+  return outputs;
+}
+
+export {
+  determineKind,
+  extractInputs,
+  detectStateAccess,
+  packageProviderName,
+  parseNamedImportBindings,
+  collectSourceExternalContext,
+  pushExternalCall,
+  detectExternalCalls,
+  detectOutputs,
+};

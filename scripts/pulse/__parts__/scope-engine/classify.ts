@@ -5,8 +5,8 @@ import {
   type GovernanceBoundary,
 } from '../../scope-state-classify';
 import type { ScopeFileRole, ScopeExecutionMode } from '../../types.scope-engine';
-import { discoverSourceExtensionsFromObservedTypescript } from '../../dynamic-reality-kernel/__parts__/token-evidence';
-import { deriveStringUnionMembersFromTypeContract } from '../../dynamic-reality-kernel/__parts__/type-contract-labels';
+import { discoverSourceExtensionsFromObservedTypescript } from '../../dynamic-reality-kernel/token-evidence';
+import { deriveStringUnionMembersFromTypeContract } from '../../dynamic-reality-kernel/type-contract-labels';
 
 export const UNKNOWN_STATUS = 'unknown';
 export const HIGH_CONFIDENCE = 1;

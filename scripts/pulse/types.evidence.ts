@@ -9,9 +9,9 @@ import type {
   PulseActorKind,
 } from './types.health';
 import type { PulseTruthMode } from './types.structural';
-import type { PulseCapabilityStateSummary } from './__parts__/types.capabilities/03-capability';
-import type { PulseFlowProjectionSummary } from './__parts__/types.capabilities/04-flow-projection';
-import type { PulseExternalSignalSummary } from './__parts__/types.capabilities/05-external-signals';
+import type { PulseCapabilityStateSummary } from './types.capabilities/03-capability';
+import type { PulseFlowProjectionSummary } from './types.capabilities/04-flow-projection';
+import type { PulseExternalSignalSummary } from './types.capabilities/05-external-signals';
 import type { PulseExecutionMatrixSummary } from './types.execution-matrix';
 import type { PulseResolvedManifestSummary } from './types.resolved-manifest';
 import type {

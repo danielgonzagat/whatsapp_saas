@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { splitIdentifierTokensFromObservedName } from './dynamic-reality-kernel/__parts__/token-evidence';
+import { splitIdentifierTokensFromObservedName } from './dynamic-reality-kernel/token-evidence';
 
 export type PulseSignalTruthMode = 'observed' | 'confirmed_static' | 'inferred' | 'weak_signal';
 

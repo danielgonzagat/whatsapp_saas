@@ -1,6 +1,6 @@
-import type { PulseCapability } from './__parts__/types.capabilities/03-capability';
+import type { PulseCapability } from './types.capabilities/03-capability';
 import type { PulseStructuralRole } from './types.structural';
-import type { PulseCapabilityDoD } from './__parts__/types.capabilities/02-maturity-dod';
+import type { PulseCapabilityDoD } from './types.capabilities/02-maturity-dod';
 import { evaluateDone } from './definition-of-done';
 import {
   buildCapabilityMaturity,

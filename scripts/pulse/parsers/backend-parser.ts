@@ -3,7 +3,7 @@ import type { BackendRoute } from '../types.core';
 import type { PulseConfig } from '../types.manifest';
 import { walkFiles } from './utils';
 import { readTextFile } from '../safe-fs';
-import { discoverAllObservedHttpMethods } from '../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+import { discoverAllObservedHttpMethods } from '../dynamic-reality-kernel/catalog-arithmetic';
 
 function discoverNestHttpDecoratorMethods(): string[] {
   return discoverAllObservedHttpMethods().map(

@@ -1,5 +1,5 @@
 import * as path from 'path';
-import type { PulseArtifactRegistry } from './artifact-registry/__parts__/discovery';
+import type { PulseArtifactRegistry } from './artifact-registry/discovery';
 import { ensureDir, pathExists, readDir, removePath } from './safe-fs';
 import { safeJoin } from './safe-path';
 

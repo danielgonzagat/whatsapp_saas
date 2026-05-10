@@ -42,15 +42,17 @@ import {
   normalizeProbabilityScoreExt,
   isAutonomousEnabledExt,
   normalizeHashExt,
+} from './whatsapp-service.helpers';
+import {
   normalizeContactEntry,
   normalizeChatEntry,
   normalizeMessageEntry,
-  collectCatalogContactEntriesExt,
-} from './__companions__/whatsapp.service.companion';
+} from './whatsapp-service.normalizers';
+import { collectCatalogContactEntriesExt } from './whatsapp-catalog-contact-collector';
 import type {
   NormalizedContact,
   NormalizedChat,
-} from './__companions__/whatsapp.service.companion';
+} from './whatsapp-service.types';
 import type { ContactCustomFields } from '../contacts/contact-custom-fields.types';
 import type { ProviderSettings } from './provider-settings.types';
 

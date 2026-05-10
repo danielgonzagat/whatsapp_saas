@@ -8,7 +8,7 @@ import {
   discoverAllObservedHttpMethods,
   deriveZeroValue,
 } from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
-import { deriveStringUnionMembersFromTypeContract } from '../../dynamic-reality-kernel/__parts__/type-contract-labels';
+import { deriveStringUnionMembersFromTypeContract } from '../../dynamic-reality-kernel/type-contract-labels';
 import { ensureDir, pathExists, readDir, writeTextFile } from '../../safe-fs';
 import { safeJoin } from '../../safe-path';
 import { FRONTEND_SRC, APP_DIR } from './constants';

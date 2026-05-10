@@ -4,7 +4,7 @@ import type { PulseActorEvidence } from './types.evidence';
 import type { PulseActorKind, PulseTimeWindowMode } from './types.health';
 import type { PulseActorProfile, PulseManifest, PulseManifestScenarioSpec } from './types.manifest';
 import type { PulseSyntheticRunMode } from './actors/types';
-import { deriveStringUnionMembersFromTypeContract } from './dynamic-reality-kernel/__parts__/type-contract-labels';
+import { deriveStringUnionMembersFromTypeContract } from './dynamic-reality-kernel/type-contract-labels';
 
 export type PulseActorEvidenceKey = PulseActorEvidence['actorKind'];
 

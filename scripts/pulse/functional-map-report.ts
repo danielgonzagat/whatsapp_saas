@@ -10,7 +10,7 @@ import type {
 } from './functional-map-types';
 import { escapeMarkdownTableCell } from './markdown-utils';
 import { writeTextFile } from './safe-fs';
-import { deriveStringUnionMembersFromTypeContract } from './dynamic-reality-kernel/__parts__/type-contract-labels';
+import { deriveStringUnionMembersFromTypeContract } from './dynamic-reality-kernel/type-contract-labels';
 
 function statusEmoji(status: InteractionStatus): string {
   return status;

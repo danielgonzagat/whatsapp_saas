@@ -23,7 +23,7 @@ import type {
   PageEntry,
   CoreParserData,
 } from './functional-map-types';
-import { normalizeForMatch, type RouteKey } from './graph/__parts__/graph-part1-core';
+import { normalizeForMatch, type RouteKey } from './graph/graph-part1-core';
 import {
   buildRouteLookup,
   matchApiCallToRoute,
@@ -38,7 +38,7 @@ import {
 } from './functional-map.helpers/__parts__/public';
 import { findAllPages, resolveComponentTree } from './functional-map-pages';
 import { traceInteractionChain, classifyInteraction } from './functional-map-classify';
-import { deriveStringUnionMembersFromTypeContract } from './dynamic-reality-kernel/__parts__/type-contract-labels';
+import { deriveStringUnionMembersFromTypeContract } from './dynamic-reality-kernel/type-contract-labels';
 
 function buildInteractionStatusCounter(): Record<InteractionStatus, number> {
   return Object.fromEntries(

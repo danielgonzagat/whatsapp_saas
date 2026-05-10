@@ -21,7 +21,7 @@ import {
   EMAIL_VALIDATION_HTML_BODY,
   extractSetupConfigField,
   normalizeWhatsAppSelectedProducts,
-} from './__companions__/marketing-connect.controller.companion';
+} from './marketing-connect.helpers';
 
 type EmailSubSettings = Record<string, unknown> & { enabled?: boolean };
 type WhatsAppStatusValue = Record<string, unknown>;

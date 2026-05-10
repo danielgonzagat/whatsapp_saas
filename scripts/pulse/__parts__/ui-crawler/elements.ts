@@ -5,8 +5,8 @@ import type {
   UIDiscoveredPage,
   UIElementKind,
 } from '../../types.ui-crawler';
-import { deriveStringUnionMembersFromTypeContract } from '../../dynamic-reality-kernel/__parts__/type-contract-labels';
-import { deriveZeroValue } from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+import { deriveStringUnionMembersFromTypeContract } from '../../dynamic-reality-kernel/type-contract-labels';
+import { deriveZeroValue } from '../../dynamic-reality-kernel/catalog-arithmetic';
 import { ensureDir, pathExists, readDir, readTextFile, writeTextFile } from '../../safe-fs';
 import { safeJoin, safeResolve } from '../../safe-path';
 import { walkFiles } from '../../parsers/utils';

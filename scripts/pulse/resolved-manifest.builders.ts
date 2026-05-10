@@ -11,8 +11,8 @@ import {
   titleCase,
   matchesOverride,
 } from './resolved-manifest.module-helpers';
-import { discoverAllObservedHttpMethods } from './dynamic-reality-kernel/__parts__/catalog-arithmetic';
-import { deriveStringUnionMembersFromTypeContract } from './dynamic-reality-kernel/__parts__/type-contract-labels';
+import { discoverAllObservedHttpMethods } from './dynamic-reality-kernel/catalog-arithmetic';
+import { deriveStringUnionMembersFromTypeContract } from './dynamic-reality-kernel/type-contract-labels';
 
 export {
   normalizeText,

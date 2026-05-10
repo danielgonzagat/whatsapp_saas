@@ -1,5 +1,5 @@
 import type { PulseStructuralRole } from './types.structural';
-import type { PulseDoDStatus } from './__parts__/types.capabilities/01-primitives';
+import type { PulseDoDStatus } from './types.capabilities/01-primitives';
 import type {
   CapabilityRoleEvidence,
   DoDEvidenceTruthMode,

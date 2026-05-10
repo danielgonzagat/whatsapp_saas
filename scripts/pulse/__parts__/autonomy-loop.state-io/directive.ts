@@ -38,9 +38,9 @@ import {
   getPreferredAutomationSafeUnits,
   hasUnitConflict,
 } from '../../autonomy-loop.unit-ranking/__parts__/selection';
-import { buildRuntimeRealityQueueInfluence } from '../../autonomy-loop.unit-ranking/__parts__/runtime-rank';
+import { buildRuntimeRealityQueueInfluence } from '../../autonomy-loop.unit-ranking/runtime-rank';
 import { buildPulseAutonomyMemoryState } from '../../autonomy-loop.memory';
-import { fingerprintStrategy } from '../../structural-memory/__parts__/memory-core';
+import { fingerprintStrategy } from '../../structural-memory/memory-core';
 import type { FalsePositiveAdjudicationState } from '../../types.false-positive-adjudicator';
 import type { RuntimeFusionState } from '../../types.runtime-fusion';
 import type { StructuralMemoryState } from '../../types.structural-memory';

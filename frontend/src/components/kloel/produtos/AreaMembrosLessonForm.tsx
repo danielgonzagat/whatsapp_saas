@@ -1,7 +1,6 @@
 'use client';
 
 import {
-  SORA,
   inputStyle,
   btnPrimary,
   btnGhost,
@@ -23,7 +22,7 @@ interface Props {
 }
 
 export default function AreaMembrosLessonForm({
-  mode,
+  mode: _mode,
   name,
   description,
   videoUrl,

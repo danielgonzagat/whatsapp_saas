@@ -1,9 +1,9 @@
 {
   "projectId": "kloel",
   "projectName": "KLOEL",
-  "commitSha": "25a107c112a3ec87f12e56de758e8be9b9d73a36",
+  "commitSha": "faed6a9f4ca1ff18b11803751613f6d1a4755f95",
   "environment": "scan",
-  "timestamp": "2026-05-10T01:08:02.209Z",
+  "timestamp": "2026-05-10T01:32:59.139Z",
   "status": "NOT_CERTIFIED",
   "humanReplacementStatus": "NOT_READY",
   "profile": null,
@@ -132,20 +132,20 @@
     },
     "noOverclaimPass": {
       "status": "fail",
-      "reason": "overclaim:completionProofReadiness — certification cannot complete while .pulse/current/PULSE_PROOF_READINESS.json has non-observed production proof (status=executable_unproved, canAdvance=false, planned=1974, inferred=0, not_available=0, nonObserved=1974, executableUnproved=1974).",
+      "reason": "overclaim:completionProofReadiness — certification cannot complete while .pulse/current/PULSE_PROOF_READINESS.json has non-observed production proof (status=executable_unproved, canAdvance=false, planned=1995, inferred=0, not_available=0, nonObserved=1995, executableUnproved=1995).",
       "failureClass": "checker_gap",
       "evidenceMode": "observed",
       "confidence": "high"
     },
     "executionMatrixCompletePass": {
       "status": "pass",
-      "reason": "Execution matrix classified 5237 path(s) with zero unknown and zero non-terminal paths.",
+      "reason": "Execution matrix classified 5286 path(s) with zero unknown and zero non-terminal paths.",
       "evidenceMode": "inferred",
       "confidence": "high"
     },
     "criticalPathObservedPass": {
       "status": "fail",
-      "reason": "3964 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-insights, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
+      "reason": "4014 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-insights, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
       "failureClass": "missing_evidence",
       "affectedCapabilityIds": [
         "capability:ad-insights",
@@ -203,8 +203,8 @@
     "soakPass: soak synthetic evidence is missing for: operator-campaigns-and-flows, operator-autopilot-run, system-payment-reconciliation.",
     "evidenceFresh: Execution trace is missing, so the certification run cannot prove which phases actually executed.",
     "pulseSelfTrustPass: PULSE still reconstructs 1 phantom capability(ies) and 0 phantom flow(s); self-trust stays degraded until illusion collapses into real chains.",
-    "noOverclaimPass: overclaim:completionProofReadiness — certification cannot complete while .pulse/current/PULSE_PROOF_READINESS.json has non-observed production proof (status=executable_unproved, canAdvance=false, planned=1974, inferred=0, not_available=0, nonObserved=1974, executableUnproved=1974).",
-    "criticalPathObservedPass: 3964 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-insights, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
+    "noOverclaimPass: overclaim:completionProofReadiness — certification cannot complete while .pulse/current/PULSE_PROOF_READINESS.json has non-observed production proof (status=executable_unproved, canAdvance=false, planned=1995, inferred=0, not_available=0, nonObserved=1995, executableUnproved=1995).",
+    "criticalPathObservedPass: 4014 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-insights, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
     "multiCycleConvergencePass: multiCycleConvergence: no autonomy iteration history found; production-autonomy verdict requires proven cycles.",
     "typeIntegrityPass: Found 7 type-integrity escape-hatch finding(s): frontend/src/lib/fabric/BackgroundManager.ts:51 (as any), scripts/pulse/__parts__/test-honesty/ast-detection.ts:24 (as any), scripts/pulse/__parts__/test-honesty/ast-detection.ts:25 (@ts-ignore), scripts/pulse/__parts__/test-honesty/ast-detection.ts:26 (@ts-expect-error), scripts/pulse/__parts__/test-honesty/main.ts:39 (as any), scripts/pulse/__parts__/test-honesty/main.ts:40 (@ts-ignore), scripts/pulse/__parts__/test-honesty/main.ts:41 (@ts-expect-error)."
   ],
@@ -212,31 +212,31 @@
     "Observed Codacy files are missing from repo inventory: .agents/skills/marketing-psychology/SKILL.md, scripts/pulse/parsers/facade-detector.ts, scripts/pulse/parsers/runtime-utils.ts.",
     "Codacy still reports 1076 HIGH issue(s).",
     "Phantom capabilities remain: Knowledge Base.",
-    "Codacy snapshot is stale (24157 minute(s) old).",
+    "Codacy snapshot is stale (24178 minute(s) old).",
     "Observed external high-impact signals remain active: 3.",
     "Required external adapters are missing: 2.",
-    "Proof readiness still has non-observed production proof: status=executable_unproved, canAdvance=false, planned=1974, inferred=0, not_available=0, nonObserved=1974, executableUnproved=1974.",
-    "No-hardcoded-reality state still has hardcoded reality authority: 218684 hardcoded reality event(s) across 499 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9.."
+    "Proof readiness still has non-observed production proof: status=executable_unproved, canAdvance=false, planned=1995, inferred=0, not_available=0, nonObserved=1995, executableUnproved=1995.",
+    "No-hardcoded-reality state still has hardcoded reality authority: 218692 hardcoded reality event(s) across 499 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9.."
   ],
   "noHardcodedRealityState": {
     "artifact": "PULSE_NO_HARDCODED_REALITY",
     "version": 1,
-    "generatedAt": "2026-05-10T01:08:02.209Z",
+    "generatedAt": "2026-05-10T01:32:59.139Z",
     "operationalIdentity": "dynamic_hardcode_evidence_event",
     "scannedFiles": 499,
-    "totalEvents": 218684,
+    "totalEvents": 218692,
     "summary": {
-      "totalFindings": 218684,
+      "totalFindings": 218692,
       "byKind": {
         "hardcoded_literal_surface_risk": 15056,
-        "hardcoded_const_declaration_risk": 8037,
+        "hardcoded_const_declaration_risk": 8038,
         "hardcoded_predeclared_authority_context_risk": 206,
         "hardcoded_fixed_boolean_decision_risk": 99,
         "hardcoded_numeric_surface_risk": 4371,
         "hardcoded_numeric_decision_literal_risk": 394,
         "hardcoded_fixed_literal_decision_risk": 742,
         "hardcoded_boolean_surface_risk": 1232,
-        "hardcoded_regex_surface_risk": 1082,
+        "hardcoded_regex_surface_risk": 1086,
         "hardcoded_gate_profile_threshold_risk": 14,
         "hardcoded_decision_regex_risk": 20,
         "hardcoded_identity_limit_risk": 7,
@@ -244,7 +244,7 @@
         "hardcoded_sql_reality_table_risk": 2,
         "hardcoded_parser_rule_blocker_risk": 5,
         "hardcoded_auditor_mutation_risk": 1,
-        "hardcoded_replacement_cheat_risk": 187387
+        "hardcoded_replacement_cheat_risk": 187390
       },
       "topFiles": [
         {
@@ -1544,31 +1544,31 @@
   },
   "selfTrustReport": null,
   "scopeStateSummary": {
-    "totalFiles": 3940,
-    "totalLines": 719925,
-    "runtimeCriticalFiles": 2822,
-    "userFacingFiles": 1234,
+    "totalFiles": 3971,
+    "totalLines": 723164,
+    "runtimeCriticalFiles": 2854,
+    "userFacingFiles": 1238,
     "governedValidationFiles": 0,
     "surfaceCounts": {
-      "frontend": 1133,
+      "frontend": 1137,
       "frontend-admin": 102,
       "backend": 0,
       "worker": 0,
-      "prisma": 64,
+      "prisma": 65,
       "e2e": 55,
-      "scripts": 2026,
+      "scripts": 2053,
       "docs": 128,
       "infra": 3,
-      "governance": 118,
+      "governance": 117,
       "root-config": 24,
       "artifacts": 3,
       "misc": 284
     },
     "kindCounts": {
-      "source": 2753,
+      "source": 2784,
       "spec": 406,
-      "migration": 42,
-      "config": 589,
+      "migration": 43,
+      "config": 588,
       "document": 147,
       "artifact": 3
     },
@@ -1684,6 +1684,7 @@
       "messages",
       "mobile",
       "model",
+      "narrow",
       "nest",
       "normalize",
       "nosecrets",
@@ -5944,7 +5945,7 @@
       {
         "path": "artifacts/opencode-fleet/wave-10-final-2026-05-09/pids.json",
         "extension": ".json",
-        "lineCount": 13,
+        "lineCount": 10,
         "surface": "misc",
         "kind": "config",
         "runtimeCritical": false,
@@ -5961,7 +5962,7 @@
       {
         "path": "artifacts/opencode-fleet/wave-11-fraud-fix-2026-05-09/pids.json",
         "extension": ".json",
-        "lineCount": 9,
+        "lineCount": 12,
         "surface": "misc",
         "kind": "config",
         "runtimeCritical": false,
@@ -6593,7 +6594,7 @@
     "snapshotAvailable": true,
     "sourcePath": "/Users/danielpenin/whatsapp_saas/PULSE_CODACY_STATE.json",
     "syncedAt": "2026-04-23T06:27:53.909Z",
-    "ageMinutes": 24157,
+    "ageMinutes": 24178,
     "stale": true,
     "loc": 463549,
     "totalIssues": 7548,
@@ -7760,7 +7761,7 @@
       "impactScore": 0.8,
       "confidence": 0.95,
       "summary": "37 HIGH Codacy issue(s) remain in backend/prisma/migrations/20251209150035_init_baseline/migration.sql.",
-      "observedAt": "2026-05-10T01:04:54.786Z",
+      "observedAt": "2026-05-10T01:26:30.165Z",
       "relatedFiles": [
         "backend/prisma/migrations/20251209150035_init_baseline/migration.sql"
       ],
@@ -7802,7 +7803,7 @@
       "impactScore": 0.8,
       "confidence": 0.95,
       "summary": "2 HIGH Codacy issue(s) remain in backend/src/auth/email.service.ts.",
-      "observedAt": "2026-05-10T01:04:54.786Z",
+      "observedAt": "2026-05-10T01:26:30.165Z",
       "relatedFiles": [
         "backend/src/auth/email.service.ts"
       ],
@@ -7979,7 +7980,7 @@
       "impactScore": 0.8,
       "confidence": 0.95,
       "summary": "1 HIGH Codacy issue(s) remain in backend/src/autopilot/autopilot.service.ts.",
-      "observedAt": "2026-05-10T01:04:54.786Z",
+      "observedAt": "2026-05-10T01:26:30.165Z",
       "relatedFiles": [
         "backend/src/autopilot/autopilot.service.ts"
       ],
@@ -8166,7 +8167,7 @@
       "impactScore": 0.55,
       "confidence": 0.95,
       "summary": "1 HIGH Codacy issue(s) remain in package.json.",
-      "observedAt": "2026-05-10T01:04:54.786Z",
+      "observedAt": "2026-05-10T01:26:30.165Z",
       "relatedFiles": [
         "package.json"
       ],
@@ -8202,18 +8203,18 @@
     }
   ],
   "structuralGraphSummary": {
-    "totalNodes": 7219,
-    "totalEdges": 15226,
+    "totalNodes": 7240,
+    "totalEdges": 15222,
     "roleCounts": {
-      "interface": 2740,
+      "interface": 2761,
       "orchestration": 3358,
       "persistence": 145,
       "side_effect": 973,
       "simulation": 3
     },
-    "interfaceChains": 2740,
+    "interfaceChains": 2761,
     "completeChains": 770,
-    "partialChains": 1970,
+    "partialChains": 1991,
     "simulatedChains": 0
   },
   "capabilityStateSummary": {
@@ -10760,7 +10761,7 @@
     }
   ],
   "productVision": {
-    "generatedAt": "2026-05-10T01:09:58.617Z",
+    "generatedAt": "2026-05-10T01:34:51.735Z",
     "truthMode": "aspirational",
     "evidenceBasis": {
       "observed": 51,
@@ -28225,7 +28226,7 @@
     }
   },
   "convergencePlan": {
-    "totalUnits": 152,
+    "totalUnits": 153,
     "governedValidationUnits": 0,
     "observationOnlyUnits": 1,
     "topQueue": [
@@ -28428,12 +28429,16 @@
           "backend/src/whatsapp/agent-conversation-state.util.spec.ts",
           "backend/src/whatsapp/agent-conversation-state.util.ts",
           "backend/src/whatsapp/agent-events.service.ts",
+          "backend/src/whatsapp/cia-backlog-run.helpers.ts",
           "backend/src/whatsapp/cia-backlog-run.service.ts",
+          "backend/src/whatsapp/cia-bootstrap.constants.ts",
           "backend/src/whatsapp/cia-bootstrap.service.ts",
           "backend/src/whatsapp/cia-chat-filter.service.ts",
           "backend/src/whatsapp/cia-inline-fallback.service.ts",
+          "backend/src/whatsapp/cia-remote-backlog.helpers.ts",
           "backend/src/whatsapp/cia-remote-backlog.service.ts",
           "backend/src/whatsapp/cia-runtime-state.service.ts",
+          "backend/src/whatsapp/cia-runtime.fixtures.ts",
           "backend/src/whatsapp/cia-runtime.service.fixtures.ts",
           "backend/src/whatsapp/cia-runtime.service.spec.ts",
           "backend/src/whatsapp/cia-runtime.service.ts",
@@ -28453,10 +28458,12 @@
           "backend/src/whatsapp/providers/provider-env.ts",
           "backend/src/whatsapp/providers/provider-registry.spec.ts",
           "backend/src/whatsapp/providers/provider-registry.ts",
+          "backend/src/whatsapp/providers/provider-send-message.helpers.ts",
           "backend/src/whatsapp/providers/waha-message-event-name.ts",
           "backend/src/whatsapp/providers/waha-session-config.provider.ts",
           "backend/src/whatsapp/providers/waha-session-config.util.ts",
           "backend/src/whatsapp/providers/waha-session-lifecycle.util.ts",
+          "backend/src/whatsapp/providers/waha-session.helpers.ts",
           "backend/src/whatsapp/providers/waha-session.provider.ts",
           "backend/src/whatsapp/providers/waha-transport.ts",
           "backend/src/whatsapp/providers/waha-types.ts",
@@ -28477,6 +28484,7 @@
           "backend/src/whatsapp/whatsapp-watchdog-recovery.service.spec.ts",
           "backend/src/whatsapp/whatsapp-watchdog-recovery.service.ts",
           "backend/src/whatsapp/whatsapp-watchdog-session.service.ts",
+          "backend/src/whatsapp/whatsapp-watchdog.helpers.ts",
           "backend/src/whatsapp/whatsapp-watchdog.service.spec.ts",
           "backend/src/whatsapp/whatsapp-watchdog.service.ts",
           "backend/src/whatsapp/whatsapp-watchdog.types.ts",
@@ -28485,6 +28493,7 @@
           "backend/src/whatsapp/whatsapp.service.chats.backlog.helpers.ts",
           "backend/src/whatsapp/whatsapp.service.chats.ts",
           "backend/src/whatsapp/whatsapp.service.chats.types.ts",
+          "backend/src/whatsapp/whatsapp.service.spec.fixtures.ts",
           "backend/src/whatsapp/whatsapp.service.spec.ts",
           "backend/src/whatsapp/whatsapp.service.ts",
           "backend/src/whatsapp/worker-runtime.service.ts",
@@ -29244,10 +29253,13 @@
           "frontend/src/components/kloel/produtos/AfiliarSe.tsx",
           "frontend/src/components/kloel/produtos/AfiliarSeMarketplaceGrid.tsx",
           "frontend/src/components/kloel/produtos/AfiliarSeProductDetail.tsx",
+          "frontend/src/components/kloel/produtos/AreaCardHeader.tsx",
           "frontend/src/components/kloel/produtos/AreaMembros.tsx",
           "frontend/src/components/kloel/produtos/AreaMembrosAreaCard.tsx",
+          "frontend/src/components/kloel/produtos/AreaMembrosCourseEditor.tsx",
           "frontend/src/components/kloel/produtos/AreaMembrosCreateAreaForm.tsx",
           "frontend/src/components/kloel/produtos/AreaMembrosDashboard.tsx",
+          "frontend/src/components/kloel/produtos/AreaMembrosLessonForm.tsx",
           "frontend/src/components/kloel/produtos/AreaMembrosStudentDrawer.tsx",
           "frontend/src/components/kloel/produtos/MeusProdutos.tsx",
           "frontend/src/components/kloel/produtos/MeusProdutosDashboard.tsx",
@@ -29547,6 +29559,7 @@
           "frontend/src/lib/async-sequence.ts",
           "frontend/src/lib/auth-identity.ts",
           "frontend/src/lib/canvas-formats.ts",
+          "frontend/src/lib/canvas-palette-tokens.ts",
           "frontend/src/lib/canvas-product-templates.ts",
           "frontend/src/lib/capability-data/fale.ts",
           "frontend/src/lib/capability-data/gerencie.ts",
@@ -35311,7 +35324,7 @@
       ]
     },
     "worldState": {
-      "generatedAt": "2026-05-10T01:08:22.460Z",
+      "generatedAt": "2026-05-10T01:33:08.990Z",
       "actorProfiles": [
         "synthetic-customer",
         "synthetic-operator",
@@ -35419,9 +35432,9 @@
       ]
     },
     "executionTrace": {
-      "runId": "pulse-cert-1778375302460",
-      "generatedAt": "2026-05-10T01:08:22.460Z",
-      "updatedAt": "2026-05-10T01:08:22.460Z",
+      "runId": "pulse-cert-1778376788990",
+      "generatedAt": "2026-05-10T01:33:08.990Z",
+      "updatedAt": "2026-05-10T01:33:08.990Z",
       "environment": "scan",
       "certificationTarget": {
         "tier": null,
@@ -35447,7 +35460,7 @@
           "PULSE_CERTIFICATE.json"
         ],
         "metrics": {
-          "inventoryFiles": 3940,
+          "inventoryFiles": 3971,
           "codacyObservedFiles": 60,
           "codacyObservedFilesCovered": 57,
           "confidence": "low"
@@ -36011,7 +36024,7 @@
         ],
         "metrics": {
           "codacySnapshotAvailable": true,
-          "codacyAgeMinutes": 24157,
+          "codacyAgeMinutes": 24178,
           "codacyStale": true,
           "externalStaleAdapters": 0,
           "externalMissingAdapters": 2
@@ -36022,12 +36035,12 @@
       {
         "kind": "artifact",
         "executed": true,
-        "summary": "Execution matrix classified 5237 path(s); unknown=0.",
+        "summary": "Execution matrix classified 5286 path(s); unknown=0.",
         "artifactPaths": [
           "PULSE_EXECUTION_MATRIX.json"
         ],
         "metrics": {
-          "totalPaths": 5237,
+          "totalPaths": 5286,
           "unknownPaths": 0,
           "coveragePercent": 100
         }
@@ -36069,18 +36082,18 @@
       {
         "kind": "artifact",
         "executed": true,
-        "summary": "Proof readiness blocks completion: status=executable_unproved, canAdvance=false, planned=1974, inferred=0, not_available=0, nonObserved=1974, executableUnproved=1974.",
+        "summary": "Proof readiness blocks completion: status=executable_unproved, canAdvance=false, planned=1995, inferred=0, not_available=0, nonObserved=1995, executableUnproved=1995.",
         "artifactPaths": [
           ".pulse/current/PULSE_PROOF_READINESS.json"
         ],
         "metrics": {
           "canAdvance": 0,
-          "plannedEvidence": 1974,
-          "plannedOrUnexecutedEvidence": 1974,
+          "plannedEvidence": 1995,
+          "plannedOrUnexecutedEvidence": 1995,
           "inferredEvidence": 0,
           "notAvailableEvidence": 0,
-          "nonObservedEvidence": 1974,
-          "executableUnproved": 1974,
+          "nonObservedEvidence": 1995,
+          "executableUnproved": 1995,
           "observationOnlyRequired": 0,
           "blockedNotExecutable": 0
         }
@@ -36088,12 +36101,12 @@
       {
         "kind": "artifact",
         "executed": true,
-        "summary": "No-hardcoded-reality state blocks completion: 218684 hardcoded reality event(s) across 499 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9.",
+        "summary": "No-hardcoded-reality state blocks completion: 218692 hardcoded reality event(s) across 499 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9.",
         "artifactPaths": [
           null
         ],
         "metrics": {
-          "totalEvents": 218684,
+          "totalEvents": 218692,
           "scannedFiles": 499
         }
       }
@@ -36102,7 +36115,7 @@
   "pulseMachineReadiness": {
     "scope": "pulse_machine_not_kloel_product",
     "status": "NOT_READY",
-    "generatedAt": "2026-05-10T01:08:02.209Z",
+    "generatedAt": "2026-05-10T01:32:59.139Z",
     "productCertificationStatus": "NOT_CERTIFIED",
     "productCertificationExcludedFromVerdict": true,
     "canRunBoundedAutonomousCycle": false,
@@ -36116,7 +36129,7 @@
           "nextExecutableUnitLimit": 8,
           "boundedExecutableUnits": 8,
           "totalAutonomousUnits": 68,
-          "totalConvergenceUnits": 152
+          "totalConvergenceUnits": 153
         }
       },
       {
@@ -36131,9 +36144,9 @@
       {
         "id": "execution_matrix",
         "status": "pass",
-        "reason": "Execution matrix classified 5237 path(s) with zero unknown and zero non-terminal paths.",
+        "reason": "Execution matrix classified 5286 path(s) with zero unknown and zero non-terminal paths.",
         "evidence": {
-          "totalPaths": 5237,
+          "totalPaths": 5286,
           "unknownPaths": 0,
           "criticalUnobservedPaths": 0,
           "impreciseBreakpoints": 0,
@@ -36143,12 +36156,12 @@
       {
         "id": "critical_path_terminal",
         "status": "fail",
-        "reason": "3964 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-insights, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
+        "reason": "4014 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-insights, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
         "evidence": {
           "criticalUnobservedPaths": 0,
           "observedPass": 0,
           "observedFail": 221,
-          "terminalWithoutObservedEvidence": 3964,
+          "terminalWithoutObservedEvidence": 4014,
           "firstTerminalPathId": "matrix:capability:capability:ad-insights",
           "terminalArtifact": "PULSE_EXECUTION_MATRIX.json",
           "coverageArtifact": "PULSE_PATH_COVERAGE.json",
@@ -36207,12 +36220,12 @@
     ],
     "blockers": [
       "artifact_consistency: Cross-artifact consistency has not produced a passing check.",
-      "critical_path_terminal: 3964 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-insights, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
+      "critical_path_terminal: 4014 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-insights, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
       "external_reality: 2 missing, 0 stale, and 0 invalid external adapter(s) remain.",
       "self_trust: PULSE still reconstructs 1 phantom capability(ies) and 0 phantom flow(s); self-trust stays degraded until illusion collapses into real chains.",
       "multi_cycle: multiCycleConvergence: no autonomy iteration history found; production-autonomy verdict requires proven cycles. Cycle proof: 3/3 successful non-regressing real cycle(s)."
     ]
   },
-  "runId": "9b4d022f-0fd6-44f2-b838-f1927cd86c03",
-  "generatedAt": "2026-05-10T01:14:54.851Z"
+  "runId": "43f1d359-ac6e-47d4-8493-bbba16b86627",
+  "generatedAt": "2026-05-10T01:43:25.753Z"
 }

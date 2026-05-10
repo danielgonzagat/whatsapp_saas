@@ -12,7 +12,7 @@ import type { PulseParityGapsArtifact } from '../../types.capabilities.parity';
 import type { PulseExternalSignalState } from '../types.capabilities/05-external-signals';
 import type { PulseProductVision } from '../../types.product-vision';
 import type { PulseCertification } from '../../types.evidence';
-import type { PulseArtifactRegistry } from '../../artifact-registry/__parts__/discovery';
+import type { PulseArtifactRegistry } from '../../artifact-registry/discovery';
 
 /** Pulse artifact snapshot shape. */
 export interface PulseArtifactSnapshot {

@@ -5,7 +5,7 @@ import { OpsAlertService } from '../observability/ops-alert.service';
 import { MetaSdkService } from './meta-sdk.service';
 import { decryptMetaToken } from './meta-token-crypto';
 import { asProviderSettings } from '../whatsapp/provider-settings.types';
-import { readRecord, readStrictText, readText } from './__companions__/meta-read-helpers';
+import { readRecord, readStrictText, readText } from './meta-read-helpers';
 
 const D_RE = /\D/g;
 

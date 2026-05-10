@@ -1,1 +1,1 @@
-export { buildCapabilityState } from './capability-model/__parts__/builder';
+export { buildCapabilityState } from './capability-model/builder';

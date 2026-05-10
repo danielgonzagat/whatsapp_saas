@@ -30,6 +30,8 @@ import { StartNode } from './nodes/StartNode';
 import { WaitForReplyNode } from './nodes/WaitForReplyNode';
 
 import { Maximize, Play, Redo, Save, Trash2, Undo, ZoomIn, ZoomOut } from 'lucide-react';
+import { colors } from '@/lib/design-tokens';
+import { canvasPalette } from '@/lib/canvas-palette-tokens';
 
 // Node type registry
 const nodeTypes = {
@@ -243,19 +245,18 @@ export default function FlowBuilder({
 
   // Minimap node color
   const nodeColor = useCallback((node: Node) => {
-    const colors: Record<string, string> = {
-      start:
-        'var(--app-success)',
+    const nodeColors: Record<string, string> = {
+      start: 'var(--app-success)',
       message: colors.checkout.success,
-      input: '#3b82f6',
-      condition: '#eab308',
-      delay: '#f97316',
-      waitForReply: '#8b5cf6',
-      action: '#a855f7',
-      ai: '#6366f1',
+      input: colors.semantic.info,
+      condition: colors.semantic.warning,
+      delay: colors.ember.primary,
+      waitForReply: colors.semantic.purple,
+      action: colors.semantic.purpleText,
+      ai: canvasPalette.indigo,
       end: 'var(--app-error)',
     };
-    return colors[node.type || 'default'] || colors.text.muted;
+    return nodeColors[node.type || 'default'] || colors.text.muted;
   }, []);
 
   return (
@@ -285,7 +286,7 @@ export default function FlowBuilder({
           }}
           proOptions={{ hideAttribution: true }}
         >
-          <Background color="#e2e8f0" gap={15} />
+          <Background color={colors.text.dim} gap={15} />
           <Controls showInteractive={!readOnly} />
           <MiniMap nodeColor={nodeColor} nodeStrokeWidth={3} zoomable pannable />
 

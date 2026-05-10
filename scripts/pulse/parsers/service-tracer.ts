@@ -4,7 +4,7 @@ import type { ServiceTrace } from '../types.core';
 import type { PulseConfig } from '../types.manifest';
 import { walkFiles } from './utils';
 import { readTextFile } from '../safe-fs';
-import { discoverReservedJsKeywords } from '../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+import { discoverReservedJsKeywords } from '../dynamic-reality-kernel/catalog-arithmetic';
 
 function isNonMethodName(name: string): boolean {
   return discoverReservedJsKeywords().has(name);

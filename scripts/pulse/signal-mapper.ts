@@ -12,7 +12,7 @@ import type {
   PulseFlowProjection,
   PulseFlowProjectionItem,
 } from './__parts__/types.capabilities/04-flow-projection';
-import type { PulseSignal } from './__parts__/types.capabilities/05-external-signals';
+import type { PulseSignal } from './types.capabilities/05-external-signals';
 import type { PulseConvergenceOwnerLane } from './types.gate-failure';
 import type { PulseScopeExecutionMode, PulseScopeFile, PulseScopeState } from './types.truth.scope';
 import type { PulseCodacyEvidence } from './types.structural';

@@ -24,6 +24,7 @@ export const externalBrands = {
   tiktokPink: '#FE2C55',
   tiktokTeal: '#25F4EE',
   tiktokBlack: '#010101',
+  tiktokBg: '#121212',
 
   whatsapp: '#25D366',
   whatsappGreen: '#25D366',
@@ -36,6 +37,11 @@ export const externalBrands = {
   instagramGradientStart: '#833AB4',
   instagramGradientMid: '#E1306C',
   instagramGradientEnd: '#F77737',
+  instagramGradientYellow: '#FEDA75',
+  instagramGradientOrange: '#FA7E1E',
+  instagramGradientPink: '#D62976',
+  instagramGradientPurple: '#962FBF',
+  instagramGradientBlue: '#4F5BD5',
 
   twitter: '#1DA1F2',
   twitterBlue: '#1DA1F2',
@@ -63,6 +69,10 @@ export const externalBrands = {
 
   sms: '#8B5CF6',
   smsPurple: '#8B5CF6',
+
+  messenger: '#00B2FF',
+  messengerBlue: '#00B2FF',
+  messengerDark: '#006AFF',
 
   snapchat: '#FFFC00',
   spotify: '#1DB954',

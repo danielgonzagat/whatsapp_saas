@@ -90,8 +90,8 @@ export async function processCheckoutSocialLeadEnrichment(leadId: string) {
     await prisma.checkoutSocialLead.update({
       where: { id: lead.id, workspaceId: lead.workspaceId },
       data: {
-        phone: normalizedPhone || undefined,
-        cpf: normalizedCpf || undefined,
+        ...(normalizedPhone ? { phone: normalizedPhone } : {}),
+        ...(normalizedCpf ? { cpf: normalizedCpf } : {}),
         enrichmentData: enrichmentData as Prisma.InputJsonValue,
         enrichmentStatus: CheckoutSocialLeadEnrichmentStatus.COMPLETED,
         status: CheckoutSocialLeadStatus.ENRICHED,
@@ -110,7 +110,7 @@ export async function processCheckoutSocialLeadEnrichment(leadId: string) {
         create: {
           workspaceId: lead.workspaceId,
           phone: normalizedPhone,
-          name: lead.name || undefined,
+          name: lead.name ?? null,
           email: lead.email,
           customFields: {
             checkoutSocialLead: true,
@@ -118,7 +118,7 @@ export async function processCheckoutSocialLeadEnrichment(leadId: string) {
           },
         },
         update: {
-          name: lead.name || undefined,
+          name: lead.name ?? null,
           email: lead.email,
         },
       });
