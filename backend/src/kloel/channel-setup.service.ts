@@ -89,6 +89,7 @@ export class ChannelSetupService {
     const normalizedChannel = normalizeSetupChannel(channel);
     const type = normalizeArsenalType(input.type);
     const storageRef = input.storageRef?.trim();
+    const assetId = input.assetId?.trim() || randomUUID();
     if (!storageRef) {
       throw new BadRequestException('storageRef obrigatorio');
     }
@@ -98,13 +99,13 @@ export class ChannelSetupService {
           workspaceId_channel_assetId: {
             workspaceId,
             channel: normalizedChannel,
-            assetId: input.assetId?.trim() || randomUUID(),
+            assetId,
           },
         },
         create: {
           workspaceId,
           channel: normalizedChannel,
-          assetId: input.assetId?.trim() || randomUUID(),
+          assetId,
           type,
           label: input.label?.trim() || null,
           storageRef,
