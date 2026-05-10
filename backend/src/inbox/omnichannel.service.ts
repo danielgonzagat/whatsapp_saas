@@ -1,6 +1,7 @@
 import { Inject, Injectable, Logger, Optional, forwardRef } from '@nestjs/common';
 import { forEachSequential } from '../common/async-sequence';
 import { StorageService } from '../common/storage/storage.service';
+import { CommercialDecisionOrchestratorService } from '../kloel/commercial-decision-orchestrator.service';
 import { UnifiedAgentService } from '../kloel/unified-agent.service';
 import { ChannelInboundHookService } from '../omnichannel/channel-inbound-hook.service';
 import { OmnichannelContactResolutionService } from '../omnichannel/contact-resolution.service';
@@ -37,6 +38,9 @@ export class OmnichannelService {
     @Optional()
     @Inject(forwardRef(() => ChannelInboundHookService))
     private readonly mindHook?: ChannelInboundHookService,
+    @Optional()
+    @Inject(forwardRef(() => CommercialDecisionOrchestratorService))
+    private readonly commercialOrchestrator?: CommercialDecisionOrchestratorService,
   ) {}
 
   /** Unified entry point for ALL channels — saves, triggers CIA, and (optionally) routes. */
@@ -95,26 +99,70 @@ export class OmnichannelService {
       .trim()
       .toLowerCase();
 
-    this.unifiedAgent
-      .processIncomingMessage({
-        workspaceId: msg.workspaceId,
-        contactId: savedMsg.contactId,
-        phone: identifier,
-        message: msg.content,
-        channel: normalizedChannel,
-        context: {
-          source: 'omnichannel',
-          deliveryMode: 'reactive',
-          messageId: savedMsg.id,
-          providerMessageId: msg.externalId,
-        },
-      })
-      .catch((err: unknown) => {
+    this.processCiaMessage(msg, savedMsg, identifier, normalizedChannel).catch((err: unknown) => {
+      const wrapped = ensureError(err);
+      this.logger.error(`[OMNI] CIA trigger failed for channel ${msg.channel}: ${wrapped.message}`);
+    });
+  }
+
+  private async processCiaMessage(
+    msg: NormalizedMessage,
+    savedMsg: { contactId?: string; id?: string },
+    identifier: string,
+    normalizedChannel: string,
+  ) {
+    const deterministicEnabled = this.isDeterministicPipelineEnabled();
+    if (deterministicEnabled && this.commercialOrchestrator) {
+      try {
+        const decision = await this.commercialOrchestrator.orchestrateInbound({
+          workspaceId: msg.workspaceId,
+          contactId: savedMsg.contactId,
+          channel: normalizedChannel,
+          message: msg.content,
+          conversationId: savedMsg.id,
+        });
+        await this.unifiedAgent?.processMessage({
+          workspaceId: msg.workspaceId,
+          contactId: savedMsg.contactId || '',
+          phone: identifier,
+          message: msg.content,
+          predecidedActions: decision.actions,
+          context: {
+            source: 'omnichannel',
+            deliveryMode: 'reactive',
+            deterministicPipeline: true,
+            messageId: savedMsg.id,
+            providerMessageId: msg.externalId,
+            trace: decision.trace,
+          },
+        });
+        return;
+      } catch (err: unknown) {
         const wrapped = ensureError(err);
-        this.logger.error(
-          `[OMNI] CIA trigger failed for channel ${msg.channel}: ${wrapped.message}`,
+        this.logger.warn(
+          `[OMNI] deterministic pipeline failed, using legacy CIA: ${wrapped.message}`,
         );
-      });
+      }
+    }
+
+    await this.unifiedAgent?.processIncomingMessage({
+      workspaceId: msg.workspaceId,
+      contactId: savedMsg.contactId,
+      phone: identifier,
+      message: msg.content,
+      channel: normalizedChannel,
+      context: {
+        source: 'omnichannel',
+        deliveryMode: 'reactive',
+        messageId: savedMsg.id,
+        providerMessageId: msg.externalId,
+      },
+    });
+  }
+
+  private isDeterministicPipelineEnabled(): boolean {
+    const value = String(process.env.KLOEL_DETERMINISTIC_PIPELINE_ENABLED || '').toLowerCase();
+    return value === '1' || value === 'true' || value === 'yes' || value === 'on';
   }
 
   /** Fire-and-forget MIND percept event push after message is persisted. */

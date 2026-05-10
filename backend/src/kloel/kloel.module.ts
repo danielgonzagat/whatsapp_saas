@@ -117,6 +117,7 @@ import {
   WhatsAppChannelTransport,
 } from './channel-transport.providers';
 import { ChannelTransportRegistry } from './channel-transport.registry';
+import { CommercialDecisionOrchestratorService } from './commercial-decision-orchestrator.service';
 import { MindBeliefService } from './mind-belief.service';
 import { MindBanditService } from './mind-bandit.service';
 import { MindCaseMemoryService } from './mind-case-memory.service';
@@ -250,6 +251,7 @@ import { MindWorkspaceStateService } from './mind-workspace-state.service';
     EmailCampaignService,
     CartRecoveryService,
     ChannelTransportRegistry,
+    CommercialDecisionOrchestratorService,
     EmailChannelTransport,
     InstagramChannelTransport,
     MessengerChannelTransport,
@@ -325,6 +327,7 @@ import { MindWorkspaceStateService } from './mind-workspace-state.service';
     AdRulesEngineService,
     EmailCampaignService,
     ChannelTransportRegistry,
+    CommercialDecisionOrchestratorService,
     MindBeliefService,
     MindBanditService,
     MindGlobalPriorService,

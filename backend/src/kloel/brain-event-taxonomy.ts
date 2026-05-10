@@ -36,6 +36,8 @@ export const BRAIN_EVENT_TAXONOMY = [
   'mind.prediction.resolved',
   'mind.surprise.recorded',
   'concept.detected',
+  'case_memory.consulted',
+  'predecided_actions.built',
   'channel.connected',
   'channel.disconnected',
   'channel.externally_blocked',
