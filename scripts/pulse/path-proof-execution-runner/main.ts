@@ -158,8 +158,8 @@ export async function executePathProofPlan(
         reason: execution.timedOut
           ? `Command timed out after ${timeoutMs}ms.`
           : `Command exited with code ${execution.exitCode ?? 'unknown'}.`,
-        stdout: execution.stdout,
-        stderr: execution.stderr,
+        ...(execution.stdout !== undefined ? { stdout: execution.stdout } : {}),
+        ...(execution.stderr !== undefined ? { stderr: execution.stderr } : {}),
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);

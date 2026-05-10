@@ -26,6 +26,7 @@ export function hasScenarioResults(
   return (
     Boolean(value) &&
     typeof value === 'object' &&
+    value !== null &&
     'results' in value &&
     Array.isArray(value.results)
   );

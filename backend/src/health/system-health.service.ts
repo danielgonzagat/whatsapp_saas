@@ -151,7 +151,7 @@ export class SystemHealthService {
       this.probeMetaCloud(),
       this.probeOpenAI(),
       this.probeAnthropic(),
-      this.probeEmail(),
+      Promise.resolve(this.probeEmail()),
     ];
 
     const settled = await Promise.allSettled(probes);

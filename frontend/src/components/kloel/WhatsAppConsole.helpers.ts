@@ -1,6 +1,4 @@
-// Pure data helpers extracted from WhatsAppConsole.tsx to reduce cyclomatic
-// complexity. No React, no JSX — these are payload-shape transforms only.
-
+import type { AgentActivity } from './AgentConsole';
 import type { Message as InboxMessage } from '@/lib/api';
 
 const D_RE = /^\d+$/;

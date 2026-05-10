@@ -21,7 +21,6 @@ import {
   getPrimaryFamily,
   graphTraversalDepthLimit,
   reachableRoutePatternLimit,
-  unique,
 } from '../capability-model-helpers/main';
 import { getNodeRoutePatterns } from '../capability-model-helpers/graph-helpers';
 import {
@@ -142,7 +141,8 @@ export function buildCapabilityState(input: BuildCapabilityStateInput): PulseCap
     if (
       sameToken(edge.kind, 'orchestrates') &&
       sameToken(fromNode?.kind, 'backend_route') &&
-      sameToken(toNode?.kind, 'service_trace') &&
+      toNode !== undefined &&
+      sameToken(toNode.kind, 'service_trace') &&
       toNode.file
     ) {
       skippedServiceSeedFiles.add(toNode.file);
