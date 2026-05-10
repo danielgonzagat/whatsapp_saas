@@ -65,13 +65,13 @@ type DbContact = {
   updatedAt: Date;
 };
 
-export const WORKSPACE_ID = 'ws-proof';
+const WORKSPACE_ID = 'ws-proof';
 export const ALICE_PHONE = '5511999991111';
 const CARLOS_PHONE = '5511999992222';
 const DANIELA_PHONE = '5511999993333';
-export const ALICE_CHAT_ID = `${ALICE_PHONE}@c.us`;
-export const CARLOS_CHAT_ID = `${CARLOS_PHONE}@c.us`;
-export const DANIELA_CHAT_ID = `${DANIELA_PHONE}@c.us`;
+const ALICE_CHAT_ID = `${ALICE_PHONE}@c.us`;
+const CARLOS_CHAT_ID = `${CARLOS_PHONE}@c.us`;
+const DANIELA_CHAT_ID = `${DANIELA_PHONE}@c.us`;
 
 export const EXPECTED_TOOL_ALPHABET = [
   'connect_whatsapp',

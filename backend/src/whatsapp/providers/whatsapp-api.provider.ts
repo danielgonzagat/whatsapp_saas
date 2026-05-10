@@ -28,11 +28,6 @@ export type {
   WahaSessionConfigDiagnostics,
   WahaSessionOverview,
 } from './whatsapp-api.provider.types';
-export {
-  mapWahaSessionStatus,
-  normalizeWahaSessionStatus,
-  resolveWahaSessionState,
-} from './whatsapp-api.provider.types';
 
 /** Whats app api provider. */
 @Injectable()

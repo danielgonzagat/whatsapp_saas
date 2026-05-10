@@ -1,5 +1,6 @@
 import type { Page } from '@playwright/test';
 import type { CriticalRoute } from './critical-flows.routes';
+import { BRAND_COLORS } from '../../backend/src/common/kloel-colors';
 import {
   VISUAL_CHECKOUT_PRODUCT_DETAIL_FIXTURE,
   VISUAL_CHECKOUT_PRODUCTS_FIXTURE,
@@ -69,10 +70,10 @@ async function seedAcceptedCookieConsent(page: Page) {
     const style = document.createElement('style');
     style.textContent =
       '.kloel-cookie-banner,.kloel-cookie-modal__overlay{display:none!important}' +
-      'html,body{scrollbar-color:#0a0a0c #0a0a0c!important}' +
+      `html,body{scrollbar-color:${BRAND_COLORS.VOID} ${BRAND_COLORS.VOID}!important}` +
       'html::-webkit-scrollbar,body::-webkit-scrollbar{width:8px!important;height:8px!important}' +
       'html::-webkit-scrollbar-track,body::-webkit-scrollbar-track,' +
-      'html::-webkit-scrollbar-thumb,body::-webkit-scrollbar-thumb{background:#0a0a0c!important}';
+      `html::-webkit-scrollbar-thumb,body::-webkit-scrollbar-thumb{background:${BRAND_COLORS.VOID}!important}`;
     document.documentElement.appendChild(style);
   });
 }

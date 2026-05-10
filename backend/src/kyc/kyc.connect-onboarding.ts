@@ -12,7 +12,7 @@ import {
   type ConnectAddressInput,
 } from './kyc.helpers';
 
-export type KycSyncDeps = {
+type KycSyncDeps = {
   prisma: PrismaService;
   connectService: ConnectService;
 };
@@ -59,7 +59,7 @@ export async function doAutoApproveIfComplete(
   return { approved: false, percentage: completion.percentage };
 }
 
-export async function ensureSellerConnectAccount(
+async function ensureSellerConnectAccount(
   deps: KycSyncDeps,
   workspaceId: string,
   email: string,

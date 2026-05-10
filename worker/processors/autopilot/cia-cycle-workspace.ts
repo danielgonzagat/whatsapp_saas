@@ -14,7 +14,7 @@ import { assertCiaExhaustion, assertCiaGuarantees, buildCiaExhaustionReport, bui
 import { assertConversationTacticPlan } from '../cia/conversation-tactics';
 import { isCiaAutonomyMode, isCiaProactiveCycleEnabled, log, type UnknownRecord, WINDOW_START, WINDOW_END, SILENCE_HOURS, CIA_MAIN_LOOP_LIMIT, CIA_MAX_ACTIONS_PER_CYCLE } from './shared';
 import { refreshOpportunityUniverse, persistCiaCycleProof, listCanonicalWorkItems, persistAccountProofSnapshot } from './score';
-import { publishCiaProofEvent } from './cia-cycle-orchestrate';
+import { publishCiaProofEvent } from './cia-cycle-proof-event';
 
 async function loadWorkspaceGlobalStrategy(input: { settings: UnknownRecord; intentHint?: string }) {
   const domain = inferWorkspaceDomain(input.settings || {});

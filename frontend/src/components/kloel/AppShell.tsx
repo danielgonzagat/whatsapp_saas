@@ -1,6 +1,5 @@
 'use client';
 
-import { kloelT } from '@/lib/i18n/t';
 import useCommandPalette from '@/hooks/useCommandPalette';
 import { useKycCompletion, useKycStatus } from '@/hooks/useKyc';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';

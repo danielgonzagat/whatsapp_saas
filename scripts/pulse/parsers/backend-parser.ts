@@ -3,12 +3,9 @@ import type { BackendRoute } from '../types.core';
 import type { PulseConfig } from '../types.manifest';
 import { walkFiles } from './utils';
 import { readTextFile } from '../safe-fs';
-import { discoverAllObservedHttpMethods } from '../dynamic-reality-kernel/catalog-arithmetic';
 
 function discoverNestHttpDecoratorMethods(): string[] {
-  return discoverAllObservedHttpMethods().map(
-    (method) => method.charAt(0).toUpperCase() + method.slice(1).toLowerCase(),
-  );
+  return ['Get', 'Post', 'Put', 'Patch', 'Delete', 'Options', 'Head', 'All'];
 }
 
 function matchHttpDecorator(line: string, method: string): RegExpMatchArray | null {
@@ -139,16 +136,23 @@ export function parseBackendRoutes(config: PulseConfig): BackendRoute[] {
       for (const block of controllerBlocks) {
         const controllerPath = block.path;
 
-        // Extract class-level guards for this block
+        // Extract class-level guards and @Public() for this block
         const classGuards: string[] = [];
+        let classIsPublic = false;
         for (let j = block.startLine; j < Math.min(block.startLine + 5, block.endLine); j++) {
+          if (/@Public\(\)/.test(lines[j])) {
+            classIsPublic = true;
+          }
           const guardMatch = lines[j]?.match(/@UseGuards\(([^)]+)\)/);
           if (guardMatch) {
             classGuards.push(...guardMatch[1].split(',').map((g) => g.trim()));
           }
         }
-        // Also check lines ABOVE @Controller for guards
+        // Also check lines ABOVE @Controller for guards and @Public()
         for (let j = Math.max(0, block.startLine - 3); j < block.startLine; j++) {
+          if (/@Public\(\)/.test(lines[j])) {
+            classIsPublic = true;
+          }
           const guardMatch = lines[j]?.match(/@UseGuards\(([^)]+)\)/);
           if (guardMatch) {
             classGuards.push(...guardMatch[1].split(',').map((g) => g.trim()));
@@ -168,8 +172,8 @@ export function parseBackendRoutes(config: PulseConfig): BackendRoute[] {
             const methodPath = match[1] || '';
             const fullPath = buildFullPath(controllerPath, methodPath);
 
-            // Check for @Public() in the 5 lines above
-            let isPublic = false;
+            // Check for @Public() in the 5 lines above + class-level
+            let isPublic = classIsPublic;
             const guards = [...classGuards];
             for (let j = Math.max(block.startLine, i - 5); j < i; j++) {
               const above = lines[j].trim();

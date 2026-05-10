@@ -13,7 +13,7 @@ export function extractSetupConfigField(
   return cfg ? (cfg[field] ?? fallback) : fallback;
 }
 
-export function serializeWhatsAppSelectedProduct(product: Record<string, unknown>) {
+function serializeWhatsAppSelectedProduct(product: Record<string, unknown>) {
   const pickString = (v: unknown, fb: string) =>
     typeof v === 'string' && v.trim() ? v.trim() : fb;
   const pickOptional = (v: unknown, v2?: unknown): string | null => {

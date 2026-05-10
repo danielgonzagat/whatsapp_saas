@@ -93,7 +93,7 @@ export function isNowebStoreMisconfiguredExt(error: unknown): boolean {
   );
 }
 
-export function expandComparablePhoneVariantsExt(phone: string): string[] {
+function expandComparablePhoneVariantsExt(phone: string): string[] {
   const digits = normalizePhoneExt(phone);
   if (!digits) return [];
   const variants = new Set<string>([digits]);
@@ -103,7 +103,7 @@ export function expandComparablePhoneVariantsExt(phone: string): string[] {
   return Array.from(variants);
 }
 
-export function areEquivalentPhonesExt(left: string, right: string): boolean {
+function areEquivalentPhonesExt(left: string, right: string): boolean {
   const lv = expandComparablePhoneVariantsExt(left);
   const rv = expandComparablePhoneVariantsExt(right);
   return lv.some((c) => rv.includes(c));

@@ -6,7 +6,7 @@ import type { ReportFiltersDto } from './dto/report-filters.dto';
 const ORDER_STATUSES = new Set<string>(Object.values(OrderStatus));
 const PAYMENT_METHODS = new Set<string>(Object.values(PaymentMethod));
 
-export function assertValidReportDate(parsed: Date, field: string): void {
+function assertValidReportDate(parsed: Date, field: string): void {
   if (Number.isNaN(parsed.getTime())) {
     throw new BadRequestException(`Invalid ${field}`);
   }

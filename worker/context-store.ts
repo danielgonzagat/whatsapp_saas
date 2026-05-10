@@ -9,7 +9,7 @@ import { redis } from './redis-client';
  * Allows multiple workers to coordinate flow execution.
  */
 
-export const contextStore = {
+const contextStore = {
   /**
    * Waits for a user reply.
    * Uses BLPOP (Blocking Left Pop) on a Redis list unique to the user.

@@ -2,8 +2,6 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import * as Sentry from '@sentry/node';
 import { forEachSequential } from '../common/async-sequence';
-import { escapeHtml } from '../common/utils/html-escape.util';
-import { BRAND_COLORS } from '../common/kloel-colors';
 import { formatBrlAmount } from '../kloel/money-format.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { CheckoutSocialLeadService } from './checkout-social-lead.service';
@@ -216,31 +214,14 @@ export class CheckoutPostPaymentEffectsService {
     order: CheckoutOrderForEffects,
     chargedAmount: number,
   ): string {
-    const safeCustomerName = escapeHtml(order.customerName || '');
-    const safeProductName = escapeHtml(order.plan?.product?.name || '\u2014');
-    const safeOrderId = escapeHtml(order.orderNumber || order.id || '');
     const amountSource = chargedAmount || Number(order.totalInCents || 0) / 100;
-    const formattedAmount = escapeHtml(formatBrlAmount(amountSource));
-
-    return [
-      '<div style="font-family:sans-serif;max-width:600px;margin:0 auto;background:' + BRAND_COLORS.VOID + ';color:' + BRAND_COLORS.LIGHT_TEXT + ';padding:40px;">',
-      '<h1 style="color:' + BRAND_COLORS.EMBER + ';">KLOEL</h1>',
-      '<p>Ola ',
-      safeCustomerName,
-      ',</p>',
-      '<p>Seu pagamento foi confirmado!</p>',
-      '<div style="background:' + BRAND_COLORS.CARD_SURFACE + ';padding:20px;border-radius:6px;margin:20px 0;">',
-      '<p><strong>Produto:</strong> ',
-      safeProductName,
-      '</p>',
-      '<p><strong>Valor:</strong> ',
-      formattedAmount,
-      '</p>',
-      '<p><strong>Pedido:</strong> #',
-      safeOrderId,
-      '</p>',
-      '</div>',
-      '</div>',
-    ].join('');
+    const { renderEmailTemplate } = require('../common/utils/email-template-renderer.util');
+    return renderEmailTemplate('payment-confirmation', {
+      customerName: order.customerName || '',
+      productName: order.plan?.product?.name || '\u2014',
+      orderNumber: order.orderNumber || order.id || '',
+      formattedAmount: formatBrlAmount(amountSource),
+      memberAreaSection: '',
+    });
   }
 }

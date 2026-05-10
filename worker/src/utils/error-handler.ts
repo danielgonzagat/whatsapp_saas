@@ -12,7 +12,7 @@ export class WorkerError extends Error {
 }
 
 /** Handle error and return structured info for logging/monitoring. */
-export const handleError = (error: unknown, jobName: string) => {
+const handleError = (error: unknown, jobName: string) => {
   const safeMessage = error instanceof Error ? error.message : String(error);
   const safeName = error instanceof Error ? error.name : typeof error;
   console.error('[%s] Error: %s (%s)', jobName, safeMessage, safeName);

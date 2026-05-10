@@ -165,7 +165,7 @@ export class PromptSanitizerMiddleware implements NestMiddleware {
 /**
  * Função utilitária para sanitizar texto fora do middleware.
  */
-export function sanitizePromptInput(input: string): string {
+function sanitizePromptInput(input: string): string {
   const middleware = new PromptSanitizerMiddleware();
   return middleware.sanitizeString(input);
 }

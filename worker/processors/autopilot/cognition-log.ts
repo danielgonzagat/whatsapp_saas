@@ -6,6 +6,73 @@ import {
 } from './shared';
 import { type CustomerCognitiveState, type CognitiveActionType } from '../cia/cognitive-state';
 
+type CognitiveMessageResolver = (ctx: { prefix: string; productText: string }) => string;
+
+interface TacticTemplate {
+  tactic: string;
+  resolve: CognitiveMessageResolver;
+}
+
+const ACTION_TACTIC_MAP: Record<string, { default: CognitiveMessageResolver; tactics: TacticTemplate[] }> = {
+  ASK_CLARIFYING: {
+    default: ({ productText }) =>
+      `Pra eu te ajudar melhor${productText}, sua prioridade e valor, resultado ou proximo passo?`,
+    tactics: [
+      { tactic: 'EMPATHETIC_ECHO', resolve: ({ prefix, productText }) => `${prefix}faz sentido querer entender isso melhor${productText}. O que pesa mais pra voce agora?` },
+      { tactic: 'PAIN_PROBING', resolve: ({ prefix, productText }) => `${prefix}pra eu te orientar certo${productText}, o que mais te trava hoje?` },
+      { tactic: 'QUALIFY_NEED', resolve: ({ productText }) => `Pra eu te orientar certo${productText}, qual necessidade voce quer resolver primeiro?` },
+    ],
+  },
+  SOCIAL_PROOF: {
+    default: ({ productText }) =>
+      `Faz sentido ter essa duvida${productText}. Se quiser, eu te mostro o que costuma destravar essa decisao.`,
+    tactics: [
+      { tactic: 'TRUST_REASSURANCE', resolve: ({ productText }) => `Faz sentido ter essa duvida${productText}. Se quiser, eu te explico o ponto principal de forma direta.` },
+    ],
+  },
+  OFFER: {
+    default: ({ productText }) =>
+      `Pelo que voce me disse${productText}, eu ja posso te mostrar a melhor opcao pra seguir.`,
+    tactics: [
+      { tactic: 'EMPATHETIC_ECHO', resolve: ({ prefix, productText }) => `${prefix}pelo que voce trouxe${productText}, faz sentido buscar um caminho simples e seguro. Se quiser, eu te mostro a melhor opcao agora.` },
+      { tactic: 'EPIPHANY_DROP', resolve: ({ prefix, productText }) => `${prefix}tem um detalhe${productText} que costuma mudar a decisao: a melhor opcao nem sempre e a mais barata, e sim a que resolve com menos atrito. Se quiser, eu te mostro qual faz mais sentido aqui.` },
+      { tactic: 'STORYTELLING_HOOK', resolve: ({ prefix, productText }) => `${prefix}isso me lembra gente que quase travou nessa etapa${productText} e destravou quando viu o caminho mais simples. Se quiser, eu te mostro direto.` },
+      { tactic: 'CHECKOUT_SIMPLIFICATION', resolve: ({ productText }) => `Pelo que voce me disse${productText}, eu posso te mostrar a opcao mais simples pra avancar agora.` },
+      { tactic: 'PRICE_VALUE_REFRAME', resolve: ({ productText }) => `Aqui${productText}, o ponto nao e so preco. Se fizer sentido, eu te mostro a opcao com melhor custo-beneficio.` },
+    ],
+  },
+  FOLLOWUP_URGENT: {
+    default: ({ productText }) =>
+      `Sua conversa esta perto de avancar${productText}. Se ainda fizer sentido, eu sigo com voce agora.`,
+    tactics: [
+      { tactic: 'SAFE_URGENCY', resolve: ({ productText }) => `Ainda da pra priorizar isso hoje${productText}. Se fizer sentido, eu ja te passo o proximo passo.` },
+    ],
+  },
+  FOLLOWUP_SOFT: {
+    default: ({ productText }) =>
+      `Sua conversa ficou em aberto${productText}. Se quiser, eu continuo daqui.`,
+    tactics: [
+      { tactic: 'EMPATHETIC_ECHO', resolve: ({ prefix, productText }) => `${prefix}sua conversa ficou em aberto${productText}, e tudo bem. Se ainda fizer sentido, eu continuo daqui sem te fazer repetir nada.` },
+      { tactic: 'CHECKOUT_SIMPLIFICATION', resolve: ({ productText }) => `Sua conversa ficou em aberto${productText}. Se ainda fizer sentido, eu te resumo o caminho mais simples.` },
+    ],
+  },
+  PAYMENT_RECOVERY: {
+    default: ({ productText }) =>
+      `Seu pagamento ficou pendente${productText}. Se quiser, eu reativo isso agora.`,
+    tactics: [
+      { tactic: 'CHECKOUT_SIMPLIFICATION', resolve: ({ productText }) => `Seu pagamento ficou pendente${productText}. Se quiser, eu te passo o proximo passo agora.` },
+    ],
+  },
+  _DEFAULT: {
+    default: ({ productText }) =>
+      `Estou acompanhando sua conversa${productText}. Posso seguir com voce por aqui.`,
+    tactics: [
+      { tactic: 'TRUST_REASSURANCE', resolve: ({ productText }) => `Estou acompanhando sua conversa${productText}. Se quiser, eu te digo o melhor proximo passo.` },
+      { tactic: 'EMPATHETIC_ECHO', resolve: ({ prefix, productText }) => `${prefix}eu acompanhei o que voce trouxe${productText}. Se fizer sentido, eu te digo o proximo passo mais leve daqui.` },
+    ],
+  },
+};
+
 export function buildCognitiveMessage(params: {
   action: CognitiveActionType;
   state?: CustomerCognitiveState | null;
@@ -18,38 +85,11 @@ export function buildCognitiveMessage(params: {
   const tactic = String(params.tactic || '');
   const prefix =
     leadFirstName && (tactic === 'EMPATHETIC_ECHO' || tactic === 'STORYTELLING_HOOK') ? `${leadFirstName}, ` : '';
+  const ctx = { prefix, productText };
 
-  switch (params.action) {
-    case 'ASK_CLARIFYING':
-      if (tactic === 'EMPATHETIC_ECHO') return `${prefix}faz sentido querer entender isso melhor${productText}. O que pesa mais pra você agora?`;
-      if (tactic === 'PAIN_PROBING') return `${prefix}pra eu te orientar certo${productText}, o que mais te trava hoje?`;
-      if (tactic === 'QUALIFY_NEED') return `Pra eu te orientar certo${productText}, qual necessidade você quer resolver primeiro?`;
-      return `Pra eu te ajudar melhor${productText}, sua prioridade é valor, resultado ou próximo passo?`;
-    case 'SOCIAL_PROOF':
-      if (tactic === 'TRUST_REASSURANCE') return `Faz sentido ter essa dúvida${productText}. Se quiser, eu te explico o ponto principal de forma direta.`;
-      return `Faz sentido ter essa dúvida${productText}. Se quiser, eu te mostro o que costuma destravar essa decisão.`;
-    case 'OFFER':
-      if (tactic === 'EMPATHETIC_ECHO') return `${prefix}pelo que você trouxe${productText}, faz sentido buscar um caminho simples e seguro. Se quiser, eu te mostro a melhor opção agora.`;
-      if (tactic === 'EPIPHANY_DROP') return `${prefix}tem um detalhe${productText} que costuma mudar a decisão: a melhor opção nem sempre é a mais barata, e sim a que resolve com menos atrito. Se quiser, eu te mostro qual faz mais sentido aqui.`;
-      if (tactic === 'STORYTELLING_HOOK') return `${prefix}isso me lembra gente que quase travou nessa etapa${productText} e destravou quando viu o caminho mais simples. Se quiser, eu te mostro direto.`;
-      if (tactic === 'CHECKOUT_SIMPLIFICATION') return `Pelo que você me disse${productText}, eu posso te mostrar a opção mais simples pra avançar agora.`;
-      if (tactic === 'PRICE_VALUE_REFRAME') return `Aqui${productText}, o ponto não é só preço. Se fizer sentido, eu te mostro a opção com melhor custo-benefício.`;
-      return `Pelo que você me disse${productText}, eu já posso te mostrar a melhor opção pra seguir.`;
-    case 'FOLLOWUP_URGENT':
-      if (tactic === 'SAFE_URGENCY') return `Ainda dá pra priorizar isso hoje${productText}. Se fizer sentido, eu já te passo o próximo passo.`;
-      return `Sua conversa está perto de avançar${productText}. Se ainda fizer sentido, eu sigo com você agora.`;
-    case 'FOLLOWUP_SOFT':
-      if (tactic === 'EMPATHETIC_ECHO') return `${prefix}sua conversa ficou em aberto${productText}, e tudo bem. Se ainda fizer sentido, eu continuo daqui sem te fazer repetir nada.`;
-      if (tactic === 'CHECKOUT_SIMPLIFICATION') return `Sua conversa ficou em aberto${productText}. Se ainda fizer sentido, eu te resumo o caminho mais simples.`;
-      return `Sua conversa ficou em aberto${productText}. Se quiser, eu continuo daqui.`;
-    case 'PAYMENT_RECOVERY':
-      if (tactic === 'CHECKOUT_SIMPLIFICATION') return `Seu pagamento ficou pendente${productText}. Se quiser, eu te passo o próximo passo agora.`;
-      return `Seu pagamento ficou pendente${productText}. Se quiser, eu reativo isso agora.`;
-    default:
-      if (tactic === 'TRUST_REASSURANCE') return `Estou acompanhando sua conversa${productText}. Se quiser, eu te digo o melhor próximo passo.`;
-      if (tactic === 'EMPATHETIC_ECHO') return `${prefix}eu acompanhei o que você trouxe${productText}. Se fizer sentido, eu te digo o próximo passo mais leve daqui.`;
-      return `Estou acompanhando sua conversa${productText}. Posso seguir com você por aqui.`;
-  }
+  const mapping = ACTION_TACTIC_MAP[params.action] || ACTION_TACTIC_MAP._DEFAULT;
+  const matched = mapping.tactics.find((t) => t.tactic === tactic);
+  return matched ? matched.resolve(ctx) : mapping.default(ctx);
 }
 
 export function normalizeAutonomyLedgerValue(value: unknown): unknown {

@@ -27,4 +27,4 @@ export class InstagramInsightsQueryDto {
   metrics?: string;
 }
 
-export { VALID_METRICS, VALID_PERIODS };
+export { VALID_METRICS };

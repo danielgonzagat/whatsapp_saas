@@ -49,7 +49,7 @@ export const localContactsSeed = [
   },
 ];
 
-export const localConversationsSeed = [
+const localConversationsSeed = [
   {
     id: 'conv-1',
     contactId: 'contact-1',
@@ -82,7 +82,7 @@ export const localConversationsSeed = [
   },
 ];
 
-export const localMessagesSeed = [
+const localMessagesSeed = [
   {
     id: 'db-msg-1',
     workspaceId: 'ws-1',

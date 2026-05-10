@@ -2,7 +2,7 @@ import Redis from 'ioredis';
 import { PrismaService } from '../prisma/prisma.service';
 import { connection } from '../queue/queue';
 
-export async function withTimeout<T>(
+async function withTimeout<T>(
   promise: Promise<T>,
   ms: number,
   label: string,

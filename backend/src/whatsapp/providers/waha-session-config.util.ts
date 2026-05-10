@@ -5,7 +5,7 @@
  * Extracted from WahaSessionConfigProvider to keep that file under 400 lines.
  */
 
-import type { WahaLidMapping, WahaSessionConfigDiagnostics } from './waha-types';
+import type { WahaLidMapping } from './waha-types';
 import { isWahaInboundMessageEvent } from './waha-message-event-name';
 
 type WahaLidPayload = {
@@ -161,4 +161,4 @@ export function extractLidMappingsPayload(payload: unknown): WahaLidMapping[] {
     .filter((entry) => Boolean(entry.lid) && Boolean(entry.pn));
 }
 
-export type { WahaSessionConfigDiagnostics };
+

@@ -94,6 +94,6 @@ export function normalizeHashExt(text: string): string {
     .slice(0, 32);
 }
 
-export function normalizeNumberExt(num: string): string {
+function normalizeNumberExt(num: string): string {
   return num.replace(D_RE, '');
 }

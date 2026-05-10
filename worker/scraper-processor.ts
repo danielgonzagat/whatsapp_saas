@@ -1,5 +1,6 @@
 import { type Job, Worker } from 'bullmq';
 import type { Prisma } from '@prisma/client';
+import { PIPELINE_COLORS } from './lib/colors';
 import { prisma } from './db';
 import { buildQueueOptions } from './queue';
 import { isRetryableError, WorkerError } from './src/utils/error-handler';
@@ -20,7 +21,7 @@ import { checkIdempotent, endJob, logError, markCompleted, startJob } from './pr
 
 const log = new WorkerLogger('scraper-worker');
 
-const STAGE_DEFAULT_COLOR = '#3B82F6';
+const STAGE_DEFAULT_COLOR = PIPELINE_COLORS.DEFAULT_STAGE;
 
 interface ScrapedLeadNormalized {
   phone: string;

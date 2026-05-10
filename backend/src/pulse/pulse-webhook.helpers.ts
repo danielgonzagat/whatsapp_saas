@@ -2,7 +2,7 @@ import type { ConfigService } from '@nestjs/config';
 import { validateNoInternalAccess } from '../common/utils/url-validator';
 import type { Logger } from '@nestjs/common';
 
-export function getAlertWebhookUrl(config: ConfigService): string {
+function getAlertWebhookUrl(config: ConfigService): string {
   return (
     config.get<string>('PULSE_ALERT_WEBHOOK_URL') ||
     config.get<string>('OPS_WEBHOOK_URL') ||

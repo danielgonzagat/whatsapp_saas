@@ -10,7 +10,6 @@ import type {
  * without chasing `@prisma/client` imports directly.
  */
 export type DestructiveIntentRecord = DestructiveIntent;
-export type { DestructiveIntentKind, DestructiveIntentStatus };
 
 /**
  * Serialisable view of an intent exposed to the admin frontend. It

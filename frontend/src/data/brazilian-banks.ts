@@ -6,7 +6,7 @@ export interface BrazilianBank {
 }
 
 /** Top ~15 banks shown when the user opens the dropdown without typing */
-export const POPULAR_BANK_CODES = new Set([
+const POPULAR_BANK_CODES = new Set([
   1, 33, 77, 104, 212, 237, 260, 290, 323, 336, 341, 380, 422, 748, 756,
 ]);
 
@@ -272,6 +272,6 @@ export const BRAZILIAN_BANKS: BrazilianBank[] = [
 ];
 
 /** Format bank code with zero-fill to 3 digits */
-export function formatBankCode(code: number): string {
+function formatBankCode(code: number): string {
   return String(code).padStart(3, '0');
 }

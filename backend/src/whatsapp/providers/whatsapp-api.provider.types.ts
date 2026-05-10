@@ -33,7 +33,7 @@ export interface QrCodeResponse {
 }
 
 /** Normalize waha session status. */
-export function normalizeWahaSessionStatus(raw: unknown): string | null {
+function normalizeWahaSessionStatus(raw: unknown): string | null {
   if (typeof raw !== 'string') {
     return null;
   }
@@ -43,7 +43,7 @@ export function normalizeWahaSessionStatus(raw: unknown): string | null {
 }
 
 /** Map waha session status. */
-export function mapWahaSessionStatus(rawStatus: string | null): SessionStatus['state'] {
+function mapWahaSessionStatus(rawStatus: string | null): SessionStatus['state'] {
   switch (rawStatus) {
     case 'CONNECTED':
       return 'CONNECTED';
@@ -59,7 +59,7 @@ export function mapWahaSessionStatus(rawStatus: string | null): SessionStatus['s
 }
 
 /** Resolve waha session state. */
-export function resolveWahaSessionState(data: Record<string, unknown> | null | undefined): {
+function resolveWahaSessionState(data: Record<string, unknown> | null | undefined): {
   rawStatus: string;
   state: SessionStatus['state'];
 } {

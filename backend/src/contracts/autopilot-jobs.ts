@@ -91,7 +91,7 @@ function normalizeMode(value: unknown): AutopilotBacklogMode {
 }
 
 /** Parse sweep unread conversations job data. */
-export function parseSweepUnreadConversationsJobData(
+function parseSweepUnreadConversationsJobData(
   value: unknown,
 ): SweepUnreadConversationsJobData {
   const input = asObject(value, AUTOPILOT_SWEEP_UNREAD_CONVERSATIONS_JOB);

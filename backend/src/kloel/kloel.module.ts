@@ -120,7 +120,7 @@ import { WebinarController } from './webinar.controller';
     PartnershipsModule,
     MetricsModule,
     KloelAudioModule,
-    WebhooksModule,
+    forwardRef(() => WebhooksModule),
   ],
   controllers: [
     KloelController,

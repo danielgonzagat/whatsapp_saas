@@ -11,7 +11,7 @@ import type { CiaRuntimeService } from './cia-runtime.service';
 import type { WorkerRuntimeService } from './worker-runtime.service';
 import type { WhatsAppApiProvider } from './providers/whatsapp-api.provider';
 
-export interface ChatOwnerSummary {
+interface ChatOwnerSummary {
   id?: string;
   name?: string | null;
   phone?: string | null;
@@ -31,15 +31,6 @@ export interface ProviderMessageEnvelope {
   timestamp: number;
   isoTimestamp: string | null;
   source: string;
-}
-
-export interface MessageDeliveryReceipt {
-  error?: boolean;
-  message?: string;
-  ok?: boolean;
-  direct?: boolean;
-  delivery?: string;
-  messageId?: string | null;
 }
 
 export type NormalizedContact = {

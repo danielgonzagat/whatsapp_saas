@@ -80,5 +80,3 @@ const server = http.createServer(async (req, res) => {
 server.listen(port, '0.0.0.0', () => {
   console.log(`[metrics-server] listening on port ${port}`);
 });
-
-export { server as metricsHttpServer };

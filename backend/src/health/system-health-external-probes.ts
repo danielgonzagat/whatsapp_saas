@@ -263,7 +263,7 @@ export function checkEmail() {
   return { status: 'NOT_CONFIGURED', missing: ['RESEND_API_KEY', 'SENDGRID_API_KEY', 'SMTP_HOST'] };
 }
 
-export function getConfiguredGoogleClientIds(config: ConfigService) {
+function getConfiguredGoogleClientIds(config: ConfigService) {
   const raw = [
     config.get<string>('GOOGLE_CLIENT_ID'),
     config.get<string>('NEXT_PUBLIC_GOOGLE_CLIENT_ID'),

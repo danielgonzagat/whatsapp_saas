@@ -20,14 +20,14 @@ import { asProviderSettings } from '../../whatsapp/provider-settings.types';
  */
 const KLOEL_PUBLIC_METADATA = ['kloel', 'public'].join('_');
 /** Kloel public. */
-export const KloelPublic = () => SetMetadata(KLOEL_PUBLIC_METADATA, true);
+const KloelPublic = () => SetMetadata(KLOEL_PUBLIC_METADATA, true);
 
 /**
  * Decorator para definir rate limit customizado
  */
 const KLOEL_RATE_LIMIT_METADATA = ['kloel', 'rate', 'limit'].join('_');
 /** Kloel rate limit. */
-export const KloelRateLimit = (requests: number, windowMs: number) =>
+const KloelRateLimit = (requests: number, windowMs: number) =>
   SetMetadata(KLOEL_RATE_LIMIT_METADATA, { requests, windowMs });
 
 interface RateLimitEntry {
@@ -300,7 +300,7 @@ export class KloelSecurityGuard implements CanActivate, OnModuleDestroy {
  * Verifica se o usuário é membro do workspace.
  */
 @Injectable()
-export class WorkspaceAccessGuard implements CanActivate {
+class WorkspaceAccessGuard implements CanActivate {
   private readonly logger = new Logger(WorkspaceAccessGuard.name);
 
   constructor(private readonly prisma: PrismaService) {}
@@ -352,7 +352,7 @@ export class WorkspaceAccessGuard implements CanActivate {
  * Requer confirmação ou 2FA.
  */
 @Injectable()
-export class SensitiveOperationGuard implements CanActivate {
+class SensitiveOperationGuard implements CanActivate {
   /** Can activate. */
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest();

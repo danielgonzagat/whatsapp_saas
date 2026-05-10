@@ -106,11 +106,11 @@ export const DEFAULT_WORKER_TTL_MS = 60_000;
 /** Default_frontend_ttl_ms. */
 export const DEFAULT_FRONTEND_TTL_MS = 90_000;
 /** Default_heartbeat_interval_ms. */
-export const DEFAULT_HEARTBEAT_INTERVAL_MS = 15_000;
+const DEFAULT_HEARTBEAT_INTERVAL_MS = 15_000;
 /** Default_stale_sweep_ms. */
-export const DEFAULT_STALE_SWEEP_MS = 60_000;
+const DEFAULT_STALE_SWEEP_MS = 60_000;
 /** Default_frontend_prune_sweep_ms. */
-export const DEFAULT_FRONTEND_PRUNE_SWEEP_MS = 15 * 60_000;
+const DEFAULT_FRONTEND_PRUNE_SWEEP_MS = 15 * 60_000;
 /** Frontend_retention_ms. */
 export const FRONTEND_RETENTION_MS = 24 * 60 * 60 * 1000;
 /** Incident_limit. */

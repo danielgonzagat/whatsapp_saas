@@ -1,3 +1,5 @@
+import { PIPELINE_STAGE_COLORS } from '../../backend/src/common/kloel-colors';
+
 const VISUAL_FIXED_TIME_ISO = '2026-01-15T15:30:00.000Z';
 const VISUAL_AUTH_USER_EMAIL = 'admin+e2e@example.com';
 const VISUAL_AUTH_WORKSPACE_NAME = 'E2E Workspace';
@@ -229,9 +231,9 @@ export const VISUAL_CRM_PIPELINE_FIXTURE = {
   id: 'crm-pipeline-e2e',
   name: 'Pipeline de Vendas',
   stages: [
-    { id: 'crm-stage-lead', name: 'LEAD', order: 0, color: '#3B82F6' },
-    { id: 'crm-stage-negociacao', name: 'EM NEGOCIAÇÃO', order: 1, color: '#FACC15' },
-    { id: 'crm-stage-fechado', name: 'FECHADO', order: 2, color: '#22C55E' },
+    { id: 'crm-stage-lead', name: 'LEAD', order: 0, color: PIPELINE_STAGE_COLORS.LEAD_BLUE },
+    { id: 'crm-stage-negociacao', name: 'EM NEGOCIAÇÃO', order: 1, color: PIPELINE_STAGE_COLORS.NEGOTIATION_YELLOW },
+    { id: 'crm-stage-fechado', name: 'FECHADO', order: 2, color: PIPELINE_STAGE_COLORS.WON_GREEN },
   ],
 };
 

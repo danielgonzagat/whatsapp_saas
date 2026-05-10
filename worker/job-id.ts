@@ -16,6 +16,6 @@ export function buildQueueJobId(prefix: string, ...parts: unknown[]): string {
 }
 
 /** Build queue dedup id. */
-export function buildQueueDedupId(prefix: string, ...parts: unknown[]): string {
+function buildQueueDedupId(prefix: string, ...parts: unknown[]): string {
   return buildQueueJobId(prefix, ...parts);
 }

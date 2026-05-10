@@ -1,6 +1,7 @@
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service';
+import { PIPELINE_STAGE_COLORS } from '../common/kloel-colors';
 import { PipelineService } from './pipeline.service';
 
 describe('PipelineService', () => {
@@ -26,11 +27,11 @@ describe('PipelineService', () => {
   const wsId = 'ws-1';
 
   const defaultStages = [
-    { name: 'Lead', color: '#E5E7EB', order: 0 },
-    { name: 'Contacted', color: '#FEF3C7', order: 1 },
-    { name: 'Proposal', color: '#DBEAFE', order: 2 },
-    { name: 'Won', color: '#D1FAE5', order: 3 },
-    { name: 'Lost', color: '#FEE2E2', order: 4 },
+    { name: 'Lead', color: PIPELINE_STAGE_COLORS.LEAD_LIGHT, order: 0 },
+    { name: 'Contacted', color: PIPELINE_STAGE_COLORS.CONTACTED_LIGHT, order: 1 },
+    { name: 'Proposal', color: PIPELINE_STAGE_COLORS.PROPOSAL_LIGHT, order: 2 },
+    { name: 'Won', color: PIPELINE_STAGE_COLORS.WON_LIGHT, order: 3 },
+    { name: 'Lost', color: PIPELINE_STAGE_COLORS.LOST_LIGHT, order: 4 },
   ];
 
   beforeEach(async () => {

@@ -1,6 +1,6 @@
 import { collapseWhitespace, extractAsciiDigits, isDigit } from './whatsapp-digits.util';
 
-export { collapseWhitespace, extractAsciiDigits };
+export { extractAsciiDigits };
 
 /** Extract phone from chat id. */
 export function extractPhoneFromChatId(value: unknown): string {

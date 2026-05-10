@@ -116,7 +116,7 @@ export class AccountBalanceNotFoundError extends Error {
  * Map our domain entry type to the Prisma enum. Kept as a typed const so
  * adding new entry types fails the type-check until the consumer is updated.
  */
-export const LEDGER_ENTRY_TYPES: Record<ConnectLedgerEntryType, ConnectLedgerEntryType> = {
+const LEDGER_ENTRY_TYPES: Record<ConnectLedgerEntryType, ConnectLedgerEntryType> = {
   CREDIT_PENDING: 'CREDIT_PENDING',
   MATURE: 'MATURE',
   DEBIT_PAYOUT: 'DEBIT_PAYOUT',

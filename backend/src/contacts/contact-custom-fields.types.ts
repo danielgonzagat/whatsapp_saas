@@ -40,7 +40,7 @@ export interface ContactCustomFields {
   [key: string]: unknown;
 }
 
-export interface ContactDemographics {
+interface ContactDemographics {
   gender?: string;
   ageRange?: string;
   location?: string;

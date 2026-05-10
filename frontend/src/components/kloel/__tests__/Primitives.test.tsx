@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
+import { colors } from '@/lib/design-tokens';
 import { Button, IconButton, Badge, Chip, Skeleton, Avatar } from '../Primitives';
 
 vi.mock('next/image', () => ({
@@ -64,7 +65,7 @@ describe('Button', () => {
   it('applies variant styles — danger', () => {
     render(<Button variant="danger">Delete</Button>);
     const btn = screen.getByText('Delete');
-    expect(btn).toHaveStyle({ backgroundColor: '#E85D30', color: '#fff' });
+    expect(btn).toHaveStyle({ backgroundColor: colors.state.error, color: colors.text.silver });
   });
 
   it('applies size styles — lg', () => {
@@ -108,22 +109,22 @@ describe('Badge', () => {
 
   it('applies success variant colors', () => {
     render(<Badge variant="success">Done</Badge>);
-    expect(screen.getByText('Done')).toHaveStyle({ color: '#E0DDD8' });
+    expect(screen.getByText('Done')).toHaveStyle({ color: colors.state.success });
   });
 
   it('renders warning variant', () => {
     render(<Badge variant="warning">Warn</Badge>);
-    expect(screen.getByText('Warn')).toHaveStyle({ color: '#6E6E73' });
+    expect(screen.getByText('Warn')).toHaveStyle({ color: colors.state.warning });
   });
 
   it('renders error variant', () => {
     render(<Badge variant="error">Fail</Badge>);
-    expect(screen.getByText('Fail')).toHaveStyle({ color: '#E85D30' });
+    expect(screen.getByText('Fail')).toHaveStyle({ color: colors.state.error });
   });
 
   it('renders info variant', () => {
     render(<Badge variant="info">Info</Badge>);
-    expect(screen.getByText('Info')).toHaveStyle({ color: '#6E6E73' });
+    expect(screen.getByText('Info')).toHaveStyle({ color: colors.state.info });
   });
 });
 
@@ -166,7 +167,7 @@ describe('Chip', () => {
 
   it('applies success variant', () => {
     render(<Chip variant="success">OK</Chip>);
-    expect(screen.getByText('OK')).toHaveStyle({ color: '#E0DDD8' });
+    expect(screen.getByText('OK')).toHaveStyle({ color: colors.state.success });
   });
 });
 
@@ -225,7 +226,7 @@ describe('Avatar', () => {
     const { container } = render(<Avatar name="Online" status="online" />);
     const statusDot = container.querySelector('[class*="rounded-full"][class*="border-2"]');
     expect(statusDot).toBeInTheDocument();
-    expect(statusDot).toHaveStyle({ backgroundColor: '#E0DDD8' });
+    expect(statusDot).toHaveStyle({ backgroundColor: colors.state.success });
   });
 
   it('applies size classes to avatar inner element', () => {

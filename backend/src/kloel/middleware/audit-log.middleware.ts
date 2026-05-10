@@ -307,7 +307,7 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
 /**
  * Decorator para marcar operacoes como auditaveis com metadados extras.
  */
-export function AuditOperation(operationType: string) {
+function AuditOperation(operationType: string) {
   return (_target: unknown, propertyKey: string, descriptor: PropertyDescriptor) => {
     const originalMethod = descriptor.value;
 

@@ -31,37 +31,6 @@ export interface QrCodeResponse {
   message?: string;
 }
 
-/** Waha chat summary shape. */
-export interface WahaChatSummary {
-  id: string;
-  unreadCount?: number;
-  timestamp?: number;
-  lastMessageTimestamp?: number;
-  lastMessageRecvTimestamp?: number;
-  lastMessageFromMe?: boolean | null;
-  name?: string | null;
-  contact?: { pushName?: string; name?: string } | null;
-  pushName?: string | null;
-  notifyName?: string | null;
-  lastMessage?: { _data?: { notifyName?: string; verifiedBizName?: string } } | null;
-}
-
-/** Waha chat message shape. */
-export interface WahaChatMessage {
-  id: string;
-  from?: string;
-  to?: string;
-  fromMe?: boolean;
-  body?: string;
-  type?: string;
-  hasMedia?: boolean;
-  mediaUrl?: string;
-  mimetype?: string;
-  timestamp?: number;
-  chatId?: string;
-  raw?: unknown;
-}
-
 /** Waha lid mapping shape. */
 export interface WahaLidMapping {
   lid: string;
@@ -138,7 +107,7 @@ const WAHA_SESSION_STATUS_MAP: Record<string, NonNullable<SessionStatus['state']
 };
 
 /** Normalize waha session status. */
-export function normalizeWahaSessionStatus(raw: unknown): string | null {
+function normalizeWahaSessionStatus(raw: unknown): string | null {
   if (typeof raw !== 'string') {
     return null;
   }

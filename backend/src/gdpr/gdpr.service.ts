@@ -545,14 +545,13 @@ export class GdprService implements OnModuleInit, OnModuleDestroy {
     const typeLabel = type === 'EXPORT' ? 'exportação de dados' : 'exclusão de dados';
     const subject = `Confirmação de ${typeLabel} - KLOEL`;
 
-    const html = `
-      <p>Olá ${agent.name},</p>
-      <p>Recebemos sua solicitação de <strong>${typeLabel}</strong> na Kloel.</p>
-      <p>Código da solicitação: <strong>${code}</strong></p>
-      <p>Para confirmar e prosseguir, acesse:</p>
-      <p><a href="${statusUrl}">${statusUrl}</a></p>
-      <p>Este link expira em 24 horas. Se você não solicitou esta ação, ignore este email.</p>
-    `;
+    const { renderEmailTemplate } = await import('../common/utils/email-template-renderer.util');
+    const html = renderEmailTemplate('data-request-confirmation', {
+      agentName: agent.name,
+      typeLabel,
+      code,
+      statusUrl,
+    });
 
     await this.email.sendEmail({ to: agent.email, subject, html });
   }

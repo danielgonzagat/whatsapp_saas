@@ -303,6 +303,167 @@ jobs:
             .eslint-seatbelt.tsv
           if-no-files-found: ignore
 
+  pulse-deep:
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: whatsapp_saas_test
+        ports:
+          - 55432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 56379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
+    env:
+      PULSE_BACKEND_URL: http://localhost:3099
+      DATABASE_URL: postgresql://postgres:password@localhost:55432/whatsapp_saas_test
+      REDIS_URL: redis://localhost:56379
+      JWT_SECRET: pulse-deep-ci-test-secret
+      AUTH_OPTIONAL: 'true'
+      OPENAI_API_KEY: e2e-dummy-key
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: |
+            backend/package-lock.json
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Install backend dependencies
+        run: npm ci
+        working-directory: backend
+
+      - name: Build backend
+        run: |
+          npx prisma generate
+          npx prisma migrate deploy
+          npm run build
+        working-directory: backend
+
+      - name: Start backend on test port
+        run: |
+          NODE_ENV=production \
+          PORT=3099 \
+          DATABASE_URL="${DATABASE_URL}" \
+          REDIS_URL="${REDIS_URL}" \
+          JWT_SECRET="${JWT_SECRET}" \
+          AUTH_OPTIONAL=true \
+          ENABLE_LEGACY_BACKEND_AUTOPILOT=false \
+          GLOBAL_AUTONOMY_KILL_SWITCH=false \
+          ENABLE_LEGACY_AUTOPILOT_SCANNER=false \
+          OPENAI_API_KEY="${OPENAI_API_KEY}" \
+          node backend/dist/src/bootstrap.js > /tmp/pulse-backend.log 2>&1 &
+          echo $! > /tmp/pulse-backend.pid
+
+      - name: Wait for backend health
+        run: |
+          for i in {1..60}; do
+            if curl -sf http://localhost:3099/health/liveness >/dev/null 2>&1; then
+              echo "Backend healthy"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Backend did not become healthy"
+          tail -n 100 /tmp/pulse-backend.log || true
+          exit 1
+
+      - name: Run PULSE with --deep flag
+        env:
+          PULSE_CI_TIMEOUT_MS: '600000'
+          PULSE_DEEP: '1'
+          PULSE_BACKEND_URL: http://localhost:3099
+        run: npm run pulse:ci
+        continue-on-error: true
+
+      - name: Collect PULSE runtime evidence results
+        if: always()
+        run: |
+          echo "=== PULSE Runtime Evidence ==="
+          if [ -f PULSE_RUNTIME_EVIDENCE.json ]; then
+            cat PULSE_RUNTIME_EVIDENCE.json | node -e "
+              const d = JSON.parse(require('fs').readFileSync(0,'utf-8'));
+              console.log('Executed:', d.executed);
+              console.log('Probes executed:', d.probes?.filter(p=>p.executed).length ?? 0);
+              console.log('Probes passed:', d.probes?.filter(p=>p.status==='passed').length ?? 0);
+              console.log('Coverage:', d.runtime_evidence_coverage ?? '0%');
+            "
+          elif [ -f .pulse/current/PULSE_RUNTIME_EVIDENCE.json ]; then
+            cat .pulse/current/PULSE_RUNTIME_EVIDENCE.json | node -e "
+              const d = JSON.parse(require('fs').readFileSync(0,'utf-8'));
+              console.log('Executed:', d.executed);
+              console.log('Probes executed:', d.probes?.filter(p=>p.executed).length ?? 0);
+              console.log('Probes passed:', d.probes?.filter(p=>p.status==='passed').length ?? 0);
+            "
+          else
+            echo 'No runtime evidence found.'
+          fi
+          echo "=== PULSE Certificate ==="
+          if [ -f PULSE_CERTIFICATE.json ]; then
+            node -e "
+              const d = JSON.parse(require('fs').readFileSync('PULSE_CERTIFICATE.json','utf-8'));
+              const mc = d.gates?.multiCycleConvergencePass;
+              if (mc) {
+                console.log('multiCycleConvergencePass:', mc.status, '-', mc.reason);
+              }
+              const runtime = d.gates?.runtimePass;
+              if (runtime) {
+                console.log('runtimePass:', runtime.status, '-', runtime.reason);
+              }
+            "
+          fi
+
+      - name: Upload PULSE deep artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pulse-deep-artifacts
+          path: |
+            PULSE_*.json
+            PULSE_*.md
+            PULSE_*
+            PULSE_REPORT.md
+            PULSE_CERTIFICATE.json
+            .pulse/current/PULSE_RUNTIME_EVIDENCE.json
+            .pulse/current/PULSE_RUNTIME_PROBES.json
+          if-no-files-found: ignore
+
+      - name: Stop backend
+        if: always()
+        run: |
+          if [ -f /tmp/pulse-backend.pid ]; then
+            pid=$(cat /tmp/pulse-backend.pid)
+            kill "$pid" 2>/dev/null || true
+          fi
+          echo "--- backend.log ---"
+          tail -n 100 /tmp/pulse-backend.log || true
+
   e2e:
     needs: quality
     runs-on: ubuntu-latest

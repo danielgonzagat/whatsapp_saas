@@ -44,7 +44,7 @@ function resolvePreferredChatIdExt(
   return candidates.find((c) => !c.includes('@lid')) || candidates[0] || null;
 }
 
-export function normalizeChatEntryExt(chatRaw: unknown): WahaChatSummary {
+function normalizeChatEntryExt(chatRaw: unknown): WahaChatSummary {
   const chat = (chatRaw && typeof chatRaw === 'object' ? chatRaw : {}) as Record<string, unknown>;
   const chatIdObj = chat.id as Record<string, unknown> | string | undefined;
   const lm = chat.lastMessage as Record<string, unknown> | null | undefined;

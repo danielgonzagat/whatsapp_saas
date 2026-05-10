@@ -1,5 +1,5 @@
 import 'jest';
-import { createService } from '../test/pulse/pulse.service-test-helpers';
+import { createService } from '../../test/pulse/pulse.service-test-helpers';
 
 export async function testStaleOrganismState(artifactRootDir: string) {
   const { service } = createService({

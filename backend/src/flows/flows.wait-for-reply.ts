@@ -43,7 +43,7 @@ export interface ResumeResult {
   state?: Record<string, unknown>;
 }
 
-export function resolveTimeoutMs(
+function resolveTimeoutMs(
   timeout: number,
   unit: 'seconds' | 'minutes' | 'hours' | 'days',
 ): number {

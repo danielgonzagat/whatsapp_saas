@@ -31,7 +31,7 @@ export interface TokenIssuanceResult {
   isNewUser: boolean;
 }
 
-export async function signToken(
+async function signToken(
   jwt: JwtService,
   agentId: string,
   email: string,

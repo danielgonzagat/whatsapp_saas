@@ -7,15 +7,39 @@ import type { WhatsappService } from './whatsapp.service';
 import type { OpsAlertService } from '../observability/ops-alert.service';
 import type Redis from 'ioredis';
 import type { ProviderSettings } from './provider-settings.types';
-import { areEquivalentPhones, normalizePhone } from './inbound-processor.helpers';
 import { extractFallbackTopic as extractFallbackTopicValue } from './whatsapp-normalization.util';
+
+const PHONE_NON_DIGIT_RE = /\D/g;
+
+function normalizePhone(phone: string): string {
+  return String(phone || '')
+    .replace(PHONE_NON_DIGIT_RE, '')
+    .replace('@c.us', '')
+    .replace('@s.whatsapp.net', '');
+}
+
+function expandComparablePhoneVariants(phone: string): string[] {
+  const digits = normalizePhone(phone);
+  if (!digits) return [];
+  const variants = new Set<string>([digits]);
+  if (digits.startsWith('55') && digits.length > 11) variants.add(digits.slice(2));
+  if (!digits.startsWith('55') && digits.length >= 10 && digits.length <= 11)
+    variants.add(`55${digits}`);
+  return Array.from(variants);
+}
+
+function areEquivalentPhones(left: string, right: string): boolean {
+  const lv = expandComparablePhoneVariants(left);
+  const rv = expandComparablePhoneVariants(right);
+  return lv.some((c) => rv.includes(c));
+}
 
 const PRE_C__O_QUANTO_VALOR_C_RE = /(pre[cç]o|quanto|valor|custa|comprar|boleto|pix|pagamento)/i;
 const AGENDAR_AGENDA_REUNI_A_RE = /(agendar|agenda|reuni[aã]o|hor[aá]rio|marcar)/i;
 const OL__A__BOM_DIA_BOA_TARD_RE = /(ol[áa]|bom dia|boa tarde|boa noite|oi\b)/i;
 
 export type InboundIngestMode = 'live' | 'catchup';
-export type InboundProvider = 'meta-cloud' | 'whatsapp-api' | 'whatsapp-web-agent';
+type InboundProvider = 'meta-cloud' | 'whatsapp-api' | 'whatsapp-web-agent';
 
 export interface InboundMessage {
   workspaceId: string;
@@ -230,7 +254,7 @@ export function buildInlineFallbackReplyExt(messageContent: string): string {
     : 'Entendi. Me diz o produto, exame ou objetivo e eu sigo com a informação certa, sem teatro.';
 }
 
-export function extractFallbackTopicExt(messageContent: string): string | null {
+function extractFallbackTopicExt(messageContent: string): string | null {
   return extractFallbackTopicValue(messageContent);
 }
 

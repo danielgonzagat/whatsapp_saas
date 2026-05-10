@@ -4,7 +4,7 @@ import { autopilotDecisionCounter, autopilotGhostCloserCounter, autopilotPipelin
 import { logFallback, sendEmail } from '../../providers/channel-dispatcher';
 import { log, type UnknownRecord, type QuotedCustomerMessage } from './shared';
 import { logAutopilotAction, buildWorkspaceConfig } from './safeguard';
-import { sendAudioResponse } from './cycle';
+import { sendAudioResponse } from './cycle-audio';
 import { isRecentLiveConversation, isExplicitProactiveOutreachAllowed } from './shared';
 import {
   findRecentDuplicateOutbound, dispatchAutonomousReplyPlan,

@@ -1,7 +1,7 @@
 'use client';
 import { useCallback } from 'react';
 import { kloelT } from '@/lib/i18n/t';
-import { SORA, MONO, EMBER } from './ContaConstants';
+import { SORA, EMBER } from './ContaConstants';
 import { formatBankCode } from '@/hooks/useBrazilianBanks';
 import type { BrazilianBank } from '@/hooks/useBrazilianBanks';
 import BankListItem from './ContaBankListItem';

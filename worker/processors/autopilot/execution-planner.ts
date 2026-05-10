@@ -99,32 +99,31 @@ export async function buildMessage(action: string, content: string, settings: Un
     }
   }
 
-  switch (action) {
-    case 'SEND_OFFER':
-      return await generatePitchSafe(content, settings);
-    case 'SEND_PRICE':
-      return customTpl.SEND_PRICE || defaults.SEND_PRICE[0];
-    case 'SEND_CALENDAR':
-      return customTpl.SEND_CALENDAR || defaults.SEND_CALENDAR[0];
-    case 'QUALIFY':
-      return customTpl.QUALIFY || defaults.QUALIFY[0];
-    case 'FOLLOW_UP':
-      return customTpl.FOLLOW_UP || defaults.FOLLOW_UP[0];
-    case 'FOLLOW_UP_STRONG':
-      return customTpl.FOLLOW_UP_STRONG || defaults.FOLLOW_UP_STRONG[0];
-    case 'GHOST_CLOSER':
-      return customTpl.GHOST_CLOSER || defaults.GHOST_CLOSER[0];
-    case 'LEAD_UNLOCKER':
-      return customTpl.LEAD_UNLOCKER || defaults.LEAD_UNLOCKER[0];
-    case 'TRANSFER_AGENT':
-      return customTpl.TRANSFER_AGENT || defaults.TRANSFER_AGENT[0];
-    case 'ANTI_CHURN':
-      return customTpl.ANTI_CHURN || defaults.ANTI_CHURN[0];
-    case 'HANDLE_OBJECTION':
-      return customTpl.HANDLE_OBJECTION || defaults.HANDLE_OBJECTION[0];
-    case 'SEND_AUDIO':
-      return content || customTpl.FOLLOW_UP || defaults.FOLLOW_UP[0];
-    default:
-      return null;
+  if (action === 'SEND_OFFER') {
+    return await generatePitchSafe(content, settings);
   }
+
+  const DEFAULT_KEY_MAP: Record<string, string> = {
+    SEND_PRICE: 'SEND_PRICE',
+    SEND_CALENDAR: 'SEND_CALENDAR',
+    QUALIFY: 'QUALIFY',
+    FOLLOW_UP: 'FOLLOW_UP',
+    FOLLOW_UP_STRONG: 'FOLLOW_UP_STRONG',
+    GHOST_CLOSER: 'GHOST_CLOSER',
+    LEAD_UNLOCKER: 'LEAD_UNLOCKER',
+    TRANSFER_AGENT: 'TRANSFER_AGENT',
+    ANTI_CHURN: 'ANTI_CHURN',
+    HANDLE_OBJECTION: 'HANDLE_OBJECTION',
+  };
+
+  if (action === 'SEND_AUDIO') {
+    return content || customTpl.FOLLOW_UP || defaults.FOLLOW_UP[0];
+  }
+
+  const defaultKey = DEFAULT_KEY_MAP[action];
+  if (defaultKey) {
+    return (customTpl[defaultKey] as string) || defaults[defaultKey][0];
+  }
+
+  return null;
 }

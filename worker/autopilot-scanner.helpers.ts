@@ -22,7 +22,7 @@ export type AutopilotContact = {
   tags?: ReadonlyArray<{ name: string }> | null;
 };
 
-export function isPlainJsonObject(value: Prisma.JsonValue | null | undefined): value is JsonObject {
+function isPlainJsonObject(value: Prisma.JsonValue | null | undefined): value is JsonObject {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
 
@@ -38,14 +38,14 @@ export function jsonDateMillis(value: Prisma.JsonValue | undefined): number {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-export function asNestedObject(value: Prisma.JsonValue | undefined): Record<string, unknown> | null {
+function asNestedObject(value: Prisma.JsonValue | undefined): Record<string, unknown> | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return null;
   }
   return value as Record<string, unknown>;
 }
 
-export function asNestedString(value: unknown): string | null {
+function asNestedString(value: unknown): string | null {
   return typeof value === 'string' ? value : null;
 }
 
@@ -114,7 +114,7 @@ export async function computeBestHour(workspaceId: string): Promise<number> {
   return best;
 }
 
-export function hasKeyword(text: string, ...keys: string[]) {
+function hasKeyword(text: string, ...keys: string[]) {
   const lower = text.toLowerCase();
   return keys.some((k) => lower.includes(k));
 }

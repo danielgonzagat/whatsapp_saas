@@ -44,7 +44,7 @@ export function extractWorkspaceId(job: Job): string {
   return 'unknown';
 }
 
-export function buildDedupKey(job: Job): string {
+function buildDedupKey(job: Job): string {
   const dedupId =
     (job.data as Record<string, unknown> | undefined)?.dedupKey ?? job.id ?? 'unknown';
   return `${DEDUP_KEY_PREFIX}${job.queueName}:${String(dedupId)}`;

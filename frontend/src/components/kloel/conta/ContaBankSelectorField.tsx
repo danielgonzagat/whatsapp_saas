@@ -1,5 +1,5 @@
 'use client';
-import { SORA, MONO, EMBER } from './ContaConstants';
+import { SORA, EMBER } from './ContaConstants';
 import { kloelT } from '@/lib/i18n/t';
 import BankDropdownPanel from './ContaBankDropdownPanel';
 

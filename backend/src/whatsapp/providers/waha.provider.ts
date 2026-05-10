@@ -8,11 +8,6 @@ import {
   isPlaceholderContactName as isPlaceholderContactNameValue,
   extractPhoneFromChatId as normalizePhoneFromChatId,
 } from '../whatsapp-normalization.util';
-import {
-  normalizeWahaSessionStatus,
-  mapWahaSessionStatus,
-  resolveWahaSessionState,
-} from './waha-types';
 import { WahaSessionProvider } from './waha-session.provider';
 
 type WahaChatPayload = {
@@ -29,17 +24,6 @@ type WahaChatEntry = {
   [key: string]: unknown;
 };
 
-export type {
-  SessionStatus,
-  QrCodeResponse,
-  WahaChatSummary,
-  WahaChatMessage,
-  WahaLidMapping,
-  WahaSessionOverview,
-  WahaRuntimeConfigDiagnostics,
-  WahaSessionConfigDiagnostics,
-} from './waha-types';
-export { normalizeWahaSessionStatus, mapWahaSessionStatus, resolveWahaSessionState };
 
 const S_RE = /\s+/;
 

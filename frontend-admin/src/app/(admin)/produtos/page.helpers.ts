@@ -16,22 +16,24 @@ export function formatInteger(value: number | null | undefined) {
   return new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 }).format(value);
 }
 
+import { colors } from '@/lib/design-tokens';
+
 export function statusTone(status: string) {
   switch (status) {
     case 'APPROVED':
     case 'ACTIVE':
       return {
-        dot: '#22C55E',
+        dot: colors.status.success,
         badge: 'border-emerald-500/25 bg-emerald-500/10 text-emerald-700',
       };
     case 'PENDING':
       return {
-        dot: '#F59E0B',
+        dot: colors.status.warning,
         badge: 'border-amber-500/25 bg-amber-500/10 text-amber-700',
       };
     case 'REJECTED':
       return {
-        dot: '#EF4444',
+        dot: colors.status.error,
         badge: 'border-red-500/25 bg-red-500/10 text-red-600',
       };
     default:

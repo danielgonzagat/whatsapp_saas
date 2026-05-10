@@ -6,7 +6,6 @@ import { AuthenticatedRequest } from '../common/interfaces';
 import { PrismaService } from '../prisma/prisma.service';
 import { ReportFiltersDto } from './dto/report-filters.dto';
 import { ReportsService } from './reports.service';
-import { BRAND_COLORS } from '../common/kloel-colors';
 
 type ReportResponseDetails = { score?: number; [key: string]: unknown };
 
@@ -159,13 +158,12 @@ export class ReportsController {
     await this.emailService.sendEmail({
       to: targetEmail,
       subject: 'Relatorio KLOEL — Resumo de Vendas',
-      html: `<div style="font-family:sans-serif;background:${BRAND_COLORS.VOID};color:${BRAND_COLORS.LIGHT_TEXT};padding:40px;max-width:600px;margin:0 auto;">
-        <h1 style="color:${BRAND_COLORS.EMBER};">KLOEL — Relatorio</h1>
-        <p>Receita: R$ ${(summary.totalRevenue / 100).toFixed(2)}</p>
-        <p>Vendas: ${summary.totalCount}</p>
-        <p>Ticket Medio: R$ ${(summary.ticketMedio / 100).toFixed(2)}</p>
-        <p>Conversao: ${summary.conversao}%</p>
-      </div>`,
+      html: (await import('../common/utils/email-template-renderer.util')).renderEmailTemplate('report-summary', {
+        totalRevenue: (summary.totalRevenue / 100).toFixed(2),
+        totalCount: String(summary.totalCount),
+        ticketMedio: (summary.ticketMedio / 100).toFixed(2),
+        conversao: String(summary.conversao),
+      }),
     });
     return { success: true, sentTo: targetEmail };
   }

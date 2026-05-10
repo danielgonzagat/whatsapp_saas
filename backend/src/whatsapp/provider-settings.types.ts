@@ -64,7 +64,7 @@ export interface ProviderSessionSnapshot {
 }
 
 /** Provider autonomy settings shape. */
-export interface ProviderAutonomySettings {
+interface ProviderAutonomySettings {
   /** Mode property. */
   mode?: string;
   /** Reason property. */
@@ -82,7 +82,7 @@ export interface ProviderAutonomySettings {
 }
 
 /** Provider cia runtime shape. */
-export interface ProviderCiaRuntime {
+interface ProviderCiaRuntime {
   /** Current run id property. */
   currentRunId?: string | null;
   /** State property. */
@@ -102,7 +102,7 @@ export interface ProviderCiaRuntime {
 }
 
 /** Provider autopilot settings shape. */
-export interface ProviderAutopilotSettings {
+interface ProviderAutopilotSettings {
   /** Enabled property. */
   enabled?: boolean;
   /** Paused at property. */
@@ -136,7 +136,7 @@ export interface ProviderCalendarSettings {
 }
 
 /** Provider plan limit settings shape. */
-export interface ProviderPlanLimitSettings {
+interface ProviderPlanLimitSettings {
   /** Plan property. */
   plan?: string;
   /** Ai requests per day property. */

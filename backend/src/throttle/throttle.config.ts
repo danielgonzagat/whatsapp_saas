@@ -75,7 +75,7 @@ function isAiToolRoute(ctx: ExecutionContext): boolean {
 }
 
 /** Named throttler tier: authentication endpoints. */
-export const AUTH_TIER: ThrottlerOptions = {
+const AUTH_TIER: ThrottlerOptions = {
   name: 'auth',
   limit: 5,
   ttl: 60000,
@@ -83,7 +83,7 @@ export const AUTH_TIER: ThrottlerOptions = {
 };
 
 /** Named throttler tier: inbound external webhooks. */
-export const WEBHOOK_TIER: ThrottlerOptions = {
+const WEBHOOK_TIER: ThrottlerOptions = {
   name: 'webhook',
   limit: 200,
   ttl: 60000,
@@ -91,7 +91,7 @@ export const WEBHOOK_TIER: ThrottlerOptions = {
 };
 
 /** Named throttler tier: generic read (GET) requests. */
-export const GET_TIER: ThrottlerOptions = {
+const GET_TIER: ThrottlerOptions = {
   name: 'get',
   limit: 300,
   ttl: 60000,
@@ -99,7 +99,7 @@ export const GET_TIER: ThrottlerOptions = {
 };
 
 /** Named throttler tier: generic write (POST/PUT/PATCH/DELETE) requests. */
-export const MUTATION_TIER: ThrottlerOptions = {
+const MUTATION_TIER: ThrottlerOptions = {
   name: 'mutation',
   limit: 100,
   ttl: 60000,
@@ -107,7 +107,7 @@ export const MUTATION_TIER: ThrottlerOptions = {
 };
 
 /** Named throttler tier: AI / LLM tool-call endpoints. */
-export const AI_TOOL_TIER: ThrottlerOptions = {
+const AI_TOOL_TIER: ThrottlerOptions = {
   name: 'ai-tool',
   limit: 60,
   ttl: 60000,
@@ -123,4 +123,4 @@ export const THROTTLE_TIERS: ThrottlerOptions[] = [
   AI_TOOL_TIER,
 ];
 
-export { isAuthRoute, isWebhookRoute, isGetRequest, isMutationRequest, isAiToolRoute };
+

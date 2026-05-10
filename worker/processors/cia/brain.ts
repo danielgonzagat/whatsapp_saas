@@ -2,9 +2,7 @@ import type { CiaActionType, CiaCandidate, CiaWorkspaceState } from './build-sta
 import type {
   CiaActionDecision,
   CiaDecisionBatch,
-  CiaGovernorVerdict,
   CiaStrategyHints,
-  ConversationActionCandidate,
 } from './brain.types';
 
 export type {

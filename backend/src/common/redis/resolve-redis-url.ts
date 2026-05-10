@@ -222,7 +222,7 @@ export function isRedisConfigured(): boolean {
  * Diagnostic helper: returns the discovered URL (masked) and the
  * effective mode. Safe to log at startup.
  */
-export function describeRedisResolution(): {
+function describeRedisResolution(): {
   url: string | null;
   masked: string;
   mode: 'required' | 'disabled' | 'auto';

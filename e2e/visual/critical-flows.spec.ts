@@ -8,8 +8,13 @@ import {
   type CriticalRoute,
   VIEWPORTS,
 } from './critical-flows.routes';
+import {
+  VISUAL_CHECKOUT_PRODUCT_DETAIL_FIXTURE,
+  VISUAL_CHECKOUT_PRODUCTS_FIXTURE,
+} from './critical-flows.data';
 import { mockVisualAuthApis } from './critical-flows.auth-mocks';
 import { mockVisualRouteApis } from './critical-flows.route-mocks';
+import { BRAND_COLORS } from '../../backend/src/common/kloel-colors';
 import {
   bootstrapAuthenticatedPage,
   ensureE2EAdmin,
@@ -84,10 +89,10 @@ const VISUAL_FREEZE_STYLE = [
   '}',
   "html[data-visual-capture='true'] {",
   'cursor: default !important;',
-  'scrollbar-color: #0a0a0c #0a0a0c !important;',
+  `scrollbar-color: ${BRAND_COLORS.VOID} ${BRAND_COLORS.VOID} !important;`,
   '}',
   "html[data-visual-capture='true']::-webkit-scrollbar, html[data-visual-capture='true'] body::-webkit-scrollbar { width: 8px !important; height: 8px !important; }",
-  "html[data-visual-capture='true']::-webkit-scrollbar-track, html[data-visual-capture='true']::-webkit-scrollbar-thumb, html[data-visual-capture='true'] body::-webkit-scrollbar-track, html[data-visual-capture='true'] body::-webkit-scrollbar-thumb { background: #0a0a0c !important; }",
+  `html[data-visual-capture='true']::-webkit-scrollbar-track, html[data-visual-capture='true']::-webkit-scrollbar-thumb, html[data-visual-capture='true'] body::-webkit-scrollbar-track, html[data-visual-capture='true'] body::-webkit-scrollbar-thumb { background: ${BRAND_COLORS.VOID} !important; }`,
   "html[data-visual-capture='true'] a,",
   "html[data-visual-capture='true'] button,",
   "html[data-visual-capture='true'] input,",

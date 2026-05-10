@@ -4,16 +4,11 @@ import { useToast } from '@/components/kloel/ToastProvider';
 import { apiFetch } from '@/lib/api';
 import { colors } from '@/lib/design-tokens';
 import { Sparkles } from 'lucide-react';
-import React, { useEffect, useState, useId } from 'react';
+import { useEffect, useState, useId } from 'react';
 import { mutate } from 'swr';
 import { applyPlanShippingPayload } from './PlanShippingTab.helpers';
 import {
-  PACKAGE_TYPES,
-  CARRIERS,
   REGIONS,
-  PRAZO_OPTIONS,
-  OBS_OPTIONS,
-  SHIP_FROM,
   FAQ_QUESTIONS,
   FAQ_ANSWERS,
 } from './PlanShippingTab.constants';

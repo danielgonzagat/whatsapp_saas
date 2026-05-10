@@ -24,7 +24,7 @@ export class SitePublicController {
       return res
         .status(HttpStatus.NOT_FOUND)
         .send(
-          '<html><body style="background:' + BRAND_COLORS.VOID + ';color:' + BRAND_COLORS.SILVER + ';font-family:sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh"><h1>Pagina nao encontrada</h1></body></html>',
+          `<html><body style="background:${BRAND_COLORS.VOID};color:${BRAND_COLORS.SILVER};font-family:sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh"><h1>Pagina nao encontrada</h1></body></html>`,
         );
     }
 

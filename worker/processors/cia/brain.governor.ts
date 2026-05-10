@@ -1,10 +1,9 @@
-import type { CiaActionType, CiaCandidate, CiaWorkspaceState } from './build-state';
+import type { CiaActionType, CiaCandidate } from './build-state';
 import type { CustomerCognitiveState } from './cognitive-state';
 import { buildConversationTacticPlan } from './conversation-tactics';
 import type {
   ActionOption,
   CiaActionDecision,
-  CiaDecisionBatch,
   CiaGovernorVerdict,
   CiaStrategyHints,
   ConversationActionCandidate,

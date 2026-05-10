@@ -1,7 +1,7 @@
 import path from 'node:path';
 
 /** Path.join wrapper — validates segments. */
-export function safeJoin(...parts: string[]): string {
+function safeJoin(...parts: string[]): string {
   for (const part of parts) {
     if (typeof part !== 'string') {
       throw new TypeError('safeJoin: non-string segment');

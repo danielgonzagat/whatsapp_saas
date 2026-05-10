@@ -18,6 +18,8 @@ import {
   _gateFailLabel,
   _readyLabel,
   _notReadyLabel,
+  _observedTruthModeLabel,
+  _highConfidenceLabel,
   loadPathCoverageGateState,
   loadProofReadinessSummary,
 } from './helpers';
@@ -478,7 +480,16 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
       manifest,
       evaluateBreakpointPrecisionGate(input.executionMatrix),
     ),
-    multiCycleConvergencePass: multiCycleConvergenceResult,
+    multiCycleConvergencePass:
+      env !== 'scan' &&
+      multiCycleConvergenceResult.status === _gatePassLabel() &&
+      evidenceSummary.runtime.probes.filter((p) => p.executed).length === deriveZeroValue()
+        ? gateFail(
+            'multiCycleConvergence: convergence cycles were non-regressing but no runtime evidence coverage was collected (0 probes executed). Run PULSE with --deep against a live backend.',
+            _missingEvidenceLabel(),
+            { evidenceMode: _observedTruthModeLabel(), confidence: _highConfidenceLabel() },
+          )
+        : multiCycleConvergenceResult,
     testHonestyPass: withTemporaryGateAcceptance(
       'testHonestyPass',
       manifest,

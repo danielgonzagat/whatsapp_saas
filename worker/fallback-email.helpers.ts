@@ -1,25 +1,25 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { WorkerLogger } from './logger';
 
 const log = new WorkerLogger('fallback-email');
 
-const EMAIL_DIVIDER = '#E5E7EB';
-const EMAIL_FOOTER_TEXT = '#6E6E73';
+const FALLBACK_TEMPLATE = readFileSync(join(__dirname, 'templates', 'fallback-email.html'), 'utf8');
+const PLACEHOLDER_RE = /\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}/g;
 
-export function buildFallbackEmailHtml(
+function buildFallbackEmailHtml(
   contactName: string | null,
   message: string,
   workspaceName: string | null,
 ): string {
-  return `
-    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-      <h2>Olá${contactName ? ` ${contactName}` : ''}!</h2>
-      <p style="white-space: pre-wrap;">${message}</p>
-      <hr style="border: none; border-top: 1px solid ${EMAIL_DIVIDER}; margin: 20px 0;">
-      <p style="color: ${EMAIL_FOOTER_TEXT}; font-size: 12px;">
-        Enviado automaticamente por ${workspaceName || 'KLOEL'}
-      </p>
-    </div>
-  `;
+  return FALLBACK_TEMPLATE.replace(PLACEHOLDER_RE, (_match, key: string) => {
+    switch (key) {
+      case 'greetingName': return contactName ? ` ${contactName}` : '';
+      case 'message': return message;
+      case 'workspaceName': return workspaceName || 'KLOEL';
+      default: return '';
+    }
+  });
 }
 
 async function trySendFallbackEmailViaResend(args: {

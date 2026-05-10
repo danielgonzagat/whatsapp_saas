@@ -12,7 +12,7 @@ const HTTPS_RE = /^https?:\/\//i;
 const LOCALHOST_127__0__0__1_RE = /^(localhost|127\.0\.0\.1)(:\d+)?$/i;
 const RAILWAY__INTERNAL_RE = /\.railway\.internal(?::\d+)?$/i;
 
-export function resolveConfiguredWhatsAppProvider(): 'meta-cloud' {
+function resolveConfiguredWhatsAppProvider(): 'meta-cloud' {
   return 'meta-cloud';
 }
 
@@ -53,7 +53,7 @@ export async function checkWhatsAppTransport(
   };
 }
 
-export function resolveWorkerHealthUrl(config: ConfigService): string | null {
+function resolveWorkerHealthUrl(config: ConfigService): string | null {
   const candidates = [
     config.get<string>('WORKER_HEALTH_URL'),
     config.get<string>('WORKER_METRICS_URL'),
@@ -73,7 +73,7 @@ export function resolveWorkerHealthUrl(config: ConfigService): string | null {
   return null;
 }
 
-export function normalizeServiceUrl(candidate: string | undefined): string {
+function normalizeServiceUrl(candidate: string | undefined): string {
   const raw = String(candidate || '')
     .replace(S____S____S_RE, '')
     .trim()
@@ -98,7 +98,7 @@ export function normalizeServiceUrl(candidate: string | undefined): string {
   return `https://${raw}`;
 }
 
-export function maskUrl(input: string): string {
+function maskUrl(input: string): string {
   try {
     const url = new URL(input);
     url.username = '';
@@ -229,7 +229,7 @@ export function checkCriticalConfig(config: ConfigService) {
   };
 }
 
-export async function getConnectedMetaWorkspaceCount(
+async function getConnectedMetaWorkspaceCount(
   observabilityQueries: ObservabilityQueriesService,
 ): Promise<number> {
   try {

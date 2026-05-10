@@ -15,7 +15,7 @@ export type WorkspaceAutonomyMode =
   | 'HUMAN_ONLY'
   | 'SUSPENDED';
 
-export const safeStr = (v: unknown, fb = ''): string =>
+const safeStr = (v: unknown, fb = ''): string =>
   typeof v === 'string' ? v : typeof v === 'number' || typeof v === 'boolean' ? String(v) : fb;
 
 type StartBacklogRunFn = (
