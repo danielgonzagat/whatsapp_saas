@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import {
   CheckoutPaymentE2EGuard,
   CheckoutPaymentE2EStubResult,
-} from '../../src/checkout/checkout-payment-e2e-guard';
+} from 'src/checkout/checkout-payment-e2e-guard';
 
 export function isCheckoutPaymentE2EStubEnabled(): boolean {
   if (process.env.NODE_ENV === 'production') {

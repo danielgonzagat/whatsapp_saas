@@ -1,7 +1,9 @@
+import { colors } from '@/lib/design-tokens';
+
 const C = {
-  elevated: 'var(--bg-elevated, #19191C)',
-  border: 'var(--border-space, #222226)',
-  muted: 'var(--text-muted, #6E6E73)',
+  elevated: colors.background.elevated,
+  border: colors.border.space,
+  muted: colors.text.muted,
 } as const;
 
 export function LoadingStrip({

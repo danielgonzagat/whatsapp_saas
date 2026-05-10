@@ -139,7 +139,10 @@ export function AdminChatHistoryProvider({ children }: { children: ReactNode }) 
     const cachedSessions = readCache<AdminChatSessionSummary[]>(SESSION_CACHE_SLOT, []);
     sessionsRef.current = cachedSessions;
     setSessions(cachedSessions);
-    setActiveSessionIdRaw(readCache<string | null>(ACTIVE_SESSION_CACHE_SLOT, null));
+  }, []);
+
+  useEffect(() => {
+    setActiveSessionIdRaw(readSessionCache<string | null>(ACTIVE_SESSION_CACHE_SLOT, null));
   }, []);
 
   const persistSessions = useCallback((nextSessions: AdminChatSessionSummary[]) => {
@@ -197,13 +200,6 @@ export function AdminChatHistoryProvider({ children }: { children: ReactNode }) 
   useEffect(() => {
     writeSessionCache(ACTIVE_SESSION_CACHE_SLOT, activeSessionId);
   }, [activeSessionId]);
-
-  useEffect(() => {
-    const cachedSessions = readCache<AdminChatSessionSummary[]>(SESSION_CACHE_SLOT, []);
-    sessionsRef.current = cachedSessions;
-    setSessions(cachedSessions);
-    setActiveSessionIdRaw(readSessionCache<string | null>(ACTIVE_SESSION_CACHE_SLOT, null));
-  }, []);
 
   const upsertSession = useCallback((session: AdminChatSessionView) => {
     const mapped = mapSession(session);

@@ -10,10 +10,10 @@ interface ContactScoreSentimentSectionProps {
 }
 
 const C = {
-  elevated: 'var(--bg-elevated, #19191C)',
+  elevated: colors.background.elevated,
   accent: colors.ember.primary,
-  text: 'var(--text-silver, #E0DDD8)',
-  muted: 'var(--text-muted, #6E6E73)',
+  text: colors.text.silver,
+  muted: colors.text.muted,
   mono: "var(--font-jetbrains), 'JetBrains Mono', monospace",
 } as const;
 

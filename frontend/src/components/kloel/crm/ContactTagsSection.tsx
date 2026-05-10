@@ -12,12 +12,12 @@ interface ContactTagsSectionProps {
 }
 
 const C = {
-  bg: 'var(--bg-void, #0A0A0C)',
-  elevated: 'var(--bg-elevated, #19191C)',
-  border: 'var(--border-space, #222226)',
+  bg: colors.background.void,
+  elevated: colors.background.elevated,
+  border: colors.border.space,
   accent: colors.ember.primary,
-  text: 'var(--text-silver, #E0DDD8)',
-  muted: 'var(--text-muted, #6E6E73)',
+  text: colors.text.silver,
+  muted: colors.text.muted,
   sora: "var(--font-sora), 'Sora', sans-serif",
 } as const;
 

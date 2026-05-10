@@ -6,6 +6,7 @@ import {
 } from './kernel';
 import {
   observedPulseSource,
+  observedAiSafeExecutionMode,
   observedScenarioKind,
   observedGateKind,
   observedOpenStatus,

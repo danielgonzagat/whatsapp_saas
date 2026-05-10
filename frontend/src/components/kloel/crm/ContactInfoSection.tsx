@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { Mail, Phone } from 'lucide-react';
 
@@ -8,8 +9,8 @@ interface ContactInfoSectionProps {
 }
 
 const C = {
-  muted: 'var(--text-muted, #6E6E73)',
-  text: 'var(--text-silver, #E0DDD8)',
+  muted: colors.text.muted,
+  text: colors.text.silver,
   mono: "var(--font-jetbrains), 'JetBrains Mono', monospace",
 } as const;
 

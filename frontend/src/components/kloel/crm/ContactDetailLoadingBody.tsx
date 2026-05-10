@@ -1,11 +1,12 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { LoadingStrip, Section } from './crm-drawer-parts';
 
 const C = {
-  elevated: 'var(--bg-elevated, #19191C)',
-  border: 'var(--border-space, #222226)',
+  elevated: colors.background.elevated,
+  border: colors.border.space,
 } as const;
 
 export function ContactDetailLoadingBody() {

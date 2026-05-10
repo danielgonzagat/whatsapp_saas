@@ -6,85 +6,17 @@ import { useToast } from '@/components/kloel/ToastProvider';
 import { useOrderBumps } from '@/hooks/useCheckoutPlans';
 import { useState, useId } from 'react';
 
-
-/* ── Inline SVG Icons ── */
-const GiftIcon = () => (
-  <svg
-    width="20"
-    height="20"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden="true"
-  >
-    <polyline points="20 12 20 22 4 22 4 12" />
-    <rect x="2" y="7" width="20" height="5" />
-    <line x1="12" y1="22" x2="12" y2="7" />
-    <path d={kloelT(`M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z`)} />
-    <path d={kloelT(`M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z`)} />
-  </svg>
-);
-
-const EditIcon = () => (
-  <svg
-    width="16"
-    height="16"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden="true"
-  >
-    <path d={kloelT(`M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7`)} />
-    <path d={kloelT(`M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z`)} />
-  </svg>
-);
-
-const TrashIcon = () => (
-  <svg
-    width="16"
-    height="16"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden="true"
-  >
-    <polyline points="3 6 5 6 21 6" />
-    <path
-      d={kloelT(`M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2`)}
-    />
-  </svg>
-);
-
-const PlusIcon = () => (
-  <svg
-    width="16"
-    height="16"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden="true"
-  >
-    <line x1="12" y1="5" x2="12" y2="19" />
-    <line x1="5" y1="12" x2="19" y2="12" />
-  </svg>
-);
+import { GiftIcon, EditIcon, TrashIcon, PlusIcon } from './PlanOrderBumpTab.icons';
+import {
+  BumpFormPanel,
+  type BumpFormData,
+  defaultForm,
+  cardStyle,
+} from './PlanOrderBumpTab.Form';
 
 /* ── Design Tokens ── */
 
 const BG_SURFACE = 'colors.background.surface';
-const BG_ELEVATED = 'colors.background.elevated';
 const BORDER = 'colors.border.space';
 const TEXT_PRIMARY = 'colors.text.silver';
 const TEXT_MUTED = 'colors.text.muted';
@@ -94,64 +26,6 @@ const GREEN = colors.semantic.success;
 const RED = colors.semantic.error;
 const FONT_BODY = "'Sora', sans-serif";
 const FONT_MONO = "'JetBrains Mono', monospace";
-
-/* ── Types ── */
-interface BumpFormData {
-  productName: string;
-  title: string;
-  priceInCents: number;
-  compareAtPrice: number;
-  checkboxLabel: string;
-  description: string;
-  [key: string]: unknown;
-}
-
-const defaultForm: BumpFormData = {
-  productName: '',
-  title: '',
-  priceInCents: 0,
-  compareAtPrice: 0,
-  checkboxLabel: 'Sim, eu quero!',
-  description: '',
-};
-
-/* ── Styles ── */
-const labelStyle: React.CSSProperties = {
-  fontFamily: FONT_BODY,
-  fontSize: '11px',
-  fontWeight: 600,
-  color: TEXT_DIM,
-  letterSpacing: '0.08em',
-  textTransform: 'uppercase',
-  marginBottom: '6px',
-  display: 'block',
-};
-
-const inputStyle: React.CSSProperties = {
-  width: '100%',
-  background: BG_ELEVATED,
-  border: `1px solid ${BORDER}`,
-  color: TEXT_PRIMARY,
-  borderRadius: '6px',
-  padding: '10px 14px',
-  fontSize: '14px',
-  fontFamily: FONT_BODY,
-  outline: 'none',
-  boxSizing: 'border-box' as const,
-};
-
-const textareaStyle: React.CSSProperties = {
-  ...inputStyle,
-  minHeight: '80px',
-  resize: 'vertical' as const,
-};
-
-const cardStyle: React.CSSProperties = {
-  background: BG_SURFACE,
-  border: `1px solid ${BORDER}`,
-  borderRadius: '6px',
-  padding: '20px',
-};
 
 /** Plan order bump tab. */
 export function PlanOrderBumpTab({ planId }: { planId: string }) {
@@ -276,161 +150,15 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
 
       {/* Inline Form */}
       {showForm && (
-        <div
-          style={{
-            ...cardStyle,
-            borderColor: `${EMBER}40`,
-          }}
-        >
-          <h4
-            style={{
-              fontFamily: FONT_BODY,
-              fontSize: '14px',
-              fontWeight: 600,
-              color: TEXT_PRIMARY,
-              margin: '0 0 20px 0',
-            }}
-          >
-            {editingId ? 'Editar Bump' : 'Novo Bump'}
-          </h4>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-            {/* productName */}
-            <div>
-              <label style={labelStyle} htmlFor={`${fid}-product-name`}>
-                {kloelT(`Product Name`)}
-              </label>
-              <input
-                aria-label="Nome do produto"
-                type="text"
-                value={form.productName}
-                onChange={(e) => setForm({ ...form, productName: e.target.value })}
-                placeholder={kloelT(`Nome do produto`)}
-                style={inputStyle}
-                id={`${fid}-product-name`}
-              />
-            </div>
-
-            {/* title */}
-            <div>
-              <label style={labelStyle} htmlFor={`${fid}-title`}>
-                {kloelT(`Title`)}
-              </label>
-              <input
-                aria-label="Titulo da oferta"
-                type="text"
-                value={form.title}
-                onChange={(e) => setForm({ ...form, title: e.target.value })}
-                placeholder={kloelT(`Titulo da oferta`)}
-                style={inputStyle}
-                id={`${fid}-title`}
-              />
-            </div>
-
-            {/* priceInCents */}
-            <div>
-              <label style={labelStyle} htmlFor={`${fid}-price`}>
-                {kloelT(`Preco (centavos)`)}
-              </label>
-              <input
-                aria-label="Preco em centavos"
-                type="number"
-                value={form.priceInCents}
-                onChange={(e) => setForm({ ...form, priceInCents: Number(e.target.value) })}
-                placeholder={kloelT(`Ex: 4990`)}
-                style={{ ...inputStyle, fontFamily: FONT_MONO }}
-                id={`${fid}-price`}
-              />
-            </div>
-
-            {/* compareAtPrice */}
-            <div>
-              <label style={labelStyle} htmlFor={`${fid}-compare-price`}>
-                {kloelT(`Preco comparativo (centavos)`)}
-              </label>
-              <input
-                aria-label="Preco comparativo em centavos"
-                type="number"
-                value={form.compareAtPrice}
-                onChange={(e) => setForm({ ...form, compareAtPrice: Number(e.target.value) })}
-                placeholder={kloelT(`Ex: 9990`)}
-                style={{ ...inputStyle, fontFamily: FONT_MONO }}
-                id={`${fid}-compare-price`}
-              />
-            </div>
-
-            {/* checkboxLabel */}
-            <div style={{ gridColumn: '1 / -1' }}>
-              <label style={labelStyle} htmlFor={`${fid}-checkbox-label`}>
-                {kloelT(`Checkbox Label`)}
-              </label>
-              <input
-                aria-label="Texto do checkbox"
-                type="text"
-                value={form.checkboxLabel}
-                onChange={(e) => setForm({ ...form, checkboxLabel: e.target.value })}
-                style={inputStyle}
-                id={`${fid}-checkbox-label`}
-              />
-            </div>
-
-            {/* description */}
-            <div style={{ gridColumn: '1 / -1' }}>
-              <label style={labelStyle} htmlFor={`${fid}-desc`}>
-                {kloelT(`Descricao`)}
-              </label>
-              <textarea
-                value={form.description}
-                onChange={(e) => setForm({ ...form, description: e.target.value })}
-                placeholder={kloelT(`Descreva o bump...`)}
-                style={textareaStyle}
-                id={`${fid}-desc`}
-              />
-            </div>
-          </div>
-
-          {/* Form Actions */}
-          <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
-            <button
-              type="button"
-              onClick={handleSave}
-              disabled={saving}
-              style={{
-                background: EMBER,
-                color: colors.text.silver,
-                border: 'none',
-                borderRadius: '6px',
-                padding: '10px 24px',
-                fontSize: '13px',
-                fontWeight: 600,
-                fontFamily: FONT_BODY,
-                cursor: saving ? 'not-allowed' : 'pointer',
-                opacity: saving ? 0.6 : 1,
-                transition: 'opacity 150ms ease',
-              }}
-            >
-              {saving ? 'Salvando...' : 'Salvar'}
-            </button>
-            <button
-              type="button"
-              onClick={handleCancel}
-              style={{
-                background: 'transparent',
-                color: TEXT_MUTED,
-                border: `1px solid ${BORDER}`,
-                borderRadius: '6px',
-                padding: '10px 24px',
-                fontSize: '13px',
-                fontWeight: 600,
-                fontFamily: FONT_BODY,
-                cursor: 'pointer',
-                transition: 'color 150ms ease',
-              }}
-            >
-              {kloelT(`Cancelar`)}
-            </button>
-          </div>
-        </div>
+        <BumpFormPanel
+          form={form}
+          setForm={setForm}
+          editingId={editingId}
+          saving={saving}
+          onSave={handleSave}
+          onCancel={handleCancel}
+          fid={fid}
+        />
       )}
 
       {/* Bump List */}

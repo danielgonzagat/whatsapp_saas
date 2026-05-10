@@ -57,7 +57,7 @@ export function evaluateNoOverclaimPassForCurrentRun(
     autonomyReadiness: {
       canDeclareComplete: false,
     },
-    proofReadiness: proofReadinessSummary,
+    ...(proofReadinessSummary !== undefined ? { proofReadiness: proofReadinessSummary } : {}),
   };
   const currentCertificate: PulseCertificateSnapshot = {};
   const previousResult = evaluateNoOverclaimGate(

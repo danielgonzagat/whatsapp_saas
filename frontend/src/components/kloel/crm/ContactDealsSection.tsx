@@ -17,11 +17,11 @@ interface ContactDealsSectionProps {
 }
 
 const C = {
-  elevated: 'var(--bg-elevated, #19191C)',
-  border: 'var(--border-space, #222226)',
+  elevated: colors.background.elevated,
+  border: colors.border.space,
   accent: colors.ember.primary,
-  text: 'var(--text-silver, #E0DDD8)',
-  muted: 'var(--text-muted, #6E6E73)',
+  text: colors.text.silver,
+  muted: colors.text.muted,
   mono: "var(--font-jetbrains), 'JetBrains Mono', monospace",
 } as const;
 

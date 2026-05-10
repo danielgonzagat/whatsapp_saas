@@ -3,7 +3,7 @@
 const EMBER = 'colors.ember.primary';
 const BORDER = 'var(--border-space, colors.border.space)';
 const TEXT = 'var(--text-starlight, colors.text.silver)';
-const TEXT_ON_ACCENT = 'var(--app-text-on-accent, #FFFFFF)';
+const TEXT_ON_ACCENT = 'var(--app-text-on-accent)';
 
 export function CheckoutCheckbox({
   checked,

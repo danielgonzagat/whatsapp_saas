@@ -84,41 +84,54 @@ export async function runDerivedOutputs(input: DerivedOutputsInput): Promise<voi
     executionEvidence: certification.evidenceSummary,
   });
 
+  const githubToken = process.env.GITHUB_TOKEN;
+  const sentryAuthToken = process.env.SENTRY_AUTH_TOKEN;
+  const sentryOrg = process.env.SENTRY_ORG;
+  const sentryProject = process.env.SENTRY_PROJECT;
+  const datadogApiKey = process.env.DATADOG_API_KEY;
+  const datadogAppKey = process.env.DATADOG_APP_KEY;
+  const datadogSite = process.env.DATADOG_SITE;
+  const prometheusBaseUrl = process.env.PROMETHEUS_BASE_URL || process.env.PULSE_PROMETHEUS_URL;
+  const prometheusBearerToken = process.env.PROMETHEUS_BEARER_TOKEN || process.env.PULSE_PROMETHEUS_TOKEN;
+  const prometheusQuery = process.env.PROMETHEUS_QUERY;
+  const codecovToken = process.env.CODECOV_TOKEN;
+  const dependabotToken = process.env.GITHUB_TOKEN; 
+
   // Run external sources orchestration
   const externalSourcesConfig: ExternalSourcesConfig = {
     rootDir: config.rootDir,
     github: {
       owner: process.env.GITHUB_OWNER || '',
       repo: process.env.GITHUB_REPO || '',
-      token: process.env.GITHUB_TOKEN,
+      ...(githubToken !== undefined ? { token: githubToken } : {}),
     },
     sentry: {
-      authToken: process.env.SENTRY_AUTH_TOKEN,
-      org: process.env.SENTRY_ORG,
-      project: process.env.SENTRY_PROJECT,
+      ...(sentryAuthToken !== undefined ? { authToken: sentryAuthToken } : {}),
+      ...(sentryOrg !== undefined ? { org: sentryOrg } : {}),
+      ...(sentryProject !== undefined ? { project: sentryProject } : {}),
     },
     datadog: {
-      apiKey: process.env.DATADOG_API_KEY,
-      appKey: process.env.DATADOG_APP_KEY,
-      site: process.env.DATADOG_SITE,
+      ...(datadogApiKey !== undefined ? { apiKey: datadogApiKey } : {}),
+      ...(datadogAppKey !== undefined ? { appKey: datadogAppKey } : {}),
+      ...(datadogSite !== undefined ? { site: datadogSite } : {}),
     },
     prometheus: {
-      baseUrl: process.env.PROMETHEUS_BASE_URL || process.env.PULSE_PROMETHEUS_URL,
-      bearerToken: process.env.PROMETHEUS_BEARER_TOKEN || process.env.PULSE_PROMETHEUS_TOKEN,
-      query: process.env.PROMETHEUS_QUERY,
+      ...(prometheusBaseUrl !== undefined ? { baseUrl: prometheusBaseUrl } : {}),
+      ...(prometheusBearerToken !== undefined ? { bearerToken: prometheusBearerToken } : {}),
+      ...(prometheusQuery !== undefined ? { query: prometheusQuery } : {}),
     },
     codecov: {
-      token: process.env.CODECOV_TOKEN,
+      ...(codecovToken !== undefined ? { token: codecovToken } : {}),
       owner: process.env.GITHUB_OWNER || '',
       repo: process.env.GITHUB_REPO || '',
     },
     dependabot: {
-      token: process.env.GITHUB_TOKEN,
+      ...(dependabotToken !== undefined ? { token: dependabotToken } : {}),
       owner: process.env.GITHUB_OWNER || '',
       repo: process.env.GITHUB_REPO || '',
     },
-    profile: config.certificationProfile || undefined,
-    certificationScope: config.certificationProfile || undefined,
+    profile: config.certificationProfile ?? undefined,
+    certificationScope: config.certificationProfile ?? undefined,
   };
   const externalSourcesTask = runExternalSourcesOrchestrator(externalSourcesConfig).catch(
     () => null,
@@ -184,7 +197,6 @@ export async function runDerivedOutputs(input: DerivedOutputsInput): Promise<voi
   const { flags, queryModeRequested, selfTrustReport } = input;
   const health = finalScanResult.health;
   const coreData = finalScanResult.coreData;
-  const humanReadableOutput = !flags.json && !flags.guidance && !flags.prove && !flags.vision;
 
   if (flags.manifestValidate) {
     if (

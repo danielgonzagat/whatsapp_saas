@@ -2,7 +2,7 @@
 import { colors } from '@/lib/design-tokens';
 
 const BORDER = 'var(--border-space, colors.border.space)';
-const TEXT_ON_ACCENT = 'var(--app-text-on-accent, #FFFFFF)';
+const TEXT_ON_ACCENT = 'var(--app-text-on-accent)';
 const GREEN = colors.semantic.success;
 
 export function CheckoutToggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {

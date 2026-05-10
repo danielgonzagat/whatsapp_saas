@@ -470,9 +470,9 @@ export class GdprService implements OnModuleInit, OnModuleDestroy {
           data: {
             workspaceId,
             action: 'GDPR_DELETE',
-            entityType: 'GdprRequest',
-            entityId: requestId,
-            metadata: {
+            resource: 'GdprRequest',
+            resourceId: requestId,
+            details: {
               userId,
               deletedAt: new Date().toISOString(),
               requestId,

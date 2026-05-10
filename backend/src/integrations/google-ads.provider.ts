@@ -170,7 +170,7 @@ export class GoogleAdsProvider implements AdProvider {
           const resourceNames = (accessible as { resource_names?: string[] }).resource_names || [];
           const ids = resourceNames.map((rn) => rn.replace('customers/', ''));
           if (ids.length > 0) {
-            loginCustomerId = ids[0];
+            loginCustomerId = ids[0] ?? null;
           }
         }
       } catch {

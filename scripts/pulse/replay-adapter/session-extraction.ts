@@ -28,6 +28,14 @@ function normalizeSignalSourceToken(raw: string): string {
   return output.join('');
 }
 
+function firstRoutePattern(signal: Record<string, unknown>): string | undefined {
+  const patterns = signal.routePatterns;
+  if (Array.isArray(patterns) && patterns.length > 0) {
+    return String(patterns[0]);
+  }
+  return undefined;
+}
+
 function mapSignalSource(raw: string): ReplaySource | null {
   const normalized = normalizeSignalSourceToken(raw);
   return normalized.length > 0 ? normalized : null;
@@ -74,7 +82,7 @@ export function extractSessionsFromExternalSignals(filePath: string): ReplaySess
         startTime: String(signal.observedAt || new Date().toISOString()),
         endTime: String(signal.observedAt || new Date().toISOString()),
         durationMs: 0,
-        url: String(signal.routePatterns?.[0] || signal.summary || '/'),
+        url: String(firstRoutePattern(signal) || signal.summary || '/'),
         events: hasError
           ? [
               {
@@ -124,7 +132,7 @@ export function extractSessionsFromExternalSignals(filePath: string): ReplaySess
           startTime: String(signal.observedAt || new Date().toISOString()),
           endTime: String(signal.observedAt || new Date().toISOString()),
           durationMs: 0,
-          url: String(signal.routePatterns?.[0] || signal.summary || '/'),
+          url: String(firstRoutePattern(signal) || signal.summary || '/'),
           events: hasError
             ? [
                 {

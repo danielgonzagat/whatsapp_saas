@@ -19,7 +19,6 @@ import type {
 import type { PulseScopeFile, PulseScopeState } from '../types.truth.scope';
 import type {
   PulseStructuralGraph,
-  PulseStructuralNode,
   PulseTruthMode,
 } from '../types.structural';
 import {

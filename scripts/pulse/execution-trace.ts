@@ -188,8 +188,8 @@ export class PulseExecutionTracer {
     phase: string,
     status: Exclude<PulseExecutionPhaseStatus, 'running'>,
     extra: {
-      errorSummary?: string;
-      metadata?: Record<string, string | number | boolean>;
+      errorSummary?: string | undefined;
+      metadata?: Record<string, string | number | boolean> | undefined;
     } = {},
   ): void {
     const entry = [...this.trace.phases]

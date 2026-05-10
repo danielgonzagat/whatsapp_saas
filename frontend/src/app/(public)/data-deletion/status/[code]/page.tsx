@@ -256,14 +256,29 @@ function translateStatus(status?: string) {
   switch (String(status || '').toLowerCase()) {
     case 'pending':
       return 'Pendente';
+    case 'verifying':
+      return 'Verificando identidade';
     case 'processing':
       return 'Em processamento';
+    case 'complete':
+      return 'Concluída';
     case 'completed':
       return 'Concluída';
     case 'failed':
       return 'Falhou';
     default:
       return 'Indefinido';
+  }
+}
+
+function translateGdprType(type?: string) {
+  switch (String(type || '').toUpperCase()) {
+    case 'EXPORT':
+      return 'Exportação de dados';
+    case 'DELETE':
+      return 'Exclusão de dados';
+    default:
+      return type || 'Desconhecido';
   }
 }
 

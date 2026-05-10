@@ -50,7 +50,7 @@ const BORDER = 'var(--border-space, colors.border.space)';
 const TEXT = 'var(--text-starlight, colors.text.silver)';
 const SECONDARY = 'var(--text-moonlight, colors.text.muted)';
 const FAINT = 'var(--text-dust, colors.text.dim)';
-const TEXT_ON_ACCENT = 'var(--app-text-on-accent, #FFFFFF)';
+const TEXT_ON_ACCENT = 'var(--app-text-on-accent)';
 const EMBER = 'colors.ember.primary';
 
 /* ── Shared Styles ── */

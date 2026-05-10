@@ -3,7 +3,7 @@ import {
   KloelComposerE2EGuard,
   ComposerE2EWebSearchDigest,
   ComposerE2EImageResult,
-} from '../../src/kloel/kloel-composer-e2e-guard';
+} from 'src/kloel/kloel-composer-e2e-guard';
 
 export function isComposerWebSearchE2EStubEnabled(): boolean {
   if (process.env.NODE_ENV === 'production') {

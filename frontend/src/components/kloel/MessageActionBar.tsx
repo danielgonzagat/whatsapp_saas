@@ -35,9 +35,9 @@ interface MessageActionBarProps {
 }
 
 const EMBER = colors.ember.primary;
-const TEXT_PRIMARY = 'var(--app-text-primary, #FFFFFF)';
-const TEXT_SECONDARY = 'var(--app-text-secondary, #8A8A8E)';
-const TOOLTIP_BG = 'var(--app-bg-tertiary, #1A1A1E)';
+const TEXT_PRIMARY = 'var(--app-text-primary)';
+const TEXT_SECONDARY = 'var(--app-text-secondary)';
+const TOOLTIP_BG = 'var(--app-bg-tertiary)';
 const DISABLED_STROKE = colors.text.dim;
 
 /** Message action bar. */

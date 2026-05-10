@@ -1,5 +1,5 @@
 'use client';
-import { PRODUCT_CAMPAIGNS_COPY, type Campaign, SORA, V } from './ProductCampaignsTab.constants';
+import { MONO, PRODUCT_CAMPAIGNS_COPY, type Campaign, SORA, V } from './ProductCampaignsTab.constants';
 
 export function ProductCampaignDeleteModal({
   campaignPendingDelete,

@@ -4,7 +4,6 @@ import type {
   PulseRuntimeProbeArtifactProbe,
   PulseRuntimeProbeArtifactSource,
   PulseRuntimeProbeArtifactStatus,
-  PulseRuntimeProbeFreshness,
   PulseRuntimeProbesArtifact,
 } from '../types.runtime-probes';
 
@@ -78,7 +77,7 @@ function normalizeSource(value: unknown): PulseRuntimeProbeArtifactSource {
   return 'unknown';
 }
 
-function normalizeStatus(value: unknown): PulseRuntimeProbeArtifactStatus | null {
+function _normalizeStatus(value: unknown): PulseRuntimeProbeArtifactStatus | null {
   const candidate = stringValue(value);
   if (candidate && STATUSES.has(candidate)) {
     return candidate as PulseRuntimeProbeArtifactStatus;
@@ -86,7 +85,7 @@ function normalizeStatus(value: unknown): PulseRuntimeProbeArtifactStatus | null
   return null;
 }
 
-function parseTimeMs(value: string | null): number | null {
+function _parseTimeMs(value: string | null): number | null {
   if (!value) {
     return null;
   }
@@ -98,7 +97,7 @@ function recordMetrics(value: unknown): Record<string, unknown> | undefined {
   return isRecord(value) ? value : undefined;
 }
 
-function isSimulatedProbe(record: Record<string, unknown>): boolean {
+function _isSimulatedProbe(record: Record<string, unknown>): boolean {
   const source = stringValue(record.source);
   if (source === 'simulated') {
     return true;
@@ -147,6 +146,10 @@ function normalizeProbe(
     status === 'passed' && executed && freshness.fresh && sourceCanProve(source);
   const artifactPaths = unique([...stringArray(record.artifactPaths), RUNTIME_PROBES_PATH]);
   const metrics = recordMetrics(record.metrics);
+  const failureClassVal = stringValue(record.failureClass);
+  const summaryVal = stringValue(record.summary);
+  const latencyMsVal = numberValue(record.latencyMs);
+  const metricsVal = recordMetrics(record.metrics);
   return {
     probeId: stringValue(record.probeId) ?? 'unknown',
     target: stringValue(record.target) ?? 'unknown',
@@ -155,12 +158,12 @@ function normalizeProbe(
     status,
     source,
     proofEligible,
-    failureClass: stringValue(record.failureClass) ?? undefined,
-    summary: stringValue(record.summary) ?? 'Runtime probe has no summary.',
-    latencyMs: numberValue(record.latencyMs),
+    ...(failureClassVal !== null ? { failureClass: failureClassVal } : {}),
+    summary: summaryVal ?? 'Runtime probe has no summary.',
+    ...(latencyMsVal !== undefined ? { latencyMs: latencyMsVal } : {}),
     artifactPaths,
     freshness,
-    metrics,
+    ...(metricsVal !== undefined ? { metrics: metricsVal } : {}),
   };
 }
 
@@ -294,7 +297,7 @@ function artifactFromRecord(
     artifact: ARTIFACT_ID,
     artifactVersion: 1,
     generatedAt,
-    environment: options.environment,
+    ...(options.environment !== undefined ? { environment: options.environment } : {}),
     executed,
     source: effectiveSource,
     status,

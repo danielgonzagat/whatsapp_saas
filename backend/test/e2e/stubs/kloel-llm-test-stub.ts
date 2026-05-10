@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import type { ChatCompletionChunk, ChatCompletionMessageParam } from 'openai/resources/chat';
-import { KloelLLME2EGuard } from '../../src/kloel/kloel-llm-e2e-guard';
+import { KloelLLME2EGuard } from 'src/kloel/kloel-llm-e2e-guard';
 
 const LINKED_PRODUCT_HEADER = 'PRODUTO VINCULADO AO PROMPT:';
 
@@ -122,7 +122,9 @@ export function buildKloelLlmTestStubStream(
           if (index >= chunks.length) {
             return Promise.resolve({ done: true } as IteratorResult<ChatCompletionChunk>);
           }
-          const value = buildChunk(chunks[index]);
+          const chunk = chunks[index];
+          if (!chunk) return Promise.resolve({ done: true } as IteratorResult<ChatCompletionChunk>);
+          const value = buildChunk(chunk);
           index += 1;
           return Promise.resolve({ value, done: false });
         },
