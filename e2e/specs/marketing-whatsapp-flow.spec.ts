@@ -220,6 +220,38 @@ async function installMarketingWhatsAppFlowMocks(page: Page) {
     });
   });
 
+  await page.route('**/channel-setup/whatsapp', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        arsenal: [],
+        channel: 'whatsapp',
+        completed: false,
+        config: null,
+        products: productsPayload.products,
+        selectedProductIds: [],
+        setup: null,
+      }),
+    });
+  });
+
+  await page.route('**/channel-setup/whatsapp/products', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        arsenal: [],
+        channel: 'whatsapp',
+        completed: false,
+        config: null,
+        products: productsPayload.products,
+        selectedProductIds: ['prod-1'],
+        setup: { currentStep: 1 },
+      }),
+    });
+  });
+
   await page.route('**/products*', async (route) => {
     await route.fulfill({
       status: 200,
@@ -305,6 +337,14 @@ async function installMarketingWhatsAppFlowMocks(page: Page) {
 
 test.describe('Marketing WhatsApp flow', () => {
   test.beforeEach(async ({ page }) => {
+    page.on('pageerror', (err) => {
+      console.error('[E2E][pageerror]', err.message);
+    });
+    page.on('console', (msg) => {
+      if (msg.type() === 'error') {
+        console.error('[E2E][console.error]', msg.text());
+      }
+    });
     await seedE2EAuthSession(page, {
       token: TEST_TOKEN,
       workspaceId: TEST_WORKSPACE_ID,
@@ -326,12 +366,13 @@ test.describe('Marketing WhatsApp flow', () => {
     await expect(page.getByText('Passo 2 de 4')).toBeVisible({ timeout: 15_000 });
     await expect(page.getByText('Conta necessaria')).toBeVisible();
 
-    await page.getByRole('button', { name: 'Proximo' }).click();
+    await page.getByLabel('Produto Teste').check();
+    await page.getByRole('button', { name: 'Salvar e avancar' }).click();
     await expect(page.getByText('Passo 3 de 4')).toBeVisible();
-    await expect(page.getByText('Templates de mensagem', { exact: true })).toBeVisible();
+    await expect(page.getByText('Arsenal do canal', { exact: true })).toBeVisible();
 
     await page.getByRole('button', { name: 'Proximo' }).click();
     await expect(page.getByText('Passo 4 de 4')).toBeVisible();
-    await expect(page.getByText('Meta OAuth')).toBeVisible();
+    await expect(page.getByText('Tom de voz')).toBeVisible();
   });
 });
