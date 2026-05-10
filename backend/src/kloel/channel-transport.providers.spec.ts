@@ -1,5 +1,6 @@
 import { EmailChannelTransport, TikTokChannelTransport } from './channel-transport.providers';
 import type { ChannelName, ChannelTransportProvider } from './channel-transport.types';
+import { encryptString, generateEncryptionKey } from '../lib/crypto';
 
 describe('TikTokChannelTransport', () => {
   it('is never configured for outbound', () => {
@@ -33,28 +34,27 @@ describe('EmailChannelTransport', () => {
   beforeEach(() => {
     delete process.env.RESEND_API_KEY;
     delete process.env.SENDGRID_API_KEY;
+    delete process.env.SMTP_HOST;
+    delete process.env.SMTP_USER;
+    delete process.env.SMTP_PASS;
+    delete process.env.ENCRYPTION_KEY;
     delete process.env.EMAIL_OUTBOUND_SMTP_HOST;
     delete process.env.EMAIL_OUTBOUND_SMTP_USER;
+    delete process.env.EMAIL_OUTBOUND_SMTP_PASS;
   });
 
   afterEach(() => {
     Object.assign(process.env, originalEnv);
   });
 
-  it('is not configured without email provider env vars', () => {
+  it('is not configured without EmailCampaignService', () => {
     const transport = new EmailChannelTransport();
     expect(transport.isConfigured()).toBe(false);
   });
 
-  it('is configured when RESEND_API_KEY is set', () => {
-    process.env.RESEND_API_KEY = 're_test';
-    const transport = new EmailChannelTransport();
-    expect(transport.isConfigured()).toBe(true);
-  });
-
-  it('is configured when SENDGRID_API_KEY is set', () => {
-    process.env.SENDGRID_API_KEY = 'sg_test';
-    const transport = new EmailChannelTransport();
+  it('is configured when EmailCampaignService is injected', () => {
+    const mockCampaign = { sendSingleEmail: jest.fn() };
+    const transport = new EmailChannelTransport(mockCampaign as never);
     expect(transport.isConfigured()).toBe(true);
   });
 
@@ -73,13 +73,13 @@ describe('EmailChannelTransport', () => {
     expect(cap.sendBlockedReason).toBeNull();
   });
 
-  it('reports blocked capability when only SMTP is configured', async () => {
+  it('reports available capability when SMTP is configured', async () => {
     process.env.EMAIL_OUTBOUND_SMTP_HOST = 'smtp.example.com';
     process.env.EMAIL_OUTBOUND_SMTP_USER = 'user';
     const transport = new EmailChannelTransport();
     const cap = await transport.capability('ws-1');
-    expect(cap.sendAvailable).toBe(false);
-    expect(cap.sendBlockedReason).toContain('SMTP');
+    expect(cap.sendAvailable).toBe(true);
+    expect(cap.sendBlockedReason).toBeNull();
   });
 
   it('returns blocked result when EmailCampaignService is not injected', async () => {
@@ -126,6 +126,77 @@ describe('EmailChannelTransport', () => {
       'user@example.com',
       'Assunto da mensagem',
       '<p>Corpo do email.</p>',
+      undefined,
+    );
+  });
+
+  it('dispatches via global SMTP provider', async () => {
+    process.env.EMAIL_OUTBOUND_SMTP_HOST = 'smtp.example.com';
+    process.env.EMAIL_OUTBOUND_SMTP_USER = 'user';
+    process.env.EMAIL_OUTBOUND_SMTP_PASS = 'pass';
+    const mockCampaign = { sendSingleEmail: jest.fn().mockResolvedValue(true) };
+    const transport = new EmailChannelTransport(mockCampaign as never);
+    const result = await transport.send('ws-1', {
+      workspaceId: 'ws-1',
+      channel: 'email',
+      recipientId: 'user@example.com',
+      content: 'Assunto da mensagem\nCorpo do email.',
+    });
+    expect(result.success).toBe(true);
+    expect(result.blocked).toBe(false);
+    expect(mockCampaign.sendSingleEmail).toHaveBeenCalledWith(
+      'user@example.com',
+      'Assunto da mensagem',
+      '<p>Corpo do email.</p>',
+      undefined,
+    );
+  });
+
+  it('uses encrypted per-workspace Resend delivery when available', async () => {
+    process.env.ENCRYPTION_KEY = generateEncryptionKey();
+    const apiKeyEncrypted = encryptString('re_workspace', process.env.ENCRYPTION_KEY);
+    const prisma = {
+      channelConfig: {
+        findUnique: jest.fn().mockResolvedValue({
+          transferCriteria: {
+            emailDelivery: {
+              provider: 'resend',
+              fromEmail: 'vendas@example.com',
+              fromName: 'Vendas Example',
+              apiKeyEncrypted,
+            },
+          },
+        }),
+      },
+    };
+    const mockCampaign = { sendSingleEmail: jest.fn().mockResolvedValue(true) };
+    const transport = new EmailChannelTransport(mockCampaign as never, prisma as never);
+
+    const cap = await transport.capability('ws-1');
+    expect(cap.sendAvailable).toBe(true);
+
+    const result = await transport.send('ws-1', {
+      workspaceId: 'ws-1',
+      channel: 'email',
+      recipientId: 'lead@example.com',
+      content: 'Assunto\nCorpo.',
+    });
+
+    expect(result.success).toBe(true);
+    expect(prisma.channelConfig.findUnique).toHaveBeenCalledWith({
+      where: { workspaceId_channel: { workspaceId: 'ws-1', channel: 'email' } },
+      select: { transferCriteria: true },
+    });
+    expect(mockCampaign.sendSingleEmail).toHaveBeenCalledWith(
+      'lead@example.com',
+      'Assunto',
+      '<p>Corpo.</p>',
+      expect.objectContaining({
+        provider: 'resend',
+        fromEmail: 'vendas@example.com',
+        fromName: 'Vendas Example',
+        resendApiKey: 're_workspace',
+      }),
     );
   });
 

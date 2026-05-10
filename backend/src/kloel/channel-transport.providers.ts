@@ -2,7 +2,10 @@ import { Injectable, Logger, Optional } from '@nestjs/common';
 import { InstagramService } from '../meta/instagram/instagram.service';
 import { MetaWhatsAppService } from '../meta/meta-whatsapp.service';
 import { MessengerService } from '../meta/messenger/messenger.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { EmailCampaignService } from './email-campaign.service';
+import type { EmailDeliveryOverride } from './email-smtp-delivery';
+import { isWorkspaceDeliveryReady, readWorkspaceEmailDelivery } from './email-workspace-delivery';
 import { renderEmailLine } from './email-html';
 import type {
   ChannelCapability,
@@ -218,7 +221,10 @@ export class TikTokChannelTransport implements ChannelTransportProvider {
 function hasEmailProvider(): 'resend' | 'sendgrid' | 'smtp' | null {
   if (process.env.RESEND_API_KEY?.trim()) return 'resend';
   if (process.env.SENDGRID_API_KEY?.trim()) return 'sendgrid';
-  if (process.env.EMAIL_OUTBOUND_SMTP_HOST?.trim() && process.env.EMAIL_OUTBOUND_SMTP_USER?.trim())
+  if (
+    (process.env.EMAIL_OUTBOUND_SMTP_HOST?.trim() || process.env.SMTP_HOST?.trim()) &&
+    (process.env.EMAIL_OUTBOUND_SMTP_USER?.trim() || process.env.SMTP_USER?.trim())
+  )
     return 'smtp';
   return null;
 }
@@ -228,25 +234,24 @@ export class EmailChannelTransport implements ChannelTransportProvider {
   readonly channel: ChannelName = 'email';
   private readonly logger = new Logger(EmailChannelTransport.name);
 
-  constructor(@Optional() private readonly emailCampaign?: EmailCampaignService) {}
+  constructor(
+    @Optional() private readonly emailCampaign?: EmailCampaignService,
+    @Optional() private readonly prisma?: PrismaService,
+  ) {}
 
   isConfigured(): boolean {
-    return hasEmailProvider() !== null;
+    return Boolean(this.emailCampaign);
   }
 
-  capability(_workspaceId: string): Promise<ChannelCapability> {
-    const provider = hasEmailProvider();
-    if (provider === 'resend' || provider === 'sendgrid') {
-      return Promise.resolve(availableCapability('email'));
+  async capability(workspaceId: string): Promise<ChannelCapability> {
+    const workspaceDelivery = await this.resolveWorkspaceDelivery(workspaceId);
+    if (isWorkspaceDeliveryReady(workspaceDelivery)) {
+      return availableCapability('email');
     }
-    if (provider === 'smtp') {
-      return Promise.resolve(
-        blockedCapability(
-          'email',
-          'SMTP outbound transport ainda nao implementado no canal unificado. Configure RESEND_API_KEY ou SENDGRID_API_KEY para envio imediato.',
-          ['RESEND_API_KEY', 'SENDGRID_API_KEY'],
-        ),
-      );
+
+    const provider = hasEmailProvider();
+    if (provider === 'resend' || provider === 'sendgrid' || provider === 'smtp') {
+      return Promise.resolve(availableCapability('email'));
     }
     return Promise.resolve(
       blockedCapability(
@@ -270,22 +275,22 @@ export class EmailChannelTransport implements ChannelTransportProvider {
     }
 
     const provider = hasEmailProvider();
-    if (!provider) {
+    const workspaceDelivery = await this.resolveWorkspaceDelivery(workspaceId);
+    if (!provider && !isWorkspaceDeliveryReady(workspaceDelivery)) {
       return blockedResult(
         'Email outbound nao configurado. Configure RESEND_API_KEY, SENDGRID_API_KEY ou credenciais SMTP.',
-      );
-    }
-
-    if (provider === 'smtp') {
-      return blockedResult(
-        'SMTP outbound ainda nao implementado. Configure RESEND_API_KEY ou SENDGRID_API_KEY para envio imediato.',
       );
     }
 
     try {
       const { subject, html } = this.adaptContent(request.content);
 
-      const success = await this.emailCampaign.sendSingleEmail(request.recipientId, subject, html);
+      const success = await this.emailCampaign.sendSingleEmail(
+        request.recipientId,
+        subject,
+        html,
+        workspaceDelivery ?? undefined,
+      );
 
       if (!success) {
         this.logger.warn(
@@ -304,6 +309,19 @@ export class EmailChannelTransport implements ChannelTransportProvider {
       this.logger.error(`Email send erro workspace=${workspaceId}: ${message}`);
       return { success: false, blocked: false, error: message };
     }
+  }
+
+  private async resolveWorkspaceDelivery(
+    workspaceId: string,
+  ): Promise<EmailDeliveryOverride | null> {
+    if (!this.prisma) {
+      return null;
+    }
+    const config = await this.prisma.channelConfig.findUnique({
+      where: { workspaceId_channel: { workspaceId, channel: 'email' } },
+      select: { transferCriteria: true },
+    });
+    return readWorkspaceEmailDelivery(config?.transferCriteria);
   }
 
   private adaptContent(content: string): { subject: string; html: string } {
