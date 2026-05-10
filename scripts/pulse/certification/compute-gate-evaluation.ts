@@ -52,7 +52,7 @@ export function evaluateNoOverclaimPassForCurrentRun(
     advisoryOnly: !currentProofAllowsProduction,
     autonomyProof: {
       cycleProof: currentCycleProof,
-      proofReadiness: proofReadinessSummary,
+      ...(proofReadinessSummary !== undefined ? { proofReadiness: proofReadinessSummary } : {}),
     },
     autonomyReadiness: {
       canDeclareComplete: false,

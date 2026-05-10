@@ -6,7 +6,9 @@ import type {
   PulseGateName,
   PulseManifest,
 } from '../types.manifest';
-import type {
+import type { ComputeCertificationInput } from './helpers';
+
+import {
   _phantomLabel,
   _checkerGapLabel,
   _missingEvidenceLabel,
@@ -16,7 +18,6 @@ import type {
   _gateFailLabel,
   _readyLabel,
   _notReadyLabel,
-  type ComputeCertificationInput,
   loadPathCoverageGateState,
   loadProofReadinessSummary,
 } from './helpers';

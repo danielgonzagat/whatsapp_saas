@@ -164,7 +164,7 @@ export function parameterName(parameter: ts.ParameterDeclaration): string {
 }
 
 export function enumMemberName(member: ts.EnumMember): string {
-  if (ts.isStringLiteral(member.initializer)) {
+  if (member.initializer && ts.isStringLiteral(member.initializer)) {
     return member.initializer.text;
   }
   return ts.isIdentifier(member.name) || ts.isStringLiteral(member.name)

@@ -2,11 +2,20 @@
 
 import { kloelT } from '@/lib/i18n/t';
 import { colors } from '@/lib/design-tokens';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 const sora = "var(--font-sora), 'Sora', sans-serif";
 const mono = "var(--font-jetbrains), 'JetBrains Mono', monospace";
+
+type GdprStatusResponse = {
+  code?: string;
+  type?: string;
+  status?: string;
+  requestedAt?: string;
+  completedAt?: string | null;
+  message?: string;
+};
 
 type DeletionStatusResponse = {
   provider?: string;
@@ -19,11 +28,13 @@ type DeletionStatusResponse = {
 /** Data deletion status page. */
 export default function DataDeletionStatusPage() {
   const params = useParams<{ code: string }>();
+  const searchParams = useSearchParams();
   const code = String(params?.code || '').trim();
+  const token = searchParams.get('token') || '';
   const [state, setState] = useState<{
     loading: boolean;
     error: string;
-    data: DeletionStatusResponse | null;
+    data: GdprStatusResponse | DeletionStatusResponse | null;
   }>({
     loading: true,
     error: '',
@@ -33,34 +44,48 @@ export default function DataDeletionStatusPage() {
   useEffect(() => {
     let cancelled = false;
 
-    const run = async () => {
+    const fetchStatuses = async () => {
       if (!code) {
         setState({ loading: false, error: 'Código de confirmação inválido.', data: null });
         return;
       }
 
       try {
-        const response = await fetch(
-          `/api/compliance/deletion-status/${encodeURIComponent(code)}`,
-          {
+        const [gdprRes, complianceRes] = await Promise.all([
+          fetch(`/api/gdpr/status/${encodeURIComponent(code)}`, {
             cache: 'no-store',
-          },
-        );
-        const data = (await response.json().catch(() => ({}))) as DeletionStatusResponse;
+          }),
+          fetch(`/api/compliance/deletion-status/${encodeURIComponent(code)}`, {
+            cache: 'no-store',
+          }),
+        ]);
+
         if (cancelled) {
           return;
         }
 
-        if (!response.ok) {
-          setState({
-            loading: false,
-            error: data.message || 'Não foi possível consultar o status da solicitação.',
-            data: null,
-          });
+        const gdprData = (await gdprRes.json().catch(() => ({}))) as GdprStatusResponse;
+        const complianceData = (await complianceRes.json().catch(() => ({}))) as DeletionStatusResponse;
+
+        if (gdprRes.ok && gdprData.status) {
+          setState({ loading: false, error: '', data: gdprData });
           return;
         }
 
-        setState({ loading: false, error: '', data });
+        if (complianceRes.ok && complianceData.status) {
+          setState({ loading: false, error: '', data: complianceData });
+          return;
+        }
+
+        const errorMsg = (gdprData as { message?: string }).message ||
+          (complianceData as { message?: string }).message ||
+          'Não foi possível consultar o status da solicitação.';
+
+        setState({
+          loading: false,
+          error: errorMsg,
+          data: null,
+        });
       } catch {
         if (!cancelled) {
           setState({
@@ -72,7 +97,7 @@ export default function DataDeletionStatusPage() {
       }
     };
 
-    void run();
+    void fetchStatuses();
     return () => {
       cancelled = true;
     };
@@ -155,8 +180,11 @@ export default function DataDeletionStatusPage() {
               gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
             }}
           >
-            <StatusCard label={kloelT(`Código`)} value={code} />
-            <StatusCard label={kloelT(`Origem`)} value={translateProvider(state.data.provider)} />
+            <StatusCard label={kloelT(`Código`)} value={'code' in state.data && state.data.code ? state.data.code : code} />
+            <StatusCard
+              label={kloelT(`Tipo`)}
+              value={'type' in state.data ? translateGdprType(state.data.type) : translateProvider((state.data as DeletionStatusResponse).provider)}
+            />
             <StatusCard
               label={kloelT(`Solicitado em`)}
               value={formatDate(state.data.requestedAt)}

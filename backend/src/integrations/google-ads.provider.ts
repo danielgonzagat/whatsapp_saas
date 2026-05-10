@@ -1,7 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { GoogleAdsApi, type Customer, enums } from 'google-ads-api';
-import type { services } from 'google-ads-api';
+import { GoogleAdsApi, enums } from 'google-ads-api';
 import { PrismaService } from '../prisma/prisma.service';
 import type {
   AdProvider,
@@ -103,7 +102,7 @@ export class GoogleAdsProvider implements AdProvider {
     workspaceId: string,
     customerId: string,
     loginCustomerId?: string | null,
-  ): Promise<Customer> {
+  ) {
     const { refreshToken } = await this.getTokens(workspaceId);
     return client.Customer({
       customer_id: customerId,
@@ -237,11 +236,11 @@ export class GoogleAdsProvider implements AdProvider {
         const customer = await this.buildCustomer(client, workspaceId, customerId, loginCustomerId);
         const rows = await customer.query(`SELECT customer_client.descriptive_name FROM customer_client WHERE customer_client.id = '${customerId}'`);
         const data = Array.isArray(rows) ? rows[0] : undefined;
-        const accountName = (data as Record<string, unknown> | undefined)?.customer_client as { descriptive_name?: string } | undefined;
+        const cdata = (data as Record<string, unknown> | undefined)?.customer_client as { descriptive_name?: string } | undefined;
         accounts.push({
           platform: PLATFORM,
           accountId: customerId,
-          accountName: accountName?.descriptive_name || `Google Ads Account ${customerId}`,
+          accountName: cdata?.descriptive_name || `Google Ads Account ${customerId}`,
         });
       } catch (err) {
         this.logger.error(`Failed to fetch account details for ${customerId}`, err);
@@ -282,7 +281,6 @@ export class GoogleAdsProvider implements AdProvider {
       return { campaigns: [] };
     }
 
-    const { refreshToken } = await this.getTokens(workspaceId);
     const client = this.buildClientParams();
 
     const workspace = await this.prisma.workspace.findUnique({
@@ -290,7 +288,8 @@ export class GoogleAdsProvider implements AdProvider {
       select: { providerSettings: true },
     });
     const google = readGoogleSubsettings(workspace?.providerSettings);
-    const loginCustomerId = google.loginCustomerId || (dbAccounts.length > 1 ? dbAccounts[0].accountId : null);
+    const loginCustomerId: string | null | undefined =
+      google.loginCustomerId || (dbAccounts.length > 1 ? dbAccounts[0]?.accountId : null);
 
     const campaigns: SyncCampaignsResult['campaigns'] = [];
 
@@ -303,6 +302,8 @@ export class GoogleAdsProvider implements AdProvider {
             'campaign.id',
             'campaign.name',
             'campaign.status',
+          ],
+          metrics: [
             'metrics.cost_micros',
             'metrics.impressions',
             'metrics.clicks',
@@ -366,7 +367,6 @@ export class GoogleAdsProvider implements AdProvider {
       return { insights: [] };
     }
 
-    const { refreshToken } = await this.getTokens(workspaceId);
     const client = this.buildClientParams();
 
     const workspace = await this.prisma.workspace.findUnique({
@@ -374,7 +374,8 @@ export class GoogleAdsProvider implements AdProvider {
       select: { providerSettings: true },
     });
     const google = readGoogleSubsettings(workspace?.providerSettings);
-    const loginCustomerId = google.loginCustomerId || (dbAccounts.length > 1 ? dbAccounts[0].accountId : null);
+    const loginCustomerId: string | null | undefined =
+      google.loginCustomerId || (dbAccounts.length > 1 ? dbAccounts[0]?.accountId : null);
 
     const fromDate = since.toISOString().slice(0, 10);
     const toDate = until.toISOString().slice(0, 10);
@@ -388,6 +389,8 @@ export class GoogleAdsProvider implements AdProvider {
           attributes: [
             'campaign.id',
             'campaign.name',
+          ],
+          metrics: [
             'metrics.cost_micros',
             'metrics.impressions',
             'metrics.clicks',

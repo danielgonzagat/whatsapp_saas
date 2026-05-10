@@ -43,7 +43,7 @@ export function buildPathFromChain(args: {
   capabilities: PulseCapability[];
   flows: PulseFlowProjectionItem[];
   executionEvidence: PulseExecutionEvidence;
-  externalSignalState?: PulseExternalSignalState;
+  externalSignalState?: PulseExternalSignalState | undefined;
 }): PulseExecutionMatrixPath {
   const chainSteps = collectChainSteps(args.chain);
   const chainNodeIds = chainSteps.map((step) => step.nodeId);
@@ -127,7 +127,7 @@ export function buildSyntheticPath(args: {
   capability: PulseCapability | null;
   flow: PulseFlowProjectionItem | null;
   executionEvidence: PulseExecutionEvidence;
-  externalSignalState?: PulseExternalSignalState;
+  externalSignalState?: PulseExternalSignalState | undefined;
 }): PulseExecutionMatrixPath {
   const routePatterns = unique([
     ...(args.capability?.routePatterns ?? []),
@@ -235,7 +235,7 @@ export function buildPathFromStructuralNode(args: {
   node: PulseStructuralNode;
   index: number;
   executionEvidence: PulseExecutionEvidence;
-  externalSignalState?: PulseExternalSignalState;
+  externalSignalState?: PulseExternalSignalState | undefined;
 }): PulseExecutionMatrixPath {
   const routePatterns = routePatternsFromNode(args.node);
   const observedEvidence = collectObservedEvidence({

@@ -360,7 +360,9 @@ export function buildProductVision(input: BuildProductVisionInput): PulseProduct
     inferredProductIdentity,
     distanceSummary: `Distance to projected readiness is driven by ${productFacingWeakUnits} product-facing phantom capability(ies), ${systemWeakUnits} system-wide phantom capability(ies), ${input.flowProjection.summary.phantomFlows} phantom flow(s), ${input.parityGaps.summary.totalGaps} structural parity gap(s), and ${input.codacyEvidence.summary.highIssues} HIGH Codacy issue(s).`,
     promiseToProductionDelta,
-    externalSignalSummary: input.externalSignalState?.summary,
+    ...(input.externalSignalState?.summary !== undefined
+      ? { externalSignalSummary: input.externalSignalState.summary }
+      : {}),
     surfaces,
     experiences,
     topBlockers: leadingBlockers,

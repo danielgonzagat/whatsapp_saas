@@ -1,7 +1,6 @@
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AdminAuditService } from '../audit/admin-audit.service';
-import { OpsAlertService } from '../../observability/ops-alert.service';
 import { adminErrors } from '../common/admin-api-errors';
 
 const MAX_PAGE_SIZE = 50;
@@ -10,19 +9,19 @@ const DEFAULT_PAGE_SIZE = 20;
 export interface CreateSessionInput {
   adminUserId: string;
   workspaceId: string;
-  title?: string;
+  title: string | undefined;
 }
 
 export interface ListSessionsInput {
   workspaceId: string;
-  cursor?: string;
-  take?: number;
+  cursor: string | undefined;
+  take: number | undefined;
 }
 
 export interface UpdateSessionInput {
   id: string;
   workspaceId: string;
-  title?: string;
+  title: string | undefined;
 }
 
 export interface DeleteSessionInput {
@@ -33,12 +32,10 @@ export interface DeleteSessionInput {
 
 @Injectable()
 export class AdminChatSessionService {
-  private readonly logger = new Logger(AdminChatSessionService.name);
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AdminAuditService,
-    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   async createSession(input: CreateSessionInput) {
@@ -90,7 +87,8 @@ export class AdminChatSessionService {
     const hasMore = sessions.length > take;
     const items = hasMore ? sessions.slice(0, take) : sessions;
 
-    const nextCursor = items.length > 0 ? items[items.length - 1].lastUsedAt.toISOString() : null;
+    const lastItem = items.length > 0 ? items[items.length - 1] : null;
+    const nextCursor = lastItem ? lastItem.lastUsedAt.toISOString() : null;
 
     return {
       items,

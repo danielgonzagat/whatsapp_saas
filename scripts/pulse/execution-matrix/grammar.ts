@@ -39,7 +39,7 @@ export interface BuildExecutionMatrixInput {
   capabilityState: PulseCapabilityState;
   flowProjection: PulseFlowProjection;
   executionEvidence: PulseExecutionEvidence;
-  externalSignalState?: PulseExternalSignalState;
+  externalSignalState?: PulseExternalSignalState | undefined;
 }
 
 type MatrixEvidence = PulseExecutionMatrixObservedEvidence;
@@ -267,7 +267,7 @@ export function collectObservedEvidence(args: {
   flow: PulseFlowProjectionItem | null;
   routePatterns: string[];
   executionEvidence: PulseExecutionEvidence;
-  externalSignalState?: PulseExternalSignalState;
+  externalSignalState?: PulseExternalSignalState | undefined;
 }): MatrixEvidence[] {
   const evidence: MatrixEvidence[] = [];
   const capabilityId = args.capability?.id ?? null;

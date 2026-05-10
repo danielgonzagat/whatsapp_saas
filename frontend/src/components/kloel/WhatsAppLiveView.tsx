@@ -4,9 +4,8 @@ import { kloelT } from '@/lib/i18n/t';
 import { cn } from '@/lib/utils';
 import type { Message as InboxMessage } from '@/lib/api';
 import type { AgentActivity } from './AgentConsole';
-import { formatClock } from './WhatsAppConsole.helpers';
+import { formatClock, getActivityTone } from './WhatsAppConsole.helpers';
 import type { ChatPreview } from './WhatsAppConsole.helpers';
-import { getActivityTone } from './WhatsAppConsole';
 
 interface WhatsAppLiveViewProps {
   selectedChat: ChatPreview | null;

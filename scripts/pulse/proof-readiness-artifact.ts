@@ -109,7 +109,7 @@ export function pathProofEntryToReadinessEvidence(
     evidenceMode: pathProofReadinessMode(entry),
     executed,
     attempts: executed ? 1 : 0,
-    exitCode: entry.result?.exitCode,
+    ...(typeof entry.result?.exitCode === 'number' ? { exitCode: entry.result.exitCode } : {}),
     startedAt: entry.result?.startedAt ?? null,
     finishedAt: entry.result?.finishedAt ?? null,
     artifactPaths: pathProofReadinessArtifactPaths(entry),
