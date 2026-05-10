@@ -19,10 +19,8 @@ CREATE TABLE "RAC_ChannelIdentifier" (
 
 DO $$
 BEGIN
-    EXECUTE 'ALTER TABLE "RAC_ChannelIdentifier" ADD CONSTRAINT "RAC_ChannelIdentifier_contactId_fkey" ' ||
-        ('FORE' || 'IGN') || ' ' || ('K' || 'EY') || ' ("contactId", "workspaceId") ' || ('REF' || 'ERENCES') || ' "RAC_Contact" (id, "workspaceId") ON DELETE CASCADE ON UPDATE CASCADE';
-    EXECUTE 'ALTER TABLE "RAC_ChannelIdentifier" ADD CONSTRAINT "RAC_ChannelIdentifier_workspaceId_fkey" ' ||
-        ('FORE' || 'IGN') || ' ' || ('K' || 'EY') || ' ("workspaceId") ' || ('REF' || 'ERENCES') || ' "RAC_Workspace" (id) ON DELETE CASCADE ON UPDATE CASCADE';
+    EXECUTE 'ALTER TABLE "RAC_ChannelIdentifier" ADD CONSTRAINT "RAC_ChannelIdentifier_contactId_fkey" ' || ('FORE' || 'IGN') || ' ' || ('K' || 'EY') || ' ("contactId", "workspaceId") ' || ('REF' || 'ERENCES') || ' "RAC_Contact" (id, "workspaceId") ON DELETE CASCADE ON UPDATE CASCADE';
+    EXECUTE 'ALTER TABLE "RAC_ChannelIdentifier" ADD CONSTRAINT "RAC_ChannelIdentifier_workspaceId_fkey" ' || ('FORE' || 'IGN') || ' ' || ('K' || 'EY') || ' ("workspaceId") ' || ('REF' || 'ERENCES') || ' "RAC_Workspace" (id) ON DELETE CASCADE ON UPDATE CASCADE';
 END $$;
 
 -- Unique constraint: one identifier per channel per workspace

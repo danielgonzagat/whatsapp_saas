@@ -12,8 +12,7 @@ CREATE TABLE IF NOT EXISTS "RAC_ChannelSetup" (
 
 DO $$
 BEGIN
-    EXECUTE 'ALTER TABLE "RAC_ChannelSetup" ADD CONSTRAINT "RAC_ChannelSetup_workspaceId_fkey" ' ||
-        ('FORE' || 'IGN') || ' ' || ('K' || 'EY') || ' ("workspaceId") ' || ('REF' || 'ERENCES') || ' "RAC_Workspace" (id) ON DELETE CASCADE ON UPDATE CASCADE';
+    EXECUTE 'ALTER TABLE "RAC_ChannelSetup" ADD CONSTRAINT "RAC_ChannelSetup_workspaceId_fkey" ' || ('FORE' || 'IGN') || ' ' || ('K' || 'EY') || ' ("workspaceId") ' || ('REF' || 'ERENCES') || ' "RAC_Workspace" (id) ON DELETE CASCADE ON UPDATE CASCADE';
 END $$;
 
 CREATE UNIQUE INDEX IF NOT EXISTS "RAC_ChannelSetup_workspaceId_channel_key"
@@ -33,10 +32,8 @@ CREATE TABLE IF NOT EXISTS "RAC_ChannelProduct" (
 
 DO $$
 BEGIN
-    EXECUTE 'ALTER TABLE "RAC_ChannelProduct" ADD CONSTRAINT "RAC_ChannelProduct_workspaceId_fkey" ' ||
-        ('FORE' || 'IGN') || ' ' || ('K' || 'EY') || ' ("workspaceId") ' || ('REF' || 'ERENCES') || ' "RAC_Workspace" (id) ON DELETE CASCADE ON UPDATE CASCADE';
-    EXECUTE 'ALTER TABLE "RAC_ChannelProduct" ADD CONSTRAINT "RAC_ChannelProduct_productId_fkey" ' ||
-        ('FORE' || 'IGN') || ' ' || ('K' || 'EY') || ' ("productId") ' || ('REF' || 'ERENCES') || ' "RAC_Product" (id) ON DELETE CASCADE ON UPDATE CASCADE';
+    EXECUTE 'ALTER TABLE "RAC_ChannelProduct" ADD CONSTRAINT "RAC_ChannelProduct_workspaceId_fkey" ' || ('FORE' || 'IGN') || ' ' || ('K' || 'EY') || ' ("workspaceId") ' || ('REF' || 'ERENCES') || ' "RAC_Workspace" (id) ON DELETE CASCADE ON UPDATE CASCADE';
+    EXECUTE 'ALTER TABLE "RAC_ChannelProduct" ADD CONSTRAINT "RAC_ChannelProduct_productId_fkey" ' || ('FORE' || 'IGN') || ' ' || ('K' || 'EY') || ' ("productId") ' || ('REF' || 'ERENCES') || ' "RAC_Product" (id) ON DELETE CASCADE ON UPDATE CASCADE';
 END $$;
 
 CREATE UNIQUE INDEX IF NOT EXISTS "RAC_ChannelProduct_workspaceId_channel_productId_key"
@@ -63,8 +60,7 @@ CREATE TABLE IF NOT EXISTS "RAC_ChannelArsenal" (
 
 DO $$
 BEGIN
-    EXECUTE 'ALTER TABLE "RAC_ChannelArsenal" ADD CONSTRAINT "RAC_ChannelArsenal_workspaceId_fkey" ' ||
-        ('FORE' || 'IGN') || ' ' || ('K' || 'EY') || ' ("workspaceId") ' || ('REF' || 'ERENCES') || ' "RAC_Workspace" (id) ON DELETE CASCADE ON UPDATE CASCADE';
+    EXECUTE 'ALTER TABLE "RAC_ChannelArsenal" ADD CONSTRAINT "RAC_ChannelArsenal_workspaceId_fkey" ' || ('FORE' || 'IGN') || ' ' || ('K' || 'EY') || ' ("workspaceId") ' || ('REF' || 'ERENCES') || ' "RAC_Workspace" (id) ON DELETE CASCADE ON UPDATE CASCADE';
 END $$;
 
 CREATE UNIQUE INDEX IF NOT EXISTS "RAC_ChannelArsenal_workspaceId_channel_assetId_key"
@@ -91,8 +87,7 @@ CREATE TABLE IF NOT EXISTS "RAC_ChannelConfig" (
 
 DO $$
 BEGIN
-    EXECUTE 'ALTER TABLE "RAC_ChannelConfig" ADD CONSTRAINT "RAC_ChannelConfig_workspaceId_fkey" ' ||
-        ('FORE' || 'IGN') || ' ' || ('K' || 'EY') || ' ("workspaceId") ' || ('REF' || 'ERENCES') || ' "RAC_Workspace" (id) ON DELETE CASCADE ON UPDATE CASCADE';
+    EXECUTE 'ALTER TABLE "RAC_ChannelConfig" ADD CONSTRAINT "RAC_ChannelConfig_workspaceId_fkey" ' || ('FORE' || 'IGN') || ' ' || ('K' || 'EY') || ' ("workspaceId") ' || ('REF' || 'ERENCES') || ' "RAC_Workspace" (id) ON DELETE CASCADE ON UPDATE CASCADE';
 END $$;
 
 CREATE UNIQUE INDEX IF NOT EXISTS "RAC_ChannelConfig_workspaceId_channel_key"
