@@ -12,7 +12,7 @@ function isJsonRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function readFunctionName(value: unknown): string {
-  return typeof value === 'function' && value.name ? value.name : 'function';
+  return (value as { name?: string }).name || 'function';
 }
 
 function readSymbolDescription(value: unknown): string {
