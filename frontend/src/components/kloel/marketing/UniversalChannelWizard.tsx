@@ -160,12 +160,7 @@ export default function UniversalChannelWizard({
         borderRadius: UI.radiusMd,
       }}
     >
-      <style>{`
-        ::selection { background: color-mix(in srgb, ${E} 30%, transparent); }
-        @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
-        .fade-in { animation: fadeUp .5s ease both; }
-        @media (max-width: 760px) { .wiz-profile-grid { grid-template-columns: 1fr; } }
-      `}</style>
+      <style>{WIZARD_GLOBAL_CSS}</style>
       <div style={{ maxWidth: 680, margin: '0 auto', padding: '32px 24px' }}>
         <Steps current={step} steps={WIZARD_STEPS} />
         <div
@@ -255,6 +250,13 @@ export default function UniversalChannelWizard({
     </div>
   );
 }
+
+const WIZARD_GLOBAL_CSS = [
+  '::selection { background: rgba(232, 93, 48, 0.3); }',
+  '@keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }',
+  '.fade-in { animation: fadeUp .5s ease both; }',
+  '@media (max-width: 760px) { .wiz-profile-grid { grid-template-columns: 1fr; } }',
+].join('\n');
 
 const defaultChannelConfig: ChannelSetupConfig = {
   aggressiveness: 'normal',

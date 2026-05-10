@@ -278,42 +278,44 @@ describe('public reduced-motion surfaces', () => {
   });
 });
 
-const CANONICAL_SVG = `<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-  <style>
-    @media (prefers-reduced-motion: no-preference) {
-      .cap-group { animation: cap-breathe 3s ease-in-out infinite; }
-      .circuit-cap { animation: pump-cap 3s ease-in-out infinite; }
-      .node-cap { animation: node-cap-pulse 3s ease-in-out infinite; }
-    }
-    @keyframes cap-breathe {
-      0%   { transform: scaleY(1); }
-      100% { transform: scaleY(1); }
-    }
-    @keyframes pump-cap {
-      0%   { stroke-opacity: 0.35; }
-      100% { stroke-opacity: 0.35; }
-    }
-    @keyframes node-cap-pulse {
-      0%   { r: 2.5; }
-      100% { r: 2.5; }
-    }
-    .spore { opacity: 0; }
-    @media (prefers-reduced-motion: no-preference) {
-      .sp-L1 { animation: sp-L1 3s ease-out infinite 0s; opacity: 1; }
-    }
-    @keyframes sp-L1 {
-      0%,43%{ opacity:0; cx:38; cy:96; }
-      100%{ opacity:0; cx:-10; cy:90; }
-    }
-  </style>
-  <g>
-    <g class="cap-group">
-      <line class="circuit-cap" x1="70" y1="70" x2="90" y2="50" stroke="#FFFFFF"/>
-      <circle class="node-cap" cx="70" cy="70" fill="#FFFFFF"/>
-    </g>
-    <circle class="sp-L1 spore" cx="38" cy="96" r="2.2" fill="#E85D30"/>
-  </g>
-</svg>`;
+const CANONICAL_SVG = [
+  '<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">',
+  '  <style>',
+  '    @media (prefers-reduced-motion: no-preference) {',
+  '      .cap-group { animation: cap-breathe 3s ease-in-out infinite; }',
+  '      .circuit-cap { animation: pump-cap 3s ease-in-out infinite; }',
+  '      .node-cap { animation: node-cap-pulse 3s ease-in-out infinite; }',
+  '    }',
+  '    @keyframes cap-breathe {',
+  '      0%   { transform: scaleY(1); }',
+  '      100% { transform: scaleY(1); }',
+  '    }',
+  '    @keyframes pump-cap {',
+  '      0%   { stroke-opacity: 0.35; }',
+  '      100% { stroke-opacity: 0.35; }',
+  '    }',
+  '    @keyframes node-cap-pulse {',
+  '      0%   { r: 2.5; }',
+  '      100% { r: 2.5; }',
+  '    }',
+  '    .spore { opacity: 0; }',
+  '    @media (prefers-reduced-motion: no-preference) {',
+  '      .sp-L1 { animation: sp-L1 3s ease-out infinite 0s; opacity: 1; }',
+  '    }',
+  '    @keyframes sp-L1 {',
+  '      0%,43%{ opacity:0; cx:38; cy:96; }',
+  '      100%{ opacity:0; cx:-10; cy:90; }',
+  '    }',
+  '  </style>',
+  '  <g>',
+  '    <g class="cap-group">',
+  '      <line class="circuit-cap" x1="70" y1="70" x2="90" y2="50" stroke="#FFFFFF"/>',
+  '      <circle class="node-cap" cx="70" cy="70" fill="#FFFFFF"/>',
+  '    </g>',
+  '    <circle class="sp-L1 spore" cx="38" cy="96" r="2.2" fill="#E85D30"/>',
+  '  </g>',
+  '</svg>',
+].join('\n');
 
 function mockSvgFetch(svg = CANONICAL_SVG) {
   vi.stubGlobal(
