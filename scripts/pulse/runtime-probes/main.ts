@@ -32,16 +32,6 @@ const SOURCES: ReadonlySet<string> = new Set([
   'unknown',
 ]);
 
-const STATUSES: ReadonlySet<string> = new Set([
-  'passed',
-  'failed',
-  'missing_evidence',
-  'skipped',
-  'not_run',
-  'simulated',
-  'stale',
-]);
-
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
@@ -75,22 +65,6 @@ function normalizeSource(value: unknown): PulseRuntimeProbeArtifactSource {
     return candidate as PulseRuntimeProbeArtifactSource;
   }
   return 'unknown';
-}
-
-function __normalizeStatus(value: unknown): PulseRuntimeProbeArtifactStatus | null {
-  const candidate = stringValue(value);
-  if (candidate && STATUSES.has(candidate)) {
-    return candidate as PulseRuntimeProbeArtifactStatus;
-  }
-  return null;
-}
-
-function __parseTimeMs(value: string | null): number | null {
-  if (!value) {
-    return null;
-  }
-  const parsed = Date.parse(value);
-  return Number.isFinite(parsed) ? parsed : null;
 }
 
 function recordMetrics(value: unknown): Record<string, unknown> | undefined {

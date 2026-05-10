@@ -65,7 +65,6 @@ export function classifyDestructiveActions(rootDir: string): DestructiveAction[]
       }
 
       const full = path.join(dir, entry.name);
-      const _relative = path.relative(rootDir, full);
 
       if (entry.isDirectory()) {
         walk(full);

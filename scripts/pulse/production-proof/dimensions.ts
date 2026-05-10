@@ -68,7 +68,7 @@ const _truthModes = [
   ),
 ];
 const _truthObserved = _truthModes[0]! as ProductionProofTruthMode;
-const __truthInferred = _truthModes[1]! as ProductionProofTruthMode;
+export const _truthNotAvailable = _truthModes[2]! as ProductionProofTruthMode;
 
 const _probeStatuses = [...discoverRuntimeProbeStatusLabels()];
 const _probePassed = _probeStatuses[0]!;

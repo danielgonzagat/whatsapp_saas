@@ -24,7 +24,6 @@ import {
   getCapabilitiesForSurface,
   getEndpointsForSurface,
   getEntitiesForSurface,
-  getEntityOperations,
   getFlowsForSurface,
   getHarnessTargetsForSurface,
   getPrimaryEntity,
