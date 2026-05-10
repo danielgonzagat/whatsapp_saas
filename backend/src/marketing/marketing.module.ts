@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { InboxModule } from '../inbox/inbox.module';
+import { EmailCampaignService } from '../kloel/email-campaign.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { WhatsappModule } from '../whatsapp/whatsapp.module';
 import { EmailInboundController } from './email-inbound.controller';
@@ -17,6 +18,6 @@ import { TikTokMarketingService } from './tiktok-marketing.service';
     TikTokMarketingController,
     EmailInboundController,
   ],
-  providers: [TikTokMarketingService],
+  providers: [TikTokMarketingService, EmailCampaignService],
 })
 export class MarketingModule {}
