@@ -635,7 +635,7 @@ export function FloatingChat({
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <KloelMushroomVisual
                   size={18}
-                  traceColor={kloelT(`#FFFFFF`)}
+                  traceColor={colors.text.silver}
                   animated
                   spores="animated"
                 />

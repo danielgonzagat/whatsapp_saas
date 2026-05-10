@@ -1,5 +1,5 @@
-import { pathExists, readDir, readJsonFile } from '../../safe-fs';
-import { safeJoin } from '../../safe-path';
+import { pathExists, readDir, readJsonFile } from '../safe-fs';
+import { safeJoin } from '../safe-path';
 import { ZERO, SKIP_DIR_NAMES } from './types';
 import type { PackageJson } from './types';
 import { normalizeRelative } from './helpers';

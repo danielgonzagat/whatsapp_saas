@@ -1,9 +1,9 @@
-import { readObject, readString, varAsString } from '../flow-engine.helpers';
-import type { ExecutionState, FlowNode } from '../flow-engine.types';
-import { prisma } from '../db';
-import { CRM } from '../providers/crm';
-import { redis } from '../redis-client';
-import { isUrlAllowed, safeRequest, validateUrl } from '../utils/ssrf-protection';
+import { readObject, readString, varAsString } from './flow-engine.helpers';
+import type { ExecutionState, FlowNode } from './flow-engine.types';
+import { prisma } from './db';
+import { CRM } from './providers/crm';
+import { redis } from './redis-client';
+import { isUrlAllowed, safeRequest, validateUrl } from './utils/ssrf-protection';
 import type { FlowNodeExecutorDeps, FlowNodeResult } from './flow-node-executor.types';
 
 const PATTERN_RE = /\{\{(.*?)\}\}/g;

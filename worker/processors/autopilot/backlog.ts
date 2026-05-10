@@ -586,10 +586,10 @@ export async function maybeEscalateToHumanControl(input: {
 
   await logAutopilotAction({
     workspaceId: input.workspaceId,
-    contactId: input.contactId,
-    phone: input.phone,
+    ...(input.contactId !== undefined ? { contactId: input.contactId } : {}),
+    ...(input.phone !== undefined ? { phone: input.phone } : {}),
     action: input.action || 'HUMAN_REVIEW_REQUIRED',
-    intent: input.intent,
+    ...(input.intent !== undefined ? { intent: input.intent } : {}),
     status: 'skipped',
     reason: humanTask?.reason || 'human_validation_required',
     meta: {

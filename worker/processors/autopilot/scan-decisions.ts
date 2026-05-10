@@ -1,6 +1,4 @@
 import { WorkerLogger } from '../../logger';
-import { prisma } from '../../db';
-import { publishAgentEvent } from '../../providers/agent-events';
 import {
   autopilotDecisionCounter,
   autopilotPipelineCounter,
@@ -12,7 +10,6 @@ import {
   processWithUnifiedAgent,
   shouldUseUnifiedAgent,
 } from '../../providers/unified-agent-integrator';
-import { recordDecisionOutcome } from '../cia/cognitive-state';
 import {
   log,
   type UnknownRecord,
@@ -25,9 +22,7 @@ import {
   finishAutonomyExecution,
   decideActionSafe,
   generateAutonomousFallbackResponse,
-  computeCognitiveRewardSignal,
 } from './cognition';
-import { reportSmokeTest } from './shared';
 import { executeAction, sendDirectAutopilotText } from './execution';
 
 const scanLog = new WorkerLogger('autopilot:scan-decisions');

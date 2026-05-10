@@ -16,7 +16,7 @@ export default function RootLoading() {
     >
       <KloelLoadingState
         size={118}
-        traceColor={kloelT(`#FFFFFF`)}
+        traceColor={colors.text.silver}
         label={kloelT(`Kloel`)}
         hint={kloelT(`inicializando a plataforma`)}
         minHeight={320}

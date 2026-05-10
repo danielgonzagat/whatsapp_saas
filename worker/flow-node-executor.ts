@@ -5,11 +5,11 @@ import {
   readOptionalString,
   readString,
   varAsString,
-} from '../flow-engine.helpers';
-import type { ExecutionState, FlowNode } from '../flow-engine.types';
-import { prisma } from '../db';
-import { CRM } from '../providers/crm';
-import { redis } from '../redis-client';
+} from './flow-engine.helpers';
+import type { ExecutionState, FlowNode } from './flow-engine.types';
+import { prisma } from './db';
+import { CRM } from './providers/crm';
+import { redis } from './redis-client';
 
 const PATTERN_RE = /\{\{(.*?)\}\}/g;
 
@@ -270,7 +270,7 @@ export async function executeNode(
       const campaignId = readString(node.data, 'campaignId');
       const action = readString(node.data, 'action');
       if (campaignId) {
-        const { Campaigns } = await import('../providers/campaigns');
+        const { Campaigns } = await import('./providers/campaigns');
         await Campaigns.run({ id: campaignId, user: state.user, action });
       }
       return node.next ?? 'END';

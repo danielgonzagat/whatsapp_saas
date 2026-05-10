@@ -1,16 +1,5 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from './db';
-import { WorkerLogger } from './logger';
-import { autopilotDecisionCounter } from './metrics';
-import { PlanLimitsProvider } from './providers/plan-limits';
-import { forEachSequential } from './utils/async-sequence';
-import { getErrorMessage } from './utils/error-message';
-
-const log = new WorkerLogger('autopilot-scanner');
-
-const JSON_RE = /```json/g;
-const PATTERN_RE = /```/g;
-const PRE__VALOR_CUSTA_PIX_BO_RE = /(preç|valor|custa|pix|boleto|pag|assin|compr|checkout|fechar)/i;
 
 export type JsonObject = Record<string, Prisma.JsonValue>;
 

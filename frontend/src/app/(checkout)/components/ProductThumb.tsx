@@ -1,7 +1,7 @@
 import { kloelT } from '@/lib/i18n/t';
 import { UI } from '@/lib/ui-tokens';
 import Image from 'next/image';
-import type { CheckoutVisualTheme } from '../checkout-theme-tokens';
+import type { CheckoutVisualTheme } from './checkout-theme-tokens';
 
 export function ProductThumb({
   productImage,

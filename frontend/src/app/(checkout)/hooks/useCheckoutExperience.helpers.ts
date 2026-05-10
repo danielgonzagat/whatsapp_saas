@@ -1,8 +1,8 @@
-import { type CreateOrderData } from '../useCheckout';
+import { type CreateOrderData } from './useCheckout';
 import {
   resolvePaymentMethodCode,
   resolveShippingMethodLabel,
-} from '../useCheckoutExperience.utils';
+} from './useCheckoutExperience.utils';
 
 export interface BuildOrderPayloadParams {
   checkoutCode: string | undefined;

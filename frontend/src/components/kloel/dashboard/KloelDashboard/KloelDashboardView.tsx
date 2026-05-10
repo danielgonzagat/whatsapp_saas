@@ -38,6 +38,7 @@ interface KloelDashboardViewProps {
   hasMessages: boolean;
   messages: DashboardMessage[];
   conversationTitle: string;
+  onTitle: (title: string) => void;
   streamingMessageId: string | null;
   isThinking: boolean;
   isReplyInFlight: boolean;
@@ -79,6 +80,7 @@ export function KloelDashboardView({
   hasMessages,
   messages,
   conversationTitle,
+  onTitle,
   streamingMessageId,
   isThinking,
   isReplyInFlight,
@@ -165,7 +167,7 @@ export function KloelDashboardView({
       >
         {hasMessages ? (
           <>
-            <ConversationHeaderBar title={conversationTitle} />
+            <ConversationHeaderBar title={conversationTitle} onTitle={onTitle} />
             <div
               style={{
                 flex: 1,

@@ -1,8 +1,8 @@
 import { it, expect, vi } from 'vitest';
 import type { Mock } from 'vitest';
-import type * as QueueModule from '../../queue';
-import type * as RedisClientModule from '../../redis-client';
-import { runSweepUnreadConversations } from '../../processors/autopilot-processor';
+import type * as QueueModule from '../queue';
+import type * as RedisClientModule from '../redis-client';
+import { runSweepUnreadConversations } from '../processors/autopilot-processor';
 
 type MockPrisma = Record<string, Record<string, Mock>>;
 

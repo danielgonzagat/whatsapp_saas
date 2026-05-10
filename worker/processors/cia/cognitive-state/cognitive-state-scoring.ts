@@ -1,4 +1,4 @@
-import type { DemandState } from '../../../../providers/commercial-intelligence';
+import type { DemandState } from '../../../providers/commercial-intelligence';
 import { clamp, includesAny, URGENCY_HINTS } from './cognitive-state-types';
 import type { CustomerStage, CustomerCognitiveState } from './cognitive-state-types';
 

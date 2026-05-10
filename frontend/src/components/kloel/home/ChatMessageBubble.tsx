@@ -183,7 +183,7 @@ function AssistantMessage({
           </span>
           <KloelMushroomVisual
             size={28}
-            traceColor={kloelT(`#FFFFFF`)}
+            traceColor={colors.text.silver}
             animated
             spores="animated"
             ariaHidden

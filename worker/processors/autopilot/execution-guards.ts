@@ -29,6 +29,7 @@ export async function checkDeliveryGuards(params: {
   workspaceId: string;
   contactId?: string | undefined;
   phone: string;
+  chatId?: string | undefined;
   settings: UnknownRecord;
   workspaceRecord?: UnknownRecord;
   deliveryMode: 'reactive' | 'proactive';

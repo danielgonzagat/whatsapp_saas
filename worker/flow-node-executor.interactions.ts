@@ -5,11 +5,11 @@ import {
   readOptionalString,
   readString,
   varAsString,
-} from '../flow-engine.helpers';
-import type { ExecutionState, FlowNode } from '../flow-engine.types';
-import { prisma } from '../db';
-import { redis } from '../redis-client';
-import { pollUntil } from '../utils/async-sequence';
+} from './flow-engine.helpers';
+import type { ExecutionState, FlowNode } from './flow-engine.types';
+import { prisma } from './db';
+import { redis } from './redis-client';
+import { pollUntil } from './utils/async-sequence';
 import type { FlowNodeExecutorDeps, FlowNodeResult } from './flow-node-executor.types';
 
 export async function executeAutoPitchNode(
@@ -29,7 +29,7 @@ export async function executeAutoPitchNode(
       nestedString(workspace?.providerSettings, 'openai', 'apiKey') || process.env.OPENAI_API_KEY;
 
     if (apiKey) {
-      const { AIProvider } = await import('../providers/ai-provider');
+      const { AIProvider } = await import('./providers/ai-provider');
       const ai = new AIProvider(apiKey);
 
       const sys =
@@ -100,7 +100,7 @@ export async function executeVoiceNode(
       },
     });
 
-    const { enqueueVoiceJob } = await import('../flow-engine-voice-producer');
+    const { enqueueVoiceJob } = await import('./flow-engine-voice-producer');
     await enqueueVoiceJob(job.id, state.workspaceId, text, voiceId);
 
     const voiceJob = await pollUntil({
@@ -119,7 +119,7 @@ export async function executeVoiceNode(
     }
 
     if (audioUrl) {
-      const { WhatsAppEngine } = await import('../providers/whatsapp-engine');
+    const { WhatsAppEngine } = await import('./providers/whatsapp-engine');
       const workspace = await prisma.workspace.findUnique({
         where: { id: state.workspaceId },
       });

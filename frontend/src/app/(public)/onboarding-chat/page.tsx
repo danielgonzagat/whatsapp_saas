@@ -377,7 +377,7 @@ function OnboardingChatContent() {
                 <div className="flex items-center gap-3">
                   <KloelMushroomVisual
                     size={28}
-                    traceColor={kloelT(`#FFFFFF`)}
+                    traceColor={colors.text.silver}
                     animated
                     spores="animated"
                   />
@@ -466,7 +466,7 @@ function OnboardingLoading() {
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-teal-900 to-gray-900 flex items-center justify-center px-4">
       <KloelLoadingState
         size={96}
-        traceColor={kloelT(`#FFFFFF`)}
+        traceColor={colors.text.silver}
         label={kloelT(`Kloel`)}
         hint={kloelT(`iniciando a configuracao`)}
         minHeight={320}

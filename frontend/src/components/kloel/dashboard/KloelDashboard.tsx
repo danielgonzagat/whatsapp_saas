@@ -36,7 +36,7 @@ import { S_RE, SLOW_HINT_DELAY_MS } from './KloelDashboard.subcomponents';
 import {
   KloelDashboardView,
   type KloelDashboardQuickAction,
-} from './KloelDashboard/__parts__/KloelDashboard.view';
+} from './KloelDashboard/KloelDashboardView';
 import {
   useKloelFiles,
   useKloelDragDrop,

@@ -1,6 +1,6 @@
-import type { ContextStore } from '../context-store';
-import type { FlowVariables } from '../flow-engine.types';
-import type { WorkerLogger } from '../logger';
+import type { ContextStore } from './context-store';
+import type { FlowVariables } from './flow-engine.types';
+import type { WorkerLogger } from './logger';
 
 export type FlowNodeResult = string | 'WAIT' | 'END';
 

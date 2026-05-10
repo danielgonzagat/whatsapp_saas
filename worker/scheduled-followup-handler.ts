@@ -1,9 +1,9 @@
 import { type Job } from 'bullmq';
-import { prisma } from '../db';
-import { buildQueueJobId } from '../job-id';
-import { WorkerLogger } from '../logger';
-import { dispatchOutboundThroughFlow } from '../providers/outbound-dispatcher';
-import { sendFallbackEmail } from '../fallback-email.helpers';
+import { prisma } from './db';
+import { buildQueueJobId } from './job-id';
+import { WorkerLogger } from './logger';
+import { dispatchOutboundThroughFlow } from './providers/outbound-dispatcher';
+import { sendFallbackEmail } from './fallback-email.helpers';
 
 const log = new WorkerLogger('scheduled-followup');
 

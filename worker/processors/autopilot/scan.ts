@@ -64,8 +64,9 @@ export async function runScanContact(data: UnknownRecord) {
       autopilotPipelineCounter.inc({ workspaceId, stage: 'scan_contact', result: 'empty' });
       await reportSmokeTest(smokeTestId, { status: 'empty', workspaceId, contactId: data?.contactId, phone: data?.phone });
       finalSummary = 'Nenhuma mensagem pendente para este contato.';
-      return;
-    }
+    return;
+  }
+  /* empty check handled above */
 
     const {
       contactId, phone, chatId, contactName, leadScore,

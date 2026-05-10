@@ -18,7 +18,7 @@ import {
   buildOrderPayload as buildOrderPayloadHelper,
   resolveSuccessRedirect as resolveSuccessRedirectHelper,
   type BuildOrderPayloadParams,
-} from './__companions__/useCheckoutExperience.helpers';
+} from './useCheckoutExperience.helpers';
 import {
   EMPTY_CHECKOUT_EXPERIENCE_FORM,
   applyFieldFormatter,

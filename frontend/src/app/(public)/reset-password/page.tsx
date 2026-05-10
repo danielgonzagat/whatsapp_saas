@@ -458,7 +458,7 @@ export default function ResetPasswordPage() {
         >
           <KloelLoadingState
             size={88}
-            traceColor={kloelT(`#FFFFFF`)}
+            traceColor={colors.text.silver}
             label={kloelT(`Kloel`)}
             hint={kloelT(`preparando a redefinicao`)}
             minHeight={280}

@@ -1,6 +1,6 @@
-import { readString } from '../flow-engine.helpers';
-import type { ExecutionState, FlowNode } from '../flow-engine.types';
-import { isUrlAllowed, safeRequest, validateUrl } from '../utils/ssrf-protection';
+import { readString } from './flow-engine.helpers';
+import type { ExecutionState, FlowNode } from './flow-engine.types';
+import { isUrlAllowed, safeRequest, validateUrl } from './utils/ssrf-protection';
 import type { FlowNodeExecutorDeps, FlowNodeResult } from './flow-node-executor.types';
 
 export async function executeApiNode(

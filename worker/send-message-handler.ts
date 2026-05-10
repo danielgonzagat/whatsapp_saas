@@ -166,7 +166,7 @@ export async function handleSendMessage(job: Job) {
             mediaUrl: mediaUrl || undefined,
             status: providerError ? 'FAILED' : 'SENT',
             errorCode: providerError ? String(providerError) : null,
-            externalId: externalId || undefined,
+            externalId: externalId || null,
           },
         });
 
@@ -254,7 +254,7 @@ export async function handleSendMessage(job: Job) {
             mediaUrl: mediaUrl || undefined,
             status: 'FAILED',
             errorCode: getErrorMessage(err),
-            externalId: undefined,
+            externalId: null,
           },
         });
       } catch (dbErr) {

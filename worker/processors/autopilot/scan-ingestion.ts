@@ -5,7 +5,6 @@ import { publishAgentEvent } from '../../providers/agent-events';
 import { autopilotDecisionCounter, autopilotPipelineCounter } from '../../metrics';
 import {
   log,
-  normalizeJsonObject,
   isAutonomousEnabled,
   SHARENON_DIGIT_REPLY_LOCK_MS,
   type UnknownRecord,
@@ -20,7 +19,7 @@ import {
   findConversationAutomationState,
 } from './backlog';
 import { resolveConversationOwner } from '../../conversation-agent-state';
-import { isRecentLiveConversation, notifyBillingSuspended } from './shared';
+import { notifyBillingSuspended } from './shared';
 
 const scanLog = new WorkerLogger('autopilot:scan-ingestion');
 

@@ -91,14 +91,14 @@ async function generateTemplate(
         // fallback to static OFFER template below
       }
     }
-    return renderTemplate('OFFER', { calendarLink });
+    return renderTemplate('OFFER', { ...(calendarLink ? { calendarLink } : {}) });
   }
 
   const key = action as keyof typeof SALES_TEMPLATES;
   if (key in SALES_TEMPLATES) {
-    return renderTemplate(key, { calendarLink });
+    return renderTemplate(key, { ...(calendarLink ? { calendarLink } : {}) });
   }
-  return renderTemplate('FOLLOW_UP', { calendarLink });
+  return renderTemplate('FOLLOW_UP', { ...(calendarLink ? { calendarLink } : {}) });
 }
 
 export async function autopilotScanner() {

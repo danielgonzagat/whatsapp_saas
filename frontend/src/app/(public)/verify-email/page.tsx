@@ -86,7 +86,7 @@ function VerifyEmailContent() {
             <div style={{ margin: '0 auto 24px', display: 'flex', justifyContent: 'center' }}>
               <KloelMushroomVisual
                 size={52}
-                traceColor={kloelT(`#FFFFFF`)}
+                traceColor={colors.text.silver}
                 animated
                 spores="animated"
               />
@@ -187,7 +187,7 @@ function VerifyEmailContent() {
         {state === 'error' && (
           <>
             <div style={{ margin: '0 auto 24px', display: 'flex', justifyContent: 'center' }}>
-              <KloelMushroomVisual size={56} traceColor={kloelT(`#FFFFFF`)} spores="static" />
+              <KloelMushroomVisual size={56} traceColor={colors.text.silver} spores="static" />
             </div>
             <h1
               style={{
@@ -252,7 +252,7 @@ export default function VerifyEmailPage() {
         >
           <KloelLoadingState
             size={88}
-            traceColor={kloelT(`#FFFFFF`)}
+            traceColor={colors.text.silver}
             label={kloelT(`Kloel`)}
             hint={kloelT(`verificando o acesso`)}
             minHeight={280}

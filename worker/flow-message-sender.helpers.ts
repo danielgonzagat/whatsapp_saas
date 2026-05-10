@@ -97,7 +97,7 @@ export async function sendMessage(
             direction: 'OUTBOUND',
             type: 'TEXT',
             status: 'SENT',
-            externalId: externalId || undefined,
+            externalId: externalId || null,
           },
         });
 
@@ -143,7 +143,7 @@ export async function sendMessage(
                 id: created.id,
                 conversationId: conversation.id,
                 contactId: contact.id,
-                externalId: externalId || undefined,
+            externalId: externalId || null,
                 status: 'SENT',
               },
             }),
@@ -177,7 +177,7 @@ export async function sendMessage(
               type: 'TEXT',
               status: 'FAILED',
               errorCode: err instanceof Error ? err.message : String(err),
-              externalId: undefined,
+              externalId: null,
             },
           });
         } catch (persistErr) {

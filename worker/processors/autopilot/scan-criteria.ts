@@ -3,13 +3,13 @@ import { prisma } from '../../db';
 import { unifiedWhatsAppProvider as whatsappApiProvider } from '../../providers/unified-whatsapp-provider';
 import {
   normalizeJsonObject,
-  isWorkspaceSelfTarget,
   PENDING_MESSAGE_LIMIT,
   type UnknownRecord,
   type QuotedCustomerMessage,
   type WorkspaceSelfIdentity,
 } from './shared';
 import {
+  isWorkspaceSelfTarget,
   resolveTrustedCatalogName,
   extractTrustedNameFromRemoteMessage,
 } from './identity';

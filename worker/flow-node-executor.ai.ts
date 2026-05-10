@@ -1,11 +1,11 @@
 import {
   appendLog as appendLogExternal,
   getConversationHistory as getConversationHistoryExternal,
-} from '../flow-engine-lifecycle';
-import { nestedString, readBoolean, readString, varAsString } from '../flow-engine.helpers';
-import type { ExecutionState, FlowNode } from '../flow-engine.types';
-import { prisma } from '../db';
-import { sanitizeUserInput } from '../utils/prompt-sanitizer';
+} from './flow-engine-lifecycle';
+import { nestedString, readBoolean, readString, varAsString } from './flow-engine.helpers';
+import type { ExecutionState, FlowNode } from './flow-engine.types';
+import { prisma } from './db';
+import { sanitizeUserInput } from './utils/prompt-sanitizer';
 import type { FlowNodeExecutorDeps, FlowNodeResult } from './flow-node-executor.types';
 
 export async function executeAiNode(
@@ -25,7 +25,7 @@ export async function executeAiNode(
   let finalSystemPrompt = systemPrompt || 'Você é um assistente útil.';
   if (kbId) {
     try {
-      const { RAGProvider } = await import('../providers/rag-provider');
+      const { RAGProvider } = await import('./providers/rag-provider');
       const context = await RAGProvider.getContext(
         state.workspaceId,
         varAsString(state.variables.last_user_message),
@@ -45,7 +45,7 @@ export async function executeAiNode(
 
   if (useMemory) {
     try {
-      const { SemanticMemory } = await import('../providers/semantic-memory');
+      const { SemanticMemory } = await import('./providers/semantic-memory');
       const workspace = await prisma.workspace.findUnique({
         where: { id: state.workspaceId },
       });
@@ -91,10 +91,10 @@ export async function executeAiNode(
     messages.push({ role: 'user', content: sanitizedMsg });
   }
 
-  const { ToolsRegistry } = await import('../providers/tools-registry');
+  const { ToolsRegistry } = await import('./providers/tools-registry');
   const tools = enableTools ? ToolsRegistry.getDefinitions() : undefined;
 
-  const { AIProvider } = await import('../providers/ai-provider');
+  const { AIProvider } = await import('./providers/ai-provider');
   const workspace = await prisma.workspace.findUnique({ where: { id: state.workspaceId } });
   const apiKey =
     nestedString(workspace?.providerSettings, 'openai', 'apiKey') || process.env.OPENAI_API_KEY;
@@ -124,7 +124,7 @@ export async function executeAiNode(
     if (responseMessage.tool_calls && responseMessage.tool_calls.length > 0) {
       deps.log.info('ai_tool_call', { count: responseMessage.tool_calls.length });
 
-      const { forEachSequential } = await import('../utils/async-sequence');
+      const { forEachSequential } = await import('./utils/async-sequence');
       await forEachSequential(responseMessage.tool_calls, async (toolCall) => {
         if (!('function' in toolCall) || !toolCall.function) {
           return;
@@ -172,7 +172,7 @@ export async function executeAiNode(
   if (useMemory && finalResponse) {
     (async () => {
       try {
-        const { memoryQueue } = await import('../queue');
+        const { memoryQueue } = await import('./queue');
         const userMessage = varAsString(state.variables.last_user_message);
         const conversationText = `User: ${userMessage}\nAI: ${finalResponse}`;
 

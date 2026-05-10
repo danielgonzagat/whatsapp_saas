@@ -6,7 +6,6 @@ import { computeDemandState, buildDecisionEnvelope, persistDemandState } from '.
 import { buildConversationTacticPlan, assertConversationTacticPlan } from '../cia/conversation-tactics';
 import { recordDecisionOutcome } from '../cia/cognitive-state';
 import {
-  log,
   type UnknownRecord,
   findWorkspaceProductMatches,
 } from './shared';

@@ -13,7 +13,7 @@ import { dispatchAutopilotAction } from './execution-dispatcher';
 export { buildMessage } from './execution-planner';
 export { persistFallbackMessage } from './execution-audit';
 export { checkDeliveryGuards, ensureCompliance, resolveContactForExecution } from './execution-guards';
-export { dispatchAutopilotAction, checkIdempotencyAndDuplicates } from './execution-dispatcher';
+export { dispatchAutopilotAction } from './execution-dispatcher';
 
 export async function executeAction(
   action: string,

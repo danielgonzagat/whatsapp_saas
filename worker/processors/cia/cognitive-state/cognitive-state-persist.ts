@@ -3,7 +3,7 @@ import type { PrismaClient } from '@prisma/client';
 import type { CustomerCognitiveState } from './cognitive-state-types';
 import { clamp } from './cognitive-state-types';
 import { buildStateKey } from './cognitive-state-load';
-import { toPrismaJsonValue } from '../../../../utils/prisma-json.util';
+import { toPrismaJsonValue } from '../../../utils/prisma-json.util';
 
 interface PersistCognitiveStateInput {
   workspaceId: string;

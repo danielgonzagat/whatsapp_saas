@@ -15,7 +15,7 @@ import './metrics-server'; // Expose /metrics and /health
 import './dlq-monitor'; // Monitor DLQs and alert ops
 import { redisPub } from './redis-client';
 import { getErrorMessage } from './utils/error-message';
-import { handleScheduledFollowup } from './__parts__/scheduled-followup-handler';
+import { handleScheduledFollowup } from './scheduled-followup-handler';
 import { handleSendMessage } from './send-message-handler';
 import { autopilotScanner } from './autopilot-scanner.engine';
 import {

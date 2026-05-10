@@ -1,5 +1,5 @@
-import type { DemandState } from '../../../../providers/commercial-intelligence';
-import { RX } from '../../cognitive-state-patterns';
+import type { DemandState } from '../../../providers/commercial-intelligence';
+import { RX } from '../cognitive-state-patterns';
 import {
   clamp,
   includesAny,
