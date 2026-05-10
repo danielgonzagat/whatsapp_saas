@@ -138,65 +138,23 @@ export class WhatsappService {
 
   // ═══ NORMALIZE (thin wrappers) ═══
   private normalizeContacts(raw: unknown): NormalizedContact[] {
-    const r = raw as ExternalProviderPayload | undefined;
-    const candidates: unknown[] = Array.isArray(raw)
-      ? raw
-      : Array.isArray(r?.contacts)
-        ? (r.contacts as unknown[])
-        : Array.isArray(r?.items)
-          ? (r.items as unknown[])
-          : Array.isArray(r?.data)
-            ? (r.data as unknown[])
-            : [];
-    return candidates
-      .map((c) =>
-        normalizeContactEntry(c, {
-          isPlaceholder: (v: unknown, p?: string | null) => this.isPlaceholderContactName(v, p),
-          resolveName: (p: string, ...cs: unknown[]) => this.resolveTrustedContactName(p, ...cs),
-          extractPhone: (id: string) => this.providerExtract(id),
-        }),
-      )
-      .filter((c): c is NormalizedContact => c !== null);
+    return normalizeContactsArray(raw, {
+      isPlaceholderContactName: (v, p) => this.isPlaceholderContactName(v, p),
+      resolveTrustedContactName: (p, ...cs) => this.resolveTrustedContactName(p, ...cs),
+      extractPhone: (id) => this.providerExtract(id),
+    });
   }
   private normalizeChats(raw: unknown): NormalizedChat[] {
-    const r = raw as ExternalProviderPayload | undefined;
-    const cs: unknown[] = Array.isArray(raw)
-      ? raw
-      : Array.isArray(r?.chats)
-        ? (r.chats as unknown[])
-        : Array.isArray(r?.items)
-          ? (r.items as unknown[])
-          : Array.isArray(r?.data)
-            ? (r.data as unknown[])
-            : [];
-    return cs
-      .map((c) =>
-        normalizeChatEntry(c, {
-          resolveName: (p: string, ...cs: unknown[]) => this.resolveTrustedContactName(p, ...cs),
-          extractPhone: (id: string) => this.providerExtract(id),
-          isPlaceholder: (v: unknown, p?: string | null) => this.isPlaceholderContactName(v, p),
-        }),
-      )
-      .filter((c): c is NormalizedChat => c !== null);
+    return normalizeChatsArray(raw, {
+      resolveTrustedContactName: (p, ...cs) => this.resolveTrustedContactName(p, ...cs),
+      extractPhone: (id) => this.providerExtract(id),
+      isPlaceholderContactName: (v, p) => this.isPlaceholderContactName(v, p),
+    });
   }
   private normalizeMessages(raw: unknown, fallbackChatId: string) {
-    const r = raw as ExternalProviderPayload | undefined;
-    const cs = Array.isArray(raw)
-      ? raw
-      : Array.isArray(r?.messages)
-        ? (r.messages as unknown[])
-        : Array.isArray(r?.items)
-          ? (r.items as unknown[])
-          : Array.isArray(r?.data)
-            ? (r.data as unknown[])
-            : [];
-    return cs
-      .map((m) =>
-        normalizeMessageEntry(m, fallbackChatId, {
-          extractPhone: (id: string) => this.providerExtract(id),
-        }),
-      )
-      .filter(Boolean);
+    return normalizeMessagesArray(raw, fallbackChatId, {
+      extractPhone: (id) => this.providerExtract(id),
+    });
   }
 
   // ═══ LIST CATALOG, PROBABILITY, REFRESH, RESCORE, BACKLOG ═══
@@ -240,22 +198,13 @@ export class WhatsappService {
     const oc = o?.onlyCataloged !== false;
     const eb = o?.excludeBuyers === true;
     const entries = await this.collectCatalogContactEntries(ws, { days, onlyCataloged: oc });
-    const ranked = entries
-      .filter(
-        (e) =>
-          (!eb || e.buyerStatus !== 'BOUGHT') &&
-          e.leadScore >= mls &&
-          e.purchaseProbabilityScore >= mps,
-      )
-      .sort((a, b) => {
-        if (a.purchaseProbabilityScore !== b.purchaseProbabilityScore)
-          return b.purchaseProbabilityScore - a.purchaseProbabilityScore;
-        if (a.leadScore !== b.leadScore) return b.leadScore - a.leadScore;
-        return (
-          this.resolveTimestamp({ createdAt: b.lastConversationAt }) -
-          this.resolveTimestamp({ createdAt: a.lastConversationAt })
-        );
-      })
+    const filtered = entries.filter(
+      (e) =>
+        (!eb || e.buyerStatus !== 'BOUGHT') &&
+        e.leadScore >= mls &&
+        e.purchaseProbabilityScore >= mps,
+    );
+    const ranked = rankByPurchaseProbability(filtered)
       .slice(0, limit)
       .map((e, i) => ({ rank: i + 1, ...e }));
     return {

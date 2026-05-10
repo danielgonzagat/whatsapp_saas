@@ -68,7 +68,7 @@ export async function checkE2eProductCreation(_config: PulseConfig): Promise<Bre
       return breaks;
     }
 
-    const agent = approvedAgents[0];
+    const agent = approvedAgents[0] as Record<string, string>;
     // Build a real JWT signed with the backend's secret for this agent
     jwt = makeTestJwt({
       sub: agent.id,
@@ -108,9 +108,9 @@ export async function checkE2eProductCreation(_config: PulseConfig): Promise<Bre
       return breaks; // Can't test further without a product
     }
 
-    const body = createRes.body || {};
-    const product = body.product || body;
-    productId = product?.id || null;
+    const body = createRes.body ?? {};
+    const product = (body as Record<string, unknown>).product as Record<string, unknown> | undefined ?? body;
+    productId = ((product as Record<string, unknown>).id as string | undefined) ?? null;
 
     if (!productId) {
       breaks.push({

@@ -1,5 +1,7 @@
 'use client';
 
+import { colors } from '@/lib/design-tokens';
+
 import { kloelT } from '@/lib/i18n/t';
 import { IC, FmtMoney, SORA, MONO, EMBER, TEXT, TEXT_DIM, BORDER, BG_CARD } from './SitesViewIcons';
 import { Btn, Card, SectionLabel, Badge } from './SitesViewAtoms';
@@ -95,7 +97,7 @@ export function CriarSiteAskPhase({
       </Btn>
 
       {error && (
-        <div style={{ fontFamily: MONO, fontSize: 12, color: '#ef4444', maxWidth: 500, textAlign: 'center', padding: '8px 16px', background: 'rgba(239,68,68,0.1)', borderRadius: 6 }}>
+        <div style={{ fontFamily: MONO, fontSize: 12, color: colors.semantic.error, maxWidth: 500, textAlign: 'center', padding: '8px 16px', background: colors.semantic.errorBg, borderRadius: 6 }}>
           {error}
         </div>
       )}
@@ -115,12 +117,12 @@ export function CriarSiteAskPhase({
                   style={{ fontFamily: SORA, fontSize: 13, color: TEXT, flex: 1, cursor: 'pointer', background: 'transparent', border: 'none', padding: 0, textAlign: 'left' }}>
                   {site.name || 'Site sem titulo'}
                 </button>
-                {site.published && <Badge color="#10B981">{kloelT(`Publicado`)}</Badge>}
+                {site.published && <Badge color={colors.semantic.success}>{kloelT(`Publicado`)}</Badge>}
                 <span style={{ fontFamily: MONO, fontSize: 10, color: TEXT_DIM }}>
                   {site.updatedAt ? new Date(site.updatedAt).toLocaleDateString('pt-BR') : ''}
                 </span>
                 <button type="button" onClick={() => handleDelete(site.id)}
-                  style={{ fontFamily: MONO, fontSize: 10, padding: '2px 8px', borderRadius: 4, border: `1px solid ${BORDER}`, background: 'transparent', color: '#ef4444', cursor: 'pointer' }}>
+                  style={{ fontFamily: MONO, fontSize: 10, padding: '2px 8px', borderRadius: 4, border: `1px solid ${BORDER}`, background: 'transparent', color: colors.semantic.error, cursor: 'pointer' }}>
                   X
                 </button>
               </Card>

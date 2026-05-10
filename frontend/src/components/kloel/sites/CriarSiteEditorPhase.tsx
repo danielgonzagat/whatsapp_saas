@@ -95,7 +95,7 @@ export function CriarSiteEditorPhase({
       )}
 
       {error && (
-        <div style={{ fontFamily: MONO, fontSize: 12, color: '#ef4444', padding: '8px 16px', marginBottom: 12, background: 'rgba(239,68,68,0.1)', borderRadius: 6 }}>{error}</div>
+        <div style={{ fontFamily: MONO, fontSize: 12, color: colors.semantic.error, padding: '8px 16px', marginBottom: 12, background: colors.semantic.errorBg, borderRadius: 6 }}>{error}</div>
       )}
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
@@ -112,8 +112,8 @@ export function CriarSiteEditorPhase({
 
       <Card style={{ padding: 0, overflow: 'hidden', minHeight: 500 }}>
         <div style={{ background: BG_ELEVATED, padding: '6px 12px', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', gap: 6 }}>
-          <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#ef4444' }} />
-          <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#f59e0b' }} />
+          <div style={{ width: 8, height: 8, borderRadius: '50%', background: colors.semantic.error }} />
+          <div style={{ width: 8, height: 8, borderRadius: '50%', background: colors.semantic.warning }} />
           <div style={{ width: 8, height: 8, borderRadius: '50%', background: colors.semantic.success }} />
           <span style={{ fontFamily: MONO, fontSize: 10, color: TEXT_MUTED, marginLeft: 8 }}>{kloelT(`Preview`)}</span>
         </div>

@@ -561,10 +561,11 @@ export class GdprService implements OnModuleInit, OnModuleDestroy {
     fs.writeFileSync(path.join(dir, filename), JSON.stringify(data, null, 2), 'utf8');
   }
 
-  private createZip(sourceDir: string, outputPath: string): Promise<void> {
+  private async createZip(sourceDir: string, outputPath: string): Promise<void> {
+    const archiver = await import('archiver');
     return new Promise((resolve, reject) => {
       const output = fs.createWriteStream(outputPath);
-      const archive = archiver('zip', { zlib: { level: 9 } });
+      const archive = archiver.default('zip', { zlib: { level: 9 } });
 
       output.on('close', () => resolve());
       archive.on('error', (err) => reject(err));

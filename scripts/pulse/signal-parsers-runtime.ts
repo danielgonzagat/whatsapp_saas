@@ -69,7 +69,7 @@ export function parseSentrySignals(
 
   const issues = asArray(data.issues || data.events)
     .map((entry) => asObject(entry))
-    .filter(Boolean);
+    .filter((entry): entry is Record<string, unknown> => Boolean(entry));
   return issues
     .filter((issue) => String(issue.status || 'open').toLowerCase() !== 'resolved')
     .map((issue, index) => {

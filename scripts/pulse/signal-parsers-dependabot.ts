@@ -30,7 +30,7 @@ export function parseDependabotSignals(
 
   const alerts = asArray(data.alerts || data.vulnerabilities)
     .map((entry) => asObject(entry))
-    .filter(Boolean);
+    .filter((entry): entry is Record<string, unknown> => Boolean(entry));
   return alerts
     .filter((alert) => String(alert.state || 'open').toLowerCase() !== 'dismissed')
     .map((alert, index) => {
