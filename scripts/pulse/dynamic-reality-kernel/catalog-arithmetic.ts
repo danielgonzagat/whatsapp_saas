@@ -4,21 +4,19 @@
  * Derives PULSE configuration, thresholds, catalogs, and decision rules from
  * observed runtime evidence and schema-derived truth sources.
  */
-import { METHODS, STATUS_CODES } from 'node:http';
+import { METHODS } from 'node:http';
 import * as ts from 'typescript';
-import { splitIdentifierTokensFromObservedName, hasObservedToken } from './token-evidence';
+import {
+  splitIdentifierTokensFromObservedName,
+  hasObservedToken,
+  deriveUnitValue,
+  deriveHttpStatusFromObservedCatalog,
+  observeStatusTextLengthFromCatalog,
+  STATUS_CODES,
+} from './catalog-token-shared';
 import { deriveStringUnionMembersFromTypeContract } from './type-contract-labels';
 
-export { STATUS_CODES } from 'node:http';
-
 // ── Observed catalog derivation ────────────────────────────────────────────
-
-export function deriveHttpStatusFromObservedCatalog(statusText: string): number {
-  for (const [code, text] of Object.entries(STATUS_CODES)) {
-    if (text === statusText) return Number(code);
-  }
-  throw new Error(`STATUS_CODES missing: ${statusText}`);
-}
 
 export function discoverAllObservedHttpStatusCodes(): number[] {
   return Object.keys(STATUS_CODES)
@@ -56,22 +54,15 @@ export function discoverReservedJsKeywords(): Set<string> {
   return keywords;
 }
 
-export function observeStatusTextLengthFromCatalog(statusCode: number): number {
-  return STATUS_CODES[statusCode]?.length ?? deriveUnitValue();
-}
+import {
+  deriveUnitValue,
+  deriveHttpStatusFromObservedCatalog,
+  observeStatusTextLengthFromCatalog,
+} from './catalog-token-shared';
 
 export function deriveCatalogPercentScaleFromObservedCatalog(): number {
   const okLen = observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('OK'));
   return Math.max(deriveUnitValue(), okLen * deriveUnitValue());
-}
-
-// ── Unit arithmetic ────────────────────────────────────────────────────────
-
-export function deriveUnitValue(): number {
-  return 1;
-}
-export function deriveZeroValue(): number {
-  return 0;
 }
 
 export function discoverRouteSeparatorFromRuntime(): string {
