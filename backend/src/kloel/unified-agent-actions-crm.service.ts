@@ -8,6 +8,9 @@ import { OpsAlertService } from '../observability/ops-alert.service';
 import { MindPolicyService } from './mind-policy.service';
 import { MindService } from './mind.service';
 import { resolveFollowupTimingDecision } from './mind-recovery-decision-resolvers';
+import { MindGuardContextBuilderService } from './mind-guard-context-builder.service';
+import { MindGuardsService } from './mind-guards.service';
+import type { MindActionContext } from './mind-code-native.types';
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -25,6 +28,8 @@ export class UnifiedAgentActionsCrmService {
     @Optional() private readonly opsAlert?: OpsAlertService,
     @Optional() private readonly mindPolicy?: MindPolicyService,
     @Optional() private readonly mind?: MindService,
+    @Optional() private readonly guardContextBuilder?: MindGuardContextBuilderService,
+    @Optional() private readonly guards?: MindGuardsService,
   ) {}
 
   // ───────── helpers ─────────
@@ -315,6 +320,28 @@ export class UnifiedAgentActionsCrmService {
         .catch(() => {});
       return { success: true, transferred: false, reason, priority, mind: handoff };
     }
+    const transferContext = await this.buildTransferGuardContext(workspaceId, {
+      contactId,
+      humanAvailable: true,
+      priority,
+      reason,
+    });
+    const guard = await this.guards?.evaluate({
+      workspaceId,
+      decisionType: 'human_transfer',
+      action: 'human_escalation',
+      context: transferContext,
+    });
+    if (guard && !guard.allowed) {
+      return {
+        success: false,
+        blocked: true,
+        transferred: false,
+        reason: guard.reason,
+        guardName: guard.guardName,
+        mind: handoff,
+      };
+    }
     if (contactId) {
       await this.prisma.$transaction(
         async (tx) => {
@@ -367,6 +394,13 @@ export class UnifiedAgentActionsCrmService {
       );
     }
     return { success: true, reason, priority, transferred: true, mind: handoff };
+  }
+
+  private async buildTransferGuardContext(
+    workspaceId: string,
+    context: MindActionContext,
+  ): Promise<MindActionContext> {
+    return (await this.guardContextBuilder?.buildForTransfer(workspaceId, context)) ?? context;
   }
 
   private async chooseHumanTransfer(

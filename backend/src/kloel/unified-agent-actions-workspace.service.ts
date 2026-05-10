@@ -8,6 +8,9 @@ import type { ToolArgs } from './unified-agent.types';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { actionGetWorkspaceStatus as actionGetWorkspaceStatusFn } from './__companions__/unified-agent-actions-workspace.service.companion';
 import { MindService } from './mind.service';
+import { MindGuardContextBuilderService } from './mind-guard-context-builder.service';
+import { MindGuardsService } from './mind-guards.service';
+import type { MindActionContext } from './mind-code-native.types';
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -27,6 +30,8 @@ export class UnifiedAgentActionsWorkspaceService {
     private readonly planLimits: PlanLimitsService,
     @Optional() private readonly opsAlert?: OpsAlertService,
     @Optional() private readonly mind?: MindService,
+    @Optional() private readonly guardContextBuilder?: MindGuardContextBuilderService,
+    @Optional() private readonly guards?: MindGuardsService,
   ) {}
 
   // ───────── helpers ─────────
@@ -247,6 +252,28 @@ export class UnifiedAgentActionsWorkspaceService {
       ? await this.mind.resolveBroadcastWindow(workspaceId, channelChoice.channel, segment)
       : { window: args.scheduleAt ? 'operator_fixed' : 'now', confidence: 0, fallback: true };
     const scheduleAt = args.scheduleAt || this.resolveBroadcastScheduleAt(broadcastWindow.window);
+    const broadcastContext = await this.buildBroadcastGuardContext(workspaceId, {
+      campaignActive: true,
+      campaignBudgetExhausted: false,
+      channel: channelChoice.channel,
+      segment,
+      withinComplianceWindow: false,
+    });
+    const guard = await this.guards?.evaluate({
+      workspaceId,
+      decisionType: 'broadcast_window',
+      action: 'schedule_broadcast',
+      context: broadcastContext,
+    });
+    if (guard && !guard.allowed) {
+      return {
+        success: false,
+        blocked: true,
+        error: guard.reason,
+        guardName: guard.guardName,
+        mind: { channelChoice, broadcastWindow },
+      };
+    }
     let contactCount = 0;
     if (args.targetTags && args.targetTags.length > 0) {
       contactCount = await this.prisma.contact.count({
@@ -311,6 +338,13 @@ export class UnifiedAgentActionsWorkspaceService {
     scheduled.setDate(scheduled.getDate() + 1);
     scheduled.setHours(9, 0, 0, 0);
     return scheduled.toISOString();
+  }
+
+  private async buildBroadcastGuardContext(
+    workspaceId: string,
+    context: MindActionContext,
+  ): Promise<MindActionContext> {
+    return (await this.guardContextBuilder?.buildForBroadcast(workspaceId, context)) ?? context;
   }
 
   async actionConfigureAIPersona(workspaceId: string, args: ToolArgs) {

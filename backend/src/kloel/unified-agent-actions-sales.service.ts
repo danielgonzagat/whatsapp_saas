@@ -6,6 +6,9 @@ import type { ToolArgs } from './unified-agent.types';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { actionHandleObjection as actionHandleObjectionFn } from './__companions__/unified-agent-actions-sales.service.companion';
 import { MindService } from './mind.service';
+import { MindGuardContextBuilderService } from './mind-guard-context-builder.service';
+import { MindGuardsService } from './mind-guards.service';
+import type { MindActionContext } from './mind-code-native.types';
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -52,6 +55,8 @@ export class UnifiedAgentActionsSalesService {
     private readonly messaging: UnifiedAgentActionsMessagingService,
     @Optional() private readonly opsAlert?: OpsAlertService,
     @Optional() private readonly mind?: MindService,
+    @Optional() private readonly guardContextBuilder?: MindGuardContextBuilderService,
+    @Optional() private readonly guards?: MindGuardsService,
   ) {}
 
   async actionApplyDiscount(
@@ -115,6 +120,30 @@ export class UnifiedAgentActionsSalesService {
         couponDecision?.action,
         requestedDiscountPercent,
       );
+      const discountContext = await this.buildDiscountGuardContext(workspaceId, {
+        ...(context || {}),
+        contactId,
+        discountPercent,
+        maxDiscountPercent: 30,
+        minMarginPercent: 0,
+        productName,
+      });
+      const guard = await this.guards?.evaluate({
+        workspaceId,
+        decisionType: 'coupon_offer',
+        action: 'apply_discount',
+        context: discountContext,
+      });
+      if (guard && !guard.allowed) {
+        return {
+          success: false,
+          blocked: true,
+          discountApplied: false,
+          messageSent: false,
+          reason: guard.reason,
+          guardName: guard.guardName,
+        };
+      }
       const finalPrice = originalPrice * (1 - discountPercent / 100);
       await this.prisma.autopilotEvent.create({
         data: {
@@ -170,6 +199,13 @@ export class UnifiedAgentActionsSalesService {
       this.logger.error(`Erro ao aplicar desconto: ${msg}`);
       return { success: false, error: msg };
     }
+  }
+
+  private async buildDiscountGuardContext(
+    workspaceId: string,
+    context: MindActionContext,
+  ): Promise<MindActionContext> {
+    return (await this.guardContextBuilder?.buildForDiscount(workspaceId, context)) ?? context;
   }
 
   async actionHandleObjection(
