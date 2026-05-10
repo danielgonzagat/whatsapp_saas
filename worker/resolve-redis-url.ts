@@ -203,19 +203,10 @@ export function resolveRedisUrl(): string | null {
  * triggering full URL resolution.
  */
 export function isRedisConfigured(): boolean {
-  if (process.env.REDIS_URL) {
-    return true;
-  }
   const host = process.env.REDIS_HOST ?? process.env.REDISHOST ?? process.env.REDIS_HOSTNAME;
   const password =
     process.env.REDIS_PASSWORD ?? process.env.REDISPASSWORD ?? process.env.REDIS_PASS;
-  if (host && password) {
-    return true;
-  }
-  if (process.env.REDIS_FALLBACK_URL) {
-    return true;
-  }
-  return false;
+  return Boolean(process.env.REDIS_URL || (host && password) || process.env.REDIS_FALLBACK_URL);
 }
 
 /**

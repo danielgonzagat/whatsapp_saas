@@ -17,6 +17,90 @@ const CONSTITUTION_AUTHORITY_FILES = new Set([
   'ops/kloel-ai-constitution.json',
   'scripts/ops/check-ai-constitution.mjs',
 ]);
+const REQUIRED_CONSTITUTION_SECTIONS = [
+  'graphContract',
+  'agentWorkContract',
+  'convergenceContract',
+  'evidenceContract',
+];
+const REQUIRED_CONSTITUTION_ARRAYS = [
+  ['nonNegotiables', 8],
+  ['agentWorkContract.requiredBeforeEditing', 6],
+  ['agentWorkContract.requiredAfterEditing', 4],
+  ['agentWorkContract.forbiddenWork', 20],
+  ['convergenceContract.monotonicRules', 8],
+  ['convergenceContract.forbiddenNewCodeSignals', 20],
+  ['evidenceContract.acceptedProofClasses', 6],
+  ['evidenceContract.rejectedProofClasses', 8],
+];
+const REQUIRED_SELF_INTEGRITY_SNIPPETS = [
+  'resolveDiffRange',
+  'collectConstitutionChangedFiles',
+  'checkFunctionalProofForProductionChanges',
+  'checkGateWiring',
+  'checkConstitutionContract',
+  'destructive git restore command',
+  'hook bypass command',
+  'unsafe cast bridge',
+  'fake/mock implementation marker',
+  'swallowed promise rejection',
+  'mudou sem teste/smoke/prova operacional',
+];
+const PACKAGE_SCRIPT_REQUIREMENTS = [
+  [
+    'check:ai-constitution',
+    (value) => value === 'node scripts/ops/check-ai-constitution.mjs',
+    'package.json deve manter check:ai-constitution apontando para scripts/ops/check-ai-constitution.mjs.',
+  ],
+  [
+    'guard:new-code',
+    (value) => String(value || '').includes('npm run check:ai-constitution'),
+    'guard:new-code deve executar check:ai-constitution antes dos demais gates de codigo novo.',
+  ],
+  [
+    'check:all',
+    (value) => String(value || '').includes('check-all-gates.mjs'),
+    'check:all deve continuar delegando para scripts/ops/check-all-gates.mjs.',
+  ],
+];
+const GATE_FILE_SNIPPETS = [
+  [
+    'scripts/ops/check-all-gates.mjs',
+    `label: 'governance-boundary'`,
+    'check-all-gates deve manter governance-boundary como gate do conjunto completo.',
+  ],
+  [
+    'scripts/ops/check-all-gates.mjs',
+    `label: 'ai-constitution'`,
+    'check-all-gates deve manter ai-constitution como gate do conjunto completo.',
+  ],
+  [
+    '.github/workflows/ci-cd.yml',
+    'npm run check:all',
+    '.github/workflows/ci-cd.yml deve executar npm run check:all para tornar a constituicao bloqueante no GitHub.',
+  ],
+  [
+    '.husky/pre-push',
+    'npm run prepush:scoped',
+    '.husky/pre-push deve continuar chamando npm run prepush:scoped.',
+  ],
+  [
+    'scripts/ops/run-scoped-pre-push.mjs',
+    'npm run guard:new-code',
+    'scripts/ops/run-scoped-pre-push.mjs deve continuar executando guard:new-code.',
+  ],
+];
+const NON_PRODUCTION_PREFIXES = ['scripts/ops/', 'ops/', '.github/', 'docs/', 'e2e/'];
+const PRODUCTION_SOURCE_PATTERNS = [
+  /^backend\/src\/.*\.[cm]?tsx?$/,
+  /^backend\/prisma\/.*\.(?:prisma|sql)$/,
+  /^frontend\/src\/.*\.[cm]?tsx?$/,
+  /^prisma\/.*\.(?:prisma|sql)$/,
+  /^worker\/src\/.*\.[cm]?tsx?$/,
+  /^scripts\/(?!ops\/|pulse\/parser-tests\/).*\.mjs$/,
+];
+const FUNCTIONAL_PROOF_PREFIXES = ['e2e/', 'docs/adr/', 'docs/runbooks/', 'scripts/smoke/'];
+const FUNCTIONAL_PROOF_RE = /(?:smoke|proof|certification|readiness|contract|integration)/i;
 
 if (!constitution?.graphContract || !constitution?.agentWorkContract) {
   fail('ops/kloel-ai-constitution.json ausente ou invalida.');
@@ -49,39 +133,27 @@ function readRepo(relativePath) {
 }
 
 function checkConstitutionContract() {
-  const requiredSections = [
-    'graphContract',
-    'agentWorkContract',
-    'convergenceContract',
-    'evidenceContract',
-  ];
+  REQUIRED_CONSTITUTION_SECTIONS.forEach(requireConstitutionSection);
+  REQUIRED_CONSTITUTION_ARRAYS.forEach(requireConstitutionArray);
+  requireConstitutionMission();
+}
 
-  for (const section of requiredSections) {
-    if (!constitution[section] || typeof constitution[section] !== 'object') {
-      fail(`ops/kloel-ai-constitution.json deve declarar ${section}.`);
-    }
+function requireConstitutionSection(section) {
+  if (!constitution[section] || typeof constitution[section] !== 'object') {
+    fail(`ops/kloel-ai-constitution.json deve declarar ${section}.`);
   }
+}
 
-  const requiredArrayFields = [
-    ['nonNegotiables', 8],
-    ['agentWorkContract.requiredBeforeEditing', 6],
-    ['agentWorkContract.requiredAfterEditing', 4],
-    ['agentWorkContract.forbiddenWork', 20],
-    ['convergenceContract.monotonicRules', 8],
-    ['convergenceContract.forbiddenNewCodeSignals', 20],
-    ['evidenceContract.acceptedProofClasses', 6],
-    ['evidenceContract.rejectedProofClasses', 8],
-  ];
-
-  for (const [fieldPath, minLength] of requiredArrayFields) {
-    const value = getContractField(fieldPath);
-    if (!Array.isArray(value) || value.length < minLength || value.some((item) => !item)) {
-      fail(
-        `ops/kloel-ai-constitution.json deve manter ${fieldPath} com pelo menos ${minLength} itens.`,
-      );
-    }
+function requireConstitutionArray([fieldPath, minLength]) {
+  const value = getContractField(fieldPath);
+  if (!Array.isArray(value) || value.length < minLength || value.some((item) => !item)) {
+    fail(
+      `ops/kloel-ai-constitution.json deve manter ${fieldPath} com pelo menos ${minLength} itens.`,
+    );
   }
+}
 
+function requireConstitutionMission() {
   if (!String(constitution.mission || '').includes('verifiable architecture')) {
     fail('A missao constitucional deve preservar arquitetura verificavel como objetivo explicito.');
   }
@@ -93,77 +165,32 @@ function getContractField(fieldPath) {
 
 function checkSelfIntegrity() {
   const source = readRepo('scripts/ops/check-ai-constitution.mjs');
-  const requiredSourceSnippets = [
-    'resolveDiffRange',
-    'collectConstitutionChangedFiles',
-    'checkFunctionalProofForProductionChanges',
-    'checkGateWiring',
-    'checkConstitutionContract',
-    'destructive git restore command',
-    'hook bypass command',
-    'unsafe cast bridge',
-    'fake/mock implementation marker',
-    'swallowed promise rejection',
-    'mudou sem teste/smoke/prova operacional',
-  ];
+  REQUIRED_SELF_INTEGRITY_SNIPPETS.forEach((snippet) => requireSourceSnippet(source, snippet));
+}
 
-  for (const snippet of requiredSourceSnippets) {
-    if (!source.includes(snippet)) {
-      fail(`check-ai-constitution deve preservar self-integrity snippet: ${snippet}.`);
-    }
+function requireSourceSnippet(source, snippet) {
+  if (!source.includes(snippet)) {
+    fail(`check-ai-constitution deve preservar self-integrity snippet: ${snippet}.`);
   }
 }
 
 function checkGateWiring() {
   const packageJson = readJsonFile('package.json', null);
-  const scripts = packageJson?.scripts || {};
+  PACKAGE_SCRIPT_REQUIREMENTS.forEach((requirement) =>
+    requirePackageScript(packageJson, requirement),
+  );
+  GATE_FILE_SNIPPETS.forEach(requireGateFileSnippet);
+}
 
-  if (scripts['check:ai-constitution'] !== 'node scripts/ops/check-ai-constitution.mjs') {
-    fail(
-      'package.json deve manter check:ai-constitution apontando para scripts/ops/check-ai-constitution.mjs.',
-    );
+function requirePackageScript(packageJson, [scriptName, predicate, message]) {
+  if (!predicate(packageJson?.scripts?.[scriptName])) {
+    fail(message);
   }
-  if (!String(scripts['guard:new-code'] || '').includes('npm run check:ai-constitution')) {
-    fail(
-      'guard:new-code deve executar check:ai-constitution antes dos demais gates de codigo novo.',
-    );
-  }
-  if (!String(scripts['check:all'] || '').includes('check-all-gates.mjs')) {
-    fail('check:all deve continuar delegando para scripts/ops/check-all-gates.mjs.');
-  }
+}
 
-  const allGates = readRepo('scripts/ops/check-all-gates.mjs');
-  if (!allGates.includes("label: 'governance-boundary'")) {
-    fail('check-all-gates deve manter governance-boundary como gate do conjunto completo.');
-  }
-  if (!allGates.includes("label: 'ai-constitution'")) {
-    fail('check-all-gates deve manter ai-constitution como gate do conjunto completo.');
-  }
-
-  const ciWorkflow = '.github/workflows/ci-cd.yml';
-  if (
-    existsSync(path.join(repoRoot, ciWorkflow)) &&
-    !readRepo(ciWorkflow).includes('npm run check:all')
-  ) {
-    fail(
-      `${ciWorkflow} deve executar npm run check:all para tornar a constituicao bloqueante no GitHub.`,
-    );
-  }
-
-  const prePush = '.husky/pre-push';
-  if (
-    existsSync(path.join(repoRoot, prePush)) &&
-    !readRepo(prePush).includes('npm run prepush:scoped')
-  ) {
-    fail(`${prePush} deve continuar chamando npm run prepush:scoped.`);
-  }
-
-  const scopedPrePush = 'scripts/ops/run-scoped-pre-push.mjs';
-  if (
-    existsSync(path.join(repoRoot, scopedPrePush)) &&
-    !readRepo(scopedPrePush).includes('npm run guard:new-code')
-  ) {
-    fail(`${scopedPrePush} deve continuar executando guard:new-code.`);
+function requireGateFileSnippet([file, snippet, message]) {
+  if (existsSync(path.join(repoRoot, file)) && !readRepo(file).includes(snippet)) {
+    fail(message);
   }
 }
 
@@ -352,11 +379,17 @@ function checkChangedFiles() {
   ];
 
   for (const file of changed) {
-    if (CONSTITUTION_AUTHORITY_FILES.has(file)) continue;
-    if (!isTextFile(file)) continue;
+    if (CONSTITUTION_AUTHORITY_FILES.has(file)) {
+      continue;
+    }
+    if (!isTextFile(file)) {
+      continue;
+    }
     const content = addedTextForFile(file);
     for (const { pattern, label, productionOnly = false } of forbiddenPatterns) {
-      if (productionOnly && isTestFile(file)) continue;
+      if (productionOnly && isTestFile(file)) {
+        continue;
+      }
       if (pattern.test(content)) {
         fail(`${file} contem ${label}; a constituicao proibe bypass/supressao.`);
       }
@@ -379,28 +412,38 @@ function addedTextForFile(file) {
     .map((args) => addedTextFromDiff(args))
     .filter(Boolean)
     .join('\n');
-  if (added.trim()) return added;
+  if (added.trim()) {
+    return added;
+  }
 
-  if (isTracked(file)) return '';
+  if (isTracked(file)) {
+    return '';
+  }
   return readRepo(file);
 }
 
 function addedTextFromDiff(args) {
   try {
-    const diff = execFileSync('git', args, {
-      cwd: repoRoot,
-      encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'ignore'],
-    });
-    const added = diff
-      .split('\n')
-      .filter((line) => line.startsWith('+') && !line.startsWith('+++'))
-      .map((line) => line.slice(1))
-      .join('\n');
-    return added;
+    return extractAddedText(execGit(args));
   } catch {
     return '';
   }
+}
+
+function execGit(args) {
+  return execFileSync('git', args, {
+    cwd: repoRoot,
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'ignore'],
+  });
+}
+
+function extractAddedText(diff) {
+  return diff
+    .split('\n')
+    .filter((line) => line.startsWith('+') && !line.startsWith('+++'))
+    .map((line) => line.slice(1))
+    .join('\n');
 }
 
 function isTracked(file) {
@@ -416,7 +459,9 @@ function isTracked(file) {
 }
 
 function isTextFile(file) {
-  if (statSync(path.join(repoRoot, file)).size > 2 * 1024 * 1024) return false;
+  if (statSync(path.join(repoRoot, file)).size > 2 * 1024 * 1024) {
+    return false;
+  }
   return /\.(?:js|mjs|cjs|ts|tsx|jsx|json|md|yml|yaml|sh|css|scss|html|txt|prisma|sql|toml|conf|template)$/.test(
     file,
   );
@@ -464,12 +509,7 @@ function checkForbiddenDeletions() {
 
 function checkFunctionalProofForProductionChanges() {
   const changed = collectConstitutionChangedFiles();
-  const productionChanged = changed.filter(
-    (file) =>
-      existsSync(path.join(repoRoot, file)) &&
-      isProductionSourceFile(file) &&
-      !CONSTITUTION_AUTHORITY_FILES.has(file),
-  );
+  const productionChanged = changed.filter(isUnprovenProductionChangeCandidate);
 
   if (productionChanged.length === 0 || hasFunctionalProofChange(changed)) {
     return;
@@ -480,20 +520,20 @@ function checkFunctionalProofForProductionChanges() {
   }
 }
 
+function isUnprovenProductionChangeCandidate(file) {
+  return (
+    existsSync(path.join(repoRoot, file)) &&
+    isProductionSourceFile(file) &&
+    !CONSTITUTION_AUTHORITY_FILES.has(file)
+  );
+}
+
 function collectConstitutionChangedFiles() {
-  const files = new Set(collectChangedFiles());
-  for (const file of collectStatusFiles()) {
-    files.add(file);
-  }
-  return [...files].filter(Boolean);
+  return [...new Set([...collectChangedFiles(), ...collectStatusFiles()])].filter(Boolean);
 }
 
 function collectConstitutionNameStatus() {
-  const entries = collectNameStatus();
-  for (const entry of collectStatusNameEntries()) {
-    entries.push(entry);
-  }
-  return entries;
+  return [...collectNameStatus(), ...collectStatusNameEntries()];
 }
 
 function collectStatusFiles() {
@@ -501,58 +541,54 @@ function collectStatusFiles() {
 }
 
 function collectStatusNameEntries() {
-  let output = '';
   try {
-    output = execFileSync('git', ['status', '--short'], {
-      cwd: repoRoot,
-      encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'ignore'],
-    });
+    return parseStatusEntries(execGit(['status', '--short']));
   } catch {
     return [];
   }
+}
 
-  return output
-    .split('\n')
-    .filter(Boolean)
-    .map((line) => {
-      const status = line.slice(0, 2).trim() || line.slice(0, 2);
-      const pathText = line.slice(3);
-      const renamedPath = pathText.includes(' -> ') ? pathText.split(' -> ').at(-1) : pathText;
-      return {
-        status,
-        paths: renamedPath ? [renamedPath] : [],
-      };
-    })
-    .filter((entry) => entry.paths.length > 0);
+function parseStatusEntries(output) {
+  return output.split('\n').filter(Boolean).map(parseStatusEntry).filter(hasStatusPath);
+}
+
+function parseStatusEntry(line) {
+  const pathText = line.slice(3);
+  const renamedPath = pathText.includes(' -> ') ? pathText.split(' -> ').at(-1) : pathText;
+  return {
+    status: line.slice(0, 2).trim() || line.slice(0, 2),
+    paths: renamedPath ? [renamedPath] : [],
+  };
+}
+
+function hasStatusPath(entry) {
+  return entry.paths.length > 0;
 }
 
 function isProductionSourceFile(file) {
-  if (isTestFile(file)) return false;
-  if (file.startsWith('scripts/ops/')) return false;
-  if (file.startsWith('ops/')) return false;
-  if (file.startsWith('.github/')) return false;
-  if (file.startsWith('docs/')) return false;
-  if (file.startsWith('e2e/')) return false;
-
   return (
-    /^backend\/src\/.*\.[cm]?tsx?$/.test(file) ||
-    /^backend\/prisma\/.*\.(?:prisma|sql)$/.test(file) ||
-    /^frontend\/src\/.*\.[cm]?tsx?$/.test(file) ||
-    /^prisma\/.*\.(?:prisma|sql)$/.test(file) ||
-    /^worker\/src\/.*\.[cm]?tsx?$/.test(file) ||
-    /^scripts\/(?!ops\/|pulse\/parser-tests\/).*\.mjs$/.test(file)
+    !isTestFile(file) &&
+    !hasAnyPrefix(file, NON_PRODUCTION_PREFIXES) &&
+    matchesAny(file, PRODUCTION_SOURCE_PATTERNS)
   );
 }
 
 function hasFunctionalProofChange(changed) {
-  return changed.some(
-    (file) =>
-      isTestFile(file) ||
-      file.startsWith('e2e/') ||
-      file.startsWith('docs/adr/') ||
-      file.startsWith('docs/runbooks/') ||
-      file.startsWith('scripts/smoke/') ||
-      /(?:smoke|proof|certification|readiness|contract|integration)/i.test(file),
+  return changed.some(hasFunctionalProofSignal);
+}
+
+function hasFunctionalProofSignal(file) {
+  return (
+    isTestFile(file) ||
+    hasAnyPrefix(file, FUNCTIONAL_PROOF_PREFIXES) ||
+    FUNCTIONAL_PROOF_RE.test(file)
   );
+}
+
+function hasAnyPrefix(value, prefixes) {
+  return prefixes.some((prefix) => value.startsWith(prefix));
+}
+
+function matchesAny(value, patterns) {
+  return patterns.some((pattern) => pattern.test(value));
 }
