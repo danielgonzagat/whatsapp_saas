@@ -6,17 +6,22 @@ import { PrismaService } from '../prisma/prisma.service';
 import type { BrainEventName, CommercialEventPayload } from './brain-event-taxonomy';
 
 type AutopilotEventIdRow = { id: string } | null;
+type UnsupportedJsonType = 'bigint' | 'function' | 'symbol' | 'undefined';
+
+const UNSUPPORTED_JSON_VALUE_READERS: Record<UnsupportedJsonType, (value: unknown) => string> = {
+  bigint: (value) => String(value),
+  function: (value) => (value as { name?: string }).name || 'function',
+  symbol: (value) => (value as symbol).description ?? 'symbol',
+  undefined: () => 'undefined',
+};
 
 function isJsonRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 function toUnsupportedJsonValue(value: unknown): string {
-  if (typeof value === 'bigint') return value.toString();
-  if (typeof value === 'function') return value.name || 'function';
-  if (typeof value === 'symbol') return value.description ?? 'symbol';
-  if (typeof value === 'undefined') return 'undefined';
-  return 'unsupported';
+  const reader = UNSUPPORTED_JSON_VALUE_READERS[typeof value as UnsupportedJsonType];
+  return reader ? reader(value) : 'unsupported';
 }
 
 function toInputJsonValue(value: unknown): Prisma.InputJsonValue | null {

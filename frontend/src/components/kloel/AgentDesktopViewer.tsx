@@ -44,15 +44,22 @@ function formatTimestamp(value?: Date) {
   });
 }
 
-function formatConnectionState(status?: WhatsAppConnectionStatus | null): string {
-  if (status?.connected) {
-    return 'Conectado';
-  }
+type ConnectionStateKey = 'connected' | 'disconnected' | 'reconnecting';
+
+const CONNECTION_STATE_LABELS: Record<ConnectionStateKey, string> = {
+  connected: 'Conectado',
+  disconnected: 'Desconectado',
+  reconnecting: 'Reconectando',
+};
+
+function resolveConnectionStateKey(status?: WhatsAppConnectionStatus | null): ConnectionStateKey {
   const raw = String(status?.status || '').toLowerCase();
-  if (raw.includes('reconnect') || raw.includes('reconnecting')) {
-    return 'Reconectando';
-  }
-  return 'Desconectado';
+  const reconnecting = raw.includes('reconnect') || raw.includes('reconnecting');
+  return status?.connected ? 'connected' : reconnecting ? 'reconnecting' : 'disconnected';
+}
+
+function formatConnectionState(status?: WhatsAppConnectionStatus | null): string {
+  return CONNECTION_STATE_LABELS[resolveConnectionStateKey(status)];
 }
 
 function formatOperatorReason(value?: string | null): string {
