@@ -43,6 +43,7 @@ import { ContaInfoSection } from './ContaInfoSection';
 import { StatusBadge } from './ContaShared';
 import Icons from './ContaIcons';
 import { SORA, MONO, EMBER, DEFAULT_SETTINGS_SECTION, resolveSettingsSection } from './ContaConstants';
+import { colors } from '@/lib/design-tokens';
 import { getErrorMessage } from './ContaHelpers';
 import type { SettingsSectionKey } from './ContaTypes';
 
@@ -217,7 +218,7 @@ export default function ContaView() {
               gap: 12,
             }}
           >
-            <span style={{ color: '#F59E0B' }}>{Icons.alert(20)}</span>
+            <span style={{ color: colors.semantic.warning }}>{Icons.alert(20)}</span>
             <div style={{ flex: 1 }}>
               <span
                 style={{
@@ -240,7 +241,7 @@ export default function ContaView() {
                   fontFamily: MONO,
                   fontSize: 24,
                   fontWeight: 700,
-                  color: pct === 100 ? '#10B981' : '#F59E0B',
+                  color: pct === 100 ? colors.semantic.success : colors.semantic.warning,
                 }}
               >
                 {pct}%
@@ -266,7 +267,7 @@ export default function ContaView() {
               gap: 12,
             }}
           >
-            <span style={{ color: '#3B82F6', flexShrink: 0 }}>{Icons.clock(18)}</span>
+            <span style={{ color: colors.semantic.info, flexShrink: 0 }}>{Icons.clock(18)}</span>
             <div style={{ flex: 1 }}>
               <span
                 style={{
@@ -306,7 +307,7 @@ export default function ContaView() {
             style={{
               height: '100%',
               width: `${pct}%`,
-              background: pct === 100 ? '#10B981' : EMBER,
+              background: pct === 100 ? colors.semantic.success : EMBER,
               borderRadius: 2,
               transition: 'width .3s',
             }}
@@ -341,7 +342,7 @@ export default function ContaView() {
                 >
                   <span
                     style={{
-                      color: active ? EMBER : done ? '#10B981' : 'var(--app-text-placeholder)',
+                      color: active ? EMBER : done ? colors.semantic.success : 'var(--app-text-placeholder)',
                     }}
                   >
                     {sec.icon(16)}
@@ -356,7 +357,7 @@ export default function ContaView() {
                   >
                     {sec.label}
                   </span>
-                  {done ? <span style={{ color: '#10B981' }}>{Icons.check(12)}</span> : null}
+                  {done ? <span style={{ color: colors.semantic.success }}>{Icons.check(12)}</span> : null}
                 </button>
               );
             })}

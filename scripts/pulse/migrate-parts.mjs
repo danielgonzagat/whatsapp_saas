@@ -77,8 +77,8 @@ console.log(`Found ${partsFiles.length} files inside __parts__ directories`);
 const moves = [];
 for (const src of partsFiles) {
   const relativePath = relative(PULSE_ROOT, src);
-  // Remove all /__parts__/ segments
-  const targetRel = relativePath.replace(/\/__parts__\//g, '/');
+  // Remove all /__parts__/ segments — handle both leading and inner occurrences
+  const targetRel = relativePath.replace(/(^|\/)__parts__\//g, (_, p) => p);
   const dst = resolve(PULSE_ROOT, targetRel);
   moves.push({ src, dst, targetRel });
 }

@@ -1,7 +1,7 @@
 'use client';
 import { colors } from '@/lib/design-tokens';
 
-import { SORA, MONO, BG_CARD, BORDER, inputStyle, btnPrimary, btnGhost, iconBtn } from './ProdutosView.shared';
+import { SORA, BG_CARD, BORDER, iconBtn } from './ProdutosView.shared';
 import { IC } from './ProdutosView.icons';
 import { kloelT } from '@/lib/i18n/t';
 import { toSupportedEmbedUrl } from '@/lib/video-embed';

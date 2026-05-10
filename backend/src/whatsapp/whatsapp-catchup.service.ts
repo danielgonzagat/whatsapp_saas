@@ -33,9 +33,11 @@ import {
   getLidPnMapExt,
   resolveCanonicalPhoneExt,
   isWorkspaceSelfChatIdExt,
+} from './whatsapp-catchup.helpers';
+import {
   normalizeChatsExt,
   normalizeMessagesExt,
-} from './__companions__/whatsapp-catchup.service.companion';
+} from './whatsapp-catchup.normalizers';
 
 const D__D_S____S_DOE_RE = /^\+?\d[\d\s-]*\s+doe$/i;
 
