@@ -1,104 +1,115 @@
 'use client';
-
-import { SORA, MONO, BG_CARD, BG_ELEVATED, BORDER, GREEN, fmtBRL, NP } from './ProdutosView.shared';
+import { colors } from '@/lib/design-tokens';
+import { kloelT } from '@/lib/i18n/t';
+import {
+  NP,
+  SORA,
+  MONO,
+  BG_CARD,
+  BG_ELEVATED,
+  BORDER,
+  GREEN,
+  fmtBRL,
+  iconBtn,
+} from './ProdutosView.shared';
 import { IC } from './ProdutosView.icons';
+import type React from 'react';
 import type { MarketplaceItem } from './ProdutosView.types';
 
-function HeartIcon({ filled, size }: { filled: boolean; size: number }) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill={filled ? GREEN : 'none'}
-      stroke={filled ? GREEN : 'var(--app-text-tertiary)'}
-      strokeWidth={2}
-      aria-hidden="true"
-    >
-      <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
-    </svg>
-  );
-}
-
-interface Props {
-  items: MarketplaceItem[];
-  onSelectItem: (item: MarketplaceItem) => void;
-  onToggleSave: (productId: string, isSaved: boolean) => void;
-}
-
 export default function MarketplaceProductGrid({
-  items,
+  filteredMarket,
   onSelectItem,
   onToggleSave,
-}: Props) {
-  if (items.length === 0) {
-    return (
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '48px 16px',
-          background: BG_CARD,
-          borderRadius: 12,
-          border: `1px solid ${BORDER}`,
-          gap: 10,
-          color: 'var(--app-text-tertiary)',
-        }}
-      >
-        {IC.store(32)}
-        <div style={{ fontFamily: SORA, fontSize: 14, fontWeight: 600 }}>Nenhum produto disponivel</div>
-        <div style={{ fontFamily: SORA, fontSize: 12 }}>
-          Nenhum produto encontrado com os filtros atuais.
-        </div>
-      </div>
-    );
-  }
-
+}: {
+  filteredMarket: MarketplaceItem[];
+  onSelectItem: (item: MarketplaceItem) => void;
+  onToggleSave: (productId: string, isSaved: boolean) => void;
+}) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      {items.map((item) => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      {filteredMarket.length === 0 && (
         <div
-          key={item.id}
-          onClick={() => onSelectItem(item)}
           style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 12,
-            padding: '12px 12px 12px 0',
+            padding: '40px 20px',
+            textAlign: 'center',
             background: BG_CARD,
+            borderRadius: 6,
             border: `1px solid ${BORDER}`,
-            borderLeft: `3px solid ${GREEN}`,
-            borderRadius: 8,
-            cursor: 'pointer',
           }}
         >
+          <span style={{ color: GREEN, display: 'block', marginBottom: 12 }}>{IC.store(32)}</span>
+          <div
+            style={{
+              fontFamily: SORA,
+              fontSize: 14,
+              fontWeight: 600,
+              color: 'var(--app-text-primary)',
+              marginBottom: 6,
+            }}
+          >
+            {kloelT('Nenhum produto disponivel no marketplace.')}
+          </div>
+          <div style={{ fontFamily: SORA, fontSize: 13, color: 'var(--app-text-secondary)' }}>
+            {kloelT('Novos produtos serao exibidos aqui quando estiverem disponiveis.')}
+          </div>
+        </div>
+      )}
+      {filteredMarket.map((m) => (
+        <div
+          key={m.id}
+          onClick={() => onSelectItem(m)}
+          style={{
+            position: 'relative',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 14,
+            padding: '14px 16px 14px 20px',
+            background: BG_CARD,
+            borderRadius: 6,
+            border: `1px solid ${BORDER}`,
+            cursor: 'pointer',
+            transition: 'border-color 150ms ease',
+            overflow: 'hidden',
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              (e.currentTarget as HTMLElement).click();
+            }
+          }}
+        >
+          <div
+            style={{
+              position: 'absolute',
+              left: 0,
+              top: 0,
+              bottom: 0,
+              width: 3,
+              background: GREEN,
+            }}
+          />
           <div
             style={{
               width: 40,
               height: 40,
               borderRadius: 6,
-              overflow: 'hidden',
-              flexShrink: 0,
               background: BG_ELEVATED,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              marginLeft: 12,
             }}
           >
-            {item.thumbnailUrl || item.imageUrl ? (
+            {m.thumbnailUrl || m.imageUrl ? (
               <img
-                src={item.thumbnailUrl || item.imageUrl}
+                src={m.thumbnailUrl || m.imageUrl}
                 alt=""
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 6 }}
               />
             ) : (
-              IC.box(20)
+              <span style={{ color: GREEN }}>{IC.box(20)}</span>
             )}
           </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ flex: 1 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <span
                 style={{
@@ -106,47 +117,62 @@ export default function MarketplaceProductGrid({
                   fontSize: 13,
                   fontWeight: 600,
                   color: 'var(--app-text-primary)',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
                 }}
               >
-                {item.name}
+                {m.name}
               </span>
-              {(item.temperature || 0) >= 90 && IC.fire(14)}
+              {(m.temperature || 0) >= 90 && <span>{IC.fire(12)}</span>}
             </div>
-            <div style={{ fontFamily: SORA, fontSize: 11, color: 'var(--app-text-tertiary)', marginTop: 2 }}>
-              {item.category}{item.producer ? ` · ${item.producer}` : ''}
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
-              <NP w={60} h={14} color={GREEN} />
-              <span style={{ fontFamily: MONO, fontSize: 12, fontWeight: 600, color: GREEN }}>
-                {item.commission || 0}%
-              </span>
-              <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--app-text-secondary)' }}>
-                {fmtBRL(item.price || 0)}
-              </span>
+            <div
+              style={{
+                fontFamily: MONO,
+                fontSize: 11,
+                color: 'var(--app-text-tertiary)',
+                marginTop: 2,
+              }}
+            >
+              {m.category} {kloelT('&middot; por')} {m.producer}
             </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
-            {IC.star(12)}
+          <NP w={100} h={24} color={GREEN} />
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontFamily: MONO, fontSize: 13, fontWeight: 600, color: GREEN }}>
+              {m.commission || 0}%
+            </div>
+            <div
+              style={{
+                fontFamily: MONO,
+                fontSize: 10,
+                color: 'var(--app-text-secondary)',
+                marginTop: 2,
+              }}
+            >
+              {fmtBRL(m.price || 0)}
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <span style={{ color: 'colors.ember.primary' }}>{IC.star(12)}</span>
             <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--app-text-secondary)' }}>
-              {item.rating || 0}
+              {m.rating || 0}
             </span>
           </div>
           <button
+            type="button"
             onClick={(e) => {
               e.stopPropagation();
-              onToggleSave(item.id, !item.isSaved);
+              onToggleSave(m.id, !!m.isSaved);
             }}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'flex', flexShrink: 0 }}
-            aria-label={item.isSaved ? 'Remover dos salvos' : 'Salvar produto'}
+            style={{
+              ...iconBtn,
+              color: m.isSaved ? GREEN : 'var(--app-text-secondary)',
+            }}
+            title={m.isSaved ? 'Remover dos salvos' : 'Salvar produto'}
           >
-            <HeartIcon filled={Boolean(item.isSaved)} size={16} />
+            {IC.heart(14)}
           </button>
-          <div style={{ color: 'var(--app-text-tertiary)', fontSize: 18, flexShrink: 0, paddingRight: 4 }}>
-            {IC.chevRight(14)}
-          </div>
+          <span style={{ color: 'var(--app-text-tertiary)', fontFamily: SORA, fontSize: 16 }}>
+            {kloelT('&rsaquo;')}
+          </span>
         </div>
       ))}
     </div>

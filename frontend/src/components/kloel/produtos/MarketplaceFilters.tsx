@@ -1,90 +1,95 @@
 'use client';
-import { colors } from '@/lib/design-tokens';
-
-import { SORA, BG_ELEVATED, BORDER, GREEN } from './ProdutosView.shared';
+import { kloelT } from '@/lib/i18n/t';
+import {
+  SORA,
+  BG_CARD,
+  BG_ELEVATED,
+  BORDER,
+  GREEN,
+} from './ProdutosView.shared';
 import { IC } from './ProdutosView.icons';
-
-interface Props {
-  search: string;
-  catFilter: string | null;
-  categories: string[];
-  onSearchChange: (value: string) => void;
-  onCatFilterChange: (value: string | null) => void;
-}
+import type React from 'react';
 
 export default function MarketplaceFilters({
   search,
-  catFilter,
+  setSearch,
   categories,
-  onSearchChange,
-  onCatFilterChange,
-}: Props) {
+  catFilter,
+  setCatFilter,
+}: {
+  search: string;
+  setSearch: (v: string) => void;
+  categories: string[];
+  catFilter: string | null;
+  setCatFilter: (v: string | null) => void;
+}) {
   return (
     <>
-      <div style={{ position: 'relative' }}>
-        <div
+      <div style={{ position: 'relative', marginBottom: 16 }}>
+        <span
           style={{
             position: 'absolute',
             left: 12,
             top: '50%',
             transform: 'translateY(-50%)',
-            color: 'var(--app-text-tertiary)',
-            display: 'flex',
+            color: 'var(--app-text-secondary)',
           }}
         >
           {IC.search(16)}
-        </div>
+        </span>
         <input
-          type="text"
+          aria-label={kloelT('Buscar produtos para se afiliar')}
           value={search}
-          onChange={(e) => onSearchChange(e.target.value)}
-          placeholder="Buscar produtos para se afiliar..."
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder={kloelT('Buscar produtos para se afiliar...')}
           style={{
             width: '100%',
-            padding: '8px 12px 8px 36px',
-            background: BG_ELEVATED,
+            padding: '10px 14px 10px 36px',
+            background: BG_CARD,
             border: `1px solid ${BORDER}`,
-            borderRadius: 8,
+            borderRadius: 6,
             color: 'var(--app-text-primary)',
             fontFamily: SORA,
             fontSize: 13,
             outline: 'none',
-            boxSizing: 'border-box',
+            boxSizing: 'border-box' as const,
           }}
         />
       </div>
 
-      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
         <button
-          onClick={() => onCatFilterChange(null)}
+          type="button"
+          onClick={() => setCatFilter(null)}
           style={{
             padding: '6px 14px',
-            borderRadius: 20,
+            borderRadius: 99,
             border: 'none',
-            fontFamily: SORA,
-            fontSize: 12,
             cursor: 'pointer',
+            fontFamily: SORA,
+            fontSize: 11,
             fontWeight: 600,
-            background: catFilter === null ? GREEN : BG_ELEVATED,
-            color: catFilter === null ? colors.text.silver : 'var(--app-text-secondary)',
+            background: !catFilter ? GREEN : BG_ELEVATED,
+            color: !catFilter ? 'var(--app-text-on-accent)' : 'var(--app-text-secondary)',
           }}
         >
-          Todos
+          {kloelT('Todos')}
         </button>
         {categories.map((cat) => (
           <button
+            type="button"
             key={cat}
-            onClick={() => onCatFilterChange(catFilter === cat ? null : cat)}
+            onClick={() => setCatFilter(catFilter === cat ? null : cat)}
             style={{
               padding: '6px 14px',
-              borderRadius: 20,
+              borderRadius: 99,
               border: 'none',
-              fontFamily: SORA,
-              fontSize: 12,
               cursor: 'pointer',
+              fontFamily: SORA,
+              fontSize: 11,
               fontWeight: 600,
               background: catFilter === cat ? GREEN : BG_ELEVATED,
-              color: catFilter === cat ? colors.text.silver : 'var(--app-text-secondary)',
+              color: catFilter === cat ? 'var(--app-text-on-accent)' : 'var(--app-text-secondary)',
             }}
           >
             {cat}
