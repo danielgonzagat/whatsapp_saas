@@ -293,31 +293,16 @@ O estado de rigor maximo do Codacy faz parte da governance.
 <claude-mem-context>
 # Memory Context
 
-# [whatsapp_saas] recent context, 2026-05-10 6:38pm GMT-3
+# [whatsapp_saas] recent context, 2026-05-10 7:09pm GMT-3
 
 Legend: 🎯session 🔴bugfix 🟣feature 🔄refactor ✅change 🔵discovery ⚖️decision
 Format: ID TIME TYPE TITLE
 Fetch details: get_observations([IDs]) | Search: mem-search skill
 
-Stats: 50 obs (24,622t read) | 641,033t work | 96% savings
+Stats: 50 obs (24,223t read) | 569,173t work | 96% savings
 
-### May 9, 2026
-684 4:26p 🔵 Daemon RAM Profile Post-Restart — Startup Spike to 154MB Then GC Down to 40MB at Idle
-685 " 🟣 Obsidian Mirror Watchdog Script Created — Auto-Restarts Daemon if RSS Exceeds 128MB
-686 4:27p 🔵 Watchdog Triggered First Restart — Daemon Startup Consistently Exceeds 128MB RSS Threshold
-687 " ✅ Watchdog RSS Threshold Raised to 192MB to Prevent Startup Restart Loop
-688 4:28p 🔵 Watchdog Restart Loop Continues — Daemon Reaches 194MB RSS at 11s, Near New 192MB Ceiling
-689 " 🔵 Daemon Stabilized at 144MB RSS After Multiple Restarts — 192MB Threshold Working
-691 4:29p 🔴 Duplicate Daemon Instances Killed — Two Watchdog Trees Running Simultaneously
-695 4:30p 🔵 Obsidian Mirror Daemon Stable at 40MB RSS — Clean Single-Watchdog Configuration Confirmed
 ### May 10, 2026
-706 5:43p 🔵 Kloel Project — AI Constitution Anti-Cheat Gate System
-708 5:45p 🔵 check-ai-constitution.mjs Full Architecture — Three Enforcement Pillars
-709 " 🔵 kloel-ai-constitution.json — Full Content of the Machine-Readable Constitution
-710 " 🔵 Governance Approval System — ops/governance-change-approvals.json Is Currently Empty
-711 " 🔵 Current Repo State — Branch chore/purga-total-debt with 804 Deletions Across PULSE Scripts
-715 5:49p 🔵 Kloel AI Constitution System — Existing Gate Architecture Mapped
-722 " 🟣 New Worktree Created — chore/ai-constitution-convergence-gates Branched from main
+722 5:49p 🟣 New Worktree Created — chore/ai-constitution-convergence-gates Branched from main
 723 " 🔵 check-ai-constitution.mjs — Full Implementation Architecture Mapped
 724 " 🔵 ops/kloel-ai-constitution.json — Declarative Constitution Full Content Mapped
 725 " 🔵 Kloel Governance Layer Full Stack — AGENTS.md, CLAUDE.md, CODEX.md, AGENT_RUNBOOK.md All Read
@@ -353,8 +338,22 @@ Stats: 50 obs (24,622t read) | 641,033t work | 96% savings
 777 " 🔵 Pre-Commit Hook Blocks Constitution Commit — Protected Files and Self-Referential False Positive
 783 6:30p 🔵 gate-rules.mjs Anti-Self-Trip Pattern — Forbidden Strings Built via Per-Character Joins
 784 " 🔴 Self-Integrity Snippet Name Changed — False Positive in Architecture Gate Resolved
+785 6:39p ⚖️ Human Approval Granted — validate-staged.mjs Pre-Commit Gate Enhancement
+787 " 🟣 validate-staged.mjs — Governance Approval Bypass Added to Protected-File Gate
+789 6:40p ✅ validate-staged.mjs Patch Passes Full Guard Suite on Node 20
+791 6:43p ✅ check:all Suite — Ratchet, Lint, All Typechecks, and Frontend Tests Green
+793 " ✅ check:all Suite — All 20 Gates Green, Exit Code 0 on Node 20
+795 " 🔵 Pre-Commit Blocked — `eslint-disable` Forbidden Token in check-ai-constitution.mjs:286
+796 6:44p 🔴 validate-staged.mjs — Protected-Path `continue` Logic Fixed to Always Skip Remaining Checks
+799 6:48p ✅ Second check:all Run — All 20 Gates Green After Control-Flow Bugfix in validate-staged.mjs
+800 6:49p 🔵 validate-staged.mjs Had `MM` Git Status — Both Staged and Unstaged Changes After Two-Patch Series
+802 " 🟣 Commit `681a63249` Landed on chore/ai-constitution-convergence-gates — Pre-Commit Hook Passed
+804 6:50p 🔵 pre-push Hook Architecture — `run-scoped-pre-push.mjs` Runs 7 Ordered Gate Stages
+808 6:51p 🔵 Pre-Push Frontend Tests — 276/276 Passed; Next.js `middleware` Deprecation Warning Active
+809 6:52p 🟣 Branch chore/ai-constitution-convergence-gates Pushed to Origin — Full Pre-Push Pipeline Passed
+810 " 🔵 Worker Tests Use Dummy OpenAI Key — 401 Errors Are Expected and Tests Still Pass
 
-Access 641k tokens of past work via get_observations([IDs]) or mem-search skill.
+Access 569k tokens of past work via get_observations([IDs]) or mem-search skill.
 </claude-mem-context>
 
 ## PULSE Auditor Immutability
