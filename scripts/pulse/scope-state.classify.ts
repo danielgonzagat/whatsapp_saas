@@ -5,7 +5,7 @@ import { ROOT_CONFIG_FILES } from './scope-state.constants/main';
 import {
   discoverWorkspaceStructure,
   type WorkspaceStructure,
-} from './__parts__/scope-state.constants/workspace-walk';
+} from './scope-state.constants/workspace-walk';
 import { normalizePath } from './scope-state.codacy';
 import { discoverSourceExtensionsFromObservedTypescript } from './dynamic-reality-kernel/token-evidence';
 import { deriveStringUnionMembersFromTypeContract } from './dynamic-reality-kernel/type-contract-labels';

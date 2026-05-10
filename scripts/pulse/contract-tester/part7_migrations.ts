@@ -9,7 +9,7 @@ import { safeJoin } from '../../lib/safe-path';
 import {
   deriveUnitValue,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+} from '../../dynamic-reality-kernel/catalog-arithmetic';
 import { discoverDirectorySkipHintsFromEvidence } from '../../dynamic-reality-kernel/token-evidence';
 import {
   DROP_TABLE_RE,

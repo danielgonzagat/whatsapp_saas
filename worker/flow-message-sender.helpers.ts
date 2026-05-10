@@ -1,9 +1,9 @@
 import { randomInt } from 'node:crypto';
-import { prisma } from '../db';
-import { extractExternalId } from '../flow-engine-external-id';
-import { ProviderRegistry } from '../providers/registry';
-import { redisPub } from '../redis-client';
-import type { WorkerLogger as WorkerLoggerClass } from '../logger';
+import { prisma } from './db';
+import { extractExternalId } from './flow-engine-external-id';
+import { ProviderRegistry } from './providers/registry';
+import { redisPub } from './redis-client';
+import type { WorkerLogger as WorkerLoggerClass } from './logger';
 
 export interface FlowMessageSenderDeps {
   log: WorkerLoggerClass;
@@ -28,7 +28,7 @@ export async function sendMessage(
   let conversationId: string | null = null;
 
   // Rate Limiter Check
-  const { RateLimiter } = await import('../providers/rate-limiter');
+  const { RateLimiter } = await import('./providers/rate-limiter');
   const allowedWorkspace = await RateLimiter.checkLimit(workspace.id);
   const allowedNumber = await RateLimiter.checkNumberLimit(workspace.id, user);
   if (!allowedWorkspace || !allowedNumber) {
@@ -37,8 +37,8 @@ export async function sendMessage(
   }
 
   // Watchdog & Retries
-  const { Watchdog } = await import('../providers/watchdog');
-  const { HealthMonitor } = await import('../providers/health-monitor');
+  const { Watchdog } = await import('./providers/watchdog');
+  const { HealthMonitor } = await import('./providers/health-monitor');
   const MAX_RETRIES = 3;
   let lastError: unknown;
   const sendWithRetry = async (attempt: number): Promise<Record<string, unknown>> => {

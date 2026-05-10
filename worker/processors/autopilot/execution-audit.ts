@@ -1,8 +1,5 @@
 import { redisPub } from '../../redis-client';
 import { prisma } from '../../db';
-import {
-  type UnknownRecord,
-} from './shared';
 
 export async function persistFallbackMessage(params: {
   workspaceId: string;

@@ -7,7 +7,7 @@ import { buildPulseAutonomyMemoryState } from '../../autonomy-loop.memory';
 import {
   buildArtifactRegistry,
   resolveArtifactRelativePath,
-} from '../../artifact-registry/__parts__/registry';
+} from '../../artifact-registry/registry';
 import type { PulseArtifactRegistry } from '../../artifact-registry/discovery';
 import { cleanupPulseArtifacts } from '../../artifact-gc';
 import { buildConvergencePlan } from '../../convergence-plan/plan';
@@ -31,16 +31,16 @@ import {
   deriveZeroValue,
   discoverAllObservedHttpStatusCodes,
   observeStatusTextLengthFromCatalog,
-} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+} from '../../dynamic-reality-kernel/catalog-arithmetic';
 import { deriveStringUnionMembersFromTypeContract } from '../../dynamic-reality-kernel/type-contract-labels';
 import {
   discoverAllObservedArtifactFilenames,
   discoverDirectorySkipHintsFromEvidence,
-} from '../../dynamic-reality-kernel/__parts__/token-evidence';
+} from '../../dynamic-reality-kernel/token-evidence';
 import {
   buildDirectiveContextFabricPatch,
   buildPulseContextFabricBundle,
-} from '../../context-broadcast/__parts__/fabric';
+} from '../../context-broadcast/fabric';
 import type { PulseAgentOrchestrationState, PulseAutonomyState } from '../../types.autonomy';
 import type { PulseArtifactSnapshot, PulseArtifactPaths } from './types';
 

@@ -10,7 +10,7 @@ import { deriveDynamicFindingIdentity } from '../../finding-identity';
 import {
   deriveZeroValue,
   deriveUnitValue,
-} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+} from '../../dynamic-reality-kernel/catalog-arithmetic';
 import { deriveStringUnionMembersFromTypeContract } from '../../dynamic-reality-kernel/type-contract-labels';
 
 export function normalizeForMatch(p: string): string {

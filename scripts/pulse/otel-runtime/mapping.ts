@@ -4,7 +4,7 @@ import * as path from 'path';
 import {
   deriveUnitValue,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+} from '../../dynamic-reality-kernel/catalog-arithmetic';
 import type {
   OtelSpan,
   OtelTrace,

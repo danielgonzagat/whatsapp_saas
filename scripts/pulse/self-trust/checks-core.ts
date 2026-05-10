@@ -12,7 +12,7 @@ import { deriveStringUnionMembersFromTypeContract } from '../../dynamic-reality-
 import {
   deriveUnitValue,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+} from '../../dynamic-reality-kernel/catalog-arithmetic';
 import { discoverAllObservedArtifactFilenames } from '../../dynamic-reality-kernel/token-evidence';
 import { discoverConvergenceEvidenceConfidenceLabels } from '../../__kernel_additions__/discoverConvergenceEvidenceConfidenceLabels';
 import { discoverConvergenceRiskLevelLabels } from '../../__kernel_additions__/discoverConvergenceRiskLevelLabels';

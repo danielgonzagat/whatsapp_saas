@@ -7,7 +7,7 @@ import { deriveStringUnionMembersFromTypeContract } from '../../dynamic-reality-
 import {
   deriveUnitValue,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+} from '../../dynamic-reality-kernel/catalog-arithmetic';
 import { discoverSourceExtensionsFromObservedTypescript } from '../../dynamic-reality-kernel/token-evidence';
 import {
   DEFAULT_IDENTIFIER_RE,

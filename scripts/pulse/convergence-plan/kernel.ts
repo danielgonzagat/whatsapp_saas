@@ -24,7 +24,7 @@ import {
   discoverSourceLabelFromObservedContext,
   deriveUnitIdFromObservedKind,
   deriveProductImpactFromObservedScope,
-} from '../../dynamic-reality-kernel/__parts__/token-evidence';
+} from '../../dynamic-reality-kernel/token-evidence';
 import { deriveUnitValue } from '../../dynamic-reality-kernel/catalog-arithmetic';
 import { discoverConvergenceUnitKindLabels } from '../../__kernel_additions__/discoverConvergenceUnitKindLabels';
 import { discoverConvergenceUnitStatusLabels } from '../../__kernel_additions__/discoverConvergenceUnitStatusLabels';
@@ -39,11 +39,11 @@ import {
   discoverGateFailureClassLabels,
   discoverParityGapKindLabels,
   discoverParityGapSeverityLabels,
-} from '../../dynamic-reality-kernel/__parts__/type-contract-labels';
+} from '../../dynamic-reality-kernel/type-contract-labels';
 import {
   discoverTruthModeLabels,
   discoverScenarioStatusLabels,
-} from '../../dynamic-reality-kernel/__parts__/type-contract-engines';
+} from '../../dynamic-reality-kernel/type-contract-engines';
 import { discoverCapabilityStatusLabels } from '../../__kernel_additions__/discoverCapabilityStatusLabels';
 import { discoverFlowProjectionStatusLabels } from '../../__kernel_additions__/discoverFlowProjectionStatusLabels';
 import { discoverExternalSignalSourceLabels } from '../../__kernel_additions__/discoverExternalSignalSourceLabels';

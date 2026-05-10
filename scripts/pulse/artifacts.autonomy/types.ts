@@ -8,11 +8,11 @@ import {
   deriveZeroValue,
   deriveCatalogPercentScaleFromObservedCatalog,
   observeStatusTextLengthFromCatalog,
-} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+} from '../../dynamic-reality-kernel/catalog-arithmetic';
 import {
   discoverDoDGateStatusLabels,
   discoverCertificationProfileLabels,
-} from '../../dynamic-reality-kernel/__parts__/type-contract-engines';
+} from '../../dynamic-reality-kernel/type-contract-engines';
 import { discoverConvergenceUnitStatusLabels } from '../../__kernel_additions__/discoverConvergenceUnitStatusLabels';
 import { discoverConvergenceExecutionModeLabels } from '../../__kernel_additions__/discoverConvergenceExecutionModeLabels';
 

@@ -16,11 +16,11 @@ import {
 import {
   deriveZeroValue,
   deriveUnitValue,
-} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+} from '../../dynamic-reality-kernel/catalog-arithmetic';
 import {
   discoverAllObservedArtifactFilenames,
   discoverSourceExtensionsFromObservedTypescript,
-} from '../../dynamic-reality-kernel/__parts__/token-evidence';
+} from '../../dynamic-reality-kernel/token-evidence';
 import type { ParsedFunc } from './grammar-and-types';
 import type { BehaviorNodeArtifact } from './grammar-and-types';
 import { extractFunctionsFromSource } from './function-extraction';

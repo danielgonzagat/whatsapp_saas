@@ -3,4 +3,4 @@ export {
   getArtifactDefinitionById,
   requireArtifactDefinitionById,
   resolveArtifactRelativePath,
-} from './artifact-registry/__parts__/registry';
+} from './artifact-registry/registry';

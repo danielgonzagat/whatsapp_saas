@@ -2,8 +2,8 @@
  * Logger estruturado (JSON) para worker, com contexto e correlação.
  */
 export class WorkerLogger {
-  private correlationId?: string;
-  private workspaceId?: string;
+  private correlationId: string | undefined;
+  private workspaceId: string | undefined;
 
   constructor(private context: string) {}
 

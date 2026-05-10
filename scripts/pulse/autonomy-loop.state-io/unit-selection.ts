@@ -8,7 +8,7 @@ import { compact } from '../../autonomy-loop.utils';
 import {
   getPreferredAutomationSafeUnits,
   hasUnitConflict,
-} from '../../autonomy-loop.unit-ranking/__parts__/selection';
+} from '../../autonomy-loop.unit-ranking/selection';
 import { readDirectiveArtifact } from './directive';
 import {
   readQueueInfluence,

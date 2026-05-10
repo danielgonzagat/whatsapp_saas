@@ -14,7 +14,7 @@ import {
 import {
   buildPulseMachineReadiness,
   getProductFacingCapabilities,
-} from '../../artifacts.report/__parts__/machine-readiness';
+} from '../../artifacts.report/machine-readiness';
 import { deriveAuthorityState } from '../../artifacts.autonomy/authority';
 import { buildAutonomyReadiness } from '../../artifacts.autonomy/readiness';
 import { buildAutonomyProof } from '../../artifacts.autonomy/autonomy-proof';

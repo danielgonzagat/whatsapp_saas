@@ -1,4 +1,4 @@
-import { WorkerLogger } from '../logger';
+import { WorkerLogger } from './logger';
 
 const log = new WorkerLogger('fallback-email');
 

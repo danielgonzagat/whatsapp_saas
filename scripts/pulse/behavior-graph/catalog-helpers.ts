@@ -13,11 +13,11 @@ import type {
 import {
   discoverDirectorySkipHintsFromEvidence,
   discoverSourceExtensionsFromObservedTypescript,
-} from '../../dynamic-reality-kernel/__parts__/token-evidence';
+} from '../../dynamic-reality-kernel/token-evidence';
 import {
   deriveZeroValue,
   deriveUnitValue,
-} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+} from '../../dynamic-reality-kernel/catalog-arithmetic';
 import { deriveRuntimeStringBoundaryFromObservedCatalog } from '../../dynamic-reality-kernel/profile-derivations';
 import { deriveStringUnionMembersFromTypeContract } from '../../dynamic-reality-kernel/type-contract-labels';
 

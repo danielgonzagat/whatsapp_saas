@@ -9,12 +9,12 @@ import {
   discoverSignalSourceLabels,
   discoverSignalTypeLabels,
   discoverTruthModeLabels,
-} from '../../dynamic-reality-kernel/__parts__/type-contract-engines';
+} from '../../dynamic-reality-kernel/type-contract-engines';
 import {
   discoverRouteSeparatorFromRuntime,
   deriveUnitValue,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+} from '../../dynamic-reality-kernel/catalog-arithmetic';
 import type { CanonicalExternalSignal } from './parsing';
 import { TREND_LABELS, isRecord, asNumber } from './parsing';
 import { computeImpactScore } from './mapping';

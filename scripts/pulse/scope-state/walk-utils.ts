@@ -7,7 +7,7 @@ import {
   IGNORED_DIRECTORIES,
   ROOT_CONFIG_FILES,
   SCANNABLE_EXTENSIONS,
-} from '../../__parts__/scope-state.constants/main';
+} from '../../scope-state.constants/main';
 import { normalizePath } from '../../scope-state.codacy';
 import {
   classifyExcludeReason,

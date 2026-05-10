@@ -3,7 +3,7 @@
  * Implementation in __parts__/artifacts/
  *
  * Contains writeRegisteredArtifact() calls for AST-based artifact registry
- * discovery (scanned by artifact-registry/__parts__/discovery.ts).
+ * discovery (scanned by artifact-registry/discovery.ts).
  * This file is never imported at runtime — it exists purely for the
  * TypeScript AST scanner to discover artifact IDs.
  */

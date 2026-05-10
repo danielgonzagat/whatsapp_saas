@@ -1,7 +1,7 @@
 import type {
   PulseCapabilityStatus,
   PulseFlowProjectionStatus,
-} from '../../__parts__/types.capabilities/01-primitives';
+} from '../../types.capabilities/01-primitives';
 import type { PulseProductVision } from '../../types.product-vision';
 import { deriveStructuralFamilies, familiesOverlap } from '../../structural-family';
 import {

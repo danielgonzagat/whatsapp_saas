@@ -7,7 +7,7 @@
 import type {
   PulseCapability,
   PulseCapabilityState,
-} from '../../__parts__/types.capabilities/03-capability';
+} from '../../types.capabilities/03-capability';
 import type { PulseCodacyEvidence, PulseStructuralGraph } from '../../types.structural';
 import type { PulseExecutionEvidence } from '../../types.evidence';
 import type { PulseResolvedManifest } from '../../types.resolved-manifest';
@@ -22,7 +22,7 @@ import {
   graphTraversalDepthLimit,
   reachableRoutePatternLimit,
   unique,
-} from '../../__parts__/capability-model-helpers/main';
+} from '../../capability-model-helpers/main';
 import { getNodeRoutePatterns } from '../../capability-model-helpers/graph-helpers';
 import {
   collectScenarioResults,

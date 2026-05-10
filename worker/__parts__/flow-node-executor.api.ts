@@ -39,7 +39,7 @@ export async function executeApiNode(
       url,
       method,
       headers: parsedHeaders,
-      body: body.length ? body : undefined,
+      ...(body.length ? { body } : {}),
       timeout: 10000,
       maxRedirects: 3,
       allowlist,

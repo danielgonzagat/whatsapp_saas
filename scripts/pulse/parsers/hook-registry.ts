@@ -6,7 +6,7 @@ import { pathExists, readTextFile } from '../safe-fs';
 import {
   discoverAllObservedHttpMethods,
   discoverReservedJsKeywords,
-} from '../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+} from '../dynamic-reality-kernel/catalog-arithmetic';
 
 /** Hook function shape. */
 export interface HookFunction {

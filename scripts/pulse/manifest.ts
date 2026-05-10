@@ -10,7 +10,7 @@ import {
   discoverProviderModeLabels,
   discoverScenarioKindLabels,
   discoverTimeWindowModeLabels,
-} from './dynamic-reality-kernel/__parts__/type-contract-engines';
+} from './dynamic-reality-kernel/type-contract-engines';
 
 /** Pulse_manifest_filename. */
 export const PULSE_MANIFEST_FILENAME = 'pulse.manifest.json';

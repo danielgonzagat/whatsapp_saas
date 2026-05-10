@@ -1,12 +1,12 @@
 import type {
   PulseCapability,
   PulseCapabilityState,
-} from '../../__parts__/types.capabilities/03-capability';
+} from '../../types.capabilities/03-capability';
 import type { PulseExternalSignalState } from '../../types.capabilities/05-external-signals';
 import type {
   PulseFlowProjection,
   PulseFlowProjectionItem,
-} from '../../__parts__/types.capabilities/04-flow-projection';
+} from '../../types.capabilities/04-flow-projection';
 import type { PulseExecutionChain, PulseExecutionChainSet } from '../../types.product-graph';
 import type { PulseExecutionEvidence } from '../../types.evidence';
 import type {
@@ -28,7 +28,7 @@ import {
   deriveZeroValue,
   deriveUnitValue,
   deriveCatalogPercentScaleFromObservedCatalog,
-} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+} from '../../dynamic-reality-kernel/catalog-arithmetic';
 import { discoverConvergenceExecutionModeLabels } from '../../__kernel_additions__/discoverConvergenceExecutionModeLabels';
 import { discoverConvergenceRiskLevelLabels } from '../../__kernel_additions__/discoverConvergenceRiskLevelLabels';
 import { discoverExecutionMatrixPathStatusLabels } from '../../__kernel_additions__/discoverExecutionMatrixPathStatusLabels';

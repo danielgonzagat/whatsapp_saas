@@ -12,12 +12,12 @@ import {
   discoverAllObservedArtifactFilenames,
   discoverSourceExtensionsFromObservedTypescript,
   discoverExternalReceiverTokensFromEvidence,
-} from '../../dynamic-reality-kernel/__parts__/token-evidence';
+} from '../../dynamic-reality-kernel/token-evidence';
 import { discoverChaosTargetLabels } from '../../dynamic-reality-kernel/type-contract-engines';
 import {
   deriveUnitValue,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+} from '../../dynamic-reality-kernel/catalog-arithmetic';
 
 export type ChaosProviderName = string;
 export type ChaosOperationalConcern =

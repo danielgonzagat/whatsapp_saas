@@ -18,7 +18,7 @@ import { discoverExecutionMatrixPathStatusLabels } from '../../__kernel_addition
 import {
   deriveUnitValue,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+} from '../../dynamic-reality-kernel/catalog-arithmetic';
 
 export function getProductFacingCapabilities(
   snapshot: PulseArtifactSnapshot,

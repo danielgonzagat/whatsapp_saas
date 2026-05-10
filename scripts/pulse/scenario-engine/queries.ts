@@ -20,13 +20,13 @@ import {
   deriveZeroValue,
   discoverPropertyUnexecutedStatusFromExecutionEvidence,
   observeStatusTextLengthFromCatalog,
-} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+} from '../../dynamic-reality-kernel/catalog-arithmetic';
 import { deriveLengthBoundariesFromObservedCatalog } from '../../dynamic-reality-kernel/profile-derivations';
 import {
   discoverAllObservedArtifactFilenames,
   discoverDirectorySkipHintsFromEvidence,
   discoverSourceExtensionsFromObservedTypescript,
-} from '../../dynamic-reality-kernel/__parts__/token-evidence';
+} from '../../dynamic-reality-kernel/token-evidence';
 import { discoverTruthModeLabels } from '../../dynamic-reality-kernel/type-contract-engines';
 import type {
   PulseProductCapability,

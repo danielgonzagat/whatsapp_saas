@@ -6,7 +6,7 @@ import {
   discoverDirectorySkipHintsFromEvidence,
   splitIdentifierTokensFromObservedName,
   hasObservedToken,
-} from '../../dynamic-reality-kernel/__parts__/token-evidence';
+} from '../../dynamic-reality-kernel/token-evidence';
 import type {
   PulseCommandPurpose,
   PulseDiscoveredCommand,

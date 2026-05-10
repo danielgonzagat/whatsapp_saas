@@ -45,7 +45,7 @@ import {
   discoverGateLaneFromObservedStructure,
   derivePriorityFromObservedContext,
   discoverSourceLabelFromObservedContext,
-} from '../../dynamic-reality-kernel/__parts__/token-evidence';
+} from '../../dynamic-reality-kernel/token-evidence';
 import {
   buildCapabilityVisionDelta,
   buildCodacyVisionDelta,

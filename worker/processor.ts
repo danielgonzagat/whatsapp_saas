@@ -16,8 +16,8 @@ import './dlq-monitor'; // Monitor DLQs and alert ops
 import { redisPub } from './redis-client';
 import { getErrorMessage } from './utils/error-message';
 import { handleScheduledFollowup } from './__parts__/scheduled-followup-handler';
-import { handleSendMessage } from './__companions__/send-message-handler.companion';
-import { autopilotScanner } from './__companions__/autopilot-scanner.companion';
+import { handleSendMessage } from './send-message-handler';
+import { autopilotScanner } from './autopilot-scanner.engine';
 import {
   checkIdempotent,
   endJob,

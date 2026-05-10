@@ -9,7 +9,7 @@ import { readFileSafe } from '../../parsers/utils';
 import {
   deriveZeroValue,
   deriveUnitValue,
-} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+} from '../../dynamic-reality-kernel/catalog-arithmetic';
 import {
   STRUCTURED_LOG_FIELDS,
   containsSimulatedObservabilitySource,

@@ -15,7 +15,7 @@ import {
   deriveUnitValue,
   deriveZeroValue,
   observeStatusTextLengthFromCatalog,
-} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+} from '../../dynamic-reality-kernel/catalog-arithmetic';
 import {
   deriveStructuralFamilies,
   familiesOverlap,

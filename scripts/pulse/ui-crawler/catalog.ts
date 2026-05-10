@@ -7,7 +7,7 @@ import type {
 import {
   discoverAllObservedHttpMethods,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+} from '../../dynamic-reality-kernel/catalog-arithmetic';
 import { deriveStringUnionMembersFromTypeContract } from '../../dynamic-reality-kernel/type-contract-labels';
 import { ensureDir, pathExists, readDir, writeTextFile } from '../../safe-fs';
 import { safeJoin } from '../../safe-path';

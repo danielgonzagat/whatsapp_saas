@@ -11,7 +11,7 @@ import {
 import {
   deriveUnitValue,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+} from '../../dynamic-reality-kernel/catalog-arithmetic';
 import { discoverExternalAdapterProofBasisLabels } from '../../__kernel_additions__/discoverExternalAdapterProofBasisLabels';
 import { discoverExternalSignalSourceLabels } from '../../__kernel_additions__/discoverExternalSignalSourceLabels';
 import { discoverConvergenceExecutionModeLabels } from '../../__kernel_additions__/discoverConvergenceExecutionModeLabels';
@@ -19,7 +19,7 @@ import { discoverTruthModeLabels } from '../../dynamic-reality-kernel/type-contr
 import {
   isAdapterRequired,
   normalizeExternalSignalProfile,
-} from '../../adapters/external-sources-orchestrator/__parts__/core';
+} from '../../adapters/external-sources-orchestrator/core';
 import { PULSE_EXTERNAL_SNAPSHOT_FILES } from './snapshot-config';
 import type { UnclassifiedExternalAdapter } from './adapter-builders';
 import {

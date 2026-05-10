@@ -1,7 +1,7 @@
 import { autopilotQueue } from '../../queue';
 import { publishAgentEvent } from '../../providers/agent-events';
 import { autopilotDecisionCounter, autopilotGhostCloserCounter, autopilotPipelineCounter } from '../../metrics';
-import { channelEnabled, logFallback, sendEmail } from '../../providers/channel-dispatcher';
+import { logFallback, sendEmail } from '../../providers/channel-dispatcher';
 import { log, type UnknownRecord, type QuotedCustomerMessage } from './shared';
 import {
   findRecentDuplicateOutbound, dispatchAutonomousReplyPlan,

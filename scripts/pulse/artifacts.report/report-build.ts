@@ -18,7 +18,7 @@ import { discoverExternalSignalSourceLabels } from '../../__kernel_additions__/d
 import {
   deriveUnitValue,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+} from '../../dynamic-reality-kernel/catalog-arithmetic';
 import {
   buildPulseMachineReadiness,
   getProductFacingCapabilities,

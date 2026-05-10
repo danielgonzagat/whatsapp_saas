@@ -65,11 +65,11 @@ import {
   evaluateStaticGate,
   evaluateRuntimeGate,
   evaluateChangeRiskGate,
-} from '../../__parts__/cert-gate-evaluators/main';
+} from '../../cert-gate-evaluators/main';
 import {
   evaluateTruthExtractionGate,
   evaluatePulseSelfTrustGate,
-} from '../../__parts__/cert-gate-evaluators/truth-gates';
+} from '../../cert-gate-evaluators/truth-gates';
 import { evaluateBrowserGate } from '../../cert-gate-browser';
 
 import {
@@ -108,7 +108,7 @@ import { evaluateMultiCycleConvergenceGate } from '../../cert-gate-multi-cycle/c
 import {
   REQUIRED_NON_REGRESSING_CYCLES,
   type PulseAutonomyStateSnapshot,
-} from '../../cert-gate-multi-cycle/__parts__/helpers';
+} from '../../cert-gate-multi-cycle/helpers';
 import {
   evaluateBreakpointPrecisionGate,
   evaluateCriticalPathObservedGate,
@@ -119,7 +119,7 @@ import {
   detectPlaceholderTests,
   detectWeakStatusAssertions,
   detectTypeEscapeHatches,
-} from '../../__parts__/test-honesty/main';
+} from '../../test-honesty/main';
 import {
   buildPulseNoHardcodedRealityState,
   formatNoHardcodedRealityBlocker,

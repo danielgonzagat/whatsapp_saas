@@ -4,12 +4,12 @@ import { discoverConvergenceEvidenceConfidenceLabels } from '../../__kernel_addi
 import {
   discoverGateFailureClassLabels,
   deriveStringUnionMembersFromTypeContract,
-} from '../../dynamic-reality-kernel/__parts__/type-contract-labels';
+} from '../../dynamic-reality-kernel/type-contract-labels';
 import { discoverTruthModeLabels } from '../../dynamic-reality-kernel/type-contract-engines';
 import {
   deriveUnitValue,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+} from '../../dynamic-reality-kernel/catalog-arithmetic';
 
 import {
   PROOF_READINESS_ARTIFACT,

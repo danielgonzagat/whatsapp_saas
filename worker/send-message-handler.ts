@@ -1,13 +1,13 @@
 import { type Job } from 'bullmq';
 import { v4 as uuidv4 } from 'uuid';
-import { prisma } from '../db';
-import { WorkerLogger } from '../logger';
-import { PlanLimitsProvider } from '../providers/plan-limits';
-import { HealthMonitor } from '../providers/health-monitor';
-import { WhatsAppEngine } from '../providers/whatsapp-engine';
-import { getWhatsAppProviderFromEnv } from '../providers/whatsapp-provider-resolver';
-import { redisPub } from '../redis-client';
-import { getErrorMessage } from '../utils/error-message';
+import { prisma } from './db';
+import { WorkerLogger } from './logger';
+import { PlanLimitsProvider } from './providers/plan-limits';
+import { HealthMonitor } from './providers/health-monitor';
+import { WhatsAppEngine } from './providers/whatsapp-engine';
+import { getWhatsAppProviderFromEnv } from './providers/whatsapp-provider-resolver';
+import { redisPub } from './redis-client';
+import { getErrorMessage } from './utils/error-message';
 
 const DEFAULT_WHATSAPP_PROVIDER = getWhatsAppProviderFromEnv();
 const log = new WorkerLogger('send-message');

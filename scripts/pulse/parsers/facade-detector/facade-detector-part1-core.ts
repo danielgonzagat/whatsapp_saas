@@ -6,7 +6,7 @@ import {
   deriveUnitValue,
   deriveZeroValue,
   deriveCatalogPercentScaleFromObservedCatalog,
-} from '../../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+} from '../../../dynamic-reality-kernel/catalog-arithmetic';
 
 export interface FunctionRange {
   startLine: number;

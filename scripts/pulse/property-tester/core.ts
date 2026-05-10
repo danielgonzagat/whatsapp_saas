@@ -13,13 +13,13 @@ import {
   deriveUnitValue,
   deriveZeroValue,
   discoverPropertyPassedStatusFromTypeEvidence,
-} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+} from '../../dynamic-reality-kernel/catalog-arithmetic';
 import { deriveStringUnionMembersFromTypeContract } from '../../dynamic-reality-kernel/type-contract-labels';
 import {
   discoverAllObservedArtifactFilenames,
   discoverDirectorySkipHintsFromEvidence,
   discoverSourceExtensionsFromObservedTypescript,
-} from '../../dynamic-reality-kernel/__parts__/token-evidence';
+} from '../../dynamic-reality-kernel/token-evidence';
 
 type GeneratedExpectation = GeneratedPropertyTestInput['expected'];
 

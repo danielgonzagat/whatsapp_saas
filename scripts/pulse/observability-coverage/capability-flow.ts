@@ -11,7 +11,7 @@ import { readFileSafe } from '../../parsers/utils';
 import {
   deriveZeroValue,
   deriveUnitValue,
-} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+} from '../../dynamic-reality-kernel/catalog-arithmetic';
 import { discoverAllObservedArtifactFilenames } from '../../dynamic-reality-kernel/token-evidence';
 import type {
   CapabilityObservability,
@@ -22,11 +22,11 @@ import type {
 import type {
   PulseCapability,
   PulseCapabilityState,
-} from '../../__parts__/types.capabilities/03-capability';
+} from '../../types.capabilities/03-capability';
 import type {
   PulseFlowProjection,
   PulseFlowProjectionItem,
-} from '../../__parts__/types.capabilities/04-flow-projection';
+} from '../../types.capabilities/04-flow-projection';
 import {
   resolveCapabilityFiles,
   toRepoRelativePath,

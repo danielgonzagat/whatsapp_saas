@@ -4,7 +4,7 @@ import { isRuntimeExternalSignal } from '../../cert-helpers';
 import {
   deriveZeroValue,
   deriveUnitValue,
-} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+} from '../../dynamic-reality-kernel/catalog-arithmetic';
 import type { PulseArtifactSnapshot } from '../../artifacts/types';
 import type { OverclaimGovernedValidationEvidence } from '../../overclaim-guard';
 import type { PulseAutonomyState } from '../../types.autonomy';

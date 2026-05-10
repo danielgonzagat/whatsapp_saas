@@ -8,7 +8,7 @@ import {
   deriveUnitValue,
   deriveZeroValue,
   deriveHttpStatusFromObservedCatalog,
-} from '../../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+} from '../../../dynamic-reality-kernel/catalog-arithmetic';
 import {
   isSkippedSourcePath,
   hasCommentMarker,

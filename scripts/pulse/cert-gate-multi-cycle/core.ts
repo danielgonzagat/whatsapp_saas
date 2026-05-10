@@ -8,12 +8,12 @@ import { gateFail } from '../../cert-gate-evaluators/gate-fail';
 import {
   deriveUnitValue,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+} from '../../dynamic-reality-kernel/catalog-arithmetic';
 import { discoverConvergenceEvidenceConfidenceLabels } from '../../__kernel_additions__/discoverConvergenceEvidenceConfidenceLabels';
 import {
   discoverDoDGateStatusLabels,
   discoverTruthModeLabels,
-} from '../../dynamic-reality-kernel/__parts__/type-contract-engines';
+} from '../../dynamic-reality-kernel/type-contract-engines';
 import { discoverExternalAdapterStatusLabels } from '../../__kernel_additions__/discoverExternalAdapterStatusLabels';
 import { discoverGateFailureClassLabels } from '../../dynamic-reality-kernel/type-contract-labels';
 

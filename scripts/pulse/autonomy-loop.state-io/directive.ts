@@ -33,11 +33,11 @@ import {
 import {
   toUnitSnapshot,
   buildStructuralQueueInfluence,
-} from '../../autonomy-loop.unit-ranking/__parts__/structural-rank';
+} from '../../autonomy-loop.unit-ranking/structural-rank';
 import {
   getPreferredAutomationSafeUnits,
   hasUnitConflict,
-} from '../../autonomy-loop.unit-ranking/__parts__/selection';
+} from '../../autonomy-loop.unit-ranking/selection';
 import { buildRuntimeRealityQueueInfluence } from '../../autonomy-loop.unit-ranking/runtime-rank';
 import { buildPulseAutonomyMemoryState } from '../../autonomy-loop.memory';
 import { fingerprintStrategy } from '../../structural-memory/memory-core';

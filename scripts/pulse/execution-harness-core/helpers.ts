@@ -11,12 +11,12 @@ import {
   discoverPropertyPassedStatusFromTypeEvidence,
   discoverPropertyUnexecutedStatusFromExecutionEvidence,
   discoverRouteSeparatorFromRuntime,
-} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+} from '../../dynamic-reality-kernel/catalog-arithmetic';
 import {
   discoverHarnessExecutionFeasibilityLabels,
   discoverHarnessExecutionStatusLabels,
   discoverHarnessTargetKindLabels,
-} from '../../dynamic-reality-kernel/__parts__/type-contract-engines';
+} from '../../dynamic-reality-kernel/type-contract-engines';
 import {
   EXTERNAL_TOKENS,
   mutatingHttpVerbs,

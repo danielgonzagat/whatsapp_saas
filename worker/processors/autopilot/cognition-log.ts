@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { prisma } from '../../db';
 import {
   WHITESPACE_RE,
   type UnknownRecord,

@@ -37,7 +37,7 @@ import {
   discoverGateLaneFromObservedStructure,
   derivePriorityFromObservedContext,
   deriveProductImpactFromObservedScope,
-} from '../../dynamic-reality-kernel/__parts__/token-evidence';
+} from '../../dynamic-reality-kernel/token-evidence';
 import { deriveUnitValue } from '../../dynamic-reality-kernel/catalog-arithmetic';
 
 export function evidenceBatchSize(

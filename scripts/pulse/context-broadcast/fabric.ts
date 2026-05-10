@@ -6,7 +6,7 @@ import type { PulseConvergencePlan } from '../../types.convergence';
 import {
   deriveUnitValue,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+} from '../../dynamic-reality-kernel/catalog-arithmetic';
 import {
   CONTEXT_TTL_MINUTES,
   DEFAULT_WORKER_COUNT,

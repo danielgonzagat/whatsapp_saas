@@ -7,11 +7,11 @@
 import type {
   PulseCapability,
   PulseCapabilityState,
-} from './__parts__/types.capabilities/03-capability';
+} from './types.capabilities/03-capability';
 import type {
   PulseFlowProjection,
   PulseFlowProjectionItem,
-} from './__parts__/types.capabilities/04-flow-projection';
+} from './types.capabilities/04-flow-projection';
 import type { PulseSignal } from './types.capabilities/05-external-signals';
 import type { PulseConvergenceOwnerLane } from './types.gate-failure';
 import type { PulseScopeExecutionMode, PulseScopeFile, PulseScopeState } from './types.truth.scope';
@@ -33,7 +33,7 @@ export interface BuildExternalSignalStateInput {
   capabilityState: PulseCapabilityState;
   flowProjection: PulseFlowProjection;
   liveExternalState?:
-    | import('./adapters/external-sources-orchestrator/__parts__/core').ConsolidatedExternalState
+    | import('./adapters/external-sources-orchestrator/core').ConsolidatedExternalState
     | null;
 }
 

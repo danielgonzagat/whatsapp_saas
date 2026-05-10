@@ -39,7 +39,7 @@ import { discoverChaosResultLabels } from '../../dynamic-reality-kernel/type-con
 import {
   deriveHttpStatusFromObservedCatalog,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+} from '../../dynamic-reality-kernel/catalog-arithmetic';
 
 export function buildChaosCatalog(rootDir: string): ChaosEvidence {
   const targets = detectCodebaseTargets(rootDir);

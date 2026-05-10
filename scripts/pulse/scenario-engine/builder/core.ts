@@ -4,7 +4,7 @@
 import {
   discoverHarnessExecutionStatusLabels,
   discoverScenarioStatusLabels,
-} from '../../../../dynamic-reality-kernel/__parts__/type-contract-engines';
+} from '../../../../dynamic-reality-kernel/type-contract-engines';
 import { discoverPropertyPassedStatusFromTypeEvidence } from '../../../../dynamic-reality-kernel/catalog-arithmetic';
 import { writeTextFile } from '../../../../safe-fs';
 import type { PulseProductSurface } from '../../../../types.product-graph';
@@ -38,7 +38,7 @@ import {
   buildEvidenceLinks,
   buildPreconditions,
   generatePlaywrightSpec,
-} from '../../playwright/__parts__/spec-gen';
+} from '../../playwright/spec-gen';
 
 import { generateStepsForSubFlow } from './step-generation';
 

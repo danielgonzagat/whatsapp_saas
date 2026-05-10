@@ -10,7 +10,7 @@ import { deriveStringUnionMembersFromTypeContract } from '../../dynamic-reality-
 import {
   deriveUnitValue,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+} from '../../dynamic-reality-kernel/catalog-arithmetic';
 import { discoverAllObservedArtifactFilenames } from '../../dynamic-reality-kernel/token-evidence';
 import { discoverRuntimeProbeStatusLabels } from '../../__kernel_additions__/discoverRuntimeProbeStatusLabels';
 import { discoverScenarioStatusLabels } from '../../dynamic-reality-kernel/type-contract-engines';
@@ -19,11 +19,11 @@ import { pathExists, readJsonFile } from '../../safe-fs';
 import {
   isRuntimeProbeProofEligible,
   normalizeRuntimeProbesArtifact,
-} from '../../__parts__/runtime-probes/main';
+} from '../../runtime-probes/main';
 import type {
   PulseCapability,
   PulseCapabilityState,
-} from '../../__parts__/types.capabilities/03-capability';
+} from '../../types.capabilities/03-capability';
 import type { PulseProductGraph } from '../../types.product-graph';
 import type {
   ProductionProofDimension,

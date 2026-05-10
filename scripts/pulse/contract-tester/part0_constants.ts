@@ -16,12 +16,12 @@ import {
   deriveUnitValue,
   deriveZeroValue,
   discoverRouteSeparatorFromRuntime,
-} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+} from '../../dynamic-reality-kernel/catalog-arithmetic';
 import {
   discoverAllObservedArtifactFilenames,
   discoverDirectorySkipHintsFromEvidence,
   discoverSourceExtensionsFromObservedTypescript,
-} from '../../dynamic-reality-kernel/__parts__/token-evidence';
+} from '../../dynamic-reality-kernel/token-evidence';
 import { discoverNestjsDecoratorNamesFromTypeEvidence } from '../../dynamic-reality-kernel/evidence-domain';
 import { discoverStructuralNodeKindLabels } from '../../dynamic-reality-kernel/type-contract-engines';
 

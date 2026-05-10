@@ -10,7 +10,7 @@ import { walkFiles } from '../../parsers/utils';
 import {
   discoverAllObservedArtifactFilenames,
   discoverSourceExtensionsFromObservedTypescript,
-} from '../../dynamic-reality-kernel/__parts__/token-evidence';
+} from '../../dynamic-reality-kernel/token-evidence';
 import { isNodeKind, CONTRACT_EVIDENCE_FILENAME, resolveSeverityLabel } from './part0_constants';
 import {
   findBackendDir,

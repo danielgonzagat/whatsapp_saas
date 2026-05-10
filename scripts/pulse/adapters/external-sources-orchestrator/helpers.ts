@@ -12,7 +12,7 @@ import {
   deriveUnitValue,
   deriveZeroValue,
   observeStatusTextLengthFromCatalog,
-} from '../../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+} from '../../../dynamic-reality-kernel/catalog-arithmetic';
 import { discoverExternalAdapterStatusLabels } from '../../../__kernel_additions__/discoverExternalAdapterStatusLabels';
 import { discoverExternalAdapterRequirementLabels } from '../../../__kernel_additions__/discoverExternalAdapterRequirementLabels';
 import { discoverExternalAdapterRequirednessLabels } from '../../../__kernel_additions__/discoverExternalAdapterRequirednessLabels';
@@ -25,7 +25,7 @@ import type {
   PulseExternalAdapterRequirement,
   PulseExternalAdapterStatus,
   PulseExternalSignalSource,
-} from '../../../__parts__/types.capabilities/01-primitives';
+} from '../../../types.capabilities/01-primitives';
 
 // ─── Canonical label derivation from type contracts ───
 

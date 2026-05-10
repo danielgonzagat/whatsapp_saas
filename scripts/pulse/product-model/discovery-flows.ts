@@ -4,7 +4,7 @@ import type { PulseProductCapability, PulseProductFlow } from '../../types.produ
 import {
   deriveUnitValue,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+} from '../../dynamic-reality-kernel/catalog-arithmetic';
 import {
   deriveStructuralFamilies,
   familiesOverlap,

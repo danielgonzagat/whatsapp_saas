@@ -1,7 +1,7 @@
 import type {
   PulseFlowProjection,
   PulseFlowProjectionItem,
-} from '../../__parts__/types.capabilities/04-flow-projection';
+} from '../../types.capabilities/04-flow-projection';
 import type { PulseStructuralRole } from '../../types.structural';
 import type { PulseCapabilityDoD } from '../../types.capabilities/02-maturity-dod';
 import { deriveStructuralFamilies, familiesOverlap } from '../../structural-family';

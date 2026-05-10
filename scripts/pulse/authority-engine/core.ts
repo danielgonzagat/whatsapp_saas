@@ -8,7 +8,7 @@ import {
   deriveUnitValue,
   deriveZeroValue,
   discoverPropertyPassedStatusFromTypeEvidence,
-} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+} from '../../dynamic-reality-kernel/catalog-arithmetic';
 import { discoverAllObservedArtifactFilenames } from '../../dynamic-reality-kernel/token-evidence';
 import type { PulseGateName } from '../../types.manifest';
 import type { PulseCertification } from '../../types.evidence';

@@ -33,13 +33,13 @@ import {
   discoverStructuralNodeKindLabels,
   discoverStructuralRoleLabels,
   discoverTruthModeLabels,
-} from '../../dynamic-reality-kernel/__parts__/type-contract-engines';
+} from '../../dynamic-reality-kernel/type-contract-engines';
 import {
   deriveHttpStatusFromObservedCatalog,
   deriveUnitValue,
   deriveZeroValue,
   observeStatusTextLengthFromCatalog,
-} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+} from '../../dynamic-reality-kernel/catalog-arithmetic';
 import {
   deriveRouteFamily,
   deriveStructuralFamilies,

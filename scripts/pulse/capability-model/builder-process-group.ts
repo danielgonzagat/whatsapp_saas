@@ -13,7 +13,7 @@ import { footprintMatchesFamilies } from '../../execution-observation';
 import {
   deriveUnitValue,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+} from '../../dynamic-reality-kernel/catalog-arithmetic';
 import {
   buildCapabilityMaturity,
   chooseTruthMode,
@@ -24,12 +24,12 @@ import {
   pickExecutionMode,
   pickOwnerLane,
   unique,
-} from '../../__parts__/capability-model-helpers/main';
+} from '../../capability-model-helpers/main';
 import {
   chooseDominantLabel,
   getNodeRoutePatterns,
   shouldTraverseNeighbor,
-} from '../../__parts__/capability-model-helpers/graph-helpers';
+} from '../../capability-model-helpers/graph-helpers';
 import type { PulseCapabilityDoD } from '../../types.capabilities/02-maturity-dod';
 import { evaluateDone } from '../../definition-of-done';
 import {

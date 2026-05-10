@@ -16,7 +16,7 @@ import { detectSourceRoots } from '../../source-root-detector/api';
 import {
   discoverAllObservedArtifactFilenames,
   discoverDirectorySkipHintsFromEvidence,
-} from '../../dynamic-reality-kernel/__parts__/token-evidence';
+} from '../../dynamic-reality-kernel/token-evidence';
 import type {
   ScopeEngineState,
   ScopeEngineSummary,

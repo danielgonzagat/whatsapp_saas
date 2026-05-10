@@ -5,7 +5,7 @@ import type { PulseTruthMode } from './types.structural';
 import type {
   PulseCapabilityStatus,
   PulseFlowProjectionStatus,
-} from './__parts__/types.capabilities/01-primitives';
+} from './types.capabilities/01-primitives';
 import type { PulseExternalSignalSummary } from './types.capabilities/05-external-signals';
 import type { PulseCertification } from './types.evidence';
 

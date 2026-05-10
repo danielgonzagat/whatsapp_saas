@@ -10,7 +10,7 @@ import {
   discoverKnownHttpClientMethods,
   discoverRouteSeparatorFromRuntime,
   observeStatusTextLengthFromCatalog,
-} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+} from '../../dynamic-reality-kernel/catalog-arithmetic';
 import { deriveStringUnionMembersFromTypeContract } from '../../dynamic-reality-kernel/type-contract-labels';
 import { discoverAllObservedArtifactFilenames } from '../../dynamic-reality-kernel/token-evidence';
 import { discoverNestjsDecoratorNamesFromTypeEvidence } from '../../dynamic-reality-kernel/evidence-domain';

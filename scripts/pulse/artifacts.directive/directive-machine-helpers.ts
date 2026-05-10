@@ -17,7 +17,7 @@ import {
 import type {
   PulseArtifactDefinition,
   PulseArtifactRegistry,
-} from '../../artifact-registry/__parts__/discovery';
+} from '../../artifact-registry/discovery';
 import type { PulseArtifactSnapshot, PulseMachineReadiness } from '../../artifacts.types';
 import type { QueueUnit } from '../../artifacts.queue';
 import type { PulseGateName } from '../../types.manifest';

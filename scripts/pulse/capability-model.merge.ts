@@ -9,7 +9,7 @@ import {
   pickExecutionMode,
   pickOwnerLane,
   unique,
-} from './__parts__/capability-model-helpers/main';
+} from './capability-model-helpers/main';
 import {
   CAPABILITY_REQUIRED_DOD_ROLES,
   buildCapabilityDoDEvidence,

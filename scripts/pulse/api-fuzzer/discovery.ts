@@ -10,7 +10,7 @@ import {
   deriveHttpStatusFromObservedCatalog,
   deriveUnitValue,
   observeStatusTextLengthFromCatalog,
-} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+} from '../../dynamic-reality-kernel/catalog-arithmetic';
 import { pathExists, readTextFile } from '../../safe-fs';
 import { walkFiles } from '../../parsers/utils';
 import type { APIEndpointProbe } from '../../types.api-fuzzer';

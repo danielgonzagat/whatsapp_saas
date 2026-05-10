@@ -6,7 +6,6 @@ import {
   type UnknownRecord,
   CONVERSATION_HISTORY_LIMIT,
   WHITESPACE_RE,
-  finalizeReplyStyle,
 } from './shared';
 import { buildConversationLedger } from './identity';
 import {

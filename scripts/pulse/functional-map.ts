@@ -29,13 +29,13 @@ import {
   matchApiCallToRoute,
   buildServiceModelMap,
   resolveRouteModels,
-} from './graph/__parts__/graph-part2-routing';
+} from './graph/graph-part2-routing';
 import { buildApiModuleMap } from './parsers/api-parser';
 import { pathExists, readTextFile } from './safe-fs';
 import {
   findApiCallForElement,
   groupElementsByPage,
-} from './functional-map.helpers/__parts__/public';
+} from './functional-map.helpers/public';
 import { findAllPages, resolveComponentTree } from './functional-map-pages';
 import { traceInteractionChain, classifyInteraction } from './functional-map-classify';
 import { deriveStringUnionMembersFromTypeContract } from './dynamic-reality-kernel/type-contract-labels';

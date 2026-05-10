@@ -4,7 +4,7 @@ import {
   deriveZeroValue,
   discoverAllObservedHttpMethods,
   discoverReservedJsKeywords,
-} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+} from '../../dynamic-reality-kernel/catalog-arithmetic';
 
 function isIdentifierChar(value: string | undefined): boolean {
   if (!value) {

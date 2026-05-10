@@ -11,7 +11,7 @@ import {
   discoverPropertyPassedStatusFromTypeEvidence,
   discoverPropertyUnexecutedStatusFromExecutionEvidence,
   observeStatusTextLengthFromCatalog,
-} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+} from '../../dynamic-reality-kernel/catalog-arithmetic';
 import { deriveLengthBoundariesFromObservedCatalog } from '../../dynamic-reality-kernel/profile-derivations';
 import { discoverNestjsDecoratorNamesFromTypeEvidence } from '../../dynamic-reality-kernel/evidence-domain';
 import { deriveStringUnionMembersFromTypeContract } from '../../dynamic-reality-kernel/type-contract-labels';

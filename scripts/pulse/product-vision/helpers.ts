@@ -1,16 +1,16 @@
 import type {
   PulseCapability,
   PulseCapabilityState,
-} from '../../__parts__/types.capabilities/03-capability';
+} from '../../types.capabilities/03-capability';
 import type {
   PulseCapabilityStatus,
   PulseFlowProjectionStatus,
-} from '../../__parts__/types.capabilities/01-primitives';
+} from '../../types.capabilities/01-primitives';
 import type { PulseExternalSignalState } from '../../types.capabilities/05-external-signals';
 import type {
   PulseFlowProjection,
   PulseFlowProjectionItem,
-} from '../../__parts__/types.capabilities/04-flow-projection';
+} from '../../types.capabilities/04-flow-projection';
 import type { PulseParityGapsArtifact } from '../../types.capabilities.parity';
 import type { PulseCertification } from '../../types.evidence';
 import type { PulseCodacyEvidence, PulseTruthMode } from '../../types.structural';
@@ -28,7 +28,7 @@ import {
   deriveHttpStatusFromObservedCatalog,
   deriveUnitValue,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+} from '../../dynamic-reality-kernel/catalog-arithmetic';
 import { deriveStringUnionMembersFromTypeContract } from '../../dynamic-reality-kernel/type-contract-labels';
 import { discoverCapabilityStatusLabels } from '../../__kernel_additions__/discoverCapabilityStatusLabels';
 import { discoverTruthModeLabels } from '../../dynamic-reality-kernel/type-contract-engines';

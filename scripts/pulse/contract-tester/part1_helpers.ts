@@ -10,7 +10,7 @@ import {
   deriveUnitValue,
   deriveZeroValue,
   discoverRouteSeparatorFromRuntime,
-} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+} from '../../dynamic-reality-kernel/catalog-arithmetic';
 import { safeJoin } from '../../lib/safe-path';
 import { pathExists } from '../../safe-fs';
 import {

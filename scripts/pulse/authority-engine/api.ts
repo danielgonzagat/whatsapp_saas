@@ -5,7 +5,7 @@ import { resolveRoot } from '../../lib/safe-path';
 import {
   deriveUnitValue,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+} from '../../dynamic-reality-kernel/catalog-arithmetic';
 import type { PulseGateName } from '../../types.manifest';
 import type { PulseCertification } from '../../types.evidence';
 import type {

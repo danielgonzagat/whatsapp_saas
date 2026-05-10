@@ -8,7 +8,7 @@ import type {
   PulseExternalAdapterRequirement,
   PulseExternalAdapterStatus,
   PulseExternalSignalSource,
-} from '../../../__parts__/types.capabilities/01-primitives';
+} from '../../../types.capabilities/01-primitives';
 import type { PulseSignal } from '../../../types.capabilities/05-external-signals';
 import { deriveZeroValue } from '../../../dynamic-reality-kernel/catalog-arithmetic';
 import { safeJoin } from '../../../safe-path';

@@ -27,19 +27,19 @@ export interface GuardResult {
 
 export async function checkDeliveryGuards(params: {
   workspaceId: string;
-  contactId?: string;
+  contactId?: string | undefined;
   phone: string;
   settings: UnknownRecord;
   workspaceRecord?: UnknownRecord;
   deliveryMode: 'reactive' | 'proactive';
   action: string;
-  intent?: string;
-  intentConfidence?: number;
-  usedHistory?: boolean;
-  usedKb?: boolean;
-  smokeTestId?: string;
-  conversationId?: string;
-  idempotencyContext?: Record<string, unknown>;
+  intent?: string | undefined;
+  intentConfidence?: number | undefined;
+  usedHistory?: boolean | undefined;
+  usedKb?: boolean | undefined;
+  smokeTestId?: string | undefined;
+  conversationId?: string | undefined;
+  idempotencyContext?: Record<string, unknown> | undefined;
 }): Promise<GuardResult> {
   const {
     workspaceId, contactId, phone, settings, workspaceRecord,

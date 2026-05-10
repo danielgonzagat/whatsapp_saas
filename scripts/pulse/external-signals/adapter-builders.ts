@@ -2,7 +2,7 @@ import * as path from 'path';
 import {
   deriveUnitValue,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+} from '../../dynamic-reality-kernel/catalog-arithmetic';
 import type { PulseCertificationProfile } from '../../types.health';
 import type { PulseCodacyEvidence } from '../../types.structural';
 import type { PulseExternalAdapterSnapshot } from '../../types.capabilities/05-external-signals';
@@ -25,7 +25,7 @@ import type { BuildExternalSignalStateInput } from '../../signal-mapper';
 import {
   getAdapterRequiredness,
   isAdapterRequired,
-} from '../../adapters/external-sources-orchestrator/__parts__/core';
+} from '../../adapters/external-sources-orchestrator/core';
 import type { PulseExternalAdapterProofBasis } from '../../types.capabilities/01-primitives';
 import { PULSE_EXTERNAL_SNAPSHOT_FILES } from './snapshot-config';
 

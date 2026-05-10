@@ -11,7 +11,7 @@ import {
   deriveZeroValue,
   deriveHttpStatusFromObservedCatalog,
   deriveCatalogPercentScaleFromObservedCatalog,
-} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+} from '../../dynamic-reality-kernel/catalog-arithmetic';
 
 function extractFunctionsFromSource(filePath: string, source: string): ParsedFunc[] {
   if (source.length > FULL_BODY_EXTRACTION_BUDGET_BYTES) {

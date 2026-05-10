@@ -8,11 +8,11 @@ import {
   deriveHttpStatusFromObservedCatalog as httpStatus,
   deriveUnitValue,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+} from '../../dynamic-reality-kernel/catalog-arithmetic';
 import {
   detectBrlCurrencyFromObservedInput,
   discoverEnumMembersFromCandidateEvidence,
-} from '../../dynamic-reality-kernel/__parts__/token-evidence';
+} from '../../dynamic-reality-kernel/token-evidence';
 import { dpe, dfa } from './core';
 import {
   fuzzSampleBudget,

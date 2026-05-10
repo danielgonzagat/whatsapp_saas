@@ -1,11 +1,11 @@
 import type {
   PulseCapability,
   PulseCapabilityState,
-} from './__parts__/types.capabilities/03-capability';
+} from './types.capabilities/03-capability';
 import type {
   PulseFlowProjection,
   PulseFlowProjectionItem,
-} from './__parts__/types.capabilities/04-flow-projection';
+} from './types.capabilities/04-flow-projection';
 import type {
   PulseParityGap,
   PulseParityGapsArtifact,
@@ -27,13 +27,13 @@ import {
   isCoveredByProductSurfaceRouteFamily,
   isIncludedInRoutedCapability,
   isRoadmapCatalogCapability,
-} from './parity-capability-classifiers/__parts__/classifier-routes';
+} from './parity-capability-classifiers/classifier-routes';
 import {
   isFrameworkShellCapability,
   isInterfaceOnlyWithoutRoutes,
   isMaterializedCapability,
   isOperationalReadinessCapability,
-} from './parity-capability-classifiers/__parts__/classifier-helpers';
+} from './parity-capability-classifiers/classifier-helpers';
 import {
   buildGap,
   buildSummary,

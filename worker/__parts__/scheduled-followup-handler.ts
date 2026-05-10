@@ -3,7 +3,7 @@ import { prisma } from '../db';
 import { buildQueueJobId } from '../job-id';
 import { WorkerLogger } from '../logger';
 import { dispatchOutboundThroughFlow } from '../providers/outbound-dispatcher';
-import { sendFallbackEmail } from '../__companions__/fallback-email.companion';
+import { sendFallbackEmail } from '../fallback-email.helpers';
 
 const log = new WorkerLogger('scheduled-followup');
 

@@ -16,7 +16,7 @@ import {
 import {
   deriveZeroValue,
   deriveUnitValue,
-} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+} from '../../dynamic-reality-kernel/catalog-arithmetic';
 import {
   _ARTIFACT_NAMES,
   isObservedPassClass,

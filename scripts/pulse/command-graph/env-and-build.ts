@@ -5,7 +5,7 @@ import { deriveUnitValue } from '../../dynamic-reality-kernel/catalog-arithmetic
 import {
   hasObservedToken,
   splitIdentifierTokensFromObservedName,
-} from '../../dynamic-reality-kernel/__parts__/token-evidence';
+} from '../../dynamic-reality-kernel/token-evidence';
 import type {
   PulseCommandGraph,
   PulseDiscoveredCommand,

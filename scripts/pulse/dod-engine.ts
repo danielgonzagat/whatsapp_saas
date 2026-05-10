@@ -5,11 +5,11 @@ import {
   discoverDoDCapabilityClassificationLabels,
   discoverDoDRequirementModeLabels,
   discoverTruthModeLabels,
-} from './dynamic-reality-kernel/__parts__/type-contract-engines';
+} from './dynamic-reality-kernel/type-contract-engines';
 import {
   deriveUnitValue,
   deriveZeroValue,
-} from './dynamic-reality-kernel/__parts__/catalog-arithmetic';
+} from './dynamic-reality-kernel/catalog-arithmetic';
 
 // ── Re-exports from parts ───────────────────────────────────────────────────
 

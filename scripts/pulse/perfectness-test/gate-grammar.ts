@@ -13,7 +13,7 @@ import {
   deriveZeroValue,
   discoverPropertyPassedStatusFromTypeEvidence,
   observeStatusTextLengthFromCatalog,
-} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+} from '../../dynamic-reality-kernel/catalog-arithmetic';
 import { discoverAllObservedArtifactFilenames } from '../../dynamic-reality-kernel/token-evidence';
 import type {
   ExitAction,

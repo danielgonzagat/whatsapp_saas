@@ -6,7 +6,7 @@ import { pathExists, readJsonFile } from '../../safe-fs';
 import {
   deriveUnitValue,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+} from '../../dynamic-reality-kernel/catalog-arithmetic';
 import { discoverAllObservedArtifactFilenames } from '../../dynamic-reality-kernel/token-evidence';
 import type { OtelSpan, OtelTrace } from '../../types.otel-runtime';
 import type { PulseStructuralEdge, PulseStructuralGraph } from '../../types.structural';

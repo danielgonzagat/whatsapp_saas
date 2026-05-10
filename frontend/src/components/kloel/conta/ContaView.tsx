@@ -388,7 +388,7 @@ export default function ContaView() {
                   background: 'transparent',
                   border: 'none',
                   cursor: 'pointer',
-                  color: '#EF4444',
+                  color: colors.semantic.error,
                   fontSize: 11,
                   fontFamily: SORA,
                 }}
@@ -489,7 +489,7 @@ export default function ContaView() {
               <span
                 style={{
                   fontSize: 12,
-                  color: '#EF4444',
+                  color: colors.semantic.error,
                   display: 'block',
                   marginBottom: 8,
                   fontFamily: SORA,
@@ -516,7 +516,7 @@ export default function ContaView() {
                 background: EMBER,
                 border: 'none',
                 borderRadius: 6,
-                color: '#fff',
+                color: colors.text.silver,
                 fontSize: 14,
                 fontWeight: 700,
                 cursor: 'pointer',

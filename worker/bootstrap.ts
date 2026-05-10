@@ -28,10 +28,11 @@ import tracer from 'dd-trace';
 
 const ddEnabled = Boolean(process.env.DD_API_KEY || process.env.DATADOG_API_KEY);
 if (ddEnabled) {
+  const version = process.env.DD_VERSION || process.env.RAILWAY_GIT_COMMIT_SHA;
   tracer.init({
     service: process.env.DD_SERVICE || 'kloel-worker',
     env: process.env.DD_ENV || process.env.NODE_ENV || 'development',
-    version: process.env.DD_VERSION || process.env.RAILWAY_GIT_COMMIT_SHA || undefined,
+    ...(version ? { version } : {}),
     logInjection: true,
     runtimeMetrics: true,
   });

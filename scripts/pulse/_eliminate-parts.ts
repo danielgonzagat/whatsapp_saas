@@ -122,8 +122,8 @@ function phase1LeafModules() {
   let totalChanges = 0;
 
   for (const filePath of allTsFiles) {
-    // Pattern: module-name/__parts__/ → module-name/
-    // This handles: './module/__parts__/file', '../module/__parts__/file', '../../module/__parts__/file', etc.
+    // Pattern: module-name/ → module-name/
+    // This handles: './module/file', '../module/file', '../../module/file', etc.
     const replacements: Array<[RegExp, string]> = [
       // Cross-module imports pointing to __parts__
       [/(['"])([^'"]*)\/__parts__\/([^'"]+)(['"])/g, '$1$2/$3$4'],
@@ -191,7 +191,7 @@ function phase2RootParts() {
     moveDirectoryRecursive(srcDir, destDir);
   }
 
-  // Update imports: ./__parts__/submodule/ → ./renamed-submodule/  or  ./submodule/
+  // Update imports: ./submodule/ → ./renamed-submodule/  or  ./submodule/
   console.log('Updating imports for root __parts__...');
   const allTsFiles = collectTsFiles(PULSE_ROOT);
   let totalChanges = 0;
@@ -239,16 +239,16 @@ function phase2RootParts() {
 console.log('Starting __parts__ elimination...');
 
 // First handle nested ones (scenario-engine sub-__parts__) by moving them up
-const nestedBuilder = join(PULSE_ROOT, 'scenario-engine/__parts__/builder/__parts__');
-const nestedPlaywright = join(PULSE_ROOT, 'scenario-engine/__parts__/playwright/__parts__');
+const nestedBuilder = join(PULSE_ROOT, 'scenario-engine/builder/__parts__');
+const nestedPlaywright = join(PULSE_ROOT, 'scenario-engine/playwright/__parts__');
 
 if (require('fs').existsSync(nestedBuilder)) {
   console.log('\nPre-pass: handling nested scenario-engine/builder/__parts__');
-  moveDirectoryRecursive(nestedBuilder, join(PULSE_ROOT, 'scenario-engine/__parts__/builder'));
+  moveDirectoryRecursive(nestedBuilder, join(PULSE_ROOT, 'scenario-engine/builder'));
 }
 if (require('fs').existsSync(nestedPlaywright)) {
   console.log('Pre-pass: handling nested scenario-engine/playwright/__parts__');
-  moveDirectoryRecursive(nestedPlaywright, join(PULSE_ROOT, 'scenario-engine/__parts__/playwright'));
+  moveDirectoryRecursive(nestedPlaywright, join(PULSE_ROOT, 'scenario-engine/playwright'));
 }
 
 phase1LeafModules();

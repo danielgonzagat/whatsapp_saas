@@ -9,7 +9,7 @@ import type { PulseScopeFile } from '../../types.truth.scope';
 import {
   deriveUnitValue,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+} from '../../dynamic-reality-kernel/catalog-arithmetic';
 import { discoverExecutionMatrixPathStatusLabels } from '../../__kernel_additions__/discoverExecutionMatrixPathStatusLabels';
 import {
   artifactGrammar,

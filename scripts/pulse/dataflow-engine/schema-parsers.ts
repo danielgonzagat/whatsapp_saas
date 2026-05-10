@@ -4,11 +4,11 @@ import { readTextFile, writeTextFile, pathExists, readDir, ensureDir } from '../
 import {
   deriveUnitValue,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+} from '../../dynamic-reality-kernel/catalog-arithmetic';
 import {
   discoverSourceExtensionsFromObservedTypescript,
   discoverAllObservedArtifactFilenames,
-} from '../../dynamic-reality-kernel/__parts__/token-evidence';
+} from '../../dynamic-reality-kernel/token-evidence';
 import { discoverParityGapSeverityLabels } from '../../dynamic-reality-kernel/type-contract-labels';
 import type {
   DataflowRawSignal,
