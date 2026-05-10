@@ -1,11 +1,10 @@
 {
-  "runId": "69087d64-ac5e-49c2-93b1-4c35eb89a400",
-  "generatedAt": "2026-05-10T16:23:56.623Z",
+  "runId": "94f45942-f1fa-49a0-afe7-279e2af5c009",
+  "generatedAt": "2026-05-10T16:57:29.365Z",
   "authorityMode": "advisory-only",
   "advisoryOnly": true,
   "authorityReasons": [
     "Evidence freshness is not closed.",
-    "Pulse self-trust is still failing.",
     "Runtime pass is not green with live evidence."
   ],
   "pulseMachineReadiness": {
@@ -15,9 +14,8 @@
     "canDeclareKloelProductCertified": false,
     "blockers": [
       "artifact_consistency: Cross-artifact consistency has not produced a passing check.",
-      "critical_path_terminal: 3995 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-insights, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
-      "external_reality: 2 missing, 0 stale, and 0 invalid external adapter(s) remain.",
-      "self_trust: PULSE still reconstructs 1 phantom capability(ies) and 0 phantom flow(s); self-trust stays degraded until illusion collapses into real chains."
+      "critical_path_terminal: 3931 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-insights, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
+      "external_reality: 2 missing, 0 stale, and 0 invalid external adapter(s) remain."
     ]
   },
   "cleanupPolicy": "enforced-single-state",
@@ -1069,9 +1067,29 @@
     "PULSE_WORLD_STATE.json"
   ],
   "removedLegacyPulseArtifacts": [
+    "PULSE_ADMIN_EVIDENCE.json",
+    "PULSE_BROWSER_EVIDENCE.json",
     "PULSE_CERTIFICATE.json",
     "PULSE_CLI_DIRECTIVE.json",
-    "PULSE_REPORT.md"
+    "PULSE_CODEBASE_TRUTH.json",
+    "PULSE_CONVERGENCE_PLAN.json",
+    "PULSE_CUSTOMER_EVIDENCE.json",
+    "PULSE_EXECUTION_TRACE.json",
+    "PULSE_FLOW_EVIDENCE.json",
+    "PULSE_FLOW_PROJECTION.json",
+    "PULSE_HEALTH.json",
+    "PULSE_INVARIANT_EVIDENCE.json",
+    "PULSE_OBSERVABILITY_EVIDENCE.json",
+    "PULSE_OPERATOR_EVIDENCE.json",
+    "PULSE_RECOVERY_EVIDENCE.json",
+    "PULSE_REPORT.md",
+    "PULSE_RESOLVED_MANIFEST.json",
+    "PULSE_RUNTIME_EVIDENCE.json",
+    "PULSE_RUNTIME_PROBES.json",
+    "PULSE_SCENARIO_COVERAGE.json",
+    "PULSE_SCOPE_STATE.json",
+    "PULSE_SOAK_EVIDENCE.json",
+    "PULSE_WORLD_STATE.json"
   ],
   "rootStateMode": "local-only"
 }

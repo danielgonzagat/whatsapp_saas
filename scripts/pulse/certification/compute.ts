@@ -1,7 +1,5 @@
 import type {
   PulseCertification,
-  PulseActorEvidence,
-  PulseCertificationTarget,
   PulseExecutionEvidence,
   PulseGateResult,
   PulseSelfTrustReport,
@@ -27,8 +25,6 @@ import {
   _checkerGapLabel,
   _missingEvidenceLabel,
   _productFailureLabel,
-  _highConfidenceLabel,
-  _observedTruthModeLabel,
   NO_HARDCODED_REALITY_ARTIFACT,
   _gatePassLabel,
   _gateFailLabel,
@@ -83,7 +79,6 @@ import {
 import {
   evaluateFlowGate,
   evaluateInvariantGate,
-  evaluateActorGate,
   evaluateSyntheticCoverageGate,
   computeScore,
   buildTierStatuses,
@@ -93,22 +88,13 @@ import {
 import { buildDefaultEvidence, mergeExecutionEvidence } from '../cert-evidence-defaults';
 import { buildGateEvidence } from '../cert-gate-evidence';
 import {
-  evaluateNoOverclaimGate,
   formatProofReadinessGap,
   hasProductionProofReadinessGap,
-  type PulseDirectiveSnapshot,
-  type PulseCertificateSnapshot,
-  type PulseProofReadinessSummary,
 } from '../cert-gate-overclaim';
 import {
   PROOF_READINESS_ARTIFACT,
-  type ProofReadinessArtifact,
 } from '../proof-readiness-artifact';
 import { evaluateMultiCycleConvergenceGate } from '../cert-gate-multi-cycle/core';
-import {
-  REQUIRED_NON_REGRESSING_CYCLES,
-  type PulseAutonomyStateSnapshot,
-} from '../cert-gate-multi-cycle/helpers';
 import {
   evaluateBreakpointPrecisionGate,
   evaluateCriticalPathObservedGate,
@@ -129,98 +115,16 @@ import {
 import { deriveZeroValue } from '../dynamic-reality-kernel/catalog-arithmetic';
 import { discoverAllObservedArtifactFilenames } from '../dynamic-reality-kernel/token-evidence';
 
-function findTierForGate(
-  certificationTiers: PulseManifest['certificationTiers'],
-  gateName: PulseGateName,
-): number | null {
-  const tier = certificationTiers.find((item) => item.gates.includes(gateName));
-  return tier?.id ?? null;
-}
+import {
+  findTierForGate,
+  certificationTargetRequiresGate,
+  evaluateActorGateForCurrentObjective,
+  deriveCertificationStatus,
+  deriveFoundationalGates,
+  isGateBlockingFinalReadiness,
+} from './compute-helpers';
+import { evaluateNoOverclaimPassForCurrentRun } from './compute-gate-evaluation';
 
-function certificationTargetRequiresGate(
-  certificationTarget: PulseCertificationTarget,
-  certificationTiers: PulseManifest['certificationTiers'],
-  gateName: PulseGateName,
-  gateEvidence?: Partial<Record<PulseGateName, unknown[]>>,
-): boolean {
-  const gateTier = findTierForGate(certificationTiers, gateName);
-  if (gateTier === null) {
-    const hasEvidence = (gateEvidence?.[gateName] ?? []).length > deriveZeroValue();
-    return hasEvidence && (certificationTarget.final || certificationTarget.tier !== null);
-  }
-  const requestedTier = certificationTarget.tier;
-  return (
-    Boolean(certificationTarget.final) || (requestedTier !== null && gateTier <= requestedTier)
-  );
-}
-
-function evaluateActorGateForCurrentObjective(
-  gateName: PulseGateName,
-  label: PulseActorEvidence['actorKind'],
-  evidence: PulseActorEvidence,
-  certificationTarget: PulseCertificationTarget,
-  certificationTiers: PulseManifest['certificationTiers'],
-  gateEvidence: Partial<Record<PulseGateName, unknown[]>>,
-): PulseGateResult {
-  const requiresCriticalExecution = certificationTargetRequiresGate(
-    certificationTarget,
-    certificationTiers,
-    gateName,
-    gateEvidence,
-  );
-  if (!evidence.declared.some(Boolean) && requiresCriticalExecution) {
-    return {
-      status: _gatePassLabel(),
-      reason: `${label} actor evidence is outside the current certification objective because the resolved evidence bundle declared no ${label} scenarios.`,
-    };
-  }
-  return evaluateActorGate(label, evidence, requiresCriticalExecution);
-}
-
-function deriveCertificationStatus(
-  certificationTarget: PulseCertificationTarget,
-  foundationsPass: boolean,
-  finalReadinessPass: boolean,
-  tierStatus: PulseCertification['tierStatus'],
-  allPass: boolean,
-): PulseCertification['status'] {
-  if (!foundationsPass) {
-    return 'NOT_CERTIFIED';
-  }
-  if (certificationTarget.final) {
-    return finalReadinessPass ? 'CERTIFIED' : 'PARTIAL';
-  }
-  if (certificationTarget.tier !== null) {
-    const requested = tierStatus.filter((tier) => tier.id <= certificationTarget.tier);
-    return requested.every((tier) => tier.status === _gatePassLabel()) ? 'CERTIFIED' : 'PARTIAL';
-  }
-  return allPass ? 'CERTIFIED' : 'PARTIAL';
-}
-
-function deriveFoundationalGates(
-  certificationTiers: PulseManifest['certificationTiers'],
-  gateOrder: PulseGateName[],
-): PulseGateName[] {
-  const firstDeclaredTier = certificationTiers.find((tier) =>
-    tier.gates.some((gateName) => gateOrder.includes(gateName)),
-  );
-  if (!firstDeclaredTier) {
-    return [];
-  }
-  return firstDeclaredTier.gates.filter((gateName) => gateOrder.includes(gateName));
-}
-
-function isGateBlockingFinalReadiness(_gateName: PulseGateName, result: PulseGateResult): boolean {
-  return (
-    result.status === _gateFailLabel() &&
-    (result.evidenceMode === _observedTruthModeLabel() ||
-      result.confidence === _highConfidenceLabel() ||
-      result.failureClass === _missingEvidenceLabel() ||
-      result.failureClass === _checkerGapLabel())
-  );
-}
-
-/** Compute certification. */
 export function computeCertification(input: ComputeCertificationInput): PulseCertification {
   const env = getEnvironment();
   const manifest: PulseManifest | null = input.manifestResult.manifest;
@@ -563,65 +467,16 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
     noOverclaimPass: withTemporaryGateAcceptance(
       'noOverclaimPass',
       manifest,
-      (() => {
-        // Use current computed state, not stale previous-run artifacts.
-        // The previous directive may carry claims from a run where the
-        // certification was computed inconsistently.
-        // Build a minimal current-state snapshot from available data.
-        const currentCycleProofProven = multiCycleConvergenceResult.status === _gatePassLabel();
-        const currentCycleProof = input.autonomyState
-          ? {
-              proven: currentCycleProofProven,
-              successfulNonRegressingCycles: currentCycleProofProven
-                ? REQUIRED_NON_REGRESSING_CYCLES
-                : undefined,
-            }
-          : { proven: false };
-        const currentProofAllowsProduction =
-          currentCycleProofProven && !productionProofReadinessGap && !noHardcodedRealityGap;
-
-        const currentDirective: PulseDirectiveSnapshot = {
-          zeroPromptProductionGuidanceVerdict: currentProofAllowsProduction ? 'SIM' : 'NAO',
-          productionAutonomyVerdict: 'NAO',
-          authorityMode: currentProofAllowsProduction ? 'autonomous-execution' : 'advisory-only',
-          advisoryOnly: !currentProofAllowsProduction,
-          autonomyProof: {
-            cycleProof: currentCycleProof,
-            proofReadiness: proofReadinessSummary,
-          },
-          autonomyReadiness: {
-            canDeclareComplete: false,
-          },
-          proofReadiness: proofReadinessSummary,
-        };
-        const currentCertificate: PulseCertificateSnapshot = {
-          status: undefined, // Being computed; not yet final.
-          rawContent: undefined,
-        };
-        // Also check previous for cross-run contradictions.
-        const previousResult = evaluateNoOverclaimGate(
-          input.previousDirective,
-          input.previousCertificate,
-        );
-        if (previousResult.status === _gateFailLabel()) {
-          return previousResult;
-        }
-        if (productionProofReadinessGap) {
-          return gateFail(
-            `overclaim:completionProofReadiness — certification cannot complete while ${PROOF_READINESS_ARTIFACT} has non-observed production proof (${formatProofReadinessGap(proofReadinessSummary ?? {})}).`,
-            _checkerGapLabel(),
-            { evidenceMode: _observedTruthModeLabel(), confidence: _highConfidenceLabel() },
-          );
-        }
-        if (noHardcodedRealityGap) {
-          return gateFail(
-            `overclaim:noHardcodedRealityState — certification cannot complete while ${NO_HARDCODED_REALITY_ARTIFACT} reports hardcoded reality authority (${formatNoHardcodedRealityBlocker(noHardcodedRealitySummary)}).`,
-            _checkerGapLabel(),
-            { evidenceMode: _observedTruthModeLabel(), confidence: _highConfidenceLabel() },
-          );
-        }
-        return evaluateNoOverclaimGate(currentDirective, currentCertificate);
-      })(),
+      evaluateNoOverclaimPassForCurrentRun(
+        multiCycleConvergenceResult,
+        input.autonomyState,
+        productionProofReadinessGap,
+        noHardcodedRealityGap,
+        proofReadinessSummary,
+        noHardcodedRealitySummary,
+        input.previousDirective,
+        input.previousCertificate,
+      ),
     ),
     executionMatrixCompletePass: withTemporaryGateAcceptance(
       'executionMatrixCompletePass',

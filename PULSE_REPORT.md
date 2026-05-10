@@ -1,11 +1,11 @@
-# PULSE REPORT — 2026-05-10T16:39:55.217Z
+# PULSE REPORT — 2026-05-10T16:53:52.946Z
 
 ## PULSE VERDICT
 
 - Produto pronto para producao? NAO
 - IA pode trabalhar autonomamente ate producao? NAO
 - Proximo passo seguro? SIM
-- Self-trust: FAIL
+- Self-trust: PASS
 - No-overclaim: FAIL
 - Principal blocker: codacy/static_hotspot: 37 HIGH Codacy issue(s) remain in backend/prisma/migrations/20251209150035_init_baseline/migration.sql.
 - Proxima acao: Recover Customer Whatsapp And Inbox
@@ -19,27 +19,27 @@
 - Can declare Kloel product certified: NAO
 - bounded_run: PASS - Bounded next autonomous cycle exposes 8 ai_safe unit(s).
 - artifact_consistency: FAIL - Cross-artifact consistency has not produced a passing check.
-- execution_matrix: PASS - Execution matrix classified 5247 path(s) with zero unknown and zero non-terminal paths.
-- critical_path_terminal: FAIL - 4021 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-insights, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.
+- execution_matrix: PASS - Execution matrix classified 5157 path(s) with zero unknown and zero non-terminal paths.
+- critical_path_terminal: FAIL - 3931 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-insights, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.
 - breakpoint_precision: PASS - Every observed failure in the execution matrix has a breakpoint.
 - external_reality: FAIL - 2 missing, 0 stale, and 0 invalid external adapter(s) remain.
-- self_trust: FAIL - PULSE still reconstructs 1 phantom capability(ies) and 0 phantom flow(s); self-trust stays degraded until illusion collapses into real chains.
+- self_trust: PASS - All parsers loaded and no phantom capability/flow remains. 11 aspirational structure(s) remain explicitly marked as aspirational.
 - multi_cycle: PASS - 3 non-regressing real autonomous cycle(s) observed (>= 3 required).
 
 ## Current State
 
 - Certification: NOT_CERTIFIED
 - Human replacement: NOT_READY
-- Score: 42/100
+- Score: 45/100
 - Blocking tier: 0
 - Scope parity: FAIL (low)
-- Structural chains: 762/2735 complete
-- Capabilities: real=0, partial=390, latent=11, phantom=1
-- Capability maturity: foundational=4, connected=398, operational=0, productionReady=0
+- Structural chains: 762/2641 complete
+- Capabilities: real=0, partial=390, latent=11, phantom=0
+- Capability maturity: foundational=3, connected=398, operational=0, productionReady=0
 - Flows: real=0, partial=49, latent=0, phantom=0
-- Execution matrix: paths=5247, observedPass=0, observedFail=218, criticalUnobserved=0, unknown=0
+- Execution matrix: paths=5157, observedPass=0, observedFail=218, criticalUnobserved=0, unknown=0
 - Structural parity gaps: total=55, critical=12, high=42
-- Finding events: totalSignals=309, uniqueEvents=262, observed=0, confirmedStatic=309, weakSignals=0
+- Finding events: totalSignals=308, uniqueEvents=261, observed=0, confirmedStatic=308, weakSignals=0
 - Codacy HIGH issues: 1076
 - GitNexus Code Graph: not configured
 - External signals: total=4, runtime=0, change=0, dependency=0, high-impact=3
@@ -60,15 +60,15 @@
 
 - Inventory Coverage: 100%
 - Classification Coverage: 93%
-- Structural Graph Coverage: 33% (1107/3322 connected)
-  Reason: 1107/3322 structural files connected.
+- Structural Graph Coverage: 33% (1095/3310 connected)
+  Reason: 1095/3310 structural files connected.
 - Test Coverage: 8%
-  Reason: 232/2829 source modules have spec files.
+  Reason: 232/2817 source modules have spec files.
 - Scenario Coverage: 100% (declared=100%, executed=100%, passed=0%)
 - Runtime Evidence Coverage: 0% (fresh=0%, stale=0%)
   Reason: No runtime probes executed.
 - Production Proof Coverage: 0%
-  Reason: 0/402 capabilities real.
+  Reason: 0/401 capabilities real.
 - Unknown Files: 290
 - Orphan Files: 200
 - Excluded Directories: 24
@@ -80,11 +80,11 @@
 ### Observed (direct evidence)
 - Runtime probes executed: 0
 - External signals: 4 total
-- Self-trust: FAIL
+- Self-trust: PASS
 - No-overclaim: FAIL
 
 ### Inferred (structural analysis)
-- 2735 structural chains
+- 2641 structural chains
 - 0 real capabilities
 - 0 real flows
 
@@ -101,16 +101,15 @@
 
 ## Product Identity
 
-- Current checkpoint: The current product-facing system materializes 376 partial capability(ies), 0 latent capability(ies), 0 phantom capability(ies). System-wide phantom capability count is 1.
-- Inferred product: If the currently connected structures converge, the product resolves toward a unified operational platform centered on Analytics, Anuncios/Ads, Auth, Autopilot, Billing, Campaigns, Checkout, CIA/Agent, CRM, Dashboard, Followups, Inbox/Chat, Onboarding, Partnerships, Products, Sales/Vendas, Scrapers, Video/Voice, Marketing, Account, Area, Canvas, Carteira.
+- Current checkpoint: The current product-facing system materializes 376 partial capability(ies), 0 latent capability(ies). System-wide phantom capability count is 0.
+- Inferred product: If the currently connected structures converge, the product resolves toward a unified operational platform centered on Analytics, Anuncios/Ads, Autopilot, Billing, Campaigns, Checkout, CIA/Agent, CRM, Dashboard, Followups, Inbox/Chat, Onboarding, Partnerships, Products, Sales/Vendas, Scrapers, Video/Voice, Marketing, Account, Area, Canvas, Carteira, Ferramentas.
 - Projected checkpoint: If the currently connected partial and latent structures converge without introducing new phantom paths, the product projects to 376/376 capability(ies) and 49/49 flow(s) at least partially real, with readiness yellow.
-- Distance: Distance to projected readiness is driven by 0 product-facing phantom capability(ies), 1 system-wide phantom capability(ies), 0 phantom flow(s), 55 structural parity gap(s), and 1076 HIGH Codacy issue(s).
+- Distance: Distance to projected readiness is driven by 0 product-facing phantom capability(ies), 0 system-wide phantom capability(ies), 0 phantom flow(s), 55 structural parity gap(s), and 1076 HIGH Codacy issue(s).
 
 ## Product Surfaces
 
 - Analytics: status=partial, completion=100%, capabilities=71, flows=48, blocker=Maturity is still missing: runtime_evidence, validation, scenario_coverage, codacy_hygiene.
 - Anuncios/Ads: status=partial, completion=100%, capabilities=144, flows=48, blocker=Missing structural roles: persistence.
-- Auth: status=partial, completion=100%, capabilities=53, flows=48, blocker=Missing structural roles: persistence.
 - Autopilot: status=partial, completion=100%, capabilities=107, flows=42, blocker=Maturity is still missing: runtime_evidence, validation, scenario_coverage, codacy_hygiene.
 - Billing: status=partial, completion=100%, capabilities=11, flows=5
 - Campaigns: status=partial, completion=100%, capabilities=59, flows=48, blocker=Maturity is still missing: runtime_evidence, validation, scenario_coverage, codacy_hygiene.
@@ -120,6 +119,7 @@
 - Dashboard: status=partial, completion=100%, capabilities=9, flows=16
 - Followups: status=partial, completion=100%, capabilities=142, flows=48, blocker=Maturity is still missing: runtime_evidence, validation, scenario_coverage, codacy_hygiene.
 - Inbox/Chat: status=partial, completion=100%, capabilities=26, flows=23
+- Onboarding: status=partial, completion=100%, capabilities=34, flows=33, blocker=Maturity is still missing: runtime_evidence, validation, scenario_coverage, codacy_hygiene.
 
 ## Experience Projection
 
@@ -135,18 +135,19 @@
 ## Promise To Production Delta
 
 - Declared surfaces: 38
-- Real surfaces: 28
-- Partial surfaces: 0
-- Latent surfaces: 0
-- Phantom surfaces: 10
+- Real surfaces: 27
+- Partial surfaces: 11
+- Latent surfaces: 11
+- Phantom surfaces: 11
 - Critical gaps:
-  - Cookies: phantom surface with incomplete materialization.
-  - Parcerias: phantom surface with incomplete materialization.
-  - Pay: phantom surface with incomplete materialization.
-  - Privacy: phantom surface with incomplete materialization.
-  - Produtos: phantom surface with incomplete materialization.
-  - Terms: phantom surface with incomplete materialization.
-  - Tools: phantom surface with incomplete materialization.
+  - Auth: Missing structural roles: persistence.
+  - Cookies: latent surface with incomplete materialization.
+  - Parcerias: latent surface with incomplete materialization.
+  - Pay: latent surface with incomplete materialization.
+  - Privacy: latent surface with incomplete materialization.
+  - Produtos: latent surface with incomplete materialization.
+  - Terms: latent surface with incomplete materialization.
+  - Tools: latent surface with incomplete materialization.
 
 ## Structural Parity Gaps
 
@@ -194,13 +195,14 @@
 - codacy/static_hotspot: 2 HIGH Codacy issue(s) remain in backend/src/auth/email.service.ts.
 - codacy/static_hotspot: 1 HIGH Codacy issue(s) remain in backend/src/autopilot/autopilot.service.ts.
 - codacy/static_hotspot: 1 HIGH Codacy issue(s) remain in package.json.
-- Cookies: phantom surface with incomplete materialization.
-- Parcerias: phantom surface with incomplete materialization.
-- Pay: phantom surface with incomplete materialization.
-- Privacy: phantom surface with incomplete materialization.
-- Produtos: phantom surface with incomplete materialization.
-- Terms: phantom surface with incomplete materialization.
-- Tools: phantom surface with incomplete materialization.
+- Auth: Missing structural roles: persistence.
+- Cookies: latent surface with incomplete materialization.
+- Parcerias: latent surface with incomplete materialization.
+- Pay: latent surface with incomplete materialization.
+- Privacy: latent surface with incomplete materialization.
+- Produtos: latent surface with incomplete materialization.
+- Terms: latent surface with incomplete materialization.
+- Tools: latent surface with incomplete materialization.
 - Integration without observability: Ad Rules: Capability Ad Rules depends on runtime-critical effects but observability evidence is still weak (0 signal(s) detected).
 - Integration without observability: Ai Assistant: Capability Ai Assistant depends on runtime-critical effects but observability evidence is still weak (0 signal(s) detected).
 - Integration without observability: Analytics Analytic: Capability Analytics Analytic depends on runtime-critical effects but observability evidence is still weak (0 signal(s) detected).

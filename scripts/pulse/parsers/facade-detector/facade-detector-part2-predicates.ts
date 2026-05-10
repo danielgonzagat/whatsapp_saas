@@ -166,6 +166,7 @@ export function isServiceEmptyReturn(line: string): boolean {
 }
 
 export function contextAllowsEmptyReturn(context: string): boolean {
+  const compacted = compactCode(context);
   return includesAny(context, [
     'catch',
     'default',
@@ -190,5 +191,16 @@ export function contextAllowsEmptyReturn(context: string): boolean {
     'if(err)',
     'if(e)',
     'catch(',
+  ]) || includesAny(compacted, [
+    'if(!',
+    'if(!items',
+    'if(!data',
+    'if(!input',
+    'if(!text',
+    'if(!value',
+    'if(!result',
+    'if(error)',
+    'if(err)',
+    'if(e)',
   ]);
 }
