@@ -42,7 +42,7 @@ export interface InferIntentParams {
   text: string;
   unreadCount: number;
   paymentState: CustomerCognitiveState['paymentState'];
-  leadScore?: number | null;
+  leadScore?: number | null | undefined;
 }
 
 const isCuriousByScore = (leadScore: number | null | undefined, unreadCount: number): boolean =>
@@ -376,16 +376,16 @@ export const summarizeState = (input: SummarizeStateInput): string => {
 };
 
 export interface SeedCognitiveStateInput {
-  conversationId?: string | null;
-  contactId?: string | null;
-  phone?: string | null;
-  contactName?: string | null;
-  lastMessageText?: string | null;
-  unreadCount?: number;
-  lastMessageAt?: Date | string | null;
-  leadScore?: number | null;
-  previousState?: Partial<CustomerCognitiveState> | null;
-  demandState?: DemandState | null;
-  lastOutcome?: string | null;
-  lastAction?: string | null;
+  conversationId?: string | null | undefined;
+  contactId?: string | null | undefined;
+  phone?: string | null | undefined;
+  contactName?: string | null | undefined;
+  lastMessageText?: string | null | undefined;
+  unreadCount?: number | undefined;
+  lastMessageAt?: Date | string | null | undefined;
+  leadScore?: number | null | undefined;
+  previousState?: Partial<CustomerCognitiveState> | null | undefined;
+  demandState?: DemandState | null | undefined;
+  lastOutcome?: string | null | undefined;
+  lastAction?: string | null | undefined;
 }

@@ -94,12 +94,12 @@ function includesAny(text: string, keywords: string[]) {
 
 /** Compute demand state. */
 export function computeDemandState(input: {
-  lastMessageAt?: Date | string | null;
-  unreadCount?: number;
-  leadScore?: number | null;
-  lastMessageText?: string | null;
-  followupAttempts?: number;
-  ignoredCount?: number;
+  lastMessageAt?: Date | string | null | undefined;
+  unreadCount?: number | undefined;
+  leadScore?: number | null | undefined;
+  lastMessageText?: string | null | undefined;
+  followupAttempts?: number | undefined;
+  ignoredCount?: number | undefined;
 }): DemandState {
   const text = normalized(input.lastMessageText);
   const unreadCount = Math.max(0, Number(input.unreadCount || 0) || 0);

@@ -10,8 +10,8 @@ import { WhatsAppProviderRegistry } from './providers/provider-registry';
 import { WahaChatSummary } from './providers/whatsapp-api.provider';
 import { extractPhoneFromChatId as normalizePhoneFromChatId } from './whatsapp-normalization.util';
 import { WhatsappService } from './whatsapp.service';
-import type { BacklogMode } from './__companions__/cia-remote-backlog.service.companion';
-import { loadRemotePendingBatchHelper } from './__companions__/cia-remote-backlog.service.companion';
+import type { BacklogMode } from './cia-remote-backlog.helpers';
+import { loadRemotePendingBatchHelper } from './cia-remote-backlog.helpers';
 
 /**
  * Handles remote backlog fallback: reads pending chats directly from the

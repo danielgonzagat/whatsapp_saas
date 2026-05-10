@@ -21,7 +21,7 @@ import {
 import {
   listSessionsHelper,
   logoutSessionHelper,
-} from './__companions__/waha-session.provider.companion';
+} from './waha-session.helpers';
 
 /**
  * Session lifecycle layer for WAHA.

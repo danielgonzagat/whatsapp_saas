@@ -37,7 +37,7 @@ import {
 import {
   updateSaleAndPaymentHelper,
   sendGenericConfirmationHelper,
-} from './__companions__/payment-webhook-generic.controller.companion';
+} from './payment-webhook-generic.helpers';
 
 /**
  * Handles generic, Shopify, PagHiper, and WooCommerce payment webhooks.

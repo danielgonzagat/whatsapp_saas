@@ -192,7 +192,7 @@ function includesAny(text: string, keywords: string[]) {
 function computePriority(input: {
   demandState: DemandState;
   unreadCount: number;
-  lastMessageAt?: Date | string | null;
+  lastMessageAt?: Date | string | null | undefined;
   isPayment: boolean;
   cognitiveState: CustomerCognitiveState;
 }) {

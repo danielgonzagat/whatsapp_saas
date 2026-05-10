@@ -31,12 +31,9 @@ import {
   extractFallbackTopicExt,
   hasOutboundActionExt,
   buildPendingInboundBatchExt,
-} from './__companions__/inbound-processor.service.companion';
-import type {
-  InboundMessage,
-  InboundIngestMode,
-} from './__companions__/inbound-processor.service.companion';
-export type { InboundMessage } from './__companions__/inbound-processor.service.companion';
+} from './inbound-processor.helpers';
+
+export type { InboundMessage } from './inbound-processor.helpers';
 
 type InboundRawPayload = {
   pushName?: string;

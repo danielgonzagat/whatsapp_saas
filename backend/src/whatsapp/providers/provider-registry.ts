@@ -8,7 +8,7 @@ import { extractPhoneFromChatId as normalizePhoneFromChatId } from '../whatsapp-
 import { type ResolvedWhatsAppProvider, resolveDefaultWhatsAppProvider } from './provider-env';
 import { WahaProvider } from './waha.provider';
 import { WhatsAppApiProvider } from './whatsapp-api.provider';
-import { sendMessage as companionSendMessage } from './__companions__/provider-send-message';
+import { sendMessage as companionSendMessage } from './provider-send-message.helpers';
 
 type UnknownRecord = Record<string, unknown>;
 

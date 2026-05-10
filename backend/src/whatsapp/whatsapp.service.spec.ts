@@ -3,7 +3,7 @@ import {
   localContactsSeed,
   buildMockProviderRegistry,
   buildMockPrisma,
-} from './__companions__/whatsapp.service.spec.companion';
+} from './whatsapp.service.spec.fixtures';
 
 jest.mock('../queue/queue', () => ({
   autopilotQueue: { add: jest.fn() },

@@ -19,7 +19,7 @@ import type { StripeHandlerDeps } from './payment-webhook-stripe.handlers';
 import {
   updatePaymentAndSaleForSessionHelper,
   sendCheckoutConfirmationHelper,
-} from './__companions__/payment-webhook-stripe.handlers2.companion';
+} from './payment-webhook-stripe.handlers2.helpers';
 
 export type { StripeHandlerDeps };
 

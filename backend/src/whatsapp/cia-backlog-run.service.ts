@@ -20,8 +20,8 @@ import { CiaBootstrapService } from './cia-bootstrap.service';
 import type {
   BacklogMode,
   WorkspaceAutonomyMode,
-} from './__companions__/cia-backlog-run.service.companion';
-import { ensureBacklogCoverageHelper } from './__companions__/cia-backlog-run.service.companion';
+} from './cia-backlog-run.helpers';
+import { ensureBacklogCoverageHelper } from './cia-backlog-run.helpers';
 
 /**
  * Orchestrates the backlog run: decides between queue-based (BullMQ worker),

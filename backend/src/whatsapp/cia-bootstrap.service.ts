@@ -17,7 +17,7 @@ import {
   CIA_BOOTSTRAP_IMMEDIATE_LIMIT,
   CIA_BOOTSTRAP_AUTO_CONTINUE,
   CIA_BOOTSTRAP_AUTO_CONTINUE_LIMIT,
-} from './__companions__/cia-bootstrap.service.companion';
+} from './cia-bootstrap.constants';
 
 export { CIA_BOOTSTRAP_AUTO_CONTINUE_LIMIT };
 
