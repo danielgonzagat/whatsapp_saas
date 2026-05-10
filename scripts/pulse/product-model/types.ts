@@ -18,17 +18,11 @@
 
 import type {
   PulseStructuralGraph,
-  PulseStructuralNode,
   PulseTruthMode,
 } from '../types.structural';
 import type { PulseScopeState } from '../types.truth.scope';
 import type { PulseResolvedManifest } from '../types.resolved-manifest';
-import type {
-  PulseProductGraph,
-  PulseProductCapability,
-  PulseProductFlow,
-  PulseProductSurface,
-} from '../types.product-graph';
+
 import {
   discoverStructuralNodeKindLabels,
   discoverStructuralRoleLabels,
@@ -37,16 +31,8 @@ import {
 import {
   deriveHttpStatusFromObservedCatalog,
   deriveUnitValue,
-  deriveZeroValue,
   observeStatusTextLengthFromCatalog,
 } from '../dynamic-reality-kernel/catalog-arithmetic';
-import {
-  deriveRouteFamily,
-  deriveStructuralFamilies,
-  familiesOverlap,
-  slugifyStructural,
-  titleCaseStructural,
-} from '../structural-family';
 
 /** Input to product model builder */
 export interface BuildProductModelInput {

@@ -3,7 +3,6 @@
 
 import { deriveHttpStatusFromObservedCatalog } from '../../dynamic-reality-kernel/catalog-arithmetic';
 import {
-  isObservedMutatingMethod,
   toPlaywrightHttpMethod,
 } from '../../dynamic-reality-grammar';
 import type { BehaviorNode } from '../../types.behavior-graph';
@@ -22,15 +21,10 @@ import {
   _unit,
   _zero,
   DEFAULT_STEP_TIMEOUT,
-  LONG_STEP_TIMEOUT,
-  getCapabilitiesForSurface,
   getHttpDecorator,
   extractRoutePattern,
   getHarnessFixtures,
-  getSurface,
-  tokenizeScenarioText,
 } from '../queries';
-import type { ScenarioBuildContext } from '../queries';
 
 // ─── Playwright Spec Generation ──────────────────────────────────────────
 export function generatePlaywrightSpec(scenario: {

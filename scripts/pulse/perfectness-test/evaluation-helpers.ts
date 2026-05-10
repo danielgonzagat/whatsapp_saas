@@ -3,10 +3,9 @@
 //
 // Internal types and core utility helpers for gate evaluation.
 
-import { pathExists, readJsonFile } from '../safe-fs';
 import { discoverPropertyPassedStatusFromTypeEvidence } from '../dynamic-reality-kernel/catalog-arithmetic';
 import type { GateEvidencePlan, PerfectnessGate } from '../types.perfectness-test';
-import { PULSE_CERTIFICATE_FILE, SCENARIO_EVIDENCE_FILE } from './gate-grammar';
+import { SCENARIO_EVIDENCE_FILE } from './gate-grammar';
 import { readStateFile } from './time-engine';
 
 // ────────────────────────────────────────────────────────────────────────────

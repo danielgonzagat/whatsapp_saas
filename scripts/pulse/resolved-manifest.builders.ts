@@ -9,7 +9,6 @@ import {
   tokenize,
   unique,
   titleCase,
-  matchesOverride,
 } from './resolved-manifest.module-helpers';
 import { discoverAllObservedHttpMethods } from './dynamic-reality-kernel/catalog-arithmetic';
 import { deriveStringUnionMembersFromTypeContract } from './dynamic-reality-kernel/type-contract-labels';

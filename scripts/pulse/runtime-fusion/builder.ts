@@ -166,7 +166,7 @@ function deriveOrder(signals: RuntimeSignal[], staticOrder: string): string {
 
 function buildSummary(
   signals: RuntimeSignal[],
-  capabilityState?: { capabilities?: Array<{ id: string }> },
+  _capabilityState?: { capabilities?: Array<{ id: string }> },
 ): RuntimeFusionState['summary'] {
   let totalSignals = signals.length;
   let criticalSignals = signals.filter(isCriticalSignal).length;

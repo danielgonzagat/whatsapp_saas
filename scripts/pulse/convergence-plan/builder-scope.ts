@@ -113,6 +113,7 @@ export function buildScopeUnits(input: BuildPulseConvergencePlanInput): PulseCon
         'scopeClosed returns pass in the next certification run.',
         'All observed Codacy hotspot files are covered by the repo inventory.',
       ],
+      breakTypes: [],
     });
   }
 
@@ -177,6 +178,7 @@ export function buildScopeUnits(input: BuildPulseConvergencePlanInput): PulseCon
         'truthExtractionPass returns pass in the next certification run.',
         'Scope-only module candidates are either resolved into the manifest overlay or intentionally excluded.',
       ],
+      breakTypes: [],
     });
   }
 
@@ -243,6 +245,7 @@ export function buildParityGapUnits(input: BuildPulseConvergencePlanInput): Puls
         ...gap.validationTargets,
         `Gap ${gap.kind} is absent from the next PULSE_PARITY_GAPS.json snapshot.`,
       ]),
+      breakTypes: [],
     }))
     .sort(compareByObservedPressure);
 }
@@ -350,6 +353,7 @@ export function buildCodacyStaticUnits(
             ? 'PULSE has collected enough evidence to convert this surface into a governed autonomous change or prove no mutation is needed.'
             : null,
         ]),
+        breakTypes: [],
       };
     })
     .sort(compareByObservedPressure);

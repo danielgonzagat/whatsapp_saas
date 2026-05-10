@@ -1,5 +1,5 @@
 import * as p from 'path';
-import { pathExists as existsAt, readTextFile } from '../safe-fs';
+import { pathExists as existsAt } from '../safe-fs';
 import { unique } from '../signal-normalizers';
 import type { OtelSpan, RuntimeCallGraphEvidence } from '../types.otel-runtime';
 import type {
@@ -52,7 +52,7 @@ import {
  */
 function otelErrorSpanToSignal(
   span: OtelSpan,
-  traceId: string,
+  _traceId: string,
   mappedFilePaths: string[],
 ): RuntimeSignal {
   let httpMethod = (span.attributes['http.method'] as string) || '';

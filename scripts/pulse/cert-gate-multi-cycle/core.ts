@@ -1,4 +1,4 @@
-import type { PulseAutonomyIterationRecord, PulseAutonomyState } from '../types.autonomy';
+import type { PulseAutonomyState } from '../types.autonomy';
 import type { PulseGateFailureClass } from '../types.gate-failure';
 import type { PulseGateResult } from '../types.evidence';
 import type { PulseTruthMode } from '../types.structural';
@@ -14,7 +14,7 @@ import {
   discoverDoDGateStatusLabels,
   discoverTruthModeLabels,
 } from '../dynamic-reality-kernel/type-contract-engines';
-import { discoverExternalAdapterStatusLabels } from '../__kernel_additions__/discoverExternalAdapterStatusLabels';
+
 import { discoverGateFailureClassLabels } from '../dynamic-reality-kernel/type-contract-labels';
 
 import {
@@ -22,7 +22,6 @@ import {
   formatCycleLabel,
   formatNumericTransition,
   REQUIRED_NON_REGRESSING_CYCLES,
-  type CycleAnalysis,
   type PulseAutonomyStateSnapshot,
 } from './helpers';
 

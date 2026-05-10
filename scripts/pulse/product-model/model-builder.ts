@@ -1,7 +1,6 @@
 import type {
   PulseStructuralGraph,
   PulseStructuralNode,
-  PulseTruthMode,
 } from '../types.structural';
 import type { PulseScopeState } from '../types.truth.scope';
 import type { PulseResolvedManifest } from '../types.resolved-manifest';

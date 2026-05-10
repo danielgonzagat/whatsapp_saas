@@ -173,7 +173,7 @@ export const PRODUCT_TEMPLATES: ProductTemplate[] = [
     name: 'Prova Social',
     cat: 'Depoimento',
     fmt: 'story-ig',
-    colors: ['colors.ember.primary', '#1C1C1F'],
+    colors: ['colors.ember.primary', 'colors.canvas.border'],
     w: 1080,
     h: 1920,
     json: {
@@ -374,7 +374,7 @@ export const PRODUCT_TEMPLATES: ProductTemplate[] = [
           top: 250,
           width: 400,
           height: 600,
-          fill: '#1C1C1F',
+          fill: 'colors.canvas.border',
           rx: 8,
           ry: 8,
         },

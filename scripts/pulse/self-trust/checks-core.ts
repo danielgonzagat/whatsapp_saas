@@ -1,12 +1,11 @@
 import * as path from 'path';
 import * as ts from 'typescript';
-import type { Break, PulseParserContract } from '../types.manifest';
+import type { PulseParserContract } from '../types.manifest';
 import type { PulseExecutionTrace } from '../types.evidence';
 import { pathExists, readTextFile } from '../safe-fs';
 import { discoverParserContracts } from '../parser-registry/loader';
 import {
   getActiveExecutionTraceSnapshot,
-  verifyExecutionTraceAuditTrail,
 } from '../execution-trace';
 import { deriveStringUnionMembersFromTypeContract } from '../dynamic-reality-kernel/type-contract-labels';
 import {
@@ -100,7 +99,7 @@ const _parserContractKindLabels = deriveStringUnionMembersFromTypeContract(
 );
 const _riskLevelLabels = discoverConvergenceRiskLevelLabels();
 const _confidenceLabels = discoverConvergenceEvidenceConfidenceLabels();
-const _sourceLabels = discoverConvergenceSourceLabels();
+discoverConvergenceSourceLabels();
 
 function isActiveParserContract(contract: PulseParserContract): boolean {
   return _parserContractKindLabels.has(contract.kind) && contract.kind.includes('active');

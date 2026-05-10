@@ -18,7 +18,6 @@ import {
   deriveHttpStatusFromObservedCatalog,
   deriveUnitValue,
   deriveZeroValue,
-  discoverPropertyUnexecutedStatusFromExecutionEvidence,
   observeStatusTextLengthFromCatalog,
 } from '../dynamic-reality-kernel/catalog-arithmetic';
 import { deriveLengthBoundariesFromObservedCatalog } from '../dynamic-reality-kernel/profile-derivations';

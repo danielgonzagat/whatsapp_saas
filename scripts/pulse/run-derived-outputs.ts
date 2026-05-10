@@ -130,8 +130,8 @@ export async function runDerivedOutputs(input: DerivedOutputsInput): Promise<voi
       owner: process.env.GITHUB_OWNER || '',
       repo: process.env.GITHUB_REPO || '',
     },
-    profile: config.certificationProfile ?? undefined,
-    certificationScope: config.certificationProfile ?? undefined,
+    ...(config.certificationProfile != null ? { profile: config.certificationProfile } : {}),
+    ...(config.certificationProfile != null ? { certificationScope: config.certificationProfile } : {}),
   };
   const externalSourcesTask = runExternalSourcesOrchestrator(externalSourcesConfig).catch(
     () => null,

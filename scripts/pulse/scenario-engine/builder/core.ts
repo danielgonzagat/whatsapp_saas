@@ -95,8 +95,6 @@ function buildScenario(
 
   const capabilities = getCapabilitiesForSurface(ctx.productGraph, ctx.primarySurfaceId);
   const capabilityIds = capabilities.map((c) => c.id);
-  const entityOps = getEntityOperations(ctx.primaryEntity);
-
   const evidenceLinks = buildEvidenceLinks(steps, ctx.endpoints, ctx.primaryEntity);
 
   const scenario: Scenario = {

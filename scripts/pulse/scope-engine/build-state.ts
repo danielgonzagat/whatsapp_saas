@@ -3,7 +3,6 @@ import * as path from 'path';
 import { safeJoin } from '../lib/safe-path';
 import {
   ensureDir,
-  pathExists,
   readDir,
   readTextFile,
   statPath,

@@ -1,6 +1,6 @@
 import * as p from 'path';
 import { pathExists as existsAt, readTextFile } from '../safe-fs';
-import { tokenize, unique } from '../signal-normalizers';
+import { unique } from '../signal-normalizers';
 import { deriveStringUnionMembersFromTypeContract } from '../dynamic-reality-kernel/type-contract-labels';
 import { discoverSignalSourceLabels } from '../dynamic-reality-kernel/type-contract-engines';
 import type { RuntimeCallGraphEvidence } from '../types.otel-runtime';
@@ -15,7 +15,6 @@ import {
   DYNAMIC_SIGNAL_SEMANTICS_NOTE,
   EVIDENCE_INVALID,
   EVIDENCE_NOT_AVAILABLE,
-  EVIDENCE_SIMULATED,
   EVIDENCE_SKIPPED,
   EXTERNAL_SIGNAL_STATE_FILE,
   TRUTH_INFERRED,

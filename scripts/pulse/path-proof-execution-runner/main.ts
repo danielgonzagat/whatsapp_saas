@@ -80,12 +80,19 @@ function defaultExecutor(input: PathProofCommandExecutionInput): PathProofComman
     shell: false,
     timeout: input.timeoutMs,
   });
-  return {
+  const output: PathProofCommandExecutionOutput = {
     exitCode: result.status,
-    ...(result.stdout ? { stdout: result.stdout } : {}),
-    ...(result.stderr || result.error?.message ? { stderr: result.stderr || result.error?.message } : {}),
     timedOut: result.error?.message.includes('ETIMEDOUT') ?? false,
   };
+  const stdout = result.stdout || undefined;
+  if (stdout !== undefined) {
+    output.stdout = stdout;
+  }
+  const stderr = result.stderr || result.error?.message || undefined;
+  if (stderr !== undefined) {
+    output.stderr = stderr;
+  }
+  return output;
 }
 
 function buildSkippedResult(
@@ -144,7 +151,7 @@ export async function executePathProofPlan(
       const finishedAt = new Date(finishedAtMs).toISOString();
       const status: PathProofExecutionStatus =
         execution.exitCode === 0 ? 'observed_pass' : 'observed_fail';
-      results.push({
+      const result: PathProofExecutionResult = {
         taskId: task.taskId,
         pathId: task.pathId,
         command: policy.parsed.displayCommand,
@@ -158,9 +165,14 @@ export async function executePathProofPlan(
         reason: execution.timedOut
           ? `Command timed out after ${timeoutMs}ms.`
           : `Command exited with code ${execution.exitCode ?? 'unknown'}.`,
-        ...(execution.stdout !== undefined ? { stdout: execution.stdout } : {}),
-        ...(execution.stderr !== undefined ? { stderr: execution.stderr } : {}),
-      });
+      };
+      if (execution.stdout !== undefined) {
+        result.stdout = execution.stdout;
+      }
+      if (execution.stderr !== undefined) {
+        result.stderr = execution.stderr;
+      }
+      results.push(result);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       const finishedAtMs = Date.now();

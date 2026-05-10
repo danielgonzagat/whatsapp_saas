@@ -1,5 +1,4 @@
 import type {
-  PulseRuntimeProbeArtifactProbe,
   PulseRuntimeProbeArtifactSource,
   PulseRuntimeProbeArtifactStatus,
   PulseRuntimeProbeFreshness,

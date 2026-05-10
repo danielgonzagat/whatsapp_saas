@@ -13,7 +13,7 @@ import { gateFail } from './gate-fail';
 export function evaluateTruthExtractionGate(
   codebaseTruth: PulseCodebaseTruth,
   resolvedManifest: PulseResolvedManifest,
-  scopeState: PulseScopeState,
+  _scopeState: PulseScopeState,
   capabilityState?: PulseCapabilityState,
   flowProjection?: PulseFlowProjection,
 ): import('../types.evidence').PulseGateResult {

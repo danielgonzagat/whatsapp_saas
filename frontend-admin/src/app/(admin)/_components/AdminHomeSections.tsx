@@ -29,11 +29,11 @@ export function AdminRevenueSection({
   previousMonthData,
   balance,
 }: {
-  data?: AdminHomeResponse;
-  todayData?: AdminHomeResponse;
-  currentMonthData?: AdminHomeResponse;
-  previousMonthData?: AdminHomeResponse;
-  balance?: MarketplaceTreasuryBalance;
+  data: AdminHomeResponse | undefined;
+  todayData: AdminHomeResponse | undefined;
+  currentMonthData: AdminHomeResponse | undefined;
+  previousMonthData: AdminHomeResponse | undefined;
+  balance: MarketplaceTreasuryBalance | undefined;
 }) {
   return (
     <AdminSurface className="px-5 py-5 lg:px-6 lg:py-6">
@@ -109,7 +109,7 @@ export function AdminKpiCards({
   totalOrders,
   conversionRate,
 }: {
-  data?: AdminHomeResponse;
+  data: AdminHomeResponse | undefined;
   revenueSeries: number[];
   orderSeries: number[];
   conversationsSeries: number[];
@@ -174,7 +174,7 @@ export function AdminRevenueChartSection({
   revenueSeries,
   previousRevenueSeries,
 }: {
-  data?: AdminHomeResponse;
+  data: AdminHomeResponse | undefined;
   chartLabels: string[];
   revenueSeries: number[];
   previousRevenueSeries: number[];
@@ -248,7 +248,7 @@ export function AdminProductsSection({
   topProducts,
   recentConversations,
 }: {
-  data?: AdminHomeResponse;
+  data: AdminHomeResponse | undefined;
   topProducts: AdminProductRow[];
   recentConversations: AdminSupportOverviewItem[];
 }) {
@@ -454,7 +454,7 @@ export function AdminBottomCharts({
   data,
   recentNotifications,
 }: {
-  data?: AdminHomeResponse;
+  data: AdminHomeResponse | undefined;
   recentNotifications: Array<{
     id: string;
     type: string;

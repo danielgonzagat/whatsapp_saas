@@ -2,8 +2,6 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as ts from 'typescript';
 
-const SOURCE_EXTENSIONS = new Set(['.ts', '.tsx']);
-const TEST_NAME_TOKENS = new Set(['spec', 'test']);
 const TEST_DIRECTORY_TOKENS = new Set(['test', '__tests__', 'spec', '__mocks__', 'e2e', 'parsers']);
 const EXCLUDED_DIRECTORIES = new Set(['node_modules', '.git', 'dist', 'build', '.next', 'e2e']);
 const TEST_DECLARATION_NAMES = new Set(['it', 'test']);
@@ -41,42 +39,6 @@ interface SourceFileCandidate {
 
 function pathSegments(filePath: string): string[] {
   return filePath.replaceAll('\\', '/').split('/').filter(Boolean);
-}
-
-function nameTokens(fileName: string): Set<string> {
-  const extension = path.extname(fileName);
-  const stem = extension ? fileName.slice(0, -extension.length) : fileName;
-  const tokens: string[] = [];
-  let current = '';
-
-  for (const char of stem) {
-    if (char === '.' || char === '_' || char === '-') {
-      if (current.length > 0) {
-        tokens.push(current);
-        current = '';
-      }
-      continue;
-    }
-    current += char.toLowerCase();
-  }
-
-  if (current.length > 0) {
-    tokens.push(current);
-  }
-
-  return new Set(tokens);
-}
-
-function isSourceFile(fileName: string): boolean {
-  return SOURCE_EXTENSIONS.has(path.extname(fileName));
-}
-
-function _isTestFileName(fileName: string): boolean {
-  if (!isSourceFile(fileName)) {
-    return false;
-  }
-  const tokens = nameTokens(fileName);
-  return [...TEST_NAME_TOKENS].some((token) => tokens.has(token));
 }
 
 export function isInTestDirectory(relativePath: string): boolean {
@@ -121,11 +83,6 @@ export function walkSourceFiles(
 
   scanDir(rootDir);
   return files;
-}
-
-function _parseTypeScriptFile(filePath: string): ts.SourceFile {
-  const content = fs.readFileSync(filePath, 'utf-8');
-  return ts.createSourceFile(filePath, content, ts.ScriptTarget.Latest, true);
 }
 
 function calleeName(expression: ts.Expression): string | null {

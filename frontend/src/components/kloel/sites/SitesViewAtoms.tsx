@@ -32,7 +32,7 @@ export function Badge({ children, color = EMBER }: { children: React.ReactNode; 
 }
 
 export function StatusDot({ status }: { status: 'online' | 'offline' | 'warning' | 'building' }) {
-  const colors = {
+  const statusColors = {
     online: colors.semantic.success,
     offline: colors.text.muted,
     warning: colors.semantic.warning,
@@ -45,8 +45,8 @@ export function StatusDot({ status }: { status: 'online' | 'offline' | 'warning'
         width: 8,
         height: 8,
         borderRadius: '50%',
-        background: colors[status],
-        boxShadow: status === 'online' ? `0 0 6px ${colors[status]}` : 'none',
+        background: statusColors[status],
+        boxShadow: status === 'online' ? `0 0 6px ${statusColors[status]}` : 'none',
       }}
     />
   );

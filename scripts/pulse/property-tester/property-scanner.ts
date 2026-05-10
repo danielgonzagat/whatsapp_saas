@@ -237,8 +237,7 @@ export function splitKnownTestSourceSuffixesFromObservedName(name: string): stri
 export function countPropertyTestsInContent(content: string): number {
   let tally = deriveZeroValue();
   let re = new RegExp(PROPERTY_ASSERTION_SENSOR.source, 'g');
-  let match: RegExpExecArray | null;
-  while ((match = re.exec(content)) !== null) {
+  while (re.exec(content) !== null) {
     tally += deriveUnitValue();
   }
   return tally;

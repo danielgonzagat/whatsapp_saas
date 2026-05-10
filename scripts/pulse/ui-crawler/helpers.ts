@@ -15,15 +15,6 @@ function isWhitespaceChar(c: string | undefined): boolean {
   return c === ' ' || c === '\t' || c === '\n' || c === '\r' || c === '\f' || c === '\v';
 }
 
-function isIdentifierChar(c: string | undefined): boolean {
-  return Boolean(c && /[\w$]/.test(c));
-}
-
-function hasIdentifierAt(text: string, offset: number, identifier: string): boolean {
-  if (!text.startsWith(identifier, offset)) return false;
-  return !isIdentifierChar(text[offset - 1]) && !isIdentifierChar(text[offset + identifier.length]);
-}
-
 /** Extract the handler expression from a JSX prop assignment like `onClick={handler}`. */
 export function extractJSXHandler(line: string, eventName: string): string | null {
   let searchFrom = 0;
@@ -306,11 +297,11 @@ export function classifyElementRisk(evidence: ElementRiskEvidence): UIElementRis
   const explicitRisk = riskFromDomAttribute(evidence.sourceLine);
   if (explicitRisk) return explicitRisk;
 
-  const riskLabels = deriveStringUnionMembersFromTypeContract(
+  deriveStringUnionMembersFromTypeContract(
     'scripts/pulse/types.ui-crawler.ts',
     'UIElementRisk',
   );
-  const kindLabels = deriveStringUnionMembersFromTypeContract(
+  deriveStringUnionMembersFromTypeContract(
     'scripts/pulse/types.ui-crawler.ts',
     'UIElementKind',
   );

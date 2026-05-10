@@ -1,5 +1,4 @@
-import { safeJoin, safeResolve } from '../safe-path';
-import * as path from 'path';
+import { safeJoin } from '../safe-path';
 import type { PulseConfig } from '../types.manifest';
 import { walkFiles } from './utils';
 import { pathExists, readTextFile } from '../safe-fs';
@@ -159,13 +158,7 @@ export function buildHookRegistry(config: PulseConfig): HookRegistry {
         // Also find return statement to map returned function names
         const returnMatch = hookBody.match(/return\s*\{([^}]+)\}/);
         if (returnMatch) {
-          const returnedNames = returnMatch[1]
-            .split(',')
-            .map((s) => s.trim().split(':')[0].trim())
-            .filter(Boolean);
-          // Any returned name that matches an inner function is already in funcMap
-          // If a returned name references a variable from destructuring (like from the api module),
-          // try to trace it
+          // Return statement references inner functions already in funcMap
         }
 
         if (funcMap.size > 0) {
@@ -193,11 +186,10 @@ export function buildHookRegistry(config: PulseConfig): HookRegistry {
           }
           // Find methods called on this API object within hook bodies
           const methodCallRe = new RegExp(`${apiObj}\\.(\\w+)\\s*\\(`, 'g');
-          let mc;
-          while ((mc = methodCallRe.exec(content)) !== null) {
-            // We'll capture these as potential API calls from hooks
-            // but they need to be matched against the API module map
-          }
+          // Methods called on this API object within hook bodies
+          // are captured as potential API calls from hooks
+          // but need to be matched against the API module map
+          methodCallRe.exec(content);
         }
       }
     } catch (e) {

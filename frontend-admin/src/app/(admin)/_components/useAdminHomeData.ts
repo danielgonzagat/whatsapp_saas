@@ -10,7 +10,7 @@ import {
 } from '@/lib/api/admin-dashboard-api';
 import { adminNotificationsApi } from '@/lib/api/admin-notifications-api';
 import { adminProductsApi, type ListProductsResponse } from '@/lib/api/admin-products-api';
-import { adminSupportApi, type AdminSupportOverviewItem } from '@/lib/api/admin-support-api';
+import { adminSupportApi } from '@/lib/api/admin-support-api';
 import { useAdminSession } from '@/lib/auth/admin-session-context';
 import { toIsoDateTime } from './admin-formatters';
 
@@ -40,8 +40,7 @@ export function useAdminHomeData() {
       adminDashboardApi.home({
         period,
         compare: 'PREVIOUS',
-        from: period === 'CUSTOM' ? customRange.from : undefined,
-        to: period === 'CUSTOM' ? customRange.to : undefined,
+        ...(period === 'CUSTOM' ? { from: customRange.from, to: customRange.to } : {}),
       }),
     { refreshInterval: 60_000, revalidateOnFocus: false },
   );

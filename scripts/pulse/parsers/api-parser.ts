@@ -1,6 +1,6 @@
 import { safeJoin } from '../safe-path';
 import * as path from 'path';
-import type { APICall, ProxyRoute } from '../types.core';
+import type { APICall } from '../types.core';
 import type { PulseConfig } from '../types.manifest';
 import { walkFiles } from './utils';
 import { pathExists, readTextFile } from '../safe-fs';
@@ -21,15 +21,6 @@ import {
 } from './api-parser-helpers';
 
 export { normalizeEndpoint } from './api-parser-normalize';
-
-function removeLeadingRouteSegment(routePath: string, segment: string): string {
-  const parts = routePath.split('/').filter(Boolean);
-  if (parts[0] !== segment) {
-    return routePath;
-  }
-  const remainder = parts.slice(1).join('/');
-  return remainder ? `/${remainder}` : '/';
-}
 
 // Pass 1: Parse API module files to build function-to-endpoint map
 export function buildApiModuleMap(

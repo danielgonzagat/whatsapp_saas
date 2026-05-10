@@ -5,7 +5,6 @@ import type { PulseResolvedModule } from '../types.resolved-manifest';
 import {
   normalizeText,
   slugify,
-  tokenize,
   unique,
   titleCase,
   matchesOverride,

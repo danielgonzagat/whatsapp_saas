@@ -6,7 +6,6 @@
 import * as path from 'path';
 
 import {
-  deriveUnitValue,
   deriveZeroValue,
 } from '../dynamic-reality-kernel/catalog-arithmetic';
 import type {

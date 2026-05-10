@@ -190,10 +190,10 @@ function isBuiltinOrControlCall(value: string): boolean {
 export function resolveHandler(input: ResolveHandlerInput): HandlerResolution {
   const {
     handlerExpr,
-    lines,
+    lines: _lines,
     hookDestructures,
     hookRegistry,
-    hasSaveHandler,
+    hasSaveHandler: _hasSaveHandler,
     apiImportsInFile,
     apiModuleMap,
   } = input;
@@ -400,7 +400,7 @@ function resolveNestedLocalCall(
   visited = new Set<string>(),
   depth = 0,
 ): { type: UIElement['handlerType']; apiCalls: string[] } | null {
-  const { fileContent, lines, apiModuleMap, apiImportsInFile, hookDestructures, hookRegistry } =
+  const { fileContent: _fileContent, lines, apiModuleMap, apiImportsInFile, hookDestructures, hookRegistry } =
     input;
   if (depth > 4) {
     return null;

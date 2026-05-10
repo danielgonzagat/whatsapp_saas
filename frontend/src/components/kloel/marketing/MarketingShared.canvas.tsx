@@ -157,7 +157,7 @@ export function ConnBadge({ connected }: { connected: boolean }) {
         gap: 4,
         fontSize: 10,
         fontFamily: MONO,
-        color: connected ? colors.semantic.success : '#ef4444',
+        color: connected ? colors.semantic.success : colors.semantic.error,
         background: connected ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
         padding: '2px 8px',
         borderRadius: 99,
@@ -168,7 +168,7 @@ export function ConnBadge({ connected }: { connected: boolean }) {
           width: 6,
           height: 6,
           borderRadius: '50%',
-          background: connected ? colors.semantic.success : '#ef4444',
+          background: connected ? colors.semantic.success : colors.semantic.error,
           animation: connected ? 'mktPulse 2s infinite' : 'none',
         }}
       />

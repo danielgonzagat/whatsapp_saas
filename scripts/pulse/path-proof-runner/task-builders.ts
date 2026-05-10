@@ -6,7 +6,6 @@ import type {
 } from '../types.path-coverage-engine';
 import {
   isProtectedFile as isGovernanceProtectedFile,
-  loadGovernanceBoundary,
   normalizePath,
   type GovernanceBoundary,
 } from '../scope-state-classify';

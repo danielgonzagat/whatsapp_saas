@@ -21,7 +21,6 @@ import {
   computeVerdict,
   evaluateGate,
   isAutonomousApproved,
-  resolveExitAction,
 } from './gate-execution';
 import { PulseAutonomyState, PulseCertState } from './evaluation-helpers';
 import { computeHoursSince, evaluateLongRunEvidence, readStateFile } from './time-engine';

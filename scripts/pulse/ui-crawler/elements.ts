@@ -7,7 +7,7 @@ import type {
 } from '../types.ui-crawler';
 import { deriveStringUnionMembersFromTypeContract } from '../dynamic-reality-kernel/type-contract-labels';
 import { deriveZeroValue } from '../dynamic-reality-kernel/catalog-arithmetic';
-import { ensureDir, pathExists, readDir, readTextFile, writeTextFile } from '../safe-fs';
+import { pathExists, readTextFile } from '../safe-fs';
 import { safeJoin, safeResolve } from '../safe-path';
 import { walkFiles } from '../parsers/utils';
 import { FRONTEND_SRC, APP_DIR, DOM_HANDLER_PROPS } from './constants';
@@ -230,10 +230,6 @@ export function parseElementsFromFile(
     let status: UICrawlerStatus;
     let errorMessage: string | null = null;
 
-    const statusLabels = deriveStringUnionMembersFromTypeContract(
-      'scripts/pulse/types.ui-crawler.ts',
-      'UICrawlerStatus',
-    );
     if (!handlerName && kind !== 'input' && kind !== 'select') {
       status = 'no_handler' as UICrawlerStatus;
     } else if (isExplicitFakeSignal(line, handlerName)) {
@@ -397,10 +393,6 @@ export function classifyHandlerStatus(
   element: UIDiscoveredElement,
   apiEndpoint: string | null,
 ): { status: UICrawlerStatus; reason: string | null } {
-  const statuses = deriveStringUnionMembersFromTypeContract(
-    'scripts/pulse/types.ui-crawler.ts',
-    'UICrawlerStatus',
-  );
   if (element.status === ('no_handler' as UICrawlerStatus)) {
     return { status: 'no_handler' as UICrawlerStatus, reason: 'No handler attached' };
   }

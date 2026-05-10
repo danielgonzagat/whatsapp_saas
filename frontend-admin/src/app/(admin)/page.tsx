@@ -1,6 +1,5 @@
 'use client';
 
-import { useMemo } from 'react';
 import { firstName, resolveGreeting } from '@/components/admin/admin-greeting';
 import {
   AdminMetricGrid,
@@ -43,9 +42,7 @@ export default function AdminHomePage() {
     orderSeries,
     conversationsSeries,
     averageTicketSeries,
-    activeProducts,
     chargebackRatePct,
-    catalogActivationPct,
     checkoutCompletionPct,
     operationalScorePct,
   } = useAdminHomeData();

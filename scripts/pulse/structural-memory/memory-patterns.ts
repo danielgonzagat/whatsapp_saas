@@ -31,7 +31,6 @@ import {
   LegacyUnitMemory,
   loadAuditLog,
   loadExisting,
-  newMemoryState,
   normalizeUnitMemory,
   persistMemory,
   recordFailedStrategyFingerprint,

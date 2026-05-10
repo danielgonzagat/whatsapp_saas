@@ -6,7 +6,6 @@ import {
   discoverRuntimeFusionEvidenceStatusLabels,
   discoverSignalActionLabels,
   discoverSignalSeverityLabels,
-  discoverSignalSourceLabels,
   discoverSignalTypeLabels,
   discoverTruthModeLabels,
 } from '../dynamic-reality-kernel/type-contract-engines';

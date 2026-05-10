@@ -125,6 +125,7 @@ export function buildCapabilityUnits(
           ? 'Reduce phantom capability count'
           : undefined,
       exitCriteria: capability.validationTargets,
+      breakTypes: [],
     };
   });
 }
@@ -195,6 +196,7 @@ export function buildFlowUnits(input: BuildPulseConvergencePlanInput): PulseConv
         ? `Pass ${certificationMatches.map(humanize).join('/')}`
         : 'Reduce phantom flow count',
       exitCriteria: flow.validationTargets,
+      breakTypes: [],
     };
   });
 }
@@ -284,6 +286,7 @@ export function buildExecutionMatrixUnits(
           `Path ${path.pathId} is no longer ${path.status}.`,
           'PULSE_EXECUTION_MATRIX.json is regenerated with a concrete observed classification.',
         ],
+        breakTypes: [],
       };
     },
   );

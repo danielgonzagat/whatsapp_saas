@@ -3,7 +3,7 @@
 // Types, paths, loaders, fingerprinting, audit log, and unit factory.
 
 import * as path from 'node:path';
-import { createHash, randomUUID } from 'node:crypto';
+import { createHash } from 'node:crypto';
 import {
   appendTextFile,
   ensureDir,
@@ -14,7 +14,6 @@ import {
 } from '../safe-fs';
 import {
   deriveUnitValue,
-  deriveZeroValue,
 } from '../dynamic-reality-kernel/catalog-arithmetic';
 import { discoverAllObservedArtifactFilenames } from '../dynamic-reality-kernel/token-evidence';
 import type {

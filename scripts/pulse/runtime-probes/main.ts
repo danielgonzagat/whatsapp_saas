@@ -50,7 +50,7 @@ function stringValue(value: unknown): string | null {
   return typeof value === 'string' && value.trim() ? value : null;
 }
 
-function numberValue(value: unknown): number | undefined {
+function _numberValue(value: unknown): number | undefined {
   return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
 }
 
@@ -77,7 +77,7 @@ function normalizeSource(value: unknown): PulseRuntimeProbeArtifactSource {
   return 'unknown';
 }
 
-function _normalizeStatus(value: unknown): PulseRuntimeProbeArtifactStatus | null {
+function __normalizeStatus(value: unknown): PulseRuntimeProbeArtifactStatus | null {
   const candidate = stringValue(value);
   if (candidate && STATUSES.has(candidate)) {
     return candidate as PulseRuntimeProbeArtifactStatus;
@@ -85,7 +85,7 @@ function _normalizeStatus(value: unknown): PulseRuntimeProbeArtifactStatus | nul
   return null;
 }
 
-function _parseTimeMs(value: string | null): number | null {
+function __parseTimeMs(value: string | null): number | null {
   if (!value) {
     return null;
   }
@@ -97,15 +97,6 @@ function recordMetrics(value: unknown): Record<string, unknown> | undefined {
   return isRecord(value) ? value : undefined;
 }
 
-function _isSimulatedProbe(record: Record<string, unknown>): boolean {
-  const source = stringValue(record.source);
-  if (source === 'simulated') {
-    return true;
-  }
-  const metrics = recordMetrics(record.metrics);
-  const proofMode = metrics ? stringValue(metrics.proofMode) : null;
-  return proofMode === 'simulated';
-}
 
 function inferRuntimeEvidenceSource(
   evidence: PulseRuntimeEvidence,
@@ -145,10 +136,9 @@ function normalizeProbe(
   const proofEligible =
     status === 'passed' && executed && freshness.fresh && sourceCanProve(source);
   const artifactPaths = unique([...stringArray(record.artifactPaths), RUNTIME_PROBES_PATH]);
-  const metrics = recordMetrics(record.metrics);
   const failureClassVal = stringValue(record.failureClass);
   const summaryVal = stringValue(record.summary);
-  const latencyMsVal = numberValue(record.latencyMs);
+  const latencyMsVal = _numberValue(record.latencyMs);
   const metricsVal = recordMetrics(record.metrics);
   return {
     probeId: stringValue(record.probeId) ?? 'unknown',

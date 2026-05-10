@@ -1,4 +1,4 @@
-import type { PrismaModel, PrismaField, PrismaRelation } from '../types.core';
+import type { PrismaModel } from '../types.core';
 import type { PulseConfig } from '../types.manifest';
 import { pathExists, readTextFile } from '../safe-fs';
 

@@ -209,7 +209,7 @@ export function computeExecutionMode(
   return 'ai_safe';
 }
 
-export function extractImports(filePath: string, content: string): string[] {
+export function extractImports(_filePath: string, content: string): string[] {
   const imports: string[] = [];
   let match: RegExpExecArray | null;
   const regex = new RegExp(IMPORT_REGEX.source, 'g');

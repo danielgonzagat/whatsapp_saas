@@ -2,7 +2,6 @@ import type { PulseExecutionMatrixPath } from '../types.execution-matrix';
 import type {
   PathClassification,
   PathCoverageExecutionMode,
-  PathCoverageEntry,
   PathCoverageExpectedEvidence,
   PathCoverageStructuralSafetyClassification,
   PathCoverageArtifactLink,
@@ -16,12 +15,11 @@ import {
   isProbeBlueprintClass,
   isUnreachableClass,
   isNotExecutableClass,
-  isCriticalRiskLevel,
   isEvidenceStatusPassed,
   isEvidenceStatusFailed,
   unique,
 } from './kernel-helpers';
-import { normalizeCoverageExecutionMode, isHighOrCriticalRisk } from './path-classification';
+import { normalizeCoverageExecutionMode } from './path-classification';
 import { deriveZeroValue } from '../dynamic-reality-kernel/catalog-arithmetic';
 
 function buildTerminalReason(

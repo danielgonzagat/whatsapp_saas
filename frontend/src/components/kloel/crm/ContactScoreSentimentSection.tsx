@@ -20,7 +20,7 @@ const C = {
 const sentimentColors: Record<string, { bg: string; text: string }> = {
   positive: { bg: 'rgba(52,199,89,0.15)', text: colors.semantic.success },
   neutral: { bg: 'rgba(110,110,115,0.15)', text: colors.text.muted },
-  negative: { bg: 'rgba(255,69,58,0.15)', text: '#FF453A' },
+  negative: { bg: 'rgba(255,69,58,0.15)', text: colors.semantic.error },
 };
 
 export function ContactScoreSentimentSection({

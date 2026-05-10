@@ -80,7 +80,7 @@ export function ContactTagsSection({ tags, onAddTag, onRemoveTag }: ContactTagsS
                 display: 'flex',
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.color = '#FF453A';
+                e.currentTarget.style.color = colors.semantic.error;
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.color = C.muted;

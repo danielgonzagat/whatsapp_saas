@@ -20,7 +20,6 @@ import {
   deriveActionKindsFromEffectGraph,
   deriveRequirementsFromEffectGraph,
   deriveRiskLevelFromEffectGraph,
-  getRiskOrder,
 } from './effect-graph';
 import { loadProtectedFiles } from './protected-files';
 import { pathExists } from '../safe-fs';
@@ -66,7 +65,7 @@ export function classifyDestructiveActions(rootDir: string): DestructiveAction[]
       }
 
       const full = path.join(dir, entry.name);
-      const relative = path.relative(rootDir, full);
+      const _relative = path.relative(rootDir, full);
 
       if (entry.isDirectory()) {
         walk(full);

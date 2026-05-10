@@ -3,29 +3,15 @@
 //
 // Constants and canonical gate definitions for the 8-gate perfectness suite.
 
-import * as path from 'path';
-
-import { ensureDir, pathExists, readJsonFile, writeTextFile } from '../safe-fs';
 import {
   deriveCatalogPercentScaleFromObservedCatalog,
   deriveHttpStatusFromObservedCatalog,
   deriveUnitValue,
-  deriveZeroValue,
-  discoverPropertyPassedStatusFromTypeEvidence,
   observeStatusTextLengthFromCatalog,
 } from '../dynamic-reality-kernel/catalog-arithmetic';
 import { discoverAllObservedArtifactFilenames } from '../dynamic-reality-kernel/token-evidence';
 import type {
-  ExitAction,
-  GateEvidencePlan,
-  GateEvidenceSource,
-  GateExitCondition,
-  PerfectnessGate,
-  PerfectnessLongRunEvidence,
   PerfectnessPhase,
-  PerfectnessResult,
-  PerfectnessTestSuite,
-  PerfectnessVerdict,
 } from '../types.perfectness-test';
 
 const _dcps = deriveCatalogPercentScaleFromObservedCatalog();

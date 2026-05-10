@@ -3,7 +3,6 @@ import type { PropertyTestEvidence } from '../types.property-tester';
 import { ensureDir } from '../safe-fs';
 import { safeJoin } from '../lib/safe-path';
 import {
-  deriveUnitValue,
   deriveZeroValue,
   discoverBoundaryStrategiesFromTypeEvidence,
   discoverPropertyPassedStatusFromTypeEvidence,

@@ -14,11 +14,10 @@ import type {
 import type { PulseParityGapsArtifact } from '../types.capabilities.parity';
 import type { PulseCertification } from '../types.evidence';
 import type { PulseCodacyEvidence, PulseTruthMode } from '../types.structural';
-import type { PulseProductVision } from '../types.product-vision';
+
 import type { PulseResolvedManifest } from '../types.resolved-manifest';
 import type { PulseScopeState } from '../types.truth.scope';
 import {
-  deriveRouteFamily,
   deriveStructuralFamilies,
   familiesOverlap,
   slugifyStructural,

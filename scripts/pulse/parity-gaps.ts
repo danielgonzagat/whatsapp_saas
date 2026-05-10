@@ -30,7 +30,6 @@ import {
 } from './parity-capability-classifiers/classifier-routes';
 import {
   isFrameworkShellCapability,
-  isInterfaceOnlyWithoutRoutes,
   isMaterializedCapability,
   isOperationalReadinessCapability,
 } from './parity-capability-classifiers/classifier-helpers';

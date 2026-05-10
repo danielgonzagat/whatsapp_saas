@@ -1,7 +1,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import type { PulseActorEvidence } from './types.evidence';
-import type { PulseActorKind, PulseTimeWindowMode } from './types.health';
+import type { PulseActorKind } from './types.health';
 import type { PulseActorProfile, PulseManifest, PulseManifestScenarioSpec } from './types.manifest';
 import type { PulseSyntheticRunMode } from './actors/types';
 import { deriveStringUnionMembersFromTypeContract } from './dynamic-reality-kernel/type-contract-labels';

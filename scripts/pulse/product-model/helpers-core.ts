@@ -2,10 +2,7 @@ import type { PulseStructuralGraph, PulseStructuralNode } from '../types.structu
 import type { PulseScopeState } from '../types.truth.scope';
 import type { PulseResolvedManifest } from '../types.resolved-manifest';
 import {
-  deriveHttpStatusFromObservedCatalog,
-  deriveUnitValue,
   deriveZeroValue,
-  observeStatusTextLengthFromCatalog,
 } from '../dynamic-reality-kernel/catalog-arithmetic';
 import {
   deriveRouteFamily,

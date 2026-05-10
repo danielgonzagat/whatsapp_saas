@@ -11,13 +11,15 @@ import {
   discoverModuleStateLabels,
 } from '../dynamic-reality-kernel/type-contract-engines';
 import {
-  normalizeText,
-  tokenize,
   slugify,
   unique,
   titleCase,
   singularize,
+  normalizeText,
   getRouteSegments,
+} from '../codebase-truth.string-utils';
+import {
+  tokenize,
   buildPageSemanticProfile,
 } from '../codebase-truth.analysis';
 

@@ -4,7 +4,6 @@
 // The canonical 8-gate evaluation rule set.
 
 import { deriveZeroValue } from '../dynamic-reality-kernel/catalog-arithmetic';
-import type { PerfectnessGate } from '../types.perfectness-test';
 import {
   PULSE_AUTONOMY_STATE_FILE,
   PULSE_CERTIFICATE_FILE,
@@ -104,17 +103,6 @@ function browserGateStatus(cert: PulseCertState | null): string | undefined {
     normalizeProofToken(gateName).includes('browser'),
   );
   return browserEntry?.[1].status;
-}
-
-function buildUnknownGate(context: GateEvaluationContext): PerfectnessGate {
-  return {
-    name: context.name,
-    description: context.description,
-    target: context.target,
-    actual: 'unknown gate',
-    passed: false,
-    evidence: `No evidence predicate matched gate "${context.name}" in the perfectness suite`,
-  };
 }
 
 function evidencePlanHasSource(context: GateEvaluationContext, source: string): boolean {

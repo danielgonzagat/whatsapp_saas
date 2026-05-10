@@ -78,7 +78,7 @@ export function ContactNeuroSection({ contactId, onMutate }: ContactNeuroSection
         {neuroLoading ? 'Analisando...' : 'Analisar com IA'}
       </button>
       {neuroError && (
-        <p style={{ fontSize: 12, color: '#FF453A', margin: '0 0 8px' }}>{neuroError}</p>
+        <p style={{ fontSize: 12, color: colors.semantic.error, margin: '0 0 8px' }}>{neuroError}</p>
       )}
       {neuroResult && (
         <div

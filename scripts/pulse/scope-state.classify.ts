@@ -284,6 +284,6 @@ export function classifyExcludeReason(dirName: string): string {
 }
 
 /** Return true when a file could not be classified into any known surface. */
-export function isUnknownFile(surface: PulseScopeSurface, kind: PulseScopeFileKind): boolean {
+export function isUnknownFile(surface: PulseScopeSurface, _kind: PulseScopeFileKind): boolean {
   return surface === 'misc';
 }
