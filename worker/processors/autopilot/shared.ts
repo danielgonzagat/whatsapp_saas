@@ -220,8 +220,8 @@ export type AutopilotDecision = {
 
 export type QuotedCustomerMessage = {
   content: string;
-  quotedMessageId?: string;
-  createdAt?: string;
+  quotedMessageId?: string | undefined;
+  createdAt?: string | undefined;
 };
 
 export async function reportSmokeTest(smokeTestId: string | undefined, payload: Record<string, unknown>) {

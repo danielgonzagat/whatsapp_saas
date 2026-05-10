@@ -31,11 +31,11 @@ export interface CiaHarnessEvent {
   /** Message property. */
   message: string;
   /** Contact id property. */
-  contactId?: string;
+  contactId?: string | undefined;
   /** Phone property. */
-  phone?: string;
+  phone?: string | undefined;
   /** Meta property. */
-  meta?: Record<string, unknown>;
+  meta?: Record<string, unknown> | undefined;
 }
 
 /** Cia harness summary shape. */

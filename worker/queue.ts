@@ -272,9 +272,9 @@ export const queueRegistry: BullQueue[] = [
 
 interface DlqEvent {
   queue: string;
-  jobId?: string | number;
-  jobName?: string;
-  reason?: string;
+  jobId?: string | number | undefined;
+  jobName?: string | undefined;
+  reason?: string | undefined;
 }
 
 interface DlqPayload extends DlqEvent {

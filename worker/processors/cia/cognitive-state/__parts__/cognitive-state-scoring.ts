@@ -11,7 +11,7 @@ export const computeSilenceMinutes = (lastMessageAt?: Date | string | null): num
 
 export interface ComputeTrustScoreParams {
   previous: Partial<CustomerCognitiveState> | null;
-  leadScore?: number | null;
+  leadScore?: number | null | undefined;
   trustSignals: string[];
   objections: string[];
 }

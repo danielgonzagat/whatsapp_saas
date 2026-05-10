@@ -6,8 +6,8 @@ const log = new WorkerLogger('channel-dispatcher');
 type EmailConfig = {
   host: string;
   port: number;
-  user?: string;
-  pass?: string;
+  user?: string | undefined;
+  pass?: string | undefined;
   from: string;
   secure: boolean;
 };

@@ -31,17 +31,17 @@ export interface AgentEventPayload {
   /** Message property. */
   message: string;
   /** Phase property. */
-  phase?: string;
+  phase?: string | undefined;
   /** Run id property. */
-  runId?: string;
+  runId?: string | undefined;
   /** Persistent property. */
-  persistent?: boolean;
+  persistent?: boolean | undefined;
   /** Streaming property. */
-  streaming?: boolean;
+  streaming?: boolean | undefined;
   /** Token property. */
-  token?: string;
+  token?: string | undefined;
   /** Meta property. */
-  meta?: Record<string, unknown>;
+  meta?: Record<string, unknown> | undefined;
 }
 
 type BacklogRunState = {

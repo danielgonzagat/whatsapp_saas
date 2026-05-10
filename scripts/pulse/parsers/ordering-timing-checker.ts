@@ -217,15 +217,15 @@ export function checkOrderingTiming(config: PulseConfig): Break[] {
       continue;
     }
 
-    // (b) One-shot POST hooks — no SWR cache to invalidate
-    if (/\/hooks\//i.test(file) && !/useSWR/.test(readTextFile(file, 'utf8') || '')) {
-      continue;
-    }
-
     let content: string;
     try {
       content = readTextFile(file, 'utf8');
     } catch {
+      continue;
+    }
+
+    // (b) One-shot POST hooks — no SWR reads, no cache to invalidate
+    if (/\/hooks\//i.test(file) && !/useSWR/.test(content)) {
       continue;
     }
 
