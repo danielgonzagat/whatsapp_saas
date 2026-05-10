@@ -118,6 +118,20 @@ export class MindPredictorService {
     if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
       return value.toString();
     }
-    return JSON.stringify(value);
+    return stableJsonString(value);
   }
+}
+
+function stableJsonString(value: unknown): string {
+  if (Array.isArray(value)) {
+    return `[${value.map(stableJsonString).join(',')}]`;
+  }
+  if (!value || typeof value !== 'object') {
+    return String(value);
+  }
+  const record = value as Record<string, unknown>;
+  const entries = Object.keys(record)
+    .sort()
+    .map((key) => `${key}:${stableJsonString(record[key])}`);
+  return `{${entries.join(',')}}`;
 }
