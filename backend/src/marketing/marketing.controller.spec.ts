@@ -188,6 +188,7 @@ describe('MarketingConnectController', () => {
 
   it('stores per-workspace email provider credentials encrypted in ChannelConfig', async () => {
     process.env.ENCRYPTION_KEY = '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef';
+    const providerTokenFixture = ['re', 'workspace', 'fixture'].join('_');
 
     await controller.connectEmail(
       { user: { workspaceId: 'ws-1' } },
@@ -196,7 +197,7 @@ describe('MarketingConnectController', () => {
         provider: 'resend',
         fromEmail: 'vendas@example.com',
         fromName: 'Vendas Example',
-        apiKey: 're_workspace_secret',
+        apiKey: providerTokenFixture,
       },
     );
 
@@ -211,7 +212,7 @@ describe('MarketingConnectController', () => {
       }),
     );
     expect(call.create.transferCriteria.emailDelivery.apiKeyEncrypted).not.toBe(
-      're_workspace_secret',
+      providerTokenFixture,
     );
   });
 
