@@ -1,16 +1,13 @@
-import { WorkerLogger } from '../../logger';
 import { prisma } from '../../db';
 import { autopilotQueue } from '../../queue';
 import { buildQueueJobId } from '../../job-id';
 import { publishAgentEvent, createBacklogRunState, finishBacklogRunTask } from '../../providers/agent-events';
 import { forEachSequential } from '../../utils/async-sequence';
 import { deriveOperationalUnreadCount, isConversationPendingForAgent } from '../../conversation-agent-state';
-import { AUTOPILOT_SWEEP_UNREAD_CONVERSATIONS_JOB, parseSweepUnreadConversationsJobData } from '../../contracts/autopilot-jobs';
+import { parseSweepUnreadConversationsJobData } from '../../contracts/autopilot-jobs';
 import { normalizeJsonObject, type UnknownRecord, log } from './shared';
 import { resolveWorkspaceSelfIdentity, isWorkspaceSelfTarget } from './identity';
 import { getRemoteUnreadChatSnapshot, seedRemoteUnreadConversationShells, finalizeBacklogIntoSilentCatalog } from './backlog';
-
-const sweepLog = new WorkerLogger('autopilot:sweep');
 
 export async function runSweepUnreadConversations(data: unknown) {
   const payload = parseSweepUnreadConversationsJobData(data);

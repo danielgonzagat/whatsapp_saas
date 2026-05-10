@@ -293,68 +293,68 @@ O estado de rigor maximo do Codacy faz parte da governance.
 <claude-mem-context>
 # Memory Context
 
-# [whatsapp_saas] recent context, 2026-04-29 8:56pm GMT-3
+# [whatsapp_saas] recent context, 2026-05-09 9:46pm GMT-3
 
 Legend: 🎯session 🔴bugfix 🟣feature 🔄refactor ✅change 🔵discovery ⚖️decision
 Format: ID TIME TYPE TITLE
 Fetch details: get_observations([IDs]) | Search: mem-search skill
 
-Stats: 50 obs (23,883t read) | 3,461,087t work | 99% savings
+Stats: 50 obs (19,053t read) | 821,139t work | 98% savings
 
-### Apr 29, 2026
+### May 7, 2026
+390 1:08p 🔵 Apple Auth Env Var Resolution Chain — backend/src/auth/apple-auth.service.ts
+391 " 🔵 Meta Per-Channel Config ID Env Var Mapping and TikTok Technical Leakage in MarketingView
+393 " 🔴 TikTok Marketing UI — Technical Identifiers and Env Var Names Removed from Operator Screen
+394 " 🟣 Railway Backend Production Variables Bulk Upsert — MIND + Meta + TikTok Config Vars
+414 1:15p 🔴 WhatsAppExperience ConnectedCelebration — Raw Unicode Checkmark Replaced with Lucide Icon
+415 " ✅ KLOEL_MIND_OMNICHANNEL_DELIVERY_REPORT.md — Blocker List Reduced and Railway API Status Updated
+416 " 🔵 Frontend Validation — TypeCheck Clean, 27 Tests Passing Across 4 Critical Suites
+417 1:16p 🔵 Backend Build + Mind/Brain Test Suite — 20 Suites, 123 Tests All Passing
+418 " 🔵 MIND Decision Types — Both `cia_aggressiveness` and `followup_timing` Are Real, Distinct Decision Types
+419 " 🔵 Pre-Commit Hook Blocks Commit — 6 Architecture Violations in 109-File Staged Changeset
+430 1:19p 🔵 MIND Module Complete File Inventory — 17 Backend Services + 4 Admin + Frontend Hooks Verified
+431 " 🔵 Apple Service ID `com.kloel.web` — Only in Test Fixtures, Never in Production Code
+432 " 🔴 admin-mind.service.ts Trailing Whitespace Fixed — git diff --check Now Passes
+433 " 🔵 Frontend-Admin Also Uses Canonical Mushroom SVG — 3 References Found
+434 " 🔵 Pre-Commit Architecture Gate Flags `expect.any()` as Explicit Any — False Positive Pattern
+### May 9, 2026
+627 3:42p 🔵 Obsidian Mirror Debug Session Boot — Workspace State Snapshot
+633 3:45p 🔵 Obsidian Mirror Real-Time Sync Investigation Initiated — RAM and Graph Staleness Bugs Scoped
+635 3:47p 🔴 Obsidian Mirror Daemon — Missing `collectAllSourceFiles` Import Fixed
+636 " 🔵 Obsidian Mirror Daemon — Full Rebuild Now Running, 3666 Source Files Detected
+639 3:48p 🔵 Obsidian Mirror Real-Time Sync Bug — Session Boot
+641 3:49p 🔴 Obsidian Mirror Full Rebuild — 1483 Stale Files Removed, 3666 Files Re-synced
+642 " 🔴 Graph Lens Active Mode Fixed — "Custom" Replaced by "factory"
+643 " 🔵 Post-Rebuild Validation — 14 Files Changed Since Manifest, Mirror Now In-Sync
+644 " 🟣 Obsidian Mirror Daemon Launched in Watch Mode — PID 88841
+645 3:51p 🔴 Daemon Watch Mode Crash Bug Discovered — Process Exits Seconds After Launch
+646 " 🔵 Daemon Watch Mode Uses 13 Scoped Source Roots — Not Full Repo Tree
+648 " 🔵 Watch Mode Daemon Confirmed Working — Real-Time Mirroring Active When Run Foreground
+649 " 🔵 Validate Drift Growing — 19 Changed Files vs 14 Earlier, Mirror Falling Behind Active Dev
+652 3:52p 🔵 Daemon Watch Loop Fully Functional — Git Dirty State Refresh, Real-Time Mirror, Stable at 143MB RSS
+653 " 🔵 Terminal Multiplexer Availability — Only `screen` Present, No `tmux` or `dtach`
+656 " 🔵 Screen Daemon Container Survives but Node Child Still Exits — Bug Is In Daemon Code, Not Process Management
+657 3:55p 🔵 Obsidian Mirror Real-Time Sync Bug — Session Boot Context
+658 " 🔵 Obsidian Mirror Daemon Runtime State — PID 28855 Confirmed Active at Low RAM
+659 3:57p 🔵 Mirror Daemon Validate Exit Code 1 — 1 Changed File Per Run, Different File Each Time
+660 " 🔵 Obsidian Mirror Daemon Live Throughput — 13 Mirror Events in 2.5 Minutes Across Backend + Frontend
+662 4:00p 🔵 Graph Lens HTTP Server (port 37779) Not Running — Active Lens Corrected to "factory"
+663 " 🔴 Stale PID File Fixed — tmp/obsidian-mirror-daemon.pid Updated from 98907 to 28855
+664 " 🔵 Mirror Daemon Status Snapshot — 3670 Files, 56MB Source, 70MB Mirror, Live Since 18:46
+678 4:24p ⚖️ Obsidian Mirror Daemon — RAM Efficiency Mandate Issued
+679 4:25p 🔵 Obsidian Mirror Daemon RAM Profile — 100MB RSS on 16GB System at 71% Pressure
+680 " 🔄 Obsidian Mirror Daemon Constants — Polling Intervals Slowed and Made Env-Configurable
+681 " ✅ Obsidian Mirror Daemon Restarted with 64MB Heap Cap and Slower Polls
+684 4:26p 🔵 Daemon RAM Profile Post-Restart — Startup Spike to 154MB Then GC Down to 40MB at Idle
+685 " 🟣 Obsidian Mirror Watchdog Script Created — Auto-Restarts Daemon if RSS Exceeds 128MB
+686 4:27p 🔵 Watchdog Triggered First Restart — Daemon Startup Consistently Exceeds 128MB RSS Threshold
+687 " ✅ Watchdog RSS Threshold Raised to 192MB to Prevent Startup Restart Loop
+688 4:28p 🔵 Watchdog Restart Loop Continues — Daemon Reaches 194MB RSS at 11s, Near New 192MB Ceiling
+689 " 🔵 Daemon Stabilized at 144MB RSS After Multiple Restarts — 192MB Threshold Working
+691 4:29p 🔴 Duplicate Daemon Instances Killed — Two Watchdog Trees Running Simultaneously
+695 4:30p 🔵 Obsidian Mirror Daemon Stable at 40MB RSS — Clean Single-Watchdog Configuration Confirmed
 
-4299 4:19p 🔄 Pillar Scanners Refactored to Return Rich PillarScanResult Instead of Binary ObservabilityStatus
-4300 " 🔄 buildCapabilityObservability Rebuilt Around Evidence-First Architecture
-4301 " 🔴 Simulation Detection Regex Narrowed to Prevent False Positives on Test Files
-4307 4:23p 🔴 property-tester.ts — All False Positive Execution Statuses Eliminated
-4308 " 🔴 property-tester.ts buildPropertyTestEvidence() Summary — Planned/NotExecuted Counters Added
-4309 " 🔄 property-tester.ts — generateFallbackCandidates Removal Attempted; ENUM_CANDIDATE_NAMES Removed
-4310 4:24p ⚖️ PULSE Mission Scope — Full AI Autonomy from Zero to Production
-4311 " ⚖️ Architectural Principle — "Hardcode of Grammar Allowed, Hardcode of Reality Forbidden"
-4312 " ⚖️ PULSE 8 Organs — Complete Operational Vision
-4313 " 🔵 PULSE Current State — Score 77, PARTIAL Certification, 3/3 Convergence Cycles Passing
-4314 " ⚖️ PULSE 20 Technology Gaps — Ordered Implementation Roadmap to Perfect Machine
-4315 " ⚖️ PULSE Layer Architecture — Scope → Capability → Flow → Vision → Directive
-4316 4:25p 🔄 execution-harness.ts generateTestHarnessCode() — 4 Test Templates Collapsed to 1 Blueprint
-4322 4:26p ⚖️ PULSE Mission Defined — Full AI Autonomy from Zero to Production
-4323 " ⚖️ Architectural Principle — "Hardcode of Grammar Allowed, Hardcode of Reality Forbidden"
-4324 " 🔵 PULSE Current State — 9 Missing Technologies to Reach "Perfect Machine"
-4325 " ⚖️ PULSE 20 Technology Gaps — Ordered Implementation Roadmap
-4326 " ⚖️ PULSE 8 Organs — Complete Operational Architecture
-4327 " 🔵 PULSE Structural Gaps — 6 Specific Blockers Preventing Certified Status
-4328 4:30p ⚖️ PULSE Architectural Principle — "Hardcode of Grammar Allowed, Hardcode of Reality Forbidden"
-4329 " ⚖️ PULSE Completion Criterion — Binary 72-Hour Zero-Prompt Production Test
-4330 " 🔵 PULSE Current State at Mission Start — Score 77, PARTIAL, 3/3 Convergence Cycles Passing
-4331 " ⚖️ PULSE 20 Technology Gaps — Ordered Implementation Roadmap to Perfect Machine
-4332 " ⚖️ PULSE Autonomous Engineer Mission — Full AI Handoff, Zero Human Involvement
-4333 4:32p 🔵 PULSE Audit Session Git State — Branch chore/codacy-tsdoc-pulse-updates-apr23
-4343 4:37p ⚖️ PULSE Autonomous Engineer Mission — Full AI Handoff, Zero Human Involvement
-4344 " 🔵 PULSE Current State — Score 77, PARTIAL Certification, 20 Technology Gaps
-4345 " ⚖️ Architectural Principle — "Hardcode of Grammar Allowed, Hardcode of Reality Forbidden"
-4346 " ⚖️ PULSE 20 Technology Gaps — Ordered Implementation Roadmap to Perfect Machine
-4347 4:38p ⚖️ PULSE Mission — Full AI Autonomy, Zero Human Technical Involvement
-4348 " ⚖️ PULSE 20-Technology Gap Roadmap — Ordered Implementation to Perfect Machine
-4349 " ⚖️ PULSE Architectural Principle — "Hardcode of Grammar Allowed, Hardcode of Reality Forbidden"
-4360 4:42p ⚖️ PULSE Autonomous Engineer Mission — Full AI Handoff, Zero Human Involvement
-4361 " ⚖️ Architectural Principle — "Hardcode of Grammar Allowed, Hardcode of Reality Forbidden"
-4362 " 🔵 PULSE Current State — Score 77, PARTIAL Certification, 3/3 Convergence Cycles Passing
-4363 " ⚖️ PULSE 20 Technology Gaps — Ordered Implementation Roadmap to Perfect Machine
-4364 " ⚖️ PULSE Completion Criterion — Binary 72-Hour Zero-Prompt Production Test
-4365 " 🔵 PULSE 8 Organs — Complete Operational Vision of the Finished Machine
-4366 4:44p ⚖️ PULSE Mission Restated — Complete Autonomous Technical Substitute Specification
-4367 " 🔴 OpsAlertModule Product Code Contamination Reverted
-4368 " 🟣 OpsAlertService @Optional() Injection Added to Auth Services
-4375 4:45p ⚖️ PULSE Mission Definition — Full AI Autonomy, Zero Human Involvement
-4376 " ⚖️ Architectural Principle — "Hardcode of Grammar Allowed, Hardcode of Reality Forbidden"
-4377 " ⚖️ PULSE 8 Organs — Complete Vision of the Finished Machine
-4378 " 🔵 PULSE Current State at Mission Handoff — Score 77, PARTIAL, 20 Technology Gaps
-4379 " ⚖️ PULSE 20 Technology Gaps — Ordered Implementation Roadmap to Perfect Machine
-4386 4:47p 🟣 PULSE Observability Coverage — Error Budget Pillar Now Scans Real Code Instead of Always Returning Missing
-4387 " 🔴 PULSE Path Coverage Engine — Three Logic Fixes for Scope, Risk Classification, and Safe Execution
-4388 4:48p 🔵 PULSE human_required Emitter Map — Generator Functions Identified
-4395 4:50p ⚖️ PULSE Investigation — Remove Human Blocking Semantics from Artifacts
-
-Access 3461k tokens of past work via get_observations([IDs]) or mem-search skill.
+Access 821k tokens of past work via get_observations([IDs]) or mem-search skill.
 </claude-mem-context>
 
 ## PULSE Auditor Immutability

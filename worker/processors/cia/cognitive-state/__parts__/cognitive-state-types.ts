@@ -58,7 +58,7 @@ export interface CustomerCognitiveState {
   disclosureLevel?: number;
   corePain?: string | null;
   preferredStyle?: 'direct' | 'empathetic' | 'consultative' | 'technical';
-  nextBestQuestion?: string | null;
+  nextBestQuestion?: string | null | undefined;
   classificationConfidence: number;
   summary: string;
   updatedAt: string;

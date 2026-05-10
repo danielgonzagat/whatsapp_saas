@@ -10,8 +10,6 @@ import { log, normalizeJsonObject, type UnknownRecord, CIA_OPPORTUNITY_REFRESH_T
 import { buildHeuristicCatalogScore, maybeScoreContactWithAi, classifyOpportunityCandidate, buildCompressedOpportunityContext, mapOpportunityBucket } from './opportunity';
 import { resolveCatalogChatActivityTimestamp } from './identity';
 
-const scoreLog = new WorkerLogger('autopilot:score');
-
 export async function runScoreContact(data: UnknownRecord) {
   const workspaceId = String(data?.workspaceId || '').trim();
   const contactId = String(data?.contactId || '').trim();

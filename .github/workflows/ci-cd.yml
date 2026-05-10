@@ -185,6 +185,25 @@ jobs:
       - name: Normalize LCOV paths for monorepo uploads
         run: npm run coverage:normalize
 
+      - name: Validate coverage summaries
+        run: |
+          missing=0
+          for dir in backend frontend worker; do
+            if [ -f "$dir/coverage/coverage-summary.json" ]; then
+              echo "  ✓ $dir coverage-summary.json found"
+            else
+              echo "  ✗ $dir coverage-summary.json MISSING"
+              missing=1
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            echo ""
+            echo "ERROR: coverage-summary.json missing in one or more packages"
+            exit 1
+          fi
+          echo ""
+          echo "All coverage-summary.json files present"
+
       # Codecov Coverage Analytics — one upload per workspace with a flag so
       # the dashboard separates backend/frontend/worker rollups and component
       # targets in codecov.yml resolve correctly.

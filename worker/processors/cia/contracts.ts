@@ -53,9 +53,9 @@ export interface CiaCandidateExhaustionRecord {
   /** Conversation id property. */
   conversationId: string;
   /** Contact id property. */
-  contactId?: string;
+  contactId?: string | undefined;
   /** Phone property. */
-  phone?: string;
+  phone?: string | undefined;
   /** Cluster property. */
   cluster: string;
   /** Planned type property. */

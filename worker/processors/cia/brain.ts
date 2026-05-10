@@ -16,11 +16,11 @@ export interface CiaActionDecision {
   /** Cluster property. */
   cluster: CiaCluster;
   /** Contact id property. */
-  contactId?: string;
+  contactId?: string | undefined;
   /** Phone property. */
-  phone?: string;
+  phone?: string | undefined;
   /** Contact name property. */
-  contactName?: string;
+  contactName?: string | undefined;
   /** Conversation id property. */
   conversationId: string;
   /** Priority property. */
@@ -122,7 +122,7 @@ export interface ConversationActionCandidate {
   /** Selected property. */
   selected: boolean;
   /** Variant family property. */
-  variantFamily?: 'followup' | 'payment_recovery';
+  variantFamily?: 'followup' | 'payment_recovery' | undefined;
 }
 
 interface ActionOption {
@@ -131,7 +131,7 @@ interface ActionOption {
   rewardScore: number;
   riskScore: number;
   confidence: number;
-  variantFamily?: 'followup' | 'payment_recovery';
+  variantFamily?: 'followup' | 'payment_recovery' | undefined;
 }
 
 function clamp(value: number, min = 0, max = 1) {

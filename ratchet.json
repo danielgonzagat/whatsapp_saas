@@ -1,9 +1,9 @@
 {
   "version": 1,
-  "updatedAt": "2026-05-09T16:33:55.690Z",
+  "updatedAt": "2026-05-10T01:09:33.123Z",
   "source": "scripts/ops/collect-ratchet-metrics.mjs",
   "mode": "mechanical-ratchet",
-  "note": "Zeroed by chore/purga-total-debt - autorizado pelo dono do repositorio",
+  "note": "Live-measured by collector — every zero corresponds to evidence in code",
   "ratchet": {
     "pulse_score_min": 100,
     "any_count_max": 0,

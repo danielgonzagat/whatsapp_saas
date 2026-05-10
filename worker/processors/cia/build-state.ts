@@ -101,11 +101,11 @@ export interface CiaCandidate {
   /** Conversation id property. */
   conversationId: string;
   /** Contact id property. */
-  contactId?: string;
+  contactId?: string | undefined;
   /** Phone property. */
-  phone?: string;
+  phone?: string | undefined;
   /** Contact name property. */
-  contactName?: string;
+  contactName?: string | undefined;
   /** Unread count property. */
   unreadCount: number;
   /** Pending property. */
@@ -151,11 +151,11 @@ export interface CiaSeedConversation {
   /** Conversation id property. */
   conversationId: string;
   /** Contact id property. */
-  contactId?: string;
+  contactId?: string | undefined;
   /** Phone property. */
-  phone?: string;
+  phone?: string | undefined;
   /** Contact name property. */
-  contactName?: string;
+  contactName?: string | undefined;
   /** Unread count property. */
   unreadCount?: number;
   /** Pending property. */

@@ -66,7 +66,7 @@ function resolvePublicBackendBaseUrl() {
 
 async function handleGenerateAudio(
   job: Job,
-  meta: ReturnType<typeof startJob>,
+  _meta: ReturnType<typeof startJob>,
   ctxLog: WorkerLogger,
 ) {
   const { jobId, workspaceId, text, profileId } = job.data as {
@@ -142,7 +142,7 @@ async function handleGenerateAudio(
 
 async function handleTranscription(
   job: Job,
-  meta: ReturnType<typeof startJob>,
+  _meta: ReturnType<typeof startJob>,
   ctxLog: WorkerLogger,
 ) {
   const { workspaceId, phone, mediaUrl, messageType } = job.data;

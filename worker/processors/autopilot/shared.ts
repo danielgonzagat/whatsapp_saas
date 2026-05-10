@@ -1,5 +1,3 @@
-import { createHash, randomUUID } from 'node:crypto';
-import type { Prisma } from '@prisma/client';
 import { WorkerLogger } from '../../logger';
 import { redis } from '../../redis-client';
 import { prisma } from '../../db';

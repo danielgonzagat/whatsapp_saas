@@ -134,6 +134,7 @@
       "**/*.(t|j)s"
     ],
     "coverageDirectory": "../coverage",
+    "coverageReporters": ["clover", "json", "lcov", "text", "json-summary"],
     "reporters": [
       "default",
       [
