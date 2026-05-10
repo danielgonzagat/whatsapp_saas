@@ -1,6 +1,14 @@
 import { AutopilotCycleExecutorService } from './autopilot-cycle-executor.service';
 
 describe('AutopilotCycleExecutorService', () => {
+  beforeEach(() => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-05-10T15:00:00.000Z'));
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
   const buildConfig = () => ({ get: jest.fn().mockReturnValue('') });
   const buildService = (mindPolicy?: { choose: jest.Mock }) =>
     new AutopilotCycleExecutorService(
