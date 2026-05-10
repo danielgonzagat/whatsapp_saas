@@ -74,7 +74,6 @@ export async function scrapeInstagram(query: string, limit = 5): Promise<Scraped
       console.warn('[IG] Login wall detected. Public scraping might be limited.');
       // If we have credentials, we could login here.
     } catch {
-      // PULSE:OK — No login wall means selector timeout is expected; continue scraping
     }
 
     // Try to find posts
@@ -145,7 +144,6 @@ export async function scrapeInstagram(query: string, limit = 5): Promise<Scraped
         }
         await newPage.close();
       } catch (err) {
-        // PULSE:OK — Per-post scraping error non-critical; other posts still collected
         console.error(`[IG] Error processing post:`, err);
       }
     });

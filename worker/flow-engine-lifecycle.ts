@@ -82,7 +82,6 @@ export async function markStatus(
   try {
     flowStatusCounter.inc({ workspaceId: state.workspaceId || 'unknown', status });
   } catch (err) {
-    // PULSE:OK — Prometheus metric increment non-critical; flow state already persisted
     log.error('flow_status_metric_error', {
       error: err instanceof Error ? err.message : String(err),
     });
@@ -152,7 +151,6 @@ export async function failExecution(
   try {
     flowStatusCounter.inc({ workspaceId: state.workspaceId || 'unknown', status: 'FAILED' });
   } catch (err) {
-    // PULSE:OK — Prometheus metric increment non-critical; FAILED status already persisted
     log.error('flow_status_metric_error', {
       error: err instanceof Error ? err.message : String(err),
     });

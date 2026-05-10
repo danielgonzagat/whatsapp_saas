@@ -64,7 +64,6 @@ export async function syncProductToMemory(
       update: { value: value as Prisma.InputJsonValue, content },
     });
   } catch {
-    // PULSE:OK — Memory sync is non-critical; product operation succeeds without it
   }
 }
 
@@ -85,6 +84,5 @@ export async function deleteProductFromMemory(
       },
     });
   } catch {
-    // PULSE:OK — Memory cleanup is non-critical; product deletion succeeds without it
   }
 }

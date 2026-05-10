@@ -36,7 +36,6 @@ export class AdminAuditInterceptor implements NestInterceptor {
       return next.handle();
     }
 
-    // PULSE:OK buildAdminAuditEntry sanitizes query/body/params via admin-sanitize before persistence.
     const entry = buildAdminAuditEntry(context, req);
 
     return next.handle().pipe(

@@ -46,7 +46,6 @@ export class AlertsGateway implements OnGatewayConnection, OnGatewayDisconnect {
           this.server.emit('alert:event', payload);
         }
       } catch (err: unknown) {
-        // PULSE:OK — Redis pub/sub parse error; cannot propagate from event handler
         this.logger.error('Failed to parse alert message', err);
       }
     });

@@ -155,7 +155,6 @@ export class CheckoutProductService {
   // ─── Plans ─────────────────────────────────────────────────────────────────
 
   /** Create plan.
-   * PULSE:OK — Sub-creates (checkoutProductPlan, checkoutConfig) inherit
    * workspace ownership transitively through Product.workspaceId, which is
    * verified by the product lookup above before the transaction runs.
    */

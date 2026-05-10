@@ -1,4 +1,3 @@
-// PULSE:OK — provider registry does not enforce daily send limits itself.
 // WhatsAppService.sendMessage() calls PlanLimitsService.trackMessageSend() before delegating here.
 import { Injectable, Logger, Optional } from '@nestjs/common';
 import { Prisma } from '@prisma/client';

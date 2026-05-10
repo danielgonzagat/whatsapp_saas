@@ -577,7 +577,6 @@ export class CrmService {
         error instanceof Error ? error.message : String(error),
         { context: 'CrmService.notifyRevenue', workspaceId, campaignId },
       );
-      // PULSE:OK — CRM webhook notification non-critical; contact event still recorded
     }
   }
 }

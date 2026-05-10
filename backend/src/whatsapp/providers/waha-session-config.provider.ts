@@ -1,4 +1,3 @@
-// PULSE:OK — session config/diagnostics layer for WAHA.
 // Session lifecycle lives in WahaSessionProvider (waha-session.provider.ts).
 // Messaging lives in WahaProvider (waha.provider.ts).
 import { Injectable } from '@nestjs/common';

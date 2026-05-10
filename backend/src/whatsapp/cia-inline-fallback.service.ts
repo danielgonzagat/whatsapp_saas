@@ -337,7 +337,6 @@ export class CiaInlineFallbackService {
           context: 'CiaInlineFallbackService.runBacklogInlineFallback',
           conversationId: safeStr(conversation.id) || undefined,
         });
-        // PULSE:OK — Per-conversation processing failure is isolated; others still processed
         skipped += 1;
       } finally {
         if (!keepReplyLock) {

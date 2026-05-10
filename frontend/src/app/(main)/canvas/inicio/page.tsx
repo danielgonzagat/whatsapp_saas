@@ -2,7 +2,6 @@
 
 import { kloelT } from '@/lib/i18n/t';
 import { colors } from '@/lib/design-tokens';
-// PULSE:OK — AI generate POST navigates to editor on success; deleteDesign uses useCanvasDesigns hook which calls mutate internally.
 
 import { IC } from '@/components/canvas/CanvasIcons';
 import { CreateModal } from '@/components/canvas/CreateModal';

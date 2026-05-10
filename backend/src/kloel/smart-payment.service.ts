@@ -199,7 +199,6 @@ export class SmartPaymentService {
         await this.planLimits
           .trackAiUsage(workspaceId, aiResponse?.usage?.total_tokens ?? 500)
           .catch(() => {});
-        // PULSE:OK — AI message is optional enrichment; static fallback message is used when AI fails
       } catch (err: unknown) {
         this.logger.warn(
           'AI message generation failed',
@@ -345,7 +344,6 @@ export class SmartPaymentService {
         installments: parsed.installments,
         approved: parsed.approved !== false,
       };
-      // PULSE:OK — AI negotiation is an optional enrichment layer; static 5% fallback discount is the safe default when AI is unavailable
     } catch (err: unknown) {
       this.logger.error('AI negotiation failed', err instanceof Error ? err.message : String(err));
       Sentry.captureException(err, {

@@ -76,7 +76,6 @@ export class MemoryManagementService {
       );
     } catch (error: unknown) {
       void this.opsAlert?.alertOnCriticalError(error, 'MemoryManagementService.runDailyCleanup');
-      // PULSE:OK — Scheduled cleanup failure is non-critical; next run will retry
       this.logger.error(
         `Cleanup failed: ${error instanceof Error ? error.message : 'unknown_error'}`,
       );
@@ -96,7 +95,6 @@ export class MemoryManagementService {
       }
     } catch (error: unknown) {
       void this.opsAlert?.alertOnCriticalError(error, 'MemoryManagementService.getStats');
-      // PULSE:OK — Prometheus metric update failure is non-critical; next cron will retry
       this.logger.error(
         `Failed to update memory metrics: ${error instanceof Error ? error.message : 'unknown_error'}`,
       );
@@ -183,7 +181,6 @@ export class MemoryManagementService {
       cutoffDate.setDate(cutoffDate.getDate() - days);
 
       try {
-        // PULSE:OK — each category has a unique cutoff date; fixed small set of categories
         const result = await this.prisma.kloelMemory.deleteMany({
           where: {
             category,
@@ -201,7 +198,6 @@ export class MemoryManagementService {
           error,
           'MemoryManagementService.removeExpiredMemories',
         );
-        // PULSE:OK — Per-category cleanup failure is non-critical; other categories still processed
         this.logger.warn(
           `Failed to cleanup ${category}: ${error instanceof Error ? error.message : 'unknown_error'}`,
         );
@@ -224,7 +220,6 @@ export class MemoryManagementService {
       });
       totalRemoved += result.count;
     } catch {
-      // PULSE:OK — Default-category cleanup non-critical; known categories already processed above
     }
 
     return totalRemoved;
@@ -251,7 +246,6 @@ export class MemoryManagementService {
       });
 
       await forEachSequential(groups, async (group) => {
-        // PULSE:OK — each group has unique workspace+category filter; dedup requires per-group scan
         const memories = await this.prisma.kloelMemory.findMany({
           where: {
             workspaceId: group.workspaceId,
@@ -286,7 +280,6 @@ export class MemoryManagementService {
       });
     } catch (error: unknown) {
       void this.opsAlert?.alertOnCriticalError(error, 'MemoryManagementService.removeDuplicates');
-      // PULSE:OK — Deduplication is a background maintenance job; next run will retry
       this.logger.warn(
         `Deduplication failed: ${error instanceof Error ? error.message : 'unknown_error'}`,
       );

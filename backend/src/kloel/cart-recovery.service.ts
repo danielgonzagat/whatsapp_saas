@@ -119,13 +119,11 @@ export class CartRecoveryService {
 
           this.logger.log(`Recovery email sent for order ${order.id}`);
         } catch (e: unknown) {
-          // PULSE:OK — Cart recovery is best-effort background job; other orders still processed
           this.logger.error(`Cart recovery failed for ${order.id}: ${String(e)}`);
         }
       });
     } catch (e: unknown) {
       void this.opsAlert?.alertOnCriticalError(e, 'CartRecoveryService.checkAbandonedCarts');
-      // PULSE:OK — cart recovery is non-critical background cron; errors logged and retried next cycle
       this.logger.error(`checkAbandonedCarts cron failed: ${String(e)}`);
     }
   }

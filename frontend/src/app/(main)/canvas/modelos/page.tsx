@@ -2,7 +2,6 @@
 
 import { kloelT } from '@/lib/i18n/t';
 import { colors } from '@/lib/design-tokens';
-// PULSE:OK — AI generate POST navigates to editor on success; no SWR reads to invalidate.
 
 import { IC } from '@/components/canvas/CanvasIcons';
 import { FormatCard } from '@/components/canvas/FormatCard';

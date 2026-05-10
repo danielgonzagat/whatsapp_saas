@@ -226,7 +226,6 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
       mutate((key: unknown) => typeof key === 'string' && key.startsWith('/products'));
       setShowSaved(true);
       if (savedTimer.current) clearTimeout(savedTimer.current);
-      // PULSE:OK — visual saved badge reset after a successful onSave() + mutate() cycle.
       savedTimer.current = setTimeout(() => setShowSaved(false), 3000);
     } catch {}
     setSaving(false);

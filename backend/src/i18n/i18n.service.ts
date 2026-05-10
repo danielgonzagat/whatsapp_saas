@@ -258,7 +258,6 @@ export class I18nService {
         return detected as SupportedLanguage;
       }
     } catch (error: unknown) {
-      // PULSE:OK — Language detection non-critical; falls back to pt-BR default
       this.logger.error(`Error detecting language: ${String(error)}`);
     }
 

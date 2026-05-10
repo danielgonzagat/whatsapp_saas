@@ -196,7 +196,6 @@ export class WebhooksService {
         'WebhooksService.processFinanceWebhook',
         { workspaceId },
       );
-      // PULSE:OK — Finance event logging non-critical; flow trigger already queued
       this.logger.warn(
         `Failed to log finance event: ${err instanceof Error ? err.message : 'unknown'}`,
       );

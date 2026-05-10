@@ -78,7 +78,6 @@ export class FacebookCAPIService {
         this.logger.log(`Facebook CAPI Purchase event sent for pixel ${data.pixelId}`);
         return true;
       }
-      // PULSE:OK — CAPI is a best-effort analytics side-effect; webhook processing must not fail because of it
     } catch (error: unknown) {
       this.logger.error(`Facebook CAPI error: ${String(error)}`);
       Sentry.captureException(error, {

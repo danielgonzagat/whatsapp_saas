@@ -466,7 +466,6 @@ export class WalletService {
             return;
           }
 
-          // PULSE:OK — each settlement needs atomic $transaction with unique amounts per wallet
           await this.prisma.$transaction(
             async (txn) => {
               // Guard the status flip with `updateMany` so a concurrent
@@ -539,7 +538,6 @@ export class WalletService {
           { details: { failures: perTxFailures } },
         );
       }
-      // PULSE:OK — cron job top-level catch prevents crashing the scheduler on transient DB failures
     } catch (err: unknown) {
       void this.opsAlert?.alertOnCriticalError(err, 'WalletService.reconciliationAlert');
       this.logger.error(`Reconciliation error: ${String(err)}`);

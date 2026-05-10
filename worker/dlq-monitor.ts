@@ -36,7 +36,6 @@ async function notify(queue: string, waiting: number, failed: number) {
     });
     lastAlert[queue] = now;
   } catch (err: unknown) {
-    // PULSE:OK — DLQ alert webhook non-critical; queue still monitored on next interval
     console.warn(
       '[DLQ Monitor] notify failed:',
       err instanceof Error ? err.message : 'unknown_error',
@@ -129,7 +128,6 @@ async function checkSingleDlq(name: string): Promise<void> {
     // 2. Monitor leftovers
     await notifyIfDlqHasBacklog(dlqName);
   } catch (err: unknown) {
-    // PULSE:OK — DLQ heal failure is non-critical; other queues still checked
     console.warn('[DLQ Monitor] error checking/healing', dlqName, toDlqMonitorError(err).message);
   }
 }

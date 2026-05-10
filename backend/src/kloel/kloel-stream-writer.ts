@@ -1,4 +1,3 @@
-// PULSE:OK — stream helper only. KloelService performs PlanLimitsService.ensureTokenBudget()
 // before opening any writer stream through this module.
 import { Response } from 'express';
 import OpenAI from 'openai';
@@ -181,7 +180,6 @@ export class KloelStreamWriter {
   ): Promise<StreamWriterModelResponseResult | null> {
     this.write(createKloelStatusEvent('thinking', input.thinkingLabel));
 
-    // PULSE:OK — caller (KloelService.think) runs PlanLimitsService.ensureTokenBudget()
     // before delegating to the stream writer; this helper only opens the already-approved stream.
     const openWriterStream = async (model: string) =>
       chatCompletionStreamWithRetry(
@@ -200,7 +198,6 @@ export class KloelStreamWriter {
         this.options.signal ? { signal: this.options.signal } : undefined,
       );
 
-    // PULSE:OK — stream object itself is not a new LLM call; it is the handle returned by the
     // already-budgeted chatCompletionStreamWithRetry() invocation above.
     let stream: ChatCompletionStream;
 

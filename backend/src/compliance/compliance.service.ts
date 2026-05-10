@@ -84,7 +84,6 @@ export class ComplianceService {
   }
 
   /** Handle facebook deauthorize.
-   * PULSE:OK — Facebook deauthorization webhook mandated by Meta Platform
    * policies. Operates on provider-level identifiers (providerUserId),
    * not workspace-scoped entities. Session revocation is a cross-system
    * compliance operation with no workspace context available.
@@ -358,7 +357,6 @@ export class ComplianceService {
   }
 
   /**
-   * PULSE:OK — System-level compliance operation. Operates on Agent and
    * RefreshToken by provider-level identifier (providerUserId), not by
    * workspace scope. Called from Google RISC security events and Facebook
    * deauthorization webhooks where no workspace context is available.
@@ -376,7 +374,6 @@ export class ComplianceService {
   }
 
   /**
-   * PULSE:OK — System-level compliance operation. Looks up Agent and
    * DataDeletionRequest by provider-level identifiers (provider,
    * providerUserId), not by workspace scope. Called from Facebook data
    * deletion and Google RISC webhook handlers where no workspace context
@@ -405,7 +402,6 @@ export class ComplianceService {
   }
 
   /**
-   * PULSE:OK — System-level lookup by provider identifiers (provider,
    * providerUserId). Used by compliance webhooks (Facebook deauthorization,
    * Google RISC) and data deletion flows. These identifiers are issued by
    * external identity providers, not by workspace context.
@@ -444,7 +440,6 @@ export class ComplianceService {
   }
 
   /**
-   * PULSE:OK — System-level GDPR data deletion operation. Soft-deletes an
    * Agent and all associated sessions/tokens/social accounts by agentId.
    * Called from Facebook data deletion, Google RISC account-purged, and
    * user-initiated account deletion flows where the agent has already been

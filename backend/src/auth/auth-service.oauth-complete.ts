@@ -281,7 +281,6 @@ export async function completeTrustedOAuthLogin(
           }),
         );
       } catch {
-        // PULSE:OK — Error log stringify failure; original error is re-thrown below
       }
       throw error;
     }

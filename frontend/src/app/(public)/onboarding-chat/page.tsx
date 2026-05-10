@@ -2,7 +2,6 @@
 import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
-// PULSE:OK — Onboarding chat uses one-shot POST calls (start, stream). No SWR reads to invalidate on this page.
 
 import {
   KloelBrandLockup,

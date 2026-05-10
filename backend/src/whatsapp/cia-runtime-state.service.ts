@@ -273,7 +273,6 @@ export class CiaRuntimeStateService {
         },
       });
     } catch {
-      // PULSE:OK — AutonomyRun record creation is best-effort; autonomy still executes
     }
   }
 
@@ -294,7 +293,6 @@ export class CiaRuntimeStateService {
         },
       });
     } catch {
-      // PULSE:OK — AutonomyRun status update is best-effort; status tracked in-memory
     }
   }
 

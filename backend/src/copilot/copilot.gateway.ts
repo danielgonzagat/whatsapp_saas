@@ -43,7 +43,6 @@ export class CopilotGateway implements OnGatewayConnection, OnGatewayDisconnect,
         }
       } catch (err: unknown) {
         void this.opsAlert?.alertOnCriticalError(err, 'CopilotGateway.emit');
-        // PULSE:OK — Redis pub/sub parse error; cannot propagate from event handler
         this.logger.warn(
           `CopilotGateway parse error: ${err instanceof Error ? err.message : 'unknown'}`,
         );

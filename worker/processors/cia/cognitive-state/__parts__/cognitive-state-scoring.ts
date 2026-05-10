@@ -32,7 +32,7 @@ export interface ComputeUrgencyScoreParams {
   previous: Partial<CustomerCognitiveState> | null;
   text: string;
   unreadCount: number;
-  demandState?: DemandState | null;
+  demandState?: DemandState | null | undefined;
 }
 
 export const computeUrgencyScore = (params: ComputeUrgencyScoreParams): number => {
@@ -62,7 +62,7 @@ export const computePriceSensitivity = (params: ComputePriceSensitivityParams): 
 };
 
 export interface ComputeLtvEstimateParams {
-  leadScore?: number | null;
+  leadScore?: number | null | undefined;
   trustScore: number;
   urgencyScore: number;
   stage: CustomerStage;

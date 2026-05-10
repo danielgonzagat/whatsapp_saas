@@ -347,7 +347,6 @@ export class CampaignsService {
       Array.from({ length: Math.max(1, Math.min(variants, 10)) }),
       async (_, i) => {
         const mutatedMessage = await this.mutateCopy(base.messageTemplate, i);
-        // PULSE:OK — each variant depends on mutateCopy result; sequential creation required
         const variant = await this.prisma.campaign.create({
           data: {
             name: `${base.name} - Var ${i + 1}`,

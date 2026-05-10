@@ -213,7 +213,6 @@ export class MetaWebhookController {
             break;
         }
       } catch (err: unknown) {
-        // PULSE:OK — Per-entry webhook error must not block other entries; returns 200 to Meta
         this.logger.error(`Meta webhook processing error: ${String(err)}`);
       }
     });

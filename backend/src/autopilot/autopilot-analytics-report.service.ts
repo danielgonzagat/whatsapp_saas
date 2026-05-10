@@ -78,7 +78,6 @@ export class AutopilotAnalyticsReportService {
       let revenue = 0;
       let deals = 0;
 
-      // PULSE:OK — each campaign has unique JSON path filter on customFields; cannot batch
       const taggedContacts = await this.prisma.contact.findMany({
         take: 500,
         where: {

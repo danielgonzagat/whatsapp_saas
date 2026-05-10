@@ -49,7 +49,6 @@ export class MediaService {
         prompt: data.prompt,
       },
     });
-    // PULSE:OK — worker processor pending implementation
     await this.mediaQueue.add('generate-video', {
       jobId: job.id,
       inputUrl: data.imageUrl,

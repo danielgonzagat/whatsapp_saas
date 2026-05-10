@@ -1,4 +1,3 @@
-// PULSE:OK — tool router only serializes tool-call messages. It does not perform LLM calls;
 // KloelService enforces token budget before the follow-up completion that consumes this output.
 import { forEachSequential } from '../common/async-sequence';
 import { buildTimestampedRuntimeId } from './kloel-id.util';
@@ -55,7 +54,6 @@ interface ExecuteAssistantToolCallsInput {
 }
 
 interface ExecuteAssistantToolCallsResult {
-  // PULSE:OK — toolMessages are plain transcript objects for the next completion;
   // budget is enforced upstream in KloelService before any LLM call.
   toolMessages: ToolMessage[];
   receipts: KloelToolExecutionReceipt[];
@@ -106,7 +104,6 @@ export class KloelToolRouter {
     input: ExecuteAssistantToolCallsInput,
   ): Promise<ExecuteAssistantToolCallsResult> {
     const receipts: KloelToolExecutionReceipt[] = [];
-    // PULSE:OK — local accumulation only; no model call happens in this router.
     const toolMessages: ToolMessage[] = [];
     const toolCalls = Array.isArray(input.assistantMessage?.tool_calls)
       ? input.assistantMessage.tool_calls
@@ -171,7 +168,6 @@ export class KloelToolRouter {
         error,
       });
 
-      // PULSE:OK — cast only serializes a tool result message for the caller's next
       // already-budgeted completion; this router does not invoke OpenAI directly.
       toolMessages.push({
         role: 'tool',

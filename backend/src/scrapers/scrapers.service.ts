@@ -32,7 +32,7 @@ export class ScrapersService {
       },
     });
 
-    // Dispatch to worker // PULSE:OK — worker processor pending implementation
+    // Dispatch to worker
     await this.scraperQueue.add('run-scraper', {
       jobId: job.id,
       workspaceId,
@@ -116,7 +116,6 @@ export class ScrapersService {
     let importedCount = 0;
 
     await forEachSequential(leads, async (lead) => {
-      // PULSE:OK — upsert requires compound unique where per contact phone; cannot batch
       await this.prisma.contact.upsert({
         where: {
           workspaceId_phone: {

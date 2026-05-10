@@ -212,7 +212,6 @@ export class UnifiedAgentResponseService {
         .replace(JSON_RE, '')
         .replace(PATTERN_RE_3, '')
         .trim();
-      // PULSE:OK — inside try/catch; parser confused by multi-line template literal
       const parsed = JSON.parse(raw);
       const replies = Array.isArray(parsed?.replies) ? parsed.replies : [];
 

@@ -1,4 +1,3 @@
-// PULSE:OK — session lifecycle layer for WAHA.
 // Config/diagnostics live in WahaSessionConfigProvider (waha-session-config.provider.ts).
 // Setup/QR/LID helpers live in waha-session-lifecycle.util.ts.
 // Messaging lives in WahaProvider (waha.provider.ts).

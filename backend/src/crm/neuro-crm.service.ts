@@ -371,7 +371,6 @@ Return strictly JSON with:
   }
 
   /** Create insight.
-   * PULSE:OK — ContactInsight inherits workspace ownership transitively
    * through Contact.workspaceId. Ownership is verified by the contact
    * lookup below before the insight is created.
    */

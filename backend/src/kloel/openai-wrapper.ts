@@ -1,4 +1,3 @@
-// PULSE:OK — helper/wrapper module only. Real budget enforcement happens in caller services
 // via PlanLimitsService.ensureTokenBudget() before invoking these helpers.
 import { randomInt } from 'node:crypto';
 import { Logger } from '@nestjs/common';
@@ -210,7 +209,6 @@ function assertMessagesFitInputLimit(messages: unknown): void {
   }
 }
 
-// PULSE:OK — normalization helpers do not call the provider; caller-level budget
 // enforcement happens before chatCompletionWithRetry/chatCompletionStreamWithRetry.
 export function normalizeChatCompletionParams(
   params: NonStreamingChatParams,
@@ -236,7 +234,6 @@ export function normalizeChatCompletionParams(params: AnyChatParams): AnyChatPar
   // not let that through.
   assertMessagesFitInputLimit(payload.messages);
 
-  // PULSE:OK — returning a normalized payload object is not an LLM call.
   return payload;
 }
 

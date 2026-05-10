@@ -114,7 +114,6 @@ export class KloelComposerService {
       return buildComposerWebSearchE2EStub(normalizedQuery);
     }
 
-    // PULSE:OK — callers enforce PlanLimitsService.ensureTokenBudget() before calling searchWeb
     const response = await this.openai.responses.create({
       model: KLOEL_SEARCH_WEB_MODEL,
       input: normalizedQuery,

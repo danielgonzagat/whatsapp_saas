@@ -6,7 +6,6 @@ import { PrismaService } from '../prisma/prisma.service';
 import { StripeRuntime } from './stripe-runtime';
 import type { StripeClient, StripeCustomer } from './stripe-types';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
-// PULSE:OK — cache.invalidate — payment methods are fetched live from Stripe; no Redis cache layer; TTL N/A
 
 const ERROR_WORKSPACE_NOT_FOUND = 'Workspace não encontrado';
 const ERROR_BILLING_UNAVAILABLE = 'Infraestrutura de cobrança indisponível';
@@ -102,7 +101,6 @@ export class PaymentMethodService {
         url.searchParams.set(key, value);
         return url.toString();
       } catch {
-        // PULSE:OK — URL parse failure; fallback to manual query string concatenation
         const sep = base.includes('?') ? '&' : '?';
         return `${base}${sep}${encodeURIComponent(key)}=${encodeURIComponent(value)}`;
       }
@@ -212,7 +210,6 @@ export class PaymentMethodService {
           isDefault: pm.id === defaultMethodId,
         })),
       };
-      // PULSE:OK — listing payment methods is non-destructive; Stripe API errors return empty list for graceful degradation
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'unknown_error';
       this.logger.error(`Erro ao listar payment methods: ${errorMessage}`);

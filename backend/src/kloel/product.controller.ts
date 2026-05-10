@@ -423,7 +423,6 @@ export class ProductController {
     const results = await Promise.all(
       dto.products.map(async (product) => {
         try {
-          // PULSE:OK — import needs per-product error tracking; createMany doesn't return individual results
           const created = await this.prisma.product.create({
             data: {
               workspaceId,

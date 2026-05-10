@@ -1,6 +1,5 @@
 'use client';
 
-// PULSE:OK — public checkout hooks use one-shot POST calls (order creation, coupon validation, upsell accept/decline).
 // These do not read from SWR caches, so no invalidation is needed on the client side.
 
 import { API_BASE } from '@/lib/http';

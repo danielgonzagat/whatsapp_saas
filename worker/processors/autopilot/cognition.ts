@@ -797,7 +797,6 @@ async function buildQuotedReplyPlan(params: {
       .replace(JSON_FENCE_RE, '')
       .replace(CODE_FENCE_RE, '')
       .trim();
-    // PULSE:OK — inside try/catch; parser confused by multi-line template literal in the arguments above
     const parsed = JSON.parse(raw);
     const replies = Array.isArray(parsed?.replies) ? parsed.replies : [];
 

@@ -206,13 +206,11 @@ const processIngestSource = async (job: Job, ctxLog: WorkerLogger): Promise<void
  */
 const dispatchMemoryJob = async (job: Job, ctxLog: WorkerLogger): Promise<void> => {
   switch (job.name) {
-    // PULSE:OK - extract-facts is enqueued by unified-agent and inbound-processor via memory queue
     case 'extract-facts':
       await processFactExtraction(job);
 
       return;
 
-    // PULSE:OK - analyze-contact is enqueued by whatsapp.service via memory queue
     case 'analyze-contact':
       await LeadScorer.analyze(job.data.workspaceId, job.data.contactId);
 

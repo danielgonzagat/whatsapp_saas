@@ -37,7 +37,6 @@ export class MassSendService {
     if (sanitized.length === 0) {
       throw new BadRequestException('Nenhum número válido após sanitização');
     }
-    // PULSE:OK — worker processor pending implementation
     const job = await this.queue.add('dispatch', {
       workspaceId,
       user,
