@@ -6,7 +6,8 @@ export type QualityInvariant =
   | 'negative_lift_fallback'
   | 'unsupported_transport_guard'
   | 'opt_out_guard'
-  | 'no_payment_execution';
+  | 'no_payment_execution'
+  | 'brain_tick_recent';
 
 export interface QualityViolation {
   invariant: QualityInvariant;
@@ -123,6 +124,18 @@ export class MindQualityService {
     }
 
     return pass('no_payment_execution', `Action "${action}" does not execute payments`);
+  }
+
+  checkTickHealth(input: { lastTickAt: Date | null; maxAgeMs?: number; now: Date }): QualityCheck {
+    if (!input.lastTickAt) {
+      return fail('brain_tick_recent', 'MIND tick never ran for this workspace');
+    }
+    const ageMs = input.now.getTime() - input.lastTickAt.getTime();
+    const maxAgeMs = input.maxAgeMs ?? 15 * 60 * 1000;
+    if (ageMs > maxAgeMs) {
+      return fail('brain_tick_recent', `MIND tick is stale by ${ageMs}ms`);
+    }
+    return pass('brain_tick_recent', `MIND tick age ${ageMs}ms is within ${maxAgeMs}ms`);
   }
 
   runAllChecks(input: {

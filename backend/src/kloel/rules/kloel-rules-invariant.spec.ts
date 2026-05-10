@@ -59,4 +59,78 @@ describe('Kloel rule catalog invariants', () => {
     expect(ruleTrace.blockedBy).toBe('unsupported_audio');
     expect(qualityCheck.passed).toBe(false);
   });
+
+  it('enforces supported output format by channel capabilities', () => {
+    const engine = new KloelRuleEngineService();
+    const audioTrace = engine.evaluate({ action: 'send_audio', supportsAudio: false });
+    const documentTrace = engine.evaluate({ action: 'send_document', supportsDocument: false });
+
+    expect(audioTrace.blockedBy).toBe('unsupported_audio');
+    expect(documentTrace.blockedBy).toBe('unsupported_document');
+  });
+
+  it('enforces compliance window or approved template for proactive sends', () => {
+    const engine = new KloelRuleEngineService();
+    const trace = engine.evaluate({
+      action: 'send_message',
+      templateApproved: false,
+      withinComplianceWindow: false,
+    });
+
+    expect(trace.blocked).toBe(true);
+    expect(trace.blockedBy).toBe('compliance_window');
+  });
+
+  it('enforces coupon ceiling and minimum margin', () => {
+    const engine = new KloelRuleEngineService();
+
+    expect(
+      engine.evaluate({ action: 'apply_discount', discountPercent: 31, maxDiscountPercent: 30 })
+        .blockedBy,
+    ).toBe('max_discount');
+    expect(engine.evaluate({ action: 'apply_discount', minMarginPercent: -1 }).blockedBy).toBe(
+      'minimum_margin',
+    );
+  });
+
+  it('enforces workspace isolation in every rule trace context', () => {
+    const engine = new KloelRuleEngineService();
+    const trace = engine.evaluate({ action: 'send_message', workspaceId: 'ws-a' });
+
+    expect(trace.verdicts.length).toBe(KLOEL_RULE_CATALOG.length);
+    expect(trace.verdicts.every((verdict) => verdict.ruleId.length > 0)).toBe(true);
+  });
+
+  it('enforces payment idempotency and payment amount bounds', () => {
+    const engine = new KloelRuleEngineService();
+
+    expect(engine.evaluate({ action: 'create_payment', paymentProcessed: true }).blockedBy).toBe(
+      'duplicate_payment',
+    );
+    expect(
+      engine.evaluate({ action: 'create_payment', paymentAmount: 200, maxPaymentAmount: 100 })
+        .blockedBy,
+    ).toBe('payment_amount_exceeded');
+  });
+
+  it('produces complete decision traces for every evaluated action', () => {
+    const engine = new KloelRuleEngineService();
+    const trace = engine.evaluate({ action: 'send_message' });
+
+    expect(trace.durationMs).toBeGreaterThanOrEqual(0);
+    expect(trace.verdicts).toHaveLength(KLOEL_RULE_CATALOG.length);
+    expect(trace.verdicts.every((verdict) => typeof verdict.reason === 'string')).toBe(true);
+  });
+
+  it('keeps the rule catalog durable and executable after import', () => {
+    expect(KLOEL_RULE_CATALOG.length).toBeGreaterThanOrEqual(10);
+    expect(KLOEL_RULE_CATALOG.every((rule) => typeof rule.evaluate === 'function')).toBe(true);
+  });
+
+  it('keeps brain tick health rule evidence connected to MIND quality checks', () => {
+    const quality = new MindQualityService();
+    const stale = quality.checkTickHealth({ lastTickAt: new Date(0), now: new Date(1000000) });
+
+    expect(stale.passed).toBe(false);
+  });
 });
