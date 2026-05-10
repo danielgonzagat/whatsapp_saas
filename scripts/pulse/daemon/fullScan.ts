@@ -16,6 +16,7 @@ import { buildFlowProjection } from '../flow-projection/builder';
 import { buildGraph } from '../graph/graph-part3-builder';
 import { loadParserInventory } from '../parser-registry/loader';
 import { buildParityGaps } from '../parity-gaps';
+import type { PulseAutonomyStateSnapshot } from '../cert-gate-multi-cycle/helpers';
 import { buildProductModel } from '../product-model/model-builder';
 import { buildProductVision } from '../product-vision/builder';
 import { buildResolvedManifest } from '../resolved-manifest/builder';

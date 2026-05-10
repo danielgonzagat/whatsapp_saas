@@ -6,10 +6,8 @@ import {
   BG_CARD,
   BG_ELEVATED,
   BORDER,
-  GREEN,
   btnGhost,
 } from './ProdutosView.shared';
-import type React from 'react';
 import type { AffiliateLink, AffiliateProductItem } from './ProdutosView.types';
 
 export default function AffiliateMyApplications({
@@ -126,7 +124,7 @@ export default function AffiliateMyApplications({
               </div>
               <button
                 type="button"
-                onClick={() => handleToggleSave(item.affiliateProductId || item.id, true)}
+                onClick={() => onToggleSave(item.affiliateProductId || item.id, true)}
                 style={{ ...btnGhost, padding: '6px 10px' }}
               >
                 {kloelT('Remover')}

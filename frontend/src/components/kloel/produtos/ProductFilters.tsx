@@ -5,11 +5,9 @@ import {
   MONO,
   BG_CARD,
   BORDER,
-  EMBER,
   iconBtn,
 } from './ProdutosView.shared';
 import { IC } from './ProdutosView.icons';
-import type React from 'react';
 
 export default function ProductFilters({
   search,

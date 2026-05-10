@@ -1,6 +1,6 @@
 {
-  "score": 93,
-  "totalNodes": 1932,
+  "score": 94,
+  "totalNodes": 1927,
   "breaks": [
     {
       "type": "graph-route-caller-unobserved",
@@ -946,29 +946,9 @@
       "type": "graph-route-caller-unobserved",
       "severity": "low",
       "file": "backend/src/compliance/compliance.controller.ts",
-      "line": 46,
+      "line": 45,
       "description": "GET /compliance/deletion-status/:code is not called by frontend code",
       "detail": "Controller: deletionStatus",
-      "source": "graph:confirmed_static:route_caller_unobserved",
-      "surface": "route-connectivity"
-    },
-    {
-      "type": "graph-route-caller-unobserved",
-      "severity": "low",
-      "file": "backend/src/compliance/compliance.controller.ts",
-      "line": 53,
-      "description": "GET /user/data-export is not called by frontend code",
-      "detail": "Controller: dataExport",
-      "source": "graph:confirmed_static:route_caller_unobserved",
-      "surface": "route-connectivity"
-    },
-    {
-      "type": "graph-route-caller-unobserved",
-      "severity": "low",
-      "file": "backend/src/compliance/compliance.controller.ts",
-      "line": 60,
-      "description": "DELETE /user/data-deletion is not called by frontend code",
-      "detail": "Controller: deleteCurrentUser",
       "source": "graph:confirmed_static:route_caller_unobserved",
       "surface": "route-connectivity"
     },
@@ -1099,26 +1079,6 @@
       "line": 61,
       "description": "QUERY /dashboard/workspaceId is not called by frontend code",
       "detail": "Controller: unknown",
-      "source": "graph:confirmed_static:route_caller_unobserved",
-      "surface": "route-connectivity"
-    },
-    {
-      "type": "graph-route-caller-unobserved",
-      "severity": "low",
-      "file": "backend/src/gdpr/data-delete.controller.ts",
-      "line": 24,
-      "description": "POST /gdpr/delete is not called by frontend code",
-      "detail": "Controller: deleteData",
-      "source": "graph:confirmed_static:route_caller_unobserved",
-      "surface": "route-connectivity"
-    },
-    {
-      "type": "graph-route-caller-unobserved",
-      "severity": "low",
-      "file": "backend/src/gdpr/data-export.controller.ts",
-      "line": 20,
-      "description": "POST /gdpr/export is not called by frontend code",
-      "detail": "Controller: exportData",
       "source": "graph:confirmed_static:route_caller_unobserved",
       "surface": "route-connectivity"
     },
@@ -1696,7 +1656,7 @@
       "type": "graph-route-caller-unobserved",
       "severity": "low",
       "file": "backend/src/kloel/smart-payment.controller.ts",
-      "line": 165,
+      "line": 164,
       "description": "GET /kloel/payment/:workspaceId/recovery/:paymentId is not called by frontend code",
       "detail": "Controller: analyzeRecovery",
       "source": "graph:confirmed_static:route_caller_unobserved",
@@ -1706,7 +1666,7 @@
       "type": "graph-route-caller-unobserved",
       "severity": "low",
       "file": "backend/src/kloel/smart-payment.controller.ts",
-      "line": 174,
+      "line": 173,
       "description": "QUERY /kloel/payment/daysPending is not called by frontend code",
       "detail": "Controller: unknown",
       "source": "graph:confirmed_static:route_caller_unobserved",
@@ -1716,7 +1676,7 @@
       "type": "graph-route-caller-unobserved",
       "severity": "low",
       "file": "backend/src/kloel/smart-payment.controller.ts",
-      "line": 191,
+      "line": 190,
       "description": "POST /kloel/payment/:workspaceId/webhook/confirm is not called by frontend code",
       "detail": "Controller: processConfirmation",
       "source": "graph:confirmed_static:route_caller_unobserved",
@@ -1746,17 +1706,7 @@
       "type": "graph-route-caller-unobserved",
       "severity": "low",
       "file": "backend/src/kloel/upload.controller.ts",
-      "line": 236,
-      "description": "POST /kloel/upload is not called by frontend code",
-      "detail": "Controller: unknown",
-      "source": "graph:confirmed_static:route_caller_unobserved",
-      "surface": "route-connectivity"
-    },
-    {
-      "type": "graph-route-caller-unobserved",
-      "severity": "low",
-      "file": "backend/src/kloel/upload.controller.ts",
-      "line": 318,
+      "line": 229,
       "description": "POST /kloel/upload/multiple is not called by frontend code",
       "detail": "Controller: FilesInterceptor",
       "source": "graph:confirmed_static:route_caller_unobserved",
@@ -3325,80 +3275,10 @@
     {
       "type": "graph-ui-handler-effect-unobserved",
       "severity": "medium",
-      "file": "frontend/src/app/(main)/cia/page.tsx",
-      "line": 88,
-      "description": "clickable \"onRefresh\" has dead handler",
-      "detail": "Handler: onRefresh",
-      "source": "graph:confirmed_static:ui_handler_effect_unobserved",
-      "surface": "ui-interaction"
-    },
-    {
-      "type": "graph-ui-handler-effect-unobserved",
-      "severity": "medium",
       "file": "frontend/src/app/(main)/vendas/gestao-vendas/page.tsx",
       "line": 280,
       "description": "clickable \"(sem texto)\" has dead handler",
       "detail": "Handler: () => handleRemoveTag(phone, tag)",
-      "source": "graph:confirmed_static:ui_handler_effect_unobserved",
-      "surface": "ui-interaction"
-    },
-    {
-      "type": "graph-ui-handler-effect-unobserved",
-      "severity": "medium",
-      "file": "frontend/src/components/kloel/auth/kloel-auth-screen.tsx",
-      "line": 477,
-      "description": "clickable \"onFormSubmit\" has dead handler",
-      "detail": "Handler: handleFormSubmit",
-      "source": "graph:confirmed_static:ui_handler_effect_unobserved",
-      "surface": "ui-interaction"
-    },
-    {
-      "type": "graph-ui-handler-effect-unobserved",
-      "severity": "medium",
-      "file": "frontend/src/components/kloel/chat-container.tsx",
-      "line": 628,
-      "description": "clickable \"onSend\" has dead handler",
-      "detail": "Handler: handleSendMessage",
-      "source": "graph:confirmed_static:ui_handler_effect_unobserved",
-      "surface": "ui-interaction"
-    },
-    {
-      "type": "graph-ui-handler-effect-unobserved",
-      "severity": "medium",
-      "file": "frontend/src/components/kloel/conta/ContaDadosBancariosSection.tsx",
-      "line": 728,
-      "description": "clickable \"onSave\" has dead handler",
-      "detail": "Handler: handleSave",
-      "source": "graph:confirmed_static:ui_handler_effect_unobserved",
-      "surface": "ui-interaction"
-    },
-    {
-      "type": "graph-ui-handler-effect-unobserved",
-      "severity": "medium",
-      "file": "frontend/src/components/kloel/conta/ContaDadosFiscaisSection.tsx",
-      "line": 413,
-      "description": "clickable \"onSave\" has dead handler",
-      "detail": "Handler: handleSave",
-      "source": "graph:confirmed_static:ui_handler_effect_unobserved",
-      "surface": "ui-interaction"
-    },
-    {
-      "type": "graph-ui-handler-effect-unobserved",
-      "severity": "medium",
-      "file": "frontend/src/components/kloel/conta/ContaDadosPessoaisSection.tsx",
-      "line": 266,
-      "description": "clickable \"onSave\" has dead handler",
-      "detail": "Handler: handleSave",
-      "source": "graph:confirmed_static:ui_handler_effect_unobserved",
-      "surface": "ui-interaction"
-    },
-    {
-      "type": "graph-ui-handler-effect-unobserved",
-      "severity": "medium",
-      "file": "frontend/src/components/kloel/conta/ContaPerfilPublicoSection.tsx",
-      "line": 134,
-      "description": "clickable \"onSave\" has dead handler",
-      "detail": "Handler: handleSave",
       "source": "graph:confirmed_static:ui_handler_effect_unobserved",
       "surface": "ui-interaction"
     },
@@ -3415,70 +3295,10 @@
     {
       "type": "graph-ui-handler-effect-unobserved",
       "severity": "medium",
-      "file": "frontend/src/components/kloel/produtos/AreaMembros.tsx",
-      "line": 278,
-      "description": "clickable \"onDelete\" has dead handler",
-      "detail": "Handler: handleDeleteArea",
-      "source": "graph:confirmed_static:ui_handler_effect_unobserved",
-      "surface": "ui-interaction"
-    },
-    {
-      "type": "graph-ui-handler-effect-unobserved",
-      "severity": "medium",
-      "file": "frontend/src/components/kloel/produtos/AreaMembros.tsx",
-      "line": 296,
-      "description": "clickable \"onDeleteModule\" has dead handler",
-      "detail": "Handler: handleDeleteModule",
-      "source": "graph:confirmed_static:ui_handler_effect_unobserved",
-      "surface": "ui-interaction"
-    },
-    {
-      "type": "graph-ui-handler-effect-unobserved",
-      "severity": "medium",
-      "file": "frontend/src/components/kloel/produtos/AreaMembros.tsx",
-      "line": 306,
-      "description": "clickable \"onDeleteLesson\" has dead handler",
-      "detail": "Handler: handleDeleteLesson",
-      "source": "graph:confirmed_static:ui_handler_effect_unobserved",
-      "surface": "ui-interaction"
-    },
-    {
-      "type": "graph-ui-handler-effect-unobserved",
-      "severity": "medium",
-      "file": "frontend/src/components/plans/PlanOrderBumpTab.tsx",
-      "line": 396,
-      "description": "clickable \"(sem texto)\" has dead handler",
-      "detail": "Handler: handleSave",
-      "source": "graph:confirmed_static:ui_handler_effect_unobserved",
-      "surface": "ui-interaction"
-    },
-    {
-      "type": "graph-ui-handler-effect-unobserved",
-      "severity": "medium",
       "file": "frontend/src/components/plans/PlanOrderBumpTab.tsx",
       "line": 598,
       "description": "clickable \"(sem texto)\" has dead handler",
       "detail": "Handler: () => handleDelete(bump.id)",
-      "source": "graph:confirmed_static:ui_handler_effect_unobserved",
-      "surface": "ui-interaction"
-    },
-    {
-      "type": "graph-ui-handler-effect-unobserved",
-      "severity": "medium",
-      "file": "frontend/src/components/products/ProductAfterPayTab.tsx",
-      "line": 365,
-      "description": "clickable \"(sem texto)\" has dead handler",
-      "detail": "Handler: save",
-      "source": "graph:confirmed_static:ui_handler_effect_unobserved",
-      "surface": "ui-interaction"
-    },
-    {
-      "type": "graph-ui-handler-effect-unobserved",
-      "severity": "medium",
-      "file": "frontend/src/components/products/ProductIATab.tsx",
-      "line": 494,
-      "description": "clickable \"(sem texto)\" has dead handler",
-      "detail": "Handler: save",
       "source": "graph:confirmed_static:ui_handler_effect_unobserved",
       "surface": "ui-interaction"
     },
@@ -3489,26 +3309,6 @@
       "line": 83,
       "description": "[hardcoded_data] Service method returns empty collection/object without guard evidence",
       "detail": "Service method returns empty collection/object without guard evidence; predicates=truth_confirmed_static, source_facade_evidence_service_empty_return_static_predicate, detector_service_empty_return_static_predicate, evidence_service_method, evidence_method_returns, evidence_returns_empty, evidence_empty_collection, evidence_collection_object, evidence_object_without, evidence_without_guard, evidence_guard_evidence, evidence_evidence_backend, evidence_backend_service, evidence_service_return, evidence_return_statement, evidence_statement_emits, evidence_emits_outside, evidence_outside_catch, evidence_catch_fallback, evidence_fallback_normalizer, evidence_normalizer_guarded, evidence_guarded_empty, evidence_empty_context, evidence_context_evidence, evidence_evidence_return, evidence_return_truth, evidence_truth_confirmed, evidence_confirmed_static, evidence_static_source, evidence_source_facade, evidence_facade_evidence, evidence_evidence_service, evidence_service_empty, evidence_empty_return, evidence_return_static, evidence_static_predicate, evidence_predicate_detector, evidence_detector_service, evidence_predicate; evidence=75d9ef086ef8cdda; predicates=truth_confirmed_static,source_facade_evidence_service_empty_return_static_predicate,detector_service_empty_return_static_predicate,evidence_service_method,evidence_method_returns,evidence_returns_empty,evidence_empty_collection,evidence_collection_object,evidence_object_without,evidence_without_guard,evidence_guard_evidence,evidence_evidence_backend,evidence_backend_service,evidence_service_return,evidence_return_statement,evidence_statement_emits,evidence_emits_outside,evidence_outside_catch,evidence_catch_fallback,evidence_fallback_normalizer,evidence_normalizer_guarded,evidence_guarded_empty,evidence_empty_context,evidence_context_evidence,evidence_evidence_return,evidence_return_truth,evidence_truth_confirmed,evidence_confirmed_static,evidence_static_source,evidence_source_facade,evidence_facade_evidence,evidence_evidence_service,evidence_service_empty,evidence_empty_return,evidence_return_static,evidence_static_predicate,evidence_predicate_detector,evidence_detector_service,evidence_predicate; A backend service return statement emits [] or {} outside catch, fallback, normalizer, or guarded-empty context. Evidence: return [];",
-      "source": "graph:confirmed_static:facade_evidence",
-      "surface": "capability-materialization"
-    },
-    {
-      "type": "graph-facade-evidence",
-      "severity": "medium",
-      "file": "backend/src/calendar/calendar.service.ts",
-      "line": 398,
-      "description": "[hardcoded_data] Service method returns empty collection/object without guard evidence",
-      "detail": "Service method returns empty collection/object without guard evidence; predicates=truth_confirmed_static, source_facade_evidence_service_empty_return_static_predicate, detector_service_empty_return_static_predicate, evidence_service_method, evidence_method_returns, evidence_returns_empty, evidence_empty_collection, evidence_collection_object, evidence_object_without, evidence_without_guard, evidence_guard_evidence, evidence_evidence_backend, evidence_backend_service, evidence_service_return, evidence_return_statement, evidence_statement_emits, evidence_emits_outside, evidence_outside_catch, evidence_catch_fallback, evidence_fallback_normalizer, evidence_normalizer_guarded, evidence_guarded_empty, evidence_empty_context, evidence_context_evidence, evidence_evidence_return, evidence_return_truth, evidence_truth_confirmed, evidence_confirmed_static, evidence_static_source, evidence_source_facade, evidence_facade_evidence, evidence_evidence_service, evidence_service_empty, evidence_empty_return, evidence_return_static, evidence_static_predicate, evidence_predicate_detector, evidence_detector_service, evidence_predicate; evidence=5c0074479f55ac33; predicates=truth_confirmed_static,source_facade_evidence_service_empty_return_static_predicate,detector_service_empty_return_static_predicate,evidence_service_method,evidence_method_returns,evidence_returns_empty,evidence_empty_collection,evidence_collection_object,evidence_object_without,evidence_without_guard,evidence_guard_evidence,evidence_evidence_backend,evidence_backend_service,evidence_service_return,evidence_return_statement,evidence_statement_emits,evidence_emits_outside,evidence_outside_catch,evidence_catch_fallback,evidence_fallback_normalizer,evidence_normalizer_guarded,evidence_guarded_empty,evidence_empty_context,evidence_context_evidence,evidence_evidence_return,evidence_return_truth,evidence_truth_confirmed,evidence_confirmed_static,evidence_static_source,evidence_source_facade,evidence_facade_evidence,evidence_evidence_service,evidence_service_empty,evidence_empty_return,evidence_return_static,evidence_static_predicate,evidence_predicate_detector,evidence_detector_service,evidence_predicate; A backend service return statement emits [] or {} outside catch, fallback, normalizer, or guarded-empty context. Evidence: return [];",
-      "source": "graph:confirmed_static:facade_evidence",
-      "surface": "capability-materialization"
-    },
-    {
-      "type": "graph-facade-evidence",
-      "severity": "medium",
-      "file": "backend/src/payments/connect/connect-reversal.service.ts",
-      "line": 143,
-      "description": "[hardcoded_data] Service method returns empty collection/object without guard evidence",
-      "detail": "Service method returns empty collection/object without guard evidence; predicates=truth_confirmed_static, source_facade_evidence_service_empty_return_static_predicate, detector_service_empty_return_static_predicate, evidence_service_method, evidence_method_returns, evidence_returns_empty, evidence_empty_collection, evidence_collection_object, evidence_object_without, evidence_without_guard, evidence_guard_evidence, evidence_evidence_backend, evidence_backend_service, evidence_service_return, evidence_return_statement, evidence_statement_emits, evidence_emits_outside, evidence_outside_catch, evidence_catch_fallback, evidence_fallback_normalizer, evidence_normalizer_guarded, evidence_guarded_empty, evidence_empty_context, evidence_context_evidence, evidence_evidence_return, evidence_return_truth, evidence_truth_confirmed, evidence_confirmed_static, evidence_static_source, evidence_source_facade, evidence_facade_evidence, evidence_evidence_service, evidence_service_empty, evidence_empty_return, evidence_return_static, evidence_static_predicate, evidence_predicate_detector, evidence_detector_service, evidence_predicate; evidence=6ac48b2d509e806f; predicates=truth_confirmed_static,source_facade_evidence_service_empty_return_static_predicate,detector_service_empty_return_static_predicate,evidence_service_method,evidence_method_returns,evidence_returns_empty,evidence_empty_collection,evidence_collection_object,evidence_object_without,evidence_without_guard,evidence_guard_evidence,evidence_evidence_backend,evidence_backend_service,evidence_service_return,evidence_return_statement,evidence_statement_emits,evidence_emits_outside,evidence_outside_catch,evidence_catch_fallback,evidence_fallback_normalizer,evidence_normalizer_guarded,evidence_guarded_empty,evidence_empty_context,evidence_context_evidence,evidence_evidence_return,evidence_return_truth,evidence_truth_confirmed,evidence_confirmed_static,evidence_static_source,evidence_source_facade,evidence_facade_evidence,evidence_evidence_service,evidence_service_empty,evidence_empty_return,evidence_return_static,evidence_static_predicate,evidence_predicate_detector,evidence_detector_service,evidence_predicate; A backend service return statement emits [] or {} outside catch, fallback, normalizer, or guarded-empty context. Evidence: return [];",
       "source": "graph:confirmed_static:facade_evidence",
       "surface": "capability-materialization"
     },
@@ -3524,29 +3324,29 @@
     }
   ],
   "stats": {
-    "uiElements": 1967,
-    "uiDeadHandlers": 17,
+    "uiElements": 1963,
+    "uiDeadHandlers": 4,
     "apiCalls": 759,
     "apiNoRoute": 1,
-    "backendRoutes": 1028,
-    "backendEmpty": 3,
+    "backendRoutes": 1023,
+    "backendEmpty": 1,
     "prismaModels": 145,
     "modelOrphans": 30,
-    "facades": 3,
+    "facades": 1,
     "facadesBySeverity": {
       "high": 0,
-      "medium": 3,
+      "medium": 1,
       "low": 0
     },
     "proxyRoutes": 82,
     "proxyNoUpstream": 0,
-    "securityIssues": 318,
-    "dataSafetyIssues": 19,
+    "securityIssues": 314,
+    "dataSafetyIssues": 16,
     "qualityIssues": 0,
     "unavailableChecks": 0,
     "unknownSurfaces": 0
   },
-  "timestamp": "2026-05-10T03:38:10.255Z",
-  "runId": "cf93bbde-8fbb-4538-8a48-e5355156621b",
-  "generatedAt": "2026-05-10T03:46:46.869Z"
+  "timestamp": "2026-05-10T16:15:31.115Z",
+  "runId": "69087d64-ac5e-49c2-93b1-4c35eb89a400",
+  "generatedAt": "2026-05-10T16:23:56.623Z"
 }

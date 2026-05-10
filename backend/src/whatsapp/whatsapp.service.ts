@@ -1,26 +1,16 @@
-import { randomInt, randomUUID } from 'node:crypto';
-import { InjectRedis } from '@nestjs-modules/ioredis';
 import {
   BadRequestException,
-  ForbiddenException,
   Injectable,
-  Logger,
   NotFoundException,
   Optional,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import Redis from 'ioredis';
-import { PlanLimitsService } from '../billing/plan-limits.service';
-import { forEachSequential } from '../common/async-sequence';
-import { createRedisClient } from '../common/redis/redis.util';
-import { NeuroCrmService } from '../crm/neuro-crm.service';
-import { InboxService } from '../inbox/inbox.service';
 import { StructuredLogger } from '../logging/structured-logger';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import { forEachSequential } from '../common/async-sequence';
 import { PrismaService } from '../prisma/prisma.service';
-import { buildQueueDedupId, buildQueueJobId } from '../queue/job-id.util';
-import { autopilotQueue, flowQueue } from '../queue/queue';
-import { WorkspaceService } from '../workspaces/workspace.service';
+import { buildQueueJobId } from '../queue/job-id.util';
+import { autopilotQueue } from '../queue/queue';
 import {
   buildConversationOperationalState,
   type ConversationOperationalLike,
@@ -29,19 +19,13 @@ import {
 import * as chatHelpers from './whatsapp.service.chats';
 import type { ChatHelperDeps } from './whatsapp.service.chats';
 import { CiaRuntimeService } from './cia-runtime.service';
-import { WhatsAppProviderRegistry, type SessionStatus } from './providers/provider-registry';
-import { WhatsAppApiProvider } from './providers/whatsapp-api.provider';
+import { WhatsAppProviderRegistry } from './providers/provider-registry';
 import { WhatsAppCatchupService } from './whatsapp-catchup.service';
-import { TAG_DEFAULT_COLORS } from '../common/kloel-colors';
 import { isPlaceholderContactName as isPlaceholderName } from './whatsapp-normalization.util';
-import { WorkerRuntimeService } from './worker-runtime.service';
 import {
   normalizeJsonObjExt,
   resolveTimestampExt,
   toIsoTimestamp,
-  normalizeProbabilityScoreExt,
-  isAutonomousEnabledExt,
-  normalizeHashExt,
 } from './whatsapp-service.helpers';
 import {
   normalizeContactEntry,
@@ -53,35 +37,26 @@ import type {
   NormalizedContact,
   NormalizedChat,
 } from './whatsapp-service.types';
-import type { ContactCustomFields } from '../contacts/contact-custom-fields.types';
-import type { ProviderSettings } from './provider-settings.types';
+import { WhatsappSessionService } from './whatsapp-session.service';
+import { WhatsappMessageDispatcherService } from './whatsapp-message-dispatcher.service';
+import { WhatsappReconcilerService } from './whatsapp-reconciler.service';
 
 type ExternalProviderPayload = Record<string, unknown>;
 
 const D_RE = /\D/g;
-const PATTERN_RE = /-/g;
 
 @Injectable()
 export class WhatsappService {
-  private readonly logger = new Logger(WhatsappService.name);
   private readonly slog = new StructuredLogger('whatsapp-service');
-  private readonly contactDebounceMs = Math.max(
-    500,
-    Number.parseInt(process.env.AUTOPILOT_CONTACT_DEBOUNCE_MS || '2000', 10) || 2000,
-  );
 
   constructor(
-    private readonly workspaces: WorkspaceService,
-    private readonly inbox: InboxService,
-    private readonly planLimits: PlanLimitsService,
-    @InjectRedis() private readonly redis: Redis,
-    private readonly neuroCrm: NeuroCrmService,
     private readonly prisma: PrismaService,
     private readonly providerRegistry: WhatsAppProviderRegistry,
-    private readonly whatsappApi: WhatsAppApiProvider,
     private readonly catchupService: WhatsAppCatchupService,
     private readonly ciaRuntime: CiaRuntimeService,
-    private readonly workerRuntime: WorkerRuntimeService,
+    private readonly sessionService: WhatsappSessionService,
+    private readonly messageDispatcher: WhatsappMessageDispatcherService,
+    private readonly reconciler: WhatsappReconcilerService,
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
@@ -111,30 +86,14 @@ export class WhatsappService {
   private normalizeJsonObject(v: unknown): ExternalProviderPayload {
     return normalizeJsonObjExt(v);
   }
-  private normalizeDateValue(v: unknown): string | null {
-    const ts = this.resolveTimestamp({ createdAt: v });
-    return toIsoTimestamp(ts);
-  }
-  private normalizeProbabilityScore(s: unknown, b?: string | null): number {
-    return normalizeProbabilityScoreExt(s, b);
-  }
   private resolveTimestamp(v: unknown): number {
     return resolveTimestampExt(v);
   }
   private toIsoTimestamp(ts: number): string | null {
     return toIsoTimestamp(ts);
   }
-  private normalizeChatId(chatId: string): string {
+  normalizeChatId(chatId: string): string {
     return String(chatId || '').includes('@') ? chatId : `${this.normalizeNumber(chatId)}@c.us`;
-  }
-  private normalizeHash(t: string): string {
-    return normalizeHashExt(t);
-  }
-  private isAutonomousEnabled(s: ProviderSettings): boolean {
-    return isAutonomousEnabledExt(s);
-  }
-  private sleep(ms: number): Promise<void> {
-    return new Promise((r) => setTimeout(r, ms));
   }
   private get providerExtract() {
     return this.providerRegistry.extractPhoneFromChatId.bind(this.providerRegistry);
@@ -145,15 +104,17 @@ export class WhatsappService {
     return {
       prisma: this.prisma,
       providerRegistry: this.providerRegistry,
-      normalizeChats: (r) => this.normalizeChats(r),
-      normalizeMessages: (r, fc) => this.normalizeMessages(r, fc),
-      normalizeNumber: (n) => this.normalizeNumber(n),
-      normalizeChatId: (c) => this.normalizeChatId(c),
-      isIndividualChatId: (c) => this.isIndividualChatId(c),
-      toIsoTimestamp: (ts) => this.toIsoTimestamp(ts),
-      resolveTimestamp: (v) => this.resolveTimestamp(v),
-      resolveTrustedContactName: (p, ...cs) => this.resolveTrustedContactName(p, ...cs),
-      listOperationalConversations: (ws, o) => this.listOperationalConversations(ws, o),
+      normalizeChats: (r: unknown) => this.normalizeChats(r),
+      normalizeMessages: (r: unknown, fc: string) => this.normalizeMessages(r, fc),
+      normalizeNumber: (n: string) => this.normalizeNumber(n),
+      normalizeChatId: (c: string) => this.normalizeChatId(c),
+      isIndividualChatId: (c?: string | null) => this.isIndividualChatId(c),
+      toIsoTimestamp: (ts: number) => this.toIsoTimestamp(ts),
+      resolveTimestamp: (v: unknown) => this.resolveTimestamp(v),
+      resolveTrustedContactName: (p: string, ...cs: unknown[]) =>
+        this.resolveTrustedContactName(p, ...cs),
+      listOperationalConversations: (ws: string, o?: unknown) =>
+        this.listOperationalConversations(ws, o as { limit?: number; pendingOnly?: boolean }),
     };
   }
   async listChats(ws: string) {
@@ -188,9 +149,9 @@ export class WhatsappService {
     return candidates
       .map((c) =>
         normalizeContactEntry(c, {
-          isPlaceholder: (v, p) => this.isPlaceholderContactName(v, p),
-          resolveName: (p, ...cs) => this.resolveTrustedContactName(p, ...cs),
-          extractPhone: (id) => this.providerExtract(id),
+          isPlaceholder: (v: unknown, p?: string | null) => this.isPlaceholderContactName(v, p),
+          resolveName: (p: string, ...cs: unknown[]) => this.resolveTrustedContactName(p, ...cs),
+          extractPhone: (id: string) => this.providerExtract(id),
         }),
       )
       .filter((c): c is NormalizedContact => c !== null);
@@ -209,9 +170,9 @@ export class WhatsappService {
     return cs
       .map((c) =>
         normalizeChatEntry(c, {
-          resolveName: (p, ...cs) => this.resolveTrustedContactName(p, ...cs),
-          extractPhone: (id) => this.providerExtract(id),
-          isPlaceholder: (v, p) => this.isPlaceholderContactName(v, p),
+          resolveName: (p: string, ...cs: unknown[]) => this.resolveTrustedContactName(p, ...cs),
+          extractPhone: (id: string) => this.providerExtract(id),
+          isPlaceholder: (v: unknown, p?: string | null) => this.isPlaceholderContactName(v, p),
         }),
       )
       .filter((c): c is NormalizedChat => c !== null);
@@ -230,7 +191,7 @@ export class WhatsappService {
     return cs
       .map((m) =>
         normalizeMessageEntry(m, fallbackChatId, {
-          extractPhone: (id) => this.providerExtract(id),
+          extractPhone: (id: string) => this.providerExtract(id),
         }),
       )
       .filter(Boolean);
@@ -410,176 +371,16 @@ export class WhatsappService {
     o?: { days?: number; onlyCataloged?: boolean },
   ) {
     return collectCatalogContactEntriesExt(
-      { prisma: this.prisma, resolveName: (p, ...cs) => this.resolveTrustedContactName(p, ...cs) },
+      { prisma: this.prisma, resolveName: (p: string, ...cs: unknown[]) => this.resolveTrustedContactName(p, ...cs) },
       ws,
       o,
     );
   }
 
-  // ═══ handleIncoming ═══
+  // ═══ DELEGATION: Reconciler ═══
   async handleIncoming(workspaceId: string, from: string, message: string) {
-    this.slog.info('incoming_webhook', { workspaceId, from, message });
-    const ws = await this.workspaces.getWorkspace(workspaceId).catch(() => null);
-    if (!ws) {
-      this.slog.warn('incoming_invalid_workspace', { workspaceId });
-      throw new Error('Workspace not found');
-    }
-    const dedupeKey = `incoming:dedupe:${workspaceId}:${from}:${this.normalizeHash(message)}`;
-    if (await this.redis.get(dedupeKey)) return { skipped: true, reason: 'duplicate' };
-    await this.redis.setex(dedupeKey, 60, '1');
-
-    const lower = (message || '').toLowerCase();
-    if (
-      ['stop', 'sair', 'cancelar', 'cancel', 'parar', 'unsubscribe'].some((k) => lower.includes(k))
-    )
-      await this.optOutContact(workspaceId, from.replace(D_RE, '')).catch(() => {});
-
-    const saved = await this.inbox.saveMessageByPhone({
-      workspaceId,
-      phone: from,
-      content: message,
-      direction: 'INBOUND',
-    });
-    const nPhone = this.normalizeNumber(from);
-    const ctxKey = `reply:${nPhone}`;
-    try {
-      await this.redis.rpush(ctxKey, message);
-      await this.redis.expire(ctxKey, 60 * 60 * 24);
-    } catch (_e: unknown) {
-      this.logger.warn(
-        `Redis reply context write failed for ${workspaceId}, trying fallback: ${(_e instanceof Error ? _e : new Error(String(_e))).message}`,
-      );
-      const fc = createRedisClient();
-      if (fc) {
-        try {
-          await fc.rpush(ctxKey, message);
-          await fc.expire(ctxKey, 60 * 60 * 24);
-        } finally {
-          fc.disconnect();
-        }
-      }
-    }
-    await flowQueue.add(
-      'resume-flow',
-      { user: nPhone, message, workspaceId },
-      { removeOnComplete: true },
-    );
-
-    try {
-      const settings = this.normalizeJsonObject(ws.providerSettings);
-      if (this.isAutonomousEnabled(settings) && saved?.contactId) {
-        const sk = `autopilot:scan-contact:${workspaceId}:${saved.contactId}`;
-        if ((await this.redis.set(sk, saved.id, 'PX', this.contactDebounceMs, 'NX')) === 'OK')
-          await autopilotQueue.add(
-            'scan-contact',
-            {
-              workspaceId,
-              phone: from,
-              contactId: saved.contactId,
-              messageContent: message,
-              messageId: saved.id,
-            },
-            {
-              jobId: buildQueueJobId('scan-contact', workspaceId, saved.contactId, saved.id),
-              delay: this.contactDebounceMs,
-              deduplication: {
-                id: buildQueueDedupId('scan-contact', workspaceId, saved.contactId),
-                ttl: this.contactDebounceMs + 500,
-              },
-              removeOnComplete: true,
-            },
-          );
-      }
-      const apc = this.normalizeJsonObject(settings.autopilot);
-      const hf = typeof apc.hotFlowId === 'string' ? apc.hotFlowId : null;
-      if (
-        hf &&
-        [
-          'preco',
-          'preço',
-          'price',
-          'quanto',
-          'pix',
-          'boleto',
-          'garantia',
-          'comprar',
-          'assinar',
-        ].some((k) => lower.includes(k))
-      )
-        await flowQueue.add('run-flow', {
-          workspaceId,
-          flowId: hf,
-          user: nPhone,
-          initialVars: { source: 'hot_signal', lastMessage: message },
-        });
-      if (
-        [
-          'paguei',
-          'pago',
-          'pix',
-          'pague',
-          'comprei',
-          'compre',
-          'boleto',
-          'assinatura',
-          'transferi',
-          'transferido',
-        ].some((k) => lower.includes(k)) &&
-        saved?.contactId
-      ) {
-        const le = await this.prisma.autopilotEvent.findFirst({
-          where: { workspaceId, contactId: saved.contactId },
-          orderBy: { createdAt: 'desc' },
-        });
-        if (le && Date.now() - new Date(le.createdAt).getTime() <= 72 * 60 * 60 * 1000) {
-          await this.prisma.autopilotEvent.create({
-            data: {
-              workspaceId,
-              contactId: saved.contactId,
-              intent: 'BUYING',
-              action: 'CONVERSION',
-              status: 'executed',
-              reason: 'payment_keyword_inbound',
-              responseText: message,
-              meta: { source: 'inbound', keywordHit: true },
-            },
-          });
-          await this.prisma.contact.updateMany({
-            where: { id: saved.contactId, workspaceId },
-            data: { purchaseProbability: 'HIGH', sentiment: 'POSITIVE' },
-          });
-        }
-      }
-    } catch (e: unknown) {
-      this.logger.warn(
-        `Autopilot enqueue failed: ${(e instanceof Error ? e : new Error(String(e))).message}`,
-      );
-      void this.opsAlert?.alertOnCriticalError(e, 'WhatsappService.processInbound.autopilot', {
-        workspaceId,
-      });
-    }
-    if (saved?.contactId)
-      this.neuroCrm.analyzeContact(workspaceId, saved.contactId).catch(() => {});
-    try {
-      await this.redis.publish(
-        `ws:copilot:${workspaceId}`,
-        JSON.stringify({
-          type: 'new_message',
-          workspaceId,
-          contactId: saved?.contactId,
-          phone: from,
-          message,
-        }),
-      );
-    } catch (e: unknown) {
-      this.logger.warn(
-        `Copilot pub/sub failed for ws=${workspaceId}: ${(e instanceof Error ? e : new Error(String(e))).message}`,
-      );
-    }
-    return { ok: true };
+    return this.reconciler.handleIncoming(workspaceId, from, message);
   }
-
-  // ═══ CONTACTS ═══
   async listContacts(ws: string) {
     const rContacts = this.normalizeContacts(
       await this.providerRegistry.getContacts(ws).catch((e: unknown) => {
@@ -676,64 +477,49 @@ export class WhatsappService {
     phone: string,
     name?: string | null,
   ): Promise<boolean> {
-    const np = this.normalizeNumber(phone || '');
-    const nn = this.resolveTrustedContactName(phone, name);
-    if (!np || !nn) return false;
-    try {
-      return await this.providerRegistry.upsertContactProfile(ws, { phone: np, name: nn });
-    } catch (e: unknown) {
-      this.logger.warn(
-        `Falha ao sincronizar contato ${np}: ${(e instanceof Error ? e : new Error(String(e))).message}`,
-      );
-      void this.opsAlert?.alertOnCriticalError(e, 'WhatsappService.syncRemoteContactProfile', {
-        workspaceId: ws,
-        metadata: { phone: np },
-      });
-      return false;
-    }
+    return this.reconciler.syncRemoteContactProfile(ws, phone, name);
+  }
+  async optInContact(ws: string, phone: string) {
+    return this.reconciler.optInContact(ws, phone);
+  }
+  async optOutContact(ws: string, phone: string) {
+    return this.reconciler.optOutContact(ws, phone);
+  }
+  async optInBulk(ws: string, phones: string[]) {
+    return this.reconciler.optInBulk(ws, phones);
+  }
+  async optOutBulk(ws: string, phones: string[]) {
+    return this.reconciler.optOutBulk(ws, phones);
+  }
+  async getOptInStatus(ws: string, phone: string) {
+    return this.reconciler.getOptInStatus(ws, phone);
   }
 
-  // ═══ SESSION ═══
+  // ═══ DELEGATION: Session ═══
   async createSession(ws: string) {
-    const result = await this.providerRegistry.startSession(ws);
-    if (!result.success)
-      return { error: true, message: result.message || 'failed_to_start_session' };
-    const qr = await this.providerRegistry.getQrCode(ws);
-    if (qr.success && qr.qr) return { status: 'qr_pending', code: qr.qr, qrCode: qr.qr };
-    const status = await this.providerRegistry.getSessionStatus(ws);
-    return {
-      status: status.connected ? 'already_connected' : status.status,
-      qrCode: status.qrCode,
-    };
+    return this.sessionService.createSession(ws);
   }
   async recreateSessionIfInvalid(ws: string) {
-    await this.providerRegistry.getProviderType(ws);
-    const d = await this.providerRegistry.getSessionDiagnostics(ws);
-    await this.providerRegistry.getSessionStatus(ws).catch(() => null);
-    const invalid =
-      !d?.available ||
-      d?.configMismatch ||
-      d?.webhookConfigured !== true ||
-      d?.inboundEventsConfigured !== true ||
-      d?.storeEnabled !== true;
-    if (!invalid) return { recreated: false, reason: 'session_config_healthy', diagnostics: d };
-    await this.providerRegistry.deleteSession(ws).catch(() => undefined);
-    const start = await this.providerRegistry.startSession(ws);
-    return { recreated: start.success === true, reason: start.message, diagnostics: d };
+    return this.sessionService.recreateSessionIfInvalid(ws);
   }
   getSession(ws: string) {
-    return { workspaceId: ws, provider: 'dynamic' };
+    return this.sessionService.getSession(ws);
   }
   async getConnectionStatus(ws: string) {
-    const s = await this.providerRegistry.getSessionStatus(ws);
-    return { status: s.status, phoneNumber: s.phoneNumber, qrCode: s.qrCode };
+    return this.sessionService.getConnectionStatus(ws);
   }
   async getQrCode(ws: string) {
-    const q = await this.providerRegistry.getQrCode(ws);
-    return q.success ? q.qr || null : null;
+    return this.sessionService.getQrCode(ws);
   }
   async disconnect(ws: string) {
-    await this.providerRegistry.disconnect(ws);
+    return this.sessionService.disconnect(ws);
+  }
+  async setPresence(
+    ws: string,
+    chatId: string,
+    presence: 'typing' | 'paused' | 'seen' | 'available' | 'offline',
+  ) {
+    return this.sessionService.setPresence(ws, chatId, presence);
   }
 
   // ═══ OPERATIONAL ═══
@@ -765,38 +551,11 @@ export class WhatsappService {
       .map((c) => buildConversationOperationalState(c as ConversationOperationalLike))
       .filter((c) => !o?.pendingOnly || c.pending);
   }
-  async setPresence(
-    ws: string,
-    chatId: string,
-    presence: 'typing' | 'paused' | 'seen' | 'available' | 'offline',
-  ) {
-    const n = this.normalizeChatId(chatId);
-    switch (presence) {
-      case 'available':
-        await this.providerRegistry.setPresence(ws, 'available', n);
-        break;
-      case 'offline':
-        await this.providerRegistry.setPresence(ws, 'offline', n);
-        break;
-      case 'typing':
-        await this.providerRegistry.sendTyping(ws, n);
-        break;
-      case 'paused':
-        await this.providerRegistry.stopTyping(ws, n);
-        break;
-      case 'seen':
-        await this.markChatAsReadBestEffort(ws, n);
-        break;
-      default:
-        throw new BadRequestException('presence inválida');
-    }
-    return { ok: true, chatId: n, presence };
-  }
   async triggerSync(ws: string, reason = 'manual_sync') {
     return this.catchupService.triggerCatchup(ws, reason);
   }
 
-  // ═══ SEND MESSAGE ═══
+  // ═══ DELEGATION: Message Dispatcher ═══
   async sendMessage(
     ws: string,
     to: string,
@@ -811,410 +570,20 @@ export class WhatsappService {
       quotedMessageId?: string;
     },
   ) {
-    this.slog.info('send_message', { workspaceId: ws, to });
-    await this.planLimits.ensureSubscriptionActive(ws);
-    const w = await this.workspaces.getWorkspace(ws);
-    const ew = this.workspaces.toEngineWorkspace(w);
-    await this.ensureOptInAllowed(ws, to, opts?.complianceMode || 'proactive');
-    const missing = this.validateWorkspaceProvider(ew);
-    if (missing.length)
-      return { error: true, message: `Configuração do provedor incompleta: ${missing.join(', ')}` };
-    const r = await this.collectMessagingRuntimeIssues(ws, ew, { requireInboundWebhook: false });
-    if (r.issues.length)
-      return {
-        error: true,
-        message: `Runtime do WhatsApp indisponível: ${r.issues.join(', ')}`,
-        diagnostics: r.diagnostics,
-      };
-    if (opts?.forceDirect) {
-      const dr = await this.sendDirectlyViaProvider(ws, to, message, opts);
-      if (dr.ok) await this.planLimits.trackMessageSend(ws);
-      return dr;
-    }
-    if (!(await this.workerRuntime.isAvailable())) {
-      const dr = await this.sendDirectlyViaProvider(ws, to, message, opts);
-      if (dr.ok) await this.planLimits.trackMessageSend(ws);
-      return dr;
-    }
-    await flowQueue.add('send-message', {
-      type: 'direct',
-      workspaceId: ws,
-      workspace: ew,
-      to,
-      message,
-      user: to,
-      mediaUrl: opts?.mediaUrl,
-      mediaType: opts?.mediaType,
-      caption: opts?.caption,
-      externalId: opts?.externalId,
-      quotedMessageId: opts?.quotedMessageId,
-    });
-    await this.planLimits.trackMessageSend(ws);
-    return { ok: true, queued: true, delivery: 'queued' };
+    return this.messageDispatcher.sendMessage(ws, to, message, opts);
   }
-  listTemplates(_ws: string) {
-    return {
-      error: true,
-      message: 'Templates legados não são suportados no modo Meta Cloud.',
-      data: [],
-      total: 0,
-    };
+  listTemplates(ws: string) {
+    return this.messageDispatcher.listTemplates(ws);
   }
-
   async sendTemplate(
     ws: string,
     to: string,
     template: { name: string; language: string; components?: unknown[] },
   ) {
-    this.slog.info('send_template', { workspaceId: ws, to, template: template.name });
-    await this.planLimits.ensureSubscriptionActive(ws);
-    const w = await this.workspaces.getWorkspace(ws);
-    const ew = this.workspaces.toEngineWorkspace(w);
-    await this.ensureOptInAllowed(ws, to);
-    const m = this.validateWorkspaceProvider(ew);
-    if (m.length)
-      return { error: true, message: `Configuração do provedor incompleta: ${m.join(', ')}` };
-    const r = await this.collectMessagingRuntimeIssues(ws, ew, { requireInboundWebhook: false });
-    if (r.issues.length)
-      return {
-        error: true,
-        message: `Runtime do WhatsApp indisponível: ${r.issues.join(', ')}`,
-        diagnostics: r.diagnostics,
-      };
-    await flowQueue.add('send-message', {
-      type: 'template',
-      workspaceId: ws,
-      workspace: ew,
-      to,
-      template,
-      user: to,
-    });
-    await this.planLimits.trackMessageSend(ws);
-    return { ok: true, queued: true, delivery: 'queued' };
+    return this.messageDispatcher.sendTemplate(ws, to, template);
   }
-
   async sendDirectMessage(ws: string, to: string, message: string) {
-    const r = await this.sendDirectlyViaProvider(ws, to, message);
-    return r.ok === true
-      ? { success: true, result: r }
-      : { error: true, message: r.message || 'send_failed' };
-  }
-
-  private async sendDirectlyViaProvider(
-    ws: string,
-    to: string,
-    message: string,
-    opts?: {
-      mediaUrl?: string;
-      mediaType?: 'image' | 'video' | 'audio' | 'document';
-      caption?: string;
-      externalId?: string;
-      complianceMode?: 'reactive' | 'proactive';
-      forceDirect?: boolean;
-      quotedMessageId?: string;
-    },
-  ) {
-    const lockKey = `whatsapp:action-lock:${ws}`;
-    const token = `${Date.now()}:${randomUUID()}`;
-    const ttlMs = Math.max(
-      15_000,
-      Number.parseInt(process.env.WHATSAPP_ACTION_LOCK_MS || '45000', 10) || 45_000,
-    );
-    const deadline = Date.now() + ttlMs;
-    const tryAcquire = async (): ReturnType<typeof this._sendDirectCore> => {
-      if (Date.now() >= deadline) return this._sendDirectCore(ws, to, message, opts);
-      if ((await this.redis.set(lockKey, token, 'PX', ttlMs, 'NX')) !== 'OK') {
-        await this.sleep(250 + randomInt(250));
-        return tryAcquire();
-      }
-      try {
-        return await this._sendDirectCore(ws, to, message, opts);
-      } finally {
-        const c = await this.redis.get(lockKey).catch(() => null);
-        if (c === token) await this.redis.del(lockKey).catch(() => {});
-      }
-    };
-    return tryAcquire();
-  }
-  private async _sendDirectCore(
-    ws: string,
-    to: string,
-    message: string,
-    opts?: {
-      mediaUrl?: string;
-      mediaType?: 'image' | 'video' | 'audio' | 'document';
-      caption?: string;
-      quotedMessageId?: string;
-      externalId?: string;
-    },
-  ) {
-    const n = this.normalizeChatId(to);
-    await this.markChatAsReadBestEffort(ws, n);
-    const isTest = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
-    if (!isTest) {
-      await this.providerRegistry.setPresence(ws, 'available', n).catch(() => {});
-      await this.sleep(300 + randomInt(500));
-      await this.providerRegistry.sendTyping(ws, n).catch(() => {});
-      await this.sleep(
-        Math.max(
-          500,
-          Math.min(
-            3500,
-            450 + String(opts?.caption || message || '').trim().length * 35 + randomInt(450),
-          ),
-        ),
-      );
-      await this.providerRegistry.stopTyping(ws, n).catch(() => {});
-    }
-    const r = await this.providerRegistry
-      .sendMessage(ws, to, message, {
-        mediaUrl: opts?.mediaUrl,
-        mediaType: opts?.mediaType,
-        caption: opts?.caption,
-        quotedMessageId: opts?.quotedMessageId,
-      })
-      .catch((e: unknown) => {
-        this.slog.error('send_direct_provider_failed', {
-          workspaceId: ws,
-          to,
-          error: String(e instanceof Error ? e.message : e),
-        });
-        void this.opsAlert?.alertOnCriticalError(e, 'WhatsappService._sendDirectCore', {
-          workspaceId: ws,
-          metadata: { to },
-        });
-        return { success: false, error: String(e instanceof Error ? e.message : e) };
-      });
-    if (!r.success) {
-      await this.providerRegistry.setPresence(ws, 'offline', n).catch(() => {});
-      return { error: true, message: r.error || 'send_failed' };
-    }
-    await this.markChatAsReadBestEffort(ws, to);
-    await this.providerRegistry.setPresence(ws, 'offline', n).catch(() => {});
-    await this.inbox.saveMessageByPhone({
-      workspaceId: ws,
-      phone: to,
-      content: opts?.caption || message || opts?.mediaUrl || '',
-      direction: 'OUTBOUND',
-      externalId: 'messageId' in r ? r.messageId : (opts?.externalId ?? null),
-      type: opts?.mediaType ? opts.mediaType.toUpperCase() : 'TEXT',
-      mediaUrl: opts?.mediaUrl,
-      status: 'SENT',
-    });
-    return {
-      ok: true,
-      direct: true,
-      delivery: 'sent',
-      messageId: 'messageId' in r ? r.messageId : null,
-    };
-  }
-
-  // ═══ OPT-IN / OUT ═══
-  async optInContact(ws: string, phone: string) {
-    return this.prisma.$transaction(async (tx) => {
-      const c = await tx.contact.upsert({
-        where: { workspaceId_phone: { workspaceId: ws, phone } },
-        update: {},
-        create: { workspaceId: ws, phone, name: null },
-      });
-      await tx.contact.updateMany({
-        where: { id: c.id, workspaceId: ws },
-        data: { optIn: true, optedOutAt: null },
-      });
-      const t = await tx.tag.upsert({
-        where: { workspaceId_name: { workspaceId: ws, name: 'optin_whatsapp' } },
-        update: {},
-        create: { workspaceId: ws, name: 'optin_whatsapp', color: TAG_DEFAULT_COLORS.WHATSAPP_OPTIN_GREEN },
-      });
-      await tx.contact.update({
-        where: { workspaceId_phone: { workspaceId: ws, phone } },
-        data: { tags: { connect: { id: t.id } } },
-      });
-      return { ok: true };
-    });
-  }
-  async optOutContact(ws: string, phone: string) {
-    return this.prisma.$transaction(async (tx) => {
-      const c = await tx.contact.findUnique({
-        where: { workspaceId_phone: { workspaceId: ws, phone } },
-        select: { id: true },
-      });
-      if (!c) return { ok: true };
-      await tx.contact.updateMany({
-        where: { id: c.id, workspaceId: ws },
-        data: { optIn: false, optedOutAt: new Date() },
-      });
-      const t = await tx.tag.findUnique({
-        where: { workspaceId_name: { workspaceId: ws, name: 'optin_whatsapp' } },
-        select: { id: true },
-      });
-      if (t)
-        await tx.contact.update({
-          where: { workspaceId_phone: { workspaceId: ws, phone } },
-          data: { tags: { disconnect: { id: t.id } } },
-        });
-      return { ok: true };
-    });
-  }
-  async optInBulk(ws: string, phones: string[]) {
-    const u = Array.from(new Set((phones || []).map((p) => p?.trim()).filter(Boolean)));
-    const r: { phone: string; ok: boolean }[] = [];
-    await forEachSequential(u, async (p) => {
-      try {
-        await this.optInContact(ws, p);
-        r.push({ phone: p, ok: true });
-      } catch (e: unknown) {
-        this.logger.warn(
-          `optInContact failed for ${p} in ws=${ws}: ${(e instanceof Error ? e : new Error(String(e))).message}`,
-        );
-        r.push({ phone: p, ok: false });
-      }
-    });
-    return { ok: true, processed: r.length, results: r };
-  }
-  async optOutBulk(ws: string, phones: string[]) {
-    const u = Array.from(new Set((phones || []).map((p) => p?.trim()).filter(Boolean)));
-    const r: { phone: string; ok: boolean }[] = [];
-    await forEachSequential(u, async (p) => {
-      try {
-        await this.optOutContact(ws, p);
-        r.push({ phone: p, ok: true });
-      } catch (e: unknown) {
-        this.logger.warn(
-          `optOutContact failed for ${p} in ws=${ws}: ${(e instanceof Error ? e : new Error(String(e))).message}`,
-        );
-        r.push({ phone: p, ok: false });
-      }
-    });
-    return { ok: true, processed: r.length, results: r };
-  }
-  async getOptInStatus(ws: string, phone: string) {
-    const c = await this.prisma.contact.findUnique({
-      where: { workspaceId_phone: { workspaceId: ws, phone } },
-      select: { id: true, tags: { select: { name: true } } },
-    });
-    if (!c) return { optIn: false, contactExists: false };
-    return {
-      optIn: c.tags.some((t: { name: string }) => t.name === 'optin_whatsapp'),
-      contactExists: true,
-    };
-  }
-
-  private async ensureOptInAllowed(
-    ws: string,
-    phone: string,
-    complianceMode: 'reactive' | 'proactive' = 'proactive',
-  ) {
-    const eo = process.env.ENFORCE_OPTIN === 'true';
-    const e24 = (process.env.AUTOPILOT_ENFORCE_24H ?? 'false').toLowerCase() !== 'false';
-    const c = await this.prisma.contact.findUnique({
-      where: { workspaceId_phone: { workspaceId: ws, phone } },
-      select: {
-        id: true,
-        optIn: true,
-        optedOutAt: true,
-        customFields: true,
-        tags: { select: { name: true } },
-      },
-    });
-    if (c && c.optIn === false)
-      throw new ForbiddenException('Contato cancelou o recebimento de mensagens (opt-out)');
-    if (complianceMode === 'reactive') return;
-    if (eo) {
-      if (!c) throw new ForbiddenException('Contato sem opt-in para WhatsApp');
-      const cf = (c.customFields as ContactCustomFields) || {};
-      const has =
-        c.optIn === true ||
-        c.tags.some((t: { name: string }) => t.name === 'optin_whatsapp') ||
-        cf.optin === true ||
-        cf.optin_whatsapp === true;
-      if (!has) throw new ForbiddenException('Contato sem opt-in para WhatsApp');
-    }
-    if (e24) {
-      const li = await this.prisma.message.findFirst({
-        where: { workspaceId: ws, contact: { phone }, direction: 'INBOUND' },
-        orderBy: { createdAt: 'desc' },
-        select: { createdAt: true },
-      });
-      if (!li || li.createdAt.getTime() < Date.now() - 24 * 60 * 60 * 1000)
-        throw new ForbiddenException('Fora da janela de 24h para envio');
-    }
-  }
-
-  // ═══ INFRA ═══
-  private validateWorkspaceProvider(w: ProviderSettings): string[] {
-    const p = w?.whatsappProvider || 'meta-cloud';
-    return p !== 'meta-cloud' ? ['whatsapp_provider'] : [];
-  }
-  private async collectMessagingRuntimeIssues(
-    ws: string,
-    workspace: ProviderSettings,
-    o?: { requireInboundWebhook?: boolean },
-  ) {
-    const issues = this.validateWorkspaceProvider(workspace);
-    const pt = await this.providerRegistry.getProviderType(ws);
-    const d: {
-      webhook: ReturnType<typeof this.whatsappApi.getRuntimeConfigDiagnostics>;
-      session: (SessionStatus & { error?: string }) | null;
-    } = {
-      webhook: this.whatsappApi.getRuntimeConfigDiagnostics(),
-      session: null,
-    };
-    if (o?.requireInboundWebhook) {
-      if (!d.webhook.webhookConfigured) issues.push('meta_webhook_missing');
-      else if (!d.webhook.inboundEventsConfigured)
-        issues.push('meta_webhook_events_missing_inbound');
-    }
-    try {
-      d.session = await this.providerRegistry.getSessionStatus(ws);
-      if (!d.session.connected)
-        issues.push(
-          `${pt.replace(PATTERN_RE, '_')}_session_${String(d.session.status || 'unknown').toLowerCase()}`,
-        );
-    } catch (e: unknown) {
-      issues.push(`${pt.replace(PATTERN_RE, '_')}_session_status_unavailable`);
-      d.session = {
-        connected: false,
-        status: 'UNKNOWN',
-        error: e instanceof Error ? e.message : 'unknown_error',
-      };
-      void this.opsAlert?.alertOnCriticalError(e, 'WhatsappService.runDiagnostics.session', {
-        workspaceId: ws,
-      });
-    }
-    return { issues, diagnostics: d };
-  }
-
-  private async resolveReadChatCandidates(ws: string, chatIdOrPhone: string): Promise<string[]> {
-    const nChat = this.normalizeChatId(chatIdOrPhone);
-    const nPhone = this.normalizeNumber(this.providerExtract(nChat));
-    const c = nPhone
-      ? await this.prisma.contact
-          .findUnique({
-            where: { workspaceId_phone: { workspaceId: ws, phone: nPhone } },
-            select: { customFields: true },
-          })
-          .catch(() => null)
-      : null;
-    const cf = this.normalizeJsonObject(c?.customFields);
-    return Array.from(
-      new Set(
-        [
-          nChat,
-          this.readText(cf.lastRemoteChatId),
-          this.readText(cf.lastCatalogChatId),
-          this.readText(cf.lastResolvedChatId),
-          nPhone ? `${nPhone}@c.us` : '',
-          nPhone ? `${nPhone}@s.whatsapp.net` : '',
-        ].filter(Boolean),
-      ),
-    );
-  }
-  private async markChatAsReadBestEffort(ws: string, chatIdOrPhone: string): Promise<void> {
-    const cs = await this.resolveReadChatCandidates(ws, chatIdOrPhone);
-    await forEachSequential(cs, async (c) => {
-      await this.providerRegistry.readChatMessages(ws, c).catch(() => {});
-    });
+    return this.messageDispatcher.sendDirectMessage(ws, to, message);
   }
 
   // ═══ GROUP MANAGEMENT ═══

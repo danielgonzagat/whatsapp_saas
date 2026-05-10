@@ -189,6 +189,23 @@ function collectPrismaModelsFromText(text: string): Set<string> {
         }
       }
 
+      if (ts.isPropertyAccessExpression(node)) {
+        const parts = expressionParts(node);
+        if (parts.length >= 3) {
+          for (let idx = 0; idx < parts.length - 1; idx++) {
+            const part = parts[idx];
+            const isPrismaToken = hasIdentifierToken(part, 'prisma');
+            const isKnownReceiver = prismaReceivers.has(part);
+            if (isPrismaToken || isKnownReceiver) {
+              const modelName = parts[idx + 1];
+              if (modelName && !modelName.startsWith('$')) {
+                models.add(modelName);
+              }
+            }
+          }
+        }
+      }
+
       ts.forEachChild(node, visit);
     };
 

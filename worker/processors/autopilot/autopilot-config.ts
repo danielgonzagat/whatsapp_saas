@@ -1,4 +1,4 @@
-import { log } from './autopilot-config';
+import { log } from './autopilot-utils';
 
 const WORKER_ROLE = (process.env.WORKER_ROLE || 'all').toLowerCase();
 export const SHOULD_RUN_AUTOPILOT_WORKER = WORKER_ROLE !== 'scheduler';

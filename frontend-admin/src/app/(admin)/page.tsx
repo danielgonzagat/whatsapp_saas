@@ -24,250 +24,20 @@ import { adminNotificationsApi } from '@/lib/api/admin-notifications-api';
 import { adminProductsApi } from '@/lib/api/admin-products-api';
 import { adminSupportApi } from '@/lib/api/admin-support-api';
 import { useAdminSession } from '@/lib/auth/admin-session-context';
-
-const METHOD_LABELS: Record<string, string> = {
-  CREDIT_CARD: 'Cartão',
-  PIX: 'PIX',
-  BOLETO: 'Boleto',
-};
-
-const INTEGER_FORMATTER = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 });
-const CURRENCY_FORMATTER = new Intl.NumberFormat('pt-BR', {
-  style: 'currency',
-  currency: 'BRL',
-  minimumFractionDigits: 2,
-});
-const PERCENT_FORMATTER = new Intl.NumberFormat('pt-BR', {
-  minimumFractionDigits: 0,
-  maximumFractionDigits: 1,
-});
-
-function toIsoDateTime(value: Date) {
-  return value.toISOString();
-}
-
-function formatInteger(value: number | null | undefined) {
-  return INTEGER_FORMATTER.format(Number(value || 0));
-}
-
-function formatCurrency(value: number | null | undefined) {
-  return CURRENCY_FORMATTER.format((Number(value || 0) || 0) / 100);
-}
-
-function formatPercent(value: number | null | undefined) {
-  return `${PERCENT_FORMATTER.format((Number(value || 0) || 0) * 100)}%`;
-}
-
-function formatDelta(deltaPct: number | null | undefined) {
-  if (deltaPct === null || deltaPct === undefined) {
-    return 'Sem comparativo anterior';
-  }
-  const sign = deltaPct >= 0 ? '+' : '';
-  return `${sign}${PERCENT_FORMATTER.format(deltaPct)}% vs período anterior`;
-}
-
-function formatRelativeTime(value?: string | null) {
-  if (!value) {
-    return 'Agora';
-  }
-
-  const diffMs = Date.now() - new Date(value).getTime();
-  if (!Number.isFinite(diffMs) || diffMs < 0) {
-    return 'Agora';
-  }
-
-  const minutes = Math.floor(diffMs / 60_000);
-  if (minutes < 1) {
-    return 'Agora';
-  }
-  if (minutes < 60) {
-    return `há ${minutes} min`;
-  }
-
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) {
-    return `há ${hours} h`;
-  }
-
-  const days = Math.floor(hours / 24);
-  return `há ${days} d`;
-}
-
-function Sparkline({
-  data,
-  color = 'var(--app-accent)',
-  width = 84,
-  height = 30,
-}: {
-  data: number[];
-  color?: string;
-  width?: number;
-  height?: number;
-}) {
-  const points = useMemo(() => {
-    if (!data.length) {
-      return '';
-    }
-    const max = Math.max(...data);
-    const min = Math.min(...data);
-    const range = max - min || 1;
-    return data
-      .map((value, index) => {
-        const x = data.length === 1 ? width / 2 : (index / (data.length - 1)) * width;
-        const y = height - ((value - min) / range) * (height - 6) - 3;
-        return `${x},${y}`;
-      })
-      .join(' ');
-  }, [data, height, width]);
-
-  return (
-    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} aria-hidden="true">
-      <polyline
-        points={points}
-        fill="none"
-        stroke={color}
-        strokeWidth="1.7"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function RevenueBars({
-  labels,
-  values,
-  comparison,
-}: {
-  labels: string[];
-  values: number[];
-  comparison: number[];
-}) {
-  const maxValue = Math.max(1, ...values, ...comparison);
-
-  return (
-    <div className="grid h-[196px] grid-cols-7 items-end gap-2 md:gap-3">
-      {labels.map((label, index) => {
-        const current = values[index] || 0;
-        const previous = comparison[index] || 0;
-        const currentHeight = Math.max(6, Math.round((current / maxValue) * 162));
-        const previousHeight = Math.max(4, Math.round((previous / maxValue) * 162));
-
-        return (
-          <div
-            key={`${label}-${index}`}
-            className="flex min-w-0 flex-col items-center justify-end gap-1.5"
-          >
-            <div className="flex h-[168px] w-full items-end justify-center gap-1">
-              <div
-                className="w-1.5 rounded-t-[3px] bg-[var(--app-accent-medium)]"
-                style={{ height: previousHeight }}
-              />
-              <div
-                className="w-2 rounded-t-[3px] bg-[var(--app-accent)]"
-                style={{ height: currentHeight }}
-              />
-            </div>
-            <span className="font-mono text-[10px] text-[var(--app-text-tertiary)]">{label}</span>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-function RingMeter({
-  percent,
-  color,
-  size = 48,
-}: {
-  percent: number;
-  color: string;
-  size?: number;
-}) {
-  const stroke = 3;
-  const radius = size / 2 - (stroke / 2 + 1);
-  const circumference = 2 * Math.PI * radius;
-  const normalized = Math.max(0, Math.min(100, Number(percent || 0)));
-  const dashoffset = circumference - (normalized / 100) * circumference;
-
-  return (
-    <svg
-      width={size}
-      height={size}
-      style={{ transform: 'rotate(-90deg)', display: 'block', overflow: 'visible' }}
-      aria-hidden="true"
-    >
-      <circle
-        cx={size / 2}
-        cy={size / 2}
-        r={radius}
-        fill="none"
-        stroke="var(--app-border-primary)"
-        strokeWidth={stroke}
-      />
-      <circle
-        cx={size / 2}
-        cy={size / 2}
-        r={radius}
-        fill="none"
-        stroke={color}
-        strokeWidth={stroke}
-        strokeDasharray={circumference}
-        strokeDashoffset={dashoffset}
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
-function StatusChip({ status }: { status: string }) {
-  const normalized = status.toUpperCase();
-  const config =
-    normalized === 'OPEN'
-      ? {
-          border: 'border-amber-500/20',
-          bg: 'bg-amber-500/10',
-          text: 'text-amber-600',
-          label: 'Aberto',
-        }
-      : normalized === 'PENDING'
-        ? {
-            border: 'border-[var(--app-accent-medium)]',
-            bg: 'bg-[var(--app-accent-light)]',
-            text: 'text-[var(--app-accent)]',
-            label: 'Pendente',
-          }
-        : normalized === 'RESOLVED'
-          ? {
-              border: 'border-emerald-500/20',
-              bg: 'bg-emerald-500/10',
-              text: 'text-emerald-600',
-              label: 'Resolvido',
-            }
-          : {
-              border: 'border-[var(--app-border-primary)]',
-              bg: 'bg-[var(--app-bg-secondary)]',
-              text: 'text-[var(--app-text-secondary)]',
-              label: status,
-            };
-
-  return (
-    <span
-      className={`inline-flex h-5 items-center rounded-full border px-2 text-[10px] font-bold ${config.border} ${config.bg} ${config.text}`}
-    >
-      {config.label}
-    </span>
-  );
-}
-
-function EmptyState({ label }: { label: string }) {
-  return (
-    <div className="rounded-md border border-[var(--app-border-primary)] bg-[var(--app-bg-secondary)] px-4 py-5 text-[12px] text-[var(--app-text-secondary)]">
-      {label}
-    </div>
-  );
-}
+import {
+  formatCurrency,
+  formatDelta,
+  formatInteger,
+  formatPercent,
+  formatRelativeTime,
+  METHOD_LABELS,
+  toIsoDateTime,
+} from './_components/admin-formatters';
+import { AdminEmptyState } from './_components/admin-empty-state';
+import { AdminRevenueBars } from './_components/admin-revenue-bars';
+import { AdminRingMeter } from './_components/admin-ring-meter';
+import { AdminSparkline } from './_components/admin-sparkline';
+import { AdminStatusChip } from './_components/admin-status-chip';
 
 /** Admin home page. */
 export default function AdminHomePage() {
@@ -574,7 +344,7 @@ export default function AdminHomePage() {
                   {item.value}
                 </div>
               </div>
-              <Sparkline data={item.series} />
+              <AdminSparkline data={item.series} />
             </div>
             <div className="text-[11px] text-[var(--app-text-secondary)]">{item.detail}</div>
           </AdminSurface>
@@ -587,7 +357,7 @@ export default function AdminHomePage() {
             title="Receita no período"
             description="A barra laranja mostra o período ativo. O apoio mostra a janela anterior."
           />
-          <RevenueBars
+          <AdminRevenueBars
             labels={chartLabels}
             values={revenueSeries}
             comparison={previousRevenueSeries}
@@ -702,7 +472,7 @@ export default function AdminHomePage() {
               ))}
             </div>
           ) : (
-            <EmptyState label="Nenhum produto com receita para exibir." />
+            <AdminEmptyState label="Nenhum produto com receita para exibir." />
           )}
         </AdminSurface>
 
@@ -756,13 +526,13 @@ export default function AdminHomePage() {
                     <div className="mb-1 text-[10px] text-[var(--app-text-tertiary)]">
                       {formatRelativeTime(conversation.lastMessageAt)}
                     </div>
-                    <StatusChip status={conversation.status} />
+                    <AdminStatusChip status={conversation.status} />
                   </div>
                 </button>
               ))}
             </div>
           ) : (
-            <EmptyState label="Nenhuma conversa recente para exibir." />
+            <AdminEmptyState label="Nenhuma conversa recente para exibir." />
           )}
         </AdminSurface>
       </div>
@@ -770,7 +540,7 @@ export default function AdminHomePage() {
       <div className="grid gap-3 lg:grid-cols-3">
         <AdminSurface className="px-5 py-5 lg:px-6">
           <div className="flex items-center gap-4">
-            <RingMeter percent={operationalScorePct} color="var(--app-success)" />
+            <AdminRingMeter percent={operationalScorePct} color="var(--app-success)" />
             <div className="min-w-0 flex-1">
               <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--app-text-tertiary)]">
                 Saúde operacional
@@ -787,7 +557,7 @@ export default function AdminHomePage() {
 
         <AdminSurface className="px-5 py-5 lg:px-6">
           <div className="flex items-center gap-4">
-            <RingMeter percent={checkoutCompletionPct} color="var(--app-accent)" />
+            <AdminRingMeter percent={checkoutCompletionPct} color="var(--app-accent)" />
             <div className="min-w-0 flex-1">
               <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--app-text-tertiary)]">
                 Funil do checkout
@@ -804,7 +574,7 @@ export default function AdminHomePage() {
 
         <AdminSurface className="px-5 py-5 lg:px-6">
           <div className="flex items-center gap-4">
-            <RingMeter
+            <AdminRingMeter
               percent={Math.max(0, 100 - chargebackRatePct * 4)}
               color="var(--app-warning)"
             />
@@ -910,7 +680,7 @@ export default function AdminHomePage() {
               ))}
             </div>
           ) : (
-            <EmptyState label="Nenhum alerta recente para exibir." />
+            <AdminEmptyState label="Nenhum alerta recente para exibir." />
           )}
         </AdminSurface>
       </div>

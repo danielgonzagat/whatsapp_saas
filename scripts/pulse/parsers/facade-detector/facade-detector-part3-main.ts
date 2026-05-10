@@ -391,22 +391,10 @@ export function detectFacades(config: PulseConfig): FacadeEntry[] {
 
           if (relFile.includes('backend') && file.endsWith('.service.ts')) {
             if (isServiceEmptyReturn(trimmed)) {
+              const contextWindow = 25;
               let context10 = lines
                 .slice(
-                  Math.max(
-                    deriveZeroValue(),
-                    i -
-                      (deriveUnitValue() +
-                        deriveUnitValue() +
-                        deriveUnitValue() +
-                        deriveUnitValue() +
-                        deriveUnitValue() +
-                        deriveUnitValue() +
-                        deriveUnitValue() +
-                        deriveUnitValue() +
-                        deriveUnitValue() +
-                        deriveUnitValue()),
-                  ),
+                  Math.max(deriveZeroValue(), i - contextWindow),
                   i,
                 )
                 .join('\n');

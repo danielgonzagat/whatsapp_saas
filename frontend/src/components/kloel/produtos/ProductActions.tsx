@@ -8,7 +8,6 @@ import {
   EMBER,
 } from './ProdutosView.shared';
 import { IC } from './ProdutosView.icons';
-import type React from 'react';
 import type { DisplayProduct } from './ProdutosView.types';
 
 export default function ProductActions({
@@ -16,16 +15,13 @@ export default function ProductActions({
   onCreateProduct,
   isMobile,
 }: {
-  product: DisplayProduct | undefined;
-  onCreateProduct: (() => void) | undefined;
+  product: DisplayProduct | undefined | null;
+  onCreateProduct: (() => void) | undefined | null;
   isMobile: boolean;
 }) {
   const router = useRouter();
 
-  if (!product) {
-    if (!onCreateProduct) {
-      return null;
-    }
+  if (onCreateProduct != null && product == null) {
     return (
       <div style={isMobile ? { width: '100%', maxWidth: 360 } : {}}>
         <button
@@ -54,6 +50,10 @@ export default function ProductActions({
         </button>
       </div>
     );
+  }
+
+  if (product == null) {
+    return null;
   }
 
   return (

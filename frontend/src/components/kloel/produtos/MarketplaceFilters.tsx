@@ -8,7 +8,6 @@ import {
   GREEN,
 } from './ProdutosView.shared';
 import { IC } from './ProdutosView.icons';
-import type React from 'react';
 
 export default function MarketplaceFilters({
   search,

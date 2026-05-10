@@ -4,16 +4,12 @@ import { kloelT } from '@/lib/i18n/t';
 /** Dynamic. */
 export const dynamic = 'force-dynamic';
 
-import {
-  Button,
-  CenterStage,
-  type MissionCardData,
-  Section,
-  StageHeadline,
-} from '@/components/kloel';
-import AutopilotPlanInspector from '@/components/kloel/autopilot/AutopilotPlanInspector';
-import AutopilotDecisionLog from '@/components/kloel/autopilot/AutopilotDecisionLog';
-import AutopilotSafetyBrakes from '@/components/kloel/autopilot/AutopilotSafetyBrakes';
+import { type MissionCardData } from '@/components/kloel';
+import { AutopilotOverview } from './AutopilotOverview';
+import { AutopilotRulesPanel } from './AutopilotRulesPanel';
+import { AutopilotPlanList } from './AutopilotPlanList';
+import { AutopilotHistoryPanel } from './AutopilotHistoryPanel';
+import { AutopilotMissionGrid } from './AutopilotMissionGrid';
 import { useWorkspaceId } from '@/hooks/useWorkspaceId';
 import {
   apiFetch,
@@ -39,25 +35,11 @@ import type { AskInsightsResult, RuntimeConfig } from '@/lib/api';
 import { unwrapArrayEnvelope, unwrapDataEnvelope, unwrapSettled } from './page.helpers';
 import { colors } from '@/lib/design-tokens';
 import {
-  Activity,
-  AlertCircle,
   BarChart3,
-  Bot,
-  Calendar,
-  CheckCircle2,
-  Clock,
-  DollarSign,
-  Layers,
-  Lightbulb,
   MessageSquare,
-  Pause,
-  Play,
   RefreshCw,
-  Settings2,
-  Sparkles,
   TrendingUp,
   Users,
-  XCircle,
   Zap,
 } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';

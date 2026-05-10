@@ -3,12 +3,9 @@ import { colors } from '@/lib/design-tokens';
 import { kloelT } from '@/lib/i18n/t';
 import {
   SORA,
-  BG_CARD,
   BG_ELEVATED,
-  BORDER,
   GREEN,
 } from './ProdutosView.shared';
-import type React from 'react';
 
 export default function AffiliateApplyDialog({
   item,

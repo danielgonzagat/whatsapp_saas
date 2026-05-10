@@ -1,5 +1,4 @@
 'use client';
-import { colors } from '@/lib/design-tokens';
 import { kloelT } from '@/lib/i18n/t';
 import {
   NP,
@@ -13,7 +12,6 @@ import {
   iconBtn,
 } from './ProdutosView.shared';
 import { IC } from './ProdutosView.icons';
-import type React from 'react';
 import type { MarketplaceItem } from './ProdutosView.types';
 
 export default function MarketplaceProductGrid({

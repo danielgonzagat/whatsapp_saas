@@ -26,12 +26,18 @@ import { WhatsAppProviderRegistry } from './providers/provider-registry';
 import { WahaProvider } from './providers/waha.provider';
 import { WhatsAppApiProvider } from './providers/whatsapp-api.provider';
 import { WhatsAppCatchupService } from './whatsapp-catchup.service';
+import { WhatsappCatchupOrchestratorService } from './whatsapp-catchup-orchestrator.service';
+import { WhatsappCatchupHistoryService } from './whatsapp-catchup-history.service';
 import { WhatsAppWatchdogService } from './whatsapp-watchdog.service';
 import { WhatsAppWatchdogRecoveryService } from './whatsapp-watchdog-recovery.service';
 import { WhatsAppWatchdogSessionService } from './whatsapp-watchdog-session.service';
 import { WhatsappController } from './whatsapp.controller';
 import { WhatsappSendRateGuardService } from './whatsapp-send-rate-guard.service';
 import { WhatsappService } from './whatsapp.service';
+import { WhatsappSessionService } from './whatsapp-session.service';
+import { WhatsappMessageDispatcherService } from './whatsapp-message-dispatcher.service';
+import { WhatsappMediaService } from './whatsapp-media.service';
+import { WhatsappReconcilerService } from './whatsapp-reconciler.service';
 import { WorkerRuntimeService } from './worker-runtime.service';
 
 /** Whatsapp module. */
@@ -55,6 +61,10 @@ import { WorkerRuntimeService } from './worker-runtime.service';
   ],
   providers: [
     WhatsappService,
+    WhatsappSessionService,
+    WhatsappMessageDispatcherService,
+    WhatsappMediaService,
+    WhatsappReconcilerService,
     WhatsappSendRateGuardService,
     InboundProcessorService,
     WhatsAppApiProvider,
@@ -64,6 +74,8 @@ import { WorkerRuntimeService } from './worker-runtime.service';
     WhatsAppWatchdogRecoveryService,
     WhatsAppWatchdogSessionService,
     WhatsAppCatchupService,
+    WhatsappCatchupOrchestratorService,
+    WhatsappCatchupHistoryService,
     AgentEventsService,
     CiaChatFilterService,
     CiaRuntimeService,
@@ -78,6 +90,10 @@ import { WorkerRuntimeService } from './worker-runtime.service';
   ],
   exports: [
     WhatsappService,
+    WhatsappSessionService,
+    WhatsappMessageDispatcherService,
+    WhatsappMediaService,
+    WhatsappReconcilerService,
     InboundProcessorService,
     WhatsAppApiProvider,
     WahaProvider,
@@ -86,6 +102,8 @@ import { WorkerRuntimeService } from './worker-runtime.service';
     WhatsAppWatchdogRecoveryService,
     WhatsAppWatchdogSessionService,
     WhatsAppCatchupService,
+    WhatsappCatchupOrchestratorService,
+    WhatsappCatchupHistoryService,
     AgentEventsService,
     CiaChatFilterService,
     CiaRuntimeService,

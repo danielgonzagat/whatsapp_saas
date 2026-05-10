@@ -173,6 +173,13 @@ export function isGuardedEmptyReturnContext(context: string): boolean {
       'empty',
       'invalid',
       'missing',
+      'notfound',
+      'not_found',
+      'noresult',
+      'no_result',
+      'fail',
+      'error',
+      'exception',
     ])
   );
 }

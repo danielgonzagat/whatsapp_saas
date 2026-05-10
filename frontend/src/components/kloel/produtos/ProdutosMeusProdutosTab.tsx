@@ -1,5 +1,4 @@
 'use client';
-import type React from 'react';
 import type { DisplayProduct } from './ProdutosView.types';
 import ProductsListing from './ProductsListing';
 
@@ -26,7 +25,7 @@ export default function MeusProdutos({
       totalRevenue={totalRevenue}
       totalSales={totalSales}
       activeProducts={activeProducts}
-      onCreateProduct={onCreateProduct}
+      {...(onCreateProduct ? { onCreateProduct } : {})}
     />
   );
 }

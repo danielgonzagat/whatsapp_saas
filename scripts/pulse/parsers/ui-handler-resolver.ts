@@ -12,6 +12,7 @@ import {
   hasFunctionOrMemberUse,
   hasApiCall,
   hookFunctionApiCalls,
+  isUsedAsJsxProp,
 } from './ui-handler-resolver-utils';
 
 export { componentHasSaveHandler } from './ui-handler-resolver-utils';
@@ -345,6 +346,10 @@ function resolveNamedFunction(
 
   const isStateUpdater = hasStateUpdaterCall(bodyText);
   if (!isSaveFunction && isStateUpdater && !hasApiCall(bodyText)) {
+    return handlerResolution(HANDLER_TYPE_REAL);
+  }
+
+  if (isUsedAsJsxProp(funcName, fileContent)) {
     return handlerResolution(HANDLER_TYPE_REAL);
   }
 
