@@ -117,6 +117,8 @@ import {
   WhatsAppChannelTransport,
 } from './channel-transport.providers';
 import { ChannelTransportRegistry } from './channel-transport.registry';
+import { ChannelSetupController } from './channel-setup.controller';
+import { ChannelSetupService } from './channel-setup.service';
 import { CommercialDecisionOrchestratorService } from './commercial-decision-orchestrator.service';
 import { MindBeliefService } from './mind-belief.service';
 import { MindBanditService } from './mind-bandit.service';
@@ -192,6 +194,7 @@ import { MindWorkspaceStateService } from './mind-workspace-state.service';
     LeadsController,
     AdRulesController,
     WebinarController,
+    ChannelSetupController,
     BrainRuntimeController,
     MindController,
   ],
@@ -250,6 +253,7 @@ import { MindWorkspaceStateService } from './mind-workspace-state.service';
     AdRulesEngineService,
     EmailCampaignService,
     CartRecoveryService,
+    ChannelSetupService,
     ChannelTransportRegistry,
     CommercialDecisionOrchestratorService,
     EmailChannelTransport,

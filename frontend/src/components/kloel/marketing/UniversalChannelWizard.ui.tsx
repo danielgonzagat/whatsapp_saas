@@ -21,15 +21,18 @@ export function StepDot({ active, done }: { active: boolean; done: boolean }) {
 
 export function SecondaryButton({
   onClick,
+  disabled = false,
   children,
 }: {
   onClick: () => void;
+  disabled?: boolean;
   children: React.ReactNode;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
+      disabled={disabled}
       style={{
         fontFamily: F,
         fontSize: 13,
@@ -38,8 +41,9 @@ export function SecondaryButton({
         border: `1px solid ${B}`,
         background: 'transparent',
         color: KLOEL_THEME.textPrimary,
-        cursor: 'pointer',
+        cursor: disabled ? 'not-allowed' : 'pointer',
         fontWeight: 500,
+        opacity: disabled ? 0.55 : 1,
       }}
     >
       {children}

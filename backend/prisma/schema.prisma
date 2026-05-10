@@ -189,6 +189,12 @@ model Workspace {
   mindDailyReports      MindDailyReport[]
   mindGlobalPriors      MindGlobalPrior[]
 
+  // Channel setup — operational wizard state
+  channelSetups   ChannelSetup[]
+  channelProducts ChannelProduct[]
+  channelArsenal  ChannelArsenal[]
+  channelConfigs  ChannelConfig[]
+
   @@map("RAC_Workspace")
 }
 
@@ -1638,6 +1644,7 @@ model Product {
   checkoutPlans       CheckoutProductPlan[]
   checkoutSocialLeads CheckoutSocialLead[]
   campaigns           ProductCampaign[]
+  channelProducts     ChannelProduct[]
 
   @@unique([workspaceId, sku])
   @@index([workspaceId, active])
@@ -3151,6 +3158,74 @@ model MetaConnection {
   updatedAt             DateTime  @updatedAt
 
   @@map("RAC_MetaConnection")
+}
+
+model ChannelSetup {
+  id                 String    @id @default(uuid())
+  workspaceId        String
+  workspace          Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  channel            String
+  completedAt        DateTime?
+  lastReconfiguredAt DateTime?
+  currentStep        Int       @default(0)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@unique([workspaceId, channel])
+  @@index([workspaceId, channel])
+  @@map("RAC_ChannelSetup")
+}
+
+model ChannelProduct {
+  id          String    @id @default(uuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  channel     String
+  productId   String
+  product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  includedAt  DateTime  @default(now())
+
+  @@unique([workspaceId, channel, productId])
+  @@index([workspaceId, channel])
+  @@index([productId])
+  @@map("RAC_ChannelProduct")
+}
+
+model ChannelArsenal {
+  id          String    @id @default(uuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  channel     String
+  assetId     String
+  type        String
+  label       String?
+  storageRef  String
+  metadata    Json?
+  uploadedAt  DateTime  @default(now())
+
+  @@unique([workspaceId, channel, assetId])
+  @@index([workspaceId, channel])
+  @@map("RAC_ChannelArsenal")
+}
+
+model ChannelConfig {
+  id                String    @id @default(uuid())
+  workspaceId       String
+  workspace         Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  channel           String
+  tone              String    @default("consultivo")
+  aggressiveness    String    @default("normal")
+  businessHours     Json      @default("{}")
+  followupEnabled   Boolean   @default(true)
+  dailyMessageLimit Int       @default(20)
+  transferCriteria  Json      @default("{}")
+  language          String    @default("pt-BR")
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@unique([workspaceId, channel])
+  @@index([workspaceId, channel])
+  @@map("RAC_ChannelConfig")
 }
 
 // ============================================================================

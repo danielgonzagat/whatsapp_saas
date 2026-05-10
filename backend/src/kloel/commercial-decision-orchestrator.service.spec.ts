@@ -15,6 +15,7 @@ describe('CommercialDecisionOrchestratorService', () => {
   };
   const concepts = { detect: jest.fn() };
   const events = { recordCommercial: jest.fn() };
+  const setup = { getState: jest.fn() };
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -53,6 +54,11 @@ describe('CommercialDecisionOrchestratorService', () => {
       fallback: false,
     });
     events.recordCommercial.mockResolvedValue(undefined);
+    setup.getState.mockResolvedValue({
+      arsenal: [{ id: 'asset-1' }],
+      config: { tone: 'direto' },
+      selectedProductIds: ['product-1'],
+    });
   });
 
   it('builds predecided actions after detecting concepts and consulting case memory', async () => {
@@ -61,6 +67,7 @@ describe('CommercialDecisionOrchestratorService', () => {
       mind as never,
       concepts as never,
       events as never,
+      setup as never,
     );
 
     const decision = await service.orchestrateInbound({
@@ -108,6 +115,7 @@ describe('CommercialDecisionOrchestratorService', () => {
       mind as never,
       concepts as never,
       events as never,
+      setup as never,
     );
 
     await service.orchestrateInbound({

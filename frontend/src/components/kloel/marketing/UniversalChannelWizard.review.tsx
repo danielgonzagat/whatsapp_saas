@@ -1,6 +1,8 @@
 import { kloelT } from '@/lib/i18n/t';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 import { UI } from '@/lib/ui-tokens';
+import type { ChannelSetupArsenal, ChannelSetupConfig } from '@/lib/api/channel-setup';
+import type React from 'react';
 import {
   type UniversalChannel,
   channelIcon,
@@ -12,93 +14,73 @@ import { PrimaryButton, SecondaryButton } from './UniversalChannelWizard.ui';
 type Profile = ReturnType<typeof channelWizardProfile>;
 
 export function ArsenalStep({
-  profile,
+  arsenal,
+  assetDraft,
+  saving,
+  onAssetDraftChange,
+  onAddAsset,
+  onRemoveAsset,
   onPrev,
   onNext,
 }: {
-  profile: Profile;
+  arsenal: ChannelSetupArsenal[];
+  assetDraft: { type: string; label: string; storageRef: string };
+  saving: boolean;
+  onAssetDraftChange: (draft: { type: string; label: string; storageRef: string }) => void;
+  onAddAsset: () => void;
+  onRemoveAsset: (assetId: string) => void;
   onPrev: () => void;
   onNext: () => void;
 }) {
   return (
     <div className="fade-in" key="step-2">
       <p style={{ fontSize: 13, color: S, lineHeight: 1.7, marginBottom: 20 }}>
-        {kloelT(`Conheca o arsenal de formatos, ferramentas e limites do canal ${profile.label}.`)}
+        {kloelT('Carregue materiais aprovados para este canal usar nas respostas automaticas.')}
       </p>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
-        {profile.formatNotes.map((note) => (
-          <div
-            key={note.title}
-            style={{
-              background: C,
-              borderRadius: UI.radiusSm,
-              border: `1px solid ${B}`,
-              padding: '14px 16px',
-            }}
-          >
-            <div
-              style={{
-                fontFamily: M,
-                fontSize: 10,
-                color: E,
-                letterSpacing: '0.15em',
-                textTransform: 'uppercase',
-                marginBottom: 8,
-              }}
-            >
-              {kloelT(note.title)}
-            </div>
-            <div
-              style={{
-                fontFamily: F,
-                fontSize: 12,
-                color: KLOEL_THEME.textPrimary,
-                lineHeight: 1.6,
-              }}
-            >
-              {kloelT(note.body)}
-            </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
+        <input
+          aria-label={kloelT('Nome do material')}
+          onChange={(event) => onAssetDraftChange({ ...assetDraft, label: event.target.value })}
+          placeholder={kloelT('Nome do material')}
+          style={inputStyle}
+          value={assetDraft.label}
+        />
+        <select
+          aria-label={kloelT('Tipo')}
+          onChange={(event) => onAssetDraftChange({ ...assetDraft, type: event.target.value })}
+          style={inputStyle}
+          value={assetDraft.type}
+        >
+          {['text', 'audio', 'image', 'video', 'document', 'template'].map((type) => (
+            <option key={type} value={type}>
+              {type}
+            </option>
+          ))}
+        </select>
+        <textarea
+          aria-label={kloelT('Referencia do arquivo ou template')}
+          onChange={(event) =>
+            onAssetDraftChange({ ...assetDraft, storageRef: event.target.value })
+          }
+          placeholder={kloelT('URL, template aprovado ou referencia do storage')}
+          style={{ ...inputStyle, minHeight: 86, resize: 'vertical' }}
+          value={assetDraft.storageRef}
+        />
+        <SecondaryButton onClick={onAddAsset} disabled={saving || !assetDraft.storageRef.trim()}>
+          {saving ? kloelT('Salvando...') : kloelT('Adicionar material')}
+        </SecondaryButton>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 24 }}>
+        {arsenal.map((asset) => (
+          <div key={asset.assetId} style={rowStyle}>
+            <span style={{ color: KLOEL_THEME.textPrimary, fontFamily: F, fontSize: 12 }}>
+              {asset.label || asset.storageRef}
+            </span>
+            <SecondaryButton onClick={() => onRemoveAsset(asset.assetId)}>
+              {kloelT('Remover')}
+            </SecondaryButton>
           </div>
         ))}
-      </div>
-      <div
-        style={{
-          background: `color-mix(in srgb, ${KLOEL_THEME.error} 6%, transparent)`,
-          borderRadius: UI.radiusSm,
-          border: `1px solid color-mix(in srgb, ${KLOEL_THEME.error} 18%, transparent)`,
-          padding: '16px 18px',
-          marginBottom: 24,
-        }}
-      >
-        <div
-          style={{
-            fontFamily: M,
-            fontSize: 9,
-            color: KLOEL_THEME.error,
-            letterSpacing: '0.2em',
-            textTransform: 'uppercase',
-            marginBottom: 12,
-          }}
-        >
-          {kloelT('Restricoes importantes')}
-        </div>
-        <ul
-          style={{ margin: 0, paddingLeft: 18, display: 'flex', flexDirection: 'column', gap: 8 }}
-        >
-          {profile.restrictions.map((restriction) => (
-            <li
-              key={restriction}
-              style={{
-                fontFamily: F,
-                fontSize: 12,
-                color: KLOEL_THEME.textPrimary,
-                lineHeight: 1.6,
-              }}
-            >
-              {kloelT(restriction)}
-            </li>
-          ))}
-        </ul>
       </div>
       <div
         style={{ display: 'flex', gap: 12, justifyContent: 'space-between', alignItems: 'center' }}
@@ -115,20 +97,28 @@ export function ArsenalStep({
 
 export function ConfigStep({
   channel,
+  config,
   profile,
   method,
   connected,
   connecting,
   canConnect,
+  saving,
+  onConfigChange,
+  onComplete,
   onPrev,
   onConnect,
 }: {
   channel: UniversalChannel;
+  config: ChannelSetupConfig;
   profile: Profile;
   method: string;
   connected: boolean;
   connecting: boolean;
   canConnect: boolean;
+  saving: boolean;
+  onConfigChange: (config: ChannelSetupConfig) => void;
+  onComplete: () => void;
   onPrev: () => void;
   onConnect: () => void;
 }) {
@@ -188,6 +178,30 @@ export function ConfigStep({
         </p>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 24 }}>
+        <input
+          aria-label={kloelT('Tom')}
+          onChange={(event) => onConfigChange({ ...config, tone: event.target.value })}
+          placeholder={kloelT('Tom default')}
+          style={inputStyle}
+          value={config.tone}
+        />
+        <input
+          aria-label={kloelT('Agressividade')}
+          onChange={(event) => onConfigChange({ ...config, aggressiveness: event.target.value })}
+          placeholder={kloelT('Agressividade default')}
+          style={inputStyle}
+          value={config.aggressiveness}
+        />
+        <input
+          aria-label={kloelT('Limite diario')}
+          min={1}
+          onChange={(event) =>
+            onConfigChange({ ...config, dailyMessageLimit: Number(event.target.value) })
+          }
+          style={inputStyle}
+          type="number"
+          value={config.dailyMessageLimit}
+        />
         {rows.map((row) => (
           <div
             key={row.label}
@@ -238,8 +252,32 @@ export function ConfigStep({
                 ? kloelT('Conectado')
                 : profile.connectionLabel}
           </PrimaryButton>
+          <PrimaryButton onClick={onComplete} disabled={saving}>
+            {saving ? kloelT('Salvando...') : kloelT('Concluir')}
+          </PrimaryButton>
         </div>
       </div>
     </div>
   );
 }
+
+const inputStyle: React.CSSProperties = {
+  background: C,
+  border: `1px solid ${B}`,
+  borderRadius: UI.radiusSm,
+  color: KLOEL_THEME.textPrimary,
+  fontFamily: F,
+  fontSize: 13,
+  padding: '11px 12px',
+};
+
+const rowStyle: React.CSSProperties = {
+  alignItems: 'center',
+  background: C,
+  border: `1px solid ${B}`,
+  borderRadius: UI.radiusSm,
+  display: 'flex',
+  gap: 12,
+  justifyContent: 'space-between',
+  padding: '10px 12px',
+};

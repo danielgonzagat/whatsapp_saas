@@ -1,6 +1,7 @@
 import { kloelT } from '@/lib/i18n/t';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 import { UI } from '@/lib/ui-tokens';
+import type { ChannelSetupProduct } from '@/lib/api/channel-setup';
 import type { channelWizardProfile } from './UniversalChannelWizard.helpers';
 import { B, C, E, F, M, S } from './UniversalChannelWizard.styles';
 import { PrimaryButton, SecondaryButton } from './UniversalChannelWizard.ui';
@@ -66,56 +67,55 @@ export function ConnectionStep({
 }
 
 export function ProductsStep({
-  profile,
+  products,
+  saving,
+  selectedProductIds,
+  onToggleProduct,
+  onSelectAll,
+  onSave,
   onPrev,
-  onNext,
 }: {
-  profile: Profile;
+  products: ChannelSetupProduct[];
+  saving: boolean;
+  selectedProductIds: string[];
+  onToggleProduct: (productId: string) => void;
+  onSelectAll: () => void;
+  onSave: () => void;
   onPrev: () => void;
-  onNext: () => void;
 }) {
   return (
     <div className="fade-in" key="step-1">
       <p style={{ fontSize: 13, color: S, lineHeight: 1.7, marginBottom: 20 }}>
-        {kloelT(`Veja os produtos e servicos que voce libera ao ativar o canal ${profile.label}.`)}
+        {kloelT('Escolha os produtos que este canal pode oferecer automaticamente.')}
       </p>
-      <div
-        className="wiz-profile-grid"
-        style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 10, marginBottom: 24 }}
-      >
-        {profile.profileCards.map((card) => (
-          <div
-            key={card.label}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
+        {products.length === 0 ? <EmptyState label="Nenhum produto cadastrado" /> : null}
+        {products.map((product) => (
+          <label
+            key={product.id}
             style={{
+              alignItems: 'center',
               background: C,
-              borderRadius: UI.radiusSm,
               border: `1px solid ${B}`,
-              padding: '14px 16px',
+              borderRadius: UI.radiusSm,
+              cursor: 'pointer',
+              display: 'flex',
+              gap: 12,
+              padding: '12px 14px',
             }}
           >
-            <div
-              style={{
-                fontFamily: M,
-                fontSize: 9,
-                color: E,
-                letterSpacing: '0.2em',
-                textTransform: 'uppercase',
-                marginBottom: 8,
-              }}
-            >
-              {kloelT(card.label)}
-            </div>
-            <div
-              style={{
-                fontFamily: F,
-                fontSize: 12,
-                color: KLOEL_THEME.textPrimary,
-                lineHeight: 1.6,
-              }}
-            >
-              {kloelT(card.value)}
-            </div>
-          </div>
+            <input
+              checked={selectedProductIds.includes(product.id)}
+              onChange={() => onToggleProduct(product.id)}
+              type="checkbox"
+            />
+            <span style={{ color: KLOEL_THEME.textPrimary, flex: 1, fontFamily: F, fontSize: 13 }}>
+              {product.name}
+            </span>
+            <span style={{ color: S, fontFamily: M, fontSize: 11 }}>
+              {product.active === false ? kloelT('Inativo') : kloelT(product.status || 'Ativo')}
+            </span>
+          </label>
         ))}
       </div>
       <div
@@ -124,9 +124,32 @@ export function ProductsStep({
         <span style={{ fontSize: 11, color: S, fontFamily: M }}>{kloelT('Passo 2 de 4')}</span>
         <div style={{ display: 'flex', gap: 8 }}>
           <SecondaryButton onClick={onPrev}>{kloelT('Voltar')}</SecondaryButton>
-          <SecondaryButton onClick={onNext}>{kloelT('Proximo')}</SecondaryButton>
+          <SecondaryButton onClick={onSelectAll} disabled={products.length === 0}>
+            {kloelT('Selecionar todos')}
+          </SecondaryButton>
+          <SecondaryButton onClick={onSave} disabled={saving}>
+            {saving ? kloelT('Salvando...') : kloelT('Salvar e avancar')}
+          </SecondaryButton>
         </div>
       </div>
+    </div>
+  );
+}
+
+function EmptyState({ label }: { label: string }) {
+  return (
+    <div
+      style={{
+        background: C,
+        border: `1px solid ${B}`,
+        borderRadius: UI.radiusSm,
+        color: S,
+        fontFamily: F,
+        fontSize: 12,
+        padding: '14px 16px',
+      }}
+    >
+      {kloelT(label)}
     </div>
   );
 }

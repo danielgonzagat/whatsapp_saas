@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { createHash } from 'node:crypto';
 import { BrainEventSpineService } from './brain-event-spine.service';
+import { ChannelSetupService } from './channel-setup.service';
 import { MindConceptService } from './mind-concepts.service';
 import { MindService } from './mind.service';
 import type { PredecidedAction } from './unified-agent.types';
@@ -55,11 +56,20 @@ function buildReplyDraft(input: {
   concept: string;
   couponAction?: string;
   productOffer?: string;
+  setup?: { arsenalCount: number; productCount: number; tone?: string | null };
   tone: string;
 }): string {
   const parts = [
-    `Responder com tom ${input.tone.toLowerCase()} e intensidade ${input.aggressiveness.toLowerCase()}.`,
+    `Responder com tom ${(input.setup?.tone || input.tone).toLowerCase()} e intensidade ${input.aggressiveness.toLowerCase()}.`,
   ];
+  if (input.setup?.productCount) {
+    parts.push(
+      `Usar apenas os ${input.setup.productCount} produto(s) habilitados para este canal.`,
+    );
+  }
+  if (input.setup?.arsenalCount) {
+    parts.push(`Priorizar o arsenal aprovado do canal quando o formato permitir.`);
+  }
   if (input.concept === 'price_objection' && input.couponAction) {
     parts.push(`Tratar a objeção de preço com política ${input.couponAction}.`);
   }
@@ -91,6 +101,7 @@ export class CommercialDecisionOrchestratorService {
     private readonly mind: MindService,
     private readonly concepts: MindConceptService,
     private readonly events: BrainEventSpineService,
+    private readonly setup: ChannelSetupService,
   ) {}
 
   async orchestrateInbound(input: InboundOrchestrationInput): Promise<InboundDecision> {
@@ -115,6 +126,7 @@ export class CommercialDecisionOrchestratorService {
       features: { channel, concept },
       limit: 5,
     });
+    const channelSetup = await this.setup.getState(input.workspaceId, channel).catch(() => null);
     const occurredAt = new Date();
     await this.events.recordCommercial({
       workspaceId: input.workspaceId,
@@ -203,6 +215,13 @@ export class CommercialDecisionOrchestratorService {
             concept,
             couponAction,
             productOffer,
+            setup: channelSetup
+              ? {
+                  arsenalCount: channelSetup.arsenal.length,
+                  productCount: channelSetup.selectedProductIds.length,
+                  tone: channelSetup.config?.tone,
+                }
+              : undefined,
             tone: tone.tone,
           }),
         },
@@ -215,14 +234,38 @@ export class CommercialDecisionOrchestratorService {
       eventType: 'predecided_actions.built',
       occurredAt,
       idempotencyKey: `predecided:${inboundKey}`,
-      payload: { actions: actions.map((action) => action.tool), channel, concept, decisions },
+      payload: {
+        actions: actions.map((action) => action.tool),
+        channel,
+        concept,
+        decisions,
+        setup: channelSetup
+          ? {
+              arsenalCount: channelSetup.arsenal.length,
+              selectedProductIds: channelSetup.selectedProductIds,
+              tone: channelSetup.config?.tone ?? null,
+            }
+          : null,
+      },
     });
 
     this.logger.log(`Deterministic inbound actions built for ${input.workspaceId}:${channel}`);
     return {
       actions,
       concepts: conceptRows.map((row) => row.concept),
-      trace: { channel, concept, decisions, similarCases: similarCases.length },
+      trace: {
+        channel,
+        concept,
+        decisions,
+        setup: channelSetup
+          ? {
+              arsenalCount: channelSetup.arsenal.length,
+              selectedProductIds: channelSetup.selectedProductIds,
+              tone: channelSetup.config?.tone ?? null,
+            }
+          : null,
+        similarCases: similarCases.length,
+      },
     };
   }
 }
