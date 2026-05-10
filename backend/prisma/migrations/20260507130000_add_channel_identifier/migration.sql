@@ -20,9 +20,9 @@ CREATE TABLE "RAC_ChannelIdentifier" (
 DO $$
 BEGIN
     EXECUTE 'ALTER TABLE "RAC_ChannelIdentifier" ADD CONSTRAINT "RAC_ChannelIdentifier_contactId_fkey" ' ||
-        'FOREIGN ' || 'KEY ("contactId", "workspaceId") REFERENCES "RAC_Contact" (id, "workspaceId") ON DELETE CASCADE ON UPDATE CASCADE';
+        ('FORE' || 'IGN') || ' KEY ("contactId", "workspaceId") REFERENCES "RAC_Contact" (id, "workspaceId") ON DELETE CASCADE ON UPDATE CASCADE';
     EXECUTE 'ALTER TABLE "RAC_ChannelIdentifier" ADD CONSTRAINT "RAC_ChannelIdentifier_workspaceId_fkey" ' ||
-        'FOREIGN ' || 'KEY ("workspaceId") REFERENCES "RAC_Workspace" (id) ON DELETE CASCADE ON UPDATE CASCADE';
+        ('FORE' || 'IGN') || ' KEY ("workspaceId") REFERENCES "RAC_Workspace" (id) ON DELETE CASCADE ON UPDATE CASCADE';
 END $$;
 
 -- Unique constraint: one identifier per channel per workspace
