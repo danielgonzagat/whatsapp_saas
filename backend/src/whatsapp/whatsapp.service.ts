@@ -15,6 +15,8 @@ import {
 } from './agent-conversation-state.util';
 import * as chatHelpers from './whatsapp.service.chats';
 import type { ChatHelperDeps } from './whatsapp.service.chats';
+import { WhatsappChatBacklogService } from './whatsapp.service.chats.backlog';
+import { WhatsappChatMessagesService } from './whatsapp.service.chats.messages';
 import { CiaRuntimeService } from './cia-runtime.service';
 import { WhatsAppProviderRegistry } from './providers/provider-registry';
 import { WhatsAppCatchupService } from './whatsapp-catchup.service';
@@ -55,6 +57,8 @@ export class WhatsappService {
     private readonly sessionService: WhatsappSessionService,
     private readonly messageDispatcher: WhatsappMessageDispatcherService,
     private readonly reconciler: WhatsappReconcilerService,
+    private readonly chatMessagesService: WhatsappChatMessagesService,
+    private readonly chatBacklogService: WhatsappChatBacklogService,
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
@@ -123,13 +127,13 @@ export class WhatsappService {
     cid: string,
     o?: { limit?: number; offset?: number; downloadMedia?: boolean },
   ) {
-    return chatHelpers.getChatMessages(this.getChatHelperDeps(), ws, cid, o);
+    return this.chatMessagesService.getChatMessages(this.getChatHelperDeps(), ws, cid, o);
   }
   async getBacklog(ws: string) {
-    return chatHelpers.getBacklog(this.getChatHelperDeps(), ws);
+    return this.chatBacklogService.getBacklog(this.getChatHelperDeps(), ws, chatHelpers.listChats);
   }
   async getOperationalBacklogReport(ws: string, o?: { limit?: number; includeResolved?: boolean }) {
-    return chatHelpers.getOperationalBacklogReport(this.getChatHelperDeps(), ws, o);
+    return this.chatBacklogService.getOperationalBacklogReport(this.getChatHelperDeps(), ws, o);
   }
 
   // ═══ NORMALIZE (thin wrappers) ═══

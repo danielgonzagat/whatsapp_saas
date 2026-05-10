@@ -40,6 +40,8 @@ import { WhatsappMessageDispatcherService } from './whatsapp-message-dispatcher.
 import { WhatsappMediaService } from './whatsapp-media.service';
 import { WhatsappReconcilerService } from './whatsapp-reconciler.service';
 import { WorkerRuntimeService } from './worker-runtime.service';
+import { WhatsappChatBacklogService } from './whatsapp.service.chats.backlog';
+import { WhatsappChatMessagesService } from './whatsapp.service.chats.messages';
 import {
   WHATSAPP_MESSAGING,
   INBOUND_PROCESSOR,
@@ -94,6 +96,8 @@ import {
     CiaSendHelpersService,
     AccountAgentService,
     WorkerRuntimeService,
+    WhatsappChatMessagesService,
+    WhatsappChatBacklogService,
     { provide: WHATSAPP_MESSAGING, useExisting: WhatsappService },
     { provide: INBOUND_PROCESSOR, useExisting: InboundProcessorService },
     { provide: CIA_RUNTIME, useExisting: CiaRuntimeService },

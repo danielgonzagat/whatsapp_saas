@@ -48,39 +48,6 @@ export class UnifiedAgentController {
     };
   }
 
-  /** Simulate message. */
-  @Post(':workspaceId/simulate')
-  @ApiOperation({
-    summary: 'Simula processamento sem executar ações',
-    description: 'Útil para testes e debugging',
-  })
-  async simulateMessage(
-    @Param('workspaceId') workspaceId: string,
-    @Body()
-    body: {
-      contactId?: string;
-      phone: string;
-      message: string;
-      context?: Record<string, unknown>;
-    },
-  ) {
-    // Por enquanto, usa o mesmo método
-    // Em produção, poderia ter um flag para não executar ações
-    const result = await this.agent.processMessage({
-      workspaceId,
-      contactId: body.contactId || '',
-      phone: body.phone,
-      message: body.message,
-      context: { ...body.context, simulate: true },
-    });
-
-    return {
-      success: true,
-      simulated: true,
-      ...result,
-    };
-  }
-
   /** List tools. */
   @Get(':workspaceId/tools')
   @ApiOperation({ summary: 'Lista todas as ferramentas disponíveis do agente' })

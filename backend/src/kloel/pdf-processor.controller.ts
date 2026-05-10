@@ -1,6 +1,5 @@
 import {
   BadRequestException,
-  Body,
   Controller,
   FileTypeValidator,
   HttpException,
@@ -320,65 +319,4 @@ export class PdfProcessorController {
     }
   }
 
-  /** Process text. */
-  @Post(':workspaceId/text')
-  @ApiOperation({ summary: 'Processa texto direto' })
-  @ApiParam({ name: 'workspaceId', description: 'ID do workspace' })
-  async processText(
-    @Param('workspaceId') workspaceId: string,
-    @Body() body: { text: string; sourceName: string },
-  ) {
-    if (!body.text || !body.sourceName) {
-      throw new BadRequestException('Texto e sourceName são obrigatórios');
-    }
-
-    const requestId = `${workspaceId}:${body.sourceName}:${body.text.length}`;
-    const estimatedCostCents = this.estimatePdfAnalysisQuote(body.text, body.sourceName);
-    const usageCharged = await this.chargePdfAnalysisIfNeeded({
-      workspaceId,
-      requestId,
-      sourceName: body.sourceName,
-      textLength: body.text.length,
-      estimatedCostCents,
-    });
-
-    try {
-      const result = await this.pdfProcessor.processTextWithUsage(
-        workspaceId,
-        body.text,
-        body.sourceName,
-      );
-      if (estimatedCostCents !== undefined && usageCharged) {
-        await this.settlePdfAnalysisIfNeeded({
-          workspaceId,
-          requestId,
-          sourceName: body.sourceName,
-          usage: result.usage,
-        });
-      }
-
-      return {
-        status: 'processed',
-        sourceName: body.sourceName,
-        textLength: body.text.length,
-        analysis: {
-          products: countAnalysisItems(result.analysis.products),
-          hasCompanyInfo: !!result.analysis.companyInfo,
-          objections: countAnalysisItems(result.analysis.objections),
-        },
-        details: result.analysis,
-      };
-    } catch (error: unknown) {
-      void this.opsAlert?.alertOnCriticalError(error, 'PdfProcessorController.countAnalysisItems');
-      if (usageCharged) {
-        await this.refundPdfAnalysisIfNeeded(
-          workspaceId,
-          requestId,
-          'pdf_analysis_provider_exception',
-          body.sourceName,
-        );
-      }
-      throw error;
-    }
-  }
 }

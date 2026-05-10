@@ -67,7 +67,7 @@ import { getRedisUrl, isRedisConfigured } from './common/redis/redis.util';
 import { StorageModule } from './common/storage/storage.module';
 import { CookieConsentModule } from './cookie-consent/cookie-consent.module';
 import { ComplianceModule } from './compliance/compliance.module';
-import { CopilotModule } from './copilot/copilot.module';
+
 import { FollowUpModule } from './followup/followup.module';
 import { GdprModule } from './gdpr/gdpr.module';
 import { GrowthModule } from './growth/growth.module';
@@ -207,7 +207,7 @@ const isProd = process.env.NODE_ENV === 'production';
     MarketplaceModule,
     AuditModule,
     AutopilotModule,
-    CopilotModule,
+
     AiBrainModule,
     GrowthModule,
     CalendarModule, // 📅 Integração com calendários

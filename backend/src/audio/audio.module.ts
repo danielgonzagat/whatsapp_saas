@@ -1,10 +1,8 @@
 import { Module } from '@nestjs/common';
-import { AudioController } from './audio.controller';
 import { TranscriptionService } from './transcription.service';
 
 /** Audio module. */
 @Module({
-  controllers: [AudioController],
   providers: [TranscriptionService],
   exports: [TranscriptionService],
 })

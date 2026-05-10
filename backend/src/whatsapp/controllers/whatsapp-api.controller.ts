@@ -145,15 +145,7 @@ export class WhatsAppApiController {
       body?.limit,
     );
   }
-  /** Resume conversation autonomy. */
-  @Post('cia/conversations/:conversationId/resume')
-  async resumeConversationAutonomy(
-    @Req() req: AuthenticatedRequest,
-    @Param('conversationId') conversationId: string,
-  ) {
-    return this.ciaRuntime.resumeConversationAutonomy(req.workspaceId!, conversationId);
-  }
-  /** Get operational intelligence. */
+  /** Start backlog. */
   @Get('cia/intelligence')
   async getOperationalIntelligence(@Req() req: AuthenticatedRequest) {
     return this.ciaRuntime.getOperationalIntelligence(req.workspaceId!);
@@ -353,16 +345,6 @@ export class WhatsAppApiController {
     return this.providerRegistry.logout(workspaceId);
   }
   // messageLimit: enforced via PlanLimitsService.trackMessageSend
-  @Post('send/:phone')
-  async sendMessage(@Req() req: AuthenticatedRequest, @Param('phone') phone: string) {
-    const workspaceId = req.workspaceId!;
-    const { message, mediaUrl, caption, mediaType } = req.body || {};
-    await this.providerRegistry.getProviderType(workspaceId);
-    if (mediaUrl) {
-      return this.whatsappApi.sendMediaFromUrl(workspaceId, phone, mediaUrl, caption, mediaType);
-    }
-    return this.whatsappApi.sendMessage(workspaceId, phone, message);
-  }
   /** Check registration. */
   @Get('check/:phone')
   async checkRegistration(@Req() req: AuthenticatedRequest, @Param('phone') phone: string) {

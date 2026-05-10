@@ -104,11 +104,31 @@ export function buildApiModuleMap(
 }
 
 // Pass 2: Scan all frontend files for API calls
+function collectScanDirs(config: PulseConfig): string[] {
+  const dirs: string[] = [];
+
+  for (const dir of getFrontendSourceDirs(config)) {
+    if (pathExists(dir)) dirs.push(dir);
+  }
+
+  if (config.workerDir && pathExists(config.workerDir)) {
+    dirs.push(config.workerDir);
+  }
+
+  const e2eDir = path.resolve(config.rootDir, 'e2e');
+  if (pathExists(e2eDir)) {
+    dirs.push(e2eDir);
+  }
+
+  return dirs;
+}
+
 export function parseAPICalls(config: PulseConfig): APICall[] {
   const calls: APICall[] = [];
   const seen = new Set<string>(); // dedup: file:line:endpoint
-  const files = getFrontendSourceDirs(config).flatMap((frontendDir) =>
-    walkFiles(frontendDir, [...discoverSourceExtensionsFromObservedTypescript()]),
+  const scanDirs = collectScanDirs(config);
+  const files = scanDirs.flatMap((dir) =>
+    walkFiles(dir, [...discoverSourceExtensionsFromObservedTypescript()]),
   );
   const wrapperPrefixes = buildFetchWrapperPrefixMap(files);
   const apiModuleMap = buildApiModuleMap(config);

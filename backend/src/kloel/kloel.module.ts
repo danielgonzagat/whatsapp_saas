@@ -27,7 +27,6 @@ import { KloelToolDispatcherService } from './kloel-tool-dispatcher.service';
 import { KloelToolExecutorService } from './kloel-tool-executor.service';
 import { KloelWhatsAppToolsService } from './kloel-whatsapp-tools.service';
 import { KloelWorkspaceContextService } from './kloel-workspace-context.service';
-import { OnboardingController } from './onboarding.controller';
 import { OnboardingProfileController } from './onboarding-profile.controller';
 import { OnboardingService } from './onboarding.service';
 import { PaymentController } from './payment.controller';
@@ -133,7 +132,6 @@ import { WebinarController } from './webinar.controller';
     GuestChatController,
     WhatsAppBrainController,
     PaymentController,
-    OnboardingController,
     OnboardingProfileController,
     MemoryController,
     PdfProcessorController,

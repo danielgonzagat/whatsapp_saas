@@ -303,20 +303,6 @@ export class AutopilotController {
     return this.autopilotService.getRevenueEvents(effective, clampedRevenueLimit);
   }
 
-  /** Process. */
-  @Post('process')
-  async process(
-    @Req() req: AuthenticatedRequest,
-    @Body() body: { workspaceId?: string; forceLocal?: boolean },
-  ) {
-    const workspaceId = resolveWorkspaceId(req, body.workspaceId);
-    if (!body.forceLocal) {
-      return this.autopilotService.runAutopilotCycle(workspaceId);
-    }
-    const result = await this.autopilotService.runAutopilotCycle(workspaceId);
-    return { workspaceId, ...result, mode: 'local' };
-  }
-
   /** Next best. */
   @Get('next-best-action')
   @Roles('ADMIN', 'AGENT')
