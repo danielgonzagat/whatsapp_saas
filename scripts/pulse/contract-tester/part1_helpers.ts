@@ -7,14 +7,12 @@ import * as path from 'path';
 import * as ts from 'typescript';
 import type { ContractProvider, ProviderContract } from '../types.contract-tester';
 import {
-  deriveUnitValue,
   deriveZeroValue,
   discoverRouteSeparatorFromRuntime,
 } from '../dynamic-reality-kernel/catalog-arithmetic';
 import { safeJoin } from '../lib/safe-path';
 import { pathExists } from '../safe-fs';
 import {
-  AUTH_TYPE_LABELS,
   CONTRACT_EVIDENCE_FILENAME,
   HTTP_METHOD_PATTERN,
   isAuthType,

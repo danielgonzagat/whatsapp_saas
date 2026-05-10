@@ -659,20 +659,5 @@ export function AgentConsole({
 // HOOK FOR USING AGENT CONSOLE
 // ============================================
 
-export function useAgentConsole() {
-  const [isOpen, setIsOpen] = useState(false);
-
-  return {
-    isOpen,
-    open: () => setIsOpen(true),
-    close: () => setIsOpen(false),
-    toggle: () => setIsOpen((prev) => !prev),
-    consoleProps: {
-      isOpen,
-      onClose: () => setIsOpen(false),
-      onToggle: () => setIsOpen((prev) => !prev),
-    },
-  };
-}
-
+export { useAgentConsole } from './AgentConsole.hook';
 export default AgentConsole;

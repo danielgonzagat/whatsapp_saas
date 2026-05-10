@@ -12,7 +12,6 @@ import type { APIEndpointProbe, APIFuzzEvidence, FuzzTestCaseStatus } from '../t
 import {
   STATUS,
   IDEM,
-  PLANNED,
   PASSED,
   PASSED_STATUSES,
   UNEXECUTED_STATUSES,

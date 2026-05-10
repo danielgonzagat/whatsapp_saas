@@ -1,3 +1,4 @@
+import { canvasPalette } from '@/lib/canvas-palette-tokens';
 import { kloelT } from '@/lib/i18n/t';
 /* ═══════════════════════════════════════════
    KLOEL CANVAS — SVG Icon Factory
@@ -21,9 +22,9 @@ export function ColorIcon({ s = 16 }: { s?: number }) {
       <circle cx="12" cy="12" r="5" fill={`url(#${gid}-rg)`} />
       <defs>
         <radialGradient id={`${gid}-rg`}>
-          <stop stopColor={kloelT(`#FF6B6B`)} />
-          <stop offset="0.5" stopColor={kloelT(`#4ECDC4`)} />
-          <stop offset="1" stopColor={kloelT(`#45B7D1`)} />
+          <stop stopColor={canvasPalette.gradientWarm} />
+          <stop offset="0.5" stopColor={canvasPalette.gradientTeal} />
+          <stop offset="1" stopColor={canvasPalette.gradientBlue} />
         </radialGradient>
       </defs>
     </svg>

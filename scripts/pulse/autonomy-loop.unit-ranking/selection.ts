@@ -52,10 +52,13 @@ export function getStalledUnitIds(previousState?: PulseAutonomyState | null): Se
         record.directiveDigestAfter !== null &&
         record.directiveDigestBefore !== record.directiveDigestAfter) ||
       (typeof record.directiveBefore?.score === 'number' &&
-        typeof record.directiveAfter?.score === 'number' &&
+        record.directiveAfter !== null &&
+        typeof record.directiveAfter.score === 'number' &&
         record.directiveAfter.score > record.directiveBefore.score) ||
-      (record.directiveBefore?.blockingTier !== null &&
-        record.directiveAfter?.blockingTier !== null &&
+      (record.directiveBefore !== null &&
+        record.directiveAfter !== null &&
+        record.directiveBefore.blockingTier !== null &&
+        record.directiveAfter.blockingTier !== null &&
         record.directiveAfter.blockingTier < record.directiveBefore.blockingTier);
 
     if (!didImprove) {

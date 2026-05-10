@@ -10,7 +10,6 @@ import { safeJoin } from '../../safe-path';
 import {
   deriveHttpStatusFromObservedCatalog,
   deriveUnitValue,
-  deriveZeroValue,
   observeStatusTextLengthFromCatalog,
 } from '../../dynamic-reality-kernel/catalog-arithmetic';
 import { discoverExternalAdapterStatusLabels } from '../../__kernel_additions__/discoverExternalAdapterStatusLabels';

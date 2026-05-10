@@ -13,10 +13,8 @@ import {
   deriveRouteFamily,
   deriveStructuralFamilies,
   deriveTextFamily,
-  familiesOverlap,
-  titleCaseStructural,
 } from '../structural-family';
-import { getNodeRoutePatterns, shouldTraverseNeighbor, chooseDominantLabel } from './graph-helpers';
+import { getNodeRoutePatterns } from './graph-helpers';
 
 export function unique<T>(values: T[]): T[] {
   return [...new Set(values)];

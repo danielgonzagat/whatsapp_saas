@@ -27,8 +27,6 @@ import {
 import {
   collectUrlObservations,
   dedupeContracts,
-  findBackendDir,
-  findMigrationsDir,
   inferAuthTypeFromObservation,
   inferOpenApiAuthType,
   isOpenApiSpecFile,
@@ -38,7 +36,6 @@ import {
   providerFromUrl,
   uniqueStrings,
 } from './part1_helpers';
-import type { UrlObservation } from './part1_helpers';
 
 // ── Private helpers for discovery ───────────────────────────────────────────
 

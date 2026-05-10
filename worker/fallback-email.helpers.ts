@@ -2,6 +2,9 @@ import { WorkerLogger } from './logger';
 
 const log = new WorkerLogger('fallback-email');
 
+const EMAIL_DIVIDER = '#E5E7EB';
+const EMAIL_FOOTER_TEXT = '#6E6E73';
+
 export function buildFallbackEmailHtml(
   contactName: string | null,
   message: string,
@@ -11,8 +14,8 @@ export function buildFallbackEmailHtml(
     <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
       <h2>Olá${contactName ? ` ${contactName}` : ''}!</h2>
       <p style="white-space: pre-wrap;">${message}</p>
-      <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
-      <p style="color: #666; font-size: 12px;">
+      <hr style="border: none; border-top: 1px solid ${EMAIL_DIVIDER}; margin: 20px 0;">
+      <p style="color: ${EMAIL_FOOTER_TEXT}; font-size: 12px;">
         Enviado automaticamente por ${workspaceName || 'KLOEL'}
       </p>
     </div>

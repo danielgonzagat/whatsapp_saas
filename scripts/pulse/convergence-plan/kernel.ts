@@ -4,28 +4,18 @@ import type { PulseExternalSignalState } from '../types.capabilities/05-external
 import type { PulseParityGapsArtifact } from '../types.capabilities.parity';
 import type { PulseFlowProjection } from '../types.capabilities/04-flow-projection';
 import type { PulseCertification, PulseWorldState } from '../types.evidence';
-import type { PulseConvergenceOwnerLane, PulseGateFailureClass } from '../types.gate-failure';
 import type {
-  PulseConvergencePlan,
-  PulseConvergenceUnit,
   PulseConvergenceUnitPriority,
-  PulseConvergenceUnitStatus,
-  PulseEvidenceRecord,
 } from '../types.convergence';
 import type { PulseExecutionMatrix } from '../types.execution-matrix';
 import type { PulseResolvedManifest } from '../types.resolved-manifest';
 import type { PulseScenarioResult } from '../types.scenario-result';
-import type { PulseScopeFile, PulseScopeState } from '../types.truth.scope';
+import type { PulseScopeState } from '../types.truth.scope';
+import type { PulseGateResult, PulseGatesArtifact } from '../types.gate-result';
 import {
   discoverAllObservedArtifactFilenames,
   discoverAllObservedGateNames,
-  discoverGateLaneFromObservedStructure,
-  derivePriorityFromObservedContext,
-  discoverSourceLabelFromObservedContext,
-  deriveUnitIdFromObservedKind,
-  deriveProductImpactFromObservedScope,
 } from '../dynamic-reality-kernel/token-evidence';
-import { deriveUnitValue } from '../dynamic-reality-kernel/catalog-arithmetic';
 import { discoverConvergenceUnitKindLabels } from '../__kernel_additions__/discoverConvergenceUnitKindLabels';
 import { discoverConvergenceUnitStatusLabels } from '../__kernel_additions__/discoverConvergenceUnitStatusLabels';
 import { discoverConvergenceUnitPriorityLabels } from '../__kernel_additions__/discoverConvergenceUnitPriorityLabels';

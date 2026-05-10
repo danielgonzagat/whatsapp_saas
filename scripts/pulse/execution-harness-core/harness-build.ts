@@ -1,5 +1,5 @@
 import * as path from 'path';
-import type { BehaviorGraph, BehaviorNode } from '../types.behavior-graph';
+import type { BehaviorNode } from '../types.behavior-graph';
 import type {
   HarnessEvidence,
   HarnessExecutionResult,
@@ -9,7 +9,7 @@ import { detectConfig } from '../config';
 import { safeJoin } from '../safe-path';
 import { ensureDir, writeTextFile } from '../safe-fs';
 import { deriveZeroValue } from '../dynamic-reality-kernel/catalog-arithmetic';
-import { ALL_ARTIFACTS, harnessArtifactPath, UNEXECUTED_STATUSES } from './grammar';
+import { harnessArtifactPath, UNEXECUTED_STATUSES } from './grammar';
 import {
   ALL_EXECUTION_STATUS_LABELS,
   BLOCKED_HARNESS_STATUS,
@@ -94,7 +94,7 @@ export function buildExecutionHarness(rootDir: string): HarnessEvidence {
   }
 
   // ── 6. Build fixture data structures (blueprint, no real DB connection) ──
-  const fixtureData = buildFixtureDataStructures(allTargets);
+  buildFixtureDataStructures(allTargets);
 
   // ── 7. Merge with existing results ──
   const existingResults = loadHarnessResults(rootDir);

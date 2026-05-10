@@ -52,7 +52,7 @@ export function PlanActivationSuccessModal({
           <div className="relative flex h-24 w-24 items-center justify-center">
             {/* Outer ring */}
             <svg className="absolute h-full w-full" viewBox="0 0 100 100" aria-hidden="true">
-              <circle cx="50" cy="50" r="45" fill="none" stroke="#E5E7EB" strokeWidth="6" />
+              <circle cx="50" cy="50" r="45" fill="none" stroke={colors.text.faint} strokeWidth="6" />
               <circle
                 cx="50"
                 cy="50"

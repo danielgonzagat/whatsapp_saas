@@ -34,6 +34,10 @@ export const canvasPalette = {
   gray: '#9CA3AF',
 
   redDark: '#8B0000',
+
+  gradientWarm: '#FF6B6B',
+  gradientTeal: '#4ECDC4',
+  gradientBlue: '#45B7D1',
 } as const;
 
 export default canvasPalette;

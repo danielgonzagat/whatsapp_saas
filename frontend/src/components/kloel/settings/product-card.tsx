@@ -1,6 +1,7 @@
 'use client';
 
 import { kloelT } from '@/lib/i18n/t';
+import { colors } from '@/lib/design-tokens';
 import { Button } from '@/components/ui/button';
 import { formatCurrency } from './brain-settings-section.helpers';
 import { Sparkles, Trash2 } from 'lucide-react';
@@ -64,7 +65,7 @@ export function ProductCard({ product, onDelete }: ProductCardProps) {
               </div>
             ))}
           </div>
-          <div className="mt-4 rounded-xl border border-dashed border-[colors.text.silver]/50 bg-[#FCFBF9] px-4 py-3 text-sm text-gray-600">
+          <div className="mt-4 rounded-xl border border-dashed px-4 py-3 text-sm text-gray-600" style={{ borderColor: `${colors.text.silver}33`, background: `${colors.text.silver}08` }}>
             {product.activePlansCount > 0 ? 'Este produto ja possui checkout operando dentro do Kloel.' : 'Os checkouts deste produto sao criados e operados internamente pelo Kloel na tela de editar produto.'}
           </div>
           <div className="mt-4 flex flex-wrap gap-2">

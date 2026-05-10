@@ -15,12 +15,8 @@ import {
   providerFromUrl,
   readPropertyName,
   readStaticStringExpression,
-  readDecoratorCall,
 } from './part1_helpers';
-import { normalizeHttpMethod } from './part1_helpers';
 import {
-  HTTP_METHOD_PATTERN,
-  NESTJS_DECORATOR_NAMES,
   resolveAuthLabel,
   resolveStatusLabel,
 } from './part0_constants';

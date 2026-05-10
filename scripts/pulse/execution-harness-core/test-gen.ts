@@ -1,5 +1,4 @@
 import type {
-  ExecutionFeasibility,
   HarnessGeneratedTest,
   HarnessTarget,
 } from '../types.execution-harness';

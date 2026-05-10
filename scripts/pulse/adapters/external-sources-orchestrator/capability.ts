@@ -4,7 +4,6 @@
  */
 
 import type { PulseCertificationProfile } from '../../types.health';
-import { deriveZeroValue } from '../../dynamic-reality-kernel/catalog-arithmetic';
 import {
   commandAvailable,
   repoPathExists,

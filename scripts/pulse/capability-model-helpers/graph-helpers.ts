@@ -1,4 +1,4 @@
-import type { PulseStructuralNode, PulseStructuralRole } from '../types.structural';
+import type { PulseStructuralNode } from '../types.structural';
 import {
   deriveRouteFamily,
   deriveTextFamily,

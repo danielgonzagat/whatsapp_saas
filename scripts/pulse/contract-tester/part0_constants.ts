@@ -3,24 +3,15 @@
  * Foundation layer — no dependencies on other parts.
  */
 
-import { builtinModules } from 'node:module';
-import * as ts from 'typescript';
 import type {
-  ContractProvider,
   ContractStatus,
   ProviderContract,
   SchemaDiffSeverity,
 } from '../types.contract-tester';
 import { deriveStringUnionMembersFromTypeContract } from '../dynamic-reality-kernel/type-contract-labels';
-import {
-  deriveUnitValue,
-  deriveZeroValue,
-  discoverRouteSeparatorFromRuntime,
-} from '../dynamic-reality-kernel/catalog-arithmetic';
+import { deriveUnitValue } from '../dynamic-reality-kernel/catalog-arithmetic';
 import {
   discoverAllObservedArtifactFilenames,
-  discoverDirectorySkipHintsFromEvidence,
-  discoverSourceExtensionsFromObservedTypescript,
 } from '../dynamic-reality-kernel/token-evidence';
 import { discoverNestjsDecoratorNamesFromTypeEvidence } from '../dynamic-reality-kernel/evidence-domain';
 import { discoverStructuralNodeKindLabels } from '../dynamic-reality-kernel/type-contract-engines';

@@ -8,8 +8,6 @@ import type {
 import {
   deriveZeroValue,
   deriveUnitValue,
-  discoverPropertyPassedStatusFromTypeEvidence,
-  discoverPropertyUnexecutedStatusFromExecutionEvidence,
   discoverRouteSeparatorFromRuntime,
 } from '../dynamic-reality-kernel/catalog-arithmetic';
 import {

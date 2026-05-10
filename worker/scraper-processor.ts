@@ -20,6 +20,8 @@ import { checkIdempotent, endJob, logError, markCompleted, startJob } from './pr
 
 const log = new WorkerLogger('scraper-worker');
 
+const STAGE_DEFAULT_COLOR = '#3B82F6';
+
 interface ScrapedLeadNormalized {
   phone: string;
   name: string;
@@ -79,7 +81,7 @@ async function ensureFirstStage(pipelineId: string) {
     return existing;
   }
   return prisma.stage.create({
-    data: { name: 'Lead', order: 1, color: '#3b82f6', pipelineId },
+    data: { name: 'Lead', order: 1, color: STAGE_DEFAULT_COLOR, pipelineId },
   });
 }
 

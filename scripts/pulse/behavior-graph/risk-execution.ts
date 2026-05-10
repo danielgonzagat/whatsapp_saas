@@ -315,20 +315,22 @@ function buildNodesFromParsedFunctions(
       func.bodyText,
     );
 
+    const sourceRootMeta = sourceRoot
+      ? {
+          relativePath: sourceRoot.relativePath,
+          kind: sourceRoot.kind,
+          languages: sourceRoot.languages,
+          frameworks: sourceRoot.frameworks,
+          entrypoints: sourceRoot.entrypoints,
+        }
+      : undefined;
+
     return {
       id: nextNodeId(),
       kind,
       name: func.name,
       filePath: relPath,
-      sourceRoot: sourceRoot
-        ? {
-            relativePath: sourceRoot.relativePath,
-            kind: sourceRoot.kind,
-            languages: sourceRoot.languages,
-            frameworks: sourceRoot.frameworks,
-            entrypoints: sourceRoot.entrypoints,
-          }
-        : undefined,
+      ...(sourceRootMeta ? { sourceRoot: sourceRootMeta } : {}),
       line: func.line,
       parentFunctionId: null,
       inputs,
