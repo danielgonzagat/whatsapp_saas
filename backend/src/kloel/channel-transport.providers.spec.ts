@@ -1,4 +1,5 @@
 import { EmailChannelTransport, TikTokChannelTransport } from './channel-transport.providers';
+import { renderEmailLine } from './email-html';
 import type { ChannelName, ChannelTransportProvider } from './channel-transport.types';
 import { encryptString, generateEncryptionKey } from '../lib/crypto';
 
@@ -125,7 +126,7 @@ describe('EmailChannelTransport', () => {
     expect(mockCampaign.sendSingleEmail).toHaveBeenCalledWith(
       'user@example.com',
       'Assunto da mensagem',
-      '<p>Corpo do email.</p>',
+      renderEmailLine('Corpo do email.'),
       undefined,
     );
   });
@@ -147,7 +148,7 @@ describe('EmailChannelTransport', () => {
     expect(mockCampaign.sendSingleEmail).toHaveBeenCalledWith(
       'user@example.com',
       'Assunto da mensagem',
-      '<p>Corpo do email.</p>',
+      renderEmailLine('Corpo do email.'),
       undefined,
     );
   });
@@ -190,7 +191,7 @@ describe('EmailChannelTransport', () => {
     expect(mockCampaign.sendSingleEmail).toHaveBeenCalledWith(
       'lead@example.com',
       'Assunto',
-      '<p>Corpo.</p>',
+      renderEmailLine('Corpo.'),
       expect.objectContaining({
         provider: 'resend',
         fromEmail: 'vendas@example.com',

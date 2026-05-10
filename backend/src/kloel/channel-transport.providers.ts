@@ -218,14 +218,21 @@ export class TikTokChannelTransport implements ChannelTransportProvider {
   }
 }
 
+function hasConfiguredEnv(name: string): boolean {
+  return Boolean(process.env[name]?.trim());
+}
+
+function hasEnvSmtpProvider(): boolean {
+  return (
+    (hasConfiguredEnv('EMAIL_OUTBOUND_SMTP_HOST') || hasConfiguredEnv('SMTP_HOST')) &&
+    (hasConfiguredEnv('EMAIL_OUTBOUND_SMTP_USER') || hasConfiguredEnv('SMTP_USER'))
+  );
+}
+
 function hasEmailProvider(): 'resend' | 'sendgrid' | 'smtp' | null {
-  if (process.env.RESEND_API_KEY?.trim()) return 'resend';
-  if (process.env.SENDGRID_API_KEY?.trim()) return 'sendgrid';
-  if (
-    (process.env.EMAIL_OUTBOUND_SMTP_HOST?.trim() || process.env.SMTP_HOST?.trim()) &&
-    (process.env.EMAIL_OUTBOUND_SMTP_USER?.trim() || process.env.SMTP_USER?.trim())
-  )
-    return 'smtp';
+  if (hasConfiguredEnv('RESEND_API_KEY')) return 'resend';
+  if (hasConfiguredEnv('SENDGRID_API_KEY')) return 'sendgrid';
+  if (hasEnvSmtpProvider()) return 'smtp';
   return null;
 }
 

@@ -21,9 +21,16 @@ function readNumber(value: unknown): number | undefined {
   return undefined;
 }
 
+function isSupportedEmailProvider(
+  value: string | undefined,
+): value is NonNullable<EmailDeliveryOverride['provider']> {
+  return value === 'resend' || value === 'sendgrid' || value === 'smtp';
+}
+
 function decryptWorkspaceSecret(value: unknown): string | undefined {
   const encrypted = readString(value);
-  if (!encrypted || !isEncrypted(encrypted)) return undefined;
+  if (!encrypted) return undefined;
+  if (!isEncrypted(encrypted)) return undefined;
   const key = readString(process.env.ENCRYPTION_KEY);
   if (!key) return undefined;
   try {
@@ -31,6 +38,34 @@ function decryptWorkspaceSecret(value: unknown): string | undefined {
   } catch {
     return undefined;
   }
+}
+
+function readWorkspaceApiKeys(
+  provider: NonNullable<EmailDeliveryOverride['provider']>,
+  raw: Record<string, unknown>,
+): Pick<EmailDeliveryOverride, 'resendApiKey' | 'sendgridApiKey'> {
+  const apiKey = decryptWorkspaceSecret(raw.apiKeyEncrypted);
+  return {
+    resendApiKey: provider === 'resend' ? apiKey : undefined,
+    sendgridApiKey: provider === 'sendgrid' ? apiKey : undefined,
+  };
+}
+
+function readWorkspaceSmtp(
+  provider: NonNullable<EmailDeliveryOverride['provider']>,
+  raw: Record<string, unknown>,
+): Pick<EmailDeliveryOverride, 'smtp'> {
+  const smtp = asRecord(raw.smtp);
+  if (provider !== 'smtp' || !smtp) return {};
+  return {
+    smtp: {
+      host: readString(smtp.host) ?? '',
+      port: readNumber(smtp.port),
+      secure: smtp.secure === true,
+      user: readString(smtp.user),
+      pass: decryptWorkspaceSecret(smtp.passwordEncrypted),
+    },
+  };
 }
 
 export function readWorkspaceEmailDelivery(
@@ -41,29 +76,16 @@ export function readWorkspaceEmailDelivery(
   if (!raw) return null;
 
   const provider = readString(raw.provider);
-  if (provider !== 'resend' && provider !== 'sendgrid' && provider !== 'smtp') {
+  if (!isSupportedEmailProvider(provider)) {
     return null;
   }
 
-  const smtp = asRecord(raw.smtp);
   return {
     provider,
     fromEmail: readString(raw.fromEmail),
     fromName: readString(raw.fromName),
-    resendApiKey: provider === 'resend' ? decryptWorkspaceSecret(raw.apiKeyEncrypted) : undefined,
-    sendgridApiKey:
-      provider === 'sendgrid' ? decryptWorkspaceSecret(raw.apiKeyEncrypted) : undefined,
-    ...(provider === 'smtp' && smtp
-      ? {
-          smtp: {
-            host: readString(smtp.host) ?? '',
-            port: readNumber(smtp.port),
-            secure: smtp.secure === true,
-            user: readString(smtp.user),
-            pass: decryptWorkspaceSecret(smtp.passwordEncrypted),
-          },
-        }
-      : {}),
+    ...readWorkspaceApiKeys(provider, raw),
+    ...readWorkspaceSmtp(provider, raw),
   };
 }
 

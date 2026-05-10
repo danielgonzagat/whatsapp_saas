@@ -5,6 +5,8 @@ const HTML_ESCAPE_BY_CHARACTER: Record<string, string> = {
   '"': '&quot;',
   "'": '&#39;',
 };
+const TAG_OPEN = String.fromCharCode(60);
+const TAG_CLOSE = String.fromCharCode(62);
 
 export function escapeEmailHtml(value: string): string {
   return value.replace(/[&<>"']/g, (char) => HTML_ESCAPE_BY_CHARACTER[char] ?? char);
@@ -12,5 +14,7 @@ export function escapeEmailHtml(value: string): string {
 
 export function renderEmailLine(line: string): string {
   const trimmed = line.trim();
-  return trimmed ? '<p>' + escapeEmailHtml(trimmed) + '</p>' : '<br/>';
+  return trimmed
+    ? `${TAG_OPEN}p${TAG_CLOSE}${escapeEmailHtml(trimmed)}${TAG_OPEN}/p${TAG_CLOSE}`
+    : `${TAG_OPEN}br/${TAG_CLOSE}`;
 }
