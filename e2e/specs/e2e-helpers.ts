@@ -406,9 +406,7 @@ export async function ensureE2EAdmin(request: APIRequestContext): Promise<E2EAut
     const withLock = async (fn: () => Promise<E2EAuthContext>): Promise<E2EAuthContext> => {
       const maxWaitMs = 15000;
       const startedAt = Date.now();
-      // Try to acquire lock; if busy, wait for another worker to populate cache.
-      // eslint-disable-next-line no-constant-condition
-      while (true) {
+      for (;;) {
         try {
           const fd = fs.openSync(lockFile, 'wx');
           try {

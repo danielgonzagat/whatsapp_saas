@@ -3665,13 +3665,17 @@ enum AdminChatRole {
 model AdminChatSession {
   id          String             @id @default(cuid())
   adminUserId String             @map("admin_user_id")
+  workspaceId String             @map("workspace_id")
   title       String?
   createdAt   DateTime           @default(now()) @map("created_at")
+  updatedAt   DateTime           @updatedAt @map("updated_at")
   lastUsedAt  DateTime           @default(now()) @map("last_used_at")
   expiresAt   DateTime           @map("expires_at")
+  deletedAt   DateTime?          @map("deleted_at")
   messages    AdminChatMessage[]
 
   @@index([adminUserId, lastUsedAt])
+  @@index([workspaceId, deletedAt])
   @@map("admin_chat_sessions")
 }
 
@@ -3891,25 +3895,6 @@ model FraudBlacklist {
 // PlanLimitsService.ensureDailyMessageQuota() reads the plan-based limit
 // from the subscription and compares against the running count.
 //
-// ============================================================================
-// ProductCategory
-// ============================================================================
-// Workspace-scoped product categories for the product catalog.
-// ============================================================================
-model ProductCategory {
-  id          String   @id @default(uuid())
-  workspaceId String
-  name        String
-  sort        Int      @default(0)
-  active      Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@unique([workspaceId, name])
-  @@index([workspaceId])
-  @@map("RAC_ProductCategory")
-}
-
 // Invariants:
 //   * (workspaceId, date) is unique — one row per workspace per day.
 //   * The count is monotonically increasing; it is NEVER decremented.

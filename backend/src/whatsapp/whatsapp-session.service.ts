@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   Optional,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
@@ -16,6 +17,7 @@ const PATTERN_RE = /-/g;
 
 @Injectable()
 export class WhatsappSessionService {
+  private readonly logger = new Logger(WhatsappSessionService.name);
 
   constructor(
     private readonly providerRegistry: WhatsAppProviderRegistry,
@@ -48,6 +50,7 @@ export class WhatsappSessionService {
 
   async createSession(ws: string) {
     const result = await this.providerRegistry.startSession(ws);
+    this.logger.log(`Session start attempted for ws=${ws}: success=${result.success}`);
     if (!result.success)
       return { error: true, message: result.message || 'failed_to_start_session' };
     const qr = await this.providerRegistry.getQrCode(ws);
@@ -62,7 +65,10 @@ export class WhatsappSessionService {
   async recreateSessionIfInvalid(ws: string) {
     await this.providerRegistry.getProviderType(ws);
     const d = await this.providerRegistry.getSessionDiagnostics(ws);
-    await this.providerRegistry.getSessionStatus(ws).catch(() => null);
+    await this.providerRegistry.getSessionStatus(ws).catch((e: unknown) => {
+      this.logger.warn(`Session status check failed for ws=${ws}: ${e instanceof Error ? e.message : 'unknown'}`);
+      return null;
+    });
     const invalid =
       !d?.available ||
       d?.configMismatch ||
@@ -70,7 +76,11 @@ export class WhatsappSessionService {
       d?.inboundEventsConfigured !== true ||
       d?.storeEnabled !== true;
     if (!invalid) return { recreated: false, reason: 'session_config_healthy', diagnostics: d };
-    await this.providerRegistry.deleteSession(ws).catch(() => undefined);
+    this.logger.warn(`Session invalid for ws=${ws}, recreating`);
+    await this.providerRegistry.deleteSession(ws).catch((e: unknown) => {
+      this.logger.warn(`Session delete failed for ws=${ws}: ${e instanceof Error ? e.message : 'unknown'}`);
+      return undefined;
+    });
     const start = await this.providerRegistry.startSession(ws);
     return { recreated: start.success === true, reason: start.message, diagnostics: d };
   }
@@ -152,11 +162,13 @@ export class WhatsappSessionService {
           `${pt.replace(PATTERN_RE, '_')}_session_${String(d.session.status || 'unknown').toLowerCase()}`,
         );
     } catch (e: unknown) {
+      const errMsg = e instanceof Error ? e.message : 'unknown_error';
+      this.logger.error(`Session status check failed for ws=${ws}: ${errMsg}`);
       issues.push(`${pt.replace(PATTERN_RE, '_')}_session_status_unavailable`);
       d.session = {
         connected: false,
         status: 'UNKNOWN',
-        error: e instanceof Error ? e.message : 'unknown_error',
+        error: errMsg,
       };
       void this.opsAlert?.alertOnCriticalError(e, 'WhatsappSessionService.runDiagnostics.session', {
         workspaceId: ws,

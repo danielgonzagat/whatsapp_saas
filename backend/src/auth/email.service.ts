@@ -65,7 +65,15 @@ export class EmailService {
   private readonly fromEmail = process.env.EMAIL_FROM || 'noreply@kloel.com';
 
   constructor(@Optional() private readonly opsAlert?: OpsAlertService) {
-    this.logger.log(`EmailService initialized with provider: ${this.getProvider()}`);
+    const provider = this.getProvider();
+    this.logger.log(`EmailService initialized with provider: ${provider}`);
+
+    if (process.env.NODE_ENV === 'production' && provider === 'log') {
+      throw new Error(
+        'EmailService cannot start in production: no email provider configured. ' +
+          'Set one of: RESEND_API_KEY, SENDGRID_API_KEY, or SMTP_HOST (+ SMTP_PORT, SMTP_USER, SMTP_PASS).',
+      );
+    }
   }
 
   private getProvider(): 'resend' | 'sendgrid' | 'smtp' | 'log' {

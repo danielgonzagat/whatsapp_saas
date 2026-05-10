@@ -4,22 +4,44 @@ import { EmailService } from './email.service';
 describe('EmailService', () => {
   let service: EmailService;
 
-  beforeEach(async () => {
-    // Reset environment variables
-    delete process.env.RESEND_API_KEY;
-    delete process.env.SENDGRID_API_KEY;
-    delete process.env.SMTP_HOST;
+  const OLD_ENV = process.env;
 
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [EmailService],
-    }).compile();
+  beforeEach(() => {
+    jest.resetModules();
+    process.env = { ...OLD_ENV, NODE_ENV: undefined };
+  });
 
-    service = module.get<EmailService>(EmailService);
+  afterAll(() => {
+    process.env = OLD_ENV;
   });
 
   describe('initialization', () => {
-    it('should initialize with log provider by default', () => {
+    it('should initialize with log provider by default when NODE_ENV is not production', async () => {
+      delete process.env.RESEND_API_KEY;
+      delete process.env.SENDGRID_API_KEY;
+      delete process.env.SMTP_HOST;
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [EmailService],
+      }).compile();
+
+      service = module.get<EmailService>(EmailService);
       expect(service).toBeDefined();
+    });
+
+    it('should throw when NODE_ENV is production and no email provider is configured', async () => {
+      process.env.NODE_ENV = 'production';
+      delete process.env.RESEND_API_KEY;
+      delete process.env.SENDGRID_API_KEY;
+      delete process.env.SMTP_HOST;
+
+      await expect(
+        Test.createTestingModule({
+          providers: [EmailService],
+        }).compile(),
+      ).rejects.toThrow(
+        'EmailService cannot start in production',
+      );
     });
   });
 

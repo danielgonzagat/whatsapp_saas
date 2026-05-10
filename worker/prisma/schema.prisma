@@ -3394,13 +3394,17 @@ enum AdminChatRole {
 model AdminChatSession {
   id          String             @id @default(cuid())
   adminUserId String             @map("admin_user_id")
+  workspaceId String             @map("workspace_id")
   title       String?
   createdAt   DateTime           @default(now()) @map("created_at")
+  updatedAt   DateTime           @updatedAt @map("updated_at")
   lastUsedAt  DateTime           @default(now()) @map("last_used_at")
   expiresAt   DateTime           @map("expires_at")
+  deletedAt   DateTime?          @map("deleted_at")
   messages    AdminChatMessage[]
 
   @@index([adminUserId, lastUsedAt])
+  @@index([workspaceId, deletedAt])
   @@map("admin_chat_sessions")
 }
 

@@ -151,6 +151,7 @@ export class SystemHealthService {
       this.probeMetaCloud(),
       this.probeOpenAI(),
       this.probeAnthropic(),
+      this.probeEmail(),
     ];
 
     const settled = await Promise.allSettled(probes);
@@ -458,6 +459,33 @@ export class SystemHealthService {
     }
   }
 
+  private async probeEmail(): Promise<{
+    dependency: string;
+    status: 'UP' | 'DOWN';
+    error?: string;
+    latencyMs: number;
+  }> {
+    const startedAt = Date.now();
+    const isProduction = process.env.NODE_ENV === 'production';
+
+    const hasResend = Boolean(process.env.RESEND_API_KEY?.trim());
+    const hasSendGrid = Boolean(process.env.SENDGRID_API_KEY?.trim());
+    const hasSmtp = Boolean(process.env.SMTP_HOST?.trim());
+    const configured = hasResend || hasSendGrid || hasSmtp;
+
+    if (!configured && isProduction) {
+      return {
+        dependency: 'email',
+        status: 'DOWN',
+        error:
+          'No email provider configured: RESEND_API_KEY, SENDGRID_API_KEY, or SMTP_HOST missing',
+        latencyMs: Date.now() - startedAt,
+      };
+    }
+
+    return { dependency: 'email', status: 'UP', latencyMs: Date.now() - startedAt };
+  }
+
   private async checkDatabase() {
     try {
       await this.prisma.$queryRaw<{ '?column?': 1 }[]>`SELECT 1`;
@@ -657,7 +685,16 @@ export class SystemHealthService {
   }
 
   private checkEmail() {
-    return { status: 'CONFIGURED' };
+    const hasResend = Boolean(process.env.RESEND_API_KEY?.trim());
+    const hasSendGrid = Boolean(process.env.SENDGRID_API_KEY?.trim());
+    const hasSmtp = Boolean(process.env.SMTP_HOST?.trim());
+    const configured = hasResend || hasSendGrid || hasSmtp;
+
+    if (configured) {
+      const provider = hasResend ? 'resend' : hasSendGrid ? 'sendgrid' : 'smtp';
+      return { status: 'CONFIGURED', provider };
+    }
+    return { status: 'NOT_CONFIGURED', missing: ['RESEND_API_KEY', 'SENDGRID_API_KEY', 'SMTP_HOST'] };
   }
 
   private checkGoogleAuth() {

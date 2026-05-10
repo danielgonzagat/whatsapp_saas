@@ -1,4 +1,4 @@
-import { Injectable, Optional } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { forEachSequential } from '../common/async-sequence';
 import { OpsAlertService } from '../observability/ops-alert.service';
@@ -41,6 +41,7 @@ export type CatchupBackfillCursor = {
 
 @Injectable()
 export class WhatsappCatchupHistoryService {
+  private readonly logger = new Logger(WhatsappCatchupHistoryService.name);
   private readonly selfPhoneCacheTtlMs = Math.max(30_000, Number.parseInt(process.env.WAHA_SELF_IDENTITY_TTL_MS || '60000', 10) || 60_000);
   private readonly lidMapCacheTtlMs = Math.max(60_000, Number.parseInt(process.env.WAHA_LID_MAP_CACHE_TTL_MS || '300000', 10) || 300_000);
   private readonly selfPhoneCache = new Map<string, { expiresAt: number; phone: string | null }>();
@@ -96,7 +97,10 @@ export class WhatsappCatchupHistoryService {
     const sp = this.normalizePhone(safeStr(wS?.phoneNumber || aS?.phoneNumber));
     if (sp) { this.selfPhoneCache.set(ws, { expiresAt: Date.now() + this.selfPhoneCacheTtlMs, phone: sp }); return sp; }
     if (process.env.NODE_ENV === 'test') { this.selfPhoneCache.set(ws, { expiresAt: Date.now() + this.selfPhoneCacheTtlMs, phone: null }); return null; }
-    const r = await this.providerRegistry.getSessionStatus(ws).catch(() => null);
+    const r = await this.providerRegistry.getSessionStatus(ws).catch((e: unknown) => {
+      this.logger.warn(`Session status fetch failed for ws=${ws}: ${e instanceof Error ? e.message : 'unknown'}`);
+      return null;
+    });
     const rp = this.normalizePhone(String(r?.phoneNumber || '')) || null;
     this.selfPhoneCache.set(ws, { expiresAt: Date.now() + this.selfPhoneCacheTtlMs, phone: rp });
     return rp;
@@ -173,9 +177,11 @@ export class WhatsappCatchupHistoryService {
       return true;
     } catch (e: unknown) {
       if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
+        this.logger.warn(`Duplicate outbound message for ws=${ws} phone=${phone}`);
         void this.opsAlert?.alertOnDegradation(e.message, 'WhatsAppCatchupService.persistHistoricalOutboundMessage.duplicate', { workspaceId: ws });
         return false;
       }
+      this.logger.error(`persistHistoricalOutboundMessage failed for ws=${ws} phone=${phone}: ${e instanceof Error ? e.message : 'unknown'}`);
       void this.opsAlert?.alertOnCriticalError(e, 'WhatsAppCatchupService.persistHistoricalOutboundMessage', { workspaceId: ws });
       throw e;
     }
@@ -200,7 +206,10 @@ export class WhatsappCatchupHistoryService {
       create: { workspaceId: ws, phone, name: cn, customFields: JSON.parse(JSON.stringify({ remotePushName: rpn || undefined, remotePushNameUpdatedAt: rpn ? new Date().toISOString() : undefined, lastRemoteChatId: cid, lastResolvedChatId: rcid || cid })) as Prisma.InputJsonObject },
       select: { id: true },
     });
-    const saved = cn ? await this.providerRegistry.upsertContactProfile(ws, { phone, name: cn }).catch(() => false) : false;
+    const saved = cn ? await this.providerRegistry.upsertContactProfile(ws, { phone, name: cn }).catch((e: unknown) => {
+      this.logger.warn(`upsertContactProfile failed for ws=${ws} phone=${phone}: ${e instanceof Error ? e.message : 'unknown'}`);
+      return false;
+    }) : false;
     if (saved) await this.prisma.contact.updateMany({
       where: { id: contact.id, workspaceId: ws },
       data: { customFields: JSON.parse(JSON.stringify({ ...this.normalizeJsonObject((await this.prisma.contact.findFirst({ where: { id: contact.id, workspaceId: ws }, select: { customFields: true } }))?.customFields), whatsappSavedAt: new Date().toISOString(), lastRemoteChatId: cid, lastResolvedChatId: rcid || cid, remotePushName: rpn || undefined })) as Prisma.InputJsonObject },
