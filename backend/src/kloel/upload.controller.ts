@@ -1,22 +1,18 @@
 import {
   BadRequestException,
   Controller,
-  FileTypeValidator,
   HttpException,
   HttpStatus,
   Logger,
-  MaxFileSizeValidator,
-  ParseFilePipe,
   Post,
   Req,
-  UploadedFile,
   UploadedFiles,
   UseGuards,
   UseInterceptors,
   Optional,
 } from '@nestjs/common';
-import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
-import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { FilesInterceptor } from '@nestjs/platform-express';
+import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { forEachSequential } from '../common/async-sequence';
@@ -50,7 +46,6 @@ import {
 } from './upload-helpers';
 
 const JPG_JPEG_PNG_GIF_WEBP_RE = /\.(jpg|jpeg|png|gif|webp|pdf|txt|doc|docx|xls|xlsx)$/i;
-const IMAGE___JPEG_PNG_GIF_W_RE = /^(image\/(jpeg|png|gif|webp)|application\/pdf|text\/plain)$/;
 const DOC_DOCX_RE = /\.(doc|docx)$/i;
 
 interface UploadedFileType {
@@ -226,90 +221,6 @@ export class UploadController {
         }`,
       );
     }
-  }
-
-  /**
-   * Endpoint generico de upload de arquivos
-   * Suporta: PDF, TXT, imagens, documentos
-   */
-  // PULSE_TODO: verify if still needed, no caller detected
-  @Post()
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard, WorkspaceGuard)
-  @ApiOperation({ summary: 'Upload de arquivo para ensinar a IA' })
-  @ApiConsumes('multipart/form-data')
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        file: {
-          type: 'string',
-          format: 'binary',
-          description: 'Arquivo para upload (PDF, TXT, imagem)',
-        },
-      },
-    },
-  })
-  @UseInterceptors(
-    FileInterceptor('file', {
-      limits: { fileSize: 10 * 1024 * 1024 },
-      fileFilter: (_req, file, cb) => {
-        const allowed = JPG_JPEG_PNG_GIF_WEBP_RE;
-        cb(null, allowed.test(file.originalname));
-      },
-    }),
-  )
-  async uploadFile(
-    @UploadedFile(
-      new ParseFilePipe({
-        validators: [
-          new MaxFileSizeValidator({ maxSize: 10 * 1024 * 1024 }), // 10MB
-          new FileTypeValidator({
-            fileType: IMAGE___JPEG_PNG_GIF_W_RE,
-          }),
-        ],
-      }),
-    )
-    file: UploadedFileType,
-    @Req() req: AuthenticatedRequest,
-  ) {
-    if (!file) {
-      throw new BadRequestException('Nenhum arquivo enviado');
-    }
-
-    const workspaceId = resolveWorkspaceId(req);
-
-    this.logger.log(
-      `Upload recebido: ${file.originalname} (${file.mimetype}) - ${file.size} bytes`,
-    );
-
-    // Validar tamanho (max 10MB)
-    const maxSize = 10 * 1024 * 1024;
-    if (file.size > maxSize) {
-      throw new BadRequestException('Arquivo muito grande. Máximo permitido: 10MB');
-    }
-
-    const detectedMime = detectUploadedMime(file);
-    if (!detectedMime) {
-      throw new BadRequestException('Tipo de arquivo não permitido ou assinatura inválida.');
-    }
-    if (!ALLOWED_UPLOAD_MIMES.has(detectedMime)) {
-      throw new BadRequestException(
-        `Tipo de arquivo não suportado neste endpoint: ${detectedMime}`,
-      );
-    }
-    file.mimetype = detectedMime;
-
-    // Processar baseado no tipo
-    const result = await this.processFile(file, workspaceId);
-
-    return {
-      success: true,
-      filename: file.originalname,
-      size: file.size,
-      type: file.mimetype,
-      ...result,
-    };
   }
 
   /**

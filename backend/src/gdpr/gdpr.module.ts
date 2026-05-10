@@ -1,12 +1,5 @@
 import { Module } from '@nestjs/common';
-import { AuditModule } from '../audit/audit.module';
-import { PrismaModule } from '../prisma/prisma.module';
-import { DataDeleteController } from './data-delete.controller';
-import { DataExportController } from './data-export.controller';
 
 /** Gdpr module. */
-@Module({
-  imports: [PrismaModule, AuditModule],
-  controllers: [DataExportController, DataDeleteController],
-})
+@Module({})
 export class GdprModule {}

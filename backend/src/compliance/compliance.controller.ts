@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Post, Query, Req } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, Post, Query, Req } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import type { Request } from 'express';
 import { Public } from '../auth/public.decorator';
@@ -46,20 +46,6 @@ export class ComplianceController {
   @Get('compliance/deletion-status/:code')
   async deletionStatus(@Param('code') code: string) {
     return this.complianceService.getDeletionStatus(code);
-  }
-
-  /** Data export. */
-  // PULSE_TODO: verify if still needed, no caller detected
-  @Get('user/data-export')
-  async dataExport(@Req() req: AuthenticatedRequest) {
-    return this.complianceService.exportUserData(req.user.sub, req.user.workspaceId);
-  }
-
-  /** Delete current user. */
-  // PULSE_TODO: verify if still needed, no caller detected
-  @Delete('user/data-deletion')
-  async deleteCurrentUser(@Req() req: AuthenticatedRequest) {
-    return this.complianceService.deleteCurrentUser(req.user.sub, req.user.workspaceId);
   }
 
   /** Unsubscribe from marketing emails (GET — user clicks link in email). */

@@ -170,21 +170,21 @@ model Workspace {
   affiliatePartners   AffiliatePartner[]
 
   // Kloel & Commerce Relations
-  documents             Document[]
-  followUps             FollowUp[]
-  emailCampaigns         EmailCampaign[]
+  documents               Document[]
+  followUps               FollowUp[]
+  emailCampaigns          EmailCampaign[]
   emailCampaignRecipients EmailCampaignRecipient[]
   emailCampaignDeliveries EmailCampaignDelivery[]
-  kloelMessages         KloelMessage[]
-  kloelMemories         KloelMemory[]
-  kloelLeads            KloelLead[]
-  kloelSales            KloelSale[]
-  kloelWallets          KloelWallet[]
-  kloelSites            KloelSite[]
-  kloelDesigns          KloelDesign[]
-  checkoutSocialLeads   CheckoutSocialLead[]
-  customerSubscriptions CustomerSubscription[]
-  physicalOrders        PhysicalOrder[]
+  kloelMessages           KloelMessage[]
+  kloelMemories           KloelMemory[]
+  kloelLeads              KloelLead[]
+  kloelSales              KloelSale[]
+  kloelWallets            KloelWallet[]
+  kloelSites              KloelSite[]
+  kloelDesigns            KloelDesign[]
+  checkoutSocialLeads     CheckoutSocialLead[]
+  customerSubscriptions   CustomerSubscription[]
+  physicalOrders          PhysicalOrder[]
 
   // Bank Accounts & Wallet Anticipations
   bankAccounts        BankAccount[]
@@ -1575,7 +1575,7 @@ model Product {
   images   Json? // Array of image URLs
 
   // Payment Integration
-  paymentLink String?  // Stripe, Mercado Pago, etc
+  paymentLink String? // Stripe, Mercado Pago, etc
 
   // Status
   active   Boolean @default(true)
@@ -1745,8 +1745,8 @@ model KloelSale {
   status            String    @default("pending") // "pending", "paid", "cancelled", "refunded", "overdue"
   paymentMethod     String? // "PIX", "CREDIT_CARD", "BOLETO"
   paymentLink       String?
-  externalPaymentId String?  @unique // ID do pagamento no gateway (Stripe, Mercado Pago, etc)
-  externalId        String?  // Legacy
+  externalPaymentId String?   @unique // ID do pagamento no gateway (Stripe, Mercado Pago, etc)
+  externalId        String? // Legacy
   paidAt            DateTime?
   metadata          Json?
 
@@ -1869,29 +1869,29 @@ model Document {
 // FOLLOW-UP SCHEDULING
 // =========================================
 model EmailCampaign {
-  id          String             @id @default(uuid())
+  id          String    @id @default(uuid())
   workspaceId String
-  workspace   Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  name        String
-  subject     String
-  htmlBody    String
-  fromEmail   String?
-  fromName    String?
-  replyTo     String?
+  name      String
+  subject   String
+  htmlBody  String
+  fromEmail String?
+  fromName  String?
+  replyTo   String?
 
-  status           EmailCampaignStatus @default(DRAFT)
-  totalRecipients  Int                 @default(0)
-  sentCount        Int                 @default(0)
-  deliveredCount   Int                 @default(0)
-  openedCount      Int                 @default(0)
-  clickedCount     Int                 @default(0)
-  repliedCount     Int                 @default(0)
-  failedCount      Int                 @default(0)
-  bouncedCount     Int                 @default(0)
-  unsubscribedCount Int                @default(0)
+  status            EmailCampaignStatus @default(DRAFT)
+  totalRecipients   Int                 @default(0)
+  sentCount         Int                 @default(0)
+  deliveredCount    Int                 @default(0)
+  openedCount       Int                 @default(0)
+  clickedCount      Int                 @default(0)
+  repliedCount      Int                 @default(0)
+  failedCount       Int                 @default(0)
+  bouncedCount      Int                 @default(0)
+  unsubscribedCount Int                 @default(0)
 
-  provider    String? // resend, sendgrid, smtp, log
+  provider String? // resend, sendgrid, smtp, log
 
   scheduledAt DateTime?
   startedAt   DateTime?
@@ -1909,11 +1909,11 @@ model EmailCampaign {
 }
 
 model EmailCampaignRecipient {
-  id         String  @id @default(uuid())
-  campaignId String
-  campaign   EmailCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  id          String        @id @default(uuid())
+  campaignId  String
+  campaign    EmailCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
   workspaceId String
-  workspace  Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspace   Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   email String
   name  String?
@@ -1922,13 +1922,13 @@ model EmailCampaignRecipient {
   providerMessageId String?
   errorMessage      String?
 
-  sentAt        DateTime?
-  deliveredAt   DateTime?
-  openedAt      DateTime?
-  clickedAt     DateTime?
-  repliedAt     DateTime?
-  failedAt      DateTime?
-  bouncedAt     DateTime?
+  sentAt         DateTime?
+  deliveredAt    DateTime?
+  openedAt       DateTime?
+  clickedAt      DateTime?
+  repliedAt      DateTime?
+  failedAt       DateTime?
+  bouncedAt      DateTime?
   unsubscribedAt DateTime?
 
   createdAt DateTime @default(now())
@@ -1943,13 +1943,13 @@ model EmailCampaignRecipient {
 }
 
 model EmailCampaignDelivery {
-  id          String  @id @default(uuid())
+  id          String                 @id @default(uuid())
   campaignId  String
-  campaign    EmailCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  campaign    EmailCampaign          @relation(fields: [campaignId], references: [id], onDelete: Cascade)
   recipientId String
   recipient   EmailCampaignRecipient @relation(fields: [recipientId], references: [id], onDelete: Cascade)
   workspaceId String
-  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspace   Workspace              @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   event             EmailDeliveryEvent
   providerMessageId String?
@@ -3263,24 +3263,24 @@ model MetaConnection {
 }
 
 model FbMessage {
-  id              String    @id @default(uuid())
-  workspaceId     String
-  workspace       Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  mid             String?   // Facebook message ID (unique per workspace)
-  direction       String    // INBOUND | OUTBOUND
-  text            String?
-  senderPsid      String?   // Page-scoped ID of sender
-  recipientPsid   String?   // Page-scoped ID of recipient
-  pageId          String?
-  deliveryStatus  String    @default("SENT") // SENT | DELIVERED | READ | FAILED
-  errorCode       String?
-  errorMessage    String?
-  metadata        Json?     // Raw webhook payload for audit
-  deliveredAt     DateTime?
-  readAt          DateTime?
-  failedAt        DateTime?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id             String    @id @default(uuid())
+  workspaceId    String
+  workspace      Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  mid            String? // Facebook message ID (unique per workspace)
+  direction      String // INBOUND | OUTBOUND
+  text           String?
+  senderPsid     String? // Page-scoped ID of sender
+  recipientPsid  String? // Page-scoped ID of recipient
+  pageId         String?
+  deliveryStatus String    @default("SENT") // SENT | DELIVERED | READ | FAILED
+  errorCode      String?
+  errorMessage   String?
+  metadata       Json? // Raw webhook payload for audit
+  deliveredAt    DateTime?
+  readAt         DateTime?
+  failedAt       DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   @@unique([workspaceId, mid])
   @@index([workspaceId, pageId, createdAt])
@@ -3289,16 +3289,16 @@ model FbMessage {
 }
 
 model AdAccount {
-  id          String   @id @default(uuid())
+  id          String    @id @default(uuid())
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   platform    String
   accountId   String
   accountName String?
-  status      String   @default("connected")
+  status      String    @default("connected")
   lastSyncAt  DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@unique([workspaceId, platform, accountId])
   @@index([workspaceId])
@@ -3332,21 +3332,21 @@ model AdCampaign {
 }
 
 model AdInsight {
-  id          String   @id @default(uuid())
+  id          String    @id @default(uuid())
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   accountId   String
   platform    String
   date        DateTime
-  spend       Float    @default(0)
-  revenue     Float    @default(0)
-  roas        Float    @default(0)
-  conversions Int      @default(0)
-  impressions Int      @default(0)
-  clicks      Int      @default(0)
-  ctr         Float    @default(0)
-  cpc         Float    @default(0)
-  createdAt   DateTime @default(now())
+  spend       Float     @default(0)
+  revenue     Float     @default(0)
+  roas        Float     @default(0)
+  conversions Int       @default(0)
+  impressions Int       @default(0)
+  clicks      Int       @default(0)
+  ctr         Float     @default(0)
+  cpc         Float     @default(0)
+  createdAt   DateTime  @default(now())
 
   @@unique([workspaceId, platform, accountId, date])
   @@index([workspaceId, platform, date])
