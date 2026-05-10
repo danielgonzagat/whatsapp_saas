@@ -1,11 +1,11 @@
 {
-  "generatedAt": "2026-05-10T02:52:36.925Z",
+  "generatedAt": "2026-05-10T03:46:46.869Z",
   "profile": null,
   "certificationScope": null,
   "pulseMachineReadiness": {
     "scope": "pulse_machine_not_kloel_product",
     "status": "NOT_READY",
-    "generatedAt": "2026-05-10T02:46:32.836Z",
+    "generatedAt": "2026-05-10T03:42:16.852Z",
     "productCertificationStatus": "NOT_CERTIFIED",
     "productCertificationExcludedFromVerdict": true,
     "canRunBoundedAutonomousCycle": false,
@@ -34,9 +34,9 @@
       {
         "id": "execution_matrix",
         "status": "pass",
-        "reason": "Execution matrix classified 5195 path(s) with zero unknown and zero non-terminal paths.",
+        "reason": "Execution matrix classified 5194 path(s) with zero unknown and zero non-terminal paths.",
         "evidence": {
-          "totalPaths": 5195,
+          "totalPaths": 5194,
           "unknownPaths": 0,
           "criticalUnobservedPaths": 0,
           "impreciseBreakpoints": 0,
@@ -96,10 +96,10 @@
       },
       {
         "id": "multi_cycle",
-        "status": "fail",
-        "reason": "multiCycleConvergence: no autonomy iteration history found; production-autonomy verdict requires proven cycles. Cycle proof: 3/3 successful non-regressing real cycle(s).",
+        "status": "pass",
+        "reason": "3 non-regressing real autonomous cycle(s) observed (>= 3 required).",
         "evidence": {
-          "gateStatus": "fail",
+          "gateStatus": "pass",
           "requiredCycles": 3,
           "totalRecordedCycles": 5,
           "realExecutedCycles": 5,
@@ -112,8 +112,7 @@
       "artifact_consistency: Cross-artifact consistency has not produced a passing check.",
       "critical_path_terminal: 3961 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-insights, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
       "external_reality: 2 missing, 0 stale, and 0 invalid external adapter(s) remain.",
-      "self_trust: PULSE still reconstructs 1 phantom capability(ies) and 0 phantom flow(s); self-trust stays degraded until illusion collapses into real chains.",
-      "multi_cycle: multiCycleConvergence: no autonomy iteration history found; production-autonomy verdict requires proven cycles. Cycle proof: 3/3 successful non-regressing real cycle(s)."
+      "self_trust: PULSE still reconstructs 1 phantom capability(ies) and 0 phantom flow(s); self-trust stays degraded until illusion collapses into real chains."
     ]
   },
   "pulseMachineProofGates": [
@@ -186,22 +185,17 @@
       "gate": "criticalPathObservedPass",
       "status": "fail",
       "reason": "3961 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-insights, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json."
-    },
-    {
-      "gate": "multiCycleConvergencePass",
-      "status": "fail",
-      "reason": "multiCycleConvergence: no autonomy iteration history found; production-autonomy verdict requires proven cycles."
     }
   ],
   "pathProofSurface": {
-    "summary": "1974 executable unproved path proof task(s) remain; next execution mode is ai_safe.",
+    "summary": "1965 executable unproved path proof task(s) remain; next execution mode is ai_safe.",
     "counts": {
-      "plannedTasks": 1974,
-      "unprovedTasks": 1974,
-      "executableUnprovedTasks": 1974,
+      "plannedTasks": 1965,
+      "unprovedTasks": 1965,
+      "executableUnprovedTasks": 1965,
       "governedValidationTasks": 0,
       "notExecutableTasks": 0,
-      "readinessBlockers": 5,
+      "readinessBlockers": 4,
       "criticalUnobservedPaths": 0,
       "criticalBlueprintReady": 0,
       "coveragePercent": 4
@@ -324,7 +318,7 @@
       }
     ],
     "evidenceFreshness": {
-      "generatedAt": "2026-05-10T02:52:27.476Z",
+      "generatedAt": "2026-05-10T03:46:39.517Z",
       "ageMinutes": 0,
       "stale": false,
       "source": "path_proof_plan",
@@ -345,8 +339,7 @@
         "artifact_consistency: Cross-artifact consistency has not produced a passing check.",
         "critical_path_terminal: 3961 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-insights, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
         "external_reality: 2 missing, 0 stale, and 0 invalid external adapter(s) remain.",
-        "self_trust: PULSE still reconstructs 1 phantom capability(ies) and 0 phantom flow(s); self-trust stays degraded until illusion collapses into real chains.",
-        "multi_cycle: multiCycleConvergence: no autonomy iteration history found; production-autonomy verdict requires proven cycles. Cycle proof: 3/3 successful non-regressing real cycle(s)."
+        "self_trust: PULSE still reconstructs 1 phantom capability(ies) and 0 phantom flow(s); self-trust stays degraded until illusion collapses into real chains."
       ]
     }
   },
@@ -896,7 +889,7 @@
   "zeroPromptProductionGuidanceVerdict": "NAO",
   "zeroPromptProductionGuidanceReason": "NAO: Authority is not automation-eligible: Evidence freshness is not closed. | Pulse self-trust is still failing. | Runtime pass is not green with live evidence.. | 2 missing, 0 stale, and 0 invalid external adapter(s) remain. | 1 governed validation gap(s) remain observation-only or protected-surface work.",
   "productionAutonomyVerdict": "NAO",
-  "productionAutonomyReason": "NAO: Evidence freshness is not closed. | Pulse self-trust is still failing. | Runtime pass is not green with live evidence. | Authority mode is advisory-only, not certified-autonomous. | Certification status is NOT_CERTIFIED, not CERTIFIED. | 2 missing, 0 stale, and 0 invalid external adapter(s) remain. | 56 parity gap(s), 1076 HIGH Codacy issue(s), 1 phantom capability(ies), and 0 phantom flow(s) remain. | 1 governed validation gap(s) remain observation-only or protected-surface work. | Observed Codacy files are missing from repo inventory: .agents/skills/marketing-psychology/SKILL.md, scripts/pulse/parsers/facade-detector.ts, scripts/pulse/parsers/runtime-utils.ts. | Codacy still reports 1076 HIGH issue(s). | Phantom capabilities remain: Knowledge Base. | Codacy snapshot is stale (24253 minute(s) old). | Observed external high-impact signals remain active: 3. | Required external adapters are missing: 2. | Proof readiness still has non-observed production proof: status=executable_unproved, canAdvance=false, planned=1965, inferred=0, not_available=0, nonObserved=1965, executableUnproved=1965. | No-hardcoded-reality state still has hardcoded reality authority: 219506 hardcoded reality event(s) across 499 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9.. | NAO: production proof readiness is not fully observed (proofReadiness status=executable_unproved, canAdvance=false, planned=1965, inferred=0, not_available=0, nonObserved=1965, executableUnproved=1965).",
+  "productionAutonomyReason": "NAO: Evidence freshness is not closed. | Pulse self-trust is still failing. | Runtime pass is not green with live evidence. | Authority mode is advisory-only, not certified-autonomous. | Certification status is NOT_CERTIFIED, not CERTIFIED. | 2 missing, 0 stale, and 0 invalid external adapter(s) remain. | 56 parity gap(s), 1076 HIGH Codacy issue(s), 1 phantom capability(ies), and 0 phantom flow(s) remain. | 1 governed validation gap(s) remain observation-only or protected-surface work. | Observed Codacy files are missing from repo inventory: .agents/skills/marketing-psychology/SKILL.md, scripts/pulse/parsers/facade-detector.ts, scripts/pulse/parsers/runtime-utils.ts. | Codacy still reports 1076 HIGH issue(s). | Phantom capabilities remain: Knowledge Base. | Codacy snapshot is stale (24310 minute(s) old). | Observed external high-impact signals remain active: 3. | Required external adapters are missing: 2. | Proof readiness still has non-observed production proof: status=executable_unproved, canAdvance=false, planned=1965, inferred=0, not_available=0, nonObserved=1965, executableUnproved=1965. | No-hardcoded-reality state still has hardcoded reality authority: 219630 hardcoded reality event(s) across 499 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9.. | NAO: production proof readiness is not fully observed (proofReadiness status=executable_unproved, canAdvance=false, planned=1965, inferred=0, not_available=0, nonObserved=1965, executableUnproved=1965).",
   "canWorkNow": false,
   "canContinueUntilReady": false,
   "canWorkUntilProductionReady": false,
@@ -917,12 +910,12 @@
     ]
   },
   "autonomyProof": {
-    "generatedAt": "2026-05-10T02:46:32.836Z",
+    "generatedAt": "2026-05-10T03:42:16.852Z",
     "freshSessionQuestion": "If a new AI session runs the full Pulse, will it know the next safe executable step?",
     "freshSessionAnswer": "SIM",
     "productionAutonomyQuestion": "Can Pulse prove unsupervised convergence to fully functional and production-safe completion?",
     "productionAutonomyAnswer": "NAO",
-    "productionAutonomyReason": "NAO: Evidence freshness is not closed. | Pulse self-trust is still failing. | Runtime pass is not green with live evidence. | Authority mode is advisory-only, not certified-autonomous. | Certification status is NOT_CERTIFIED, not CERTIFIED. | 2 missing, 0 stale, and 0 invalid external adapter(s) remain. | 56 parity gap(s), 1076 HIGH Codacy issue(s), 1 phantom capability(ies), and 0 phantom flow(s) remain. | 1 governed validation gap(s) remain observation-only or protected-surface work. | Observed Codacy files are missing from repo inventory: .agents/skills/marketing-psychology/SKILL.md, scripts/pulse/parsers/facade-detector.ts, scripts/pulse/parsers/runtime-utils.ts. | Codacy still reports 1076 HIGH issue(s). | Phantom capabilities remain: Knowledge Base. | Codacy snapshot is stale (24253 minute(s) old). | Observed external high-impact signals remain active: 3. | Required external adapters are missing: 2. | Proof readiness still has non-observed production proof: status=executable_unproved, canAdvance=false, planned=1965, inferred=0, not_available=0, nonObserved=1965, executableUnproved=1965. | No-hardcoded-reality state still has hardcoded reality authority: 219506 hardcoded reality event(s) across 499 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9.. | NAO: production proof readiness is not fully observed (proofReadiness status=executable_unproved, canAdvance=false, planned=1965, inferred=0, not_available=0, nonObserved=1965, executableUnproved=1965).",
+    "productionAutonomyReason": "NAO: Evidence freshness is not closed. | Pulse self-trust is still failing. | Runtime pass is not green with live evidence. | Authority mode is advisory-only, not certified-autonomous. | Certification status is NOT_CERTIFIED, not CERTIFIED. | 2 missing, 0 stale, and 0 invalid external adapter(s) remain. | 56 parity gap(s), 1076 HIGH Codacy issue(s), 1 phantom capability(ies), and 0 phantom flow(s) remain. | 1 governed validation gap(s) remain observation-only or protected-surface work. | Observed Codacy files are missing from repo inventory: .agents/skills/marketing-psychology/SKILL.md, scripts/pulse/parsers/facade-detector.ts, scripts/pulse/parsers/runtime-utils.ts. | Codacy still reports 1076 HIGH issue(s). | Phantom capabilities remain: Knowledge Base. | Codacy snapshot is stale (24310 minute(s) old). | Observed external high-impact signals remain active: 3. | Required external adapters are missing: 2. | Proof readiness still has non-observed production proof: status=executable_unproved, canAdvance=false, planned=1965, inferred=0, not_available=0, nonObserved=1965, executableUnproved=1965. | No-hardcoded-reality state still has hardcoded reality authority: 219630 hardcoded reality event(s) across 499 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9.. | NAO: production proof readiness is not fully observed (proofReadiness status=executable_unproved, canAdvance=false, planned=1965, inferred=0, not_available=0, nonObserved=1965, executableUnproved=1965).",
     "zeroPromptProductionGuidanceQuestion": "If a fresh AI session runs the full Pulse and is told to work autonomously, can it keep converging safely until production completion without manual intervention?",
     "zeroPromptProductionGuidanceAnswer": "NAO",
     "zeroPromptProductionGuidanceReason": "NAO: Authority is not automation-eligible: Evidence freshness is not closed. | Pulse self-trust is still failing. | Runtime pass is not green with live evidence.. | 2 missing, 0 stale, and 0 invalid external adapter(s) remain. | 1 governed validation gap(s) remain observation-only or protected-surface work.",
@@ -1018,11 +1011,11 @@
       "Observed Codacy files are missing from repo inventory: .agents/skills/marketing-psychology/SKILL.md, scripts/pulse/parsers/facade-detector.ts, scripts/pulse/parsers/runtime-utils.ts.",
       "Codacy still reports 1076 HIGH issue(s).",
       "Phantom capabilities remain: Knowledge Base.",
-      "Codacy snapshot is stale (24253 minute(s) old).",
+      "Codacy snapshot is stale (24310 minute(s) old).",
       "Observed external high-impact signals remain active: 3.",
       "Required external adapters are missing: 2.",
       "Proof readiness still has non-observed production proof: status=executable_unproved, canAdvance=false, planned=1965, inferred=0, not_available=0, nonObserved=1965, executableUnproved=1965.",
-      "No-hardcoded-reality state still has hardcoded reality authority: 219506 hardcoded reality event(s) across 499 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9.."
+      "No-hardcoded-reality state still has hardcoded reality authority: 219630 hardcoded reality event(s) across 499 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9.."
     ],
     "cycleProof": {
       "requiredCycles": 3,
@@ -1045,7 +1038,7 @@
         "proofBasis": "codacy_snapshot",
         "executed": true,
         "signalCount": 4,
-        "reason": "PULSE_CODACY_STATE.json is stale (24253 minute(s) old)."
+        "reason": "PULSE_CODACY_STATE.json is stale (24310 minute(s) old)."
       },
       {
         "source": "github",
@@ -1178,7 +1171,7 @@
   },
   "noHardcodedReality": {
     "summary": {
-      "totalEvents": 219506,
+      "totalEvents": 219630,
       "scannedFiles": 499,
       "topFiles": [
         "scripts/pulse/convergence-plan.ts",
@@ -1204,7 +1197,7 @@
       }
     },
     "blocksProduction": true,
-    "reason": "219506 hardcoded reality event(s) across 499 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9."
+    "reason": "219630 hardcoded reality event(s) across 499 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9."
   },
   "noOverclaim": {
     "gateStatus": "fail",
@@ -1227,7 +1220,7 @@
   "currentCheckpoint": {
     "tier": 0,
     "status": "NOT_CERTIFIED",
-    "score": 42
+    "score": 45
   },
   "targetCheckpoint": {
     "capabilityRealnessRatio": 1,
@@ -1238,13 +1231,13 @@
   "currentState": {
     "certificationStatus": "NOT_CERTIFIED",
     "blockingTier": 0,
-    "score": 42,
+    "score": 45,
     "scopeParity": {
       "status": "fail",
       "mode": "repo_inventory_with_codacy_spotcheck",
       "confidence": "low",
       "reason": "Observed Codacy files are missing from repo inventory: .agents/skills/marketing-psychology/SKILL.md, scripts/pulse/parsers/facade-detector.ts, scripts/pulse/parsers/runtime-utils.ts.",
-      "inventoryFiles": 3904,
+      "inventoryFiles": 3903,
       "codacyObservedFiles": 60,
       "codacyObservedFilesCovered": 57,
       "missingCodacyFiles": [
@@ -1302,7 +1295,7 @@
         "blocking": false,
         "proofBasis": "codacy_snapshot",
         "syncedAt": "2026-04-23T06:27:53.909Z",
-        "freshnessMinutes": 24253
+        "freshnessMinutes": 24310
       },
       {
         "source": "github",
@@ -1541,7 +1534,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "37 HIGH Codacy issue(s) remain in backend/prisma/migrations/20251209150035_init_baseline/migration.sql.",
-        "observedAt": "2026-05-10T02:41:28.421Z",
+        "observedAt": "2026-05-10T03:38:16.652Z",
         "relatedFiles": [
           "backend/prisma/migrations/20251209150035_init_baseline/migration.sql"
         ],
@@ -1583,7 +1576,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "2 HIGH Codacy issue(s) remain in backend/src/auth/email.service.ts.",
-        "observedAt": "2026-05-10T02:41:28.421Z",
+        "observedAt": "2026-05-10T03:38:16.652Z",
         "relatedFiles": [
           "backend/src/auth/email.service.ts"
         ],
@@ -1760,7 +1753,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "1 HIGH Codacy issue(s) remain in backend/src/autopilot/autopilot.service.ts.",
-        "observedAt": "2026-05-10T02:41:28.421Z",
+        "observedAt": "2026-05-10T03:38:16.652Z",
         "relatedFiles": [
           "backend/src/autopilot/autopilot.service.ts"
         ],
@@ -1947,7 +1940,7 @@
         "impactScore": 0.55,
         "confidence": 0.95,
         "summary": "1 HIGH Codacy issue(s) remain in package.json.",
-        "observedAt": "2026-05-10T02:41:28.421Z",
+        "observedAt": "2026-05-10T03:38:16.652Z",
         "relatedFiles": [
           "package.json"
         ],
@@ -2969,13 +2962,13 @@
   },
   "executionMatrix": {
     "summary": {
-      "totalPaths": 5195,
+      "totalPaths": 5194,
       "bySource": {
         "execution_chain": 0,
         "capability": 401,
         "flow": 54,
         "structural_node": 1821,
-        "scope_file": 2919
+        "scope_file": 2918
       },
       "byStatus": {
         "observed_pass": 0,
@@ -2984,15 +2977,15 @@
         "observation_only": 0,
         "unreachable": 0,
         "inferred_only": 1960,
-        "not_executable": 3003
+        "not_executable": 3002
       },
       "observedPass": 0,
       "observedFail": 221,
       "untested": 11,
       "unreachable": 0,
       "inferredOnly": 1960,
-      "notExecutable": 3003,
-      "terminalPaths": 5195,
+      "notExecutable": 3002,
+      "terminalPaths": 5194,
       "nonTerminalPaths": 0,
       "unknownPaths": 0,
       "criticalUnobservedPaths": 0,
@@ -20207,7 +20200,7 @@
       ]
     },
     {
-      "order": 120,
+      "order": 124,
       "id": "pulse-no-hardcoded-reality-state",
       "kind": "gate",
       "priority": "P3",
@@ -20219,7 +20212,7 @@
       "productImpact": "diagnostic",
       "ownerLane": "platform",
       "title": "Remove PULSE Hardcoded Reality Authority",
-      "summary": "219506 hardcoded reality event(s) across 499 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/p...",
+      "summary": "219630 hardcoded reality event(s) across 499 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/p...",
       "whyNow": "Keeps PULSE decisions grounded in discovered evidence instead of fixed product reality lists.",
       "visionDelta": "Keeps PULSE decisions grounded in discovered evidence instead of fixed product reality lists.",
       "targetState": "PULSE_NO_HARDCODED_REALITY.json reports zero dynamic hardcode evidence events.",
@@ -20231,7 +20224,6 @@
         "soakPass",
         "pulseSelfTrustPass",
         "criticalPathObservedPass",
-        "multiCycleConvergencePass",
         "typeIntegrityPass"
       ],
       "expectedGateShift": "Pass noOverclaimPass and clear hardcoded reality state blockers",
@@ -23968,7 +23960,7 @@
       ]
     },
     {
-      "order": 120,
+      "order": 124,
       "id": "pulse-no-hardcoded-reality-state",
       "kind": "gate",
       "priority": "P3",
@@ -23980,7 +23972,7 @@
       "productImpact": "diagnostic",
       "ownerLane": "platform",
       "title": "Remove PULSE Hardcoded Reality Authority",
-      "summary": "219506 hardcoded reality event(s) across 499 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/p...",
+      "summary": "219630 hardcoded reality event(s) across 499 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/p...",
       "whyNow": "Keeps PULSE decisions grounded in discovered evidence instead of fixed product reality lists.",
       "visionDelta": "Keeps PULSE decisions grounded in discovered evidence instead of fixed product reality lists.",
       "targetState": "PULSE_NO_HARDCODED_REALITY.json reports zero dynamic hardcode evidence events.",
@@ -23992,7 +23984,6 @@
         "soakPass",
         "pulseSelfTrustPass",
         "criticalPathObservedPass",
-        "multiCycleConvergencePass",
         "typeIntegrityPass"
       ],
       "expectedGateShift": "Pass noOverclaimPass and clear hardcoded reality state blockers",
@@ -24480,6 +24471,7 @@
         "scripts/pulse/autonomy-types.ts",
         "scripts/pulse/cross-artifact-consistency-check/loaders.ts",
         "scripts/pulse/autonomy-loop.utils.ts",
+        "scripts/pulse/daemon/fullScan.ts",
         "scripts/pulse/probabilistic-risk/model.ts",
         "scripts/pulse/structural-memory/memory-patterns.ts",
         "scripts/pulse/execution-matrix/grammar.ts",
@@ -24762,71 +24754,6 @@
       ],
       "successCriteria": [
         "PULSE_MACHINE_READINESS criterion self_trust is pass or has a more precise terminal blocker.",
-        "PULSE_CLI_DIRECTIVE keeps next work focused on the PULSE machine when machine readiness is not READY.",
-        "Targeted PULSE tests pass."
-      ],
-      "requiredValidations": [
-        "affected-tests"
-      ]
-    },
-    {
-      "order": 5,
-      "id": "pulse-machine-multi_cycle",
-      "kind": "pulse_machine",
-      "priority": "P1",
-      "source": "pulse_machine",
-      "executionMode": "ai_safe",
-      "riskLevel": "low",
-      "evidenceMode": "inferred",
-      "confidence": "high",
-      "productImpact": "machine",
-      "ownerLane": "pulse-core",
-      "title": "Close PULSE multi cycle criterion",
-      "summary": "multiCycleConvergence: no autonomy iteration history found; production-autonomy verdict requires proven cycles. Cycle proof: 3/3 successful non-regressing real cycle(s).",
-      "whyNow": "PULSE machine readiness is the active target; do not spend this cycle materializing SaaS product capabilities.",
-      "visionDelta": "Moves PULSE closer to zero-prompt technical autonomy by closing machine proof, adapter, or execution-evidence gaps.",
-      "targetState": "PULSE machine criterion \"multi_cycle\" must pass with canonical evidence.",
-      "affectedCapabilities": [],
-      "affectedFlows": [],
-      "gateNames": [
-        "multi_cycle"
-      ],
-      "expectedGateShift": "Pass PULSE machine criterion multi_cycle",
-      "validationTargets": [
-        "PULSE_MACHINE_READINESS.json",
-        "PULSE_CLI_DIRECTIVE.json",
-        "PULSE_CERTIFICATE.json"
-      ],
-      "validationArtifacts": [
-        "PULSE_MACHINE_READINESS.json",
-        "PULSE_CLI_DIRECTIVE.json",
-        "PULSE_CERTIFICATE.json"
-      ],
-      "proofAuthority": "registry_gap",
-      "proofBasis": [
-        "registry gap: no artifact producer/consumer/freshness evidence matched multi_cycle"
-      ],
-      "relatedFiles": [],
-      "exitCriteria": [
-        "{\"id\":\"pulse-machine-multi_cycle-exit-0\",\"type\":\"artifact-assertion\",\"target\":\"PULSE_MACHINE_READINESS.json\",\"expected\":{\"criterion\":\"multi_cycle\",\"status\":\"pass\"},\"comparison\":\"contains\"}"
-      ],
-      "preconditions": [
-        "Operate only on PULSE machine/proof code and generated PULSE artifacts."
-      ],
-      "allowedActions": [
-        "PULSE scanner changes",
-        "PULSE evidence generation",
-        "PULSE adapter refresh",
-        "PULSE test writing"
-      ],
-      "forbiddenActions": [
-        "Do not edit SaaS product code for this unit",
-        "Do not edit governance-protected files",
-        "Do not suppress Codacy, lint, or certification findings",
-        "Do not add secrets or credentials"
-      ],
-      "successCriteria": [
-        "PULSE_MACHINE_READINESS criterion multi_cycle is pass or has a more precise terminal blocker.",
         "PULSE_CLI_DIRECTIVE keeps next work focused on the PULSE machine when machine readiness is not READY.",
         "Targeted PULSE tests pass."
       ],
@@ -25895,6 +25822,7 @@
         "scripts/pulse/autonomy-types.ts",
         "scripts/pulse/cross-artifact-consistency-check/loaders.ts",
         "scripts/pulse/autonomy-loop.utils.ts",
+        "scripts/pulse/daemon/fullScan.ts",
         "scripts/pulse/probabilistic-risk/model.ts",
         "scripts/pulse/structural-memory/memory-patterns.ts",
         "scripts/pulse/execution-matrix/grammar.ts",
@@ -26086,80 +26014,6 @@
       ]
     },
     {
-      "order": 115,
-      "id": "pulse-proof-multiCycleConvergencePass",
-      "kind": "pulse_machine",
-      "priority": "P0",
-      "source": "pulse_machine",
-      "executionMode": "ai_safe",
-      "riskLevel": "low",
-      "evidenceMode": "observed",
-      "confidence": "high",
-      "productImpact": "machine",
-      "ownerLane": "pulse-proof",
-      "title": "Repair PULSE multi cycle convergence proof",
-      "summary": "multiCycleConvergence: no autonomy iteration history found; production-autonomy verdict requires proven cycles.",
-      "whyNow": "PULSE cannot claim zero-prompt production autonomy while this proof gate is failing; improve PULSE proof machinery before editing SaaS product code.",
-      "visionDelta": "Moves PULSE from advisory/autonomous execution toward certified technical replacement by converting inferred or missing proof into canonical evidence.",
-      "targetState": "Certification gate multiCycleConvergencePass must pass or expose a precise non-product proof blocker.",
-      "affectedCapabilities": [],
-      "affectedFlows": [],
-      "gateNames": [
-        "multiCycleConvergencePass"
-      ],
-      "expectedGateShift": "Pass or sharpen multiCycleConvergencePass without editing SaaS product code",
-      "proofAuthority": "artifact_registry",
-      "proofBasis": [
-        "convergence-plan:./artifacts.writeRegisteredArtifact.convergence-plan:run:generated_from_module"
-      ],
-      "validationTargets": [
-        "PULSE_CERTIFICATE.json",
-        "PULSE_CLI_DIRECTIVE.json",
-        "PULSE_MACHINE_READINESS.json",
-        "PULSE_CONVERGENCE_PLAN.json"
-      ],
-      "validationArtifacts": [
-        "PULSE_CERTIFICATE.json",
-        "PULSE_CLI_DIRECTIVE.json",
-        "PULSE_MACHINE_READINESS.json",
-        "PULSE_CONVERGENCE_PLAN.json"
-      ],
-      "relatedFiles": [
-        "scripts/pulse/artifacts.ts",
-        "scripts/pulse/artifact-gc.ts",
-        "scripts/pulse/cert-gate-evidence.ts",
-        "scripts/pulse/cross-artifact-consistency-check.ts",
-        "scripts/pulse/signal-mapper.ts"
-      ],
-      "exitCriteria": [
-        "{\"id\":\"pulse-proof-multiCycleConvergencePass-exit-0\",\"type\":\"artifact-gate\",\"target\":\"PULSE_CERTIFICATE.json\",\"expected\":{\"gate\":\"multiCycleConvergencePass\",\"status\":\"pass\"},\"comparison\":\"eq\"}"
-      ],
-      "preconditions": [
-        "Operate only on PULSE machine/proof code and generated PULSE artifacts.",
-        "Do not materialize SaaS product capabilities for this proof-debt unit."
-      ],
-      "allowedActions": [
-        "PULSE scanner changes",
-        "PULSE evidence generation",
-        "PULSE scenario/probe harness changes",
-        "PULSE test writing"
-      ],
-      "forbiddenActions": [
-        "Do not edit SaaS product code for this unit",
-        "Do not edit governance-protected files",
-        "Do not suppress Codacy, lint, or certification findings",
-        "Do not add secrets or credentials"
-      ],
-      "successCriteria": [
-        "multiCycleConvergencePass is pass or has a more precise machine-owned blocker.",
-        "PULSE_CLI_DIRECTIVE keeps next work focused on PULSE proof machinery while production autonomy is NAO.",
-        "Targeted PULSE tests pass."
-      ],
-      "requiredValidations": [
-        "affected-tests"
-      ]
-    },
-    {
       "order": 201,
       "id": "pulse-proof-productionAutonomy",
       "kind": "pulse_machine",
@@ -26172,7 +26026,7 @@
       "productImpact": "machine",
       "ownerLane": "pulse-proof",
       "title": "Close PULSE production-autonomy proof debt",
-      "summary": "NAO: Evidence freshness is not closed. | Pulse self-trust is still failing. | Runtime pass is not green with live evidence. | Authority mode is advisory-only, not certified-autonomous. | Certification status is NOT_CERTIFIED, not CERTIFIED. | 2 missing, 0 stale, and 0 invalid external adapter(s) remain. | 56 parity gap(s), 1076 HIGH Codacy issue(s), 1 phantom capability(ies), and 0 phantom flow(s) remain. | 1 governed validation gap(s) remain observation-only or protected-surface work. | Observed Codacy files are missing from repo inventory: .agents/skills/marketing-psychology/SKILL.md, scripts/pulse/parsers/facade-detector.ts, scripts/pulse/parsers/runtime-utils.ts. | Codacy still reports 1076 HIGH issue(s). | Phantom capabilities remain: Knowledge Base. | Codacy snapshot is stale (24253 minute(s) old). | Observed external high-impact signals remain active: 3. | Required external adapters are missing: 2. | Proof readiness still has non-observed production proof: status=executable_unproved, canAdvance=false, planned=1965, inferred=0, not_available=0, nonObserved=1965, executableUnproved=1965. | No-hardcoded-reality state still has hardcoded reality authority: 219506 hardcoded reality event(s) across 499 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9.. | NAO: production proof readiness is not fully observed (proofReadiness status=executable_unproved, canAdvance=false, planned=1965, inferred=0, not_available=0, nonObserved=1965, executableUnproved=1965).",
+      "summary": "NAO: Evidence freshness is not closed. | Pulse self-trust is still failing. | Runtime pass is not green with live evidence. | Authority mode is advisory-only, not certified-autonomous. | Certification status is NOT_CERTIFIED, not CERTIFIED. | 2 missing, 0 stale, and 0 invalid external adapter(s) remain. | 56 parity gap(s), 1076 HIGH Codacy issue(s), 1 phantom capability(ies), and 0 phantom flow(s) remain. | 1 governed validation gap(s) remain observation-only or protected-surface work. | Observed Codacy files are missing from repo inventory: .agents/skills/marketing-psychology/SKILL.md, scripts/pulse/parsers/facade-detector.ts, scripts/pulse/parsers/runtime-utils.ts. | Codacy still reports 1076 HIGH issue(s). | Phantom capabilities remain: Knowledge Base. | Codacy snapshot is stale (24310 minute(s) old). | Observed external high-impact signals remain active: 3. | Required external adapters are missing: 2. | Proof readiness still has non-observed production proof: status=executable_unproved, canAdvance=false, planned=1965, inferred=0, not_available=0, nonObserved=1965, executableUnproved=1965. | No-hardcoded-reality state still has hardcoded reality authority: 219630 hardcoded reality event(s) across 499 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9.. | NAO: production proof readiness is not fully observed (proofReadiness status=executable_unproved, canAdvance=false, planned=1965, inferred=0, not_available=0, nonObserved=1965, executableUnproved=1965).",
       "whyNow": "PULSE cannot claim production autonomy while proof blockers remain; repair PULSE proof machinery before editing SaaS product code.",
       "visionDelta": "Moves PULSE from next-step guidance toward certified zero-prompt technical replacement.",
       "targetState": "productionAutonomyVerdict must be SIM or expose only precise machine blockers.",
@@ -26220,6 +26074,7 @@
         "scripts/pulse/autonomy-loop.types.ts",
         "scripts/pulse/autonomy-types.ts",
         "scripts/pulse/autonomy-loop.utils.ts",
+        "scripts/pulse/daemon/fullScan.ts",
         "scripts/pulse/probabilistic-risk/model.ts",
         "scripts/pulse/structural-memory/memory-patterns.ts",
         "scripts/pulse/cert-gate-evidence.ts",
@@ -26525,6 +26380,7 @@
         "scripts/pulse/autonomy-types.ts",
         "scripts/pulse/cross-artifact-consistency-check/loaders.ts",
         "scripts/pulse/autonomy-loop.utils.ts",
+        "scripts/pulse/daemon/fullScan.ts",
         "scripts/pulse/probabilistic-risk/model.ts",
         "scripts/pulse/structural-memory/memory-patterns.ts",
         "scripts/pulse/execution-matrix/grammar.ts",
@@ -26815,71 +26671,6 @@
       ]
     },
     {
-      "order": 5,
-      "id": "pulse-machine-multi_cycle",
-      "kind": "pulse_machine",
-      "priority": "P1",
-      "source": "pulse_machine",
-      "executionMode": "ai_safe",
-      "riskLevel": "low",
-      "evidenceMode": "inferred",
-      "confidence": "high",
-      "productImpact": "machine",
-      "ownerLane": "pulse-core",
-      "title": "Close PULSE multi cycle criterion",
-      "summary": "multiCycleConvergence: no autonomy iteration history found; production-autonomy verdict requires proven cycles. Cycle proof: 3/3 successful non-regressing real cycle(s).",
-      "whyNow": "PULSE machine readiness is the active target; do not spend this cycle materializing SaaS product capabilities.",
-      "visionDelta": "Moves PULSE closer to zero-prompt technical autonomy by closing machine proof, adapter, or execution-evidence gaps.",
-      "targetState": "PULSE machine criterion \"multi_cycle\" must pass with canonical evidence.",
-      "affectedCapabilities": [],
-      "affectedFlows": [],
-      "gateNames": [
-        "multi_cycle"
-      ],
-      "expectedGateShift": "Pass PULSE machine criterion multi_cycle",
-      "validationTargets": [
-        "PULSE_MACHINE_READINESS.json",
-        "PULSE_CLI_DIRECTIVE.json",
-        "PULSE_CERTIFICATE.json"
-      ],
-      "validationArtifacts": [
-        "PULSE_MACHINE_READINESS.json",
-        "PULSE_CLI_DIRECTIVE.json",
-        "PULSE_CERTIFICATE.json"
-      ],
-      "proofAuthority": "registry_gap",
-      "proofBasis": [
-        "registry gap: no artifact producer/consumer/freshness evidence matched multi_cycle"
-      ],
-      "relatedFiles": [],
-      "exitCriteria": [
-        "{\"id\":\"pulse-machine-multi_cycle-exit-0\",\"type\":\"artifact-assertion\",\"target\":\"PULSE_MACHINE_READINESS.json\",\"expected\":{\"criterion\":\"multi_cycle\",\"status\":\"pass\"},\"comparison\":\"contains\"}"
-      ],
-      "preconditions": [
-        "Operate only on PULSE machine/proof code and generated PULSE artifacts."
-      ],
-      "allowedActions": [
-        "PULSE scanner changes",
-        "PULSE evidence generation",
-        "PULSE adapter refresh",
-        "PULSE test writing"
-      ],
-      "forbiddenActions": [
-        "Do not edit SaaS product code for this unit",
-        "Do not edit governance-protected files",
-        "Do not suppress Codacy, lint, or certification findings",
-        "Do not add secrets or credentials"
-      ],
-      "successCriteria": [
-        "PULSE_MACHINE_READINESS criterion multi_cycle is pass or has a more precise terminal blocker.",
-        "PULSE_CLI_DIRECTIVE keeps next work focused on the PULSE machine when machine readiness is not READY.",
-        "Targeted PULSE tests pass."
-      ],
-      "requiredValidations": [
-        "affected-tests"
-      ]
-    },
-    {
       "order": 101,
       "id": "pulse-proof-scopeClosed",
       "kind": "pulse_machine",
@@ -27097,6 +26888,79 @@
       ],
       "successCriteria": [
         "invariantPass is pass or has a more precise machine-owned blocker.",
+        "PULSE_CLI_DIRECTIVE keeps next work focused on PULSE proof machinery while production autonomy is NAO.",
+        "Targeted PULSE tests pass."
+      ],
+      "requiredValidations": [
+        "affected-tests"
+      ]
+    },
+    {
+      "order": 104,
+      "id": "pulse-proof-recoveryPass",
+      "kind": "pulse_machine",
+      "priority": "P0",
+      "source": "pulse_machine",
+      "executionMode": "ai_safe",
+      "riskLevel": "low",
+      "evidenceMode": "inferred",
+      "confidence": "medium",
+      "productImpact": "machine",
+      "ownerLane": "pulse-proof",
+      "title": "Repair PULSE recovery proof",
+      "summary": "Recovery evidence was not attached in scan mode.",
+      "whyNow": "PULSE cannot claim zero-prompt production autonomy while this proof gate is failing; improve PULSE proof machinery before editing SaaS product code.",
+      "visionDelta": "Moves PULSE from advisory/autonomous execution toward certified technical replacement by converting inferred or missing proof into canonical evidence.",
+      "targetState": "Certification gate recoveryPass must pass or expose a precise non-product proof blocker.",
+      "affectedCapabilities": [],
+      "affectedFlows": [],
+      "gateNames": [
+        "recoveryPass"
+      ],
+      "expectedGateShift": "Pass or sharpen recoveryPass without editing SaaS product code",
+      "proofAuthority": "artifact_registry",
+      "proofBasis": [
+        "recovery-evidence:./artifacts.writeRegisteredArtifact.recovery-evidence:preserved:preserved_evidence"
+      ],
+      "validationTargets": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_CLI_DIRECTIVE.json",
+        "PULSE_MACHINE_READINESS.json",
+        "PULSE_RECOVERY_EVIDENCE.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_CLI_DIRECTIVE.json",
+        "PULSE_MACHINE_READINESS.json",
+        "PULSE_RECOVERY_EVIDENCE.json"
+      ],
+      "relatedFiles": [
+        "scripts/pulse/artifacts.ts",
+        "scripts/pulse/artifact-gc.ts",
+        "scripts/pulse/cert-evidence-defaults.ts",
+        "scripts/pulse/cert-gate-evidence.ts"
+      ],
+      "exitCriteria": [
+        "{\"id\":\"pulse-proof-recoveryPass-exit-0\",\"type\":\"artifact-gate\",\"target\":\"PULSE_CERTIFICATE.json\",\"expected\":{\"gate\":\"recoveryPass\",\"status\":\"pass\"},\"comparison\":\"eq\"}"
+      ],
+      "preconditions": [
+        "Operate only on PULSE machine/proof code and generated PULSE artifacts.",
+        "Do not materialize SaaS product capabilities for this proof-debt unit."
+      ],
+      "allowedActions": [
+        "PULSE scanner changes",
+        "PULSE evidence generation",
+        "PULSE scenario/probe harness changes",
+        "PULSE test writing"
+      ],
+      "forbiddenActions": [
+        "Do not edit SaaS product code for this unit",
+        "Do not edit governance-protected files",
+        "Do not suppress Codacy, lint, or certification findings",
+        "Do not add secrets or credentials"
+      ],
+      "successCriteria": [
+        "recoveryPass is pass or has a more precise machine-owned blocker.",
         "PULSE_CLI_DIRECTIVE keeps next work focused on PULSE proof machinery while production autonomy is NAO.",
         "Targeted PULSE tests pass."
       ],
@@ -27283,6 +27147,7 @@
         "scripts/pulse/autonomy-types.ts",
         "scripts/pulse/cross-artifact-consistency-check/loaders.ts",
         "scripts/pulse/autonomy-loop.utils.ts",
+        "scripts/pulse/daemon/fullScan.ts",
         "scripts/pulse/probabilistic-risk/model.ts",
         "scripts/pulse/structural-memory/memory-patterns.ts",
         "scripts/pulse/execution-matrix/grammar.ts",
@@ -27573,71 +27438,6 @@
       ]
     },
     {
-      "order": 5,
-      "id": "pulse-machine-multi_cycle",
-      "kind": "pulse_machine",
-      "priority": "P1",
-      "source": "pulse_machine",
-      "executionMode": "ai_safe",
-      "riskLevel": "low",
-      "evidenceMode": "inferred",
-      "confidence": "high",
-      "productImpact": "machine",
-      "ownerLane": "pulse-core",
-      "title": "Close PULSE multi cycle criterion",
-      "summary": "multiCycleConvergence: no autonomy iteration history found; production-autonomy verdict requires proven cycles. Cycle proof: 3/3 successful non-regressing real cycle(s).",
-      "whyNow": "PULSE machine readiness is the active target; do not spend this cycle materializing SaaS product capabilities.",
-      "visionDelta": "Moves PULSE closer to zero-prompt technical autonomy by closing machine proof, adapter, or execution-evidence gaps.",
-      "targetState": "PULSE machine criterion \"multi_cycle\" must pass with canonical evidence.",
-      "affectedCapabilities": [],
-      "affectedFlows": [],
-      "gateNames": [
-        "multi_cycle"
-      ],
-      "expectedGateShift": "Pass PULSE machine criterion multi_cycle",
-      "validationTargets": [
-        "PULSE_MACHINE_READINESS.json",
-        "PULSE_CLI_DIRECTIVE.json",
-        "PULSE_CERTIFICATE.json"
-      ],
-      "validationArtifacts": [
-        "PULSE_MACHINE_READINESS.json",
-        "PULSE_CLI_DIRECTIVE.json",
-        "PULSE_CERTIFICATE.json"
-      ],
-      "proofAuthority": "registry_gap",
-      "proofBasis": [
-        "registry gap: no artifact producer/consumer/freshness evidence matched multi_cycle"
-      ],
-      "relatedFiles": [],
-      "exitCriteria": [
-        "{\"id\":\"pulse-machine-multi_cycle-exit-0\",\"type\":\"artifact-assertion\",\"target\":\"PULSE_MACHINE_READINESS.json\",\"expected\":{\"criterion\":\"multi_cycle\",\"status\":\"pass\"},\"comparison\":\"contains\"}"
-      ],
-      "preconditions": [
-        "Operate only on PULSE machine/proof code and generated PULSE artifacts."
-      ],
-      "allowedActions": [
-        "PULSE scanner changes",
-        "PULSE evidence generation",
-        "PULSE adapter refresh",
-        "PULSE test writing"
-      ],
-      "forbiddenActions": [
-        "Do not edit SaaS product code for this unit",
-        "Do not edit governance-protected files",
-        "Do not suppress Codacy, lint, or certification findings",
-        "Do not add secrets or credentials"
-      ],
-      "successCriteria": [
-        "PULSE_MACHINE_READINESS criterion multi_cycle is pass or has a more precise terminal blocker.",
-        "PULSE_CLI_DIRECTIVE keeps next work focused on the PULSE machine when machine readiness is not READY.",
-        "Targeted PULSE tests pass."
-      ],
-      "requiredValidations": [
-        "affected-tests"
-      ]
-    },
-    {
       "order": 101,
       "id": "pulse-proof-scopeClosed",
       "kind": "pulse_machine",
@@ -27855,6 +27655,79 @@
       ],
       "successCriteria": [
         "invariantPass is pass or has a more precise machine-owned blocker.",
+        "PULSE_CLI_DIRECTIVE keeps next work focused on PULSE proof machinery while production autonomy is NAO.",
+        "Targeted PULSE tests pass."
+      ],
+      "requiredValidations": [
+        "affected-tests"
+      ]
+    },
+    {
+      "order": 104,
+      "id": "pulse-proof-recoveryPass",
+      "kind": "pulse_machine",
+      "priority": "P0",
+      "source": "pulse_machine",
+      "executionMode": "ai_safe",
+      "riskLevel": "low",
+      "evidenceMode": "inferred",
+      "confidence": "medium",
+      "productImpact": "machine",
+      "ownerLane": "pulse-proof",
+      "title": "Repair PULSE recovery proof",
+      "summary": "Recovery evidence was not attached in scan mode.",
+      "whyNow": "PULSE cannot claim zero-prompt production autonomy while this proof gate is failing; improve PULSE proof machinery before editing SaaS product code.",
+      "visionDelta": "Moves PULSE from advisory/autonomous execution toward certified technical replacement by converting inferred or missing proof into canonical evidence.",
+      "targetState": "Certification gate recoveryPass must pass or expose a precise non-product proof blocker.",
+      "affectedCapabilities": [],
+      "affectedFlows": [],
+      "gateNames": [
+        "recoveryPass"
+      ],
+      "expectedGateShift": "Pass or sharpen recoveryPass without editing SaaS product code",
+      "proofAuthority": "artifact_registry",
+      "proofBasis": [
+        "recovery-evidence:./artifacts.writeRegisteredArtifact.recovery-evidence:preserved:preserved_evidence"
+      ],
+      "validationTargets": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_CLI_DIRECTIVE.json",
+        "PULSE_MACHINE_READINESS.json",
+        "PULSE_RECOVERY_EVIDENCE.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_CLI_DIRECTIVE.json",
+        "PULSE_MACHINE_READINESS.json",
+        "PULSE_RECOVERY_EVIDENCE.json"
+      ],
+      "relatedFiles": [
+        "scripts/pulse/artifacts.ts",
+        "scripts/pulse/artifact-gc.ts",
+        "scripts/pulse/cert-evidence-defaults.ts",
+        "scripts/pulse/cert-gate-evidence.ts"
+      ],
+      "exitCriteria": [
+        "{\"id\":\"pulse-proof-recoveryPass-exit-0\",\"type\":\"artifact-gate\",\"target\":\"PULSE_CERTIFICATE.json\",\"expected\":{\"gate\":\"recoveryPass\",\"status\":\"pass\"},\"comparison\":\"eq\"}"
+      ],
+      "preconditions": [
+        "Operate only on PULSE machine/proof code and generated PULSE artifacts.",
+        "Do not materialize SaaS product capabilities for this proof-debt unit."
+      ],
+      "allowedActions": [
+        "PULSE scanner changes",
+        "PULSE evidence generation",
+        "PULSE scenario/probe harness changes",
+        "PULSE test writing"
+      ],
+      "forbiddenActions": [
+        "Do not edit SaaS product code for this unit",
+        "Do not edit governance-protected files",
+        "Do not suppress Codacy, lint, or certification findings",
+        "Do not add secrets or credentials"
+      ],
+      "successCriteria": [
+        "recoveryPass is pass or has a more precise machine-owned blocker.",
         "PULSE_CLI_DIRECTIVE keeps next work focused on PULSE proof machinery while production autonomy is NAO.",
         "Targeted PULSE tests pass."
       ],
@@ -28051,7 +27924,7 @@
     "leasesRef": "PULSE_WORKER_LEASES.json",
     "gitnexusRef": "gitnexus:missing",
     "beadsRef": "beads:60ac6e77ca29e058",
-    "contextDigest": "b13cb383c52b2834ffce8d23fc1571f1947a00e0da7529b9484ccb1237013118",
+    "contextDigest": "f2cd7749885510cbd3a32c587e1973c810b9c9f01ee11b507aec0f4f0114660a",
     "workerEnvelopeCount": 10,
     "contextBroadcastPass": true,
     "ownershipConflictPass": true,
@@ -28066,11 +27939,11 @@
     "Observed Codacy files are missing from repo inventory: .agents/skills/marketing-psychology/SKILL.md, scripts/pulse/parsers/facade-detector.ts, scripts/pulse/parsers/runtime-utils.ts.",
     "Codacy still reports 1076 HIGH issue(s).",
     "Phantom capabilities remain: Knowledge Base.",
-    "Codacy snapshot is stale (24253 minute(s) old).",
+    "Codacy snapshot is stale (24310 minute(s) old).",
     "Observed external high-impact signals remain active: 3.",
     "Required external adapters are missing: 2.",
     "Proof readiness still has non-observed production proof: status=executable_unproved, canAdvance=false, planned=1965, inferred=0, not_available=0, nonObserved=1965, executableUnproved=1965.",
-    "No-hardcoded-reality state still has hardcoded reality authority: 219506 hardcoded reality event(s) across 499 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9.."
+    "No-hardcoded-reality state still has hardcoded reality authority: 219630 hardcoded reality event(s) across 499 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9.."
   ],
-  "runId": "901768e5-5c8b-4ac1-b341-90fde975f76c"
+  "runId": "cf93bbde-8fbb-4538-8a48-e5355156621b"
 }

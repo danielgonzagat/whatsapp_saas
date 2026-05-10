@@ -52,6 +52,8 @@ export const colors = {
     primary: themeColor('--text-silver', '#E0DDD8'),
     secondary: themeColor('--text-muted', '#6E6E73'),
     inverted: themeColor('--app-text-inverse', '#0A0A0C'),
+    faint: '#9B9BA0',
+    faintLight: '#ADADB0',
     // Legacy aliases
     starlight: themeColor('--text-starlight', '#E0DDD8'),
     moonlight: themeColor('--text-moonlight', '#6E6E73'),
@@ -62,6 +64,7 @@ export const colors = {
   // Ember — the ONLY color
   ember: {
     primary: '#E85D30',
+    hover: '#D04E25',
     bg: 'rgba(232,93,48,0.06)',
     glow10: 'rgba(232,93,48,0.1)',
     glow30: 'rgba(232,93,48,0.3)',

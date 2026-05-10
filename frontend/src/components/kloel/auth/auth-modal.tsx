@@ -254,7 +254,7 @@ export function AuthModal({
             <div className="mb-3">
               <KloelMushroomVisual
                 size={56}
-                traceColor={kloelT(`#0A0A0C`)}
+                traceColor={colors.background.void}
                 animated={isLoading}
                 spores={isLoading ? 'animated' : 'none'}
               />

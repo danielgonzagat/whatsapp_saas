@@ -78,7 +78,7 @@ export default function MagicLinkPage() {
           width: '100%',
           maxWidth: 480,
           background: colors.background.surface,
-          border: '1px solid #222226',
+          border: `1px solid ${colors.background.border}`,
           borderRadius: 6,
           padding: '32px 28px',
           textAlign: 'center',

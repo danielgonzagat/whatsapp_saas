@@ -1,4 +1,4 @@
-# PULSE REPORT — 2026-05-10T02:46:32.836Z
+# PULSE REPORT — 2026-05-10T03:42:16.852Z
 
 ## PULSE VERDICT
 
@@ -19,25 +19,25 @@
 - Can declare Kloel product certified: NAO
 - bounded_run: PASS - Bounded next autonomous cycle exposes 8 ai_safe unit(s).
 - artifact_consistency: FAIL - Cross-artifact consistency has not produced a passing check.
-- execution_matrix: PASS - Execution matrix classified 5195 path(s) with zero unknown and zero non-terminal paths.
+- execution_matrix: PASS - Execution matrix classified 5194 path(s) with zero unknown and zero non-terminal paths.
 - critical_path_terminal: FAIL - 3961 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-insights, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.
 - breakpoint_precision: PASS - Every observed failure in the execution matrix has a breakpoint.
 - external_reality: FAIL - 2 missing, 0 stale, and 0 invalid external adapter(s) remain.
 - self_trust: FAIL - PULSE still reconstructs 1 phantom capability(ies) and 0 phantom flow(s); self-trust stays degraded until illusion collapses into real chains.
-- multi_cycle: FAIL - multiCycleConvergence: no autonomy iteration history found; production-autonomy verdict requires proven cycles. Cycle proof: 3/3 successful non-regressing real cycle(s).
+- multi_cycle: PASS - 3 non-regressing real autonomous cycle(s) observed (>= 3 required).
 
 ## Current State
 
 - Certification: NOT_CERTIFIED
 - Human replacement: NOT_READY
-- Score: 42/100
+- Score: 45/100
 - Blocking tier: 0
 - Scope parity: FAIL (low)
 - Structural chains: 766/2726 complete
 - Capabilities: real=0, partial=387, latent=13, phantom=1
 - Capability maturity: foundational=6, connected=395, operational=0, productionReady=0
 - Flows: real=0, partial=54, latent=0, phantom=0
-- Execution matrix: paths=5195, observedPass=0, observedFail=221, criticalUnobserved=0, unknown=0
+- Execution matrix: paths=5194, observedPass=0, observedFail=221, criticalUnobserved=0, unknown=0
 - Structural parity gaps: total=56, critical=12, high=43
 - Finding events: totalSignals=352, uniqueEvents=304, observed=0, confirmedStatic=352, weakSignals=0
 - Codacy HIGH issues: 1076
@@ -69,7 +69,7 @@
   Reason: No runtime probes executed.
 - Production Proof Coverage: 0%
   Reason: 0/401 capabilities real.
-- Unknown Files: 284
+- Unknown Files: 285
 - Orphan Files: 200
 - Excluded Directories: 23
 - Manifest role: semantic overlay, NOT scope boundary
@@ -259,7 +259,7 @@
 
 - Canonical dir: /Users/danielpenin/whatsapp_saas/.pulse/current
 - Mirrors: PULSE_ADMIN_EVIDENCE.json, PULSE_AGENT_ORCHESTRATION_STATE.json, PULSE_ARTIFACT_INDEX.json, PULSE_AUTONOMY_STATE.json, PULSE_BEADS_STATE.json, PULSE_BROWSER_EVIDENCE.json, PULSE_CAPABILITY_STATE.json, PULSE_CERTIFICATE.json, PULSE_CLI_DIRECTIVE.json, PULSE_CODACY_EVIDENCE.json, PULSE_CODEBASE_TRUTH.json, PULSE_CONTEXT_BROADCAST.json, PULSE_CONTEXT_DELTA.json, PULSE_CONVERGENCE_PLAN.json, PULSE_CUSTOMER_EVIDENCE.json, PULSE_EXECUTION_MATRIX.json, PULSE_EXECUTION_TRACE.json, PULSE_EXTERNAL_SIGNAL_STATE.json, PULSE_FLOW_EVIDENCE.json, PULSE_FLOW_PROJECTION.json, PULSE_GITNEXUS_STATE.json, PULSE_HEALTH.json, PULSE_INVARIANT_EVIDENCE.json, PULSE_MACHINE_READINESS.json, PULSE_OBSERVABILITY_EVIDENCE.json, PULSE_OPERATOR_EVIDENCE.json, PULSE_PARITY_GAPS.json, PULSE_PRODUCT_GRAPH.json, PULSE_PRODUCT_VISION.json, PULSE_RECOVERY_EVIDENCE.json, PULSE_REPORT.md, PULSE_RESOLVED_MANIFEST.json, PULSE_RUNTIME_EVIDENCE.json, PULSE_RUNTIME_PROBES.json, PULSE_SCENARIO_COVERAGE.json, PULSE_SCOPE_STATE.json, PULSE_SOAK_EVIDENCE.json, PULSE_STRUCTURAL_GRAPH.json, PULSE_WORKER_LEASES.json, PULSE_WORLD_STATE.json
-- Removed legacy artifacts this run: 3
+- Removed legacy artifacts this run: 23
 
 ## Truth Model
 

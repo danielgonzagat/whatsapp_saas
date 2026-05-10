@@ -1,8 +1,11 @@
+import * as path from 'path';
 import type { Break, PulseConfig } from '../types.manifest';
 import type { CoreParserData } from '../functional-map-types';
 import type { FullScanResult, FullScanOptions } from './types';
 import { PASSED, FAILED, runParserWithTimeout } from './types';
 import { buildCapabilityState } from '../capability-model/builder';
+import { pathExists, readJsonFile } from '../safe-fs';
+import { safeJoin } from '../safe-path';
 import { computeCertification } from '../certification/compute';
 import { extractCodebaseTruth } from '../codebase-truth/main-extraction';
 import { buildCodacyEvidence } from '../codacy-evidence';
@@ -239,6 +242,9 @@ export async function fullScan(
   });
 
   options.tracer?.startPhase('scan:certification');
+  const autonomyStatePath = path.join(config.rootDir, '.pulse', 'current', 'PULSE_AUTONOMY_STATE.json');
+  const autonomyState =
+    pathExists(autonomyStatePath) ? readJsonFile<Record<string, unknown>>(autonomyStatePath) : null;
   const preliminaryCertification = computeCertification({
     rootDir: config.rootDir,
     manifestResult,
@@ -252,6 +258,7 @@ export async function fullScan(
     capabilityState,
     flowProjection,
     externalSignalState,
+    autonomyState: autonomyState as PulseAutonomyStateSnapshot | null,
   });
   const executionMatrix = buildExecutionMatrix({
     structuralGraph,
@@ -277,6 +284,7 @@ export async function fullScan(
     flowProjection,
     externalSignalState,
     executionMatrix,
+    autonomyState: autonomyState as PulseAutonomyStateSnapshot | null,
   });
   const parityGaps = buildParityGaps({
     codebaseTruth,

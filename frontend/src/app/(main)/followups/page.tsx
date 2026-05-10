@@ -1,6 +1,7 @@
 'use client';
 
 import { kloelT } from '@/lib/i18n/t';
+import { colors } from '@/lib/design-tokens';
 /** Dynamic. */
 export const dynamic = 'force-dynamic';
 
@@ -183,13 +184,14 @@ export default function FollowupsPage() {
             type="button"
             onClick={loadFollowups}
             disabled={isLoading}
-            className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-[#D04E25] disabled:bg-primary/50 text-primary-foreground font-medium rounded-lg transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-[var(--ember-hover)] disabled:bg-primary/50 text-primary-foreground font-medium rounded-lg transition-colors"
+            style={{ '--ember-hover': colors.ember.hover } as React.CSSProperties}
           >
             {isLoading ? (
               <KloelMushroomMark
                 size={18}
                 title="Atualizando follow-ups"
-                traceColor="colors.background.void"
+                traceColor={colors.background.void}
               />
             ) : (
               <RefreshCw className="w-4 h-4" aria-hidden="true" />

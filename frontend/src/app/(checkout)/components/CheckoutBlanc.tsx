@@ -222,7 +222,7 @@ export default function CheckoutBlanc({
 
       <header
         style={{
-          background: 'linear-gradient(135deg,#3d1232,#5a1a4a,#3d1232)',
+          background: `linear-gradient(135deg,${CHECKOUT_VISUAL.blancBgStart},${CHECKOUT_VISUAL.blancBgMid},${CHECKOUT_VISUAL.blancBgStart})`,
           padding: '22px 24px',
         }}
       >
@@ -306,7 +306,7 @@ export default function CheckoutBlanc({
           background: designTokens.background.surface,
           padding: '10px 24px',
           textAlign: 'center',
-          borderBottom: '1px solid #f0e6c0',
+          borderBottom: `1px solid ${CHECKOUT_VISUAL.blancBorder}`,
         }}
       >
         <div style={{ fontSize: 14, fontWeight: 700 }}>{headerPrimary}</div>

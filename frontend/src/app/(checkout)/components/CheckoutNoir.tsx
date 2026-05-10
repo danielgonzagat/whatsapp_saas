@@ -1,5 +1,6 @@
 'use client';
 import { colors } from '@/lib/design-tokens';
+import { CHECKOUT_VISUAL } from './checkout-theme-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import type {
@@ -250,7 +251,7 @@ export default function CheckoutNoir({
 
       <header
         style={{
-          background: 'linear-gradient(135deg,#1a0a14,#2d1525,#1a0a14)',
+          background: `linear-gradient(135deg,${CHECKOUT_VISUAL.noirBgStart},${CHECKOUT_VISUAL.noirBgMid},${CHECKOUT_VISUAL.noirBgStart})`,
           padding: '22px 24px',
         }}
       >

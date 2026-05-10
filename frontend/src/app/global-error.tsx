@@ -16,8 +16,8 @@ const shellStyle: CSSProperties = {
   alignItems: 'center',
   justifyContent: 'center',
   padding: '32px 20px',
-  background: 'colors.background.void',
-  color: 'colors.text.silver',
+  background: colors.background.void,
+  color: colors.text.silver,
   fontFamily: "var(--font-sora), 'Sora', sans-serif",
 };
 
@@ -41,7 +41,7 @@ const titleStyle: CSSProperties = {
 const textStyle: CSSProperties = {
   fontSize: 14,
   lineHeight: 1.7,
-  color: '#ADADB0',
+  color: colors.text.faintLight,
   margin: '14px 0 24px',
 };
 
@@ -59,7 +59,7 @@ const primaryButtonStyle: CSSProperties = {
   padding: '12px 18px',
   borderRadius: 8,
   border: 'none',
-  background: 'colors.ember.primary',
+  background: colors.ember.primary,
   color: colors.text.silver,
   fontSize: 13,
   fontWeight: 600,
@@ -69,7 +69,7 @@ const primaryButtonStyle: CSSProperties = {
 const secondaryButtonStyle: CSSProperties = {
   ...primaryButtonStyle,
   background: 'transparent',
-  color: 'colors.text.silver',
+  color: colors.text.silver,
   border: '1px solid rgba(224, 221, 216, 0.16)',
 };
 
@@ -103,7 +103,7 @@ export default function GlobalError({
                 wordBreak: 'break-word',
                 fontSize: 12,
                 lineHeight: 1.6,
-                color: '#9B9BA0',
+                color: colors.text.faint,
                 margin: '0 0 20px',
               }}
             >
