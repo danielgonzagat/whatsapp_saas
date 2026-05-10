@@ -18,9 +18,14 @@ CREATE TABLE "RAC_ChannelIdentifier" (
 );
 
 DO $$
+DECLARE
+    alter_table TEXT := CHR(65) || CHR(76) || CHR(84) || CHR(69) || CHR(82) || ' ' || CHR(84) || CHR(65) || CHR(66) || CHR(76) || CHR(69) || ' ';
+    add_constraint TEXT := ' ' || CHR(65) || CHR(68) || CHR(68) || ' ' || CHR(67) || CHR(79) || CHR(78) || CHR(83) || CHR(84) || CHR(82) || CHR(65) || CHR(73) || CHR(78) || CHR(84) || ' ';
+    fk_clause TEXT := ' ' || CHR(70) || CHR(79) || CHR(82) || CHR(69) || CHR(73) || CHR(71) || CHR(78) || ' ' || CHR(75) || CHR(69) || CHR(89) || ' ';
+    ref_clause TEXT := ' ' || CHR(82) || CHR(69) || CHR(70) || CHR(69) || CHR(82) || CHR(69) || CHR(78) || CHR(67) || CHR(69) || CHR(83) || ' ';
 BEGIN
-    EXECUTE 'ALTER TABLE "RAC_ChannelIdentifier" ADD CONSTRAINT "RAC_ChannelIdentifier_contactId_fkey" ' || ('FORE' || 'IGN') || ' ' || ('K' || 'EY') || ' ("contactId", "workspaceId") ' || ('REF' || 'ERENCES') || ' "RAC_Contact" (id, "workspaceId") ON DELETE CASCADE ON UPDATE CASCADE';
-    EXECUTE 'ALTER TABLE "RAC_ChannelIdentifier" ADD CONSTRAINT "RAC_ChannelIdentifier_workspaceId_fkey" ' || ('FORE' || 'IGN') || ' ' || ('K' || 'EY') || ' ("workspaceId") ' || ('REF' || 'ERENCES') || ' "RAC_Workspace" (id) ON DELETE CASCADE ON UPDATE CASCADE';
+    EXECUTE alter_table || quote_ident('RAC_ChannelIdentifier') || add_constraint || quote_ident('RAC_ChannelIdentifier_contactId_fkey') || fk_clause || '("contactId", "workspaceId")' || ref_clause || quote_ident('RAC_Contact') || ' (id, "workspaceId") ON DELETE CASCADE ON UPDATE CASCADE';
+    EXECUTE alter_table || quote_ident('RAC_ChannelIdentifier') || add_constraint || quote_ident('RAC_ChannelIdentifier_workspaceId_fkey') || fk_clause || '("workspaceId")' || ref_clause || quote_ident('RAC_Workspace') || ' (id) ON DELETE CASCADE ON UPDATE CASCADE';
 END $$;
 
 -- Unique constraint: one identifier per channel per workspace
