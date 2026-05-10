@@ -373,6 +373,6 @@ test.describe('Marketing WhatsApp flow', () => {
 
     await page.getByRole('button', { name: 'Proximo' }).click();
     await expect(page.getByText('Passo 4 de 4')).toBeVisible();
-    await expect(page.getByText('Tom de voz')).toBeVisible();
+    await expect(page.getByLabel('Tom')).toBeVisible();
   });
 });
