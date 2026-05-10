@@ -26,8 +26,7 @@ ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE "RAC_ChannelIdentifier"
 ADD CONSTRAINT "RAC_ChannelIdentifier_workspaceId_fkey"
 FOREIGN KEY ("workspaceId")
-REFERENCES "RAC_Workspace" (id)
-ON DELETE CASCADE ON UPDATE CASCADE;
+REFERENCES "RAC_Workspace" (id) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- Unique constraint: one identifier per channel per workspace
 CREATE UNIQUE INDEX "RAC_ChannelIdentifier_workspaceId_channel_value_key"
