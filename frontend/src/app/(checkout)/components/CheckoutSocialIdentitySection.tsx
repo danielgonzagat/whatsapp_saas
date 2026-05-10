@@ -55,7 +55,7 @@ export function CheckoutSocialIdentitySection({
             loading={loadingProvider === 'google'}
           />
           <ActionSocialButton
-            icon={<FacebookIcon />}
+            icon={<MetaIdentityIcon />}
             label={facebookSdkReady ? 'Continuar com Facebook' : 'Carregando Facebook'}
             available={facebookAvailable}
             loading={loadingProvider === 'facebook'}
@@ -254,7 +254,7 @@ function GoogleIcon() {
   );
 }
 
-function FacebookIcon() {
+function MetaIdentityIcon() {
   return (
     <svg width="26" height="26" viewBox="0 0 24 24" fill="rgb(24, 119, 242)" aria-hidden="true">
       <path

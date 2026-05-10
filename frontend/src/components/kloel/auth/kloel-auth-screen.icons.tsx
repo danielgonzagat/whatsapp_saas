@@ -46,30 +46,6 @@ export function AppleIcon() {
   );
 }
 
-export function FacebookIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill={UI.text} aria-hidden="true">
-      <path
-        d={kloelT(
-          `M13.52 22v-8h2.7l.4-3.2h-3.1V8.76c0-.93.25-1.56 1.58-1.56H16.8V4.34A22.5 22.5 0 0 0 14.33 4c-2.45 0-4.13 1.5-4.13 4.25v2.55H7.4V14h2.8v8h3.32Z`,
-        )}
-      />
-    </svg>
-  );
-}
-
-export function TikTokIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill={UI.text} aria-hidden="true">
-      <path
-        d={kloelT(
-          `M14.4 3.5c.58 1.62 1.57 2.75 3.08 3.48.74.35 1.55.56 2.47.63v3.04a8.6 8.6 0 0 1-3.1-.63v5.34c0 3.65-2.74 6.14-6.29 6.14S4.5 18.93 4.5 15.58c0-3.56 2.85-6.12 6.41-6.12.38 0 .76.03 1.12.1v3.1a3.9 3.9 0 0 0-1.12-.16c-1.77 0-3.19 1.23-3.19 3.03 0 1.72 1.35 2.95 3.02 2.95 1.95 0 3.04-1.3 3.04-3.4V3.5h2.62z`,
-        )}
-      />
-    </svg>
-  );
-}
-
 export function EyeIcon() {
   return (
     <svg

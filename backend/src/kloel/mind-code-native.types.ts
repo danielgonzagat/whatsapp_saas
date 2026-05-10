@@ -10,7 +10,8 @@ export type MindDecisionKind =
   | 'product_offer'
   | 'broadcast_window'
   | 'cart_recovery'
-  | 'ad_alert_action';
+  | 'ad_alert_action'
+  | 'autopilot_action';
 
 export type MindGuardDecision = 'allow' | 'block' | 'modify' | 'needs_human';
 

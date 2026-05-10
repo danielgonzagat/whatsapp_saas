@@ -108,6 +108,29 @@ export const MIND_DECISION_CATALOG: MindDecisionSpec[] = [
     fallbackBehavior:
       'reverts to alert_only when confidence is low or ad platform reports stale metrics; never auto-executes budget or creative changes without operator confirmation',
   },
+  {
+    decisionType: 'autopilot_action',
+    options: [
+      'send_offer',
+      'send_offer_soft',
+      'send_price',
+      'send_calendar',
+      'handover_human',
+      'handle_objection',
+      'qualify',
+      'try_upsell',
+      'send_cta',
+      'soft_close_night',
+      'auto_reply_night',
+      'ai_chat',
+    ],
+    predicate: 'P(success|autopilot_action,intent,stage,channel,hour)',
+    contextKeys: ['channel', 'intent', 'stage', 'hour', 'isOptimalTime'],
+    baseline: 'legacy_autopilot_action',
+    outcomeEvent: 'autopilot.*',
+    fallbackBehavior:
+      'reverts to the legacy autopilot action baseline when MIND lift is negative with enough samples',
+  },
 ];
 
 export const MIND_DECISION_TYPES = MIND_DECISION_CATALOG.map((spec) => spec.decisionType);

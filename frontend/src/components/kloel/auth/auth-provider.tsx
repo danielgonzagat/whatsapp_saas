@@ -62,10 +62,6 @@ interface AuthContextType extends AuthState {
   ) => Promise<{ success: boolean; error?: string }>;
   signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   signInWithGoogle: (credential: string) => Promise<{ success: boolean; error?: string }>;
-  signInWithFacebook: (
-    accessToken: string,
-    userId?: string,
-  ) => Promise<{ success: boolean; error?: string }>;
   requestMagicLink: (
     email: string,
     redirectTo?: string,
@@ -445,34 +441,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     return { success: false, error: 'Falha ao autenticar com Google.' };
   };
-  const signInWithFacebook = async (accessToken: string, userId?: string) => {
-    rememberWorkspaceClaimCandidateForAuthUpgrade();
-    const res = await authApi.signInWithFacebook(accessToken, userId);
-    if (res.error) {
-      if (res.status === 429) {
-        return {
-          success: false,
-          error: 'Muitas tentativas. Aguarde alguns minutos e tente novamente.',
-        };
-      }
-      if (res.status === 503) {
-        return {
-          success: false,
-          error:
-            res.error ||
-            'Login com Facebook indisponível no momento. Tente novamente em instantes.',
-        };
-      }
-      return { success: false, error: res.error };
-    }
-    if (res.data?.user) {
-      return hydrateFromAuthResponse(res.data, {
-        fallbackEmail: res.data.user.email,
-        fallbackName: res.data.user.name ?? undefined,
-      });
-    }
-    return { success: false, error: 'Falha ao autenticar com Facebook.' };
-  };
   const requestMagicLink = async (email: string, redirectTo?: string) => {
     rememberWorkspaceClaimCandidateForAuthUpgrade();
     const res = await authApi.requestMagicLink(email, redirectTo);
@@ -552,7 +520,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signUp,
         signIn,
         signInWithGoogle,
-        signInWithFacebook,
         requestMagicLink,
         signOut,
         completeOnboarding,

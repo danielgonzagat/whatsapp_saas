@@ -51,7 +51,6 @@ describe('MindEventProcessorService', () => {
       subject: 'contact:lead-1',
       decisionType: 'followup_timing',
       outcome: 1,
-      baselineOutcome: 1,
     });
     for (const decisionType of ['audio_vs_text', 'message_format', 'tom', 'channel_choice']) {
       expect(policy.resolveOpenForSubject).toHaveBeenCalledWith({
@@ -59,7 +58,6 @@ describe('MindEventProcessorService', () => {
         subject: 'workspace:ws-1',
         decisionType,
         outcome: 1,
-        baselineOutcome: 1,
       });
     }
   });
@@ -78,7 +76,6 @@ describe('MindEventProcessorService', () => {
       subject: 'order:order-1',
       decisionType: 'cart_recovery',
       outcome: 1,
-      baselineOutcome: 1,
     });
     for (const decisionType of ['coupon_offer', 'product_offer', 'objection_response']) {
       expect(policy.resolveOpenForSubject).toHaveBeenCalledWith({
@@ -86,7 +83,6 @@ describe('MindEventProcessorService', () => {
         subject: 'workspace:ws-1',
         decisionType,
         outcome: 1,
-        baselineOutcome: 1,
       });
     }
   });
@@ -105,7 +101,6 @@ describe('MindEventProcessorService', () => {
       subject: 'workspace:ws-1',
       decisionType: 'human_transfer',
       outcome: 1,
-      baselineOutcome: 1,
     });
   });
 
@@ -123,7 +118,6 @@ describe('MindEventProcessorService', () => {
       subject: 'workspace:ws-1',
       decisionType: 'human_transfer',
       outcome: 1,
-      baselineOutcome: 1,
     });
   });
 
@@ -142,7 +136,6 @@ describe('MindEventProcessorService', () => {
         subject: 'workspace:ws-1',
         decisionType,
         outcome: 1,
-        baselineOutcome: 1,
       });
     }
   });
@@ -161,14 +154,12 @@ describe('MindEventProcessorService', () => {
       subject: 'order:order-1',
       decisionType: 'cart_recovery',
       outcome: 0,
-      baselineOutcome: 0,
     });
     expect(policy.resolveOpenForSubject).toHaveBeenCalledWith({
       workspaceId: 'ws-1',
       subject: 'workspace:ws-1',
       decisionType: 'coupon_offer',
       outcome: 0,
-      baselineOutcome: 0,
     });
   });
 
@@ -193,14 +184,12 @@ describe('MindEventProcessorService', () => {
       subject: 'workspace:ws-1',
       decisionType: 'human_transfer',
       outcome: 1,
-      baselineOutcome: 1,
     });
     expect(policy.resolveOpenForSubject).toHaveBeenCalledWith({
       workspaceId: 'ws-1',
       subject: 'workspace:ws-1',
       decisionType: 'broadcast_window',
       outcome: 1,
-      baselineOutcome: 1,
     });
   });
 
@@ -218,7 +207,6 @@ describe('MindEventProcessorService', () => {
       subject: 'workspace:ws-1',
       decisionType: 'ad_alert_action',
       outcome: 0,
-      baselineOutcome: 0,
     });
   });
 });

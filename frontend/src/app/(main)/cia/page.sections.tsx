@@ -34,7 +34,7 @@ export function CiaHeader({
           {surface?.title || 'KLOEL'}
         </h1>
         <p className="text-sm mt-1" style={{ color: colors.text.secondary }}>
-          {surface?.subtitle || 'Trabalhando no seu WhatsApp'}
+          {surface?.subtitle || 'Operando seus canais'}
         </p>
         <div className="mt-3 flex items-center gap-2 flex-wrap">
           <Badge>{surface?.workspaceName || 'Workspace'}</Badge>

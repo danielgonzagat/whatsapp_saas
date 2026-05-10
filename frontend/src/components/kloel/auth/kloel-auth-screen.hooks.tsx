@@ -1,7 +1,5 @@
 'use client';
-import { kloelError } from '@/lib/i18n/t';
-import { requestFacebookAccessTokenWithEmailScope } from '@/lib/facebook-sdk';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 /* ────────────────────────────────────────────────────────────
    GOOGLE SIGN-IN HOOK
@@ -103,94 +101,4 @@ export function useGoogleSignIn(
   }, [sdkLoaded, clientId, buttonRef, disabled]);
 
   return { available: !disabled && !!clientId };
-}
-
-/* ────────────────────────────────────────────────────────────
-   FACEBOOK SIGN-IN HOOK
-   ──────────────────────────────────────────────────────────── */
-export function useFacebookSignIn(
-  onAuthResponse: (payload: { accessToken: string; userId?: string }) => Promise<void>,
-  disabled = false,
-) {
-  const appId =
-    (typeof process !== 'undefined'
-      ? process.env.NEXT_PUBLIC_META_AUTH_APP_ID?.trim() ||
-        process.env.NEXT_PUBLIC_META_APP_ID?.trim()
-      : '') || '';
-  const version =
-    (typeof process !== 'undefined'
-      ? process.env.NEXT_PUBLIC_META_GRAPH_API_VERSION?.trim()
-      : '') || 'v21.0';
-  const cbRef = useRef(onAuthResponse);
-  const [sdkReady, setSdkReady] = useState(false);
-
-  useEffect(() => {
-    cbRef.current = onAuthResponse;
-  }, [onAuthResponse]);
-
-  useEffect(() => {
-    if (disabled || !appId || typeof window === 'undefined') {
-      return;
-    }
-
-    const initialize = () => {
-      if (!window.FB) {
-        return;
-      }
-      window.FB.init({
-        appId,
-        cookie: true,
-        xfbml: false,
-        version,
-      });
-      window.FB.AppEvents?.logPageView?.();
-      window.FB.getLoginStatus(() => undefined);
-      setSdkReady(true);
-    };
-
-    if (window.FB) {
-      initialize();
-      return;
-    }
-
-    const scriptId = 'facebook-jssdk';
-    const existing = document.getElementById(scriptId);
-    const previousInit = window.fbAsyncInit;
-
-    window.fbAsyncInit = () => {
-      previousInit?.();
-      initialize();
-    };
-
-    if (existing) {
-      return () => {
-        window.fbAsyncInit = previousInit;
-      };
-    }
-
-    const script = document.createElement('script');
-    script.id = scriptId;
-    script.async = true;
-    script.defer = true;
-    script.src = 'https://connect.facebook.net/en_US/sdk.js';
-    document.head.appendChild(script);
-
-    return () => {
-      window.fbAsyncInit = previousInit;
-    };
-  }, [appId, disabled, version]);
-
-  const signIn = useCallback(async () => {
-    if (disabled || !appId || !sdkReady || !window.FB) {
-      throw kloelError('Login com Facebook indisponível no momento.');
-    }
-
-    await cbRef.current(await requestFacebookAccessTokenWithEmailScope());
-  }, [appId, disabled, sdkReady]);
-
-  return {
-    available: !disabled && !!appId,
-    sdkReady,
-    signIn,
-  };
 }

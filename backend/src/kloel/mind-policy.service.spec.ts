@@ -20,6 +20,7 @@ describe('MindPolicyService', () => {
           harnessRows.map((r) => ({ outcome: r.outcome, baselineOutcome: r.baselineOutcome })),
         ),
       create: jest.fn().mockResolvedValue(undefined),
+      update: jest.fn().mockResolvedValue(undefined),
       updateMany: jest.fn().mockResolvedValue({ count: 0 }),
       count: jest.fn().mockResolvedValue(0),
     },
@@ -121,6 +122,7 @@ describe('MindPolicyService', () => {
         $queryRaw: jest.fn().mockResolvedValue(harnessData),
         mindPolicy: {
           create: jest.fn().mockResolvedValue(undefined),
+          update: jest.fn().mockResolvedValue(undefined),
           findMany: jest.fn().mockResolvedValue(
             harnessData.map((row) => ({
               baselineOutcome: row.baselineOutcome,
@@ -313,6 +315,68 @@ describe('MindPolicyService', () => {
       expect(result.chosen).toBe('only_option');
       expect(result.decision.baseline).toBe('only_option');
       expect(result.decision.fallbackActive).toBe(false);
+    });
+  });
+
+  describe('resolve outcomes with real baseline', () => {
+    it('estima baseline contrafactual quando o caller nao informa baselineOutcome', async () => {
+      const tx = {
+        $executeRaw: jest.fn().mockResolvedValue(1),
+        kloelMemory: { upsert: jest.fn() },
+        mindPolicy: {
+          findMany: jest.fn().mockResolvedValue([
+            {
+              id: 'policy-1',
+              workspaceId: 'ws-1',
+              subject: 'contact:1',
+              decisionType: 'coupon_offer',
+              context: { channel: 'whatsapp', ticket: 0.2 },
+              chosen: 'coupon_15',
+              baseline: 'no_coupon',
+              outcomeKey: 'coupon:1',
+            },
+          ]),
+          updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+        },
+      };
+      const prisma = {
+        $transaction: jest.fn(async (callback: (client: typeof tx) => Promise<void>) =>
+          callback(tx),
+        ),
+        mindPolicy: { create: jest.fn(), findMany: jest.fn() },
+      };
+      const service = new MindPolicyService(prisma as never, { getOrInit: jest.fn() } as never);
+
+      await service.resolveOutcome('ws-1', 'coupon:1', 1);
+
+      expect(tx.mindPolicy.updateMany).toHaveBeenCalledWith({
+        where: {
+          id: 'policy-1',
+          workspaceId: 'ws-1',
+          resolvedAt: null,
+        },
+        data: expect.objectContaining({ outcome: 1, baselineOutcome: 0.78 }),
+      });
+      const updateCall = tx.mindPolicy.updateMany.mock.calls[0][0] as {
+        data: { baselineOutcome: number };
+      };
+      expect(updateCall.data.baselineOutcome).toBeGreaterThanOrEqual(0);
+      expect(updateCall.data.baselineOutcome).toBeLessThan(1);
+    });
+
+    it('calcula lift diferente de zero quando baselineOutcome diverge do outcome', async () => {
+      const prisma = buildPrisma([
+        { outcome: 1, baselineOutcome: 0.65 },
+        { outcome: 1, baselineOutcome: 0.65 },
+        { outcome: 0, baselineOutcome: 0.35 },
+      ]);
+      const service = new MindPolicyService(prisma as never, { getOrInit: jest.fn() } as never);
+
+      const result = await service.harness('ws-1', 'coupon_offer');
+
+      expect(result.mindMean).toBeCloseTo(2 / 3);
+      expect(result.baselineMean).toBeCloseTo(0.55);
+      expect(result.lift).toBeGreaterThan(0);
     });
   });
 });

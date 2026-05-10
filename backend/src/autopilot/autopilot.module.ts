@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { AnalyticsModule } from '../analytics/analytics.module';
 import { BillingModule } from '../billing/billing.module';
 import { InboxModule } from '../inbox/inbox.module';
+import { KloelModule } from '../kloel/kloel.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { AutopilotAnalyticsInsightsService } from './autopilot-analytics-insights.service';
 import { AutopilotAnalyticsReportService } from './autopilot-analytics-report.service';
@@ -18,7 +19,7 @@ import { SegmentationService } from './segmentation.service';
 
 /** Autopilot module. */
 @Module({
-  imports: [PrismaModule, InboxModule, AnalyticsModule, BillingModule],
+  imports: [PrismaModule, InboxModule, AnalyticsModule, BillingModule, KloelModule],
   controllers: [AutopilotController, SegmentationController],
   providers: [
     AutopilotService,

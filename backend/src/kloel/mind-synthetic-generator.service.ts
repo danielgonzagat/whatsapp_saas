@@ -157,6 +157,24 @@ const BUILTIN_RECIPES: Record<string, SyntheticDecisionRecipe> = {
     ],
     baseline: 'alert_only',
   },
+  autopilot_action: {
+    decisionType: 'autopilot_action',
+    candidates: [
+      { action: 'send_offer', meanRange: [0.35, 0.72], varianceRange: [0.08, 0.28] },
+      { action: 'send_offer_soft', meanRange: [0.32, 0.68], varianceRange: [0.08, 0.3] },
+      { action: 'send_price', meanRange: [0.25, 0.62], varianceRange: [0.1, 0.35] },
+      { action: 'send_calendar', meanRange: [0.2, 0.58], varianceRange: [0.12, 0.38] },
+      { action: 'handover_human', meanRange: [0.18, 0.56], varianceRange: [0.12, 0.4] },
+      { action: 'handle_objection', meanRange: [0.3, 0.7], varianceRange: [0.08, 0.3] },
+      { action: 'qualify', meanRange: [0.28, 0.66], varianceRange: [0.09, 0.32] },
+      { action: 'try_upsell', meanRange: [0.2, 0.55], varianceRange: [0.12, 0.4] },
+      { action: 'send_cta', meanRange: [0.36, 0.74], varianceRange: [0.07, 0.25] },
+      { action: 'soft_close_night', meanRange: [0.24, 0.6], varianceRange: [0.1, 0.35] },
+      { action: 'auto_reply_night', meanRange: [0.18, 0.52], varianceRange: [0.12, 0.42] },
+      { action: 'ai_chat', meanRange: [0.3, 0.68], varianceRange: [0.08, 0.32] },
+    ],
+    baseline: 'legacy_autopilot_action',
+  },
 };
 
 @Injectable()

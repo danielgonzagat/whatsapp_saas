@@ -101,7 +101,7 @@ async function hasGrantedEmailPermission(
 }
 
 /** Request facebook access token with email scope. */
-export async function requestFacebookAccessTokenWithEmailScope(): Promise<FacebookAuthResult> {
+export async function requestMetaAccessTokenWithEmailScope(): Promise<FacebookAuthResult> {
   const facebook = resolveSdk();
   const currentStatus = await getLoginStatus(facebook);
 

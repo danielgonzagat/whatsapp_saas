@@ -116,7 +116,6 @@ export class MindEventProcessorService {
         subject: event.subject,
         decisionType: 'followup_timing',
         outcome: 1,
-        baselineOutcome: 1,
       });
       await this.resolveWorkspacePolicies(
         event,
@@ -230,6 +229,7 @@ export class MindEventProcessorService {
           outcome,
         );
         this.applySurprise(result, surprise);
+        await this.resolvePolicies(event, result, event.subject, ['autopilot_action'], outcome);
         if (intent === 'lead_qualified') {
           await this.resolveWorkspacePolicies(event, result, ['human_transfer'], 1);
         }
@@ -285,7 +285,6 @@ export class MindEventProcessorService {
         subject,
         decisionType,
         outcome,
-        baselineOutcome: outcome,
       });
     }
   }
