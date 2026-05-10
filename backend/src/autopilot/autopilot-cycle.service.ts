@@ -168,6 +168,31 @@ export class AutopilotCycleService {
     });
   }
 
+  private isHotLeadMessage(lastMsg: { direction: string; content?: string | null; createdAt: Date }): boolean {
+    if (lastMsg.direction !== 'INBOUND') {
+      return false;
+    }
+    const ageHours = (Date.now() - lastMsg.createdAt.getTime()) / 3600000;
+    if (ageHours >= 168) {
+      return false;
+    }
+    const hotKeywords = ['preço', 'preco', 'valor', 'quanto', 'pix', 'boleto', 'comprar', 'quero'];
+    const text = (lastMsg.content || '').toLowerCase();
+    return hotKeywords.some((kw) => text.includes(kw));
+  }
+
+  private async isOptimalTimeWindow(workspaceId: string): Promise<boolean> {
+    const bestTime = await this.smartTime.getBestTime(workspaceId);
+    const currentHour = new Date().getHours();
+    if (Math.abs(currentHour - bestTime.peakHour) > 3) {
+      this.logger.log(
+        `[Autopilot] Skipping proactive mode. Current hour ${currentHour} is too far from optimal ${bestTime.peakHour}`,
+      );
+      return false;
+    }
+    return true;
+  }
+
   private async handleProactive(workspaceId: string) {
     const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
@@ -186,42 +211,17 @@ export class AutopilotCycleService {
       orderBy: { lastMessageAt: 'desc' },
     });
 
-    const bestTime = await this.smartTime.getBestTime(workspaceId);
-    const currentHour = new Date().getHours();
-    if (Math.abs(currentHour - bestTime.peakHour) > 3) {
-      this.logger.log(
-        `[Autopilot] Skipping proactive mode. Current hour ${currentHour} is too far from optimal ${bestTime.peakHour}`,
-      );
+    if (!(await this.isOptimalTimeWindow(workspaceId))) {
       return;
     }
 
     await forEachSequential(stalled, async (conv) => {
       const lastMsg = conv.messages[0];
-      if (!lastMsg) {
+      if (!lastMsg || !this.isHotLeadMessage(lastMsg)) {
         return;
       }
-      const text = (lastMsg.content || '').toLowerCase();
-      const ageHours = (Date.now() - lastMsg.createdAt.getTime()) / 3600000;
-
-      const isHot =
-        lastMsg.direction === 'INBOUND' &&
-        ageHours < 168 &&
-        (text.includes('preço') ||
-          text.includes('preco') ||
-          text.includes('valor') ||
-          text.includes('quanto') ||
-          text.includes('pix') ||
-          text.includes('boleto') ||
-          text.includes('comprar') ||
-          text.includes('quero'));
-      if (isHot) {
-        const compliance = await this.ensureCompliance(
-          conv.workspaceId,
-          conv.contact,
-          conv.messages,
-        );
-        await this.executor.executeAction('lead_unlocker', conv, compliance);
-      }
+      const compliance = await this.ensureCompliance(conv.workspaceId, conv.contact, conv.messages);
+      await this.executor.executeAction('lead_unlocker', conv, compliance);
     });
   }
 
@@ -240,6 +240,65 @@ export class AutopilotCycleService {
     }
   }
 
+  private shouldEnforceOptIn(contact: AutopilotConversation['contact']): boolean {
+    return (
+      process.env.ENFORCE_OPTIN === 'true' ||
+      this.readRecord(
+        this.readRecord(contact?.workspace).providerSettings,
+      ).autopilot === true
+    );
+  }
+
+  private isEnforce24h(): boolean {
+    return (process.env.AUTOPILOT_ENFORCE_24H ?? 'false').toLowerCase() !== 'false';
+  }
+
+  private async checkOptInCompliance(
+    workspaceId: string,
+    contact: { id?: string; tags?: Array<{ name: string }>; customFields?: Prisma.JsonValue },
+  ): Promise<{ allowed: boolean; reason?: string }> {
+    let tags = contact?.tags || [];
+    let customFields = (contact?.customFields as Record<string, unknown>) || {};
+
+    if (!Array.isArray(tags)) {
+      const fullContact = await this.prisma.contact.findFirst({
+        where: { id: contact?.id, workspaceId },
+        select: { id: true, customFields: true, tags: { select: { name: true } } },
+      });
+      if (fullContact) {
+        tags = fullContact.tags || [];
+        customFields = (fullContact.customFields as Record<string, unknown>) || {};
+      }
+    }
+
+    const tagNames = tags.map((t) => t.name?.toLowerCase());
+    const hasOptIn =
+      tagNames.includes('optin_whatsapp') || customFields.optin === true || customFields.optin_whatsapp === true;
+    if (!hasOptIn) {
+      return { allowed: false, reason: 'optin_required' };
+    }
+    return { allowed: true };
+  }
+
+  private async check24hCompliance(
+    workspaceId: string,
+    contactId: string | undefined,
+    messages: Array<{ direction: string; createdAt: Date }>,
+  ): Promise<{ allowed: boolean; reason?: string }> {
+    const lastInbound =
+      messages?.find((m) => m.direction === 'INBOUND') ||
+      (await this.prisma.message.findFirst({
+        where: { workspaceId, contactId, direction: 'INBOUND' },
+        orderBy: { createdAt: 'desc' },
+        select: { createdAt: true },
+      }));
+    const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+    if (!lastInbound || new Date(lastInbound.createdAt).getTime() < cutoff) {
+      return { allowed: false, reason: 'session_expired_24h' };
+    }
+    return { allowed: true };
+  }
+
   /**
    * Compliance guardrails: opt-in e janela 24h.
    */
@@ -255,51 +314,15 @@ export class AutopilotCycleService {
         },
     messages: Array<{ direction: string; createdAt: Date }>,
   ): Promise<{ allowed: boolean; reason?: string }> {
-    const enforceOptIn =
-      process.env.ENFORCE_OPTIN === 'true' ||
-      this.readRecord(
-        this.readRecord((contact as AutopilotConversation['contact'])?.workspace).providerSettings,
-      ).autopilot === true;
-    const enforce24h = (process.env.AUTOPILOT_ENFORCE_24H ?? 'false').toLowerCase() !== 'false';
-
-    let fullContact: {
-      id?: string;
-      tags?: Array<{ name: string }>;
-      customFields?: Prisma.JsonValue;
-    } | null = contact;
-    if (enforceOptIn && (!contact?.tags || !Array.isArray(contact.tags))) {
-      fullContact = await this.prisma.contact.findFirst({
-        where: { id: contact?.id, workspaceId },
-        select: {
-          id: true,
-          customFields: true,
-          tags: { select: { name: true } },
-        },
-      });
-    }
-
-    if (enforceOptIn) {
-      const tags = (fullContact?.tags || []).map((t) => t.name?.toLowerCase());
-      const cf = (fullContact?.customFields as Record<string, unknown>) || {};
-      const hasOptIn =
-        tags.includes('optin_whatsapp') || cf.optin === true || cf.optin_whatsapp === true;
-      if (!hasOptIn) {
-        return { allowed: false, reason: 'optin_required' };
+    if (this.shouldEnforceOptIn(contact as AutopilotConversation['contact'])) {
+      const result = await this.checkOptInCompliance(workspaceId, contact);
+      if (!result.allowed) {
+        return result;
       }
     }
 
-    if (enforce24h) {
-      const lastInbound =
-        messages?.find((m) => m.direction === 'INBOUND') ||
-        (await this.prisma.message.findFirst({
-          where: { workspaceId, contactId: contact?.id, direction: 'INBOUND' },
-          orderBy: { createdAt: 'desc' },
-          select: { createdAt: true },
-        }));
-      const cutoff = Date.now() - 24 * 60 * 60 * 1000;
-      if (!lastInbound || new Date(lastInbound.createdAt).getTime() < cutoff) {
-        return { allowed: false, reason: 'session_expired_24h' };
-      }
+    if (this.isEnforce24h()) {
+      return this.check24hCompliance(workspaceId, contact?.id, messages);
     }
 
     return { allowed: true };

@@ -1,12 +1,12 @@
 import type { Job } from 'bullmq';
-import { FlowEngineGlobal } from '../flow-engine-global';
-import { WorkerLogger } from '../logger';
-import { PlanLimitsProvider } from '../providers/plan-limits';
+import { FlowEngineGlobal } from './flow-engine-global';
+import { WorkerLogger } from './logger';
+import { PlanLimitsProvider } from './providers/plan-limits';
 
 type SkippedFlowResult = { ok: false; skipped: true; reason: string };
 
 export async function checkFlowSubscription(
-  jobId: string | undefined,
+  _jobId: string | undefined,
   workspaceId: string,
 ): Promise<SkippedFlowResult | null> {
   const subStatus = await PlanLimitsProvider.checkSubscriptionStatus(workspaceId);
@@ -17,7 +17,7 @@ export async function checkFlowSubscription(
 }
 
 export async function checkFlowRateLimit(
-  jobId: string | undefined,
+  _jobId: string | undefined,
   workspaceId: string,
 ): Promise<SkippedFlowResult | null> {
   const rate = await PlanLimitsProvider.checkFlowRunRate(workspaceId);
@@ -50,7 +50,7 @@ export async function resolveFlowDefinition(
 
 export async function checkIdempotentCompletion(
   engine: FlowEngineGlobal,
-  jobId: Job['id'],
+  _jobId: Job['id'],
   executionId: string | undefined,
   workspaceId: string | undefined,
 ): Promise<{ ok: true; skipped: true; reason: 'already_completed' } | null> {

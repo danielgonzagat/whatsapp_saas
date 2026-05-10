@@ -1,4 +1,5 @@
 import { KLOEL_THEME } from '@/lib/kloel-theme';
+import { colors } from '@/lib/design-tokens';
 
 export const FONT_SORA = "var(--font-sora), 'Sora', sans-serif";
 export const FONT_MONO = "var(--font-jetbrains), 'JetBrains Mono', monospace";
@@ -12,13 +13,13 @@ export const V = {
   t: KLOEL_THEME.textPrimary,
   t2: KLOEL_THEME.textSecondary,
   t3: KLOEL_THEME.textTertiary,
-  g2: '#10B981',
-  bl: '#3B82F6',
-  y: '#F59E0B',
-  r: '#EF4444',
-  p: '#8B5CF6',
-  cy: '#06B6D4',
-  pk: '#EC4899',
+  g2: colors.semantic.success,
+  bl: colors.semantic.info,
+  y: colors.semantic.warning,
+  r: colors.semantic.error,
+  p: colors.semantic.purple,
+  cy: colors.canvas.cyan,
+  pk: colors.canvas.pink,
 };
 
 export const R$ = (n: number) =>

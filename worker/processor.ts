@@ -32,7 +32,7 @@ import {
   markCompleted,
   startJob,
 } from './processor-base';
-import { checkAutopilotQueueHealth, startAutopilotHealthMonitor } from './processor-health-monitor';
+import { startAutopilotHealthMonitor } from './processor-health-monitor';
 
 /**
  * =======================================================

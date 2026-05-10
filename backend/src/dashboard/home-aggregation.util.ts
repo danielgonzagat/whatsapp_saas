@@ -176,6 +176,49 @@ function buildLabel(period: DashboardHomePeriod, start: Date, end: Date) {
   }
 }
 
+const VALID_PERIODS = new Set(['today', '7d', '30d', '90d', 'custom']);
+
+function validatePeriod(raw: string): DashboardHomePeriod {
+  return VALID_PERIODS.has(raw) ? (raw as DashboardHomePeriod) : '30d';
+}
+
+function computeRangeBounds(
+  period: DashboardHomePeriod,
+  now: Date,
+  startDate: string | undefined,
+  endDate: string | undefined,
+): { start: Date; end: Date } {
+  switch (period) {
+    case 'today':
+      return { start: startOfDay(now), end: now };
+    case '7d':
+      return { start: startOfDay(addDays(now, -29)), end: now };
+    case '30d':
+      return { start: startOfDay(addDays(now, -29)), end: now };
+    case '90d':
+      return { start: startOfDay(addDays(now, -89)), end: now };
+    case 'custom': {
+      const fallbackStart = startOfDay(addDays(now, -29));
+      const fallbackEnd = now;
+      const parsedStart = parseInputDate(startDate, fallbackStart);
+      const parsedEnd = parseInputDate(endDate, fallbackEnd);
+      return {
+        start: startOfDay(parsedStart <= parsedEnd ? parsedStart : parsedEnd),
+        end: endOfDay(parsedStart <= parsedEnd ? parsedEnd : parsedStart),
+      };
+    }
+    default:
+      return { start: startOfDay(addDays(now, -6)), end: now };
+  }
+}
+
+function computePreviousRange(start: Date, end: Date) {
+  const durationMs = Math.max(end.getTime() - start.getTime(), HOUR_MS);
+  const previousEnd = addMs(start, -1);
+  const previousStart = addMs(previousEnd, -durationMs);
+  return { previousStart, previousEnd };
+}
+
 /** Resolve dashboard home range. */
 export function resolveDashboardHomeRange(input?: {
   period?: string;
@@ -184,54 +227,9 @@ export function resolveDashboardHomeRange(input?: {
   now?: Date;
 }): DashboardHomeRange {
   const now = isValidDate(input?.now) ? input.now : new Date();
-  const requestedPeriod = String(input?.period || '30d').toLowerCase();
-  const period: DashboardHomePeriod =
-    requestedPeriod === 'today' ||
-    requestedPeriod === '7d' ||
-    requestedPeriod === '30d' ||
-    requestedPeriod === '90d' ||
-    requestedPeriod === 'custom'
-      ? requestedPeriod
-      : '30d';
-
-  let start: Date;
-  let end: Date;
-
-  switch (period) {
-    case 'today':
-      start = startOfDay(now);
-      end = now;
-      break;
-    case '7d':
-      start = startOfDay(addDays(now, -29));
-      end = now;
-      break;
-    case '30d':
-      start = startOfDay(addDays(now, -29));
-      end = now;
-      break;
-    case '90d':
-      start = startOfDay(addDays(now, -89));
-      end = now;
-      break;
-    case 'custom': {
-      const fallbackStart = startOfDay(addDays(now, -29));
-      const fallbackEnd = now;
-      const parsedStart = parseInputDate(input?.startDate, fallbackStart);
-      const parsedEnd = parseInputDate(input?.endDate, fallbackEnd);
-      start = startOfDay(parsedStart <= parsedEnd ? parsedStart : parsedEnd);
-      end = endOfDay(parsedStart <= parsedEnd ? parsedEnd : parsedStart);
-      break;
-    }
-    default:
-      start = startOfDay(addDays(now, -6));
-      end = now;
-      break;
-  }
-
-  const durationMs = Math.max(end.getTime() - start.getTime(), HOUR_MS);
-  const previousEnd = addMs(start, -1);
-  const previousStart = addMs(previousEnd, -durationMs);
+  const period = validatePeriod(String(input?.period || '30d').toLowerCase());
+  const { start, end } = computeRangeBounds(period, now, input?.startDate, input?.endDate);
+  const { previousStart, previousEnd } = computePreviousRange(start, end);
 
   return {
     period,
