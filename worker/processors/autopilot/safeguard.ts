@@ -127,10 +127,10 @@ export async function logAutopilotAction(input: {
 
 export async function resolveLatestQuotedMessageId(input: {
   workspaceId: string;
-  contactId?: string;
-  conversationId?: string;
-  phone?: string;
-  providerMessageIds?: string[];
+  contactId?: string | undefined;
+  conversationId?: string | undefined;
+  phone?: string | undefined;
+  providerMessageIds?: string[] | undefined;
 }): Promise<string | undefined> {
   const fromContext =
     Array.isArray(input.providerMessageIds) && input.providerMessageIds.length > 0

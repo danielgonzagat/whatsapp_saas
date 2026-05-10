@@ -30,7 +30,7 @@ export interface CiaActionDecision {
   /** Last message text property. */
   lastMessageText: string;
   /** Variant family property. */
-  variantFamily?: 'followup' | 'payment_recovery';
+  variantFamily?: 'followup' | 'payment_recovery' | undefined;
   /** Confidence property. */
   confidence: number;
   /** Risk score property. */

@@ -1,8 +1,8 @@
 // PULSE Wave 5 — Scenario Selector Helpers
 // Part of builder sub-decomposition: selector token normalization
 
-import { deriveLengthBoundariesFromObservedCatalog } from '../../../dynamic-reality-kernel/profile-derivations';
-import { _okTextLen, _scale, _unit, _zero } from '../../queries';
+import { deriveLengthBoundariesFromObservedCatalog } from '../../dynamic-reality-kernel/profile-derivations';
+import { _okTextLen, _scale, _unit, _zero } from '../queries';
 
 const _selectorMaxLen =
   deriveLengthBoundariesFromObservedCatalog()[

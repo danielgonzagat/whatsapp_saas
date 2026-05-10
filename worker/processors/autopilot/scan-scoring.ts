@@ -37,7 +37,7 @@ export async function runScanCognitivePipeline(params: {
   contactName: string;
   messageContent: string;
   messageCount: number;
-  leadScore?: number | null;
+  leadScore?: number | null | undefined;
   conversationId?: string | undefined;
   deliveryMode: 'reactive' | 'proactive';
   settings: UnknownRecord;

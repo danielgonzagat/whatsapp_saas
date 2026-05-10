@@ -133,7 +133,7 @@ export function isWorkspaceSelfPhone(
 export function isWorkspaceSelfTarget(input: {
   phone?: string | null | undefined;
   chatId?: string | null | undefined;
-  selfIdentity?: WorkspaceSelfIdentity | null;
+  selfIdentity?: WorkspaceSelfIdentity | null | undefined;
 }): boolean {
   const selfIdentity = input.selfIdentity;
   if (!selfIdentity) {

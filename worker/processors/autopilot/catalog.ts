@@ -10,8 +10,6 @@ import { resolveWorkspaceSelfIdentity, isWorkspaceSelfTarget, resolveCanonicalCh
 import { getRemoteUnreadChatSnapshot, seedRemoteUnreadConversationShells, scheduleBacklogContinuation, setWorkspaceSilentLiveMode } from './backlog';
 import { upsertCatalogConversationShell } from './opportunity';
 
-const catalogLog = new WorkerLogger('autopilot:catalog');
-
 export async function runCatalogContacts(data: UnknownRecord) {
   const workspaceId = String(data?.workspaceId || '').trim();
   if (!workspaceId) {

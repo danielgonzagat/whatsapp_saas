@@ -1,7 +1,7 @@
 import * as path from 'path';
 import * as ts from 'typescript';
 import type { FacadeEntry } from '../../types.core';
-import { buildParserDiagnosticBreak } from '../../diagnostic-break';
+import { buildParserDiagnosticBreak } from '../diagnostic-break';
 import {
   deriveUnitValue,
   deriveZeroValue,

@@ -36,7 +36,7 @@ function ProjectSkeletonGrid() {
           key={`project-skeleton-${slot}`}
           style={{
             background: 'var(--app-bg-card)',
-            border: '1px solid #1C1C1F',
+            border: `1px solid ${colors.canvas.border}`,
             borderRadius: 6,
             overflow: 'hidden',
           }}
@@ -44,7 +44,7 @@ function ProjectSkeletonGrid() {
           <div
             style={{
               height: 96,
-              background: 'linear-gradient(135deg, #161618 0%, #1C1C1F 50%, #161618 100%)',
+              background: `linear-gradient(135deg, ${colors.canvas.surface} 0%, ${colors.canvas.border} 50%, ${colors.canvas.surface} 100%)`,
             }}
           />
           <div style={{ padding: '10px 12px', display: 'grid', gap: 8 }}>
@@ -90,7 +90,7 @@ export default function CanvasProjetos() {
             alignItems: 'center',
             gap: 10,
             background: 'var(--app-bg-card)',
-            border: '1px solid #1C1C1F',
+            border: `1px solid ${colors.canvas.border}`,
             borderRadius: 6,
             padding: '10px 16px',
           }}
@@ -119,7 +119,7 @@ export default function CanvasProjetos() {
               style={{
                 padding: '5px 12px',
                 background: 'none',
-                border: '1px solid #1C1C1F',
+                border: `1px solid ${colors.canvas.border}`,
                 borderRadius: 4,
                 color: 'var(--app-text-secondary)',
                 fontSize: 11,
@@ -140,7 +140,7 @@ export default function CanvasProjetos() {
         <div
           style={{
             background: 'var(--app-bg-card)',
-            border: '1px dashed #1C1C1F',
+            border: `1px dashed ${colors.canvas.border}`,
             borderRadius: 6,
             padding: '48px 24px',
             textAlign: 'center',
@@ -286,7 +286,7 @@ function ProjectCard({
             top: 6,
             right: 6,
             background: 'var(--app-bg-card)',
-            border: '1px solid #1C1C1F',
+            border: `1px solid ${colors.canvas.border}`,
             borderRadius: 4,
             padding: 4,
             cursor: 'pointer',

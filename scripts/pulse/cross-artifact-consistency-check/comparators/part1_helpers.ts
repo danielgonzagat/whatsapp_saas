@@ -4,7 +4,7 @@
 
 import * as path from 'path';
 import type { LoadedArtifact } from '../../types';
-import { deepGet } from '../../loaders';
+import { deepGet } from '../loaders';
 import {
   deriveUnitValue,
   deriveZeroValue,

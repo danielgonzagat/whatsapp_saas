@@ -1,10 +1,6 @@
 import OpenAI from 'openai';
 import { safeResolve } from '../../safe-path';
-import { WorkerLogger } from '../../logger';
 import { prisma } from '../../db';
-import { redis } from '../../redis-client';
-import { autopilotQueue, flowQueue } from '../../queue';
-import { buildQueueJobId } from '../../job-id';
 import { publishAgentEvent } from '../../providers/agent-events';
 import {
   buildBusinessStateSnapshot,
@@ -17,10 +13,8 @@ import {
   persistMarketSignals,
   persistSystemInsight,
 } from '../../providers/commercial-intelligence';
-import { dispatchOutboundThroughFlow } from '../../providers/outbound-dispatcher';
 import { getWorkspaceLocalHour, isWithinWorkspaceWindow } from '../../providers/timezone';
 import { WhatsAppEngine } from '../../providers/whatsapp-engine';
-import { unifiedWhatsAppProvider as whatsappApiProvider } from '../../providers/unified-whatsapp-provider';
 import { forEachSequential } from '../../utils/async-sequence';
 import { buildSignedLocalStorageUrl } from '../../utils/signed-storage-url';
 import {
@@ -28,21 +22,16 @@ import {
   isAutonomousEnabled,
   isCiaAutonomyMode,
   isExplicitProactiveOutreachAllowed,
-  normalizeJsonObject,
   type UnknownRecord,
-  type WorkspaceSelfIdentity,
   notifyBillingSuspended,
   WINDOW_START,
   WINDOW_END,
   SILENCE_HOURS,
   CYCLE_LIMIT,
 } from './shared';
-import { resolveWorkspaceSelfIdentity, isWorkspaceSelfTarget } from './identity';
 import { maybeEscalateToHumanControl } from './backlog';
 import { logAutopilotAction } from './safeguard';
 import { executeAction } from './execution';
-
-const cycleLog = new WorkerLogger('autopilot:cycle');
 
 export async function runCycleAll() {
   const workspaces = await prisma.workspace.findMany({

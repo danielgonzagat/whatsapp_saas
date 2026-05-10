@@ -16,7 +16,7 @@ export function evaluateTruthExtractionGate(
   scopeState: PulseScopeState,
   capabilityState?: PulseCapabilityState,
   flowProjection?: PulseFlowProjection,
-): import('../../types.evidence').PulseGateResult {
+): import('../types.evidence').PulseGateResult {
   if (codebaseTruth.summary.totalPages === 0 || resolvedManifest.summary.totalModules === 0) {
     return gateFail(
       'Code-derived truth extraction did not discover frontend pages or modules.',
@@ -78,7 +78,7 @@ export function evaluateTruthExtractionGate(
 }
 
 export function evaluatePulseSelfTrustGate(
-  parserInventory: import('../../types.manifest').PulseParserInventory,
+  parserInventory: import('../types.manifest').PulseParserInventory,
   capabilityState?: PulseCapabilityState,
   flowProjection?: PulseFlowProjection,
   selfTrustReport?: {
@@ -90,8 +90,8 @@ export function evaluatePulseSelfTrustGate(
       severity?: 'critical' | 'high' | 'medium';
     }>;
   } | null,
-  executionTrace?: import('../../types.evidence').PulseExecutionTrace,
-): import('../../types.evidence').PulseGateResult {
+  executionTrace?: import('../types.evidence').PulseExecutionTrace,
+): import('../types.evidence').PulseGateResult {
   const passedParserPhases = new Set(
     (executionTrace?.phases ?? [])
       .filter((phase) => phase.phase.startsWith('parser:') && phase.phaseStatus === 'passed')

@@ -16,7 +16,7 @@ export interface DispatchInput {
   workspaceId: string;
   action: string;
   contactId?: string | undefined;
-  contactRecord?: UnknownRecord | null;
+  contactRecord?: UnknownRecord | null | undefined;
   contactRecordId?: string | undefined;
   conversationId?: string | undefined;
   phone: string;
@@ -24,7 +24,7 @@ export interface DispatchInput {
   contactName?: string | undefined;
   message: string;
   settings: UnknownRecord;
-  workspaceRecord?: UnknownRecord;
+  workspaceRecord?: UnknownRecord | undefined;
   intent?: string | undefined;
   reason?: string | undefined;
   intentConfidence?: number | undefined;

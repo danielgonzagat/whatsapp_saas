@@ -40,7 +40,7 @@ function RecentSkeletonGrid() {
           <div
             style={{
               height: 112,
-              background: 'linear-gradient(135deg, #161618 0%, ${colors.canvas.border} 50%, #161618 100%)',
+              background: `linear-gradient(135deg, ${colors.canvas.surface} 0%, ${colors.canvas.border} 50%, ${colors.canvas.surface} 100%)`,
             }}
           />
           <div style={{ padding: '10px 12px', display: 'grid', gap: 8 }}>
@@ -265,7 +265,7 @@ function DesignCard({
     <div
       style={{
         background: 'var(--app-bg-card)',
-        border: '1px solid ${colors.canvas.border}',
+        border: `1px solid ${colors.canvas.border}`,
         borderRadius: 6,
         transition: 'all 0.25s',
         overflow: 'hidden',
@@ -289,7 +289,7 @@ function DesignCard({
           height: 22,
           borderRadius: 4,
           background: 'var(--app-bg-primary)',
-          border: '1px solid #2A2A2E',
+          border: `1px solid ${colors.canvas.hover}`,
           color:
             colors.checkout.danger,
           cursor: 'pointer',
@@ -362,7 +362,7 @@ function DesignCard({
                   width: 20,
                   height: 20,
                   borderRadius: 3,
-                  background: 'radial-gradient(circle, colors.ember.glow40, transparent)',
+                  background: `radial-gradient(circle, ${colors.ember.glow40}, transparent)`,
                 }}
               />
             </div>

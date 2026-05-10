@@ -157,7 +157,7 @@ export default function UpsellPage() {
               alignItems: 'center',
               gap: '8px',
               background: colors.checkout.dangerBg,
-              border: '1px solid #ef444444',
+              border: `1px solid ${colors.semantic.error}44`,
               borderRadius: '10px',
               padding: '8px 16px',
               marginBottom: '20px',
@@ -234,7 +234,7 @@ export default function UpsellPage() {
           <div
             style={{
               background: colors.checkout.bg,
-              border: '1px solid #2A2A2E',
+              border: `1px solid ${colors.checkout.border}`,
               borderRadius: '8px',
               padding: '10px 14px',
               marginBottom: '20px',
@@ -254,7 +254,7 @@ export default function UpsellPage() {
           style={{
             width: '100%',
             padding: '18px',
-            background: `linear-gradient(135deg, ${accent}, #16a34a)`,
+            background: `linear-gradient(135deg, ${accent}, ${colors.checkout.successDark})`,
             border: 'none',
             borderRadius: '12px',
             color: colors.text.silver,

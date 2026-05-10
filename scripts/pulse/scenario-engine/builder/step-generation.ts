@@ -1,11 +1,11 @@
 // PULSE Wave 5 — Scenario Step Generation
 // Part of builder sub-decomposition: dynamic step generation for sub-flows
 
-import { extractRouteFromSurfaceId } from '../../../dynamic-reality-grammar';
-import { deriveLengthBoundariesFromObservedCatalog } from '../../../dynamic-reality-kernel/profile-derivations';
-import type { BehaviorNode } from '../../../types.behavior-graph';
-import type { ScenarioCategory, ScenarioStep } from '../../../types.scenario-engine';
-import type { ScenarioBuildContext } from '../../queries';
+import { extractRouteFromSurfaceId } from '../../dynamic-reality-grammar';
+import { deriveLengthBoundariesFromObservedCatalog } from '../../dynamic-reality-kernel/profile-derivations';
+import type { BehaviorNode } from '../../types.behavior-graph';
+import type { ScenarioCategory, ScenarioStep } from '../../types.scenario-engine';
+import type { ScenarioBuildContext } from '../queries';
 import {
   _okTextLen,
   _unit,
@@ -14,9 +14,9 @@ import {
   LONG_STEP_TIMEOUT,
   extractRoutePattern,
   getHttpDecorator,
-} from '../../queries';
-import { buildStep } from '../../playwright/spec-gen';
-import { buildDynamicScenarioPlan } from '../../playwright/plan-gen';
+} from '../queries';
+import { buildStep } from '../playwright/spec-gen';
+import { buildDynamicScenarioPlan } from '../playwright/plan-gen';
 import { buildInputSelector, normalizeSelectorToken } from './selector-helpers';
 
 export function generateStepsForSubFlow(

@@ -75,8 +75,8 @@ function normalizeContactCustomFields(
 // a well-known shape via persistence helpers; we narrow defensively here
 // so readers never trust untyped data.
 function readAutopilotEventMeta(event: AutopilotEventRow): {
-  saleApproved?: boolean;
-  amount?: number;
+  saleApproved: boolean | undefined;
+  amount: number | undefined;
 } {
   const raw = event.meta;
   if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
@@ -157,17 +157,17 @@ export interface CiaSeedConversation {
   /** Contact name property. */
   contactName?: string | undefined;
   /** Unread count property. */
-  unreadCount?: number;
+  unreadCount?: number | undefined;
   /** Pending property. */
-  pending?: boolean;
+  pending?: boolean | undefined;
   /** Last message at property. */
-  lastMessageAt?: Date | string | null;
+  lastMessageAt?: Date | string | null | undefined;
   /** Last message text property. */
-  lastMessageText: (string | null) | undefined;
+  lastMessageText?: string | null | undefined;
   /** Lead score property. */
-  leadScore: (number | null) | undefined;
+  leadScore?: number | null | undefined;
   /** Custom fields property. */
-  customFields?: Record<string, unknown> | null;
+  customFields?: Record<string, unknown> | null | undefined;
 }
 
 const PAYMENT_HINTS = [

@@ -1,9 +1,9 @@
 {
   "projectId": "kloel",
   "projectName": "KLOEL",
-  "commitSha": "faed6a9f4ca1ff18b11803751613f6d1a4755f95",
+  "commitSha": "a828645cc362a3b7554e5f06a9c84c6d73c054eb",
   "environment": "scan",
-  "timestamp": "2026-05-10T01:32:59.139Z",
+  "timestamp": "2026-05-10T02:46:32.836Z",
   "status": "NOT_CERTIFIED",
   "humanReplacementStatus": "NOT_READY",
   "profile": null,
@@ -132,20 +132,20 @@
     },
     "noOverclaimPass": {
       "status": "fail",
-      "reason": "overclaim:completionProofReadiness — certification cannot complete while .pulse/current/PULSE_PROOF_READINESS.json has non-observed production proof (status=executable_unproved, canAdvance=false, planned=1995, inferred=0, not_available=0, nonObserved=1995, executableUnproved=1995).",
+      "reason": "overclaim:completionProofReadiness — certification cannot complete while .pulse/current/PULSE_PROOF_READINESS.json has non-observed production proof (status=executable_unproved, canAdvance=false, planned=1965, inferred=0, not_available=0, nonObserved=1965, executableUnproved=1965).",
       "failureClass": "checker_gap",
       "evidenceMode": "observed",
       "confidence": "high"
     },
     "executionMatrixCompletePass": {
       "status": "pass",
-      "reason": "Execution matrix classified 5286 path(s) with zero unknown and zero non-terminal paths.",
+      "reason": "Execution matrix classified 5195 path(s) with zero unknown and zero non-terminal paths.",
       "evidenceMode": "inferred",
       "confidence": "high"
     },
     "criticalPathObservedPass": {
       "status": "fail",
-      "reason": "4014 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-insights, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
+      "reason": "3961 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-insights, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
       "failureClass": "missing_evidence",
       "affectedCapabilityIds": [
         "capability:ad-insights",
@@ -184,7 +184,7 @@
     },
     "typeIntegrityPass": {
       "status": "fail",
-      "reason": "Found 7 type-integrity escape-hatch finding(s): frontend/src/lib/fabric/BackgroundManager.ts:51 (as any), scripts/pulse/__parts__/test-honesty/ast-detection.ts:24 (as any), scripts/pulse/__parts__/test-honesty/ast-detection.ts:25 (@ts-ignore), scripts/pulse/__parts__/test-honesty/ast-detection.ts:26 (@ts-expect-error), scripts/pulse/__parts__/test-honesty/main.ts:39 (as any), scripts/pulse/__parts__/test-honesty/main.ts:40 (@ts-ignore), scripts/pulse/__parts__/test-honesty/main.ts:41 (@ts-expect-error).",
+      "reason": "Found 7 type-integrity escape-hatch finding(s): frontend/src/lib/fabric/BackgroundManager.ts:51 (as any), scripts/pulse/test-honesty/ast-detection.ts:24 (as any), scripts/pulse/test-honesty/ast-detection.ts:25 (@ts-ignore), scripts/pulse/test-honesty/ast-detection.ts:26 (@ts-expect-error), scripts/pulse/test-honesty/main.ts:39 (as any), scripts/pulse/test-honesty/main.ts:40 (@ts-ignore), scripts/pulse/test-honesty/main.ts:41 (@ts-expect-error).",
       "failureClass": "product_failure"
     }
   },
@@ -203,53 +203,53 @@
     "soakPass: soak synthetic evidence is missing for: operator-campaigns-and-flows, operator-autopilot-run, system-payment-reconciliation.",
     "evidenceFresh: Execution trace is missing, so the certification run cannot prove which phases actually executed.",
     "pulseSelfTrustPass: PULSE still reconstructs 1 phantom capability(ies) and 0 phantom flow(s); self-trust stays degraded until illusion collapses into real chains.",
-    "noOverclaimPass: overclaim:completionProofReadiness — certification cannot complete while .pulse/current/PULSE_PROOF_READINESS.json has non-observed production proof (status=executable_unproved, canAdvance=false, planned=1995, inferred=0, not_available=0, nonObserved=1995, executableUnproved=1995).",
-    "criticalPathObservedPass: 4014 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-insights, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
+    "noOverclaimPass: overclaim:completionProofReadiness — certification cannot complete while .pulse/current/PULSE_PROOF_READINESS.json has non-observed production proof (status=executable_unproved, canAdvance=false, planned=1965, inferred=0, not_available=0, nonObserved=1965, executableUnproved=1965).",
+    "criticalPathObservedPass: 3961 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-insights, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
     "multiCycleConvergencePass: multiCycleConvergence: no autonomy iteration history found; production-autonomy verdict requires proven cycles.",
-    "typeIntegrityPass: Found 7 type-integrity escape-hatch finding(s): frontend/src/lib/fabric/BackgroundManager.ts:51 (as any), scripts/pulse/__parts__/test-honesty/ast-detection.ts:24 (as any), scripts/pulse/__parts__/test-honesty/ast-detection.ts:25 (@ts-ignore), scripts/pulse/__parts__/test-honesty/ast-detection.ts:26 (@ts-expect-error), scripts/pulse/__parts__/test-honesty/main.ts:39 (as any), scripts/pulse/__parts__/test-honesty/main.ts:40 (@ts-ignore), scripts/pulse/__parts__/test-honesty/main.ts:41 (@ts-expect-error)."
+    "typeIntegrityPass: Found 7 type-integrity escape-hatch finding(s): frontend/src/lib/fabric/BackgroundManager.ts:51 (as any), scripts/pulse/test-honesty/ast-detection.ts:24 (as any), scripts/pulse/test-honesty/ast-detection.ts:25 (@ts-ignore), scripts/pulse/test-honesty/ast-detection.ts:26 (@ts-expect-error), scripts/pulse/test-honesty/main.ts:39 (as any), scripts/pulse/test-honesty/main.ts:40 (@ts-ignore), scripts/pulse/test-honesty/main.ts:41 (@ts-expect-error)."
   ],
   "dynamicBlockingReasons": [
     "Observed Codacy files are missing from repo inventory: .agents/skills/marketing-psychology/SKILL.md, scripts/pulse/parsers/facade-detector.ts, scripts/pulse/parsers/runtime-utils.ts.",
     "Codacy still reports 1076 HIGH issue(s).",
     "Phantom capabilities remain: Knowledge Base.",
-    "Codacy snapshot is stale (24178 minute(s) old).",
+    "Codacy snapshot is stale (24253 minute(s) old).",
     "Observed external high-impact signals remain active: 3.",
     "Required external adapters are missing: 2.",
-    "Proof readiness still has non-observed production proof: status=executable_unproved, canAdvance=false, planned=1995, inferred=0, not_available=0, nonObserved=1995, executableUnproved=1995.",
-    "No-hardcoded-reality state still has hardcoded reality authority: 218692 hardcoded reality event(s) across 499 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9.."
+    "Proof readiness still has non-observed production proof: status=executable_unproved, canAdvance=false, planned=1965, inferred=0, not_available=0, nonObserved=1965, executableUnproved=1965.",
+    "No-hardcoded-reality state still has hardcoded reality authority: 219506 hardcoded reality event(s) across 499 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9.."
   ],
   "noHardcodedRealityState": {
     "artifact": "PULSE_NO_HARDCODED_REALITY",
     "version": 1,
-    "generatedAt": "2026-05-10T01:32:59.139Z",
+    "generatedAt": "2026-05-10T02:46:32.836Z",
     "operationalIdentity": "dynamic_hardcode_evidence_event",
     "scannedFiles": 499,
-    "totalEvents": 218692,
+    "totalEvents": 219506,
     "summary": {
-      "totalFindings": 218692,
+      "totalFindings": 219506,
       "byKind": {
         "hardcoded_literal_surface_risk": 15056,
         "hardcoded_const_declaration_risk": 8038,
         "hardcoded_predeclared_authority_context_risk": 206,
-        "hardcoded_fixed_boolean_decision_risk": 99,
-        "hardcoded_numeric_surface_risk": 4371,
-        "hardcoded_numeric_decision_literal_risk": 394,
-        "hardcoded_fixed_literal_decision_risk": 742,
-        "hardcoded_boolean_surface_risk": 1232,
         "hardcoded_regex_surface_risk": 1086,
-        "hardcoded_gate_profile_threshold_risk": 14,
+        "hardcoded_boolean_surface_risk": 1232,
+        "hardcoded_numeric_surface_risk": 4371,
+        "hardcoded_fixed_literal_decision_risk": 742,
+        "hardcoded_fixed_boolean_decision_risk": 99,
+        "hardcoded_numeric_decision_literal_risk": 394,
         "hardcoded_decision_regex_risk": 20,
+        "hardcoded_gate_profile_threshold_risk": 14,
         "hardcoded_identity_limit_risk": 7,
         "hardcoded_break_push_type_risk": 29,
         "hardcoded_sql_reality_table_risk": 2,
         "hardcoded_parser_rule_blocker_risk": 5,
         "hardcoded_auditor_mutation_risk": 1,
-        "hardcoded_replacement_cheat_risk": 187390
+        "hardcoded_replacement_cheat_risk": 188204
       },
       "topFiles": [
         {
           "filePath": "scripts/pulse/convergence-plan.ts",
-          "findings": 4605
+          "findings": 4607
         },
         {
           "filePath": "scripts/pulse/__companions__/autopilot-processor.companion.ts",
@@ -261,7 +261,7 @@
         },
         {
           "filePath": "scripts/pulse/types.ts",
-          "findings": 2926
+          "findings": 2932
         },
         {
           "filePath": "scripts/pulse/certification.ts",
@@ -297,7 +297,7 @@
         },
         {
           "filePath": "scripts/pulse/artifacts.ts",
-          "findings": 1977
+          "findings": 1983
         },
         {
           "filePath": "scripts/pulse/contract-tester.ts",
@@ -408,12 +408,12 @@
       },
       {
         "eventName": "Hardcoded reality candidate at scripts/pulse/__kernel_additions__/discoverCapabilityStatusLabels.ts:9",
-        "evidence": "discoverCapabilityStatusLabels -> scripts/pulse/__parts__/types.capabilities/01-primitives.ts",
+        "evidence": "discoverCapabilityStatusLabels -> scripts/pulse/types.capabilities/01-primitives.ts",
         "filePath": "scripts/pulse/__kernel_additions__/discoverCapabilityStatusLabels.ts",
         "line": 9,
         "column": 5,
         "samples": [
-          "scripts/pulse/__parts__/types.capabilities/01-primitives.ts"
+          "scripts/pulse/types.capabilities/01-primitives.ts"
         ],
         "truthMode": "confirmed_static",
         "actionability": "replace_with_dynamic_discovery"
@@ -624,12 +624,12 @@
       },
       {
         "eventName": "Hardcoded reality candidate at scripts/pulse/__kernel_additions__/discoverDoDStatusLabels.ts:9",
-        "evidence": "discoverDoDStatusLabels -> scripts/pulse/__parts__/types.capabilities/01-primitives.ts",
+        "evidence": "discoverDoDStatusLabels -> scripts/pulse/types.capabilities/01-primitives.ts",
         "filePath": "scripts/pulse/__kernel_additions__/discoverDoDStatusLabels.ts",
         "line": 9,
         "column": 5,
         "samples": [
-          "scripts/pulse/__parts__/types.capabilities/01-primitives.ts"
+          "scripts/pulse/types.capabilities/01-primitives.ts"
         ],
         "truthMode": "confirmed_static",
         "actionability": "replace_with_dynamic_discovery"
@@ -696,12 +696,12 @@
       },
       {
         "eventName": "Hardcoded reality candidate at scripts/pulse/__kernel_additions__/discoverExternalAdapterProofBasisLabels.ts:9",
-        "evidence": "discoverExternalAdapterProofBasisLabels -> scripts/pulse/__parts__/types.capabilities/01-primitives.ts",
+        "evidence": "discoverExternalAdapterProofBasisLabels -> scripts/pulse/types.capabilities/01-primitives.ts",
         "filePath": "scripts/pulse/__kernel_additions__/discoverExternalAdapterProofBasisLabels.ts",
         "line": 9,
         "column": 5,
         "samples": [
-          "scripts/pulse/__parts__/types.capabilities/01-primitives.ts"
+          "scripts/pulse/types.capabilities/01-primitives.ts"
         ],
         "truthMode": "confirmed_static",
         "actionability": "replace_with_dynamic_discovery"
@@ -720,12 +720,12 @@
       },
       {
         "eventName": "Hardcoded reality candidate at scripts/pulse/__kernel_additions__/discoverExternalAdapterRequirednessLabels.ts:9",
-        "evidence": "discoverExternalAdapterRequirednessLabels -> scripts/pulse/__parts__/types.capabilities/01-primitives.ts",
+        "evidence": "discoverExternalAdapterRequirednessLabels -> scripts/pulse/types.capabilities/01-primitives.ts",
         "filePath": "scripts/pulse/__kernel_additions__/discoverExternalAdapterRequirednessLabels.ts",
         "line": 9,
         "column": 5,
         "samples": [
-          "scripts/pulse/__parts__/types.capabilities/01-primitives.ts"
+          "scripts/pulse/types.capabilities/01-primitives.ts"
         ],
         "truthMode": "confirmed_static",
         "actionability": "replace_with_dynamic_discovery"
@@ -744,12 +744,12 @@
       },
       {
         "eventName": "Hardcoded reality candidate at scripts/pulse/__kernel_additions__/discoverExternalAdapterRequirementLabels.ts:5",
-        "evidence": "discoverExternalAdapterRequirementLabels -> scripts/pulse/__parts__/types.capabilities/01-primitives.ts",
+        "evidence": "discoverExternalAdapterRequirementLabels -> scripts/pulse/types.capabilities/01-primitives.ts",
         "filePath": "scripts/pulse/__kernel_additions__/discoverExternalAdapterRequirementLabels.ts",
         "line": 5,
         "column": 5,
         "samples": [
-          "scripts/pulse/__parts__/types.capabilities/01-primitives.ts"
+          "scripts/pulse/types.capabilities/01-primitives.ts"
         ],
         "truthMode": "confirmed_static",
         "actionability": "replace_with_dynamic_discovery"
@@ -768,12 +768,12 @@
       },
       {
         "eventName": "Hardcoded reality candidate at scripts/pulse/__kernel_additions__/discoverExternalAdapterStatusLabels.ts:9",
-        "evidence": "discoverExternalAdapterStatusLabels -> scripts/pulse/__parts__/types.capabilities/01-primitives.ts",
+        "evidence": "discoverExternalAdapterStatusLabels -> scripts/pulse/types.capabilities/01-primitives.ts",
         "filePath": "scripts/pulse/__kernel_additions__/discoverExternalAdapterStatusLabels.ts",
         "line": 9,
         "column": 5,
         "samples": [
-          "scripts/pulse/__parts__/types.capabilities/01-primitives.ts"
+          "scripts/pulse/types.capabilities/01-primitives.ts"
         ],
         "truthMode": "confirmed_static",
         "actionability": "replace_with_dynamic_discovery"
@@ -792,12 +792,12 @@
       },
       {
         "eventName": "Hardcoded reality candidate at scripts/pulse/__kernel_additions__/discoverExternalSignalSourceLabels.ts:9",
-        "evidence": "discoverExternalSignalSourceLabels -> scripts/pulse/__parts__/types.capabilities/01-primitives.ts",
+        "evidence": "discoverExternalSignalSourceLabels -> scripts/pulse/types.capabilities/01-primitives.ts",
         "filePath": "scripts/pulse/__kernel_additions__/discoverExternalSignalSourceLabels.ts",
         "line": 9,
         "column": 5,
         "samples": [
-          "scripts/pulse/__parts__/types.capabilities/01-primitives.ts"
+          "scripts/pulse/types.capabilities/01-primitives.ts"
         ],
         "truthMode": "confirmed_static",
         "actionability": "replace_with_dynamic_discovery"
@@ -816,12 +816,12 @@
       },
       {
         "eventName": "Hardcoded reality candidate at scripts/pulse/__kernel_additions__/discoverFlowProjectionStatusLabels.ts:9",
-        "evidence": "discoverFlowProjectionStatusLabels -> scripts/pulse/__parts__/types.capabilities/01-primitives.ts",
+        "evidence": "discoverFlowProjectionStatusLabels -> scripts/pulse/types.capabilities/01-primitives.ts",
         "filePath": "scripts/pulse/__kernel_additions__/discoverFlowProjectionStatusLabels.ts",
         "line": 9,
         "column": 5,
         "samples": [
-          "scripts/pulse/__parts__/types.capabilities/01-primitives.ts"
+          "scripts/pulse/types.capabilities/01-primitives.ts"
         ],
         "truthMode": "confirmed_static",
         "actionability": "replace_with_dynamic_discovery"
@@ -887,167 +887,299 @@
         "actionability": "replace_with_dynamic_discovery"
       },
       {
-        "eventName": "Hardcoded reality candidate at scripts/pulse/__parts__/artifacts/generate.ts:53",
-        "evidence": "const.declaration -> root",
-        "filePath": "scripts/pulse/__parts__/artifacts/generate.ts",
-        "line": 53,
-        "column": 3,
+        "eventName": "Hardcoded reality candidate at scripts/pulse/actors/admin/index.ts:24",
+        "evidence": "const.declaration -> OBSERVERS",
+        "filePath": "scripts/pulse/actors/admin/index.ts",
+        "line": 24,
+        "column": 1,
         "samples": [
-          "root"
+          "OBSERVERS"
         ],
         "truthMode": "confirmed_static",
         "actionability": "replace_with_dynamic_discovery"
       },
       {
-        "eventName": "Hardcoded reality candidate at scripts/pulse/__parts__/artifacts/generate.ts:54",
-        "evidence": "const.declaration -> resolved",
-        "filePath": "scripts/pulse/__parts__/artifacts/generate.ts",
-        "line": 54,
+        "eventName": "Hardcoded reality candidate at scripts/pulse/actors/admin/index.ts:25",
+        "evidence": "admin-settings-kyc-banking -> admin-settings-kyc-banking",
+        "filePath": "scripts/pulse/actors/admin/index.ts",
+        "line": 25,
         "column": 3,
         "samples": [
-          "resolved"
+          "admin-settings-kyc-banking"
         ],
         "truthMode": "confirmed_static",
         "actionability": "replace_with_dynamic_discovery"
       },
       {
-        "eventName": "Hardcoded reality candidate at scripts/pulse/__parts__/artifacts/generate.ts:55",
-        "evidence": "const.declaration -> boundary",
-        "filePath": "scripts/pulse/__parts__/artifacts/generate.ts",
+        "eventName": "Hardcoded reality candidate at scripts/pulse/actors/admin/index.ts:26",
+        "evidence": "admin-whatsapp-session-control -> admin-whatsapp-session-control",
+        "filePath": "scripts/pulse/actors/admin/index.ts",
+        "line": 26,
+        "column": 3,
+        "samples": [
+          "admin-whatsapp-session-control"
+        ],
+        "truthMode": "confirmed_static",
+        "actionability": "replace_with_dynamic_discovery"
+      },
+      {
+        "eventName": "Hardcoded reality candidate at scripts/pulse/actors/admin/settings-kyc-banking.ts:27",
+        "evidence": "relPath -> relPath",
+        "filePath": "scripts/pulse/actors/admin/settings-kyc-banking.ts",
+        "line": 27,
+        "column": 7,
+        "samples": [
+          "relPath"
+        ],
+        "truthMode": "confirmed_static",
+        "actionability": "replace_with_dynamic_discovery"
+      },
+      {
+        "eventName": "Hardcoded reality candidate at scripts/pulse/actors/admin/settings-kyc-banking.ts:27",
+        "evidence": "relPath -> frontend-admin/src/app/(admin)/contas/kyc/page.tsx",
+        "filePath": "scripts/pulse/actors/admin/settings-kyc-banking.ts",
+        "line": 27,
+        "column": 16,
+        "samples": [
+          "frontend-admin/src/app/(admin)/contas/kyc/page.tsx"
+        ],
+        "truthMode": "confirmed_static",
+        "actionability": "replace_with_dynamic_discovery"
+      },
+      {
+        "eventName": "Hardcoded reality candidate at scripts/pulse/actors/admin/settings-kyc-banking.ts:28",
+        "evidence": "mustContain -> approveKyc",
+        "filePath": "scripts/pulse/actors/admin/settings-kyc-banking.ts",
+        "line": 28,
+        "column": 21,
+        "samples": [
+          "approveKyc"
+        ],
+        "truthMode": "confirmed_static",
+        "actionability": "replace_with_dynamic_discovery"
+      },
+      {
+        "eventName": "Hardcoded reality candidate at scripts/pulse/actors/admin/settings-kyc-banking.ts:28",
+        "evidence": "mustContain -> rejectKyc",
+        "filePath": "scripts/pulse/actors/admin/settings-kyc-banking.ts",
+        "line": 28,
+        "column": 35,
+        "samples": [
+          "rejectKyc"
+        ],
+        "truthMode": "confirmed_static",
+        "actionability": "replace_with_dynamic_discovery"
+      },
+      {
+        "eventName": "Hardcoded reality candidate at scripts/pulse/actors/admin/settings-kyc-banking.ts:31",
+        "evidence": "relPath -> frontend-admin/src/app/(admin)/contas/[workspaceId]/page.tsx",
+        "filePath": "scripts/pulse/actors/admin/settings-kyc-banking.ts",
+        "line": 31,
+        "column": 16,
+        "samples": [
+          "frontend-admin/src/app/(admin)/contas/[workspaceId]/page.tsx"
+        ],
+        "truthMode": "confirmed_static",
+        "actionability": "replace_with_dynamic_discovery"
+      },
+      {
+        "eventName": "Hardcoded reality candidate at scripts/pulse/actors/admin/settings-kyc-banking.ts:34",
+        "evidence": "relPath -> frontend-admin/src/app/(admin)/carteira/page.tsx",
+        "filePath": "scripts/pulse/actors/admin/settings-kyc-banking.ts",
+        "line": 34,
+        "column": 16,
+        "samples": [
+          "frontend-admin/src/app/(admin)/carteira/page.tsx"
+        ],
+        "truthMode": "confirmed_static",
+        "actionability": "replace_with_dynamic_discovery"
+      },
+      {
+        "eventName": "Hardcoded reality candidate at scripts/pulse/actors/admin/settings-kyc-banking.ts:39",
+        "evidence": "relPath -> backend/src/admin/compliance/admin-compliance.controller.ts",
+        "filePath": "scripts/pulse/actors/admin/settings-kyc-banking.ts",
+        "line": 39,
+        "column": 16,
+        "samples": [
+          "backend/src/admin/compliance/admin-compliance.controller.ts"
+        ],
+        "truthMode": "confirmed_static",
+        "actionability": "replace_with_dynamic_discovery"
+      },
+      {
+        "eventName": "Hardcoded reality candidate at scripts/pulse/actors/admin/settings-kyc-banking.ts:42",
+        "evidence": "relPath -> backend/src/admin/compliance/admin-compliance.service.ts",
+        "filePath": "scripts/pulse/actors/admin/settings-kyc-banking.ts",
+        "line": 42,
+        "column": 16,
+        "samples": [
+          "backend/src/admin/compliance/admin-compliance.service.ts"
+        ],
+        "truthMode": "confirmed_static",
+        "actionability": "replace_with_dynamic_discovery"
+      },
+      {
+        "eventName": "Hardcoded reality candidate at scripts/pulse/actors/admin/settings-kyc-banking.ts:43",
+        "evidence": "mustContain -> kycStatus",
+        "filePath": "scripts/pulse/actors/admin/settings-kyc-banking.ts",
+        "line": 43,
+        "column": 21,
+        "samples": [
+          "kycStatus"
+        ],
+        "truthMode": "confirmed_static",
+        "actionability": "replace_with_dynamic_discovery"
+      },
+      {
+        "eventName": "Hardcoded reality candidate at scripts/pulse/actors/admin/settings-kyc-banking.ts:46",
+        "evidence": "relPath -> backend/src/admin/compliance/admin-compliance.module.ts",
+        "filePath": "scripts/pulse/actors/admin/settings-kyc-banking.ts",
+        "line": 46,
+        "column": 16,
+        "samples": [
+          "backend/src/admin/compliance/admin-compliance.module.ts"
+        ],
+        "truthMode": "confirmed_static",
+        "actionability": "replace_with_dynamic_discovery"
+      },
+      {
+        "eventName": "Hardcoded reality candidate at scripts/pulse/actors/admin/settings-kyc-banking.ts:51",
+        "evidence": "relPath -> backend/src/admin/carteira/admin-carteira.controller.ts",
+        "filePath": "scripts/pulse/actors/admin/settings-kyc-banking.ts",
+        "line": 51,
+        "column": 16,
+        "samples": [
+          "backend/src/admin/carteira/admin-carteira.controller.ts"
+        ],
+        "truthMode": "confirmed_static",
+        "actionability": "replace_with_dynamic_discovery"
+      },
+      {
+        "eventName": "Hardcoded reality candidate at scripts/pulse/actors/admin/settings-kyc-banking.ts:52",
+        "evidence": "mustContain -> ledger",
+        "filePath": "scripts/pulse/actors/admin/settings-kyc-banking.ts",
+        "line": 52,
+        "column": 21,
+        "samples": [
+          "ledger"
+        ],
+        "truthMode": "confirmed_static",
+        "actionability": "replace_with_dynamic_discovery"
+      },
+      {
+        "eventName": "Hardcoded reality candidate at scripts/pulse/actors/admin/settings-kyc-banking.ts:55",
+        "evidence": "relPath -> backend/src/admin/carteira/admin-carteira.module.ts",
+        "filePath": "scripts/pulse/actors/admin/settings-kyc-banking.ts",
         "line": 55,
+        "column": 16,
+        "samples": [
+          "backend/src/admin/carteira/admin-carteira.module.ts"
+        ],
+        "truthMode": "confirmed_static",
+        "actionability": "replace_with_dynamic_discovery"
+      },
+      {
+        "eventName": "Hardcoded reality candidate at scripts/pulse/actors/admin/settings-kyc-banking.ts:68",
+        "evidence": "const.declaration -> checks",
+        "filePath": "scripts/pulse/actors/admin/settings-kyc-banking.ts",
+        "line": 68,
         "column": 3,
         "samples": [
-          "boundary"
+          "checks"
         ],
         "truthMode": "confirmed_static",
         "actionability": "replace_with_dynamic_discovery"
       },
       {
-        "eventName": "Hardcoded reality candidate at scripts/pulse/__parts__/artifacts/generate.ts:63",
-        "evidence": "const.declaration -> ids",
-        "filePath": "scripts/pulse/__parts__/artifacts/generate.ts",
-        "line": 63,
+        "eventName": "Hardcoded reality candidate at scripts/pulse/actors/admin/settings-kyc-banking.ts:69",
+        "evidence": "const.declaration -> passed",
+        "filePath": "scripts/pulse/actors/admin/settings-kyc-banking.ts",
+        "line": 69,
         "column": 3,
         "samples": [
-          "ids"
+          "passed"
         ],
         "truthMode": "confirmed_static",
         "actionability": "replace_with_dynamic_discovery"
       },
       {
-        "eventName": "Hardcoded reality candidate at scripts/pulse/__parts__/artifacts/generate.ts:91",
-        "evidence": "const.declaration -> topN",
-        "filePath": "scripts/pulse/__parts__/artifacts/generate.ts",
-        "line": 91,
+        "eventName": "Hardcoded reality candidate at scripts/pulse/actors/admin/settings-kyc-banking.ts:70",
+        "evidence": "const.declaration -> summary",
+        "filePath": "scripts/pulse/actors/admin/settings-kyc-banking.ts",
+        "line": 70,
         "column": 3,
         "samples": [
-          "topN"
+          "summary"
         ],
         "truthMode": "confirmed_static",
         "actionability": "replace_with_dynamic_discovery"
       },
       {
-        "eventName": "Hardcoded reality candidate at scripts/pulse/__parts__/artifacts/generate.ts:92",
-        "evidence": "topN -> OK",
-        "filePath": "scripts/pulse/__parts__/artifacts/generate.ts",
-        "line": 92,
-        "column": 76,
+        "eventName": "Hardcoded reality candidate at scripts/pulse/actors/admin/settings-kyc-banking.ts:73",
+        "evidence": "truthMode -> inferred",
+        "filePath": "scripts/pulse/actors/admin/settings-kyc-banking.ts",
+        "line": 73,
+        "column": 48,
         "samples": [
-          "OK"
+          "inferred"
         ],
         "truthMode": "confirmed_static",
         "actionability": "replace_with_dynamic_discovery"
       },
       {
-        "eventName": "Hardcoded reality candidate at scripts/pulse/__parts__/artifacts/generate.ts:95",
-        "evidence": "const.declaration -> eventSurface",
-        "filePath": "scripts/pulse/__parts__/artifacts/generate.ts",
-        "line": 95,
-        "column": 3,
+        "eventName": "Hardcoded reality candidate at scripts/pulse/actors/admin/structural-checks.ts:29",
+        "evidence": "deriveStructuralCheckLabel -> /[\\\\/]/",
+        "filePath": "scripts/pulse/actors/admin/structural-checks.ts",
+        "line": 29,
+        "column": 45,
         "samples": [
-          "eventSurface"
+          "/[\\\\/]/"
         ],
         "truthMode": "confirmed_static",
         "actionability": "replace_with_dynamic_discovery"
       },
       {
-        "eventName": "Hardcoded reality candidate at scripts/pulse/__parts__/artifacts/generate.ts:96",
-        "evidence": "const.declaration -> generatedDiagnostic",
-        "filePath": "scripts/pulse/__parts__/artifacts/generate.ts",
-        "line": 96,
-        "column": 3,
+        "eventName": "Hardcoded reality candidate at scripts/pulse/actors/admin/structural-checks.ts:29",
+        "evidence": "deriveStructuralCheckLabel -> :",
+        "filePath": "scripts/pulse/actors/admin/structural-checks.ts",
+        "line": 29,
+        "column": 59,
         "samples": [
-          "generatedDiagnostic"
+          ":"
         ],
         "truthMode": "confirmed_static",
         "actionability": "replace_with_dynamic_discovery"
       },
       {
-        "eventName": "Hardcoded reality candidate at scripts/pulse/__parts__/artifacts/generate.ts:100",
-        "evidence": "const.declaration -> proofPlan",
-        "filePath": "scripts/pulse/__parts__/artifacts/generate.ts",
-        "line": 100,
-        "column": 3,
-        "samples": [
-          "proofPlan"
-        ],
-        "truthMode": "confirmed_static",
-        "actionability": "replace_with_dynamic_discovery"
-      },
-      {
-        "eventName": "Hardcoded reality candidate at scripts/pulse/__parts__/artifacts/generate.ts:102",
-        "evidence": "artifact -> PULSE_FINDING_VALIDATION_STATE",
-        "filePath": "scripts/pulse/__parts__/artifacts/generate.ts",
-        "line": 102,
-        "column": 15,
-        "samples": [
-          "PULSE_FINDING_VALIDATION_STATE"
-        ],
-        "truthMode": "confirmed_static",
-        "actionability": "replace_with_dynamic_discovery"
-      },
-      {
-        "eventName": "Hardcoded reality candidate at scripts/pulse/__parts__/artifacts/generate.ts:105",
-        "evidence": "operationalIdentity -> operationalIdentity",
-        "filePath": "scripts/pulse/__parts__/artifacts/generate.ts",
-        "line": 105,
+        "eventName": "Hardcoded reality candidate at scripts/pulse/actors/admin/structural-checks.ts:37",
+        "evidence": "const.declaration -> absolute",
+        "filePath": "scripts/pulse/actors/admin/structural-checks.ts",
+        "line": 37,
         "column": 5,
         "samples": [
-          "operationalIdentity"
+          "absolute"
         ],
         "truthMode": "confirmed_static",
         "actionability": "replace_with_dynamic_discovery"
       },
       {
-        "eventName": "Hardcoded reality candidate at scripts/pulse/__parts__/artifacts/generate.ts:105",
-        "evidence": "operationalIdentity -> dynamic_finding_event",
-        "filePath": "scripts/pulse/__parts__/artifacts/generate.ts",
-        "line": 105,
-        "column": 26,
+        "eventName": "Hardcoded reality candidate at scripts/pulse/actors/admin/structural-checks.ts:38",
+        "evidence": "const.declaration -> label",
+        "filePath": "scripts/pulse/actors/admin/structural-checks.ts",
+        "line": 38,
+        "column": 5,
         "samples": [
-          "dynamic_finding_event"
+          "label"
         ],
         "truthMode": "confirmed_static",
         "actionability": "replace_with_dynamic_discovery"
       },
       {
-        "eventName": "Hardcoded reality candidate at scripts/pulse/__parts__/artifacts/generate.ts:107",
-        "evidence": "internalFindingEventRetained -> true",
-        "filePath": "scripts/pulse/__parts__/artifacts/generate.ts",
-        "line": 107,
-        "column": 70,
-        "samples": [
-          "true"
-        ],
-        "truthMode": "confirmed_static",
-        "actionability": "replace_with_dynamic_discovery"
-      },
-      {
-        "eventName": "Hardcoded reality candidate at scripts/pulse/__parts__/artifacts/generate.ts:108",
-        "evidence": "internalFindingEventIsOperationalIdentity -> false",
-        "filePath": "scripts/pulse/__parts__/artifacts/generate.ts",
-        "line": 108,
-        "column": 82,
+        "eventName": "Hardcoded reality candidate at scripts/pulse/actors/admin/structural-checks.ts:40",
+        "evidence": "present -> false",
+        "filePath": "scripts/pulse/actors/admin/structural-checks.ts",
+        "line": 40,
+        "column": 53,
         "samples": [
           "false"
         ],
@@ -1055,179 +1187,11 @@
         "actionability": "replace_with_dynamic_discovery"
       },
       {
-        "eventName": "Hardcoded reality candidate at scripts/pulse/__parts__/artifacts/generate.ts:116",
-        "evidence": "weak_signal -> needs_probe_only",
-        "filePath": "scripts/pulse/__parts__/artifacts/generate.ts",
-        "line": 116,
-        "column": 20,
-        "samples": [
-          "needs_probe_only"
-        ],
-        "truthMode": "confirmed_static",
-        "actionability": "replace_with_dynamic_discovery"
-      },
-      {
-        "eventName": "Hardcoded reality candidate at scripts/pulse/__parts__/artifacts/generate.ts:117",
-        "evidence": "inferred -> needs_context_or_probe",
-        "filePath": "scripts/pulse/__parts__/artifacts/generate.ts",
-        "line": 117,
-        "column": 17,
-        "samples": [
-          "needs_context_or_probe"
-        ],
-        "truthMode": "confirmed_static",
-        "actionability": "replace_with_dynamic_discovery"
-      },
-      {
-        "eventName": "Hardcoded reality candidate at scripts/pulse/__parts__/artifacts/generate.ts:118",
-        "evidence": "confirmed_static -> can_block_when_actionable",
-        "filePath": "scripts/pulse/__parts__/artifacts/generate.ts",
-        "line": 118,
-        "column": 25,
-        "samples": [
-          "can_block_when_actionable"
-        ],
-        "truthMode": "confirmed_static",
-        "actionability": "replace_with_dynamic_discovery"
-      },
-      {
-        "eventName": "Hardcoded reality candidate at scripts/pulse/__parts__/artifacts/generate.ts:119",
-        "evidence": "observed -> can_block_when_actionable",
-        "filePath": "scripts/pulse/__parts__/artifacts/generate.ts",
-        "line": 119,
-        "column": 17,
-        "samples": [
-          "can_block_when_actionable"
-        ],
-        "truthMode": "confirmed_static",
-        "actionability": "replace_with_dynamic_discovery"
-      },
-      {
-        "eventName": "Hardcoded reality candidate at scripts/pulse/__parts__/artifacts/generate.ts:125",
-        "evidence": "const.declaration -> allStatusCodes",
-        "filePath": "scripts/pulse/__parts__/artifacts/generate.ts",
-        "line": 125,
-        "column": 3,
-        "samples": [
-          "allStatusCodes"
-        ],
-        "truthMode": "confirmed_static",
-        "actionability": "replace_with_dynamic_discovery"
-      },
-      {
-        "eventName": "Hardcoded reality candidate at scripts/pulse/__parts__/artifacts/generate.ts:126",
-        "evidence": "const.declaration -> indent",
-        "filePath": "scripts/pulse/__parts__/artifacts/generate.ts",
-        "line": 126,
-        "column": 3,
-        "samples": [
-          "indent"
-        ],
-        "truthMode": "confirmed_static",
-        "actionability": "replace_with_dynamic_discovery"
-      },
-      {
-        "eventName": "Hardcoded reality candidate at scripts/pulse/__parts__/artifacts/generate.ts:126",
-        "evidence": "indent -> 200",
-        "filePath": "scripts/pulse/__parts__/artifacts/generate.ts",
-        "line": 126,
-        "column": 52,
-        "samples": [
-          "200"
-        ],
-        "truthMode": "confirmed_static",
-        "actionability": "replace_with_dynamic_discovery"
-      },
-      {
-        "eventName": "Hardcoded reality candidate at scripts/pulse/__parts__/artifacts/generate.ts:126",
-        "evidence": "indent -> 300",
-        "filePath": "scripts/pulse/__parts__/artifacts/generate.ts",
-        "line": 126,
-        "column": 63,
-        "samples": [
-          "300"
-        ],
-        "truthMode": "confirmed_static",
-        "actionability": "replace_with_dynamic_discovery"
-      },
-      {
-        "eventName": "Hardcoded reality candidate at scripts/pulse/__parts__/artifacts/generate.ts:137",
-        "evidence": "const.declaration -> registry",
-        "filePath": "scripts/pulse/__parts__/artifacts/generate.ts",
-        "line": 137,
-        "column": 3,
-        "samples": [
-          "registry"
-        ],
-        "truthMode": "confirmed_static",
-        "actionability": "replace_with_dynamic_discovery"
-      },
-      {
-        "eventName": "Hardcoded reality candidate at scripts/pulse/__parts__/artifacts/generate.ts:138",
-        "evidence": "const.declaration -> RUN_MODES",
-        "filePath": "scripts/pulse/__parts__/artifacts/generate.ts",
-        "line": 138,
-        "column": 3,
-        "samples": [
-          "RUN_MODES"
-        ],
-        "truthMode": "confirmed_static",
-        "actionability": "replace_with_dynamic_discovery"
-      },
-      {
-        "eventName": "Hardcoded reality candidate at scripts/pulse/__parts__/artifacts/generate.ts:139",
-        "evidence": "RUN_MODES -> scripts/pulse/run-identity.ts",
-        "filePath": "scripts/pulse/__parts__/artifacts/generate.ts",
-        "line": 139,
-        "column": 5,
-        "samples": [
-          "scripts/pulse/run-identity.ts"
-        ],
-        "truthMode": "confirmed_static",
-        "actionability": "replace_with_dynamic_discovery"
-      },
-      {
-        "eventName": "Hardcoded reality candidate at scripts/pulse/__parts__/artifacts/generate.ts:140",
-        "evidence": "RUN_MODES -> PulseRunMode",
-        "filePath": "scripts/pulse/__parts__/artifacts/generate.ts",
-        "line": 140,
-        "column": 5,
-        "samples": [
-          "PulseRunMode"
-        ],
-        "truthMode": "confirmed_static",
-        "actionability": "replace_with_dynamic_discovery"
-      },
-      {
-        "eventName": "Hardcoded reality candidate at scripts/pulse/__parts__/artifacts/generate.ts:142",
-        "evidence": "const.declaration -> defaultRunMode",
-        "filePath": "scripts/pulse/__parts__/artifacts/generate.ts",
-        "line": 142,
-        "column": 3,
-        "samples": [
-          "defaultRunMode"
-        ],
-        "truthMode": "confirmed_static",
-        "actionability": "replace_with_dynamic_discovery"
-      },
-      {
-        "eventName": "Hardcoded reality candidate at scripts/pulse/__parts__/artifacts/generate.ts:142",
-        "evidence": "defaultRunMode -> scan",
-        "filePath": "scripts/pulse/__parts__/artifacts/generate.ts",
-        "line": 142,
+        "eventName": "Hardcoded reality candidate at scripts/pulse/actors/admin/structural-checks.ts:42",
+        "evidence": "checkAdminPaths -> 0",
+        "filePath": "scripts/pulse/actors/admin/structural-checks.ts",
+        "line": 42,
         "column": 60,
-        "samples": [
-          "scan"
-        ],
-        "truthMode": "confirmed_static",
-        "actionability": "replace_with_dynamic_discovery"
-      },
-      {
-        "eventName": "Hardcoded reality candidate at scripts/pulse/__parts__/artifacts/generate.ts:143",
-        "evidence": "defaultRunMode -> 0",
-        "filePath": "scripts/pulse/__parts__/artifacts/generate.ts",
-        "line": 143,
-        "column": 20,
         "samples": [
           "0"
         ],
@@ -1235,301 +1199,337 @@
         "actionability": "replace_with_dynamic_discovery"
       },
       {
-        "eventName": "Hardcoded reality candidate at scripts/pulse/__parts__/artifacts/generate.ts:144",
-        "evidence": "const.declaration -> identity",
-        "filePath": "scripts/pulse/__parts__/artifacts/generate.ts",
-        "line": 144,
-        "column": 3,
+        "eventName": "Hardcoded reality candidate at scripts/pulse/actors/admin/structural-checks.ts:43",
+        "evidence": "present -> true",
+        "filePath": "scripts/pulse/actors/admin/structural-checks.ts",
+        "line": 43,
+        "column": 53,
         "samples": [
-          "identity"
+          "true"
         ],
         "truthMode": "confirmed_static",
         "actionability": "replace_with_dynamic_discovery"
       },
       {
-        "eventName": "Hardcoded reality candidate at scripts/pulse/__parts__/artifacts/generate.ts:147",
-        "evidence": "const.declaration -> INDENT",
-        "filePath": "scripts/pulse/__parts__/artifacts/generate.ts",
-        "line": 147,
-        "column": 3,
+        "eventName": "Hardcoded reality candidate at scripts/pulse/actors/admin/structural-checks.ts:45",
+        "evidence": "present -> true",
+        "filePath": "scripts/pulse/actors/admin/structural-checks.ts",
+        "line": 45,
+        "column": 19,
         "samples": [
-          "INDENT"
+          "true"
         ],
         "truthMode": "confirmed_static",
         "actionability": "replace_with_dynamic_discovery"
       },
       {
-        "eventName": "Hardcoded reality candidate at scripts/pulse/__parts__/artifacts/generate.ts:147",
-        "evidence": "INDENT -> 200",
-        "filePath": "scripts/pulse/__parts__/artifacts/generate.ts",
-        "line": 147,
-        "column": 74,
+        "eventName": "Hardcoded reality candidate at scripts/pulse/actors/admin/structural-checks.ts:47",
+        "evidence": "const.declaration -> text",
+        "filePath": "scripts/pulse/actors/admin/structural-checks.ts",
+        "line": 47,
+        "column": 7,
         "samples": [
-          "200"
+          "text"
         ],
         "truthMode": "confirmed_static",
         "actionability": "replace_with_dynamic_discovery"
       },
       {
-        "eventName": "Hardcoded reality candidate at scripts/pulse/__parts__/artifacts/generate.ts:147",
-        "evidence": "INDENT -> 300",
-        "filePath": "scripts/pulse/__parts__/artifacts/generate.ts",
-        "line": 147,
-        "column": 85,
+        "eventName": "Hardcoded reality candidate at scripts/pulse/actors/admin/structural-checks.ts:50",
+        "evidence": "checkAdminPaths -> false",
+        "filePath": "scripts/pulse/actors/admin/structural-checks.ts",
+        "line": 50,
+        "column": 17,
         "samples": [
-          "300"
+          "false"
         ],
         "truthMode": "confirmed_static",
         "actionability": "replace_with_dynamic_discovery"
       },
       {
-        "eventName": "Hardcoded reality candidate at scripts/pulse/__parts__/artifacts/generate.ts:149",
-        "evidence": "const.declaration -> previousAutonomyState",
-        "filePath": "scripts/pulse/__parts__/artifacts/generate.ts",
-        "line": 149,
-        "column": 3,
+        "eventName": "Hardcoded reality candidate at scripts/pulse/actors/admin/structural-checks.ts:50",
+        "evidence": "checkAdminPaths -> present = false",
+        "filePath": "scripts/pulse/actors/admin/structural-checks.ts",
+        "line": 50,
+        "column": 17,
         "samples": [
-          "previousAutonomyState"
+          "present = false"
         ],
         "truthMode": "confirmed_static",
         "actionability": "replace_with_dynamic_discovery"
       },
       {
-        "eventName": "Hardcoded reality candidate at scripts/pulse/__parts__/artifacts/generate.ts:149",
-        "evidence": "previousAutonomyState -> autonomy-state",
-        "filePath": "scripts/pulse/__parts__/artifacts/generate.ts",
-        "line": 149,
-        "column": 82,
+        "eventName": "Hardcoded reality candidate at scripts/pulse/actors/admin/structural-checks.ts:50",
+        "evidence": "checkAdminPaths -> false",
+        "filePath": "scripts/pulse/actors/admin/structural-checks.ts",
+        "line": 50,
+        "column": 17,
         "samples": [
-          "autonomy-state"
+          "false"
         ],
         "truthMode": "confirmed_static",
         "actionability": "replace_with_dynamic_discovery"
       },
       {
-        "eventName": "Hardcoded reality candidate at scripts/pulse/__parts__/artifacts/generate.ts:150",
-        "evidence": "const.declaration -> previousAgentOrchestrationState",
-        "filePath": "scripts/pulse/__parts__/artifacts/generate.ts",
-        "line": 150,
-        "column": 3,
+        "eventName": "Hardcoded reality candidate at scripts/pulse/actors/admin/structural-checks.ts:64",
+        "evidence": "summarizeAdminMissing -> ; ",
+        "filePath": "scripts/pulse/actors/admin/structural-checks.ts",
+        "line": 64,
+        "column": 11,
         "samples": [
-          "previousAgentOrchestrationState"
+          "; "
         ],
         "truthMode": "confirmed_static",
         "actionability": "replace_with_dynamic_discovery"
       },
       {
-        "eventName": "Hardcoded reality candidate at scripts/pulse/__parts__/artifacts/generate.ts:152",
-        "evidence": "previousAgentOrchestrationState -> agent-orchestration-state",
-        "filePath": "scripts/pulse/__parts__/artifacts/generate.ts",
-        "line": 152,
+        "eventName": "Hardcoded reality candidate at scripts/pulse/actors/admin/whatsapp-session-control.ts:25",
+        "evidence": "const.declaration -> CHECKS",
+        "filePath": "scripts/pulse/actors/admin/whatsapp-session-control.ts",
+        "line": 25,
+        "column": 1,
+        "samples": [
+          "CHECKS"
+        ],
+        "truthMode": "confirmed_static",
+        "actionability": "replace_with_dynamic_discovery"
+      },
+      {
+        "eventName": "Hardcoded reality candidate at scripts/pulse/actors/admin/whatsapp-session-control.ts:28",
+        "evidence": "label -> frontend-admin-workspace-page",
+        "filePath": "scripts/pulse/actors/admin/whatsapp-session-control.ts",
+        "line": 28,
+        "column": 12,
+        "samples": [
+          "frontend-admin-workspace-page"
+        ],
+        "truthMode": "confirmed_static",
+        "actionability": "replace_with_dynamic_discovery"
+      },
+      {
+        "eventName": "Hardcoded reality candidate at scripts/pulse/actors/admin/whatsapp-session-control.ts:29",
+        "evidence": "relPath -> relPath",
+        "filePath": "scripts/pulse/actors/admin/whatsapp-session-control.ts",
+        "line": 29,
         "column": 5,
         "samples": [
-          "agent-orchestration-state"
+          "relPath"
         ],
         "truthMode": "confirmed_static",
         "actionability": "replace_with_dynamic_discovery"
       },
       {
-        "eventName": "Hardcoded reality candidate at scripts/pulse/__parts__/artifacts/generate.ts:154",
-        "evidence": "const.declaration -> cleanupReport",
-        "filePath": "scripts/pulse/__parts__/artifacts/generate.ts",
-        "line": 154,
+        "eventName": "Hardcoded reality candidate at scripts/pulse/actors/admin/whatsapp-session-control.ts:29",
+        "evidence": "relPath -> frontend-admin/src/app/(admin)/contas/[workspaceId]/page.tsx",
+        "filePath": "scripts/pulse/actors/admin/whatsapp-session-control.ts",
+        "line": 29,
+        "column": 14,
+        "samples": [
+          "frontend-admin/src/app/(admin)/contas/[workspaceId]/page.tsx"
+        ],
+        "truthMode": "confirmed_static",
+        "actionability": "replace_with_dynamic_discovery"
+      },
+      {
+        "eventName": "Hardcoded reality candidate at scripts/pulse/actors/admin/whatsapp-session-control.ts:30",
+        "evidence": "mustContain -> session",
+        "filePath": "scripts/pulse/actors/admin/whatsapp-session-control.ts",
+        "line": 30,
+        "column": 19,
+        "samples": [
+          "session"
+        ],
+        "truthMode": "confirmed_static",
+        "actionability": "replace_with_dynamic_discovery"
+      },
+      {
+        "eventName": "Hardcoded reality candidate at scripts/pulse/actors/admin/whatsapp-session-control.ts:33",
+        "evidence": "label -> frontend-admin-chat-route",
+        "filePath": "scripts/pulse/actors/admin/whatsapp-session-control.ts",
+        "line": 33,
+        "column": 12,
+        "samples": [
+          "frontend-admin-chat-route"
+        ],
+        "truthMode": "confirmed_static",
+        "actionability": "replace_with_dynamic_discovery"
+      },
+      {
+        "eventName": "Hardcoded reality candidate at scripts/pulse/actors/admin/whatsapp-session-control.ts:34",
+        "evidence": "relPath -> frontend-admin/src/app/(admin)/chat",
+        "filePath": "scripts/pulse/actors/admin/whatsapp-session-control.ts",
+        "line": 34,
+        "column": 14,
+        "samples": [
+          "frontend-admin/src/app/(admin)/chat"
+        ],
+        "truthMode": "confirmed_static",
+        "actionability": "replace_with_dynamic_discovery"
+      },
+      {
+        "eventName": "Hardcoded reality candidate at scripts/pulse/actors/admin/whatsapp-session-control.ts:39",
+        "evidence": "label -> backend-admin-sessions-controller",
+        "filePath": "scripts/pulse/actors/admin/whatsapp-session-control.ts",
+        "line": 39,
+        "column": 12,
+        "samples": [
+          "backend-admin-sessions-controller"
+        ],
+        "truthMode": "confirmed_static",
+        "actionability": "replace_with_dynamic_discovery"
+      },
+      {
+        "eventName": "Hardcoded reality candidate at scripts/pulse/actors/admin/whatsapp-session-control.ts:40",
+        "evidence": "relPath -> backend/src/admin/sessions/admin-sessions.controller.ts",
+        "filePath": "scripts/pulse/actors/admin/whatsapp-session-control.ts",
+        "line": 40,
+        "column": 14,
+        "samples": [
+          "backend/src/admin/sessions/admin-sessions.controller.ts"
+        ],
+        "truthMode": "confirmed_static",
+        "actionability": "replace_with_dynamic_discovery"
+      },
+      {
+        "eventName": "Hardcoded reality candidate at scripts/pulse/actors/admin/whatsapp-session-control.ts:41",
+        "evidence": "mustContain -> admin/sessions",
+        "filePath": "scripts/pulse/actors/admin/whatsapp-session-control.ts",
+        "line": 41,
+        "column": 19,
+        "samples": [
+          "admin/sessions"
+        ],
+        "truthMode": "confirmed_static",
+        "actionability": "replace_with_dynamic_discovery"
+      },
+      {
+        "eventName": "Hardcoded reality candidate at scripts/pulse/actors/admin/whatsapp-session-control.ts:44",
+        "evidence": "label -> backend-admin-sessions-service",
+        "filePath": "scripts/pulse/actors/admin/whatsapp-session-control.ts",
+        "line": 44,
+        "column": 12,
+        "samples": [
+          "backend-admin-sessions-service"
+        ],
+        "truthMode": "confirmed_static",
+        "actionability": "replace_with_dynamic_discovery"
+      },
+      {
+        "eventName": "Hardcoded reality candidate at scripts/pulse/actors/admin/whatsapp-session-control.ts:45",
+        "evidence": "relPath -> backend/src/admin/sessions/admin-sessions.service.ts",
+        "filePath": "scripts/pulse/actors/admin/whatsapp-session-control.ts",
+        "line": 45,
+        "column": 14,
+        "samples": [
+          "backend/src/admin/sessions/admin-sessions.service.ts"
+        ],
+        "truthMode": "confirmed_static",
+        "actionability": "replace_with_dynamic_discovery"
+      },
+      {
+        "eventName": "Hardcoded reality candidate at scripts/pulse/actors/admin/whatsapp-session-control.ts:48",
+        "evidence": "label -> backend-admin-sessions-module",
+        "filePath": "scripts/pulse/actors/admin/whatsapp-session-control.ts",
+        "line": 48,
+        "column": 12,
+        "samples": [
+          "backend-admin-sessions-module"
+        ],
+        "truthMode": "confirmed_static",
+        "actionability": "replace_with_dynamic_discovery"
+      },
+      {
+        "eventName": "Hardcoded reality candidate at scripts/pulse/actors/admin/whatsapp-session-control.ts:49",
+        "evidence": "relPath -> backend/src/admin/sessions/admin-sessions.module.ts",
+        "filePath": "scripts/pulse/actors/admin/whatsapp-session-control.ts",
+        "line": 49,
+        "column": 14,
+        "samples": [
+          "backend/src/admin/sessions/admin-sessions.module.ts"
+        ],
+        "truthMode": "confirmed_static",
+        "actionability": "replace_with_dynamic_discovery"
+      },
+      {
+        "eventName": "Hardcoded reality candidate at scripts/pulse/actors/admin/whatsapp-session-control.ts:54",
+        "evidence": "label -> worker-whatsapp-engine",
+        "filePath": "scripts/pulse/actors/admin/whatsapp-session-control.ts",
+        "line": 54,
+        "column": 12,
+        "samples": [
+          "worker-whatsapp-engine"
+        ],
+        "truthMode": "confirmed_static",
+        "actionability": "replace_with_dynamic_discovery"
+      },
+      {
+        "eventName": "Hardcoded reality candidate at scripts/pulse/actors/admin/whatsapp-session-control.ts:55",
+        "evidence": "relPath -> worker/providers/whatsapp-engine.ts",
+        "filePath": "scripts/pulse/actors/admin/whatsapp-session-control.ts",
+        "line": 55,
+        "column": 14,
+        "samples": [
+          "worker/providers/whatsapp-engine.ts"
+        ],
+        "truthMode": "confirmed_static",
+        "actionability": "replace_with_dynamic_discovery"
+      },
+      {
+        "eventName": "Hardcoded reality candidate at scripts/pulse/actors/admin/whatsapp-session-control.ts:58",
+        "evidence": "label -> worker-whatsapp-provider-resolver",
+        "filePath": "scripts/pulse/actors/admin/whatsapp-session-control.ts",
+        "line": 58,
+        "column": 12,
+        "samples": [
+          "worker-whatsapp-provider-resolver"
+        ],
+        "truthMode": "confirmed_static",
+        "actionability": "replace_with_dynamic_discovery"
+      },
+      {
+        "eventName": "Hardcoded reality candidate at scripts/pulse/actors/admin/whatsapp-session-control.ts:59",
+        "evidence": "relPath -> worker/providers/whatsapp-provider-resolver.ts",
+        "filePath": "scripts/pulse/actors/admin/whatsapp-session-control.ts",
+        "line": 59,
+        "column": 14,
+        "samples": [
+          "worker/providers/whatsapp-provider-resolver.ts"
+        ],
+        "truthMode": "confirmed_static",
+        "actionability": "replace_with_dynamic_discovery"
+      },
+      {
+        "eventName": "Hardcoded reality candidate at scripts/pulse/actors/admin/whatsapp-session-control.ts:62",
+        "evidence": "label -> worker-unified-whatsapp-provider",
+        "filePath": "scripts/pulse/actors/admin/whatsapp-session-control.ts",
+        "line": 62,
+        "column": 12,
+        "samples": [
+          "worker-unified-whatsapp-provider"
+        ],
+        "truthMode": "confirmed_static",
+        "actionability": "replace_with_dynamic_discovery"
+      },
+      {
+        "eventName": "Hardcoded reality candidate at scripts/pulse/actors/admin/whatsapp-session-control.ts:63",
+        "evidence": "relPath -> worker/providers/unified-whatsapp-provider.ts",
+        "filePath": "scripts/pulse/actors/admin/whatsapp-session-control.ts",
+        "line": 63,
+        "column": 14,
+        "samples": [
+          "worker/providers/unified-whatsapp-provider.ts"
+        ],
+        "truthMode": "confirmed_static",
+        "actionability": "replace_with_dynamic_discovery"
+      },
+      {
+        "eventName": "Hardcoded reality candidate at scripts/pulse/actors/admin/whatsapp-session-control.ts:75",
+        "evidence": "const.declaration -> checks",
+        "filePath": "scripts/pulse/actors/admin/whatsapp-session-control.ts",
+        "line": 75,
         "column": 3,
         "samples": [
-          "cleanupReport"
-        ],
-        "truthMode": "confirmed_static",
-        "actionability": "replace_with_dynamic_discovery"
-      },
-      {
-        "eventName": "Hardcoded reality candidate at scripts/pulse/__parts__/artifacts/generate.ts:155",
-        "evidence": "const.declaration -> noHardcodedRealityState",
-        "filePath": "scripts/pulse/__parts__/artifacts/generate.ts",
-        "line": 155,
-        "column": 3,
-        "samples": [
-          "noHardcodedRealityState"
-        ],
-        "truthMode": "confirmed_static",
-        "actionability": "replace_with_dynamic_discovery"
-      },
-      {
-        "eventName": "Hardcoded reality candidate at scripts/pulse/__parts__/artifacts/generate.ts:158",
-        "evidence": "const.declaration -> snapshotWithNoHardcodedRealityState",
-        "filePath": "scripts/pulse/__parts__/artifacts/generate.ts",
-        "line": 158,
-        "column": 3,
-        "samples": [
-          "snapshotWithNoHardcodedRealityState"
-        ],
-        "truthMode": "confirmed_static",
-        "actionability": "replace_with_dynamic_discovery"
-      },
-      {
-        "eventName": "Hardcoded reality candidate at scripts/pulse/__parts__/artifacts/generate.ts:165",
-        "evidence": "const.declaration -> convergencePlan",
-        "filePath": "scripts/pulse/__parts__/artifacts/generate.ts",
-        "line": 165,
-        "column": 3,
-        "samples": [
-          "convergencePlan"
-        ],
-        "truthMode": "confirmed_static",
-        "actionability": "replace_with_dynamic_discovery"
-      },
-      {
-        "eventName": "Hardcoded reality candidate at scripts/pulse/__parts__/artifacts/generate.ts:177",
-        "evidence": "const.declaration -> authority",
-        "filePath": "scripts/pulse/__parts__/artifacts/generate.ts",
-        "line": 177,
-        "column": 3,
-        "samples": [
-          "authority"
-        ],
-        "truthMode": "confirmed_static",
-        "actionability": "replace_with_dynamic_discovery"
-      },
-      {
-        "eventName": "Hardcoded reality candidate at scripts/pulse/__parts__/artifacts/generate.ts:178",
-        "evidence": "const.declaration -> machineReadiness",
-        "filePath": "scripts/pulse/__parts__/artifacts/generate.ts",
-        "line": 178,
-        "column": 3,
-        "samples": [
-          "machineReadiness"
-        ],
-        "truthMode": "confirmed_static",
-        "actionability": "replace_with_dynamic_discovery"
-      },
-      {
-        "eventName": "Hardcoded reality candidate at scripts/pulse/__parts__/artifacts/generate.ts:184",
-        "evidence": "const.declaration -> reportPath",
-        "filePath": "scripts/pulse/__parts__/artifacts/generate.ts",
-        "line": 184,
-        "column": 3,
-        "samples": [
-          "reportPath"
-        ],
-        "truthMode": "confirmed_static",
-        "actionability": "replace_with_dynamic_discovery"
-      },
-      {
-        "eventName": "Hardcoded reality candidate at scripts/pulse/__parts__/artifacts/generate.ts:186",
-        "evidence": "reportPath -> report",
-        "filePath": "scripts/pulse/__parts__/artifacts/generate.ts",
-        "line": 186,
-        "column": 5,
-        "samples": [
-          "report"
-        ],
-        "truthMode": "confirmed_static",
-        "actionability": "replace_with_dynamic_discovery"
-      },
-      {
-        "eventName": "Hardcoded reality candidate at scripts/pulse/__parts__/artifacts/generate.ts:194",
-        "evidence": "const.declaration -> certificateContent",
-        "filePath": "scripts/pulse/__parts__/artifacts/generate.ts",
-        "line": 194,
-        "column": 3,
-        "samples": [
-          "certificateContent"
-        ],
-        "truthMode": "confirmed_static",
-        "actionability": "replace_with_dynamic_discovery"
-      },
-      {
-        "eventName": "Hardcoded reality candidate at scripts/pulse/__parts__/artifacts/generate.ts:199",
-        "evidence": "const.declaration -> certificatePath",
-        "filePath": "scripts/pulse/__parts__/artifacts/generate.ts",
-        "line": 199,
-        "column": 3,
-        "samples": [
-          "certificatePath"
-        ],
-        "truthMode": "confirmed_static",
-        "actionability": "replace_with_dynamic_discovery"
-      },
-      {
-        "eventName": "Hardcoded reality candidate at scripts/pulse/__parts__/artifacts/generate.ts:201",
-        "evidence": "certificatePath -> certificate",
-        "filePath": "scripts/pulse/__parts__/artifacts/generate.ts",
-        "line": 201,
-        "column": 5,
-        "samples": [
-          "certificate"
-        ],
-        "truthMode": "confirmed_static",
-        "actionability": "replace_with_dynamic_discovery"
-      },
-      {
-        "eventName": "Hardcoded reality candidate at scripts/pulse/__parts__/artifacts/generate.ts:205",
-        "evidence": "const.declaration -> machineReadinessPath",
-        "filePath": "scripts/pulse/__parts__/artifacts/generate.ts",
-        "line": 205,
-        "column": 3,
-        "samples": [
-          "machineReadinessPath"
-        ],
-        "truthMode": "confirmed_static",
-        "actionability": "replace_with_dynamic_discovery"
-      },
-      {
-        "eventName": "Hardcoded reality candidate at scripts/pulse/__parts__/artifacts/generate.ts:207",
-        "evidence": "machineReadinessPath -> machine-readiness",
-        "filePath": "scripts/pulse/__parts__/artifacts/generate.ts",
-        "line": 207,
-        "column": 5,
-        "samples": [
-          "machine-readiness"
-        ],
-        "truthMode": "confirmed_static",
-        "actionability": "replace_with_dynamic_discovery"
-      },
-      {
-        "eventName": "Hardcoded reality candidate at scripts/pulse/__parts__/artifacts/generate.ts:211",
-        "evidence": "const.declaration -> directiveContent",
-        "filePath": "scripts/pulse/__parts__/artifacts/generate.ts",
-        "line": 211,
-        "column": 3,
-        "samples": [
-          "directiveContent"
-        ],
-        "truthMode": "confirmed_static",
-        "actionability": "replace_with_dynamic_discovery"
-      },
-      {
-        "eventName": "Hardcoded reality candidate at scripts/pulse/__parts__/artifacts/generate.ts:218",
-        "evidence": "const.declaration -> cliDirectivePath",
-        "filePath": "scripts/pulse/__parts__/artifacts/generate.ts",
-        "line": 218,
-        "column": 3,
-        "samples": [
-          "cliDirectivePath"
-        ],
-        "truthMode": "confirmed_static",
-        "actionability": "replace_with_dynamic_discovery"
-      },
-      {
-        "eventName": "Hardcoded reality candidate at scripts/pulse/__parts__/artifacts/generate.ts:220",
-        "evidence": "cliDirectivePath -> directive",
-        "filePath": "scripts/pulse/__parts__/artifacts/generate.ts",
-        "line": 220,
-        "column": 5,
-        "samples": [
-          "directive"
-        ],
-        "truthMode": "confirmed_static",
-        "actionability": "replace_with_dynamic_discovery"
-      },
-      {
-        "eventName": "Hardcoded reality candidate at scripts/pulse/__parts__/artifacts/generate.ts:224",
-        "evidence": "const.declaration -> contextBundle",
-        "filePath": "scripts/pulse/__parts__/artifacts/generate.ts",
-        "line": 224,
-        "column": 3,
-        "samples": [
-          "contextBundle"
+          "checks"
         ],
         "truthMode": "confirmed_static",
         "actionability": "replace_with_dynamic_discovery"
@@ -1544,19 +1544,19 @@
   },
   "selfTrustReport": null,
   "scopeStateSummary": {
-    "totalFiles": 3971,
-    "totalLines": 723164,
-    "runtimeCriticalFiles": 2854,
-    "userFacingFiles": 1238,
+    "totalFiles": 3904,
+    "totalLines": 705600,
+    "runtimeCriticalFiles": 2825,
+    "userFacingFiles": 1217,
     "governedValidationFiles": 0,
     "surfaceCounts": {
-      "frontend": 1137,
+      "frontend": 1116,
       "frontend-admin": 102,
       "backend": 0,
       "worker": 0,
       "prisma": 65,
       "e2e": 55,
-      "scripts": 2053,
+      "scripts": 2007,
       "docs": 128,
       "infra": 3,
       "governance": 117,
@@ -1565,10 +1565,10 @@
       "misc": 284
     },
     "kindCounts": {
-      "source": 2784,
+      "source": 2755,
       "spec": 406,
       "migration": 43,
-      "config": 588,
+      "config": 550,
       "document": 147,
       "artifact": 3
     },
@@ -1588,32 +1588,41 @@
       "applied",
       "architecture",
       "area",
+      "assembler",
+      "auditability",
+      "authority",
       "biome",
+      "blast",
       "brazilian",
+      "builders",
       "bullmq",
       "campaign",
+      "certificate",
       "checklist",
       "checkoutclient",
+      "classify",
       "claude",
       "cleanup",
       "cli",
       "clientes",
       "codecov",
+      "collection",
       "commercial",
       "commitlint",
       "component",
       "configuracoes",
-      "constants",
       "contacts",
       "context",
       "cookies",
       "cspell",
       "cycle",
       "dangerously",
+      "decorators",
       "deferred",
       "definition",
       "depcheck",
-      "directive",
+      "detection",
+      "dimensions",
       "disaster",
       "discoverautonomyconcepttypelabels",
       "discoverautonomysuggestedstrategylabels",
@@ -1640,52 +1649,69 @@
       "discoversurfaceclassificationlabels",
       "dod",
       "domain",
+      "elements",
       "emit",
       "ensure",
       "env",
       "error",
-      "evidence",
       "executor",
       "extend",
+      "extraction",
+      "fabric",
       "fact",
+      "fallback",
       "false",
       "final",
       "financial",
+      "fixtures",
       "formatter",
       "funnels",
+      "fuzzer",
+      "generate",
+      "generation",
       "gitleaks",
       "global",
       "google",
+      "groups",
       "guard",
       "hadolint",
-      "helpers",
+      "handler",
+      "harness",
+      "hashing",
       "hex",
       "hidden",
       "hook",
       "husky",
       "idempotency",
       "implementation",
+      "injection",
       "instrument",
+      "internals",
       "ioredis",
       "job",
+      "kernel",
       "kill",
       "last",
       "last60",
       "legacy",
       "legal",
+      "loader",
       "loaders",
       "logger",
+      "machine",
       "madge",
-      "main",
       "markdown",
+      "matrix",
       "max",
       "mcp",
       "memory",
+      "merkle",
       "messages",
+      "migrate",
       "mobile",
-      "model",
       "narrow",
       "nest",
+      "normalization",
       "normalize",
       "nosecrets",
       "not",
@@ -1694,32 +1720,57 @@
       "operacoes",
       "overclaim",
       "pair",
-      "parser",
-      "path",
+      "parse",
+      "parsing",
+      "part0",
+      "part1",
+      "part2",
+      "part3",
+      "part5",
+      "part6",
+      "part7",
+      "payload",
       "perfil",
-      "playwright",
+      "plugin",
       "pr198",
       "predicate",
       "prettierrc",
       "preview",
       "pricing",
+      "profile",
       "protected",
       "prove",
+      "queries",
       "rac",
+      "readiness",
       "redis",
       "register",
+      "registry",
       "relatorios",
       "replace",
+      "replay",
+      "report",
       "reprocess",
       "requirements",
+      "resolution",
       "restore",
+      "results",
       "retry",
       "robots",
+      "runner",
+      "runtime",
       "sales",
-      "scan",
+      "sandbox",
+      "scanner",
+      "scanners",
       "scenario",
+      "scenarios",
+      "scheduled",
       "scraper",
+      "selection",
+      "semantic",
       "semgrep",
+      "send",
       "sentry",
       "service",
       "severity",
@@ -1727,17 +1778,23 @@
       "sitemap",
       "skipped",
       "smoke",
+      "snapshots",
       "social",
+      "source",
+      "spec",
       "staging",
       "status",
       "stripe",
       "svg",
       "sync",
       "system",
+      "target",
       "tasks",
       "tenant",
       "testing",
+      "text",
       "theme",
+      "token",
       "tool",
       "tools",
       "tsc",
@@ -5962,7 +6019,7 @@
       {
         "path": "artifacts/opencode-fleet/wave-11-fraud-fix-2026-05-09/pids.json",
         "extension": ".json",
-        "lineCount": 12,
+        "lineCount": 7,
         "surface": "misc",
         "kind": "config",
         "runtimeCritical": false,
@@ -6594,7 +6651,7 @@
     "snapshotAvailable": true,
     "sourcePath": "/Users/danielpenin/whatsapp_saas/PULSE_CODACY_STATE.json",
     "syncedAt": "2026-04-23T06:27:53.909Z",
-    "ageMinutes": 24178,
+    "ageMinutes": 24253,
     "stale": true,
     "loc": 463549,
     "totalIssues": 7548,
@@ -7761,7 +7818,7 @@
       "impactScore": 0.8,
       "confidence": 0.95,
       "summary": "37 HIGH Codacy issue(s) remain in backend/prisma/migrations/20251209150035_init_baseline/migration.sql.",
-      "observedAt": "2026-05-10T01:26:30.165Z",
+      "observedAt": "2026-05-10T02:41:28.421Z",
       "relatedFiles": [
         "backend/prisma/migrations/20251209150035_init_baseline/migration.sql"
       ],
@@ -7803,7 +7860,7 @@
       "impactScore": 0.8,
       "confidence": 0.95,
       "summary": "2 HIGH Codacy issue(s) remain in backend/src/auth/email.service.ts.",
-      "observedAt": "2026-05-10T01:26:30.165Z",
+      "observedAt": "2026-05-10T02:41:28.421Z",
       "relatedFiles": [
         "backend/src/auth/email.service.ts"
       ],
@@ -7980,7 +8037,7 @@
       "impactScore": 0.8,
       "confidence": 0.95,
       "summary": "1 HIGH Codacy issue(s) remain in backend/src/autopilot/autopilot.service.ts.",
-      "observedAt": "2026-05-10T01:26:30.165Z",
+      "observedAt": "2026-05-10T02:41:28.421Z",
       "relatedFiles": [
         "backend/src/autopilot/autopilot.service.ts"
       ],
@@ -8167,7 +8224,7 @@
       "impactScore": 0.55,
       "confidence": 0.95,
       "summary": "1 HIGH Codacy issue(s) remain in package.json.",
-      "observedAt": "2026-05-10T01:26:30.165Z",
+      "observedAt": "2026-05-10T02:41:28.421Z",
       "relatedFiles": [
         "package.json"
       ],
@@ -8203,18 +8260,18 @@
     }
   ],
   "structuralGraphSummary": {
-    "totalNodes": 7240,
-    "totalEdges": 15222,
+    "totalNodes": 7205,
+    "totalEdges": 15218,
     "roleCounts": {
-      "interface": 2761,
+      "interface": 2726,
       "orchestration": 3358,
       "persistence": 145,
       "side_effect": 973,
       "simulation": 3
     },
-    "interfaceChains": 2761,
-    "completeChains": 770,
-    "partialChains": 1991,
+    "interfaceChains": 2726,
+    "completeChains": 766,
+    "partialChains": 1960,
     "simulatedChains": 0
   },
   "capabilityStateSummary": {
@@ -9534,7 +9591,6 @@
         "frontend/src/components/kloel/products/ProductNerveCenterComissaoTab.richtext.hooks.ts",
         "frontend/src/components/kloel/products/ProductNerveCenterIATab.hooks.ts",
         "frontend/src/components/kloel/products/ProductNerveCenterRoot.js",
-        "frontend/src/components/kloel/products/__parts__/ProductNerveCenterRoot.js",
         "frontend/src/components/kloel/produtos/AreaMembrosStudentDrawer.tsx",
         "frontend/src/components/kloel/produtos/ProdutosAreaMembrosTab.tsx",
         "frontend/src/components/kloel/settings/autopilot-section.tsx",
@@ -9864,7 +9920,6 @@
         "frontend/src/components/kloel/products/ProductNerveCenterComissaoTab.richtext.hooks.ts",
         "frontend/src/components/kloel/products/ProductNerveCenterIATab.hooks.ts",
         "frontend/src/components/kloel/products/ProductNerveCenterRoot.js",
-        "frontend/src/components/kloel/products/__parts__/ProductNerveCenterRoot.js",
         "frontend/src/components/kloel/produtos/AreaMembrosStudentDrawer.tsx",
         "frontend/src/components/kloel/produtos/ProdutosAreaMembrosTab.tsx",
         "frontend/src/components/kloel/settings/autopilot-section.tsx",
@@ -10564,7 +10619,6 @@
         "frontend/src/components/kloel/products/ProductNerveCenterComissaoTab.richtext.hooks.ts",
         "frontend/src/components/kloel/products/ProductNerveCenterIATab.hooks.ts",
         "frontend/src/components/kloel/products/ProductNerveCenterRoot.js",
-        "frontend/src/components/kloel/products/__parts__/ProductNerveCenterRoot.js",
         "frontend/src/components/kloel/produtos/AreaMembrosStudentDrawer.tsx",
         "frontend/src/components/kloel/produtos/ProdutosAreaMembrosTab.tsx",
         "frontend/src/components/kloel/settings/crm-settings-section.tsx",
@@ -10761,7 +10815,7 @@
     }
   ],
   "productVision": {
-    "generatedAt": "2026-05-10T01:34:51.735Z",
+    "generatedAt": "2026-05-10T02:47:44.191Z",
     "truthMode": "aspirational",
     "evidenceBasis": {
       "observed": 51,
@@ -28226,7 +28280,7 @@
     }
   },
   "convergencePlan": {
-    "totalUnits": 153,
+    "totalUnits": 152,
     "governedValidationUnits": 0,
     "observationOnlyUnits": 1,
     "topQueue": [
@@ -28406,17 +28460,11 @@
           "backend/src/video/video.module.ts",
           "backend/src/video/video.service.spec.ts",
           "backend/src/video/video.service.ts",
-          "backend/src/whatsapp/__companions__/account-agent.service.companion.ts",
-          "backend/src/whatsapp/__companions__/cia-backlog-run.service.companion.ts",
-          "backend/src/whatsapp/__companions__/cia-bootstrap.service.companion.ts",
-          "backend/src/whatsapp/__companions__/cia-remote-backlog.service.companion.ts",
-          "backend/src/whatsapp/__companions__/cia-runtime.service.fixtures.companion.ts",
-          "backend/src/whatsapp/__companions__/inbound-processor.service.companion.ts",
-          "backend/src/whatsapp/__companions__/whatsapp-catchup.service.companion.ts",
-          "backend/src/whatsapp/__companions__/whatsapp-watchdog-recovery.service.companion.ts",
-          "backend/src/whatsapp/__companions__/whatsapp.service.companion.ts",
-          "backend/src/whatsapp/__companions__/whatsapp.service.spec.companion.ts",
+          "backend/src/whatsapp/account-agent.capability-gaps.ts",
+          "backend/src/whatsapp/account-agent.gap-detector.ts",
+          "backend/src/whatsapp/account-agent.input-session.ts",
           "backend/src/whatsapp/account-agent.parsers.ts",
+          "backend/src/whatsapp/account-agent.product-materializer.ts",
           "backend/src/whatsapp/account-agent.registry.ts",
           "backend/src/whatsapp/account-agent.service.spec.helpers.ts",
           "backend/src/whatsapp/account-agent.service.spec.ts",
@@ -28452,8 +28500,6 @@
           "backend/src/whatsapp/inbound-processor.service.ts",
           "backend/src/whatsapp/internal-whatsapp-runtime.controller.ts",
           "backend/src/whatsapp/provider-settings.types.ts",
-          "backend/src/whatsapp/providers/__companions__/provider-send-message.ts",
-          "backend/src/whatsapp/providers/__companions__/waha-session.provider.companion.ts",
           "backend/src/whatsapp/providers/provider-env.spec.ts",
           "backend/src/whatsapp/providers/provider-env.ts",
           "backend/src/whatsapp/providers/provider-registry.spec.ts",
@@ -28474,6 +28520,9 @@
           "backend/src/whatsapp/providers/whatsapp-api.provider.spec.ts",
           "backend/src/whatsapp/providers/whatsapp-api.provider.ts",
           "backend/src/whatsapp/providers/whatsapp-api.provider.types.ts",
+          "backend/src/whatsapp/whatsapp-catalog-contact-collector.ts",
+          "backend/src/whatsapp/whatsapp-catchup.helpers.ts",
+          "backend/src/whatsapp/whatsapp-catchup.normalizers.ts",
           "backend/src/whatsapp/whatsapp-catchup.service.pagination.spec.ts",
           "backend/src/whatsapp/whatsapp-catchup.service.spec-helpers.ts",
           "backend/src/whatsapp/whatsapp-catchup.service.spec.ts",
@@ -28481,6 +28530,10 @@
           "backend/src/whatsapp/whatsapp-digits.util.ts",
           "backend/src/whatsapp/whatsapp-normalization.util.ts",
           "backend/src/whatsapp/whatsapp-send-rate-guard.service.ts",
+          "backend/src/whatsapp/whatsapp-service.helpers.ts",
+          "backend/src/whatsapp/whatsapp-service.normalizers.ts",
+          "backend/src/whatsapp/whatsapp-service.operations.ts",
+          "backend/src/whatsapp/whatsapp-service.types.ts",
           "backend/src/whatsapp/whatsapp-watchdog-recovery.service.spec.ts",
           "backend/src/whatsapp/whatsapp-watchdog-recovery.service.ts",
           "backend/src/whatsapp/whatsapp-watchdog-session.service.ts",
@@ -28629,17 +28682,6 @@
           "frontend/src/__tests__/contracts/schemas.ts",
           "frontend/src/app/(checkout)/[slug]/CheckoutClient.tsx",
           "frontend/src/app/(checkout)/[slug]/page.tsx",
-          "frontend/src/app/(checkout)/components/__companions__/ProductThumb.tsx",
-          "frontend/src/app/(checkout)/components/__parts__/CheckoutSummarySections/CheckoutDesktopSidebar.tsx",
-          "frontend/src/app/(checkout)/components/__parts__/CheckoutSummarySections/CheckoutFooter.tsx",
-          "frontend/src/app/(checkout)/components/__parts__/CheckoutSummarySections/CheckoutMobileSummary.tsx",
-          "frontend/src/app/(checkout)/components/__parts__/CheckoutSummarySections/CouponRow.tsx",
-          "frontend/src/app/(checkout)/components/__parts__/CheckoutSummarySections/helpers.ts",
-          "frontend/src/app/(checkout)/components/__parts__/CheckoutSummarySections/main.ts",
-          "frontend/src/app/(checkout)/components/__parts__/CheckoutSummarySections/QuantityControl.tsx",
-          "frontend/src/app/(checkout)/components/__parts__/CheckoutSummarySections/SummaryProductRow.tsx",
-          "frontend/src/app/(checkout)/components/__parts__/CheckoutSummarySections/SummaryTotals.tsx",
-          "frontend/src/app/(checkout)/components/__parts__/CheckoutSummarySections/types.ts",
           "frontend/src/app/(checkout)/components/checkout-shared-parts.tsx",
           "frontend/src/app/(checkout)/components/checkout-shared-payment-parts.tsx",
           "frontend/src/app/(checkout)/components/checkout-summary-helpers.ts",
@@ -28688,14 +28730,15 @@
           "frontend/src/app/(checkout)/components/FloatingBar.tsx",
           "frontend/src/app/(checkout)/components/OrderBumpCard.tsx",
           "frontend/src/app/(checkout)/components/PixelTracker.tsx",
+          "frontend/src/app/(checkout)/components/ProductThumb.tsx",
           "frontend/src/app/(checkout)/components/StockCounter.tsx",
           "frontend/src/app/(checkout)/components/StripePaymentElement.tsx",
-          "frontend/src/app/(checkout)/hooks/__companions__/useCheckoutExperience.helpers.ts",
           "frontend/src/app/(checkout)/hooks/checkout-experience-social-helpers.ts",
           "frontend/src/app/(checkout)/hooks/checkout-order-submit.test.ts",
           "frontend/src/app/(checkout)/hooks/checkout-order-submit.ts",
           "frontend/src/app/(checkout)/hooks/useCheckout.ts",
           "frontend/src/app/(checkout)/hooks/useCheckoutExperience.effects.ts",
+          "frontend/src/app/(checkout)/hooks/useCheckoutExperience.helpers.ts",
           "frontend/src/app/(checkout)/hooks/useCheckoutExperience.ts",
           "frontend/src/app/(checkout)/hooks/useCheckoutExperience.types.ts",
           "frontend/src/app/(checkout)/hooks/useCheckoutExperience.utils.ts",
@@ -29042,9 +29085,6 @@
           "frontend/src/components/kloel/crm/NoPipelinesEmptyState.tsx",
           "frontend/src/components/kloel/crm/PipelineStageColumn.tsx",
           "frontend/src/components/kloel/crm/PipelineToolbar.tsx",
-          "frontend/src/components/kloel/dashboard/__parts__/KloelDashboard.sendMessage.ts",
-          "frontend/src/components/kloel/dashboard/__parts__/KloelDashboard.useKloelDragDrop.ts",
-          "frontend/src/components/kloel/dashboard/__parts__/KloelDashboard.useKloelFiles.ts",
           "frontend/src/components/kloel/dashboard/KloelChatComposer.test.tsx",
           "frontend/src/components/kloel/dashboard/KloelChatComposer.tsx",
           "frontend/src/components/kloel/dashboard/KloelChatComposerParts.helpers.ts",
@@ -29057,7 +29097,6 @@
           "frontend/src/components/kloel/dashboard/KloelDashboard.message.tsx",
           "frontend/src/components/kloel/dashboard/KloelDashboard.subcomponents.tsx",
           "frontend/src/components/kloel/dashboard/KloelDashboard.tsx",
-          "frontend/src/components/kloel/dashboard/KloelDashboard/__parts__/KloelDashboard.view.tsx",
           "frontend/src/components/kloel/dashboard/KloelDashboard/KloelDashboardView.tsx",
           "frontend/src/components/kloel/dashboard/KloelDashboardSendMessage.ts",
           "frontend/src/components/kloel/dashboard/useKloelDragDrop.ts",
@@ -29083,11 +29122,6 @@
           "frontend/src/components/kloel/home/useKloelChat.ts",
           "frontend/src/components/kloel/home/useKloelSendMessage.ts",
           "frontend/src/components/kloel/home/useTypingSimulation.ts",
-          "frontend/src/components/kloel/inbox/__parts__/conversation-list-item.tsx",
-          "frontend/src/components/kloel/inbox/__parts__/no-workspace-view.tsx",
-          "frontend/src/components/kloel/inbox/__parts__/not-authenticated-view.tsx",
-          "frontend/src/components/kloel/inbox/__parts__/use-inbox-data.ts",
-          "frontend/src/components/kloel/inbox/__parts__/use-inbox-realtime.ts",
           "frontend/src/components/kloel/inbox/inbox-workspace-utils.ts",
           "frontend/src/components/kloel/inbox/InboxConversationListItem.tsx",
           "frontend/src/components/kloel/inbox/InboxNotAuthenticatedView.tsx",
@@ -29208,9 +29242,6 @@
           "frontend/src/components/kloel/parcerias/partnershipTypes.ts",
           "frontend/src/components/kloel/plan-activation-success-modal.tsx",
           "frontend/src/components/kloel/Primitives.tsx",
-          "frontend/src/components/kloel/products/__companions__/ProductNerveCenterComissaoTab.coprod.DeleteDialog.tsx",
-          "frontend/src/components/kloel/products/__parts__/product-nerve-tabs.const.ts",
-          "frontend/src/components/kloel/products/__parts__/ProductNerveCenterRoot.js",
           "frontend/src/components/kloel/products/CoprodDeleteDialog.tsx",
           "frontend/src/components/kloel/products/LabeledFormField.tsx",
           "frontend/src/components/kloel/products/product-nerve-center.constants.tsx",
@@ -29260,7 +29291,11 @@
           "frontend/src/components/kloel/produtos/AreaMembrosCreateAreaForm.tsx",
           "frontend/src/components/kloel/produtos/AreaMembrosDashboard.tsx",
           "frontend/src/components/kloel/produtos/AreaMembrosLessonForm.tsx",
+          "frontend/src/components/kloel/produtos/AreaMembrosLessonItem.tsx",
+          "frontend/src/components/kloel/produtos/AreaMembrosModuleItem.tsx",
           "frontend/src/components/kloel/produtos/AreaMembrosStudentDrawer.tsx",
+          "frontend/src/components/kloel/produtos/MarketplaceFilters.tsx",
+          "frontend/src/components/kloel/produtos/MarketplaceProductGrid.tsx",
           "frontend/src/components/kloel/produtos/MeusProdutos.tsx",
           "frontend/src/components/kloel/produtos/MeusProdutosDashboard.tsx",
           "frontend/src/components/kloel/produtos/MeusProdutosProductCard.tsx",
@@ -29491,9 +29526,6 @@
           "frontend/src/lib/__tests__/subdomains.test.ts",
           "frontend/src/lib/anonymous-session.ts",
           "frontend/src/lib/api.ts",
-          "frontend/src/lib/api/__parts__/core-tokens.scoring.ts",
-          "frontend/src/lib/api/__parts__/core-tokens.storage.ts",
-          "frontend/src/lib/api/__parts__/core-tokens.sync.ts",
           "frontend/src/lib/api/ad-rules.ts",
           "frontend/src/lib/api/affiliate.ts",
           "frontend/src/lib/api/agent-tools.ts",
@@ -29626,16 +29658,32 @@
           "scripts/ops/codemods/i18n-wrap-jsx.mjs",
           "scripts/ops/lib/changed-files.mjs",
           "scripts/ops/lib/scan-utils.mjs",
+          "scripts/pulse/artifacts.autonomy/types.ts",
+          "scripts/pulse/artifacts/types.ts",
+          "scripts/pulse/authority-engine/api.ts",
+          "scripts/pulse/autonomy-loop.workspace/types.ts",
+          "scripts/pulse/browser-stress-tester/live-artifacts/types.ts",
+          "scripts/pulse/command-graph/types.ts",
+          "scripts/pulse/context-broadcast/types.ts",
           "scripts/pulse/cross-artifact-consistency-check/types.ts",
           "scripts/pulse/flow-projection.ts",
+          "scripts/pulse/functional-map.helpers/public.ts",
           "scripts/pulse/gitnexus/types.ts",
+          "scripts/pulse/hardcoded-finding-audit/types.ts",
           "scripts/pulse/lib/safe-path.ts",
           "scripts/pulse/lib/safe-regex.ts",
+          "scripts/pulse/parser-registry/types.ts",
           "scripts/pulse/parsers/api-parser-helpers.ts",
           "scripts/pulse/parsers/api-parser-normalize.ts",
           "scripts/pulse/parsers/api-parser-proxy.ts",
           "scripts/pulse/parsers/api-parser-string-utils.ts",
           "scripts/pulse/parsers/api-parser.ts",
+          "scripts/pulse/product-model/types.ts",
+          "scripts/pulse/real-sandbox/types.ts",
+          "scripts/pulse/regression-guard/types.ts",
+          "scripts/pulse/source-root-detector/api.ts",
+          "scripts/pulse/source-root-detector/package-discovery.ts",
+          "scripts/pulse/source-root-detector/types.ts",
           "scripts/pulse/tsconfig.json",
           "scripts/pulse/types.api-fuzzer.ts",
           "scripts/pulse/types.ast-graph.ts",
@@ -29645,6 +29693,11 @@
           "scripts/pulse/types.autonomy.ts",
           "scripts/pulse/types.behavior-graph.ts",
           "scripts/pulse/types.capabilities.parity.ts",
+          "scripts/pulse/types.capabilities/01-primitives.ts",
+          "scripts/pulse/types.capabilities/02-maturity-dod.ts",
+          "scripts/pulse/types.capabilities/03-capability.ts",
+          "scripts/pulse/types.capabilities/04-flow-projection.ts",
+          "scripts/pulse/types.capabilities/05-external-signals.ts",
           "scripts/pulse/types.chaos-engine.ts",
           "scripts/pulse/types.codacy-classification.ts",
           "scripts/pulse/types.continuous-daemon.ts",
@@ -29699,6 +29752,13 @@
           "worker/flow-engine-voice-producer.ts",
           "worker/flow-engine.helpers.ts",
           "worker/flow-engine.types.ts",
+          "worker/flow-message-sender.helpers.ts",
+          "worker/flow-node-executor.actions.ts",
+          "worker/flow-node-executor.ai.ts",
+          "worker/flow-node-executor.api.ts",
+          "worker/flow-node-executor.interactions.ts",
+          "worker/flow-node-executor.ts",
+          "worker/flow-node-executor.types.ts",
           "worker/metrics-server.ts",
           "worker/metrics.ts",
           "worker/package-lock.json",
@@ -29707,13 +29767,13 @@
           "worker/processors/cia/build-state.ts",
           "worker/processors/cia/cognitive-state-patterns.ts",
           "worker/processors/cia/cognitive-state.ts",
-          "worker/processors/cia/cognitive-state/__parts__/cognitive-state-build.ts",
-          "worker/processors/cia/cognitive-state/__parts__/cognitive-state-inference.ts",
-          "worker/processors/cia/cognitive-state/__parts__/cognitive-state-load.ts",
-          "worker/processors/cia/cognitive-state/__parts__/cognitive-state-persist.ts",
-          "worker/processors/cia/cognitive-state/__parts__/cognitive-state-record.ts",
-          "worker/processors/cia/cognitive-state/__parts__/cognitive-state-scoring.ts",
-          "worker/processors/cia/cognitive-state/__parts__/cognitive-state-types.ts",
+          "worker/processors/cia/cognitive-state/cognitive-state-build.ts",
+          "worker/processors/cia/cognitive-state/cognitive-state-inference.ts",
+          "worker/processors/cia/cognitive-state/cognitive-state-load.ts",
+          "worker/processors/cia/cognitive-state/cognitive-state-persist.ts",
+          "worker/processors/cia/cognitive-state/cognitive-state-record.ts",
+          "worker/processors/cia/cognitive-state/cognitive-state-scoring.ts",
+          "worker/processors/cia/cognitive-state/cognitive-state-types.ts",
           "worker/processors/cia/contracts.ts",
           "worker/processors/cia/conversation-policy.ts",
           "worker/processors/cia/conversation-tactics.ts",
@@ -30031,7 +30091,6 @@
           "frontend/src/components/kloel/products/ProductNerveCenterComissaoTab.richtext.hooks.ts",
           "frontend/src/components/kloel/products/ProductNerveCenterIATab.hooks.ts",
           "frontend/src/components/kloel/products/ProductNerveCenterRoot.js",
-          "frontend/src/components/kloel/products/__parts__/ProductNerveCenterRoot.js",
           "frontend/src/components/kloel/produtos/AreaMembrosStudentDrawer.tsx",
           "frontend/src/components/kloel/produtos/ProdutosAreaMembrosTab.tsx",
           "frontend/src/components/kloel/settings/autopilot-section.tsx",
@@ -30804,7 +30863,6 @@
           "frontend/src/components/kloel/products/ProductNerveCenterComissaoTab.richtext.hooks.ts",
           "frontend/src/components/kloel/products/ProductNerveCenterIATab.hooks.ts",
           "frontend/src/components/kloel/products/ProductNerveCenterRoot.js",
-          "frontend/src/components/kloel/products/__parts__/ProductNerveCenterRoot.js",
           "frontend/src/components/kloel/produtos/AreaMembrosStudentDrawer.tsx",
           "frontend/src/components/kloel/produtos/ProdutosAreaMembrosTab.tsx",
           "frontend/src/components/kloel/settings/autopilot-section.tsx",
@@ -31723,7 +31781,6 @@
           "frontend/src/components/kloel/products/ProductNerveCenterComissaoTab.richtext.hooks.ts",
           "frontend/src/components/kloel/products/ProductNerveCenterIATab.hooks.ts",
           "frontend/src/components/kloel/products/ProductNerveCenterRoot.js",
-          "frontend/src/components/kloel/products/__parts__/ProductNerveCenterRoot.js",
           "frontend/src/components/kloel/produtos/AreaMembrosStudentDrawer.tsx",
           "frontend/src/components/kloel/produtos/ProdutosAreaMembrosTab.tsx",
           "frontend/src/components/kloel/settings/crm-settings-section.tsx",
@@ -35324,7 +35381,7 @@
       ]
     },
     "worldState": {
-      "generatedAt": "2026-05-10T01:33:08.990Z",
+      "generatedAt": "2026-05-10T02:46:39.592Z",
       "actorProfiles": [
         "synthetic-customer",
         "synthetic-operator",
@@ -35432,9 +35489,9 @@
       ]
     },
     "executionTrace": {
-      "runId": "pulse-cert-1778376788990",
-      "generatedAt": "2026-05-10T01:33:08.990Z",
-      "updatedAt": "2026-05-10T01:33:08.990Z",
+      "runId": "pulse-cert-1778381199593",
+      "generatedAt": "2026-05-10T02:46:39.593Z",
+      "updatedAt": "2026-05-10T02:46:39.593Z",
       "environment": "scan",
       "certificationTarget": {
         "tier": null,
@@ -35460,7 +35517,7 @@
           "PULSE_CERTIFICATE.json"
         ],
         "metrics": {
-          "inventoryFiles": 3971,
+          "inventoryFiles": 3904,
           "codacyObservedFiles": 60,
           "codacyObservedFilesCovered": 57,
           "confidence": "low"
@@ -36024,7 +36081,7 @@
         ],
         "metrics": {
           "codacySnapshotAvailable": true,
-          "codacyAgeMinutes": 24178,
+          "codacyAgeMinutes": 24253,
           "codacyStale": true,
           "externalStaleAdapters": 0,
           "externalMissingAdapters": 2
@@ -36035,12 +36092,12 @@
       {
         "kind": "artifact",
         "executed": true,
-        "summary": "Execution matrix classified 5286 path(s); unknown=0.",
+        "summary": "Execution matrix classified 5195 path(s); unknown=0.",
         "artifactPaths": [
           "PULSE_EXECUTION_MATRIX.json"
         ],
         "metrics": {
-          "totalPaths": 5286,
+          "totalPaths": 5195,
           "unknownPaths": 0,
           "coveragePercent": 100
         }
@@ -36082,18 +36139,18 @@
       {
         "kind": "artifact",
         "executed": true,
-        "summary": "Proof readiness blocks completion: status=executable_unproved, canAdvance=false, planned=1995, inferred=0, not_available=0, nonObserved=1995, executableUnproved=1995.",
+        "summary": "Proof readiness blocks completion: status=executable_unproved, canAdvance=false, planned=1965, inferred=0, not_available=0, nonObserved=1965, executableUnproved=1965.",
         "artifactPaths": [
           ".pulse/current/PULSE_PROOF_READINESS.json"
         ],
         "metrics": {
           "canAdvance": 0,
-          "plannedEvidence": 1995,
-          "plannedOrUnexecutedEvidence": 1995,
+          "plannedEvidence": 1965,
+          "plannedOrUnexecutedEvidence": 1965,
           "inferredEvidence": 0,
           "notAvailableEvidence": 0,
-          "nonObservedEvidence": 1995,
-          "executableUnproved": 1995,
+          "nonObservedEvidence": 1965,
+          "executableUnproved": 1965,
           "observationOnlyRequired": 0,
           "blockedNotExecutable": 0
         }
@@ -36101,12 +36158,12 @@
       {
         "kind": "artifact",
         "executed": true,
-        "summary": "No-hardcoded-reality state blocks completion: 218692 hardcoded reality event(s) across 499 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9.",
+        "summary": "No-hardcoded-reality state blocks completion: 219506 hardcoded reality event(s) across 499 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9.",
         "artifactPaths": [
           null
         ],
         "metrics": {
-          "totalEvents": 218692,
+          "totalEvents": 219506,
           "scannedFiles": 499
         }
       }
@@ -36115,7 +36172,7 @@
   "pulseMachineReadiness": {
     "scope": "pulse_machine_not_kloel_product",
     "status": "NOT_READY",
-    "generatedAt": "2026-05-10T01:32:59.139Z",
+    "generatedAt": "2026-05-10T02:46:32.836Z",
     "productCertificationStatus": "NOT_CERTIFIED",
     "productCertificationExcludedFromVerdict": true,
     "canRunBoundedAutonomousCycle": false,
@@ -36129,7 +36186,7 @@
           "nextExecutableUnitLimit": 8,
           "boundedExecutableUnits": 8,
           "totalAutonomousUnits": 68,
-          "totalConvergenceUnits": 153
+          "totalConvergenceUnits": 152
         }
       },
       {
@@ -36144,9 +36201,9 @@
       {
         "id": "execution_matrix",
         "status": "pass",
-        "reason": "Execution matrix classified 5286 path(s) with zero unknown and zero non-terminal paths.",
+        "reason": "Execution matrix classified 5195 path(s) with zero unknown and zero non-terminal paths.",
         "evidence": {
-          "totalPaths": 5286,
+          "totalPaths": 5195,
           "unknownPaths": 0,
           "criticalUnobservedPaths": 0,
           "impreciseBreakpoints": 0,
@@ -36156,12 +36213,12 @@
       {
         "id": "critical_path_terminal",
         "status": "fail",
-        "reason": "4014 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-insights, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
+        "reason": "3961 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-insights, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
         "evidence": {
           "criticalUnobservedPaths": 0,
           "observedPass": 0,
           "observedFail": 221,
-          "terminalWithoutObservedEvidence": 4014,
+          "terminalWithoutObservedEvidence": 3961,
           "firstTerminalPathId": "matrix:capability:capability:ad-insights",
           "terminalArtifact": "PULSE_EXECUTION_MATRIX.json",
           "coverageArtifact": "PULSE_PATH_COVERAGE.json",
@@ -36220,12 +36277,12 @@
     ],
     "blockers": [
       "artifact_consistency: Cross-artifact consistency has not produced a passing check.",
-      "critical_path_terminal: 4014 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-insights, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
+      "critical_path_terminal: 3961 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-insights, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
       "external_reality: 2 missing, 0 stale, and 0 invalid external adapter(s) remain.",
       "self_trust: PULSE still reconstructs 1 phantom capability(ies) and 0 phantom flow(s); self-trust stays degraded until illusion collapses into real chains.",
       "multi_cycle: multiCycleConvergence: no autonomy iteration history found; production-autonomy verdict requires proven cycles. Cycle proof: 3/3 successful non-regressing real cycle(s)."
     ]
   },
-  "runId": "43f1d359-ac6e-47d4-8493-bbba16b86627",
-  "generatedAt": "2026-05-10T01:43:25.753Z"
+  "runId": "901768e5-5c8b-4ac1-b341-90fde975f76c",
+  "generatedAt": "2026-05-10T02:52:36.925Z"
 }

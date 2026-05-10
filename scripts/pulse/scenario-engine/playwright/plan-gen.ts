@@ -1,7 +1,7 @@
 // PULSE Wave 5 — Dynamic Scenario Plan Generator
 // Sub-part: token collection, token matching, and dynamic plan derivation
 
-import { isObservedMutatingMethod } from '../../../dynamic-reality-grammar';
+import { isObservedMutatingMethod } from '../../dynamic-reality-grammar';
 import {
   _unit,
   _zero,
@@ -9,8 +9,8 @@ import {
   getHttpDecorator,
   getSurface,
   tokenizeScenarioText,
-} from '../../queries';
-import type { ScenarioBuildContext } from '../../queries';
+} from '../queries';
+import type { ScenarioBuildContext } from '../queries';
 import type { DynamicScenarioPlan } from './spec-gen';
 
 export function collectScenarioTokens(

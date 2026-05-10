@@ -93,7 +93,7 @@ export default function SuccessPage() {
         <div
           style={{
             background: colors.checkout.bg,
-            border: '1px solid #2A2A2E',
+            border: `1px solid ${colors.checkout.border}`,
             borderRadius: '12px',
             padding: '20px',
             marginBottom: '20px',
@@ -119,7 +119,7 @@ export default function SuccessPage() {
         <div
           style={{
             background: colors.checkout.bg,
-            border: '1px solid #2A2A2E',
+            border: `1px solid ${colors.checkout.border}`,
             borderRadius: '12px',
             padding: '20px',
             marginBottom: '20px',
@@ -174,7 +174,7 @@ export default function SuccessPage() {
         <div
           style={{
             background: colors.checkout.successBg,
-            border: '1px solid #22c55e33',
+            border: `1px solid ${colors.checkout.success}33`,
             borderRadius: '10px',
             padding: '14px 16px',
             marginBottom: '20px',

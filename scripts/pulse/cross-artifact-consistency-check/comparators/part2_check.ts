@@ -4,7 +4,7 @@
 
 import * as path from 'path';
 import type { ArtifactDivergence, ConsistencyResult, LoadedArtifact } from '../../types';
-import { deepGet, MAX_GENERATED_AT_DRIFT_MS } from '../../loaders';
+import { deepGet, MAX_GENERATED_AT_DRIFT_MS } from '../loaders';
 import {
   deriveUnitValue,
   deriveZeroValue,

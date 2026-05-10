@@ -146,7 +146,7 @@ const VALID_TYPES = new Set([
   'ESCALATE_HUMAN',
 ]);
 
-function targetKey(action: { contactId?: string; phone?: string; conversationId: string }) {
+function targetKey(action: { contactId?: string | undefined; phone?: string | undefined; conversationId: string }) {
   return String(action.contactId || action.phone || action.conversationId);
 }
 

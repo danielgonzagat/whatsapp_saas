@@ -267,8 +267,8 @@ export function deriveVerificationThresholdFromObservedCatalog(): number {
 }
 
 // Wave K3 — kernel enrichment via stage files
-export { discoverAutonomyConceptTypeLabels } from '../../__kernel_additions__/discoverAutonomyConceptTypeLabels';
-export { discoverAutonomySuggestedStrategyLabels } from '../../__kernel_additions__/discoverAutonomySuggestedStrategyLabels';
-export { discoverBrowserFailureCodeLabels } from '../../__kernel_additions__/discoverBrowserFailureCodeLabels';
-export { discoverExecutionPhaseStatusLabels } from '../../__kernel_additions__/discoverExecutionPhaseStatusLabels';
-export { discoverSurfaceClassificationLabels } from '../../__kernel_additions__/discoverSurfaceClassificationLabels';
+export { discoverAutonomyConceptTypeLabels } from '../__kernel_additions__/discoverAutonomyConceptTypeLabels';
+export { discoverAutonomySuggestedStrategyLabels } from '../__kernel_additions__/discoverAutonomySuggestedStrategyLabels';
+export { discoverBrowserFailureCodeLabels } from '../__kernel_additions__/discoverBrowserFailureCodeLabels';
+export { discoverExecutionPhaseStatusLabels } from '../__kernel_additions__/discoverExecutionPhaseStatusLabels';
+export { discoverSurfaceClassificationLabels } from '../__kernel_additions__/discoverSurfaceClassificationLabels';

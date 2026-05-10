@@ -2,12 +2,12 @@ import * as path from 'path';
 import * as ts from 'typescript';
 import type { UIElement } from '../../types.core';
 import type { PulseConfig } from '../../types.manifest';
-import type { HookRegistry } from '../../hook-registry';
-import { buildApiModuleMap } from '../../api-parser';
+import type { HookRegistry } from '../hook-registry';
+import { buildApiModuleMap } from '../api-parser';
 import { extractSaveHandlerApiCalls } from '../../ui-api-calls';
-import { componentHasSaveHandler, resolveHandler } from '../../ui-handler-resolver';
-import { extractHookDestructures } from '../../hook-registry';
-import { walkFiles } from '../../utils';
+import { componentHasSaveHandler, resolveHandler } from '../ui-handler-resolver';
+import { extractHookDestructures } from '../hook-registry';
+import { walkFiles } from '../utils';
 import { readTextFile } from '../../safe-fs';
 import { getFrontendSourceDirs } from '../../frontend-roots';
 import {

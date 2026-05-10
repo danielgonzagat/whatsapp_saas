@@ -74,7 +74,7 @@ export default function CanvasModelos() {
             alignItems: 'center',
             gap: 10,
             background: 'var(--app-bg-card)',
-            border: '1px solid #1C1C1F',
+            border: `1px solid ${colors.canvas.border}`,
             borderRadius: 6,
             padding: '10px 16px',
           }}

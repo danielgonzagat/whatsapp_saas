@@ -1,9 +1,8 @@
-import { WorkerLogger } from '../../logger';
 import { prisma } from '../../db';
 import { redis } from '../../redis-client';
 import { persistSystemInsight } from '../../providers/commercial-intelligence';
 import { forEachSequential } from '../../utils/async-sequence';
-import { computeLearningSnapshot, recordDecisionLog } from '../cia/self-improvement';
+import { computeLearningSnapshot } from '../cia/self-improvement';
 import {
   anonymizeDecisionLog,
   buildGlobalStrategy,
@@ -11,9 +10,7 @@ import {
   inferWorkspaceDomain,
   persistGlobalPatterns,
 } from '../cia/global-learning';
-import { isAutonomousEnabled, type UnknownRecord, log } from './shared';
-
-const ciaLearnLog = new WorkerLogger('autopilot:cia-learn');
+import { isAutonomousEnabled, type UnknownRecord } from './shared';
 
 export async function runCiaSelfImproveAll() {
   const workspaces = await prisma.workspace.findMany({

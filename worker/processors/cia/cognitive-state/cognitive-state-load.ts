@@ -2,9 +2,9 @@ import type { PrismaClient } from '@prisma/client';
 import type { CustomerCognitiveState } from './cognitive-state-types';
 
 export function buildStateKey(input: {
-  conversationId?: string | null;
-  contactId?: string | null;
-  phone?: string | null;
+  conversationId?: string | null | undefined;
+  contactId?: string | null | undefined;
+  phone?: string | null | undefined;
 }) {
   return `cognitive_state:${input.conversationId || input.contactId || input.phone || 'workspace'}`;
 }

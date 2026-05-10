@@ -5,14 +5,14 @@
 
 import type { PulseSignal } from '../../types.capabilities/05-external-signals';
 import { deriveZeroValue } from '../../dynamic-reality-kernel/catalog-arithmetic';
-import { fetchGitHubSignals } from '../../github-adapter';
-import { fetchSentrySignals } from '../../sentry-adapter';
-import { fetchDatadogSignals } from '../../datadog-adapter';
-import { fetchPrometheusSignals } from '../../prometheus-adapter';
-import { fetchCodecovSignals } from '../../codecov-adapter';
-import { fetchDependabotSignals } from '../../dependabot-adapter';
-import { fetchGitHubActionsSignals } from '../../github-actions-adapter';
-import { runGitNexusAdapter } from '../../gitnexus-adapter';
+import { fetchGitHubSignals } from '../github-adapter';
+import { fetchSentrySignals } from '../sentry-adapter';
+import { fetchDatadogSignals } from '../datadog-adapter';
+import { fetchPrometheusSignals } from '../prometheus-adapter';
+import { fetchCodecovSignals } from '../codecov-adapter';
+import { fetchDependabotSignals } from '../dependabot-adapter';
+import { fetchGitHubActionsSignals } from '../github-actions-adapter';
+import { runGitNexusAdapter } from '../gitnexus-adapter';
 import {
   readyStatus,
   githubSource,

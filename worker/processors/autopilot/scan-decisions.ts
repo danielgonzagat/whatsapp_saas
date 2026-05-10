@@ -35,15 +35,15 @@ export interface ScanDecisionInput {
   contactName: string;
   messageContent: string;
   messageCount: number;
-  leadScore?: number;
+  leadScore?: number | undefined;
   productMatches: string[];
   cognitiveState: unknown;
   deliveryMode: 'reactive' | 'proactive';
   settings: UnknownRecord;
   workspaceRecord: UnknownRecord;
-  smokeTestId?: string;
+  smokeTestId?: string | undefined;
   smokeMode: 'dry-run' | 'live';
-  runId?: string;
+  runId?: string | undefined;
   customerMessages?: { content: string; quotedMessageId?: string | undefined; createdAt?: string | undefined }[];
   messageIds?: (string | null | undefined)[];
   providerMessageIds?: (string | null | undefined)[];

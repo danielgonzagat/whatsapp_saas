@@ -195,7 +195,7 @@ export const WhatsAppEngine = {
     workspace: WorkspaceLike,
     to: string,
     message: string,
-    options?: { quotedMessageId?: string; chatId?: string },
+    options?: { quotedMessageId?: string | undefined; chatId?: string | undefined },
   ) {
     const normalizedWorkspace = normalizeWorkspace(workspace);
     return withWorkspaceActionLock(normalizedWorkspace.id, async () => {
@@ -277,7 +277,7 @@ export const WhatsAppEngine = {
     type: 'image' | 'video' | 'audio' | 'document',
     url: string,
     caption?: string,
-    options?: { quotedMessageId?: string; chatId?: string },
+    options?: { quotedMessageId?: string | undefined; chatId?: string | undefined },
   ) {
     const normalizedWorkspace = normalizeWorkspace(workspace);
     return withWorkspaceActionLock(normalizedWorkspace.id, async () => {

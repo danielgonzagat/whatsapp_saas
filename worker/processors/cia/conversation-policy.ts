@@ -317,11 +317,11 @@ function buildListeningSignalsBlock(listening?: ActiveListeningSignals | null): 
 }
 
 function buildConversationContextBlock(params: {
-  compressedContext?: string | null;
-  conversationHistory?: string | null;
-  conversationLedger?: string | null;
-  productSummary?: string | null;
-  matchedProducts?: string[];
+  compressedContext?: string | null | undefined;
+  conversationHistory?: string | null | undefined;
+  conversationLedger?: string | null | undefined;
+  productSummary?: string | null | undefined;
+  matchedProducts?: string[] | undefined;
 }): string[] {
   const matchedProducts = params.matchedProducts?.length
     ? params.matchedProducts.join(', ')

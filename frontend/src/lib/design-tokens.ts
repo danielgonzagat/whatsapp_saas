@@ -131,6 +131,7 @@ export const colors = {
     surface: '#1A1A1E',
     surfaceLight: '#F5F5F5',
     success: '#22C55E',
+    successDark: '#16a34a',
     successBg: '#0F1F0F',
     danger: '#FF6B6B',
     dangerBg: '#2A1A1A',

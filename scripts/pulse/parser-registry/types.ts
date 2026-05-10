@@ -45,9 +45,9 @@ export interface ParserOperationalMetadata {
 }
 
 export type ParserContractWithOperationalMetadata =
-  import('../../types.manifest').PulseParserContract & ParserOperationalMetadata;
+  import('../types.manifest').PulseParserContract & ParserOperationalMetadata;
 export type ParserDefinitionWithOperationalMetadata =
-  import('../../types.manifest').PulseParserDefinition & ParserOperationalMetadata;
+  import('../types.manifest').PulseParserDefinition & ParserOperationalMetadata;
 
 export interface PluginParserProvider {
   parsers?: () => unknown;
@@ -57,7 +57,7 @@ export interface PluginParserProvider {
 export type PluginParserSurface = 'parsers' | 'sensors';
 
 export type PluginParserDefinitionInput = Omit<
-  import('../../types.manifest').PulseParserDefinition,
+  import('../types.manifest').PulseParserDefinition,
   'file'
 > & {
   confidence?: unknown;

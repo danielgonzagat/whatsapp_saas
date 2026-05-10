@@ -115,7 +115,7 @@ export function findModelOperations(
   rootDir: string,
   modelName: string,
 ): Omit<
-  import('../../types.dataflow-engine').EntityLifecycle,
+  import('../types.dataflow-engine').EntityLifecycle,
   | 'shownInUI'
   | 'critical'
   | 'financial'

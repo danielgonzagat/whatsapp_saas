@@ -1,4 +1,3 @@
-import { WorkerLogger } from '../../logger';
 import { prisma } from '../../db';
 import { publishAgentEvent } from '../../providers/agent-events';
 import {
@@ -7,7 +6,7 @@ import {
 } from '../../providers/commercial-intelligence';
 import { pickVariant, updateVariantOutcome } from '../cia/self-improvement';
 import { type CognitiveActionType } from '../cia/cognitive-state';
-import { log, type UnknownRecord, SEPARATOR_G_RE } from './shared';
+import { type UnknownRecord, SEPARATOR_G_RE } from './shared';
 import { acquireCiaContactLock, releaseCiaContactLock } from './opportunity';
 import { maybeEscalateToHumanControl } from './backlog';
 import { runScanContact } from './scan';
@@ -18,8 +17,6 @@ import {
   finalizeConversationProofSnapshot,
 } from './score';
 import { recordDecisionLog } from '../cia/self-improvement';
-
-const ciaActionLog = new WorkerLogger('autopilot:cia-action');
 
 export async function runCiaAction(data: UnknownRecord) {
   const workspaceId = data?.workspaceId;

@@ -172,7 +172,7 @@ export default function PixPaymentPage() {
           <div
             style={{
               background: colors.checkout.bg,
-              border: '1px solid #2A2A2E',
+              border: `1px solid ${colors.checkout.border}`,
               borderRadius: '10px',
               padding: '14px 16px',
               color: colors.text.muted,

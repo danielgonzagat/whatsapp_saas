@@ -1,4 +1,3 @@
-import { WorkerLogger } from '../../logger';
 import { prisma } from '../../db';
 import { redis } from '../../redis-client';
 import { autopilotQueue } from '../../queue';
@@ -43,8 +42,6 @@ import {
   listCanonicalWorkItems,
   persistAccountProofSnapshot,
 } from './score';
-
-const ciaCycleLog = new WorkerLogger('autopilot:cia-cycle');
 
 async function loadWorkspaceGlobalStrategy(input: {
   settings: UnknownRecord;

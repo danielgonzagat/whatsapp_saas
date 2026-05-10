@@ -57,7 +57,7 @@ export async function runScanIngestion(params: {
   runId?: string;
   data?: UnknownRecord;
 }): Promise<ScanIngestionResult | null> {
-  const { workspaceId, smokeTestId, runId, data } = params;
+  const { workspaceId, smokeTestId, runId } = params;
   const smokeMode = params.smokeMode === 'live' ? 'live' : 'dry-run';
 
   const workspace = await prisma.workspace.findUnique({ where: { id: workspaceId } });
