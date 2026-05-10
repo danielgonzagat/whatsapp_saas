@@ -3665,7 +3665,7 @@ enum AdminChatRole {
 model AdminChatSession {
   id          String             @id @default(cuid())
   adminUserId String             @map("admin_user_id")
-  workspaceId String             @map("workspace_id")
+  workspaceId String             @default("__admin__") @map("workspace_id")
   title       String?
   createdAt   DateTime           @default(now()) @map("created_at")
   updatedAt   DateTime           @updatedAt @map("updated_at")

@@ -406,7 +406,7 @@ export async function ensureE2EAdmin(request: APIRequestContext): Promise<E2EAut
     const withLock = async (fn: () => Promise<E2EAuthContext>): Promise<E2EAuthContext> => {
       const maxWaitMs = 15000;
       const startedAt = Date.now();
-      for (;;) {
+      for (; Date.now() - startedAt < maxWaitMs; ) {
         try {
           const fd = fs.openSync(lockFile, 'wx');
           try {
@@ -429,13 +429,11 @@ export async function ensureE2EAdmin(request: APIRequestContext): Promise<E2EAut
           if (cached?.token && cached?.workspaceId && cached?.email) {
             return cached as E2EAuthContext;
           }
-          if (Date.now() - startedAt > maxWaitMs) {
-            // Lock is stuck; proceed without it.
-            return fn();
-          }
           await sleep(250);
         }
       }
+      // Lock is stuck; proceed without it.
+      return fn();
     };
 
     const doLogin = async (email: string) =>

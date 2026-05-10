@@ -440,7 +440,7 @@ describe('SystemHealthService', () => {
       return mock;
     };
 
-    it('returns UP when all six dependencies are healthy', async () => {
+    it('returns UP when all seven dependencies are healthy', async () => {
       stubBackupManifest();
       createSuccessFetchMock();
 
@@ -455,6 +455,7 @@ describe('SystemHealthService', () => {
       expect(result.details.metacloud.status).toBe('UP');
       expect(result.details.openai.status).toBe('UP');
       expect(result.details.anthropic.status).toBe('UP');
+      expect(result.details.email.status).toBe('UP');
     });
 
     it('returns DOWN and lists postgres when database is unreachable', async () => {
@@ -634,6 +635,68 @@ describe('SystemHealthService', () => {
       for (const dependency of Object.keys(result.details)) {
         expect(typeof result.details[dependency].latencyMs).toBe('number');
         expect(result.details[dependency].latencyMs).toBeGreaterThanOrEqual(0);
+      }
+    });
+
+    it('returns DOWN and lists email when NODE_ENV is production and no email provider configured', async () => {
+      const originalNodeEnv = process.env.NODE_ENV;
+      process.env.NODE_ENV = 'production';
+      delete process.env.RESEND_API_KEY;
+      delete process.env.SENDGRID_API_KEY;
+      delete process.env.SMTP_HOST;
+
+      stubBackupManifest();
+      createSuccessFetchMock();
+
+      try {
+        const service = createService();
+        const result = await service.deepReadiness();
+
+        expect(result.status).toBe('DOWN');
+        expect(result.failures).toContain('email');
+        expect(result.details.email.status).toBe('DOWN');
+        expect(result.details.email.error).toContain('No email provider configured');
+      } finally {
+        process.env.NODE_ENV = originalNodeEnv;
+      }
+    });
+
+    it('returns UP for email when NODE_ENV is not production even without credentials', async () => {
+      const originalNodeEnv = process.env.NODE_ENV;
+      process.env.NODE_ENV = 'development';
+      delete process.env.RESEND_API_KEY;
+      delete process.env.SENDGRID_API_KEY;
+      delete process.env.SMTP_HOST;
+
+      stubBackupManifest();
+      createSuccessFetchMock();
+
+      try {
+        const service = createService();
+        const result = await service.deepReadiness();
+
+        expect(result.details.email.status).toBe('UP');
+      } finally {
+        process.env.NODE_ENV = originalNodeEnv;
+      }
+    });
+
+    it('returns UP for email when credentials are configured regardless of NODE_ENV', async () => {
+      const originalNodeEnv = process.env.NODE_ENV;
+      process.env.NODE_ENV = 'production';
+      process.env.RESEND_API_KEY = 're_test_key';
+
+      stubBackupManifest();
+      createSuccessFetchMock();
+
+      try {
+        const service = createService();
+        const result = await service.deepReadiness();
+
+        expect(result.details.email.status).toBe('UP');
+      } finally {
+        process.env.NODE_ENV = originalNodeEnv;
+        delete process.env.RESEND_API_KEY;
       }
     });
 
