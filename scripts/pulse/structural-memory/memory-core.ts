@@ -11,12 +11,12 @@ import {
   readJsonFile,
   readTextFile,
   writeTextFile,
-} from '../../safe-fs';
+} from '../safe-fs';
 import {
   deriveUnitValue,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel/catalog-arithmetic';
-import { discoverAllObservedArtifactFilenames } from '../../dynamic-reality-kernel/token-evidence';
+} from '../dynamic-reality-kernel/catalog-arithmetic';
+import { discoverAllObservedArtifactFilenames } from '../dynamic-reality-kernel/token-evidence';
 import type {
   AttemptStatus,
   LegacyUnitMemoryStatus,
@@ -25,7 +25,7 @@ import type {
   StructuralMemoryState,
   UnitMemory,
   UnitMemoryStatus,
-} from '../../types.structural-memory';
+} from '../types.structural-memory';
 
 const _oneMoreThanUnit = deriveUnitValue() + deriveUnitValue();
 const REPEATED_FAILURE_THRESHOLD = deriveUnitValue() + deriveUnitValue() + deriveUnitValue();

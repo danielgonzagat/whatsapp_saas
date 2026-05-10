@@ -151,10 +151,10 @@ export async function getBacklogRunState(workspaceId: string): Promise<BacklogRu
 /** Finish backlog run task. */
 export async function finishBacklogRunTask(input: {
   workspaceId: string;
-  runId?: string;
-  contactId?: string;
-  contactName?: string;
-  phone?: string;
+  runId?: string | undefined;
+  contactId?: string | undefined;
+  contactName?: string | undefined;
+  phone?: string | undefined;
   status: 'sent' | 'failed' | 'skipped';
   summary: string;
 }) {

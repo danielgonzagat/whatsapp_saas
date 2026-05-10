@@ -4,10 +4,10 @@
  * Parses NestJS DTO files to infer request body schemas from class-validator
  * decorators and TypeScript type annotations.
  */
-import { safeJoin } from '../../lib/safe-path';
-import { pathExists, readTextFile } from '../../safe-fs';
-import { walkFiles } from '../../parsers/utils';
-import type { APIEndpointProbe } from '../../types.api-fuzzer';
+import { safeJoin } from '../lib/safe-path';
+import { pathExists, readTextFile } from '../safe-fs';
+import { walkFiles } from '../parsers/utils';
+import type { APIEndpointProbe } from '../types.api-fuzzer';
 
 /**
  * Convert PascalCase to kebab-case for DTO filename matching.

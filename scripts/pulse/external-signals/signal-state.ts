@@ -1,25 +1,25 @@
-import type { PulseExternalSignalSource } from '../../types.capabilities/01-primitives';
-import type { PulseExternalSignalState } from '../../types.capabilities/05-external-signals';
-import type { PulseExternalAdapterProofBasis } from '../../types.capabilities/01-primitives';
-import type { BuildExternalSignalStateInput } from '../../signal-mapper';
+import type { PulseExternalSignalSource } from '../types.capabilities/01-primitives';
+import type { PulseExternalSignalState } from '../types.capabilities/05-external-signals';
+import type { PulseExternalAdapterProofBasis } from '../types.capabilities/01-primitives';
+import type { BuildExternalSignalStateInput } from '../signal-mapper';
 import {
   attachRecentChangeRefs,
   isRuntimeSignal,
   isChangeSignal,
   isDependencySignal,
-} from '../../signal-mapper';
+} from '../signal-mapper';
 import {
   deriveUnitValue,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel/catalog-arithmetic';
-import { discoverExternalAdapterProofBasisLabels } from '../../__kernel_additions__/discoverExternalAdapterProofBasisLabels';
-import { discoverExternalSignalSourceLabels } from '../../__kernel_additions__/discoverExternalSignalSourceLabels';
-import { discoverConvergenceExecutionModeLabels } from '../../__kernel_additions__/discoverConvergenceExecutionModeLabels';
-import { discoverTruthModeLabels } from '../../dynamic-reality-kernel/type-contract-engines';
+} from '../dynamic-reality-kernel/catalog-arithmetic';
+import { discoverExternalAdapterProofBasisLabels } from '../__kernel_additions__/discoverExternalAdapterProofBasisLabels';
+import { discoverExternalSignalSourceLabels } from '../__kernel_additions__/discoverExternalSignalSourceLabels';
+import { discoverConvergenceExecutionModeLabels } from '../__kernel_additions__/discoverConvergenceExecutionModeLabels';
+import { discoverTruthModeLabels } from '../dynamic-reality-kernel/type-contract-engines';
 import {
   isAdapterRequired,
   normalizeExternalSignalProfile,
-} from '../../adapters/external-sources-orchestrator/core';
+} from '../adapters/external-sources-orchestrator/core';
 import { PULSE_EXTERNAL_SNAPSHOT_FILES } from './snapshot-config';
 import type { UnclassifiedExternalAdapter } from './adapter-builders';
 import {

@@ -3,7 +3,7 @@ import type {
   AuditBlock,
   AuditSignatureMode,
   AuditSigningKeyStatus,
-} from '../../types.audit-chain';
+} from '../types.audit-chain';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 

@@ -1,17 +1,17 @@
-import type { PulseCapability } from '../../types.capabilities/03-capability';
-import type { PulseExternalSignalState } from '../../types.capabilities/05-external-signals';
-import type { PulseFlowProjectionItem } from '../../types.capabilities/04-flow-projection';
-import type { PulseExecutionChain } from '../../types.product-graph';
-import type { PulseExecutionEvidence } from '../../types.evidence';
+import type { PulseCapability } from '../types.capabilities/03-capability';
+import type { PulseExternalSignalState } from '../types.capabilities/05-external-signals';
+import type { PulseFlowProjectionItem } from '../types.capabilities/04-flow-projection';
+import type { PulseExecutionChain } from '../types.product-graph';
+import type { PulseExecutionEvidence } from '../types.evidence';
 import type {
   PulseExecutionMatrixPath,
   PulseExecutionMatrixPathStatus,
-} from '../../types.execution-matrix';
-import type { PulseStructuralNode } from '../../types.structural';
+} from '../types.execution-matrix';
+import type { PulseStructuralNode } from '../types.structural';
 import {
   deriveUnitValue,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel/catalog-arithmetic';
+} from '../dynamic-reality-kernel/catalog-arithmetic';
 import {
   artifactGrammar,
   buildRequiredEvidence,

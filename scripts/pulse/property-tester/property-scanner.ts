@@ -2,13 +2,13 @@ import * as path from 'path';
 import * as fs from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { STATUS_CODES } from 'node:http';
-import type { PropertyTestCase, PropertyTestStatus } from '../../types.property-tester';
-import { readDir } from '../../safe-fs';
+import type { PropertyTestCase, PropertyTestStatus } from '../types.property-tester';
+import { readDir } from '../safe-fs';
 import {
   deriveUnitValue,
   deriveZeroValue,
   deriveHttpStatusFromObservedCatalog,
-} from '../../dynamic-reality-kernel/catalog-arithmetic';
+} from '../dynamic-reality-kernel/catalog-arithmetic';
 import {
   du8,
   isStringEvidence,

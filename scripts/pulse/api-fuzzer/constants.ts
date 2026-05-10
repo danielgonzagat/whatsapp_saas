@@ -11,11 +11,11 @@ import {
   discoverPropertyPassedStatusFromTypeEvidence,
   discoverPropertyUnexecutedStatusFromExecutionEvidence,
   observeStatusTextLengthFromCatalog,
-} from '../../dynamic-reality-kernel/catalog-arithmetic';
-import { deriveLengthBoundariesFromObservedCatalog } from '../../dynamic-reality-kernel/profile-derivations';
-import { discoverNestjsDecoratorNamesFromTypeEvidence } from '../../dynamic-reality-kernel/evidence-domain';
-import { deriveStringUnionMembersFromTypeContract } from '../../dynamic-reality-kernel/type-contract-labels';
-import type { FuzzTestCaseStatus, IdempotencyResult } from '../../types.api-fuzzer';
+} from '../dynamic-reality-kernel/catalog-arithmetic';
+import { deriveLengthBoundariesFromObservedCatalog } from '../dynamic-reality-kernel/profile-derivations';
+import { discoverNestjsDecoratorNamesFromTypeEvidence } from '../dynamic-reality-kernel/evidence-domain';
+import { deriveStringUnionMembersFromTypeContract } from '../dynamic-reality-kernel/type-contract-labels';
+import type { FuzzTestCaseStatus, IdempotencyResult } from '../types.api-fuzzer';
 
 // ── Kernel-derived constants ─────────────────────────────────────────────────
 

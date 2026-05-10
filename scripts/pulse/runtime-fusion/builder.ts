@@ -1,9 +1,9 @@
 import * as p from 'path';
-import { pathExists as existsAt, writeTextFile, ensureDir } from '../../safe-fs';
-import { unique } from '../../signal-normalizers';
-import { discoverAllObservedArtifactFilenames } from '../../dynamic-reality-kernel/token-evidence';
-import { discoverConvergenceUnitPriorityLabels } from '../../__kernel_additions__/discoverConvergenceUnitPriorityLabels';
-import type { RuntimeSignal, RuntimeFusionState } from '../../types.runtime-fusion';
+import { pathExists as existsAt, writeTextFile, ensureDir } from '../safe-fs';
+import { unique } from '../signal-normalizers';
+import { discoverAllObservedArtifactFilenames } from '../dynamic-reality-kernel/token-evidence';
+import { discoverConvergenceUnitPriorityLabels } from '../__kernel_additions__/discoverConvergenceUnitPriorityLabels';
+import type { RuntimeSignal, RuntimeFusionState } from '../types.runtime-fusion';
 import {
   ACTION_BLOCK_DEPLOY,
   ACTION_BLOCK_MERGE,

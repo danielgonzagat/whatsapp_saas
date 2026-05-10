@@ -1,14 +1,14 @@
 import * as path from 'path';
-import { safeJoin } from '../../lib/safe-path';
-import { isObservedMutatingMethod } from '../../dynamic-reality-grammar';
-import { pathExists, writeTextFile } from '../../safe-fs';
-import type { Scenario, ScenarioStep } from '../../types.scenario-engine';
+import { safeJoin } from '../lib/safe-path';
+import { isObservedMutatingMethod } from '../dynamic-reality-grammar';
+import { pathExists, writeTextFile } from '../safe-fs';
+import type { Scenario, ScenarioStep } from '../types.scenario-engine';
 import type {
   ReplayScenarioCatalog,
   ReplaySession,
   ReplaySource,
   ReplayState,
-} from '../../types.replay-adapter';
+} from '../types.replay-adapter';
 import { extractSessionsFromExternalSignals, mergeSessions } from './session-extraction';
 
 const REPLAY_STATE_FILENAME = 'PULSE_REPLAY_STATE.json';

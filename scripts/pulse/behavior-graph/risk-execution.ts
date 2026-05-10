@@ -7,8 +7,8 @@ import type {
   BehaviorNode,
   BehaviorInput,
   BehaviorOutput,
-} from '../../types.behavior-graph';
-import type { DetectedSourceRoot } from '../../source-root-detector/types';
+} from '../types.behavior-graph';
+import type { DetectedSourceRoot } from '../source-root-detector/types';
 import type {
   ParsedFunc,
   SourceExternalContext,

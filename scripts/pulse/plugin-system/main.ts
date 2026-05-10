@@ -1,6 +1,6 @@
 import * as path from 'path';
-import { ensureDir, pathExists, statPath, writeTextFile } from '../../safe-fs';
-import type { PluginKind, PluginRegistry, PulsePlugin } from '../../types.plugin-system';
+import { ensureDir, pathExists, statPath, writeTextFile } from '../safe-fs';
+import type { PluginKind, PluginRegistry, PulsePlugin } from '../types.plugin-system';
 import { discoverPlugins } from './schema-discovery';
 
 const ARTIFACT_FILE_NAME = 'PULSE_PLUGIN_REGISTRY.json';

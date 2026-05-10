@@ -202,10 +202,10 @@ export function computeDemandState(input: {
 export function buildDecisionEnvelope(input: {
   intent: string;
   action: string;
-  confidence?: number;
-  messageContent?: string | null;
-  demandState?: DemandState | null;
-  matchedProducts?: string[];
+  confidence?: number | undefined;
+  messageContent?: string | null | undefined;
+  demandState?: DemandState | null | undefined;
+  matchedProducts?: string[] | undefined;
 }): CommercialDecisionEnvelope {
   const text = normalized(input.messageContent);
   const demandState = input.demandState || null;

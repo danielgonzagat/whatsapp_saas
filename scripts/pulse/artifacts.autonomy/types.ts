@@ -1,20 +1,20 @@
 /**
  * Pulse artifact autonomy — types and grammar constants.
  */
-import type { AuthorityMode } from '../../types.authority-mode';
+import type { AuthorityMode } from '../types.authority-mode';
 import {
   deriveHttpStatusFromObservedCatalog,
   deriveUnitValue,
   deriveZeroValue,
   deriveCatalogPercentScaleFromObservedCatalog,
   observeStatusTextLengthFromCatalog,
-} from '../../dynamic-reality-kernel/catalog-arithmetic';
+} from '../dynamic-reality-kernel/catalog-arithmetic';
 import {
   discoverDoDGateStatusLabels,
   discoverCertificationProfileLabels,
-} from '../../dynamic-reality-kernel/type-contract-engines';
-import { discoverConvergenceUnitStatusLabels } from '../../__kernel_additions__/discoverConvergenceUnitStatusLabels';
-import { discoverConvergenceExecutionModeLabels } from '../../__kernel_additions__/discoverConvergenceExecutionModeLabels';
+} from '../dynamic-reality-kernel/type-contract-engines';
+import { discoverConvergenceUnitStatusLabels } from '../__kernel_additions__/discoverConvergenceUnitStatusLabels';
+import { discoverConvergenceExecutionModeLabels } from '../__kernel_additions__/discoverConvergenceExecutionModeLabels';
 
 export type AuthorityState = {
   mode: AuthorityMode;

@@ -4,19 +4,10 @@ import { AIProvider } from '../../providers/ai-provider';
 import { type CustomerCognitiveState } from '../cia/cognitive-state';
 import {
   log,
-  normalizeJsonObject,
   extractFirstJsonObject,
   scoreToProbabilityBucket,
   type UnknownRecord,
-  type WorkspaceSelfIdentity,
   CIA_CONTACT_LOCK_TTL_SECONDS,
-  CIA_OPPORTUNITY_LOOKBACK_DAYS,
-  CIA_OPPORTUNITY_REFRESH_LIMIT,
-  CIA_OPPORTUNITY_REFRESH_TTL_SECONDS,
-  CIA_CONTACT_SCORE_MESSAGE_LIMIT,
-  NON_DIGIT_RE,
-  SEPARATOR_G_RE,
-  WHITESPACE_G_RE,
   J__S_COMPREI_JA_S_COMPR_RE,
   PIX_BOLETO_CART_A__O_CA_RE,
   QUERO_VOU_COMPRAR_COMO_RE,
@@ -39,15 +30,6 @@ import {
   B__D_2___S_ANOS_B_RE,
   B___SOU_DE_MORO_EM_AQUI_RE,
 } from './shared';
-import {
-  normalizeCatalogPhone,
-  resolveWorkspaceSelfIdentity,
-  buildConversationLedger,
-  resolveCatalogChatActivityTimestamp,
-  isWorkspaceSelfTarget,
-  resolveCanonicalChatId,
-  isIndividualWahaChatId,
-} from './identity';
 
 export async function acquireCiaContactLock(contactId?: string, phone?: string) {
   const keyBase = contactId || phone;

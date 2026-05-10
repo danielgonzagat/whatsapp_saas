@@ -1,21 +1,21 @@
 import * as path from 'path';
 import type { PulseCapability } from '../types.capabilities/03-capability';
 import type { PulseCapabilityMaturity } from '../types.capabilities/02-maturity-dod';
-import type { PulseConvergenceOwnerLane } from '../../types.gate-failure';
-import type { PulseExecutionEvidence } from '../../types.evidence';
-import type { PulseScopeExecutionMode } from '../../types.truth.scope';
+import type { PulseConvergenceOwnerLane } from '../types.gate-failure';
+import type { PulseExecutionEvidence } from '../types.evidence';
+import type { PulseScopeExecutionMode } from '../types.truth.scope';
 import type {
   PulseStructuralNode,
   PulseStructuralRole,
   PulseTruthMode,
-} from '../../types.structural';
+} from '../types.structural';
 import {
   deriveRouteFamily,
   deriveStructuralFamilies,
   deriveTextFamily,
   familiesOverlap,
   titleCaseStructural,
-} from '../../structural-family';
+} from '../structural-family';
 import { getNodeRoutePatterns, shouldTraverseNeighbor, chooseDominantLabel } from './graph-helpers';
 
 export function unique<T>(values: T[]): T[] {

@@ -38,21 +38,21 @@ export async function runScanCognitivePipeline(params: {
   messageContent: string;
   messageCount: number;
   leadScore?: number | null;
-  conversationId?: string;
+  conversationId?: string | undefined;
   deliveryMode: 'reactive' | 'proactive';
   settings: UnknownRecord;
   workspaceRecord: UnknownRecord;
-  smokeTestId?: string;
+  smokeTestId?: string | undefined;
   smokeMode: string;
-  runId?: string;
-  customerMessages?: { content: string; quotedMessageId?: string; createdAt?: string }[];
-  messageIds?: string[];
-  providerMessageIds?: string[];
+  runId?: string | undefined;
+  customerMessages?: { content: string; quotedMessageId?: string | undefined; createdAt?: string | undefined }[] | undefined;
+  messageIds?: (string | null | undefined)[] | undefined;
+  providerMessageIds?: (string | null | undefined)[] | undefined;
 }): Promise<ScanScoringResult> {
   const {
     workspaceId, contactId, phone, contactName, messageContent, messageCount,
-    leadScore, conversationId, deliveryMode, settings, workspaceRecord,
-    smokeTestId, smokeMode, runId, customerMessages, messageIds, providerMessageIds,
+    leadScore, conversationId, deliveryMode,
+    smokeTestId, smokeMode, runId,
   } = params;
 
   const productMatches = await findWorkspaceProductMatches(workspaceId, messageContent);

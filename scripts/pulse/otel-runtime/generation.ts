@@ -1,16 +1,16 @@
 // PULSE — AST/Structural Graph Context & Trace Generation Core
 
 import * as path from 'path';
-import { safeJoin } from '../../safe-path';
-import { pathExists, readJsonFile } from '../../safe-fs';
+import { safeJoin } from '../safe-path';
+import { pathExists, readJsonFile } from '../safe-fs';
 import {
   deriveUnitValue,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel/catalog-arithmetic';
-import { discoverAllObservedArtifactFilenames } from '../../dynamic-reality-kernel/token-evidence';
-import type { OtelSpan, OtelTrace } from '../../types.otel-runtime';
-import type { PulseStructuralEdge, PulseStructuralGraph } from '../../types.structural';
-import type { AstCallGraph, AstCallEdge } from '../../types.ast-graph';
+} from '../dynamic-reality-kernel/catalog-arithmetic';
+import { discoverAllObservedArtifactFilenames } from '../dynamic-reality-kernel/token-evidence';
+import type { OtelSpan, OtelTrace } from '../types.otel-runtime';
+import type { PulseStructuralEdge, PulseStructuralGraph } from '../types.structural';
+import type { AstCallGraph, AstCallEdge } from '../types.ast-graph';
 import {
   stableHex,
   stableNumber,

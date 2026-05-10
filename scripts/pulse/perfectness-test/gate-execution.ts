@@ -8,14 +8,14 @@ import * as path from 'path';
 import {
   deriveUnitValue,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel/catalog-arithmetic';
+} from '../dynamic-reality-kernel/catalog-arithmetic';
 import type {
   ExitAction,
   GateEvidencePlan,
   GateExitCondition,
   PerfectnessGate,
   PerfectnessVerdict,
-} from '../../types.perfectness-test';
+} from '../types.perfectness-test';
 import {
   _dcps,
   _u,

@@ -16,10 +16,10 @@ import { forEachSequential } from '../../utils/async-sequence';
 export async function dispatchAutonomousTextMessage(input: {
   workspaceId: string;
   phone: string;
-  chatId?: string;
+  chatId?: string | undefined;
   message: string;
   idempotencyKey: string;
-  quotedMessageId?: string;
+  quotedMessageId?: string | undefined;
 }) {
   const result = await dispatchOutboundThroughFlow({
     workspaceId: input.workspaceId, to: input.phone, chatId: input.chatId,
@@ -65,14 +65,14 @@ export async function findRecentDuplicateOutbound(params: {
 export async function dispatchAutonomousReplyPlan(input: {
   workspaceId: string;
   phone: string;
-  chatId?: string;
+  chatId?: string | undefined;
   message: string;
   idempotencyKey: string;
-  quotedMessageId?: string;
-  customerMessages?: QuotedCustomerMessage[];
-  settings?: UnknownRecord;
-  mirrorReplies?: boolean;
-}): Promise<Array<{ quotedMessageId?: string; text: string }>> {
+  quotedMessageId?: string | undefined;
+  customerMessages?: QuotedCustomerMessage[] | undefined;
+  settings?: UnknownRecord | undefined;
+  mirrorReplies?: boolean | undefined;
+}): Promise<Array<{ quotedMessageId?: string | undefined; text: string }>> {
   const normalizedCustomerMessages = (input.customerMessages || [])
     .map((message) => ({
       content: String(message.content || '').trim(),
@@ -111,8 +111,8 @@ export async function dispatchAutonomousReplyPlan(input: {
 
 export async function buildQuotedReplyPlan(params: {
   draftReply: string;
-  customerMessages?: QuotedCustomerMessage[];
-  settings?: UnknownRecord;
+  customerMessages?: QuotedCustomerMessage[] | undefined;
+  settings?: UnknownRecord | undefined;
 }): Promise<Array<{ quotedMessageId: string; text: string }>> {
   const normalizedMessages = (params.customerMessages || [])
     .map((message) => ({

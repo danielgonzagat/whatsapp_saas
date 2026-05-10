@@ -1,9 +1,9 @@
 import * as path from 'path';
-import type { PulseConfig } from '../../types.manifest';
-import type { HarnessTarget, HarnessTargetKind } from '../../types.execution-harness';
-import { parseBackendRoutes } from '../../parsers/backend-parser';
-import { walkFiles } from '../../parsers/utils';
-import { readTextFile } from '../../safe-fs';
+import type { PulseConfig } from '../types.manifest';
+import type { HarnessTarget, HarnessTargetKind } from '../types.execution-harness';
+import { parseBackendRoutes } from '../parsers/backend-parser';
+import { walkFiles } from '../parsers/utils';
+import { readTextFile } from '../safe-fs';
 import {
   CRO_KIND_LABEL,
   ENDPOINT_KIND_LABEL,

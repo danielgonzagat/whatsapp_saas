@@ -3,17 +3,17 @@
 
 import * as path from 'path';
 
-import type { PulseCommandPurpose } from '../../command-graph/types';
-import { buildPulseCommandGraph } from '../../command-graph/env-and-build';
-import { discoverAllObservedArtifactFilenames } from '../../dynamic-reality-kernel/token-evidence';
-import { discoverConvergenceEvidenceConfidenceLabels } from '../../__kernel_additions__/discoverConvergenceEvidenceConfidenceLabels';
-import { ensureDir, writeTextFile } from '../../safe-fs';
+import type { PulseCommandPurpose } from '../command-graph/types';
+import { buildPulseCommandGraph } from '../command-graph/env-and-build';
+import { discoverAllObservedArtifactFilenames } from '../dynamic-reality-kernel/token-evidence';
+import { discoverConvergenceEvidenceConfidenceLabels } from '../__kernel_additions__/discoverConvergenceEvidenceConfidenceLabels';
+import { ensureDir, writeTextFile } from '../safe-fs';
 import type {
   DestructiveActionKind,
   SandboxIsolationRules,
   SandboxState,
   SandboxWorkspace,
-} from '../../types.safety-sandbox';
+} from '../types.safety-sandbox';
 import {
   _z,
   _riskAtOrdinal,

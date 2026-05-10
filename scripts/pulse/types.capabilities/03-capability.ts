@@ -1,9 +1,9 @@
-import type { PulseConvergenceOwnerLane } from '../../types.gate-failure';
+import type { PulseConvergenceOwnerLane } from '../types.gate-failure';
 import type {
   PulseScopeExecutionMode,
   PulseStructuralRole,
   PulseTruthMode,
-} from '../../types.truth';
+} from '../types.truth';
 import type { PulseCapabilityStatus } from './01-primitives';
 import type { PulseCapabilityDoD, PulseCapabilityMaturity } from './02-maturity-dod';
 

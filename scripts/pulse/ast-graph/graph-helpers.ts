@@ -2,7 +2,7 @@
 // Module graph builder, enclosing symbol finder, callee text extraction.
 
 import { Node } from 'ts-morph';
-import type { AstModuleGraph } from '../../types.ast-graph';
+import type { AstModuleGraph } from '../types.ast-graph';
 import { normalizePath } from './core-utils';
 
 export function buildModuleGraph(file: import('ts-morph').SourceFile): AstModuleGraph | null {

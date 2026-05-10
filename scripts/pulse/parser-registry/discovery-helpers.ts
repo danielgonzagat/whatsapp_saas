@@ -240,7 +240,7 @@ export function readDeclaredParserMetadata(
 import {
   deriveUnitValue,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel/catalog-arithmetic';
+} from '../dynamic-reality-kernel/catalog-arithmetic';
 
 export function buildOperationalMetadata(
   overrides: Partial<ParserOperationalMetadata>,
@@ -260,7 +260,7 @@ export function buildOperationalMetadata(
   };
 }
 
-import type { PulseParserContract } from '../../types.manifest';
+import type { PulseParserContract } from '../types.manifest';
 import type { ParserContractWithOperationalMetadata } from './types';
 
 export function getOperationalMetadata(contract: PulseParserContract): ParserOperationalMetadata {

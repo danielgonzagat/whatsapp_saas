@@ -1,7 +1,7 @@
-import type { PulseCodebaseTruth } from '../../types.truth';
-import type { PulseManifest, PulseManifestModule } from '../../types.manifest';
-import type { PulseScopeModuleAggregate } from '../../types.truth.scope';
-import type { PulseResolvedModule } from '../../types.resolved-manifest';
+import type { PulseCodebaseTruth } from '../types.truth';
+import type { PulseManifest, PulseManifestModule } from '../types.manifest';
+import type { PulseScopeModuleAggregate } from '../types.truth.scope';
+import type { PulseResolvedModule } from '../types.resolved-manifest';
 import {
   normalizeText,
   slugify,
@@ -9,9 +9,9 @@ import {
   unique,
   titleCase,
   matchesOverride,
-} from '../../resolved-manifest.builders';
-import { deriveZeroValue } from '../../dynamic-reality-kernel/catalog-arithmetic';
-import { deriveStringUnionMembersFromTypeContract } from '../../dynamic-reality-kernel/type-contract-labels';
+} from '../resolved-manifest.builders';
+import { deriveZeroValue } from '../dynamic-reality-kernel/catalog-arithmetic';
+import { deriveStringUnionMembersFromTypeContract } from '../dynamic-reality-kernel/type-contract-labels';
 
 const RESOLVED_TYPE_FILE = 'scripts/pulse/types.resolved-manifest.ts';
 

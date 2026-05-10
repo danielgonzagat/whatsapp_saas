@@ -6,12 +6,12 @@
  * and health/alert/dashboard scanners.
  */
 
-import { readFileSafe } from '../../parsers/utils';
+import { readFileSafe } from '../parsers/utils';
 import {
   deriveZeroValue,
   deriveUnitValue,
   deriveCatalogPercentScaleFromObservedCatalog,
-} from '../../dynamic-reality-kernel/catalog-arithmetic';
+} from '../dynamic-reality-kernel/catalog-arithmetic';
 import type {
   ObservabilityPillar,
   ObservabilityStatus,
@@ -19,8 +19,8 @@ import type {
   FlowObservability,
   CapabilityObservability,
   ObservabilityMachineImprovementSignal,
-} from '../../types.observability-coverage';
-import type { PulseFlowProjectionItem } from '../../types.capabilities/04-flow-projection';
+} from '../types.observability-coverage';
+import type { PulseFlowProjectionItem } from '../types.capabilities/04-flow-projection';
 import {
   tokenizeObservabilityTerm,
   signalMatchesPillar,

@@ -4,19 +4,19 @@ import type {
   HarnessExecutionStatus,
   HarnessExecutionResult,
   ExecutionFeasibility,
-} from '../../types.execution-harness';
+} from '../types.execution-harness';
 import {
   deriveZeroValue,
   deriveUnitValue,
   discoverPropertyPassedStatusFromTypeEvidence,
   discoverPropertyUnexecutedStatusFromExecutionEvidence,
   discoverRouteSeparatorFromRuntime,
-} from '../../dynamic-reality-kernel/catalog-arithmetic';
+} from '../dynamic-reality-kernel/catalog-arithmetic';
 import {
   discoverHarnessExecutionFeasibilityLabels,
   discoverHarnessExecutionStatusLabels,
   discoverHarnessTargetKindLabels,
-} from '../../dynamic-reality-kernel/type-contract-engines';
+} from '../dynamic-reality-kernel/type-contract-engines';
 import {
   EXTERNAL_TOKENS,
   mutatingHttpVerbs,

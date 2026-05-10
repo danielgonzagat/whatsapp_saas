@@ -6,36 +6,36 @@
  */
 
 import * as path from 'path';
-import { deriveStringUnionMembersFromTypeContract } from '../../dynamic-reality-kernel/type-contract-labels';
+import { deriveStringUnionMembersFromTypeContract } from '../dynamic-reality-kernel/type-contract-labels';
 import {
   deriveUnitValue,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel/catalog-arithmetic';
-import { discoverAllObservedArtifactFilenames } from '../../dynamic-reality-kernel/token-evidence';
-import { discoverRuntimeProbeStatusLabels } from '../../__kernel_additions__/discoverRuntimeProbeStatusLabels';
-import { discoverScenarioStatusLabels } from '../../dynamic-reality-kernel/type-contract-engines';
-import { safeJoin } from '../../lib/safe-path';
-import { pathExists, readJsonFile } from '../../safe-fs';
+} from '../dynamic-reality-kernel/catalog-arithmetic';
+import { discoverAllObservedArtifactFilenames } from '../dynamic-reality-kernel/token-evidence';
+import { discoverRuntimeProbeStatusLabels } from '../__kernel_additions__/discoverRuntimeProbeStatusLabels';
+import { discoverScenarioStatusLabels } from '../dynamic-reality-kernel/type-contract-engines';
+import { safeJoin } from '../lib/safe-path';
+import { pathExists, readJsonFile } from '../safe-fs';
 import {
   isRuntimeProbeProofEligible,
   normalizeRuntimeProbesArtifact,
-} from '../../runtime-probes/main';
+} from '../runtime-probes/main';
 import type {
   PulseCapability,
   PulseCapabilityState,
-} from '../../types.capabilities/03-capability';
-import type { PulseProductGraph } from '../../types.product-graph';
+} from '../types.capabilities/03-capability';
+import type { PulseProductGraph } from '../types.product-graph';
 import type {
   ProductionProofDimension,
   ProductionProofDimensionEvidence,
   ProductionProofState,
   ProductionProofTruthMode,
   ProofStatus,
-} from '../../types.production-proof';
+} from '../types.production-proof';
 import type {
   PulseRuntimeProbeArtifactProbe,
   PulseRuntimeProbesArtifact,
-} from '../../types.runtime-probes';
+} from '../types.runtime-probes';
 
 const _artifacts = discoverAllObservedArtifactFilenames();
 const PRODUCTION_PROOF_FILENAME = _artifacts.productionProof ?? 'PULSE_PRODUCTION_PROOF.json';

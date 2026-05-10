@@ -1,15 +1,15 @@
-import type { PulseExecutionMatrixPath } from '../../types.execution-matrix';
+import type { PulseExecutionMatrixPath } from '../types.execution-matrix';
 import type {
   PathCoverageArtifactLink,
   PathCoverageEntry,
   PathCoverageExpectedEvidence,
-} from '../../types.path-coverage-engine';
+} from '../types.path-coverage-engine';
 import {
   isProtectedFile as isGovernanceProtectedFile,
   loadGovernanceBoundary,
   normalizePath,
   type GovernanceBoundary,
-} from '../../scope-state-classify';
+} from '../scope-state-classify';
 import type { PathProofTask, PathProofTaskMode } from './main';
 
 function hasPreciseTerminalReason(path: PulseExecutionMatrixPath): boolean {

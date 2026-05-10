@@ -1,24 +1,24 @@
 /**
  * Pulse machine readiness — internal helpers and public exports.
  */
-import { buildAutonomyQueue } from '../../artifacts.queue';
-import { buildAutonomyCycleProof } from '../../artifacts.autonomy/readiness';
+import { buildAutonomyQueue } from '../artifacts.queue';
+import { buildAutonomyCycleProof } from '../artifacts.autonomy/readiness';
 import type {
   PulseArtifactSnapshot,
   PulseMachineReadiness,
   PulseMachineReadinessCriterion,
-} from '../../artifacts.types';
-import type { PulseAutonomyState } from '../../types.autonomy';
-import type { PulseConvergencePlan } from '../../types.convergence';
-import type { PulseExecutionMatrixPath } from '../../types.execution-matrix';
-import { discoverAllObservedArtifactFilenames } from '../../dynamic-reality-kernel/token-evidence';
-import { discoverConvergenceRiskLevelLabels } from '../../__kernel_additions__/discoverConvergenceRiskLevelLabels';
-import { discoverDoDGateStatusLabels } from '../../dynamic-reality-kernel/type-contract-engines';
-import { discoverExecutionMatrixPathStatusLabels } from '../../__kernel_additions__/discoverExecutionMatrixPathStatusLabels';
+} from '../artifacts.types';
+import type { PulseAutonomyState } from '../types.autonomy';
+import type { PulseConvergencePlan } from '../types.convergence';
+import type { PulseExecutionMatrixPath } from '../types.execution-matrix';
+import { discoverAllObservedArtifactFilenames } from '../dynamic-reality-kernel/token-evidence';
+import { discoverConvergenceRiskLevelLabels } from '../__kernel_additions__/discoverConvergenceRiskLevelLabels';
+import { discoverDoDGateStatusLabels } from '../dynamic-reality-kernel/type-contract-engines';
+import { discoverExecutionMatrixPathStatusLabels } from '../__kernel_additions__/discoverExecutionMatrixPathStatusLabels';
 import {
   deriveUnitValue,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel/catalog-arithmetic';
+} from '../dynamic-reality-kernel/catalog-arithmetic';
 
 export function getProductFacingCapabilities(
   snapshot: PulseArtifactSnapshot,

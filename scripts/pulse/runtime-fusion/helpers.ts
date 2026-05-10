@@ -1,6 +1,6 @@
-import { tokenize, unique } from '../../signal-normalizers';
-import { discoverAllObservedArtifactFilenames } from '../../dynamic-reality-kernel/token-evidence';
-import { discoverExternalAdapterStatusLabels } from '../../__kernel_additions__/discoverExternalAdapterStatusLabels';
+import { tokenize, unique } from '../signal-normalizers';
+import { discoverAllObservedArtifactFilenames } from '../dynamic-reality-kernel/token-evidence';
+import { discoverExternalAdapterStatusLabels } from '../__kernel_additions__/discoverExternalAdapterStatusLabels';
 import {
   discoverOperationalEvidenceKindLabels,
   discoverRuntimeFusionEvidenceStatusLabels,
@@ -9,12 +9,12 @@ import {
   discoverSignalSourceLabels,
   discoverSignalTypeLabels,
   discoverTruthModeLabels,
-} from '../../dynamic-reality-kernel/type-contract-engines';
+} from '../dynamic-reality-kernel/type-contract-engines';
 import {
   discoverRouteSeparatorFromRuntime,
   deriveUnitValue,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel/catalog-arithmetic';
+} from '../dynamic-reality-kernel/catalog-arithmetic';
 import type { CanonicalExternalSignal } from './parsing';
 import { TREND_LABELS, isRecord, asNumber } from './parsing';
 import { computeImpactScore } from './mapping';
@@ -26,7 +26,7 @@ import type {
   SignalType,
   RuntimeFusionEvidenceStatus,
   RuntimeSignalEvidenceMode,
-} from '../../types.runtime-fusion';
+} from '../types.runtime-fusion';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 

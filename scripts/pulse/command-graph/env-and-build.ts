@@ -1,11 +1,11 @@
 import * as path from 'node:path';
-import { pathExists, readTextFile, statPath } from '../../safe-fs';
-import { safeJoin } from '../../lib/safe-path';
-import { deriveUnitValue } from '../../dynamic-reality-kernel/catalog-arithmetic';
+import { pathExists, readTextFile, statPath } from '../safe-fs';
+import { safeJoin } from '../lib/safe-path';
+import { deriveUnitValue } from '../dynamic-reality-kernel/catalog-arithmetic';
 import {
   hasObservedToken,
   splitIdentifierTokensFromObservedName,
-} from '../../dynamic-reality-kernel/token-evidence';
+} from '../dynamic-reality-kernel/token-evidence';
 import type {
   PulseCommandGraph,
   PulseDiscoveredCommand,

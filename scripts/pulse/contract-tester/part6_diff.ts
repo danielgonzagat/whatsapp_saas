@@ -2,15 +2,15 @@
  * Part 6: API schema diff detection and endpoint classification.
  */
 
-import type { ContractTestEvidence, SchemaDiff } from '../../types.contract-tester';
-import type { PulseStructuralGraph } from '../../types.structural';
-import { pathExists, readTextFile } from '../../safe-fs';
-import { safeJoin } from '../../lib/safe-path';
-import { walkFiles } from '../../parsers/utils';
+import type { ContractTestEvidence, SchemaDiff } from '../types.contract-tester';
+import type { PulseStructuralGraph } from '../types.structural';
+import { pathExists, readTextFile } from '../safe-fs';
+import { safeJoin } from '../lib/safe-path';
+import { walkFiles } from '../parsers/utils';
 import {
   discoverAllObservedArtifactFilenames,
   discoverSourceExtensionsFromObservedTypescript,
-} from '../../dynamic-reality-kernel/token-evidence';
+} from '../dynamic-reality-kernel/token-evidence';
 import { isNodeKind, CONTRACT_EVIDENCE_FILENAME, resolveSeverityLabel } from './part0_constants';
 import {
   findBackendDir,

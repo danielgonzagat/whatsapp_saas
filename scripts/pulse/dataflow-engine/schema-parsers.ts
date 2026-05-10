@@ -1,22 +1,22 @@
 import * as path from 'path';
-import { safeJoin } from '../../lib/safe-path';
-import { readTextFile, writeTextFile, pathExists, readDir, ensureDir } from '../../safe-fs';
+import { safeJoin } from '../lib/safe-path';
+import { readTextFile, writeTextFile, pathExists, readDir, ensureDir } from '../safe-fs';
 import {
   deriveUnitValue,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel/catalog-arithmetic';
+} from '../dynamic-reality-kernel/catalog-arithmetic';
 import {
   discoverSourceExtensionsFromObservedTypescript,
   discoverAllObservedArtifactFilenames,
-} from '../../dynamic-reality-kernel/token-evidence';
-import { discoverParityGapSeverityLabels } from '../../dynamic-reality-kernel/type-contract-labels';
+} from '../dynamic-reality-kernel/token-evidence';
+import { discoverParityGapSeverityLabels } from '../dynamic-reality-kernel/type-contract-labels';
 import type {
   DataflowRawSignal,
   DataflowCoverageStatus,
   DataflowState,
   DataflowStateMutation,
   EntityLifecycle,
-} from '../../types.dataflow-engine';
+} from '../types.dataflow-engine';
 
 const MODEL_REGEX = /model\s+(\w+)\s*\{/g;
 

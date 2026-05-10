@@ -2,13 +2,13 @@ import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { compact } from '../../artifacts.io';
-import { pathExists, readTextFile } from '../../safe-fs';
-import { safeJoin } from '../../safe-path';
+import { compact } from '../artifacts.io';
+import { pathExists, readTextFile } from '../safe-fs';
+import { safeJoin } from '../safe-path';
 import {
   deriveZeroValue,
   discoverRouteSeparatorFromRuntime,
-} from '../../dynamic-reality-kernel/catalog-arithmetic';
+} from '../dynamic-reality-kernel/catalog-arithmetic';
 import type {
   SnapshotStatus,
   GitNexusSourceMode,

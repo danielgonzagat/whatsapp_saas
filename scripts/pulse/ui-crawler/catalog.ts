@@ -3,14 +3,14 @@ import type {
   UICrawlerEvidence,
   UICrawlerStatus,
   UIElementKind,
-} from '../../types.ui-crawler';
+} from '../types.ui-crawler';
 import {
   discoverAllObservedHttpMethods,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel/catalog-arithmetic';
-import { deriveStringUnionMembersFromTypeContract } from '../../dynamic-reality-kernel/type-contract-labels';
-import { ensureDir, pathExists, readDir, writeTextFile } from '../../safe-fs';
-import { safeJoin } from '../../safe-path';
+} from '../dynamic-reality-kernel/catalog-arithmetic';
+import { deriveStringUnionMembersFromTypeContract } from '../dynamic-reality-kernel/type-contract-labels';
+import { ensureDir, pathExists, readDir, writeTextFile } from '../safe-fs';
+import { safeJoin } from '../safe-path';
 import { FRONTEND_SRC, APP_DIR } from './constants';
 import {
   discoverPages,

@@ -1,7 +1,7 @@
 import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
-import { safeJoin, assertWithinRoot } from '../../lib/safe-path';
+import { safeJoin, assertWithinRoot } from '../lib/safe-path';
 import {
   ensureDir,
   pathExists,
@@ -9,21 +9,21 @@ import {
   readTextFile,
   statPath,
   writeTextFile,
-} from '../../safe-fs';
+} from '../safe-fs';
 import { IGNORED_DIRECTORIES } from '../scope-state.constants/main';
-import { loadGovernanceBoundary } from '../../scope-state-classify';
-import { detectSourceRoots } from '../../source-root-detector/api';
+import { loadGovernanceBoundary } from '../scope-state-classify';
+import { detectSourceRoots } from '../source-root-detector/api';
 import {
   discoverAllObservedArtifactFilenames,
   discoverDirectorySkipHintsFromEvidence,
-} from '../../dynamic-reality-kernel/token-evidence';
+} from '../dynamic-reality-kernel/token-evidence';
 import type {
   ScopeEngineState,
   ScopeEngineSummary,
   ScopeFileEntry,
   ScopeFileRole,
   ScopeFileStatus,
-} from '../../types.scope-engine';
+} from '../types.scope-engine';
 import {
   classifyFileExtension,
   classifyFileRole,

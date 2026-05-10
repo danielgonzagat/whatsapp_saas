@@ -1,55 +1,55 @@
-import { discoverAllObservedArtifactFilenames } from '../../dynamic-reality-kernel/token-evidence';
-import { discoverCapabilityStatusLabels } from '../../__kernel_additions__/discoverCapabilityStatusLabels';
-import { discoverConvergenceEvidenceConfidenceLabels } from '../../__kernel_additions__/discoverConvergenceEvidenceConfidenceLabels';
+import { discoverAllObservedArtifactFilenames } from '../dynamic-reality-kernel/token-evidence';
+import { discoverCapabilityStatusLabels } from '../__kernel_additions__/discoverCapabilityStatusLabels';
+import { discoverConvergenceEvidenceConfidenceLabels } from '../__kernel_additions__/discoverConvergenceEvidenceConfidenceLabels';
 import {
   discoverGateFailureClassLabels,
   deriveStringUnionMembersFromTypeContract,
-} from '../../dynamic-reality-kernel/type-contract-labels';
-import { discoverTruthModeLabels } from '../../dynamic-reality-kernel/type-contract-engines';
+} from '../dynamic-reality-kernel/type-contract-labels';
+import { discoverTruthModeLabels } from '../dynamic-reality-kernel/type-contract-engines';
 import {
   deriveUnitValue,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel/catalog-arithmetic';
+} from '../dynamic-reality-kernel/catalog-arithmetic';
 
 import {
   PROOF_READINESS_ARTIFACT,
   refreshProofReadinessArtifact,
   type ProofReadinessArtifact,
-} from '../../proof-readiness-artifact';
+} from '../proof-readiness-artifact';
 
-import { pathExists, readJsonFile } from '../../safe-fs';
-import { safeJoin } from '../../safe-path';
+import { pathExists, readJsonFile } from '../safe-fs';
+import { safeJoin } from '../safe-path';
 
-import type { PulsePathCoverageGateState } from '../../cert-gate-execution-matrix';
+import type { PulsePathCoverageGateState } from '../cert-gate-execution-matrix';
 import type {
   PulseCertificateSnapshot,
   PulseDirectiveSnapshot,
   PulseProofReadinessSummary,
-} from '../../cert-gate-overclaim';
-import type { PulseAutonomyStateSnapshot } from '../../cert-gate-multi-cycle/helpers';
-import type { PulseCapabilityState } from '../../types.capabilities/03-capability';
-import type { PulseExternalSignalState } from '../../types.capabilities/05-external-signals';
-import type { PulseFlowProjection } from '../../types.capabilities/04-flow-projection';
+} from '../cert-gate-overclaim';
+import type { PulseAutonomyStateSnapshot } from '../cert-gate-multi-cycle/helpers';
+import type { PulseCapabilityState } from '../types.capabilities/03-capability';
+import type { PulseExternalSignalState } from '../types.capabilities/05-external-signals';
+import type { PulseFlowProjection } from '../types.capabilities/04-flow-projection';
 import type {
   PulseCertificationTarget,
   PulseExecutionEvidence,
   PulseSelfTrustReport,
   PulseGateResult,
   PulseCertification,
-} from '../../types.evidence';
+} from '../types.evidence';
 import type {
   PulseCodacyEvidence,
   PulseStructuralGraph,
   PulseTruthMode,
-} from '../../types.structural';
-import type { PulseCodebaseTruth } from '../../types.truth';
-import type { PulseExecutionMatrix } from '../../types.execution-matrix';
-import type { PulseHealth } from '../../types.health';
-import type { PulseManifestLoadResult, PulseParserInventory } from '../../types.manifest';
-import type { PulseResolvedManifest } from '../../types.resolved-manifest';
-import type { PulseScopeState } from '../../types.truth.scope';
-import type { PulseGateFailureClass } from '../../types.gate-failure';
-import type { PulseConvergenceEvidenceConfidence } from '../../types.convergence';
+} from '../types.structural';
+import type { PulseCodebaseTruth } from '../types.truth';
+import type { PulseExecutionMatrix } from '../types.execution-matrix';
+import type { PulseHealth } from '../types.health';
+import type { PulseManifestLoadResult, PulseParserInventory } from '../types.manifest';
+import type { PulseResolvedManifest } from '../types.resolved-manifest';
+import type { PulseScopeState } from '../types.truth.scope';
+import type { PulseGateFailureClass } from '../types.gate-failure';
+import type { PulseConvergenceEvidenceConfidence } from '../types.convergence';
 
 function _phantomLabel(): string {
   const members = [...discoverCapabilityStatusLabels()];

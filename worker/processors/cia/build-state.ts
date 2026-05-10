@@ -88,7 +88,7 @@ function readAutopilotEventMeta(event: AutopilotEventRow): {
       amount: typeof amountRaw === 'number' ? amountRaw : undefined,
     };
   }
-  return {};
+  return { saleApproved: undefined, amount: undefined };
 }
 
 /** Cia action type type. */
@@ -163,9 +163,9 @@ export interface CiaSeedConversation {
   /** Last message at property. */
   lastMessageAt?: Date | string | null;
   /** Last message text property. */
-  lastMessageText?: string | null;
+  lastMessageText: (string | null) | undefined;
   /** Lead score property. */
-  leadScore?: number | null;
+  leadScore: (number | null) | undefined;
   /** Custom fields property. */
   customFields?: Record<string, unknown> | null;
 }

@@ -8,19 +8,19 @@
 
 import * as path from 'path';
 import * as fs from 'node:fs';
-import type { MutationTestResult } from '../../types.property-tester';
-import { pathExists, readTextFile, readDir } from '../../safe-fs';
-import { safeJoin } from '../../lib/safe-path';
+import type { MutationTestResult } from '../types.property-tester';
+import { pathExists, readTextFile, readDir } from '../safe-fs';
+import { safeJoin } from '../lib/safe-path';
 import {
   deriveCatalogPercentScaleFromObservedCatalog,
   deriveUnitValue,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel/catalog-arithmetic';
-import { discoverAllObservedArtifactFilenames } from '../../dynamic-reality-kernel/token-evidence';
+} from '../dynamic-reality-kernel/catalog-arithmetic';
+import { discoverAllObservedArtifactFilenames } from '../dynamic-reality-kernel/token-evidence';
 import {
   deriveMutantEstimateFromObservedFileEvidence,
   inferCoverageFromObservedFileCharacteristics,
-} from '../../dynamic-reality-kernel/profile-derivations';
+} from '../dynamic-reality-kernel/profile-derivations';
 import { du8, isSourceFileName, shouldScanDirectory, isTestLikeFile } from './core';
 
 /**

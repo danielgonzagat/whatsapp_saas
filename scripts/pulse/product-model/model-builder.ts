@@ -2,26 +2,26 @@ import type {
   PulseStructuralGraph,
   PulseStructuralNode,
   PulseTruthMode,
-} from '../../types.structural';
-import type { PulseScopeState } from '../../types.truth.scope';
-import type { PulseResolvedManifest } from '../../types.resolved-manifest';
+} from '../types.structural';
+import type { PulseScopeState } from '../types.truth.scope';
+import type { PulseResolvedManifest } from '../types.resolved-manifest';
 import type {
   PulseProductGraph,
   PulseProductCapability,
   PulseProductSurface,
-} from '../../types.product-graph';
+} from '../types.product-graph';
 import {
   deriveHttpStatusFromObservedCatalog,
   deriveUnitValue,
   deriveZeroValue,
   observeStatusTextLengthFromCatalog,
-} from '../../dynamic-reality-kernel/catalog-arithmetic';
+} from '../dynamic-reality-kernel/catalog-arithmetic';
 import {
   deriveStructuralFamilies,
   familiesOverlap,
   slugifyStructural,
   titleCaseStructural,
-} from '../../structural-family';
+} from '../structural-family';
 import {
   type BuildProductModelInput,
   MAX_PRODUCT_SURFACES,

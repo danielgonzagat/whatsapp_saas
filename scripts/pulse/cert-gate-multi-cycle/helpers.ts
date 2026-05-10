@@ -16,20 +16,20 @@ import type {
   PulseAutonomyIterationRecord,
   PulseAutonomyState,
   PulseAutonomyValidationCommandResult,
-} from '../../types.autonomy';
-import type { PulseGateResult } from '../../types.evidence';
-import { gateFail } from '../../cert-gate-evaluators/gate-fail';
+} from '../types.autonomy';
+import type { PulseGateResult } from '../types.evidence';
+import { gateFail } from '../cert-gate-evaluators/gate-fail';
 import {
   deriveUnitValue,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel/catalog-arithmetic';
-import { discoverConvergenceEvidenceConfidenceLabels } from '../../__kernel_additions__/discoverConvergenceEvidenceConfidenceLabels';
+} from '../dynamic-reality-kernel/catalog-arithmetic';
+import { discoverConvergenceEvidenceConfidenceLabels } from '../__kernel_additions__/discoverConvergenceEvidenceConfidenceLabels';
 import {
   discoverDoDGateStatusLabels,
   discoverTruthModeLabels,
-} from '../../dynamic-reality-kernel/type-contract-engines';
-import { discoverExternalAdapterStatusLabels } from '../../__kernel_additions__/discoverExternalAdapterStatusLabels';
-import { discoverGateFailureClassLabels } from '../../dynamic-reality-kernel/type-contract-labels';
+} from '../dynamic-reality-kernel/type-contract-engines';
+import { discoverExternalAdapterStatusLabels } from '../__kernel_additions__/discoverExternalAdapterStatusLabels';
+import { discoverGateFailureClassLabels } from '../dynamic-reality-kernel/type-contract-labels';
 /**
  * Minimal subset of the autonomy state the gate needs.
  * Wider shape from PulseAutonomyState is accepted; only `history` is read.

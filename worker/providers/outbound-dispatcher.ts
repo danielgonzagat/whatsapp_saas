@@ -4,20 +4,20 @@ import { flowQueue, getQueueEvents } from '../queue';
 export async function dispatchOutboundThroughFlow(input: {
   workspaceId: string;
   to: string;
-  chatId?: string;
-  message?: string;
-  mediaUrl?: string;
-  mediaType?: string;
-  caption?: string;
+  chatId?: string | undefined;
+  message?: string | undefined;
+  mediaUrl?: string | undefined;
+  mediaType?: string | undefined;
+  caption?: string | undefined;
   template?: {
     name: string;
     language?: string;
     components?: unknown[];
-  };
+  } | undefined;
   jobId: string;
-  externalId?: string;
-  quotedMessageId?: string;
-  timeoutMs?: number;
+  externalId?: string | undefined;
+  quotedMessageId?: string | undefined;
+  timeoutMs?: number | undefined;
 }) {
   const job = await flowQueue.add(
     'send-message',

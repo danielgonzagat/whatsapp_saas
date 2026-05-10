@@ -3,9 +3,9 @@
 
 import { METHODS as NODE_HTTP_METHODS } from 'http';
 import { Node, type Decorator } from 'ts-morph';
-import type { AstCallEdgeKind, AstResolvedNodeKind } from '../../types.ast-graph';
-import { deriveStringUnionMembersFromTypeContract } from '../../dynamic-reality-kernel/type-contract-labels';
-import { discoverDirectorySkipHintsFromEvidence } from '../../dynamic-reality-kernel/token-evidence';
+import type { AstCallEdgeKind, AstResolvedNodeKind } from '../types.ast-graph';
+import { deriveStringUnionMembersFromTypeContract } from '../dynamic-reality-kernel/type-contract-labels';
+import { discoverDirectorySkipHintsFromEvidence } from '../dynamic-reality-kernel/token-evidence';
 import type {
   DecoratorSemanticRole,
   DecoratorTargetKind,

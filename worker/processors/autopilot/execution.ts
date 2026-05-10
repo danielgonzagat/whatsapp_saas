@@ -19,25 +19,25 @@ export async function executeAction(
   action: string,
   input: {
     workspaceId: string;
-    contactId?: string;
-    conversationId?: string;
-    phone?: string;
-    chatId?: string;
-    contactName?: string;
-    messageContent?: string;
-    settings?: UnknownRecord;
-    intent?: string;
-    reason?: string;
-    workspaceRecord?: UnknownRecord;
-    intentConfidence?: number;
-    usedHistory?: boolean;
-    usedKb?: boolean;
-    deliveryMode?: 'reactive' | 'proactive';
-    smokeTestId?: string;
-    smokeMode?: 'dry-run' | 'live';
-    runId?: string;
-    idempotencyContext?: Record<string, unknown>;
-    customerMessages?: QuotedCustomerMessage[];
+    contactId?: string | undefined;
+    conversationId?: string | undefined;
+    phone?: string | undefined;
+    chatId?: string | undefined;
+    contactName?: string | undefined;
+    messageContent?: string | undefined;
+    settings?: UnknownRecord | undefined;
+    intent?: string | undefined;
+    reason?: string | undefined;
+    workspaceRecord?: UnknownRecord | undefined;
+    intentConfidence?: number | undefined;
+    usedHistory?: boolean | undefined;
+    usedKb?: boolean | undefined;
+    deliveryMode?: 'reactive' | 'proactive' | undefined;
+    smokeTestId?: string | undefined;
+    smokeMode?: 'dry-run' | 'live' | undefined;
+    runId?: string | undefined;
+    idempotencyContext?: Record<string, unknown> | undefined;
+    customerMessages?: QuotedCustomerMessage[] | undefined;
   },
 ) {
   if (!action || action === 'NONE') return 'skipped';
@@ -115,26 +115,26 @@ export async function executeAction(
 
 export async function sendDirectAutopilotText(input: {
   workspaceId: string;
-  contactId?: string;
-  conversationId?: string;
-  phone?: string;
-  chatId?: string;
-  contactName?: string;
+  contactId?: string | undefined;
+  conversationId?: string | undefined;
+  phone?: string | undefined;
+  chatId?: string | undefined;
+  contactName?: string | undefined;
   text: string;
-  settings?: UnknownRecord;
-  intent?: string;
-  reason?: string;
-  workspaceRecord?: UnknownRecord;
-  intentConfidence?: number;
-  actionLabel?: string;
-  usedHistory?: boolean;
-  usedKb?: boolean;
-  deliveryMode?: 'reactive' | 'proactive';
-  smokeTestId?: string;
-  smokeMode?: 'dry-run' | 'live';
-  runId?: string;
-  idempotencyContext?: Record<string, unknown>;
-  customerMessages?: QuotedCustomerMessage[];
+  settings?: UnknownRecord | undefined;
+  intent?: string | undefined;
+  reason?: string | undefined;
+  workspaceRecord?: UnknownRecord | undefined;
+  intentConfidence?: number | undefined;
+  actionLabel?: string | undefined;
+  usedHistory?: boolean | undefined;
+  usedKb?: boolean | undefined;
+  deliveryMode?: 'reactive' | 'proactive' | undefined;
+  smokeTestId?: string | undefined;
+  smokeMode?: 'dry-run' | 'live' | undefined;
+  runId?: string | undefined;
+  idempotencyContext?: Record<string, unknown> | undefined;
+  customerMessages?: QuotedCustomerMessage[] | undefined;
 }) {
   const action = input.actionLabel || 'UNIFIED_AGENT_TEXT';
   const message = String(input.text || '').trim();

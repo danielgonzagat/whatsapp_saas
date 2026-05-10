@@ -4,21 +4,21 @@
 import type {
   PulseAutonomousDirective,
   PulseAutonomousDirectiveUnit,
-} from '../../autonomy-loop.types';
-import { unique } from '../../autonomy-loop.utils';
+} from '../autonomy-loop.types';
+import { unique } from '../autonomy-loop.utils';
 import {
   deriveUnitValue,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel/catalog-arithmetic';
+} from '../dynamic-reality-kernel/catalog-arithmetic';
 import {
   discoverOperationalEvidenceKindLabels,
   discoverRuntimeFusionEvidenceStatusLabels,
-} from '../../dynamic-reality-kernel/type-contract-engines';
+} from '../dynamic-reality-kernel/type-contract-engines';
 import type {
   OperationalEvidenceKind,
   RuntimeFusionState,
   RuntimeSignal,
-} from '../../types.runtime-fusion';
+} from '../types.runtime-fusion';
 import type { StructuralQueueInfluence, RuntimeRealityUnitMetadata } from './structural-rank';
 import {
   emptyStructuralQueueInfluence,

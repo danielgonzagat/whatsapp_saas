@@ -8,8 +8,8 @@ import { deepGet, MAX_GENERATED_AT_DRIFT_MS } from '../../loaders';
 import {
   deriveUnitValue,
   deriveZeroValue,
-} from '../../../dynamic-reality-kernel/catalog-arithmetic';
-import { discoverAllObservedArtifactFilenames } from '../../../dynamic-reality-kernel/token-evidence';
+} from '../../dynamic-reality-kernel/catalog-arithmetic';
+import { discoverAllObservedArtifactFilenames } from '../../dynamic-reality-kernel/token-evidence';
 import {
   collectProofDebtSignals,
   firstExecutableUnit,

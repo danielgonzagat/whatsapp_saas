@@ -4,7 +4,7 @@
  * Generates security test cases (SQLi, XSS, NoSQLi, mass assignment, IDOR,
  * open redirect) and classifies endpoint risk from contract shape.
  */
-import type { APIEndpointProbe, SecurityTestCase } from '../../types.api-fuzzer';
+import type { APIEndpointProbe, SecurityTestCase } from '../types.api-fuzzer';
 import { PLANNED, STATUS, deriveUnitValue, parseRouteParameters } from './constants';
 import {
   synthesizeSqlMutationPayloads,

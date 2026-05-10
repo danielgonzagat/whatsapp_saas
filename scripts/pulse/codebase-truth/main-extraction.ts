@@ -1,18 +1,18 @@
-import type { PulseCodebaseTruth, PulseDiscoveredModule } from '../../types.truth';
-import type { PulseConfig, PulseManifest } from '../../types.manifest';
-import type { CoreParserData } from '../../functional-map-types';
-import { buildFunctionalMap } from '../../functional-map';
+import type { PulseCodebaseTruth, PulseDiscoveredModule } from '../types.truth';
+import type { PulseConfig, PulseManifest } from '../types.manifest';
+import type { CoreParserData } from '../functional-map-types';
+import { buildFunctionalMap } from '../functional-map';
 import {
   deriveUnitValue,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel/catalog-arithmetic';
+} from '../dynamic-reality-kernel/catalog-arithmetic';
 import {
   isUserFacingGroup,
   unique,
   buildDiscoveredFlows,
   buildDivergence,
   buildPageSemanticProfile,
-} from '../../codebase-truth.analysis';
+} from '../codebase-truth.analysis';
 import {
   buildPageSummary,
   getRouteRoot,

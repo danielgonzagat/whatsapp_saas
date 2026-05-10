@@ -5,27 +5,27 @@
  */
 
 import { execFileSync } from 'child_process';
-import { isDirectory, pathExists, readDir, readTextFile } from '../../../safe-fs';
-import { safeJoin } from '../../../safe-path';
+import { isDirectory, pathExists, readDir, readTextFile } from '../../safe-fs';
+import { safeJoin } from '../../safe-path';
 import {
   deriveHttpStatusFromObservedCatalog,
   deriveUnitValue,
   deriveZeroValue,
   observeStatusTextLengthFromCatalog,
-} from '../../../dynamic-reality-kernel/catalog-arithmetic';
-import { discoverExternalAdapterStatusLabels } from '../../../__kernel_additions__/discoverExternalAdapterStatusLabels';
-import { discoverExternalAdapterRequirementLabels } from '../../../__kernel_additions__/discoverExternalAdapterRequirementLabels';
-import { discoverExternalAdapterRequirednessLabels } from '../../../__kernel_additions__/discoverExternalAdapterRequirednessLabels';
-import { discoverExternalAdapterProofBasisLabels } from '../../../__kernel_additions__/discoverExternalAdapterProofBasisLabels';
-import { discoverCertificationProfileLabels } from '../../../dynamic-reality-kernel/type-contract-engines';
-import { discoverExternalSignalSourceLabels } from '../../../__kernel_additions__/discoverExternalSignalSourceLabels';
-import type { PulseCertificationProfile } from '../../../types.health';
+} from '../../dynamic-reality-kernel/catalog-arithmetic';
+import { discoverExternalAdapterStatusLabels } from '../../__kernel_additions__/discoverExternalAdapterStatusLabels';
+import { discoverExternalAdapterRequirementLabels } from '../../__kernel_additions__/discoverExternalAdapterRequirementLabels';
+import { discoverExternalAdapterRequirednessLabels } from '../../__kernel_additions__/discoverExternalAdapterRequirednessLabels';
+import { discoverExternalAdapterProofBasisLabels } from '../../__kernel_additions__/discoverExternalAdapterProofBasisLabels';
+import { discoverCertificationProfileLabels } from '../../dynamic-reality-kernel/type-contract-engines';
+import { discoverExternalSignalSourceLabels } from '../../__kernel_additions__/discoverExternalSignalSourceLabels';
+import type { PulseCertificationProfile } from '../../types.health';
 import type {
   PulseExternalAdapterProofBasis,
   PulseExternalAdapterRequirement,
   PulseExternalAdapterStatus,
   PulseExternalSignalSource,
-} from '../../../types.capabilities/01-primitives';
+} from '../../types.capabilities/01-primitives';
 
 // ─── Canonical label derivation from type contracts ───
 

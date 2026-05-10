@@ -1,6 +1,6 @@
 import * as ts from 'typescript';
-import type { UIElement } from '../../../types.core';
-import { deriveUnitValue } from '../../../dynamic-reality-kernel/catalog-arithmetic';
+import type { UIElement } from '../../types.core';
+import { deriveUnitValue } from '../../dynamic-reality-kernel/catalog-arithmetic';
 import { isApiModuleSpecifier } from './text-and-string-utils';
 import { extractJSXHandler, buildHandlerEvidence } from './handler-utils';
 

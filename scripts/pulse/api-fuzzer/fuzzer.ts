@@ -5,10 +5,10 @@
  * and writes evidence to disk.
  */
 import { execFileSync } from 'node:child_process';
-import { safeJoin } from '../../lib/safe-path';
-import { discoverAllObservedArtifactFilenames } from '../../dynamic-reality-kernel/token-evidence';
-import { ensureDir, writeTextFile } from '../../safe-fs';
-import type { APIEndpointProbe, APIFuzzEvidence, FuzzTestCaseStatus } from '../../types.api-fuzzer';
+import { safeJoin } from '../lib/safe-path';
+import { discoverAllObservedArtifactFilenames } from '../dynamic-reality-kernel/token-evidence';
+import { ensureDir, writeTextFile } from '../safe-fs';
+import type { APIEndpointProbe, APIFuzzEvidence, FuzzTestCaseStatus } from '../types.api-fuzzer';
 import {
   STATUS,
   IDEM,

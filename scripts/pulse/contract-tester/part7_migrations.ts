@@ -3,14 +3,14 @@
  */
 
 import type { Dirent } from 'fs';
-import type { MigrationSafetyCheck, SchemaDiffSeverity } from '../../types.contract-tester';
-import { pathExists, readDir, readTextFile } from '../../safe-fs';
-import { safeJoin } from '../../lib/safe-path';
+import type { MigrationSafetyCheck, SchemaDiffSeverity } from '../types.contract-tester';
+import { pathExists, readDir, readTextFile } from '../safe-fs';
+import { safeJoin } from '../lib/safe-path';
 import {
   deriveUnitValue,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel/catalog-arithmetic';
-import { discoverDirectorySkipHintsFromEvidence } from '../../dynamic-reality-kernel/token-evidence';
+} from '../dynamic-reality-kernel/catalog-arithmetic';
+import { discoverDirectorySkipHintsFromEvidence } from '../dynamic-reality-kernel/token-evidence';
 import {
   DROP_TABLE_RE,
   DROP_COLUMN_RE,

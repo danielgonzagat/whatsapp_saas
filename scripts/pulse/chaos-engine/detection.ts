@@ -1,23 +1,23 @@
 import * as path from 'path';
 import { METHODS as HTTP_METHODS } from 'node:http';
-import type { ChaosTarget, ChaosScenarioKind } from '../../types.chaos-engine';
-import type { PulseCapability } from '../../types.capabilities/03-capability';
-import type { PulseExecutionMatrix } from '../../types.execution-matrix';
-import type { PulseExecutionTrace } from '../../types.evidence';
-import type { PulseRuntimeEvidence, PulseRuntimeProbe } from '../../types.convergence';
-import { walkFiles } from '../../parsers/utils';
-import { readTextFile, readJsonFile, pathExists } from '../../safe-fs';
-import { safeJoin } from '../../safe-path';
+import type { ChaosTarget, ChaosScenarioKind } from '../types.chaos-engine';
+import type { PulseCapability } from '../types.capabilities/03-capability';
+import type { PulseExecutionMatrix } from '../types.execution-matrix';
+import type { PulseExecutionTrace } from '../types.evidence';
+import type { PulseRuntimeEvidence, PulseRuntimeProbe } from '../types.convergence';
+import { walkFiles } from '../parsers/utils';
+import { readTextFile, readJsonFile, pathExists } from '../safe-fs';
+import { safeJoin } from '../safe-path';
 import {
   discoverAllObservedArtifactFilenames,
   discoverSourceExtensionsFromObservedTypescript,
   discoverExternalReceiverTokensFromEvidence,
-} from '../../dynamic-reality-kernel/token-evidence';
-import { discoverChaosTargetLabels } from '../../dynamic-reality-kernel/type-contract-engines';
+} from '../dynamic-reality-kernel/token-evidence';
+import { discoverChaosTargetLabels } from '../dynamic-reality-kernel/type-contract-engines';
 import {
   deriveUnitValue,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel/catalog-arithmetic';
+} from '../dynamic-reality-kernel/catalog-arithmetic';
 
 export type ChaosProviderName = string;
 export type ChaosOperationalConcern =

@@ -1,8 +1,8 @@
 import {
   deriveUnitValue,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel/catalog-arithmetic';
-import type { DataflowRawSignal } from '../../types.dataflow-engine';
+} from '../dynamic-reality-kernel/catalog-arithmetic';
+import type { DataflowRawSignal } from '../types.dataflow-engine';
 import type {
   PrismaFieldEvidence,
   FieldUsageEvidence,

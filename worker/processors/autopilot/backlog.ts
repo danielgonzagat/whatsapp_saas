@@ -471,14 +471,14 @@ export async function finalizeBacklogIntoSilentCatalog(input: {
 
 export async function maybeEscalateToHumanControl(input: {
   workspaceId: string;
-  contactId?: string;
-  contactName?: string;
-  phone?: string;
-  runId?: string;
+  contactId?: string | undefined;
+  contactName?: string | undefined;
+  phone?: string | undefined;
+  runId?: string | undefined;
   decisionEnvelope: ReturnType<typeof buildDecisionEnvelope>;
-  messageContent?: string;
-  intent?: string;
-  action?: string;
+  messageContent?: string | undefined;
+  intent?: string | undefined;
+  action?: string | undefined;
 }) {
   if (input.action === 'AUTONOMOUS_FALLBACK' && input.decisionEnvelope.riskFlags.length === 0) {
     return { blocked: false as const };

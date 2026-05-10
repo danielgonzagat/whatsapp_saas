@@ -1,4 +1,4 @@
-import type { PulseRuntimeEvidence } from '../../types.convergence';
+import type { PulseRuntimeEvidence } from '../types.convergence';
 import type {
   BuildRuntimeProbesArtifactOptions,
   PulseRuntimeProbeArtifactProbe,
@@ -6,7 +6,7 @@ import type {
   PulseRuntimeProbeArtifactStatus,
   PulseRuntimeProbeFreshness,
   PulseRuntimeProbesArtifact,
-} from '../../types.runtime-probes';
+} from '../types.runtime-probes';
 
 const ARTIFACT_ID = 'PULSE_RUNTIME_PROBES';
 const RUNTIME_EVIDENCE_PATH = 'PULSE_RUNTIME_EVIDENCE.json';

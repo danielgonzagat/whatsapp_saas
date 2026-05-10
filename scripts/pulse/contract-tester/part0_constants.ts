@@ -10,20 +10,20 @@ import type {
   ContractStatus,
   ProviderContract,
   SchemaDiffSeverity,
-} from '../../types.contract-tester';
-import { deriveStringUnionMembersFromTypeContract } from '../../dynamic-reality-kernel/type-contract-labels';
+} from '../types.contract-tester';
+import { deriveStringUnionMembersFromTypeContract } from '../dynamic-reality-kernel/type-contract-labels';
 import {
   deriveUnitValue,
   deriveZeroValue,
   discoverRouteSeparatorFromRuntime,
-} from '../../dynamic-reality-kernel/catalog-arithmetic';
+} from '../dynamic-reality-kernel/catalog-arithmetic';
 import {
   discoverAllObservedArtifactFilenames,
   discoverDirectorySkipHintsFromEvidence,
   discoverSourceExtensionsFromObservedTypescript,
-} from '../../dynamic-reality-kernel/token-evidence';
-import { discoverNestjsDecoratorNamesFromTypeEvidence } from '../../dynamic-reality-kernel/evidence-domain';
-import { discoverStructuralNodeKindLabels } from '../../dynamic-reality-kernel/type-contract-engines';
+} from '../dynamic-reality-kernel/token-evidence';
+import { discoverNestjsDecoratorNamesFromTypeEvidence } from '../dynamic-reality-kernel/evidence-domain';
+import { discoverStructuralNodeKindLabels } from '../dynamic-reality-kernel/type-contract-engines';
 
 // ── Artifact filenames ──────────────────────────────────────────────────────
 

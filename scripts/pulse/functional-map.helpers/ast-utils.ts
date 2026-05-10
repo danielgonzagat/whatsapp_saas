@@ -1,10 +1,10 @@
-import { normalizeEndpoint } from '../../parsers/api-parser';
-import type { HookRegistry } from '../../parsers/hook-registry';
+import { normalizeEndpoint } from '../parsers/api-parser';
+import type { HookRegistry } from '../parsers/hook-registry';
 import {
   deriveZeroValue,
   discoverAllObservedHttpMethods,
   discoverReservedJsKeywords,
-} from '../../dynamic-reality-kernel/catalog-arithmetic';
+} from '../dynamic-reality-kernel/catalog-arithmetic';
 
 function isIdentifierChar(value: string | undefined): boolean {
   if (!value) {

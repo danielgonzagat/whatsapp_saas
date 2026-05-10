@@ -8,13 +8,13 @@ import {
   isAutonomousEnabled,
   SHARENON_DIGIT_REPLY_LOCK_MS,
   type UnknownRecord,
+  type WorkspaceSelfIdentity,
 } from './shared';
 import {
   isWorkspaceSelfTarget,
 } from './identity';
 import { logAutopilotAction } from './safeguard';
 import {
-  resolveScanDeliveryMode,
   getSharedReplyLockKey,
   findConversationAutomationState,
 } from './backlog';
@@ -38,11 +38,11 @@ export interface ScanIngestionResult {
   deliveryMode: 'reactive' | 'proactive';
   replyLockKey: string | null;
   keepReplyLock: boolean;
-  workspaceRecord?: UnknownRecord;
+  workspaceRecord?: UnknownRecord | undefined;
   settings: UnknownRecord;
-  smokeTestId?: string;
+  smokeTestId?: string | undefined;
   smokeMode: string;
-  runId?: string;
+  runId?: string | undefined;
 }
 
 export async function runScanIngestion(params: {
@@ -59,7 +59,6 @@ export async function runScanIngestion(params: {
 }): Promise<ScanIngestionResult | null> {
   const { workspaceId, smokeTestId, runId, data } = params;
   const smokeMode = params.smokeMode === 'live' ? 'live' : 'dry-run';
-  const requestedDeliveryMode = resolveScanDeliveryMode(data || {});
 
   const workspace = await prisma.workspace.findUnique({ where: { id: workspaceId } });
   const settings = (workspace?.providerSettings ?? {}) as UnknownRecord;
@@ -83,13 +82,13 @@ export async function checkScanPreFlight(params: {
   phone: string;
   chatId: string;
   contactName: string;
-  selfIdentity?: { phone?: string; chatId?: string } | null;
-  data?: UnknownRecord;
-  runId?: string;
-  smokeTestId?: string;
-  smokeMode?: string;
+  selfIdentity?: WorkspaceSelfIdentity | null | undefined;
+  data?: UnknownRecord | undefined;
+  runId?: string | undefined;
+  smokeTestId?: string | undefined;
+  smokeMode?: string | undefined;
 }): Promise<{ skip: boolean; summary: string; replyLockKey: string | null }> {
-  const { workspaceId, contactId, phone, chatId, contactName, selfIdentity, data, runId, smokeTestId, smokeMode } = params;
+  const { workspaceId, contactId, phone, chatId, contactName, selfIdentity, data, runId } = params;
 
   if (isWorkspaceSelfTarget({ phone, chatId, selfIdentity })) {
     await logAutopilotAction({
@@ -134,9 +133,9 @@ export async function checkScanAutonomyBilling(params: {
   contactId: string;
   phone: string;
   settings: UnknownRecord;
-  smokeTestId?: string;
+  smokeTestId?: string | undefined;
 }): Promise<{ skip: boolean; summary: string }> {
-  const { workspaceId, contactId, phone, settings, smokeTestId } = params;
+  const { workspaceId, contactId, settings } = params;
 
   if (!isAutonomousEnabled(settings)) {
     autopilotDecisionCounter.inc({ workspaceId, intent: 'DISABLED', action: 'NONE', result: 'skipped' });

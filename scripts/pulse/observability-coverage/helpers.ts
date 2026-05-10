@@ -10,13 +10,13 @@ import {
   deriveUnitValue,
   deriveCatalogPercentScaleFromObservedCatalog,
   deriveHttpStatusFromObservedCatalog,
-} from '../../dynamic-reality-kernel/catalog-arithmetic';
+} from '../dynamic-reality-kernel/catalog-arithmetic';
 import type {
   CapabilityObservability,
   ObservabilityCoverageState,
   ObservabilityPillar,
   ObservabilityStatus,
-} from '../../types.observability-coverage';
+} from '../types.observability-coverage';
 
 export function countLogCalls(filePaths: string[], getContent: (p: string) => string): number {
   let count = deriveZeroValue();

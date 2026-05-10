@@ -1,21 +1,21 @@
-import type { Break, PulseGateName, PulseManifestScenarioSpec } from '../../types.manifest';
+import type { Break, PulseGateName, PulseManifestScenarioSpec } from '../types.manifest';
 import type { PulseCapabilityState } from '../types.capabilities/03-capability';
 import type { PulseExternalSignalState } from '../types.capabilities/05-external-signals';
-import type { PulseParityGapsArtifact } from '../../types.capabilities.parity';
+import type { PulseParityGapsArtifact } from '../types.capabilities.parity';
 import type { PulseFlowProjection } from '../types.capabilities/04-flow-projection';
-import type { PulseCertification, PulseWorldState } from '../../types.evidence';
-import type { PulseConvergenceOwnerLane, PulseGateFailureClass } from '../../types.gate-failure';
+import type { PulseCertification, PulseWorldState } from '../types.evidence';
+import type { PulseConvergenceOwnerLane, PulseGateFailureClass } from '../types.gate-failure';
 import type {
   PulseConvergencePlan,
   PulseConvergenceUnit,
   PulseConvergenceUnitPriority,
   PulseConvergenceUnitStatus,
   PulseEvidenceRecord,
-} from '../../types.convergence';
-import type { PulseExecutionMatrix } from '../../types.execution-matrix';
-import type { PulseResolvedManifest } from '../../types.resolved-manifest';
-import type { PulseScenarioResult } from '../../types.scenario-result';
-import type { PulseScopeFile, PulseScopeState } from '../../types.truth.scope';
+} from '../types.convergence';
+import type { PulseExecutionMatrix } from '../types.execution-matrix';
+import type { PulseResolvedManifest } from '../types.resolved-manifest';
+import type { PulseScenarioResult } from '../types.scenario-result';
+import type { PulseScopeFile, PulseScopeState } from '../types.truth.scope';
 import {
   discoverAllObservedArtifactFilenames,
   discoverAllObservedGateNames,
@@ -24,30 +24,30 @@ import {
   discoverSourceLabelFromObservedContext,
   deriveUnitIdFromObservedKind,
   deriveProductImpactFromObservedScope,
-} from '../../dynamic-reality-kernel/token-evidence';
-import { deriveUnitValue } from '../../dynamic-reality-kernel/catalog-arithmetic';
-import { discoverConvergenceUnitKindLabels } from '../../__kernel_additions__/discoverConvergenceUnitKindLabels';
-import { discoverConvergenceUnitStatusLabels } from '../../__kernel_additions__/discoverConvergenceUnitStatusLabels';
-import { discoverConvergenceUnitPriorityLabels } from '../../__kernel_additions__/discoverConvergenceUnitPriorityLabels';
-import { discoverConvergenceExecutionModeLabels } from '../../__kernel_additions__/discoverConvergenceExecutionModeLabels';
-import { discoverConvergenceRiskLevelLabels } from '../../__kernel_additions__/discoverConvergenceRiskLevelLabels';
-import { discoverConvergenceProductImpactLabels } from '../../__kernel_additions__/discoverConvergenceProductImpactLabels';
-import { discoverConvergenceEvidenceConfidenceLabels } from '../../__kernel_additions__/discoverConvergenceEvidenceConfidenceLabels';
-import { discoverConvergenceSourceLabels } from '../../__kernel_additions__/discoverConvergenceSourceLabels';
+} from '../dynamic-reality-kernel/token-evidence';
+import { deriveUnitValue } from '../dynamic-reality-kernel/catalog-arithmetic';
+import { discoverConvergenceUnitKindLabels } from '../__kernel_additions__/discoverConvergenceUnitKindLabels';
+import { discoverConvergenceUnitStatusLabels } from '../__kernel_additions__/discoverConvergenceUnitStatusLabels';
+import { discoverConvergenceUnitPriorityLabels } from '../__kernel_additions__/discoverConvergenceUnitPriorityLabels';
+import { discoverConvergenceExecutionModeLabels } from '../__kernel_additions__/discoverConvergenceExecutionModeLabels';
+import { discoverConvergenceRiskLevelLabels } from '../__kernel_additions__/discoverConvergenceRiskLevelLabels';
+import { discoverConvergenceProductImpactLabels } from '../__kernel_additions__/discoverConvergenceProductImpactLabels';
+import { discoverConvergenceEvidenceConfidenceLabels } from '../__kernel_additions__/discoverConvergenceEvidenceConfidenceLabels';
+import { discoverConvergenceSourceLabels } from '../__kernel_additions__/discoverConvergenceSourceLabels';
 import {
   discoverConvergenceOwnerLaneLabels,
   discoverGateFailureClassLabels,
   discoverParityGapKindLabels,
   discoverParityGapSeverityLabels,
-} from '../../dynamic-reality-kernel/type-contract-labels';
+} from '../dynamic-reality-kernel/type-contract-labels';
 import {
   discoverTruthModeLabels,
   discoverScenarioStatusLabels,
-} from '../../dynamic-reality-kernel/type-contract-engines';
-import { discoverCapabilityStatusLabels } from '../../__kernel_additions__/discoverCapabilityStatusLabels';
-import { discoverFlowProjectionStatusLabels } from '../../__kernel_additions__/discoverFlowProjectionStatusLabels';
-import { discoverExternalSignalSourceLabels } from '../../__kernel_additions__/discoverExternalSignalSourceLabels';
-import { CHECKER_GAP_TYPES, SECURITY_FINDING_EVENT_KERNEL_GRAMMAR } from '../../cert-constants';
+} from '../dynamic-reality-kernel/type-contract-engines';
+import { discoverCapabilityStatusLabels } from '../__kernel_additions__/discoverCapabilityStatusLabels';
+import { discoverFlowProjectionStatusLabels } from '../__kernel_additions__/discoverFlowProjectionStatusLabels';
+import { discoverExternalSignalSourceLabels } from '../__kernel_additions__/discoverExternalSignalSourceLabels';
+import { CHECKER_GAP_TYPES, SECURITY_FINDING_EVENT_KERNEL_GRAMMAR } from '../cert-constants';
 
 let OBSERVED_ARTIFACTS = discoverAllObservedArtifactFilenames();
 let OBSERVED_GATES = discoverAllObservedGateNames();
@@ -104,7 +104,7 @@ export interface BuildPulseConvergencePlanInput {
   noHardcodedRealityState?: PulseNoHardcodedRealityState;
 }
 
-import type { PulseNoHardcodedRealityState } from '../../no-hardcoded-reality-state';
+import type { PulseNoHardcodedRealityState } from '../no-hardcoded-reality-state';
 
 export interface ScenarioAccumulator {
   scenarioId: string;

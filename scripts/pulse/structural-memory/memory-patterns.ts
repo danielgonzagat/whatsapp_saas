@@ -4,19 +4,19 @@
 
 import * as path from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { pathExists, readJsonFile } from '../../safe-fs';
+import { pathExists, readJsonFile } from '../safe-fs';
 import {
   deriveUnitValue,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel/catalog-arithmetic';
-import type { PulseAutonomyState } from '../../types.autonomy';
+} from '../dynamic-reality-kernel/catalog-arithmetic';
+import type { PulseAutonomyState } from '../types.autonomy';
 import type {
   AttemptStatus,
   LearnedPattern,
   MemoryEntry,
   StructuralMemoryState,
   UnitMemory,
-} from '../../types.structural-memory';
+} from '../types.structural-memory';
 import {
   _oneMoreThanUnit,
   REPEATED_FAILURE_THRESHOLD,

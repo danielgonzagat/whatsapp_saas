@@ -4,7 +4,7 @@
 import * as path from 'path';
 import * as fs from 'fs';
 
-import { pathExists, readJsonFile } from '../../safe-fs';
+import { pathExists, readJsonFile } from '../safe-fs';
 
 const PROTECTED_FILES_PATH = 'ops/protected-governance-files.json';
 

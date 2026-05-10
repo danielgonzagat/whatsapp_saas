@@ -3,7 +3,7 @@ import {
   deriveUnitValue,
   deriveZeroValue,
   deriveHttpStatusFromObservedCatalog,
-} from '../../../dynamic-reality-kernel/catalog-arithmetic';
+} from '../../dynamic-reality-kernel/catalog-arithmetic';
 
 function isApiModuleSpecifier(value: string): boolean {
   const normalized = value.split(path.sep).join('/');

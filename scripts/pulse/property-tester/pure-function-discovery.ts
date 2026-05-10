@@ -1,13 +1,13 @@
 import * as path from 'path';
 import * as fs from 'node:fs';
 import * as ts from 'typescript';
-import type { PureFunctionCandidate, PropertyTestCase } from '../../types.property-tester';
-import { readDir } from '../../safe-fs';
+import type { PureFunctionCandidate, PropertyTestCase } from '../types.property-tester';
+import { readDir } from '../safe-fs';
 import {
   deriveUnitValue,
   inferCandidateCategoryFromObservedTokens,
   type DerivedCandidateCategory,
-} from '../../dynamic-reality-kernel/catalog-arithmetic';
+} from '../dynamic-reality-kernel/catalog-arithmetic';
 import { du8, isSourceFileName, shouldScanDirectory, isTestLikeFile } from './core';
 
 export type CandidateCategory = Exclude<DerivedCandidateCategory, null>;

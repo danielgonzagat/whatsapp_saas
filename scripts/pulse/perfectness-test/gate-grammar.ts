@@ -5,7 +5,7 @@
 
 import * as path from 'path';
 
-import { ensureDir, pathExists, readJsonFile, writeTextFile } from '../../safe-fs';
+import { ensureDir, pathExists, readJsonFile, writeTextFile } from '../safe-fs';
 import {
   deriveCatalogPercentScaleFromObservedCatalog,
   deriveHttpStatusFromObservedCatalog,
@@ -13,8 +13,8 @@ import {
   deriveZeroValue,
   discoverPropertyPassedStatusFromTypeEvidence,
   observeStatusTextLengthFromCatalog,
-} from '../../dynamic-reality-kernel/catalog-arithmetic';
-import { discoverAllObservedArtifactFilenames } from '../../dynamic-reality-kernel/token-evidence';
+} from '../dynamic-reality-kernel/catalog-arithmetic';
+import { discoverAllObservedArtifactFilenames } from '../dynamic-reality-kernel/token-evidence';
 import type {
   ExitAction,
   GateEvidencePlan,
@@ -26,7 +26,7 @@ import type {
   PerfectnessResult,
   PerfectnessTestSuite,
   PerfectnessVerdict,
-} from '../../types.perfectness-test';
+} from '../types.perfectness-test';
 
 const _dcps = deriveCatalogPercentScaleFromObservedCatalog();
 const _u = deriveUnitValue();

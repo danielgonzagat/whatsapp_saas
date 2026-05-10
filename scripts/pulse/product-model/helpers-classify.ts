@@ -2,13 +2,13 @@ import type {
   PulseStructuralGraph,
   PulseStructuralNode,
   PulseTruthMode,
-} from '../../types.structural';
-import type { PulseProductCapability } from '../../types.product-graph';
+} from '../types.structural';
+import type { PulseProductCapability } from '../types.product-graph';
 import {
   deriveHttpStatusFromObservedCatalog,
   deriveUnitValue,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel/catalog-arithmetic';
+} from '../dynamic-reality-kernel/catalog-arithmetic';
 import {
   _OBSERVED_TRUTH,
   _INFERRED_TRUTH,

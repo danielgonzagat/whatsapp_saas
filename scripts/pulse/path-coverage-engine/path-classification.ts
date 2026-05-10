@@ -1,22 +1,22 @@
 import * as path from 'path';
-import type { PulseExecutionMatrixPath } from '../../types.execution-matrix';
+import type { PulseExecutionMatrixPath } from '../types.execution-matrix';
 import type {
   PathClassification,
   PathCoverageExecutionMode,
   PathCoverageEntry,
-} from '../../types.path-coverage-engine';
-import { readJsonFile, writeTextFile, ensureDir, pathExists } from '../../safe-fs';
-import { safeJoin } from '../../safe-path';
+} from '../types.path-coverage-engine';
+import { readJsonFile, writeTextFile, ensureDir, pathExists } from '../safe-fs';
+import { safeJoin } from '../safe-path';
 import {
   isProtectedFile as isGovernanceProtectedFile,
   loadGovernanceBoundary,
   normalizePath as normalizeGovernancePath,
   type GovernanceBoundary,
-} from '../../scope-state-classify';
+} from '../scope-state-classify';
 import {
   deriveZeroValue,
   deriveUnitValue,
-} from '../../dynamic-reality-kernel/catalog-arithmetic';
+} from '../dynamic-reality-kernel/catalog-arithmetic';
 import {
   _ARTIFACT_NAMES,
   isObservedPassClass,

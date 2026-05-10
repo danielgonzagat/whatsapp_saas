@@ -1,16 +1,16 @@
-import type { PulseStructuralGraph, PulseStructuralNode } from '../../types.structural';
-import type { PulseResolvedManifest } from '../../types.resolved-manifest';
-import type { PulseProductCapability, PulseProductFlow } from '../../types.product-graph';
+import type { PulseStructuralGraph, PulseStructuralNode } from '../types.structural';
+import type { PulseResolvedManifest } from '../types.resolved-manifest';
+import type { PulseProductCapability, PulseProductFlow } from '../types.product-graph';
 import {
   deriveUnitValue,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel/catalog-arithmetic';
+} from '../dynamic-reality-kernel/catalog-arithmetic';
 import {
   deriveStructuralFamilies,
   familiesOverlap,
   slugifyStructural,
   titleCaseStructural,
-} from '../../structural-family';
+} from '../structural-family';
 import { MAX_PRODUCT_FLOWS } from './types';
 import {
   unique,

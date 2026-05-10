@@ -1,5 +1,5 @@
-import type { PulseConvergenceOwnerLane } from '../../types.gate-failure';
-import type { PulseScopeExecutionMode, PulseTruthMode } from '../../types.truth';
+import type { PulseConvergenceOwnerLane } from '../types.gate-failure';
+import type { PulseScopeExecutionMode, PulseTruthMode } from '../types.truth';
 import type {
   PulseExternalAdapterProofBasis,
   PulseExternalAdapterRequiredness,

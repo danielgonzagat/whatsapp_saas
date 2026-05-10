@@ -5,28 +5,28 @@
  * observability construction, and pillar evidence scanning.
  */
 
-import { safeJoin, safeResolve } from '../../safe-path';
-import { pathExists, readJsonFile } from '../../safe-fs';
-import { readFileSafe } from '../../parsers/utils';
+import { safeJoin, safeResolve } from '../safe-path';
+import { pathExists, readJsonFile } from '../safe-fs';
+import { readFileSafe } from '../parsers/utils';
 import {
   deriveZeroValue,
   deriveUnitValue,
-} from '../../dynamic-reality-kernel/catalog-arithmetic';
-import { discoverAllObservedArtifactFilenames } from '../../dynamic-reality-kernel/token-evidence';
+} from '../dynamic-reality-kernel/catalog-arithmetic';
+import { discoverAllObservedArtifactFilenames } from '../dynamic-reality-kernel/token-evidence';
 import type {
   CapabilityObservability,
   ObservabilityPillar,
   ObservabilityStatus,
   ObservabilityPillarEvidence,
-} from '../../types.observability-coverage';
+} from '../types.observability-coverage';
 import type {
   PulseCapability,
   PulseCapabilityState,
-} from '../../types.capabilities/03-capability';
+} from '../types.capabilities/03-capability';
 import type {
   PulseFlowProjection,
   PulseFlowProjectionItem,
-} from '../../types.capabilities/04-flow-projection';
+} from '../types.capabilities/04-flow-projection';
 import {
   resolveCapabilityFiles,
   toRepoRelativePath,

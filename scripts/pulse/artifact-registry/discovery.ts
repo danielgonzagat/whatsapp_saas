@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as ts from 'typescript';
-import { safeJoin } from '../../safe-path';
+import { safeJoin } from '../safe-path';
 
 /** How PULSE should interpret an artifact as operational truth. */
 export type PulseArtifactTruthMode =

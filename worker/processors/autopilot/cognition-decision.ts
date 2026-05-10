@@ -37,14 +37,14 @@ export async function generatePitchSafe(messageContent: string, settings: Unknow
 
 export async function computePersistentCognitiveState(input: {
   workspaceId: string;
-  conversationId?: string | null;
-  contactId?: string | null;
-  phone?: string | null;
-  contactName?: string | null;
+  conversationId?: string | null | undefined;
+  contactId?: string | null | undefined;
+  phone?: string | null | undefined;
+  contactName?: string | null | undefined;
   messageContent: string;
   unreadCount: number;
-  lastMessageAt?: Date | string | null;
-  leadScore?: number | null;
+  lastMessageAt?: Date | string | null | undefined;
+  leadScore?: number | null | undefined;
   demandState: ReturnType<typeof computeDemandState>;
   source: string;
 }) {

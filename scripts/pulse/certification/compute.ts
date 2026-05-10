@@ -5,22 +5,22 @@ import type {
   PulseExecutionEvidence,
   PulseGateResult,
   PulseSelfTrustReport,
-} from '../../types.evidence';
-import type { PulseCodacyEvidence, PulseStructuralGraph } from '../../types.structural';
-import type { PulseCapabilityState } from '../../types.capabilities/03-capability';
-import type { PulseExternalSignalState } from '../../types.capabilities/05-external-signals';
-import type { PulseFlowProjection } from '../../types.capabilities/04-flow-projection';
-import type { PulseExecutionMatrix } from '../../types.execution-matrix';
+} from '../types.evidence';
+import type { PulseCodacyEvidence, PulseStructuralGraph } from '../types.structural';
+import type { PulseCapabilityState } from '../types.capabilities/03-capability';
+import type { PulseExternalSignalState } from '../types.capabilities/05-external-signals';
+import type { PulseFlowProjection } from '../types.capabilities/04-flow-projection';
+import type { PulseExecutionMatrix } from '../types.execution-matrix';
 import type {
   PulseGateName,
   PulseManifest,
   PulseManifestLoadResult,
   PulseParserInventory,
-} from '../../types.manifest';
-import type { PulseHealth } from '../../types.health';
-import type { PulseResolvedManifest } from '../../types.resolved-manifest';
-import type { PulseScopeState } from '../../types.truth.scope';
-import type { PulseCodebaseTruth } from '../../types.truth';
+} from '../types.manifest';
+import type { PulseHealth } from '../types.health';
+import type { PulseResolvedManifest } from '../types.resolved-manifest';
+import type { PulseScopeState } from '../types.truth.scope';
+import type { PulseCodebaseTruth } from '../types.truth';
 
 import {
   _phantomLabel,
@@ -54,23 +54,23 @@ import {
   isCodacySecurityIssue,
   isCodacyIsolationIssue,
   deriveGateOrderFromResults,
-} from '../../cert-helpers';
+} from '../cert-helpers';
 
-import { CERTIFICATION_FINDING_PREDICATES } from '../../cert-constants';
+import { CERTIFICATION_FINDING_PREDICATES } from '../cert-constants';
 
-import { gateFail } from '../../cert-gate-evaluators/gate-fail';
+import { gateFail } from '../cert-gate-evaluators/gate-fail';
 import {
   evaluateEvidenceFreshGate,
   evaluateScopeGate,
   evaluateStaticGate,
   evaluateRuntimeGate,
   evaluateChangeRiskGate,
-} from '../../cert-gate-evaluators/main';
+} from '../cert-gate-evaluators/main';
 import {
   evaluateTruthExtractionGate,
   evaluatePulseSelfTrustGate,
-} from '../../cert-gate-evaluators/truth-gates';
-import { evaluateBrowserGate } from '../../cert-gate-browser';
+} from '../cert-gate-evaluators/truth-gates';
+import { evaluateBrowserGate } from '../cert-gate-browser';
 
 import {
   evaluatePatternGate,
@@ -78,7 +78,7 @@ import {
   evaluateRecoveryGate,
   evaluateObservabilityGate,
   withTemporaryGateAcceptance,
-} from '../../cert-gate-pattern';
+} from '../cert-gate-pattern';
 
 import {
   evaluateFlowGate,
@@ -88,10 +88,10 @@ import {
   computeScore,
   buildTierStatuses,
   getBlockingTier,
-} from '../../cert-gate-evaluators-actor';
+} from '../cert-gate-evaluators-actor';
 
-import { buildDefaultEvidence, mergeExecutionEvidence } from '../../cert-evidence-defaults';
-import { buildGateEvidence } from '../../cert-gate-evidence';
+import { buildDefaultEvidence, mergeExecutionEvidence } from '../cert-evidence-defaults';
+import { buildGateEvidence } from '../cert-gate-evidence';
 import {
   evaluateNoOverclaimGate,
   formatProofReadinessGap,
@@ -99,35 +99,35 @@ import {
   type PulseDirectiveSnapshot,
   type PulseCertificateSnapshot,
   type PulseProofReadinessSummary,
-} from '../../cert-gate-overclaim';
+} from '../cert-gate-overclaim';
 import {
   PROOF_READINESS_ARTIFACT,
   type ProofReadinessArtifact,
-} from '../../proof-readiness-artifact';
-import { evaluateMultiCycleConvergenceGate } from '../../cert-gate-multi-cycle/core';
+} from '../proof-readiness-artifact';
+import { evaluateMultiCycleConvergenceGate } from '../cert-gate-multi-cycle/core';
 import {
   REQUIRED_NON_REGRESSING_CYCLES,
   type PulseAutonomyStateSnapshot,
-} from '../../cert-gate-multi-cycle/helpers';
+} from '../cert-gate-multi-cycle/helpers';
 import {
   evaluateBreakpointPrecisionGate,
   evaluateCriticalPathObservedGate,
   evaluateExecutionMatrixCompleteGate,
   type PulsePathCoverageGateState,
-} from '../../cert-gate-execution-matrix';
+} from '../cert-gate-execution-matrix';
 import {
   detectPlaceholderTests,
   detectWeakStatusAssertions,
   detectTypeEscapeHatches,
-} from '../../test-honesty/main';
+} from '../test-honesty/main';
 import {
   buildPulseNoHardcodedRealityState,
   formatNoHardcodedRealityBlocker,
   hasNoHardcodedRealityBlocker,
   summarizeNoHardcodedRealityState,
-} from '../../no-hardcoded-reality-state';
-import { deriveZeroValue } from '../../dynamic-reality-kernel/catalog-arithmetic';
-import { discoverAllObservedArtifactFilenames } from '../../dynamic-reality-kernel/token-evidence';
+} from '../no-hardcoded-reality-state';
+import { deriveZeroValue } from '../dynamic-reality-kernel/catalog-arithmetic';
+import { discoverAllObservedArtifactFilenames } from '../dynamic-reality-kernel/token-evidence';
 
 function findTierForGate(
   certificationTiers: PulseManifest['certificationTiers'],

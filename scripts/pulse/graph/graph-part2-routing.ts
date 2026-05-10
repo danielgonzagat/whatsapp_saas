@@ -6,8 +6,8 @@ import type {
   UIElement,
   FacadeEntry,
   PrismaModel,
-} from '../../types.core';
-import type { Break, PulseConfig } from '../../types.manifest';
+} from '../types.core';
+import type { Break, PulseConfig } from '../types.manifest';
 import { normalizeForMatch } from './graph-part1-core';
 import type { RouteKey } from './graph-part1-core';
 

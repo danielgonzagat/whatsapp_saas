@@ -19,10 +19,10 @@ import {
 
 export async function ensureTrustedContactProfile(input: {
   workspaceId: string;
-  contactId?: string | null;
-  phone?: string | null;
-  chatId?: string | null;
-  contactName?: string | null;
+  contactId?: string | null | undefined;
+  phone?: string | null | undefined;
+  chatId?: string | null | undefined;
+  contactName?: string | null | undefined;
   existingContact?: {
     id?: string | null;
     name?: string | null;

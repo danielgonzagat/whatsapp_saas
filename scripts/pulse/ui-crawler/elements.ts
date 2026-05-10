@@ -4,12 +4,12 @@ import type {
   UIDiscoveredElement,
   UIDiscoveredPage,
   UIElementKind,
-} from '../../types.ui-crawler';
-import { deriveStringUnionMembersFromTypeContract } from '../../dynamic-reality-kernel/type-contract-labels';
-import { deriveZeroValue } from '../../dynamic-reality-kernel/catalog-arithmetic';
-import { ensureDir, pathExists, readDir, readTextFile, writeTextFile } from '../../safe-fs';
-import { safeJoin, safeResolve } from '../../safe-path';
-import { walkFiles } from '../../parsers/utils';
+} from '../types.ui-crawler';
+import { deriveStringUnionMembersFromTypeContract } from '../dynamic-reality-kernel/type-contract-labels';
+import { deriveZeroValue } from '../dynamic-reality-kernel/catalog-arithmetic';
+import { ensureDir, pathExists, readDir, readTextFile, writeTextFile } from '../safe-fs';
+import { safeJoin, safeResolve } from '../safe-path';
+import { walkFiles } from '../parsers/utils';
 import { FRONTEND_SRC, APP_DIR, DOM_HANDLER_PROPS } from './constants';
 import {
   buildSelector,

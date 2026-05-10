@@ -1,6 +1,6 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import type { ObservabilityCoverageState } from '../../types.observability-coverage';
+import type { ObservabilityCoverageState } from '../types.observability-coverage';
 import {
   buildCapabilityObservability,
   detectIntegrationsWithoutObservability,

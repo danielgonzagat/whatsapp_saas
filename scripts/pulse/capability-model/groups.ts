@@ -1,12 +1,12 @@
-import type { PulseCapability } from '../../types.capabilities/03-capability';
+import type { PulseCapability } from '../types.capabilities/03-capability';
 import type {
   PulseCodacyEvidence,
   PulseStructuralGraph,
   PulseStructuralRole,
-} from '../../types.structural';
-import type { PulseExecutionEvidence } from '../../types.evidence';
-import type { PulseResolvedManifest } from '../../types.resolved-manifest';
-import type { PulseScopeState } from '../../types.truth.scope';
+} from '../types.structural';
+import type { PulseExecutionEvidence } from '../types.evidence';
+import type { PulseResolvedManifest } from '../types.resolved-manifest';
+import type { PulseScopeState } from '../types.truth.scope';
 
 export interface BuildCapabilityStateInput {
   structuralGraph: PulseStructuralGraph;

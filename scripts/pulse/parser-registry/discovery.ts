@@ -1,14 +1,14 @@
-import { safeJoin } from '../../safe-path';
+import { safeJoin } from '../safe-path';
 import * as path from 'path';
-import { pathExists, readDir, readTextFile, statPath } from '../../safe-fs';
-import { loadPlugin } from '../../plugin-system/main';
-import { discoverPlugins } from '../../plugin-system/schema-discovery';
-import { deriveStringUnionMembersFromTypeContract } from '../../dynamic-reality-kernel/type-contract-labels';
+import { pathExists, readDir, readTextFile, statPath } from '../safe-fs';
+import { loadPlugin } from '../plugin-system/main';
+import { discoverPlugins } from '../plugin-system/schema-discovery';
+import { deriveStringUnionMembersFromTypeContract } from '../dynamic-reality-kernel/type-contract-labels';
 import {
   deriveUnitValue,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel/catalog-arithmetic';
-import { discoverSourceExtensionsFromObservedTypescript } from '../../dynamic-reality-kernel/token-evidence';
+} from '../dynamic-reality-kernel/catalog-arithmetic';
+import { discoverSourceExtensionsFromObservedTypescript } from '../dynamic-reality-kernel/token-evidence';
 import {
   DEFAULT_IDENTIFIER_RE,
   EXPORTED_CONST_FUNCTION_RE,

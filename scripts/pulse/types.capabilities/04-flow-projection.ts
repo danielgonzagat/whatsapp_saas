@@ -1,4 +1,4 @@
-import type { PulseStructuralRole, PulseTruthMode } from '../../types.truth';
+import type { PulseStructuralRole, PulseTruthMode } from '../types.truth';
 import type { PulseFlowProjectionStatus } from './01-primitives';
 import type { PulseCapabilityDoD } from './02-maturity-dod';
 

@@ -8,17 +8,17 @@ import {
   deriveNumericProbeValuesFromObservedCatalog,
   deriveRuntimeStringBoundaryFromObservedCatalog,
   deriveSpecialCharactersFromRuntimeEvidence,
-} from '../../dynamic-reality-kernel/profile-derivations';
+} from '../dynamic-reality-kernel/profile-derivations';
 import {
   deriveCatalogPercentScaleFromObservedCatalog,
   deriveHttpStatusFromObservedCatalog as httpStatus,
   deriveUnitValue,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel/catalog-arithmetic';
+} from '../dynamic-reality-kernel/catalog-arithmetic';
 import {
   deriveStringIdentitySeedsFromCandidate,
   splitIdentifierTokensFromObservedName,
-} from '../../dynamic-reality-kernel/token-evidence';
+} from '../dynamic-reality-kernel/token-evidence';
 
 export function mutationScaleFromCatalog(): number {
   return Number.MAX_SAFE_INTEGER / deriveCatalogPercentScaleFromObservedCatalog();

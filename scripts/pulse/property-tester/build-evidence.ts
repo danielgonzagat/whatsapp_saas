@@ -1,14 +1,14 @@
 import * as fs from 'node:fs';
-import type { PropertyTestEvidence } from '../../types.property-tester';
-import { ensureDir } from '../../safe-fs';
-import { safeJoin } from '../../lib/safe-path';
+import type { PropertyTestEvidence } from '../types.property-tester';
+import { ensureDir } from '../safe-fs';
+import { safeJoin } from '../lib/safe-path';
 import {
   deriveUnitValue,
   deriveZeroValue,
   discoverBoundaryStrategiesFromTypeEvidence,
   discoverPropertyPassedStatusFromTypeEvidence,
   discoverPropertyUnexecutedStatusFromExecutionEvidence,
-} from '../../dynamic-reality-kernel/catalog-arithmetic';
+} from '../dynamic-reality-kernel/catalog-arithmetic';
 import { canonicalArtifactFilename, mergeAndDedupe } from './core';
 import { discoverEndpoints } from './endpoint-discovery';
 import { generateFuzzCasesFromEndpoints } from './endpoint-fuzz';

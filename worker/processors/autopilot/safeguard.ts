@@ -1,20 +1,10 @@
 import { prisma } from '../../db';
-import { redis } from '../../redis-client';
 import { connection } from '../../queue';
-import { PlanLimitsProvider } from '../../providers/plan-limits';
-import {
-  autopilotDecisionCounter,
-  autopilotGhostCloserCounter,
-  autopilotPipelineCounter,
-} from '../../metrics';
 import {
   log,
   type UnknownRecord,
   CONTACT_DAILY_LIMIT,
   WORKSPACE_DAILY_LIMIT,
-  SILENCE_HOURS,
-  WINDOW_START,
-  WINDOW_END,
 } from './shared';
 
 export function buildWorkspaceConfig(
@@ -80,15 +70,15 @@ export async function checkRateLimits(
 
 export async function logAutopilotAction(input: {
   workspaceId: string;
-  contactId?: string;
-  phone?: string;
+  contactId?: string | undefined;
+  phone?: string | undefined;
   action: string;
-  intent?: string;
+  intent?: string | undefined;
   status: 'executed' | 'error' | 'skipped';
-  reason?: string;
-  latencyMs?: number;
-  intentConfidence?: number;
-  meta?: Record<string, unknown>;
+  reason?: string | undefined;
+  latencyMs?: number | undefined;
+  intentConfidence?: number | undefined;
+  meta?: Record<string, unknown> | undefined;
 }) {
   try {
     const details = {
@@ -107,7 +97,7 @@ export async function logAutopilotAction(input: {
         workspaceId: input.workspaceId,
         action: 'AUTOPILOT_ACTION',
         resource: 'contact',
-        resourceId: input.contactId,
+        resourceId: input.contactId ?? null,
         details,
       },
     });

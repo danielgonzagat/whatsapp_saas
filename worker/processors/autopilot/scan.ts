@@ -50,7 +50,6 @@ export async function runScanContact(data: UnknownRecord) {
   });
 
   let finalStatus: 'sent' | 'failed' | 'skipped' = 'skipped';
-  let finalSummary = 'sem ação';
   let finalContactId = data?.contactId as string | undefined;
   let finalPhone = data?.phone as string | undefined;
   let finalContactName = data?.contactName as string | undefined;
@@ -63,7 +62,6 @@ export async function runScanContact(data: UnknownRecord) {
       log.info('autopilot_scan_contact_empty', { workspaceId, contactId: data?.contactId, phone: data?.phone });
       autopilotPipelineCounter.inc({ workspaceId, stage: 'scan_contact', result: 'empty' });
       await reportSmokeTest(smokeTestId, { status: 'empty', workspaceId, contactId: data?.contactId, phone: data?.phone });
-      finalSummary = 'Nenhuma mensagem pendente para este contato.';
     return;
   }
   /* empty check handled above */
@@ -94,7 +92,7 @@ export async function runScanContact(data: UnknownRecord) {
       workspaceId, contactId, phone, chatId, contactName,
       selfIdentity, data, runId, smokeTestId, smokeMode,
     });
-    if (preFlight.skip) { finalSummary = preFlight.summary; return; }
+    if (preFlight.skip) { return; }
     replyLockKey = preFlight.replyLockKey;
 
     log.info('autopilot_scan_contact', { workspaceId, contactId, phone, messageCount });
@@ -108,7 +106,7 @@ export async function runScanContact(data: UnknownRecord) {
     });
 
     const billingCheck = await checkScanAutonomyBilling({ workspaceId, contactId, phone, settings, smokeTestId });
-    if (billingCheck.skip) { finalSummary = billingCheck.summary; return; }
+    if (billingCheck.skip) { return; }
 
     const cognitiveResult = await runScanCognitivePipeline({
       workspaceId, contactId, phone, contactName, messageContent, messageCount,
@@ -118,7 +116,6 @@ export async function runScanContact(data: UnknownRecord) {
     });
 
     if (cognitiveResult.skip) {
-      finalSummary = cognitiveResult.summary;
       return;
     }
 
@@ -140,9 +137,6 @@ export async function runScanContact(data: UnknownRecord) {
       });
       finalStatus = sendResult === 'executed' ? 'sent' : 'skipped';
       keepReplyLock = sendResult === 'executed';
-      finalSummary = sendResult === 'executed'
-        ? 'Resposta cognitiva enviada com sucesso.'
-        : 'Ação cognitiva pulada por política operacional.';
       return;
     }
 
@@ -159,12 +153,9 @@ export async function runScanContact(data: UnknownRecord) {
 
     finalStatus = decisionResult.status;
     keepReplyLock = decisionResult.keepReplyLock;
-    finalSummary = decisionResult.summary;
-  } catch (err: unknown) {
-    const errInstanceofError = err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
+  } catch (_err: unknown) {
     finalStatus = 'failed';
-    finalSummary = errInstanceofError?.message || 'Erro ao processar contato';
-    throw err;
+    throw _err;
   } finally {
     if (finalStatus === 'sent') {
       await runPostSendCleanup(

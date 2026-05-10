@@ -1,21 +1,21 @@
-import type { PulseAutonomyIterationRecord, PulseAutonomyState } from '../../types.autonomy';
-import type { PulseGateFailureClass } from '../../types.gate-failure';
-import type { PulseGateResult } from '../../types.evidence';
-import type { PulseTruthMode } from '../../types.structural';
-import type { PulseConvergenceEvidenceConfidence } from '../../types.convergence';
+import type { PulseAutonomyIterationRecord, PulseAutonomyState } from '../types.autonomy';
+import type { PulseGateFailureClass } from '../types.gate-failure';
+import type { PulseGateResult } from '../types.evidence';
+import type { PulseTruthMode } from '../types.structural';
+import type { PulseConvergenceEvidenceConfidence } from '../types.convergence';
 
-import { gateFail } from '../../cert-gate-evaluators/gate-fail';
+import { gateFail } from '../cert-gate-evaluators/gate-fail';
 import {
   deriveUnitValue,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel/catalog-arithmetic';
-import { discoverConvergenceEvidenceConfidenceLabels } from '../../__kernel_additions__/discoverConvergenceEvidenceConfidenceLabels';
+} from '../dynamic-reality-kernel/catalog-arithmetic';
+import { discoverConvergenceEvidenceConfidenceLabels } from '../__kernel_additions__/discoverConvergenceEvidenceConfidenceLabels';
 import {
   discoverDoDGateStatusLabels,
   discoverTruthModeLabels,
-} from '../../dynamic-reality-kernel/type-contract-engines';
-import { discoverExternalAdapterStatusLabels } from '../../__kernel_additions__/discoverExternalAdapterStatusLabels';
-import { discoverGateFailureClassLabels } from '../../dynamic-reality-kernel/type-contract-labels';
+} from '../dynamic-reality-kernel/type-contract-engines';
+import { discoverExternalAdapterStatusLabels } from '../__kernel_additions__/discoverExternalAdapterStatusLabels';
+import { discoverGateFailureClassLabels } from '../dynamic-reality-kernel/type-contract-labels';
 
 import {
   analyzeCycle,

@@ -1,4 +1,4 @@
-import type { PulseExecutionMatrixPath } from '../../types.execution-matrix';
+import type { PulseExecutionMatrixPath } from '../types.execution-matrix';
 import type {
   PathClassification,
   PathCoverageExecutionMode,
@@ -7,7 +7,7 @@ import type {
   PathCoverageStructuralSafetyClassification,
   PathCoverageArtifactLink,
   PathCoverageTerminalProof,
-} from '../../types.path-coverage-engine';
+} from '../types.path-coverage-engine';
 import {
   _ARTIFACT_NAMES,
   isObservedPassClass,
@@ -22,7 +22,7 @@ import {
   unique,
 } from './kernel-helpers';
 import { normalizeCoverageExecutionMode, isHighOrCriticalRisk } from './path-classification';
-import { deriveZeroValue } from '../../dynamic-reality-kernel/catalog-arithmetic';
+import { deriveZeroValue } from '../dynamic-reality-kernel/catalog-arithmetic';
 
 function buildTerminalReason(
   mp: PulseExecutionMatrixPath,

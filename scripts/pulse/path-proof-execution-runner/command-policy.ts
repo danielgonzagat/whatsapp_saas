@@ -3,7 +3,7 @@ import {
   isProtectedFile as isGovernanceProtectedFile,
   loadGovernanceBoundary,
   normalizePath,
-} from '../../scope-state-classify';
+} from '../scope-state-classify';
 
 export interface ParsedPathProofCommand {
   executable: string;

@@ -9,19 +9,19 @@ import type {
   PulseAutonomyMemoryState,
   PulseAutonomyState,
   PulseAutonomyUnitSnapshot,
-} from '../../types.autonomy';
+} from '../types.autonomy';
 import type {
   PulseAutonomousDirective,
   PulseAutonomousDirectiveUnit,
   PulseAutonomyArtifactSeedInput,
   PulseAgentOrchestrationArtifactSeedInput,
   PulseAutonomySummarySnapshot,
-} from '../../autonomy-loop.types';
+} from '../autonomy-loop.types';
 import {
   DEFAULT_MAX_ITERATIONS,
   DEFAULT_PARALLEL_AGENTS,
   DEFAULT_MAX_WORKER_RETRIES,
-} from '../../autonomy-loop.types';
+} from '../autonomy-loop.types';
 import {
   getAutonomyArtifactPath,
   getAutonomyMemoryArtifactPath,
@@ -29,21 +29,21 @@ import {
   readOptionalArtifact,
   writeAtomicArtifact,
   compact,
-} from '../../autonomy-loop.utils';
+} from '../autonomy-loop.utils';
 import {
   toUnitSnapshot,
   buildStructuralQueueInfluence,
-} from '../../autonomy-loop.unit-ranking/structural-rank';
+} from '../autonomy-loop.unit-ranking/structural-rank';
 import {
   getPreferredAutomationSafeUnits,
   hasUnitConflict,
-} from '../../autonomy-loop.unit-ranking/selection';
-import { buildRuntimeRealityQueueInfluence } from '../../autonomy-loop.unit-ranking/runtime-rank';
-import { buildPulseAutonomyMemoryState } from '../../autonomy-loop.memory';
-import { fingerprintStrategy } from '../../structural-memory/memory-core';
-import type { FalsePositiveAdjudicationState } from '../../types.false-positive-adjudicator';
-import type { RuntimeFusionState } from '../../types.runtime-fusion';
-import type { StructuralMemoryState } from '../../types.structural-memory';
+} from '../autonomy-loop.unit-ranking/selection';
+import { buildRuntimeRealityQueueInfluence } from '../autonomy-loop.unit-ranking/runtime-rank';
+import { buildPulseAutonomyMemoryState } from '../autonomy-loop.memory';
+import { fingerprintStrategy } from '../structural-memory/memory-core';
+import type { FalsePositiveAdjudicationState } from '../types.false-positive-adjudicator';
+import type { RuntimeFusionState } from '../types.runtime-fusion';
+import type { StructuralMemoryState } from '../types.structural-memory';
 
 export function directiveDigest(directive: PulseAutonomousDirective): string {
   const crypto = require('node:crypto') as typeof import('node:crypto');

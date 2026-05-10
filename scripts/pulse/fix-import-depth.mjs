@@ -4,7 +4,7 @@ import { join, dirname, resolve, relative } from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const PULSE_ROOT = resolve(__dirname);
+const PULSE_ROOT = __dirname; // __dirname is already absolute from fileURLToPath
 
 function findAllTsFiles(dir) {
   const files = [];
@@ -17,7 +17,7 @@ function findAllTsFiles(dir) {
           e.name.startsWith('fix-import-') || e.name.startsWith('_eliminate-')) continue;
       if (e.isDirectory()) {
         files.push(...findAllTsFiles(full));
-      } else if (e.endsWith('.ts') || e.endsWith('.tsx')) {
+      } else if (e.name.endsWith('.ts') || e.name.endsWith('.tsx')) {
         files.push(full);
       }
     }
@@ -58,31 +58,31 @@ for (const file of allFiles) {
   // Match all import/export from strings (both single and double quotes)
   const re = /((?:import|export)\b[^"'\n]*?from\s+['"])([^'"]+)('[^'"\n;]*;?)/g;
   let match;
-  const newContent = content.replace(re, (full, prefix, importPath, suffix) => {
-    if (importPath.includes('__parts__')) return full; // shouldn't exist but safety
-    
+  const newContent = content.replace(re, (full, quote, importPath) => {
+    if (importPath.includes('__parts__')) return full;
+
     const resolved = resolveImport(file, importPath);
-    if (resolved) return full; // OK
+    if (resolved) return full;
     
-    // Try reducing ../
+    // Try reducing ../ (for files moved out of __parts__ that are now one level up)
     if (importPath.startsWith('../')) {
       const reduced = importPath.replace(/^\.\.\//, '');
       const reducedResolved = resolveImport(file, reduced);
       if (reducedResolved) {
         fixedImports++;
         changed = true;
-        return `${prefix}${reduced}${suffix}`;
+        return `from ${quote}${reduced}${quote}`;
       }
     }
     
-    // Try adding ../ (for files that might need more depth)
+    // Try adding ../ (for files that still need more depth)
     if (importPath.startsWith('./')) {
       const increased = importPath.replace(/^\.\//, '../');
       const increasedResolved = resolveImport(file, increased);
       if (increasedResolved) {
         fixedImports++;
         changed = true;
-        return `${prefix}${increased}${suffix}`;
+        return `from ${quote}${increased}${quote}`;
       }
     }
     

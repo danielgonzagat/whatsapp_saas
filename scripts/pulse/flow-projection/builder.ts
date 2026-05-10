@@ -1,12 +1,12 @@
 import type {
   PulseFlowProjection,
   PulseFlowProjectionItem,
-} from '../../types.capabilities/04-flow-projection';
-import type { PulseStructuralRole } from '../../types.structural';
-import type { PulseCapabilityDoD } from '../../types.capabilities/02-maturity-dod';
-import { deriveStructuralFamilies, familiesOverlap } from '../../structural-family';
-import { buildObservationFootprint, footprintMatchesFamilies } from '../../execution-observation';
-import { evaluateDone } from '../../definition-of-done';
+} from '../types.capabilities/04-flow-projection';
+import type { PulseStructuralRole } from '../types.structural';
+import type { PulseCapabilityDoD } from '../types.capabilities/02-maturity-dod';
+import { deriveStructuralFamilies, familiesOverlap } from '../structural-family';
+import { buildObservationFootprint, footprintMatchesFamilies } from '../execution-observation';
+import { evaluateDone } from '../definition-of-done';
 import {
   unique,
   clamp,

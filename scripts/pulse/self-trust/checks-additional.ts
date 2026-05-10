@@ -1,18 +1,18 @@
 import * as path from 'path';
-import type { Break } from '../../types.manifest';
-import type { PulseExecutionTrace } from '../../types.evidence';
-import { pathExists, readDir, readTextFile, statPath } from '../../safe-fs';
+import type { Break } from '../types.manifest';
+import type { PulseExecutionTrace } from '../types.evidence';
+import { pathExists, readDir, readTextFile, statPath } from '../safe-fs';
 import {
   runCrossArtifactConsistencyCheck,
   type ConsistencyResult,
-} from '../../cross-artifact-consistency-check';
-import { buildHardcodedFindingAuditArtifact } from '../../hardcoded-finding-audit/artifact-builder';
-import { auditPulseNoHardcodedReality } from '../../no-hardcoded-reality-audit';
-import { verifyExecutionTraceAuditTrail } from '../../execution-trace';
+} from '../cross-artifact-consistency-check';
+import { buildHardcodedFindingAuditArtifact } from '../hardcoded-finding-audit/artifact-builder';
+import { auditPulseNoHardcodedReality } from '../no-hardcoded-reality-audit';
+import { verifyExecutionTraceAuditTrail } from '../execution-trace';
 import {
   deriveUnitValue,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel/catalog-arithmetic';
+} from '../dynamic-reality-kernel/catalog-arithmetic';
 import {
   type SelfTrustCheckpoint,
   checkpointScore,

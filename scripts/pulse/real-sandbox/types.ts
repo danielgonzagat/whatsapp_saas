@@ -1,4 +1,4 @@
-import type { SandboxExecutionResult } from '../../autonomous-executor-policy';
+import type { SandboxExecutionResult } from '../autonomous-executor-policy';
 
 export type RealSandboxPlanStatus = 'ready' | 'blocked';
 export type RealSandboxCommandKind = 'read_only' | 'validation' | 'patch_check' | 'patch_apply';

@@ -1,9 +1,9 @@
 import type {
   PulseCapabilityStatus,
   PulseFlowProjectionStatus,
-} from '../../types.capabilities/01-primitives';
-import type { PulseProductVision } from '../../types.product-vision';
-import { deriveStructuralFamilies, familiesOverlap } from '../../structural-family';
+} from '../types.capabilities/01-primitives';
+import type { PulseProductVision } from '../types.product-vision';
+import { deriveStructuralFamilies, familiesOverlap } from '../structural-family';
 import {
   type BuildProductVisionInput,
   bestStatus,

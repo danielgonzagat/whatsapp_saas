@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as ts from 'typescript';
-import { safeJoin } from '../../safe-path';
+import { safeJoin } from '../safe-path';
 import {
   type ArtifactReferenceIndex,
   type RegisteredArtifactWriter,

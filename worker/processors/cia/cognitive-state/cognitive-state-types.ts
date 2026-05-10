@@ -66,14 +66,14 @@ export interface CustomerCognitiveState {
 
 export interface RecordDecisionOutcomeInput {
   workspaceId: string;
-  contactId?: string;
-  conversationId?: string;
-  phone?: string;
+  contactId?: string | undefined;
+  conversationId?: string | undefined;
+  phone?: string | undefined;
   action: CognitiveActionType | string;
   outcome: string;
-  reward?: number;
-  message?: string;
-  metadata?: Prisma.InputJsonObject;
+  reward?: number | undefined;
+  message?: string | undefined;
+  metadata?: Prisma.InputJsonObject | undefined;
 }
 
 export const BUYING_HINTS = [

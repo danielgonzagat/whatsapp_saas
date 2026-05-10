@@ -5,11 +5,11 @@
  * that statically inspect file contents for observability instrumentation.
  */
 
-import { readFileSafe } from '../../parsers/utils';
+import { readFileSafe } from '../parsers/utils';
 import {
   deriveZeroValue,
   deriveUnitValue,
-} from '../../dynamic-reality-kernel/catalog-arithmetic';
+} from '../dynamic-reality-kernel/catalog-arithmetic';
 import {
   STRUCTURED_LOG_FIELDS,
   containsSimulatedObservabilitySource,
@@ -20,7 +20,7 @@ import type {
   ObservabilityStatus,
   PerFileLoggingEntry,
   LogQuality,
-} from '../../types.observability-coverage';
+} from '../types.observability-coverage';
 
 // ─── Logging ──────────────────────────────────────────────────────────────────
 

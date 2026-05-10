@@ -1,12 +1,12 @@
 import * as path from 'path';
-import { assertWithinRoot } from '../../lib/safe-path';
+import { assertWithinRoot } from '../lib/safe-path';
 import {
   isProtectedFile as isGovernanceProtectedFile,
   type GovernanceBoundary,
-} from '../../scope-state-classify';
-import type { ScopeFileRole, ScopeExecutionMode } from '../../types.scope-engine';
-import { discoverSourceExtensionsFromObservedTypescript } from '../../dynamic-reality-kernel/token-evidence';
-import { deriveStringUnionMembersFromTypeContract } from '../../dynamic-reality-kernel/type-contract-labels';
+} from '../scope-state-classify';
+import type { ScopeFileRole, ScopeExecutionMode } from '../types.scope-engine';
+import { discoverSourceExtensionsFromObservedTypescript } from '../dynamic-reality-kernel/token-evidence';
+import { deriveStringUnionMembersFromTypeContract } from '../dynamic-reality-kernel/type-contract-labels';
 
 export const UNKNOWN_STATUS = 'unknown';
 export const HIGH_CONFIDENCE = 1;

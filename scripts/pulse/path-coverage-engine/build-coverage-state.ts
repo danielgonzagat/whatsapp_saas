@@ -1,15 +1,15 @@
 import * as path from 'path';
-import type { PulseExecutionMatrix, PulseExecutionMatrixPath } from '../../types.execution-matrix';
+import type { PulseExecutionMatrix, PulseExecutionMatrixPath } from '../types.execution-matrix';
 import type {
   PathCoverageExecutionMode,
   PathCoverageEntry,
   PathCoverageState,
-} from '../../types.path-coverage-engine';
-import { buildPathProofPlan } from '../../path-proof-runner/main';
-import { buildPathProofEvidenceArtifact } from '../../path-proof-evidence/main';
-import { readJsonFile, writeTextFile, ensureDir, pathExists } from '../../safe-fs';
-import { safeJoin } from '../../safe-path';
-import { loadGovernanceBoundary } from '../../scope-state-classify';
+} from '../types.path-coverage-engine';
+import { buildPathProofPlan } from '../path-proof-runner/main';
+import { buildPathProofEvidenceArtifact } from '../path-proof-evidence/main';
+import { readJsonFile, writeTextFile, ensureDir, pathExists } from '../safe-fs';
+import { safeJoin } from '../safe-path';
+import { loadGovernanceBoundary } from '../scope-state-classify';
 import {
   _ARTIFACT_NAMES,
   isObservedPassClass,

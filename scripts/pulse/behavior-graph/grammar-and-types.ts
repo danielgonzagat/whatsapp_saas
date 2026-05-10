@@ -1,14 +1,14 @@
-import type { DetectedSourceRoot } from '../../source-root-detector/types';
+import type { DetectedSourceRoot } from '../source-root-detector/types';
 import type {
   BehaviorNode,
   BehaviorValidationRequirement,
   BehaviorDecoratorRole,
   BehaviorClassNameRole,
   GovernedEvidenceMode,
-} from '../../types.behavior-graph';
-import { discoverExternalReceiverTokensFromEvidence } from '../../dynamic-reality-kernel/token-evidence';
-import { discoverSourceExtensionsFromObservedTypescript } from '../../dynamic-reality-kernel/token-evidence';
-import { discoverAllObservedHttpStatusCodes } from '../../dynamic-reality-kernel/catalog-arithmetic';
+} from '../types.behavior-graph';
+import { discoverExternalReceiverTokensFromEvidence } from '../dynamic-reality-kernel/token-evidence';
+import { discoverSourceExtensionsFromObservedTypescript } from '../dynamic-reality-kernel/token-evidence';
+import { discoverAllObservedHttpStatusCodes } from '../dynamic-reality-kernel/catalog-arithmetic';
 
 type BehaviorNodeArtifact = BehaviorNode & {
   governedEvidenceMode: GovernedEvidenceMode;

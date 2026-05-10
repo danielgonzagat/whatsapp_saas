@@ -5,21 +5,21 @@ import type {
   GeneratedPropertyTestInput,
   PropertyTestCase,
   PropertyTestEvidence,
-} from '../../types.property-tester';
-import { ensureDir, readDir } from '../../safe-fs';
-import { safeJoin } from '../../lib/safe-path';
+} from '../types.property-tester';
+import { ensureDir, readDir } from '../safe-fs';
+import { safeJoin } from '../lib/safe-path';
 import {
   deriveCatalogPercentScaleFromObservedCatalog,
   deriveUnitValue,
   deriveZeroValue,
   discoverPropertyPassedStatusFromTypeEvidence,
-} from '../../dynamic-reality-kernel/catalog-arithmetic';
-import { deriveStringUnionMembersFromTypeContract } from '../../dynamic-reality-kernel/type-contract-labels';
+} from '../dynamic-reality-kernel/catalog-arithmetic';
+import { deriveStringUnionMembersFromTypeContract } from '../dynamic-reality-kernel/type-contract-labels';
 import {
   discoverAllObservedArtifactFilenames,
   discoverDirectorySkipHintsFromEvidence,
   discoverSourceExtensionsFromObservedTypescript,
-} from '../../dynamic-reality-kernel/token-evidence';
+} from '../dynamic-reality-kernel/token-evidence';
 
 type GeneratedExpectation = GeneratedPropertyTestInput['expected'];
 

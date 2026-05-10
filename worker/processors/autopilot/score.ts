@@ -1,5 +1,4 @@
 import type { Prisma } from '@prisma/client';
-import { WorkerLogger } from '../../logger';
 import { prisma } from '../../db';
 import { redis } from '../../redis-client';
 import { forEachSequential } from '../../utils/async-sequence';

@@ -1,19 +1,19 @@
-import type { PulseCapability } from '../../types.capabilities/03-capability';
-import type { PulseExecutionEvidence } from '../../types.evidence';
-import type { PulseScopeState } from '../../types.truth.scope';
-import type { PulseStructuralGraph, PulseStructuralRole } from '../../types.structural';
-import type { PulseObservationFootprint } from '../../execution-observation';
+import type { PulseCapability } from '../types.capabilities/03-capability';
+import type { PulseExecutionEvidence } from '../types.evidence';
+import type { PulseScopeState } from '../types.truth.scope';
+import type { PulseStructuralGraph, PulseStructuralRole } from '../types.structural';
+import type { PulseObservationFootprint } from '../execution-observation';
 import {
   deriveRouteFamily,
   deriveStructuralFamilies,
   familiesOverlap,
   slugifyStructural,
-} from '../../structural-family';
-import { footprintMatchesFamilies } from '../../execution-observation';
+} from '../structural-family';
+import { footprintMatchesFamilies } from '../execution-observation';
 import {
   deriveUnitValue,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel/catalog-arithmetic';
+} from '../dynamic-reality-kernel/catalog-arithmetic';
 import {
   buildCapabilityMaturity,
   chooseTruthMode,
@@ -24,20 +24,20 @@ import {
   pickExecutionMode,
   pickOwnerLane,
   unique,
-} from '../../capability-model-helpers/main';
+} from '../capability-model-helpers/main';
 import {
   chooseDominantLabel,
   getNodeRoutePatterns,
   shouldTraverseNeighbor,
-} from '../../capability-model-helpers/graph-helpers';
-import type { PulseCapabilityDoD } from '../../types.capabilities/02-maturity-dod';
-import { evaluateDone } from '../../definition-of-done';
+} from '../capability-model-helpers/graph-helpers';
+import type { PulseCapabilityDoD } from '../types.capabilities/02-maturity-dod';
+import { evaluateDone } from '../definition-of-done';
 import {
   CAPABILITY_REQUIRED_DOD_ROLES,
   buildCapabilityDoDEvidence,
   toDoDStatus,
-} from '../../capability-model.dod';
-import { mergeExistingCapability } from '../../capability-model.merge';
+} from '../capability-model.dod';
+import { mergeExistingCapability } from '../capability-model.merge';
 import {
   isObservedFailedStatus,
   nodeKindExposesInterface,
@@ -46,7 +46,7 @@ import {
   statusIs,
 } from './groups';
 import { collectScenarioResults } from './groups';
-import type { CapabilitySeedGroup } from '../../capability-seed-groups';
+import type { CapabilitySeedGroup } from '../capability-seed-groups';
 
 type PulseStructuralNode = PulseStructuralGraph['nodes'][number];
 type PulseScopeFile = PulseScopeState['files'][number];

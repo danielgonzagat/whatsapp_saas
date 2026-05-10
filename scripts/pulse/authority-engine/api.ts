@@ -1,18 +1,18 @@
 /**
  * Authority Engine — Public API: level determination, transitions, advancement.
  */
-import { resolveRoot } from '../../lib/safe-path';
+import { resolveRoot } from '../lib/safe-path';
 import {
   deriveUnitValue,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel/catalog-arithmetic';
-import type { PulseGateName } from '../../types.manifest';
-import type { PulseCertification } from '../../types.evidence';
+} from '../dynamic-reality-kernel/catalog-arithmetic';
+import type { PulseGateName } from '../types.manifest';
+import type { PulseCertification } from '../types.evidence';
 import type {
   AuthorityLevel,
   AuthorityState,
   AuthorityTransitionGate,
-} from '../../types.authority-engine';
+} from '../types.authority-engine';
 import {
   LEVEL_ORDER,
   loadAuthorityState,

@@ -5,14 +5,14 @@
  * computeProofCoverage, and buildProductionProofState.
  */
 
-import { deriveZeroValue } from '../../dynamic-reality-kernel/catalog-arithmetic';
-import { pathExists, writeTextFile } from '../../safe-fs';
+import { deriveZeroValue } from '../dynamic-reality-kernel/catalog-arithmetic';
+import { pathExists, writeTextFile } from '../safe-fs';
 import type {
   ProductionProof,
   ProductionProofDimension,
   ProductionProofState,
   ProofStatus,
-} from '../../types.production-proof';
+} from '../types.production-proof';
 import {
   RUNTIME_PROBES_FILENAME,
   SCENARIO_EVIDENCE_FILENAME,

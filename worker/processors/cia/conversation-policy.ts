@@ -346,17 +346,17 @@ function buildConversationContextBlock(params: {
 /** Build whats app conversation prompt. */
 export function buildWhatsAppConversationPrompt(params: {
   workspaceName: string;
-  contactName?: string | null;
-  compressedContext?: string | null;
-  productSummary?: string | null;
-  conversationHistory?: string | null;
-  conversationLedger?: string | null;
-  matchedProducts?: string[];
-  cognitiveState?: CustomerCognitiveState | null;
-  listeningSignals?: ActiveListeningSignals | null;
-  deliveryMode?: string;
-  action?: CognitiveActionType | string | null;
-  tactic?: string | null;
+  contactName?: string | null | undefined;
+  compressedContext?: string | null | undefined;
+  productSummary?: string | null | undefined;
+  conversationHistory?: string | null | undefined;
+  conversationLedger?: string | null | undefined;
+  matchedProducts?: string[] | undefined;
+  cognitiveState?: CustomerCognitiveState | null | undefined;
+  listeningSignals?: ActiveListeningSignals | null | undefined;
+  deliveryMode?: string | undefined;
+  action?: CognitiveActionType | string | null | undefined;
+  tactic?: string | null | undefined;
 }): string {
   const state = params.cognitiveState;
   const stage = state?.stage || 'COLD';

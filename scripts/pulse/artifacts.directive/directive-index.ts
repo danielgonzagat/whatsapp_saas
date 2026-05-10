@@ -2,12 +2,12 @@
  * Directive artifact-index builder.
  * Exports: buildArtifactIndex
  */
-import { normalizeCanonicalArtifactValue } from '../../artifacts.queue';
-import { deriveAuthorityState } from '../../artifacts.autonomy/authority';
-import type { PulseArtifactCleanupReport } from '../../artifact-gc';
-import type { PulseArtifactRegistry } from '../../artifact-registry/discovery';
-import type { PulseRunIdentity } from '../../run-identity';
-import type { PulseMachineReadiness } from '../../artifacts.autonomy/types';
+import { normalizeCanonicalArtifactValue } from '../artifacts.queue';
+import { deriveAuthorityState } from '../artifacts.autonomy/authority';
+import type { PulseArtifactCleanupReport } from '../artifact-gc';
+import type { PulseArtifactRegistry } from '../artifact-registry/discovery';
+import type { PulseRunIdentity } from '../run-identity';
+import type { PulseMachineReadiness } from '../artifacts.autonomy/types';
 import { artifactJsonReplacer } from './directive-shared';
 
 export function buildArtifactIndex(

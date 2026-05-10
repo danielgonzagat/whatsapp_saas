@@ -3,45 +3,45 @@ import {
   buildPulseAgentOrchestrationStateSeed,
   buildPulseAutonomyStateSeed,
 } from '../autonomy-loop.state-io/seed-builders';
-import { buildPulseAutonomyMemoryState } from '../../autonomy-loop.memory';
+import { buildPulseAutonomyMemoryState } from '../autonomy-loop.memory';
 import {
   buildArtifactRegistry,
   resolveArtifactRelativePath,
-} from '../../artifact-registry/registry';
-import type { PulseArtifactRegistry } from '../../artifact-registry/discovery';
-import { cleanupPulseArtifacts } from '../../artifact-gc';
-import { buildConvergencePlan } from '../../convergence-plan/plan';
-import { readOptionalJson, writeArtifact } from '../../artifacts.io';
-import { buildPulseMachineReadiness } from '../../artifacts.report/machine-readiness';
-import { buildReport } from '../../artifacts.report/report-build';
-import { buildCertificate } from '../../artifacts.report/certificate-build';
-import { buildDirective } from '../../artifacts.directive/directive-core';
-import { buildArtifactIndex } from '../../artifacts.directive/directive-index';
-import { normalizeCanonicalArtifactValue } from '../../artifacts.queue';
-import { deriveAuthorityState } from '../../artifacts.autonomy/authority';
+} from '../artifact-registry/registry';
+import type { PulseArtifactRegistry } from '../artifact-registry/discovery';
+import { cleanupPulseArtifacts } from '../artifact-gc';
+import { buildConvergencePlan } from '../convergence-plan/plan';
+import { readOptionalJson, writeArtifact } from '../artifacts.io';
+import { buildPulseMachineReadiness } from '../artifacts.report/machine-readiness';
+import { buildReport } from '../artifacts.report/report-build';
+import { buildCertificate } from '../artifacts.report/certificate-build';
+import { buildDirective } from '../artifacts.directive/directive-core';
+import { buildArtifactIndex } from '../artifacts.directive/directive-index';
+import { normalizeCanonicalArtifactValue } from '../artifacts.queue';
+import { deriveAuthorityState } from '../artifacts.autonomy/authority';
 import { buildRuntimeProbesArtifact } from '../runtime-probes/main';
-import { createRunIdentity, type PulseRunIdentity } from '../../run-identity';
-import { buildFindingEventSurface } from '../../finding-event-surface';
-import { synthesizeDiagnosticFromBreaks } from '../../legacy-break-adapter';
-import { buildPulseNoHardcodedRealityState } from '../../no-hardcoded-reality-state';
-import { synthesizeProofPlan } from '../../proof-synthesizer';
+import { createRunIdentity, type PulseRunIdentity } from '../run-identity';
+import { buildFindingEventSurface } from '../finding-event-surface';
+import { synthesizeDiagnosticFromBreaks } from '../legacy-break-adapter';
+import { buildPulseNoHardcodedRealityState } from '../no-hardcoded-reality-state';
+import { synthesizeProofPlan } from '../proof-synthesizer';
 import {
   deriveHttpStatusFromObservedCatalog,
   deriveUnitValue,
   deriveZeroValue,
   discoverAllObservedHttpStatusCodes,
   observeStatusTextLengthFromCatalog,
-} from '../../dynamic-reality-kernel/catalog-arithmetic';
-import { deriveStringUnionMembersFromTypeContract } from '../../dynamic-reality-kernel/type-contract-labels';
+} from '../dynamic-reality-kernel/catalog-arithmetic';
+import { deriveStringUnionMembersFromTypeContract } from '../dynamic-reality-kernel/type-contract-labels';
 import {
   discoverAllObservedArtifactFilenames,
   discoverDirectorySkipHintsFromEvidence,
-} from '../../dynamic-reality-kernel/token-evidence';
+} from '../dynamic-reality-kernel/token-evidence';
 import {
   buildDirectiveContextFabricPatch,
   buildPulseContextFabricBundle,
-} from '../../context-broadcast/fabric';
-import type { PulseAgentOrchestrationState, PulseAutonomyState } from '../../types.autonomy';
+} from '../context-broadcast/fabric';
+import type { PulseAgentOrchestrationState, PulseAutonomyState } from '../types.autonomy';
 import type { PulseArtifactSnapshot, PulseArtifactPaths } from './types';
 
 /**

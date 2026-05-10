@@ -6,9 +6,9 @@ import * as path from 'path';
 import {
   deriveUnitValue,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel/catalog-arithmetic';
-import { deriveStringUnionMembersFromTypeContract } from '../../dynamic-reality-kernel/type-contract-labels';
-import type { DestructiveActionKind, SandboxRiskLevel } from '../../types.safety-sandbox';
+} from '../dynamic-reality-kernel/catalog-arithmetic';
+import { deriveStringUnionMembersFromTypeContract } from '../dynamic-reality-kernel/type-contract-labels';
+import type { DestructiveActionKind, SandboxRiskLevel } from '../types.safety-sandbox';
 
 // ────────────────────────────────────────────────────────────────────────────
 // Internal Interfaces

@@ -1,19 +1,19 @@
 // PULSE — Core Collection, Comparison, and Artifact I/O
 
-import { safeJoin } from '../../safe-path';
-import { ensureDir, pathExists, readJsonFile, writeTextFile } from '../../safe-fs';
+import { safeJoin } from '../safe-path';
+import { ensureDir, pathExists, readJsonFile, writeTextFile } from '../safe-fs';
 import {
   deriveCatalogPercentScaleFromObservedCatalog,
   deriveUnitValue,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel/catalog-arithmetic';
+} from '../dynamic-reality-kernel/catalog-arithmetic';
 import type {
   OtelTrace,
   OtelRuntimeSource,
   OtelRuntimeSourceDetails,
   RuntimeCallGraphEvidence,
-} from '../../types.otel-runtime';
-import type { AstCallGraph } from '../../types.ast-graph';
+} from '../types.otel-runtime';
+import type { AstCallGraph } from '../types.ast-graph';
 import {
   RUNTIME_TRACES_ARTIFACT,
   TRACE_DIFF_ARTIFACT,

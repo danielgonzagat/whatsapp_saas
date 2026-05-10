@@ -1,11 +1,11 @@
 import { createHash } from 'crypto';
 import { readFileSync, statSync } from 'fs';
 import * as path from 'path';
-import type { MerkleNode } from '../../types.merkle-cache';
-import { deriveStringUnionMembersFromTypeContract } from '../../dynamic-reality-kernel/type-contract-labels';
-import { deriveZeroValue } from '../../dynamic-reality-kernel/catalog-arithmetic';
-import { readDir } from '../../safe-fs';
-import { normalizePath } from '../../scope-state.codacy';
+import type { MerkleNode } from '../types.merkle-cache';
+import { deriveStringUnionMembersFromTypeContract } from '../dynamic-reality-kernel/type-contract-labels';
+import { deriveZeroValue } from '../dynamic-reality-kernel/catalog-arithmetic';
+import { readDir } from '../safe-fs';
+import { normalizePath } from '../scope-state.codacy';
 
 export const CACHE_DIR = '.pulse/cache';
 export const DAG_FILE = 'merkle-dag.json';

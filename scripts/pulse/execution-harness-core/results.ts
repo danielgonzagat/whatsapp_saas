@@ -2,9 +2,9 @@ import type {
   HarnessEvidence,
   HarnessExecutionResult,
   HarnessTarget,
-} from '../../types.execution-harness';
-import { safeJoin } from '../../safe-path';
-import { pathExists, readJsonFile } from '../../safe-fs';
+} from '../types.execution-harness';
+import { safeJoin } from '../safe-path';
+import { pathExists, readJsonFile } from '../safe-fs';
 import {
   DB_SEED_FIXTURE,
   harnessArtifactPath,

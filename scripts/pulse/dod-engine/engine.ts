@@ -1,6 +1,6 @@
 import * as fs from 'fs';
-import { ensureDir, pathExists, readTextFile } from '../../safe-fs';
-import { safeJoin, resolveRoot } from '../../lib/safe-path';
+import { ensureDir, pathExists, readTextFile } from '../safe-fs';
+import { safeJoin, resolveRoot } from '../lib/safe-path';
 import type {
   CapabilityDoD,
   DoDCapabilityClassification,
@@ -11,7 +11,7 @@ import type {
   DoDState,
   DoDStateSummary,
   DoDOverallStatus,
-} from '../../types.dod-engine';
+} from '../types.dod-engine';
 import type { PulseCapability, PulseCapabilityState } from '../types.capabilities/03-capability';
 import {
   dodArtifactFile,
@@ -19,7 +19,7 @@ import {
   dodStructuralEvidenceKernelGrammar,
 } from './grammar';
 import type { CheckRequirement } from './grammar';
-import { deriveStringUnionMembersFromTypeContract } from '../../dynamic-reality-kernel/type-contract-labels';
+import { deriveStringUnionMembersFromTypeContract } from '../dynamic-reality-kernel/type-contract-labels';
 import {
   determineRiskLevel,
   zero,

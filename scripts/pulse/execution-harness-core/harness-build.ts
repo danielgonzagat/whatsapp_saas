@@ -1,14 +1,14 @@
 import * as path from 'path';
-import type { BehaviorGraph, BehaviorNode } from '../../types.behavior-graph';
+import type { BehaviorGraph, BehaviorNode } from '../types.behavior-graph';
 import type {
   HarnessEvidence,
   HarnessExecutionResult,
   HarnessExecutionStatus,
-} from '../../types.execution-harness';
-import { detectConfig } from '../../config';
-import { safeJoin } from '../../safe-path';
-import { ensureDir, writeTextFile } from '../../safe-fs';
-import { deriveZeroValue } from '../../dynamic-reality-kernel/catalog-arithmetic';
+} from '../types.execution-harness';
+import { detectConfig } from '../config';
+import { safeJoin } from '../safe-path';
+import { ensureDir, writeTextFile } from '../safe-fs';
+import { deriveZeroValue } from '../dynamic-reality-kernel/catalog-arithmetic';
 import { ALL_ARTIFACTS, harnessArtifactPath, UNEXECUTED_STATUSES } from './grammar';
 import {
   ALL_EXECUTION_STATUS_LABELS,

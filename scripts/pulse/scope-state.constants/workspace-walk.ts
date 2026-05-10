@@ -1,8 +1,8 @@
 import * as path from 'path';
 import { existsSync, readFileSync, readdirSync, statSync } from 'fs';
-import { normalizePath } from '../../scope-state.codacy';
-import { extractLocalFileReferences } from '../../dynamic-reality-grammar';
-import type { PulseScopeSurface } from '../../types.truth.scope';
+import { normalizePath } from '../scope-state.codacy';
+import { extractLocalFileReferences } from '../dynamic-reality-grammar';
+import type { PulseScopeSurface } from '../types.truth.scope';
 
 interface PackageJsonShape {
   name?: string;

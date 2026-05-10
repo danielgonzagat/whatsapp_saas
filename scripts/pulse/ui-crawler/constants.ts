@@ -1,4 +1,4 @@
-import type { CrawlerRole, UIElementKind } from '../../types.ui-crawler';
+import type { CrawlerRole, UIElementKind } from '../types.ui-crawler';
 
 export const FRONTEND_SRC = 'frontend/src';
 export const APP_DIR = 'app';

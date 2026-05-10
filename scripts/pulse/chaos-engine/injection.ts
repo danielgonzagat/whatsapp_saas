@@ -1,16 +1,16 @@
-import type { ChaosScenarioKind, ChaosTarget } from '../../types.chaos-engine';
-import type { PulseCapability } from '../../types.capabilities/03-capability';
-import type { PulseRuntimeEvidence } from '../../types.convergence';
-import type { PulseExecutionTrace } from '../../types.evidence';
+import type { ChaosScenarioKind, ChaosTarget } from '../types.chaos-engine';
+import type { PulseCapability } from '../types.capabilities/03-capability';
+import type { PulseRuntimeEvidence } from '../types.convergence';
+import type { PulseExecutionTrace } from '../types.evidence';
 import { ChaosProviderName, ChaosEvidenceContext, ChaosScenarioSeed, unique } from './detection';
 import { computeProviderBlastRadius } from './blast-radius';
-import { discoverExternalReceiverTokensFromEvidence } from '../../dynamic-reality-kernel/token-evidence';
-import { discoverChaosScenarioKindLabels } from '../../dynamic-reality-kernel/type-contract-engines';
+import { discoverExternalReceiverTokensFromEvidence } from '../dynamic-reality-kernel/token-evidence';
+import { discoverChaosScenarioKindLabels } from '../dynamic-reality-kernel/type-contract-engines';
 import {
   discoverPropertyPassedStatusFromTypeEvidence,
   deriveUnitValue,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel/catalog-arithmetic';
+} from '../dynamic-reality-kernel/catalog-arithmetic';
 
 // ── Injection config generation ───────────────────────────────────────────
 

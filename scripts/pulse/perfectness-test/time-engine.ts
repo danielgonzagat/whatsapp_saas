@@ -5,8 +5,8 @@
 
 import * as path from 'path';
 
-import { pathExists, readJsonFile } from '../../safe-fs';
-import type { PerfectnessLongRunEvidence } from '../../types.perfectness-test';
+import { pathExists, readJsonFile } from '../safe-fs';
+import type { PerfectnessLongRunEvidence } from '../types.perfectness-test';
 import type { PulseAutonomyState } from './evaluation-helpers';
 import { REQUIRED_LONG_RUN_HOURS, MAX_LONG_RUN_GAP_HOURS } from './gate-grammar';
 

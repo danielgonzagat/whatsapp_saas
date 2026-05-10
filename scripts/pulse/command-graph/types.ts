@@ -1,7 +1,7 @@
 import {
   splitIdentifierTokensFromObservedName,
   hasObservedToken,
-} from '../../dynamic-reality-kernel/token-evidence';
+} from '../dynamic-reality-kernel/token-evidence';
 
 const OBSERVED_COMMAND_PURPOSE_TOKEN_CATALOG = [
   'install',

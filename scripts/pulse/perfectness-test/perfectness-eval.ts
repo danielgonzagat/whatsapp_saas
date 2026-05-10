@@ -5,12 +5,12 @@
 
 import * as path from 'path';
 
-import { ensureDir, writeTextFile } from '../../safe-fs';
+import { ensureDir, writeTextFile } from '../safe-fs';
 import type {
   PerfectnessGate,
   PerfectnessResult,
   PerfectnessVerdict,
-} from '../../types.perfectness-test';
+} from '../types.perfectness-test';
 import {
   ARTIFACT_FILE_NAME,
   PERFECTNESS_EVALUATION_KERNEL_GRAMMAR,

@@ -1,10 +1,10 @@
 // PULSE Wave 5 — Scenario Step Generation
 // Part of builder sub-decomposition: dynamic step generation for sub-flows
 
-import { extractRouteFromSurfaceId } from '../../../../dynamic-reality-grammar';
-import { deriveLengthBoundariesFromObservedCatalog } from '../../../../dynamic-reality-kernel/profile-derivations';
-import type { BehaviorNode } from '../../../../types.behavior-graph';
-import type { ScenarioCategory, ScenarioStep } from '../../../../types.scenario-engine';
+import { extractRouteFromSurfaceId } from '../../../dynamic-reality-grammar';
+import { deriveLengthBoundariesFromObservedCatalog } from '../../../dynamic-reality-kernel/profile-derivations';
+import type { BehaviorNode } from '../../../types.behavior-graph';
+import type { ScenarioCategory, ScenarioStep } from '../../../types.scenario-engine';
 import type { ScenarioBuildContext } from '../../queries';
 import {
   _okTextLen,

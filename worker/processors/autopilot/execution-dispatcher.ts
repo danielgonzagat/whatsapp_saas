@@ -5,7 +5,11 @@ import { logFallback, sendEmail } from '../../providers/channel-dispatcher';
 import { log, type UnknownRecord, type QuotedCustomerMessage } from './shared';
 import { logAutopilotAction, buildWorkspaceConfig } from './safeguard';
 import { sendAudioResponse } from './cycle';
-import { isRecentLiveConversation, isExplicitProactiveOutreachAllowed, reportSmokeTest } from './shared';
+import { isRecentLiveConversation, isExplicitProactiveOutreachAllowed } from './shared';
+import {
+  findRecentDuplicateOutbound, dispatchAutonomousReplyPlan,
+  buildAutonomyExecutionKey, beginAutonomyExecution, finishAutonomyExecution,
+} from './cognition';
 import { persistFallbackMessage } from './execution-audit';
 
 export interface DispatchInput {
@@ -28,7 +32,7 @@ export interface DispatchInput {
   usedKb?: boolean | undefined;
   deliveryMode: 'reactive' | 'proactive';
   smokeTestId?: string | undefined;
-  smokeMode?: 'dry-run' | 'live';
+  smokeMode?: 'dry-run' | 'live' | undefined;
   runId?: string | undefined;
   customerMessages?: QuotedCustomerMessage[] | undefined;
   idempotencyContext?: Record<string, unknown> | undefined;
@@ -46,10 +50,10 @@ export interface DispatchResult {
 
 export async function dispatchAutopilotAction(input: DispatchInput): Promise<DispatchResult> {
   const {
-    workspaceId, action, contactId, contactRecord, conversationId,
+    workspaceId, action, contactId, contactRecord,
     phone, chatId, contactName, message, settings, workspaceRecord,
     intent, reason, intentConfidence, usedHistory, usedKb,
-    deliveryMode, smokeTestId, smokeMode, runId, customerMessages,
+    deliveryMode, runId, customerMessages,
     idempotencyContext, latestQuotedMessageId,
     hasEmailFallback, contactEmail, followupEligible, isAudioAction,
   } = input;

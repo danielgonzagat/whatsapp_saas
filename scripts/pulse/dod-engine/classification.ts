@@ -1,11 +1,11 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { pathExists, readTextFile } from '../../safe-fs';
-import { safeJoin, resolveRoot } from '../../lib/safe-path';
-import type { DoDRiskLevel, DoDGate, DoDOverallStatus } from '../../types.dod-engine';
+import { pathExists, readTextFile } from '../safe-fs';
+import { safeJoin, resolveRoot } from '../lib/safe-path';
+import type { DoDRiskLevel, DoDGate, DoDOverallStatus } from '../types.dod-engine';
 import type { PulseCapability } from '../types.capabilities/03-capability';
-import { deriveZeroValue } from '../../dynamic-reality-kernel/catalog-arithmetic';
-import { derivePriorityFromObservedContext } from '../../dynamic-reality-kernel/token-evidence';
+import { deriveZeroValue } from '../dynamic-reality-kernel/catalog-arithmetic';
+import { derivePriorityFromObservedContext } from '../dynamic-reality-kernel/token-evidence';
 
 // ── Risk classification rules ──────────────────────────────────────────────
 

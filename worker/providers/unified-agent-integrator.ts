@@ -203,7 +203,7 @@ const hasUnifiedAgentContentSignals = (messageContent: string): boolean => {
  */
 export function shouldUseUnifiedAgent(params: {
   messageContent: string;
-  leadScore?: number;
+  leadScore?: number | undefined;
   settings?: Record<string, unknown> | null;
 }): boolean {
   const { messageContent, leadScore, settings } = params;

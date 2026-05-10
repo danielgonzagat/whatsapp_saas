@@ -68,9 +68,9 @@ export function normalizeAutonomyLedgerValue(value: unknown): unknown {
 export function buildAutonomyExecutionKey(input: {
   workspaceId: string;
   actionType: string;
-  contactId?: string;
-  conversationId?: string;
-  phone?: string;
+  contactId?: string | undefined;
+  conversationId?: string | undefined;
+  phone?: string | undefined;
   payload: Record<string, unknown>;
 }) {
   const hash = createHash('sha256');
@@ -90,8 +90,8 @@ export function isAutonomyExecutionDuplicate(err: unknown) {
 export async function beginAutonomyExecution(input: {
   workspaceId: string;
   actionType: string;
-  contactId?: string;
-  conversationId?: string;
+  contactId?: string | undefined;
+  conversationId?: string | undefined;
   workItemId?: string | null;
   proofId?: string | null;
   capabilityCode?: string | null;

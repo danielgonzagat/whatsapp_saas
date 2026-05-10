@@ -42,11 +42,11 @@ export interface ScanDecisionInput {
   settings: UnknownRecord;
   workspaceRecord: UnknownRecord;
   smokeTestId?: string;
-  smokeMode: string;
+  smokeMode: 'dry-run' | 'live';
   runId?: string;
-  customerMessages?: { content: string; quotedMessageId?: string; createdAt?: string }[];
-  messageIds?: string[];
-  providerMessageIds?: string[];
+  customerMessages?: { content: string; quotedMessageId?: string | undefined; createdAt?: string | undefined }[];
+  messageIds?: (string | null | undefined)[];
+  providerMessageIds?: (string | null | undefined)[];
   conversationId?: string;
 }
 

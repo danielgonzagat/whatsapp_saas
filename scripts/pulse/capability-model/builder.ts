@@ -7,23 +7,23 @@
 import type {
   PulseCapability,
   PulseCapabilityState,
-} from '../../types.capabilities/03-capability';
-import type { PulseCodacyEvidence, PulseStructuralGraph } from '../../types.structural';
-import type { PulseExecutionEvidence } from '../../types.evidence';
-import type { PulseResolvedManifest } from '../../types.resolved-manifest';
-import type { PulseScopeState } from '../../types.truth.scope';
-import { buildObservationFootprint } from '../../execution-observation';
-import { hasApiCalls } from '../../capability-ui-seeds';
-import { buildFallbackGroups, buildSeedGroups } from '../../capability-seed-groups';
-import { deriveZeroValue } from '../../dynamic-reality-kernel/catalog-arithmetic';
+} from '../types.capabilities/03-capability';
+import type { PulseCodacyEvidence, PulseStructuralGraph } from '../types.structural';
+import type { PulseExecutionEvidence } from '../types.evidence';
+import type { PulseResolvedManifest } from '../types.resolved-manifest';
+import type { PulseScopeState } from '../types.truth.scope';
+import { buildObservationFootprint } from '../execution-observation';
+import { hasApiCalls } from '../capability-ui-seeds';
+import { buildFallbackGroups, buildSeedGroups } from '../capability-seed-groups';
+import { deriveZeroValue } from '../dynamic-reality-kernel/catalog-arithmetic';
 import {
   getNodeFamilies,
   getPrimaryFamily,
   graphTraversalDepthLimit,
   reachableRoutePatternLimit,
   unique,
-} from '../../capability-model-helpers/main';
-import { getNodeRoutePatterns } from '../../capability-model-helpers/graph-helpers';
+} from '../capability-model-helpers/main';
+import { getNodeRoutePatterns } from '../capability-model-helpers/graph-helpers';
 import {
   collectScenarioResults,
   countCapabilityStatus,

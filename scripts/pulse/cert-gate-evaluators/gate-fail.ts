@@ -1,5 +1,5 @@
-import type { PulseGateFailureClass } from '../../types.gate-failure';
-import type { PulseGateResult } from '../../types.evidence';
+import type { PulseGateFailureClass } from '../types.gate-failure';
+import type { PulseGateResult } from '../types.evidence';
 
 export function gateFail(
   reason: string,

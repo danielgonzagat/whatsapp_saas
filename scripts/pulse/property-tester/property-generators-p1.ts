@@ -2,13 +2,13 @@ import { STATUS_CODES } from 'node:http';
 import type {
   GeneratedPropertyTestInput,
   PureFunctionCandidate,
-} from '../../types.property-tester';
+} from '../types.property-tester';
 import {
   deriveCatalogPercentScaleFromObservedCatalog,
   deriveHttpStatusFromObservedCatalog as httpStatus,
   deriveUnitValue,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel/catalog-arithmetic';
+} from '../dynamic-reality-kernel/catalog-arithmetic';
 import { dpe, dfa } from './core';
 import {
   fuzzSampleBudget,

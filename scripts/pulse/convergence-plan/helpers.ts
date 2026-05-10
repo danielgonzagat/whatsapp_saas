@@ -4,10 +4,10 @@ import type {
   PulseConvergenceUnitPriority,
   PulseConvergenceUnitStatus,
   PulseGateFailureClass,
-} from '../../types';
-import { CHECKER_GAP_TYPES, SECURITY_BREAK_TYPE_KERNEL_GRAMMAR } from '../../cert-constants';
-import { isBlockingDynamicFinding, summarizeDynamicFindingEvents } from '../../finding-identity';
-import { deriveUnitValue } from '../../dynamic-reality-kernel';
+} from '../types';
+import { CHECKER_GAP_TYPES, SECURITY_BREAK_TYPE_KERNEL_GRAMMAR } from '../cert-constants';
+import { isBlockingDynamicFinding, summarizeDynamicFindingEvents } from '../finding-identity';
+import { deriveUnitValue } from '../dynamic-reality-kernel';
 
 export function evidenceBatchSize(
   ...collections: Array<{ length: number } | null | undefined>

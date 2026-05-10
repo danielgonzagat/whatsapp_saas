@@ -1,10 +1,10 @@
-import type { PulseStructuralNode, PulseStructuralRole } from '../../types.structural';
+import type { PulseStructuralNode, PulseStructuralRole } from '../types.structural';
 import {
   deriveRouteFamily,
   deriveTextFamily,
   familiesOverlap,
   titleCaseStructural,
-} from '../../structural-family';
+} from '../structural-family';
 
 export function getNodeRoutePatterns(node: PulseStructuralNode): string[] {
   const directPatterns = [

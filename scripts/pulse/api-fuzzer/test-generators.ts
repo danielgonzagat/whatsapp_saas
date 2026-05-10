@@ -10,7 +10,7 @@ import type {
   IdempotencyTestCase,
   RateLimitTestCase,
   SchemaTestCase,
-} from '../../types.api-fuzzer';
+} from '../types.api-fuzzer';
 import {
   PLANNED,
   OK,

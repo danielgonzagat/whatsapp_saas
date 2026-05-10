@@ -1,4 +1,4 @@
-import { deriveUnitValue } from '../../../dynamic-reality-kernel/catalog-arithmetic';
+import { deriveUnitValue } from '../../dynamic-reality-kernel/catalog-arithmetic';
 import { compactCode, lower, includesAny, startsWithAny } from './facade-detector-part1-core';
 
 export function isSetTimeoutStateReset(line: string): boolean {

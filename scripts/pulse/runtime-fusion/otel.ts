@@ -1,12 +1,12 @@
 import * as p from 'path';
-import { pathExists as existsAt, readTextFile } from '../../safe-fs';
-import { unique } from '../../signal-normalizers';
-import type { OtelSpan, RuntimeCallGraphEvidence } from '../../types.otel-runtime';
+import { pathExists as existsAt, readTextFile } from '../safe-fs';
+import { unique } from '../signal-normalizers';
+import type { OtelSpan, RuntimeCallGraphEvidence } from '../types.otel-runtime';
 import type {
   RuntimeSignal,
   RuntimeFusionState,
   RuntimeFusionMachineImprovementSignal,
-} from '../../types.runtime-fusion';
+} from '../types.runtime-fusion';
 import {
   ACTION_LOG_ONLY,
   ACTION_PRIORITIZE,

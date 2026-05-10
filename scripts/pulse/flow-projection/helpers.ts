@@ -1,33 +1,33 @@
 import * as path from 'path';
-import type { PulseCapabilityState } from '../../types.capabilities/03-capability';
-import type { PulseFlowProjectionItem } from '../../types.capabilities/04-flow-projection';
-import type { PulseCodebaseTruth } from '../../types.truth';
-import type { PulseExecutionEvidence } from '../../types.evidence';
-import type { PulseResolvedManifest } from '../../types.resolved-manifest';
-import type { PulseScopeState } from '../../types.truth.scope';
+import type { PulseCapabilityState } from '../types.capabilities/03-capability';
+import type { PulseFlowProjectionItem } from '../types.capabilities/04-flow-projection';
+import type { PulseCodebaseTruth } from '../types.truth';
+import type { PulseExecutionEvidence } from '../types.evidence';
+import type { PulseResolvedManifest } from '../types.resolved-manifest';
+import type { PulseScopeState } from '../types.truth.scope';
 import type {
   PulseStructuralGraph,
   PulseStructuralRole,
   PulseTruthMode,
-} from '../../types.structural';
-import type { PulseActorEvidence } from '../../types.evidence';
+} from '../types.structural';
+import type { PulseActorEvidence } from '../types.evidence';
 import {
   deriveRouteFamily,
   deriveStructuralFamilies,
   familiesOverlap,
   isMeaningfulUiLabel,
   titleCaseStructural,
-} from '../../structural-family';
-import { normalizePath } from '../../scope-state.codacy';
-import { readTextFile } from '../../safe-fs';
-import { safeJoin } from '../../lib/safe-path';
-import type { PulseCapabilityDoD } from '../../types.capabilities/02-maturity-dod';
-import type { PulseDoDStatus } from '../../types.capabilities/01-primitives';
+} from '../structural-family';
+import { normalizePath } from '../scope-state.codacy';
+import { readTextFile } from '../safe-fs';
+import { safeJoin } from '../lib/safe-path';
+import type { PulseCapabilityDoD } from '../types.capabilities/02-maturity-dod';
+import type { PulseDoDStatus } from '../types.capabilities/01-primitives';
 import {
   evaluateDone,
   type CapabilityRoleEvidence,
   type StructuralRole as DoDStructuralRole,
-} from '../../definition-of-done';
+} from '../definition-of-done';
 
 /** Required DoD roles for a runtime-critical user flow. */
 const FLOW_REQUIRED_DOD_ROLES: DoDStructuralRole[] = [

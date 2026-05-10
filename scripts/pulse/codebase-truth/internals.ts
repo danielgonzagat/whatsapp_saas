@@ -1,15 +1,15 @@
-import type { PulseDiscoveredModule, PulseTruthPageSummary } from '../../types.truth';
-import type { PulseManifest, PulseModuleState } from '../../types.manifest';
-import type { PulseShellComplexity } from '../../types.structural';
-import type { PageFunctionalMap } from '../../functional-map-types';
+import type { PulseDiscoveredModule, PulseTruthPageSummary } from '../types.truth';
+import type { PulseManifest, PulseModuleState } from '../types.manifest';
+import type { PulseShellComplexity } from '../types.structural';
+import type { PageFunctionalMap } from '../functional-map-types';
 import {
   deriveUnitValue,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel/catalog-arithmetic';
+} from '../dynamic-reality-kernel/catalog-arithmetic';
 import {
   discoverShellComplexityLabels,
   discoverModuleStateLabels,
-} from '../../dynamic-reality-kernel/type-contract-engines';
+} from '../dynamic-reality-kernel/type-contract-engines';
 import {
   normalizeText,
   tokenize,
@@ -19,7 +19,7 @@ import {
   singularize,
   getRouteSegments,
   buildPageSemanticProfile,
-} from '../../codebase-truth.analysis';
+} from '../codebase-truth.analysis';
 
 export interface ModuleAlias {
   key: string;

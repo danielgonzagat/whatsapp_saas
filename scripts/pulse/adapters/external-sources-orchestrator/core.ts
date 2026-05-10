@@ -2,16 +2,16 @@
  * External sources orchestrator — core types, requiredness, and classification.
  */
 
-import type { PulseCertificationProfile } from '../../../types.health';
+import type { PulseCertificationProfile } from '../../types.health';
 import type {
   PulseExternalAdapterProofBasis,
   PulseExternalAdapterRequirement,
   PulseExternalAdapterStatus,
   PulseExternalSignalSource,
-} from '../../../types.capabilities/01-primitives';
-import type { PulseSignal } from '../../../types.capabilities/05-external-signals';
-import { deriveZeroValue } from '../../../dynamic-reality-kernel/catalog-arithmetic';
-import { safeJoin } from '../../../safe-path';
+} from '../../types.capabilities/01-primitives';
+import type { PulseSignal } from '../../types.capabilities/05-external-signals';
+import { deriveZeroValue } from '../../dynamic-reality-kernel/catalog-arithmetic';
+import { safeJoin } from '../../safe-path';
 import {
   fullProductProfile,
   pulseCoreFinalProfile,
@@ -33,7 +33,7 @@ import {
   readGitHubCliToken,
 } from './helpers';
 import type { ExternalSourceCapabilityEvidence, ExternalSourceCapabilityKind } from './helpers';
-import { discoverCertificationProfileLabels } from '../../../dynamic-reality-kernel/type-contract-engines';
+import { discoverCertificationProfileLabels } from '../../dynamic-reality-kernel/type-contract-engines';
 
 /**
  * Adapter requiredness profile.

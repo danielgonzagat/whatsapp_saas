@@ -4,15 +4,15 @@
 import {
   discoverHarnessExecutionStatusLabels,
   discoverScenarioStatusLabels,
-} from '../../../../dynamic-reality-kernel/type-contract-engines';
-import { discoverPropertyPassedStatusFromTypeEvidence } from '../../../../dynamic-reality-kernel/catalog-arithmetic';
-import { writeTextFile } from '../../../../safe-fs';
-import type { PulseProductSurface } from '../../../../types.product-graph';
+} from '../../../dynamic-reality-kernel/type-contract-engines';
+import { discoverPropertyPassedStatusFromTypeEvidence } from '../../../dynamic-reality-kernel/catalog-arithmetic';
+import { writeTextFile } from '../../../safe-fs';
+import type { PulseProductSurface } from '../../../types.product-graph';
 import type {
   Scenario,
   ScenarioEvidenceState,
   ScenarioStatus,
-} from '../../../../types.scenario-engine';
+} from '../../../types.scenario-engine';
 
 import type { LoadedArtifacts } from '../../queries';
 import type { ScenarioBuildContext } from '../../queries';

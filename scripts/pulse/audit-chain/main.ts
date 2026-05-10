@@ -1,9 +1,9 @@
 import * as path from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
-import { appendTextFile, ensureDir, pathExists, readTextFile, writeTextFile } from '../../safe-fs';
-import { resolveRoot } from '../../lib/safe-path';
-import type { AuditBlock, AuditChain } from '../../types.audit-chain';
+import { appendTextFile, ensureDir, pathExists, readTextFile, writeTextFile } from '../safe-fs';
+import { resolveRoot } from '../lib/safe-path';
+import type { AuditBlock, AuditChain } from '../types.audit-chain';
 import {
   computeBlockHash,
   computeDecisionHash,

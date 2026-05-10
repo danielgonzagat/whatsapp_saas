@@ -10,7 +10,7 @@ import {
 } from './catalog-arithmetic';
 import { deriveStringUnionMembersFromTypeContract } from './type-contract-labels';
 import { discoverConvergenceRiskLevelLabels } from './type-contract-labels';
-import type { PulseConvergenceSource } from '../../types.convergence';
+import type { PulseConvergenceSource } from '../types.convergence';
 
 // ── Enum discovery ─────────────────────────────────────────────────────────
 

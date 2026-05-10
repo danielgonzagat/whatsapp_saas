@@ -10,16 +10,16 @@ import {
   discoverKnownHttpClientMethods,
   discoverRouteSeparatorFromRuntime,
   observeStatusTextLengthFromCatalog,
-} from '../../dynamic-reality-kernel/catalog-arithmetic';
-import { deriveStringUnionMembersFromTypeContract } from '../../dynamic-reality-kernel/type-contract-labels';
-import { discoverAllObservedArtifactFilenames } from '../../dynamic-reality-kernel/token-evidence';
-import { discoverNestjsDecoratorNamesFromTypeEvidence } from '../../dynamic-reality-kernel/evidence-domain';
+} from '../dynamic-reality-kernel/catalog-arithmetic';
+import { deriveStringUnionMembersFromTypeContract } from '../dynamic-reality-kernel/type-contract-labels';
+import { discoverAllObservedArtifactFilenames } from '../dynamic-reality-kernel/token-evidence';
+import { discoverNestjsDecoratorNamesFromTypeEvidence } from '../dynamic-reality-kernel/evidence-domain';
 import {
   discoverAxiosMethodNamesFromRuntimeTypeEvidence,
   discoverBullMQMethodNamesFromRuntimeTypeEvidence,
   discoverPrismaClientMethodNamesFromRuntimeTypeEvidence,
-} from '../../dynamic-runtime-method-evidence';
-import type { OtelRuntimeSource, OtelTraceSummary } from '../../types.otel-runtime';
+} from '../dynamic-runtime-method-evidence';
+import type { OtelRuntimeSource, OtelTraceSummary } from '../types.otel-runtime';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 

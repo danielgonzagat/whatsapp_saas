@@ -7,12 +7,12 @@ import { toPrismaJsonValue } from '../../../utils/prisma-json.util';
 
 interface PersistCognitiveStateInput {
   workspaceId: string;
-  conversationId?: string | null;
-  contactId?: string | null;
-  phone?: string | null;
-  contactName?: string | null;
+  conversationId?: string | null | undefined;
+  contactId?: string | null | undefined;
+  phone?: string | null | undefined;
+  contactName?: string | null | undefined;
   state: CustomerCognitiveState;
-  source?: string;
+  source?: string | undefined;
 }
 
 function normalizeStateForPersist(input: PersistCognitiveStateInput): CustomerCognitiveState {

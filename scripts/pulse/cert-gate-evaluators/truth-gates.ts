@@ -1,8 +1,8 @@
 import type { PulseCapabilityState } from '../types.capabilities/03-capability';
 import type { PulseFlowProjection } from '../types.capabilities/04-flow-projection';
-import type { PulseCodebaseTruth } from '../../types.truth';
-import type { PulseResolvedManifest } from '../../types.resolved-manifest';
-import type { PulseScopeState } from '../../types.truth.scope';
+import type { PulseCodebaseTruth } from '../types.truth';
+import type { PulseResolvedManifest } from '../types.resolved-manifest';
+import type { PulseScopeState } from '../types.truth.scope';
 import { gateFail } from './gate-fail';
 
 /**

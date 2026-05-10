@@ -1,16 +1,16 @@
-import type { Break, PulseGateName } from '../../types.manifest';
+import type { Break, PulseGateName } from '../types.manifest';
 import type { PulseCapabilityState } from '../types.capabilities/03-capability';
-import type { PulseParityGapsArtifact } from '../../types.capabilities.parity';
+import type { PulseParityGapsArtifact } from '../types.capabilities.parity';
 import type { PulseFlowProjection } from '../types.capabilities/04-flow-projection';
-import type { PulseCertification, PulseWorldState } from '../../types.evidence';
-import type { PulseConvergenceOwnerLane, PulseGateFailureClass } from '../../types.gate-failure';
+import type { PulseCertification, PulseWorldState } from '../types.evidence';
+import type { PulseConvergenceOwnerLane, PulseGateFailureClass } from '../types.gate-failure';
 import type {
   PulseConvergenceUnit,
   PulseConvergenceUnitPriority,
   PulseConvergenceUnitStatus,
   PulseEvidenceRecord,
-} from '../../types.convergence';
-import type { PulseScenarioResult } from '../../types.scenario-result';
+} from '../types.convergence';
+import type { PulseScenarioResult } from '../types.scenario-result';
 import {
   OBSERVED_ARTIFACTS,
   OBSERVED_GATES,
@@ -31,14 +31,14 @@ import {
   UNIT_STATUSES,
 } from './kernel';
 import type { BuildPulseConvergencePlanInput, ScenarioPriorityContext } from './kernel';
-import { CHECKER_GAP_TYPES, SECURITY_FINDING_EVENT_KERNEL_GRAMMAR } from '../../cert-constants';
-import { isBlockingDynamicFinding, summarizeDynamicFindingEvents } from '../../finding-identity';
+import { CHECKER_GAP_TYPES, SECURITY_FINDING_EVENT_KERNEL_GRAMMAR } from '../cert-constants';
+import { isBlockingDynamicFinding, summarizeDynamicFindingEvents } from '../finding-identity';
 import {
   discoverGateLaneFromObservedStructure,
   derivePriorityFromObservedContext,
   deriveProductImpactFromObservedScope,
-} from '../../dynamic-reality-kernel/token-evidence';
-import { deriveUnitValue } from '../../dynamic-reality-kernel/catalog-arithmetic';
+} from '../dynamic-reality-kernel/token-evidence';
+import { deriveUnitValue } from '../dynamic-reality-kernel/catalog-arithmetic';
 
 export function evidenceBatchSize(
   ...collections: Array<{ length: number } | null | undefined>

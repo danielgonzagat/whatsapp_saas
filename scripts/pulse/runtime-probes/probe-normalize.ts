@@ -3,7 +3,7 @@ import type {
   PulseRuntimeProbeArtifactSource,
   PulseRuntimeProbeArtifactStatus,
   PulseRuntimeProbeFreshness,
-} from '../../types.runtime-probes';
+} from '../types.runtime-probes';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);

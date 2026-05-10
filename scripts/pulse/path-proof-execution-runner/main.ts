@@ -5,7 +5,7 @@ import {
   isProtectedFile as isGovernanceProtectedFile,
   loadGovernanceBoundary,
   normalizePath,
-} from '../../scope-state-classify';
+} from '../scope-state-classify';
 import { evaluatePathProofCommandPolicy } from './command-policy';
 import type { ParsedPathProofCommand } from './command-policy';
 

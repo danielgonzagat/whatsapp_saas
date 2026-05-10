@@ -1,12 +1,12 @@
 import * as path from 'path';
 import * as ts from 'typescript';
-import type { FacadeEntry } from '../../../types.core';
+import type { FacadeEntry } from '../../types.core';
 import { buildParserDiagnosticBreak } from '../../diagnostic-break';
 import {
   deriveUnitValue,
   deriveZeroValue,
   deriveCatalogPercentScaleFromObservedCatalog,
-} from '../../../dynamic-reality-kernel/catalog-arithmetic';
+} from '../../dynamic-reality-kernel/catalog-arithmetic';
 
 export interface FunctionRange {
   startLine: number;

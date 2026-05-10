@@ -1,13 +1,13 @@
-import type { PulseExecutionMatrix, PulseExecutionMatrixPath } from '../../types.execution-matrix';
+import type { PulseExecutionMatrix, PulseExecutionMatrixPath } from '../types.execution-matrix';
 import type {
   PathCoverageEntry,
   PathCoverageExpectedEvidence,
   PathCoverageState,
-} from '../../types.path-coverage-engine';
-import { ensureDir, pathExists, readJsonFile, writeTextFile } from '../../safe-fs';
-import { safeJoin } from '../../safe-path';
+} from '../types.path-coverage-engine';
+import { ensureDir, pathExists, readJsonFile, writeTextFile } from '../safe-fs';
+import { safeJoin } from '../safe-path';
 import { isTerminalProofCandidate, buildPathProofTask } from './task-builders';
-import { loadGovernanceBoundary } from '../../scope-state-classify';
+import { loadGovernanceBoundary } from '../scope-state-classify';
 
 export type PathProofTaskMode =
   | 'endpoint'

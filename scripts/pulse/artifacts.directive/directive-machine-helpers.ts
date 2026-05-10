@@ -2,26 +2,26 @@
  * Directive machine-work internal helpers — registry evidence, gate classification,
  * and unit title builders. NOT re-exported from the shim.
  */
-import { unique } from '../../artifacts.io';
-import { deriveZeroValue } from '../../dynamic-reality-kernel/catalog-arithmetic';
-import { discoverGateFailureClassLabels } from '../../dynamic-reality-kernel/type-contract-labels';
-import { buildArtifactRegistry } from '../../artifact-registry/registry';
-import { normalizeArtifactExecutionMode } from '../../artifacts.queue';
-import { deriveRequiredValidations } from '../../autonomy-decision';
+import { unique } from '../artifacts.io';
+import { deriveZeroValue } from '../dynamic-reality-kernel/catalog-arithmetic';
+import { discoverGateFailureClassLabels } from '../dynamic-reality-kernel/type-contract-labels';
+import { buildArtifactRegistry } from '../artifact-registry/registry';
+import { normalizeArtifactExecutionMode } from '../artifacts.queue';
+import { deriveRequiredValidations } from '../autonomy-decision';
 import {
   buildPreconditions,
   buildAllowedActions,
   buildForbiddenActions,
   buildSuccessCriteria,
-} from '../../artifacts.directive.helpers';
+} from '../artifacts.directive.helpers';
 import type {
   PulseArtifactDefinition,
   PulseArtifactRegistry,
-} from '../../artifact-registry/discovery';
-import type { PulseArtifactSnapshot, PulseMachineReadiness } from '../../artifacts.types';
-import type { QueueUnit } from '../../artifacts.queue';
-import type { PulseGateName } from '../../types.manifest';
-import type { PulseGateResult } from '../../types.evidence';
+} from '../artifact-registry/discovery';
+import type { PulseArtifactSnapshot, PulseMachineReadiness } from '../artifacts.types';
+import type { QueueUnit } from '../artifacts.queue';
+import type { PulseGateName } from '../types.manifest';
+import type { PulseGateResult } from '../types.evidence';
 import {
   buildDefaultExitCriteria,
   OBSERVED_ARTIFACT_FILENAMES,

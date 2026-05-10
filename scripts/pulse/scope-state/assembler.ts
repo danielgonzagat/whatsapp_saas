@@ -1,12 +1,12 @@
-import { buildArtifactRegistry } from '../../artifact-registry/registry';
-import { buildCodacySummary, normalizePath } from '../../scope-state.codacy';
-import { isUnknownFile } from '../../scope-state.classify';
+import { buildArtifactRegistry } from '../artifact-registry/registry';
+import { buildCodacySummary, normalizePath } from '../scope-state.codacy';
+import { isUnknownFile } from '../scope-state.classify';
 import type {
   PulseScopeFile,
   PulseScopeExcludedFile,
   PulseScopeState,
   PulseScopeSurface,
-} from '../../types.truth.scope';
+} from '../types.truth.scope';
 import {
   createKindCountRecord,
   createSurfaceCountRecord,

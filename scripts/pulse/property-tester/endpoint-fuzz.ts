@@ -1,22 +1,22 @@
-import type { FuzzStrategy, FuzzTestCase } from '../../types.property-tester';
+import type { FuzzStrategy, FuzzTestCase } from '../types.property-tester';
 import {
   isObservedDestructiveMethod,
   isObservedMutatingMethod,
   observedMethodAcceptsBody,
-} from '../../dynamic-reality-grammar';
+} from '../dynamic-reality-grammar';
 import {
   deriveEndpointRiskFromObservedProfile,
   deriveExpectedStatusCodesFromObservedProfile,
   deriveStrategyWeightFromObservedProfile,
-} from '../../dynamic-reality-kernel/profile-derivations';
+} from '../dynamic-reality-kernel/profile-derivations';
 import {
   deriveUnitValue,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel/catalog-arithmetic';
+} from '../dynamic-reality-kernel/catalog-arithmetic';
 import {
   hasObservedToken,
   splitIdentifierTokensFromObservedName,
-} from '../../dynamic-reality-kernel/token-evidence';
+} from '../dynamic-reality-kernel/token-evidence';
 import { addExpectedStatus, hasQueryParameter, isStringEvidence } from './core';
 
 type EndpointRisk = 'high' | 'medium' | 'low';

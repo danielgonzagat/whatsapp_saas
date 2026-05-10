@@ -1,17 +1,17 @@
-import type { PulseStructuralGraph, PulseStructuralNode } from '../../types.structural';
-import type { PulseScopeState } from '../../types.truth.scope';
-import type { PulseResolvedManifest } from '../../types.resolved-manifest';
+import type { PulseStructuralGraph, PulseStructuralNode } from '../types.structural';
+import type { PulseScopeState } from '../types.truth.scope';
+import type { PulseResolvedManifest } from '../types.resolved-manifest';
 import {
   deriveHttpStatusFromObservedCatalog,
   deriveUnitValue,
   deriveZeroValue,
   observeStatusTextLengthFromCatalog,
-} from '../../dynamic-reality-kernel/catalog-arithmetic';
+} from '../dynamic-reality-kernel/catalog-arithmetic';
 import {
   deriveRouteFamily,
   deriveStructuralFamilies,
   slugifyStructural,
-} from '../../structural-family';
+} from '../structural-family';
 import {
   type ArtifactLayer,
   _EVIDENCE_KIND,

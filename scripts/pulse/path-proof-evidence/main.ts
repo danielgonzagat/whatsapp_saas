@@ -1,5 +1,5 @@
-import { ensureDir, pathExists, readJsonFile, writeTextFile } from '../../safe-fs';
-import { safeJoin } from '../../safe-path';
+import { ensureDir, pathExists, readJsonFile, writeTextFile } from '../safe-fs';
+import { safeJoin } from '../safe-path';
 import type { PathProofExecutionResult } from '../path-proof-execution-runner/main';
 import type { PathProofPlan, PathProofTask } from '../path-proof-runner/main';
 import { buildEvidenceEntry, summarize } from './evidence-builder';

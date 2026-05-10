@@ -1,5 +1,5 @@
 import * as path from 'path';
-import type { BehaviorGraph, BehaviorNode } from '../../types.behavior-graph';
+import type { BehaviorGraph, BehaviorNode } from '../types.behavior-graph';
 import type {
   ExecutionFeasibility,
   HarnessEvidence,
@@ -7,9 +7,9 @@ import type {
   HarnessFixtureKind,
   HarnessTarget,
   HarnessTargetKind,
-} from '../../types.execution-harness';
-import { safeJoin } from '../../safe-path';
-import { pathExists, readJsonFile, readTextFile } from '../../safe-fs';
+} from '../types.execution-harness';
+import { safeJoin } from '../safe-path';
+import { pathExists, readJsonFile, readTextFile } from '../safe-fs';
 import {
   ALL_ARTIFACTS,
   constructorMemberName,

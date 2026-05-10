@@ -13,9 +13,9 @@ export async function loadCustomerCognitiveState(
   prisma: PrismaClient,
   input: {
     workspaceId: string;
-    conversationId?: string | null;
-    contactId?: string | null;
-    phone?: string | null;
+    conversationId?: string | null | undefined;
+    contactId?: string | null | undefined;
+    phone?: string | null | undefined;
   },
 ): Promise<CustomerCognitiveState | null> {
   if (!prisma?.kloelMemory?.findUnique) {

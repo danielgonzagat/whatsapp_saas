@@ -1,7 +1,7 @@
 import * as path from 'path';
-import type { HarnessTarget } from '../../types.execution-harness';
-import { walkFiles } from '../../parsers/utils';
-import { pathExists, readTextFile } from '../../safe-fs';
+import type { HarnessTarget } from '../types.execution-harness';
+import { walkFiles } from '../parsers/utils';
+import { pathExists, readTextFile } from '../safe-fs';
 import { infrastructureAliasNames, nonCallableMemberNames } from './grammar';
 import { measureParenBalance } from './helpers';
 

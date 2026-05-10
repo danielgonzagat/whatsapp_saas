@@ -1,9 +1,5 @@
-import { WorkerLogger } from '../../logger';
-import { prisma } from '../../db';
 import { unifiedWhatsAppProvider as whatsappApiProvider } from '../../providers/unified-whatsapp-provider';
 import {
-  log,
-  normalizeJsonObject,
   type UnknownRecord,
   type WorkspaceSelfIdentity,
   WORKSPACE_SELF_IDENTITY_TTL_MS,
@@ -135,8 +131,8 @@ export function isWorkspaceSelfPhone(
 }
 
 export function isWorkspaceSelfTarget(input: {
-  phone?: string | null;
-  chatId?: string | null;
+  phone?: string | null | undefined;
+  chatId?: string | null | undefined;
   selfIdentity?: WorkspaceSelfIdentity | null;
 }): boolean {
   const selfIdentity = input.selfIdentity;

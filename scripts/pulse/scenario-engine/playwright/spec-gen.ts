@@ -1,14 +1,14 @@
 // PULSE Wave 5 — Playwright Spec & Evidence Generator
 // Sub-part: spec generation, evidence links, preconditions, step builder
 
-import { deriveHttpStatusFromObservedCatalog } from '../../../../dynamic-reality-kernel/catalog-arithmetic';
+import { deriveHttpStatusFromObservedCatalog } from '../../../dynamic-reality-kernel/catalog-arithmetic';
 import {
   isObservedMutatingMethod,
   toPlaywrightHttpMethod,
-} from '../../../../dynamic-reality-grammar';
-import type { BehaviorNode } from '../../../../types.behavior-graph';
-import type { EntityLifecycle } from '../../../../types.dataflow-engine';
-import type { HarnessTarget } from '../../../../types.execution-harness';
+} from '../../../dynamic-reality-grammar';
+import type { BehaviorNode } from '../../../types.behavior-graph';
+import type { EntityLifecycle } from '../../../types.dataflow-engine';
+import type { HarnessTarget } from '../../../types.execution-harness';
 import type {
   ScenarioCategory,
   ScenarioEvidenceLink,
@@ -16,7 +16,7 @@ import type {
   ScenarioRole,
   ScenarioStep,
   ScenarioStepKind,
-} from '../../../../types.scenario-engine';
+} from '../../../types.scenario-engine';
 import {
   _scale,
   _unit,

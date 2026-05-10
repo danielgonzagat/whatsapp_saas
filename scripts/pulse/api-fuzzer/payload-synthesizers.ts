@@ -5,7 +5,7 @@
  * mass assignment, SQL injection, XSS, operator injection, IDOR, and
  * open redirect testing.
  */
-import type { APIEndpointProbe } from '../../types.api-fuzzer';
+import type { APIEndpointProbe } from '../types.api-fuzzer';
 import { deriveZeroValue, deriveUnitValue, parseRouteParameters, uniqueStrings } from './constants';
 import { schemaFieldsFromEndpoint, sampleValueForFieldType } from './dto-parser';
 

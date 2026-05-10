@@ -1,14 +1,14 @@
-import { safeJoin } from '../../safe-path';
+import { safeJoin } from '../safe-path';
 import * as path from 'path';
 import type {
   PulseConfig,
   PulseParserContract,
   PulseParserDefinition,
   PulseParserInventory,
-} from '../../types.manifest';
-import { loadPlugin } from '../../plugin-system/main';
-import { discoverPlugins } from '../../plugin-system/schema-discovery';
-import { deriveZeroValue } from '../../dynamic-reality-kernel/catalog-arithmetic';
+} from '../types.manifest';
+import { loadPlugin } from '../plugin-system/main';
+import { discoverPlugins } from '../plugin-system/schema-discovery';
+import { deriveZeroValue } from '../dynamic-reality-kernel/catalog-arithmetic';
 import {
   getOperationalMetadata,
   operationalMetadataFromPluginDefinition,

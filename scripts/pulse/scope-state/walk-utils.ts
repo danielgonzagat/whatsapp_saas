@@ -1,14 +1,14 @@
 import * as path from 'path';
-import { pathExists, readDir, readTextFile } from '../../safe-fs';
-import { safeJoin } from '../../lib/safe-path';
-import type { PulseCodacySummary } from '../../types.truth.codacy';
-import type { PulseScopeExcludedFile, PulseScopeFile } from '../../types.truth.scope';
+import { pathExists, readDir, readTextFile } from '../safe-fs';
+import { safeJoin } from '../lib/safe-path';
+import type { PulseCodacySummary } from '../types.truth.codacy';
+import type { PulseScopeExcludedFile, PulseScopeFile } from '../types.truth.scope';
 import {
   IGNORED_DIRECTORIES,
   ROOT_CONFIG_FILES,
   SCANNABLE_EXTENSIONS,
-} from '../../scope-state.constants/main';
-import { normalizePath } from '../../scope-state.codacy';
+} from '../scope-state.constants/main';
+import { normalizePath } from '../scope-state.codacy';
 import {
   classifyExcludeReason,
   classifyKind,
@@ -17,7 +17,7 @@ import {
   classifySurface,
   isRuntimeCritical,
   isUserFacing,
-} from '../../scope-state.classify';
+} from '../scope-state.classify';
 
 /**
  * Resolve `segments` against `rootDir`, asserting the result lives inside the

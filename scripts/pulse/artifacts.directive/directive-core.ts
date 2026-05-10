@@ -2,32 +2,32 @@
  * Directive core — main buildDirective function orchestrating all other builders.
  * Exports: buildDirective
  */
-import { unique } from '../../artifacts.io';
-import { deriveZeroValue } from '../../dynamic-reality-kernel/catalog-arithmetic';
-import { discoverConvergenceExecutionModeLabels } from '../../__kernel_additions__/discoverConvergenceExecutionModeLabels';
+import { unique } from '../artifacts.io';
+import { deriveZeroValue } from '../dynamic-reality-kernel/catalog-arithmetic';
+import { discoverConvergenceExecutionModeLabels } from '../__kernel_additions__/discoverConvergenceExecutionModeLabels';
 import {
   buildDecisionQueue,
   buildAutonomyQueue,
   normalizeArtifactExecutionMode,
   normalizeCanonicalArtifactValue,
-} from '../../artifacts.queue';
+} from '../artifacts.queue';
 import {
   buildPulseMachineReadiness,
   getProductFacingCapabilities,
-} from '../../artifacts.report/machine-readiness';
-import { deriveAuthorityState } from '../../artifacts.autonomy/authority';
-import { buildAutonomyReadiness } from '../../artifacts.autonomy/readiness';
-import { buildAutonomyProof } from '../../artifacts.autonomy/autonomy-proof';
-import { buildFindingEventSurface } from '../../finding-event-surface';
+} from '../artifacts.report/machine-readiness';
+import { deriveAuthorityState } from '../artifacts.autonomy/authority';
+import { buildAutonomyReadiness } from '../artifacts.autonomy/readiness';
+import { buildAutonomyProof } from '../artifacts.autonomy/autonomy-proof';
+import { buildFindingEventSurface } from '../finding-event-surface';
 import {
   formatNoHardcodedRealityBlocker,
   hasNoHardcodedRealityBlocker,
   summarizeNoHardcodedRealityState,
   type PulseNoHardcodedRealityState,
-} from '../../no-hardcoded-reality-state';
-import type { PulseArtifactSnapshot, PulseMachineReadiness } from '../../artifacts.types';
-import type { PulseAutonomyState } from '../../types.autonomy';
-import type { PulseConvergencePlan } from '../../types.convergence';
+} from '../no-hardcoded-reality-state';
+import type { PulseArtifactSnapshot, PulseMachineReadiness } from '../artifacts.types';
+import type { PulseAutonomyState } from '../types.autonomy';
+import type { PulseConvergencePlan } from '../types.convergence';
 import {
   readCurrentPulseArtifact,
   artifactJsonReplacer,

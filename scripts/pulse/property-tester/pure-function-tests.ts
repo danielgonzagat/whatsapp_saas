@@ -4,13 +4,13 @@ import type {
   GeneratedPropertyTestInput,
   PropertyKind,
   PureFunctionCandidate,
-} from '../../types.property-tester';
-import { deriveFuzzStrategyFromObservedPropertyShape } from '../../dynamic-reality-kernel/profile-derivations';
+} from '../types.property-tester';
+import { deriveFuzzStrategyFromObservedPropertyShape } from '../dynamic-reality-kernel/profile-derivations';
 import {
   derivePropertyKindsFromObservedCategory,
   deriveUnitValue,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel/catalog-arithmetic';
+} from '../dynamic-reality-kernel/catalog-arithmetic';
 import { fallbackGeneratedPath, dpe, dfa } from './core';
 import { discoverPureFunctionCandidates } from './pure-function-discovery';
 import {

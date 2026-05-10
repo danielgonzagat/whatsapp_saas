@@ -8,26 +8,26 @@
  * Stores artifact at `.pulse/current/PULSE_HARNESS_EVIDENCE.json`.
  */
 
-import type { HarnessFixtureKind, HarnessTargetKind } from '../../types.execution-harness';
+import type { HarnessFixtureKind, HarnessTargetKind } from '../types.execution-harness';
 import * as fs from 'node:fs';
-import { deriveStringUnionMembersFromTypeContract } from '../../dynamic-reality-kernel/type-contract-labels';
+import { deriveStringUnionMembersFromTypeContract } from '../dynamic-reality-kernel/type-contract-labels';
 import {
   deriveUnitValue,
   deriveZeroValue,
   discoverPropertyPassedStatusFromTypeEvidence,
   discoverPropertyUnexecutedStatusFromExecutionEvidence,
-} from '../../dynamic-reality-kernel/catalog-arithmetic';
+} from '../dynamic-reality-kernel/catalog-arithmetic';
 import {
   discoverAllObservedArtifactFilenames,
   discoverDirectorySkipHintsFromEvidence,
   discoverExternalReceiverTokensFromEvidence,
-} from '../../dynamic-reality-kernel/token-evidence';
-import { discoverConvergenceExecutionModeLabels } from '../../__kernel_additions__/discoverConvergenceExecutionModeLabels';
-import { discoverHarnessTargetKindLabels } from '../../dynamic-reality-kernel/type-contract-engines';
+} from '../dynamic-reality-kernel/token-evidence';
+import { discoverConvergenceExecutionModeLabels } from '../__kernel_additions__/discoverConvergenceExecutionModeLabels';
+import { discoverHarnessTargetKindLabels } from '../dynamic-reality-kernel/type-contract-engines';
 import {
   discoverMutatingHttpVerbsFromSourceEvidence,
   discoverReservedJsKeywordsFromRuntimeEvidence,
-} from '../../dynamic-runtime-method-evidence';
+} from '../dynamic-runtime-method-evidence';
 
 // ─── Structural Grammar ─────────────────────────────────────────────────────
 

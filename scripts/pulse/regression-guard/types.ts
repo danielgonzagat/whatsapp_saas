@@ -1,4 +1,4 @@
-import type { PulseExecutionMatrixSummary } from '../../types.execution-matrix';
+import type { PulseExecutionMatrixSummary } from '../types.execution-matrix';
 
 /** Snapshot of key Pulse health metrics captured at a point in time. */
 export interface PulseSnapshot {

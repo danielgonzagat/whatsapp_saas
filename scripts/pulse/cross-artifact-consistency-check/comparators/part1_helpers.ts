@@ -9,10 +9,10 @@ import {
   deriveUnitValue,
   deriveZeroValue,
   discoverRouteSeparatorFromRuntime,
-} from '../../../dynamic-reality-kernel/catalog-arithmetic';
-import { discoverAllObservedArtifactFilenames } from '../../../dynamic-reality-kernel/token-evidence';
-import { discoverConvergenceExecutionModeLabels } from '../../../__kernel_additions__/discoverConvergenceExecutionModeLabels';
-import { discoverGateFailureClassLabels } from '../../../dynamic-reality-kernel/type-contract-labels';
+} from '../../dynamic-reality-kernel/catalog-arithmetic';
+import { discoverAllObservedArtifactFilenames } from '../../dynamic-reality-kernel/token-evidence';
+import { discoverConvergenceExecutionModeLabels } from '../../__kernel_additions__/discoverConvergenceExecutionModeLabels';
+import { discoverGateFailureClassLabels } from '../../dynamic-reality-kernel/type-contract-labels';
 
 export interface DirectiveUnitView {
   id?: string;

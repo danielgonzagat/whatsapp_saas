@@ -2,7 +2,7 @@ import type {
   ExecutionFeasibility,
   HarnessGeneratedTest,
   HarnessTarget,
-} from '../../types.execution-harness';
+} from '../types.execution-harness';
 import {
   CRO_KIND_LABEL,
   GOVERNED_EXECUTION_MODE,

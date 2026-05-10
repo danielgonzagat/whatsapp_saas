@@ -1,5 +1,5 @@
-import type { PulseConfig } from '../../types.manifest';
-import type { PulseStructuralGraph } from '../../types.structural';
+import type { PulseConfig } from '../types.manifest';
+import type { PulseStructuralGraph } from '../types.structural';
 import type { FullScanOptions } from './types';
 import {
   PASSED,
@@ -9,38 +9,38 @@ import {
   derivePerfectnessSummary,
 } from './types';
 import * as path from 'path';
-import { ensureDir, writeTextFile } from '../../safe-fs';
-import { deriveZeroValue } from '../../dynamic-reality-kernel/catalog-arithmetic';
-import { buildAstCallGraph } from '../../ast-graph/call-graph';
-import { buildScopeEngineState } from '../../scope-engine/engine';
-import { generateBehaviorGraph } from '../../behavior-graph/graph-builder';
-import { buildMerkleDag } from '../../merkle-cache/dag-build';
-import { collectRuntimeTraces } from '../../otel-runtime/collection';
-import { buildRuntimeFusionState } from '../../runtime-fusion/builder';
-import { buildPropertyTestEvidence } from '../../property-tester/build-evidence';
-import { buildExecutionHarness } from '../../execution-harness-core/harness-build';
-import { buildUICrawlerCatalog } from '../../ui-crawler/catalog';
-import { buildAPIFuzzCatalog } from '../../api-fuzzer/fuzzer';
-import { buildDataflowState } from '../../dataflow-engine/builder';
-import { buildContractTestEvidence } from '../../contract-tester/part2_main';
-import { buildDoDEngineState } from '../../dod-engine';
-import { buildObservabilityCoverage } from '../../observability-coverage/builder';
-import { buildScenarioCatalog } from '../../scenario-engine/builder/core';
-import { buildReplayState } from '../../replay-adapter/main';
-import { buildProductionProofState } from '../../production-proof/engine';
-import { buildChaosCatalog } from '../../chaos-engine/scenarios';
-import { buildPathCoverageState } from '../../path-coverage-engine/build-coverage-state';
-import { writePulseCommandGraphArtifact } from '../../command-graph-artifact';
-import { buildProofSynthesisState } from '../../proof-synthesis';
-import { buildProbabilisticRisk } from '../../probabilistic-risk/engine';
-import { buildStructuralMemory } from '../../structural-memory/memory-patterns';
-import { buildFPAdjudicationState } from '../../false-positive-adjudicator';
-import { evaluateAuthorityState } from '../../authority-engine/api';
-import { buildAuditChain } from '../../audit-chain/main';
-import { checkGitNexusFreshness } from '../../gitnexus-freshness';
-import { loadPluginRegistry } from '../../plugin-system/main';
-import { buildSandboxState } from '../../safety-sandbox/sandbox';
-import { evaluatePerfectness } from '../../perfectness-test/perfectness-eval';
+import { ensureDir, writeTextFile } from '../safe-fs';
+import { deriveZeroValue } from '../dynamic-reality-kernel/catalog-arithmetic';
+import { buildAstCallGraph } from '../ast-graph/call-graph';
+import { buildScopeEngineState } from '../scope-engine/engine';
+import { generateBehaviorGraph } from '../behavior-graph/graph-builder';
+import { buildMerkleDag } from '../merkle-cache/dag-build';
+import { collectRuntimeTraces } from '../otel-runtime/collection';
+import { buildRuntimeFusionState } from '../runtime-fusion/builder';
+import { buildPropertyTestEvidence } from '../property-tester/build-evidence';
+import { buildExecutionHarness } from '../execution-harness-core/harness-build';
+import { buildUICrawlerCatalog } from '../ui-crawler/catalog';
+import { buildAPIFuzzCatalog } from '../api-fuzzer/fuzzer';
+import { buildDataflowState } from '../dataflow-engine/builder';
+import { buildContractTestEvidence } from '../contract-tester/part2_main';
+import { buildDoDEngineState } from '../dod-engine';
+import { buildObservabilityCoverage } from '../observability-coverage/builder';
+import { buildScenarioCatalog } from '../scenario-engine/builder/core';
+import { buildReplayState } from '../replay-adapter/main';
+import { buildProductionProofState } from '../production-proof/engine';
+import { buildChaosCatalog } from '../chaos-engine/scenarios';
+import { buildPathCoverageState } from '../path-coverage-engine/build-coverage-state';
+import { writePulseCommandGraphArtifact } from '../command-graph-artifact';
+import { buildProofSynthesisState } from '../proof-synthesis';
+import { buildProbabilisticRisk } from '../probabilistic-risk/engine';
+import { buildStructuralMemory } from '../structural-memory/memory-patterns';
+import { buildFPAdjudicationState } from '../false-positive-adjudicator';
+import { evaluateAuthorityState } from '../authority-engine/api';
+import { buildAuditChain } from '../audit-chain/main';
+import { checkGitNexusFreshness } from '../gitnexus-freshness';
+import { loadPluginRegistry } from '../plugin-system/main';
+import { buildSandboxState } from '../safety-sandbox/sandbox';
+import { evaluatePerfectness } from '../perfectness-test/perfectness-eval';
 
 export async function runPerfectnessScan(
   config: PulseConfig,

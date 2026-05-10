@@ -1,5 +1,5 @@
-import type { ChaosTarget } from '../../types.chaos-engine';
-import type { PulseCapability } from '../../types.capabilities/03-capability';
+import type { ChaosTarget } from '../types.chaos-engine';
+import type { PulseCapability } from '../types.capabilities/03-capability';
 import {
   type ChaosOperationalConcern,
   ChaosProviderName,
@@ -7,8 +7,8 @@ import {
   compactBlastRadius,
   dependencyId,
 } from './detection';
-import { discoverExternalReceiverTokensFromEvidence } from '../../dynamic-reality-kernel/token-evidence';
-import { deriveZeroValue } from '../../dynamic-reality-kernel/catalog-arithmetic';
+import { discoverExternalReceiverTokensFromEvidence } from '../dynamic-reality-kernel/token-evidence';
+import { deriveZeroValue } from '../dynamic-reality-kernel/catalog-arithmetic';
 
 // ── Blast-radius computation ──────────────────────────────────────────────
 

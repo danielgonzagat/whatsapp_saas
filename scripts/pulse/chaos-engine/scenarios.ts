@@ -4,8 +4,8 @@ import type {
   ChaosScenario,
   ChaosScenarioKind,
   ChaosTarget,
-} from '../../types.chaos-engine';
-import type { PulseCapability } from '../../types.capabilities/03-capability';
+} from '../types.chaos-engine';
+import type { PulseCapability } from '../types.capabilities/03-capability';
 import {
   ChaosProviderName,
   ChaosOperationalConcern,
@@ -32,14 +32,14 @@ import {
   buildChaosEvidenceContext,
   deriveChaosScenarioSeeds,
 } from './injection';
-import { ensureDir, writeTextFile } from '../../safe-fs';
-import { safeJoin } from '../../safe-path';
-import { discoverAllObservedArtifactFilenames } from '../../dynamic-reality-kernel/token-evidence';
-import { discoverChaosResultLabels } from '../../dynamic-reality-kernel/type-contract-engines';
+import { ensureDir, writeTextFile } from '../safe-fs';
+import { safeJoin } from '../safe-path';
+import { discoverAllObservedArtifactFilenames } from '../dynamic-reality-kernel/token-evidence';
+import { discoverChaosResultLabels } from '../dynamic-reality-kernel/type-contract-engines';
 import {
   deriveHttpStatusFromObservedCatalog,
   deriveZeroValue,
-} from '../../dynamic-reality-kernel/catalog-arithmetic';
+} from '../dynamic-reality-kernel/catalog-arithmetic';
 
 export function buildChaosCatalog(rootDir: string): ChaosEvidence {
   const targets = detectCodebaseTargets(rootDir);

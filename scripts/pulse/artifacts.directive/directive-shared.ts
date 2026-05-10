@@ -2,11 +2,11 @@
  * Directive shared helpers — internal constants, normalizers, and builders
  * reused across multiple directive parts. NOT re-exported from the shim.
  */
-import { safeJoin } from '../../safe-path';
-import { readOptionalJson } from '../../artifacts.io';
-import { normalizeArtifactStatus, normalizeArtifactExecutionMode } from '../../artifacts.queue';
-import { discoverAllObservedArtifactFilenames } from '../../dynamic-reality-kernel/token-evidence';
-import type { QueueUnit } from '../../artifacts.queue';
+import { safeJoin } from '../safe-path';
+import { readOptionalJson } from '../artifacts.io';
+import { normalizeArtifactStatus, normalizeArtifactExecutionMode } from '../artifacts.queue';
+import { discoverAllObservedArtifactFilenames } from '../dynamic-reality-kernel/token-evidence';
+import type { QueueUnit } from '../artifacts.queue';
 
 export const CURRENT_PULSE_ARTIFACT_DIR = '.pulse/current';
 export const OBSERVED_ARTIFACT_FILENAMES = discoverAllObservedArtifactFilenames();

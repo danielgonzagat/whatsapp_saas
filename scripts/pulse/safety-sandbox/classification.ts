@@ -4,7 +4,7 @@
 import * as path from 'path';
 import * as fs from 'fs';
 
-import { discoverDirectorySkipHintsFromEvidence } from '../../dynamic-reality-kernel/token-evidence';
+import { discoverDirectorySkipHintsFromEvidence } from '../dynamic-reality-kernel/token-evidence';
 import {
   _kindAtOrdinal,
   _riskAtOrdinal,
@@ -23,12 +23,12 @@ import {
   getRiskOrder,
 } from './effect-graph';
 import { loadProtectedFiles } from './protected-files';
-import { pathExists } from '../../safe-fs';
+import { pathExists } from '../safe-fs';
 import type {
   DestructiveAction,
   DestructiveActionKind,
   SandboxRiskLevel,
-} from '../../types.safety-sandbox';
+} from '../types.safety-sandbox';
 
 // ────────────────────────────────────────────────────────────────────────────
 // Destructive Action Classification

@@ -7,12 +7,12 @@
  */
 
 import * as path from 'path';
-import { safeJoin } from '../../lib/safe-path';
+import { safeJoin } from '../lib/safe-path';
 import {
   isObservedHttpEntrypointMethod,
   toPlaywrightHttpMethod,
-} from '../../dynamic-reality-grammar';
-import { pathExists, readJsonFile } from '../../safe-fs';
+} from '../dynamic-reality-grammar';
+import { pathExists, readJsonFile } from '../safe-fs';
 import {
   deriveCatalogPercentScaleFromObservedCatalog,
   deriveHttpStatusFromObservedCatalog,
@@ -20,24 +20,24 @@ import {
   deriveZeroValue,
   discoverPropertyUnexecutedStatusFromExecutionEvidence,
   observeStatusTextLengthFromCatalog,
-} from '../../dynamic-reality-kernel/catalog-arithmetic';
-import { deriveLengthBoundariesFromObservedCatalog } from '../../dynamic-reality-kernel/profile-derivations';
+} from '../dynamic-reality-kernel/catalog-arithmetic';
+import { deriveLengthBoundariesFromObservedCatalog } from '../dynamic-reality-kernel/profile-derivations';
 import {
   discoverAllObservedArtifactFilenames,
   discoverDirectorySkipHintsFromEvidence,
   discoverSourceExtensionsFromObservedTypescript,
-} from '../../dynamic-reality-kernel/token-evidence';
-import { discoverTruthModeLabels } from '../../dynamic-reality-kernel/type-contract-engines';
+} from '../dynamic-reality-kernel/token-evidence';
+import { discoverTruthModeLabels } from '../dynamic-reality-kernel/type-contract-engines';
 import type {
   PulseProductCapability,
   PulseProductFlow,
   PulseProductGraph,
   PulseProductSurface,
-} from '../../types.product-graph';
-import type { BehaviorGraph, BehaviorNode } from '../../types.behavior-graph';
-import type { DataflowState, EntityLifecycle } from '../../types.dataflow-engine';
-import type { HarnessEvidence, HarnessTarget } from '../../types.execution-harness';
-import type { ScenarioCategory, ScenarioRole } from '../../types.scenario-engine';
+} from '../types.product-graph';
+import type { BehaviorGraph, BehaviorNode } from '../types.behavior-graph';
+import type { DataflowState, EntityLifecycle } from '../types.dataflow-engine';
+import type { HarnessEvidence, HarnessTarget } from '../types.execution-harness';
+import type { ScenarioCategory, ScenarioRole } from '../types.scenario-engine';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
