@@ -459,12 +459,12 @@ export class SystemHealthService {
     }
   }
 
-  private async probeEmail(): Promise<{
+  private probeEmail(): {
     dependency: string;
     status: 'UP' | 'DOWN';
     error?: string;
     latencyMs: number;
-  }> {
+  } {
     const startedAt = Date.now();
     const isProduction = process.env.NODE_ENV === 'production';
 

@@ -177,7 +177,7 @@ function buildScenario(
   blastRadius: string[],
   params?: Record<string, number>,
 ): ChaosScenario {
-  const config = generateInjectionConfig(kind, target, { params });
+  const config = generateInjectionConfig(kind, target, params !== undefined ? { params } : undefined);
   const description = buildDescription(kind, target, config, undefined);
   const expectedBehavior = buildExpectedBehavior(kind, target, config, undefined);
   return {
@@ -213,7 +213,7 @@ function buildProviderScenario(
   operationalConcerns: Set<ChaosOperationalConcern>,
   params?: Record<string, number>,
 ): ChaosScenario {
-  const config = generateInjectionConfig(kind, target, { params });
+  const config = generateInjectionConfig(kind, target, params !== undefined ? { params } : undefined);
   const description = buildDescription(kind, target, config, provider);
   const expectedBehavior = buildExpectedBehavior(
     kind,

@@ -4,6 +4,7 @@ import { MarketingModule } from '../marketing/marketing.module';
 import { MetaMarketingProvider } from '../integrations/meta-marketing.provider';
 import { GoogleAdsProvider } from '../integrations/google-ads.provider';
 import { TikTokAdsProvider } from '../integrations/tiktok-ads.provider';
+import { AdsSyncProcessor } from '../integrations/ads-sync.processor';
 import { AnunciosController } from './anuncios.controller';
 import { AnunciosService } from './anuncios.service';
 
@@ -15,6 +16,7 @@ import { AnunciosService } from './anuncios.service';
     GoogleAdsProvider,
     TikTokAdsProvider,
     AnunciosService,
+    AdsSyncProcessor,
   ],
   exports: [AnunciosService],
 })

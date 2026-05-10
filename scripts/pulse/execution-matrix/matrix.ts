@@ -12,10 +12,8 @@ import {
 } from '../dynamic-reality-kernel/catalog-arithmetic';
 import { discoverExecutionMatrixPathStatusLabels } from '../__kernel_additions__/discoverExecutionMatrixPathStatusLabels';
 import {
-  artifactGrammar,
   differsGrammar,
   fileConfidenceGrammar,
-  hasItemsGrammar,
   isElevatedRiskGrammar,
   matrixSourceGrammar,
   normalizeExecutionMode,

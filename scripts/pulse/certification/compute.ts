@@ -1,26 +1,12 @@
 import type {
   PulseCertification,
-  PulseExecutionEvidence,
   PulseGateResult,
-  PulseSelfTrustReport,
 } from '../types.evidence';
-import type { PulseCodacyEvidence, PulseStructuralGraph } from '../types.structural';
-import type { PulseCapabilityState } from '../types.capabilities/03-capability';
-import type { PulseExternalSignalState } from '../types.capabilities/05-external-signals';
-import type { PulseFlowProjection } from '../types.capabilities/04-flow-projection';
-import type { PulseExecutionMatrix } from '../types.execution-matrix';
 import type {
   PulseGateName,
   PulseManifest,
-  PulseManifestLoadResult,
-  PulseParserInventory,
 } from '../types.manifest';
-import type { PulseHealth } from '../types.health';
-import type { PulseResolvedManifest } from '../types.resolved-manifest';
-import type { PulseScopeState } from '../types.truth.scope';
-import type { PulseCodebaseTruth } from '../types.truth';
-
-import {
+import type {
   _phantomLabel,
   _checkerGapLabel,
   _missingEvidenceLabel,
@@ -99,7 +85,6 @@ import {
   evaluateBreakpointPrecisionGate,
   evaluateCriticalPathObservedGate,
   evaluateExecutionMatrixCompleteGate,
-  type PulsePathCoverageGateState,
 } from '../cert-gate-execution-matrix';
 import {
   detectPlaceholderTests,
@@ -116,7 +101,6 @@ import { deriveZeroValue } from '../dynamic-reality-kernel/catalog-arithmetic';
 import { discoverAllObservedArtifactFilenames } from '../dynamic-reality-kernel/token-evidence';
 
 import {
-  findTierForGate,
   certificationTargetRequiresGate,
   evaluateActorGateForCurrentObjective,
   deriveCertificationStatus,
@@ -198,7 +182,7 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
           criticalUnobservedPaths: input.executionMatrix.summary.criticalUnobservedPaths,
           criticalInferredOnlyPaths: pathCoverage?.summary?.criticalInferredOnly ?? 0,
           criticalPathCoverageUnobserved: pathCoverage?.summary?.criticalUnobserved ?? 0,
-          pathCoveragePercent: pathCoverage?.summary?.coveragePercent ?? null,
+          pathCoveragePercent: pathCoverage?.summary?.coveragePercent ?? 0,
           observedPass: input.executionMatrix.summary.observedPass,
           observedFail: input.executionMatrix.summary.observedFail,
         },

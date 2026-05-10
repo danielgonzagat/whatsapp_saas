@@ -20,17 +20,21 @@ export class TikTokAdsProvider implements AdProvider {
     private readonly tiktokAds: TikTokAdsService,
   ) {}
 
-  connect(workspaceId: string, _redirectUri: string): Promise<OAuthConnectResult> {
+  async connect(workspaceId: string, _redirectUri: string): Promise<OAuthConnectResult> {
     try {
       const result = this.tiktokMarketing.generateAuthUrl(workspaceId, 'advertiser');
-      return {
+      return Promise.resolve({
         connected: false,
         status: 'pending_oauth',
         authUrl: result.url,
-      };
+      });
     } catch (err) {
       this.logger.error('TikTok Ads connect URL generation failed', err);
-      return { connected: false, status: 'tiktok_not_configured', providerMessage: String(err) };
+      return Promise.resolve({
+        connected: false,
+        status: 'tiktok_not_configured',
+        providerMessage: String(err),
+      });
     }
   }
 

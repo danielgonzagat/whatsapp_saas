@@ -150,9 +150,9 @@ export function pathProofExecutionResultToRunnerResult(
     executed: result.executed,
     plannedOnly: result.status === 'planned_only',
     skipped: result.status === 'execution_skipped',
-    startedAt: result.startedAt,
-    finishedAt: result.finishedAt,
-    durationMs: result.durationMs,
+    ...(result.startedAt !== undefined ? { startedAt: result.startedAt } : {}),
+    ...(result.finishedAt !== undefined ? { finishedAt: result.finishedAt } : {}),
+    ...(typeof result.durationMs === 'number' ? { durationMs: result.durationMs } : {}),
     summary: result.reason,
     ...(typeof result.exitCode === 'number' ? { exitCode: result.exitCode } : {}),
   };

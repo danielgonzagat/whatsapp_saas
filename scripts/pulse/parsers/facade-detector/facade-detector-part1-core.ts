@@ -195,7 +195,7 @@ export function appendFacade(facades: FacadeEntry[], input: FacadeDiagnosticInpu
     summary: input.summary,
     detail: `${input.detail} Evidence: ${input.evidence}`,
     surface: input.surface,
-    runtimeImpact: input.runtimeImpact,
+    ...(input.runtimeImpact !== undefined ? { runtimeImpact: input.runtimeImpact } : {}),
   });
   let facadeType = input.kind;
   facades.push({

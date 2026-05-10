@@ -59,10 +59,7 @@ export function evaluateNoOverclaimPassForCurrentRun(
     },
     proofReadiness: proofReadinessSummary,
   };
-  const currentCertificate: PulseCertificateSnapshot = {
-    status: undefined,
-    rawContent: undefined,
-  };
+  const currentCertificate: PulseCertificateSnapshot = {};
   const previousResult = evaluateNoOverclaimGate(
     previousDirective,
     previousCertificate,

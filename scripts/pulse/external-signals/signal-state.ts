@@ -138,6 +138,7 @@ export function buildExternalSignalState(
     ).length,
     governedValidationSignals: signals.filter(
       (signal) =>
+        signal.governanceDisposition !== undefined &&
         discoverConvergenceExecutionModeLabels().has(signal.governanceDisposition) &&
         signal.governanceDisposition === 'governed_validation',
     ).length,

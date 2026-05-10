@@ -80,7 +80,8 @@ export function deriveCertificationStatus(
     return finalReadinessPass ? 'CERTIFIED' : 'PARTIAL';
   }
   if (certificationTarget.tier !== null) {
-    const requested = tierStatus.filter((tier) => tier.id <= certificationTarget.tier);
+    const targetTier = certificationTarget.tier;
+    const requested = tierStatus.filter((tier) => tier.id <= targetTier);
     return requested.every((tier) => tier.status === _gatePassLabel()) ? 'CERTIFIED' : 'PARTIAL';
   }
   return allPass ? 'CERTIFIED' : 'PARTIAL';

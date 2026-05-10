@@ -1,11 +1,6 @@
 import { spawnSync } from 'node:child_process';
 
 import type { PathProofTask } from '../path-proof-runner/main';
-import {
-  isProtectedFile as isGovernanceProtectedFile,
-  loadGovernanceBoundary,
-  normalizePath,
-} from '../scope-state-classify';
 import { evaluatePathProofCommandPolicy } from './command-policy';
 import type { ParsedPathProofCommand } from './command-policy';
 
@@ -87,8 +82,8 @@ function defaultExecutor(input: PathProofCommandExecutionInput): PathProofComman
   });
   return {
     exitCode: result.status,
-    stdout: result.stdout || undefined,
-    stderr: result.stderr || result.error?.message,
+    ...(result.stdout ? { stdout: result.stdout } : {}),
+    ...(result.stderr || result.error?.message ? { stderr: result.stderr || result.error?.message } : {}),
     timedOut: result.error?.message.includes('ETIMEDOUT') ?? false,
   };
 }

@@ -1,30 +1,9 @@
-/**
- * Deterministic LLM test stub for the Kloel chat streaming pipeline.
- *
- * Activated only when the runtime env signals a non-production e2e/test
- * harness (mirrors the same env-detection contract used by
- * {@link TestModeThrottlerGuard}). When active the stub returns a fake
- * async iterable that yields ChatCompletionChunk-shaped values from the LLM provider so
- * that the rest of the streaming pipeline (KloelStreamWriter, SSE
- * serialization, token accounting) runs unchanged.
- *
- * The CI harness sets `OPENAI_API_KEY=e2e-dummy-key`; with that key any
- * real LLM-provider request fails immediately and the chat composer e2e specs
- * cannot validate the streaming contract or the linked-product prompt
- * context. The stub bridges that gap by echoing the product name + price
- * extracted from the system messages so the assistant reply visibly
- * reflects the linked product.
- *
- * Production behavior is untouched — the dispatch uses the real LLM-provider
- * client whenever {@link isKloelLlmTestStubEnabled} returns false.
- */
+import { Injectable } from '@nestjs/common';
 import type { ChatCompletionChunk, ChatCompletionMessageParam } from 'openai/resources/chat';
-
-type ChatCompletionStream = AsyncIterable<ChatCompletionChunk>;
+import { KloelLLME2EGuard } from '../../src/kloel/kloel-llm-e2e-guard';
 
 const LINKED_PRODUCT_HEADER = 'PRODUTO VINCULADO AO PROMPT:';
 
-/** True when a non-production harness should bypass real OpenAI calls. */
 export function isKloelLlmTestStubEnabled(): boolean {
   if (process.env.NODE_ENV === 'production') return false;
   if (process.env.E2E_TEST_MODE === 'true') return true;
@@ -62,11 +41,8 @@ function findProductNameInBlock(block: string): string | null {
   const lines = block.split('\n');
   for (const rawLine of lines) {
     const line = rawLine.trim();
-    // Format produced by KloelContextFormatter.buildWorkspaceProductContext:
-    // `PRODUTO 1: <name>`
     const productHeader = /^PRODUTO\s+\d+\s*[:-]\s*(.+)$/i.exec(line);
     if (productHeader?.[1]) return productHeader[1].trim();
-    // Fallback for `Nome: <name>` shapes from older formatters / tests.
     const directMatch = /^Nome\s*[:-]\s*(.+)$/i.exec(line);
     if (directMatch?.[1]) return directMatch[1].trim();
     const dashMatch = /^[-•]\s*Nome\s*[:-]\s*(.+)$/i.exec(line);
@@ -85,10 +61,6 @@ interface KloelStubExtraction {
   productPrice: string | null;
 }
 
-/**
- * Inspect the writer messages and extract linked-product hints (name + price)
- * from the system prompt, if any. Used by the deterministic stream stub.
- */
 export function extractLinkedProductHints(
   writerMessages: readonly ChatCompletionMessageParam[],
 ): KloelStubExtraction {
@@ -135,14 +107,9 @@ function buildChunk(content: string): ChatCompletionChunk {
   };
 }
 
-/**
- * Build a deterministic ChatCompletionChunk async iterable that mirrors the
- * shape returned by the real OpenAI streaming client. Streams short word
- * deltas so the SSE pipeline emits multiple content events.
- */
 export function buildKloelLlmTestStubStream(
   writerMessages: readonly ChatCompletionMessageParam[],
-): ChatCompletionStream {
+): AsyncIterable<ChatCompletionChunk> {
   const extraction = extractLinkedProductHints(writerMessages);
   const reply = buildStubReply(extraction);
   const chunks = reply.split(/(\s+)/).filter((part) => part.length > 0);
@@ -163,4 +130,17 @@ export function buildKloelLlmTestStubStream(
       return iter;
     },
   };
+}
+
+@Injectable()
+export class KloelLLME2EStubGuard implements KloelLLME2EGuard {
+  isEnabled(): boolean {
+    return isKloelLlmTestStubEnabled();
+  }
+
+  buildStream(
+    writerMessages: readonly ChatCompletionMessageParam[],
+  ): AsyncIterable<ChatCompletionChunk> {
+    return buildKloelLlmTestStubStream(writerMessages);
+  }
 }

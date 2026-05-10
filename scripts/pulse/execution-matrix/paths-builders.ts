@@ -10,7 +10,6 @@ import type {
 import type { PulseStructuralNode } from '../types.structural';
 import {
   deriveUnitValue,
-  deriveZeroValue,
 } from '../dynamic-reality-kernel/catalog-arithmetic';
 import {
   artifactGrammar,
@@ -18,9 +17,7 @@ import {
   collectObservedEvidence,
   fallbackConfidenceGrammar,
   flowCriticalityGrammar,
-  hasItemsGrammar,
   isCriticalCapability,
-  matchRouteGrammar,
   nodeConfidenceGrammar,
   normalizeExecutionMode,
   sameGrammar,

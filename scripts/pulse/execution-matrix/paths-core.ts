@@ -174,7 +174,8 @@ export function classifyTraversalGrammar(args: {
   }
   if (
     !requiredRuntimeLike &&
-    sameGrammar(args.capability?.status, 'real') &&
+    args.capability &&
+    sameGrammar(args.capability.status, 'real') &&
     sameGrammar(args.capability.truthMode, 'observed')
   ) {
     return 'observed_pass';

@@ -147,9 +147,9 @@ export function observedLinkFor(
     relationship: 'observed_evidence',
     command: result.command,
     status: disposition,
-    exitCode: result.exitCode,
-    startedAt: result.startedAt,
-    finishedAt: result.finishedAt,
+    ...(typeof result.exitCode === 'number' ? { exitCode: result.exitCode } : {}),
+    ...(result.startedAt !== undefined ? { startedAt: result.startedAt } : {}),
+    ...(result.finishedAt !== undefined ? { finishedAt: result.finishedAt } : {}),
     observedAt: result.finishedAt ?? result.startedAt ?? new Date().toISOString(),
     summary:
       result.summary ?? `Observed ${disposition.replace('observed_', '')} for ${result.taskId}.`,
