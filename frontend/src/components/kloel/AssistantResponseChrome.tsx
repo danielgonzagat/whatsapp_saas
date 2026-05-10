@@ -1,5 +1,6 @@
 'use client';
 
+import { colors } from '@/lib/design-tokens';
 import { kloelT } from '@/lib/i18n/t';
 import { useEffect, useState } from 'react';
 import { KloelMushroomVisual } from './KloelBrand';
@@ -41,7 +42,7 @@ const DEFAULT_THEME: Required<AssistantChromeTheme> = {
   nestedSurfaceColor: 'var(--app-bg-secondary, colors.background.void)',
   nestedBorderColor: 'var(--app-border-subtle, colors.background.elevated)',
   textColor: 'var(--app-text-primary, colors.text.silver)',
-  mutedColor: 'var(--app-text-secondary, #8A8A8E)',
+  mutedColor: `var(--app-text-secondary, ${colors.text.secondary})`,
   subtleTextColor: 'var(--app-text-tertiary, colors.text.muted)',
   iconTraceColor: 'var(--app-text-primary, colors.text.silver)',
 };

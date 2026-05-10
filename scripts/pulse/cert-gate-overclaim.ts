@@ -28,8 +28,8 @@ export interface PulseAutonomyReadiness {
 
 /** Minimal proof-readiness summary used to prevent planned/inferred proof overclaims. */
 export interface PulseProofReadinessSummary {
-  canAdvance?: boolean;
-  status?: string;
+  canAdvance?: boolean | undefined;
+  status?: string | undefined;
   plannedEvidence?: number;
   inferredEvidence?: number;
   notAvailableEvidence?: number;

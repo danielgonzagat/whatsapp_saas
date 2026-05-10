@@ -239,10 +239,10 @@ export function hasSemanticRole(
 // ── Symbol Classification ───────────────────────────────────────────────
 
 export function classifySymbolKind(
-  symbolName: string,
+  _symbolName: string,
   decoratorMeta: FrameworkDecoratorMeta,
   node: Node,
-  parentClass?: string | null,
+  _parentClass?: string | null,
 ): AstResolvedNodeKind {
   if (Node.isMethodDeclaration(node) || Node.isMethodSignature(node)) {
     const constructorKind =

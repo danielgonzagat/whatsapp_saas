@@ -1,21 +1,5 @@
 import * as ts from 'typescript';
-import type { HardcodedFindingAuditFinding, HardcodedFindingAuditSource } from './types';
-import { MIN_COLLECTION_SIZE, ALLOWLIST_NAME_RE, FINDING_EVENT_NAME_RE } from './types';
-import {
-  locationOf,
-  symbolName,
-  declarationName,
-  stringLiteralValue,
-  collectStringLiteralValues,
-  collectionValues,
-  compactEvidence,
-  isRegexNode,
-  regexBody,
-  isDecisionTokenRegex,
-  nearestFunctionLike,
-  nearestConditional,
-  nodeContainsRegexPredicate,
-} from './ast-helpers';
+import { stringLiteralValue, symbolName } from './ast-helpers';
 
 export function isFindingEventObject(node: ts.ObjectLiteralExpression): boolean {
   return objectFindingEventName(node) !== null;

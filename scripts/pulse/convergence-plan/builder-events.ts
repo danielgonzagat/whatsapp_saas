@@ -244,6 +244,7 @@ export function buildScenarioUnits(input: BuildPulseConvergencePlanInput): Pulse
       affectedFlowIds: flowIds,
       asyncExpectations,
       findingEvents: rankFindingEvents(relatedBreaks, evidenceBatchSize(relatedBreaks)),
+      breakTypes: [],
       artifactPaths,
       relatedFiles: rankFiles(relatedBreaks, evidenceBatchSize(relatedBreaks)),
       validationArtifacts: buildValidationArtifacts(
@@ -309,7 +310,8 @@ export function buildNoHardcodedRealityUnits(
       affectedCapabilityIds: [],
       affectedFlowIds: [],
       asyncExpectations: [],
-      findingEvents: ['dynamic_hardcode_evidence_event'],
+      findingEvents: [],
+      breakTypes: [],
       artifactPaths: [OBSERVED_ARTIFACTS.noHardcodedReality, OBSERVED_ARTIFACTS.certificate],
       relatedFiles: summary.topFiles,
       validationArtifacts: [
@@ -378,6 +380,7 @@ export function buildExternalUnits(input: BuildPulseConvergencePlanInput): Pulse
       affectedFlowIds: signal.flowIds,
       asyncExpectations: [],
       findingEvents: [signal.type],
+      breakTypes: [],
       artifactPaths: [OBSERVED_ARTIFACTS.externalSignalState],
       relatedFiles: signal.relatedFiles,
       validationArtifacts: signal.validationTargets,

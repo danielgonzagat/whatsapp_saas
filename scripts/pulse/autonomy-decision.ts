@@ -23,7 +23,6 @@ import {
   extractMissingStructuralRoles,
   compareAutomationUnits,
   isRiskSafeForAutomation,
-  getAutomationExecutionCost,
 } from './autonomy-decision-ranking';
 
 export {

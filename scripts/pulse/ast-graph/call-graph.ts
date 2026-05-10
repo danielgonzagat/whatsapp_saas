@@ -8,7 +8,6 @@ import { pathExists } from '../safe-fs';
 import { sourceGlobsForTsMorph } from '../source-root-detector/api';
 import type { AstCallGraph, AstCallEdge, AstResolvedSymbol } from '../types.ast-graph';
 import { deriveStringUnionMembersFromTypeContract } from '../dynamic-reality-kernel/type-contract-labels';
-import { deriveUnitValue } from '../dynamic-reality-kernel/catalog-arithmetic';
 import {
   type FrameworkDecoratorMeta,
   type AstTargetSymbol,

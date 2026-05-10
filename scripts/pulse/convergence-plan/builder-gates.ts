@@ -1,7 +1,7 @@
 import type { PulseGateName } from '../types.manifest';
 import type { PulseCapabilityState } from '../types.capabilities/03-capability';
 import type { PulseCertification } from '../types.evidence';
-import type { PulseConvergenceOwnerLane, PulseGateFailureClass } from '../types.gate-failure';
+import type { PulseConvergenceOwnerLane } from '../types.gate-failure';
 import type {
   PulseConvergenceUnit,
   PulseConvergenceUnitPriority,
@@ -109,6 +109,7 @@ export function buildSecurityUnit(input: BuildPulseConvergencePlanInput): PulseC
       affectedFlowIds: [],
       asyncExpectations: [],
       findingEvents: rankFindingEvents(securityBreaks, evidenceBatchSize(securityBreaks)),
+      breakTypes: [],
       artifactPaths: [OBSERVED_ARTIFACTS.certificate, OBSERVED_ARTIFACTS.report],
       relatedFiles: rankFiles(securityBreaks, evidenceBatchSize(securityBreaks)),
       validationArtifacts: [OBSERVED_ARTIFACTS.certificate, OBSERVED_ARTIFACTS.report],
@@ -177,6 +178,7 @@ export function buildStaticUnit(input: BuildPulseConvergencePlanInput): PulseCon
       affectedFlowIds: [],
       asyncExpectations: [],
       findingEvents: rankFindingEvents(blockingBreaks, evidenceBatchSize(blockingBreaks)),
+      breakTypes: [],
       artifactPaths: [OBSERVED_ARTIFACTS.certificate, OBSERVED_ARTIFACTS.report],
       relatedFiles: rankFiles(blockingBreaks, evidenceBatchSize(blockingBreaks)),
       validationArtifacts: [OBSERVED_ARTIFACTS.certificate, OBSERVED_ARTIFACTS.report],
@@ -370,6 +372,7 @@ export function buildGenericGateUnits(
       affectedFlowIds: gate.affectedFlowIds || [],
       asyncExpectations: [],
       findingEvents: [],
+      breakTypes: [],
       artifactPaths,
       relatedFiles: [],
       validationArtifacts: artifactPaths,

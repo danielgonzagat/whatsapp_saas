@@ -1,4 +1,3 @@
-import * as crypto from 'node:crypto';
 import { buildDecisionQueue, type QueueUnit } from '../artifacts.queue';
 import { safeJoin } from '../safe-path';
 import type { PulseArtifactRegistry } from '../artifact-registry/discovery';

@@ -34,7 +34,7 @@ export function buildModuleGraph(file: import('ts-morph').SourceFile): AstModule
         exports.push({
           name: ne.getName(),
           isReExport: !exp.isTypeOnly() && exp.getModuleSpecifierValue() != null,
-          source: exp.getModuleSpecifierValue() ?? undefined,
+          ...(exp.getModuleSpecifierValue() ? { source: exp.getModuleSpecifierValue()! } : {}),
         });
       }
     }

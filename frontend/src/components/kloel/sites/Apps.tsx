@@ -1,5 +1,6 @@
 'use client';
 
+import { colors } from '@/lib/design-tokens';
 import { kloelT } from '@/lib/i18n/t';
 import React, { useState } from 'react';
 import { IC, SORA, EMBER, TEXT, TEXT_DIM } from './SitesViewIcons';
@@ -33,7 +34,7 @@ export function Apps() {
                   <div style={{ fontFamily: SORA, fontSize: 13, color: TEXT }}>{app.name}</div>
                   <div style={{ fontFamily: SORA, fontSize: 11, color: TEXT_DIM }}>{app.desc}</div>
                 </div>
-                <Badge color="#10B981">{app.status}</Badge>
+                <Badge color={colors.semantic.success}>{app.status}</Badge>
               </Card>
             ))
           )}

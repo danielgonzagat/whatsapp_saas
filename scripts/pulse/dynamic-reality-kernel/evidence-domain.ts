@@ -4,7 +4,6 @@ import * as ts from 'typescript';
 import {
   discoverAllObservedHttpMethods,
   deriveUnitValue,
-  deriveZeroValue,
   deriveHttpStatusFromObservedCatalog,
   deriveCatalogPercentScaleFromObservedCatalog,
   observeStatusTextLengthFromCatalog,

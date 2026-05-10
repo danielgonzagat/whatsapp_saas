@@ -348,7 +348,7 @@ export default function CanvasEditor() {
           style={{
             width: sidebarTab ? 336 : 56,
             display: 'flex',
-            borderRight: '1px solid #1C1C1F',
+            borderRight: `1px solid ${colors.canvas.border}`,
             transition: 'width 200ms ease',
             flexShrink: 0,
           }}
@@ -358,7 +358,7 @@ export default function CanvasEditor() {
             style={{
               width: 56,
               background: 'colors.background.void',
-              borderRight: '1px solid #1C1C1F',
+              borderRight: `1px solid ${colors.canvas.border}`,
               display: 'flex',
               flexDirection: 'column',
               padding: '8px 0',
@@ -415,7 +415,7 @@ export default function CanvasEditor() {
                 background: 'colors.background.void',
                 overflowY: 'auto',
                 padding: 16,
-                borderRight: '1px solid #1C1C1F',
+                borderRight: `1px solid ${colors.canvas.border}`,
               }}
             >
               <SidebarPanels

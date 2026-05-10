@@ -22,7 +22,6 @@ import { readTextFile } from '../safe-fs';
 import { safeJoin } from '../lib/safe-path';
 import type { PulseDoDStatus } from '../types.capabilities/01-primitives';
 import {
-  _evaluateDone,
   type CapabilityRoleEvidence,
   type StructuralRole as DoDStructuralRole,
 } from '../definition-of-done';
@@ -121,10 +120,11 @@ export function clamp(value: number): number {
 
 function hasScenarioResults(value: unknown): value is { results: PulseScenarioResultItem[] } {
   return (
-    Boolean(value) &&
+    value !== null &&
+    value !== undefined &&
     typeof value === 'object' &&
     'results' in value &&
-    Array.isArray(value.results)
+    Array.isArray((value as Record<string, unknown>).results)
   );
 }
 
@@ -138,14 +138,6 @@ export function collectScenarioResults(
   return Object.values(executionEvidence).flatMap((evidenceBlock) =>
     hasScenarioResults(evidenceBlock) ? evidenceBlock.results : [],
   );
-}
-
-function compactWords(value: string): string {
-  return value
-    .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
-    .replace(/[^a-zA-Z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .toLowerCase();
 }
 
 function splitValidationTokens(value: string): string[] {
@@ -203,7 +195,7 @@ function routeValidationVariants(routePatterns: string[]): string[] {
           .replace(/\/$/g, '')
           .toLowerCase();
         const withoutLeadingSlash = raw.replace(/^\/+/, '');
-        return [raw, withoutLeadingSlash].filter((value) => value.length >= 5);
+        return [raw, withoutLeadingSlash].filter((value) => (value ?? '').length >= 5);
       })
       .filter(Boolean),
   );

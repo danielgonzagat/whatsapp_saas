@@ -257,7 +257,7 @@ export function AuthFormFields({
           marginTop: 12,
           background: colors.background.surface,
           color: colors.text.silver,
-          border: '1px solid #222226',
+          border: `1px solid ${colors.stroke}`,
           borderRadius: 6,
           fontSize: 14,
           fontWeight: 500,

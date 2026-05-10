@@ -164,7 +164,6 @@ export function isIncludedInRoutedCapability(
     return Boolean(undefined);
   }
 
-  const capabilityFiles = new Set(capability.filePaths);
   return allCapabilities.some((candidate) => {
     if (
       candidate.id === capability.id ||

@@ -15,7 +15,6 @@ import { discoverAutonomySuggestedStrategyLabels } from '../__kernel_additions__
 import { discoverConvergenceEvidenceConfidenceLabels } from '../__kernel_additions__/discoverConvergenceEvidenceConfidenceLabels';
 import { discoverConvergenceExecutionModeLabels } from '../__kernel_additions__/discoverConvergenceExecutionModeLabels';
 import { discoverConvergenceRiskLevelLabels } from '../__kernel_additions__/discoverConvergenceRiskLevelLabels';
-import { discoverConvergenceUnitKindLabels } from '../__kernel_additions__/discoverConvergenceUnitKindLabels';
 import { discoverConvergenceUnitPriorityLabels } from '../__kernel_additions__/discoverConvergenceUnitPriorityLabels';
 import { discoverRuntimeFusionEvidenceStatusLabels } from '../dynamic-reality-kernel/type-contract-engines';
 import type { FalsePositiveAdjudicationState } from '../types.false-positive-adjudicator';

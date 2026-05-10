@@ -14,7 +14,7 @@ import {
   discoverProtectedExposuresFromTypeEvidence,
   discoverRouteSeparatorFromRuntime,
 } from './catalog-arithmetic';
-import type { DerivedPropertyKind, DerivedCandidateCategory } from './catalog-arithmetic';
+import type { DerivedPropertyKind } from './catalog-arithmetic';
 
 // ── Fuzz strategy derivation ───────────────────────────────────────────────
 

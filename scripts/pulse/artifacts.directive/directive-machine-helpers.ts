@@ -24,9 +24,7 @@ import type { PulseGateName } from '../types.manifest';
 import type { PulseGateResult } from '../types.evidence';
 import {
   buildDefaultExitCriteria,
-  OBSERVED_ARTIFACT_FILENAMES,
   type MachineProofRegistryEvidence,
-  type PulseMachineDirectiveUnit,
 } from './directive-shared';
 
 export function directiveLabelFromIdentifier(identifier: string): string {
@@ -145,11 +143,12 @@ export function buildMachineCriterionRegistryEvidence(
 
 export function isMachineProofGate(_gateName: PulseGateName, gate: PulseGateResult): boolean {
   const gateFailureClasses = discoverGateFailureClassLabels();
+  const gfc = gate.failureClass ?? '';
   const machineOwnedFailure =
-    gateFailureClasses.has(gate.failureClass) &&
+    gateFailureClasses.has(gfc) &&
     gateFailureClasses.has('missing_evidence') &&
     gateFailureClasses.has('checker_gap')
-      ? gate.failureClass === 'missing_evidence' || gate.failureClass === 'checker_gap'
+      ? gfc === 'missing_evidence' || gfc === 'checker_gap'
       : false;
   return gate.status === 'fail' && machineOwnedFailure;
 }

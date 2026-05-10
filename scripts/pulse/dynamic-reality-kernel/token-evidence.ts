@@ -296,7 +296,7 @@ export function discoverSourceExtensionsFromObservedTypescript(): Set<string> {
   return new Set([ts.Extension.Ts, ts.Extension.Tsx, ts.Extension.Js, ts.Extension.Jsx]);
 }
 export function deriveCapabilityIdFromObservedPath(
-  filePath: string,
+  _filePath: string,
   strippedSuffix: string,
 ): string {
   let excluded = new Set(['src', 'tests', '__tests__', 'test', 'spec']);

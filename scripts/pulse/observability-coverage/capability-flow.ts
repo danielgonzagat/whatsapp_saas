@@ -10,7 +10,6 @@ import { pathExists, readJsonFile } from '../safe-fs';
 import { readFileSafe } from '../parsers/utils';
 import {
   deriveZeroValue,
-  deriveUnitValue,
 } from '../dynamic-reality-kernel/catalog-arithmetic';
 import { discoverAllObservedArtifactFilenames } from '../dynamic-reality-kernel/token-evidence';
 import type {

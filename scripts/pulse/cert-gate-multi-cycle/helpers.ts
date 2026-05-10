@@ -16,13 +16,7 @@ import type {
   PulseAutonomyIterationRecord,
   PulseAutonomyValidationCommandResult,
 } from '../types.autonomy';
-import { discoverConvergenceEvidenceConfidenceLabels } from '../__kernel_additions__/discoverConvergenceEvidenceConfidenceLabels';
-import {
-  discoverDoDGateStatusLabels,
-  discoverTruthModeLabels,
-} from '../dynamic-reality-kernel/type-contract-engines';
 import { discoverExternalAdapterStatusLabels } from '../__kernel_additions__/discoverExternalAdapterStatusLabels';
-import { discoverGateFailureClassLabels } from '../dynamic-reality-kernel/type-contract-labels';
 import {
   deriveUnitValue,
   deriveZeroValue,
@@ -138,21 +132,6 @@ const NON_RUNTIME_LONG_OPTION_GRAMMAR = new Set([
 function isDeficientAdapterStatus(status: string): boolean {
   if (!discoverExternalAdapterStatusLabels().has(status)) return false;
   return status === 'not_available' || status === 'invalid';
-}
-function passGateStatusLabel(): string {
-  return [...discoverDoDGateStatusLabels()][0];
-}
-function observedTruthModeLabel(): string {
-  return [...discoverTruthModeLabels()][0];
-}
-function highConfidenceLabel(): string {
-  return [...discoverConvergenceEvidenceConfidenceLabels()][0];
-}
-function productFailureClassLabel(): string {
-  return [...discoverGateFailureClassLabels()][0];
-}
-function missingEvidenceClassLabel(): string {
-  return [...discoverGateFailureClassLabels()][1];
 }
 function normalizeGrammarToken(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, '');

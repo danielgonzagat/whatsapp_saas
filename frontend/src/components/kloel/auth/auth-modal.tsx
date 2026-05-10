@@ -259,7 +259,7 @@ export function AuthModal({
                 spores={isLoading ? 'animated' : 'none'}
               />
             </div>
-            <KloelWordmark color="#0A0A0C" fontSize={20} fontWeight={600} />
+            <KloelWordmark color={colors.background.void} fontSize={20} fontWeight={600} />
             <h1 className="text-xl font-semibold text-gray-900">
               {mode === 'signup' ? 'Criar sua conta' : 'Entrar no Kloel'}
             </h1>

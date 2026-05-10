@@ -5,7 +5,6 @@
  * observed runtime evidence and schema-derived truth sources.
  */
 import { METHODS, STATUS_CODES } from 'node:http';
-import * as path from 'path';
 import * as ts from 'typescript';
 import { splitIdentifierTokensFromObservedName, hasObservedToken } from './token-evidence';
 import { deriveStringUnionMembersFromTypeContract } from './type-contract-labels';
@@ -226,8 +225,6 @@ export function derivePropertyKindsFromObservedCategory(
   category: DerivedCandidateCategory,
 ): DerivedPropertyKind[] {
   const all = deriveAllPropertyKindsFromObservedEvidence();
-  const extreme = deriveExtremePropertyKindsFromObservedEvidence();
-  const boundary = deriveBoundaryPropertyKindsFromObservedEvidence();
   const requiredBase = () => all.filter((k) => k === 'type_constraint' || k === 'required_field');
   switch (category) {
     case 'validation':

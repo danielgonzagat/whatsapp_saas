@@ -69,8 +69,6 @@ export function buildReport(
   const boundedRunLimit = U + U + U + U + U + U + U + U;
   const displayLimit10 = U + U + U + U + U + U + U + U + U + U;
   const displayLimit12 = U + U + U + U + U + U + U + U + U + U + U + U;
-  const displayLimit20 =
-    U + U + U + U + U + U + U + U + U + U + U + U + U + U + U + U + U + U + U + U;
   const findingEventSurface = buildFindingEventSurface(snapshot.health.breaks, boundedRunLimit);
 
   lines.push('## PULSE VERDICT');

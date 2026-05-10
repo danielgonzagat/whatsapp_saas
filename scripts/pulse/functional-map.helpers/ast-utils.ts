@@ -85,19 +85,6 @@ function hasMemberCall(text: string, objectName: string, methodName: string): bo
   return false;
 }
 
-function findFunctionDeclarationIndex(lines: string[], funcName: string): number {
-  return lines.findIndex((line) => {
-    const trimmed = line.trimStart();
-    if (trimmed.startsWith(`function ${funcName}`)) {
-      return true;
-    }
-    if (trimmed.startsWith(`async function ${funcName}`)) {
-      return true;
-    }
-    return trimmed.startsWith(`const ${funcName}`) || trimmed.startsWith(`let ${funcName}`);
-  });
-}
-
 export function handlerCallsFunction(handler: string, funcName: string): boolean {
   return handler.trim() === funcName || hasFunctionCall(handler, funcName);
 }

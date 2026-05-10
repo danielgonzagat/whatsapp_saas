@@ -6,7 +6,6 @@ import { walkFiles } from '../parsers/utils';
 import { readTextFile } from '../safe-fs';
 import {
   CRO_KIND_LABEL,
-  _ENDPOINT_KIND_LABEL,
   mutatingHttpVerbs,
   persistentStateMutationShape,
   SERVICE_KIND_LABEL,
@@ -24,7 +23,6 @@ import {
   unique,
 } from './helpers';
 import {
-  extractConstructorAliases,
   extractPublicMethods,
   collectPrismaModelsFromText,
   nestjsBullMQDiscoveries,
@@ -119,7 +117,6 @@ export function discoverServices(config: PulseConfig): HarnessTarget[] {
     const classMatch = content.match(/export\s+class\s+(\w+)/);
     const className = classMatch ? classMatch[1] : path.basename(file, '.ts');
     const methods = extractPublicMethods(content);
-    const _aliases = extractConstructorAliases(content);
 
     for (const method of methods) {
       const targetId = `service:${camelToKebab(className)}:${camelToKebab(method.name)}`;

@@ -42,7 +42,7 @@ const VARIANT_STYLES: Record<
   },
   danger: {
     bg: colors.state.error,
-    bgHover: '#E5404F',
+    bgHover: colors.semantic.error,
     text: colors.text.silver,
   },
   success: {

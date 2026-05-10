@@ -9,7 +9,6 @@
  */
 
 import type { HarnessFixtureKind, HarnessTargetKind } from '../types.execution-harness';
-import * as fs from 'node:fs';
 import { deriveStringUnionMembersFromTypeContract } from '../dynamic-reality-kernel/type-contract-labels';
 import {
   deriveUnitValue,
@@ -19,7 +18,6 @@ import {
 } from '../dynamic-reality-kernel/catalog-arithmetic';
 import {
   discoverAllObservedArtifactFilenames,
-  discoverDirectorySkipHintsFromEvidence,
   discoverExternalReceiverTokensFromEvidence,
 } from '../dynamic-reality-kernel/token-evidence';
 import { discoverConvergenceExecutionModeLabels } from '../__kernel_additions__/discoverConvergenceExecutionModeLabels';
@@ -99,21 +97,6 @@ export function harnessArtifactPath(): string {
 
 export function targetKindFromDecorator(_decoratorName: string): HarnessTargetKind {
   return ENDPOINT_KIND_LABEL as HarnessTargetKind;
-}
-
-function ignoredDirectoryNames(): Set<string> {
-  const base = new Set(discoverDirectorySkipHintsFromEvidence());
-  const projectExtras = fs.existsSync('.gitignore')
-    ? fs
-        .readFileSync('.gitignore', 'utf8')
-        .split('\n')
-        .filter((l) => l.startsWith('/') && !l.includes('*') && !l.includes('.'))
-        .map((l) => l.replace(/^\//, '').replace(/\/$/, ''))
-        .filter(Boolean)
-    : [];
-  for (const entry of projectExtras) base.add(entry);
-  base.add('.git');
-  return base;
 }
 
 export function nonCallableMemberNames(): Set<string> {

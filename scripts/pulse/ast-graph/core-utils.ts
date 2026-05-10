@@ -2,7 +2,7 @@
 // Shared types, path normalization, and ID generation.
 
 import * as path from 'path';
-import { type Node, type Decorator } from 'ts-morph';
+import { type Node } from 'ts-morph';
 import { deriveUnitValue } from '../dynamic-reality-kernel/catalog-arithmetic';
 
 // ── Types ───────────────────────────────────────────────────────────────

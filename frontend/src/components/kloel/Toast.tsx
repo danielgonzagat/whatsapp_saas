@@ -75,7 +75,7 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: number) =
       type="button"
       style={{
         background: 'var(--app-bg-card)',
-        border: `1px solid #222226`,
+        border: `1px solid ${colors.stroke}`,
         borderRadius: 6,
         padding: '14px 18px',
         minWidth: 280,

@@ -1,10 +1,9 @@
 'use client';
-import { colors } from '@/lib/design-tokens';
+import { colors, typography } from '@/lib/design-tokens';
 import { kloelT } from '@/lib/i18n/t';
 import { CurrencyInput } from '@/components/kloel/FormExtras';
 import { useToast } from '@/components/kloel/ToastProvider';
 import { apiFetch } from '@/lib/api';
-import { colors, typography } from '@/lib/design-tokens';
 import { AlertTriangle, Check, CreditCard, FileText, QrCode } from 'lucide-react';
 import { useEffect, useState, useId } from 'react';
 import { mutate } from 'swr';
@@ -261,7 +260,7 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
           icon={CreditCard}
           title={kloelT(`Cartão de crédito`)}
           desc={kloelT(`Parcelamento e pagamento à vista`)}
-          iconColor={kloelT(`#E0DDD8`)}
+          iconColor={colors.text.silver}
         />
         <PaymentMethodCard
           enabled={boletoEnabled}
@@ -269,7 +268,7 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
           icon={FileText}
           title={kloelT(`Boleto bancário`)}
           desc={kloelT(`Compensação em 1-3 dias úteis`)}
-          iconColor={kloelT(`#6E6E73`)}
+          iconColor={colors.text.muted}
         />
         <PaymentMethodCard
           enabled={pixEnabled}
@@ -277,7 +276,7 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
           icon={QrCode}
           title="PIX"
           desc={kloelT(`Pagamento instantâneo, sem taxas`)}
-          iconColor={kloelT(`#E0DDD8`)}
+          iconColor={colors.text.silver}
         />
       </div>
 

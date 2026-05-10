@@ -13,35 +13,6 @@ export const PULSE_MANIFEST_FILENAME = 'pulse.manifest.json';
 /** Supported_stacks. */
 export const SUPPORTED_STACKS = new Set<string>();
 
-const REQUIRED_FIELDS: Array<keyof import('./types.manifest').PulseManifest> = [
-  'version',
-  'projectId',
-  'projectName',
-  'systemType',
-  'supportedStacks',
-  'surfaces',
-  'criticalDomains',
-  'modules',
-  'actorProfiles',
-  'scenarioSpecs',
-  'externalIntegrations',
-  'jobs',
-  'webhooks',
-  'stateMachines',
-  'criticalFlows',
-  'invariants',
-  'flowSpecs',
-  'invariantSpecs',
-  'temporaryAcceptances',
-  'certificationTiers',
-  'finalReadinessCriteria',
-  'slos',
-  'securityRequirements',
-  'recoveryRequirements',
-  'excludedSurfaces',
-  'environments',
-];
-
 export function manifestBreak(
   type: 'MANIFEST_MISSING' | 'MANIFEST_INVALID' | 'UNKNOWN_SURFACE',
   description: string,

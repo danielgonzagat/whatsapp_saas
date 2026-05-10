@@ -1,5 +1,4 @@
 import * as path from 'path';
-import type { HarnessTarget } from '../types.execution-harness';
 import { walkFiles } from '../parsers/utils';
 import { pathExists, readTextFile } from '../safe-fs';
 import { infrastructureAliasNames, nonCallableMemberNames } from './grammar';
@@ -58,7 +57,6 @@ export function rawWorkerDiscoveries(workerDir: string): RawWorkerDiscovery[] {
     const workerRe =
       /new\s+Worker\s*\(\s*(?:['"`]([^'"`]+)['"`])\s*,\s*(?:async\s+)?(?:\([^)]*\)|function\s*\w*|[A-Za-z_]\w*)/g;
     let match: RegExpExecArray | null;
-    const lines = content.split('\n');
 
     while ((match = workerRe.exec(content)) !== null) {
       const queueName = match[1];
@@ -278,7 +276,7 @@ export function collectPrismaModelsFromText(text: string): string[] {
 
 export function resolveDependencyNames(
   file: string,
-  className: string,
+  _className: string,
   methodName: string,
 ): Array<{ className: string; methodName: string | null }> {
   const dependencies: Array<{ className: string; methodName: string | null }> = [];

@@ -3,7 +3,6 @@
  * Exports: buildDirective
  */
 import { unique } from '../artifacts.io';
-import { deriveZeroValue } from '../dynamic-reality-kernel/catalog-arithmetic';
 import { discoverConvergenceExecutionModeLabels } from '../__kernel_additions__/discoverConvergenceExecutionModeLabels';
 import {
   buildDecisionQueue,

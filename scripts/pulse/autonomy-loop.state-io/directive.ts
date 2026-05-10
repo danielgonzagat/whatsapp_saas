@@ -1,49 +1,10 @@
 /** State read/write, seed builders, and directive IO for the autonomy loop. */
 import * as path from 'node:path';
-import { spawnSync } from 'node:child_process';
-import type {
-  PulseAgentOrchestrationBatchRecord,
-  PulseAgentOrchestrationState,
-  PulseAutonomyIterationRecord,
-  PulseAutonomyMemoryConcept,
-  PulseAutonomyMemoryState,
-  PulseAutonomyState,
-  PulseAutonomyUnitSnapshot,
-} from '../types.autonomy';
 import type {
   PulseAutonomousDirective,
-  PulseAutonomousDirectiveUnit,
-  PulseAutonomyArtifactSeedInput,
-  PulseAgentOrchestrationArtifactSeedInput,
   PulseAutonomySummarySnapshot,
 } from '../autonomy-loop.types';
-import {
-  DEFAULT_MAX_ITERATIONS,
-  DEFAULT_PARALLEL_AGENTS,
-  DEFAULT_MAX_WORKER_RETRIES,
-} from '../autonomy-loop.types';
-import {
-  getAutonomyArtifactPath,
-  getAutonomyMemoryArtifactPath,
-  getAgentOrchestrationArtifactPath,
-  readOptionalArtifact,
-  writeAtomicArtifact,
-  compact,
-} from '../autonomy-loop.utils';
-import {
-  toUnitSnapshot,
-  buildStructuralQueueInfluence,
-} from '../autonomy-loop.unit-ranking/structural-rank';
-import {
-  getPreferredAutomationSafeUnits,
-  hasUnitConflict,
-} from '../autonomy-loop.unit-ranking/selection';
-import { buildRuntimeRealityQueueInfluence } from '../autonomy-loop.unit-ranking/runtime-rank';
-import { buildPulseAutonomyMemoryState } from '../autonomy-loop.memory';
-import { fingerprintStrategy } from '../structural-memory/memory-core';
-import type { FalsePositiveAdjudicationState } from '../types.false-positive-adjudicator';
-import type { RuntimeFusionState } from '../types.runtime-fusion';
-import type { StructuralMemoryState } from '../types.structural-memory';
+import { readOptionalArtifact } from '../autonomy-loop.utils';
 
 export function directiveDigest(directive: PulseAutonomousDirective): string {
   const crypto = require('node:crypto') as typeof import('node:crypto');

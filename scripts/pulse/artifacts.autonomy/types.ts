@@ -5,8 +5,6 @@ import type { AuthorityMode } from '../types.authority-mode';
 import {
   deriveHttpStatusFromObservedCatalog,
   deriveUnitValue,
-  deriveZeroValue,
-  deriveCatalogPercentScaleFromObservedCatalog,
   observeStatusTextLengthFromCatalog,
 } from '../dynamic-reality-kernel/catalog-arithmetic';
 import {

@@ -31,13 +31,10 @@ import {
   isPassed,
   isFailed,
   isDoneStatus,
-  isPartialStatus,
-  isBlockedStatus,
   isInferredTruthMode,
   certaintyFromStatus,
   sumNumbers,
   scanFilesForPattern,
-  testFilesExist,
 } from './classification';
 
 // ── Helpers ────────────────────────────────────────────────────────────────

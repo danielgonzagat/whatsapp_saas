@@ -19,7 +19,6 @@ import {
 import {
   collectCreatedModelBindings,
   contextMentionsCreatedBinding,
-  collectFieldUsageFromContext,
   buildUsageGraph,
 } from './evidence-classifiers';
 

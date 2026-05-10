@@ -1,5 +1,6 @@
 'use client';
 
+import { colors } from '@/lib/design-tokens';
 import { kloelT } from '@/lib/i18n/t';
 import { IC } from '@/components/canvas/CanvasIcons';
 import { CreateModal } from '@/components/canvas/CreateModal';
@@ -43,13 +44,13 @@ export default function CanvasLayout({ children }: { children: ReactNode }) {
         @keyframes pE{0%,100%{box-shadow:0 0 12px rgba(232,93,48,0.2)}50%{box-shadow:0 0 22px rgba(232,93,48,0.35)}}
         .sb::-webkit-scrollbar{width:4px}
         .sb::-webkit-scrollbar-track{background:transparent}
-        .sb::-webkit-scrollbar-thumb{background:#2A2A2E;border-radius:2px}
+        .sb::-webkit-scrollbar-thumb{background:${colors.canvas.hover};border-radius:2px}
       `}</style>
 
       {/* Sub-tabs */}
       <div
         style={{
-          borderBottom: '1px solid #1C1C1F',
+          borderBottom: `1px solid ${colors.canvas.border}`,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',

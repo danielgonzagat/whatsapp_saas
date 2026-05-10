@@ -65,7 +65,7 @@ export function CustomSizePanel({
             style={{
               width: '100%',
               background: colors.background.surface,
-              border: '1px solid #1C1C1F',
+              border: `1px solid ${colors.canvas.border}`,
               borderRadius: 4,
               padding: '10px 12px',
               color: colors.text.silver,
@@ -101,7 +101,7 @@ export function CustomSizePanel({
             style={{
               width: '100%',
               background: colors.background.surface,
-              border: '1px solid #1C1C1F',
+              border: `1px solid ${colors.canvas.border}`,
               borderRadius: 4,
               padding: '10px 12px',
               color: colors.text.silver,
@@ -130,7 +130,7 @@ export function CustomSizePanel({
             style={{
               width: '100%',
               background: colors.background.surface,
-              border: '1px solid #1C1C1F',
+              border: `1px solid ${colors.canvas.border}`,
               borderRadius: 4,
               padding: '10px',
               color: colors.text.silver,
@@ -211,7 +211,7 @@ export function CustomSizePanel({
               alignItems: 'center',
               gap: 10,
               background: colors.background.surface,
-              border: '1px solid #1C1C1F',
+              border: `1px solid ${colors.canvas.border}`,
               borderRadius: 4,
               padding: '10px 14px',
               cursor: 'pointer',

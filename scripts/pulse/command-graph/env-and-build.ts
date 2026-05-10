@@ -4,7 +4,6 @@ import { safeJoin } from '../lib/safe-path';
 import { deriveUnitValue } from '../dynamic-reality-kernel/catalog-arithmetic';
 import {
   hasObservedToken,
-  splitIdentifierTokensFromObservedName,
 } from '../dynamic-reality-kernel/token-evidence';
 import type {
   PulseCommandGraph,
@@ -12,7 +11,6 @@ import type {
   PulseDiscoveredEnvironmentVariable,
   CandidateSource,
 } from './types';
-import { discoverSourceFilePatternCatalog, discoverEnvContextCatalog } from './types';
 import {
   discoverStaticSources,
   inferInstallCommands,
@@ -36,8 +34,6 @@ const OBSERVED_SECRET_COMPOUND_TOKEN_CATALOG = [
   { primary: 'api', secondary: 'key' },
   { primary: 'access', secondary: 'key' },
 ] as const;
-
-const ENV_CONTEXT_CATALOG = discoverEnvContextCatalog();
 
 function isEnvNameChar(char: string | undefined): boolean {
   if (!char) {
@@ -138,7 +134,7 @@ function isSecretLikeName(name: string): boolean {
   return false;
 }
 
-function classifyEnvContext(line: string, trimmed: string): string | null {
+function classifyEnvContext(_line: string, trimmed: string): string | null {
   const upperTrimmed = trimmed.toUpperCase();
   if (upperTrimmed.startsWith('ARG ')) {
     const declaration = trimmed.slice(4).trim();

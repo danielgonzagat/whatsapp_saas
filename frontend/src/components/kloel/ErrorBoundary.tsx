@@ -52,7 +52,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           <div
             style={{
               background: 'var(--app-bg-card)',
-              border: '1px solid #E85D30',
+              border: `1px solid ${colors.ember.primary}`,
               borderRadius: 6,
               padding: 40,
               maxWidth: 480,

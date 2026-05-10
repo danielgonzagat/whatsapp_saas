@@ -5,7 +5,6 @@ import {
   deriveUnitValue,
   deriveZeroValue,
 } from '../dynamic-reality-kernel/catalog-arithmetic';
-import { discoverAllObservedArtifactFilenames } from '../dynamic-reality-kernel/token-evidence';
 import type { OtelSpan } from '../types.otel-runtime';
 import type { AstGraphContext, StructuralGraphContext } from './generation';
 import {
@@ -166,7 +165,7 @@ export function createManualSpanForTrace(
   serviceName: string,
   astCtx: AstGraphContext,
   structCtx: StructuralGraphContext,
-  opts: SpanGenOptions,
+  _opts: SpanGenOptions,
   seed: string,
 ): OtelSpan {
   const edge = findRelevantEdge(name, astCtx, structCtx);
@@ -244,7 +243,6 @@ export function findRelevantEdge(
     const fromSym = astCtx.symbols.get(edge.from);
     const toSym = astCtx.symbols.get(edge.to);
     if (fromSym && toSym) {
-      const combined = `${fromSym.name}→${toSym.name}`.toLowerCase();
       const fromBase = path
         .basename(fromSym.filePath, path.extname(fromSym.filePath))
         .toLowerCase();

@@ -2,11 +2,8 @@ import * as path from 'path';
 import type { BehaviorGraph, BehaviorNode } from '../types.behavior-graph';
 import type {
   ExecutionFeasibility,
-  HarnessEvidence,
   HarnessFixture,
-  HarnessFixtureKind,
   HarnessTarget,
-  HarnessTargetKind,
 } from '../types.execution-harness';
 import { safeJoin } from '../safe-path';
 import { pathExists, readJsonFile, readTextFile } from '../safe-fs';

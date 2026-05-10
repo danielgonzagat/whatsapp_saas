@@ -23,7 +23,7 @@ export function UploadPanel() {
           width: '100%',
           maxWidth: 500,
           height: 280,
-          border: '2px dashed #1C1C1F',
+          border: `2px dashed ${colors.canvas.border}`,
           borderRadius: 6,
           display: 'flex',
           flexDirection: 'column',
@@ -69,7 +69,7 @@ export function UploadPanel() {
             style={{
               padding: '8px 16px',
               background: colors.background.surface,
-              border: '1px solid #1C1C1F',
+              border: `1px solid ${colors.canvas.border}`,
               borderRadius: 4,
               color: colors.text.silver,
               fontSize: 12,

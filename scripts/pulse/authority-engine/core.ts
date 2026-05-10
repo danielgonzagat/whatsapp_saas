@@ -16,7 +16,6 @@ import type { PulseMachineReadiness } from '../artifacts.types';
 import type {
   AuthorityLevel,
   AuthorityState,
-  AuthorityTransitionGate,
 } from '../types.authority-engine';
 
 // ── Authority-level contract derivation ─────────────────────────────────────

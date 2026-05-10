@@ -12,7 +12,6 @@ import type {
   SpanToPathMapping,
 } from '../types.otel-runtime';
 import type { PulseStructuralEdge } from '../types.structural';
-import { nowIso } from './constants';
 
 // ─── Span-to-path matching ───────────────────────────────────────────────────
 

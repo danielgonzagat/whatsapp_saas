@@ -1,5 +1,5 @@
 import * as path from 'node:path';
-import { pathExists, readDir, readTextFile, statPath } from '../safe-fs';
+import { pathExists, readDir, readTextFile } from '../safe-fs';
 import { safeJoin } from '../lib/safe-path';
 import { deriveUnitValue } from '../dynamic-reality-kernel/catalog-arithmetic';
 import {

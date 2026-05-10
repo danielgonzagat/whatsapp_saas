@@ -12,7 +12,7 @@ export function Hospedagem() {
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <span style={{ color: EMBER }}>{IC.server(24)}</span>
         <span style={{ fontFamily: SORA, fontSize: 18, color: TEXT }}>{kloelT(`Hospedagem`)}</span>
-        <Badge color="#10B981">{kloelT(`Plano Pro`)}</Badge>
+        <Badge color={colors.semantic.success}>{kloelT(`Plano Pro`)}</Badge>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>

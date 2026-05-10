@@ -13,7 +13,6 @@ import { discoverAllObservedArtifactFilenames } from '../dynamic-reality-kernel/
 import { deriveStringUnionMembersFromTypeContract } from '../dynamic-reality-kernel/type-contract-labels';
 import type {
   ObservabilityEvidenceKind,
-  ObservabilityCoverageState,
   ObservabilityPillar,
   ObservabilityStatus,
 } from '../types.observability-coverage';

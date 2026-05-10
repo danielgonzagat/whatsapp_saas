@@ -4,14 +4,10 @@ import type { PulseExternalSignalState } from '../types.capabilities/05-external
 import type { PulseParityGapsArtifact } from '../types.capabilities.parity';
 import type { PulseFlowProjection } from '../types.capabilities/04-flow-projection';
 import type { PulseCertification, PulseWorldState } from '../types.evidence';
-import type {
-  PulseConvergenceUnitPriority,
-} from '../types.convergence';
 import type { PulseExecutionMatrix } from '../types.execution-matrix';
 import type { PulseResolvedManifest } from '../types.resolved-manifest';
 import type { PulseScenarioResult } from '../types.scenario-result';
 import type { PulseScopeState } from '../types.truth.scope';
-import type { PulseGateResult, PulseGatesArtifact } from '../types.gate-result';
 import {
   discoverAllObservedArtifactFilenames,
   discoverAllObservedGateNames,
@@ -37,7 +33,6 @@ import {
 import { discoverCapabilityStatusLabels } from '../__kernel_additions__/discoverCapabilityStatusLabels';
 import { discoverFlowProjectionStatusLabels } from '../__kernel_additions__/discoverFlowProjectionStatusLabels';
 import { discoverExternalSignalSourceLabels } from '../__kernel_additions__/discoverExternalSignalSourceLabels';
-import { CHECKER_GAP_TYPES, SECURITY_FINDING_EVENT_KERNEL_GRAMMAR } from '../cert-constants';
 
 let OBSERVED_ARTIFACTS = discoverAllObservedArtifactFilenames();
 let OBSERVED_GATES = discoverAllObservedGateNames();

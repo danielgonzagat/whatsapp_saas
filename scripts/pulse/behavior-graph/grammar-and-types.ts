@@ -1,7 +1,6 @@
 import type { DetectedSourceRoot } from '../source-root-detector/types';
 import type {
   BehaviorNode,
-  BehaviorValidationRequirement,
   BehaviorDecoratorRole,
   BehaviorClassNameRole,
   GovernedEvidenceMode,

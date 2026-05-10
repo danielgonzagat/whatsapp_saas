@@ -1,14 +1,12 @@
 import type {
   BehaviorNodeKind,
   BehaviorInput,
-  BehaviorInputKind,
-  BehaviorOutputKind,
   BehaviorStateAccess,
   BehaviorExternalCall,
   BehaviorOutput,
 } from '../types.behavior-graph';
 import type { DetectedSourceRoot } from '../source-root-detector/types';
-import type { ParsedFunc, SourceExternalContext, GovernedEvidenceMode } from './grammar-and-types';
+import type { ParsedFunc, SourceExternalContext } from './grammar-and-types';
 import {
   requireDecoratorRoleCatalog,
   requireClassNameRoleCatalog,

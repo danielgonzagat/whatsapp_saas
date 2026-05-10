@@ -93,7 +93,7 @@ export function Pagination({
                 width: 32,
                 height: 32,
                 borderRadius: 6,
-                border: isActive ? '1px solid #E85D30' : '1px solid #222226',
+                border: isActive ? `1px solid ${colors.ember.primary}` : `1px solid ${colors.stroke}`,
                 background: isActive ? 'rgba(232, 93, 48, 0.06)' : colors.background.surface,
                 color: isActive ? colors.ember.primary : colors.text.muted,
                 fontSize: 12,

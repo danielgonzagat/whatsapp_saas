@@ -10,7 +10,6 @@ import {
   isSameState,
   normalizeConvergenceUnit,
   uniqueStrings,
-  humanize,
 } from './utils';
 import {
   buildCapabilityUnits,

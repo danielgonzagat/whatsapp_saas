@@ -5,14 +5,11 @@ import type {
   BehaviorExternalCall,
   BehaviorValidationRequirement,
   BehaviorNode,
-  BehaviorInput,
-  BehaviorOutput,
 } from '../types.behavior-graph';
 import type { DetectedSourceRoot } from '../source-root-detector/types';
 import type {
   ParsedFunc,
   SourceExternalContext,
-  GovernedEvidenceMode,
   BehaviorNodeArtifact,
 } from './grammar-and-types';
 import {

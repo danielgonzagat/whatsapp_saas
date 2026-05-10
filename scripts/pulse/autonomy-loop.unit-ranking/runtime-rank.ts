@@ -10,10 +10,6 @@ import {
   deriveUnitValue,
   deriveZeroValue,
 } from '../dynamic-reality-kernel/catalog-arithmetic';
-import {
-  discoverOperationalEvidenceKindLabels,
-  discoverRuntimeFusionEvidenceStatusLabels,
-} from '../dynamic-reality-kernel/type-contract-engines';
 import type {
   OperationalEvidenceKind,
   RuntimeFusionState,
@@ -26,8 +22,6 @@ import {
   getPriorityRank,
   getConfidenceRank,
   sourceMatchesGrammarPulseMachine,
-  evidenceModeMatchesGrammarObserved,
-  evidenceModeMatchesGrammarInferred,
   kindMatchesGrammarScenario,
   deriveEvidenceModeGrammarFallback,
   getRiskRank,

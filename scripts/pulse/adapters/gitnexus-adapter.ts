@@ -46,7 +46,7 @@ function makeSignal(
     recentChangeRefs: [],
     ownerLane: 'platform',
     executionMode,
-    governanceDisposition: tags.includes('governed_validation') ? 'governed_validation' : undefined,
+    ...(tags.includes('governed_validation') ? { governanceDisposition: 'governed_validation' as const } : {}),
     protectedByGovernance: false,
     validationTargets,
     rawRef: null,

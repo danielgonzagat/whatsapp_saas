@@ -3,13 +3,11 @@
  * Exports: buildPulseMachineNextWork
  */
 import { unique } from '../artifacts.io';
-import { deriveZeroValue } from '../dynamic-reality-kernel/catalog-arithmetic';
 import type { PulseMachineReadiness } from '../artifacts.types';
 import { OBSERVED_ARTIFACT_FILENAMES, type PulseMachineDirectiveUnit } from './directive-shared';
 import {
   buildMachineCriterionRegistryEvidence,
   machineUnitTitle,
-  evidenceNumber,
   evidenceString,
   shouldEmitMachineCriterionWork,
 } from './directive-machine-helpers';

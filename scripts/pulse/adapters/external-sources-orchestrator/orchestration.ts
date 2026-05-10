@@ -55,7 +55,11 @@ export async function runExternalSourcesOrchestrator(
 
   // Run GitHub adapter
   try {
-    const gc = { owner: githubOwner, repo: githubRepo, token: githubToken };
+    const gc = {
+      owner: githubOwner,
+      repo: githubRepo,
+      ...(githubToken !== undefined ? { token: githubToken } : {}),
+    };
     if (gc.owner && gc.repo) {
       const signals = await fetchGitHubSignals(gc);
       signalsBySource[githubSource()] = signals;
@@ -93,9 +97,15 @@ export async function runExternalSourcesOrchestrator(
   // Run Sentry adapter
   try {
     const sc = {
-      authToken: config.sentry?.authToken || mergedEnv['SENTRY_AUTH_TOKEN'],
-      org: config.sentry?.org || mergedEnv['SENTRY_ORG'],
-      project: config.sentry?.project || mergedEnv['SENTRY_PROJECT'],
+      ...(config.sentry?.authToken || mergedEnv['SENTRY_AUTH_TOKEN']
+        ? { authToken: (config.sentry?.authToken || mergedEnv['SENTRY_AUTH_TOKEN'])! }
+        : {}),
+      ...(config.sentry?.org || mergedEnv['SENTRY_ORG']
+        ? { org: (config.sentry?.org || mergedEnv['SENTRY_ORG'])! }
+        : {}),
+      ...(config.sentry?.project || mergedEnv['SENTRY_PROJECT']
+        ? { project: (config.sentry?.project || mergedEnv['SENTRY_PROJECT'])! }
+        : {}),
     };
     if (sc.authToken && sc.org && sc.project) {
       const signals = await fetchSentrySignals(sc);
@@ -136,8 +146,10 @@ export async function runExternalSourcesOrchestrator(
     const ac = {
       owner: githubOwner,
       repo: githubRepo,
-      token: githubToken,
-      currentHeadSha: readCurrentHeadSha(config.rootDir),
+      ...(githubToken !== undefined ? { token: githubToken } : {}),
+      ...(readCurrentHeadSha(config.rootDir) !== undefined
+        ? { currentHeadSha: readCurrentHeadSha(config.rootDir)! }
+        : {}),
     };
     if (ac.token && ac.owner && ac.repo) {
       const signals = await fetchGitHubActionsSignals(ac);
@@ -176,9 +188,15 @@ export async function runExternalSourcesOrchestrator(
   // Run Datadog adapter
   try {
     const dc = {
-      apiKey: config.datadog?.apiKey || mergedEnv['DATADOG_API_KEY'],
-      appKey: config.datadog?.appKey || mergedEnv['DATADOG_APP_KEY'],
-      site: config.datadog?.site || mergedEnv['DATADOG_SITE'],
+      ...(config.datadog?.apiKey || mergedEnv['DATADOG_API_KEY']
+        ? { apiKey: (config.datadog?.apiKey || mergedEnv['DATADOG_API_KEY'])! }
+        : {}),
+      ...(config.datadog?.appKey || mergedEnv['DATADOG_APP_KEY']
+        ? { appKey: (config.datadog?.appKey || mergedEnv['DATADOG_APP_KEY'])! }
+        : {}),
+      ...(config.datadog?.site || mergedEnv['DATADOG_SITE']
+        ? { site: (config.datadog?.site || mergedEnv['DATADOG_SITE'])! }
+        : {}),
     };
     if (dc.apiKey && dc.appKey) {
       const signals = await fetchDatadogSignals(dc);
@@ -217,15 +235,27 @@ export async function runExternalSourcesOrchestrator(
   // Run Prometheus adapter
   try {
     const pc = {
-      baseUrl:
-        config.prometheus?.baseUrl ||
+      ...(config.prometheus?.baseUrl ||
         mergedEnv['PROMETHEUS_BASE_URL'] ||
-        mergedEnv['PULSE_PROMETHEUS_URL'],
-      bearerToken:
-        config.prometheus?.bearerToken ||
+        mergedEnv['PULSE_PROMETHEUS_URL']
+        ? {
+            baseUrl: (config.prometheus?.baseUrl ||
+              mergedEnv['PROMETHEUS_BASE_URL'] ||
+              mergedEnv['PULSE_PROMETHEUS_URL'])!,
+          }
+        : {}),
+      ...(config.prometheus?.bearerToken ||
         mergedEnv['PROMETHEUS_BEARER_TOKEN'] ||
-        mergedEnv['PULSE_PROMETHEUS_TOKEN'],
-      query: config.prometheus?.query || mergedEnv['PROMETHEUS_QUERY'],
+        mergedEnv['PULSE_PROMETHEUS_TOKEN']
+        ? {
+            bearerToken: (config.prometheus?.bearerToken ||
+              mergedEnv['PROMETHEUS_BEARER_TOKEN'] ||
+              mergedEnv['PULSE_PROMETHEUS_TOKEN'])!,
+          }
+        : {}),
+      ...(config.prometheus?.query || mergedEnv['PROMETHEUS_QUERY']
+        ? { query: (config.prometheus?.query || mergedEnv['PROMETHEUS_QUERY'])! }
+        : {}),
     };
     if (pc.baseUrl) {
       const signals = await fetchPrometheusSignals(pc);
@@ -264,7 +294,9 @@ export async function runExternalSourcesOrchestrator(
   // Run Codecov adapter
   try {
     const cc = {
-      token: config.codecov?.token || mergedEnv['CODECOV_TOKEN'],
+      ...(config.codecov?.token || mergedEnv['CODECOV_TOKEN']
+        ? { token: (config.codecov?.token || mergedEnv['CODECOV_TOKEN'])! }
+        : {}),
       owner: config.codecov?.owner || mergedEnv['GITHUB_OWNER'] || githubOwner,
       repo: config.codecov?.repo || mergedEnv['GITHUB_REPO'] || githubRepo,
     };
@@ -305,7 +337,9 @@ export async function runExternalSourcesOrchestrator(
   // Run Dependabot adapter
   try {
     const dc = {
-      token: config.dependabot?.token || mergedEnv['GITHUB_TOKEN'] || githubToken,
+      ...(config.dependabot?.token || mergedEnv['GITHUB_TOKEN'] || githubToken !== undefined
+        ? { token: (config.dependabot?.token || mergedEnv['GITHUB_TOKEN'] || githubToken)! }
+        : {}),
       owner: config.dependabot?.owner || mergedEnv['GITHUB_OWNER'] || githubOwner,
       repo: config.dependabot?.repo || mergedEnv['GITHUB_REPO'] || githubRepo,
     };
@@ -366,7 +400,7 @@ export async function runExternalSourcesOrchestrator(
       env: mergedEnv,
       githubOwner,
       githubRepo,
-      githubToken,
+      ...(githubToken !== undefined ? { githubToken } : {}),
       gitHubRemote: ctx.gitHubRemote,
     },
     requirednessProfile,
@@ -385,8 +419,8 @@ export async function runExternalSourcesOrchestrator(
 
   return {
     generatedAt,
-    profile,
-    certificationScope,
+    ...(profile !== undefined ? { profile } : {}),
+    ...(certificationScope !== undefined ? { certificationScope } : {}),
     sources: refinedSources,
     sourceCapabilities,
     allSignals,

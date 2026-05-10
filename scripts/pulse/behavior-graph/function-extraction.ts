@@ -13,7 +13,7 @@ import {
   deriveCatalogPercentScaleFromObservedCatalog,
 } from '../dynamic-reality-kernel/catalog-arithmetic';
 
-function extractFunctionsFromSource(filePath: string, source: string): ParsedFunc[] {
+function extractFunctionsFromSource(_filePath: string, source: string): ParsedFunc[] {
   if (source.length > FULL_BODY_EXTRACTION_BUDGET_BYTES) {
     return extractLargeFileFunctionStubs(source);
   }

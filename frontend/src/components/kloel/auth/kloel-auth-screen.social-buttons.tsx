@@ -23,7 +23,7 @@ const socialBtnBase: React.CSSProperties = {
   gap: 10,
   height: 44,
   background: colors.background.surface,
-  border: '1px solid #222226',
+  border: `1px solid ${colors.stroke}`,
   borderRadius: 6,
   color: colors.text.silver,
   fontSize: 13,

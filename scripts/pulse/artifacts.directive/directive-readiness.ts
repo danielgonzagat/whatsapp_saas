@@ -8,14 +8,13 @@ import { deriveZeroValue } from '../dynamic-reality-kernel/catalog-arithmetic';
 import { buildDirectiveProofSurface } from '../directive-proof-surface';
 import { buildAutonomyProof } from '../artifacts.autonomy/autonomy-proof';
 import { buildAutonomyReadiness } from '../artifacts.autonomy/readiness';
-import type { PulseArtifactSnapshot, PulseMachineReadiness } from '../artifacts.types';
+import type { PulseMachineReadiness } from '../artifacts.types';
 import type { PulseProofReadinessSummary } from '../cert-gate-overclaim';
 import type { PathProofPlan } from '../path-proof-runner/main';
 import type { PathCoverageState } from '../types.path-coverage-engine';
 import {
   OBSERVED_ARTIFACT_FILENAMES,
   readCurrentPulseArtifact,
-  type MachineProofRegistryEvidence,
 } from './directive-shared';
 
 type DirectiveProofReadinessArtifact = {
@@ -58,8 +57,12 @@ export function buildProofReadinessSummaryForDirective(
   }
 
   return {
-    canAdvance: source?.canAdvance ?? artifact.readinessGate?.canAdvance,
-    status: source?.status ?? artifact.readinessGate?.status,
+    ...(source?.canAdvance !== undefined || artifact.readinessGate?.canAdvance !== undefined
+      ? { canAdvance: source?.canAdvance ?? artifact.readinessGate?.canAdvance }
+      : {}),
+    ...(source?.status !== undefined || artifact.readinessGate?.status !== undefined
+      ? { status: source?.status ?? artifact.readinessGate?.status }
+      : {}),
     plannedEvidence: finiteCount(source?.plannedEvidence),
     inferredEvidence: finiteCount(source?.inferredEvidence),
     notAvailableEvidence: finiteCount(source?.notAvailableEvidence),
@@ -105,16 +108,6 @@ function proofReadinessProductionBlockerReason(summary: PulseProofReadinessSumma
 
 function directiveVerdict(value: string): 'SIM' | 'NAO' {
   return value === 'SIM' ? 'SIM' : 'NAO';
-}
-
-function verdictGateEvidenceKey(verdictName: string): string {
-  return verdictName as string;
-}
-
-function directiveGateEvidencePatch(...verdictNames: string[]): { gateNames: string[] } {
-  return {
-    gateNames: verdictNames.map(verdictGateEvidenceKey),
-  };
 }
 
 export function applyProofReadinessToAutonomyClaims(

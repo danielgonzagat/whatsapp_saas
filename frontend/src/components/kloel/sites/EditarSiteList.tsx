@@ -1,5 +1,6 @@
 'use client';
 
+import { colors } from '@/lib/design-tokens';
 import { kloelT } from '@/lib/i18n/t';
 import { IC, SORA, MONO, EMBER, TEXT, TEXT_DIM } from './SitesViewIcons';
 import { Card, Badge, Btn, EmptyState } from './SitesViewAtoms';
@@ -43,7 +44,7 @@ export function EditarSiteList({ savedSites, loading, onSelectSite, onDeleteSite
                 <div style={{ fontFamily: SORA, fontSize: 14, color: TEXT }}>{site.name || 'Site sem titulo'}</div>
                 <div style={{ fontFamily: MONO, fontSize: 11, color: TEXT_DIM }}>{site.updatedAt ? new Date(site.updatedAt).toLocaleDateString('pt-BR') : 'Sem data'}</div>
               </button>
-              {site.published && <Badge color="#10B981">{kloelT(`Publicado`)}</Badge>}
+              {site.published && <Badge color={colors.semantic.success}>{kloelT(`Publicado`)}</Badge>}
               <Btn variant="ghost" small onClick={() => onSelectSite(site)}>{IC.edit(14)} {kloelT(`Editar`)}</Btn>
               <Btn variant="danger" small onClick={() => onDeleteSite(site.id)}>{IC.trash(14)}</Btn>
             </Card>

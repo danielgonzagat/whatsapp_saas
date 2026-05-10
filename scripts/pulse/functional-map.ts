@@ -6,34 +6,27 @@ import { safeJoin } from './safe-path';
 import * as path from 'path';
 import type { PulseConfig } from './types.manifest';
 import type {
-  UIElement,
   APICall,
   BackendRoute,
-  ServiceTrace,
   ProxyRoute,
-  FacadeEntry,
 } from './types.core';
-import type { HookRegistry } from './parsers/hook-registry';
 import type {
   InteractionStatus,
   InteractionChain,
   DataSource,
   PageFunctionalMap,
   FunctionalMapResult,
-  PageEntry,
   CoreParserData,
 } from './functional-map-types';
-import { normalizeForMatch, type RouteKey } from './graph/graph-part1-core';
+import type { RouteKey } from './graph/graph-part1-core';
 import {
   buildRouteLookup,
   matchApiCallToRoute,
   buildServiceModelMap,
-  resolveRouteModels,
 } from './graph/graph-part2-routing';
 import { buildApiModuleMap } from './parsers/api-parser';
-import { pathExists, readTextFile } from './safe-fs';
+import { readTextFile } from './safe-fs';
 import {
-  findApiCallForElement,
   groupElementsByPage,
 } from './functional-map.helpers/public';
 import { findAllPages, resolveComponentTree } from './functional-map-pages';

@@ -15,9 +15,6 @@ import {
   DEFAULT_MAX_WORKER_RETRIES,
 } from '../autonomy-loop.types';
 import { toUnitSnapshot } from '../autonomy-loop.unit-ranking/structural-rank';
-import { fingerprintStrategy } from '../structural-memory/memory-core';
-import { readDirectiveArtifact } from './directive';
-import { readQueueInfluence } from './queue-influence';
 import {
   getMemoryAwarePreferredAutomationSafeUnits,
   selectMemoryAwareParallelUnits,

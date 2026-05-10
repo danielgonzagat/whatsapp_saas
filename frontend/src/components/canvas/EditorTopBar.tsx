@@ -21,7 +21,7 @@ const ddMenu: React.CSSProperties = {
   left: 0,
   marginTop: 4,
   background: colors.background.surface,
-  border: '1px solid #1C1C1F',
+  border: `1px solid ${colors.canvas.border}`,
   borderRadius: 6,
   boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
   padding: '4px 0',
@@ -125,7 +125,7 @@ export function EditorTopBar({
       style={{
         height: 42,
         background: colors.background.surface,
-        borderBottom: '1px solid #1C1C1F',
+        borderBottom: `1px solid ${colors.canvas.border}`,
         display: 'flex',
         alignItems: 'center',
         padding: '0 12px',
@@ -289,7 +289,7 @@ export function EditorTopBar({
                 style={{
                   width: 60,
                   background: colors.background.void,
-                  border: '1px solid #1C1C1F',
+                  border: `1px solid ${colors.canvas.border}`,
                   borderRadius: 4,
                   color: colors.text.silver,
                   fontSize: 11,
@@ -309,7 +309,7 @@ export function EditorTopBar({
                 style={{
                   width: 60,
                   background: colors.background.void,
-                  border: '1px solid #1C1C1F',
+                  border: `1px solid ${colors.canvas.border}`,
                   borderRadius: 4,
                   color: colors.text.silver,
                   fontSize: 11,

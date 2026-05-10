@@ -74,7 +74,7 @@ export function CreateModal({ open, onClose }: CreateModalProps) {
         aria-modal="true"
         style={{
           background: colors.background.void,
-          border: '1px solid #1C1C1F',
+          border: `1px solid ${colors.canvas.border}`,
           borderRadius: 6,
           width: '92vw',
           maxWidth: 920,
@@ -96,7 +96,7 @@ export function CreateModal({ open, onClose }: CreateModalProps) {
             alignItems: 'center',
             justifyContent: 'space-between',
             padding: '14px 20px',
-            borderBottom: '1px solid #1C1C1F',
+            borderBottom: `1px solid ${colors.canvas.border}`,
             flexShrink: 0,
           }}
         >
@@ -112,7 +112,7 @@ export function CreateModal({ open, onClose }: CreateModalProps) {
               maxWidth: 340,
               marginLeft: 20,
               background: colors.background.surface,
-              border: '1px solid #1C1C1F',
+              border: `1px solid ${colors.canvas.border}`,
               borderRadius: 4,
               padding: '6px 10px',
             }}
@@ -154,7 +154,7 @@ export function CreateModal({ open, onClose }: CreateModalProps) {
             className="sb"
             style={{
               width: 190,
-              borderRight: '1px solid #1C1C1F',
+              borderRight: `1px solid ${colors.canvas.border}`,
               overflowY: 'auto',
               padding: '6px 0',
               flexShrink: 0,

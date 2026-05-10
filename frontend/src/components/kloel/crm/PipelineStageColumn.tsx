@@ -167,7 +167,7 @@ export function PipelineStageColumn({
               justifyContent: 'center',
               gap: 4,
               background: 'transparent',
-              border: '1px dashed #222226',
+              border: `1px dashed ${colors.stroke}`,
               borderRadius: 6,
               color: 'var(--app-text-secondary)',
               fontSize: 11,

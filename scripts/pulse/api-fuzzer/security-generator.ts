@@ -5,7 +5,7 @@
  * open redirect) and classifies endpoint risk from contract shape.
  */
 import type { APIEndpointProbe, SecurityTestCase } from '../types.api-fuzzer';
-import { PLANNED, STATUS, deriveUnitValue, parseRouteParameters } from './constants';
+import { PLANNED, deriveUnitValue, parseRouteParameters } from './constants';
 import {
   synthesizeSqlMutationPayloads,
   synthesizeMarkupMutationPayloads,

@@ -1,5 +1,4 @@
 import * as path from 'path';
-import { METHODS as HTTP_METHODS } from 'node:http';
 import type { ChaosTarget, ChaosScenarioKind } from '../types.chaos-engine';
 import type { PulseCapability } from '../types.capabilities/03-capability';
 import type { PulseExecutionMatrix } from '../types.execution-matrix';
@@ -45,8 +44,6 @@ export type ChaosScenarioSeed = {
 
 const _receiverTokens = discoverExternalReceiverTokensFromEvidence();
 const _receiverPattern = _receiverTokens.join('|');
-const _httpVerbs = unique(HTTP_METHODS.map((m) => m.toLowerCase()));
-const _httpVerbsPattern = _httpVerbs.join('|');
 const PRISMA_OPERATION_RE =
   /\b(?:this\.)?prisma\.\w+\.(?:create|findMany|findUnique|findFirst|update|delete|upsert|count|aggregate|groupBy)\s*\(/;
 const QUEUE_OR_CACHE_RE =

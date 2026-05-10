@@ -1,9 +1,10 @@
 'use client';
 
+import { colors } from '@/lib/design-tokens';
 import { useRef, useEffect } from 'react';
 import { secureRandomFloat } from '@/lib/secure-random';
 
-export function NeuralPulse({ w, h, color = '#f97316' }: { w: number; h: number; color?: string }) {
+export function NeuralPulse({ w, h, color = colors.ember.primary }: { w: number; h: number; color?: string }) {
   const ref = useRef<HTMLCanvasElement>(null);
   const effectiveColor = color;
 

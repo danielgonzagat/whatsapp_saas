@@ -9,7 +9,6 @@ import type {
   SchemaDiffSeverity,
 } from '../types.contract-tester';
 import { deriveStringUnionMembersFromTypeContract } from '../dynamic-reality-kernel/type-contract-labels';
-import { deriveUnitValue } from '../dynamic-reality-kernel/catalog-arithmetic';
 import {
   discoverAllObservedArtifactFilenames,
 } from '../dynamic-reality-kernel/token-evidence';

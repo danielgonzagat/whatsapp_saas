@@ -22,11 +22,8 @@ import {
   discoverSourceExtensionsFromObservedTypescript,
 } from '../dynamic-reality-kernel/token-evidence';
 import type { ParsedFunc } from './grammar-and-types';
-import type { BehaviorNodeArtifact } from './grammar-and-types';
 import { extractFunctionsFromSource } from './function-extraction';
 import { buildNodesFromParsedFunctions, extractCalledFunctions } from './risk-execution';
-
-let _tsMorphAvailable = false;
 
 function collectSourceFiles(
   rootDir: string,
@@ -81,7 +78,6 @@ function parseFileWithTsMorph(
 export function buildBehaviorGraph(rootDir: string): BehaviorGraph {
   resetNodeIdSequence();
   const tsMorphAvailable = loadTsMorph();
-  _tsMorphAvailable = tsMorphAvailable;
   const allNodes: BehaviorNode[] = [];
 
   if (!tsMorphAvailable) {
