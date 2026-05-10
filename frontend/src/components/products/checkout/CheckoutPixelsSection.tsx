@@ -1,5 +1,4 @@
 'use client';
-import { colors } from '@/lib/design-tokens';
 import { kloelT } from '@/lib/i18n/t';
 import { apiFetch } from '@/lib/api';
 import { useCallback, useEffect, useState, useId } from 'react';
@@ -8,10 +7,8 @@ import { PixelRow, PixelAddPanel, type Pixel, type PixelFormState } from './Chec
 
 const EMBER = 'colors.ember.primary';
 const BORDER = 'var(--border-space, colors.border.space)';
-const TEXT = 'var(--text-starlight, colors.text.silver)';
 const SECONDARY = 'var(--text-moonlight, colors.text.muted)';
 const FAINT = 'var(--text-dust, colors.text.dim)';
-const TEXT_ON_ACCENT = 'var(--app-text-on-accent, #FFFFFF)';
 
 export function PixelsSection({ configId, planId }: { configId: string | null; planId: string }) {
   const fid = useId();
