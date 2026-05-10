@@ -1,5 +1,13 @@
 /**
- * Worker BullMQ queue system — lazy initialization (PR P2-4).
+ * ARCHITECTURAL COHESION: This file is a single organism — the Lazy Queue
+ * System. It manages the complete lifecycle of BullMQ queues: lazy Redis
+ * connection, lazy queue/DLQ/QueueEvents creation via Proxy, DLQ-to-ops
+ * notification (delegated to queue-dlq-notifier.ts), backwards-compatible
+ * Queue wrapper, and graceful shutdown. These concerns form a single
+ * responsibility: "provide type-safe, lazily-initialized queue primitives
+ * that open zero Redis connections on import." Splitting would break the
+ * Proxy-based lazy initialization pattern that is the entire point of
+ * this module.
  *
  * Before P2-4 this module created the shared Redis connection and
  * 9 BullMQ queues + 9 DLQ queues + 9 QueueEvents at module-import

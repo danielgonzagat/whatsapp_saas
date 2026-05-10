@@ -1,3 +1,14 @@
+/**
+ * ARCHITECTURAL COHESION: This file builds the CIA Workspace State — the
+ * input data structure consumed by the autopilot brain. It queries
+ * Prisma for conversations, contacts, and autopilot events, then assembles
+ * them into a CiaWorkspaceState with candidates clustered by priority.
+ * The candidate scoring/building logic (toCandidate, computePriority) is
+ * extracted to cia-candidate-builder.ts. What remains is the database
+ * query orchestration and the high-level state assembly that ties the
+ * queries to the scoring pipeline.
+ */
+
 import type { Prisma, PrismaClient } from '@prisma/client';
 
 import {

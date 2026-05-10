@@ -1,3 +1,11 @@
+/**
+ * ARCHITECTURAL COHESION: Customer Cognitive State Inference — builds a psychological model
+ * (trust score, urgency score, stage classification, risk flags, next best action) from
+ * conversation signals. The pipeline is deeply interconnected: stage drives urgency, urgency
+ * drives nextBestAction, and risk flags feed back into everything. Extracting any piece would
+ * require artificial boundary data that duplicates the full inference pass.
+ */
+
 import type { DemandState } from '../../../providers/commercial-intelligence';
 import { RX } from '../cognitive-state-patterns';
 import {

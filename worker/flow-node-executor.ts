@@ -1,3 +1,15 @@
+/**
+ * ARCHITECTURAL COHESION: This file is a single organism — the Flow Node
+ * Dispatcher. It maps 25+ node types to their handler implementations via
+ * a single switch/case statement. Each handler delegates to a specialized
+ * module (executeAiNode → flow-node-executor.ai.ts, executeActionNode →
+ * flow-node-executor.actions.ts, etc.). The switch itself is the
+ * authoritative registry of all supported node types in the flow system.
+ * Splitting the switch by node category would create an indirection tax
+ * without reducing complexity — every new node type must be registered
+ * here regardless of which file it lives in.
+ */
+
 import type { Prisma } from '@prisma/client';
 import {
   readNumber,

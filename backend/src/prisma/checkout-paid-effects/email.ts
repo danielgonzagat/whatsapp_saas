@@ -102,7 +102,15 @@ function buildPurchaseConfirmationEmailHtml(input: {
   const { renderEmailTemplate } = require('../../common/utils/email-template-renderer.util');
   const formattedAmount = formatBrlAmount(input.totalInCents / 100);
   const memberAreaSection = input.memberAreaUrl
-    ? `<p>Acesse sua area de membros: <a href="${escapeHtml(input.memberAreaUrl)}" style="color:${BRAND_COLORS.EMBER};">${escapeHtml(input.memberAreaUrl)}</a></p>`
+    ? [
+      '<p>Acesse sua area de membros: <a href="',
+      escapeHtml(input.memberAreaUrl),
+      '" style="color:',
+      BRAND_COLORS.EMBER,
+      ';">',
+      escapeHtml(input.memberAreaUrl),
+      '</a></p>',
+    ].join('')
     : '<p>Se o produto tiver area de membros, seu acesso ja foi liberado automaticamente.</p>';
   return renderEmailTemplate('payment-confirmation', {
     customerName: input.customerName,

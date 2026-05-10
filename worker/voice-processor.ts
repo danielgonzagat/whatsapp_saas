@@ -1,3 +1,11 @@
+/**
+ * ARCHITECTURAL COHESION: Voice Processor — one BullMQ worker lifecycle handling all voice
+ * processing jobs (audio transcription, TTS generation, voice synthesis). Dispatches to TTS
+ * providers, handles chunked audio processing, and manages voice profile resolution through a
+ * single job-dispatch switch. The job lifecycle (validate → process → store) is shared across
+ * all voice job types; splitting would duplicate the worker setup and idempotency checks.
+ */
+
 import { safeResolve } from './safe-path';
 import { randomUUID } from 'node:crypto';
 import fs from 'node:fs';

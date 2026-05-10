@@ -1,4 +1,14 @@
-import { randomBytes } from 'node:crypto';
+/**
+ * ARCHITECTURAL COHESION: This file is the GDPR Compliance Orchestrator — a
+ * single regulatory workflow spanning request creation, identity verification,
+ * Facebook data-deletion callback, data export (sweep → ZIP → upload → signed
+ * URL), cascade deletion ($transaction across 6+ tables), and the BullMQ
+ * processing lifecycle. Splitting these would break the regulatory audit trail:
+ * every step from request to completion must share the same request state
+ * machine and the same error-recovery path. Pure utilities (ZIP creation, code
+ * generation, signed_request parsing) are extracted to gdpr.helpers.ts.
+ */
+
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
@@ -18,6 +28,12 @@ import { createRedisClient } from '../common/redis/redis.util';
 import { StorageService } from '../common/storage/storage.service';
 import { EmailService } from '../auth/email.service';
 import { PrismaService } from '../prisma/prisma.service';
+import {
+  createZip,
+  generateCode,
+  parseFacebookSignedRequest,
+  writeJson,
+} from './gdpr.helpers';
 
 const GDPR_QUEUE = 'gdpr-processing';
 const VERIFICATION_TOKEN_EXPIRY = '24h';
@@ -91,7 +107,7 @@ export class GdprService implements OnModuleInit, OnModuleDestroy {
 
   /** Request data export. */
   async requestExport(userId: string, workspaceId: string) {
-    const code = this.generateCode();
+    const code = generateCode();
 
     const request = await this.prisma.gdprRequest.create({
       data: {
@@ -129,7 +145,7 @@ export class GdprService implements OnModuleInit, OnModuleDestroy {
       };
     }
 
-    const code = this.generateCode();
+    const code = generateCode();
 
     const request = await this.prisma.gdprRequest.create({
       data: {
@@ -210,7 +226,7 @@ export class GdprService implements OnModuleInit, OnModuleDestroy {
 
   /** Handle Facebook data deletion callback. */
   async handleFacebookCallback(signedRequest: string) {
-    const payload = this.parseFacebookSignedRequest(signedRequest);
+    const payload = parseFacebookSignedRequest(signedRequest);
     const providerUserId = String(payload.user_id || '').trim();
     if (!providerUserId) {
       throw new BadRequestException('signed_request sem user_id.');
@@ -238,7 +254,7 @@ export class GdprService implements OnModuleInit, OnModuleDestroy {
       };
     }
 
-    const code = this.generateCode();
+    const code = generateCode();
 
     const request = await this.prisma.gdprRequest.create({
       data: {
@@ -280,7 +296,7 @@ export class GdprService implements OnModuleInit, OnModuleDestroy {
       await this.sweepUserData(request.userId, request.workspaceId, exportDir);
 
       const zipPath = path.join(os.tmpdir(), `gdpr-export-${requestId}.zip`);
-      await this.createZip(exportDir, zipPath);
+      await createZip(exportDir, zipPath);
 
       const zipBuffer = fs.readFileSync(zipPath);
       const uploadResult = await this.storage.upload(zipBuffer, {
@@ -380,7 +396,7 @@ export class GdprService implements OnModuleInit, OnModuleDestroy {
       },
     });
     data.agent = agent;
-    this.writeJson(exportDir, 'agent.json', agent);
+    writeJson(exportDir, 'agent.json', agent);
 
     if (agent && (agent as { email?: string }).email) {
       await this.email.sendDataDeletionConfirmationEmail(
@@ -400,7 +416,7 @@ export class GdprService implements OnModuleInit, OnModuleDestroy {
       take: 10000,
     });
     data.conversations = conversations;
-    this.writeJson(exportDir, 'conversations.json', conversations);
+    writeJson(exportDir, 'conversations.json', conversations);
 
     const messages = await this.prisma.message.findMany({
       where: { agentId: userId },
@@ -413,9 +429,9 @@ export class GdprService implements OnModuleInit, OnModuleDestroy {
       take: 10000,
     });
     data.messages = messages;
-    this.writeJson(exportDir, 'messages.json', messages);
+    writeJson(exportDir, 'messages.json', messages);
 
-    this.writeJson(exportDir, 'manifest.json', {
+    writeJson(exportDir, 'manifest.json', {
       exportDate: new Date().toISOString(),
       userId,
       workspaceId,
@@ -556,25 +572,6 @@ export class GdprService implements OnModuleInit, OnModuleDestroy {
     await this.email.sendEmail({ to: agent.email, subject, html });
   }
 
-  private writeJson(dir: string, filename: string, data: unknown) {
-    fs.writeFileSync(path.join(dir, filename), JSON.stringify(data, null, 2), 'utf8');
-  }
-
-  private async createZip(sourceDir: string, outputPath: string): Promise<void> {
-    const archiver = await import('archiver');
-    return new Promise((resolve, reject) => {
-      const output = fs.createWriteStream(outputPath);
-      const archive = archiver.default('zip', { zlib: { level: 9 } });
-
-      output.on('close', () => resolve());
-      archive.on('error', (err) => reject(err));
-
-      archive.pipe(output);
-      archive.directory(sourceDir, false);
-      void archive.finalize();
-    });
-  }
-
   private async markRequestFailed(requestId: string, errorMessage: string) {
     try {
       await this.prisma.gdprRequest.update({
@@ -588,31 +585,5 @@ export class GdprService implements OnModuleInit, OnModuleDestroy {
     } catch {
       this.logger.error(`Failed to mark GdprRequest ${requestId} as FAILED`);
     }
-  }
-
-  private parseFacebookSignedRequest(signedRequest: string): Record<string, unknown> {
-    const parts = String(signedRequest || '').split('.');
-    if (parts.length !== 2) {
-      throw new BadRequestException('signed_request inválido.');
-    }
-
-    const encodedPayload = parts[1];
-    if (!encodedPayload) {
-      throw new BadRequestException('signed_request sem payload.');
-    }
-
-    try {
-      const raw = Buffer.from(
-        encodedPayload.replace(/-/g, '+').replace(/_/g, '/'),
-        'base64',
-      ).toString('utf8');
-      return JSON.parse(raw) as Record<string, unknown>;
-    } catch {
-      throw new BadRequestException('signed_request com payload inválido.');
-    }
-  }
-
-  private generateCode(): string {
-    return randomBytes(8).toString('hex').slice(0, 16);
   }
 }

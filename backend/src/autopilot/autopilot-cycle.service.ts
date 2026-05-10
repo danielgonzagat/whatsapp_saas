@@ -266,7 +266,7 @@ export class AutopilotCycleService {
         select: { id: true, customFields: true, tags: { select: { name: true } } },
       });
       if (fullContact) {
-        tags = fullContact.tags || [];
+        tags = fullContact?.tags || [];
         customFields = (fullContact.customFields as Record<string, unknown>) || {};
       }
     }

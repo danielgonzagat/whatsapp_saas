@@ -1,3 +1,12 @@
+/**
+ * ARCHITECTURAL COHESION: CIA Guarantee Contract System — a single-orchestrated validation
+ * pipeline where every function feeds into the next. Validates action batches against safety
+ * constraints (max actions, unique targets, monotonic priorities), validates contracts against
+ * strategy hints, computes guarantee reports, applies human approval/denial, and opens/commits
+ * execution contracts. Splitting would break the sequential dependency chain and scatter the
+ * guarantee invariants across multiple modules.
+ */
+
 import {
   type CiaDecisionBatch,
   type CiaGovernorVerdict,

@@ -1,3 +1,11 @@
+/**
+ * ARCHITECTURAL COHESION: WhatsApp Engine — the single provider-agnostic facade over multiple
+ * WhatsApp providers. Covers message sending with anti-ban protection, session management,
+ * message queueing, and media/video/voice/document/audio/sticker dispatch. All channel types
+ * funnel through one routing surface; splitting by message type would duplicate the anti-ban,
+ * session, and queue concerns across files.
+ */
+
 import { randomInt, randomUUID, timingSafeEqual } from 'node:crypto';
 import { autoProvider } from './auto-provider';
 import { unifiedWhatsAppProvider } from './unified-whatsapp-provider';

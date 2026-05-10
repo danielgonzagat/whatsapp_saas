@@ -1,5 +1,4 @@
 import { type Job } from 'bullmq';
-import { v4 as uuidv4 } from 'uuid';
 import { prisma } from './db';
 import { WorkerLogger } from './logger';
 import { PlanLimitsProvider } from './providers/plan-limits';
@@ -8,6 +7,8 @@ import { WhatsAppEngine } from './providers/whatsapp-engine';
 import { getWhatsAppProviderFromEnv } from './providers/whatsapp-provider-resolver';
 import { redisPub } from './redis-client';
 import { getErrorMessage } from './utils/error-message';
+import { persistSuccess } from './send-message.persist-success';
+import { persistFailure } from './send-message.persist-failure';
 
 const DEFAULT_WHATSAPP_PROVIDER = getWhatsAppProviderFromEnv();
 const log = new WorkerLogger('send-message');
@@ -39,7 +40,6 @@ export async function handleSendMessage(job: Job) {
   let contactId: string | null = null;
   let conversationId: string | null = null;
 
-  // Lazy load workspace config if not provided
   if (!workspace && workspaceId) {
     const ws = await prisma.workspace.findUnique({ where: { id: workspaceId } });
     if (ws) {
@@ -59,7 +59,6 @@ export async function handleSendMessage(job: Job) {
     return { error: true, reason: 'invalid_job_data' };
   }
 
-  // 1. Check Plan Limits (Messages per Month)
   const limitCheck = await PlanLimitsProvider.checkMessageLimit(workspace.id);
   if (!limitCheck.allowed) {
     log.warn('send_blocked_limit', {
@@ -73,7 +72,6 @@ export async function handleSendMessage(job: Job) {
   const targetUser = user || to;
 
   try {
-    // Prepara contato/conversa para registrar status
     try {
       const contact = await prisma.contact.upsert({
         where: { workspaceId_phone: { workspaceId: workspace.id, phone: targetUser } },
@@ -140,7 +138,6 @@ export async function handleSendMessage(job: Job) {
     }
     const latency = Date.now() - start;
 
-    // Detect provider-level errors that didn't throw (common in HTTP 200 with { error })
     const providerError = (res && (res.error || res.err || res.status === 'error')) || null;
 
     await HealthMonitor.updateMetrics(workspace.id, !providerError, latency);
@@ -151,70 +148,20 @@ export async function handleSendMessage(job: Job) {
     const msgType = mediaType ? mediaType.toUpperCase() : template?.name ? 'TEMPLATE' : 'TEXT';
     const externalId = jobExternalId || extractExternalId(res);
 
-    // Persist outbound message for analytics/inbox visibility
     if (contactId && conversationId) {
-      try {
-        const created = await prisma.message.create({
-          data: {
-            id: uuidv4(),
-            workspaceId: workspace.id,
-            contactId,
-            conversationId,
-            content: caption || message || mediaUrl || '',
-            direction: 'OUTBOUND',
-            type: msgType,
-            mediaUrl: mediaUrl || undefined,
-            status: providerError ? 'FAILED' : 'SENT',
-            errorCode: providerError ? String(providerError) : null,
-            externalId: externalId || null,
-          },
-        });
-
-        await prisma.conversation.updateMany({
-          where: { id: conversationId, workspaceId: workspace.id },
-          data: { lastMessageAt: new Date(), unreadCount: 0 },
-        });
-
-        // Notifica realtime (via Redis → backend WebSocket)
-        const payload = {
-          type: 'message:new',
-          workspaceId: workspace.id,
-          message: created,
-        };
-        await redisPub.publish('ws:inbox', JSON.stringify(payload));
-        await redisPub.publish(
-          'ws:inbox',
-          JSON.stringify({
-            type: 'conversation:update',
-            workspaceId: workspace.id,
-            conversation: {
-              id: conversationId,
-              lastMessageStatus: providerError ? 'FAILED' : 'SENT',
-              lastMessageErrorCode: providerError ? String(providerError) : null,
-              lastMessageAt: created.createdAt,
-            },
-          }),
-        );
-        await redisPub.publish(
-          'ws:inbox',
-          JSON.stringify({
-            type: 'message:status',
-            workspaceId: workspace.id,
-            payload: {
-              id: created.id,
-              conversationId,
-              contactId,
-              externalId,
-              status: providerError ? 'FAILED' : 'SENT',
-              errorCode: providerError ? String(providerError) : null,
-            },
-          }),
-        );
-      } catch (dbErr) {
-        log.warn('send_persist_failed', {
-          error: dbErr instanceof Error ? dbErr.message : String(dbErr),
-        });
-      }
+      await persistSuccess({
+        prisma,
+        redisPub,
+        log,
+        workspaceId: workspace.id,
+        contactId,
+        conversationId,
+        content: caption || message || mediaUrl || '',
+        msgType,
+        mediaUrl: mediaUrl || undefined,
+        providerError,
+        externalId,
+      });
     }
 
     if (providerError) {
@@ -235,61 +182,28 @@ export async function handleSendMessage(job: Job) {
     const finalFailure =
       job.attemptsMade + 1 >= maxAttempts || getErrorMessage(err) === 'session_expired';
 
-    // Health Check Failure
     await HealthMonitor.updateMetrics(workspace.id, false, latency);
     log.error('send_failed', { jobId: job.id, error: err });
 
-    // Persist failure for analytics
     if (finalFailure && contactId && conversationId) {
-      try {
-        await prisma.message.create({
-          data: {
-            id: uuidv4(),
-            workspaceId: workspace.id,
-            contactId,
-            conversationId,
-            content: caption || message || mediaUrl || '',
-            direction: 'OUTBOUND',
-            type: mediaType ? mediaType.toUpperCase() : template?.name ? 'TEMPLATE' : 'TEXT',
-            mediaUrl: mediaUrl || undefined,
-            status: 'FAILED',
-            errorCode: getErrorMessage(err),
-            externalId: null,
-          },
-        });
-      } catch (dbErr) {
-        log.warn('send_persist_failed_errorpath', {
-          error: dbErr instanceof Error ? dbErr.message : String(dbErr),
-        });
-      }
-
-      try {
-        await redisPub.publish(
-          'ws:inbox',
-          JSON.stringify({
-            type: 'message:status',
-            workspaceId: workspace.id,
-            payload: {
-              conversationId,
-              contactId,
-              status: 'FAILED',
-              errorCode: getErrorMessage(err),
-            },
-          }),
-        );
-      } catch (pubErr) {
-        log.warn('ws_publish_failed_errorpath', {
-          error: pubErr instanceof Error ? pubErr.message : String(pubErr),
-        });
-      }
+      await persistFailure({
+        prisma,
+        redisPub,
+        log,
+        workspaceId: workspace.id,
+        contactId,
+        conversationId,
+        content: caption || message || mediaUrl || '',
+        msgType: mediaType ? mediaType.toUpperCase() : template?.name ? 'TEMPLATE' : 'TEXT',
+        mediaUrl: mediaUrl || undefined,
+        errorMessage: getErrorMessage(err),
+      });
     }
 
-    // Erros de sessão expirada (24h) não valem retry
     if (getErrorMessage(err) === 'session_expired') {
       return { error: true, reason: 'session_expired', skipped: true };
     }
 
-    // Retry logic handled by BullMQ, but we log health
     throw err;
   }
 }

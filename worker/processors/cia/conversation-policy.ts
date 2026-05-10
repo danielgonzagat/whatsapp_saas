@@ -1,3 +1,11 @@
+/**
+ * ARCHITECTURAL COHESION: CIA Conversation Policy Engine — evaluates per-conversation
+ * constraints for autopilot actions from a shared state object. All functions (silence window,
+ * backoff policy, dispatch window, contact-level rate limiting, master kill switch) compute
+ * boolean decisions fed by the same policy state. Splitting would scatter the decision rules
+ * and require duplicating the shared-state traversal logic across modules.
+ */
+
 import type { CognitiveActionType, CustomerCognitiveState, CustomerStage } from './cognitive-state';
 
 const DIACRITICS_RE = /[\u0300-\u036f]/g;

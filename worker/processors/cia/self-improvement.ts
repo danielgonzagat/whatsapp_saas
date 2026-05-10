@@ -1,3 +1,14 @@
+/**
+ * ARCHITECTURAL COHESION: This file is the Variant Reinforcement Learning
+ * Engine. It defines the variant families (followup, payment_recovery), the
+ * default message templates, the scoring algorithm (applyOutcomeScore), the
+ * epsilon-greedy selection strategy (pickVariant), and the variant outcome
+ * persistence (updateVariantOutcome). The decision log functions
+ * (recordDecisionLog, computeLearningSnapshot) are extracted to
+ * cia-decision-log.ts. What remains is the closed-loop learn→select→score
+ * system that cannot be split without breaking the feedback loop it models.
+ */
+
 import { randomInt } from 'node:crypto';
 import type { Prisma, PrismaClient } from '@prisma/client';
 export { computeLearningSnapshot, recordDecisionLog } from './cia-decision-log';

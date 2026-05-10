@@ -38,6 +38,8 @@ import { WhatsAppBrainService } from './whatsapp-brain.service';
 import { LLMBudgetService } from './llm-budget.service';
 import { MemoryManagementService } from './memory-management.service';
 import { MemoryController } from './memory.controller';
+import { MemoryCrudService } from './memory-crud.service';
+import { MemorySearchService } from './memory-search.service';
 import { MemoryService } from './memory.service';
 import { MarketingSkillContextBuilder } from './marketing-skills/marketing-skill.context';
 import { MarketingSkillLoader } from './marketing-skills/marketing-skill.loader';
@@ -189,6 +191,8 @@ import { WebinarController } from './webinar.controller';
     KloelToolExecutorWhatsAppService,
     KloelWorkspaceContextDataService,
     KloelWorkspaceContextLinkedProductService,
+    MemoryCrudService,
+    MemorySearchService,
     MemoryService,
     MemoryManagementService,
     MarketingSkillLoader,
@@ -241,6 +245,8 @@ import { WebinarController } from './webinar.controller';
     PaymentService,
     OnboardingService,
     ConversationalOnboardingService,
+    MemoryCrudService,
+    MemorySearchService,
     MemoryService,
     MemoryManagementService,
     PdfProcessorService,

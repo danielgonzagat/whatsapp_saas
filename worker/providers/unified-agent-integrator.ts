@@ -5,6 +5,15 @@
  * para decisões avançadas com tool calling.
  */
 
+/**
+ * ARCHITECTURAL COHESION: Unified Agent Integrator — bridges the CIA agent system with
+ * external platforms (WhatsApp, email, webhooks) through a single dispatch interface.
+ * Handles multi-channel message dispatch, channel-specific formatting, activity log
+ * synchronization, and platform capability detection. Every channel shares the same
+ * dispatch contract and formatting pipeline; separating channels would duplicate the
+ * HTTP transport, auth, and retry logic across files.
+ */
+
 import { WorkerLogger } from '../logger';
 
 const QUESTION_MARK_RE = /\?/g;

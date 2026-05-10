@@ -1,3 +1,11 @@
+/**
+ * ARCHITECTURAL COHESION: CIA Global Learning — a single analytical pipeline for cross-
+ * workspace pattern extraction. Identifies high-performing variant patterns that work across
+ * workspaces, computes cross-account aggregates, and promotes winning strategies to global
+ * defaults. The aggregation, scoring, and promotion steps are sequential and lossy when
+ * separated — each depends on the full intermediate dataset from the prior step.
+ */
+
 const U0300__U036F_RE = /[\u0300-\u036f]/g;
 const A_Z0_9_RE = /[^a-z0-9]+/g;
 const PATTERN_RE = /^_+|_+$/g;

@@ -1,3 +1,11 @@
+/**
+ * ARCHITECTURAL COHESION: Prepaid Wallet Settlement Engine — a closed financial transaction
+ * loop handling usage quoting, charge settlement with idempotency, cost calculation from token
+ * descriptors, and ledger audit entries. Every settlement step depends on the prior step's
+ * computed values (quote → cost → charge → ledger). Keeping this atomic in one file prevents
+ * partial-settlement bugs and makes the transactional invariant auditable in a single read.
+ */
+
 import type { Prisma, PrepaidWalletTransaction } from '@prisma/client';
 import { prisma } from '../db';
 import {

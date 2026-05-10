@@ -1,3 +1,16 @@
+/**
+ * ARCHITECTURAL COHESION: This file is a single organism — the Flow Engine
+ * global singleton. It orchestrates the full lifecycle of a WhatsApp flow
+ * execution: initialization (startFlow), user interaction (onUserResponse),
+ * the execution loop with timeout/retry/safety guards, and timeout
+ * monitoring (checkTimeouts). Splitting these concerns would scatter the
+ * invariants that span them (state transitions, failure modes, and the
+ * mutual dependency between execution loop and timeout checker). Node-level
+ * dispatch, parsing, lifecycle persistence, and message sending are already
+ * extracted to dedicated modules. The remaining ~560 lines are the minimal
+ * orchestration surface that ties them together.
+ */
+
 import { Prisma } from '@prisma/client';
 import { v4 as uuid } from 'uuid';
 import { executeNode } from './flow-node-executor';

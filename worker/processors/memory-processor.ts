@@ -1,3 +1,13 @@
+/**
+ * ARCHITECTURAL COHESION: This file is the Memory Processing Worker.
+ * It hosts the BullMQ worker for the `memory-jobs` queue, dispatching
+ * `ingest-source`, `extract-facts`, and `analyze-contact` jobs. The text
+ * splitting algorithm is extracted to memory-text-splitter.ts. What remains
+ * is the embedding pipeline (chunk → vector → wallet settlement), the job
+ * dispatch switch, and the failure cleanup — all tied to the memory worker's
+ * BullMQ lifecycle.
+ */
+
 import { type Job, Worker } from 'bullmq';
 import OpenAI from 'openai';
 import { prisma } from '../db';

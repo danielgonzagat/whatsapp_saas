@@ -37,6 +37,15 @@ import { startAutopilotHealthMonitor } from './processor-health-monitor';
 /**
  * =======================================================
  * WORKER ENGINE — VERSION PRO (TS SAFE)
+ *
+ * ARCHITECTURAL COHESION: This file is the Worker Process Lifecycle
+ * controller. It wires together the Flow Engine, BullMQ workers, scheduler
+ * repeatables, autopilot health monitoring, graceful shutdown handlers, and
+ * legacy scanner. Flow guards and health monitoring are extracted to dedicated
+ * modules (processor-flow-guards.ts, processor-health-monitor.ts). What
+ * remains is the boot-time wiring, the job dispatch switch, event handlers,
+ * and the SIGTERM/SIGINT shutdown orchestration — all of which form a single
+ * "process lifecycle" responsibility.
  * =======================================================
  */
 

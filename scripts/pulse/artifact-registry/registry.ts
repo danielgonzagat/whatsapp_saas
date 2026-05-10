@@ -60,7 +60,7 @@ function snapshotPathFromExpression(
     return null;
   }
   const text = expression.getText(sourceFile);
-  const match = text.match(/snapshot(?:\.[a-zA-Z0-9_]+)+/);
+  const match = text.match(/snapshot\.[a-zA-Z0-9_]+(?:\.[a-zA-Z0-9_]+)*/);
   return match?.[0] ?? null;
 }
 
