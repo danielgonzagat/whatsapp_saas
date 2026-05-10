@@ -1,6 +1,6 @@
 /**
  * Pulse artifact generation — thin orchestrator shell.
- * Implementation in __parts__/artifacts/
+ * Implementation in artifacts/
  *
  * Contains writeRegisteredArtifact() calls for AST-based artifact registry
  * discovery (scanned by artifact-registry/discovery.ts).
@@ -21,7 +21,7 @@ declare function writeRegisteredArtifact(
 
 // AST discovery stubs — never executed, parsed only by TypeScript AST scanner.
 // Each call registers an artifact ID in the PulseArtifactRegistry.
-// Keep in sync with __parts__/artifacts/generate.ts writeRegisteredArtifact() calls.
+// Keep in sync with artifacts/generate.ts writeRegisteredArtifact() calls.
 
 function __artifact_registry_discovery_stubs__(registry: PulseArtifactRegistry): void {
   writeRegisteredArtifact(registry, 'report', '');

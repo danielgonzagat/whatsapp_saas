@@ -119,6 +119,7 @@ export class FlowEngineGlobal {
       variables: { ...contactVars, ...initialVars },
       logs: [],
       startedAt: Date.now(),
+      timeoutAt: undefined,
       stack: [],
     };
 

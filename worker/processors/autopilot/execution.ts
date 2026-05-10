@@ -1,13 +1,10 @@
 import { prisma } from '../../db';
 import { flowQueue } from '../../queue';
-import { publishAgentEvent } from '../../providers/agent-events';
 import {
-  log,
   normalizeJsonObject,
   type UnknownRecord,
   type QuotedCustomerMessage,
 } from './shared';
-import { logAutopilotAction } from './safeguard';
 import { ensureTrustedContactProfile } from './profile';
 import { buildMessage } from './execution-planner';
 import { checkDeliveryGuards, resolveContactForExecution, type GuardResult } from './execution-guards';

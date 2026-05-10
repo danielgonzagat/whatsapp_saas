@@ -1,7 +1,7 @@
 /**
  * External sources orchestrator — internal helpers
  * Shared infrastructure consumed by core, capability, and orchestration.
- * This file does NOT import from other __parts__/ files (avoids circular deps).
+ * This file does NOT import from other sibling files (avoids circular deps).
  */
 
 import { execFileSync } from 'child_process';
