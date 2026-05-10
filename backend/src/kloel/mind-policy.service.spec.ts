@@ -233,15 +233,20 @@ describe('MindPolicyService', () => {
 
       expect(result.decision.calcSteps).toHaveLength(2);
       for (const step of result.decision.calcSteps) {
-        expect(step.formula).toContain('EFE=-(P+E)');
+        expect(step.formula).toContain('EFE=-(P+E)-economicScore');
         expect(step.beliefMean).toBeGreaterThan(0);
         expect(step.beliefVariance).toBeGreaterThan(0);
-        expect(step.efe).toBeCloseTo(-(step.pragmatic + step.epistemic), 8);
+        expect(step.baseEfe).toBeCloseTo(-(step.pragmatic + step.epistemic), 8);
+        expect(step.economicScore).toBeGreaterThan(0);
+        expect(step.efe).toBeCloseTo((step.baseEfe ?? 0) - (step.economicScore ?? 0), 8);
       }
 
       const winner = result.decision.candidates[0];
       expect(winner.beliefMean).toBeGreaterThan(0);
       expect(winner.beliefVariance).toBeGreaterThan(0);
+      expect(winner.economicObjective).toEqual(
+        expect.objectContaining({ profile: 'b2c_ecommerce' }),
+      );
     });
 
     it('inclui epsilon e utility weights no decision para rastreabilidade', async () => {

@@ -15,6 +15,7 @@ import {
   persistResolvedPolicyMemories,
   twoProportionZScore,
 } from './mind-policy.helpers';
+import { evaluateEconomicObjective } from './economic-objective';
 
 const FALLBACK_MIN_SAMPLES = 30;
 
@@ -97,12 +98,22 @@ export class MindPolicyService {
       const pragmatic =
         pessimisticSuccess * utilitySuccess + (1 - pessimisticSuccess) * utilityFail;
       const epistemic = epsilon * belief.variance;
-      const efe = -(pragmatic + epistemic);
+      const baseEfe = -(pragmatic + epistemic);
+      const economicObjective = evaluateEconomicObjective({
+        action: option.action,
+        beliefMean: belief.mean,
+        context: option.context,
+        decisionType: input.decisionType,
+      });
+      const efe = baseEfe - economicObjective.score;
 
       candidates.push({
         action: option.action,
+        baseEfe,
         beliefMean: belief.mean,
         beliefVariance: belief.variance,
+        economicObjective,
+        economicScore: economicObjective.score,
         pragmatic,
         epistemic,
         efe,
@@ -111,15 +122,19 @@ export class MindPolicyService {
 
       calcSteps.push({
         action: option.action,
+        baseEfe,
         beliefMean: belief.mean,
         beliefVariance: belief.variance,
+        economicScore: economicObjective.score,
         pragmatic,
         epistemic,
         efe,
         formula: [
-          'EFE=-(P+E)',
+          'EFE=-(P+E)-economicScore',
           `P=${belief.mean.toFixed(4)}*${utilitySuccess}+${(1 - belief.mean).toFixed(4)}*${utilityFail}=${pragmatic.toFixed(4)}`,
           `E=${epsilon}*${belief.variance.toFixed(4)}=${epistemic.toFixed(4)}`,
+          `baseEFE=${baseEfe.toFixed(4)}`,
+          `economicScore=${economicObjective.score.toFixed(4)}`,
           `EFE=${efe.toFixed(4)}`,
         ].join(' '),
       });
@@ -147,7 +162,7 @@ export class MindPolicyService {
       fallbackActive: false,
       fallbackReason: null,
       outcomeKey: input.outcomeKey,
-      reasonInternal: `efe=${winner.efe.toFixed(3)} pragmatic=${winner.pragmatic.toFixed(3)} epistemic=${winner.epistemic.toFixed(3)} variance=${winner.uncertaintyAtChoice.toFixed(3)}`,
+      reasonInternal: `efe=${winner.efe.toFixed(3)} economic=${(winner.economicScore ?? 0).toFixed(3)} pragmatic=${winner.pragmatic.toFixed(3)} epistemic=${winner.epistemic.toFixed(3)} variance=${winner.uncertaintyAtChoice.toFixed(3)}`,
       utilityFail,
       utilitySuccess,
     };

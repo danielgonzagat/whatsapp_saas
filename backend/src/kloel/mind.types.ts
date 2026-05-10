@@ -60,8 +60,11 @@ export interface MindTick {
 
 export interface MindActionCandidate {
   action: string;
+  baseEfe?: number;
   beliefMean: number;
   beliefVariance: number;
+  economicObjective?: Record<string, unknown>;
+  economicScore?: number;
   pragmatic: number;
   epistemic: number;
   efe: number;
@@ -94,8 +97,10 @@ export interface MindPolicyDecision {
 
 export interface MindPolicyCalcStep {
   action: string;
+  baseEfe?: number;
   beliefMean: number;
   beliefVariance: number;
+  economicScore?: number;
   pragmatic: number;
   epistemic: number;
   efe: number;
