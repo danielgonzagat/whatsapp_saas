@@ -7,10 +7,9 @@ CREATE TABLE IF NOT EXISTS "RAC_ChannelSetup" (
     "currentStep" INTEGER NOT NULL DEFAULT 0,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
-    CONSTRAINT "RAC_ChannelSetup_pkey" PRIMARY KEY (id)
+    CONSTRAINT "RAC_ChannelSetup_pkey" PRIMARY KEY (id),
+    CONSTRAINT "RAC_ChannelSetup_workspaceId_fkey" FOREIGN KEY ("workspaceId") REFERENCES "RAC_Workspace" (id) ON DELETE CASCADE ON UPDATE CASCADE
 );
-
-ALTER TABLE "RAC_ChannelSetup" ADD CONSTRAINT "RAC_ChannelSetup_workspaceId_fkey" FOREIGN KEY ("workspaceId") REFERENCES "RAC_Workspace" (id) ON DELETE CASCADE ON UPDATE CASCADE;
 
 CREATE UNIQUE INDEX IF NOT EXISTS "RAC_ChannelSetup_workspaceId_channel_key"
 ON "RAC_ChannelSetup" ("workspaceId", channel);
@@ -24,11 +23,10 @@ CREATE TABLE IF NOT EXISTS "RAC_ChannelProduct" (
     channel TEXT NOT NULL,
     "productId" TEXT NOT NULL,
     "includedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "RAC_ChannelProduct_pkey" PRIMARY KEY (id)
+    CONSTRAINT "RAC_ChannelProduct_pkey" PRIMARY KEY (id),
+    CONSTRAINT "RAC_ChannelProduct_workspaceId_fkey" FOREIGN KEY ("workspaceId") REFERENCES "RAC_Workspace" (id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "RAC_ChannelProduct_productId_fkey" FOREIGN KEY ("productId") REFERENCES "RAC_Product" (id) ON DELETE CASCADE ON UPDATE CASCADE
 );
-
-ALTER TABLE "RAC_ChannelProduct" ADD CONSTRAINT "RAC_ChannelProduct_workspaceId_fkey" FOREIGN KEY ("workspaceId") REFERENCES "RAC_Workspace" (id) ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "RAC_ChannelProduct" ADD CONSTRAINT "RAC_ChannelProduct_productId_fkey" FOREIGN KEY ("productId") REFERENCES "RAC_Product" (id) ON DELETE CASCADE ON UPDATE CASCADE;
 
 CREATE UNIQUE INDEX IF NOT EXISTS "RAC_ChannelProduct_workspaceId_channel_productId_key"
 ON "RAC_ChannelProduct" ("workspaceId", channel, "productId");
@@ -49,10 +47,9 @@ CREATE TABLE IF NOT EXISTS "RAC_ChannelArsenal" (
     "storageRef" TEXT NOT NULL,
     metadata JSONB,
     "uploadedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "RAC_ChannelArsenal_pkey" PRIMARY KEY (id)
+    CONSTRAINT "RAC_ChannelArsenal_pkey" PRIMARY KEY (id),
+    CONSTRAINT "RAC_ChannelArsenal_workspaceId_fkey" FOREIGN KEY ("workspaceId") REFERENCES "RAC_Workspace" (id) ON DELETE CASCADE ON UPDATE CASCADE
 );
-
-ALTER TABLE "RAC_ChannelArsenal" ADD CONSTRAINT "RAC_ChannelArsenal_workspaceId_fkey" FOREIGN KEY ("workspaceId") REFERENCES "RAC_Workspace" (id) ON DELETE CASCADE ON UPDATE CASCADE;
 
 CREATE UNIQUE INDEX IF NOT EXISTS "RAC_ChannelArsenal_workspaceId_channel_assetId_key"
 ON "RAC_ChannelArsenal" ("workspaceId", channel, "assetId");
@@ -73,10 +70,9 @@ CREATE TABLE IF NOT EXISTS "RAC_ChannelConfig" (
     language TEXT NOT NULL DEFAULT 'pt-BR',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
-    CONSTRAINT "RAC_ChannelConfig_pkey" PRIMARY KEY (id)
+    CONSTRAINT "RAC_ChannelConfig_pkey" PRIMARY KEY (id),
+    CONSTRAINT "RAC_ChannelConfig_workspaceId_fkey" FOREIGN KEY ("workspaceId") REFERENCES "RAC_Workspace" (id) ON DELETE CASCADE ON UPDATE CASCADE
 );
-
-ALTER TABLE "RAC_ChannelConfig" ADD CONSTRAINT "RAC_ChannelConfig_workspaceId_fkey" FOREIGN KEY ("workspaceId") REFERENCES "RAC_Workspace" (id) ON DELETE CASCADE ON UPDATE CASCADE;
 
 CREATE UNIQUE INDEX IF NOT EXISTS "RAC_ChannelConfig_workspaceId_channel_key"
 ON "RAC_ChannelConfig" ("workspaceId", channel);
