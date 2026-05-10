@@ -176,7 +176,9 @@ export class MetaWebhookController {
       return 'ok';
     }
 
-    const metaExternalId = eventId || `meta_${crypto.createHash('sha256').update(JSON.stringify(body)).digest('hex').slice(0, 32)}`;
+    const metaExternalId =
+      eventId ||
+      `meta_${crypto.createHash('sha256').update(JSON.stringify(body)).digest('hex').slice(0, 32)}`;
     let webhookEvent: WebhookEvent | undefined;
     try {
       webhookEvent = await this.webhooksService.logWebhookEvent(

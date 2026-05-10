@@ -37,7 +37,13 @@ describe('ChatService', () => {
     it('returns paginated messages ordered by createdAt desc', async () => {
       const messages = [
         { id: 'm3', role: 'user', content: 'c3', createdAt: new Date('2024-03-01'), userId: 'u1' },
-        { id: 'm2', role: 'assistant', content: 'c2', createdAt: new Date('2024-02-01'), userId: null },
+        {
+          id: 'm2',
+          role: 'assistant',
+          content: 'c2',
+          createdAt: new Date('2024-02-01'),
+          userId: null,
+        },
         { id: 'm1', role: 'user', content: 'c1', createdAt: new Date('2024-01-01'), userId: 'u1' },
       ];
       mockPrisma.chatMessage.findMany.mockResolvedValue(messages);

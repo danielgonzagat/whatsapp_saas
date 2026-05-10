@@ -6,10 +6,7 @@ import { PlanLimitsService } from '../billing/plan-limits.service';
 import { StorageService } from '../common/storage/storage.service';
 import { getTraceHeaders } from '../common/trace-headers';
 import { resolveKloelCapabilityModel } from '../lib/ai-models';
-import {
-  KloelComposerE2EGuard,
-  KLOEL_COMPOSER_E2E_GUARD,
-} from './kloel-composer-e2e-guard';
+import { KloelComposerE2EGuard, KLOEL_COMPOSER_E2E_GUARD } from './kloel-composer-e2e-guard';
 
 const MODEL_RE = /model/i;
 const INVALID_RE = /invalid/i;

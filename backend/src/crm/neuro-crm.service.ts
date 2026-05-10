@@ -7,11 +7,7 @@ import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { PrismaService } from '../prisma/prisma.service';
 import { buildFallbackAnalysis, normalizeAnalysis } from './neuro-crm.helpers';
-import {
-  type AnalysisContact,
-  type AnalysisResult,
-  type RawAnalysis,
-} from './neuro-crm.types';
+import { type AnalysisContact, type AnalysisResult, type RawAnalysis } from './neuro-crm.types';
 
 interface ClusterPoint {
   contact: {

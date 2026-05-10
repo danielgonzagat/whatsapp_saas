@@ -122,10 +122,14 @@ export class CiaRemoteBacklogService {
         chat,
         sessionKey,
       }).catch((error: unknown) => {
-        this.logger.error('Failed to load remote pending batch', error instanceof Error ? error.message : String(error), {
-          context: 'CiaRemoteBacklogService.runRemoteBacklogInlineFallback',
-          chatId: chat.id,
-        });
+        this.logger.error(
+          'Failed to load remote pending batch',
+          error instanceof Error ? error.message : String(error),
+          {
+            context: 'CiaRemoteBacklogService.runRemoteBacklogInlineFallback',
+            chatId: chat.id,
+          },
+        );
         return null;
       });
 

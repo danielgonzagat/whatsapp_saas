@@ -44,7 +44,14 @@ export class AutopilotAnalyticsService {
         workspaceId,
         createdAt: { gte: new Date(now - days7) },
       },
-      select: { createdAt: true, status: true, action: true, intent: true, reason: true, meta: true },
+      select: {
+        createdAt: true,
+        status: true,
+        action: true,
+        intent: true,
+        reason: true,
+        meta: true,
+      },
       orderBy: { createdAt: 'desc' },
       take: 5000,
     });
@@ -103,7 +110,13 @@ export class AutopilotAnalyticsService {
   }
 
   private processStatsEvent(
-    ev: { createdAt: Date; status?: string | null; action?: string | null; reason?: string | null; meta?: unknown },
+    ev: {
+      createdAt: Date;
+      status?: string | null;
+      action?: string | null;
+      reason?: string | null;
+      meta?: unknown;
+    },
     acc: ReturnType<AutopilotAnalyticsService['createStatsAccumulator']>,
   ) {
     const action = ev.action || 'UNKNOWN';

@@ -1,13 +1,4 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Param,
-  Patch,
-  Post,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import * as Sentry from '@sentry/node';
 
@@ -23,7 +14,6 @@ import { InsufficientWalletBalanceError } from './wallet.types';
 @UseGuards(JwtAuthGuard, WorkspaceGuard, ThrottlerGuard)
 @Throttle({ default: { limit: 5, ttl: 60000 } })
 export class PrepaidWalletController {
-
   constructor(
     private readonly walletService: WalletService,
     private readonly prisma: PrismaService,

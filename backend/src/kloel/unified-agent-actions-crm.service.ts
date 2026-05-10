@@ -82,7 +82,9 @@ export class UnifiedAgentActionsCrmService {
       async (tx) => {
         let tag = await tx.tag.findFirst({ where: { workspaceId, name: tagName } });
         if (!tag) {
-          tag = await tx.tag.create({ data: { name: tagName, workspaceId, color: TAG_DEFAULT_COLORS.CRM_AUTO_BLUE } });
+          tag = await tx.tag.create({
+            data: { name: tagName, workspaceId, color: TAG_DEFAULT_COLORS.CRM_AUTO_BLUE },
+          });
         }
         const contact = await tx.contact.findFirst({
           where: { id: contactId, workspaceId },

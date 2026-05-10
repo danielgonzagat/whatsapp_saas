@@ -132,9 +132,9 @@ async function fetchCommerceGroups(
   prisma: PrismaService,
   planIds: string[],
 ): Promise<{
-    orderGroups: OrderGroupRow[];
-    last30dGroups: Last30dGroupRow[];
-  }> {
+  orderGroups: OrderGroupRow[];
+  last30dGroups: Last30dGroupRow[];
+}> {
   const [orderGroups, last30dGroups] = await Promise.all([
     // Platform-level admin aggregate: intentionally cross-workspace.
     // `workspaceId: undefined` is a Prisma-side no-op ("skip filter")

@@ -2,11 +2,7 @@ import Redis from 'ioredis';
 import { PrismaService } from '../prisma/prisma.service';
 import { connection } from '../queue/queue';
 
-async function withTimeout<T>(
-  promise: Promise<T>,
-  ms: number,
-  label: string,
-): Promise<T> {
+async function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   const timeout = new Promise<never>((_, reject) => {
     timer = setTimeout(() => {
@@ -32,11 +28,7 @@ export async function probePostgres(prisma: PrismaService): Promise<{
 }> {
   const startedAt = Date.now();
   try {
-    await withTimeout(
-      prisma.$queryRaw<{ '?column?': 1 }[]>`SELECT 1`,
-      2_000,
-      'postgres',
-    );
+    await withTimeout(prisma.$queryRaw<{ '?column?': 1 }[]>`SELECT 1`, 2_000, 'postgres');
     return { dependency: 'postgres', status: 'UP', latencyMs: Date.now() - startedAt };
   } catch (err: unknown) {
     return {

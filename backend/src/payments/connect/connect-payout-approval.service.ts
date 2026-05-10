@@ -390,7 +390,9 @@ export class ConnectPayoutApprovalService {
           skip,
           take,
         }),
-        this.prisma.approvalRequest.count({ where: { workspaceId: input.workspaceId ?? undefined, ...where } }),
+        this.prisma.approvalRequest.count({
+          where: { workspaceId: input.workspaceId ?? undefined, ...where },
+        }),
       ],
       { isolationLevel: 'ReadCommitted' },
     );

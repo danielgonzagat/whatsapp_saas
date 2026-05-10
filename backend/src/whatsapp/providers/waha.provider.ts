@@ -24,7 +24,6 @@ type WahaChatEntry = {
   [key: string]: unknown;
 };
 
-
 const S_RE = /\s+/;
 
 /**
@@ -386,14 +385,14 @@ export class WahaProvider extends WahaSessionProvider {
     }
     const p = payload as WahaChatPayload | undefined;
     if (Array.isArray(p?.chats)) {
-      return p.chats as unknown[];
+      return p.chats;
     }
     return [];
   }
 
   private getChatDedupKey(chat: unknown): string {
     const c = chat as WahaChatEntry;
-    const cContact = c?.contact as WahaChatEntry['contact'] | undefined;
+    const cContact = c?.contact;
     const candidates = [c?.id, c?.chatId, c?.contactId, c?.phone, cContact?.phone];
     const strMatch = candidates.find((v): v is string => typeof v === 'string' && v.trim() !== '');
     if (strMatch) {

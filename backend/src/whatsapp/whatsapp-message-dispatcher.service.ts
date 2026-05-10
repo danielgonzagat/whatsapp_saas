@@ -1,12 +1,6 @@
 import { randomInt, randomUUID } from 'node:crypto';
 import { InjectRedis } from '@nestjs-modules/ioredis';
-import {
-  ForbiddenException,
-  Inject,
-  Injectable,
-  Optional,
-  forwardRef,
-} from '@nestjs/common';
+import { ForbiddenException, Inject, Injectable, Optional, forwardRef } from '@nestjs/common';
 import Redis from 'ioredis';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { StructuredLogger } from '../logging/structured-logger';

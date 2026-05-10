@@ -225,8 +225,8 @@ export class WebhooksService {
       return {
         at: l.createdAt,
         flowId: l.resourceId,
-        status: details.status as string | undefined,
-        phone: details.phone as string | undefined,
+        status: details.status,
+        phone: details.phone,
         amount: details.amount as number | undefined,
         provider: details.provider as string | undefined,
       };

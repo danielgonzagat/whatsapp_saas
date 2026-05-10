@@ -79,10 +79,14 @@ export class CartRecoveryService {
           await emailService.sendEmail({
             to: customerEmail,
             subject: `Voce esqueceu algo — ${productName}`,
-            html: (await import('../common/utils/email-template-renderer.util')).renderEmailTemplate('cart-recovery', {
-              productName,
-              orderNumber: order.orderNumber,
-            }) + unsubscribeFooter,
+            html:
+              (await import('../common/utils/email-template-renderer.util')).renderEmailTemplate(
+                'cart-recovery',
+                {
+                  productName,
+                  orderNumber: order.orderNumber,
+                },
+              ) + unsubscribeFooter,
             headers: {
               'List-Unsubscribe': listUnsubscribe,
               'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',

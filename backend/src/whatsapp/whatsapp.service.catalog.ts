@@ -94,10 +94,7 @@ export async function listPurchaseProbabilityRanking(
   };
 }
 
-export async function triggerCatalogRefresh(
-  ws: string,
-  o?: { days?: number; reason?: string },
-) {
+export async function triggerCatalogRefresh(ws: string, o?: { days?: number; reason?: string }) {
   const days = Math.max(1, Math.min(365, Number(o?.days || 30) || 30));
   const reason = String(o?.reason || 'manual_catalog_refresh').trim();
   const jid = buildQueueJobId('catalog-contacts-30d', ws);
@@ -137,9 +134,7 @@ export async function triggerCatalogRescore(
         phone: c.phone,
         contactName: c.name || c.phone,
         chatId:
-          readText(cf.lastRemoteChatId) ||
-          readText(cf.lastResolvedChatId) ||
-          `${c.phone}@c.us`,
+          readText(cf.lastRemoteChatId) || readText(cf.lastResolvedChatId) || `${c.phone}@c.us`,
       },
     ];
   } else {

@@ -193,5 +193,4 @@ Gere uma descricao visual detalhada para criacao de imagem de marketing. Dark th
     const imageUrl = response.data[0]?.url;
     return { success: true, imageUrl, prompt: enrichedPrompt };
   }
-
 }

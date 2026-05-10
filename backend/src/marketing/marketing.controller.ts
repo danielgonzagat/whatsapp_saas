@@ -1,12 +1,4 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Param,
-  Post,
-  Request,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Request, UseGuards } from '@nestjs/common';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { forEachSequential } from '../common/async-sequence';
@@ -37,7 +29,6 @@ const CHANNELS = ['WHATSAPP', 'INSTAGRAM', 'MESSENGER', 'EMAIL', 'TIKTOK'];
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 @Throttle({ default: { limit: 10, ttl: 60000 } })
 export class MarketingController {
-
   constructor(
     private readonly prisma: PrismaService,
     private readonly metaWhatsApp: MetaWhatsAppService,

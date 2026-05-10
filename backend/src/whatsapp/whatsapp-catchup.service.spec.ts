@@ -32,14 +32,14 @@ describe('WhatsAppCatchupService', () => {
 
   const buildService = () =>
     new WhatsAppCatchupService(
-      prisma as never as PrismaService,
-      providerRegistry as never,
-      inboundProcessor as never,
-      ciaRuntime as never,
-      inbox as never,
-      workerRuntime as never,
-      redis as never,
-      agentEvents as never,
+      prisma as never,
+      providerRegistry,
+      inboundProcessor,
+      ciaRuntime,
+      inbox,
+      workerRuntime,
+      redis,
+      agentEvents,
     );
 
   beforeEach(() => {

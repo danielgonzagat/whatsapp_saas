@@ -77,7 +77,9 @@ export class PaymentController {
       return { received: true, duplicate: true };
     }
 
-    const externalId = eventId || `kloel_payment_${crypto.createHash('sha256').update(JSON.stringify(body)).digest('hex').slice(0, 32)}`;
+    const externalId =
+      eventId ||
+      `kloel_payment_${crypto.createHash('sha256').update(JSON.stringify(body)).digest('hex').slice(0, 32)}`;
     let webhookEvent: WebhookEvent | undefined;
     try {
       webhookEvent = await this.webhooksService.logWebhookEvent(

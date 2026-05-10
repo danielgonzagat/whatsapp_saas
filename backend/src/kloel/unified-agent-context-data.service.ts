@@ -52,7 +52,7 @@ export class UnifiedAgentContextDataService {
     });
     return {
       ...workspace,
-      brandVoice: (brandVoice?.value as BrandVoiceValue)?.style as string | undefined,
+      brandVoice: (brandVoice?.value as BrandVoiceValue)?.style,
     };
   }
 

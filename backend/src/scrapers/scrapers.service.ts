@@ -47,7 +47,7 @@ export class ScrapersService {
   /** Extracts status string from stats JSON for API response. */
   private extractStatus(stats: unknown): string | undefined {
     if (stats && typeof stats === 'object' && 'status' in stats) {
-      return (stats as ScraperStats).status as string | undefined;
+      return (stats as ScraperStats).status;
     }
     return undefined;
   }
@@ -73,7 +73,7 @@ export class ScrapersService {
     return jobs.map((job) => ({
       ...job,
       status: this.extractStatus(job.stats),
-      resultsCount: (job.stats as ScraperStats | null)?.found as number | undefined,
+      resultsCount: (job.stats as ScraperStats | null)?.found,
     }));
   }
 

@@ -131,7 +131,10 @@ export class WhatsAppBrainController {
     } catch (error: unknown) {
       if (webhookEvent?.id) {
         await this.webhooksService
-          .markWebhookFailed(webhookEvent.id, error instanceof Error ? error.message : String(error))
+          .markWebhookFailed(
+            webhookEvent.id,
+            error instanceof Error ? error.message : String(error),
+          )
           .catch(() => {});
       }
       return { status: 'error', message: error instanceof Error ? error.message : String(error) };

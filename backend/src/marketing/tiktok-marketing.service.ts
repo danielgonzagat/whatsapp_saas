@@ -202,7 +202,11 @@ export class TikTokMarketingService {
       clientKey = this.readTikTokClientKey();
       secret = this.readTikTokSecret();
     } catch (error) {
-      this.logger.error('Failed to read TikTok client credentials', error instanceof Error ? error.message : String(error), { context: 'TikTokMarketingService.completeOAuth' });
+      this.logger.error(
+        'Failed to read TikTok client credentials',
+        error instanceof Error ? error.message : String(error),
+        { context: 'TikTokMarketingService.completeOAuth' },
+      );
       return { connected: false, status: 'server_not_configured' };
     }
 
@@ -244,7 +248,9 @@ export class TikTokMarketingService {
 
     await this.prisma.workspace.update({
       where: { id: workspaceId },
-      data: { providerSettings: JSON.parse(JSON.stringify(nextSettings)) as Prisma.InputJsonObject },
+      data: {
+        providerSettings: JSON.parse(JSON.stringify(nextSettings)) as Prisma.InputJsonObject,
+      },
     });
 
     return { connected: true, status: 'connected', kind, advertiserIds };
@@ -299,7 +305,10 @@ export class TikTokMarketingService {
     secret: string;
     redirectUri: string;
   }): Promise<TikTokTokenPayload> {
-    this.logger.log('Calling TikTok API', { context: 'TikTokMarketingService.exchangeToken', kind: input.kind });
+    this.logger.log('Calling TikTok API', {
+      context: 'TikTokMarketingService.exchangeToken',
+      kind: input.kind,
+    });
     const response =
       input.kind === 'advertiser'
         ? await fetch(ADVERTISER_TOKEN_URL, {
@@ -317,7 +326,11 @@ export class TikTokMarketingService {
     try {
       return (await response.json()) as TikTokTokenPayload;
     } catch (error) {
-      this.logger.error('Failed to parse TikTok token response', error instanceof Error ? error.message : String(error), { context: 'TikTokMarketingService.exchangeToken' });
+      this.logger.error(
+        'Failed to parse TikTok token response',
+        error instanceof Error ? error.message : String(error),
+        { context: 'TikTokMarketingService.exchangeToken' },
+      );
       return { error: 'invalid_token_response' };
     }
   }

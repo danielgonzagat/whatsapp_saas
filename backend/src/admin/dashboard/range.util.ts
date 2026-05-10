@@ -41,7 +41,6 @@ export interface ResolvedAdminHomeRange {
 
 const MS_IN_DAY = 24 * 60 * 60 * 1000;
 
-
 function startOfDay(d: Date): Date {
   const out = new Date(d.getTime());
   out.setUTCHours(0, 0, 0, 0);

@@ -68,11 +68,7 @@ describe('WebhooksController — replay safety', () => {
       auditLog: { create: jest.fn().mockResolvedValue({}) },
     };
 
-    controller = new ControllerClass(
-      webhooksService as never,
-      redis as never,
-      prisma as never,
-    );
+    controller = new ControllerClass(webhooksService as never, redis as never, prisma as never);
   });
 
   afterAll(() => {
@@ -84,7 +80,10 @@ describe('WebhooksController — replay safety', () => {
 
     const body = { phone: '5511999999999', status: 'paid' };
     const promise = controller.catchHook(
-      'ws-1', 'flow-1', body, {},
+      'ws-1',
+      'flow-1',
+      body,
+      {},
       createTestSignature(body, 'test-hooks-secret'),
       undefined,
       { body, rawBody: JSON.stringify(body) },
@@ -102,7 +101,10 @@ describe('WebhooksController — replay safety', () => {
 
     const body = { phone: '5511999999999', status: 'paid' };
     const result = await controller.catchHook(
-      'ws-1', 'flow-1', body, {},
+      'ws-1',
+      'flow-1',
+      body,
+      {},
       createTestSignature(body, 'test-hooks-secret'),
       undefined,
       { body, rawBody: JSON.stringify(body) },
@@ -120,7 +122,8 @@ describe('WebhooksController — replay safety', () => {
 
     const body = { status: 'paid', phone: '5511999999999' };
     const result = await controller.financeHook(
-      'ws-1', body,
+      'ws-1',
+      body,
       createTestSignature(body, 'test-hooks-secret'),
       undefined,
       { body, rawBody: JSON.stringify(body) },
@@ -168,7 +171,9 @@ describe('WebhooksController — replay safety', () => {
 // ── PaymentWebhookGenericController replay tests ──
 
 describe('PaymentWebhookGenericController — replay safety', () => {
-  let controller: InstanceType<typeof import('./payment-webhook-generic.controller').PaymentWebhookGenericController>;
+  let controller: InstanceType<
+    typeof import('./payment-webhook-generic.controller').PaymentWebhookGenericController
+  >;
   let redis: { set: jest.Mock };
   let webhooksService: { logWebhookEvent: jest.Mock; markWebhookProcessed: jest.Mock };
   let autopilot: { markConversion: jest.Mock; triggerPostPurchaseFlow: jest.Mock };
@@ -177,7 +182,8 @@ describe('PaymentWebhookGenericController — replay safety', () => {
 
   beforeAll(async () => {
     process.env.NODE_ENV = 'test';
-    const { PaymentWebhookGenericController } = await import('./payment-webhook-generic.controller');
+    const { PaymentWebhookGenericController } =
+      await import('./payment-webhook-generic.controller');
     ControllerClass = PaymentWebhookGenericController;
   });
 
@@ -212,8 +218,15 @@ describe('PaymentWebhookGenericController — replay safety', () => {
 
     const result = await controller.handlePayment(
       'test-payment-secret',
-      undefined, undefined, undefined,
-      { body: { status: 'paid', workspaceId: 'ws-1', orderId: 'order-1' }, rawBody: Buffer.from(JSON.stringify({ status: 'paid', workspaceId: 'ws-1', orderId: 'order-1' })) },
+      undefined,
+      undefined,
+      undefined,
+      {
+        body: { status: 'paid', workspaceId: 'ws-1', orderId: 'order-1' },
+        rawBody: Buffer.from(
+          JSON.stringify({ status: 'paid', workspaceId: 'ws-1', orderId: 'order-1' }),
+        ),
+      },
       { status: 'paid', workspaceId: 'ws-1', orderId: 'order-1' },
     );
 
@@ -229,11 +242,12 @@ describe('PaymentWebhookGenericController — replay safety', () => {
 
     const body = { financial_status: 'paid', workspaceId: 'ws-1', id: 12345, total_price: '99.90' };
     const rawBody = JSON.stringify(body);
-    const hmac = crypto.createHmac('sha256', 'test-shopify-secret').update(rawBody).digest('base64');
+    const hmac = crypto
+      .createHmac('sha256', 'test-shopify-secret')
+      .update(rawBody)
+      .digest('base64');
 
-    const result = await controller.handleShopify(
-      { body, rawBody }, hmac, undefined, body as never,
-    );
+    const result = await controller.handleShopify({ body, rawBody }, hmac, undefined, body);
 
     expect(result).toHaveProperty('skipped', true);
     expect(result).toHaveProperty('reason', 'duplicate_webhook_event');
@@ -248,9 +262,10 @@ describe('PaymentWebhookGenericController — replay safety', () => {
 
     const body = { status: 'completed', workspaceId: 'ws-1', transaction_id: 'tx-1' };
     const result = await controller.handlePagHiper(
-      'test-paghiper-token', undefined,
+      'test-paghiper-token',
+      undefined,
       { body, rawBody: JSON.stringify(body) },
-      body as never,
+      body,
     );
 
     expect(result).toHaveProperty('skipped', true);
@@ -266,11 +281,12 @@ describe('PaymentWebhookGenericController — replay safety', () => {
 
     const body = { status: 'completed', workspaceId: 'ws-1', id: 100, total: '50.00' };
     const rawBody = JSON.stringify(body);
-    const signature = crypto.createHmac('sha256', 'test-wc-secret').update(rawBody).digest('base64');
+    const signature = crypto
+      .createHmac('sha256', 'test-wc-secret')
+      .update(rawBody)
+      .digest('base64');
 
-    const result = await controller.handleWoo(
-      { body, rawBody }, signature, undefined, body as never,
-    );
+    const result = await controller.handleWoo({ body, rawBody }, signature, undefined, body);
 
     expect(result).toHaveProperty('skipped', true);
     expect(result).toHaveProperty('reason', 'duplicate_webhook_event');
@@ -281,7 +297,9 @@ describe('PaymentWebhookGenericController — replay safety', () => {
 // ── MetaWebhookController replay tests ──
 
 describe('MetaWebhookController — replay safety', () => {
-  let controller: InstanceType<typeof import('../meta/webhooks/meta-webhook.controller').MetaWebhookController>;
+  let controller: InstanceType<
+    typeof import('../meta/webhooks/meta-webhook.controller').MetaWebhookController
+  >;
   let redis: { set: jest.Mock };
   let webhooksService: { logWebhookEvent: jest.Mock; markWebhookProcessed: jest.Mock };
   let inboundProcessor: { process: jest.Mock };
@@ -318,8 +336,12 @@ describe('MetaWebhookController — replay safety', () => {
     };
 
     controller = new ControllerClass(
-      metaWhatsApp as never, inboundProcessor as never, {} as never,
-      prisma as never, webhooksService as never, redis as never,
+      metaWhatsApp as never,
+      inboundProcessor as never,
+      {} as never,
+      prisma as never,
+      webhooksService as never,
+      redis as never,
     );
   });
 
@@ -352,8 +374,12 @@ describe('MetaWebhookController — replay safety', () => {
   it('throws ForbiddenException on invalid signature', async () => {
     process.env.META_APP_SECRET = 'meta-secret';
     const ctrl = new ControllerClass(
-      metaWhatsApp as never, inboundProcessor as never, {} as never,
-      prisma as never, webhooksService as never, redis as never,
+      metaWhatsApp as never,
+      inboundProcessor as never,
+      {} as never,
+      prisma as never,
+      webhooksService as never,
+      redis as never,
     );
 
     const body = { object: 'whatsapp_business_account', entry: [] };

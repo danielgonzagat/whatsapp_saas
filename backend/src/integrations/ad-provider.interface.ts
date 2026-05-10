@@ -63,7 +63,11 @@ export interface SyncInsightsResult {
 export interface AdProvider {
   readonly platform: string;
   connect(workspaceId: string, redirectUri: string): Promise<OAuthConnectResult>;
-  completeOAuth(workspaceId: string, code: string, redirectUri: string): Promise<OAuthConnectResult>;
+  completeOAuth(
+    workspaceId: string,
+    code: string,
+    redirectUri: string,
+  ): Promise<OAuthConnectResult>;
   getStatus(workspaceId: string): Promise<OAuthStatusResult>;
   syncAccounts(workspaceId: string): Promise<SyncAccountsResult>;
   syncCampaigns(workspaceId: string): Promise<SyncCampaignsResult>;

@@ -28,12 +28,7 @@ import { createRedisClient } from '../common/redis/redis.util';
 import { StorageService } from '../common/storage/storage.service';
 import { EmailService } from '../auth/email.service';
 import { PrismaService } from '../prisma/prisma.service';
-import {
-  createZip,
-  generateCode,
-  parseFacebookSignedRequest,
-  writeJson,
-} from './gdpr.helpers';
+import { createZip, generateCode, parseFacebookSignedRequest, writeJson } from './gdpr.helpers';
 
 const GDPR_QUEUE = 'gdpr-processing';
 const VERIFICATION_TOKEN_EXPIRY = '24h';
@@ -201,7 +196,11 @@ export class GdprService implements OnModuleInit, OnModuleDestroy {
 
     await this.enqueueProcessing(request.id, request.type, request.userId, request.workspaceId);
 
-    return { code, status: 'PROCESSING' as const, message: 'Solicitação verificada e em processamento.' };
+    return {
+      code,
+      status: 'PROCESSING' as const,
+      message: 'Solicitação verificada e em processamento.',
+    };
   }
 
   /** Get status by code. */
@@ -338,8 +337,7 @@ export class GdprService implements OnModuleInit, OnModuleDestroy {
       select: { id: true, userId: true, workspaceId: true, requestedAt: true },
     });
 
-    const daysSinceRequest =
-      (Date.now() - request.requestedAt.getTime()) / (1000 * 60 * 60 * 24);
+    const daysSinceRequest = (Date.now() - request.requestedAt.getTime()) / (1000 * 60 * 60 * 24);
 
     if (daysSinceRequest > DELETION_MAX_DAYS) {
       await this.prisma.gdprRequest.update({
@@ -399,9 +397,7 @@ export class GdprService implements OnModuleInit, OnModuleDestroy {
     writeJson(exportDir, 'agent.json', agent);
 
     if (agent && (agent as { email?: string }).email) {
-      await this.email.sendDataDeletionConfirmationEmail(
-        (agent as { email: string }).email,
-      );
+      await this.email.sendDataDeletionConfirmationEmail((agent as { email: string }).email);
     }
 
     const conversations = await this.prisma.conversation.findMany({
@@ -439,11 +435,7 @@ export class GdprService implements OnModuleInit, OnModuleDestroy {
     });
   }
 
-  private async cascadeDeleteUserData(
-    userId: string,
-    workspaceId: string,
-    requestId: string,
-  ) {
+  private async cascadeDeleteUserData(userId: string, workspaceId: string, requestId: string) {
     await this.prisma.$transaction(
       async (tx) => {
         await tx.refreshToken.updateMany({
@@ -491,7 +483,7 @@ export class GdprService implements OnModuleInit, OnModuleDestroy {
               userId,
               deletedAt: new Date().toISOString(),
               requestId,
-            } as Prisma.InputJsonValue,
+            },
           },
         });
       },

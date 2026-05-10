@@ -55,9 +55,10 @@ export class FacebookMessengerService {
       pageAccessToken,
     );
 
-    const typed: FbSendResult = typeof result === 'object' && result !== null
-      ? (result as FbSendResult)
-      : { error: { code: -1, message: 'Invalid response' } };
+    const typed: FbSendResult =
+      typeof result === 'object' && result !== null
+        ? result
+        : { error: { code: -1, message: 'Invalid response' } };
 
     if (typed.error) {
       await this.prisma.fbMessage.create({
@@ -136,10 +137,7 @@ export class FacebookMessengerService {
     });
   }
 
-  async processDeliveryReceipt(
-    workspaceId: string,
-    msg: FbWebhookMessagingEvent,
-  ): Promise<void> {
+  async processDeliveryReceipt(workspaceId: string, msg: FbWebhookMessagingEvent): Promise<void> {
     const mids = msg.delivery?.mids;
     if (!mids || mids.length === 0) {
       return;
@@ -158,10 +156,7 @@ export class FacebookMessengerService {
     });
   }
 
-  async processReadReceipt(
-    workspaceId: string,
-    msg: FbWebhookMessagingEvent,
-  ): Promise<void> {
+  async processReadReceipt(workspaceId: string, msg: FbWebhookMessagingEvent): Promise<void> {
     const watermark = msg.read?.watermark;
     if (!watermark) {
       return;
@@ -257,9 +252,7 @@ export class FacebookMessengerService {
       where: { workspaceId, pageId },
       orderBy: { createdAt: 'desc' },
       take: options?.limit || 50,
-      ...(options?.before
-        ? { cursor: { id: options.before }, skip: 1 }
-        : {}),
+      ...(options?.before ? { cursor: { id: options.before }, skip: 1 } : {}),
     });
   }
 
@@ -267,8 +260,7 @@ export class FacebookMessengerService {
     return this.metaSdk.graphApiGet(
       `${pageId}/conversations`,
       {
-        fields:
-          'id,senders,message_count,updated_time,messages{id,message,from,created_time}',
+        fields: 'id,senders,message_count,updated_time,messages{id,message,from,created_time}',
       },
       pageAccessToken,
     );

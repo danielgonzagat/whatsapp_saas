@@ -17,10 +17,7 @@ import { WhatsAppProviderRegistry } from './providers/provider-registry';
 import { WhatsAppCatchupService } from './whatsapp-catchup.service';
 import { WorkerRuntimeService } from './worker-runtime.service';
 import { CiaBootstrapService } from './cia-bootstrap.service';
-import type {
-  BacklogMode,
-  WorkspaceAutonomyMode,
-} from './cia-backlog-run.helpers';
+import type { BacklogMode, WorkspaceAutonomyMode } from './cia-backlog-run.helpers';
 import { ensureBacklogCoverageHelper } from './cia-backlog-run.helpers';
 
 /**

@@ -494,9 +494,7 @@ export class WhatsAppApiProvider {
       mismatchReasons: [],
       sessionRestartRisk: false,
       whatsappBusinessId: details.whatsappBusinessId ?? null,
-      ...(degradedReason !== undefined && degradedReason !== null
-        ? { error: degradedReason }
-        : {}),
+      ...(degradedReason !== undefined && degradedReason !== null ? { error: degradedReason } : {}),
       ...(authUrl !== undefined && authUrl !== null ? { authUrl } : {}),
       ...(phoneNumberId !== undefined && phoneNumberId !== null ? { phoneNumberId } : {}),
     };

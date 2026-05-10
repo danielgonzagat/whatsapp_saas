@@ -23,5 +23,7 @@ function resolveVariable(vars: Record<string, string>, key: string): string {
 export function renderEmailTemplate(name: string, vars: Record<string, string>): string {
   const source = loadTemplate(name);
   const withRaw = source.replace(RAW_RE, (_match, key: string) => resolveVariable(vars, key));
-  return withRaw.replace(ESCAPED_RE, (_match, key: string) => escapeHtml(resolveVariable(vars, key)));
+  return withRaw.replace(ESCAPED_RE, (_match, key: string) =>
+    escapeHtml(resolveVariable(vars, key)),
+  );
 }

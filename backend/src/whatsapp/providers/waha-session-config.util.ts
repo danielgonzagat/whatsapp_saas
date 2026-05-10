@@ -135,9 +135,9 @@ export function extractLidMappingsPayload(payload: unknown): WahaLidMapping[] {
   const candidates: unknown[] = Array.isArray(payload)
     ? payload
     : Array.isArray(p?.items)
-      ? (p.items as unknown[])
+      ? p.items
       : Array.isArray(p?.data)
-        ? (p.data as unknown[])
+        ? p.data
         : [];
 
   return candidates
@@ -160,5 +160,3 @@ export function extractLidMappingsPayload(payload: unknown): WahaLidMapping[] {
     })
     .filter((entry) => Boolean(entry.lid) && Boolean(entry.pn));
 }
-
-

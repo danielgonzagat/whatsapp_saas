@@ -55,7 +55,7 @@ export async function queryTransactionCounts(
         workspaceId: undefined,
       },
     }),
-      prisma.checkoutOrder.aggregate({
+    prisma.checkoutOrder.aggregate({
       where: {
         status: OrderStatus.REFUNDED,
         refundedAt: { gte: from, lte: to },
@@ -79,9 +79,9 @@ export async function queryTransactionCounts(
     approved,
     declined,
     pending,
-    refundCount: (refundAgg._count as { _all: number })._all,
+    refundCount: refundAgg._count._all,
     refundAmountInCents: Number(refundAgg._sum.totalInCents ?? 0),
-    chargebackCount: (chargebackAgg._count as { _all: number })._all,
+    chargebackCount: chargebackAgg._count._all,
     chargebackAmountInCents: Number(chargebackAgg._sum.totalInCents ?? 0),
   };
 }

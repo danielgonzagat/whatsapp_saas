@@ -64,7 +64,8 @@ export class InboundProcessorService {
     private readonly accountAgent: AccountAgentService,
     private readonly workerRuntime: WorkerRuntimeService,
     private readonly unifiedAgent: UnifiedAgentService,
-    @Inject(forwardRef(() => WHATSAPP_MESSAGING)) private readonly whatsappService: IWhatsappMessaging,
+    @Inject(forwardRef(() => WHATSAPP_MESSAGING))
+    private readonly whatsappService: IWhatsappMessaging,
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
@@ -85,11 +86,7 @@ export class InboundProcessorService {
     return '';
   }
 
-  private isWorkspaceSelfInbound(
-    settings: ProviderSettings,
-    from: string,
-    phone: string,
-  ): boolean {
+  private isWorkspaceSelfInbound(settings: ProviderSettings, from: string, phone: string): boolean {
     return isWorkspaceSelfInboundExt(settings, from, phone);
   }
 

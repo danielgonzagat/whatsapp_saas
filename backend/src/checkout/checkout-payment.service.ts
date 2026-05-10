@@ -3,10 +3,7 @@ import { Prisma } from '@prisma/client';
 import * as Sentry from '@sentry/node';
 
 import { AuditService } from '../audit/audit.service';
-import {
-  CheckoutPaymentE2EGuard,
-  CHECKOUT_PAYMENT_E2E_GUARD,
-} from './checkout-payment-e2e-guard';
+import { CheckoutPaymentE2EGuard, CHECKOUT_PAYMENT_E2E_GUARD } from './checkout-payment-e2e-guard';
 import { FinancialAlertService } from '../common/financial-alert.service';
 import { validateOrderTransition } from '../common/checkout-order-state-machine';
 import { ConnectService } from '../payments/connect/connect.service';

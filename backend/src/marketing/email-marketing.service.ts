@@ -9,11 +9,7 @@ import {
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 import type { CreateEmailCampaignDto } from './dto/create-email-campaign.dto';
-import type {
-  EmailCampaign,
-  EmailCampaignRecipient,
-  EmailCampaignDelivery,
-} from '@prisma/client';
+import type { EmailCampaign, EmailCampaignRecipient, EmailCampaignDelivery } from '@prisma/client';
 
 const NAME_RE = /\{\{name\}\}/g;
 
@@ -107,9 +103,7 @@ export class EmailMarketingService implements OnModuleInit, OnModuleDestroy {
       });
 
       this.worker.on('failed', (job, err) => {
-        this.logger.error(
-          `Email campaign job failed: ${job?.data.campaignId}: ${err.message}`,
-        );
+        this.logger.error(`Email campaign job failed: ${job?.data.campaignId}: ${err.message}`);
       });
 
       this.logger.log('Email marketing queue worker started');
@@ -138,10 +132,7 @@ export class EmailMarketingService implements OnModuleInit, OnModuleDestroy {
   // CAMPAIGN CRUD
   // ========================================
 
-  async createCampaign(
-    workspaceId: string,
-    dto: CreateEmailCampaignDto,
-  ): Promise<EmailCampaign> {
+  async createCampaign(workspaceId: string, dto: CreateEmailCampaignDto): Promise<EmailCampaign> {
     const provider = this.getProvider();
     const fromEmail = dto.fromEmail || this.fromEmail;
     const fromName = dto.fromName || this.fromName;
@@ -260,10 +251,7 @@ export class EmailMarketingService implements OnModuleInit, OnModuleDestroy {
     });
   }
 
-  private async processCampaignSend(
-    campaignId: string,
-    workspaceId: string,
-  ): Promise<void> {
+  private async processCampaignSend(campaignId: string, workspaceId: string): Promise<void> {
     const campaign = await this.prisma.emailCampaign.findFirst({
       where: { id: campaignId, workspaceId },
       include: { recipients: true },
@@ -298,8 +286,7 @@ export class EmailMarketingService implements OnModuleInit, OnModuleDestroy {
       }
 
       try {
-        const personalizedHtml = campaign.htmlBody
-          .replace(NAME_RE, recipient.name || 'Cliente');
+        const personalizedHtml = campaign.htmlBody.replace(NAME_RE, recipient.name || 'Cliente');
 
         const footerHtml = buildUnsubscribeFooterHtml({
           email: recipient.email,
@@ -378,10 +365,11 @@ export class EmailMarketingService implements OnModuleInit, OnModuleDestroy {
   }
 
   private async recordDeliveryEvent(log: EmailDeliveryLog): Promise<void> {
-    const event = log.event as 'SENT' | 'FAILED';
-    const statusUpdate = event === 'SENT'
-      ? { status: 'SENT' as const, sentAt: new Date() }
-      : { status: 'FAILED' as const, failedAt: new Date(), errorMessage: log.errorMessage };
+    const event = log.event;
+    const statusUpdate =
+      event === 'SENT'
+        ? { status: 'SENT' as const, sentAt: new Date() }
+        : { status: 'FAILED' as const, failedAt: new Date(), errorMessage: log.errorMessage };
 
     await Promise.all([
       this.prisma.emailCampaignDelivery.create({
@@ -406,7 +394,14 @@ export class EmailMarketingService implements OnModuleInit, OnModuleDestroy {
 
   async reconcileDeliveryFromWebhook(params: {
     providerMessageId: string;
-    event: 'DELIVERED' | 'OPENED' | 'CLICKED' | 'REPLIED' | 'BOUNCED' | 'COMPLAINT' | 'UNSUBSCRIBED';
+    event:
+      | 'DELIVERED'
+      | 'OPENED'
+      | 'CLICKED'
+      | 'REPLIED'
+      | 'BOUNCED'
+      | 'COMPLAINT'
+      | 'UNSUBSCRIBED';
     metadata?: Record<string, unknown>;
   }): Promise<boolean> {
     const { providerMessageId, event, metadata } = params;
@@ -424,7 +419,10 @@ export class EmailMarketingService implements OnModuleInit, OnModuleDestroy {
     const campaignId = recipient.campaignId;
     const workspaceId = recipient.workspaceId;
 
-    const statusMap: Record<string, Partial<Record<keyof EmailCampaignRecipient, Date | string | null>>> = {
+    const statusMap: Record<
+      string,
+      Partial<Record<keyof EmailCampaignRecipient, Date | string | null>>
+    > = {
       DELIVERED: { status: 'DELIVERED', deliveredAt: new Date() },
       OPENED: { status: 'OPENED', openedAt: new Date() },
       CLICKED: { status: 'CLICKED', clickedAt: new Date() },
@@ -443,7 +441,7 @@ export class EmailMarketingService implements OnModuleInit, OnModuleDestroy {
         workspaceId,
         event,
         providerMessageId,
-        metadata: metadata ? (metadata as Record<string, unknown>) : undefined,
+        metadata: metadata ? metadata : undefined,
       },
     });
 

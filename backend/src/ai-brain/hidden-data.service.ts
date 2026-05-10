@@ -34,7 +34,10 @@ export class HiddenDataExtractorService {
     `;
 
     // tokenBudget: non-workspace context, budget tracked at caller level
-    this.logger.log('Calling OpenAI', { context: 'HiddenDataExtractorService.extract', model: 'brain' });
+    this.logger.log('Calling OpenAI', {
+      context: 'HiddenDataExtractorService.extract',
+      model: 'brain',
+    });
     const completion = await chatCompletionWithRetry(this.openai, {
       model: resolveBackendOpenAIModel('brain'),
       messages: [{ role: 'user', content: prompt }],
@@ -45,7 +48,11 @@ export class HiddenDataExtractorService {
     try {
       result = JSON.parse(completion.choices[0]?.message?.content || '{}');
     } catch (error: unknown) {
-      this.logger.error('Failed to parse OpenAI JSON response', error instanceof Error ? error.message : String(error), { context: 'HiddenDataExtractorService.extract' });
+      this.logger.error(
+        'Failed to parse OpenAI JSON response',
+        error instanceof Error ? error.message : String(error),
+        { context: 'HiddenDataExtractorService.extract' },
+      );
     }
     return result;
   }

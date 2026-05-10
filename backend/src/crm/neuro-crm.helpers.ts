@@ -1,7 +1,4 @@
-import {
-  PRECO_PRE_O_VALOR_QUANT_RE,
-  RECLAMA_RUIM_PROBLEMA_C_RE,
-} from './neuro-crm.types';
+import { PRECO_PRE_O_VALOR_QUANT_RE, RECLAMA_RUIM_PROBLEMA_C_RE } from './neuro-crm.types';
 
 import type {
   AnalysisContact,

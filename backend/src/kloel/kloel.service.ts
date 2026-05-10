@@ -14,7 +14,16 @@ import { KloelWorkspaceContextService } from './kloel-workspace-context.service'
 
 type ComposerCapability = 'create_image' | 'create_site' | 'search_web';
 type UnknownRecord = Record<string, unknown>;
-type FollowupMetadata = { phone?: string; contactId?: string; message?: string; scheduledFor?: unknown; delayMinutes?: unknown; status?: string; executedAt?: unknown; [key: string]: unknown };
+type FollowupMetadata = {
+  phone?: string;
+  contactId?: string;
+  message?: string;
+  scheduledFor?: unknown;
+  delayMinutes?: unknown;
+  status?: string;
+  executedAt?: unknown;
+  [key: string]: unknown;
+};
 
 interface ComposerAttachmentMetadata {
   id?: string;

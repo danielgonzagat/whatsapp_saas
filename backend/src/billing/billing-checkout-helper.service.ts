@@ -19,7 +19,13 @@ export class BillingCheckoutHelperService {
   ) {}
 
   async notifyCustomerPaymentConfirmed(
-    session: { customer_email?: string | null; customer_details?: { email?: string | null } | null; amount_total?: number | null; id: string; payment_intent?: string | { id?: string } | null },
+    session: {
+      customer_email?: string | null;
+      customer_details?: { email?: string | null } | null;
+      amount_total?: number | null;
+      id: string;
+      payment_intent?: string | { id?: string } | null;
+    },
     plan: string,
     workspaceId: string,
   ): Promise<void> {

@@ -278,7 +278,10 @@ export class PaymentWebhookGenericController {
     if (paghiperDupe) return paghiperDupe;
 
     const paghiperExternalId =
-      eventId || body?.transaction?.transaction_id || body?.transaction_id || `paghiper_${Date.now()}`;
+      eventId ||
+      body?.transaction?.transaction_id ||
+      body?.transaction_id ||
+      `paghiper_${Date.now()}`;
     let paghiperWebhookEvent: WebhookEvent | undefined;
     try {
       paghiperWebhookEvent = await this.webhooksService.logWebhookEvent(
@@ -407,14 +410,12 @@ export class PaymentWebhookGenericController {
     });
 
     if (wooWebhookEvent?.id) {
-      await this.webhooksService
-        .markWebhookProcessed(wooWebhookEvent.id)
-        .catch((err: unknown) => {
-          const errMsg = err instanceof Error ? err.message : 'unknown_error';
-          this.logger.error(
-            `[WEBHOOK] Failed to mark WooCommerce webhook ${wooWebhookEvent.id} as processed: ${errMsg}`,
-          );
-        });
+      await this.webhooksService.markWebhookProcessed(wooWebhookEvent.id).catch((err: unknown) => {
+        const errMsg = err instanceof Error ? err.message : 'unknown_error';
+        this.logger.error(
+          `[WEBHOOK] Failed to mark WooCommerce webhook ${wooWebhookEvent.id} as processed: ${errMsg}`,
+        );
+      });
     }
     return { ok: true };
   }

@@ -307,7 +307,7 @@ export class BillingCheckoutWebhookService {
     if (
       subscriptionRef &&
       typeof subscriptionRef === 'object' &&
-      typeof (subscriptionRef as { id?: string | null }).id === 'string' &&
+      typeof subscriptionRef.id === 'string' &&
       (subscriptionRef as { id: string }).id.trim()
     ) {
       return (subscriptionRef as { id: string }).id;

@@ -76,7 +76,11 @@ export class KloelThinkerService {
     const isAborted = () => !!signal?.aborted;
     const abortReason = () => signal?.reason;
     const isClientDisconnected = () => this.replyEngine.isClientDisconnected(abortReason());
-    const streamWriter = new KloelStreamWriter(res, { signal, logger: this.logger, llmE2EGuard: this.llmE2EGuard });
+    const streamWriter = new KloelStreamWriter(res, {
+      signal,
+      logger: this.logger,
+      llmE2EGuard: this.llmE2EGuard,
+    });
     const processingTraceEntries: StoredProcessingTraceEntry[] = [];
     const safeWrite = (event: KloelStreamEvent) => {
       this.threadService.appendStoredProcessingTraceEntry(processingTraceEntries, event);

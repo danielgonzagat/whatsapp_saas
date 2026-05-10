@@ -1,19 +1,6 @@
 import path from 'node:path';
 
-/** Path.join wrapper — validates segments. */
-function safeJoin(...parts: string[]): string {
-  for (const part of parts) {
-    if (typeof part !== 'string') {
-      throw new TypeError('safeJoin: non-string segment');
-    }
-    if (part.includes('\0')) {
-      throw new Error('safeJoin: null byte');
-    }
-  }
-  return path.join(...parts);
-}
-
-/** Companion to safeJoin. */
+/** Path.resolve wrapper — validates segments. */
 export function safeResolve(...parts: string[]): string {
   for (const part of parts) {
     if (typeof part !== 'string') {

@@ -158,9 +158,7 @@ describe('StructuredLogger', () => {
       const logged = spy.mock.calls[0][0];
       const parsed = JSON.parse(logged as string);
 
-      expect(parsed.timestamp).toMatch(
-        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
-      );
+      expect(parsed.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
       spy.mockRestore();
     });
 

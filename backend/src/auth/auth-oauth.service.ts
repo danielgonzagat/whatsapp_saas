@@ -278,8 +278,7 @@ export class AuthOAuthService {
               response: safeResponse,
             }),
           );
-        } catch {
-        }
+        } catch {}
         throw error;
       }
 

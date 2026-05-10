@@ -10,7 +10,13 @@ import type { ToolArgs } from './unified-agent.types';
 import { OpsAlertService } from '../observability/ops-alert.service';
 
 type UnknownRecord = Record<string, unknown>;
-type ProductMemoryValue = { name?: string; price?: number; description?: string; paymentLink?: string; [key: string]: unknown };
+type ProductMemoryValue = {
+  name?: string;
+  price?: number;
+  description?: string;
+  paymentLink?: string;
+  [key: string]: unknown;
+};
 
 /**
  * Handles commerce tool actions: send product info, create payment link.
@@ -123,9 +129,9 @@ export class UnifiedAgentActionsCommerceService {
     const productData = product.value as ProductMemoryValue;
     const message = this.buildProductInfoMessage(
       productData.name as string,
-      productData.description as string,
-      includePrice ? (productData.price as number) : null,
-      includeLink ? (productData.paymentLink as string) : undefined,
+      productData.description,
+      includePrice ? productData.price : null,
+      includeLink ? productData.paymentLink : undefined,
     );
     const sendResult = await this.messaging.actionSendMessage(
       workspaceId,

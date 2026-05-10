@@ -71,7 +71,10 @@ export function resolveTimestampExt(value: unknown): number {
   return 0;
 }
 
-export function resolveChatActivityTimestampExt(chat: { timestamp?: number; lastMessageTimestamp?: number }): number {
+export function resolveChatActivityTimestampExt(chat: {
+  timestamp?: number;
+  lastMessageTimestamp?: number;
+}): number {
   return Math.max(Number(chat.timestamp || 0) || 0, Number(chat.lastMessageTimestamp || 0) || 0);
 }
 

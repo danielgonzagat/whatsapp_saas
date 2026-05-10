@@ -161,12 +161,12 @@ describe('InboundProcessorService', () => {
 
     service = new InboundProcessorService(
       prisma as never,
-      inbox as never,
+      inbox,
       redis as never,
       accountAgent as never,
       workerRuntime as never,
       unifiedAgent as never,
-      whatsappService as never,
+      whatsappService,
     );
   });
 

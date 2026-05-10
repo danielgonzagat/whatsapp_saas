@@ -1,9 +1,6 @@
 import { AccountDeps } from './account-agent.gap-detector';
 import { asProviderSettings } from './provider-settings.types';
-import {
-  ALL_GAP_CHECKERS,
-  type GapCheckInput,
-} from './account-agent.gap-checkers';
+import { ALL_GAP_CHECKERS, type GapCheckInput } from './account-agent.gap-checkers';
 import { upsertWorkItem, type WorkItemInput } from './account-agent.work-item-upsert';
 
 export async function materializeAccountCapabilityGapsExt(deps: AccountDeps, workspaceId: string) {

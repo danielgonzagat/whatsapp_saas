@@ -168,7 +168,11 @@ export class AutopilotCycleService {
     });
   }
 
-  private isHotLeadMessage(lastMsg: { direction: string; content?: string | null; createdAt: Date }): boolean {
+  private isHotLeadMessage(lastMsg: {
+    direction: string;
+    content?: string | null;
+    createdAt: Date;
+  }): boolean {
     if (lastMsg.direction !== 'INBOUND') {
       return false;
     }
@@ -243,9 +247,7 @@ export class AutopilotCycleService {
   private shouldEnforceOptIn(contact: AutopilotConversation['contact']): boolean {
     return (
       process.env.ENFORCE_OPTIN === 'true' ||
-      this.readRecord(
-        this.readRecord(contact?.workspace).providerSettings,
-      ).autopilot === true
+      this.readRecord(this.readRecord(contact?.workspace).providerSettings).autopilot === true
     );
   }
 
@@ -273,7 +275,9 @@ export class AutopilotCycleService {
 
     const tagNames = tags.map((t) => t.name?.toLowerCase());
     const hasOptIn =
-      tagNames.includes('optin_whatsapp') || customFields.optin === true || customFields.optin_whatsapp === true;
+      tagNames.includes('optin_whatsapp') ||
+      customFields.optin === true ||
+      customFields.optin_whatsapp === true;
     if (!hasOptIn) {
       return { allowed: false, reason: 'optin_required' };
     }
@@ -314,7 +318,7 @@ export class AutopilotCycleService {
         },
     messages: Array<{ direction: string; createdAt: Date }>,
   ): Promise<{ allowed: boolean; reason?: string }> {
-    if (this.shouldEnforceOptIn(contact as AutopilotConversation['contact'])) {
+    if (this.shouldEnforceOptIn(contact)) {
       const result = await this.checkOptInCompliance(workspaceId, contact);
       if (!result.allowed) {
         return result;

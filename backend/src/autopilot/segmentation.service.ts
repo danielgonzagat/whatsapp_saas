@@ -380,7 +380,9 @@ export class SegmentationService {
     return Math.min(25, responseRate * 25);
   }
 
-  private computePurchaseValueFactor(deals: Array<{ status: string; value: number | null }>): number {
+  private computePurchaseValueFactor(
+    deals: Array<{ status: string; value: number | null }>,
+  ): number {
     const totalPurchased = deals
       .filter((d) => d.status === 'WON')
       .reduce((sum, d) => sum + (d.value || 0), 0);
@@ -436,7 +438,8 @@ export class SegmentationService {
     factors.responseRate = this.computeResponseRateFactor(allMessages);
     factors.purchaseValue = this.computePurchaseValueFactor(contact.deals);
 
-    const totalScore = factors.recency + factors.frequency + factors.responseRate + factors.purchaseValue;
+    const totalScore =
+      factors.recency + factors.frequency + factors.responseRate + factors.purchaseValue;
 
     return {
       score: Math.round(totalScore),

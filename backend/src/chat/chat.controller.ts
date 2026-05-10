@@ -33,12 +33,6 @@ export class ChatController {
     @Req() req: AuthenticatedRequest,
   ) {
     const userId = req.user?.sub;
-    return this.chatService.addMessage(
-      resolveWorkspaceId(req),
-      id,
-      userId,
-      'user',
-      dto.content,
-    );
+    return this.chatService.addMessage(resolveWorkspaceId(req), id, userId, 'user', dto.content);
   }
 }

@@ -1,9 +1,4 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-  Optional,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, Optional } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { StructuredLogger } from '../logging/structured-logger';
 import { OpsAlertService } from '../observability/ops-alert.service';
@@ -33,10 +28,7 @@ import {
 } from './whatsapp.service.normalizers';
 import * as catalogOps from './whatsapp.service.catalog';
 import type { CatalogDeps } from './whatsapp.service.catalog';
-import type {
-  NormalizedContact,
-  NormalizedChat,
-} from './whatsapp-service.types';
+import type { NormalizedContact, NormalizedChat } from './whatsapp-service.types';
 import { WhatsappSessionService } from './whatsapp-session.service';
 import { WhatsappMessageDispatcherService } from './whatsapp-message-dispatcher.service';
 import { WhatsappReconcilerService } from './whatsapp-reconciler.service';

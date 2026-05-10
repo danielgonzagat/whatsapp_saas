@@ -1,7 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { StripeRuntime } from '../billing/stripe-runtime';
 import { PrismaService } from '../prisma/prisma.service';
-import type { ToolResult, ToolChangePlanArgs, ToolUpdateBillingInfoArgs } from './kloel-tool-executor.types';
+import type {
+  ToolResult,
+  ToolChangePlanArgs,
+  ToolUpdateBillingInfoArgs,
+} from './kloel-tool-executor.types';
 
 /**
  * Number of milliseconds in a single day. Used to compute the default

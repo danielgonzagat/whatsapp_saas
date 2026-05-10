@@ -21,11 +21,9 @@ jest.mock('../common/guards/workspace.guard', () => ({
 }));
 
 jest.mock('../auth/workspace-access', () => ({
-  resolveWorkspaceId: jest.fn(
-    (req: { user?: { workspaceId?: string } }, explicit?: string) => {
-      return explicit || req.user?.workspaceId || 'ws-default';
-    },
-  ),
+  resolveWorkspaceId: jest.fn((req: { user?: { workspaceId?: string } }, explicit?: string) => {
+    return explicit || req.user?.workspaceId || 'ws-default';
+  }),
 }));
 
 describe('VoiceController', () => {
@@ -53,7 +51,12 @@ describe('VoiceController', () => {
 
   describe('createProfile', () => {
     it('creates a voice profile via service', async () => {
-      const profile = { id: 'vp-1', name: 'Voice A', provider: VoiceProvider.OPENAI, voiceId: 'v1' };
+      const profile = {
+        id: 'vp-1',
+        name: 'Voice A',
+        provider: VoiceProvider.OPENAI,
+        voiceId: 'v1',
+      };
       service.createVoiceProfile.mockResolvedValue(profile);
       const req = { user: { workspaceId: 'ws-1' } } as never;
       const body = { name: 'Voice A', provider: VoiceProvider.OPENAI, voiceId: 'v1' };

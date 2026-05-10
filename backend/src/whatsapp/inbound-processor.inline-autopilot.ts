@@ -33,7 +33,11 @@ import {
 } from './inbound-processor.helpers';
 import { normalizePhone } from './inbound-processor.helpers';
 
-function getSharedReplyLockKey(workspaceId: string, contactId?: string | null, phone?: string | null): string {
+function getSharedReplyLockKey(
+  workspaceId: string,
+  contactId?: string | null,
+  phone?: string | null,
+): string {
   return `autopilot:reply:${workspaceId}:${contactId || normalizePhone(String(phone || ''))}`;
 }
 
@@ -68,11 +72,9 @@ async function recordAutopilotSkip(
     deps.logger.warn(
       `[AUTOPILOT] Falha ao registrar skip: ${(error instanceof Error ? error : new Error(String(error))).message}`,
     );
-    void deps.opsAlert?.alertOnCriticalError(
-      error,
-      'InboundProcessorService.recordAutopilotSkip',
-      { workspaceId },
-    );
+    void deps.opsAlert?.alertOnCriticalError(error, 'InboundProcessorService.recordAutopilotSkip', {
+      workspaceId,
+    });
   }
 }
 
@@ -218,17 +220,12 @@ export async function executeInlineAutopilot(
       ],
     });
     await forEachSequential(replyPlan, async (plan, index) => {
-      const r = await deps.whatsappService.sendMessage(
-        input.workspaceId,
-        input.phone,
-        plan.text,
-        {
-          externalId: `inline:${input.messageId}:${index + 1}`,
-          complianceMode: 'reactive',
-          forceDirect: true,
-          quotedMessageId: plan.quotedMessageId || latestQid,
-        },
-      );
+      const r = await deps.whatsappService.sendMessage(input.workspaceId, input.phone, plan.text, {
+        externalId: `inline:${input.messageId}:${index + 1}`,
+        complianceMode: 'reactive',
+        forceDirect: true,
+        quotedMessageId: plan.quotedMessageId || latestQid,
+      });
       if (r?.error)
         deps.logger.error(`[AUTOPILOT] Inline reply failed: ${r.message || 'send_failed'}`);
     });
@@ -269,7 +266,11 @@ export async function executeInlineAutopilot(
     }
   } finally {
     if (!keepReplyLock) {
-      try { await deps.redis.del(replyLockKey); } catch { /* best-effort */ }
+      try {
+        await deps.redis.del(replyLockKey);
+      } catch {
+        /* best-effort */
+      }
     }
   }
 }

@@ -18,10 +18,7 @@ import {
   getQrCode,
   listLidMappings,
 } from './waha-session-lifecycle.util';
-import {
-  listSessionsHelper,
-  logoutSessionHelper,
-} from './waha-session.helpers';
+import { listSessionsHelper, logoutSessionHelper } from './waha-session.helpers';
 
 /**
  * Session lifecycle layer for WAHA.

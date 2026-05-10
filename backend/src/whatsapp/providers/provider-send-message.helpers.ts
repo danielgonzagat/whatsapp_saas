@@ -58,7 +58,11 @@ export async function sendMessage(
           options.mediaUrl,
           options.caption || message,
           options.mediaType || 'image',
-          { ...(options.quotedMessageId !== undefined ? { quotedMessageId: options.quotedMessageId } : {}) },
+          {
+            ...(options.quotedMessageId !== undefined
+              ? { quotedMessageId: options.quotedMessageId }
+              : {}),
+          },
         )
       : await deps.metaCloudProvider.sendMessage(workspaceId, to, message, {
           ...(options?.quotedMessageId !== undefined

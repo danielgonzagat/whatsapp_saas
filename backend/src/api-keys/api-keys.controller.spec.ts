@@ -18,7 +18,7 @@ describe('ApiKeysController', () => {
       rotate: jest.fn(),
       delete: jest.fn(),
     };
-    controller = new ApiKeysController(service as never as ApiKeysService);
+    controller = new ApiKeysController(service as never);
   });
 
   describe('list', () => {

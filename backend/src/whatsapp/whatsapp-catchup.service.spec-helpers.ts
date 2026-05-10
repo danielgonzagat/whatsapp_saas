@@ -78,8 +78,13 @@ export function runCatchup(
   reason: string,
   lockToken: string,
 ) {
-  const orchestrator = (service as unknown as { orchestrator: WhatsappCatchupOrchestratorService }).orchestrator;
-  return (orchestrator as unknown as CatchupOrchestratorInternals).runCatchup(workspaceId, reason, lockToken);
+  const orchestrator = (service as unknown as { orchestrator: WhatsappCatchupOrchestratorService })
+    .orchestrator;
+  return (orchestrator as unknown as CatchupOrchestratorInternals).runCatchup(
+    workspaceId,
+    reason,
+    lockToken,
+  );
 }
 
 /** Apply catchup environment defaults used across spec setups. */
@@ -196,13 +201,13 @@ export function buildCatchupService(mocks: CatchupMocks): WhatsAppCatchupService
   const history = new WhatsappCatchupHistoryService(
     mocks.prisma as never as PrismaService,
     mocks.providerRegistry as never,
-    mocks.inbox as never,
+    mocks.inbox,
   );
   const orchestrator = new WhatsappCatchupOrchestratorService(
     mocks.prisma as never as PrismaService,
     mocks.providerRegistry as never,
-    mocks.inboundProcessor as never,
-    mocks.ciaRuntime as never,
+    mocks.inboundProcessor,
+    mocks.ciaRuntime,
     mocks.workerRuntime as never,
     mocks.redis as never,
     mocks.agentEvents as never,

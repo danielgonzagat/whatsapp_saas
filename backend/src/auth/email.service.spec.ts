@@ -39,9 +39,7 @@ describe('EmailService', () => {
         Test.createTestingModule({
           providers: [EmailService],
         }).compile(),
-      ).rejects.toThrow(
-        'EmailService cannot start in production',
-      );
+      ).rejects.toThrow('EmailService cannot start in production');
     });
   });
 

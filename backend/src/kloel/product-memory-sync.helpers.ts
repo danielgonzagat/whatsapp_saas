@@ -63,8 +63,7 @@ export async function syncProductToMemory(
       },
       update: { value: value as Prisma.InputJsonValue, content },
     });
-  } catch {
-  }
+  } catch {}
 }
 
 /**
@@ -83,6 +82,5 @@ export async function deleteProductFromMemory(
         key: { startsWith: `product:${product.sku || product.id}` },
       },
     });
-  } catch {
-  }
+  } catch {}
 }

@@ -225,7 +225,9 @@ export class CiaInlineFallbackService {
       try {
         this.logger.log('Calling unifiedAgent.processIncomingMessage', {
           context: 'CiaInlineFallbackService.runBacklogInlineFallback',
-          deliveryMode: this.chatFilter.isRecentRemoteBatch(pendingBatch?.messages || []) ? 'reactive' : 'proactive',
+          deliveryMode: this.chatFilter.isRecentRemoteBatch(pendingBatch?.messages || [])
+            ? 'reactive'
+            : 'proactive',
           backlogIndex: index + 1,
           backlogTotal: conversations.length,
         });
@@ -333,10 +335,14 @@ export class CiaInlineFallbackService {
         keepReplyLock = true;
         processed += 1;
       } catch (error: unknown) {
-        this.logger.error('Inline fallback per-conversation processing failed', error instanceof Error ? error.message : String(error), {
-          context: 'CiaInlineFallbackService.runBacklogInlineFallback',
-          conversationId: safeStr(conversation.id) || undefined,
-        });
+        this.logger.error(
+          'Inline fallback per-conversation processing failed',
+          error instanceof Error ? error.message : String(error),
+          {
+            context: 'CiaInlineFallbackService.runBacklogInlineFallback',
+            conversationId: safeStr(conversation.id) || undefined,
+          },
+        );
         skipped += 1;
       } finally {
         if (!keepReplyLock) {

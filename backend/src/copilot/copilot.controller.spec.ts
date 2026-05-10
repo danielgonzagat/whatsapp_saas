@@ -22,7 +22,7 @@ describe('CopilotController', () => {
       suggestMultiple: jest.fn(),
     };
 
-    controller = new CopilotController(copilot as never as CopilotService);
+    controller = new CopilotController(copilot);
   });
 
   describe('suggest', () => {
@@ -67,7 +67,7 @@ describe('CopilotController', () => {
 
       const req = { user: {} } as never;
 
-      const result = await controller.suggest(req, {} as never);
+      const result = await controller.suggest(req, {});
 
       expect(result).toEqual({ suggestion: 'Fallback' });
       expect(copilot.suggest).toHaveBeenCalledWith({
@@ -120,9 +120,7 @@ describe('CopilotController', () => {
 
       await controller.suggestMultiple(req, body);
 
-      expect(copilot.suggestMultiple).toHaveBeenCalledWith(
-        expect.objectContaining({ count: 3 }),
-      );
+      expect(copilot.suggestMultiple).toHaveBeenCalledWith(expect.objectContaining({ count: 3 }));
     });
 
     it('defaults count to 3 when count is 0 (falsy override)', async () => {
@@ -134,9 +132,7 @@ describe('CopilotController', () => {
 
       await controller.suggestMultiple(req, body);
 
-      expect(copilot.suggestMultiple).toHaveBeenCalledWith(
-        expect.objectContaining({ count: 3 }),
-      );
+      expect(copilot.suggestMultiple).toHaveBeenCalledWith(expect.objectContaining({ count: 3 }));
     });
 
     it('propagates errors from copilot service', async () => {

@@ -91,7 +91,10 @@ export class WhatsAppApiController {
   @Post('session/force-check')
   async forceCheck(@Req() req: AuthenticatedRequest) {
     const workspace = await this.workspaces.getWorkspace(req.workspaceId!);
-    await this.watchdog.checkWorkspaceSession(req.workspaceId!, workspace?.name || req.workspaceId!);
+    await this.watchdog.checkWorkspaceSession(
+      req.workspaceId!,
+      workspace?.name || req.workspaceId!,
+    );
     return {
       success: true,
       diagnostics: await this.getSessionDiagnostics(req.workspaceId!),

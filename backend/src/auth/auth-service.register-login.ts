@@ -19,7 +19,10 @@ import type { RateLimitService } from './rate-limit.service';
 import { DbInitErrorService } from './db-init-error.service';
 import { UserNameDerivationService } from './user-name-derivation.service';
 import { normalizeEmail, assertAgentCanAuthenticate } from './auth-service.helpers';
-import { resolvePartnerInvite, finalizePartnerInviteRegistration } from './auth-service.partner-invite';
+import {
+  resolvePartnerInvite,
+  finalizePartnerInviteRegistration,
+} from './auth-service.partner-invite';
 import { issueTokens, type TokenIssuanceResult } from './auth-service.tokens';
 import type { Logger } from '@nestjs/common';
 

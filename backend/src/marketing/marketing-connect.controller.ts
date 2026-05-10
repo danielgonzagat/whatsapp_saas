@@ -13,10 +13,7 @@ import { buildUnsubscribeFooterHtml } from '../common/utils/unsubscribe-footer.u
 import { MetaWhatsAppService } from '../meta/meta-whatsapp.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
-import {
-  asProviderSettings,
-  type ProviderSettings,
-} from '../whatsapp/provider-settings.types';
+import { asProviderSettings, type ProviderSettings } from '../whatsapp/provider-settings.types';
 import {
   EMAIL_VALIDATION_HTML_BODY,
   extractSetupConfigField,
@@ -36,7 +33,6 @@ type WhatsAppLifecycleRecord = Record<string, unknown>;
 @Controller('marketing')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class MarketingConnectController {
-
   constructor(
     private readonly prisma: PrismaService,
     private readonly metaWhatsApp: MetaWhatsAppService,
@@ -247,7 +243,7 @@ export class MarketingConnectController {
       select: { providerSettings: true },
     });
     const providerSettings = asProviderSettings(workspace?.providerSettings);
-    const setup = providerSettings.whatsappLifecycle ?? ({} as WhatsAppLifecycleRecord);
+    const setup = providerSettings.whatsappLifecycle ?? {};
 
     const selectedProducts = normalizeWhatsAppSelectedProducts(setup.selectedProducts);
     const productNames = [
@@ -313,7 +309,7 @@ export class MarketingConnectController {
         providerSettings: {
           ...currentSettings,
           email: {
-            ...(currentSettings.email ?? ({} as EmailSubSettings)),
+            ...(currentSettings.email ?? {}),
             enabled: nextEnabled,
           },
         },

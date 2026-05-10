@@ -255,10 +255,14 @@ export class PulseArtifactService {
           : 'stale';
       return { artifact: artifactName, path: targetPath, freshness, generatedAt, staleMs, data };
     } catch (error: unknown) {
-      this.logger.error('Failed to read artifact', error instanceof Error ? error.message : String(error), {
-        context: 'PulseArtifactService.readArtifactJson',
-        artifact: artifactName,
-      });
+      this.logger.error(
+        'Failed to read artifact',
+        error instanceof Error ? error.message : String(error),
+        {
+          context: 'PulseArtifactService.readArtifactJson',
+          artifact: artifactName,
+        },
+      );
       return {
         artifact: artifactName,
         path: targetPath,

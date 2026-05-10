@@ -3,7 +3,10 @@ import { KloelContextBaseFormatter } from './kloel-context-base-formatter';
 import type { KloelContextFormatterLimits } from './kloel-context-formatter.types';
 
 export class KloelProductMetaContextFormatter {
-  constructor(protected base: KloelContextBaseFormatter, protected limits: KloelContextFormatterLimits) {}
+  constructor(
+    protected base: KloelContextBaseFormatter,
+    protected limits: KloelContextFormatterLimits,
+  ) {}
 
   buildProductPlanContext(plans: unknown): string | null {
     if (!Array.isArray(plans) || plans.length === 0) {

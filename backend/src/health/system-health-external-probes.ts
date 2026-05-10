@@ -1,9 +1,7 @@
 import { ConfigService } from '@nestjs/config';
 import { StripeService } from '../billing/stripe.service';
 
-export async function probeStripe(
-  stripeService: StripeService | undefined,
-): Promise<{
+export async function probeStripe(stripeService: StripeService | undefined): Promise<{
   dependency: string;
   status: 'UP' | 'DOWN';
   error?: string;
@@ -222,8 +220,7 @@ export async function probeEmail(): Promise<{
     return {
       dependency: 'email',
       status: 'DOWN',
-      error:
-        'No email provider configured: RESEND_API_KEY, SENDGRID_API_KEY, or SMTP_HOST missing',
+      error: 'No email provider configured: RESEND_API_KEY, SENDGRID_API_KEY, or SMTP_HOST missing',
       latencyMs: Date.now() - startedAt,
     };
   }

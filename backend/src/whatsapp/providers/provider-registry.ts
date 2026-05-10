@@ -316,7 +316,8 @@ export class WhatsAppProviderRegistry {
     const resolvedPushName = details.pushName || snapshot.pushName || undefined;
     const resolvedAuthUrl = details.authUrl || snapshot.authUrl || undefined;
     const resolvedPhoneNumberId = details.phoneNumberId || snapshot.phoneNumberId || undefined;
-    const resolvedWhatsappBusinessId = details.whatsappBusinessId || snapshot.whatsappBusinessId || undefined;
+    const resolvedWhatsappBusinessId =
+      details.whatsappBusinessId || snapshot.whatsappBusinessId || undefined;
 
     const status: SessionStatus = {
       connected: liveConnected || fallbackToSnapshot,
@@ -327,7 +328,9 @@ export class WhatsAppProviderRegistry {
       ...(resolvedPushName != null ? { pushName: resolvedPushName } : {}),
       ...(resolvedAuthUrl != null ? { authUrl: resolvedAuthUrl } : {}),
       ...(resolvedPhoneNumberId != null ? { phoneNumberId: resolvedPhoneNumberId } : {}),
-      ...(resolvedWhatsappBusinessId != null ? { whatsappBusinessId: resolvedWhatsappBusinessId } : {}),
+      ...(resolvedWhatsappBusinessId != null
+        ? { whatsappBusinessId: resolvedWhatsappBusinessId }
+        : {}),
     };
 
     await this.persistSessionSnapshot(workspaceId, {

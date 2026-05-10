@@ -30,8 +30,18 @@ const CIA_SHARED_REPLY_LOCK_MS = Math.max(
 
 export { CIA_SHARED_REPLY_LOCK_MS };
 
-type SendActionResult = { sent?: boolean; success?: boolean; messageId?: string | null; [key: string]: unknown };
-type SendIncomingPayloadData = { pushName?: string | null; notifyName?: string | null; verifiedBizName?: string | null; [key: string]: unknown };
+type SendActionResult = {
+  sent?: boolean;
+  success?: boolean;
+  messageId?: string | null;
+  [key: string]: unknown;
+};
+type SendIncomingPayloadData = {
+  pushName?: string | null;
+  notifyName?: string | null;
+  verifiedBizName?: string | null;
+  [key: string]: unknown;
+};
 
 /**
  * Shared sending helpers for CIA inline and remote backlog services:

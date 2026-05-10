@@ -10,10 +10,7 @@ import {
   setInternalValue,
   spyOnRunBackgroundTask,
 } from '../../test/pulse/pulse.service-test-helpers';
-import {
-  testStaleOrganismState,
-  testMissingCanonicalArtifacts,
-} from './pulse.spec.helpers';
+import { testStaleOrganismState, testMissingCanonicalArtifacts } from './pulse.spec.helpers';
 
 function buildExpectedIntervalHandlerError() {
   const error = new Error();

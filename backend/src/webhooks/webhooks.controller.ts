@@ -87,10 +87,12 @@ export class WebhooksController {
     await this.assertWorkspaceNotSuspended(workspaceId);
     await this.checkIdempotencyOrThrow(eventId, req);
 
-    const catchExternalId = eventId || createHmac('sha256', process.env.HOOKS_WEBHOOK_SECRET || 'hooks_salt')
-      .update(Buffer.from(JSON.stringify(body || {})))
-      .digest('hex')
-      .slice(0, 24);
+    const catchExternalId =
+      eventId ||
+      createHmac('sha256', process.env.HOOKS_WEBHOOK_SECRET || 'hooks_salt')
+        .update(Buffer.from(JSON.stringify(body || {})))
+        .digest('hex')
+        .slice(0, 24);
     const catchDupe = await this.logWebhookEventSafe('hooks_catch', flowId, catchExternalId, body);
     if (catchDupe) return { status: 'success', ...catchDupe };
 
@@ -133,11 +135,18 @@ export class WebhooksController {
     await this.assertWorkspaceNotSuspended(workspaceId);
     await this.checkIdempotencyOrThrow(eventId, req);
 
-    const financeExternalId = eventId || createHmac('sha256', process.env.HOOKS_WEBHOOK_SECRET || 'hooks_salt')
-      .update(Buffer.from(JSON.stringify(body)))
-      .digest('hex')
-      .slice(0, 24);
-    const financeDupe = await this.logWebhookEventSafe('hooks_finance', body.status || 'unknown', financeExternalId, body);
+    const financeExternalId =
+      eventId ||
+      createHmac('sha256', process.env.HOOKS_WEBHOOK_SECRET || 'hooks_salt')
+        .update(Buffer.from(JSON.stringify(body)))
+        .digest('hex')
+        .slice(0, 24);
+    const financeDupe = await this.logWebhookEventSafe(
+      'hooks_finance',
+      body.status || 'unknown',
+      financeExternalId,
+      body,
+    );
     if (financeDupe) return { status: 'received', ...financeDupe };
 
     try {
@@ -224,11 +233,18 @@ export class WebhooksController {
     body: unknown,
   ): Promise<{ skipped: true; duplicate: true } | undefined> {
     try {
-      await this.webhooksService.logWebhookEvent(provider, eventType, externalId, body as WebhookJsonPayload);
+      await this.webhooksService.logWebhookEvent(
+        provider,
+        eventType,
+        externalId,
+        body as WebhookJsonPayload,
+      );
     } catch (err: unknown) {
       const code = (err as { code?: string } | null)?.code;
       if (code === 'P2002') {
-        this.logger.log(`Duplicate webhook event ${externalId} (provider=${provider}), returning 200`);
+        this.logger.log(
+          `Duplicate webhook event ${externalId} (provider=${provider}), returning 200`,
+        );
         return { skipped: true, duplicate: true };
       }
       this.logger.warn(
@@ -314,11 +330,18 @@ export class WebhooksController {
     this.verifySignatureOrThrow(signature, req);
     await this.checkIdempotencyOrThrow(undefined, req);
 
-    const messageStatusExternalId = body.externalId || createHmac('sha256', process.env.HOOKS_WEBHOOK_SECRET || 'hooks_salt')
-      .update(Buffer.from(JSON.stringify(body)))
-      .digest('hex')
-      .slice(0, 24);
-    const msgDupe = await this.logWebhookEventSafe('hooks_message_status', body.status, messageStatusExternalId, body);
+    const messageStatusExternalId =
+      body.externalId ||
+      createHmac('sha256', process.env.HOOKS_WEBHOOK_SECRET || 'hooks_salt')
+        .update(Buffer.from(JSON.stringify(body)))
+        .digest('hex')
+        .slice(0, 24);
+    const msgDupe = await this.logWebhookEventSafe(
+      'hooks_message_status',
+      body.status,
+      messageStatusExternalId,
+      body,
+    );
     if (msgDupe) return { updated: 0, ...msgDupe };
 
     const { workspaceId, externalId, status, errorCode, phone, channel } = body || {};
@@ -352,11 +375,18 @@ export class WebhooksController {
     this.verifySignatureOrThrow(signature, req);
     await this.checkIdempotencyOrThrow(undefined, req);
 
-    const emailStatusExternalId = body.externalId || createHmac('sha256', process.env.HOOKS_WEBHOOK_SECRET || 'hooks_salt')
-      .update(Buffer.from(JSON.stringify(body)))
-      .digest('hex')
-      .slice(0, 24);
-    const emailDupe = await this.logWebhookEventSafe('hooks_email_status', body.status, emailStatusExternalId, body);
+    const emailStatusExternalId =
+      body.externalId ||
+      createHmac('sha256', process.env.HOOKS_WEBHOOK_SECRET || 'hooks_salt')
+        .update(Buffer.from(JSON.stringify(body)))
+        .digest('hex')
+        .slice(0, 24);
+    const emailDupe = await this.logWebhookEventSafe(
+      'hooks_email_status',
+      body.status,
+      emailStatusExternalId,
+      body,
+    );
     if (emailDupe) return { updated: 0, ...emailDupe };
 
     return this.webhooksService.updateMessageStatus({
@@ -390,7 +420,12 @@ export class WebhooksController {
       .update(Buffer.from(JSON.stringify(body)))
       .digest('hex')
       .slice(0, 24);
-    const igDupe = await this.logWebhookEventSafe('hooks_instagram', 'instagram_webhook', igExternalId, body);
+    const igDupe = await this.logWebhookEventSafe(
+      'hooks_instagram',
+      'instagram_webhook',
+      igExternalId,
+      body,
+    );
     if (igDupe) return { status: 'success', ...igDupe };
 
     this.logger.log(`[INSTAGRAM] Webhook received for workspace ${workspaceId}`);

@@ -3,7 +3,9 @@ import { ForbiddenException } from '@nestjs/common';
 jest.mock('./kloel.service', () => ({}));
 
 describe('WhatsAppBrainController — replay safety', () => {
-  let controller: InstanceType<typeof import('./whatsapp-brain.controller').WhatsAppBrainController>;
+  let controller: InstanceType<
+    typeof import('./whatsapp-brain.controller').WhatsAppBrainController
+  >;
   let redis: { set: jest.Mock };
   let webhooksService: {
     logWebhookEvent: jest.Mock;
@@ -63,14 +65,16 @@ describe('WhatsAppBrainController — replay safety', () => {
 
   it('throws ForbiddenException on invalid signature', async () => {
     process.env.WHATSAPP_API_WEBHOOK_SECRET = 'wb-secret';
-    const ctrl = new ControllerClass(whatsappBrain as never, webhooksService as never, redis as never);
+    const ctrl = new ControllerClass(
+      whatsappBrain as never,
+      webhooksService as never,
+      redis as never,
+    );
 
     const payload = { messages: [{ from: '5511999999999', text: 'hello' }] };
     const req = { headers: { 'x-hub-signature-256': 'sha256=badsignature' } };
 
-    await expect(ctrl.receiveWebhook(req as never, payload)).rejects.toThrow(
-      ForbiddenException,
-    );
+    await expect(ctrl.receiveWebhook(req as never, payload)).rejects.toThrow(ForbiddenException);
 
     delete process.env.WHATSAPP_API_WEBHOOK_SECRET;
   });
@@ -133,7 +137,11 @@ describe('PaymentController — replay safety', () => {
 
   it('throws ForbiddenException on invalid webhook secret', async () => {
     process.env.PAYMENT_WEBHOOK_SECRET = 'real-secret';
-    const ctrl = new ControllerClass(paymentService as never, webhooksService as never, redis as never);
+    const ctrl = new ControllerClass(
+      paymentService as never,
+      webhooksService as never,
+      redis as never,
+    );
 
     const body = { event: 'payment.created', payment: { workspaceId: 'ws-1' } };
 

@@ -48,9 +48,7 @@ export class CachePurgeHandler implements DestructiveHandler {
     const cfZoneId = process.env.CLOUDFLARE_ZONE_ID;
 
     if (!redisUrl) {
-      throw new NotConfiguredException(
-        'Cache purge requires REDIS_URL environment variable',
-      );
+      throw new NotConfiguredException('Cache purge requires REDIS_URL environment variable');
     }
 
     const pattern = `cache:${targetType}:${targetId}*`;
@@ -157,10 +155,7 @@ export class CachePurgeHandler implements DestructiveHandler {
     }
   }
 
-  private async persistAudit(
-    intent: DestructiveIntentRecord,
-    result: PurgeResult,
-  ): Promise<void> {
+  private async persistAudit(intent: DestructiveIntentRecord, result: PurgeResult): Promise<void> {
     if (!this.adminAudit) {
       this.logger.warn('[cache-purge] AdminAuditService not available — skipping audit log');
       return;

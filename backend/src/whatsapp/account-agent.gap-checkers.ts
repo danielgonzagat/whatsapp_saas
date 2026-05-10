@@ -35,7 +35,9 @@ export const checkBillingGap: GapChecker = (input) => ({
   entityType: 'workspace',
   entityId: input.workspaceId,
   state: input.billingSuspended ? 'BLOCKED' : 'COMPLETED',
-  title: input.billingSuspended ? 'Billing da conta exige ação' : 'Billing da conta está operacional',
+  title: input.billingSuspended
+    ? 'Billing da conta exige ação'
+    : 'Billing da conta está operacional',
   summary: input.billingSuspended
     ? 'A conta está suspensa por billing e exige intervenção estrutural.'
     : 'Billing operacional sem bloqueio estrutural.',
@@ -76,9 +78,10 @@ export const checkWebhookGap: GapChecker = (input) => ({
   entityId: input.workspaceId,
   state: input.webhookCount > 0 ? 'COMPLETED' : 'OPEN',
   title: input.webhookCount > 0 ? 'Webhooks configurados' : 'Conta sem webhooks ativos',
-  summary: input.webhookCount > 0
-    ? `${input.webhookCount} webhook(s) ativo(s).`
-    : 'A conta ainda não possui webhook ativo configurado.',
+  summary:
+    input.webhookCount > 0
+      ? `${input.webhookCount} webhook(s) ativo(s).`
+      : 'A conta ainda não possui webhook ativo configurado.',
   priority: 44,
   utility: input.webhookCount > 0 ? 0 : 44,
   requiresApproval: true,
@@ -96,9 +99,10 @@ export const checkApiKeyGap: GapChecker = (input) => ({
   entityId: input.workspaceId,
   state: input.apiKeyCount > 0 ? 'COMPLETED' : 'OPEN',
   title: input.apiKeyCount > 0 ? 'API keys configuradas' : 'Conta sem API key',
-  summary: input.apiKeyCount > 0
-    ? `${input.apiKeyCount} API key(s) cadastrada(s).`
-    : 'A conta ainda não possui API key configurada.',
+  summary:
+    input.apiKeyCount > 0
+      ? `${input.apiKeyCount} API key(s) cadastrada(s).`
+      : 'A conta ainda não possui API key configurada.',
   priority: 42,
   utility: input.apiKeyCount > 0 ? 0 : 42,
   requiresApproval: true,
@@ -116,9 +120,10 @@ export const checkTeamGap: GapChecker = (input) => ({
   entityId: input.workspaceId,
   state: input.agentCount > 0 ? 'COMPLETED' : 'OPEN',
   title: input.agentCount > 0 ? 'Time configurado' : 'Conta sem agentes',
-  summary: input.agentCount > 0
-    ? `${input.agentCount} agente(s) cadastrado(s).`
-    : 'A conta ainda não possui agentes/equipe configurados.',
+  summary:
+    input.agentCount > 0
+      ? `${input.agentCount} agente(s) cadastrado(s).`
+      : 'A conta ainda não possui agentes/equipe configurados.',
   priority: 40,
   utility: input.agentCount > 0 ? 0 : 40,
   requiresApproval: true,
@@ -136,9 +141,10 @@ export const checkFlowGap: GapChecker = (input) => ({
   entityId: input.workspaceId,
   state: input.flowCount > 0 ? 'COMPLETED' : 'OPEN',
   title: input.flowCount > 0 ? 'Flows configurados' : 'Conta sem flow comercial',
-  summary: input.flowCount > 0
-    ? `${input.flowCount} flow(s) disponível(is).`
-    : 'A conta ainda não possui flow comercial configurado.',
+  summary:
+    input.flowCount > 0
+      ? `${input.flowCount} flow(s) disponível(is).`
+      : 'A conta ainda não possui flow comercial configurado.',
   priority: 32,
   utility: input.flowCount > 0 ? 0 : 32,
   requiresApproval: false,
@@ -156,9 +162,10 @@ export const checkCampaignGap: GapChecker = (input) => ({
   entityId: input.workspaceId,
   state: input.campaignCount > 0 ? 'COMPLETED' : 'OPEN',
   title: input.campaignCount > 0 ? 'Campanhas configuradas' : 'Conta sem campanha ativa',
-  summary: input.campaignCount > 0
-    ? `${input.campaignCount} campanha(s) cadastrada(s).`
-    : 'A conta ainda não possui campanha comercial configurada.',
+  summary:
+    input.campaignCount > 0
+      ? `${input.campaignCount} campanha(s) cadastrada(s).`
+      : 'A conta ainda não possui campanha comercial configurada.',
   priority: 28,
   utility: input.campaignCount > 0 ? 0 : 28,
   requiresApproval: false,
@@ -176,9 +183,10 @@ export const checkCatalogProductGap: GapChecker = (input) => ({
   entityId: 'primary',
   state: input.productCount > 0 ? 'COMPLETED' : 'OPEN',
   title: input.productCount > 0 ? 'Catálogo ativo' : 'Conta sem produto ativo',
-  summary: input.productCount > 0
-    ? `${input.productCount} produto(s) ativo(s) no catálogo.`
-    : 'A conta ainda não possui produto ativo no catálogo.',
+  summary:
+    input.productCount > 0
+      ? `${input.productCount} produto(s) ativo(s) no catálogo.`
+      : 'A conta ainda não possui produto ativo no catálogo.',
   priority: 60,
   utility: input.productCount > 0 ? 0 : 60,
   requiresApproval: true,

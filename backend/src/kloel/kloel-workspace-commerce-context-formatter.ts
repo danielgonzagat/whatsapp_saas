@@ -2,7 +2,10 @@ import { KloelContextBaseFormatter } from './kloel-context-base-formatter';
 import type { KloelContextFormatterLimits } from './kloel-context-formatter.types';
 
 export class KloelWorkspaceCommerceContextFormatter {
-  constructor(protected base: KloelContextBaseFormatter, protected limits: KloelContextFormatterLimits) {}
+  constructor(
+    protected base: KloelContextBaseFormatter,
+    protected limits: KloelContextFormatterLimits,
+  ) {}
 
   private buildAffiliateEntryHeader(entry: Record<string, unknown>): string[] {
     const status = typeof entry.status === 'string' ? entry.status : null;

@@ -34,13 +34,11 @@ jest.mock('../queue/queue', () => ({
 }));
 
 jest.mock('../common/async-sequence', () => ({
-  forEachSequential: jest.fn(
-    async <T>(items: T[], fn: (item: T) => Promise<void>) => {
-      for (const item of items) {
-        await fn(item);
-      }
-    },
-  ),
+  forEachSequential: jest.fn(async <T>(items: T[], fn: (item: T) => Promise<void>) => {
+    for (const item of items) {
+      await fn(item);
+    }
+  }),
 }));
 
 jest.mock('../auth/jwt-auth.guard', () => ({
@@ -124,9 +122,7 @@ describe('OpsController', () => {
     });
 
     it('throws BadRequestException for unknown queue name', () => {
-      expect(() => (controller as any)['getQueue']('nonexistent')).toThrow(
-        BadRequestException,
-      );
+      expect(() => (controller as any)['getQueue']('nonexistent')).toThrow(BadRequestException);
     });
 
     it('clamps limit to valid range', async () => {
@@ -252,9 +248,7 @@ describe('OpsController', () => {
 
       const result = await controller.listBillingSuspended();
 
-      expect(result).toEqual([
-        { id: 'ws-2', name: 'No Sub', subscriptionStatus: 'UNKNOWN' },
-      ]);
+      expect(result).toEqual([{ id: 'ws-2', name: 'No Sub', subscriptionStatus: 'UNKNOWN' }]);
     });
 
     it('propagates prisma errors', async () => {

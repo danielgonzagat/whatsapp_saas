@@ -1,7 +1,4 @@
-import type {
-  WahaChatMessage,
-  WahaChatSummary,
-} from './providers/whatsapp-api.provider';
+import type { WahaChatMessage, WahaChatSummary } from './providers/whatsapp-api.provider';
 import {
   normalizePhoneExt,
   resolveCanonicalChatIdExt,

@@ -56,9 +56,7 @@ export class EmailMarketingController {
   }
 
   @Get('campaigns')
-  async listCampaigns(
-    @Request() req: { user: { workspaceId: string; email?: string } },
-  ) {
+  async listCampaigns(@Request() req: { user: { workspaceId: string; email?: string } }) {
     const workspaceId = req.user.workspaceId;
     const campaigns = await this.emailMarketingService.listCampaigns(workspaceId);
     return { campaigns };

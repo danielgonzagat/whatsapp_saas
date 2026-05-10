@@ -14,12 +14,7 @@ import { TikTokAuthService } from './tiktok-auth.service';
 import { RateLimitService } from './rate-limit.service';
 
 import type { AuthPartsDeps } from './auth-service.register-login';
-import {
-  checkEmail,
-  createAnonymous,
-  register,
-  login,
-} from './auth-service.register-login';
+import { checkEmail, createAnonymous, register, login } from './auth-service.register-login';
 import { issueTokensForAgentId, refreshToken } from './auth-service.tokens';
 import {
   oauthLogin,

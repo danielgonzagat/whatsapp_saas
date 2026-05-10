@@ -129,7 +129,7 @@ describe('WhatsappService', () => {
       whatsappApi as never,
       catchupService as never,
       ciaRuntime as never,
-      workerRuntime as never,
+      workerRuntime,
     );
   });
 

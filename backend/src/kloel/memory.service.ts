@@ -64,7 +64,13 @@ export class MemoryService {
  DESCRIÇÃO: ${productData.description}
  ${productData.benefits ? `BENEFÍCIOS: ${productData.benefits.join(', ')}` : ''}`.trim();
 
-    return this.memoryCrud.saveMemory(workspaceId, `product_${productId}`, productData, 'product', content);
+    return this.memoryCrud.saveMemory(
+      workspaceId,
+      `product_${productId}`,
+      productData,
+      'product',
+      content,
+    );
   }
 
   /**

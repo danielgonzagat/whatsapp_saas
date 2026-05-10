@@ -10,15 +10,11 @@ import { GdprController } from './gdpr.controller';
 import { GdprService } from './gdpr.service';
 
 jest.mock('../common/redis/redis.util', () => {
-  const actual = jest.requireActual(
-    '../common/redis/redis.util',
-  ) as typeof import('../common/redis/redis.util');
+  const actual = jest.requireActual('../common/redis/redis.util');
   return {
     ...actual,
     createRedisClient: jest.fn(() => {
-      const { RedisConfigurationError } = jest.requireActual(
-        '../common/redis/resolve-redis-url',
-      ) as typeof import('../common/redis/resolve-redis-url');
+      const { RedisConfigurationError } = jest.requireActual('../common/redis/resolve-redis-url');
       throw new RedisConfigurationError('Redis not available in test');
     }),
   };
@@ -123,12 +119,19 @@ describe('GdprController', () => {
     prismaMock.gdprRequest.findUnique.mockResolvedValue(gdprRecord);
     prismaMock.gdprRequest.findUniqueOrThrow.mockResolvedValue(gdprRecord);
     prismaMock.gdprRequest.findFirst.mockResolvedValue(null);
-    prismaMock.gdprRequest.update.mockResolvedValue({ ...gdprRecord, status: GdprStatus.PROCESSING });
+    prismaMock.gdprRequest.update.mockResolvedValue({
+      ...gdprRecord,
+      status: GdprStatus.PROCESSING,
+    });
     prismaMock.agent.findUnique.mockResolvedValue(agentRecord);
     prismaMock.agent.findFirst.mockResolvedValue(null);
     emailMock.sendEmail.mockResolvedValue(true);
     emailMock.sendDataDeletionConfirmationEmail.mockResolvedValue(true);
-    storageMock.upload.mockResolvedValue({ url: 'https://cdn.example.com/file.zip', path: 'gdpr-exports/file.zip', size: 1024 });
+    storageMock.upload.mockResolvedValue({
+      url: 'https://cdn.example.com/file.zip',
+      path: 'gdpr-exports/file.zip',
+      size: 1024,
+    });
     storageMock.getSignedUrl.mockReturnValue('https://cdn.example.com/signed/file.zip');
   });
 
@@ -138,9 +141,7 @@ describe('GdprController', () => {
 
   describe('getStatus', () => {
     it('returns status for a valid code', async () => {
-      const response = await request(app.getHttpServer())
-        .get('/gdpr/status/abc123')
-        .expect(200);
+      const response = await request(app.getHttpServer()).get('/gdpr/status/abc123').expect(200);
 
       expect(response.body).toEqual(
         expect.objectContaining({
@@ -154,9 +155,7 @@ describe('GdprController', () => {
     it('returns 404 for unknown code', async () => {
       prismaMock.gdprRequest.findUnique.mockResolvedValueOnce(null);
 
-      await request(app.getHttpServer())
-        .get('/gdpr/status/unknown')
-        .expect(404);
+      await request(app.getHttpServer()).get('/gdpr/status/unknown').expect(404);
     });
   });
 

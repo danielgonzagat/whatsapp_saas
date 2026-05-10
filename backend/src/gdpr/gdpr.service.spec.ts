@@ -8,10 +8,14 @@ import { PrismaService } from '../prisma/prisma.service';
 import { GdprService } from './gdpr.service';
 
 jest.mock('node:fs', () => {
-  const { Writable } = jest.requireActual('node:stream') as typeof import('node:stream');
+  const { Writable } = jest.requireActual('node:stream');
   const actual = jest.requireActual('node:fs');
   const stream = new Writable({ write: (_ch: unknown, _enc: unknown, cb: () => void) => cb() });
-  stream.on = jest.fn().mockImplementation(function (this: Record<string, unknown>, event: string, cb: () => void) {
+  stream.on = jest.fn().mockImplementation(function (
+    this: Record<string, unknown>,
+    event: string,
+    cb: () => void,
+  ) {
     if (event === 'close') setImmediate(cb);
     return this;
   });
@@ -138,14 +142,21 @@ describe('GdprService', () => {
     prismaMock.gdprRequest.findUnique.mockResolvedValue(gdprRecord);
     prismaMock.gdprRequest.findUniqueOrThrow.mockResolvedValue(gdprRecord);
     prismaMock.gdprRequest.findFirst.mockResolvedValue(null);
-    prismaMock.gdprRequest.update.mockResolvedValue({ ...gdprRecord, status: GdprStatus.PROCESSING });
+    prismaMock.gdprRequest.update.mockResolvedValue({
+      ...gdprRecord,
+      status: GdprStatus.PROCESSING,
+    });
     prismaMock.agent.findUnique.mockResolvedValue(agentRecord);
     prismaMock.agent.findFirst.mockResolvedValue(null);
     prismaMock.conversation.findMany.mockResolvedValue([]);
     prismaMock.message.findMany.mockResolvedValue([]);
     emailMock.sendEmail.mockResolvedValue(true);
     emailMock.sendDataDeletionConfirmationEmail.mockResolvedValue(true);
-    storageMock.upload.mockResolvedValue({ url: 'https://cdn.example.com/file.zip', path: 'gdpr-exports/file.zip', size: 1024 });
+    storageMock.upload.mockResolvedValue({
+      url: 'https://cdn.example.com/file.zip',
+      path: 'gdpr-exports/file.zip',
+      size: 1024,
+    });
     storageMock.getSignedUrl.mockReturnValue('https://cdn.example.com/signed/file.zip');
 
     const module: TestingModule = await Test.createTestingModule({
@@ -277,19 +288,25 @@ describe('GdprService', () => {
         throw new Error('jwt malformed');
       });
 
-      await expect(service.verifyIdentity('abc123', 'bad-token')).rejects.toThrow(UnauthorizedException);
+      await expect(service.verifyIdentity('abc123', 'bad-token')).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
 
     it('throws NotFoundException for unknown code', async () => {
       prismaMock.gdprRequest.findUnique.mockResolvedValueOnce(null);
 
-      await expect(service.verifyIdentity('unknown', 'valid-token')).rejects.toThrow(NotFoundException);
+      await expect(service.verifyIdentity('unknown', 'valid-token')).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('throws UnauthorizedException when token does not match request', async () => {
       jwtMock.verify.mockReturnValueOnce({ sub: 'other_agent', requestId: 'other_gdpr' });
 
-      await expect(service.verifyIdentity('abc123', 'valid-token')).rejects.toThrow(UnauthorizedException);
+      await expect(service.verifyIdentity('abc123', 'valid-token')).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
 
     it('throws BadRequestException when request is not in PENDING state', async () => {
@@ -298,7 +315,9 @@ describe('GdprService', () => {
         status: GdprStatus.VERIFYING,
       });
 
-      await expect(service.verifyIdentity('abc123', 'valid-token')).rejects.toThrow(BadRequestException);
+      await expect(service.verifyIdentity('abc123', 'valid-token')).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
@@ -360,9 +379,7 @@ describe('GdprService', () => {
         workspaceId: 'ws_social',
       });
 
-      const result = await service.handleFacebookCallback(
-        makeSignedRequest({ user_id: 'fb_456' }),
-      );
+      const result = await service.handleFacebookCallback(makeSignedRequest({ user_id: 'fb_456' }));
 
       expect(result.confirmation_code).toBeDefined();
     });
@@ -390,23 +407,20 @@ describe('GdprService', () => {
     });
 
     it('throws BadRequestException for signed_request without payload', () => {
-      return expect(service.handleFacebookCallback('signature.')).rejects.toThrow(BadRequestException);
+      return expect(service.handleFacebookCallback('signature.')).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('throws BadRequestException for signed_request with invalid base64', () => {
-      return expect(service.handleFacebookCallback('sig.!!!invalid')).rejects.toThrow(BadRequestException);
+      return expect(service.handleFacebookCallback('sig.!!!invalid')).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
   describe('processExport', () => {
-    const fs = jest.requireMock('node:fs') as {
-      mkdirSync: jest.Mock;
-      writeFileSync: jest.Mock;
-      readFileSync: jest.Mock;
-      unlinkSync: jest.Mock;
-      rmSync: jest.Mock;
-      createWriteStream: jest.Mock;
-    };
+    const fs = jest.requireMock('node:fs');
 
     beforeEach(() => {
       jest.clearAllMocks();
@@ -438,7 +452,13 @@ describe('GdprService', () => {
 
     it('sweeps agent profile, conversations, and messages into export dir', async () => {
       prismaMock.conversation.findMany.mockResolvedValueOnce([
-        { id: 'c1', status: 'OPEN', channel: 'WHATSAPP', lastMessageAt: new Date(), createdAt: new Date() },
+        {
+          id: 'c1',
+          status: 'OPEN',
+          channel: 'WHATSAPP',
+          lastMessageAt: new Date(),
+          createdAt: new Date(),
+        },
       ]);
       prismaMock.message.findMany.mockResolvedValueOnce([
         { id: 'm1', content: 'hello', direction: 'INBOUND', createdAt: new Date() },
@@ -493,19 +513,19 @@ describe('GdprService', () => {
     it('executes transaction for cascade anonymization', async () => {
       await service.processDeletion('gdpr_1');
 
-      const txCall = prismaMock.$transaction.mock.calls[0]?.[0] as (tx: typeof prismaMock) => unknown;
+      const txCall = prismaMock.$transaction.mock.calls[0]?.[0] as (
+        tx: typeof prismaMock,
+      ) => unknown;
       expect(txCall).toBeDefined();
     });
 
     it('sets evidenceUrl after cascade completion', async () => {
       await service.processDeletion('gdpr_1');
 
-      const evidenceCall = prismaMock.gdprRequest.update.mock.calls.find(
-        (call: unknown[]) => {
-          const arg = call[0] as { data?: { evidenceUrl?: string } };
-          return Boolean(arg?.data?.evidenceUrl);
-        },
-      );
+      const evidenceCall = prismaMock.gdprRequest.update.mock.calls.find((call: unknown[]) => {
+        const arg = call[0] as { data?: { evidenceUrl?: string } };
+        return Boolean(arg?.data?.evidenceUrl);
+      });
       expect(evidenceCall).toBeDefined();
     });
   });

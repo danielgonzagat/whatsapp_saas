@@ -9,11 +9,7 @@ import {
 const logger = new Logger('RedisUtil');
 
 // Re-export the canonical helpers so existing imports of redis.util keep working.
-export {
-  isRedisConfigured,
-  maskRedisUrl,
-  resolveRedisUrl,
-} from './resolve-redis-url';
+export { isRedisConfigured, maskRedisUrl, resolveRedisUrl } from './resolve-redis-url';
 
 /**
  * Backwards-compatible wrapper around the canonical resolver.

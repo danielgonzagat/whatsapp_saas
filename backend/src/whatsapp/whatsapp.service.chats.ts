@@ -130,5 +130,3 @@ export async function listChats(
     (a, b) => Number(b.timestamp || 0) - Number(a.timestamp || 0),
   );
 }
-
-

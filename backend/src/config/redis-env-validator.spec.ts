@@ -81,17 +81,13 @@ describe('redisInProductionValidator', () => {
     it('throws when neither REDIS_URL, REDIS_FALLBACK_URL, nor HOST+PASSWORD are configured', () => {
       const input = { NODE_ENV: 'production' };
 
-      expect(() => redisInProductionValidator(input)).toThrow(
-        'Redis is required in production',
-      );
+      expect(() => redisInProductionValidator(input)).toThrow('Redis is required in production');
     });
 
     it('throws when Redis is not configured but REDIS_MODE is auto', () => {
       const input = { NODE_ENV: 'production', REDIS_MODE: 'auto' };
 
-      expect(() => redisInProductionValidator(input)).toThrow(
-        'Redis is required in production',
-      );
+      expect(() => redisInProductionValidator(input)).toThrow('Redis is required in production');
     });
 
     it('throws when REDIS_URL points to Railway public proxy', () => {
@@ -147,9 +143,7 @@ describe('redisInProductionValidator', () => {
       };
 
       // No Redis URL configured and no proxy host → should fail on missing Redis
-      expect(() => redisInProductionValidator(input)).toThrow(
-        'Redis is required in production',
-      );
+      expect(() => redisInProductionValidator(input)).toThrow('Redis is required in production');
     });
 
     it('accepts valid internal Railway Redis URL', () => {
@@ -167,18 +161,14 @@ describe('redisInProductionValidator', () => {
       const input = { NODE_ENV: 'production', REDIS_MODE: true };
 
       // Boolean true → "true" as string !== "disabled" → proceeds to assert Redis
-      expect(() => redisInProductionValidator(input)).toThrow(
-        'Redis is required in production',
-      );
+      expect(() => redisInProductionValidator(input)).toThrow('Redis is required in production');
     });
 
     it('handles numeric REDIS_MODE value', () => {
       const input = { NODE_ENV: 'production', REDIS_MODE: 0 };
 
       // Numeric 0 → "0" as string !== "disabled" → proceeds to assert Redis
-      expect(() => redisInProductionValidator(input)).toThrow(
-        'Redis is required in production',
-      );
+      expect(() => redisInProductionValidator(input)).toThrow('Redis is required in production');
     });
   });
 });

@@ -64,12 +64,7 @@ describe('UploadController', () => {
       settleUsageCharge: jest.fn().mockResolvedValue(undefined),
       refundUsageCharge: jest.fn().mockResolvedValue(undefined),
     };
-    controller = new UploadController(
-      pdfProcessor as never,
-      memoryService as never,
-      storageService as never,
-      walletService as never,
-    );
+    controller = new UploadController(pdfProcessor, memoryService, storageService, walletService);
   });
 
   it('charges before storage side effects and settles after a successful PDF upload analysis', async () => {

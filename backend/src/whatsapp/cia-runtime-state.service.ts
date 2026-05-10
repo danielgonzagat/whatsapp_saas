@@ -272,8 +272,7 @@ export class CiaRuntimeStateService {
           meta: meta as import('@prisma/client').Prisma.InputJsonValue,
         },
       });
-    } catch {
-    }
+    } catch {}
   }
 
   async updateAutonomyRunStatus(workspaceId: string, runId: string | undefined, status: string) {
@@ -292,8 +291,7 @@ export class CiaRuntimeStateService {
               : undefined,
         },
       });
-    } catch {
-    }
+    } catch {}
   }
 
   async createExecution(workspaceId: string, runId: string, action: string) {

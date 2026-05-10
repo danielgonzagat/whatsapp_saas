@@ -24,11 +24,7 @@ export interface WorkItemInput {
   metadata: Record<string, unknown>;
 }
 
-export async function upsertWorkItem(
-  deps: AccountDeps,
-  workspaceId: string,
-  input: WorkItemInput,
-) {
+export async function upsertWorkItem(deps: AccountDeps, workspaceId: string, input: WorkItemInput) {
   const id = `${workspaceId}:${input.kind}:${input.entityType}:${input.entityId}`;
   const prev = await deps.prisma.agentWorkItem.findFirst({
     where: { id, workspaceId },

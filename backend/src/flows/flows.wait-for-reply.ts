@@ -43,10 +43,7 @@ export interface ResumeResult {
   state?: Record<string, unknown>;
 }
 
-function resolveTimeoutMs(
-  timeout: number,
-  unit: 'seconds' | 'minutes' | 'hours' | 'days',
-): number {
+function resolveTimeoutMs(timeout: number, unit: 'seconds' | 'minutes' | 'hours' | 'days'): number {
   const multipliers: Record<string, number> = {
     seconds: 1_000,
     minutes: 60_000,

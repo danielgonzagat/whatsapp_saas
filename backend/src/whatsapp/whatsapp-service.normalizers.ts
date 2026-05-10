@@ -1,5 +1,14 @@
-import type { NormalizedChat, NormalizedContact, ProviderMessageEnvelope } from './whatsapp-service.types';
-import { normalizeJsonObjExt, normalizeNumber, resolveTimestampExt, toIsoTimestamp } from './whatsapp-service.helpers';
+import type {
+  NormalizedChat,
+  NormalizedContact,
+  ProviderMessageEnvelope,
+} from './whatsapp-service.types';
+import {
+  normalizeJsonObjExt,
+  normalizeNumber,
+  resolveTimestampExt,
+  toIsoTimestamp,
+} from './whatsapp-service.helpers';
 
 const D_RE = /\D/g;
 

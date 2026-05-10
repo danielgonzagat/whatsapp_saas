@@ -7,7 +7,11 @@ import { KloelWorkspaceContextService } from './kloel-workspace-context.service'
 import { KloelThreadService } from './kloel-thread.service';
 import { KloelToolRouter } from './kloel-tool-router';
 import { createKloelStatusEvent, type KloelStreamEvent } from './kloel-stream-events';
-import { KLOEL_ONBOARDING_PROMPT, KLOEL_SALES_PROMPT, buildKloelResponseEnginePrompt } from './kloel.prompts';
+import {
+  KLOEL_ONBOARDING_PROMPT,
+  KLOEL_SALES_PROMPT,
+  buildKloelResponseEnginePrompt,
+} from './kloel.prompts';
 import { chatCompletionWithFallback } from './openai-wrapper';
 import { KLOEL_CHAT_TOOLS } from './kloel-chat-tools.definition';
 import type { ExpertiseLevel, LocalToolExecutor, ReplyMessage } from './kloel-reply-engine.types';

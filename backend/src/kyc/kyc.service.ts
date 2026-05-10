@@ -1,8 +1,10 @@
-import { BadRequestException,
+import {
+  BadRequestException,
   Injectable,
   Logger,
   NotFoundException,
-  UnauthorizedException } from '@nestjs/common';
+  UnauthorizedException,
+} from '@nestjs/common';
 import { compare as bcryptCompare, hash as bcryptHash } from 'bcrypt';
 import { Prisma } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';

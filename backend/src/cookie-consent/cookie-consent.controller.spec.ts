@@ -44,7 +44,7 @@ describe('CookieConsentController', () => {
     };
 
     controller = new CookieConsentController(
-      consentService as never as CookieConsentService,
+      consentService as never,
       jwtService as never as JwtService,
     );
   });

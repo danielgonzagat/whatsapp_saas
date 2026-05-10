@@ -16,15 +16,13 @@ describe('PublicApiModule', () => {
   });
 
   it('registers PublicApiController', () => {
-    const controllers =
-      Reflect.getMetadata(MODULE_METADATA.CONTROLLERS, PublicApiModule) ?? [];
+    const controllers = Reflect.getMetadata(MODULE_METADATA.CONTROLLERS, PublicApiModule) ?? [];
 
     expect(controllers).toContain(PublicApiController);
   });
 
   it('provides ApiKeyGuard', () => {
-    const providers =
-      Reflect.getMetadata(MODULE_METADATA.PROVIDERS, PublicApiModule) ?? [];
+    const providers = Reflect.getMetadata(MODULE_METADATA.PROVIDERS, PublicApiModule) ?? [];
 
     expect(providers).toContain(ApiKeyGuard);
   });

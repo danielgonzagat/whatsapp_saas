@@ -203,8 +203,7 @@ export function checkCriticalConfig(config: ConfigService) {
   const metaAppId = config.get<string>('META_APP_ID');
   const metaAppSecret = config.get<string>('META_APP_SECRET');
   const metaVerifyToken =
-    config.get<string>('META_VERIFY_TOKEN') ||
-    config.get<string>('META_WEBHOOK_VERIFY_TOKEN');
+    config.get<string>('META_VERIFY_TOKEN') || config.get<string>('META_WEBHOOK_VERIFY_TOKEN');
 
   const missing: string[] = [];
   if (!jwtSecret) {

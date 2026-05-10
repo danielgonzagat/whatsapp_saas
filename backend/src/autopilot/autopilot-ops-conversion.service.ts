@@ -14,9 +14,7 @@ const D_RE_CONV = /\D/g;
 export class AutopilotOpsConversionService {
   private readonly logger = new Logger(AutopilotOpsConversionService.name);
 
-  constructor(
-    private readonly prisma: PrismaService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   private readRecord(value: unknown): Record<string, unknown> {
     return typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : {};

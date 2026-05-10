@@ -173,12 +173,12 @@ describe('KloelService', () => {
       planLimitsMock as never,
       { upload: jest.fn(), uploadFromUrl: jest.fn() } as never,
       threadService, // [8] threadService
-      wsContextServiceMock as never, // [9] wsContextService
-      {} as never, // [10] chatToolsService
-      {} as never, // [11] bizConfigToolsService
+      wsContextServiceMock, // [9] wsContextService
+      {}, // [10] chatToolsService
+      {}, // [11] bizConfigToolsService
       whatsappToolsService, // [12] whatsappToolsService
-      {} as never, // [13] leadBrainService
-      composerServiceMock as never, // [14] composerService
+      {}, // [13] leadBrainService
+      composerServiceMock, // [14] composerService
       thinkerService,
       replyEngineService,
       {
@@ -187,7 +187,7 @@ describe('KloelService', () => {
             ? whatsappToolsService.toolListWhatsAppChats(workspaceId, args as { limit?: number })
             : { success: false, error: `Ferramenta desconhecida: ${toolName}` },
         ),
-      } as never,
+      },
     );
   });
 

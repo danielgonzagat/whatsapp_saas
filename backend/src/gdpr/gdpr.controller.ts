@@ -28,10 +28,7 @@ export class GdprController {
   /** Request data export. */
   @Post('export-request')
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
-  async exportRequest(
-    @Req() req: AuthenticatedRequest,
-    @Body() _body: ExportRequestDto,
-  ) {
+  async exportRequest(@Req() req: AuthenticatedRequest, @Body() _body: ExportRequestDto) {
     const userId = req.user.sub;
     const workspaceId = req.user.workspaceId;
     return this.gdprService.requestExport(userId, workspaceId);
@@ -40,10 +37,7 @@ export class GdprController {
   /** Request data deletion. */
   @Post('delete-request')
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
-  async deleteRequest(
-    @Req() req: AuthenticatedRequest,
-    @Body() _body: DeleteRequestDto,
-  ) {
+  async deleteRequest(@Req() req: AuthenticatedRequest, @Body() _body: DeleteRequestDto) {
     const userId = req.user.sub;
     const workspaceId = req.user.workspaceId;
     return this.gdprService.requestDeletion(userId, workspaceId);
@@ -52,20 +46,14 @@ export class GdprController {
   /** Verify identity and proceed with processing. */
   @Post('verify/:code')
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
-  async verifyIdentity(
-    @Param('code') code: string,
-    @Query() query: VerifyIdentityQueryDto,
-  ) {
+  async verifyIdentity(@Param('code') code: string, @Query() query: VerifyIdentityQueryDto) {
     return this.gdprService.verifyIdentity(code, query.token);
   }
 
   /** Verify identity via POST body. */
   @Post('verify')
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
-  async verifyIdentityPost(
-    @Body() body: VerifyIdentityDto,
-    @Query('code') code: string,
-  ) {
+  async verifyIdentityPost(@Body() body: VerifyIdentityDto, @Query('code') code: string) {
     return this.gdprService.verifyIdentity(code || '', body.token);
   }
 

@@ -1,8 +1,10 @@
-import { BadRequestException,
+import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   Logger,
-  NotFoundException } from '@nestjs/common';
+  NotFoundException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { hash as bcryptHash } from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';

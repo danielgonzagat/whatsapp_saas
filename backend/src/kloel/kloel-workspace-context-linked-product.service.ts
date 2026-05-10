@@ -96,9 +96,14 @@ export class KloelWorkspaceContextLinkedProductService {
               select: { workspaceId: true },
             })
             .catch((err) => {
-              this.logger.error('Failed to resolve producer workspace for linked product',
+              this.logger.error(
+                'Failed to resolve producer workspace for linked product',
                 err instanceof Error ? err.message : String(err),
-                { context: 'KloelWorkspaceContextLinkedProduct.buildLinkedProductPromptContext', targetProductId });
+                {
+                  context: 'KloelWorkspaceContextLinkedProduct.buildLinkedProductPromptContext',
+                  targetProductId,
+                },
+              );
               return null;
             })
         )?.workspaceId || null
@@ -110,9 +115,15 @@ export class KloelWorkspaceContextLinkedProductService {
             targetProductId,
             limits,
           ).catch((err) => {
-            this.logger.error('Failed to fetch catalog product for linked context',
+            this.logger.error(
+              'Failed to fetch catalog product for linked context',
               err instanceof Error ? err.message : String(err),
-              { context: 'KloelWorkspaceContextLinkedProduct.buildLinkedProductPromptContext', producerWorkspaceId, targetProductId });
+              {
+                context: 'KloelWorkspaceContextLinkedProduct.buildLinkedProductPromptContext',
+                producerWorkspaceId,
+                targetProductId,
+              },
+            );
             return null;
           })
         : null;

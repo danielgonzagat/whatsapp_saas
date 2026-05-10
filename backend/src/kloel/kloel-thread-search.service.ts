@@ -109,9 +109,11 @@ export class KloelThreadSearchService {
 
       return this.mapRows(rows, normalizedQuery);
     } catch (err) {
-      this.logger.error('Full-text search failed, falling back to contains search',
+      this.logger.error(
+        'Full-text search failed, falling back to contains search',
         err instanceof Error ? err.message : String(err),
-        { context: 'KloelThreadSearch.search', queryLength: normalizedQuery.length });
+        { context: 'KloelThreadSearch.search', queryLength: normalizedQuery.length },
+      );
       return this.containsFallback(workspaceId, normalizedQuery, safeLimit);
     }
   }

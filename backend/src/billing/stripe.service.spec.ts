@@ -88,17 +88,13 @@ describe('StripeService', () => {
       return;
     }
 
-    it(
-      'retrieveBalance() succeeds against Stripe test mode',
-      async () => {
-        const moduleRef = await buildModule({ STRIPE_SECRET_KEY: realKey });
-        const service = moduleRef.get(StripeService);
+    it('retrieveBalance() succeeds against Stripe test mode', async () => {
+      const moduleRef = await buildModule({ STRIPE_SECRET_KEY: realKey });
+      const service = moduleRef.get(StripeService);
 
-        const balance = await service.retrieveBalance();
-        expect(balance.object).toBe('balance');
-        expect(balance.livemode).toBe(false);
-      },
-      15_000,
-    );
+      const balance = await service.retrieveBalance();
+      expect(balance.object).toBe('balance');
+      expect(balance.livemode).toBe(false);
+    }, 15_000);
   });
 });

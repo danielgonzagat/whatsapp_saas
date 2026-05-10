@@ -268,7 +268,7 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
                   statusCode: log.statusCode,
                   responseTimeMs: log.responseTimeMs,
                   requestBody: log.requestBody
-                      ? (sanitizePayload(log.requestBody) as AuditRequestBody)
+                    ? (sanitizePayload(log.requestBody) as AuditRequestBody)
                     : undefined,
                   error: log.error || undefined,
                 }),

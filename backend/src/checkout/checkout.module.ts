@@ -9,7 +9,10 @@ import { CheckoutCatalogConfigService } from './checkout-catalog-config.service'
 import { CheckoutCatalogService } from './checkout-catalog.service';
 import { CheckoutOrderQueryService } from './checkout-order-query.service';
 import { CheckoutOrderService } from './checkout-order.service';
-import { CHECKOUT_PAYMENT_E2E_GUARD, NoopCheckoutPaymentE2EGuard } from './checkout-payment-e2e-guard';
+import {
+  CHECKOUT_PAYMENT_E2E_GUARD,
+  NoopCheckoutPaymentE2EGuard,
+} from './checkout-payment-e2e-guard';
 import { CheckoutPaymentService } from './checkout-payment.service';
 import { CheckoutProductConfigService } from './checkout-product-config.service';
 import { CheckoutPostPaymentEffectsService } from './checkout-post-payment-effects.service';

@@ -59,11 +59,7 @@ export class TenantThrottlerGuard extends ThrottlerGuard {
     return false;
   }
 
-  protected override generateKey(
-    context: ExecutionContext,
-    suffix: string,
-    name: string,
-  ): string {
+  protected override generateKey(context: ExecutionContext, suffix: string, name: string): string {
     const req = context.switchToHttp().getRequest<RequestLike>();
     const tenant = resolveWorkspaceId(req);
     const prefix = `${context.getClass().name}-${context.getHandler().name}-${name}`;

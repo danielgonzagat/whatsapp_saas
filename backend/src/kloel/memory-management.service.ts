@@ -219,8 +219,7 @@ export class MemoryManagementService {
         },
       });
       totalRemoved += result.count;
-    } catch {
-    }
+    } catch {}
 
     return totalRemoved;
   }

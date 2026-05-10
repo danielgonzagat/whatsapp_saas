@@ -14,7 +14,10 @@ type ResendWebhookPayload = {
 
 type SendGridWebhookPayload = Record<string, unknown>[];
 
-const RESEND_EVENT_MAP: Record<string, 'DELIVERED' | 'OPENED' | 'CLICKED' | 'BOUNCED' | 'COMPLAINT'> = {
+const RESEND_EVENT_MAP: Record<
+  string,
+  'DELIVERED' | 'OPENED' | 'CLICKED' | 'BOUNCED' | 'COMPLAINT'
+> = {
   'email.delivered': 'DELIVERED',
   'email.opened': 'OPENED',
   'email.clicked': 'CLICKED',
@@ -22,7 +25,10 @@ const RESEND_EVENT_MAP: Record<string, 'DELIVERED' | 'OPENED' | 'CLICKED' | 'BOU
   'email.complained': 'COMPLAINT',
 };
 
-const SENDGRID_EVENT_MAP: Record<string, 'DELIVERED' | 'OPENED' | 'CLICKED' | 'REPLIED' | 'BOUNCED' | 'UNSUBSCRIBED'> = {
+const SENDGRID_EVENT_MAP: Record<
+  string,
+  'DELIVERED' | 'OPENED' | 'CLICKED' | 'REPLIED' | 'BOUNCED' | 'UNSUBSCRIBED'
+> = {
   delivered: 'DELIVERED',
   open: 'OPENED',
   click: 'CLICKED',
@@ -68,7 +74,7 @@ export class EmailMarketingWebhookController {
       await this.emailMarketingService.reconcileDeliveryFromWebhook({
         providerMessageId,
         event: mappedEvent,
-        metadata: payload.data as Record<string, unknown>,
+        metadata: payload.data,
       });
       this.logger.log(`Resend webhook processed: ${eventType} for ${providerMessageId}`);
     } catch (err: unknown) {
@@ -110,7 +116,7 @@ export class EmailMarketingWebhookController {
         await this.emailMarketingService.reconcileDeliveryFromWebhook({
           providerMessageId,
           event: mappedEvent,
-          metadata: eventObj as Record<string, unknown>,
+          metadata: eventObj,
         });
         processed++;
       } catch (err: unknown) {
@@ -121,9 +127,7 @@ export class EmailMarketingWebhookController {
       }
     }
 
-    this.logger.log(
-      `SendGrid webhook processed: ${processed}/${payload.length} events`,
-    );
+    this.logger.log(`SendGrid webhook processed: ${processed}/${payload.length} events`);
     return { received: processed > 0 };
   }
 }

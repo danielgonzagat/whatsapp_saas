@@ -12,11 +12,7 @@ type ListChatsFn = (deps: ChatHelperDeps, workspaceId: string) => Promise<ChatNo
 
 @Injectable()
 export class WhatsappChatBacklogService {
-  async getBacklog(
-    deps: ChatHelperDeps,
-    workspaceId: string,
-    listChats: ListChatsFn,
-  ) {
+  async getBacklog(deps: ChatHelperDeps, workspaceId: string, listChats: ListChatsFn) {
     const status = await deps.providerRegistry.getSessionStatus(workspaceId);
     const chats = await listChats(deps, workspaceId);
     const pendingChats = chats.filter((chat) => chat.pending === true);

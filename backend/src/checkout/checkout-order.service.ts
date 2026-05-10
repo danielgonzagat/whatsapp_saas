@@ -110,7 +110,10 @@ export class CheckoutOrderService {
     const normalizedOrderQuantity = normalizeCheckoutOrderQuantity(orderQuantity);
     const acceptedBumpIds = this.orderSupport.parseAcceptedBumpIds(orderData.acceptedBumps);
     const shippingAddress = orderData.shippingAddress;
-    const address = shippingAddress && typeof shippingAddress === 'object' ? shippingAddress as ShippingAddress : null;
+    const address =
+      shippingAddress && typeof shippingAddress === 'object'
+        ? (shippingAddress as ShippingAddress)
+        : null;
     const destinationZip =
       typeof address?.cep === 'string'
         ? address.cep

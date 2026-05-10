@@ -49,10 +49,7 @@ export class FacebookMessengerController {
       'Messenger page id',
     );
 
-    const recipientPsid = normalizeMetaGraphSegment(
-      body.recipientPsid,
-      'Messenger recipient psid',
-    );
+    const recipientPsid = normalizeMetaGraphSegment(body.recipientPsid, 'Messenger recipient psid');
 
     if (!body.text || body.text.trim().length === 0) {
       throw new BadRequestException('message_text_required');
@@ -97,10 +94,7 @@ export class FacebookMessengerController {
   }
 
   @Get('conversations')
-  async getConversations(
-    @Req() req: AuthenticatedRequest,
-    @Query('pageId') pageIdQuery: string,
-  ) {
+  async getConversations(@Req() req: AuthenticatedRequest, @Query('pageId') pageIdQuery: string) {
     const workspaceId = resolveWorkspaceId(req);
     const resolved = await this.metaWhatsApp.resolveConnection(workspaceId);
 

@@ -158,12 +158,15 @@ export class ReportsController {
     await this.emailService.sendEmail({
       to: targetEmail,
       subject: 'Relatorio KLOEL — Resumo de Vendas',
-      html: (await import('../common/utils/email-template-renderer.util')).renderEmailTemplate('report-summary', {
-        totalRevenue: (summary.totalRevenue / 100).toFixed(2),
-        totalCount: String(summary.totalCount),
-        ticketMedio: (summary.ticketMedio / 100).toFixed(2),
-        conversao: String(summary.conversao),
-      }),
+      html: (await import('../common/utils/email-template-renderer.util')).renderEmailTemplate(
+        'report-summary',
+        {
+          totalRevenue: (summary.totalRevenue / 100).toFixed(2),
+          totalCount: String(summary.totalCount),
+          ticketMedio: (summary.ticketMedio / 100).toFixed(2),
+          conversao: String(summary.conversao),
+        },
+      ),
     });
     return { success: true, sentTo: targetEmail };
   }
@@ -200,7 +203,7 @@ export class ReportsController {
       take: 100,
     });
     const scores = responses
-      .map((r) => (r.details as ReportResponseDetails | null)?.score as number | undefined)
+      .map((r) => (r.details as ReportResponseDetails | null)?.score)
       .filter(Boolean);
     const avg =
       scores.length > 0 ? scores.reduce((a: number, b: number) => a + b, 0) / scores.length : 0;

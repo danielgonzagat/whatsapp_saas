@@ -88,25 +88,37 @@ export class MetaMarketingProvider implements AdProvider {
     return { connected: false, status: 'pending_oauth', authUrl };
   }
 
-  async completeOAuth(workspaceId: string, code: string, _redirectUri: string): Promise<OAuthConnectResult> {
+  async completeOAuth(
+    workspaceId: string,
+    code: string,
+    _redirectUri: string,
+  ): Promise<OAuthConnectResult> {
     try {
       const appId = String(process.env.META_APP_ID || '').trim();
       const appSecret = String(process.env.META_APP_SECRET || '').trim();
       if (!appId || !appSecret) {
         return { connected: false, status: 'meta_credentials_not_configured' };
       }
-      const tokenResponse = await this.metaSdk.graphApiGet('oauth/access_token', {
-        client_id: appId,
-        client_secret: appSecret,
-        code,
-      }, '');
+      const tokenResponse = await this.metaSdk.graphApiGet(
+        'oauth/access_token',
+        {
+          client_id: appId,
+          client_secret: appSecret,
+          code,
+        },
+        '',
+      );
       const accessToken = (tokenResponse as MetaTokenResponse).access_token;
       if (!accessToken) {
         return { connected: false, status: 'token_exchange_failed' };
       }
-      const adAccounts = await this.metaSdk.graphApiGet('me/adaccounts', {
-        fields: 'id,name',
-      }, accessToken);
+      const adAccounts = await this.metaSdk.graphApiGet(
+        'me/adaccounts',
+        {
+          fields: 'id,name',
+        },
+        accessToken,
+      );
       const accounts = (adAccounts as MetaAdAccountsResponse).data || [];
       const primaryAccount = accounts[0];
       await this.prisma.metaConnection.upsert({
@@ -157,16 +169,22 @@ export class MetaMarketingProvider implements AdProvider {
       return { accounts: [] };
     }
     try {
-      const response = await this.metaSdk.graphApiGet(`act_${conn.adAccountId}`, {
-        fields: 'id,name,account_status',
-      }, conn.accessToken);
+      const response = await this.metaSdk.graphApiGet(
+        `act_${conn.adAccountId}`,
+        {
+          fields: 'id,name,account_status',
+        },
+        conn.accessToken,
+      );
       const data = response as MetaAccountInfo;
       return {
-        accounts: [{
-          platform: 'meta',
-          accountId: `act_${conn.adAccountId}`,
-          accountName: data.name || `Meta Ad Account ${conn.adAccountId}`,
-        }],
+        accounts: [
+          {
+            platform: 'meta',
+            accountId: `act_${conn.adAccountId}`,
+            accountName: data.name || `Meta Ad Account ${conn.adAccountId}`,
+          },
+        ],
       };
     } catch (err) {
       this.logger.error('Meta account sync failed', err);
@@ -183,18 +201,21 @@ export class MetaMarketingProvider implements AdProvider {
       return { campaigns: [] };
     }
     try {
-      const response = await this.metaAds.getCampaigns(
-        conn.adAccountId,
-        conn.accessToken,
-        { fields: 'id,name,status' },
-      );
+      const response = await this.metaAds.getCampaigns(conn.adAccountId, conn.accessToken, {
+        fields: 'id,name,status',
+      });
       const campaigns = (response as MetaCampaignResponse).data || [];
       const result = await Promise.all(
         campaigns.map(async (c) => {
           const campaignId = String(c.id || '');
           let insights: Record<string, unknown> = {};
           try {
-            insights = await this.metaAds.getCampaignInsights(campaignId, conn.accessToken, '2024-01-01', '2099-12-31');
+            insights = await this.metaAds.getCampaignInsights(
+              campaignId,
+              conn.accessToken,
+              '2024-01-01',
+              '2099-12-31',
+            );
           } catch {
             // Insights may fail for new campaigns
           }

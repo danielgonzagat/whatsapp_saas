@@ -1,14 +1,12 @@
-import {
-  BadRequestException,
-  Injectable,
-  Logger,
-  Optional,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, Optional } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { forEachSequential } from '../common/async-sequence';
 import { WhatsAppProviderRegistry, type SessionStatus } from './providers/provider-registry';
-import { WhatsAppApiProvider, type WahaRuntimeConfigDiagnostics } from './providers/whatsapp-api.provider';
+import {
+  WhatsAppApiProvider,
+  type WahaRuntimeConfigDiagnostics,
+} from './providers/whatsapp-api.provider';
 import { normalizeJsonObjExt } from './whatsapp-service.helpers';
 import type { ProviderSettings } from './provider-settings.types';
 
@@ -66,7 +64,9 @@ export class WhatsappSessionService {
     await this.providerRegistry.getProviderType(ws);
     const d = await this.providerRegistry.getSessionDiagnostics(ws);
     await this.providerRegistry.getSessionStatus(ws).catch((e: unknown) => {
-      this.logger.warn(`Session status check failed for ws=${ws}: ${e instanceof Error ? e.message : 'unknown'}`);
+      this.logger.warn(
+        `Session status check failed for ws=${ws}: ${e instanceof Error ? e.message : 'unknown'}`,
+      );
       return null;
     });
     const invalid =
@@ -78,7 +78,9 @@ export class WhatsappSessionService {
     if (!invalid) return { recreated: false, reason: 'session_config_healthy', diagnostics: d };
     this.logger.warn(`Session invalid for ws=${ws}, recreating`);
     await this.providerRegistry.deleteSession(ws).catch((e: unknown) => {
-      this.logger.warn(`Session delete failed for ws=${ws}: ${e instanceof Error ? e.message : 'unknown'}`);
+      this.logger.warn(
+        `Session delete failed for ws=${ws}: ${e instanceof Error ? e.message : 'unknown'}`,
+      );
       return undefined;
     });
     const start = await this.providerRegistry.startSession(ws);

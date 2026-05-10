@@ -4,7 +4,10 @@ import type { KloelContextFormatterLimits } from './kloel-context-formatter.type
 const S_RE = /\s+/g;
 
 export class KloelWorkspaceCoreContextFormatter {
-  constructor(protected base: KloelContextBaseFormatter, protected limits: KloelContextFormatterLimits) {}
+  constructor(
+    protected base: KloelContextBaseFormatter,
+    protected limits: KloelContextFormatterLimits,
+  ) {}
 
   private safeStr(v: unknown, fb = ''): string {
     return typeof v === 'string'

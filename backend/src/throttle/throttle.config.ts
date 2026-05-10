@@ -122,5 +122,3 @@ export const THROTTLE_TIERS: ThrottlerOptions[] = [
   MUTATION_TIER,
   AI_TOOL_TIER,
 ];
-
-

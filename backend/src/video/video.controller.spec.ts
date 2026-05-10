@@ -12,11 +12,9 @@ jest.mock('../auth/jwt-auth.guard', () => ({
 }));
 
 jest.mock('../auth/workspace-access', () => ({
-  resolveWorkspaceId: jest.fn(
-    (req: { user?: { workspaceId?: string } }, explicit?: string) => {
-      return explicit || req.user?.workspaceId || 'ws-default';
-    },
-  ),
+  resolveWorkspaceId: jest.fn((req: { user?: { workspaceId?: string } }, explicit?: string) => {
+    return explicit || req.user?.workspaceId || 'ws-default';
+  }),
 }));
 
 describe('VideoController', () => {
@@ -61,9 +59,9 @@ describe('VideoController', () => {
       service.createJob.mockRejectedValue(new Error('DB error'));
       const req = { user: { workspaceId: 'ws-1' } } as never;
 
-      await expect(
-        controller.createJob(req, { inputUrl: 'url', prompt: 'test' }),
-      ).rejects.toThrow('DB error');
+      await expect(controller.createJob(req, { inputUrl: 'url', prompt: 'test' })).rejects.toThrow(
+        'DB error',
+      );
     });
   });
 
@@ -87,9 +85,7 @@ describe('VideoController', () => {
     });
 
     it('throws ForbiddenException when job belongs to another workspace', async () => {
-      service.getJob.mockRejectedValue(
-        new ForbiddenException('Job não pertence a este workspace'),
-      );
+      service.getJob.mockRejectedValue(new ForbiddenException('Job não pertence a este workspace'));
       const req = { user: { workspaceId: 'ws-1' } } as never;
 
       await expect(controller.getJob(req, 'job-1')).rejects.toThrow(ForbiddenException);

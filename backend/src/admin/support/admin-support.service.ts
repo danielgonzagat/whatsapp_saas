@@ -40,7 +40,7 @@ export class AdminSupportService {
     // Platform-level admin query: intentionally cross-workspace.
     // `workspaceId: undefined` is a Prisma-side no-op ("skip filter")
     // and keeps the unsafe-query scanner satisfied.
-    const conversations = await this.prisma.conversation.findMany({
+    const conversations = (await this.prisma.conversation.findMany({
       where: {
         workspaceId: undefined,
         ...(search
@@ -68,7 +68,7 @@ export class AdminSupportService {
         workspace: { select: { id: true, name: true } },
         contact: { select: { id: true, name: true, email: true, phone: true } },
       },
-    }) as unknown as ConversationSelectRow[];
+    })) as unknown as ConversationSelectRow[];
 
     return {
       items: conversations.map((conversation) => ({

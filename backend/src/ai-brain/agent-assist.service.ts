@@ -77,7 +77,11 @@ export class AgentAssistService {
     });
     try {
       await this.ensureBudget(workspaceId);
-      this.logger.log('Calling OpenAI', { context: 'AgentAssistService.executeAiOperation', model, operation });
+      this.logger.log('Calling OpenAI', {
+        context: 'AgentAssistService.executeAiOperation',
+        model,
+        operation,
+      });
       const completion = await chatCompletionWithRetry(this.openai, { model, messages });
       if (estimatedCostCents !== undefined && usageCharged) {
         await settleAiUsageIfNeeded({
@@ -92,7 +96,11 @@ export class AgentAssistService {
       await this.trackUsage(workspaceId, completion?.usage?.total_tokens);
       return handler(completion);
     } catch (error: unknown) {
-      this.logger.error('AI operation failed', error instanceof Error ? error.message : String(error), { context: 'AgentAssistService.executeAiOperation', model, operation });
+      this.logger.error(
+        'AI operation failed',
+        error instanceof Error ? error.message : String(error),
+        { context: 'AgentAssistService.executeAiOperation', model, operation },
+      );
       void this.opsAlert?.alertOnCriticalError(error, 'AgentAssistService.handler');
       if (!(error instanceof AgentAssistWalletAccessError)) {
         await refundAiUsageIfNeeded({
@@ -177,7 +185,11 @@ export class AgentAssistService {
       }
       return result;
     } catch (error: unknown) {
-      this.logger.error('Sentiment analysis failed', error instanceof Error ? error.message : String(error), { context: 'AgentAssistService.analyzeSentiment', workspaceId });
+      this.logger.error(
+        'Sentiment analysis failed',
+        error instanceof Error ? error.message : String(error),
+        { context: 'AgentAssistService.analyzeSentiment', workspaceId },
+      );
       void this.opsAlert?.alertOnCriticalError(error, 'AgentAssistService.now');
       if (workspaceId) {
         await this.prisma.autopilotEvent

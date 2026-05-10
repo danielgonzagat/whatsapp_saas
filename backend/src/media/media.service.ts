@@ -81,7 +81,12 @@ export class MediaService {
       throw new BadRequestException('Arquivo inválido');
     }
 
-    this.logger.log('Uploading document to storage', { context: 'MediaService.uploadDocument', fileName: file.originalname, mimeType: file.mimetype, fileSize: file.size });
+    this.logger.log('Uploading document to storage', {
+      context: 'MediaService.uploadDocument',
+      fileName: file.originalname,
+      mimeType: file.mimetype,
+      fileSize: file.size,
+    });
 
     const stored = await this.storage.upload(file.buffer, {
       filename: `${uuid()}${extname(file.originalname || '')}`,
@@ -210,7 +215,10 @@ export class MediaService {
     const signedUrl = this.storage.getSignedUrl(doc.filePath, {
       downloadName: doc.fileName,
     });
-    this.logger.log('Fetching document from remote storage', { context: 'MediaService.getDocumentFile', documentId: doc.id });
+    this.logger.log('Fetching document from remote storage', {
+      context: 'MediaService.getDocumentFile',
+      documentId: doc.id,
+    });
     const response = await safeStorageFetch(signedUrl, {
       allowedHosts: this.allowedStorageHosts,
       allowHttp: this.allowHttpStorage,

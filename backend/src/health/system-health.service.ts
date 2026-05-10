@@ -103,20 +103,19 @@ export class SystemHealthService {
     status: 'UP' | 'DOWN';
     timestamp: string;
     failures: string[];
-    details: Record<
-      string,
-      { status: string; error?: string; latencyMs?: number }
-    >;
+    details: Record<string, { status: string; error?: string; latencyMs?: number }>;
   }> {
     const logger = new Logger('ReadinessProbe');
     const startedAt = Date.now();
 
-    const probes: Array<Promise<{
-      dependency: string;
-      status: 'UP' | 'DOWN';
-      error?: string;
-      latencyMs: number;
-    }>> = [
+    const probes: Array<
+      Promise<{
+        dependency: string;
+        status: 'UP' | 'DOWN';
+        error?: string;
+        latencyMs: number;
+      }>
+    > = [
       DbProbe.probePostgres(this.prisma),
       DbProbe.probeBullMQRedis(),
       ExternalProbe.probeStripe(this.stripeService),
@@ -128,17 +127,11 @@ export class SystemHealthService {
 
     const settled = await Promise.allSettled(probes);
     const failures: string[] = [];
-    const details: Record<
-      string,
-      { status: string; error?: string; latencyMs?: number }
-    > = {};
+    const details: Record<string, { status: string; error?: string; latencyMs?: number }> = {};
 
     for (const result of settled) {
       if (result.status === 'rejected') {
-        logger.error(
-          `Readiness probe crashed unexpectedly`,
-          String(result.reason),
-        );
+        logger.error(`Readiness probe crashed unexpectedly`, String(result.reason));
         continue;
       }
 

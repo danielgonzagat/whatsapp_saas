@@ -29,7 +29,11 @@ export class VectorService {
     const cleanText = text.replace(N_RE, ' ').slice(0, 8000);
 
     // tokenBudget: non-workspace context, budget tracked at caller level
-    this.logger.log('Calling OpenAI embeddings', { context: 'VectorService.getEmbedding', model: 'text-embedding-3-small', textLength: cleanText.length });
+    this.logger.log('Calling OpenAI embeddings', {
+      context: 'VectorService.getEmbedding',
+      model: 'text-embedding-3-small',
+      textLength: cleanText.length,
+    });
     const response = await this.openai.embeddings.create({
       model: 'text-embedding-3-small',
       input: cleanText,

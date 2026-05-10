@@ -6,11 +6,7 @@ import { OpsAlertService } from '../observability/ops-alert.service';
 
 const D_RE = /\D/g;
 
-import type {
-  WaitForReplyNodeData,
-  WaitState,
-  ResumeResult,
-} from './flows.wait-for-reply';
+import type { WaitForReplyNodeData, WaitState, ResumeResult } from './flows.wait-for-reply';
 import {
   pauseForWaitNode as pauseForWaitNodeFn,
   resumeFromWait as resumeFromWaitFn,

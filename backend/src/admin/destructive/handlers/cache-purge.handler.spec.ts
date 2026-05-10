@@ -33,16 +33,14 @@ function fakeIntent(overrides?: Partial<DestructiveIntentRecord>): DestructiveIn
   };
 }
 
-function buildHandler(opts?: {
-  scan?: jest.Mock;
-  del?: jest.Mock;
-  append?: jest.Mock;
-}) {
+function buildHandler(opts?: { scan?: jest.Mock; del?: jest.Mock; append?: jest.Mock }) {
   const redis = {
-    scan: opts?.scan ?? jest.fn().mockResolvedValue(['0', []]) as jest.Mock,
-    del: opts?.del ?? jest.fn().mockResolvedValue(0) as jest.Mock,
+    scan: opts?.scan ?? jest.fn().mockResolvedValue(['0', []]),
+    del: opts?.del ?? jest.fn().mockResolvedValue(0),
   };
-  const adminAudit = { append: opts?.append ?? jest.fn().mockResolvedValue(undefined) as jest.Mock };
+  const adminAudit = {
+    append: opts?.append ?? jest.fn().mockResolvedValue(undefined),
+  };
   return {
     handler: new CachePurgeHandler(redis as never, adminAudit as never),
     redis,
@@ -102,10 +100,7 @@ describe('CachePurgeHandler', () => {
         expect(result.snapshot.redisPattern).toBe('cache:workspace:ws-123*');
 
         expect(scan).toHaveBeenCalledWith('0', 'MATCH', 'cache:workspace:ws-123*', 'COUNT', 100);
-        expect(del).toHaveBeenCalledWith(
-          'cache:workspace:ws-123:a',
-          'cache:workspace:ws-123:b',
-        );
+        expect(del).toHaveBeenCalledWith('cache:workspace:ws-123:a', 'cache:workspace:ws-123:b');
 
         expect(adminAudit.append).toHaveBeenCalledWith(
           expect.objectContaining({
@@ -125,16 +120,10 @@ describe('CachePurgeHandler', () => {
     it('iterates scan cursor until it returns zero', async () => {
       const scan = jest
         .fn()
-        .mockResolvedValueOnce([
-          '5',
-          ['cache:workspace:ws-123:a', 'cache:workspace:ws-123:b'],
-        ])
+        .mockResolvedValueOnce(['5', ['cache:workspace:ws-123:a', 'cache:workspace:ws-123:b']])
         .mockResolvedValueOnce(['0', ['cache:workspace:ws-123:c']]);
 
-      const del = jest
-        .fn()
-        .mockResolvedValueOnce(2)
-        .mockResolvedValueOnce(1);
+      const del = jest.fn().mockResolvedValueOnce(2).mockResolvedValueOnce(1);
 
       const { handler } = buildHandler({ scan, del });
 
@@ -168,7 +157,7 @@ describe('CachePurgeHandler', () => {
         ok: true,
         json: async () => ({ success: true }),
       });
-      global.fetch = fetchMock as unknown as typeof fetch;
+      global.fetch = fetchMock;
 
       const { handler } = buildHandler({ scan, del });
 
@@ -209,7 +198,7 @@ describe('CachePurgeHandler', () => {
         ok: false,
         json: async () => ({ success: false, errors: [{ code: 10000, message: 'bad' }] }),
       });
-      global.fetch = fetchMock as unknown as typeof fetch;
+      global.fetch = fetchMock;
 
       const { handler } = buildHandler({ scan });
 
@@ -239,7 +228,11 @@ describe('CachePurgeHandler', () => {
       const { handler } = buildHandler({ scan, del });
 
       await withEnv(
-        { REDIS_URL: FAKE_REDIS_URL, CLOUDFLARE_API_TOKEN: undefined, CLOUDFLARE_ZONE_ID: undefined },
+        {
+          REDIS_URL: FAKE_REDIS_URL,
+          CLOUDFLARE_API_TOKEN: undefined,
+          CLOUDFLARE_ZONE_ID: undefined,
+        },
         async () => {
           const result = await handler.execute(fakeIntent());
 
@@ -257,9 +250,7 @@ describe('CachePurgeHandler', () => {
       const { handler, adminAudit } = buildHandler({ scan, del, append });
 
       await withEnv({ REDIS_URL: FAKE_REDIS_URL }, async () => {
-        await handler.execute(
-          fakeIntent({ targetType: 'product', targetId: 'prod-99' }),
-        );
+        await handler.execute(fakeIntent({ targetType: 'product', targetId: 'prod-99' }));
 
         expect(adminAudit.append).toHaveBeenCalledWith(
           expect.objectContaining({

@@ -43,7 +43,9 @@ export class AdsSyncProcessor implements OnModuleDestroy {
       queueName,
       async (job: Job<AdsSyncJobData>) => {
         const { type } = job.data;
-        this.logger.log(`Processing Google Ads sync job: ${type} workspace=${job.data.workspaceId} attempt=${job.attemptsMade + 1}`);
+        this.logger.log(
+          `Processing Google Ads sync job: ${type} workspace=${job.data.workspaceId} attempt=${job.attemptsMade + 1}`,
+        );
 
         switch (type) {
           case 'sync-accounts':
@@ -72,7 +74,9 @@ export class AdsSyncProcessor implements OnModuleDestroy {
     );
 
     this.worker.on('completed', (job) => {
-      this.logger.log(`Google Ads sync job completed: ${job.data.type} workspace=${job.data.workspaceId}`);
+      this.logger.log(
+        `Google Ads sync job completed: ${job.data.type} workspace=${job.data.workspaceId}`,
+      );
     });
 
     this.worker.on('failed', (job, err) => {

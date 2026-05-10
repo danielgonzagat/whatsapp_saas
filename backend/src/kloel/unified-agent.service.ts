@@ -41,8 +41,6 @@ function formatPromptValue(value: unknown): string {
   return Object.prototype.toString.call(value);
 }
 
-
-
 /**
  * KLOEL Unified Agent Service — orchestrator.
  *

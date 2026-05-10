@@ -419,11 +419,7 @@ export class PrismaService
     args: Prisma.CheckoutOrderUpdateManyArgs,
   ) {
     if (!this.checkoutEmailSender) return;
-    await sendPurchaseConfirmationEmailFromPaidCheckoutUpdate(
-      this,
-      args,
-      this.checkoutEmailSender,
-    );
+    await sendPurchaseConfirmationEmailFromPaidCheckoutUpdate(this, args, this.checkoutEmailSender);
   }
 
   async createAffiliateCommissionFromPaidCheckoutUpdate(args: Prisma.CheckoutOrderUpdateManyArgs) {

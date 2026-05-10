@@ -74,8 +74,7 @@ export class KloelWorkspaceContextService {
       }
 
       const affiliateCatalogProducts = affiliateProductIds.size
-        ?
-          await this.prisma.product.findMany({
+        ? await this.prisma.product.findMany({
             where: { id: { in: Array.from(affiliateProductIds) } },
             // Cross-workspace affiliate catalog lookup by product IDs. The
             // producer workspaceId is surfaced for telemetry / tenant

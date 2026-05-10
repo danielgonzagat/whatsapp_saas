@@ -1,5 +1,10 @@
 export interface IWhatsappMessaging {
-  sendMessage(workspaceId: string, phone: string, text: string, options?: Record<string, unknown>): Promise<unknown>;
+  sendMessage(
+    workspaceId: string,
+    phone: string,
+    text: string,
+    options?: Record<string, unknown>,
+  ): Promise<unknown>;
   syncRemoteContactProfile(workspaceId: string, phone: string, name: string): Promise<unknown>;
 }
 
@@ -18,7 +23,10 @@ export interface ICiaRuntime {
 
 export interface ICatchupHistory {
   sanitizePlaceholderContacts(workspaceId: string): Promise<void>;
-  resolveBackfillCursor(meta: { backfillCursor?: unknown; [key: string]: unknown }): CatchupBackfillCursor;
+  resolveBackfillCursor(meta: {
+    backfillCursor?: unknown;
+    [key: string]: unknown;
+  }): CatchupBackfillCursor;
   resolveWorkspaceSelfPhone(workspaceId: string, session: unknown): Promise<string>;
   reconcileRemoteChatState(workspaceId: string, chat: unknown): Promise<void>;
   persistHistoricalOutboundMessage(workspaceId: string, message: unknown): Promise<unknown>;

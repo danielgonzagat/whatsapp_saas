@@ -1,11 +1,5 @@
 import { InjectRedis } from '@nestjs-modules/ioredis';
-import {
-  Inject,
-  Injectable,
-  Logger,
-  Optional,
-  forwardRef,
-} from '@nestjs/common';
+import { Inject, Injectable, Logger, Optional, forwardRef } from '@nestjs/common';
 import Redis from 'ioredis';
 import { forEachSequential } from '../common/async-sequence';
 import { createRedisClient } from '../common/redis/redis.util';
@@ -261,14 +255,10 @@ export class WhatsappReconcilerService {
       this.logger.warn(
         `Falha ao sincronizar contato ${np}: ${(e instanceof Error ? e : new Error(String(e))).message}`,
       );
-      void this.opsAlert?.alertOnCriticalError(
-        e,
-        'WhatsappReconciler.syncRemoteContactProfile',
-        {
-          workspaceId: ws,
-          metadata: { phone: np },
-        },
-      );
+      void this.opsAlert?.alertOnCriticalError(e, 'WhatsappReconciler.syncRemoteContactProfile', {
+        workspaceId: ws,
+        metadata: { phone: np },
+      });
       return false;
     }
   }

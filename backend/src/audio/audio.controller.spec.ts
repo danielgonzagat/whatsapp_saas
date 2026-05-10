@@ -45,7 +45,7 @@ describe('AudioController', () => {
 
     it('throws an error when text is not provided at all', async () => {
       // null body should trigger BadRequestException since !body?.text is true
-      await expect(controller.synthesize(null as never)).rejects.toThrow(BadRequestException);
+      await expect(controller.synthesize(null)).rejects.toThrow(BadRequestException);
     });
 
     it('handles undefined text field gracefully', async () => {

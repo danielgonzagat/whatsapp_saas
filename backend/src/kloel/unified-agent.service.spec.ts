@@ -117,7 +117,7 @@ describe('UnifiedAgentService', () => {
       whatsappService as never,
       {} as never,
       { trackAiUsage: jest.fn().mockResolvedValue(undefined) } as never,
-      { log: jest.fn().mockResolvedValue(undefined) } as never,
+      { log: jest.fn().mockResolvedValue(undefined) },
       ctx,
       response,
       actions,

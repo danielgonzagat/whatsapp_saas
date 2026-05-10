@@ -32,7 +32,6 @@ export interface DeleteSessionInput {
 
 @Injectable()
 export class AdminChatSessionService {
-
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AdminAuditService,

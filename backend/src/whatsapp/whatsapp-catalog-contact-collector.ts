@@ -1,6 +1,11 @@
 import type { PrismaService } from '../prisma/prisma.service';
 import type { CatalogConversationSummary, WsDeps } from './whatsapp-service.types';
-import { normalizeJsonObjExt, normalizeProbabilityScoreExt, resolveTimestampExt, toIsoTimestamp } from './whatsapp-service.helpers';
+import {
+  normalizeJsonObjExt,
+  normalizeProbabilityScoreExt,
+  resolveTimestampExt,
+  toIsoTimestamp,
+} from './whatsapp-service.helpers';
 
 export async function collectCatalogContactEntriesExt(
   deps: Pick<WsDeps, 'prisma'> & { resolveName: (p: string, ...c: unknown[]) => string },

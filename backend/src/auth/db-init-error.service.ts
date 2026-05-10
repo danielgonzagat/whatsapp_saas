@@ -35,11 +35,9 @@ export class DbInitErrorService {
 
     // Casos comuns quando o schema ainda não existe / migrations não aplicadas.
     if (message.toLowerCase().includes('database not initialized')) {
-      DbInitErrorService.logger.error(
-        'Database not initialized',
-        message,
-        { context: 'DbInitErrorService.throwFriendlyDbInitError' },
-      );
+      DbInitErrorService.logger.error('Database not initialized', message, {
+        context: 'DbInitErrorService.throwFriendlyDbInitError',
+      });
       throw new ServiceUnavailableException(
         'Serviço indisponível. Banco de dados ainda não inicializado (migrations não aplicadas).',
       );

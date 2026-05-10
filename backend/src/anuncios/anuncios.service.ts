@@ -68,8 +68,7 @@ export class AnunciosService {
           } else if (provider.platform === 'google') {
             clientConfigured = String(process.env.GOOGLE_ADS_CLIENT_ID || '').trim().length > 0;
           } else if (provider.platform === 'tiktok') {
-            clientConfigured =
-              String(process.env.TIKTOK_CLIENT_KEY || '').trim().length > 0;
+            clientConfigured = String(process.env.TIKTOK_CLIENT_KEY || '').trim().length > 0;
           }
           return {
             platform: provider.platform,
@@ -93,7 +92,10 @@ export class AnunciosService {
   }
 
   async getConnectUrl(workspaceId: string, platform: string): Promise<{ authUrl: string }> {
-    const frontendUrl = String(process.env.FRONTEND_URL || 'https://app.kloel.com').replace(/\/+$/, '');
+    const frontendUrl = String(process.env.FRONTEND_URL || 'https://app.kloel.com').replace(
+      /\/+$/,
+      '',
+    );
     const redirectUri = `${frontendUrl}/api/anuncios/callback/${platform}`;
     const provider = this.providerFor(platform);
     if (!provider) {
@@ -108,7 +110,10 @@ export class AnunciosService {
     platform: string,
     code: string,
   ): Promise<{ connected: boolean; status: string }> {
-    const frontendUrl = String(process.env.FRONTEND_URL || 'https://app.kloel.com').replace(/\/+$/, '');
+    const frontendUrl = String(process.env.FRONTEND_URL || 'https://app.kloel.com').replace(
+      /\/+$/,
+      '',
+    );
     const redirectUri = `${frontendUrl}/api/anuncios/callback/${platform}`;
     const provider = this.providerFor(platform);
     if (!provider) {

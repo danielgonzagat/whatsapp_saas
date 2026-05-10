@@ -76,7 +76,9 @@ export class GoogleAdsProvider implements AdProvider {
     });
   }
 
-  private async getTokens(workspaceId: string): Promise<{ refreshToken: string; accessToken: string }> {
+  private async getTokens(
+    workspaceId: string,
+  ): Promise<{ refreshToken: string; accessToken: string }> {
     const workspace = await this.prisma.workspace.findUnique({
       where: { id: workspaceId },
       select: { providerSettings: true },
@@ -127,7 +129,11 @@ export class GoogleAdsProvider implements AdProvider {
     return { connected: false, status: 'pending_oauth', authUrl: url.toString() };
   }
 
-  async completeOAuth(workspaceId: string, code: string, redirectUri: string): Promise<OAuthConnectResult> {
+  async completeOAuth(
+    workspaceId: string,
+    code: string,
+    redirectUri: string,
+  ): Promise<OAuthConnectResult> {
     const clientId = resolveEnv('GOOGLE_ADS_CLIENT_ID');
     const clientSecret = resolveEnv('GOOGLE_ADS_CLIENT_SECRET');
     if (!clientId || !clientSecret) {
@@ -151,8 +157,8 @@ export class GoogleAdsProvider implements AdProvider {
         return { connected: false, status: 'token_exchange_failed' };
       }
       const tokenData = (await res.json()) as GoogleTokenResponse;
-      const accessToken = tokenData.access_token as string | undefined;
-      const refreshToken = tokenData.refresh_token as string | undefined;
+      const accessToken = tokenData.access_token;
+      const refreshToken = tokenData.refresh_token;
       if (!accessToken) {
         return { connected: false, status: 'token_exchange_failed' };
       }
@@ -174,7 +180,9 @@ export class GoogleAdsProvider implements AdProvider {
           }
         }
       } catch {
-        this.logger.warn('Could not resolve login customer id during OAuth — will discover on first sync');
+        this.logger.warn(
+          'Could not resolve login customer id during OAuth — will discover on first sync',
+        );
       }
 
       const workspace = await this.prisma.workspace.findUnique({
@@ -195,7 +203,9 @@ export class GoogleAdsProvider implements AdProvider {
       };
       await this.prisma.workspace.update({
         where: { id: workspaceId },
-        data: { providerSettings: JSON.parse(JSON.stringify(nextSettings)) as Prisma.InputJsonObject },
+        data: {
+          providerSettings: JSON.parse(JSON.stringify(nextSettings)) as Prisma.InputJsonObject,
+        },
       });
 
       return { connected: true, status: 'connected' };
@@ -234,9 +244,13 @@ export class GoogleAdsProvider implements AdProvider {
     for (const customerId of customerIds) {
       try {
         const customer = await this.buildCustomer(client, workspaceId, customerId, loginCustomerId);
-        const rows = await customer.query(`SELECT customer_client.descriptive_name FROM customer_client WHERE customer_client.id = '${customerId}'`);
+        const rows = await customer.query(
+          `SELECT customer_client.descriptive_name FROM customer_client WHERE customer_client.id = '${customerId}'`,
+        );
         const data = Array.isArray(rows) ? rows[0] : undefined;
-        const cdata = (data as Record<string, unknown> | undefined)?.customer_client as { descriptive_name?: string } | undefined;
+        const cdata = (data as Record<string, unknown> | undefined)?.customer_client as
+          | { descriptive_name?: string }
+          | undefined;
         accounts.push({
           platform: PLATFORM,
           accountId: customerId,
@@ -265,7 +279,9 @@ export class GoogleAdsProvider implements AdProvider {
       };
       await this.prisma.workspace.update({
         where: { id: workspaceId },
-        data: { providerSettings: JSON.parse(JSON.stringify(updatedSettings)) as Prisma.InputJsonObject },
+        data: {
+          providerSettings: JSON.parse(JSON.stringify(updatedSettings)) as Prisma.InputJsonObject,
+        },
       });
     }
 
@@ -295,14 +311,15 @@ export class GoogleAdsProvider implements AdProvider {
 
     for (const account of dbAccounts) {
       try {
-        const customer = await this.buildCustomer(client, workspaceId, account.accountId, loginCustomerId);
+        const customer = await this.buildCustomer(
+          client,
+          workspaceId,
+          account.accountId,
+          loginCustomerId,
+        );
         const rows = await customer.report({
           entity: 'campaign',
-          attributes: [
-            'campaign.id',
-            'campaign.name',
-            'campaign.status',
-          ],
+          attributes: ['campaign.id', 'campaign.name', 'campaign.status'],
           metrics: [
             'metrics.cost_micros',
             'metrics.impressions',
@@ -383,13 +400,15 @@ export class GoogleAdsProvider implements AdProvider {
 
     for (const account of dbAccounts) {
       try {
-        const customer = await this.buildCustomer(client, workspaceId, account.accountId, loginCustomerId);
+        const customer = await this.buildCustomer(
+          client,
+          workspaceId,
+          account.accountId,
+          loginCustomerId,
+        );
         const rows = await customer.report({
           entity: 'campaign',
-          attributes: [
-            'campaign.id',
-            'campaign.name',
-          ],
+          attributes: ['campaign.id', 'campaign.name'],
           metrics: [
             'metrics.cost_micros',
             'metrics.impressions',
@@ -405,10 +424,16 @@ export class GoogleAdsProvider implements AdProvider {
         });
 
         const data = (Array.isArray(rows) ? rows : [rows]) as Record<string, unknown>[];
-        const dateBuckets = new Map<string, {
-          spend: number; revenue: number; conversions: number;
-          impressions: number; clicks: number;
-        }>();
+        const dateBuckets = new Map<
+          string,
+          {
+            spend: number;
+            revenue: number;
+            conversions: number;
+            impressions: number;
+            clicks: number;
+          }
+        >();
 
         for (const row of data) {
           const m = (row.metrics as Record<string, unknown>) || {};
@@ -420,7 +445,11 @@ export class GoogleAdsProvider implements AdProvider {
           const spend = costMicros / 1_000_000;
           const conversionsValue = Number(m.conversions_value || 0);
           const bucket = dateBuckets.get(dateKey) || {
-            spend: 0, revenue: 0, conversions: 0, impressions: 0, clicks: 0,
+            spend: 0,
+            revenue: 0,
+            conversions: 0,
+            impressions: 0,
+            clicks: 0,
           };
           bucket.spend += spend;
           bucket.revenue += conversionsValue;
