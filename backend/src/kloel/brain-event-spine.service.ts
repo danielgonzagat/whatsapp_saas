@@ -11,16 +11,12 @@ function isJsonRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-function readSymbolDescription(value: unknown): string {
-  return typeof value === 'symbol' ? (value.description ?? 'symbol') : 'symbol';
-}
-
 function toUnsupportedJsonValue(value: unknown): string {
   const valueType = typeof value;
   const candidates: Array<[boolean, string]> = [
     [valueType === 'bigint', String(value)],
     [valueType === 'function', 'function'],
-    [valueType === 'symbol', readSymbolDescription(value)],
+    [valueType === 'symbol', 'symbol'],
     [valueType === 'undefined', 'undefined'],
   ];
   return candidates.find(([matches]) => matches)?.[1] ?? 'unsupported';
