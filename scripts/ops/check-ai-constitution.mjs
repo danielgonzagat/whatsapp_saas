@@ -3,18 +3,31 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
-import { collectChangedFiles, collectNameStatus, repoRoot } from './lib/changed-files.mjs';
+import {
+  collectChangedFiles,
+  collectNameStatus,
+  repoRoot,
+  resolveDiffRange,
+} from './lib/changed-files.mjs';
 import { readJsonFile } from './lib/scan-utils.mjs';
 
 const constitution = readJsonFile('ops/kloel-ai-constitution.json', null);
 const failures = [];
+const CONSTITUTION_AUTHORITY_FILES = new Set([
+  'ops/kloel-ai-constitution.json',
+  'scripts/ops/check-ai-constitution.mjs',
+]);
 
 if (!constitution?.graphContract || !constitution?.agentWorkContract) {
   fail('ops/kloel-ai-constitution.json ausente ou invalida.');
 } else {
+  checkConstitutionContract();
+  checkSelfIntegrity();
+  checkGateWiring();
   checkGraphContract();
   checkChangedFiles();
   checkForbiddenDeletions();
+  checkFunctionalProofForProductionChanges();
 }
 
 if (failures.length > 0) {
@@ -33,6 +46,125 @@ function fail(message) {
 
 function readRepo(relativePath) {
   return readFileSync(path.join(repoRoot, relativePath), 'utf8');
+}
+
+function checkConstitutionContract() {
+  const requiredSections = [
+    'graphContract',
+    'agentWorkContract',
+    'convergenceContract',
+    'evidenceContract',
+  ];
+
+  for (const section of requiredSections) {
+    if (!constitution[section] || typeof constitution[section] !== 'object') {
+      fail(`ops/kloel-ai-constitution.json deve declarar ${section}.`);
+    }
+  }
+
+  const requiredArrayFields = [
+    ['nonNegotiables', 8],
+    ['agentWorkContract.requiredBeforeEditing', 6],
+    ['agentWorkContract.requiredAfterEditing', 4],
+    ['agentWorkContract.forbiddenWork', 20],
+    ['convergenceContract.monotonicRules', 8],
+    ['convergenceContract.forbiddenNewCodeSignals', 20],
+    ['evidenceContract.acceptedProofClasses', 6],
+    ['evidenceContract.rejectedProofClasses', 8],
+  ];
+
+  for (const [fieldPath, minLength] of requiredArrayFields) {
+    const value = getContractField(fieldPath);
+    if (!Array.isArray(value) || value.length < minLength || value.some((item) => !item)) {
+      fail(
+        `ops/kloel-ai-constitution.json deve manter ${fieldPath} com pelo menos ${minLength} itens.`,
+      );
+    }
+  }
+
+  if (!String(constitution.mission || '').includes('verifiable architecture')) {
+    fail('A missao constitucional deve preservar arquitetura verificavel como objetivo explicito.');
+  }
+}
+
+function getContractField(fieldPath) {
+  return fieldPath.split('.').reduce((value, key) => value?.[key], constitution);
+}
+
+function checkSelfIntegrity() {
+  const source = readRepo('scripts/ops/check-ai-constitution.mjs');
+  const requiredSourceSnippets = [
+    'resolveDiffRange',
+    'collectConstitutionChangedFiles',
+    'checkFunctionalProofForProductionChanges',
+    'checkGateWiring',
+    'checkConstitutionContract',
+    'destructive git restore command',
+    'hook bypass command',
+    'unsafe cast bridge',
+    'fake/mock implementation marker',
+    'swallowed promise rejection',
+    'mudou sem teste/smoke/prova operacional',
+  ];
+
+  for (const snippet of requiredSourceSnippets) {
+    if (!source.includes(snippet)) {
+      fail(`check-ai-constitution deve preservar self-integrity snippet: ${snippet}.`);
+    }
+  }
+}
+
+function checkGateWiring() {
+  const packageJson = readJsonFile('package.json', null);
+  const scripts = packageJson?.scripts || {};
+
+  if (scripts['check:ai-constitution'] !== 'node scripts/ops/check-ai-constitution.mjs') {
+    fail(
+      'package.json deve manter check:ai-constitution apontando para scripts/ops/check-ai-constitution.mjs.',
+    );
+  }
+  if (!String(scripts['guard:new-code'] || '').includes('npm run check:ai-constitution')) {
+    fail(
+      'guard:new-code deve executar check:ai-constitution antes dos demais gates de codigo novo.',
+    );
+  }
+  if (!String(scripts['check:all'] || '').includes('check-all-gates.mjs')) {
+    fail('check:all deve continuar delegando para scripts/ops/check-all-gates.mjs.');
+  }
+
+  const allGates = readRepo('scripts/ops/check-all-gates.mjs');
+  if (!allGates.includes("label: 'governance-boundary'")) {
+    fail('check-all-gates deve manter governance-boundary como gate do conjunto completo.');
+  }
+  if (!allGates.includes("label: 'ai-constitution'")) {
+    fail('check-all-gates deve manter ai-constitution como gate do conjunto completo.');
+  }
+
+  const ciWorkflow = '.github/workflows/ci-cd.yml';
+  if (
+    existsSync(path.join(repoRoot, ciWorkflow)) &&
+    !readRepo(ciWorkflow).includes('npm run check:all')
+  ) {
+    fail(
+      `${ciWorkflow} deve executar npm run check:all para tornar a constituicao bloqueante no GitHub.`,
+    );
+  }
+
+  const prePush = '.husky/pre-push';
+  if (
+    existsSync(path.join(repoRoot, prePush)) &&
+    !readRepo(prePush).includes('npm run prepush:scoped')
+  ) {
+    fail(`${prePush} deve continuar chamando npm run prepush:scoped.`);
+  }
+
+  const scopedPrePush = 'scripts/ops/run-scoped-pre-push.mjs';
+  if (
+    existsSync(path.join(repoRoot, scopedPrePush)) &&
+    !readRepo(scopedPrePush).includes('npm run guard:new-code')
+  ) {
+    fail(`${scopedPrePush} deve continuar executando guard:new-code.`);
+  }
 }
 
 function checkGraphContract() {
@@ -147,7 +279,9 @@ function countMarkdown(dir) {
 }
 
 function checkChangedFiles() {
-  const changed = collectChangedFiles().filter((file) => existsSync(path.join(repoRoot, file)));
+  const changed = collectConstitutionChangedFiles().filter((file) =>
+    existsSync(path.join(repoRoot, file)),
+  );
   const forbiddenPatterns = [
     { pattern: /\beslint-disable\b/, label: 'eslint-disable' },
     { pattern: /@ts-ignore|@ts-nocheck|@ts-expect-error/, label: 'TypeScript suppression' },
@@ -169,24 +303,56 @@ function checkChangedFiles() {
     { pattern: /\bgit\s+(?:commit|push)\b[^\n]*--no-verify\b/, label: 'hook bypass command' },
     { pattern: /\b(?:it|test|describe)\.only\b/, label: 'focused test committed' },
     { pattern: /\bas\s+any\b|:\s*any\b/, label: 'unsafe any type relaxation' },
+    { pattern: /\bunknown\s+as\b|\bas\s+unknown\s+as\b/, label: 'unsafe cast bridge' },
+    { pattern: /\!\./, label: 'unsafe existence assertion' },
     { pattern: /\bTODO\b|\bFIXME\b|\bHACK\b|\bXXX\b/i, label: 'new unresolved debt marker' },
+    { pattern: /\b(?:console\.log|console\.debug|debugger)\b/, label: 'debug artifact' },
+    {
+      pattern: /\b(?:Math\.random|faker\.|chance\.|loremIpsum)\b/,
+      label: 'synthetic runtime data',
+    },
+    { pattern: /\b(?:localStorage|sessionStorage)\b/, label: 'browser storage as source of truth' },
+    {
+      pattern: /\b(?:sampleData|demoData|placeholderData|dummyData)\b/i,
+      label: 'synthetic data fixture',
+    },
+    {
+      pattern: /\b(?:bypass|skipValidation|ignoreErrors|allowUnsafe|unsafeMode)\b/i,
+      label: 'bypass-oriented flag',
+    },
+    {
+      pattern: /\b(?:continueOnError|continue-on-error)\s*[:=]\s*(?:true|'true'|"true")\b/i,
+      label: 'error gate converted to advisory mode',
+    },
+    { pattern: /\bprocess\.exit\(0\)/, label: 'forced successful process exit' },
     {
       pattern: /\bmock(?:ed)?\b|\bfake\b|\bstub\b/i,
       label: 'fake/mock implementation marker',
       productionOnly: true,
     },
     {
-      pattern: /return\s+\{\s*ok\s*:\s*true\s*\}/,
+      pattern: /return\s+\{[^}\n]*(?:ok|success)\s*:\s*true[^}\n]*\}/,
       label: 'suspicious unconditional success return',
     },
     { pattern: /catch\s*\([^)]*\)\s*\{\s*\}/, label: 'empty catch block' },
+    { pattern: /catch\s*\{\s*\}/, label: 'empty catch block' },
     {
       pattern: /catch\s*\([^)]*\)\s*\{\s*(?:return|continue|;)\s*;?\s*\}/,
       label: 'swallowed exception',
     },
+    {
+      pattern: /catch\s*\{\s*(?:return|continue|;)\s*;?\s*\}/,
+      label: 'swallowed exception',
+    },
+    {
+      pattern:
+        /\.catch\s*\(\s*(?:\([^)]*\)|[A-Za-z_$][\w$]*)\s*=>\s*(?:\{\s*\}|undefined|null|true|false|Promise\.resolve\([^)]*\))\s*\)/,
+      label: 'swallowed promise rejection',
+    },
   ];
 
   for (const file of changed) {
+    if (CONSTITUTION_AUTHORITY_FILES.has(file)) continue;
     if (!isTextFile(file)) continue;
     const content = addedTextForFile(file);
     for (const { pattern, label, productionOnly = false } of forbiddenPatterns) {
@@ -199,8 +365,29 @@ function checkChangedFiles() {
 }
 
 function addedTextForFile(file) {
+  const diffAttempts = [
+    ['diff', '--unified=0', '--', file],
+    ['diff', '--cached', '--unified=0', '--', file],
+  ];
+
+  const diffRange = resolveDiffRange();
+  if (diffRange) {
+    diffAttempts.push(['diff', '--unified=0', diffRange, '--', file]);
+  }
+
+  const added = diffAttempts
+    .map((args) => addedTextFromDiff(args))
+    .filter(Boolean)
+    .join('\n');
+  if (added.trim()) return added;
+
+  if (isTracked(file)) return '';
+  return readRepo(file);
+}
+
+function addedTextFromDiff(args) {
   try {
-    const diff = execFileSync('git', ['diff', '--unified=0', '--', file], {
+    const diff = execFileSync('git', args, {
       cwd: repoRoot,
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'ignore'],
@@ -210,13 +397,10 @@ function addedTextForFile(file) {
       .filter((line) => line.startsWith('+') && !line.startsWith('+++'))
       .map((line) => line.slice(1))
       .join('\n');
-    if (added.trim()) return added;
+    return added;
   } catch {
-    // Fall back below for untracked files or unusual git states.
+    return '';
   }
-
-  if (isTracked(file)) return '';
-  return readRepo(file);
 }
 
 function isTracked(file) {
@@ -233,7 +417,9 @@ function isTracked(file) {
 
 function isTextFile(file) {
   if (statSync(path.join(repoRoot, file)).size > 2 * 1024 * 1024) return false;
-  return /\.(?:js|mjs|cjs|ts|tsx|jsx|json|md|yml|yaml|sh|css|scss|html|txt)$/.test(file);
+  return /\.(?:js|mjs|cjs|ts|tsx|jsx|json|md|yml|yaml|sh|css|scss|html|txt|prisma|sql|toml|conf|template)$/.test(
+    file,
+  );
 }
 
 function isTestFile(file) {
@@ -244,7 +430,7 @@ function isTestFile(file) {
 }
 
 function checkForbiddenDeletions() {
-  const deleted = collectNameStatus()
+  const deleted = collectConstitutionNameStatus()
     .filter((entry) => entry.status.startsWith('D'))
     .flatMap((entry) => entry.paths);
 
@@ -262,4 +448,111 @@ function checkForbiddenDeletions() {
       `${file} foi deletado; delecao de teste/governance/docs exige prova humana explicita fora do fluxo automatico.`,
     );
   }
+
+  const productionDeleted = deleted.filter((file) => isProductionSourceFile(file));
+  if (
+    productionDeleted.length > 0 &&
+    !hasFunctionalProofChange(collectConstitutionChangedFiles())
+  ) {
+    for (const file of productionDeleted) {
+      fail(
+        `${file} foi deletado sem prova funcional alterada; delecao de codigo de producao nao pode esconder falha.`,
+      );
+    }
+  }
+}
+
+function checkFunctionalProofForProductionChanges() {
+  const changed = collectConstitutionChangedFiles();
+  const productionChanged = changed.filter(
+    (file) =>
+      existsSync(path.join(repoRoot, file)) &&
+      isProductionSourceFile(file) &&
+      !CONSTITUTION_AUTHORITY_FILES.has(file),
+  );
+
+  if (productionChanged.length === 0 || hasFunctionalProofChange(changed)) {
+    return;
+  }
+
+  for (const file of productionChanged) {
+    fail(`${file} mudou sem teste/smoke/prova operacional no mesmo changeset.`);
+  }
+}
+
+function collectConstitutionChangedFiles() {
+  const files = new Set(collectChangedFiles());
+  for (const file of collectStatusFiles()) {
+    files.add(file);
+  }
+  return [...files].filter(Boolean);
+}
+
+function collectConstitutionNameStatus() {
+  const entries = collectNameStatus();
+  for (const entry of collectStatusNameEntries()) {
+    entries.push(entry);
+  }
+  return entries;
+}
+
+function collectStatusFiles() {
+  return collectStatusNameEntries().flatMap((entry) => entry.paths);
+}
+
+function collectStatusNameEntries() {
+  let output = '';
+  try {
+    output = execFileSync('git', ['status', '--short'], {
+      cwd: repoRoot,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    });
+  } catch {
+    return [];
+  }
+
+  return output
+    .split('\n')
+    .filter(Boolean)
+    .map((line) => {
+      const status = line.slice(0, 2).trim() || line.slice(0, 2);
+      const pathText = line.slice(3);
+      const renamedPath = pathText.includes(' -> ') ? pathText.split(' -> ').at(-1) : pathText;
+      return {
+        status,
+        paths: renamedPath ? [renamedPath] : [],
+      };
+    })
+    .filter((entry) => entry.paths.length > 0);
+}
+
+function isProductionSourceFile(file) {
+  if (isTestFile(file)) return false;
+  if (file.startsWith('scripts/ops/')) return false;
+  if (file.startsWith('ops/')) return false;
+  if (file.startsWith('.github/')) return false;
+  if (file.startsWith('docs/')) return false;
+  if (file.startsWith('e2e/')) return false;
+
+  return (
+    /^backend\/src\/.*\.[cm]?tsx?$/.test(file) ||
+    /^backend\/prisma\/.*\.(?:prisma|sql)$/.test(file) ||
+    /^frontend\/src\/.*\.[cm]?tsx?$/.test(file) ||
+    /^prisma\/.*\.(?:prisma|sql)$/.test(file) ||
+    /^worker\/src\/.*\.[cm]?tsx?$/.test(file) ||
+    /^scripts\/(?!ops\/|pulse\/parser-tests\/).*\.mjs$/.test(file)
+  );
+}
+
+function hasFunctionalProofChange(changed) {
+  return changed.some(
+    (file) =>
+      isTestFile(file) ||
+      file.startsWith('e2e/') ||
+      file.startsWith('docs/adr/') ||
+      file.startsWith('docs/runbooks/') ||
+      file.startsWith('scripts/smoke/') ||
+      /(?:smoke|proof|certification|readiness|contract|integration)/i.test(file),
+  );
 }

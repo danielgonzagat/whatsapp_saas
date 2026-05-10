@@ -13,6 +13,8 @@ const REPO_ROOT = path.resolve(here, '..', '..');
 
 const { evaluateContent, getLockedFiles, isProtectedPath, isSelfImmutable, SOURCE_FILE_RE } =
   await import('./lib/gate-rules.mjs');
+const { loadApprovalEntries, matchesApproval, readJsonFile } =
+  await import('../ops/lib/scan-utils.mjs');
 
 function git(args) {
   try {
@@ -28,6 +30,13 @@ function git(args) {
 
 const stagedRaw = git(['diff', '--cached', '--name-status', '--diff-filter=AM']);
 const lockedFiles = getLockedFiles(REPO_ROOT);
+const protectedManifest = readJsonFile('ops/protected-governance-files.json', null);
+const governanceApprovals =
+  protectedManifest?.approvalFile &&
+  Array.isArray(protectedManifest.protectedExact) &&
+  Array.isArray(protectedManifest.protectedPrefixes)
+    ? loadApprovalEntries(protectedManifest.approvalFile, protectedManifest.approvalFile)
+    : [];
 
 const violations = [];
 
@@ -37,9 +46,13 @@ for (const line of stagedRaw.split('\n').filter(Boolean)) {
 
   // Bloqueia commit que toque arquivos protegidos (sem authorization-marker)
   if (isProtectedPath(relPath)) {
-    violations.push(
-      '[protected] ' + relPath + ' — arquivo protegido por CLAUDE.md, somente Daniel pode editar.',
-    );
+    if (!hasGovernanceApproval(relPath)) {
+      violations.push(
+        '[protected] ' +
+          relPath +
+          ' — arquivo protegido por CLAUDE.md, somente Daniel pode editar.',
+      );
+    }
     continue;
   }
   // SELF_IMMUTABLE M is permitted at pre-commit because Layer 1 (Pre-Tool
@@ -88,3 +101,7 @@ if (violations.length > 0) {
 }
 
 process.exit(0);
+
+function hasGovernanceApproval(relPath) {
+  return matchesApproval(governanceApprovals, relPath, 'governanceChange');
+}
