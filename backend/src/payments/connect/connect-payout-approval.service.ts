@@ -385,12 +385,14 @@ export class ConnectPayoutApprovalService {
     const [items, total] = await this.prisma.$transaction(
       [
         this.prisma.approvalRequest.findMany({
-          where,
+          where: { ...where, workspaceId: where.workspaceId },
           orderBy: { createdAt: 'desc' },
           skip,
           take,
         }),
-        this.prisma.approvalRequest.count({ where }),
+        this.prisma.approvalRequest.count({
+          where: { ...where, workspaceId: where.workspaceId },
+        }),
       ],
       { isolationLevel: 'ReadCommitted' },
     );
