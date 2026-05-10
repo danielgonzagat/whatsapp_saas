@@ -369,7 +369,7 @@ test.describe('Marketing WhatsApp flow', () => {
     await page.getByLabel('Produto Teste').check();
     await page.getByRole('button', { name: 'Salvar e avancar' }).click();
     await expect(page.getByText('Passo 3 de 4')).toBeVisible();
-    await expect(page.getByText('Arsenal do canal', { exact: true })).toBeVisible();
+    await expect(page.getByLabel('Nome do material')).toBeVisible();
 
     await page.getByRole('button', { name: 'Proximo' }).click();
     await expect(page.getByText('Passo 4 de 4')).toBeVisible();
