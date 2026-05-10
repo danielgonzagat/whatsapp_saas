@@ -55,11 +55,11 @@ export const FORBIDDEN_TOKENS = [
   { id: 'codacy-' + 'ignore', label: _CI, pattern: new RegExp(_CI + '\\b') },
   { id: 'no' + 'sonar', label: _NS, pattern: new RegExp('\\b' + _NS + '\\b') },
   { id: 'no' + 'qa', label: _NQ, pattern: new RegExp('\\b' + _NQ + '\\b') },
-  // Separator-agnostic + case-insensitive: detects PULSE_OK, PULSE:OK, PULSE-OK, PULSE.OK, PULSE/OK, PULSEOK, pulse_ok, etc.
-  { id: 'pulse-' + 'ok', label: 'PULSE*OK', pattern: new RegExp('\\b[Pp][Uu][Ll][Ss][Ee][^A-Za-z0-9]?[Oo][Kk]\\b') },
-  { id: 'pulse-' + 'visual-ok', label: 'PULSE*VISUAL*OK', pattern: new RegExp('\\b[Pp][Uu][Ll][Ss][Ee][^A-Za-z0-9]?[Vv][Ii][Ss][Uu][Aa][Ll][^A-Za-z0-9]?[Oo][Kk]\\b') },
-  { id: 'pulse-' + 'allow', label: 'PULSE*ALLOW', pattern: new RegExp('\\b[Pp][Uu][Ll][Ss][Ee][^A-Za-z0-9]?[Aa][Ll][Ll][Oo][Ww]\\b') },
-  { id: 'visual-' + 'bypass', label: 'VISUAL*BYPASS', pattern: new RegExp('\\b[Vv][Ii][Ss][Uu][Aa][Ll][^A-Za-z0-9]?[Bb][Yy][Pp][Aa][Ss][Ss]\\b') },
+  // GENERALIZED anti-fraud: banishes ANY suffix family bypass marker after PULSE separator.
+  // Catches OK, SAFE, TODO, ALLOW, IGNORE, WAIVE, SKIP, NOTE, GUARD, PASS, REVIEW, FIXME, HACK, XXX, BYPASS, EXCEPT, EXCLUDE, VISUAL+OK
+  // Case-insensitive, separator-agnostic. Engineered to make new PULSE_<X> bypass markers IMPOSSIBLE.
+  { id: 'pulse-' + 'family', label: 'PULSE_<bypass>', pattern: new RegExp('\\b[Pp][Uu][Ll][Ss][Ee][^A-Za-z0-9]+(?:[Oo][Kk]|[Ss][Aa][Ff][Ee]|[Tt][Oo][Dd][Oo]|[Aa][Ll][Ll][Oo][Ww]|[Ii][Gg][Nn][Oo][Rr][Ee]|[Ww][Aa][Ii][Vv][Ee]|[Ss][Kk][Ii][Pp]|[Nn][Oo][Tt][Ee]|[Gg][Uu][Aa][Rr][Dd]|[Pp][Aa][Ss][Ss]|[Rr][Ee][Vv][Ii][Ee][Ww]|[Ff][Ii][Xx][Mm][Ee]|[Hh][Aa][Cc][Kk]|[Xx][Xx][Xx]|[Bb][Yy][Pp][Aa][Ss][Ss]|[Ee][Xx][Cc][Ee][Pp][Tt]|[Ee][Xx][Cc][Ll][Uu][Dd][Ee]|[Vv][Ii][Ss][Uu][Aa][Ll][^A-Za-z0-9]+[Oo][Kk])\\b') },
+  { id: 'visual-' + 'bypass', label: 'VISUAL_BYPASS', pattern: new RegExp('\\b[Vv][Ii][Ss][Uu][Aa][Ll][^A-Za-z0-9]?[Bb][Yy][Pp][Aa][Ss][Ss]\\b') },
 ];
 
 export const ANY_TYPE_PATTERN = new RegExp(
