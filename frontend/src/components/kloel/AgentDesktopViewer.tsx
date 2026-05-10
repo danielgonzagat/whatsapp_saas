@@ -54,8 +54,11 @@ const CONNECTION_STATE_LABELS: Record<ConnectionStateKey, string> = {
 
 function resolveConnectionStateKey(status?: WhatsAppConnectionStatus | null): ConnectionStateKey {
   const raw = String(status?.status || '').toLowerCase();
-  const reconnecting = raw.includes('reconnect') || raw.includes('reconnecting');
-  return status?.connected ? 'connected' : reconnecting ? 'reconnecting' : 'disconnected';
+  const candidates: Array<[boolean, ConnectionStateKey]> = [
+    [Boolean(status?.connected), 'connected'],
+    [raw.includes('reconnect') || raw.includes('reconnecting'), 'reconnecting'],
+  ];
+  return candidates.find(([matches]) => matches)?.[1] ?? 'disconnected';
 }
 
 function formatConnectionState(status?: WhatsAppConnectionStatus | null): string {

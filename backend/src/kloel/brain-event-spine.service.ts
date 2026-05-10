@@ -6,22 +6,28 @@ import { PrismaService } from '../prisma/prisma.service';
 import type { BrainEventName, CommercialEventPayload } from './brain-event-taxonomy';
 
 type AutopilotEventIdRow = { id: string } | null;
-type UnsupportedJsonType = 'bigint' | 'function' | 'symbol' | 'undefined';
-
-const UNSUPPORTED_JSON_VALUE_READERS: Record<UnsupportedJsonType, (value: unknown) => string> = {
-  bigint: (value) => String(value),
-  function: (value) => (value as { name?: string }).name || 'function',
-  symbol: (value) => (value as symbol).description ?? 'symbol',
-  undefined: () => 'undefined',
-};
 
 function isJsonRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+function readFunctionName(value: unknown): string {
+  return typeof value === 'function' && value.name ? value.name : 'function';
+}
+
+function readSymbolDescription(value: unknown): string {
+  return typeof value === 'symbol' ? (value.description ?? 'symbol') : 'symbol';
+}
+
 function toUnsupportedJsonValue(value: unknown): string {
-  const reader = UNSUPPORTED_JSON_VALUE_READERS[typeof value as UnsupportedJsonType];
-  return reader ? reader(value) : 'unsupported';
+  const valueType = typeof value;
+  const candidates: Array<[boolean, string]> = [
+    [valueType === 'bigint', String(value)],
+    [valueType === 'function', readFunctionName(value)],
+    [valueType === 'symbol', readSymbolDescription(value)],
+    [valueType === 'undefined', 'undefined'],
+  ];
+  return candidates.find(([matches]) => matches)?.[1] ?? 'unsupported';
 }
 
 function toInputJsonValue(value: unknown): Prisma.InputJsonValue | null {
