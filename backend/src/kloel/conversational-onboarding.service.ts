@@ -9,6 +9,27 @@ import { ConversationalOnboardingToolsService } from './conversational-onboardin
 import { ONBOARDING_TOOLS } from './conversational-onboarding-tools-schema';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 
+const ONBOARDING_SAFE_SETUP_TOOL_NAMES = [
+  'save_business_info',
+  'save_contact_info',
+  'add_product',
+  'set_brand_voice',
+  'set_business_hours',
+  'set_main_goal',
+] as const;
+
+function isFunctionOnboardingTool(
+  tool: OpenAI.ChatCompletionTool,
+): tool is OpenAI.ChatCompletionTool & { type: 'function' } {
+  return tool.type === 'function';
+}
+
+const ONBOARDING_SAFE_SETUP_TOOLS = ONBOARDING_TOOLS.filter(
+  (tool) =>
+    isFunctionOnboardingTool(tool) &&
+    ONBOARDING_SAFE_SETUP_TOOL_NAMES.some((name) => name === tool.function.name),
+);
+
 /**
  * ONBOARDING CONVERSACIONAL COM IA
  *
@@ -132,8 +153,8 @@ export class ConversationalOnboardingService {
     const response = await chatCompletionWithRetry(this.openai, {
       model: resolveBackendOpenAIModel(role),
       messages: messages as OpenAI.ChatCompletionMessageParam[],
-      tools: ONBOARDING_TOOLS,
-      tool_choice: 'auto',
+      tools: ONBOARDING_SAFE_SETUP_TOOLS,
+      tool_choice: ONBOARDING_SAFE_SETUP_TOOLS.length > 0 ? 'auto' : 'none',
       temperature: 0.7,
       max_tokens: 1000,
     });
