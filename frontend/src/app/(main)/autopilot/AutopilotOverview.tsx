@@ -5,6 +5,12 @@ import { colors } from '@/lib/design-tokens';
 import { CenterStage, Section, StageHeadline } from '@/components/kloel';
 import type { MissionCardData } from '@/components/kloel';
 import AutopilotPlanInspector from '@/components/kloel/autopilot/AutopilotPlanInspector';
+import type {
+  AutopilotStatsLike,
+  AutopilotImpactLike,
+  AutopilotPipelineLike,
+  SystemHealthLike,
+} from '@/components/kloel/autopilot/AutopilotPlanInspector';
 import {
   AlertCircle,
   Calendar,
@@ -19,28 +25,6 @@ import {
 interface OverviewStatus {
   enabled: boolean;
   billingSuspended?: boolean;
-}
-
-interface OverviewStats {
-  actionsByType?: Record<string, number>;
-  errorsLast7d?: number;
-  skippedTotal?: number;
-  scheduledCount?: number;
-  [key: string]: unknown;
-}
-
-interface OverviewImpact {
-  avgReplyMinutes?: number | null;
-  [key: string]: unknown;
-}
-
-interface OverviewPipeline {
-  [key: string]: unknown;
-}
-
-interface OverviewSystemHealth {
-  status: string;
-  details?: Record<string, { status?: string; error?: string; missing?: string[] }>;
 }
 
 function StatCard({
@@ -104,10 +88,10 @@ function StatCard({
 
 interface AutopilotOverviewProps {
   status: OverviewStatus | null;
-  stats: OverviewStats | null;
-  impact: OverviewImpact | null;
-  pipeline: OverviewPipeline | null;
-  systemHealth: OverviewSystemHealth | null;
+  stats: AutopilotStatsLike | null;
+  impact: AutopilotImpactLike | null;
+  pipeline: AutopilotPipelineLike | null;
+  systemHealth: SystemHealthLike | null;
   missionCards: MissionCardData[];
   isLoading: boolean;
   error: string | null;
@@ -281,7 +265,9 @@ export function AutopilotOverview({
             <StatCard
               icon={CheckCircle2}
               label={kloelT(`Sucesso`)}
-              value={stats?.actionsByType?.REPLY || stats?.actionsByType?.SEND_MESSAGE || 0}
+              value={
+                (stats?.actionsByType && (stats.actionsByType.REPLY || stats.actionsByType.SEND_MESSAGE)) || 0
+              }
               color={colors.brand.green}
             />
             <StatCard

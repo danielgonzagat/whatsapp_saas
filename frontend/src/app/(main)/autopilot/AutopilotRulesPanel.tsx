@@ -4,6 +4,10 @@ import { kloelT } from '@/lib/i18n/t';
 import { colors } from '@/lib/design-tokens';
 import { CenterStage, Section } from '@/components/kloel';
 import AutopilotDecisionLog from '@/components/kloel/autopilot/AutopilotDecisionLog';
+import type {
+  AutopilotActionLike,
+  AutopilotImpactLike,
+} from '@/components/kloel/autopilot/AutopilotDecisionLog';
 import {
   Activity,
   BarChart3,
@@ -12,22 +16,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 
-interface RulesImpact {
-  [key: string]: unknown;
-}
-
-interface RulesAction {
-  id?: string;
-  createdAt: string;
-  contactId?: string;
-  contact?: string;
-  intent?: string;
-  action?: string;
-  status?: string;
-  reason?: string;
-}
-
-interface RulesMoneyReport {
+interface MoneyReportLike {
   totalRevenue?: number;
   totalCosts?: number;
   roi?: number;
@@ -35,7 +24,6 @@ interface RulesMoneyReport {
   conversions?: number;
   avgTicket?: number;
   revenueByDay?: Record<string, number>;
-  [key: string]: unknown;
 }
 
 function formatCurrency(value?: number) {
@@ -107,13 +95,13 @@ function StatCard({
 }
 
 interface AutopilotRulesPanelProps {
-  actions: RulesAction[];
-  impact: RulesImpact | null;
+  actions: AutopilotActionLike[];
+  impact: AutopilotImpactLike | null;
   statusFilter: string;
   setStatusFilter: (v: string) => void;
   isLoading: boolean;
   isEnabled: boolean;
-  moneyReport: RulesMoneyReport | null;
+  moneyReport: MoneyReportLike | null;
   onRefresh: () => void;
   onExport: () => void;
 }

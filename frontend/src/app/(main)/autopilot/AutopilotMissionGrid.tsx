@@ -4,58 +4,22 @@ import { kloelT } from '@/lib/i18n/t';
 import { colors } from '@/lib/design-tokens';
 import { Button, CenterStage, Section } from '@/components/kloel';
 import AutopilotSafetyBrakes from '@/components/kloel/autopilot/AutopilotSafetyBrakes';
+import type {
+  AutopilotConfigLike,
+  AutopilotSmokeResultLike,
+  QueueStatsLike,
+  RuntimeConfigLike,
+} from '@/components/kloel/autopilot/AutopilotSafetyBrakes';
 import {
   Bot,
   MessageSquare,
   Settings2,
 } from 'lucide-react';
 
-interface MissionQueueStats {
-  waiting?: number;
-  active?: number;
-  delayed?: number;
-  completed?: number;
-  failed?: number;
-  paused?: number;
-  [key: string]: unknown;
-}
-
-interface MissionRuntimeConfig {
-  [key: string]: unknown;
-}
-
-interface MissionSmokeResult {
-  smokeTestId: string;
-  mode: 'dry-run' | 'live';
-  phone: string;
-  message: string;
-  result?: {
-    status?: string;
-    stage?: string;
-    error?: string;
-    previewText?: string;
-    mode?: 'dry-run' | 'live';
-    reason?: string;
-  };
-  queue?: {
-    waiting?: number;
-    active?: number;
-    delayed?: number;
-    failed?: number;
-  };
-}
-
-interface MissionConfig {
-  conversionFlowId?: string | null;
-  currencyDefault?: string;
-  recoveryTemplateName?: string | null;
-  [key: string]: unknown;
-}
-
 interface AutopilotMissionGridProps {
-  queueStats: MissionQueueStats | null;
-  runtimeConfig: MissionRuntimeConfig | null;
-  smokeResult: MissionSmokeResult | null;
+  queueStats: QueueStatsLike | null;
+  runtimeConfig: RuntimeConfigLike | null;
+  smokeResult: AutopilotSmokeResultLike | null;
   testPhone: string;
   testMessage: string;
   testLiveSend: boolean;
@@ -64,11 +28,11 @@ interface AutopilotMissionGridProps {
   onTestMessageChange: (v: string) => void;
   onTestLiveSendChange: (v: boolean) => void;
   onSmokeTest: () => void;
-  config: MissionConfig | null;
+  config: AutopilotConfigLike | null;
   isEditingConfig: boolean;
-  configDraft: MissionConfig;
+  configDraft: AutopilotConfigLike;
   isSavingConfig: boolean;
-  onConfigDraftChange: (updater: (prev: MissionConfig) => MissionConfig) => void;
+  onConfigDraftChange: (updater: (prev: AutopilotConfigLike) => AutopilotConfigLike) => void;
   onToggleEditingConfig: () => void;
   onSaveConfig: () => void;
   onNavigate: (href: string) => void;

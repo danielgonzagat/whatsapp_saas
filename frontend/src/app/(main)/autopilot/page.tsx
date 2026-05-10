@@ -38,7 +38,6 @@ import {
   BarChart3,
   MessageSquare,
   RefreshCw,
-  TrendingUp,
   Users,
   Zap,
 } from 'lucide-react';
@@ -221,82 +220,6 @@ interface AutopilotSmokeTestResult {
     delayed?: number;
     failed?: number;
   };
-}
-
-function StatCard({
-  icon: Icon,
-  label,
-  value,
-  subValue,
-  trend,
-  color = colors.brand.green,
-}: {
-  icon: React.ElementType;
-  label: string;
-  value: string | number;
-  subValue?: string;
-  trend?: 'up' | 'down' | 'neutral';
-  color?: string;
-}) {
-  return (
-    <div
-      className="p-5 rounded-xl border transition-all hover:scale-[1.02]"
-      style={{
-        backgroundColor: colors.background.surface1,
-        borderColor: colors.stroke,
-      }}
-    >
-      <div className="flex items-center gap-3 mb-3">
-        <div className="p-2 rounded-lg" style={{ backgroundColor: `${color}20` }}>
-          <Icon size={20} style={{ color }} />
-        </div>
-        <span className="text-sm font-medium" style={{ color: colors.text.secondary }}>
-          {label}
-        </span>
-      </div>
-      <div className="flex items-baseline gap-2">
-        <span className="text-2xl font-bold" style={{ color: colors.text.primary }}>
-          {value}
-        </span>
-        {subValue && (
-          <span className="text-sm" style={{ color: colors.text.muted }}>
-            {subValue}
-          </span>
-        )}
-        {trend && (
-          <TrendingUp
-            size={16}
-            className={
-              trend === 'up'
-                ? 'text-green-500'
-                : trend === 'down'
-                  ? 'text-red-500'
-                  : 'text-gray-500'
-            }
-            style={{ transform: trend === 'down' ? 'rotate(180deg)' : undefined }}
-            aria-hidden="true"
-          />
-        )}
-      </div>
-    </div>
-  );
-}
-
-
-function formatDateTime(value?: string | null) {
-  if (!value) {
-    return '—';
-  }
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) {
-    return '—';
-  }
-  return parsed.toLocaleString('pt-BR', {
-    day: '2-digit',
-    month: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
 }
 
 /** Autopilot page. */
@@ -606,16 +529,6 @@ export default function AutopilotPage() {
     } finally {
       setIsAsking(false);
     }
-  };
-
-
-  const formatCurrency = (value?: number) => {
-    if (value == null) {
-      return 'R$ 0';
-    }
-    return (
-      'R$ ' + value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-    );
   };
 
 

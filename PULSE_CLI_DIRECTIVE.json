@@ -1,11 +1,11 @@
 {
-  "generatedAt": "2026-05-10T16:23:56.623Z",
+  "generatedAt": "2026-05-10T16:43:36.380Z",
   "profile": null,
   "certificationScope": null,
   "pulseMachineReadiness": {
     "scope": "pulse_machine_not_kloel_product",
     "status": "NOT_READY",
-    "generatedAt": "2026-05-10T16:19:46.000Z",
+    "generatedAt": "2026-05-10T16:39:55.217Z",
     "productCertificationStatus": "NOT_CERTIFIED",
     "productCertificationExcludedFromVerdict": true,
     "canRunBoundedAutonomousCycle": false,
@@ -18,8 +18,8 @@
         "evidence": {
           "nextExecutableUnitLimit": 8,
           "boundedExecutableUnits": 8,
-          "totalAutonomousUnits": 66,
-          "totalConvergenceUnits": 149
+          "totalAutonomousUnits": 68,
+          "totalConvergenceUnits": 153
         }
       },
       {
@@ -34,9 +34,9 @@
       {
         "id": "execution_matrix",
         "status": "pass",
-        "reason": "Execution matrix classified 5218 path(s) with zero unknown and zero non-terminal paths.",
+        "reason": "Execution matrix classified 5247 path(s) with zero unknown and zero non-terminal paths.",
         "evidence": {
-          "totalPaths": 5218,
+          "totalPaths": 5247,
           "unknownPaths": 0,
           "criticalUnobservedPaths": 0,
           "impreciseBreakpoints": 0,
@@ -46,12 +46,12 @@
       {
         "id": "critical_path_terminal",
         "status": "fail",
-        "reason": "3995 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-insights, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
+        "reason": "4021 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-insights, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
         "evidence": {
           "criticalUnobservedPaths": 0,
           "observedPass": 0,
-          "observedFail": 217,
-          "terminalWithoutObservedEvidence": 3995,
+          "observedFail": 218,
+          "terminalWithoutObservedEvidence": 4021,
           "firstTerminalPathId": "matrix:capability:capability:ad-insights",
           "terminalArtifact": "PULSE_EXECUTION_MATRIX.json",
           "coverageArtifact": "PULSE_PATH_COVERAGE.json",
@@ -64,7 +64,7 @@
         "reason": "Every observed failure in the execution matrix has a breakpoint.",
         "evidence": {
           "impreciseBreakpoints": 0,
-          "observedFail": 217
+          "observedFail": 218
         }
       },
       {
@@ -110,7 +110,7 @@
     ],
     "blockers": [
       "artifact_consistency: Cross-artifact consistency has not produced a passing check.",
-      "critical_path_terminal: 3995 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-insights, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
+      "critical_path_terminal: 4021 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-insights, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
       "external_reality: 2 missing, 0 stale, and 0 invalid external adapter(s) remain.",
       "self_trust: PULSE still reconstructs 1 phantom capability(ies) and 0 phantom flow(s); self-trust stays degraded until illusion collapses into real chains."
     ]
@@ -184,20 +184,20 @@
     {
       "gate": "noOverclaimPass",
       "status": "fail",
-      "reason": "overclaim:completionProofReadiness — certification cannot complete while .pulse/current/PULSE_PROOF_READINESS.json has non-observed production proof (status=executable_unproved, canAdvance=false, planned=1966, inferred=0, not_available=0, nonObserved=1966, executableUnproved=1966)."
+      "reason": "overclaim:completionProofReadiness — certification cannot complete while .pulse/current/PULSE_PROOF_READINESS.json has non-observed production proof (status=executable_unproved, canAdvance=false, planned=1976, inferred=0, not_available=0, nonObserved=1976, executableUnproved=1976)."
     },
     {
       "gate": "criticalPathObservedPass",
       "status": "fail",
-      "reason": "3995 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-insights, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json."
+      "reason": "4021 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-insights, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json."
     }
   ],
   "pathProofSurface": {
-    "summary": "1965 executable unproved path proof task(s) remain; next execution mode is ai_safe.",
+    "summary": "1966 executable unproved path proof task(s) remain; next execution mode is ai_safe.",
     "counts": {
-      "plannedTasks": 1965,
-      "unprovedTasks": 1965,
-      "executableUnprovedTasks": 1965,
+      "plannedTasks": 1966,
+      "unprovedTasks": 1966,
+      "executableUnprovedTasks": 1966,
       "governedValidationTasks": 0,
       "notExecutableTasks": 0,
       "readinessBlockers": 4,
@@ -323,7 +323,7 @@
       }
     ],
     "evidenceFreshness": {
-      "generatedAt": "2026-05-10T16:23:49.670Z",
+      "generatedAt": "2026-05-10T16:43:28.517Z",
       "ageMinutes": 0,
       "stale": false,
       "source": "path_proof_plan",
@@ -342,7 +342,7 @@
       "canDeclareProductCertified": false,
       "blockers": [
         "artifact_consistency: Cross-artifact consistency has not produced a passing check.",
-        "critical_path_terminal: 3995 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-insights, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
+        "critical_path_terminal: 4021 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-insights, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
         "external_reality: 2 missing, 0 stale, and 0 invalid external adapter(s) remain.",
         "self_trust: PULSE still reconstructs 1 phantom capability(ies) and 0 phantom flow(s); self-trust stays degraded until illusion collapses into real chains."
       ]
@@ -355,16 +355,16 @@
     "parserSignalMustPassValidationBeforeBlocking": true,
     "weakSignalCanBlock": false,
     "eventSurface": {
-      "totalBreaks": 332,
-      "uniqueEvents": 285,
+      "totalBreaks": 309,
+      "uniqueEvents": 262,
       "truthModeCounts": {
         "observed": 0,
-        "confirmed_static": 332,
+        "confirmed_static": 309,
         "inferred": 0,
         "weak_signal": 0
       },
       "actionabilityCounts": {
-        "fix_now": 36,
+        "fix_now": 13,
         "needs_probe": 0,
         "needs_context": 296,
         "ignore": 0
@@ -879,12 +879,12 @@
   ],
   "findingTruthModeCounts": {
     "observed": 0,
-    "confirmed_static": 332,
+    "confirmed_static": 309,
     "inferred": 0,
     "weak_signal": 0
   },
   "findingActionabilityCounts": {
-    "fix_now": 36,
+    "fix_now": 13,
     "needs_probe": 0,
     "needs_context": 296,
     "ignore": 0
@@ -894,7 +894,7 @@
   "zeroPromptProductionGuidanceVerdict": "NAO",
   "zeroPromptProductionGuidanceReason": "NAO: Authority is not automation-eligible: Evidence freshness is not closed. | Pulse self-trust is still failing. | Runtime pass is not green with live evidence.. | 2 missing, 0 stale, and 0 invalid external adapter(s) remain. | 1 governed validation gap(s) remain observation-only or protected-surface work.",
   "productionAutonomyVerdict": "NAO",
-  "productionAutonomyReason": "NAO: Evidence freshness is not closed. | Pulse self-trust is still failing. | Runtime pass is not green with live evidence. | Authority mode is advisory-only, not certified-autonomous. | Certification status is NOT_CERTIFIED, not CERTIFIED. | 2 missing, 0 stale, and 0 invalid external adapter(s) remain. | 53 parity gap(s), 1076 HIGH Codacy issue(s), 1 phantom capability(ies), and 0 phantom flow(s) remain. | 1 governed validation gap(s) remain observation-only or protected-surface work. | Observed Codacy files are missing from repo inventory: .agents/skills/marketing-psychology/SKILL.md, scripts/pulse/parsers/facade-detector.ts, scripts/pulse/parsers/runtime-utils.ts. | Codacy still reports 1076 HIGH issue(s). | Phantom capabilities remain: Knowledge Base. | Codacy snapshot is stale (25068 minute(s) old). | Observed external high-impact signals remain active: 3. | Required external adapters are missing: 2. | Proof readiness still has non-observed production proof: status=executable_unproved, canAdvance=false, planned=1966, inferred=0, not_available=0, nonObserved=1966, executableUnproved=1966. | No-hardcoded-reality state still has hardcoded reality authority: 220352 hardcoded reality event(s) across 505 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9.. | NAO: production proof readiness is not fully observed (proofReadiness status=executable_unproved, canAdvance=false, planned=1966, inferred=0, not_available=0, nonObserved=1966, executableUnproved=1966).",
+  "productionAutonomyReason": "NAO: Evidence freshness is not closed. | Pulse self-trust is still failing. | Runtime pass is not green with live evidence. | Authority mode is advisory-only, not certified-autonomous. | Certification status is NOT_CERTIFIED, not CERTIFIED. | 2 missing, 0 stale, and 0 invalid external adapter(s) remain. | 55 parity gap(s), 1076 HIGH Codacy issue(s), 1 phantom capability(ies), and 0 phantom flow(s) remain. | 1 governed validation gap(s) remain observation-only or protected-surface work. | Observed Codacy files are missing from repo inventory: .agents/skills/marketing-psychology/SKILL.md, scripts/pulse/parsers/facade-detector.ts, scripts/pulse/parsers/runtime-utils.ts. | Codacy still reports 1076 HIGH issue(s). | Phantom capabilities remain: Knowledge Base. | Codacy snapshot is stale (25089 minute(s) old). | Observed external high-impact signals remain active: 3. | Required external adapters are missing: 2. | Proof readiness still has non-observed production proof: status=executable_unproved, canAdvance=false, planned=1976, inferred=0, not_available=0, nonObserved=1976, executableUnproved=1976. | No-hardcoded-reality state still has hardcoded reality authority: 220356 hardcoded reality event(s) across 505 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9.. | NAO: production proof readiness is not fully observed (proofReadiness status=executable_unproved, canAdvance=false, planned=1976, inferred=0, not_available=0, nonObserved=1976, executableUnproved=1976).",
   "canWorkNow": false,
   "canContinueUntilReady": false,
   "canWorkUntilProductionReady": false,
@@ -906,21 +906,21 @@
     "canWorkNow": true,
     "canContinueUntilReady": false,
     "canDeclareComplete": false,
-    "automationSafeUnits": 66,
+    "automationSafeUnits": 68,
     "blockers": [],
     "warnings": [
       "2 external adapter(s) are missing; production reality is incomplete but local convergence can still proceed.",
       "PULSE still reconstructs 1 phantom capability(ies) and 0 phantom flow(s); self-trust stays degraded until illusion collapses into real chains.",
-      "NAO: production proof readiness is not fully observed (proofReadiness status=executable_unproved, canAdvance=false, planned=1966, inferred=0, not_available=0, nonObserved=1966, executableUnproved=1966)."
+      "NAO: production proof readiness is not fully observed (proofReadiness status=executable_unproved, canAdvance=false, planned=1976, inferred=0, not_available=0, nonObserved=1976, executableUnproved=1976)."
     ]
   },
   "autonomyProof": {
-    "generatedAt": "2026-05-10T16:19:46.000Z",
+    "generatedAt": "2026-05-10T16:39:55.217Z",
     "freshSessionQuestion": "If a new AI session runs the full Pulse, will it know the next safe executable step?",
     "freshSessionAnswer": "SIM",
     "productionAutonomyQuestion": "Can Pulse prove unsupervised convergence to fully functional and production-safe completion?",
     "productionAutonomyAnswer": "NAO",
-    "productionAutonomyReason": "NAO: Evidence freshness is not closed. | Pulse self-trust is still failing. | Runtime pass is not green with live evidence. | Authority mode is advisory-only, not certified-autonomous. | Certification status is NOT_CERTIFIED, not CERTIFIED. | 2 missing, 0 stale, and 0 invalid external adapter(s) remain. | 53 parity gap(s), 1076 HIGH Codacy issue(s), 1 phantom capability(ies), and 0 phantom flow(s) remain. | 1 governed validation gap(s) remain observation-only or protected-surface work. | Observed Codacy files are missing from repo inventory: .agents/skills/marketing-psychology/SKILL.md, scripts/pulse/parsers/facade-detector.ts, scripts/pulse/parsers/runtime-utils.ts. | Codacy still reports 1076 HIGH issue(s). | Phantom capabilities remain: Knowledge Base. | Codacy snapshot is stale (25068 minute(s) old). | Observed external high-impact signals remain active: 3. | Required external adapters are missing: 2. | Proof readiness still has non-observed production proof: status=executable_unproved, canAdvance=false, planned=1966, inferred=0, not_available=0, nonObserved=1966, executableUnproved=1966. | No-hardcoded-reality state still has hardcoded reality authority: 220352 hardcoded reality event(s) across 505 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9.. | NAO: production proof readiness is not fully observed (proofReadiness status=executable_unproved, canAdvance=false, planned=1966, inferred=0, not_available=0, nonObserved=1966, executableUnproved=1966).",
+    "productionAutonomyReason": "NAO: Evidence freshness is not closed. | Pulse self-trust is still failing. | Runtime pass is not green with live evidence. | Authority mode is advisory-only, not certified-autonomous. | Certification status is NOT_CERTIFIED, not CERTIFIED. | 2 missing, 0 stale, and 0 invalid external adapter(s) remain. | 55 parity gap(s), 1076 HIGH Codacy issue(s), 1 phantom capability(ies), and 0 phantom flow(s) remain. | 1 governed validation gap(s) remain observation-only or protected-surface work. | Observed Codacy files are missing from repo inventory: .agents/skills/marketing-psychology/SKILL.md, scripts/pulse/parsers/facade-detector.ts, scripts/pulse/parsers/runtime-utils.ts. | Codacy still reports 1076 HIGH issue(s). | Phantom capabilities remain: Knowledge Base. | Codacy snapshot is stale (25089 minute(s) old). | Observed external high-impact signals remain active: 3. | Required external adapters are missing: 2. | Proof readiness still has non-observed production proof: status=executable_unproved, canAdvance=false, planned=1976, inferred=0, not_available=0, nonObserved=1976, executableUnproved=1976. | No-hardcoded-reality state still has hardcoded reality authority: 220356 hardcoded reality event(s) across 505 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9.. | NAO: production proof readiness is not fully observed (proofReadiness status=executable_unproved, canAdvance=false, planned=1976, inferred=0, not_available=0, nonObserved=1976, executableUnproved=1976).",
     "zeroPromptProductionGuidanceQuestion": "If a fresh AI session runs the full Pulse and is told to work autonomously, can it keep converging safely until production completion without manual intervention?",
     "zeroPromptProductionGuidanceAnswer": "NAO",
     "zeroPromptProductionGuidanceReason": "NAO: Authority is not automation-eligible: Evidence freshness is not closed. | Pulse self-trust is still failing. | Runtime pass is not green with live evidence.. | 2 missing, 0 stale, and 0 invalid external adapter(s) remain. | 1 governed validation gap(s) remain observation-only or protected-surface work.",
@@ -981,7 +981,7 @@
       {
         "id": "structural_debt_closed",
         "status": "fail",
-        "evidence": "53 parity gap(s), 1076 HIGH Codacy issue(s), 1 phantom capability(ies), 0 phantom flow(s)."
+        "evidence": "55 parity gap(s), 1076 HIGH Codacy issue(s), 1 phantom capability(ies), 0 phantom flow(s)."
       },
       {
         "id": "multi_cycle_convergence",
@@ -1011,16 +1011,16 @@
       "Authority mode is advisory-only, not certified-autonomous.",
       "Certification status is NOT_CERTIFIED, not CERTIFIED.",
       "2 missing, 0 stale, and 0 invalid external adapter(s) remain.",
-      "53 parity gap(s), 1076 HIGH Codacy issue(s), 1 phantom capability(ies), and 0 phantom flow(s) remain.",
+      "55 parity gap(s), 1076 HIGH Codacy issue(s), 1 phantom capability(ies), and 0 phantom flow(s) remain.",
       "1 governed validation gap(s) remain observation-only or protected-surface work.",
       "Observed Codacy files are missing from repo inventory: .agents/skills/marketing-psychology/SKILL.md, scripts/pulse/parsers/facade-detector.ts, scripts/pulse/parsers/runtime-utils.ts.",
       "Codacy still reports 1076 HIGH issue(s).",
       "Phantom capabilities remain: Knowledge Base.",
-      "Codacy snapshot is stale (25068 minute(s) old).",
+      "Codacy snapshot is stale (25089 minute(s) old).",
       "Observed external high-impact signals remain active: 3.",
       "Required external adapters are missing: 2.",
-      "Proof readiness still has non-observed production proof: status=executable_unproved, canAdvance=false, planned=1966, inferred=0, not_available=0, nonObserved=1966, executableUnproved=1966.",
-      "No-hardcoded-reality state still has hardcoded reality authority: 220352 hardcoded reality event(s) across 505 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9.."
+      "Proof readiness still has non-observed production proof: status=executable_unproved, canAdvance=false, planned=1976, inferred=0, not_available=0, nonObserved=1976, executableUnproved=1976.",
+      "No-hardcoded-reality state still has hardcoded reality authority: 220356 hardcoded reality event(s) across 505 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9.."
     ],
     "cycleProof": {
       "requiredCycles": 3,
@@ -1043,7 +1043,7 @@
         "proofBasis": "codacy_snapshot",
         "executed": true,
         "signalCount": 4,
-        "reason": "PULSE_CODACY_STATE.json is stale (25068 minute(s) old)."
+        "reason": "PULSE_CODACY_STATE.json is stale (25089 minute(s) old)."
       },
       {
         "source": "github",
@@ -1152,12 +1152,12 @@
     "proofReadiness": {
       "canAdvance": false,
       "status": "executable_unproved",
-      "plannedEvidence": 1966,
+      "plannedEvidence": 1976,
       "inferredEvidence": 0,
       "notAvailableEvidence": 0,
-      "nonObservedEvidence": 1966,
-      "executableUnproved": 1966,
-      "plannedOrUnexecutedEvidence": 1966,
+      "nonObservedEvidence": 1976,
+      "executableUnproved": 1976,
+      "plannedOrUnexecutedEvidence": 1976,
       "observationOnlyRequired": 0,
       "blockedNotExecutable": 0
     }
@@ -1165,18 +1165,18 @@
   "proofReadiness": {
     "canAdvance": false,
     "status": "executable_unproved",
-    "plannedEvidence": 1966,
+    "plannedEvidence": 1976,
     "inferredEvidence": 0,
     "notAvailableEvidence": 0,
-    "nonObservedEvidence": 1966,
-    "executableUnproved": 1966,
-    "plannedOrUnexecutedEvidence": 1966,
+    "nonObservedEvidence": 1976,
+    "executableUnproved": 1976,
+    "plannedOrUnexecutedEvidence": 1976,
     "observationOnlyRequired": 0,
     "blockedNotExecutable": 0
   },
   "noHardcodedReality": {
     "summary": {
-      "totalEvents": 220352,
+      "totalEvents": 220356,
       "scannedFiles": 505,
       "topFiles": [
         "scripts/pulse/convergence-plan.ts",
@@ -1202,11 +1202,11 @@
       }
     },
     "blocksProduction": true,
-    "reason": "220352 hardcoded reality event(s) across 505 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9."
+    "reason": "220356 hardcoded reality event(s) across 505 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9."
   },
   "noOverclaim": {
     "gateStatus": "fail",
-    "gateReason": "overclaim:completionProofReadiness — certification cannot complete while .pulse/current/PULSE_PROOF_READINESS.json has non-observed production proof (status=executable_unproved, canAdvance=false, planned=1966, inferred=0, not_available=0, nonObserved=1966, executableUnproved=1966).",
+    "gateReason": "overclaim:completionProofReadiness — certification cannot complete while .pulse/current/PULSE_PROOF_READINESS.json has non-observed production proof (status=executable_unproved, canAdvance=false, planned=1976, inferred=0, not_available=0, nonObserved=1976, executableUnproved=1976).",
     "proofReadinessBlocksProduction": true,
     "proofReadinessReason": "proofReadiness canAdvance=false, status=executable_unproved"
   },
@@ -1232,7 +1232,7 @@
     "flowRealnessRatio": 1,
     "projectedProductionReadiness": "yellow"
   },
-  "visionGap": "Distance to projected readiness is driven by 0 product-facing phantom capability(ies), 1 system-wide phantom capability(ies), 0 phantom flow(s), 53 structural parity gap(s), and 1076 HIGH Codacy issue(s).",
+  "visionGap": "Distance to projected readiness is driven by 0 product-facing phantom capability(ies), 1 system-wide phantom capability(ies), 0 phantom flow(s), 55 structural parity gap(s), and 1076 HIGH Codacy issue(s).",
   "currentState": {
     "certificationStatus": "NOT_CERTIFIED",
     "blockingTier": 0,
@@ -1242,7 +1242,7 @@
       "mode": "repo_inventory_with_codacy_spotcheck",
       "confidence": "low",
       "reason": "Observed Codacy files are missing from repo inventory: .agents/skills/marketing-psychology/SKILL.md, scripts/pulse/parsers/facade-detector.ts, scripts/pulse/parsers/runtime-utils.ts.",
-      "inventoryFiles": 3940,
+      "inventoryFiles": 3975,
       "codacyObservedFiles": 60,
       "codacyObservedFilesCovered": 57,
       "missingCodacyFiles": [
@@ -1300,7 +1300,7 @@
         "blocking": false,
         "proofBasis": "codacy_snapshot",
         "syncedAt": "2026-04-23T06:27:53.909Z",
-        "freshnessMinutes": 25068
+        "freshnessMinutes": 25089
       },
       {
         "source": "github",
@@ -1539,7 +1539,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "37 HIGH Codacy issue(s) remain in backend/prisma/migrations/20251209150035_init_baseline/migration.sql.",
-        "observedAt": "2026-05-10T16:15:37.056Z",
+        "observedAt": "2026-05-10T16:36:42.504Z",
         "relatedFiles": [
           "backend/prisma/migrations/20251209150035_init_baseline/migration.sql"
         ],
@@ -1581,7 +1581,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "2 HIGH Codacy issue(s) remain in backend/src/auth/email.service.ts.",
-        "observedAt": "2026-05-10T16:15:37.056Z",
+        "observedAt": "2026-05-10T16:36:42.504Z",
         "relatedFiles": [
           "backend/src/auth/email.service.ts"
         ],
@@ -1691,9 +1691,7 @@
           "affiliate-post-member-areas-id-generate-structure",
           "auth-post-auth-forgot-password",
           "auth-post-auth-reset-password",
-          "autopilot-post-autopilot-ask",
           "autopilot-post-autopilot-test",
-          "autopilot-post-autopilot-toggle",
           "billing-post-billing-checkout",
           "canvas-post-canvas-generate",
           "crm-delete-billing-payment-methods-payment-method-id",
@@ -1753,7 +1751,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "1 HIGH Codacy issue(s) remain in backend/src/autopilot/autopilot.service.ts.",
-        "observedAt": "2026-05-10T16:15:37.056Z",
+        "observedAt": "2026-05-10T16:36:42.504Z",
         "relatedFiles": [
           "backend/src/autopilot/autopilot.service.ts"
         ],
@@ -1780,12 +1778,15 @@
           "capability:autopilot-contact",
           "capability:autopilot-conversion",
           "capability:autopilot-cycle",
+          "capability:autopilot-history",
           "capability:autopilot-impact",
           "capability:autopilot-insights",
           "capability:autopilot-limit",
+          "capability:autopilot-mission",
           "capability:autopilot-money",
           "capability:autopilot-next",
           "capability:autopilot-ops",
+          "capability:autopilot-overview",
           "capability:autopilot-pipeline",
           "capability:autopilot-process",
           "capability:autopilot-queue",
@@ -1881,9 +1882,7 @@
           "affiliate-post-member-areas-id-generate-structure",
           "auth-post-auth-forgot-password",
           "auth-post-auth-reset-password",
-          "autopilot-post-autopilot-ask",
           "autopilot-post-autopilot-test",
-          "autopilot-post-autopilot-toggle",
           "billing-post-billing-checkout",
           "canvas-post-canvas-generate",
           "crm-delete-billing-payment-methods-payment-method-id",
@@ -1937,7 +1936,7 @@
         "impactScore": 0.55,
         "confidence": 0.95,
         "summary": "1 HIGH Codacy issue(s) remain in package.json.",
-        "observedAt": "2026-05-10T16:15:37.056Z",
+        "observedAt": "2026-05-10T16:36:42.504Z",
         "relatedFiles": [
           "package.json"
         ],
@@ -1975,13 +1974,13 @@
   },
   "parityGaps": {
     "summary": {
-      "totalGaps": 53,
+      "totalGaps": 55,
       "criticalGaps": 12,
-      "highGaps": 40,
+      "highGaps": 42,
       "byKind": {
-        "front_without_back": 8,
+        "front_without_back": 9,
         "back_without_front": 3,
-        "ui_without_persistence": 26,
+        "ui_without_persistence": 27,
         "persistence_without_consumer": 0,
         "flow_without_validation": 4,
         "integration_without_observability": 12,
@@ -2196,7 +2195,6 @@
           "backend/src/autopilot/autopilot.controller.ts",
           "backend/src/autopilot/autopilot.service.ts",
           "backend/src/billing/plan-limits.service.ts",
-          "frontend/src/app/(main)/autopilot/page.tsx",
           "frontend/src/lib/api/autopilot.ts"
         ],
         "routePatterns": [
@@ -2256,9 +2254,7 @@
           "capability:autopilot-ask"
         ],
         "affectedFlowIds": [
-          "autopilot-post-autopilot-ask",
           "autopilot-post-autopilot-test",
-          "autopilot-post-autopilot-toggle",
           "canvas-post-canvas-generate",
           "crm-delete-billing-payment-methods-payment-method-id",
           "crm-delete-team-invite-id",
@@ -2342,9 +2338,7 @@
           "affiliate-post-affiliate-request-product-id",
           "affiliate-post-affiliate-saved-product-id",
           "affiliate-post-member-areas-id-generate-structure",
-          "autopilot-post-autopilot-ask",
           "autopilot-post-autopilot-test",
-          "autopilot-post-autopilot-toggle",
           "crm-post-autopilot-toggle",
           "crm-post-products",
           "products-post-products"
@@ -2490,9 +2484,7 @@
           "capability:autopilot-actions"
         ],
         "affectedFlowIds": [
-          "autopilot-post-autopilot-ask",
-          "autopilot-post-autopilot-test",
-          "autopilot-post-autopilot-toggle"
+          "autopilot-post-autopilot-test"
         ],
         "validationTargets": [
           "Validate structural chain for /autopilot/actions.",
@@ -2535,9 +2527,7 @@
           "capability:autopilot-impact"
         ],
         "affectedFlowIds": [
-          "autopilot-post-autopilot-ask",
-          "autopilot-post-autopilot-test",
-          "autopilot-post-autopilot-toggle"
+          "autopilot-post-autopilot-test"
         ],
         "validationTargets": [
           "Validate structural chain for /autopilot/ask.",
@@ -2578,9 +2568,7 @@
           "capability:autopilot-config"
         ],
         "affectedFlowIds": [
-          "autopilot-post-autopilot-ask",
-          "autopilot-post-autopilot-test",
-          "autopilot-post-autopilot-toggle"
+          "autopilot-post-autopilot-test"
         ],
         "validationTargets": [
           "Validate structural chain for /autopilot/config.",
@@ -2629,9 +2617,7 @@
           "capability:autopilot"
         ],
         "affectedFlowIds": [
-          "autopilot-post-autopilot-ask",
           "autopilot-post-autopilot-test",
-          "autopilot-post-autopilot-toggle",
           "crm-post-autopilot-toggle"
         ],
         "validationTargets": [
@@ -2680,9 +2666,7 @@
           "capability:autopilot-money"
         ],
         "affectedFlowIds": [
-          "autopilot-post-autopilot-ask",
-          "autopilot-post-autopilot-test",
-          "autopilot-post-autopilot-toggle"
+          "autopilot-post-autopilot-test"
         ],
         "validationTargets": [
           "Validate structural chain for /autopilot/limit.",
@@ -2722,9 +2706,7 @@
           "capability:autopilot-next"
         ],
         "affectedFlowIds": [
-          "autopilot-post-autopilot-ask",
-          "autopilot-post-autopilot-test",
-          "autopilot-post-autopilot-toggle"
+          "autopilot-post-autopilot-test"
         ],
         "validationTargets": [
           "Validate structural chain for /autopilot/money-machine.",
@@ -2764,9 +2746,7 @@
           "capability:autopilot-revenue"
         ],
         "affectedFlowIds": [
-          "autopilot-post-autopilot-ask",
-          "autopilot-post-autopilot-test",
-          "autopilot-post-autopilot-toggle"
+          "autopilot-post-autopilot-test"
         ],
         "validationTargets": [
           "Validate structural chain for /autopilot/revenue-events.",
@@ -2929,30 +2909,30 @@
   },
   "executionMatrix": {
     "summary": {
-      "totalPaths": 5218,
+      "totalPaths": 5247,
       "bySource": {
         "execution_chain": 0,
-        "capability": 397,
-        "flow": 51,
-        "structural_node": 1825,
-        "scope_file": 2945
+        "capability": 402,
+        "flow": 49,
+        "structural_node": 1833,
+        "scope_file": 2963
       },
       "byStatus": {
         "observed_pass": 0,
-        "observed_fail": 217,
+        "observed_fail": 218,
         "untested": 9,
         "observation_only": 0,
         "unreachable": 0,
-        "inferred_only": 1961,
-        "not_executable": 3031
+        "inferred_only": 1971,
+        "not_executable": 3049
       },
       "observedPass": 0,
-      "observedFail": 217,
+      "observedFail": 218,
       "untested": 9,
       "unreachable": 0,
-      "inferredOnly": 1961,
-      "notExecutable": 3031,
-      "terminalPaths": 5218,
+      "inferredOnly": 1971,
+      "notExecutable": 3049,
+      "terminalPaths": 5247,
       "nonTerminalPaths": 0,
       "unknownPaths": 0,
       "criticalUnobservedPaths": 0,
@@ -3430,7 +3410,7 @@
         "flowId": null,
         "source": "capability",
         "entrypoint": {
-          "nodeId": "api:frontend-admin-src-app-admin-page-tsx:366:GET:admin-notifications",
+          "nodeId": "api:frontend-admin-src-app-admin-page-tsx:136:GET:admin-notifications",
           "filePath": "backend/prisma/schema.prisma",
           "routePattern": "/admin/accounts/:workspaceId",
           "description": "Admin Accounts"
@@ -3443,7 +3423,7 @@
           "stage": "unknown",
           "stepIndex": 0,
           "filePath": "backend/prisma/schema.prisma",
-          "nodeId": "api:frontend-admin-src-app-admin-page-tsx:366:GET:admin-notifications",
+          "nodeId": "api:frontend-admin-src-app-admin-page-tsx:136:GET:admin-notifications",
           "routePattern": "/admin/accounts/:workspaceId",
           "reason": "2 HIGH Codacy issue(s) remain in backend/src/auth/email.service.ts.",
           "recovery": "Inspect failing observed evidence and rerun the path probe."
@@ -3534,7 +3514,7 @@
         "flowId": null,
         "source": "capability",
         "entrypoint": {
-          "nodeId": "api:frontend-admin-src-app-admin-page-tsx:354:GET:admin-products",
+          "nodeId": "api:frontend-admin-src-app-admin-page-tsx:124:GET:admin-products",
           "filePath": "backend/prisma/schema.prisma",
           "routePattern": "/admin/accounts/:workspaceId",
           "description": "Admin Accounts"
@@ -3547,7 +3527,7 @@
           "stage": "unknown",
           "stepIndex": 0,
           "filePath": "backend/prisma/schema.prisma",
-          "nodeId": "api:frontend-admin-src-app-admin-page-tsx:354:GET:admin-products",
+          "nodeId": "api:frontend-admin-src-app-admin-page-tsx:124:GET:admin-products",
           "routePattern": "/admin/accounts/:workspaceId",
           "reason": "2 HIGH Codacy issue(s) remain in backend/src/auth/email.service.ts.",
           "recovery": "Inspect failing observed evidence and rerun the path probe."
@@ -4256,7 +4236,7 @@
         "flowId": null,
         "source": "capability",
         "entrypoint": {
-          "nodeId": "api:frontend-admin-src-app-admin-configuracoes-page-tsx:230:GET:admin-config-overview",
+          "nodeId": "api:frontend-admin-src-app-admin-configuracoes-page-tsx:48:GET:admin-config-overview",
           "filePath": "backend/prisma/schema.prisma",
           "routePattern": "/admin/config",
           "description": "Admin Config"
@@ -4269,7 +4249,7 @@
           "stage": "entrypoint",
           "stepIndex": 0,
           "filePath": "backend/prisma/schema.prisma",
-          "nodeId": "api:frontend-admin-src-app-admin-configuracoes-page-tsx:230:GET:admin-config-overview",
+          "nodeId": "api:frontend-admin-src-app-admin-configuracoes-page-tsx:48:GET:admin-config-overview",
           "routePattern": "/admin/config",
           "reason": "Path is structurally inferred but lacks observed runtime, flow, actor, browser, or external evidence.",
           "recovery": "Run or attach a matching runtime, flow, actor, browser, or external probe before promoting this path to observed evidence."
@@ -4313,6 +4293,7 @@
           "backend/prisma/schema.prisma",
           "backend/src/admin/config/admin-config.controller.ts",
           "backend/src/admin/config/admin-config.service.ts",
+          "frontend-admin/src/app/(admin)/configuracoes/_components/ConfigWorkspaceConfigEditor.tsx",
           "frontend-admin/src/app/(admin)/configuracoes/page.tsx",
           "frontend-admin/src/lib/api/admin-config-api.ts"
         ],
@@ -5298,9 +5279,7 @@
         "affiliate-post-member-areas-id-generate-structure",
         "auth-post-auth-forgot-password",
         "auth-post-auth-reset-password",
-        "autopilot-post-autopilot-ask",
         "autopilot-post-autopilot-test",
-        "autopilot-post-autopilot-toggle",
         "billing-post-billing-checkout",
         "canvas-post-canvas-generate",
         "crm-delete-billing-payment-methods-payment-method-id",
@@ -6424,9 +6403,7 @@
         "affiliate-post-member-areas-id-generate-structure",
         "auth-post-auth-forgot-password",
         "auth-post-auth-reset-password",
-        "autopilot-post-autopilot-ask",
         "autopilot-post-autopilot-test",
-        "autopilot-post-autopilot-toggle",
         "billing-post-billing-checkout",
         "canvas-post-canvas-generate",
         "crm-delete-billing-payment-methods-payment-method-id",
@@ -6608,7 +6585,6 @@
         "/auth/whatsapp/send-code",
         "/auth/whatsapp/verify",
         "/autopilot",
-        "/autopilot/ask",
         "/autopilot/limit",
         "/autopilot/money-machine",
         "/autopilot/process",
@@ -7016,9 +6992,7 @@
         "affiliate-post-member-areas-id-generate-structure",
         "auth-post-auth-forgot-password",
         "auth-post-auth-reset-password",
-        "autopilot-post-autopilot-ask",
         "autopilot-post-autopilot-test",
-        "autopilot-post-autopilot-toggle",
         "billing-post-billing-checkout",
         "canvas-post-canvas-generate",
         "crm-delete-billing-payment-methods-payment-method-id",
@@ -7671,12 +7645,15 @@
         "capability:autopilot-contact",
         "capability:autopilot-conversion",
         "capability:autopilot-cycle",
+        "capability:autopilot-history",
         "capability:autopilot-impact",
         "capability:autopilot-insights",
         "capability:autopilot-limit",
+        "capability:autopilot-mission",
         "capability:autopilot-money",
         "capability:autopilot-next",
         "capability:autopilot-ops",
+        "capability:autopilot-overview",
         "capability:autopilot-pipeline",
         "capability:autopilot-process",
         "capability:autopilot-queue",
@@ -7770,9 +7747,7 @@
         "affiliate-post-member-areas-id-generate-structure",
         "auth-post-auth-forgot-password",
         "auth-post-auth-reset-password",
-        "autopilot-post-autopilot-ask",
         "autopilot-post-autopilot-test",
-        "autopilot-post-autopilot-toggle",
         "billing-post-billing-checkout",
         "canvas-post-canvas-generate",
         "crm-delete-billing-payment-methods-payment-method-id",
@@ -8614,9 +8589,7 @@
         "affiliate-post-member-areas-id-generate-structure",
         "auth-post-auth-forgot-password",
         "auth-post-auth-reset-password",
-        "autopilot-post-autopilot-ask",
         "autopilot-post-autopilot-test",
-        "autopilot-post-autopilot-toggle",
         "billing-post-billing-checkout",
         "canvas-post-canvas-generate",
         "crm-delete-billing-payment-methods-payment-method-id",
@@ -9357,9 +9330,7 @@
         "affiliate-post-member-areas-id-generate-structure",
         "auth-post-auth-forgot-password",
         "auth-post-auth-reset-password",
-        "autopilot-post-autopilot-ask",
         "autopilot-post-autopilot-test",
-        "autopilot-post-autopilot-toggle",
         "billing-post-billing-checkout",
         "canvas-post-canvas-generate",
         "crm-delete-billing-payment-methods-payment-method-id",
@@ -9965,9 +9936,7 @@
         "affiliate-post-member-areas-id-generate-structure",
         "auth-post-auth-forgot-password",
         "auth-post-auth-reset-password",
-        "autopilot-post-autopilot-ask",
         "autopilot-post-autopilot-test",
-        "autopilot-post-autopilot-toggle",
         "canvas-post-canvas-generate",
         "crm-delete-billing-payment-methods-payment-method-id",
         "crm-delete-team-invite-id",
@@ -10835,9 +10804,7 @@
         "affiliate-post-member-areas-id-generate-structure",
         "auth-post-auth-forgot-password",
         "auth-post-auth-reset-password",
-        "autopilot-post-autopilot-ask",
         "autopilot-post-autopilot-test",
-        "autopilot-post-autopilot-toggle",
         "billing-post-billing-checkout",
         "canvas-post-canvas-generate",
         "crm-delete-billing-payment-methods-payment-method-id",
@@ -12071,9 +12038,7 @@
         "affiliate-post-member-areas-id-generate-structure",
         "auth-post-auth-forgot-password",
         "auth-post-auth-reset-password",
-        "autopilot-post-autopilot-ask",
         "autopilot-post-autopilot-test",
-        "autopilot-post-autopilot-toggle",
         "billing-post-billing-checkout",
         "canvas-post-canvas-generate",
         "crm-delete-billing-payment-methods-payment-method-id",
@@ -12405,9 +12370,7 @@
         "capability:whatsapp-sync"
       ],
       "flowIds": [
-        "autopilot-post-autopilot-ask",
         "autopilot-post-autopilot-test",
-        "autopilot-post-autopilot-toggle",
         "canvas-post-canvas-generate",
         "crm-delete-billing-payment-methods-payment-method-id",
         "crm-delete-team-invite-id",
@@ -12817,9 +12780,7 @@
         "affiliate-post-affiliate-request-product-id",
         "affiliate-post-affiliate-saved-product-id",
         "affiliate-post-member-areas-id-generate-structure",
-        "autopilot-post-autopilot-ask",
         "autopilot-post-autopilot-test",
-        "autopilot-post-autopilot-toggle",
         "canvas-post-canvas-generate",
         "crm-delete-billing-payment-methods-payment-method-id",
         "crm-delete-team-invite-id",
@@ -13514,9 +13475,7 @@
         "affiliate-post-member-areas-id-generate-structure",
         "auth-post-auth-forgot-password",
         "auth-post-auth-reset-password",
-        "autopilot-post-autopilot-ask",
         "autopilot-post-autopilot-test",
-        "autopilot-post-autopilot-toggle",
         "billing-post-billing-checkout",
         "canvas-post-canvas-generate",
         "crm-delete-billing-payment-methods-payment-method-id",
@@ -14369,9 +14328,7 @@
         "affiliate-post-member-areas-id-generate-structure",
         "auth-post-auth-forgot-password",
         "auth-post-auth-reset-password",
-        "autopilot-post-autopilot-ask",
         "autopilot-post-autopilot-test",
-        "autopilot-post-autopilot-toggle",
         "billing-post-billing-checkout",
         "canvas-post-canvas-generate",
         "crm-delete-billing-payment-methods-payment-method-id",
@@ -14509,12 +14466,15 @@
         "capability:autopilot-contact",
         "capability:autopilot-conversion",
         "capability:autopilot-cycle",
+        "capability:autopilot-history",
         "capability:autopilot-impact",
         "capability:autopilot-insights",
         "capability:autopilot-limit",
+        "capability:autopilot-mission",
         "capability:autopilot-money",
         "capability:autopilot-next",
         "capability:autopilot-ops",
+        "capability:autopilot-overview",
         "capability:autopilot-pipeline",
         "capability:autopilot-process",
         "capability:autopilot-queue",
@@ -14735,9 +14695,7 @@
         "affiliate-post-member-areas-id-generate-structure",
         "auth-post-auth-forgot-password",
         "auth-post-auth-reset-password",
-        "autopilot-post-autopilot-ask",
         "autopilot-post-autopilot-test",
-        "autopilot-post-autopilot-toggle",
         "billing-post-billing-checkout",
         "canvas-post-canvas-generate",
         "crm-delete-billing-payment-methods-payment-method-id",
@@ -14877,12 +14835,15 @@
         "capability:autopilot-contact",
         "capability:autopilot-conversion",
         "capability:autopilot-cycle",
+        "capability:autopilot-history",
         "capability:autopilot-impact",
         "capability:autopilot-insights",
         "capability:autopilot-limit",
+        "capability:autopilot-mission",
         "capability:autopilot-money",
         "capability:autopilot-next",
         "capability:autopilot-ops",
+        "capability:autopilot-overview",
         "capability:autopilot-pipeline",
         "capability:autopilot-process",
         "capability:autopilot-queue",
@@ -15100,9 +15061,7 @@
         "affiliate-post-member-areas-id-generate-structure",
         "auth-post-auth-forgot-password",
         "auth-post-auth-reset-password",
-        "autopilot-post-autopilot-ask",
         "autopilot-post-autopilot-test",
-        "autopilot-post-autopilot-toggle",
         "billing-post-billing-checkout",
         "canvas-post-canvas-generate",
         "crm-delete-billing-payment-methods-payment-method-id",
@@ -15242,12 +15201,15 @@
         "capability:autopilot-contact",
         "capability:autopilot-conversion",
         "capability:autopilot-cycle",
+        "capability:autopilot-history",
         "capability:autopilot-impact",
         "capability:autopilot-insights",
         "capability:autopilot-limit",
+        "capability:autopilot-mission",
         "capability:autopilot-money",
         "capability:autopilot-next",
         "capability:autopilot-ops",
+        "capability:autopilot-overview",
         "capability:autopilot-pipeline",
         "capability:autopilot-process",
         "capability:autopilot-queue",
@@ -15458,9 +15420,7 @@
         "affiliate-post-member-areas-id-generate-structure",
         "auth-post-auth-forgot-password",
         "auth-post-auth-reset-password",
-        "autopilot-post-autopilot-ask",
         "autopilot-post-autopilot-test",
-        "autopilot-post-autopilot-toggle",
         "billing-post-billing-checkout",
         "canvas-post-canvas-generate",
         "crm-delete-billing-payment-methods-payment-method-id",
@@ -15601,12 +15561,15 @@
         "capability:autopilot-contact",
         "capability:autopilot-conversion",
         "capability:autopilot-cycle",
+        "capability:autopilot-history",
         "capability:autopilot-impact",
         "capability:autopilot-insights",
         "capability:autopilot-limit",
+        "capability:autopilot-mission",
         "capability:autopilot-money",
         "capability:autopilot-next",
         "capability:autopilot-ops",
+        "capability:autopilot-overview",
         "capability:autopilot-pipeline",
         "capability:autopilot-process",
         "capability:autopilot-queue",
@@ -15827,9 +15790,7 @@
         "affiliate-post-member-areas-id-generate-structure",
         "auth-post-auth-forgot-password",
         "auth-post-auth-reset-password",
-        "autopilot-post-autopilot-ask",
         "autopilot-post-autopilot-test",
-        "autopilot-post-autopilot-toggle",
         "billing-post-billing-checkout",
         "canvas-post-canvas-generate",
         "crm-delete-billing-payment-methods-payment-method-id",
@@ -15969,12 +15930,15 @@
         "capability:autopilot-contact",
         "capability:autopilot-conversion",
         "capability:autopilot-cycle",
+        "capability:autopilot-history",
         "capability:autopilot-impact",
         "capability:autopilot-insights",
         "capability:autopilot-limit",
+        "capability:autopilot-mission",
         "capability:autopilot-money",
         "capability:autopilot-next",
         "capability:autopilot-ops",
+        "capability:autopilot-overview",
         "capability:autopilot-pipeline",
         "capability:autopilot-process",
         "capability:autopilot-queue",
@@ -16193,9 +16157,7 @@
         "auth-login",
         "auth-post-auth-forgot-password",
         "auth-post-auth-reset-password",
-        "autopilot-post-autopilot-ask",
         "autopilot-post-autopilot-test",
-        "autopilot-post-autopilot-toggle",
         "billing-post-billing-checkout",
         "canvas-post-canvas-generate",
         "crm-delete-billing-payment-methods-payment-method-id",
@@ -16335,12 +16297,15 @@
         "capability:autopilot-contact",
         "capability:autopilot-conversion",
         "capability:autopilot-cycle",
+        "capability:autopilot-history",
         "capability:autopilot-impact",
         "capability:autopilot-insights",
         "capability:autopilot-limit",
+        "capability:autopilot-mission",
         "capability:autopilot-money",
         "capability:autopilot-next",
         "capability:autopilot-ops",
+        "capability:autopilot-overview",
         "capability:autopilot-pipeline",
         "capability:autopilot-process",
         "capability:autopilot-queue",
@@ -16561,9 +16526,7 @@
         "affiliate-post-member-areas-id-generate-structure",
         "auth-post-auth-forgot-password",
         "auth-post-auth-reset-password",
-        "autopilot-post-autopilot-ask",
         "autopilot-post-autopilot-test",
-        "autopilot-post-autopilot-toggle",
         "billing-post-billing-checkout",
         "canvas-post-canvas-generate",
         "checkout-payment",
@@ -16706,12 +16669,15 @@
         "capability:autopilot-contact",
         "capability:autopilot-conversion",
         "capability:autopilot-cycle",
+        "capability:autopilot-history",
         "capability:autopilot-impact",
         "capability:autopilot-insights",
         "capability:autopilot-limit",
+        "capability:autopilot-mission",
         "capability:autopilot-money",
         "capability:autopilot-next",
         "capability:autopilot-ops",
+        "capability:autopilot-overview",
         "capability:autopilot-pipeline",
         "capability:autopilot-process",
         "capability:autopilot-queue",
@@ -16929,9 +16895,7 @@
         "affiliate-post-member-areas-id-generate-structure",
         "auth-post-auth-forgot-password",
         "auth-post-auth-reset-password",
-        "autopilot-post-autopilot-ask",
         "autopilot-post-autopilot-test",
-        "autopilot-post-autopilot-toggle",
         "billing-post-billing-checkout",
         "canvas-post-canvas-generate",
         "crm-delete-billing-payment-methods-payment-method-id",
@@ -17073,12 +17037,15 @@
         "capability:autopilot-contact",
         "capability:autopilot-conversion",
         "capability:autopilot-cycle",
+        "capability:autopilot-history",
         "capability:autopilot-impact",
         "capability:autopilot-insights",
         "capability:autopilot-limit",
+        "capability:autopilot-mission",
         "capability:autopilot-money",
         "capability:autopilot-next",
         "capability:autopilot-ops",
+        "capability:autopilot-overview",
         "capability:autopilot-pipeline",
         "capability:autopilot-process",
         "capability:autopilot-queue",
@@ -17299,9 +17266,7 @@
         "affiliate-post-member-areas-id-generate-structure",
         "auth-post-auth-forgot-password",
         "auth-post-auth-reset-password",
-        "autopilot-post-autopilot-ask",
         "autopilot-post-autopilot-test",
-        "autopilot-post-autopilot-toggle",
         "billing-post-billing-checkout",
         "canvas-post-canvas-generate",
         "checkout-payment",
@@ -17372,6 +17337,60 @@
       "routePatterns": []
     },
     {
+      "id": "capability:autopilot-history",
+      "name": "Autopilot History",
+      "status": "partial",
+      "stage": "connected",
+      "score": 0.3,
+      "missing": [
+        "api_surface",
+        "orchestration",
+        "persistence",
+        "side_effect",
+        "runtime_evidence",
+        "validation",
+        "scenario_coverage"
+      ],
+      "executionMode": "ai_safe",
+      "routePatterns": []
+    },
+    {
+      "id": "capability:autopilot-mission",
+      "name": "Autopilot Mission",
+      "status": "partial",
+      "stage": "connected",
+      "score": 0.3,
+      "missing": [
+        "api_surface",
+        "orchestration",
+        "persistence",
+        "side_effect",
+        "runtime_evidence",
+        "validation",
+        "scenario_coverage"
+      ],
+      "executionMode": "ai_safe",
+      "routePatterns": []
+    },
+    {
+      "id": "capability:autopilot-overview",
+      "name": "Autopilot Overview",
+      "status": "partial",
+      "stage": "connected",
+      "score": 0.3,
+      "missing": [
+        "api_surface",
+        "orchestration",
+        "persistence",
+        "side_effect",
+        "runtime_evidence",
+        "validation",
+        "scenario_coverage"
+      ],
+      "executionMode": "ai_safe",
+      "routePatterns": []
+    },
+    {
       "id": "capability:billing-form",
       "name": "Billing Form",
       "status": "partial",
@@ -17410,6 +17429,42 @@
     {
       "id": "capability:checkout-editor",
       "name": "Checkout Editor",
+      "status": "partial",
+      "stage": "connected",
+      "score": 0.3,
+      "missing": [
+        "api_surface",
+        "orchestration",
+        "persistence",
+        "side_effect",
+        "runtime_evidence",
+        "validation",
+        "scenario_coverage"
+      ],
+      "executionMode": "ai_safe",
+      "routePatterns": []
+    },
+    {
+      "id": "capability:config-user",
+      "name": "Config User",
+      "status": "partial",
+      "stage": "connected",
+      "score": 0.3,
+      "missing": [
+        "api_surface",
+        "orchestration",
+        "persistence",
+        "side_effect",
+        "runtime_evidence",
+        "validation",
+        "scenario_coverage"
+      ],
+      "executionMode": "ai_safe",
+      "routePatterns": []
+    },
+    {
+      "id": "capability:config-workspace",
+      "name": "Config Workspace",
       "status": "partial",
       "stage": "connected",
       "score": 0.3,
@@ -17478,96 +17533,6 @@
       ],
       "executionMode": "ai_safe",
       "routePatterns": []
-    },
-    {
-      "id": "capability:layout",
-      "name": "Layout",
-      "status": "partial",
-      "stage": "connected",
-      "score": 0.3,
-      "missing": [
-        "api_surface",
-        "orchestration",
-        "persistence",
-        "side_effect",
-        "runtime_evidence",
-        "validation",
-        "scenario_coverage"
-      ],
-      "executionMode": "ai_safe",
-      "routePatterns": []
-    },
-    {
-      "id": "capability:onboarding",
-      "name": "Onboarding",
-      "status": "partial",
-      "stage": "connected",
-      "score": 0.3,
-      "missing": [
-        "api_surface",
-        "orchestration",
-        "persistence",
-        "side_effect",
-        "runtime_evidence",
-        "validation",
-        "scenario_coverage"
-      ],
-      "executionMode": "ai_safe",
-      "routePatterns": []
-    },
-    {
-      "id": "capability:order-confirmation",
-      "name": "Order Confirmation",
-      "status": "partial",
-      "stage": "connected",
-      "score": 0.3,
-      "missing": [
-        "api_surface",
-        "orchestration",
-        "persistence",
-        "side_effect",
-        "runtime_evidence",
-        "validation",
-        "scenario_coverage"
-      ],
-      "executionMode": "ai_safe",
-      "routePatterns": []
-    },
-    {
-      "id": "capability:payment-method",
-      "name": "Payment Method",
-      "status": "partial",
-      "stage": "connected",
-      "score": 0.3,
-      "missing": [
-        "api_surface",
-        "orchestration",
-        "persistence",
-        "side_effect",
-        "runtime_evidence",
-        "validation",
-        "scenario_coverage"
-      ],
-      "executionMode": "ai_safe",
-      "routePatterns": []
-    },
-    {
-      "id": "capability:plan-summary",
-      "name": "Plan Summary",
-      "status": "partial",
-      "stage": "connected",
-      "score": 0.3,
-      "missing": [
-        "api_surface",
-        "orchestration",
-        "persistence",
-        "side_effect",
-        "runtime_evidence",
-        "validation",
-        "scenario_coverage"
-      ],
-      "executionMode": "ai_safe",
-      "routePatterns": []
     }
   ],
   "topBlockers": [
@@ -17601,6 +17566,7 @@
     "Flow without validation: canvas-post-canvas-generate: canvas-post-canvas-generate -> /canvas/modelos still exists as a connected product flow candidate without declared validation/oracle coverage.",
     "Flow without validation: form: Flow form is structurally present but still lacks executed validation evidence.",
     "Flow without validation: launch-post-launch-launcher: launch-post-launch-launcher -> /ferramentas/launchpad still exists as a connected product flow candidate without declared validation/oracle coverage.",
+    "Front without back: Autopilot Mission: Capability Autopilot Mission exposes UI or interaction entry points without an orchestrated backend/materialized effect.",
     "Front without back: Capabilities Capability: Capability Capabilities Capability exposes UI or interaction entry points without an orchestrated backend/materialized effect.",
     "Front without back: Ferramentas Ferramenta: Capability Ferramentas Ferramenta exposes UI or interaction entry points without an orchestrated backend/materialized effect.",
     "Front without back: Global Error: Capability Global Error exposes UI or interaction entry points without an orchestrated backend/materialized effect.",
@@ -17745,9 +17711,7 @@
         "affiliate-post-member-areas-id-generate-structure",
         "auth-post-auth-forgot-password",
         "auth-post-auth-reset-password",
-        "autopilot-post-autopilot-ask",
         "autopilot-post-autopilot-test",
-        "autopilot-post-autopilot-toggle",
         "billing-post-billing-checkout",
         "canvas-post-canvas-generate",
         "crm-delete-billing-payment-methods-payment-method-id",
@@ -17811,12 +17775,15 @@
         "capability:autopilot-contact",
         "capability:autopilot-conversion",
         "capability:autopilot-cycle",
+        "capability:autopilot-history",
         "capability:autopilot-impact",
         "capability:autopilot-insights",
         "capability:autopilot-limit",
+        "capability:autopilot-mission",
         "capability:autopilot-money",
         "capability:autopilot-next",
         "capability:autopilot-ops",
+        "capability:autopilot-overview",
         "capability:autopilot-pipeline",
         "capability:autopilot-process",
         "capability:autopilot-queue",
@@ -17912,9 +17879,7 @@
         "affiliate-post-member-areas-id-generate-structure",
         "auth-post-auth-forgot-password",
         "auth-post-auth-reset-password",
-        "autopilot-post-autopilot-ask",
         "autopilot-post-autopilot-test",
-        "autopilot-post-autopilot-toggle",
         "billing-post-billing-checkout",
         "canvas-post-canvas-generate",
         "crm-delete-billing-payment-methods-payment-method-id",
@@ -18247,10 +18212,23 @@
         "frontend-admin/package-lock.json",
         "frontend-admin/package.json",
         "frontend-admin/postcss.config.mjs",
+        "frontend-admin/src/app/(admin)/_components/admin-empty-state.tsx",
+        "frontend-admin/src/app/(admin)/_components/admin-formatters.ts",
+        "frontend-admin/src/app/(admin)/_components/admin-revenue-bars.tsx",
+        "frontend-admin/src/app/(admin)/_components/admin-ring-meter.tsx",
+        "frontend-admin/src/app/(admin)/_components/admin-sparkline.tsx",
+        "frontend-admin/src/app/(admin)/_components/admin-status-chip.tsx",
         "frontend-admin/src/app/(admin)/audit/page.tsx",
         "frontend-admin/src/app/(admin)/chat/page.tsx",
         "frontend-admin/src/app/(admin)/clientes/page.tsx",
         "frontend-admin/src/app/(admin)/compliance/page.tsx",
+        "frontend-admin/src/app/(admin)/configuracoes/_components/config-constants.ts",
+        "frontend-admin/src/app/(admin)/configuracoes/_components/ConfigCreateUserDialog.tsx",
+        "frontend-admin/src/app/(admin)/configuracoes/_components/ConfigGovernanceNotesSection.tsx",
+        "frontend-admin/src/app/(admin)/configuracoes/_components/ConfigPermissionEditor.tsx",
+        "frontend-admin/src/app/(admin)/configuracoes/_components/ConfigUserAccessSection.tsx",
+        "frontend-admin/src/app/(admin)/configuracoes/_components/ConfigWorkspaceConfigEditor.tsx",
+        "frontend-admin/src/app/(admin)/configuracoes/_components/ConfigWorkspaceConfigSection.tsx",
         "frontend-admin/src/app/(admin)/configuracoes/page.tsx",
         "frontend-admin/src/app/(admin)/contas/[workspaceId]/page.tsx",
         "frontend-admin/src/app/(admin)/contas/kyc/page.tsx",
@@ -18680,9 +18658,12 @@
         "frontend/src/components/kloel/carteira/carteira.helpers.ts",
         "frontend/src/components/kloel/carteira/carteira.icons.tsx",
         "frontend/src/components/kloel/carteira/carteira.types.ts",
+        "frontend/src/components/kloel/carteira/CarteiraAntecipateModal.tsx",
         "frontend/src/components/kloel/carteira/CarteiraExtratoTable.tsx",
         "frontend/src/components/kloel/carteira/CarteiraSaldoCard.tsx",
         "frontend/src/components/kloel/carteira/CarteiraSaque.tsx",
+        "frontend/src/components/kloel/carteira/CarteiraTabAntecipacoes.tsx",
+        "frontend/src/components/kloel/carteira/CarteiraWithdrawModal.tsx",
         "frontend/src/components/kloel/chat-container.agent-stream.ts",
         "frontend/src/components/kloel/chat-container.agent-trace.tsx",
         "frontend/src/components/kloel/chat-container.data.ts",
@@ -18841,9 +18822,14 @@
         "frontend/src/components/kloel/marketing/EmailMarketingTab.tsx",
         "frontend/src/components/kloel/marketing/FacebookMarketingTab.tsx",
         "frontend/src/components/kloel/marketing/InstagramMarketingTab.tsx",
+        "frontend/src/components/kloel/marketing/marketing-utils.ts",
+        "frontend/src/components/kloel/marketing/MarketingChannelNerveRow.tsx",
+        "frontend/src/components/kloel/marketing/MarketingConversationsHub.tsx",
+        "frontend/src/components/kloel/marketing/MarketingRevenueBarChart.tsx",
         "frontend/src/components/kloel/marketing/MarketingShared.tsx",
         "frontend/src/components/kloel/marketing/MarketingTypes.ts",
         "frontend/src/components/kloel/marketing/MarketingView.tsx",
+        "frontend/src/components/kloel/marketing/MarketingVisaoGeral.tsx",
         "frontend/src/components/kloel/marketing/OfficialMarketingChannelPage.helpers.ts",
         "frontend/src/components/kloel/marketing/OfficialMarketingChannelPage.tsx",
         "frontend/src/components/kloel/marketing/SmsMarketingTab.tsx",
@@ -19117,6 +19103,12 @@
         "frontend/src/components/plans/PlanShippingTab.tsx",
         "frontend/src/components/plans/PlanStoreTab.tsx",
         "frontend/src/components/plans/PlanThankYouTab.tsx",
+        "frontend/src/components/products/checkout/CheckoutCheckbox.tsx",
+        "frontend/src/components/products/checkout/CheckoutPixelRow.tsx",
+        "frontend/src/components/products/checkout/CheckoutPixelsSection.tsx",
+        "frontend/src/components/products/checkout/CheckoutRadio.tsx",
+        "frontend/src/components/products/checkout/CheckoutToggle.tsx",
+        "frontend/src/components/products/checkout/CheckoutToggleRow.tsx",
         "frontend/src/components/products/CheckoutConfigPage.tsx",
         "frontend/src/components/products/CheckoutLinksModal.tsx",
         "frontend/src/components/products/ProductAfterPayTab.tsx",
@@ -19516,7 +19508,7 @@
       ]
     },
     {
-      "order": 28,
+      "order": 29,
       "id": "parity-flow-without-validation-flow-without-validation-launch-post-launch-launcher",
       "kind": "scope",
       "priority": "P2",
@@ -19636,7 +19628,7 @@
       ]
     },
     {
-      "order": 34,
+      "order": 35,
       "id": "capability-capability-admin-carteira",
       "kind": "capability",
       "priority": "P2",
@@ -19721,7 +19713,7 @@
       ]
     },
     {
-      "order": 38,
+      "order": 39,
       "id": "capability-capability-ad-rules",
       "kind": "capability",
       "priority": "P2",
@@ -19808,7 +19800,7 @@
       ]
     },
     {
-      "order": 36,
+      "order": 37,
       "id": "matrix-matrix-capability-capability-ad-rules",
       "kind": "capability",
       "priority": "P2",
@@ -19908,7 +19900,7 @@
       ]
     },
     {
-      "order": 124,
+      "order": 128,
       "id": "pulse-no-hardcoded-reality-state",
       "kind": "gate",
       "priority": "P3",
@@ -19920,7 +19912,7 @@
       "productImpact": "diagnostic",
       "ownerLane": "platform",
       "title": "Remove PULSE Hardcoded Reality Authority",
-      "summary": "220352 hardcoded reality event(s) across 505 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/p...",
+      "summary": "220356 hardcoded reality event(s) across 505 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/p...",
       "whyNow": "Keeps PULSE decisions grounded in discovered evidence instead of fixed product reality lists.",
       "visionDelta": "Keeps PULSE decisions grounded in discovered evidence instead of fixed product reality lists.",
       "targetState": "PULSE_NO_HARDCODED_REALITY.json reports zero dynamic hardcode evidence events.",
@@ -19994,7 +19986,88 @@
       ]
     },
     {
-      "order": 103,
+      "order": 95,
+      "id": "parity-front-without-back-front-without-back-autopilot-mission",
+      "kind": "scope",
+      "priority": "P3",
+      "source": "pulse",
+      "executionMode": "ai_safe",
+      "riskLevel": "high",
+      "evidenceMode": "observed",
+      "confidence": "high",
+      "productImpact": "transformational",
+      "ownerLane": "platform",
+      "title": "Front without back: Autopilot Mission",
+      "summary": "Capability Autopilot Mission exposes UI or interaction entry points without an orchestrated backend/materialized effect.",
+      "whyNow": "Converts a user-facing illusion into a real product chain for Front without back: Autopilot Mission.",
+      "visionDelta": "Converts a user-facing illusion into a real product chain for Front without back: Autopilot Mission.",
+      "targetState": "Structural parity gap front_without_back must stop appearing in the next PULSE run.",
+      "affectedCapabilities": [
+        "capability:autopilot-mission"
+      ],
+      "affectedFlows": [
+        "autopilot-post-autopilot-test"
+      ],
+      "gateNames": [],
+      "expectedGateShift": "Reduce product parity drift",
+      "validationTargets": [
+        "PULSE_CLI_DIRECTIVE.json",
+        "PULSE_PARITY_GAPS.json",
+        "PULSE_PRODUCT_VISION.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_CLI_DIRECTIVE.json",
+        "PULSE_PARITY_GAPS.json",
+        "PULSE_PRODUCT_VISION.json"
+      ],
+      "relatedFiles": [
+        "frontend/src/app/(main)/autopilot/AutopilotMissionGrid.tsx"
+      ],
+      "exitCriteria": [
+        "Gap front_without_back is absent from the next PULSE_PARITY_GAPS.json snapshot.",
+        "Governed ai_safe validation: Run governed runtime evidence collection for capability capability:autopilot-mission.",
+        "Governed ai_safe validation: Run governed scenario or flow evidence for capability capability:autopilot-mission.",
+        "Governed ai_safe validation: Run governed structural evidence validation for role interface on capability capability:autopilot-mission.",
+        "Governed ai_safe validation: Run governed structural evidence validation for role orchestration on capability capability:autopilot-mission.",
+        "Governed ai_safe validation: Run governed structural evidence validation for role persistence on capability capability:autopilot-mission.",
+        "Governed ai_safe validation: Run governed structural evidence validation for role side_effect on capability capability:autopilot-mission.",
+        "Governed ai_safe validation: Run targeted typecheck and tests that exercise capability capability:autopilot-mission.",
+        "Re-run runtime evidence for this capability."
+      ],
+      "preconditions": [
+        "One or more affected capabilities are still partial or phantom."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
+      ],
+      "successCriteria": [
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "requiredValidations": [
+        "typecheck",
+        "affected-tests",
+        "flow-evidence"
+      ]
+    },
+    {
+      "order": 107,
       "id": "parity-front-without-back-front-without-back-capabilities-capability",
       "kind": "scope",
       "priority": "P3",
@@ -20075,7 +20148,7 @@
       ]
     },
     {
-      "order": 136,
+      "order": 140,
       "id": "scope-codacy-parity",
       "kind": "scope",
       "priority": "P3",
@@ -20160,7 +20233,7 @@
       ]
     },
     {
-      "order": 108,
+      "order": 112,
       "id": "parity-back-without-front-back-without-front-diag-db",
       "kind": "scope",
       "priority": "P3",
@@ -20241,7 +20314,7 @@
       ]
     },
     {
-      "order": 114,
+      "order": 118,
       "id": "parity-back-without-front-back-without-front-audio-synthesize",
       "kind": "scope",
       "priority": "P3",
@@ -20321,7 +20394,7 @@
       ]
     },
     {
-      "order": 115,
+      "order": 119,
       "id": "parity-back-without-front-back-without-front-token",
       "kind": "scope",
       "priority": "P3",
@@ -20390,90 +20463,6 @@
         "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
       ],
       "successCriteria": [
-        "All affected files pass linting and typecheck.",
-        "No new Codacy high/critical issues introduced.",
-        "Tests passing for affected modules."
-      ],
-      "requiredValidations": [
-        "typecheck",
-        "affected-tests",
-        "flow-evidence"
-      ]
-    },
-    {
-      "order": 54,
-      "id": "capability-capability-admin-reports",
-      "kind": "capability",
-      "priority": "P3",
-      "source": "pulse",
-      "executionMode": "ai_safe",
-      "riskLevel": "medium",
-      "evidenceMode": "inferred",
-      "confidence": "medium",
-      "productImpact": "material",
-      "ownerLane": "operator-admin",
-      "title": "Materialize capability Admin Accounts",
-      "summary": "Capability Admin Accounts is partial. Maturity is connected (70%). Maturity is still missing: runtime_evidence, validation, scenario_coverage. Governed ai_safe blocker for runtime_evidence: Missing observed evidence for required role runtime_evidence. Expected validation: Run governed runtime evidence collection for...",
-      "whyNow": "Moves capability Admin Accounts from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
-      "visionDelta": "Moves capability Admin Accounts from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
-      "targetState": "Capability Admin Accounts must become materially real or at least structurally partial with no illusion-only path.",
-      "affectedCapabilities": [
-        "capability:admin-reports"
-      ],
-      "affectedFlows": [],
-      "gateNames": [],
-      "expectedGateShift": "Reduce phantom capability count",
-      "validationTargets": [
-        "PULSE_CAPABILITY_STATE.json",
-        "PULSE_PRODUCT_VISION.json",
-        "PULSE_CERTIFICATE.json"
-      ],
-      "validationArtifacts": [
-        "PULSE_CAPABILITY_STATE.json",
-        "PULSE_PRODUCT_VISION.json",
-        "PULSE_CERTIFICATE.json"
-      ],
-      "relatedFiles": [
-        "backend/prisma/schema.prisma",
-        "backend/src/admin/audit/admin-audit.service.ts",
-        "backend/src/admin/dashboard/admin-dashboard.service.ts"
-      ],
-      "exitCriteria": [
-        "Validate structural chain for /admin/accounts/:workspaceId.",
-        "Re-run runtime evidence for this capability.",
-        "Governed ai_safe validation: Run governed runtime evidence collection for capability capability:admin-reports.",
-        "Governed ai_safe validation: Run governed scenario or flow evidence for capability capability:admin-reports.",
-        "Governed ai_safe validation: Run governed structural evidence validation for role interface on capability capability:admin-reports.",
-        "Governed ai_safe validation: Run governed structural evidence validation for role orchestration on capability capability:admin-reports.",
-        "Governed ai_safe validation: Run governed structural evidence validation for role persistence on capability capability:admin-reports.",
-        "Governed ai_safe validation: Run governed structural evidence validation for role side_effect on capability capability:admin-reports.",
-        "Governed ai_safe validation: Run targeted typecheck and tests that exercise capability capability:admin-reports."
-      ],
-      "preconditions": [
-        "Structural evidence must be rechecked for accuracy.",
-        "One or more affected capabilities are still partial or phantom."
-      ],
-      "allowedActions": [
-        "Code generation",
-        "File mutations",
-        "Integration setup",
-        "Test writing",
-        "Schema migrations",
-        "Configuration changes"
-      ],
-      "forbiddenActions": [
-        "Do not suppress Codacy or linting results",
-        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
-        "Do not use db push in production or CI",
-        "Do not reduce test coverage or delete existing tests",
-        "Do not commit secrets or credentials",
-        "Do not bypass payment, auth, or webhook validation",
-        "Do not rewrite git history or force pushes",
-        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
-      ],
-      "successCriteria": [
-        "Capability status changed from LATENT/PHANTOM to REAL or PARTIAL.",
-        "All affected routes have working backend endpoints.",
         "All affected files pass linting and typecheck.",
         "No new Codacy high/critical issues introduced.",
         "Tests passing for affected modules."
@@ -21125,7 +21114,7 @@
       ]
     },
     {
-      "order": 8,
+      "order": 7,
       "id": "scenario-operator-autopilot-run",
       "kind": "scenario",
       "priority": "P0",
@@ -21159,12 +21148,15 @@
         "capability:autopilot-contact",
         "capability:autopilot-conversion",
         "capability:autopilot-cycle",
+        "capability:autopilot-history",
         "capability:autopilot-impact",
         "capability:autopilot-insights",
         "capability:autopilot-limit",
+        "capability:autopilot-mission",
         "capability:autopilot-money",
         "capability:autopilot-next",
         "capability:autopilot-ops",
+        "capability:autopilot-overview",
         "capability:autopilot-pipeline",
         "capability:autopilot-process",
         "capability:autopilot-queue",
@@ -21478,7 +21470,7 @@
       ]
     },
     {
-      "order": 13,
+      "order": 12,
       "id": "scenario-admin-settings-kyc-banking",
       "kind": "scenario",
       "priority": "P0",
@@ -21622,7 +21614,7 @@
       ]
     },
     {
-      "order": 29,
+      "order": 30,
       "id": "matrix-matrix-capability-capability-analytics-analytic",
       "kind": "capability",
       "priority": "P2",
@@ -21714,7 +21706,7 @@
       ]
     },
     {
-      "order": 30,
+      "order": 31,
       "id": "matrix-matrix-capability-capability-ai-assistant",
       "kind": "capability",
       "priority": "P2",
@@ -22037,10 +22029,23 @@
         "frontend-admin/package-lock.json",
         "frontend-admin/package.json",
         "frontend-admin/postcss.config.mjs",
+        "frontend-admin/src/app/(admin)/_components/admin-empty-state.tsx",
+        "frontend-admin/src/app/(admin)/_components/admin-formatters.ts",
+        "frontend-admin/src/app/(admin)/_components/admin-revenue-bars.tsx",
+        "frontend-admin/src/app/(admin)/_components/admin-ring-meter.tsx",
+        "frontend-admin/src/app/(admin)/_components/admin-sparkline.tsx",
+        "frontend-admin/src/app/(admin)/_components/admin-status-chip.tsx",
         "frontend-admin/src/app/(admin)/audit/page.tsx",
         "frontend-admin/src/app/(admin)/chat/page.tsx",
         "frontend-admin/src/app/(admin)/clientes/page.tsx",
         "frontend-admin/src/app/(admin)/compliance/page.tsx",
+        "frontend-admin/src/app/(admin)/configuracoes/_components/config-constants.ts",
+        "frontend-admin/src/app/(admin)/configuracoes/_components/ConfigCreateUserDialog.tsx",
+        "frontend-admin/src/app/(admin)/configuracoes/_components/ConfigGovernanceNotesSection.tsx",
+        "frontend-admin/src/app/(admin)/configuracoes/_components/ConfigPermissionEditor.tsx",
+        "frontend-admin/src/app/(admin)/configuracoes/_components/ConfigUserAccessSection.tsx",
+        "frontend-admin/src/app/(admin)/configuracoes/_components/ConfigWorkspaceConfigEditor.tsx",
+        "frontend-admin/src/app/(admin)/configuracoes/_components/ConfigWorkspaceConfigSection.tsx",
         "frontend-admin/src/app/(admin)/configuracoes/page.tsx",
         "frontend-admin/src/app/(admin)/contas/[workspaceId]/page.tsx",
         "frontend-admin/src/app/(admin)/contas/kyc/page.tsx",
@@ -22470,9 +22475,12 @@
         "frontend/src/components/kloel/carteira/carteira.helpers.ts",
         "frontend/src/components/kloel/carteira/carteira.icons.tsx",
         "frontend/src/components/kloel/carteira/carteira.types.ts",
+        "frontend/src/components/kloel/carteira/CarteiraAntecipateModal.tsx",
         "frontend/src/components/kloel/carteira/CarteiraExtratoTable.tsx",
         "frontend/src/components/kloel/carteira/CarteiraSaldoCard.tsx",
         "frontend/src/components/kloel/carteira/CarteiraSaque.tsx",
+        "frontend/src/components/kloel/carteira/CarteiraTabAntecipacoes.tsx",
+        "frontend/src/components/kloel/carteira/CarteiraWithdrawModal.tsx",
         "frontend/src/components/kloel/chat-container.agent-stream.ts",
         "frontend/src/components/kloel/chat-container.agent-trace.tsx",
         "frontend/src/components/kloel/chat-container.data.ts",
@@ -22631,9 +22639,14 @@
         "frontend/src/components/kloel/marketing/EmailMarketingTab.tsx",
         "frontend/src/components/kloel/marketing/FacebookMarketingTab.tsx",
         "frontend/src/components/kloel/marketing/InstagramMarketingTab.tsx",
+        "frontend/src/components/kloel/marketing/marketing-utils.ts",
+        "frontend/src/components/kloel/marketing/MarketingChannelNerveRow.tsx",
+        "frontend/src/components/kloel/marketing/MarketingConversationsHub.tsx",
+        "frontend/src/components/kloel/marketing/MarketingRevenueBarChart.tsx",
         "frontend/src/components/kloel/marketing/MarketingShared.tsx",
         "frontend/src/components/kloel/marketing/MarketingTypes.ts",
         "frontend/src/components/kloel/marketing/MarketingView.tsx",
+        "frontend/src/components/kloel/marketing/MarketingVisaoGeral.tsx",
         "frontend/src/components/kloel/marketing/OfficialMarketingChannelPage.helpers.ts",
         "frontend/src/components/kloel/marketing/OfficialMarketingChannelPage.tsx",
         "frontend/src/components/kloel/marketing/SmsMarketingTab.tsx",
@@ -22907,6 +22920,12 @@
         "frontend/src/components/plans/PlanShippingTab.tsx",
         "frontend/src/components/plans/PlanStoreTab.tsx",
         "frontend/src/components/plans/PlanThankYouTab.tsx",
+        "frontend/src/components/products/checkout/CheckoutCheckbox.tsx",
+        "frontend/src/components/products/checkout/CheckoutPixelRow.tsx",
+        "frontend/src/components/products/checkout/CheckoutPixelsSection.tsx",
+        "frontend/src/components/products/checkout/CheckoutRadio.tsx",
+        "frontend/src/components/products/checkout/CheckoutToggle.tsx",
+        "frontend/src/components/products/checkout/CheckoutToggleRow.tsx",
         "frontend/src/components/products/CheckoutConfigPage.tsx",
         "frontend/src/components/products/CheckoutLinksModal.tsx",
         "frontend/src/components/products/ProductAfterPayTab.tsx",
@@ -23306,7 +23325,7 @@
       ]
     },
     {
-      "order": 28,
+      "order": 29,
       "id": "parity-flow-without-validation-flow-without-validation-launch-post-launch-launcher",
       "kind": "scope",
       "priority": "P2",
@@ -23426,7 +23445,7 @@
       ]
     },
     {
-      "order": 34,
+      "order": 35,
       "id": "capability-capability-admin-carteira",
       "kind": "capability",
       "priority": "P2",
@@ -23511,7 +23530,7 @@
       ]
     },
     {
-      "order": 38,
+      "order": 39,
       "id": "capability-capability-ad-rules",
       "kind": "capability",
       "priority": "P2",
@@ -23598,7 +23617,7 @@
       ]
     },
     {
-      "order": 36,
+      "order": 37,
       "id": "matrix-matrix-capability-capability-ad-rules",
       "kind": "capability",
       "priority": "P2",
@@ -23698,7 +23717,7 @@
       ]
     },
     {
-      "order": 124,
+      "order": 128,
       "id": "pulse-no-hardcoded-reality-state",
       "kind": "gate",
       "priority": "P3",
@@ -23710,7 +23729,7 @@
       "productImpact": "diagnostic",
       "ownerLane": "platform",
       "title": "Remove PULSE Hardcoded Reality Authority",
-      "summary": "220352 hardcoded reality event(s) across 505 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/p...",
+      "summary": "220356 hardcoded reality event(s) across 505 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/p...",
       "whyNow": "Keeps PULSE decisions grounded in discovered evidence instead of fixed product reality lists.",
       "visionDelta": "Keeps PULSE decisions grounded in discovered evidence instead of fixed product reality lists.",
       "targetState": "PULSE_NO_HARDCODED_REALITY.json reports zero dynamic hardcode evidence events.",
@@ -23784,7 +23803,88 @@
       ]
     },
     {
-      "order": 103,
+      "order": 95,
+      "id": "parity-front-without-back-front-without-back-autopilot-mission",
+      "kind": "scope",
+      "priority": "P3",
+      "source": "pulse",
+      "executionMode": "ai_safe",
+      "riskLevel": "high",
+      "evidenceMode": "observed",
+      "confidence": "high",
+      "productImpact": "transformational",
+      "ownerLane": "platform",
+      "title": "Front without back: Autopilot Mission",
+      "summary": "Capability Autopilot Mission exposes UI or interaction entry points without an orchestrated backend/materialized effect.",
+      "whyNow": "Converts a user-facing illusion into a real product chain for Front without back: Autopilot Mission.",
+      "visionDelta": "Converts a user-facing illusion into a real product chain for Front without back: Autopilot Mission.",
+      "targetState": "Structural parity gap front_without_back must stop appearing in the next PULSE run.",
+      "affectedCapabilities": [
+        "capability:autopilot-mission"
+      ],
+      "affectedFlows": [
+        "autopilot-post-autopilot-test"
+      ],
+      "gateNames": [],
+      "expectedGateShift": "Reduce product parity drift",
+      "validationTargets": [
+        "PULSE_CLI_DIRECTIVE.json",
+        "PULSE_PARITY_GAPS.json",
+        "PULSE_PRODUCT_VISION.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_CLI_DIRECTIVE.json",
+        "PULSE_PARITY_GAPS.json",
+        "PULSE_PRODUCT_VISION.json"
+      ],
+      "relatedFiles": [
+        "frontend/src/app/(main)/autopilot/AutopilotMissionGrid.tsx"
+      ],
+      "exitCriteria": [
+        "Gap front_without_back is absent from the next PULSE_PARITY_GAPS.json snapshot.",
+        "Governed ai_safe validation: Run governed runtime evidence collection for capability capability:autopilot-mission.",
+        "Governed ai_safe validation: Run governed scenario or flow evidence for capability capability:autopilot-mission.",
+        "Governed ai_safe validation: Run governed structural evidence validation for role interface on capability capability:autopilot-mission.",
+        "Governed ai_safe validation: Run governed structural evidence validation for role orchestration on capability capability:autopilot-mission.",
+        "Governed ai_safe validation: Run governed structural evidence validation for role persistence on capability capability:autopilot-mission.",
+        "Governed ai_safe validation: Run governed structural evidence validation for role side_effect on capability capability:autopilot-mission.",
+        "Governed ai_safe validation: Run targeted typecheck and tests that exercise capability capability:autopilot-mission.",
+        "Re-run runtime evidence for this capability."
+      ],
+      "preconditions": [
+        "One or more affected capabilities are still partial or phantom."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
+      ],
+      "successCriteria": [
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "requiredValidations": [
+        "typecheck",
+        "affected-tests",
+        "flow-evidence"
+      ]
+    },
+    {
+      "order": 107,
       "id": "parity-front-without-back-front-without-back-capabilities-capability",
       "kind": "scope",
       "priority": "P3",
@@ -23862,91 +23962,6 @@
         "typecheck",
         "affected-tests",
         "flow-evidence"
-      ]
-    },
-    {
-      "order": 136,
-      "id": "scope-codacy-parity",
-      "kind": "scope",
-      "priority": "P3",
-      "source": "scope",
-      "executionMode": "ai_safe",
-      "riskLevel": "high",
-      "evidenceMode": "observed",
-      "confidence": "low",
-      "productImpact": "material",
-      "ownerLane": "platform",
-      "title": "Close Codacy Scope Parity Gaps",
-      "summary": "Observed Codacy files are missing from repo inventory: .agents/skills/marketing-psychology/SKILL.md, scripts/pulse/parsers/facade-detector.ts, scripts/pulse/parsers/runtime-utils.ts.",
-      "whyNow": "Closes scope drift between what Codacy is flagging and what PULSE can actually inventory and classify.",
-      "visionDelta": "Closes scope drift between what Codacy is flagging and what PULSE can actually inventory and classify.",
-      "targetState": "Every observed Codacy hotspot file must exist in the dynamic repo inventory and be classifiable by PULSE.",
-      "affectedCapabilities": [],
-      "affectedFlows": [],
-      "gateNames": [
-        "scopeClosed",
-        "staticPass",
-        "invariantPass",
-        "customerPass",
-        "operatorPass",
-        "adminPass",
-        "soakPass",
-        "evidenceFresh",
-        "noOverclaimPass",
-        "criticalPathObservedPass"
-      ],
-      "expectedGateShift": "Pass scopeClosed",
-      "validationTargets": [
-        "PULSE_SCOPE_STATE.json",
-        null,
-        "PULSE_CERTIFICATE.json"
-      ],
-      "validationArtifacts": [
-        "PULSE_SCOPE_STATE.json",
-        null,
-        "PULSE_CERTIFICATE.json"
-      ],
-      "relatedFiles": [
-        ".agents/skills/marketing-psychology/SKILL.md",
-        "scripts/pulse/parsers/facade-detector.ts",
-        "scripts/pulse/parsers/runtime-utils.ts"
-      ],
-      "exitCriteria": [
-        "scopeClosed returns pass in the next certification run.",
-        "All observed Codacy hotspot files are covered by the repo inventory."
-      ],
-      "preconditions": [
-        "No preconditions; safe to start."
-      ],
-      "allowedActions": [
-        "Code generation",
-        "File mutations",
-        "Integration setup",
-        "Test writing",
-        "Schema migrations",
-        "Configuration changes"
-      ],
-      "forbiddenActions": [
-        "Do not suppress Codacy or linting results",
-        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
-        "Do not use db push in production or CI",
-        "Do not reduce test coverage or delete existing tests",
-        "Do not commit secrets or credentials",
-        "Do not bypass payment, auth, or webhook validation",
-        "Do not rewrite git history or force pushes",
-        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
-      ],
-      "successCriteria": [
-        "Gap type (front/back/persistence/etc) resolved.",
-        "Affected surface now has real backing.",
-        "All affected files pass linting and typecheck.",
-        "No new Codacy high/critical issues introduced.",
-        "Tests passing for affected modules."
-      ],
-      "requiredValidations": [
-        "typecheck",
-        "affected-tests",
-        "scenario-evidence"
       ]
     }
   ],
@@ -24192,7 +24207,7 @@
       "productImpact": "machine",
       "ownerLane": "pulse-core",
       "title": "Close PULSE critical path terminal criterion",
-      "summary": "3995 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-insights, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
+      "summary": "4021 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-insights, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
       "whyNow": "PULSE machine readiness is the active target; do not spend this cycle materializing SaaS product capabilities.",
       "visionDelta": "Moves PULSE closer to zero-prompt technical autonomy by closing machine proof, adapter, or execution-evidence gaps.",
       "targetState": "PULSE machine criterion \"critical_path_terminal\" must pass with canonical evidence.",
@@ -25616,7 +25631,7 @@
       "productImpact": "machine",
       "ownerLane": "pulse-proof",
       "title": "Repair PULSE no overclaim proof",
-      "summary": "overclaim:completionProofReadiness — certification cannot complete while .pulse/current/PULSE_PROOF_READINESS.json has non-observed production proof (status=executable_unproved, canAdvance=false, planned=1966, inferred=0, not_available=0, nonObserved=1966, executableUnproved=1966).",
+      "summary": "overclaim:completionProofReadiness — certification cannot complete while .pulse/current/PULSE_PROOF_READINESS.json has non-observed production proof (status=executable_unproved, canAdvance=false, planned=1976, inferred=0, not_available=0, nonObserved=1976, executableUnproved=1976).",
       "whyNow": "PULSE cannot claim zero-prompt production autonomy while this proof gate is failing; improve PULSE proof machinery before editing SaaS product code.",
       "visionDelta": "Moves PULSE from advisory/autonomous execution toward certified technical replacement by converting inferred or missing proof into canonical evidence.",
       "targetState": "Certification gate noOverclaimPass must pass or expose a precise non-product proof blocker.",
@@ -25682,7 +25697,7 @@
       "productImpact": "machine",
       "ownerLane": "pulse-proof",
       "title": "Repair PULSE critical path observed proof",
-      "summary": "3995 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-insights, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
+      "summary": "4021 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-insights, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
       "whyNow": "PULSE cannot claim zero-prompt production autonomy while this proof gate is failing; improve PULSE proof machinery before editing SaaS product code.",
       "visionDelta": "Moves PULSE from advisory/autonomous execution toward certified technical replacement by converting inferred or missing proof into canonical evidence.",
       "targetState": "Certification gate criticalPathObservedPass must pass or expose a precise non-product proof blocker.",
@@ -25755,7 +25770,7 @@
       "productImpact": "machine",
       "ownerLane": "pulse-proof",
       "title": "Close PULSE production-autonomy proof debt",
-      "summary": "NAO: Evidence freshness is not closed. | Pulse self-trust is still failing. | Runtime pass is not green with live evidence. | Authority mode is advisory-only, not certified-autonomous. | Certification status is NOT_CERTIFIED, not CERTIFIED. | 2 missing, 0 stale, and 0 invalid external adapter(s) remain. | 53 parity gap(s), 1076 HIGH Codacy issue(s), 1 phantom capability(ies), and 0 phantom flow(s) remain. | 1 governed validation gap(s) remain observation-only or protected-surface work. | Observed Codacy files are missing from repo inventory: .agents/skills/marketing-psychology/SKILL.md, scripts/pulse/parsers/facade-detector.ts, scripts/pulse/parsers/runtime-utils.ts. | Codacy still reports 1076 HIGH issue(s). | Phantom capabilities remain: Knowledge Base. | Codacy snapshot is stale (25068 minute(s) old). | Observed external high-impact signals remain active: 3. | Required external adapters are missing: 2. | Proof readiness still has non-observed production proof: status=executable_unproved, canAdvance=false, planned=1966, inferred=0, not_available=0, nonObserved=1966, executableUnproved=1966. | No-hardcoded-reality state still has hardcoded reality authority: 220352 hardcoded reality event(s) across 505 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9.. | NAO: production proof readiness is not fully observed (proofReadiness status=executable_unproved, canAdvance=false, planned=1966, inferred=0, not_available=0, nonObserved=1966, executableUnproved=1966).",
+      "summary": "NAO: Evidence freshness is not closed. | Pulse self-trust is still failing. | Runtime pass is not green with live evidence. | Authority mode is advisory-only, not certified-autonomous. | Certification status is NOT_CERTIFIED, not CERTIFIED. | 2 missing, 0 stale, and 0 invalid external adapter(s) remain. | 55 parity gap(s), 1076 HIGH Codacy issue(s), 1 phantom capability(ies), and 0 phantom flow(s) remain. | 1 governed validation gap(s) remain observation-only or protected-surface work. | Observed Codacy files are missing from repo inventory: .agents/skills/marketing-psychology/SKILL.md, scripts/pulse/parsers/facade-detector.ts, scripts/pulse/parsers/runtime-utils.ts. | Codacy still reports 1076 HIGH issue(s). | Phantom capabilities remain: Knowledge Base. | Codacy snapshot is stale (25089 minute(s) old). | Observed external high-impact signals remain active: 3. | Required external adapters are missing: 2. | Proof readiness still has non-observed production proof: status=executable_unproved, canAdvance=false, planned=1976, inferred=0, not_available=0, nonObserved=1976, executableUnproved=1976. | No-hardcoded-reality state still has hardcoded reality authority: 220356 hardcoded reality event(s) across 505 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9.. | NAO: production proof readiness is not fully observed (proofReadiness status=executable_unproved, canAdvance=false, planned=1976, inferred=0, not_available=0, nonObserved=1976, executableUnproved=1976).",
       "whyNow": "PULSE cannot claim production autonomy while proof blockers remain; repair PULSE proof machinery before editing SaaS product code.",
       "visionDelta": "Moves PULSE from next-step guidance toward certified zero-prompt technical replacement.",
       "targetState": "productionAutonomyVerdict must be SIM or expose only precise machine blockers.",
@@ -26173,7 +26188,7 @@
       "productImpact": "machine",
       "ownerLane": "pulse-core",
       "title": "Close PULSE critical path terminal criterion",
-      "summary": "3995 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-insights, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
+      "summary": "4021 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-insights, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
       "whyNow": "PULSE machine readiness is the active target; do not spend this cycle materializing SaaS product capabilities.",
       "visionDelta": "Moves PULSE closer to zero-prompt technical autonomy by closing machine proof, adapter, or execution-evidence gaps.",
       "targetState": "PULSE machine criterion \"critical_path_terminal\" must pass with canonical evidence.",
@@ -26939,7 +26954,7 @@
       "productImpact": "machine",
       "ownerLane": "pulse-core",
       "title": "Close PULSE critical path terminal criterion",
-      "summary": "3995 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-insights, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
+      "summary": "4021 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-insights, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
       "whyNow": "PULSE machine readiness is the active target; do not spend this cycle materializing SaaS product capabilities.",
       "visionDelta": "Moves PULSE closer to zero-prompt technical autonomy by closing machine proof, adapter, or execution-evidence gaps.",
       "targetState": "PULSE machine criterion \"critical_path_terminal\" must pass with canonical evidence.",
@@ -27504,34 +27519,34 @@
   ],
   "productTruth": {
     "capabilities": {
-      "totalCapabilities": 397,
+      "totalCapabilities": 402,
       "realCapabilities": 0,
-      "partialCapabilities": 385,
+      "partialCapabilities": 390,
       "latentCapabilities": 11,
       "phantomCapabilities": 1,
       "governedValidationCapabilities": 0,
       "foundationalCapabilities": 4,
-      "connectedCapabilities": 393,
+      "connectedCapabilities": 398,
       "operationalCapabilities": 0,
       "productionReadyCapabilities": 0,
       "runtimeObservedCapabilities": 0,
       "scenarioCoveredCapabilities": 0
     },
     "flows": {
-      "totalFlows": 51,
+      "totalFlows": 49,
       "realFlows": 0,
-      "partialFlows": 51,
+      "partialFlows": 49,
       "latentFlows": 0,
       "phantomFlows": 0
     },
     "parityGaps": {
-      "totalGaps": 53,
+      "totalGaps": 55,
       "criticalGaps": 12,
-      "highGaps": 40,
+      "highGaps": 42,
       "byKind": {
-        "front_without_back": 8,
+        "front_without_back": 9,
         "back_without_front": 3,
-        "ui_without_persistence": 26,
+        "ui_without_persistence": 27,
         "persistence_without_consumer": 0,
         "flow_without_validation": 4,
         "integration_without_observability": 12,
@@ -27540,18 +27555,18 @@
       }
     },
     "structuralGraph": {
-      "totalNodes": 7218,
-      "totalEdges": 15143,
+      "totalNodes": 7231,
+      "totalEdges": 15141,
       "roleCounts": {
-        "interface": 2722,
+        "interface": 2735,
         "orchestration": 3369,
         "persistence": 145,
         "side_effect": 981,
         "simulation": 1
       },
-      "interfaceChains": 2722,
-      "completeChains": 764,
-      "partialChains": 1958,
+      "interfaceChains": 2735,
+      "completeChains": 762,
+      "partialChains": 1973,
       "simulatedChains": 0
     },
     "codacy": {
@@ -27616,8 +27631,8 @@
       }
     },
     "evidenceBasis": {
-      "observed": 48,
-      "inferred": 374,
+      "observed": 46,
+      "inferred": 379,
       "projected": 0
     }
   },
@@ -27649,26 +27664,18 @@
   "contextFabric": {
     "broadcastRef": "PULSE_CONTEXT_BROADCAST.json",
     "leasesRef": "PULSE_WORKER_LEASES.json",
-    "gitnexusRef": "gitnexus:a4e3ef82b3ce639d3de7246d39eb6b43ee600ff0:2026-05-10T16:29:42.199Z",
-    "beadsRef": "beads:60ac6e77ca29e058",
-    "contextDigest": "aa8b1b26a79dbaa0a4f1fcfc5ea9775681d55ea57456a242b0f7b172abff934f",
-    "workerEnvelopeCount": 10,
-    "contextBroadcastPass": true,
-    "ownershipConflictPass": true,
-    "protectedFilesForbiddenPass": true,
-    "workerContextCompletenessPass": true,
-    "staleContextBlocksExecution": false,
-    "blockers": []
+    "requiredForParallelWorkers": true,
+    "status": "pending_artifact_generation"
   },
   "stopCondition": [
     "Observed Codacy files are missing from repo inventory: .agents/skills/marketing-psychology/SKILL.md, scripts/pulse/parsers/facade-detector.ts, scripts/pulse/parsers/runtime-utils.ts.",
     "Codacy still reports 1076 HIGH issue(s).",
     "Phantom capabilities remain: Knowledge Base.",
-    "Codacy snapshot is stale (25068 minute(s) old).",
+    "Codacy snapshot is stale (25089 minute(s) old).",
     "Observed external high-impact signals remain active: 3.",
     "Required external adapters are missing: 2.",
-    "Proof readiness still has non-observed production proof: status=executable_unproved, canAdvance=false, planned=1966, inferred=0, not_available=0, nonObserved=1966, executableUnproved=1966.",
-    "No-hardcoded-reality state still has hardcoded reality authority: 220352 hardcoded reality event(s) across 505 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9.."
+    "Proof readiness still has non-observed production proof: status=executable_unproved, canAdvance=false, planned=1976, inferred=0, not_available=0, nonObserved=1976, executableUnproved=1976.",
+    "No-hardcoded-reality state still has hardcoded reality authority: 220356 hardcoded reality event(s) across 505 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9.."
   ],
-  "runId": "69087d64-ac5e-49c2-93b1-4c35eb89a400"
+  "runId": "d6804acb-6a88-42e4-a0d0-fad06b787f54"
 }

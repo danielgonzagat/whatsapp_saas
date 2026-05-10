@@ -2,14 +2,12 @@
 import { colors } from '@/lib/design-tokens';
 import { kloelT } from '@/lib/i18n/t';
 import {
-  NP,
   SORA,
   MONO,
   EMBER,
   BG_CARD,
   BG_ELEVATED,
   BORDER,
-  fmt,
   fmtBRL,
 } from './ProdutosView.shared';
 import { IC } from './ProdutosView.icons';
