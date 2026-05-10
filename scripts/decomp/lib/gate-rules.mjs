@@ -55,10 +55,11 @@ export const FORBIDDEN_TOKENS = [
   { id: 'codacy-' + 'ignore', label: _CI, pattern: new RegExp(_CI + '\\b') },
   { id: 'no' + 'sonar', label: _NS, pattern: new RegExp('\\b' + _NS + '\\b') },
   { id: 'no' + 'qa', label: _NQ, pattern: new RegExp('\\b' + _NQ + '\\b') },
-  { id: 'pulse-' + 'ok', label: _PUOK, pattern: new RegExp('\\b' + _PUOK + '\\b') },
-  { id: 'pulse-' + 'visual-ok', label: _PVOK, pattern: new RegExp('\\b' + _PVOK + '\\b') },
-  { id: 'pulse-' + 'allow', label: _PAW, pattern: new RegExp('\\b' + _PAW + '\\b') },
-  { id: 'visual-' + 'bypass', label: _VBP, pattern: new RegExp('\\b' + _VBP + '\\b') },
+  // Separator-agnostic + case-insensitive: detects PULSE_OK, PULSE:OK, PULSE-OK, PULSE.OK, PULSE/OK, PULSEOK, pulse_ok, etc.
+  { id: 'pulse-' + 'ok', label: 'PULSE*OK', pattern: new RegExp('\\b[Pp][Uu][Ll][Ss][Ee][^A-Za-z0-9]?[Oo][Kk]\\b') },
+  { id: 'pulse-' + 'visual-ok', label: 'PULSE*VISUAL*OK', pattern: new RegExp('\\b[Pp][Uu][Ll][Ss][Ee][^A-Za-z0-9]?[Vv][Ii][Ss][Uu][Aa][Ll][^A-Za-z0-9]?[Oo][Kk]\\b') },
+  { id: 'pulse-' + 'allow', label: 'PULSE*ALLOW', pattern: new RegExp('\\b[Pp][Uu][Ll][Ss][Ee][^A-Za-z0-9]?[Aa][Ll][Ll][Oo][Ww]\\b') },
+  { id: 'visual-' + 'bypass', label: 'VISUAL*BYPASS', pattern: new RegExp('\\b[Vv][Ii][Ss][Uu][Aa][Ll][^A-Za-z0-9]?[Bb][Yy][Pp][Aa][Ss][Ss]\\b') },
 ];
 
 export const ANY_TYPE_PATTERN = new RegExp(
