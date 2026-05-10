@@ -303,11 +303,11 @@ function toCandidate(seed: CiaSeedConversation): CiaCandidate {
 /** Build cia workspace state from seed. */
 export function buildCiaWorkspaceStateFromSeed(input: {
   workspaceId: string;
-  workspaceName?: string | null;
-  generatedAt?: string;
-  openBacklog?: number;
-  approvedSalesCount?: number;
-  approvedSalesAmount?: number;
+  workspaceName?: string | null | undefined;
+  generatedAt?: string | undefined;
+  openBacklog?: number | undefined;
+  approvedSalesCount?: number | undefined;
+  approvedSalesAmount?: number | undefined;
   conversations: CiaSeedConversation[];
 }): CiaWorkspaceState {
   const candidates = input.conversations.map(toCandidate).sort((a, b) => b.priority - a.priority);

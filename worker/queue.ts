@@ -176,7 +176,7 @@ function attachDlq(queue: BullQueue) {
             ...(correlationId ? { correlationId } : {}),
             ...(workspaceId ? { workspaceId } : {}),
           },
-          { jobId: job.id, removeOnComplete: true },
+          { ...(job.id ? { jobId: job.id } : {}), removeOnComplete: true },
         );
         await notifyOps({
           queue: queue.name,

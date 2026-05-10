@@ -1,4 +1,3 @@
-import { WorkerLogger } from '../../logger';
 import { prisma } from '../../db';
 import { autopilotQueue } from '../../queue';
 import { buildQueueJobId } from '../../job-id';

@@ -3,6 +3,15 @@
 import type { CheckoutThemeInputTokens, CheckoutThemeStepTokens } from './checkout-theme-shared';
 import { colors } from '@/lib/design-tokens';
 
+export const CHECKOUT_VISUAL = {
+  blancBgStart: '#3d1232',
+  blancBgMid: '#5a1a4a',
+  blancBorder: '#f0e6c0',
+  blancPlaceholder: '#aaa',
+  noirBgStart: '#1a0a14',
+  noirBgMid: '#2d1525',
+} as const;
+
 /** Checkout visual theme shape. */
 export interface CheckoutVisualTheme {
   /** Mode property. */

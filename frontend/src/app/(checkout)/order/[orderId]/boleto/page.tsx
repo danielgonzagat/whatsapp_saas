@@ -84,7 +84,7 @@ export default function BoletoPaymentPage() {
               alignItems: 'center',
               gap: '8px',
               background: colors.checkout.surface,
-              border: '1px solid #2A2A2E',
+              border: `1px solid ${colors.checkout.border}`,
               borderRadius: '10px',
               padding: '10px 20px',
               marginBottom: '24px',
@@ -101,7 +101,7 @@ export default function BoletoPaymentPage() {
         <div
           style={{
             background: colors.checkout.bg,
-            border: '1px solid #2A2A2E',
+            border: `1px solid ${colors.checkout.border}`,
             borderRadius: '12px',
             padding: '20px',
             marginBottom: '16px',
@@ -159,7 +159,7 @@ export default function BoletoPaymentPage() {
                 width: '100%',
                 padding: '14px',
                 background: colors.checkout.bg,
-                border: '1px solid #2A2A2E',
+                border: `1px solid ${colors.checkout.border}`,
                 borderRadius: '10px',
                 color: colors.checkout.textPrimary,
                 fontSize: '14px',

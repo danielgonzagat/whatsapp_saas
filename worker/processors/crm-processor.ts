@@ -106,7 +106,7 @@ async function checkInactivity(workspaceId: string) {
             flow.nodes as Array<{
               id: string;
               type: string;
-              data?: Record<string, unknown>;
+              data: Record<string, unknown> | undefined;
             }>,
             flow.edges as Array<{
               source: string;
