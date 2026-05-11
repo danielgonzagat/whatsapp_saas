@@ -22,6 +22,60 @@ type UnifiedAgentPrismaMock = {
   autopilotEvent: { create: jest.Mock };
 };
 
+const BLOCKED_PAYMENT_LINK_COMPLETION = {
+  choices: [
+    {
+      message: {
+        content: null,
+        tool_calls: [
+          {
+            id: 'call-1',
+            type: 'function',
+            function: { name: 'create_payment_link', arguments: '{"amount":100}' },
+          },
+        ],
+      },
+    },
+  ],
+  usage: { total_tokens: 12 },
+};
+
+const BLOCKED_PAYMENT_LINK_ACTION = {
+  tool: 'create_payment_link',
+  args: {},
+  result: { blocked: true, reason: 'capability_not_allowed' },
+};
+
+function mockBlockedToolCallCompletion() {
+  (chatCompletionWithFallback as jest.Mock)
+    .mockResolvedValueOnce(BLOCKED_PAYMENT_LINK_COMPLETION)
+    .mockResolvedValueOnce({
+      choices: [{ message: { content: 'Posso te ajudar por aqui.' } }],
+      usage: { total_tokens: 8 },
+    });
+}
+
+function blockedPaymentLinkEventExpectation() {
+  return expect.objectContaining({
+    data: expect.objectContaining({
+      action: 'create_payment_link',
+      contactId: 'contact-1',
+      status: 'failed',
+      workspaceId: 'ws-1',
+    }),
+  });
+}
+
+function expectPaymentLinkToolBlocked(
+  result: { actions: unknown[] },
+  prisma: UnifiedAgentPrismaMock,
+  paymentService: { createPayment: jest.Mock },
+) {
+  expect(paymentService.createPayment).not.toHaveBeenCalled();
+  expect(prisma.autopilotEvent.create).toHaveBeenCalledWith(blockedPaymentLinkEventExpectation());
+  expect(result.actions).toEqual([BLOCKED_PAYMENT_LINK_ACTION]);
+}
+
 describe('UnifiedAgentService', () => {
   let prisma: UnifiedAgentPrismaMock;
   let whatsappService: { sendMessage: jest.Mock };
@@ -278,31 +332,7 @@ describe('UnifiedAgentService', () => {
 
   it('logs and blocks LLM tool calls outside the allowed policy', async () => {
     Reflect.set(service, 'openai', {});
-    (chatCompletionWithFallback as jest.Mock)
-      .mockResolvedValueOnce({
-        choices: [
-          {
-            message: {
-              content: null,
-              tool_calls: [
-                {
-                  id: 'call-1',
-                  type: 'function',
-                  function: {
-                    name: 'create_payment_link',
-                    arguments: '{"amount":100}',
-                  },
-                },
-              ],
-            },
-          },
-        ],
-        usage: { total_tokens: 12 },
-      })
-      .mockResolvedValueOnce({
-        choices: [{ message: { content: 'Posso te ajudar por aqui.' } }],
-        usage: { total_tokens: 8 },
-      });
+    mockBlockedToolCallCompletion();
 
     const result = await service.processMessage({
       workspaceId: 'ws-1',
@@ -312,24 +342,7 @@ describe('UnifiedAgentService', () => {
       allowedTools: ['send_message'],
     });
 
-    expect(paymentService.createPayment).not.toHaveBeenCalled();
-    expect(prisma.autopilotEvent.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          action: 'create_payment_link',
-          contactId: 'contact-1',
-          status: 'failed',
-          workspaceId: 'ws-1',
-        }),
-      }),
-    );
-    expect(result.actions).toEqual([
-      {
-        tool: 'create_payment_link',
-        args: {},
-        result: { blocked: true, reason: 'capability_not_allowed' },
-      },
-    ]);
+    expectPaymentLinkToolBlocked(result, prisma, paymentService);
   });
 
   it('loads conversation history by phone when contactId is missing', async () => {
