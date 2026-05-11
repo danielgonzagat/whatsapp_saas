@@ -293,7 +293,7 @@ export class CheckoutService {
   /** Duplicate checkout. */
   async duplicateCheckout(checkoutId: string, workspaceId: string) {
     const checkout = await this.prisma.checkoutProductPlan.findUnique({
-      where: { id: checkoutId },
+      where: { id: checkoutId, product: { workspaceId } },
       include: {
         checkoutConfig: { include: { pixels: true } },
         checkoutLinks: { select: { planId: true } },
@@ -339,7 +339,7 @@ export class CheckoutService {
 
       if (checkout.checkoutConfig.pixels?.length) {
         const createdConfig = await this.prisma.checkoutConfig.findUnique({
-          where: { planId: duplicatedId },
+          where: { planId: duplicatedId, plan: { product: { workspaceId } } },
           select: { id: true },
         });
         if (createdConfig?.id) {
@@ -367,7 +367,7 @@ export class CheckoutService {
     }
 
     return this.prisma.checkoutProductPlan.findUnique({
-      where: { id: duplicatedId },
+      where: { id: duplicatedId, product: { workspaceId } },
       include: {
         checkoutConfig: true,
         checkoutLinks: { include: { plan: { select: { id: true, name: true } } } },
