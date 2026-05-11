@@ -1,4 +1,14 @@
 {
+  "airlock_pr": {
+    "active": true,
+    "pr": "#276",
+    "openedAt": "2026-05-11T15:55:00.000Z",
+    "openedBy": "Daniel via mission grant",
+    "mechanism": ".claude/settings.local.json -> disableAllHooks: true",
+    "reason": "PR #276 total-debt closure (Kloel) — temporary suspension of preflight gates to allow ratchet/governance/ops/* edits and frota dispatch.",
+    "restoreCommit": "wave-O-final-restore",
+    "restoreInstruction": "Remove the 'disableAllHooks: true' key from .claude/settings.local.json (or set to false) and revert this file's airlock_pr.active to false before merging PR #276 to main. Verify gates fire by attempting a Write to AGENTS.md; the gate must block."
+  },
   "protectedExact": [
     "AGENTS.md",
     "CLAUDE.md",
