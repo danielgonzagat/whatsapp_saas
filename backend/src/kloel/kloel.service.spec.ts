@@ -134,7 +134,6 @@ describe('KloelService', () => {
       mocks.threadService as never,
       mocks.wsContextService as never,
       mocks.leadBrainService as never,
-      mocks.composerService as never,
       mocks.thinkerService as never,
       mocks.replyEngineService as never,
       mocks.toolDispatcher as never,
