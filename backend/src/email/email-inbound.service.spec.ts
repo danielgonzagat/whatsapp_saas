@@ -206,17 +206,17 @@ describe('EmailInboundService', () => {
     it('resolves workspace from a plus-address recipient alias', async () => {
       prisma.workspace.findFirst.mockResolvedValue({ id: 'ws-abc' });
 
-      await expect(service.resolveWorkspaceIdForRecipient('inbox+ws-abc@example.com')).resolves.toBe(
-        'ws-abc',
-      );
+      await expect(
+        service.resolveWorkspaceIdForRecipient('inbox+ws-abc@example.com'),
+      ).resolves.toBe('ws-abc');
     });
 
     it('prefers a workspace custom domain match over the recipient alias', async () => {
       prisma.workspace.findFirst.mockResolvedValue({ id: 'ws-domain' });
 
-      await expect(service.resolveWorkspaceIdForRecipient('inbox+ws-abc@example.com')).resolves.toBe(
-        'ws-domain',
-      );
+      await expect(
+        service.resolveWorkspaceIdForRecipient('inbox+ws-abc@example.com'),
+      ).resolves.toBe('ws-domain');
     });
 
     it('rejects unknown recipient aliases without routing to another workspace', async () => {
