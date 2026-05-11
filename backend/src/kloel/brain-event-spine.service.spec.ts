@@ -1,5 +1,6 @@
 import { BrainEventSpineService } from './brain-event-spine.service';
 import type {
+  CommercialEventPayload,
   CheckoutEventPayload,
   MessageEventPayload,
   SaleEventPayload,
@@ -196,6 +197,28 @@ describe('BrainEventSpineService', () => {
           }),
         }),
       );
+    });
+
+    it('omits undefined object keys and preserves nulls in commercial payloads', async () => {
+      const event: CommercialEventPayload = {
+        occurredAt: new Date(),
+        workspaceId: 'ws-1',
+        subject: 'contact:contact-1',
+        eventType: 'brain.observe',
+        contactId: 'contact-1',
+        payload: {
+          contentPreview: 'Quero comprar',
+          channel: undefined,
+          providerMessageId: null,
+        },
+      };
+
+      await service.recordCommercial(event);
+
+      const createCall = prisma.autopilotEvent.create.mock.calls[0][0];
+      const payload = createCall.data.meta.payload as Record<string, unknown>;
+      expect(payload).not.toHaveProperty('channel');
+      expect(payload).toMatchObject({ providerMessageId: null });
     });
 
     it('records a checkout.created event with full payload', async () => {

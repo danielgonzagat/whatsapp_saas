@@ -151,10 +151,6 @@ export function QRCodePane({
             {loading ? 'Atualizando...' : qrCode ? 'Gerar novo QR Code' : 'Atualizar QR Code'}
           </button>
         </>
-      ) : progress < 100 ? (
-        <p style={{ fontSize: 12, color: S }}>
-          {kloelT(`Aguardando confirmação do dispositivo...`)}
-        </p>
       ) : null}
     </div>
   );

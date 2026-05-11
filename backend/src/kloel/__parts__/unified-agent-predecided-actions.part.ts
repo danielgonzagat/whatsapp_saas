@@ -30,16 +30,25 @@ export async function executePredecidedAgentActions(input: {
   predecidedActions: PredecidedAction[];
   workspaceId: string;
 }): Promise<ActionEntry[]> {
-  const allowed = input.allowedTools?.length ? new Set(input.allowedTools) : null;
+  const allowed =
+    typeof input.allowedTools === 'undefined' ? null : new Set(input.allowedTools);
   const actionsList: ActionEntry[] = [];
 
   await forEachSequential(input.predecidedActions, async (action) => {
     if (allowed && !allowed.has(action.tool)) {
+      const blockedResult = { blocked: true, reason: 'capability_not_allowed' };
       actionsList.push({
         tool: action.tool,
         args: action.args,
-        result: { blocked: true, reason: 'capability_not_allowed' },
+        result: blockedResult,
       });
+      await input.logAutopilotEvent(
+        input.workspaceId,
+        input.contactId,
+        action.tool,
+        action.args,
+        blockedResult,
+      );
       return;
     }
 

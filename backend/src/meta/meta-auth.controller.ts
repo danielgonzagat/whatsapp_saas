@@ -135,7 +135,7 @@ export class MetaAuthController {
     if (msg.includes('rate') || msg.includes('limit')) {
       return 'Limite de requisicoes da Meta atingido. Aguarde alguns minutos e tente novamente.';
     }
-    return rawMessage || 'Erro desconhecido na autenticacao Meta.';
+    return 'Nao foi possivel concluir a autenticacao Meta. Tente novamente em instantes.';
   }
 
   // ─── Generate OAuth URL ──────────────────────────────────────────
@@ -165,6 +165,7 @@ export class MetaAuthController {
     @Query('state') state: string,
     @Res() res: Response,
   ) {
+    const startedAt = Date.now();
     const parsedState = this.parseState(state);
     const workspaceId = parsedState.workspaceId;
     const returnTo = this.sanitizeReturnTo(parsedState.returnTo, parsedState.channel);
@@ -209,7 +210,18 @@ export class MetaAuthController {
         const rawMetaError = String(
           tokenData.error.message || tokenData.error.error_user_msg || '',
         );
-        this.logger.error(`Meta OAuth token exchange error: ${rawMetaError}`);
+        this.logger.error(
+          JSON.stringify({
+            event: 'meta_oauth_token_exchange_failed',
+            workspaceId,
+            provider: 'meta',
+            operation: 'oauth_token_exchange',
+            status: 'error',
+            durationMs: Date.now() - startedAt,
+            errorCode: String(tokenData.error.code || tokenData.error.type || 'meta_oauth_error'),
+            message: rawMetaError.slice(0, 512),
+          }),
+        );
         return res.redirect(
           this.buildFrontendRedirect(returnTo, parsedState.channel, {
             meta: 'error',
@@ -327,7 +339,18 @@ export class MetaAuthController {
     } catch (err: unknown) {
       const errMsg = err instanceof Error ? err.message : 'unknown_error';
       void this.opsAlert?.alertOnCriticalError(err, 'MetaAuthController.callback');
-      this.logger.error(`Meta OAuth callback failed: ${errMsg}`);
+      this.logger.error(
+        JSON.stringify({
+          event: 'meta_oauth_callback_failed',
+          workspaceId,
+          provider: 'meta',
+          operation: 'oauth_callback',
+          status: 'error',
+          durationMs: Date.now() - startedAt,
+          errorCode: err instanceof Error ? err.name : 'unknown_error',
+          message: errMsg.slice(0, 512),
+        }),
+      );
       return res.redirect(
         this.buildFrontendRedirect(returnTo, parsedState.channel, {
           meta: 'error',

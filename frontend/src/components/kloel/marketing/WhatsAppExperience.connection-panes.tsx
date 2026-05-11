@@ -193,27 +193,6 @@ export function Steps({ current, steps }: { current: number; steps: readonly str
   );
 }
 
-export function NonWahaProviderHint() {
-  return (
-    <div
-      style={{
-        maxWidth: 420,
-        margin: '0 auto',
-        border: `1px solid ${B}`,
-        borderRadius: UI.radiusMd,
-        padding: '18px 20px',
-        background: C,
-        color: S,
-        fontSize: 13,
-        lineHeight: 1.7,
-      }}
-    >
-      {kloelT(`A conexao por QR nao esta disponivel para este workspace. Use o botao de conexao
-      oficial para autorizar o WhatsApp Business e retornar para a Kloel.`)}
-    </div>
-  );
-}
-
 export function ConnectedCelebration() {
   return (
     <div style={{ animation: 'celebrate .5s ease both' }}>
@@ -228,6 +207,7 @@ export function ConnectedCelebration() {
           justifyContent: 'center',
           margin: '0 auto 16px',
           fontSize: 28,
+          color: G,
         }}
       >
         <Check aria-hidden="true" size={28} strokeWidth={2.4} />

@@ -237,6 +237,31 @@ describe('UnifiedAgentService', () => {
     ]);
   });
 
+  it('treats an empty allowedTools policy as no tools allowed', async () => {
+    const result = await service.processMessage({
+      workspaceId: 'ws-1',
+      contactId: 'contact-1',
+      phone: '5511999999999',
+      message: 'manda uma mensagem',
+      allowedTools: [],
+      predecidedActions: [
+        {
+          tool: 'send_message',
+          args: { message: 'Nao deve enviar.' },
+        },
+      ],
+    });
+
+    expect(transportRegistry.send).not.toHaveBeenCalled();
+    expect(result.actions).toEqual([
+      {
+        tool: 'send_message',
+        args: { message: 'Nao deve enviar.' },
+        result: { blocked: true, reason: 'capability_not_allowed' },
+      },
+    ]);
+  });
+
   it('loads conversation history by phone when contactId is missing', async () => {
     prisma.message.findMany.mockResolvedValue([
       {

@@ -46,6 +46,10 @@ function formatPromptValue(value: unknown): string {
   return Object.prototype.toString.call(value);
 }
 
+function isAllowedTool(tool: string, allowedTools?: string[]): boolean {
+  return typeof allowedTools === 'undefined' || allowedTools.includes(tool);
+}
+
 @Injectable()
 export class UnifiedAgentService {
   private readonly logger = new Logger(UnifiedAgentService.name);
@@ -275,6 +279,21 @@ Mensagem: ${message}`,
       await forEachSequential(assistantMessage.tool_calls, async (toolCall) => {
         if (toolCall.type !== 'function') return;
         const toolName = toolCall.function.name;
+        if (!isAllowedTool(toolName, params.allowedTools)) {
+          this.logger.warn(
+            `Blocked disallowed agent tool call: workspaceId=${workspaceId} tool=${toolName}`,
+          );
+          const blockedResult = { blocked: true, reason: 'capability_not_allowed' };
+          actionsList.push({ tool: toolName, args: {}, result: blockedResult });
+          await this.actions.logAutopilotEvent(
+            workspaceId,
+            contactId,
+            toolName,
+            {},
+            blockedResult,
+          );
+          return;
+        }
         let toolArgs: Record<string, unknown> = {};
         try {
           toolArgs = JSON.parse(toolCall.function.arguments || '{}');

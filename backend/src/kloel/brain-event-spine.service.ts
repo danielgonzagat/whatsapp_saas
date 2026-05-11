@@ -23,7 +23,7 @@ function toUnsupportedJsonValue(value: unknown): string {
 }
 
 function toInputJsonValue(value: unknown): Prisma.InputJsonValue | null {
-  if (value === null) {
+  if (value === null || typeof value === 'undefined') {
     return null;
   }
   if (typeof value === 'string' || typeof value === 'boolean') {
@@ -46,7 +46,9 @@ function toInputJsonValue(value: unknown): Prisma.InputJsonValue | null {
 
 function toInputJsonObject(payload: Record<string, unknown>): Prisma.InputJsonObject {
   return Object.fromEntries(
-    Object.entries(payload).map(([key, value]) => [key, toInputJsonValue(value)]),
+    Object.entries(payload)
+      .filter(([, value]) => typeof value !== 'undefined')
+      .map(([key, value]) => [key, toInputJsonValue(value)]),
   );
 }
 

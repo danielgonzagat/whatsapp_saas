@@ -241,7 +241,22 @@ export class PaymentService {
           status: 'pending',
         },
       };
-      void this.events?.recordCommercial(saleEvent);
+      try {
+        await this.events?.recordCommercial(saleEvent);
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        this.logger.warn(
+          JSON.stringify({
+            event: 'mind_sale_event_record_failed',
+            workspaceId: params.data.workspaceId,
+            provider: 'mind_event_spine',
+            operation: 'record_sale_created',
+            status: 'error',
+            errorCode: error instanceof Error ? error.name : 'unknown_error',
+            message: message.slice(0, 512),
+          }),
+        );
+      }
     }
   }
 
