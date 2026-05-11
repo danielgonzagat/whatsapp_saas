@@ -243,7 +243,7 @@ export class ConnectPayoutService {
     this.financialAlert.withdrawalFailed(
       new Error(`Stripe payout.failed webhook ${input.payoutId}`),
       {
-        workspaceId: balance?.workspaceId,
+        ...(balance?.workspaceId !== undefined ? { workspaceId: balance.workspaceId } : {}),
         amount: Number(input.amountCents),
       },
     );

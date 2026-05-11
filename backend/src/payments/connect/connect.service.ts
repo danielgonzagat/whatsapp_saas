@@ -45,14 +45,22 @@ function buildAddress(address?: ConnectAddressInput): Record<string, string> | u
     return undefined;
   }
 
-  return compactObject({
-    line1: trimToUndefined(address.line1),
-    line2: trimToUndefined(address.line2),
-    city: trimToUndefined(address.city),
-    state: trimToUndefined(address.state),
-    postal_code: trimToUndefined(address.postalCode),
-    country: trimToUndefined(address.country),
-  });
+  const line1 = trimToUndefined(address.line1);
+  const line2 = trimToUndefined(address.line2);
+  const city = trimToUndefined(address.city);
+  const state = trimToUndefined(address.state);
+  const postal_code = trimToUndefined(address.postalCode);
+  const country = trimToUndefined(address.country);
+
+  const result: Record<string, string> = {};
+  if (line1 !== undefined) result.line1 = line1;
+  if (line2 !== undefined) result.line2 = line2;
+  if (city !== undefined) result.city = city;
+  if (state !== undefined) result.state = state;
+  if (postal_code !== undefined) result.postal_code = postal_code;
+  if (country !== undefined) result.country = country;
+
+  return Object.keys(result).length > 0 ? result : undefined;
 }
 
 function buildBusinessProfile(
@@ -62,15 +70,24 @@ function buildBusinessProfile(
     return undefined;
   }
 
-  return compactObject({
-    name: trimToUndefined(profile.name),
-    url: trimToUndefined(profile.url),
-    mcc: trimToUndefined(profile.mcc),
-    product_description: trimToUndefined(profile.productDescription),
-    support_email: trimToUndefined(profile.supportEmail),
-    support_phone: trimToUndefined(profile.supportPhone),
-    support_url: trimToUndefined(profile.supportUrl),
-  });
+  const name = trimToUndefined(profile.name);
+  const url = trimToUndefined(profile.url);
+  const mcc = trimToUndefined(profile.mcc);
+  const product_description = trimToUndefined(profile.productDescription);
+  const support_email = trimToUndefined(profile.supportEmail);
+  const support_phone = trimToUndefined(profile.supportPhone);
+  const support_url = trimToUndefined(profile.supportUrl);
+
+  const result: Record<string, string> = {};
+  if (name !== undefined) result.name = name;
+  if (url !== undefined) result.url = url;
+  if (mcc !== undefined) result.mcc = mcc;
+  if (product_description !== undefined) result.product_description = product_description;
+  if (support_email !== undefined) result.support_email = support_email;
+  if (support_phone !== undefined) result.support_phone = support_phone;
+  if (support_url !== undefined) result.support_url = support_url;
+
+  return Object.keys(result).length > 0 ? result : undefined;
 }
 
 function buildIndividualProfile(
@@ -124,15 +141,23 @@ function buildExternalAccount(
     return token;
   }
 
-  return compactObject({
-    object: 'bank_account',
-    country: trimToUndefined(externalAccount.country) ?? 'BR',
-    currency: trimToUndefined(externalAccount.currency)?.toLowerCase() ?? 'brl',
-    account_holder_name: trimToUndefined(externalAccount.accountHolderName),
-    account_holder_type: trimToUndefined(externalAccount.accountHolderType),
-    routing_number: digitsOnly(externalAccount.routingNumber),
-    account_number: digitsOnly(externalAccount.accountNumber),
-  });
+  const country = trimToUndefined(externalAccount.country) ?? 'BR';
+  const currency = trimToUndefined(externalAccount.currency)?.toLowerCase() ?? 'brl';
+  const account_holder_name = trimToUndefined(externalAccount.accountHolderName);
+  const account_holder_type = trimToUndefined(externalAccount.accountHolderType);
+  const routing_number = digitsOnly(externalAccount.routingNumber);
+  const account_number = digitsOnly(externalAccount.accountNumber);
+
+  const result: Record<string, string> = {};
+  result.object = 'bank_account';
+  if (country !== undefined) result.country = country;
+  if (currency !== undefined) result.currency = currency;
+  if (account_holder_name !== undefined) result.account_holder_name = account_holder_name;
+  if (account_holder_type !== undefined) result.account_holder_type = account_holder_type;
+  if (routing_number !== undefined) result.routing_number = routing_number;
+  if (account_number !== undefined) result.account_number = account_number;
+
+  return result;
 }
 
 function buildTosAcceptance(
@@ -282,10 +307,7 @@ export class ConnectService {
             `Stripe rejected manual payout schedule for country=${country}; retrying workspace=${input.workspaceId} type=${input.accountType} without schedule`,
           );
 
-          const payloadWithoutManualPayoutSchedule: StripeAccountCreateParams = {
-            ...accountPayload,
-            settings: undefined,
-          };
+          const { settings: _, ...payloadWithoutManualPayoutSchedule } = accountPayload;
           account = await this.stripeService.stripe.accounts.create(
             payloadWithoutManualPayoutSchedule,
           );
@@ -374,7 +396,7 @@ export class ConnectService {
   /** List balances. */
   async listBalances(workspaceId?: string): Promise<ConnectAccountBalance[]> {
     return this.prisma.connectAccountBalance.findMany({
-      where: workspaceId ? { workspaceId } : undefined,
+      ...(workspaceId ? { where: { workspaceId } } : {}),
       orderBy: [{ workspaceId: 'asc' }, { accountType: 'asc' }, { createdAt: 'asc' }],
     });
   }

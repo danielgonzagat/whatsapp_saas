@@ -137,10 +137,10 @@ export class ConnectPayoutApprovalService {
 
     return this.listRequestsInternal({
       workspaceId: input.workspaceId,
-      entityId: input.accountBalanceId,
-      state: input.state,
-      skip: input.skip,
-      take: input.take,
+      ...(input.accountBalanceId !== undefined ? { entityId: input.accountBalanceId } : {}),
+      ...(input.state !== undefined ? { state: input.state } : {}),
+      ...(input.skip !== undefined ? { skip: input.skip } : {}),
+      ...(input.take !== undefined ? { take: input.take } : {}),
     });
   }
 
@@ -152,10 +152,10 @@ export class ConnectPayoutApprovalService {
     take?: number;
   }): Promise<{ items: ConnectPayoutApprovalSummary[]; total: number }> {
     return this.listRequestsInternal({
-      workspaceId: input.workspaceId,
-      state: input.state,
-      skip: input.skip,
-      take: input.take,
+      ...(input.workspaceId !== undefined ? { workspaceId: input.workspaceId } : {}),
+      ...(input.state !== undefined ? { state: input.state } : {}),
+      ...(input.skip !== undefined ? { skip: input.skip } : {}),
+      ...(input.take !== undefined ? { take: input.take } : {}),
     });
   }
 
@@ -385,13 +385,13 @@ export class ConnectPayoutApprovalService {
     const [items, total] = await this.prisma.$transaction(
       [
         this.prisma.approvalRequest.findMany({
-          where: { workspaceId: input.workspaceId ?? undefined, ...where },
+          where: { ...where },
           orderBy: { createdAt: 'desc' },
           skip,
           take,
         }),
         this.prisma.approvalRequest.count({
-          where: { workspaceId: input.workspaceId ?? undefined, ...where },
+          where: { ...where },
         }),
       ],
       { isolationLevel: 'ReadCommitted' },

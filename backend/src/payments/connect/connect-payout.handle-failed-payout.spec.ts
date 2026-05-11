@@ -75,7 +75,7 @@ describe('ConnectPayoutService.handleFailedPayout', () => {
     expect(ledger.creditAvailableByAdjustment).toHaveBeenCalled();
     const [errorArg, contextArg] = financialAlert.withdrawalFailed.mock.calls[0];
     expect(errorArg).toBeInstanceOf(Error);
-    expect(contextArg).toEqual(expect.objectContaining({ workspaceId: undefined }));
+    expect(contextArg).toEqual({ amount: 5000 });
   });
 
   it('includes stripePayoutId in metadata for webhook audit correlation', async () => {

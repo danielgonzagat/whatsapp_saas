@@ -13,7 +13,6 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import * as Sentry from '@sentry/node';
-import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { ConnectAccountType, type ConnectLedgerEntryType } from '@prisma/client';
 
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
@@ -33,13 +32,14 @@ import {
   type SubmitOnboardingProfileInput,
 } from './connect.types';
 import { CONNECT_LEDGER_ENTRY_TYPES, parseSkip, parseTake } from './connect-helpers';
+import { RouteClass } from '../../../common/throttler/route-class.decorator';
 
 const CONNECT_ACCOUNT_TYPES = Object.values(ConnectAccountType);
 
 /** Connect controller. */
 @Controller('payments/connect')
 @UseGuards(JwtAuthGuard, WorkspaceGuard, ThrottlerGuard)
-@Throttle({ default: { limit: 5, ttl: 60000 } })
+@RouteClass('mutate')
 export class ConnectController {
   constructor(
     private readonly prisma: PrismaService,
@@ -111,12 +111,12 @@ export class ConnectController {
         workspaceId,
         accountType: accountType as ConnectAccountType,
         email,
-        country:
-          typeof body.country === 'string' && body.country.trim() ? body.country.trim() : undefined,
-        displayName:
-          typeof body.displayName === 'string' && body.displayName.trim()
-            ? body.displayName.trim()
-            : undefined,
+        ...(typeof body.country === 'string' && body.country.trim()
+          ? { country: body.country.trim() }
+          : {}),
+        ...(typeof body.displayName === 'string' && body.displayName.trim()
+          ? { displayName: body.displayName.trim() }
+          : {}),
       });
     } catch (error: unknown) {
       if (error instanceof ConnectAccountAlreadyExistsError) {
@@ -172,7 +172,7 @@ export class ConnectController {
       typeof forwardedFor === 'string' && forwardedFor.trim()
         ? forwardedFor.split(',')[0]?.trim() || undefined
         : undefined;
-    const tosAcceptance = body.tosAcceptance
+    const tosAcceptanceRaw = body.tosAcceptance
       ? {
           ...body.tosAcceptance,
           ipAddress: body.tosAcceptance.ipAddress || forwardedIp,
@@ -180,18 +180,34 @@ export class ConnectController {
         }
       : undefined;
 
-    const result = await this.connectService.submitOnboardingProfile({
+    const tosAcceptance = tosAcceptanceRaw
+      ? {
+          ...(tosAcceptanceRaw.ipAddress !== undefined
+            ? { ipAddress: tosAcceptanceRaw.ipAddress }
+            : {}),
+          ...(tosAcceptanceRaw.userAgent !== undefined
+            ? { userAgent: tosAcceptanceRaw.userAgent }
+            : {}),
+          ...(tosAcceptanceRaw.acceptedAt !== undefined
+            ? { acceptedAt: tosAcceptanceRaw.acceptedAt }
+            : {}),
+        }
+      : undefined;
+
+    const profileInput: SubmitOnboardingProfileInput = {
       stripeAccountId: balance.stripeAccountId,
-      email: body.email,
-      country: body.country,
-      businessType: body.businessType,
-      businessProfile: body.businessProfile,
-      individual: body.individual,
-      company: body.company,
-      externalAccount: body.externalAccount,
-      tosAcceptance,
-      metadata: body.metadata,
-    });
+    };
+    if (body.email !== undefined) profileInput.email = body.email;
+    if (body.country !== undefined) profileInput.country = body.country;
+    if (body.businessType !== undefined) profileInput.businessType = body.businessType;
+    if (body.businessProfile !== undefined) profileInput.businessProfile = body.businessProfile;
+    if (body.individual !== undefined) profileInput.individual = body.individual;
+    if (body.company !== undefined) profileInput.company = body.company;
+    if (body.externalAccount !== undefined) profileInput.externalAccount = body.externalAccount;
+    if (tosAcceptance !== undefined) profileInput.tosAcceptance = tosAcceptance;
+    if (body.metadata !== undefined) profileInput.metadata = body.metadata;
+
+    const result = await this.connectService.submitOnboardingProfile(profileInput);
 
     return {
       accountBalanceId: balance.id,
@@ -216,13 +232,17 @@ export class ConnectController {
     @Query('skip') skip?: string,
     @Query('take') take?: string,
   ) {
-    return this.connectPayoutApprovalService.listWorkspaceRequests({
+    const payload: { workspaceId: string; accountBalanceId?: string; state?: string; skip?: number; take?: number } = {
       workspaceId,
-      accountBalanceId: accountBalanceId ? String(accountBalanceId).trim() : undefined,
-      state: state ? String(state).trim() : undefined,
-      skip: parseSkip(skip),
-      take: parseTake(take),
-    });
+    };
+    if (accountBalanceId) payload.accountBalanceId = String(accountBalanceId).trim();
+    if (state) payload.state = String(state).trim();
+    const s = parseSkip(skip);
+    if (s !== undefined) payload.skip = s;
+    const t = parseTake(take);
+    if (t !== undefined) payload.take = t;
+
+    return this.connectPayoutApprovalService.listWorkspaceRequests(payload);
   }
 
   /** List payouts. */
@@ -445,7 +465,7 @@ export class ConnectController {
         workspaceId,
         amountCents: BigInt(requestedAmount),
         requestId,
-        currency: body.currency,
+        ...(body.currency !== undefined ? { currency: body.currency } : {}),
       });
     } catch (error: unknown) {
       await this.appendPayoutAudit({
@@ -521,7 +541,7 @@ export class ConnectController {
       workspaceId,
       accountBalanceId,
       amountCents: BigInt(requestedAmount),
-      currency: body.currency,
+      ...(body.currency !== undefined ? { currency: body.currency } : {}),
     });
 
     return {
