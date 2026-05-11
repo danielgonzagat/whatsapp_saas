@@ -81,6 +81,10 @@ function installIoredisDefaultUrlGuard(redisUrl: string): void {
 
   Object.setPrototypeOf(RedisWithDefaultUrl, OriginalRedis);
   RedisWithDefaultUrl.prototype = OriginalRedis.prototype;
+  Object.defineProperty(RedisWithDefaultUrl.prototype, 'constructor', {
+    value: RedisWithDefaultUrl,
+    configurable: true,
+  });
   Object.defineProperties(RedisWithDefaultUrl, {
     Redis: { value: RedisWithDefaultUrl, configurable: true },
     default: { value: RedisWithDefaultUrl, configurable: true },
