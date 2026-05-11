@@ -4,6 +4,7 @@
   "description": "",
   "author": "",
   "private": true,
+  "packageManager": "npm@10.9.7",
   "license": "UNLICENSED",
   "overrides": {
     "path-to-regexp": ">=8.4.0",
@@ -11,7 +12,7 @@
     "@tootallnate/once": "3.0.1"
   },
   "engines": {
-    "node": "20.x"
+    "node": ">=22 <23"
   },
   "scripts": {
     "build": "nest build && tsc -p tsconfig.build.json",
@@ -62,19 +63,18 @@
     "class-transformer": "0.5.1",
     "class-validator": "0.15.1",
     "cookie-parser": "1.4.7",
-    "express": "4.21.0",
     "dd-trace": "5.101.0",
     "dotenv": "17.4.2",
-    "google-auth-library": "9.15.1",
-    "jsonwebtoken": "9.0.2",
-    "multer": "1.4.5-lts.1",
-    "uuid": "11.1.0",
+    "express": "^4.22.1",
     "firebase-admin": "13.9.0",
     "google-ads-api": "^23.0.0",
+    "google-auth-library": "9.15.1",
     "helmet": "8.1.0",
     "htmlparser2": "10.1.0",
     "ioredis": "5.10.1",
     "joi": "18.2.1",
+    "jsonwebtoken": "9.0.2",
+    "multer": "1.4.5-lts.1",
     "openai": "6.37.0",
     "otplib": "12.0.1",
     "pdf-parse": "2.4.5",
@@ -86,6 +86,7 @@
     "socket.io": "4.8.3",
     "stripe": "22.1.1",
     "swagger-ui-express": "5.0.1",
+    "uuid": "^11.1.1",
     "zod": "4.4.3"
   },
   "devDependencies": {
