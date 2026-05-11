@@ -34,15 +34,15 @@ ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
 
 WORKDIR /app
 
-# Copy only production artifacts from builder
-COPY --from=builder /app/package*.json ./
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+# Copy only production artifacts from builder, already owned by the runtime user.
+COPY --chown=node:node --from=builder /app/package*.json ./
+COPY --chown=node:node --from=builder /app/node_modules ./node_modules
+COPY --chown=node:node --from=builder /app/dist ./dist
+COPY --chown=node:node --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
-# Create runtime directories and fix permissions before switching user
+# Create runtime directories before switching user.
 RUN mkdir -p /app/backend/public/audio /app/public /tmp/.X11-unix && \
-    chown -R node:node /app /tmp/.X11-unix
+    chown node:node /app/backend/public/audio /app/public /tmp/.X11-unix
 
 # Railway exposes a single port via PORT env var
 EXPOSE 8080
