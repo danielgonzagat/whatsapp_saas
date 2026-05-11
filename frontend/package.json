@@ -33,7 +33,7 @@
     "jspdf": "4.2.1",
     "lucide-react": "0.577.0",
     "next": "16.2.6",
-    "next-intl": "4.11.0",
+    "next-intl": "4.11.1",
     "react": "19.2.6",
     "react-dom": "19.2.6",
     "react-markdown": "10.1.0",
@@ -43,7 +43,7 @@
     "remark-gfm": "4.0.1",
     "socket.io-client": "4.8.3",
     "swr": "2.4.1",
-    "tailwind-merge": "3.5.0"
+    "tailwind-merge": "3.6.0"
   },
   "devDependencies": {
     "@codecov/webpack-plugin": "2.0.1",
