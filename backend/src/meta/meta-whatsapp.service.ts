@@ -13,6 +13,22 @@ const PATTERN_RE = /\/+$/;
 const HTTPS_RE = /^https?:\/\//i;
 const LOCALHOST_127__0__0__1_RE = /^(localhost|127\.0\.0\.1)(:\d+)?$/i;
 
+function looksLikeBackendUrl(candidate: string): boolean {
+  try {
+    const { hostname } = new URL(candidate);
+    return (
+      hostname === 'localhost' ||
+      hostname === '127.0.0.1' ||
+      hostname.startsWith('api.') ||
+      hostname.startsWith('backend.') ||
+      hostname.endsWith('.up.railway.app') ||
+      hostname.endsWith('.railway.app')
+    );
+  } catch {
+    return false;
+  }
+}
+
 type ResolvedMetaConnection = {
   workspaceId: string;
   accessToken: string;
@@ -539,17 +555,25 @@ export class MetaWhatsAppService {
 
   /** Get public backend base url. */
   getPublicBackendBaseUrl(): string {
-    const candidates = [
+    const explicitBackendCandidates = [
       process.env.BACKEND_PUBLIC_URL,
-      process.env.APP_URL,
       process.env.BACKEND_URL,
-      process.env.NEXT_PUBLIC_API_URL,
+      process.env.SERVICE_BASE_URL,
+      process.env.API_URL,
       process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : '',
     ];
 
-    for (const candidate of candidates) {
+    for (const candidate of explicitBackendCandidates) {
       const normalized = this.normalizePublicBaseUrl(candidate);
       if (normalized) {
+        return normalized;
+      }
+    }
+
+    const legacyCandidates = [process.env.NEXT_PUBLIC_API_URL, process.env.APP_URL];
+    for (const candidate of legacyCandidates) {
+      const normalized = this.normalizePublicBaseUrl(candidate);
+      if (normalized && looksLikeBackendUrl(normalized)) {
         return normalized;
       }
     }
