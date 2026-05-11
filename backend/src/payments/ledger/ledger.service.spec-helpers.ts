@@ -97,7 +97,7 @@ export function makePrismaStub(initial: ConnectAccountBalance[] = []): PrismaStu
         if (idx === -1) {
           throw new Error(`stub: entry not found ${where.id}`);
         }
-        entries[idx] = { ...entries[idx], ...data };
+        entries[idx] = { ...entries[idx], ...data } as EntryRow;
         return entries[idx];
       }),
     },

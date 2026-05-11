@@ -123,7 +123,7 @@ export class ConnectLedgerReconciliationService {
     input: ConnectLedgerReconciliationInput = {},
   ): Promise<ConnectLedgerReconciliationResult> {
     const balances = await this.prisma.connectAccountBalance.findMany({
-      where: input.workspaceId ? { workspaceId: input.workspaceId } : undefined,
+      ...(input.workspaceId ? { where: { workspaceId: input.workspaceId } } : {}),
       orderBy: [{ workspaceId: 'asc' }, { accountType: 'asc' }, { createdAt: 'asc' }],
       take: 5000,
     });

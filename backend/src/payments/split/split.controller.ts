@@ -9,25 +9,31 @@ import type { SplitInput } from './split.types';
 import { RouteClass } from '../../common/throttler/route-class.decorator';
 
 function dtoToSplitInput(dto: SplitPreviewDto): SplitInput {
-  return {
+  const input: SplitInput = {
     buyerPaidCents: BigInt(dto.buyerPaidCents),
     saleValueCents: BigInt(dto.saleValueCents),
     interestCents: BigInt(dto.interestCents),
     marketplaceFeeCents: BigInt(dto.marketplaceFeeCents),
-    supplier: dto.supplier
-      ? { accountId: dto.supplier.accountId, amountCents: BigInt(dto.supplier.amountCents) }
-      : undefined,
-    affiliate: dto.affiliate
-      ? { accountId: dto.affiliate.accountId, percentBp: dto.affiliate.percentBp }
-      : undefined,
-    coproducer: dto.coproducer
-      ? { accountId: dto.coproducer.accountId, percentBp: dto.coproducer.percentBp }
-      : undefined,
-    manager: dto.manager
-      ? { accountId: dto.manager.accountId, percentBp: dto.manager.percentBp }
-      : undefined,
     seller: { accountId: dto.seller.accountId },
   };
+
+  if (dto.supplier) {
+    input.supplier = {
+      accountId: dto.supplier.accountId,
+      amountCents: BigInt(dto.supplier.amountCents),
+    };
+  }
+  if (dto.affiliate) {
+    input.affiliate = { accountId: dto.affiliate.accountId, percentBp: dto.affiliate.percentBp };
+  }
+  if (dto.coproducer) {
+    input.coproducer = { accountId: dto.coproducer.accountId, percentBp: dto.coproducer.percentBp };
+  }
+  if (dto.manager) {
+    input.manager = { accountId: dto.manager.accountId, percentBp: dto.manager.percentBp };
+  }
+
+  return input;
 }
 
 /** Split controller. */
