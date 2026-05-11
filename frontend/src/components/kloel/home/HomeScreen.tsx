@@ -47,6 +47,39 @@ const DEV_FALLBACK_MESSAGE =
 
 const ERROR_MESSAGE = 'Nao foi possivel conectar ao servidor. Tente novamente.';
 
+type AuthenticatedThreadInfo = { conversationId: string; title?: string };
+
+function withAssistantStreamContent(
+  messages: ChatMessage[],
+  assistantId: string,
+  content: string,
+): ChatMessage[] {
+  return messages.map((msg) =>
+    msg.id === assistantId
+      ? { ...msg, content, displayedContent: content, isThinking: false, isTyping: true }
+      : msg,
+  );
+}
+
+function withAssistantFinalContent(
+  messages: ChatMessage[],
+  assistantId: string,
+  content: string,
+): ChatMessage[] {
+  return messages.map((msg) =>
+    msg.id === assistantId
+      ? { ...msg, content, displayedContent: content, isThinking: false, isTyping: false }
+      : msg,
+  );
+}
+
+function resolveThreadTitle(
+  thread: AuthenticatedThreadInfo,
+  conversationTitleMap: Map<string, string>,
+): string {
+  return thread.title || conversationTitleMap.get(thread.conversationId) || 'Nova conversa';
+}
+
 // ════════════════════════════════════════════
 // ICONS
 // ════════════════════════════════════════════
@@ -294,24 +327,11 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
         let nextTitle = chatTitle;
         const appendAuthenticatedChunk = (chunk: string) => {
           fullContent += chunk;
-          setMessages((prev) =>
-            prev.map((msg) =>
-              msg.id === assistantId
-                ? {
-                    ...msg,
-                    content: fullContent,
-                    displayedContent: fullContent,
-                    isThinking: false,
-                    isTyping: true,
-                  }
-                : msg,
-            ),
-          );
+          setMessages((prev) => withAssistantStreamContent(prev, assistantId, fullContent));
         };
-        const handleAuthenticatedThread = (thread: { conversationId: string; title?: string }) => {
+        const handleAuthenticatedThread = (thread: AuthenticatedThreadInfo) => {
           nextConversationId = thread.conversationId;
-          nextTitle =
-            thread.title || conversationTitleMap.get(thread.conversationId) || 'Nova conversa';
+          nextTitle = resolveThreadTitle(thread, conversationTitleMap);
           setActiveConversationId(thread.conversationId);
           setActiveConversation(thread.conversationId);
           setChatTitle(nextTitle);
@@ -412,19 +432,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
             startTyping(fullContent);
           }, thinkDuration);
         } else {
-          setMessages((prev) =>
-            prev.map((msg) =>
-              msg.id === assistantId
-                ? {
-                    ...msg,
-                    content: fullContent,
-                    displayedContent: fullContent,
-                    isThinking: false,
-                    isTyping: false,
-                  }
-                : msg,
-            ),
-          );
+          setMessages((prev) => withAssistantFinalContent(prev, assistantId, fullContent));
           setIsWaitingForResponse(false);
           typingMessageIdRef.current = null;
         }

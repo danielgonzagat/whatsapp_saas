@@ -8,7 +8,7 @@ jest.mock('bcrypt', () => ({
 
 const TEST_IP = '127.0.0.1';
 const TEST_USER_AGENT = 'vitest';
-const TEST_PASSWORD_HASH = 'hashed-password';
+const TEST_PASSWORD_HASH = 'hash_fixture';
 
 function buildUser(overrides: Partial<AdminUser> = {}): AdminUser {
   const now = new Date('2026-05-11T12:00:00.000Z');

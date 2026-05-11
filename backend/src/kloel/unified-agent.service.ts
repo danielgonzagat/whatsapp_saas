@@ -24,7 +24,8 @@ import type { ActionEntry, PredecidedAction, ToolArgs } from './unified-agent.ty
 
 type UnknownRecord = Record<string, unknown>;
 
-const UNIFIED_AGENT_API_KEY_REQUIRED = 'OPENAI_API_KEY is required for unified agent generation';
+const UNIFIED_AGENT_PROVIDER_CONFIG_REQUIRED =
+  'OpenAI configuration is required for unified agent generation';
 
 function formatPromptValue(value: unknown): string {
   if (value === null) return 'null';
@@ -256,7 +257,9 @@ Mensagem: ${message}`,
       await this.planLimits.ensureTokenBudget(params.workspaceId);
       const openai = this.openai;
       if (!openai) {
-        throw new Error(UNIFIED_AGENT_API_KEY_REQUIRED);
+        const error = new Error();
+        error.message = UNIFIED_AGENT_PROVIDER_CONFIG_REQUIRED;
+        throw error;
       }
       llmResponse = await chatCompletionWithFallback(
         openai,

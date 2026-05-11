@@ -50,7 +50,9 @@ export class WhatsAppApiController {
 
   private requireWorkspaceId(req: AuthenticatedRequest): string {
     if (!req.workspaceId) {
-      throw new Error(WHATSAPP_API_WORKSPACE_REQUIRED);
+      const error = new Error();
+      error.message = WHATSAPP_API_WORKSPACE_REQUIRED;
+      throw error;
     }
     return req.workspaceId;
   }

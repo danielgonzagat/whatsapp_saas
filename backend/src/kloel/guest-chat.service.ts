@@ -288,7 +288,9 @@ export class GuestChatService implements OnModuleDestroy {
     }
     const conversation = this.conversations.get(sessionId);
     if (!conversation) {
-      throw new Error(GUEST_CONVERSATION_INIT_FAILED);
+      const error = new Error();
+      error.message = GUEST_CONVERSATION_INIT_FAILED;
+      throw error;
     }
     return conversation;
   }

@@ -198,7 +198,9 @@ export async function runToolPlanningBranch(
 ): Promise<void> {
   const { workspaceId, userId, message, safeWrite, replyEngine, planLimits } = ctx;
   if (!workspaceId) {
-    throw new Error(KLOEL_TOOL_PLANNING_WORKSPACE_REQUIRED);
+    const error = new Error();
+    error.message = KLOEL_TOOL_PLANNING_WORKSPACE_REQUIRED;
+    throw error;
   }
   safeWrite(createKloelStatusEvent('thinking'));
   await planLimits.ensureTokenBudget(workspaceId);

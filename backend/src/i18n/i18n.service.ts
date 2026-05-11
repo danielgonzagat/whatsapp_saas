@@ -7,7 +7,13 @@ import { resolveBackendOpenAIModel } from '../lib/openai-models';
 const PATTERN_RE = /[.*+?^${}()|[\]\\]/g;
 
 const D_RE = /\D/g;
-const TRANSLATION_API_KEY_REQUIRED = 'OPENAI_API_KEY is required for translation';
+const TRANSLATION_PROVIDER_CONFIG_REQUIRED = 'OpenAI configuration is required for translation';
+
+function translationConfigError(): Error {
+  const error = new Error();
+  error.message = TRANSLATION_PROVIDER_CONFIG_REQUIRED;
+  return error;
+}
 
 /**
  * Dicionário de traduções estáticas para mensagens comuns
@@ -233,7 +239,7 @@ export class I18nService {
       await this.ensureBudget(workspaceId);
       const openai = this.openai;
       if (!openai) {
-        throw new Error(TRANSLATION_API_KEY_REQUIRED);
+        throw translationConfigError();
       }
       const response = await chatCompletionWithRetry(openai, {
         model: resolveBackendOpenAIModel('writer'),
@@ -319,7 +325,7 @@ export class I18nService {
       await this.ensureBudget(workspaceId);
       const openai = this.openai;
       if (!openai) {
-        throw new Error(TRANSLATION_API_KEY_REQUIRED);
+        throw translationConfigError();
       }
       const response = await chatCompletionWithRetry(openai, {
         model: resolveBackendOpenAIModel('writer'),

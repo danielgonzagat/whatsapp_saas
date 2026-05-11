@@ -27,17 +27,18 @@ function extractThreadMessages(payload: unknown): Array<Record<string, unknown>>
   return Array.isArray(wrapped?.data) ? (wrapped.data as Array<Record<string, unknown>>) : [];
 }
 
+function serializeThreadMessages(payload: unknown) {
+  return extractThreadMessages(payload).map((message) => ({
+    role: message.role,
+    content: message.content,
+    createdAt: message.createdAt,
+  }));
+}
+
 async function fetchConversationForExport(conv: ConversationExportSource) {
   try {
     const response = await apiFetch<unknown>(`/kloel/threads/${conv.id}/messages`);
-    return {
-      ...conv,
-      messages: extractThreadMessages(response).map((message) => ({
-        role: message.role,
-        content: message.content,
-        createdAt: message.createdAt,
-      })),
-    };
+    return { ...conv, messages: serializeThreadMessages(response) };
   } catch {
     return { ...conv, messages: [] };
   }

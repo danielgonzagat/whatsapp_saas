@@ -72,6 +72,19 @@ function isAuditLogEntryWithWorkspace(
   return typeof log.workspaceId === 'string' && log.workspaceId.length > 0;
 }
 
+function buildAuditDetails(log: AuditLogEntry): Prisma.InputJsonValue {
+  return JSON.parse(
+    JSON.stringify({
+      statusCode: log.statusCode,
+      responseTimeMs: log.responseTimeMs,
+      requestBody: log.requestBody
+        ? (sanitizePayload(log.requestBody) as Record<string, unknown>)
+        : undefined,
+      error: log.error || undefined,
+    }),
+  ) as Prisma.InputJsonValue;
+}
+
 function toAuditCreateManyInput(
   log: AuditLogEntry & { workspaceId: string },
 ): Prisma.AuditLogCreateManyInput {
@@ -79,16 +92,7 @@ function toAuditCreateManyInput(
     workspaceId: log.workspaceId,
     action: `HTTP_${log.method}`,
     resource: log.path,
-    details: JSON.parse(
-      JSON.stringify({
-        statusCode: log.statusCode,
-        responseTimeMs: log.responseTimeMs,
-        requestBody: log.requestBody
-          ? (sanitizePayload(log.requestBody) as Record<string, unknown>)
-          : undefined,
-        error: log.error || undefined,
-      }),
-    ) as Prisma.InputJsonValue,
+    details: buildAuditDetails(log),
     agentId: log.userId,
     ipAddress: log.ip,
     userAgent: log.userAgent,

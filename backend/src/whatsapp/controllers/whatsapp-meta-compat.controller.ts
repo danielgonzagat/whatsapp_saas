@@ -18,7 +18,9 @@ export class WhatsAppMetaCompatController {
 
   private requireWorkspaceId(req: AuthenticatedRequest): string {
     if (!req.workspaceId) {
-      throw new Error(WHATSAPP_META_COMPAT_WORKSPACE_REQUIRED);
+      const error = new Error();
+      error.message = WHATSAPP_META_COMPAT_WORKSPACE_REQUIRED;
+      throw error;
     }
     return req.workspaceId;
   }
