@@ -22,7 +22,7 @@ export class MediaFactoryService {
 
     // tokenBudget: non-workspace context, budget tracked at caller level
     const response = await this.openai.images.generate({
-      model: 'dall-e-3',
+      model: resolveBackendOpenAIModel('image_generation', this.config),
       prompt: prompt,
       n: 1,
       size: '1024x1024',
