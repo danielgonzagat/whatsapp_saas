@@ -64,8 +64,8 @@ function signTamperEvidenceHmac(data: string): Buffer {
 
 interface UnsubscribePayload {
   email: string;
-  workspaceId?: string;
-  campaignId?: string;
+  workspaceId?: string | undefined;
+  campaignId?: string | undefined;
 }
 
 /** Generate a signed unsubscribe token for a given email and optional context. */
@@ -83,7 +83,7 @@ export function verifyUnsubscribeToken(token: string): UnsubscribePayload | null
     const parts = token.split(TOKEN_SEPARATOR);
     if (parts.length !== 3) return null;
 
-    const [headerB64, bodyB64, signatureB64] = parts;
+    const [headerB64, bodyB64, signatureB64] = parts as [string, string, string];
     const expectedSig = base64UrlDecode(signatureB64);
     const actualSig = signTamperEvidenceHmac(`${headerB64}${TOKEN_SEPARATOR}${bodyB64}`);
 

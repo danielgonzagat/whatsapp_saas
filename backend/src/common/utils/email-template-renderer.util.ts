@@ -17,7 +17,7 @@ function loadTemplate(name: string): string {
 }
 
 function resolveVariable(vars: Record<string, string>, key: string): string {
-  return key in vars ? vars[key] : '';
+  return vars[key] ?? '';
 }
 
 export function renderEmailTemplate(name: string, vars: Record<string, string>): string {

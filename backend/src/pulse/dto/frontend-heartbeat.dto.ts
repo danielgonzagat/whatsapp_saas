@@ -14,12 +14,12 @@ class PulseFrontendViewportDto {
   @IsInt()
   @Min(0)
   @Max(8192)
-  width: number;
+  width!: number;
 
   @IsInt()
   @Min(0)
   @Max(8192)
-  height: number;
+  height!: number;
 }
 
 /** Pulse frontend heartbeat dto. */
@@ -27,20 +27,20 @@ export class PulseFrontendHeartbeatDto {
   /** Session id property. */
   @IsString()
   @MaxLength(128)
-  sessionId: string;
+  sessionId!: string;
 
   /** Route property. */
   @IsString()
   @MaxLength(512)
-  route: string;
+  route!: string;
 
   /** Visible property. */
   @IsBoolean()
-  visible: boolean;
+  visible!: boolean;
 
   /** Online property. */
   @IsBoolean()
-  online: boolean;
+  online!: boolean;
 
   /** Connection type property. */
   @IsOptional()
