@@ -1,6 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { authenticator } from 'otplib';
+import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 // `qrcode` is a CJS package; the Node resolver picks up its default export.
 
 import { toDataURL as qrToDataURL } from 'qrcode';
@@ -8,14 +8,86 @@ import { decryptAdminSecret, encryptAdminSecret } from '../common/admin-crypto';
 import { adminErrors } from '../common/admin-api-errors';
 
 const RX_0_9__6_RE = /^[0-9]{6}$/;
+const BASE32_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+const MFA_PERIOD_SECONDS = 30;
+const MFA_WINDOW_STEPS = 2;
 
-// otplib: 30s step, window=2 (±60s tolerance). The wider window
-// absorbs typical VM clock drift on Railway/Vercel Edge without
-// making the OTP meaningfully weaker — an attacker still only has
-// five 30s windows of attack surface instead of three, but the
-// operator never gets a mysterious "invalid code" from a 10s
-// server-client clock delta.
-authenticator.options = { step: 30, window: 2 };
+function generateMfaSecret(): string {
+  return base32Encode(randomBytes(20));
+}
+
+function base32Encode(bytes: Buffer): string {
+  let output = '';
+  let value = 0;
+  let bits = 0;
+
+  for (const byte of bytes) {
+    value = (value << 8) | byte;
+    bits += 8;
+
+    while (bits >= 5) {
+      output += BASE32_ALPHABET[(value >>> (bits - 5)) & 31];
+      bits -= 5;
+    }
+  }
+
+  if (bits > 0) {
+    output += BASE32_ALPHABET[(value << (5 - bits)) & 31];
+  }
+
+  return output;
+}
+
+function base32Decode(secret: string): Buffer {
+  let value = 0;
+  let bits = 0;
+  const bytes: number[] = [];
+
+  for (const char of secret.replace(/=+$/u, '').toUpperCase()) {
+    const index = BASE32_ALPHABET.indexOf(char);
+    if (index < 0) {
+      throw adminErrors.mfaInvalidCode();
+    }
+
+    value = (value << 5) | index;
+    bits += 5;
+
+    if (bits >= 8) {
+      bytes.push((value >>> (bits - 8)) & 255);
+      bits -= 8;
+    }
+  }
+
+  return Buffer.from(bytes);
+}
+
+function generateTotp(secret: string, timeStep: number): string {
+  const counter = Buffer.alloc(8);
+  counter.writeBigUInt64BE(BigInt(timeStep));
+  const digest = createHmac('sha1', base32Decode(secret)).update(counter).digest();
+  const offset = digest[digest.length - 1] & 15;
+  const binary = digest.readUInt32BE(offset) & 0x7fffffff;
+
+  return String(binary % 1_000_000).padStart(6, '0');
+}
+
+function verifyTotp(
+  secret: string,
+  code: string,
+  epochSeconds = Math.floor(Date.now() / 1000),
+): boolean {
+  const currentStep = Math.floor(epochSeconds / MFA_PERIOD_SECONDS);
+  const provided = Buffer.from(code);
+
+  for (let offset = -MFA_WINDOW_STEPS; offset <= MFA_WINDOW_STEPS; offset += 1) {
+    const expected = Buffer.from(generateTotp(secret, currentStep + offset));
+    if (provided.length === expected.length && timingSafeEqual(provided, expected)) {
+      return true;
+    }
+  }
+
+  return false;
+}
 
 /** Mfa setup result shape. */
 export interface MfaSetupResult {
@@ -52,7 +124,7 @@ export class AdminMfaService {
 
   /** Create setup. */
   async createSetup(accountLabel: string): Promise<MfaSetupResult> {
-    const secret = authenticator.generateSecret();
+    const secret = generateMfaSecret();
     return this.buildSetup(accountLabel, secret);
   }
 
@@ -86,7 +158,9 @@ export class AdminMfaService {
     secret: string,
     preEncrypted?: string,
   ): Promise<MfaSetupResult> {
-    const otpauthUrl = authenticator.keyuri(accountLabel, this.issuer, secret);
+    const label = `${encodeURIComponent(this.issuer)}:${encodeURIComponent(accountLabel)}`;
+    const issuer = encodeURIComponent(this.issuer);
+    const otpauthUrl = `otpauth://totp/${label}?secret=${secret}&issuer=${issuer}&period=${MFA_PERIOD_SECONDS}&digits=6&algorithm=SHA1`;
     const qrDataUrl = await qrToDataURL(otpauthUrl, {
       errorCorrectionLevel: 'M',
       width: 240,
@@ -117,7 +191,7 @@ export class AdminMfaService {
       );
       throw adminErrors.cryptoFailure();
     }
-    const ok = authenticator.check(code, secret);
+    const ok = verifyTotp(secret, code);
     if (!ok) {
       throw adminErrors.mfaInvalidCode();
     }

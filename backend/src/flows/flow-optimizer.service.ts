@@ -84,7 +84,7 @@ export class FlowOptimizerService {
           flowId,
           workspaceId,
           nodes: suggestion.nodes as Prisma.InputJsonValue,
-          edges: flow.edges, // Keep edges for now
+          edges: flow.edges as Prisma.InputJsonValue,
           label:
             'AI Auto-Optimization: ' +
             (typeof suggestion.reason === 'string' ? suggestion.reason : ''),
