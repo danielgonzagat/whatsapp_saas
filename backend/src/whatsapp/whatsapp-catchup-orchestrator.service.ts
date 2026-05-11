@@ -34,6 +34,27 @@ import type {
   ICatchupHistory,
   CatchupBackfillCursor,
 } from './whatsapp.interfaces';
+import {
+  safeStr,
+  normalizeOptionalText,
+  type GuestCheckSettings,
+  CATCHUP_SWEEP_LIMIT,
+  CATCHUP_LOCK_TTL_SECONDS,
+  CATCHUP_MIN_TRIGGER_INTERVAL_SECONDS,
+  CATCHUP_MAX_CHATS,
+  CATCHUP_MAX_MESSAGES_PER_CHAT,
+  CATCHUP_FIRST_RUN_LOOKBACK_MS,
+  CATCHUP_MAX_PASSES,
+  CATCHUP_MAX_PAGES_PER_CHAT,
+  CATCHUP_FALLBACK_CHATS_PER_PASS,
+  CATCHUP_INCLUDE_ZERO_UNREAD_ACTIVITY,
+  CATCHUP_FALLBACK_PAGES_PER_CHAT,
+  CATCHUP_MARK_READ_WITHOUT_REPLY,
+  CATCHUP_LID_MAP_CACHE_TTL_MS,
+} from './whatsapp-catchup-config';
+import { getLockKey, getCooldownKey, releaseLock } from './whatsapp-catchup-lock.helpers';
+import { selectCandidateChats } from './whatsapp-catchup-chat-selector';
+import { loadCatchupMessages } from './whatsapp-catchup-message-loader';
 
 type CatchupRunSummary = {
   importedMessages: number;
@@ -57,91 +78,13 @@ type CatchupUpdatePayload = {
   [key: string]: unknown;
 };
 
-const CATCHUP_SWEEP_LIMIT = Math.max(
-  1,
-  Math.min(2000, Number.parseInt(process.env.WAHA_CATCHUP_SWEEP_LIMIT || '500', 10) || 500),
-);
-
-function safeStr(v: unknown, fb = ''): string {
-  return typeof v === 'string'
-    ? v
-    : typeof v === 'number' || typeof v === 'boolean'
-      ? String(v)
-      : fb;
-}
-function normalizeOptionalText(value: unknown): string {
-  if (typeof value === 'string') return value.trim();
-  if (typeof value === 'number' || typeof value === 'boolean') return String(value).trim();
-  return '';
-}
-
-type GuestCheckSettings = {
-  guestMode?: boolean;
-  anonymousGuest?: boolean;
-  workspaceMode?: string;
-  authMode?: string;
-  auth?: { anonymous?: boolean };
-};
-
 @Injectable()
 export class WhatsappCatchupOrchestratorService {
   private readonly logger = new Logger(WhatsappCatchupOrchestratorService.name);
-  private readonly lidMapCacheTtlMs = Math.max(
-    60_000,
-    Number.parseInt(process.env.WAHA_LID_MAP_CACHE_TTL_MS || '300000', 10) || 300_000,
-  );
   private readonly lidMapCache = new Map<
     string,
     { expiresAt: number; mappings: Map<string, string> }
   >();
-  private readonly lockTtlSeconds = 180;
-  private readonly minTriggerIntervalSeconds = Math.max(
-    15,
-    Number.parseInt(process.env.WAHA_CATCHUP_MIN_TRIGGER_INTERVAL_SECONDS || '60', 10) || 60,
-  );
-  private readonly maxChats = Math.max(
-    1,
-    Number.parseInt(process.env.WAHA_CATCHUP_MAX_CHATS || '1000', 10) || 1000,
-  );
-  private readonly maxMessagesPerChat = Math.max(
-    1,
-    Number.parseInt(process.env.WAHA_CATCHUP_MAX_MESSAGES_PER_CHAT || '100', 10) || 100,
-  );
-  private readonly lookbackMs = Math.max(
-    60_000,
-    Number.parseInt(process.env.WAHA_CATCHUP_LOOKBACK_MS || `${12 * 60 * 60 * 1000}`, 10) ||
-      12 * 60 * 60 * 1000,
-  );
-  private readonly firstRunLookbackMs = Math.max(
-    this.lookbackMs,
-    Number.parseInt(
-      process.env.WAHA_CATCHUP_FIRST_RUN_LOOKBACK_MS || `${30 * 24 * 60 * 60 * 1000}`,
-      10,
-    ) || 30 * 24 * 60 * 60 * 1000,
-  );
-  private readonly maxPasses = Math.max(
-    1,
-    Number.parseInt(process.env.WAHA_CATCHUP_MAX_PASSES || '5', 10) || 5,
-  );
-  private readonly maxPagesPerChat = Math.max(
-    1,
-    Number.parseInt(process.env.WAHA_CATCHUP_MAX_PAGES_PER_CHAT || '10', 10) || 10,
-  );
-  private readonly fallbackChatsPerPass = (() => {
-    const p = Number.parseInt(process.env.WAHA_CATCHUP_FALLBACK_CHATS_PER_PASS || '100', 10);
-    return Number.isFinite(p) ? p : 0;
-  })();
-  private readonly includeZeroUnreadActivity =
-    String(process.env.WAHA_CATCHUP_INCLUDE_ZERO_UNREAD_ACTIVITY || 'true').toLowerCase() ===
-    'true';
-  private readonly fallbackPagesPerChat = Math.max(
-    1,
-    Number.parseInt(process.env.WAHA_CATCHUP_FALLBACK_PAGES_PER_CHAT || '2', 10) || 2,
-  );
-  private readonly markReadWithoutReplyOnImport =
-    String(process.env.WAHA_CATCHUP_MARK_READ_WITHOUT_REPLY || 'true')
-      .trim()
-      .toLowerCase() === 'true';
 
   constructor(
     private readonly prisma: PrismaService,
@@ -196,12 +139,6 @@ export class WhatsappCatchupOrchestratorService {
       return 'catchup_disabled';
     return null;
   }
-  private getLockKey(ws: string) {
-    return `whatsapp:catchup:${ws}`;
-  }
-  private getCooldownKey(ws: string) {
-    return `whatsapp:catchup:cooldown:${ws}`;
-  }
   private resolveTimestamp(value: unknown): number {
     return resolveTimestampExt(value);
   }
@@ -232,7 +169,7 @@ export class WhatsappCatchupOrchestratorService {
     return getLidPnMapExt(
       { providerRegistry: this.providerRegistry },
       ws,
-      this.lidMapCacheTtlMs,
+      CATCHUP_LID_MAP_CACHE_TTL_MS,
       this.lidMapCache,
     );
   }
@@ -241,15 +178,17 @@ export class WhatsappCatchupOrchestratorService {
   async triggerCatchup(ws: string, reason = 'unknown') {
     const br = await this.getCatchupBlockReason(ws);
     if (br) return { scheduled: false, reason: br };
-    const ck = this.getCooldownKey(ws);
-    if ((await this.redis.set(ck, reason, 'EX', this.minTriggerIntervalSeconds, 'NX')) !== 'OK')
+    const ck = getCooldownKey(ws);
+    if (
+      (await this.redis.set(ck, reason, 'EX', CATCHUP_MIN_TRIGGER_INTERVAL_SECONDS, 'NX')) !== 'OK'
+    )
       return { scheduled: false, reason: 'catchup_cooldown' };
-    const lk = this.getLockKey(ws);
+    const lk = getLockKey(ws);
     const t = randomUUID();
-    if ((await this.redis.set(lk, t, 'EX', this.lockTtlSeconds, 'NX')) !== 'OK')
+    if ((await this.redis.set(lk, t, 'EX', CATCHUP_LOCK_TTL_SECONDS, 'NX')) !== 'OK')
       return { scheduled: false, reason: 'catchup_locked' };
-    void this.runCatchup(ws, reason, t).catch((e) =>
-      this.logger.error(`catchup_failed ws=${ws}: ${e?.message || e}`),
+    void this.runCatchup(ws, reason, t).catch((e: unknown) =>
+      this.logger.error(`catchup_failed ws=${ws}: ${e instanceof Error ? e.message : String(e)}`),
     );
     return { scheduled: true };
   }
@@ -260,9 +199,9 @@ export class WhatsappCatchupOrchestratorService {
   ): Promise<({ scheduled: true } & CatchupRunSummary) | { scheduled: false; reason?: string }> {
     const br = await this.getCatchupBlockReason(ws);
     if (br) return { scheduled: false, reason: br };
-    const lk = this.getLockKey(ws);
+    const lk = getLockKey(ws);
     const t = randomUUID();
-    if ((await this.redis.set(lk, t, 'EX', this.lockTtlSeconds, 'NX')) !== 'OK')
+    if ((await this.redis.set(lk, t, 'EX', CATCHUP_LOCK_TTL_SECONDS, 'NX')) !== 'OK')
       return { scheduled: false, reason: 'catchup_locked' };
     const s = await this.runCatchup(ws, reason, t);
     return { scheduled: true, ...s };
@@ -310,13 +249,21 @@ export class WhatsappCatchupOrchestratorService {
       const since = this.resolveCatchupSince(sm);
       const processedChatIds = new Set<string>();
       const runPass = async (pass: number): Promise<void> => {
-        if (pass >= this.maxPasses) return;
+        if (pass >= CATCHUP_MAX_PASSES) return;
         const raw = await this.providerRegistry.getChats(ws);
         const pending = this.normalizeChats(raw)
           .filter((c) => !!c.id)
           .filter((c) => !this.isWorkspaceSelfChatId(c.id, selfPhone, selfIds, mappings))
           .filter((c) => !processedChatIds.has(c.id));
-        const { chats: ccs, fallbackChatIds } = this.selectCandidateChats(pending, since, nbc);
+        const { chats: ccs, fallbackChatIds } = selectCandidateChats(
+          pending,
+          since,
+          this.history,
+          CATCHUP_INCLUDE_ZERO_UNREAD_ACTIVITY,
+          CATCHUP_FALLBACK_CHATS_PER_PASS,
+          (c) => this.resolveChatActivityTimestamp(c),
+          nbc,
+        );
         if (pass === 0) {
           etc = ccs.length;
           await this.agentEvents.publish({
@@ -330,7 +277,7 @@ export class WhatsappCatchupOrchestratorService {
             meta: { totalChats: etc, reason },
           });
         }
-        const chats = ccs.slice(0, this.maxChats);
+        const chats = ccs.slice(0, CATCHUP_MAX_CHATS);
         if (!chats.length) return;
         if (ccs.length > chats.length || pending.length > ccs.length) ho = true;
         await forEachSequential(chats, async (chat) => {
@@ -350,16 +297,26 @@ export class WhatsappCatchupOrchestratorService {
               message: `Sincronizando conversa ${pc} de ${Math.max(etc, pc)}.`,
               meta: { processedChats: pc, totalChats: Math.max(etc, pc), importedMessages: im },
             });
-          const { messages, hadOverflow: co } = await this.loadCatchupMessages(ws, chat, since, {
+          const { messages, hadOverflow: co } = await loadCatchupMessages(ws, chat, since, {
+            providerRegistry: this.providerRegistry,
+            maxPagesPerChat: CATCHUP_MAX_PAGES_PER_CHAT,
+            fallbackPagesPerChat: CATCHUP_FALLBACK_PAGES_PER_CHAT,
+            maxMessagesPerChat: CATCHUP_MAX_MESSAGES_PER_CHAT,
+            normalizeMessages: (r, fcid) => this.normalizeMessages(r, fcid),
+            resolveTimestamp: (v) => this.resolveTimestamp(v),
+            getLidPnMap: (w) => this.getLidPnMap(w),
+            resolveCanonicalChatId: (cid, m) => this.resolveCanonicalChatId(cid, m),
             fallbackScan: fallbackChatIds.has(chat.id),
             firstSync,
           });
           if (co) ho = true;
           await this.history
             .reconcileRemoteChatState(ws, chat)
-            .catch((e) =>
+            .catch((e: unknown) =>
               this.logger.warn(
-                `catchup_reconcile_failed ws=${ws} chat=${chat.id}: ${e?.message || e}`,
+                `catchup_reconcile_failed ws=${ws} chat=${chat.id}: ${
+                  e instanceof Error ? e.message : String(e)
+                }`,
               ),
             );
           if (!messages.length) return;
@@ -375,10 +332,14 @@ export class WhatsappCatchupOrchestratorService {
             const r = await this.inboundProcessor.process(ib);
             if (!r.deduped) im += 1;
           });
-          if (this.markReadWithoutReplyOnImport)
+          if (CATCHUP_MARK_READ_WITHOUT_REPLY)
             await this.providerRegistry
               .readChatMessages(ws, chat.id)
-              .catch((e) => this.logger.warn('Failed to mark chat as read', e.message));
+              .catch((e: unknown) =>
+                this.logger.warn(
+                  `Failed to mark chat as read: ${e instanceof Error ? e.message : String(e)}`,
+                ),
+              );
         });
         await runPass(pass + 1);
       };
@@ -408,7 +369,10 @@ export class WhatsappCatchupOrchestratorService {
         meta: { importedMessages: im, touchedChats: tc, processedChats: pc, overflow: ho, reason },
       });
       await this.scheduleUnreadSweep(ws, { reason, processedChats: pc, touchedChats: tc }).catch(
-        (e) => this.logger.warn(`catchup_sweep_schedule_failed ws=${ws}: ${e?.message || e}`),
+        (e: unknown) =>
+          this.logger.warn(
+            `catchup_sweep_schedule_failed ws=${ws}: ${e instanceof Error ? e.message : String(e)}`,
+          ),
       );
       return { importedMessages: im, touchedChats: tc, processedChats: pc, overflow: ho };
     } catch (error: unknown) {
@@ -465,129 +429,13 @@ export class WhatsappCatchupOrchestratorService {
       });
       throw error;
     } finally {
-      await this.releaseLock(ws, token);
+      await releaseLock(this.redis, ws, token);
     }
   }
 
   private resolveCatchupSince(sm: ProviderSessionSnapshot): Date {
     const lca = this.normalizeTimestamp(sm.lastCatchupAt);
-    return lca || new Date(Date.now() - this.firstRunLookbackMs);
-  }
-
-  private sortChatsByPriority(chats: WahaChatSummary[], since: Date): WahaChatSummary[] {
-    return [...chats].sort((a, b) => {
-      const ud = (b.unreadCount || 0) - (a.unreadCount || 0);
-      if (ud !== 0) return ud;
-      const ad = this.resolveChatActivityTimestamp(b) - this.resolveChatActivityTimestamp(a);
-      if (ad !== 0) return ad;
-      const rpd =
-        Number(this.history.isRemoteChatAwaitingReply(b)) -
-        Number(this.history.isRemoteChatAwaitingReply(a));
-      if (rpd !== 0) return rpd;
-      const rd =
-        Number(this.resolveChatActivityTimestamp(b) >= since.getTime()) -
-        Number(this.resolveChatActivityTimestamp(a) >= since.getTime());
-      if (rd !== 0) return rd;
-      return String(a.id).localeCompare(String(b.id));
-    });
-  }
-
-  private selectCandidateChats(
-    chats: WahaChatSummary[],
-    since: Date,
-    cursor?: CatchupBackfillCursor,
-  ) {
-    const pri = this.sortChatsByPriority(
-      chats.filter(
-        (c) =>
-          (c.unreadCount || 0) > 0 ||
-          this.history.isRemoteChatAwaitingReply(c) ||
-          (this.includeZeroUnreadActivity &&
-            this.resolveChatActivityTimestamp(c) >= since.getTime()),
-      ),
-      since,
-    );
-    const stale = this.sortChatsByPriority(
-      chats.filter(
-        (c) =>
-          (c.unreadCount || 0) <= 0 &&
-          !this.history.isRemoteChatAwaitingReply(c) &&
-          this.resolveChatActivityTimestamp(c) < since.getTime(),
-      ),
-      since,
-    );
-    const fb = this.history
-      .rotateFallbackChatsByCursor(stale, cursor)
-      .slice(0, this.fallbackChatsPerPass);
-    const deduped = new Map<string, WahaChatSummary>();
-    for (const c of [...pri, ...fb]) {
-      if (!deduped.has(c.id)) deduped.set(c.id, c);
-    }
-    return { chats: Array.from(deduped.values()), fallbackChatIds: new Set(fb.map((c) => c.id)) };
-  }
-
-  private async loadCatchupMessages(
-    ws: string,
-    chat: WahaChatSummary,
-    since: Date,
-    o?: { fallbackScan?: boolean; firstSync?: boolean },
-  ): Promise<{ messages: WahaChatMessage[]; hadOverflow: boolean }> {
-    const collected: WahaChatMessage[] = [];
-    const seen = new Set<string>();
-    let ho = false;
-    let off = 0;
-    const ur = Math.max(0, Number(chat.unreadCount || 0) || 0);
-    const fs = o?.fallbackScan === true;
-    const fS = o?.firstSync === true;
-    const mp = fs
-      ? Math.min(this.maxPagesPerChat, this.fallbackPagesPerChat)
-      : this.maxPagesPerChat;
-    const loadPage = async (page: number): Promise<void> => {
-      if (page >= mp) return;
-      const raw = await this.providerRegistry.getChatMessages(ws, chat.id, {
-        limit: this.maxMessagesPerChat,
-        offset: off,
-      });
-      const np = this.normalizeMessages(raw, chat.id)
-        .filter((m) => !!m.id)
-        .sort((a, b) => this.resolveTimestamp(a) - this.resolveTimestamp(b));
-      if (!np.length) return;
-      if (np.length >= this.maxMessagesPerChat) ho = true;
-      for (const m of np) {
-        if (seen.has(m.id)) continue;
-        seen.add(m.id);
-        collected.push(m);
-      }
-      off += np.length;
-      if (np.length < this.maxMessagesPerChat) return;
-      const ic = collected.filter((m) => !m.fromMe).length;
-      if (ur > 0 && ic >= ur) return;
-      if (ur === 0 && !fS && !fs && np.every((m) => this.resolveTimestamp(m) < since.getTime()))
-        return;
-      return loadPage(page + 1);
-    };
-    await loadPage(0);
-    if (ur > 0 && collected.length < ur) ho = true;
-    const cm = await this.canonicalizeMessages(ws, collected);
-    return {
-      messages:
-        ur > 0 || fs || fS ? cm : cm.filter((m) => this.resolveTimestamp(m) >= since.getTime()),
-      hadOverflow: ho,
-    };
-  }
-
-  private async canonicalizeMessages(
-    ws: string,
-    messages: WahaChatMessage[],
-  ): Promise<WahaChatMessage[]> {
-    const mappings = await this.getLidPnMap(ws);
-    return (messages || []).map((m) => ({
-      ...m,
-      chatId:
-        this.resolveCanonicalChatId(String(m.chatId || m.from || '').trim(), mappings) || m.chatId,
-      from: this.resolveCanonicalChatId(String(m.from || m.chatId).trim(), mappings) || m.from,
-      to: this.resolveCanonicalChatId(String(m.to || '').trim(), mappings) || m.to,
-    })) as WahaChatMessage[];
+    return lca || new Date(Date.now() - CATCHUP_FIRST_RUN_LOOKBACK_MS);
   }
 
   private async persistCatchupSnapshot(ws: string, update: CatchupUpdatePayload) {
@@ -669,11 +517,6 @@ export class WhatsappCatchupOrchestratorService {
         limit: CATCHUP_SWEEP_LIMIT,
       },
     });
-  }
-
-  private async releaseLock(ws: string, token: string) {
-    const c = await this.redis.get(this.getLockKey(ws));
-    if (c === token) await this.redis.del(this.getLockKey(ws));
   }
 
   private async getCatchupBlockReason(ws: string): Promise<string | null> {

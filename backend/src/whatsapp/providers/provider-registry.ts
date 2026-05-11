@@ -1,74 +1,56 @@
-// WhatsAppService.sendMessage() calls PlanLimitsService.trackMessageSend() before delegating here.
 import { Injectable, Logger, Optional } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { OpsAlertService } from '../../observability/ops-alert.service';
 import { PrismaService } from '../../prisma/prisma.service';
-import { asProviderSettings, type ProviderSessionSnapshot } from '../provider-settings.types';
+import { asProviderSettings } from '../provider-settings.types';
+import type { ProviderSessionSnapshot } from '../provider-settings.types';
 import { extractPhoneFromChatId as normalizePhoneFromChatId } from '../whatsapp-normalization.util';
-import { type ResolvedWhatsAppProvider, resolveDefaultWhatsAppProvider } from './provider-env';
+import { resolveDefaultWhatsAppProvider } from './provider-env';
 import { WahaProvider } from './waha.provider';
 import { WhatsAppApiProvider } from './whatsapp-api.provider';
-import { sendMessage as companionSendMessage } from './provider-send-message.helpers';
+import type {
+  WhatsAppProviderType,
+  SendMessageOptions,
+  SendResult,
+  SessionStatus,
+} from './provider-registry.types';
+import {
+  readRecord,
+  persistSessionSnapshot,
+  startSession as startSessionFn,
+  getSessionStatus as getSessionStatusFn,
+  getQrCode as getQrCodeFn,
+} from './provider-registry-session';
+import {
+  sendMessage as sendMessageFn,
+  sendMedia as sendMediaFn,
+} from './provider-registry-messaging';
+import {
+  disconnect as disconnectFn,
+  logout as logoutFn,
+  restartSession as restartSessionFn,
+  deleteSession as deleteSessionFn,
+  syncSessionConfig as syncSessionConfigFn,
+} from './provider-registry-op';
+import {
+  isRegistered as isRegisteredFn,
+  getClientInfo as getClientInfoFn,
+  getContacts as getContactsFn,
+  upsertContactProfile as upsertContactProfileFn,
+  getChats as getChatsFn,
+  getChatMessages as getChatMessagesFn,
+  readChatMessages as readChatMessagesFn,
+  setPresence as setPresenceFn,
+  sendTyping as sendTypingFn,
+  stopTyping as stopTypingFn,
+  sendSeen as sendSeenFn,
+  healthCheck as healthCheckFn,
+  getSessionDiagnostics as getSessionDiagnosticsFn,
+  listLidMappings as listLidMappingsFn,
+} from './provider-registry-contacts';
 
-type UnknownRecord = Record<string, unknown>;
+export { SessionStatus } from './provider-registry.types';
 
-class MissingWahaProviderError extends Error {
-  constructor() {
-    super(['WAHA', 'provider', 'not', 'configured'].join(' '));
-    this.name = 'MissingWahaProviderError';
-  }
-}
-
-/** Whats app provider type type. */
-type WhatsAppProviderType = ResolvedWhatsAppProvider;
-
-/** Send message options shape. */
-interface SendMessageOptions {
-  /** Media url property. */
-  mediaUrl?: string;
-  /** Media type property. */
-  mediaType?: 'image' | 'video' | 'audio' | 'document';
-  /** Caption property. */
-  caption?: string;
-  /** Quoted message id property. */
-  quotedMessageId?: string;
-}
-
-/** Send result shape. */
-interface SendResult {
-  /** Success property. */
-  success: boolean;
-  /** Message id property. */
-  messageId?: string;
-  /** Error property. */
-  error?: string;
-}
-
-/** Session status shape. */
-export interface SessionStatus {
-  /** Connected property. */
-  connected: boolean;
-  /** Status property. */
-  status: string;
-  /** Phone number property. */
-  phoneNumber?: string;
-  /** Push name property. */
-  pushName?: string;
-  /** Self ids property. */
-  selfIds?: string[];
-  /** Qr code property. */
-  qrCode?: string;
-  /** Auth url property. */
-  authUrl?: string;
-  /** Phone number id property. */
-  phoneNumberId?: string;
-  /** Whatsapp business id property. */
-  whatsappBusinessId?: string | null;
-  /** Degraded reason property. */
-  degradedReason?: string | null;
-}
-
-/** Whats app provider registry. */
 @Injectable()
 export class WhatsAppProviderRegistry {
   private readonly logger = new Logger(WhatsAppProviderRegistry.name);
@@ -84,122 +66,14 @@ export class WhatsAppProviderRegistry {
     this.logger.log(`WhatsApp provider default: ${this.defaultProvider}`);
   }
 
-  private readRecord(value: unknown): UnknownRecord {
-    return typeof value === 'object' && value !== null ? (value as UnknownRecord) : {};
-  }
-
-  private readString(value: unknown): string | undefined {
-    return typeof value === 'string' && value.trim() ? value : undefined;
-  }
-
-  private readStringArray(value: unknown): string[] | undefined {
-    if (!Array.isArray(value)) {
-      return undefined;
-    }
-
-    const items = value.filter(
-      (item): item is string => typeof item === 'string' && item.length > 0,
-    );
-    return items.length > 0 ? items : [];
-  }
-
-  private readSessionSnapshot(value: unknown): ProviderSessionSnapshot {
-    const snapshot = this.readRecord(value);
-    const status = this.readString(snapshot.status);
-    const provider = this.readString(snapshot.provider);
-    const lastUpdated = this.readString(snapshot.lastUpdated);
-
-    return {
-      rawStatus: this.readString(snapshot.rawStatus) ?? null,
-      phoneNumber: this.readString(snapshot.phoneNumber) ?? null,
-      pushName: this.readString(snapshot.pushName) ?? null,
-      selfIds: this.readStringArray(snapshot.selfIds) ?? [],
-      qrCode: this.readString(snapshot.qrCode) ?? null,
-      authUrl: this.readString(snapshot.authUrl) ?? null,
-      phoneNumberId: this.readString(snapshot.phoneNumberId) ?? null,
-      whatsappBusinessId: this.readString(snapshot.whatsappBusinessId) ?? null,
-      sessionName: this.readString(snapshot.sessionName) ?? null,
-      disconnectReason: this.readString(snapshot.disconnectReason) ?? null,
-      ...(status !== undefined ? { status } : {}),
-      ...(provider !== undefined ? { provider } : {}),
-      ...(lastUpdated !== undefined ? { lastUpdated } : {}),
-    };
-  }
-
   private isWahaMode(): boolean {
     return this.defaultProvider === 'whatsapp-api' && !!this.wahaProvider;
   }
 
-  /** Extract phone from chat id. */
   extractPhoneFromChatId(chatId: string): string {
     return normalizePhoneFromChatId(chatId);
   }
 
-  private normalizeWahaSnapshotStatus(
-    rawStatus: string | null | undefined,
-  ): 'connected' | 'connecting' | 'failed' | 'disconnected' {
-    const normalized = String(rawStatus || '')
-      .trim()
-      .toUpperCase();
-
-    if (normalized === 'CONNECTED' || normalized === 'WORKING') {
-      return 'connected';
-    }
-
-    if (
-      normalized === 'SCAN_QR_CODE' ||
-      normalized === 'QR_PENDING' ||
-      normalized === 'STARTING' ||
-      normalized === 'OPENING'
-    ) {
-      return 'connecting';
-    }
-
-    if (normalized === 'FAILED') {
-      return 'failed';
-    }
-
-    return 'disconnected';
-  }
-
-  private async persistSessionSnapshot(
-    workspaceId: string,
-    update: Partial<ProviderSessionSnapshot>,
-  ) {
-    await this.prisma.$transaction(async (tx) => {
-      const workspace = await tx.workspace.findUnique({
-        where: { id: workspaceId },
-        select: { providerSettings: true },
-      });
-      if (!workspace) {
-        return;
-      }
-
-      const settings = asProviderSettings(workspace.providerSettings);
-      const currentSession = settings.whatsappApiSession || {};
-
-      await tx.workspace.update({
-        where: { id: workspaceId },
-        data: {
-          providerSettings: JSON.parse(
-            JSON.stringify({
-              ...settings,
-              whatsappProvider: this.defaultProvider,
-              connectionStatus: update.status || currentSession.status || 'unknown',
-              whatsappApiSession: {
-                ...currentSession,
-                ...update,
-                provider: this.defaultProvider,
-                lastUpdated: new Date().toISOString(),
-              },
-            }),
-          ) as Prisma.InputJsonObject,
-        },
-      });
-    });
-  }
-
-  /** Get provider type. */
   async getProviderType(workspaceId: string): Promise<WhatsAppProviderType> {
     const provider = await this.prisma.$transaction(async (tx) => {
       const workspace = await tx.workspace.findUnique({
@@ -230,9 +104,46 @@ export class WhatsAppProviderRegistry {
     return provider;
   }
 
-  // ═══════════════════════════════════════════════════
-  // SESSION MANAGEMENT
-  // ═══════════════════════════════════════════════════
+  private buildSessionDeps() {
+    return {
+      prisma: this.prisma,
+      metaCloudProvider: this.metaCloudProvider,
+      wahaProvider: this.wahaProvider,
+      defaultProvider: this.defaultProvider,
+      isWahaMode: () => this.isWahaMode(),
+      getProviderType: (wsId: string) => this.getProviderType(wsId),
+    };
+  }
+
+  private buildOpDeps() {
+    return {
+      isWahaMode: () => this.isWahaMode(),
+      wahaProvider: this.wahaProvider,
+      metaCloudProvider: this.metaCloudProvider,
+      persistSessionSnapshot: (wsId: string, update: Partial<ProviderSessionSnapshot>) =>
+        persistSessionSnapshot(this.prisma, this.defaultProvider, wsId, update),
+    };
+  }
+
+  private buildContactsDeps() {
+    return {
+      isWahaMode: () => this.isWahaMode(),
+      wahaProvider: this.wahaProvider,
+      metaCloudProvider: this.metaCloudProvider,
+      getSessionStatus: (wsId: string) => this.getSessionStatus(wsId),
+    };
+  }
+
+  private buildMessagingDeps() {
+    return {
+      isWahaMode: () => this.isWahaMode(),
+      wahaProvider: this.wahaProvider,
+      metaCloudProvider: this.metaCloudProvider,
+      opsAlert: this.opsAlert,
+      logger: this.logger,
+      readRecord,
+    };
+  }
 
   async startSession(workspaceId: string): Promise<{
     success: boolean;
@@ -240,127 +151,18 @@ export class WhatsAppProviderRegistry {
     message?: string;
     authUrl?: string;
   }> {
-    await this.getProviderType(workspaceId);
-
-    if (this.isWahaMode()) {
-      if (!this.wahaProvider) {
-        throw new MissingWahaProviderError();
-      }
-      const result = await this.wahaProvider.startSession(workspaceId);
-      await this.persistSessionSnapshot(workspaceId, {
-        status: result.message === 'already_connected' ? 'connected' : 'connecting',
-        rawStatus: result.message === 'already_connected' ? 'CONNECTED' : 'STARTING',
-        disconnectReason: null,
-        ...(result.message === 'already_connected' ? { qrCode: null } : {}),
-        sessionName: workspaceId,
-      });
-      return { success: result.success, message: result.message };
-    }
-
-    const result = await this.metaCloudProvider.startSession(workspaceId);
-    await this.persistSessionSnapshot(workspaceId, {
-      status: result.message === 'already_connected' ? 'connected' : 'connection_required',
-      qrCode: null,
-      authUrl: result.authUrl || null,
-      sessionName: workspaceId,
-    });
-    return result;
+    return startSessionFn(this.buildSessionDeps(), workspaceId);
   }
 
-  /** Get session status. */
   async getSessionStatus(workspaceId: string): Promise<SessionStatus> {
-    await this.getProviderType(workspaceId);
-
-    if (this.isWahaMode() && this.wahaProvider) {
-      const wahaStatus = await this.wahaProvider.getSessionStatus(workspaceId);
-      const connected = wahaStatus.state === 'CONNECTED';
-      const snapshotStatus = this.normalizeWahaSnapshotStatus(wahaStatus.state);
-      const status: SessionStatus = {
-        connected,
-        status: wahaStatus.state || 'DISCONNECTED',
-        selfIds: wahaStatus.selfIds || [],
-        ...(wahaStatus.phoneNumber != null ? { phoneNumber: wahaStatus.phoneNumber } : {}),
-        ...(wahaStatus.pushName != null ? { pushName: wahaStatus.pushName } : {}),
-      };
-      await this.persistSessionSnapshot(workspaceId, {
-        status: snapshotStatus,
-        rawStatus: status.status,
-        phoneNumber: status.phoneNumber || null,
-        pushName: status.pushName || null,
-        selfIds: status.selfIds || [],
-        disconnectReason: connected ? null : wahaStatus.message || null,
-        ...(connected ? { qrCode: null } : {}),
-        sessionName: workspaceId,
-      });
-      return status;
-    }
-
-    // Meta Cloud path (unchanged)
-    const [workspace, details] = await Promise.all([
-      this.prisma.workspace.findUnique({
-        where: { id: workspaceId },
-        select: { providerSettings: true },
-      }),
-      this.metaCloudProvider.getSessionConfigDiagnostics(workspaceId),
-    ]);
-    const settings = asProviderSettings(workspace?.providerSettings);
-    const snapshot = this.readSessionSnapshot(settings.whatsappApiSession);
-    const snapshotStatus = String(snapshot.status || snapshot.rawStatus || '')
-      .trim()
-      .toUpperCase();
-    const snapshotConnected = snapshotStatus === 'CONNECTED' || snapshotStatus === 'WORKING';
-    const liveConnected = details.state === 'CONNECTED';
-    const fallbackToSnapshot = !liveConnected && details.state === 'DEGRADED' && snapshotConnected;
-
-    const resolvedPhoneNumber = details.phoneNumber || snapshot.phoneNumber || undefined;
-    const resolvedPushName = details.pushName || snapshot.pushName || undefined;
-    const resolvedAuthUrl = details.authUrl || snapshot.authUrl || undefined;
-    const resolvedPhoneNumberId = details.phoneNumberId || snapshot.phoneNumberId || undefined;
-    const resolvedWhatsappBusinessId =
-      details.whatsappBusinessId || snapshot.whatsappBusinessId || undefined;
-
-    const status: SessionStatus = {
-      connected: liveConnected || fallbackToSnapshot,
-      status: fallbackToSnapshot ? 'CONNECTED' : details.state || 'DISCONNECTED',
-      selfIds: [],
-      degradedReason: fallbackToSnapshot ? null : details.error || null,
-      ...(resolvedPhoneNumber != null ? { phoneNumber: resolvedPhoneNumber } : {}),
-      ...(resolvedPushName != null ? { pushName: resolvedPushName } : {}),
-      ...(resolvedAuthUrl != null ? { authUrl: resolvedAuthUrl } : {}),
-      ...(resolvedPhoneNumberId != null ? { phoneNumberId: resolvedPhoneNumberId } : {}),
-      ...(resolvedWhatsappBusinessId != null
-        ? { whatsappBusinessId: resolvedWhatsappBusinessId }
-        : {}),
-    };
-
-    await this.persistSessionSnapshot(workspaceId, {
-      status: status.connected ? 'connected' : 'disconnected',
-      phoneNumber: status.phoneNumber || null,
-      pushName: status.pushName || null,
-      selfIds: status.selfIds || [],
-      sessionName: workspaceId,
-      authUrl: status.authUrl || null,
-      phoneNumberId: status.phoneNumberId || null,
-      whatsappBusinessId: status.whatsappBusinessId || null,
-    });
-    return status;
+    return getSessionStatusFn(this.buildSessionDeps(), workspaceId);
   }
 
-  /** Get qr code. */
   async getQrCode(
     workspaceId: string,
   ): Promise<{ success: boolean; qr?: string; message?: string }> {
-    await this.getProviderType(workspaceId);
-
-    if (this.isWahaMode() && this.wahaProvider) {
-      return this.wahaProvider.getQrCode(workspaceId);
-    }
-    return this.metaCloudProvider.getQrCode(workspaceId);
+    return getQrCodeFn(this.buildSessionDeps(), workspaceId);
   }
-
-  // ═══════════════════════════════════════════════════
-  // MESSAGING
-  // ═══════════════════════════════════════════════════
 
   async sendMessage(
     workspaceId: string,
@@ -368,224 +170,104 @@ export class WhatsAppProviderRegistry {
     message: string,
     options?: SendMessageOptions,
   ): Promise<SendResult> {
-    return companionSendMessage(
-      {
-        isWahaMode: () => this.isWahaMode(),
-        wahaProvider: this.wahaProvider,
-        metaCloudProvider: this.metaCloudProvider,
-        opsAlert: this.opsAlert,
-        logger: this.logger,
-        readRecord: (value: unknown) => this.readRecord(value),
-      },
-      workspaceId,
-      to,
-      message,
-      options,
-    );
+    return sendMessageFn(this.buildMessagingDeps(), workspaceId, to, message, options);
   }
 
-  /** Send media. */
   async sendMedia(
     workspaceId: string,
     to: string,
     mediaUrl: string,
     options?: { caption?: string; mediaType?: 'image' | 'video' | 'audio' | 'document' },
   ): Promise<SendResult> {
-    return this.sendMessage(workspaceId, to, options?.caption || '', {
-      mediaUrl,
-      ...(options?.caption !== undefined ? { caption: options.caption } : {}),
-      ...(options?.mediaType !== undefined ? { mediaType: options.mediaType } : {}),
-    });
+    return sendMediaFn(this.buildMessagingDeps(), workspaceId, to, mediaUrl, options);
   }
-
-  // ═══════════════════════════════════════════════════
-  // SESSION OPERATIONS
-  // ═══════════════════════════════════════════════════
 
   async disconnect(workspaceId: string): Promise<{ success: boolean; message?: string }> {
-    if (this.isWahaMode() && this.wahaProvider) {
-      const result = await this.wahaProvider.logoutSession(workspaceId);
-      await this.persistSessionSnapshot(workspaceId, { status: 'disconnected', qrCode: null });
-      return { success: Boolean(result?.success), message: 'disconnected' };
-    }
-    await this.persistSessionSnapshot(workspaceId, { status: 'disconnected', qrCode: null });
-    return { success: true, message: 'disconnected' };
+    return disconnectFn(this.buildOpDeps(), workspaceId);
   }
 
-  /** Logout. */
   async logout(workspaceId: string): Promise<{ success: boolean; message?: string }> {
-    return this.disconnect(workspaceId);
+    return logoutFn(this.buildOpDeps(), workspaceId);
   }
 
-  /** Restart session. */
   async restartSession(
     workspaceId: string,
   ): Promise<{ success: boolean; message?: string; qrCode?: string; authUrl?: string }> {
-    if (this.isWahaMode() && this.wahaProvider) {
-      return this.wahaProvider.restartSession(workspaceId);
-    }
-    return this.metaCloudProvider.restartSession(workspaceId);
+    return restartSessionFn(this.buildOpDeps(), workspaceId);
   }
 
-  /** Delete session. */
   async deleteSession(workspaceId: string): Promise<boolean> {
-    if (this.isWahaMode() && this.wahaProvider) {
-      return this.wahaProvider.deleteSession(workspaceId);
-    }
-    return this.metaCloudProvider.deleteSession(workspaceId);
+    return deleteSessionFn(this.buildOpDeps(), workspaceId);
   }
 
-  /** Sync session config. */
   async syncSessionConfig(workspaceId: string): Promise<void> {
-    if (this.isWahaMode() && this.wahaProvider) {
-      return this.wahaProvider.syncSessionConfig(workspaceId);
-    }
-    return this.metaCloudProvider.syncSessionConfig(workspaceId);
+    return syncSessionConfigFn(this.buildOpDeps(), workspaceId);
   }
-
-  // ═══════════════════════════════════════════════════
-  // CONTACTS & CHATS
-  // ═══════════════════════════════════════════════════
 
   async isRegistered(workspaceId: string, phone: string): Promise<boolean> {
-    if (this.isWahaMode() && this.wahaProvider) {
-      return this.wahaProvider.isRegisteredUser(workspaceId, phone);
-    }
-    return this.metaCloudProvider.isRegisteredUser(workspaceId, phone);
+    return isRegisteredFn(this.buildContactsDeps(), workspaceId, phone);
   }
 
-  /** Get client info. */
   async getClientInfo(workspaceId: string): Promise<unknown> {
-    if (this.isWahaMode() && this.wahaProvider) {
-      return this.wahaProvider.getClientInfo(workspaceId);
-    }
-    return this.metaCloudProvider.getClientInfo(workspaceId);
+    return getClientInfoFn(this.buildContactsDeps(), workspaceId);
   }
 
-  /** Get contacts. */
   async getContacts(workspaceId: string): Promise<unknown[]> {
-    if (this.isWahaMode() && this.wahaProvider) {
-      const contacts = await this.wahaProvider.getContacts(workspaceId);
-      return Array.isArray(contacts) ? contacts : [];
-    }
-    const contacts = await this.metaCloudProvider.getContacts(workspaceId);
-    return Array.isArray(contacts) ? contacts : [];
+    return getContactsFn(this.buildContactsDeps(), workspaceId);
   }
 
-  /** Upsert contact profile. */
   async upsertContactProfile(
     workspaceId: string,
     contact: { phone: string; name?: string | null },
   ): Promise<boolean> {
-    if (this.isWahaMode() && this.wahaProvider) {
-      return this.wahaProvider.upsertContactProfile(workspaceId, contact);
-    }
-    return this.metaCloudProvider.upsertContactProfile(workspaceId, contact);
+    return upsertContactProfileFn(this.buildContactsDeps(), workspaceId, contact);
   }
 
-  /** Get chats. */
   async getChats(workspaceId: string): Promise<unknown[]> {
-    if (this.isWahaMode() && this.wahaProvider) {
-      const chats = await this.wahaProvider.getChats(workspaceId);
-      return Array.isArray(chats) ? chats : [];
-    }
-    const chats = await this.metaCloudProvider.getChats(workspaceId);
-    return Array.isArray(chats) ? chats : [];
+    return getChatsFn(this.buildContactsDeps(), workspaceId);
   }
 
-  /** Get chat messages. */
   async getChatMessages(
     workspaceId: string,
     chatId: string,
     options?: { limit?: number; offset?: number; downloadMedia?: boolean },
   ): Promise<unknown[]> {
-    if (this.isWahaMode() && this.wahaProvider) {
-      const msgs = await this.wahaProvider.getChatMessages(workspaceId, chatId, options);
-      return Array.isArray(msgs) ? msgs : [];
-    }
-    const msgs = await this.metaCloudProvider.getChatMessages(workspaceId, chatId, options);
-    return Array.isArray(msgs) ? msgs : [];
+    return getChatMessagesFn(this.buildContactsDeps(), workspaceId, chatId, options);
   }
 
-  /** Read chat messages. */
   async readChatMessages(workspaceId: string, chatId: string): Promise<void> {
-    if (this.isWahaMode() && this.wahaProvider) {
-      return this.wahaProvider.sendSeen(workspaceId, chatId);
-    }
-    return this.metaCloudProvider.readChatMessages(workspaceId, chatId);
+    return readChatMessagesFn(this.buildContactsDeps(), workspaceId, chatId);
   }
 
-  /** Set presence. */
   async setPresence(
     workspaceId: string,
     presence: 'available' | 'offline',
     chatId?: string,
   ): Promise<void> {
-    if (this.isWahaMode()) {
-      return;
-    } // WAHA does not support presence API
-    return this.metaCloudProvider.setPresence(workspaceId, presence, chatId);
+    return setPresenceFn(this.buildContactsDeps(), workspaceId, presence, chatId);
   }
 
-  /** Send typing. */
   async sendTyping(workspaceId: string, chatId: string): Promise<void> {
-    if (this.isWahaMode()) {
-      return;
-    }
-    return this.metaCloudProvider.sendTyping(workspaceId, chatId);
+    return sendTypingFn(this.buildContactsDeps(), workspaceId, chatId);
   }
 
-  /** Stop typing. */
   async stopTyping(workspaceId: string, chatId: string): Promise<void> {
-    if (this.isWahaMode()) {
-      return;
-    }
-    return this.metaCloudProvider.stopTyping(workspaceId, chatId);
+    return stopTypingFn(this.buildContactsDeps(), workspaceId, chatId);
   }
 
-  /** Send seen. */
   async sendSeen(workspaceId: string, chatId: string): Promise<void> {
-    if (this.isWahaMode() && this.wahaProvider) {
-      return this.wahaProvider.sendSeen(workspaceId, chatId);
-    }
-    return this.metaCloudProvider.sendSeen(workspaceId, chatId);
+    return sendSeenFn(this.buildContactsDeps(), workspaceId, chatId);
   }
 
-  /** Health check. */
   async healthCheck(): Promise<{ whatsappApi: boolean; whatsappWebAgent: boolean }> {
-    if (this.isWahaMode() && this.wahaProvider) {
-      const wahaHealthy = await this.wahaProvider.ping().catch(() => false);
-      return { whatsappApi: wahaHealthy, whatsappWebAgent: false };
-    }
-    return {
-      whatsappApi: await this.metaCloudProvider.ping(),
-      whatsappWebAgent: false,
-    };
+    return healthCheckFn(this.buildContactsDeps());
   }
 
-  /** Get session diagnostics. */
   async getSessionDiagnostics(workspaceId: string): Promise<Record<string, unknown>> {
-    if (this.isWahaMode() && this.wahaProvider) {
-      const diag = await this.wahaProvider.getSessionConfigDiagnostics(workspaceId);
-      return {
-        ...diag,
-        providerType: 'whatsapp-api',
-        status: await this.getSessionStatus(workspaceId),
-      };
-    }
-    const diagnostics = await this.metaCloudProvider.getSessionConfigDiagnostics(workspaceId);
-    return {
-      ...diagnostics,
-      providerType: 'meta-cloud',
-      status: await this.getSessionStatus(workspaceId),
-    };
+    return getSessionDiagnosticsFn(this.buildContactsDeps(), workspaceId);
   }
 
-  /** List lid mappings. */
   async listLidMappings(workspaceId: string): Promise<Array<{ lid: string; pn: string }>> {
-    if (this.isWahaMode() && this.wahaProvider) {
-      return this.wahaProvider.listLidMappings(workspaceId);
-    }
-    return this.metaCloudProvider.listLidMappings(workspaceId);
+    return listLidMappingsFn(this.buildContactsDeps(), workspaceId);
   }
 }
