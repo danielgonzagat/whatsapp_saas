@@ -297,12 +297,20 @@ export class CheckoutController {
   ) {
     const workspaceId = req.user?.workspaceId;
     await this.verifyPlanOwnership(planId, workspaceId);
-    const { orderBumps: _orderBumps, upsells: _upsells, pixels: _pixels, ...configDto } = dto;
+    const {
+      orderBumps: _orderBumps,
+      upsells: _upsells,
+      pixels: _pixels,
+      timerType,
+      testimonials,
+      trustBadges,
+      ...configDto
+    } = dto;
     const configInput: Prisma.CheckoutConfigUpdateInput = {
       ...configDto,
-      timerType: normalizeTimerType(dto.timerType),
-      testimonials: dto.testimonials ? toPrismaJsonValue(dto.testimonials) : undefined,
-      trustBadges: dto.trustBadges ? toPrismaJsonValue(dto.trustBadges) : undefined,
+      ...(timerType !== undefined ? { timerType: normalizeTimerType(timerType) } : {}),
+      ...(testimonials !== undefined ? { testimonials: toPrismaJsonValue(testimonials) } : {}),
+      ...(trustBadges !== undefined ? { trustBadges: toPrismaJsonValue(trustBadges) } : {}),
     };
     return this.checkoutService.updateConfig(planId, configInput);
   }
@@ -464,9 +472,9 @@ export class CheckoutController {
       ? Math.min(Math.max(Number.parseInt(limit, 10) || 20, 1), 100)
       : undefined;
     return this.checkoutService.listOrders(wsId, {
-      status,
-      page: clampedPage,
-      limit: clampedLimit,
+      ...(status !== undefined ? { status } : {}),
+      ...(clampedPage !== undefined ? { page: clampedPage } : {}),
+      ...(clampedLimit !== undefined ? { limit: clampedLimit } : {}),
     });
   }
 

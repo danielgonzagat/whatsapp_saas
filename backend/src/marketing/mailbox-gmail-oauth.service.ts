@@ -8,7 +8,10 @@ import { createHmac, timingSafeEqual } from 'node:crypto';
 import { MailboxProvider, MailboxStatus, Prisma } from '@prisma/client';
 import { ConfigService } from '@nestjs/config';
 import { OmnichannelService } from '../inbox/omnichannel.service';
+import type { NormalizedMessage } from '../inbox/omnichannel.helpers';
 import { PrismaService } from '../prisma/prisma.service';
+import { buildUnsubscribeFooterHtml } from '../common/utils/unsubscribe-footer.util';
+import { Metrics } from '../observability/metrics';
 import { decryptMailboxToken, encryptMailboxToken } from './mailbox-token-crypto';
 
 const GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
@@ -88,6 +91,12 @@ interface GmailMessageResponse {
       value?: string;
     }>;
   };
+}
+
+interface GmailSendResponse {
+  id?: string;
+  threadId?: string;
+  labelIds?: string[];
 }
 
 function readConfiguredValue(config: ConfigService, keys: string[]): string | null {
@@ -203,8 +212,8 @@ export class MailboxGmailOAuthService {
         email,
         status: MailboxStatus.ACTIVE,
         providerAccountId: profile.id || null,
-        accessToken: encryptMailboxToken(token.access_token),
-        refreshToken: encryptMailboxToken(token.refresh_token),
+        accessToken: encryptMailboxToken(token.access_token) ?? null,
+        refreshToken: encryptMailboxToken(token.refresh_token) ?? null,
         expiresAt: expiresAtFromSeconds(token.expires_in),
         connectedAt: new Date(),
         disconnectedAt: null,
@@ -215,8 +224,8 @@ export class MailboxGmailOAuthService {
       update: {
         status: MailboxStatus.ACTIVE,
         providerAccountId: profile.id || null,
-        accessToken: encryptMailboxToken(token.access_token),
-        refreshToken: encryptMailboxToken(token.refresh_token),
+        accessToken: encryptMailboxToken(token.access_token) ?? null,
+        refreshToken: encryptMailboxToken(token.refresh_token) ?? null,
         expiresAt: expiresAtFromSeconds(token.expires_in),
         connectedAt: new Date(),
         disconnectedAt: null,
@@ -233,6 +242,8 @@ export class MailboxGmailOAuthService {
         expiresAt: true,
       },
     });
+
+    Metrics.mailbox.connected('gmail', { workspace_id: parsedState.workspaceId });
 
     return {
       connected: true,
@@ -288,51 +299,165 @@ export class MailboxGmailOAuthService {
     });
 
     if (!connection) {
+      Metrics.mailbox.syncCompleted('gmail', 0, 0, {
+        workspace_id: workspaceId,
+        status: 'not_connected',
+      });
       return { provider: 'gmail', status: 'not_connected', imported: 0 };
     }
 
-    const accessToken = await this.resolveAccessToken(connection);
-    const limit = Math.min(25, Math.max(1, Number(requestedLimit || 10) || 10));
-    const list = await this.listMessages(accessToken, limit);
-    const syncedIds = this.readSyncedMessageIds(connection.metadata);
-    const nextSyncedIds = new Set(syncedIds);
-    let imported = 0;
+    try {
+      const accessToken = await this.resolveAccessToken(connection);
+      const limit = Math.min(25, Math.max(1, Number(requestedLimit || 10) || 10));
+      const list = await this.listMessages(accessToken, limit);
+      const syncedIds = this.readSyncedMessageIds(connection.metadata);
+      const nextSyncedIds = new Set(syncedIds);
+      let imported = 0;
 
-    for (const item of list.messages || []) {
-      const messageId = String(item.id || '').trim();
-      if (!messageId || nextSyncedIds.has(messageId)) {
-        continue;
-      }
+      for (const item of list.messages || []) {
+        const messageId = String(item.id || '').trim();
+        if (!messageId || nextSyncedIds.has(messageId)) {
+          continue;
+        }
 
-      const message = await this.getMessage(accessToken, messageId);
-      const normalized = this.normalizeGmailMessage(connection, message);
-      if (!normalized.content || normalized.from === connection.email) {
+        const message = await this.getMessage(accessToken, messageId);
+        const normalized = this.normalizeGmailMessage(connection, message);
+        if (!normalized.content || normalized.from === connection.email) {
+          nextSyncedIds.add(messageId);
+          continue;
+        }
+
+        await this.omnichannel.handleIncomingMessage(normalized);
         nextSyncedIds.add(messageId);
-        continue;
+        imported += 1;
       }
 
-      await this.omnichannel.handleIncomingMessage(normalized);
-      nextSyncedIds.add(messageId);
-      imported += 1;
+      await this.prisma.mailboxConnection.update({
+        where: { id: connection.id },
+        data: {
+          lastSyncAt: new Date(),
+          lastErrorAt: null,
+          lastError: null,
+          metadata: this.mergeSyncMetadata(connection.metadata, Array.from(nextSyncedIds)),
+        },
+      });
+
+      const seen = list.messages?.length || 0;
+      Metrics.mailbox.syncCompleted('gmail', imported, seen, {
+        workspace_id: workspaceId,
+        status: 'synced',
+      });
+      return {
+        provider: 'gmail',
+        status: 'synced',
+        email: connection.email,
+        imported,
+        seen,
+      };
+    } catch (error: unknown) {
+      Metrics.mailbox.syncFailed('gmail', this.metricReason(error), {
+        workspace_id: workspaceId,
+      });
+      throw error;
+    }
+  }
+
+  async sendMessageFromMailbox(
+    workspaceId: string,
+    input: {
+      toEmail: string;
+      subject?: string;
+      html?: string;
+      proactive?: boolean;
+    },
+  ) {
+    const toEmail = String(input.toEmail || '')
+      .trim()
+      .toLowerCase();
+    if (!toEmail || !toEmail.includes('@')) {
+      throw new BadRequestException('gmail_recipient_required');
+    }
+    if (input.proactive !== false && (await this.isSuppressedRecipient(workspaceId, toEmail))) {
+      Metrics.mailbox.sendSuppressed('gmail', { workspace_id: workspaceId });
+      return {
+        provider: 'gmail',
+        status: 'suppressed',
+        sent: false,
+        toEmail,
+        reason: 'recipient_unsubscribed',
+      };
     }
 
-    await this.prisma.mailboxConnection.update({
-      where: { id: connection.id },
-      data: {
-        lastSyncAt: new Date(),
-        lastErrorAt: null,
-        lastError: null,
-        metadata: this.mergeSyncMetadata(connection.metadata, Array.from(nextSyncedIds)),
-      },
+    const connection = await this.getActiveGmailConnection(workspaceId);
+    if (!connection) {
+      Metrics.mailbox.sendFailed('gmail', 'not_connected', { workspace_id: workspaceId });
+      return { provider: 'gmail', status: 'not_connected', sent: false };
+    }
+
+    const accessToken = await this.resolveAccessToken(connection);
+    const subject = String(input.subject || 'Kloel CIA - mensagem de teste')
+      .trim()
+      .slice(0, 160);
+    const baseHtml =
+      input.html ||
+      '<p>Esta mensagem foi enviada pela CIA usando a caixa Gmail conectada ao workspace.</p>';
+    const html =
+      input.proactive === false
+        ? baseHtml
+        : `${baseHtml}${buildUnsubscribeFooterHtml({ email: toEmail })}`;
+    const raw = this.buildRawMimeMessage({
+      fromEmail: connection.email,
+      toEmail,
+      subject,
+      html,
+      proactive: input.proactive !== false,
     });
 
+    const response = await fetch(`${GMAIL_API_BASE}/messages/send`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ raw }),
+      signal: AbortSignal.timeout(30000),
+    });
+    const payload = (await response.json().catch(() => ({}))) as GmailSendResponse;
+    if (!response.ok || !payload.id) {
+      await this.prisma.mailboxConnection.update({
+        where: { id: connection.id },
+        data: {
+          lastErrorAt: new Date(),
+          lastError: 'gmail_send_failed',
+        },
+      });
+      Metrics.mailbox.sendFailed('gmail', 'gmail_send_failed', { workspace_id: workspaceId });
+      throw new BadRequestException('gmail_send_failed');
+    }
+
+    Metrics.mailbox.sendCompleted('gmail', { workspace_id: workspaceId });
     return {
       provider: 'gmail',
-      status: 'synced',
+      status: 'sent',
+      sent: true,
       email: connection.email,
-      imported,
-      seen: list.messages?.length || 0,
+      toEmail,
+      messageId: payload.id,
+      threadId: payload.threadId || null,
     };
+  }
+
+  private metricReason(error: unknown): string {
+    if (error instanceof BadRequestException) {
+      const response = error.getResponse();
+      if (typeof response === 'string') return response;
+      if (response && typeof response === 'object' && 'message' in response) {
+        const message = response.message;
+        return Array.isArray(message) ? String(message[0] || 'bad_request') : String(message);
+      }
+      return 'bad_request';
+    }
+    return error instanceof Error ? error.message.slice(0, 80) : 'unknown';
   }
 
   private async exchangeCode(code: string): Promise<GoogleTokenResponse> {
@@ -405,15 +530,47 @@ export class MailboxGmailOAuthService {
     await this.prisma.mailboxConnection.update({
       where: { id: connection.id },
       data: {
-        accessToken: encryptMailboxToken(payload.access_token),
+        accessToken: encryptMailboxToken(payload.access_token) ?? null,
         expiresAt: expiresAtFromSeconds(payload.expires_in),
         status: MailboxStatus.ACTIVE,
-        lastErrorAt: null,
-        lastError: null,
+        lastErrorAt: null as Date | null,
+        lastError: null as string | null,
       },
     });
 
     return payload.access_token;
+  }
+
+  private async getActiveGmailConnection(workspaceId: string): Promise<GmailMailboxRecord | null> {
+    return this.prisma.mailboxConnection.findFirst({
+      where: {
+        workspaceId,
+        provider: MailboxProvider.GMAIL,
+        status: MailboxStatus.ACTIVE,
+      },
+      orderBy: { connectedAt: 'desc' },
+      select: {
+        id: true,
+        workspaceId: true,
+        email: true,
+        accessToken: true,
+        refreshToken: true,
+        expiresAt: true,
+        metadata: true,
+      },
+    });
+  }
+
+  private async isSuppressedRecipient(workspaceId: string, email: string): Promise<boolean> {
+    const contact = await this.prisma.contact.findFirst({
+      where: {
+        workspaceId,
+        email: { equals: email, mode: 'insensitive' },
+        optIn: false,
+      },
+      select: { id: true, optedOutAt: true },
+    });
+    return Boolean(contact);
   }
 
   private tokenStillUsable(expiresAt: Date | null): boolean {
@@ -459,12 +616,12 @@ export class MailboxGmailOAuthService {
     const parsedFrom = this.parseFromHeader(fromRaw);
     const bodyText = this.extractTextBody(message.payload) || message.snippet || '';
 
-    return {
+    const externalId = `gmail:${message.id || message.threadId || message.historyId || 'unknown'}`;
+    const normalized: NormalizedMessage = {
       workspaceId: connection.workspaceId,
       channel: 'EMAIL' as const,
-      externalId: message.id ? `gmail:${message.id}` : undefined,
+      externalId,
       from: parsedFrom.email || fromRaw || 'unknown-email',
-      fromName: parsedFrom.name || parsedFrom.email || fromRaw || undefined,
       content: subject ? `Assunto: ${subject}\n\n${bodyText}` : bodyText,
       metadata: {
         provider: 'gmail',
@@ -476,6 +633,11 @@ export class MailboxGmailOAuthService {
         subject: subject || null,
       },
     };
+    const fromNameVal = parsedFrom.name || parsedFrom.email || fromRaw || undefined;
+    if (fromNameVal) {
+      normalized.fromName = fromNameVal;
+    }
+    return normalized;
   }
 
   private readHeader(headers: Array<{ name?: string; value?: string }>, wanted: string): string {
@@ -527,11 +689,51 @@ export class MailboxGmailOAuthService {
     return Buffer.from(normalized, 'base64').toString('utf8').trim();
   }
 
+  private buildRawMimeMessage(input: {
+    fromEmail: string;
+    toEmail: string;
+    subject: string;
+    html: string;
+    proactive: boolean;
+  }): string {
+    const unsubscribeUrl = `${this.resolveFrontendUrl()}/email/unsubscribe?email=${encodeURIComponent(
+      input.toEmail,
+    )}`;
+    const headers = [
+      `From: ${input.fromEmail}`,
+      `To: ${input.toEmail}`,
+      `Subject: ${this.encodeHeader(input.subject)}`,
+      'MIME-Version: 1.0',
+      'Content-Type: text/html; charset=UTF-8',
+    ];
+    if (input.proactive) {
+      headers.push(`List-Unsubscribe: <${unsubscribeUrl}>`);
+    }
+
+    return Buffer.from(`${headers.join('\r\n')}\r\n\r\n${input.html}`, 'utf8')
+      .toString('base64url')
+      .replace(/=+$/, '');
+  }
+
+  private encodeHeader(value: string): string {
+    if (/^[\x20-\x7E]*$/.test(value)) {
+      return value;
+    }
+    return `=?UTF-8?B?${Buffer.from(value, 'utf8').toString('base64')}?=`;
+  }
+
+  private resolveFrontendUrl(): string {
+    return (
+      readConfiguredValue(this.config, ['FRONTEND_URL', 'NEXT_PUBLIC_APP_URL']) ||
+      'http://localhost:3000'
+    ).replace(/\/+$/, '');
+  }
+
   private readSyncedMessageIds(metadata: Prisma.JsonValue | null): string[] {
     if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) {
       return [];
     }
-    const ids = (metadata as Prisma.JsonObject).syncedMessageIds;
+    const ids = metadata.syncedMessageIds;
     if (!Array.isArray(ids)) {
       return [];
     }
@@ -543,9 +745,7 @@ export class MailboxGmailOAuthService {
 
   private mergeSyncMetadata(metadata: Prisma.JsonValue | null, syncedMessageIds: string[]) {
     const base =
-      metadata && typeof metadata === 'object' && !Array.isArray(metadata)
-        ? (metadata as Prisma.JsonObject)
-        : {};
+      metadata && typeof metadata === 'object' && !Array.isArray(metadata) ? metadata : {};
     return {
       ...base,
       syncedMessageIds: syncedMessageIds.slice(-500),

@@ -11,12 +11,16 @@ const PATTERN_RE = /,/g;
 
 interface AutopilotActionRow {
   createdAt: Date | string;
-  contactId?: string;
-  contact?: string;
+  contact?: string | null;
+  contactId?: string | null;
+  contactPhone?: string | null;
   intent?: string;
   action?: string;
   status?: string;
   reason?: string;
+  nextRetryAt?: string | null;
+  intentConfidence?: unknown;
+  meta?: unknown;
 }
 
 /** Autopilot controller. */
@@ -173,9 +177,11 @@ export class AutopilotController {
   ) {
     const workspaceId = resolveWorkspaceId(req, body.workspaceId);
     return this.autopilotService.updateConfig(workspaceId, {
-      conversionFlowId: body.conversionFlowId,
-      currencyDefault: body.currencyDefault,
-      recoveryTemplateName: body.recoveryTemplateName,
+      ...(body.conversionFlowId !== undefined ? { conversionFlowId: body.conversionFlowId } : {}),
+      ...(body.currencyDefault !== undefined ? { currencyDefault: body.currencyDefault } : {}),
+      ...(body.recoveryTemplateName !== undefined
+        ? { recoveryTemplateName: body.recoveryTemplateName }
+        : {}),
     });
   }
 
@@ -200,9 +206,9 @@ export class AutopilotController {
     if (!body.forceLocal && (body.phone || body.contactId)) {
       return this.autopilotService.enqueueProcessing({
         workspaceId,
-        phone: body.phone,
-        contactId: body.contactId,
-        message: body.message,
+        ...(body.phone !== undefined ? { phone: body.phone } : {}),
+        ...(body.contactId !== undefined ? { contactId: body.contactId } : {}),
+        ...(body.message !== undefined ? { message: body.message } : {}),
       });
     }
     const result = await this.autopilotService.runAutopilotCycle(workspaceId);
@@ -226,10 +232,10 @@ export class AutopilotController {
     const workspaceId = resolveWorkspaceId(req, body.workspaceId);
     return this.autopilotService.runSmokeTest({
       workspaceId,
-      phone: body.phone,
-      message: body.message,
-      waitMs: body.waitMs,
-      liveSend: body.liveSend,
+      ...(body.phone !== undefined ? { phone: body.phone } : {}),
+      ...(body.message !== undefined ? { message: body.message } : {}),
+      ...(body.waitMs !== undefined ? { waitMs: body.waitMs } : {}),
+      ...(body.liveSend !== undefined ? { liveSend: body.liveSend } : {}),
     });
   }
 

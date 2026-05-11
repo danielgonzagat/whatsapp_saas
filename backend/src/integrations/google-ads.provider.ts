@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import * as crypto from 'node:crypto';
 import { GoogleAdsApi, enums } from 'google-ads-api';
 import { PrismaService } from '../prisma/prisma.service';
 import type {
@@ -9,8 +9,10 @@ import type {
   SyncAccountsResult,
   SyncCampaignsResult,
   SyncInsightsResult,
+  DisconnectResult,
+  RefreshTokenResult,
 } from './ad-provider.interface';
-import { asProviderSettings } from '../whatsapp/provider-settings.types';
+import { encryptGoogleAdsToken, decryptGoogleAdsToken } from './google-ads-token-crypto';
 import { NotConfiguredException } from './exceptions/not-configured.exception';
 
 interface GoogleTokenResponse {
@@ -20,28 +22,28 @@ interface GoogleTokenResponse {
   [key: string]: unknown;
 }
 
-interface GoogleSubsettings {
-  connected?: boolean;
-  status?: string;
-  accessToken?: string;
-  refreshToken?: string | null;
-  loginCustomerId?: string | null;
-  connectedAt?: string;
-  [key: string]: unknown;
-}
-
 const PLATFORM = 'google';
 const GOOGLE_ADS_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
 const GOOGLE_ADS_TOKEN_URL = 'https://oauth2.googleapis.com/token';
+const GOOGLE_ADS_REVOKE_URL = 'https://oauth2.googleapis.com/revoke';
 const ADS_SCOPE = 'https://www.googleapis.com/auth/adwords';
+const CURRENT_KEY_VERSION = 1;
 
 function resolveEnv(name: string): string {
   return String(process.env[name] || '').trim();
 }
 
-function readGoogleSubsettings(workspaceProviderSettings: unknown): GoogleSubsettings {
-  const settings = asProviderSettings(workspaceProviderSettings);
-  return (settings.google || {}) as GoogleSubsettings;
+function maskToken(token: string): string {
+  if (!token || token.length < 8) return '****';
+  return `${token.slice(0, 4)}****${token.slice(-4)}`;
+}
+
+function generateCodeVerifier(): string {
+  return crypto.randomBytes(64).toString('base64url');
+}
+
+function generateCodeChallenge(verifier: string): string {
+  return crypto.createHash('sha256').update(verifier).digest('base64url');
 }
 
 @Injectable()
@@ -69,23 +71,15 @@ export class GoogleAdsProvider implements AdProvider {
       );
     }
 
-    return new GoogleAdsApi({
-      client_id: clientId,
-      client_secret: clientSecret,
-      developer_token: developerToken,
-    });
+    return { clientId, clientSecret, developerToken };
   }
 
-  private async getTokens(
-    workspaceId: string,
-  ): Promise<{ refreshToken: string; accessToken: string }> {
-    const workspace = await this.prisma.workspace.findUnique({
-      where: { id: workspaceId },
-      select: { providerSettings: true },
+  private async getCredential(workspaceId: string) {
+    const cred = await this.prisma.integrationCredential.findUnique({
+      where: { workspaceId },
     });
-    const google = readGoogleSubsettings(workspace?.providerSettings);
 
-    if (!google.connected || !google.refreshToken) {
+    if (!cred || !cred.refreshToken || cred.status !== 'connected') {
       throw new NotConfiguredException(
         'Google Ads workspace not connected — OAuth tokens missing',
         PLATFORM,
@@ -93,31 +87,42 @@ export class GoogleAdsProvider implements AdProvider {
       );
     }
 
+    const accessToken = decryptGoogleAdsToken(cred.accessToken) || cred.accessToken;
+    const refreshToken = decryptGoogleAdsToken(cred.refreshToken) || cred.refreshToken;
+
     return {
-      refreshToken: google.refreshToken,
-      accessToken: google.accessToken || '',
+      credential: cred,
+      refreshToken,
+      accessToken,
     };
   }
 
-  private async buildCustomer(
-    client: GoogleAdsApi,
-    workspaceId: string,
-    customerId: string,
-    loginCustomerId?: string | null,
-  ) {
-    const { refreshToken } = await this.getTokens(workspaceId);
-    return client.Customer({
-      customer_id: customerId,
-      refresh_token: refreshToken,
-      ...(loginCustomerId ? { login_customer_id: loginCustomerId } : {}),
-    });
-  }
-
-  async connect(_workspaceId: string, redirectUri: string): Promise<OAuthConnectResult> {
+  async connect(workspaceId: string, redirectUri: string): Promise<OAuthConnectResult> {
     const clientId = resolveEnv('GOOGLE_ADS_CLIENT_ID');
     if (!clientId) {
       return { connected: false, status: 'google_ads_client_id_not_configured' };
     }
+
+    const codeVerifier = generateCodeVerifier();
+    const codeChallenge = generateCodeChallenge(codeVerifier);
+
+    await this.prisma.integrationCredential.upsert({
+      where: { workspaceId },
+      create: {
+        workspaceId,
+        platform: PLATFORM,
+        accessToken: encryptGoogleAdsToken(codeVerifier) || codeVerifier,
+        keyVersion: CURRENT_KEY_VERSION,
+        status: 'pending_oauth',
+      },
+      update: {
+        accessToken: encryptGoogleAdsToken(codeVerifier) || codeVerifier,
+        keyVersion: CURRENT_KEY_VERSION,
+        status: 'pending_oauth',
+        updatedAt: new Date(),
+      },
+    });
+
     const url = new URL(GOOGLE_ADS_AUTH_URL);
     url.searchParams.set('client_id', clientId);
     url.searchParams.set('redirect_uri', redirectUri);
@@ -125,7 +130,10 @@ export class GoogleAdsProvider implements AdProvider {
     url.searchParams.set('scope', ADS_SCOPE);
     url.searchParams.set('access_type', 'offline');
     url.searchParams.set('prompt', 'consent');
-    url.searchParams.set('state', _workspaceId);
+    url.searchParams.set('state', workspaceId);
+    url.searchParams.set('code_challenge', codeChallenge);
+    url.searchParams.set('code_challenge_method', 'S256');
+
     return { connected: false, status: 'pending_oauth', authUrl: url.toString() };
   }
 
@@ -139,6 +147,15 @@ export class GoogleAdsProvider implements AdProvider {
     if (!clientId || !clientSecret) {
       return { connected: false, status: 'google_ads_credentials_not_configured' };
     }
+
+    const pending = await this.prisma.integrationCredential.findUnique({
+      where: { workspaceId },
+      select: { accessToken: true },
+    });
+
+    const codeVerifier =
+      decryptGoogleAdsToken(pending?.accessToken || '') || pending?.accessToken || '';
+
     try {
       const body = new URLSearchParams();
       body.set('client_id', clientId);
@@ -146,6 +163,7 @@ export class GoogleAdsProvider implements AdProvider {
       body.set('code', code);
       body.set('grant_type', 'authorization_code');
       body.set('redirect_uri', redirectUri);
+      body.set('code_verifier', codeVerifier);
 
       const res = await fetch(GOOGLE_ADS_TOKEN_URL, {
         method: 'POST',
@@ -153,58 +171,79 @@ export class GoogleAdsProvider implements AdProvider {
         body,
         signal: AbortSignal.timeout(30000),
       });
+
       if (!res.ok) {
+        this.logger.error(
+          `Google Ads OAuth token exchange failed: status=${res.status} workspace=${workspaceId}`,
+        );
         return { connected: false, status: 'token_exchange_failed' };
       }
+
       const tokenData = (await res.json()) as GoogleTokenResponse;
       const accessToken = tokenData.access_token;
-      const refreshToken = tokenData.refresh_token;
+      const refreshTokenInResponse = tokenData.refresh_token;
+      const expiresIn = tokenData.expires_in;
+
       if (!accessToken) {
         return { connected: false, status: 'token_exchange_failed' };
       }
 
+      this.logger.log(
+        `Google Ads OAuth token obtained: access=${maskToken(accessToken)} refresh=${maskToken(refreshTokenInResponse || 'none')} workspace=${workspaceId}`,
+      );
+
+      const encryptedAccess = encryptGoogleAdsToken(accessToken) || accessToken;
+      const encryptedRefresh =
+        encryptGoogleAdsToken(refreshTokenInResponse) || refreshTokenInResponse;
+
       let loginCustomerId: string | null = null;
-      try {
-        const developerToken = resolveEnv('GOOGLE_ADS_DEVELOPER_TOKEN');
-        if (refreshToken && developerToken) {
-          const client = new GoogleAdsApi({
+      const developerToken = resolveEnv('GOOGLE_ADS_DEVELOPER_TOKEN');
+      const effectiveRefresh = refreshTokenInResponse || refreshTokenInResponse;
+
+      if (effectiveRefresh && developerToken) {
+        try {
+          const tempClient = new GoogleAdsApi({
             client_id: clientId,
             client_secret: clientSecret,
             developer_token: developerToken,
           });
-          const accessible = await client.listAccessibleCustomers(refreshToken);
+          const accessible = await tempClient.listAccessibleCustomers(effectiveRefresh);
           const resourceNames = (accessible as { resource_names?: string[] }).resource_names || [];
           const ids = resourceNames.map((rn) => rn.replace('customers/', ''));
           if (ids.length > 0) {
             loginCustomerId = ids[0] ?? null;
           }
+        } catch {
+          this.logger.warn(
+            'Could not resolve login customer id during OAuth — will discover on first sync',
+          );
         }
-      } catch {
-        this.logger.warn(
-          'Could not resolve login customer id during OAuth — will discover on first sync',
-        );
       }
 
-      const workspace = await this.prisma.workspace.findUnique({
-        where: { id: workspaceId },
-        select: { providerSettings: true },
-      });
-      const current = asProviderSettings(workspace?.providerSettings);
-      const nextSettings = {
-        ...current,
-        google: {
-          connected: true,
-          status: 'connected',
-          accessToken,
-          refreshToken: refreshToken || null,
+      const expiresAt = expiresIn
+        ? new Date(Date.now() + expiresIn * 1000)
+        : new Date(Date.now() + 60 * 60 * 1000);
+
+      await this.prisma.integrationCredential.upsert({
+        where: { workspaceId },
+        create: {
+          workspaceId,
+          platform: PLATFORM,
+          accessToken: encryptedAccess,
+          refreshToken: encryptedRefresh || null,
+          expiresAt,
+          keyVersion: CURRENT_KEY_VERSION,
           loginCustomerId,
-          connectedAt: new Date().toISOString(),
+          status: 'connected',
         },
-      };
-      await this.prisma.workspace.update({
-        where: { id: workspaceId },
-        data: {
-          providerSettings: JSON.parse(JSON.stringify(nextSettings)) as Prisma.InputJsonObject,
+        update: {
+          accessToken: encryptedAccess,
+          refreshToken: encryptedRefresh || null,
+          expiresAt,
+          keyVersion: CURRENT_KEY_VERSION,
+          loginCustomerId,
+          status: 'connected',
+          updatedAt: new Date(),
         },
       });
 
@@ -216,20 +255,151 @@ export class GoogleAdsProvider implements AdProvider {
   }
 
   async getStatus(workspaceId: string): Promise<OAuthStatusResult> {
-    const workspace = await this.prisma.workspace.findUnique({
-      where: { id: workspaceId },
-      select: { providerSettings: true },
+    const cred = await this.prisma.integrationCredential.findUnique({
+      where: { workspaceId },
+      select: { status: true, loginCustomerId: true },
     });
-    const google = readGoogleSubsettings(workspace?.providerSettings);
-    return {
-      connected: Boolean(google.connected),
-      status: google.connected ? 'connected' : 'disconnected',
+
+    const connected = cred?.status === 'connected';
+    const loginCustomerId = cred?.loginCustomerId;
+
+    const result: OAuthStatusResult = {
+      connected,
+      status: cred?.status || 'disconnected',
     };
+
+    if (loginCustomerId) {
+      result.accountId = loginCustomerId;
+    }
+
+    return result;
+  }
+
+  async disconnect(workspaceId: string): Promise<DisconnectResult> {
+    const cred = await this.prisma.integrationCredential.findUnique({
+      where: { workspaceId },
+      select: { accessToken: true },
+    });
+
+    if (!cred) {
+      return { status: 'already_disconnected' };
+    }
+
+    const resolvedToken = decryptGoogleAdsToken(cred.accessToken) || cred.accessToken;
+    if (resolvedToken && resolvedToken !== cred.accessToken) {
+      try {
+        await fetch(GOOGLE_ADS_REVOKE_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({ token: resolvedToken }),
+          signal: AbortSignal.timeout(15000),
+        });
+        this.logger.log(`Google Ads token revoked for workspace ${workspaceId}`);
+      } catch {
+        this.logger.warn(
+          `Failed to revoke Google Ads token for workspace ${workspaceId} (non-blocking)`,
+        );
+      }
+    }
+
+    await this.prisma.integrationCredential.delete({
+      where: { workspaceId },
+    });
+
+    this.logger.log(`Google Ads disconnected for workspace ${workspaceId}`);
+    return { status: 'disconnected' };
+  }
+
+  async refreshToken(workspaceId: string): Promise<RefreshTokenResult | null> {
+    try {
+      const cred = await this.prisma.integrationCredential.findUnique({
+        where: { workspaceId },
+        select: { refreshToken: true },
+      });
+
+      if (!cred?.refreshToken) {
+        return null;
+      }
+
+      const refreshToken = decryptGoogleAdsToken(cred.refreshToken) || cred.refreshToken;
+
+      const clientId = resolveEnv('GOOGLE_ADS_CLIENT_ID');
+      const clientSecret = resolveEnv('GOOGLE_ADS_CLIENT_SECRET');
+
+      if (!clientId || !clientSecret) {
+        this.logger.warn(
+          `Google Ads token refresh skipped — credentials not configured workspace=${workspaceId}`,
+        );
+        return null;
+      }
+
+      const body = new URLSearchParams();
+      body.set('client_id', clientId);
+      body.set('client_secret', clientSecret);
+      body.set('refresh_token', refreshToken);
+      body.set('grant_type', 'refresh_token');
+
+      const res = await fetch(GOOGLE_ADS_TOKEN_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body,
+        signal: AbortSignal.timeout(30000),
+      });
+
+      if (!res.ok) {
+        this.logger.error(
+          `Google Ads token refresh failed: status=${res.status} workspace=${workspaceId}`,
+        );
+        return null;
+      }
+
+      const tokenData = (await res.json()) as GoogleTokenResponse;
+      const newAccessToken = tokenData.access_token;
+      const expiresIn = tokenData.expires_in;
+
+      if (!newAccessToken) {
+        return null;
+      }
+
+      const encryptedAccess = encryptGoogleAdsToken(newAccessToken) || newAccessToken;
+      const expiresAt = expiresIn
+        ? new Date(Date.now() + expiresIn * 1000)
+        : new Date(Date.now() + 60 * 60 * 1000);
+
+      await this.prisma.integrationCredential.update({
+        where: { workspaceId },
+        data: {
+          accessToken: encryptedAccess,
+          expiresAt,
+          keyVersion: CURRENT_KEY_VERSION,
+          updatedAt: new Date(),
+        },
+      });
+
+      this.logger.log(
+        `Google Ads token refreshed for workspace ${workspaceId} expiresIn=${expiresIn ?? '1h'}`,
+      );
+
+      const result: RefreshTokenResult = { accessToken: newAccessToken };
+      if (expiresIn !== undefined) {
+        result.expiresIn = expiresIn;
+      }
+      return result;
+    } catch (err) {
+      this.logger.error(`Google Ads token refresh failed for workspace ${workspaceId}`, err);
+      return null;
+    }
   }
 
   async syncAccounts(workspaceId: string): Promise<SyncAccountsResult> {
-    const { refreshToken } = await this.getTokens(workspaceId);
-    const client = this.buildClientParams();
+    const { refreshToken, credential } = await this.getCredential(workspaceId);
+    const { clientId, clientSecret, developerToken } = this.buildClientParams();
+
+    const client = new GoogleAdsApi({
+      client_id: clientId,
+      client_secret: clientSecret,
+      developer_token: developerToken,
+    });
 
     const accessible = await client.listAccessibleCustomers(refreshToken);
     const resourceNames = (accessible as { resource_names?: string[] }).resource_names || [];
@@ -243,7 +413,11 @@ export class GoogleAdsProvider implements AdProvider {
 
     for (const customerId of customerIds) {
       try {
-        const customer = await this.buildCustomer(client, workspaceId, customerId, loginCustomerId);
+        const customer = client.Customer({
+          customer_id: customerId,
+          refresh_token: refreshToken,
+          ...(loginCustomerId ? { login_customer_id: loginCustomerId } : {}),
+        });
         const rows = await customer.query(
           `SELECT customer_client.descriptive_name FROM customer_client WHERE customer_client.id = '${customerId}'`,
         );
@@ -266,22 +440,10 @@ export class GoogleAdsProvider implements AdProvider {
       }
     }
 
-    if (loginCustomerId) {
-      const workspace = await this.prisma.workspace.findUnique({
-        where: { id: workspaceId },
-        select: { providerSettings: true },
-      });
-      const current = asProviderSettings(workspace?.providerSettings);
-      const google = (current.google || {}) as Record<string, unknown>;
-      const updatedSettings = {
-        ...current,
-        google: { ...google, loginCustomerId },
-      };
-      await this.prisma.workspace.update({
-        where: { id: workspaceId },
-        data: {
-          providerSettings: JSON.parse(JSON.stringify(updatedSettings)) as Prisma.InputJsonObject,
-        },
+    if (loginCustomerId && loginCustomerId !== credential.loginCustomerId) {
+      await this.prisma.integrationCredential.update({
+        where: { workspaceId },
+        data: { loginCustomerId, updatedAt: new Date() },
       });
     }
 
@@ -297,26 +459,27 @@ export class GoogleAdsProvider implements AdProvider {
       return { campaigns: [] };
     }
 
-    const client = this.buildClientParams();
+    const { refreshToken, credential } = await this.getCredential(workspaceId);
+    const { clientId, clientSecret, developerToken } = this.buildClientParams();
 
-    const workspace = await this.prisma.workspace.findUnique({
-      where: { id: workspaceId },
-      select: { providerSettings: true },
+    const client = new GoogleAdsApi({
+      client_id: clientId,
+      client_secret: clientSecret,
+      developer_token: developerToken,
     });
-    const google = readGoogleSubsettings(workspace?.providerSettings);
+
     const loginCustomerId: string | null | undefined =
-      google.loginCustomerId || (dbAccounts.length > 1 ? dbAccounts[0]?.accountId : null);
+      credential.loginCustomerId || (dbAccounts.length > 1 ? dbAccounts[0]?.accountId : null);
 
     const campaigns: SyncCampaignsResult['campaigns'] = [];
 
     for (const account of dbAccounts) {
       try {
-        const customer = await this.buildCustomer(
-          client,
-          workspaceId,
-          account.accountId,
-          loginCustomerId,
-        );
+        const customer = client.Customer({
+          customer_id: account.accountId,
+          refresh_token: refreshToken,
+          ...(loginCustomerId ? { login_customer_id: loginCustomerId } : {}),
+        });
         const rows = await customer.report({
           entity: 'campaign',
           attributes: ['campaign.id', 'campaign.name', 'campaign.status'],
@@ -384,15 +547,17 @@ export class GoogleAdsProvider implements AdProvider {
       return { insights: [] };
     }
 
-    const client = this.buildClientParams();
+    const { refreshToken, credential } = await this.getCredential(workspaceId);
+    const { clientId, clientSecret, developerToken } = this.buildClientParams();
 
-    const workspace = await this.prisma.workspace.findUnique({
-      where: { id: workspaceId },
-      select: { providerSettings: true },
+    const client = new GoogleAdsApi({
+      client_id: clientId,
+      client_secret: clientSecret,
+      developer_token: developerToken,
     });
-    const google = readGoogleSubsettings(workspace?.providerSettings);
+
     const loginCustomerId: string | null | undefined =
-      google.loginCustomerId || (dbAccounts.length > 1 ? dbAccounts[0]?.accountId : null);
+      credential.loginCustomerId || (dbAccounts.length > 1 ? dbAccounts[0]?.accountId : null);
 
     const fromDate = since.toISOString().slice(0, 10);
     const toDate = until.toISOString().slice(0, 10);
@@ -400,12 +565,11 @@ export class GoogleAdsProvider implements AdProvider {
 
     for (const account of dbAccounts) {
       try {
-        const customer = await this.buildCustomer(
-          client,
-          workspaceId,
-          account.accountId,
-          loginCustomerId,
-        );
+        const customer = client.Customer({
+          customer_id: account.accountId,
+          refresh_token: refreshToken,
+          ...(loginCustomerId ? { login_customer_id: loginCustomerId } : {}),
+        });
         const rows = await customer.report({
           entity: 'campaign',
           attributes: ['campaign.id', 'campaign.name'],

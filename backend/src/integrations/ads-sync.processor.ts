@@ -14,7 +14,8 @@ import type {
 type AdsSyncJobData =
   | { type: 'sync-accounts'; workspaceId: string }
   | { type: 'sync-campaigns'; workspaceId: string }
-  | { type: 'sync-insights'; workspaceId: string; since: string; until: string };
+  | { type: 'sync-insights'; workspaceId: string; since: string; until: string }
+  | { type: 'refresh-google-token'; workspaceId: string };
 
 type MetaSyncJobData =
   | { type: 'sync-meta-accounts'; workspaceId: string }
@@ -23,6 +24,7 @@ type MetaSyncJobData =
   | { type: 'refresh-meta-token'; workspaceId: string };
 
 const MAX_CONCURRENCY = 2;
+const GOOGLE_RETRY_ATTEMPTS = 5;
 const META_RETRY_ATTEMPTS = 5;
 const META_RATE_LIMIT_PER_HOUR = 200;
 
@@ -71,6 +73,8 @@ export class AdsSyncProcessor implements OnModuleDestroy {
               new Date(job.data.since),
               new Date(job.data.until),
             );
+          case 'refresh-google-token':
+            return this.processGoogleTokenRefresh(job.data.workspaceId);
           default:
             throw new Error(`Unknown Google Ads sync job type: ${String(type)}`);
         }
@@ -94,10 +98,16 @@ export class AdsSyncProcessor implements OnModuleDestroy {
         this.logger.error(
           `Google Ads sync job failed: type=${String(job.data.type)} workspace=${String(job.data.workspaceId)} attempt=${job.attemptsMade} error=${err.message}`,
         );
+
+        if (job.attemptsMade >= GOOGLE_RETRY_ATTEMPTS) {
+          this.logger.error(
+            `Google Ads sync job EXHAUSTED after ${GOOGLE_RETRY_ATTEMPTS} retries — sending to DLQ: ${String(job.data.type)} workspace=${String(job.data.workspaceId)}`,
+          );
+        }
       }
     });
 
-    this.logger.log('Google Ads sync worker started');
+    this.logger.log('Google Ads sync worker started (retry: 5x, dedup by jobId)');
   }
 
   // ── Meta Ads Worker ─────────────────────────────────────────────────
@@ -194,6 +204,16 @@ export class AdsSyncProcessor implements OnModuleDestroy {
     const result = await this.googleAds.syncInsights(workspaceId, since, until);
     await this.persistInsights(workspaceId, result.insights);
     return { insights: result.insights.length };
+  }
+
+  private async processGoogleTokenRefresh(workspaceId: string) {
+    const result = await this.googleAds.refreshToken(workspaceId);
+    if (!result) {
+      this.logger.warn(`Google token refresh returned null for workspace ${workspaceId}`);
+      return { refreshed: false };
+    }
+    this.logger.log(`Google token refreshed for workspace ${workspaceId}`);
+    return { refreshed: true, expiresIn: result.expiresIn };
   }
 
   // ── Meta Ads processing ────────────────────────────────────────────
@@ -359,6 +379,18 @@ export class AdsSyncProcessor implements OnModuleDestroy {
       select: { lastSyncAt: true },
     });
 
+    const latestTikTokAccount = await this.prisma.adAccount.findFirst({
+      where: { workspaceId, platform: 'tiktok' },
+      orderBy: { lastSyncAt: 'desc' },
+      select: { lastSyncAt: true },
+    });
+
+    const latestTikTokCampaign = await this.prisma.adCampaign.findFirst({
+      where: { workspaceId, platform: 'tiktok' },
+      orderBy: { lastSyncAt: 'desc' },
+      select: { lastSyncAt: true },
+    });
+
     return {
       workspaceId,
       meta: {
@@ -367,29 +399,61 @@ export class AdsSyncProcessor implements OnModuleDestroy {
         lastAccountSync: latestAccount?.lastSyncAt?.toISOString() || null,
         lastCampaignSync: latestCampaign?.lastSyncAt?.toISOString() || null,
       },
+      tiktok: {
+        lastAccountSync: latestTikTokAccount?.lastSyncAt?.toISOString() || null,
+        lastCampaignSync: latestTikTokCampaign?.lastSyncAt?.toISOString() || null,
+      },
     };
   }
 
   // ── Static enqueue helpers (Google) ───────────────────────────────
 
   static enqueueSyncAccounts(workspaceId: string) {
+    const day = new Date().toISOString().slice(0, 10);
+    const jobId = `google-sync-accounts-${workspaceId}-${day}`;
     const jobData: AdsSyncJobData = { type: 'sync-accounts', workspaceId };
-    return googleAdsSyncQueue.add('sync-accounts', jobData);
+    return googleAdsSyncQueue.add('sync-accounts', jobData, {
+      jobId,
+      attempts: GOOGLE_RETRY_ATTEMPTS,
+      backoff: { type: 'exponential', delay: 5000 },
+    });
   }
 
   static enqueueSyncCampaigns(workspaceId: string) {
+    const day = new Date().toISOString().slice(0, 10);
+    const jobId = `google-sync-campaigns-${workspaceId}-${day}`;
     const jobData: AdsSyncJobData = { type: 'sync-campaigns', workspaceId };
-    return googleAdsSyncQueue.add('sync-campaigns', jobData);
+    return googleAdsSyncQueue.add('sync-campaigns', jobData, {
+      jobId,
+      attempts: GOOGLE_RETRY_ATTEMPTS,
+      backoff: { type: 'exponential', delay: 5000 },
+    });
   }
 
   static enqueueSyncInsights(workspaceId: string, since: Date, until: Date) {
+    const day = new Date().toISOString().slice(0, 10);
+    const jobId = `google-sync-insights-${workspaceId}-${day}`;
     const jobData: AdsSyncJobData = {
       type: 'sync-insights',
       workspaceId,
       since: since.toISOString(),
       until: until.toISOString(),
     };
-    return googleAdsSyncQueue.add('sync-insights', jobData);
+    return googleAdsSyncQueue.add('sync-insights', jobData, {
+      jobId,
+      attempts: GOOGLE_RETRY_ATTEMPTS,
+      backoff: { type: 'exponential', delay: 5000 },
+    });
+  }
+
+  static enqueueGoogleRefreshToken(workspaceId: string) {
+    const jobId = `google-refresh-token-${workspaceId}`;
+    const jobData: AdsSyncJobData = { type: 'refresh-google-token', workspaceId };
+    return googleAdsSyncQueue.add('refresh-google-token', jobData, {
+      jobId,
+      attempts: 3,
+      backoff: { type: 'exponential', delay: 10000 },
+    });
   }
 
   // ── Static enqueue helpers (Meta) ─────────────────────────────────

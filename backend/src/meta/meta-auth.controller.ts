@@ -11,6 +11,7 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
+import type { Prisma } from '@prisma/client';
 import { Response } from 'express';
 import { Public } from '../auth/public.decorator';
 import { resolveWorkspaceId } from '../auth/workspace-access';
@@ -149,7 +150,7 @@ export class MetaAuthController {
     return {
       url: this.metaWhatsApp.buildEmbeddedSignupUrl(workspaceId, {
         channel,
-        returnTo: this.sanitizeReturnTo(returnTo, channel),
+        ...(returnTo ? { returnTo: this.sanitizeReturnTo(returnTo, channel) } : {}),
       }),
     };
   }
@@ -279,36 +280,38 @@ export class MetaAuthController {
       const tokenExpiresAt = expiresIn ? new Date(Date.now() + expiresIn * 1000) : null;
 
       // 6. Upsert MetaConnection
+      const connectionCreate: Prisma.MetaConnectionCreateInput = {
+        workspace: { connect: { id: workspaceId } },
+        accessToken: encryptMetaToken(accessToken) || accessToken,
+        tokenExpiresAt,
+        pageId,
+        pageName,
+        pageAccessToken: encryptMetaToken(pageAccessToken),
+        instagramAccountId,
+        instagramUsername,
+        whatsappPhoneNumberId: whatsappAssets.whatsappPhoneNumberId || null,
+        whatsappBusinessId: whatsappAssets.whatsappBusinessId || null,
+        adAccountId,
+        status: 'connected',
+      };
+      const connectionUpdate: Prisma.MetaConnectionUpdateInput = {
+        accessToken: encryptMetaToken(accessToken) || accessToken,
+        tokenExpiresAt,
+        pageId,
+        pageName,
+        pageAccessToken: encryptMetaToken(pageAccessToken),
+        instagramAccountId,
+        instagramUsername,
+        whatsappPhoneNumberId: whatsappAssets.whatsappPhoneNumberId || null,
+        whatsappBusinessId: whatsappAssets.whatsappBusinessId || null,
+        adAccountId,
+        status: 'connected',
+        updatedAt: new Date(),
+      };
       await this.prisma.metaConnection.upsert({
         where: { workspaceId },
-        create: {
-          workspaceId,
-          accessToken: encryptMetaToken(accessToken) || accessToken,
-          tokenExpiresAt,
-          pageId,
-          pageName,
-          pageAccessToken: encryptMetaToken(pageAccessToken),
-          instagramAccountId,
-          instagramUsername,
-          whatsappPhoneNumberId: whatsappAssets.whatsappPhoneNumberId || null,
-          whatsappBusinessId: whatsappAssets.whatsappBusinessId || null,
-          adAccountId,
-          status: 'connected',
-        },
-        update: {
-          accessToken: encryptMetaToken(accessToken) || accessToken,
-          tokenExpiresAt,
-          pageId,
-          pageName,
-          pageAccessToken: encryptMetaToken(pageAccessToken),
-          instagramAccountId,
-          instagramUsername,
-          whatsappPhoneNumberId: whatsappAssets.whatsappPhoneNumberId || null,
-          whatsappBusinessId: whatsappAssets.whatsappBusinessId || null,
-          adAccountId,
-          status: 'connected',
-          updatedAt: new Date(),
-        },
+        create: connectionCreate,
+        update: connectionUpdate,
       });
 
       this.logger.log(`Meta connected for workspace ${workspaceId} (page: ${pageName || 'none'})`);

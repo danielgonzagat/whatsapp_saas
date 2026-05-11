@@ -126,6 +126,14 @@ export class AnunciosService {
     return { connected: result.connected, status: result.status };
   }
 
+  async disconnect(workspaceId: string, platform: string): Promise<{ status: string }> {
+    const provider = this.providerFor(platform);
+    if (!provider || !provider.disconnect) {
+      return { status: 'not_supported' };
+    }
+    return provider.disconnect(workspaceId);
+  }
+
   async getAccounts(workspaceId: string, platform?: string): Promise<AccountResponse[]> {
     const dbAccounts = await this.prisma.adAccount.findMany({
       where: {

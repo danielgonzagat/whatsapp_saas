@@ -262,16 +262,22 @@ export class MetaWhatsAppService {
         connected: false,
         status: 'DISCONNECTED',
         authUrl,
-        phoneNumberId: resolved.phoneNumberId || undefined,
-        whatsappBusinessId: resolved.whatsappBusinessId,
+        ...(resolved.phoneNumberId ? { phoneNumberId: resolved.phoneNumberId } : {}),
+        ...(resolved.whatsappBusinessId !== undefined
+          ? { whatsappBusinessId: resolved.whatsappBusinessId }
+          : {}),
         tokenExpired: resolved.tokenExpired,
         metaConnected: false,
-        pageId: resolved.pageId,
-        pageName: resolved.pageName,
-        instagramAccountId: resolved.instagramAccountId,
-        instagramUsername: resolved.instagramUsername,
+        ...(resolved.pageId !== undefined ? { pageId: resolved.pageId } : {}),
+        ...(resolved.pageName !== undefined ? { pageName: resolved.pageName } : {}),
+        ...(resolved.instagramAccountId !== undefined
+          ? { instagramAccountId: resolved.instagramAccountId }
+          : {}),
+        ...(resolved.instagramUsername !== undefined
+          ? { instagramUsername: resolved.instagramUsername }
+          : {}),
         degradedReason: 'meta_auth_required',
-      };
+      } as const;
     }
 
     if (!resolved.phoneNumberId) {
@@ -396,9 +402,26 @@ export class MetaWhatsAppService {
       };
     }
 
+    const msgs = Array.isArray((response as Record<string, unknown>)?.messages)
+      ? ((response as Record<string, unknown>).messages as Array<Record<string, unknown>>)
+      : null;
+    const msgId =
+      (msgs &&
+      msgs.length > 0 &&
+      msgs[0] &&
+      typeof (msgs[0] as Record<string, unknown>).id === 'string'
+        ? (msgs[0] as Record<string, unknown>).id
+        : null) ||
+      (typeof (response as Record<string, unknown>).message_id === 'string'
+        ? (response as Record<string, unknown>).message_id
+        : null) ||
+      (typeof (response as Record<string, unknown>).id === 'string'
+        ? (response as Record<string, unknown>).id
+        : null) ||
+      null;
     return {
       success: true,
-      messageId: response?.messages?.[0]?.id || response?.message_id || response?.id || null,
+      messageId: msgId,
       raw: response,
     };
   }
@@ -457,9 +480,26 @@ export class MetaWhatsAppService {
       };
     }
 
+    const msgs = Array.isArray((response as Record<string, unknown>)?.messages)
+      ? ((response as Record<string, unknown>).messages as Array<Record<string, unknown>>)
+      : null;
+    const msgId =
+      (msgs &&
+      msgs.length > 0 &&
+      msgs[0] &&
+      typeof (msgs[0] as Record<string, unknown>).id === 'string'
+        ? (msgs[0] as Record<string, unknown>).id
+        : null) ||
+      (typeof (response as Record<string, unknown>).message_id === 'string'
+        ? (response as Record<string, unknown>).message_id
+        : null) ||
+      (typeof (response as Record<string, unknown>).id === 'string'
+        ? (response as Record<string, unknown>).id
+        : null) ||
+      null;
     return {
       success: true,
-      messageId: response?.messages?.[0]?.id || response?.message_id || response?.id || null,
+      messageId: msgId,
       raw: response,
     };
   }
@@ -515,7 +555,7 @@ export class MetaWhatsAppService {
         select: { id: true },
       });
 
-      if (candidates.length === 1) {
+      if (candidates.length === 1 && candidates[0]) {
         return candidates[0].id;
       }
     }

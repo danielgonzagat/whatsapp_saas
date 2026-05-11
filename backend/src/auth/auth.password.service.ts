@@ -37,14 +37,9 @@ export class AuthPasswordService {
 
   async checkEmail(email: string): Promise<{ exists: boolean }> {
     try {
-      // Identity-resolution lookup: scoping by email is sufficient and the
-      // optional workspaceId conjunction is a no-op at runtime — it is present
-      // in the source so the unsafe-queries scanner can confirm the call is
-      // workspaceId-aware before we discover which workspace the email belongs to.
-      const workspaceId: string | undefined = undefined;
-      const where: Prisma.AgentWhereInput = workspaceId ? { email, workspaceId } : { email };
+      const where: Prisma.AgentWhereInput = { email };
       const agent = await this.prisma.agent.findFirst({
-        where: { ...where, workspaceId: undefined },
+        where,
       });
       return { exists: !!agent };
     } catch (error: unknown) {
