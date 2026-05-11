@@ -1,19 +1,19 @@
 import { Body, Controller, ForbiddenException, Get, Headers, Param, Post } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
-import { Throttle } from '@nestjs/throttler';
 import { Public } from '../auth/public.decorator';
 import { UnifiedAgentService } from './unified-agent.service';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 /** Unified agent controller. */
 @ApiTags('unified-agent')
 @Controller('kloel/agent')
+@RouteClass('ai')
 export class UnifiedAgentController {
   constructor(private readonly agent: UnifiedAgentService) {}
 
   /** Process message. */
   @Post(':workspaceId/process')
   @Public()
-  @Throttle({ default: { limit: 2000, ttl: 60000 } })
   @ApiOperation({
     summary: 'Processa mensagem com o agente unificado IA+Autopilot',
     description: 'Analisa a mensagem e executa ações automaticamente usando tool calling',

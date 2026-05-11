@@ -5,11 +5,13 @@ import { RequireAdminPermission } from '../auth/decorators/admin-permission.deco
 import { AdminAuthGuard } from '../auth/guards/admin-auth.guard';
 import { AdminPermissionGuard } from '../auth/guards/admin-permission.guard';
 import { AdminSalesService } from './admin-sales.service';
+import { RouteClass } from '../../common/throttler/route-class.decorator';
 
 /** Admin sales controller. */
 @Public()
 @Controller('admin/sales')
 @UseGuards(AdminAuthGuard, AdminPermissionGuard)
+@RouteClass('mutate')
 export class AdminSalesController {
   constructor(private readonly sales: AdminSalesService) {}
 

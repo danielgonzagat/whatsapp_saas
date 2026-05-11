@@ -3,6 +3,7 @@ import { AuditService } from '../audit/audit.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { PrismaService } from '../prisma/prisma.service';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 /**
  * LGPD / GDPR — Data Deletion Controller
@@ -11,6 +12,7 @@ import { PrismaService } from '../prisma/prisma.service';
  * in compliance with LGPD Art. 18 / GDPR Art. 17 (Right to Erasure).
  */
 @Controller('gdpr')
+@RouteClass('mutate')
 export class DataDeleteController {
   private readonly logger = new Logger(DataDeleteController.name);
 

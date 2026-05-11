@@ -16,7 +16,6 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { SkipThrottle, Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { Prisma } from '@prisma/client';
 import { Response } from 'express';
 import { memoryStorage } from 'multer';
@@ -49,6 +48,7 @@ import {
   exportData,
 } from './kloel-upload.controller-helpers';
 
+import { RouteClass } from '../common/throttler/route-class.decorator';
 interface ThinkDto {
   message: string;
   workspaceId?: string;
@@ -75,6 +75,7 @@ const UPLOAD_MAX = 25 * 1024 * 1024;
 
 /** Kloel controller. */
 @Controller('kloel')
+@RouteClass('ai')
 export class KloelController {
   constructor(
     private readonly kloelService: KloelService,
@@ -176,7 +177,6 @@ export class KloelController {
 
   @Public()
   @Get('health')
-  @SkipThrottle()
   health() {
     return { status: 'online', identity: 'KLOEL - Inteligência Comercial Autônoma' };
   }
@@ -284,8 +284,7 @@ export class KloelController {
 
   // ═══ ONBOARDING ═══
 
-  @UseGuards(JwtAuthGuard, WorkspaceGuard, ThrottlerGuard)
-  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post('onboarding/:workspaceId/start')
   async startConversationalOnboarding(
     @Req() req: AuthenticatedRequest,
@@ -296,8 +295,7 @@ export class KloelController {
     };
   }
 
-  @UseGuards(JwtAuthGuard, WorkspaceGuard, ThrottlerGuard)
-  @Throttle({ default: { limit: 20, ttl: 60000 } })
+  @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post('onboarding/:workspaceId/chat')
   async chatOnboarding(
     @Req() req: AuthenticatedRequest,
@@ -312,8 +310,7 @@ export class KloelController {
     };
   }
 
-  @UseGuards(JwtAuthGuard, WorkspaceGuard, ThrottlerGuard)
-  @Throttle({ default: { limit: 20, ttl: 60000 } })
+  @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post('onboarding/:workspaceId/chat/stream')
   async chatOnboardingStream(
     @Req() req: AuthenticatedRequest,
@@ -328,8 +325,7 @@ export class KloelController {
     );
   }
 
-  @UseGuards(JwtAuthGuard, WorkspaceGuard, ThrottlerGuard)
-  @Throttle({ default: { limit: 30, ttl: 60000 } })
+  @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Get('onboarding/:workspaceId/status')
   async getOnboardingStatus(
     @Req() req: AuthenticatedRequest,

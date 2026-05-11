@@ -17,11 +17,13 @@ import { forEachSequential } from '../common/async-sequence';
 import { QueueHealthService } from '../metrics/queue-health.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { connection, queueOptions, queueRegistry } from '../queue/queue';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 /** Ops controller. */
 @Controller('ops/queues')
 @UseGuards(JwtAuthGuard)
 @Roles('ADMIN')
+@RouteClass('read')
 export class OpsController {
   constructor(
     private readonly queueHealth: QueueHealthService,

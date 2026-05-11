@@ -2,10 +2,12 @@ import { Controller, Get, Param, Post, Query, Request, UseGuards } from '@nestjs
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { MarketplaceService } from './marketplace.service';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 /** Marketplace controller. */
 @Controller('marketplace')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
+@RouteClass('mutate')
 export class MarketplaceController {
   constructor(private readonly marketplaceService: MarketplaceService) {}
 

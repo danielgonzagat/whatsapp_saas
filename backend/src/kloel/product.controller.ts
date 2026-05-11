@@ -23,6 +23,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { buildProductMetrics } from './product-metrics.helpers';
 import { syncProductToMemory, deleteProductFromMemory } from './product-memory-sync.helpers';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 interface CreateProductDto {
   name: string;
@@ -81,6 +82,7 @@ interface UpdateProductDto extends Partial<CreateProductDto> {
  */
 @Controller('products')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
+@RouteClass('mutate')
 export class ProductController {
   private readonly logger = new Logger(ProductController.name);
 

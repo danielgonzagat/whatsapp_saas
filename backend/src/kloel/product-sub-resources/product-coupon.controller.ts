@@ -28,10 +28,12 @@ import {
   getWorkspaceId,
 } from './helpers/common.helpers';
 import { buildCouponData, serializeCoupon } from './helpers/plan.helpers';
+import { RouteClass } from '../../common/throttler/route-class.decorator';
 
 /** Product coupon controller. */
 @Controller('products/:productId/coupons')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
+@RouteClass('mutate')
 export class ProductCouponController {
   constructor(
     private readonly prisma: PrismaService,

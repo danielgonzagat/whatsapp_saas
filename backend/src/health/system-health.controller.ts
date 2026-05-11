@@ -3,9 +3,11 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AdminAuthGuard } from '../admin/auth/guards/admin-auth.guard';
 import { Public } from '../auth/public.decorator';
 import { SystemHealthService } from './system-health.service';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 @ApiTags('System')
 @Controller('health')
+@RouteClass('read')
 export class SystemHealthController {
   constructor(private readonly health: SystemHealthService) {}
 

@@ -9,7 +9,6 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import {
   AdminAction,
   AdminModule,
@@ -33,6 +32,7 @@ import { MarketplaceTreasuryReconcileService } from '../../marketplace-treasury/
 import { MarketplaceTreasuryService } from '../../marketplace-treasury/marketplace-treasury.service';
 import { AddFraudBlacklistDto } from './dto/add-fraud-blacklist.dto';
 import { AdminCarteiraLedgerQueryDto } from './dto/admin-carteira-ledger-query.dto';
+import { RouteClass } from '../../common/throttler/route-class.decorator';
 
 function parseSkip(value?: string): number | undefined {
   if (!value) {
@@ -68,8 +68,8 @@ function parseDateOrFail(raw: string | undefined, label: string): Date | undefin
  */
 @Public()
 @Controller('admin/carteira')
-@UseGuards(AdminAuthGuard, AdminPermissionGuard, ThrottlerGuard)
-@Throttle({ default: { limit: 5, ttl: 60000 } })
+@UseGuards(AdminAuthGuard, AdminPermissionGuard)
+@RouteClass('read')
 export class AdminCarteiraController {
   constructor(
     private readonly wallet: MarketplaceTreasuryService,
@@ -85,8 +85,6 @@ export class AdminCarteiraController {
 
   /** Balance. */
   @Get('balance')
-  @Throttle({ default: { limit: 30, ttl: 60000 } })
-  @Throttle({ default: { limit: 30, ttl: 60000 } })
   @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.VIEW)
   async balance(@Query('currency') currency?: string) {
     return this.wallet.readBalance(currency ?? 'BRL');
@@ -94,7 +92,6 @@ export class AdminCarteiraController {
 
   /** Ledger. */
   @Get('ledger')
-  @Throttle({ default: { limit: 30, ttl: 60000 } })
   @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.VIEW)
   async ledger(@Query() query: AdminCarteiraLedgerQueryDto) {
     const parsedKind =
@@ -120,7 +117,6 @@ export class AdminCarteiraController {
 
   /** Run reconcile. */
   @Get('reconcile')
-  @Throttle({ default: { limit: 30, ttl: 60000 } })
   @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.VIEW)
   async runReconcile(@Query('currency') currency?: string) {
     return this.reconcile.reconcile(currency ?? 'BRL');
@@ -128,7 +124,6 @@ export class AdminCarteiraController {
 
   /** List connect accounts. */
   @Get('connect/accounts')
-  @Throttle({ default: { limit: 30, ttl: 60000 } })
   @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.VIEW)
   async listConnectAccounts(@Query('workspaceId') workspaceId?: string) {
     const balances = await this.connectService.listBalances(
@@ -162,7 +157,6 @@ export class AdminCarteiraController {
 
   /** Reconcile connect. */
   @Get('connect/reconcile')
-  @Throttle({ default: { limit: 30, ttl: 60000 } })
   @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.VIEW)
   async reconcileConnect(@Query('workspaceId') workspaceId?: string) {
     return this.connectReconcile.reconcile({
@@ -172,7 +166,6 @@ export class AdminCarteiraController {
 
   /** List payouts. */
   @Get('payouts')
-  @Throttle({ default: { limit: 30, ttl: 60000 } })
   @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.VIEW)
   async listPayouts(@Query('skip') skip?: string, @Query('take') take?: string) {
     const parsedSkip = parseSkip(skip);
@@ -214,7 +207,6 @@ export class AdminCarteiraController {
 
   /** List connect payout requests. */
   @Get('connect/payout-requests')
-  @Throttle({ default: { limit: 30, ttl: 60000 } })
   @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.VIEW)
   async listConnectPayoutRequests(
     @Query('workspaceId') workspaceId?: string,
@@ -234,7 +226,6 @@ export class AdminCarteiraController {
 
   /** List fraud blacklist rows. */
   @Get('fraud/blacklist')
-  @Throttle({ default: { limit: 30, ttl: 60000 } })
   @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.VIEW)
   async listFraudBlacklist(
     @Query('type') type?: string,

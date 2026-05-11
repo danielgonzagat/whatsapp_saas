@@ -1,10 +1,10 @@
 import { Controller, Get, Req, UnauthorizedException } from '@nestjs/common';
-import { SkipThrottle } from '@nestjs/throttler';
 import { AppService } from './app.service';
 import { Public } from './auth/public.decorator';
 import { safeCompareStrings } from './common/utils/crypto-compare.util';
 import { PrismaService } from './prisma/prisma.service';
 import { AuthenticatedRequest } from './common/interfaces/authenticated-request.interface';
+import { RouteClass } from './common/throttler/route-class.decorator';
 
 interface DiagnosticTables {
   workspaces?: number;
@@ -21,8 +21,8 @@ interface DiagnosticResult {
 }
 
 /** App controller. */
-@SkipThrottle()
 @Controller()
+@RouteClass('read')
 export class AppController {
   constructor(
     private readonly appService: AppService,

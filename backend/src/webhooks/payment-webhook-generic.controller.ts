@@ -9,9 +9,7 @@ import {
   Logger,
   Post,
   Req,
-  UseGuards,
 } from '@nestjs/common';
-import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { type Contact, type WebhookEvent } from '@prisma/client';
 import type { Redis } from 'ioredis';
 import { Public } from '../auth/public.decorator';
@@ -43,9 +41,9 @@ import {
  * Handles generic, Shopify, PagHiper, and WooCommerce payment webhooks.
  * Stripe webhooks are handled by PaymentWebhookStripeController.
  */
+import { RouteClass } from '../common/throttler/route-class.decorator';
 @Controller('webhook/payment')
-@UseGuards(ThrottlerGuard)
-@Throttle({ default: { limit: 100, ttl: 60000 } })
+@RouteClass('webhook')
 export class PaymentWebhookGenericController {
   private readonly logger = new Logger(PaymentWebhookGenericController.name);
 

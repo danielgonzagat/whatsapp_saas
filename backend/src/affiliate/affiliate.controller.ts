@@ -15,7 +15,6 @@ import {
 } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { generateUniquePublicCheckoutCode } from '../checkout/checkout-code.util';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { Idempotent } from '../common/idempotency.guard';
@@ -29,6 +28,7 @@ import {
   serializeAffiliateProductForResponse,
 } from './affiliate-helpers';
 
+import { RouteClass } from '../common/throttler/route-class.decorator';
 interface ListProductDto {
   commissionPct?: number;
   commissionType?: string;
@@ -62,8 +62,8 @@ interface ConfigureProductDto {
  * AffiliateMarketplaceController.
  */
 @Controller('affiliate')
-@UseGuards(JwtAuthGuard, WorkspaceGuard, ThrottlerGuard)
-@Throttle({ default: { limit: 20, ttl: 60000 } })
+@UseGuards(JwtAuthGuard, WorkspaceGuard)
+@RouteClass('mutate')
 export class AffiliateController {
   private readonly logger = new Logger(AffiliateController.name);
 

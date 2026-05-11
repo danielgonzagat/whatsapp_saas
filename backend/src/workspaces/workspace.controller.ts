@@ -18,6 +18,7 @@ import {
   extractRawStatus,
 } from './provider-status.util';
 import { WorkspaceService } from './workspace.service';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 interface AccountUpdateBody {
   name?: string;
@@ -34,6 +35,7 @@ interface AccountUpdateBody {
 /** Workspace controller. */
 @Controller('workspace')
 @UseGuards(JwtAuthGuard)
+@RouteClass('mutate')
 export class WorkspaceController {
   constructor(private readonly service: WorkspaceService) {}
 

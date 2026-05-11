@@ -47,8 +47,8 @@ import { WhatsappModule } from './whatsapp/whatsapp.module';
 import { WorkspaceModule } from './workspaces/workspace.module';
 
 import { ThrottlerModule } from '@nestjs/throttler';
-import { THROTTLE_TIERS } from './throttle/throttle.config';
-import { TenantThrottlerGuard } from './throttle/tenant-throttler.guard';
+import { THROTTLE_TIERS } from './common/throttler/throttler-config';
+import { RouteClassGuard } from './common/throttler/route-class.guard';
 
 import { AdminModule } from './admin/admin.module';
 import { AffiliateModule } from './affiliate/affiliate.module';
@@ -120,8 +120,8 @@ function setRedisClientListenerBudget(client: Redis): void {
       }),
     }),
 
-    // Rate Limiting Global — calibrated tiers with per-tenant isolation
-    // Tier definitions and documentation: src/throttle/throttle.config.ts
+    // Rate Limiting Global — route-class based tiers with per-tenant isolation
+    // Route class definitions and documentation: src/common/throttler/throttler-config.ts
     ThrottlerModule.forRoot({
       throttlers: THROTTLE_TIERS,
     }),
@@ -264,7 +264,7 @@ function setRedisClientListenerBudget(client: Redis): void {
     },
     {
       provide: APP_GUARD,
-      useClass: TenantThrottlerGuard,
+      useClass: RouteClassGuard,
     },
     {
       provide: APP_GUARD,
@@ -310,9 +310,7 @@ export class AppModule implements NestModule {
         'copilot/*path',
         'autopilot/*path',
       );
-    consumer
-      .apply(IdempotencyMiddleware)
-      .forRoutes('*path');
+    consumer.apply(IdempotencyMiddleware).forRoutes('*path');
     consumer.apply(AuditLogMiddleware).forRoutes('*path');
   }
 }

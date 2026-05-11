@@ -6,11 +6,13 @@ import { AdminAuthGuard } from '../auth/guards/admin-auth.guard';
 import { AdminPermissionGuard } from '../auth/guards/admin-permission.guard';
 import { ListHomeQueryDto } from '../dashboard/dto/list-home.dto';
 import { AdminMarketingService } from './admin-marketing.service';
+import { RouteClass } from '../../common/throttler/route-class.decorator';
 
 /** Admin marketing controller. */
 @Public()
 @Controller('admin/marketing')
 @UseGuards(AdminAuthGuard, AdminPermissionGuard)
+@RouteClass('mutate')
 export class AdminMarketingController {
   constructor(private readonly marketing: AdminMarketingService) {}
 

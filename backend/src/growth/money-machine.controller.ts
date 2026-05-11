@@ -3,12 +3,14 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { MoneyMachineService } from './money-machine.service';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 /** Money machine controller. */
 @ApiTags('Money Machine')
 @ApiBearerAuth()
 @Controller('growth/money-machine')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
+@RouteClass('ai')
 export class MoneyMachineController {
   constructor(private readonly moneyMachine: MoneyMachineService) {}
 

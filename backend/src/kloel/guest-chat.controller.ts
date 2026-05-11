@@ -9,13 +9,12 @@ import {
   Post,
   Req,
   Res,
-  UseGuards,
 } from '@nestjs/common';
-import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { Request, Response } from 'express';
 import { Public } from '../auth/public.decorator';
 import { GuestChatService } from './guest-chat.service';
 
+import { RouteClass } from '../common/throttler/route-class.decorator';
 interface GuestChatDto {
   message: string;
   sessionId?: string; // Para manter contexto entre mensagens
@@ -37,7 +36,7 @@ interface GuestChatDto {
  * ⚠️ RATE LIMITING: 10 requisições por minuto por IP
  */
 @Controller('chat')
-@UseGuards(ThrottlerGuard)
+@RouteClass('ai')
 export class GuestChatController {
   private readonly logger = new Logger(GuestChatController.name);
 
@@ -50,7 +49,6 @@ export class GuestChatController {
    */
   @Public()
   @Post('guest')
-  @Throttle({ default: { limit: 10, ttl: 60000 } })
   async guestChat(
     @Body() dto: GuestChatDto,
     @Req() req: Request,
@@ -71,7 +69,6 @@ export class GuestChatController {
    */
   @Public()
   @Post('guest/sync')
-  @Throttle({ default: { limit: 10, ttl: 60000 } })
   async guestChatSync(
     @Body() dto: GuestChatDto,
     @Req() req: Request,
@@ -112,7 +109,6 @@ export class GuestChatController {
    */
   @Public()
   @Get('guest/session')
-  @Throttle({ default: { limit: 30, ttl: 60000 } })
   getSession(): { sessionId: string } {
     this.assertGuestChatEnabledOrThrow();
     return { sessionId: this.generateSessionId() };
@@ -123,7 +119,6 @@ export class GuestChatController {
    */
   @Public()
   @Get('guest/health')
-  @Throttle({ default: { limit: 30, ttl: 60000 } })
   health(): { status: string; mode: string } {
     this.assertGuestChatEnabledOrThrow();
     return {

@@ -12,7 +12,6 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { DealStatus } from '@prisma/client';
-import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
@@ -23,12 +22,12 @@ import { ListContactsQueryDto } from './dto/list-contacts.query.dto';
 import { UpsertContactDto } from './dto/upsert-contact.dto';
 
 /** Crm controller. */
+import { RouteClass } from '../common/throttler/route-class.decorator';
 @ApiTags('CRM')
 @ApiBearerAuth()
-@UseGuards(ThrottlerGuard)
 @Controller('crm')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
-@Throttle({ default: { limit: 10, ttl: 60000 } })
+@RouteClass('read')
 export class CrmController {
   constructor(private readonly crmService: CrmService) {}
 

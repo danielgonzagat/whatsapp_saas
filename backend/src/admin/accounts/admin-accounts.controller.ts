@@ -23,11 +23,13 @@ import { ListAccountsQueryDto } from './dto/list-accounts.dto';
 import { RejectKycDto } from './dto/reject-kyc.dto';
 import { ResetAccountPasswordDto } from './dto/reset-account-password.dto';
 import { UpdateAccountStateDto } from './dto/update-account-state.dto';
+import { RouteClass } from '../../common/throttler/route-class.decorator';
 
 /** Admin accounts controller. */
 @Public()
 @Controller('admin/accounts')
 @UseGuards(AdminAuthGuard, AdminPermissionGuard)
+@RouteClass('mutate')
 export class AdminAccountsController {
   // audit.append is centralized in AdminAccountsService for mutating admin account operations.
   constructor(private readonly accounts: AdminAccountsService) {}

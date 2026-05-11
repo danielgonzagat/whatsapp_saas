@@ -45,6 +45,7 @@ import {
   storeUploadedFile as companionStoreFile,
 } from './upload-helpers';
 
+import { RouteClass } from '../common/throttler/route-class.decorator';
 const JPG_JPEG_PNG_GIF_WEBP_RE = /\.(jpg|jpeg|png|gif|webp|pdf|txt|doc|docx|xls|xlsx)$/i;
 const DOC_DOCX_RE = /\.(doc|docx)$/i;
 
@@ -77,6 +78,7 @@ function countAnalysisItems(value: unknown): number {
 /** Upload controller. */
 @ApiTags('KLOEL Upload')
 @Controller('kloel/upload')
+@RouteClass('mutate')
 export class UploadController {
   private readonly logger = new Logger(UploadController.name);
 

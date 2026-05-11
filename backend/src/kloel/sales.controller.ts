@@ -18,10 +18,12 @@ import { AuthenticatedRequest } from '../common/interfaces';
 import { PrismaService } from '../prisma/prisma.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { Idempotent } from '../common/idempotency.guard';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 /** Sales controller — KloelSale CRUD. */
 @UseGuards(JwtAuthGuard)
 @Controller('sales')
+@RouteClass('read')
 export class SalesController {
   private readonly logger = new Logger(SalesController.name);
 

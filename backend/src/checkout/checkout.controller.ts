@@ -13,7 +13,6 @@ import {
   Request,
   UseGuards,
 } from '@nestjs/common';
-import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { Prisma, TimerType } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
@@ -30,6 +29,7 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { CreateUpsellDto } from './dto/create-upsell.dto';
 import { UpdateConfigDto } from './dto/update-config.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 const U0300__U036F_RE = /[\u0300-\u036f]/g;
 const A_Z0_9_RE = /[^a-z0-9]+/g;
@@ -59,8 +59,8 @@ function normalizeTimerType(value: unknown): TimerType | undefined {
 
 /** Checkout controller. */
 @Controller('checkout')
-@UseGuards(JwtAuthGuard, WorkspaceGuard, ThrottlerGuard)
-@Throttle({ default: { limit: 30, ttl: 60000 } })
+@UseGuards(JwtAuthGuard, WorkspaceGuard)
+@RouteClass('mutate')
 export class CheckoutController {
   constructor(
     private readonly checkoutService: CheckoutService,

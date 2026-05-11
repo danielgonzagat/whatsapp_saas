@@ -21,11 +21,13 @@ import { AdminChatSessionService } from './admin-chat-session.service';
 import { SendMessageDto } from './dto/send-message.dto';
 import { CreateChatSessionDto } from './dto/create-chat-session.dto';
 import { UpdateChatSessionDto } from './dto/update-chat-session.dto';
+import { RouteClass } from '../../common/throttler/route-class.decorator';
 
 /** Admin chat controller. */
 @Public()
 @Controller('admin/chat')
 @UseGuards(AdminAuthGuard, AdminGlobalOperationGuard)
+@RouteClass('mutate')
 export class AdminChatController {
   constructor(
     private readonly chat: AdminChatService,

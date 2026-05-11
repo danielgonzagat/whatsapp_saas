@@ -26,9 +26,11 @@ import {
 } from '../common/utils/webhook-challenge-response.util';
 import { WebhooksService } from '../webhooks/webhooks.service';
 import { WhatsAppBrainService } from './whatsapp-brain.service';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 /** Whats app brain controller. */
 @Controller('kloel/whatsapp')
+@RouteClass('ai')
 export class WhatsAppBrainController {
   private readonly logger = new Logger(WhatsAppBrainController.name);
 

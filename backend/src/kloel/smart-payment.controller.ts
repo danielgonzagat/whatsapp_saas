@@ -11,7 +11,6 @@ import {
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import * as Sentry from '@sentry/node';
-import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Public } from '../auth/public.decorator';
 import { resolveWorkspaceId } from '../auth/workspace-access';
@@ -19,11 +18,12 @@ import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { PrismaService } from '../prisma/prisma.service';
 import { SmartPaymentService } from './smart-payment.service';
 import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 // All dates stored as UTC via Prisma DateTime (toISOString)
 @ApiTags('smart-payment')
 @Controller('kloel/payment')
-@Throttle({ default: { limit: 10, ttl: 60000 } })
+@RouteClass('mutate')
 export class SmartPaymentController {
   constructor(
     private readonly paymentService: SmartPaymentService,
@@ -33,7 +33,6 @@ export class SmartPaymentController {
   /** Get payment details. */
   @Public()
   @Get('public/:paymentId')
-  @Throttle({ default: { limit: 60, ttl: 60000 } })
   @ApiOperation({
     summary: 'Busca detalhes públicos de um pagamento',
     description: 'Endpoint público para página de pagamento fallback',

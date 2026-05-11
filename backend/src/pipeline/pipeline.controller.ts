@@ -5,10 +5,12 @@ import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { CreateDealDto } from './dto/create-deal.dto';
 import { PipelineService } from './pipeline.service';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 /** Pipeline controller. */
 @Controller('pipeline')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
+@RouteClass('read')
 export class PipelineController {
   constructor(private readonly pipelineService: PipelineService) {}
 

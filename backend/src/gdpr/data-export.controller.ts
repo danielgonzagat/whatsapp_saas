@@ -2,6 +2,7 @@ import { Controller, Logger, Post, Req, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { PrismaService } from '../prisma/prisma.service';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 /**
  * LGPD / GDPR — Data Export Controller
@@ -10,6 +11,7 @@ import { PrismaService } from '../prisma/prisma.service';
  * stored in the platform, in compliance with LGPD Art. 18 / GDPR Art. 20.
  */
 @Controller('gdpr')
+@RouteClass('mutate')
 export class DataExportController {
   private readonly logger = new Logger(DataExportController.name);
 

@@ -36,6 +36,7 @@ import {
   buildPdfAnalysisPrompt,
 } from './pdf-processor.service';
 
+import { RouteClass } from '../common/throttler/route-class.decorator';
 const PDF_TXT_RE = /\.(pdf|txt)$/i;
 const APPLICATION__PDF_OR_TEXT_RE = /^(application\/pdf|text\/plain)$/;
 
@@ -47,6 +48,7 @@ function countAnalysisItems(value: unknown): number {
 @ApiTags('KLOEL PDF Processor')
 @Controller('kloel/pdf')
 @UseGuards(JwtAuthGuard)
+@RouteClass('ai')
 export class PdfProcessorController {
   private readonly logger = new Logger(PdfProcessorController.name);
 

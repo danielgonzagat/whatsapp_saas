@@ -11,6 +11,7 @@ import { LoginDto } from './dto/login.dto';
 import { MfaVerifyDto } from './dto/mfa-verify.dto';
 import { RefreshDto } from './dto/refresh.dto';
 import { AdminAuthGuard } from './guards/admin-auth.guard';
+import { RouteClass } from '../../common/throttler/route-class.decorator';
 
 function readForwardedForIp(header: string | string[] | undefined): string | null {
   if (typeof header !== 'string' || header.length === 0) {
@@ -36,6 +37,7 @@ function extractUserAgent(req: Request): string {
 /** Admin auth controller. */
 @Public()
 @Controller('admin/auth')
+@RouteClass('auth')
 export class AdminAuthController {
   constructor(private readonly auth: AdminAuthService) {}
 

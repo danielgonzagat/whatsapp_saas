@@ -7,9 +7,7 @@ import {
   HttpCode,
   Logger,
   Post,
-  UseGuards,
 } from '@nestjs/common';
-import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import type Redis from 'ioredis';
 import { Public } from '../auth/public.decorator';
 import { safeCompareStrings } from '../common/utils/crypto-compare.util';
@@ -20,6 +18,7 @@ import { InboundProcessorService } from '../whatsapp/inbound-processor.service';
 import { WhatsAppApiProvider } from '../whatsapp/providers/whatsapp-api.provider';
 import { WhatsAppCatchupService } from '../whatsapp/whatsapp-catchup.service';
 
+import { RouteClass } from '../common/throttler/route-class.decorator';
 interface WahaWebhookPayload {
   event?: string;
   session?: string;
@@ -34,7 +33,7 @@ interface WahaWebhookPayload {
  * Event ordering: legacy WAHA events carried event.timestamp for sequencing.
  */
 @Controller('webhooks/whatsapp-api')
-@UseGuards(ThrottlerGuard)
+@RouteClass('webhook')
 export class WhatsAppApiWebhookController {
   private readonly logger = new Logger(WhatsAppApiWebhookController.name);
   private readonly ignoredLegacyWebhookLogTtlMs = 15 * 60_000;
@@ -61,7 +60,6 @@ export class WhatsAppApiWebhookController {
   /** Handle webhook. */
   @Public()
   @Post()
-  @Throttle({ default: { limit: 2000, ttl: 60000 } })
   @HttpCode(200)
   handleWebhook(
     @Body() body: WahaWebhookPayload,

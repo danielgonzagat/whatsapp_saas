@@ -38,6 +38,7 @@ import {
   WalletNotFoundError,
 } from '../wallet/wallet.types';
 
+import { RouteClass } from '../common/throttler/route-class.decorator';
 const U0300__U036F_RE = /[\u0300-\u036f]/g;
 const A_Z0_9_RE = /[^a-z0-9]+/g;
 const PATTERN_RE = /^-|-$/g;
@@ -48,6 +49,7 @@ type SiteProvider = 'openai' | 'anthropic';
 /** Site controller. */
 @UseGuards(JwtAuthGuard)
 @Controller('kloel/site')
+@RouteClass('mutate')
 export class SiteController {
   private readonly logger = new Logger(SiteController.name);
 

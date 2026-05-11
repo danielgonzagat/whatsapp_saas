@@ -9,7 +9,6 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
-import { Throttle } from '@nestjs/throttler';
 import { Public } from '../auth/public.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
@@ -19,9 +18,11 @@ import { VerifyIdentityDto } from './dto/verify-identity.dto';
 import { VerifyIdentityQueryDto } from './dto/verify-identity-query.dto';
 import { GdprService } from './gdpr.service';
 import type { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 /** Gdpr controller. */
 @Controller('gdpr')
+@RouteClass('mutate')
 export class GdprController {
   constructor(private readonly gdprService: GdprService) {}
 
@@ -60,7 +61,6 @@ export class GdprController {
   /** Get status by code — public endpoint. */
   @Public()
   @Get('status/:code')
-  @Throttle({ default: { limit: 60, ttl: 60000 } })
   async getStatus(@Param('code') code: string) {
     return this.gdprService.getStatus(code);
   }
@@ -69,7 +69,6 @@ export class GdprController {
   @Public()
   @HttpCode(200)
   @Post('facebook-callback')
-  @Throttle({ default: { limit: 30, ttl: 60000 } })
   async facebookCallback(@Body('signed_request') signedRequest?: string) {
     return this.gdprService.handleFacebookCallback(String(signedRequest || ''));
   }

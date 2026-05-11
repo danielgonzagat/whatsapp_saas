@@ -9,10 +9,8 @@ import {
   Patch,
   Post,
   Query,
-  UseGuards,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { Public } from '../auth/public.decorator';
 import { Idempotent } from '../common/idempotency.guard';
 import { CalculateShippingDto } from './dto/calculate-shipping.dto';
@@ -25,10 +23,10 @@ import { ValidateCouponDto } from './dto/validate-coupon.dto';
 import { CheckoutSocialLeadService } from './checkout-social-lead.service';
 
 /** Checkout public controller. */
+import { RouteClass } from '../common/throttler/route-class.decorator';
 @Controller('checkout/public')
 @Public()
-@UseGuards(ThrottlerGuard)
-@Throttle({ default: { limit: 30, ttl: 60000 } })
+@RouteClass('public-checkout')
 export class CheckoutPublicController {
   constructor(
     private readonly checkoutService: CheckoutService,
@@ -126,7 +124,6 @@ export class CheckoutPublicController {
   /** Create order. */
   @Post('order')
   @Idempotent()
-  @Throttle({ default: { limit: 10, ttl: 60000 } })
   createOrder(
     @Body() dto: CreateOrderDto,
     @Ip() ip: string,
@@ -171,21 +168,18 @@ export class CheckoutPublicController {
 
   /** Capture social lead. */
   @Post('social-capture')
-  @Throttle({ default: { limit: 12, ttl: 60000 } })
   captureSocialLead(@Body() dto: CaptureSocialLeadDto) {
     return this.checkoutSocialLeadService.captureLead(dto);
   }
 
   /** Update social lead. */
   @Patch('social-capture/:leadId')
-  @Throttle({ default: { limit: 20, ttl: 60000 } })
   updateSocialLead(@Param('leadId') leadId: string, @Body() dto: UpdateSocialLeadDto) {
     return this.checkoutSocialLeadService.updateLead(leadId, dto);
   }
 
   /** Hydrate google people profile. */
   @Post('social-capture/:leadId/google-profile')
-  @Throttle({ default: { limit: 8, ttl: 60000 } })
   hydrateGooglePeopleProfile(@Param('leadId') leadId: string, @Body() dto: GooglePeopleProfileDto) {
     return this.checkoutSocialLeadService.hydrateGoogleProfile(leadId, dto.accessToken);
   }

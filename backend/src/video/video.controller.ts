@@ -4,10 +4,12 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { VideoService } from './video.service';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 /** Video controller. */
 @UseGuards(JwtAuthGuard)
 @Controller('video')
+@RouteClass('mutate')
 export class VideoController {
   constructor(private readonly videoService: VideoService) {}
 

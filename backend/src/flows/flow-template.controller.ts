@@ -2,10 +2,12 @@ import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { FlowTemplateService } from './flow-template.service';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 /** Flow template controller. */
 @Controller('flow-templates')
 @UseGuards(JwtAuthGuard)
+@RouteClass('read')
 export class FlowTemplateController {
   constructor(private readonly service: FlowTemplateService) {}
 

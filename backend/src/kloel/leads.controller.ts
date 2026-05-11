@@ -3,9 +3,11 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { PaginationLimitPipe } from '../common/pagination-clamp.pipe';
 import { LeadsService } from './leads.service';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 /** Leads controller. */
 @Controller('kloel/leads')
+@RouteClass('read')
 export class LeadsController {
   constructor(private readonly leads: LeadsService) {}
 

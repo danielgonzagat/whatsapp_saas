@@ -1,12 +1,14 @@
 import { Controller, Get, Post, Query, Req, Param } from '@nestjs/common';
 import type { Request } from 'express';
 import { AnunciosService } from './anuncios.service';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 interface WorkspaceRequest extends Request {
   workspaceId?: string;
 }
 
 @Controller('api/anuncios')
+@RouteClass('mutate')
 export class AnunciosController {
   constructor(private readonly anunciosService: AnunciosService) {}
 

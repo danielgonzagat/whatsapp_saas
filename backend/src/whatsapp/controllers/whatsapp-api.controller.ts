@@ -13,11 +13,13 @@ import { WhatsAppApiProvider } from '../providers/whatsapp-api.provider';
 import { WhatsAppCatchupService } from '../whatsapp-catchup.service';
 import { WhatsAppWatchdogService } from '../whatsapp-watchdog.service';
 import { WhatsappService } from '../whatsapp.service';
+import { RouteClass } from '../../common/throttler/route-class.decorator';
 type BacklogMode = Exclude<Parameters<CiaRuntimeService['startBacklogRun']>[1], undefined>;
 
 /** Whats app api controller. */
 @Controller('whatsapp-api')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
+@RouteClass('mutate')
 export class WhatsAppApiController {
   constructor(
     private readonly providerRegistry: WhatsAppProviderRegistry,

@@ -33,6 +33,7 @@ import {
   safeStr,
 } from './helpers/common.helpers';
 
+import { RouteClass } from '../../common/throttler/route-class.decorator';
 interface AffiliateConfigContext {
   commissionType: string | undefined;
   nextCommissionType: string | undefined;
@@ -156,6 +157,7 @@ function buildProductPayload(
 /** Product affiliate controller. */
 @Controller('products/:productId/affiliates')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
+@RouteClass('mutate')
 export class ProductAffiliateController {
   constructor(private readonly prisma: PrismaService) {}
 

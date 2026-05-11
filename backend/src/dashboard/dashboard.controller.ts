@@ -7,6 +7,7 @@ import { normalizeStorageUrlForRequest } from '../common/storage/public-storage-
 import { PrismaService } from '../prisma/prisma.service';
 import { DashboardService } from './dashboard.service';
 import { HomeQueryDto } from './dto/home-query.dto';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 const POST_PAYMENT_AUDIT_ACTIONS = [
   'payment_approved',
@@ -22,6 +23,7 @@ const POST_PAYMENT_AUDIT_ACTIONS = [
 /** Dashboard controller. */
 @Controller('dashboard')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
+@RouteClass('read')
 export class DashboardController {
   constructor(
     private readonly dashboardService: DashboardService,

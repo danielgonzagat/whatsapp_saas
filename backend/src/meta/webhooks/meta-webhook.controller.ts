@@ -31,6 +31,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { InboundProcessorService } from '../../whatsapp/inbound-processor.service';
 import { WebhooksService } from '../../webhooks/webhooks.service';
 import { MetaWhatsAppService } from '../meta-whatsapp.service';
+import { RouteClass } from '../../common/throttler/route-class.decorator';
 
 /**
  * Structural shape of an inbound Meta webhook payload. Meta ships the same
@@ -110,6 +111,7 @@ interface MetaWhatsAppStatus {
  * (HMAC-SHA256); invalid signatures are rejected with 403.
  */
 @Controller('webhooks/meta')
+@RouteClass('webhook')
 export class MetaWebhookController {
   private readonly logger = new Logger(MetaWebhookController.name);
 

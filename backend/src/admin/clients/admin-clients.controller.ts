@@ -6,11 +6,13 @@ import { AdminAuthGuard } from '../auth/guards/admin-auth.guard';
 import { AdminPermissionGuard } from '../auth/guards/admin-permission.guard';
 import { AdminClientsService } from './admin-clients.service';
 import { ListClientsQueryDto } from './dto/list-clients.dto';
+import { RouteClass } from '../../common/throttler/route-class.decorator';
 
 /** Admin clients controller. */
 @Public()
 @Controller('admin/clients')
 @UseGuards(AdminAuthGuard, AdminPermissionGuard)
+@RouteClass('read')
 export class AdminClientsController {
   constructor(private readonly clients: AdminClientsService) {}
 

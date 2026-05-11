@@ -14,12 +14,14 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { ApiKeysService } from './api-keys.service';
 import { CreateApiKeyDto } from './dto/create-api-key.dto';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 /** Api keys controller. */
 @ApiTags('Settings')
 @ApiBearerAuth()
 @Controller('settings/api-keys')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
+@RouteClass('mutate')
 export class ApiKeysController {
   constructor(private readonly apiKeysService: ApiKeysService) {}
 

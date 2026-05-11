@@ -20,11 +20,13 @@ import { InboundMessage, InboundProcessorService } from './inbound-processor.ser
 import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
 import type { ContactCustomFields } from '../contacts/contact-custom-fields.types';
 import { WhatsappService } from './whatsapp.service';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 const D_RE = /\D/g;
 
 /** Internal whats app runtime controller. */
 @Controller('internal/whatsapp-runtime')
+@RouteClass('mutate')
 export class InternalWhatsAppRuntimeController {
   private readonly logger = new Logger(InternalWhatsAppRuntimeController.name);
 

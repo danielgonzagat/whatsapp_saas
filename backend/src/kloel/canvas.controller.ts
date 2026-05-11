@@ -22,6 +22,7 @@ import type { AuthenticatedRequest } from '../common/interfaces/authenticated-re
 import { resolveKloelCapabilityModel } from '../lib/ai-models';
 import { PrismaService } from '../prisma/prisma.service';
 import { BRAND_COLORS, CANVAS_COLORS } from '../common/kloel-colors';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 const IMAGE_GEN_TOKEN_EQUIVALENT = 1000;
 
@@ -46,6 +47,7 @@ interface GenerateCanvasImageDto {
 /** Canvas controller. */
 @UseGuards(JwtAuthGuard)
 @Controller('canvas')
+@RouteClass('mutate')
 export class CanvasController {
   constructor(
     private readonly prisma: PrismaService,

@@ -5,6 +5,7 @@ import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import type { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { PrismaService } from '../prisma/prisma.service';
 import { buildMarketplaceWhere, enrichAffiliateProducts } from './affiliate-helpers';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 /**
  * Affiliate Marketplace Read Controller
@@ -14,6 +15,7 @@ import { buildMarketplaceWhere, enrichAffiliateProducts } from './affiliate-help
  */
 @Controller('affiliate')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
+@RouteClass('mutate')
 export class AffiliateMarketplaceController {
   constructor(private readonly prisma: PrismaService) {}
 

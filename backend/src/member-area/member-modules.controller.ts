@@ -16,6 +16,7 @@ import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { AuthenticatedRequest } from '../common/interfaces';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateLessonDto, CreateModuleDto, UpdateLessonDto } from './member-area.helpers';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 function parseReleaseDate(raw: string | undefined | null): Date | null {
   if (!raw) {
@@ -37,6 +38,7 @@ function parseReleaseDate(raw: string | undefined | null): Date | null {
  */
 @Controller('member-areas')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
+@RouteClass('mutate')
 export class MemberModulesController {
   constructor(
     private readonly prisma: PrismaService,

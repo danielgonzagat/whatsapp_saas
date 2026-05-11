@@ -2,11 +2,13 @@ import { Body, Controller, Get, Post, Query, Request, UseGuards } from '@nestjs/
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { TikTokMarketingService, type TikTokCompleteBody } from './tiktok-marketing.service';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 type TikTokKind = 'creator' | 'advertiser';
 
 @Controller('marketing/connect/tiktok')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
+@RouteClass('mutate')
 export class TikTokMarketingController {
   constructor(private readonly tiktokMarketing: TikTokMarketingService) {}
 

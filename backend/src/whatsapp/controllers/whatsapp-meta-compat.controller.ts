@@ -3,6 +3,7 @@ import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../../common/guards/workspace.guard';
 import { AuthenticatedRequest } from '../../common/interfaces';
 import { WhatsAppProviderRegistry } from '../providers/provider-registry';
+import { RouteClass } from '../../common/throttler/route-class.decorator';
 
 /**
  * Meta-compat stubs — endpoints that are not supported under the Meta Cloud API
@@ -10,6 +11,7 @@ import { WhatsAppProviderRegistry } from '../providers/provider-registry';
  */
 @Controller('whatsapp-api')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
+@RouteClass('mutate')
 export class WhatsAppMetaCompatController {
   constructor(private readonly providerRegistry: WhatsAppProviderRegistry) {}
 

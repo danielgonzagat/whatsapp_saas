@@ -5,12 +5,14 @@ import { resolveWorkspaceId } from '../auth/workspace-access';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { AuditService } from './audit.service';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 /** Audit controller. */
 @ApiTags('Audit')
 @ApiBearerAuth()
 @Controller('audit')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
+@RouteClass('read')
 export class AuditController {
   constructor(private readonly auditService: AuditService) {}
 

@@ -23,6 +23,7 @@ import { MetaSdkService } from './meta-sdk.service';
 import { decryptMetaToken, encryptMetaToken } from './meta-token-crypto';
 import { MetaWhatsAppService } from './meta-whatsapp.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 interface MetaAuthPage {
   id?: string;
@@ -52,6 +53,7 @@ interface MetaAuthAdAccount {
  *  GET  /meta/auth/status      — connection status (authed)
  */
 @Controller('meta/auth')
+@RouteClass('mutate')
 export class MetaAuthController {
   private readonly logger = new Logger(MetaAuthController.name);
 

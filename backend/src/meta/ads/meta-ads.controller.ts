@@ -20,10 +20,12 @@ import {
   MetaAdsInsightsQueryDto,
 } from './dto/meta-ads-insights-query.dto';
 import { MetaAdsService } from './meta-ads.service';
+import { RouteClass } from '../../common/throttler/route-class.decorator';
 
 /** Meta ads controller. Resolves access token from DB — never accepts it from client. */
 @Controller('meta/ads')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
+@RouteClass('mutate')
 export class MetaAdsController {
   constructor(
     private readonly metaAdsService: MetaAdsService,

@@ -3,7 +3,6 @@ import {
   Body,
   Controller,
   Get,
-  Logger,
   Post,
   Query,
   Req,
@@ -16,12 +15,12 @@ import { AuthenticatedRequest } from '../common/interfaces/authenticated-request
 import { MetaWhatsAppService } from '../meta/meta-whatsapp.service';
 import { normalizeMetaGraphSegment } from '../meta/meta-input.util';
 import { FacebookMessengerService } from './facebook-messenger.service';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 @Controller('marketing/facebook-messenger')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
+@RouteClass('webhook')
 export class FacebookMessengerController {
-  private readonly logger = new Logger(FacebookMessengerController.name);
-
   constructor(
     private readonly fbMessenger: FacebookMessengerService,
     private readonly metaWhatsApp: MetaWhatsAppService,

@@ -14,6 +14,7 @@ import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { AuthenticatedRequest } from '../common/interfaces';
 import { PrismaService } from '../prisma/prisma.service';
 import { serializeArea } from './member-area.helpers';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 interface ModuleTemplateLesson {
   name: string;
@@ -149,6 +150,7 @@ function templateForAreaType(type: string): ModuleTemplate[] {
  */
 @Controller('member-areas')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
+@RouteClass('mutate')
 export class MemberStructureController {
   private readonly logger = new Logger(MemberStructureController.name);
 

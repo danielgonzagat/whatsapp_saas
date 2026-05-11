@@ -4,12 +4,14 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { NeuroCrmService } from './neuro-crm.service';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 /** Neuro crm controller. */
 @ApiTags('NeuroCRM')
 @ApiBearerAuth()
 @Controller('crm/neuro')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
+@RouteClass('ai')
 export class NeuroCrmController {
   constructor(private readonly neuroService: NeuroCrmService) {}
 

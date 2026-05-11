@@ -23,6 +23,7 @@ import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import type { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { AgentAssistService } from './agent-assist.service';
 import { KnowledgeBaseService } from './knowledge-base.service';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 /**
  * Uploaded file shape consumed by `uploadSource`. Extends the minimal
@@ -40,6 +41,7 @@ const APPLICATION__PDF_TEXT_RE = /^(application\/pdf|text\/plain|text\/csv|appli
 /** Knowledge base controller. */
 @Controller('ai')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
+@RouteClass('ai')
 export class KnowledgeBaseController {
   private readonly logger = new Logger(KnowledgeBaseController.name);
 

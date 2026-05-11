@@ -11,7 +11,6 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
@@ -20,6 +19,7 @@ import { CalendarEvent, CalendarService } from './calendar.service';
 import { CreateEventDto } from './dto/create-event.dto';
 import { ListEventsQueryDto } from './dto/list-events-query.dto';
 
+import { RouteClass } from '../common/throttler/route-class.decorator';
 function parseDateOrFail(raw: string | undefined, label: string): Date | undefined {
   if (!raw) {
     return undefined;
@@ -34,10 +34,9 @@ function parseDateOrFail(raw: string | undefined, label: string): Date | undefin
 /** Calendar controller. */
 @ApiTags('Calendar')
 @ApiBearerAuth()
-@UseGuards(ThrottlerGuard)
 @Controller('calendar')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
-@Throttle({ default: { limit: 10, ttl: 60000 } })
+@RouteClass('read')
 export class CalendarController {
   constructor(private readonly calendarService: CalendarService) {}
 

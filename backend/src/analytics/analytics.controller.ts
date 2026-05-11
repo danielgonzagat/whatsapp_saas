@@ -8,7 +8,6 @@ import {
   Request,
   UseGuards,
 } from '@nestjs/common';
-import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
@@ -18,6 +17,7 @@ import { AnalyticsDateRangeQueryDto, AnalyticsReportQueryDto } from './dto/analy
 import { SmartTimeService } from './smart-time/smart-time.service';
 import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 
+import { RouteClass } from '../common/throttler/route-class.decorator';
 function parseDateRange(startDate?: string, endDate?: string) {
   const end = endDate ? new Date(endDate) : new Date();
   const start = startDate ? new Date(startDate) : new Date(end.getTime() - 7 * 24 * 60 * 60 * 1000);
@@ -38,10 +38,9 @@ function parseDateRange(startDate?: string, endDate?: string) {
 }
 
 /** Analytics controller. */
-@UseGuards(ThrottlerGuard)
 @Controller('analytics')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
-@Throttle({ default: { limit: 30, ttl: 60000 } })
+@RouteClass('read')
 export class AnalyticsController {
   constructor(
     private readonly analyticsService: AnalyticsService,

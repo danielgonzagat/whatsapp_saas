@@ -1,8 +1,8 @@
 import { Body, Controller, Get, HttpCode, Param, Post, Query, Req } from '@nestjs/common';
-import { Throttle } from '@nestjs/throttler';
 import type { Request } from 'express';
 import { Public } from '../auth/public.decorator';
 import { ComplianceService } from './compliance.service';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 type RawBodyRequest = Request & {
   rawBody?: Buffer;
@@ -10,6 +10,7 @@ type RawBodyRequest = Request & {
 
 /** Compliance controller. */
 @Controller()
+@RouteClass('read')
 export class ComplianceController {
   constructor(private readonly complianceService: ComplianceService) {}
 
@@ -32,7 +33,6 @@ export class ComplianceController {
   /** Google risc events. */
   @Public()
   @HttpCode(202)
-  @Throttle({ default: { limit: 100, ttl: 60000 } })
   @Post('auth/google/risc-events')
   async googleRiscEvents(@Req() req: RawBodyRequest) {
     const rawJwt =

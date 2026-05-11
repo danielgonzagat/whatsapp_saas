@@ -1,5 +1,4 @@
 import { Body, Controller, Get, HttpException, Post, Put, Query, Req, Res } from '@nestjs/common';
-import { Throttle } from '@nestjs/throttler';
 import { Request, Response } from 'express';
 import * as Sentry from '@sentry/node';
 import { AuthenticatedRequest } from '../common/interfaces';
@@ -20,16 +19,17 @@ import { VerifyMagicLinkDto } from './dto/verify-magic-link.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { SendWhatsAppCodeDto, VerifyWhatsAppCodeDto } from './dto/whatsapp-auth.dto';
 import { Public } from './public.decorator';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 /** Auth controller. */
 @Controller('auth')
+@RouteClass('auth')
 export class AuthController {
   constructor(private readonly auth: AuthService) {}
 
   /** Check email. */
   @Public()
   @Post('check-email')
-  @Throttle({ default: { limit: 5, ttl: 60000 } })
   async checkEmail(@Body() body: CheckEmailDto) {
     return this.auth.checkEmail(body.email);
   }
@@ -37,7 +37,6 @@ export class AuthController {
   /** Check email query. */
   @Public()
   @Get('check-email')
-  @Throttle({ default: { limit: 5, ttl: 60000 } })
   async checkEmailQuery(@Query('email') email?: string) {
     if (!email) {
       return { exists: false };
@@ -48,7 +47,6 @@ export class AuthController {
   /** Register. */
   @Public()
   @Post('register')
-  @Throttle({ default: { limit: 5, ttl: 60000 } })
   async register(
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
@@ -86,7 +84,6 @@ export class AuthController {
   /** Login. */
   @Public()
   @Post('login')
-  @Throttle({ default: { limit: 10, ttl: 60000 } })
   async login(
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
@@ -113,7 +110,6 @@ export class AuthController {
   /** Refresh. */
   @Public()
   @Post('refresh')
-  @Throttle({ default: { limit: 10, ttl: 60000 } })
   async refresh(@Body() body: RefreshDto) {
     const token = body.refreshToken || body.refresh_token;
     if (!token) {
@@ -128,7 +124,6 @@ export class AuthController {
    */
   @Public()
   @Post('oauth')
-  @Throttle({ default: { limit: 5, ttl: 60000 } })
   async oauthLogin(@Req() req: Request, @Body() body: Record<string, unknown>) {
     return this.auth.oauthLogin({ ...body, ip: req.ip });
   }
@@ -139,7 +134,6 @@ export class AuthController {
    */
   @Public()
   @Post('oauth/google')
-  @Throttle({ default: { limit: 5, ttl: 60000 } })
   async googleOAuthLogin(@Req() req: Request, @Body() body: GoogleOAuthDto) {
     return this.auth.loginWithGoogleCredential({
       credential: body.credential,
@@ -150,7 +144,6 @@ export class AuthController {
   /** Facebook o auth login. */
   @Public()
   @Post('oauth/facebook')
-  @Throttle({ default: { limit: 5, ttl: 60000 } })
   async facebookOAuthLogin(@Req() req: Request, @Body() body: FacebookOAuthDto) {
     return this.auth.loginWithFacebookAccessToken({
       accessToken: body.accessToken,
@@ -165,7 +158,6 @@ export class AuthController {
    */
   @Public()
   @Post('oauth/apple')
-  @Throttle({ default: { limit: 5, ttl: 60000 } })
   async appleOAuthLogin(@Req() req: Request, @Body() body: AppleOAuthDto) {
     return this.auth.loginWithAppleCredential({
       identityToken: body.identityToken,
@@ -179,7 +171,6 @@ export class AuthController {
   /** TikTok o auth login. */
   @Public()
   @Post('oauth/tiktok')
-  @Throttle({ default: { limit: 5, ttl: 60000 } })
   async tikTokOAuthLogin(@Req() req: Request, @Body() body: TikTokOAuthDto) {
     if (body.accessToken) {
       return this.auth.loginWithTikTokAccessToken({
@@ -201,7 +192,6 @@ export class AuthController {
   /** Request magic link. */
   @Public()
   @Post('magic-link/request')
-  @Throttle({ default: { limit: 5, ttl: 60000 } })
   requestMagicLink(@Req() req: Request, @Body() body: RequestMagicLinkDto) {
     return this.auth.requestMagicLink({
       email: body.email,
@@ -213,7 +203,6 @@ export class AuthController {
   /** Verify magic link. */
   @Public()
   @Post('magic-link/verify')
-  @Throttle({ default: { limit: 10, ttl: 60000 } })
   verifyMagicLink(@Req() req: Request, @Body() body: VerifyMagicLinkDto) {
     return this.auth.verifyMagicLink(body.token, req.ip);
   }
@@ -223,7 +212,6 @@ export class AuthController {
    */
   @Public()
   @Post('whatsapp/send-code')
-  @Throttle({ default: { limit: 3, ttl: 60000 } })
   async sendWhatsAppCode(@Req() req: Request, @Body() body: SendWhatsAppCodeDto) {
     return this.auth.sendWhatsAppCode(body.phone, req.ip);
   }
@@ -233,7 +221,6 @@ export class AuthController {
    */
   @Public()
   @Post('whatsapp/verify')
-  @Throttle({ default: { limit: 5, ttl: 60000 } })
   async verifyWhatsAppCode(@Req() req: Request, @Body() body: VerifyWhatsAppCodeDto) {
     return this.auth.verifyWhatsAppCode(body.phone, body.code, req.ip);
   }
@@ -243,7 +230,6 @@ export class AuthController {
 
   @Public()
   @Post('anonymous')
-  @Throttle({ default: { limit: 3, ttl: 60000 } })
   async createAnonymous(@Req() req: Request) {
     return this.auth.createAnonymous(req.ip);
   }
@@ -258,7 +244,6 @@ export class AuthController {
    */
   @Public()
   @Post('forgot-password')
-  @Throttle({ default: { limit: 5, ttl: 60000 } })
   async forgotPassword(@Req() req: Request, @Body() body: ForgotPasswordDto) {
     return this.auth.forgotPassword(body.email, req.ip);
   }
@@ -268,7 +253,6 @@ export class AuthController {
    */
   @Public()
   @Post('reset-password')
-  @Throttle({ default: { limit: 5, ttl: 60000 } })
   async resetPassword(@Req() req: Request, @Body() body: ResetPasswordDto) {
     return this.auth.resetPassword(body.token, body.newPassword, req.ip);
   }
@@ -282,7 +266,6 @@ export class AuthController {
    */
   @Public()
   @Post('verify-email')
-  @Throttle({ default: { limit: 5, ttl: 60000 } })
   async verifyEmail(@Req() req: Request, @Body() body: VerifyEmailDto) {
     return this.auth.verifyEmail(body.token, req.ip);
   }
@@ -292,7 +275,6 @@ export class AuthController {
    */
   @Public()
   @Post('resend-verification')
-  @Throttle({ default: { limit: 3, ttl: 60000 } })
   async resendVerificationEmail(@Req() req: Request, @Body() body: CheckEmailDto) {
     return this.auth.resendVerificationEmail(body.email, req.ip);
   }

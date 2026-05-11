@@ -5,10 +5,12 @@ import { resolveWorkspaceId } from '../auth/workspace-access';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { MassSendService } from './mass-send.service';
 import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 /** Mass send controller. */
 @Controller('campaign')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
+@RouteClass('mutate')
 export class MassSendController {
   constructor(private readonly massSendService: MassSendService) {}
 

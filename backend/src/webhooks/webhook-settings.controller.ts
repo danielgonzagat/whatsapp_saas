@@ -10,10 +10,10 @@ import {
   Request,
   UseGuards,
 } from '@nestjs/common';
-import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { AuditService } from '../audit/audit.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PrismaService } from '../prisma/prisma.service';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 /**
  * CRUD for outbound webhookEvent subscription URLs.
@@ -21,8 +21,8 @@ import { PrismaService } from '../prisma/prisma.service';
  * Ordering/sequence is managed by the WebhookDispatcherService via BullMQ jobId.
  */
 @Controller('settings/webhooks')
-@UseGuards(JwtAuthGuard, ThrottlerGuard)
-@Throttle({ default: { limit: 20, ttl: 60000 } })
+@UseGuards(JwtAuthGuard)
+@RouteClass('webhook')
 export class WebhookSettingsController {
   constructor(
     private prisma: PrismaService,

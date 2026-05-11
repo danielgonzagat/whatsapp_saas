@@ -22,6 +22,7 @@ import { DestructiveIntentService } from './destructive-intent.service';
 import { CreateDestructiveIntentDto } from './dto/create-destructive-intent.dto';
 import { ConfirmDestructiveIntentDto } from './dto/confirm-destructive-intent.dto';
 import { UndoDestructiveIntentDto } from './dto/undo-destructive-intent.dto';
+import { RouteClass } from '../../common/throttler/route-class.decorator';
 
 function extractClientIp(req: Request): string {
   return req.ip ?? req.socket?.remoteAddress ?? '0.0.0.0';
@@ -42,6 +43,7 @@ function extractUserAgent(req: Request): string {
 @Public()
 @Controller('admin/destructive-intents')
 @UseGuards(AdminAuthGuard, AdminPermissionGuard)
+@RouteClass('mutate')
 export class AdminDestructiveController {
   constructor(private readonly intents: DestructiveIntentService) {}
 

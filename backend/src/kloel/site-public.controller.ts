@@ -1,12 +1,13 @@
 import { Controller, Get, HttpStatus, Logger, Param, Res } from '@nestjs/common';
-import { Throttle } from '@nestjs/throttler';
 import { Response } from 'express';
 import { Public } from '../auth/public.decorator';
 import { PrismaService } from '../prisma/prisma.service';
 import { BRAND_COLORS } from '../common/kloel-colors';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 /** Site public controller. */
 @Controller('s')
+@RouteClass('public-checkout')
 export class SitePublicController {
   private readonly logger = new Logger(SitePublicController.name);
   constructor(private readonly prisma: PrismaService) {}
@@ -14,7 +15,6 @@ export class SitePublicController {
   // GET /s/:slug — serve published site HTML (public, no auth)
   @Public()
   @Get(':slug')
-  @Throttle({ default: { limit: 100, ttl: 60000 } })
   async serveSite(@Param('slug') slug: string, @Res() res: Response) {
     const site = await this.prisma.kloelSite.findFirst({
       where: { slug, published: true, workspaceId: undefined },

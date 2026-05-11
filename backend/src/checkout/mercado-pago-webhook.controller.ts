@@ -1,10 +1,10 @@
 import { Body, Controller, ForbiddenException, Headers, Post, Query } from '@nestjs/common';
-import { Throttle } from '@nestjs/throttler';
 import { Prisma } from '@prisma/client';
 import { Public } from '../auth/public.decorator';
 import { PrismaService } from '../prisma/prisma.service';
 import { WebhooksService } from '../webhooks/webhooks.service';
 import { MercadoPagoPaymentSnapshot, MercadoPagoPixService } from './mercado-pago-pix.service';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 type MercadoPagoWebhookBody = {
   id?: string | number;
@@ -52,7 +52,7 @@ function toJsonValue(value: unknown): Prisma.InputJsonValue {
 
 @Controller('checkout/webhooks/mercado-pago')
 @Public()
-@Throttle({ default: { limit: 120, ttl: 60000 } })
+@RouteClass('webhook')
 export class MercadoPagoWebhookController {
   constructor(
     private readonly prisma: PrismaService,

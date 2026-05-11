@@ -3,12 +3,14 @@ import { ApiBearerAuth, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestj
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { MemoryService } from './memory.service';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 /** Memory controller. */
 @ApiTags('KLOEL Memory')
 @ApiBearerAuth()
 @Controller('kloel/memory')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
+@RouteClass('ai')
 export class MemoryController {
   constructor(private readonly memoryService: MemoryService) {}
 

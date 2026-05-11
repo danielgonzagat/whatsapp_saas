@@ -16,10 +16,12 @@ import { AuthenticatedRequest } from '../../common/interfaces/authenticated-requ
 import { normalizeMetaGraphSegment } from '../meta-input.util';
 import { MetaWhatsAppService } from '../meta-whatsapp.service';
 import { InstagramService } from './instagram.service';
+import { RouteClass } from '../../common/throttler/route-class.decorator';
 
 /** Instagram controller. */
 @Controller('meta/instagram')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
+@RouteClass('mutate')
 export class InstagramController {
   constructor(
     private readonly instagramService: InstagramService,

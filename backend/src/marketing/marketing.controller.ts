@@ -1,5 +1,4 @@
-import { Body, Controller, Get, Param, Post, Request, UseGuards } from '@nestjs/common';
-import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
+import { Body, Controller, Get, Logger, Param, Post, Request, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { forEachSequential } from '../common/async-sequence';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
@@ -8,10 +7,9 @@ import {
   buildListUnsubscribeHeader,
   buildUnsubscribeFooterHtml,
 } from '../common/utils/unsubscribe-footer.util';
-import { MetaWhatsAppService } from '../meta/meta-whatsapp.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
 
+import { RouteClass } from '../common/throttler/route-class.decorator';
 const NAME_RE = /\{\{name\}\}/g;
 
 const CHANNELS = ['WHATSAPP', 'INSTAGRAM', 'MESSENGER', 'EMAIL', 'TIKTOK'];
@@ -24,16 +22,13 @@ const CHANNELS = ['WHATSAPP', 'INSTAGRAM', 'MESSENGER', 'EMAIL', 'TIKTOK'];
  * Channel connect/email/WhatsApp summary endpoints live in
  * MarketingConnectController.
  */
-@UseGuards(ThrottlerGuard)
 @Controller('marketing')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
-@Throttle({ default: { limit: 10, ttl: 60000 } })
+@RouteClass('read')
 export class MarketingController {
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly metaWhatsApp: MetaWhatsAppService,
-    private readonly whatsappProviders: WhatsAppProviderRegistry,
-  ) {}
+  private readonly logger = new Logger(MarketingController.name);
+
+  constructor(private readonly prisma: PrismaService) {}
 
   /**
    * Aggregate stats: totalMessages, totalLeads, totalSales, totalRevenue

@@ -5,6 +5,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ObservabilityQueriesService } from '../metrics/observability-queries.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { asProviderSettings } from '../whatsapp/provider-settings.types';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 interface SystemMetrics {
   cpu: { usage: number; cores: number };
@@ -50,6 +51,7 @@ interface WorkspaceDiagnosticsSettings {
 @ApiTags('diagnostics')
 @UseGuards(JwtAuthGuard)
 @Controller('diag')
+@RouteClass('ai')
 export class DiagnosticsController {
   constructor(
     private readonly prisma: PrismaService,

@@ -19,6 +19,7 @@ import { AuthenticatedRequest } from '../common/interfaces';
 import { PrismaService } from '../prisma/prisma.service';
 import { EnrollStudentDto, readText } from './member-area.helpers';
 import { MemberAreaStatsService } from './member-area-stats.service';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 /**
  * MEMBER ENROLLMENTS CONTROLLER — Student listing + lifecycle
@@ -29,6 +30,7 @@ import { MemberAreaStatsService } from './member-area-stats.service';
  */
 @Controller('member-areas')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
+@RouteClass('mutate')
 export class MemberEnrollmentsController {
   constructor(
     private readonly prisma: PrismaService,

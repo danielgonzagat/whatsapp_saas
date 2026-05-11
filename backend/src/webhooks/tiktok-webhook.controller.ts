@@ -10,15 +10,14 @@ import {
   Logger,
   Post,
   Req,
-  UseGuards,
 } from '@nestjs/common';
-import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import type { Redis } from 'ioredis';
 import { Public } from '../auth/public.decorator';
 import { RawBodyRequest } from '../common/interfaces/authenticated-request.interface';
 import { safeCompareStrings } from '../common/utils/crypto-compare.util';
 import { WebhooksService } from './webhooks.service';
 
+import { RouteClass } from '../common/throttler/route-class.decorator';
 type TikTokWebhookPayload = Record<string, unknown> | Array<unknown> | string | number | null;
 
 interface ParsedTikTokSignature {
@@ -111,7 +110,7 @@ function describeEvent(body: TikTokWebhookPayload): string {
  * `TikTok-Signature` whenever TikTok sends one.
  */
 @Controller('webhooks/tiktok')
-@UseGuards(ThrottlerGuard)
+@RouteClass('webhook')
 export class TikTokWebhookController {
   private readonly logger = new Logger(TikTokWebhookController.name);
 
@@ -135,7 +134,6 @@ export class TikTokWebhookController {
   /** Receive TikTok webhook events and acknowledge the callback test. */
   @Public()
   @Post()
-  @Throttle({ default: { limit: 2000, ttl: 60000 } })
   @HttpCode(200)
   async handleWebhook(
     @Body() body: TikTokWebhookPayload,

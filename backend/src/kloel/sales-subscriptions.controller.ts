@@ -19,10 +19,12 @@ import { AuthenticatedRequest } from '../common/interfaces';
 import { PrismaService } from '../prisma/prisma.service';
 import { ChangeSubscriptionPlanDto } from './dto/sales-actions.dto';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 /** Customer-subscription sub-controller (mounted under /sales). */
 @UseGuards(JwtAuthGuard)
 @Controller('sales')
+@RouteClass('read')
 export class SalesSubscriptionsController {
   private readonly logger = new Logger(SalesSubscriptionsController.name);
 

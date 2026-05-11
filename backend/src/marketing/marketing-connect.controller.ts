@@ -1,3 +1,4 @@
+import { RouteClass } from '../common/throttler/route-class.decorator';
 import {
   BadRequestException,
   Body,
@@ -11,6 +12,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { buildUnsubscribeFooterHtml } from '../common/utils/unsubscribe-footer.util';
 import { MetaWhatsAppService } from '../meta/meta-whatsapp.service';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
 import { asProviderSettings, type ProviderSettings } from '../whatsapp/provider-settings.types';
@@ -22,7 +24,10 @@ import {
 
 type EmailSubSettings = Record<string, unknown> & { enabled?: boolean };
 type WhatsAppStatusValue = Record<string, unknown>;
-type WhatsAppLifecycleRecord = Record<string, unknown>;
+
+function readOptionalText(value: unknown): string | null {
+  return typeof value === 'string' && value.trim() ? value : null;
+}
 
 /**
  * Marketing Connect Controller
@@ -32,6 +37,7 @@ type WhatsAppLifecycleRecord = Record<string, unknown>;
  */
 @Controller('marketing')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
+@RouteClass('mutate')
 export class MarketingConnectController {
   constructor(
     private readonly prisma: PrismaService,
@@ -179,15 +185,16 @@ export class MarketingConnectController {
               ? safeWhatsApp.whatsappBusinessId || snapshot.whatsappBusinessId || null
               : null,
           phoneNumber:
-            safeWhatsApp.phoneNumber || safeWhatsApp.phone || snapshot.phoneNumber || null,
-          pushName: safeWhatsApp.pushName || snapshot.pushName || null,
+            readOptionalText(safeWhatsApp.phoneNumber) ||
+            readOptionalText(safeWhatsApp.phone) ||
+            readOptionalText(snapshot.phoneNumber),
+          pushName: readOptionalText(safeWhatsApp.pushName) || readOptionalText(snapshot.pushName),
           degradedReason:
             whatsappConnected || whatsappStatusValue === 'connecting'
               ? null
-              : safeWhatsApp.degradedReason ||
-                (typeof safeWhatsApp.message === 'string' ? safeWhatsApp.message : null) ||
-                snapshot.disconnectReason ||
-                null,
+              : readOptionalText(safeWhatsApp.degradedReason) ||
+                readOptionalText(safeWhatsApp.message) ||
+                readOptionalText(snapshot.disconnectReason),
         },
         instagram: {
           connected: Boolean(metaConnection?.instagramAccountId),
@@ -309,10 +316,12 @@ export class MarketingConnectController {
         providerSettings: {
           ...currentSettings,
           email: {
-            ...(currentSettings.email ?? {}),
+            ...(typeof currentSettings.email === 'object' && currentSettings.email !== null
+              ? currentSettings.email
+              : {}),
             enabled: nextEnabled,
           },
-        },
+        } as unknown as Prisma.InputJsonObject,
       },
     });
 

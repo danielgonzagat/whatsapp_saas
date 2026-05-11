@@ -14,7 +14,6 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ForbiddenException } from '@nestjs/common';
-import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import type { Redis } from 'ioredis';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Public } from '../auth/public.decorator';
@@ -31,6 +30,7 @@ import { WebhooksService } from './webhooks.service';
  * read are the parsed body, the raw body (for signature verification)
  * and the request URL (used when emitting ops alerts on duplicates).
  */
+import { RouteClass } from '../common/throttler/route-class.decorator';
 interface WebhookRequestLike {
   body?: unknown;
   rawBody?: string | Buffer;
@@ -60,8 +60,7 @@ type OpsAlertMeta = Record<string, unknown>;
  * Event ordering: events carry eventDate/createdAt; out-of-order duplicates are rejected.
  */
 @Controller('hooks')
-@UseGuards(ThrottlerGuard)
-@Throttle({ default: { limit: 100, ttl: 60000 } })
+@RouteClass('webhook')
 export class WebhooksController {
   private readonly logger = new Logger(WebhooksController.name);
 

@@ -3,7 +3,6 @@ import {
   Body,
   Controller,
   Get,
-  Logger,
   Post,
   Query,
   Req,
@@ -16,12 +15,12 @@ import { AuthenticatedRequest } from '../../common/interfaces/authenticated-requ
 import { CreateInstagramPostDto } from './dto/create-instagram-post.dto';
 import { InstagramInsightsQueryDto, VALID_METRICS } from './dto/instagram-insights-query.dto';
 import { InstagramMarketingService } from './instagram-marketing.service';
+import { RouteClass } from '../../common/throttler/route-class.decorator';
 
 @Controller('marketing/instagram')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
+@RouteClass('mutate')
 export class InstagramMarketingController {
-  private readonly logger = new Logger(InstagramMarketingController.name);
-
   constructor(private readonly instagramMarketingService: InstagramMarketingService) {}
 
   @Get('accounts')

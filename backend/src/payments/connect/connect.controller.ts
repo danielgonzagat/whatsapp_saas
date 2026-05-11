@@ -32,13 +32,13 @@ import {
   type SubmitOnboardingProfileInput,
 } from './connect.types';
 import { CONNECT_LEDGER_ENTRY_TYPES, parseSkip, parseTake } from './connect-helpers';
-import { RouteClass } from '../../../common/throttler/route-class.decorator';
+import { RouteClass } from '../../common/throttler/route-class.decorator';
 
 const CONNECT_ACCOUNT_TYPES = Object.values(ConnectAccountType);
 
 /** Connect controller. */
 @Controller('payments/connect')
-@UseGuards(JwtAuthGuard, WorkspaceGuard, ThrottlerGuard)
+@UseGuards(JwtAuthGuard, WorkspaceGuard)
 @RouteClass('mutate')
 export class ConnectController {
   constructor(

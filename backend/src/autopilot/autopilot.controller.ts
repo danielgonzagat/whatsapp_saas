@@ -5,6 +5,7 @@ import { resolveWorkspaceId } from '../auth/workspace-access';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { AuthenticatedRequest } from '../common/interfaces';
 import { AutopilotService } from './autopilot.service';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 const PATTERN_RE = /,/g;
 
@@ -21,6 +22,7 @@ interface AutopilotActionRow {
 /** Autopilot controller. */
 @Controller('autopilot')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
+@RouteClass('ai')
 export class AutopilotController {
   constructor(private readonly autopilotService: AutopilotService) {}
 

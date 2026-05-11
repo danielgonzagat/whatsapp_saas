@@ -34,8 +34,10 @@ import {
 } from './helpers/campaign.helpers';
 
 /** Product campaign controller. */
+import { RouteClass } from '../../common/throttler/route-class.decorator';
 @Controller('products/:productId/campaigns')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
+@RouteClass('mutate')
 export class ProductCampaignController {
   constructor(
     private readonly prisma: PrismaService,

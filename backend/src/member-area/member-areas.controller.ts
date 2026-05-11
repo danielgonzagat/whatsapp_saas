@@ -38,8 +38,10 @@ import {
  * structure-generation and enrollment endpoints live in sibling controllers
  * under the same `/member-areas` prefix.
  */
+import { RouteClass } from '../common/throttler/route-class.decorator';
 @Controller('member-areas')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
+@RouteClass('mutate')
 export class MemberAreasController {
   private readonly logger = new Logger(MemberAreasController.name);
 

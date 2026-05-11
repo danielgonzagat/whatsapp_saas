@@ -18,10 +18,12 @@ import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 /** Ad rules controller. */
 @Controller('ad-rules')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
+@RouteClass('ai')
 export class AdRulesController {
   private readonly logger = new Logger(AdRulesController.name);
   constructor(

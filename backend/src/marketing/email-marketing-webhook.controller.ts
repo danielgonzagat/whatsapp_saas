@@ -3,6 +3,7 @@ import { Public } from '../auth/public.decorator';
 import { Idempotent } from '../common/idempotency.guard';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { EmailMarketingService } from './email-marketing.service';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 type ResendWebhookPayload = {
   type: string;
@@ -42,6 +43,7 @@ const SENDGRID_EVENT_MAP: Record<
 };
 
 @Controller('marketing/email/webhook')
+@RouteClass('webhook')
 export class EmailMarketingWebhookController {
   private readonly logger = new Logger(EmailMarketingWebhookController.name);
 

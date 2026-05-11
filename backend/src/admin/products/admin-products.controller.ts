@@ -20,11 +20,13 @@ import { AdminProductsService } from './admin-products.service';
 import { ListProductsQueryDto } from './dto/list-products.dto';
 import { ApproveProductDto, RejectProductDto } from './dto/moderate-product.dto';
 import { UpdateProductStateDto } from './dto/update-product-state.dto';
+import { RouteClass } from '../../common/throttler/route-class.decorator';
 
 /** Admin products controller. */
 @Public()
 @Controller('admin/products')
 @UseGuards(AdminAuthGuard, AdminPermissionGuard)
+@RouteClass('mutate')
 export class AdminProductsController {
   constructor(private readonly products: AdminProductsService) {}
 

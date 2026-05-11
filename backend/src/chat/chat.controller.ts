@@ -6,9 +6,11 @@ import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { ChatService } from './chat.service';
 import { CreateMessageDto } from './dto/create-message.dto';
 import { GetMessagesQueryDto } from './dto/get-messages-query.dto';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 @Controller('chat')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
+@RouteClass('mutate')
 export class ChatController {
   constructor(private readonly chatService: ChatService) {}
 

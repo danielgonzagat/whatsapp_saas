@@ -14,11 +14,13 @@ import { AdminUsersService } from './admin-users.service';
 import { CreateAdminUserDto } from './dto/create-admin-user.dto';
 import { SetPermissionsDto } from './dto/set-permissions.dto';
 import { UpdateAdminUserDto } from './dto/update-admin-user.dto';
+import { RouteClass } from '../../common/throttler/route-class.decorator';
 
 /** Admin users controller. */
 @Public()
 @Controller('admin/users')
 @UseGuards(AdminAuthGuard, AdminRoleGuard, AdminPermissionGuard)
+@RouteClass('mutate')
 export class AdminUsersController {
   constructor(
     private readonly users: AdminUsersService,

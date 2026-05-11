@@ -1,6 +1,5 @@
 import { Body, Controller, Delete, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
-import { Throttle } from '@nestjs/throttler';
 import { Prisma } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -12,13 +11,14 @@ import { PrismaService } from '../prisma/prisma.service';
 import { formatBrlAmount } from './money-format.util';
 import { AddBankAccountDto } from './dto/wallet-actions.dto';
 import { WalletService } from './wallet.service';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 // All dates stored as UTC via Prisma DateTime (toISOString)
 @ApiTags('KLOEL Wallet')
 @ApiBearerAuth()
 @Controller('kloel/wallet')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
-@Throttle({ default: { limit: 15, ttl: 60000 } })
+@RouteClass('mutate')
 export class WalletController {
   constructor(
     private readonly walletService: WalletService,

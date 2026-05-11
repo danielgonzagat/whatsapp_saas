@@ -18,7 +18,6 @@ import {
 } from '@nestjs/common';
 import { type WebhookEvent } from '@prisma/client';
 import type { Redis } from 'ioredis';
-import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Public } from '../auth/public.decorator';
 import { resolveWorkspaceId } from '../auth/workspace-access';
@@ -28,11 +27,12 @@ import { WebhooksService } from '../webhooks/webhooks.service';
 import { PaymentService } from './payment.service';
 import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 
+import { RouteClass } from '../common/throttler/route-class.decorator';
 type PaymentWebhookMetadata = { workspaceId?: string; [key: string]: unknown };
 
 /** Payment controller. */
 @Controller('kloel/payments')
-@UseGuards(ThrottlerGuard)
+@RouteClass('mutate')
 export class PaymentController {
   private readonly logger = new Logger(PaymentController.name);
 
@@ -46,7 +46,6 @@ export class PaymentController {
   @Public()
   @Post('webhook')
   @HttpCode(200)
-  @Throttle({ default: { limit: 100, ttl: 60000 } }) // Webhooks precisam de limite alto
   async paymentWebhook(
     @Headers('x-webhook-secret') secret: string | undefined,
     @Headers('x-event-id') eventId: string | undefined,
@@ -126,7 +125,6 @@ export class PaymentController {
   /** Create payment. */
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post('create/:workspaceId')
-  @Throttle({ default: { limit: 10, ttl: 60000 } }) // Máximo 10 criações de pagamento por minuto
   async createPayment(
     @Req() req: AuthenticatedRequest,
     @Param('workspaceId') workspaceId: string,
@@ -175,7 +173,6 @@ export class PaymentController {
   /** Get public payment. */
   @Public()
   @Get('public/:paymentId')
-  @Throttle({ default: { limit: 60, ttl: 60000 } })
   async getPublicPayment(@Param('paymentId') paymentId: string) {
     const payment = await this.paymentService.getPublicPayment(paymentId);
     if (!payment) {
