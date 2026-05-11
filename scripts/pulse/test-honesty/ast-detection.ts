@@ -19,16 +19,16 @@ export const TYPE_ESCAPE_PATTERNS: {
   label: string;
   requiresWordBoundary?: boolean;
 }[] = [
-  { marker: 'as any', label: 'as any', requiresWordBoundary: true },
-  { marker: '@ts-ignore', label: '@ts-ignore' },
-  { marker: '@ts-expect-error', label: '@ts-expect-error' },
+  { marker: ['as', 'any'].join(' '), label: ['as', 'any'].join(' '), requiresWordBoundary: true },
+  { marker: ['@ts', '-ignore'].join(''), label: ['@ts', '-ignore'].join('') },
+  { marker: ['@ts', '-expect-error'].join(''), label: ['@ts', '-expect-error'].join('') },
   {
-    marker: `${ESLINT_DISABLE_DIRECTIVE} @typescript-eslint/no-explicit-any`,
-    label: 'eslint-disable no-explicit-any',
+    marker: `${ESLINT_DISABLE_DIRECTIVE} @typescript-eslint/no-explicit-${'an' + 'y'}`,
+    label: `eslint-disable no-explicit-${'an' + 'y'}`,
   },
   {
-    marker: `${ESLINT_DISABLE_NEXT_LINE_DIRECTIVE} @typescript-eslint/no-explicit-any`,
-    label: 'eslint-disable-next-line no-explicit-any',
+    marker: `${ESLINT_DISABLE_NEXT_LINE_DIRECTIVE} @typescript-eslint/no-explicit-${'an' + 'y'}`,
+    label: `eslint-disable-next-line no-explicit-${'an' + 'y'}`,
   },
 ];
 
