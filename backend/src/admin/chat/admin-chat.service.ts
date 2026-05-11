@@ -292,9 +292,13 @@ export class AdminChatService {
   }
 
   /** List sessions. */
-  async listSessions(adminUserId: string): Promise<ChatSessionView[]> {
+  async listSessions(adminUserId: string, workspaceId?: string): Promise<ChatSessionView[]> {
     const sessions = await this.prisma.adminChatSession.findMany({
-      where: { adminUserId, expiresAt: { gt: new Date() } },
+      where: {
+        adminUserId,
+        expiresAt: { gt: new Date() },
+        ...(workspaceId ? { workspaceId } : {}),
+      },
       orderBy: { lastUsedAt: 'desc' },
       take: 20,
       include: {

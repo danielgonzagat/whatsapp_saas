@@ -43,18 +43,17 @@ type CampaignAudienceWhere = {
   phone?: { in: string[] };
 };
 
-function buildAudienceWhere(
-  workspaceId: string,
+function buildAudienceFilters(
   filters: Record<string, unknown>,
-): CampaignAudienceWhere {
-  const where: CampaignAudienceWhere = { workspaceId };
+): Partial<Omit<CampaignAudienceWhere, 'workspaceId'>> {
+  const extra: Partial<Omit<CampaignAudienceWhere, 'workspaceId'>> = {};
   if (Array.isArray(filters?.tags) && filters.tags.length > 0) {
-    where.tags = { some: { name: { in: filters.tags as string[] } } };
+    extra.tags = { some: { name: { in: filters.tags as string[] } } };
   }
   if (Array.isArray(filters?.phones) && filters.phones.length > 0) {
-    where.phone = { in: filters.phones as string[] };
+    extra.phone = { in: filters.phones as string[] };
   }
-  return where;
+  return extra;
 }
 
 function isFlowTemplate(template: string): boolean {
@@ -175,10 +174,10 @@ export const campaignWorker = new Worker(
       });
 
       const filters = (campaign.filters || {}) as Record<string, unknown>;
-      const where = buildAudienceWhere(workspaceId, filters);
+      const audience = buildAudienceFilters(filters);
 
       const contacts = await prisma.contact.findMany({
-        where,
+        where: { workspaceId, ...audience },
         select: { phone: true, name: true, id: true, customFields: true },
       });
 

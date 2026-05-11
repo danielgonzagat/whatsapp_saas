@@ -34,20 +34,25 @@ async function getProviderForUser(user: string, workspaceId?: string) {
   // 2. Default: WhatsApp (Phone)
   const normalized = (user || '').replace(D_RE, '');
 
-  const contact = workspaceId
-    ? await prisma.contact.findUnique({
-        where: {
-          workspaceId_phone: {
-            workspaceId,
-            phone: normalized,
-          },
-        },
-        include: { workspace: true },
-      })
-    : await prisma.contact.findFirst({
-        where: { phone: normalized },
-        include: { workspace: true },
-      });
+  if (!workspaceId) {
+    return {
+      ...autoProvider,
+      workspace: {
+        id: 'default',
+        whatsappProvider: getDefaultWhatsAppProvider(),
+      },
+    };
+  }
+
+  const contact = await prisma.contact.findUnique({
+    where: {
+      workspaceId_phone: {
+        workspaceId,
+        phone: normalized,
+      },
+    },
+    include: { workspace: true },
+  });
 
   if (!contact) {
     return {

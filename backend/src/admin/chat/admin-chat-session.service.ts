@@ -61,17 +61,12 @@ export class AdminChatSessionService {
   async listSessions(input: ListSessionsInput) {
     const take = Math.min(MAX_PAGE_SIZE, Math.max(1, input.take ?? DEFAULT_PAGE_SIZE));
 
-    const where: Record<string, unknown> = {
-      workspaceId: input.workspaceId,
-      deletedAt: null,
-    };
-
-    if (input.cursor) {
-      where['lastUsedAt'] = { lt: new Date(input.cursor) };
-    }
-
     const sessions = await this.prisma.adminChatSession.findMany({
-      where,
+      where: {
+        workspaceId: input.workspaceId,
+        deletedAt: null,
+        ...(input.cursor ? { lastUsedAt: { lt: new Date(input.cursor) } } : {}),
+      },
       orderBy: { lastUsedAt: 'desc' },
       take: take + 1,
       include: {

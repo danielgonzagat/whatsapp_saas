@@ -29,6 +29,7 @@ import { AdminChatController } from './admin-chat.controller';
 import { AdminChatService } from './admin-chat.service';
 import { AdminChatSessionService } from './admin-chat-session.service';
 import { ChatToolRegistry } from './chat-tool.registry';
+import { AdminGlobalOperationGuard } from '../../common/decorators/admin-global-operation.decorator';
 import {
   accountsOverviewTool,
   clientsOverviewTool,
@@ -63,7 +64,12 @@ import { searchWorkspacesTool } from './tools/search-workspaces.tool';
     AdminProductsModule,
   ],
   controllers: [AdminChatController],
-  providers: [AdminChatService, AdminChatSessionService, ChatToolRegistry],
+  providers: [
+    AdminChatService,
+    AdminChatSessionService,
+    ChatToolRegistry,
+    AdminGlobalOperationGuard,
+  ],
   exports: [AdminChatService, AdminChatSessionService, ChatToolRegistry],
 })
 export class AdminChatModule implements OnModuleInit {

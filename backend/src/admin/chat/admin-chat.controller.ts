@@ -14,6 +14,7 @@ import {
 import { Public } from '../../auth/public.decorator';
 import { CurrentAdmin } from '../auth/decorators/current-admin.decorator';
 import { AdminAuthGuard } from '../auth/guards/admin-auth.guard';
+import { AdminGlobalOperation, AdminGlobalOperationGuard } from '../../common/decorators/admin-global-operation.decorator';
 import type { AuthenticatedAdmin } from '../auth/admin-token.types';
 import { AdminChatService } from './admin-chat.service';
 import { AdminChatSessionService } from './admin-chat-session.service';
@@ -24,7 +25,7 @@ import { UpdateChatSessionDto } from './dto/update-chat-session.dto';
 /** Admin chat controller. */
 @Public()
 @Controller('admin/chat')
-@UseGuards(AdminAuthGuard)
+@UseGuards(AdminAuthGuard, AdminGlobalOperationGuard)
 export class AdminChatController {
   constructor(
     private readonly chat: AdminChatService,
@@ -45,6 +46,7 @@ export class AdminChatController {
 
   /** List sessions. */
   @Get('sessions')
+  @AdminGlobalOperation('admin can audit chat sessions across workspaces')
   async list(
     @CurrentAdmin() admin: AuthenticatedAdmin,
     @Query('workspaceId') workspaceId?: string,
@@ -58,7 +60,7 @@ export class AdminChatController {
         take: take ? Number(take) : undefined,
       });
     }
-    return this.chat.listSessions(admin.id);
+    return this.chat.listSessions(admin.id, workspaceId);
   }
 
   /** Create session. */
@@ -74,6 +76,7 @@ export class AdminChatController {
 
   /** Get session. */
   @Get('sessions/:id')
+  @AdminGlobalOperation('admin can inspect chat sessions across workspaces')
   async get(
     @Param('id') id: string,
     @CurrentAdmin() admin: AuthenticatedAdmin,

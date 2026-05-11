@@ -122,7 +122,7 @@ export class GdprService implements OnModuleInit, OnModuleDestroy {
   /** Request data deletion. */
   async requestDeletion(userId: string, workspaceId: string) {
     const existing = await this.prisma.gdprRequest.findFirst({
-      where: { userId, type: GdprType.DELETE, status: { not: GdprStatus.FAILED } },
+      where: { workspaceId, userId, type: GdprType.DELETE, status: { not: GdprStatus.FAILED } },
       orderBy: { requestedAt: 'desc' },
     });
 
@@ -415,7 +415,7 @@ export class GdprService implements OnModuleInit, OnModuleDestroy {
     writeJson(exportDir, 'conversations.json', conversations);
 
     const messages = await this.prisma.message.findMany({
-      where: { agentId: userId },
+      where: { agentId: userId, workspaceId },
       select: {
         id: true,
         content: true,

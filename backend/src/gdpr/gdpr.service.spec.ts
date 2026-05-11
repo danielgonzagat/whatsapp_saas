@@ -202,6 +202,21 @@ describe('GdprService', () => {
   });
 
   describe('requestDeletion', () => {
+    it('filters deletion lookup by workspaceId to prevent cross-tenant leak', async () => {
+      prismaMock.gdprRequest.findFirst.mockResolvedValueOnce(null);
+
+      await service.requestDeletion('agent_1', 'ws_1');
+
+      expect(prismaMock.gdprRequest.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            workspaceId: 'ws_1',
+            userId: 'agent_1',
+          }),
+        }),
+      );
+    });
+
     it('creates a new deletion request when no existing one', async () => {
       const result = await service.requestDeletion('agent_1', 'ws_1');
 
@@ -468,7 +483,14 @@ describe('GdprService', () => {
 
       expect(prismaMock.agent.findUnique).toHaveBeenCalled();
       expect(prismaMock.conversation.findMany).toHaveBeenCalled();
-      expect(prismaMock.message.findMany).toHaveBeenCalled();
+      expect(prismaMock.message.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            agentId: 'agent_1',
+            workspaceId: 'ws_1',
+          }),
+        }),
+      );
       expect(fs.writeFileSync).toHaveBeenCalledTimes(4); // agent.json, conversations.json, messages.json, manifest.json
     });
   });
