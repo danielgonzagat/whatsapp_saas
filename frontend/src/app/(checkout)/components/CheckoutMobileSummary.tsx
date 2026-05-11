@@ -71,7 +71,7 @@ export function CheckoutMobileSummary(props: SummaryProps) {
           <div style={{ padding: '0 20px 20px' }}>
             <CheckoutSummaryProductRow
               theme={theme}
-              productImage={productImage}
+              {...(productImage !== undefined ? { productImage } : {})}
               productName={productName}
               unitPriceInCents={unitPriceInCents}
               fmtBrl={fmtBrl}

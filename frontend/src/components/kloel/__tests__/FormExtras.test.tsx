@@ -172,13 +172,9 @@ describe('DataTable', () => {
 
   it('renders table with rows', () => {
     render(
-      <DataTable
-        columns={columns}
-        rows={[
-          { name: 'Alice', age: 30 },
-          { name: 'Bob', age: 25 },
-        ]}
-      />,
+      <DataTable<
+        Record<string, unknown>
+      > columns={columns} rows={[{ name: 'Alice', age: 30 }, { name: 'Bob', age: 25 }]} />,
     );
     expect(screen.getByText('Alice')).toBeInTheDocument();
     expect(screen.getByText('Bob')).toBeInTheDocument();
@@ -190,7 +186,7 @@ describe('DataTable', () => {
     const { container } = render(
       <DataTable
         columns={columns}
-        rows={[{ id: 'row-1', name: 'Test', age: 1 }]}
+        rows={[{ id: 'row-1', name: 'Test', age: 1 }] as Record<string, unknown>[]}
       />,
     );
     const rows = container.querySelectorAll('tbody tr');
@@ -201,7 +197,7 @@ describe('DataTable', () => {
     render(
       <DataTable
         columns={[{ key: 'missing', label: 'Missing' }]}
-        rows={[{ missing: undefined }]}
+        rows={[{ missing: undefined }] as Record<string, unknown>[]}
       />,
     );
     expect(screen.getByText('—')).toBeInTheDocument();
@@ -211,7 +207,7 @@ describe('DataTable', () => {
     const { container } = render(
       <DataTable
         columns={[{ key: 'x', label: 'X', width: '200px' }]}
-        rows={[{ x: 'val' }]}
+        rows={[{ x: 'val' }] as Record<string, unknown>[]}
       />,
     );
     const th = container.querySelector('th');

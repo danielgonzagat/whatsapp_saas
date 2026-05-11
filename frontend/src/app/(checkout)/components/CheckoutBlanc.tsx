@@ -28,8 +28,6 @@ const DEFAULT_PRODUCT = { name: 'Produto', priceInCents: 0, brand: 'Kloel' };
 
 const DEFAULT_TESTIMONIALS: Array<{ name: string; stars: number; text: string; avatar: string }> = [];
 
-const BLANC_STAR_SLOTS = ['one', 'two', 'three', 'four', 'five'] as const;
-
 const BLANC = {
   white: 'rgb(255 255 255)',
   dark: 'rgb(26 26 26)',
@@ -334,7 +332,7 @@ export default function CheckoutBlanc({
         <SharedStepBubble
           n={3}
           state={step >= 3 ? 'active' : 'locked'}
-          onClick={step >= 3 ? () => goStep(3) : undefined}
+          {...(step >= 3 ? { onClick: () => goStep(3) } : {})}
           label={kloelT(`Pagamento`)}
           theme={stepTheme}
         />
@@ -380,7 +378,7 @@ export default function CheckoutBlanc({
             inputTheme={inputTheme}
             submitError={submitError}
             shippingInCents={shippingInCents}
-            btnStep2Text={config?.btnStep2Text}
+            {...(config?.btnStep2Text !== undefined ? { btnStep2Text: config.btnStep2Text } : {})}
             setStep={setStep}
             updateField={updateFieldStr}
             goStep={goStep}

@@ -199,7 +199,7 @@ export function ImageUpload({
 }) {
   const [uploading, setUploading] = useState(false);
   const { previewUrl, clearPreview, setPreviewUrl } = usePersistentImagePreview({
-    storageKey: previewStorageKey,
+    ...(previewStorageKey !== undefined ? { storageKey: previewStorageKey } : {}),
   });
 
   const handleFile = async (file: File) => {
@@ -208,7 +208,9 @@ export function ImageUpload({
     setUploading(true);
 
     try {
-      const uploadedUrl = await uploadGenericMedia(file, { folder });
+      const uploadedUrl = await uploadGenericMedia(file, {
+        ...(folder !== undefined ? { folder } : {}),
+      });
       if (uploadedUrl) {
         onChange(uploadedUrl);
       }
@@ -221,8 +223,8 @@ export function ImageUpload({
 
   return (
     <MediaPreviewBox
-      label={label}
-      hint={hint}
+      {...(label !== undefined ? { label } : {})}
+      {...(hint !== undefined ? { hint } : {})}
       previewUrl={previewUrl}
       fallbackUrl={value}
       uploading={uploading}
@@ -235,7 +237,6 @@ export function ImageUpload({
       }}
       layout={{ minHeight: 120 }}
       emptyTitle={kloelT(`Arraste ou clique`)}
-      emptySubtitle={undefined}
     />
   );
 }

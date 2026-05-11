@@ -40,9 +40,9 @@ export interface StripePaymentElementProps {
   /** PaymentIntent client secret returned by the backend. */
   clientSecret: string;
   /** Called when stripe.confirmPayment resolves with a `succeeded` status. */
-  onSuccess?: () => void;
+  onSuccess?: (() => void) | undefined;
   /** Called with the user-facing message when confirmation errors. */
-  onError?: (message: string) => void;
+  onError?: ((message: string) => void) | undefined;
   /**
    * Absolute return URL Stripe redirects to after off-session methods like
    * boleto/pix that complete out of band. Required.
@@ -62,7 +62,7 @@ export function StripePaymentElement(props: StripePaymentElementProps): ReactEle
   const options = useMemo(
     () => ({
       clientSecret: props.clientSecret,
-      appearance: props.appearance,
+      ...(props.appearance !== undefined ? { appearance: props.appearance } : {}),
     }),
     [props.clientSecret, props.appearance],
   );

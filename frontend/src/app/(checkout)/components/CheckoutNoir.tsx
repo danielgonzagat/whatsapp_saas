@@ -8,16 +8,7 @@ import type * as React from 'react';
 import { useId } from 'react';
 import { useCheckoutExperience } from '../hooks/useCheckoutExperience';
 import PixelTracker from './PixelTracker';
-import {
-  type CheckoutThemeInputTokens,
-  type CheckoutThemeStepTokens,
-  PAYMENT_BADGES,
-  StepBubble as SharedStepBubble,
-  StepLine as SharedStepLine,
-  buildFooterPrimaryLine,
-  fmt,
-  formatCnpj,
-} from './checkout-theme-shared';
+import { CheckoutThemeStepTokens, PAYMENT_BADGES, StepBubble as SharedStepBubble, StepLine as SharedStepLine, buildFooterPrimaryLine, fmt, formatCnpj } from './checkout-theme-shared';
 import { NoirAddressStep } from './CheckoutNoir.address-step';
 import {
   DEFAULT_C,
@@ -371,7 +362,7 @@ export default function CheckoutNoir({
         <SharedStepBubble
           n={3}
           state={step >= 3 ? 'active' : 'locked'}
-          onClick={step >= 3 ? () => goStep(3) : undefined}
+          {...(step >= 3 ? { onClick: () => goStep(3) } : {})}
           label={kloelT(`Pagamento`)}
           theme={stepTheme}
         />
@@ -418,11 +409,15 @@ export default function CheckoutNoir({
             inputTheme={inputTheme}
             submitError={submitError}
             shippingInCents={shippingInCents}
-            btnStep2Text={config?.btnStep2Text}
+            {...(config?.btnStep2Text !== undefined ? { btnStep2Text: config.btnStep2Text } : {})}
             setStep={setStep}
             updateField={updateFieldStr}
             goStep={goStep}
-            {...stepCardProps}
+            doneCard={doneCard}
+            activeCard={activeCard}
+            lockedCard={lockedCard}
+            numDone={numDone}
+            numLock={numLock}
           />
         </div>
 

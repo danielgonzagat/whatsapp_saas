@@ -142,9 +142,9 @@ export function LeadField({
         value={value}
         onChange={onChange}
         placeholder={placeholder}
-        type={type}
-        disabled={disabled}
-        style={style}
+        {...(type !== undefined ? { type } : {})}
+        {...(disabled !== undefined ? { disabled } : {})}
+        {...(style !== undefined ? { style } : {})}
       />
     </div>
   );
@@ -185,7 +185,6 @@ export function IdentityPanel({
   submitError,
   step,
   loadingStep,
-  goStep,
   socialIdentity,
   socialLoadingProvider,
   socialError,
@@ -314,7 +313,6 @@ export function DeliveryPanel({
   updateField,
   submitError,
   step,
-  goStep,
   labelStyle,
   renderHeader,
   renderAction,

@@ -61,7 +61,7 @@ export function CheckoutDesktopSidebar(props: SummaryProps) {
         />
         <CheckoutSummaryProductRow
           theme={theme}
-          productImage={productImage}
+          {...(productImage !== undefined ? { productImage } : {})}
           productName={productName}
           unitPriceInCents={unitPriceInCents}
           fmtBrl={fmtBrl}

@@ -201,7 +201,7 @@ export function CheckoutThemePage({
         <StepBubble
           n={1}
           state={checkout.step === 1 ? 'active' : checkout.step > 1 ? 'done' : 'locked'}
-          onClick={checkout.mobileCanOpenStep1 ? () => checkout.setStep(1) : undefined}
+          {...(checkout.mobileCanOpenStep1 ? { onClick: () => checkout.setStep(1) } : {})}
           label={kloelT('Informações pessoais')}
           theme={theme.step}
         />
@@ -209,7 +209,7 @@ export function CheckoutThemePage({
         <StepBubble
           n={2}
           state={checkout.step === 2 ? 'active' : checkout.step > 2 ? 'done' : 'locked'}
-          onClick={checkout.mobileCanOpenStep2 ? () => checkout.setStep(2) : undefined}
+          {...(checkout.mobileCanOpenStep2 ? { onClick: () => checkout.setStep(2) } : {})}
           label={kloelT('Entrega')}
           theme={theme.step}
         />
@@ -256,7 +256,7 @@ export function CheckoutThemePage({
       >
         <CheckoutLeadSections
           theme={theme}
-          config={config}
+          {...(config ? { config } : {})}
           step={checkout.step}
           setStep={checkout.setStep}
           form={checkout.form}
@@ -282,7 +282,7 @@ export function CheckoutThemePage({
         ) : null}
         <CheckoutPaymentSection
           theme={theme}
-          config={config}
+          {...(config ? { config } : {})}
           step={checkout.step}
           payMethod={checkout.payMethod}
           setPayMethod={checkout.setPayMethod}

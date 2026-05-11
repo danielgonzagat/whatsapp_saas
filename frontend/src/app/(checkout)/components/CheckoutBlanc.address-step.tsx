@@ -43,7 +43,7 @@ interface BlancAddressStepProps {
   inputTheme: BlancInputTheme;
   submitError: string | null;
   shippingInCents: number;
-  btnStep2Text?: string;
+  btnStep2Text?: string | undefined;
   setStep: (n: number) => void;
   updateField: (field: string) => React.ChangeEventHandler<HTMLSelectElement | HTMLInputElement>;
   goStep: (n: number) => void;

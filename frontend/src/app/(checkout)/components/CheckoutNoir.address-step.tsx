@@ -29,7 +29,7 @@ interface NoirAddressStepProps {
   inputTheme: NoirInputTheme;
   submitError: string | null;
   shippingInCents: number;
-  btnStep2Text?: string;
+  btnStep2Text?: string | undefined;
   doneCard: React.CSSProperties;
   activeCard: React.CSSProperties;
   lockedCard: React.CSSProperties;
