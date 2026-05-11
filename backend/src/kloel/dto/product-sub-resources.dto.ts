@@ -14,9 +14,9 @@ import {
 // Plans
 // ============================================
 
-class CreatePlanDto {
+export class CreatePlanDto {
   /** Name property. */
-  @IsString() @MaxLength(255) name: string;
+  @IsString() @MaxLength(255) name!: string;
   /** Slug property. */
   @IsOptional() @IsString() @MaxLength(255) slug?: string;
   /** Price in cents property. */
@@ -28,7 +28,7 @@ class CreatePlanDto {
 }
 
 /** Update plan dto. */
-class UpdatePlanDto {
+export class UpdatePlanDto {
   /** Name property. */
   @IsOptional() @IsString() @MaxLength(255) name?: string;
   /** Slug property. */
@@ -45,7 +45,7 @@ class UpdatePlanDto {
 // Checkout Config
 // ============================================
 
-class CreateCheckoutDto {
+export class CreateCheckoutDto {
   /** Theme property. */
   @IsOptional() @IsString() @MaxLength(255) theme?: string;
   /** Header text property. */
@@ -59,7 +59,7 @@ class CreateCheckoutDto {
 }
 
 /** Update checkout dto. */
-class UpdateCheckoutDto {
+export class UpdateCheckoutDto {
   /** Theme property. */
   @IsOptional() @IsString() @MaxLength(255) theme?: string;
   /** Header text property. */
@@ -76,9 +76,9 @@ class UpdateCheckoutDto {
 // Coupons
 // ============================================
 
-class CreateCouponDto {
+export class CreateCouponDto {
   /** Code property. */
-  @IsString() @MaxLength(255) code: string;
+  @IsString() @MaxLength(255) code!: string;
   /** Discount percent property. */
   @IsOptional() @IsNumber() @Min(0) @Max(100) discountPercent?: number;
   /** Discount fixed property. */
@@ -92,14 +92,14 @@ class CreateCouponDto {
 /** Validate coupon dto. */
 export class ValidateCouponDto {
   /** Code property. */
-  @IsString() @MaxLength(255) code: string;
+  @IsString() @MaxLength(255) code!: string;
 }
 
 // ============================================
 // URLs
 // ============================================
 
-class CreateUrlDto {
+export class CreateUrlDto {
   /** Sales page url property. */
   @IsOptional() @IsString() @MaxLength(2048) salesPageUrl?: string;
   /** Thankyou url property. */
@@ -111,7 +111,7 @@ class CreateUrlDto {
 }
 
 /** Update url dto. */
-class UpdateUrlDto {
+export class UpdateUrlDto {
   /** Sales page url property. */
   @IsOptional() @IsString() @MaxLength(2048) salesPageUrl?: string;
   /** Thankyou url property. */
@@ -126,7 +126,7 @@ class UpdateUrlDto {
 // AI Config
 // ============================================
 
-class UpsertAIConfigDto {
+export class UpsertAIConfigDto {
   /** Marketing artificial property. */
   @IsOptional() @IsString() @MaxLength(2000) marketingArtificial?: string;
   /** Brand voice property. */
@@ -139,9 +139,9 @@ class UpsertAIConfigDto {
 // Reviews
 // ============================================
 
-class CreateReviewDto {
+export class CreateReviewDto {
   /** Name property. */
-  @IsString() @MaxLength(255) name: string;
+  @IsString() @MaxLength(255) name!: string;
   /** Rating property. */
   @IsOptional() @IsNumber() @Min(0) @Max(999999) rating?: number;
   /** Comment property. */
@@ -152,7 +152,7 @@ class CreateReviewDto {
 // Commissions
 // ============================================
 
-class CreateCommissionDto {
+export class CreateCommissionDto {
   /** Percentage property. */
   @IsOptional() @IsNumber() @Min(0) @Max(100) percentage?: number;
   /** Fixed amount property. */
@@ -162,7 +162,7 @@ class CreateCommissionDto {
 }
 
 /** Update commission dto. */
-class UpdateCommissionDto {
+export class UpdateCommissionDto {
   /** Percentage property. */
   @IsOptional() @IsNumber() @Min(0) @Max(100) percentage?: number;
   /** Fixed amount property. */
