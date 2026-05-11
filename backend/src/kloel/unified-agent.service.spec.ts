@@ -70,8 +70,12 @@ function expectPaymentLinkToolBlocked(
   result: { actions: unknown[] },
   prisma: UnifiedAgentPrismaMock,
   paymentService: { createPayment: jest.Mock },
+  planLimits: { trackAiUsage: jest.Mock },
 ) {
   expect(paymentService.createPayment).not.toHaveBeenCalled();
+  expect(chatCompletionWithFallback).toHaveBeenCalledTimes(2);
+  expect(planLimits.trackAiUsage).toHaveBeenCalledWith('ws-1', 12);
+  expect(planLimits.trackAiUsage).toHaveBeenCalledWith('ws-1', 8);
   expect(prisma.autopilotEvent.create).toHaveBeenCalledWith(blockedPaymentLinkEventExpectation());
   expect(result.actions).toEqual([BLOCKED_PAYMENT_LINK_ACTION]);
 }
@@ -342,7 +346,7 @@ describe('UnifiedAgentService', () => {
       allowedTools: ['send_message'],
     });
 
-    expectPaymentLinkToolBlocked(result, prisma, paymentService);
+    expectPaymentLinkToolBlocked(result, prisma, paymentService, planLimits);
   });
 
   it('loads conversation history by phone when contactId is missing', async () => {

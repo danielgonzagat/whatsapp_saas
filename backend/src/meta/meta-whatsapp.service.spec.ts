@@ -107,6 +107,18 @@ describe('MetaWhatsAppService', () => {
     expect(service.getPublicBackendBaseUrl()).toBe('https://api.kloel.com');
   });
 
+  it('rejects legacy Railway frontend hosts as backend callbacks', () => {
+    process.env.NEXT_PUBLIC_API_URL = 'https://web-production-1234.up.railway.app';
+
+    expect(service.getPublicBackendBaseUrl()).toBe('http://localhost:3001');
+  });
+
+  it('accepts legacy Railway backend hosts as backend callbacks', () => {
+    process.env.NEXT_PUBLIC_API_URL = 'https://api.up.railway.app';
+
+    expect(service.getPublicBackendBaseUrl()).toBe('https://api.up.railway.app');
+  });
+
   it('ignores malformed legacy callback URLs', () => {
     process.env.NEXT_PUBLIC_API_URL = 'http://[bad';
 

@@ -7,13 +7,14 @@ const LOCALHOST_HOST_RE = /^(localhost|127\.0\.0\.1)(:\d+)?$/i;
 function looksLikeBackendUrl(candidate: string): boolean {
   try {
     const { hostname } = new URL(candidate);
+    const firstLabel = hostname.split('.')[0];
+    const isRailwayHost = hostname.endsWith('.up.railway.app') || hostname.endsWith('.railway.app');
     return (
       hostname === 'localhost' ||
       hostname === '127.0.0.1' ||
       hostname.startsWith('api.') ||
       hostname.startsWith('backend.') ||
-      hostname.endsWith('.up.railway.app') ||
-      hostname.endsWith('.railway.app')
+      (isRailwayHost && (firstLabel === 'api' || firstLabel === 'backend'))
     );
   } catch {
     return false;
