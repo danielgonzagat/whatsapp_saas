@@ -253,6 +253,37 @@ export class AuthService {
     return resendVerificationEmail(this.buildDeps(), email, ip);
   }
 
+  async completeOnboarding(agentId: string) {
+    const agent = await this.prisma.agent.update({
+      where: { id: agentId },
+      data: { onboardingCompletedAt: new Date() },
+      select: { id: true, onboardingCompletedAt: true },
+    });
+    return { onboardingCompletedAt: agent.onboardingCompletedAt };
+  }
+
+  async getMe(agentId: string) {
+    const agent = await this.prisma.agent.findUnique({
+      where: { id: agentId },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        phone: true,
+        avatarUrl: true,
+        workspaceId: true,
+        onboardingCompletedAt: true,
+        displayRole: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+    if (!agent) {
+      throw new Error('User not found');
+    }
+    return { user: agent };
+  }
+
   /** Logout — revoke all refresh tokens for the authenticated agent. */
   async logout(agentId: string, accessTokenJti?: string, accessTokenExp?: number) {
     await this.prisma.refreshToken.updateMany({

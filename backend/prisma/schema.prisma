@@ -79,6 +79,7 @@ enum EmailRecipientStatus {
 
 enum EmailDeliveryEvent {
   SENT
+  FAILED
   DELIVERED
   OPENED
   CLICKED
@@ -274,6 +275,9 @@ model Agent {
   avatarUrl  String? // Profile picture URL
   disabledAt DateTime?
   deletedAt  DateTime?
+
+  // Onboarding
+  onboardingCompletedAt DateTime?
 
   // KYC Profile
   birthDate         DateTime?

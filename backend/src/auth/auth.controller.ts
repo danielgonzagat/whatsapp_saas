@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpException, Post, Query, Req, Res } from '@nestjs/common';
+import { Body, Controller, Get, HttpException, Post, Put, Query, Req, Res } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { Request, Response } from 'express';
 import * as Sentry from '@sentry/node';
@@ -318,5 +318,25 @@ export class AuthController {
       throw new Error('Usuário não autenticado');
     }
     return this.auth.logout(agentId, req.user?.jti, req.user?.exp);
+  }
+
+  /** Get authenticated user profile including onboarding status. */
+  @Get('me')
+  getMe(@Req() req: AuthenticatedRequest) {
+    const agentId = req.user?.sub;
+    if (!agentId) {
+      throw new Error('Usuário não autenticado');
+    }
+    return this.auth.getMe(agentId);
+  }
+
+  /** Mark onboarding as completed for the authenticated user. */
+  @Put('me/onboarding-complete')
+  async completeOnboarding(@Req() req: AuthenticatedRequest) {
+    const agentId = req.user?.sub;
+    if (!agentId) {
+      throw new Error('Usuário não autenticado');
+    }
+    return this.auth.completeOnboarding(agentId);
   }
 }

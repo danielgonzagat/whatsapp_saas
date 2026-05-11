@@ -6,6 +6,7 @@ import {
   rememberGuestWorkspaceClaimCandidate,
 } from '@/lib/anonymous-session';
 import {
+  apiFetch,
   authApi,
   billingApi,
   resolveWorkspaceFromAuthPayload,
@@ -17,7 +18,7 @@ import {
   isAnonymousKloelPayload,
   isAnonymousKloelToken,
 } from '@/lib/auth-identity';
-import { completeOnboardingProfile, getOnboardingStatus } from '@/lib/api/onboarding';
+import { completeOnboardingProfile } from '@/lib/api/onboarding';
 import {
   type ReactNode,
   createContext,
@@ -80,7 +81,6 @@ interface AuthContextType extends AuthState {
   authModalMode: 'signup' | 'login';
 }
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-const ONBOARDING_STORAGE_SLOT = 'kloel_onboarding_completed';
 function isUnauthorizedStatus(status?: number): boolean {
   return status === 401 || status === 403;
 }
@@ -117,7 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           isAuthenticated: true,
           isLoading: true,
           justSignedUp: false,
-          hasCompletedOnboarding: localStorage.getItem(ONBOARDING_STORAGE_SLOT) === 'true',
+          hasCompletedOnboarding: false,
           user: { id: payload.sub, email: payload.email, name: payload.name || '' },
           workspace: (() => {
             const storedWorkspaceId = tokenStorage.getWorkspaceId();
@@ -212,17 +212,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         trialDaysLeft: 0,
         creditsBalance: 0,
       };
-      let onboardingCompleted = localStorage.getItem(ONBOARDING_STORAGE_SLOT) === 'true';
-      if (workspace?.id) {
+      let onboardingCompleted = false;
+      if (user?.id) {
         try {
-          const onboardingRes = await getOnboardingStatus(workspace.id);
-          onboardingCompleted = onboardingCompleted || onboardingRes.data?.completed === true;
-          if (onboardingCompleted) {
-            localStorage.setItem(ONBOARDING_STORAGE_SLOT, 'true');
-          }
+          const meRes = await apiFetch<{ user?: { onboardingCompletedAt?: string | null } }>('/auth/me');
+          onboardingCompleted = Boolean(meRes.data?.user?.onboardingCompletedAt);
         } catch (error) {
           logAuthBootstrapIssue('Failed to load onboarding status during auth bootstrap:', error);
         }
+      }
+      if (workspace?.id) {
         try {
           const subRes = await billingApi.getSubscription();
           if (subRes.data) {
@@ -306,16 +305,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         trialDaysLeft: 0,
         creditsBalance: 0,
       };
-      let onboardingCompleted = localStorage.getItem(ONBOARDING_STORAGE_SLOT) === 'true';
-      if (workspace?.id) {
-        const onboardingRes = await getOnboardingStatus(workspace.id).catch((error: unknown) => {
+      let onboardingCompleted = false;
+      if (user?.id) {
+        const meRes = await apiFetch<{ user?: { onboardingCompletedAt?: string | null } }>('/auth/me').catch((error: unknown) => {
           logAuthBootstrapIssue('Failed to load onboarding status after auth response:', error);
           return null;
         });
-        onboardingCompleted = onboardingCompleted || onboardingRes?.data?.completed === true;
-        if (onboardingCompleted) {
-          localStorage.setItem(ONBOARDING_STORAGE_SLOT, 'true');
-        }
+        onboardingCompleted = Boolean(meRes?.data?.user?.onboardingCompletedAt);
+      }
+      if (workspace?.id) {
         const subRes = await billingApi.getSubscription();
         if (subRes.data) {
           subscription = {
@@ -515,19 +513,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
   };
   const completeOnboarding = async () => {
-    localStorage.setItem(ONBOARDING_STORAGE_SLOT, 'true');
     setAuthState((prev) => ({
       ...prev,
       hasCompletedOnboarding: true,
       justSignedUp: false,
     }));
+    try {
+      await apiFetch('/auth/me/onboarding-complete', { method: 'PUT' });
+    } catch (error) {
+      logAuthBootstrapIssue('Failed to persist onboarding completion:', error);
+    }
     const workspaceId = authState.workspace?.id;
     if (!workspaceId) {
       return;
     }
     const result = await completeOnboardingProfile(workspaceId);
     if (result.error) {
-      logAuthBootstrapIssue('Failed to persist onboarding completion:', result.error);
+      logAuthBootstrapIssue('Failed to persist onboarding profile:', result.error);
     }
   };
   const dismissOnboardingForSession = () => {

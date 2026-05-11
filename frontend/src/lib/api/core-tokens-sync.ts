@@ -42,10 +42,6 @@ export function reconcileFreshSharedAuthSession() {
     return;
   }
 
-  localStorage.removeItem(PRIMARY_BROWSER_SLOT);
-  localStorage.removeItem(RENEWAL_BROWSER_SLOT);
-  localStorage.removeItem(WORKSPACE_BROWSER_SLOT);
-
   for (const name of [
     SESSION_MARKER_COOKIE,
     LEGACY_SESSION_COOKIE,
@@ -57,16 +53,12 @@ export function reconcileFreshSharedAuthSession() {
   }
 
   removeFreshAuthQueryParam();
-  syncBrowserStorageFromCookies({ clearLocalIfMissing: false });
+  syncBrowserStorageFromCookies();
   emitStorageChange();
 }
 
 export function readStoredAccessToken(): string | null {
-  return (
-    localStorage.getItem(PRIMARY_BROWSER_SLOT) ||
-    readBrowserCookie(PRIMARY_BROWSER_SLOT) ||
-    readBrowserCookie(LEGACY_SESSION_COOKIE)
-  );
+  return readBrowserCookie(PRIMARY_BROWSER_SLOT) || readBrowserCookie(LEGACY_SESSION_COOKIE);
 }
 
 export function extractTokenWorkspaceId(token: string | null): string {
@@ -79,7 +71,6 @@ export function persistWorkspaceIfChanged(
   tokenWorkspaceId: string,
 ): void {
   if (currentWorkspaceId !== tokenWorkspaceId) {
-    localStorage.setItem(WORKSPACE_BROWSER_SLOT, tokenWorkspaceId);
     setBrowserCookie(WORKSPACE_BROWSER_SLOT, tokenWorkspaceId);
     emitStorageChange();
     return;
@@ -96,7 +87,7 @@ export function syncWorkspaceFromToken(): string | null {
 
   const token = readStoredAccessToken();
   const tokenWorkspaceId = extractTokenWorkspaceId(token);
-  const currentWorkspaceId = localStorage.getItem(WORKSPACE_BROWSER_SLOT);
+  const currentWorkspaceId = readBrowserCookie(WORKSPACE_BROWSER_SLOT);
 
   if (!tokenWorkspaceId) {
     return currentWorkspaceId;
@@ -106,7 +97,7 @@ export function syncWorkspaceFromToken(): string | null {
   return tokenWorkspaceId;
 }
 
-export function syncBrowserStorageFromCookies(options?: {
+export function syncBrowserStorageFromCookies(_options?: {
   clearLocalIfMissing?: boolean;
 }): boolean {
   if (typeof window === 'undefined') {
@@ -115,53 +106,15 @@ export function syncBrowserStorageFromCookies(options?: {
 
   const accessToken =
     readBrowserCookie(PRIMARY_BROWSER_SLOT) || readBrowserCookie(LEGACY_SESSION_COOKIE);
-  const refreshToken = readBrowserCookie(RENEWAL_BROWSER_SLOT);
-  const workspaceId = readBrowserCookie(WORKSPACE_BROWSER_SLOT);
   const hasSharedSession = Boolean(readBrowserCookie(SESSION_MARKER_COOKIE) || accessToken);
-  let changed = false;
-
-  const syncKey = (key: string, value: string | null) => {
-    const currentValue = localStorage.getItem(key);
-
-    if (value) {
-      if (currentValue !== value) {
-        localStorage.setItem(key, value);
-        changed = true;
-      }
-      return;
-    }
-
-    if (currentValue !== null) {
-      localStorage.removeItem(key);
-      changed = true;
-    }
-  };
 
   if (!hasSharedSession) {
-    if (options?.clearLocalIfMissing) {
-      syncKey(PRIMARY_BROWSER_SLOT, null);
-      syncKey(RENEWAL_BROWSER_SLOT, null);
-      syncKey(WORKSPACE_BROWSER_SLOT, null);
-      clearBrowserAuthCookies();
-
-      if (changed) {
-        emitStorageChange();
-      }
-    }
-
+    clearBrowserAuthCookies();
     return false;
   }
 
-  syncKey(PRIMARY_BROWSER_SLOT, accessToken);
-  syncKey(RENEWAL_BROWSER_SLOT, refreshToken);
-  syncKey(WORKSPACE_BROWSER_SLOT, workspaceId);
-
   if (hasAuthenticatedKloelToken(accessToken) && !readBrowserCookie(SESSION_MARKER_COOKIE)) {
     setBrowserAuthCookie();
-  }
-
-  if (changed) {
-    emitStorageChange();
   }
 
   return Boolean(accessToken);
