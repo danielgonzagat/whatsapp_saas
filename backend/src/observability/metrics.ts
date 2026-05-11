@@ -63,6 +63,28 @@ export const Metrics = {
       increment('whatsapp.session_disconnected', { workspace_id: ws });
     },
   },
+  mailbox: {
+    connected(provider: string, t?: Record<string, string>) {
+      increment('mailbox.connected', { ...t, provider });
+    },
+    syncCompleted(provider: string, imported: number, seen: number, t?: Record<string, string>) {
+      increment('mailbox.sync.completed', { ...t, provider });
+      histogram('mailbox.sync.imported', imported, { ...t, provider });
+      histogram('mailbox.sync.seen', seen, { ...t, provider });
+    },
+    syncFailed(provider: string, reason: string, t?: Record<string, string>) {
+      increment('mailbox.sync.failed', { ...t, provider, reason });
+    },
+    sendCompleted(provider: string, t?: Record<string, string>) {
+      increment('mailbox.send.completed', { ...t, provider });
+    },
+    sendFailed(provider: string, reason: string, t?: Record<string, string>) {
+      increment('mailbox.send.failed', { ...t, provider, reason });
+    },
+    sendSuppressed(provider: string, t?: Record<string, string>) {
+      increment('mailbox.send.suppressed', { ...t, provider });
+    },
+  },
   api: {
     request(route: string, code: number, ms: number) {
       increment('api.request', { route, status: String(code) });

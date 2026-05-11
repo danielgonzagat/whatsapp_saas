@@ -111,6 +111,7 @@ export class TikTokAdsProvider implements AdProvider {
   // ── OAuth Connect ──────────────────────────────────────────────────
 
   async connect(workspaceId: string, redirectUri: string): Promise<OAuthConnectResult> {
+    await Promise.resolve();
     const appId = resolveEnv('TIKTOK_CLIENT_KEY') || resolveEnv('NEXT_PUBLIC_TIKTOK_CLIENT_KEY');
     if (!appId) {
       return { connected: false, status: 'tiktok_app_id_not_configured' };
@@ -227,11 +228,14 @@ export class TikTokAdsProvider implements AdProvider {
     });
     const tiktok = readTikTokSubsettings(workspace?.providerSettings);
 
-    return {
+    const result: OAuthStatusResult = {
       connected: Boolean(tiktok.connected),
       status: tiktok.connected ? 'connected' : 'disconnected',
-      accountId: tiktok.advertiserIds?.[0],
     };
+    if (tiktok.advertiserIds?.[0]) {
+      result.accountId = tiktok.advertiserIds[0];
+    }
+    return result;
   }
 
   // ── Disconnect ─────────────────────────────────────────────────────

@@ -134,7 +134,7 @@ export class TikTokEventsApiService {
     const settings = asProviderSettings(workspace?.providerSettings);
     const tiktok = (settings.tiktok || {}) as Record<string, unknown>;
 
-    const encryptedToken = String(tiktok.accessToken || '');
+    const encryptedToken = typeof tiktok.accessToken === 'string' ? tiktok.accessToken : '';
     const accessToken = decryptTikTokToken(encryptedToken) || encryptedToken;
 
     if (!accessToken) {
@@ -187,19 +187,38 @@ export class TikTokEventsApiService {
         const errorMsg = `TikTok Events API error [${body.code ?? 'unknown'}]: ${body.message ?? 'unknown error'}`;
         this.logger.error(errorMsg, { workspaceId, eventName: event.eventName });
 
-        void this.opsAlert?.alertOnDegradation(errorMsg, 'TikTokEventsApiService.sendEvent', {
-          workspaceId,
-          metadata: {
-            eventName: event.eventName,
-            pixelCode,
-            requestId: body.request_id,
-          },
-        });
+        if (this.opsAlert) {
+          this.opsAlert
+            .alertOnDegradation(errorMsg, 'TikTokEventsApiService.sendEvent', {
+              workspaceId,
+              metadata: {
+                eventName: event.eventName,
+                pixelCode,
+                requestId: body.request_id,
+              },
+            })
+            .catch(() => undefined);
+        }
 
-        return { success: false, error: body.message, requestId: body.request_id };
+        const result: { success: boolean; requestId?: string; error?: string } = {
+          success: false,
+        };
+        if (body.message) {
+          result.error = body.message;
+        }
+        if (body.request_id) {
+          result.requestId = body.request_id;
+        }
+        return result;
       }
 
-      return { success: true, requestId: body.request_id };
+      const result: { success: boolean; requestId?: string; error?: string } = {
+        success: true,
+      };
+      if (body.request_id) {
+        result.requestId = body.request_id;
+      }
+      return result;
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : String(err);
       this.logger.error(`TikTok Events API call failed: ${errorMsg}`, {
