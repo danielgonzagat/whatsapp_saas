@@ -1,25 +1,35 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { WorkerLogger } from './logger';
 
 const log = new WorkerLogger('fallback-email');
 
-const FALLBACK_TEMPLATE = readFileSync(join(__dirname, 'templates', 'fallback-email.html'), 'utf8');
-const PLACEHOLDER_RE = /\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}/g;
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
 function buildFallbackEmailHtml(
   contactName: string | null,
   message: string,
   workspaceName: string | null,
 ): string {
-  return FALLBACK_TEMPLATE.replace(PLACEHOLDER_RE, (_match, key: string) => {
-    switch (key) {
-      case 'greetingName': return contactName ? ` ${contactName}` : '';
-      case 'message': return message;
-      case 'workspaceName': return workspaceName || 'KLOEL';
-      default: return '';
-    }
-  });
+  const greetingName = contactName ? ` ${escapeHtml(contactName)}` : '';
+  const safeMessage = escapeHtml(message).replace(/\n/g, '<br>');
+  const safeWorkspaceName = escapeHtml(workspaceName || 'KLOEL');
+
+  return [
+    '<!doctype html>',
+    '<html>',
+    '<body style="font-family:Arial,sans-serif;line-height:1.5;color:#111827">',
+    `<p>Ola${greetingName},</p>`,
+    `<p>${safeMessage}</p>`,
+    `<p style="color:#6b7280">Mensagem enviada por ${safeWorkspaceName}.</p>`,
+    '</body>',
+    '</html>',
+  ].join('');
 }
 
 async function trySendFallbackEmailViaResend(args: {
