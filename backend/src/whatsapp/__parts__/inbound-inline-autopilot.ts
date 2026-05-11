@@ -32,9 +32,8 @@ export async function sendInlineReplyPlan(
       quotedMessageId: plan.quotedMessageId || params.latestQuotedMessageId,
     });
     if (!result?.success) {
-      deps.logger.error(
-        `[AUTOPILOT] Inline reply failed: ${result.error || result.blockedReason || 'send_failed'}`,
-      );
+      const errorInfo = result?.error || result?.blockedReason || 'send_failed';
+      deps.logger.error(`[AUTOPILOT] Inline reply failed: ${errorInfo}`);
     }
   }
 }
