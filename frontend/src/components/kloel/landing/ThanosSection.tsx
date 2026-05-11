@@ -14,6 +14,8 @@ const PRE_REVEAL_MS = 500;
 const SALES_DELAY_MS = 800;
 const REVEAL_HOLD_MS = 8000;
 const PHI = 1.618033988749895;
+const THANOS_REVEAL_KEYFRAMES =
+  '@keyframes thanosIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}';
 
 type LoadedIcon = (typeof THANOS_ICONS)[number] & { img: HTMLImageElement };
 type ChannelKey = 'wa' | 'ig' | 'fb' | 'em' | 'sms' | 'tt';
@@ -239,6 +241,13 @@ async function thanosLoadImages(icons: typeof THANOS_ICONS): Promise<LoadedIcon[
   return loaded.filter((icon): icon is LoadedIcon => Boolean(icon));
 }
 
+function particleNoise(px: number, py: number, salt: number): number {
+  let value = (Math.imul(px + 1, 374_761_393) ^ Math.imul(py + 1, 668_265_263) ^ salt) >>> 0;
+  value = Math.imul(value ^ (value >>> 15), 2_246_822_519) >>> 0;
+  value = Math.imul(value ^ (value >>> 13), 3_266_489_917) >>> 0;
+  return ((value ^ (value >>> 16)) >>> 0) / 4_294_967_296;
+}
+
 function captureParticles(ctx: CanvasRenderingContext2D, layout: LegacyLayout) {
   const imgData = ctx.getImageData(0, 0, layout.pixelWidth, layout.pixelHeight);
   const data = imgData.data;
@@ -267,12 +276,15 @@ function captureParticles(ctx: CanvasRenderingContext2D, layout: LegacyLayout) {
       }
 
       const nd = Math.sqrt(nearestDistance);
-      const ang = Math.random() * 6.28;
-      const spd = 0.4 + nd * 0.015 + Math.random() * 0.6;
+      const ang = particleNoise(px, py, 0x9e3779b9) * 6.28;
+      const spd = 0.4 + nd * 0.015 + particleNoise(px, py, 0x85ebca6b) * 0.6;
       const vx0 = Math.cos(ang) * spd;
       const vy0 = Math.sin(ang) * spd;
       const goldenPhase = (nearest.idx * PHI) % 1;
-      const delayFrames = Math.max(0, Math.round(goldenPhase * 34 + Math.random() * 21));
+      const delayFrames = Math.max(
+        0,
+        Math.round(goldenPhase * 34 + particleNoise(px, py, 0xc2b2ae35) * 21),
+      );
 
       particles.push({
         x,
@@ -281,17 +293,19 @@ function captureParticles(ctx: CanvasRenderingContext2D, layout: LegacyLayout) {
         vy: vy0 * 0.01,
         dvx: vx0,
         dvy: vy0,
-        size: layout.isMobile ? 0.3 + Math.random() * 0.6 : 0.4 + Math.random() * 1.2,
+        size: layout.isMobile
+          ? 0.3 + particleNoise(px, py, 0x27d4eb2f) * 0.6
+          : 0.4 + particleNoise(px, py, 0x27d4eb2f) * 1.2,
         r: data[index],
         g: data[index + 1],
         b: data[index + 2],
         a: data[index + 3] / 255,
-        tr: 125 + Math.random() * 35,
-        tg: 85 + Math.random() * 25,
-        tb: 50 + Math.random() * 20,
+        tr: 125 + particleNoise(px, py, 0x165667b1) * 35,
+        tg: 85 + particleNoise(px, py, 0xd3a2646c) * 25,
+        tb: 50 + particleNoise(px, py, 0xfd7046c5) * 20,
         life: 1,
-        decay: 0.0046 + nd * 0.00005 + Math.random() * 0.0024,
-        shrink: 0.9953 + Math.random() * 0.002,
+        decay: 0.0046 + nd * 0.00005 + particleNoise(px, py, 0xb55a4f09) * 0.0024,
+        shrink: 0.9953 + particleNoise(px, py, 0x9e3779b1) * 0.002,
         delaySec: delayFrames / 60,
         ageSec: 0,
         ramp: 0,
@@ -771,7 +785,7 @@ export default function ThanosSection() {
           </div>
         )}
       </section>
-      <style>{`@keyframes thanosIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}`}</style>
+      <style>{THANOS_REVEAL_KEYFRAMES}</style>
     </div>
   );
 }
