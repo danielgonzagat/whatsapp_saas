@@ -15,6 +15,7 @@ import { Response } from 'express';
 import { Public } from '../auth/public.decorator';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import { Idempotent } from '../common/idempotency.guard';
 import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { getTraceHeaders } from '../common/trace-headers';
 import { PrismaService } from '../prisma/prisma.service';
@@ -332,6 +333,7 @@ export class MetaAuthController {
   // ─── Disconnect ──────────────────────────────────────────────────
 
   @Post('disconnect')
+  @Idempotent()
   @UseGuards(WorkspaceGuard)
   async disconnect(@Req() req: AuthenticatedRequest) {
     const workspaceId = resolveWorkspaceId(req);

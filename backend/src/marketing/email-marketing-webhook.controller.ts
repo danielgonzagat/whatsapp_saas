@@ -1,5 +1,6 @@
 import { Body, Controller, Logger, Optional, Post } from '@nestjs/common';
 import { Public } from '../auth/public.decorator';
+import { Idempotent } from '../common/idempotency.guard';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { EmailMarketingService } from './email-marketing.service';
 
@@ -27,7 +28,7 @@ const RESEND_EVENT_MAP: Record<
 
 const SENDGRID_EVENT_MAP: Record<
   string,
-  'DELIVERED' | 'OPENED' | 'CLICKED' | 'REPLIED' | 'BOUNCED' | 'UNSUBSCRIBED'
+  'DELIVERED' | 'OPENED' | 'CLICKED' | 'REPLIED' | 'BOUNCED' | 'COMPLAINT' | 'UNSUBSCRIBED'
 > = {
   delivered: 'DELIVERED',
   open: 'OPENED',
@@ -51,6 +52,7 @@ export class EmailMarketingWebhookController {
 
   @Public()
   @Post('resend')
+  @Idempotent()
   async handleResendWebhook(@Body() payload: ResendWebhookPayload): Promise<{ received: boolean }> {
     const eventType = payload?.type;
     if (!eventType) {
@@ -89,6 +91,7 @@ export class EmailMarketingWebhookController {
 
   @Public()
   @Post('sendgrid')
+  @Idempotent()
   async handleSendGridWebhook(
     @Body() payload: SendGridWebhookPayload,
   ): Promise<{ received: boolean }> {

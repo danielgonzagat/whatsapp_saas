@@ -17,6 +17,7 @@ import { StripeService } from '../billing/stripe.service';
 import { AuthenticatedRequest } from '../common/interfaces';
 import { PrismaService } from '../prisma/prisma.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import { Idempotent } from '../common/idempotency.guard';
 
 /** Sales controller — KloelSale CRUD. */
 @UseGuards(JwtAuthGuard)
@@ -160,6 +161,7 @@ export class SalesController {
 
   /** Refund sale. */
   @Post(':id/refund')
+  @Idempotent()
   async refundSale(
     @Request() req: AuthenticatedRequest,
     @Param('id') id: string,

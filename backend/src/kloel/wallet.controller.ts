@@ -42,6 +42,7 @@ export class WalletController {
 
   /** Process sale. */
   @Post(':workspaceId/process-sale')
+  @Idempotent()
   @ApiOperation({ summary: 'Processa uma venda com split' })
   @ApiParam({ name: 'workspaceId', description: 'ID do workspace' })
   async processSale(
@@ -66,6 +67,7 @@ export class WalletController {
 
   /** Confirm payment. */
   @Post(':workspaceId/confirm/:transactionId')
+  @Idempotent()
   @ApiOperation({ summary: 'Confirma pagamento e libera saldo' })
   async confirmPayment(
     @Param('workspaceId') workspaceId: string,
@@ -77,6 +79,7 @@ export class WalletController {
 
   /** Withdraw. */
   @Post(':workspaceId/withdraw')
+  @Idempotent()
   @ApiOperation({ summary: 'Solicita saque' })
   @UseGuards(KycApprovedGuard)
   @KycRequired()

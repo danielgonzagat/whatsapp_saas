@@ -21,6 +21,7 @@ import { Response } from 'express';
 import { Public } from '../../auth/public.decorator';
 import { forEachSequential } from '../../common/async-sequence';
 import { RawBodyRequest } from '../../common/interfaces/authenticated-request.interface';
+import { Idempotent } from '../../common/idempotency.guard';
 import {
   sanitizeWebhookChallenge,
   sendPlainTextResponse,
@@ -147,6 +148,7 @@ export class MetaWebhookController {
   /** Handle webhook. */
   @Public()
   @Post()
+  @Idempotent()
   @HttpCode(200)
   async handleWebhook(
     @Body() body: MetaWebhookBody,

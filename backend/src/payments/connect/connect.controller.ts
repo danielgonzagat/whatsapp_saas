@@ -85,6 +85,7 @@ export class ConnectController {
 
   /** Create account. */
   @Post(':workspaceId/accounts')
+  @Idempotent()
   async createAccount(
     @Param('workspaceId') workspaceId: string,
     @Body()
@@ -132,6 +133,7 @@ export class ConnectController {
 
   /** Submit onboarding data directly from Kloel's UI. */
   @Post(':workspaceId/accounts/:accountBalanceId/onboarding')
+  @Idempotent()
   async submitOnboardingProfile(
     @Param('workspaceId') workspaceId: string,
     @Param('accountBalanceId') accountBalanceId: string,

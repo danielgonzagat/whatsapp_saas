@@ -2,6 +2,7 @@ import { Body, Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/comm
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import { Idempotent } from '../common/idempotency.guard';
 import type { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { WhatsappService } from './whatsapp.service';
 
@@ -40,6 +41,7 @@ export class WhatsappController {
 
   /** Send. */
   @Post('send')
+  @Idempotent()
   async send(
     @Req() req: AuthenticatedRequest,
     @Param('workspaceId') workspaceId: string,
@@ -57,6 +59,7 @@ export class WhatsappController {
 
   /** Incoming. */
   @Post('incoming')
+  @Idempotent()
   async incoming(
     @Req() req: AuthenticatedRequest,
     @Param('workspaceId') workspaceId: string,
@@ -68,6 +71,7 @@ export class WhatsappController {
 
   /** Opt in bulk. */
   @Post('opt-in/bulk')
+  @Idempotent()
   async optInBulk(
     @Req() req: AuthenticatedRequest,
     @Param('workspaceId') workspaceId: string,
@@ -79,6 +83,7 @@ export class WhatsappController {
 
   /** Opt out bulk. */
   @Post('opt-out/bulk')
+  @Idempotent()
   async optOutBulk(
     @Req() req: AuthenticatedRequest,
     @Param('workspaceId') workspaceId: string,

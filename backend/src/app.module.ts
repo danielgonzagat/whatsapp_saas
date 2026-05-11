@@ -3,6 +3,7 @@ import { Logger, MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { SentryModule } from '@sentry/nestjs/setup';
+import type Redis from 'ioredis';
 // rawbody removed (stripe webhook controller removed)
 
 import { AppController } from './app.controller';
@@ -74,6 +75,8 @@ import { GrowthModule } from './growth/growth.module';
 import { I18nModule } from './i18n/i18n.module';
 import { KloelModule } from './kloel/kloel.module';
 import { AuditLogMiddleware } from './kloel/middleware';
+import { IdempotencyMiddleware } from './common/idempotency/idempotency.middleware';
+import { IdempotencyModule } from './common/idempotency/idempotency.module';
 import { KycModule } from './kyc/kyc.module';
 import { MarketingModule } from './marketing/marketing.module';
 import { MarketplaceModule } from './marketplace/marketplace.module';
@@ -96,6 +99,11 @@ import { StripeWebhookLedgerService } from './webhooks/stripe-webhook-ledger.ser
 
 const appLogger = new Logger('AppModule');
 const isProd = process.env.NODE_ENV === 'production';
+const REDIS_GLOBAL_LISTENER_BUDGET = 128;
+
+function setRedisClientListenerBudget(client: Redis): void {
+  client.setMaxListeners(Math.max(client.getMaxListeners(), REDIS_GLOBAL_LISTENER_BUDGET));
+}
 
 /** App module. */
 @Module({
@@ -130,8 +138,8 @@ const isProd = process.env.NODE_ENV === 'production';
     // Global cache service (wraps the global Redis connection)
     CacheModule,
 
-    // Redis para filas e workers - SEMPRE carregado para satisfazer @InjectRedis()
-    // Se Redis não estiver configurado, usa URL fictícia e conexões falham silenciosamente
+    // Redis global para cache, rate limit, idempotência e eventos.
+    // Em produção o resolver falha cedo quando Redis não estiver configurado.
     RedisModule.forRootAsync({
       useFactory: () => {
         const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
@@ -178,6 +186,7 @@ const isProd = process.env.NODE_ENV === 'production';
             },
             reconnectOnError: () => configured, // Reconecta apenas se configurado
           },
+          onClientReady: setRedisClientListenerBudget,
         };
       },
     }),
@@ -238,6 +247,7 @@ const isProd = process.env.NODE_ENV === 'production';
     PaymentsModule, // 💳 Stripe Connect — split, ledger, fraud, charge, webhook (FASES 1-7)
     MarketplaceTreasuryModule, // 💼 Marketplace treasury ledger / reconciliation
     WalletModule, // ⚡ Prepaid wallet for usage-metered services (FASE 4)
+    IdempotencyModule, // 🔁 Idempotency middleware + service
   ],
   controllers: [AppController, PaymentWebhookStripeController, PaymentWebhookGenericController],
   providers: [
@@ -300,6 +310,9 @@ export class AppModule implements NestModule {
         'copilot/*path',
         'autopilot/*path',
       );
+    consumer
+      .apply(IdempotencyMiddleware)
+      .forRoutes('*path');
     consumer.apply(AuditLogMiddleware).forRoutes('*path');
   }
 }

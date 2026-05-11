@@ -3,6 +3,7 @@ import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../../common/guards/workspace.guard';
+import { Idempotent } from '../../common/idempotency.guard';
 
 import { SplitPreviewDto } from './dto/split-preview.dto';
 import { calculateSplit } from './split.engine';
@@ -39,6 +40,7 @@ export class SplitController {
 
   /** Preview split. */
   @Post(':workspaceId/preview')
+  @Idempotent()
   preview(@Param('workspaceId') workspaceId: string, @Body() dto: SplitPreviewDto) {
     const input = dtoToSplitInput(dto);
     const result = calculateSplit(input, workspaceId);

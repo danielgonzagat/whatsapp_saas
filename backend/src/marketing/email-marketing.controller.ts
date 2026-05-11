@@ -14,6 +14,7 @@ import {
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import { Idempotent } from '../common/idempotency.guard';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { CreateEmailCampaignDto } from './dto/create-email-campaign.dto';
 import { EmailMarketingService } from './email-marketing.service';
@@ -31,6 +32,7 @@ export class EmailMarketingController {
   ) {}
 
   @Post('campaigns')
+  @Idempotent()
   async createCampaign(
     @Request() req: { user: { workspaceId: string; email?: string } },
     @Body() dto: CreateEmailCampaignDto,
@@ -78,6 +80,7 @@ export class EmailMarketingController {
   }
 
   @Post('campaigns/:id/send')
+  @Idempotent()
   async sendCampaign(
     @Request() req: { user: { workspaceId: string; email?: string } },
     @Param('id') id: string,
