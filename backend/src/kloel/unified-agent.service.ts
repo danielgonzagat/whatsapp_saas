@@ -252,8 +252,12 @@ Mensagem: ${message}`,
     let llmResponse: OpenAI.Chat.ChatCompletion;
     try {
       await this.planLimits.ensureTokenBudget(params.workspaceId);
+      const openai = this.openai;
+      if (!openai) {
+        throw new Error('OPENAI_API_KEY is required for unified agent generation');
+      }
       llmResponse = await chatCompletionWithFallback(
-        this.openai,
+        openai,
         {
           model: this.primaryBrainModel,
           messages,

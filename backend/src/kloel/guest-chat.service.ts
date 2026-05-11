@@ -284,7 +284,11 @@ export class GuestChatService implements OnModuleDestroy {
         lastMessageAt: new Date(),
       });
     }
-    return this.conversations.get(sessionId);
+    const conversation = this.conversations.get(sessionId);
+    if (!conversation) {
+      throw new Error('Failed to initialize guest conversation');
+    }
+    return conversation;
   }
 
   /**

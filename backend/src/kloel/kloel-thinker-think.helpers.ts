@@ -95,7 +95,7 @@ export async function finalizeSuccessfulReply(
     await threadService.maybeRefreshThreadSummary(thread.id, workspaceId, replyEngine.openai);
     const title = await threadService.maybeGenerateThreadTitle(
       thread.id,
-      thread.title,
+      thread.title ?? '',
       message,
       workspaceId,
       replyEngine.openai,
@@ -162,7 +162,7 @@ export async function runComposerCapabilityBranch(
     await threadService.maybeRefreshThreadSummary(thread.id, workspaceId, replyEngine.openai);
     const title = await threadService.maybeGenerateThreadTitle(
       thread.id,
-      thread.title,
+      thread.title ?? '',
       message,
       workspaceId,
       replyEngine.openai,
@@ -195,6 +195,9 @@ export async function runToolPlanningBranch(
   ctx: ThinkBranchContext,
 ): Promise<void> {
   const { workspaceId, userId, message, safeWrite, replyEngine, planLimits } = ctx;
+  if (!workspaceId) {
+    throw new Error('workspaceId is required for Kloel tool planning');
+  }
   safeWrite(createKloelStatusEvent('thinking'));
   await planLimits.ensureTokenBudget(workspaceId);
   const allowedTools = KLOEL_SAFE_READ_TOOLS;

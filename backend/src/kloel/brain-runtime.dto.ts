@@ -26,11 +26,11 @@ export interface BrainMessage {
 
 export class BrainMessageDto implements BrainMessage {
   @IsIn(['assistant', 'system', 'user'])
-  role: 'assistant' | 'system' | 'user';
+  role!: 'assistant' | 'system' | 'user';
 
   @IsString()
   @MaxLength(12000)
-  content: string;
+  content!: string;
 }
 
 export class BrainDecideDto {

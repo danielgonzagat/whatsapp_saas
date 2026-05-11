@@ -438,6 +438,6 @@ ${productContext ? `\nAVAILABLE PRODUCTS (use ONLY these real products in your r
         .catch(() => {});
     }
 
-    return completion.choices[0]?.message?.content;
+    return completion.choices[0]?.message?.content ?? 'Olá, como posso ajudar?';
   }
 }

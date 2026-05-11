@@ -1,6 +1,6 @@
 // Message action handlers for ChatContainer.
 // Pure hook — no JSX, no 'use client' needed (used only in the client component).
-import { useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import {
   regenerateKloelConversationMessage,
   updateKloelMessageFeedback,
@@ -35,7 +35,9 @@ export function useMessageActions({
   sendMessageRef,
 }: UseMessageActionsParams) {
   const activeIdRef = useRef(activeConversationId);
-  activeIdRef.current = activeConversationId;
+  useEffect(() => {
+    activeIdRef.current = activeConversationId;
+  }, [activeConversationId]);
 
   const handleMessageRetry = useCallback(
     async (messageId: string) => {

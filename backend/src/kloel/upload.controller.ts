@@ -307,7 +307,6 @@ export class UploadController {
       success: true,
       filename: file.originalname,
       size: file.size,
-      type: file.mimetype,
       ...result,
     };
   }
@@ -367,7 +366,6 @@ export class UploadController {
           success: true,
           filename: file.originalname,
           size: file.size,
-          type: file.mimetype,
           ...result,
         });
       } catch (error: unknown) {

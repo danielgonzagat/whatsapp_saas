@@ -76,7 +76,11 @@ export class AgentAssistService {
     });
     try {
       await this.ensureBudget(workspaceId);
-      const completion = await chatCompletionWithRetry(this.openai, { model, messages });
+      const openai = this.openai;
+      if (!openai) {
+        throw new Error('OPENAI_API_KEY is required for agent assist operations');
+      }
+      const completion = await chatCompletionWithRetry(openai, { model, messages });
       if (estimatedCostCents !== undefined && usageCharged) {
         await settleAiUsageIfNeeded({
           walletService: this.prepaidWalletService,

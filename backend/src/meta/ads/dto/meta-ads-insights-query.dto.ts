@@ -5,15 +5,15 @@ export class MetaAdsInsightsQueryDto {
   /** Ad account id property. */
   @IsString()
   @MaxLength(255)
-  adAccountId: string;
+  adAccountId!: string;
 
   /** Since property (ISO 8601 date string). */
   @IsDateString()
-  since: string;
+  since!: string;
 
   /** Until property (ISO 8601 date string). */
   @IsDateString()
-  until: string;
+  until!: string;
 
   /** Level property. */
   @IsOptional()
@@ -27,13 +27,13 @@ export class MetaAdsDailyInsightsQueryDto {
   /** Campaign id property. */
   @IsString()
   @MaxLength(255)
-  campaignId: string;
+  campaignId!: string;
 
   /** Since property (ISO 8601 date string). */
   @IsDateString()
-  since: string;
+  since!: string;
 
   /** Until property (ISO 8601 date string). */
   @IsDateString()
-  until: string;
+  until!: string;
 }

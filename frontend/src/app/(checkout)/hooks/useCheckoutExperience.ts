@@ -315,13 +315,12 @@ export function useCheckoutExperience({
 
   const runCouponValidation = useCallback(
     async (nextCode: string): Promise<boolean> => {
+      if (!workspaceId || !plan?.id) {
+        handleCouponFailure('Checkout sem contexto para validar cupom.');
+        return false;
+      }
       try {
-        const result = await validateCoupon(
-          workspaceId as string,
-          nextCode,
-          plan?.id as string,
-          subtotal,
-        );
+        const result = await validateCoupon(workspaceId, nextCode, plan.id, subtotal);
         if (!result.valid) {
           handleCouponFailure(result.message || 'Cupom inválido ou expirado.');
           return false;
@@ -333,7 +332,7 @@ export function useCheckoutExperience({
         return false;
       }
     },
-    [handleCouponFailure, handleCouponSuccess, plan?.id, subtotal, workspaceId],
+    [handleCouponFailure, handleCouponSuccess, plan, subtotal, workspaceId],
   );
 
   const applyCoupon = useCallback(

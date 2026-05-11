@@ -339,6 +339,11 @@ export class SiteController {
 
       // tokenBudget: site generation is a one-shot action; budget enforced at plan level
       // Fallback to Anthropic
+      if (!anthropicKey) {
+        throw new ServiceUnavailableException(
+          'ANTHROPIC_API_KEY is required for fallback site generation.',
+        );
+      }
       const anthropicRequestBody = {
         model,
         max_tokens: SITE_GENERATION_MAX_OUTPUT_TOKENS,

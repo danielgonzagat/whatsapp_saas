@@ -230,7 +230,11 @@ export class I18nService {
       }
       // tokenBudget: caller responsible for pre-flight budget check
       await this.ensureBudget(workspaceId);
-      const response = await chatCompletionWithRetry(this.openai, {
+      const openai = this.openai;
+      if (!openai) {
+        throw new Error('OPENAI_API_KEY is required for translation');
+      }
+      const response = await chatCompletionWithRetry(openai, {
         model: resolveBackendOpenAIModel('writer'),
         messages: [
           {
@@ -312,7 +316,11 @@ export class I18nService {
 
       // tokenBudget: caller responsible for pre-flight budget check
       await this.ensureBudget(workspaceId);
-      const response = await chatCompletionWithRetry(this.openai, {
+      const openai = this.openai;
+      if (!openai) {
+        throw new Error('OPENAI_API_KEY is required for translation');
+      }
+      const response = await chatCompletionWithRetry(openai, {
         model: resolveBackendOpenAIModel('writer'),
         messages: [
           {

@@ -106,11 +106,17 @@ function ensureInitialized() {
 // Getters para acesso lazy
 function getConnection() {
   ensureInitialized();
+  if (!_connection) {
+    throw new Error('Redis queue connection was not initialized');
+  }
   return _connection;
 }
 
 function getQueueOptions() {
   ensureInitialized();
+  if (!_queueOptions) {
+    throw new Error('Queue options were not initialized');
+  }
   return _queueOptions;
 }
 

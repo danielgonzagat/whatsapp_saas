@@ -28,7 +28,7 @@ export class MediaFactoryService {
       size: '1024x1024',
     });
 
-    return { url: response.data[0].url };
+    return { url: response.data?.[0]?.url ?? '' };
   }
 
   /** Generate voice. */
