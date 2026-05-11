@@ -26,18 +26,26 @@ const PARTICLES_PER_ICON = 150;
 const DUST_DURATION_MS = 3000;
 const ICON_STAGGER_MS = 140;
 const CONTOUR_SAMPLE_SIZE = 40;
-const PARTICLE_COLOR = 'rgba(168, 168, 182, 0.7)';
 const CONTOUR_ALPHA_THRESHOLD = 30;
+const CRACK_PHASE_MS = 360;
 
 type DustParticle = {
   x: number;
   y: number;
   vx: number;
   vy: number;
+  wave: number;
+  gravity: number;
   size: number;
+  rotation: number;
+  spin: number;
   delay: number;
   life: number;
   alpha: number;
+  r: number;
+  g: number;
+  b: number;
+  chunk: boolean;
 };
 
 function seededUnit(seed: number) {
@@ -66,7 +74,7 @@ function usePrefersReducedMotion() {
 function sampleIconContour(
   node: HTMLSpanElement,
   sampleSize: number,
-): Array<{ x: number; y: number }> | null {
+): Array<{ x: number; y: number; r: number; g: number; b: number; a: number }> | null {
   const img = node.querySelector('img');
   if (!img || !img.complete || img.naturalWidth === 0) {
     return null;
@@ -81,12 +89,21 @@ function sampleIconContour(
   try {
     offCtx.drawImage(img, 0, 0, sampleSize, sampleSize);
     const imageData = offCtx.getImageData(0, 0, sampleSize, sampleSize);
-    const points: Array<{ x: number; y: number }> = [];
+    const points: Array<{ x: number; y: number; r: number; g: number; b: number; a: number }> = [];
     const { data } = imageData;
     for (let py = 0; py < sampleSize; py += 1) {
       for (let px = 0; px < sampleSize; px += 1) {
-        if (data[(py * sampleSize + px) * 4 + 3] > CONTOUR_ALPHA_THRESHOLD) {
-          points.push({ x: px / sampleSize, y: py / sampleSize });
+        const index = (py * sampleSize + px) * 4;
+        const alpha = data[index + 3];
+        if (alpha > CONTOUR_ALPHA_THRESHOLD) {
+          points.push({
+            x: px / sampleSize,
+            y: py / sampleSize,
+            r: data[index],
+            g: data[index + 1],
+            b: data[index + 2],
+            a: alpha / 255,
+          });
         }
       }
     }
@@ -323,25 +340,48 @@ export default function ThanosSection() {
         const seed = iconIndex * 1000 + particleIndex + 1;
         let px: number;
         let py: number;
+        let r = 168;
+        let g = 168;
+        let b = 182;
+        let alpha = 0.7;
         if (contour) {
           const cp = contour[particleIndex % contour.length];
           px = cp.x + (seededUnit(seed) - 0.5) * 0.07;
           py = cp.y + (seededUnit(seed + 1) - 0.5) * 0.07;
+          r = cp.r;
+          g = cp.g;
+          b = cp.b;
+          alpha = Math.max(0.32, cp.a);
         } else {
           px = seededUnit(seed);
           py = seededUnit(seed + 17);
         }
-        const angle = -Math.PI / 2 + (seededUnit(seed + 31) - 0.5) * 1.35;
-        const speed = 18 + seededUnit(seed + 47) * 62;
+        const dx = px - 0.5;
+        const dy = py - 0.5;
+        const radial = Math.atan2(dy, dx);
+        const curl = (seededUnit(seed + 31) - 0.5) * 2.3;
+        const lift = -0.65 - seededUnit(seed + 37) * 0.55;
+        const angle = radial * 0.55 + curl + lift;
+        const speed = 22 + seededUnit(seed + 47) * 88 + Math.hypot(dx, dy) * 62;
+        const chunk = seededUnit(seed + 53) > 0.82;
+        const sizeBase = chunk ? 2.1 + seededUnit(seed + 59) * 3.4 : 0.55 + seededUnit(seed + 59) * 1.6;
         particles.push({
           x: left + px * iconRect.width,
           y: top + py * iconRect.height,
           vx: Math.cos(angle) * speed,
-          vy: Math.sin(angle) * speed - 16,
-          size: 0.7 + seededUnit(seed + 59) * 1.9,
-          delay: iconIndex * ICON_STAGGER_MS + seededUnit(seed + 71) * 120,
-          life: 1100 + seededUnit(seed + 83) * 980,
-          alpha: 0.34 + seededUnit(seed + 97) * 0.5,
+          vy: Math.sin(angle) * speed - 22,
+          wave: (seededUnit(seed + 61) - 0.5) * 90,
+          gravity: 26 + seededUnit(seed + 67) * 58,
+          size: sizeBase,
+          rotation: seededUnit(seed + 71) * Math.PI,
+          spin: (seededUnit(seed + 73) - 0.5) * 4.8,
+          delay: iconIndex * ICON_STAGGER_MS + seededUnit(seed + 79) * 210,
+          life: 1250 + seededUnit(seed + 83) * 1200,
+          alpha: alpha * (0.42 + seededUnit(seed + 97) * 0.5),
+          r,
+          g,
+          b,
+          chunk,
         });
       }
     });
@@ -357,19 +397,39 @@ export default function ThanosSection() {
     const animate = (now: number) => {
       const elapsed = now - startedAt;
       ctx.clearRect(0, 0, rect.width, rect.height);
-      ctx.fillStyle = PARTICLE_COLOR;
       particles.forEach((particle) => {
         const local = elapsed - particle.delay;
         if (local < 0 || local > particle.life) {
           return;
         }
         const progress = local / particle.life;
-        const driftX = particle.x + particle.vx * progress;
-        const driftY = particle.y + particle.vy * progress - 44 * progress * progress;
-        ctx.globalAlpha = particle.alpha * (1 - progress);
-        ctx.beginPath();
-        ctx.arc(driftX, driftY, particle.size * (1 - progress * 0.35), 0, Math.PI * 2);
-        ctx.fill();
+        const crack = Math.min(1, local / CRACK_PHASE_MS);
+        const release = Math.max(0, (local - CRACK_PHASE_MS) / (particle.life - CRACK_PHASE_MS));
+        const organicWave = Math.sin((release * 5 + particle.wave) * Math.PI) * particle.wave * release;
+        const driftX = particle.x + particle.vx * release + organicWave;
+        const driftY =
+          particle.y +
+          particle.vy * release +
+          particle.gravity * release * release -
+          34 * Math.sin(release * Math.PI);
+        const ember = Math.min(1, Math.max(0, release - 0.35) * 1.9);
+        const r = Math.round(particle.r + (232 - particle.r) * ember);
+        const g = Math.round(particle.g + (93 - particle.g) * ember);
+        const b = Math.round(particle.b + (48 - particle.b) * ember);
+        ctx.globalAlpha = particle.alpha * (1 - progress) * (0.3 + crack * 0.7);
+        ctx.fillStyle = `rgb(${r} ${g} ${b})`;
+        const size = particle.size * (1 - release * 0.42);
+        if (particle.chunk) {
+          ctx.save();
+          ctx.translate(driftX, driftY);
+          ctx.rotate(particle.rotation + particle.spin * release);
+          ctx.fillRect(-size / 2, -size / 2, size * 1.45, size);
+          ctx.restore();
+        } else {
+          ctx.beginPath();
+          ctx.arc(driftX, driftY, size, 0, Math.PI * 2);
+          ctx.fill();
+        }
       });
       ctx.globalAlpha = 1;
 

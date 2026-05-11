@@ -16,11 +16,11 @@ export class CreateFlowDto {
 
   /** Nodes property. */
   @IsArray()
-  nodes: unknown[];
+  nodes!: unknown[];
 
   /** Edges property. */
   @IsArray()
-  edges: unknown[];
+  edges!: unknown[];
 }
 
 /** Update flow dto. */

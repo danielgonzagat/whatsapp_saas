@@ -53,29 +53,29 @@ function normalizeAiObjections(value: unknown): LooseObject[] {
     return [];
   }
 
-  return value
-    .map((entry, index) => {
-      const objection = parseObject(entry);
-      const label = safeStr(
-        objection.label || objection.id || objection.q || objection.question,
-        `Objeção ${index + 1}`,
-      ).trim();
-      const response = safeStr(objection.response || objection.a || objection.answer).trim();
+  const objections: LooseObject[] = [];
+  value.forEach((entry, index) => {
+    const objection = parseObject(entry);
+    const label = safeStr(
+      objection.label || objection.id || objection.q || objection.question,
+      `Objeção ${index + 1}`,
+    ).trim();
+    const response = safeStr(objection.response || objection.a || objection.answer).trim();
 
-      if (!label && !response) {
-        return null;
-      }
+    if (!label && !response) {
+      return;
+    }
 
-      return {
-        id: safeStr(objection.id, `objection-${index + 1}`),
-        label,
-        response,
-        q: label,
-        a: response,
-        enabled: objection.enabled !== false,
-      };
-    })
-    .filter(Boolean);
+    objections.push({
+      id: safeStr(objection.id, `objection-${index + 1}`),
+      label,
+      response,
+      q: label,
+      a: response,
+      enabled: objection.enabled !== false,
+    });
+  });
+  return objections;
 }
 
 const CUSTOMER_PROFILE_KEYS = [

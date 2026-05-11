@@ -275,7 +275,7 @@ export class AutopilotOpsConversionService {
           where: { id: contactIdResolved, workspaceId },
           select: { phone: true },
         });
-        contactPhone = contact.phone || contactPhone;
+        contactPhone = contact?.phone || contactPhone;
       }
 
       const ws = await this.prisma.workspace.findUnique({ where: { id: workspaceId } });

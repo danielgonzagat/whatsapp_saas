@@ -168,7 +168,7 @@ export class AuthController {
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   async appleOAuthLogin(@Req() req: Request, @Body() body: AppleOAuthDto) {
     return this.auth.loginWithAppleCredential({
-      identityToken: body.identityToken,
+      identityToken: body.identityToken ?? '',
       authorizationCode: body.authorizationCode,
       redirectUri: body.redirectUri,
       user: body.user,

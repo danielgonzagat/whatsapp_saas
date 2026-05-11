@@ -2,6 +2,7 @@ import { Injectable, Logger, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
 import { PlanLimitsService } from '../billing/plan-limits.service';
+import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
 import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { Prisma } from '@prisma/client';
@@ -81,12 +82,13 @@ export class FlowOptimizerService {
 
     // 3. Create New Version (Draft)
     if (suggestion.nodes) {
+      const nodes = toPrismaJsonValue(suggestion.nodes);
       await this.prisma.flowVersion.create({
         data: {
           flowId,
           workspaceId,
-          nodes: suggestion.nodes as Prisma.InputJsonValue,
-          edges: flow.edges, // Keep edges for now
+          nodes,
+          edges: flow.edges === null ? Prisma.JsonNull : (flow.edges as Prisma.InputJsonValue),
           label:
             'AI Auto-Optimization: ' +
             (typeof suggestion.reason === 'string' ? suggestion.reason : ''),

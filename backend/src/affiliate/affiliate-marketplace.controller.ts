@@ -182,7 +182,13 @@ export class AffiliateMarketplaceController {
       select: { category: true, name: true },
       take: 5,
     });
-    const categories = [...new Set(myProducts.map((product) => product.category).filter(Boolean))];
+    const categories = [
+      ...new Set(
+        myProducts
+          .map((product) => product.category)
+          .filter((category): category is string => Boolean(category)),
+      ),
+    ];
 
     const where = buildMarketplaceWhere({
       listed: true,

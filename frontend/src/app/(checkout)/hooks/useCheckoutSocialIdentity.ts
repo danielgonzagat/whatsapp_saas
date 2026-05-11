@@ -334,7 +334,9 @@ export function useCheckoutSocialIdentity({
     [checkoutCode, deviceFingerprint, hydrateGooglePeopleProfile, slug, snapshot],
   );
 
-  callbackRef.current = handleGoogleCredential;
+  useEffect(() => {
+    callbackRef.current = handleGoogleCredential;
+  }, [handleGoogleCredential]);
 
   const handleFacebookAccessToken = useCallback(
     async (accessToken: string, userId?: string) => {
@@ -454,7 +456,7 @@ export function useCheckoutSocialIdentity({
         body: JSON.stringify(payload),
       }).catch(() => undefined);
     },
-    [snapshot?.leadId],
+    [snapshot],
   );
 
   return {

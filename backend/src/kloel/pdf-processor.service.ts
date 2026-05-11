@@ -145,7 +145,7 @@ export class PdfProcessorService {
       await this.memoryService.saveProduct(workspaceId, `${pdfId}_product_${i}`, {
         name: product.name,
         description: product.description,
-        price: product.price,
+        price: product.price ?? 0,
         benefits: product.benefits,
       });
     });

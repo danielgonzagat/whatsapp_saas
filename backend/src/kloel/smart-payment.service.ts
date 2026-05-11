@@ -148,7 +148,7 @@ interface PaymentNegotiation {
 @Injectable()
 export class SmartPaymentService {
   private readonly logger = new Logger(SmartPaymentService.name);
-  private openai: OpenAI;
+  private openai!: OpenAI;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -288,7 +288,7 @@ export class SmartPaymentService {
 
     // 3. Se não temos OpenAI, usar regras simples
     if (!this.openai) {
-      const isHighValue = contact?.leadScore >= 70;
+      const isHighValue = (contact?.leadScore ?? 0) >= 70;
       const discountPercent = isHighValue
         ? Math.min(10, rules.maxDiscount)
         : Math.min(5, rules.maxDiscount);

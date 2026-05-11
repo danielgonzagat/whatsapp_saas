@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 /** Marketplace service. */
@@ -42,8 +43,8 @@ export class MarketplaceService {
         workspaceId,
         name: template.name,
         description: template.description,
-        nodes: template.nodes,
-        edges: template.edges,
+        nodes: template.nodes ?? Prisma.JsonNull,
+        edges: template.edges ?? Prisma.JsonNull,
         isActive: false,
         triggerType: 'MANUAL',
       },

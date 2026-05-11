@@ -222,6 +222,7 @@ export class FollowUpService {
         scheduledFor: true,
         status: true,
         message: true,
+        reason: true,
       },
       orderBy: { scheduledFor: 'asc' },
     });

@@ -4,6 +4,9 @@ import { WorkspaceGuard } from '../../common/guards/workspace.guard';
 import { AuthenticatedRequest } from '../../common/interfaces';
 import { WhatsAppProviderRegistry } from '../providers/provider-registry';
 
+const WHATSAPP_META_COMPAT_WORKSPACE_REQUIRED =
+  'workspaceId is required for WhatsApp Meta compatibility routes';
+
 /**
  * Meta-compat stubs — endpoints that are not supported under the Meta Cloud API
  * provider but must exist for backward compatibility with WAHA-based clients.
@@ -12,6 +15,15 @@ import { WhatsAppProviderRegistry } from '../providers/provider-registry';
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class WhatsAppMetaCompatController {
   constructor(private readonly providerRegistry: WhatsAppProviderRegistry) {}
+
+  private requireWorkspaceId(req: AuthenticatedRequest): string {
+    if (!req.workspaceId) {
+      const error = new Error();
+      error.message = WHATSAPP_META_COMPAT_WORKSPACE_REQUIRED;
+      throw error;
+    }
+    return req.workspaceId;
+  }
 
   private buildMetaUnsupportedResponse(feature: string, extra?: Record<string, unknown>) {
     return {
@@ -32,7 +44,9 @@ export class WhatsAppMetaCompatController {
   ) {
     void req;
     void body;
-    const status = await this.providerRegistry.getSessionStatus(req.workspaceId).catch(() => null);
+    const status = await this.providerRegistry
+      .getSessionStatus(this.requireWorkspaceId(req))
+      .catch(() => null);
     return this.buildMetaUnsupportedResponse('legacy_session_link', {
       authUrl: status?.authUrl || null,
     });
@@ -47,7 +61,9 @@ export class WhatsAppMetaCompatController {
   ) {
     void req;
     void body;
-    const status = await this.providerRegistry.getSessionStatus(req.workspaceId).catch(() => null);
+    const status = await this.providerRegistry
+      .getSessionStatus(this.requireWorkspaceId(req))
+      .catch(() => null);
     return this.buildMetaUnsupportedResponse('legacy_session_claim', {
       authUrl: status?.authUrl || null,
     });
@@ -118,7 +134,7 @@ export class WhatsAppMetaCompatController {
   /** Get session stream health. */
   @Get('session/stream-health')
   async getSessionStreamHealth(@Req() req: AuthenticatedRequest) {
-    const providerType = await this.providerRegistry.getProviderType(req.workspaceId);
+    const providerType = await this.providerRegistry.getProviderType(this.requireWorkspaceId(req));
     return {
       success: true,
       provider: providerType,

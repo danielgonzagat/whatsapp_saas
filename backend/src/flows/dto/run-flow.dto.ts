@@ -4,17 +4,17 @@ import { IsObject, IsOptional, IsString, MaxLength } from 'class-validator';
 export class RunFlowDto {
   /** Flow property. */
   @IsObject()
-  flow: Record<string, unknown>;
+  flow!: Record<string, unknown>;
 
   /** Start node property. */
   @IsString()
   @MaxLength(255)
-  startNode: string;
+  startNode!: string;
 
   /** User property. */
   @IsString()
   @MaxLength(255)
-  user: string;
+  user!: string;
 
   /** Flow id property. */
   @IsOptional()

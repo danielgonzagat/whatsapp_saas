@@ -267,7 +267,13 @@ export class AutopilotAnalyticsReportService {
         },
       });
 
-      const contactIds = Array.from(new Set(events.map((l) => l.contactId).filter(Boolean)));
+      const contactIds = Array.from(
+        new Set(
+          events
+            .map((l) => l.contactId)
+            .filter((contactId): contactId is string => Boolean(contactId)),
+        ),
+      );
       const contacts = await this.prisma.contact.findMany({
         take: 5000,
         where: { id: { in: contactIds }, workspaceId },

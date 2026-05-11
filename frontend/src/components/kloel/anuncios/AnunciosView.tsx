@@ -197,7 +197,7 @@ let PLATFORMS: Record<'meta' | 'google' | 'tiktok', PlatformData> = {
   },
 };
 
-// Campaigns — empty until ad accounts are connected, mutable
+// Campaigns — empty until ad accounts are connected.
 type Campaign = {
   id: string;
   platform: 'meta' | 'google' | 'tiktok';
@@ -211,7 +211,6 @@ type Campaign = {
   cpc: number;
   trend: 'up' | 'down';
 };
-let CAMPAIGNS: Campaign[] = [];
 
 type Rule = { id: string; condition: string; action: string; active: boolean; fires: number };
 
@@ -324,7 +323,9 @@ function NP({
 function Ticker({ value, prefix = '' }: { value: number; prefix?: string }) {
   const [display, setDisplay] = useState(0);
   const displayRef = useRef(display);
-  displayRef.current = display;
+  useEffect(() => {
+    displayRef.current = display;
+  }, [display]);
   useEffect(() => {
     const current = displayRef.current;
     const diff = value - current;
@@ -431,10 +432,14 @@ function WarRoom({
   onGoToRules,
   onGoToTab: _onGoToTab,
   metaAccessToken,
+  campaigns,
+  onCampaignsChange,
 }: {
   onGoToRules: () => void;
   onGoToTab: (id: string) => void;
   metaAccessToken?: string;
+  campaigns: Campaign[];
+  onCampaignsChange: (campaigns: Campaign[]) => void;
 }) {
   const { data: rulesData } = useSWR<Record<string, unknown>[]>('/ad-rules', swrFetcher, {
     keepPreviousData: true,
@@ -453,11 +458,12 @@ function WarRoom({
     }
     const newStatus = campaign.status === 'active' ? 'PAUSED' : 'ACTIVE';
     await metaAdsApi.updateCampaignStatus(campaign.id, newStatus);
-    // Update local state optimistically
-    CAMPAIGNS = CAMPAIGNS.map((c) =>
-      c.id === campaign.id
-        ? { ...c, status: newStatus.toLowerCase() === 'active' ? 'active' : 'paused' }
-        : c,
+    onCampaignsChange(
+      campaigns.map((c) =>
+        c.id === campaign.id
+          ? { ...c, status: newStatus.toLowerCase() === 'active' ? 'active' : 'paused' }
+          : c,
+      ),
     );
   };
 
@@ -619,8 +625,8 @@ function WarRoom({
           },
           {
             label: 'CAMPANHAS',
-            value: String(CAMPAIGNS.length),
-            color: CAMPAIGNS.length > 0 ? colors.text.silver : colors.text.dim,
+            value: String(campaigns.length),
+            color: campaigns.length > 0 ? colors.text.silver : colors.text.dim,
           },
         ].map((s) => (
           <div key={s.label} style={{ textAlign: 'center' as const }}>
@@ -863,9 +869,9 @@ function WarRoom({
         >
           {kloelT(`CAMPANHAS — FIBRAS NEURAIS`)}
         </div>
-        {CAMPAIGNS.length > 0 ? (
+        {campaigns.length > 0 ? (
           <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 6 }}>
-            {[...CAMPAIGNS]
+            {[...campaigns]
               .sort((a, b) => b.roas - a.roas)
               .map((c) => {
                 const pIcon =
@@ -1259,9 +1265,13 @@ function WarRoom({
 function PlatformTab({
   platformKey,
   metaAccessToken,
+  campaigns,
+  onCampaignsChange,
 }: {
   platformKey: string;
   metaAccessToken?: string;
+  campaigns: Campaign[];
+  onCampaignsChange: (campaigns: Campaign[]) => void;
 }) {
   const p = PLATFORMS[platformKey as keyof typeof PLATFORMS];
   if (!p) {
@@ -1270,7 +1280,7 @@ function PlatformTab({
   const isConnected = p.connected;
   const profit = p.revenue - p.spend;
   const profitColor = profit >= 0 ? G : R;
-  const camps = CAMPAIGNS.filter((c) => c.platform === platformKey);
+  const camps = campaigns.filter((c) => c.platform === platformKey);
 
   const handleCampaignToggle = async (c: Campaign) => {
     if (platformKey !== 'meta' || !metaAccessToken) {
@@ -1278,10 +1288,12 @@ function PlatformTab({
     }
     const newStatus = c.status === 'active' ? 'PAUSED' : 'ACTIVE';
     await metaAdsApi.updateCampaignStatus(c.id, newStatus);
-    CAMPAIGNS = CAMPAIGNS.map((x) =>
-      x.id === c.id
-        ? { ...x, status: newStatus.toLowerCase() === 'active' ? 'active' : 'paused' }
-        : x,
+    onCampaignsChange(
+      campaigns.map((x) =>
+        x.id === c.id
+          ? { ...x, status: newStatus.toLowerCase() === 'active' ? 'active' : 'paused' }
+          : x,
+      ),
     );
   };
 
@@ -2785,6 +2797,7 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [tab, setTab] = useState(defaultTab);
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const requestedFocus = searchParams?.get('focus') || undefined;
   const prevDefault = useRef(defaultTab);
   useEffect(() => {
@@ -2827,7 +2840,7 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
   // Hydrate CAMPAIGNS with real campaign data
   useEffect(() => {
     const raw = extractMetaCampaignsFromResponse(metaCampaigns);
-    CAMPAIGNS = metaConnected && raw.length > 0 ? raw.map(mapMetaCampaign) : [];
+    setCampaigns(metaConnected && raw.length > 0 ? raw.map(mapMetaCampaign) : []);
   }, [metaConnected, metaCampaigns]);
 
   const metaAccessToken: string | undefined =
@@ -2872,11 +2885,36 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
       {/* Content */}
       <div style={{ padding: isMobile ? 16 : 24, maxWidth: 1240, margin: '0 auto' }}>
         {tab === 'visao' && (
-          <WarRoom onGoToRules={goToRules} onGoToTab={goToTab} metaAccessToken={metaAccessToken} />
+          <WarRoom
+            onGoToRules={goToRules}
+            onGoToTab={goToTab}
+            metaAccessToken={metaAccessToken}
+            campaigns={campaigns}
+            onCampaignsChange={setCampaigns}
+          />
         )}
-        {tab === 'meta' && <PlatformTab platformKey="meta" metaAccessToken={metaAccessToken} />}
-        {tab === 'google' && <PlatformTab platformKey="google" />}
-        {tab === 'tiktok' && <PlatformTab platformKey="tiktok" />}
+        {tab === 'meta' && (
+          <PlatformTab
+            platformKey="meta"
+            metaAccessToken={metaAccessToken}
+            campaigns={campaigns}
+            onCampaignsChange={setCampaigns}
+          />
+        )}
+        {tab === 'google' && (
+          <PlatformTab
+            platformKey="google"
+            campaigns={campaigns}
+            onCampaignsChange={setCampaigns}
+          />
+        )}
+        {tab === 'tiktok' && (
+          <PlatformTab
+            platformKey="tiktok"
+            campaigns={campaigns}
+            onCampaignsChange={setCampaigns}
+          />
+        )}
         {tab === 'track' && <TrackingTab focus={requestedFocus} />}
         {tab === 'rules' && <RulesTab />}
       </div>

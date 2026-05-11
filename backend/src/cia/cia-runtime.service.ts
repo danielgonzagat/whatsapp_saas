@@ -219,7 +219,11 @@ export class CiaRuntimeService implements OnModuleDestroy {
         autoBootstrapOnConnected: settings.autonomy?.autoBootstrapOnConnected ?? true,
       },
     });
-    await this.runtimeState.updateAutonomyRunStatus(workspaceId, currentRunId, 'PAUSED');
+    await this.runtimeState.updateAutonomyRunStatus(
+      workspaceId,
+      currentRunId ?? undefined,
+      'PAUSED',
+    );
     await this.stopPresenceHeartbeat(workspaceId);
 
     await this.agentEvents.publish({

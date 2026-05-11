@@ -22,29 +22,47 @@ interface Conversation {
 interface ConversationHistoryContextType {
   conversations: Conversation[];
   activeConv: string | null;
+  hasMoreConversations: boolean;
+  isLoadingMoreConversations: boolean;
+  totalConversations: number | null;
   addConversation: (title?: string) => Promise<string | null>;
   updateConversationTitle: (id: string, title: string) => void;
   deleteConversation: (id: string) => void;
   setActiveConversation: (id: string | null) => void;
   upsertConversation: (conversation: Conversation) => void;
   refreshConversations: () => Promise<void>;
+  loadMoreConversations: () => Promise<void>;
+  loadAllConversations: () => Promise<Conversation[]>;
   clearAll: () => void;
 }
 
 const ConversationHistoryContext = createContext<ConversationHistoryContextType>({
   conversations: [],
   activeConv: null,
+  hasMoreConversations: false,
+  isLoadingMoreConversations: false,
+  totalConversations: null,
   addConversation: async () => null,
   updateConversationTitle: () => {},
   deleteConversation: () => {},
   setActiveConversation: () => {},
   upsertConversation: () => {},
   refreshConversations: async () => {},
+  loadMoreConversations: async () => {},
+  loadAllConversations: async () => [],
   clearAll: () => {},
 });
 
 const CONVERSATIONS_CACHE_SLOT = 'kloel:conversations';
 const ACTIVE_CONVERSATION_CACHE_SLOT = 'kloel:activeConv';
+const CONVERSATION_PAGE_SIZE = 20;
+
+interface ThreadPage {
+  items: Conversation[];
+  total: number;
+  nextCursor: string | null;
+  hasMore: boolean;
+}
 
 function readCache<T>(key: string, fallback: T): T {
   try {
@@ -76,6 +94,10 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
   const { isAuthenticated, isLoading } = useAuth();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConv, setActiveConv] = useState<string | null>(null);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [hasMoreConversations, setHasMoreConversations] = useState(false);
+  const [isLoadingMoreConversations, setIsLoadingMoreConversations] = useState(false);
+  const [totalConversations, setTotalConversations] = useState<number | null>(null);
   const [cacheHydrated, setCacheHydrated] = useState(false);
   const didSyncRef = useRef(false);
 
@@ -92,8 +114,7 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
         const aTime = new Date(a.updatedAt || 0).getTime();
         const bTime = new Date(b.updatedAt || 0).getTime();
         return bTime - aTime;
-      })
-      .slice(0, 50);
+      });
 
     setConversations(normalized);
     writeCache(CONVERSATIONS_CACHE_SLOT, normalized);
@@ -102,13 +123,38 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
     );
   }, []);
 
+  const mergeConversations = useCallback((nextConversations: Conversation[]) => {
+    setConversations((prev) => {
+      const byId = new Map<string, Conversation>();
+      for (const conversation of [...prev, ...nextConversations]) {
+        if (!isValidConversationId(conversation.id)) {
+          continue;
+        }
+        byId.set(conversation.id, {
+          id: conversation.id,
+          title: String(conversation.title || 'Nova conversa').trim() || 'Nova conversa',
+          updatedAt: conversation.updatedAt,
+          lastMessagePreview: String(conversation.lastMessagePreview || '').trim(),
+        });
+      }
+      const merged = Array.from(byId.values()).sort((a, b) => {
+        const aTime = new Date(a.updatedAt || 0).getTime();
+        const bTime = new Date(b.updatedAt || 0).getTime();
+        return bTime - aTime;
+      });
+      writeCache(CONVERSATIONS_CACHE_SLOT, merged);
+      return merged;
+    });
+  }, []);
+
   const refreshConversations = useCallback(async () => {
     if (!isAuthenticated) {
       return;
     }
     try {
-      const res = await apiFetch<Conversation[]>('/kloel/threads');
-      const threads: Conversation[] = Array.isArray(res?.data) ? res.data : [];
+      const res = await apiFetch<ThreadPage>(`/kloel/threads?limit=${CONVERSATION_PAGE_SIZE}`);
+      const page = res?.data;
+      const threads: Conversation[] = Array.isArray(page?.items) ? page.items : [];
       const mapped = threads.map((t) => ({
         id: t.id,
         title: t.title,
@@ -116,10 +162,66 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
         lastMessagePreview: t.lastMessagePreview,
       }));
       applyConversations(mapped);
+      setNextCursor(page?.nextCursor ?? null);
+      setHasMoreConversations(Boolean(page?.hasMore));
+      setTotalConversations(typeof page?.total === 'number' ? page.total : mapped.length);
     } catch {
       // Keep cached conversations when backend is temporarily unavailable
     }
   }, [applyConversations, isAuthenticated]);
+
+  const loadMoreConversations = useCallback(async () => {
+    if (!isAuthenticated || !hasMoreConversations || isLoadingMoreConversations || !nextCursor) {
+      return;
+    }
+    setIsLoadingMoreConversations(true);
+    try {
+      const res = await apiFetch<ThreadPage>(
+        `/kloel/threads?limit=${CONVERSATION_PAGE_SIZE}&cursor=${encodeURIComponent(nextCursor)}`,
+      );
+      const page = res?.data;
+      const threads = Array.isArray(page?.items) ? page.items : [];
+      mergeConversations(threads);
+      setNextCursor(page?.nextCursor ?? null);
+      setHasMoreConversations(Boolean(page?.hasMore));
+      setTotalConversations(typeof page?.total === 'number' ? page.total : null);
+    } catch {
+      // Keep the current list; the sentinel can retry on the next scroll.
+    } finally {
+      setIsLoadingMoreConversations(false);
+    }
+  }, [
+    hasMoreConversations,
+    isAuthenticated,
+    isLoadingMoreConversations,
+    mergeConversations,
+    nextCursor,
+  ]);
+
+  const loadAllConversations = useCallback(async (): Promise<Conversation[]> => {
+    if (!isAuthenticated) {
+      return conversations;
+    }
+    const all: Conversation[] = [];
+    let cursor: string | null = null;
+    let keepGoing = true;
+    while (keepGoing) {
+      const query: string = cursor
+        ? `/kloel/threads?limit=50&cursor=${encodeURIComponent(cursor)}`
+        : '/kloel/threads?limit=50';
+      const res: { data?: ThreadPage } = await apiFetch<ThreadPage>(query);
+      const page: ThreadPage | undefined = res.data;
+      const items = Array.isArray(page?.items) ? page.items : [];
+      all.push(...items);
+      cursor = page?.nextCursor ?? null;
+      keepGoing = Boolean(page?.hasMore && cursor);
+    }
+    mergeConversations(all);
+    setNextCursor(null);
+    setHasMoreConversations(false);
+    setTotalConversations(all.length);
+    return all;
+  }, [conversations, isAuthenticated, mergeConversations]);
 
   useEffect(() => {
     const cachedConversations = readCache<Conversation[]>(CONVERSATIONS_CACHE_SLOT, []).filter(
@@ -145,6 +247,9 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
       didSyncRef.current = false;
       setConversations([]);
       setActiveConv(null);
+      setNextCursor(null);
+      setHasMoreConversations(false);
+      setTotalConversations(null);
       try {
         localStorage.removeItem(CONVERSATIONS_CACHE_SLOT);
         localStorage.removeItem(ACTIVE_CONVERSATION_CACHE_SLOT);
@@ -215,7 +320,7 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
           updatedAt: payload.updatedAt,
           lastMessagePreview: payload.lastMessagePreview,
         };
-        setConversations((prev) => [conv, ...prev].slice(0, 50));
+        setConversations((prev) => [conv, ...prev]);
         return payload.id;
       }
     } catch {
@@ -257,7 +362,7 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
           lastMessagePreview: String(conversation.lastMessagePreview || '').trim(),
         },
         ...prev.filter((entry) => entry.id !== conversation.id),
-      ].slice(0, 50);
+      ];
 
       writeCache(CONVERSATIONS_CACHE_SLOT, next);
       return next;
@@ -278,12 +383,17 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
       value={{
         conversations,
         activeConv,
+        hasMoreConversations,
+        isLoadingMoreConversations,
+        totalConversations,
         addConversation,
         updateConversationTitle,
         deleteConversation,
         setActiveConversation,
         upsertConversation,
         refreshConversations,
+        loadMoreConversations,
+        loadAllConversations,
         clearAll,
       }}
     >

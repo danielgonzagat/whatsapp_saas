@@ -93,11 +93,12 @@ export class CheckoutOrderService {
       ...orderData
     } = data;
     const correlationId = incomingCorrelationId || randomUUID();
+    const paymentMethod = orderData.paymentMethod ?? 'PIX';
     this.logOrderEvent('checkout_order_create_start', {
       correlationId,
       planId: orderData.planId,
       workspaceId: orderData.workspaceId,
-      paymentMethod: orderData.paymentMethod,
+      paymentMethod,
       checkoutCode: checkoutCode || null,
     });
     const planRecord = await this.orderSupport.resolvePlanForOrder(
@@ -149,7 +150,7 @@ export class CheckoutOrderService {
     const normalizedBumpTotalInCents = serverTotals.bumpTotalInCents;
     const normalizedBaseTotalInCents = serverTotals.totalInCents;
     const normalizedInstallments =
-      orderData.paymentMethod === 'CREDIT_CARD'
+      paymentMethod === 'CREDIT_CARD'
         ? Math.max(1, Math.round(Number(orderData.installments || 1)))
         : 1;
     const qualityGate = {
@@ -171,13 +172,13 @@ export class CheckoutOrderService {
       customerPhone: qualityGate.phoneDigits,
     });
     const marketplaceFeePercent = await this.orderSupport.resolveMarketplaceFeePercent(
-      orderData.paymentMethod as 'CREDIT_CARD' | 'PIX' | 'BOLETO',
+      paymentMethod,
       normalizedBaseTotalInCents,
       DEFAULT_MARKETPLACE_FEE_PERCENT,
     );
     const marketplacePricing = buildCheckoutMarketplacePricing({
       baseTotalInCents: normalizedBaseTotalInCents,
-      paymentMethod: orderData.paymentMethod as 'CREDIT_CARD' | 'PIX' | 'BOLETO',
+      paymentMethod,
       installments: normalizedInstallments,
       marketplaceFeePercent,
       installmentInterestMonthlyPercent: 3.99,
@@ -191,7 +192,7 @@ export class CheckoutOrderService {
       0,
       marketplacePricing.sellerReceivableInCents - affiliateCommissionInCents,
     );
-    if (orderData.paymentMethod === 'BOLETO') {
+    if (paymentMethod === 'BOLETO') {
       throw new BadRequestException(
         'Boleto ainda não está habilitado no checkout Stripe-only. Use cartão ou Pix.',
       );
@@ -224,6 +225,7 @@ export class CheckoutOrderService {
         const created = await tx.checkoutOrder.create({
           data: {
             ...orderData,
+            paymentMethod,
             shippingPrice: normalizedShippingInCents,
             acceptedBumps: toPrismaJsonArray(serverTotals.acceptedBumpIds),
             subtotalInCents: normalizedSubtotalInCents,
@@ -290,7 +292,7 @@ export class CheckoutOrderService {
         orderNumber,
         correlationId,
         data,
-        orderData,
+        orderData: { paymentMethod },
         qualityGate,
         normalizedBaseTotalInCents,
         normalizedInstallments,
@@ -313,7 +315,7 @@ export class CheckoutOrderService {
       orderNumber,
       correlationId,
       data,
-      orderData,
+      orderData: { paymentMethod },
       qualityGate,
       normalizedBaseTotalInCents,
       normalizedInstallments,

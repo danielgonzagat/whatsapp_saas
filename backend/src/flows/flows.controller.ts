@@ -3,6 +3,7 @@ import {
   Body,
   Controller,
   Get,
+  NotFoundException,
   Param,
   Post,
   Put,
@@ -223,6 +224,9 @@ export class FlowsController {
   ) {
     const workspaceId = resolveWorkspaceId(req);
     const execution = await this.flows.retryExecution(workspaceId, executionId);
+    if (!execution) {
+      throw new NotFoundException('Execution not found');
+    }
 
     const flow = execution.flow;
     const user = execution.contact.phone;

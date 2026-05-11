@@ -9,7 +9,10 @@ import { tokenStorage } from '@/lib/api';
 import { apiUrl } from '@/lib/http';
 import { readStreamSequential } from '@/lib/async-sequence';
 import { colors } from '@/lib/design-tokens';
-import { loadKloelThreadMessages, sendAuthenticatedKloelMessage } from '@/lib/kloel-conversations';
+import {
+  loadKloelThreadMessages,
+  streamAuthenticatedKloelMessage,
+} from '@/lib/kloel-conversations';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { mutate } from 'swr';
 import { parseKloelChatStreamLine, typingSimulationDelay } from './HomeScreen.helpers';
@@ -43,6 +46,43 @@ const DEV_FALLBACK_MESSAGE =
   'Desculpe, nao consegui processar sua mensagem. Tente novamente em alguns instantes.';
 
 const ERROR_MESSAGE = 'Nao foi possivel conectar ao servidor. Tente novamente.';
+
+type AuthenticatedThreadInfo = { conversationId: string; title?: string };
+
+function withAssistantStreamContent(
+  messages: ChatMessage[],
+  assistantId: string,
+  content: string,
+): ChatMessage[] {
+  return messages.map((msg) =>
+    msg.id === assistantId
+      ? { ...msg, content, displayedContent: content, isThinking: false, isTyping: true }
+      : msg,
+  );
+}
+
+function withAssistantFinalContent(
+  messages: ChatMessage[],
+  assistantId: string,
+  content: string,
+): ChatMessage[] {
+  return messages.map((msg) =>
+    msg.id === assistantId
+      ? { ...msg, content, displayedContent: content, isThinking: false, isTyping: false }
+      : msg,
+  );
+}
+
+function resolveThreadTitle(
+  thread: AuthenticatedThreadInfo,
+  conversationTitleMap: Map<string, string>,
+): string {
+  return thread.title || conversationTitleMap.get(thread.conversationId) || 'Nova conversa';
+}
+
+function buildConversationTouch(id: string, title: string) {
+  return { id, title, updatedAt: new Date().toISOString() };
+}
 
 // ════════════════════════════════════════════
 // ICONS
@@ -289,6 +329,18 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
         let fullContent = '';
         let nextConversationId = activeConversationId;
         let nextTitle = chatTitle;
+        const appendAuthenticatedChunk = (chunk: string) => {
+          fullContent += chunk;
+          setMessages((prev) => withAssistantStreamContent(prev, assistantId, fullContent));
+        };
+        const handleAuthenticatedThread = (thread: AuthenticatedThreadInfo) => {
+          nextConversationId = thread.conversationId;
+          nextTitle = resolveThreadTitle(thread, conversationTitleMap);
+          setActiveConversationId(thread.conversationId);
+          setActiveConversation(thread.conversationId);
+          setChatTitle(nextTitle);
+          upsertConversation(buildConversationTouch(thread.conversationId, nextTitle));
+        };
 
         if (isGuest) {
           const response = await fetch(apiUrl('/chat/guest'), {
@@ -339,37 +391,57 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
             },
           );
         } else {
-          const response = await sendAuthenticatedKloelMessage({
-            message: messageText,
-            conversationId: activeConversationId,
-            mode: 'chat',
+          await new Promise<void>((resolve, reject) => {
+            const finish = () => {
+              ac.signal.removeEventListener('abort', finish);
+              resolve();
+            };
+            ac.signal.addEventListener('abort', finish, { once: true });
+            streamAuthenticatedKloelMessage(
+              {
+                message: messageText,
+                conversationId: activeConversationId,
+                mode: 'chat',
+              },
+              {
+                signal: ac.signal,
+                onThread: handleAuthenticatedThread,
+                onChunk: appendAuthenticatedChunk,
+                onDone: finish,
+                onError: (message) => {
+                  reject(new Error(message));
+                },
+              },
+            );
           });
-          fullContent = String(response.response || '').trim();
-          nextConversationId = response.conversationId || activeConversationId;
-          nextTitle =
-            response.title || conversationTitleMap.get(nextConversationId || '') || chatTitle;
+        }
+
+        if (ac.signal.aborted) {
+          return;
         }
 
         if (!fullContent.trim()) {
           throw new Error('empty_response');
         }
 
-        setTimeout(() => {
-          setMessages((prev) =>
-            prev.map((msg) => (msg.id === assistantId ? { ...msg, content: fullContent } : msg)),
-          );
-          startTyping(fullContent);
-        }, thinkDuration);
+        if (isGuest) {
+          setTimeout(() => {
+            setMessages((prev) =>
+              prev.map((msg) => (msg.id === assistantId ? { ...msg, content: fullContent } : msg)),
+            );
+            startTyping(fullContent);
+          }, thinkDuration);
+        } else {
+          setMessages((prev) => withAssistantFinalContent(prev, assistantId, fullContent));
+          setIsWaitingForResponse(false);
+          typingMessageIdRef.current = null;
+        }
 
         if (!isGuest && nextConversationId) {
           setActiveConversationId(nextConversationId);
           setActiveConversation(nextConversationId);
           setChatTitle(nextTitle || 'Nova conversa');
-          upsertConversation({
-            id: nextConversationId,
-            title: nextTitle || 'Nova conversa',
-            updatedAt: new Date().toISOString(),
-          });
+          upsertConversation(buildConversationTouch(nextConversationId, nextTitle || 'Nova conversa'));
           void refreshConversations();
         }
       } catch (error) {

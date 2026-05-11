@@ -208,7 +208,7 @@ export class ReportsController {
     });
     const scores = responses
       .map((r) => (r.details as Record<string, unknown> | null)?.score as number | undefined)
-      .filter(Boolean);
+      .filter((score): score is number => typeof score === 'number');
     const avg =
       scores.length > 0 ? scores.reduce((a: number, b: number) => a + b, 0) / scores.length : 0;
     const promoters = scores.filter((s: number) => s >= 9).length;

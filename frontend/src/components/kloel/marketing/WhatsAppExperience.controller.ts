@@ -8,7 +8,7 @@ import {
   getWhatsAppStatus,
 } from '@/lib/api/whatsapp';
 import { swrFetcher } from '@/lib/fetcher';
-import { useCallback, useId, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import useSWR from 'swr';
 import {
   type SelectableProduct,
@@ -206,7 +206,9 @@ export function useWhatsAppExperienceController({
       qrRequestInFlightRef.current = false;
     }
   };
-  requestQrCodeRef.current = requestQrCode;
+  useEffect(() => {
+    requestQrCodeRef.current = requestQrCode;
+  }, [requestQrCode]);
 
   const selectableProducts = useMemo(() => {
     const own = ownedProducts

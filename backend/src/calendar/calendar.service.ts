@@ -245,10 +245,10 @@ export class CalendarService {
 
       return {
         id: appointment.id,
-        summary: appointment.title,
+        summary: appointment.title ?? event.summary,
         description: appointment.description || undefined,
-        startTime: appointment.startAt,
-        endTime: appointment.endAt,
+        startTime: appointment.startAt ?? event.startTime,
+        endTime: appointment.endAt ?? event.endTime,
         location: appointment.location || undefined,
         meetingLink: appointment.meetingUrl || undefined,
       };
@@ -367,10 +367,10 @@ export class CalendarService {
 
       return appointments.map((apt) => ({
         id: apt.id,
-        summary: apt.title,
+        summary: apt.title ?? 'Evento sem titulo',
         description: apt.description || undefined,
-        startTime: apt.startAt,
-        endTime: apt.endAt,
+        startTime: apt.startAt ?? new Date(0),
+        endTime: apt.endAt ?? new Date(0),
         location: apt.location || undefined,
         meetingLink: apt.meetingUrl || undefined,
       }));
