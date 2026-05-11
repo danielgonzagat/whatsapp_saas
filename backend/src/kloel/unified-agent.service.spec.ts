@@ -1,9 +1,14 @@
+jest.mock('./openai-wrapper', () => ({
+  chatCompletionWithFallback: jest.fn(),
+}));
+
 import { ConfigService } from '@nestjs/config';
 import { UnifiedAgentActionsCommerceService } from './unified-agent-actions-commerce.service';
 import { UnifiedAgentActionsMessagingService } from './unified-agent-actions-messaging.service';
 import { UnifiedAgentActionsService } from './unified-agent-actions.service';
 import { UnifiedAgentContextDataService } from './unified-agent-context-data.service';
 import { UnifiedAgentContextService } from './unified-agent-context.service';
+import { chatCompletionWithFallback } from './openai-wrapper';
 import { UnifiedAgentResponseService } from './unified-agent-response.service';
 import { UnifiedAgentService } from './unified-agent.service';
 
@@ -14,7 +19,66 @@ type UnifiedAgentPrismaMock = {
   message: { findMany: jest.Mock };
   kloelMemory: { findFirst: jest.Mock; findMany: jest.Mock; upsert: jest.Mock };
   product: { findFirst: jest.Mock; findMany: jest.Mock };
+  autopilotEvent: { create: jest.Mock };
 };
+
+const BLOCKED_PAYMENT_LINK_COMPLETION = {
+  choices: [
+    {
+      message: {
+        content: null,
+        tool_calls: [
+          {
+            id: 'call-1',
+            type: 'function',
+            function: { name: 'create_payment_link', arguments: '{"amount":100}' },
+          },
+        ],
+      },
+    },
+  ],
+  usage: { total_tokens: 12 },
+};
+
+const BLOCKED_PAYMENT_LINK_ACTION = {
+  tool: 'create_payment_link',
+  args: {},
+  result: { blocked: true, reason: 'capability_not_allowed' },
+};
+
+function mockBlockedToolCallCompletion() {
+  (chatCompletionWithFallback as jest.Mock)
+    .mockResolvedValueOnce(BLOCKED_PAYMENT_LINK_COMPLETION)
+    .mockResolvedValueOnce({
+      choices: [{ message: { content: 'Posso te ajudar por aqui.' } }],
+      usage: { total_tokens: 8 },
+    });
+}
+
+function blockedPaymentLinkEventExpectation() {
+  return expect.objectContaining({
+    data: expect.objectContaining({
+      action: 'create_payment_link',
+      contactId: 'contact-1',
+      status: 'failed',
+      workspaceId: 'ws-1',
+    }),
+  });
+}
+
+function expectPaymentLinkToolBlocked(
+  result: { actions: unknown[] },
+  prisma: UnifiedAgentPrismaMock,
+  paymentService: { createPayment: jest.Mock },
+  planLimits: { trackAiUsage: jest.Mock },
+) {
+  expect(paymentService.createPayment).not.toHaveBeenCalled();
+  expect(chatCompletionWithFallback).toHaveBeenCalledTimes(2);
+  expect(planLimits.trackAiUsage).toHaveBeenCalledWith('ws-1', 12);
+  expect(planLimits.trackAiUsage).toHaveBeenCalledWith('ws-1', 8);
+  expect(prisma.autopilotEvent.create).toHaveBeenCalledWith(blockedPaymentLinkEventExpectation());
+  expect(result.actions).toEqual([BLOCKED_PAYMENT_LINK_ACTION]);
+}
 
 describe('UnifiedAgentService', () => {
   let prisma: UnifiedAgentPrismaMock;
@@ -22,6 +86,7 @@ describe('UnifiedAgentService', () => {
   let transportRegistry: { send: jest.Mock };
   let paymentService: { createPayment: jest.Mock };
   let configMock: ConfigService;
+  let planLimits: { ensureTokenBudget: jest.Mock; trackAiUsage: jest.Mock };
   let service: UnifiedAgentService;
   let ctx: UnifiedAgentContextService;
   let response: UnifiedAgentResponseService;
@@ -52,6 +117,9 @@ describe('UnifiedAgentService', () => {
       product: {
         findFirst: jest.fn(),
         findMany: jest.fn().mockResolvedValue([]),
+      },
+      autopilotEvent: {
+        create: jest.fn().mockResolvedValue({}),
       },
     };
 
@@ -84,10 +152,14 @@ describe('UnifiedAgentService', () => {
         return undefined;
       }),
     } as never as ConfigService;
+    planLimits = {
+      ensureTokenBudget: jest.fn().mockResolvedValue(undefined),
+      trackAiUsage: jest.fn().mockResolvedValue(undefined),
+    };
 
     const contextData = new UnifiedAgentContextDataService(prisma as never);
     ctx = new UnifiedAgentContextService(contextData);
-    response = new UnifiedAgentResponseService({} as never);
+    response = new UnifiedAgentResponseService(planLimits as never);
     const messaging = new UnifiedAgentActionsMessagingService(
       transportRegistry as never,
       {} as never,
@@ -120,7 +192,7 @@ describe('UnifiedAgentService', () => {
       {} as never,
       whatsappService as never,
       {} as never,
-      { trackAiUsage: jest.fn().mockResolvedValue(undefined) } as never,
+      planLimits as never,
       { log: jest.fn().mockResolvedValue(undefined) } as never,
       ctx,
       response,
@@ -260,6 +332,21 @@ describe('UnifiedAgentService', () => {
         result: { blocked: true, reason: 'capability_not_allowed' },
       },
     ]);
+  });
+
+  it('logs and blocks LLM tool calls outside the allowed policy', async () => {
+    Reflect.set(service, 'openai', {});
+    mockBlockedToolCallCompletion();
+
+    const result = await service.processMessage({
+      workspaceId: 'ws-1',
+      contactId: 'contact-1',
+      phone: '5511999999999',
+      message: 'gera o link',
+      allowedTools: ['send_message'],
+    });
+
+    expectPaymentLinkToolBlocked(result, prisma, paymentService, planLimits);
   });
 
   it('loads conversation history by phone when contactId is missing', async () => {

@@ -23,6 +23,13 @@ describe('MetaWhatsAppService', () => {
     delete process.env.META_GRAPH_API_VERSION;
     delete process.env.PUBLIC_BACKEND_URL;
     delete process.env.API_PUBLIC_URL;
+    delete process.env.API_URL;
+    delete process.env.APP_URL;
+    delete process.env.BACKEND_PUBLIC_URL;
+    delete process.env.BACKEND_URL;
+    delete process.env.NEXT_PUBLIC_API_URL;
+    delete process.env.RAILWAY_PUBLIC_DOMAIN;
+    delete process.env.SERVICE_BASE_URL;
 
     prisma = {
       metaConnection: {
@@ -63,6 +70,85 @@ describe('MetaWhatsAppService', () => {
     const params = new URL(url).searchParams;
 
     expect(params.get('config_id')).toBe('instagram-config');
+  });
+
+  it('uses explicit backend URL for Meta OAuth callbacks even when frontend URLs are configured', () => {
+    process.env.APP_URL = 'https://app.kloel.com';
+    process.env.NEXT_PUBLIC_API_URL = 'https://app.kloel.com/api';
+    process.env.BACKEND_PUBLIC_URL = 'https://api.kloel.com';
+
+    expect(service.getPublicBackendBaseUrl()).toBe('https://api.kloel.com');
+    expect(service.getOAuthRedirectUri()).toBe('https://api.kloel.com/meta/auth/callback');
+  });
+
+  it('does not use frontend app URLs as Meta OAuth callbacks', () => {
+    process.env.APP_URL = 'https://app.kloel.com';
+    process.env.NEXT_PUBLIC_API_URL = 'https://app.kloel.com/api';
+
+    expect(service.getPublicBackendBaseUrl()).toBe('http://localhost:3001');
+    expect(service.getOAuthRedirectUri()).toBe('http://localhost:3001/meta/auth/callback');
+  });
+
+  it('normalizes backend domains without protocols for Meta callbacks', () => {
+    process.env.BACKEND_URL = 'api.kloel.com';
+
+    expect(service.getPublicBackendBaseUrl()).toBe('https://api.kloel.com');
+  });
+
+  it('keeps localhost backend callbacks on http', () => {
+    process.env.BACKEND_URL = 'localhost:3001';
+
+    expect(service.getPublicBackendBaseUrl()).toBe('http://localhost:3001');
+  });
+
+  it('accepts legacy frontend env names only when they point to a backend host', () => {
+    process.env.NEXT_PUBLIC_API_URL = 'https://api.kloel.com';
+
+    expect(service.getPublicBackendBaseUrl()).toBe('https://api.kloel.com');
+  });
+
+  it('rejects legacy Railway frontend hosts as backend callbacks', () => {
+    process.env.NEXT_PUBLIC_API_URL = 'https://web-production-1234.up.railway.app';
+
+    expect(service.getPublicBackendBaseUrl()).toBe('http://localhost:3001');
+  });
+
+  it('accepts legacy Railway backend hosts as backend callbacks', () => {
+    process.env.NEXT_PUBLIC_API_URL = 'https://api.up.railway.app';
+
+    expect(service.getPublicBackendBaseUrl()).toBe('https://api.up.railway.app');
+  });
+
+  it('ignores malformed legacy callback URLs', () => {
+    process.env.NEXT_PUBLIC_API_URL = 'http://[bad';
+
+    expect(service.getPublicBackendBaseUrl()).toBe('http://localhost:3001');
+  });
+
+  it('builds the Meta signup URL with the backend OAuth callback', () => {
+    process.env.META_APP_ID = '2208402546567386';
+    process.env.META_CONFIG_ID = 'config-1';
+    process.env.META_GRAPH_API_VERSION = 'v22.0';
+    process.env.BACKEND_PUBLIC_URL = 'https://api.kloel.com';
+
+    const authUrl = new URL(
+      service.buildEmbeddedSignupUrl('workspace-1', {
+        channel: 'whatsapp',
+        returnTo: '/marketing/whatsapp',
+      }),
+    );
+
+    expect(authUrl.origin).toBe('https://www.facebook.com');
+    expect(authUrl.searchParams.get('client_id')).toBe('2208402546567386');
+    expect(authUrl.searchParams.get('config_id')).toBe('config-1');
+    expect(authUrl.searchParams.get('redirect_uri')).toBe(
+      'https://api.kloel.com/meta/auth/callback',
+    );
+    expect(JSON.parse(authUrl.searchParams.get('state') || '{}')).toEqual({
+      workspaceId: 'workspace-1',
+      channel: 'whatsapp',
+      returnTo: '/marketing/whatsapp',
+    });
   });
 
   it('falls back to connected when webhook heartbeat sees malformed persisted status', async () => {

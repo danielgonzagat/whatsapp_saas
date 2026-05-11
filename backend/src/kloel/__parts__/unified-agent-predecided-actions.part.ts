@@ -30,8 +30,7 @@ export async function executePredecidedAgentActions(input: {
   predecidedActions: PredecidedAction[];
   workspaceId: string;
 }): Promise<ActionEntry[]> {
-  const allowed =
-    typeof input.allowedTools === 'undefined' ? null : new Set(input.allowedTools);
+  const allowed = typeof input.allowedTools === 'undefined' ? null : new Set(input.allowedTools);
   const actionsList: ActionEntry[] = [];
 
   await forEachSequential(input.predecidedActions, async (action) => {

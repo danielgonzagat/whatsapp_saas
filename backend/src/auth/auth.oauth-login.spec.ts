@@ -264,7 +264,9 @@ describe('AuthService OAuth login', () => {
   });
 
   it('should reject invalid Apple credentials without issuing tokens', async () => {
-    mockAppleAuthService.verifyCredential.mockRejectedValue(new BadRequestException('apple_denied'));
+    mockAppleAuthService.verifyCredential.mockRejectedValue(
+      new BadRequestException('apple_denied'),
+    );
 
     await expect(
       service.loginWithAppleCredential({

@@ -285,13 +285,7 @@ Mensagem: ${message}`,
           );
           const blockedResult = { blocked: true, reason: 'capability_not_allowed' };
           actionsList.push({ tool: toolName, args: {}, result: blockedResult });
-          await this.actions.logAutopilotEvent(
-            workspaceId,
-            contactId,
-            toolName,
-            {},
-            blockedResult,
-          );
+          await this.actions.logAutopilotEvent(workspaceId, contactId, toolName, {}, blockedResult);
           return;
         }
         let toolArgs: Record<string, unknown> = {};
