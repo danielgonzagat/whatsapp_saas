@@ -30,14 +30,16 @@ import { GET, POST } from './route';
 
 const appleState = 'auth-state-1';
 
-function encodeAppleState(nonce = appleState): string {
-  return Buffer.from(JSON.stringify({ nonce })).toString('base64url');
+function encodeAppleState(nonce = appleState, nextPath?: string): string {
+  return Buffer.from(JSON.stringify({ nextPath, nonce })).toString('base64url');
 }
 
-function createCookieJar(nonce = appleState) {
+function createCookieJar(nonce = appleState, nextPath?: string) {
   return {
     get: vi.fn((name: string) =>
-      name === 'kloel_auth_apple_state' ? { name, value: encodeAppleState(nonce) } : undefined,
+      name === 'kloel_auth_apple_state'
+        ? { name, value: encodeAppleState(nonce, nextPath) }
+        : undefined,
     ),
   };
 }
@@ -61,6 +63,7 @@ function createPostRequest(options?: {
   idToken?: string;
   state?: string;
   cookieState?: string;
+  nextPath?: string;
   host?: string;
 }) {
   const form = new FormData();
@@ -83,7 +86,7 @@ function createPostRequest(options?: {
     } as NextRequest,
     {
       nextUrl,
-      cookies: createCookieJar(options?.cookieState || appleState),
+      cookies: createCookieJar(options?.cookieState || appleState, options?.nextPath),
       formData: vi.fn(async () => form),
     },
   );
@@ -151,6 +154,29 @@ describe('apple auth callback route', () => {
     expect(mocks.setSharedAuthCookies).toHaveBeenCalledTimes(1);
     expect(response.status).toBe(307);
     expect(response.headers.get('location')).toBe('https://app.kloel.com/');
+  });
+
+  it('redirects to the sanitized next path stored in Apple state', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          access_token: 'access-token',
+          refresh_token: 'refresh-token',
+          user: { id: 'user_1', email: 'apple@kloel.com' },
+          workspace: { id: 'ws_1', name: 'Workspace' },
+        }),
+        {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        },
+      ),
+    );
+    mocks.buildAppUrl.mockReturnValue('https://app.kloel.com/billing');
+
+    const response = await POST(createPostRequest({ nextPath: '/billing' }));
+
+    expect(mocks.buildAppUrl).toHaveBeenCalledWith('/billing', 'auth.kloel.com');
+    expect(response.headers.get('location')).toBe('https://app.kloel.com/billing');
   });
 
   it('redirects to login with an explicit reason when the identity token is missing', async () => {

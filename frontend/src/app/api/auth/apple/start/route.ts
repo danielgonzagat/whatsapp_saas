@@ -7,6 +7,17 @@ function readAppleClientId(): string {
   );
 }
 
+function sanitizeNextPath(value: string | null): string {
+  if (!value?.trim()) {
+    return '/';
+  }
+  const trimmed = value.trim();
+  if (!trimmed.startsWith('/') || trimmed.startsWith('//')) {
+    return '/';
+  }
+  return trimmed;
+}
+
 /** Start Apple OAuth flow for auth (login/register). */
 export async function GET(request: NextRequest) {
   const clientId = readAppleClientId();
@@ -22,6 +33,7 @@ export async function GET(request: NextRequest) {
 
   const redirectUri = new URL('/api/auth/callback/apple', request.nextUrl.origin);
   const nonce = crypto.randomUUID();
+  const nextPath = sanitizeNextPath(request.nextUrl.searchParams.get('next'));
   const appleUrl = new URL('https://appleid.apple.com/auth/authorize');
   appleUrl.searchParams.set('client_id', clientId);
   appleUrl.searchParams.set('redirect_uri', redirectUri.toString());
@@ -31,6 +43,6 @@ export async function GET(request: NextRequest) {
   appleUrl.searchParams.set('state', nonce);
 
   const response = NextResponse.redirect(appleUrl);
-  writeAuthAppleState(response, { nonce });
+  writeAuthAppleState(response, { nextPath, nonce });
   return response;
 }

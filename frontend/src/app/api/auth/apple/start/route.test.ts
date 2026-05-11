@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const env = vi.hoisted(() => ({
   APPLE_CLIENT_ID: 'com.kloel.web',
   NEXT_PUBLIC_APPLE_CLIENT_ID: '',
+  writeAuthAppleState: vi.fn(),
 }));
 
 vi.mock('next/server', async () => {
@@ -22,10 +23,14 @@ vi.mock('next/server', async () => {
   };
 });
 
+vi.mock('../state', () => ({
+  writeAuthAppleState: env.writeAuthAppleState,
+}));
+
 import { GET } from './route';
 
-function createGetRequest(host = 'auth.kloel.com') {
-  const nextUrl = new URL('https://auth.kloel.com/api/auth/apple/start');
+function createGetRequest(host = 'auth.kloel.com', url = 'https://auth.kloel.com/api/auth/apple/start') {
+  const nextUrl = new URL(url);
   return Object.assign(
     {
       method: 'GET',
@@ -40,6 +45,7 @@ describe('apple auth start route', () => {
   beforeEach(() => {
     vi.stubEnv('APPLE_CLIENT_ID', env.APPLE_CLIENT_ID);
     vi.stubEnv('NEXT_PUBLIC_APPLE_CLIENT_ID', env.NEXT_PUBLIC_APPLE_CLIENT_ID);
+    env.writeAuthAppleState.mockReset();
   });
 
   it('redirects to Apple with correct parameters', async () => {
@@ -59,6 +65,38 @@ describe('apple auth start route', () => {
     expect(appleUrl.searchParams.get('scope')).toBe('name email');
     expect(appleUrl.searchParams.get('response_mode')).toBe('form_post');
     expect(appleUrl.searchParams.get('state')).toBeTruthy();
+    expect(env.writeAuthAppleState).toHaveBeenCalledWith(
+      expect.any(Response),
+      expect.objectContaining({ nextPath: '/', nonce: appleUrl.searchParams.get('state') }),
+    );
+  });
+
+  it('stores only relative next paths in the Apple state cookie', async () => {
+    await GET(
+      createGetRequest(
+        'auth.kloel.com',
+        'https://auth.kloel.com/api/auth/apple/start?next=%2Fbilling',
+      ),
+    );
+
+    expect(env.writeAuthAppleState).toHaveBeenCalledWith(
+      expect.any(Response),
+      expect.objectContaining({ nextPath: '/billing' }),
+    );
+  });
+
+  it('drops external next URLs before writing Apple state', async () => {
+    await GET(
+      createGetRequest(
+        'auth.kloel.com',
+        'https://auth.kloel.com/api/auth/apple/start?next=https%3A%2F%2Fevil.example',
+      ),
+    );
+
+    expect(env.writeAuthAppleState).toHaveBeenCalledWith(
+      expect.any(Response),
+      expect.objectContaining({ nextPath: '/' }),
+    );
   });
 
   it('uses NEXT_PUBLIC_APPLE_CLIENT_ID as fallback when APPLE_CLIENT_ID is empty', async () => {

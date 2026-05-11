@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 
 export type AuthAppleState = {
+  nextPath?: string;
   nonce: string;
 };
 

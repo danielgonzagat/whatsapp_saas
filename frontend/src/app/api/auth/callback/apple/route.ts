@@ -117,7 +117,9 @@ async function handleAppleCallback(request: NextRequest) {
 
     revalidateTag('auth', 'max');
     const currentHost = request.headers.get('host') || request.nextUrl.host;
-    const successRedirect = NextResponse.redirect(new URL(buildAppUrl('/', currentHost)));
+    const successRedirect = NextResponse.redirect(
+      new URL(buildAppUrl(storedState.nextPath || '/', currentHost)),
+    );
     setSharedAuthCookies(request, successRedirect, data);
     clearAuthAppleState(successRedirect);
     return successRedirect;
