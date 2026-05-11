@@ -144,7 +144,34 @@ export class CheckoutPaymentService {
     },
   ) {
     const isPix = params.paymentMethod === 'PIX';
-    return {
+    const paymentMethodData = isPix
+      ? {
+          type: 'pix' as const,
+          billing_details: {
+            name: params.customerName,
+            email: params.customerEmail,
+            phone: params.customerPhone,
+          },
+        }
+      : undefined;
+
+    const paymentMethodOptions = isPix
+      ? {
+          pix: {
+            expires_after_seconds: 30 * 60,
+          },
+        }
+      : opts.forceThreeDS
+        ? {
+            card: {
+              request_three_d_secure: 'any' as const,
+            },
+          }
+        : undefined;
+
+    const confirm = isPix ? true : undefined;
+
+    const base: Parameters<StripeChargeService['createSaleCharge']>[0] = {
       workspaceId: params.workspaceId,
       sellerStripeAccountId: opts.sellerStripeAccountId,
       buyerPaidCents: BigInt(opts.chargedTotalInCents),
@@ -155,35 +182,21 @@ export class CheckoutPaymentService {
       idempotencyKey: params.idempotencyKey || params.orderId,
       buyerEmail: params.customerEmail,
       paymentMethodTypes: (isPix ? ['pix'] : ['card']) as ('pix' | 'card')[],
-      confirm: isPix,
-      paymentMethodData: isPix
-        ? {
-            type: 'pix' as const,
-            billing_details: {
-              name: params.customerName,
-              email: params.customerEmail,
-              phone: params.customerPhone,
-            },
-          }
-        : undefined,
-      paymentMethodOptions: isPix
-        ? {
-            pix: {
-              expires_after_seconds: 30 * 60,
-            },
-          }
-        : opts.forceThreeDS
-          ? {
-              card: {
-                request_three_d_secure: 'any' as const,
-              },
-            }
-          : undefined,
       metadata: {
         kloel_order_id: params.orderId,
         workspace_id: params.workspaceId,
       },
     };
+    if (paymentMethodData !== undefined) {
+      base.paymentMethodData = paymentMethodData;
+    }
+    if (paymentMethodOptions !== undefined) {
+      base.paymentMethodOptions = paymentMethodOptions;
+    }
+    if (confirm !== undefined) {
+      base.confirm = confirm;
+    }
+    return base;
   }
 
   private async persistPayment(
@@ -501,12 +514,7 @@ export class CheckoutPaymentService {
   }
 
   private async transitionOrderToApproved(
-    tx: {
-      checkoutOrder: {
-        findFirst: (args: unknown) => Promise<{ status: string } | null>;
-        updateMany: (args: unknown) => Promise<unknown>;
-      };
-    },
+    tx: Prisma.TransactionClient,
     orderId: string,
     workspaceId: string,
     _transitionContext: {

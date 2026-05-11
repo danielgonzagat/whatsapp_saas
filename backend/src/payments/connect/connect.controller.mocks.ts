@@ -174,7 +174,6 @@ export function buildController() {
       ledgerService as never,
       connectLedgerReconciliationService as never,
       connectPayoutApprovalService as never,
-      connectPayoutService as never,
     ),
   };
 }

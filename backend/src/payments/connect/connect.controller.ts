@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto';
 import {
   BadRequestException,
   Body,
@@ -23,7 +22,6 @@ import { LedgerService } from '../ledger/ledger.service';
 
 type ConnectPayoutDetails = Record<string, unknown>;
 
-import { ConnectPayoutService } from './connect-payout.service';
 import { ConnectPayoutApprovalService } from './connect-payout-approval.service';
 import { ConnectLedgerReconciliationService } from '../ledger/connect-ledger-reconciliation.service';
 import { ConnectService } from './connect.service';
@@ -47,7 +45,6 @@ export class ConnectController {
     private readonly ledgerService: LedgerService,
     private readonly connectLedgerReconciliationService: ConnectLedgerReconciliationService,
     private readonly connectPayoutApprovalService: ConnectPayoutApprovalService,
-    private readonly connectPayoutService: ConnectPayoutService,
   ) {}
 
   /** List accounts. */
@@ -432,7 +429,7 @@ export class ConnectController {
     };
   }
 
-  /** Create payout. */
+  /** Create payout approval request through the legacy payout route. */
   @Post(':workspaceId/payouts')
   @Idempotent()
   async createPayout(
@@ -462,62 +459,17 @@ export class ConnectController {
       throw new NotFoundException('Connect account balance not found for this workspace');
     }
 
-    const requestId = String(body.requestId || '').trim() || `po_${randomUUID()}`;
-
-    let result;
-    try {
-      result = await this.connectPayoutService.createPayout({
-        accountBalanceId,
-        workspaceId,
-        amountCents: BigInt(requestedAmount),
-        requestId,
-        ...(body.currency !== undefined ? { currency: body.currency } : {}),
-      });
-    } catch (error: unknown) {
-      await this.appendPayoutAudit({
-        action: 'system.connect.payout_request_failed',
-        accountBalanceId: balance.id,
-        workspaceId: balance.workspaceId,
-        accountType: String(balance.accountType),
-        stripeAccountId: balance.stripeAccountId,
-        requestId,
-        payoutId: null,
-        status: 'failed',
-        amountCents: String(requestedAmount),
-        error: error instanceof Error ? error.message : String(error),
-      });
-      Sentry.captureException(error, {
-        tags: { type: 'financial_alert', operation: 'connect_payout_request' },
-        extra: {
-          accountBalanceId: balance.id,
-          workspaceId: balance.workspaceId,
-          requestId,
-          amountCents: String(requestedAmount),
-        },
-        level: 'fatal',
-      });
-      throw error;
-    }
-
-    await this.appendPayoutAudit({
-      action: 'system.connect.payout_requested',
-      accountBalanceId: balance.id,
-      workspaceId: balance.workspaceId,
-      accountType: String(balance.accountType),
-      stripeAccountId: balance.stripeAccountId,
-      requestId,
-      payoutId: result.payoutId,
-      status: result.status,
-      amountCents: result.amountCents.toString(),
+    const result = await this.connectPayoutApprovalService.createRequest({
+      workspaceId,
+      accountBalanceId,
+      amountCents: BigInt(requestedAmount),
+      ...(body.currency !== undefined ? { currency: body.currency } : {}),
     });
 
     return {
       success: true,
-      payoutId: result.payoutId,
-      status: result.status,
-      accountBalanceId: result.accountBalanceId,
-      stripeAccountId: result.stripeAccountId,
-      amountCents: result.amountCents.toString(),
+      approvalRequired: true,
+      ...result,
     };
   }
 
@@ -554,40 +506,5 @@ export class ConnectController {
       success: true,
       ...result,
     };
-  }
-
-  private async appendPayoutAudit(input: {
-    action: string;
-    accountBalanceId: string;
-    workspaceId: string;
-    accountType: string;
-    stripeAccountId: string;
-    requestId?: string | null;
-    payoutId?: string | null;
-    status: string;
-    amountCents: string;
-    error?: string;
-  }): Promise<void> {
-    try {
-      await this.prisma.adminAuditLog.create({
-        data: {
-          action: input.action,
-          entityType: 'connect_account_balance',
-          entityId: input.accountBalanceId,
-          details: {
-            workspaceId: input.workspaceId,
-            accountType: input.accountType,
-            stripeAccountId: input.stripeAccountId,
-            requestId: input.requestId ?? null,
-            payoutId: input.payoutId ?? null,
-            status: input.status,
-            amountCents: input.amountCents,
-            ...(input.error ? { error: input.error } : {}),
-          },
-        },
-      });
-    } catch {
-      // Audit append must not block payout execution.
-    }
   }
 }
