@@ -89,6 +89,30 @@ describe('MetaWhatsAppService', () => {
     expect(service.getOAuthRedirectUri()).toBe('http://localhost:3001/meta/auth/callback');
   });
 
+  it('normalizes backend domains without protocols for Meta callbacks', () => {
+    process.env.BACKEND_URL = 'api.kloel.com';
+
+    expect(service.getPublicBackendBaseUrl()).toBe('https://api.kloel.com');
+  });
+
+  it('keeps localhost backend callbacks on http', () => {
+    process.env.BACKEND_URL = 'localhost:3001';
+
+    expect(service.getPublicBackendBaseUrl()).toBe('http://localhost:3001');
+  });
+
+  it('accepts legacy frontend env names only when they point to a backend host', () => {
+    process.env.NEXT_PUBLIC_API_URL = 'https://api.kloel.com';
+
+    expect(service.getPublicBackendBaseUrl()).toBe('https://api.kloel.com');
+  });
+
+  it('ignores malformed legacy callback URLs', () => {
+    process.env.NEXT_PUBLIC_API_URL = 'http://[bad';
+
+    expect(service.getPublicBackendBaseUrl()).toBe('http://localhost:3001');
+  });
+
   it('builds the Meta signup URL with the backend OAuth callback', () => {
     process.env.META_APP_ID = '2208402546567386';
     process.env.META_CONFIG_ID = 'config-1';
