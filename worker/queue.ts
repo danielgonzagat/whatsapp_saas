@@ -39,7 +39,7 @@
  */
 
 import { Queue as BullQueue, type Job, QueueEvents, Worker } from 'bullmq';
-import Redis from 'ioredis';
+import Redis, { type RedisOptions } from 'ioredis';
 import { maskRedisUrl, resolveRedisUrl } from './resolve-redis-url';
 
 // ─── Lazy Redis connection ────────────────────────────────────────────────
@@ -54,33 +54,70 @@ const redisOpts = {
 
 let _connection: Redis | null = null;
 
+const resolveRequiredRedisUrl = (context: string): string => {
+  const resolved = resolveRedisUrl();
+  if (!resolved) {
+    console.error(
+      `❌ [QUEUE] Redis URL is null while creating ${context}. Worker bootstrap should have prevented this. Exiting.`,
+    );
+    process.exit(1);
+  }
+  return resolved;
+};
+
+const collectRedisDuplicateOverrides = (args: unknown[]): RedisOptions => {
+  const overrides: RedisOptions = {};
+  for (const arg of args) {
+    if (arg && typeof arg === 'object' && !Array.isArray(arg)) {
+      Object.assign(overrides, arg);
+    }
+  }
+  return overrides;
+};
+
+const createRedisConnection = (
+  context: string,
+  overrides: RedisOptions = {},
+  attachQueueLogs = false,
+): Redis => {
+  const resolved = resolveRequiredRedisUrl(context);
+  const options: RedisOptions = { ...redisOpts, ...overrides };
+  const client = new Redis(resolved, options);
+
+  client.duplicate = ((...args: unknown[]) =>
+    createRedisConnection(
+      `${context}:duplicate`,
+      { ...options, ...collectRedisDuplicateOverrides(args) },
+      attachQueueLogs,
+    )) as Redis['duplicate'];
+
+  if (attachQueueLogs) {
+    client.on('error', (err) => {
+      console.error('❌ [QUEUE] Redis error:', err.message);
+    });
+    client.on('connect', () => {
+      console.log('📡 [QUEUE] Conectado ao Redis');
+    });
+    client.on('ready', () => {
+      console.log('✅ [QUEUE] Redis pronto para comandos');
+    });
+  }
+
+  return client;
+};
+
 function getConnection(): Redis {
   if (_connection) {
     return _connection;
   }
 
-  const resolved = resolveRedisUrl();
-  if (!resolved) {
-    console.error(
-      '❌ [QUEUE] Redis URL is null. Worker bootstrap should have prevented this. Exiting.',
-    );
-    process.exit(1);
-  }
+  const resolved = resolveRequiredRedisUrl('shared BullMQ connection');
 
   console.log('========================================');
   console.log(`✅ [QUEUE] Connecting to Redis: ${maskRedisUrl(resolved)}`);
   console.log('========================================');
 
-  _connection = new Redis(resolved, redisOpts);
-  _connection.on('error', (err) => {
-    console.error('❌ [QUEUE] Redis error:', err.message);
-  });
-  _connection.on('connect', () => {
-    console.log('📡 [QUEUE] Conectado ao Redis');
-  });
-  _connection.on('ready', () => {
-    console.log('✅ [QUEUE] Redis pronto para comandos');
-  });
+  _connection = createRedisConnection('shared BullMQ connection', {}, true);
   return _connection;
 }
 
@@ -212,11 +249,9 @@ export function getQueueEvents(queueName: string): QueueEvents {
   }
 
   // QueueEvents requires its own blocking connection per BullMQ docs.
-  const resolved = resolveRedisUrl();
-  if (!resolved) {
-    throw new Error('Cannot create QueueEvents: Redis URL unavailable');
-  }
-  const events = new QueueEvents(queueName, { connection: new Redis(resolved, redisOpts) });
+  const events = new QueueEvents(queueName, {
+    connection: createRedisConnection(`QueueEvents:${queueName}`),
+  });
   queueEventsRegistry.set(queueName, events);
   return events;
 }
