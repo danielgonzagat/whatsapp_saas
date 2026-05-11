@@ -8,18 +8,20 @@ jest.mock('../common/trace-headers', () => ({
   getTraceHeaders: jest.fn().mockReturnValue({ 'X-Request-ID': 'test-id' }),
 }));
 
-const makeEventData = (overrides: Partial<{
-  pixelId: string;
-  accessToken: string;
-  eventName: string;
-  email: string;
-  phone: string;
-  amount: number;
-  currency: string;
-  productId: string;
-  ip: string;
-  userAgent: string;
-}> = {}) => ({
+const makeEventData = (
+  overrides: Partial<{
+    pixelId: string;
+    accessToken: string;
+    eventName: string;
+    email: string;
+    phone: string;
+    amount: number;
+    currency: string;
+    productId: string;
+    ip: string;
+    userAgent: string;
+  }> = {},
+) => ({
   pixelId: '1234567890',
   accessToken: 'test-access-token',
   eventName: 'Purchase',
@@ -34,7 +36,7 @@ describe('FacebookCAPIService', () => {
 
   beforeEach(() => {
     fetchSpy = jest.fn();
-    globalThis.fetch = fetchSpy as unknown as typeof fetch;
+    globalThis.fetch = fetchSpy;
     jest.clearAllMocks();
     service = new FacebookCAPIService();
   });
@@ -47,7 +49,7 @@ describe('FacebookCAPIService', () => {
     it('sends event successfully when fetch returns ok', async () => {
       fetchSpy.mockResolvedValueOnce({
         ok: true,
-      } as Response);
+      });
 
       const result = await service.sendEvent(makeEventData());
 
@@ -64,7 +66,7 @@ describe('FacebookCAPIService', () => {
         ok: false,
         status: 400,
         text: async () => 'Bad Request',
-      } as Response);
+      });
 
       const result = await service.sendEvent(makeEventData());
 
@@ -82,11 +84,9 @@ describe('FacebookCAPIService', () => {
     it('hashes email and phone with SHA-256', async () => {
       fetchSpy.mockResolvedValueOnce({
         ok: true,
-      } as Response);
+      });
 
-      await service.sendEvent(
-        makeEventData({ email: 'Test@Example.com', phone: '5511999999999' }),
-      );
+      await service.sendEvent(makeEventData({ email: 'Test@Example.com', phone: '5511999999999' }));
 
       const [, init] = fetchSpy.mock.calls[0];
       const body = JSON.parse(init.body);
@@ -102,7 +102,7 @@ describe('FacebookCAPIService', () => {
     it('converts amount from cents to currency units', async () => {
       fetchSpy.mockResolvedValueOnce({
         ok: true,
-      } as Response);
+      });
 
       await service.sendEvent(makeEventData({ amount: 15000 }));
 
@@ -114,11 +114,9 @@ describe('FacebookCAPIService', () => {
     it('sets client_ip_address and client_user_agent when provided', async () => {
       fetchSpy.mockResolvedValueOnce({
         ok: true,
-      } as Response);
+      });
 
-      await service.sendEvent(
-        makeEventData({ ip: '1.2.3.4', userAgent: 'Chrome/120' }),
-      );
+      await service.sendEvent(makeEventData({ ip: '1.2.3.4', userAgent: 'Chrome/120' }));
 
       const [, init] = fetchSpy.mock.calls[0];
       const body = JSON.parse(init.body);
@@ -130,7 +128,7 @@ describe('FacebookCAPIService', () => {
     it('includes content_ids when productId is provided', async () => {
       fetchSpy.mockResolvedValueOnce({
         ok: true,
-      } as Response);
+      });
 
       await service.sendEvent(makeEventData({ productId: 'prod-123' }));
 
@@ -142,7 +140,7 @@ describe('FacebookCAPIService', () => {
     it('sends empty content_ids array when productId is absent', async () => {
       fetchSpy.mockResolvedValueOnce({
         ok: true,
-      } as Response);
+      });
 
       await service.sendEvent(makeEventData({ productId: undefined }));
 

@@ -192,7 +192,7 @@ Gere uma descricao visual detalhada para criacao de imagem de marketing. Dark th
     if (workspaceId) {
       await this.planLimits.trackAiUsage(workspaceId, IMAGE_GEN_TOKEN_EQUIVALENT).catch(() => {});
     }
-    const imageUrl = response.data[0]?.url;
+    const imageUrl = response.data?.[0]?.url;
     return { success: true, imageUrl, prompt: enrichedPrompt };
   }
 }

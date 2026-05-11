@@ -10,7 +10,7 @@ export const P_EXTENDED_PICTOGRAPHIC_G_RE = /\p{Extended_Pictographic}/gu;
 export const PATTERN_RE_2 = /[^.!?]+[.!?]?/g;
 export const JSON_RE = /```json/gi;
 export const PATTERN_RE_3 = /```/g;
-const WHITESPACE_RE = /\s+/;
+export const WHITESPACE_RE = /\s+/;
 export const P_EXTENDED_PICTOGRAPHIC_RE = /\p{Extended_Pictographic}/u;
 
 export const PRE_C__O_QUANTO_VALOR_C_RE =
@@ -28,7 +28,7 @@ export const OL__A__BOM_DIA_BOA_TARD_RE = /(ol[áa]|bom dia|boa tarde|boa noite|
 const MAX_REGEX_INPUT_LEN = 4_096;
 
 /** Truncates user-supplied input before any regex scan to neutralize ReDoS surface. */
-function safeForRegex(input: string | null | undefined): string {
+export function safeForRegex(input: string | null | undefined): string {
   if (!input) {
     return '';
   }

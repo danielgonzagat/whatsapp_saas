@@ -254,11 +254,11 @@ export async function buildAssistantReplyImpl(
   const historyState = conversationState || { recentMessages: [], totalMessages: 0 };
   const expertiseLevel = deps.detectExpertiseLevel(message, historyState.recentMessages);
   const dynamicContext = await deps.buildDynamicRuntimeContext({
-    workspaceId,
-    userId,
+    ...(workspaceId !== undefined ? { workspaceId } : {}),
+    ...(userId !== undefined ? { userId } : {}),
     userName,
     expertiseLevel,
-    companyContext,
+    ...(companyContext !== undefined ? { companyContext } : {}),
   });
   const summaryMessage = threadService.buildThreadSummarySystemMessage(historyState.summary);
   const marketingPromptAddendum = await deps.buildMarketingPromptAddendum(
@@ -305,8 +305,8 @@ export async function buildAssistantReplyImpl(
     {
       model: resolveBackendOpenAIModel(isChatMode ? 'brain' : 'writer'),
       messages,
-      tools: isChatMode ? KLOEL_CHAT_TOOLS : undefined,
-      tool_choice: isChatMode ? 'auto' : undefined,
+      ...(isChatMode ? { tools: KLOEL_CHAT_TOOLS } : {}),
+      ...(isChatMode ? { tool_choice: 'auto' as const } : {}),
       temperature: responseTemperature,
       top_p: 0.95,
       frequency_penalty: 0.3,
@@ -328,8 +328,8 @@ export async function buildAssistantReplyImpl(
     const { toolMessages, usedSearchWeb } = await toolRouter.executeAssistantToolCalls({
       assistantMessage: initialMsg,
       workspaceId,
-      userId,
-      safeWrite: onTraceEvent,
+      ...(userId !== undefined ? { userId } : {}),
+      ...(onTraceEvent !== undefined ? { safeWrite: onTraceEvent } : {}),
       executeLocalTool,
     });
     onTraceEvent?.(createKloelStatusEvent('tool_result'));
@@ -366,7 +366,7 @@ export async function buildAssistantReplyImpl(
   return assistantMessage;
 }
 
-function buildKloelDashboardPrompt(params: {
+export function buildKloelDashboardPrompt(params: {
   currentDate: string;
   userName?: string | null;
   workspaceName?: string | null;

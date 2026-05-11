@@ -93,7 +93,7 @@ export async function requestDataDeletion(
       action: 'lgpd_data_deletion',
       resource: 'workspace',
       resourceId: workspaceId,
-      agentId,
+      ...(agentId !== undefined ? { agentId } : {}),
       details: { requestedAt: new Date().toISOString() },
     },
   });

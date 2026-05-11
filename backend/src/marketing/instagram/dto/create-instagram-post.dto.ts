@@ -4,7 +4,7 @@ export class CreateInstagramPostDto {
   @IsString()
   @MinLength(1)
   @MaxLength(2048)
-  imageUrl: string;
+  imageUrl!: string;
 
   @IsOptional()
   @IsString()

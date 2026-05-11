@@ -151,7 +151,7 @@ export async function toolSendDocument(
     await deps.whatsappService.sendMessage(workspaceId, normalizedPhone, caption || '', {
       mediaUrl: documentUrl,
       mediaType: 'document',
-      caption,
+      ...(caption !== undefined ? { caption } : {}),
     });
     return { success: true, message: `Documento enviado para ${normalizedPhone}` };
   } catch (error: unknown) {

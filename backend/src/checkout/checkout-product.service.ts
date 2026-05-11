@@ -331,7 +331,7 @@ export class CheckoutProductService {
     return this.planLinkManager;
   }
 
-  private logCheckoutEvent(event: string, payload: Record<string, unknown>) {
+  logCheckoutEvent(event: string, payload: Record<string, unknown>) {
     this.logger.log(JSON.stringify({ event, ...payload }));
   }
 }

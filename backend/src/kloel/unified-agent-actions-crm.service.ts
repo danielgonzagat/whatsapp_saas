@@ -64,8 +64,8 @@ export class UnifiedAgentActionsCrmService {
         await tx.contact.updateMany({
           where: { id: contactId, workspaceId },
           data: {
-            nextBestAction: statusVal || intentVal || undefined,
-            aiSummary: intentVal ? `Intent: ${intentVal}` : undefined,
+            ...(statusVal || intentVal ? { nextBestAction: statusVal || intentVal } : {}),
+            ...(intentVal ? { aiSummary: `Intent: ${intentVal}` } : {}),
             updatedAt: new Date(),
           },
         });

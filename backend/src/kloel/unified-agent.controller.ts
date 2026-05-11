@@ -39,7 +39,7 @@ export class UnifiedAgentController {
       contactId: body.contactId || '',
       phone: body.phone,
       message: body.message,
-      context: body.context,
+      ...(body.context !== undefined ? { context: body.context } : {}),
     });
 
     return {

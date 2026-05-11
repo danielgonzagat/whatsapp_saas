@@ -1,5 +1,4 @@
-import { Injectable, Logger, NotFoundException, OnModuleDestroy, Optional } from '@nestjs/common';
-import { AuditService } from '../audit/audit.service';
+import { Injectable, Logger, NotFoundException, OnModuleDestroy } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AgentEventsService } from './agent-events.service';
 import { CiaBacklogRunService } from './cia-backlog-run.service';
@@ -25,7 +24,6 @@ export class CiaRuntimeService implements OnModuleDestroy {
     private readonly runtimeState: CiaRuntimeStateService,
     private readonly bootstrapService: CiaBootstrapService,
     private readonly backlogRunService: CiaBacklogRunService,
-    @Optional() private readonly auditService?: AuditService,
   ) {}
 
   /** On module destroy. */

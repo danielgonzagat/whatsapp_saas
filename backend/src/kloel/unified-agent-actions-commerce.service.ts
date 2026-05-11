@@ -163,7 +163,7 @@ export class UnifiedAgentActionsCommerceService {
         leadId: contact?.id || phone,
         customerName: contact?.name || 'Cliente',
         customerPhone: phone,
-        customerEmail: contact?.email || undefined,
+        ...(contact?.email ? { customerEmail: contact.email } : {}),
         amount,
         description,
         idempotencyKey: `kloel-pix:${workspaceId}:${phone}:${amount}:${productName}`,

@@ -10,7 +10,13 @@ import { PrismaService } from '../prisma/prisma.service';
 import { buildQueueDedupId, buildQueueJobId } from '../queue/job-id.util';
 import { autopilotQueue, flowQueue, voiceQueue } from '../queue/queue';
 import { AccountAgentService } from './account-agent.service';
-import { InboundMessage, getDefaultContent, mapMessageType } from './inbound-processor.helpers';
+import {
+  InboundMessage,
+  type InboundIngestMode,
+  getDefaultContent,
+  mapMessageType,
+  normalizePhone,
+} from './inbound-processor.helpers';
 import { isPlaceholderContactName as isPlaceholderContactNameValue } from './whatsapp-normalization.util';
 import { WHATSAPP_MESSAGING } from './whatsapp.tokens';
 import type { IWhatsappMessaging } from './whatsapp.interfaces';
@@ -146,7 +152,7 @@ export class InboundProcessorService {
             ...cf,
             remotePushName: trustedSenderName,
             remotePushNameUpdatedAt: new Date().toISOString(),
-          },
+          } as Prisma.InputJsonObject,
         },
       });
       await this.whatsappService

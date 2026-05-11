@@ -4,8 +4,8 @@ import { StripeRuntime } from '../billing/stripe-runtime';
 import type { StripeClient, StripeSubscription } from '../billing/stripe-types';
 import { PrismaService } from '../prisma/prisma.service';
 import type { ToolArgs } from './unified-agent.types';
-import { createFunnelFlows } from './unified-agent-actions-billing.helpers';
 import {
+  createFunnelFlows,
   getProductPlans as getProductPlansCompanion,
   getProductAIConfig as getProductAIConfigCompanion,
   getProductReviews as getProductReviewsCompanion,
@@ -204,6 +204,7 @@ export class UnifiedAgentActionsBillingService {
           metadata: { workspaceId },
         });
         customerId = customer.id;
+        const resolvedCustomerId = customerId;
         await this.prisma.$transaction(
           async (tx) => {
             const latest = await tx.workspace.findUnique({
@@ -214,10 +215,10 @@ export class UnifiedAgentActionsBillingService {
             await tx.workspace.update({
               where: { id: workspaceId },
               data: {
-                stripeCustomerId: customerId,
+                stripeCustomerId: resolvedCustomerId,
                 providerSettings: {
                   ...latestSettings,
-                  stripeCustomerId: customerId,
+                  stripeCustomerId: resolvedCustomerId,
                 },
               },
             });
@@ -307,8 +308,10 @@ export class UnifiedAgentActionsBillingService {
       let result: StripeSubscription;
       if (subscriptionId) {
         const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+        const item = subscription.items.data[0];
+        if (!item) return { success: false, error: 'No subscription item found' };
         result = await stripe.subscriptions.update(subscriptionId, {
-          items: [{ id: subscription.items.data[0].id, price: priceId }],
+          items: [{ id: item.id, price: priceId }],
           proration_behavior: 'create_prorations',
         });
       } else {

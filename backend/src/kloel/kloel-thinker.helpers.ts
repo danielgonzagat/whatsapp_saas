@@ -63,20 +63,22 @@ export async function thinkSyncImpl(
       ? await composerService.executeComposerCapability({
           capability: composerCapability,
           message,
-          workspaceId,
-          metadata,
-          composerContext: effectiveCompanyContext,
+          ...(workspaceId !== undefined ? { workspaceId } : {}),
+          ...(metadata !== undefined ? { metadata } : {}),
+          ...(effectiveCompanyContext !== undefined ? { composerContext: effectiveCompanyContext } : {}),
         })
       : null;
   const assistantMessage =
     capabilityResult?.content ||
     (await replyEngine.buildAssistantReply({
       message,
-      workspaceId,
-      userId,
-      userName: reqUserName,
+      ...(workspaceId ? { workspaceId } : {}),
+      ...(userId ? { userId } : {}),
+      ...(reqUserName ? { userName: reqUserName } : {}),
       mode,
-      companyContext: effectiveCompanyContext,
+      ...(effectiveCompanyContext !== undefined
+        ? { companyContext: effectiveCompanyContext }
+        : {}),
       conversationState: historyState,
     }));
 
@@ -132,7 +134,13 @@ export async function thinkSyncImpl(
     await conversationStore.saveMessage(workspaceId, 'user', message);
     await conversationStore.saveMessage(workspaceId, 'assistant', assistantMessage);
   }
-  return { response: assistantMessage, conversationId: thread?.id, title: resolvedTitle };
+  const convId = thread?.id;
+  const title = resolvedTitle;
+  return {
+    response: assistantMessage,
+    ...(convId ? { conversationId: convId } : {}),
+    ...(title ? { title } : {}),
+  };
 }
 
 /** Regenerate assistant response — extracted to keep KloelThinkerService under 400 lines. */
@@ -222,6 +230,7 @@ export async function regenerateThreadAssistantResponseImpl(
   if (sourceUserIndex === undefined) throw buildRegenerationError(ERR_NO_USER_MSG_TO_REGENERATE);
 
   const sourceUserMessage = messages[sourceUserIndex];
+  if (!sourceUserMessage) throw buildRegenerationError(ERR_NO_USER_MSG_TO_REGENERATE);
   const historyBeforeUser = messages
     .slice(Math.max(0, sourceUserIndex - 20), sourceUserIndex)
     .filter((m) => String(m.content || '').trim().length > 0)
@@ -236,11 +245,13 @@ export async function regenerateThreadAssistantResponseImpl(
   const regeneratedContent = await replyEngine.buildAssistantReply({
     message: sourceUserMessage.content,
     workspaceId,
-    userId,
-    userName,
+    ...(userId ? { userId } : {}),
+    ...(userName ? { userName } : {}),
     mode: 'chat',
     conversationState: {
-      summary: (thread as { summary?: string | null }).summary ?? undefined,
+      ...(typeof (thread as { summary?: string | null }).summary === 'string'
+        ? { summary: (thread as { summary?: string | null }).summary as string }
+        : {}),
       recentMessages: historyBeforeUser,
       totalMessages: sourceUserIndex,
     },
@@ -250,6 +261,7 @@ export async function regenerateThreadAssistantResponseImpl(
 
   const deletedMessageIds = messages.slice(assistantIndex + 1).map((m) => m.id);
   const currentAssistantMessage = messages[assistantIndex];
+  if (!currentAssistantMessage) throw buildRegenerationError(ERR_ASSISTANT_MSG_NOT_FOUND);
   const currentMetadata = threadService.normalizeThreadMessageMetadataRecord(
     currentAssistantMessage.metadata,
   );
@@ -317,6 +329,8 @@ export async function regenerateThreadAssistantResponseImpl(
     metadata: Prisma.JsonValue | null;
     createdAt: Date;
   }>;
+  if (!updatedMessage) throw new Error('Transaction failed to return updated message');
+  if (!updatedMessage) throw buildRegenerationError(ERR_ASSISTANT_MSG_NOT_FOUND);
   await threadService.maybeRefreshThreadSummary(conversationId, workspaceId, replyEngine.openai);
   return {
     id: updatedMessage.id,

@@ -157,8 +157,8 @@ export class PaymentWebhookStripeController {
         event = {
           id: hydrated.id,
           type: hydrated.type,
-          data: { object: asRecord(hydrated.data?.object) ?? undefined },
-        };
+          data: { object: asRecord(hydrated.data?.object) ?? undefined } as StripeEventLike['data'],
+        } as StripeEventLike;
       } else if (verified.type === 'checkout.session.completed') {
         const session: StripeCheckoutSession = verified.data.object;
         event = {
@@ -219,8 +219,8 @@ export class PaymentWebhookStripeController {
         event = {
           id: verified.id,
           type: verified.type,
-          data: { object: asRecord(verified.data.object) ?? undefined },
-        };
+          data: { object: asRecord(verified.data.object) ?? undefined } as StripeEventLike['data'],
+        } as StripeEventLike;
       }
     }
 

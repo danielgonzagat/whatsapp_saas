@@ -51,7 +51,6 @@ describe('KloelController', () => {
     expect(kloelService.thinkSync).toHaveBeenCalledWith(
       expect.objectContaining({
         workspaceId: 'ws-1',
-        userId: undefined,
       }),
     );
   });

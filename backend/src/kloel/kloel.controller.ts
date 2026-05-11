@@ -114,13 +114,15 @@ export class KloelController {
     req.on('close', () => abortWithReason('client_disconnected'));
     res.on('close', () => abortWithReason('client_disconnected'));
     try {
+      const { metadata: rawMetadata, ...requestDto } = dto;
+      const metadata = rawMetadata as Prisma.InputJsonValue | undefined;
       return await this.kloelService.think(
         {
-          ...dto,
+          ...requestDto,
           workspaceId,
-          userId,
-          userName,
-          metadata: dto.metadata as Prisma.InputJsonValue | undefined,
+          ...(userId !== undefined ? { userId } : {}),
+          ...(userName !== undefined ? { userName } : {}),
+          ...(metadata !== undefined ? { metadata } : {}),
         },
         res,
         { signal: abortController.signal, timeoutMs },
@@ -140,12 +142,16 @@ export class KloelController {
   @Post('think/sync')
   async thinkSync(@Body() dto: ThinkDto, @Request() req: AuthenticatedRequest) {
     const workspaceId = req.workspaceId || req.user?.workspaceId;
+    const userId = this.readUserId(req.user);
+    const userName = typeof req.user?.name === 'string' ? req.user.name : undefined;
+    const { metadata: rawMetadata, ...requestDto } = dto;
+    const metadata = rawMetadata as Prisma.InputJsonValue | undefined;
     return this.kloelService.thinkSync({
-      ...dto,
+      ...requestDto,
       workspaceId,
-      userId: this.readUserId(req.user),
-      userName: typeof req.user?.name === 'string' ? req.user.name : undefined,
-      metadata: dto.metadata as Prisma.InputJsonValue | undefined,
+      ...(userId !== undefined ? { userId } : {}),
+      ...(userName !== undefined ? { userName } : {}),
+      ...(metadata !== undefined ? { metadata } : {}),
     });
   }
 
@@ -446,12 +452,14 @@ export class KloelController {
   ) {
     const messageId = String(dto?.messageId || '').trim();
     if (!messageId) throw new BadRequestException('messageId é obrigatório.');
+    const userId = typeof req.user?.sub === 'string' ? req.user.sub : undefined;
+    const userName = typeof req.user?.name === 'string' ? req.user.name : undefined;
     return this.kloelService.regenerateThreadAssistantResponse({
       workspaceId: resolveWorkspaceId(req),
       conversationId: id,
       assistantMessageId: messageId,
-      userId: req.user?.sub,
-      userName: req.user?.name,
+      ...(userId !== undefined ? { userId } : {}),
+      ...(userName !== undefined ? { userName } : {}),
     });
   }
 

@@ -55,12 +55,17 @@ export async function handlePaymentIntentEvent(
           status: checkoutPaymentStatus,
           ...(intent.next_action?.type === 'pix_display_qr_code'
             ? {
-                pixQrCode: intent.next_action.pix_display_qr_code?.image_url_png || undefined,
-                pixCopyPaste: intent.next_action.pix_display_qr_code?.data || undefined,
+                pixQrCode:
+                  intent.next_action.pix_display_qr_code?.image_url_png || null,
+                pixCopyPaste:
+                  intent.next_action.pix_display_qr_code?.data || null,
                 pixExpiresAt:
-                  typeof intent.next_action.pix_display_qr_code?.expires_at === 'number'
-                    ? new Date(intent.next_action.pix_display_qr_code.expires_at * 1000)
-                    : undefined,
+                  typeof intent.next_action.pix_display_qr_code?.expires_at ===
+                  'number'
+                    ? new Date(
+                        intent.next_action.pix_display_qr_code.expires_at * 1000,
+                      )
+                    : null,
               }
             : {}),
         },
@@ -73,17 +78,8 @@ export async function handlePaymentIntentEvent(
       await deps.prisma
         .$transaction(async (tx) => {
           await tx.kloelSale.updateMany({
-            where: { workspaceId, externalPaymentId: intent.id },
+            where: { workspaceId, externalPaymentId: intent.id ?? null },
             data: { status: 'paid', paidAt: new Date() },
-          });
-        }, FINANCIAL_TRANSACTION_OPTIONS)
-        .catch(() => undefined);
-    } else if (checkoutPaymentStatus === 'CANCELED') {
-      await deps.prisma
-        .$transaction(async (tx) => {
-          await tx.kloelSale.updateMany({
-            where: { workspaceId, externalPaymentId: intent.id },
-            data: { status: 'cancelled' },
           });
         }, FINANCIAL_TRANSACTION_OPTIONS)
         .catch(() => undefined);
@@ -107,12 +103,12 @@ export async function handlePaymentIntentEvent(
         await deps.prisma
           .$transaction(async (tx) => {
             await tx.checkoutPayment.updateMany({
-              where: { externalId: intent.id },
+              where: { externalId: intent.id ?? null },
               data: { status: 'APPROVED' },
             });
             if (workspaceId) {
               await tx.kloelSale.updateMany({
-                where: { workspaceId, externalPaymentId: intent.id },
+                where: { workspaceId, externalPaymentId: intent.id ?? null },
                 data: { status: 'paid', paidAt: new Date() },
               });
             }

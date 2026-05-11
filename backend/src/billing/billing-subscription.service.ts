@@ -12,9 +12,9 @@ export class BillingSubscriptionService {
   constructor(
     private prisma: PrismaService,
     private configService: ConfigService,
-    private readonly moduleRef: ModuleRef,
+    _moduleRef: ModuleRef,
     stripe: StripeClient | undefined,
-    private readonly helper: BillingCheckoutHelperService,
+    _helper: BillingCheckoutHelperService,
   ) {
     this.stripe = stripe;
   }

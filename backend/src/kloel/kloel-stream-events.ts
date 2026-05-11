@@ -104,10 +104,11 @@ export function createKloelThreadEvent(
   conversationId: string,
   title?: string | null,
 ): KloelThreadEvent {
+  const resolvedTitle = typeof title === 'string' ? title : undefined;
   return {
     type: 'thread',
     conversationId,
-    title: typeof title === 'string' ? title : undefined,
+    ...(resolvedTitle ? { title: resolvedTitle } : {}),
     done: false,
   };
 }
@@ -121,7 +122,7 @@ export function createKloelStatusEvent(
     type: 'status',
     phase,
     streaming: phase === 'streaming_token',
-    message,
+    ...(typeof message === 'string' ? { message } : {}),
     done: false,
   };
 }
@@ -164,7 +165,7 @@ export function createKloelToolResultEvent(input: {
     tool: input.tool,
     success: input.success,
     result: input.result,
-    error: input.error,
+    ...(input.error !== undefined ? { error: input.error } : {}),
     done: false,
   };
 }
@@ -178,7 +179,7 @@ export function createKloelErrorEvent(input: {
   return {
     type: 'error',
     error: input.error,
-    content: input.content,
+    ...(input.content !== undefined ? { content: input.content } : {}),
     done: input.done === true,
   };
 }

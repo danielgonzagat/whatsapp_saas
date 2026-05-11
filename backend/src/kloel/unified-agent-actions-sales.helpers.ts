@@ -67,15 +67,17 @@ export async function actionHandleObjection(deps: {
       const val = typeof o.value === 'string' ? JSON.parse(o.value) : o.value;
       return (val as UnknownRecord)?.type === objectionType;
     });
-    let response = objectionResponses[objectionType] || objectionResponses.other;
+    const objectionResponse = objectionResponses[objectionType] || objectionResponses.other;
+    let response = objectionResponse;
     if (customObjection?.value) {
       const customData =
         typeof customObjection.value === 'string'
           ? JSON.parse(customObjection.value)
           : customObjection.value;
-      if ((customData as UnknownRecord)?.response)
-        response = (customData as Record<string, string>).response;
+      const customResponse = (customData as Record<string, string>).response;
+      if (customResponse) response = customResponse;
     }
+    if (!response) return { success: false, error: 'No objection response' };
     await deps.prisma.autopilotEvent.create({
       data: {
         workspaceId,

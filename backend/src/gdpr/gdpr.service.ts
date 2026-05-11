@@ -22,7 +22,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { GdprStatus, GdprType, Prisma } from '@prisma/client';
+import { GdprStatus, GdprType } from '@prisma/client';
 import { Queue, Worker, type Job } from 'bullmq';
 import { createRedisClient } from '../common/redis/redis.util';
 import { StorageService } from '../common/storage/storage.service';

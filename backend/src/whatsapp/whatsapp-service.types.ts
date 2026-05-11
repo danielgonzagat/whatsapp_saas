@@ -10,12 +10,7 @@ import type { WhatsAppCatchupService } from './whatsapp-catchup.service';
 import type { CiaRuntimeService } from './cia-runtime.service';
 import type { WorkerRuntimeService } from './worker-runtime.service';
 import type { WhatsAppApiProvider } from './providers/whatsapp-api.provider';
-
-interface ChatOwnerSummary {
-  id?: string;
-  name?: string | null;
-  phone?: string | null;
-}
+import type { ConversationOperationalState } from './agent-conversation-state.util';
 
 export interface ProviderMessageEnvelope {
   id: string;
@@ -55,7 +50,7 @@ export type NormalizedChat = {
   pending: boolean;
   needsReply?: boolean;
   pendingMessages?: number;
-  owner?: ChatOwnerSummary | null;
+  owner?: ConversationOperationalState['owner'];
   blockedReason?: string | null;
   lastMessageDirection?: 'INBOUND' | 'OUTBOUND' | null;
   timestamp: number;

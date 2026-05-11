@@ -64,7 +64,7 @@ export interface ProviderSessionSnapshot {
 }
 
 /** Provider autonomy settings shape. */
-interface ProviderAutonomySettings {
+export interface ProviderAutonomySettings {
   /** Mode property. */
   mode?: string;
   /** Reason property. */
@@ -82,7 +82,7 @@ interface ProviderAutonomySettings {
 }
 
 /** Provider cia runtime shape. */
-interface ProviderCiaRuntime {
+export interface ProviderCiaRuntime {
   /** Current run id property. */
   currentRunId?: string | null;
   /** State property. */

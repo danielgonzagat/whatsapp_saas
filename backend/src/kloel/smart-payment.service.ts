@@ -148,7 +148,7 @@ interface PaymentNegotiation {
 @Injectable()
 export class SmartPaymentService {
   private readonly logger = new Logger(SmartPaymentService.name);
-  private openai: OpenAI;
+  private openai!: OpenAI;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -183,7 +183,7 @@ export class SmartPaymentService {
               role: 'system',
               content: buildSmartPaymentAiPrompt({
                 customerName,
-                productName,
+                ...(productName !== undefined ? { productName } : {}),
                 amount,
                 conversation,
               }),
@@ -192,9 +192,8 @@ export class SmartPaymentService {
           temperature: 0.7,
         });
 
-        const parsed = JSON.parse(
-          aiResponse.choices[0].message.content?.replace(JSON_N___N_RE, '') || '{}',
-        );
+        const aiContent = aiResponse.choices[0]?.message?.content ?? '';
+        const parsed = JSON.parse(aiContent.replace(JSON_N___N_RE, '') || '{}');
         suggestedMessage = parsed.message || '';
         await this.planLimits
           .trackAiUsage(workspaceId, aiResponse?.usage?.total_tokens ?? 500)
@@ -227,8 +226,8 @@ export class SmartPaymentService {
       return {
         paymentId: payment.id,
         paymentUrl: payment.paymentLink || payment.invoiceUrl || '',
-        pixQrCode: payment.pixQrCodeUrl,
-        pixCopyPaste: payment.pixCopyPaste,
+        ...(payment.pixQrCodeUrl !== undefined ? { pixQrCode: payment.pixQrCodeUrl } : {}),
+        ...(payment.pixCopyPaste !== undefined ? { pixCopyPaste: payment.pixCopyPaste } : {}),
         billingType: 'PIX',
         suggestedMessage: suggestedMessage || buildPixReadyMessage(customerName, amount),
       };
@@ -287,7 +286,7 @@ export class SmartPaymentService {
 
     // 3. Se não temos OpenAI, usar regras simples
     if (!this.openai) {
-      const isHighValue = contact?.leadScore >= 70;
+      const isHighValue = (contact?.leadScore ?? 0) >= 70;
       const discountPercent = isHighValue
         ? Math.min(10, rules.maxDiscount)
         : Math.min(5, rules.maxDiscount);
@@ -312,9 +311,9 @@ export class SmartPaymentService {
           {
             role: 'system',
             content: buildNegotiationAiPrompt({
-              customerName: contact?.name,
-              leadScore: contact?.leadScore,
-              purchaseProbability: contact?.purchaseProbability,
+              ...(contact?.name != null ? { customerName: contact.name } : {}),
+              ...(contact?.leadScore != null ? { leadScore: contact.leadScore } : {}),
+              ...(contact?.purchaseProbability != null ? { purchaseProbability: contact.purchaseProbability } : {}),
               maxDiscount: rules.maxDiscount,
               minPurchaseForDiscount: rules.minPurchaseForDiscount,
               originalAmount,
@@ -325,9 +324,8 @@ export class SmartPaymentService {
         temperature: 0.5,
       });
 
-      const parsed = JSON.parse(
-        response.choices[0].message.content?.replace(JSON_N___N_RE, '') || '{}',
-      );
+      const responseContent = response.choices[0]?.message?.content ?? '';
+      const parsed = JSON.parse(responseContent.replace(JSON_N___N_RE, '') || '{}');
 
       await this.planLimits
         .trackAiUsage(workspaceId, response?.usage?.total_tokens ?? 500)

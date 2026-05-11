@@ -165,7 +165,7 @@ export class KloelToolRouter {
         args: toolArgs,
         success,
         result,
-        error,
+        ...(error !== undefined ? { error } : {}),
       });
 
       // already-budgeted completion; this router does not invoke OpenAI directly.
@@ -190,7 +190,7 @@ export class KloelToolRouter {
           tool: toolName,
           success,
           result,
-          error,
+          ...(error !== undefined ? { error } : {}),
         }),
       );
     });

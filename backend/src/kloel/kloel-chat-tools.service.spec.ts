@@ -45,7 +45,7 @@ describe('KloelChatToolsService', () => {
   beforeEach(async () => {
     prisma = {
       product: {
-        create: jest.fn().mockResolvedValue({} as ProductRecord),
+        create: jest.fn().mockResolvedValue({}),
         findMany: jest.fn().mockResolvedValue([]),
         findFirst: jest.fn().mockResolvedValue(null),
         updateMany: jest.fn().mockResolvedValue({ count: 1 }),
@@ -59,7 +59,7 @@ describe('KloelChatToolsService', () => {
         findUnique: jest.fn().mockResolvedValue(null),
       },
       flow: {
-        create: jest.fn().mockResolvedValue({} as FlowRecord),
+        create: jest.fn().mockResolvedValue({}),
         findMany: jest.fn().mockResolvedValue([]),
         count: jest.fn().mockResolvedValue(0),
       },
@@ -71,7 +71,9 @@ describe('KloelChatToolsService', () => {
         return Promise.resolve(undefined);
       }),
     };
-    smartPayment = { createSmartPayment: jest.fn().mockResolvedValue({ paymentUrl: 'https://pay.test' }) };
+    smartPayment = {
+      createSmartPayment: jest.fn().mockResolvedValue({ paymentUrl: 'https://pay.test' }),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -127,7 +129,14 @@ describe('KloelChatToolsService', () => {
 
     it('lists products filtered by workspaceId', async () => {
       const products: ProductRecord[] = [
-        { id: 'p-1', name: 'Produto A', price: 99, description: null, active: true, status: 'active' },
+        {
+          id: 'p-1',
+          name: 'Produto A',
+          price: 99,
+          description: null,
+          active: true,
+          status: 'active',
+        },
       ];
       prisma.product.findMany.mockResolvedValue(products);
 
@@ -145,7 +154,7 @@ describe('KloelChatToolsService', () => {
       prisma.product.findFirst.mockResolvedValue({
         id: 'p-1',
         name: 'Curso Antigo',
-      } as unknown as ProductRecord);
+      });
 
       const result = await service.toolDeleteProduct(wsId, { productName: 'Curso' });
 
@@ -249,7 +258,13 @@ describe('KloelChatToolsService', () => {
   describe('toolListFlows', () => {
     it('returns flows filtered by workspaceId', async () => {
       const flows: FlowRecord[] = [
-        { id: 'f-1', name: 'Flow 1', isActive: true, createdAt: new Date(), _count: { executions: 5 } },
+        {
+          id: 'f-1',
+          name: 'Flow 1',
+          isActive: true,
+          createdAt: new Date(),
+          _count: { executions: 5 },
+        },
       ];
       prisma.flow.findMany.mockResolvedValue(flows);
 

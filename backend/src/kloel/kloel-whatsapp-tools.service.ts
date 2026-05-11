@@ -194,8 +194,8 @@ export class KloelWhatsAppToolsService {
   ): Promise<ToolResult> {
     const contact = await this.whatsappService.createContact(workspaceId, {
       phone: args?.phone,
-      name: args?.name,
-      email: args?.email,
+      ...(args?.name !== undefined ? { name: args.name } : {}),
+      ...(args?.email !== undefined ? { email: args.email } : {}),
     });
     return {
       success: true,
@@ -294,7 +294,7 @@ export class KloelWhatsAppToolsService {
         planLimits: this.planLimits,
         whatsappService: this.whatsappService,
         logger: this.logger,
-        opsAlert: this.opsAlert,
+        ...(this.opsAlert !== undefined ? { opsAlert: this.opsAlert } : {}),
       },
       workspaceId,
       args,
@@ -308,7 +308,7 @@ export class KloelWhatsAppToolsService {
         planLimits: this.planLimits,
         whatsappService: this.whatsappService,
         logger: this.logger,
-        opsAlert: this.opsAlert,
+        ...(this.opsAlert !== undefined ? { opsAlert: this.opsAlert } : {}),
       },
       workspaceId,
       args,

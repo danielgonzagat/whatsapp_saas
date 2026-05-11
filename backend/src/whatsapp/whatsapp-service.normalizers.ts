@@ -3,12 +3,7 @@ import type {
   NormalizedContact,
   ProviderMessageEnvelope,
 } from './whatsapp-service.types';
-import {
-  normalizeJsonObjExt,
-  normalizeNumber,
-  resolveTimestampExt,
-  toIsoTimestamp,
-} from './whatsapp-service.helpers';
+import { normalizeNumber, resolveTimestampExt, toIsoTimestamp } from './whatsapp-service.helpers';
 
 const D_RE = /\D/g;
 
@@ -147,13 +142,13 @@ export function normalizeMessageEntry(
     id,
     chatId,
     phone,
-    body: message?.body || mText?.body || '',
+    body: readText(message?.body || mText?.body || ''),
     direction: fm ? 'OUTBOUND' : 'INBOUND',
     fromMe: fm,
     type: (typeof message?.type === 'string' ? message.type : 'chat').toLowerCase(),
     hasMedia: message?.hasMedia === true,
-    mediaUrl: message?.mediaUrl || mMedia?.url || null,
-    mimetype: message?.mimetype || mMedia?.mimetype || null,
+    mediaUrl: readText(message?.mediaUrl || mMedia?.url || '') || null,
+    mimetype: readText(message?.mimetype || mMedia?.mimetype || '') || null,
     timestamp: ts,
     isoTimestamp: toIsoTimestamp(ts),
     source: 'provider',

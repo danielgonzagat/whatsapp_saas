@@ -88,7 +88,9 @@ export class WalletLedgerService {
         bucket: entry.bucket,
         amountInCents: entry.amountInCents,
         reason: entry.reason,
-        metadata: entry.metadata ? toPrismaJsonValue(entry.metadata) : undefined,
+        ...(entry.metadata !== undefined
+          ? { metadata: toPrismaJsonValue(entry.metadata) }
+          : {}),
       },
     });
     this.logger.log({

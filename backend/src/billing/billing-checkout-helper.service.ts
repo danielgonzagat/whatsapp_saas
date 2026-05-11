@@ -12,10 +12,10 @@ export class BillingCheckoutHelperService {
 
   constructor(
     private prisma: PrismaService,
-    private configService: ConfigService,
+    _configService: ConfigService,
     private readonly moduleRef: ModuleRef,
     private stripe: StripeClient | undefined,
-    private readonly financialAlert?: FinancialAlertService,
+    _financialAlert?: FinancialAlertService,
   ) {}
 
   async notifyCustomerPaymentConfirmed(

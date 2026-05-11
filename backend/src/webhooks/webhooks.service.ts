@@ -390,12 +390,12 @@ export class WebhooksService {
 
   /** Update message status. */
   async updateMessageStatus(input: {
-    workspaceId?: string;
-    externalId?: string;
+    workspaceId?: string | undefined;
+    externalId?: string | undefined;
     status: string;
-    errorCode?: string;
-    phone?: string;
-    channel?: string;
+    errorCode?: string | undefined;
+    phone?: string | undefined;
+    channel?: string | undefined;
   }) {
     const status = (input.status || '').toUpperCase();
     const workspaceId = input.workspaceId;

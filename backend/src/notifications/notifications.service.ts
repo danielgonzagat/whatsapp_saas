@@ -38,7 +38,7 @@ export class NotificationsService {
         });
         this.logger.log('✅ Firebase Admin SDK inicializado');
       } else {
-        this.logger.warn('⚠️ Firebase não configurado - push notifications desabilitadas');
+        this.logger.log('Firebase não configurado - push notifications desabilitadas');
       }
     } catch (error: unknown) {
       void this.opsAlert?.alertOnCriticalError(error, 'NotificationsService.initFirebase');

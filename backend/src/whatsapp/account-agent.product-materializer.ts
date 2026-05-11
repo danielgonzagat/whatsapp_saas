@@ -1,7 +1,6 @@
 import type { Prisma } from '@prisma/client';
 import { forEachSequential } from '../common/async-sequence';
 import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
-import type { PrismaService } from '../prisma/prisma.service';
 import { AccountDeps } from './account-agent.gap-detector';
 import type { AccountInputSessionPayload } from './account-agent.types';
 import {

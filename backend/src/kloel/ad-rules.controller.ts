@@ -69,8 +69,8 @@ export class AdRulesController {
         name: dto.name,
         condition: dto.condition,
         action: dto.action,
-        alertMethod: dto.alertMethod,
-        alertTarget: dto.alertTarget,
+        ...(dto.alertMethod !== undefined ? { alertMethod: dto.alertMethod } : {}),
+        ...(dto.alertTarget !== undefined ? { alertTarget: dto.alertTarget } : {}),
       },
     });
   }

@@ -16,6 +16,26 @@ export class MemoryCrudService {
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
+  private toMemoryItem(
+    row: {
+      id: string;
+      workspaceId: string;
+      key: string;
+      value: unknown;
+      category: string;
+      content: string | null;
+    },
+  ): MemoryItem {
+    return {
+      id: row.id,
+      workspaceId: row.workspaceId,
+      key: row.key,
+      value: row.value,
+      category: row.category,
+      content: row.content ?? '',
+    };
+  }
+
   /**
    * 💾 Salva memória com embedding
    */
@@ -49,7 +69,7 @@ export class MemoryCrudService {
       });
 
       this.logger.log(`Memória salva: ${key} (${category})`);
-      return memory;
+      return this.toMemoryItem(memory);
     } catch (error: unknown) {
       void this.opsAlert?.alertOnCriticalError(error, 'MemoryCrudService.saveMemory');
       this.logger.error(
@@ -83,7 +103,7 @@ export class MemoryCrudService {
       this.prisma.kloelMemory.count({ where: { ...where, workspaceId } }),
     ]);
 
-    return { memories, total };
+    return { memories: memories.map((m) => this.toMemoryItem(m)), total };
   }
 
   /**

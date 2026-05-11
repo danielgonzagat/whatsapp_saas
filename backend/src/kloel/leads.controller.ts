@@ -23,8 +23,8 @@ export class LeadsController {
     @Query('limit', new PaginationLimitPipe()) limit: number = 20,
   ) {
     const data = await this.leads.listLeads(workspaceId, {
-      status: status || undefined,
-      search: search || undefined,
+      ...(status !== undefined ? { status } : {}),
+      ...(search !== undefined ? { search } : {}),
       limit,
     });
     return data;

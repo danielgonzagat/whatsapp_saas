@@ -3,7 +3,6 @@ import { InjectRedis } from '@nestjs-modules/ioredis';
 import {
   BadRequestException,
   Injectable,
-  Logger,
   Optional,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -23,7 +22,6 @@ import { UserNameDerivationService } from './user-name-derivation.service';
  */
 @Injectable()
 export class AuthVerificationService {
-  private readonly logger = new Logger(AuthVerificationService.name);
   private readonly rateLimitService: RateLimitService;
 
   constructor(

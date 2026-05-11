@@ -111,8 +111,8 @@ export class CiaSendHelpersService {
     workspaceId: string,
     phone: string,
     text: string,
-    options: Parameters<WhatsappService['sendMessage']>[3],
-  ): Promise<Awaited<ReturnType<WhatsappService['sendMessage']>>> {
+    options: Parameters<IWhatsappMessaging['sendMessage']>[3],
+  ): Promise<Awaited<ReturnType<IWhatsappMessaging['sendMessage']>>> {
     const reserved = await this.reserveDailyMessageLimit(workspaceId);
     if (!reserved) {
       return {

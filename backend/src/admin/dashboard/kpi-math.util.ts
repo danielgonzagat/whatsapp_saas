@@ -84,7 +84,7 @@ const INTERVAL_TO_MONTHLY_FACTOR: Record<string, number> = {
 };
 
 /** Normalize recurring amount to monthly cents. */
-function normalizeRecurringAmountToMonthlyCents(amount: number, interval: string): number {
+export function normalizeRecurringAmountToMonthlyCents(amount: number, interval: string): number {
   const cents = Math.round(amount * 100);
   const factor = INTERVAL_TO_MONTHLY_FACTOR[interval.toUpperCase()];
   return factor === undefined ? cents : Math.round(cents * factor);

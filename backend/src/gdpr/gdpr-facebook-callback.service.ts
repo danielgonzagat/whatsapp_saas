@@ -38,7 +38,7 @@ export class GdprFacebookCallbackService {
 
     const code = generateCode();
 
-    const request = await this.prisma.gdprRequest.create({
+    await this.prisma.gdprRequest.create({
       data: {
         workspaceId: agent.workspaceId,
         userId: agent.id,

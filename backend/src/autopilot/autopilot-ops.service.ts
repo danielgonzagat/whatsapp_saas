@@ -40,10 +40,6 @@ export class AutopilotOpsService {
     return typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : {};
   }
 
-  private readRecord(value: unknown): Record<string, unknown> {
-    return typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : {};
-  }
-
   private async ensureNotSuspended(workspaceId: string) {
     const ws = await this.prisma.workspace.findUnique({
       where: { id: workspaceId },
@@ -332,10 +328,10 @@ export class AutopilotOpsService {
   /** Marca conversão manual/webhook — delegated to AutopilotOpsConversionService. */
   async markConversion(input: {
     workspaceId: string;
-    contactId?: string;
-    phone?: string;
-    reason?: string;
-    meta?: Record<string, unknown>;
+    contactId?: string | undefined;
+    phone?: string | undefined;
+    reason?: string | undefined;
+    meta?: Record<string, unknown> | undefined;
   }) {
     return this.conversion.markConversion(input);
   }

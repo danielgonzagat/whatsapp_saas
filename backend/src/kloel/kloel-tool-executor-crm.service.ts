@@ -124,7 +124,7 @@ export class KloelToolExecutorCrmService {
               ...currentSettings,
               businessDescription: description,
               businessSegment: segment,
-            },
+            } as unknown as Prisma.InputJsonObject,
             ...(businessName ? { name: businessName } : {}),
           },
         });
@@ -149,7 +149,12 @@ export class KloelToolExecutorCrmService {
       const currentSettings = asProviderSettings(workspace?.providerSettings);
       await tx.workspace.update({
         where: { id: workspaceId },
-        data: { providerSettings: { ...currentSettings, businessHours } },
+        data: {
+          providerSettings: {
+            ...currentSettings,
+            businessHours,
+          } as unknown as Prisma.InputJsonObject,
+        },
       });
     });
     return { success: true, businessHours, message: 'Horário de funcionamento configurado.' };

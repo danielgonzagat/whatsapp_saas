@@ -39,7 +39,7 @@ const AGENT_SELECT = {
   deletedAt: true,
 } as const;
 
-function _buildAuthLogMessage(event: string, payload: Record<string, unknown>) {
+export function _buildAuthLogMessage(event: string, payload: Record<string, unknown>) {
   return JSON.stringify({ event, ...payload });
 }
 
@@ -172,7 +172,7 @@ export class AuthOAuthResolverService {
             workspaceId: workspace.id,
             provider: opts.normalizedProvider,
             providerId: opts.normalizedProviderId,
-            avatarUrl: opts.image,
+            ...(opts.image !== undefined ? { avatarUrl: opts.image } : {}),
             emailVerified: !!opts.emailVerified,
           },
           select: AGENT_SELECT,

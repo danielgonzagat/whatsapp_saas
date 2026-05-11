@@ -14,7 +14,7 @@ import { AuditService } from './audit.service';
 /** Audit action metadata. */
 const AUDIT_ACTION_METADATA = ['audit', 'action'].join('_');
 /** Audit action. */
-const AuditAction = (action: string, resource: string) =>
+export const AuditAction = (action: string, resource: string) =>
   SetMetadata(AUDIT_ACTION_METADATA, { action, resource });
 
 /** Audit interceptor. */

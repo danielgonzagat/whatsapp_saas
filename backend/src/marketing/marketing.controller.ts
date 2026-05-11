@@ -90,7 +90,7 @@ export class MarketingController {
     });
 
     // Resolve conversationId → channel for message counts
-    const convIds = msgGroups.map((g) => g.conversationId).filter(Boolean);
+    const convIds = msgGroups.map((g) => g.conversationId).filter((v): v is string => Boolean(v));
     const convs =
       convIds.length > 0
         ? await this.prisma.conversation.findMany({
@@ -102,7 +102,9 @@ export class MarketingController {
 
     const msgsByChannel = new Map<string, number>();
     for (const g of msgGroups) {
-      const ch = channelByConvId.get(g.conversationId);
+      const convId = g.conversationId;
+      if (!convId) continue;
+      const ch = channelByConvId.get(convId);
       if (ch) {
         msgsByChannel.set(ch, (msgsByChannel.get(ch) || 0) + g._count.id);
       }
@@ -256,10 +258,10 @@ export class MarketingController {
     let totalResponseMs = 0;
     let responseCount = 0;
     if (recentInbound.length > 0) {
-      const convIds = [...new Set(recentInbound.map((m) => m.conversationId).filter(Boolean))];
+      const convIds = [...new Set(recentInbound.map((m) => m.conversationId).filter((v): v is string => Boolean(v)))];
       const minCreatedAt = recentInbound.reduce(
         (min, m) => (m.createdAt < min ? m.createdAt : min),
-        recentInbound[0].createdAt,
+        recentInbound[0]!.createdAt,
       );
       const outboundReplies = await this.prisma.message.findMany({
         take: 500,
@@ -272,15 +274,17 @@ export class MarketingController {
         select: { conversationId: true, createdAt: true },
         orderBy: { createdAt: 'asc' },
       });
-      // Build map of first reply per conversation
       const firstReplyByConv = new Map<string, Date>();
       for (const r of outboundReplies) {
-        if (!firstReplyByConv.has(r.conversationId)) {
-          firstReplyByConv.set(r.conversationId, r.createdAt);
+        const cid = r.conversationId;
+        if (cid && !firstReplyByConv.has(cid)) {
+          firstReplyByConv.set(cid, r.createdAt);
         }
       }
       for (const msg of recentInbound) {
-        const reply = firstReplyByConv.get(msg.conversationId);
+        const cid = msg.conversationId;
+        if (!cid) continue;
+        const reply = firstReplyByConv.get(cid);
         if (reply && reply > msg.createdAt) {
           totalResponseMs += reply.getTime() - msg.createdAt.getTime();
           responseCount++;

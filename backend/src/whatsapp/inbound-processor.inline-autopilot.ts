@@ -23,7 +23,6 @@ interface MinimalWhatsappService {
   ): Promise<{ error?: boolean; message?: string } | undefined>;
 }
 import type { ProviderSettings } from './provider-settings.types';
-import type { InboundIngestMode } from './inbound-processor.helpers';
 import {
   buildPendingInboundBatchExt,
   shouldBypassHumanLockExt,

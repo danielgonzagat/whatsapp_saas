@@ -125,9 +125,9 @@ export class SalesOrdersController {
       data: {
         status: 'SHIPPED',
         trackingCode: sanitizedCode,
-        shippingMethod: dto.shippingMethod,
+        ...(dto.shippingMethod !== undefined ? { shippingMethod: dto.shippingMethod } : {}),
         shippedAt: new Date(),
-        trackingUrl,
+        ...(trackingUrl ? { trackingUrl } : {}),
       },
     });
     return {

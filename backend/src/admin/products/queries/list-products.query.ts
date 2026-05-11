@@ -141,7 +141,7 @@ async function fetchCommerceGroups(
     // and keeps the unsafe-query scanner satisfied.
     prisma.checkoutOrder.groupBy({
       by: ['planId', 'status'],
-      where: { planId: { in: planIds }, workspaceId: undefined },
+      where: { planId: { in: planIds } },
       _count: { _all: true },
       _sum: { totalInCents: true },
     }),
@@ -151,7 +151,6 @@ async function fetchCommerceGroups(
         planId: { in: planIds },
         status: { in: APPROVED },
         paidAt: { gte: new Date(Date.now() - WINDOW_MS) },
-        workspaceId: undefined,
       },
       _sum: { totalInCents: true },
     }),

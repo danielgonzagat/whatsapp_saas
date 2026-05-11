@@ -81,12 +81,12 @@ function accumulateRefunds(
   }
 }
 
-type KycAgent = {
+  type KycAgent = {
   id: string;
   name: string | null;
   email: string | null;
   kycStatus: string | null;
-  workspace: { id: string; name: string | null };
+  workspace?: { id: string; name: string | null };
 };
 
 type AuditItem = {
@@ -101,8 +101,8 @@ type AuditItem = {
 function mapKycQueue(kycAgents: KycAgent[]) {
   return kycAgents.map((agent) => ({
     agentId: agent.id,
-    workspaceId: agent.workspace.id,
-    workspaceName: agent.workspace.name,
+      workspaceId: agent.workspace?.id ?? '',
+      workspaceName: agent.workspace?.name ?? null,
     ownerName: agent.name,
     ownerEmail: agent.email,
     kycStatus: agent.kycStatus,
@@ -219,14 +219,10 @@ export class AdminComplianceService {
   }
 
   private fetchKycAgents() {
-    // Platform-level admin query: intentionally cross-workspace.
-    // `workspaceId: undefined` is a Prisma-side no-op ("skip filter")
-    // and keeps the unsafe-query scanner satisfied.
     return this.prisma.agent.findMany({
       where: {
         role: 'ADMIN',
         kycStatus: { in: ['pending', 'reverify', 'rejected'] },
-        workspaceId: undefined,
       },
       orderBy: { updatedAt: 'desc' },
       take: 20,

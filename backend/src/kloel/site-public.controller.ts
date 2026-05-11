@@ -17,7 +17,7 @@ export class SitePublicController {
   @Get(':slug')
   async serveSite(@Param('slug') slug: string, @Res() res: Response) {
     const site = await this.prisma.kloelSite.findFirst({
-      where: { slug, published: true, workspaceId: undefined },
+      where: { slug, published: true },
     });
 
     if (!site) {

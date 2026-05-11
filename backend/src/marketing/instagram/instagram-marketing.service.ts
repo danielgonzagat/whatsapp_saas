@@ -119,6 +119,10 @@ export class InstagramMarketingService {
     const today = new Date();
     today.setUTCHours(0, 0, 0, 0);
 
+    const onlineFollowers = metricMap['online_followers']
+      ? (metricMap['online_followers'] as Prisma.InputJsonValue)
+      : undefined;
+
     const insight = await this.prisma.igInsight.upsert({
       where: {
         workspaceId_igAccountId_date: {
@@ -140,9 +144,7 @@ export class InstagramMarketingService {
         phoneCallClicks: metricMap['phone_call_clicks'] ?? 0,
         textMessageClicks: metricMap['text_message_clicks'] ?? 0,
         getDirectionsClicks: metricMap['get_directions_clicks'] ?? 0,
-        onlineFollowers: metricMap['online_followers']
-          ? (metricMap['online_followers'] as Prisma.InputJsonValue)
-          : undefined,
+        ...(onlineFollowers !== undefined ? { onlineFollowers } : {}),
       },
       update: {
         impressions: metricMap['impressions'] ?? 0,
@@ -154,9 +156,7 @@ export class InstagramMarketingService {
         phoneCallClicks: metricMap['phone_call_clicks'] ?? 0,
         textMessageClicks: metricMap['text_message_clicks'] ?? 0,
         getDirectionsClicks: metricMap['get_directions_clicks'] ?? 0,
-        onlineFollowers: metricMap['online_followers']
-          ? (metricMap['online_followers'] as Prisma.InputJsonValue)
-          : undefined,
+        ...(onlineFollowers !== undefined ? { onlineFollowers } : {}),
       },
     });
 

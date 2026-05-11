@@ -1,4 +1,3 @@
-import type { PrismaService } from '../prisma/prisma.service';
 import type { CatalogConversationSummary, WsDeps } from './whatsapp-service.types';
 import {
   normalizeJsonObjExt,

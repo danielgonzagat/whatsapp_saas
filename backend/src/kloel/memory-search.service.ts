@@ -55,7 +55,14 @@ export class MemorySearchService {
       });
 
       return {
-        memories,
+        memories: memories.map((m) => ({
+          id: m.id,
+          workspaceId: m.workspaceId,
+          key: m.key,
+          value: m.value,
+          category: m.category,
+          content: m.content ?? '',
+        })),
         totalFound: memories.length,
         searchTime: Date.now() - startTime,
       };

@@ -6,7 +6,7 @@ import type { PrismaService } from '../prisma/prisma.service';
 
 export const VALID_CHARGE_TYPES: readonly string[] = ['ONE_CLICK', 'NEW_PAYMENT'];
 export const VALID_DISCOUNT_TYPES: readonly string[] = ['PERCENTAGE', 'FIXED'];
-const VALID_PIXEL_TYPES: readonly string[] = [
+export const VALID_PIXEL_TYPES: readonly string[] = [
   'FACEBOOK',
   'GOOGLE_ADS',
   'GOOGLE_ANALYTICS',

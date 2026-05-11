@@ -37,7 +37,6 @@ export class CartRecoveryService {
       // Find PENDING orders older than 30 minutes that haven't received recovery emails
       const abandoned = await this.prisma.checkoutOrder.findMany({
         where: {
-          workspaceId: undefined,
           status: 'PENDING',
           createdAt: { lt: thirtyMinAgo },
         },
@@ -65,7 +64,8 @@ export class CartRecoveryService {
           }
 
           const emailService = new EmailService();
-          const productName = order.plan?.product?.name || 'Seu pedido';
+          const orderWithPlan = order as typeof order & { plan?: { product?: { name?: string } } };
+          const productName = orderWithPlan.plan?.product?.name || 'Seu pedido';
           const customerEmail = order.customerEmail;
           const unsubscribeFooter = buildUnsubscribeFooterHtml({
             email: customerEmail,

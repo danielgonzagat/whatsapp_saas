@@ -106,7 +106,7 @@ export class KloelLeadProcessorService {
         try {
           const unifiedResult = await this.unifiedAgentService.processIncomingMessage({
             workspaceId,
-            contactId: contactId || undefined,
+            ...(contactId ? { contactId } : {}),
             phone: normalizedPhone || senderPhone,
             message,
             channel: 'whatsapp',
@@ -199,7 +199,9 @@ export class KloelLeadProcessorService {
             return {
               response: `${baseResponse}\n\nAqui está o link para finalizar sua compra:\n${paymentResult.paymentUrl}`,
               paymentLink: paymentResult.paymentUrl,
-              pixQrCode: paymentResult.pixQrCode,
+              ...(paymentResult.pixQrCode !== undefined
+                ? { pixQrCode: paymentResult.pixQrCode }
+                : {}),
             };
           }
         }
@@ -230,7 +232,7 @@ export class KloelLeadProcessorService {
       this.logger.log(`Pagamento gerado para lead ${leadId}: ${result.paymentUrl}`);
       return {
         paymentUrl: result.paymentUrl,
-        pixQrCode: result.pixQrCode,
+        ...(result.pixQrCode !== undefined ? { pixQrCode: result.pixQrCode } : {}),
         message: result.suggestedMessage,
       };
     } catch (error: unknown) {

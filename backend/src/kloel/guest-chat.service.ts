@@ -26,7 +26,7 @@ export class GuestChatService implements OnModuleDestroy {
   private conversations: Map<string, GuestConversation> = new Map();
 
   // Limpar conversas antigas a cada 1 hora
-  private cleanupInterval?: NodeJS.Timeout;
+  private cleanupInterval?: NodeJS.Timeout | undefined;
 
   constructor(
     private readonly configService: ConfigService,
@@ -282,7 +282,17 @@ export class GuestChatService implements OnModuleDestroy {
         lastMessageAt: new Date(),
       });
     }
-    return this.conversations.get(sessionId);
+    const conversation = this.conversations.get(sessionId);
+    if (!conversation) {
+      const created: GuestConversation = {
+        messages: [],
+        createdAt: new Date(),
+        lastMessageAt: new Date(),
+      };
+      this.conversations.set(sessionId, created);
+      return created;
+    }
+    return conversation;
   }
 
   /**

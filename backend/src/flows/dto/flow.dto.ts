@@ -24,7 +24,7 @@ export class CreateFlowDto {
 }
 
 /** Update flow dto. */
-class UpdateFlowDto {
+export class UpdateFlowDto {
   /** Name property. */
   @IsOptional()
   @IsString()

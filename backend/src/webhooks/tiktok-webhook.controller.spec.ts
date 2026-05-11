@@ -2,20 +2,29 @@ import { createHmac } from 'node:crypto';
 import { ForbiddenException } from '@nestjs/common';
 import { RawBodyRequest } from '../common/interfaces/authenticated-request.interface';
 import { IS_PUBLIC_METADATA } from '../auth/public.decorator';
+import { ROUTE_CLASS_METADATA_KEY } from '../common/throttler/route-class.decorator';
 import { TikTokWebhookController } from './tiktok-webhook.controller';
 
 describe('TikTokWebhookController', () => {
   let controller: TikTokWebhookController;
   let mockWebhooksService: { logWebhookEvent: jest.Mock };
+  let omnichannelService: { processTikTokWebhook: jest.Mock };
 
   beforeEach(() => {
     mockWebhooksService = {
       logWebhookEvent: jest.fn().mockResolvedValue({ id: 'we_mock' }),
     };
+    omnichannelService = {
+      processTikTokWebhook: jest.fn().mockResolvedValue({ status: 'saved' }),
+    };
     const redis = {
       set: jest.fn().mockResolvedValue('OK'),
     };
-    controller = new TikTokWebhookController(redis as never, mockWebhooksService as never);
+    controller = new TikTokWebhookController(
+      redis as never,
+      mockWebhooksService as never,
+      omnichannelService as never,
+    );
     delete process.env.TIKTOK_CLIENT_SECRET;
   });
 
@@ -30,15 +39,7 @@ describe('TikTokWebhookController', () => {
     expect(
       Reflect.getMetadata(IS_PUBLIC_METADATA, TikTokWebhookController.prototype.handleWebhook),
     ).toBe(true);
-    expect(
-      Reflect.getMetadata(
-        'THROTTLER:LIMITdefault',
-        TikTokWebhookController.prototype.handleWebhook,
-      ),
-    ).toBe(2000);
-    expect(
-      Reflect.getMetadata('THROTTLER:TTLdefault', TikTokWebhookController.prototype.handleWebhook),
-    ).toBe(60000);
+    expect(Reflect.getMetadata(ROUTE_CLASS_METADATA_KEY, TikTokWebhookController)).toBe('webhook');
   });
 
   it('exposes a simple manual health response on GET', () => {
@@ -115,6 +116,26 @@ describe('TikTokWebhookController', () => {
     ).rejects.toThrow(ForbiddenException);
   });
 
+  it('rejects unsigned webhook when TIKTOK_CLIENT_SECRET is configured', async () => {
+    process.env.TIKTOK_CLIENT_SECRET = 'tiktok-secret';
+
+    await expect(controller.handleWebhook({ event: 'message' })).rejects.toThrow(
+      ForbiddenException,
+    );
+
+    await expect(controller.handleWebhook({ event: 'message' }, '')).rejects.toThrow(
+      ForbiddenException,
+    );
+  });
+
+  it('rejects webhook with malformed signature when TIKTOK_CLIENT_SECRET is configured', async () => {
+    process.env.TIKTOK_CLIENT_SECRET = 'tiktok-secret';
+
+    await expect(
+      controller.handleWebhook({ event: 'message' }, 'not-a-valid-header'),
+    ).rejects.toThrow(ForbiddenException);
+  });
+
   it('still acknowledges a signed delivery when the secret is not configured yet', async () => {
     await expect(
       controller.handleWebhook({ event: 'message' }, `t=1710000000,s=${'a'.repeat(64)}`),
@@ -133,7 +154,13 @@ describe('TikTokWebhookController', () => {
       set: jest.fn().mockResolvedValue(null),
     };
     const wss = { logWebhookEvent: jest.fn().mockResolvedValue({ id: 'we_mock' }) };
-    const ctrl = new TikTokWebhookController(redis as never, wss as never);
+    const ctrl = new TikTokWebhookController(
+      redis as never,
+      wss as never,
+      {
+        processTikTokWebhook: jest.fn(),
+      } as never,
+    );
 
     const result = await ctrl.handleWebhook(
       { event: 'message' },
@@ -159,7 +186,13 @@ describe('TikTokWebhookController', () => {
       set: jest.fn().mockResolvedValue('OK'),
     };
     const wss = { logWebhookEvent: jest.fn().mockResolvedValue({ id: 'we_mock' }) };
-    const ctrl = new TikTokWebhookController(redis as never, wss as never);
+    const ctrl = new TikTokWebhookController(
+      redis as never,
+      wss as never,
+      {
+        processTikTokWebhook: jest.fn().mockResolvedValue({ status: 'saved' }),
+      } as never,
+    );
 
     const result = await ctrl.handleWebhook(
       { event: 'message' },
@@ -172,5 +205,20 @@ describe('TikTokWebhookController', () => {
 
     expect(redis.set).toHaveBeenCalledWith('webhook:tiktok:evt_tiktok_new', '1', 'EX', 300, 'NX');
     expect(result).toEqual({ received: true });
+  });
+
+  it('routes object webhook payloads into the omnichannel inbox adapter after idempotency', async () => {
+    const payload = {
+      workspaceId: 'ws_1',
+      data: { open_id: 'tt_user_1', text: 'quero comprar' },
+    };
+
+    await expect(controller.handleWebhook(payload, undefined, 'evt_tiktok_inbox')).resolves.toEqual(
+      {
+        received: true,
+      },
+    );
+
+    expect(omnichannelService.processTikTokWebhook).toHaveBeenCalledWith(payload);
   });
 });

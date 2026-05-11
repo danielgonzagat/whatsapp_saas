@@ -128,7 +128,8 @@ export async function addThreadMessage(
     });
     const msg = await deps.prisma.chatMessage.create({
       data: {
-        threadId: id,
+        thread: { connect: { id } },
+        workspaceId,
         role: dto.role,
         content: dto.content,
         metadata: dto.metadata as Prisma.InputJsonValue,

@@ -81,13 +81,11 @@ export class AdminConfigService {
           this.prisma.apiKey.count({
             where: {
               workspace: where,
-              workspaceId: undefined,
             },
           }),
           this.prisma.webhookSubscription.count({
             where: {
               workspace: where,
-              workspaceId: undefined,
             },
           }),
           this.prisma.workspace.findMany({

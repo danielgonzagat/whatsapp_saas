@@ -69,7 +69,7 @@ export class MemoryController {
       name: body.name,
       description: body.description,
       price: body.price,
-      benefits: body.benefits,
+      ...(body.benefits !== undefined ? { benefits: body.benefits } : {}),
     });
     return { status: 'saved', memory };
   }

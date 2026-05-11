@@ -197,8 +197,10 @@ export class ProductCampaignController {
     const updatedProductCampaign = await this.prisma.productCampaign.update({
       where: { id: campaignId },
       data: removeUndefined({
-        name: body.name ? safeStr(body.name).trim() : undefined,
-        pixelId: body.pixelId !== undefined ? safeStr(body.pixelId).trim() || null : undefined,
+        ...(body.name !== undefined ? { name: safeStr(body.name).trim() } : {}),
+        ...(body.pixelId !== undefined
+          ? { pixelId: safeStr(body.pixelId).trim() || null }
+          : {}),
       }),
     });
 

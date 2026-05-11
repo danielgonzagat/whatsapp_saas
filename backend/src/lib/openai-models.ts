@@ -58,6 +58,6 @@ export function resolveBackendOpenAIModel(
 }
 
 /** Should require audio reply by default. */
-function shouldRequireAudioReplyByDefault(config?: ConfigLike): boolean {
+export function shouldRequireAudioReplyByDefault(config?: ConfigLike): boolean {
   return readConfig('VOICE_RESPONSE_AUDIO_REQUIRED', config) === 'true';
 }

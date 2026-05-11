@@ -83,10 +83,14 @@ export class AuthOAuthService {
       refreshToken:
         encryptedRefreshToken || (options?.overwriteTokens ? null : current?.refreshToken) || null,
       tokenExpiresAt: profile.tokenExpiresAt || null,
-      profileData: (profile.profileData as Prisma.InputJsonValue | null | undefined) || undefined,
       revokedAt: null,
       lastUsedAt: new Date(),
     };
+
+    const profileData = (profile.profileData as Prisma.InputJsonValue | null | undefined) || undefined;
+    if (profileData !== undefined) {
+      data.profileData = profileData;
+    }
 
     return this.prisma.socialAccount.upsert({
       where: { agentId_provider: { agentId, provider: profile.provider } },

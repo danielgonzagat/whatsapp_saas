@@ -121,7 +121,7 @@ export class UnifiedAgentActionsSalesService {
       prisma: this.prisma,
       messaging: this.messaging,
       logger: this.logger,
-      opsAlert: this.opsAlert,
+      ...(this.opsAlert !== undefined ? { opsAlert: this.opsAlert } : {}),
     });
   }
 
@@ -274,6 +274,7 @@ export class UnifiedAgentActionsSalesService {
           'Você está em atendimento prioritário.\n\nVou te conectar com nosso time de suporte prioritário para resolver qualquer questão.',
       };
       const message = strategyMessages[strategy] || strategyMessages.feedback;
+      if (!message) return { success: false, error: 'No strategy message found' };
       try {
         await this.prisma.autopilotEvent.create({
           data: {
@@ -334,6 +335,7 @@ export class UnifiedAgentActionsSalesService {
           'Mais de 500 pessoas já estão usando.\n\nOs resultados têm sido incríveis. Dá uma olhada no que estão falando!',
       };
       const message = reactivationMessages[strategy] || reactivationMessages.curiosity;
+      if (!message) return { success: false, error: 'No reactivation message found' };
       await this.prisma.autopilotEvent.create({
         data: {
           workspaceId,

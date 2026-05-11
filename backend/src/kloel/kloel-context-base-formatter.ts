@@ -1,4 +1,3 @@
-import { buildProductAIConfigPrompt } from './kloel.prompts';
 import type { KloelContextFormatterLimits } from './kloel-context-formatter.types';
 
 const S_RE = /\s+/g;

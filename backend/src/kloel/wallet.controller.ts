@@ -216,10 +216,12 @@ export class WalletController {
     transactions.forEach((t) => {
       const day = new Date(t.createdAt).getDate() - 1;
       if (day >= 0 && day < daysInMonth) {
+        const entry = daily[day];
+        if (!entry) return;
         if (t.amount > 0) {
-          daily[day].income += t.amount;
+          entry.income += t.amount;
         } else {
-          daily[day].expense += Math.abs(t.amount);
+          entry.expense += Math.abs(t.amount);
         }
       }
     });

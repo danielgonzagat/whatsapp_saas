@@ -246,11 +246,13 @@ export class UnifiedAgentResponseService {
       .filter(Boolean) || [normalizedDraft];
 
     if (customerMessages.length === 1) {
+      const first = customerMessages[0];
+      if (!first) return [];
       return [
         {
-          quotedMessageId: customerMessages[0].quotedMessageId,
+          quotedMessageId: first.quotedMessageId,
           text:
-            this.finalizeReplyStyle(customerMessages[0].content, normalizedDraft, 0) ||
+            this.finalizeReplyStyle(first.content, normalizedDraft, 0) ||
             normalizedDraft,
         },
       ];
@@ -277,60 +279,65 @@ export class UnifiedAgentResponseService {
     const topic = extractFallbackTopicValue(message);
 
     if (PRE_C__O_QUANTO_VALOR_C_RE.test(normalized)) {
+      const response = this.finalizeReplyStyle(
+        message,
+        topic
+          ? `Boa, você foi direto ao ponto. Posso confirmar preço, pagamento e disponibilidade de ${topic}. Quer que eu siga por aí?`
+          : 'Boa, sem rodeio fica melhor. Posso confirmar preço, pagamento e disponibilidade. Me diz o produto ou procedimento.',
+      );
       return {
         actions: [],
-        response: this.finalizeReplyStyle(
-          message,
-          topic
-            ? `Boa, você foi direto ao ponto. Posso confirmar preço, pagamento e disponibilidade de ${topic}. Quer que eu siga por aí?`
-            : 'Boa, sem rodeio fica melhor. Posso confirmar preço, pagamento e disponibilidade. Me diz o produto ou procedimento.',
-        ),
+        ...(response !== undefined ? { response } : {}),
         intent: 'BUYING_INTENT',
         confidence: 0.45,
       };
     }
 
     if (AGENDAR_AGENDA_REUNI_A_RE.test(normalized)) {
+      const response = this.finalizeReplyStyle(
+        message,
+        'Perfeito, organização ainda existe. Me diz o dia ou horário e eu organizo isso com você.',
+      );
       return {
         actions: [],
-        response: this.finalizeReplyStyle(
-          message,
-          'Perfeito, organização ainda existe. Me diz o dia ou horário e eu organizo isso com você.',
-        ),
+        ...(response !== undefined ? { response } : {}),
         intent: 'SCHEDULING',
         confidence: 0.4,
       };
     }
 
     if (CANCEL_CANCELAR_REEMBOL_RE.test(normalized)) {
+      const response = this.finalizeReplyStyle(
+        message,
+        'Entendi. Me diz o que aconteceu para eu te ajudar nisso agora.',
+      );
       return {
         actions: [],
-        response: this.finalizeReplyStyle(
-          message,
-          'Entendi. Me diz o que aconteceu para eu te ajudar nisso agora.',
-        ),
+        ...(response !== undefined ? { response } : {}),
         intent: 'CHURN_RISK',
         confidence: 0.4,
       };
     }
 
     if (OL__A__BOM_DIA_BOA_TARD_RE.test(normalized)) {
+      const response = this.finalizeReplyStyle(message, 'Oi. Como posso te ajudar?');
       return {
         actions: [],
-        response: this.finalizeReplyStyle(message, 'Oi. Como posso te ajudar?'),
+        ...(response !== undefined ? { response } : {}),
         intent: 'GREETING',
         confidence: 0.35,
       };
     }
 
+    const response = this.finalizeReplyStyle(
+      message,
+      topic
+        ? `Entendi. Você falou de ${topic}. Me diz o que quer confirmar e eu te respondo sem enrolação.`
+        : 'Entendi. Me diz o produto, exame ou objetivo e eu sigo com a informação certa, sem teatro.',
+    );
     return {
       actions: [],
-      response: this.finalizeReplyStyle(
-        message,
-        topic
-          ? `Entendi. Você falou de ${topic}. Me diz o que quer confirmar e eu te respondo sem enrolação.`
-          : 'Entendi. Me diz o produto, exame ou objetivo e eu sigo com a informação certa, sem teatro.',
-      ),
+      ...(response !== undefined ? { response } : {}),
       intent: 'UNKNOWN',
       confidence: 0.2,
     };
@@ -350,7 +357,8 @@ export class UnifiedAgentResponseService {
       qualify_lead: 'QUALIFICATION',
     };
     for (const action of actions) {
-      if (toolIntentMap[action.tool]) return toolIntentMap[action.tool];
+      const intent = toolIntentMap[action.tool];
+      if (intent) return intent;
     }
     return 'FOLLOW_UP';
   }
@@ -362,7 +370,7 @@ export class UnifiedAgentResponseService {
   ): number {
     let confidence = 0.5;
     confidence += Math.min(actions.length * 0.1, 0.3);
-    if (response.choices[0].message.tool_calls?.length) confidence += 0.15;
+    if (response.choices[0]?.message?.tool_calls?.length) confidence += 0.15;
     return Math.min(confidence, 1);
   }
 

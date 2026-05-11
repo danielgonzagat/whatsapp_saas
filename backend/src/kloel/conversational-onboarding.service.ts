@@ -197,8 +197,11 @@ export class ConversationalOnboardingService {
   ): Promise<string> {
     await this.executeAndAppendToolCalls(workspaceId, messages, initialToolCalls);
     const finalResponse = await this.runOnboardingCompletion(workspaceId, messages, 'writer');
-    const responseText = finalResponse.choices[0].message.content || '';
-    await this.executeFollowupToolCalls(workspaceId, finalResponse.choices[0].message.tool_calls);
+    const assistantChoice = finalResponse.choices[0];
+    if (!assistantChoice) return '';
+    const responseText = assistantChoice.message.content || '';
+    await this.executeFollowupToolCalls(workspaceId, assistantChoice.message.tool_calls);
+
     return responseText;
   }
 
@@ -226,7 +229,9 @@ export class ConversationalOnboardingService {
 
     try {
       const response = await this.runOnboardingCompletion(workspaceId, messages, 'brain');
-      const assistantMessage = response.choices[0].message;
+      const assistantChoice = response.choices[0];
+      if (!assistantChoice) return '';
+      const assistantMessage = assistantChoice.message;
       let responseText = assistantMessage.content || '';
 
       const initialToolCalls = assistantMessage.tool_calls;
@@ -265,17 +270,16 @@ export class ConversationalOnboardingService {
     // Wrap reads in $transaction to get a consistent snapshot — prevents
     // concurrent onboarding completion from returning stale status.
     return this.prismaExt.$transaction(
-      async (tx: {
-        kloelMemory: {
+      async (tx: Record<string, unknown>) => {
+        const kloelMemory = tx.kloelMemory as {
           findUnique: (...args: unknown[]) => Promise<unknown>;
           findMany: (...args: unknown[]) => Promise<unknown[]>;
         };
-      }) => {
-        const state = await tx.kloelMemory.findUnique({
+        const state = await kloelMemory.findUnique({
           where: { workspaceId_key: { workspaceId, key: 'onboarding_completed' } },
         });
 
-        const messages = await tx.kloelMemory.findMany({
+        const messages = await kloelMemory.findMany({
           where: { workspaceId, key: { startsWith: 'onboarding_msg_' } },
           select: { id: true },
           take: 100,

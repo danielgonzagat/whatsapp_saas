@@ -21,7 +21,7 @@ export interface ProcessedAttachment {
 }
 
 /** Channel discriminator for normalized messages. */
-type OmniChannel = 'WHATSAPP' | 'INSTAGRAM' | 'MESSENGER' | 'EMAIL';
+type OmniChannel = 'WHATSAPP' | 'INSTAGRAM' | 'MESSENGER' | 'TIKTOK' | 'EMAIL';
 
 /** A normalized inbound message — the canonical input across adapters. */
 export interface NormalizedMessage {
@@ -66,6 +66,9 @@ export function extractIdentifier(msg: NormalizedMessage): string {
   }
   if (msg.channel === 'MESSENGER') {
     return `fb:${msg.externalId || msg.from}`;
+  }
+  if (msg.channel === 'TIKTOK') {
+    return `tt:${msg.externalId || msg.from}`;
   }
   return msg.from || msg.externalId || 'unknown';
 }

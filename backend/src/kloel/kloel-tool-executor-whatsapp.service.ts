@@ -166,8 +166,8 @@ export class KloelToolExecutorWhatsAppService {
   ): Promise<ToolResult> {
     const contact = await this.whatsappService.createContact(workspaceId, {
       phone: args?.phone,
-      name: args?.name,
-      email: args?.email,
+      ...(args?.name !== undefined ? { name: args.name } : {}),
+      ...(args?.email !== undefined ? { email: args.email } : {}),
     });
     return {
       success: true,
@@ -299,7 +299,7 @@ export class KloelToolExecutorWhatsAppService {
       await this.whatsappService.sendMessage(workspaceId, normalizedPhone, caption || '', {
         mediaUrl: documentUrl,
         mediaType: 'document',
-        caption,
+        ...(caption !== undefined ? { caption } : {}),
       });
       return { success: true, message: `Documento enviado para ${normalizedPhone}` };
     } catch (error: unknown) {

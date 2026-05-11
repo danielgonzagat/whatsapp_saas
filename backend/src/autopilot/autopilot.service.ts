@@ -316,9 +316,9 @@ export class AutopilotService {
     contactId: string,
     purchaseInfo: {
       provider: string;
-      amount?: number;
-      productName?: string;
-      orderId?: string;
+      amount?: number | undefined;
+      productName?: string | undefined;
+      orderId?: string | undefined;
     },
   ) {
     await this.ensureNotSuspended(workspaceId);

@@ -71,18 +71,23 @@ export class UnifiedAgentActionsMessagingService {
       this.readOptionalText(context?.quotedMessageId) ||
       this.readOptionalText(context?.providerMessageId);
 
+    const resolvedMediaUrl = this.readOptionalText(extraRecord.mediaUrl);
+    const resolvedMediaType =
+      mediaType === 'document' ||
+      mediaType === 'image' ||
+      mediaType === 'audio' ||
+      mediaType === 'video'
+        ? mediaType
+        : undefined;
+    const resolvedCaption = this.readOptionalText(extraRecord.caption);
+    const resolvedExternalId = this.readOptionalText(extraRecord.externalId);
+
     return {
-      mediaUrl: this.readOptionalText(extraRecord.mediaUrl),
-      mediaType:
-        mediaType === 'document' ||
-        mediaType === 'image' ||
-        mediaType === 'audio' ||
-        mediaType === 'video'
-          ? mediaType
-          : undefined,
-      caption: this.readOptionalText(extraRecord.caption),
-      externalId: this.readOptionalText(extraRecord.externalId),
-      quotedMessageId,
+      ...(resolvedMediaUrl !== undefined ? { mediaUrl: resolvedMediaUrl } : {}),
+      ...(resolvedMediaType !== undefined ? { mediaType: resolvedMediaType } : {}),
+      ...(resolvedCaption !== undefined ? { caption: resolvedCaption } : {}),
+      ...(resolvedExternalId !== undefined ? { externalId: resolvedExternalId } : {}),
+      ...(quotedMessageId !== undefined ? { quotedMessageId } : {}),
       complianceMode: this.resolveComplianceMode(context),
       forceDirect: context?.forceDirect === true,
     };
@@ -111,9 +116,10 @@ export class UnifiedAgentActionsMessagingService {
       );
       const sendResult: Record<string, unknown> = this.isRecord(result) ? result : {};
 
-      if (result.error) {
-        if (!isTestEnv) this.logger.error(`[AGENT] Erro ao enviar: ${result.message}`);
-        return { success: false, error: result.message };
+      if (sendResult.error) {
+        const message = this.readText(sendResult.message, 'send_message_failed');
+        if (!isTestEnv) this.logger.error(`[AGENT] Erro ao enviar: ${message}`);
+        return { success: false, error: message };
       }
 
       const delivery = this.readText(sendResult.delivery).toLowerCase();
@@ -162,9 +168,11 @@ export class UnifiedAgentActionsMessagingService {
         caption,
         this.buildWhatsAppSendOptions(context, { mediaUrl: url, mediaType: type, caption }),
       );
-      if (result.error) {
-        this.logger.error(`[AGENT] Erro ao enviar mídia: ${result.message}`);
-        return { success: false, error: result.message };
+      const sendResult: Record<string, unknown> = this.isRecord(result) ? result : {};
+      if (sendResult.error) {
+        const message = this.readText(sendResult.message, 'send_media_failed');
+        this.logger.error(`[AGENT] Erro ao enviar mídia: ${message}`);
+        return { success: false, error: message };
       }
       this.logger.log(`[AGENT] Mídia enviada com sucesso para ${phone}`);
       return { success: true, type, url, caption, sent: true };
@@ -203,9 +211,11 @@ export class UnifiedAgentActionsMessagingService {
         '',
         this.buildWhatsAppSendOptions(context, { mediaUrl: audioDataUrl, mediaType: 'audio' }),
       );
-      if (result.error) {
-        this.logger.error(`[AGENT] Erro ao enviar áudio: ${result.message}`);
-        return { success: false, error: result.message };
+      const sendResult: Record<string, unknown> = this.isRecord(result) ? result : {};
+      if (sendResult.error) {
+        const message = this.readText(sendResult.message, 'send_voice_failed');
+        this.logger.error(`[AGENT] Erro ao enviar áudio: ${message}`);
+        return { success: false, error: message };
       }
       this.logger.log(`[AGENT] Nota de voz enviada com sucesso para ${phone}`);
       return { success: true, text, voice, sent: true, audioSize: audioBuffer.length };
@@ -243,9 +253,11 @@ export class UnifiedAgentActionsMessagingService {
         '',
         this.buildWhatsAppSendOptions(context, { mediaUrl: audioDataUrl, mediaType: 'audio' }),
       );
-      if (result.error) {
-        this.logger.error(`[AGENT] Erro ao enviar áudio: ${result.message}`);
-        return { success: false, error: result.message };
+      const sendResult: Record<string, unknown> = this.isRecord(result) ? result : {};
+      if (sendResult.error) {
+        const message = this.readText(sendResult.message, 'send_audio_failed');
+        this.logger.error(`[AGENT] Erro ao enviar áudio: ${message}`);
+        return { success: false, error: message };
       }
       this.logger.log(`[AGENT] Áudio enviado para ${phone}`);
       return { success: true, text, voice, sent: true, audioSize: audioBuffer.length };

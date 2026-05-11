@@ -1,8 +1,73 @@
-import { Logger } from '@nestjs/common';
+import { createHmac } from 'node:crypto';
+import { Logger, NotFoundException } from '@nestjs/common';
+import type { Redis } from 'ioredis';
 import { validatePaymentTransition } from '../common/payment-state-machine';
 import { PrismaService } from '../prisma/prisma.service';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
-import type { GenericPaymentWebhookBody } from './payment-webhook-types';
+import type { GenericPaymentWebhookBody, WebhookRequest } from './payment-webhook-types';
+
+export async function assertWorkspaceExists(
+  prisma: PrismaService,
+  workspaceId: string,
+): Promise<void> {
+  const workspace = await prisma.workspace.findUnique({
+    where: { id: workspaceId },
+    select: { id: true },
+  });
+  if (!workspace) {
+    throw new NotFoundException('workspace_not_found');
+  }
+}
+
+export function verifySharedSecretOrSignature(
+  req: WebhookRequest,
+  expectedSecret: string,
+  secretHeader: string | undefined,
+  signatureHeader: string | undefined,
+): boolean {
+  if (secretHeader && secretHeader === expectedSecret) {
+    return true;
+  }
+  if (!signatureHeader) {
+    return false;
+  }
+  const raw = req?.rawBody || JSON.stringify(req?.body || {});
+  const rawBuffer = Buffer.isBuffer(raw) ? raw : Buffer.from(raw, 'utf8');
+  const digest = createHmac('sha256', expectedSecret).update(rawBuffer).digest('hex');
+  return signatureHeader === digest || signatureHeader === `sha256=${digest}`;
+}
+
+export async function ensureIdempotent(
+  eventId: string | undefined,
+  req: WebhookRequest,
+  redis: Redis,
+  logger: Logger,
+  onDuplicate: (message: string, meta: Record<string, unknown>) => Promise<void> | void,
+): Promise<{ ok: true; duplicate: true } | null> {
+  const raw = req?.rawBody || JSON.stringify(req?.body || {});
+  const rawBuffer = Buffer.isBuffer(raw) ? raw : Buffer.from(raw, 'utf8');
+  const keySeed =
+    eventId || createHmac('sha256', 'generic-payment-webhook').update(rawBuffer).digest('hex');
+  const key = `webhook:payment:generic:${keySeed}`;
+  const inserted = await redis.set(key, '1', 'EX', 60 * 60 * 24, 'NX');
+  if (inserted === 'OK') {
+    return null;
+  }
+  logger.log(`Duplicate payment webhook ignored: ${keySeed}`);
+  await onDuplicate('duplicate_payment_webhook', { eventId: keySeed });
+  return { ok: true, duplicate: true };
+}
+
+export async function sendOpsAlert(
+  message: string,
+  meta: Record<string, unknown>,
+  redis: Redis,
+): Promise<void> {
+  await redis.publish(
+    'ops-alerts',
+    JSON.stringify({ message, meta, at: new Date().toISOString() }),
+  );
+}
 
 export async function updateSaleAndPaymentHelper(
   prisma: PrismaService,

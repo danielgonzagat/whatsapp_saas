@@ -204,10 +204,10 @@ export class AutopilotOpsConversionService {
   /** Marca conversão manual/webhook e registra evento CONVERSION. */
   async markConversion(input: {
     workspaceId: string;
-    contactId?: string;
-    phone?: string;
-    reason?: string;
-    meta?: Record<string, unknown>;
+    contactId?: string | undefined;
+    phone?: string | undefined;
+    reason?: string | undefined;
+    meta?: Record<string, unknown> | undefined;
   }) {
     const startedAt = Date.now();
     const operation = 'autopilot/conversion';

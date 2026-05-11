@@ -217,10 +217,10 @@ export class KloelWorkspaceContextService {
     stripeCustomerId: string | null | undefined,
   ): void {
     const billingContext = this.contextFormatter.buildWorkspaceBillingContext({
-      subscription,
+      ...(subscription !== undefined ? { subscription } : {}),
       invoices,
       providerSettings,
-      stripeCustomerId,
+      ...(stripeCustomerId !== undefined ? { stripeCustomerId } : {}),
     });
     if (billingContext) parts.push(`STATUS DA CONTA E DA ASSINATURA:\n${billingContext}`);
   }

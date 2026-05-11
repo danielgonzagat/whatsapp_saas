@@ -57,6 +57,42 @@ export interface InboundMessage {
   raw?: Record<string, unknown>;
 }
 
+export function getDefaultContent(type: InboundMessage['type']): string {
+  switch (type) {
+    case 'audio':
+      return '[audio]';
+    case 'image':
+      return '[imagem]';
+    case 'document':
+      return '[documento]';
+    case 'video':
+      return '[video]';
+    case 'sticker':
+      return '[sticker]';
+    default:
+      return '';
+  }
+}
+
+export function mapMessageType(type: InboundMessage['type']): string {
+  switch (type) {
+    case 'audio':
+      return 'AUDIO';
+    case 'image':
+      return 'IMAGE';
+    case 'document':
+      return 'DOCUMENT';
+    case 'video':
+      return 'VIDEO';
+    case 'sticker':
+      return 'STICKER';
+    case 'text':
+      return 'TEXT';
+    default:
+      return 'UNKNOWN';
+  }
+}
+
 export type ProcessDeps = {
   prisma: PrismaService;
   inbox: IInboxService;

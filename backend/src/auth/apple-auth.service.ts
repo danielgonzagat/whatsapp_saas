@@ -8,7 +8,6 @@ import { ConfigService } from '@nestjs/config';
 import { createPublicKey, createSign, createVerify } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { getTraceHeaders } from '../common/trace-headers';
-import { APPLE_CLIENT_SECRET_TTL_SECONDS } from './apple-auth.support';
 import { GoogleVerifiedProfile } from './google-auth.service';
 import {
   APPLE_CLIENT_SECRET_TTL_SECONDS,
@@ -74,20 +73,20 @@ export class AppleAuthService {
       throw new UnauthorizedException('Identity token Apple ausente.');
     }
 
-    const parts = token.split('.');
-    if (parts.length !== 3) {
+    const [rawHeader, rawPayload, rawSig] = token.split('.');
+    if (rawHeader === undefined || rawPayload === undefined || rawSig === undefined) {
       throw new UnauthorizedException('Identity token Apple malformado.');
     }
 
-    const header = this.decodeTokenHeader(parts[0]);
+    const header = this.decodeTokenHeader(rawHeader);
     if (header.alg !== 'RS256' || !header.kid) {
       throw new UnauthorizedException('Header do token Apple invalido.');
     }
 
     const key = await this.findJwk(header.kid);
-    this.verifySignature(`${parts[0]}.${parts[1]}`, parts[2], key);
+    this.verifySignature(`${rawHeader}.${rawPayload}`, rawSig, key);
 
-    const payload = this.decodeTokenPayload(parts[1]);
+    const payload = this.decodeTokenPayload(rawPayload);
     this.assertIdentityPayload(payload);
     return payload as AppleIdentityPayload & { sub: string };
   }

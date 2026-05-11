@@ -1,7 +1,7 @@
 import { KloelContextBaseFormatter } from './kloel-context-base-formatter';
 import type { KloelContextFormatterLimits } from './kloel-context-formatter.types';
 
-const S_RE = /\s+/g;
+export const S_RE = /\s+/g;
 
 export class KloelWorkspaceCoreContextFormatter {
   constructor(

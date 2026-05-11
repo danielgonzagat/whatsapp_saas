@@ -89,6 +89,20 @@ enum EmailDeliveryEvent {
   UNSUBSCRIBED
 }
 
+enum MailboxProvider {
+  GMAIL
+  MICROSOFT
+  IMAP_SMTP
+}
+
+enum MailboxStatus {
+  PENDING
+  ACTIVE
+  DISCONNECTED
+  EXPIRED
+  ERROR
+}
+
 enum GdprType {
   EXPORT
   DELETE
@@ -190,6 +204,7 @@ model Workspace {
   emailCampaigns          EmailCampaign[]
   emailCampaignRecipients EmailCampaignRecipient[]
   emailCampaignDeliveries EmailCampaignDelivery[]
+  mailboxConnections      MailboxConnection[]
   kloelMessages           KloelMessage[]
   kloelMemories           KloelMemory[]
   kloelLeads              KloelLead[]
@@ -1124,17 +1139,17 @@ model DataDeletionRequest {
 }
 
 model GdprRequest {
-  id          String      @id @default(cuid())
+  id          String     @id @default(cuid())
   workspaceId String
-  workspace   Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspace   Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   userId      String
-  user        Agent       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user        Agent      @relation(fields: [userId], references: [id], onDelete: Cascade)
   type        GdprType
-  code        String      @unique
-  status      GdprStatus  @default(PENDING)
-  requestedAt DateTime    @default(now())
+  code        String     @unique
+  status      GdprStatus @default(PENDING)
+  requestedAt DateTime   @default(now())
   completedAt DateTime?
-  evidenceUrl String?     @db.Text
+  evidenceUrl String?    @db.Text
 
   @@index([code])
   @@index([workspaceId, userId])
@@ -2000,6 +2015,42 @@ model EmailCampaignDelivery {
   @@index([recipientId])
   @@index([providerMessageId])
   @@map("RAC_EmailCampaignDelivery")
+}
+
+model MailboxConnection {
+  id                String          @id @default(uuid())
+  workspaceId       String
+  workspace         Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  provider          MailboxProvider
+  email             String
+  status            MailboxStatus   @default(PENDING)
+  providerAccountId String?
+  accessToken       String? // encrypted OAuth access token
+  refreshToken      String? // encrypted OAuth refresh token
+  expiresAt         DateTime?
+  imapHost          String?
+  imapPort          Int?
+  imapSecure        Boolean         @default(true)
+  imapUsername      String?
+  imapPassword      String? // encrypted IMAP/app password
+  smtpHost          String?
+  smtpPort          Int?
+  smtpSecure        Boolean         @default(true)
+  smtpUsername      String?
+  smtpPassword      String? // encrypted SMTP/app password
+  metadata          Json?
+  connectedAt       DateTime?
+  disconnectedAt    DateTime?
+  lastSyncAt        DateTime?
+  lastErrorAt       DateTime?
+  lastError         String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@unique([workspaceId, provider, email])
+  @@index([workspaceId, status])
+  @@index([workspaceId, provider])
+  @@map("RAC_MailboxConnection")
 }
 
 model FollowUp {

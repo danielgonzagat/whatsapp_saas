@@ -114,9 +114,9 @@ export class SmartPaymentController {
       phone: body.phone,
       customerName: body.customerName,
       amount: body.amount,
-      productName: body.productName,
-      contactId: body.contactId,
-      conversation: body.conversation,
+      ...(body.productName !== undefined ? { productName: body.productName } : {}),
+      ...(body.contactId !== undefined ? { contactId: body.contactId } : {}),
+      ...(body.conversation !== undefined ? { conversation: body.conversation } : {}),
     });
 
     return {
@@ -149,7 +149,9 @@ export class SmartPaymentController {
       contactId: body.contactId,
       originalAmount: body.originalAmount,
       customerMessage: body.customerMessage,
-      maxDiscountPercent: body.maxDiscountPercent,
+      ...(body.maxDiscountPercent !== undefined
+        ? { maxDiscountPercent: body.maxDiscountPercent }
+        : {}),
     });
 
     return {
@@ -208,7 +210,7 @@ export class SmartPaymentController {
       paymentId: body.paymentId,
       status: body.status,
       amount: body.amount,
-      customerId: body.customerId,
+      ...(body.customerId !== undefined ? { customerId: body.customerId } : {}),
     });
 
     return {

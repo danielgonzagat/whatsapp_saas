@@ -16,11 +16,7 @@ import { CiaRuntimeService } from './cia-runtime.service';
 import { WhatsAppProviderRegistry } from './providers/provider-registry';
 import { WhatsAppCatchupService } from './whatsapp-catchup.service';
 import { isPlaceholderContactName as isPlaceholderName } from './whatsapp-normalization.util';
-import {
-  normalizeJsonObjExt,
-  resolveTimestampExt,
-  toIsoTimestamp,
-} from './whatsapp-service.helpers';
+import { resolveTimestampExt, toIsoTimestamp } from './whatsapp-service.helpers';
 import {
   normalizeContactsArray,
   normalizeChatsArray,
@@ -76,9 +72,6 @@ export class WhatsappService {
   private isIndividualChatId(c?: string | null): boolean {
     const v = String(c || '').trim();
     return v.endsWith('@c.us') || v.endsWith('@s.whatsapp.net');
-  }
-  private normalizeJsonObject(v: unknown): ExternalProviderPayload {
-    return normalizeJsonObjExt(v);
   }
   private resolveTimestamp(v: unknown): number {
     return resolveTimestampExt(v);

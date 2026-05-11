@@ -27,10 +27,14 @@ export class StripeChargeService {
       saleValueCents: input.saleValueCents,
       interestCents: input.interestCents,
       marketplaceFeeCents: input.marketplaceFeeCents,
-      supplier: input.splitConfig?.supplier,
-      affiliate: input.splitConfig?.affiliate,
-      coproducer: input.splitConfig?.coproducer,
-      manager: input.splitConfig?.manager,
+      ...(input.splitConfig?.supplier !== undefined ? { supplier: input.splitConfig.supplier } : {}),
+      ...(input.splitConfig?.affiliate !== undefined
+        ? { affiliate: input.splitConfig.affiliate }
+        : {}),
+      ...(input.splitConfig?.coproducer !== undefined
+        ? { coproducer: input.splitConfig.coproducer }
+        : {}),
+      ...(input.splitConfig?.manager !== undefined ? { manager: input.splitConfig.manager } : {}),
       // Seller residue is keyed by the destination connected account id so the
       // downstream marketplace settlement processor can map the seller line
       // without depending on provider-side merchant context like on_behalf_of.
@@ -59,7 +63,7 @@ export class StripeChargeService {
           ? { payment_method_options: input.paymentMethodOptions }
           : {}),
         transfer_group: transferGroup,
-        receipt_email: input.buyerEmail,
+        ...(input.buyerEmail !== undefined ? { receipt_email: input.buyerEmail } : {}),
         metadata: {
           ...(input.metadata ?? {}),
           type: 'sale',

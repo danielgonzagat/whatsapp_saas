@@ -1,4 +1,4 @@
-import { Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
 import type { ChatCompletionMessageParam } from 'openai/resources/chat';
@@ -6,8 +6,6 @@ import { PlanLimitsService } from '../billing/plan-limits.service';
 import { AuditService } from '../audit/audit.service';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { PrismaService } from '../prisma/prisma.service';
-import { WHATSAPP_MESSAGING } from '../whatsapp/whatsapp.tokens';
-import type { IWhatsappMessaging } from '../whatsapp/whatsapp.interfaces';
 import { chatCompletionWithFallback } from './openai-wrapper';
 import { forEachSequential } from '../common/async-sequence';
 import { UNIFIED_AGENT_TOOLS } from './unified-agent-tools-def';
@@ -62,8 +60,6 @@ export class UnifiedAgentService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
-    @Inject(forwardRef(() => WHATSAPP_MESSAGING))
-    private readonly whatsappService: IWhatsappMessaging,
     private readonly planLimits: PlanLimitsService,
     private readonly auditService: AuditService,
     private readonly ctx: UnifiedAgentContextService,
@@ -88,6 +84,7 @@ export class UnifiedAgentService {
     contactId?: string;
     channel?: string;
     context?: UnknownRecord;
+    executeTools?: boolean;
   }): Promise<{
     reply?: string;
     response?: string;
@@ -102,11 +99,19 @@ export class UnifiedAgentService {
       message: params.message,
       context: {
         channel: params.channel || 'whatsapp',
+        executeTools: params.executeTools !== false,
         ...(params.context || {}),
       },
     });
 
-    return { ...result, reply: result.response };
+    return {
+      actions: result.actions,
+      intent: result.intent,
+      confidence: result.confidence,
+      ...(result.response !== undefined
+        ? { reply: result.response, response: result.response }
+        : {}),
+    };
   }
 
   /**
@@ -235,15 +240,19 @@ Mensagem: ${message}`,
       this.logger.error(`OpenAI agent processing failed, using fallback: ${msg}`);
       return this.response.buildFallbackResult(message);
     }
+    if (!llmResponse) return this.response.buildFallbackResult(message);
+    const firstChoice = llmResponse.choices[0];
+    if (!firstChoice) return this.response.buildFallbackResult(message);
     await this.planLimits
-      .trackAiUsage(params.workspaceId, llmResponse?.usage?.total_tokens ?? 500)
+      .trackAiUsage(params.workspaceId, llmResponse.usage?.total_tokens ?? 500)
       .catch(() => {});
 
-    const assistantMessage = llmResponse.choices[0].message;
+    const assistantMessage = firstChoice.message;
     const actionsList: ActionEntry[] = [];
 
     // 5. Process tool calls
-    if (assistantMessage.tool_calls && assistantMessage.tool_calls.length > 0) {
+    const executeTools = context?.executeTools !== false;
+    if (executeTools && assistantMessage.tool_calls && assistantMessage.tool_calls.length > 0) {
       await forEachSequential(assistantMessage.tool_calls, async (toolCall) => {
         if (toolCall.type !== 'function') return;
         const toolName = toolCall.function.name;
@@ -282,7 +291,12 @@ Mensagem: ${message}`,
       },
     );
 
-    return { actions: actionsList, response: draftedReply, intent, confidence };
+    return {
+      actions: actionsList,
+      ...(draftedReply !== undefined ? { response: draftedReply } : {}),
+      intent,
+      confidence,
+    };
   }
 
   /**

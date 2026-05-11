@@ -20,7 +20,7 @@ export function assertAgentCanAuthenticate(agent: {
   }
 }
 
-function buildDeletedEmail(agentId: string): string {
+export function buildDeletedEmail(agentId: string): string {
   return `deleted-${agentId}@removed.local`;
 }
 

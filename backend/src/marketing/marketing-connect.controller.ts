@@ -5,6 +5,7 @@ import {
   Controller,
   Get,
   Post,
+  Query,
   Request,
   UseGuards,
 } from '@nestjs/common';
@@ -21,12 +22,90 @@ import {
   extractSetupConfigField,
   normalizeWhatsAppSelectedProducts,
 } from './marketing-connect.helpers';
+import { MailboxGmailOAuthService } from './mailbox-gmail-oauth.service';
 
 type EmailSubSettings = Record<string, unknown> & { enabled?: boolean };
 type WhatsAppStatusValue = Record<string, unknown>;
+type MarketingChannelKey = 'whatsapp' | 'instagram' | 'facebook' | 'tiktok' | 'email';
+
+const MARKETING_CHANNEL_KEYS = new Set<MarketingChannelKey>([
+  'whatsapp',
+  'instagram',
+  'facebook',
+  'tiktok',
+  'email',
+]);
+
+interface MarketingChannelSetupPayload {
+  channel?: string;
+  currentStep?: unknown;
+  selectedProductIds?: unknown;
+  arsenal?: unknown;
+  config?: unknown;
+}
+
+interface GmailOAuthCompletePayload {
+  code?: string;
+  state?: string;
+}
+
+interface GmailSyncPayload {
+  limit?: unknown;
+}
 
 function readOptionalText(value: unknown): string | null {
   return typeof value === 'string' && value.trim() ? value : null;
+}
+
+function assertMarketingChannel(value: unknown): MarketingChannelKey {
+  if (typeof value === 'string' && MARKETING_CHANNEL_KEYS.has(value as MarketingChannelKey)) {
+    return value as MarketingChannelKey;
+  }
+  throw new BadRequestException('invalid_marketing_channel');
+}
+
+function readMarketingChannelSetup(
+  providerSettings: ProviderSettings,
+  channel: MarketingChannelKey,
+): Record<string, unknown> {
+  const allSetups =
+    providerSettings.marketingChannelSetup &&
+    typeof providerSettings.marketingChannelSetup === 'object' &&
+    !Array.isArray(providerSettings.marketingChannelSetup)
+      ? (providerSettings.marketingChannelSetup as Record<string, unknown>)
+      : {};
+  const setup = allSetups[channel];
+  return setup && typeof setup === 'object' && !Array.isArray(setup)
+    ? (setup as Record<string, unknown>)
+    : {};
+}
+
+function normalizeStep(value: unknown, fallback = 0) {
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed)) {
+    return fallback;
+  }
+  return Math.min(3, Math.max(0, parsed));
+}
+
+function normalizeStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return value
+    .map((item) => String(item || '').trim())
+    .filter(Boolean)
+    .slice(0, 100);
+}
+
+function normalizeRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+function normalizeArsenal(value: unknown): string[] {
+  return normalizeStringArray(value).slice(0, 50);
 }
 
 /**
@@ -43,6 +122,7 @@ export class MarketingConnectController {
     private readonly prisma: PrismaService,
     private readonly metaWhatsApp: MetaWhatsAppService,
     private readonly whatsappProviders: WhatsAppProviderRegistry,
+    private readonly gmailMailbox: MailboxGmailOAuthService,
   ) {}
 
   private getEmailProviderSnapshot() {
@@ -99,29 +179,31 @@ export class MarketingConnectController {
   }
 
   private async getConnectionStatus(workspaceId: string) {
-    const [workspace, metaConnection, providerType, whatsappStatus] = await Promise.all([
-      this.prisma.workspace.findUnique({
-        where: { id: workspaceId },
-        select: { providerSettings: true, name: true },
-      }),
-      this.prisma.metaConnection.findUnique({
-        where: { workspaceId },
-        select: {
-          status: true,
-          pageId: true,
-          pageName: true,
-          instagramAccountId: true,
-          instagramUsername: true,
-          whatsappPhoneNumberId: true,
-          whatsappBusinessId: true,
-          adAccountId: true,
-          tokenExpiresAt: true,
-          updatedAt: true,
-        },
-      }),
-      this.whatsappProviders.getProviderType(workspaceId).catch(() => 'meta-cloud' as const),
-      this.whatsappProviders.getSessionStatus(workspaceId).catch(() => null),
-    ]);
+    const [workspace, metaConnection, providerType, whatsappStatus, gmailMailbox] =
+      await Promise.all([
+        this.prisma.workspace.findUnique({
+          where: { id: workspaceId },
+          select: { providerSettings: true, name: true },
+        }),
+        this.prisma.metaConnection.findUnique({
+          where: { workspaceId },
+          select: {
+            status: true,
+            pageId: true,
+            pageName: true,
+            instagramAccountId: true,
+            instagramUsername: true,
+            whatsappPhoneNumberId: true,
+            whatsappBusinessId: true,
+            adAccountId: true,
+            tokenExpiresAt: true,
+            updatedAt: true,
+          },
+        }),
+        this.whatsappProviders.getProviderType(workspaceId).catch(() => 'meta-cloud' as const),
+        this.whatsappProviders.getSessionStatus(workspaceId).catch(() => null),
+        this.gmailMailbox.getPrimaryGmailStatus(workspaceId).catch(() => null),
+      ]);
 
     const providerSettings = asProviderSettings(workspace?.providerSettings);
     const emailSettings = (providerSettings.email ?? { enabled: false }) as EmailSubSettings;
@@ -186,14 +268,14 @@ export class MarketingConnectController {
               : null,
           phoneNumber:
             readOptionalText(safeWhatsApp.phoneNumber) ||
-            readOptionalText(safeWhatsApp.phone) ||
+            readOptionalText((safeWhatsApp as Record<string, unknown>).phone) ||
             readOptionalText(snapshot.phoneNumber),
           pushName: readOptionalText(safeWhatsApp.pushName) || readOptionalText(snapshot.pushName),
           degradedReason:
             whatsappConnected || whatsappStatusValue === 'connecting'
               ? null
               : readOptionalText(safeWhatsApp.degradedReason) ||
-                readOptionalText(safeWhatsApp.message) ||
+                readOptionalText((safeWhatsApp as Record<string, unknown>).message) ||
                 readOptionalText(snapshot.disconnectReason),
         },
         instagram: {
@@ -218,17 +300,25 @@ export class MarketingConnectController {
           pageName: metaConnection?.pageName || null,
         },
         email: {
-          connected: Boolean(emailProvider.available && emailSettings.enabled),
-          status: emailProvider.available
-            ? emailSettings.enabled
-              ? 'connected'
-              : 'disconnected'
-            : 'unavailable',
+          connected: Boolean(gmailMailbox || (emailProvider.available && emailSettings.enabled)),
+          status: gmailMailbox
+            ? 'connected'
+            : emailProvider.available
+              ? emailSettings.enabled
+                ? 'connected'
+                : 'disconnected'
+              : 'unavailable',
           enabled: Boolean(emailSettings.enabled),
-          provider: emailProvider.provider,
+          provider: gmailMailbox ? 'gmail' : emailProvider.provider,
           providerAvailable: emailProvider.available,
-          fromEmail: emailProvider.fromEmail,
+          fromEmail: gmailMailbox?.email || emailProvider.fromEmail,
           fromName: emailProvider.fromName,
+          mailboxConnectionId: gmailMailbox?.id || null,
+          mailboxProvider: gmailMailbox?.provider || null,
+          mailboxStatus: gmailMailbox?.status || null,
+          lastSyncAt: gmailMailbox?.lastSyncAt || null,
+          lastErrorAt: gmailMailbox?.lastErrorAt || null,
+          lastError: gmailMailbox?.lastError || null,
           workspaceName: workspace?.name || null,
         },
       },
@@ -239,6 +329,77 @@ export class MarketingConnectController {
   @Get('connect/status')
   async getConnectStatus(@Request() req: { user: { workspaceId: string; email?: string } }) {
     return this.getConnectionStatus(req.user.workspaceId);
+  }
+
+  /** Get persistent four-step setup for one official marketing channel. */
+  @Get('connect/channel-setup')
+  async getChannelSetup(
+    @Request() req: { user: { workspaceId: string; email?: string } },
+    @Query('channel') rawChannel?: string,
+  ) {
+    const channel = assertMarketingChannel(rawChannel);
+    const workspace = await this.prisma.workspace.findUnique({
+      where: { id: req.user.workspaceId },
+      select: { providerSettings: true },
+    });
+    const providerSettings = asProviderSettings(workspace?.providerSettings);
+    return {
+      channel,
+      setup: {
+        currentStep: 0,
+        selectedProductIds: [],
+        arsenal: [],
+        config: {},
+        ...readMarketingChannelSetup(providerSettings, channel),
+      },
+    };
+  }
+
+  /** Persist four-step setup progress for one official marketing channel. */
+  @Post('connect/channel-setup')
+  async saveChannelSetup(
+    @Request() req: { user: { workspaceId: string; email?: string } },
+    @Body() body: MarketingChannelSetupPayload = {},
+  ) {
+    const channel = assertMarketingChannel(body.channel);
+    const workspace = await this.prisma.workspace.findUnique({
+      where: { id: req.user.workspaceId },
+      select: { providerSettings: true },
+    });
+    const currentSettings = asProviderSettings(workspace?.providerSettings);
+    const existingSetup = readMarketingChannelSetup(currentSettings, channel);
+    const allSetups =
+      currentSettings.marketingChannelSetup &&
+      typeof currentSettings.marketingChannelSetup === 'object' &&
+      !Array.isArray(currentSettings.marketingChannelSetup)
+        ? (currentSettings.marketingChannelSetup as Record<string, unknown>)
+        : {};
+    const nextSetup = {
+      ...existingSetup,
+      currentStep: normalizeStep(body.currentStep, normalizeStep(existingSetup.currentStep)),
+      selectedProductIds: normalizeStringArray(body.selectedProductIds),
+      arsenal: normalizeArsenal(body.arsenal),
+      config: {
+        ...normalizeRecord(existingSetup.config),
+        ...normalizeRecord(body.config),
+      },
+      updatedAt: new Date().toISOString(),
+    };
+
+    await this.prisma.workspace.update({
+      where: { id: req.user.workspaceId },
+      data: {
+        providerSettings: {
+          ...currentSettings,
+          marketingChannelSetup: {
+            ...allSetups,
+            [channel]: nextSetup,
+          },
+        } as unknown as Prisma.InputJsonObject,
+      },
+    });
+
+    return { channel, setup: nextSetup };
   }
 
   /** Get whats app summary. */
@@ -326,6 +487,37 @@ export class MarketingConnectController {
     });
 
     return this.getConnectionStatus(workspaceId);
+  }
+
+  /** Start Gmail mailbox OAuth for the workspace owner. */
+  @Get('connect/email/gmail/auth-url')
+  getGmailAuthUrl(
+    @Request() req: { user: { workspaceId: string; email?: string } },
+    @Query('returnTo') returnTo?: string,
+  ) {
+    return this.gmailMailbox.buildAuthUrl(req.user.workspaceId, returnTo);
+  }
+
+  /** Complete Gmail mailbox OAuth and persist encrypted tokens. */
+  @Post('connect/email/gmail/complete')
+  async completeGmailOAuth(
+    @Request() req: { user: { workspaceId: string; email?: string } },
+    @Body() body: GmailOAuthCompletePayload = {},
+  ) {
+    return this.gmailMailbox.completeOAuth(
+      req.user.workspaceId,
+      String(body.code || ''),
+      String(body.state || ''),
+    );
+  }
+
+  /** Pull latest Gmail messages into the unified inbox for the connected mailbox. */
+  @Post('connect/email/gmail/sync')
+  async syncGmailMailbox(
+    @Request() req: { user: { workspaceId: string; email?: string } },
+    @Body() body: GmailSyncPayload = {},
+  ) {
+    return this.gmailMailbox.syncLatestInbox(req.user.workspaceId, Number(body.limit || 10));
   }
 
   /** Send email test. */

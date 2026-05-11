@@ -12,7 +12,7 @@ import { Type } from 'class-transformer';
 
 class CampaignRecipientDto {
   @IsEmail()
-  email: string;
+  email!: string;
 
   @IsOptional()
   @IsString()
@@ -25,18 +25,18 @@ export class CreateEmailCampaignDto {
   @IsNotEmpty()
   @MinLength(1)
   @MaxLength(255)
-  name: string;
+  name!: string;
 
   @IsString()
   @IsNotEmpty()
   @MinLength(1)
   @MaxLength(998)
-  subject: string;
+  subject!: string;
 
   @IsString()
   @IsNotEmpty()
   @MinLength(1)
-  htmlBody: string;
+  htmlBody!: string;
 
   @IsOptional()
   @IsEmail()
@@ -54,5 +54,5 @@ export class CreateEmailCampaignDto {
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => CampaignRecipientDto)
-  recipients: CampaignRecipientDto[];
+  recipients!: CampaignRecipientDto[];
 }

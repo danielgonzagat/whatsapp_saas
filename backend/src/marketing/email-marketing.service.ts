@@ -9,7 +9,12 @@ import {
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 import type { CreateEmailCampaignDto } from './dto/create-email-campaign.dto';
-import type { EmailCampaign, EmailCampaignRecipient, EmailCampaignDelivery } from '@prisma/client';
+import type {
+  EmailCampaign,
+  EmailCampaignRecipient,
+  EmailCampaignDelivery,
+  Prisma,
+} from '@prisma/client';
 
 const NAME_RE = /\{\{name\}\}/g;
 
@@ -145,15 +150,15 @@ export class EmailMarketingService implements OnModuleInit, OnModuleDestroy {
         htmlBody: dto.htmlBody,
         fromEmail,
         fromName,
-        replyTo: dto.replyTo,
+        ...(dto.replyTo !== undefined ? { replyTo: dto.replyTo } : {}),
         status: 'DRAFT',
         totalRecipients: dto.recipients.length,
         provider,
-        recipients: {
+          recipients: {
           create: dto.recipients.map((r) => ({
             workspaceId,
             email: r.email,
-            name: r.name,
+            ...(r.name ? { name: r.name } : {}),
             status: 'PENDING',
           })),
         },
@@ -280,7 +285,7 @@ export class EmailMarketingService implements OnModuleInit, OnModuleDestroy {
     let failedCount = 0;
 
     for (let i = 0; i < campaign.recipients.length; i++) {
-      const recipient = campaign.recipients[i];
+      const recipient = campaign.recipients[i]!;
       if (recipient.status === 'UNSUBSCRIBED') {
         continue;
       }
@@ -366,10 +371,7 @@ export class EmailMarketingService implements OnModuleInit, OnModuleDestroy {
 
   private async recordDeliveryEvent(log: EmailDeliveryLog): Promise<void> {
     const event = log.event;
-    const statusUpdate =
-      event === 'SENT'
-        ? { status: 'SENT' as const, sentAt: new Date() }
-        : { status: 'FAILED' as const, failedAt: new Date(), errorMessage: log.errorMessage };
+    const isSent = event === 'SENT';
 
     await Promise.all([
       this.prisma.emailCampaignDelivery.create({
@@ -378,12 +380,14 @@ export class EmailMarketingService implements OnModuleInit, OnModuleDestroy {
           recipientId: log.recipientId,
           workspaceId: log.workspaceId,
           event,
-          providerMessageId: log.providerMessageId,
+          ...(log.providerMessageId ? { providerMessageId: log.providerMessageId } : {}),
         },
       }),
       this.prisma.emailCampaignRecipient.update({
         where: { id: log.recipientId },
-        data: statusUpdate,
+        data: isSent
+          ? { status: 'SENT' as const, sentAt: new Date() }
+          : { status: 'FAILED' as const, failedAt: new Date(), ...(log.errorMessage ? { errorMessage: log.errorMessage } : {}) },
       }),
     ]);
   }
@@ -407,7 +411,7 @@ export class EmailMarketingService implements OnModuleInit, OnModuleDestroy {
     const { providerMessageId, event, metadata } = params;
 
     const recipient = await this.prisma.emailCampaignRecipient.findFirst({
-      where: { providerMessageId, workspaceId: undefined },
+      where: { providerMessageId },
       include: { campaign: true },
     });
 
@@ -419,10 +423,7 @@ export class EmailMarketingService implements OnModuleInit, OnModuleDestroy {
     const campaignId = recipient.campaignId;
     const workspaceId = recipient.workspaceId;
 
-    const statusMap: Record<
-      string,
-      Partial<Record<keyof EmailCampaignRecipient, Date | string | null>>
-    > = {
+    const statusMap: Record<string, Prisma.EmailCampaignRecipientUpdateInput> = {
       DELIVERED: { status: 'DELIVERED', deliveredAt: new Date() },
       OPENED: { status: 'OPENED', openedAt: new Date() },
       CLICKED: { status: 'CLICKED', clickedAt: new Date() },
@@ -441,7 +442,7 @@ export class EmailMarketingService implements OnModuleInit, OnModuleDestroy {
         workspaceId,
         event,
         providerMessageId,
-        metadata: metadata ? metadata : undefined,
+        ...(metadata ? { metadata: metadata as Prisma.InputJsonObject } : {}),
       },
     });
 

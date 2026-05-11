@@ -3,7 +3,6 @@ import { Prisma } from '@prisma/client';
 import { Response } from 'express';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { KloelComposerService } from './kloel-composer.service';
 import { KloelConversationStore } from './kloel-conversation-store';
 import { KloelLeadBrainService } from './kloel-lead-brain.service';
 import { KloelReplyEngineService } from './kloel-reply-engine.service';
@@ -75,7 +74,6 @@ export class KloelService {
     private readonly threadService: KloelThreadService,
     private readonly wsContextService: KloelWorkspaceContextService,
     private readonly leadBrainService: KloelLeadBrainService,
-    private readonly composerService: KloelComposerService,
     private readonly thinkerService: KloelThinkerService,
     private readonly replyEngineService: KloelReplyEngineService,
     private readonly toolDispatcher: KloelToolDispatcherService,
@@ -225,9 +223,9 @@ export class KloelService {
       composerMetadata.capability,
     );
     const enrichedCompanyContext = await this.buildComposerContext({
-      workspaceId,
-      metadata,
-      companyContext,
+      ...(workspaceId !== undefined ? { workspaceId } : {}),
+      ...(metadata !== undefined ? { metadata } : {}),
+      ...(companyContext !== undefined ? { companyContext } : {}),
     });
     const marketingAddendum = await this.replyEngineService.buildMarketingPromptAddendum(
       workspaceId,
@@ -257,9 +255,9 @@ export class KloelService {
       composerMetadata.capability,
     );
     const enrichedCompanyContext = await this.buildComposerContext({
-      workspaceId,
-      metadata,
-      companyContext,
+      ...(workspaceId !== undefined ? { workspaceId } : {}),
+      ...(metadata !== undefined ? { metadata } : {}),
+      ...(companyContext !== undefined ? { companyContext } : {}),
     });
     const marketingAddendum = await this.replyEngineService.buildMarketingPromptAddendum(
       workspaceId,

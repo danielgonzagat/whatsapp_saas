@@ -32,7 +32,7 @@ export type { LocalToolExecutor } from './kloel-reply-engine.service';
 type ComposerCapability = 'create_image' | 'create_site' | 'search_web';
 
 export type { ChatMessage, ThinkRequest, ThinkSyncResult } from './kloel-thinker.types';
-import type { ChatMessage, ThinkRequest, ThinkSyncResult } from './kloel-thinker.types';
+import type { ThinkRequest, ThinkSyncResult } from './kloel-thinker.types';
 
 /** Orchestrates the Kloel thinking loop — SSE streaming and sync variants. */
 @Injectable()
@@ -77,7 +77,7 @@ export class KloelThinkerService {
     const abortReason = () => signal?.reason;
     const isClientDisconnected = () => this.replyEngine.isClientDisconnected(abortReason());
     const streamWriter = new KloelStreamWriter(res, {
-      signal,
+      ...(signal !== undefined ? { signal } : {}),
       logger: this.logger,
       llmE2EGuard: this.llmE2EGuard,
     });
@@ -156,11 +156,11 @@ export class KloelThinkerService {
         historyState.recentMessages,
       );
       const dynamicContext = await this.replyEngine.buildDynamicRuntimeContext({
-        workspaceId,
-        userId,
+        ...(workspaceId !== undefined ? { workspaceId } : {}),
+        ...(userId !== undefined ? { userId } : {}),
         userName,
         expertiseLevel,
-        companyContext: enrichedCompanyContext,
+        ...(enrichedCompanyContext !== undefined ? { companyContext: enrichedCompanyContext } : {}),
       });
       const summaryMessage = this.threadService.buildThreadSummarySystemMessage(
         historyState.summary,
@@ -188,7 +188,7 @@ export class KloelThinkerService {
       const persistedUserMessage = thread?.id
         ? await this.threadService.persistUserThreadMessage(
             thread.id,
-            workspaceId,
+            workspaceId ?? '',
             message,
             this.threadService.buildThreadMessageMetadata(metadata, {
               clientRequestId,
@@ -308,7 +308,7 @@ export class KloelThinkerService {
   async thinkSync(
     request: ThinkRequest,
     composerCapability: ComposerCapability | null,
-    enrichedCompanyContext: string | undefined,
+    _enrichedCompanyContext: string | undefined,
     effectiveCompanyContext: string | undefined,
     _executeLocalTool?: LocalToolExecutor,
   ): Promise<ThinkSyncResult> {
@@ -316,7 +316,6 @@ export class KloelThinkerService {
       return await thinkSyncImpl(
         request,
         composerCapability,
-        enrichedCompanyContext,
         effectiveCompanyContext,
         {
           replyEngine: this.replyEngine,

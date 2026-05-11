@@ -256,6 +256,29 @@ export class TikTokMarketingService {
     return { connected: true, status: 'connected', kind, advertiserIds };
   }
 
+  async disconnect(workspaceId: string) {
+    const workspace = await this.prisma.workspace.findUnique({
+      where: { id: workspaceId },
+      select: { providerSettings: true },
+    });
+    const currentSettings = asProviderSettings(workspace?.providerSettings);
+    const nextSettings = {
+      ...currentSettings,
+      tiktok: {} as Record<string, never>,
+    } satisfies ProviderSettings;
+
+    await this.prisma.workspace.update({
+      where: { id: workspaceId },
+      data: {
+        providerSettings: JSON.parse(JSON.stringify(nextSettings)) as Prisma.InputJsonObject,
+      },
+    });
+
+    this.logger.log(`TikTok disconnected for workspace ${workspaceId}`);
+
+    return { status: 'disconnected' };
+  }
+
   private tryReadTikTokClientKey() {
     return (
       String(process.env.TIKTOK_CLIENT_KEY || '').trim() ||

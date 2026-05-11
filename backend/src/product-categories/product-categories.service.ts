@@ -10,9 +10,11 @@ export class ProductCategoriesService {
   }
 
   async listByWorkspace(workspaceId: string) {
-    return this.prisma.productCategory.findMany({
+    return this.prisma.product.findMany({
       where: { workspaceId, active: true },
-      orderBy: { sort: 'asc' },
+      distinct: ['category'],
+      orderBy: { category: 'asc' },
+      select: { category: true },
     });
   }
 }

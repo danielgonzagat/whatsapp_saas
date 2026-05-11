@@ -86,10 +86,11 @@ export class FacebookMessengerController {
 
     const limit = limitQuery ? parseInt(limitQuery, 10) : undefined;
 
-    return this.fbMessenger.getMessages(workspaceId, pageId, {
-      limit,
-      before,
-    });
+    const options: { limit?: number; before?: string } = {};
+    if (limit !== undefined) options.limit = limit;
+    if (before !== undefined) options.before = before;
+
+    return this.fbMessenger.getMessages(workspaceId, pageId, options);
   }
 
   @Get('conversations')

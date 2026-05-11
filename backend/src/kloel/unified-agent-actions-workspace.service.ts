@@ -64,7 +64,11 @@ export class UnifiedAgentActionsWorkspaceService {
 
   async actionCreateProduct(workspaceId: string, args: ToolArgs) {
     const existingDb = await this.prisma.product.findFirst({
-      where: { workspaceId, name: args.name, active: true },
+      where: {
+        workspaceId,
+        ...(args.name !== undefined ? { name: args.name } : {}),
+        active: true,
+      },
       select: { id: true, name: true, price: true },
     });
     if (existingDb) {
@@ -142,10 +146,12 @@ export class UnifiedAgentActionsWorkspaceService {
   }
 
   async actionUpdateProduct(workspaceId: string, args: ToolArgs) {
+    if (!args.productId) return { success: false, error: 'Product ID is required' };
+    const productId = args.productId;
     const result = await this.prisma.$transaction(
       async (tx) => {
         const product = await tx.kloelMemory.findFirst({
-          where: { workspaceId, key: args.productId, type: 'product' },
+          where: { workspaceId, key: productId, type: 'product' },
         });
         if (!product) return { success: false as const, error: 'Produto não encontrado' };
         const currentValue = product.value as MemoryValue;
@@ -170,6 +176,7 @@ export class UnifiedAgentActionsWorkspaceService {
   }
 
   async actionCreateFlow(workspaceId: string, args: ToolArgs) {
+    if (!args.name) return { success: false, error: 'Flow name is required' };
     const flowKey = `flow_${Date.now()}_${args.name.toLowerCase().replace(WHITESPACE_G_RE, '_')}`;
     await this.prisma.kloelMemory.create({
       data: {

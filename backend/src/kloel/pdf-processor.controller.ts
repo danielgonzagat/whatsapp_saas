@@ -278,7 +278,7 @@ export class PdfProcessorController {
       requestId,
       sourceName: file.originalname,
       textLength: text.length,
-      estimatedCostCents,
+      ...(estimatedCostCents !== undefined ? { estimatedCostCents } : {}),
     });
 
     try {

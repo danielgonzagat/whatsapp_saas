@@ -61,13 +61,13 @@ export class AdminAuditService {
     try {
       await this.prisma.adminAuditLog.create({
         data: {
-          adminUserId: input.adminUserId ?? null,
+          ...(input.adminUserId ? { adminUser: { connect: { id: input.adminUserId } } } : {}),
           action: input.action,
           entityType: input.entityType ?? null,
           entityId: input.entityId ?? null,
           ...(input.details === undefined || input.details === null
             ? {}
-            : { details: input.details }),
+            : { details: input.details as Prisma.InputJsonValue }),
           ip: input.ip ?? null,
           userAgent: input.userAgent ?? null,
         },

@@ -424,6 +424,11 @@ export class MetaAuthController {
           pageId: connection.pageId,
           status: connection.pageId ? 'connected' : 'disconnected',
         },
+        facebook: {
+          connected: Boolean(connection.pageId),
+          pageId: connection.pageId,
+          status: connection.pageId ? 'connected' : 'disconnected',
+        },
         ads: {
           connected: Boolean(connection.adAccountId),
           adAccountId: connection.adAccountId,

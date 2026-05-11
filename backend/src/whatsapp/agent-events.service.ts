@@ -99,7 +99,7 @@ export class AgentEventsService implements OnModuleInit, OnModuleDestroy {
 
   constructor(
     @InjectRedis() private readonly redis: Redis,
-    @Optional() private readonly auditService?: AuditService,
+    @Optional() _auditService?: AuditService,
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 

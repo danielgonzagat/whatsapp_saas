@@ -111,6 +111,7 @@ import {
     CiaRuntimeService,
     CIA_RUNTIME,
     WhatsappCatchupHistoryService,
+    WhatsAppCatchupService,
     CATCHUP_HISTORY,
     AgentEventsService,
     CiaChatFilterService,
@@ -123,6 +124,8 @@ import {
     CiaSendHelpersService,
     AccountAgentService,
     WorkerRuntimeService,
+    WhatsAppApiProvider,
+    WhatsAppProviderRegistry,
   ],
 })
 export class WhatsappModule {}

@@ -95,7 +95,7 @@ export async function finalizeSuccessfulReply(
     await threadService.maybeRefreshThreadSummary(thread.id, workspaceId, replyEngine.openai);
     const title = await threadService.maybeGenerateThreadTitle(
       thread.id,
-      thread.title,
+      thread.title ?? '',
       message,
       workspaceId,
       replyEngine.openai,
@@ -137,10 +137,10 @@ export async function runComposerCapabilityBranch(
   const capResult = await composerService.executeComposerCapability({
     capability: composerCapability,
     message,
-    workspaceId,
-    metadata,
-    composerContext: effectiveCompanyContext,
-    signal,
+    ...(workspaceId !== undefined ? { workspaceId } : {}),
+    ...(metadata !== undefined ? { metadata } : {}),
+    ...(effectiveCompanyContext !== undefined ? { composerContext: effectiveCompanyContext } : {}),
+    ...(signal !== undefined ? { signal } : {}),
   });
   safeWrite(createKloelStatusEvent('streaming_token'));
   safeWrite(createKloelContentEvent(capResult.content));
@@ -162,7 +162,7 @@ export async function runComposerCapabilityBranch(
     await threadService.maybeRefreshThreadSummary(thread.id, workspaceId, replyEngine.openai);
     const title = await threadService.maybeGenerateThreadTitle(
       thread.id,
-      thread.title,
+      thread.title ?? '',
       message,
       workspaceId,
       replyEngine.openai,
@@ -196,7 +196,7 @@ export async function runToolPlanningBranch(
 ): Promise<void> {
   const { workspaceId, userId, message, safeWrite, replyEngine, planLimits } = ctx;
   safeWrite(createKloelStatusEvent('thinking'));
-  await planLimits.ensureTokenBudget(workspaceId);
+  await planLimits.ensureTokenBudget(workspaceId ?? '');
   const initialResponse = await chatCompletionWithFallback(
     replyEngine.openai,
     {
@@ -215,20 +215,20 @@ export async function runToolPlanningBranch(
     signal ? { signal } : undefined,
   );
   await planLimits
-    .trackAiUsage(workspaceId, initialResponse?.usage?.total_tokens ?? 500)
+    .trackAiUsage(workspaceId ?? '', initialResponse?.usage?.total_tokens ?? 500)
     .catch(() => {});
   const assistantMsg = initialResponse.choices[0]?.message;
   const assistantText = assistantMsg?.content || '';
   if (assistantMsg?.tool_calls?.length) {
     const { toolMessages, usedSearchWeb } = await replyEngine.toolRouter.executeAssistantToolCalls({
       assistantMessage: assistantMsg,
-      workspaceId: workspaceId,
-      userId,
+      workspaceId: workspaceId ?? '',
+      ...(userId !== undefined ? { userId } : {}),
       safeWrite,
       executeLocalTool,
     });
     const finalTemp = usedSearchWeb ? 0.1 : responseTemperature;
-    await planLimits.ensureTokenBudget(workspaceId);
+    await planLimits.ensureTokenBudget(workspaceId ?? '');
     const streamedFinal = await streamWriterResponse(
       replyEngine.buildChatModelMessages({
         systemPrompt,
@@ -252,7 +252,7 @@ export async function runToolPlanningBranch(
     await finalizeSuccessfulReply(finalResp, streamedFinal.estimatedTokens, ctx);
     return;
   }
-  await planLimits.ensureTokenBudget(workspaceId);
+  await planLimits.ensureTokenBudget(workspaceId ?? '');
   const streamedReply = await streamWriterResponse(messages, responseTemperature);
   if (!streamedReply) return;
   let fallbackText = streamedReply.fullResponse.trim();

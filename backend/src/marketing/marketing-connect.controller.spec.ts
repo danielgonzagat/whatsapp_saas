@@ -33,6 +33,11 @@ describe('MarketingConnectController channel setup', () => {
       status: 'connected',
       email: 'owner@kloel.test',
     })),
+    syncLatestInbox: jest.fn(async () => ({
+      provider: 'gmail',
+      status: 'synced',
+      imported: 1,
+    })),
   };
   const controller = new MarketingConnectController(
     prisma as never,
@@ -140,5 +145,12 @@ describe('MarketingConnectController channel setup', () => {
 
     expect(gmailMailbox.completeOAuth).toHaveBeenCalledWith('ws_1', 'auth-code', 'signed-state');
     expect(result).toEqual(expect.objectContaining({ connected: true, provider: 'gmail' }));
+  });
+
+  it('triggers Gmail mailbox sync for the authenticated workspace', async () => {
+    const result = await controller.syncGmailMailbox(req, { limit: 5 });
+
+    expect(gmailMailbox.syncLatestInbox).toHaveBeenCalledWith('ws_1', 5);
+    expect(result).toEqual(expect.objectContaining({ status: 'synced', imported: 1 }));
   });
 });

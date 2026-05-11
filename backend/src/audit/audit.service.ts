@@ -28,7 +28,7 @@ export class AuditService {
    * Falls back to the default prisma client when no tx is provided.
    */
   async logWithTx(
-    tx: { auditLog: { create: (args: Record<string, unknown>) => Promise<unknown> } },
+    tx: Prisma.TransactionClient,
     data: {
       workspaceId: string;
       action: string;
@@ -47,7 +47,7 @@ export class AuditService {
         resource: data.resource,
         resourceId: data.resourceId,
         agentId: data.agentId,
-        details: data.details ?? {},
+        details: (data.details ?? {}) as Prisma.InputJsonValue,
         ipAddress: data.ipAddress,
         userAgent: data.userAgent,
       },

@@ -11,18 +11,18 @@ export async function updatePaymentAndSaleForSessionHelper(
   try {
     if (deps.prisma.payment) {
       const existingPayment = await deps.prisma.payment.findFirst({
-        where: { workspaceId, externalId: stripePaymentExternalId },
+        where: { workspaceId, externalId: stripePaymentExternalId ?? null },
       });
       const canTransition =
         !existingPayment ||
         validatePaymentTransition(existingPayment.status || 'PENDING', 'RECEIVED', {
           paymentId: existingPayment?.id,
           provider: 'stripe',
-          externalId: stripePaymentExternalId,
+          externalId: stripePaymentExternalId ?? null,
         });
       if (canTransition) {
         await deps.prisma.payment.updateMany({
-          where: { workspaceId, externalId: stripePaymentExternalId },
+          where: { workspaceId, externalId: stripePaymentExternalId ?? null },
           data: { status: 'RECEIVED' },
         });
       } else {
@@ -38,7 +38,7 @@ export async function updatePaymentAndSaleForSessionHelper(
         : new Error(typeof paymentErr === 'string' ? paymentErr : 'unknown error');
     deps.financialAlert.webhookProcessingFailed(msg, {
       provider: 'stripe',
-      externalId: stripePaymentExternalId,
+      externalId: stripePaymentExternalId ?? null,
       eventType: 'checkout.session.completed',
     });
     deps.logger.error(
@@ -54,7 +54,7 @@ export async function updatePaymentAndSaleForSessionHelper(
   try {
     if (deps.prisma.kloelSale) {
       await deps.prisma.kloelSale.updateMany({
-        where: { workspaceId, externalPaymentId: stripePaymentExternalId },
+        where: { workspaceId, externalPaymentId: stripePaymentExternalId ?? null },
         data: { status: 'paid', paidAt: new Date() },
       });
     }
@@ -65,7 +65,7 @@ export async function updatePaymentAndSaleForSessionHelper(
         : new Error(typeof saleErr === 'string' ? saleErr : 'unknown error');
     deps.financialAlert.webhookProcessingFailed(msg, {
       provider: 'stripe',
-      externalId: stripePaymentExternalId,
+      externalId: stripePaymentExternalId ?? null,
       eventType: 'checkout.session.completed',
     });
     deps.logger.error(
@@ -97,7 +97,7 @@ export async function sendCheckoutConfirmationHelper(
     const notifyErrMsg = notifyErr instanceof Error ? notifyErr.message : 'unknown error';
     deps.financialAlert.webhookProcessingFailed(
       notifyErr instanceof Error ? notifyErr : new Error(notifyErrMsg),
-      { provider: 'stripe', externalId: session.id, eventType: 'checkout.session.completed' },
+      { provider: 'stripe', externalId: session.id ?? null, eventType: 'checkout.session.completed' },
     );
     deps.logger.error(`[STRIPE] Failed to notify customer ${customerPhone}: ${notifyErrMsg}`, {
       workspaceId,

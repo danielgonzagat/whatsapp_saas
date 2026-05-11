@@ -11,7 +11,12 @@ import {
   toPaymentMethod,
 } from './reports-orders.helpers';
 
-export { dateRange, validatedPaidOrderStatus, paginate } from './reports-orders.helpers';
+export {
+  dateRange,
+  validatedPaidOrderStatus,
+  paginate,
+  applyCommonOrderFilters,
+} from './reports-orders.helpers';
 
 /**
  * Handles CheckoutOrder and CheckoutPayment report queries:

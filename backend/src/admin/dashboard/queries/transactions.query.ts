@@ -39,7 +39,6 @@ export async function queryTransactionCounts(
       where: {
         status: { in: [OrderStatus.PAID, OrderStatus.SHIPPED, OrderStatus.DELIVERED] },
         paidAt: { gte: from, lte: to },
-        workspaceId: undefined,
       },
     }),
     prisma.checkoutPayment.count({
@@ -52,14 +51,12 @@ export async function queryTransactionCounts(
       where: {
         status: { in: [OrderStatus.PENDING, OrderStatus.PROCESSING] },
         createdAt: { gte: from, lte: to },
-        workspaceId: undefined,
       },
     }),
     prisma.checkoutOrder.aggregate({
       where: {
         status: OrderStatus.REFUNDED,
         refundedAt: { gte: from, lte: to },
-        workspaceId: undefined,
       },
       _count: { _all: true },
       _sum: { totalInCents: true },
@@ -68,7 +65,6 @@ export async function queryTransactionCounts(
       where: {
         status: OrderStatus.CHARGEBACK,
         updatedAt: { gte: from, lte: to },
-        workspaceId: undefined,
       },
       _count: { _all: true },
       _sum: { totalInCents: true },

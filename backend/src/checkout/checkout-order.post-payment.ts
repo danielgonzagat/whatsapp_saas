@@ -1,5 +1,6 @@
 import type { CheckoutOrderSupport } from './checkout-order-support';
 import type { CheckoutPaymentService } from './checkout-payment.service';
+import type { CheckoutPaymentE2EStubResult } from './checkout-payment-e2e-guard';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import type { Logger } from '@nestjs/common';
@@ -34,6 +35,6 @@ export async function executeProcessOrderPostPayment(
     orderSupport: CheckoutOrderSupport;
     logger: Logger;
   },
-): Promise<Record<string, unknown> | null> {
+): Promise<Record<string, unknown> | CheckoutPaymentE2EStubResult | null> {
   return processOrderPostPayment(params, deps);
 }

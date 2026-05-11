@@ -190,11 +190,11 @@ export class PaymentService {
             status: 'pending',
             amount: params.data.amount,
             paymentMethod: 'PIX',
-            paymentLink: params.paymentLink,
+            ...(params.paymentLink !== undefined ? { paymentLink: params.paymentLink } : {}),
             externalPaymentId: params.paymentIntent.id,
             workspaceId: params.data.workspaceId,
             metadata: {
-              companyName: params.companyName || undefined,
+              ...(params.companyName !== undefined ? { companyName: params.companyName } : {}),
               pixQrCodeUrl: params.pixData?.image_url_png || null,
               pixCopyPaste: params.pixData?.data || null,
               pixHostedInstructionsUrl: params.pixData?.hosted_instructions_url || null,
@@ -228,12 +228,15 @@ export class PaymentService {
     paymentLink?: string;
     pixData: PixDisplayQrCode | null;
   }): CreatePaymentResult {
+    const invoiceUrl = params.pixData?.hosted_instructions_url || undefined;
+    const pixQrCodeUrl = params.pixData?.image_url_png || undefined;
+    const pixCopyPaste = params.pixData?.data || undefined;
     return {
       id: params.paymentIntent.id,
-      invoiceUrl: params.pixData?.hosted_instructions_url || undefined,
-      pixQrCodeUrl: params.pixData?.image_url_png || undefined,
-      pixCopyPaste: params.pixData?.data || undefined,
-      paymentLink: params.paymentLink,
+      ...(invoiceUrl !== undefined ? { invoiceUrl } : {}),
+      ...(pixQrCodeUrl !== undefined ? { pixQrCodeUrl } : {}),
+      ...(pixCopyPaste !== undefined ? { pixCopyPaste } : {}),
+      ...(params.paymentLink !== undefined ? { paymentLink: params.paymentLink } : {}),
       status: params.paymentIntent.status,
     };
   }
@@ -273,10 +276,10 @@ export class PaymentService {
         workspaceId: data.workspaceId,
         leadId: data.leadId,
         customerPhone: data.customerPhone,
-        customerEmail: data.customerEmail,
+        ...(data.customerEmail !== undefined ? { customerEmail: data.customerEmail } : {}),
         description: data.description,
         amountInCents,
-        idempotencyKey: data.idempotencyKey,
+        ...(data.idempotencyKey !== undefined ? { idempotencyKey: data.idempotencyKey } : {}),
       });
       const paymentIntent = await this.createStripePixPaymentIntent(
         data,
@@ -292,16 +295,16 @@ export class PaymentService {
       await this.persistStripePixSale({
         data,
         paymentIntent,
-        companyName: workspace?.name,
+        ...(workspace?.name !== undefined ? { companyName: workspace.name } : {}),
         idempotencyKey,
-        paymentLink,
-        pixData,
+        ...(paymentLink !== undefined ? { paymentLink } : {}),
+        pixData: pixData ?? null,
       });
 
       return this.buildCreatePaymentResponse({
         paymentIntent,
-        paymentLink,
-        pixData,
+        ...(paymentLink !== undefined ? { paymentLink } : {}),
+        pixData: pixData ?? null,
       });
     } catch (err: unknown) {
       if (err instanceof BadRequestException) {
@@ -360,7 +363,8 @@ export class PaymentService {
       select: { slug: true },
       take: 2,
     });
-    const memberAreaSlug = activeMemberAreas.length === 1 ? activeMemberAreas[0].slug : undefined;
+    const memberAreaSlug =
+      activeMemberAreas.length === 1 ? activeMemberAreas[0]?.slug : undefined;
 
     return {
       id: sale.externalPaymentId || sale.id,
@@ -393,13 +397,14 @@ export class PaymentService {
     if (!payment?.id) {
       return;
     }
+    const paymentId = payment.id;
 
     // Move find inside $transaction to prevent concurrent webhook deliveries
     // from racing between find and update.
     await this.prisma.$transaction(
       async (tx) => {
         const sale = await tx.kloelSale.findFirst({
-          where: { workspaceId, externalPaymentId: payment.id },
+          where: { workspaceId, externalPaymentId: paymentId },
           select: { id: true, status: true },
         });
 
@@ -423,7 +428,7 @@ export class PaymentService {
           resource: 'KloelSale',
           resourceId: typeof sale.id === 'string' ? sale.id : '',
           details: {
-            externalPaymentId: payment.id,
+            externalPaymentId: paymentId,
             event,
             previousStatus: sale.status,
             newStatus: 'paid',

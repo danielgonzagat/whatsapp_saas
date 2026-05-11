@@ -109,8 +109,7 @@ export class MemoryManagementService {
 
     // Contar antes (cross-workspace maintenance count; workspaceId filter is
     // universal since the column is NOT NULL and no-op in practice).
-    const totalBefore =
-      (await this.prisma.kloelMemory.count({ where: { workspaceId: { not: undefined } } })) || 0;
+    const totalBefore = (await this.prisma.kloelMemory.count()) || 0;
 
     // 1. Remover memórias expiradas
     const expiredRemoved = await this.removeExpiredMemories();
@@ -122,8 +121,7 @@ export class MemoryManagementService {
     const orphansRemoved = await this.removeOrphans();
 
     // Contar depois (cross-workspace maintenance count).
-    const totalAfter =
-      (await this.prisma.kloelMemory.count({ where: { workspaceId: { not: undefined } } })) || 0;
+    const totalAfter = (await this.prisma.kloelMemory.count()) || 0;
 
     const result: MemoryCleanupResult = {
       expiredRemoved,
@@ -185,7 +183,6 @@ export class MemoryManagementService {
           where: {
             category,
             updatedAt: { lt: cutoffDate },
-            workspaceId: { not: undefined },
           },
         });
 
@@ -204,9 +201,9 @@ export class MemoryManagementService {
       }
     });
 
-    // Limpar categorias não listadas com expiração padrão
+    const defaultDays = this.EXPIRATION_DAYS.default ?? 180;
     const defaultCutoff = new Date();
-    defaultCutoff.setDate(defaultCutoff.getDate() - this.EXPIRATION_DAYS.default);
+    defaultCutoff.setDate(defaultCutoff.getDate() - defaultDays);
 
     const knownCategories = Object.keys(this.EXPIRATION_DAYS).filter((c) => c !== 'default');
 
@@ -215,7 +212,6 @@ export class MemoryManagementService {
         where: {
           category: { notIn: knownCategories },
           updatedAt: { lt: defaultCutoff },
-          workspaceId: { not: undefined },
         },
       });
       totalRemoved += result.count;
@@ -426,13 +422,15 @@ export class MemoryManagementService {
     // Agrupar por prefixo de key (ex: "product_", "lead_")
     const groups = new Map<string, typeof memories>();
 
-    for (const mem of memories) {
-      const prefix = mem.key.split('_').slice(0, 2).join('_');
-      if (!groups.has(prefix)) {
-        groups.set(prefix, []);
+      for (const mem of memories) {
+        const prefix = mem.key.split('_').slice(0, 2).join('_');
+        const group = groups.get(prefix);
+        if (group) {
+          group.push(mem);
+        } else {
+          groups.set(prefix, [mem]);
+        }
       }
-      groups.get(prefix).push(mem);
-    }
 
     let merged = 0;
 

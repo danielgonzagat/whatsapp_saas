@@ -286,7 +286,7 @@ export class SiteController {
       prompt: dto.prompt,
       providerPreference,
       model,
-      estimatedCostCents,
+      ...(estimatedCostCents !== undefined ? { estimatedCostCents } : {}),
     });
 
     try {
@@ -355,7 +355,7 @@ export class SiteController {
         headers: {
           ...getTraceHeaders(),
           'Content-Type': 'application/json',
-          'x-api-key': anthropicKey,
+          'x-api-key': anthropicKey ?? '',
           'anthropic-version': '2023-06-01',
         },
         body: JSON.stringify(anthropicRequestBody),

@@ -80,7 +80,7 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
   private readonly BUFFER_SIZE = 50;
   private readonly FLUSH_INTERVAL_MS = 30000; // 30 segundos
 
-  private flushInterval?: NodeJS.Timeout;
+  private flushInterval: NodeJS.Timeout | null = null;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -99,16 +99,17 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
 
   /** On module destroy. */
   onModuleDestroy(): void {
-    if (this.flushInterval) {
+    if (this.flushInterval !== null) {
       clearInterval(this.flushInterval);
-      this.flushInterval = undefined;
+      this.flushInterval = null;
     }
   }
 
   /** Use. */
   use(req: Request, res: Response, next: NextFunction): void {
     const startTime = Date.now();
-    const { method, path, ip } = req;
+    const { method, path } = req;
+    const ip = req.ip || 'unknown';
 
     // Capturar resposta
     // messageLimit: this is HTTP response send, not WhatsApp message send
@@ -131,7 +132,7 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
           method,
           path,
           ip,
-          workspaceId,
+          ...(workspaceId !== undefined ? { workspaceId } : {}),
           statusCode,
           responseTimeMs,
           responseBody,
@@ -162,19 +163,21 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
     const { req, method, path, ip, workspaceId, statusCode, responseTimeMs, responseBody } = params;
     const user = (req as Request & { user?: { userId?: string; sub?: string } }).user;
     const sanitizedBody = sanitizePayload(req.body) as AuditRequestBody | undefined;
+    const userId = user?.userId || user?.sub;
+    const errorValue = statusCode >= 400 ? this.extractError(responseBody) : undefined;
 
     return {
       timestamp: new Date(),
       method,
       path,
-      workspaceId,
-      userId: user?.userId || user?.sub,
-      ip: ip || 'unknown',
+      ...(workspaceId !== undefined ? { workspaceId } : {}),
+      ...(userId !== undefined ? { userId } : {}),
+      ip,
       userAgent: req.headers['user-agent'] || 'unknown',
       statusCode,
       responseTimeMs,
-      requestBody: sanitizedBody,
-      error: statusCode >= 400 ? this.extractError(responseBody) : undefined,
+      ...(sanitizedBody !== undefined ? { requestBody: sanitizedBody } : {}),
+      ...(errorValue !== undefined ? { error: errorValue } : {}),
     };
   }
 
@@ -258,7 +261,7 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
       await this.prisma.auditLog
         .createMany({
           data: logsToFlush
-            .filter((log) => log.workspaceId)
+            .filter((log): log is typeof log & { workspaceId: string } => !!log.workspaceId)
             .map((log) => ({
               workspaceId: log.workspaceId,
               action: `HTTP_${log.method}`,
@@ -273,7 +276,7 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
                   error: log.error || undefined,
                 }),
               ),
-              agentId: log.userId,
+              ...(log.userId !== undefined ? { agentId: log.userId } : {}),
               ipAddress: log.ip,
               userAgent: log.userAgent,
             })),
@@ -307,11 +310,11 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
 /**
  * Decorator para marcar operacoes como auditaveis com metadados extras.
  */
-function AuditOperation(operationType: string) {
+export function AuditOperation(operationType: string) {
   return (_target: unknown, propertyKey: string, descriptor: PropertyDescriptor) => {
     const originalMethod = descriptor.value;
 
-    descriptor.value = async function (...args: unknown[]) {
+    descriptor.value = async function (this: { opsAlert?: OpsAlertService }, ...args: unknown[]) {
       const logger = new Logger('AuditOperation');
       const startTime = Date.now();
 

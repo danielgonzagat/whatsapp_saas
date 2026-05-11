@@ -2,6 +2,7 @@ import * as Sentry from '@sentry/node';
 import { Prisma } from '@prisma/client';
 import { CheckoutOrderSupport } from './checkout-order-support';
 import { CheckoutPaymentService } from './checkout-payment.service';
+import type { CheckoutPaymentE2EStubResult } from './checkout-payment-e2e-guard';
 import { Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -36,7 +37,7 @@ export async function processOrderPostPayment(
     orderSupport: CheckoutOrderSupport;
     logger: Logger;
   },
-): Promise<Record<string, unknown> | null> {
+): Promise<Record<string, unknown> | CheckoutPaymentE2EStubResult | null> {
   const { order, orderNumber, correlationId, data, orderData, qualityGate } = params;
   const { prisma, paymentService, orderSupport, logger } = deps;
 
@@ -44,7 +45,7 @@ export async function processOrderPostPayment(
     logger.log(JSON.stringify({ event, ...payload }));
   };
 
-  let paymentData: Record<string, unknown> | null = null;
+  let paymentData: Record<string, unknown> | CheckoutPaymentE2EStubResult | null = null;
   try {
     paymentData = await paymentService.processPayment({
       orderId: order.id,

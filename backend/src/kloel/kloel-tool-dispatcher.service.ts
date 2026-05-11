@@ -203,8 +203,8 @@ export class KloelToolDispatcherService {
             workspaceId,
             action: 'KLOEL_TOOL_PAYMENT_LINK_DISPATCHED',
             resource: 'KloelToolDispatcher',
-            resourceId,
-            agentId: userId,
+            ...(resourceId !== undefined ? { resourceId } : {}),
+            ...(userId !== undefined ? { agentId: userId } : {}),
             details: this.sanitizeDetails(args),
           });
         },

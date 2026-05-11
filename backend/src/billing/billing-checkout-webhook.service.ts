@@ -23,7 +23,7 @@ export class BillingCheckoutWebhookService {
   constructor(
     private prisma: PrismaService,
     private configService: ConfigService,
-    private readonly moduleRef: ModuleRef,
+    _moduleRef: ModuleRef,
     stripe: StripeClient | undefined,
     private readonly helper: BillingCheckoutHelperService,
     private readonly financialAlert?: FinancialAlertService,
@@ -33,14 +33,14 @@ export class BillingCheckoutWebhookService {
 
   async createCheckoutSession(workspaceId: string, plan: string, userEmail: string) {
     if (!this.stripe) {
-      const nodeEnv = this.configService.get('NODE_ENV') || process.env.NODE_ENV;
+      const nodeEnv = this.configService.get<string>('NODE_ENV') || process.env.NODE_ENV;
       if (nodeEnv === 'production') {
         throw new Error('Infraestrutura de cobrança indisponível em produção');
       }
-      let allowMock = this.configService.get('BILLING_MOCK_MODE') === 'true';
+      let allowMock = this.configService.get<string>('BILLING_MOCK_MODE') === 'true';
       if (
         allowMock &&
-        (this.configService.get('NODE_ENV') || process.env.NODE_ENV) === 'production'
+        (this.configService.get<string>('NODE_ENV') || process.env.NODE_ENV) === 'production'
       ) {
         this.logger.error(
           'CRITICAL: BILLING_MOCK_MODE=true is set in production! Disabling mock mode to prevent fake subscriptions.',
@@ -51,7 +51,7 @@ export class BillingCheckoutWebhookService {
         throw new Error('Infraestrutura de cobrança indisponível');
       }
       this.logger.log(`Mocking checkout for ${workspaceId} plan ${plan}`);
-      const frontendUrl = this.configService.get('FRONTEND_URL') || 'http://localhost:3000';
+      const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
       const mockStripeId = `mock_sub_${Date.now()}`;
       await this.prisma.$transaction(
         async (tx) => {
@@ -106,9 +106,9 @@ export class BillingCheckoutWebhookService {
       });
     }
     const prices = {
-      STARTER: this.configService.get('STRIPE_PRICE_STARTER'),
-      PRO: this.configService.get('STRIPE_PRICE_PRO'),
-      ENTERPRISE: this.configService.get('STRIPE_PRICE_ENTERPRISE'),
+      STARTER: this.configService.get<string>('STRIPE_PRICE_STARTER'),
+      PRO: this.configService.get<string>('STRIPE_PRICE_PRO'),
+      ENTERPRISE: this.configService.get<string>('STRIPE_PRICE_ENTERPRISE'),
     };
     const priceId = prices[plan as keyof typeof prices];
     if (!priceId) {
@@ -120,8 +120,8 @@ export class BillingCheckoutWebhookService {
         mode: 'subscription',
         payment_method_types: ['card'],
         line_items: [{ price: priceId, quantity: 1 }],
-        success_url: `${this.configService.get('FRONTEND_URL')}/dashboard/billing?success=true`,
-        cancel_url: `${this.configService.get('FRONTEND_URL')}/dashboard/billing?canceled=true`,
+        success_url: `${this.configService.get<string>('FRONTEND_URL')}/dashboard/billing?success=true`,
+        cancel_url: `${this.configService.get<string>('FRONTEND_URL')}/dashboard/billing?canceled=true`,
         metadata: {
           workspaceId,
           plan,
@@ -143,7 +143,7 @@ export class BillingCheckoutWebhookService {
       this.logger.error('Webhook sem rawBody ou signature');
       throw new Error('Missing rawBody or signature for webhook verification');
     }
-    const endpointSecret = this.configService.get('STRIPE_WEBHOOK_SECRET');
+    const endpointSecret = this.configService.get<string>('STRIPE_WEBHOOK_SECRET');
     if (!endpointSecret) {
       this.logger.error('STRIPE_WEBHOOK_SECRET não configurado');
       throw new Error('STRIPE_WEBHOOK_SECRET not configured');
@@ -297,20 +297,19 @@ export class BillingCheckoutWebhookService {
     return ws?.id || null;
   }
 
-  private readInvoiceSubscriptionId(invoice: {
-    subscription?: string | { id?: string | null } | null;
-  }): string | null {
-    const subscriptionRef = invoice.subscription;
+  private readInvoiceSubscriptionId(invoice: unknown): string | null {
+    if (!invoice || typeof invoice !== 'object') {
+      return null;
+    }
+    const subscriptionRef = (invoice as { subscription?: unknown }).subscription;
     if (typeof subscriptionRef === 'string' && subscriptionRef.trim()) {
       return subscriptionRef;
     }
-    if (
-      subscriptionRef &&
-      typeof subscriptionRef === 'object' &&
-      typeof subscriptionRef.id === 'string' &&
-      (subscriptionRef as { id: string }).id.trim()
-    ) {
-      return (subscriptionRef as { id: string }).id;
+    if (subscriptionRef && typeof subscriptionRef === 'object') {
+      const subscriptionObject = subscriptionRef as { id?: unknown };
+      if (typeof subscriptionObject.id === 'string' && subscriptionObject.id.trim()) {
+        return subscriptionObject.id;
+      }
     }
     return null;
   }

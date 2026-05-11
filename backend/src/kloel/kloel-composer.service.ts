@@ -174,7 +174,7 @@ export class KloelComposerService {
         filename,
         mimeType: 'image/png',
         folder,
-        workspaceId,
+        ...(workspaceId !== undefined ? { workspaceId } : {}),
       });
       return stored.url;
     }
@@ -184,7 +184,7 @@ export class KloelComposerService {
       filename,
       mimeType: 'image/png',
       folder,
-      workspaceId,
+      ...(workspaceId !== undefined ? { workspaceId } : {}),
     });
     return stored.url;
   }
@@ -265,7 +265,7 @@ export class KloelComposerService {
       try {
         const persistedImageUrl = await this.persistGeneratedImageAsset({
           response,
-          workspaceId,
+          ...(workspaceId !== undefined ? { workspaceId } : {}),
           filename: generatedImageFilename,
         });
         if (persistedImageUrl) {

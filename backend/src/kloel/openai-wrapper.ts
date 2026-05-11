@@ -284,7 +284,7 @@ export async function chatCompletionStreamWithRetry(
 // I16: callers SHOULD invoke LLMBudgetService.assertBudget() before this
 // wrapper. The wrapper itself enforces per-request clamps (max tokens,
 // max input size) via normalizeChatCompletionParams. See llm-budget.service.ts.
-async function embeddingsWithRetry(
+export async function embeddingsWithRetry(
   client: OpenAI,
   params: OpenAI.Embeddings.EmbeddingCreateParams,
   options?: RetryOptions,
@@ -298,7 +298,7 @@ async function embeddingsWithRetry(
 // I16: callers SHOULD invoke LLMBudgetService.assertBudget() before this
 // wrapper. The wrapper itself enforces per-request clamps (max tokens,
 // max input size) via normalizeChatCompletionParams. See llm-budget.service.ts.
-async function ttsWithRetry(
+export async function ttsWithRetry(
   client: OpenAI,
   params: OpenAI.Audio.Speech.SpeechCreateParams,
   options?: RetryOptions,
@@ -315,7 +315,7 @@ async function ttsWithRetry(
 // I16: callers SHOULD invoke LLMBudgetService.assertBudget() before this
 // wrapper. The wrapper itself enforces per-request clamps (max tokens,
 // max input size) via normalizeChatCompletionParams. See llm-budget.service.ts.
-async function transcribeWithRetry(
+export async function transcribeWithRetry(
   client: OpenAI,
   file: Uploadable,
   model = resolveBackendOpenAIModel('audio_understanding'),

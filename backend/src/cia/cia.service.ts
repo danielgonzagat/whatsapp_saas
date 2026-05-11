@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { buildQueueJobId } from '../queue/job-id.util';
 import { flowQueue } from '../queue/queue';
@@ -11,7 +11,6 @@ type JsonRecord = Record<string, unknown>;
 /** Cia service. */
 @Injectable()
 export class CiaService {
-  private readonly logger = new Logger(CiaService.name);
   constructor(
     private readonly prisma: PrismaService,
     private readonly runtime: CiaRuntimeService,

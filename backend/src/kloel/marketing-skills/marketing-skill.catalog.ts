@@ -235,4 +235,4 @@ export const MARKETING_SKILL_CATALOG: MarketingSkillCatalogEntry[] = Object.entr
 }));
 
 /** Marketing_skill_ids. */
-const MARKETING_SKILL_IDS = MARKETING_SKILL_CATALOG.map((entry) => entry.id);
+export const MARKETING_SKILL_IDS = MARKETING_SKILL_CATALOG.map((entry) => entry.id);

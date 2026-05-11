@@ -33,27 +33,57 @@ export class WhatsAppBrainService {
   async processWebhook(payload: Record<string, unknown>, workspaceId: string): Promise<void> {
     this.logger.log('Processando webhook WhatsApp');
 
-    const entry = payload.entry?.[0];
-    const changes = entry?.changes?.[0];
-    const value = changes?.value;
+    const entry = (payload.entry as unknown[] | undefined)?.[0];
+    if (!entry) return;
+    const changes = (entry as Record<string, unknown>).changes as unknown[] | undefined;
+    if (!changes?.[0]) return;
+    const value = changes[0] as Record<string, unknown> | undefined;
+    if (!value) return;
 
-    if (!value?.messages?.[0]) {
-      return;
-    }
-
-    const message = value.messages[0];
+    const messages = value.messages as unknown[] | undefined;
+    if (!messages?.[0]) return;
+    const message = messages[0] as Record<string, unknown>;
+    const metadata =
+      value.metadata && typeof value.metadata === 'object' && !Array.isArray(value.metadata)
+        ? (value.metadata as Record<string, unknown>)
+        : {};
+    const textPayload =
+      message.text && typeof message.text === 'object' && !Array.isArray(message.text)
+        ? (message.text as Record<string, unknown>)
+        : {};
+    const messageType = this.normalizeMessageType(message.type);
+    const timestamp =
+      typeof message.timestamp === 'string' || typeof message.timestamp === 'number'
+        ? Number.parseInt(String(message.timestamp), 10)
+        : 0;
 
     const webhookMessage: WebhookMessage = {
-      from: message.from,
-      to: value.metadata?.display_phone_number || 'unknown',
-      message: message.text?.body || '',
-      messageType: message.type,
-      timestamp: new Date(Number.parseInt(message.timestamp, 10) * 1000),
-      messageId: message.id,
+      from: typeof message.from === 'string' ? message.from : 'unknown',
+      to:
+        typeof metadata.display_phone_number === 'string'
+          ? metadata.display_phone_number
+          : 'unknown',
+      message: typeof textPayload.body === 'string' ? textPayload.body : '',
+      messageType,
+      timestamp: new Date((Number.isFinite(timestamp) ? timestamp : 0) * 1000),
+      messageId: typeof message.id === 'string' ? message.id : 'unknown',
       workspaceId,
     };
 
     await this.handleIncomingMessage(webhookMessage);
+  }
+
+  private normalizeMessageType(value: unknown): WebhookMessage['messageType'] {
+    if (
+      value === 'text' ||
+      value === 'image' ||
+      value === 'audio' ||
+      value === 'document' ||
+      value === 'location'
+    ) {
+      return value;
+    }
+    return 'text';
   }
 
   /** Handle incoming message. */

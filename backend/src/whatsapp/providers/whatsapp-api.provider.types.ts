@@ -59,7 +59,7 @@ function mapWahaSessionStatus(rawStatus: string | null): SessionStatus['state'] 
 }
 
 /** Resolve waha session state. */
-function resolveWahaSessionState(data: Record<string, unknown> | null | undefined): {
+export function resolveWahaSessionState(data: Record<string, unknown> | null | undefined): {
   rawStatus: string;
   state: SessionStatus['state'];
 } {

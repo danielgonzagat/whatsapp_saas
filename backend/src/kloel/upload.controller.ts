@@ -280,7 +280,7 @@ export class UploadController {
           success: true,
           filename: file.originalname,
           size: file.size,
-          type: file.mimetype,
+          mimetype: file.mimetype,
           ...result,
         });
       } catch (error: unknown) {
@@ -336,7 +336,7 @@ export class UploadController {
         requestId,
         sourceName: originalname,
         textLength: extractedText.length,
-        estimatedCostCents,
+        ...(estimatedCostCents !== undefined ? { estimatedCostCents } : {}),
       });
 
       let stored:

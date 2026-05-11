@@ -127,7 +127,15 @@ export class UnifiedAgentActionsService {
           caption: documentCaption || '',
         }),
       );
-      if (result.error) return { success: false, error: result.message };
+      const sendResult =
+        result && typeof result === 'object' ? (result as Record<string, unknown>) : {};
+      if (sendResult.error) {
+        return {
+          success: false,
+          error:
+            typeof sendResult.message === 'string' ? sendResult.message : 'send_document_failed',
+        };
+      }
       return {
         success: true,
         documentName: documentName || 'URL direta',

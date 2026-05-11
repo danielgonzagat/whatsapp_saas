@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import OpenAI from 'openai';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -9,6 +9,7 @@ import { KloelToolRouter } from './kloel-tool-router';
 import { KloelWorkspaceContextService } from './kloel-workspace-context.service';
 import { buildKloelResponseEnginePrompt } from './kloel.prompts';
 import { MarketingSkillService } from './marketing-skills/marketing-skill.service';
+import { UnifiedAgentService } from './unified-agent.service';
 import {
   WHITESPACE_RE,
   RELAT_O__RIO_DOCUMENTO_RE,
@@ -39,6 +40,7 @@ export class KloelReplyEngineService {
     private readonly planLimits: PlanLimitsService,
     private readonly threadService: KloelThreadService,
     private readonly wsContextService: KloelWorkspaceContextService,
+    private readonly unifiedAgentService: UnifiedAgentService,
     @Optional() private readonly marketingSkillService?: MarketingSkillService,
   ) {
     this.openai = new OpenAI({
@@ -46,7 +48,7 @@ export class KloelReplyEngineService {
       timeout: 60_000,
       maxRetries: 0,
     });
-    this.toolRouter = new KloelToolRouter(this.logger, unifiedAgentService);
+    this.toolRouter = new KloelToolRouter(this.logger, this.unifiedAgentService);
   }
 
   get contextFormatter(): KloelContextFormatter {
@@ -69,7 +71,7 @@ export class KloelReplyEngineService {
       }).format(new Date()),
       userName: this.contextFormatter.sanitizeUserNameForAssistant(params?.userName),
       workspaceName: 'Workspace',
-      expertiseLevel: params?.expertiseLevel,
+      ...(params?.expertiseLevel !== undefined ? { expertiseLevel: params.expertiseLevel } : {}),
     });
   }
 
@@ -180,15 +182,16 @@ export class KloelReplyEngineService {
       msgs.push({ role: entry.role as 'user' | 'assistant', content: entry.content });
     msgs.push({ role: 'user', content: params.userMessage });
     if (params.assistantMessage) {
+      const toolCalls = Array.isArray(params.assistantMessage.tool_calls)
+        ? params.assistantMessage.tool_calls
+        : undefined;
       msgs.push({
         role: 'assistant',
         content:
           typeof params.assistantMessage.content === 'string'
             ? params.assistantMessage.content
             : '',
-        tool_calls: Array.isArray(params.assistantMessage.tool_calls)
-          ? params.assistantMessage.tool_calls
-          : undefined,
+        ...(toolCalls !== undefined ? { tool_calls: toolCalls } : {}),
       });
     }
     if (params.toolMessages?.length)

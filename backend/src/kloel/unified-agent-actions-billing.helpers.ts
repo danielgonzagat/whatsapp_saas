@@ -1,5 +1,50 @@
 import { PrismaService } from '../prisma/prisma.service';
 
+export async function createFunnelFlows(
+  prisma: PrismaService,
+  workspaceId: string,
+  funnelName: string,
+  stages: unknown[],
+  productName: string,
+  productPrice: number,
+  includeFollowUps: unknown,
+) {
+  const normalizedStages = stages.map((stage) => String(stage || '').trim()).filter(Boolean);
+  const stagesToCreate = normalizedStages.length
+    ? normalizedStages
+    : ['awareness', 'interest', 'purchase'];
+
+  return Promise.all(
+    stagesToCreate.map((stage, index) =>
+      prisma.flow.create({
+        data: {
+          workspaceId,
+          name: `${funnelName} - ${stage}`,
+          description: `Funil para ${productName} (${productPrice})`,
+          nodes: [
+            {
+              id: 'trigger',
+              type: 'trigger',
+              position: { x: 100, y: 100 },
+              data: { trigger: stage, includeFollowUps: Boolean(includeFollowUps) },
+            },
+            {
+              id: 'message',
+              type: 'message',
+              position: { x: 100, y: 220 },
+              data: { message: `Etapa ${index + 1}: ${stage}` },
+            },
+          ],
+          edges: [{ id: 'trigger-message', source: 'trigger', target: 'message' }],
+          isActive: false,
+          triggerType: 'MANUAL',
+          triggerCondition: stage,
+        },
+      }),
+    ),
+  );
+}
+
 export async function getProductPlans(prisma: PrismaService, productId: string) {
   return {
     plans: await prisma.productPlan.findMany({

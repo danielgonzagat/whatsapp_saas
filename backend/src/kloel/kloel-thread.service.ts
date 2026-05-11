@@ -128,10 +128,9 @@ export class KloelThreadService {
     ]);
 
     return {
-      summary:
-        thread?.summary && String(thread.summary).trim().length > 0
-          ? String(thread.summary)
-          : undefined,
+      ...(thread?.summary && String(thread.summary).trim().length > 0
+        ? { summary: String(thread.summary) }
+        : {}),
       recentMessages,
       totalMessages,
     };
@@ -171,7 +170,13 @@ export class KloelThreadService {
   ): Promise<{ id: string } | null> {
     if (!threadId) return null;
     const created = await this.prisma.chatMessage.create({
-      data: { threadId, role: 'user', content: userMessage, metadata },
+      data: {
+        thread: { connect: { id: threadId } },
+        workspaceId,
+        role: 'user',
+        content: userMessage,
+        ...(metadata !== undefined ? { metadata } : {}),
+      },
       select: { id: true },
     });
     await this.touchThread(threadId, workspaceId);
@@ -186,7 +191,13 @@ export class KloelThreadService {
   ): Promise<{ id: string } | null> {
     if (!threadId) return null;
     const created = await this.prisma.chatMessage.create({
-      data: { threadId, role: 'assistant', content: assistantMessage, metadata },
+      data: {
+        thread: { connect: { id: threadId } },
+        workspaceId,
+        role: 'assistant',
+        content: assistantMessage,
+        ...(metadata !== undefined ? { metadata } : {}),
+      },
       select: { id: true },
     });
     await this.touchThread(threadId, workspaceId);
@@ -302,9 +313,15 @@ export class KloelThreadService {
       ),
     );
     if (labels.length === 0) return undefined;
-    if (labels.length === 1) return `${labels[0]}.`;
-    if (labels.length === 2) return `${labels[0]} e ${this.lowercaseLeadingCharacter(labels[1])}.`;
-    return `${labels[0]}, ${this.lowercaseLeadingCharacter(labels[1])} e ${this.lowercaseLeadingCharacter(labels[labels.length - 1])}.`;
+    const first = labels[0];
+    if (!first) return undefined;
+    if (labels.length === 1) return `${first}.`;
+    const second = labels[1];
+    if (!second) return undefined;
+    if (labels.length === 2) return `${first} e ${this.lowercaseLeadingCharacter(second)}.`;
+    const last = labels[labels.length - 1];
+    if (!last) return `${first}, ${this.lowercaseLeadingCharacter(second)}.`;
+    return `${first}, ${this.lowercaseLeadingCharacter(second)} e ${this.lowercaseLeadingCharacter(last)}.`;
   }
 
   private lowercaseLeadingCharacter(value: string): string {

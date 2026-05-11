@@ -17,12 +17,12 @@ describe('Core MetaWebhookController', () => {
       markWebhookProcessed: jest.fn().mockResolvedValue(undefined),
     };
     controller = new MetaWebhookController(
-      { touchWebhookHeartbeat: jest.fn() } as never as MetaWhatsAppService,
-      { processInboundMessage: jest.fn() } as never as InboundProcessorService,
+      { touchWebhookHeartbeat: jest.fn() } as never,
+      { processInboundMessage: jest.fn() } as never,
       {
         processInstagramWebhook: jest.fn(),
         handleIncomingMessage: jest.fn(),
-      } as never as OmnichannelService,
+      } as never,
       {
         metaConnection: { findFirst: jest.fn() },
         message: { updateMany: jest.fn() },

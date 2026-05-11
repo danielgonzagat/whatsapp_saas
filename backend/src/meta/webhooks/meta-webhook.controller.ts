@@ -160,7 +160,11 @@ export class MetaWebhookController {
   ) {
     // Validate signature
     const appSecret = process.env.META_APP_SECRET;
-    if (appSecret && signature) {
+    if (appSecret) {
+      if (!signature) {
+        this.logger.warn('Missing Meta webhook signature — rejecting');
+        throw new ForbiddenException('Missing Meta webhook signature');
+      }
       const expected = `sha256=${createHmac('sha256', appSecret)
         .update(
           Buffer.isBuffer(req?.rawBody) ? req.rawBody : Buffer.from(JSON.stringify(body || {})),

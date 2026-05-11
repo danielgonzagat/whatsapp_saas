@@ -1,6 +1,6 @@
 import './instrument';
 import { join } from 'node:path';
-import { ValidationPipe } from '@nestjs/common';
+import { ConsoleLogger, LoggerService, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
@@ -24,6 +24,16 @@ const DATADOG_TRACING_HEADERS = [
   'x-datadog-sampling-priority',
   'x-datadog-trace-id',
 ];
+const PRODUCTION_BOOT_LOG_CONTEXTS = new Set(['RouterExplorer', 'RoutesResolver']);
+
+class ProductionBootstrapLogger extends ConsoleLogger implements LoggerService {
+  override log(message: unknown, context?: string): void {
+    if (context && PRODUCTION_BOOT_LOG_CONTEXTS.has(context)) {
+      return;
+    }
+    super.log(message, context);
+  }
+}
 
 function matchesWildcardPattern(value: string, pattern: string): boolean {
   if (!pattern.includes('*')) {
@@ -144,14 +154,12 @@ function setupSwagger(app: NestExpressApplication): void {
   const allowSwagger = process.env.NODE_ENV !== 'production' || (swaggerUser && swaggerPass);
 
   if (!allowSwagger) {
-    console.warn(
-      '[STARTUP] Swagger desabilitado em produção por falta de SWAGGER_BASIC_USER/PASS.',
-    );
+    console.log('[STARTUP] Swagger desabilitado em produção sem credenciais Basic Auth.');
     return;
   }
 
   if (swaggerUser && swaggerPass) {
-    app.use(['/api', '/api-json'], (req, res, next) => {
+    app.use(['/api', '/api-json'], (req: Request, res: Response, next: NextFunction) => {
       const header = req.headers.authorization || '';
       const expected = Buffer.from(`${swaggerUser}:${swaggerPass}`).toString('base64');
       if (header !== `Basic ${expected}`) {
@@ -225,6 +233,7 @@ async function bootstrap() {
 
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     rawBody: true,
+    logger: process.env.NODE_ENV === 'production' ? new ProductionBootstrapLogger() : undefined,
   });
 
   // ============================================================

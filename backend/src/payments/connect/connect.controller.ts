@@ -232,7 +232,13 @@ export class ConnectController {
     @Query('skip') skip?: string,
     @Query('take') take?: string,
   ) {
-    const payload: { workspaceId: string; accountBalanceId?: string; state?: string; skip?: number; take?: number } = {
+    const payload: {
+      workspaceId: string;
+      accountBalanceId?: string;
+      state?: string;
+      skip?: number;
+      take?: number;
+    } = {
       workspaceId,
     };
     if (accountBalanceId) payload.accountBalanceId = String(accountBalanceId).trim();

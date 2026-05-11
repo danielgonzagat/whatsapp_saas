@@ -28,6 +28,51 @@ type ResolvedMetaConnection = {
   persistedConnection: boolean;
 };
 
+type MetaChannel = 'whatsapp' | 'instagram' | 'facebook';
+
+const COMMON_META_SCOPES = [
+  'pages_show_list',
+  'pages_read_engagement',
+  'pages_manage_metadata',
+  'business_management',
+];
+
+const CHANNEL_META_SCOPES: Record<MetaChannel, string[]> = {
+  whatsapp: [...COMMON_META_SCOPES, 'whatsapp_business_management', 'whatsapp_business_messaging'],
+  instagram: [
+    ...COMMON_META_SCOPES,
+    'instagram_basic',
+    'instagram_manage_messages',
+    'instagram_manage_comments',
+  ],
+  facebook: [...COMMON_META_SCOPES, 'pages_messaging'],
+};
+
+function normalizeMetaChannel(channel?: string | null): MetaChannel {
+  const normalized = String(channel || '')
+    .trim()
+    .toLowerCase();
+  if (normalized === 'instagram' || normalized === 'facebook' || normalized === 'whatsapp') {
+    return normalized;
+  }
+  return 'whatsapp';
+}
+
+function readChannelConfigId(channel: MetaChannel): string {
+  if (channel === 'whatsapp') {
+    return String(process.env.META_CONFIG_ID_WHATSAPP || process.env.META_CONFIG_ID || '').trim();
+  }
+  if (channel === 'instagram') {
+    return String(process.env.META_CONFIG_ID_INSTAGRAM || process.env.META_CONFIG_ID || '').trim();
+  }
+  return String(
+    process.env.META_CONFIG_ID_MESSENGER ||
+      process.env.META_CONFIG_ID_FACEBOOK ||
+      process.env.META_CONFIG_ID ||
+      '',
+  ).trim();
+}
+
 // cache.invalidate — Meta connections fetched live from DB; no Redis cache to invalidate
 @Injectable()
 export class MetaWhatsAppService {
@@ -44,29 +89,15 @@ export class MetaWhatsAppService {
     options?: { channel?: string | null; returnTo?: string | null },
   ): string {
     const appId = String(process.env.META_APP_ID || '').trim();
-    const configId = String(process.env.META_CONFIG_ID || '').trim();
+    const channel = normalizeMetaChannel(options?.channel);
+    const configId = readChannelConfigId(channel);
     const version = String(process.env.META_GRAPH_API_VERSION || 'v21.0').trim();
 
     if (!appId) {
       return '';
     }
 
-    const scopes = [
-      'pages_show_list',
-      'pages_read_engagement',
-      'pages_manage_metadata',
-      'pages_messaging',
-      'instagram_basic',
-      'instagram_manage_messages',
-      'instagram_manage_comments',
-      'instagram_content_publish',
-      'business_management',
-      'ads_management',
-      'ads_read',
-      'catalog_management',
-      'whatsapp_business_management',
-      'whatsapp_business_messaging',
-    ].join(',');
+    const scopes = CHANNEL_META_SCOPES[channel].join(',');
 
     const params = new URLSearchParams({
       client_id: appId,
@@ -76,7 +107,7 @@ export class MetaWhatsAppService {
       override_default_response_type: String(true),
       state: JSON.stringify({
         workspaceId,
-        channel: options?.channel || null,
+        channel,
         returnTo: options?.returnTo || null,
       }),
     });
@@ -85,11 +116,7 @@ export class MetaWhatsAppService {
       params.set('config_id', configId);
     }
 
-    if (
-      String(options?.channel || '')
-        .trim()
-        .toLowerCase() === 'whatsapp'
-    ) {
+    if (channel === 'whatsapp') {
       params.set('extras', JSON.stringify({ sessionInfoVersion: '3', version: 'v3' }));
     }
 

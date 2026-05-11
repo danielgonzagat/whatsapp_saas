@@ -160,8 +160,12 @@ export class OnboardingService {
       data: {},
       completed: false,
     });
+    const firstStep = this.steps[0];
+    if (!firstStep) {
+      throw new Error('Onboarding steps must not be empty');
+    }
     return {
-      message: this.steps[0].question,
+      message: firstStep.question,
       step: 1,
       total: this.steps.length,
     };
@@ -180,6 +184,9 @@ export class OnboardingService {
     }
 
     const currentStep = this.steps[state.currentStep];
+    if (!currentStep) {
+      throw new Error(`Invalid onboarding step index: ${state.currentStep}`);
+    }
     state.data[currentStep.field] = response;
     state.currentStep++;
 
@@ -197,8 +204,12 @@ export class OnboardingService {
     }
 
     await this.saveState(workspaceId, state);
+    const nextStep = this.steps[state.currentStep];
+    if (!nextStep) {
+      throw new Error(`Invalid onboarding step index: ${state.currentStep}`);
+    }
     return {
-      message: this.steps[state.currentStep].question,
+      message: nextStep.question,
       step: state.currentStep + 1,
       total: this.steps.length,
       completed: false,

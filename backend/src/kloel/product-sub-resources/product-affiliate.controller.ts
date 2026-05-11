@@ -345,7 +345,7 @@ export class ProductAffiliateController {
     await this.prisma.$transaction(async (tx) => {
       await tx.affiliateLink.update({
         where: { id: linkId },
-        data: { active: body.active },
+        data: { active: Boolean(body.active) },
       });
 
       if (body.active) {

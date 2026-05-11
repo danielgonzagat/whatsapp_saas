@@ -58,7 +58,7 @@ export class FacebookMessengerService {
     const typed: FbSendResult =
       typeof result === 'object' && result !== null
         ? result
-        : { error: { code: -1, message: 'Invalid response' } };
+        : { error: { code: -1, message: 'Invalid response', type: 'invalid_response' } };
 
     if (typed.error) {
       await this.prisma.fbMessage.create({
@@ -130,7 +130,7 @@ export class FacebookMessengerService {
         metadata: JSON.parse(JSON.stringify(msg)) as Prisma.InputJsonValue,
       },
       update: {
-        text: text || undefined,
+        ...(text ? { text } : {}),
         deliveryStatus: 'DELIVERED',
         metadata: JSON.parse(JSON.stringify(msg)) as Prisma.InputJsonValue,
       },

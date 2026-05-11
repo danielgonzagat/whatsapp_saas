@@ -10,11 +10,9 @@
  * ============================================
  */
 
-import { InjectRedis } from '@nestjs-modules/ioredis';
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit, Optional } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { Prisma } from '@prisma/client';
-import type Redis from 'ioredis';
 import { forEachSequential } from '../common/async-sequence';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -46,7 +44,6 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
     private readonly whatsappApi: WhatsAppApiProvider,
     private readonly recovery: WhatsAppWatchdogRecoveryService,
     private readonly sessionSvc: WhatsAppWatchdogSessionService,
-    @InjectRedis() private readonly redis: Redis,
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 

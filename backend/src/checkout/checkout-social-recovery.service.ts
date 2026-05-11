@@ -11,7 +11,6 @@ import {
   buildListUnsubscribeHeader,
   buildUnsubscribeFooterHtml,
 } from '../common/utils/unsubscribe-footer.util';
-import { EMAIL_COLORS } from '../common/kloel-colors';
 
 const THIRTY_MINUTES_MS = 30 * 60 * 1000;
 const ONE_HOUR_MS = 60 * 60 * 1000;

@@ -49,7 +49,7 @@ export function buildUnsubscribeFooterHtml(opts: UnsubscribeUrlOptions): string 
 }
 
 /** One-click unsubscribe mailto address per RFC 8058 / RFC 2369. */
-function buildListUnsubscribeMailto(opts: UnsubscribeUrlOptions): string {
+export function buildListUnsubscribeMailto(opts: UnsubscribeUrlOptions): string {
   const token = generateUnsubscribeToken({
     email: opts.email,
     workspaceId: opts.workspaceId,

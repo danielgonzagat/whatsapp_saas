@@ -71,7 +71,7 @@ describe('KloelBusinessConfigToolsService', () => {
         findUnique: jest.fn().mockResolvedValue(null),
         update: jest.fn().mockResolvedValue({}),
       },
-      campaign: { create: jest.fn().mockResolvedValue({} as CampaignRecord) },
+      campaign: { create: jest.fn().mockResolvedValue({}) },
       subscription: { upsert: jest.fn().mockResolvedValue({}) },
       $transaction: jest.fn().mockImplementation((fn: unknown) => {
         if (typeof fn === 'function') return fn(prisma);
@@ -255,7 +255,7 @@ describe('KloelBusinessConfigToolsService', () => {
         id: 'camp-1',
         name: 'Promo Verão',
         status: 'DRAFT',
-      } as unknown as CampaignRecord);
+      });
 
       const result = await service.toolCreateCampaign(wsId, {
         name: 'Promo Verão',
@@ -274,7 +274,7 @@ describe('KloelBusinessConfigToolsService', () => {
         id: 'camp-2',
         name: 'Promo',
         status: 'DRAFT',
-      } as unknown as CampaignRecord);
+      });
 
       await service.toolCreateCampaign(wsId, {
         name: 'Promo',
@@ -345,7 +345,7 @@ describe('KloelBusinessConfigToolsService', () => {
     it('upserts subscription for valid plan change', async () => {
       prisma.workspace.findUnique.mockResolvedValue({
         subscription: { plan: 'STARTER', stripeId: null },
-      } as unknown as WorkspaceRecord);
+      });
 
       const result = await service.toolChangePlan(wsId, { newPlan: 'PRO' });
 
@@ -361,7 +361,7 @@ describe('KloelBusinessConfigToolsService', () => {
     it('returns requiresAction when stripe subscription exists', async () => {
       prisma.workspace.findUnique.mockResolvedValue({
         subscription: { plan: 'PRO', stripeId: 'sub_1' },
-      } as unknown as WorkspaceRecord);
+      });
 
       const result = await service.toolChangePlan(wsId, { newPlan: 'enterprise' });
 
@@ -403,7 +403,7 @@ describe('KloelBusinessConfigToolsService', () => {
     it('toolChangePlan returns error on Prisma failure', async () => {
       prisma.workspace.findUnique.mockResolvedValue({
         subscription: { plan: 'STARTER', stripeId: null },
-      } as unknown as WorkspaceRecord);
+      });
       prisma.subscription.upsert.mockRejectedValue(new Error('constraint violation'));
 
       const result = await service.toolChangePlan(wsId, { newPlan: 'PRO' });

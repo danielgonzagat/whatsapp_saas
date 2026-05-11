@@ -1,7 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { BadRequestException, Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { AuditService } from '../audit/audit.service';
 import { toPrismaJsonArray } from '../common/prisma/prisma-json.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { generateCheckoutOrderNumber } from './checkout-code.util';
@@ -36,7 +35,6 @@ export class CheckoutOrderService {
     private readonly prisma: PrismaService,
     @Inject(forwardRef(() => CheckoutPaymentService))
     private readonly paymentService: CheckoutPaymentService,
-    private readonly auditService: AuditService,
     private readonly catalogService: CheckoutCatalogService,
     private readonly queryService: CheckoutOrderQueryService,
   ) {
@@ -157,7 +155,7 @@ export class CheckoutOrderService {
     const qualityGate = {
       documentDigits: String(orderData.customerCPF || '').replace(D_RE, ''),
       phoneDigits: this.orderSupport.normalizePhoneDigits(orderData.customerPhone),
-      payerAddress: address as Prisma.InputJsonValue,
+      payerAddress: address,
     };
     const lineItems = this.orderSupport.buildCheckoutLineItems(
       planRecord,
@@ -322,7 +320,7 @@ export class CheckoutOrderService {
 
   private async processOrderPostPayment(
     params: ProcessOrderPostPaymentParams,
-  ): Promise<Record<string, unknown> | null> {
+  ): Promise<unknown> {
     return executeProcessOrderPostPayment(params, {
       prisma: this.prisma,
       paymentService: this.paymentService,
