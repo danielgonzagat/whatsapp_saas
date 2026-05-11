@@ -293,67 +293,67 @@ O estado de rigor maximo do Codacy faz parte da governance.
 <claude-mem-context>
 # Memory Context
 
-# [whatsapp_saas] recent context, 2026-05-10 7:09pm GMT-3
+# [whatsapp_saas] recent context, 2026-05-10 10:22pm GMT-3
 
 Legend: 🎯session 🔴bugfix 🟣feature 🔄refactor ✅change 🔵discovery ⚖️decision
 Format: ID TIME TYPE TITLE
 Fetch details: get_observations([IDs]) | Search: mem-search skill
 
-Stats: 50 obs (24,223t read) | 569,173t work | 96% savings
+Stats: 50 obs (21,424t read) | 290,628t work | 93% savings
 
 ### May 10, 2026
-722 5:49p 🟣 New Worktree Created — chore/ai-constitution-convergence-gates Branched from main
-723 " 🔵 check-ai-constitution.mjs — Full Implementation Architecture Mapped
-724 " 🔵 ops/kloel-ai-constitution.json — Declarative Constitution Full Content Mapped
-725 " 🔵 Kloel Governance Layer Full Stack — AGENTS.md, CLAUDE.md, CODEX.md, AGENT_RUNBOOK.md All Read
-726 " 🔵 Kloel Quality Gate Ecosystem — 30+ npm Scripts Form Multi-Layer Enforcement Pipeline
-728 5:51p 🔵 Wave-15 OpenCode Fleet Running — 2 Active Subagents and Monitor Process Confirmed Live
-729 " 🔵 OpenCode Subagent Delegation Rules — Comprehensive Anti-Deception Protocol for PULSE Debt Work
-730 5:53p 🔵 Deepseek Auditor Subagent Launched — Reads All CI/CD and Governance Files in Parallel
-733 5:54p 🟣 AI Constitution Enrichment Written — 268 Insertions Across Both Core Files
-734 " 🔴 collectChangedFiles() Path Bug — ops/ Prefix Loses Leading 'o' in Fallback Branch
-735 " 🔵 ops/governance-change-approvals.json — Full Audit Trail of All Protected File Change Approvals
-737 5:56p 🟣 AI Constitution v2 — Four New Enforcement Functions and 10+ New Forbidden Patterns Added
-738 " 🟣 AI Constitution JSON v2 — convergenceContract and evidenceContract Sections Added
-739 5:57p 🔴 addedTextForFile Fixed — All Diff Strategies Now Merged Instead of First-Match-Wins
-740 " 🟣 checkSelfIntegrity() Added — Constitution Checker Now Verifies Its Own Critical Code Paths Survive
-741 " 🟣 Three Regex Pattern Fixes — Broader Success Return, Parameterless Catch, and Empty Arrow Catch
-742 " 🔵 Deepseek Auditor Identified False Positive Risks in New Constitution Patterns
-752 6:04p ⚖️ Kloel AI Constitution Enrichment Mandate — Wave-4 Convergence Gate Expansion
-754 6:07p 🔵 Backend Test Suite — SplitEngine Invariant Validation Confirmed via Property-Based Tests
-755 6:09p 🔵 Backend Test Suite Passing — TranscriptionService Retry Logic and SSRF Guard Confirmed
-756 6:10p 🔵 Backend Full Test Suite — 247/247 Suites Pass on ai-constitution-convergence Worktree
-759 6:14p 🔵 Backend Tests Exit Code 1 Despite Zero Failures — 1 Skipped Test Drives Non-Zero Exit
-762 6:18p 🔵 check-all Suite on ai-constitution-convergence — 6/7 Gates Green, backend-test In Progress
-764 6:20p 🔵 UnifiedAgentService Audit Bug — auditService.logWithTx Not a Function
-765 " 🔵 TikTok Webhook Controller — New Channel Integration With Signature Validation
-766 " 🔵 LedgerReconciliationService — Active Drift Detection Between Wallet Balance and Ledger Sum
-767 6:22p 🔵 Kloel AI Constitution System — Current Gate Architecture Documented
-768 " ⚖️ AI Constitution Total Enrichment Mandate Issued — Mathematical Convergence Goal
-770 6:24p 🔵 Kloel check:all Gate Suite — Full 12-Gate Architecture Confirmed Running
-771 6:27p 🔵 check:all Suite — Full Typecheck, Lint, and Test Gates All Passing in ai-constitution-convergence Worktree
-773 6:28p 🔵 check:all Suite — All 21 Gates Pass with Exit Code 0 in ai-constitution-convergence Worktree
-775 " 🟣 AI Constitution Enriched — convergenceContract, evidenceContract, and 4 New Checker Functions Added
-776 " 🔴 MassSendService — BullMQ Queue Leak Fixed via OnModuleDestroy Lifecycle Hook
-777 " 🔵 Pre-Commit Hook Blocks Constitution Commit — Protected Files and Self-Referential False Positive
-783 6:30p 🔵 gate-rules.mjs Anti-Self-Trip Pattern — Forbidden Strings Built via Per-Character Joins
-784 " 🔴 Self-Integrity Snippet Name Changed — False Positive in Architecture Gate Resolved
-785 6:39p ⚖️ Human Approval Granted — validate-staged.mjs Pre-Commit Gate Enhancement
-787 " 🟣 validate-staged.mjs — Governance Approval Bypass Added to Protected-File Gate
-789 6:40p ✅ validate-staged.mjs Patch Passes Full Guard Suite on Node 20
-791 6:43p ✅ check:all Suite — Ratchet, Lint, All Typechecks, and Frontend Tests Green
-793 " ✅ check:all Suite — All 20 Gates Green, Exit Code 0 on Node 20
-795 " 🔵 Pre-Commit Blocked — `eslint-disable` Forbidden Token in check-ai-constitution.mjs:286
-796 6:44p 🔴 validate-staged.mjs — Protected-Path `continue` Logic Fixed to Always Skip Remaining Checks
-799 6:48p ✅ Second check:all Run — All 20 Gates Green After Control-Flow Bugfix in validate-staged.mjs
-800 6:49p 🔵 validate-staged.mjs Had `MM` Git Status — Both Staged and Unstaged Changes After Two-Patch Series
-802 " 🟣 Commit `681a63249` Landed on chore/ai-constitution-convergence-gates — Pre-Commit Hook Passed
-804 6:50p 🔵 pre-push Hook Architecture — `run-scoped-pre-push.mjs` Runs 7 Ordered Gate Stages
-808 6:51p 🔵 Pre-Push Frontend Tests — 276/276 Passed; Next.js `middleware` Deprecation Warning Active
-809 6:52p 🟣 Branch chore/ai-constitution-convergence-gates Pushed to Origin — Full Pre-Push Pipeline Passed
-810 " 🔵 Worker Tests Use Dummy OpenAI Key — 401 Errors Are Expected and Tests Still Pass
+846 7:59p 🔵 check:all Suite — Full 20/20 Green After Tenant Isolation Fix
+848 8:00p 🔵 Pre-Push Hook Chain — Full Gate Sequence Confirmed on Tenant Isolation Fix Commit
+849 " ✅ chore/ai-constitution-convergence-gates Branch Pushed — Pre-Push Fully Green Including Boot Smoke
+852 8:08p ⚖️ Kloel AI Constitution — Wave-7+ Total Enrichment Mandate Issued
+853 " 🔵 PR #277 CI Check Snapshot — Mixed Pass/Pending/Skip State at ~11:07 PM GMT-3
+854 8:13p 🔵 PR #277 Quality Gate Failure — sales-templates Constants Drift Detected
+855 " 🔵 sales-templates Drift Root Cause — Missing `export` Keyword in Backend Source of Truth
+856 " 🔴 Fixed sales-templates Export Missing in Backend Source of Truth
+857 8:14p 🔴 sales-templates Sync + Typecheck Fully Green After Export Fix
+858 " 🔵 Quality Gate Pipeline — Full Step Inventory in ci-cd.yml
+862 8:15p 🔵 Full Local Quality Gate Run — All Sync Checks Green, Baselines Confirmed
+863 " 🔵 Tenant Isolation Scan Baseline — 1971 Prisma Queries, 637 Transitive-Scope Unresolved
+865 8:17p 🔵 check:all Suite Running Green — lint, All Typechecks, Frontend Test Passing
+866 8:19p 🔵 check:all Suite — All 20 Gates Fully Green on AI Constitution Convergence Branch
+868 8:20p ✅ sales-templates Export Fix Committed — SHA 81f2bf7f0
+870 " 🔵 Pre-Push Hook Pipeline — Scoped Hard Gates Run Before Every Push
+871 " ✅ PR #277 Fix Pushed — chore/ai-constitution-convergence-gates Updated to 81f2bf7f0
+875 8:30p ⚖️ Kloel AI Constitution — Total Enrichment Mandate (Wave-8+)
+877 " 🔵 PR #277 CI Status Snapshot — Two Gates Still Pending, Both Vercel Deployments Complete
+879 8:40p 🔵 PR #277 CI Status — Codacy Static Code Analysis FAILED, quality Gate Still Pending
+880 8:41p 🔵 Codacy Failure Root Cause — 28 New Issues in check-ai-constitution.mjs and worker/resolve-redis-url.ts
+881 8:43p 🔵 Local Gate Suite Fully Green on AI Constitution Branch — Codacy Complexity Is Sole Remaining Blocker
+882 " 🔵 check:all Suite — 13/14+ Gates Green, Lint Running at 30s Yield Point
+884 8:46p 🔵 check:all Suite Progress — 18/19+ Gates Green Including All Typechecks and Frontend Tests
+885 8:47p 🔵 check:all Suite — Full 20/20 Green on AI Constitution Convergence Branch
+886 8:48p 🔄 check-ai-constitution.mjs and resolve-redis-url.ts Refactored to Fix Codacy Complexity Violations
+888 8:50p 🔵 Pre-Push Hook — Backend Boot Smoke Pass, 276 Frontend Tests Green, Frontend Build Starting
+891 8:51p ✅ Codacy Complexity Fix Pushed to Remote — Pre-Push Hook Passed All Gates Including Frontend Build and Worker Tests
+893 8:54p 🔵 PR #277 New CI Run After Codacy Fix Push — Fresh Gates Running on Commit c750bcabe
+895 9:00p ⚖️ Kloel AI Constitution — Wave-9+ Total Enrichment Mandate Issued
+897 9:03p 🔵 PR #277 CI Status — Quality and Codacy Still Pending, Vercel Deployments and Static Analysis Passed
+898 9:10p 🔵 PR #277 Quality Gate Still Running — Log Fetch Confirms Job 75267096745 In Progress
+900 9:20p 🔵 Kloel AI Constitution — Anti-Cheat Gate System Architecture
+901 " ⚖️ AI Constitution Total Enrichment Mandate — Wave-10+ Issued
+902 9:23p 🔄 check-ai-constitution.mjs — Regex Patterns Replaced with Named Function Rules
+903 " 🔵 macOS zsh Missing GNU `timeout` Command — pulse:ci Runner Workaround Needed
+904 9:28p 🔵 pulse:ci Execution Timed Out at 300s Default Threshold
+905 " 🔵 PULSE CI Architecture — ts-node spawnSync Blocks Full 300s Until Timeout
+908 9:32p 🔵 check:all Suite — 6 Gates Green After Constitution Refactor
+910 9:33p 🔵 check:all Suite — Full Green (21/21 Gates) After AI Constitution Enrichment
+911 9:35p 🔄 check-ai-constitution.mjs — Second Refactor Pass Consolidates to Named Constant Arrays
+913 " 🔵 check-ai-constitution.mjs — Full Internal Check Sequence and Self-Integrity Rules Mapped
+915 9:36p 🔵 guard:new-code Command Composition Confirmed — 5 Sub-Gates in Sequence
+917 " 🔵 guard:new-code + format:check — Full Green After Constitution Refactor
+920 9:40p 🔵 check:all Suite — Second Full Green (21/21) After Constitution Second Refactor Pass
+922 " ✅ Constitution Refactor Committed — e86b87c05 on chore/ai-constitution-convergence-gates
+924 9:41p 🔵 Pre-Push Hook Architecture — 6-Stage Sequence via run-scoped-pre-push.mjs
+926 " 🔵 Pre-Push Hook — Backend Build and Boot Smoke Stages Confirmed
+928 9:42p 🔵 Pre-Push Hook — Boot Smoke OK, 276 Frontend Tests Pass, Frontend Clean Build Stage Added
+930 9:43p ⚖️ Kloel AI Constitution — Total Enrichment Mandate Wave-13+ Issued
 
-Access 569k tokens of past work via get_observations([IDs]) or mem-search skill.
+Access 291k tokens of past work via get_observations([IDs]) or mem-search skill.
 </claude-mem-context>
 
 ## PULSE Auditor Immutability

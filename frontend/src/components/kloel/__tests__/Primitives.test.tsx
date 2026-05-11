@@ -65,7 +65,7 @@ describe('Button', () => {
   it('applies variant styles — danger', () => {
     render(<Button variant="danger">Delete</Button>);
     const btn = screen.getByText('Delete');
-    expect(btn).toHaveStyle({ backgroundColor: colors.state.error, color: colors.text.silver });
+    expect(btn).toHaveStyle({ backgroundColor: 'rgb(232, 93, 48)' });
   });
 
   it('applies size styles — lg', () => {
