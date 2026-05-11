@@ -14,8 +14,12 @@ const PRE_REVEAL_MS = 500;
 const SALES_DELAY_MS = 800;
 const REVEAL_HOLD_MS = 8000;
 const PHI = 1.618033988749895;
-const THANOS_REVEAL_KEYFRAMES =
-  '@keyframes thanosIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}';
+const THANOS_REVEAL_KEYFRAMES = [
+  '@keyframes thanosIn {',
+  '  from { opacity: 0; transform: translateY(8px); }',
+  '  to { opacity: 1; transform: translateY(0); }',
+  '}',
+].join('\n');
 
 type LoadedIcon = (typeof THANOS_ICONS)[number] & { img: HTMLImageElement };
 type ChannelKey = 'wa' | 'ig' | 'fb' | 'em' | 'sms' | 'tt';

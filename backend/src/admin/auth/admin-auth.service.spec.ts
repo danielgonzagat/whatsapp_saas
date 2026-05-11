@@ -15,7 +15,7 @@ function buildUser(overrides: Partial<AdminUser> = {}): AdminUser {
     id: 'admin-1',
     name: 'Owner',
     email: 'owner@kloel.com',
-    passwordHash: '$2b$12$V56XKk1ANaRd6npThmIlZ.VsSTuPav39Umy3N337/6ibAMYCQu35C',
+    passwordHash: 'mocked-password-hash',
     role: AdminRole.OWNER,
     status: AdminUserStatus.ACTIVE,
     mfaSecret: null,
