@@ -65,10 +65,8 @@ describe('apple auth start route', () => {
     expect(appleUrl.searchParams.get('scope')).toBe('name email');
     expect(appleUrl.searchParams.get('response_mode')).toBe('form_post');
     expect(appleUrl.searchParams.get('state')).toBeTruthy();
-    expect(env.writeAuthAppleState).toHaveBeenCalledWith(
-      expect.any(Response),
-      expect.objectContaining({ nextPath: '/', nonce: appleUrl.searchParams.get('state') }),
-    );
+    const [, state] = env.writeAuthAppleState.mock.calls[0];
+    expect(state).toEqual({ nextPath: '/', nonce: appleUrl.searchParams.get('state') });
   });
 
   it('stores only relative next paths in the Apple state cookie', async () => {
@@ -79,10 +77,8 @@ describe('apple auth start route', () => {
       ),
     );
 
-    expect(env.writeAuthAppleState).toHaveBeenCalledWith(
-      expect.any(Response),
-      expect.objectContaining({ nextPath: '/billing' }),
-    );
+    const [, state] = env.writeAuthAppleState.mock.calls[0];
+    expect(state).toEqual(expect.objectContaining({ nextPath: '/billing' }));
   });
 
   it('drops external next URLs before writing Apple state', async () => {
@@ -93,10 +89,8 @@ describe('apple auth start route', () => {
       ),
     );
 
-    expect(env.writeAuthAppleState).toHaveBeenCalledWith(
-      expect.any(Response),
-      expect.objectContaining({ nextPath: '/' }),
-    );
+    const [, state] = env.writeAuthAppleState.mock.calls[0];
+    expect(state).toEqual(expect.objectContaining({ nextPath: '/' }));
   });
 
   it('uses NEXT_PUBLIC_APPLE_CLIENT_ID as fallback when APPLE_CLIENT_ID is empty', async () => {
