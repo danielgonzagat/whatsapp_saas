@@ -22,7 +22,7 @@ import { Server, Socket } from 'socket.io';
 })
 export class InboxGateway implements OnGatewayConnection, OnGatewayDisconnect {
   /** Server property. */
-  @WebSocketServer() server!: Server;
+  @WebSocketServer() server: Server;
   private logger: Logger = new Logger('InboxGateway');
 
   constructor(private readonly jwt: JwtService) {}

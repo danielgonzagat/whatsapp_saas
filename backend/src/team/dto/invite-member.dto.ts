@@ -4,12 +4,12 @@ import { IsEmail, IsIn, IsNotEmpty, IsString, MaxLength, MinLength } from 'class
 export class InviteMemberDto {
   /** Email property. */
   @IsEmail()
-  email!: string;
+  email: string;
 
   /** Role property. */
   @IsString()
   @IsIn(['ADMIN', 'MEMBER', 'VIEWER'])
-  role!: string;
+  role: string;
 }
 
 /** Update role dto. */
@@ -17,7 +17,7 @@ export class UpdateRoleDto {
   /** Role property. */
   @IsString()
   @IsIn(['ADMIN', 'MEMBER', 'VIEWER'])
-  role!: string;
+  role: string;
 }
 
 /** Accept invite dto. */
@@ -26,17 +26,17 @@ export class AcceptInviteDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(1024)
-  token!: string;
+  token: string;
 
   /** Name property. */
   @IsString()
   @IsNotEmpty()
   @MaxLength(255)
-  name!: string;
+  name: string;
 
   /** Password property. */
   @IsString()
   @MinLength(8, { message: 'A senha deve ter pelo menos 8 caracteres' })
   @MaxLength(255)
-  password!: string;
+  password: string;
 }

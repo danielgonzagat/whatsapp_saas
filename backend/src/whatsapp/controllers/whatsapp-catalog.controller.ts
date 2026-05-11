@@ -4,22 +4,11 @@ import { WorkspaceGuard } from '../../common/guards/workspace.guard';
 import { AuthenticatedRequest } from '../../common/interfaces';
 import { WhatsappService } from '../whatsapp.service';
 
-const WHATSAPP_CATALOG_WORKSPACE_REQUIRED = 'workspaceId is required for WhatsApp catalog routes';
-
 /** Contacts, chats, catalog, and backlog operational endpoints. */
 @Controller('whatsapp-api')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class WhatsAppCatalogController {
   constructor(private readonly whatsappService: WhatsappService) {}
-
-  private requireWorkspaceId(req: AuthenticatedRequest): string {
-    if (!req.workspaceId) {
-      const error = new Error();
-      error.message = WHATSAPP_CATALOG_WORKSPACE_REQUIRED;
-      throw error;
-    }
-    return req.workspaceId;
-  }
 
   private readNumberQuery(value: unknown, fallback: number, min: number, max: number) {
     const parsed = Number(value);
@@ -53,7 +42,7 @@ export class WhatsAppCatalogController {
   /** Get contacts. */
   @Get('contacts')
   async getContacts(@Req() req: AuthenticatedRequest) {
-    return this.whatsappService.listContacts(this.requireWorkspaceId(req));
+    return this.whatsappService.listContacts(req.workspaceId);
   }
 
   /** Create contact. */
@@ -62,13 +51,13 @@ export class WhatsAppCatalogController {
     @Req() req: AuthenticatedRequest,
     @Body() body: { phone: string; name?: string; email?: string },
   ) {
-    return this.whatsappService.createContact(this.requireWorkspaceId(req), body);
+    return this.whatsappService.createContact(req.workspaceId, body);
   }
 
   /** Get chats. */
   @Get('chats')
   async getChats(@Req() req: AuthenticatedRequest) {
-    return this.whatsappService.listChats(this.requireWorkspaceId(req));
+    return this.whatsappService.listChats(req.workspaceId);
   }
 
   /** Get chat messages. */
@@ -77,15 +66,11 @@ export class WhatsAppCatalogController {
     const limit = Number(req.query?.limit || req.body?.limit || 100) || 100;
     const offset = Number(req.query?.offset || req.body?.offset || 0) || 0;
     const downloadMedia = this.readBooleanQuery(req.query?.downloadMedia, false);
-    return this.whatsappService.getChatMessages(
-      this.requireWorkspaceId(req),
-      decodeURIComponent(chatId),
-      {
-        limit,
-        offset,
-        downloadMedia,
-      },
-    );
+    return this.whatsappService.getChatMessages(req.workspaceId, decodeURIComponent(chatId), {
+      limit,
+      offset,
+      downloadMedia,
+    });
   }
 
   /** Set presence. */
@@ -97,16 +82,16 @@ export class WhatsAppCatalogController {
     body: { presence?: 'typing' | 'paused' | 'seen' | 'available' | 'offline' },
   ) {
     return this.whatsappService.setPresence(
-      this.requireWorkspaceId(req),
+      req.workspaceId,
       decodeURIComponent(chatId),
-      body?.presence ?? 'available',
+      body?.presence,
     );
   }
 
   /** Get operational backlog report. */
   @Get('backlog/report')
   async getOperationalBacklogReport(@Req() req: AuthenticatedRequest) {
-    return this.whatsappService.getOperationalBacklogReport(this.requireWorkspaceId(req), {
+    return this.whatsappService.getOperationalBacklogReport(req.workspaceId, {
       limit: this.readNumberQuery(req.query?.limit, 100, 1, 500),
       includeResolved: this.readBooleanQuery(req.query?.includeResolved, false),
     });
@@ -115,14 +100,14 @@ export class WhatsAppCatalogController {
   /** Get backlog. */
   @Get('backlog')
   async getBacklog(@Req() req: AuthenticatedRequest) {
-    return this.whatsappService.getBacklog(this.requireWorkspaceId(req));
+    return this.whatsappService.getBacklog(req.workspaceId);
   }
 
   /** Get catalog contacts. */
   // PULSE_OK: internal route, called by worker process for WhatsApp catalog contact listing
   @Get('catalog/contacts')
   async getCatalogContacts(@Req() req: AuthenticatedRequest) {
-    return this.whatsappService.listCatalogContacts(this.requireWorkspaceId(req), {
+    return this.whatsappService.listCatalogContacts(req.workspaceId, {
       days: this.readNumberQuery(req.query?.days, 30, 1, 365),
       page: this.readNumberQuery(req.query?.page, 1, 1, 10000),
       limit: this.readNumberQuery(req.query?.limit, 50, 1, 200),
@@ -134,7 +119,7 @@ export class WhatsAppCatalogController {
   // PULSE_OK: internal route, called by worker process for WhatsApp catalog purchase ranking
   @Get('catalog/ranking')
   async getCatalogRanking(@Req() req: AuthenticatedRequest) {
-    return this.whatsappService.listPurchaseProbabilityRanking(this.requireWorkspaceId(req), {
+    return this.whatsappService.listPurchaseProbabilityRanking(req.workspaceId, {
       days: this.readNumberQuery(req.query?.days, 30, 1, 365),
       limit: this.readNumberQuery(req.query?.limit, 50, 1, 200),
       minLeadScore: this.readNumberQuery(req.query?.minLeadScore, 0, 0, 100),
@@ -151,7 +136,7 @@ export class WhatsAppCatalogController {
     @Req() req: AuthenticatedRequest,
     @Body() body: { days?: number; reason?: string },
   ) {
-    return this.whatsappService.triggerCatalogRefresh(this.requireWorkspaceId(req), {
+    return this.whatsappService.triggerCatalogRefresh(req.workspaceId, {
       days: this.readNumberQuery(body?.days, 30, 1, 365),
       reason: this.readText(body?.reason, 'manual_catalog_refresh'),
     });
@@ -171,7 +156,7 @@ export class WhatsAppCatalogController {
     },
   ) {
     const contactId = this.readText(body?.contactId).trim() || undefined;
-    return this.whatsappService.triggerCatalogRescore(this.requireWorkspaceId(req), {
+    return this.whatsappService.triggerCatalogRescore(req.workspaceId, {
       contactId,
       days: this.readNumberQuery(body?.days, 30, 1, 365),
       limit: this.readNumberQuery(body?.limit, 100, 1, 500),
@@ -185,7 +170,7 @@ export class WhatsAppCatalogController {
     @Req() req: AuthenticatedRequest,
     @Body() body: { limit?: number; reason?: string },
   ) {
-    return this.whatsappService.triggerBacklogRebuild(this.requireWorkspaceId(req), {
+    return this.whatsappService.triggerBacklogRebuild(req.workspaceId, {
       limit: this.readNumberQuery(body?.limit, 500, 1, 2000),
       reason: this.readText(body?.reason, 'manual_backlog_rebuild'),
     });
@@ -195,14 +180,14 @@ export class WhatsAppCatalogController {
   // PULSE_OK: internal route, called by worker process for WhatsApp session recreation
   @Post('session/recreate-if-invalid')
   async recreateSessionIfInvalid(@Req() req: AuthenticatedRequest) {
-    return this.whatsappService.recreateSessionIfInvalid(this.requireWorkspaceId(req));
+    return this.whatsappService.recreateSessionIfInvalid(req.workspaceId);
   }
 
   /** Sync. */
   @Post('sync')
   async sync(@Req() req: AuthenticatedRequest, @Body() body: { reason?: string }) {
     return this.whatsappService.triggerSync(
-      this.requireWorkspaceId(req),
+      req.workspaceId,
       this.readText(body?.reason, 'manual_sync'),
     );
   }

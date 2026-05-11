@@ -989,7 +989,7 @@ export class WhatsappService {
       phone: to,
       content: opts?.caption || message || opts?.mediaUrl || '',
       direction: 'OUTBOUND',
-      externalId: 'messageId' in r ? r.messageId : opts?.externalId,
+      externalId: 'messageId' in r ? r.messageId : (opts?.externalId ?? null),
       type: opts?.mediaType ? opts.mediaType.toUpperCase() : 'TEXT',
       mediaUrl: opts?.mediaUrl,
       status: 'SENT',
@@ -1146,12 +1146,11 @@ export class WhatsappService {
   ) {
     const issues = this.validateWorkspaceProvider(workspace);
     const pt = await this.providerRegistry.getProviderType(ws);
-    const webhookDiagnostics = this.whatsappApi.getRuntimeConfigDiagnostics();
     const d: {
-      webhook: typeof webhookDiagnostics;
+      webhook: ReturnType<typeof this.whatsappApi.getRuntimeConfigDiagnostics>;
       session: (SessionStatus & { error?: string }) | null;
     } = {
-      webhook: webhookDiagnostics,
+      webhook: this.whatsappApi.getRuntimeConfigDiagnostics(),
       session: null,
     };
     if (o?.requireInboundWebhook) {

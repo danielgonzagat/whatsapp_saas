@@ -1,6 +1,5 @@
 import { Injectable, Logger, NestMiddleware, OnModuleDestroy, Optional } from '@nestjs/common';
 import { NextFunction, Request, Response } from 'express';
-import { Prisma } from '@prisma/client';
 import { sanitizePayload } from '../../common/sanitize-payload';
 import { getTraceHeaders } from '../../common/trace-headers';
 import { validateNoInternalAccess } from '../../common/utils/url-validator';
@@ -66,39 +65,6 @@ function matchesLoggedGetPath(path: string): boolean {
   return LOGGED_GET_PATH_FRAGMENTS.some((fragment) => path.includes(fragment));
 }
 
-function isAuditLogEntryWithWorkspace(
-  log: AuditLogEntry,
-): log is AuditLogEntry & { workspaceId: string } {
-  return typeof log.workspaceId === 'string' && log.workspaceId.length > 0;
-}
-
-function buildAuditDetails(log: AuditLogEntry): Prisma.InputJsonValue {
-  return JSON.parse(
-    JSON.stringify({
-      statusCode: log.statusCode,
-      responseTimeMs: log.responseTimeMs,
-      requestBody: log.requestBody
-        ? (sanitizePayload(log.requestBody) as Record<string, unknown>)
-        : undefined,
-      error: log.error || undefined,
-    }),
-  ) as Prisma.InputJsonValue;
-}
-
-function toAuditCreateManyInput(
-  log: AuditLogEntry & { workspaceId: string },
-): Prisma.AuditLogCreateManyInput {
-  return {
-    workspaceId: log.workspaceId,
-    action: `HTTP_${log.method}`,
-    resource: log.path,
-    details: buildAuditDetails(log),
-    agentId: log.userId,
-    ipAddress: log.ip,
-    userAgent: log.userAgent,
-  };
-}
-
 /**
  * Middleware de Audit Logging para APIs KLOEL.
  * Registra todas as operacoes para auditoria e debugging.
@@ -161,7 +127,7 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
           req,
           method,
           path,
-          ip: typeof ip === 'string' ? ip : 'unknown',
+          ip,
           workspaceId,
           statusCode,
           responseTimeMs,
@@ -201,8 +167,7 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
       workspaceId,
       userId: user?.userId || user?.sub,
       ip: ip || 'unknown',
-      userAgent:
-        typeof req.headers['user-agent'] === 'string' ? req.headers['user-agent'] : 'unknown',
+      userAgent: req.headers['user-agent'] || 'unknown',
       statusCode,
       responseTimeMs,
       requestBody: sanitizedBody,
@@ -289,7 +254,26 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
       // Persist audit logs to database
       await this.prisma.auditLog
         .createMany({
-          data: logsToFlush.filter(isAuditLogEntryWithWorkspace).map(toAuditCreateManyInput),
+          data: logsToFlush
+            .filter((log) => log.workspaceId)
+            .map((log) => ({
+              workspaceId: log.workspaceId,
+              action: `HTTP_${log.method}`,
+              resource: log.path,
+              details: JSON.parse(
+                JSON.stringify({
+                  statusCode: log.statusCode,
+                  responseTimeMs: log.responseTimeMs,
+                  requestBody: log.requestBody
+                    ? (sanitizePayload(log.requestBody) as Record<string, unknown>)
+                    : undefined,
+                  error: log.error || undefined,
+                }),
+              ),
+              agentId: log.userId,
+              ipAddress: log.ip,
+              userAgent: log.userAgent,
+            })),
           skipDuplicates: true,
         })
         .catch((err: Error) => {
@@ -338,6 +322,7 @@ export function AuditOperation(operationType: string) {
         });
         return result;
       } catch (error: unknown) {
+        void this.opsAlert?.alertOnCriticalError(error, 'AuditLogMiddleware.now');
         logger.error({
           operation: operationType,
           method: propertyKey,

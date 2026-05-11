@@ -5,7 +5,7 @@ export class RequestMagicLinkDto {
   /** Email property. */
   @IsEmail()
   @MaxLength(255)
-  email!: string;
+  email: string;
 
   /** Redirect to property. */
   @IsOptional()

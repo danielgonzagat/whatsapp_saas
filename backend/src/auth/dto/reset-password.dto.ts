@@ -6,11 +6,11 @@ export class ResetPasswordDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(1024)
-  token!: string;
+  token: string;
 
   /** New password property. */
   @IsString()
   @MinLength(8, { message: 'A senha deve ter pelo menos 8 caracteres' })
   @MaxLength(255)
-  newPassword!: string;
+  newPassword: string;
 }

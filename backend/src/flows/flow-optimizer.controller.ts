@@ -3,7 +3,6 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { FlowOptimizerService } from './flow-optimizer.service';
-import type { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 
 /** Flow optimizer controller. */
 @ApiTags('Flow AI')
@@ -16,7 +15,7 @@ export class FlowOptimizerController {
   /** Optimize. */
   @Post('optimize/:flowId')
   @ApiOperation({ summary: 'Trigger AI optimization for a flow' })
-  async optimize(@Request() req: AuthenticatedRequest, @Param('flowId') flowId: string) {
+  async optimize(@Request() req, @Param('flowId') flowId: string) {
     return this.optimizer.optimizeFlow(req.user.workspaceId, flowId);
   }
 }

@@ -134,8 +134,8 @@ export class AuthTokenService {
         agent.id,
         agent.email,
         agent.workspaceId,
-        agent.role ?? 'USER',
-        agent.name ?? undefined,
+        agent.role,
+        agent.name,
       );
 
       const refreshToken = await this.rotateRefreshToken(agent.id);

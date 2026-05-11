@@ -198,20 +198,19 @@ export class KloelThinkerService {
 
       if (thread?.id) safeWrite(createKloelThreadEvent(thread.id, thread.title));
 
-      const persistedUserMessage =
-        thread?.id && workspaceId
-          ? await this.threadService.persistUserThreadMessage(
-              thread.id,
-              workspaceId,
-              message,
-              this.threadService.buildThreadMessageMetadata(metadata, {
-                clientRequestId,
-                mode,
-                transport: 'sse',
-                requestState: 'accepted',
-              }),
-            )
-          : null;
+      const persistedUserMessage = thread?.id
+        ? await this.threadService.persistUserThreadMessage(
+            thread.id,
+            workspaceId,
+            message,
+            this.threadService.buildThreadMessageMetadata(metadata, {
+              clientRequestId,
+              mode,
+              transport: 'sse',
+              requestState: 'accepted',
+            }),
+          )
+        : null;
 
       const branchCtx: ThinkBranchContext = {
         workspaceId,

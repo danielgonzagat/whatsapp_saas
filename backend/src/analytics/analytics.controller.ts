@@ -66,38 +66,32 @@ export class AnalyticsController {
 
   /** Get dashboard. */
   @Get('dashboard')
-  async getDashboard(@Request() req: AuthenticatedRequest) {
+  async getDashboard(@Request() req) {
     return this.analyticsService.getDashboardStats(req.user.workspaceId);
   }
 
   /** Get daily activity. */
   @Get('activity')
-  async getDailyActivity(@Request() req: AuthenticatedRequest) {
+  async getDailyActivity(@Request() req) {
     return this.analyticsService.getDailyActivity(req.user.workspaceId);
   }
 
   /** Get flow stats. */
   @Get('flow/:id')
-  async getFlowStats(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
+  async getFlowStats(@Request() req, @Param('id') id: string) {
     return this.analyticsService.getFlowStats(req.user.workspaceId, id);
   }
 
   /** Get advanced. */
   @Get('advanced')
-  async getAdvanced(
-    @Request() req: AuthenticatedRequest,
-    @Query() query: AnalyticsDateRangeQueryDto,
-  ) {
+  async getAdvanced(@Request() req, @Query() query: AnalyticsDateRangeQueryDto) {
     const { start, end } = parseDateRange(query.startDate, query.endDate);
     return this.advancedAnalyticsService.getAdvancedDashboard(req.user.workspaceId, start, end);
   }
 
   /** Get full report. */
   @Get('reports')
-  async getFullReport(
-    @Request() req: AuthenticatedRequest,
-    @Query() query: AnalyticsReportQueryDto,
-  ) {
+  async getFullReport(@Request() req, @Query() query: AnalyticsReportQueryDto) {
     if (query.startDate && query.endDate) {
       const { start, end } = parseDateRange(query.startDate, query.endDate);
       return this.analyticsService.getFullReport(req.user.workspaceId, 'custom', start, end);
@@ -107,7 +101,7 @@ export class AnalyticsController {
 
   /** Get ai report. */
   @Get('reports/ai')
-  async getAIReport(@Request() req: AuthenticatedRequest) {
+  async getAIReport(@Request() req) {
     return this.analyticsService.getAIReport(req.user.workspaceId);
   }
 }

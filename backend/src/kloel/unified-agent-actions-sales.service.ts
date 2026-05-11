@@ -41,7 +41,7 @@ function toJsonValue(value: unknown): Prisma.InputJsonValue | null {
     return value;
   }
   if (Array.isArray(value)) {
-    const output: Array<Prisma.InputJsonValue | null> = [];
+    const output: Prisma.InputJsonValue[] = [];
     for (const item of value) {
       output.push(toJsonValue(item));
     }

@@ -21,7 +21,7 @@ import { OpsAlertService } from '../observability/ops-alert.service';
 })
 export class CopilotGateway implements OnGatewayConnection, OnGatewayDisconnect, OnModuleInit {
   /** Server property. */
-  @WebSocketServer() server!: Server;
+  @WebSocketServer() server: Server;
   private readonly logger = new Logger('CopilotGateway');
   private readonly sub: Redis;
 

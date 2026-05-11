@@ -6,10 +6,10 @@ export class GenerateAudioDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(2000)
-  text!: string;
+  text: string;
 
   /** Profile id property. */
   @IsUUID()
   @IsNotEmpty()
-  profileId!: string;
+  profileId: string;
 }

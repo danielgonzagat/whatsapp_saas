@@ -6,7 +6,7 @@ export class CreateCampaignDto {
   /** Name property. */
   @IsString()
   @MaxLength(255)
-  name!: string;
+  name: string;
 
   /** Message template property. */
   @IsOptional()

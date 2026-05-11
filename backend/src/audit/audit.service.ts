@@ -3,12 +3,6 @@ import { Prisma } from '@prisma/client';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 
-interface AuditLogCreateClient {
-  auditLog: {
-    create(args: Prisma.AuditLogCreateArgs): Promise<unknown>;
-  };
-}
-
 /** Audit service. */
 @Injectable()
 export class AuditService {
@@ -34,7 +28,7 @@ export class AuditService {
    * Falls back to the default prisma client when no tx is provided.
    */
   async logWithTx(
-    tx: AuditLogCreateClient,
+    tx: { auditLog: { create: (args: Record<string, unknown>) => Promise<unknown> } },
     data: {
       workspaceId: string;
       action: string;
@@ -53,7 +47,7 @@ export class AuditService {
         resource: data.resource,
         resourceId: data.resourceId,
         agentId: data.agentId,
-        details: (data.details ?? {}) as Prisma.InputJsonValue,
+        details: data.details ?? {},
         ipAddress: data.ipAddress,
         userAgent: data.userAgent,
       },

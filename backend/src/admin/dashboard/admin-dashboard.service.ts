@@ -376,7 +376,7 @@ export class AdminDashboardService {
           value: current.churnRate,
           previous: previous?.churnRate ?? null,
           deltaPct:
-            current.churnRate === null || previous?.churnRate === null || !previous
+            current.churnRate === null || previous?.churnRate === null
               ? null
               : deltaPct(current.churnRate, previous.churnRate),
         },

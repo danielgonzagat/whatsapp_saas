@@ -432,7 +432,7 @@ async function main() {
               webhookData: buildSnapshotWebhookData(connectPostSale),
             }),
         },
-      } as unknown as PrismaService,
+      } as PrismaService,
       stripeService,
       connectService,
       ledgerService,

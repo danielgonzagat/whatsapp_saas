@@ -504,7 +504,12 @@ export class CheckoutPaymentService {
   }
 
   private async transitionOrderToApproved(
-    tx: Pick<Prisma.TransactionClient, 'checkoutOrder'>,
+    tx: {
+      checkoutOrder: {
+        findFirst: (args: unknown) => Promise<{ status: string } | null>;
+        updateMany: (args: unknown) => Promise<unknown>;
+      };
+    },
     orderId: string,
     workspaceId: string,
     _transitionContext: {

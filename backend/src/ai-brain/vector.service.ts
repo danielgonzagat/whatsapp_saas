@@ -9,7 +9,7 @@ type EmbeddingResult = { embedding: number[]; tokensUsed: number };
 /** Vector service. */
 @Injectable()
 export class VectorService {
-  private openai!: OpenAI;
+  private openai: OpenAI;
 
   constructor(private configService: ConfigService) {
     const apiKey = this.configService.get<string>('OPENAI_API_KEY');

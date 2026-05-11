@@ -20,7 +20,7 @@ function headerValueToString(value: string | string[] | undefined): string {
   return String(value || '');
 }
 
-function readHeader(req: MinimalRequest | undefined | null, name: string) {
+function readHeader(req: MinimalRequest, name: string) {
   if (!req) {
     return '';
   }

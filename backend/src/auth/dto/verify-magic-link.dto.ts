@@ -6,5 +6,5 @@ export class VerifyMagicLinkDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(255)
-  token!: string;
+  token: string;
 }

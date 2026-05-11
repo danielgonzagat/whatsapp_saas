@@ -481,9 +481,7 @@ export function ChatContainer({
       setIsTyping(false);
     }
   };
-  useEffect(() => {
-    handleSendMessageRef.current = handleSendMessage;
-  }, [handleSendMessage]);
+  handleSendMessageRef.current = handleSendMessage;
 
   const {
     handleMessageRetry,

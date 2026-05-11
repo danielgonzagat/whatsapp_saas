@@ -18,20 +18,20 @@ import type { MindActionContext } from './mind-code-native.types';
 class MindPolicyOptionDto implements MindPolicyOption {
   @IsString()
   @MaxLength(120)
-  action!: string;
+  action: string;
 
   @IsObject()
-  context!: MindJson;
+  context: MindJson;
 
   @IsString()
   @MaxLength(120)
-  predicate!: string;
+  predicate: string;
 }
 
 export class DecideDto {
   @IsString()
   @MaxLength(120)
-  subject!: string;
+  subject: string;
 
   @IsString()
   @IsIn([
@@ -42,15 +42,15 @@ export class DecideDto {
     'urgency_level',
     'commercial_prompt',
   ])
-  decisionType!: string;
+  decisionType: string;
 
   @IsObject()
-  context!: MindJson;
+  context: MindJson;
 
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => MindPolicyOptionDto)
-  options!: MindPolicyOption[];
+  options: MindPolicyOption[];
 
   @IsOptional()
   @IsString()
@@ -84,25 +84,25 @@ export class DecideDto {
 export class GuardEvaluateDto {
   @IsString()
   @MaxLength(120)
-  action!: string;
+  action: string;
 
   @IsString()
   @MaxLength(120)
-  decisionType!: string;
+  decisionType: string;
 
   @IsObject()
-  context!: MindActionContext;
+  context: MindActionContext;
 }
 
 export class ResolveDto {
   @IsString()
   @MaxLength(120)
-  outcomeKey!: string;
+  outcomeKey: string;
 
   @IsNumber()
   @Min(-1)
   @Max(1)
-  outcome!: number;
+  outcome: number;
 
   @IsOptional()
   @IsNumber()
@@ -115,29 +115,29 @@ export class AudioVsTextDto {
   @IsString()
   @MaxLength(40)
   @IsIn(['whatsapp', 'instagram', 'facebook', 'email', 'chat'])
-  channel!: string;
+  channel: string;
 
   @IsNumber()
   @Min(0)
   @Max(1)
-  audioRatio!: number;
+  audioRatio: number;
 }
 
 export class ToneDto {
   @IsString()
   @MaxLength(40)
   @IsIn(['whatsapp', 'instagram', 'facebook', 'email', 'chat'])
-  channel!: string;
+  channel: string;
 
   @IsNumber()
   @Min(0)
   @Max(1)
-  repliedRate!: number;
+  repliedRate: number;
 
   @IsNumber()
   @Min(0)
   @Max(1)
-  soldRate!: number;
+  soldRate: number;
 
   @IsOptional()
   @IsString()
@@ -149,12 +149,12 @@ export class CouponDto {
   @IsString()
   @MaxLength(40)
   @IsIn(['under_100', '100_300', 'over_300', 'over_500', 'over_1000'])
-  priceBand!: string;
+  priceBand: string;
 
   @IsNumber()
   @Min(0)
   @Max(1)
-  soldRate!: number;
+  soldRate: number;
 
   @IsOptional()
   @IsString()
@@ -166,21 +166,21 @@ export class AggressivenessDto {
   @IsString()
   @MaxLength(80)
   @IsIn(['whatsapp_sales', 'email_marketing', 'social_engagement'])
-  domain!: string;
+  domain: string;
 
   @IsNumber()
   @Min(0)
   @Max(1)
-  soldRate!: number;
+  soldRate: number;
 
   @IsNumber()
   @Min(0)
   @Max(1)
-  repliedRate!: number;
+  repliedRate: number;
 
   @IsNumber()
   @Min(0)
-  revenuePerSignal!: number;
+  revenuePerSignal: number;
 }
 
 export class SimilarCasesDto {
@@ -201,47 +201,47 @@ export class SimilarCasesDto {
 
   @IsString()
   @MaxLength(2000)
-  text!: string;
+  text: string;
 }
 
 export class SimulateActionDto {
   @IsString()
   @MaxLength(120)
-  action!: string;
+  action: string;
 
   @IsString()
   @MaxLength(120)
-  decisionType!: string;
+  decisionType: string;
 
   @IsObject()
-  context!: MindActionContext;
+  context: MindActionContext;
 }
 
 export class SimulateCandidateDto {
   @IsString()
   @MaxLength(120)
-  action!: string;
+  action: string;
 
   @IsNumber()
   @Min(0)
   @Max(1)
-  beliefMean!: number;
+  beliefMean: number;
 
   @IsNumber()
   @Min(0)
   @Max(1)
-  beliefVariance!: number;
+  beliefVariance: number;
 }
 
 export class SimulateDecisionDto {
   @IsString()
   @MaxLength(120)
-  decisionType!: string;
+  decisionType: string;
 
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => SimulateCandidateDto)
-  candidates!: SimulateCandidateDto[];
+  candidates: SimulateCandidateDto[];
 
   @IsOptional()
   @IsString()

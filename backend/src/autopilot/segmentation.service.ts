@@ -25,7 +25,7 @@ type SegmentationDeal = {
  */
 type SegmentationContact = {
   id: string;
-  phone: string;
+  phone: string | null;
   name: string | null;
   updatedAt: Date;
   deals: SegmentationDeal[];
@@ -223,6 +223,7 @@ export class SegmentationService {
   ): Promise<SegmentResult> {
     const where: Prisma.ContactWhereInput = {
       workspaceId,
+      phone: { not: null },
     };
 
     const now = new Date();
@@ -454,7 +455,7 @@ export class SegmentationService {
     processed: number;
   }> {
     const contacts = await this.prisma.contact.findMany({
-      where: { workspaceId },
+      where: { workspaceId, phone: { not: null } },
       select: { id: true },
       take: 5000,
       orderBy: { updatedAt: 'desc' },

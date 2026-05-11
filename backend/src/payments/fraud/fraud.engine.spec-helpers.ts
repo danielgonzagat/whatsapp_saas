@@ -45,16 +45,14 @@ export function makePrismaStub(initial: FraudBlacklist[] = []) {
             if (where.type) {
               filtered = filtered.filter((r) => r.type === where.type);
             }
-            const valueContains = where.value?.contains;
-            if (valueContains) {
+            if (where.value?.contains) {
               filtered = filtered.filter((r) =>
-                r.value.toLowerCase().includes(valueContains.toLowerCase()),
+                r.value.toLowerCase().includes(where.value.contains.toLowerCase()),
               );
             }
-            const orFilters = where.OR;
-            if (orFilters) {
+            if (where.OR) {
               filtered = filtered.filter((r) =>
-                orFilters.some((cand) => cand.type === r.type && cand.value === r.value),
+                where.OR.some((cand) => cand.type === r.type && cand.value === r.value),
               );
             }
             return filtered;

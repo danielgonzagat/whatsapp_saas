@@ -190,8 +190,7 @@ export class UnifiedAgentActionsWorkspaceService {
 
   // PULSE_OK: workspaceId validated by caller guard
   async actionCreateFlow(workspaceId: string, args: ToolArgs) {
-    const flowName = typeof args.name === 'string' ? args.name : 'flow';
-    const flowKey = `flow_${Date.now()}_${flowName.toLowerCase().replace(WHITESPACE_G_RE, '_')}`;
+    const flowKey = `flow_${Date.now()}_${args.name.toLowerCase().replace(WHITESPACE_G_RE, '_')}`;
     await this.prisma.kloelMemory.create({
       data: {
         workspaceId,

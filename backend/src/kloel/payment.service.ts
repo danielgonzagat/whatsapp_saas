@@ -158,7 +158,7 @@ export class PaymentService {
   private extractPixDetails(paymentIntent: StripePaymentIntent) {
     const nextAction = paymentIntent.next_action as PixNextAction | null | undefined;
     const pixData =
-      nextAction?.type === 'pix_display_qr_code' ? (nextAction.pix_display_qr_code ?? null) : null;
+      nextAction?.type === 'pix_display_qr_code' ? nextAction.pix_display_qr_code : null;
     const paymentLink =
       pixData?.hosted_instructions_url || pixData?.image_url_png || pixData?.data || undefined;
 

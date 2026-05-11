@@ -407,7 +407,7 @@ export class OmnichannelService {
         senderId: sid,
         senderName: sname || undefined,
         content: b.text.trim(),
-        messageId: this.fieldStr(b, 'message_id') ?? undefined,
+        messageId: this.fieldStr(b, 'message_id'),
         eventType: eventT,
       };
     }
@@ -431,7 +431,7 @@ export class OmnichannelService {
         this.fieldStr(data, 'content') ||
         this.fieldStr(data, 'message') ||
         '',
-      messageId: this.fieldStr(data, 'message_id') ?? undefined,
+      messageId: this.fieldStr(data, 'message_id'),
       eventType: 'dm',
     };
   }
@@ -449,7 +449,7 @@ export class OmnichannelService {
       senderId: sid,
       senderName: sname || undefined,
       content: `[Comentário TikTok] ${commentText}`,
-      messageId: this.fieldStr(data, 'comment_id') ?? undefined,
+      messageId: this.fieldStr(data, 'comment_id'),
       eventType: 'comment',
     };
   }
@@ -466,7 +466,7 @@ export class OmnichannelService {
       senderId: sid,
       senderName: sname || undefined,
       content: `[Lead TikTok] ${fields.join(' | ') || 'Novo lead'}`,
-      messageId: this.fieldStr(data, 'lead_id') ?? undefined,
+      messageId: this.fieldStr(data, 'lead_id'),
       eventType: 'lead_gen',
     };
   }

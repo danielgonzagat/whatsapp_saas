@@ -22,13 +22,13 @@ export class MediaFactoryService {
 
     // tokenBudget: non-workspace context, budget tracked at caller level
     const response = await this.openai.images.generate({
-      model: resolveBackendOpenAIModel('image_generation', this.config),
+      model: 'dall-e-3',
       prompt: prompt,
       n: 1,
       size: '1024x1024',
     });
 
-    return { url: response.data?.[0]?.url ?? '' };
+    return { url: response.data[0].url };
   }
 
   /** Generate voice. */

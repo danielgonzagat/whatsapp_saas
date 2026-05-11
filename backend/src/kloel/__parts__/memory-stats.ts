@@ -56,11 +56,11 @@ export async function computeMemoryStats(prisma: PrismaService): Promise<MemoryS
     select: { createdAt: true, workspaceId: true },
   });
 
-  const avgResult = await prisma.$queryRaw<Array<{ avg_days: string | number | null }>>`
+  const avgResult = await prisma.$queryRaw`
     SELECT AVG(EXTRACT(EPOCH FROM (NOW() - "createdAt"))) / 86400 as avg_days
     FROM "RAC_KloelMemory"
   `;
-  const averageAge = Number.parseFloat(String(avgResult[0]?.avg_days ?? '0'));
+  const averageAge = Number.parseFloat(avgResult?.[0]?.avg_days ?? '0');
 
   return {
     total,

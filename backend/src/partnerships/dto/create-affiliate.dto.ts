@@ -5,12 +5,12 @@ export class CreateAffiliateDto {
   /** Partner name property. */
   @IsString()
   @MaxLength(255)
-  partnerName!: string;
+  partnerName: string;
 
   /** Partner email property. */
   @IsString()
   @MaxLength(255)
-  partnerEmail!: string;
+  partnerEmail: string;
 
   /** Partner phone property. */
   @IsOptional()
@@ -21,7 +21,7 @@ export class CreateAffiliateDto {
   /** Type property. */
   @IsString()
   @MaxLength(255)
-  type!: string;
+  type: string;
 
   /** Commission rate property. */
   @IsOptional()

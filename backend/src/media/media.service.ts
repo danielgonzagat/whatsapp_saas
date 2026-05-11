@@ -83,7 +83,7 @@ export class MediaService {
 
     const stored = await this.storage.upload(file.buffer, {
       filename: `${uuid()}${extname(file.originalname || '')}`,
-      mimeType: file.mimetype ?? 'application/octet-stream',
+      mimeType: file.mimetype,
       folder: 'documents',
       workspaceId,
     });
@@ -91,11 +91,11 @@ export class MediaService {
     const doc = await this.prisma.document.create({
       data: {
         workspaceId,
-        name: metadata.name || file.originalname || 'document',
-        fileName: file.originalname || 'document',
+        name: metadata.name || file.originalname,
+        fileName: file.originalname,
         filePath: stored.path,
-        mimeType: file.mimetype ?? 'application/octet-stream',
-        fileSize: file.size ?? file.buffer.length,
+        mimeType: file.mimetype,
+        fileSize: file.size,
         description: metadata.description,
         category: metadata.category,
         isActive: true,

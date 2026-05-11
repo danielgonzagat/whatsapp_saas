@@ -4,5 +4,5 @@ import { IsEmail } from 'class-validator';
 export class CheckEmailDto {
   /** Email property. */
   @IsEmail()
-  email!: string;
+  email: string;
 }

@@ -19,16 +19,6 @@ interface IntentDetection {
   entities: Record<string, unknown>;
 }
 
-function recordValue(value: unknown): Record<string, unknown> | null {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : null;
-}
-
-function firstRecord(value: unknown): Record<string, unknown> | null {
-  return Array.isArray(value) ? (recordValue(value[0]) ?? null) : null;
-}
-
 /** Whats app brain service. */
 @Injectable()
 export class WhatsAppBrainService {
@@ -43,33 +33,23 @@ export class WhatsAppBrainService {
   async processWebhook(payload: Record<string, unknown>, workspaceId: string): Promise<void> {
     this.logger.log('Processando webhook WhatsApp');
 
-    const entry = firstRecord(payload.entry);
-    const changes = firstRecord(entry?.changes);
-    const value = recordValue(changes?.value);
+    const entry = payload.entry?.[0];
+    const changes = entry?.changes?.[0];
+    const value = changes?.value;
 
-    const message = firstRecord(value?.messages);
-    if (!value || !message) {
+    if (!value?.messages?.[0]) {
       return;
     }
 
-    const metadata = recordValue(value.metadata);
-    const text = recordValue(message.text);
-    const messageType = typeof message.type === 'string' ? message.type : 'text';
+    const message = value.messages[0];
 
     const webhookMessage: WebhookMessage = {
-      from: typeof message.from === 'string' ? message.from : 'unknown',
-      to:
-        typeof metadata?.display_phone_number === 'string'
-          ? metadata.display_phone_number
-          : 'unknown',
-      message: typeof text?.body === 'string' ? text.body : '',
-      messageType: ['text', 'image', 'audio', 'document', 'location'].includes(messageType)
-        ? (messageType as WebhookMessage['messageType'])
-        : 'text',
-      timestamp: new Date(
-        Number.parseInt(typeof message.timestamp === 'string' ? message.timestamp : '0', 10) * 1000,
-      ),
-      messageId: typeof message.id === 'string' ? message.id : 'unknown',
+      from: message.from,
+      to: value.metadata?.display_phone_number || 'unknown',
+      message: message.text?.body || '',
+      messageType: message.type,
+      timestamp: new Date(Number.parseInt(message.timestamp, 10) * 1000),
+      messageId: message.id,
       workspaceId,
     };
 

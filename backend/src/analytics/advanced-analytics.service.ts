@@ -222,9 +222,6 @@ export class AdvancedAnalyticsService {
     const pendingCustomerMessages = new Map<string, Date>();
 
     for (const msg of interactions) {
-      if (!msg.conversationId) {
-        continue;
-      }
       if (msg.direction === 'INBOUND') {
         // Marca hora que o cliente falou
         pendingCustomerMessages.set(msg.conversationId, msg.createdAt);

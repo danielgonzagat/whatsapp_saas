@@ -22,7 +22,7 @@ import { OpsAlertService } from '../observability/ops-alert.service';
 })
 export class FlowsGateway implements OnGatewayConnection, OnGatewayDisconnect, OnModuleInit {
   /** Server property. */
-  @WebSocketServer() server!: Server;
+  @WebSocketServer() server: Server;
   private logger: Logger = new Logger('FlowsGateway');
 
   private readonly sub: Redis;

@@ -6,7 +6,7 @@ export class FacebookOAuthDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(4096)
-  accessToken!: string;
+  accessToken: string;
 
   /** User id property. */
   @IsOptional()

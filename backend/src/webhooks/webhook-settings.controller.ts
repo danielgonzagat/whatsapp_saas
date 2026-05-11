@@ -14,7 +14,6 @@ import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { AuditService } from '../audit/audit.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PrismaService } from '../prisma/prisma.service';
-import type { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 
 /**
  * CRUD for outbound webhookEvent subscription URLs.
@@ -32,7 +31,7 @@ export class WebhookSettingsController {
 
   /** List. */
   @Get()
-  async list(@Request() req: AuthenticatedRequest) {
+  async list(@Request() req) {
     return this.prisma.webhookSubscription.findMany({
       where: { workspaceId: req.user.workspaceId },
     });
@@ -41,7 +40,7 @@ export class WebhookSettingsController {
   /** Create. */
   @Post()
   async create(
-    @Request() req: AuthenticatedRequest,
+    @Request() req,
     @Body() body: { url: string; events: string[] },
     @Headers('x-idempotency-key') idempotencyKey?: string,
   ) {
@@ -67,7 +66,7 @@ export class WebhookSettingsController {
 
   /** Delete. */
   @Delete(':id')
-  async delete(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
+  async delete(@Request() req, @Param('id') id: string) {
     await this.auditService.log({
       workspaceId: req.user.workspaceId,
       action: 'DELETE_RECORD',

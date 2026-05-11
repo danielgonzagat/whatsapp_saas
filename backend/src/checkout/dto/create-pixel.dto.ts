@@ -13,9 +13,9 @@ enum PixelType {
 /** Create pixel dto. */
 export class CreatePixelDto {
   /** Type property. */
-  @IsIn(Object.values(PixelType)) type!: PixelType;
+  @IsIn(Object.values(PixelType)) type: PixelType;
   /** Pixel id property. */
-  @IsString() @MaxLength(255) pixelId!: string;
+  @IsString() @MaxLength(255) pixelId: string;
   /** Access token property. */
   @IsOptional() @IsString() @MaxLength(255) accessToken?: string;
   /** Track page view property. */

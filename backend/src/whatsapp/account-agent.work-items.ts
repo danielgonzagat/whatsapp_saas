@@ -153,7 +153,7 @@ async function findPreviousWorkItem(
 
 function buildWorkItemUpdateData(
   input: WorkItemUpsertInput,
-  missingValue: Prisma.InputJsonValue | Prisma.NullTypes.JsonNull | undefined,
+  missingValue: Prisma.InputJsonValue | null | undefined,
 ) {
   return {
     state: input.state,
@@ -200,7 +200,7 @@ export async function upsertAccountWorkItem(
   const entityKey = String(input.entityId || 'global');
   const id = `${workspaceId}:${input.kind}:${input.entityType}:${entityKey}`;
   const previous = await findPreviousWorkItem(deps, workspaceId, id);
-  const updateData = buildWorkItemUpdateData(input, Prisma.JsonNull);
+  const updateData = buildWorkItemUpdateData(input, null);
   const createData = {
     id,
     workspaceId,

@@ -439,7 +439,7 @@ export class MemoryManagementService {
       if (!groups.has(prefix)) {
         groups.set(prefix, []);
       }
-      groups.get(prefix)?.push(mem);
+      groups.get(prefix).push(mem);
     }
 
     let merged = 0;

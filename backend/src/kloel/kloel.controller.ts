@@ -360,18 +360,8 @@ export class KloelController {
 
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Get('threads')
-  async listChatThreads(
-    @Req() req: AuthenticatedRequest,
-    @Query('limit') limit?: string,
-    @Query('cursor') cursor?: string,
-  ) {
-    const parsedLimit = limit ? Number.parseInt(limit, 10) : undefined;
-    const parsedCursor = cursor ? Number.parseInt(cursor, 10) : undefined;
-    return listThreads({ prisma: this.prisma }, resolveWorkspaceId(req), {
-      limit: Number.isFinite(parsedLimit) ? parsedLimit : undefined,
-      cursor: Number.isFinite(parsedCursor) ? parsedCursor : undefined,
-      paginated: Boolean(limit || cursor),
-    });
+  async listChatThreads(@Req() req: AuthenticatedRequest) {
+    return listThreads({ prisma: this.prisma }, resolveWorkspaceId(req));
   }
 
   @UseGuards(JwtAuthGuard, WorkspaceGuard)

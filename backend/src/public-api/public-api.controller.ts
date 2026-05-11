@@ -5,10 +5,6 @@ import { Public } from '../auth/public.decorator';
 import { InboxService } from '../inbox/inbox.service';
 import { ApiKeyGuard } from './api-key.guard';
 
-interface ApiKeyAuthenticatedRequest {
-  user: { workspaceId: string };
-}
-
 /** Public api controller. */
 @ApiTags('Public API v1')
 @ApiSecurity('x-api-key')
@@ -40,10 +36,7 @@ export class PublicApiController {
     },
   })
   @ApiResponse({ status: 201, description: 'Message queued for delivery' })
-  async sendMessage(
-    @Request() req: ApiKeyAuthenticatedRequest,
-    @Body() body: { phone: string; message: string },
-  ) {
+  async sendMessage(@Request() req, @Body() body: { phone: string; message: string }) {
     return this.inbox.saveMessageByPhone({
       workspaceId: req.user.workspaceId,
       phone: body.phone,

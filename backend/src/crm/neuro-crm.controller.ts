@@ -4,7 +4,6 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { NeuroCrmService } from './neuro-crm.service';
-import type { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 
 /** Neuro crm controller. */
 @ApiTags('NeuroCRM')
@@ -17,21 +16,21 @@ export class NeuroCrmController {
   /** Analyze. */
   @Post('analyze/:contactId')
   @ApiOperation({ summary: 'Manually trigger AI analysis for a contact' })
-  async analyze(@Request() req: AuthenticatedRequest, @Param('contactId') contactId: string) {
+  async analyze(@Request() req, @Param('contactId') contactId: string) {
     return this.neuroService.analyzeContact(req.user.workspaceId, contactId);
   }
 
   /** Nba. */
   @Get('next-best/:contactId')
   @ApiOperation({ summary: 'Get next best action for a contact' })
-  async nba(@Request() req: AuthenticatedRequest, @Param('contactId') contactId: string) {
+  async nba(@Request() req, @Param('contactId') contactId: string) {
     return this.neuroService.nextBestAction(req.user.workspaceId, contactId);
   }
 
   /** Clusters. */
   @Get('clusters')
   @ApiOperation({ summary: 'Cluster leads for this workspace' })
-  async clusters(@Request() req: AuthenticatedRequest) {
+  async clusters(@Request() req) {
     return this.neuroService.clusterLeads(req.user.workspaceId);
   }
 
@@ -39,7 +38,7 @@ export class NeuroCrmController {
   @Post('simulate')
   @ApiOperation({ summary: 'Simulate a sales conversation' })
   async simulate(
-    @Request() req: AuthenticatedRequest,
+    @Request() req,
     @Body()
     body: {
       persona: string;

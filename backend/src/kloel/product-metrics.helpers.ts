@@ -137,12 +137,12 @@ function applyMemberAreaMetric(
 }
 
 function updatePlanPriceRange(current: ProductMetrics, normalizedPriceInCents: number): void {
-  const currentMin = current.minPlanPriceInCents;
-  if (currentMin === null || normalizedPriceInCents < currentMin) {
+  const minUnset = current.minPlanPriceInCents === null;
+  if (minUnset || normalizedPriceInCents < current.minPlanPriceInCents) {
     current.minPlanPriceInCents = normalizedPriceInCents;
   }
-  const currentMax = current.maxPlanPriceInCents;
-  if (currentMax === null || normalizedPriceInCents > currentMax) {
+  const maxUnset = current.maxPlanPriceInCents === null;
+  if (maxUnset || normalizedPriceInCents > current.maxPlanPriceInCents) {
     current.maxPlanPriceInCents = normalizedPriceInCents;
   }
 }

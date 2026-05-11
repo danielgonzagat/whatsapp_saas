@@ -3,7 +3,7 @@ import { IsBoolean, IsIn, IsOptional, IsString, MaxLength } from 'class-validato
 /** Update bank dto. */
 export class UpdateBankDto {
   /** Bank name property. */
-  @IsString() @MaxLength(255) bankName!: string;
+  @IsString() @MaxLength(255) bankName: string;
   /** Bank code property. */
   @IsOptional() @IsString() @MaxLength(255) bankCode?: string;
   /** Agency property. */

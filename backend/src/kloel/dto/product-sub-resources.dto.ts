@@ -16,7 +16,7 @@ import {
 
 export class CreatePlanDto {
   /** Name property. */
-  @IsString() @MaxLength(255) name!: string;
+  @IsString() @MaxLength(255) name: string;
   /** Slug property. */
   @IsOptional() @IsString() @MaxLength(255) slug?: string;
   /** Price in cents property. */
@@ -78,7 +78,7 @@ export class UpdateCheckoutDto {
 
 export class CreateCouponDto {
   /** Code property. */
-  @IsString() @MaxLength(255) code!: string;
+  @IsString() @MaxLength(255) code: string;
   /** Discount percent property. */
   @IsOptional() @IsNumber() @Min(0) @Max(100) discountPercent?: number;
   /** Discount fixed property. */
@@ -92,7 +92,7 @@ export class CreateCouponDto {
 /** Validate coupon dto. */
 export class ValidateCouponDto {
   /** Code property. */
-  @IsString() @MaxLength(255) code!: string;
+  @IsString() @MaxLength(255) code: string;
 }
 
 // ============================================
@@ -141,7 +141,7 @@ export class UpsertAIConfigDto {
 
 export class CreateReviewDto {
   /** Name property. */
-  @IsString() @MaxLength(255) name!: string;
+  @IsString() @MaxLength(255) name: string;
   /** Rating property. */
   @IsOptional() @IsNumber() @Min(0) @Max(999999) rating?: number;
   /** Comment property. */

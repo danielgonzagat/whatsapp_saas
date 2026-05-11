@@ -17,7 +17,7 @@ export interface MemoryItem {
   /** Category property. */
   category: string;
   /** Content property. */
-  content: string | null;
+  content: string;
   /** Similarity property. */
   similarity?: number;
 }

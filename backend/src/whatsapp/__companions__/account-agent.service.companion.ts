@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { Prisma } from '@prisma/client';
+import type { Prisma } from '@prisma/client';
 import { forEachSequential } from '../../common/async-sequence';
 import { toPrismaJsonValue } from '../../common/prisma/prisma-json.util';
 
@@ -365,8 +365,8 @@ export async function materializeProductExt(
           platform: 'other',
           productName: session.productName,
           price: offer.price || prices[0] || 0,
-          paymentUrl: String(offer.url),
-          checkoutUrl: String(offer.url),
+          paymentUrl: offer.url,
+          checkoutUrl: offer.url,
           isActive: true,
         },
       });
@@ -536,7 +536,7 @@ export async function materializeAccountCapabilityGapsExt(deps: AccountDeps, wor
       summary: input.summary || null,
       priority: input.priority,
       utility: input.utility,
-      blockedBy: input.blockedBy ? toJson(input.blockedBy) : Prisma.JsonNull,
+      blockedBy: input.blockedBy ? toJson(input.blockedBy) : null,
       requiresApproval: input.requiresApproval,
       requiresInput: input.requiresInput,
       approvalState: input.approvalState || null,

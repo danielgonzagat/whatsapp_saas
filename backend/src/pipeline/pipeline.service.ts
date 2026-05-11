@@ -1,9 +1,4 @@
-import {
-  BadRequestException,
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 /** Pipeline service. */
@@ -104,28 +99,36 @@ export class PipelineService {
     // Find first stage of default pipeline
     const pipeline = await this.getPipeline(workspaceId);
     const firstStage = pipeline.stages[0];
-    if (!data.contactId) {
-      throw new BadRequestException('Contato é obrigatório para criar negócio');
-    }
 
-    const contactId = data.contactId;
-    const contact = await this.prisma.contact.findUnique({
-      where: { id: contactId },
-      select: { workspaceId: true, customFields: true },
-    });
-    if (!contact || contact.workspaceId !== workspaceId) {
-      throw new ForbiddenException('Contato não pertence a este workspace');
+    if (data.contactId) {
+      const contact = await this.prisma.contact.findUnique({
+        where: { id: data.contactId },
+        select: { workspaceId: true, customFields: true },
+      });
+      if (!contact || contact.workspaceId !== workspaceId) {
+        throw new ForbiddenException('Contato não pertence a este workspace');
+      }
+      const cf = (contact.customFields || {}) as Record<string, unknown>;
+      const sourceCampaignId =
+        typeof cf.lastCampaignId === 'string' ? cf.lastCampaignId : undefined;
+
+      return this.prisma.deal.create({
+        data: {
+          title: data.title || '',
+          value: data.value || 0,
+          contactId: data.contactId,
+          stageId: firstStage.id,
+          ...(sourceCampaignId ? { sourceCampaignId } : {}),
+        },
+      });
     }
-    const cf = (contact.customFields || {}) as Record<string, unknown>;
-    const sourceCampaignId = typeof cf.lastCampaignId === 'string' ? cf.lastCampaignId : undefined;
 
     return this.prisma.deal.create({
       data: {
         title: data.title || '',
         value: data.value || 0,
+        contactId: data.contactId,
         stageId: firstStage.id,
-        contactId,
-        ...(sourceCampaignId ? { sourceCampaignId } : {}),
       },
     });
   }

@@ -257,13 +257,11 @@ export function useInboxData({
   };
 
   const refreshConversationsRef = useRef(refreshConversations);
+  refreshConversationsRef.current = refreshConversations;
   const refreshAgentsRef = useRef(refreshAgents);
+  refreshAgentsRef.current = refreshAgents;
   const loadMessagesRef = useRef(loadMessages);
-  useEffect(() => {
-    refreshConversationsRef.current = refreshConversations;
-    refreshAgentsRef.current = refreshAgents;
-    loadMessagesRef.current = loadMessages;
-  }, [loadMessages, refreshAgents, refreshConversations]);
+  loadMessagesRef.current = loadMessages;
 
   useEffect(() => {
     if (!isLoading && isAuthenticated && workspaceId) {

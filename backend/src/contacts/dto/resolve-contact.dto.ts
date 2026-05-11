@@ -2,13 +2,13 @@ import { IsOptional, IsString, IsBoolean, IsObject } from 'class-validator';
 
 export class ResolveContactDto {
   @IsString()
-  channel!: string;
+  channel: string;
 
   @IsString()
-  value!: string;
+  value: string;
 
   @IsString()
-  workspaceId!: string;
+  workspaceId: string;
 
   @IsOptional()
   @IsString()
@@ -25,16 +25,16 @@ export class ResolveContactDto {
 
 export class LinkIdentifierDto {
   @IsString()
-  channel!: string;
+  channel: string;
 
   @IsString()
-  value!: string;
+  value: string;
 
   @IsString()
-  contactId!: string;
+  contactId: string;
 
   @IsString()
-  workspaceId!: string;
+  workspaceId: string;
 
   @IsOptional()
   @IsBoolean()

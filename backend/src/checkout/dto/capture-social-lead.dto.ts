@@ -7,11 +7,11 @@ export class CaptureSocialLeadDto {
   /** Slug property. */
   @IsString()
   @MaxLength(255)
-  slug!: string;
+  slug: string;
 
   /** Provider property. */
   @IsIn(SOCIAL_PROVIDERS)
-  provider!: (typeof SOCIAL_PROVIDERS)[number];
+  provider: (typeof SOCIAL_PROVIDERS)[number];
 
   /** Credential property. */
   @ValidateIf((value: CaptureSocialLeadDto) => value.provider === 'google')

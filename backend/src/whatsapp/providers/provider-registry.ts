@@ -126,13 +126,6 @@ export class WhatsAppProviderRegistry {
     return this.defaultProvider === 'whatsapp-api' && !!this.wahaProvider;
   }
 
-  private requireWahaProvider(): WahaProvider {
-    if (!this.wahaProvider) {
-      throw new MissingWahaProviderError();
-    }
-    return this.wahaProvider;
-  }
-
   /** Extract phone from chat id. */
   extractPhoneFromChatId(chatId: string): string {
     return normalizePhoneFromChatId(chatId);
@@ -246,7 +239,10 @@ export class WhatsAppProviderRegistry {
     await this.getProviderType(workspaceId);
 
     if (this.isWahaMode()) {
-      const result = await this.requireWahaProvider().startSession(workspaceId);
+      if (!this.wahaProvider) {
+        throw new MissingWahaProviderError();
+      }
+      const result = await this.wahaProvider.startSession(workspaceId);
       await this.persistSessionSnapshot(workspaceId, {
         status: result.message === 'already_connected' ? 'connected' : 'connecting',
         rawStatus: result.message === 'already_connected' ? 'CONNECTED' : 'STARTING',
@@ -272,7 +268,7 @@ export class WhatsAppProviderRegistry {
     await this.getProviderType(workspaceId);
 
     if (this.isWahaMode()) {
-      const wahaStatus = await this.requireWahaProvider().getSessionStatus(workspaceId);
+      const wahaStatus = await this.wahaProvider.getSessionStatus(workspaceId);
       const connected = wahaStatus.state === 'CONNECTED';
       const snapshotStatus = this.normalizeWahaSnapshotStatus(wahaStatus.state);
       const status: SessionStatus = {
@@ -344,7 +340,7 @@ export class WhatsAppProviderRegistry {
     await this.getProviderType(workspaceId);
 
     if (this.isWahaMode()) {
-      return this.requireWahaProvider().getQrCode(workspaceId);
+      return this.wahaProvider.getQrCode(workspaceId);
     }
     return this.metaCloudProvider.getQrCode(workspaceId);
   }
@@ -395,7 +391,7 @@ export class WhatsAppProviderRegistry {
 
   async disconnect(workspaceId: string): Promise<{ success: boolean; message?: string }> {
     if (this.isWahaMode()) {
-      const result = await this.requireWahaProvider().logoutSession(workspaceId);
+      const result = await this.wahaProvider.logoutSession(workspaceId);
       await this.persistSessionSnapshot(workspaceId, { status: 'disconnected', qrCode: null });
       return { success: Boolean(result?.success), message: 'disconnected' };
     }
@@ -413,7 +409,7 @@ export class WhatsAppProviderRegistry {
     workspaceId: string,
   ): Promise<{ success: boolean; message?: string; qrCode?: string; authUrl?: string }> {
     if (this.isWahaMode()) {
-      return this.requireWahaProvider().restartSession(workspaceId);
+      return this.wahaProvider.restartSession(workspaceId);
     }
     return this.metaCloudProvider.restartSession(workspaceId);
   }
@@ -421,7 +417,7 @@ export class WhatsAppProviderRegistry {
   /** Delete session. */
   async deleteSession(workspaceId: string): Promise<boolean> {
     if (this.isWahaMode()) {
-      return this.requireWahaProvider().deleteSession(workspaceId);
+      return this.wahaProvider.deleteSession(workspaceId);
     }
     return this.metaCloudProvider.deleteSession(workspaceId);
   }
@@ -429,7 +425,7 @@ export class WhatsAppProviderRegistry {
   /** Sync session config. */
   async syncSessionConfig(workspaceId: string): Promise<void> {
     if (this.isWahaMode()) {
-      return this.requireWahaProvider().syncSessionConfig(workspaceId);
+      return this.wahaProvider.syncSessionConfig(workspaceId);
     }
     return this.metaCloudProvider.syncSessionConfig(workspaceId);
   }
@@ -440,7 +436,7 @@ export class WhatsAppProviderRegistry {
 
   async isRegistered(workspaceId: string, phone: string): Promise<boolean> {
     if (this.isWahaMode()) {
-      return this.requireWahaProvider().isRegisteredUser(workspaceId, phone);
+      return this.wahaProvider.isRegisteredUser(workspaceId, phone);
     }
     return this.metaCloudProvider.isRegisteredUser(workspaceId, phone);
   }
@@ -448,7 +444,7 @@ export class WhatsAppProviderRegistry {
   /** Get client info. */
   async getClientInfo(workspaceId: string): Promise<unknown> {
     if (this.isWahaMode()) {
-      return this.requireWahaProvider().getClientInfo(workspaceId);
+      return this.wahaProvider.getClientInfo(workspaceId);
     }
     return this.metaCloudProvider.getClientInfo(workspaceId);
   }
@@ -456,7 +452,7 @@ export class WhatsAppProviderRegistry {
   /** Get contacts. */
   async getContacts(workspaceId: string): Promise<unknown[]> {
     if (this.isWahaMode()) {
-      const contacts = await this.requireWahaProvider().getContacts(workspaceId);
+      const contacts = await this.wahaProvider.getContacts(workspaceId);
       return Array.isArray(contacts) ? contacts : [];
     }
     const contacts = await this.metaCloudProvider.getContacts(workspaceId);
@@ -469,7 +465,7 @@ export class WhatsAppProviderRegistry {
     contact: { phone: string; name?: string | null },
   ): Promise<boolean> {
     if (this.isWahaMode()) {
-      return this.requireWahaProvider().upsertContactProfile(workspaceId, contact);
+      return this.wahaProvider.upsertContactProfile(workspaceId, contact);
     }
     return this.metaCloudProvider.upsertContactProfile(workspaceId, contact);
   }
@@ -477,7 +473,7 @@ export class WhatsAppProviderRegistry {
   /** Get chats. */
   async getChats(workspaceId: string): Promise<unknown[]> {
     if (this.isWahaMode()) {
-      const chats = await this.requireWahaProvider().getChats(workspaceId);
+      const chats = await this.wahaProvider.getChats(workspaceId);
       return Array.isArray(chats) ? chats : [];
     }
     const chats = await this.metaCloudProvider.getChats(workspaceId);
@@ -491,7 +487,7 @@ export class WhatsAppProviderRegistry {
     options?: { limit?: number; offset?: number; downloadMedia?: boolean },
   ): Promise<unknown[]> {
     if (this.isWahaMode()) {
-      const msgs = await this.requireWahaProvider().getChatMessages(workspaceId, chatId, options);
+      const msgs = await this.wahaProvider.getChatMessages(workspaceId, chatId, options);
       return Array.isArray(msgs) ? msgs : [];
     }
     const msgs = await this.metaCloudProvider.getChatMessages(workspaceId, chatId, options);
@@ -501,7 +497,7 @@ export class WhatsAppProviderRegistry {
   /** Read chat messages. */
   async readChatMessages(workspaceId: string, chatId: string): Promise<void> {
     if (this.isWahaMode()) {
-      return this.requireWahaProvider().sendSeen(workspaceId, chatId);
+      return this.wahaProvider.sendSeen(workspaceId, chatId);
     }
     return this.metaCloudProvider.readChatMessages(workspaceId, chatId);
   }
@@ -537,7 +533,7 @@ export class WhatsAppProviderRegistry {
   /** Send seen. */
   async sendSeen(workspaceId: string, chatId: string): Promise<void> {
     if (this.isWahaMode()) {
-      return this.requireWahaProvider().sendSeen(workspaceId, chatId);
+      return this.wahaProvider.sendSeen(workspaceId, chatId);
     }
     return this.metaCloudProvider.sendSeen(workspaceId, chatId);
   }
@@ -545,9 +541,7 @@ export class WhatsAppProviderRegistry {
   /** Health check. */
   async healthCheck(): Promise<{ whatsappApi: boolean; whatsappWebAgent: boolean }> {
     if (this.isWahaMode()) {
-      const wahaHealthy = await this.requireWahaProvider()
-        .ping()
-        .catch(() => false);
+      const wahaHealthy = await this.wahaProvider.ping().catch(() => false);
       return { whatsappApi: wahaHealthy, whatsappWebAgent: false };
     }
     return {
@@ -559,7 +553,7 @@ export class WhatsAppProviderRegistry {
   /** Get session diagnostics. */
   async getSessionDiagnostics(workspaceId: string): Promise<Record<string, unknown>> {
     if (this.isWahaMode()) {
-      const diag = await this.requireWahaProvider().getSessionConfigDiagnostics(workspaceId);
+      const diag = await this.wahaProvider.getSessionConfigDiagnostics(workspaceId);
       return {
         ...diag,
         providerType: 'whatsapp-api',
@@ -577,7 +571,7 @@ export class WhatsAppProviderRegistry {
   /** List lid mappings. */
   async listLidMappings(workspaceId: string): Promise<Array<{ lid: string; pn: string }>> {
     if (this.isWahaMode()) {
-      return this.requireWahaProvider().listLidMappings(workspaceId);
+      return this.wahaProvider.listLidMappings(workspaceId);
     }
     return this.metaCloudProvider.listLidMappings(workspaceId);
   }

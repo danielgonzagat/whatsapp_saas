@@ -151,7 +151,7 @@ function setupSwagger(app: NestExpressApplication): void {
   }
 
   if (swaggerUser && swaggerPass) {
-    app.use(['/api', '/api-json'], (req: Request, res: Response, next: NextFunction) => {
+    app.use(['/api', '/api-json'], (req, res, next) => {
       const header = req.headers.authorization || '';
       const expected = Buffer.from(`${swaggerUser}:${swaggerPass}`).toString('base64');
       if (header !== `Basic ${expected}`) {
@@ -447,7 +447,7 @@ async function bootstrap() {
     if (req.method === 'OPTIONS') {
       return res.status(204).end();
     }
-    return next();
+    next();
   });
 
   // Serve Static Files (Audio/Images) from 'backend/public' mapped to root

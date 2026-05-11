@@ -25,7 +25,7 @@ import type { WhatsappNotifier } from './billing-webhook.types';
 @Injectable()
 export class BillingService {
   private readonly logger = new Logger(BillingService.name);
-  private stripe!: StripeClient;
+  private stripe: StripeClient;
   private whatsappService: WhatsappNotifier | null = null;
   private normalizeSubscriptionStatus(status: string | null | undefined): string {
     return String(status || '')

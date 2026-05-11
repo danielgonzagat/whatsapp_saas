@@ -6,7 +6,7 @@ export class ChangeSubscriptionPlanDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(255)
-  newPlanId!: string;
+  newPlanId: string;
 }
 
 /** Ship order dto. */
@@ -15,7 +15,7 @@ export class ShipOrderDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(100)
-  trackingCode!: string;
+  trackingCode: string;
 
   /** Shipping method property. */
   @IsOptional()

@@ -12,5 +12,5 @@ export class BillingCheckoutDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(50)
-  plan!: string;
+  plan: string;
 }

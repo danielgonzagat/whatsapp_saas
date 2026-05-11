@@ -12,47 +12,47 @@ import {
 class SupplierInputDto {
   @IsString()
   @MaxLength(255)
-  accountId!: string;
+  accountId: string;
 
   @IsString()
   @MaxLength(32)
-  amountCents!: string;
+  amountCents: string;
 }
 
 class PercentRoleInputDto {
   @IsString()
   @MaxLength(255)
-  accountId!: string;
+  accountId: string;
 
   @Type(() => Number)
   @IsNumber()
   @Min(0)
   @Max(10_000)
-  percentBp!: number;
+  percentBp: number;
 }
 
 class SellerInputDto {
   @IsString()
   @MaxLength(255)
-  accountId!: string;
+  accountId: string;
 }
 
 export class SplitPreviewDto {
   @IsString()
   @MaxLength(32)
-  buyerPaidCents!: string;
+  buyerPaidCents: string;
 
   @IsString()
   @MaxLength(32)
-  saleValueCents!: string;
+  saleValueCents: string;
 
   @IsString()
   @MaxLength(32)
-  interestCents!: string;
+  interestCents: string;
 
   @IsString()
   @MaxLength(32)
-  marketplaceFeeCents!: string;
+  marketplaceFeeCents: string;
 
   @IsOptional()
   @ValidateNested()
@@ -76,5 +76,5 @@ export class SplitPreviewDto {
 
   @ValidateNested()
   @Type(() => SellerInputDto)
-  seller!: SellerInputDto;
+  seller: SellerInputDto;
 }

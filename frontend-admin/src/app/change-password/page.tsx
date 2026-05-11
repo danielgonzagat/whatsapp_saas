@@ -8,7 +8,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { adminAuthApi } from '@/lib/api/admin-auth-api';
 import { AdminApiClientError } from '@/lib/api/admin-errors';
-import { useAdminSession } from '@/lib/auth/admin-session-context';
 
 const PASSWORD_RULE = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{12,}$/;
 
@@ -23,7 +22,6 @@ export default function ChangePasswordPage() {
 
 function ChangePasswordScreen() {
   const router = useRouter();
-  const { persistSession } = useAdminSession();
   const params = useSearchParams();
   const changeToken = params.get('token') ?? '';
   const [newPassword, setNewPassword] = useState('');
@@ -51,12 +49,8 @@ function ChangePasswordScreen() {
     setBusy(true);
     try {
       const response = await adminAuthApi.changePassword(changeToken, newPassword);
-      if (response.state === 'authenticated') {
-        persistSession(response);
-        router.replace('/');
-        return;
-      }
-      // Default flow continues to MFA; temporary operator bypass can return a full session.
+      // Backend always transitions to mfa_setup_required or mfa_required after
+      // password change. Redirect accordingly.
       const next = response.state === 'mfa_setup_required' ? '/mfa/setup' : '/mfa/verify';
       const search = new URLSearchParams({
         token: 'token' in response ? (response.token as string) : '',

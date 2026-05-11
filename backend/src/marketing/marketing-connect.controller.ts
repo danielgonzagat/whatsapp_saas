@@ -121,7 +121,7 @@ function isJsonObject(value: Prisma.JsonValue | null | undefined): value is Pris
 function toInputJsonObject(value: Prisma.JsonObject): Prisma.InputJsonObject {
   const entries: [string, Prisma.InputJsonValue][] = [];
   for (const [key, item] of Object.entries(value)) {
-    if (item !== null && item !== undefined) {
+    if (item !== null) {
       entries.push([key, item]);
     }
   }

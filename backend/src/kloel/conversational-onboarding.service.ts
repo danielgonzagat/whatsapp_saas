@@ -111,7 +111,7 @@ interface PrismaWithDynamicModels {
     findUnique(args: Record<string, unknown>): Promise<Record<string, unknown> | null>;
     findMany(args: Record<string, unknown>): Promise<Array<Record<string, unknown>>>;
   };
-  $transaction: <T>(fn: (tx: PrismaWithDynamicModels) => Promise<T>) => Promise<T>;
+  $transaction: (fn: (tx: Record<string, unknown>) => Promise<unknown>) => Promise<unknown>;
 }
 
 /** Conversational onboarding service. */
@@ -268,22 +268,29 @@ export class ConversationalOnboardingService {
   async getStatus(workspaceId: string) {
     // Wrap reads in $transaction to get a consistent snapshot — prevents
     // concurrent onboarding completion from returning stale status.
-    return this.prismaExt.$transaction(async (tx) => {
-      const state = await tx.kloelMemory.findUnique({
-        where: { workspaceId_key: { workspaceId, key: 'onboarding_completed' } },
-      });
+    return this.prismaExt.$transaction(
+      async (tx: {
+        kloelMemory: {
+          findUnique: (...args: unknown[]) => Promise<unknown>;
+          findMany: (...args: unknown[]) => Promise<unknown[]>;
+        };
+      }) => {
+        const state = await tx.kloelMemory.findUnique({
+          where: { workspaceId_key: { workspaceId, key: 'onboarding_completed' } },
+        });
 
-      const messages = await tx.kloelMemory.findMany({
-        where: { workspaceId, key: { startsWith: 'onboarding_msg_' } },
-        select: { id: true },
-        take: 100,
-      });
+        const messages = await tx.kloelMemory.findMany({
+          where: { workspaceId, key: { startsWith: 'onboarding_msg_' } },
+          select: { id: true },
+          take: 100,
+        });
 
-      return {
-        completed: (state as { value?: unknown } | null)?.value === true,
-        messagesCount: messages.length,
-        hasStarted: messages.length > 0,
-      };
-    });
+        return {
+          completed: (state as { value?: unknown } | null)?.value === true,
+          messagesCount: messages.length,
+          hasStarted: messages.length > 0,
+        };
+      },
+    );
   }
 }

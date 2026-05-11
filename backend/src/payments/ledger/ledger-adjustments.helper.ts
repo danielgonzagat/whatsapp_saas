@@ -2,7 +2,6 @@ import type { Logger } from '@nestjs/common';
 import { type ConnectLedgerEntry, Prisma } from '@prisma/client';
 
 import type { PrismaService } from '../../prisma/prisma.service';
-import { toPrismaJsonValue } from '../../common/prisma/prisma-json.util';
 
 import { FINANCIAL_TRANSACTION_OPTIONS, logLedgerWrite } from './ledger-audit.helper';
 import { AccountBalanceNotFoundError, type CreditAvailableAdjustmentInput } from './ledger.types';
@@ -77,7 +76,7 @@ export async function creditAvailableByAdjustmentImpl(
         balanceAfterAvailableCents: newAvailable,
         referenceType: input.reference.type,
         referenceId: input.reference.id,
-        metadata: input.metadata ? toPrismaJsonValue(input.metadata) : Prisma.JsonNull,
+        metadata: (input.metadata ?? null) as Prisma.InputJsonValue | null,
       },
     });
 

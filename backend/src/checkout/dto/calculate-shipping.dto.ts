@@ -6,12 +6,12 @@ export class CalculateShippingDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(255)
-  slug!: string;
+  slug: string;
 
   /** Cep property (Brazilian postal code). */
   @IsString()
   @IsNotEmpty()
   @MaxLength(9)
   @Matches(/^\d{5}-?\d{3}$/, { message: 'CEP deve ser válido (ex: 12345-678)' })
-  cep!: string;
+  cep: string;
 }

@@ -20,7 +20,7 @@ interface ProcessOrderPostPaymentParams {
     couponCode?: string;
     shippingAddress: Prisma.InputJsonValue;
   };
-  orderData: { paymentMethod: 'CREDIT_CARD' | 'PIX' | 'BOLETO' };
+  orderData: { paymentMethod: Prisma.EnumPaymentMethodFilter['equals'] };
   qualityGate: { phoneDigits: string };
   normalizedBaseTotalInCents: number;
   normalizedInstallments: number;

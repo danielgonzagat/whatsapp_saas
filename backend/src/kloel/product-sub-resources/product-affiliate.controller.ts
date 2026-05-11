@@ -340,14 +340,13 @@ export class ProductAffiliateController {
       throw new NotFoundException('Link de afiliado não encontrado');
     }
 
-    const active = body.active === true;
     await this.prisma.$transaction(async (tx) => {
       await tx.affiliateLink.update({
         where: { id: linkId },
-        data: { active },
+        data: { active: body.active },
       });
 
-      if (active) {
+      if (body.active) {
         await tx.affiliateRequest.updateMany({
           where: {
             affiliateProductId: link.affiliateProductId,
