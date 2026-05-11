@@ -80,6 +80,10 @@ function resolveThreadTitle(
   return thread.title || conversationTitleMap.get(thread.conversationId) || 'Nova conversa';
 }
 
+function buildConversationTouch(id: string, title: string) {
+  return { id, title, updatedAt: new Date().toISOString() };
+}
+
 // ════════════════════════════════════════════
 // ICONS
 // ════════════════════════════════════════════
@@ -335,11 +339,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
           setActiveConversationId(thread.conversationId);
           setActiveConversation(thread.conversationId);
           setChatTitle(nextTitle);
-          upsertConversation({
-            id: thread.conversationId,
-            title: nextTitle,
-            updatedAt: new Date().toISOString(),
-          });
+          upsertConversation(buildConversationTouch(thread.conversationId, nextTitle));
         };
 
         if (isGuest) {
@@ -441,11 +441,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
           setActiveConversationId(nextConversationId);
           setActiveConversation(nextConversationId);
           setChatTitle(nextTitle || 'Nova conversa');
-          upsertConversation({
-            id: nextConversationId,
-            title: nextTitle || 'Nova conversa',
-            updatedAt: new Date().toISOString(),
-          });
+          upsertConversation(buildConversationTouch(nextConversationId, nextTitle || 'Nova conversa'));
           void refreshConversations();
         }
       } catch (error) {

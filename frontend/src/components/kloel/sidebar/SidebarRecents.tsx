@@ -28,11 +28,15 @@ function extractThreadMessages(payload: unknown): Array<Record<string, unknown>>
 }
 
 function serializeThreadMessages(payload: unknown) {
-  return extractThreadMessages(payload).map((message) => ({
-    role: message.role,
-    content: message.content,
-    createdAt: message.createdAt,
-  }));
+  const messages = [];
+  for (const message of extractThreadMessages(payload)) {
+    messages.push({
+      role: message.role,
+      content: message.content,
+      createdAt: message.createdAt,
+    });
+  }
+  return messages;
 }
 
 async function fetchConversationForExport(conv: ConversationExportSource) {
