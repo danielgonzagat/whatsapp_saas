@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { startTransition, useMemo, useState } from 'react';
 import useSWR from 'swr';
@@ -46,8 +45,8 @@ export default function ProdutosPage() {
     ['admin/products', activeTab, search, workspaceFilter],
     () =>
       adminProductsApi.list({
-        search: search || undefined,
-        status: apiStatus,
+        ...(search ? { search } : {}),
+        ...(apiStatus !== undefined ? { status: apiStatus } : {}),
         take: 60,
       }),
     { refreshInterval: 60_000, revalidateOnFocus: false },

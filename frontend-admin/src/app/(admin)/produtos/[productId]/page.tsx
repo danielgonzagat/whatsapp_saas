@@ -149,7 +149,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ produc
               label="Estoque"
               value={data.trackStock ? (data.stockQuantity ?? 0) : null}
               kind="integer"
-              unavailableReason={!data.trackStock ? 'Não rastreia estoque' : undefined}
+              {...(!data.trackStock ? { unavailableReason: 'Não rastreia estoque' } : {})}
             />
           </div>
 

@@ -105,13 +105,13 @@ export default function AdminOpsQueuesPage() {
             label: 'Failed',
             value: totals.failed,
             detail: 'Falhas nas filas principais',
-            tone: totals.failed > 0 ? 'text-[var(--app-danger)]' : undefined,
+            ...(totals.failed > 0 ? { tone: 'text-[var(--app-danger)]' } : {}),
           },
           {
             label: 'DLQ',
             value: totals.dlq,
             detail: 'Jobs retidos em dead-letter queues',
-            tone: totals.dlq > 0 ? 'text-[var(--app-danger)]' : undefined,
+            ...(totals.dlq > 0 ? { tone: 'text-[var(--app-danger)]' } : {}),
           },
         ]}
       />

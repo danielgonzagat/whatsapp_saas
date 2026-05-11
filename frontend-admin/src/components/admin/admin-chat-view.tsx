@@ -148,7 +148,7 @@ export function AdminChatView() {
 
     try {
       const nextSession = await adminChatApi.sendMessage({
-        sessionId: session?.id,
+        ...(session?.id ? { sessionId: session.id } : {}),
         content: buildPayload(content, moduleContext),
       });
 
