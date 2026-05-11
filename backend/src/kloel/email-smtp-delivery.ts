@@ -80,6 +80,29 @@ function htmlToPlainText(html: string): string {
   return decodeHtmlEntities(text).trim();
 }
 
+export function sanitizeSmtpHeaderValue(value: string): string {
+  let sanitized = '';
+  for (const char of value) {
+    if (char === '\r' || char === '\n' || char === '\0') {
+      continue;
+    }
+    sanitized += char;
+  }
+  return sanitized.trim();
+}
+
+function sanitizeSmtpAddress(value: string): string {
+  const headerSafe = sanitizeSmtpHeaderValue(value);
+  let sanitized = '';
+  for (const char of headerSafe) {
+    if (char === '<' || char === '>') {
+      continue;
+    }
+    sanitized += char;
+  }
+  return sanitized.trim();
+}
+
 function buildSmtpMessage(
   to: string,
   subject: string,
@@ -88,10 +111,14 @@ function buildSmtpMessage(
 ): string {
   const boundary = `KLOEL_${Date.now()}`;
   const plain = htmlToPlainText(html);
+  const fromName = sanitizeSmtpHeaderValue(delivery.fromName);
+  const fromEmail = sanitizeSmtpAddress(delivery.fromEmail);
+  const toEmail = sanitizeSmtpAddress(to);
+  const safeSubject = sanitizeSmtpHeaderValue(subject);
   return [
-    `From: ${delivery.fromName} <${delivery.fromEmail}>`,
-    `To: ${to}`,
-    `Subject: ${subject}`,
+    `From: ${fromName} <${fromEmail}>`,
+    `To: ${toEmail}`,
+    `Subject: ${safeSubject}`,
     'MIME-Version: 1.0',
     `Content-Type: multipart/alternative; boundary="${boundary}"`,
     '',
@@ -121,6 +148,8 @@ export function sendViaSmtp(params: {
   }
 
   const { host, port, secure, user, pass } = delivery.smtp;
+  const fromEmail = sanitizeSmtpAddress(delivery.fromEmail);
+  const toEmail = sanitizeSmtpAddress(to);
   const message = buildSmtpMessage(to, subject, html, delivery);
 
   return new Promise((resolve, reject) => {
@@ -164,8 +193,8 @@ export function sendViaSmtp(params: {
           await sendCmd(Buffer.from(user).toString('base64'));
           await sendCmd(Buffer.from(pass).toString('base64'));
         }
-        await sendCmd(`MAIL FROM:<${delivery.fromEmail}>`);
-        await sendCmd(`RCPT TO:<${to}>`);
+        await sendCmd(`MAIL FROM:<${fromEmail}>`);
+        await sendCmd(`RCPT TO:<${toEmail}>`);
         await sendCmd('DATA');
         socket.write(`${message}\r\n.\r\n`);
         await readResponse();

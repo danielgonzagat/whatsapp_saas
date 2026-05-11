@@ -14,9 +14,8 @@ import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { randomUUID, timingSafeEqual } from 'node:crypto';
 import type { Request } from 'express';
 import { Public } from '../auth/public.decorator';
-import { OmnichannelService } from '../inbox/omnichannel.service';
-import { ensureError, type NormalizedMessage } from '../inbox/omnichannel.helpers';
-import { PrismaService } from '../prisma/prisma.service';
+import { EmailInboundService, type InboundEmail } from '../email/email-inbound.service';
+import { ensureError } from '../inbox/omnichannel.helpers';
 
 function decodeHtmlEntities(raw: string): string {
   return raw
@@ -55,14 +54,6 @@ function stripHtml(raw: string): string {
     lastWasWhitespace = false;
   }
   return decodeHtmlEntities(text).trim();
-}
-
-function redactEmailAddress(value: string): string {
-  const [local, domain] = value.trim().split('@');
-  if (!local || !domain) {
-    return '***';
-  }
-  return `${local.slice(0, 2)}***@${domain}`;
 }
 
 function verifyEmailInboundSecret(req: Request): boolean {
@@ -121,15 +112,6 @@ function parseForwardedEmailHeaders(req: Request) {
   };
 }
 
-function resolveWorkspaceFromRecipient(
-  to: string,
-): { workspaceId: string; username: string } | null {
-  const matched = to.match(/^inbox(?:\+([a-zA-Z0-9_-]+))?@/);
-  if (!matched) return null;
-  const username = matched[1] || 'default';
-  return { workspaceId: username, username };
-}
-
 /**
  * Email inbound webhook — compatible with SendGrid Inbound Parse.
  *
@@ -145,10 +127,7 @@ function resolveWorkspaceFromRecipient(
 export class EmailInboundController {
   private readonly logger = new Logger(EmailInboundController.name);
 
-  constructor(
-    @Optional() private readonly omnichannel?: OmnichannelService,
-    @Optional() private readonly prisma?: PrismaService,
-  ) {}
+  constructor(@Optional() private readonly emailInbound?: EmailInboundService) {}
 
   @Public()
   @Get()
@@ -171,8 +150,7 @@ export class EmailInboundController {
       return {
         received: true,
         setup_required: true,
-        message:
-          'Email inbound is not enabled. Set EMAIL_INBOUND_ENABLED=true and configure SendGrid Inbound Parse MX records.',
+        message: 'Recebimento de email ainda nao esta habilitado neste ambiente.',
       };
     }
 
@@ -191,67 +169,46 @@ export class EmailInboundController {
       return { received: true, skipped: true, reason: 'empty_email' };
     }
 
-    const resolved = resolveWorkspaceFromRecipient(to);
-    if (!resolved) {
-      this.logger.warn({
-        operation: 'email.inbound.resolve',
-        status: 'failed',
-        reason: 'unknown_workspace',
-        recipient: redactEmailAddress(to),
-      });
-      return { received: true, skipped: true, reason: 'unknown_workspace' };
+    if (!this.emailInbound) {
+      return { received: true, skipped: true, reason: 'email_inbound_not_available' };
     }
 
-    let workspaceId = resolved.workspaceId;
-
-    try {
-      const domain = to.split('@')[1] || '';
-      const match = await this.prisma?.workspace.findFirst({
-        where: {
-          OR: [{ customDomain: domain || undefined }],
-        },
-        select: { id: true },
-      });
-
-      if (!match && resolved.username !== 'default') {
-        this.logger.warn({
-          operation: 'email.inbound.lookup',
-          status: 'failed',
-          reason: 'workspace_not_found',
-          username: resolved.username,
-        });
-        return { received: true, skipped: true, reason: 'workspace_not_found' };
-      }
-
-      if (match) {
-        workspaceId = match.id;
-      }
-    } catch {
-      return { received: true, skipped: true, reason: 'workspace_lookup_failed' };
+    const workspaceId = await this.emailInbound.resolveWorkspaceIdForRecipient(to);
+    if (!workspaceId) {
+      return { received: true, skipped: true, reason: 'workspace_not_found' };
     }
 
-    const normalized: NormalizedMessage = {
-      workspaceId,
-      channel: 'EMAIL',
-      externalId: messageId || `email:${randomUUID()}`,
+    const email: InboundEmail = {
       from,
       fromName: from.split('<')[0]?.trim() || from,
-      content: subject ? `[${subject}] ${content}` : content,
-      metadata: {
-        to: redactEmailAddress(to),
-        subject,
-        messageId,
-        inReplyTo,
-        raw: safeMetadataSummary(body),
-      },
+      to,
+      subject,
+      bodyText: content,
+      messageId: messageId || `email:${randomUUID()}`,
+      timestamp: Date.now(),
     };
 
     try {
-      const result = await this.omnichannel?.handleIncomingMessage(normalized);
-      return { received: true, messageId: (result as { id?: string })?.id };
+      const result = await this.emailInbound.processInboundEmail(workspaceId, email);
+      this.logger.log({
+        operation: 'email.inbound.webhook',
+        status: 'processed',
+        workspaceId,
+        provider: 'sendgrid',
+        metadata: {
+          inReplyTo: Boolean(inReplyTo),
+          ...safeMetadataSummary(body),
+        },
+      });
+      return { received: true, messageId: result.messageId };
     } catch (err: unknown) {
       const wrapped = ensureError(err);
-      this.logger.error(`Email inbound processing failed: ${wrapped.message}`);
+      this.logger.error({
+        operation: 'email.inbound.webhook',
+        status: 'failed',
+        provider: 'sendgrid',
+        errorCode: wrapped.name,
+      });
       return { received: true, error: 'processing_failed' };
     }
   }

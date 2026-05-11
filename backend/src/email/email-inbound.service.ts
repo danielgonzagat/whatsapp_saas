@@ -80,6 +80,13 @@ function maskEmail(value?: string): string | undefined {
   return `${local.slice(0, 2)}***@${domain}`;
 }
 
+function resolveWorkspaceAlias(to: string): { workspaceId: string; username: string } | null {
+  const matched = to.match(/^inbox(?:\+([a-zA-Z0-9_-]+))?@/);
+  if (!matched) return null;
+  const username = matched[1] || 'default';
+  return { workspaceId: username, username };
+}
+
 @Injectable()
 export class EmailInboundService {
   private readonly logger = new Logger(EmailInboundService.name);
@@ -147,6 +154,53 @@ export class EmailInboundService {
         errorCode: wrapped.name,
       });
       throw wrapped;
+    }
+  }
+
+  async resolveWorkspaceIdForRecipient(to: string): Promise<string | null> {
+    const resolved = resolveWorkspaceAlias(to);
+    if (!resolved) {
+      this.logger.warn({
+        operation: 'email.inbound.resolve',
+        status: 'failed',
+        reason: 'unknown_workspace',
+        recipient: maskEmail(to),
+      });
+      return null;
+    }
+
+    const domain = to.split('@')[1] || '';
+    try {
+      const match = await this.prisma.workspace.findFirst({
+        where: {
+          OR: [{ customDomain: domain || undefined }, { id: resolved.workspaceId }],
+        },
+        select: { id: true },
+      });
+
+      if (match) {
+        return match.id;
+      }
+
+      if (resolved.username === 'default') {
+        return resolved.workspaceId;
+      }
+
+      this.logger.warn({
+        operation: 'email.inbound.lookup',
+        status: 'failed',
+        reason: 'workspace_not_found',
+        username: resolved.username,
+      });
+      return null;
+    } catch (err: unknown) {
+      this.logger.warn({
+        operation: 'email.inbound.lookup',
+        status: 'failed',
+        reason: 'workspace_lookup_failed',
+        errorCode: err instanceof Error ? err.name : 'unknown',
+      });
+      return null;
     }
   }
 
