@@ -91,16 +91,14 @@ const GATE_FILE_SNIPPETS = [
   ],
 ];
 const NON_PRODUCTION_PREFIXES = ['scripts/ops/', 'ops/', '.github/', 'docs/', 'e2e/'];
-const PRODUCTION_SOURCE_PATTERNS = [
-  /^backend\/src\/.*\.[cm]?tsx?$/,
-  /^backend\/prisma\/.*\.(?:prisma|sql)$/,
-  /^frontend\/src\/.*\.[cm]?tsx?$/,
-  /^prisma\/.*\.(?:prisma|sql)$/,
-  /^worker\/src\/.*\.[cm]?tsx?$/,
-  /^scripts\/(?!ops\/|pulse\/parser-tests\/).*\.mjs$/,
-];
+const TS_PRODUCTION_PREFIXES = ['backend/src/', 'frontend/src/', 'worker/src/'];
+const PRISMA_PRODUCTION_PREFIXES = ['backend/prisma/', 'prisma/'];
+const TS_SOURCE_SUFFIXES = ['.ts', '.tsx', '.mts', '.cts'];
+const PRISMA_SOURCE_SUFFIXES = ['.prisma', '.sql'];
 const FUNCTIONAL_PROOF_PREFIXES = ['e2e/', 'docs/adr/', 'docs/runbooks/', 'scripts/smoke/'];
-const FUNCTIONAL_PROOF_RE = /(?:smoke|proof|certification|readiness|contract|integration)/i;
+const FUNCTIONAL_PROOF_TERMS = 'smoke proof certification readiness contract integration'.split(
+  ' ',
+);
 
 if (!constitution?.graphContract || !constitution?.agentWorkContract) {
   fail('ops/kloel-ai-constitution.json ausente ou invalida.');
@@ -497,7 +495,7 @@ function checkForbiddenDeletions() {
   const productionDeleted = deleted.filter((file) => isProductionSourceFile(file));
   if (
     productionDeleted.length > 0 &&
-    !hasFunctionalProofChange(collectConstitutionChangedFiles())
+    !collectConstitutionChangedFiles().some(hasFunctionalProofSignal)
   ) {
     for (const file of productionDeleted) {
       fail(
@@ -510,14 +508,13 @@ function checkForbiddenDeletions() {
 function checkFunctionalProofForProductionChanges() {
   const changed = collectConstitutionChangedFiles();
   const productionChanged = changed.filter(isUnprovenProductionChangeCandidate);
-
-  if (productionChanged.length === 0 || hasFunctionalProofChange(changed)) {
+  if (productionChanged.length === 0 || changed.some(hasFunctionalProofSignal)) {
     return;
   }
 
-  for (const file of productionChanged) {
-    fail(`${file} mudou sem teste/smoke/prova operacional no mesmo changeset.`);
-  }
+  productionChanged.forEach((file) =>
+    fail(`${file} mudou sem teste/smoke/prova operacional no mesmo changeset.`),
+  );
 }
 
 function isUnprovenProductionChangeCandidate(file) {
@@ -529,15 +526,12 @@ function isUnprovenProductionChangeCandidate(file) {
 }
 
 function collectConstitutionChangedFiles() {
-  return [...new Set([...collectChangedFiles(), ...collectStatusFiles()])].filter(Boolean);
+  const statusFiles = collectStatusNameEntries().flatMap((entry) => entry.paths);
+  return [...new Set([...collectChangedFiles(), ...statusFiles])].filter(Boolean);
 }
 
 function collectConstitutionNameStatus() {
   return [...collectNameStatus(), ...collectStatusNameEntries()];
-}
-
-function collectStatusFiles() {
-  return collectStatusNameEntries().flatMap((entry) => entry.paths);
 }
 
 function collectStatusNameEntries() {
@@ -549,7 +543,11 @@ function collectStatusNameEntries() {
 }
 
 function parseStatusEntries(output) {
-  return output.split('\n').filter(Boolean).map(parseStatusEntry).filter(hasStatusPath);
+  return output
+    .split('\n')
+    .filter(Boolean)
+    .map(parseStatusEntry)
+    .filter((entry) => entry.paths.length > 0);
 }
 
 function parseStatusEntry(line) {
@@ -561,27 +559,28 @@ function parseStatusEntry(line) {
   };
 }
 
-function hasStatusPath(entry) {
-  return entry.paths.length > 0;
-}
-
 function isProductionSourceFile(file) {
+  const isTypedSource =
+    hasAnyPrefix(file, TS_PRODUCTION_PREFIXES) && hasAnySuffix(file, TS_SOURCE_SUFFIXES);
+  const isPrismaSource =
+    hasAnyPrefix(file, PRISMA_PRODUCTION_PREFIXES) && hasAnySuffix(file, PRISMA_SOURCE_SUFFIXES);
+  const isScriptSource =
+    file.startsWith('scripts/') &&
+    !file.startsWith('scripts/pulse/parser-tests/') &&
+    file.endsWith('.mjs');
+
   return (
     !isTestFile(file) &&
     !hasAnyPrefix(file, NON_PRODUCTION_PREFIXES) &&
-    matchesAny(file, PRODUCTION_SOURCE_PATTERNS)
+    (isTypedSource || isPrismaSource || isScriptSource)
   );
-}
-
-function hasFunctionalProofChange(changed) {
-  return changed.some(hasFunctionalProofSignal);
 }
 
 function hasFunctionalProofSignal(file) {
   return (
     isTestFile(file) ||
     hasAnyPrefix(file, FUNCTIONAL_PROOF_PREFIXES) ||
-    FUNCTIONAL_PROOF_RE.test(file)
+    includesAnyTerm(file, FUNCTIONAL_PROOF_TERMS)
   );
 }
 
@@ -589,6 +588,10 @@ function hasAnyPrefix(value, prefixes) {
   return prefixes.some((prefix) => value.startsWith(prefix));
 }
 
-function matchesAny(value, patterns) {
-  return patterns.some((pattern) => pattern.test(value));
+function hasAnySuffix(value, suffixes) {
+  return suffixes.some((suffix) => value.endsWith(suffix));
+}
+
+function includesAnyTerm(value, terms) {
+  return terms.some((term) => value.toLowerCase().includes(term));
 }
