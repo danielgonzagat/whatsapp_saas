@@ -404,3 +404,7 @@ export const crmQueue = lazyQueueProxy('crm-jobs');
 export const webhookQueue = lazyQueueProxy('webhook-jobs');
 /** Google Ads sync queue. */
 export const googleAdsSyncQueue = lazyQueueProxy('google-ads-sync-jobs');
+/** Meta Ads sync queue (retry 5x exponential backoff, 200 calls/hr rate limit). */
+export const metaAdsSyncQueue = lazyQueueProxy('ads-sync-meta');
+/** Meta Ads sync DLQ (dead letter queue after 5 retry failures). */
+export const metaAdsSyncDlq = lazyQueueProxy('ads-sync-meta-dlq');

@@ -74,6 +74,7 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
 
   const [platforms, setPlatforms] = useState<Record<PlatformKey, PlatformData>>(PLATFORM_DEFAULTS);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [lastSyncAt, setLastSyncAt] = useState<string | null>(null);
 
   useEffect(() => {
     if (statuses.length > 0) {
@@ -87,6 +88,27 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
         ? apiCampaigns.map(mapApiCampaignToView)
         : [],
     );
+  }, [apiCampaigns]);
+
+  useEffect(() => {
+    const fetchSyncStatus = async () => {
+      try {
+        const metaAdsResp = await fetch('/api/anuncios/sync-status/meta');
+        if (metaAdsResp.ok) {
+          const syncData = await metaAdsResp.json();
+          const metaSync = syncData?.data?.meta;
+          if (metaSync) {
+            const ts = metaSync.lastCampaignSync || metaSync.lastAccountSync;
+            if (ts) {
+              setLastSyncAt(new Date(ts).toLocaleString('pt-BR'));
+            }
+          }
+        }
+      } catch {
+        void 0;
+      }
+    };
+    fetchSyncStatus();
   }, [apiCampaigns]);
 
   const metaConnected = statuses.find((s) => s.platform === 'meta')?.connected ?? false;
@@ -153,6 +175,44 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
       <AnunciosTabBar tab={tab} isMobile={isMobile} onSelect={goToTab} />
 
       <div style={{ padding: isMobile ? 16 : 24, maxWidth: 1240, margin: '0 auto' }}>
+        {!metaConnected && tab === 'visao' ? (
+          <div style={{
+            padding: '40px 20px',
+            textAlign: 'center',
+            borderBottom: '1px solid var(--app-border)',
+            animation: 'fadeIn 0.5s ease',
+          }}>
+            <div style={{ marginBottom: 12, fontSize: 14, color: 'var(--app-text-secondary)' }}>
+              Conecte sua conta Meta para visualizar campanhas e insights reais.
+            </div>
+            <button
+              type="button"
+              onClick={() => handleConnectPlatform('meta')}
+              style={{
+                cursor: 'pointer',
+                padding: '10px 28px',
+                fontSize: 13,
+                fontWeight: 600,
+                border: 'none',
+                borderRadius: 4,
+                background: '#1877F2',
+                color: '#fff',
+                fontFamily: SORA,
+              }}
+            >
+              Conectar Meta Ads
+            </button>
+          </div>
+        ) : lastSyncAt ? (
+          <div style={{
+            padding: '6px 16px',
+            fontSize: 12,
+            color: 'var(--app-text-tertiary)',
+            textAlign: 'right',
+          }}>
+            Última sincronização: {lastSyncAt}
+          </div>
+        ) : null}
         {tab === 'visao' && (
           <WarRoomDashboard
             platforms={platforms}

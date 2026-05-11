@@ -5,6 +5,7 @@ import { MetaMarketingProvider } from '../integrations/meta-marketing.provider';
 import { GoogleAdsProvider } from '../integrations/google-ads.provider';
 import { TikTokAdsProvider } from '../integrations/tiktok-ads.provider';
 import { AdsSyncProcessor } from '../integrations/ads-sync.processor';
+import { MetaConversionsApiService } from '../integrations/meta-conversions-api.service';
 import { AnunciosController } from './anuncios.controller';
 import { AnunciosService } from './anuncios.service';
 
@@ -17,7 +18,8 @@ import { AnunciosService } from './anuncios.service';
     TikTokAdsProvider,
     AnunciosService,
     AdsSyncProcessor,
+    MetaConversionsApiService,
   ],
-  exports: [AnunciosService],
+  exports: [AnunciosService, MetaConversionsApiService],
 })
 export class AnunciosModule {}

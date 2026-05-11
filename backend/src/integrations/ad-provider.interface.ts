@@ -60,6 +60,15 @@ export interface SyncInsightsResult {
   insights: AdInsightSyncResult[];
 }
 
+export interface DisconnectResult {
+  status: string;
+}
+
+export interface RefreshTokenResult {
+  accessToken: string;
+  expiresIn?: number;
+}
+
 export interface AdProvider {
   readonly platform: string;
   connect(workspaceId: string, redirectUri: string): Promise<OAuthConnectResult>;
@@ -72,4 +81,6 @@ export interface AdProvider {
   syncAccounts(workspaceId: string): Promise<SyncAccountsResult>;
   syncCampaigns(workspaceId: string): Promise<SyncCampaignsResult>;
   syncInsights(workspaceId: string, since: Date, until: Date): Promise<SyncInsightsResult>;
+  disconnect?(workspaceId: string): Promise<DisconnectResult>;
+  refreshToken?(workspaceId: string): Promise<RefreshTokenResult | null>;
 }

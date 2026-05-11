@@ -13,7 +13,8 @@ import { MessengerService } from './messenger/messenger.service';
 import { MetaAuthController } from './meta-auth.controller';
 import { MetaSdkService } from './meta-sdk.service';
 import { MetaWhatsAppService } from './meta-whatsapp.service';
-import { MetaWebhookController } from './webhooks/meta-webhook.controller';
+import { MetaWebhookController as MetaCoreWebhookController } from './webhooks/meta-webhook.controller';
+import { MetaWebhookController } from './meta-webhook.controller';
 
 // Webhook ordering: MetaWebhookController processes events with createdAt
 // timestamps from Meta Graph API; duplicate entries skipped by externalId.
@@ -22,6 +23,7 @@ import { MetaWebhookController } from './webhooks/meta-webhook.controller';
   imports: [PrismaModule, InboxModule, WebhooksModule, forwardRef(() => WhatsappModule)],
   controllers: [
     MetaAuthController,
+    MetaCoreWebhookController,
     MetaWebhookController,
     InstagramController,
     MessengerController,

@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { MetaSdkService } from '../meta/meta-sdk.service';
 import { MetaAdsService } from '../meta/ads/meta-ads.service';
+import { encryptMetaToken, decryptMetaToken } from './meta-token-crypto';
 import type {
   AdProvider,
   OAuthConnectResult,
@@ -9,6 +10,8 @@ import type {
   SyncAccountsResult,
   SyncCampaignsResult,
   SyncInsightsResult,
+  DisconnectResult,
+  RefreshTokenResult,
 } from './ad-provider.interface';
 
 interface MetaTokenResponse {
@@ -65,6 +68,11 @@ interface MetaInsightsResponse {
   [key: string]: unknown;
 }
 
+function maskToken(token: string): string {
+  if (!token || token.length < 8) return '****';
+  return `${token.slice(0, 4)}****${token.slice(-4)}`;
+}
+
 @Injectable()
 export class MetaMarketingProvider implements AdProvider {
   readonly platform = 'meta';
@@ -77,6 +85,7 @@ export class MetaMarketingProvider implements AdProvider {
   ) {}
 
   async connect(_workspaceId: string, redirectUri: string): Promise<OAuthConnectResult> {
+    await Promise.resolve();
     const appId = String(process.env.META_APP_ID || '').trim();
     if (!appId) {
       return { connected: false, status: 'meta_app_id_not_configured' };
@@ -99,6 +108,7 @@ export class MetaMarketingProvider implements AdProvider {
       if (!appId || !appSecret) {
         return { connected: false, status: 'meta_credentials_not_configured' };
       }
+
       const tokenResponse = await this.metaSdk.graphApiGet(
         'oauth/access_token',
         {
@@ -108,37 +118,52 @@ export class MetaMarketingProvider implements AdProvider {
         },
         '',
       );
+
       const accessToken = (tokenResponse as MetaTokenResponse).access_token;
       if (!accessToken) {
         return { connected: false, status: 'token_exchange_failed' };
       }
+
+      this.logger.log(
+        `Meta marketing OAuth token obtained: ${maskToken(accessToken)} workspace=${workspaceId}`,
+      );
+
+      const encryptedToken = encryptMetaToken(accessToken);
+
       const adAccounts = await this.metaSdk.graphApiGet(
         'me/adaccounts',
-        {
-          fields: 'id,name',
-        },
+        { fields: 'id,name' },
         accessToken,
       );
+
       const accounts = (adAccounts as MetaAdAccountsResponse).data || [];
       const primaryAccount = accounts[0];
+
+      const tokenExpiresAt = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000);
+
       await this.prisma.metaConnection.upsert({
         where: { workspaceId },
         create: {
           workspaceId,
-          accessToken,
+          accessToken: encryptedToken || accessToken,
+          tokenExpiresAt,
           adAccountId: (primaryAccount?.id as string) ?? null,
           status: 'connected',
         },
         update: {
-          accessToken,
+          accessToken: encryptedToken || accessToken,
+          tokenExpiresAt,
           adAccountId: (primaryAccount?.id as string) ?? null,
           status: 'connected',
+          updatedAt: new Date(),
         },
       });
-      return {
-        connected: true,
-        status: 'connected',
-      };
+
+      this.logger.log(
+        `Meta marketing OAuth complete for workspace ${workspaceId} adAccount=${primaryAccount?.id || 'none'}`,
+      );
+
+      return { connected: true, status: 'connected' };
     } catch (err) {
       this.logger.error('Meta OAuth completion failed', err);
       return { connected: false, status: 'oauth_error', providerMessage: String(err) };
@@ -150,14 +175,100 @@ export class MetaMarketingProvider implements AdProvider {
       where: { workspaceId },
       select: { status: true, adAccountId: true },
     });
-    const result: OAuthStatusResult = {
+
+    if (conn?.adAccountId) {
+      return {
+        connected: conn.status === 'connected',
+        status: conn.status || 'disconnected',
+        accountId: conn.adAccountId,
+      };
+    }
+
+    return {
       connected: conn?.status === 'connected',
       status: conn?.status || 'disconnected',
     };
-    if (conn?.adAccountId) {
-      result.accountId = conn.adAccountId;
+  }
+
+  async disconnect(workspaceId: string): Promise<DisconnectResult> {
+    const conn = await this.prisma.metaConnection.findUnique({
+      where: { workspaceId },
+      select: { accessToken: true },
+    });
+
+    if (!conn) {
+      return { status: 'already_disconnected' };
     }
-    return result;
+
+    const resolvedToken = decryptMetaToken(conn.accessToken) || conn.accessToken;
+    if (resolvedToken && resolvedToken !== conn.accessToken) {
+      try {
+        await this.metaSdk.graphApiDelete('me/permissions', resolvedToken);
+        this.logger.log(`Meta permissions revoked for workspace ${workspaceId}`);
+      } catch {
+        this.logger.warn(
+          `Failed to revoke Meta permissions for workspace ${workspaceId} (non-blocking)`,
+        );
+      }
+    }
+
+    await this.prisma.metaConnection.delete({
+      where: { workspaceId },
+    });
+
+    this.logger.log(`Meta marketing disconnected for workspace ${workspaceId}`);
+
+    return { status: 'disconnected' };
+  }
+
+  async refreshToken(workspaceId: string): Promise<RefreshTokenResult | null> {
+    const conn = await this.prisma.metaConnection.findUnique({
+      where: { workspaceId },
+      select: { accessToken: true, tokenExpiresAt: true },
+    });
+
+    if (!conn?.accessToken) {
+      return null;
+    }
+
+    const resolvedToken = decryptMetaToken(conn.accessToken) || conn.accessToken;
+
+    try {
+      const longLived = await this.metaSdk.exchangeToken(resolvedToken);
+      const newAccessToken = longLived.access_token;
+      const expiresIn = longLived.expires_in;
+
+      if (!newAccessToken) {
+        return null;
+      }
+
+      const encryptedToken = encryptMetaToken(newAccessToken);
+      const tokenExpiresAt = expiresIn
+        ? new Date(Date.now() + expiresIn * 1000)
+        : new Date(Date.now() + 60 * 24 * 60 * 60 * 1000);
+
+      await this.prisma.metaConnection.update({
+        where: { workspaceId },
+        data: {
+          accessToken: encryptedToken || newAccessToken,
+          tokenExpiresAt,
+          updatedAt: new Date(),
+        },
+      });
+
+      this.logger.log(
+        `Meta token refreshed for workspace ${workspaceId} expiresIn=${expiresIn ?? '60d'}`,
+      );
+
+      const result: RefreshTokenResult = { accessToken: newAccessToken };
+      if (expiresIn !== undefined) {
+        result.expiresIn = expiresIn;
+      }
+      return result;
+    } catch (err) {
+      this.logger.error(`Meta token refresh failed for workspace ${workspaceId}`, err);
+      return null;
+    }
   }
 
   async syncAccounts(workspaceId: string): Promise<SyncAccountsResult> {
@@ -165,17 +276,20 @@ export class MetaMarketingProvider implements AdProvider {
       where: { workspaceId },
       select: { accessToken: true, adAccountId: true },
     });
+
     if (!conn?.accessToken || !conn?.adAccountId) {
       return { accounts: [] };
     }
+
+    const resolvedToken = decryptMetaToken(conn.accessToken) || conn.accessToken;
+
     try {
       const response = await this.metaSdk.graphApiGet(
         `act_${conn.adAccountId}`,
-        {
-          fields: 'id,name,account_status',
-        },
-        conn.accessToken,
+        { fields: 'id,name,account_status' },
+        resolvedToken,
       );
+
       const data = response as MetaAccountInfo;
       return {
         accounts: [
@@ -197,13 +311,18 @@ export class MetaMarketingProvider implements AdProvider {
       where: { workspaceId },
       select: { accessToken: true, adAccountId: true },
     });
+
     if (!conn?.accessToken || !conn?.adAccountId) {
       return { campaigns: [] };
     }
+
+    const resolvedToken = decryptMetaToken(conn.accessToken) || conn.accessToken;
+
     try {
-      const response = await this.metaAds.getCampaigns(conn.adAccountId, conn.accessToken, {
+      const response = await this.metaAds.getCampaigns(conn.adAccountId, resolvedToken, {
         fields: 'id,name,status',
       });
+
       const campaigns = (response as MetaCampaignResponse).data || [];
       const result = await Promise.all(
         campaigns.map(async (c) => {
@@ -212,12 +331,12 @@ export class MetaMarketingProvider implements AdProvider {
           try {
             insights = await this.metaAds.getCampaignInsights(
               campaignId,
-              conn.accessToken,
+              resolvedToken,
               '2024-01-01',
               '2099-12-31',
             );
           } catch {
-            // Insights may fail for new campaigns
+            void 0;
           }
           const insightData = (insights as MetaInsightsResponse).data?.[0] || {};
           return {
@@ -249,14 +368,19 @@ export class MetaMarketingProvider implements AdProvider {
       where: { workspaceId },
       select: { accessToken: true, adAccountId: true },
     });
+
     if (!conn?.accessToken || !conn?.adAccountId) {
       return { insights: [] };
     }
+
+    const resolvedToken = decryptMetaToken(conn.accessToken) || conn.accessToken;
+
     try {
-      const response = await this.metaAds.getAccountInsights(conn.adAccountId, conn.accessToken, {
+      const response = await this.metaAds.getAccountInsights(conn.adAccountId, resolvedToken, {
         since: since.toISOString().slice(0, 10),
         until: until.toISOString().slice(0, 10),
       });
+
       const data = (response as MetaInsightsResponse).data || [];
       return {
         insights: data.map((d) => ({

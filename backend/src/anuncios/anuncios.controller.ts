@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Query, Req, Param } from '@nestjs/common';
 import type { Request } from 'express';
 import { AnunciosService } from './anuncios.service';
+import { AdsSyncProcessor } from '../integrations/ads-sync.processor';
 import { RouteClass } from '../common/throttler/route-class.decorator';
 
 interface WorkspaceRequest extends Request {
@@ -10,7 +11,10 @@ interface WorkspaceRequest extends Request {
 @Controller('api/anuncios')
 @RouteClass('mutate')
 export class AnunciosController {
-  constructor(private readonly anunciosService: AnunciosService) {}
+  constructor(
+    private readonly anunciosService: AnunciosService,
+    private readonly adsSyncProcessor: AdsSyncProcessor,
+  ) {}
 
   private workspaceId(req: Request): string {
     return (req as WorkspaceRequest).workspaceId || '';
@@ -21,6 +25,13 @@ export class AnunciosController {
     const wsId = this.workspaceId(req);
     const statuses = await this.anunciosService.getPlatformStatuses(wsId);
     return { data: statuses };
+  }
+
+  @Get('sync-status/meta')
+  async getMetaSyncStatus(@Req() req: Request) {
+    const wsId = this.workspaceId(req);
+    const status = await this.adsSyncProcessor.getSyncStatus(wsId);
+    return { data: status };
   }
 
   @Get('accounts')
