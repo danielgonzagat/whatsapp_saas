@@ -413,7 +413,7 @@ async function bootstrap() {
       res.setHeader('Access-Control-Allow-Origin', matched);
       return true;
     }
-    console.warn('[CORS] Blocked origin: %s on %s %s', rawOrigin, req.method, req.path);
+    console.log('[CORS] Blocked origin: %s on %s %s', rawOrigin, req.method, req.path);
     return req.method !== 'OPTIONS';
   };
 
