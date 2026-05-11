@@ -5,13 +5,7 @@ import { UI } from '@/lib/ui-tokens';
 import { ELEMENT_CATEGORIES } from '@/lib/canvas-formats';
 import type { KloelEditor } from '@/lib/fabric';
 import { IC } from './CanvasIcons';
-import {
-  FONT_SORA as S,
-  panelHeading,
-  panelSubtext,
-  cardBtn,
-  accentBtn,
-} from './canvas-editor.types';
+import { FONT_SORA as S, panelHeading, panelSubtext, cardBtn } from './canvas-editor.types';
 
 interface ShapeConfig {
   id: 'rect' | 'circle' | 'triangle' | 'line' | 'star';

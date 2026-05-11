@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { colors } from '@/lib/design-tokens';
 import { secureRandomFloat } from '@/lib/secure-random';
 import { usePrefersReducedMotion } from './usePrefersReducedMotion';
-import { delayForTypewriter, runSequentialRange } from './KloelLanding.helpers';
+import { runSequentialRange } from './KloelLanding.helpers';
 
 const F = "var(--font-sora), 'Sora', sans-serif";
 const E = colors.ember.primary;

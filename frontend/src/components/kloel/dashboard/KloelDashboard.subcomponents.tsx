@@ -5,7 +5,7 @@ import { KloelMushroomVisual } from '@/components/kloel/KloelBrand';
 import { openCookiePreferences } from '@/components/kloel/cookies/CookieProvider';
 import { KLOEL_CHAT_QUICK_ACTIONS } from '@/lib/kloel-chat';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
-import { AnimatePresence, motion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { BarChart3, LayoutTemplate, Megaphone, PenLine, Search } from 'lucide-react';
 import { useState, useRef, useCallback } from 'react';
 

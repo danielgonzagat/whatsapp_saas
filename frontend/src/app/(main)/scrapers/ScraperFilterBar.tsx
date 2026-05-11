@@ -1,6 +1,6 @@
 'use client';
 import { kloelT } from '@/lib/i18n/t';
-import { colors } from '@/lib/design-tokens';
+
 import type { ScrapingJob } from '@/hooks/useScrapers';
 import { useRouter } from 'next/navigation';
 

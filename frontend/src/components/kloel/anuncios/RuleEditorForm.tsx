@@ -2,7 +2,7 @@
 
 import { kloelT } from '@/lib/i18n/t';
 import { colors } from '@/lib/design-tokens';
-import { NP, EMBER, SORA, MONO } from './AnunciosShared';
+import { EMBER, SORA, MONO } from './AnunciosShared';
 import { useId } from 'react';
 
 interface RuleEditorFormProps {

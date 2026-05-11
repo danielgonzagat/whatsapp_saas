@@ -2,7 +2,7 @@
 
 import { t } from '@/lib/i18n/t';
 import type { PublicCheckoutConfig } from '@/lib/public-checkout-contract';
-import type { Dispatch, RefObject, SetStateAction } from 'react';
+import type { RefObject } from 'react';
 import type {
   CheckoutSocialIdentitySnapshot,
   CheckoutSocialProvider,

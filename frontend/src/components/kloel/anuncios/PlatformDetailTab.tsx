@@ -3,7 +3,7 @@
 import { kloelT } from '@/lib/i18n/t';
 import { colors } from '@/lib/design-tokens';
 import { metaAdsApi } from '@/lib/api/meta';
-import { IC, FmtMoney, Fmt, roasColor, G, SORA, MONO } from './AnunciosShared';
+import { IC, FmtMoney, roasColor, G, SORA, MONO } from './AnunciosShared';
 import type { Campaign, PlatformKey, PlatformData } from './anuncios-types';
 
 const R = colors.semantic.error;

@@ -1,7 +1,7 @@
 // Agent event processing extracted from chat-container.tsx.
 // Pure functions — no React, no JSX.
 
-import type { AgentActivity, AgentStats } from './AgentConsole';
+import type { AgentActivity } from './AgentConsole';
 import type { AgentStreamEvent, AgentTraceEntry, AgentCursorTarget } from './chat-container.types';
 
 /* ── Regex constants (module-level, not per-render) ── */

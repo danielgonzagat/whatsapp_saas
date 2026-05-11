@@ -3,10 +3,7 @@ import { colors } from '@/lib/design-tokens';
 import { CHECKOUT_VISUAL } from './checkout-theme-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
-import type {
-  PublicCheckoutTestimonial,
-  PublicCheckoutThemeProps,
-} from '@/lib/public-checkout-contract';
+import type { PublicCheckoutThemeProps } from '@/lib/public-checkout-contract';
 import type * as React from 'react';
 import { useId } from 'react';
 import { useCheckoutExperience } from '../hooks/useCheckoutExperience';

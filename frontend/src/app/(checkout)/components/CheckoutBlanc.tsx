@@ -10,18 +10,7 @@ import type * as React from 'react';
 import { useId } from 'react';
 import { useCheckoutExperience } from '../hooks/useCheckoutExperience';
 import PixelTracker from './PixelTracker';
-import {
-  type CheckoutThemeInputTokens,
-  type CheckoutThemeStepTokens,
-  Star,
-  StepBubble as SharedStepBubble,
-  StepLine as SharedStepLine,
-  buildFooterPrimaryLine,
-  fmt,
-  formatCnpj,
-  normalizeTestimonials as normalizeThemeTestimonials,
-  PAYMENT_BADGES,
-} from './checkout-theme-shared';
+import { type CheckoutThemeInputTokens, type CheckoutThemeStepTokens, StepBubble as SharedStepBubble, StepLine as SharedStepLine, buildFooterPrimaryLine, fmt, formatCnpj, normalizeTestimonials as normalizeThemeTestimonials, PAYMENT_BADGES } from './checkout-theme-shared';
 import { BlancAddressStep } from './CheckoutBlanc.address-step';
 import { BlancIdentityStep } from './CheckoutBlanc.identity-step';
 import { BlancCouponPopup, BlancSuccessModal } from './CheckoutBlanc.modals';

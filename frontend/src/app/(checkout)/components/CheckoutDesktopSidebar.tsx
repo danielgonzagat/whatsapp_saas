@@ -1,6 +1,6 @@
 'use client';
 
-import { kloelT } from '@/lib/i18n/t';
+
 import { Star } from './checkout-theme-shared';
 import { CheckoutCouponRow } from './CheckoutCouponRow';
 import { CheckoutQuantityControl } from './CheckoutQuantityControl';

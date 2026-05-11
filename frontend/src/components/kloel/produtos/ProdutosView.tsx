@@ -1,22 +1,17 @@
 'use client';
 
-import { kloelT } from '@/lib/i18n/t';
-import { IconActionButton } from '@/components/kloel/products/product-nerve-center.shared';
 import {
   SUBINTERFACE_PILL_ROW_STYLE,
   getSubinterfacePillStyle,
 } from '@/components/kloel/ui/subinterface-pill';
-import { useMemberAreaMutations, useMemberAreas } from '@/hooks/useMemberAreas';
+import { useMemberAreas } from '@/hooks/useMemberAreas';
 import { useProductMutations, useProducts } from '@/hooks/useProducts';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
-import { apiFetch } from '@/lib/api';
 import { affiliateApi } from '@/lib/api/affiliate';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import type React from 'react';
-import { startTransition, useCallback, useEffect, useRef, useState, useId } from 'react';
-import { mutate } from 'swr';
+import { startTransition, useCallback, useEffect, useState } from 'react';
 
-import { SORA, ANIMATIONS, Ticker, LiveFeed, PURPLE, getProductPlanPriceSummary } from './ProdutosView.shared';
+import { SORA, ANIMATIONS, PURPLE, getProductPlanPriceSummary } from './ProdutosView.shared';
 import {
   type DisplayProduct,
   type DisplayArea,

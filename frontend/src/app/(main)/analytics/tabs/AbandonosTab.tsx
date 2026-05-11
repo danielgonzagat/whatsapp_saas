@@ -4,8 +4,8 @@ import { kloelT } from '@/lib/i18n/t';
 import { V, FONT_MONO, chartCardStyle } from '../analytics.design-tokens';
 import { R$ } from '../analytics.design-tokens';
 import { ICONS } from '../shared/Icons';
-import { MetricCard, StatusDot, NeuroPulse, Pagination, TableHeader } from '../shared/Components';
-import { statusMap } from '../shared/status-maps';
+import { MetricCard, NeuroPulse, Pagination, TableHeader } from '../shared/Components';
+
 import { useReport } from '../use-report';
 import type { ReportFilters, ReportRow, PaginatedReport } from '../analytics.types';
 

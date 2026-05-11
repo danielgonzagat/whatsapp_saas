@@ -5,7 +5,7 @@ import { kloelT } from '@/lib/i18n/t';
 import { sendReportEmail } from '@/lib/api/reports';
 import { V, FONT_MONO, chartCardStyle, inputStyle, labelStyle } from '../analytics.design-tokens';
 import { ICONS } from '../shared/Icons';
-import { Button, EmptyState } from '../shared/Components';
+import { Button } from '../shared/Components';
 import type { ReportFilters } from '../analytics.types';
 
 const REPORT_TYPES = ['vendas', 'assinaturas', 'abandonos', 'chargeback'] as const;

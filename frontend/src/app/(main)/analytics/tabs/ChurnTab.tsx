@@ -4,9 +4,9 @@ import { kloelT } from '@/lib/i18n/t';
 import { V, FONT_MONO, chartCardStyle } from '../analytics.design-tokens';
 import { R$, Fmt } from '../analytics.design-tokens';
 import { ICONS } from '../shared/Icons';
-import { MetricCard, StatusDot, NeuroPulse, Pagination, TableHeader, ChartTooltip } from '../shared/Components';
+import { MetricCard, ChartTooltip } from '../shared/Components';
 import { useReport } from '../use-report';
-import type { ReportFilters, ReportRow, ChurnResponse } from '../analytics.types';
+import type { ReportFilters, ChurnResponse } from '../analytics.types';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 export function ChurnTab({ filters }: { filters: ReportFilters }) {

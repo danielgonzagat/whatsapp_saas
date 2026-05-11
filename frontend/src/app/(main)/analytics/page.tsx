@@ -1,6 +1,6 @@
 'use client';
 
-import { kloelT } from '@/lib/i18n/t';
+
 import { colors } from '@/lib/design-tokens';
 import { SUBINTERFACE_PILL_ROW_STYLE, getSubinterfacePillStyle } from '@/components/kloel/ui/subinterface-pill';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';

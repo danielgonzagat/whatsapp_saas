@@ -9,7 +9,7 @@ import { secureRandomFloat } from '@/lib/secure-random';
 import { AdAccountsBoard } from './AdAccountsBoard';
 import { CampaignTimeline } from './CampaignTimeline';
 import { InvestReturnPanel } from './InvestReturnPanel';
-import { IC, Ticker, Fmt, roasColor, EMBER, G, SORA, MONO } from './AnunciosShared';
+import { Ticker, Fmt, roasColor, EMBER, G, SORA, MONO } from './AnunciosShared';
 import type { AdRule } from './anuncios-types';
 import type { Campaign, PlatformKey, PlatformData } from './anuncios-types';
 
