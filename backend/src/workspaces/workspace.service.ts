@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { Workspace } from '@prisma/client';
 import { CacheService } from '../common/cache/cache.service';
 import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
@@ -15,7 +15,6 @@ type EmailSubSettings = Record<string, unknown> & { enabled?: boolean };
 /** Workspace service. */
 @Injectable()
 export class WorkspaceService {
-  private readonly logger = new Logger(WorkspaceService.name);
   constructor(
     private prisma: PrismaService,
     private readonly cache: CacheService,

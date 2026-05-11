@@ -1,3 +1,12 @@
+/**
+ * Minimal contract the inbox saver exposes to callers. The Prisma message
+ * shape is wider, but reconcilers only need contactId + id projections.
+ */
+export interface InboxSavedMessage {
+  id: string;
+  contactId: string;
+}
+
 export interface IInboxService {
   saveMessageByPhone(data: {
     workspaceId: string;
@@ -13,5 +22,5 @@ export interface IInboxService {
     countAsUnread?: boolean;
     resetUnreadOnOutbound?: boolean;
     silent?: boolean;
-  }): Promise<unknown>;
+  }): Promise<InboxSavedMessage>;
 }
