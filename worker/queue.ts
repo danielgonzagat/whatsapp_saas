@@ -53,6 +53,7 @@ const redisOpts = {
 };
 
 let _connection: Redis | null = null;
+type BullMqRedisOptions = RedisOptions & { url: string };
 
 const resolveRequiredRedisUrl = (context: string): string => {
   const resolved = resolveRedisUrl();
@@ -106,6 +107,11 @@ const createRedisConnection = (
   return client;
 };
 
+const buildBullMqConnectionOptions = (context: string): BullMqRedisOptions => ({
+  url: resolveRequiredRedisUrl(context),
+  ...redisOpts,
+});
+
 function getConnection(): Redis {
   if (_connection) {
     return _connection;
@@ -142,7 +148,7 @@ const defaultBackoff = Math.max(
 
 export function buildQueueOptions() {
   return {
-    connection: getConnection(),
+    connection: buildBullMqConnectionOptions('BullMQ queue connection'),
     defaultJobOptions: {
       attempts: defaultAttempts,
       backoff: { type: 'exponential', delay: defaultBackoff },
@@ -250,7 +256,7 @@ export function getQueueEvents(queueName: string): QueueEvents {
 
   // QueueEvents requires its own blocking connection per BullMQ docs.
   const events = new QueueEvents(queueName, {
-    connection: createRedisConnection(`QueueEvents:${queueName}`),
+    connection: buildBullMqConnectionOptions(`QueueEvents:${queueName}`),
   });
   queueEventsRegistry.set(queueName, events);
   return events;
@@ -346,7 +352,7 @@ export class Queue {
         async (job: Job) => {
           await callback(job.data);
         },
-        { connection: getConnection(), lockDuration: 120_000 },
+        { connection: buildBullMqConnectionOptions(`QueueWorker:${this.name}`), lockDuration: 120_000 },
       );
       additionalWorkers.push(this.worker);
       console.log(`👷 [Queue] Worker criado para fila "${this.name}"`);
