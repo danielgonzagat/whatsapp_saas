@@ -9,7 +9,10 @@ import { tokenStorage } from '@/lib/api';
 import { apiUrl } from '@/lib/http';
 import { readStreamSequential } from '@/lib/async-sequence';
 import { colors } from '@/lib/design-tokens';
-import { loadKloelThreadMessages, sendAuthenticatedKloelMessage } from '@/lib/kloel-conversations';
+import {
+  loadKloelThreadMessages,
+  streamAuthenticatedKloelMessage,
+} from '@/lib/kloel-conversations';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { mutate } from 'swr';
 import { parseKloelChatStreamLine, typingSimulationDelay } from './HomeScreen.helpers';
@@ -339,27 +342,92 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
             },
           );
         } else {
-          const response = await sendAuthenticatedKloelMessage({
-            message: messageText,
-            conversationId: activeConversationId,
-            mode: 'chat',
+          await new Promise<void>((resolve, reject) => {
+            const finish = () => {
+              ac.signal.removeEventListener('abort', finish);
+              resolve();
+            };
+            ac.signal.addEventListener('abort', finish, { once: true });
+            streamAuthenticatedKloelMessage(
+              {
+                message: messageText,
+                conversationId: activeConversationId,
+                mode: 'chat',
+              },
+              {
+                signal: ac.signal,
+                onThread: (thread) => {
+                  nextConversationId = thread.conversationId;
+                  nextTitle =
+                    thread.title ||
+                    conversationTitleMap.get(thread.conversationId) ||
+                    'Nova conversa';
+                  setActiveConversationId(thread.conversationId);
+                  setActiveConversation(thread.conversationId);
+                  setChatTitle(nextTitle);
+                  upsertConversation({
+                    id: thread.conversationId,
+                    title: nextTitle,
+                    updatedAt: new Date().toISOString(),
+                  });
+                },
+                onChunk: (chunk) => {
+                  fullContent += chunk;
+                  setMessages((prev) =>
+                    prev.map((msg) =>
+                      msg.id === assistantId
+                        ? {
+                            ...msg,
+                            content: fullContent,
+                            displayedContent: fullContent,
+                            isThinking: false,
+                            isTyping: true,
+                          }
+                        : msg,
+                    ),
+                  );
+                },
+                onDone: finish,
+                onError: (message) => {
+                  reject(new Error(message));
+                },
+              },
+            );
           });
-          fullContent = String(response.response || '').trim();
-          nextConversationId = response.conversationId || activeConversationId;
-          nextTitle =
-            response.title || conversationTitleMap.get(nextConversationId || '') || chatTitle;
+        }
+
+        if (ac.signal.aborted) {
+          return;
         }
 
         if (!fullContent.trim()) {
           throw new Error('empty_response');
         }
 
-        setTimeout(() => {
+        if (isGuest) {
+          setTimeout(() => {
+            setMessages((prev) =>
+              prev.map((msg) => (msg.id === assistantId ? { ...msg, content: fullContent } : msg)),
+            );
+            startTyping(fullContent);
+          }, thinkDuration);
+        } else {
           setMessages((prev) =>
-            prev.map((msg) => (msg.id === assistantId ? { ...msg, content: fullContent } : msg)),
+            prev.map((msg) =>
+              msg.id === assistantId
+                ? {
+                    ...msg,
+                    content: fullContent,
+                    displayedContent: fullContent,
+                    isThinking: false,
+                    isTyping: false,
+                  }
+                : msg,
+            ),
           );
-          startTyping(fullContent);
-        }, thinkDuration);
+          setIsWaitingForResponse(false);
+          typingMessageIdRef.current = null;
+        }
 
         if (!isGuest && nextConversationId) {
           setActiveConversationId(nextConversationId);
