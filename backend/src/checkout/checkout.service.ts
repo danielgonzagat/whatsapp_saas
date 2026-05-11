@@ -304,20 +304,25 @@ export class CheckoutService {
       throw new NotFoundException('Checkout nao encontrado');
     }
 
+    const createInput = {
+      name: `${checkout.name} (Copia)`,
+      priceInCents: checkout.priceInCents,
+      currency: checkout.currency,
+      maxInstallments: checkout.maxInstallments,
+      installmentsFee: checkout.installmentsFee,
+      quantity: checkout.quantity,
+      freeShipping: checkout.freeShipping,
+      brandName: checkout.checkoutConfig?.brandName ?? checkout.name,
+      ...(checkout.compareAtPrice != null
+        ? { compareAtPrice: checkout.compareAtPrice }
+        : {}),
+      ...(checkout.shippingPrice != null
+        ? { shippingPrice: checkout.shippingPrice }
+        : {}),
+    };
     const duplicated = await this.productService.createCheckout(
       checkout.productId,
-      {
-        name: `${checkout.name} (Copia)`,
-        priceInCents: checkout.priceInCents,
-        compareAtPrice: checkout.compareAtPrice ?? undefined,
-        currency: checkout.currency,
-        maxInstallments: checkout.maxInstallments,
-        installmentsFee: checkout.installmentsFee,
-        quantity: checkout.quantity,
-        freeShipping: checkout.freeShipping,
-        shippingPrice: checkout.shippingPrice ?? undefined,
-        brandName: checkout.checkoutConfig?.brandName ?? checkout.name,
-      },
+      createInput,
       workspaceId,
     );
 
