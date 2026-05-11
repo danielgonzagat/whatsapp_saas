@@ -19,6 +19,18 @@ export type KloelPrismaMock = {
     update: jest.Mock;
     deleteMany: jest.Mock;
   };
+  kloelMemory: {
+    findMany: jest.Mock;
+    upsert: jest.Mock;
+  };
+  persona: {
+    findMany: jest.Mock;
+    create: jest.Mock;
+  };
+  integration: {
+    findMany: jest.Mock;
+    create: jest.Mock;
+  };
   product: {
     create: jest.Mock;
     count: jest.Mock;
