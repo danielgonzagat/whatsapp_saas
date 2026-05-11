@@ -151,7 +151,13 @@ export class ProductCouponController {
 
   /** Validate. */
   @Post('validate')
-  async validate(@Param('productId') productId: string, @Body() body: ValidateCouponDto) {
+  async validate(
+    @Param('productId') productId: string,
+    @Body() body: ValidateCouponDto,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
+
     const coupon = await this.prisma.productCoupon.findUnique({
       where: {
         productId_code: {
