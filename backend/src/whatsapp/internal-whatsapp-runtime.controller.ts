@@ -13,6 +13,7 @@ import {
   forwardRef,
 } from '@nestjs/common';
 import { Public } from '../auth/public.decorator';
+import { ChannelTransportRegistry } from '../kloel/channel-transport.registry';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { WorkspaceService } from '../workspaces/workspace.service';
@@ -32,6 +33,7 @@ export class InternalWhatsAppRuntimeController {
     private readonly prisma: PrismaService,
     @Inject(forwardRef(() => WhatsappService))
     private readonly whatsappService: WhatsappService,
+    private readonly transports: ChannelTransportRegistry,
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
@@ -141,7 +143,11 @@ export class InternalWhatsAppRuntimeController {
     @Headers('x-internal-key') internalKey?: string,
   ) {
     this.assertInternalKey(internalKey);
-    return this.whatsappService.sendMessage(body.workspaceId, body.to, body.message, {
+    return this.transports.send(body.workspaceId, {
+      workspaceId: body.workspaceId,
+      channel: 'whatsapp',
+      recipientId: body.to,
+      content: body.message,
       quotedMessageId: body.quotedMessageId,
       externalId: body.externalId,
       forceDirect: true,
@@ -165,7 +171,11 @@ export class InternalWhatsAppRuntimeController {
     @Headers('x-internal-key') internalKey?: string,
   ) {
     this.assertInternalKey(internalKey);
-    return this.whatsappService.sendMessage(body.workspaceId, body.to, body.caption || '', {
+    return this.transports.send(body.workspaceId, {
+      workspaceId: body.workspaceId,
+      channel: 'whatsapp',
+      recipientId: body.to,
+      content: body.caption || '',
       mediaUrl: body.mediaUrl,
       mediaType: body.mediaType,
       caption: body.caption,

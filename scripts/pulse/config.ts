@@ -4,11 +4,12 @@ import type { PulseConfig } from './types.manifest';
 import { pathExists, readDir, readTextFile } from './safe-fs';
 import { detectSourceRoots } from './source-root-detector/__parts__/api';
 import type { DetectedSourceRoot } from './source-root-detector/__parts__/types';
+import { normalizeRelative, walkUnskippedFiles } from './source-root-detector/__parts__/helpers';
 
 function hasMatchingFile(rootDir: string, matcher: (relativePath: string) => boolean): boolean {
   if (!pathExists(rootDir)) return false;
   try {
-    const files = readDir(rootDir, { recursive: true }) as string[];
+    const files = walkUnskippedFiles(rootDir);
     return files.some((file) => matcher(String(file).split(path.sep).join('/')));
   } catch {
     return false;
@@ -32,11 +33,8 @@ function pickRoot(
 
 function findSchemaPath(rootDir: string): string {
   try {
-    const schemas = (readDir(rootDir, { recursive: true }) as string[])
-      .map((entry) => String(entry).split(path.sep).join('/'))
-      .filter(
-        (entry) => !entry.split('/').some((part) => part === 'node_modules' || part === 'dist'),
-      )
+    const schemas = walkUnskippedFiles(rootDir)
+      .map((entry) => normalizeRelative(entry))
       .filter((entry) => path.basename(entry) === 'schema.prisma')
       .sort();
     return schemas[0] ? safeJoin(rootDir, schemas[0]) : '';

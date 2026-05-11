@@ -65,6 +65,7 @@ import { StorageModule } from './common/storage/storage.module';
 import { CookieConsentModule } from './cookie-consent/cookie-consent.module';
 import { ComplianceModule } from './compliance/compliance.module';
 import { CopilotModule } from './copilot/copilot.module';
+import { EmailModule } from './email/email.module';
 import { FollowUpModule } from './followup/followup.module';
 import { GdprModule } from './gdpr/gdpr.module';
 import { GrowthModule } from './growth/growth.module';
@@ -206,6 +207,7 @@ const isProd = process.env.NODE_ENV === 'production';
     AuditModule,
     AutopilotModule,
     CopilotModule,
+    EmailModule,
     AiBrainModule,
     GrowthModule,
     CalendarModule, // 📅 Integração com calendários

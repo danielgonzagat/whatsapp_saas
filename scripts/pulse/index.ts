@@ -1,9 +1,11 @@
 #!/usr/bin/env ts-node
 
 import { detectConfig } from './config';
+import { flags } from './cli-args';
 import { fullScan } from './daemon';
 import { generateArtifacts } from './__parts__/artifacts/generate';
 import { renderDashboard } from './dashboard';
+import { PulseExecutionTracer } from './execution-trace';
 
 const args = process.argv.slice(2);
 const wantsJson = args.includes('--json') || args.includes('-j');
@@ -12,7 +14,17 @@ const wantsWatch = args.includes('--watch') || args.includes('-w');
 
 async function main(): Promise<void> {
   const config = detectConfig(process.cwd());
-  const scanResult = await fullScan(config, { includeParser: () => false, parserTimeoutMs: 1000 });
+  const tracer = new PulseExecutionTracer(config.rootDir);
+  const perfectnessMode =
+    flags.final || flags.deep || flags.total || (typeof flags.tier === 'number' && flags.tier > 0)
+      ? 'full'
+      : 'tier0';
+  const scanResult = await fullScan(config, {
+    includeParser: () => false,
+    parserTimeoutMs: 1000,
+    perfectnessMode,
+    tracer,
+  });
 
   if (wantsReport || wantsJson || !wantsWatch) {
     const artifactPaths = generateArtifacts(scanResult, config.rootDir);

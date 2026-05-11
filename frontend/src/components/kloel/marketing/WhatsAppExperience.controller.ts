@@ -104,6 +104,7 @@ export function useWhatsAppExperienceController({
   const [scanProgress, setScanProgress] = useState(0);
   const [uploadingCount, setUploadingCount] = useState(0);
   const [sessionExpired, setSessionExpired] = useState(false);
+  const [metaConnecting, setMetaConnecting] = useState(false);
 
   const { data: affiliateResponse } = useSWR(
     workspaceId ? `affiliate/my-products/${workspaceId}` : null,
@@ -236,6 +237,9 @@ export function useWhatsAppExperienceController({
     [draft.selectedProducts, productMap],
   );
 
+  const metaAuthUrl = connection?.authUrl || null;
+  const isMetaProvider = effectiveProvider === 'meta-cloud';
+
   const summaryProducts = useMemo(() => {
     if (summaryData?.selectedProducts?.length) {
       return summaryData.selectedProducts;
@@ -364,5 +368,9 @@ export function useWhatsAppExperienceController({
     resolveStatusLabel,
     workspaceId,
     operator,
+    metaAuthUrl,
+    isMetaProvider,
+    metaConnecting,
+    setMetaConnecting,
   } as const;
 }

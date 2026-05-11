@@ -17,6 +17,7 @@ import {
   requireBehaviorOutputKindCatalog,
   requireOperationCatalog,
   discoverStateWriteOperationLabels,
+  IMPLICIT_UNTYPED_TEXT,
 } from './catalog-helpers';
 import { hasDecoratorRole, inputKindFromDecorator, classNameRole } from './decorator-roles';
 import {
@@ -86,11 +87,12 @@ function extractInputs(
   const inputKinds = requireBehaviorInputKindCatalog();
 
   for (const param of parameters) {
+    const typeText = param.typeText || IMPLICIT_UNTYPED_TEXT;
     const input: BehaviorInput = {
       kind: inputKinds.body,
       name: param.name,
-      type: param.typeText,
-      required: !param.typeText.includes('?') && !param.name.includes('?'),
+      type: typeText,
+      required: !typeText.includes('?') && !param.name.includes('?'),
       validated: false,
       source: param.name,
     };

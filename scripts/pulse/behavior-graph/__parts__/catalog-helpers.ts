@@ -192,9 +192,9 @@ function requireJsReservedWordSet(): Set<string> {
 
 const IMPLICIT_UNTYPED_TEXT = (() => {
   try {
-    return require('typescript').ClassificationTypeNames.any;
+    return require('typescript').ClassificationTypeNames.any || 'untyped';
   } catch {
-    return 'any';
+    return 'untyped';
   }
 })();
 

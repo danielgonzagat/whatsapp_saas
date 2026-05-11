@@ -1,5 +1,5 @@
 import * as path from 'path';
-import { pathExists, readDir } from '../../safe-fs';
+import { pathExists } from '../../safe-fs';
 import { safeJoin } from '../../safe-path';
 import {
   SourceRootKind,
@@ -20,6 +20,7 @@ import {
   inferFrameworksFromFileEvidence,
   inferKindFromFileEvidence,
   inferKind,
+  walkUnskippedFiles,
 } from './helpers';
 
 export function staticPrefixFromPattern(pattern: string): string | null {
@@ -115,7 +116,7 @@ export function hasSourceFiles(rootDir: string, relativeDir: string): boolean {
   const absoluteDir = safeJoin(rootDir, relativeDir);
   if (!pathExists(absoluteDir)) return false;
 
-  const entries = readDir(absoluteDir, { recursive: true }) as string[];
+  const entries = walkUnskippedFiles(absoluteDir);
   return entries.some((entry) => {
     const normalized = normalizeRelative(entry);
     if (normalized.split('/').some((part) => SKIP_DIR_NAMES.has(part))) return false;
@@ -128,7 +129,7 @@ export function languageExtensionsFor(rootDir: string, relativeDir: string): str
   if (!pathExists(absoluteDir)) return [];
 
   const found = new Set<string>();
-  for (const entry of readDir(absoluteDir, { recursive: true }) as string[]) {
+  for (const entry of walkUnskippedFiles(absoluteDir)) {
     const normalized = normalizeRelative(entry);
     if (normalized.split('/').some((part) => SKIP_DIR_NAMES.has(part))) continue;
     const ext = path.extname(normalized);

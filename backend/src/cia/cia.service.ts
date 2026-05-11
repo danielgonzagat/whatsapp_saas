@@ -1,21 +1,31 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { buildQueueJobId } from '../queue/job-id.util';
 import { flowQueue } from '../queue/queue';
 import { AccountAgentService } from '../whatsapp/account-agent.service';
 import { AgentEventsService } from '../whatsapp/agent-events.service';
-import { CiaRuntimeService } from '../whatsapp/cia-runtime.service';
+import { CiaRuntimeService } from './cia-runtime.service';
+import { MindService } from '../kloel/mind.service';
 
 type JsonRecord = Record<string, unknown>;
+
+const CHANNEL_LABEL: Record<string, string> = {
+  whatsapp: 'WhatsApp',
+  instagram: 'Instagram',
+  facebook: 'Facebook',
+};
 
 /** Cia service. */
 @Injectable()
 export class CiaService {
+  private readonly logger = new Logger(CiaService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly runtime: CiaRuntimeService,
     private readonly agentEvents: AgentEventsService,
     private readonly accountAgent: AccountAgentService,
+    private readonly mind: MindService,
   ) {}
 
   /** Get surface. */
@@ -29,6 +39,9 @@ export class CiaService {
       accountProof,
       capabilityRegistry,
       conversationActionRegistry,
+      mindLift,
+      metaConnection,
+      integrations,
     ] = await Promise.all([
       this.runtime.getOperationalIntelligence(workspaceId),
       this.getHumanTasks(workspaceId),
@@ -38,14 +51,45 @@ export class CiaService {
       this.getAccountProof(workspaceId),
       Promise.resolve(this.accountAgent.getCapabilityRegistry()),
       Promise.resolve(this.accountAgent.getConversationActionRegistry()),
+      this.mind.lift(workspaceId, 'followup_timing').catch((err) => {
+        this.logger.warn(`MIND lift unavailable for ${workspaceId}: ${String(err)}`);
+        return null;
+      }),
+      this.prisma.metaConnection.findUnique({
+        where: { workspaceId },
+      }),
+      this.prisma.integration.findMany({
+        where: { workspaceId, isActive: true },
+        select: { type: true },
+      }),
     ]);
     const recent = this.agentEvents.getRecent(workspaceId).slice(-12);
     const latest = recent[recent.length - 1] || null;
     const businessState = this.readRecord(intelligence.businessState);
 
+    const activeChannels = new Set<string>();
+    if (metaConnection?.whatsappPhoneNumberId) activeChannels.add('whatsapp');
+    if (metaConnection?.instagramAccountId) activeChannels.add('instagram');
+    if (metaConnection?.pageId) activeChannels.add('facebook');
+    for (const integration of integrations) {
+      const lower = integration.type.toLowerCase();
+      if (lower === 'instagram') activeChannels.add('instagram');
+    }
+
+    const channels = [...activeChannels];
+    let subtitle: string;
+    if (channels.length === 0) {
+      subtitle = 'Cuidando do seu negócio';
+    } else if (channels.length === 1) {
+      const label = CHANNEL_LABEL[channels[0]] || channels[0];
+      subtitle = `Cuidando do seu negócio no ${label}`;
+    } else {
+      subtitle = 'Orquestrando seus canais de venda';
+    }
+
     return {
       title: 'KLOEL',
-      subtitle: 'Trabalhando no seu WhatsApp',
+      subtitle,
       workspaceName: intelligence.workspaceName,
       state: intelligence.runtime?.state || 'IDLE',
       today: {
@@ -74,6 +118,16 @@ export class CiaService {
       accountProof,
       capabilityRegistry,
       conversationActionRegistry,
+      mindLift: mindLift
+        ? {
+            decisionType: 'followup_timing',
+            n: mindLift.n,
+            mindMean: mindLift.mindMean,
+            baselineMean: mindLift.baselineMean,
+            lift: mindLift.lift,
+            pZScore: mindLift.pZScore,
+          }
+        : null,
     };
   }
 

@@ -20,6 +20,7 @@ import type React from 'react';
 import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import useSWR, { mutate } from 'swr';
 import WhatsAppExperience from './WhatsAppExperience';
+import UniversalChannelWizard from './UniversalChannelWizard';
 import { secureRandomFloat } from '@/lib/secure-random';
 
 // ── Fonts ──
@@ -31,6 +32,8 @@ const BG_CARD = KLOEL_THEME.bgCard;
 const BG_ELEVATED = KLOEL_THEME.bgSecondary;
 const BORDER = KLOEL_THEME.borderPrimary;
 const EMBER = KLOEL_THEME.accent;
+const STATUS_OK = KLOEL_THEME.success;
+const STATUS_WARN = KLOEL_THEME.error;
 const META_OAUTH_HOSTS = new Set([
   'facebook.com',
   'www.facebook.com',
@@ -245,35 +248,35 @@ const CH_CONFIG: Record<
   whatsapp: {
     icon: IC.wa,
     label: 'WhatsApp',
-    color: '#25D366', // PULSE_VISUAL_OK: WhatsApp brand green
+    color: EMBER,
     backendKey: 'WHATSAPP',
     hasIntegration: true,
   },
   instagram: {
     icon: IC.ig,
     label: 'Instagram',
-    color: '#E1306C', // PULSE_VISUAL_OK: Instagram brand gradient
+    color: EMBER,
     backendKey: 'INSTAGRAM',
     hasIntegration: false,
   },
   tiktok: {
     icon: IC.tt,
     label: 'TikTok',
-    color: '#ff0050', // PULSE_VISUAL_OK: TikTok brand pink
+    color: EMBER,
     backendKey: 'TIKTOK',
     hasIntegration: false,
   },
   facebook: {
     icon: IC.fb,
     label: 'Facebook',
-    color: '#1877F2', // PULSE_VISUAL_OK: Facebook brand blue
+    color: EMBER,
     backendKey: 'MESSENGER',
     hasIntegration: false,
   },
   email: {
     icon: IC.em,
     label: 'Email',
-    color: '#F59E0B', // PULSE_VISUAL_OK: email amber indicator
+    color: EMBER,
     backendKey: 'EMAIL',
     hasIntegration: true,
   },
@@ -330,6 +333,18 @@ interface MarketingConnectStatus {
       authUrl?: string;
       pageId?: string | null;
       pageName?: string | null;
+    };
+    tiktok?: {
+      connected?: boolean;
+      status?: string;
+      kind?: string | null;
+      openId?: string | null;
+      advertiserIds?: string[];
+      expiresAt?: string | null;
+      expired?: boolean;
+      clientConfigured?: boolean;
+      secretConfigured?: boolean;
+      configReady?: boolean;
     };
     email?: {
       connected?: boolean;
@@ -858,18 +873,18 @@ function ConnBadge({ connected }: { connected: boolean }) {
         gap: 4,
         fontSize: 10,
         fontFamily: MONO,
-        color: connected ? '#10B981' : '#ef4444', // PULSE_VISUAL_OK: connection status green/red
+        color: connected ? STATUS_OK : STATUS_WARN,
         background: connected ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
         padding: '2px 8px',
-        borderRadius: 99,
+        borderRadius: 6,
       }}
     >
       <span
         style={{
           width: 6,
           height: 6,
-          borderRadius: '50%',
-          background: connected ? '#10B981' : '#ef4444', // PULSE_VISUAL_OK: connection dot green/red
+          borderRadius: 6,
+          background: connected ? STATUS_OK : STATUS_WARN,
           animation: connected ? 'mktPulse 2s infinite' : 'none',
         }}
       />
@@ -878,19 +893,27 @@ function ConnBadge({ connected }: { connected: boolean }) {
   );
 }
 
-// ── ConnectFlow — waitlist for channels not yet integrated ──
+// ── ConnectFlow — canonical connect screen for any channel ──
 function ConnectFlow({
   channelKey,
   channelData,
+  onConnect,
+  connecting,
+  connected,
 }: {
   channelKey: string;
   channelData: ChannelRealData | null;
+  onConnect?: () => void;
+  connecting?: boolean;
+  connected?: boolean;
 }) {
   const router = useRouter();
   const ch = CH_CONFIG[channelKey];
   if (!ch) {
     return null;
   }
+
+  const isConnected = connected === true;
 
   return (
     <div
@@ -905,51 +928,96 @@ function ConnectFlow({
     >
       <div style={{ color: ch.color, opacity: 0.25 }}>{ch.icon(80)}</div>
       <div style={{ fontFamily: SORA, fontSize: 22, color: 'var(--app-text-primary)' }}>
-        {kloelT(`Conectar`)} {ch.label}
-      </div>
-      <div
-        style={{
-          fontFamily: SORA,
-          fontSize: 14,
-          color: 'var(--app-text-secondary)',
-          maxWidth: 420,
-          textAlign: 'center',
-          lineHeight: 1.6,
-        }}
-      >
-        {kloelT(`Ainda nao existe operacao publicada para`)} {ch.label}{' '}
-        {kloelT(`dentro do shell de Marketing. Enquanto
-        essa integracao nao entra no produto ativo, use os canais ja operacionais abaixo.`)}
+        {isConnected ? ch.label : `${kloelT(`Conectar`)} ${ch.label}`}
       </div>
 
-      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
-        {[
-          { label: 'Abrir Inbox', href: '/inbox' },
-          { label: 'Abrir WhatsApp', href: '/marketing/whatsapp' },
-          { label: 'Abrir Email', href: '/marketing/email' },
-        ].map((item) => (
-          <button
-            type="button"
-            key={item.href}
-            onClick={() => router.push(item.href)}
+      {onConnect ? (
+        <>
+          <div
             style={{
               fontFamily: SORA,
-              fontSize: 13,
-              padding: '10px 16px',
-              borderRadius: 6,
-              border: '1px solid var(--app-border-primary)',
-              background: 'var(--app-bg-card)',
-              color: 'var(--app-text-primary)',
-              cursor: 'pointer',
-              fontWeight: 600,
+              fontSize: 14,
+              color: 'var(--app-text-secondary)',
+              maxWidth: 420,
+              textAlign: 'center',
+              lineHeight: 1.6,
             }}
           >
-            {item.label}
+            {isConnected
+              ? `${ch.label} ${kloelT(`esta conectado. Use o botao abaixo para reconectar ou gerenciar a integracao.`)}`
+              : `${kloelT(`Conecte sua conta`)} ${ch.label} ${kloelT(`oficialmente. O fluxo abre a autorizacao e retorna para este canal.`)}`}
+          </div>
+          <button
+            type="button"
+            onClick={onConnect}
+            disabled={connecting}
+            style={{
+              fontFamily: SORA,
+              fontSize: 14,
+              padding: '12px 32px',
+              borderRadius: 6,
+              border: 'none',
+              background: ch.color,
+              color: '#fff',
+              cursor: connecting ? 'wait' : 'pointer',
+              fontWeight: 600,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              opacity: connecting ? 0.7 : 1,
+            }}
+          >
+            {connecting
+              ? 'Abrindo...'
+              : isConnected
+                ? `Reconectar ${ch.label}`
+                : `Conectar ${ch.label}`}
           </button>
-        ))}
-      </div>
+        </>
+      ) : (
+        <div
+          style={{
+            fontFamily: SORA,
+            fontSize: 14,
+            color: 'var(--app-text-secondary)',
+            maxWidth: 420,
+            textAlign: 'center',
+            lineHeight: 1.6,
+          }}
+        >
+          {kloelT(`Use os canais ja operacionais abaixo enquanto esta integracao e preparada.`)}
+        </div>
+      )}
 
-      {/* Show whatever real data IS available */}
+      {!onConnect && (
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
+          {[
+            { label: 'Abrir Inbox', href: '/inbox' },
+            { label: 'Abrir WhatsApp', href: '/marketing/whatsapp' },
+            { label: 'Abrir Email', href: '/marketing/email' },
+          ].map((item) => (
+            <button
+              type="button"
+              key={item.href}
+              onClick={() => router.push(item.href)}
+              style={{
+                fontFamily: SORA,
+                fontSize: 13,
+                padding: '10px 16px',
+                borderRadius: 6,
+                border: '1px solid var(--app-border-primary)',
+                background: 'var(--app-bg-card)',
+                color: 'var(--app-text-primary)',
+                cursor: 'pointer',
+                fontWeight: 600,
+              }}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+      )}
+
       {channelData && (channelData.messages > 0 || channelData.leads > 0) && (
         <RegisteredDataList channelData={channelData} color={ch.color} />
       )}
@@ -1176,8 +1244,8 @@ function EmailConnectionPanel({
             }}
           >
             {connection?.providerAvailable
-              ? 'Provider detectado e pronto para ativacao'
-              : 'Nenhum provider de email configurado no backend'}
+              ? 'Canal de envio pronto para ativacao'
+              : 'Canal de email ainda nao configurado'}
           </div>
           <div
             style={{
@@ -1187,8 +1255,8 @@ function EmailConnectionPanel({
               lineHeight: 1.6,
             }}
           >
-            {kloelT(`Provider:`)} {connection?.provider || 'log'} {kloelT(`&middot; Remetente:`)}{' '}
-            {connection?.fromName || 'KLOEL'} {kloelT(`&lt;`)}
+            {kloelT(`Envio:`)} {connection?.providerAvailable ? 'Configurado' : 'Pendente'}{' '}
+            {kloelT(`&middot; Remetente:`)} {connection?.fromName || 'KLOEL'} {kloelT(`&lt;`)}
             {connection?.fromEmail || 'noreply@kloel.com'}
             {kloelT(`&gt;`)}
           </div>
@@ -1338,8 +1406,8 @@ function EmailTemplatesPanel({
   );
 }
 
-// ── EmailTab — campaign send form ──
-function EmailTab({
+// ── EmailOperationalPanel — campaign send form after the universal wizard ──
+function EmailOperationalPanel({
   channelData,
   mode,
   connection,
@@ -1595,8 +1663,8 @@ function EmailTab({
   );
 }
 
-// ── InstagramTab — real data when Meta connected ──
-function InstagramTab({
+// ── InstagramOperationalPanel — real data after the universal wizard ──
+function InstagramOperationalPanel({
   channelData,
   igProfile,
   igInsights,
@@ -1644,7 +1712,7 @@ function InstagramTab({
           <span style={{ fontFamily: SORA, fontSize: 18, color: 'var(--app-text-primary)' }}>
             {ch.label}
           </span>
-          <ConnBadge connected={true} />
+          <ConnBadge connected={connection?.connected === true} />
         </div>
         <button
           type="button"
@@ -1662,7 +1730,11 @@ function InstagramTab({
             opacity: connecting ? 0.7 : 1,
           }}
         >
-          {connecting ? 'Abrindo Meta...' : 'Reconectar Instagram'}
+          {connecting
+            ? 'Abrindo Meta...'
+            : connection?.connected
+              ? 'Reconectar Instagram'
+              : 'Conectar Instagram'}
         </button>
       </div>
 
@@ -1788,8 +1860,168 @@ function InstagramTab({
   );
 }
 
-// ── FacebookTab — Messenger real data when Meta connected ──
-function FacebookTab({
+// ── TikTokOperationalPanel — TikTok status after the universal wizard ──
+function TikTokOperationalPanel({
+  channelData,
+  connection,
+  onConnect,
+  onDisconnect,
+  connecting,
+}: {
+  channelData: ChannelRealData | null;
+  connection?: NonNullable<MarketingConnectStatus['channels']>['tiktok'];
+  onConnect: () => void;
+  onDisconnect: () => void;
+  connecting?: boolean;
+}) {
+  const ch = CH_CONFIG.tiktok;
+  const configReady = connection?.configReady === true;
+  const isConnected = connection?.connected === true;
+  const isExpired = connection?.expired === true;
+  const kind = connection?.kind || null;
+
+  const statusLabel = !configReady
+    ? 'Chaves TikTok nao configuradas'
+    : isConnected
+      ? `Conectado${kind ? ` (${kind === 'advertiser' ? 'Advertiser' : 'Creator'})` : ''}`
+      : isExpired
+        ? 'Token expirado'
+        : 'Desconectado';
+
+  return (
+    <div>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: 16,
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ color: ch.color }}>{ch.icon(24)}</span>
+          <span style={{ fontFamily: SORA, fontSize: 18, color: 'var(--app-text-primary)' }}>
+            {ch.label}
+          </span>
+          <ConnBadge connected={isConnected} />
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {isConnected && (
+            <button
+              type="button"
+              onClick={onDisconnect}
+              disabled={connecting}
+              style={{
+                fontFamily: SORA,
+                fontSize: 12,
+                padding: '6px 14px',
+                borderRadius: 6,
+                border: '1px solid rgba(239,68,68,0.25)',
+                background: 'rgba(239,68,68,0.08)',
+                color: '#ef4444',
+                cursor: connecting ? 'wait' : 'pointer',
+                opacity: connecting ? 0.7 : 1,
+              }}
+            >
+              {connecting ? '...' : 'Desconectar'}
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={onConnect}
+            disabled={connecting || !configReady}
+            style={{
+              fontFamily: SORA,
+              fontSize: 12,
+              padding: '6px 14px',
+              borderRadius: 6,
+              border: `1px solid ${ch.color}40`,
+              background: `${ch.color}10`,
+              color: configReady ? ch.color : 'var(--app-text-tertiary)',
+              cursor: !configReady ? 'not-allowed' : connecting ? 'wait' : 'pointer',
+              opacity: connecting ? 0.7 : 1,
+            }}
+          >
+            {connecting
+              ? 'Abrindo TikTok...'
+              : !configReady
+                ? 'Conexao indisponivel'
+                : isConnected
+                  ? 'Reconectar TikTok'
+                  : 'Conectar TikTok'}
+          </button>
+        </div>
+      </div>
+
+      {!configReady && (
+        <div
+          style={{
+            marginBottom: 16,
+            padding: '12px 16px',
+            borderRadius: 6,
+            border: '1px solid rgba(251,191,36,0.25)',
+            background: 'rgba(251,191,36,0.08)',
+            color: 'var(--app-text-primary)',
+            fontSize: 12,
+            fontFamily: SORA,
+            lineHeight: 1.6,
+          }}
+        >
+          {kloelT(
+            'A conexao com TikTok ainda nao esta disponivel para este workspace. O time da Kloel ja consegue finalizar essa ativacao pelo painel interno.',
+          )}
+        </div>
+      )}
+
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))',
+          gap: 10,
+          marginBottom: 16,
+        }}
+      >
+        {[
+          { label: 'Status', value: statusLabel },
+          {
+            label: 'Aplicativo',
+            value: connection?.clientConfigured ? 'Pronto' : 'Pendente',
+          },
+          {
+            label: 'Autorizacao',
+            value: connection?.secretConfigured ? 'Pronta' : 'Pendente',
+          },
+          isConnected && kind
+            ? { label: 'Conta', value: kind === 'advertiser' ? 'Negocios' : 'Criador' }
+            : null,
+          isConnected && connection?.advertiserIds && connection.advertiserIds.length > 0
+            ? {
+                label: 'Contas vinculadas',
+                value: `${connection.advertiserIds.length}`,
+              }
+            : null,
+          isConnected && connection?.expiresAt
+            ? {
+                label: 'Expira em',
+                value: new Date(connection.expiresAt).toLocaleDateString('pt-BR'),
+              }
+            : null,
+        ]
+          .filter((item): item is ChannelStatRow => item !== null)
+          .map((item) => (
+            <ChannelInfoGridCard key={item.label} label={item.label} value={item.value} />
+          ))}
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 20 }}>
+        <ChannelStatsList stats={channelDataStats(channelData)} color={ch.color} />
+      </div>
+    </div>
+  );
+}
+
+// ── FacebookOperationalPanel — Messenger data after the universal wizard ──
+function FacebookOperationalPanel({
   channelData,
   connection,
   onConnect,
@@ -1817,7 +2049,7 @@ function FacebookTab({
           <span style={{ fontFamily: SORA, fontSize: 18, color: 'var(--app-text-primary)' }}>
             {kloelT(`Messenger`)}
           </span>
-          <ConnBadge connected={true} />
+          <ConnBadge connected={connection?.connected === true} />
         </div>
         <button
           type="button"
@@ -1835,7 +2067,11 @@ function FacebookTab({
             opacity: connecting ? 0.7 : 1,
           }}
         >
-          {connecting ? 'Abrindo Meta...' : 'Reconectar Facebook'}
+          {connecting
+            ? 'Abrindo Meta...'
+            : connection?.connected
+              ? 'Reconectar Facebook'
+              : 'Conectar Facebook'}
         </button>
       </div>
 
@@ -1849,7 +2085,7 @@ function FacebookTab({
       >
         {[
           { label: 'Pagina vinculada', value: connection?.pageName || 'Nao resolvida' },
-          { label: 'Page ID', value: connection?.pageId || 'Pendente' },
+          { label: 'Pagina autorizada', value: connection?.pageId ? 'Autorizada' : 'Pendente' },
           { label: 'Canal', value: 'Messenger do Facebook' },
         ].map((item) => (
           <ChannelInfoGridCard key={item.label} label={item.label} value={item.value} />
@@ -1959,6 +2195,8 @@ function ChannelTab({
   connectingKey,
   emailTestSending,
   emailTestResult,
+  onConnectTikTok,
+  onDisconnectTikTok,
 }: {
   channelKey: string;
   channelData: ChannelRealData | null;
@@ -1994,44 +2232,70 @@ function ChannelTab({
   connectingKey?: string | null;
   emailTestSending?: boolean;
   emailTestResult?: string | null;
+  onConnectTikTok?: () => void;
+  onDisconnectTikTok?: () => void;
 }) {
   const ch = CH_CONFIG[channelKey];
   if (!ch) {
     return null;
   }
   if (channelKey === 'whatsapp') {
+    if (connectionStatus?.channels?.whatsapp?.connected && workspaceId) {
+      return (
+        <WhatsAppTab
+          channelData={channelData}
+          liveFeed={liveFeed}
+          mode={mode}
+          workspaceId={workspaceId}
+          operator={operator}
+          connection={connectionStatus?.channels?.whatsapp}
+          onRefreshConnectionStatus={onRefreshConnectionStatus}
+        />
+      );
+    }
     return (
-      <WhatsAppTab
-        channelData={channelData}
-        liveFeed={liveFeed}
-        mode={mode}
-        workspaceId={workspaceId}
-        operator={operator}
-        connection={connectionStatus?.channels?.whatsapp}
-        onRefreshConnectionStatus={onRefreshConnectionStatus}
+      <UniversalChannelWizard
+        channel="whatsapp"
+        connecting={connectingKey === 'whatsapp'}
+        connected={false}
+        error={null}
+        onConnect={() => onConnectMeta?.('whatsapp')}
       />
     );
   }
   if (channelKey === 'email') {
+    if (connectionStatus?.channels?.email?.connected) {
+      return (
+        <EmailOperationalPanel
+          channelData={channelData}
+          mode={mode}
+          connection={connectionStatus?.channels?.email}
+          onConnect={() => onConnectEmail?.()}
+          onDisconnect={() => onDisconnectEmail?.()}
+          onSendTest={() => onSendEmailTest?.()}
+          connecting={connectingKey === 'email'}
+          testSending={emailTestSending}
+          testResult={emailTestResult}
+          defaultRecipientEmail={operator || null}
+        />
+      );
+    }
     return (
-      <EmailTab
-        channelData={channelData}
-        mode={mode}
-        connection={connectionStatus?.channels?.email}
-        onConnect={() => onConnectEmail?.()}
-        onDisconnect={() => onDisconnectEmail?.()}
-        onSendTest={() => onSendEmailTest?.()}
+      <UniversalChannelWizard
+        channel="email"
         connecting={connectingKey === 'email'}
-        testSending={emailTestSending}
-        testResult={emailTestResult}
-        defaultRecipientEmail={operator || null}
+        connected={false}
+        error={
+          emailTestResult && !connectionStatus?.channels?.email?.connected ? emailTestResult : null
+        }
+        onConnect={() => onConnectEmail?.()}
       />
     );
   }
   if (channelKey === 'instagram') {
     if (metaConnected) {
       return (
-        <InstagramTab
+        <InstagramOperationalPanel
           channelData={channelData}
           igProfile={igProfile ?? null}
           igInsights={igInsights ?? null}
@@ -2042,18 +2306,19 @@ function ChannelTab({
       );
     }
     return (
-      <MetaConnectPrompt
-        channelKey={channelKey}
-        channelData={channelData}
-        onConnect={(key) => onConnectMeta?.(key)}
+      <UniversalChannelWizard
+        channel="instagram"
         connecting={connectingKey === 'instagram'}
+        connected={false}
+        error={null}
+        onConnect={() => onConnectMeta?.('instagram')}
       />
     );
   }
   if (channelKey === 'facebook') {
     if (metaConnected) {
       return (
-        <FacebookTab
+        <FacebookOperationalPanel
           channelData={channelData}
           connection={connectionStatus?.channels?.facebook}
           onConnect={(key) => onConnectMeta?.(key)}
@@ -2062,11 +2327,35 @@ function ChannelTab({
       );
     }
     return (
-      <MetaConnectPrompt
-        channelKey={channelKey}
-        channelData={channelData}
-        onConnect={(key) => onConnectMeta?.(key)}
+      <UniversalChannelWizard
+        channel="facebook"
         connecting={connectingKey === 'facebook'}
+        connected={false}
+        error={null}
+        onConnect={() => onConnectMeta?.('facebook')}
+      />
+    );
+  }
+  if (channelKey === 'tiktok') {
+    if (connectionStatus?.channels?.tiktok?.connected) {
+      return (
+        <TikTokOperationalPanel
+          channelData={channelData}
+          connection={connectionStatus?.channels?.tiktok}
+          onConnect={() => onConnectTikTok?.()}
+          onDisconnect={() => onDisconnectTikTok?.()}
+          connecting={connectingKey === 'tiktok'}
+        />
+      );
+    }
+    return (
+      <UniversalChannelWizard
+        channel="tiktok"
+        connecting={connectingKey === 'tiktok'}
+        connected={false}
+        error={null}
+        configReady={connectionStatus?.channels?.tiktok?.configReady}
+        onConnect={() => onConnectTikTok?.()}
       />
     );
   }
@@ -2612,6 +2901,7 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
   const requestedMode = searchParams?.get('mode') || searchParams?.get('focus') || undefined;
   const metaQueryState = searchParams?.get('meta') || null;
   const metaQueryReason = searchParams?.get('reason') || null;
+  const tiktokQueryState = searchParams?.get('tiktok') || null;
   const [connectingKey, setConnectingKey] = useState<string | null>(null);
   const [emailTestSending, setEmailTestSending] = useState(false);
   const [emailTestResult, setEmailTestResult] = useState<string | null>(null);
@@ -2619,6 +2909,12 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
 
   const { data: connectionStatus, mutate: mutateConnectionStatus } = useSWR<MarketingConnectStatus>(
     '/marketing/connect/status',
+    swrFetcher,
+    { revalidateOnFocus: false, shouldRetryOnError: false },
+  );
+
+  const { data: tiktokStatus } = useSWR<{ connected?: boolean; status?: string }>(
+    '/marketing/connect/tiktok/status',
     swrFetcher,
     { revalidateOnFocus: false, shouldRetryOnError: false },
   );
@@ -2656,13 +2952,15 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
     swrFetcher,
   );
 
-  // Update CH_CONFIG dynamically based on Meta connection
+  // Update CH_CONFIG dynamically based on connection status
   useEffect(() => {
     CH_CONFIG.whatsapp.hasIntegration = connectionStatus?.channels?.whatsapp?.connected === true;
     CH_CONFIG.instagram.hasIntegration = connectionStatus?.channels?.instagram?.connected === true;
     CH_CONFIG.facebook.hasIntegration = connectionStatus?.channels?.facebook?.connected === true;
     CH_CONFIG.email.hasIntegration = connectionStatus?.channels?.email?.connected === true;
-  }, [connectionStatus]);
+    CH_CONFIG.tiktok.hasIntegration =
+      connectionStatus?.channels?.tiktok?.connected === true || tiktokStatus?.connected === true;
+  }, [connectionStatus, tiktokStatus]);
 
   const handleConnectMeta = useCallback(
     async (channelKey: 'whatsapp' | 'instagram' | 'facebook') => {
@@ -2688,13 +2986,43 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
     [],
   );
 
+  const handleConnectTikTok = useCallback(async () => {
+    setConnectingKey('tiktok');
+    try {
+      const res = await apiFetch<{ url?: string }>('/marketing/connect/tiktok/url?kind=creator');
+      const url = String(res?.data?.url || '').trim();
+      if (!url) {
+        throw kloelError('Nao foi possivel iniciar a conexao oficial do TikTok.');
+      }
+      navigateCurrentWindow(url);
+    } catch (error: unknown) {
+      setConnectingKey(null);
+      setConnectionMessage(error instanceof Error ? error.message : 'Falha ao abrir o TikTok.');
+    }
+  }, []);
+
+  const handleDisconnectTikTok = useCallback(async () => {
+    setConnectingKey('tiktok');
+    try {
+      await apiFetch('/marketing/connect/tiktok/disconnect', { method: 'POST' });
+      await mutateConnectionStatus();
+      setConnectionMessage('Canal TikTok desconectado do workspace.');
+    } catch (error: unknown) {
+      setConnectionMessage(
+        error instanceof Error ? error.message : 'Falha ao desconectar o TikTok.',
+      );
+    } finally {
+      setConnectingKey(null);
+    }
+  }, [mutateConnectionStatus]);
+
   const handleConnectEmail = useCallback(async () => {
     setConnectingKey('email');
     try {
       await apiFetch('/marketing/connect/email', { method: 'POST', body: { enabled: true } });
       await mutateConnectionStatus();
       setEmailTestResult(
-        'Email ativado com sucesso. Agora voce pode enviar campanhas e testar o provider.',
+        'Email ativado com sucesso. Agora voce pode enviar campanhas e testar a entrega.',
       );
     } catch (error: unknown) {
       setEmailTestResult(
@@ -2732,7 +3060,7 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
       );
       const payload = res?.data;
       setEmailTestResult(
-        `Email de teste enviado para ${payload?.toEmail || userEmail || 'seu email'} via ${payload?.provider || 'provider configurado'}.`,
+        `Email de teste enviado para ${payload?.toEmail || userEmail || 'seu email'} pelo canal configurado.`,
       );
     } catch (error: unknown) {
       setEmailTestResult(
@@ -2794,10 +3122,10 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
   const TABS = Object.freeze([
     { id: 'conversas', label: 'Conversas', icon: IC.zap },
     { id: 'whatsapp', label: 'WhatsApp', icon: IC.wa },
-    { id: 'instagram', label: 'Instagram', icon: IC.ig, soon: true },
-    { id: 'tiktok', label: 'TikTok', icon: IC.tt, soon: true },
-    { id: 'facebook', label: 'Facebook', icon: IC.fb, soon: true },
-    { id: 'email', label: 'Email', icon: IC.em, soon: true },
+    { id: 'instagram', label: 'Instagram', icon: IC.ig },
+    { id: 'tiktok', label: 'TikTok', icon: IC.tt },
+    { id: 'facebook', label: 'Facebook', icon: IC.fb },
+    { id: 'email', label: 'Email', icon: IC.em },
   ]);
 
   const switchTab = useCallback(
@@ -2867,18 +3195,6 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
           >
             <span style={{ display: 'flex', alignItems: 'center' }}>{t.icon(14)}</span>
             {t.label}
-            {t.soon && (
-              <span
-                style={{
-                  fontSize: 8,
-                  color: 'var(--app-text-tertiary)',
-                  fontFamily: MONO,
-                  marginLeft: 2,
-                }}
-              >
-                soon
-              </span>
-            )}
           </button>
         ))}
       </div>
@@ -2932,86 +3248,66 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
           />
         )}
         {tab === 'instagram' && (
-          <div style={{ position: 'relative' }}>
-            <ChannelTab
-              channelKey="instagram"
-              channelData={getChannelData('instagram')}
-              liveFeed={feed.filter((m) => m.includes('[instagram]'))}
-              metaConnected={metaConnected}
-              igProfile={igProfile}
-              igInsights={igInsights}
-              connectionStatus={connectionStatus}
-              onConnectMeta={handleConnectMeta}
-              onConnectEmail={handleConnectEmail}
-              onDisconnectEmail={handleDisconnectEmail}
-              onSendEmailTest={handleSendEmailTest}
-              connectingKey={connectingKey}
-              emailTestSending={emailTestSending}
-              emailTestResult={emailTestResult}
-            />
-            <ComingSoonOverlay
-              title={kloelT(`Em breve`)}
-              description={kloelT(`Instagram Marketing esta sendo finalizado.`)}
-            />
-          </div>
+          <ChannelTab
+            channelKey="instagram"
+            channelData={getChannelData('instagram')}
+            liveFeed={feed.filter((m) => m.includes('[instagram]'))}
+            metaConnected={metaConnected}
+            igProfile={igProfile}
+            igInsights={igInsights}
+            connectionStatus={connectionStatus}
+            onConnectMeta={handleConnectMeta}
+            onConnectEmail={handleConnectEmail}
+            onDisconnectEmail={handleDisconnectEmail}
+            onSendEmailTest={handleSendEmailTest}
+            connectingKey={connectingKey}
+            emailTestSending={emailTestSending}
+            emailTestResult={emailTestResult}
+          />
         )}
         {tab === 'tiktok' && (
-          <div style={{ position: 'relative' }}>
-            <ChannelTab
-              channelKey="tiktok"
-              channelData={getChannelData('tiktok')}
-              liveFeed={feed.filter((m) => m.includes('[tiktok]'))}
-            />
-            <ComingSoonOverlay
-              title={kloelT(`Em breve`)}
-              description={kloelT(`TikTok Marketing esta sendo finalizado.`)}
-            />
-          </div>
+          <ChannelTab
+            channelKey="tiktok"
+            channelData={getChannelData('tiktok')}
+            liveFeed={feed.filter((m) => m.includes('[tiktok]'))}
+            connectionStatus={connectionStatus}
+            onConnectTikTok={handleConnectTikTok}
+            onDisconnectTikTok={handleDisconnectTikTok}
+            connectingKey={connectingKey}
+          />
         )}
         {tab === 'facebook' && (
-          <div style={{ position: 'relative' }}>
-            <ChannelTab
-              channelKey="facebook"
-              channelData={getChannelData('facebook')}
-              liveFeed={feed.filter((m) => m.includes('[facebook]'))}
-              metaConnected={metaConnected}
-              connectionStatus={connectionStatus}
-              onConnectMeta={handleConnectMeta}
-              onConnectEmail={handleConnectEmail}
-              onDisconnectEmail={handleDisconnectEmail}
-              onSendEmailTest={handleSendEmailTest}
-              connectingKey={connectingKey}
-              emailTestSending={emailTestSending}
-              emailTestResult={emailTestResult}
-            />
-            <ComingSoonOverlay
-              title={kloelT(`Em breve`)}
-              description={kloelT(`Facebook Messenger esta sendo finalizado.`)}
-            />
-          </div>
+          <ChannelTab
+            channelKey="facebook"
+            channelData={getChannelData('facebook')}
+            liveFeed={feed.filter((m) => m.includes('[facebook]'))}
+            metaConnected={metaConnected}
+            connectionStatus={connectionStatus}
+            onConnectMeta={handleConnectMeta}
+            onConnectEmail={handleConnectEmail}
+            onDisconnectEmail={handleDisconnectEmail}
+            onSendEmailTest={handleSendEmailTest}
+            connectingKey={connectingKey}
+            emailTestSending={emailTestSending}
+            emailTestResult={emailTestResult}
+          />
         )}
         {tab === 'email' && (
-          <div style={{ position: 'relative' }}>
-            <ChannelTab
-              channelKey="email"
-              channelData={getChannelData('email')}
-              liveFeed={feed.filter((m) => m.includes('[email]'))}
-              mode={requestedMode}
-              operator={userEmail || null}
-              connectionStatus={connectionStatus}
-              onConnectMeta={handleConnectMeta}
-              onConnectEmail={handleConnectEmail}
-              onDisconnectEmail={handleDisconnectEmail}
-              onSendEmailTest={handleSendEmailTest}
-              connectingKey={connectingKey}
-              emailTestSending={emailTestSending}
-              emailTestResult={emailTestResult}
-            />
-            <ComingSoonOverlay
-              title={kloelT(`Em breve`)}
-              description={kloelT(`Email Marketing esta sendo finalizado.`)}
-            />
-          </div>
+          <ChannelTab
+            channelKey="email"
+            channelData={getChannelData('email')}
+            liveFeed={feed.filter((m) => m.includes('[email]'))}
+            mode={requestedMode}
+            operator={userEmail || null}
+            connectionStatus={connectionStatus}
+            onConnectMeta={handleConnectMeta}
+            onConnectEmail={handleConnectEmail}
+            onDisconnectEmail={handleDisconnectEmail}
+            onSendEmailTest={handleSendEmailTest}
+            connectingKey={connectingKey}
+            emailTestSending={emailTestSending}
+            emailTestResult={emailTestResult}
+          />
         )}
       </div>
     </div>

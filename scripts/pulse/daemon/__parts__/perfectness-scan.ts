@@ -42,6 +42,12 @@ import { loadPluginRegistry } from '../../__parts__/plugin-system/main';
 import { buildSandboxState } from '../../safety-sandbox/__parts__/sandbox';
 import { evaluatePerfectness } from '../../perfectness-test/__parts__/perfectness-eval';
 
+interface PerfectnessModule {
+  module: string;
+  run: () => unknown | Promise<unknown>;
+  tier0: boolean;
+}
+
 export async function runPerfectnessScan(
   config: PulseConfig,
   options: FullScanOptions,
@@ -49,43 +55,160 @@ export async function runPerfectnessScan(
 ): Promise<void> {
   const perfectnessStart = Date.now();
 
-  const perfectnessModules = 30; // discovered from evidence via Promise.all count
+  const perfectnessModules: PerfectnessModule[] = [
+    {
+      module: 'ast-call-graph',
+      run: () => buildAstCallGraph(config.rootDir),
+      tier0: false,
+    },
+    {
+      module: 'scope-engine',
+      run: () => buildScopeEngineState(config.rootDir),
+      tier0: false,
+    },
+    {
+      module: 'behavior-graph',
+      run: () => generateBehaviorGraph(config.rootDir),
+      tier0: true,
+    },
+    {
+      module: 'merkle-dag',
+      run: () => buildMerkleDag(config.rootDir, structuralGraph),
+      tier0: false,
+    },
+    {
+      module: 'otel-runtime',
+      run: () => collectRuntimeTraces(config.rootDir),
+      tier0: false,
+    },
+    {
+      module: 'runtime-fusion',
+      run: () => buildRuntimeFusionState(config.rootDir),
+      tier0: false,
+    },
+    {
+      module: 'property-tester',
+      run: () => buildPropertyTestEvidence(config.rootDir),
+      tier0: false,
+    },
+    {
+      module: 'execution-harness',
+      run: () => buildExecutionHarness(config.rootDir),
+      tier0: false,
+    },
+    {
+      module: 'ui-crawler',
+      run: () => buildUICrawlerCatalog(config.rootDir),
+      tier0: false,
+    },
+    {
+      module: 'api-fuzzer',
+      run: () => buildAPIFuzzCatalog(config.rootDir),
+      tier0: false,
+    },
+    {
+      module: 'dataflow-engine',
+      run: () => buildDataflowState(config.rootDir),
+      tier0: false,
+    },
+    {
+      module: 'contract-tester',
+      run: () => buildContractTestEvidence(config.rootDir),
+      tier0: false,
+    },
+    {
+      module: 'dod-engine',
+      run: () => buildDoDEngineState(config.rootDir),
+      tier0: false,
+    },
+    {
+      module: 'observability-coverage',
+      run: () => buildObservabilityCoverage(config.rootDir),
+      tier0: false,
+    },
+    {
+      module: 'scenario-engine',
+      run: () => buildScenarioCatalog(config.rootDir),
+      tier0: false,
+    },
+    {
+      module: 'replay-adapter',
+      run: () => buildReplayState(config.rootDir),
+      tier0: true,
+    },
+    {
+      module: 'production-proof',
+      run: () => buildProductionProofState(config.rootDir),
+      tier0: true,
+    },
+    {
+      module: 'chaos-engine',
+      run: () => buildChaosCatalog(config.rootDir),
+      tier0: false,
+    },
+    {
+      module: 'path-coverage-engine',
+      run: () => buildPathCoverageState(config.rootDir),
+      tier0: true,
+    },
+    {
+      module: 'probabilistic-risk',
+      run: () => buildProbabilisticRisk(config.rootDir),
+      tier0: true,
+    },
+    {
+      module: 'structural-memory',
+      run: () => buildStructuralMemory(config.rootDir),
+      tier0: true,
+    },
+    {
+      module: 'false-positive-adjudicator',
+      run: () => buildFPAdjudicationState(config.rootDir),
+      tier0: true,
+    },
+    {
+      module: 'authority-engine',
+      run: () => evaluateAuthorityState(config.rootDir),
+      tier0: false,
+    },
+    {
+      module: 'audit-chain',
+      run: () => buildAuditChain(config.rootDir),
+      tier0: true,
+    },
+    {
+      module: 'gitnexus-freshness',
+      run: () => checkGitNexusFreshness(config.rootDir),
+      tier0: true,
+    },
+    {
+      module: 'plugin-system',
+      run: () => loadPluginRegistry(config.rootDir),
+      tier0: true,
+    },
+    {
+      module: 'safety-sandbox',
+      run: () => buildSandboxState(config.rootDir),
+      tier0: true,
+    },
+    {
+      module: 'perfectness-test',
+      run: () => evaluatePerfectness(config.rootDir, new Date().toISOString()),
+      tier0: true,
+    },
+  ];
+  const selectedPerfectnessModules =
+    options.perfectnessMode === 'tier0'
+      ? perfectnessModules.filter((moduleRun) => moduleRun.tier0)
+      : perfectnessModules;
   options.tracer?.startPhase('scan:perfectness', {
-    moduleCount: perfectnessModules,
+    moduleCount: selectedPerfectnessModules.length + 2,
+    tier0Mode: options.perfectnessMode === 'tier0',
   });
 
-  const perfectnessRuns = await Promise.all([
-    safeRun('ast-call-graph', () => buildAstCallGraph(config.rootDir)),
-    safeRun('scope-engine', () => buildScopeEngineState(config.rootDir)),
-    safeRun('behavior-graph', () => generateBehaviorGraph(config.rootDir)),
-    safeRun('merkle-dag', () => buildMerkleDag(config.rootDir, structuralGraph)),
-    safeRun('otel-runtime', () => collectRuntimeTraces(config.rootDir)),
-    safeRun('runtime-fusion', () => buildRuntimeFusionState(config.rootDir)),
-    safeRun('property-tester', () => buildPropertyTestEvidence(config.rootDir)),
-    safeRun('execution-harness', () => buildExecutionHarness(config.rootDir)),
-    safeRun('ui-crawler', () => buildUICrawlerCatalog(config.rootDir)),
-    safeRun('api-fuzzer', () => buildAPIFuzzCatalog(config.rootDir)),
-    safeRun('dataflow-engine', () => buildDataflowState(config.rootDir)),
-    safeRun('contract-tester', () => buildContractTestEvidence(config.rootDir)),
-    safeRun('dod-engine', () => buildDoDEngineState(config.rootDir)),
-    safeRun('observability-coverage', () => buildObservabilityCoverage(config.rootDir)),
-    safeRun('scenario-engine', () => buildScenarioCatalog(config.rootDir)),
-    safeRun('replay-adapter', () => buildReplayState(config.rootDir)),
-    safeRun('production-proof', () => buildProductionProofState(config.rootDir)),
-    safeRun('chaos-engine', () => buildChaosCatalog(config.rootDir)),
-    safeRun('path-coverage-engine', () => buildPathCoverageState(config.rootDir)),
-    safeRun('probabilistic-risk', () => buildProbabilisticRisk(config.rootDir)),
-    safeRun('structural-memory', () => buildStructuralMemory(config.rootDir)),
-    safeRun('false-positive-adjudicator', () => buildFPAdjudicationState(config.rootDir)),
-    safeRun('authority-engine', () => evaluateAuthorityState(config.rootDir)),
-    safeRun('audit-chain', () => buildAuditChain(config.rootDir)),
-    safeRun('gitnexus-freshness', () => checkGitNexusFreshness(config.rootDir)),
-    safeRun('plugin-system', () => loadPluginRegistry(config.rootDir)),
-    safeRun('safety-sandbox', () => buildSandboxState(config.rootDir)),
-    safeRun('perfectness-test', () =>
-      evaluatePerfectness(config.rootDir, new Date().toISOString()),
-    ),
-  ]);
+  const perfectnessRuns = await Promise.all(
+    selectedPerfectnessModules.map((moduleRun) => safeRun(moduleRun.module, moduleRun.run)),
+  );
 
   const proofSynthesisRun = await safeRun('proof-synthesis', () =>
     buildProofSynthesisState(config.rootDir),

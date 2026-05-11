@@ -1,6 +1,6 @@
 'use client';
 
-import { requestFacebookAccessTokenWithEmailScope } from '@/lib/facebook-sdk';
+import { requestMetaAccessTokenWithEmailScope } from '@/lib/facebook-sdk';
 import { API_BASE } from '@/lib/http';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -491,7 +491,7 @@ export function useCheckoutSocialIdentity({
 
       setError('');
       try {
-        const auth = await requestFacebookAccessTokenWithEmailScope();
+        const auth = await requestMetaAccessTokenWithEmailScope();
         await handleFacebookAccessToken(auth.accessToken, auth.userId);
       } catch (error) {
         setError(error instanceof Error ? error.message : 'Falha ao autenticar com Facebook.');

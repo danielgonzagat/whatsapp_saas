@@ -1,5 +1,5 @@
 import * as path from 'path';
-import { pathExists, readDir } from '../../safe-fs';
+import { pathExists } from '../../safe-fs';
 import { safeJoin } from '../../safe-path';
 import {
   DetectedSourceRoot,
@@ -8,13 +8,13 @@ import {
   SourceRootEvidenceBasis,
   CONVENTIONAL_SOURCE_DIR_NAMES,
   BUILD_CONFIG_FILES,
-  SKIP_DIR_NAMES,
 } from './types';
 import {
   normalizeRelative,
   inferKindFromPackage,
   inferFrameworksFromPackage,
   uniqueSorted,
+  walkUnskippedFiles,
 } from './helpers';
 import {
   addRoot,
@@ -29,9 +29,8 @@ import { readJsonOrNull } from './package-discovery';
 
 export function discoverProjectConfigs(rootDir: string): string[] {
   const configs: string[] = [];
-  for (const entry of readDir(rootDir, { recursive: true }) as string[]) {
+  for (const entry of walkUnskippedFiles(rootDir)) {
     const normalized = normalizeRelative(entry);
-    if (normalized.split('/').some((part) => SKIP_DIR_NAMES.has(part))) continue;
     if (/^[tj]sconfig(?:\.[\w-]+)?\.json$/.test(path.basename(normalized))) {
       configs.push(normalized);
     }

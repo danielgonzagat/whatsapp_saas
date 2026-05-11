@@ -3,10 +3,24 @@ import { PrismaService } from '../prisma/prisma.service';
 import { actionImportContacts as actionImportContactsCompanion } from './__companions__/unified-agent-actions-crm.service.companion';
 import { flowQueue } from '../queue/queue';
 import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
-import type { ToolArgs } from './unified-agent.service';
+import type { ToolArgs } from './unified-agent.types';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import { MindPolicyService } from './mind-policy.service';
+import { MindService } from './mind.service';
+import { MindGuardContextBuilderService } from './mind-guard-context-builder.service';
+import { MindGuardsService } from './mind-guards.service';
+import type { MindActionContext } from './mind-code-native.types';
+import {
+  chooseFollowUpTiming,
+  predecidedFollowUpTiming,
+  predecidedHumanTransfer,
+} from './unified-agent-actions-crm-predecided.helpers';
 
 type UnknownRecord = Record<string, unknown>;
+
+function isDeterministicPipeline(context?: UnknownRecord): boolean {
+  return context?.deterministicPipeline === true;
+}
 
 /**
  * Handles CRM tool actions: lead status updates, tags, follow-ups, human transfer,
@@ -20,6 +34,10 @@ export class UnifiedAgentActionsCrmService {
     private readonly prisma: PrismaService,
     private readonly providerRegistry: WhatsAppProviderRegistry,
     @Optional() private readonly opsAlert?: OpsAlertService,
+    @Optional() private readonly mindPolicy?: MindPolicyService,
+    @Optional() private readonly mind?: MindService,
+    @Optional() private readonly guardContextBuilder?: MindGuardContextBuilderService,
+    @Optional() private readonly guards?: MindGuardsService,
   ) {}
 
   // ───────── helpers ─────────
@@ -103,9 +121,23 @@ export class UnifiedAgentActionsCrmService {
     contactId: string,
     _phone: string,
     args: ToolArgs,
+    context?: UnknownRecord,
   ) {
     try {
-      const delayHours = this.num(args.delayHours, 24);
+      const requestedDelayHours = this.num(args.delayHours, 24);
+      const resolvedChannel = await this.resolveChannel(workspaceId, _phone);
+      const predecided = isDeterministicPipeline(context);
+      const mindDecision = predecided
+        ? predecidedFollowUpTiming(args, requestedDelayHours)
+        : await chooseFollowUpTiming({
+            workspaceId,
+            contactId,
+            channel: resolvedChannel,
+            logger: this.logger,
+            mindPolicy: this.mindPolicy,
+            requestedDelayHours,
+          });
+      const delayHours = mindDecision.delayHours;
       const scheduledFor = new Date(Date.now() + delayHours * 60 * 60 * 1000);
       const followMessage = this.str(args.message);
       const followReason = this.str(args.reason, 'scheduled_by_unified_agent');
@@ -131,7 +163,9 @@ export class UnifiedAgentActionsCrmService {
         };
       }
 
-      this.logger.log(`[AGENT] Follow-up agendado para ${_phone} em ${delayHours}h`);
+      this.logger.log(
+        `[AGENT] Follow-up agendado para ${_phone} em ${delayHours}h (channel=${resolvedChannel})`,
+      );
       await this.prisma.followUp.create({
         data: {
           workspaceId,
@@ -153,7 +187,15 @@ export class UnifiedAgentActionsCrmService {
             status: 'scheduled',
             reason: `Agendado para ${scheduledFor.toISOString()}`,
             responseText: followMessage,
-            meta: { scheduledFor: scheduledFor.toISOString(), delayHours },
+            meta: {
+              scheduledFor: scheduledFor.toISOString(),
+              delayHours,
+              channel: resolvedChannel,
+              decisionTraceId: args.decisionTraceId,
+              inboundCorrelationId: args.inboundCorrelationId,
+              mind: mindDecision.meta,
+              source: predecided ? 'orchestrator_predecided' : 'legacy_action_decision',
+            },
           },
         })
         .catch(() => {});
@@ -163,6 +205,7 @@ export class UnifiedAgentActionsCrmService {
         scheduledFor: scheduledFor.toISOString(),
         message: followMessage,
         jobId: `followup_${workspaceId}_${contactId}_${scheduledFor.getTime()}`,
+        mind: mindDecision.meta,
       };
     } catch (error: unknown) {
       void this.opsAlert?.alertOnCriticalError(error, 'UnifiedAgentActionsCrmService.getTime');
@@ -173,9 +216,95 @@ export class UnifiedAgentActionsCrmService {
     }
   }
 
-  async actionTransferToHuman(workspaceId: string, contactId: string, args: ToolArgs) {
+  private async resolveChannel(workspaceId: string, phone: string): Promise<string> {
+    try {
+      const workspace = await this.prisma.workspace.findUnique({
+        where: { id: workspaceId },
+        select: {
+          providerSettings: true,
+          channelIdentifiers: {
+            where: { channel: 'WHATSAPP' },
+            select: { value: true },
+            take: 1,
+          },
+        },
+      });
+      const settings = (workspace?.providerSettings ?? {}) as UnknownRecord;
+      const whatsappProvider = settings.whatsappProvider;
+      const connectionStatus = settings.connectionStatus;
+
+      if (typeof whatsappProvider === 'string' && connectionStatus === 'connected') {
+        return 'whatsapp';
+      }
+
+      const hasWhatsappChannel = (workspace?.channelIdentifiers?.length ?? 0) > 0;
+
+      if (phone && phone.startsWith('+') && hasWhatsappChannel) {
+        return 'whatsapp';
+      }
+
+      return 'email';
+    } catch {
+      return phone && phone.startsWith('+') ? 'whatsapp' : 'email';
+    }
+  }
+
+  async actionTransferToHuman(
+    workspaceId: string,
+    contactId: string,
+    args: ToolArgs,
+    context?: UnknownRecord,
+  ) {
     const reason = this.str(args.reason, 'Not specified');
     const priority = this.str(args.priority, 'normal');
+    const predecided = isDeterministicPipeline(context);
+    const handoff = predecided
+      ? predecidedHumanTransfer(args)
+      : await this.chooseHumanTransfer(workspaceId, reason, priority);
+    if (handoff.action === 'continue_ai' || handoff.action === 'pause_wait') {
+      await this.prisma.autopilotEvent
+        .create({
+          data: {
+            workspaceId,
+            contactId,
+            intent: 'HUMAN_TRANSFER',
+            action: 'TRANSFER_SKIPPED_BY_MIND',
+            status: 'completed',
+            meta: {
+              reason,
+              priority,
+              handoff,
+              decisionTraceId: args.decisionTraceId,
+              inboundCorrelationId: args.inboundCorrelationId,
+              source: predecided ? 'orchestrator_predecided' : 'legacy_action_decision',
+            },
+          },
+        })
+        .catch(() => {});
+      return { success: true, transferred: false, reason, priority, mind: handoff };
+    }
+    const transferContext = await this.buildTransferGuardContext(workspaceId, {
+      contactId,
+      humanAvailable: true,
+      priority,
+      reason,
+    });
+    const guard = await this.guards?.evaluate({
+      workspaceId,
+      decisionType: 'human_transfer',
+      action: 'human_escalation',
+      context: transferContext,
+    });
+    if (guard && !guard.allowed) {
+      return {
+        success: false,
+        blocked: true,
+        transferred: false,
+        reason: guard.reason,
+        guardName: guard.guardName,
+        mind: handoff,
+      };
+    }
     if (contactId) {
       await this.prisma.$transaction(
         async (tx) => {
@@ -227,7 +356,32 @@ export class UnifiedAgentActionsCrmService {
         { isolationLevel: 'ReadCommitted' },
       );
     }
-    return { success: true, reason, priority };
+    return { success: true, reason, priority, transferred: true, mind: handoff };
+  }
+
+  private async buildTransferGuardContext(
+    workspaceId: string,
+    context: MindActionContext,
+  ): Promise<MindActionContext> {
+    return (await this.guardContextBuilder?.buildForTransfer(workspaceId, context)) ?? context;
+  }
+
+  private async chooseHumanTransfer(
+    workspaceId: string,
+    reason: string,
+    priority: string,
+  ): Promise<{ action: string; confidence?: number; fallback?: boolean }> {
+    if (!this.mind) {
+      return { action: 'transfer_now' };
+    }
+    try {
+      const ticketRisk = priority === 'urgent' || priority === 'high' ? 0.8 : 0.35;
+      return await this.mind.resolveHumanTransfer(workspaceId, 'agent', reason, ticketRisk);
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : this.str(error, 'unknown');
+      this.logger.warn(`MIND human transfer fallback: ${msg}`);
+      return { action: 'transfer_now' };
+    }
   }
 
   async actionSearchKnowledgeBase(workspaceId: string, args: ToolArgs) {

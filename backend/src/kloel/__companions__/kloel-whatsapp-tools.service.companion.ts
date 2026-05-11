@@ -62,13 +62,18 @@ interface PlanLimitsClient {
   ensureDailyMessageQuota(workspaceId: string): Promise<unknown>;
 }
 
-interface WhatsappSendOpts {
-  mediaUrl?: string;
-  mediaType?: 'image' | 'video' | 'audio' | 'document';
-  caption?: string;
-}
-interface WhatsappServiceClient {
-  sendMessage(ws: string, to: string, message: string, opts?: WhatsappSendOpts): Promise<unknown>;
+interface ChannelTransportClient {
+  send(
+    workspaceId: string,
+    request: {
+      workspaceId: string;
+      channel: 'whatsapp';
+      recipientId: string;
+      content: string;
+      mediaUrl?: string;
+      mediaType?: 'image' | 'video' | 'audio' | 'document';
+    },
+  ): Promise<{ success: boolean; error?: string; blockedReason?: string }>;
 }
 
 interface LoggerClient {
@@ -93,7 +98,7 @@ export async function toolSendAudio(
   deps: {
     audioService: AudioServiceClient;
     planLimits: PlanLimitsClient;
-    whatsappService: WhatsappServiceClient;
+    transports: ChannelTransportClient;
     logger: LoggerClient;
     opsAlert?: OpsAlertClient;
   },
@@ -109,10 +114,20 @@ export async function toolSendAudio(
     const dataUri = `data:audio/mpeg;base64,${audioBuffer.toString('base64')}`;
     const normalizedPhone = phone.replace(NON_DIGIT_RE, '');
     await deps.planLimits.ensureDailyMessageQuota(workspaceId);
-    await deps.whatsappService.sendMessage(workspaceId, normalizedPhone, '', {
+    const send = await deps.transports.send(workspaceId, {
+      workspaceId,
+      channel: 'whatsapp',
+      recipientId: normalizedPhone,
+      content: '',
       mediaUrl: dataUri,
       mediaType: 'audio',
     });
+    if (!send.success) {
+      return {
+        success: false,
+        error: send.blockedReason || send.error || 'Falha ao enviar áudio',
+      };
+    }
     return { success: true, message: `Áudio enviado para ${normalizedPhone}` };
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : 'unknown error';
@@ -128,7 +143,7 @@ export async function toolSendDocument(
   deps: {
     prisma: DocumentPrismaDelegate;
     planLimits: PlanLimitsClient;
-    whatsappService: WhatsappServiceClient;
+    transports: ChannelTransportClient;
     logger: LoggerClient;
     opsAlert?: OpsAlertClient;
   },
@@ -153,11 +168,20 @@ export async function toolSendDocument(
       };
     }
     await deps.planLimits.ensureDailyMessageQuota(workspaceId);
-    await deps.whatsappService.sendMessage(workspaceId, normalizedPhone, caption || '', {
+    const send = await deps.transports.send(workspaceId, {
+      workspaceId,
+      channel: 'whatsapp',
+      recipientId: normalizedPhone,
+      content: caption || '',
       mediaUrl: documentUrl,
       mediaType: 'document',
-      caption,
     });
+    if (!send.success) {
+      return {
+        success: false,
+        error: send.blockedReason || send.error || 'Falha ao enviar documento',
+      };
+    }
     return { success: true, message: `Documento enviado para ${normalizedPhone}` };
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : 'unknown error';

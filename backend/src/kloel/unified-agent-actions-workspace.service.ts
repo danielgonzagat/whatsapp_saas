@@ -4,13 +4,29 @@ import OpenAI from 'openai';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { chatCompletionWithFallback } from './openai-wrapper';
-import type { ToolArgs } from './unified-agent.service';
+import type { ToolArgs } from './unified-agent.types';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { actionGetWorkspaceStatus as actionGetWorkspaceStatusFn } from './__companions__/unified-agent-actions-workspace.service.companion';
+import { MindService } from './mind.service';
+import { MindGuardContextBuilderService } from './mind-guard-context-builder.service';
+import { MindGuardsService } from './mind-guards.service';
+import type { MindActionContext } from './mind-code-native.types';
 
 type UnknownRecord = Record<string, unknown>;
 
 const WHITESPACE_G_RE = /\s+/g;
+
+function isDeterministicPipeline(context?: UnknownRecord): boolean {
+  return context?.deterministicPipeline === true;
+}
+
+function readString(value: unknown, fallback = ''): string {
+  return typeof value === 'string' && value.trim() ? value.trim() : fallback;
+}
+
+function readRecord(value: unknown): UnknownRecord | null {
+  return typeof value === 'object' && value !== null ? (value as UnknownRecord) : null;
+}
 
 /**
  * Handles workspace, product, flow, and AI persona tool actions for the Unified Agent.
@@ -25,6 +41,9 @@ export class UnifiedAgentActionsWorkspaceService {
     private readonly prisma: PrismaService,
     private readonly planLimits: PlanLimitsService,
     @Optional() private readonly opsAlert?: OpsAlertService,
+    @Optional() private readonly mind?: MindService,
+    @Optional() private readonly guardContextBuilder?: MindGuardContextBuilderService,
+    @Optional() private readonly guards?: MindGuardsService,
   ) {}
 
   // ───────── helpers ─────────
@@ -228,8 +247,69 @@ export class UnifiedAgentActionsWorkspaceService {
   }
 
   // PULSE_OK: workspaceId validated by caller guard
-  async actionCreateBroadcast(workspaceId: string, args: ToolArgs) {
+  async actionCreateBroadcast(workspaceId: string, args: ToolArgs, context?: UnknownRecord) {
     const broadcastKey = `broadcast_${Date.now()}`;
+    const segment = this.str(args.stage, 'general');
+    const availableChannels = this.resolveBroadcastChannels(args);
+    const predecided = isDeterministicPipeline(context);
+    const predecidedChannelChoice = readRecord(args.channelChoice);
+    const predecidedBroadcastWindow = readRecord(args.broadcastWindow);
+    const channelChoice = predecided
+      ? {
+          channel: readString(predecidedChannelChoice?.channel, availableChannels[0] ?? 'whatsapp'),
+          confidence:
+            typeof predecidedChannelChoice?.confidence === 'number'
+              ? predecidedChannelChoice.confidence
+              : 0,
+          fallback: predecidedChannelChoice?.fallback === true,
+        }
+      : this.mind
+        ? await this.mind.resolveChannelChoice(
+            workspaceId,
+            availableChannels,
+            segment,
+            new Date().getHours(),
+            'broadcast',
+          )
+        : { channel: availableChannels[0] ?? 'whatsapp', confidence: 0, fallback: true };
+    const broadcastWindow = predecided
+      ? {
+          window: readString(
+            predecidedBroadcastWindow?.window,
+            args.scheduleAt ? 'operator_fixed' : 'now',
+          ),
+          confidence:
+            typeof predecidedBroadcastWindow?.confidence === 'number'
+              ? predecidedBroadcastWindow.confidence
+              : 0,
+          fallback: predecidedBroadcastWindow?.fallback === true,
+        }
+      : this.mind
+        ? await this.mind.resolveBroadcastWindow(workspaceId, channelChoice.channel, segment)
+        : { window: args.scheduleAt ? 'operator_fixed' : 'now', confidence: 0, fallback: true };
+    const scheduleAt = args.scheduleAt || this.resolveBroadcastScheduleAt(broadcastWindow.window);
+    const broadcastContext = await this.buildBroadcastGuardContext(workspaceId, {
+      campaignActive: true,
+      campaignBudgetExhausted: false,
+      channel: channelChoice.channel,
+      segment,
+      withinComplianceWindow: false,
+    });
+    const guard = await this.guards?.evaluate({
+      workspaceId,
+      decisionType: 'broadcast_window',
+      action: 'schedule_broadcast',
+      context: broadcastContext,
+    });
+    if (guard && !guard.allowed) {
+      return {
+        success: false,
+        blocked: true,
+        error: guard.reason,
+        guardName: guard.guardName,
+        mind: { channelChoice, broadcastWindow },
+      };
+    }
     let contactCount = 0;
     if (args.targetTags && args.targetTags.length > 0) {
       contactCount = await this.prisma.contact.count({
@@ -248,9 +328,14 @@ export class UnifiedAgentActionsWorkspaceService {
           name: args.name,
           message: args.message,
           targetTags: args.targetTags || [],
-          scheduleAt: args.scheduleAt || null,
+          scheduleAt,
           contactCount,
           status: 'pending',
+          channel: channelChoice.channel,
+          mind: { channelChoice, broadcastWindow },
+          source: predecided ? 'orchestrator_predecided' : 'legacy_action_decision',
+          decisionTraceId: args.decisionTraceId || null,
+          inboundCorrelationId: args.inboundCorrelationId || null,
           createdAt: new Date().toISOString(),
         },
       },
@@ -259,8 +344,47 @@ export class UnifiedAgentActionsWorkspaceService {
       success: true,
       broadcastId: broadcastKey,
       contactCount,
+      channel: channelChoice.channel,
+      scheduleAt,
+      mind: { channelChoice, broadcastWindow },
+      source: predecided ? 'orchestrator_predecided' : 'legacy_action_decision',
       message: `Broadcast "${args.name}" criado para ${contactCount} contatos`,
     };
+  }
+
+  private resolveBroadcastChannels(args: ToolArgs): string[] {
+    const requested = this.str(args.source).toLowerCase();
+    if (requested) return [requested];
+    return ['whatsapp', 'instagram', 'messenger', 'email'];
+  }
+
+  private resolveBroadcastScheduleAt(window: string): string | null {
+    const now = new Date();
+    if (window === 'pause') return null;
+    if (window === 'now') return now.toISOString();
+    const scheduled = new Date(now);
+    if (window === 'tonight_20h') {
+      scheduled.setHours(20, 0, 0, 0);
+      if (scheduled <= now) scheduled.setDate(scheduled.getDate() + 1);
+      return scheduled.toISOString();
+    }
+    if (window === 'friday_21h') {
+      const friday = 5;
+      const daysUntilFriday = (friday - scheduled.getDay() + 7) % 7 || 7;
+      scheduled.setDate(scheduled.getDate() + daysUntilFriday);
+      scheduled.setHours(21, 0, 0, 0);
+      return scheduled.toISOString();
+    }
+    scheduled.setDate(scheduled.getDate() + 1);
+    scheduled.setHours(9, 0, 0, 0);
+    return scheduled.toISOString();
+  }
+
+  private async buildBroadcastGuardContext(
+    workspaceId: string,
+    context: MindActionContext,
+  ): Promise<MindActionContext> {
+    return (await this.guardContextBuilder?.buildForBroadcast(workspaceId, context)) ?? context;
   }
 
   async actionConfigureAIPersona(workspaceId: string, args: ToolArgs) {

@@ -3,21 +3,25 @@ import { Inject, Injectable, Logger, Optional, forwardRef } from '@nestjs/common
 import { Prisma } from '@prisma/client';
 import Redis from 'ioredis';
 import { InboxService } from '../inbox/inbox.service';
+import { ChannelTransportRegistry } from '../kloel/channel-transport.registry';
 import { UnifiedAgentService } from '../kloel/unified-agent.service';
-import { forEachSequential } from '../common/async-sequence';
-import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
+import { ChannelInboundHookService } from '../omnichannel/channel-inbound-hook.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { buildQueueDedupId, buildQueueJobId } from '../queue/job-id.util';
 import { autopilotQueue, flowQueue, voiceQueue } from '../queue/queue';
 import { AccountAgentService } from './account-agent.service';
 import { resolveConversationOwner } from './agent-conversation-state.util';
-import { getDefaultContent, mapMessageType, normalizePhone } from './inbound-processor.helpers';
-import { isPlaceholderContactName as isPlaceholderContactNameValue } from './whatsapp-normalization.util';
+import { triggerWhatsappMindPercept } from './inbound-mind-percept';
+import {
+  getDefaultContent,
+  mapMessageType,
+  normalizePhone,
+  resolveTrustedContactName,
+} from './inbound-processor.helpers';
 import { WhatsappService } from './whatsapp.service';
 import { WorkerRuntimeService } from './worker-runtime.service';
 import type { ProviderSettings } from './provider-settings.types';
-
 import {
   checkDuplicateExt,
   isWorkspaceSelfInboundExt,
@@ -27,10 +31,14 @@ import {
   shouldBypassHumanLockExt,
   shouldAutoReclaimHumanLockExt,
   buildInlineFallbackReplyExt,
-  extractFallbackTopicExt,
   hasOutboundActionExt,
   buildPendingInboundBatchExt,
 } from './__companions__/inbound-processor.service.companion';
+import {
+  recordAutopilotSkip as recordAutopilotSkipPart,
+  sendInlineFallbackReply,
+  sendInlineReplyPlan,
+} from './__parts__/inbound-inline-autopilot';
 import type {
   InboundMessage,
   InboundIngestMode,
@@ -63,33 +71,12 @@ export class InboundProcessorService {
     private readonly workerRuntime: WorkerRuntimeService,
     private readonly unifiedAgent: UnifiedAgentService,
     @Inject(forwardRef(() => WhatsappService)) private readonly whatsappService: WhatsappService,
+    private readonly transports: ChannelTransportRegistry,
+    @Optional()
+    @Inject(forwardRef(() => ChannelInboundHookService))
+    private readonly mindHook?: ChannelInboundHookService,
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
-
-  private isPlaceholderContactName(value: unknown, phone?: string | null): boolean {
-    return isPlaceholderContactNameValue(value, phone);
-  }
-
-  private resolveTrustedContactName(phone: string, ...candidates: unknown[]): string {
-    for (const c of candidates) {
-      const n =
-        typeof c === 'string'
-          ? c.trim()
-          : typeof c === 'number' || typeof c === 'boolean'
-            ? String(c).trim()
-            : '';
-      if (n && !this.isPlaceholderContactName(n, phone)) return n;
-    }
-    return '';
-  }
-
-  private isWorkspaceSelfInbound(
-    settings: Record<string, unknown>,
-    from: string,
-    phone: string,
-  ): boolean {
-    return isWorkspaceSelfInboundExt(settings, from, phone);
-  }
 
   // ═══ PROCESS (thin wrapper) ═══
   async process(msg: InboundMessage): Promise<ProcessResult> {
@@ -109,12 +96,12 @@ export class InboundProcessorService {
       select: { providerSettings: true },
     });
     const settings = (workspace?.providerSettings as Record<string, unknown>) || {};
-    if (this.isWorkspaceSelfInbound(settings, msg.from, phone)) {
+    if (isWorkspaceSelfInboundExt(settings, msg.from, phone)) {
       this.logger.warn(`[SELF_CONTACT] Ignorando mensagem da própria sessão: ${msg.from}`);
       return { deduped: true };
     }
     const raw = (msg.raw ?? {}) as Record<string, Record<string, unknown>>;
-    const trustedSenderName = this.resolveTrustedContactName(
+    const trustedSenderName = resolveTrustedContactName(
       phone,
       msg.senderName,
       raw?.pushName,
@@ -212,6 +199,15 @@ export class InboundProcessorService {
       phone,
       conversationId: savedMessage.conversationId || null,
       messageContent: processedContent,
+    });
+    triggerWhatsappMindPercept({
+      mindHook: this.mindHook,
+      logger: this.logger,
+      msg,
+      contactId: contact.id,
+      messageId: savedMessage.id,
+      phone,
+      content: processedContent,
     });
     await this.triggerAutopilot(
       msg.workspaceId,
@@ -450,13 +446,16 @@ export class InboundProcessorService {
     if (replyRsv !== 'OK') return;
     let keepReplyLock = false;
     await this.sleep(this.contactDebounceMs);
-    const pendingBatch = await this.buildPendingInboundBatch({
-      workspaceId: input.workspaceId,
-      contactId: input.contactId,
-      phone: input.phone,
-      fallbackMessageContent: input.messageContent,
-      fallbackProviderMessageId: input.providerMessageId,
-    });
+    const pendingBatch = await buildPendingInboundBatchExt(
+      { prisma: this.prisma },
+      {
+        workspaceId: input.workspaceId,
+        contactId: input.contactId,
+        phone: input.phone,
+        fallbackMessageContent: input.messageContent,
+        fallbackProviderMessageId: input.providerMessageId,
+      },
+    );
     const aggMsg = pendingBatch?.aggregatedMessage || input.messageContent;
     const latestQid = pendingBatch?.latestQuotedMessageId || input.providerMessageId;
     try {
@@ -493,21 +492,16 @@ export class InboundProcessorService {
           { content: input.messageContent, quotedMessageId: latestQid },
         ],
       });
-      await forEachSequential(replyPlan, async (plan, index) => {
-        const r = await this.whatsappService.sendMessage(
-          input.workspaceId,
-          input.phone,
-          plan.text,
-          {
-            externalId: `inline:${input.messageId}:${index + 1}`,
-            complianceMode: 'reactive',
-            forceDirect: true,
-            quotedMessageId: plan.quotedMessageId || latestQid,
-          },
-        );
-        if (r?.error)
-          this.logger.error(`[AUTOPILOT] Inline reply failed: ${r.message || 'send_failed'}`);
-      });
+      await sendInlineReplyPlan(
+        { transports: this.transports, logger: this.logger },
+        {
+          workspaceId: input.workspaceId,
+          phone: input.phone,
+          messageId: input.messageId,
+          latestQuotedMessageId: latestQid,
+          replyPlan,
+        },
+      );
       keepReplyLock = true;
     } catch (agentError: unknown) {
       this.logger.error(
@@ -525,18 +519,16 @@ export class InboundProcessorService {
       const fallbackReply = this.buildInlineFallbackReply(aggMsg);
       if (fallbackReply) {
         try {
-          const r = await this.whatsappService.sendMessage(
-            input.workspaceId,
-            input.phone,
-            fallbackReply,
+          keepReplyLock = await sendInlineFallbackReply(
+            { transports: this.transports },
             {
-              externalId: `inline:${input.messageId}:fallback`,
-              complianceMode: 'reactive',
-              forceDirect: true,
-              quotedMessageId: latestQid,
+              workspaceId: input.workspaceId,
+              phone: input.phone,
+              messageId: input.messageId,
+              latestQuotedMessageId: latestQid,
+              fallbackReply,
             },
           );
-          if (!r?.error) keepReplyLock = true;
         } catch (fallbackErr: unknown) {
           this.logger.error(
             `[AUTOPILOT] Fallback reply also failed: ${(fallbackErr instanceof Error ? fallbackErr : new Error(String(fallbackErr))).message}`,
@@ -547,21 +539,9 @@ export class InboundProcessorService {
       if (!keepReplyLock) await this.releaseSharedReplyLock(replyLockKey);
     }
   }
-
   private hasOutboundAction(actions: Array<{ tool?: string; result?: unknown }> = []): boolean {
     return hasOutboundActionExt(actions);
   }
-
-  private async buildPendingInboundBatch(params: {
-    workspaceId: string;
-    contactId: string;
-    phone: string;
-    fallbackMessageContent: string;
-    fallbackProviderMessageId: string;
-  }) {
-    return buildPendingInboundBatchExt({ prisma: this.prisma }, params);
-  }
-
   private shouldBypassHumanLock(settings?: ProviderSettings): boolean {
     return shouldBypassHumanLockExt(settings);
   }
@@ -585,9 +565,6 @@ export class InboundProcessorService {
   private buildInlineFallbackReply(messageContent: string): string {
     return buildInlineFallbackReplyExt(messageContent);
   }
-  private extractFallbackTopic(messageContent: string): string | null {
-    return extractFallbackTopicExt(messageContent);
-  }
   private getSharedReplyLockKey(
     workspaceId: string,
     contactId?: string | null,
@@ -596,43 +573,20 @@ export class InboundProcessorService {
     return `autopilot:reply:${workspaceId}:${contactId || normalizePhone(String(phone || ''))}`;
   }
   private async releaseSharedReplyLock(key: string) {
-    try {
-      await this.redis.del(key);
-    } catch {
-      /* lock cleanup is best-effort */
-    }
+    await this.redis.del(key).catch(() => undefined);
   }
   private async sleep(ms: number) {
     await new Promise((r) => setTimeout(r, ms));
   }
-
   private async recordAutopilotSkip(
     workspaceId: string,
     contactId: string,
     reason: string,
     meta?: Record<string, unknown>,
   ) {
-    try {
-      await this.prisma.autopilotEvent.create({
-        data: {
-          workspaceId,
-          contactId,
-          intent: 'INLINE_AUTOPILOT',
-          action: 'SKIP_INLINE_REPLY',
-          status: 'skipped',
-          reason,
-          meta: toPrismaJsonValue(meta ?? {}),
-        },
-      });
-    } catch (error: unknown) {
-      this.logger.warn(
-        `[AUTOPILOT] Falha ao registrar skip: ${(error instanceof Error ? error : new Error(String(error))).message}`,
-      );
-      void this.opsAlert?.alertOnCriticalError(
-        error,
-        'InboundProcessorService.recordAutopilotSkip',
-        { workspaceId },
-      );
-    }
+    await recordAutopilotSkipPart(
+      { prisma: this.prisma, logger: this.logger, opsAlert: this.opsAlert },
+      { workspaceId, contactId, reason, meta },
+    );
   }
 }

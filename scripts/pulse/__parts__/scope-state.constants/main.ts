@@ -21,7 +21,6 @@ export const IGNORED_DIRECTORIES = new Set([
   '.claude',
   '.copilot',
   '.kilo',
-  '.agents',
   '.serena',
   'dist',
   '.next',

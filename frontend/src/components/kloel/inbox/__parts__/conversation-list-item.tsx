@@ -66,7 +66,7 @@ export function ConversationListItem({
         </div>
         <div className="flex flex-col items-end gap-1">
           {c.unreadCount ? (
-            <span className="rounded-full bg-[#E85D30] px-[var(--inbox-chip-x)] py-[2px] text-[length:var(--inbox-body-xs)] font-semibold text-[#0A0A0C]">
+            <span className="inline-flex h-5 min-w-5 items-center justify-center rounded bg-[#E85D30] px-1.5 text-[length:var(--inbox-body-xs)] font-semibold leading-none text-[#0A0A0C]">
               {c.unreadCount}
             </span>
           ) : null}

@@ -6,9 +6,34 @@ import {
   buildListUnsubscribeHeader,
   buildUnsubscribeFooterHtml,
 } from '../common/utils/unsubscribe-footer.util';
+import {
+  type EmailDeliveryOverride,
+  type EmailProvider,
+  type EmailSmtpDeliveryOverride,
+  type ResolvedEmailDelivery,
+  sendViaSmtp,
+} from './email-smtp-delivery';
 
 const NAME_RE = /\{\{name\}\}/g;
 const EMAIL_RE = /\{\{email\}\}/g;
+
+function readText(value: unknown): string | undefined {
+  return typeof value === 'string' && value.trim() ? value.trim() : undefined;
+}
+
+function resolveEnvSmtpConfig(): EmailSmtpDeliveryOverride | undefined {
+  const host = readText(process.env.EMAIL_OUTBOUND_SMTP_HOST) ?? readText(process.env.SMTP_HOST);
+  if (!host) {
+    return undefined;
+  }
+  return {
+    host,
+    port: Number(process.env.EMAIL_OUTBOUND_SMTP_PORT ?? process.env.SMTP_PORT) || 587,
+    secure: (process.env.EMAIL_OUTBOUND_SMTP_SECURE ?? process.env.SMTP_SECURE) === 'true',
+    user: readText(process.env.EMAIL_OUTBOUND_SMTP_USER) ?? readText(process.env.SMTP_USER),
+    pass: readText(process.env.EMAIL_OUTBOUND_SMTP_PASS) ?? readText(process.env.SMTP_PASS),
+  };
+}
 
 /**
  * Email Campaign Service for KLOEL Marketing
@@ -22,17 +47,48 @@ export class EmailCampaignService {
 
   constructor(@Optional() private readonly opsAlert?: OpsAlertService) {}
 
-  private getProvider(): 'resend' | 'sendgrid' | 'smtp' | 'log' {
+  private getProvider(): EmailProvider {
     if (process.env.RESEND_API_KEY) {
       return 'resend';
     }
     if (process.env.SENDGRID_API_KEY) {
       return 'sendgrid';
     }
-    if (process.env.SMTP_HOST) {
+    if (process.env.EMAIL_OUTBOUND_SMTP_HOST || process.env.SMTP_HOST) {
       return 'smtp';
     }
     return 'log';
+  }
+
+  resolveDelivery(override?: EmailDeliveryOverride): ResolvedEmailDelivery {
+    const provider =
+      override?.provider ??
+      (override?.resendApiKey
+        ? 'resend'
+        : override?.sendgridApiKey
+          ? 'sendgrid'
+          : override?.smtp?.host
+            ? 'smtp'
+            : this.getProvider());
+    const smtp = override?.smtp ?? resolveEnvSmtpConfig();
+    return {
+      provider,
+      fromEmail: override?.fromEmail?.trim() || this.fromEmail,
+      fromName: override?.fromName?.trim() || this.fromName,
+      resendApiKey: override?.resendApiKey?.trim() || process.env.RESEND_API_KEY,
+      sendgridApiKey: override?.sendgridApiKey?.trim() || process.env.SENDGRID_API_KEY,
+      ...(smtp?.host
+        ? {
+            smtp: {
+              host: smtp.host,
+              port: Number(smtp.port) || 587,
+              secure: smtp.secure === true,
+              user: smtp.user,
+              pass: smtp.pass,
+            },
+          }
+        : {}),
+    };
   }
 
   // messageLimit: email campaigns are rate-limited via provider-level throttling
@@ -98,8 +154,13 @@ export class EmailCampaignService {
   }
 
   /** Send single email. */
-  async sendSingleEmail(to: string, subject: string, html: string): Promise<boolean> {
-    return this.sendEmail(to, subject, html, undefined);
+  async sendSingleEmail(
+    to: string,
+    subject: string,
+    html: string,
+    delivery?: EmailDeliveryOverride,
+  ): Promise<boolean> {
+    return this.sendEmail(to, subject, html, undefined, delivery);
   }
 
   private async sendEmail(
@@ -107,15 +168,19 @@ export class EmailCampaignService {
     subject: string,
     html: string,
     headers?: Record<string, string>,
+    deliveryOverride?: EmailDeliveryOverride,
   ): Promise<boolean> {
-    const provider = this.getProvider();
+    const delivery = this.resolveDelivery(deliveryOverride);
 
     try {
-      switch (provider) {
+      switch (delivery.provider) {
         case 'resend': {
+          if (!delivery.resendApiKey) {
+            throw new Error('Resend provider selected without API key');
+          }
           // Not SSRF: hardcoded Resend API endpoint
           const bodyPayload: Record<string, unknown> = {
-            from: `${this.fromName} <${this.fromEmail}>`,
+            from: `${delivery.fromName} <${delivery.fromEmail}>`,
             to,
             subject,
             html,
@@ -127,7 +192,7 @@ export class EmailCampaignService {
             method: 'POST',
             headers: {
               ...getTraceHeaders(),
-              Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+              Authorization: `Bearer ${delivery.resendApiKey}`,
               'Content-Type': 'application/json',
             },
             body: JSON.stringify(bodyPayload),
@@ -139,6 +204,9 @@ export class EmailCampaignService {
           return true;
         }
         case 'sendgrid': {
+          if (!delivery.sendgridApiKey) {
+            throw new Error('SendGrid provider selected without API key');
+          }
           // Not SSRF: hardcoded SendGrid API endpoint
           const personalization: Record<string, unknown> = { to: [{ email: to }] };
           if (headers) {
@@ -148,12 +216,12 @@ export class EmailCampaignService {
             method: 'POST',
             headers: {
               ...getTraceHeaders(),
-              Authorization: `Bearer ${process.env.SENDGRID_API_KEY}`,
+              Authorization: `Bearer ${delivery.sendgridApiKey}`,
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
               personalizations: [personalization],
-              from: { email: this.fromEmail, name: this.fromName },
+              from: { email: delivery.fromEmail, name: delivery.fromName },
               subject,
               content: [{ type: 'text/html', value: html }],
             }),
@@ -165,8 +233,13 @@ export class EmailCampaignService {
           return true;
         }
         case 'smtp':
-          this.logger.warn('SMTP campaign sending not yet implemented');
-          return false;
+          return await sendViaSmtp({
+            to,
+            subject,
+            html,
+            delivery,
+            alert: this.opsAlert,
+          });
         default:
           this.logger.log(`[DEV] Campaign email to ${to}: ${subject}`);
           return true;

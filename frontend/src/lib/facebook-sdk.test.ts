@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { requestFacebookAccessTokenWithEmailScope } from './facebook-sdk';
+import { requestMetaAccessTokenWithEmailScope } from './facebook-sdk';
 
 type FacebookSdk = NonNullable<Window['FB']>;
 
@@ -53,7 +53,7 @@ function installFacebookSdkMock(overrides?: {
   };
 }
 
-describe('requestFacebookAccessTokenWithEmailScope', () => {
+describe('requestMetaAccessTokenWithEmailScope', () => {
   beforeEach(() => {
     delete window.FB;
   });
@@ -74,7 +74,7 @@ describe('requestFacebookAccessTokenWithEmailScope', () => {
       ],
     });
 
-    await expect(requestFacebookAccessTokenWithEmailScope()).resolves.toEqual({
+    await expect(requestMetaAccessTokenWithEmailScope()).resolves.toEqual({
       accessToken: 'existing-facebook-token',
       userId: 'facebook-user-1',
     });
@@ -108,7 +108,7 @@ describe('requestFacebookAccessTokenWithEmailScope', () => {
       ],
     });
 
-    await expect(requestFacebookAccessTokenWithEmailScope()).resolves.toEqual({
+    await expect(requestMetaAccessTokenWithEmailScope()).resolves.toEqual({
       accessToken: 'fresh-facebook-token',
       userId: 'facebook-user-2',
     });
@@ -138,7 +138,7 @@ describe('requestFacebookAccessTokenWithEmailScope', () => {
       ],
     });
 
-    await expect(requestFacebookAccessTokenWithEmailScope()).rejects.toThrow(
+    await expect(requestMetaAccessTokenWithEmailScope()).rejects.toThrow(
       'O Facebook precisa liberar a permissão de email para continuar. Revise as permissões e tente novamente.',
     );
   });

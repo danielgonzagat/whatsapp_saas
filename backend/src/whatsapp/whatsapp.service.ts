@@ -28,7 +28,7 @@ import {
 } from './agent-conversation-state.util';
 import * as chatHelpers from './whatsapp.service.chats';
 import type { ChatHelperDeps } from './whatsapp.service.chats';
-import { CiaRuntimeService } from './cia-runtime.service';
+import { CiaRuntimeService } from '../cia/cia-runtime.abstract';
 import { WhatsAppProviderRegistry, type SessionStatus } from './providers/provider-registry';
 import { WhatsAppApiProvider } from './providers/whatsapp-api.provider';
 import { WhatsAppCatchupService } from './whatsapp-catchup.service';

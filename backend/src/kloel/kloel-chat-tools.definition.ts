@@ -341,3 +341,31 @@ export const KLOEL_CHAT_TOOLS: ChatCompletionTool[] = [
   ...KLOEL_CHAT_TOOLS_MEDIA_BILLING,
   ...KLOEL_CHAT_TOOLS_SETTINGS_CAMPAIGNS,
 ];
+
+export const KLOEL_SAFE_READ_TOOL_NAMES = [
+  'list_products',
+  'search_web',
+  'get_dashboard_summary',
+  'get_whatsapp_status',
+  'list_whatsapp_contacts',
+  'list_whatsapp_chats',
+  'get_whatsapp_messages',
+  'get_whatsapp_backlog',
+  'list_leads',
+  'get_lead_details',
+  'transcribe_audio',
+  'get_billing_status',
+] as const;
+
+function isFunctionChatTool(
+  tool: ChatCompletionTool,
+): tool is ChatCompletionTool & { type: 'function' } {
+  return tool.type === 'function';
+}
+
+/** Read-only tool subset allowed while the LLM is serving internal operator chat. */
+export const KLOEL_SAFE_READ_TOOLS: ChatCompletionTool[] = KLOEL_CHAT_TOOLS.filter(
+  (tool) =>
+    isFunctionChatTool(tool) &&
+    KLOEL_SAFE_READ_TOOL_NAMES.some((name) => name === tool.function.name),
+);

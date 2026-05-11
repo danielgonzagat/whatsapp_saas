@@ -255,17 +255,25 @@ export class PlanLimitsService {
       const today = new Date();
       const dateStr = today.toISOString().slice(0, 10);
 
-      const result = await this.prisma.$queryRawUnsafe<Array<{ count: number }>>(
-        `INSERT INTO "RAC_DailyMessageCounter" ("id", "workspaceId", "date", "count", "createdAt")
-         VALUES (gen_random_uuid()::text, $1, $2::date, 1, NOW())
-         ON CONFLICT ("workspaceId", "date")
-         DO UPDATE SET "count" = "RAC_DailyMessageCounter"."count" + 1
-         RETURNING "count"`,
-        workspaceId,
-        dateStr,
-      );
+      const counter = await this.prisma.dailyMessageCounter.upsert({
+        where: {
+          workspaceId_date: {
+            workspaceId,
+            date: new Date(`${dateStr}T00:00:00.000Z`),
+          },
+        },
+        update: {
+          count: { increment: 1 },
+        },
+        create: {
+          workspaceId,
+          date: new Date(`${dateStr}T00:00:00.000Z`),
+          count: 1,
+        },
+        select: { count: true },
+      });
 
-      const count = result[0]?.count ?? 0;
+      const count = counter.count;
 
       if (count > limit) {
         this.logger.warn(

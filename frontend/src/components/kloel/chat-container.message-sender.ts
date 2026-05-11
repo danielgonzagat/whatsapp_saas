@@ -4,6 +4,7 @@
 import { kloelError } from '@/lib/i18n/t';
 import { streamAuthenticatedKloelMessage } from '@/lib/kloel-conversations';
 import { appendAssistantTraceFromEvent } from '@/lib/kloel-message-ui';
+import type { KloelStreamEvent } from '@/lib/kloel-stream-events';
 import { apiUrl } from '@/lib/http';
 import { mutate } from 'swr';
 import { parseGuestStreamLine } from './chat-container.helpers';
@@ -160,8 +161,80 @@ export function runAuthedChat(deps: AuthedChatDeps): void {
   let nextConversationId = activeConversationId || null;
   let nextTitle =
     conversations.find((c) => c.id === activeConversationId)?.title || 'Nova conversa';
-
   setIsCancelableReply(true);
+  const streamOptions = {
+    onEvent: (event: KloelStreamEvent) => {
+      setMessages((prev) =>
+        prev.map((message) =>
+          message.id === assistantId
+            ? { ...message, meta: appendAssistantTraceFromEvent(message.meta, event) }
+            : message,
+        ),
+      );
+    },
+    onChunk: (chunk: string) => {
+      streamedReply += chunk;
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === assistantId ? { ...m, content: streamedReply, isStreaming: true } : m,
+        ),
+      );
+    },
+    onThread: (thread: { conversationId: string; title?: string }) => {
+      nextConversationId = thread.conversationId;
+      nextTitle =
+        thread.title ||
+        conversations.find((c) => c.id === thread.conversationId)?.title ||
+        nextTitle ||
+        'Nova conversa';
+      loadedConversationIdRef.current = thread.conversationId;
+      setActiveConversationId(thread.conversationId);
+      setActiveConversation(thread.conversationId);
+      upsertConversation({
+        id: thread.conversationId,
+        title: nextTitle,
+        updatedAt: new Date().toISOString(),
+      });
+    },
+    onDone: () => {
+      authedChatStreamRef.current = null;
+      setIsCancelableReply(false);
+      setShowSlowHint(false);
+      setMessages((prev) =>
+        prev.map((m) => (m.id === assistantId ? { ...m, isStreaming: false } : m)),
+      );
+      if (nextConversationId) {
+        upsertConversation({
+          id: nextConversationId,
+          title: nextTitle,
+          updatedAt: new Date().toISOString(),
+        });
+        void refreshConversations();
+        void loadConversation(nextConversationId);
+      }
+      setIsTyping(false);
+    },
+    onError: (error: string) => {
+      authedChatStreamRef.current = null;
+      setIsCancelableReply(false);
+      setShowSlowHint(false);
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === assistantId
+            ? {
+                ...m,
+                content:
+                  streamedReply.trim() ||
+                  error ||
+                  'Desculpe, ocorreu um erro ao continuar sua conversa.',
+                isStreaming: false,
+              }
+            : m,
+        ),
+      );
+      setIsTyping(false);
+    },
+  };
   authedChatStreamRef.current = streamAuthenticatedKloelMessage(
     {
       message: content.trim(),
@@ -169,79 +242,7 @@ export function runAuthedChat(deps: AuthedChatDeps): void {
       mode: 'chat',
       metadata: { clientRequestId, source: 'kloel_chat_container' },
     },
-    {
-      onEvent: (event) => {
-        setMessages((prev) =>
-          prev.map((message) =>
-            message.id === assistantId
-              ? { ...message, meta: appendAssistantTraceFromEvent(message.meta, event) }
-              : message,
-          ),
-        );
-      },
-      onChunk: (chunk) => {
-        streamedReply += chunk;
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === assistantId ? { ...m, content: streamedReply, isStreaming: true } : m,
-          ),
-        );
-      },
-      onThread: (thread) => {
-        nextConversationId = thread.conversationId;
-        nextTitle =
-          thread.title ||
-          conversations.find((c) => c.id === thread.conversationId)?.title ||
-          nextTitle ||
-          'Nova conversa';
-        loadedConversationIdRef.current = thread.conversationId;
-        setActiveConversationId(thread.conversationId);
-        setActiveConversation(thread.conversationId);
-        upsertConversation({
-          id: thread.conversationId,
-          title: nextTitle,
-          updatedAt: new Date().toISOString(),
-        });
-      },
-      onDone: () => {
-        authedChatStreamRef.current = null;
-        setIsCancelableReply(false);
-        setShowSlowHint(false);
-        setMessages((prev) =>
-          prev.map((m) => (m.id === assistantId ? { ...m, isStreaming: false } : m)),
-        );
-        if (nextConversationId) {
-          upsertConversation({
-            id: nextConversationId,
-            title: nextTitle,
-            updatedAt: new Date().toISOString(),
-          });
-          void refreshConversations();
-          void loadConversation(nextConversationId);
-        }
-        setIsTyping(false);
-      },
-      onError: (error) => {
-        authedChatStreamRef.current = null;
-        setIsCancelableReply(false);
-        setShowSlowHint(false);
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === assistantId
-              ? {
-                  ...m,
-                  content:
-                    streamedReply.trim() ||
-                    error ||
-                    'Desculpe, ocorreu um erro ao continuar sua conversa.',
-                  isStreaming: false,
-                }
-              : m,
-          ),
-        );
-        setIsTyping(false);
-      },
-    },
+    streamOptions,
   );
 }
 

@@ -21,7 +21,7 @@ import {
 } from './kloel-thread.service';
 import { KloelReplyEngineService } from './kloel-reply-engine.service';
 import { chatCompletionWithFallback } from './openai-wrapper';
-import { KLOEL_CHAT_TOOLS } from './kloel-chat-tools.definition';
+import { KLOEL_SAFE_READ_TOOLS } from './kloel-chat-tools.definition';
 import type { LocalToolExecutor } from './kloel-reply-engine.service';
 
 /** Context shared between the two extracted think branches. */
@@ -197,13 +197,14 @@ export async function runToolPlanningBranch(
   const { workspaceId, userId, message, safeWrite, replyEngine, planLimits } = ctx;
   safeWrite(createKloelStatusEvent('thinking'));
   await planLimits.ensureTokenBudget(workspaceId);
+  const allowedTools = KLOEL_SAFE_READ_TOOLS;
   const initialResponse = await chatCompletionWithFallback(
     replyEngine.openai,
     {
       model: resolveBackendOpenAIModel('brain'),
       messages,
-      tools: KLOEL_CHAT_TOOLS,
-      tool_choice: 'auto',
+      tools: allowedTools,
+      tool_choice: allowedTools.length > 0 ? 'auto' : 'none',
       temperature: responseTemperature,
       top_p: 0.95,
       frequency_penalty: 0.3,

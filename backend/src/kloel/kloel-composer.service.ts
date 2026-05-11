@@ -76,13 +76,15 @@ function asUnknownRecord(value: unknown): Record<string, unknown> | null {
 @Injectable()
 export class KloelComposerService {
   private readonly logger = new Logger(KloelComposerService.name);
-  private readonly openai: OpenAI;
+  private readonly openai: OpenAI | null;
 
   constructor(
     private readonly planLimits: PlanLimitsService,
     private readonly storageService: StorageService,
   ) {
-    this.openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    this.openai = process.env.OPENAI_API_KEY
+      ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+      : null;
   }
 
   buildCapabilityPrompt(message: string, composerContext?: string): string {
@@ -98,9 +100,35 @@ export class KloelComposerService {
     return `${body}\n\nFontes:\n${sourcesBlock}`;
   }
 
+  codeNativeSearchWeb(query: string): WebSearchDigest {
+    const normalizedQuery = String(query || '').trim();
+    if (!normalizedQuery) return { answer: '', sources: [], totalTokens: 0 };
+
+    const terms = normalizedQuery
+      .split(/\s+/)
+      .filter((w) => w.length > 2)
+      .slice(0, 5);
+    const termList =
+      terms.length > 0 ? terms.map((t) => `"${t}"`).join(', ') : 'os termos informados';
+
+    return {
+      answer:
+        `Pesquisa web indisponível no momento (motor LLM não configurado). ` +
+        `A busca por ${termList} não pode ser completada. ` +
+        `Verifique a configuração da API key ou tente novamente mais tarde.`,
+      sources: [],
+      totalTokens: 0,
+    };
+  }
+
   async searchWeb(query: string): Promise<WebSearchDigest> {
     const normalizedQuery = String(query || '').trim();
     if (!normalizedQuery) return { answer: '', sources: [] };
+
+    if (!this.openai) {
+      this.logger.warn('searchWeb falling back to code-native — no OpenAI client');
+      return this.codeNativeSearchWeb(normalizedQuery);
+    }
 
     // E2E test harness: the workflow runs with OPENAI_API_KEY=e2e-dummy-key
     // so any real OpenAI Responses API call fails. The chat composer e2e
@@ -206,7 +234,16 @@ export class KloelComposerService {
 
     if (capability === 'search_web') {
       if (workspaceId) await this.planLimits.ensureTokenBudget(workspaceId);
-      const digest = await this.searchWeb(prompt);
+      let digest: WebSearchDigest;
+      try {
+        digest = await this.searchWeb(prompt);
+      } catch (error: unknown) {
+        const reason = error instanceof Error ? error.message : 'unknown_search_error';
+        this.logger.warn(
+          `searchWeb failed, falling back to code-native: ${reason.substring(0, 120)}`,
+        );
+        digest = this.codeNativeSearchWeb(prompt);
+      }
       const content = this.formatSearchDigestAsMarkdown(digest);
       const usageTokens = Number(digest.totalTokens || 0);
       if (workspaceId && Number.isFinite(usageTokens) && usageTokens > 0) {
@@ -222,6 +259,9 @@ export class KloelComposerService {
     if (capability === 'create_image') {
       if (isComposerWebSearchE2EStubEnabled()) {
         return buildComposerImageE2EStub();
+      }
+      if (!this.openai) {
+        throw new Error(ERR_IMAGE_API_KEY_MISSING);
       }
       if (!process.env.OPENAI_API_KEY) {
         throw new Error(ERR_IMAGE_API_KEY_MISSING);

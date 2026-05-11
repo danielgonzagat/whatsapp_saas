@@ -1,7 +1,13 @@
+'use client';
+
 import { kloelT } from '@/lib/i18n/t';
 import { colors } from '@/lib/design-tokens';
 import type { CSSProperties, ReactNode } from 'react';
-import { KLOEL_SPORES } from './kloel-brand-spores';
+import { useEffect, useRef, useState } from 'react';
+
+const SVG_TAG_START = '<svg';
+const SVG_TAG_END = '>';
+const STYLE_BLOCK_END = '</style>';
 
 type MushroomVisualProps = {
   size?: number;
@@ -54,290 +60,218 @@ type LoadingStateProps = {
 };
 
 const soraFont = "var(--font-sora), 'Sora', sans-serif";
-const ember = colors.ember.primary;
 
-const spores = KLOEL_SPORES;
+let cachedSvgText: string | null = null;
+let activeFetch: Promise<string> | null = null;
 
-function MushroomStyles() {
-  return (
-    <style>{`
-      .kloel-mushroom__cap-group,
-      .kloel-mushroom__stem-group,
-      .kloel-mushroom__circuit-cap,
-      .kloel-mushroom__node-cap,
-      .kloel-mushroom__circuit-stem,
-      .kloel-mushroom__node-stem,
-      .kloel-mushroom__spore {
-        transform-box: view-box;
-      }
-
-      @media (prefers-reduced-motion: no-preference) {
-        .kloel-mushroom--animated .kloel-mushroom__cap-group {
-          animation: kloel-cap-breathe 3000ms ease-in-out infinite;
-          transform-origin: 100px 100px;
-        }
-
-        .kloel-mushroom--animated .kloel-mushroom__stem-group {
-          animation: kloel-stem-breathe 3000ms ease-in-out infinite;
-          transform-origin: 100px 100px;
-        }
-
-        .kloel-mushroom--animated .kloel-mushroom__circuit-cap {
-          animation: kloel-line-pulse 3000ms ease-in-out infinite;
-        }
-
-        .kloel-mushroom--animated .kloel-mushroom__node-cap {
-          animation: kloel-node-pulse 3000ms ease-in-out infinite;
-        }
-
-        .kloel-mushroom--animated .kloel-mushroom__circuit-stem {
-          animation: kloel-line-pulse 3000ms ease-in-out infinite 180ms;
-        }
-
-        .kloel-mushroom--animated .kloel-mushroom__node-stem {
-          animation: kloel-node-pulse 3000ms ease-in-out infinite 180ms;
-        }
-
-        .kloel-mushroom--animated .kloel-mushroom__spore {
-          animation: kloel-spore-float 3000ms ease-out infinite;
-          transform: translate3d(0, 0, 0);
-          will-change: opacity, transform;
-        }
-      }
-
-      @media (prefers-reduced-motion: reduce) {
-        .kloel-mushroom--animated .kloel-mushroom__cap-group,
-        .kloel-mushroom--animated .kloel-mushroom__stem-group,
-        .kloel-mushroom--animated .kloel-mushroom__circuit-cap,
-        .kloel-mushroom--animated .kloel-mushroom__node-cap,
-        .kloel-mushroom--animated .kloel-mushroom__circuit-stem,
-        .kloel-mushroom--animated .kloel-mushroom__node-stem,
-        .kloel-mushroom--animated .kloel-mushroom__spore {
-          animation: none !important;
-        }
-
-        .kloel-mushroom--animated .kloel-mushroom__spore {
-          opacity: 0 !important;
-        }
-      }
-
-      @keyframes kloel-cap-breathe {
-        0% { transform: scaleY(1) scaleX(1); }
-        35% { transform: scaleY(1.15) scaleX(1.04); }
-        50% { transform: scaleY(0.88) scaleX(1.08); }
-        65% { transform: scaleY(1) scaleX(1); }
-        100% { transform: scaleY(1) scaleX(1); }
-      }
-
-      @keyframes kloel-stem-breathe {
-        0% { transform: scaleY(1) scaleX(1); }
-        35% { transform: scaleY(1.08) scaleX(0.95); }
-        50% { transform: scaleY(0.85) scaleX(1.12); }
-        65% { transform: scaleY(1) scaleX(1); }
-        100% { transform: scaleY(1) scaleX(1); }
-      }
-
-      @keyframes kloel-line-pulse {
-        0%, 33%, 68%, 100% { stroke-opacity: 0.35; transform: scale(1); }
-        42%, 55% { stroke-opacity: 1; transform: scale(1.04); }
-      }
-
-      @keyframes kloel-node-pulse {
-        0%, 33%, 68%, 100% { fill-opacity: 0.55; transform: scale(1); }
-        42%, 55% { fill-opacity: 1; transform: scale(1.45); }
-      }
-
-      @keyframes kloel-spore-float {
-        0%, 43% { opacity: 0; transform: translate3d(0, 0, 0) scale(0.8); }
-        49% { opacity: var(--spore-opacity, .65); }
-        100% { opacity: 0; transform: translate3d(var(--spore-x, 0), var(--spore-y, -40px), 0) scale(1); }
-      }
-    `}</style>
-  );
+function fetchMushroomSvg(): Promise<string> {
+  if (cachedSvgText) return Promise.resolve(cachedSvgText);
+  if (!activeFetch) {
+    activeFetch = fetch('/kloel-mushroom-animated.svg')
+      .then((r) => {
+        if (!r.ok) throw new Error(`Mushroom SVG fetch failed: ${r.status}`);
+        return r.text();
+      })
+      .then((text) => {
+        cachedSvgText = text;
+        activeFetch = null;
+        return text;
+      })
+      .catch((err) => {
+        activeFetch = null;
+        throw err;
+      });
+  }
+  return activeFetch;
 }
 
-function renderSpores(mode: MushroomVisualProps['spores']) {
-  if (mode === 'none') {
-    return null;
+function useVisualCaptureMode(): boolean {
+  const [visualCapture, setVisualCapture] = useState(false);
+
+  useEffect(() => {
+    if (typeof document === 'undefined' || typeof MutationObserver === 'undefined') {
+      return;
+    }
+    const root = document.documentElement;
+    const apply = () => setVisualCapture(root.dataset.visualCapture === 'true');
+
+    apply();
+    const observer = new MutationObserver(apply);
+    observer.observe(root, { attributes: true, attributeFilter: ['data-visual-capture'] });
+    return () => observer.disconnect();
+  }, []);
+
+  return visualCapture;
+}
+
+function processSvg(
+  svgText: string,
+  traceColor: string,
+  animated: boolean,
+  spores: 'none' | 'animated' | 'static',
+): string {
+  let result = svgText;
+
+  result = result.replace(/<svg\b([^>]*)>/i, (_match, attrs: string) => {
+    const normalizedAttrs = attrs
+      .replace(/\swidth=(["']).*?\1/i, '')
+      .replace(/\sheight=(["']).*?\1/i, '')
+      .replace(/\sstyle=(["']).*?\1/i, '');
+    return [
+      SVG_TAG_START,
+      normalizedAttrs,
+      ' width="100%" height="100%" style="display:block"',
+      SVG_TAG_END,
+    ].join('');
+  });
+
+  if (traceColor.toLowerCase() !== '#ffffff') {
+    result = result.replace(/\bstroke=(["'])#?ffffff\1/gi, (_match, quote: string) =>
+      ['stroke=', quote, traceColor, quote].join(''),
+    );
+    result = result.replace(/\bfill=(["'])#?ffffff\1/gi, (_match, quote: string) =>
+      ['fill=', quote, traceColor, quote].join(''),
+    );
   }
 
-  return spores.map((spore) => {
-    if (mode === 'static') {
-      return (
-        <circle
-          key={spore.id}
-          cx={spore.endCx}
-          cy={spore.endCy}
-          r={spore.radius}
-          fill={ember}
-          opacity={Math.max(0.35, spore.opacity - 0.1)}
-        />
-      );
-    }
+  const injections: string[] = [];
 
-    return (
-      <circle
-        key={spore.id}
-        className="kloel-mushroom__spore"
-        cx={spore.startCx}
-        cy={spore.startCy}
-        r={spore.radius}
-        fill={ember}
-        style={
-          {
-            '--spore-x': `${spore.endCx - spore.startCx}px`,
-            '--spore-y': `${spore.endCy - spore.startCy}px`,
-            '--spore-opacity': spore.opacity,
-            animationDelay: `${spore.delayMs}ms`,
-          } as CSSProperties
-        }
-      />
+  if (!animated) {
+    injections.push(
+      '.cap-group,.stem-group,.circuit-cap,.node-cap,.circuit-stem,.node-stem,' +
+        '.sp-L1,.sp-L2,.sp-UL1,.sp-UL2,.sp-TL1,.sp-TL2,.sp-T1,.sp-T2,' +
+        '.sp-TR1,.sp-TR2,.sp-UR1,.sp-UR2,.sp-R1,.sp-R2{animation:none}',
     );
-  });
+  }
+
+  if (spores === 'none') {
+    injections.push('.spore{display:none}');
+  } else if (spores === 'static') {
+    injections.push(
+      '.sp-L1,.sp-L2,.sp-UL1,.sp-UL2,.sp-TL1,.sp-TL2,.sp-T1,.sp-T2,' +
+        '.sp-TR1,.sp-TR2,.sp-UR1,.sp-UR2,.sp-R1,.sp-R2{opacity:.6;animation:none}',
+    );
+  }
+
+  if (injections.length > 0) {
+    result = result.replace(STYLE_BLOCK_END, [injections.join(''), STYLE_BLOCK_END].join(''));
+  }
+
+  return result;
 }
 
 /** Kloel mushroom visual. */
 export function KloelMushroomVisual({
   size = 20,
-  traceColor = '#FFFFFF', // PULSE_VISUAL_OK: SVG circuit trace, default white
+  traceColor = '#FFFFFF',
   style,
   title = 'Kloel',
   animated = true,
-  spores: sporeMode = 'animated',
+  spores = 'animated',
   ariaHidden = false,
   fit = 'default',
 }: MushroomVisualProps) {
-  const viewBox = fit === 'icon' ? '22 4 156 156' : '0 0 200 200';
+  const [svgText, setSvgText] = useState<string | null>(null);
+  const svgHostRef = useRef<HTMLSpanElement>(null);
+  const visualCapture = useVisualCaptureMode();
+  const effectiveAnimated = visualCapture ? false : animated;
+  const effectiveSpores = visualCapture && spores === 'animated' ? 'static' : spores;
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchMushroomSvg()
+      .then((raw) => {
+        if (cancelled) return;
+        setSvgText(processSvg(raw, traceColor, effectiveAnimated, effectiveSpores));
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [traceColor, effectiveAnimated, effectiveSpores]);
+
+  const padding = fit === 'icon' ? Math.round(size * 0.04) : 0;
+  const sharedStyle: CSSProperties = {
+    display: 'block',
+    flexShrink: 0,
+    objectFit: 'contain',
+    objectPosition: 'center',
+    padding,
+    transform: 'translate3d(0,0,0)',
+    ...style,
+  };
+
+  useEffect(() => {
+    const host = svgHostRef.current;
+    if (!host || !svgText || typeof DOMParser === 'undefined') return;
+
+    const parsed = new DOMParser().parseFromString(svgText, 'image/svg+xml');
+    const svg = parsed.documentElement;
+    if (svg.nodeName.toLowerCase() !== 'svg') return;
+
+    host.replaceChildren(document.importNode(svg, true));
+  }, [svgText]);
+
+  if (svgText) {
+    return (
+      <span
+        aria-hidden={ariaHidden}
+        aria-label={ariaHidden ? undefined : title}
+        role={ariaHidden ? 'presentation' : 'img'}
+        style={{
+          display: 'inline-block',
+          position: 'relative',
+          flexShrink: 0,
+          width: size,
+          height: size,
+          padding,
+          transform: 'translate3d(0,0,0)',
+          lineHeight: 0,
+          ...style,
+        }}
+      >
+        <img
+          src="/kloel-mushroom-animated.svg"
+          aria-hidden
+          alt=""
+          role="presentation"
+          width={size}
+          height={size}
+          style={{
+            display: 'block',
+            width: '100%',
+            height: '100%',
+            objectFit: 'contain',
+            objectPosition: 'center',
+            opacity: 0,
+          }}
+        />
+        <span
+          ref={svgHostRef}
+          aria-hidden
+          style={{
+            position: 'absolute',
+            inset: 0,
+            display: 'block',
+            lineHeight: 0,
+            pointerEvents: 'none',
+          }}
+        />
+      </span>
+    );
+  }
 
   return (
-    <svg
+    <img
+      src="/kloel-mushroom-animated.svg"
       aria-hidden={ariaHidden}
       aria-label={ariaHidden ? undefined : title}
+      alt={ariaHidden ? '' : title}
       role={ariaHidden ? 'presentation' : 'img'}
       width={size}
       height={size}
-      viewBox={viewBox}
-      xmlns="http://www.w3.org/2000/svg"
-      className={animated ? 'kloel-mushroom--animated' : undefined}
-      style={{
-        display: 'block',
-        flexShrink: 0,
-        overflow: 'visible',
-        transform: 'translate3d(0,0,0)',
-        ...style,
-      }}
-    >
-      <MushroomStyles />
-      <g>
-        <g className={animated ? 'kloel-mushroom__stem-group' : undefined}>
-          <rect x="88" y="100" width="24" height="50" rx="3" fill={ember} />
-          <line
-            className={animated ? 'kloel-mushroom__circuit-stem' : undefined}
-            x1="100"
-            y1="105"
-            x2="100"
-            y2="145"
-            stroke={traceColor}
-            strokeLinecap="round"
-          />
-          <circle
-            className={animated ? 'kloel-mushroom__node-stem' : undefined}
-            cx="100"
-            cy="118"
-            r="2"
-            fill={traceColor}
-          />
-          <circle
-            className={animated ? 'kloel-mushroom__node-stem' : undefined}
-            cx="100"
-            cy="135"
-            r="2"
-            fill={traceColor}
-          />
-        </g>
-
-        {renderSpores(sporeMode)}
-
-        <g className={animated ? 'kloel-mushroom__cap-group' : undefined}>
-          <path d={kloelT(`M40,100 Q35,50 70,30 Q100,15 130,30 Q165,50 160,100 Z`)} fill={ember} />
-          <line
-            className={animated ? 'kloel-mushroom__circuit-cap' : undefined}
-            x1="70"
-            y1="70"
-            x2="90"
-            y2="50"
-            stroke={traceColor}
-            strokeWidth="1.2"
-            strokeLinecap="round"
-          />
-          <line
-            className={animated ? 'kloel-mushroom__circuit-cap' : undefined}
-            x1="90"
-            y1="50"
-            x2="115"
-            y2="50"
-            stroke={traceColor}
-            strokeWidth="1.2"
-            strokeLinecap="round"
-          />
-          <line
-            className={animated ? 'kloel-mushroom__circuit-cap' : undefined}
-            x1="115"
-            y1="50"
-            x2="130"
-            y2="65"
-            stroke={traceColor}
-            strokeWidth="1.2"
-            strokeLinecap="round"
-          />
-          <line
-            className={animated ? 'kloel-mushroom__circuit-cap' : undefined}
-            x1="100"
-            y1="75"
-            x2="100"
-            y2="40"
-            stroke={traceColor}
-            strokeWidth="1.2"
-            strokeLinecap="round"
-          />
-          <circle
-            className={animated ? 'kloel-mushroom__node-cap' : undefined}
-            cx="70"
-            cy="70"
-            r="2.5"
-            fill={traceColor}
-          />
-          <circle
-            className={animated ? 'kloel-mushroom__node-cap' : undefined}
-            cx="90"
-            cy="50"
-            r="2.5"
-            fill={traceColor}
-          />
-          <circle
-            className={animated ? 'kloel-mushroom__node-cap' : undefined}
-            cx="115"
-            cy="50"
-            r="2.5"
-            fill={traceColor}
-          />
-          <circle
-            className={animated ? 'kloel-mushroom__node-cap' : undefined}
-            cx="130"
-            cy="65"
-            r="2.5"
-            fill={traceColor}
-          />
-          <circle
-            className={animated ? 'kloel-mushroom__node-cap' : undefined}
-            cx="100"
-            cy="40"
-            r="2.5"
-            fill={traceColor}
-          />
-        </g>
-      </g>
-    </svg>
+      style={sharedStyle}
+    />
   );
 }
 

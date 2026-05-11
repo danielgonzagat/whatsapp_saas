@@ -1,99 +1,56 @@
-const U0300__U036F_RE = /[\u0300-\u036f]/g;
-const A_Z0_9_RE = /[^a-z0-9]+/g;
-const PATTERN_RE = /^_+|_+$/g;
-const R___PRECO_PRE_O_VALOR_PI_RE = /r\$|preco|preço|valor|pix|boleto/i;
-/** Global learning signal shape. */
+const DIACRITICS_RE = /[\u0300-\u036f]/g;
+const NON_TOKEN_RE = /[^a-z0-9]+/g;
+const EDGE_UNDERSCORE_RE = /^_+|_+$/g;
+const PRICE_RE = /r\$|preco|preço|valor|pix|boleto/i;
+
 export interface GlobalLearningSignal {
-  /** Domain property. */
   domain: string;
-  /** Intent property. */
   intent: string;
-  /** Outcome property. */
   outcome: string;
-  /** Hour property. */
   hour: number;
-  /** Message length property. */
   messageLength: number;
-  /** Length bucket property. */
   lengthBucket: 'short' | 'medium' | 'long';
-  /** Has price mention property. */
   hasPriceMention: boolean;
-  /** Variant family property. */
   variantFamily: string | null;
-  /** Priority bucket property. */
   priorityBucket: 'low' | 'medium' | 'high';
-  /** Revenue property. */
   revenue: number;
 }
 
-/** Global learning pattern shape. */
 export interface GlobalLearningPattern {
-  /** Domain property. */
   domain: string;
-  /** Intent property. */
   intent: string;
-  /** Samples property. */
   samples: number;
-  /** Sold rate property. */
   soldRate: number;
-  /** Replied rate property. */
   repliedRate: number;
-  /** Revenue per signal property. */
   revenuePerSignal: number;
-  /** Best hour property. */
   bestHour: number | null;
-  /** Preferred length property. */
   preferredLength: 'short' | 'medium' | 'long';
-  /** Preferred variant family property. */
   preferredVariantFamily: string | null;
-  /** Aggressiveness property. */
   aggressiveness: 'LOW' | 'MEDIUM' | 'HIGH';
 }
 
-function normalizeToken(value?: string | null) {
+export interface MindAggressivenessOverride {
+  aggressiveness: string;
+  confidence: number;
+  fallback: boolean;
+}
+
+type Aggressiveness = 'LOW' | 'MEDIUM' | 'HIGH';
+type PreferredLength = 'short' | 'medium' | 'long';
+
+function normalizeToken(value?: string | null): string {
   return (
     String(value || '')
       .trim()
       .toLowerCase()
       .normalize('NFD')
-      .replace(U0300__U036F_RE, '')
-      .replace(A_Z0_9_RE, '_')
-      .replace(PATTERN_RE, '') || 'generic'
+      .replace(DIACRITICS_RE, '')
+      .replace(NON_TOKEN_RE, '_')
+      .replace(EDGE_UNDERSCORE_RE, '') || 'generic'
   );
 }
 
-function toLengthBucket(length: number): 'short' | 'medium' | 'long' {
-  if (length <= 90) {
-    return 'short';
-  }
-  if (length <= 220) {
-    return 'medium';
-  }
-  return 'long';
-}
-
-function toPriorityBucket(priority: number): 'low' | 'medium' | 'high' {
-  if (priority >= 70) {
-    return 'high';
-  }
-  if (priority >= 35) {
-    return 'medium';
-  }
-  return 'low';
-}
-
-function inferVariantFamily(variantKey?: string | null) {
-  const normalized = normalizeToken(variantKey);
-  if (normalized.startsWith('payment')) {
-    return 'payment_recovery';
-  }
-  if (normalized.startsWith('followup')) {
-    return 'followup';
-  }
-  return normalized === 'generic' ? null : normalized;
-}
-
-function asObjectField(
+function objectField(
   source: Record<string, unknown> | null | undefined,
   key: string,
 ): Record<string, unknown> | null {
@@ -101,34 +58,75 @@ function asObjectField(
   return raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : null;
 }
 
-function pickDirectSegment(
-  providerSettings: Record<string, unknown> | null | undefined,
-  bInfo: Record<string, unknown> | null,
-  biz: Record<string, unknown> | null,
-  onb: Record<string, unknown> | null,
-): unknown {
-  return (
-    providerSettings?.businessSegment ||
-    providerSettings?.segment ||
-    providerSettings?.businessType ||
-    bInfo?.segment ||
-    bInfo?.businessType ||
-    biz?.segment ||
-    onb?.segment
+function lengthBucket(length: number): PreferredLength {
+  if (length <= 90) return 'short';
+  if (length <= 220) return 'medium';
+  return 'long';
+}
+
+function priorityBucket(priority: number): 'low' | 'medium' | 'high' {
+  if (priority >= 70) return 'high';
+  if (priority >= 35) return 'medium';
+  return 'low';
+}
+
+function variantFamily(variantKey?: string | null): string | null {
+  const normalized = normalizeToken(variantKey);
+  if (normalized.startsWith('payment')) return 'payment_recovery';
+  if (normalized.startsWith('followup')) return 'followup';
+  return normalized === 'generic' ? null : normalized;
+}
+
+function mostFrequentKey(values: Array<string | number | null | undefined>): string | null {
+  const counts = new Map<string, number>();
+  for (const value of values) {
+    if (value === null || value === undefined || value === '') continue;
+    const key = String(value);
+    counts.set(key, (counts.get(key) || 0) + 1);
+  }
+  return [...counts.entries()].sort((left, right) => right[1] - left[1])[0]?.[0] || null;
+}
+
+function outcomeScore(outcome: string): number {
+  if (outcome === 'sold') return 4;
+  if (outcome === 'replied') return 2;
+  return 0;
+}
+
+function bestHour(items: GlobalLearningSignal[]): number | null {
+  const ranked = Array.from({ length: 24 }, (_, hour) => ({
+    hour,
+    score: items
+      .filter((item) => item.hour === hour)
+      .reduce((sum, item) => sum + outcomeScore(item.outcome), 0),
+  })).sort((left, right) => right.score - left.score)[0];
+  return ranked?.score ? ranked.hour : null;
+}
+
+function mindAggressiveness(override?: MindAggressivenessOverride | null): Aggressiveness {
+  if (!override || override.fallback || override.confidence < 0.4) return 'LOW';
+  const value = override.aggressiveness.toUpperCase();
+  return value === 'HIGH' || value === 'MEDIUM' || value === 'LOW' ? value : 'LOW';
+}
+
+export function inferWorkspaceDomain(providerSettings?: Record<string, unknown> | null): string {
+  const businessInfo = objectField(providerSettings, 'businessInfo');
+  const business = objectField(providerSettings, 'business');
+  const onboarding = objectField(providerSettings, 'onboarding');
+  return normalizeToken(
+    String(
+      providerSettings?.businessSegment ||
+        providerSettings?.segment ||
+        providerSettings?.businessType ||
+        businessInfo?.segment ||
+        businessInfo?.businessType ||
+        business?.segment ||
+        onboarding?.segment ||
+        'generic',
+    ),
   );
 }
 
-/** Infer workspace domain. */
-export function inferWorkspaceDomain(providerSettings?: Record<string, unknown> | null): string {
-  const bInfo = asObjectField(providerSettings, 'businessInfo');
-  const biz = asObjectField(providerSettings, 'business');
-  const onb = asObjectField(providerSettings, 'onboarding');
-  const direct = pickDirectSegment(providerSettings, bInfo, biz, onb);
-
-  return normalizeToken(String(direct || 'generic'));
-}
-
-/** Anonymize decision log. */
 export function anonymizeDecisionLog(input: {
   domain: string;
   log: {
@@ -137,207 +135,102 @@ export function anonymizeDecisionLog(input: {
     metadata?: Record<string, unknown>;
   };
 }): GlobalLearningSignal | null {
-  const value = (input.log?.value || {}) as Record<string, unknown>;
-  const metadata = (input.log?.metadata || {}) as Record<string, unknown>;
-  const valueMeta = (
-    value.metadata && typeof value.metadata === 'object' ? value.metadata : {}
-  ) as Record<string, unknown>;
+  const value = input.log.value || {};
+  const metadata = input.log.metadata || {};
+  const valueMeta =
+    value.metadata && typeof value.metadata === 'object'
+      ? (value.metadata as Record<string, unknown>)
+      : {};
   const intent = normalizeToken(String(value.intent || metadata.intent || 'generic'));
-  if (!intent) {
-    return null;
-  }
+  if (!intent) return null;
 
   const message = String(value.message || '');
-  const messageLength = message.length;
-  const createdAt = input.log?.createdAt ? new Date(input.log.createdAt) : new Date();
-  const hour = Number.isFinite(createdAt.getUTCHours()) ? createdAt.getUTCHours() : 0;
-  const revenue = Number(valueMeta.revenue || metadata.revenue || value.revenue || 0) || 0;
+  const createdAt = input.log.createdAt ? new Date(input.log.createdAt) : new Date();
   const priority = Number(value.priority || metadata.priority || 0) || 0;
+  const revenue = Number(valueMeta.revenue || metadata.revenue || value.revenue || 0) || 0;
 
   return {
-    domain: normalizeToken(String(input.domain)),
+    domain: normalizeToken(input.domain),
     intent,
     outcome: normalizeToken(String(value.outcome || metadata.outcome || 'unknown')),
-    hour,
-    messageLength,
-    lengthBucket: toLengthBucket(messageLength),
-    hasPriceMention: R___PRECO_PRE_O_VALOR_PI_RE.test(message),
-    variantFamily: inferVariantFamily(String(value.variantKey || metadata.variantKey || '')),
-    priorityBucket: toPriorityBucket(priority),
+    hour: Number.isFinite(createdAt.getUTCHours()) ? createdAt.getUTCHours() : 0,
+    messageLength: message.length,
+    lengthBucket: lengthBucket(message.length),
+    hasPriceMention: PRICE_RE.test(message),
+    variantFamily: variantFamily(String(value.variantKey || metadata.variantKey || '')),
+    priorityBucket: priorityBucket(priority),
     revenue,
   };
 }
 
-function groupSignalsByDomainIntent(
-  signals: GlobalLearningSignal[],
-): Map<string, GlobalLearningSignal[]> {
-  const grouped = new Map<string, GlobalLearningSignal[]>();
-  for (const signal of signals) {
-    const key = `${signal.domain}:${signal.intent}`;
-    const current = grouped.get(key) || [];
-    current.push(signal);
-    grouped.set(key, current);
-  }
-  return grouped;
-}
-
-const outcomeScore = (outcome: string): number => {
-  if (outcome === 'sold') {
-    return 4;
-  }
-  if (outcome === 'replied') {
-    return 2;
-  }
-  return 0;
-};
-
-const pickBestHour = (items: GlobalLearningSignal[]): { hour: number; score: number } | undefined =>
-  Array.from({ length: 24 }, (_, hour) => hour)
-    .map((hour) => ({
-      hour,
-      score: items
-        .filter((item) => item.hour === hour)
-        .reduce((sum, item) => sum + outcomeScore(item.outcome), 0),
-    }))
-    .sort((left, right) => right.score - left.score)[0];
-
-const countLengthBuckets = (items: GlobalLearningSignal[]): Record<string, number> => {
-  const acc: Record<string, number> = {};
-  for (const item of items) {
-    acc[item.lengthBucket] = (acc[item.lengthBucket] || 0) + 1;
-  }
-  return acc;
-};
-
-const countVariantFamilies = (items: GlobalLearningSignal[]): Record<string, number> => {
-  const acc: Record<string, number> = {};
-  for (const item of items) {
-    if (!item.variantFamily) {
-      continue;
-    }
-    acc[item.variantFamily] = (acc[item.variantFamily] || 0) + 1;
-  }
-  return acc;
-};
-
-type Aggressiveness = 'LOW' | 'MEDIUM' | 'HIGH';
-type PreferredLength = 'short' | 'medium' | 'long';
-
-const mostFrequentKey = (frequency: Record<string, number>): string | null =>
-  Object.entries(frequency).sort((left, right) => right[1] - left[1])[0]?.[0] || null;
-
-const resolveAggressiveness = (
-  soldRate: number,
-  repliedRate: number,
-  revenuePerSignal: number,
-): Aggressiveness => {
-  if (soldRate >= 0.3 || revenuePerSignal >= 150) {
-    return 'HIGH';
-  }
-  if (soldRate >= 0.15 || repliedRate >= 0.4) {
-    return 'MEDIUM';
-  }
-  return 'LOW';
-};
-
-function buildPatternForGroup(key: string, items: GlobalLearningSignal[]): GlobalLearningPattern {
+function patternFor(key: string, items: GlobalLearningSignal[]): GlobalLearningPattern {
   const [domain, intent] = key.split(':');
   const samples = items.length;
   const sold = items.filter((item) => item.outcome === 'sold').length;
-  const replied = items.filter((item) => ['replied', 'sold'].includes(item.outcome)).length;
+  const replied = items.filter(
+    (item) => item.outcome === 'sold' || item.outcome === 'replied',
+  ).length;
   const revenue = items.reduce((sum, item) => sum + item.revenue, 0);
-  const bestHourEntry = pickBestHour(items);
-
-  const preferredLength = (mostFrequentKey(countLengthBuckets(items)) ||
-    'medium') as PreferredLength;
-  const preferredVariantFamily = mostFrequentKey(countVariantFamilies(items));
-
-  const soldRate = Number((sold / Math.max(samples, 1)).toFixed(4));
-  const repliedRate = Number((replied / Math.max(samples, 1)).toFixed(4));
-  const revenuePerSignal = Number((revenue / Math.max(samples, 1)).toFixed(2));
-  const aggressiveness = resolveAggressiveness(soldRate, repliedRate, revenuePerSignal);
-
   return {
     domain,
     intent,
     samples,
-    soldRate,
-    repliedRate,
-    revenuePerSignal,
-    bestHour: bestHourEntry?.score ? bestHourEntry.hour : null,
-    preferredLength,
-    preferredVariantFamily,
-    aggressiveness,
+    soldRate: Number((sold / Math.max(1, samples)).toFixed(4)),
+    repliedRate: Number((replied / Math.max(1, samples)).toFixed(4)),
+    revenuePerSignal: Number((revenue / Math.max(1, samples)).toFixed(2)),
+    bestHour: bestHour(items),
+    preferredLength: (mostFrequentKey(items.map((item) => item.lengthBucket)) ||
+      'medium') as PreferredLength,
+    preferredVariantFamily: mostFrequentKey(items.map((item) => item.variantFamily)),
+    aggressiveness: 'LOW',
   };
 }
 
-function comparePatterns(left: GlobalLearningPattern, right: GlobalLearningPattern): number {
-  if (right.revenuePerSignal !== left.revenuePerSignal) {
-    return right.revenuePerSignal - left.revenuePerSignal;
-  }
-  if (right.soldRate !== left.soldRate) {
-    return right.soldRate - left.soldRate;
-  }
-  return right.samples - left.samples;
-}
-
-/** Compute global patterns. */
 export function computeGlobalPatterns(signals: GlobalLearningSignal[]): GlobalLearningPattern[] {
-  const grouped = groupSignalsByDomainIntent(signals);
+  const grouped = new Map<string, GlobalLearningSignal[]>();
+  for (const signal of signals) {
+    const key = `${signal.domain}:${signal.intent}`;
+    grouped.set(key, [...(grouped.get(key) || []), signal]);
+  }
   return [...grouped.entries()]
-    .map(([key, items]) => buildPatternForGroup(key, items))
-    .sort(comparePatterns);
+    .map(([key, items]) => patternFor(key, items))
+    .sort(
+      (left, right) =>
+        right.revenuePerSignal - left.revenuePerSignal || right.samples - left.samples,
+    );
 }
 
-/** Build global strategy. */
 export function buildGlobalStrategy(input: {
   patterns: GlobalLearningPattern[];
   domain: string;
   intent: string;
+  mindOverride?: MindAggressivenessOverride | null;
 }) {
-  const domainKey = normalizeToken(input.domain);
-  const intentKey = normalizeToken(input.intent);
+  const domain = normalizeToken(input.domain);
+  const intent = normalizeToken(input.intent);
   const pattern =
-    input.patterns.find((item) => item.domain === domainKey && item.intent === intentKey) ||
-    input.patterns.find((item) => item.domain === domainKey) ||
+    input.patterns.find((item) => item.domain === domain && item.intent === intent) ||
+    input.patterns.find((item) => item.domain === domain) ||
     input.patterns.find((item) => item.domain === 'generic') ||
     null;
 
-  if (!pattern) {
-    return {
-      domain: domainKey,
-      intent: intentKey,
-      preferredLength: 'medium' as const,
-      bestHour: null,
-      aggressiveness: 'LOW' as const,
-      preferredVariantFamily: null,
-      confidence: 0,
-    };
-  }
-
   return {
-    domain: pattern.domain,
-    intent: pattern.intent,
-    preferredLength: pattern.preferredLength,
-    bestHour: pattern.bestHour,
-    aggressiveness: pattern.aggressiveness,
-    preferredVariantFamily: pattern.preferredVariantFamily,
-    confidence: Number(Math.min(pattern.samples / 25, 1).toFixed(3)),
+    domain: pattern?.domain || domain,
+    intent: pattern?.intent || intent,
+    preferredLength: pattern?.preferredLength || ('medium' as const),
+    bestHour: pattern?.bestHour ?? null,
+    aggressiveness: input.mindOverride ? mindAggressiveness(input.mindOverride) : 'MEDIUM',
+    preferredVariantFamily: pattern?.preferredVariantFamily || null,
+    confidence: Number(Math.min((pattern?.samples || 0) / 25, 1).toFixed(3)),
   };
 }
 
-/** Persist global patterns. */
 export async function persistGlobalPatterns(
   redisClient: { set?: (key: string, value: string) => Promise<string | null> } | null | undefined,
   patterns: GlobalLearningPattern[],
 ) {
-  if (!redisClient?.set) {
-    return null;
-  }
-  const payload = {
-    updatedAt: new Date().toISOString(),
-    patterns,
-  };
+  if (!redisClient?.set) return null;
+  const payload = { updatedAt: new Date().toISOString(), patterns };
   await redisClient.set('cia:global-patterns:v1', JSON.stringify(payload));
   return payload;
 }

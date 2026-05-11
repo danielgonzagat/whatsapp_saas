@@ -241,7 +241,19 @@ export function discoverAllObservedArtifactFilenames(): Record<string, string> {
       }
     }
   }
-  return names;
+  return new Proxy(names, {
+    get(target, property, receiver) {
+      if (typeof property !== 'string') {
+        return Reflect.get(target, property, receiver);
+      }
+      const observedName = Reflect.get(target, property, receiver);
+      if (typeof observedName === 'string') {
+        return observedName;
+      }
+      const snakeName = property.replace(/[A-Z]/g, (letter) => `_${letter}`).toUpperCase();
+      return `PULSE_${snakeName}.json`;
+    },
+  });
 }
 
 // ── Source labels ──────────────────────────────────────────────────────────

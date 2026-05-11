@@ -54,8 +54,19 @@ export class BillingWebhookService {
       return this.whatsappService;
     }
     try {
-      const { WhatsappService } = await import('../whatsapp/whatsapp.service');
-      this.whatsappService = this.moduleRef.get(WhatsappService, { strict: false }) ?? null;
+      const { ChannelTransportRegistry } = await import('../kloel/channel-transport.registry');
+      const transports = this.moduleRef.get(ChannelTransportRegistry, { strict: false });
+      this.whatsappService = transports
+        ? {
+            sendMessage: (workspaceId, phone, message) =>
+              transports.send(workspaceId, {
+                workspaceId,
+                channel: 'whatsapp',
+                recipientId: phone,
+                content: message,
+              }),
+          }
+        : null;
       return this.whatsappService;
     } catch (error: unknown) {
       const err = error instanceof Error ? error : new Error('Unknown error');

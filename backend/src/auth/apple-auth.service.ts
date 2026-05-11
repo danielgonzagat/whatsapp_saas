@@ -73,6 +73,7 @@ export class AppleAuthService {
     if (!redirectUri) {
       throw new UnauthorizedException('Redirect URI Apple ausente.');
     }
+    this.assertAllowedRedirectUri(redirectUri);
 
     const config = this.requireClientSecretConfig();
     const clientSecret = this.resolveClientSecret(config);
@@ -245,6 +246,59 @@ export class AppleAuthService {
     }
 
     return { clientId, teamId, keyId, privateKey };
+  }
+
+  private assertAllowedRedirectUri(redirectUri: string): void {
+    const normalized = this.normalizeRedirectUri(redirectUri);
+    const allowed = this.resolveAllowedRedirectUris();
+    if (!allowed.length) {
+      this.logger.error('apple_auth_not_configured: APPLE_CALLBACK_URL ausente');
+      throw new ServiceUnavailableException('Callback Apple nao configurado no servidor.');
+    }
+    if (!allowed.includes(normalized)) {
+      throw new UnauthorizedException('Redirect URI Apple nao autorizado.');
+    }
+  }
+
+  private resolveAllowedRedirectUris(): string[] {
+    const explicit = [
+      this.config.get<string>('APPLE_CALLBACK_URL'),
+      this.config.get<string>('APPLE_REDIRECT_URI'),
+      this.config.get<string>('APPLE_ALLOWED_REDIRECT_URIS'),
+    ];
+    const derived = [
+      this.config.get<string>('NEXT_PUBLIC_AUTH_URL'),
+      this.config.get<string>('AUTH_PUBLIC_URL'),
+      this.config.get<string>('AUTH_URL'),
+    ]
+      .map((value) => value?.trim())
+      .filter((value): value is string => Boolean(value))
+      .map((origin) => this.buildCallbackUrl(origin))
+      .filter((value): value is string => Boolean(value));
+    return [...explicit, ...derived]
+      .filter((value): value is string => typeof value === 'string')
+      .flatMap((value) => value.split(','))
+      .map((value) => this.normalizeRedirectUri(value))
+      .filter(Boolean)
+      .filter((value, index, list) => list.indexOf(value) === index);
+  }
+
+  private normalizeRedirectUri(value: string): string {
+    try {
+      const url = new URL(value.trim());
+      url.hash = '';
+      return url.toString();
+    } catch {
+      throw new UnauthorizedException('Redirect URI Apple invalido.');
+    }
+  }
+
+  private buildCallbackUrl(origin: string): string | null {
+    try {
+      return new URL('/api/auth/callback/apple', origin).toString();
+    } catch {
+      return null;
+    }
   }
 
   private resolvePrivateKey(): string {

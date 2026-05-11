@@ -10,7 +10,6 @@ import { createKloelStatusEvent, type KloelStreamEvent } from './kloel-stream-ev
 import { buildKloelDashboardPrompt } from './__companions__/kloel-reply-engine.helpers.companion';
 import { KLOEL_ONBOARDING_PROMPT, KLOEL_SALES_PROMPT } from './kloel.prompts';
 import { chatCompletionWithFallback } from './openai-wrapper';
-import { KLOEL_CHAT_TOOLS } from './kloel-chat-tools.definition';
 import type { ExpertiseLevel, LocalToolExecutor, ReplyMessage } from './kloel-reply-engine.service';
 
 export const KLOEL_STREAM_ABORT_REASON_TIMEOUT = 'request_timeout';
@@ -302,8 +301,7 @@ export async function buildAssistantReplyImpl(
     {
       model: resolveBackendOpenAIModel(isChatMode ? 'brain' : 'writer'),
       messages,
-      tools: isChatMode ? KLOEL_CHAT_TOOLS : undefined,
-      tool_choice: isChatMode ? 'auto' : undefined,
+      tool_choice: 'none',
       temperature: responseTemperature,
       top_p: 0.95,
       frequency_penalty: 0.3,

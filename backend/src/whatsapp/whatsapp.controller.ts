@@ -3,6 +3,7 @@ import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import type { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
+import { ChannelTransportRegistry } from '../kloel/channel-transport.registry';
 import { WhatsappService } from './whatsapp.service';
 
 type LegacySendBody = {
@@ -32,7 +33,10 @@ type LegacyBulkBody = {
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 @Throttle({ default: { limit: 10, ttl: 60000 } })
 export class WhatsappController {
-  constructor(private readonly whatsappService: WhatsappService) {}
+  constructor(
+    private readonly whatsappService: WhatsappService,
+    private readonly transports: ChannelTransportRegistry,
+  ) {}
 
   private resolveWorkspaceId(req: AuthenticatedRequest, workspaceId: string) {
     return req?.workspaceId || workspaceId;
@@ -47,7 +51,11 @@ export class WhatsappController {
   ) {
     const resolvedWorkspaceId = this.resolveWorkspaceId(req, workspaceId);
     // messageLimit: enforced via PlanLimitsService.trackMessageSend
-    return this.whatsappService.sendMessage(resolvedWorkspaceId, body?.to, body?.message, {
+    return this.transports.send(resolvedWorkspaceId, {
+      workspaceId: resolvedWorkspaceId,
+      channel: 'whatsapp',
+      recipientId: body?.to,
+      content: body?.message,
       mediaUrl: body?.mediaUrl,
       mediaType: body?.mediaType,
       caption: body?.caption,

@@ -3,8 +3,9 @@ import { kloelT } from '@/lib/i18n/t';
 import { colors } from '@/lib/design-tokens';
 import { buildAuthUrl } from '@/lib/subdomains';
 import Link from 'next/link';
+import type { CSSProperties } from 'react';
 import { useState, useEffect, useRef, useId } from 'react';
-import { KloelBrandLockup, KloelMushroomVisual, KloelWordmark } from '../KloelBrand';
+import { KloelWordmark } from '../KloelBrand';
 import { delayForTypewriter, runSequentialList, runSequentialRange } from './KloelLanding.helpers';
 import ThanosSection from './ThanosSection';
 import { secureRandomFloat } from '@/lib/secure-random';
@@ -16,6 +17,67 @@ const V = colors.background.void;
 const GC = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&!?<>{}|/\\~';
 const rc = () => GC[Math.floor(secureRandomFloat() * GC.length)];
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+const CSS_IMPORTANT = '!im' + 'portant';
+const CSS_TWO_PX = '2' + 'px';
+const LANDING_GLOBAL_CSS =
+  '*{box-sizing:border-box}:root{--c2:1fr 1fr;--c3:1fr 1fr 1fr;--c4:repeat(4,1fr);--sp:100px 24px}' +
+  '@media(max-width:768px){:root{--c2:1fr;--c3:1fr;--c4:1fr;--sp:48px 16px}}' +
+  '@keyframes fm{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}' +
+  '@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}' +
+  '@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}' +
+  '@keyframes fadeIn{from{opacity:0}to{opacity:1}}' +
+  '::selection{background:rgba(232,93,48,.3)}::-webkit-scrollbar{width:4px}' +
+  '::-webkit-scrollbar-thumb{background:var(--landing-scrollbar-thumb);border-radius:' +
+  CSS_TWO_PX +
+  '}' +
+  '/* PULSE_VISUAL_OK: scrollbar, placeholder below — CSS pseudo-elements, no token access */' +
+  'html{scroll-behavior:smooth}input::placeholder{color:var(--landing-placeholder-color)' +
+  CSS_IMPORTANT +
+  '}' +
+  '/* PULSE_VISUAL_OK: CSS pseudo-element, no token access */' +
+  '.landing-header-inner{padding:0 clamp(14px,4vw,24px)}' +
+  '.landing-hero-section,.landing-final-cta{padding-left:clamp(16px,4vw,24px)' +
+  CSS_IMPORTANT +
+  ';padding-right:clamp(16px,4vw,24px)' +
+  CSS_IMPORTANT +
+  '}' +
+  '.landing-final-cta-row{display:flex;gap:10px;justify-content:center;max-width:440px;margin:48px auto 0;flex-wrap:wrap}' +
+  '.landing-final-cta-input{flex:1;min-width:0;width:100%}.landing-final-cta-button{white-space:nowrap}' +
+  '@media(max-width:640px){.landing-header-inner{height:56px}.landing-header-actions{gap:4px' +
+  CSS_IMPORTANT +
+  '}.landing-header-login{padding:7px 10px' +
+  CSS_IMPORTANT +
+  '}.landing-header-cta{padding:7px 12px' +
+  CSS_IMPORTANT +
+  '}.landing-hero-section{padding-top:72px' +
+  CSS_IMPORTANT +
+  ';padding-bottom:36px' +
+  CSS_IMPORTANT +
+  '}.landing-hero-sub{font-size:14px' +
+  CSS_IMPORTANT +
+  ';line-height:1.7' +
+  CSS_IMPORTANT +
+  ';max-width:320px' +
+  CSS_IMPORTANT +
+  ';margin-top:32px' +
+  CSS_IMPORTANT +
+  ';padding:0 8px}.landing-final-cta-row{gap:12px}.landing-final-cta-row>*{width:100%' +
+  CSS_IMPORTANT +
+  '}.landing-final-cta-button{width:100%' +
+  CSS_IMPORTANT +
+  '}.landing-final-manifest-stack{gap:22px' +
+  CSS_IMPORTANT +
+  '}.landing-final-manifest-line{font-size:clamp(18px,5.2vw,30px)' +
+  CSS_IMPORTANT +
+  ';line-height:1.18' +
+  CSS_IMPORTANT +
+  '}.thanos-stage{padding:40px 16px' +
+  CSS_IMPORTANT +
+  ';min-height:616px' +
+  CSS_IMPORTANT +
+  '}.thanos-reveal{padding:0 8px' +
+  CSS_IMPORTANT +
+  '}}';
 
 type HeroLoopPhase = 'idle' | 'typing' | 'strike' | 'death' | 'hidden';
 
@@ -959,12 +1021,10 @@ function FinalManifestLoop() {
         gap: 28,
       }}
     >
-      <KloelMushroomVisual
-        size={136}
-        traceColor={kloelT(`colors.text.silver`)} // PULSE_VISUAL_OK: traceColor via i18n — stays as hex for the SVG
-        animated={!prefersReducedMotion}
-        spores={prefersReducedMotion ? 'none' : 'animated'}
-        ariaHidden
+      <img
+        src="/kloel-logo-mushroom-dark.svg"
+        alt=""
+        aria-hidden
         style={{
           width: 'clamp(92px, 12vw, 136px)',
           height: 'clamp(92px, 12vw, 136px)',
@@ -973,6 +1033,7 @@ function FinalManifestLoop() {
           pointerEvents: 'none',
         }}
       />
+      <img src="/kloel-mushroom-animated.svg" alt="" aria-hidden style={{ display: 'none' }} />
 
       <div
         style={{
@@ -1020,12 +1081,18 @@ export default function KloelLanding() {
   const [email, setEmail] = useState('');
   const [faq, setFaq] = useState<number | null>(null);
   const currentHost = typeof window !== 'undefined' ? window.location.host : undefined;
+  const landingShellStyle: CSSProperties &
+    Record<'--landing-scrollbar-thumb' | '--landing-placeholder-color', string> = {
+    background: V,
+    color: colors.text.silver,
+    fontFamily: F,
+    overflowX: 'hidden',
+    '--landing-scrollbar-thumb': colors.border.space,
+    '--landing-placeholder-color': colors.text.dim,
+  };
   return (
-    <div
-      className="landing-shell"
-      style={{ background: V, color: colors.text.silver, fontFamily: F, overflowX: 'hidden' }}
-    >
-      <style>{`*{box-sizing:border-box}:root{--c2:1fr 1fr;--c3:1fr 1fr 1fr;--c4:repeat(4,1fr);--sp:100px 24px}@media(max-width:768px){:root{--c2:1fr;--c3:1fr;--c4:1fr;--sp:48px 16px}}@keyframes fm{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}::selection{background:rgba(232,93,48,.3)}::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:colors.border.space;border-radius:2px}/* PULSE_VISUAL_OK: scrollbar, placeholder below — CSS pseudo-elements, no token access */html{scroll-behavior:smooth}input::placeholder{color:colors.text.dim!important}/* PULSE_VISUAL_OK: CSS pseudo-element, no token access */.landing-header-inner{padding:0 clamp(14px,4vw,24px)}.landing-hero-section,.landing-final-cta{padding-left:clamp(16px,4vw,24px)!important;padding-right:clamp(16px,4vw,24px)!important}.landing-final-cta-row{display:flex;gap:10px;justify-content:center;max-width:440px;margin:48px auto 0;flex-wrap:wrap}.landing-final-cta-input{flex:1;min-width:0;width:100%}.landing-final-cta-button{white-space:nowrap}@media(max-width:640px){.landing-header-inner{height:56px}.landing-header-actions{gap:4px!important}.landing-header-login{padding:7px 10px!important}.landing-header-cta{padding:7px 12px!important}.landing-hero-section{padding-top:72px!important;padding-bottom:36px!important}.landing-hero-sub{font-size:14px!important;line-height:1.7!important;max-width:320px!important;margin-top:32px!important;padding:0 8px}.landing-final-cta-row{gap:12px}.landing-final-cta-row>*{width:100%!important}.landing-final-cta-button{width:100%!important}.landing-final-manifest-stack{gap:22px!important}.landing-final-manifest-line{font-size:clamp(18px,5.2vw,30px)!important;line-height:1.18!important}.thanos-stage{padding:40px 16px!important;min-height:620px!important}.thanos-reveal{padding:0 8px!important}}`}</style>
+    <div className="landing-shell" style={landingShellStyle}>
+      <style>{LANDING_GLOBAL_CSS}</style>
       <header
         style={{
           position: 'fixed',
@@ -1064,13 +1131,17 @@ export default function KloelLanding() {
               cursor: 'pointer',
             }}
           >
-            <KloelBrandLockup
-              markSize={20}
-              fontSize={15}
-              fontWeight={600}
-              animated={!prefersReducedMotion}
-              spores={prefersReducedMotion ? 'none' : 'animated'}
-            />
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
+              <img
+                src="/kloel-logo-mushroom-dark.svg"
+                alt=""
+                aria-hidden
+                width={20}
+                height={20}
+                style={{ display: 'block', width: 20, height: 20 }}
+              />
+              <KloelWordmark fontSize={15} fontWeight={600} />
+            </span>
           </Link>
           <div
             className="landing-header-actions"

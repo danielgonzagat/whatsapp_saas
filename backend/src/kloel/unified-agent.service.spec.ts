@@ -12,13 +12,14 @@ type UnifiedAgentPrismaMock = {
   workspace: { findUnique: jest.Mock };
   contact: { findUnique: jest.Mock; findFirst: jest.Mock };
   message: { findMany: jest.Mock };
-  kloelMemory: { findFirst: jest.Mock; findMany: jest.Mock };
+  kloelMemory: { findFirst: jest.Mock; findMany: jest.Mock; upsert: jest.Mock };
   product: { findFirst: jest.Mock; findMany: jest.Mock };
 };
 
 describe('UnifiedAgentService', () => {
   let prisma: UnifiedAgentPrismaMock;
   let whatsappService: { sendMessage: jest.Mock };
+  let transportRegistry: { send: jest.Mock };
   let paymentService: { createPayment: jest.Mock };
   let configMock: ConfigService;
   let service: UnifiedAgentService;
@@ -46,6 +47,7 @@ describe('UnifiedAgentService', () => {
       kloelMemory: {
         findFirst: jest.fn().mockResolvedValue(null),
         findMany: jest.fn().mockResolvedValue([]),
+        upsert: jest.fn().mockResolvedValue(undefined),
       },
       product: {
         findFirst: jest.fn(),
@@ -56,6 +58,9 @@ describe('UnifiedAgentService', () => {
     // messageLimit: enforced via PlanLimitsService.trackMessageSend
     whatsappService = {
       sendMessage: jest.fn().mockResolvedValue({ error: false, delivery: 'sent', direct: true }),
+    };
+    transportRegistry = {
+      send: jest.fn().mockResolvedValue({ success: true, blocked: false, messageId: 'msg-1' }),
     };
 
     paymentService = {
@@ -84,7 +89,7 @@ describe('UnifiedAgentService', () => {
     ctx = new UnifiedAgentContextService(contextData);
     response = new UnifiedAgentResponseService({} as never);
     const messaging = new UnifiedAgentActionsMessagingService(
-      whatsappService as never,
+      transportRegistry as never,
       {} as never,
     );
     const commerce = new UnifiedAgentActionsCommerceService(
@@ -97,7 +102,6 @@ describe('UnifiedAgentService', () => {
     const actions = new UnifiedAgentActionsService(
       prisma as never,
       {} as never,
-      whatsappService as never,
       {} as never,
       messaging,
       {} as never,
@@ -151,14 +155,13 @@ describe('UnifiedAgentService', () => {
       },
     );
 
-    expect(whatsappService.sendMessage).toHaveBeenCalledWith(
+    expect(transportRegistry.send).toHaveBeenCalledWith(
       'ws-1',
-      '5511999999999',
-      expect.stringContaining('Test Product'),
-      {
-        complianceMode: 'proactive',
-        forceDirect: false,
-      },
+      expect.objectContaining({
+        channel: 'whatsapp',
+        recipientId: '5511999999999',
+        content: expect.stringContaining('Test Product'),
+      }),
     );
     expect(result).toEqual(
       expect.objectContaining({
@@ -174,6 +177,89 @@ describe('UnifiedAgentService', () => {
     expect(Reflect.get(service, 'fallbackBrainModel')).toBe('gpt-4.1');
     expect(Reflect.get(service, 'writerModel')).toBe('gpt-5.4-nano-2026-03-17');
     expect(Reflect.get(service, 'fallbackWriterModel')).toBe('gpt-4.1');
+  });
+
+  it('executes predecided actions without delegating tool choice to the LLM', async () => {
+    const result = await service.processMessage({
+      workspaceId: 'ws-1',
+      contactId: 'contact-1',
+      phone: '5511999999999',
+      message: 'manda o link',
+      allowedTools: ['send_message'],
+      predecidedActions: [
+        {
+          tool: 'send_message',
+          args: { message: 'Aqui está o próximo passo.' },
+        },
+      ],
+      context: { channel: 'whatsapp' },
+    });
+
+    expect(transportRegistry.send).toHaveBeenCalledWith(
+      'ws-1',
+      expect.objectContaining({
+        content: 'Aqui está o próximo passo.',
+        recipientId: '5511999999999',
+      }),
+    );
+    expect(result.actions).toEqual([
+      expect.objectContaining({
+        tool: 'send_message',
+        args: { message: 'Aqui está o próximo passo.' },
+      }),
+    ]);
+    expect(result.intent).toBe('FOLLOW_UP');
+    expect(result.confidence).toBe(0.85);
+  });
+
+  it('blocks predecided actions that are outside the Brain capability policy', async () => {
+    const result = await service.processMessage({
+      workspaceId: 'ws-1',
+      contactId: 'contact-1',
+      phone: '5511999999999',
+      message: 'manda o link',
+      allowedTools: ['send_message'],
+      predecidedActions: [
+        {
+          tool: 'create_payment_link',
+          args: { amount: 100, productName: 'Produto X' },
+        },
+      ],
+    });
+
+    expect(paymentService.createPayment).not.toHaveBeenCalled();
+    expect(result.actions).toEqual([
+      {
+        tool: 'create_payment_link',
+        args: { amount: 100, productName: 'Produto X' },
+        result: { blocked: true, reason: 'capability_not_allowed' },
+      },
+    ]);
+  });
+
+  it('treats an empty allowedTools policy as no tools allowed', async () => {
+    const result = await service.processMessage({
+      workspaceId: 'ws-1',
+      contactId: 'contact-1',
+      phone: '5511999999999',
+      message: 'manda uma mensagem',
+      allowedTools: [],
+      predecidedActions: [
+        {
+          tool: 'send_message',
+          args: { message: 'Nao deve enviar.' },
+        },
+      ],
+    });
+
+    expect(transportRegistry.send).not.toHaveBeenCalled();
+    expect(result.actions).toEqual([
+      {
+        tool: 'send_message',
+        args: { message: 'Nao deve enviar.' },
+        result: { blocked: true, reason: 'capability_not_allowed' },
+      },
+    ]);
   });
 
   it('loads conversation history by phone when contactId is missing', async () => {
@@ -277,13 +363,12 @@ describe('UnifiedAgentService', () => {
       description: 'Pagamento - Produto X',
       idempotencyKey: 'kloel-pix:ws-1:5511999999999:139.9:Produto X',
     });
-    expect(whatsappService.sendMessage).toHaveBeenCalledWith(
+    expect(transportRegistry.send).toHaveBeenCalledWith(
       'ws-1',
-      '5511999999999',
-      expect.stringContaining('000201pixcopy'),
       expect.objectContaining({
-        complianceMode: 'proactive',
-        forceDirect: false,
+        channel: 'whatsapp',
+        recipientId: '5511999999999',
+        content: expect.stringContaining('000201pixcopy'),
       }),
     );
     expect(result).toMatchObject({

@@ -6,6 +6,8 @@
  * up the NestJS injector.
  */
 
+import { isPlaceholderContactName } from './whatsapp-normalization.util';
+
 const DIGITS_RE = /\D/g;
 
 type InboundMessageType = 'text' | 'audio' | 'image' | 'document' | 'video' | 'sticker' | 'unknown';
@@ -17,6 +19,21 @@ type InboundMessageType = 'text' | 'audio' | 'image' | 'document' | 'video' | 's
  */
 export function normalizePhone(phone: string): string {
   return phone.replace(DIGITS_RE, '').replace('@c.us', '').replace('@s.whatsapp.net', '');
+}
+
+export function resolveTrustedContactName(phone: string, ...candidates: unknown[]): string {
+  for (const candidate of candidates) {
+    const name =
+      typeof candidate === 'string'
+        ? candidate.trim()
+        : typeof candidate === 'number' || typeof candidate === 'boolean'
+          ? String(candidate).trim()
+          : '';
+    if (name && !isPlaceholderContactName(name, phone)) {
+      return name;
+    }
+  }
+  return '';
 }
 
 /**

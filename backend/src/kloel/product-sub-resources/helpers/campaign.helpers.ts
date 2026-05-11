@@ -1,5 +1,55 @@
 import { LooseObject, parseObject, safeStr, toStringList } from './common.helpers';
 
+export interface CampaignMetrics {
+  sentCount: number;
+  deliveredCount: number;
+  readCount: number;
+  failedCount: number;
+  repliedCount: number;
+  convertedCount: number;
+  conversionRate: number;
+  totalSpentCents: number;
+  revenueCents: number;
+  roas: number;
+}
+
+export interface AdAlertContext {
+  workspaceId: string;
+  ruleId: string;
+  ruleName: string;
+  campaignBudgetExhausted: boolean;
+  metric: CampaignMetrics;
+  threshold: string;
+  windowHours: number;
+  campaign: string;
+}
+
+export function buildCampaignMetrics(stats: LooseObject): CampaignMetrics {
+  const sent = Number(stats.sent || 0);
+  const delivered = Number(stats.delivered || 0);
+  const read = Number(stats.read || 0);
+  const failed = Number(stats.failed || 0);
+  const replied = Number(stats.replied || 0);
+  const converted = Number(stats.converted || 0);
+  const conversionRate = delivered > 0 ? converted / delivered : 0;
+  const totalSpentCents = Number(stats.totalSpentCents || 0);
+  const revenueCents = Number(stats.revenueCents || 0);
+  const roas = totalSpentCents > 0 ? revenueCents / totalSpentCents : 0;
+
+  return {
+    sentCount: sent,
+    deliveredCount: delivered,
+    readCount: read,
+    failedCount: failed,
+    repliedCount: replied,
+    convertedCount: converted,
+    conversionRate,
+    totalSpentCents,
+    revenueCents,
+    roas,
+  };
+}
+
 export function findLinkedCampaignForProductCampaign(
   campaigns: LooseObject[],
   productCampaign: LooseObject,

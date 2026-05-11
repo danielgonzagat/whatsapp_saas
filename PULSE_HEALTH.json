@@ -1,1 +1,3112 @@
-{"generatedAt":"2026-05-03T00:00:00.000Z","scopeStates":[],"observability":{"score":0,"status":"PARTIAL","layers":[],"summary":{"total":0,"pass":0,"fail":0,"unreachable":0,"error":0}},"overall":{"score":77,"status":"PARTIAL","summary":{"totalLayers":0,"healthy":0,"degraded":0,"failing":0}},"certification":{"status":"PARTIAL","gaps":["pre-existing-pulse-gap"]}}
+{
+  "score": 94,
+  "totalNodes": 1907,
+  "breaks": [
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/admin/carteira/admin-carteira.controller.ts",
+      "line": 91,
+      "description": "QUERY /admin/carteira/currency is not called by frontend code",
+      "detail": "Controller: ledger",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/admin/carteira/admin-carteira.controller.ts",
+      "line": 121,
+      "description": "QUERY /admin/carteira/currency is not called by frontend code",
+      "detail": "Controller: listConnectAccounts",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/admin/carteira/admin-carteira.controller.ts",
+      "line": 127,
+      "description": "GET /admin/carteira/connect/accounts is not called by frontend code",
+      "detail": "Controller: listConnectAccounts",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/admin/carteira/admin-carteira.controller.ts",
+      "line": 130,
+      "description": "QUERY /admin/carteira/workspaceId is not called by frontend code",
+      "detail": "Controller: unknown",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/admin/carteira/admin-carteira.controller.ts",
+      "line": 162,
+      "description": "GET /admin/carteira/connect/reconcile is not called by frontend code",
+      "detail": "Controller: reconcileConnect",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/admin/carteira/admin-carteira.controller.ts",
+      "line": 165,
+      "description": "QUERY /admin/carteira/workspaceId is not called by frontend code",
+      "detail": "Controller: listPayouts",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/admin/carteira/admin-carteira.controller.ts",
+      "line": 173,
+      "description": "GET /admin/carteira/payouts is not called by frontend code",
+      "detail": "Controller: listPayouts",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/admin/carteira/admin-carteira.controller.ts",
+      "line": 176,
+      "description": "QUERY /admin/carteira/skip is not called by frontend code",
+      "detail": "Controller: unknown",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/admin/carteira/admin-carteira.controller.ts",
+      "line": 214,
+      "description": "GET /admin/carteira/connect/payout-requests is not called by frontend code",
+      "detail": "Controller: listConnectPayoutRequests",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/admin/carteira/admin-carteira.controller.ts",
+      "line": 218,
+      "description": "QUERY /admin/carteira/workspaceId is not called by frontend code",
+      "detail": "Controller: unknown",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/admin/carteira/admin-carteira.controller.ts",
+      "line": 219,
+      "description": "QUERY /admin/carteira/state is not called by frontend code",
+      "detail": "Controller: unknown",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/admin/carteira/admin-carteira.controller.ts",
+      "line": 220,
+      "description": "QUERY /admin/carteira/skip is not called by frontend code",
+      "detail": "Controller: unknown",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/admin/carteira/admin-carteira.controller.ts",
+      "line": 221,
+      "description": "QUERY /admin/carteira/take is not called by frontend code",
+      "detail": "Controller: unknown",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/admin/carteira/admin-carteira.controller.ts",
+      "line": 233,
+      "description": "GET /admin/carteira/fraud/blacklist is not called by frontend code",
+      "detail": "Controller: listFraudBlacklist",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/admin/carteira/admin-carteira.controller.ts",
+      "line": 237,
+      "description": "QUERY /admin/carteira/type is not called by frontend code",
+      "detail": "Controller: unknown",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/admin/carteira/admin-carteira.controller.ts",
+      "line": 238,
+      "description": "QUERY /admin/carteira/value is not called by frontend code",
+      "detail": "Controller: unknown",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/admin/carteira/admin-carteira.controller.ts",
+      "line": 239,
+      "description": "QUERY /admin/carteira/skip is not called by frontend code",
+      "detail": "Controller: unknown",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/admin/carteira/admin-carteira.controller.ts",
+      "line": 240,
+      "description": "QUERY /admin/carteira/take is not called by frontend code",
+      "detail": "Controller: unknown",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/admin/carteira/admin-carteira.controller.ts",
+      "line": 266,
+      "description": "POST /admin/carteira/fraud/blacklist is not called by frontend code",
+      "detail": "Controller: addFraudBlacklist",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/admin/carteira/admin-carteira.controller.ts",
+      "line": 317,
+      "description": "POST /admin/carteira/fraud/blacklist/remove is not called by frontend code",
+      "detail": "Controller: removeFraudBlacklist",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/admin/carteira/admin-carteira.controller.ts",
+      "line": 352,
+      "description": "POST /admin/carteira/payouts is not called by frontend code",
+      "detail": "Controller: createPayout",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/admin/carteira/admin-carteira.controller.ts",
+      "line": 421,
+      "description": "POST /admin/carteira/connect/payout-requests/:approvalRequestId/approve is not called by frontend code",
+      "detail": "Controller: approveConnectPayoutRequest",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/admin/carteira/admin-carteira.controller.ts",
+      "line": 443,
+      "description": "POST /admin/carteira/connect/payout-requests/:approvalRequestId/reject is not called by frontend code",
+      "detail": "Controller: rejectConnectPayoutRequest",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/admin/mind/admin-mind.controller.ts",
+      "line": 19,
+      "description": "GET /admin/mind/:workspaceId/state is not called by frontend code",
+      "detail": "Controller: state",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/admin/mind/admin-mind.controller.ts",
+      "line": 23,
+      "description": "QUERY /admin/mind/decisionType is not called by frontend code",
+      "detail": "Controller: surprise",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/admin/mind/admin-mind.controller.ts",
+      "line": 28,
+      "description": "GET /admin/mind/:workspaceId/surprise is not called by frontend code",
+      "detail": "Controller: surprise",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/admin/mind/admin-mind.controller.ts",
+      "line": 32,
+      "description": "QUERY /admin/mind is not called by frontend code",
+      "detail": "Controller: lift",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/admin/mind/admin-mind.controller.ts",
+      "line": 37,
+      "description": "GET /admin/mind/:workspaceId/lift is not called by frontend code",
+      "detail": "Controller: lift",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/admin/mind/admin-mind.controller.ts",
+      "line": 39,
+      "description": "QUERY /admin/mind is not called by frontend code",
+      "detail": "Controller: concepts",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/admin/mind/admin-mind.controller.ts",
+      "line": 43,
+      "description": "GET /admin/mind/:workspaceId/concepts is not called by frontend code",
+      "detail": "Controller: concepts",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/admin/mind/admin-mind.controller.ts",
+      "line": 47,
+      "description": "QUERY /admin/mind is not called by frontend code",
+      "detail": "Controller: health",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/admin/mind/admin-mind.controller.ts",
+      "line": 52,
+      "description": "GET /admin/mind/:workspaceId/health is not called by frontend code",
+      "detail": "Controller: health",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/admin/mind/admin-mind.controller.ts",
+      "line": 58,
+      "description": "GET /admin/mind/:workspaceId/briefing is not called by frontend code",
+      "detail": "Controller: briefing",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/admin/mind/admin-mind.controller.ts",
+      "line": 64,
+      "description": "POST /admin/mind/:workspaceId/ask is not called by frontend code",
+      "detail": "Controller: ask",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/admin/mind/admin-mind.controller.ts",
+      "line": 70,
+      "description": "POST /admin/mind/:workspaceId/report is not called by frontend code",
+      "detail": "Controller: report",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/admin/sales/admin-sales.controller.ts",
+      "line": 20,
+      "description": "QUERY /admin/sales/search is not called by frontend code",
+      "detail": "Controller: unknown",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/admin/sales/admin-sales.controller.ts",
+      "line": 21,
+      "description": "QUERY /admin/sales/status is not called by frontend code",
+      "detail": "Controller: unknown",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/admin/sales/admin-sales.controller.ts",
+      "line": 22,
+      "description": "QUERY /admin/sales/method is not called by frontend code",
+      "detail": "Controller: unknown",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/admin/sales/admin-sales.controller.ts",
+      "line": 23,
+      "description": "QUERY /admin/sales/gateway is not called by frontend code",
+      "detail": "Controller: unknown",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/admin/sessions/admin-sessions.controller.ts",
+      "line": 26,
+      "description": "GET /admin/sessions/user/:id is not called by frontend code",
+      "detail": "Controller: listForUser",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/admin/support/admin-support.controller.ts",
+      "line": 23,
+      "description": "QUERY /admin/support/search is not called by frontend code",
+      "detail": "Controller: detail",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/affiliate/affiliate-marketplace.controller.ts",
+      "line": 26,
+      "description": "QUERY /affiliate/category is not called by frontend code",
+      "detail": "Controller: if",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/affiliate/affiliate-marketplace.controller.ts",
+      "line": 27,
+      "description": "QUERY /affiliate/search is not called by frontend code",
+      "detail": "Controller: if",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/affiliate/affiliate-marketplace.controller.ts",
+      "line": 28,
+      "description": "QUERY /affiliate/sort is not called by frontend code",
+      "detail": "Controller: if",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/affiliate/affiliate-marketplace.controller.ts",
+      "line": 29,
+      "description": "QUERY /affiliate/page is not called by frontend code",
+      "detail": "Controller: if",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/affiliate/affiliate-marketplace.controller.ts",
+      "line": 30,
+      "description": "QUERY /affiliate/limit is not called by frontend code",
+      "detail": "Controller: if",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/affiliate/affiliate-marketplace.controller.ts",
+      "line": 136,
+      "description": "QUERY /affiliate/limit is not called by frontend code",
+      "detail": "Controller: unknown",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/ai-brain/knowledge-base.controller.ts",
+      "line": 105,
+      "description": "QUERY /ai/workspaceId is not called by frontend code",
+      "detail": "Controller: addSource",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/analytics/analytics.controller.ts",
+      "line": 55,
+      "description": "QUERY /analytics/workspaceId is not called by frontend code",
+      "detail": "Controller: getStats",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/analytics/analytics.controller.ts",
+      "line": 62,
+      "description": "QUERY /analytics/workspaceId is not called by frontend code",
+      "detail": "Controller: getDashboard",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/audio/audio.controller.ts",
+      "line": 19,
+      "description": "POST /audio/synthesize is not called by frontend code",
+      "detail": "Controller: synthesize",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/audit/audit.controller.ts",
+      "line": 18,
+      "description": "GET /audit is not called by frontend code",
+      "detail": "Controller: getLogs",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/audit/audit.controller.ts",
+      "line": 22,
+      "description": "QUERY /audit/workspaceId is not called by frontend code",
+      "detail": "Controller: unknown",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/audit/audit.controller.ts",
+      "line": 23,
+      "description": "QUERY /audit/limit is not called by frontend code",
+      "detail": "Controller: unknown",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/audit/audit.controller.ts",
+      "line": 24,
+      "description": "QUERY /audit/offset is not called by frontend code",
+      "detail": "Controller: unknown",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/auth/auth.controller.ts",
+      "line": 304,
+      "description": "POST /auth/send-verification is not called by frontend code",
+      "detail": "Controller: sendVerificationEmail",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/autopilot/autopilot.controller.ts",
+      "line": 39,
+      "description": "QUERY /autopilot/workspaceId is not called by frontend code",
+      "detail": "Controller: getWorkspaceConfig",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/autopilot/autopilot.controller.ts",
+      "line": 46,
+      "description": "QUERY /autopilot/workspaceId is not called by frontend code",
+      "detail": "Controller: stats",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/autopilot/autopilot.controller.ts",
+      "line": 53,
+      "description": "QUERY /autopilot/workspaceId is not called by frontend code",
+      "detail": "Controller: pipeline",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/autopilot/autopilot.controller.ts",
+      "line": 60,
+      "description": "QUERY /autopilot/workspaceId is not called by frontend code",
+      "detail": "Controller: impact",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/autopilot/autopilot.controller.ts",
+      "line": 67,
+      "description": "QUERY /autopilot/workspaceId is not called by frontend code",
+      "detail": "Controller: actions",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/autopilot/autopilot.controller.ts",
+      "line": 76,
+      "description": "QUERY /autopilot/workspaceId is not called by frontend code",
+      "detail": "Controller: exportActions",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/autopilot/autopilot.controller.ts",
+      "line": 77,
+      "description": "QUERY /autopilot/limit is not called by frontend code",
+      "detail": "Controller: exportActions",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/autopilot/autopilot.controller.ts",
+      "line": 89,
+      "description": "QUERY /autopilot/workspaceId is not called by frontend code",
+      "detail": "Controller: unknown",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/autopilot/autopilot.controller.ts",
+      "line": 260,
+      "description": "QUERY /autopilot/workspaceId is not called by frontend code",
+      "detail": "Controller: askInsights",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/autopilot/autopilot.controller.ts",
+      "line": 289,
+      "description": "QUERY /autopilot/workspaceId is not called by frontend code",
+      "detail": "Controller: revenueEvents",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/autopilot/autopilot.controller.ts",
+      "line": 298,
+      "description": "QUERY /autopilot/workspaceId is not called by frontend code",
+      "detail": "Controller: process",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/autopilot/autopilot.controller.ts",
+      "line": 299,
+      "description": "QUERY /autopilot/limit is not called by frontend code",
+      "detail": "Controller: process",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/autopilot/autopilot.controller.ts",
+      "line": 307,
+      "description": "POST /autopilot/process is not called by frontend code",
+      "detail": "Controller: process",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/autopilot/autopilot.controller.ts",
+      "line": 325,
+      "description": "QUERY /autopilot/workspaceId is not called by frontend code",
+      "detail": "Controller: if",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/autopilot/autopilot.controller.ts",
+      "line": 326,
+      "description": "QUERY /autopilot/contactId is not called by frontend code",
+      "detail": "Controller: if",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/autopilot/segmentation.controller.ts",
+      "line": 31,
+      "description": "QUERY /segmentation/limit is not called by frontend code",
+      "detail": "Controller: if",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/billing/billing.controller.ts",
+      "line": 34,
+      "description": "QUERY /billing/workspaceId is not called by frontend code",
+      "detail": "Controller: unknown",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/billing/billing.controller.ts",
+      "line": 72,
+      "description": "GET /billing/subscription is not called by frontend code",
+      "detail": "Controller: getSubscription",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/billing/billing.controller.ts",
+      "line": 75,
+      "description": "QUERY /billing/workspaceId is not called by frontend code",
+      "detail": "Controller: getUsage",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/billing/billing.controller.ts",
+      "line": 83,
+      "description": "QUERY /billing/workspaceId is not called by frontend code",
+      "detail": "Controller: activateTrial",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/billing/billing.controller.ts",
+      "line": 93,
+      "description": "QUERY /billing/workspaceId is not called by frontend code",
+      "detail": "Controller: cancelSubscription",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/billing/billing.controller.ts",
+      "line": 104,
+      "description": "QUERY /billing/workspaceId is not called by frontend code",
+      "detail": "Controller: createCheckout",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/checkout/checkout-public.controller.ts",
+      "line": 40,
+      "description": "QUERY /checkout/public/limit is not called by frontend code",
+      "detail": "Controller: maskName",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/checkout/checkout-public.controller.ts",
+      "line": 92,
+      "description": "QUERY /checkout/public/slug is not called by frontend code",
+      "detail": "Controller: getCheckoutBySlug",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/checkout/checkout-public.controller.ts",
+      "line": 93,
+      "description": "QUERY /checkout/public/checkoutCode is not called by frontend code",
+      "detail": "Controller: getCheckoutBySlug",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/checkout/checkout-public.controller.ts",
+      "line": 94,
+      "description": "QUERY /checkout/public/deviceFingerprint is not called by frontend code",
+      "detail": "Controller: getCheckoutBySlug",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/checkout/checkout-public.controller.ts",
+      "line": 117,
+      "description": "POST /checkout/public/validate-coupon is not called by frontend code",
+      "detail": "Controller: validateCoupon",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/checkout/checkout-public.controller.ts",
+      "line": 129,
+      "description": "POST /checkout/public/order is not called by frontend code",
+      "detail": "Controller: createOrder",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/checkout/checkout-public.controller.ts",
+      "line": 156,
+      "description": "POST /checkout/public/upsell/:orderId/accept/:upsellId is not called by frontend code",
+      "detail": "Controller: acceptUpsell",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/checkout/checkout-public.controller.ts",
+      "line": 164,
+      "description": "POST /checkout/public/upsell/:orderId/decline/:upsellId is not called by frontend code",
+      "detail": "Controller: declineUpsell",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/checkout/checkout-public.controller.ts",
+      "line": 172,
+      "description": "POST /checkout/public/shipping is not called by frontend code",
+      "detail": "Controller: calculateShipping",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/checkout/checkout-public.controller.ts",
+      "line": 193,
+      "description": "POST /checkout/public/social-capture/:leadId/google-profile is not called by frontend code",
+      "detail": "Controller: hydrateGooglePeopleProfile",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/checkout/checkout.controller.ts",
+      "line": 456,
+      "description": "QUERY /checkout/status is not called by frontend code",
+      "detail": "Controller: if",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/checkout/checkout.controller.ts",
+      "line": 457,
+      "description": "QUERY /checkout/page is not called by frontend code",
+      "detail": "Controller: if",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/checkout/checkout.controller.ts",
+      "line": 458,
+      "description": "QUERY /checkout/limit is not called by frontend code",
+      "detail": "Controller: if",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/checkout/mercado-pago-webhook.controller.ts",
+      "line": 63,
+      "description": "POST /checkout/webhooks/mercado-pago is not called by frontend code",
+      "detail": "Controller: handlePayment",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/checkout/mercado-pago-webhook.controller.ts",
+      "line": 68,
+      "description": "QUERY /checkout/webhooks/mercado-pago/data.id is not called by frontend code",
+      "detail": "Controller: if",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/checkout/mercado-pago-webhook.controller.ts",
+      "line": 69,
+      "description": "QUERY /checkout/webhooks/mercado-pago/id is not called by frontend code",
+      "detail": "Controller: if",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/compliance/compliance.controller.ts",
+      "line": 47,
+      "description": "GET /compliance/deletion-status/:code is not called by frontend code",
+      "detail": "Controller: deletionStatus",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/compliance/compliance.controller.ts",
+      "line": 54,
+      "description": "GET /user/data-export is not called by frontend code",
+      "detail": "Controller: dataExport",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/compliance/compliance.controller.ts",
+      "line": 61,
+      "description": "DELETE /user/data-deletion is not called by frontend code",
+      "detail": "Controller: deleteCurrentUser",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/cookie-consent/cookie-consent.controller.ts",
+      "line": 85,
+      "description": "GET /api/v1/cookie-consent is not called by frontend code",
+      "detail": "Controller: getConsent",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/cookie-consent/cookie-consent.controller.ts",
+      "line": 107,
+      "description": "POST /api/v1/cookie-consent is not called by frontend code",
+      "detail": "Controller: saveConsent",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/copilot/copilot.controller.ts",
+      "line": 16,
+      "description": "POST /copilot/suggest is not called by frontend code",
+      "detail": "Controller: suggest",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/copilot/copilot.controller.ts",
+      "line": 36,
+      "description": "POST /copilot/suggest-multiple is not called by frontend code",
+      "detail": "Controller: suggestMultiple",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/crm/crm.controller.ts",
+      "line": 68,
+      "description": "QUERY /crm/workspaceId is not called by frontend code",
+      "detail": "Controller: addTag",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/crm/crm.controller.ts",
+      "line": 91,
+      "description": "QUERY /crm/workspaceId is not called by frontend code",
+      "detail": "Controller: createPipeline",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/crm/crm.controller.ts",
+      "line": 113,
+      "description": "QUERY /crm/workspaceId is not called by frontend code",
+      "detail": "Controller: createDeal",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/crm/crm.controller.ts",
+      "line": 181,
+      "description": "QUERY /crm/workspaceId is not called by frontend code",
+      "detail": "Controller: listDeals",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/crm/crm.controller.ts",
+      "line": 191,
+      "description": "QUERY /crm/workspaceId is not called by frontend code",
+      "detail": "Controller: unknown",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/crm/crm.controller.ts",
+      "line": 192,
+      "description": "QUERY /crm/campaignId is not called by frontend code",
+      "detail": "Controller: unknown",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/crm/crm.controller.ts",
+      "line": 193,
+      "description": "QUERY /crm/pipeline is not called by frontend code",
+      "detail": "Controller: unknown",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/crm/crm.controller.ts",
+      "line": 194,
+      "description": "QUERY /crm/stage is not called by frontend code",
+      "detail": "Controller: unknown",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/crm/crm.controller.ts",
+      "line": 195,
+      "description": "QUERY /crm/search is not called by frontend code",
+      "detail": "Controller: unknown",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/dashboard/dashboard.controller.ts",
+      "line": 33,
+      "description": "QUERY /dashboard/workspaceId is not called by frontend code",
+      "detail": "Controller: getHome",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/dashboard/dashboard.controller.ts",
+      "line": 61,
+      "description": "QUERY /dashboard/workspaceId is not called by frontend code",
+      "detail": "Controller: unknown",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/gdpr/data-delete.controller.ts",
+      "line": 24,
+      "description": "POST /gdpr/delete is not called by frontend code",
+      "detail": "Controller: deleteData",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/gdpr/data-export.controller.ts",
+      "line": 20,
+      "description": "POST /gdpr/export is not called by frontend code",
+      "detail": "Controller: exportData",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/health/health.controller.ts",
+      "line": 11,
+      "description": "GET /health/:workspaceId is not called by frontend code",
+      "detail": "Controller: getHealth",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/kloel/audio.controller.ts",
+      "line": 43,
+      "description": "POST /kloel/audio/:workspaceId/transcribe is not called by frontend code",
+      "detail": "Controller: FileInterceptor",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/kloel/audio.controller.ts",
+      "line": 101,
+      "description": "POST /kloel/audio/:workspaceId/transcribe-url is not called by frontend code",
+      "detail": "Controller: transcribeUrl",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/kloel/audio.controller.ts",
+      "line": 127,
+      "description": "POST /kloel/audio/:workspaceId/transcribe-base64 is not called by frontend code",
+      "detail": "Controller: transcribeBase64",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/kloel/audio.controller.ts",
+      "line": 153,
+      "description": "POST /kloel/audio/:workspaceId/text-to-speech is not called by frontend code",
+      "detail": "Controller: textToSpeech",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/kloel/audio.controller.ts",
+      "line": 182,
+      "description": "POST /kloel/audio/:workspaceId/text-to-speech-base64 is not called by frontend code",
+      "detail": "Controller: textToSpeechBase64",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/kloel/brain-runtime.controller.ts",
+      "line": 43,
+      "description": "GET /brain/capabilities is not called by frontend code",
+      "detail": "Controller: capabilities",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/kloel/brain-runtime.controller.ts",
+      "line": 48,
+      "description": "GET /brain/events/taxonomy is not called by frontend code",
+      "detail": "Controller: eventTaxonomy",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/kloel/brain-runtime.controller.ts",
+      "line": 53,
+      "description": "GET /brain/graph/commercial is not called by frontend code",
+      "detail": "Controller: commercialGraph",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/kloel/brain-runtime.controller.ts",
+      "line": 58,
+      "description": "GET /brain/graph/recommendations is not called by frontend code",
+      "detail": "Controller: graphRecommendations",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/kloel/brain-runtime.controller.ts",
+      "line": 63,
+      "description": "GET /brain/autonomy/proposals is not called by frontend code",
+      "detail": "Controller: autonomyProposals",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/kloel/brain-runtime.controller.ts",
+      "line": 68,
+      "description": "POST /brain/decide is not called by frontend code",
+      "detail": "Controller: decide",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/kloel/brain-runtime.controller.ts",
+      "line": 77,
+      "description": "POST /brain/observe is not called by frontend code",
+      "detail": "Controller: observe",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/kloel/brain-runtime.controller.ts",
+      "line": 86,
+      "description": "POST /brain/stream is not called by frontend code",
+      "detail": "Controller: stream",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/kloel/canvas.controller.ts",
+      "line": 62,
+      "description": "QUERY /canvas/productId is not called by frontend code",
+      "detail": "Controller: if",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/kloel/diagnostics.controller.ts",
+      "line": 60,
+      "description": "GET /diag is not called by frontend code",
+      "detail": "Controller: basicHealth",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/kloel/diagnostics.controller.ts",
+      "line": 71,
+      "description": "GET /diag/full is not called by frontend code",
+      "detail": "Controller: fullDiagnostics",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/kloel/diagnostics.controller.ts",
+      "line": 111,
+      "description": "GET /diag/workspace/:workspaceId is not called by frontend code",
+      "detail": "Controller: workspaceDiagnostics",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/kloel/diagnostics.controller.ts",
+      "line": 170,
+      "description": "GET /diag/metrics is not called by frontend code",
+      "detail": "Controller: prometheusMetrics",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/kloel/diagnostics.controller.ts",
+      "line": 215,
+      "description": "GET /diag/errors is not called by frontend code",
+      "detail": "Controller: recentErrors",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/kloel/diagnostics.controller.ts",
+      "line": 217,
+      "description": "QUERY /diag/limit is not called by frontend code",
+      "detail": "Controller: unknown",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/kloel/kloel.controller.ts",
+      "line": 165,
+      "description": "POST /kloel/pdf/process is not called by frontend code",
+      "detail": "Controller: processPdf",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/kloel/kloel.controller.ts",
+      "line": 377,
+      "description": "GET /kloel/threads/search is not called by frontend code",
+      "detail": "Controller: searchThreads",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/kloel/kloel.controller.ts",
+      "line": 381,
+      "description": "QUERY /kloel/q is not called by frontend code",
+      "detail": "Controller: updateChatThread",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/kloel/kloel.controller.ts",
+      "line": 382,
+      "description": "QUERY /kloel/limit is not called by frontend code",
+      "detail": "Controller: updateChatThread",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/kloel/kloel.controller.ts",
+      "line": 410,
+      "description": "POST /kloel/threads/:id/messages is not called by frontend code",
+      "detail": "Controller: addChatThreadMessage",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/kloel/kloel.controller.ts",
+      "line": 477,
+      "description": "GET /kloel/data/export is not called by frontend code",
+      "detail": "Controller: handleDataExport",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/kloel/leads.controller.ts",
+      "line": 17,
+      "description": "QUERY /kloel/leads/status is not called by frontend code",
+      "detail": "Controller: unknown",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/kloel/leads.controller.ts",
+      "line": 18,
+      "description": "QUERY /kloel/leads/q is not called by frontend code",
+      "detail": "Controller: unknown",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/kloel/memory.controller.ts",
+      "line": 82,
+      "description": "QUERY /kloel/memory/category is not called by frontend code",
+      "detail": "Controller: getStats",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/kloel/memory.controller.ts",
+      "line": 83,
+      "description": "QUERY /kloel/memory/page is not called by frontend code",
+      "detail": "Controller: getStats",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/kloel/onboarding-profile.controller.ts",
+      "line": 27,
+      "description": "POST /kloel/onboarding/:workspaceId/profile is not called by frontend code",
+      "detail": "Controller: saveProfile",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/kloel/onboarding.controller.ts",
+      "line": 27,
+      "description": "POST /kloel/onboarding-legacy/start/:workspaceId is not called by frontend code",
+      "detail": "Controller: start",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/kloel/onboarding.controller.ts",
+      "line": 34,
+      "description": "POST /kloel/onboarding-legacy/respond/:workspaceId is not called by frontend code",
+      "detail": "Controller: respond",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/kloel/onboarding.controller.ts",
+      "line": 41,
+      "description": "GET /kloel/onboarding-legacy/status/:workspaceId is not called by frontend code",
+      "detail": "Controller: status",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/kloel/payment.controller.ts",
+      "line": 104,
+      "description": "QUERY /kloel/payments/period is not called by frontend code",
+      "detail": "Controller: getStatus",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/kloel/pdf-processor.controller.ts",
+      "line": 195,
+      "description": "POST /kloel/pdf/:workspaceId/upload is not called by frontend code",
+      "detail": "Controller: unknown",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/kloel/pdf-processor.controller.ts",
+      "line": 324,
+      "description": "POST /kloel/pdf/:workspaceId/text is not called by frontend code",
+      "detail": "Controller: processText",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/kloel/sales-orders.controller.ts",
+      "line": 32,
+      "description": "QUERY /sales/status is not called by frontend code",
+      "detail": "Controller: if",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/kloel/sales-orders.controller.ts",
+      "line": 179,
+      "description": "QUERY /sales/resolved is not called by frontend code",
+      "detail": "Controller: if",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/kloel/sales-subscriptions.controller.ts",
+      "line": 46,
+      "description": "QUERY /sales/status is not called by frontend code",
+      "detail": "Controller: if",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/kloel/sales.controller.ts",
+      "line": 40,
+      "description": "QUERY /sales/status is not called by frontend code",
+      "detail": "Controller: if",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/kloel/sales.controller.ts",
+      "line": 41,
+      "description": "QUERY /sales/search is not called by frontend code",
+      "detail": "Controller: if",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/kloel/sales.controller.ts",
+      "line": 42,
+      "description": "QUERY /sales/method is not called by frontend code",
+      "detail": "Controller: if",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/kloel/smart-payment.controller.ts",
+      "line": 165,
+      "description": "GET /kloel/payment/:workspaceId/recovery/:paymentId is not called by frontend code",
+      "detail": "Controller: analyzeRecovery",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/kloel/smart-payment.controller.ts",
+      "line": 174,
+      "description": "QUERY /kloel/payment/daysPending is not called by frontend code",
+      "detail": "Controller: unknown",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/kloel/smart-payment.controller.ts",
+      "line": 191,
+      "description": "POST /kloel/payment/:workspaceId/webhook/confirm is not called by frontend code",
+      "detail": "Controller: processConfirmation",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/kloel/unified-agent.controller.ts",
+      "line": 14,
+      "description": "POST /kloel/agent/:workspaceId/process is not called by frontend code",
+      "detail": "Controller: processMessage",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/kloel/unified-agent.controller.ts",
+      "line": 52,
+      "description": "POST /kloel/agent/:workspaceId/simulate is not called by frontend code",
+      "detail": "Controller: simulateMessage",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/kloel/upload.controller.ts",
+      "line": 236,
+      "description": "POST /kloel/upload is not called by frontend code",
+      "detail": "Controller: unknown",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/kloel/upload.controller.ts",
+      "line": 318,
+      "description": "POST /kloel/upload/multiple is not called by frontend code",
+      "detail": "Controller: FilesInterceptor",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/kloel/wallet.controller.ts",
+      "line": 104,
+      "description": "QUERY /kloel/wallet/page is not called by frontend code",
+      "detail": "Controller: listBankAccounts",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/kloel/wallet.controller.ts",
+      "line": 105,
+      "description": "QUERY /kloel/wallet/type is not called by frontend code",
+      "detail": "Controller: listBankAccounts",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/kloel/whatsapp-brain.controller.ts",
+      "line": 63,
+      "description": "QUERY /kloel/whatsapp/workspace is not called by frontend code",
+      "detail": "Controller: if",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/kyc/kyc.controller.ts",
+      "line": 205,
+      "description": "POST /kyc/auto-check is not called by frontend code",
+      "detail": "Controller: autoCheck",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/kyc/kyc.controller.ts",
+      "line": 211,
+      "description": "POST /kyc/:agentId/approve is not called by frontend code",
+      "detail": "Controller: adminApprove",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/launch/launch.controller.ts",
+      "line": 32,
+      "description": "GET /launch/launchers is not called by frontend code",
+      "detail": "Controller: listLaunchers",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/marketing/marketing-connect.controller.ts",
+      "line": 366,
+      "description": "GET /marketing/connect/email/status is not called by frontend code",
+      "detail": "Controller: getEmailStatus",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/marketing/marketing-connect.controller.ts",
+      "line": 396,
+      "description": "POST /marketing/connect/email/disconnect is not called by frontend code",
+      "detail": "Controller: disconnectEmail",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/marketing/marketing.controller.ts",
+      "line": 90,
+      "description": "GET /marketing/channels is not called by frontend code",
+      "detail": "Controller: getChannels",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/marketing/tiktok-marketing.controller.ts",
+      "line": 21,
+      "description": "QUERY /marketing/connect/tiktok/kind is not called by frontend code",
+      "detail": "Controller: complete",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/marketing/tiktok-marketing.controller.ts",
+      "line": 25,
+      "description": "POST /marketing/connect/tiktok/complete is not called by frontend code",
+      "detail": "Controller: complete",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/marketplace/marketplace.controller.ts",
+      "line": 14,
+      "description": "QUERY /marketplace/category is not called by frontend code",
+      "detail": "Controller: installTemplate",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/media/media.controller.ts",
+      "line": 139,
+      "description": "QUERY /media/category is not called by frontend code",
+      "detail": "Controller: getDocumentFile",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/meta/ads/meta-ads.controller.ts",
+      "line": 49,
+      "description": "QUERY /meta/ads/adAccountId is not called by frontend code",
+      "detail": "Controller: updateCampaignStatus",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/meta/ads/meta-ads.controller.ts",
+      "line": 110,
+      "description": "QUERY /meta/ads/pageId is not called by frontend code",
+      "detail": "Controller: if",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/meta/instagram/instagram.controller.ts",
+      "line": 53,
+      "description": "GET /meta/instagram/profile is not called by frontend code",
+      "detail": "Controller: getProfile",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/meta/instagram/instagram.controller.ts",
+      "line": 56,
+      "description": "QUERY /meta/instagram/igAccountId is not called by frontend code",
+      "detail": "Controller: getMedia",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/meta/instagram/instagram.controller.ts",
+      "line": 57,
+      "description": "QUERY /meta/instagram/accessToken is not called by frontend code",
+      "detail": "Controller: getMedia",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/meta/instagram/instagram.controller.ts",
+      "line": 68,
+      "description": "QUERY /meta/instagram/igAccountId is not called by frontend code",
+      "detail": "Controller: unknown",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/meta/instagram/instagram.controller.ts",
+      "line": 69,
+      "description": "QUERY /meta/instagram/limit is not called by frontend code",
+      "detail": "Controller: unknown",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/meta/instagram/instagram.controller.ts",
+      "line": 70,
+      "description": "QUERY /meta/instagram/accessToken is not called by frontend code",
+      "detail": "Controller: unknown",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/meta/instagram/instagram.controller.ts",
+      "line": 84,
+      "description": "GET /meta/instagram/insights/account is not called by frontend code",
+      "detail": "Controller: getAccountInsights",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/meta/instagram/instagram.controller.ts",
+      "line": 87,
+      "description": "QUERY /meta/instagram/igAccountId is not called by frontend code",
+      "detail": "Controller: unknown",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/meta/instagram/instagram.controller.ts",
+      "line": 88,
+      "description": "QUERY /meta/instagram/metrics is not called by frontend code",
+      "detail": "Controller: unknown",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/meta/instagram/instagram.controller.ts",
+      "line": 89,
+      "description": "QUERY /meta/instagram/period is not called by frontend code",
+      "detail": "Controller: unknown",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/meta/instagram/instagram.controller.ts",
+      "line": 90,
+      "description": "QUERY /meta/instagram/accessToken is not called by frontend code",
+      "detail": "Controller: unknown",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/meta/messenger/messenger.controller.ts",
+      "line": 71,
+      "description": "QUERY /meta/messenger/pageId is not called by frontend code",
+      "detail": "Controller: if",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/meta/meta-auth.controller.ts",
+      "line": 147,
+      "description": "QUERY /meta/auth/channel is not called by frontend code",
+      "detail": "Controller: unknown",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/meta/meta-auth.controller.ts",
+      "line": 148,
+      "description": "QUERY /meta/auth/returnTo is not called by frontend code",
+      "detail": "Controller: unknown",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/partnerships/partnerships.controller.ts",
+      "line": 107,
+      "description": "QUERY /partnerships/type is not called by frontend code",
+      "detail": "Controller: getAffiliateStats",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/partnerships/partnerships.controller.ts",
+      "line": 108,
+      "description": "QUERY /partnerships/status is not called by frontend code",
+      "detail": "Controller: getAffiliateStats",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/partnerships/partnerships.controller.ts",
+      "line": 109,
+      "description": "QUERY /partnerships/search is not called by frontend code",
+      "detail": "Controller: getAffiliateStats",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/partnerships/partnerships.controller.ts",
+      "line": 164,
+      "description": "QUERY /partnerships/cursor is not called by frontend code",
+      "detail": "Controller: sendMessage",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/payments/connect/connect.controller.ts",
+      "line": 86,
+      "description": "POST /payments/connect/:workspaceId/accounts is not called by frontend code",
+      "detail": "Controller: createAccount",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/payments/connect/connect.controller.ts",
+      "line": 134,
+      "description": "POST /payments/connect/:workspaceId/accounts/:accountBalanceId/onboarding is not called by frontend code",
+      "detail": "Controller: submitOnboardingProfile",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/payments/connect/connect.controller.ts",
+      "line": 204,
+      "description": "GET /payments/connect/:workspaceId/reconcile is not called by frontend code",
+      "detail": "Controller: reconcileWorkspace",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/payments/connect/connect.controller.ts",
+      "line": 211,
+      "description": "GET /payments/connect/:workspaceId/payout-requests is not called by frontend code",
+      "detail": "Controller: listPayoutRequests",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/payments/connect/connect.controller.ts",
+      "line": 214,
+      "description": "QUERY /payments/connect/accountBalanceId is not called by frontend code",
+      "detail": "Controller: unknown",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/payments/connect/connect.controller.ts",
+      "line": 215,
+      "description": "QUERY /payments/connect/state is not called by frontend code",
+      "detail": "Controller: unknown",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/payments/connect/connect.controller.ts",
+      "line": 216,
+      "description": "QUERY /payments/connect/skip is not called by frontend code",
+      "detail": "Controller: unknown",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/payments/connect/connect.controller.ts",
+      "line": 217,
+      "description": "QUERY /payments/connect/take is not called by frontend code",
+      "detail": "Controller: unknown",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/payments/connect/connect.controller.ts",
+      "line": 230,
+      "description": "GET /payments/connect/:workspaceId/payouts is not called by frontend code",
+      "detail": "Controller: listPayouts",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/payments/connect/connect.controller.ts",
+      "line": 233,
+      "description": "QUERY /payments/connect/accountBalanceId is not called by frontend code",
+      "detail": "Controller: unknown",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/payments/connect/connect.controller.ts",
+      "line": 234,
+      "description": "QUERY /payments/connect/skip is not called by frontend code",
+      "detail": "Controller: unknown",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/payments/connect/connect.controller.ts",
+      "line": 235,
+      "description": "QUERY /payments/connect/take is not called by frontend code",
+      "detail": "Controller: unknown",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/payments/connect/connect.controller.ts",
+      "line": 323,
+      "description": "GET /payments/connect/:workspaceId/ledger is not called by frontend code",
+      "detail": "Controller: listLedger",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/payments/connect/connect.controller.ts",
+      "line": 326,
+      "description": "QUERY /payments/connect/accountBalanceId is not called by frontend code",
+      "detail": "Controller: unknown",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/payments/connect/connect.controller.ts",
+      "line": 327,
+      "description": "QUERY /payments/connect/type is not called by frontend code",
+      "detail": "Controller: unknown",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/payments/connect/connect.controller.ts",
+      "line": 328,
+      "description": "QUERY /payments/connect/skip is not called by frontend code",
+      "detail": "Controller: unknown",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/payments/connect/connect.controller.ts",
+      "line": 329,
+      "description": "QUERY /payments/connect/take is not called by frontend code",
+      "detail": "Controller: unknown",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/payments/connect/connect.controller.ts",
+      "line": 413,
+      "description": "POST /payments/connect/:workspaceId/payouts is not called by frontend code",
+      "detail": "Controller: createPayout",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/payments/connect/connect.controller.ts",
+      "line": 503,
+      "description": "POST /payments/connect/:workspaceId/payout-requests is not called by frontend code",
+      "detail": "Controller: createPayoutRequest",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/payments/split/split.controller.ts",
+      "line": 42,
+      "description": "POST /payments/split/:workspaceId/preview is not called by frontend code",
+      "detail": "Controller: preview",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/public-api/public-api.controller.ts",
+      "line": 27,
+      "description": "POST /api/v1/messages is not called by frontend code",
+      "detail": "Controller: sendMessage",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/reports/reports.controller.ts",
+      "line": 28,
+      "description": "GET /reports/vendas is not called by frontend code",
+      "detail": "Controller: getVendas",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/reports/reports.controller.ts",
+      "line": 35,
+      "description": "GET /reports/vendas/summary is not called by frontend code",
+      "detail": "Controller: getVendasSummary",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/reports/reports.controller.ts",
+      "line": 66,
+      "description": "GET /reports/afiliados is not called by frontend code",
+      "detail": "Controller: getAfiliados",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/reports/reports.controller.ts",
+      "line": 73,
+      "description": "GET /reports/indicadores is not called by frontend code",
+      "detail": "Controller: getIndicadores",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/reports/reports.controller.ts",
+      "line": 80,
+      "description": "GET /reports/assinaturas is not called by frontend code",
+      "detail": "Controller: getAssinaturas",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/reports/reports.controller.ts",
+      "line": 87,
+      "description": "GET /reports/indicadores-produto is not called by frontend code",
+      "detail": "Controller: getIndicadoresProduto",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/reports/reports.controller.ts",
+      "line": 100,
+      "description": "GET /reports/origem is not called by frontend code",
+      "detail": "Controller: getOrigem",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/reports/reports.controller.ts",
+      "line": 141,
+      "description": "GET /reports/chargeback is not called by frontend code",
+      "detail": "Controller: getChargeback",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/scrapers/scrapers.controller.ts",
+      "line": 59,
+      "description": "QUERY /scrapers/workspaceId is not called by frontend code",
+      "detail": "Controller: findOne",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/scrapers/scrapers.controller.ts",
+      "line": 69,
+      "description": "QUERY /scrapers/workspaceId is not called by frontend code",
+      "detail": "Controller: importLeads",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/video/video.controller.ts",
+      "line": 33,
+      "description": "GET /video/job/:id is not called by frontend code",
+      "detail": "Controller: getJob",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/voice/voice.controller.ts",
+      "line": 44,
+      "description": "QUERY /voice/workspaceId is not called by frontend code",
+      "detail": "Controller: generate",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/wallet/prepaid-wallet.controller.ts",
+      "line": 35,
+      "description": "GET /wallet/prepaid/:workspaceId/balance is not called by frontend code",
+      "detail": "Controller: getBalance",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/wallet/prepaid-wallet.controller.ts",
+      "line": 70,
+      "description": "POST /wallet/prepaid/:workspaceId/topup is not called by frontend code",
+      "detail": "Controller: createTopup",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/wallet/prepaid-wallet.controller.ts",
+      "line": 107,
+      "description": "GET /wallet/prepaid/:workspaceId/transactions is not called by frontend code",
+      "detail": "Controller: getTransactions",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/wallet/prepaid-wallet.controller.ts",
+      "line": 110,
+      "description": "QUERY /wallet/prepaid/limit is not called by frontend code",
+      "detail": "Controller: if",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/wallet/prepaid-wallet.controller.ts",
+      "line": 111,
+      "description": "QUERY /wallet/prepaid/offset is not called by frontend code",
+      "detail": "Controller: if",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/wallet/prepaid-wallet.controller.ts",
+      "line": 158,
+      "description": "PATCH /wallet/prepaid/:workspaceId/auto-recharge is not called by frontend code",
+      "detail": "Controller: configureAutoRecharge",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/wallet/prepaid-wallet.controller.ts",
+      "line": 206,
+      "description": "POST /wallet/prepaid/:workspaceId/spend is not called by frontend code",
+      "detail": "Controller: spend",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/webhooks/webhook-settings.controller.ts",
+      "line": 33,
+      "description": "GET /settings/webhooks is not called by frontend code",
+      "detail": "Controller: list",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/webhooks/webhook-settings.controller.ts",
+      "line": 41,
+      "description": "POST /settings/webhooks is not called by frontend code",
+      "detail": "Controller: create",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/webhooks/webhook-settings.controller.ts",
+      "line": 68,
+      "description": "DELETE /settings/webhooks/:id is not called by frontend code",
+      "detail": "Controller: delete",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/webhooks/webhooks.controller.ts",
+      "line": 80,
+      "description": "QUERY /hooks is not called by frontend code",
+      "detail": "Controller: unknown",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/webhooks/webhooks.controller.ts",
+      "line": 144,
+      "description": "POST /hooks/finance/:workspaceId/recent is not called by frontend code",
+      "detail": "Controller: recentFinance",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/whatsapp/controllers/whatsapp-api.controller.ts",
+      "line": 102,
+      "description": "GET /whatsapp-api/session/diagnostics is not called by frontend code",
+      "detail": "Controller: getDiagnostics",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/whatsapp/controllers/whatsapp-api.controller.ts",
+      "line": 108,
+      "description": "POST /whatsapp-api/session/force-check is not called by frontend code",
+      "detail": "Controller: forceCheck",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/whatsapp/controllers/whatsapp-api.controller.ts",
+      "line": 119,
+      "description": "POST /whatsapp-api/session/force-reconnect is not called by frontend code",
+      "detail": "Controller: forceReconnect",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/whatsapp/controllers/whatsapp-api.controller.ts",
+      "line": 136,
+      "description": "POST /whatsapp-api/session/repair-config is not called by frontend code",
+      "detail": "Controller: repairConfig",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/whatsapp/controllers/whatsapp-api.controller.ts",
+      "line": 149,
+      "description": "POST /whatsapp-api/session/bootstrap is not called by frontend code",
+      "detail": "Controller: bootstrapSession",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/whatsapp/controllers/whatsapp-api.controller.ts",
+      "line": 155,
+      "description": "POST /whatsapp-api/session/backlog/start is not called by frontend code",
+      "detail": "Controller: startBacklog",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/whatsapp/controllers/whatsapp-api.controller.ts",
+      "line": 170,
+      "description": "POST /whatsapp-api/cia/conversations/:conversationId/resume is not called by frontend code",
+      "detail": "Controller: resumeConversationAutonomy",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/whatsapp/controllers/whatsapp-api.controller.ts",
+      "line": 179,
+      "description": "GET /whatsapp-api/cia/intelligence is not called by frontend code",
+      "detail": "Controller: getOperationalIntelligence",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/whatsapp/controllers/whatsapp-api.controller.ts",
+      "line": 378,
+      "description": "POST /whatsapp-api/send/:phone is not called by frontend code",
+      "detail": "Controller: sendMessage",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/whatsapp/controllers/whatsapp-api.controller.ts",
+      "line": 390,
+      "description": "GET /whatsapp-api/check/:phone is not called by frontend code",
+      "detail": "Controller: checkRegistration",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/whatsapp/controllers/whatsapp-api.controller.ts",
+      "line": 398,
+      "description": "GET /whatsapp-api/health is not called by frontend code",
+      "detail": "Controller: healthCheck",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/whatsapp/controllers/whatsapp-api.controller.ts",
+      "line": 410,
+      "description": "GET /whatsapp-api/provider-status is not called by frontend code",
+      "detail": "Controller: getProviderStatus",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/whatsapp/controllers/whatsapp-catalog.controller.ts",
+      "line": 108,
+      "description": "GET /whatsapp-api/catalog/contacts is not called by frontend code",
+      "detail": "Controller: getCatalogContacts",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/whatsapp/controllers/whatsapp-catalog.controller.ts",
+      "line": 120,
+      "description": "GET /whatsapp-api/catalog/ranking is not called by frontend code",
+      "detail": "Controller: getCatalogRanking",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/whatsapp/controllers/whatsapp-catalog.controller.ts",
+      "line": 134,
+      "description": "POST /whatsapp-api/catalog/refresh is not called by frontend code",
+      "detail": "Controller: triggerCatalogRefresh",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/whatsapp/controllers/whatsapp-catalog.controller.ts",
+      "line": 147,
+      "description": "POST /whatsapp-api/catalog/score is not called by frontend code",
+      "detail": "Controller: triggerCatalogScore",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/whatsapp/controllers/whatsapp-catalog.controller.ts",
+      "line": 181,
+      "description": "POST /whatsapp-api/session/recreate-if-invalid is not called by frontend code",
+      "detail": "Controller: recreateSessionIfInvalid",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/whatsapp/controllers/whatsapp-meta-compat.controller.ts",
+      "line": 28,
+      "description": "POST /whatsapp-api/session/link is not called by frontend code",
+      "detail": "Controller: linkSession",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/whatsapp/controllers/whatsapp-meta-compat.controller.ts",
+      "line": 43,
+      "description": "POST /whatsapp-api/session/claim is not called by frontend code",
+      "detail": "Controller: claimSession",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/whatsapp/controllers/whatsapp-meta-compat.controller.ts",
+      "line": 83,
+      "description": "POST /whatsapp-api/session/pause-agent is not called by frontend code",
+      "detail": "Controller: pauseAgent",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/whatsapp/controllers/whatsapp-meta-compat.controller.ts",
+      "line": 92,
+      "description": "POST /whatsapp-api/session/reconcile is not called by frontend code",
+      "detail": "Controller: reconcileSession",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/whatsapp/controllers/whatsapp-meta-compat.controller.ts",
+      "line": 101,
+      "description": "GET /whatsapp-api/session/proofs is not called by frontend code",
+      "detail": "Controller: getSessionProofs",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/whatsapp/controllers/whatsapp-meta-compat.controller.ts",
+      "line": 112,
+      "description": "POST /whatsapp-api/session/stream-token is not called by frontend code",
+      "detail": "Controller: getSessionStreamToken",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/whatsapp/controllers/whatsapp-meta-compat.controller.ts",
+      "line": 119,
+      "description": "GET /whatsapp-api/session/stream-health is not called by frontend code",
+      "detail": "Controller: getSessionStreamHealth",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/whatsapp/controllers/whatsapp-meta-compat.controller.ts",
+      "line": 133,
+      "description": "POST /whatsapp-api/session/action-turn is not called by frontend code",
+      "detail": "Controller: runSessionActionTurn",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/whatsapp/internal-whatsapp-runtime.controller.ts",
+      "line": 41,
+      "description": "POST /internal/whatsapp-runtime/inbound is not called by frontend code",
+      "detail": "Controller: ingestInbound",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/whatsapp/internal-whatsapp-runtime.controller.ts",
+      "line": 68,
+      "description": "POST /internal/whatsapp-runtime/session-connected is not called by frontend code",
+      "detail": "Controller: sessionConnected",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/whatsapp/internal-whatsapp-runtime.controller.ts",
+      "line": 132,
+      "description": "POST /internal/whatsapp-runtime/send-text is not called by frontend code",
+      "detail": "Controller: sendText",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/whatsapp/internal-whatsapp-runtime.controller.ts",
+      "line": 158,
+      "description": "POST /internal/whatsapp-runtime/send-media is not called by frontend code",
+      "detail": "Controller: sendMedia",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/whatsapp/internal-whatsapp-runtime.controller.ts",
+      "line": 189,
+      "description": "GET /internal/whatsapp-runtime/status is not called by frontend code",
+      "detail": "Controller: getStatus",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/whatsapp/internal-whatsapp-runtime.controller.ts",
+      "line": 200,
+      "description": "GET /internal/whatsapp-runtime/chats is not called by frontend code",
+      "detail": "Controller: getChats",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/whatsapp/internal-whatsapp-runtime.controller.ts",
+      "line": 211,
+      "description": "GET /internal/whatsapp-runtime/messages is not called by frontend code",
+      "detail": "Controller: getMessages",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/whatsapp/internal-whatsapp-runtime.controller.ts",
+      "line": 230,
+      "description": "POST /internal/whatsapp-runtime/read is not called by frontend code",
+      "detail": "Controller: readChat",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/whatsapp/internal-whatsapp-runtime.controller.ts",
+      "line": 241,
+      "description": "POST /internal/whatsapp-runtime/sync-contact is not called by frontend code",
+      "detail": "Controller: syncContact",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/whatsapp/whatsapp.controller.ts",
+      "line": 67,
+      "description": "POST /whatsapp/:workspaceId/incoming is not called by frontend code",
+      "detail": "Controller: incoming",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-ui-handler-effect-unobserved",
+      "severity": "medium",
+      "file": "frontend/src/app/(main)/autopilot/page.tsx",
+      "line": 505,
+      "description": "clickable \"onCards\" has dead handler",
+      "detail": "Handler: missionCards",
+      "source": "graph:confirmed_static:ui_handler_effect_unobserved",
+      "surface": "ui-interaction"
+    },
+    {
+      "type": "graph-ui-handler-effect-unobserved",
+      "severity": "medium",
+      "file": "frontend/src/app/(main)/vendas/gestao-vendas/page.tsx",
+      "line": 277,
+      "description": "clickable \"(sem texto)\" has dead handler",
+      "detail": "Handler: () => handleRemoveTag(phone, tag)",
+      "source": "graph:confirmed_static:ui_handler_effect_unobserved",
+      "surface": "ui-interaction"
+    },
+    {
+      "type": "graph-ui-handler-effect-unobserved",
+      "severity": "medium",
+      "file": "frontend/src/components/kloel/auth/kloel-auth-screen.tsx",
+      "line": 405,
+      "description": "clickable \"onFormSubmit\" has dead handler",
+      "detail": "Handler: handleFormSubmit",
+      "source": "graph:confirmed_static:ui_handler_effect_unobserved",
+      "surface": "ui-interaction"
+    },
+    {
+      "type": "graph-ui-handler-effect-unobserved",
+      "severity": "medium",
+      "file": "frontend/src/components/kloel/chat-container.tsx",
+      "line": 625,
+      "description": "clickable \"onSend\" has dead handler",
+      "detail": "Handler: handleSendMessage",
+      "source": "graph:confirmed_static:ui_handler_effect_unobserved",
+      "surface": "ui-interaction"
+    },
+    {
+      "type": "graph-ui-handler-effect-unobserved",
+      "severity": "medium",
+      "file": "frontend/src/components/kloel/conta/ContaView.tsx",
+      "line": 1531,
+      "description": "clickable \"onSave\" has dead handler",
+      "detail": "Handler: handleSave",
+      "source": "graph:confirmed_static:ui_handler_effect_unobserved",
+      "surface": "ui-interaction"
+    },
+    {
+      "type": "graph-ui-handler-effect-unobserved",
+      "severity": "medium",
+      "file": "frontend/src/components/kloel/conta/ContaView.tsx",
+      "line": 1945,
+      "description": "clickable \"onSave\" has dead handler",
+      "detail": "Handler: handleSave",
+      "source": "graph:confirmed_static:ui_handler_effect_unobserved",
+      "surface": "ui-interaction"
+    },
+    {
+      "type": "graph-ui-handler-effect-unobserved",
+      "severity": "medium",
+      "file": "frontend/src/components/kloel/conta/ContaView.tsx",
+      "line": 2930,
+      "description": "clickable \"onSave\" has dead handler",
+      "detail": "Handler: handleSave",
+      "source": "graph:confirmed_static:ui_handler_effect_unobserved",
+      "surface": "ui-interaction"
+    },
+    {
+      "type": "graph-ui-handler-effect-unobserved",
+      "severity": "medium",
+      "file": "frontend/src/components/kloel/conta/ContaView.tsx",
+      "line": 3272,
+      "description": "clickable \"onSave\" has dead handler",
+      "detail": "Handler: handleSave",
+      "source": "graph:confirmed_static:ui_handler_effect_unobserved",
+      "surface": "ui-interaction"
+    },
+    {
+      "type": "graph-ui-handler-effect-unobserved",
+      "severity": "medium",
+      "file": "frontend/src/components/kloel/dashboard/KloelDashboard.tsx",
+      "line": 458,
+      "description": "clickable \"onTitle\" has dead handler",
+      "detail": "Handler: conversationTitle",
+      "source": "graph:confirmed_static:ui_handler_effect_unobserved",
+      "surface": "ui-interaction"
+    },
+    {
+      "type": "graph-ui-handler-effect-unobserved",
+      "severity": "medium",
+      "file": "frontend/src/components/kloel/products/ProductNerveCenterCheckoutsTab.tsx",
+      "line": 956,
+      "description": "clickable \"(sem texto)\" has dead handler",
+      "detail": "Handler: () => void handleSave()",
+      "source": "graph:confirmed_static:ui_handler_effect_unobserved",
+      "surface": "ui-interaction"
+    },
+    {
+      "type": "graph-ui-handler-effect-unobserved",
+      "severity": "medium",
+      "file": "frontend/src/components/plans/PlanOrderBumpTab.tsx",
+      "line": 391,
+      "description": "clickable \"(sem texto)\" has dead handler",
+      "detail": "Handler: handleSave",
+      "source": "graph:confirmed_static:ui_handler_effect_unobserved",
+      "surface": "ui-interaction"
+    },
+    {
+      "type": "graph-ui-handler-effect-unobserved",
+      "severity": "medium",
+      "file": "frontend/src/components/plans/PlanOrderBumpTab.tsx",
+      "line": 593,
+      "description": "clickable \"(sem texto)\" has dead handler",
+      "detail": "Handler: () => handleDelete(bump.id)",
+      "source": "graph:confirmed_static:ui_handler_effect_unobserved",
+      "surface": "ui-interaction"
+    },
+    {
+      "type": "graph-ui-handler-effect-unobserved",
+      "severity": "medium",
+      "file": "frontend/src/components/products/ProductAfterPayTab.tsx",
+      "line": 360,
+      "description": "clickable \"(sem texto)\" has dead handler",
+      "detail": "Handler: save",
+      "source": "graph:confirmed_static:ui_handler_effect_unobserved",
+      "surface": "ui-interaction"
+    },
+    {
+      "type": "graph-ui-handler-effect-unobserved",
+      "severity": "medium",
+      "file": "frontend/src/components/products/ProductIATab.tsx",
+      "line": 490,
+      "description": "clickable \"(sem texto)\" has dead handler",
+      "detail": "Handler: save",
+      "source": "graph:confirmed_static:ui_handler_effect_unobserved",
+      "surface": "ui-interaction"
+    },
+    {
+      "type": "graph-ui-handler-effect-unobserved",
+      "severity": "medium",
+      "file": "frontend/src/app/(main)/autopilot/page.tsx",
+      "line": 505,
+      "description": "clickable \"onCards\" has dead handler",
+      "detail": "Handler: missionCards",
+      "source": "graph:confirmed_static:ui_handler_effect_unobserved",
+      "surface": "ui-interaction"
+    },
+    {
+      "type": "graph-ui-handler-effect-unobserved",
+      "severity": "medium",
+      "file": "frontend/src/app/(main)/vendas/gestao-vendas/page.tsx",
+      "line": 277,
+      "description": "clickable \"(sem texto)\" has dead handler",
+      "detail": "Handler: () => handleRemoveTag(phone, tag)",
+      "source": "graph:confirmed_static:ui_handler_effect_unobserved",
+      "surface": "ui-interaction"
+    },
+    {
+      "type": "graph-ui-handler-effect-unobserved",
+      "severity": "medium",
+      "file": "frontend/src/components/kloel/auth/kloel-auth-screen.tsx",
+      "line": 405,
+      "description": "clickable \"onFormSubmit\" has dead handler",
+      "detail": "Handler: handleFormSubmit",
+      "source": "graph:confirmed_static:ui_handler_effect_unobserved",
+      "surface": "ui-interaction"
+    },
+    {
+      "type": "graph-ui-handler-effect-unobserved",
+      "severity": "medium",
+      "file": "frontend/src/components/kloel/chat-container.tsx",
+      "line": 625,
+      "description": "clickable \"onSend\" has dead handler",
+      "detail": "Handler: handleSendMessage",
+      "source": "graph:confirmed_static:ui_handler_effect_unobserved",
+      "surface": "ui-interaction"
+    },
+    {
+      "type": "graph-ui-handler-effect-unobserved",
+      "severity": "medium",
+      "file": "frontend/src/components/kloel/conta/ContaView.tsx",
+      "line": 1531,
+      "description": "clickable \"onSave\" has dead handler",
+      "detail": "Handler: handleSave",
+      "source": "graph:confirmed_static:ui_handler_effect_unobserved",
+      "surface": "ui-interaction"
+    },
+    {
+      "type": "graph-ui-handler-effect-unobserved",
+      "severity": "medium",
+      "file": "frontend/src/components/kloel/conta/ContaView.tsx",
+      "line": 1945,
+      "description": "clickable \"onSave\" has dead handler",
+      "detail": "Handler: handleSave",
+      "source": "graph:confirmed_static:ui_handler_effect_unobserved",
+      "surface": "ui-interaction"
+    },
+    {
+      "type": "graph-ui-handler-effect-unobserved",
+      "severity": "medium",
+      "file": "frontend/src/components/kloel/conta/ContaView.tsx",
+      "line": 2930,
+      "description": "clickable \"onSave\" has dead handler",
+      "detail": "Handler: handleSave",
+      "source": "graph:confirmed_static:ui_handler_effect_unobserved",
+      "surface": "ui-interaction"
+    },
+    {
+      "type": "graph-ui-handler-effect-unobserved",
+      "severity": "medium",
+      "file": "frontend/src/components/kloel/conta/ContaView.tsx",
+      "line": 3272,
+      "description": "clickable \"onSave\" has dead handler",
+      "detail": "Handler: handleSave",
+      "source": "graph:confirmed_static:ui_handler_effect_unobserved",
+      "surface": "ui-interaction"
+    },
+    {
+      "type": "graph-ui-handler-effect-unobserved",
+      "severity": "medium",
+      "file": "frontend/src/components/kloel/dashboard/KloelDashboard.tsx",
+      "line": 458,
+      "description": "clickable \"onTitle\" has dead handler",
+      "detail": "Handler: conversationTitle",
+      "source": "graph:confirmed_static:ui_handler_effect_unobserved",
+      "surface": "ui-interaction"
+    },
+    {
+      "type": "graph-ui-handler-effect-unobserved",
+      "severity": "medium",
+      "file": "frontend/src/components/kloel/products/ProductNerveCenterCheckoutsTab.tsx",
+      "line": 956,
+      "description": "clickable \"(sem texto)\" has dead handler",
+      "detail": "Handler: () => void handleSave()",
+      "source": "graph:confirmed_static:ui_handler_effect_unobserved",
+      "surface": "ui-interaction"
+    },
+    {
+      "type": "graph-ui-handler-effect-unobserved",
+      "severity": "medium",
+      "file": "frontend/src/components/plans/PlanOrderBumpTab.tsx",
+      "line": 391,
+      "description": "clickable \"(sem texto)\" has dead handler",
+      "detail": "Handler: handleSave",
+      "source": "graph:confirmed_static:ui_handler_effect_unobserved",
+      "surface": "ui-interaction"
+    },
+    {
+      "type": "graph-ui-handler-effect-unobserved",
+      "severity": "medium",
+      "file": "frontend/src/components/plans/PlanOrderBumpTab.tsx",
+      "line": 593,
+      "description": "clickable \"(sem texto)\" has dead handler",
+      "detail": "Handler: () => handleDelete(bump.id)",
+      "source": "graph:confirmed_static:ui_handler_effect_unobserved",
+      "surface": "ui-interaction"
+    },
+    {
+      "type": "graph-ui-handler-effect-unobserved",
+      "severity": "medium",
+      "file": "frontend/src/components/products/ProductAfterPayTab.tsx",
+      "line": 360,
+      "description": "clickable \"(sem texto)\" has dead handler",
+      "detail": "Handler: save",
+      "source": "graph:confirmed_static:ui_handler_effect_unobserved",
+      "surface": "ui-interaction"
+    },
+    {
+      "type": "graph-ui-handler-effect-unobserved",
+      "severity": "medium",
+      "file": "frontend/src/components/products/ProductIATab.tsx",
+      "line": 490,
+      "description": "clickable \"(sem texto)\" has dead handler",
+      "detail": "Handler: save",
+      "source": "graph:confirmed_static:ui_handler_effect_unobserved",
+      "surface": "ui-interaction"
+    },
+    {
+      "type": "graph-route-target-unmatched",
+      "severity": "high",
+      "file": "frontend/src/lib/api/cookie-consent.ts",
+      "line": 12,
+      "description": "POST /v1/cookie-consent has no matching backend route",
+      "detail": "Pattern: apiFetch, endpoint: /v1/cookie-consent",
+      "source": "graph:confirmed_static:route_target_unmatched",
+      "surface": "api-connectivity"
+    },
+    {
+      "type": "graph-route-target-unmatched",
+      "severity": "high",
+      "file": "scripts/pulse/parsers/hook-registry.ts",
+      "line": 123,
+      "description": "POST /endpoint has no matching backend route",
+      "detail": "Pattern: apiFetch, endpoint: /endpoint",
+      "source": "graph:confirmed_static:route_target_unmatched",
+      "surface": "api-connectivity"
+    }
+  ],
+  "stats": {
+    "uiElements": 3684,
+    "uiDeadHandlers": 28,
+    "apiCalls": 749,
+    "apiNoRoute": 2,
+    "backendRoutes": 1005,
+    "backendEmpty": 0,
+    "prismaModels": 153,
+    "modelOrphans": 0,
+    "facades": 0,
+    "facadesBySeverity": {
+      "high": 0,
+      "medium": 0,
+      "low": 0
+    },
+    "proxyRoutes": 83,
+    "proxyNoUpstream": 0,
+    "securityIssues": 279,
+    "dataSafetyIssues": 5,
+    "qualityIssues": 0,
+    "unavailableChecks": 0,
+    "unknownSurfaces": 0
+  },
+  "timestamp": "2026-05-10T16:07:28.328Z",
+  "runId": "6fdaf2f0-48ef-4542-9132-24c0f6cb6ab7",
+  "generatedAt": "2026-05-10T16:09:11.441Z"
+}

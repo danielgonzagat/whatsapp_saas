@@ -5,6 +5,7 @@ import {
   ForbiddenException,
   Headers,
   HttpCode,
+  Inject,
   Logger,
   Post,
   UseGuards,
@@ -15,7 +16,7 @@ import { Public } from '../auth/public.decorator';
 import { safeCompareStrings } from '../common/utils/crypto-compare.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { AgentEventsService } from '../whatsapp/agent-events.service';
-import { CiaRuntimeService } from '../whatsapp/cia-runtime.service';
+import { CIA_RUNTIME_SERVICE, type CiaRuntimePort } from '../cia/cia-runtime.port';
 import { InboundProcessorService } from '../whatsapp/inbound-processor.service';
 import { WhatsAppApiProvider } from '../whatsapp/providers/whatsapp-api.provider';
 import { WhatsAppCatchupService } from '../whatsapp/whatsapp-catchup.service';
@@ -45,7 +46,7 @@ export class WhatsAppApiWebhookController {
     private readonly inboundProcessor: InboundProcessorService,
     private readonly catchupService: WhatsAppCatchupService,
     private readonly agentEvents: AgentEventsService,
-    private readonly ciaRuntime: CiaRuntimeService,
+    @Inject(CIA_RUNTIME_SERVICE) private readonly ciaRuntime: CiaRuntimePort,
     private readonly whatsappApi: WhatsAppApiProvider,
     @InjectRedis() private readonly redis: Redis,
   ) {

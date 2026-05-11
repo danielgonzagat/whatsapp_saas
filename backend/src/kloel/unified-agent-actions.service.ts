@@ -1,18 +1,17 @@
-import { Inject, Injectable, Logger, forwardRef, Optional } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import OpenAI from 'openai';
 import { AuditService } from '../audit/audit.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { StorageService } from '../common/storage/storage.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { UnifiedAgentActionsBillingService } from './unified-agent-actions-billing.service';
 import { UnifiedAgentActionsCommerceService } from './unified-agent-actions-commerce.service';
 import { UnifiedAgentActionsCrmService } from './unified-agent-actions-crm.service';
 import { UnifiedAgentActionsMessagingService } from './unified-agent-actions-messaging.service';
 import { UnifiedAgentActionsSalesService } from './unified-agent-actions-sales.service';
 import { UnifiedAgentActionsWorkspaceService } from './unified-agent-actions-workspace.service';
-import type { ToolArgs } from './unified-agent.service';
+import type { ToolArgs } from './unified-agent.types';
 import { actionStr, actionNum } from './__companions__/unified-agent-actions.service.companion';
 import { OpsAlertService } from '../observability/ops-alert.service';
 
@@ -31,8 +30,6 @@ export class UnifiedAgentActionsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly storageService: StorageService,
-    @Inject(forwardRef(() => WhatsappService))
-    private readonly whatsappService: WhatsappService,
     private readonly planLimits: PlanLimitsService,
     private readonly messaging: UnifiedAgentActionsMessagingService,
     private readonly crm: UnifiedAgentActionsCrmService,
@@ -107,17 +104,23 @@ export class UnifiedAgentActionsService {
         }
       }
       if (!documentUrl) return { success: false, error: 'URL ou nome do documento é obrigatório' };
-      const result = await this.whatsappService.sendMessage(
+      const result = await this.messaging.sendViaTransport(
         workspaceId,
         phone,
         documentCaption || '',
-        this.messaging.buildWhatsAppSendOptions(context, {
+        context,
+        {
           mediaUrl: documentUrl,
           mediaType: 'document',
           caption: documentCaption || '',
-        }),
+        },
       );
-      if (result.error) return { success: false, error: result.message };
+      if (!result.success) {
+        return {
+          success: false,
+          error: result.blockedReason || result.error || 'Falha ao enviar documento',
+        };
+      }
       return {
         success: true,
         documentName: documentName || 'URL direta',
@@ -221,11 +224,17 @@ export class UnifiedAgentActionsService {
     contactId: string,
     phone: string,
     args: ToolArgs,
+    context?: UnknownRecord,
   ) {
-    return this.crm.actionScheduleFollowup(workspaceId, contactId, phone, args);
+    return this.crm.actionScheduleFollowup(workspaceId, contactId, phone, args, context);
   }
-  async actionTransferToHuman(workspaceId: string, contactId: string, args: ToolArgs) {
-    return this.crm.actionTransferToHuman(workspaceId, contactId, args);
+  async actionTransferToHuman(
+    workspaceId: string,
+    contactId: string,
+    args: ToolArgs,
+    context?: UnknownRecord,
+  ) {
+    return this.crm.actionTransferToHuman(workspaceId, contactId, args, context);
   }
   async actionSearchKnowledgeBase(workspaceId: string, args: ToolArgs) {
     return this.crm.actionSearchKnowledgeBase(workspaceId, args);
@@ -254,8 +263,8 @@ export class UnifiedAgentActionsService {
   async actionUpdateWorkspaceSettings(workspaceId: string, args: ToolArgs) {
     return this.workspace.actionUpdateWorkspaceSettings(workspaceId, args);
   }
-  async actionCreateBroadcast(workspaceId: string, args: ToolArgs) {
-    return this.workspace.actionCreateBroadcast(workspaceId, args);
+  async actionCreateBroadcast(workspaceId: string, args: ToolArgs, context?: UnknownRecord) {
+    return this.workspace.actionCreateBroadcast(workspaceId, args, context);
   }
   async actionConfigureAIPersona(workspaceId: string, args: ToolArgs) {
     return this.workspace.actionConfigureAIPersona(workspaceId, args);

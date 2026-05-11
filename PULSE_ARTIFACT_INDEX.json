@@ -1,11 +1,10 @@
 {
-  "runId": "11e0bbaa-a50e-42cf-acfa-2620e00946ff",
-  "generatedAt": "2026-05-04T05:35:38.585Z",
+  "runId": "6fdaf2f0-48ef-4542-9132-24c0f6cb6ab7",
+  "generatedAt": "2026-05-10T16:09:11.441Z",
   "authorityMode": "advisory-only",
   "advisoryOnly": true,
   "authorityReasons": [
     "Evidence freshness is not closed.",
-    "Pulse self-trust is still failing.",
     "Runtime pass is not green with live evidence."
   ],
   "pulseMachineReadiness": {
@@ -14,15 +13,15 @@
     "canRunBoundedAutonomousCycle": false,
     "canDeclareKloelProductCertified": false,
     "blockers": [
-      "artifact_consistency: 1 divergence(s): generatedAt: 4 artifacts disagree",
-      "critical_path_terminal: 5102 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive, matrix:capability:capability:admin-login. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
-      "self_trust: Parser self-trust failed for 1 current parser check(s): orphaned-file-checker [execution_failed]: parser=orphaned-file-checker | file=scripts/pulse/parsers/orphaned-file-checker.ts | kind=timeout | pid=35131 | elapsedMs=30003 | timeoutMs=30000 | command=/opt/homebrew/Cellar/node/25.8.2/bin/node -r /Users/danielpenin/whatsapp_saas-onda0/backend/node_modules/ts-node/register/transpile-only.js /Users/danielpenin/whatsapp_saas-onda0/scripts/pulse/parser-worker.ts orphaned-file-checker <encoded-config> | stdout=<empty> | stderr=<empty> | action=SIGKILL sent to isolated parser worker because the parser exceeded its budget.",
+      "artifact_consistency: Cross-artifact consistency has not produced a passing check.",
+      "critical_path_terminal: 5224 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:account-agent, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive, matrix:capability:capability:admin-login. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
+      "external_reality: 2 missing, 0 stale, and 0 invalid external adapter(s) remain.",
       "multi_cycle: multiCycleConvergence: no autonomy iteration history found; production-autonomy verdict requires proven cycles. Cycle proof: 0/3 successful non-regressing real cycle(s)."
     ]
   },
   "cleanupPolicy": "enforced-single-state",
-  "canonicalDir": "/Users/danielpenin/whatsapp_saas-onda0/.pulse/current",
-  "tempDir": "/Users/danielpenin/whatsapp_saas-onda0/.pulse/tmp",
+  "canonicalDir": "/private/tmp/kloel-pr266-current/.pulse/current",
+  "tempDir": "/private/tmp/kloel-pr266-current/.pulse/tmp",
   "officialArtifacts": [
     "PULSE_ADMIN_EVIDENCE.json",
     "PULSE_AGENT_ORCHESTRATION_STATE.json",
@@ -85,9 +84,7 @@
       "consumers": [
         "./actors/coverage",
         "./artifact-gc",
-        "./cert-gate-evidence",
-        "./scenario-evidence-loader",
-        "./timeout-evidence"
+        "./cert-gate-evidence"
       ],
       "freshness": {
         "mode": "preserved"
@@ -128,10 +125,7 @@
         "exportName": "buildArtifactIndex"
       },
       "consumers": [
-        "./__companions__/artifacts.directive.companion",
-        "./cross-artifact-consistency-check/loaders",
-        "./dynamic-reality-kernel",
-        "./index"
+        "./cross-artifact-consistency-check/loaders"
       ],
       "freshness": {
         "mode": "run"
@@ -172,9 +166,7 @@
         "module": "./__parts__/artifacts/generate",
         "exportName": "writeRegisteredArtifact.autonomy-proof"
       },
-      "consumers": [
-        "./dynamic-reality-kernel"
-      ],
+      "consumers": [],
       "freshness": {
         "mode": "run"
       },
@@ -193,13 +185,10 @@
         "exportName": "normalizeCanonicalArtifactValue"
       },
       "consumers": [
-        "./__companions__/artifacts.directive.companion",
+        "./__parts__/probabilistic-risk/model",
         "./autonomy-loop.types",
         "./autonomy-types",
-        "./continuous-daemon",
-        "./dynamic-reality-kernel",
-        "./probabilistic-risk",
-        "./structural-memory"
+        "./structural-memory/__parts__/memory-patterns"
       ],
       "freshness": {
         "mode": "run"
@@ -218,10 +207,7 @@
         "module": "./__parts__/artifacts/generate",
         "exportName": "writeRegisteredArtifact.beads-state"
       },
-      "consumers": [
-        "./__companions__/context-broadcast.companion",
-        "./dynamic-reality-kernel"
-      ],
+      "consumers": [],
       "freshness": {
         "mode": "external_snapshot"
       },
@@ -240,13 +226,9 @@
         "exportName": "snapshot.certification.evidenceSummary.browser"
       },
       "consumers": [
-        "./__companions__/dynamic-reality-kernel.companion",
-        "./__companions__/execution-matrix.spec.companion",
+        "./__parts__/replay-adapter/main",
         "./artifact-gc",
-        "./browser-stress-tester/index",
-        "./dynamic-reality-kernel",
-        "./execution-matrix",
-        "./replay-adapter"
+        "./execution-matrix/__parts__/grammar"
       ],
       "freshness": {
         "mode": "external_snapshot"
@@ -266,15 +248,9 @@
         "exportName": "snapshot.capabilityState"
       },
       "consumers": [
-        "./__companions__/chaos-engine.companion",
-        "./__companions__/dod-real-status.spec.companion",
-        "./__companions__/dynamic-reality-kernel.companion",
-        "./__companions__/observability-coverage.companion",
-        "./__companions__/runtime-fusion.spec.companion",
+        "./__parts__/probabilistic-risk/model",
         "./cert-gate-evidence",
-        "./dynamic-reality-kernel",
-        "./probabilistic-risk",
-        "./production-proof",
+        "./production-proof/__parts__/dimensions",
         "./signal-mapper"
       ],
       "freshness": {
@@ -295,21 +271,13 @@
         "exportName": "buildCertificate"
       },
       "consumers": [
-        "./__companions__/artifacts.directive.companion",
-        "./__companions__/comparators.companion",
-        "./__companions__/cross-artifact-consistency.spec.companion",
-        "./__companions__/dynamic-reality-kernel.companion",
-        "./__companions__/execution-matrix.spec.companion",
-        "./__companions__/regression-guard.companion",
+        "./__parts__/probabilistic-risk/model",
         "./artifact-gc",
-        "./authority-engine",
-        "./autonomy-acceptance",
+        "./authority-engine/__parts__/core",
         "./cert-gate-evidence",
         "./cross-artifact-consistency-check",
         "./cross-artifact-consistency-check/loaders",
-        "./dynamic-reality-kernel",
-        "./execution-matrix",
-        "./probabilistic-risk",
+        "./execution-matrix/__parts__/grammar",
         "./signal-mapper"
       ],
       "freshness": {
@@ -330,16 +298,10 @@
         "exportName": "buildDirective"
       },
       "consumers": [
-        "./__companions__/artifacts.directive.companion",
-        "./__companions__/comparators.companion",
-        "./__companions__/cross-artifact-consistency.spec.companion",
-        "./__companions__/dynamic-reality-kernel.companion",
+        "./__parts__/autonomy-loop.state-io/directive",
         "./artifact-gc",
         "./autonomy-decision",
-        "./autonomy-loop.planner",
-        "./autonomy-loop.state-io",
-        "./cross-artifact-consistency-check/loaders",
-        "./dynamic-reality-kernel"
+        "./cross-artifact-consistency-check/loaders"
       ],
       "freshness": {
         "mode": "run"
@@ -397,11 +359,7 @@
         "module": "./__parts__/artifacts/generate",
         "exportName": "writeRegisteredArtifact.context-broadcast"
       },
-      "consumers": [
-        "./__companions__/artifacts.directive.companion",
-        "./__companions__/context-broadcast.companion",
-        "./dynamic-reality-kernel"
-      ],
+      "consumers": [],
       "freshness": {
         "mode": "run"
       },
@@ -438,13 +396,9 @@
         "exportName": "normalizeCanonicalArtifactValue"
       },
       "consumers": [
-        "./__companions__/dynamic-reality-kernel.companion",
-        "./__companions__/runtime-fusion.spec.companion",
         "./artifact-gc",
-        "./autonomy-loop.planner",
         "./cert-gate-evidence",
         "./cross-artifact-consistency-check",
-        "./dynamic-reality-kernel",
         "./signal-mapper"
       ],
       "freshness": {
@@ -467,9 +421,7 @@
       "consumers": [
         "./actors/coverage",
         "./artifact-gc",
-        "./cert-gate-evidence",
-        "./scenario-evidence-loader",
-        "./timeout-evidence"
+        "./cert-gate-evidence"
       ],
       "freshness": {
         "mode": "preserved"
@@ -507,14 +459,8 @@
         "exportName": "normalizeCanonicalArtifactValue"
       },
       "consumers": [
-        "./__companions__/artifacts.directive.companion",
-        "./__companions__/certification.companion",
-        "./__companions__/chaos-engine.companion",
-        "./__companions__/cross-artifact-consistency.spec.companion",
-        "./__companions__/dynamic-reality-kernel.companion",
-        "./__companions__/regression-guard.companion",
         "./cross-artifact-consistency-check",
-        "./dynamic-reality-kernel",
+        "./path-coverage-engine/__parts__/build-coverage-state",
         "./proof-synthesis"
       ],
       "freshness": {
@@ -535,12 +481,8 @@
         "exportName": "snapshot.certification.evidenceSummary.executionTrace"
       },
       "consumers": [
-        "./__companions__/chaos-engine.companion",
-        "./__companions__/dynamic-reality-kernel.companion",
-        "./__companions__/self-trust.companion",
         "./artifact-gc",
         "./cert-evidence-defaults",
-        "./dynamic-reality-kernel",
         "./execution-trace"
       ],
       "freshness": {
@@ -561,17 +503,11 @@
         "exportName": "snapshot.externalSignalState"
       },
       "consumers": [
-        "./__companions__/artifacts.directive.companion",
-        "./__companions__/dynamic-reality-kernel.companion",
-        "./__companions__/runtime-fusion.spec.companion",
+        "./__parts__/replay-adapter/main",
         "./adapters/gitnexus-adapter",
-        "./autonomy-loop.planner",
         "./cert-gate-evidence",
-        "./dynamic-reality-kernel",
-        "./execution-matrix",
-        "./parsers/hardcoded-url-checker",
-        "./production-proof",
-        "./replay-adapter",
+        "./execution-matrix/__parts__/grammar",
+        "./production-proof/__parts__/dimensions",
         "./signal-mapper"
       ],
       "freshness": {
@@ -591,10 +527,7 @@
         "module": "./__parts__/artifacts/generate",
         "exportName": "buildFindingValidationState"
       },
-      "consumers": [
-        "./__companions__/dynamic-reality-kernel.companion",
-        "./dynamic-reality-kernel"
-      ],
+      "consumers": [],
       "freshness": {
         "mode": "run"
       },
@@ -613,15 +546,10 @@
         "exportName": "snapshot.certification.evidenceSummary.flows"
       },
       "consumers": [
-        "./__companions__/dynamic-reality-kernel.companion",
-        "./__companions__/execution-matrix.spec.companion",
         "./artifact-gc",
-        "./autonomy-acceptance",
         "./cert-evidence-defaults",
         "./cert-gate-evidence",
-        "./dynamic-reality-kernel",
-        "./execution-matrix",
-        "./timeout-evidence"
+        "./execution-matrix/__parts__/grammar"
       ],
       "freshness": {
         "mode": "preserved"
@@ -641,11 +569,7 @@
         "exportName": "snapshot.flowProjection"
       },
       "consumers": [
-        "./__companions__/dynamic-reality-kernel.companion",
-        "./__companions__/observability-coverage.companion",
-        "./__companions__/runtime-fusion.spec.companion",
         "./cert-gate-evidence",
-        "./dynamic-reality-kernel",
         "./signal-mapper"
       ],
       "freshness": {
@@ -666,11 +590,8 @@
         "exportName": "writeRegisteredArtifact.gitnexus-state"
       },
       "consumers": [
-        "./__companions__/context-broadcast.companion",
-        "./__companions__/external-sources-orchestrator.companion",
-        "./adapters/external-sources-orchestrator",
-        "./adapters/gitnexus-adapter",
-        "./dynamic-reality-kernel"
+        "./adapters/external-sources-orchestrator/__parts__/capability",
+        "./adapters/gitnexus-adapter"
       ],
       "freshness": {
         "mode": "external_snapshot"
@@ -690,10 +611,8 @@
         "exportName": "buildHealth"
       },
       "consumers": [
-        "./__companions__/regression-guard.companion",
-        "./artifact-gc",
-        "./dynamic-reality-kernel",
-        "./probabilistic-risk"
+        "./__parts__/probabilistic-risk/model",
+        "./artifact-gc"
       ],
       "freshness": {
         "mode": "run"
@@ -715,9 +634,7 @@
       "consumers": [
         "./artifact-gc",
         "./cert-evidence-defaults",
-        "./cert-gate-evidence",
-        "./invariants/index",
-        "./timeout-evidence"
+        "./cert-gate-evidence"
       ],
       "freshness": {
         "mode": "preserved"
@@ -737,10 +654,8 @@
         "exportName": "writeRegisteredArtifact.machine-readiness"
       },
       "consumers": [
-        "./__companions__/artifacts.directive.companion",
-        "./authority-engine",
-        "./cross-artifact-consistency-check",
-        "./dynamic-reality-kernel"
+        "./authority-engine/__parts__/core",
+        "./cross-artifact-consistency-check"
       ],
       "freshness": {
         "mode": "run"
@@ -778,13 +693,10 @@
         "exportName": "snapshot.certification.evidenceSummary.observability"
       },
       "consumers": [
-        "./__companions__/dynamic-reality-kernel.companion",
         "./artifact-gc",
         "./cert-evidence-defaults",
         "./cert-gate-evidence",
-        "./dynamic-reality-kernel",
-        "./production-proof",
-        "./runtime-evidence"
+        "./production-proof/__parts__/dimensions"
       ],
       "freshness": {
         "mode": "preserved"
@@ -806,9 +718,7 @@
       "consumers": [
         "./actors/coverage",
         "./artifact-gc",
-        "./cert-gate-evidence",
-        "./scenario-evidence-loader",
-        "./timeout-evidence"
+        "./cert-gate-evidence"
       ],
       "freshness": {
         "mode": "preserved"
@@ -827,10 +737,7 @@
         "module": "./__parts__/artifacts/generate",
         "exportName": "snapshot.parityGaps"
       },
-      "consumers": [
-        "./__companions__/dynamic-reality-kernel.companion",
-        "./dynamic-reality-kernel"
-      ],
+      "consumers": [],
       "freshness": {
         "mode": "run"
       },
@@ -849,11 +756,7 @@
         "exportName": "snapshot.productGraph"
       },
       "consumers": [
-        "./__companions__/dynamic-reality-kernel.companion",
-        "./__companions__/no-hardcoded-reality.spec.companion",
-        "./__companions__/scenario-engine.spec.companion",
-        "./dynamic-reality-kernel",
-        "./production-proof"
+        "./production-proof/__parts__/dimensions"
       ],
       "freshness": {
         "mode": "run"
@@ -872,12 +775,7 @@
         "module": "./__parts__/artifacts/generate",
         "exportName": "snapshot.productVision"
       },
-      "consumers": [
-        "./__companions__/convergence-plan.companion",
-        "./__companions__/dynamic-reality-kernel.companion",
-        "./autonomy-loop.planner",
-        "./dynamic-reality-kernel"
-      ],
+      "consumers": [],
       "freshness": {
         "mode": "run"
       },
@@ -896,12 +794,9 @@
         "exportName": "snapshot.certification.evidenceSummary.recovery"
       },
       "consumers": [
-        "./__companions__/dynamic-reality-kernel.companion",
         "./artifact-gc",
         "./cert-evidence-defaults",
-        "./cert-gate-evidence",
-        "./dynamic-reality-kernel",
-        "./runtime-evidence"
+        "./cert-gate-evidence"
       ],
       "freshness": {
         "mode": "preserved"
@@ -921,10 +816,8 @@
         "exportName": "buildReport"
       },
       "consumers": [
-        "./__companions__/dynamic-reality-kernel.companion",
         "./artifact-gc",
-        "./cert-gate-evidence",
-        "./dynamic-reality-kernel"
+        "./cert-gate-evidence"
       ],
       "freshness": {
         "mode": "run"
@@ -944,11 +837,8 @@
         "exportName": "snapshot.resolvedManifest"
       },
       "consumers": [
-        "./__companions__/dynamic-reality-kernel.companion",
         "./artifact-gc",
-        "./autonomy-loop.prompt",
         "./cert-gate-evidence",
-        "./dynamic-reality-kernel",
         "./scenario-mode-registry"
       ],
       "freshness": {
@@ -969,19 +859,10 @@
         "exportName": "snapshot.certification.evidenceSummary.runtime"
       },
       "consumers": [
-        "./__companions__/chaos-engine.companion",
-        "./__companions__/dynamic-reality-kernel.companion",
-        "./__companions__/path-proof-runner.spec.companion",
+        "./__parts__/runtime-probes/main",
         "./artifact-gc",
         "./cert-gate-evidence",
-        "./dynamic-reality-kernel",
-        "./execution-matrix",
-        "./parsers/hardcoded-url-checker",
-        "./runtime-evidence",
-        "./runtime-evidence.db-probe",
-        "./runtime-evidence.probes",
-        "./runtime-probes",
-        "./timeout-evidence"
+        "./execution-matrix/__parts__/grammar"
       ],
       "freshness": {
         "mode": "preserved"
@@ -1001,15 +882,10 @@
         "exportName": "buildRuntimeProbesArtifact"
       },
       "consumers": [
+        "./__parts__/runtime-probes/main",
         "./artifact-gc",
         "./cert-gate-evidence",
-        "./dynamic-reality-kernel",
-        "./production-proof",
-        "./runtime-evidence",
-        "./runtime-evidence.db-probe",
-        "./runtime-evidence.probes",
-        "./runtime-probes",
-        "./timeout-evidence"
+        "./production-proof/__parts__/dimensions"
       ],
       "freshness": {
         "mode": "preserved"
@@ -1029,16 +905,10 @@
         "exportName": "snapshot.certification.evidenceSummary.syntheticCoverage"
       },
       "consumers": [
-        "./__companions__/dod-real-status.spec.companion",
-        "./__companions__/dynamic-reality-kernel.companion",
         "./actors/coverage",
         "./artifact-gc",
-        "./autonomy-acceptance",
         "./cert-evidence-actor",
-        "./cert-gate-evidence",
-        "./dynamic-reality-kernel",
-        "./index",
-        "./timeout-evidence"
+        "./cert-gate-evidence"
       ],
       "freshness": {
         "mode": "preserved"
@@ -1058,16 +928,10 @@
         "exportName": "snapshot.scopeState"
       },
       "consumers": [
-        "./__companions__/dynamic-reality-kernel.companion",
-        "./__companions__/execution-matrix.companion",
-        "./__companions__/property-tester.companion",
-        "./__companions__/scope-engine.companion",
         "./artifact-gc",
         "./cert-gate-evidence",
-        "./dynamic-reality-kernel",
-        "./execution-matrix",
-        "./false-positive-adjudicator",
-        "./parsers/hardcoded-url-checker"
+        "./execution-matrix/__parts__/matrix",
+        "./false-positive-adjudicator"
       ],
       "freshness": {
         "mode": "run"
@@ -1089,9 +953,7 @@
       "consumers": [
         "./actors/coverage",
         "./artifact-gc",
-        "./cert-gate-evidence",
-        "./scenario-evidence-loader",
-        "./timeout-evidence"
+        "./cert-gate-evidence"
       ],
       "freshness": {
         "mode": "preserved"
@@ -1110,14 +972,7 @@
         "module": "./__parts__/artifacts/generate",
         "exportName": "snapshot.structuralGraph"
       },
-      "consumers": [
-        "./__companions__/chaos-engine.companion",
-        "./__companions__/contract-tester.companion",
-        "./__companions__/dynamic-reality-kernel.companion",
-        "./__companions__/no-hardcoded-reality.spec.companion",
-        "./dynamic-reality-kernel",
-        "./parsers/hardcoded-url-checker"
-      ],
+      "consumers": [],
       "freshness": {
         "mode": "run"
       },
@@ -1135,11 +990,7 @@
         "module": "./__parts__/artifacts/generate",
         "exportName": "writeRegisteredArtifact.worker-leases"
       },
-      "consumers": [
-        "./__companions__/artifacts.directive.companion",
-        "./__companions__/context-broadcast.companion",
-        "./dynamic-reality-kernel"
-      ],
+      "consumers": [],
       "freshness": {
         "mode": "run"
       },
@@ -1158,13 +1009,10 @@
         "exportName": "snapshot.certification.evidenceSummary.worldState"
       },
       "consumers": [
-        "./__companions__/dynamic-reality-kernel.companion",
         "./actors/coverage",
         "./artifact-gc",
         "./cert-evidence-actor",
-        "./cert-gate-evidence",
-        "./dynamic-reality-kernel",
-        "./timeout-evidence"
+        "./cert-gate-evidence"
       ],
       "freshness": {
         "mode": "run"
@@ -1199,7 +1047,14 @@
   "removedLegacyPulseArtifacts": [
     "PULSE_CERTIFICATE.json",
     "PULSE_CLI_DIRECTIVE.json",
-    "PULSE_REPORT.md"
+    "PULSE_CONVERGENCE_PLAN.json",
+    "PULSE_EXECUTION_TRACE.json",
+    "PULSE_FLOW_PROJECTION.json",
+    "PULSE_HEALTH.json",
+    "PULSE_REPORT.md",
+    "PULSE_RUNTIME_EVIDENCE.json",
+    "PULSE_SCOPE_STATE.json",
+    "PULSE_WORLD_STATE.json"
   ],
   "rootStateMode": "local-only"
 }

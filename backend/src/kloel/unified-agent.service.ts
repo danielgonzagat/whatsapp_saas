@@ -1,6 +1,5 @@
 import { Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Prisma } from '@prisma/client';
 import OpenAI from 'openai';
 import type { ChatCompletionMessageParam } from 'openai/resources/chat';
 import { PlanLimitsService } from '../billing/plan-limits.service';
@@ -14,10 +13,14 @@ import { AudioService } from './audio.service';
 import { PaymentService } from './payment.service';
 import { chatCompletionWithFallback } from './openai-wrapper';
 import { forEachSequential } from '../common/async-sequence';
-import { UNIFIED_AGENT_TOOLS } from './unified-agent-tools-def';
 import { UnifiedAgentContextService } from './unified-agent-context.service';
 import { UnifiedAgentResponseService } from './unified-agent-response.service';
 import { UnifiedAgentActionsService } from './unified-agent-actions.service';
+import {
+  buildPredecidedActionDraft,
+  executePredecidedAgentActions,
+} from './__parts__/unified-agent-predecided-actions.part';
+import type { ActionEntry, PredecidedAction, ToolArgs } from './unified-agent.types';
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -43,104 +46,10 @@ function formatPromptValue(value: unknown): string {
   return Object.prototype.toString.call(value);
 }
 
-/** ToolArgs shape used by all action methods. */
-export interface ToolArgs {
-  active?: boolean;
-  amount?: number;
-  audioBase64?: string;
-  audioUrl?: string;
-  autoActivate?: boolean;
-  autoReplyEnabled?: boolean;
-  autoReplyMessage?: string;
-  businessHours?: Prisma.InputJsonValue;
-  businessName?: string;
-  campaignId?: string;
-  caption?: string;
-  category?: string;
-  code?: string;
-  csvData?: string;
-  daysSilent?: number;
-  delayHours?: number;
-  description?: string;
-  discountPercent?: number;
-  documentName?: string;
-  enabled?: boolean;
-  event?: string;
-  expiresIn?: string;
-  flowId?: string;
-  flowName?: string;
-  funnelName?: string;
-  imageUrl?: string;
-  includeConnections?: boolean;
-  includeHealth?: boolean;
-  includeFollowUps?: boolean;
-  includeLink?: boolean;
-  includeMetrics?: boolean;
-  includePrice?: boolean;
-  intent?: string;
-  language?: string;
-  message?: string;
-  metric?: string;
-  mode?: string;
-  name?: string;
-  objective?: string;
-  objectionType?: string;
-  offer?: string;
-  paymentLink?: string;
-  period?: string;
-  personality?: string;
-  plan?: string;
-  price?: number;
-  priority?: string;
-  productId?: string;
-  productName?: string;
-  properties?: Prisma.InputJsonValue;
-  query?: string;
-  questions?: string[];
-  reason?: string;
-  returnUrl?: string;
-  scheduleAt?: string;
-  source?: string;
-  stage?: string;
-  status?: string;
-  stages?: string[];
-  steps?: Prisma.InputJsonValue[];
-  strategy?: string;
-  suggestedTimes?: string[];
-  tag?: string;
-  targetTags?: string[];
-  technique?: string;
-  text?: string;
-  tone?: string;
-  trigger?: string;
-  triggerValue?: string;
-  type?: string;
-  url?: string;
-  useEmojis?: boolean;
-  variables?: Prisma.InputJsonValue;
-  voice?: string;
-  workingHoursOnly?: boolean;
+function isAllowedTool(tool: string, allowedTools?: string[]): boolean {
+  return typeof allowedTools === 'undefined' || allowedTools.includes(tool);
 }
 
-/** Action entry shape. */
-export interface ActionEntry {
-  /** Tool property. */
-  tool: string;
-  /** Args property. */
-  args: ToolArgs;
-  /** Result property. */
-  result?: unknown;
-}
-
-/**
- * KLOEL Unified Agent Service — orchestrator.
- *
- * This service coordinates context loading, LLM calls, tool dispatch, and
- * response composition. All heavy logic lives in the sub-services injected
- * here. The constructor, processMessage, and executeToolAction router are the
- * only concerns of this file.
- */
-/** Idempotency: enforced at HTTP layer via @Idempotent() guard + Stripe idempotencyKey. */
 @Injectable()
 export class UnifiedAgentService {
   private readonly logger = new Logger(UnifiedAgentService.name);
@@ -173,9 +82,6 @@ export class UnifiedAgentService {
     this.fallbackWriterModel = resolveBackendOpenAIModel('writer_fallback', this.config);
   }
 
-  /**
-   * API simplificada para processar mensagem inbound (WhatsApp/omnichannel).
-   */
   async processIncomingMessage(params: {
     workspaceId: string;
     phone: string;
@@ -204,10 +110,9 @@ export class UnifiedAgentService {
     return { ...result, reply: result.response };
   }
 
-  /**
-   * Processa uma mensagem recebida e decide as ações a tomar.
-   */
   async processMessage(params: {
+    allowedTools?: string[];
+    predecidedActions?: PredecidedAction[];
     workspaceId: string;
     contactId: string;
     phone: string;
@@ -221,7 +126,9 @@ export class UnifiedAgentService {
   }> {
     const { workspaceId, contactId, phone, message, context } = params;
 
-    if (!this.openai) {
+    const predecidedActions = params.predecidedActions ?? [];
+
+    if (!this.openai && predecidedActions.length === 0) {
       this.logger.warn('OpenAI not configured');
       return this.response.buildFallbackResult(message);
     }
@@ -282,7 +189,6 @@ export class UnifiedAgentService {
       message,
       conversationHistory.length,
     );
-
     const contactData: Record<string, unknown> = this.ctx.isRecord(contact) ? contact : {};
     const contactName = this.ctx.readText(contactData.name).trim() || phone;
     const contactSentiment = this.ctx.readText(contactData.sentiment).trim() || 'NEUTRAL';
@@ -309,7 +215,40 @@ Mensagem: ${message}`,
       },
     ];
 
-    // 4. Call OpenAI with tools
+    if (predecidedActions.length > 0) {
+      const actionsList = await executePredecidedAgentActions({
+        allowedTools: params.allowedTools,
+        contactId,
+        context,
+        executeTool: this.executeToolAction.bind(this),
+        logAutopilotEvent: this.actions.logAutopilotEvent.bind(this.actions),
+        phone,
+        predecidedActions,
+        workspaceId,
+      });
+      const intent = this.response.extractIntent(actionsList, message);
+      const draftedReply = await this.response.composeWriterReply(
+        this.openai,
+        this.writerModel,
+        this.fallbackWriterModel,
+        {
+          workspaceId,
+          customerMessage: message,
+          assistantDraft: buildPredecidedActionDraft(actionsList),
+          actions: actionsList,
+          historyTurns: conversationHistory.length,
+        },
+      );
+
+      return {
+        actions: actionsList,
+        response: draftedReply,
+        intent,
+        confidence: actionsList.length > 0 ? 0.85 : 0.55,
+      };
+    }
+
+    // 4. Ask the LLM to verbalize only; code-native actions enter via predecidedActions.
     let llmResponse: OpenAI.Chat.ChatCompletion;
     try {
       await this.planLimits.ensureTokenBudget(params.workspaceId);
@@ -318,8 +257,6 @@ Mensagem: ${message}`,
         {
           model: this.primaryBrainModel,
           messages,
-          tools: UNIFIED_AGENT_TOOLS,
-          tool_choice: 'auto',
           temperature: 0.82,
           top_p: 0.9,
         },
@@ -342,6 +279,21 @@ Mensagem: ${message}`,
       await forEachSequential(assistantMessage.tool_calls, async (toolCall) => {
         if (toolCall.type !== 'function') return;
         const toolName = toolCall.function.name;
+        if (!isAllowedTool(toolName, params.allowedTools)) {
+          this.logger.warn(
+            `Blocked disallowed agent tool call: workspaceId=${workspaceId} tool=${toolName}`,
+          );
+          const blockedResult = { blocked: true, reason: 'capability_not_allowed' };
+          actionsList.push({ tool: toolName, args: {}, result: blockedResult });
+          await this.actions.logAutopilotEvent(
+            workspaceId,
+            contactId,
+            toolName,
+            {},
+            blockedResult,
+          );
+          return;
+        }
         let toolArgs: Record<string, unknown> = {};
         try {
           toolArgs = JSON.parse(toolCall.function.arguments || '{}');
@@ -467,9 +419,9 @@ Mensagem: ${message}`,
       case 'add_tag':
         return this.actions.actionAddTag(workspaceId, contactId, args);
       case 'schedule_followup':
-        return this.actions.actionScheduleFollowup(workspaceId, contactId, phone, args);
+        return this.actions.actionScheduleFollowup(workspaceId, contactId, phone, args, context);
       case 'transfer_to_human':
-        return this.actions.actionTransferToHuman(workspaceId, contactId, args);
+        return this.actions.actionTransferToHuman(workspaceId, contactId, args, context);
       case 'search_knowledge_base':
         return this.actions.actionSearchKnowledgeBase(workspaceId, args);
       case 'trigger_flow':
@@ -508,7 +460,7 @@ Mensagem: ${message}`,
       case 'update_workspace_settings':
         return this.actions.actionUpdateWorkspaceSettings(workspaceId, args);
       case 'create_broadcast':
-        return this.actions.actionCreateBroadcast(workspaceId, args);
+        return this.actions.actionCreateBroadcast(workspaceId, args, context);
       case 'get_analytics':
         return this.actions.actionGetAnalytics(workspaceId, args);
       case 'configure_ai_persona':

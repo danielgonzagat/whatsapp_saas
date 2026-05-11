@@ -44,6 +44,44 @@ function formatTimestamp(value?: Date) {
   });
 }
 
+type ConnectionStateKey = 'connected' | 'disconnected' | 'reconnecting';
+
+const CONNECTION_STATE_LABELS: Record<ConnectionStateKey, string> = {
+  connected: 'Conectado',
+  disconnected: 'Desconectado',
+  reconnecting: 'Reconectando',
+};
+
+function resolveConnectionStateKey(status?: WhatsAppConnectionStatus | null): ConnectionStateKey {
+  const raw = String(status?.status || '').toLowerCase();
+  const candidates: Array<[boolean, ConnectionStateKey]> = [
+    [Boolean(status?.connected), 'connected'],
+    [raw.includes('reconnect') || raw.includes('reconnecting'), 'reconnecting'],
+  ];
+  return candidates.find(([matches]) => matches)?.[1] ?? 'disconnected';
+}
+
+function formatConnectionState(status?: WhatsAppConnectionStatus | null): string {
+  return CONNECTION_STATE_LABELS[resolveConnectionStateKey(status)];
+}
+
+function formatOperatorReason(value?: string | null): string {
+  const raw = String(value || '').toLowerCase();
+  if (!raw) {
+    return 'A conexão oficial ainda não está ativa.';
+  }
+  if (raw.includes('expired') || raw.includes('token')) {
+    return 'A autorização expirou. Conecte novamente.';
+  }
+  if (raw.includes('permission') || raw.includes('scope')) {
+    return 'A autorização precisa ser renovada com as permissões corretas.';
+  }
+  if (raw.includes('rate') || raw.includes('limit')) {
+    return 'O canal atingiu um limite temporário. Tente novamente em alguns minutos.';
+  }
+  return 'A conexão precisa ser revisada. Conecte novamente quando quiser.';
+}
+
 /** Agent desktop viewer. */
 export function AgentDesktopViewer({
   isVisible,
@@ -215,16 +253,18 @@ export function AgentDesktopViewer({
             </div>
             <div className="rounded-2xl border border-white/8 bg-black/20 p-4">
               <p className="text-[11px] uppercase tracking-[0.24em] text-[colors.text.dim]">
-                {kloelT(`Phone Number ID`)}
+                {kloelT(`Conexao oficial`)}
               </p>
-              <p className="mt-2 break-all text-sm text-[colors.text.silver]">
-                {status?.phoneNumberId || 'Nao resolvido'}
+              <p className="mt-2 text-sm text-[colors.text.silver]">
+                {formatConnectionState(status)}
               </p>
             </div>
             <div className="rounded-2xl border border-white/8 bg-black/20 p-4">
-              <p className="text-[11px] uppercase tracking-[0.24em] text-[colors.text.dim]">WABA</p>
-              <p className="mt-2 break-all text-sm text-[colors.text.silver]">
-                {status?.whatsappBusinessId || 'Nao resolvido'}
+              <p className="text-[11px] uppercase tracking-[0.24em] text-[colors.text.dim]">
+                {kloelT(`Canais Meta`)}
+              </p>
+              <p className="mt-2 text-sm text-[colors.text.silver]">
+                WhatsApp, Instagram e Messenger
               </p>
             </div>
             <div className="rounded-2xl border border-white/8 bg-black/20 p-4">
@@ -232,14 +272,14 @@ export function AgentDesktopViewer({
                 {kloelT(`Estado`)}
               </p>
               <p className="mt-2 text-sm text-[colors.text.silver]">
-                {status?.status || 'Desconhecido'}
+                {formatConnectionState(status)}
               </p>
             </div>
           </div>
 
           {status?.degradedReason && !status.connected ? (
             <div className="mt-4 rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
-              {status.degradedReason}
+              {formatOperatorReason(status.degradedReason)}
             </div>
           ) : null}
 

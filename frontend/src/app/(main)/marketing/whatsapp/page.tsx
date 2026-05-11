@@ -1,6 +1,6 @@
-import { OfficialMarketingChannelPage } from '@/components/kloel/marketing/OfficialMarketingChannelPage';
+import MarketingView from '@/components/kloel/marketing/MarketingView';
 
 /** Whats app page. */
 export default function WhatsAppPage() {
-  return <OfficialMarketingChannelPage channel="whatsapp" />;
+  return <MarketingView defaultTab="whatsapp" />;
 }

@@ -13,6 +13,22 @@ const PATTERN_RE = /\/+$/;
 const HTTPS_RE = /^https?:\/\//i;
 const LOCALHOST_127__0__0__1_RE = /^(localhost|127\.0\.0\.1)(:\d+)?$/i;
 
+function resolveMetaConfigChannelSuffix(channel: string): string {
+  switch (channel) {
+    case 'facebook':
+    case 'messenger':
+      return 'MESSENGER';
+    case 'whatsapp':
+      return 'WHATSAPP';
+    case 'instagram':
+      return 'INSTAGRAM';
+    case 'ads':
+      return 'ADS';
+    default:
+      return channel.toUpperCase();
+  }
+}
+
 type ResolvedMetaConnection = {
   workspaceId: string;
   accessToken: string;
@@ -44,7 +60,14 @@ export class MetaWhatsAppService {
     options?: { channel?: string | null; returnTo?: string | null },
   ): string {
     const appId = String(process.env.META_APP_ID || '').trim();
-    const configId = String(process.env.META_CONFIG_ID || '').trim();
+    const channel = String(options?.channel || '')
+      .trim()
+      .toLowerCase();
+    const channelSuffix = channel ? resolveMetaConfigChannelSuffix(channel) : '';
+    const channelSpecific = channelSuffix
+      ? String(process.env[`META_CONFIG_ID_${channelSuffix}`] || '').trim()
+      : '';
+    const configId = channelSpecific || String(process.env.META_CONFIG_ID || '').trim();
     const version = String(process.env.META_GRAPH_API_VERSION || 'v21.0').trim();
 
     if (!appId) {
@@ -85,11 +108,7 @@ export class MetaWhatsAppService {
       params.set('config_id', configId);
     }
 
-    if (
-      String(options?.channel || '')
-        .trim()
-        .toLowerCase() === 'whatsapp'
-    ) {
+    if (channel === 'whatsapp') {
       params.set('extras', JSON.stringify({ sessionInfoVersion: '3', version: 'v3' }));
     }
 

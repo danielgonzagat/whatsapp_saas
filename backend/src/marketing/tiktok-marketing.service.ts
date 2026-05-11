@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { createHmac, timingSafeEqual } from 'crypto';
+import { Prisma } from '@prisma/client';
 import { encryptMetaToken } from '../meta/meta-token-crypto';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -108,15 +109,32 @@ export class TikTokMarketingService {
     const settings = (workspace?.providerSettings as Record<string, unknown>) || {};
     const tiktok = (settings.tiktok || {}) as Record<string, unknown>;
 
+    const expiresAt = typeof tiktok.expiresAt === 'string' ? tiktok.expiresAt : null;
+    const expired = expiresAt ? new Date(expiresAt).getTime() < Date.now() : false;
+    const clientConfigured = Boolean(this.tryReadTikTokClientKey());
+    const secretConfigured = Boolean(this.tryReadTikTokSecret());
+
+    const connected = Boolean(tiktok.connected) && !expired;
+    const status =
+      !clientConfigured || !secretConfigured
+        ? 'config_missing'
+        : connected
+          ? 'connected'
+          : expired && tiktok.connected
+            ? 'expired'
+            : 'disconnected';
+
     return {
-      connected: Boolean(tiktok.connected),
-      status: tiktok.connected ? 'connected' : 'disconnected',
+      connected,
+      status,
       kind: typeof tiktok.kind === 'string' ? tiktok.kind : null,
       openId: typeof tiktok.openId === 'string' ? tiktok.openId : null,
       advertiserIds: Array.isArray(tiktok.advertiserIds) ? tiktok.advertiserIds : [],
-      expiresAt: typeof tiktok.expiresAt === 'string' ? tiktok.expiresAt : null,
-      clientConfigured: Boolean(this.tryReadTikTokClientKey()),
-      secretConfigured: Boolean(this.tryReadTikTokSecret()),
+      expiresAt,
+      expired,
+      clientConfigured,
+      secretConfigured,
+      configReady: clientConfigured && secretConfigured,
     };
   }
 
@@ -229,6 +247,23 @@ export class TikTokMarketingService {
     });
 
     return { connected: true, status: 'connected', kind, advertiserIds };
+  }
+
+  async disconnect(workspaceId: string) {
+    const workspace = await this.prisma.workspace.findUnique({
+      where: { id: workspaceId },
+      select: { providerSettings: true },
+    });
+    const currentSettings = (workspace?.providerSettings as Record<string, unknown>) || {};
+    const nextSettings = { ...currentSettings };
+    delete nextSettings.tiktok;
+
+    await this.prisma.workspace.update({
+      where: { id: workspaceId },
+      data: { providerSettings: nextSettings as Prisma.InputJsonValue },
+    });
+
+    return await this.getStatus(workspaceId);
   }
 
   private tryReadTikTokClientKey() {
