@@ -61,6 +61,7 @@ process.on('unhandledRejection', (reason) => {
 import { RedisConfigurationError, maskRedisUrl, resolveRedisUrl } from './resolve-redis-url';
 
 type RedisConstructor = typeof import('ioredis').default;
+type RedisInstance = InstanceType<RedisConstructor>;
 type RedisModuleExport = RedisConstructor &
   typeof import('ioredis') & {
     default: RedisConstructor;
@@ -72,6 +73,28 @@ function installIoredisDefaultUrlGuard(redisUrl: string): void {
   const runtimeRequire = createRequire(__filename);
   const ioredisPath = runtimeRequire.resolve('ioredis');
   const OriginalRedis = runtimeRequire(ioredisPath) as RedisModuleExport;
+  const originalConnect = OriginalRedis.prototype.connect;
+  let localhostGuardLogged = false;
+
+  Object.defineProperty(OriginalRedis.prototype, 'connect', {
+    value: function guardedConnect(this: RedisInstance) {
+      const options = this.options as { host?: string; port?: number | string } | undefined;
+      if (
+        !localhostGuardLogged &&
+        (options?.host === '127.0.0.1' || options?.host === 'localhost') &&
+        String(options?.port ?? '6379') === '6379'
+      ) {
+        localhostGuardLogged = true;
+        console.error(
+          '[WORKER/IOREDIS-GUARD] localhost Redis connection attempted in production runtime.',
+        );
+        console.error(new Error('[WORKER/IOREDIS-GUARD] construction stack').stack);
+      }
+
+      return Reflect.apply(originalConnect, this, []) as ReturnType<RedisInstance['connect']>;
+    },
+    configurable: true,
+  });
 
   const RedisWithDefaultUrl = function (this: unknown, ...args: unknown[]) {
     const constructorArgs = args.length === 0 || args[0] == null ? [redisUrl] : args;
