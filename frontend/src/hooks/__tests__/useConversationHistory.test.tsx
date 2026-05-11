@@ -47,7 +47,7 @@ describe('ConversationHistoryProvider', () => {
     const { result } = renderHook(() => useConversationHistory(), { wrapper });
 
     await waitFor(() => {
-      expect(apiFetchMock).toHaveBeenCalledWith('/kloel/threads');
+      expect(apiFetchMock).toHaveBeenCalledWith('/kloel/threads?limit=20');
     });
 
     await waitFor(() => {

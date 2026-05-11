@@ -169,7 +169,7 @@ export function AgentDesktopViewer({
     } finally {
       setWorking(false);
     }
-  }, [ensureWorkspaceId, refreshStatus, status?.authUrl]);
+  }, [ensureWorkspaceId, refreshStatus, status]);
 
   useEffect(() => {
     if (!isVisible || !autoConnect) {

@@ -5,19 +5,63 @@ import { apiFetch } from '@/lib/api';
 import { KLOEL_CHAT_ROUTE } from '@/lib/kloel-dashboard-context';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ConversationsIcon } from './ConversationsIcon';
 
 interface SidebarRecentsProps {
   expanded: boolean;
 }
 
+interface ConversationExportSource {
+  id: string;
+  title: string;
+  updatedAt?: string;
+  lastMessagePreview?: string;
+}
+
+function extractThreadMessages(payload: unknown): Array<Record<string, unknown>> {
+  if (Array.isArray(payload)) {
+    return payload as Array<Record<string, unknown>>;
+  }
+  const wrapped = payload as { data?: unknown };
+  return Array.isArray(wrapped?.data) ? (wrapped.data as Array<Record<string, unknown>>) : [];
+}
+
+function serializeThreadMessages(payload: unknown) {
+  const messages = [];
+  for (const message of extractThreadMessages(payload)) {
+    messages.push({
+      role: message.role,
+      content: message.content,
+      createdAt: message.createdAt,
+    });
+  }
+  return messages;
+}
+
+async function fetchConversationForExport(conv: ConversationExportSource) {
+  try {
+    const response = await apiFetch<unknown>(`/kloel/threads/${conv.id}/messages`);
+    return { ...conv, messages: serializeThreadMessages(response) };
+  } catch {
+    return { ...conv, messages: [] };
+  }
+}
+
 /** Sidebar recents. */
 export function SidebarRecents({ expanded }: SidebarRecentsProps) {
-  const { conversations, setActiveConversation } = useConversationHistory();
+  const {
+    conversations,
+    setActiveConversation,
+    hasMoreConversations,
+    isLoadingMoreConversations,
+    loadMoreConversations,
+    loadAllConversations,
+  } = useConversationHistory();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   const [exporting, setExporting] = useState(false);
   const handleExport = useCallback(async () => {
@@ -26,29 +70,9 @@ export function SidebarRecents({ expanded }: SidebarRecentsProps) {
     }
     setExporting(true);
     try {
+      const allConversations = await loadAllConversations();
       // Fetch full messages for each conversation from backend
-      const full = await Promise.all(
-        conversations.map(async (conv) => {
-          try {
-            const msgs = await apiFetch<unknown>(`/kloel/threads/${conv.id}/messages`);
-            const payload: Array<Record<string, unknown>> = Array.isArray(msgs)
-              ? (msgs as Array<Record<string, unknown>>)
-              : Array.isArray((msgs as { data?: unknown })?.data)
-                ? (msgs as { data: Array<Record<string, unknown>> }).data
-                : [];
-            return {
-              ...conv,
-              messages: payload.map((m) => ({
-                role: m.role,
-                content: m.content,
-                createdAt: m.createdAt,
-              })),
-            };
-          } catch {
-            return { ...conv, messages: [] };
-          }
-        }),
-      );
+      const full = await Promise.all(allConversations.map(fetchConversationForExport));
       const data = JSON.stringify(full, null, 2);
       const blob = new Blob([data], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
@@ -62,9 +86,26 @@ export function SidebarRecents({ expanded }: SidebarRecentsProps) {
     } finally {
       setExporting(false);
     }
-  }, [conversations, exporting]);
+  }, [conversations.length, exporting, loadAllConversations]);
 
-  if (!expanded || conversations.length === 0) {
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel || !expanded || !hasMoreConversations) {
+      return undefined;
+    }
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          void loadMoreConversations();
+        }
+      },
+      { root: sentinel.parentElement, rootMargin: '96px 0px', threshold: 0.1 },
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [expanded, hasMoreConversations, loadMoreConversations]);
+
+  if (!expanded || (conversations.length === 0 && !hasMoreConversations && !isLoadingMoreConversations)) {
     return null;
   }
 
@@ -74,7 +115,7 @@ export function SidebarRecents({ expanded }: SidebarRecentsProps) {
       : null;
 
   return (
-    <div style={{ marginTop: 16 }}>
+    <div style={{ marginTop: 16, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
       <div
         style={{
           padding: '0 10px',
@@ -137,52 +178,75 @@ export function SidebarRecents({ expanded }: SidebarRecentsProps) {
           </svg>
         </button>
       </div>
-      {conversations.slice(0, 8).map((conv) => {
-        const isActive = activeConversationId === conv.id;
-        return (
-          <button
-            type="button"
-            key={conv.id}
-            onClick={() => {
-              setActiveConversation(conv.id);
-              router.push(`${KLOEL_CHAT_ROUTE}?conversationId=${encodeURIComponent(conv.id)}`);
-            }}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              padding: '6px 10px',
-              background: 'transparent',
-              border: 'none',
-              borderRadius: 6,
-              cursor: 'pointer',
-              width: '100%',
-              transition: 'all .15s',
-              position: 'relative',
-              textAlign: 'left',
-            }}
-          >
-            <ConversationsIcon
-              size={14}
-              color={isActive ? KLOEL_THEME.accent : KLOEL_THEME.textTertiary}
-              aria-hidden
-            />
-            <span
+      <div
+        style={{
+          minHeight: 0,
+          maxHeight: 'min(52vh, 520px)',
+          overflowY: 'auto',
+          overscrollBehavior: 'contain',
+          paddingRight: 2,
+        }}
+      >
+        {conversations.map((conv) => {
+          const isActive = activeConversationId === conv.id;
+          return (
+            <button
+              type="button"
+              key={conv.id}
+              onClick={() => {
+                setActiveConversation(conv.id);
+                router.push(`${KLOEL_CHAT_ROUTE}?conversationId=${encodeURIComponent(conv.id)}`);
+              }}
               style={{
-                fontSize: 12,
-                color: isActive ? KLOEL_THEME.accent : KLOEL_THEME.textSecondary,
-                fontWeight: isActive ? 600 : 400,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-                fontFamily: "'Sora', sans-serif",
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '6px 10px',
+                background: 'transparent',
+                border: 'none',
+                borderRadius: 6,
+                cursor: 'pointer',
+                width: '100%',
+                transition: 'all .15s',
+                position: 'relative',
+                textAlign: 'left',
               }}
             >
-              {conv.title}
-            </span>
-          </button>
-        );
-      })}
+              <ConversationsIcon
+                size={14}
+                color={isActive ? KLOEL_THEME.accent : KLOEL_THEME.textTertiary}
+                aria-hidden
+              />
+              <span
+                style={{
+                  fontSize: 12,
+                  color: isActive ? KLOEL_THEME.accent : KLOEL_THEME.textSecondary,
+                  fontWeight: isActive ? 600 : 400,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  fontFamily: "'Sora', sans-serif",
+                }}
+              >
+                {conv.title}
+              </span>
+            </button>
+          );
+        })}
+        <div ref={sentinelRef} style={{ minHeight: 1 }} />
+        {isLoadingMoreConversations ? (
+          <div
+            style={{
+              padding: '8px 10px',
+              fontSize: 11,
+              color: KLOEL_THEME.textTertiary,
+              fontFamily: "'Sora', sans-serif",
+            }}
+          >
+            {kloelT(`Carregando...`)}
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }
