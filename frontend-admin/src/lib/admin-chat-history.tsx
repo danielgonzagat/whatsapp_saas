@@ -145,11 +145,16 @@ export function AdminChatHistoryProvider({ children }: { children: ReactNode }) 
     setActiveSessionIdRaw(readSessionCache<string | null>(ACTIVE_SESSION_CACHE_SLOT, null));
   }, []);
 
+  const setActiveSessionId = useCallback((sessionId: string | null) => {
+    setActiveSessionIdRaw(sessionId);
+    writeSessionCache(ACTIVE_SESSION_CACHE_SLOT, sessionId);
+  }, []);
+
   const persistSessions = useCallback((nextSessions: AdminChatSessionSummary[]) => {
     const normalized = sortSessions(nextSessions).slice(0, 50);
     sessionsRef.current = normalized;
     setSessions(normalized);
-    writeCache(SESSION_CACHE_SLOT, normalized);
+    writeSessionCache(SESSION_CACHE_SLOT, normalized);
   }, []);
 
   const refreshSessions = useCallback(async (workspaceId?: string) => {
@@ -209,7 +214,7 @@ export function AdminChatHistoryProvider({ children }: { children: ReactNode }) 
         ...current.filter((entry) => entry.id !== mapped.id),
       ]).slice(0, 50);
       sessionsRef.current = next;
-      writeCache(SESSION_CACHE_SLOT, next);
+      writeSessionCache(SESSION_CACHE_SLOT, next);
       return next;
     });
     setActiveSessionIdRaw(mapped.id);
@@ -219,7 +224,9 @@ export function AdminChatHistoryProvider({ children }: { children: ReactNode }) 
     async (workspaceId: string, title?: string) => {
       if (!admin) return null;
       try {
-        const view = await adminChatApi.createSession({ workspaceId, title });
+        const view = await adminChatApi.createSession(
+          title !== undefined ? { workspaceId, title } : { workspaceId },
+        );
         const mapped = mapSession(view);
         setSessions((current) => {
           const next = sortSessions([
@@ -227,7 +234,7 @@ export function AdminChatHistoryProvider({ children }: { children: ReactNode }) 
             ...current.filter((entry) => entry.id !== mapped.id),
           ]).slice(0, 50);
           sessionsRef.current = next;
-          writeCache(SESSION_CACHE_SLOT, next);
+          writeSessionCache(SESSION_CACHE_SLOT, next);
           return next;
         });
         setActiveSessionIdRaw(mapped.id);
@@ -251,7 +258,7 @@ export function AdminChatHistoryProvider({ children }: { children: ReactNode }) 
             ...current.filter((entry) => entry.id !== mapped.id),
           ]).slice(0, 50);
           sessionsRef.current = next;
-          writeCache(SESSION_CACHE_SLOT, next);
+          writeSessionCache(SESSION_CACHE_SLOT, next);
           return next;
         });
       } catch {
@@ -269,7 +276,7 @@ export function AdminChatHistoryProvider({ children }: { children: ReactNode }) 
         setSessions((current) => {
           const next = current.filter((entry) => entry.id !== id);
           sessionsRef.current = next;
-          writeCache(SESSION_CACHE_SLOT, next);
+          writeSessionCache(SESSION_CACHE_SLOT, next);
           return next;
         });
       } catch {

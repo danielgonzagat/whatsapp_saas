@@ -26,7 +26,6 @@ const LINE_COUNT_EXTENSIONS = new Set([
   '.cjs',
   '.css',
   '.scss',
-  '.prisma',
 ]);
 const SOURCE_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs']);
 const STYLE_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx', '.css', '.scss']);
