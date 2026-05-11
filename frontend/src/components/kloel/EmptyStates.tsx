@@ -283,12 +283,14 @@ export const EMPTY_STATE_CONFIGS: Record<string, EmptyStateConfig> = {
     actionPrompt: 'Reconectar meu WhatsApp',
   },
 
-  // Anúncios (Em Breve)
+  // Anúncios
   anuncios: {
     icon: Target,
-    title: 'Anúncios — Em Breve',
+    title: 'Conecte sua primeira conta de anuncios',
     description:
-      'Gerencie suas campanhas de Meta Ads, Google Ads e TikTok Ads em um só lugar. Estamos preparando esta funcionalidade.',
+      'Vincule suas contas de Meta Ads, Google Ads ou TikTok Ads para gerenciar campanhas em um so lugar.',
+    actionLabel: 'Conectar conta de anuncios',
+    actionPrompt: 'Quero conectar minha conta de Meta Ads',
   },
 
   // Generic

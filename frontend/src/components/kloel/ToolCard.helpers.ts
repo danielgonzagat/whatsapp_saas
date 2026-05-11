@@ -21,8 +21,11 @@ export function triggerClickOnActivation(event: KeyboardEvent<HTMLElement>): voi
 export function resolveBadgeLabel(
   badge: string | undefined,
   disabled: boolean | undefined,
-): string | undefined {
-  return disabled ? 'Planejado' : badge;
+): string | null {
+  if (disabled) {
+    return null;
+  }
+  return badge ?? null;
 }
 
 /** Resolve cursor. */

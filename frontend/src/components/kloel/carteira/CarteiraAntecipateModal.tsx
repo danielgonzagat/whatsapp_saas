@@ -114,14 +114,15 @@ export function CarteiraAntecipateModal({
               padding: 16,
               marginBottom: 20,
               display: 'flex',
-              alignItems: 'center',
+              alignItems: 'flex-start',
               gap: 10,
             }}
           >
-            <span style={{ color: colors.semantic.warning, display: 'flex' }}>{IC.clock(16)}</span>
+            <span style={{ color: colors.semantic.info, display: 'flex', marginTop: 1, flexShrink: 0 }}>
+              {IC.clock(16)}
+            </span>
             <span style={{ fontSize: 12, color: 'var(--app-text-secondary)', lineHeight: 1.5 }}>
-              {kloelT(`Antecipacao em breve — estamos ativando este recurso. Acompanhe suas antecipacoes
-              existentes na aba Antecipacoes.`)}
+              {kloelT(`Antecipacao ainda nao habilitada para sua conta. Aguarde analise bancaria.`)}
             </span>
           </div>
           <button
@@ -140,7 +141,7 @@ export function CarteiraAntecipateModal({
               fontFamily: "'Sora',sans-serif",
               position: 'relative',
             }}
-            title={kloelT(`Antecipacao em breve — estamos ativando este recurso`)}
+            title={kloelT(`Antecipacao requer aprovacao bancaria`)}
           >
             {kloelT(`Antecipar agora`)}
           </button>

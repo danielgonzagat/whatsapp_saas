@@ -48,7 +48,7 @@ const SECTIONS = [
   {
     title: 'Ver todas as ferramentas',
     description:
-      'Catalogo completo das capacidades do frontend, com status ativo, parcial e planejado.',
+      'Catalogo completo das capacidades do frontend, com status ativo e em desenvolvimento.',
     icon: '\u2630',
     href: '/ferramentas/ver-todas',
     count: FRONTEND_CAPABILITIES.length,

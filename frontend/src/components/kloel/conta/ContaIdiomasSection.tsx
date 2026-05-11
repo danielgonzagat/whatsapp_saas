@@ -10,8 +10,6 @@ import type { LanguageDef } from './ContaTypes';
 
 const LANGUAGES: ReadonlyArray<LanguageDef> = [
   { key: 'pt-BR', label: 'Portugues (BR)', code: 'BR', disabled: false },
-  { key: 'en', label: 'English', code: 'EN', disabled: true },
-  { key: 'es', label: 'Espanol', code: 'ES', disabled: true },
 ];
 
 function LanguageOption({
@@ -26,11 +24,7 @@ function LanguageOption({
   return (
     <button
       type="button"
-      onClick={() => {
-        if (!lang.disabled) {
-          onActivate();
-        }
-      }}
+      onClick={() => onActivate()}
       style={{
         display: 'flex',
         alignItems: 'center',
@@ -38,16 +32,13 @@ function LanguageOption({
         padding: '14px 18px',
         background: isActive
           ? 'var(--app-accent-light)'
-          : lang.disabled
-            ? 'var(--app-bg-primary)'
-            : 'var(--app-bg-card)',
+          : 'var(--app-bg-card)',
         border: isActive ? `1px solid ${EMBER}` : '1px solid var(--app-border-primary)',
         borderRadius: 8,
-        cursor: lang.disabled ? 'not-allowed' : 'pointer',
+        cursor: 'pointer',
         transition: 'all 150ms ease',
         textAlign: 'left' as const,
         fontFamily: SORA,
-        opacity: lang.disabled ? 0.5 : 1,
         width: '100%',
       }}
     >
@@ -89,24 +80,7 @@ function LanguageOption({
       >
         {lang.label}
       </span>
-      {lang.disabled && (
-        <span
-          style={{
-            fontSize: 9,
-            fontWeight: 700,
-            color: EMBER,
-            background: 'rgba(232,93,48,0.1)',
-            padding: '2px 8px',
-            borderRadius: 4,
-            textTransform: 'uppercase' as const,
-            fontFamily: SORA,
-            flexShrink: 0,
-          }}
-        >
-          {kloelT(`Planejado`)}
-        </span>
-      )}
-      {isActive && !lang.disabled && (
+      {isActive && (
         <span style={{ color: EMBER, flexShrink: 0 }}>{Icons.check(14)}</span>
       )}
     </button>
