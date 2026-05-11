@@ -7,6 +7,18 @@ import {
 } from './resolve-redis-url';
 
 const logger = new Logger('RedisUtil');
+const DEFAULT_REDIS_CLIENT_LISTENER_BUDGET = 256;
+
+function resolveRedisClientListenerBudget(): number {
+  const raw = process.env.REDIS_CLIENT_MAX_LISTENERS;
+  const parsed = raw ? Number.parseInt(raw, 10) : DEFAULT_REDIS_CLIENT_LISTENER_BUDGET;
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_REDIS_CLIENT_LISTENER_BUDGET;
+}
+
+export function setRedisClientListenerBudget(client: Redis): void {
+  const listenerBudget = resolveRedisClientListenerBudget();
+  client.setMaxListeners(Math.max(client.getMaxListeners(), listenerBudget));
+}
 
 // Re-export the canonical helpers so existing imports of redis.util keep working.
 export { isRedisConfigured, maskRedisUrl, resolveRedisUrl } from './resolve-redis-url';
@@ -74,6 +86,7 @@ export function createRedisClient(options?: RedisOptions): Redis {
     },
     ...options,
   });
+  setRedisClientListenerBudget(client);
 
   client.on('error', (err) => {
     logger.error(`[REDIS] Erro de conexão: ${err.message}`);
