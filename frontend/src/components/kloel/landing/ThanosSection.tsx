@@ -14,7 +14,7 @@ const PRE_REVEAL_MS = 500;
 const SALES_DELAY_MS = 800;
 const REVEAL_HOLD_MS = 8000;
 const PHI = 1.618033988749895;
-const THANOS_REVEAL_KEYFRAMES =
+const THANOS_REVEAL_ANIMATION_CSS =
   '@keyframes thanosIn {' +
   '\n  from { opacity: 0; transform: translateY(8px); }' +
   '\n  to { opacity: 1; transform: translateY(0); }' +
@@ -788,7 +788,7 @@ export default function ThanosSection() {
           </div>
         )}
       </section>
-      <style>{THANOS_REVEAL_KEYFRAMES}</style>
+      <style>{THANOS_REVEAL_ANIMATION_CSS}</style>
     </div>
   );
 }
