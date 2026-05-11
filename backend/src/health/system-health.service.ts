@@ -27,7 +27,11 @@ export class SystemHealthService {
   ) {}
 
   liveness() {
-    return { status: 'UP', timestamp: new Date().toISOString() };
+    return {
+      status: 'UP',
+      uptime: process.uptime(),
+      timestamp: new Date().toISOString(),
+    };
   }
 
   async readiness() {
@@ -163,6 +167,64 @@ export class SystemHealthService {
       timestamp: new Date().toISOString(),
       failures,
       details,
+    };
+  }
+
+  async deepDiagnostic() {
+    const logger = new Logger('DeepDiagnostic');
+    const startedAt = Date.now();
+
+    const readiness = await this.deepReadiness();
+
+    let queueDetails: Record<string, unknown>[] = [];
+    try {
+      const queueStatuses = await this.queueHealth.getQueuesStatus();
+      queueDetails = queueStatuses.map((q) => ({
+        name: q.name,
+        waiting: q.main.waiting ?? 0,
+        active: q.main.active ?? 0,
+        delayed: q.main.delayed ?? 0,
+        failed: q.main.failed ?? 0,
+        dlqWaiting: q.dlq.waiting ?? 0,
+        dlqFailed: q.dlq.failed ?? 0,
+      }));
+    } catch (err) {
+      logger.warn('Queue status collection failed', String(err));
+    }
+
+    const memoryUsage = process.memoryUsage();
+
+    logger.log(
+      JSON.stringify({
+        event: 'deep_diagnostic.completed',
+        status: readiness.status,
+        failures: readiness.failures,
+        totalDurationMs: Date.now() - startedAt,
+      }),
+    );
+
+    return {
+      status: readiness.status,
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      failures: readiness.failures,
+      indicators: readiness.details,
+      queues: {
+        count: queueDetails.length,
+        details: queueDetails,
+        totalWaiting: queueDetails.reduce((sum, q) => sum + ((q.waiting as number) ?? 0), 0),
+        totalFailed: queueDetails.reduce((sum, q) => sum + ((q.failed as number) ?? 0), 0),
+        totalDlqWaiting: queueDetails.reduce((sum, q) => sum + ((q.dlqWaiting as number) ?? 0), 0),
+        totalDlqFailed: queueDetails.reduce((sum, q) => sum + ((q.dlqFailed as number) ?? 0), 0),
+      },
+      performance: {
+        memory: {
+          heapUsedMb: Math.round(memoryUsage.heapUsed / 1024 / 1024),
+          heapTotalMb: Math.round(memoryUsage.heapTotal / 1024 / 1024),
+          rssMb: Math.round(memoryUsage.rss / 1024 / 1024),
+        },
+        diagnosticDurationMs: Date.now() - startedAt,
+      },
     };
   }
 }

@@ -379,6 +379,7 @@ describe('SystemHealthService', () => {
 
       expect(result.status).toBe('UP');
       expect(typeof result.timestamp).toBe('string');
+      expect(typeof result.uptime).toBe('number');
       // Must not have called any dependency method
       expect(prisma.$queryRaw).not.toHaveBeenCalled();
       expect(redis.ping).not.toHaveBeenCalled();
@@ -720,6 +721,66 @@ describe('SystemHealthService', () => {
       expect(result.failures).toContain('stripe');
       expect(result.details.stripe.status).toBe('DOWN');
       expect(result.details.stripe.error).toContain('not configured');
+    });
+  });
+
+  describe('deepDiagnostic', () => {
+    const createSuccessFetchMock = () => {
+      const mock = jest.fn() as jest.MockedFunction<typeof fetch>;
+      mock.mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({}),
+        text: async () => '',
+      } as Response);
+      global.fetch = mock;
+      return mock;
+    };
+
+    it('includes readiness indicators, queue depths and memory performance', async () => {
+      stubBackupManifest();
+      createSuccessFetchMock();
+      queueHealth.getQueuesStatus.mockResolvedValue([
+        {
+          name: 'autopilot',
+          main: { waiting: 5, active: 2, delayed: 1, failed: 1 },
+          dlq: { waiting: 0, active: 0, delayed: 0, failed: 0 },
+          threshold: 200,
+        },
+        {
+          name: 'campaign',
+          main: { waiting: 0, active: 0, delayed: 0, failed: 0 },
+          dlq: { waiting: 0, active: 0, delayed: 0, failed: 0 },
+          threshold: 200,
+        },
+      ]);
+
+      const service = createService();
+      const result = await service.deepDiagnostic();
+
+      expect(result.status).toBe('UP');
+      expect(result.uptime).toBeGreaterThan(0);
+      expect(result.failures).toHaveLength(0);
+      expect(result.indicators.postgres.status).toBe('UP');
+      expect(result.indicators.redis.status).toBe('UP');
+      expect(result.queues.count).toBe(2);
+      expect(result.queues.totalWaiting).toBe(5);
+      expect(result.queues.totalFailed).toBe(1);
+      expect(result.performance.memory.heapUsedMb).toBeGreaterThanOrEqual(0);
+      expect(typeof result.performance.diagnosticDurationMs).toBe('number');
+    });
+
+    it('reflects DOWN status from readiness when a dependency fails', async () => {
+      stubBackupManifest();
+      createSuccessFetchMock();
+      prisma.$queryRaw = jest.fn().mockRejectedValue(new Error('connection refused'));
+      queueHealth.getQueuesStatus.mockResolvedValue([]);
+
+      const service = createService();
+      const result = await service.deepDiagnostic();
+
+      expect(result.status).toBe('DOWN');
+      expect(result.failures).toContain('postgres');
     });
   });
 });

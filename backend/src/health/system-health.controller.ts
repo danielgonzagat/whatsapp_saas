@@ -1,5 +1,6 @@
-import { Controller, Get, ServiceUnavailableException } from '@nestjs/common';
+import { Controller, Get, ServiceUnavailableException, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { AdminAuthGuard } from '../admin/auth/guards/admin-auth.guard';
 import { Public } from '../auth/public.decorator';
 import { SystemHealthService } from './system-health.service';
 
@@ -50,10 +51,12 @@ export class SystemHealthController {
     return this.health.readiness();
   }
 
-  @Public()
-  @Get('system')
-  @ApiOperation({ summary: 'Deep system health with all integration details' })
-  async check() {
-    return this.health.check();
+  @UseGuards(AdminAuthGuard)
+  @Get('deep')
+  @ApiOperation({
+    summary: 'Deep diagnostic — admin-only with queue depths and performance metrics',
+  })
+  async deep() {
+    return this.health.deepDiagnostic();
   }
 }

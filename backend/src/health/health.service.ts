@@ -1,5 +1,5 @@
 import { InjectRedis } from '@nestjs-modules/ioredis';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { Queue } from 'bullmq';
 import type { Redis } from 'ioredis';
 import { forEachSequential } from '../common/async-sequence';
