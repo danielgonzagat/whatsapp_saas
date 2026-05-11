@@ -215,6 +215,73 @@ describe('AuthService OAuth login', () => {
     expect(mockGoogleAuthService.verifyCredential).toHaveBeenCalledWith('google-credential');
   });
 
+  it('should create/login through the secure Apple credential flow', async () => {
+    const profile = {
+      provider: 'apple',
+      providerId: 'apple-sub-1',
+      email: 'apple-user@kloel.com',
+      name: 'Apple User',
+      image: undefined,
+      emailVerified: true,
+    };
+    mockAppleAuthService.verifyCredential.mockResolvedValue(profile);
+    mockConfigService.get.mockImplementation((key: string) =>
+      key === 'JWT_SECRET' ? 'test-jwt-secret' : undefined,
+    );
+    prisma.socialAccount.findUnique.mockResolvedValue(null);
+    prisma.agent.findFirst.mockResolvedValue(null);
+    prisma.agent.findMany.mockResolvedValue([]);
+    prisma.workspace.create.mockResolvedValue({ id: 'ws-apple-1' });
+    prisma.agent.create.mockResolvedValue({
+      id: 'agent-apple-1',
+      email: 'apple-user@kloel.com',
+      name: 'Apple User',
+      role: 'ADMIN',
+      workspaceId: 'ws-apple-1',
+      disabledAt: null,
+      deletedAt: null,
+    });
+    prisma.socialAccount.upsert.mockResolvedValue({});
+    prisma.refreshToken.create.mockResolvedValue({ token: 'refresh-token' });
+    prisma.workspace.findUnique.mockResolvedValue({ id: 'ws-apple-1', name: 'Apple Workspace' });
+
+    const result = await service.loginWithAppleCredential({
+      identityToken: 'apple-id-token',
+      authorizationCode: 'apple-code',
+      redirectUri: 'https://auth.kloel.com/api/auth/callback/apple',
+      user: { email: 'apple-user@kloel.com', name: { firstName: 'Apple', lastName: 'User' } },
+      ip: '127.0.0.1',
+    });
+
+    expect(result).toHaveProperty('access_token');
+    expect(result).toHaveProperty('isNewUser', true);
+    expect(mockAppleAuthService.verifyCredential).toHaveBeenCalledWith({
+      identityToken: 'apple-id-token',
+      authorizationCode: 'apple-code',
+      redirectUri: 'https://auth.kloel.com/api/auth/callback/apple',
+      user: { email: 'apple-user@kloel.com', name: { firstName: 'Apple', lastName: 'User' } },
+    });
+  });
+
+  it('should reject invalid Apple credentials without issuing tokens', async () => {
+    mockAppleAuthService.verifyCredential.mockRejectedValue(new BadRequestException('apple_denied'));
+
+    await expect(
+      service.loginWithAppleCredential({
+        identityToken: 'bad-apple-token',
+        ip: '127.0.0.1',
+      }),
+    ).rejects.toThrow(BadRequestException);
+
+    expect(mockAppleAuthService.verifyCredential).toHaveBeenCalledWith({
+      identityToken: 'bad-apple-token',
+      authorizationCode: undefined,
+      redirectUri: undefined,
+      user: undefined,
+    });
+    expect(prisma.refreshToken.create).not.toHaveBeenCalled();
+  });
+
   it('should require reauthentication when Facebook login matches an existing verified email', async () => {
     const { BadRequestException: _B, ...rest } = await import('@nestjs/common');
     void rest;
