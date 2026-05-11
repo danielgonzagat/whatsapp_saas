@@ -15,15 +15,29 @@ export interface ControllerDeps {
   kloelService: KloelService;
 }
 
+export interface ListThreadsOptions {
+  limit?: number;
+  cursor?: number;
+  paginated?: boolean;
+}
+
 // ── Thread helpers ──
 
-export async function listThreads(deps: Pick<ControllerDeps, 'prisma'>, workspaceId: string) {
+export async function listThreads(
+  deps: Pick<ControllerDeps, 'prisma'>,
+  workspaceId: string,
+  options: ListThreadsOptions = {},
+) {
   try {
     await deps.prisma.chatThread.deleteMany({ where: { workspaceId, messages: { none: {} } } });
+    const take = Math.min(50, Math.max(1, options.limit ?? 50));
+    const skip = Math.max(0, options.cursor ?? 0);
+    const where = { workspaceId, messages: { some: {} } } satisfies Prisma.ChatThreadWhereInput;
     const threads = await deps.prisma.chatThread.findMany({
-      where: { workspaceId, messages: { some: {} } },
+      where,
       orderBy: { updatedAt: 'desc' },
-      take: 50,
+      skip,
+      take,
       select: {
         id: true,
         title: true,
@@ -35,7 +49,7 @@ export async function listThreads(deps: Pick<ControllerDeps, 'prisma'>, workspac
         },
       },
     });
-    return threads
+    const items = threads
       .filter((t) => t.messages.some((m) => String(m?.content || '').trim().length > 0))
       .map((t) => ({
         id: t.id,
@@ -44,7 +58,21 @@ export async function listThreads(deps: Pick<ControllerDeps, 'prisma'>, workspac
         lastMessagePreview:
           t.messages.find((m) => String(m?.content || '').trim().length > 0)?.content || '',
       }));
+    if (!options.paginated) {
+      return items;
+    }
+    const total = await deps.prisma.chatThread.count({ where });
+    const nextCursor = skip + threads.length;
+    return {
+      items,
+      total,
+      nextCursor: nextCursor < total ? String(nextCursor) : null,
+      hasMore: nextCursor < total,
+    };
   } catch {
+    if (options.paginated) {
+      return { items: [], total: 0, nextCursor: null, hasMore: false };
+    }
     return [];
   }
 }
