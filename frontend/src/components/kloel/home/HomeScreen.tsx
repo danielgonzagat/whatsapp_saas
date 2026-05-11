@@ -292,6 +292,35 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
         let fullContent = '';
         let nextConversationId = activeConversationId;
         let nextTitle = chatTitle;
+        const appendAuthenticatedChunk = (chunk: string) => {
+          fullContent += chunk;
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === assistantId
+                ? {
+                    ...msg,
+                    content: fullContent,
+                    displayedContent: fullContent,
+                    isThinking: false,
+                    isTyping: true,
+                  }
+                : msg,
+            ),
+          );
+        };
+        const handleAuthenticatedThread = (thread: { conversationId: string; title?: string }) => {
+          nextConversationId = thread.conversationId;
+          nextTitle =
+            thread.title || conversationTitleMap.get(thread.conversationId) || 'Nova conversa';
+          setActiveConversationId(thread.conversationId);
+          setActiveConversation(thread.conversationId);
+          setChatTitle(nextTitle);
+          upsertConversation({
+            id: thread.conversationId,
+            title: nextTitle,
+            updatedAt: new Date().toISOString(),
+          });
+        };
 
         if (isGuest) {
           const response = await fetch(apiUrl('/chat/guest'), {
@@ -356,37 +385,8 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
               },
               {
                 signal: ac.signal,
-                onThread: (thread) => {
-                  nextConversationId = thread.conversationId;
-                  nextTitle =
-                    thread.title ||
-                    conversationTitleMap.get(thread.conversationId) ||
-                    'Nova conversa';
-                  setActiveConversationId(thread.conversationId);
-                  setActiveConversation(thread.conversationId);
-                  setChatTitle(nextTitle);
-                  upsertConversation({
-                    id: thread.conversationId,
-                    title: nextTitle,
-                    updatedAt: new Date().toISOString(),
-                  });
-                },
-                onChunk: (chunk) => {
-                  fullContent += chunk;
-                  setMessages((prev) =>
-                    prev.map((msg) =>
-                      msg.id === assistantId
-                        ? {
-                            ...msg,
-                            content: fullContent,
-                            displayedContent: fullContent,
-                            isThinking: false,
-                            isTyping: true,
-                          }
-                        : msg,
-                    ),
-                  );
-                },
+                onThread: handleAuthenticatedThread,
+                onChunk: appendAuthenticatedChunk,
                 onDone: finish,
                 onError: (message) => {
                   reject(new Error(message));

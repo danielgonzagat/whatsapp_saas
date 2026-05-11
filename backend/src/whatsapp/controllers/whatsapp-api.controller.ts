@@ -30,6 +30,8 @@ import { WhatsAppWatchdogService } from '../whatsapp-watchdog.service';
 import { WhatsappService } from '../whatsapp.service';
 type BacklogMode = CiaBacklogMode;
 
+const WHATSAPP_API_WORKSPACE_REQUIRED = 'workspaceId is required for WhatsApp API routes';
+
 /** Whats app api controller. */
 @Controller('whatsapp-api')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
@@ -48,7 +50,7 @@ export class WhatsAppApiController {
 
   private requireWorkspaceId(req: AuthenticatedRequest): string {
     if (!req.workspaceId) {
-      throw new Error('workspaceId is required for WhatsApp API routes');
+      throw new Error(WHATSAPP_API_WORKSPACE_REQUIRED);
     }
     return req.workspaceId;
   }

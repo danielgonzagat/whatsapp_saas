@@ -12,6 +12,37 @@ interface SidebarRecentsProps {
   expanded: boolean;
 }
 
+interface ConversationExportSource {
+  id: string;
+  title: string;
+  updatedAt?: string;
+  lastMessagePreview?: string;
+}
+
+function extractThreadMessages(payload: unknown): Array<Record<string, unknown>> {
+  if (Array.isArray(payload)) {
+    return payload as Array<Record<string, unknown>>;
+  }
+  const wrapped = payload as { data?: unknown };
+  return Array.isArray(wrapped?.data) ? (wrapped.data as Array<Record<string, unknown>>) : [];
+}
+
+async function fetchConversationForExport(conv: ConversationExportSource) {
+  try {
+    const response = await apiFetch<unknown>(`/kloel/threads/${conv.id}/messages`);
+    return {
+      ...conv,
+      messages: extractThreadMessages(response).map((message) => ({
+        role: message.role,
+        content: message.content,
+        createdAt: message.createdAt,
+      })),
+    };
+  } catch {
+    return { ...conv, messages: [] };
+  }
+}
+
 /** Sidebar recents. */
 export function SidebarRecents({ expanded }: SidebarRecentsProps) {
   const {
@@ -36,28 +67,7 @@ export function SidebarRecents({ expanded }: SidebarRecentsProps) {
     try {
       const allConversations = await loadAllConversations();
       // Fetch full messages for each conversation from backend
-      const full = await Promise.all(
-        allConversations.map(async (conv) => {
-          try {
-            const msgs = await apiFetch<unknown>(`/kloel/threads/${conv.id}/messages`);
-            const payload: Array<Record<string, unknown>> = Array.isArray(msgs)
-              ? (msgs as Array<Record<string, unknown>>)
-              : Array.isArray((msgs as { data?: unknown })?.data)
-                ? (msgs as { data: Array<Record<string, unknown>> }).data
-                : [];
-            return {
-              ...conv,
-              messages: payload.map((m) => ({
-                role: m.role,
-                content: m.content,
-                createdAt: m.createdAt,
-              })),
-            };
-          } catch {
-            return { ...conv, messages: [] };
-          }
-        }),
-      );
+      const full = await Promise.all(allConversations.map(fetchConversationForExport));
       const data = JSON.stringify(full, null, 2);
       const blob = new Blob([data], { type: 'application/json' });
       const url = URL.createObjectURL(blob);

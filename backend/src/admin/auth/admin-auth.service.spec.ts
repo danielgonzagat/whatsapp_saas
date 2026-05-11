@@ -8,6 +8,7 @@ jest.mock('bcrypt', () => ({
 
 const TEST_IP = '127.0.0.1';
 const TEST_USER_AGENT = 'vitest';
+const TEST_PASSWORD_HASH = 'hashed-password';
 
 function buildUser(overrides: Partial<AdminUser> = {}): AdminUser {
   const now = new Date('2026-05-11T12:00:00.000Z');
@@ -15,7 +16,7 @@ function buildUser(overrides: Partial<AdminUser> = {}): AdminUser {
     id: 'admin-1',
     name: 'Owner',
     email: 'owner@kloel.com',
-    passwordHash: '$2b$12$V56XKk1ANaRd6npThmIlZ.VsSTuPav39Umy3N337/6ibAMYCQu35C',
+    passwordHash: TEST_PASSWORD_HASH,
     role: AdminRole.OWNER,
     status: AdminUserStatus.ACTIVE,
     mfaSecret: null,

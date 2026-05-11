@@ -72,6 +72,29 @@ function isAuditLogEntryWithWorkspace(
   return typeof log.workspaceId === 'string' && log.workspaceId.length > 0;
 }
 
+function toAuditCreateManyInput(
+  log: AuditLogEntry & { workspaceId: string },
+): Prisma.AuditLogCreateManyInput {
+  return {
+    workspaceId: log.workspaceId,
+    action: `HTTP_${log.method}`,
+    resource: log.path,
+    details: JSON.parse(
+      JSON.stringify({
+        statusCode: log.statusCode,
+        responseTimeMs: log.responseTimeMs,
+        requestBody: log.requestBody
+          ? (sanitizePayload(log.requestBody) as Record<string, unknown>)
+          : undefined,
+        error: log.error || undefined,
+      }),
+    ) as Prisma.InputJsonValue,
+    agentId: log.userId,
+    ipAddress: log.ip,
+    userAgent: log.userAgent,
+  };
+}
+
 /**
  * Middleware de Audit Logging para APIs KLOEL.
  * Registra todas as operacoes para auditoria e debugging.
@@ -262,24 +285,7 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
       // Persist audit logs to database
       await this.prisma.auditLog
         .createMany({
-          data: logsToFlush.filter(isAuditLogEntryWithWorkspace).map((log) => ({
-            workspaceId: log.workspaceId,
-            action: `HTTP_${log.method}`,
-            resource: log.path,
-            details: JSON.parse(
-              JSON.stringify({
-                statusCode: log.statusCode,
-                responseTimeMs: log.responseTimeMs,
-                requestBody: log.requestBody
-                  ? (sanitizePayload(log.requestBody) as Record<string, unknown>)
-                  : undefined,
-                error: log.error || undefined,
-              }),
-            ) as Prisma.InputJsonValue,
-            agentId: log.userId,
-            ipAddress: log.ip,
-            userAgent: log.userAgent,
-          })),
+          data: logsToFlush.filter(isAuditLogEntryWithWorkspace).map(toAuditCreateManyInput),
           skipDuplicates: true,
         })
         .catch((err: Error) => {

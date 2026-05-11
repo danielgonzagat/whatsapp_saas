@@ -24,6 +24,8 @@ import { chatCompletionWithFallback } from './openai-wrapper';
 import { KLOEL_SAFE_READ_TOOLS } from './kloel-chat-tools.definition';
 import type { LocalToolExecutor } from './kloel-reply-engine.service';
 
+const KLOEL_TOOL_PLANNING_WORKSPACE_REQUIRED = 'workspaceId is required for Kloel tool planning';
+
 /** Context shared between the two extracted think branches. */
 export interface ThinkBranchContext {
   workspaceId: string | undefined;
@@ -196,7 +198,7 @@ export async function runToolPlanningBranch(
 ): Promise<void> {
   const { workspaceId, userId, message, safeWrite, replyEngine, planLimits } = ctx;
   if (!workspaceId) {
-    throw new Error('workspaceId is required for Kloel tool planning');
+    throw new Error(KLOEL_TOOL_PLANNING_WORKSPACE_REQUIRED);
   }
   safeWrite(createKloelStatusEvent('thinking'));
   await planLimits.ensureTokenBudget(workspaceId);

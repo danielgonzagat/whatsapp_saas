@@ -33,6 +33,8 @@ interface ExecuteAiOperationArgs<T> {
   workspaceId: string | undefined;
 }
 
+const AGENT_ASSIST_API_KEY_REQUIRED = 'OPENAI_API_KEY is required for agent assist operations';
+
 /** Agent assist service — sentiment, summary, reply suggestions and pitch generation. */
 @Injectable()
 export class AgentAssistService {
@@ -78,7 +80,7 @@ export class AgentAssistService {
       await this.ensureBudget(workspaceId);
       const openai = this.openai;
       if (!openai) {
-        throw new Error('OPENAI_API_KEY is required for agent assist operations');
+        throw new Error(AGENT_ASSIST_API_KEY_REQUIRED);
       }
       const completion = await chatCompletionWithRetry(openai, { model, messages });
       if (estimatedCostCents !== undefined && usageCharged) {

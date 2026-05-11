@@ -22,6 +22,8 @@ let _initialized = false;
 
 const queueLogger = new Logger('Queue');
 const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
+const REDIS_QUEUE_CONNECTION_NOT_INITIALIZED = 'Redis queue connection was not initialized';
+const QUEUE_OPTIONS_NOT_INITIALIZED = 'Queue options were not initialized';
 
 const serializePrimitiveQueueLogValue = (value: unknown): string | null => {
   if (typeof value === 'number' || typeof value === 'boolean') {
@@ -107,7 +109,7 @@ function ensureInitialized() {
 function getConnection() {
   ensureInitialized();
   if (!_connection) {
-    throw new Error('Redis queue connection was not initialized');
+    throw new Error(REDIS_QUEUE_CONNECTION_NOT_INITIALIZED);
   }
   return _connection;
 }
@@ -115,7 +117,7 @@ function getConnection() {
 function getQueueOptions() {
   ensureInitialized();
   if (!_queueOptions) {
-    throw new Error('Queue options were not initialized');
+    throw new Error(QUEUE_OPTIONS_NOT_INITIALIZED);
   }
   return _queueOptions;
 }

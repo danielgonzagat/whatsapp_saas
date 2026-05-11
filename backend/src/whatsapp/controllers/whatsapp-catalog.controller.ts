@@ -4,6 +4,8 @@ import { WorkspaceGuard } from '../../common/guards/workspace.guard';
 import { AuthenticatedRequest } from '../../common/interfaces';
 import { WhatsappService } from '../whatsapp.service';
 
+const WHATSAPP_CATALOG_WORKSPACE_REQUIRED = 'workspaceId is required for WhatsApp catalog routes';
+
 /** Contacts, chats, catalog, and backlog operational endpoints. */
 @Controller('whatsapp-api')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
@@ -12,7 +14,7 @@ export class WhatsAppCatalogController {
 
   private requireWorkspaceId(req: AuthenticatedRequest): string {
     if (!req.workspaceId) {
-      throw new Error('workspaceId is required for WhatsApp catalog routes');
+      throw new Error(WHATSAPP_CATALOG_WORKSPACE_REQUIRED);
     }
     return req.workspaceId;
   }
