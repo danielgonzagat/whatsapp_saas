@@ -99,8 +99,9 @@ export class TikTokAuthController {
     try {
       const rawState = typeof state === 'string' ? state : '';
       const decoded = Buffer.from(rawState, 'base64url').toString('utf8');
-      const parsed = JSON.parse(decoded);
-      workspaceId = String(parsed?.workspaceId || '').trim();
+      const parsed = JSON.parse(decoded) as Record<string, unknown>;
+      const rawWorkspaceId = parsed['workspaceId'];
+      workspaceId = typeof rawWorkspaceId === 'string' ? rawWorkspaceId.trim() : '';
     } catch {
       void 0;
     }

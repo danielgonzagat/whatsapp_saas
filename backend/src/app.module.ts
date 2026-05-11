@@ -90,6 +90,7 @@ import { ProductCategoriesModule } from './product-categories/product-categories
 import { PublicApiModule } from './public-api/public-api.module';
 import { PulseModule } from './pulse/pulse.module';
 import { ReportsModule } from './reports/reports.module';
+import { TikTokAdsModule } from './tiktok-ads/tiktok-ads.module';
 import { VideoModule } from './video/video.module';
 import {
   PaymentWebhookStripeController,
@@ -243,6 +244,7 @@ function setRedisClientListenerBudget(client: Redis): void {
     OpsAlertModule, // OPS critical error alerting (global)
     PulseModule, // PULSE live organism collector
     AnunciosModule, // 📊 Anuncios — Meta/Google/TikTok ad accounts, campaigns, insights
+    TikTokAdsModule, // 🎵 TikTok Ads — OAuth + Events API + sync
     AdminModule, // adm.kloel.com identity, audit, permissions (SP-0..2)
     PaymentsModule, // 💳 Stripe Connect — split, ledger, fraud, charge, webhook (FASES 1-7)
     MarketplaceTreasuryModule, // 💼 Marketplace treasury ledger / reconciliation

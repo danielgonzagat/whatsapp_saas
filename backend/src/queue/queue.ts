@@ -408,3 +408,5 @@ export const googleAdsSyncQueue = lazyQueueProxy('google-ads-sync-jobs');
 export const metaAdsSyncQueue = lazyQueueProxy('ads-sync-meta');
 /** Meta Ads sync DLQ (dead letter queue after 5 retry failures). */
 export const metaAdsSyncDlq = lazyQueueProxy('ads-sync-meta-dlq');
+/** TikTok Ads sync queue (retry 5x exponential backoff, 200 calls/hr rate limit). */
+export const tiktokAdsSyncQueue = lazyQueueProxy('ads-sync-tiktok');
