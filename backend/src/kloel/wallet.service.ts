@@ -367,8 +367,7 @@ export class WalletService {
    * 📊 Histórico de transações
    */
   async getTransactionHistory(workspaceId: string, page = 1, limit = 20, type?: string) {
-    const wallet = await this.getOrCreateWallet(workspaceId);
-    const where: Record<string, unknown> = { walletId: wallet.id };
+    const where: Record<string, unknown> = { wallet: { workspaceId } };
     if (type) {
       where.type = type;
     }
