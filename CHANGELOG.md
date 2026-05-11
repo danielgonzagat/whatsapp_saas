@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.1](https://github.com/danielgonzagat/whatsapp_saas/compare/v0.4.0...v0.4.1) (2026-05-11)
+
+
+### Bug Fixes
+
+* address Meta OAuth review comments ([0dbcc28](https://github.com/danielgonzagat/whatsapp_saas/commit/0dbcc28a593797c67d52054af63422b4faa4973d))
+* **meta:** use backend callback for OAuth ([7d8dcfe](https://github.com/danielgonzagat/whatsapp_saas/commit/7d8dcfe4c6cb7e36cb6df082161a13618dc1b594))
+* satisfy backend prettier gate ([ee354c7](https://github.com/danielgonzagat/whatsapp_saas/commit/ee354c76e053a51cca607710d038ed1605142e73))
+
 ## [0.4.0](https://github.com/danielgonzagat/whatsapp_saas/compare/v0.3.0...v0.4.0) (2026-05-11)
 
 
