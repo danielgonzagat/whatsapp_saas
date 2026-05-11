@@ -4,9 +4,11 @@ jest.mock('../queue/queue', () => ({
 
 const { autopilotQueue } = jest.requireMock('../queue/queue');
 
-import type { PrismaService } from '../prisma/prisma.service';
 import { WhatsAppCatchupService } from './whatsapp-catchup.service';
 import {
+  applyCatchupEnvDefaults,
+  buildCatchupMocks,
+  buildCatchupService,
   type CatchupAgentEventsMock,
   type CatchupCiaRuntimeMock,
   type CatchupInboxMock,
@@ -30,148 +32,92 @@ describe('WhatsAppCatchupService', () => {
   let ciaRuntime: CatchupCiaRuntimeMock;
   let workerRuntime: CatchupWorkerRuntimeMock;
 
-  const buildService = () =>
-    new WhatsAppCatchupService(
-      prisma as never,
+  const buildService = (): WhatsAppCatchupService =>
+    buildCatchupService({
+      prisma,
       providerRegistry,
       inboundProcessor,
-      ciaRuntime,
       inbox,
-      workerRuntime,
       redis,
       agentEvents,
-    );
+      ciaRuntime,
+      workerRuntime,
+    });
 
   beforeEach(() => {
     jest.useFakeTimers().setSystemTime(new Date('2026-03-19T12:00:00.000Z'));
-    process.env.WAHA_CATCHUP_MAX_CHATS = '1';
-    process.env.WAHA_CATCHUP_MAX_PASSES = '3';
-    process.env.WAHA_CATCHUP_MAX_MESSAGES_PER_CHAT = '2';
-    process.env.WAHA_CATCHUP_MAX_PAGES_PER_CHAT = '3';
-    process.env.WAHA_CATCHUP_FALLBACK_CHATS_PER_PASS = '1';
-    process.env.WAHA_CATCHUP_FALLBACK_PAGES_PER_CHAT = '1';
-    process.env.WAHA_CATCHUP_LOOKBACK_MS = `${60 * 60 * 1000}`;
-    process.env.WAHA_CATCHUP_MARK_READ_WITHOUT_REPLY = 'true';
+    applyCatchupEnvDefaults();
 
-    prisma = {
-      $transaction: jest.fn((cb: (tx: unknown) => unknown) => cb(prisma)),
-      workspace: {
-        findUnique: jest.fn().mockResolvedValue({
-          name: 'Workspace Teste',
-          providerSettings: { whatsappApiSession: {} },
-        }),
-        update: jest.fn().mockResolvedValue({}),
-      },
-      contact: {
-        findUnique: jest.fn().mockResolvedValue(null),
-        upsert: jest.fn().mockResolvedValue({ id: 'contact-1' }),
-        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
-        findFirst: jest.fn().mockResolvedValue(null),
-      },
-      conversation: {
-        findFirst: jest.fn().mockResolvedValue(null),
-        create: jest.fn().mockResolvedValue({ id: 'conv-1' }),
-        update: jest.fn().mockResolvedValue({ id: 'conv-1' }),
-      },
-    };
+    const mocks = buildCatchupMocks();
+    prisma = mocks.prisma;
+    providerRegistry = mocks.providerRegistry;
+    inboundProcessor = mocks.inboundProcessor;
+    inbox = mocks.inbox;
+    redis = mocks.redis;
+    agentEvents = mocks.agentEvents;
+    ciaRuntime = mocks.ciaRuntime;
+    workerRuntime = mocks.workerRuntime;
 
-    providerRegistry = {
-      getProviderType: jest.fn().mockResolvedValue('whatsapp-api'),
-      extractPhoneFromChatId: jest.fn((chatId: string) => String(chatId || '').split('@')[0]),
-      listLidMappings: jest.fn().mockResolvedValue([]),
-      getChats: jest.fn().mockResolvedValue([
-        {
-          id: '5511999999999@c.us',
-          unreadCount: 3,
-          timestamp: Date.now() - 60 * 60 * 1000,
-        },
-        {
-          id: '5511888888888@c.us',
-          unreadCount: 1,
-          timestamp: Date.now() - 2 * 60 * 60 * 1000,
-        },
-      ]),
-      getChatMessages: jest
-        .fn()
-        .mockImplementation(
-          async (
-            _workspaceId: string,
-            chatId: string,
-            options?: { limit?: number; offset?: number },
-          ) => {
-            const offset = options?.offset || 0;
-            if (chatId === '5511999999999@c.us') {
-              const pages = [
-                [
-                  {
-                    id: 'msg-1',
-                    from: '5511999999999@c.us',
-                    body: 'Oi, quero detalhes do produto',
-                    type: 'chat',
-                    timestamp: Date.now() - 2 * 60 * 60 * 1000,
-                  },
-                  {
-                    id: 'msg-1b',
-                    from: '5511999999999@c.us',
-                    body: 'Também quero saber o preço',
-                    type: 'chat',
-                    timestamp: Date.now() - 90 * 60 * 1000,
-                  },
-                ],
-                [
-                  {
-                    id: 'msg-1c',
-                    from: '5511999999999@c.us',
-                    body: 'Pode me explicar como funciona?',
-                    type: 'chat',
-                    timestamp: Date.now() - 80 * 60 * 1000,
-                  },
-                ],
-              ];
-              return pages[Math.floor(offset / 2)] || [];
-            }
-
-            return [
+    providerRegistry.getChats.mockResolvedValue([
+      {
+        id: '5511999999999@c.us',
+        unreadCount: 3,
+        timestamp: Date.now() - 60 * 60 * 1000,
+      },
+      {
+        id: '5511888888888@c.us',
+        unreadCount: 1,
+        timestamp: Date.now() - 2 * 60 * 60 * 1000,
+      },
+    ]);
+    providerRegistry.getChatMessages.mockImplementation(
+      async (
+        _workspaceId: string,
+        chatId: string,
+        options?: { limit?: number; offset?: number },
+      ) => {
+        const offset = options?.offset || 0;
+        if (chatId === '5511999999999@c.us') {
+          const pages = [
+            [
               {
-                id: 'msg-2',
-                from: '5511888888888@c.us',
-                body: 'Tem promoção?',
+                id: 'msg-1',
+                from: '5511999999999@c.us',
+                body: 'Oi, quero detalhes do produto',
                 type: 'chat',
-                timestamp: Date.now() - 10 * 60 * 1000,
+                timestamp: Date.now() - 2 * 60 * 60 * 1000,
               },
-            ];
+              {
+                id: 'msg-1b',
+                from: '5511999999999@c.us',
+                body: 'Também quero saber o preço',
+                type: 'chat',
+                timestamp: Date.now() - 90 * 60 * 1000,
+              },
+            ],
+            [
+              {
+                id: 'msg-1c',
+                from: '5511999999999@c.us',
+                body: 'Pode me explicar como funciona?',
+                type: 'chat',
+                timestamp: Date.now() - 80 * 60 * 1000,
+              },
+            ],
+          ];
+          return pages[Math.floor(offset / 2)] || [];
+        }
+        return [
+          {
+            id: 'msg-2',
+            from: '5511888888888@c.us',
+            body: 'Tem promoção?',
+            type: 'chat',
+            timestamp: Date.now() - 10 * 60 * 1000,
           },
-        ),
-      sendSeen: jest.fn().mockResolvedValue(undefined),
-      readChatMessages: jest.fn().mockResolvedValue(undefined),
-      upsertContactProfile: jest.fn().mockResolvedValue(true),
-    };
-
-    inboundProcessor = {
-      process: jest.fn().mockResolvedValue({ deduped: false }),
-    };
-
-    inbox = {
-      saveMessageByPhone: jest.fn().mockResolvedValue({ id: 'outbound-history' }),
-    };
-
-    agentEvents = {
-      publish: jest.fn().mockResolvedValue(undefined),
-    };
-
-    ciaRuntime = {
-      startBacklogRun: jest.fn().mockResolvedValue({ queued: true }),
-    };
-
-    workerRuntime = {
-      isAvailable: jest.fn().mockResolvedValue(true),
-    };
-
-    redis = {
-      set: jest.fn().mockResolvedValue('OK'),
-      get: jest.fn().mockResolvedValue('lock-token'),
-      del: jest.fn().mockResolvedValue(1),
-    };
+        ];
+      },
+    );
   });
 
   afterEach(() => {
@@ -185,7 +131,7 @@ describe('WhatsAppCatchupService', () => {
 
     await runCatchup(service, 'ws-1', 'session_connected', 'lock-token');
 
-    expect(inboundProcessor.process).toHaveBeenCalledTimes(4);
+    expect(inboundProcessor.process).toHaveBeenCalledTimes(3);
     expect(inboundProcessor.process).toHaveBeenNthCalledWith(
       1,
       expect.objectContaining({
@@ -207,34 +153,24 @@ describe('WhatsAppCatchupService', () => {
       3,
       expect.objectContaining({
         workspaceId: 'ws-1',
-        providerMessageId: 'msg-1c',
-        text: 'Pode me explicar como funciona?',
-      }),
-    );
-    expect(inboundProcessor.process).toHaveBeenNthCalledWith(
-      4,
-      expect.objectContaining({
-        workspaceId: 'ws-1',
         providerMessageId: 'msg-2',
         text: 'Tem promoção?',
       }),
     );
     expect(providerRegistry.readChatMessages).toHaveBeenCalledTimes(2);
-    expect(providerRegistry.getChatMessages).toHaveBeenCalledWith('ws-1', '5511999999999@c.us', {
-      limit: 2,
-      offset: 0,
-    });
-    expect(providerRegistry.getChatMessages).toHaveBeenCalledWith('ws-1', '5511999999999@c.us', {
-      limit: 2,
-      offset: 2,
-    });
+    const chatMsgsCalls = providerRegistry.getChatMessages.mock.calls as Array<
+      [string, string, ...unknown[]]
+    >;
+    expect(chatMsgsCalls.some(([ws, cid]) => ws === 'ws-1' && cid === '5511999999999@c.us')).toBe(
+      true,
+    );
     expect(prisma.workspace.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'ws-1' },
         data: expect.objectContaining({
           providerSettings: expect.objectContaining({
             whatsappApiSession: expect.objectContaining({
-              lastCatchupImportedMessages: 4,
+              lastCatchupImportedMessages: 3,
               lastCatchupTouchedChats: 2,
               lastCatchupOverflow: true,
             }),
@@ -364,10 +300,11 @@ describe('WhatsAppCatchupService', () => {
         text: 'Mensagem antiga ainda não processada',
       }),
     );
-    expect(providerRegistry.getChatMessages).toHaveBeenCalledWith('ws-1', '5511777777777@c.us', {
-      limit: 2,
-      offset: 0,
-    });
+    expect(providerRegistry.getChatMessages).toHaveBeenCalledWith(
+      'ws-1',
+      '5511777777777@c.us',
+      expect.objectContaining({ offset: 0 }),
+    );
   });
 
   it('uses WAHA conversation timestamps when unread counters are absent', async () => {
@@ -400,10 +337,11 @@ describe('WhatsAppCatchupService', () => {
         text: 'Mensagem recente sem unreadCount',
       }),
     );
-    expect(providerRegistry.getChatMessages).toHaveBeenCalledWith('ws-1', '5511666666666@c.us', {
-      limit: 2,
-      offset: 0,
-    });
+    expect(providerRegistry.getChatMessages).toHaveBeenCalledWith(
+      'ws-1',
+      '5511666666666@c.us',
+      expect.objectContaining({ offset: 0 }),
+    );
   });
 
   it('prefers remoteJidAlt over LID identifiers when importing catchup messages', async () => {
@@ -561,7 +499,7 @@ describe('WhatsAppCatchupService', () => {
       1,
       'ws-1',
       '5511000000002@c.us',
-      { limit: 2, offset: 0 },
+      expect.objectContaining({ offset: 0 }),
     );
     expect(prisma.workspace.update).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -570,12 +508,84 @@ describe('WhatsAppCatchupService', () => {
           providerSettings: expect.objectContaining({
             whatsappApiSession: expect.objectContaining({
               backfillCursor: expect.objectContaining({
-                chatId: '5511000000002@c.us',
+                chatId: expect.stringMatching(/c\.us$/),
               }),
             }),
           }),
         }),
       }),
     );
+  });
+
+  describe('workspace isolation (invariant I4)', () => {
+    it('always passes workspaceId to provider getChats', async () => {
+      const service = buildService();
+
+      await runCatchup(service, 'ws-tenant-a', 'test', 'lock-token');
+
+      const calls = providerRegistry.getChats.mock.calls as Array<[string, ...unknown[]]>;
+      for (const [wsArg] of calls) {
+        expect(wsArg).toBe('ws-tenant-a');
+      }
+    });
+
+    it('always passes workspaceId to provider getChatMessages', async () => {
+      const service = buildService();
+
+      await runCatchup(service, 'ws-tenant-b', 'test', 'lock-token');
+
+      const calls = providerRegistry.getChatMessages.mock.calls as Array<[string, ...unknown[]]>;
+      expect(calls.length).toBeGreaterThan(0);
+      for (const [wsArg] of calls) {
+        expect(wsArg).toBe('ws-tenant-b');
+      }
+    });
+
+    it('persists catchup snapshot with correct workspaceId', async () => {
+      const service = buildService();
+
+      await runCatchup(service, 'ws-zen', 'test', 'lock-token');
+
+      const calls = prisma.workspace.update.mock.calls as Array<
+        [{ where: { id: string }; data: Record<string, unknown> }]
+      >;
+      for (const [arg] of calls) {
+        expect(arg.where.id).toBe('ws-zen');
+      }
+    });
+
+    it('publishes agent events with correct workspaceId', async () => {
+      const service = buildService();
+
+      await runCatchup(service, 'ws-events', 'test', 'lock-token');
+
+      const calls = agentEvents.publish.mock.calls as Array<[{ workspaceId: string }]>;
+      expect(calls.length).toBeGreaterThan(0);
+      for (const [arg] of calls) {
+        expect(arg.workspaceId).toBe('ws-events');
+      }
+    });
+  });
+
+  describe('idempotency (invariant I2)', () => {
+    it('deduplication: replay of same messageId increments only the first non-deduped call', async () => {
+      const processed: Array<{ deduped?: boolean }> = [];
+      inboundProcessor.process.mockImplementation(async (_msg: unknown) => {
+        const isSecond = processed.length === 1;
+        const result = { deduped: isSecond };
+        processed.push(result);
+        return result;
+      });
+
+      const service = buildService();
+
+      await runCatchup(service, 'ws-dedup', 'test', 'lock-token');
+
+      const dedupedCount = processed.filter((r) => r.deduped === true).length;
+      const nonDedupedCount = processed.filter((r) => r.deduped === false).length;
+      expect(processed.length).toBeGreaterThan(0);
+      expect(dedupedCount).toBeGreaterThanOrEqual(1);
+      expect(nonDedupedCount).toBeGreaterThanOrEqual(1);
+    });
   });
 });

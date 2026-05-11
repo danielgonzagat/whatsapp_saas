@@ -1,11 +1,5 @@
 import type { WahaChatMessage, WahaChatSummary } from './providers/whatsapp-api.provider';
-import {
-  normalizePhoneExt,
-  resolveCanonicalChatIdExt,
-  resolveTimestampExt,
-} from './whatsapp-catchup.helpers';
-
-const LID_RE = /@lid$/i;
+import { resolveTimestampExt } from './whatsapp-catchup.helpers';
 
 function pickBooleanFromMe(
   lastMessage: Record<string, unknown> | null | undefined,

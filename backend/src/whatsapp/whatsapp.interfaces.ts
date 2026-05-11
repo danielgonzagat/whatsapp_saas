@@ -27,7 +27,7 @@ export interface ICatchupHistory {
     backfillCursor?: unknown;
     [key: string]: unknown;
   }): CatchupBackfillCursor;
-  resolveWorkspaceSelfPhone(workspaceId: string, session: unknown): Promise<string>;
+  resolveWorkspaceSelfPhone(workspaceId: string, session: unknown): Promise<string | null>;
   reconcileRemoteChatState(workspaceId: string, chat: unknown): Promise<void>;
   persistHistoricalOutboundMessage(workspaceId: string, message: unknown): Promise<unknown>;
   toInboundMessage(workspaceId: string, message: unknown): unknown;

@@ -329,8 +329,12 @@ export class WhatsappCatchupOrchestratorService {
             }
             const ib = this.history.toInboundMessage(ws, m);
             if (!ib) return;
-            const r = await this.inboundProcessor.process(ib);
-            if (!r.deduped) im += 1;
+            const result = (await this.inboundProcessor.process(ib)) as {
+              deduped?: boolean;
+              messageId?: string;
+              contactId?: string;
+            };
+            if (!result.deduped) im += 1;
           });
           if (CATCHUP_MARK_READ_WITHOUT_REPLY)
             await this.providerRegistry
