@@ -4,6 +4,8 @@ import { BRAND_COLORS } from '../../backend/src/common/kloel-colors';
 import {
   VISUAL_CHECKOUT_PRODUCT_DETAIL_FIXTURE,
   VISUAL_CHECKOUT_PRODUCTS_FIXTURE,
+  VISUAL_CHECKOUT_CONFIG_FIXTURE,
+  VISUAL_CHECKOUT_PLAN_ID,
   VISUAL_CHECKOUT_PRODUCT_ID,
   VISUAL_CRM_DEALS_FIXTURE,
   VISUAL_CRM_PIPELINE_FIXTURE,
@@ -79,6 +81,23 @@ async function seedAcceptedCookieConsent(page: Page) {
 }
 
 export async function mockVisualRouteApis(page: Page, route: CriticalRoute) {
+  if (route.name === 'checkout') {
+    await page.route(
+      `**/checkout/plans/${VISUAL_CHECKOUT_PLAN_ID}/config`,
+      async (requestRoute) => {
+        if (requestRoute.request().isNavigationRequest()) {
+          return requestRoute.fallback();
+        }
+        await requestRoute.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: jsonBody(VISUAL_CHECKOUT_CONFIG_FIXTURE),
+        });
+      },
+    );
+    return;
+  }
+
   if (route.name === 'dashboard') {
     await page.route('**/dashboard/home**', async (requestRoute) => {
       await requestRoute.fulfill({
