@@ -21,7 +21,6 @@ import {
   IC,
   CH_CONFIG,
   SORA,
-  MONO,
   EMBER,
   navigateCurrentWindow,
   isTrustedMetaOauthUrl,
@@ -63,7 +62,6 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
   const requestedMode = searchParams?.get('mode') || searchParams?.get('focus') || undefined;
   const metaQueryState = searchParams?.get('meta') || null;
   const metaQueryReason = searchParams?.get('reason') || null;
-  const tiktokQueryState = searchParams?.get('tiktok') || null;
   const [connectingKey, setConnectingKey] = useState<string | null>(null);
   const [emailTestSending, setEmailTestSending] = useState(false);
   const [emailTestResult, setEmailTestResult] = useState<string | null>(null);
@@ -119,36 +117,6 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
     },
     [],
   );
-
-  const handleConnectTikTok = useCallback(async () => {
-    setConnectingKey('tiktok');
-    try {
-      const res = await apiFetch<{ url?: string }>('/marketing/connect/tiktok/url?kind=creator');
-      const url = String(res?.data?.url || '').trim();
-      if (!url) {
-        throw kloelError('Nao foi possivel iniciar a conexao oficial do TikTok.');
-      }
-      navigateCurrentWindow(url);
-    } catch (error: unknown) {
-      setConnectingKey(null);
-      setConnectionMessage(error instanceof Error ? error.message : 'Falha ao abrir o TikTok.');
-    }
-  }, []);
-
-  const handleDisconnectTikTok = useCallback(async () => {
-    setConnectingKey('tiktok');
-    try {
-      await apiFetch('/marketing/connect/tiktok/disconnect', { method: 'POST' });
-      await mutateConnectionStatus();
-      setConnectionMessage('Canal TikTok desconectado do workspace.');
-    } catch (error: unknown) {
-      setConnectionMessage(
-        error instanceof Error ? error.message : 'Falha ao desconectar o TikTok.',
-      );
-    } finally {
-      setConnectingKey(null);
-    }
-  }, [mutateConnectionStatus]);
 
   const handleConnectEmail = useCallback(async () => {
     setConnectingKey('email');
@@ -240,7 +208,9 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
   const getChannelData = useCallback(
     (channelKey: string): ChannelRealData | null => {
       const cfg = CH_CONFIG[channelKey];
-      if (!cfg) {return null;}
+      if (!cfg) {
+        return null;
+      }
       return channelDataMap[cfg.backendKey] || null;
     },
     [channelDataMap],
@@ -260,7 +230,9 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
     (id: string) => {
       setTab(id);
       const nextRoute = id === 'conversas' ? '/marketing' : `/marketing/${id}`;
-      if (pathname === nextRoute) {return;}
+      if (pathname === nextRoute) {
+        return;
+      }
       startTransition(() => {
         router.push(nextRoute);
       });

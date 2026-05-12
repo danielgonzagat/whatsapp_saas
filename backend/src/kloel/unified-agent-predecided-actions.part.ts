@@ -1,5 +1,5 @@
-import { forEachSequential } from '../../common/async-sequence';
-import type { ActionEntry, PredecidedAction, ToolArgs } from '../unified-agent.types';
+import { forEachSequential } from '../common/async-sequence';
+import type { ActionEntry, PredecidedAction, ToolArgs } from './unified-agent.types';
 
 type UnknownRecord = Record<string, unknown>;
 

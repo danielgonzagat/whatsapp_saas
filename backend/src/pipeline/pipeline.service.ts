@@ -133,7 +133,8 @@ export class PipelineService {
       data: {
         title: data.title || '',
         value: data.value || 0,
-        stageId: firstStage.id,
+        contact: { connect: { id: data.contactId } },
+        stage: { connect: { id: firstStage.id } },
         ...(sourceCampaignId !== undefined ? { sourceCampaignId } : {}),
       },
     });

@@ -1,6 +1,7 @@
 import { Injectable, Logger, Optional } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { forEachSequential } from '../common/async-sequence';
+import { EmailService } from '../auth/email.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { ChannelTransportRegistry } from './channel-transport.registry';
@@ -105,14 +106,9 @@ export class CartRecoveryService {
     try {
       const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000);
 
-      // Find PENDING orders older than 30 minutes that haven't received recovery emails
-      const abandoned = await this.prisma.checkoutOrder.findMany({
-        where: {
-          status: 'PENDING',
-          createdAt: { lt: thirtyMinAgo },
-        },
-        include: { plan: { include: { product: true } } },
-        take: 50,
+      const workspaces = await this.prisma.workspace.findMany({
+        select: { id: true },
+        take: 500,
       });
       const workspaceIds = workspaces.map((workspace) => workspace.id);
       const abandoned =
@@ -145,7 +141,6 @@ export class CartRecoveryService {
             return;
           }
 
-          const emailService = new EmailService();
           const orderWithPlan = order;
           const productName = orderWithPlan.plan?.product?.name || 'Seu pedido';
           const customerEmail = order.customerEmail;
@@ -230,23 +225,42 @@ export class CartRecoveryService {
             email: customerEmail,
             workspaceId: wsId,
           });
+          const html = emailBody + unsubscribeFooter;
 
-          await emailService.sendEmail({
-            to: customerEmail,
-            subject: `Voce esqueceu algo — ${productName}`,
-            html:
-              (await import('../common/utils/email-template-renderer.util')).renderEmailTemplate(
-                'cart-recovery',
-                {
-                  productName,
-                  orderNumber: order.orderNumber,
-                },
-              ) + unsubscribeFooter,
-            headers: {
-              'List-Unsubscribe': listUnsubscribe,
-              'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
-            },
-          });
+          if (this.transportRegistry) {
+            const sendResult = await this.transportRegistry.send(wsId, {
+              workspaceId: wsId,
+              channel: 'email',
+              recipientId: customerEmail,
+              content: html,
+              externalId: `cart-recovery:${order.id}`,
+              complianceMode: 'proactive',
+              guardContext: {
+                channel: 'email',
+                withinComplianceWindow: true,
+                productId: product?.id,
+              },
+            });
+            if (!sendResult.success) {
+              this.logger.warn(
+                `Cart recovery transport failed for order ${order.id}: ${
+                  sendResult.error || sendResult.blockedReason || 'unknown_error'
+                }`,
+              );
+              return;
+            }
+          } else {
+            const emailService = new EmailService();
+            await emailService.sendEmail({
+              to: customerEmail,
+              subject: `Voce esqueceu algo — ${productName}`,
+              html,
+              headers: {
+                'List-Unsubscribe': listUnsubscribe,
+                'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+              },
+            });
+          }
 
           await this.prisma.checkoutOrder.updateMany({
             where: { id: order.id, workspaceId: order.workspaceId },

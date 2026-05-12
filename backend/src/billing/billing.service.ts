@@ -3,15 +3,6 @@ import { ConfigService } from '@nestjs/config';
 import { ModuleRef } from '@nestjs/core';
 import { FinancialAlertService } from '../common/financial-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { markSubscriptionStatusHelper } from './__companions__/billing-webhook.service.companion';
-import { cancelSubscriptionByStripeId as cancelSubscriptionByStripeIdHelper } from './__parts__/billing-webhook.cancel';
-import { syncSubscriptionStatus as syncSubscriptionStatusHelper } from './__parts__/billing-webhook.sync-subscription';
-import { activatePlanFeatures } from './billing-plan-features';
-import {
-  notifyCustomerPaymentConfirmedHelper,
-  notifyOpsHelper,
-  readInvoiceSubscriptionId,
-} from './billing-webhook.helpers';
 import { StripeRuntime } from './stripe-runtime';
 import type { StripeClient } from './stripe-types';
 import { BillingCheckoutHelperService } from './billing-checkout-helper.service';

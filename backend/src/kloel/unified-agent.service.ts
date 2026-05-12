@@ -12,9 +12,17 @@ import { UnifiedAgentContextService } from './unified-agent-context.service';
 import { UnifiedAgentResponseService } from './unified-agent-response.service';
 import { UnifiedAgentActionsService } from './unified-agent-actions.service';
 export type { ToolArgs, ActionEntry } from './unified-agent.types';
-import type { ToolArgs, ActionEntry } from './unified-agent.types';
+import type { ToolArgs, ActionEntry, PredecidedAction } from './unified-agent.types';
+import {
+  buildPredecidedActionDraft,
+  executePredecidedAgentActions,
+} from './unified-agent-predecided-actions.part';
 
 type UnknownRecord = Record<string, unknown>;
+
+function isAllowedTool(toolName: string, allowedTools?: string[]): boolean {
+  return !allowedTools || allowedTools.includes(toolName);
+}
 
 const UNIFIED_AGENT_PROVIDER_CONFIG_REQUIRED =
   'OpenAI configuration is required for unified agent generation';

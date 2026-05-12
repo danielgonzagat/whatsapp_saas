@@ -98,10 +98,14 @@ export class EmailInboundController {
       bodyText: body.bodyText || body.text,
       bodyHtml: body.bodyHtml || body.html,
       attachments: body.attachments?.map((att) => ({
-        filename: att.filename,
-        contentBase64: att.contentBase64 || att.content,
-        mimeType: att.mimeType || att.type,
-        url: att.url,
+        ...(att.filename !== undefined ? { filename: att.filename } : {}),
+        ...((att.contentBase64 || att.content) !== undefined
+          ? { contentBase64: att.contentBase64 || att.content }
+          : {}),
+        ...((att.mimeType || att.type) !== undefined
+          ? { mimeType: att.mimeType || att.type }
+          : {}),
+        ...(att.url !== undefined ? { url: att.url } : {}),
       })),
       messageId: body.messageId,
       timestamp: body.timestamp,

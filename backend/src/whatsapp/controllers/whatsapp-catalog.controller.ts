@@ -5,23 +5,12 @@ import { AuthenticatedRequest } from '../../common/interfaces';
 import { WhatsappService } from '../whatsapp.service';
 import { RouteClass } from '../../common/throttler/route-class.decorator';
 
-const WHATSAPP_CATALOG_WORKSPACE_REQUIRED = 'workspaceId is required for WhatsApp catalog routes';
-
 /** Contacts, chats, catalog, and backlog operational endpoints. */
 @Controller('whatsapp-api')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 @RouteClass('mutate')
 export class WhatsAppCatalogController {
   constructor(private readonly whatsappService: WhatsappService) {}
-
-  private requireWorkspaceId(req: AuthenticatedRequest): string {
-    if (!req.workspaceId) {
-      const error = new Error();
-      error.message = WHATSAPP_CATALOG_WORKSPACE_REQUIRED;
-      throw error;
-    }
-    return req.workspaceId;
-  }
 
   private readNumberQuery(value: unknown, fallback: number, min: number, max: number) {
     const parsed = Number(value);

@@ -19,7 +19,10 @@ export function createSeededRandom(seed: string | number): SeededRandom {
       return Math.floor(next() * (max - min + 1)) + min;
     },
     pick(items) {
-      return items[this.int(0, items.length - 1)];
+      if (items.length === 0) {
+        throw new Error('Cannot pick from empty array');
+      }
+      return items[this.int(0, items.length - 1)]!;
     },
     value: next,
   };

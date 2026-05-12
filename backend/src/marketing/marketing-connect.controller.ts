@@ -9,17 +9,16 @@ import {
   Request,
   UseGuards,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
-import { encryptString } from '../lib/crypto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { buildUnsubscribeFooterHtml } from '../common/utils/unsubscribe-footer.util';
-import { EmailCampaignService } from '../kloel/email-campaign.service';
 import {
   isWorkspaceDeliveryReady,
   readWorkspaceEmailDelivery,
 } from '../kloel/email-workspace-delivery';
 import { MetaWhatsAppService } from '../meta/meta-whatsapp.service';
+import { EmailCampaignService } from '../kloel/email-campaign.service';
+import { TikTokMarketingService } from './tiktok-marketing.service';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
@@ -82,6 +81,10 @@ interface ImapSmtpConnectPayload {
   smtpPassword?: unknown;
 }
 
+interface ConnectEmailBody {
+  enabled?: boolean;
+}
+
 function readOptionalText(value: unknown): string | null {
   return typeof value === 'string' && value.trim() ? value : null;
 }
@@ -137,6 +140,14 @@ function normalizeArsenal(value: unknown): string[] {
   return normalizeStringArray(value).slice(0, 50);
 }
 
+interface EmailProviderSnapshot {
+  provider: string;
+  available: boolean;
+  fromEmail: string;
+  fromName: string;
+  workspaceConfigured: boolean;
+}
+
 /**
  * Marketing Connect Controller
  *
@@ -154,6 +165,8 @@ export class MarketingConnectController {
     private readonly gmailMailbox: MailboxGmailOAuthService,
     private readonly microsoftMailbox: MailboxMicrosoftOAuthService,
     private readonly imapSmtpMailbox: MailboxImapSmtpService,
+    private readonly emailCampaign: EmailCampaignService,
+    private readonly tiktokMarketing: TikTokMarketingService,
   ) {}
 
   private getGlobalEmailProviderSnapshot(): EmailProviderSnapshot {
@@ -275,7 +288,7 @@ export class MarketingConnectController {
 
     const providerSettings = asProviderSettings(workspace?.providerSettings);
     const emailSettings = (providerSettings.email ?? { enabled: false }) as EmailSubSettings;
-    const emailProvider = this.getEmailProviderSnapshot();
+    const emailProvider = await this.getEmailProviderSnapshot(workspaceId);
     const safeWhatsApp = whatsappStatus ?? ({} as WhatsAppStatusValue);
     const { snapshot, snapshotStatus, snapshotConnected } =
       this.getWhatsAppSessionSnapshot(providerSettings);
@@ -551,20 +564,6 @@ export class MarketingConnectController {
     });
     const currentSettings = asProviderSettings(workspace?.providerSettings);
     const nextEnabled = body.enabled !== false;
-    const deliveryCriteria = buildEmailDeliveryCriteria(body);
-    const currentConfig = await this.prisma.channelConfig.findUnique({
-      where: { workspaceId_channel: { workspaceId, channel: 'email' } },
-      select: { transferCriteria: true },
-    });
-    const currentCriteria: Prisma.InputJsonObject = isJsonObject(currentConfig?.transferCriteria)
-      ? toInputJsonObject(currentConfig.transferCriteria)
-      : {};
-    const nextCriteria: Prisma.InputJsonObject = deliveryCriteria
-      ? {
-          ...currentCriteria,
-          ...(deliveryCriteria as Prisma.InputJsonObject),
-        }
-      : currentCriteria;
 
     await this.prisma.workspace.update({
       where: { id: workspaceId },

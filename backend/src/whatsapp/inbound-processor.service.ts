@@ -6,6 +6,7 @@ import { INBOX_SERVICE } from '../inbox/inbox.token';
 import type { IInboxService } from '../inbox/inbox.interface';
 import { UnifiedAgentService } from '../kloel/unified-agent.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import { ChannelInboundHookService } from '../omnichannel/channel-inbound-hook.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { buildQueueDedupId, buildQueueJobId } from '../queue/job-id.util';
 import { autopilotQueue, flowQueue, voiceQueue } from '../queue/queue';
@@ -24,6 +25,7 @@ import { WorkerRuntimeService } from './worker-runtime.service';
 import { asProviderSettings, type ProviderSettings } from './provider-settings.types';
 import type { ContactCustomFields } from '../contacts/contact-custom-fields.types';
 import { executeInlineAutopilot } from './inbound-processor.inline-autopilot';
+import { triggerWhatsappMindPercept } from './inbound-mind-percept';
 
 import {
   checkDuplicateExt,
@@ -73,6 +75,7 @@ export class InboundProcessorService {
     @Inject(forwardRef(() => WHATSAPP_MESSAGING))
     private readonly whatsappService: IWhatsappMessaging,
     @Optional() private readonly opsAlert?: OpsAlertService,
+    @Optional() private readonly mindHook?: ChannelInboundHookService,
   ) {}
 
   private isPlaceholderContactName(value: unknown, phone?: string | null): boolean {
@@ -222,7 +225,7 @@ export class InboundProcessorService {
       messageContent: processedContent,
     });
     triggerWhatsappMindPercept({
-      mindHook: this.mindHook,
+      ...(this.mindHook !== undefined ? { mindHook: this.mindHook } : {}),
       logger: this.logger,
       msg,
       contactId: contact.id,

@@ -1,5 +1,5 @@
-import { CiaChatFilterService } from './cia-chat-filter.service';
-import { CiaSendHelpersService } from './cia-send-helpers.service';
+import { CiaChatFilterService } from '../cia/cia-chat-filter.service';
+import { CiaSendHelpersService } from '../cia/cia-send-helpers.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { WhatsAppProviderRegistry } from './providers/provider-registry';
 import { WahaChatSummary } from './providers/whatsapp-api.provider';

@@ -101,7 +101,7 @@ export class InstagramChannelTransport implements ChannelTransportProvider {
 
       return {
         success: true,
-        messageId,
+        ...(messageId !== undefined ? { messageId } : {}),
         blocked: false,
       };
     } catch (err: unknown) {
@@ -175,7 +175,7 @@ export class MessengerChannelTransport implements ChannelTransportProvider {
 
       return {
         success: true,
-        messageId,
+        ...(messageId !== undefined ? { messageId } : {}),
         blocked: false,
       };
     } catch (err: unknown) {

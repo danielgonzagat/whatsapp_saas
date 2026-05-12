@@ -9,7 +9,7 @@
  * system that cannot be split without breaking the feedback loop it models.
  */
 
-import { randomInt } from 'node:crypto';
+import { randomUUID } from 'node:crypto';
 import type { Prisma, PrismaClient } from '@prisma/client';
 export { computeLearningSnapshot, recordDecisionLog } from './cia-decision-log';
 
@@ -90,6 +90,14 @@ function defaultVariantMap(family: VariantFamily): Map<string, MessageVariant> {
   );
 }
 
+function firstDefaultVariant(family: VariantFamily): MessageVariant {
+  const first = Array.from(defaultVariantMap(family).values())[0];
+  if (!first) {
+    throw new Error(`No CIA variant configured for ${family}`);
+  }
+  return first;
+}
+
 function score(alpha: number, beta: number, pulls: number, totalPulls: number): number {
   const mean = alpha / (alpha + beta);
   const uncertainty = Math.sqrt(Math.log(Math.max(2, totalPulls + 1)) / Math.max(1, pulls));
@@ -129,7 +137,7 @@ function variantFromArm(
   arm: { arm: string; alpha: number; beta: number; pulls: number; context: unknown },
 ): MessageVariant {
   const defaults = defaultVariantMap(family);
-  const fallback = defaults.get(arm.arm) || defaults.values().next().value;
+  const fallback = defaults.get(arm.arm) || firstDefaultVariant(family);
   const context =
     arm.context && typeof arm.context === 'object' ? (arm.context as Record<string, unknown>) : {};
   return {
@@ -161,7 +169,7 @@ export async function pickVariant(
       score(left.alpha, left.beta, left.pulls, totalPulls),
   )[0];
   if (!chosen) {
-    return defaultVariantMap(family).values().next().value;
+    return firstDefaultVariant(family);
   }
   await prisma.mindBanditArm.updateMany({
     where: { id: chosen.id, workspaceId, decisionType: decisionType(family) },
@@ -179,40 +187,14 @@ export async function updateVariantOutcome(
     outcome: VariantOutcome;
     revenue?: number;
   },
-) {
-  if (!prisma?.kloelMemory?.upsert) {
-    return null;
+): Promise<void> {
+  if (!prisma?.mindBanditArm?.update) {
+    return;
   }
 
-  const key = `cia_variant:${input.family}:${input.variant.key}`;
-  const existing = prisma?.kloelMemory?.findUnique
-    ? await prisma.kloelMemory
-        .findUnique({
-          where: {
-            workspaceId_key: {
-              workspaceId: input.workspaceId,
-              key,
-            },
-          },
-        })
-        .catch(() => null)
-    : null;
+  const outcome = input.outcome === 'SOLD' || input.outcome === 'REPLIED' ? 1 : 0;
 
-  const existingRecord = existing?.value as Record<string, unknown> | undefined;
-
-  const current: MessageVariant = existingRecord
-    ? {
-        key: String(existingRecord.key || input.variant.key),
-        family: input.family,
-        text: String(existingRecord.text || input.variant.text),
-        score: Number(existingRecord.score || input.variant.score) || 1,
-        uses: Number(existingRecord.uses || input.variant.uses) || 0,
-      }
-    : input.variant;
-
-  const next = applyOutcomeScore(current, input.outcome, input.revenue);
-
-  await prisma.kloelMemory.upsert({
+  await prisma.mindBanditArm.update({
     where: {
       workspaceId_decisionType_arm: {
         workspaceId: input.workspaceId,

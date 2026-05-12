@@ -206,6 +206,7 @@ export async function runToolPlanningBranch(
   }
   safeWrite(createKloelStatusEvent('thinking'));
   await planLimits.ensureTokenBudget(workspaceId ?? '');
+  const allowedTools = KLOEL_SAFE_READ_TOOLS;
   const initialResponse = await chatCompletionWithFallback(
     replyEngine.openai,
     {

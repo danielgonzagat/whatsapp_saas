@@ -2,9 +2,11 @@ import { Module, forwardRef } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { CiaModule } from '../cia/cia.module';
+import { CiaRuntimeService } from '../cia/cia-runtime.service';
 import { BillingModule } from '../billing/billing.module';
 import { CrmModule } from '../crm/crm.module';
 import { InboxModule } from '../inbox/inbox.module';
+import { OmnichannelModule } from '../omnichannel/omnichannel.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { WorkspaceModule } from '../workspaces/workspace.module';
 
@@ -95,7 +97,6 @@ import {
     WHATSAPP_MESSAGING,
     InboundProcessorService,
     INBOUND_PROCESSOR,
-    CiaRuntimeService,
     CIA_RUNTIME,
     WhatsappCatchupHistoryService,
     WhatsAppCatchupService,

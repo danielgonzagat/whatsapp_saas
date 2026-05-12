@@ -6,6 +6,8 @@ import { AudioService } from './audio.service';
 import type { ToolArgs } from './unified-agent.types';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { MailboxGmailOAuthService } from '../marketing/mailbox-gmail-oauth.service';
+import { ChannelTransportRegistry } from './channel-transport.registry';
+import type { ChannelName, ChannelSendResult } from './channel-transport.types';
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -21,6 +23,7 @@ export class UnifiedAgentActionsMessagingService {
     @Inject(forwardRef(() => WHATSAPP_MESSAGING))
     private readonly whatsappService: IWhatsappMessaging,
     private readonly audioService: AudioService,
+    private readonly transports: ChannelTransportRegistry,
     @Optional() private readonly moduleRef?: ModuleRef,
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
@@ -290,8 +293,7 @@ export class UnifiedAgentActionsMessagingService {
         mediaUrl: url,
         mediaType: type,
         caption,
-        this.buildWhatsAppSendOptions(context, { mediaUrl: url, mediaType: type, caption }),
-      );
+      });
       const sendResult: Record<string, unknown> = this.isRecord(result) ? result : {};
       if (sendResult.error) {
         const message = this.readText(sendResult.message, 'send_media_failed');

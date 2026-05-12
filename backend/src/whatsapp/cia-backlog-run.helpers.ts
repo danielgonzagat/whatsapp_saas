@@ -1,6 +1,6 @@
 import { CIA_BOOTSTRAP_AUTO_CONTINUE_LIMIT } from './cia-bootstrap.constants';
-import type { CiaChatFilterService } from './cia-chat-filter.service';
-import type { CiaRuntimeStateService } from './cia-runtime-state.service';
+import type { CiaChatFilterService } from '../cia/cia-chat-filter.service';
+import type { CiaRuntimeStateService } from '../cia/cia-runtime-state.service';
 import type { PrismaService } from '../prisma/prisma.service';
 import type { WhatsAppProviderRegistry } from './providers/provider-registry';
 import { asProviderSettings } from './provider-settings.types';

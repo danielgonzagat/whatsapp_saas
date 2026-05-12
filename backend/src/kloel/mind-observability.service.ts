@@ -15,7 +15,7 @@ function isUnknownRecord(value: unknown): value is Record<string, unknown> {
 export class MindObservabilityService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly beliefs: MindBeliefService,
+    _beliefs: MindBeliefService,
     private readonly policy: MindPolicyService,
     private readonly verbalizer: MindVerbalizerService,
     private readonly reports: MindReportService,

@@ -10,7 +10,7 @@ vi.mock('@/lib/i18n/t', () => ({
 describe('SocialButtons', () => {
   it('renders Google and Apple buttons', () => {
     const ref = createRef<HTMLDivElement>();
-    render(<SocialButtons googleButtonRef={ref} isLoading={false} onAppleClick={vi.fn()} />);
+    render(<SocialButtons googleButtonRef={ref} isLoading={false} onAppleClick={vi.fn()} onFacebookClick={vi.fn()} facebookAvailable={false} facebookSdkReady={false} onTikTokClick={vi.fn()} tikTokAvailable={false} />);
 
     expect(screen.getByText('Continuar com Google')).toBeInTheDocument();
     expect(screen.getByText('Continuar com Apple')).toBeInTheDocument();
@@ -18,7 +18,7 @@ describe('SocialButtons', () => {
 
   it('does NOT render Facebook or TikTok buttons', () => {
     const ref = createRef<HTMLDivElement>();
-    render(<SocialButtons googleButtonRef={ref} isLoading={false} onAppleClick={vi.fn()} />);
+    render(<SocialButtons googleButtonRef={ref} isLoading={false} onAppleClick={vi.fn()} onFacebookClick={vi.fn()} facebookAvailable={false} facebookSdkReady={false} onTikTokClick={vi.fn()} tikTokAvailable={false} />);
 
     expect(screen.queryByText('Facebook')).not.toBeInTheDocument();
     expect(screen.queryByText('TikTok')).not.toBeInTheDocument();
@@ -27,7 +27,7 @@ describe('SocialButtons', () => {
   it('calls onAppleClick when Apple button is clicked', () => {
     const onAppleClick = vi.fn();
     const ref = createRef<HTMLDivElement>();
-    render(<SocialButtons googleButtonRef={ref} isLoading={false} onAppleClick={onAppleClick} />);
+    render(<SocialButtons googleButtonRef={ref} isLoading={false} onAppleClick={onAppleClick} onFacebookClick={vi.fn()} facebookAvailable={false} facebookSdkReady={false} onTikTokClick={vi.fn()} tikTokAvailable={false} />);
 
     fireEvent.click(screen.getByText('Continuar com Apple'));
     expect(onAppleClick).toHaveBeenCalledTimes(1);
@@ -35,7 +35,7 @@ describe('SocialButtons', () => {
 
   it('disables Apple button when isLoading is true', () => {
     const ref = createRef<HTMLDivElement>();
-    render(<SocialButtons googleButtonRef={ref} isLoading={true} onAppleClick={vi.fn()} />);
+    render(<SocialButtons googleButtonRef={ref} isLoading={true} onAppleClick={vi.fn()} onFacebookClick={vi.fn()} facebookAvailable={false} facebookSdkReady={false} onTikTokClick={vi.fn()} tikTokAvailable={false} />);
 
     const appleButton = screen.getByText('Continuar com Apple').closest('button');
     expect(appleButton).toBeDisabled();

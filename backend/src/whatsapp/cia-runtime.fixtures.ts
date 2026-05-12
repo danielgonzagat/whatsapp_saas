@@ -1,6 +1,6 @@
-import { CiaRuntimeStateService } from './cia-runtime-state.service';
-import { CiaBootstrapService } from './cia-bootstrap.service';
-import { CiaBacklogRunService } from './cia-backlog-run.service';
+import { CiaRuntimeStateService } from '../cia/cia-runtime-state.service';
+import { CiaBootstrapService } from '../cia/cia-bootstrap.service';
+import { CiaBacklogRunService } from '../cia/cia-backlog-run.service';
 
 export type PrismaMock = {
   $transaction: jest.Mock;

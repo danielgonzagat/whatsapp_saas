@@ -53,8 +53,8 @@ function normalizeAiObjections(value: unknown): LooseObject[] {
     return [];
   }
 
-  const objections: LooseObject[] = [];
-  value.forEach((entry, index) => {
+  return value
+    .map((entry, index): LooseObject | null => {
     const objection = parseObject(entry);
     const label = safeStr(
       objection.label || objection.id || objection.q || objection.question,
@@ -63,17 +63,17 @@ function normalizeAiObjections(value: unknown): LooseObject[] {
     const response = safeStr(objection.response || objection.a || objection.answer).trim();
 
     if (!label && !response) {
-      return;
+      return null;
     }
 
-      return {
-        id: safeStr(objection.id, `objection-${index + 1}`),
-        label,
-        response,
-        q: label,
-        a: response,
-        enabled: objection.enabled !== false,
-      };
+    return {
+      id: safeStr(objection.id, `objection-${index + 1}`),
+      label,
+      response,
+      q: label,
+      a: response,
+      enabled: objection.enabled !== false,
+    };
     })
     .filter(Boolean) as LooseObject[];
 }

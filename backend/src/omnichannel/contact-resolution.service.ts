@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import {
   ChannelIdentifierService,
   ResolvedContact,
@@ -10,8 +10,6 @@ export { ResolvedContact };
 
 @Injectable()
 export class OmnichannelContactResolutionService {
-  private readonly logger = new Logger(OmnichannelContactResolutionService.name);
-
   constructor(private readonly channelIdentifier: ChannelIdentifierService) {}
 
   resolveFromMessage(

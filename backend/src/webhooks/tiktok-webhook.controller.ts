@@ -216,35 +216,6 @@ export class TikTokWebhookController {
 
     this.logger.log(`TikTok webhook acknowledged: event=${describeEvent(body)}`);
 
-    const workspaceId = await this.resolveTikTokWorkspace(body);
-    if (workspaceId) {
-      this.omnichannelService
-        .processTikTokWebhook(workspaceId, body as Record<string, unknown>)
-        .catch((err: unknown) => {
-          this.logger.error(`TikTok omnichannel processing failed: ${String(err)}`);
-        });
-    } else {
-      this.logger.warn('TikTok webhook: workspace not resolved, skipping inbox save');
-    }
-
     return { received: true };
-  }
-
-  /** Resolve workspace from TikTok webhook via providerSettings JSON lookup. */
-  private async resolveTikTokWorkspace(body: TikTokWebhookPayload): Promise<string | null> {
-    if (!body || typeof body !== 'object' || Array.isArray(body)) return null;
-
-    const workspaces = await this.prisma.workspace.findMany({
-      where: {
-        providerSettings: { path: ['tiktok', 'connected'], equals: true },
-      },
-      select: { id: true },
-      take: 50,
-    });
-
-    if (workspaces.length === 0) return null;
-    if (workspaces.length === 1) return workspaces[0].id;
-
-    return workspaces[0].id;
   }
 }

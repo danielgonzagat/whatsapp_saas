@@ -5,9 +5,9 @@ import { CiaChatFilterService } from './cia-chat-filter.service';
 import { CiaRuntimeStateService } from './cia-runtime-state.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { WhatsAppProviderRegistry } from './providers/provider-registry';
-import { WhatsAppCatchupService } from './whatsapp-catchup.service';
-import { asProviderSettings } from './provider-settings.types';
+import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
+import { WhatsAppCatchupService } from '../whatsapp/whatsapp-catchup.service';
+import { asProviderSettings } from '../whatsapp/provider-settings.types';
 
 type BootstrapConversation = Record<string, unknown>;
 type OperationalMetadata = { canTakeMore?: boolean; [key: string]: unknown };
@@ -17,7 +17,7 @@ import {
   CIA_BOOTSTRAP_IMMEDIATE_LIMIT,
   CIA_BOOTSTRAP_AUTO_CONTINUE,
   CIA_BOOTSTRAP_AUTO_CONTINUE_LIMIT,
-} from './cia-bootstrap.constants';
+} from '../whatsapp/cia-bootstrap.constants';
 
 export { CIA_BOOTSTRAP_AUTO_CONTINUE_LIMIT };
 

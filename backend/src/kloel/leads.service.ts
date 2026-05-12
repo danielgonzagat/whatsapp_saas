@@ -1,6 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { MindPolicyService } from './mind-policy.service';
 
 type LeadRow = {
   id: string;
@@ -83,11 +82,6 @@ export class LeadsService {
   constructor(private readonly prisma: PrismaService) {
     this.logger.log('LeadsService initialized');
   }
-
-  constructor(
-    private readonly prisma: PrismaService,
-    @Optional() private readonly mindPolicy?: MindPolicyService,
-  ) {}
 
   /** List leads with optional commercial scoring. */
   async listLeads(

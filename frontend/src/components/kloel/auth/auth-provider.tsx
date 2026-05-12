@@ -63,6 +63,7 @@ interface AuthContextType extends AuthState {
   ) => Promise<{ success: boolean; error?: string }>;
   signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   signInWithGoogle: (credential: string) => Promise<{ success: boolean; error?: string }>;
+  signInWithFacebook: (accessToken: string, userId?: string) => Promise<{ success: boolean; error?: string }>;
   requestMagicLink: (
     email: string,
     redirectTo?: string,
@@ -562,6 +563,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signUp,
         signIn,
         signInWithGoogle,
+        signInWithFacebook,
         requestMagicLink,
         signOut,
         completeOnboarding,

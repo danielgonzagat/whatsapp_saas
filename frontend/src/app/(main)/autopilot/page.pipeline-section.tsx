@@ -3,7 +3,6 @@
 import { kloelT } from '@/lib/i18n/t';
 import { colors } from '@/lib/design-tokens';
 import {
-  Button,
   CenterStage,
   type MissionCardData,
   MissionCards,

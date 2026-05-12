@@ -8,7 +8,11 @@ export interface ControllerDeps {
   kloelService: KloelService;
 }
 
-export async function listThreads(deps: Pick<ControllerDeps, 'prisma'>, workspaceId: string) {
+export async function listThreads(
+  deps: Pick<ControllerDeps, 'prisma'>,
+  workspaceId: string,
+  options: { limit?: number; cursor?: number; paginated?: boolean } = {},
+) {
   try {
     await deps.prisma.chatThread.deleteMany({ where: { workspaceId, messages: { none: {} } } });
     const take = Math.min(50, Math.max(1, options.limit ?? 50));

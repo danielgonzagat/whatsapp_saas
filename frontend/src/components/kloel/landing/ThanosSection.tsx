@@ -4,22 +4,79 @@ import { kloelT } from '@/lib/i18n/t';
 import { colors, radius } from '@/lib/design-tokens';
 import { useEffect, useRef, useState } from 'react';
 import { THANOS_ICONS } from './thanos-icons';
-import { colors } from '@/lib/design-tokens';
 import {
   E,
-  ELEVATED,
   F,
   M,
   SALES_CHANNELS,
   SALES_DELAY_MS,
-  SUCCESS,
-  SURFACE,
   THANOS_STYLES,
   THANOS_TITLE,
   type ChannelKey,
   type SalesMessage,
 } from './thanos-section.const';
 import { useSalesFlow } from '@/hooks/useSalesFlow';
+
+const PHI = 1.618033988749895;
+const STATIC_HOLD_MS = 2000;
+const PRE_REVEAL_MS = 600;
+const REVEAL_HOLD_MS = 5000;
+const THANOS_REVEAL_ANIMATION_CSS = THANOS_STYLES;
+
+interface LegacyLayout {
+  width: number;
+  height: number;
+  pixelWidth: number;
+  pixelHeight: number;
+  dpr: number;
+  isMobile: boolean;
+  iconSize: number;
+  containerSize: number;
+  containerRadius: number;
+  cols: number;
+  rows: number;
+  gapX: number;
+  gapY: number;
+  ox: number;
+  oy: number;
+  txtSize: number;
+  txtY: number;
+  centers: Array<{ x: number; y: number; idx: number }>;
+}
+
+interface LoadedIcon {
+  id: string;
+  n: string;
+  d: string;
+  img: HTMLImageElement;
+}
+
+interface Particle {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  dvx: number;
+  dvy: number;
+  size: number;
+  r: number;
+  g: number;
+  b: number;
+  a: number;
+  tr: number;
+  tg: number;
+  tb: number;
+  life: number;
+  decay: number;
+  shrink: number;
+  delaySec: number;
+  ageSec: number;
+  ramp: number;
+}
+
+function playMessage(_n: number): Promise<void> {
+  return Promise.resolve();
+}
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -280,7 +337,7 @@ export function blendSquare(
   }
 }
 
-export function updateParticleMotion(particle: Particle, dtSec: number, frameScale: number) {
+export function updateParticleMotion(particle: Particle, _dtSec: number, frameScale: number) {
   const localSec = particle.ageSec - particle.delaySec;
   particle.ramp = Math.min(1, localSec / (30 / 60));
   particle.vx += particle.dvx * 0.008 * particle.ramp * frameScale;
@@ -327,14 +384,14 @@ function ThanosOmniSales({ runToken }: { runToken: number }) {
     });
 
     const run = async () => {
-      for (const msg of flowMessages) {
+      for (const [idx, msg] of flowMessages.entries()) {
         await wait(msg.f === '$' ? 520 : msg.f === 'a' ? 380 : 260);
         if (cancelled) {
           return;
         }
         setMsgs((prev) => ({ ...prev, [msg.ch]: [...prev[msg.ch], msg] }));
-        await playMessage(index + 1);
-      };
+        await playMessage(idx + 1);
+      }
 
       await playMessage(0);
     };

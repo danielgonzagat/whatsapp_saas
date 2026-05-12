@@ -19,7 +19,6 @@ import { AccountAgentService } from '../account-agent.service';
 import { AgentEventsService } from '../agent-events.service';
 import {
   CIA_RUNTIME_SERVICE,
-  type CiaBacklogMode,
   type CiaRuntimePort,
 } from '../../cia/cia-runtime.port';
 import { asProviderSettings, type ProviderSessionSnapshot } from '../provider-settings.types';
@@ -29,7 +28,7 @@ import { WhatsAppCatchupService } from '../whatsapp-catchup.service';
 import { WhatsAppWatchdogService } from '../whatsapp-watchdog.service';
 import { WhatsappService } from '../whatsapp.service';
 import { RouteClass } from '../../common/throttler/route-class.decorator';
-type BacklogMode = Exclude<Parameters<CiaRuntimeService['startBacklogRun']>[1], undefined>;
+type BacklogMode = Exclude<Parameters<CiaRuntimePort['startBacklogRun']>[1], undefined>;
 
 /** Whats app api controller. */
 @Controller('whatsapp-api')
@@ -47,15 +46,6 @@ export class WhatsAppApiController {
     private readonly workspaces: WorkspaceService,
     private readonly watchdog: WhatsAppWatchdogService,
   ) {}
-
-  private requireWorkspaceId(req: AuthenticatedRequest): string {
-    if (!req.workspaceId) {
-      const error = new Error();
-      error.message = WHATSAPP_API_WORKSPACE_REQUIRED;
-      throw error;
-    }
-    return req.workspaceId;
-  }
 
   private async getSessionDiagnostics(workspaceId: string) {
     const workspace = await this.workspaces.getWorkspace(workspaceId);

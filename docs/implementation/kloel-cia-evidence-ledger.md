@@ -2,6 +2,83 @@
 
 Generated: 2026-05-11
 
+## 2026-05-12T13:08:00-03:00 - W9 - Vision Traceability Status Normalization
+
+- ID-visao: V01-V24.
+- Escopo: normalize `kloel-cia-vision-traceability.md` to the status vocabulary required by the execution contract.
+- Arquivos alterados:
+  - `docs/implementation/kloel-cia-vision-traceability.md`
+  - `docs/implementation/kloel-cia-evidence-ledger.md`
+- Comportamento entregue:
+  - Removed non-contract statuses from the matrix header.
+  - Reclassified code-side delivered but live-smoke-blocked items as `[ENTREGUE_PENDENTE_BLOQUEIO_EXTERNO]`.
+  - Reclassified incomplete/internal future work as `[BACKLOG_GOVERNADO_PARA_PROXIMA_EXECUCAO]`.
+- Comando(s) rodados:
+  - `sed -n '1,220p' docs/implementation/kloel-cia-vision-traceability.md`
+- Resultado:
+  - Matrix now uses only `[ENTREGUE_PROVADO]`, `[ENTREGUE_PENDENTE_BLOQUEIO_EXTERNO]`, `[BACKLOG_GOVERNADO_PARA_PROXIMA_EXECUCAO]`, and `[INVALIDADO_POR_DESCOBERTA]`.
+- Evidencia:
+  - Updated status header and V01-V24 rows in `docs/implementation/kloel-cia-vision-traceability.md`.
+- Riscos remanescentes:
+  - This is traceability normalization, not a new product proof; provider/live Golden Path evidence is still externally blocked.
+- Plano de rollback:
+  - Forward-edit status rows if later evidence promotes any item to `[ENTREGUE_PROVADO]` or invalidates a premise.
+- Referencia subagent:
+  - None; orchestrator-only docs consistency pass.
+
+## 2026-05-12T13:01:27-03:00 - W9 - Frontend Typecheck Recovery and Social Auth Rewire
+
+- ID-visao: V05, V06, V10, V11, V12, V17, V23.
+- Escopo: recover the frontend TypeScript gate after the main-merge drift while preserving real social/OAuth UI wiring and the official Marketing channel wizard.
+- Arquivos alterados:
+  - `frontend/src/app/(main)/autopilot/page.ai-section.tsx`
+  - `frontend/src/app/(main)/autopilot/page.helpers.ts`
+  - `frontend/src/app/(main)/autopilot/page.tsx`
+  - `frontend/src/app/(main)/autopilot/page.ui.tsx`
+  - `frontend/src/app/(main)/cia/page.helpers.ts`
+  - `frontend/src/app/(main)/cia/page.panels.tsx`
+  - `frontend/src/app/(main)/cia/page.sections.tsx`
+  - `frontend/src/components/kloel/auth/kloel-auth-screen.hooks.tsx`
+  - `frontend/src/components/kloel/auth/kloel-auth-screen.icons.tsx`
+  - `frontend/src/components/kloel/auth/kloel-auth-screen.social-buttons.tsx`
+  - `frontend/src/components/kloel/auth/kloel-auth-screen.tsx`
+  - `frontend/src/components/kloel/chat-container.message-sender.ts`
+  - `frontend/src/components/kloel/marketing/MarketingView.tsx`
+  - `frontend/src/components/kloel/marketing/OfficialMarketingChannelPage.tsx`
+  - `frontend/src/components/kloel/marketing/OfficialMarketingChannelPage.helpers.ts`
+  - `frontend/src/components/kloel/marketing/WhatsAppExperience.connection-panes.tsx`
+  - `frontend/src/components/kloel/sidebar/SidebarRecents.tsx`
+  - `frontend/src/hooks/useConversationHistory.tsx`
+  - `frontend/src/lib/kloel-conversations.ts`
+- Comportamento entregue:
+  - `frontend:typecheck` is green again after exact-optional-property repairs, missing helper restoration, and stale import cleanup.
+  - Social auth UI now has typed Facebook/TikTok props and icons, renders those buttons only when their provider is available, and keeps existing Google/Apple behavior.
+  - Official Marketing channel page imports its restored channel metadata/status/trusted-url helpers instead of compiling against a missing module.
+  - Conversation history pagination/export and chat stream callback types align with the current exact optional property settings.
+- Comando(s) rodados:
+  - `npm --prefix frontend run typecheck -- --pretty false`
+  - `npm --prefix frontend test -- kloel-auth-screen.social-buttons.test.tsx`
+  - `npx prettier --write <changed frontend files>`
+  - `npm --prefix frontend run build`
+  - `npm exec eslint -- <changed frontend files>` from `frontend/`
+- Resultado:
+  - `npm --prefix frontend run typecheck -- --pretty false`: passed.
+  - `npm --prefix frontend test -- kloel-auth-screen.social-buttons.test.tsx`: passed, 1 file / 4 tests.
+  - `npx prettier --write <changed frontend files>`: passed.
+  - `npm --prefix frontend run build`: passed; Next.js compiled successfully and generated 92 static pages.
+  - `npm exec eslint -- <changed frontend files>` from `frontend/`: passed.
+  - `npx eslint <changed frontend files>` from the repo root was rejected as evidence because it pulled an incompatible transient `eslint@10` and failed before analyzing code.
+- Evidencia:
+  - Current session command outputs show the frontend typecheck exiting 0 and the social-buttons Vitest suite passing 4/4.
+  - OpenCode batch `artifacts/opencode-fleet/kloel-cia-batch-15-frontend-typecheck-2026-05-12` is rejected as a completed subagent delivery because it ended SIGKILL, but its partial frontend edits were manually reviewed and completed in this orchestrator pass.
+- Riscos remanescentes:
+  - Backend/worker files are concurrently owned by another active OpenCode/Claude merge-repair agent, so aggregate `npm run typecheck` is intentionally not claimed by this entry.
+  - Golden Path provider smokes remain externally blocked by the dependency register.
+- Plano de rollback:
+  - Revert this frontend slice by forward-editing the listed files back to the previous UI/type shapes; no provider credentials, production envs, or database migrations were touched.
+- Referencia subagent:
+  - Partial/rejected: `artifacts/opencode-fleet/kloel-cia-batch-15-frontend-typecheck-2026-05-12/A-frontend-typecheck-recovery`
+
 ## 2026-05-11T00:00:00-03:00 - W0 - Boot, Rule Applicability, Baseline
 
 - ID-visao: V01-V24, especially V10, V12, V23.

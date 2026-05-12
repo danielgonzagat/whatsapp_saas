@@ -6,7 +6,12 @@ import { colors } from '@/lib/design-tokens';
 import { Badge, Button, Grid, StatCard, Surface } from '@/components/kloel';
 import { KloelMushroomMark } from '@/components/kloel/KloelBrand';
 import { Activity, Bot, RefreshCw, Sparkles, Wallet, Zap } from 'lucide-react';
-import type { StreamEvent } from './page';
+
+interface StreamEvent {
+  type: string;
+  message: string;
+  ts?: string;
+}
 
 interface CiaHeaderProps {
   surface: CiaSurfaceResponse | null;

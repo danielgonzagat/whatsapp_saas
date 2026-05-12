@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Logger, Post, Query, Request, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, Request, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { TikTokMarketingService, type TikTokCompleteBody } from './tiktok-marketing.service';
@@ -10,8 +10,6 @@ type TikTokKind = 'creator' | 'advertiser';
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 @RouteClass('mutate')
 export class TikTokMarketingController {
-  private readonly logger = new Logger(TikTokMarketingController.name);
-
   constructor(private readonly tiktokMarketing: TikTokMarketingService) {}
 
   @Get('status')

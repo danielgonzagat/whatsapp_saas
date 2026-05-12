@@ -1,11 +1,9 @@
 import { InjectRedis } from '@nestjs-modules/ioredis';
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Inject, Injectable, Logger, Optional, forwardRef } from '@nestjs/common';
 import type Redis from 'ioredis';
 import { ChannelTransportRegistry } from '../kloel/channel-transport.registry';
 import { OpsAlertService } from '../observability/ops-alert.service';
-import { AgentEventsService } from './agent-events.service';
-import { WHATSAPP_MESSAGING } from './whatsapp.tokens';
-import type { IWhatsappMessaging } from './whatsapp.interfaces';
+import { AgentEventsService } from '../whatsapp/agent-events.service';
 
 const WHITESPACE_G_RE = /\s+/g;
 const PATTERN_RE = /[?!.;,]+$/g;
@@ -34,8 +32,17 @@ export { CIA_SHARED_REPLY_LOCK_MS };
 type SendActionResult = {
   sent?: boolean;
   success?: boolean;
+  error?: boolean | string;
   messageId?: string | null;
+  message?: unknown;
+  blockedReason?: string;
   [key: string]: unknown;
+};
+type SendCiaMessageOptions = {
+  complianceMode?: string;
+  externalId?: string;
+  forceDirect?: boolean;
+  quotedMessageId?: string;
 };
 type SendIncomingPayloadData = {
   pushName?: string | null;
@@ -56,8 +63,8 @@ export class CiaSendHelpersService {
   constructor(
     @InjectRedis() private readonly redis: Redis,
     private readonly agentEvents: AgentEventsService,
-    @Inject(forwardRef(() => WHATSAPP_MESSAGING))
-    private readonly whatsappService: IWhatsappMessaging,
+    @Inject(forwardRef(() => ChannelTransportRegistry))
+    private readonly transports: ChannelTransportRegistry,
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
@@ -112,8 +119,8 @@ export class CiaSendHelpersService {
     workspaceId: string,
     phone: string,
     text: string,
-    options: Parameters<IWhatsappMessaging['sendMessage']>[3],
-  ): Promise<Awaited<ReturnType<IWhatsappMessaging['sendMessage']>>> {
+    options: SendCiaMessageOptions,
+  ): Promise<SendActionResult> {
     const reserved = await this.reserveDailyMessageLimit(workspaceId);
     if (!reserved) {
       return {

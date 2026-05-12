@@ -13,11 +13,15 @@ export interface ToolArgs {
   campaignId?: string;
   caption?: string;
   category?: string;
+  broadcastWindow?: unknown;
+  channelChoice?: unknown;
   code?: string;
+  couponDecision?: unknown;
   csvData?: string;
   daysSilent?: number;
   delayHours?: number;
   description?: string;
+  decisionTraceId?: string;
   discountPercent?: number;
   documentName?: string;
   enabled?: boolean;
@@ -25,7 +29,9 @@ export interface ToolArgs {
   expiresIn?: string;
   flowId?: string;
   flowName?: string;
+  followupTimingDecision?: unknown;
   funnelName?: string;
+  handoffDecision?: unknown;
   imageUrl?: string;
   includeConnections?: boolean;
   includeHealth?: boolean;
@@ -33,6 +39,7 @@ export interface ToolArgs {
   includeLink?: boolean;
   includeMetrics?: boolean;
   includePrice?: boolean;
+  inboundCorrelationId?: string;
   intent?: string;
   language?: string;
   message?: string;
@@ -46,16 +53,19 @@ export interface ToolArgs {
   period?: string;
   personality?: string;
   plan?: string;
+  priceBand?: string;
   price?: number;
   priority?: string;
   productId?: string;
   productName?: string;
+  productOffer?: unknown;
   properties?: Prisma.InputJsonValue;
   query?: string;
   questions?: string[];
   reason?: string;
   returnUrl?: string;
   scheduleAt?: string;
+  segment?: string;
   source?: string;
   stage?: string;
   status?: string;
@@ -83,4 +93,9 @@ export interface ActionEntry {
   tool: string;
   args: ToolArgs;
   result?: unknown;
+}
+
+export interface PredecidedAction {
+  tool: string;
+  args: ToolArgs;
 }

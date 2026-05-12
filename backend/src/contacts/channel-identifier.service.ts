@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -70,8 +70,6 @@ function toChannelIdentifierResult(identifier: {
 
 @Injectable()
 export class ChannelIdentifierService {
-  private readonly logger = new Logger(ChannelIdentifierService.name);
-
   constructor(private readonly prisma: PrismaService) {}
 
   resolve(
@@ -125,7 +123,7 @@ export class ChannelIdentifierService {
         contactId: contact.id,
         workspaceId,
         isPrimary: options?.isPrimary ?? true,
-        metadata: options?.metadata ? (options.metadata as Prisma.JsonObject) : undefined,
+        ...(options?.metadata ? { metadata: options.metadata as Prisma.JsonObject } : {}),
       },
     });
 
@@ -170,7 +168,7 @@ export class ChannelIdentifierService {
         contactId,
         workspaceId,
         isPrimary: options?.isPrimary ?? false,
-        metadata: options?.metadata ? (options.metadata as Prisma.JsonObject) : undefined,
+        ...(options?.metadata ? { metadata: options.metadata as Prisma.JsonObject } : {}),
       },
     });
     return toChannelIdentifierResult(created);

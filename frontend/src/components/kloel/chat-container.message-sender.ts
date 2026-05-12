@@ -34,23 +34,31 @@ export async function runGuestChat(deps: GuestChatDeps): Promise<void> {
       },
       body: JSON.stringify({ message: content.trim(), sessionId: guestSessionId }),
     });
-    if (!response.ok) {throw new Error(`HTTP ${response.status}`);}
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
     mutate((key: unknown) => typeof key === 'string' && key.startsWith('/chat'));
     const reader = response.body?.getReader();
-    if (!reader) {throw kloelError('Stream not available');}
+    if (!reader) {
+      throw kloelError('Stream not available');
+    }
     const decoder = new TextDecoder();
     let fullContent = '';
     let buffer = '';
 
     const readGuestStream = async (): Promise<void> => {
       const { done, value } = await reader.read();
-      if (done) {return;}
+      if (done) {
+        return;
+      }
       buffer += decoder.decode(value, { stream: true });
       const lines = buffer.split('\n');
       buffer = lines.pop() || '';
       for (const line of lines) {
         const update = parseGuestStreamLine(line);
-        if (!update) {continue;}
+        if (!update) {
+          continue;
+        }
         if (update.errorContent) {
           fullContent = update.errorContent;
           setMessages((prev) =>
@@ -71,7 +79,9 @@ export async function runGuestChat(deps: GuestChatDeps): Promise<void> {
     };
 
     await readGuestStream();
-    if (!fullContent.trim()) {throw new Error('empty_stream');}
+    if (!fullContent.trim()) {
+      throw new Error('empty_stream');
+    }
     setMessages((prev) =>
       prev.map((m) => (m.id === assistantId ? { ...m, isStreaming: false } : m)),
     );
@@ -179,7 +189,7 @@ export function runAuthedChat(deps: AuthedChatDeps): void {
         ),
       );
     },
-    onThread: (thread: { conversationId: string; title?: string }) => {
+    onThread: (thread: { conversationId: string; title?: string | undefined }) => {
       nextConversationId = thread.conversationId;
       nextTitle =
         thread.title ||

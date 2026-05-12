@@ -27,8 +27,6 @@ import type {
   SystemHealth,
 } from './page.types';
 
-import type { AutopilotSmokeTestResult } from './page.ui';
-
 export function unwrapSettled<T>(
   result: PromiseSettledResult<unknown>,
   transform: (value: unknown) => T,
@@ -120,17 +118,62 @@ export async function fetchAutopilotDataBundle(
 
   return {
     status: statusData,
-    stats: unwrapSettled<AutopilotStats | null>(statsResult, (v) => (v as AutopilotStats) || null, null),
-    impact: unwrapSettled<AutopilotImpact | null>(impactResult, (v) => (v as AutopilotImpact) || null, null),
+    stats: unwrapSettled<AutopilotStats | null>(
+      statsResult,
+      (v) => (v as AutopilotStats) || null,
+      null,
+    ),
+    impact: unwrapSettled<AutopilotImpact | null>(
+      impactResult,
+      (v) => (v as AutopilotImpact) || null,
+      null,
+    ),
     actions: unwrapSettled<AutopilotAction[]>(actionsResult, unwrapArrayEnvelope, []),
-    pipeline: unwrapSettled<AutopilotPipeline | null>(pipelineResult, (v) => (v as AutopilotPipeline) || null, null),
-    systemHealth: unwrapSettled<SystemHealth | null>(systemHealthResult, (v) => (v as SystemHealth) || null, null),
+    pipeline: unwrapSettled<AutopilotPipeline | null>(
+      pipelineResult,
+      (v) => (v as AutopilotPipeline) || null,
+      null,
+    ),
+    systemHealth: unwrapSettled<SystemHealth | null>(
+      systemHealthResult,
+      (v) => (v as SystemHealth) || null,
+      null,
+    ),
     moneyReport: unwrapSettled<MoneyReport | null>(moneyReportResult, unwrapDataEnvelope, null),
     revenueEvents: unwrapSettled<RevenueEvent[]>(revenueEventsResult, unwrapArrayEnvelope, []),
     insights: unwrapSettled<AutopilotInsight[]>(insightsResult, unwrapArrayEnvelope, []),
     queueStats: unwrapSettled<QueueStats | null>(queueStatsResult, unwrapDataEnvelope, null),
     config: unwrapSettled<AutopilotConfigData | null>(configResult, unwrapDataEnvelope, null),
-    runtimeConfig: unwrapSettled<RuntimeConfig | null>(runtimeConfigResult, (v) => (v as RuntimeConfig) || null, null),
+    runtimeConfig: unwrapSettled<RuntimeConfig | null>(
+      runtimeConfigResult,
+      (v) => (v as RuntimeConfig) || null,
+      null,
+    ),
     partialError,
   };
+}
+
+export function askResultToSummary(value: Record<string, unknown>): string {
+  if (!value) {
+    return 'Sem dados disponíveis.';
+  }
+  const answer = value.answer;
+  if (typeof answer === 'string') {
+    return answer;
+  }
+  const keys = Object.keys(value);
+  if (keys.length === 0) {
+    return 'Resultado vazio.';
+  }
+  const parts = keys.slice(0, 3).map((k) => {
+    const v = value[k];
+    if (typeof v === 'string') {
+      return v.length > 80 ? v.slice(0, 80) + '…' : v;
+    }
+    if (typeof v === 'number') {
+      return String(v);
+    }
+    return k;
+  });
+  return parts.join(' · ') || 'Dados disponíveis.';
 }

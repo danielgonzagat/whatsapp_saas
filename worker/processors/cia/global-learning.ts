@@ -6,10 +6,10 @@
  * separated — each depends on the full intermediate dataset from the prior step.
  */
 
-const U0300__U036F_RE = /[\u0300-\u036f]/g;
-const A_Z0_9_RE = /[^a-z0-9]+/g;
-const PATTERN_RE = /^_+|_+$/g;
-const R___PRECO_PRE_O_VALOR_PI_RE = /r\$|preco|preço|valor|pix|boleto/i;
+const DIACRITICS_RE = /[\u0300-\u036f]/g;
+const NON_TOKEN_RE = /[^a-z0-9]+/g;
+const EDGE_UNDERSCORE_RE = /^_+|_+$/g;
+const PRICE_RE = /r\$|preco|preço|valor|pix|boleto/i;
 /** Global learning signal shape. */
 export interface GlobalLearningSignal {
   domain: string;

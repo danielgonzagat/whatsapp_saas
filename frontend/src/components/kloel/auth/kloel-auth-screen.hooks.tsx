@@ -1,5 +1,31 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { kloelError } from '@/lib/i18n/t';
+
+function requestFacebookAccessTokenWithEmailScope(): Promise<{
+  accessToken: string;
+  userId?: string;
+}> {
+  return new Promise((resolve, reject) => {
+    if (!window.FB) {
+      reject(kloelError('Facebook SDK não carregado.'));
+      return;
+    }
+    window.FB.login(
+      (response: { authResponse?: { accessToken?: string; userID?: string } }) => {
+        if (!response.authResponse) {
+          reject(kloelError('Login com Facebook foi cancelado.'));
+          return;
+        }
+        resolve({
+          accessToken: response.authResponse.accessToken || '',
+          ...(response.authResponse.userID ? { userId: response.authResponse.userID } : {}),
+        });
+      },
+      { scope: 'email,public_profile' },
+    );
+  });
+}
 
 /* ────────────────────────────────────────────────────────────
    GOOGLE SIGN-IN HOOK

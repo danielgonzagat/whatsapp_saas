@@ -7,6 +7,7 @@ import { apiFetch } from '@/lib/api';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 import {
   CHANNEL_META,
+  type ChannelConnectionStatus,
   type ChannelKey,
   type ConnectStatus,
   type TikTokStatus,
@@ -145,7 +146,10 @@ export function OfficialMarketingChannelPage({ channel }: Props) {
         status: tiktokStatus?.status,
       };
     }
-    return status?.channels?.[channel] || null;
+    const channelStatus = status?.channels as
+      | Partial<Record<ChannelKey, ChannelConnectionStatus>>
+      | undefined;
+    return channelStatus?.[channel] || null;
   }, [channel, status, tiktokStatus]);
 
   const refresh = useCallback(async () => {
@@ -157,7 +161,7 @@ export function OfficialMarketingChannelPage({ channel }: Props) {
       if (nextStatus.error) {
         throw new Error(nextStatus.error);
       }
-      setStatus(nextStatus.data || (nextStatus as ConnectStatus));
+      setStatus(nextStatus.data || (nextStatus as unknown as ConnectStatus));
       const setupResponse = await apiFetch<{ setup?: unknown }>(
         `/marketing/connect/channel-setup?channel=${encodeURIComponent(channel)}`,
       );

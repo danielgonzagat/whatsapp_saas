@@ -1,7 +1,7 @@
 'use client';
 import { colors } from '@/lib/design-tokens';
 import { kloelT } from '@/lib/i18n/t';
-import { AppleIcon, GoogleIcon } from './kloel-auth-screen.icons';
+import { AppleIcon, FacebookIcon, GoogleIcon, TikTokIcon } from './kloel-auth-screen.icons';
 
 const sora = "var(--font-sora), 'Sora', sans-serif";
 
@@ -9,6 +9,11 @@ interface SocialButtonsProps {
   googleButtonRef: React.RefObject<HTMLDivElement | null>;
   isLoading: boolean;
   onAppleClick: () => void;
+  onFacebookClick?: () => void;
+  facebookAvailable?: boolean;
+  facebookSdkReady?: boolean;
+  onTikTokClick?: () => void;
+  tikTokAvailable?: boolean;
 }
 
 const socialBtnBase: React.CSSProperties = {
@@ -26,7 +31,16 @@ const socialBtnBase: React.CSSProperties = {
   transition: 'border-color 150ms ease, opacity 150ms ease',
 };
 
-export function SocialButtons({ googleButtonRef, isLoading, onAppleClick }: SocialButtonsProps) {
+export function SocialButtons({
+  googleButtonRef,
+  isLoading,
+  onAppleClick,
+  onFacebookClick = () => {},
+  facebookAvailable = false,
+  facebookSdkReady = false,
+  onTikTokClick = () => {},
+  tikTokAvailable = false,
+}: SocialButtonsProps) {
   return (
     <div
       style={{
@@ -63,55 +77,56 @@ export function SocialButtons({ googleButtonRef, isLoading, onAppleClick }: Soci
         />
       </div>
 
-      <button
-        type="button"
-        onClick={onFacebookClick}
-        disabled={isLoading || !facebookAvailable}
-        style={{
-          ...socialBtnBase,
-          cursor: isLoading || !facebookAvailable ? 'default' : 'pointer',
-          opacity: facebookAvailable ? 1 : 0.45,
-        }}
-        onMouseEnter={(e) => {
-          if (!facebookAvailable || isLoading) {return;}
-          e.currentTarget.style.borderColor = colors.border.glow;
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.borderColor = colors.background.border;
-        }}
-        title={
-          facebookAvailable
-            ? facebookSdkReady
-              ? 'Continuar com Facebook'
-              : 'Carregando Facebook...'
-            : 'Facebook indisponível'
-        }
-      >
-        <FacebookIcon />
-        {kloelT(`Facebook`)}
-      </button>
+      {facebookAvailable ? (
+        <button
+          type="button"
+          onClick={onFacebookClick}
+          disabled={isLoading || !facebookSdkReady}
+          style={{
+            ...socialBtnBase,
+            cursor: isLoading || !facebookSdkReady ? 'default' : 'pointer',
+            opacity: facebookSdkReady ? 1 : 0.45,
+          }}
+          onMouseEnter={(e) => {
+            if (!facebookSdkReady || isLoading) {
+              return;
+            }
+            e.currentTarget.style.borderColor = colors.border.glow;
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = colors.background.border;
+          }}
+          title={facebookSdkReady ? 'Continuar com Facebook' : 'Carregando Facebook...'}
+        >
+          <FacebookIcon />
+          {kloelT(`Facebook`)}
+        </button>
+      ) : null}
 
-      <button
-        type="button"
-        onClick={onTikTokClick}
-        disabled={isLoading || !tikTokAvailable}
-        style={{
-          ...socialBtnBase,
-          cursor: isLoading || !tikTokAvailable ? 'default' : 'pointer',
-          opacity: tikTokAvailable ? 1 : 0.45,
-        }}
-        onMouseEnter={(e) => {
-          if (!tikTokAvailable || isLoading) {return;}
-          e.currentTarget.style.borderColor = colors.border.glow;
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.borderColor = colors.background.border;
-        }}
-        title={tikTokAvailable ? 'Continuar com TikTok' : 'TikTok indisponível'}
-      >
-        <TikTokIcon />
-        {kloelT(`TikTok`)}
-      </button>
+      {tikTokAvailable ? (
+        <button
+          type="button"
+          onClick={onTikTokClick}
+          disabled={isLoading}
+          style={{
+            ...socialBtnBase,
+            cursor: isLoading ? 'default' : 'pointer',
+          }}
+          onMouseEnter={(e) => {
+            if (isLoading) {
+              return;
+            }
+            e.currentTarget.style.borderColor = colors.border.glow;
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = colors.background.border;
+          }}
+          title="Continuar com TikTok"
+        >
+          <TikTokIcon />
+          {kloelT(`TikTok`)}
+        </button>
+      ) : null}
 
       <button
         type="button"

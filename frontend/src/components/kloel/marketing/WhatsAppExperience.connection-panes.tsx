@@ -12,9 +12,7 @@ const E = 'UI.accent';
 const V = KLOEL_THEME.bgPrimary;
 const G = 'UI.success';
 const S = KLOEL_THEME.textSecondary;
-const C = KLOEL_THEME.bgCard;
 const U = KLOEL_THEME.bgSecondary;
-const B = KLOEL_THEME.borderPrimary;
 const F = "'Sora', system-ui, sans-serif";
 const M = "'JetBrains Mono', monospace";
 

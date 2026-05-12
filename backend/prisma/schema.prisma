@@ -242,6 +242,27 @@ model Workspace {
   // Meta Platform Connection
   metaConnection MetaConnection?
 
+  // Channel setup - operational wizard state
+  channelSetups   ChannelSetup[]
+  channelProducts ChannelProduct[]
+  channelArsenal  ChannelArsenal[]
+  channelConfigs  ChannelConfig[]
+
+  // MIND - Cognitive Bayesian Runtime
+  mindBeliefs           MindBelief[]
+  mindPredictions       MindPrediction[]
+  mindPolicies          MindPolicy[]
+  mindWorkspaceState    MindWorkspaceState?
+  mindCases             MindCase[]
+  mindConceptDetections MindConceptDetection[]
+  mindGraphNodes        MindGraphNode[]
+  mindGraphEdges        MindGraphEdge[]
+  mindOutboxEvents      MindOutboxEvent[]
+  mindBanditArms        MindBanditArm[]
+  mindGuardAudits       MindGuardAudit[]
+  mindDailyReports      MindDailyReport[]
+  mindGlobalPriors      MindGlobalPrior[]
+
   // Facebook Messenger Messages
   fbMessages FbMessage[]
 
@@ -3377,6 +3398,333 @@ model MetaConnection {
   updatedAt             DateTime  @updatedAt
 
   @@map("RAC_MetaConnection")
+}
+
+model ChannelSetup {
+  id                 String    @id @default(uuid())
+  workspaceId        String
+  workspace          Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  channel            String
+  completedAt        DateTime?
+  lastReconfiguredAt DateTime?
+  currentStep        Int       @default(0)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@unique([workspaceId, channel])
+  @@index([workspaceId, channel])
+  @@map("RAC_ChannelSetup")
+}
+
+model ChannelProduct {
+  id          String    @id @default(uuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  channel     String
+  productId   String
+  product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  includedAt  DateTime  @default(now())
+
+  @@unique([workspaceId, channel, productId])
+  @@index([workspaceId, channel])
+  @@index([productId])
+  @@map("RAC_ChannelProduct")
+}
+
+model ChannelArsenal {
+  id          String    @id @default(uuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  channel     String
+  assetId     String
+  type        String
+  label       String?
+  storageRef  String
+  metadata    Json?
+  uploadedAt  DateTime  @default(now())
+
+  @@unique([workspaceId, channel, assetId])
+  @@index([workspaceId, channel])
+  @@map("RAC_ChannelArsenal")
+}
+
+model ChannelConfig {
+  id                String    @id @default(uuid())
+  workspaceId       String
+  workspace         Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  channel           String
+  tone              String    @default("consultivo")
+  aggressiveness    String    @default("normal")
+  businessHours     Json      @default("{}")
+  followupEnabled   Boolean   @default(true)
+  dailyMessageLimit Int       @default(20)
+  transferCriteria  Json      @default("{}")
+  language          String    @default("pt-BR")
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@unique([workspaceId, channel])
+  @@index([workspaceId, channel])
+  @@map("RAC_ChannelConfig")
+}
+
+model MindBelief {
+  id          String    @id
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  subject     String
+  predicate   String
+  context     Json      @db.JsonB
+  mean        Float
+  variance    Float     @default(0.25)
+  samples     Int       @default(0)
+  alpha       Float     @default(1.0)
+  beta        Float     @default(1.0)
+  lastUpdate  DateTime  @default(now())
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([workspaceId, subject, predicate, context])
+  @@index([workspaceId, predicate])
+  @@index([workspaceId, subject])
+  @@map("RAC_MindBelief")
+}
+
+model MindPrediction {
+  id                String    @id
+  workspaceId       String
+  workspace         Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  subject           String
+  predicate         String
+  context           Json      @db.JsonB
+  predictedMean     Float
+  predictedVariance Float
+  horizonSec        Int
+  deadline          DateTime
+  actual            Float?
+  surprise          Float?
+  resolvedAt        DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([workspaceId, subject])
+  @@index([workspaceId, predicate, createdAt(sort: Desc)])
+  @@map("RAC_MindPrediction")
+}
+
+model MindPolicy {
+  id              String    @id
+  workspaceId     String
+  workspace       Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  subject         String
+  decisionType    String
+  context         Json      @db.JsonB
+  candidates      Json      @db.JsonB
+  chosen          String
+  baseline        String
+  reasonInternal  String?
+  outcomeKey      String?
+  outcome         Float?
+  baselineOutcome Float?
+  resolvedAt      DateTime?
+  calcSteps       Json      @db.JsonB
+  epsilon         Float
+  utilitySuccess  Float
+  utilityFail     Float
+  fallbackActive  Boolean
+  fallbackReason  String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([workspaceId, decisionType, createdAt(sort: Desc)])
+  @@map("RAC_MindPolicy")
+}
+
+model MindWorkspaceState {
+  id              String    @id
+  workspaceId     String    @unique
+  workspace       Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  lastWatermark   DateTime?
+  lastTickAt      DateTime?
+  lastTickMs      Int       @default(0)
+  tickLeaseOwner  String?
+  tickLeaseUntil  DateTime?
+  tickCount       Int       @default(0)
+  lastError       String?
+  perceivedWindow Int       @default(0)
+  surpriseWindow  Float     @default(0)
+  openDecisions   Int       @default(0)
+  health          Json      @default("{}") @db.JsonB
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@map("RAC_MindWorkspaceState")
+}
+
+model MindCase {
+  id          String    @id
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  subject     String
+  caseType    String
+  text        String    @db.Text
+  tokens      String[]
+  features    Json      @db.JsonB
+  action      String
+  outcome     Float?
+  occurredAt  DateTime
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([workspaceId, caseType, occurredAt(sort: Desc)])
+  @@index([workspaceId, subject, occurredAt(sort: Desc)])
+  @@map("RAC_MindCase")
+}
+
+model MindConceptDetection {
+  id          String    @id
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  subject     String
+  concept     String
+  confidence  Float
+  evidence    String    @db.Text
+  features    Json      @db.JsonB
+  occurredAt  DateTime
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([workspaceId, concept, occurredAt(sort: Desc)])
+  @@index([workspaceId, subject, occurredAt(sort: Desc)])
+  @@map("RAC_MindConceptDetection")
+}
+
+model MindGraphNode {
+  id          String    @id
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  kind        String
+  label       String
+  weight      Float     @default(1)
+  metadata    Json      @default("{}") @db.JsonB
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([workspaceId, kind, label])
+  @@index([workspaceId, kind, weight])
+  @@map("RAC_MindGraphNode")
+}
+
+model MindGraphEdge {
+  id          String    @id
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  fromNode    String
+  toNode      String
+  relation    String
+  weight      Float     @default(1)
+  samples     Int       @default(1)
+  metadata    Json      @default("{}") @db.JsonB
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([workspaceId, fromNode, relation, toNode])
+  @@index([workspaceId, relation, weight])
+  @@map("RAC_MindGraphEdge")
+}
+
+model MindOutboxEvent {
+  id             String    @id
+  workspaceId    String
+  workspace      Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  eventType      String
+  subject        String
+  payload        Json      @db.JsonB
+  idempotencyKey String
+  status         String    @default("pending")
+  attempts       Int       @default(0)
+  dispatchedAt   DateTime?
+  lastError      String?
+  occurredAt     DateTime
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@unique([workspaceId, idempotencyKey])
+  @@index([workspaceId, eventType, occurredAt(sort: Desc)])
+  @@index([status, createdAt])
+  @@map("RAC_MindOutboxEvent")
+}
+
+model MindBanditArm {
+  id           String    @id
+  workspaceId  String
+  workspace    Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  decisionType String
+  arm          String
+  context      Json      @db.JsonB
+  alpha        Float     @default(1)
+  beta         Float     @default(1)
+  pulls        Int       @default(0)
+  wins         Int       @default(0)
+  isActive     Boolean   @default(true)
+  promotedAt   DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@unique([workspaceId, decisionType, arm])
+  @@index([workspaceId, decisionType, isActive])
+  @@map("RAC_MindBanditArm")
+}
+
+model MindGuardAudit {
+  id          String    @id
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  guardName   String
+  action      String
+  decision    String
+  allowed     Boolean
+  reason      String
+  context     Json      @db.JsonB
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([workspaceId, guardName, createdAt(sort: Desc)])
+  @@map("RAC_MindGuardAudit")
+}
+
+model MindDailyReport {
+  id          String    @id
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  reportDate  DateTime
+  content     String    @db.Text
+  storageKey  String?
+  metrics     Json      @db.JsonB
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([workspaceId, reportDate])
+  @@map("RAC_MindDailyReport")
+}
+
+model MindGlobalPrior {
+  id           String     @id
+  workspaceId  String?
+  workspace    Workspace? @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+  domain       String
+  predicate    String
+  context      Json       @db.JsonB
+  mean         Float
+  variance     Float
+  samples      Int
+  anonymizedBy String
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@unique([domain, predicate, context])
+  @@index([domain, predicate])
+  @@map("RAC_MindGlobalPrior")
 }
 
 model FbMessage {

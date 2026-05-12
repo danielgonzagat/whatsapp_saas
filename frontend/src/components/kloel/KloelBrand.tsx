@@ -1,6 +1,5 @@
 'use client';
 
-import { kloelT } from '@/lib/i18n/t';
 import { colors } from '@/lib/design-tokens';
 import type { CSSProperties, ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';

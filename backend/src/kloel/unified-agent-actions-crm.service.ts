@@ -6,6 +6,16 @@ import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registr
 import type { ToolArgs } from './unified-agent.types';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { TAG_DEFAULT_COLORS } from '../common/kloel-colors';
+import { MindGuardContextBuilderService } from './mind-guard-context-builder.service';
+import { MindGuardsService } from './mind-guards.service';
+import type { MindActionContext } from './mind-code-native.types';
+import { MindPolicyService } from './mind-policy.service';
+import { MindService } from './mind.service';
+import {
+  chooseFollowUpTiming,
+  predecidedFollowUpTiming,
+  predecidedHumanTransfer,
+} from './unified-agent-actions-crm-predecided.helpers';
 
 type UnknownRecord = Record<string, unknown>;
 

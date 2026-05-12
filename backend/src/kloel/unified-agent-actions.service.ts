@@ -1,4 +1,4 @@
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Inject, Injectable, Logger, Optional, forwardRef } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import OpenAI from 'openai';
 import { AuditService } from '../audit/audit.service';
@@ -127,11 +127,11 @@ export class UnifiedAgentActionsService {
         workspaceId,
         phone,
         documentCaption || '',
-        context,
         {
           mediaUrl: documentUrl,
           mediaType: 'document',
           caption: documentCaption || '',
+          ...(context || {}),
         },
       );
       const sendResult =

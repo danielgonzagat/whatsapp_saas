@@ -7,6 +7,10 @@ import { chatCompletionWithFallback } from './openai-wrapper';
 import type { ToolArgs } from './unified-agent.types';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { actionGetWorkspaceStatus as actionGetWorkspaceStatusFn } from './unified-agent-actions-workspace.helpers';
+import { MindGuardContextBuilderService } from './mind-guard-context-builder.service';
+import { MindGuardsService } from './mind-guards.service';
+import type { MindActionContext } from './mind-code-native.types';
+import { MindService } from './mind.service';
 
 type UnknownRecord = Record<string, unknown>;
 type MemoryValue = Record<string, unknown>;
@@ -257,7 +261,7 @@ export class UnifiedAgentActionsWorkspaceService {
     return { success: true, message: 'Configurações atualizadas com sucesso' };
   }
 
-  async actionCreateBroadcast(workspaceId: string, args: ToolArgs) {
+  async actionCreateBroadcast(workspaceId: string, args: ToolArgs, context?: UnknownRecord) {
     const broadcastKey = `broadcast_${Date.now()}`;
     const segment = this.str(args.stage, 'general');
     const availableChannels = this.resolveBroadcastChannels(args);

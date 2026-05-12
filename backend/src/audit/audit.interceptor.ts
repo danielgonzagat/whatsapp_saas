@@ -9,7 +9,6 @@ import { Reflector } from '@nestjs/core';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { sanitizePayload } from '../common/sanitize-payload';
-import type { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { AuditService } from './audit.service';
 
 /** Audit action metadata. */

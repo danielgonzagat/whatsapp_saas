@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { WahaChatSummary } from './providers/whatsapp-api.provider';
+import { WahaChatSummary } from '../whatsapp/providers/whatsapp-api.provider';
 
 type RawCiaChat = Record<string, unknown>;
 type RawCiaChatId = Record<string, unknown> | string;

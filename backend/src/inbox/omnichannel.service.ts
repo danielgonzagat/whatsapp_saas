@@ -52,26 +52,6 @@ export class OmnichannelService {
       ...(mediaUrlVal !== undefined ? { mediaUrl: mediaUrlVal } : {}),
     });
 
-    const savedMsg = resolved
-      ? await this.inbox.saveMessage({
-          workspaceId: msg.workspaceId,
-          contactId: resolved.id,
-          content,
-          direction: 'INBOUND',
-          type: messageType,
-          channel: msg.channel,
-          mediaUrl: processedAttachments.length > 0 ? processedAttachments[0].url : undefined,
-        })
-      : await this.inbox.saveMessageByPhone({
-          workspaceId: msg.workspaceId,
-          phone: identifier,
-          content,
-          direction: 'INBOUND',
-          type: messageType,
-          channel: msg.channel,
-          mediaUrl: processedAttachments.length > 0 ? processedAttachments[0].url : undefined,
-        });
-
     void this.routing;
 
     await this.maybeDispatchToUnifiedAgent(msg, identifier, content, savedMsg.contactId);

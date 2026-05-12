@@ -19,6 +19,23 @@ interface Conversation {
   lastMessagePreview?: string | undefined;
 }
 
+interface ConversationApiPayload {
+  items?: Conversation[];
+  total?: number;
+  nextCursor?: string | null;
+  hasMore?: boolean;
+  [key: string]: unknown;
+}
+
+interface ThreadPage {
+  items: Conversation[];
+  total: number;
+  nextCursor: string | null;
+  hasMore: boolean;
+}
+
+const CONVERSATION_PAGE_SIZE = 20;
+
 interface ConversationHistoryContextType {
   conversations: Conversation[];
   activeConv: string | null;
@@ -84,7 +101,9 @@ function unwrapConversationPayload(
   return response as ConversationApiPayload;
 }
 
-function readThreadPage(response: { data?: ConversationApiPayload } | ConversationApiPayload): ThreadPage {
+function readThreadPage(
+  response: { data?: ConversationApiPayload } | ConversationApiPayload,
+): ThreadPage {
   const payload = unwrapConversationPayload(response);
   if (Array.isArray(payload)) {
     return { items: payload, total: payload.length, nextCursor: null, hasMore: false };
@@ -102,11 +121,17 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
   const { isAuthenticated, isLoading } = useAuth();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConv, setActiveConv] = useState<string | null>(null);
+  const [hasMoreConversations, setHasMoreConversations] = useState(false);
+  const [isLoadingMoreConversations, setIsLoadingMoreConversations] = useState(false);
+  const [totalConversations, setTotalConversations] = useState<number | null>(null);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
   const didSyncRef = useRef(false);
 
   const applyConversations = useCallback((nextConversations: Conversation[]) => {
     const normalized = sortConversations(
-      nextConversations.filter((conversation) => isValidConversationId(conversation?.id)).map(normalizeConversation),
+      nextConversations
+        .filter((conversation) => isValidConversationId(conversation?.id))
+        .map(normalizeConversation),
     );
 
     setConversations(normalized);
@@ -115,12 +140,25 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
     );
   }, []);
 
+  const mergeConversations = useCallback((incoming: Conversation[]) => {
+    setConversations((prev) => {
+      const existing = new Map(prev.map((c) => [c.id, c]));
+      for (const conv of incoming) {
+        if (!isValidConversationId(conv?.id)) continue;
+        existing.set(conv.id, normalizeConversation(conv));
+      }
+      return sortConversations(Array.from(existing.values()));
+    });
+  }, []);
+
   const refreshConversations = useCallback(async () => {
     if (!isAuthenticated) {
       return;
     }
     try {
-      const res = await apiFetch<ConversationApiPayload>(`/kloel/threads?limit=${CONVERSATION_PAGE_SIZE}`);
+      const res = await apiFetch<ConversationApiPayload>(
+        `/kloel/threads?limit=${CONVERSATION_PAGE_SIZE}`,
+      );
       const page = readThreadPage(res);
       applyConversations(page.items);
       setNextCursor(page?.nextCursor ?? null);

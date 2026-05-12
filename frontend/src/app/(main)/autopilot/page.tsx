@@ -12,9 +12,9 @@ import { useAutopilotData } from './useAutopilotData';
 import { useWorkspaceId } from '@/hooks/useWorkspaceId';
 import type { AutopilotConfigData } from './page.types';
 import { colors } from '@/lib/design-tokens';
-import { RefreshCw } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import { startTransition, useCallback } from 'react';
+import { KloelMushroomMark } from '@/components/kloel/KloelBrand';
 
 export default function AutopilotPage() {
   const workspaceId = useWorkspaceId();
@@ -121,9 +121,7 @@ export default function AutopilotPage() {
         onRefresh={fetchAutopilotData}
         onExport={handleExportActions}
       />
-      <AutopilotPlanList
-        revenueEvents={revenueEvents}
-      />
+      <AutopilotPlanList revenueEvents={revenueEvents} />
       <AutopilotHistoryPanel
         insights={insights}
         askQuestion={askQuestion}
@@ -148,9 +146,13 @@ export default function AutopilotPage() {
         isEditingConfig={isEditingConfig}
         configDraft={configDraft}
         isSavingConfig={isSavingConfig}
-        onConfigDraftChange={(updater) => setConfigDraft((prev) => updater(prev) as AutopilotConfigData)}
+        onConfigDraftChange={(updater) =>
+          setConfigDraft((prev) => updater(prev) as AutopilotConfigData)
+        }
         onToggleEditingConfig={() => {
-          if (isEditingConfig) { setConfigDraft(config || {}); }
+          if (isEditingConfig) {
+            setConfigDraft(config || {});
+          }
           setIsEditingConfig(!isEditingConfig);
         }}
         onSaveConfig={handleSaveConfig}

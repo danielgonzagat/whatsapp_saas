@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { AudioService } from './audio.service';
+import { ChannelTransportRegistry } from './channel-transport.registry';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import type {
   ToolResult,

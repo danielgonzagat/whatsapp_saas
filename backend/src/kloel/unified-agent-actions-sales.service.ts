@@ -6,6 +6,10 @@ import { UnifiedAgentActionsMessagingService } from './unified-agent-actions-mes
 import type { ToolArgs } from './unified-agent.types';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { actionHandleObjection as actionHandleObjectionFn } from './unified-agent-actions-sales.helpers';
+import { MindGuardContextBuilderService } from './mind-guard-context-builder.service';
+import { MindGuardsService } from './mind-guards.service';
+import type { MindActionContext } from './mind-code-native.types';
+import { MindService } from './mind.service';
 
 type UnknownRecord = Record<string, unknown>;
 

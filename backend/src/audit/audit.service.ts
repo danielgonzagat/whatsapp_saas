@@ -3,12 +3,6 @@ import { Prisma } from '@prisma/client';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 
-interface AuditLogCreateClient {
-  auditLog: {
-    create(args: Prisma.AuditLogCreateArgs): Promise<unknown>;
-  };
-}
-
 /** Audit service. */
 @Injectable()
 export class AuditService {

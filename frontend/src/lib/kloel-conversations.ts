@@ -144,7 +144,7 @@ export async function sendAuthenticatedKloelMessage(
       companyContext: input.companyContext,
       metadata: input.metadata,
     },
-    signal: options.signal,
+    ...(options.signal ? { signal: options.signal } : {}),
   });
 
   mutate((key: unknown) => typeof key === 'string' && key.startsWith('/kloel'));

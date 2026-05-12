@@ -12,6 +12,7 @@ import type { AuditService } from '../audit/audit.service';
 import type { ConnectService } from '../payments/connect/connect.service';
 import type { PrismaService } from '../prisma/prisma.service';
 import type { EmailService } from './email.service';
+import type { AppleAuthService } from './apple-auth.service';
 import type { FacebookAuthService } from './facebook-auth.service';
 import type { GoogleAuthService } from './google-auth.service';
 import type { TikTokAuthService } from './tiktok-auth.service';
