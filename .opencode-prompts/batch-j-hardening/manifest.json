@@ -1,0 +1,21 @@
+{
+  "runId": "batch-j-hardening-2026-05-12",
+  "concurrency": 2,
+  "timeoutSec": 0,
+  "staggerMs": 25000,
+  "dir": "/Users/danielpenin/whatsapp_saas",
+  "skipPermissions": true,
+  "_note": "Wave J — 2 hardening middlewares. Independent, low risk, can run in parallel.",
+  "tasks": [
+    {
+      "id": "Idempotency-Middleware",
+      "title": "Wave J — IdempotencyMiddleware (Redis 24h cache, opt-in via header)",
+      "promptFile": ".opencode-prompts/batch-j-hardening/Idempotency-Middleware.md"
+    },
+    {
+      "id": "Correlation-Id-Middleware",
+      "title": "Wave J — CorrelationIdMiddleware (AsyncLocalStorage + X-Request-ID)",
+      "promptFile": ".opencode-prompts/batch-j-hardening/Correlation-Id-Middleware.md"
+    }
+  ]
+}
