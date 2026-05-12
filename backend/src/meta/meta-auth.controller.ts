@@ -22,6 +22,11 @@ import { MetaSdkService } from './meta-sdk.service';
 import { decryptMetaToken, encryptMetaToken } from './meta-token-crypto';
 import { MetaWhatsAppService } from './meta-whatsapp.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import {
+  buildDiagnosticsPayload,
+  humanizeMetaError,
+  sanitizeReturnTo as sanitizeReturnToHelper,
+} from './__companions__/meta-auth-helpers';
 
 /**
  * Meta Platform OAuth controller.
@@ -87,45 +92,7 @@ export class MetaAuthController {
   }
 
   private sanitizeReturnTo(requestedReturnTo?: string | null, channel?: string | null): string {
-    const raw = String(requestedReturnTo || '').trim();
-
-    // Defense-in-depth against open redirects:
-    //  - Must be absolute internal path: starts with single "/"
-    //  - Reject protocol-relative ("//evil.com"), backslash tricks ("/\\evil"),
-    //    encoded variants ("/%5cevil", "/%2f%2fevil"), CR/LF injection, schemes.
-    const looksSafe =
-      raw.length > 0 &&
-      raw.length <= 512 &&
-      raw.startsWith('/') &&
-      !raw.startsWith('//') &&
-      !raw.startsWith('/\\') &&
-      !/^\/%2f/i.test(raw) &&
-      !/^\/%5c/i.test(raw) &&
-      !/[\r\n\t]/.test(raw) &&
-      !/^[a-z][a-z0-9+.-]*:/i.test(raw);
-
-    if (looksSafe) {
-      // Round-trip through URL parser bound to the trusted frontend origin to
-      // catch anything that constructs cross-origin once parsed.
-      try {
-        const parsed = new URL(raw, this.frontendUrl);
-        const base = new URL(this.frontendUrl);
-        if (parsed.origin === base.origin) {
-          return `${parsed.pathname}${parsed.search}${parsed.hash}`;
-        }
-      } catch {
-        // fall through to channel default
-      }
-    }
-
-    const marketingChannel = String(channel || '')
-      .trim()
-      .toLowerCase();
-    if (['whatsapp', 'instagram', 'facebook', 'email'].includes(marketingChannel)) {
-      return `/marketing/${marketingChannel}`;
-    }
-
-    return '/settings?section=apps';
+    return sanitizeReturnToHelper(requestedReturnTo, channel, this.frontendUrl);
   }
 
   private buildFrontendRedirect(
@@ -142,72 +109,7 @@ export class MetaAuthController {
   }
 
   private humanizeMetaError(rawMessage: string, errorCode?: string | number | null): string {
-    const msg = rawMessage.toLowerCase();
-    const code = String(errorCode || '').trim();
-
-    // Match by numeric Graph API code first (more reliable than message scan):
-    //   https://developers.facebook.com/docs/graph-api/guides/error-handling/
-    if (code === '190') {
-      return 'O token Meta expirou ou foi revogado. Reconecte o canal para gerar um novo.';
-    }
-    if (code === '200' || code === '10' || code === '299') {
-      return 'O usuario nao concedeu todas as permissoes necessarias. Tente conectar novamente marcando todas as opcoes.';
-    }
-    if (code === '4' || code === '17' || code === '32' || code === '613') {
-      return 'Limite de requisicoes da Meta atingido. Aguarde alguns minutos e tente novamente.';
-    }
-    if (code === '368') {
-      return 'A Meta bloqueou esta acao temporariamente para o seu app. Aguarde algumas horas antes de reenviar.';
-    }
-    if (code === '100') {
-      return 'A Meta recusou um parametro obrigatorio. Verifique se o redirect_uri cadastrado bate exatamente com o backend e tente novamente.';
-    }
-    if (code === '80004' || code === '131056') {
-      return 'O numero WhatsApp atingiu o limite de mensagens ou nao esta aprovado para o tier atual.';
-    }
-
-    // Domain / redirect URI specific (the user's reported error)
-    if (
-      msg.includes("url's domain") ||
-      msg.includes('app domains') ||
-      (msg.includes('url isn') && msg.includes('domain')) ||
-      (msg.includes('not in') && msg.includes('domain')) ||
-      msg.includes('redirect_uri') ||
-      msg.includes('redirect uri')
-    ) {
-      return 'A URL de retorno nao consta nos dominios do app Meta. Cadastre o backend (ex: api.kloel.com) em "App Domains" + "Allowed Domains" + "OAuth Redirect URIs" e confira BACKEND_PUBLIC_URL / META_OAUTH_REDIRECT_URI.';
-    }
-    if (msg.includes('expired') || msg.includes('code has expired')) {
-      return 'O codigo de autorizacao Meta expirou. Tente conectar novamente.';
-    }
-    if (msg.includes('invalid') && (msg.includes('code') || msg.includes('token'))) {
-      return 'Codigo de autorizacao Meta invalido ou ja usado. Tente conectar novamente.';
-    }
-    if (msg.includes('client_id') || msg.includes('app_id')) {
-      return 'A configuracao do app Meta nao foi aceita. Revise META_APP_ID/META_APP_SECRET e o status do app no dashboard.';
-    }
-    if (msg.includes('whatsapp') && (msg.includes('not enabled') || msg.includes('disabled'))) {
-      return 'Seu numero WhatsApp Business ainda nao foi habilitado para o app. Conclua o Embedded Signup ou peca verificacao a Meta.';
-    }
-    if (msg.includes('no business') || msg.includes('not associated with')) {
-      return 'O usuario Meta nao esta associado a nenhum Business Manager. Crie um em business.facebook.com antes de continuar.';
-    }
-    if (msg.includes('no page') || msg.includes('no pages')) {
-      return 'O usuario Meta nao possui uma pagina do Facebook associada. Crie a pagina e tente conectar de novo.';
-    }
-    if (
-      msg.includes('instagram') &&
-      (msg.includes('not connected') || msg.includes('no instagram'))
-    ) {
-      return 'Sua pagina do Facebook nao possui uma conta Instagram Business vinculada. Vincule pela pagina e reconecte.';
-    }
-    if (msg.includes('permission') || msg.includes('permissions')) {
-      return 'Permissoes insuficientes no app Meta. Verifique os scopes configurados no dashboard.';
-    }
-    if (msg.includes('rate') || msg.includes('limit')) {
-      return 'Limite de requisicoes da Meta atingido. Aguarde alguns minutos e tente novamente.';
-    }
-    return 'Nao foi possivel concluir a autenticacao Meta. Tente novamente em instantes.';
+    return humanizeMetaError(rawMessage, errorCode);
   }
 
   // ─── Generate OAuth URL ──────────────────────────────────────────
@@ -236,49 +138,16 @@ export class MetaAuthController {
   @Get('diagnostics')
   @UseGuards(WorkspaceGuard)
   getDiagnostics() {
-    const resolved = this.metaWhatsApp.resolveRedirect();
-    const appIdRaw = String(process.env.META_APP_ID || '').trim();
-    const appSecretSet = Boolean(String(process.env.META_APP_SECRET || '').trim());
-    const verifyTokenSet = Boolean(String(process.env.META_VERIFY_TOKEN || '').trim());
-
-    return {
-      redirectUri: resolved.redirectUri,
-      redirectUriSource: resolved.source,
-      isFallback: resolved.isFallback,
-      backendBaseUrl: resolved.baseUrl,
+    return buildDiagnosticsPayload({
+      env: process.env,
+      resolved: this.metaWhatsApp.resolveRedirect(),
       frontendUrl: this.frontendUrl,
-      appId: appIdRaw ? `${appIdRaw.slice(0, 4)}…${appIdRaw.slice(-4)}` : null,
-      appIdSet: Boolean(appIdRaw),
-      appSecretSet,
-      verifyTokenSet,
-      graphApiVersion: String(process.env.META_GRAPH_API_VERSION || 'v21.0').trim(),
-      configIds: {
-        whatsapp: Boolean(
-          String(process.env.META_CONFIG_ID_WHATSAPP || process.env.META_CONFIG_ID || '').trim(),
-        ),
-        instagram: Boolean(
-          String(process.env.META_CONFIG_ID_INSTAGRAM || process.env.META_CONFIG_ID || '').trim(),
-        ),
-        messenger: Boolean(
-          String(
-            process.env.META_CONFIG_ID_MESSENGER ||
-              process.env.META_CONFIG_ID_FACEBOOK ||
-              process.env.META_CONFIG_ID ||
-              '',
-          ).trim(),
-        ),
-      },
-      scopes: {
+      scopesByChannel: {
         whatsapp: this.metaWhatsApp.getRequestedScopesForChannel('whatsapp'),
         instagram: this.metaWhatsApp.getRequestedScopesForChannel('instagram'),
         facebook: this.metaWhatsApp.getRequestedScopesForChannel('facebook'),
       },
-      checklist: {
-        backendUrlRegistered: !resolved.isFallback,
-        appCredentialsPresent: Boolean(appIdRaw) && appSecretSet,
-        webhookVerifyTokenPresent: verifyTokenSet,
-      },
-    };
+    });
   }
 
   // ─── OAuth Callback ──────────────────────────────────────────────
