@@ -4,7 +4,7 @@ buildCommand = "npm ci --include=dev && npm run prisma:generate && npm run build
 watchPatterns = ["worker/**"]
 
 [deploy]
-startCommand = "npm run start:prod"
+startCommand = "xvfb-run --server-args='-screen 0 1440x900x24 -ac' node dist/bootstrap.js"
 healthcheckPath = "/health"
 healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"
