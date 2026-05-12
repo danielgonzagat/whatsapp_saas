@@ -61,14 +61,18 @@ describe('CommercialDecisionOrchestratorService', () => {
     });
   });
 
-  it('builds predecided actions after detecting concepts and consulting case memory', async () => {
-    concepts.detect.mockResolvedValue([{ concept: 'price_objection', confidence: 0.8 }]);
-    const service = new CommercialDecisionOrchestratorService(
+  function makeService() {
+    return new CommercialDecisionOrchestratorService(
       mind as never,
       concepts as never,
       events as never,
       setup as never,
     );
+  }
+
+  it('builds predecided actions after detecting concepts and consulting case memory', async () => {
+    concepts.detect.mockResolvedValue([{ concept: 'price_objection', confidence: 0.8 }]);
+    const service = makeService();
 
     const decision = await service.orchestrateInbound({
       workspaceId: 'ws-1',
@@ -91,6 +95,13 @@ describe('CommercialDecisionOrchestratorService', () => {
       }),
     );
     expect(mind.resolveAudioVsText).toHaveBeenCalledWith('ws-1', 'whatsapp', 0.05);
+    expect(mind.resolveAggressiveness).toHaveBeenCalledWith(
+      'ws-1',
+      'inbound:whatsapp',
+      0.05,
+      0.5,
+      0,
+    );
     expect(mind.resolveCoupon).toHaveBeenCalledWith('ws-1', 'over_300', 0.05, 'price_objection');
     expect(decision.actions).toEqual([
       {
@@ -116,12 +127,7 @@ describe('CommercialDecisionOrchestratorService', () => {
       { concept: 'imminent_purchase', confidence: 0.9 },
       { concept: 'trust_objection', confidence: 0.7 },
     ]);
-    const service = new CommercialDecisionOrchestratorService(
-      mind as never,
-      concepts as never,
-      events as never,
-      setup as never,
-    );
+    const service = makeService();
 
     await service.orchestrateInbound({
       workspaceId: 'ws-1',
@@ -143,6 +149,135 @@ describe('CommercialDecisionOrchestratorService', () => {
       'instagram',
       'trust_objection',
       0.7,
+    );
+  });
+
+  it('does not call mind.resolveAudioVsText when channel does not support audio format', async () => {
+    concepts.detect.mockResolvedValue([{ concept: 'price_objection', confidence: 0.8 }]);
+    const service = makeService();
+
+    const decision = await service.orchestrateInbound({
+      workspaceId: 'ws-1',
+      channel: 'email',
+      message: 'Quanto custa?',
+    });
+
+    expect(mind.resolveAudioVsText).not.toHaveBeenCalled();
+    expect(decision.trace).toEqual(
+      expect.objectContaining({
+        decisions: expect.objectContaining({
+          audio_skipped: 'channel-no-audio',
+          audio_vs_text: { choice: 'text', confidence: 1, fallback: false },
+        }),
+      }),
+    );
+  });
+
+  it('records proactive gate when channel does not allow proactive outbound', async () => {
+    concepts.detect.mockResolvedValue([{ concept: 'hot_lead', confidence: 0.8 }]);
+    const service = makeService();
+
+    const decision = await service.orchestrateInbound({
+      workspaceId: 'ws-1',
+      channel: 'tiktok',
+      message: 'Quero comprar!',
+    });
+
+    expect(decision.trace).toEqual(
+      expect.objectContaining({
+        decisions: expect.objectContaining({
+          proactive_gate: 'channel-inbound-only',
+        }),
+      }),
+    );
+    expect(mind.resolveAudioVsText).not.toHaveBeenCalled();
+  });
+
+  it('intersects brain tone with channel-allowed tones', async () => {
+    mind.resolveTone.mockResolvedValue({ tone: 'formal', confidence: 0.8, fallback: false });
+    concepts.detect.mockResolvedValue([{ concept: 'price_objection', confidence: 0.8 }]);
+    const service = makeService();
+
+    const decision = await service.orchestrateInbound({
+      workspaceId: 'ws-1',
+      channel: 'tiktok',
+      message: 'Muito caro...',
+    });
+
+    const traceDecisions = decision.trace.decisions as Record<string, unknown>;
+    expect(traceDecisions.tone_repertoire_override).toBeDefined();
+    const override = traceDecisions.tone_repertoire_override as Record<string, unknown>;
+    expect(override.brain).toBe('formal');
+    expect(override.reason).toBe('channel-repertoire-intersection');
+  });
+
+  it('passes allowed formats from repertoire to resolveMessageFormat for email', async () => {
+    concepts.detect.mockResolvedValue([{ concept: 'general', confidence: 0.5 }]);
+    const service = makeService();
+
+    await service.orchestrateInbound({
+      workspaceId: 'ws-1',
+      channel: 'email',
+      message: 'Ola',
+    });
+
+    expect(mind.resolveMessageFormat).toHaveBeenCalledWith(
+      'ws-1',
+      'email',
+      'general',
+      ['text', 'html_rich'],
+    );
+  });
+
+  it('passes allowed formats from repertoire to resolveMessageFormat for whatsapp', async () => {
+    concepts.detect.mockResolvedValue([{ concept: 'general', confidence: 0.5 }]);
+    const service = makeService();
+
+    await service.orchestrateInbound({
+      workspaceId: 'ws-1',
+      channel: 'whatsapp',
+      message: 'Ola',
+    });
+
+    expect(mind.resolveMessageFormat).toHaveBeenCalledWith(
+      'ws-1',
+      'whatsapp',
+      'general',
+      ['text', 'audio', 'image', 'video', 'document', 'template'],
+    );
+  });
+
+  it('resolves tone normally when brain tone is in channel repertoire', async () => {
+    mind.resolveTone.mockResolvedValue({ tone: 'consultivo', confidence: 0.8, fallback: false });
+    concepts.detect.mockResolvedValue([{ concept: 'price_objection', confidence: 0.8 }]);
+    const service = makeService();
+
+    const decision = await service.orchestrateInbound({
+      workspaceId: 'ws-1',
+      channel: 'tiktok',
+      message: 'Quanto custa?',
+    });
+
+    const traceDecisions = decision.trace.decisions as Record<string, unknown>;
+    expect(traceDecisions.tone_repertoire_override).toBeUndefined();
+  });
+
+  it('passes channel in domain to resolveAggressiveness', async () => {
+    concepts.detect.mockResolvedValue([{ concept: 'general', confidence: 0.5 }]);
+    const service = makeService();
+
+    await service.orchestrateInbound({
+      workspaceId: 'ws-1',
+      channel: 'instagram',
+      message: 'Bom dia',
+    });
+
+    expect(mind.resolveAggressiveness).toHaveBeenCalledWith(
+      'ws-1',
+      'inbound:instagram',
+      0.05,
+      0.5,
+      0,
     );
   });
 });

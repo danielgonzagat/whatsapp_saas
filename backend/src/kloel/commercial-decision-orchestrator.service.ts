@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { createHash } from 'node:crypto';
 import { BrainEventSpineService } from './brain-event-spine.service';
+import { allowedFormatsFor, allowedTonesFor, repertoireFor } from './channel-repertoire.config';
 import { ChannelSetupService } from './channel-setup.service';
 import { MindConceptService } from './mind-concepts.service';
 import { MindService } from './mind.service';
@@ -34,14 +35,6 @@ function primaryConcept(rows: ConceptRow[]): string {
 
 function hasConcept(rows: ConceptRow[], concept: string): boolean {
   return rows.some((row) => row.concept === concept);
-}
-
-function supportedFormats(channel: string): string[] {
-  if (channel === 'email') return ['text', 'html_rich'];
-  if (channel === 'tiktok') return ['text', 'video'];
-  if (channel === 'instagram' || channel === 'messenger')
-    return ['text', 'audio', 'image', 'video'];
-  return ['text', 'audio', 'image', 'document', 'template'];
 }
 
 function priceBandFor(text: string): string {
@@ -205,19 +198,41 @@ export class CommercialDecisionOrchestratorService {
       payload: { channel, concept, count: similarCases.length },
     });
 
+    const repr = repertoireFor(channel);
+    const allowedFormats = allowedFormatsFor(channel);
+    const allowedTones = allowedTonesFor(channel);
+
     const audioRatio = hasConcept(conceptRows, 'audio_preference') ? 0.25 : 0.05;
     const soldRate = hasConcept(conceptRows, 'imminent_purchase') ? 0.2 : 0.05;
     const repliedRate = 0.5;
     const priceBand = priceBandFor(input.message);
-    const [audio, tone, aggressiveness, format, channelChoice] = await Promise.all([
-      this.mind.resolveAudioVsText(input.workspaceId, channel, audioRatio),
+
+    const decisions: Record<string, unknown> = {};
+
+    // P6 — if channel does not support audio format, force text without
+    // consulting the mind. Record the reason so the trace is auditable.
+    let audio: { choice: string; confidence: number; fallback: boolean };
+    if (!allowedFormats.includes('audio' as never)) {
+      audio = { choice: 'text', confidence: 1, fallback: false };
+      decisions.audio_skipped = 'channel-no-audio';
+    } else {
+      audio = await this.mind.resolveAudioVsText(input.workspaceId, channel, audioRatio);
+    }
+
+    const [toneRaw, aggressiveness, format, channelChoice] = await Promise.all([
       this.mind.resolveTone(input.workspaceId, channel, repliedRate, soldRate, concept),
-      this.mind.resolveAggressiveness(input.workspaceId, 'inbound', soldRate, repliedRate, 0),
+      this.mind.resolveAggressiveness(
+        input.workspaceId,
+        `inbound:${channel}`,
+        soldRate,
+        repliedRate,
+        0,
+      ),
       this.mind.resolveMessageFormat(
         input.workspaceId,
         channel,
         concept,
-        supportedFormats(channel),
+        allowedFormats,
       ),
       this.mind.resolveChannelChoice(
         input.workspaceId,
@@ -228,13 +243,37 @@ export class CommercialDecisionOrchestratorService {
       ),
     ]);
 
-    const decisions: Record<string, unknown> = {
-      audio_vs_text: audio,
-      channel_choice: channelChoice,
-      message_format: format,
-      tom: tone,
-      cia_aggressiveness: aggressiveness,
-    };
+    // P6 — intersect brain tone with channel-allowed tones. If the brain
+    // chose a tone outside the channel repertoire, replace with the first
+    // allowed tone and record the override.
+    let tone = toneRaw;
+    const toneLower = String(tone.tone || '').toLowerCase();
+    const toneInRepertoire = allowedTones.some((t) => t === toneLower);
+    if (!toneInRepertoire) {
+      const fallbackTone = allowedTones[0] ?? 'consultivo';
+      tone = {
+        tone: fallbackTone,
+        confidence: toneRaw.confidence,
+        fallback: true,
+      };
+      decisions.tone_repertoire_override = {
+        brain: toneRaw.tone,
+        channel,
+        replaced_with: fallbackTone,
+        reason: 'channel-repertoire-intersection',
+      };
+    }
+
+    // P6 — gate proactive outbound by channel repertoire.
+    if (repr && !repr.proactiveOutboundAllowed) {
+      decisions.proactive_gate = 'channel-inbound-only';
+    }
+
+    decisions.audio_vs_text = audio;
+    decisions.channel_choice = channelChoice;
+    decisions.message_format = format;
+    decisions.tom = tone;
+    decisions.cia_aggressiveness = aggressiveness;
 
     let couponAction: string | undefined;
     let couponDecision: Record<string, unknown> | undefined;
