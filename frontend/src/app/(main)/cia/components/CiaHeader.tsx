@@ -7,7 +7,7 @@ import {
   StageHeadline,
 } from '@/components/kloel';
 import type { CiaAccountRuntime, CiaSurfaceResponse } from '@/lib/api';
-import { RefreshCw, Zap } from 'lucide-react';
+import { RotateCw, Zap } from 'lucide-react';
 
 interface CiaHeaderProps {
   surface: CiaSurfaceResponse | null;
@@ -55,7 +55,7 @@ export function CiaHeader({
         <Button
           variant="secondary"
           onClick={onRefresh}
-          leftIcon={<RefreshCw size={16} aria-hidden="true" />}
+          leftIcon={<RotateCw size={16} aria-hidden="true" />}
           disabled={workspaceLoading}
         >
           {kloelT('Atualizar')}

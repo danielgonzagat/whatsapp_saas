@@ -82,7 +82,7 @@ export function DealCard({ deal, isDragging, onDragStart, onClick }: DealCardPro
               color: pr.color,
               background: `${pr.color}14`,
               padding: '2px 6px',
-              borderRadius: 3,
+              borderRadius: 4,
               textTransform: 'uppercase',
               letterSpacing: '.04em',
             }}

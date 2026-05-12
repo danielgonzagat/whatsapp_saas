@@ -75,7 +75,7 @@ export function MetricasTab({ filters }: { filters: ReportFilters }) {
                   flex: 1,
                   height: 4,
                   background: V.e,
-                  borderRadius: 2,
+                  borderRadius: 4,
                   overflow: 'hidden',
                 }}
               >
@@ -84,7 +84,7 @@ export function MetricasTab({ filters }: { filters: ReportFilters }) {
                     width: `${total > 0 ? (m.v / total) * 100 : 0}%`,
                     height: '100%',
                     background: m.c,
-                    borderRadius: 2,
+                    borderRadius: 4,
                   }}
                 />
               </div>

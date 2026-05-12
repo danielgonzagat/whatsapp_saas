@@ -3,8 +3,8 @@
  *
  * Identidade Visual: Monitor — Preciso, Cirurgico, Monochrome + Ember
  * Fontes: Sora (everything) + JetBrains Mono (numbers/metrics ONLY)
- * Paleta: Void #0A0A0C, Surface #111113, Elevated #19191C, Border #222226
- * Accent: Ember #E85D30 — the ONLY color
+ * Paleta: Void rgb(10, 10, 12), Surface rgb(17, 17, 19), Elevated rgb(25, 25, 28), Border rgb(34, 34, 38)
+ * Accent: Ember rgb(232, 93, 48) — the ONLY color
  */
 
 // ════════════════════════════════════════════
@@ -17,54 +17,54 @@ const themeColor = (variable: string, fallback: string) => `var(${variable}, ${f
 export const colors = {
   // Background System
   background: {
-    void: themeColor('--bg-void', '#0A0A0C'),
-    surface: themeColor('--bg-surface', '#111113'),
-    elevated: themeColor('--bg-elevated', '#19191C'),
-    border: themeColor('--bg-border', '#222226'),
-    hoverBg: themeColor('--app-bg-hover', '#1E1E22'),
+    void: themeColor('--bg-void', 'rgb(10, 10, 12)'),
+    surface: themeColor('--bg-surface', 'rgb(17, 17, 19)'),
+    elevated: themeColor('--bg-elevated', 'rgb(25, 25, 28)'),
+    border: themeColor('--bg-border', 'rgb(34, 34, 38)'),
+    hoverBg: themeColor('--app-bg-hover', 'rgb(30, 30, 34)'),
     activeBg: themeColor('--app-accent-light', 'rgba(232,93,48,0.06)'),
     // Aliases for backwards compat
-    base: themeColor('--bg-void', '#0A0A0C'),
-    surface1: themeColor('--bg-surface', '#111113'),
-    surface2: themeColor('--bg-elevated', '#19191C'),
-    obsidian: themeColor('--bg-void', '#0A0A0C'),
+    base: themeColor('--bg-void', 'rgb(10, 10, 12)'),
+    surface1: themeColor('--bg-surface', 'rgb(17, 17, 19)'),
+    surface2: themeColor('--bg-elevated', 'rgb(25, 25, 28)'),
+    obsidian: themeColor('--bg-void', 'rgb(10, 10, 12)'),
     // Legacy aliases (mapped to Monitor equivalents)
-    space: themeColor('--bg-space', '#111113'),
-    nebula: themeColor('--bg-nebula', '#19191C'),
-    stellar: themeColor('--bg-stellar', '#19191C'),
-    corona: themeColor('--bg-corona', '#222226'),
+    space: themeColor('--bg-space', 'rgb(17, 17, 19)'),
+    nebula: themeColor('--bg-nebula', 'rgb(25, 25, 28)'),
+    stellar: themeColor('--bg-stellar', 'rgb(25, 25, 28)'),
+    corona: themeColor('--bg-corona', 'rgb(34, 34, 38)'),
   },
 
   // Borders
   border: {
-    void: themeColor('--border-void', '#19191C'),
-    space: themeColor('--border-space', '#222226'),
-    glow: themeColor('--border-glow', '#333338'),
+    void: themeColor('--border-void', 'rgb(25, 25, 28)'),
+    space: themeColor('--border-space', 'rgb(34, 34, 38)'),
+    glow: themeColor('--border-glow', 'rgb(51, 51, 56)'),
   },
-  stroke: themeColor('--border-space', '#222226'),
-  divider: themeColor('--border-void', '#19191C'),
+  stroke: themeColor('--border-space', 'rgb(34, 34, 38)'),
+  divider: themeColor('--border-void', 'rgb(25, 25, 28)'),
 
   // Text System
   text: {
-    silver: themeColor('--text-silver', '#E0DDD8'),
-    muted: themeColor('--text-muted', '#6E6E73'),
-    dim: themeColor('--text-dim', '#3A3A3F'),
-    primary: themeColor('--text-silver', '#E0DDD8'),
-    secondary: themeColor('--text-muted', '#6E6E73'),
-    inverted: themeColor('--app-text-inverse', '#0A0A0C'),
-    faint: '#9B9BA0',
-    faintLight: '#ADADB0',
+    silver: themeColor('--text-silver', 'rgb(224, 221, 216)'),
+    muted: themeColor('--text-muted', 'rgb(110, 110, 115)'),
+    dim: themeColor('--text-dim', 'rgb(58, 58, 63)'),
+    primary: themeColor('--text-silver', 'rgb(224, 221, 216)'),
+    secondary: themeColor('--text-muted', 'rgb(110, 110, 115)'),
+    inverted: themeColor('--app-text-inverse', 'rgb(10, 10, 12)'),
+    faint: 'rgb(155, 155, 160)',
+    faintLight: 'rgb(173, 173, 176)',
     // Legacy aliases
-    starlight: themeColor('--text-starlight', '#E0DDD8'),
-    moonlight: themeColor('--text-moonlight', '#6E6E73'),
-    dust: themeColor('--text-dust', '#3A3A3F'),
-    void: themeColor('--text-void', '#3A3A3F'),
+    starlight: themeColor('--text-starlight', 'rgb(224, 221, 216)'),
+    moonlight: themeColor('--text-moonlight', 'rgb(110, 110, 115)'),
+    dust: themeColor('--text-dust', 'rgb(58, 58, 63)'),
+    void: themeColor('--text-void', 'rgb(58, 58, 63)'),
   },
 
   // Ember — the ONLY color
   ember: {
-    primary: '#E85D30',
-    hover: '#D04E25',
+    primary: 'rgb(232, 93, 48)',
+    hover: 'rgb(208, 78, 37)',
     bg: 'rgba(232,93,48,0.06)',
     glow10: 'rgba(232,93,48,0.1)',
     glow30: 'rgba(232,93,48,0.3)',
@@ -74,84 +74,84 @@ export const colors = {
 
   // Accent — Legacy aliases pointing to Ember
   accent: {
-    webb: '#E85D30',
-    webbHover: '#E85D30',
-    webbActive: '#E85D30',
+    webb: 'rgb(232, 93, 48)',
+    webbHover: 'rgb(232, 93, 48)',
+    webbActive: 'rgb(232, 93, 48)',
     webbGlow: 'rgba(232,93,48,0.1)',
-    gold: '#E85D30',
+    gold: 'rgb(232, 93, 48)',
     goldDim: 'rgba(232,93,48,0.06)',
-    nebula: '#E85D30',
+    nebula: 'rgb(232, 93, 48)',
     nebulaGlow: 'rgba(232,93,48,0.06)',
   },
 
   // Brand
   brand: {
-    primary: '#E85D30',
-    primaryHover: '#E85D30',
-    accent: '#E85D30',
-    accentHover: '#E85D30',
-    amber: '#E85D30',
-    amberHover: '#E85D30',
+    primary: 'rgb(232, 93, 48)',
+    primaryHover: 'rgb(232, 93, 48)',
+    accent: 'rgb(232, 93, 48)',
+    accentHover: 'rgb(232, 93, 48)',
+    amber: 'rgb(232, 93, 48)',
+    amberHover: 'rgb(232, 93, 48)',
     gradient: 'none',
-    green: '#E85D30',
-    greenHover: '#E85D30',
-    cyan: '#E85D30',
-    cyanHover: '#E85D30',
+    green: 'rgb(232, 93, 48)',
+    greenHover: 'rgb(232, 93, 48)',
+    cyan: 'rgb(232, 93, 48)',
+    cyanHover: 'rgb(232, 93, 48)',
   },
 
   // State Colors
   state: {
-    success: '#E0DDD8',
-    warning: '#6E6E73',
-    error: '#E85D30',
-    info: '#6E6E73',
+    success: 'rgb(224, 221, 216)',
+    warning: 'rgb(110, 110, 115)',
+    error: 'rgb(232, 93, 48)',
+    info: 'rgb(110, 110, 115)',
   },
 
   // Semantic Colors — status indicators and alerts
   semantic: {
-    success: '#10B981',
-    successText: '#7FE2BC',
+    success: 'rgb(16, 185, 129)',
+    successText: 'rgb(127, 226, 188)',
     successBg: 'rgba(16,185,129,0.12)',
-    error: '#EF4444',
-    errorSoft: '#E05252',
-    errorText: '#F7A8A8',
+    error: 'rgb(239, 68, 68)',
+    errorSoft: 'rgb(224, 82, 82)',
+    errorText: 'rgb(247, 168, 168)',
     errorBg: 'rgba(224,82,82,0.12)',
-    warning: '#F59E0B',
-    info: '#3B82F6',
-    infoText: '#93C5FD',
+    warning: 'rgb(245, 158, 11)',
+    info: 'rgb(59, 130, 246)',
+    infoText: 'rgb(147, 197, 253)',
     infoBg: 'rgba(59,130,246,0.12)',
-    purple: '#8B5CF6',
-    purpleText: '#A78BFA',
+    purple: 'rgb(139, 92, 246)',
+    purpleText: 'rgb(167, 139, 250)',
   },
 
   // Checkout theme
   checkout: {
-    accent: '#D4AF37',
-    textPrimary: '#E8E6E1',
-    textMuted: '#8A8A8E',
-    bg: '#141416',
-    border: '#2A2A2E',
-    surface: '#1A1A1E',
-    surfaceLight: '#F5F5F5',
-    success: '#22C55E',
-    successDark: '#16a34a',
-    successBg: '#0F1F0F',
-    danger: '#FF6B6B',
-    dangerBg: '#2A1A1A',
-    dangerBorder: '#662222',
+    accent: 'rgb(212, 175, 55)',
+    textPrimary: 'rgb(232, 230, 225)',
+    textMuted: 'rgb(138, 138, 142)',
+    bg: 'rgb(20, 20, 22)',
+    border: 'rgb(42, 42, 46)',
+    surface: 'rgb(26, 26, 30)',
+    surfaceLight: 'rgb(245, 245, 245)',
+    success: 'rgb(34, 197, 94)',
+    successDark: 'rgb(22, 163, 74)',
+    successBg: 'rgb(15, 31, 15)',
+    danger: 'rgb(255, 107, 107)',
+    dangerBg: 'rgb(42, 26, 26)',
+    dangerBorder: 'rgb(102, 34, 34)',
   },
 
   // Canvas surface tones (near-Monitor, editor-specific)
   canvas: {
-    border: '#1C1C1F',
-    surface: '#161618',
-    surfaceAlt: '#151517',
-    void: '#0D0D0F',
-    hover: '#2A2A2E',
-    accent: '#F2784B',
-    pink: '#EC4899',
-    cyan: '#06B6D4',
-    lime: '#2DD4A0',
+    border: 'rgb(28, 28, 31)',
+    surface: 'rgb(22, 22, 24)',
+    surfaceAlt: 'rgb(21, 21, 23)',
+    void: 'rgb(13, 13, 15)',
+    hover: 'rgb(42, 42, 46)',
+    accent: 'rgb(242, 120, 75)',
+    pink: 'rgb(236, 72, 153)',
+    cyan: 'rgb(6, 182, 212)',
+    lime: 'rgb(45, 212, 160)',
   },
 } as const;
 

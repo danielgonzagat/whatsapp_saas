@@ -69,7 +69,7 @@ export function DealDetailModal({ deal, stages, onClose }: DealDetailModalProps)
         style={{
           background: 'var(--app-bg-card)',
           border: '1px solid var(--app-border-primary)',
-          borderRadius: 10,
+          borderRadius: 8,
           width: 420,
           maxHeight: '80vh',
           overflowY: 'auto',

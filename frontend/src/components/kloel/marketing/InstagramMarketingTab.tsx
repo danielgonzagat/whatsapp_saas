@@ -124,7 +124,7 @@ export default function InstagramMarketingTab({
             style={{
               width: 48,
               height: 48,
-              borderRadius: '50%',
+              borderRadius: '16%',
               background: `${ch.color}20`,
               display: 'flex',
               alignItems: 'center',
@@ -147,7 +147,7 @@ export default function InstagramMarketingTab({
             </div>
             <div style={{ fontFamily: MONO, fontSize: 12, color: 'var(--app-text-secondary)' }}>
               {igProfile.followers_count ?? igProfile.followersCount ?? 0}{' '}
-              {kloelT(`seguidores &#183;`)} {igProfile.media_count ?? igProfile.mediaCount ?? 0}{' '}
+              {kloelT(`seguidores &rgb(17, 136, 51);`)} {igProfile.media_count ?? igProfile.mediaCount ?? 0}{' '}
               publicacoes
             </div>
           </div>

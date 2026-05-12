@@ -58,7 +58,7 @@ export default function ParceriasShell({ defaultTab = 'colaboradores' }: { defau
         @keyframes slideIn { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: ${C.border}; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb { background: ${C.border}; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: ${C.muted}; }
       `}</style>
 

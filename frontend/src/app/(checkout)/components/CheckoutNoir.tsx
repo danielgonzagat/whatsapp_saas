@@ -163,7 +163,7 @@ export default function CheckoutNoir({
   const numDone: React.CSSProperties = {
     width: 26,
     height: 26,
-    borderRadius: '50%',
+    borderRadius: '16%',
     background: C.green,
     display: 'flex',
     alignItems: 'center',
@@ -172,7 +172,7 @@ export default function CheckoutNoir({
   const numActive: React.CSSProperties = {
     width: 26,
     height: 26,
-    borderRadius: '50%',
+    borderRadius: '16%',
     background: C.accent,
     display: 'flex',
     alignItems: 'center',
@@ -181,7 +181,7 @@ export default function CheckoutNoir({
   const numLock: React.CSSProperties = {
     width: 26,
     height: 26,
-    borderRadius: '50%',
+    borderRadius: '16%',
     background: C.surface2,
     display: 'flex',
     alignItems: 'center',

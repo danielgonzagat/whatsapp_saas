@@ -35,7 +35,7 @@ export function MonitorStepper({
                   style={{
                     width: 32,
                     height: 32,
-                    borderRadius: '50%',
+                    borderRadius: '16%',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',

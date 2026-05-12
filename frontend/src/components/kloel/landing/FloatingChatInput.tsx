@@ -52,7 +52,7 @@ export function FloatingChatInput({
             border: 'none',
             outline: 'none',
             color: colors.text.silver,
-            fontSize: 14,
+            fontSize: 16,
             fontFamily: S,
           }}
         />

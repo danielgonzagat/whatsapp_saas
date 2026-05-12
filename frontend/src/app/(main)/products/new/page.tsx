@@ -350,7 +350,7 @@ export default function NewProductPage() {
                     height: 20,
                     border: '2px solid transparent',
                     borderTopColor: colors.ember.primary,
-                    borderRadius: '50%',
+                    borderRadius: '16%',
                     animation: 'spin 1s linear infinite',
                   }}
                 />

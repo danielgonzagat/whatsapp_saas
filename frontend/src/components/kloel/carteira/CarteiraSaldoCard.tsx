@@ -79,7 +79,7 @@ function RevenueChart({ data }: { data: number[] }) {
                       i === revenueWeek.length - 1
                         ? 'colors.ember.primary'
                         : 'colors.ember.primary40',
-                    borderRadius: '3px 3px 0 0',
+                    borderRadius: '4px 3px 0 0',
                   }}
                 />
               </div>
@@ -100,7 +100,7 @@ function RevenueChart({ data }: { data: number[] }) {
                     width: '100%',
                     height: 2,
                     background: 'var(--app-bg-secondary)',
-                    borderRadius: '3px 3px 0 0',
+                    borderRadius: '4px 3px 0 0',
                   }}
                 />
               </div>

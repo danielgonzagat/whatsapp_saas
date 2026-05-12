@@ -46,7 +46,7 @@ export function ContactScoreSentimentSection({
         <div
           style={{
             height: 6,
-            borderRadius: 3,
+            borderRadius: 4,
             background: C.elevated,
             overflow: 'hidden',
           }}
@@ -55,7 +55,7 @@ export function ContactScoreSentimentSection({
             style={{
               width: `${Math.min(score, 100)}%`,
               height: '100%',
-              borderRadius: 3,
+              borderRadius: 4,
               background: C.accent,
               transition: 'width .3s ease',
             }}
@@ -70,7 +70,7 @@ export function ContactScoreSentimentSection({
             fontSize: 12,
             fontWeight: 600,
             padding: '2px 10px',
-            borderRadius: 20,
+            borderRadius: 16,
             background: sentimentStyle.bg,
             color: sentimentStyle.text,
           }}

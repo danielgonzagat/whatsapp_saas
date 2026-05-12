@@ -79,7 +79,7 @@ function Toggle({
         style={{
           width: 36,
           height: 20,
-          borderRadius: 10,
+          borderRadius: 8,
           background: checked ? colors.semantic.success : V.b,
           position: 'relative',
           transition: 'background .2s',

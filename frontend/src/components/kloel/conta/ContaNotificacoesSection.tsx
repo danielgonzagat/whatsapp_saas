@@ -11,7 +11,7 @@ export default function NotificacoesSection() {
     >
       <div style={{ padding: '16px 0' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-          <span style={{ width: 8, height: 8, borderRadius: '50%', background: colors.semantic.success }} />
+          <span style={{ width: 8, height: 8, borderRadius: '16%', background: colors.semantic.success }} />
           <span
             style={{ fontSize: 13, fontWeight: 600, color: 'var(--app-text-primary)', fontFamily: SORA }}
           >

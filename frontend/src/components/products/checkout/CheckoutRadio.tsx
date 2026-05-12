@@ -35,7 +35,7 @@ export function CheckoutRadio({
         style={{
           width: 18,
           height: 18,
-          borderRadius: '50%',
+          borderRadius: '16%',
           border: `2px solid ${checked ? EMBER : BORDER}`,
           display: 'flex',
           alignItems: 'center',
@@ -49,7 +49,7 @@ export function CheckoutRadio({
             style={{
               width: 8,
               height: 8,
-              borderRadius: '50%',
+              borderRadius: '16%',
               backgroundColor: EMBER,
             }}
           />

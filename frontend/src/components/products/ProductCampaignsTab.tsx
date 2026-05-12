@@ -173,7 +173,7 @@ export function ProductCampaignsTab({ productId }: { productId: string }) {
             height: 24,
             border: `2px solid ${V.b}`,
             borderTopColor: V.em,
-            borderRadius: '50%',
+            borderRadius: '16%',
             animation: 'spin 1s linear infinite',
           }}
         />

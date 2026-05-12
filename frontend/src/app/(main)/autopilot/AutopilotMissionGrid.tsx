@@ -93,7 +93,7 @@ export function AutopilotMissionGrid({
           <div
             className="p-6 rounded-xl text-center"
             style={{
-              background: `linear-gradient(135deg, ${colors.brand.green}10, ${colors.brand.cyan}10)`,
+              background: 'rgba(232, 93, 48, 0.08)',
               border: `1px solid ${colors.stroke}`,
             }}
           >

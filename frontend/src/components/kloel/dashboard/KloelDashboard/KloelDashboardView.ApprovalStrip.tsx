@@ -29,7 +29,7 @@ function ApprovalDecisionButton({
         borderRadius: 6,
         border: `1px solid ${decision === 'approve' ? EMBER : DIVIDER}`,
         background: decision === 'approve' ? EMBER : SURFACE,
-        color: decision === 'approve' ? '#0A0A0C' : TEXT,
+        color: decision === 'approve' ? 'rgb(10, 10, 12)' : TEXT,
         padding: '0 12px',
         fontSize: 12,
         fontWeight: 700,

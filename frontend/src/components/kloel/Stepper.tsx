@@ -97,7 +97,7 @@ export function Stepper({ steps, currentStep, onStepClick }: StepperProps) {
                 style={{
                   width: 24,
                   height: 2,
-                  borderRadius: 1,
+                  borderRadius: 4,
                   background: isCompleted ? colors.text.silver : colors.background.elevated,
                   transition: 'background 150ms ease',
                 }}

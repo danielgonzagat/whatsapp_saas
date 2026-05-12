@@ -1,7 +1,7 @@
 'use client';
 import { colors } from '@/lib/design-tokens';
 import { apiFetch } from '@/lib/api';
-import { Loader2, X } from 'lucide-react';
+import { LoaderCircle, X } from 'lucide-react';
 import { useCallback, useEffect, useId, useState } from 'react';
 import { mutate } from 'swr';
 import {
@@ -78,8 +78,8 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
   if (loading) {
     return (
       <div className="flex justify-center py-12">
-        <Loader2
-          className="h-6 w-6 animate-spin"
+        <LoaderCircle
+          className="h-6 w-6 animate-pulse"
           style={{ color: colors.accent.webb }}
           aria-hidden="true"
         />

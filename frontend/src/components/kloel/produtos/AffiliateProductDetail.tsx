@@ -47,8 +47,8 @@ export default function AffiliateProductDetail({
       {/* ── commission hero ── */}
       <div style={{ position: 'relative', padding: '32px 0', ...mb(24) }}>
         <div style={{ position: 'absolute', top: '50%', left: '50%',
-          transform: 'translate(-50%, -50%)', width: 200, height: 80, borderRadius: '50%',
-          background: `radial-gradient(ellipse, ${GREEN}40, transparent 70%)`,
+          transform: 'translate(-50%, -50%)', width: 200, height: 80, borderRadius: '16%',
+          background: 'rgba(232, 93, 48, 0.08)',
           animation: 'glow 3s ease-in-out', pointerEvents: 'none' }} />
         <div style={{ textAlign: 'center', position: 'relative' }}>
           <div style={{ ...label, ...mb(4) }}>{kloelT('Comissao')}</div>

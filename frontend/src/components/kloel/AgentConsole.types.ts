@@ -5,7 +5,7 @@ import {
   Brain,
   CheckCircle,
   Clock,
-  Loader2,
+  LoaderCircle,
   MessageSquare,
   Send,
   Users,
@@ -135,7 +135,7 @@ export const ACTIVITY_CONFIG: Record<
 };
 
 export const STATUS_ICONS: Record<ActivityStatus, ElementType> = {
-  pending: Loader2,
+  pending: LoaderCircle,
   success: CheckCircle,
   error: AlertCircle,
 };

@@ -14,7 +14,7 @@ interface ChatsSyncListProps {
 export function ChatsSyncList({ chats, selectedChat, onSelect }: ChatsSyncListProps) {
   return (
     <div className="rounded-3xl border border-slate-200 bg-white p-3 shadow-sm">
-      <div className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+      <div className="mb-2 text-base font-semibold uppercase tracking-[0.18em] text-slate-500">
         {kloelT(`Conversas sincronizadas`)}
       </div>
       <div className="space-y-2">
@@ -32,15 +32,15 @@ export function ChatsSyncList({ chats, selectedChat, onSelect }: ChatsSyncListPr
               <MessageCircleMore className="h-4 w-4" aria-hidden="true" />
             </div>
             <div className="min-w-0">
-              <div className="truncate text-sm font-medium text-slate-900">{chat.title}</div>
-              <div className="truncate text-xs text-slate-500">
+              <div className="truncate text-base font-medium text-slate-900">{chat.title}</div>
+              <div className="truncate text-base text-slate-500">
                 {chat.subtitle || 'Sem prévia da última mensagem.'}
               </div>
             </div>
           </button>
         ))}
         {chats.length === 0 ? (
-          <div className="rounded-md bg-slate-50 px-3 py-3 text-xs text-slate-500">
+          <div className="rounded-md bg-slate-50 px-3 py-3 text-base text-slate-500">
             {kloelT(`Nenhuma conversa foi sincronizada ainda.`)}
           </div>
         ) : null}

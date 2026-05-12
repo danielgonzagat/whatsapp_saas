@@ -36,7 +36,7 @@ export function TestimonialsSection({
                     style={{
                       width: 32,
                       height: 32,
-                      borderRadius: '50%',
+                      borderRadius: '16%',
                       background: p.c,
                       display: 'flex',
                       alignItems: 'center',
@@ -80,7 +80,7 @@ export function TestimonialsSection({
                     gap: 4,
                   }}
                 >
-                  <div style={{ width: 4, height: 4, borderRadius: 2, background: colors.semantic.success }} />
+                  <div style={{ width: 4, height: 4, borderRadius: 4, background: colors.semantic.success }} />
                   <span style={{ fontSize: 10, fontWeight: 600, color: colors.semantic.success, fontFamily: M }}>
                     {p.m}
                   </span>

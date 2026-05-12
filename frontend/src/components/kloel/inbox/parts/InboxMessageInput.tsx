@@ -1,7 +1,7 @@
 'use client';
 
 import { kloelT } from '@/lib/i18n/t';
-import { Loader2, Send } from 'lucide-react';
+import { LoaderCircle, Send } from 'lucide-react';
 
 interface InboxMessageInputProps {
   selectedConversationId: string | null;
@@ -46,8 +46,8 @@ export function InboxMessageInput({
           title={kloelT(`Enviar`)}
         >
           {sending ? (
-            <Loader2
-              className="animate-spin"
+            <LoaderCircle
+              className="animate-pulse"
               style={{ width: 'var(--inbox-icon-sm)', height: 'var(--inbox-icon-sm)' }}
               aria-hidden="true"
             />

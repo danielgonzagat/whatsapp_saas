@@ -18,7 +18,7 @@ import {
   MessageSquare,
   Pause,
   Play,
-  RefreshCw,
+  RotateCw,
   Send,
   Sparkles,
   Stethoscope,
@@ -194,7 +194,7 @@ export function PipelineSection({
                   className="p-2 rounded-lg transition-colors hover:bg-white/5"
                   style={{ color: colors.text.muted }}
                 >
-                  <RefreshCw size={16} aria-hidden="true" />
+                  <RotateCw size={16} aria-hidden="true" />
                 </button>
               </div>
 

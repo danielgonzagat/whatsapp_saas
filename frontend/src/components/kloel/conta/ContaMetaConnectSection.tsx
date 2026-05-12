@@ -78,7 +78,7 @@ export function MetaConnectSection() {
             marginBottom: 16,
           }}
         >
-          <div style={{ width: 8, height: 8, borderRadius: '50%', background: colors.semantic.success }} />
+          <div style={{ width: 8, height: 8, borderRadius: '16%', background: colors.semantic.success }} />
           <div style={{ flex: 1 }}>
             <span
               style={{

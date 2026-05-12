@@ -127,7 +127,7 @@ export function HeaderMinimal({
                   style={{
                     width: 6,
                     height: 6,
-                    borderRadius: 3,
+                    borderRadius: 4,
                     background: colors.text.silver,
                     display: 'inline-block',
                   }}

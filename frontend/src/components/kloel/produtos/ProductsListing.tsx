@@ -82,8 +82,8 @@ export default function ProductsListing({
           style={{
             position: 'absolute', top: '50%', left: '50%',
             transform: 'translate(-50%,-50%)', width: hdr.glowW, height: hdr.glowH,
-            borderRadius: '50%', pointerEvents: 'none',
-            background: `radial-gradient(ellipse,${EMBER}40,transparent 70%)`,
+            borderRadius: '16%', pointerEvents: 'none',
+            background: 'rgba(232, 93, 48, 0.08)',
             animation: 'glow 3s ease-in-out',
           }}
         />
@@ -167,12 +167,12 @@ export default function ProductsListing({
                       {fmtBRL(p.revenue || 0)}
                     </span>
                   </div>
-                  <div style={{ height: 6, background: 'var(--app-bg-surface)', borderRadius: 3 }}>
+                  <div style={{ height: 6, background: 'var(--app-bg-surface)', borderRadius: 4 }}>
                     <div
                       style={{
                         height: '100%', width: `${pct}%`,
-                        background: `linear-gradient(90deg,${EMBER},${SORA}80)`,
-                        borderRadius: 3, transition: 'width .4s',
+                        background: EMBER,
+                        borderRadius: 4, transition: 'width .4s',
                       }}
                     />
                   </div>
@@ -207,8 +207,8 @@ export default function ProductsListing({
                   </span>
                   <span style={{ fontFamily: MONO, fontSize: 11, color: EMBER }}>{fmt(m.count || 0)}</span>
                 </div>
-                <div style={{ height: 4, background: 'var(--app-bg-surface)', borderRadius: 2 }}>
-                  <div style={{ height: '100%', width: `${pct}%`, background: EMBER, borderRadius: 2, transition: 'width .5s' }} />
+                <div style={{ height: 4, background: 'var(--app-bg-surface)', borderRadius: 4 }}>
+                  <div style={{ height: '100%', width: `${pct}%`, background: EMBER, borderRadius: 4, transition: 'width .5s' }} />
                 </div>
               </div>
             );

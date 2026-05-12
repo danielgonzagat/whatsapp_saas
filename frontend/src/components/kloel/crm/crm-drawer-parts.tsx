@@ -22,8 +22,7 @@ export function LoadingStrip({
         height,
         marginBottom,
         borderRadius: 6,
-        background:
-          'linear-gradient(90deg, rgba(25,25,28,0.98) 0%, rgba(41,41,46,1) 50%, rgba(25,25,28,0.98) 100%)',
+        background:          'rgba(25, 25, 28, 0.98)',
       }}
     />
   );

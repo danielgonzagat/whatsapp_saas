@@ -19,7 +19,7 @@ export default function ColaboratorStatsSummary() {
 
   const cards = [
     { label: kloelT(`Total Colaboradores`), value: total, icon: IC.users(16), iconStyle: { color: C.muted } },
-    { label: kloelT(`Online Agora`), value: online, icon: <div style={{ width: 8, height: 8, borderRadius: '50%', background: colors.semantic.success }} />, iconStyle: {} },
+    { label: kloelT(`Online Agora`), value: online, icon: <div style={{ width: 8, height: 8, borderRadius: '16%', background: colors.semantic.success }} />, iconStyle: {} },
     { label: kloelT(`Convites Pendentes`), value: pendingInvites, icon: IC.mail(16), iconStyle: { color: C.muted } },
     { label: kloelT(`Funcoes Ativas`), value: rolesUsed, icon: IC.shield(16), iconStyle: { color: C.muted } },
   ];

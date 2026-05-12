@@ -111,7 +111,7 @@ export function FormatGrid({
                     width: 30,
                     height: 30,
                     borderRadius: 6,
-                    background: `linear-gradient(135deg,${a.c[0]},${a.c[1]})`,
+                    background: a.c[0],
                     opacity: 0.8,
                   }}
                 />
@@ -202,7 +202,7 @@ export function FormatGrid({
                 width: 34,
                 height: 34,
                 borderRadius: 4,
-                background: 'linear-gradient(135deg,colors.ember.glow10,colors.ember.bg)',
+                background: colors.ember.bg,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',

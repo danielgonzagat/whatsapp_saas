@@ -4,7 +4,7 @@ import { kloelT } from '@/lib/i18n/t';
 import { colors } from '@/lib/design-tokens';
 import type { FlowTemplate } from '@/lib/api';
 import { KloelMushroomMark } from '@/components/kloel/KloelBrand';
-import { LayoutTemplate, RefreshCw } from 'lucide-react';
+import { LayoutTemplate, RotateCw } from 'lucide-react';
 
 interface FlowTemplatesTabProps {
   templates: FlowTemplate[];
@@ -53,7 +53,7 @@ export function FlowTemplatesTab({
               traceColor={colors.ember.primary}
             />
           ) : (
-            <RefreshCw className="w-4 h-4" aria-hidden="true" />
+            <RotateCw className="w-4 h-4" aria-hidden="true" />
           )}
         </button>
       </div>

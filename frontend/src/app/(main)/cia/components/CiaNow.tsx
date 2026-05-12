@@ -3,7 +3,7 @@
 import { kloelT } from '@/lib/i18n/t';
 import { Surface } from '@/components/kloel';
 import { colors } from '@/lib/design-tokens';
-import { Loader2, Sparkles } from 'lucide-react';
+import { LoaderCircle, Sparkles } from 'lucide-react';
 
 interface CiaNowProps {
   message: string;
@@ -21,8 +21,8 @@ export function CiaNow({ message, phase, loading, error }: CiaNowProps) {
           style={{ backgroundColor: `${colors.brand.green}18` }}
         >
           {loading ? (
-            <Loader2
-              className="animate-spin"
+            <LoaderCircle
+              className="animate-pulse"
               size={22}
               style={{ color: colors.brand.green }}
               aria-hidden="true"

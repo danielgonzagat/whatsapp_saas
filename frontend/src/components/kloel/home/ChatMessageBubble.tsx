@@ -49,7 +49,7 @@ function MessageActionButton({
         border: 'none',
         cursor: 'pointer',
         color: 'var(--app-text-tertiary)',
-        fontSize: 11,
+        fontSize: 16,
         fontFamily: "'Sora', sans-serif",
         display: 'flex',
         alignItems: 'center',
@@ -123,11 +123,11 @@ function UserMessage({
         style={{
           background: colors.checkout.surface,
           color: 'var(--app-text-primary)',
-          borderRadius: 20,
+          borderRadius: 16,
           padding: '12px 18px',
           maxWidth: '75%',
           fontFamily: "'Sora', sans-serif",
-          fontSize: 14,
+          fontSize: 16,
           lineHeight: 1.6,
           fontWeight: 400,
         }}
@@ -172,7 +172,7 @@ function AssistantMessage({
         >
           <span
             style={{
-              fontSize: 13,
+              fontSize: 16,
               color: 'var(--app-text-tertiary)',
               opacity: 0.6,
               fontFamily: "'Sora', sans-serif",
@@ -195,7 +195,7 @@ function AssistantMessage({
         <div
           style={{
             fontFamily: "'Sora', sans-serif",
-            fontSize: 14,
+            fontSize: 16,
             lineHeight: 1.8,
             color: msg.content === errorMessage ? colors.text.dim : colors.text.silver,
             whiteSpace: 'pre-wrap',

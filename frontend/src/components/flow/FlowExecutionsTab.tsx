@@ -4,7 +4,7 @@ import { kloelT } from '@/lib/i18n/t';
 import { colors } from '@/lib/design-tokens';
 import type { FlowExecutionSummary } from '@/lib/api/flows';
 import { KloelMushroomMark } from '@/components/kloel/KloelBrand';
-import { RefreshCw, RotateCcw } from 'lucide-react';
+import { RotateCw, RotateCcw } from 'lucide-react';
 
 interface FlowExecutionsTabProps {
   executions: FlowExecutionSummary[];
@@ -42,7 +42,7 @@ export function FlowExecutionsTab({
                 traceColor={colors.ember.primary}
               />
             ) : (
-              <RefreshCw className="w-4 h-4" aria-hidden="true" />
+              <RotateCw className="w-4 h-4" aria-hidden="true" />
             )}
           </button>
         </div>

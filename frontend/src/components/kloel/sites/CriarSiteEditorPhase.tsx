@@ -112,9 +112,9 @@ export function CriarSiteEditorPhase({
 
       <Card style={{ padding: 0, overflow: 'hidden', minHeight: 500 }}>
         <div style={{ background: BG_ELEVATED, padding: '6px 12px', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', gap: 6 }}>
-          <div style={{ width: 8, height: 8, borderRadius: '50%', background: colors.semantic.error }} />
-          <div style={{ width: 8, height: 8, borderRadius: '50%', background: colors.semantic.warning }} />
-          <div style={{ width: 8, height: 8, borderRadius: '50%', background: colors.semantic.success }} />
+          <div style={{ width: 8, height: 8, borderRadius: '16%', background: colors.semantic.error }} />
+          <div style={{ width: 8, height: 8, borderRadius: '16%', background: colors.semantic.warning }} />
+          <div style={{ width: 8, height: 8, borderRadius: '16%', background: colors.semantic.success }} />
           <span style={{ fontFamily: MONO, fontSize: 10, color: TEXT_MUTED, marginLeft: 8 }}>{kloelT(`Preview`)}</span>
         </div>
         <iframe ref={iframeRef} srcDoc={generatedHtml} sandbox="allow-scripts" style={{ width: '100%', height: 500, border: 'none', background: colors.text.silver }} title={kloelT(`Site Preview`)} />

@@ -44,7 +44,7 @@ export default function CanvasLayout({ children }: { children: ReactNode }) {
         @keyframes pE{0%,100%{box-shadow:0 0 12px rgba(232,93,48,0.2)}50%{box-shadow:0 0 22px rgba(232,93,48,0.35)}}
         .sb::-webkit-scrollbar{width:4px}
         .sb::-webkit-scrollbar-track{background:transparent}
-        .sb::-webkit-scrollbar-thumb{background:${colors.canvas.hover};border-radius:2px}
+        .sb::-webkit-scrollbar-thumb{background:${colors.canvas.hover};border-radius:4px}
       `}</style>
 
       {/* Sub-tabs */}

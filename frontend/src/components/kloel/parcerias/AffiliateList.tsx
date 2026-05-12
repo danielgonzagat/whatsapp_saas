@@ -62,7 +62,7 @@ export default function AffiliateList({
             onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = `${C.ember}40`; }}
             onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = C.border; }}
           >
-            <div style={{ width: 42, height: 42, borderRadius: '50%', background: a.type === 'producer' ? 'rgba(139,92,246,0.12)' : C.emberBg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: FONT.sans, fontSize: 16, fontWeight: 600, color: a.type === 'producer' ? colors.semantic.purple : C.ember, flexShrink: 0 }}>
+            <div style={{ width: 42, height: 42, borderRadius: '16%', background: a.type === 'producer' ? 'rgba(139,92,246,0.12)' : C.emberBg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: FONT.sans, fontSize: 16, fontWeight: 600, color: a.type === 'producer' ? colors.semantic.purple : C.ember, flexShrink: 0 }}>
               {(a.name || '?')[0].toUpperCase()}
             </div>
             <div style={{ minWidth: 0 }}>

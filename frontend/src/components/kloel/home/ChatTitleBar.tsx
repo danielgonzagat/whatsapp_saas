@@ -17,7 +17,7 @@ export function ChatTitleBar({ title }: ChatTitleBarProps) {
       <span
         style={{
           fontFamily: "'Sora', sans-serif",
-          fontSize: 14,
+          fontSize: 16,
           fontWeight: 600,
           color: 'var(--app-text-primary)',
           letterSpacing: '-0.01em',

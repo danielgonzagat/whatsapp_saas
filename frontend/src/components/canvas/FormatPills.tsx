@@ -69,7 +69,7 @@ export function FormatPills({ onPillClick }: FormatPillsProps) {
                 style={{
                   width: 14,
                   height: 14,
-                  borderRadius: 3,
+                  borderRadius: 4,
                   background: `linear-gradient(135deg,${p.c[0]}50,${p.c[1]}50)`,
                 }}
               />

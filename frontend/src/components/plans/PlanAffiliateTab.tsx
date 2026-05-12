@@ -174,7 +174,7 @@ export function PlanAffiliateTab({
               style={{
                 width: 18,
                 height: 18,
-                borderRadius: 9,
+                borderRadius: 8,
                 background: colors.text.silver,
                 position: 'absolute',
                 top: 3,

@@ -13,7 +13,7 @@ export function CheckoutToggle({ checked, onChange }: { checked: boolean; onChan
       style={{
         width: 36,
         height: 20,
-        borderRadius: 10,
+        borderRadius: 8,
         backgroundColor: checked ? GREEN : BORDER,
         border: 'none',
         cursor: 'pointer',
@@ -27,7 +27,7 @@ export function CheckoutToggle({ checked, onChange }: { checked: boolean; onChan
         style={{
           width: 16,
           height: 16,
-          borderRadius: '50%',
+          borderRadius: '16%',
           backgroundColor: TEXT_ON_ACCENT,
           position: 'absolute',
           top: 2,

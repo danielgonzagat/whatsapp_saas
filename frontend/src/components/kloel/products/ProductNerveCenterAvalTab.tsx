@@ -187,7 +187,7 @@ export function ProductNerveCenterAvalTab() {
                         flex: 1,
                         height: 6,
                         background: V.e,
-                        borderRadius: 3,
+                        borderRadius: 4,
                         overflow: 'hidden',
                       }}
                     >
@@ -196,7 +196,7 @@ export function ProductNerveCenterAvalTab() {
                           width: `${(ct / REVIEWS.length) * 100}%`,
                           height: '100%',
                           background: V.y,
-                          borderRadius: 3,
+                          borderRadius: 4,
                         }}
                       />
                     </div>

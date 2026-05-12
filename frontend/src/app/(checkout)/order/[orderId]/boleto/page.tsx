@@ -78,7 +78,7 @@ export default function BoletoPaymentPage() {
       <div style={{ maxWidth: '440px', width: '100%', textAlign: 'center' }}>
         {/* Header */}
         <div style={{ marginBottom: '24px' }}>
-          <div style={{ fontSize: '40px', marginBottom: '8px' }}>{kloelT(`&#128196;`)}</div>
+          <div style={{ fontSize: '40px', marginBottom: '8px' }}>{kloelT(`&rgb(18, 129, 150);`)}</div>
           <h1
             style={{
               color: colors.checkout.textPrimary,
@@ -101,7 +101,7 @@ export default function BoletoPaymentPage() {
               gap: '8px',
               background: colors.checkout.surface,
               border: `1px solid ${colors.checkout.border}`,
-              borderRadius: '10px',
+              borderRadius: '8px',
               padding: '10px 20px',
               marginBottom: '24px',
               color: colors.text.muted,
@@ -176,7 +176,7 @@ export default function BoletoPaymentPage() {
                 padding: '14px',
                 background: copied ? colors.checkout.successBg : `${accent}18`,
                 border: `1px solid ${copied ? colors.checkout.success : accent}44`,
-                borderRadius: '10px',
+                borderRadius: '8px',
                 color: copied ? colors.checkout.success : accent,
                 fontSize: '14px',
                 fontWeight: 600,
@@ -198,7 +198,7 @@ export default function BoletoPaymentPage() {
                   padding: '14px',
                   background: colors.checkout.bg,
                   border: `1px solid ${colors.checkout.border}`,
-                  borderRadius: '10px',
+                  borderRadius: '8px',
                   color: colors.checkout.textPrimary,
                   fontSize: '14px',
                   fontWeight: 600,

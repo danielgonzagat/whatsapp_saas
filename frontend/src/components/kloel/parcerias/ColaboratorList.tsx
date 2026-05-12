@@ -59,10 +59,10 @@ export default function ColaboratorList({
               borderRadius: 6, transition: 'border-color 150ms ease',
             }}>
             <div style={{ position: 'relative' }}>
-              <div style={{ width: 40, height: 40, borderRadius: '50%', background: C.elevated, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: FONT.sans, fontSize: 15, fontWeight: 600, color: C.text }}>
+              <div style={{ width: 40, height: 40, borderRadius: '16%', background: C.elevated, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: FONT.sans, fontSize: 15, fontWeight: 600, color: C.text }}>
                 {(c.name || c.email || '?')[0].toUpperCase()}
               </div>
-              <div style={{ width: 8, height: 8, borderRadius: '50%', background: c.status === 'online' ? colors.semantic.success : C.muted, border: `2px solid ${C.card}`, position: 'absolute' as const, bottom: 0, right: 0 }} />
+              <div style={{ width: 8, height: 8, borderRadius: '16%', background: c.status === 'online' ? colors.semantic.success : C.muted, border: `2px solid ${C.card}`, position: 'absolute' as const, bottom: 0, right: 0 }} />
             </div>
             <div style={{ minWidth: 0 }}>
               <div style={{ fontFamily: FONT.sans, fontSize: 14, fontWeight: 600, color: C.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{c.name}</div>
@@ -70,7 +70,7 @@ export default function ColaboratorList({
             <div style={{ fontFamily: FONT.sans, fontSize: 12, color: C.secondary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{c.email}</div>
             <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 4, fontSize: 10, fontWeight: 600, fontFamily: FONT.sans, color: roleConf.color, background: `${roleConf.color}15`, letterSpacing: '0.02em', textTransform: 'uppercase' as const, width: 'fit-content' }}>{roleConf.label}</span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <div style={{ width: 6, height: 6, borderRadius: '50%', background: c.status === 'online' ? colors.semantic.success : C.muted }} />
+              <div style={{ width: 6, height: 6, borderRadius: '16%', background: c.status === 'online' ? colors.semantic.success : C.muted }} />
               <span style={{ fontFamily: FONT.sans, fontSize: 12, color: c.status === 'online' ? colors.semantic.success : C.muted }}>{c.status === 'online' ? 'Online' : 'Offline'}</span>
             </div>
             <span style={{ fontFamily: FONT.sans, fontSize: 11, color: C.muted, whiteSpace: 'nowrap' as const }}>{c.lastActive || ''}</span>

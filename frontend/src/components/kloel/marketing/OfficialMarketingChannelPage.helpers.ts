@@ -25,11 +25,11 @@ interface ChannelMeta {
 }
 
 const CHANNEL_COLORS: Record<ChannelKey, string> = {
-  whatsapp: '#25D366',
-  instagram: '#E1306C',
-  facebook: '#1877F2',
-  tiktok: '#000000',
-  email: '#EA4335',
+  whatsapp: 'rgb(37, 211, 102)',
+  instagram: 'rgb(225, 48, 108)',
+  facebook: 'rgb(24, 119, 242)',
+  tiktok: 'rgb(0, 0, 0)',
+  email: 'rgb(234, 67, 53)',
 };
 
 const CHANNEL_SUMMARIES: Record<ChannelKey, string> = {

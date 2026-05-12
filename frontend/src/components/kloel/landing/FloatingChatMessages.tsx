@@ -57,7 +57,7 @@ export function FloatingChatMessages({
             opacity: 0.3,
           }}
         >
-          <span style={{ fontFamily: S, fontSize: 12, color: colors.text.muted }}>
+          <span style={{ fontFamily: S, fontSize: 16, color: colors.text.muted }}>
             {kloelT(`Digite sua mensagem`)}
           </span>
         </div>
@@ -94,7 +94,7 @@ export function FloatingChatMessages({
             animated
             spores="animated"
           />
-          <span style={{ fontFamily: S, fontSize: 12, color: colors.text.muted }}>
+          <span style={{ fontFamily: S, fontSize: 16, color: colors.text.muted }}>
             {thinkingLabel}
           </span>
         </div>

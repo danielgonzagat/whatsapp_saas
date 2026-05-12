@@ -59,7 +59,7 @@ export function ContactTagsSection({ tags, onAddTag, onRemoveTag }: ContactTagsS
               gap: 4,
               background: C.elevated,
               border: `1px solid ${C.border}`,
-              borderRadius: 20,
+              borderRadius: 16,
               padding: '3px 10px',
               fontSize: 12,
               color: C.text,

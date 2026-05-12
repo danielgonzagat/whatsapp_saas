@@ -243,7 +243,7 @@ export function TrackingDashboard({ focus }: { focus?: string }) {
           {events.map((e) => (
             <div key={e.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 10px', background: 'var(--app-bg-secondary)', borderRadius: 6 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ width: 6, height: 6, borderRadius: '50%', background: G }} />
+                <span style={{ width: 6, height: 6, borderRadius: '16%', background: G }} />
                 <span style={{ fontSize: 12, fontFamily: MONO, color: 'var(--app-text-primary)' }}>{e.name}</span>
               </div>
               <span style={{ fontSize: 14, fontFamily: MONO, color: EMBER, fontWeight: 600 }}>{Fmt(e.fires)} fires</span>
@@ -288,7 +288,7 @@ export function TrackingDashboard({ focus }: { focus?: string }) {
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ width: 6, height: 6, borderRadius: '50%', background: colors.text.dim }} />
+          <span style={{ width: 6, height: 6, borderRadius: '16%', background: colors.text.dim }} />
           <span style={{ fontSize: 11, fontFamily: MONO, color: 'var(--app-text-tertiary)' }}>
             {kloelT(`NAO CONFIGURADO`)}
           </span>

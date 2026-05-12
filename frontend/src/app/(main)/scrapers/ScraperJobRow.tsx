@@ -41,7 +41,7 @@ export function ScraperJobRow({
         style={{
           width: 8,
           height: 8,
-          borderRadius: '50%',
+          borderRadius: '16%',
           background: STATUS_COLORS[status] || colors.text.muted,
           flexShrink: 0,
         }}

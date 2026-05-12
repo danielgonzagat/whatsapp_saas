@@ -10,7 +10,7 @@ import {
   resolveWorkspaceFromAuthPayload,
   tokenStorage,
 } from '@/lib/api';
-import { CheckCircle2, ExternalLink, RefreshCcw, Smartphone, Unplug } from 'lucide-react';
+import { CheckCircle2, ExternalLink, RotateCcw, Smartphone, Unplug } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { AgentCursorTarget } from './AgentCursor';
 
@@ -305,8 +305,8 @@ export function AgentDesktopViewer({
               disabled={working}
               className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm text-[colors.text.muted] transition hover:border-white/20 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <RefreshCcw
-                className={`h-4 w-4 ${working ? 'animate-spin' : ''}`}
+              <RotateCcw
+                className={`h-4 w-4 ${working ? 'animate-pulse' : ''}`}
                 aria-hidden="true"
               />
 

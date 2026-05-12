@@ -3,7 +3,7 @@
 import type { ElementType } from 'react';
 import { colors } from '@/lib/design-tokens';
 import { kloelT } from '@/lib/i18n/t';
-import { Loader2, TrendingUp } from 'lucide-react';
+import { LoaderCircle, TrendingUp } from 'lucide-react';
 import type { AgentActivity } from './AgentConsole.types';
 import { ACTIVITY_CONFIG, formatTimeAgo } from './AgentConsole.types';
 
@@ -40,9 +40,9 @@ function ActivityItem({ activity }: ActivityItemProps) {
           </span>
           <div className="flex items-center gap-1.5 flex-shrink-0">
             {activity.status === 'pending' && (
-              <Loader2
+              <LoaderCircle
                 size={12}
-                className="animate-spin"
+                className="animate-pulse"
                 style={{ color: colors.brand.cyan }}
                 aria-hidden="true"
               />

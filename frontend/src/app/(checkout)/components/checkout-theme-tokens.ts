@@ -4,12 +4,12 @@ import type { CheckoutThemeInputTokens, CheckoutThemeStepTokens } from './checko
 import { colors } from '@/lib/design-tokens';
 
 export const CHECKOUT_VISUAL = {
-  blancBgStart: '#3d1232',
-  blancBgMid: '#5a1a4a',
-  blancBorder: '#f0e6c0',
-  blancPlaceholder: '#aaa',
-  noirBgStart: '#1a0a14',
-  noirBgMid: '#2d1525',
+  blancBgStart: 'rgb(61, 18, 50)',
+  blancBgMid: 'rgb(90, 26, 74)',
+  blancBorder: 'rgb(240, 230, 192)',
+  blancPlaceholder: 'rgb(170, 170, 170)',
+  noirBgStart: 'rgb(26, 10, 20)',
+  noirBgMid: 'rgb(45, 21, 37)',
 } as const;
 
 /** Checkout visual theme shape. */

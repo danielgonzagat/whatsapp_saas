@@ -98,7 +98,7 @@ export function GestaoFisicos({
             style={{
               width: `${((pl.delivered || 0) / total) * 100}%`,
               background: 'colors.ember.primary',
-              borderRadius: '0 4px 4px 0',
+              borderRadius: '4 4px 4px 0',
             }}
           />
         </div>
@@ -115,7 +115,7 @@ export function GestaoFisicos({
                 fontFamily: SORA,
               }}
             >
-              <span style={{ width: 6, height: 6, borderRadius: 2, background: s.c }} />
+              <span style={{ width: 6, height: 6, borderRadius: 4, background: s.c }} />
               {s.l} ({pl[s.key] || 0})
             </span>
           ))}

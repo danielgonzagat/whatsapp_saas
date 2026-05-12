@@ -249,7 +249,7 @@ export function TeamSection() {
                   style={{
                     width: 32,
                     height: 32,
-                    borderRadius: '50%',
+                    borderRadius: '16%',
                     background: 'var(--app-bg-secondary)',
                     display: 'flex',
                     alignItems: 'center',

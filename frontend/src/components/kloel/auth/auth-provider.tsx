@@ -98,7 +98,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     workspace: null,
     subscription: { status: 'none', trialDaysLeft: 0, creditsBalance: 0 },
   });
-  // Hydrate from JWT on client mount — avoids SSR/client mismatch (React #418)
+  // Hydrate from JWT on client mount — avoids SSR/client mismatch (React rgb(68, 17, 136))
   const hydratedRef = useRef(false);
   useEffect(() => {
     if (hydratedRef.current) {

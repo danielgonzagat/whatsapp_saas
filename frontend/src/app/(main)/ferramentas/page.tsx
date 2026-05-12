@@ -160,7 +160,7 @@ export default function FerramentasPage() {
                 fontWeight: 600,
               }}
             >
-              {kloelT(`Explorar &#8594;`)}
+              {kloelT(`Explorar &rgba(136, 85, 153, 0.267);`)}
             </div>
           </Card>
         ))}

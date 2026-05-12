@@ -154,7 +154,7 @@ export function ConnectAccountStatusCard({
                   padding: '7px 12px',
                   background: tone.bg,
                   border: `1px solid ${tone.border}`,
-                  borderRadius: 999,
+                  borderRadius: 16,
                   color: tone.color,
                 }}
               >

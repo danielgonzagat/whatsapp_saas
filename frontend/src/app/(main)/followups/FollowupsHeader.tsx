@@ -3,7 +3,7 @@
 import { kloelT } from '@/lib/i18n/t';
 import { colors } from '@/lib/design-tokens';
 import { KloelMushroomMark } from '@/components/kloel/KloelBrand';
-import { Calendar, RefreshCw } from 'lucide-react';
+import { Calendar, RotateCw } from 'lucide-react';
 
 interface FollowupsHeaderProps {
   isLoading: boolean;
@@ -36,7 +36,7 @@ export function FollowupsHeader({ isLoading, onRefresh }: FollowupsHeaderProps) 
             traceColor={colors.background.void}
           />
         ) : (
-          <RefreshCw className="w-4 h-4" aria-hidden="true" />
+          <RotateCw className="w-4 h-4" aria-hidden="true" />
         )}
         {kloelT(`Atualizar`)}
       </button>

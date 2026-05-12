@@ -120,7 +120,7 @@ export default function AreaMembrosListPanel({
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
                     {[a.certificates !== false ? 'Certificados' : null, a.quizzes !== false ? 'Quizzes' : null,
                       a.community === true ? 'Comunidade' : null].filter(Boolean).map((label) => (
-                      <span key={label} style={{ padding: '4px 8px', borderRadius: 999, background: `${areaAccent}15`, border: `1px solid ${areaAccent}30`, color: areaAccent, fontSize: 10, fontWeight: 600, fontFamily: SORA }}>
+                      <span key={label} style={{ padding: '4px 8px', borderRadius: 16, background: `${areaAccent}15`, border: `1px solid ${areaAccent}30`, color: areaAccent, fontSize: 10, fontWeight: 600, fontFamily: SORA }}>
                         {label}
                       </span>
                     ))}

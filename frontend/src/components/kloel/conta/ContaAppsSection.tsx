@@ -76,7 +76,7 @@ export function ContaAppsSection({ handleSelectSection, router }: ContaAppsSecti
                 style={{
                   width: 8,
                   height: 8,
-                  borderRadius: '50%',
+                  borderRadius: '16%',
                   background: app.connected ? colors.semantic.success : 'var(--app-text-placeholder)',
                 }}
               />

@@ -101,7 +101,7 @@ export default function GestaoVendasPage() {
                 opacity: 0.4,
               }}
             >
-              {kloelT(`&#128269;`)}
+              {kloelT(`&rgb(18, 130, 105);`)}
             </span>
           </div>
           <input
@@ -136,7 +136,7 @@ export default function GestaoVendasPage() {
                 height: 20,
                 border: '2px solid transparent',
                 borderTopColor: 'colors.ember.primary',
-                borderRadius: '50%',
+                borderRadius: '16%',
                 animation: 'spin 1s linear infinite',
               }}
             />
@@ -205,7 +205,7 @@ export default function GestaoVendasPage() {
                               style={{
                                 width: 32,
                                 height: 32,
-                                borderRadius: '50%',
+                                borderRadius: '16%',
                                 background: colors.background.nebula,
                                 border: `1px solid ${colors.border.space}`,
                                 display: 'flex',

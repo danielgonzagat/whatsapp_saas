@@ -180,7 +180,7 @@ export function MediaPreviewBox({
                   right: 8,
                   background: 'rgba(0,0,0,0.6)',
                   border: 'none',
-                  borderRadius: '50%',
+                  borderRadius: '16%',
                   width: 28,
                   height: 28,
                   display: 'flex',

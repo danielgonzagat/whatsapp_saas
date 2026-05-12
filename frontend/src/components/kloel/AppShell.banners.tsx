@@ -124,7 +124,7 @@ export function KycBanner({
         top: mobileHeaderOffset,
         zIndex: 15,
         padding: isMobile ? '12px 16px 0' : '16px 20px 0',
-        background: `linear-gradient(180deg, color-mix(in srgb, ${KLOEL_THEME.bgPrimary} 98%, transparent) 0%, color-mix(in srgb, ${KLOEL_THEME.bgPrimary} 90%, transparent) 80%, transparent 100%)`,
+        background: KLOEL_THEME.bgPrimary,
       }}
     >
       <div

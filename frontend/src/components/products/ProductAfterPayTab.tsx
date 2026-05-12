@@ -93,7 +93,7 @@ function Toggle({ label, checked, onChange, desc }: ToggleProps) {
         style={{
           width: 36,
           height: 20,
-          borderRadius: 10,
+          borderRadius: 8,
           background: checked ? V.g : V.b,
           position: 'relative',
           transition: 'background .2s',

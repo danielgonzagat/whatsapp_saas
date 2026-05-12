@@ -62,7 +62,7 @@ export default function MarketplaceFilters({
           onClick={() => setCatFilter(null)}
           style={{
             padding: '6px 14px',
-            borderRadius: 99,
+            borderRadius: 16,
             border: 'none',
             cursor: 'pointer',
             fontFamily: SORA,
@@ -81,7 +81,7 @@ export default function MarketplaceFilters({
             onClick={() => setCatFilter(catFilter === cat ? null : cat)}
             style={{
               padding: '6px 14px',
-              borderRadius: 99,
+              borderRadius: 16,
               border: 'none',
               cursor: 'pointer',
               fontFamily: SORA,

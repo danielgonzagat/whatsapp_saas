@@ -44,7 +44,7 @@ export function StatusDot({ status }: { status: 'online' | 'offline' | 'warning'
         display: 'inline-block',
         width: 8,
         height: 8,
-        borderRadius: '50%',
+        borderRadius: '16%',
         background: statusColors[status],
         boxShadow: status === 'online' ? `0 0 6px ${statusColors[status]}` : 'none',
       }}

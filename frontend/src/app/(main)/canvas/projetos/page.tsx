@@ -52,7 +52,7 @@ function ProjectSkeletonGrid() {
               style={{
                 width: '74%',
                 height: 10,
-                borderRadius: 999,
+                borderRadius: 16,
                 background:
                   colors.canvas.border,
               }}
@@ -61,7 +61,7 @@ function ProjectSkeletonGrid() {
               style={{
                 width: '46%',
                 height: 9,
-                borderRadius: 999,
+                borderRadius: 16,
                 background: 'var(--app-bg-secondary)',
               }}
             />
@@ -243,7 +243,7 @@ function ProjectCard({
               style={{
                 width: 20,
                 height: 20,
-                borderRadius: 3,
+                borderRadius: 4,
                 background: 'radial-gradient(circle, colors.ember.glow40, transparent)',
               }}
             />

@@ -128,7 +128,7 @@ export function WarRoomDashboard({
             <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
               {adRules.map((r) => (
                 <div key={r.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, opacity: r.active ? 1 : 0.5 }}>
-                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: r.active ? EMBER : colors.text.dim, marginTop: 5, flexShrink: 0 }} />
+                  <span style={{ width: 6, height: 6, borderRadius: '16%', background: r.active ? EMBER : colors.text.dim, marginTop: 5, flexShrink: 0 }} />
                   <div>
                     <div style={{ fontSize: 11, fontFamily: MONO, color: 'var(--app-text-primary)', lineHeight: 1.4 }}>
                       IF {r.condition}

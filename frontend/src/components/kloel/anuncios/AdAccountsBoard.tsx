@@ -58,7 +58,7 @@ export function AdAccountsBoard({
                     marginLeft: 'auto',
                     width: 6,
                     height: 6,
-                    borderRadius: '50%',
+                    borderRadius: '16%',
                     background: p.connected ? LIVE : colors.text.dim,
                     flexShrink: 0,
                   }}
@@ -103,7 +103,7 @@ export function AdAccountsBoard({
                         style={{
                           width: 6,
                           height: 6,
-                          borderRadius: '50%',
+                          borderRadius: '16%',
                           background: LIVE,
                           animation: 'pulse 2s infinite',
                         }}

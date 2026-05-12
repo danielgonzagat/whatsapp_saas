@@ -35,8 +35,8 @@ export default function AreaMembrosCertificatePanel({
             transform: 'translate(-50%, -50%)',
             width: 200,
             height: 80,
-            borderRadius: '50%',
-            background: `radial-gradient(ellipse, ${PURPLE}40, transparent 70%)`,
+            borderRadius: '16%',
+            background: 'rgba(232, 93, 48, 0.08)',
             animation: 'glow 3s ease-in-out',
             pointerEvents: 'none',
           }}
@@ -147,7 +147,7 @@ export default function AreaMembrosCertificatePanel({
                 style={{
                   height: 3,
                   background: BORDER,
-                  borderRadius: 2,
+                  borderRadius: 4,
                   overflow: 'hidden',
                   marginTop: 8,
                 }}
@@ -159,7 +159,7 @@ export default function AreaMembrosCertificatePanel({
                       : '0%',
                     height: '100%',
                     background: PURPLE,
-                    borderRadius: 2,
+                    borderRadius: 4,
                   }}
                 />
               </div>

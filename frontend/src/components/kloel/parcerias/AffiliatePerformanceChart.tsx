@@ -24,7 +24,7 @@ export default function AffiliatePerformanceChart({
       <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, height: 80, background: C.bg, border: `1px solid ${C.border}`, borderRadius: 6, padding: '12px 14px' }}>
         {chartData.map((point) => (
           <div key={`chart-bar-${point.label}`} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-            <div style={{ width: '100%', height: `${(point.value / chartMax) * 56}px`, background: C.ember, borderRadius: 2, opacity: 0.6 + (point.value / chartMax) * 0.4, transition: 'height 300ms ease' }} />
+            <div style={{ width: '100%', height: `${(point.value / chartMax) * 56}px`, background: C.ember, borderRadius: 4, opacity: 0.6 + (point.value / chartMax) * 0.4, transition: 'height 300ms ease' }} />
           </div>
         ))}
       </div>

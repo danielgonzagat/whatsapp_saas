@@ -169,7 +169,7 @@ export function drawScene(
   icons.forEach((icon, index) => {
     const center = layout.centers[index];
     ctx.globalAlpha = 0.08;
-    ctx.fillStyle = '#ffffff';
+    ctx.fillStyle = 'rgb(255, 255, 255)';
     ctx.beginPath();
     const rx = center.x - layout.containerSize / 2;
     const ry = center.y - layout.containerSize / 2;
@@ -177,7 +177,7 @@ export function drawScene(
     ctx.fill();
 
     ctx.globalAlpha = 0.06;
-    ctx.strokeStyle = '#ffffff';
+    ctx.strokeStyle = 'rgb(255, 255, 255)';
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.roundRect(rx, ry, layout.containerSize, layout.containerSize, layout.containerRadius);
@@ -417,7 +417,7 @@ function ThanosOmniSales({ runToken }: { runToken: number }) {
             <div
               style={{
                 padding: '8px 12px',
-                borderBottom: '1px solid #19191C',
+                borderBottom: '1px solid rgb(25, 25, 28)',
                 display: 'flex',
                 alignItems: 'center',
                 gap: 6,
@@ -479,11 +479,11 @@ function ThanosOmniSales({ runToken }: { runToken: number }) {
                   >
                     <div
                       style={{
-                        background: msg.f === 'a' ? '#19191C' : `${SALES_CHANNELS[key].c}12`,
+                        background: msg.f === 'a' ? 'rgb(25, 25, 28)' : `${SALES_CHANNELS[key].c}12`,
                         borderRadius: 4,
                         padding: '4px 8px',
                         fontSize: 10,
-                        color: '#E0DDD8',
+                        color: 'rgb(224, 221, 216)',
                         lineHeight: 1.4,
                         fontFamily: F,
                         wordBreak: 'break-word',

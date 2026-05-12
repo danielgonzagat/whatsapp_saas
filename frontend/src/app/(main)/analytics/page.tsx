@@ -54,7 +54,7 @@ export default function KloelRelatorio() {
 
   return (
     <div style={{ background: V.void, minHeight: '100vh', fontFamily: FONT_SORA, color: V.t, padding: isMobile ? '20px 16px 28px' : '28px 32px' }}>
-      <style>{`@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}} ::selection{background:rgba(232,93,48,.3)} ::-webkit-scrollbar{width:3px} ::-webkit-scrollbar-thumb{background:${colors.border.space};border-radius:2px}`}</style>
+      <style>{`@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}} ::selection{background:rgba(232,93,48,.3)} ::-webkit-scrollbar{width:3px} ::-webkit-scrollbar-thumb{background:${colors.border.space};border-radius:4px}`}</style>
 
       <AnalyticsHeader filters={filters} setFilters={setFilters} setShowFilter={setShowFilter} onExport={handleExport} showExport={showExport} isMobile={isMobile} />
 

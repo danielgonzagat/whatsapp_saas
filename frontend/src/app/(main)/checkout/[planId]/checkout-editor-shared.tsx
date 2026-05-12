@@ -117,7 +117,7 @@ export function Toggle({
           position: 'relative',
           width: 40,
           height: 22,
-          borderRadius: 11,
+          borderRadius: 12,
           border: 'none',
           backgroundColor: checked ? C.ember : C.border,
           cursor: disabled ? 'not-allowed' : 'pointer',
@@ -133,7 +133,7 @@ export function Toggle({
             left: checked ? 20 : 2,
             width: 18,
             height: 18,
-            borderRadius: 9,
+            borderRadius: 8,
             backgroundColor: colors.text.silver,
             transition: 'left 150ms ease',
           }}
@@ -248,8 +248,7 @@ export function LoadingBar({
         width,
         height,
         borderRadius: R,
-        background:
-          'linear-gradient(90deg, rgba(34,34,38,0.92) 0%, rgba(41,41,46,0.98) 50%, rgba(34,34,38,0.92) 100%)',
+        background:          'rgba(34, 34, 38, 0.96)',
         ...style,
       }}
     />
@@ -263,7 +262,7 @@ export function CheckoutEditorLoadingOverlay({ showContextCard }: { showContextC
         position: 'absolute',
         inset: 0,
         padding: 20,
-        background: 'linear-gradient(180deg, rgba(10,10,12,0.96) 0%, rgba(10,10,12,0.985) 100%)',
+        background: 'rgba(10, 10, 12, 0.98)',
         pointerEvents: 'none',
         overflow: 'hidden',
       }}
@@ -317,7 +316,7 @@ export function CheckoutPreviewLoadingOverlay() {
         alignItems: 'center',
         justifyContent: 'center',
         padding: 24,
-        background: 'linear-gradient(180deg, rgba(24,24,27,0.94) 0%, rgba(17,17,19,0.98) 100%)',
+        background: 'rgba(17, 17, 19, 0.98)',
         pointerEvents: 'none',
       }}
     >
@@ -335,7 +334,7 @@ export function CheckoutPreviewLoadingOverlay() {
         <LoadingBar width="32%" height={10} style={{ marginBottom: 16 }} />
         <LoadingBar width="68%" height={18} style={{ marginBottom: 10 }} />
         <LoadingBar width="88%" height={12} style={{ marginBottom: 24 }} />
-        <LoadingBar width="100%" height={240} style={{ marginBottom: 18, borderRadius: 10 }} />
+        <LoadingBar width="100%" height={240} style={{ marginBottom: 18, borderRadius: 8 }} />
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <LoadingBar height={40} />
           <LoadingBar height={40} />

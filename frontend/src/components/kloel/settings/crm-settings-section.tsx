@@ -18,7 +18,7 @@ import {
   ArrowRight,
   KanbanSquare,
   Plus,
-  RefreshCw,
+  RotateCw,
   Sparkles,
   XCircle,
 } from 'lucide-react';
@@ -356,7 +356,7 @@ export function CrmSettingsSection() {
                 traceColor="colors.ember.primary"
               />
             ) : (
-              <RefreshCw className="mr-2 h-4 w-4" aria-hidden="true" />
+              <RotateCw className="mr-2 h-4 w-4" aria-hidden="true" />
             )}
 
             {kloelT(`Atualizar`)}

@@ -14,7 +14,7 @@ export default function AffiliateProfileCard({ affiliate }: { affiliate: Affilia
       <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20 }}>
         <div
           style={{
-            width: 56, height: 56, borderRadius: '50%',
+            width: 56, height: 56, borderRadius: '16%',
             background: a.type === 'producer' ? 'rgba(139,92,246,0.12)' : C.emberBg,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontFamily: FONT.sans, fontSize: 22, fontWeight: 700,

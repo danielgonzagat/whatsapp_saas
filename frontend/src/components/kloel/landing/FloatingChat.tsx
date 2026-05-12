@@ -50,14 +50,14 @@ const USER_BUBBLE_STYLE: React.CSSProperties = {
   borderRadius: 6,
   padding: '10px 14px',
   fontFamily: S,
-  fontSize: 14,
+  fontSize: 16,
   lineHeight: 1.55,
   wordBreak: 'break-word',
 };
 
 const ASSISTANT_BUBBLE_STYLE: React.CSSProperties = {
   fontFamily: S,
-  fontSize: 14,
+  fontSize: 16,
   color: colors.text.silver,
   lineHeight: 1.65,
   wordBreak: 'break-word',

@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 import { useAuth } from '@/components/kloel/auth/auth-provider';
 import { apiFetch } from '@/lib/api';
 import { webinarApi } from '@/lib/api/webinars';
-import { Loader2, Plus, Video } from 'lucide-react';
+import { LoaderCircle, Plus, Video } from 'lucide-react';
 import { useCallback, useEffect, useId, useState } from 'react';
 import { mutate } from 'swr';
 
@@ -177,7 +177,7 @@ export default function WebinariosPage() {
 
       {loading && (
         <div style={loaderWrapStyle}>
-          <Loader2 size={20} style={loaderStyle} aria-hidden="true" />
+          <LoaderCircle size={20} style={loaderStyle} aria-hidden="true" />
         </div>
       )}
 

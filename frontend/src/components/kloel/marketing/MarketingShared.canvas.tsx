@@ -160,14 +160,14 @@ export function ConnBadge({ connected }: { connected: boolean }) {
         color: connected ? colors.semantic.success : colors.semantic.error,
         background: connected ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
         padding: '2px 8px',
-        borderRadius: 99,
+        borderRadius: 16,
       }}
     >
       <span
         style={{
           width: 6,
           height: 6,
-          borderRadius: '50%',
+          borderRadius: '16%',
           background: connected ? colors.semantic.success : colors.semantic.error,
           animation: connected ? 'mktPulse 2s infinite' : 'none',
         }}

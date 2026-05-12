@@ -18,7 +18,7 @@ export function MiniChart({ data, color = 'colors.ember.primary' }: MiniChartPro
             height: `${(value / max) * 100}%`,
             minHeight: 2,
             background: idx === data.length - 1 ? color : 'var(--app-accent-light)',
-            borderRadius: '2px 2px 0 0',
+            borderRadius: '4px 2px 0 0',
           }}
         />
       ))}

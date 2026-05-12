@@ -13,7 +13,7 @@ export function LivePulse() {
         style={{
           width: 6,
           height: 6,
-          borderRadius: 3,
+          borderRadius: 4,
           background: colors.semantic.success,
           animation: prefersReducedMotion ? 'none' : 'pulse 2s ease infinite',
         }}

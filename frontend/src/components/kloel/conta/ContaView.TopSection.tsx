@@ -148,7 +148,7 @@ export function ContaTopSection({
         style={{
           height: 4,
           background: 'var(--app-bg-secondary)',
-          borderRadius: 2,
+          borderRadius: 4,
           marginBottom: 24,
         }}
       >
@@ -157,7 +157,7 @@ export function ContaTopSection({
             height: '100%',
             width: `${pct}%`,
             background: pct === 100 ? colors.semantic.success : EMBER,
-            borderRadius: 2,
+            borderRadius: 4,
             transition: 'width .3s',
           }}
         />

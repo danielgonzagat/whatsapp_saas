@@ -113,7 +113,7 @@ export function MultiChannel({
           style={{
             width: 5,
             height: 5,
-            borderRadius: 3,
+            borderRadius: 4,
             background: channelColors[ch],
             boxShadow: `0 0 6px ${channelColors[ch]}50`,
           }}

@@ -58,7 +58,7 @@ export default function ScrapersPage() {
   return (
     <SectionPage
       title={kloelT(`Scrapers`)}
-      icon={kloelT(`&#128269;`)}
+      icon={kloelT(`&rgb(18, 130, 105);`)}
       description={kloelT(`Jobs de scraping para coleta de leads`)}
       back={() => router.push('/ferramentas')}
     >

@@ -59,7 +59,7 @@ export function InvestReturnPanel({
                   <div
                     style={{
                       height: 6,
-                      borderRadius: 3,
+                      borderRadius: 4,
                       background: R,
                       width: `${maxVal > 0 ? (p.spend / maxVal) * 100 : 0}%`,
                       transition: 'width 150ms ease',
@@ -68,7 +68,7 @@ export function InvestReturnPanel({
                   <div
                     style={{
                       height: 6,
-                      borderRadius: 3,
+                      borderRadius: 4,
                       background: G,
                       width: `${maxVal > 0 ? (p.revenue / maxVal) * 100 : 0}%`,
                       transition: 'width 150ms ease',

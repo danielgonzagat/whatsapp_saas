@@ -96,7 +96,7 @@ function StatusChip({ status }: { status: DashboardHomeConversation['status'] })
   if (status === 'done') {
     return (
       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 10, fontWeight: 700, color: KLOEL_THEME.success }}>
-        <span aria-hidden style={{ width: 8, height: 8, borderRadius: '50%', background: KLOEL_THEME.success }} />
+        <span aria-hidden style={{ width: 8, height: 8, borderRadius: '16%', background: KLOEL_THEME.success }} />
         {kloelT(`Convertida`)}
       </span>
     );
@@ -104,14 +104,14 @@ function StatusChip({ status }: { status: DashboardHomeConversation['status'] })
   if (status === 'waiting') {
     return (
       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 10, fontWeight: 700, color: KLOEL_THEME.warning }}>
-        <span aria-hidden style={{ width: 8, height: 8, borderRadius: '50%', background: KLOEL_THEME.warning }} />
+        <span aria-hidden style={{ width: 8, height: 8, borderRadius: '16%', background: KLOEL_THEME.warning }} />
         {kloelT(`Aguardando`)}
       </span>
     );
   }
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 10, fontWeight: 700, color: KLOEL_THEME.accent }}>
-      <span aria-hidden style={{ width: 8, height: 8, borderRadius: '50%', background: KLOEL_THEME.accent }} />
+      <span aria-hidden style={{ width: 8, height: 8, borderRadius: '16%', background: KLOEL_THEME.accent }} />
       CIA
     </span>
   );
@@ -154,8 +154,8 @@ function RevenueBars({
         return (
           <div key={label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', gap: 6, minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, height: chartHeight - 28, width: '100%', justifyContent: 'center' }}>
-              <div style={{ width: compact ? 6 : 8, height: previousHeight, borderRadius: '3px 3px 0 0', background: KLOEL_THEME.accentMedium }} />
-              <div style={{ width: compact ? 8 : 10, height: currentHeight, borderRadius: '3px 3px 0 0', background: KLOEL_THEME.accent }} />
+              <div style={{ width: compact ? 6 : 8, height: previousHeight, borderRadius: '4px 3px 0 0', background: KLOEL_THEME.accentMedium }} />
+              <div style={{ width: compact ? 8 : 10, height: currentHeight, borderRadius: '4px 3px 0 0', background: KLOEL_THEME.accent }} />
             </div>
             <span style={{ fontSize: 10, color: KLOEL_THEME.textTertiary, whiteSpace: 'nowrap', fontFamily: FONT_MONO }}>{label}</span>
           </div>
@@ -181,7 +181,7 @@ function OperationalHealthGuide({ checkpoints, onClose }: { checkpoints: Dashboa
         <div style={{ display: 'grid', gap: 10 }}>
           {checkpoints.map((checkpoint) => (
             <div key={checkpoint.id} style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: 12, alignItems: 'flex-start', padding: '12px 14px', borderRadius: 6, border: `1px solid ${checkpoint.active ? KLOEL_THEME.accentLight : KLOEL_THEME.borderPrimary}`, background: checkpoint.active ? `color-mix(in srgb, ${KLOEL_THEME.accent} 6%, ${KLOEL_THEME.bgCard})` : KLOEL_THEME.bgSecondary }}>
-              <div aria-hidden style={{ width: 18, height: 18, borderRadius: '50%', marginTop: 2, background: checkpoint.active ? KLOEL_THEME.accent : KLOEL_THEME.bgTertiary, boxShadow: checkpoint.active ? `0 0 0 3px color-mix(in srgb, ${KLOEL_THEME.accent} 16%, transparent)` : 'none' }} />
+              <div aria-hidden style={{ width: 18, height: 18, borderRadius: '16%', marginTop: 2, background: checkpoint.active ? KLOEL_THEME.accent : KLOEL_THEME.bgTertiary, boxShadow: checkpoint.active ? `0 0 0 3px color-mix(in srgb, ${KLOEL_THEME.accent} 16%, transparent)` : 'none' }} />
               <div>
                 <div style={{ fontSize: 13, fontWeight: 700, color: checkpoint.active ? KLOEL_THEME.textPrimary : KLOEL_THEME.textSecondary, marginBottom: 4 }}>{checkpoint.label}</div>
                 <div style={{ fontSize: 12, lineHeight: 1.65, color: KLOEL_THEME.textSecondary }}>{checkpoint.description}</div>
@@ -224,11 +224,11 @@ export default function HomeRecentActivity({
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ width: 10, height: 4, borderRadius: 999, background: KLOEL_THEME.accent }} />
+                <span style={{ width: 10, height: 4, borderRadius: 16, background: KLOEL_THEME.accent }} />
                 <span style={{ fontSize: 10, color: KLOEL_THEME.textTertiary }}>{kloelT(`Atual`)}</span>
               </div>
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ width: 10, height: 4, borderRadius: 999, background: KLOEL_THEME.accentMedium }} />
+                <span style={{ width: 10, height: 4, borderRadius: 16, background: KLOEL_THEME.accentMedium }} />
                 <span style={{ fontSize: 10, color: KLOEL_THEME.textTertiary }}>{kloelT(`Anterior`)}</span>
               </div>
             </div>
@@ -285,7 +285,7 @@ export default function HomeRecentActivity({
                       <div style={{ minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
                           <span style={{ fontSize: 13, fontWeight: 700, color: KLOEL_THEME.textPrimary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{product.name}</span>
-                          {product.isTop ? <span style={{ height: 20, display: 'inline-flex', alignItems: 'center', padding: '0 8px', borderRadius: 999, background: KLOEL_THEME.accentLight, color: KLOEL_THEME.accent, fontSize: 10, fontWeight: 700, flexShrink: 0 }}>TOP</span> : null}
+                          {product.isTop ? <span style={{ height: 20, display: 'inline-flex', alignItems: 'center', padding: '0 8px', borderRadius: 16, background: KLOEL_THEME.accentLight, color: KLOEL_THEME.accent, fontSize: 10, fontWeight: 700, flexShrink: 0 }}>TOP</span> : null}
                         </div>
                         <div style={{ marginTop: 4, fontSize: 11, color: KLOEL_THEME.textSecondary }}>{`${product.category || 'Produto'} · ${statusLabel}`} · {formatInteger(product.totalSales)} venda{product.totalSales === 1 ? '' : 's'}</div>
                       </div>
@@ -317,7 +317,7 @@ export default function HomeRecentActivity({
                 <button key={conversation.id} type="button" onClick={() => router.push(`/inbox?conversationId=${encodeURIComponent(conversation.id)}`)}
                   style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, width: '100%', padding: '12px 14px', borderRadius: 6, border: `1px solid ${KLOEL_THEME.borderPrimary}`, background: KLOEL_THEME.bgSecondary, textAlign: 'left', cursor: 'pointer' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
-                    <div style={{ width: 36, height: 36, borderRadius: '50%', background: KLOEL_THEME.bgElevated, border: `1px solid ${KLOEL_THEME.borderPrimary}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: KLOEL_THEME.accent, fontWeight: 700, flexShrink: 0, overflow: 'hidden' }}>
+                    <div style={{ width: 36, height: 36, borderRadius: '16%', background: KLOEL_THEME.bgElevated, border: `1px solid ${KLOEL_THEME.borderPrimary}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: KLOEL_THEME.accent, fontWeight: 700, flexShrink: 0, overflow: 'hidden' }}>
                       {conversation.avatarUrl ? <NextImage src={conversation.avatarUrl} alt={conversation.contactName} unoptimized width={144} height={144} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         : conversation.contactName.split(' ').slice(0, 2).map((chunk) => chunk[0]).join('').toUpperCase()}
                     </div>
@@ -345,7 +345,7 @@ export default function HomeRecentActivity({
           <div style={{ flex: 1 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 6, flexWrap: 'wrap' }}>
               <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: KLOEL_THEME.textTertiary }}>{kloelT(`Saúde operacional`)}</div>
-              <button type="button" onClick={() => setHealthGuideOpen(true)} style={{ height: 28, padding: '0 10px', borderRadius: 999, border: `1px solid ${KLOEL_THEME.borderPrimary}`, background: KLOEL_THEME.bgSecondary, color: KLOEL_THEME.accent, fontSize: 11, fontWeight: 700, fontFamily: "'Sora', sans-serif", cursor: 'pointer', whiteSpace: 'nowrap' }}>{kloelT(`Como chegar a 100%`)}</button>
+              <button type="button" onClick={() => setHealthGuideOpen(true)} style={{ height: 28, padding: '0 10px', borderRadius: 16, border: `1px solid ${KLOEL_THEME.borderPrimary}`, background: KLOEL_THEME.bgSecondary, color: KLOEL_THEME.accent, fontSize: 11, fontWeight: 700, fontFamily: "'Sora', sans-serif", cursor: 'pointer', whiteSpace: 'nowrap' }}>{kloelT(`Como chegar a 100%`)}</button>
             </div>
             <div style={{ fontSize: 22, fontWeight: 700 }}>{formatOneDecimal(home?.health.operationalScorePct || 0, '%')}</div>
             <div style={{ fontSize: 11, color: KLOEL_THEME.textSecondary, marginTop: 4 }}>{formatInteger(home?.health.activeCheckpoints || 0)} de {formatInteger(home?.health.totalCheckpoints || 0)} {kloelT(`checkpoints ativos`)}</div>

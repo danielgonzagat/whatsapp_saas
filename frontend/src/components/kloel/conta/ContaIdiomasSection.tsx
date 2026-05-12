@@ -46,7 +46,7 @@ function LanguageOption({
         style={{
           width: 18,
           height: 18,
-          borderRadius: '50%',
+          borderRadius: '16%',
           border: isActive ? `2px solid ${EMBER}` : '2px solid var(--app-text-placeholder)',
           display: 'flex',
           alignItems: 'center',
@@ -55,7 +55,7 @@ function LanguageOption({
           transition: 'border-color 150ms ease',
         }}
       >
-        {isActive && <div style={{ width: 8, height: 8, borderRadius: '50%', background: EMBER }} />}
+        {isActive && <div style={{ width: 8, height: 8, borderRadius: '16%', background: EMBER }} />}
       </div>
       <span
         style={{

@@ -188,7 +188,7 @@ export function OrigemTab({ filters }: { filters: ReportFilters }) {
                       flex: 1,
                       height: 5,
                       background: V.e,
-                      borderRadius: 3,
+                      borderRadius: 4,
                       overflow: 'hidden',
                     }}
                   >
@@ -197,7 +197,7 @@ export function OrigemTab({ filters }: { filters: ReportFilters }) {
                         width: `${perc}%`,
                         height: '100%',
                         background: PIE_COLORS[i % PIE_COLORS.length],
-                        borderRadius: 3,
+                        borderRadius: 4,
                       }}
                     />
                   </div>

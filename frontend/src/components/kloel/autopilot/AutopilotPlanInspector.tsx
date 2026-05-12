@@ -8,7 +8,7 @@ import {
   Activity,
   AlertCircle,
   MessageSquare,
-  RefreshCw,
+  RotateCw,
   Send,
   Sparkles,
   Stethoscope,
@@ -268,7 +268,7 @@ export default function AutopilotPlanInspector({
               className="p-2 rounded-lg transition-colors hover:bg-white/5"
               style={{ color: colors.text.muted }}
             >
-              <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} aria-hidden="true" />
+              <RotateCw size={16} className={isLoading ? 'animate-pulse' : ''} aria-hidden="true" />
             </button>
           </div>
 

@@ -103,7 +103,7 @@ export default function SuccessPage() {
               width: '80px',
               height: '80px',
               margin: '0 auto 20px',
-              borderRadius: '50%',
+              borderRadius: '16%',
               border: `3px solid ${accent}`,
               color: accent,
               display: 'flex',
@@ -221,7 +221,7 @@ export default function SuccessPage() {
           style={{
             background: isPaid ? colors.checkout.successBg : colors.checkout.bg,
             border: `1px solid ${accent}33`,
-            borderRadius: '10px',
+            borderRadius: '8px',
             padding: '14px 16px',
             marginBottom: '20px',
           }}

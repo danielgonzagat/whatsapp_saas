@@ -67,7 +67,7 @@ export function Hospedagem() {
         <SectionLabel>{kloelT(`Uptime (30 dias)`)}</SectionLabel>
         <div style={{ display: 'flex', gap: 2, alignItems: 'flex-end', height: 40 }}>
           {Array.from({ length: 30 }, (_, i) => (
-            <div key={`uptime-${i}`} style={{ flex: 1, height: 40, background: colors.semantic.success, borderRadius: 2, opacity: 0.3 }} />
+            <div key={`uptime-${i}`} style={{ flex: 1, height: 40, background: colors.semantic.success, borderRadius: 4, opacity: 0.3 }} />
           ))}
         </div>
         <div style={{ fontFamily: MONO, fontSize: 12, color: 'var(--app-text-secondary)', marginTop: 8, textAlign: 'center' }}>

@@ -13,7 +13,7 @@ export function BrandDivider({ compact = false }: { compact?: boolean }) {
         style={{
           width: compact ? 120 : 'min(72vw, 600px)',
           height: 1,
-          background: 'linear-gradient(90deg, transparent, rgba(232,93,48,0.8), transparent)',
+          background: 'rgba(232, 93, 48, 0.8)',
           opacity: compact ? 0.7 : 0.45,
         }}
       />

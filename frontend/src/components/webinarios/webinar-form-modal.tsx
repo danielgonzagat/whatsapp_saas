@@ -1,4 +1,4 @@
-import { Loader2, Plus, X } from 'lucide-react';
+import { LoaderCircle, Plus, X } from 'lucide-react';
 import { useCallback, useState } from 'react';
 
 import { kloelT } from '@/lib/i18n/t';
@@ -143,7 +143,7 @@ export default function WebinarFormModal({
             style={submitBtnStyle(isSaving)}
           >
             {isSaving ? (
-              <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} aria-hidden="true" />
+              <LoaderCircle size={14} style={{ animation: 'spin 1s linear infinite' }} aria-hidden="true" />
             ) : (
               <Plus size={14} aria-hidden="true" />
             )}
@@ -168,7 +168,7 @@ const backdropStyle: React.CSSProperties = {
 const modalPanelStyle: React.CSSProperties = {
   background: colors.checkout.bg,
   border: '1px solid rgba(255,255,255,0.08)',
-  borderRadius: 10,
+  borderRadius: 8,
   padding: 28,
   width: 440,
   maxWidth: '90vw',

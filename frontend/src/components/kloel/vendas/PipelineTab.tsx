@@ -35,7 +35,7 @@ export function PipelineTab({ stages, isLoading }: PipelineTabProps) {
                   style={{
                     width: 8,
                     height: 8,
-                    borderRadius: '50%',
+                    borderRadius: '16%',
                     background: stage.color || 'colors.ember.primary',
                     flexShrink: 0,
                   }}

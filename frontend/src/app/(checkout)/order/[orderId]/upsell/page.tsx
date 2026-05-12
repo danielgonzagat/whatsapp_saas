@@ -158,7 +158,7 @@ export default function UpsellPage() {
               gap: '8px',
               background: colors.checkout.dangerBg,
               border: `1px solid ${colors.semantic.error}44`,
-              borderRadius: '10px',
+              borderRadius: '8px',
               padding: '8px 16px',
               marginBottom: '20px',
               color: 'var(--app-error)',

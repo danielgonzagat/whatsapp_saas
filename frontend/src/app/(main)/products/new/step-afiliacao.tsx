@@ -55,7 +55,7 @@ export function StepAfiliacao({ form, updateForm }: StepCommonProps) {
               style={{
                 width: 18,
                 height: 18,
-                borderRadius: '50%',
+                borderRadius: '16%',
                 backgroundColor: 'var(--app-text-on-accent)',
                 position: 'absolute',
                 top: 3,

@@ -1,4 +1,4 @@
-import { Loader2, Trash2 } from 'lucide-react';
+import { LoaderCircle, Trash2 } from 'lucide-react';
 
 import { kloelT } from '@/lib/i18n/t';
 import { colors } from '@/lib/design-tokens';
@@ -46,7 +46,7 @@ export default function WebinarDeleteDialog({
             style={confirmBtnStyle(isDeleting)}
           >
             {isDeleting ? (
-              <Loader2
+              <LoaderCircle
                 size={14}
                 style={{ animation: 'spin 1s linear infinite' }}
                 aria-hidden="true"
@@ -73,7 +73,7 @@ const backdropStyle: React.CSSProperties = {
 const dialogPanelStyle: React.CSSProperties = {
   background: colors.checkout.bg,
   border: '1px solid rgba(232,93,48,0.2)',
-  borderRadius: 10,
+  borderRadius: 8,
   padding: 28,
   width: 360,
   maxWidth: '90vw',

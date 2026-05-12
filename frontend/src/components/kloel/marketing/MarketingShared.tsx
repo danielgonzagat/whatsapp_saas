@@ -221,10 +221,10 @@ export function ChannelConnectBadge({
         color: colors.semantic.warning,
         background: 'rgba(245,158,11,0.1)',
         padding: '2px 8px',
-        borderRadius: 99,
+        borderRadius: 16,
       }}
     >
-      <span style={{ width: 6, height: 6, borderRadius: '50%', background: colors.semantic.warning }} />
+      <span style={{ width: 6, height: 6, borderRadius: '16%', background: colors.semantic.warning }} />
       {kloelT(`Conectar`)}
     </span>
   );

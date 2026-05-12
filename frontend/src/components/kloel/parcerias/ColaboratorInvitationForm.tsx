@@ -86,7 +86,7 @@ export default function ColaboratorInvitationForm({ onClose }: { onClose: () => 
                 border: `1px solid ${role === r.value ? C.ember : C.border}`, borderRadius: 6,
                 cursor: 'pointer', textAlign: 'left' as const,
               }}>
-              <div style={{ width: 8, height: 8, borderRadius: '50%', background: r.color }} />
+              <div style={{ width: 8, height: 8, borderRadius: '16%', background: r.color }} />
               <span style={{ fontFamily: FONT.sans, fontSize: 13, fontWeight: 500, color: C.text }}>{r.label}</span>
               {role === r.value && <span style={{ marginLeft: 'auto', color: C.ember }}>{IC.check(14)}</span>}
             </button>

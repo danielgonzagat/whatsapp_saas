@@ -112,7 +112,7 @@ export function ComposerSection({
                 background: `color-mix(in srgb, ${SURFACE} 94%, ${V})`,
                 color: TEXT,
                 padding: '10px 14px',
-                fontSize: 13,
+                fontSize: 16,
                 fontWeight: 600,
                 letterSpacing: '-0.01em',
                 cursor: 'pointer',
@@ -159,7 +159,7 @@ export function ComposerSection({
         <p
           style={{
             margin: hasMessages ? '10px auto 0' : '14px auto 0',
-            fontSize: 12,
+            fontSize: 16,
             lineHeight: 1.45,
             color: MUTED,
             textAlign: 'center',

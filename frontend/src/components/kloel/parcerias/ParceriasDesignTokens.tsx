@@ -51,7 +51,7 @@ export function TempBar({
         width: '100%',
         height: 4,
         background: C.elevated,
-        borderRadius: 2,
+        borderRadius: 4,
         overflow: 'hidden',
       }}
     >
@@ -60,7 +60,7 @@ export function TempBar({
           width: `${pct}%`,
           height: '100%',
           background: color,
-          borderRadius: 2,
+          borderRadius: 4,
           transition: 'width 300ms ease',
         }}
       />

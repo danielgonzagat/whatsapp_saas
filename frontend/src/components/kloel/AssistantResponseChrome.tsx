@@ -95,14 +95,14 @@ export function AssistantVersionNavigator({
         onClick={() => onChange(activeIndex - 1)}
         style={navigatorButtonStyle(resolvedTheme, canGoPrevious)}
       >
-        <span aria-hidden style={{ fontSize: 15, lineHeight: 1 }}>
+        <span aria-hidden style={{ fontSize: 16, lineHeight: 1 }}>
           ←
         </span>
       </button>
 
       <span
         style={{
-          fontSize: 11,
+          fontSize: 16,
           fontWeight: 700,
           letterSpacing: '0.12em',
           textTransform: 'uppercase',
@@ -121,7 +121,7 @@ export function AssistantVersionNavigator({
         onClick={() => onChange(activeIndex + 1)}
         style={navigatorButtonStyle(resolvedTheme, canGoNext)}
       >
-        <span aria-hidden style={{ fontSize: 15, lineHeight: 1 }}>
+        <span aria-hidden style={{ fontSize: 16, lineHeight: 1 }}>
           →
         </span>
       </button>
@@ -201,7 +201,7 @@ export function AssistantProcessingTraceCard({
             <div
               style={{
                 marginBottom: 4,
-                fontSize: 11,
+                fontSize: 16,
                 fontWeight: 700,
                 letterSpacing: '0.12em',
                 textTransform: 'uppercase',
@@ -213,7 +213,7 @@ export function AssistantProcessingTraceCard({
             <p
               style={{
                 margin: 0,
-                fontSize: 13,
+                fontSize: 16,
                 lineHeight: 1.6,
                 color: isProcessing ? resolvedTheme.textColor : resolvedTheme.mutedColor,
               }}
@@ -229,10 +229,10 @@ export function AssistantProcessingTraceCard({
             onClick={() => setExpanded((current) => !current)}
             style={{
               border: `1px solid ${resolvedTheme.borderColor}`,
-              borderRadius: 999,
+              borderRadius: 16,
               background: 'transparent',
               color: resolvedTheme.mutedColor,
-              fontSize: 12,
+              fontSize: 16,
               fontWeight: 600,
               padding: '6px 10px',
               cursor: 'pointer',
@@ -260,7 +260,7 @@ export function AssistantProcessingTraceCard({
           <p
             style={{
               margin: 0,
-              fontSize: 12,
+              fontSize: 16,
               lineHeight: 1.5,
               color: resolvedTheme.mutedColor,
             }}
@@ -275,10 +275,10 @@ export function AssistantProcessingTraceCard({
               onClick={onCancel}
               style={{
                 border: `1px solid ${resolvedTheme.borderColor}`,
-                borderRadius: 999,
+                borderRadius: 16,
                 background: 'transparent',
                 color: resolvedTheme.textColor,
-                fontSize: 12,
+                fontSize: 16,
                 fontWeight: 600,
                 padding: '6px 10px',
                 cursor: 'pointer',
@@ -308,7 +308,7 @@ export function AssistantProcessingTraceCard({
             >
               <div
                 style={{
-                  fontSize: 11,
+                  fontSize: 16,
                   fontWeight: 700,
                   letterSpacing: '0.1em',
                   textTransform: 'uppercase',
@@ -320,7 +320,7 @@ export function AssistantProcessingTraceCard({
               <p
                 style={{
                   margin: 0,
-                  fontSize: 13,
+                  fontSize: 16,
                   lineHeight: 1.55,
                   color: resolvedTheme.textColor,
                 }}
@@ -342,7 +342,7 @@ function navigatorButtonStyle(theme: Required<AssistantChromeTheme>, enabled: bo
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 999,
+    borderRadius: 16,
     border: `1px solid ${theme.borderColor}`,
     background: 'transparent',
     color: enabled ? theme.textColor : theme.subtleTextColor,

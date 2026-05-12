@@ -312,7 +312,7 @@ export function CarteiraWithdrawModal({
                           style={{
                             width: 8,
                             height: 8,
-                            borderRadius: 2,
+                            borderRadius: 4,
                             background: 'colors.ember.primary',
                           }}
                         />

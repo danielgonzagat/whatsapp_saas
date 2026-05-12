@@ -116,7 +116,7 @@ export default function CountdownTimer({
         justifyContent: 'center',
         gap: '8px',
         padding: '10px 16px',
-        borderRadius: '10px',
+        borderRadius: '8px',
         background: expired ? colors.checkout.dangerBg : `${accentColor}12`,
         border: `1px solid ${expired ? colors.checkout.dangerBorder : `${accentColor}30`}`,
         ...positionStyles,

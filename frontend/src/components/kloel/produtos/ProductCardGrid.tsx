@@ -80,8 +80,8 @@ export default function ProductCardGrid({
               : 'Sem planos';
         const mediaSize = isMobile ? 64 : 56;
         const priceBg = p.hasPlanPricing
-          ? 'linear-gradient(180deg, rgba(232,93,48,0.1), rgba(232,93,48,0.04))'
-          : 'linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015))';
+          ? 'rgba(232, 93, 48, 0.08)'
+          : 'rgba(255, 255, 255, 0.02)';
         const priceBorder = p.hasPlanPricing
           ? '1px solid rgba(232,93,48,0.18)'
           : `1px solid ${BORDER}`;
@@ -183,7 +183,7 @@ export default function ProductCardGrid({
                         }}
                       >
                         <span style={{
-                          width: 6, height: 6, borderRadius: '50%', background: statusColor,
+                          width: 6, height: 6, borderRadius: '16%', background: statusColor,
                         }} />
                         <span style={{ fontFamily: MONO, fontSize: 10, color: statusColor }}>
                           {statusLabel}
@@ -195,7 +195,7 @@ export default function ProductCardGrid({
                 <div
                   style={{
                     display: 'inline-flex', alignItems: 'center', gap: 10,
-                    padding: isMobile ? '8px 12px' : '7px 12px', borderRadius: 999,
+                    padding: isMobile ? '8px 12px' : '7px 12px', borderRadius: 16,
                     border: priceBorder, background: priceBg,
                     boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)',
                     maxWidth: '100%', flexWrap: 'wrap', alignSelf: 'flex-start',
@@ -226,7 +226,7 @@ export default function ProductCardGrid({
                       justifyContent: 'flex-end', marginTop: 2,
                     }}>
                       <span style={{
-                        width: 6, height: 6, borderRadius: '50%', background: statusColor,
+                        width: 6, height: 6, borderRadius: '16%', background: statusColor,
                       }} />
                       <span style={{ fontFamily: MONO, fontSize: 10, color: statusColor }}>
                         {statusLabel}

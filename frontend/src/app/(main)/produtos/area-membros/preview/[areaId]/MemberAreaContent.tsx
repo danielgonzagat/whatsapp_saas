@@ -37,7 +37,7 @@ export function MemberAreaContent({
             maxWidth: 560,
             background: 'var(--app-bg-card)',
             border: '1px solid var(--app-border-primary)',
-            borderRadius: 10,
+            borderRadius: 8,
             padding: 28,
           }}
         >

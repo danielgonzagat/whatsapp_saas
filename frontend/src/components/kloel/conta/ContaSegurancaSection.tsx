@@ -102,7 +102,7 @@ export default function SegurancaSection() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span
               style={{
-                width: 8, height: 8, borderRadius: '50%', background: 'var(--app-text-placeholder)',
+                width: 8, height: 8, borderRadius: '16%', background: 'var(--app-text-placeholder)',
               }}
             />
             <span
@@ -132,7 +132,7 @@ export default function SegurancaSection() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
             <span
               style={{
-                width: 8, height: 8, borderRadius: '50%', background: 'var(--app-text-placeholder)',
+                width: 8, height: 8, borderRadius: '16%', background: 'var(--app-text-placeholder)',
               }}
             />
             <span

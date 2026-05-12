@@ -45,7 +45,7 @@ export default function AreaMembrosStudentsPanel({
   const searchRow = { padding: '12px 20px', ...hdrBorder, display: 'flex', gap: 8 };
   const addFormStyle = { padding: '12px 20px', ...hdrBorder, display: 'flex', flexDirection: 'column' as const, gap: 8 };
   const listArea = { flex: 1, overflowY: 'auto' as const, padding: '0 20px' };
-  const avatarCircle = { width: 32, height: 32, borderRadius: '50%', background: BG_ELEVATED, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 600, color: 'colors.ember.primary', fontFamily: SORA, flexShrink: 0 };
+  const avatarCircle = { width: 32, height: 32, borderRadius: '16%', background: BG_ELEVATED, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 600, color: 'colors.ember.primary', fontFamily: SORA, flexShrink: 0 };
   const studentRow = { display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0', borderBottom: `1px solid ${BG_ELEVATED}` };
   const statusDot = (s: string) => s === 'active' ? colors.semantic.success : colors.semantic.error;
 
@@ -101,10 +101,10 @@ export default function AreaMembrosStudentsPanel({
             <div style={{ padding: '18px 0', display: 'flex', flexDirection: 'column' as const, gap: 12 }}>
               {[0, 1, 2].map((i) => (
                 <div key={`skel-${i}`} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: `1px solid ${BG_ELEVATED}` }}>
-                  <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--app-bg-secondary)', border: `1px solid ${BORDER}`, flexShrink: 0 }} />
+                  <div style={{ width: 32, height: 32, borderRadius: '16%', background: 'var(--app-bg-secondary)', border: `1px solid ${BORDER}`, flexShrink: 0 }} />
                   <div style={{ flex: 1 }}>
-                    <div style={{ width: `${58 - i * 8}%`, height: 12, borderRadius: 6, marginBottom: 8, background: 'linear-gradient(90deg, rgba(25,25,28,0.98) 0%, rgba(41,41,46,1) 50%, rgba(25,25,28,0.98) 100%)' }} />
-                    <div style={{ width: `${72 - i * 10}%`, height: 10, borderRadius: 6, background: 'linear-gradient(90deg, rgba(25,25,28,0.98) 0%, rgba(41,41,46,1) 50%, rgba(25,25,28,0.98) 100%)' }} />
+                    <div style={{ width: `${58 - i * 8}%`, height: 12, borderRadius: 6, marginBottom: 8, background: 'rgba(25, 25, 28, 0.98)' }} />
+                    <div style={{ width: `${72 - i * 10}%`, height: 10, borderRadius: 6, background: 'rgba(25, 25, 28, 0.98)' }} />
                   </div>
                 </div>
               ))}
@@ -159,7 +159,7 @@ export default function AreaMembrosStudentsPanel({
                       </div>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <div style={{ width: 6, height: 6, borderRadius: '50%', background: statusDot(s.status || 'active') }} />
+                      <div style={{ width: 6, height: 6, borderRadius: '16%', background: statusDot(s.status || 'active') }} />
                       <span style={{ fontSize: 10, color: statusDot(s.status || 'active'), fontFamily: SORA }}>
                         {s.status === 'active' ? 'Ativo' : 'Suspenso'}
                       </span>

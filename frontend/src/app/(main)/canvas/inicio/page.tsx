@@ -47,7 +47,7 @@ function RecentSkeletonGrid() {
               style={{
                 width: '70%',
                 height: 10,
-                borderRadius: 999,
+                borderRadius: 16,
                 background:
                   colors.canvas.border,
               }}
@@ -56,7 +56,7 @@ function RecentSkeletonGrid() {
               style={{
                 width: '42%',
                 height: 9,
-                borderRadius: 999,
+                borderRadius: 16,
                 background: 'var(--app-bg-secondary)',
               }}
             />
@@ -360,7 +360,7 @@ function DesignCard({
                 style={{
                   width: 20,
                   height: 20,
-                  borderRadius: 3,
+                  borderRadius: 4,
                   background: `radial-gradient(circle, ${colors.ember.glow40}, transparent)`,
                 }}
               />

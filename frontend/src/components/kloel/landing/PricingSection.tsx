@@ -95,7 +95,7 @@ export function PricingSection({
                   transform: 'translateX(-50%)',
                   background: E,
                   padding: '2px 12px',
-                  borderRadius: '0 0 4px 4px',
+                  borderRadius: '4 0 4px 4px',
                   fontSize: 9,
                   fontWeight: 700,
                   color: V,

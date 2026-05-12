@@ -376,7 +376,7 @@ export function CheckoutConfigPanel({
                     alignItems: 'center',
                     gap: 8,
                     padding: '7px 12px',
-                    borderRadius: 999,
+                    borderRadius: 16,
                     border: `1px solid ${V.em}35`,
                     background: `${V.em}12`,
                     color: V.t,

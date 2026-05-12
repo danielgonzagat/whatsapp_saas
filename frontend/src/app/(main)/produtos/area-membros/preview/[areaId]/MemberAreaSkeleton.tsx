@@ -15,8 +15,7 @@ export function SkeletonBlock({
         width,
         height,
         borderRadius: 6,
-        background:
-          'linear-gradient(90deg, rgba(25,25,28,0.96) 0%, rgba(41,41,46,0.98) 50%, rgba(25,25,28,0.96) 100%)',
+        background:          'rgba(25, 25, 28, 0.98)',
         ...style,
       }}
     />
@@ -51,7 +50,7 @@ export function MemberAreaContentSkeleton() {
       <SkeletonBlock width="42%" height={24} style={{ marginBottom: 12 }} />
       <SkeletonBlock width="76%" height={13} style={{ marginBottom: 8 }} />
       <SkeletonBlock width="61%" height={13} style={{ marginBottom: 24 }} />
-      <SkeletonBlock width="100%" height={420} style={{ borderRadius: 10 }} />
+      <SkeletonBlock width="100%" height={420} style={{ borderRadius: 8 }} />
     </div>
   );
 }

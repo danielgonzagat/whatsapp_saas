@@ -2,7 +2,7 @@
 
 import { type Conversation } from '@/lib/api';
 import { kloelT } from '@/lib/i18n/t';
-import { Loader2, MessageSquare } from 'lucide-react';
+import { LoaderCircle, MessageSquare } from 'lucide-react';
 import Link from 'next/link';
 import { InboxConversationListItem } from '../InboxConversationListItem';
 import { InboxConversationFilters } from './InboxConversationFilters';
@@ -61,8 +61,8 @@ export function InboxConversationList({
       <div className="max-h-[clamp(420px,60vh,720px)] overflow-y-auto">
         {loadingConversations ? (
           <div className="flex items-center justify-center px-[var(--inbox-panel-x)] py-10">
-            <Loader2
-              className="animate-spin text-[var(--text-muted)]"
+            <LoaderCircle
+              className="animate-pulse text-[var(--text-muted)]"
               style={{ width: 'var(--inbox-icon-md)', height: 'var(--inbox-icon-md)' }}
               aria-hidden="true"
             />

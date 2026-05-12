@@ -5,7 +5,7 @@ import type { CiaAccountRuntime, CiaSurfaceResponse } from '@/lib/api';
 import { colors } from '@/lib/design-tokens';
 import { Badge, Button, Grid, StatCard, Surface } from '@/components/kloel';
 import { KloelMushroomMark } from '@/components/kloel/KloelBrand';
-import { Activity, Bot, RefreshCw, Sparkles, Wallet, Zap } from 'lucide-react';
+import { Activity, Bot, RotateCw, Sparkles, Wallet, Zap } from 'lucide-react';
 
 interface StreamEvent {
   type: string;
@@ -61,7 +61,7 @@ export function CiaHeader({
         <Button
           variant="secondary"
           onClick={onRefresh}
-          leftIcon={<RefreshCw size={16} aria-hidden="true" />}
+          leftIcon={<RotateCw size={16} aria-hidden="true" />}
           disabled={workspaceLoading}
         >
           {kloelT('Atualizar')}

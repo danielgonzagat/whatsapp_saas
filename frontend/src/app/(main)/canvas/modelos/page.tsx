@@ -273,7 +273,7 @@ function TemplateCard({
             width: isStory ? 48 : 72,
             height: isStory ? 85 : 72,
             background: 'var(--app-bg-primary)',
-            borderRadius: 3,
+            borderRadius: 4,
             position: 'relative',
             boxShadow: `0 2px 12px ${c1}20`,
             overflow: 'hidden',
@@ -288,7 +288,7 @@ function TemplateCard({
               width: '35%',
               height: 2,
               background: c1,
-              borderRadius: 1,
+              borderRadius: 4,
             }}
           />
           {/* Text line 1 */}
@@ -300,7 +300,7 @@ function TemplateCard({
               width: '60%',
               height: 4,
               background: colors.text.silver,
-              borderRadius: 1,
+              borderRadius: 4,
               opacity: 0.8,
             }}
           />
@@ -313,7 +313,7 @@ function TemplateCard({
               width: '40%',
               height: 2,
               background: colors.text.muted,
-              borderRadius: 1,
+              borderRadius: 4,
               opacity: 0.5,
             }}
           />
@@ -326,7 +326,7 @@ function TemplateCard({
               width: '30%',
               height: 5,
               background: c1,
-              borderRadius: 1,
+              borderRadius: 4,
             }}
           />
         </div>

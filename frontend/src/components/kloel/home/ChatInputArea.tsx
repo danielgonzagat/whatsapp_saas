@@ -136,7 +136,7 @@ export function ChatInputArea({
               border: 'none',
               outline: 'none',
               color: 'var(--app-text-primary)',
-              fontSize: 14,
+              fontSize: 16,
               fontFamily: "'Sora', sans-serif",
               opacity: isWaitingForResponse ? 0.5 : 1,
             }}

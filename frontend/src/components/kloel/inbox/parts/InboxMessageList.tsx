@@ -3,7 +3,7 @@
 import { type Conversation, type Message } from '@/lib/api';
 import { kloelT } from '@/lib/i18n/t';
 import { buildDashboardHref } from '@/lib/kloel-dashboard-context';
-import { Loader2 } from 'lucide-react';
+import { LoaderCircle } from 'lucide-react';
 import Link from 'next/link';
 import { type RefObject } from 'react';
 import { formatInboxTime as formatTime } from '../inbox-workspace-utils';
@@ -32,8 +32,8 @@ export function InboxMessageList({
   if (loadingMessages) {
     return (
       <div className="flex items-center justify-center py-10">
-        <Loader2
-          className="animate-spin text-[var(--text-muted)]"
+        <LoaderCircle
+          className="animate-pulse text-[var(--text-muted)]"
           style={{ width: 'var(--inbox-icon-md)', height: 'var(--inbox-icon-md)' }}
           aria-hidden="true"
         />

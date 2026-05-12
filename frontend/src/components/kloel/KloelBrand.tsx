@@ -124,7 +124,7 @@ function processSvg(
     ].join('');
   });
 
-  if (traceColor.toLowerCase() !== '#ffffff') {
+  if (traceColor.toLowerCase() !== 'rgb(255, 255, 255)') {
     result = result.replace(/\bstroke=(["'])#?ffffff\1/gi, (_match, quote: string) =>
       ['stroke=', quote, traceColor, quote].join(''),
     );

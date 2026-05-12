@@ -45,8 +45,8 @@ export default function AreaMembrosOverviewPanel({
             transform: 'translate(-50%, -50%)',
             width: 200,
             height: 80,
-            borderRadius: '50%',
-            background: `radial-gradient(ellipse, ${PURPLE}40, transparent 70%)`,
+            borderRadius: '16%',
+            background: 'rgba(232, 93, 48, 0.08)',
             animation: 'glow 3s ease-in-out',
             pointerEvents: 'none',
           }}
@@ -219,13 +219,13 @@ export default function AreaMembrosOverviewPanel({
                   {a.completion}%
                 </span>
               </div>
-              <div style={{ height: 4, background: BORDER, borderRadius: 2, overflow: 'hidden' }}>
+              <div style={{ height: 4, background: BORDER, borderRadius: 4, overflow: 'hidden' }}>
                 <div
                   style={{
                     width: `${a.completion}%`,
                     height: '100%',
-                    background: `linear-gradient(to right, ${PURPLE}50, ${PURPLE})`,
-                    borderRadius: 2,
+                    background: PURPLE,
+                    borderRadius: 4,
                     transition: 'width 0.6s ease',
                   }}
                 />

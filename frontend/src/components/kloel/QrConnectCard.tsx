@@ -1,7 +1,7 @@
 'use client';
 
 import { kloelT } from '@/lib/i18n/t';
-import { RefreshCcw, Smartphone } from 'lucide-react';
+import { RotateCcw, Smartphone } from 'lucide-react';
 import Image from 'next/image';
 import { KloelMushroomVisual } from './KloelBrand';
 import { colors } from '@/lib/design-tokens';
@@ -103,7 +103,7 @@ export function QrConnectCard({
             disabled={loading}
             className="rounded-md border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            <RefreshCcw className="h-4 w-4" aria-hidden="true" />
+            <RotateCcw className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
       </div>

@@ -195,8 +195,8 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
                 fontWeight: 600,
                 border: 'none',
                 borderRadius: 4,
-                background: '#1877F2',
-                color: '#fff',
+                background: 'rgb(24, 119, 242)',
+                color: 'rgb(255, 255, 255)',
                 fontFamily: SORA,
               }}
             >

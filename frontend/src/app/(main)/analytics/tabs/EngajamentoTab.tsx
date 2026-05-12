@@ -107,7 +107,7 @@ export function EngajamentoTab({ filters }: { filters: ReportFilters }) {
                       style={{
                         background: V.em,
                         opacity,
-                        borderRadius: 2,
+                        borderRadius: 4,
                         height: 18,
                       }}
                     />
@@ -121,7 +121,7 @@ export function EngajamentoTab({ filters }: { filters: ReportFilters }) {
               {kloelT(`Menos ativo`)}
             </span>
             {[0.04, 0.25, 0.5, 0.75, 1].map((o) => (
-              <div key={o} style={{ width: 14, height: 14, background: V.em, opacity: o, borderRadius: 2 }} />
+              <div key={o} style={{ width: 14, height: 14, background: V.em, opacity: o, borderRadius: 4 }} />
             ))}
             <span style={{ fontSize: 8, color: V.t3, fontFamily: FONT_MONO }}>
               {kloelT(`Mais ativo`)}
@@ -172,8 +172,8 @@ export function EngajamentoTab({ filters }: { filters: ReportFilters }) {
                     <span style={{ fontSize: 11, color: V.t2 }}>{kloelT(label)}</span>
                     <span style={{ fontFamily: FONT_MONO, fontSize: 11, color: colors[key] }}>{pct}%</span>
                   </div>
-                  <div style={{ height: 6, background: V.e, borderRadius: 3, overflow: 'hidden' }}>
-                    <div style={{ width: `${pct}%`, height: '100%', background: colors[key], borderRadius: 3, transition: 'width .4s' }} />
+                  <div style={{ height: 6, background: V.e, borderRadius: 4, overflow: 'hidden' }}>
+                    <div style={{ width: `${pct}%`, height: '100%', background: colors[key], borderRadius: 4, transition: 'width .4s' }} />
                   </div>
                 </div>
               );
@@ -203,8 +203,8 @@ export function EngajamentoTab({ filters }: { filters: ReportFilters }) {
                     <span style={{ fontSize: 11, color: V.t2 }}>{kloelT(label)}</span>
                     <span style={{ fontFamily: FONT_MONO, fontSize: 11, color: colors[key] }}>{pct}%</span>
                   </div>
-                  <div style={{ height: 6, background: V.e, borderRadius: 3, overflow: 'hidden' }}>
-                    <div style={{ width: `${pct}%`, height: '100%', background: colors[key], borderRadius: 3, transition: 'width .4s' }} />
+                  <div style={{ height: 6, background: V.e, borderRadius: 4, overflow: 'hidden' }}>
+                    <div style={{ width: `${pct}%`, height: '100%', background: colors[key], borderRadius: 4, transition: 'width .4s' }} />
                   </div>
                 </div>
               );

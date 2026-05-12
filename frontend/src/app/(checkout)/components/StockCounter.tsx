@@ -33,7 +33,7 @@ export default function StockCounter({
         style={{
           width: 8,
           height: 8,
-          borderRadius: '50%',
+          borderRadius: '16%',
           background: accentColor,
           animation: 'pulse 2s ease infinite',
         }}

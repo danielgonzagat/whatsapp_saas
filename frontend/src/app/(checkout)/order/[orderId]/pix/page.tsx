@@ -103,7 +103,7 @@ export default function PixPaymentPage() {
       <div style={{ maxWidth: '440px', width: '100%', textAlign: 'center' }}>
         {/* Header */}
         <div style={{ marginBottom: '24px' }}>
-          <div style={{ fontSize: '40px', marginBottom: '8px' }}>{kloelT(`&#9889;`)}</div>
+          <div style={{ fontSize: '40px', marginBottom: '8px' }}>{kloelT(`&rgba(153, 136, 136, 0.6);`)}</div>
           <h1 style={{ color: colors.checkout.textPrimary, fontSize: '22px', fontWeight: 700, margin: '0 0 4px' }}>
             {kloelT(`Pagamento via Pix`)}
           </h1>
@@ -120,7 +120,7 @@ export default function PixPaymentPage() {
             gap: '8px',
             background: expired ? colors.checkout.dangerBg : colors.checkout.surface,
             border: `1px solid ${expired ? 'var(--app-error)' : colors.canvas.hover}`,
-            borderRadius: '10px',
+            borderRadius: '8px',
             padding: '10px 20px',
             marginBottom: '24px',
             color: expired ? 'var(--app-error)' : accent,
@@ -173,7 +173,7 @@ export default function PixPaymentPage() {
             style={{
               background: colors.checkout.bg,
               border: `1px solid ${colors.checkout.border}`,
-              borderRadius: '10px',
+              borderRadius: '8px',
               padding: '14px 16px',
               color: colors.text.muted,
               fontSize: '12px',
@@ -195,7 +195,7 @@ export default function PixPaymentPage() {
               padding: '14px',
               background: copied ? colors.checkout.successBg : `${accent}18`,
               border: `1px solid ${copied ? colors.checkout.success : accent}44`,
-              borderRadius: '10px',
+              borderRadius: '8px',
               color: copied ? colors.checkout.success : accent,
               fontSize: '14px',
               fontWeight: 600,
@@ -230,7 +230,7 @@ export default function PixPaymentPage() {
               style={{
                 width: '8px',
                 height: '8px',
-                borderRadius: '50%',
+                borderRadius: '16%',
                 background: colors.checkout.success,
                 animation: 'pixPulse 1.5s ease-in-out infinite',
               }}

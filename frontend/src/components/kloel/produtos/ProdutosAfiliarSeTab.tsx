@@ -116,7 +116,7 @@ export default function AfiliarSe({
   return (
     <div style={{ opacity: 1 }}>
       <div style={{ position: 'relative', padding: '32px 0', marginBottom: 24 }}>
-        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 200, height: 80, borderRadius: '50%', background: `radial-gradient(ellipse, ${GREEN}40, transparent 70%)`, animation: 'glow 3s ease-in-out', pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 200, height: 80, borderRadius: '16%', background: 'rgba(232, 93, 48, 0.08)', animation: 'glow 3s ease-in-out', pointerEvents: 'none' }} />
         <div style={{ textAlign: 'center', position: 'relative' }}>
           <div style={{ fontFamily: MONO, fontSize: 10, color: 'var(--app-text-tertiary)', letterSpacing: '0.25em', textTransform: 'uppercase' as const, marginBottom: 4 }}>{kloelT('Ganhos Totais')}</div>
           <div style={{ fontFamily: MONO, fontSize: 80, fontWeight: 700, color: GREEN, letterSpacing: '-0.02em' }}>{fmtBRL(earnings)}</div>

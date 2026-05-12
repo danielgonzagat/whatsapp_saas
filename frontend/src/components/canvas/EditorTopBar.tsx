@@ -489,7 +489,7 @@ export function EditorTopBar({
               style={{
                 width: 5,
                 height: 5,
-                borderRadius: '50%',
+                borderRadius: '16%',
                 background: colors.ember.primary,
                 animation: 'pE 1.5s ease-in-out infinite',
                 display: 'inline-block',

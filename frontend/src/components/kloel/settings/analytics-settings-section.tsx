@@ -12,7 +12,7 @@ import {
   getAnalyticsDailyActivity,
   getAnalyticsDashboard,
 } from '@/lib/api';
-import { BarChart3, RefreshCw, XCircle } from 'lucide-react';
+import { BarChart3, RotateCw, XCircle } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   SettingsCard,
@@ -122,7 +122,7 @@ export function AnalyticsSettingsSection() {
           {loading ? (
             <KloelMushroomMark size={18} title="Atualizando analytics" traceColor={colors.ember.primary} />
           ) : (
-            <RefreshCw className="mr-2 h-4 w-4" aria-hidden="true" />
+            <RotateCw className="mr-2 h-4 w-4" aria-hidden="true" />
           )}
 
           {kloelT(`Atualizar`)}
