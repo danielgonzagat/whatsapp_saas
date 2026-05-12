@@ -5,16 +5,25 @@
 # ── Stage 1: builder ─────────────────────────────────────────────────────────
 FROM node:20-bookworm@sha256:8f693eaa7e0a8e71560c9a82b55fd54c2ae920a2ba5d2cde28bac7d1c01c9ba5 AS builder
 
+ENV NPM_CONFIG_UPDATE_NOTIFIER=false \
+    NPM_CONFIG_FUND=false \
+    NPM_CONFIG_AUDIT=false
+
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm ci
+RUN npm ci --no-audit --fund=false
 
 COPY . .
-RUN npm run prisma:generate && npm run build
+RUN npx prisma generate --schema=prisma/schema.prisma --no-hints && npm run build
 
 # ── Stage 2: runtime ─────────────────────────────────────────────────────────
 FROM node:20-bookworm@sha256:8f693eaa7e0a8e71560c9a82b55fd54c2ae920a2ba5d2cde28bac7d1c01c9ba5 AS runtime
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    NPM_CONFIG_UPDATE_NOTIFIER=false \
+    NPM_CONFIG_FUND=false \
+    NPM_CONFIG_AUDIT=false
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
@@ -54,4 +63,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
 USER node
 
 # xvfb-run is retained for scraper workloads that still launch Chromium.
-CMD ["sh", "-c", "xvfb-run --server-args='-screen 0 1440x900x24 -ac' npm run start:prod"]
+CMD ["sh", "-c", "xvfb-run --server-args='-screen 0 1440x900x24 -ac' node dist/bootstrap.js"]
