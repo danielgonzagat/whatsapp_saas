@@ -43,9 +43,9 @@ describe('ComplianceService', () => {
         create: jest.fn().mockResolvedValue({ id: 'evt-1' }),
         update: jest.fn().mockResolvedValue({}),
       },
-      $transaction: jest.fn().mockImplementation((cb: (tx: unknown) => Promise<unknown>) =>
-        cb(prisma),
-      ),
+      $transaction: jest
+        .fn()
+        .mockImplementation((cb: (tx: unknown) => Promise<unknown>) => cb(prisma)),
     };
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -81,22 +81,19 @@ describe('ComplianceService', () => {
   describe('handleFacebookDataDeletion', () => {
     it('throws BadRequestException when signed_request has no user_id', async () => {
       (validateSignedRequest as jest.Mock).mockReturnValue({ user_id: '' });
-      await expect(service.handleFacebookDataDeletion('sig')).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.handleFacebookDataDeletion('sig')).rejects.toThrow(BadRequestException);
     });
 
     it('creates DataDeletionRequest with status=processing and returns url + code', async () => {
       (validateSignedRequest as jest.Mock).mockReturnValue({ user_id: 'fb-1' });
       prisma.dataDeletionRequest.create.mockResolvedValue({ id: 'req-1' });
       const result = await service.handleFacebookDataDeletion('sig');
-      expect(prisma.dataDeletionRequest.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({
-          provider: 'facebook',
-          providerUserId: 'fb-1',
-          status: 'processing',
-        }),
-      });
+      const [createArgs] = prisma.dataDeletionRequest.create.mock.calls[0] as [
+        { data: { provider: string; providerUserId: string; status: string } },
+      ];
+      expect(createArgs.data.provider).toBe('facebook');
+      expect(createArgs.data.providerUserId).toBe('fb-1');
+      expect(createArgs.data.status).toBe('processing');
       expect(result.confirmation_code).toBeTruthy();
       expect(result.url).toMatch(/data-deletion\/status\//);
     });
@@ -113,14 +110,16 @@ describe('ComplianceService', () => {
     it('revokes all socialAccount rows for the provider user', async () => {
       (validateSignedRequest as jest.Mock).mockReturnValue({ user_id: 'fb-1' });
       await service.handleFacebookDeauthorize('sig');
-      expect(prisma.socialAccount.updateMany).toHaveBeenCalledWith({
-        where: { provider: 'facebook', providerUserId: 'fb-1' },
-        data: expect.objectContaining({
-          accessToken: null,
-          refreshToken: null,
-          tokenExpiresAt: null,
-        }),
-      });
+      const [updateArgs] = prisma.socialAccount.updateMany.mock.calls[0] as [
+        {
+          where: { provider: string; providerUserId: string };
+          data: { accessToken: null; refreshToken: null; tokenExpiresAt: null };
+        },
+      ];
+      expect(updateArgs.where).toEqual({ provider: 'facebook', providerUserId: 'fb-1' });
+      expect(updateArgs.data.accessToken).toBeNull();
+      expect(updateArgs.data.refreshToken).toBeNull();
+      expect(updateArgs.data.tokenExpiresAt).toBeNull();
     });
   });
 
@@ -143,14 +142,22 @@ describe('ComplianceService', () => {
         email: 'Test@Example.com',
       });
       const result = await service.unsubscribeMarketingEmail('tok');
-      expect(prisma.contact.updateMany).toHaveBeenCalledWith({
-        where: {
-          workspaceId: 'ws-1',
-          email: { equals: 'test@example.com', mode: 'insensitive' },
-          optIn: true,
+      const [updateArgs] = prisma.contact.updateMany.mock.calls[0] as [
+        {
+          where: {
+            workspaceId: string;
+            email: { equals: string; mode: string };
+            optIn: boolean;
+          };
+          data: { optIn: boolean };
         },
-        data: expect.objectContaining({ optIn: false }),
+      ];
+      expect(updateArgs.where).toEqual({
+        workspaceId: 'ws-1',
+        email: { equals: 'test@example.com', mode: 'insensitive' },
+        optIn: true,
       });
+      expect(updateArgs.data.optIn).toBe(false);
       expect(result).toEqual({ unsubscribed: true, email: 'test@example.com', contactCount: 3 });
     });
   });
