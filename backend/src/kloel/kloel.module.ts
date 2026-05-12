@@ -125,6 +125,7 @@ import { ChannelTransportRegistry } from './channel-transport.registry';
 import { ChannelSetupController } from './channel-setup.controller';
 import { ChannelSetupService } from './channel-setup.service';
 import { CommercialDecisionOrchestratorService } from './commercial-decision-orchestrator.service';
+import { DailyLimitService } from './daily-limit.service';
 import { MindBeliefService } from './mind-belief.service';
 import { MindBanditService } from './mind-bandit.service';
 import { MindCaseMemoryService } from './mind-case-memory.service';
@@ -145,6 +146,8 @@ import { MindReplayService } from './mind-replay.service';
 import { MindSimulatorService } from './mind-simulator.service';
 import { MindSyntheticGeneratorService } from './mind-synthetic-generator.service';
 import { MindService } from './mind.service';
+import { DecisionOutcomeService } from './decision-outcome.service';
+import { MindLiftReportService } from './mind-lift-report.service';
 import { MindSurpriseService } from './mind-surprise.service';
 import { MindVerbalizerService } from './mind-verbalizer.service';
 import { MindWorkspaceStateService } from './mind-workspace-state.service';
@@ -277,6 +280,7 @@ import { MindWorkspaceStateService } from './mind-workspace-state.service';
     ChannelTransportRegistry,
     ChannelSetupService,
     CommercialDecisionOrchestratorService,
+    DailyLimitService,
     MindBeliefService,
     MindBanditService,
     MindCaseMemoryService,
@@ -297,6 +301,8 @@ import { MindWorkspaceStateService } from './mind-workspace-state.service';
     MindSyntheticGeneratorService,
     MindService,
     MindSurpriseService,
+    DecisionOutcomeService,
+    MindLiftReportService,
     MindVerbalizerService,
     MindWorkspaceStateService,
   ],
@@ -353,6 +359,7 @@ import { MindWorkspaceStateService } from './mind-workspace-state.service';
     KloelRulesModule,
     MindObservabilityService,
     MindReportService,
+    MindLiftReportService,
     MindVerbalizerService,
   ],
 })
