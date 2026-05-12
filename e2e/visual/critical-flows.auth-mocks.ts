@@ -45,16 +45,30 @@ function isSettingsRoute(page: Page) {
   return new URL(page.url()).pathname.startsWith('/settings');
 }
 
+async function fallbackOnSettings(page: Page, requestRoute: Route) {
+  if (!isSettingsRoute(page)) {
+    return false;
+  }
+  await requestRoute.fallback();
+  return true;
+}
+
 export async function mockVisualAuthApis(page: Page, auth: Pick<E2EAuthContext, 'workspaceId'>) {
   await page.route('**/api/workspace/me', async (requestRoute) => {
     await fulfillJson(requestRoute, buildWorkspaceMeFixture(auth.workspaceId));
   });
 
   await page.route(KYC_ROUTE_PATTERNS.profile, async (requestRoute) => {
+    if (await fallbackOnSettings(page, requestRoute)) {
+      return;
+    }
     await fulfillJson(requestRoute, VISUAL_KYC_PROFILE_FIXTURE);
   });
 
   await page.route(KYC_ROUTE_PATTERNS.fiscal, async (requestRoute) => {
+    if (await fallbackOnSettings(page, requestRoute)) {
+      return;
+    }
     await fulfillJson(requestRoute, {
       ...VISUAL_KYC_FISCAL_FIXTURE,
       workspaceId: auth.workspaceId,
@@ -62,6 +76,9 @@ export async function mockVisualAuthApis(page: Page, auth: Pick<E2EAuthContext, 
   });
 
   await page.route(KYC_ROUTE_PATTERNS.documents, async (requestRoute) => {
+    if (await fallbackOnSettings(page, requestRoute)) {
+      return;
+    }
     await fulfillJson(
       requestRoute,
       VISUAL_KYC_DOCUMENTS_FIXTURE.map((document) => ({
@@ -72,6 +89,9 @@ export async function mockVisualAuthApis(page: Page, auth: Pick<E2EAuthContext, 
   });
 
   await page.route(KYC_ROUTE_PATTERNS.bank, async (requestRoute) => {
+    if (await fallbackOnSettings(page, requestRoute)) {
+      return;
+    }
     await fulfillJson(requestRoute, {
       ...VISUAL_KYC_BANK_FIXTURE,
       workspaceId: auth.workspaceId,
