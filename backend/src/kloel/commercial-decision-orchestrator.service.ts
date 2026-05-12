@@ -59,35 +59,94 @@ function discountPercentFromCoupon(action?: string): number | undefined {
   return undefined;
 }
 
-function buildReplyDraft(input: {
+// Structured internal plan emitted by the deterministic orchestrator.
+// NEVER sent verbatim to the customer — must be transformed into a
+// customer-facing message string by composeCustomerMessage() and validated
+// by assertCustomerSafe() before reaching the transport.
+export type InternalReplyPlan = {
   aggressiveness: string;
   concept: string;
   couponAction?: string;
   productOffer?: string;
   setup?: { arsenalCount: number; productCount: number; tone?: string | null };
   tone: string;
-}): string {
-  const parts = [
-    `Responder com tom ${(input.setup?.tone || input.tone).toLowerCase()} e intensidade ${input.aggressiveness.toLowerCase()}.`,
-  ];
-  if (input.setup?.productCount) {
-    parts.push(
-      `Usar apenas os ${input.setup.productCount} produto(s) habilitados para este canal.`,
-    );
+};
+
+// These patterns target the specific orchestrator-internal directive voice
+// (third-person commands such as "Responder com tom X e intensidade Y"). They
+// must NOT trip on legitimate first-/second-person customer messages that
+// happen to contain individual verbs like "responder" or "tratar". Each
+// pattern starts at message boundary and includes the directive complement
+// (tom/objeção/oferta/...) that only appears in plan output.
+const FORBIDDEN_INTERNAL_DIRECTIVES = [
+  /(?:^|\n)\s*responder com tom\b/i,
+  /(?:^|\n)\s*usar (?:apenas )?os \d+ produto/i,
+  /(?:^|\n|\.\s+)priorizar o arsenal\b/i,
+  /(?:^|\n|\.\s+)tratar a objeç[aã]o de pre[cç]o\b/i,
+  /(?:^|\n|\.\s+)direcionar a oferta para\b/i,
+  /(?:^|\n|\.\s+)conduzir para o pr[oó]ximo passo de compra\b/i,
+];
+
+/**
+ * Customer-safety guard: throws if `message` reads like an internal plan
+ * (third-person directive instructing the IA). Called immediately before
+ * the action is queued for transport. Failure here means the orchestrator
+ * leaked plan-as-message and the send must be cancelled, never relaxed.
+ */
+export function assertCustomerSafe(message: string): void {
+  const text = String(message || '').trim();
+  if (!text) {
+    throw new Error('customer-safe-violation: empty message');
   }
-  if (input.setup?.arsenalCount) {
-    parts.push(`Priorizar o arsenal aprovado do canal quando o formato permitir.`);
+  for (const pattern of FORBIDDEN_INTERNAL_DIRECTIVES) {
+    if (pattern.test(text)) {
+      throw new Error(
+        `customer-safe-violation: message matched internal-directive pattern ${pattern}`,
+      );
+    }
   }
-  if (input.concept === 'price_objection' && input.couponAction) {
-    parts.push(`Tratar a objeção de preço com política ${input.couponAction}.`);
+}
+
+/**
+ * Compose a customer-facing message from the internal plan.
+ *
+ * Voice rules:
+ *  - First/second person only ("conseguimos…", "te indico…", "podemos…").
+ *  - Never narrates strategy ("vou responder com tom…", "vou usar 3 produtos…").
+ *  - When the brain decision is ambiguous (no concept-specific branch fired),
+ *    emits a neutral holding message so the lead is acknowledged rather than
+ *    receiving a leaked plan.
+ *
+ * This is the deterministic-pipeline equivalent of the LLM writer described
+ * in the prompt. When a real LLM writer is introduced later, it should
+ * accept `plan` as the structured input and produce a richer message; the
+ * `assertCustomerSafe` guard must continue to validate its output.
+ */
+export function composeCustomerMessage(plan: InternalReplyPlan): string {
+  if (plan.concept === 'price_objection') {
+    if (plan.couponAction) {
+      const pct = discountPercentFromCoupon(plan.couponAction);
+      if (pct) {
+        return `Entendo a preocupação com o valor. Consigo liberar um desconto especial de ${pct}% válido por 24h para você fechar agora — quer que eu mande o link com o desconto já aplicado?`;
+      }
+    }
+    return 'Entendo sua preocupação com o valor — me conta o que cabe no seu orçamento que eu vejo o que conseguimos ajustar.';
   }
-  if (input.productOffer) {
-    parts.push(`Direcionar a oferta para ${input.productOffer}.`);
+  if (plan.concept === 'imminent_purchase' || plan.concept === 'hot_lead') {
+    return 'Perfeito! Já vou preparar o próximo passo de compra para você. Confirma para mim o melhor canal para receber o link?';
   }
-  if (input.concept === 'imminent_purchase' || input.concept === 'hot_lead') {
-    parts.push('Conduzir para o próximo passo de compra.');
+  if (plan.concept === 'trust_objection') {
+    return 'Tudo bem, entendo a hesitação. Posso te mostrar provas reais de clientes parecidos com você que já compraram. Quer ver?';
   }
-  return parts.join(' ');
+  if (plan.concept === 'fatigue_risk') {
+    return 'Sem pressa nenhuma. Sigo aqui quando você quiser retomar.';
+  }
+  if (plan.concept === 'audio_preference') {
+    return 'Vi que você prefere áudio — posso te responder por áudio também, fica mais natural. Quer?';
+  }
+  // Neutral acknowledgement when no concept-specific branch applies.
+  // Better than leaking an internal plan if every other path falls through.
+  return 'Recebi sua mensagem e já estou olhando aqui para te responder com o melhor caminho. Volto em instantes.';
 }
 
 function stableInboundKey(input: InboundOrchestrationInput, subject: string, channel: string) {
@@ -235,14 +294,19 @@ export class CommercialDecisionOrchestratorService {
             productCount: channelSetup.selectedProductIds.length,
           })
       : undefined;
-    const replyDraft = buildReplyDraft({
+    const internalReplyPlan: InternalReplyPlan = {
       aggressiveness: aggressiveness.aggressiveness,
       concept,
       ...(couponAction !== undefined ? { couponAction } : {}),
       ...(productOffer !== undefined ? { productOffer } : {}),
       ...(setupContext !== undefined ? { setup: setupContext } : {}),
       tone: tone.tone,
-    });
+    };
+    const customerMessage = composeCustomerMessage(internalReplyPlan);
+    // Guard: refuse to enqueue any send_message whose payload matches an
+    // internal-plan directive (third-person voice). This must fail loud, never
+    // silently downgrade — otherwise an instruction leaks to the customer.
+    assertCustomerSafe(customerMessage);
     const actions: PredecidedAction[] = [];
     const couponPercent = discountPercentFromCoupon(couponAction);
     if (couponDecision && couponPercent) {
@@ -266,7 +330,8 @@ export class CommercialDecisionOrchestratorService {
         args: {
           decisionTraceId,
           inboundCorrelationId: inboundKey,
-          message: replyDraft,
+          message: customerMessage,
+          internalReplyPlan,
         },
       });
     }

@@ -40,6 +40,14 @@ export interface ToolArgs {
   includeMetrics?: boolean;
   includePrice?: boolean;
   inboundCorrelationId?: string;
+  /**
+   * Structured plan emitted by the deterministic commercial orchestrator.
+   * NEVER sent to the customer verbatim. Carried alongside `message` so a
+   * future LLM writer/composer can rewrite the customer-facing string while
+   * keeping the structured decision available for tracing and outcome
+   * correlation. See commercial-decision-orchestrator.service.ts.
+   */
+  internalReplyPlan?: unknown;
   intent?: string;
   language?: string;
   message?: string;

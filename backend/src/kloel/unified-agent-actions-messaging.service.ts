@@ -8,6 +8,7 @@ import { OpsAlertService } from '../observability/ops-alert.service';
 import { MailboxGmailOAuthService } from '../marketing/mailbox-gmail-oauth.service';
 import { ChannelTransportRegistry } from './channel-transport.registry';
 import type { ChannelName, ChannelSendResult } from './channel-transport.types';
+import { assertCustomerSafe } from './commercial-decision-orchestrator.service';
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -227,6 +228,29 @@ export class UnifiedAgentActionsMessagingService {
       const msgText = this.str(args.message);
       if (!msgText) {
         return { success: false, error: 'Mensagem é obrigatória' };
+      }
+      // Transport-boundary safety: refuse any outbound that looks like the
+      // orchestrator's internal plan (third-person directive). This is the
+      // last line of defense before the message reaches the customer; a
+      // failure here cancels the send and surfaces an operator alert rather
+      // than degrading silently. See commercial-decision-orchestrator's
+      // assertCustomerSafe + composeCustomerMessage for the upstream path.
+      try {
+        assertCustomerSafe(msgText);
+      } catch (guardError: unknown) {
+        const reason = guardError instanceof Error ? guardError.message : 'customer-safe-violation';
+        if (!isTestEnv) {
+          this.logger.error(`[AGENT] Bloqueio anti-instrução: ${reason}`);
+        }
+        void this.opsAlert?.alertOnCriticalError(
+          guardError,
+          'UnifiedAgentActionsMessagingService.actionSendMessage.customerSafetyGuard',
+        );
+        return {
+          success: false,
+          error: reason,
+          customerSafetyViolation: true,
+        };
       }
 
       if (this.readText(context?.channel).toLowerCase() === 'email') {

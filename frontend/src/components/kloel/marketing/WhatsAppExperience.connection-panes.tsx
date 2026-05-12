@@ -8,9 +8,9 @@ import { KLOEL_THEME } from '@/lib/kloel-theme';
 
 export { QRCodePane } from './WhatsAppExperience.qr-pane';
 
-const E = 'UI.accent';
+const E = UI.accent;
 const V = KLOEL_THEME.bgPrimary;
-const G = 'UI.success';
+const G = UI.success;
 const S = KLOEL_THEME.textSecondary;
 const U = KLOEL_THEME.bgSecondary;
 const F = "'Sora', system-ui, sans-serif";
