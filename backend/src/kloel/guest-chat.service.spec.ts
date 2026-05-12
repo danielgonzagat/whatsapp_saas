@@ -125,8 +125,9 @@ describe('GuestChatService', () => {
 
       await service.chatSync('Continuar', 'stored-session');
 
-      const completionCalls = chatCompletionWithFallbackMock.mock
-        .calls as Array<[unknown, { messages?: Array<{ content?: string }> }]>;
+      const completionCalls = chatCompletionWithFallbackMock.mock.calls as Array<
+        [unknown, { messages?: Array<{ content?: string }> }]
+      >;
       const completionInput = completionCalls[0]?.[1];
       expect(
         completionInput?.messages?.some((message) => message.content === 'Mensagem antiga'),
