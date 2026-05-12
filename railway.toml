@@ -3,7 +3,7 @@ builder = "DOCKERFILE"
 dockerfilePath = "backend/Dockerfile"
 
 [deploy]
-startCommand = "cd backend && NODE_ENV=production node prisma/ensure-migrations.js && NODE_ENV=production node -r ./dd-trace-init.cjs dist/src/bootstrap.js"
+startCommand = "node prisma/ensure-migrations.js && node -r ./dd-trace-init.cjs dist/src/bootstrap.js"
 healthcheckPath = "/health/live"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3
