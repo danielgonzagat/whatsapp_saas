@@ -73,11 +73,11 @@ function installIoredisDefaultUrlGuard(redisUrl: string): void {
   const ioredisPath = runtimeRequire.resolve('ioredis');
   const OriginalRedis = runtimeRequire(ioredisPath) as RedisModuleExport;
 
-  const RedisWithDefaultUrl = function (this: unknown, ...args: unknown[]) {
+  const RedisWithDefaultUrl = (function (this: unknown, ...args: unknown[]) {
     const constructorArgs = args.length === 0 || args[0] == null ? [redisUrl] : args;
     const newTarget = new.target ?? RedisWithDefaultUrl;
     return Reflect.construct(OriginalRedis, constructorArgs, newTarget);
-  } as unknown as RedisModuleExport;
+  } as unknown) as RedisModuleExport;
 
   Object.setPrototypeOf(RedisWithDefaultUrl, OriginalRedis);
   RedisWithDefaultUrl.prototype = OriginalRedis.prototype;

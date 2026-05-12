@@ -20,6 +20,14 @@ export interface GuardResult {
   context?: GuardContext;
 }
 
+interface ComplianceContact {
+  id?: string;
+  optIn?: boolean;
+  optedOutAt?: Date | string | null;
+  customFields?: unknown;
+  tags?: { name: string }[];
+}
+
 export async function checkDeliveryGuards(params: {
   workspaceId: string;
   contactId?: string | undefined;
@@ -177,17 +185,11 @@ export async function ensureCompliance(
   workspaceId: string,
   phone: string,
   settings: UnknownRecord,
-  contact?: {
-    id?: string;
-    optIn?: boolean;
-    optedOutAt?: Date | string | null;
-    customFields?: unknown;
-    tags?: { name: string }[];
-  },
+  contact?: ComplianceContact | null,
   deliveryMode: 'reactive' | 'proactive' = 'proactive',
 ) {
   if (!contact) {
-    contact = (await prisma.contact.findFirst({
+    const foundContact = await prisma.contact.findFirst({
       where: { workspaceId, phone },
       select: {
         id: true,
@@ -196,7 +198,8 @@ export async function ensureCompliance(
         customFields: true,
         tags: { select: { name: true } },
       },
-    })) as unknown as typeof contact;
+    });
+    contact = foundContact;
   }
 
   if (contact && contact.optIn === false) {
