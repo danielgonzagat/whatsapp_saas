@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service';
 import { WhatsAppProviderRegistry } from './providers/provider-registry';
-import type { WahaChatMessage, WahaChatSummary } from './providers/whatsapp-api.provider';
+import type { WahaChatSummary } from './providers/whatsapp-api.provider';
 import { INBOX_SERVICE } from '../inbox/inbox.token';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { WhatsappCatchupHistoryService } from './whatsapp-catchup-history.service';
@@ -135,8 +135,8 @@ describe('WhatsappCatchupHistoryService', () => {
 
   describe('toInboundMessage', () => {
     it('returns null when id or from is missing', () => {
-      expect(service.toInboundMessage('ws-1', { id: '', from: 'x' } as WahaChatMessage)).toBeNull();
-      expect(service.toInboundMessage('ws-1', { id: 'x', from: '' } as WahaChatMessage)).toBeNull();
+      expect(service.toInboundMessage('ws-1', { id: '', from: 'x' })).toBeNull();
+      expect(service.toInboundMessage('ws-1', { id: 'x', from: '' })).toBeNull();
     });
 
     it('builds an InboundMessage with provider=meta-cloud by default', () => {
@@ -147,7 +147,7 @@ describe('WhatsappCatchupHistoryService', () => {
         body: 'hi',
         type: 'chat',
         timestamp: 1_700_000_000_000,
-      } as WahaChatMessage);
+      });
       expect(result).toEqual(
         expect.objectContaining({
           workspaceId: 'ws-1',
