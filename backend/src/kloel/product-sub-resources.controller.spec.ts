@@ -408,7 +408,7 @@ describe('Product Sub-Resources — Cross-Workspace Isolation', () => {
     });
 
     it('blocks workspace-B from validating coupon on workspace-A product', async () => {
-      await expect(controller.validate(PROD_A, { code: 'ABC' } as any, WS_B_USER)).rejects.toThrow(
+      await expect(controller.validate(PROD_A, { code: 'ABC' }, WS_B_USER)).rejects.toThrow(
         NotFoundException,
       );
     });
@@ -431,7 +431,7 @@ describe('Product Sub-Resources — Cross-Workspace Isolation', () => {
       const mod = await moduleWith(ProductPlanController, {
         productPlan: {
           findMany: jest.fn().mockResolvedValue([]),
-          create: jest.fn().mockImplementation(async ({ data }: any) => ({ id: 'pl1', ...data })),
+          create: jest.fn().mockImplementation((args: { data: Record<string, unknown> }) => Promise.resolve({ id: 'pl1', ...args.data })),
           findFirst: jest
             .fn()
             .mockResolvedValue({ id: 'pl1', productId: PROD_A, name: 'Basic', price: 100 }),
@@ -485,7 +485,7 @@ describe('Product Sub-Resources — Cross-Workspace Isolation', () => {
       const mod = await moduleWith(ProductReviewController, {
         productReview: {
           findMany: jest.fn().mockResolvedValue([]),
-          create: jest.fn().mockImplementation(async ({ data }: any) => ({ id: 'rv1', ...data })),
+          create: jest.fn().mockImplementation((args: { data: Record<string, unknown> }) => Promise.resolve({ id: 'rv1', ...args.data })),
           findFirst: jest.fn().mockResolvedValue({ id: 'rv1', productId: PROD_A }),
           delete: jest.fn().mockResolvedValue({ id: 'rv1' }),
         },
@@ -516,7 +516,7 @@ describe('Product Sub-Resources — Cross-Workspace Isolation', () => {
       const mod = await moduleWith(ProductUrlController, {
         productUrl: {
           findMany: jest.fn().mockResolvedValue([]),
-          create: jest.fn().mockImplementation(async ({ data }: any) => ({ id: 'u1', ...data })),
+          create: jest.fn().mockImplementation((args: { data: Record<string, unknown> }) => Promise.resolve({ id: 'u1', ...args.data })),
           findFirst: jest.fn().mockResolvedValue({ id: 'u1', productId: PROD_A }),
           update: jest.fn().mockResolvedValue({ id: 'u1' }),
           delete: jest.fn().mockResolvedValue({ id: 'u1' }),
@@ -570,7 +570,7 @@ describe('ProductCommissionController — Core Behavior', () => {
         findMany: jest.fn().mockResolvedValue([]),
         create: jest
           .fn()
-          .mockImplementation(async ({ data }: any) => ({ id: 'commission-1', ...data })),
+          .mockImplementation((args: { data: Record<string, unknown> }) => Promise.resolve({ id: 'commission-1', ...args.data })),
         delete: jest.fn().mockResolvedValue({ id: 'commission-1' }),
       },
     };
