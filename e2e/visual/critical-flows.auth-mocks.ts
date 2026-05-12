@@ -41,6 +41,10 @@ function buildWorkspaceMeFixture(workspaceId: string) {
   };
 }
 
+function isSettingsRoute(page: Page) {
+  return new URL(page.url()).pathname.startsWith('/settings');
+}
+
 export async function mockVisualAuthApis(page: Page, auth: Pick<E2EAuthContext, 'workspaceId'>) {
   await page.route('**/api/workspace/me', async (requestRoute) => {
     await fulfillJson(requestRoute, buildWorkspaceMeFixture(auth.workspaceId));
@@ -76,13 +80,13 @@ export async function mockVisualAuthApis(page: Page, auth: Pick<E2EAuthContext, 
 
   await page.route(KYC_ROUTE_PATTERNS.status, async (requestRoute) => {
     await fulfillJson(requestRoute, {
-      kycStatus: 'approved',
+      kycStatus: isSettingsRoute(page) ? 'pending' : 'approved',
     });
   });
 
   await page.route(KYC_ROUTE_PATTERNS.completion, async (requestRoute) => {
     await fulfillJson(requestRoute, {
-      percentage: 100,
+      percentage: isSettingsRoute(page) ? 0 : 100,
     });
   });
 }
