@@ -2739,3 +2739,30 @@ Generated: 2026-05-11
   - Full root `npm run lint` remains red.
   - `npm run check:governance` remains red from protected-file branch diff outside this slice.
 - Plano de rollback: restore direct payload access only if replaced by shared typed websocket/JWT payload helpers.
+
+## 2026-05-12T16:32:10-03:00 - W9 Frontend Pre-Push Test Recovery
+
+- ID-visao: V17, V23, V24.
+- Escopo: recover the frontend test failures that blocked the `chore/purga-total-debt` push after the visual-contract gate turned green.
+- Arquivos alterados:
+  - `frontend/src/app/api/auth/callback/apple/route.ts`
+  - `frontend/src/lib/api/core-tokens.ts`
+  - `frontend/src/components/kloel/EmptyStates.tsx`
+  - `frontend/src/components/kloel/FormExtras.tsx`
+  - `frontend/src/components/kloel/landing/ThanosSection.tsx`
+  - `docs/implementation/kloel-cia-evidence-ledger.md`
+  - `docs/implementation/kloel-cia-session-handoff.md`
+- Comportamento entregue:
+  - Apple OAuth callback payloads now preserve callback state for GET and POST validation before forwarding to the backend.
+  - Token storage reads no longer resync refresh/workspace reads from shared cookies in a way that erases freshly written local cookie state in tests.
+  - The no-connection empty state exposes the expected warning border style again.
+  - `RadioGroup` inputs expose option labels to accessibility queries.
+  - The animated Thanos reveal renders the omnichannel grid as soon as the reveal text is visible, preserving the tested visual contract.
+- Comandos rodados:
+  - `npm --prefix frontend test -- src/lib/__tests__/api.test.ts src/app/api/auth/callback/apple/route.test.ts src/components/kloel/__tests__/EmptyStates.test.tsx src/components/kloel/__tests__/FormExtras.test.tsx src/components/kloel/landing/__tests__/ThanosSection.test.tsx`: passed, 5 files / 82 tests.
+- Resultado: the exact frontend failures from the failed pre-push run are green in focused validation.
+- Evidencia: command output in session; failed pre-push showed 8 failures, focused rerun passed all 82 tests.
+- Riscos remanescentes:
+  - Full `npm --prefix frontend test` has not yet been rerun after this focused recovery.
+  - The branch still has untracked coverage spec files and `AGENTS.md` dirty outside this slice.
+- Plano de rollback: revert this focused frontend recovery only if replaced by equivalent state validation, token-storage cookie handling, empty-state style, radio accessibility, and reveal-timing fixes that keep the same focused tests green.
