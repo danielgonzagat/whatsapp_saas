@@ -106,6 +106,7 @@ it('loads additional recent threads with cursor pagination', async () => {
     'thread-new',
     'thread-old',
   ]);
+  expect(result.current.conversations[0]?.title).toBe('Mais recente');
   expect(result.current.conversations[0]?.lastMessagePreview).toBe('preview');
   expect(result.current.hasMoreConversations).toBe(false);
   expect(result.current.totalConversations).toBe(3);
