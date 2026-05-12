@@ -2,6 +2,41 @@
 
 Generated: 2026-05-11
 
+## 2026-05-12T14:55:27-03:00 - W9 - Smart Payment Frontend Truthfulness
+
+- ID-visao: V19, V23.
+- Escopo: align the owner "Nova cobranca" smart-payment frontend with the backend's current Pix smart-payment contract.
+- Arquivos alterados:
+  - `frontend/src/lib/api/smart-payment.ts`
+  - `frontend/src/lib/__tests__/smart-payment.test.ts`
+  - `frontend/src/components/kloel/vendas/SmartPaymentForm.tsx`
+  - `frontend/src/components/kloel/vendas/SmartPaymentModal.tsx`
+  - `frontend/src/components/kloel/vendas/SmartPaymentResult.tsx`
+- Comportamento entregue:
+  - The smart-payment API client now normalizes the backend response fields (`paymentUrl`, `pixCopyPaste`, `paymentId`) into the fields the result UI renders.
+  - The owner modal no longer exposes unsupported boleto/card/link method choices for a backend path that currently creates Pix payment links.
+  - The result UI no longer advertises a boleto action from this smart-payment path and can show/copy the suggested message returned by the backend.
+- Comando(s) rodados:
+  - `npx prettier --write frontend/src/lib/api/smart-payment.ts frontend/src/lib/__tests__/smart-payment.test.ts frontend/src/components/kloel/vendas/SmartPaymentForm.tsx frontend/src/components/kloel/vendas/SmartPaymentModal.tsx frontend/src/components/kloel/vendas/SmartPaymentResult.tsx`
+  - `npm --prefix frontend test -- smart-payment.test.ts`
+  - `npm --prefix frontend run typecheck -- --pretty false`
+  - `npm exec eslint -- src/lib/api/smart-payment.ts src/lib/__tests__/smart-payment.test.ts src/components/kloel/vendas/SmartPaymentForm.tsx src/components/kloel/vendas/SmartPaymentModal.tsx src/components/kloel/vendas/SmartPaymentResult.tsx` from `frontend/`
+  - `node scripts/ops/check-governance-boundary.mjs && git diff --check`
+- Resultado:
+  - Vitest passed: 1 file / 2 tests.
+  - Frontend typecheck passed.
+  - Focused frontend ESLint passed.
+  - Governance boundary and whitespace checks passed.
+- Evidencia:
+  - Current session command outputs and new `normalizeSmartPaymentResult` unit coverage.
+- Riscos remanescentes:
+  - This does not implement boleto or card smart-payment creation; it makes the current Pix-only path truthful.
+  - No browser screenshot was captured for the modal.
+- Plano de rollback:
+  - Reintroduce selectable methods only after the backend smart-payment service accepts and proves those methods in sandbox/provider tests.
+- Referencia subagent:
+  - Orchestrator-owned follow-up from the V23 fake-completion scan; no accepted Batch 18 OpenCode evidence was used.
+
 ## 2026-05-12T14:51:00-03:00 - W9 - Vision Traceability Refresh for V19/V23
 
 - ID-visao: V19, V23.

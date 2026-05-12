@@ -30,7 +30,9 @@ export function SmartPaymentModal({ workspaceId, onClose }: SmartPaymentModalPro
   const [error, setError] = useState('');
 
   const handleCreate = async () => {
-    if (!workspaceId || !form.amount || !form.customerName || !form.customerPhone) {return;}
+    if (!workspaceId || !form.amount || !form.customerName || !form.customerPhone) {
+      return;
+    }
     setLoading(true);
     setError('');
     try {
@@ -47,12 +49,18 @@ export function SmartPaymentModal({ workspaceId, onClose }: SmartPaymentModalPro
         description: form.description || 'Cobranca',
         customerName: form.customerName,
         customerPhone: form.customerPhone,
-        method: form.method,
+        method: 'pix',
       };
-      if (form.customerEmail) {payload.customerEmail = form.customerEmail;}
-      if (form.dueDate) {payload.dueDate = form.dueDate;}
+      if (form.customerEmail) {
+        payload.customerEmail = form.customerEmail;
+      }
+      if (form.dueDate) {
+        payload.dueDate = form.dueDate;
+      }
       const res = await smartPaymentApi.create(workspaceId, payload);
-      if (res.error) {throw new Error(res.error);}
+      if (res.error) {
+        throw new Error(res.error);
+      }
       setResult(res.data ?? null);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Erro ao criar cobranca');
@@ -82,7 +90,12 @@ export function SmartPaymentModal({ workspaceId, onClose }: SmartPaymentModalPro
           <button
             type="button"
             onClick={onClose}
-            style={{ background: 'none', border: 'none', color: 'var(--app-text-tertiary)', cursor: 'pointer' }}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'var(--app-text-tertiary)',
+              cursor: 'pointer',
+            }}
           >
             {IC.x(16)}
           </button>

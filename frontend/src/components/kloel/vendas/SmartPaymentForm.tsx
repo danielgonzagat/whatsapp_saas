@@ -67,15 +67,8 @@ export function SmartPaymentFormView({
       <div style={{ display: 'flex', gap: 8 }}>
         <div style={{ flex: 1 }}>
           <FieldLabel>{kloelT('Metodo')}</FieldLabel>
-          <select
-            value={form.method}
-            onChange={(e) => onChange((f) => ({ ...f, method: e.target.value }))}
-            style={selectStyle}
-          >
+          <select value="pix" disabled style={selectStyle}>
             <option value="pix">PIX</option>
-            <option value="boleto">{kloelT('Boleto')}</option>
-            <option value="credit_card">{kloelT('Cartao')}</option>
-            <option value="link">{kloelT('Link')}</option>
           </select>
         </div>
         <div style={{ flex: 1 }}>
@@ -89,7 +82,11 @@ export function SmartPaymentFormView({
           />
         </div>
       </div>
-      {error && <span style={{ fontSize: 12, color: colors.semantic.error, fontFamily: SORA }}>{error}</span>}
+      {error && (
+        <span style={{ fontSize: 12, color: colors.semantic.error, fontFamily: SORA }}>
+          {error}
+        </span>
+      )}
       <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
         <button type="button" onClick={onCancel} style={secondaryBtnStyle}>
           {kloelT('Cancelar')}

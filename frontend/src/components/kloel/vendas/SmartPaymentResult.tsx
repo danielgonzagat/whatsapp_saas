@@ -3,9 +3,11 @@ import { kloelT } from '@/lib/i18n/t';
 import { SORA, MONO } from './utils';
 
 export interface SmartPaymentResultData {
+  id?: string;
   paymentLink?: string;
   pixCode?: string;
-  boletoUrl?: string;
+  billingType?: 'PIX' | 'CREDIT_CARD';
+  suggestedMessage?: string;
 }
 
 interface SmartPaymentResultViewProps {
@@ -18,7 +20,11 @@ function copyToClipboard(text: string) {
   navigator.clipboard.writeText(text).catch(() => {});
 }
 
-export function SmartPaymentResultView({ result, onNewCharge, onClose }: SmartPaymentResultViewProps) {
+export function SmartPaymentResultView({
+  result,
+  onNewCharge,
+  onClose,
+}: SmartPaymentResultViewProps) {
   return (
     <div>
       <div
@@ -56,25 +62,12 @@ export function SmartPaymentResultView({ result, onNewCharge, onClose }: SmartPa
             onCopy={() => copyToClipboard(result.pixCode!)}
           />
         )}
-        {result.boletoUrl && (
-          <div>
-            <FieldLabel>{kloelT('Boleto')}</FieldLabel>
-            <div style={{ marginTop: 4 }}>
-              <a
-                href={result.boletoUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  fontSize: 12,
-                  color: 'colors.ember.primary',
-                  fontFamily: SORA,
-                  textDecoration: 'underline',
-                }}
-              >
-                {kloelT('Abrir boleto')}
-              </a>
-            </div>
-          </div>
+        {result.suggestedMessage && (
+          <CopyField
+            label={kloelT('Mensagem sugerida')}
+            value={result.suggestedMessage}
+            onCopy={() => copyToClipboard(result.suggestedMessage!)}
+          />
         )}
       </div>
       <div style={{ display: 'flex', gap: 8 }}>
@@ -136,15 +129,7 @@ function FieldLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
-function CopyField({
-  label,
-  value,
-  onCopy,
-}: {
-  label: string;
-  value: string;
-  onCopy: () => void;
-}) {
+function CopyField({ label, value, onCopy }: { label: string; value: string; onCopy: () => void }) {
   return (
     <div style={{ marginBottom: 10 }}>
       <FieldLabel>{label}</FieldLabel>
