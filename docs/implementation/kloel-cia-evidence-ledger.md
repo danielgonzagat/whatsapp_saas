@@ -2,6 +2,43 @@
 
 Generated: 2026-05-11
 
+## 2026-05-12T14:26:00-03:00 - W9 - Checkout Boleto Truthfulness Alignment
+
+- ID-visao: V19, V23.
+- Escopo: align checkout/product payment-method UI with the current Stripe-only backend capability, which rejects `BOLETO` and publicly advertises only card/PIX.
+- Arquivos alterados:
+  - `frontend/src/components/products/ProductCheckoutsTab.helpers.ts`
+  - `frontend/src/components/plans/PlanPaymentTab.tsx`
+  - `frontend/src/components/products/CheckoutConfigPage.tsx`
+  - `frontend/src/components/products/checkout/CheckoutCheckbox.tsx`
+  - `frontend/src/components/kloel/products/product-nerve-center.view-models.ts`
+  - `frontend/src/components/kloel/products/product-nerve-center.view-models.test.ts`
+- Comportamento entregue:
+  - Product checkout editor no longer offers unsupported `BOLETO` or `RECEBA_E_PAGUE` options and filters legacy unsupported methods when loading existing checkout config.
+  - Plan payment settings now displays boleto as unavailable, keeps it disabled, and saves `boleto: false` / `boletoEnabled: false`.
+  - Checkout config save path forces `enableBoleto: false`, and the checkbox component supports disabled display semantics.
+  - Product editor checkout view models no longer display `BOLETO` from legacy `enableBoleto` config.
+- Comando(s) rodados:
+  - `npx prettier --write frontend/src/components/products/ProductCheckoutsTab.helpers.ts frontend/src/components/plans/PlanPaymentTab.tsx frontend/src/components/products/CheckoutConfigPage.tsx frontend/src/components/products/checkout/CheckoutCheckbox.tsx frontend/src/components/kloel/products/product-nerve-center.view-models.ts frontend/src/components/kloel/products/product-nerve-center.view-models.test.ts`
+  - `npm --prefix frontend test -- product-nerve-center.view-models.test.ts CheckoutPaymentSection.test.tsx checkout-order-submit.test.ts`
+  - `npm --prefix frontend run typecheck -- --pretty false`
+  - `npm exec eslint -- src/components/products/ProductCheckoutsTab.helpers.ts src/components/plans/PlanPaymentTab.tsx src/components/products/CheckoutConfigPage.tsx src/components/products/checkout/CheckoutCheckbox.tsx src/components/kloel/products/product-nerve-center.view-models.ts src/components/kloel/products/product-nerve-center.view-models.test.ts` from `frontend/`
+- Resultado:
+  - Prettier completed.
+  - Vitest passed: 3 files / 5 tests.
+  - Frontend typecheck passed.
+  - Focused frontend ESLint passed.
+- Evidencia:
+  - Current session command outputs for Prettier, Vitest, frontend typecheck, and focused ESLint.
+  - Local repo evidence: `backend/src/checkout/checkout-order.service.ts` and `backend/src/checkout/checkout-payment.service.ts` reject `BOLETO`; `backend/src/checkout/checkout-public-payload.builder.ts` exposes `supportsBoleto: false`.
+- Riscos remanescentes:
+  - This is a truthfulness alignment for the current backend rail; it does not implement real boleto support.
+  - Other marketing/landing copy may still mention boleto as a future/general capability and should be audited separately before launch.
+- Plano de rollback:
+  - Re-enable boleto UI only after backend/payment provider support exists and the public checkout payload exposes `supportsBoleto: true` with live/sandbox proof.
+- Referencia subagent:
+  - Based on accepted report `artifacts/opencode-live/kloel-cia-batch-17-readonly-2026-05-12/v23-anti-fake.out`, with manual implementation and focused validation.
+
 ## 2026-05-12T14:16:00-03:00 - W9 - Guest Chat Redis Persistence Verification
 
 - ID-visao: V04, V17, V23.

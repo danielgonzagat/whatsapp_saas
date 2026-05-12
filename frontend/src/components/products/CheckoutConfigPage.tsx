@@ -1,12 +1,11 @@
 'use client';
 import { kloelT } from '@/lib/i18n/t';
 import { Save } from 'lucide-react';
-import { type CSSProperties, useEffect, useState, useId } from 'react';
+import { type CSSProperties, useState, useId } from 'react';
 import { CheckoutCheckbox as Checkbox } from '@/components/products/checkout/CheckoutCheckbox';
 import { CheckoutRadio as Radio } from '@/components/products/checkout/CheckoutRadio';
 import { CheckoutToggleRow as ToggleRow } from '@/components/products/checkout/CheckoutToggleRow';
 import { PixelsSection } from '@/components/products/checkout/CheckoutPixelsSection';
-
 
 interface CheckoutConfigState {
   checkoutName: string;
@@ -39,6 +38,34 @@ interface Props {
   planId: string;
   config: CheckoutConfigInput | null | undefined;
   onSave: (data: CheckoutConfigState) => void;
+}
+
+function createInitialCheckoutConfigState(
+  config: CheckoutConfigInput | null | undefined,
+): CheckoutConfigState {
+  const { enableBoleto: _enableBoleto, ...safeConfig } = config ?? {};
+  return {
+    checkoutName: '',
+    enableCreditCard: false,
+    enablePix: false,
+    chatEnabled: false,
+    chatWelcomeMessage: '',
+    chatDelay: 5,
+    chatPosition: 'bottom-right',
+    chatColor: 'colors.ember.primary',
+    chatOfferDiscount: false,
+    chatDiscountCode: '',
+    chatSupportPhone: '',
+    enableCoupon: false,
+    enableTimer: false,
+    timerMinutes: 10,
+    timerMessage: '',
+    socialProofEnabled: false,
+    socialProofCustomNames: '',
+    enableSteps: false,
+    ...safeConfig,
+    enableBoleto: false,
+  };
 }
 
 /* ── Design Tokens ── */
@@ -106,36 +133,16 @@ const dividerStyle: CSSProperties = {
 
 export function CheckoutConfigPage({ planId, config, onSave }: Props) {
   const fid = useId();
-  const [state, setState] = useState<CheckoutConfigState>({
-    checkoutName: '',
-    enableBoleto: false,
-    enableCreditCard: false,
-    enablePix: false,
-    chatEnabled: false,
-    chatWelcomeMessage: '',
-    chatDelay: 5,
-    chatPosition: 'bottom-right',
-    chatColor: 'colors.ember.primary',
-    chatOfferDiscount: false,
-    chatDiscountCode: '',
-    chatSupportPhone: '',
-    enableCoupon: false,
-    enableTimer: false,
-    timerMinutes: 10,
-    timerMessage: '',
-    socialProofEnabled: false,
-    socialProofCustomNames: '',
-    enableSteps: false,
-  });
-
-  useEffect(() => {
-    if (config) {
-      setState((prev) => ({ ...prev, ...config }));
-    }
-  }, [config]);
+  const [state, setState] = useState<CheckoutConfigState>(() =>
+    createInitialCheckoutConfigState(config),
+  );
 
   const set = (key: string, value: unknown) => {
     setState((prev) => ({ ...prev, [key]: value }));
+  };
+  const saveState = {
+    ...state,
+    enableBoleto: false,
   };
 
   return (
@@ -215,9 +222,10 @@ export function CheckoutConfigPage({ planId, config, onSave }: Props) {
           <h3 style={sectionTitleStyle}>{kloelT(`Pagamento`)}</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             <Checkbox
-              checked={state.enableBoleto}
-              onChange={(v) => set('enableBoleto', v)}
-              label={kloelT(`Boleto`)}
+              checked={false}
+              onChange={() => set('enableBoleto', false)}
+              label={kloelT(`Boleto indisponivel no checkout Stripe atual`)}
+              disabled
             />
             <Checkbox
               checked={state.enableCreditCard}
@@ -460,7 +468,7 @@ export function CheckoutConfigPage({ planId, config, onSave }: Props) {
           {/* ── Save Button ── */}
           <button
             type="button"
-            onClick={() => onSave(state)}
+            onClick={() => onSave(saveState)}
             style={{
               width: '100%',
               backgroundColor: EMBER,

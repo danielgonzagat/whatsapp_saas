@@ -9,10 +9,12 @@ export function CheckoutCheckbox({
   checked,
   onChange,
   label,
+  disabled = false,
 }: {
   checked: boolean;
   onChange: (v: boolean) => void;
   label: string;
+  disabled?: boolean;
 }) {
   return (
     <label
@@ -20,16 +22,22 @@ export function CheckoutCheckbox({
         display: 'flex',
         alignItems: 'center',
         gap: 10,
-        cursor: 'pointer',
+        cursor: disabled ? 'not-allowed' : 'pointer',
         fontFamily: "'Sora', sans-serif",
         fontSize: 13,
         color: TEXT,
+        opacity: disabled ? 0.72 : 1,
       }}
     >
       <input
         type="checkbox"
         checked={checked}
-        onChange={() => onChange(!checked)}
+        disabled={disabled}
+        onChange={() => {
+          if (!disabled) {
+            onChange(!checked);
+          }
+        }}
         style={{ position: 'absolute', opacity: 0, width: 0, height: 0 }}
       />
       <div
@@ -42,7 +50,7 @@ export function CheckoutCheckbox({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          cursor: 'pointer',
+          cursor: disabled ? 'not-allowed' : 'pointer',
           flexShrink: 0,
           transition: 'all 0.15s ease',
         }}

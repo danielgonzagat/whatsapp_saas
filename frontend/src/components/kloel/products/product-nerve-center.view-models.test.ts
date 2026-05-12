@@ -64,7 +64,7 @@ describe('product-nerve-center.view-models', () => {
         code: 'PX12AB34',
         referenceCode: 'PX12AB34',
         desc: 'Checkout Noir',
-        mt: ['PIX', 'BOLETO'],
+        mt: ['PIX'],
         sales: 14,
         installments: 6,
         quantity: 1,

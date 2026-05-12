@@ -47,6 +47,7 @@ const PaymentMethodCard = ({
   title,
   desc,
   iconColor,
+  disabled = false,
 }: {
   enabled: boolean;
   onToggle: () => void;
@@ -54,15 +55,20 @@ const PaymentMethodCard = ({
   title: string;
   desc: string;
   iconColor?: string;
+  disabled?: boolean;
 }) => (
   <button
     type="button"
+    aria-disabled={disabled}
     onClick={onToggle}
+    disabled={disabled}
     className="relative flex items-center gap-4 rounded-xl p-5 text-left transition-all"
     style={{
       background: enabled ? `${colors.accent.webb}08` : colors.background.nebula,
       border: `2px solid ${enabled ? colors.accent.webb : colors.border.space}`,
       boxShadow: 'none',
+      cursor: disabled ? 'not-allowed' : 'pointer',
+      opacity: disabled ? 0.72 : 1,
     }}
   >
     {enabled && (
@@ -109,7 +115,7 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
   const [boletoMaxInstallments, setBoletoMaxInstallments] = useState('6');
   const [boletoInterest, setBoletoInterest] = useState(false);
   const [creditEnabled, setCreditEnabled] = useState(true);
-  const [boletoEnabled, setBoletoEnabled] = useState(true);
+  const [boletoEnabled, setBoletoEnabled] = useState(false);
   const [pixEnabled, setPixEnabled] = useState(true);
   const [saving, setSaving] = useState(false);
   const { showToast } = useToast();
@@ -171,16 +177,12 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
           if (pm.credit != null) {
             setCreditEnabled(pm.credit as boolean);
           }
-          if (pm.boleto != null) {
-            setBoletoEnabled(pm.boleto as boolean);
-          }
+          setBoletoEnabled(false);
           if (pm.pix != null) {
             setPixEnabled(pm.pix as boolean);
           }
         }
-        if (d.boletoEnabled != null) {
-          setBoletoEnabled(d.boletoEnabled as boolean);
-        }
+        setBoletoEnabled(false);
       },
     );
   }, [productId, planId]);
@@ -199,8 +201,8 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
             subscriptionPeriod: recurringInterval,
             trialEnabled,
             trialDays: Number(trialDays),
-            paymentMethods: { credit: creditEnabled, boleto: boletoEnabled, pix: pixEnabled },
-            boletoEnabled,
+            paymentMethods: { credit: creditEnabled, boleto: false, pix: pixEnabled },
+            boletoEnabled: false,
             boletoInstallments: Number(boletoMaxInstallments),
           },
         },
@@ -264,11 +266,12 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
         />
         <PaymentMethodCard
           enabled={boletoEnabled}
-          onToggle={() => setBoletoEnabled(!boletoEnabled)}
+          onToggle={() => setBoletoEnabled(false)}
           icon={FileText}
           title={kloelT(`Boleto bancário`)}
-          desc={kloelT(`Compensação em 1-3 dias úteis`)}
+          desc={kloelT(`Indisponível no checkout Stripe atual`)}
           iconColor={colors.text.muted}
+          disabled
         />
         <PaymentMethodCard
           enabled={pixEnabled}
@@ -495,7 +498,11 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
           onClick={handleSave}
           disabled={saving}
           className="rounded-xl px-8 py-3 text-sm font-semibold text-white transition-all disabled:opacity-50"
-          style={{ backgroundColor: colors.text.silver, color: colors.background.void, boxShadow: 'none' }}
+          style={{
+            backgroundColor: colors.text.silver,
+            color: colors.background.void,
+            boxShadow: 'none',
+          }}
         >
           {saving ? 'Salvando...' : 'Salvar'}
         </button>
