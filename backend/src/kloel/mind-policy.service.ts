@@ -64,14 +64,13 @@ export class MindPolicyService {
       utilityFail,
       utilitySuccess,
     });
+    const fallbackAction = artifacts.candidates.at(-1)?.action;
     const baselineAction = resolveBaselineAction({
       ...(input.baseline !== undefined ? { baseline: input.baseline } : {}),
       ...(input.baselineActionQuiet !== undefined
         ? { baselineActionQuiet: input.baselineActionQuiet }
         : {}),
-      ...(artifacts.candidates.at(-1)?.action !== undefined
-        ? { fallback: artifacts.candidates.at(-1)?.action }
-        : {}),
+      ...(fallbackAction !== undefined ? { fallback: fallbackAction } : {}),
     });
     const decision = buildPolicyDecision({
       artifacts,
