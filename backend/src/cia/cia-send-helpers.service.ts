@@ -147,10 +147,12 @@ export class CiaSendHelpersService {
       if (!sendResult.success) {
         await this.releaseDailyMessageLimit(workspaceId);
       }
+      const msg = sendResult.error ?? sendResult.blockedReason;
+      const msgId = sendResult.messageId;
       return {
         error: !sendResult.success,
-        message: sendResult.error ?? sendResult.blockedReason,
-        messageId: sendResult.messageId,
+        ...(msg !== undefined ? { message: msg } : {}),
+        ...(msgId !== undefined ? { messageId: msgId } : {}),
         success: sendResult.success,
       };
     } catch (error: unknown) {

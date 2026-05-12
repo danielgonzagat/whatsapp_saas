@@ -2,6 +2,115 @@
 
 Generated: 2026-05-11
 
+## 2026-05-12T13:49:00-03:00 - W9 - V23 Frontend Truthfulness Fixes
+
+- ID-visao: V05, V06, V17, V23.
+- Escopo: implement the first disjoint frontend-only anti-fake fixes from Batch 17 while backend repair remains owned by another agent.
+- Arquivos alterados:
+  - `frontend/src/components/kloel/marketing/MarketingView.tsx`
+  - `frontend/src/components/kloel/marketing/MarketingView.Tabs.tsx`
+  - `frontend/src/lib/kloel-chat.ts`
+  - `frontend/src/components/kloel/auth/auth-modal.tsx`
+  - `docs/implementation/kloel-cia-evidence-ledger.md`
+  - `docs/implementation/kloel-cia-session-handoff.md`
+- Comportamento entregue:
+  - Marketing tab labels no longer mark Instagram, TikTok, Facebook, and Email as `soon`; SMS remains marked because it has no current backend implementation evidence.
+  - Owner chat quick actions are no longer an empty exported catalog; the dashboard/composer now has five real prompts that route into the existing chat flow.
+  - Auth modal terms/privacy links no longer point to `#`; they route to `/terms` and `/privacy`.
+- Comando(s) rodados:
+  - `npx prettier --write frontend/src/components/kloel/marketing/MarketingView.tsx frontend/src/components/kloel/marketing/MarketingView.Tabs.tsx frontend/src/lib/kloel-chat.ts frontend/src/components/kloel/auth/auth-modal.tsx`
+  - `npm --prefix frontend run typecheck -- --pretty false`
+  - `npm --prefix frontend test -- KloelDashboardView.test.tsx kloel-auth-screen.social-buttons.test.tsx`
+  - `npm exec eslint -- src/components/kloel/marketing/MarketingView.tsx src/components/kloel/marketing/MarketingView.Tabs.tsx src/lib/kloel-chat.ts src/components/kloel/auth/auth-modal.tsx` from `frontend/`
+- Resultado:
+  - Prettier completed.
+  - Frontend typecheck passed.
+  - Vitest passed: 2 files / 5 tests.
+  - Focused ESLint passed.
+- Evidencia:
+  - Current session command outputs for typecheck, Vitest, and ESLint.
+  - Diff in the frontend files listed above.
+- Riscos remanescentes:
+  - This fixes only a small frontend V23 slice. Checkout/billing/guest-chat V23 findings remain for later backend-safe work after the external agent exits.
+  - Backend/protected-file dirty state is still owned by another active agent, so no aggregate repo validation is claimed here.
+- Plano de rollback:
+  - Revert the four frontend files by forward edit if a later product decision intentionally hides those channels or removes quick actions.
+- Referencia subagent:
+  - Based on accepted report `artifacts/opencode-live/kloel-cia-batch-17-readonly-2026-05-12/v23-anti-fake.out`, with manual verification.
+
+## 2026-05-12T13:43:00-03:00 - W9 - Batch 17 Read-Only Anti-Fake and Provider Readiness
+
+- ID-visao: V10, V11, V12, V19, V22, V23, V24.
+- Escopo: small live OpenCode read-only batch while backend repair remained owned by another active agent.
+- Arquivos alterados:
+  - `docs/implementation/kloel-cia-evidence-ledger.md`
+  - `docs/implementation/kloel-cia-session-handoff.md`
+- Comportamento entregue:
+  - Accepted `kloel-v23-anti-fake-readonly` after manual verification of its high-priority findings. Confirmed examples include `MarketingView.tsx` marking Instagram/TikTok/Facebook/Email as `soon`, empty `KLOEL_CHAT_QUICK_ACTIONS`, in-memory guest chat storage, boleto UI/backend mismatch, mock billing path outside production, and checkout success page single-fetching any order status.
+  - Accepted `kloel-provider-readiness-readonly` as a provider readiness map for Meta, TikTok, Gmail, Microsoft, IMAP/SMTP, payment sandbox, and startup env blockers. It aligns with the External Dependency Register: provider live proof remains blocked by third-party app/config/test-account dependencies and missing orchestrator env tokens.
+  - Rejected `kloel-obsidian-macro-readonly` as a completed subagent delivery because OpenCode could not read the external Obsidian vault path. Manual local checks still confirm the graph lens is `custom` and the HUD files are stale from 2026-05-05 or earlier, so Obsidian is context only until the mirror is refreshed.
+- Comando(s) rodados:
+  - `/opt/homebrew/bin/opencode run -m deepseek/deepseek-v4-pro --variant max --format default --dir /Users/danielpenin/whatsapp_saas --title kloel-v23-anti-fake-readonly ...`
+  - `/opt/homebrew/bin/opencode run -m deepseek/deepseek-v4-pro --variant max --format default --dir /Users/danielpenin/whatsapp_saas --title kloel-provider-readiness-readonly ...`
+  - `/opt/homebrew/bin/opencode run -m deepseek/deepseek-v4-pro --variant max --format default --dir /Users/danielpenin/whatsapp_saas --title kloel-obsidian-macro-readonly ...`
+  - `nl -ba frontend/src/components/kloel/marketing/MarketingView.tsx | sed -n '200,240p'`
+  - `nl -ba frontend/src/lib/kloel-chat.ts | sed -n '80,110p'`
+  - `nl -ba backend/src/kloel/guest-chat.service.ts | sed -n '1,70p'`
+  - `nl -ba backend/src/billing/billing-checkout-webhook.service.ts | sed -n '25,95p'`
+  - `stat -f '%Sm %N' '/Users/danielpenin/Documents/Obsidian Vault/Kloel/00-HUD/'*.md '/Users/danielpenin/Documents/Obsidian Vault/Kloel/00-HUD/'*.canvas`
+- Resultado:
+  - V23 worker completed with a factual report but incorrectly claimed a clean working tree; the report is accepted only after manual correction that the tree is dirty and backend/AGENTS changes belong to another agent.
+  - Provider readiness worker completed and explicitly preserved 17 dirty files as another agent's property.
+  - Obsidian worker exited without a usable final report because external-vault reads were denied inside OpenCode.
+- Evidencia:
+  - `artifacts/opencode-live/kloel-cia-batch-17-readonly-2026-05-12/v23-anti-fake.out`
+  - `artifacts/opencode-live/kloel-cia-batch-17-readonly-2026-05-12/provider-readiness.out`
+  - `artifacts/opencode-live/kloel-cia-batch-17-readonly-2026-05-12/obsidian-macro.out` (rejected/partial)
+  - Manual verification paths listed in the commands above.
+- Riscos remanescentes:
+  - No product code was changed in this batch; V23 findings remain backlog until implemented.
+  - Live provider smokes remain blocked by `EXT-*` dependencies.
+  - One external backend OpenCode process remains active and owns current backend/protected-file drift.
+- Plano de rollback:
+  - Documentation-only entry can be forward-edited or superseded by a later provider smoke/anti-fake implementation batch.
+- Referencia subagent:
+  - Accepted: `artifacts/opencode-live/kloel-cia-batch-17-readonly-2026-05-12/v23-anti-fake.out`
+  - Accepted: `artifacts/opencode-live/kloel-cia-batch-17-readonly-2026-05-12/provider-readiness.out`
+  - Rejected/partial: `artifacts/opencode-live/kloel-cia-batch-17-readonly-2026-05-12/obsidian-macro.out`
+
+## 2026-05-12T13:23:00-03:00 - W9 - Golden Path Readiness OpenCode Audit
+
+- ID-visao: V01-V24, especially Z3 Golden Path.
+- Escopo: read-only OpenCode batch to remap Golden Path SOTA Slice after the `origin/main` merge and current backend repair.
+- Arquivos alterados:
+  - `.opencode-prompts/batch-16/A-golden-path-readiness-audit.md`
+  - `.opencode-prompts/batch-16/B-anti-fake-ui-endpoint-audit.md`
+  - `.opencode-prompts/batch-16/C-provider-readiness-audit.md`
+  - `.opencode-prompts/batch-16/manifest.json`
+  - `docs/implementation/kloel-cia-evidence-ledger.md`
+- Comportamento entregue:
+  - Accepted task `A-golden-path-readiness-audit` produced a read-only 10/10 Golden Path table with local evidence, external blockers, and next actions.
+  - Rejected tasks `B-anti-fake-ui-endpoint-audit` and `C-provider-readiness-audit` as incomplete because both were killed by timeout (`SIGKILL`) and did not produce final reports.
+- Comando(s) rodados:
+  - `node scripts/orchestration/opencode-fleet.mjs .opencode-prompts/batch-16/manifest.json`
+  - `sed -n '1,260p' artifacts/opencode-fleet/kloel-cia-batch-16-readonly-readiness-2026-05-12/A-golden-path-readiness-audit.out`
+  - `cat artifacts/opencode-fleet/kloel-cia-batch-16-readonly-readiness-2026-05-12/summary.json`
+- Resultado:
+  - Fleet summary: 1/3 ok, 2/3 error by timeout/SIGKILL.
+  - Accepted Golden Path result: 0/10 milestones `[ENTREGUE_PROVADO]`; all 10 remain externally blocked or pending live smoke.
+- Evidencia:
+  - `artifacts/opencode-fleet/kloel-cia-batch-16-readonly-readiness-2026-05-12/A-golden-path-readiness-audit.out`
+  - `artifacts/opencode-fleet/kloel-cia-batch-16-readonly-readiness-2026-05-12/summary.json`
+- Riscos remanescentes:
+  - Anti-fake UI and provider readiness audits still need a smaller follow-up batch or manual pass because B/C timed out.
+  - External backend repair is still active/stale at `/tmp/merge-main.log` and aggregate typecheck is not claimed.
+- Plano de rollback:
+  - Remove the batch-16 prompt files and ignore the accepted read-only artifact if a newer Golden Path smoke supersedes it.
+- Referencia subagent:
+  - Accepted: `artifacts/opencode-fleet/kloel-cia-batch-16-readonly-readiness-2026-05-12/A-golden-path-readiness-audit`
+  - Rejected/partial: `artifacts/opencode-fleet/kloel-cia-batch-16-readonly-readiness-2026-05-12/B-anti-fake-ui-endpoint-audit`
+  - Rejected/partial: `artifacts/opencode-fleet/kloel-cia-batch-16-readonly-readiness-2026-05-12/C-provider-readiness-audit`
+
 ## 2026-05-12T13:08:00-03:00 - W9 - Vision Traceability Status Normalization
 
 - ID-visao: V01-V24.

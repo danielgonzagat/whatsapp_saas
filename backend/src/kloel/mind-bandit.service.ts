@@ -192,10 +192,10 @@ export class MindBanditService {
     });
 
     const sortedByScore = [...armStatuses].sort((a, b) => b.score - a.score);
-    const recommendation = sortedByScore.length > 0 ? sortedByScore[0].arm : null;
+    const recommendation = sortedByScore.length > 0 ? sortedByScore[0]!.arm : null;
 
     const overallMean = totalPulls > 0 ? totalWins / totalPulls : 0;
-    const recommendationMean = sortedByScore.length > 0 ? sortedByScore[0].mean : 0;
+    const recommendationMean = sortedByScore.length > 0 ? sortedByScore[0]!.mean : 0;
     const lift = overallMean > 0 ? (recommendationMean - overallMean) / overallMean : 0;
 
     return {

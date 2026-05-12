@@ -121,7 +121,7 @@ export class MindReplayService {
     }
 
     const steps = replaySteps(input);
-    const winner = steps[0];
+    const winner = steps[0]!;
     const baselineAction = input.baseline ?? steps[steps.length - 1]?.action ?? 'pass';
 
     return {

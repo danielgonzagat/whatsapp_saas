@@ -65,9 +65,11 @@ export class MindPolicyService {
       utilitySuccess,
     });
     const baselineAction = resolveBaselineAction({
-      baseline: input.baseline,
-      baselineActionQuiet: input.baselineActionQuiet,
-      fallback: artifacts.candidates[artifacts.candidates.length - 1]?.action,
+      ...(input.baseline !== undefined ? { baseline: input.baseline } : {}),
+      ...(input.baselineActionQuiet !== undefined ? { baselineActionQuiet: input.baselineActionQuiet } : {}),
+      ...(artifacts.candidates[artifacts.candidates.length - 1]?.action !== undefined
+        ? { fallback: artifacts.candidates[artifacts.candidates.length - 1]!.action }
+        : {}),
     });
     const decision = buildPolicyDecision({
       artifacts,
@@ -293,7 +295,7 @@ export class MindPolicyService {
         `;
         const existing = await tx.mindPolicy.findFirst({
           where: {
-            outcomeKey: decision.outcomeKey,
+            outcomeKey: decision.outcomeKey!,
             workspaceId: decision.workspaceId,
           },
           select: { id: true },

@@ -212,7 +212,7 @@ export class MindSyntheticGeneratorService {
       workspaceId: '',
       decisionType: recipe.decisionType,
       candidates,
-      baseline: recipe.baseline,
+      ...(recipe.baseline !== undefined ? { baseline: recipe.baseline } : { baseline: '' }),
       epsilon: recipe.epsilon ?? 0.5,
       utilitySuccess: recipe.utilitySuccess ?? 1,
       utilityFail: recipe.utilityFail ?? -0.2,
@@ -228,7 +228,7 @@ export class MindSyntheticGeneratorService {
     const shuffled = [...recipeKeys].sort(() => rng() - 0.5).slice(0, decisionCount);
 
     const decisions = shuffled.map((key, index) => {
-      const recipe = BUILTIN_RECIPES[key];
+      const recipe = BUILTIN_RECIPES[key]!;
       return this.generateDecision(recipe, effectiveSeed + index * 100);
     });
 
@@ -247,12 +247,14 @@ export class MindSyntheticGeneratorService {
   generateActionContexts(
     actions: string[],
     seedOffset: number,
+    options?: { injectViolations?: boolean },
   ): Array<{ action: string; context: MindActionContext }> {
     const rng = mulberry32(this._seed + seedOffset);
+    const injectViolations = options?.injectViolations ?? true;
     return actions.map((action) => {
-      const willFailAudio = action.includes('audio') && rng() < 0.3;
-      const willFailDocument = action.includes('document') && rng() < 0.3;
-      const hasOptOut = rng() < 0.1;
+      const willFailAudio = injectViolations && action.includes('audio') && rng() < 0.3;
+      const willFailDocument = injectViolations && action.includes('document') && rng() < 0.3;
+      const hasOptOut = injectViolations && rng() < 0.1;
       return {
         action,
         context: {

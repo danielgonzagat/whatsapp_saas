@@ -143,7 +143,7 @@ export class UnifiedAgentActionsCrmService {
             contactId,
             channel: resolvedChannel,
             logger: this.logger,
-            mindPolicy: this.mindPolicy,
+            ...(this.mindPolicy !== undefined ? { mindPolicy: this.mindPolicy } : {}),
             requestedDelayHours,
           });
       const delayHours = mindDecision.delayHours;

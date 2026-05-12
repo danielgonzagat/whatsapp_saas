@@ -148,7 +148,7 @@ export class ChannelInboundHookService {
 
     await this.eventSpine.recordCommercial({
       workspaceId: event.workspaceId,
-      contactId,
+      ...(contactId !== undefined ? { contactId } : {}),
       subject: event.subject,
       eventType: event.kind === 'message.sent' ? 'message.sent' : 'message.received',
       idempotencyKey: `${event.kind}:${event.workspaceId}:${messageId}`,

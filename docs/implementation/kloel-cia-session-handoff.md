@@ -1,15 +1,15 @@
 # Kloel CIA Session Handoff
 
-Updated: 2026-05-12T13:01:27-03:00
+Updated: 2026-05-12T13:49:00-03:00
 
 ## Onde parou exatamente
 
-Wave 0 discovery artifacts are active and W1-W9 have focused code-side slices delivered with evidence, but completion remains blocked by external provider smokes, open dependency-register items, and current merge-repair work in backend/worker owned by another active agent. W1 persists the official channel four-step wizard spine through `Workspace.providerSettings.marketingChannelSetup`; Playwright proves four steps at desktop/mobile widths, product persistence, and Meta disconnect double-confirmation. W2 hardens code-side Meta OAuth URL generation with channel-specific Config IDs/scopes, adds the `facebook` status alias, and rejects unsigned Meta webhook POSTs when `META_APP_SECRET` is configured. W3 hardens TikTok webhook signature handling and adds backend disconnect. W4 delivers code-side Gmail/Microsoft/IMAP mailbox foundations through EMAIL-10, including encrypted token storage, Gmail sync/send, Microsoft OAuth base, IMAP+SMTP validation, suppression checks, and mailbox metrics, while live mailbox smokes remain external. W5/W6 route TikTok/Omnichannel perception toward the same `UnifiedAgentService` and prove owner strategic policy persistence into CIA prompt context. W7/W8 add checkout-paid wallet/chat context and high-risk `ApprovalRequest` gates. On 2026-05-12, after the merge from `origin/main`, this orchestrator recovered the frontend TypeScript gate, restored the official Marketing channel helper module, rewired typed Facebook/TikTok social auth buttons without rendering dead providers, and validated `npm --prefix frontend run typecheck -- --pretty false` plus `npm --prefix frontend test -- kloel-auth-screen.social-buttons.test.tsx`.
+Wave 0 discovery artifacts are active and W1-W9 have focused code-side slices delivered with evidence, but completion remains blocked by external provider smokes, open dependency-register items, and current merge-repair work in backend owned by another active agent. W1 persists the official channel four-step wizard spine through `Workspace.providerSettings.marketingChannelSetup`; Playwright proves four steps at desktop/mobile widths, product persistence, and Meta disconnect double-confirmation. W2 hardens code-side Meta OAuth URL generation with channel-specific Config IDs/scopes, adds the `facebook` status alias, and rejects unsigned Meta webhook POSTs when `META_APP_SECRET` is configured. W3 hardens TikTok webhook signature handling and adds backend disconnect. W4 delivers code-side Gmail/Microsoft/IMAP mailbox foundations through EMAIL-10, including encrypted token storage, Gmail sync/send, Microsoft OAuth base, IMAP+SMTP validation, suppression checks, and mailbox metrics, while live mailbox smokes remain external. W5/W6 route TikTok/Omnichannel perception toward the same `UnifiedAgentService` and prove owner strategic policy persistence into CIA prompt context. W7/W8 add checkout-paid wallet/chat context and high-risk `ApprovalRequest` gates. On 2026-05-12, after the merge from `origin/main`, this orchestrator recovered the frontend TypeScript gate, ran Batch 17 read-only audits for V23 anti-fake/provider readiness, and implemented the first frontend-only V23 truthfulness fixes while preserving the backend repair surface for the external agent.
 
 ## Branch atual e ultimo commit
 
 - Branch: `chore/purga-total-debt`
-- HEAD: `8d1175ef7 Merge origin/main into chore/purga-total-debt (PR #276)`
+- HEAD: `26080a4ca fix(railway): align service lockfiles`
 - Note: prior handoff referenced `feat/kloel-cia-convergence`, but the live checkout is currently `chore/purga-total-debt`; do not infer branch state from older docs.
 
 ## Gates passados na sessao
@@ -100,6 +100,12 @@ Wave 0 discovery artifacts are active and W1-W9 have focused code-side slices de
 - `npm --prefix frontend test -- kloel-auth-screen.social-buttons.test.tsx`: passed on 2026-05-12, 1 file / 4 tests.
 - `npm --prefix frontend run build`: passed on 2026-05-12; Next.js compiled and generated 92 static pages.
 - `npm exec eslint -- <changed frontend files>` from `frontend/`: passed on 2026-05-12.
+- `/opt/homebrew/bin/opencode run ... --title kloel-v23-anti-fake-readonly`: completed on 2026-05-12 with a V23 report; accepted only after manual correction that the working tree was dirty, not clean.
+- `/opt/homebrew/bin/opencode run ... --title kloel-provider-readiness-readonly`: completed on 2026-05-12 with provider readiness/external blocker mapping aligned to `kloel-cia-external-dependencies.md`.
+- `/opt/homebrew/bin/opencode run ... --title kloel-obsidian-macro-readonly`: rejected as a completed delivery because OpenCode could not read external Obsidian vault files; manual checks still showed graph lens `custom` and stale HUD files.
+- `npm --prefix frontend run typecheck -- --pretty false`: passed after V23 frontend truthfulness fixes.
+- `npm --prefix frontend test -- KloelDashboardView.test.tsx kloel-auth-screen.social-buttons.test.tsx`: passed after V23 frontend truthfulness fixes, 2 files / 5 tests.
+- `npm exec eslint -- src/components/kloel/marketing/MarketingView.tsx src/components/kloel/marketing/MarketingView.Tabs.tsx src/lib/kloel-chat.ts src/components/kloel/auth/auth-modal.tsx` from `frontend/`: passed after V23 frontend truthfulness fixes.
 - `npx eslint` on the touched frontend auth/checkout/search/media/history files: passed after local hook-rule fixes.
 - `npm run backend:typecheck`: passed after aligning `backend/src/integrations/ads-sync.processor.ts` with the current branch state.
 - `npm run typecheck`: passed after backend/frontend/worker typecheck all completed successfully.
@@ -195,18 +201,18 @@ Wave 0 discovery artifacts are active and W1-W9 have focused code-side slices de
 
 ## Gates falhando ainda
 
-- `npm run lint`: fails during backend lint with 3350 errors, mostly broad `@typescript-eslint/no-unsafe-*` debt in backend specs/tests/admin surfaces.
-- `npm --prefix frontend run lint`: fails with 117 errors, mostly broad `react-hooks/set-state-in-effect` debt in unrelated frontend routes/components.
-- `npm run check:governance`: failed because the pre-existing worktree has protected governance files modified, including `.codacy.yml`, `.github/workflows/ci-cd.yml`, `.husky/*`, `AGENTS.md`, `package.json`, `ratchet.json`, `ops/**`, `scripts/ops/**`, eslint configs, and model library files.
+- `npm run lint`: last known failure during backend lint had 3350 errors, mostly broad `@typescript-eslint/no-unsafe-*` debt in backend specs/tests/admin surfaces.
+- `npm --prefix frontend run lint`: last known failure had 117 errors, mostly broad `react-hooks/set-state-in-effect` debt in unrelated frontend routes/components.
+- `npm run check:governance`: blocked by protected-file drift. Current live dirty set includes `AGENTS.md`, which is protected; this orchestrator did not edit it and will not stage or modify it.
 - Live Railway/Vercel env inventory: blocked because `RAILWAY_TOKEN` and `VERCEL_TOKEN` are not set in this shell.
 
 ## Subagents ativos no momento da pausa
 
-An external merge-repair agent is active outside this orchestrator and owns the dirty backend/worker repair surface. It has four OpenCode-related node processes visible and `/tmp/merge-main.log` currently reports that TS2307 import errors were fixed, worker was clean earlier, backend errors were reduced, and the agent is verifying all four projects. Do not edit backend/worker files until that agent exits or hands off.
+An external backend repair OpenCode process is active outside this orchestrator: `backend-final-56-to-0`, PID observed as `13595`, tasked with reducing backend TypeScript errors to zero. It owns the current dirty backend files and protected `AGENTS.md` drift. Do not edit, stage, or commit those files until that agent exits or hands off.
 
 ## Subagents concluidos nao revisados
 
-`kloel-cia-batch-15-frontend-typecheck-2026-05-12` is rejected as a subagent-complete delivery because task `A-frontend-typecheck-recovery` ended with SIGKILL after 600s. Its partial frontend diff was manually reviewed, completed, formatted and validated by this orchestrator. Older accepted/rejected fleet statuses from 2026-05-11 remain as previously recorded.
+`kloel-cia-batch-15-frontend-typecheck-2026-05-12` is rejected as a subagent-complete delivery because task `A-frontend-typecheck-recovery` ended with SIGKILL after 600s. Its partial frontend diff was manually reviewed, completed, formatted and validated by this orchestrator. `kloel-cia-batch-16-readonly-readiness-2026-05-12` ended 1/3 ok: accepted `A-golden-path-readiness-audit` as read-only Golden Path mapping; rejected `B-anti-fake-ui-endpoint-audit` and `C-provider-readiness-audit` as incomplete because both timed out/SIGKILL without final reports. Batch 17 live read-only OpenCode outputs are reviewed: accepted `v23-anti-fake.out` with manual corrections, accepted `provider-readiness.out`, rejected `obsidian-macro.out` as completed subagent evidence because external-vault reads were denied. Older accepted/rejected fleet statuses from 2026-05-11 remain as previously recorded.
 
 ## Bloqueios externos vigentes
 
@@ -216,4 +222,4 @@ An external merge-repair agent is active outside this orchestrator and owns the 
 
 ## Proxima acao exata
 
-Keep the backend/worker merge-repair surface reserved for the active external agent until it exits. While it runs, use the Obsidian graph/mirror and docs artifacts to choose disjoint frontend, UX, evidence, and provider-smoke runbook work. After the external agent finishes, verify `git status`, inspect its diff, run the aggregate typecheck, then update the evidence ledger and only then decide whether to continue lint/security/readiness reduction or open a new narrow OpenCode batch.
+Keep the backend repair surface and protected `AGENTS.md` drift reserved for the active external agent until it exits. Next disjoint action: continue V23 frontend-only remediation if another safe slice exists, otherwise wait for the backend agent to finish, then verify `git status`, inspect its diff, run aggregate `npm run typecheck`, and only then decide whether to integrate backend changes or continue backend-dependent V23 remediation.

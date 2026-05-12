@@ -531,9 +531,11 @@ export class KloelController {
   ) {
     const parsedLimit = limit ? Number.parseInt(limit, 10) : undefined;
     const parsedCursor = cursor ? Number.parseInt(cursor, 10) : undefined;
+    const numericLimit = Number.isFinite(parsedLimit) ? parsedLimit : undefined;
+    const numericCursor = Number.isFinite(parsedCursor) ? parsedCursor : undefined;
     return listThreads({ prisma: this.prisma }, resolveWorkspaceId(req), {
-      limit: Number.isFinite(parsedLimit) ? parsedLimit : undefined,
-      cursor: Number.isFinite(parsedCursor) ? parsedCursor : undefined,
+      ...(numericLimit !== undefined ? { limit: numericLimit } : {}),
+      ...(numericCursor !== undefined ? { cursor: numericCursor } : {}),
       paginated: Boolean(limit || cursor),
     });
   }

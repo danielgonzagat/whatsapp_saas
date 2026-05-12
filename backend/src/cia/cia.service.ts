@@ -81,7 +81,8 @@ export class CiaService {
     if (channels.length === 0) {
       subtitle = 'Cuidando do seu negócio';
     } else if (channels.length === 1) {
-      const label = CHANNEL_LABEL[channels[0]] || channels[0];
+      const [channel] = channels;
+      const label = channel ? CHANNEL_LABEL[channel] || channel : 'canal conectado';
       subtitle = `Cuidando do seu negócio no ${label}`;
     } else {
       subtitle = 'Orquestrando seus canais de venda';

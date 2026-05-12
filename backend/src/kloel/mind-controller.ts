@@ -114,9 +114,9 @@ export class MindController {
   @Post(':workspaceId/cases/similar')
   similarCases(@Param('workspaceId') workspaceId: string, @Body() body: SimilarCasesDto) {
     return this.mind.retrieveSimilar({
-      caseType: body.caseType,
-      features: body.features,
-      limit: body.limit,
+      ...(body.caseType !== undefined ? { caseType: body.caseType } : {}),
+      ...(body.features !== undefined ? { features: body.features } : {}),
+      ...(body.limit !== undefined ? { limit: body.limit } : {}),
       text: body.text,
       workspaceId,
     });
@@ -221,17 +221,17 @@ export class MindController {
           beliefMean: c.beliefMean,
           beliefVariance: c.beliefVariance,
         })),
-        baseline: d.baseline,
-        epsilon: d.epsilon,
-        utilitySuccess: d.utilitySuccess,
-        utilityFail: d.utilityFail,
+        ...(d.baseline !== undefined ? { baseline: d.baseline } : {}),
+        ...(d.epsilon !== undefined ? { epsilon: d.epsilon } : {}),
+        ...(d.utilitySuccess !== undefined ? { utilitySuccess: d.utilitySuccess } : {}),
+        ...(d.utilityFail !== undefined ? { utilityFail: d.utilityFail } : {}),
       }));
     } else if (body.actions && body.actions.length > 0) {
       const recipeKeys = body.recipeKeys ?? ['followup_timing', 'cart_recovery', 'coupon_offer'];
       const recipes = MindSyntheticGeneratorService.builtinRecipes();
       decisions = recipeKeys
         .filter((key) => recipes[key])
-        .map((key, index) => this.synthetic.generateDecision(recipes[key], seed + index * 100));
+        .map((key, index) => this.synthetic.generateDecision(recipes[key]!, seed + index * 100));
     } else {
       const report = this.simulator.simulateSyntheticWorkspace(workspaceId, seed);
       return {
@@ -250,7 +250,9 @@ export class MindController {
     } else {
       const allActions = decisions.flatMap((d) => d.candidates.map((c) => c.action));
       const uniqueActions = [...new Set(allActions)];
-      const syntheticActions = this.synthetic.generateActionContexts(uniqueActions, seed + 500);
+      const syntheticActions = this.synthetic.generateActionContexts(uniqueActions, seed + 500, {
+        injectViolations: false,
+      });
       actions = syntheticActions.map((sa) => ({
         action: sa.action,
         decisionType: decisions[0]?.decisionType ?? 'followup_timing',

@@ -63,7 +63,7 @@ export class MindGuardContextBuilderService {
       ...contactContext.context,
       maxPaymentAmount:
         typeof baseContext.maxPaymentAmount === 'number' ? baseContext.maxPaymentAmount : 5000,
-      paymentAmount,
+      ...(paymentAmount !== undefined ? { paymentAmount } : {}),
       paymentProcessed,
     };
   }
@@ -148,16 +148,20 @@ export class MindGuardContextBuilderService {
 
     return {
       context: {
-        contactMessagesToday:
-          typeof baseContext.contactMessagesToday === 'number'
-            ? baseContext.contactMessagesToday
-            : (messagesToday ?? baseContext.contactMessagesToday),
-        contactOptOut:
-          typeof baseContext.contactOptOut === 'boolean'
-            ? baseContext.contactOptOut
-            : contact
-              ? contact.optIn === false || Boolean(contact.optedOutAt)
-              : baseContext.contactOptOut,
+        ...(typeof baseContext.contactMessagesToday === 'number'
+          ? { contactMessagesToday: baseContext.contactMessagesToday }
+          : messagesToday !== null
+            ? { contactMessagesToday: messagesToday }
+            : baseContext.contactMessagesToday !== undefined
+              ? { contactMessagesToday: baseContext.contactMessagesToday }
+              : {}),
+        ...(typeof baseContext.contactOptOut === 'boolean'
+          ? { contactOptOut: baseContext.contactOptOut }
+          : contact
+            ? { contactOptOut: contact.optIn === false || Boolean(contact.optedOutAt) }
+            : baseContext.contactOptOut !== undefined
+              ? { contactOptOut: baseContext.contactOptOut }
+              : {}),
       },
       lastInbound: Boolean(lastInbound),
     };

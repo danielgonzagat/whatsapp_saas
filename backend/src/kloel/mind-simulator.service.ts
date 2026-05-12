@@ -155,7 +155,7 @@ export class MindSimulatorService {
       ),
     ];
     const actions = this.synthetic
-      .generateActionContexts(uniqueActions, seed + 500)
+      .generateActionContexts(uniqueActions, seed + 500, { injectViolations: false })
       .map((entry) => ({
         action: entry.action,
         decisionType: scenario.decisions[0]?.decisionType ?? 'followup_timing',

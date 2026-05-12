@@ -25,7 +25,7 @@ export function triggerWhatsappMindPercept(input: TriggerWhatsappMindPerceptInpu
         channel: 'WHATSAPP',
         externalId: msg.providerMessageId,
         from: phone,
-        fromName: msg.senderName,
+        ...(msg.senderName !== undefined ? { fromName: msg.senderName } : {}),
         content,
         metadata: {
           provider: msg.provider,

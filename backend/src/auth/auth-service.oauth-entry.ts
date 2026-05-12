@@ -66,9 +66,9 @@ export async function loginWithAppleCredential(
 
   const profile = await deps.appleAuthService.verifyCredential({
     identityToken: data.identityToken,
-    authorizationCode: data.authorizationCode,
-    redirectUri: data.redirectUri,
-    user: data.user,
+    ...(data.authorizationCode !== undefined ? { authorizationCode: data.authorizationCode } : {}),
+    ...(data.redirectUri !== undefined ? { redirectUri: data.redirectUri } : {}),
+    ...(data.user !== undefined ? { user: data.user } : {}),
   });
   return completeTrustedOAuthLogin(deps, profile);
 }

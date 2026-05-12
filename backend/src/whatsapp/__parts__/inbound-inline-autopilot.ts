@@ -19,8 +19,7 @@ export async function sendInlineReplyPlan(
     replyPlan: InlineReplyPlanItem[];
   },
 ): Promise<void> {
-  for (let index = 0; index < params.replyPlan.length; index += 1) {
-    const plan = params.replyPlan[index];
+  for (const [index, plan] of params.replyPlan.entries()) {
     const result = await deps.transports.send(params.workspaceId, {
       workspaceId: params.workspaceId,
       channel: 'whatsapp',

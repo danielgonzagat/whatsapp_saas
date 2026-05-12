@@ -133,8 +133,8 @@ export class UnifiedAgentActionsMessagingService {
       channel: this.resolveChannel(context),
       recipientId,
       content,
-      mediaUrl: options.mediaUrl,
-      mediaType: options.mediaType,
+      ...(options.mediaUrl !== undefined ? { mediaUrl: options.mediaUrl } : {}),
+      ...(options.mediaType !== undefined ? { mediaType: options.mediaType } : {}),
       guardContext: context ?? {},
     });
 

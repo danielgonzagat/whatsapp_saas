@@ -174,7 +174,7 @@ export async function resolveMessageFormatDecision(
       predicate: 'P(reply|message_type,hour,channel,concept)',
       context: { channel, concept, message_type: format },
     })),
-    baseline: options.includes(baseline) ? baseline : options[0],
+    ...(baseline !== undefined ? { baseline: options.includes(baseline) ? baseline : options[0] } : {}),
     outcomeKey: `message_format:${workspaceId}:${Date.now()}`,
   });
 

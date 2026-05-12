@@ -30,7 +30,7 @@ function nearestFollowUpBucket(
   return Object.entries(buckets).sort(
     ([, left], [, right]) =>
       Math.abs(left - requestedDelayHours) - Math.abs(right - requestedDelayHours),
-  )[0][0];
+  )[0]![0];
 }
 
 export async function chooseFollowUpTiming(input: {
@@ -71,8 +71,8 @@ export async function chooseFollowUpTiming(input: {
       meta: {
         baseline,
         chosen: timing.bucket,
-        outcomeKey: timing.outcomeKey,
-        reasonInternal: timing.reasonInternal,
+        ...(timing.outcomeKey !== undefined ? { outcomeKey: timing.outcomeKey } : {}),
+        ...(timing.reasonInternal !== undefined ? { reasonInternal: timing.reasonInternal } : {}),
       },
     };
   } catch (error: unknown) {
@@ -108,12 +108,13 @@ export function predecidedHumanTransfer(args: ToolArgs): {
   fallback?: boolean;
 } {
   const decision = isRecord(args.handoffDecision) ? args.handoffDecision : {};
+  const conf =
+    typeof decision.confidence === 'number' && Number.isFinite(decision.confidence)
+      ? decision.confidence
+      : undefined;
   return {
     action: readString(decision.action, 'transfer_now'),
-    confidence:
-      typeof decision.confidence === 'number' && Number.isFinite(decision.confidence)
-        ? decision.confidence
-        : undefined,
+    ...(conf !== undefined ? { confidence: conf } : {}),
     fallback: decision.fallback === true,
   };
 }

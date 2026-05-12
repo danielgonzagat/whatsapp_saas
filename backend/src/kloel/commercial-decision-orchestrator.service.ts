@@ -222,19 +222,25 @@ export class CommercialDecisionOrchestratorService {
       humanTransferDecision = transfer;
     }
 
-    const setupContext = channelSetup
-      ? {
-          arsenalCount: channelSetup.arsenal.length,
-          productCount: channelSetup.selectedProductIds.length,
-          tone: channelSetup.config?.tone,
-        }
+    const channelTone = channelSetup?.config?.tone;
+    const setupContext: { arsenalCount: number; productCount: number; tone?: string | null } | undefined = channelSetup
+      ? (channelTone != null
+        ? {
+            arsenalCount: channelSetup.arsenal.length,
+            productCount: channelSetup.selectedProductIds.length,
+            tone: channelTone,
+          }
+        : {
+            arsenalCount: channelSetup.arsenal.length,
+            productCount: channelSetup.selectedProductIds.length,
+          })
       : undefined;
     const replyDraft = buildReplyDraft({
       aggressiveness: aggressiveness.aggressiveness,
       concept,
-      couponAction,
-      productOffer,
-      setup: setupContext,
+      ...(couponAction !== undefined ? { couponAction } : {}),
+      ...(productOffer !== undefined ? { productOffer } : {}),
+      ...(setupContext !== undefined ? { setup: setupContext } : {}),
       tone: tone.tone,
     });
     const actions: PredecidedAction[] = [];

@@ -90,25 +90,24 @@ export class EmailInboundController {
       };
     }
 
+    const attachments = body.attachments?.map((att) => ({
+      ...(att.filename !== undefined ? { filename: att.filename } : {}),
+      ...((att.contentBase64 || att.content) !== undefined
+        ? { contentBase64: att.contentBase64 || att.content }
+        : {}),
+      ...((att.mimeType || att.type) !== undefined ? { mimeType: att.mimeType || att.type } : {}),
+      ...(att.url !== undefined ? { url: att.url } : {}),
+    }));
     const email: InboundEmail = {
       from: body.from || '',
-      fromName: body.fromName,
+      ...(body.fromName !== undefined ? { fromName: body.fromName } : {}),
       to: body.to || '',
       subject: body.subject || 'Sem assunto',
-      bodyText: body.bodyText || body.text,
-      bodyHtml: body.bodyHtml || body.html,
-      attachments: body.attachments?.map((att) => ({
-        ...(att.filename !== undefined ? { filename: att.filename } : {}),
-        ...((att.contentBase64 || att.content) !== undefined
-          ? { contentBase64: att.contentBase64 || att.content }
-          : {}),
-        ...((att.mimeType || att.type) !== undefined
-          ? { mimeType: att.mimeType || att.type }
-          : {}),
-        ...(att.url !== undefined ? { url: att.url } : {}),
-      })),
-      messageId: body.messageId,
-      timestamp: body.timestamp,
+      ...(body.bodyText || body.text ? { bodyText: body.bodyText || body.text } : {}),
+      ...(body.bodyHtml || body.html ? { bodyHtml: body.bodyHtml || body.html } : {}),
+      ...(attachments !== undefined ? { attachments } : {}),
+      ...(body.messageId !== undefined ? { messageId: body.messageId } : {}),
+      ...(body.timestamp !== undefined ? { timestamp: body.timestamp } : {}),
     };
 
     if (!email.from) {

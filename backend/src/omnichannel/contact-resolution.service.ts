@@ -19,8 +19,9 @@ export class OmnichannelContactResolutionService {
     const channel = msg.channel;
     const value = this.extractChannelValue(channel, msg.from, msg.externalId);
 
+    const resolvedName = options?.name || msg.fromName;
     return this.channelIdentifier.resolve(channel, value, msg.workspaceId, {
-      name: options?.name || msg.fromName,
+      ...(resolvedName !== undefined ? { name: resolvedName } : {}),
       isPrimary: true,
       metadata: {
         rawFrom: msg.from,

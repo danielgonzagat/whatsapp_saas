@@ -75,13 +75,13 @@ export class BrainEventSpineService {
       await this.prisma.autopilotEvent.create({
         data: {
           workspaceId: params.workspaceId,
-          contactId: params.contactId,
+          ...(params.contactId !== undefined ? { contactId: params.contactId } : {}),
           intent: params.intent,
           action: params.action,
           status: params.status,
-          reason: params.reason,
-          responseText: params.responseText,
-          meta: params.meta,
+          ...(params.reason !== undefined ? { reason: params.reason } : {}),
+          ...(params.responseText !== undefined ? { responseText: params.responseText } : {}),
+          ...(params.meta !== undefined ? { meta: params.meta } : {}),
         },
       });
     } catch (error: unknown) {

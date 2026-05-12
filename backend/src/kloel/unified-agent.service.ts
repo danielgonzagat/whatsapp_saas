@@ -232,9 +232,9 @@ Mensagem: ${message}`,
 
     if (predecidedActions.length > 0) {
       const actionsList = await executePredecidedAgentActions({
-        allowedTools: params.allowedTools,
+        ...(params.allowedTools !== undefined ? { allowedTools: params.allowedTools } : {}),
         contactId,
-        context,
+        ...(context !== undefined ? { context } : {}),
         executeTool: this.executeToolAction.bind(this),
         logAutopilotEvent: this.actions.logAutopilotEvent.bind(this.actions),
         phone,
@@ -257,7 +257,7 @@ Mensagem: ${message}`,
 
       return {
         actions: actionsList,
-        response: draftedReply,
+        ...(draftedReply !== undefined ? { response: draftedReply } : {}),
         intent,
         confidence: actionsList.length > 0 ? 0.85 : 0.55,
       };

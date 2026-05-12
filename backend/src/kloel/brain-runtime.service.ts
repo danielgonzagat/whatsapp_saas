@@ -121,7 +121,7 @@ export class BrainRuntimeService {
     const allowedTools = this.capabilities.allowedFor(source);
     const predecidedActions = buildPredecidedActions({
       allowedTools,
-      context: params.body.context,
+      ...(params.body.context !== undefined ? { context: params.body.context } : {}),
       intent,
     });
 
@@ -179,7 +179,7 @@ export class BrainRuntimeService {
       } satisfies Prisma.InputJsonObject;
       await this.events.record({
         workspaceId: params.workspaceId,
-        contactId: params.body.contactId,
+        ...(params.body.contactId !== undefined ? { contactId: params.body.contactId } : {}),
         intent,
         action: actionSucceeded ? 'capability.executed' : 'capability.failed',
         status: actionSucceeded ? 'executed' : 'error',
@@ -189,7 +189,7 @@ export class BrainRuntimeService {
       if (domainEvent) {
         await this.events.record({
           workspaceId: params.workspaceId,
-          contactId: params.body.contactId,
+          ...(params.body.contactId !== undefined ? { contactId: params.body.contactId } : {}),
           intent,
           action: domainEvent,
           status: actionSucceeded ? 'executed' : 'error',
@@ -200,11 +200,11 @@ export class BrainRuntimeService {
 
     await this.events.record({
       workspaceId: params.workspaceId,
-      contactId: params.body.contactId,
+      ...(params.body.contactId !== undefined ? { contactId: params.body.contactId } : {}),
       intent,
       action: 'brain.decide',
       status: 'executed',
-      responseText: result.response,
+      ...(result.response !== undefined ? { responseText: result.response } : {}),
       meta: {
         source,
         requestId,
@@ -217,12 +217,12 @@ export class BrainRuntimeService {
 
     return {
       source,
-      conversationId: thread?.id,
-      title: resolvedTitle,
+      ...(thread?.id !== undefined ? { conversationId: thread.id } : {}),
+      ...(resolvedTitle !== undefined ? { title: resolvedTitle } : {}),
       intent: result.intent || intent,
       requestId,
       confidence: result.confidence,
-      response: result.response,
+      ...(result.response !== undefined ? { response: result.response } : {}),
       actions: result.actions,
     };
   }
@@ -315,7 +315,7 @@ export class BrainRuntimeService {
       mode: 'observe',
       source,
       requestId,
-      question: params.body.question,
+      ...(params.body.question !== undefined ? { question: params.body.question } : {}),
       workspace,
       products: products.length,
       capabilities: this.capabilities.list().length,

@@ -201,7 +201,10 @@ export async function upsertAccountWorkItem(
   const entityKey = String(input.entityId || 'global');
   const id = `${workspaceId}:${input.kind}:${input.entityType}:${entityKey}`;
   const previous = await findPreviousWorkItem(deps, workspaceId, id);
-  const updateData = buildWorkItemUpdateData(input, null) as Prisma.AgentWorkItemUpdateInput;
+  const updateData = buildWorkItemUpdateData(
+    input,
+    Prisma.JsonNull,
+  ) as Prisma.AgentWorkItemUpdateInput;
   const createDataBase = buildWorkItemUpdateData(input, undefined);
   const { blockedBy: _cb, evidence: _ce, metadata: _cm, ...createDataClean } = createDataBase;
   const createData = {

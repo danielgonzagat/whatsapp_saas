@@ -286,8 +286,8 @@ export class ChannelSetupService {
 function validateArsenalUploadMime(type: string, file: ChannelArsenalUploadFile): string {
   const detectedMime = detectUploadedMime({
     buffer: file.buffer,
-    mimetype: file.mimetype,
-    originalname: file.originalname,
+    ...(file.mimetype !== undefined ? { mimetype: file.mimetype } : {}),
+    ...(file.originalname !== undefined ? { originalname: file.originalname } : {}),
   });
   if (!detectedMime) {
     throw new BadRequestException('assinatura_do_arquivo_invalida');

@@ -7,6 +7,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ArrowLeft, Check, Eye, EyeOff, X } from 'lucide-react';
+import Link from 'next/link';
 import { useCallback, useEffect, useState, useId } from 'react';
 import { authApi } from '@/lib/api/auth';
 import { KloelMushroomVisual, KloelWordmark } from '../KloelBrand';
@@ -464,13 +465,13 @@ export function AuthModal({
                     />
                     <label htmlFor={`${fid}-terms`} className="text-sm text-gray-600">
                       {kloelT(`Eu concordo com os`)}{' '}
-                      <a href="#" className="text-gray-900 hover:underline">
+                      <Link href="/terms" className="text-gray-900 hover:underline">
                         {kloelT(`Termos de Uso`)}
-                      </a>{' '}
+                      </Link>{' '}
                       {kloelT(`e a`)}{' '}
-                      <a href="#" className="text-gray-900 hover:underline">
+                      <Link href="/privacy" className="text-gray-900 hover:underline">
                         {kloelT(`Politica de Privacidade`)}
-                      </a>
+                      </Link>
                       .
                     </label>
                   </div>
