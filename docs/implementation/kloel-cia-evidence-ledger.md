@@ -2,6 +2,36 @@
 
 Generated: 2026-05-11
 
+## 2026-05-12T14:45:00-03:00 - W9 - Billing Mock Guard Regression Spec
+
+- ID-visao: V19, V23.
+- Escopo: add a focused backend regression spec proving billing mock checkout cannot activate when Stripe is unavailable in production and cannot activate outside production unless mock mode is explicitly enabled.
+- Arquivos alterados:
+  - `backend/src/billing/billing-checkout-webhook.service.spec.ts`
+  - `docs/implementation/kloel-cia-evidence-ledger.md`
+- Comportamento entregue:
+  - Production `BILLING_MOCK_MODE=true` with no Stripe client rejects before any subscription write.
+  - Non-production no-Stripe/no-mock rejects before any subscription write.
+- Comando(s) rodados:
+  - `npm --prefix backend test -- billing-checkout-webhook.service.spec.ts --runInBand`
+  - `npm run backend:typecheck`
+  - `npm exec eslint -- src/billing/billing-checkout-webhook.service.spec.ts` from `backend/`
+  - `node scripts/ops/check-governance-boundary.mjs && git diff --check`
+- Resultado:
+  - Jest passed: 1 suite / 2 tests.
+  - Backend typecheck passed.
+  - Focused backend ESLint passed.
+  - Governance boundary and whitespace checks passed.
+- Evidencia:
+  - Current session command outputs for Jest, backend typecheck, focused ESLint, governance boundary, and whitespace checks.
+- Riscos remanescentes:
+  - This adds regression proof for existing production guard behavior; it does not remove development mock mode.
+  - Live billing checkout still depends on Stripe env/provider configuration.
+- Plano de rollback:
+  - Remove the regression spec only if billing mock mode is deleted entirely or replaced with a different explicit test harness.
+- Referencia subagent:
+  - Batch 18 OpenCode read-only workers under `artifacts/opencode-live/kloel-cia-batch-18-v23-readonly-2026-05-12/` are rejected as complete evidence because they exited with code `-1` and produced only partial progress lines.
+
 ## 2026-05-12T14:38:00-03:00 - W9 - Checkout Boleto Route Truthfulness
 
 - ID-visao: V19, V23.
