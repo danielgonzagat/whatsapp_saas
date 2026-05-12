@@ -48,6 +48,10 @@ function normalizeMarketingTab(tab: string): string {
   return tab === 'sms' ? 'conversas' : tab;
 }
 
+// Module-level constant so referential identity is stable across renders
+// (otherwise hooks that depend on it would re-fire every render).
+const CHANNEL_KEYS = ['whatsapp', 'instagram', 'facebook', 'tiktok', 'email'] as const;
+
 export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab?: string }) {
   const { isMobile } = useResponsiveViewport();
   const router = useRouter();
@@ -181,17 +185,39 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
     }
   }, [userEmail]);
 
-  const channelKeys = ['whatsapp', 'instagram', 'facebook', 'tiktok', 'email'] as const;
-  const activeChannelKey = channelKeys.includes(tab as (typeof channelKeys)[number])
+  const activeChannelKey = CHANNEL_KEYS.includes(tab as (typeof CHANNEL_KEYS)[number])
     ? tab
     : null;
+
+  // Track which channels have already received the meta=success auto-advance.
+  // Without this guard the effect would re-fire whenever tab switches while
+  // `?meta=success` is still in the URL, kicking innocent channels into step 2.
+  const autoAdvancedChannels = useRef<Set<string>>(new Set());
+
+  // Strip ?meta=success&channel=... from the URL after handling so a tab
+  // switch or refresh doesn't replay the auto-advance.
+  const clearMetaQuery = useCallback(() => {
+    if (!pathname || !searchParams) return;
+    const next = new URLSearchParams(searchParams.toString());
+    let touched = false;
+    for (const key of ['meta', 'reason', 'channel']) {
+      if (next.has(key)) {
+        next.delete(key);
+        touched = true;
+      }
+    }
+    if (!touched) return;
+    const qs = next.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  }, [pathname, searchParams, router]);
 
   useEffect(() => {
     if (metaQueryState === 'success') {
       setConnectionMessage(
         'Conta Meta conectada com sucesso. O canal ja voltou para o Marketing no contexto certo.',
       );
-      if (activeChannelKey) {
+      if (activeChannelKey && !autoAdvancedChannels.current.has(activeChannelKey)) {
+        autoAdvancedChannels.current.add(activeChannelKey);
         apiFetch('/marketing/connect/channel-setup', {
           method: 'POST',
           body: { channel: activeChannelKey, currentStep: 1 },
@@ -207,15 +233,21 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
                   : { currentStep: 1, completedAt: null },
               };
             });
+            clearMetaQuery();
           })
-          .catch(() => {});
+          .catch(() => {
+            // Even on failure, drop the query params so the user is not stuck
+            // in a re-fire loop. The connectionMessage already surfaces the
+            // OAuth success; the wizard auto-advance is best-effort.
+            clearMetaQuery();
+          });
       }
     } else if (metaQueryState === 'error') {
       setConnectionMessage(
         `Falha na conexao Meta${metaQueryReason ? `: ${metaQueryReason}` : '.'}`,
       );
     }
-  }, [metaQueryReason, metaQueryState, activeChannelKey]);
+  }, [metaQueryReason, metaQueryState, activeChannelKey, clearMetaQuery]);
 
   const { stats: realStats } = useMarketingStats();
   const { channels: realChannels } = useMarketingChannels();

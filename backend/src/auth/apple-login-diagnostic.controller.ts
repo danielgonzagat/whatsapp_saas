@@ -21,20 +21,37 @@ interface AppleDiagnosticResponse {
   missingVars: string[];
 }
 
-const ARTIFACTS_DIR = resolve(process.cwd(), '..', 'artifacts', 'apple-validation');
+// Apple probe artifacts live at <repoRoot>/artifacts/apple-validation. The
+// controller is loaded from whatever cwd the backend boots in (cwd may be
+// `backend/` in dev, repo root from CI, /app in Docker, etc), so resolve by
+// probing both `<cwd>/artifacts` and `<cwd>/../artifacts` and pick whichever
+// exists. Allow an explicit override via `APPLE_VALIDATION_DIR`.
+function resolveArtifactsDir(): string {
+  const override = process.env.APPLE_VALIDATION_DIR?.trim();
+  if (override) return resolve(override);
+  const candidates = [
+    resolve(process.cwd(), 'artifacts', 'apple-validation'),
+    resolve(process.cwd(), '..', 'artifacts', 'apple-validation'),
+  ];
+  for (const c of candidates) {
+    if (existsSync(c)) return c;
+  }
+  return candidates[0]!;
+}
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
 function readLatestProbe(): AppleProbeResult | null {
   try {
-    if (!existsSync(ARTIFACTS_DIR)) return null;
-    const files = readdirSync(ARTIFACTS_DIR)
+    const dir = resolveArtifactsDir();
+    if (!existsSync(dir)) return null;
+    const files = readdirSync(dir)
       .filter((f) => f.endsWith('.json'))
       .sort()
       .reverse();
     if (files.length === 0) return null;
     const latest = files[0];
     if (!latest) return null;
-    const content = readFileSync(resolve(ARTIFACTS_DIR, latest), 'utf8');
+    const content = readFileSync(resolve(dir, latest), 'utf8');
     return JSON.parse(content) as AppleProbeResult;
   } catch {
     return null;
