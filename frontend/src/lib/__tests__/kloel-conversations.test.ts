@@ -26,7 +26,13 @@ vi.mock('../api/core', () => ({
   apiFetch: vi.fn(),
 }));
 
-import { streamAuthenticatedKloelMessage } from '../kloel-conversations';
+import { apiFetch } from '../api/core';
+import {
+  sendAuthenticatedKloelMessage,
+  streamAuthenticatedKloelMessage,
+} from '../kloel-conversations';
+
+const apiFetchMock = vi.mocked(apiFetch);
 
 function buildSseResponse(lines: string[]) {
   const encoder = new TextEncoder();
@@ -46,6 +52,54 @@ function buildSseResponse(lines: string[]) {
     },
   });
 }
+
+describe('sendAuthenticatedKloelMessage', () => {
+  beforeEach(() => {
+    mutateMock.mockReset();
+    apiFetchMock.mockReset();
+  });
+
+  it('passes abort signals to authenticated sync requests', async () => {
+    const controller = new AbortController();
+    apiFetchMock.mockResolvedValue({
+      status: 200,
+      data: {
+        response: 'Resposta',
+        conversationId: 'thread-1',
+        title: 'Nova conversa',
+      },
+    });
+
+    await expect(
+      sendAuthenticatedKloelMessage(
+        {
+          message: 'oi',
+          conversationId: 'thread-1',
+          mode: 'chat',
+        },
+        {
+          signal: controller.signal,
+        },
+      ),
+    ).resolves.toMatchObject({
+      response: 'Resposta',
+      conversationId: 'thread-1',
+    });
+
+    expect(apiFetchMock).toHaveBeenCalledWith('/kloel/think/sync', {
+      method: 'POST',
+      body: {
+        message: 'oi',
+        conversationId: 'thread-1',
+        mode: 'chat',
+        companyContext: undefined,
+        metadata: undefined,
+      },
+      signal: controller.signal,
+    });
+    expect(mutateMock).toHaveBeenCalledWith(expect.any(Function));
+  });
+});
 
 describe('streamAuthenticatedKloelMessage', () => {
   beforeEach(() => {
