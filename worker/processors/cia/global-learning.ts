@@ -208,6 +208,10 @@ export function computeGlobalPatterns(signals: GlobalLearningSignal[]): GlobalLe
     );
 }
 
+/**
+ * @deprecated Decision authority migrated to MindService.resolveBestVariant (backend).
+ * Kept as pure aggregation for training data only. See ADR 0004.
+ */
 export function buildGlobalStrategy(input: {
   patterns: GlobalLearningPattern[];
   domain: string;
