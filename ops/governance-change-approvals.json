@@ -1,1 +1,79 @@
-[]
+[
+  {
+    "file": ".codacy.yml",
+    "rule": "governanceChange",
+    "reason": "Human approval granted in chat on 2026-05-12 to commit and push accumulated Kloel CIA work including protected governance changes.",
+    "issue": "user-approved-kloel-cia-accumulated-publication-2026-05-12",
+    "expires": "2026-05-19"
+  },
+  {
+    "filePrefix": ".github/workflows/",
+    "rule": "governanceChange",
+    "reason": "Human approval granted in chat on 2026-05-12 to commit and push accumulated Kloel CIA work including protected governance changes.",
+    "issue": "user-approved-kloel-cia-accumulated-publication-2026-05-12",
+    "expires": "2026-05-19"
+  },
+  {
+    "filePrefix": ".husky/",
+    "rule": "governanceChange",
+    "reason": "Human approval granted in chat on 2026-05-12 to commit and push accumulated Kloel CIA work including protected governance changes.",
+    "issue": "user-approved-kloel-cia-accumulated-publication-2026-05-12",
+    "expires": "2026-05-19"
+  },
+  {
+    "file": "AGENTS.md",
+    "rule": "governanceChange",
+    "reason": "Human approval granted in chat on 2026-05-12 to commit and push accumulated Kloel CIA work including protected governance changes.",
+    "issue": "user-approved-kloel-cia-accumulated-publication-2026-05-12",
+    "expires": "2026-05-19"
+  },
+  {
+    "file": "backend/eslint.config.mjs",
+    "rule": "governanceChange",
+    "reason": "Human approval granted in chat on 2026-05-12 to commit and push accumulated Kloel CIA work including protected governance changes.",
+    "issue": "user-approved-kloel-cia-accumulated-publication-2026-05-12",
+    "expires": "2026-05-19"
+  },
+  {
+    "file": "frontend/eslint.config.mjs",
+    "rule": "governanceChange",
+    "reason": "Human approval granted in chat on 2026-05-12 to commit and push accumulated Kloel CIA work including protected governance changes.",
+    "issue": "user-approved-kloel-cia-accumulated-publication-2026-05-12",
+    "expires": "2026-05-19"
+  },
+  {
+    "filePrefix": "ops/",
+    "rule": "governanceChange",
+    "reason": "Human approval granted in chat on 2026-05-12 to commit and push accumulated Kloel CIA work including protected governance changes.",
+    "issue": "user-approved-kloel-cia-accumulated-publication-2026-05-12",
+    "expires": "2026-05-19"
+  },
+  {
+    "file": "package.json",
+    "rule": "governanceChange",
+    "reason": "Human approval granted in chat on 2026-05-12 to commit and push accumulated Kloel CIA work including protected governance changes.",
+    "issue": "user-approved-kloel-cia-accumulated-publication-2026-05-12",
+    "expires": "2026-05-19"
+  },
+  {
+    "file": "ratchet.json",
+    "rule": "governanceChange",
+    "reason": "Human approval granted in chat on 2026-05-12 to commit and push accumulated Kloel CIA work including protected governance changes.",
+    "issue": "user-approved-kloel-cia-accumulated-publication-2026-05-12",
+    "expires": "2026-05-19"
+  },
+  {
+    "filePrefix": "scripts/ops/",
+    "rule": "governanceChange",
+    "reason": "Human approval granted in chat on 2026-05-12 to commit and push accumulated Kloel CIA work including protected governance changes.",
+    "issue": "user-approved-kloel-cia-accumulated-publication-2026-05-12",
+    "expires": "2026-05-19"
+  },
+  {
+    "file": "worker/eslint.config.mjs",
+    "rule": "governanceChange",
+    "reason": "Human approval granted in chat on 2026-05-12 to commit and push accumulated Kloel CIA work including protected governance changes.",
+    "issue": "user-approved-kloel-cia-accumulated-publication-2026-05-12",
+    "expires": "2026-05-19"
+  }
+]
