@@ -9,7 +9,7 @@ Wave 0 discovery artifacts are active and W1-W9 have focused code-side slices de
 ## Branch atual e ultimo commit
 
 - Branch: `chore/purga-total-debt`
-- HEAD: pending local W9 SMS marketing stub removal commit on top of `546a546f5 [W9] Registrar handoff estoque ficticio`
+- HEAD: `3dddfb6a6 [W9] Remover stub SMS do marketing`
 - Note: prior handoff referenced `feat/kloel-cia-convergence`, but the live checkout is currently `chore/purga-total-debt`; do not infer branch state from older docs.
 
 ## Gates passados na sessao
