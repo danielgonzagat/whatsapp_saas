@@ -307,6 +307,13 @@ async function handleQueueFailedEvent(
 
 const _queues: Record<string, BullQueue> = {};
 
+export function getDlqQueue(queue: BullQueue): BullQueue {
+  if (!_dlqQueues[queue.name]) {
+    _dlqQueues[queue.name] = new BullQueue(`${queue.name}-dlq`, getQueueOptions());
+  }
+  return _dlqQueues[queue.name];
+}
+
 function getOrCreateQueue(name: string): BullQueue {
   if (!_queues[name]) {
     log(`📦 [QUEUE] Criando fila "${name}" (lazy)...`);

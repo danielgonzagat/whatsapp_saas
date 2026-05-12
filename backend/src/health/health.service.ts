@@ -1,10 +1,9 @@
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import { Injectable, Logger } from '@nestjs/common';
-import { Queue } from 'bullmq';
 import type { Redis } from 'ioredis';
 import { forEachSequential } from '../common/async-sequence';
 import { PrismaService } from '../prisma/prisma.service';
-import { connection, queueOptions, queueRegistry } from '../queue/queue';
+import { getDlqQueue, queueRegistry } from '../queue/queue';
 // Health service only reads queue state — no jobs added, no jobId/deduplication needed.
 
 const healthLogger = new Logger('HealthService');
@@ -30,10 +29,7 @@ export class HealthService {
 
     await forEachSequential(Object.values(queueRegistry), async (queue) => {
       const mainCounts = await queue.getJobCounts('waiting', 'active', 'delayed', 'failed');
-      const dlq = new Queue(`${queue.name}-dlq`, {
-        ...queueOptions,
-        connection,
-      });
+      const dlq = getDlqQueue(queue);
       const dlqCounts = await dlq.getJobCounts('waiting', 'active', 'delayed', 'failed');
 
       totalWaiting += mainCounts.waiting || 0;

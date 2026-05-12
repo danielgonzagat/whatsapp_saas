@@ -22,7 +22,7 @@ import { AdminAuthGuard } from '../auth/guards/admin-auth.guard';
 import { AdminPermissionGuard } from '../auth/guards/admin-permission.guard';
 import type { AuthenticatedAdmin } from '../auth/admin-token.types';
 import { forEachSequential } from '../../common/async-sequence';
-import { connection, queueOptions, queueRegistry } from '../../queue/queue';
+import { getDlqQueue, queueRegistry } from '../../queue/queue';
 import { RouteClass } from '../../common/throttler/route-class.decorator';
 
 @Public()
@@ -233,10 +233,7 @@ export class DlqController {
 
   private getDlq(name: string): Queue {
     const queue = this.getQueue(name);
-    return new Queue(`${queue.name}-dlq`, {
-      ...queueOptions,
-      connection,
-    });
+    return getDlqQueue(queue);
   }
 
   private serializeJob(
