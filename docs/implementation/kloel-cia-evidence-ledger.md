@@ -2,6 +2,35 @@
 
 Generated: 2026-05-11
 
+## 2026-05-12T14:38:00-03:00 - W9 - Checkout Boleto Route Truthfulness
+
+- ID-visao: V19, V23.
+- Escopo: harden the direct boleto order route so it does not claim a boleto exists when the current backend has no boleto data.
+- Arquivos alterados:
+  - `frontend/src/app/(checkout)/order/[orderId]/boleto/page.tsx`
+  - `docs/implementation/kloel-cia-evidence-ledger.md`
+  - `docs/implementation/kloel-cia-session-handoff.md`
+- Comportamento entregue:
+  - `/order/[orderId]/boleto` now distinguishes loading, real boleto data, PDF-only data, and no-boleto states.
+  - The route hides copy/PDF actions when no boleto data exists and instructs the buyer to return to Pix/card instead of showing an endless `Carregando boleto...` state.
+- Comando(s) rodados:
+  - `npx prettier --write frontend/src/app/'(checkout)'/order/'[orderId]'/boleto/page.tsx`
+  - `npm --prefix frontend run typecheck -- --pretty false`
+  - `npm exec eslint -- src/app/'(checkout)'/order/'[orderId]'/boleto/page.tsx` from `frontend/`
+- Resultado:
+  - Prettier completed.
+  - Frontend typecheck passed.
+  - Focused frontend ESLint passed.
+- Evidencia:
+  - Current session command outputs for Prettier, frontend typecheck, and focused ESLint.
+- Riscos remanescentes:
+  - No browser screenshot was captured for this route.
+  - The route still exists for historical boleto orders; full deprecation should wait for a migration/analytics decision.
+- Plano de rollback:
+  - Restore the previous always-boleto presentation only if live boleto support is reintroduced and the route is covered by provider smoke proof.
+- Referencia subagent:
+  - Based on V23 follow-up from accepted read-only audit and manual route inspection.
+
 ## 2026-05-12T14:32:00-03:00 - W9 - Checkout Boleto Copy and Link Cleanup
 
 - ID-visao: V19, V23.
