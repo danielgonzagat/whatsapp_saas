@@ -38,12 +38,43 @@ describe('MarketingConnectController channel setup', () => {
       status: 'synced',
       imported: 1,
     })),
+    sendMessageFromMailbox: jest.fn(async () => ({
+      provider: 'gmail',
+      status: 'sent',
+      sent: true,
+      messageId: 'gmail-send-1',
+    })),
+  };
+  const microsoftMailbox = {
+    getPrimaryMicrosoftStatus: jest.fn(async () => null),
+    buildAuthUrl: jest.fn(() => ({
+      provider: 'microsoft',
+      status: 'pending_oauth',
+      authUrl: 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize',
+    })),
+    completeOAuth: jest.fn(async () => ({
+      connected: true,
+      provider: 'microsoft',
+      status: 'connected',
+      email: 'owner@kloel.test',
+    })),
+  };
+  const imapSmtpMailbox = {
+    getPrimaryImapSmtpStatus: jest.fn(async () => null),
+    connectMailbox: jest.fn(async () => ({
+      connected: true,
+      provider: 'imap_smtp',
+      status: 'connected',
+      email: 'owner@kloel.test',
+    })),
   };
   const controller = new MarketingConnectController(
     prisma as never,
     metaWhatsApp as never,
     whatsappProviders as never,
     gmailMailbox as never,
+    microsoftMailbox as never,
+    imapSmtpMailbox as never,
   );
   const req = { user: { workspaceId: 'ws_1', email: 'owner@kloel.test' } };
 
@@ -147,10 +178,100 @@ describe('MarketingConnectController channel setup', () => {
     expect(result).toEqual(expect.objectContaining({ connected: true, provider: 'gmail' }));
   });
 
+  it('returns Microsoft mailbox auth URL for the authenticated workspace', () => {
+    const result = controller.getMicrosoftAuthUrl(req, '/marketing/email');
+
+    expect(microsoftMailbox.buildAuthUrl).toHaveBeenCalledWith('ws_1', '/marketing/email');
+    expect(result).toEqual(
+      expect.objectContaining({
+        provider: 'microsoft',
+        status: 'pending_oauth',
+        authUrl: expect.stringContaining('login.microsoftonline.com'),
+      }),
+    );
+  });
+
+  it('completes Microsoft OAuth through encrypted mailbox storage service', async () => {
+    const result = await controller.completeMicrosoftOAuth(req, {
+      code: 'auth-code',
+      state: 'signed-state',
+    });
+
+    expect(microsoftMailbox.completeOAuth).toHaveBeenCalledWith(
+      'ws_1',
+      'auth-code',
+      'signed-state',
+    );
+    expect(result).toEqual(expect.objectContaining({ connected: true, provider: 'microsoft' }));
+  });
+
+  it('uses Microsoft mailbox status in the Email channel overlay when connected', async () => {
+    findUnique.mockResolvedValueOnce({
+      providerSettings: { email: { enabled: false } },
+      name: 'Workspace Teste',
+    });
+    prisma.metaConnection.findUnique.mockResolvedValueOnce(null);
+    microsoftMailbox.getPrimaryMicrosoftStatus.mockResolvedValueOnce({
+      id: 'mailbox-ms-1',
+      email: 'owner@kloel.test',
+      provider: 'MICROSOFT',
+      status: 'ACTIVE',
+      connectedAt: new Date('2026-05-11T12:00:00.000Z'),
+      lastSyncAt: new Date('2026-05-11T12:05:00.000Z'),
+      lastErrorAt: null,
+      lastError: null,
+    });
+
+    const result = await controller.getConnectStatus(req);
+
+    expect(result.channels.email).toEqual(
+      expect.objectContaining({
+        connected: true,
+        status: 'connected',
+        provider: 'microsoft',
+        fromEmail: 'owner@kloel.test',
+        mailboxConnectionId: 'mailbox-ms-1',
+        mailboxProvider: 'MICROSOFT',
+        mailboxStatus: 'ACTIVE',
+      }),
+    );
+  });
+
+  it('connects IMAP+SMTP mailbox credentials through the mailbox service', async () => {
+    const body = {
+      email: 'owner@kloel.test',
+      imapHost: 'imap.kloel.test',
+      imapPassword: 'imap-password',
+      smtpHost: 'smtp.kloel.test',
+      smtpPassword: 'smtp-password',
+    };
+
+    const result = await controller.connectImapSmtpMailbox(req, body);
+
+    expect(imapSmtpMailbox.connectMailbox).toHaveBeenCalledWith('ws_1', body);
+    expect(result).toEqual(expect.objectContaining({ connected: true, provider: 'imap_smtp' }));
+  });
+
   it('triggers Gmail mailbox sync for the authenticated workspace', async () => {
     const result = await controller.syncGmailMailbox(req, { limit: 5 });
 
     expect(gmailMailbox.syncLatestInbox).toHaveBeenCalledWith('ws_1', 5);
     expect(result).toEqual(expect.objectContaining({ status: 'synced', imported: 1 }));
+  });
+
+  it('sends a Gmail mailbox test message from the connected customer mailbox', async () => {
+    const result = await controller.sendGmailMailboxTest(req, {
+      toEmail: 'lead@example.com',
+      subject: 'Teste',
+      html: '<p>Teste</p>',
+    });
+
+    expect(gmailMailbox.sendMessageFromMailbox).toHaveBeenCalledWith('ws_1', {
+      toEmail: 'lead@example.com',
+      subject: 'Teste',
+      html: '<p>Teste</p>',
+      proactive: true,
+    });
+    expect(result).toEqual(expect.objectContaining({ status: 'sent', sent: true }));
   });
 });

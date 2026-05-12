@@ -1,4 +1,15 @@
-import { Body, Controller, Get, Logger, Param, Post, Request, UseGuards } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  Logger,
+  Param,
+  Post,
+  Request,
+  UseGuards,
+} from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { forEachSequential } from '../common/async-sequence';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
@@ -13,6 +24,15 @@ import { RouteClass } from '../common/throttler/route-class.decorator';
 const NAME_RE = /\{\{name\}\}/g;
 
 const CHANNELS = ['WHATSAPP', 'INSTAGRAM', 'MESSENGER', 'EMAIL', 'TIKTOK'];
+
+type DirectEmailRecipient = { email: string; name?: string };
+type DirectEmailSendBody = {
+  subject?: string;
+  html?: string;
+  recipients?: DirectEmailRecipient[];
+  campaignName?: string;
+  approvalRequestId?: string;
+};
 
 /**
  * Marketing Command Center Controller
@@ -258,7 +278,11 @@ export class MarketingController {
     let totalResponseMs = 0;
     let responseCount = 0;
     if (recentInbound.length > 0) {
-      const convIds = [...new Set(recentInbound.map((m) => m.conversationId).filter((v): v is string => Boolean(v)))];
+      const convIds = [
+        ...new Set(
+          recentInbound.map((m) => m.conversationId).filter((v): v is string => Boolean(v)),
+        ),
+      ];
       const minCreatedAt = recentInbound.reduce(
         (min, m) => (m.createdAt < min ? m.createdAt : min),
         recentInbound[0]!.createdAt,
@@ -313,15 +337,91 @@ export class MarketingController {
   @Post('email/send')
   async sendEmailCampaign(
     @Request() req: { user: { workspaceId: string; email?: string } },
-    @Body()
-    body: {
-      subject: string;
-      html: string;
-      recipients: { email: string; name?: string }[];
-      campaignName?: string;
-    },
+    @Body() body: DirectEmailSendBody,
   ) {
     const workspaceId = req.user?.workspaceId;
+    const approvalRequestId =
+      typeof body.approvalRequestId === 'string' ? body.approvalRequestId.trim() : '';
+    let sendBody = body;
+
+    if (approvalRequestId) {
+      const approval = await this.prisma.approvalRequest.findFirst({
+        where: {
+          id: approvalRequestId,
+          workspaceId,
+          kind: 'marketing_email:direct_send',
+          entityType: 'MarketingEmailDirectSend',
+          state: 'APPROVED',
+        },
+        select: { id: true, payload: true },
+      });
+      if (!approval || !approval.payload || typeof approval.payload !== 'object') {
+        throw new BadRequestException('Approved direct email send request not found');
+      }
+      const payload = approval.payload as Record<string, unknown>;
+      const recipients: DirectEmailRecipient[] = Array.isArray(payload.recipients)
+        ? payload.recipients
+            .filter((recipient): recipient is Record<string, unknown> =>
+              Boolean(recipient && typeof recipient === 'object'),
+            )
+            .map((recipient) => {
+              const parsed: DirectEmailRecipient = {
+                email: typeof recipient.email === 'string' ? recipient.email : '',
+              };
+              if (typeof recipient.name === 'string') {
+                parsed.name = recipient.name;
+              }
+              return parsed;
+            })
+            .filter((recipient) => recipient.email)
+        : [];
+      sendBody = {
+        recipients,
+        ...(typeof payload.subject === 'string' ? { subject: payload.subject } : {}),
+        ...(typeof payload.html === 'string' ? { html: payload.html } : {}),
+        ...(typeof payload.campaignName === 'string' ? { campaignName: payload.campaignName } : {}),
+      };
+    }
+
+    if (!sendBody.subject || !sendBody.html || !sendBody.recipients?.length) {
+      throw new BadRequestException('Missing required fields: subject, html, recipients');
+    }
+    const subject = sendBody.subject!;
+    const htmlTemplate = sendBody.html!;
+    const recipients = sendBody.recipients!;
+
+    if (!approvalRequestId) {
+      const approval = await this.prisma.approvalRequest.create({
+        data: {
+          workspaceId,
+          kind: 'marketing_email:direct_send',
+          scope: 'workspace',
+          entityType: 'MarketingEmailDirectSend',
+          entityId: `direct-email:${Date.now()}`,
+          state: 'OPEN',
+          title: `Aprovar envio direto de email: ${sendBody.campaignName || subject}`,
+          prompt: `Envio direto de email para ${recipients.length} destinatario(s). Revise assunto, HTML e destinatarios antes de autorizar.`,
+          payload: {
+            subject,
+            html: htmlTemplate,
+            recipients,
+            campaignName: sendBody.campaignName || null,
+            requestedByEmail: req.user.email || null,
+            risk: 'high',
+            requiresApproval: true,
+          } as Prisma.InputJsonObject,
+        },
+        select: { id: true, state: true, title: true, createdAt: true },
+      });
+      return {
+        approvalRequired: true,
+        approvalRequestId: approval.id,
+        approvalState: approval.state,
+        approval,
+        message: 'Envio direto de email enviado para aprovacao humana antes do disparo.',
+      };
+    }
+
     // Since this controller doesn't inject EmailCampaignService, we use a simpler approach
     // Just validate and forward - the actual sending uses the same Resend/SendGrid infra
     const fromEmail = process.env.EMAIL_FROM || 'noreply@kloel.com';
@@ -331,23 +431,15 @@ export class MarketingController {
         ? 'sendgrid'
         : 'log';
 
-    if (!body.subject || !body.html || !body.recipients?.length) {
-      return { error: 'Missing required fields: subject, html, recipients' };
-    }
-
-    if (body.recipients.length > 500) {
-      return { error: 'Maximum 500 recipients per campaign' };
-    }
-
     this.logger.log(
-      `Email campaign "${body.campaignName || body.subject}" to ${body.recipients.length} recipients via ${provider}`,
+      `Email campaign "${sendBody.campaignName || subject}" to ${recipients.length} recipients via ${provider}`,
     );
 
     let sent = 0;
     let failed = 0;
 
-    await forEachSequential(body.recipients, async (recipient) => {
-      const personalizedBody = body.html.replace(NAME_RE, recipient.name || 'Cliente');
+    await forEachSequential(recipients, async (recipient) => {
+      const personalizedBody = htmlTemplate.replace(NAME_RE, recipient.name || 'Cliente');
       const footerHtml = buildUnsubscribeFooterHtml({
         email: recipient.email,
         workspaceId,
@@ -376,7 +468,7 @@ export class MarketingController {
             body: JSON.stringify({
               from: fromEmail,
               to: recipient.email,
-              subject: body.subject,
+              subject,
               html: htmlWithUnsub,
               headers: emailHeaders,
             }),
@@ -399,7 +491,7 @@ export class MarketingController {
             body: JSON.stringify({
               personalizations: [{ to: [{ email: recipient.email }], headers: emailHeaders }],
               from: { email: fromEmail },
-              subject: body.subject,
+              subject,
               content: [{ type: 'text/html', value: htmlWithUnsub }],
             }),
             signal: AbortSignal.timeout(30000),
@@ -410,7 +502,7 @@ export class MarketingController {
             failed++;
           }
         } else {
-          this.logger.log(`[DEV] Would send to ${recipient.email}: ${body.subject}`);
+          this.logger.log(`[DEV] Would send to ${recipient.email}: ${subject}`);
           sent++;
         }
         // Rate limit: 100ms between sends
@@ -420,6 +512,22 @@ export class MarketingController {
       }
     });
 
-    return { sent, failed, total: body.recipients.length, provider };
+    await this.prisma.approvalRequest.updateMany({
+      where: { id: approvalRequestId, workspaceId, state: 'APPROVED' },
+      data: {
+        state: 'COMPLETED',
+        respondedAt: new Date(),
+        response: {
+          action: 'approved_direct_email_send_executed',
+          executedAt: new Date().toISOString(),
+          sent,
+          failed,
+          total: recipients.length,
+          provider,
+        },
+      },
+    });
+
+    return { sent, failed, total: recipients.length, provider, approvalExecuted: true };
   }
 }

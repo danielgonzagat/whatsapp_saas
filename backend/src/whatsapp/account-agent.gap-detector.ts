@@ -149,12 +149,11 @@ export async function detectCatalogGapExt(
       title: `Criar produto ${approval.requestedProductName}`,
       prompt: approval.operatorPrompt,
       payload: toJson(approval),
-      respondedAt:
-        approval.status === 'APPROVED' ||
-        approval.status === 'REJECTED' ||
-        approval.status === 'COMPLETED'
-          ? new Date(approval.lastDetectedAt)
-          : undefined,
+      ...(approval.status === 'APPROVED' ||
+      approval.status === 'REJECTED' ||
+      approval.status === 'COMPLETED'
+        ? { respondedAt: new Date(approval.lastDetectedAt) }
+        : {}),
     },
     update: {
       state: approval.status,

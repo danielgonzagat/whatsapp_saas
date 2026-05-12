@@ -189,8 +189,8 @@ export class KycController {
         : undefined;
 
     return this.kycService.submitKyc(req.user.sub, req.user.workspaceId, {
-      ipAddress,
-      userAgent,
+      ...(ipAddress !== undefined ? { ipAddress } : {}),
+      ...(userAgent !== undefined ? { userAgent } : {}),
     });
   }
 

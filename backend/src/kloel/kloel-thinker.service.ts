@@ -313,18 +313,13 @@ export class KloelThinkerService {
     _executeLocalTool?: LocalToolExecutor,
   ): Promise<ThinkSyncResult> {
     try {
-      return await thinkSyncImpl(
-        request,
-        composerCapability,
-        effectiveCompanyContext,
-        {
-          replyEngine: this.replyEngine,
-          threadService: this.threadService,
-          composerService: this.composerService,
-          conversationStore: this.conversationStore,
-          planLimits: this.planLimits,
-        },
-      );
+      return await thinkSyncImpl(request, composerCapability, effectiveCompanyContext, {
+        replyEngine: this.replyEngine,
+        threadService: this.threadService,
+        composerService: this.composerService,
+        conversationStore: this.conversationStore,
+        planLimits: this.planLimits,
+      });
     } catch (error: unknown) {
       this.logger.error('Erro no KLOEL Thinker Sync:', error);
       throw error;

@@ -46,7 +46,7 @@ export class MediaService {
         type: 'VIDEO_GENERATION',
         status: 'PENDING',
         inputUrl: data.imageUrl,
-        prompt: data.prompt,
+        ...(data.prompt !== undefined ? { prompt: data.prompt } : {}),
       },
     });
     await this.mediaQueue.add('generate-video', {
@@ -88,23 +88,24 @@ export class MediaService {
       fileSize: file.size,
     });
 
-    const stored = await this.storage.upload(file.buffer, {
+    const uploadOpts: Record<string, unknown> = {
       filename: `${uuid()}${extname(file.originalname || '')}`,
-      mimeType: file.mimetype,
       folder: 'documents',
       workspaceId,
-    });
+    };
+    if (file.mimetype) uploadOpts.mimeType = file.mimetype;
+    const stored = await this.storage.upload(file.buffer, uploadOpts as { filename?: string; mimeType?: string; folder?: string; workspaceId?: string });
 
     const doc = await this.prisma.document.create({
       data: {
         workspaceId,
-        name: metadata.name || file.originalname,
-        fileName: file.originalname,
+        name: metadata.name || file.originalname || 'document',
+        fileName: file.originalname || 'file',
         filePath: stored.path,
-        mimeType: file.mimetype,
-        fileSize: file.size,
-        description: metadata.description,
-        category: metadata.category,
+        mimeType: file.mimetype || 'application/octet-stream',
+        fileSize: file.size || 0,
+        description: metadata.description || '',
+        category: metadata.category || '',
         isActive: true,
       },
     });

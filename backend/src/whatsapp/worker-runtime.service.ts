@@ -96,7 +96,7 @@ export class WorkerRuntimeService {
       return false;
     }
 
-    const fetchFn = globalThis.fetch?.bind(globalThis);
+    const fetchFn = globalThis.fetch ? globalThis.fetch.bind(globalThis) : undefined;
     if (!fetchFn) {
       return false;
     }
@@ -105,11 +105,11 @@ export class WorkerRuntimeService {
     const timeout = setTimeout(() => controller.abort(), this.getTimeoutMs());
 
     try {
-      const response = await fetchFn(workerHealthUrl, {
+      const response = await fetchFn(workerHealthUrl as string, {
         method: 'GET',
         headers: this.buildWorkerHealthHeaders(),
         signal: controller.signal,
-      });
+      } as RequestInit);
       return await this.readWorkerHealthResponse(response);
     } catch (error: unknown) {
       this.logWorkerHealthError(error);

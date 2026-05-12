@@ -233,7 +233,9 @@ export class BillingSubscriptionService {
         prioritySupport: true,
       },
     };
-    const limits = planLimits[plan.toUpperCase()] || planLimits.STARTER;
+    const limitsCandidate = planLimits[plan.toUpperCase()] ?? planLimits['STARTER'];
+    if (!limitsCandidate) return;
+    const limits = limitsCandidate;
     const workspace = await this.prisma.workspace.findUnique({
       where: { id: workspaceId },
       select: { providerSettings: true },

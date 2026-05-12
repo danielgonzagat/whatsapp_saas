@@ -24,7 +24,7 @@ export async function doAdminApprove(
   await deps.prisma.$transaction(
     async (tx: Prisma.TransactionClient) => {
       const a = await tx.agent.findFirst({
-        where: { id: agentId, workspaceId: { not: undefined } },
+        where: { id: agentId },
         select: { id: true, workspaceId: true, kycStatus: true },
       });
       if (!a) throw new NotFoundException('Agent not found');
@@ -124,6 +124,14 @@ export async function syncSellerConnectOnboarding(
 
   const businessType = fiscal.type === 'PJ' ? 'company' : 'individual';
   const address = deps.buildConnectAddress(fiscal);
+  const cleanAddress = {
+    ...(address.line1 !== undefined ? { line1: address.line1 } : {}),
+    ...(address.line2 !== undefined ? { line2: address.line2 } : {}),
+    ...(address.city !== undefined ? { city: address.city } : {}),
+    ...(address.state !== undefined ? { state: address.state } : {}),
+    ...(address.postalCode !== undefined ? { postalCode: address.postalCode } : {}),
+    country: address.country,
+  };
   const businessName =
     trimToUndefined(fiscal.nomeFantasia) ||
     trimToUndefined(fiscal.razaoSocial) ||
@@ -150,6 +158,12 @@ export async function syncSellerConnectOnboarding(
     agent.email,
     businessName,
   );
+  const website = trimToUndefined(agent.website);
+  const phone = trimToUndefined(agent.phone);
+  const dob = buildDateOfBirth(agent.birthDate);
+  const taxId = trimToUndefined(fiscal.cnpj);
+  const tosIp = trimToUndefined(context?.ipAddress);
+  const tosUa = trimToUndefined(context?.userAgent);
 
   await deps.connectService.submitOnboardingProfile({
     stripeAccountId,
@@ -158,50 +172,56 @@ export async function syncSellerConnectOnboarding(
     businessType,
     businessProfile: {
       name: businessName,
-      url: trimToUndefined(agent.website),
+      ...(website !== undefined ? { url: website } : {}),
       supportEmail: agent.email,
-      supportPhone: trimToUndefined(agent.phone),
+      ...(phone !== undefined ? { supportPhone: phone } : {}),
     },
-    individual:
-      firstName || lastName || representativeDocument || representativeName
-        ? {
-            firstName,
-            lastName,
+    ...(firstName || lastName || representativeDocument || representativeName
+      ? {
+          individual: {
+            ...(firstName !== undefined ? { firstName } : {}),
+            ...(lastName !== undefined ? { lastName } : {}),
             email: agent.email,
-            phone: trimToUndefined(agent.phone),
-            dateOfBirth: buildDateOfBirth(agent.birthDate),
-            idNumber: representativeDocument,
-            address,
-          }
-        : undefined,
-    company:
-      businessType === 'company'
-        ? {
+            ...(phone !== undefined ? { phone } : {}),
+            ...(dob !== undefined ? { dateOfBirth: dob } : {}),
+            ...(representativeDocument !== undefined
+              ? { idNumber: representativeDocument }
+              : {}),
+            address: cleanAddress,
+          },
+        }
+      : {}),
+    ...(businessType === 'company'
+      ? {
+          company: {
             name: trimToUndefined(fiscal.razaoSocial) || businessName,
-            taxId: trimToUndefined(fiscal.cnpj),
-            phone: trimToUndefined(agent.phone),
-            address,
-          }
-        : undefined,
-    externalAccount:
-      accountNumber && routingNumber
-        ? {
+            ...(taxId !== undefined ? { taxId } : {}),
+            ...(phone !== undefined ? { phone } : {}),
+            address: cleanAddress,
+          },
+        }
+      : {}),
+    ...(accountNumber && routingNumber
+      ? {
+          externalAccount: {
             country: 'BR',
             currency: 'BRL',
             accountHolderName: trimToUndefined(bankAccount.holderName) || businessName,
             accountHolderType: businessType,
             routingNumber,
             accountNumber,
-          }
-        : undefined,
-    tosAcceptance:
-      context?.ipAddress || context?.userAgent
-        ? {
+          },
+        }
+      : {}),
+    ...(tosIp || tosUa
+      ? {
+          tosAcceptance: {
             acceptedAt: new Date().toISOString(),
-            ipAddress: trimToUndefined(context.ipAddress),
-            userAgent: trimToUndefined(context.userAgent),
-          }
-        : undefined,
+            ...(tosIp !== undefined ? { ipAddress: tosIp } : {}),
+            ...(tosUa !== undefined ? { userAgent: tosUa } : {}),
+          },
+        }
+      : {}),
     metadata: {
       kycWorkspaceId: workspaceId,
       kycAgentId: agentId,

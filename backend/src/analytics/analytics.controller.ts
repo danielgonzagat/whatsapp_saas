@@ -1,13 +1,4 @@
-import {
-  BadRequestException,
-  Controller,
-  Get,
-  Param,
-  Query,
-  Req,
-  Request,
-  UseGuards,
-} from '@nestjs/common';
+import { BadRequestException, Controller, Get, Param, Query, Req, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
@@ -64,32 +55,32 @@ export class AnalyticsController {
 
   /** Get dashboard. */
   @Get('dashboard')
-  async getDashboard(@Request() req) {
+  async getDashboard(@Req() req: AuthenticatedRequest) {
     return this.analyticsService.getDashboardStats(req.user.workspaceId);
   }
 
   /** Get daily activity. */
   @Get('activity')
-  async getDailyActivity(@Request() req) {
+  async getDailyActivity(@Req() req: AuthenticatedRequest) {
     return this.analyticsService.getDailyActivity(req.user.workspaceId);
   }
 
   /** Get flow stats. */
   @Get('flow/:id')
-  async getFlowStats(@Request() req, @Param('id') id: string) {
+  async getFlowStats(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     return this.analyticsService.getFlowStats(req.user.workspaceId, id);
   }
 
   /** Get advanced. */
   @Get('advanced')
-  async getAdvanced(@Request() req, @Query() query: AnalyticsDateRangeQueryDto) {
+  async getAdvanced(@Req() req: AuthenticatedRequest, @Query() query: AnalyticsDateRangeQueryDto) {
     const { start, end } = parseDateRange(query.startDate, query.endDate);
     return this.advancedAnalyticsService.getAdvancedDashboard(req.user.workspaceId, start, end);
   }
 
   /** Get full report. */
   @Get('reports')
-  async getFullReport(@Request() req, @Query() query: AnalyticsReportQueryDto) {
+  async getFullReport(@Req() req: AuthenticatedRequest, @Query() query: AnalyticsReportQueryDto) {
     if (query.startDate && query.endDate) {
       const { start, end } = parseDateRange(query.startDate, query.endDate);
       return this.analyticsService.getFullReport(req.user.workspaceId, 'custom', start, end);
@@ -99,7 +90,7 @@ export class AnalyticsController {
 
   /** Get ai report. */
   @Get('reports/ai')
-  async getAIReport(@Request() req) {
+  async getAIReport(@Req() req: AuthenticatedRequest) {
     return this.analyticsService.getAIReport(req.user.workspaceId);
   }
 }

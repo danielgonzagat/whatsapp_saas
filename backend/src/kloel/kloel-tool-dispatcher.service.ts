@@ -1,4 +1,5 @@
 import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -9,6 +10,14 @@ import { KloelWhatsAppToolsService } from './kloel-whatsapp-tools.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 
 type UnknownRecord = Record<string, unknown>;
+type ApprovedToolExecutionResult = {
+  success: boolean;
+  approvalRequestId: string;
+  state: string;
+  executed: boolean;
+  toolName?: string;
+  result?: unknown;
+};
 
 /**
  * Dispatcher for KloelService tool execution. Extracted from kloel.service.ts
@@ -59,7 +68,7 @@ export class KloelToolDispatcherService {
     if (settings.billingSuspended === true) {
       return { success: false, error: 'billing_suspended' };
     }
-    this.logger.log(`Executando ferramenta: ${toolName}`, args);
+    this.logger.log(`Executando ferramenta: ${toolName}`, this.sanitizeDetails(args));
     try {
       switch (toolName) {
         case 'save_product':
@@ -72,6 +81,12 @@ export class KloelToolDispatcherService {
           return await this.chatToolsService.toolToggleAutopilot(workspaceId, asToolArgs(args));
         case 'set_brand_voice':
           return await this.chatToolsService.toolSetBrandVoice(workspaceId, asToolArgs(args));
+        case 'set_sales_policy':
+          return await this.chatToolsService.toolSetSalesPolicy(
+            workspaceId,
+            asToolArgs(args),
+            userId,
+          );
         case 'remember_user_info':
           return await this.chatToolsService.toolRememberUserInfo(
             workspaceId,
@@ -152,7 +167,7 @@ export class KloelToolDispatcherService {
             asToolArgs(args),
           );
         case 'create_campaign':
-          return await this.bizConfigToolsService.toolCreateCampaign(workspaceId, asToolArgs(args));
+          return await this.requestHighRiskApproval(workspaceId, toolName, args, userId);
         case 'update_billing_info':
           return await this.bizConfigToolsService.toolUpdateBillingInfo(
             workspaceId,
@@ -161,7 +176,7 @@ export class KloelToolDispatcherService {
         case 'get_billing_status':
           return await this.bizConfigToolsService.toolGetBillingStatus(workspaceId);
         case 'change_plan':
-          return await this.bizConfigToolsService.toolChangePlan(workspaceId, asToolArgs(args));
+          return await this.requestHighRiskApproval(workspaceId, toolName, args, userId);
         default:
           return { success: false, error: `Ferramenta desconhecida: ${toolName}` };
       }
@@ -226,6 +241,200 @@ export class KloelToolDispatcherService {
     return result;
   }
 
+  private async requestHighRiskApproval(
+    workspaceId: string,
+    toolName: string,
+    args: UnknownRecord,
+    userId?: string,
+  ): Promise<{ success: boolean; message?: string; [key: string]: unknown }> {
+    const approval = await this.prisma.approvalRequest.create({
+      data: {
+        workspaceId,
+        kind: `kloel_tool:${toolName}`,
+        scope: 'workspace',
+        entityType: 'KloelTool',
+        entityId: toolName,
+        state: 'OPEN',
+        title: this.titleForHighRiskTool(toolName),
+        prompt: this.promptForHighRiskTool(toolName, args),
+        payload: {
+          toolName,
+          args: this.sanitizeDetails(args),
+          requestedByUserId: userId || null,
+          risk: 'high',
+          requiresApproval: true,
+        } as Prisma.InputJsonObject,
+      },
+      select: {
+        id: true,
+        kind: true,
+        state: true,
+        title: true,
+        createdAt: true,
+      },
+    });
+
+    return {
+      success: true,
+      approvalRequired: true,
+      approvalRequestId: approval.id,
+      approvalState: approval.state,
+      message: 'Acao de alto risco enviada para aprovacao humana antes da execucao.',
+      approval,
+    };
+  }
+
+  async executeApprovedApprovalRequest(input: {
+    workspaceId: string;
+    approvalRequestId: string;
+    userId?: string;
+  }): Promise<ApprovedToolExecutionResult> {
+    const approval = await this.prisma.approvalRequest.findFirst({
+      where: {
+        id: input.approvalRequestId,
+        workspaceId: input.workspaceId,
+        state: 'APPROVED',
+      },
+    });
+    if (!approval) {
+      return {
+        success: false,
+        approvalRequestId: input.approvalRequestId,
+        state: 'APPROVED',
+        executed: false,
+      };
+    }
+
+    const payload = this.readApprovedToolPayload(approval.payload);
+    if (!payload || approval.kind !== `kloel_tool:${payload.toolName}`) {
+      return {
+        success: true,
+        approvalRequestId: approval.id,
+        state: approval.state,
+        executed: false,
+      };
+    }
+
+    if (!this.isSupportedApprovedHighRiskTool(payload.toolName)) {
+      return {
+        success: true,
+        approvalRequestId: approval.id,
+        state: approval.state,
+        executed: false,
+        toolName: payload.toolName,
+      };
+    }
+
+    try {
+      const result = await this.executeApprovedHighRiskTool(
+        input.workspaceId,
+        payload.toolName,
+        payload.args,
+      );
+      await this.prisma.approvalRequest.updateMany({
+        where: { id: approval.id, workspaceId: input.workspaceId, state: 'APPROVED' },
+        data: {
+          state: 'COMPLETED',
+          respondedAt: new Date(),
+          response: {
+            action: 'approved_executed',
+            executedToolName: payload.toolName,
+            executedByUserId: input.userId ?? null,
+            executedAt: new Date().toISOString(),
+            result: result as Prisma.InputJsonValue,
+          },
+        },
+      });
+      return {
+        success: true,
+        approvalRequestId: approval.id,
+        state: 'COMPLETED',
+        executed: true,
+        toolName: payload.toolName,
+        result,
+      };
+    } catch (error: unknown) {
+      await this.prisma.approvalRequest.updateMany({
+        where: { id: approval.id, workspaceId: input.workspaceId, state: 'APPROVED' },
+        data: {
+          state: 'FAILED',
+          respondedAt: new Date(),
+          response: {
+            action: 'approved_execution_failed',
+            executedToolName: payload.toolName,
+            executedByUserId: input.userId ?? null,
+            failedAt: new Date().toISOString(),
+            error: error instanceof Error ? error.message : String(error),
+          },
+        },
+      });
+      throw error;
+    }
+  }
+
+  private readApprovedToolPayload(payload: Prisma.JsonValue): {
+    toolName: string;
+    args: UnknownRecord;
+  } | null {
+    if (!this.isRecord(payload)) return null;
+    const toolName = typeof payload.toolName === 'string' ? payload.toolName.trim() : '';
+    if (!toolName || !this.isRecord(payload.args)) return null;
+    return { toolName, args: payload.args };
+  }
+
+  private async executeApprovedHighRiskTool(
+    workspaceId: string,
+    toolName: string,
+    args: UnknownRecord,
+  ): Promise<unknown> {
+    switch (toolName) {
+      case 'create_campaign':
+        return this.bizConfigToolsService.toolCreateCampaign(workspaceId, args as never);
+      case 'change_plan':
+        return this.bizConfigToolsService.toolChangePlan(workspaceId, args as never);
+      default:
+        throw new Error(`unsupported_approved_tool:${toolName}`);
+    }
+  }
+
+  private isSupportedApprovedHighRiskTool(toolName: string): boolean {
+    return toolName === 'create_campaign' || toolName === 'change_plan';
+  }
+
+  private titleForHighRiskTool(toolName: string): string {
+    if (toolName === 'create_campaign') {
+      return 'Aprovar criacao de campanha pela CIA';
+    }
+    if (toolName === 'change_plan') {
+      return 'Aprovar alteracao de plano pela CIA';
+    }
+    return `Aprovar acao ${toolName}`;
+  }
+
+  private promptForHighRiskTool(toolName: string, args: UnknownRecord): string {
+    if (toolName === 'create_campaign') {
+      const name =
+        typeof args.name === 'string' && args.name.trim() ? args.name.trim() : 'sem nome';
+      const audience =
+        typeof args.targetAudience === 'string' && args.targetAudience.trim()
+          ? args.targetAudience.trim()
+          : 'all';
+      return `A CIA quer criar a campanha "${name}" para o publico "${audience}". Revise antes de autorizar qualquer disparo.`;
+    }
+    if (toolName === 'change_plan') {
+      const plan =
+        typeof args.newPlan === 'string' && args.newPlan.trim()
+          ? args.newPlan.trim()
+          : typeof args.planId === 'string' && args.planId.trim()
+            ? args.planId.trim()
+            : typeof args.plan === 'string' && args.plan.trim()
+              ? args.plan.trim()
+              : 'plano solicitado';
+      return `A CIA quer alterar o plano do workspace para "${plan}". Revise impacto de cobranca e limites antes de autorizar.`;
+    }
+    return `A CIA solicitou a acao ${toolName}. Revise o contexto antes de executar.`;
+  }
+
   /**
    * Strip sensitive fields (password, token, secret, cpf, ssn, full PAN/card)
    * from a tool args record before persisting to the audit log.
@@ -238,6 +447,10 @@ export class KloelToolDispatcherService {
       out[k] = v;
     }
     return out;
+  }
+
+  private isRecord(value: unknown): value is UnknownRecord {
+    return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
   }
 
   private async toolSearchWeb(

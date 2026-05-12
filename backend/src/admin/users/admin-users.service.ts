@@ -155,6 +155,7 @@ export class AdminUsersService {
   private buildUpdateAuditDetails(
     current: { role: AdminRole; status: AdminUserStatus; name: string },
     patch: UpdateAdminUserInput,
+    revokedSessions: number,
   ): Prisma.InputJsonValue {
     return {
       before: { role: current.role, status: current.status, name: current.name },
@@ -163,7 +164,17 @@ export class AdminUsersService {
         status: patch.status ?? null,
         name: patch.name ?? null,
       },
+      revokedSessions,
     };
+  }
+
+  private shouldRevokeSessionsAfterUpdate(
+    current: { role: AdminRole; status: AdminUserStatus },
+    patch: UpdateAdminUserInput,
+  ): boolean {
+    const roleChanged = patch.role !== undefined && patch.role !== current.role;
+    const statusChanged = patch.status !== undefined && patch.status !== current.status;
+    return roleChanged || statusChanged;
   }
 
   /** Update. */
@@ -179,6 +190,7 @@ export class AdminUsersService {
 
         const data = this.buildAdminUserUpdateData(patch, current.role);
         const needsReseed = this.isRoleChange(patch, current.role);
+        const shouldRevokeSessions = this.shouldRevokeSessionsAfterUpdate(current, patch);
 
         const result = await tx.adminUser.update({ where: { id }, data });
 
@@ -198,13 +210,26 @@ export class AdminUsersService {
           }
         }
 
+        let revokedSessions = 0;
+        if (shouldRevokeSessions) {
+          const revoked = await tx.adminSession.updateMany({
+            where: {
+              adminUserId: id,
+              revokedAt: null,
+              expiresAt: { gt: new Date() },
+            },
+            data: { revokedAt: new Date() },
+          });
+          revokedSessions = revoked.count;
+        }
+
         await tx.adminAuditLog.create({
           data: {
             adminUserId: patch.actorId,
             action: 'admin.users.updated',
             entityType: 'AdminUser',
             entityId: id,
-            details: this.buildUpdateAuditDetails(current, patch),
+            details: this.buildUpdateAuditDetails(current, patch, revokedSessions),
           },
         });
 

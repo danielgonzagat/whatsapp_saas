@@ -42,6 +42,7 @@ describe('EmailMarketingService', () => {
   const deliveryCreate = jest.fn();
   const recipientUpdate = jest.fn();
   const recipientFindFirst = jest.fn();
+  const approvalFindFirst = jest.fn();
 
   const sendEmail = jest.fn();
   const opsAlertOnError = jest.fn();
@@ -52,6 +53,7 @@ describe('EmailMarketingService', () => {
     jest.clearAllMocks();
     workerCallback = null;
     sendEmail.mockResolvedValue(true);
+    approvalFindFirst.mockResolvedValue({ id: 'approval-email-1' });
 
     service = new EmailMarketingService(
       {
@@ -68,6 +70,9 @@ describe('EmailMarketingService', () => {
         emailCampaignRecipient: {
           update: recipientUpdate,
           findFirst: recipientFindFirst,
+        },
+        approvalRequest: {
+          findFirst: approvalFindFirst,
         },
       } as never,
       { sendEmail } as never,
@@ -104,10 +109,7 @@ describe('EmailMarketingService', () => {
         fromEmail: 'custom@test.com',
         fromName: 'Custom',
         replyTo: 'reply@test.com',
-        recipients: [
-          { email: 'a@test.com', name: 'A' },
-          { email: 'b@test.com' },
-        ],
+        recipients: [{ email: 'a@test.com', name: 'A' }, { email: 'b@test.com' }],
       });
 
       expect(campaignCreate).toHaveBeenCalledTimes(1);
@@ -261,9 +263,7 @@ describe('EmailMarketingService', () => {
         subject: 'Test',
         status: 'DRAFT',
         name: 'Test',
-        recipients: [
-          { id: 'r-1', email: 'a@test.com', name: 'A', status: 'PENDING' },
-        ],
+        recipients: [{ id: 'r-1', email: 'a@test.com', name: 'A', status: 'PENDING' }],
       });
       campaignUpdate.mockResolvedValue({});
       campaignFindFirstOrThrow.mockResolvedValue({ id: 'camp-1', status: 'SENT', recipients: [] });
@@ -285,6 +285,7 @@ describe('EmailMarketingService', () => {
           },
           emailCampaignDelivery: { create: deliveryCreate },
           emailCampaignRecipient: { update: recipientUpdate, findFirst: recipientFindFirst },
+          approvalRequest: { findFirst: approvalFindFirst },
         } as never,
         { sendEmail } as never,
         { alertOnCriticalError: opsAlertOnError } as never,
@@ -292,6 +293,21 @@ describe('EmailMarketingService', () => {
 
       const result = await noQService.enqueueSend('camp-1', 'ws-1');
       expect(result.status).toBe('SENT');
+    });
+
+    it('rejects enqueue when there is no approved send request', async () => {
+      campaignFindFirst.mockResolvedValueOnce({
+        id: 'camp-1',
+        workspaceId: 'ws-1',
+        status: 'DRAFT',
+        name: 'Test',
+      });
+      approvalFindFirst.mockResolvedValueOnce(null);
+
+      await expect(service.enqueueSend('camp-1', 'ws-1')).rejects.toThrow(
+        'Approved email campaign send request not found',
+      );
+      expect(campaignUpdate).not.toHaveBeenCalled();
     });
   });
 
@@ -443,9 +459,7 @@ describe('EmailMarketingService', () => {
       await workerCallback({ data: { campaignId: 'camp-1', workspaceId: 'ws-1' } });
 
       expect(sendEmail).toHaveBeenCalledTimes(1);
-      expect(sendEmail).toHaveBeenCalledWith(
-        expect.objectContaining({ to: 'b@test.com' }),
-      );
+      expect(sendEmail).toHaveBeenCalledWith(expect.objectContaining({ to: 'b@test.com' }));
     });
 
     it('records failed delivery when emailService returns false', async () => {
@@ -456,9 +470,7 @@ describe('EmailMarketingService', () => {
         subject: 'Hello',
         htmlBody: '<p>Hi</p>',
         status: 'SCHEDULED',
-        recipients: [
-          { id: 'r-1', email: 'a@test.com', name: 'A', status: 'PENDING' },
-        ],
+        recipients: [{ id: 'r-1', email: 'a@test.com', name: 'A', status: 'PENDING' }],
       });
       campaignUpdate.mockResolvedValue({});
       deliveryCreate.mockResolvedValue({});
@@ -497,9 +509,7 @@ describe('EmailMarketingService', () => {
         subject: 'Hello',
         htmlBody: '<p>Hi</p>',
         status: 'SCHEDULED',
-        recipients: [
-          { id: 'r-1', email: 'a@test.com', name: 'A', status: 'PENDING' },
-        ],
+        recipients: [{ id: 'r-1', email: 'a@test.com', name: 'A', status: 'PENDING' }],
       });
       campaignUpdate.mockResolvedValue({});
       deliveryCreate.mockResolvedValue({});

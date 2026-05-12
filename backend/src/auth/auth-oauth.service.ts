@@ -71,6 +71,8 @@ export class AuthOAuthService {
       select: { id: true, accessToken: true, refreshToken: true },
     });
 
+    const profileData = (profile.profileData as Prisma.InputJsonValue | null | undefined) || undefined;
+
     const data: Prisma.SocialAccountUncheckedCreateInput = {
       agentId,
       provider: profile.provider,
@@ -79,15 +81,14 @@ export class AuthOAuthService {
         .trim()
         .toLowerCase(),
       accessToken:
-        encryptedAccessToken || (options?.overwriteTokens ? null : current?.accessToken) || null,
+        encryptedAccessToken ?? (options?.overwriteTokens ? null : (current?.accessToken ?? null)),
       refreshToken:
-        encryptedRefreshToken || (options?.overwriteTokens ? null : current?.refreshToken) || null,
+        encryptedRefreshToken ??
+        (options?.overwriteTokens ? null : (current?.refreshToken ?? null)),
       tokenExpiresAt: profile.tokenExpiresAt || null,
       revokedAt: null,
       lastUsedAt: new Date(),
     };
-
-    const profileData = (profile.profileData as Prisma.InputJsonValue | null | undefined) || undefined;
     if (profileData !== undefined) {
       data.profileData = profileData;
     }
@@ -96,12 +97,16 @@ export class AuthOAuthService {
       where: { agentId_provider: { agentId, provider: profile.provider } },
       create: data,
       update: {
-        providerUserId: data.providerUserId,
-        email: data.email,
-        accessToken: data.accessToken,
-        refreshToken: data.refreshToken,
-        tokenExpiresAt: data.tokenExpiresAt,
-        profileData: data.profileData,
+        providerUserId: profile.providerId,
+        email: String(profile.email || '').trim().toLowerCase(),
+        accessToken:
+          encryptedAccessToken ??
+          (options?.overwriteTokens ? null : (current?.accessToken ?? null)),
+        refreshToken:
+          encryptedRefreshToken ??
+          (options?.overwriteTokens ? null : (current?.refreshToken ?? null)),
+        tokenExpiresAt: profile.tokenExpiresAt || null,
+        ...(profileData !== undefined ? { profileData } : {}),
         revokedAt: null,
         lastUsedAt: new Date(),
       },
@@ -152,9 +157,11 @@ export class AuthOAuthService {
     await this.rateLimitService.checkRateLimit(`oauth:tiktok:${data.ip || 'ip-unknown'}`);
     return this.tikTokAuthService.verifyAccessToken({
       accessToken: data.accessToken,
-      openId: data.openId,
-      refreshToken: data.refreshToken,
-      expiresInSeconds: data.expiresInSeconds,
+      ...(data.openId !== undefined ? { openId: data.openId } : {}),
+      ...(data.refreshToken !== undefined ? { refreshToken: data.refreshToken } : {}),
+      ...(data.expiresInSeconds !== undefined
+        ? { expiresInSeconds: data.expiresInSeconds }
+        : {}),
     });
   }
 
@@ -225,9 +232,9 @@ export class AuthOAuthService {
           normalizedProviderId,
           normalizedEmail,
           finalName,
-          image,
-          emailVerified,
-          syntheticEmail,
+          ...(image !== undefined ? { image } : {}),
+          ...(emailVerified !== undefined ? { emailVerified } : {}),
+          ...(syntheticEmail !== undefined ? { syntheticEmail } : {}),
         });
 
         await this.upsertSocialAccount(patched.id, {
@@ -248,8 +255,8 @@ export class AuthOAuthService {
         normalizedEmail,
         normalizedProvider,
         normalizedProviderId,
-        image,
-        emailVerified,
+        ...(image !== undefined ? { image } : {}),
+        ...(emailVerified !== undefined ? { emailVerified } : {}),
       });
 
       await this.upsertSocialAccount(created.id, {

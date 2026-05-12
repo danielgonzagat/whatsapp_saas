@@ -41,6 +41,7 @@ export class OmnichannelService {
     const processedAttachments = await this.maybeProcessAttachments(msg);
     const content = buildAttachmentContent(msg.content || '', messageType, processedAttachments);
 
+    const mediaUrlVal = processedAttachments.length > 0 ? processedAttachments[0]?.url : undefined;
     const savedMsg = await this.inbox.saveMessageByPhone({
       workspaceId: msg.workspaceId,
       phone: identifier,
@@ -48,7 +49,7 @@ export class OmnichannelService {
       direction: 'INBOUND',
       type: messageType,
       channel: msg.channel,
-      mediaUrl: processedAttachments.length > 0 ? processedAttachments[0].url : undefined,
+      ...(mediaUrlVal !== undefined ? { mediaUrl: mediaUrlVal } : {}),
     });
 
     // Smart routing hook — kept as a no-op until conversation re-routing is wired
@@ -88,6 +89,7 @@ export class OmnichannelService {
         channel: msg.channel.toLowerCase(),
         executeTools: msg.channel === 'WHATSAPP',
         context: {
+          deliveryMode: 'reactive',
           externalId: msg.externalId,
           fromName: msg.fromName || msg.from,
           metadata: msg.metadata || {},
@@ -225,13 +227,13 @@ export class OmnichannelService {
         channel: 'INSTAGRAM',
         externalId: extracted.senderId,
         from: extracted.senderId,
-        fromName: extracted.senderName,
+        ...(extracted.senderName !== undefined ? { fromName: extracted.senderName } : {}),
         content: extracted.content,
-        attachments: extracted.attachments.length > 0 ? extracted.attachments : undefined,
+        ...(extracted.attachments.length > 0 ? { attachments: extracted.attachments } : {}),
         metadata: {
           raw: payload,
-          messageId: extracted.messageId,
-          timestamp: extracted.timestamp,
+          ...(extracted.messageId !== undefined ? { messageId: extracted.messageId } : {}),
+          ...(extracted.timestamp !== undefined ? { timestamp: extracted.timestamp } : {}),
         },
       };
 

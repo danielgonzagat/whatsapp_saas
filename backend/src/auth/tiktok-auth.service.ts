@@ -153,9 +153,11 @@ export class TikTokAuthService {
     return this.buildVerifiedProfile(
       {
         accessToken: input.accessToken,
-        openId: input.openId,
-        refreshToken: input.refreshToken,
-        expiresInSeconds: input.expiresInSeconds,
+        ...(input.openId !== undefined ? { openId: input.openId } : {}),
+        ...(input.refreshToken !== undefined ? { refreshToken: input.refreshToken } : {}),
+        ...(input.expiresInSeconds !== undefined
+          ? { expiresInSeconds: input.expiresInSeconds }
+          : {}),
       },
       { requireUserInfo: true },
     );

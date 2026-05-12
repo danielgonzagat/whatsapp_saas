@@ -39,7 +39,7 @@ export class ObservabilityQueriesService {
    */
   async countConnectedMetaWorkspaces(): Promise<number> {
     return this.prisma.metaConnection.count({
-      where: { status: 'connected', workspaceId: undefined },
+      where: { status: 'connected' },
     });
   }
 
@@ -50,7 +50,7 @@ export class ObservabilityQueriesService {
    */
   async countAllMessagesSince(since: Date): Promise<number> {
     return this.prisma.message.count({
-      where: { createdAt: { gte: since }, workspaceId: undefined },
+      where: { createdAt: { gte: since } },
     });
   }
 
@@ -61,7 +61,7 @@ export class ObservabilityQueriesService {
    */
   async countAllAutopilotEventsSince(since: Date): Promise<number> {
     return this.prisma.autopilotEvent.count({
-      where: { createdAt: { gte: since }, workspaceId: undefined },
+      where: { createdAt: { gte: since } },
     });
   }
 }

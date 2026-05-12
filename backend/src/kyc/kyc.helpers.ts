@@ -40,7 +40,10 @@ export function buildPersonName(name: string | null | undefined): {
   const parts = normalized.split(/\s+/);
   const firstName = parts.shift();
   const lastName = parts.join(' ') || undefined;
-  return { firstName, lastName };
+  return {
+    ...(firstName !== undefined ? { firstName } : {}),
+    ...(lastName !== undefined ? { lastName } : {}),
+  };
 }
 
 export function buildDateOfBirth(

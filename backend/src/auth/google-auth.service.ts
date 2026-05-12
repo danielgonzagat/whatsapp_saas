@@ -159,7 +159,7 @@ export class GoogleAuthService {
       providerId,
       email,
       name: trimmedName || derivedName,
-      image: trimmedPicture || undefined,
+      ...(trimmedPicture !== undefined ? { image: trimmedPicture } : {}),
       emailVerified,
     };
   }

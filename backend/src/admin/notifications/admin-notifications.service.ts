@@ -55,7 +55,6 @@ export class AdminNotificationsService {
           where: {
             role: 'ADMIN',
             kycStatus: { in: ['pending', 'reverify'] },
-            workspaceId: undefined,
           },
           orderBy: { updatedAt: 'desc' },
           take: 5,
@@ -65,16 +64,9 @@ export class AdminNotificationsService {
             updatedAt: true,
             workspace: { select: { id: true, name: true } },
           },
-        }) as Promise<
-          Array<{
-            id: string;
-            name: string;
-            updatedAt: Date;
-            workspace: { id: string; name: string };
-          }>
-        >,
+        }),
         this.prisma.conversation.findMany({
-          where: { unreadCount: { gt: 0 }, workspaceId: undefined },
+          where: { unreadCount: { gt: 0 } },
           orderBy: { lastMessageAt: 'desc' },
           take: 5,
           select: {
@@ -83,14 +75,7 @@ export class AdminNotificationsService {
             workspace: { select: { id: true, name: true } },
             contact: { select: { name: true } },
           },
-        }) as Promise<
-          Array<{
-            id: string;
-            lastMessageAt: Date;
-            workspace: { id: string; name: string };
-            contact: { name: string | null };
-          }>
-        >,
+        }),
         this.prisma.adminLoginAttempt.count({
           where: {
             success: false,

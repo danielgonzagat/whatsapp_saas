@@ -223,7 +223,6 @@ export class SegmentationService {
   ): Promise<SegmentResult> {
     const where: Prisma.ContactWhereInput = {
       workspaceId,
-      phone: { not: null },
     };
 
     const now = new Date();
@@ -232,24 +231,32 @@ export class SegmentationService {
     this.applyPipelineFilters(where, criteria);
 
     // Buscar contatos com critérios básicos
-    let contacts = await this.prisma.contact.findMany({
-      take: criteria.limit || 1000,
-      where: { ...where, workspaceId },
-      select: {
-        id: true,
-        phone: true,
-        name: true,
-        updatedAt: true,
-        deals: {
-          select: {
-            id: true,
-            value: true,
-            status: true,
-            createdAt: true,
+    let contacts: SegmentationContact[] = (
+      await this.prisma.contact.findMany({
+        take: criteria.limit || 1000,
+        where: { ...where, workspaceId },
+        select: {
+          id: true,
+          phone: true,
+          name: true,
+          updatedAt: true,
+          deals: {
+            select: {
+              id: true,
+              value: true,
+              status: true,
+              createdAt: true,
+            },
           },
         },
-      },
-    });
+      })
+    ).map((c) => ({
+      id: c.id,
+      phone: c.phone,
+      name: c.name,
+      updatedAt: c.updatedAt,
+      deals: c.deals as SegmentationDeal[],
+    }));
 
     // Filtros pós-query (histórico de compras)
     if (criteria.purchaseHistory) {
@@ -276,8 +283,8 @@ export class SegmentationService {
     return {
       contacts: contacts.map((c) => ({
         id: c.id,
-        phone: c.phone,
-        name: c.name || undefined,
+        phone: c.phone as string,
+        ...(c.name != null ? { name: c.name } : {}),
       })),
       total: contacts.length,
       criteria,
@@ -459,7 +466,7 @@ export class SegmentationService {
     processed: number;
   }> {
     const contacts = await this.prisma.contact.findMany({
-      where: { workspaceId, phone: { not: null } },
+      where: { workspaceId },
       select: { id: true },
       take: 5000,
       orderBy: { updatedAt: 'desc' },

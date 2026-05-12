@@ -25,6 +25,9 @@ describe('MarketingConnectController', () => {
     getProviderType: jest.Mock;
     getSessionStatus: jest.Mock;
   };
+  let gmailMailbox: { getPrimaryGmailStatus: jest.Mock };
+  let microsoftMailbox: { getPrimaryMicrosoftStatus: jest.Mock };
+  let imapSmtpMailbox: { getPrimaryImapSmtpStatus: jest.Mock };
   let controller: MarketingConnectController;
 
   beforeEach(() => {
@@ -60,11 +63,17 @@ describe('MarketingConnectController', () => {
         pushName: null,
       }),
     };
+    gmailMailbox = { getPrimaryGmailStatus: jest.fn().mockResolvedValue(null) };
+    microsoftMailbox = { getPrimaryMicrosoftStatus: jest.fn().mockResolvedValue(null) };
+    imapSmtpMailbox = { getPrimaryImapSmtpStatus: jest.fn().mockResolvedValue(null) };
 
     controller = new MarketingConnectController(
       prisma as never as PrismaService,
       metaWhatsApp as never,
       whatsappProviders as never,
+      gmailMailbox as never,
+      microsoftMailbox as never,
+      imapSmtpMailbox as never,
     );
   });
 

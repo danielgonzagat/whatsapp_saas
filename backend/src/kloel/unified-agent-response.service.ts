@@ -251,9 +251,7 @@ export class UnifiedAgentResponseService {
       return [
         {
           quotedMessageId: first.quotedMessageId,
-          text:
-            this.finalizeReplyStyle(first.content, normalizedDraft, 0) ||
-            normalizedDraft,
+          text: this.finalizeReplyStyle(first.content, normalizedDraft, 0) || normalizedDraft,
         },
       ];
     }

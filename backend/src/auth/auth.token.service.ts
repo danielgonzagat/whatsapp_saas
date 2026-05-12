@@ -39,7 +39,7 @@ export class AuthTokenService {
     agentId: string,
     email: string,
     workspaceId: string,
-    role: string,
+    role: string | null | undefined,
     name?: string,
   ): Promise<string> {
     const jti = randomUUID();
@@ -47,7 +47,10 @@ export class AuthTokenService {
     if (name) {
       payload.name = name;
     }
-    return this.jwt.signAsync(payload, { expiresIn: getJwtExpiresIn() });
+    const expiresIn = getJwtExpiresIn();
+    return this.jwt.signAsync(payload, {
+      ...(expiresIn !== undefined ? { expiresIn } : {}),
+    });
   }
 
   private async loadWorkspaceMeta(agent: TokenAgent): Promise<{ id: string; name: string } | null> {
@@ -135,7 +138,7 @@ export class AuthTokenService {
         agent.email,
         agent.workspaceId,
         agent.role,
-        agent.name,
+        agent.name ?? undefined,
       );
 
       const refreshToken = await this.rotateRefreshToken(agent.id);

@@ -36,8 +36,8 @@ export interface AuthPartsDeps {
   tikTokAuthService: TikTokAuthService;
   connectService: ConnectService;
   rateLimitService: RateLimitService;
-  redis?: Redis;
-  auditService?: AuditService;
+  redis?: Redis | undefined;
+  auditService?: AuditService | undefined;
   logger: Logger;
 }
 

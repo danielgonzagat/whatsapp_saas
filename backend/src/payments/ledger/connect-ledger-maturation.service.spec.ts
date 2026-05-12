@@ -136,9 +136,9 @@ describe('ConnectLedgerMaturationService.matureDueEntries', () => {
       'connect ledger maturation failed',
       expect.anything(),
     );
-    expect(
-      (financialAlert.reconciliationAlert as jest.Mock).mock.calls[0]?.[1],
-    ).toMatchObject({ details: { error: 'raw string failure' } });
+    expect(financialAlert.reconciliationAlert.mock.calls[0]?.[1]).toMatchObject({
+      details: { error: 'raw string failure' },
+    });
   });
 
   it('survives adminAuditLog.create failure during maturation error', async () => {

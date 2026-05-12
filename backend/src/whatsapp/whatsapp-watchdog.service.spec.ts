@@ -92,7 +92,7 @@ describe('WhatsAppWatchdogService', () => {
       whatsappApi as never,
       recovery as never,
       sessionSvc,
-      redis as never as ConstructorParameters<typeof WhatsAppWatchdogService>[5],
+      redis as never,
     );
     service.onModuleInit();
   });

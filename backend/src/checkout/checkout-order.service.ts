@@ -219,7 +219,42 @@ export class CheckoutOrderService {
 
         const created = await tx.checkoutOrder.create({
           data: {
-            ...orderData,
+            planId: orderData.planId,
+            workspaceId: orderData.workspaceId,
+            customerName: orderData.customerName,
+            customerEmail: orderData.customerEmail,
+            paymentMethod: orderData.paymentMethod as 'CREDIT_CARD' | 'PIX' | 'BOLETO',
+            shippingAddress: orderData.shippingAddress,
+            ...(orderData.shippingMethod !== undefined
+              ? { shippingMethod: orderData.shippingMethod }
+              : {}),
+            ...(orderData.customerCPF !== undefined
+              ? { customerCPF: orderData.customerCPF }
+              : {}),
+            ...(orderData.customerPhone !== undefined
+              ? { customerPhone: orderData.customerPhone }
+              : {}),
+            ...(orderData.utmSource !== undefined
+              ? { utmSource: orderData.utmSource }
+              : {}),
+            ...(orderData.utmMedium !== undefined
+              ? { utmMedium: orderData.utmMedium }
+              : {}),
+            ...(orderData.utmCampaign !== undefined
+              ? { utmCampaign: orderData.utmCampaign }
+              : {}),
+            ...(orderData.utmContent !== undefined
+              ? { utmContent: orderData.utmContent }
+              : {}),
+            ...(orderData.utmTerm !== undefined
+              ? { utmTerm: orderData.utmTerm }
+              : {}),
+            ...(orderData.ipAddress !== undefined
+              ? { ipAddress: orderData.ipAddress }
+              : {}),
+            ...(orderData.userAgent !== undefined
+              ? { userAgent: orderData.userAgent }
+              : {}),
             shippingPrice: normalizedShippingInCents,
             acceptedBumps: toPrismaJsonArray(serverTotals.acceptedBumpIds),
             subtotalInCents: normalizedSubtotalInCents,
@@ -229,7 +264,7 @@ export class CheckoutOrderService {
             couponCode: orderData.couponCode ? orderData.couponCode.toUpperCase() : null,
             couponDiscount: normalizedDiscountInCents || null,
             installments: normalizedInstallments,
-            affiliateId: affiliateLink?.affiliateWorkspaceId || affiliateId,
+            affiliateId: (affiliateLink?.affiliateWorkspaceId || affiliateId) ?? null,
             metadata: buildCheckoutOrderMetadata({
               checkoutCode,
               capturedLeadId,
@@ -285,12 +320,32 @@ export class CheckoutOrderService {
         order: orderResult.order,
         orderNumber,
         correlationId,
-        data,
-        orderData,
+        data: {
+          workspaceId: data.workspaceId,
+          planId: data.planId,
+          customerName: data.customerName,
+          customerEmail: data.customerEmail,
+          ...(data.customerCPF !== undefined
+            ? { customerCPF: data.customerCPF }
+            : {}),
+          ...(data.customerPhone !== undefined
+            ? { customerPhone: data.customerPhone }
+            : {}),
+          ...(data.couponCode !== undefined
+            ? { couponCode: data.couponCode }
+            : {}),
+          shippingAddress: data.shippingAddress,
+        },
+        orderData: {
+          paymentMethod: orderData.paymentMethod as
+            | 'CREDIT_CARD'
+            | 'PIX'
+            | 'BOLETO',
+        },
         qualityGate,
         normalizedBaseTotalInCents,
         normalizedInstallments,
-        cardHolderName,
+        ...(cardHolderName !== undefined ? { cardHolderName } : {}),
       });
       return { ...orderResult.order, paymentData };
     }
@@ -308,19 +363,37 @@ export class CheckoutOrderService {
       order,
       orderNumber,
       correlationId,
-      data,
-      orderData,
+      data: {
+        workspaceId: data.workspaceId,
+        planId: data.planId,
+        customerName: data.customerName,
+        customerEmail: data.customerEmail,
+        ...(data.customerCPF !== undefined
+          ? { customerCPF: data.customerCPF }
+          : {}),
+        ...(data.customerPhone !== undefined
+          ? { customerPhone: data.customerPhone }
+          : {}),
+        ...(data.couponCode !== undefined
+          ? { couponCode: data.couponCode }
+          : {}),
+        shippingAddress: data.shippingAddress,
+      },
+      orderData: {
+        paymentMethod: orderData.paymentMethod as
+          | 'CREDIT_CARD'
+          | 'PIX'
+          | 'BOLETO',
+      },
       qualityGate,
       normalizedBaseTotalInCents,
       normalizedInstallments,
-      cardHolderName,
+      ...(cardHolderName !== undefined ? { cardHolderName } : {}),
     });
     return { ...order, paymentData };
   }
 
-  private async processOrderPostPayment(
-    params: ProcessOrderPostPaymentParams,
-  ): Promise<unknown> {
+  private async processOrderPostPayment(params: ProcessOrderPostPaymentParams): Promise<unknown> {
     return executeProcessOrderPostPayment(params, {
       prisma: this.prisma,
       paymentService: this.paymentService,

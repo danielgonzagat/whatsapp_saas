@@ -171,10 +171,10 @@ export class FlowsController {
     return this.flows.saveVersion({
       workspaceId: effectiveWorkspaceId,
       flowId,
-      nodes,
-      edges,
-      label,
-      createdById: req?.user?.sub,
+      nodes: nodes ?? [],
+      edges: edges ?? [],
+      ...(label !== undefined ? { label } : {}),
+      ...(req?.user?.sub !== undefined ? { createdById: req?.user?.sub } : {}),
     });
   }
   /** Log execution. */
@@ -191,7 +191,7 @@ export class FlowsController {
     return this.flows.logExecution({
       workspaceId: effectiveWorkspaceId,
       flowId,
-      user,
+      ...(user !== undefined ? { user } : {}),
       logs: Array.isArray(logs) ? logs : [],
     });
   }
@@ -223,6 +223,10 @@ export class FlowsController {
     const workspaceId = resolveWorkspaceId(req);
     const execution = await this.flows.retryExecution(workspaceId, executionId);
 
+    if (!execution) {
+      throw new BadRequestException('Execution not found');
+    }
+
     const flow = execution.flow;
     const user = execution.contact.phone;
     const ws = await this.workspaces.getWorkspace(workspaceId);
@@ -232,7 +236,7 @@ export class FlowsController {
       flowId: flow.id,
       user,
       workspace,
-      executionId: execution.id, // Pass existing ID to resume/retry
+      executionId: execution.id,
     });
 
     return { ok: true, executionId: execution.id };

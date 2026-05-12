@@ -1,8 +1,37 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import {
+  createAffiliateCommissionFromPaidCheckoutUpdate,
+  creditWalletFromPaidCheckoutUpdate,
+  enqueuePurchaseWhatsappFromPaidCheckoutUpdate,
+  markCheckoutSocialLeadConvertedFromPaidUpdate,
+  sendFacebookCapiPurchaseFromPaidUpdate,
+} from './checkout-paid-effects';
 import { PrismaService } from './prisma.service';
 
 jest.mock('@prisma/client', () => {
   const actual = jest.requireActual('@prisma/client');
+  const makeTransactionClient = () => ({
+    $executeRaw: jest.fn(),
+    auditLog: { findFirst: jest.fn().mockResolvedValue(null), create: jest.fn() },
+    checkoutOrder: {
+      findUnique: jest.fn().mockResolvedValue(null),
+      updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+    },
+    checkoutPayment: {
+      findMany: jest.fn().mockResolvedValue([]),
+      updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+    },
+    memberArea: {
+      findFirst: jest.fn().mockResolvedValue(null),
+      update: jest.fn(),
+    },
+    memberEnrollment: {
+      aggregate: jest.fn().mockResolvedValue({ _count: { _all: 0 }, _avg: { progress: null } }),
+      create: jest.fn(),
+      findFirst: jest.fn().mockResolvedValue(null),
+      update: jest.fn(),
+    },
+  });
   return {
     ...actual,
     PrismaClient: class MockPrismaClient {
@@ -10,7 +39,7 @@ jest.mock('@prisma/client', () => {
       $disconnect = jest.fn();
       $transaction = jest.fn().mockImplementation(async (arg: unknown) => {
         if (typeof arg === 'function') {
-          return arg({});
+          return arg(makeTransactionClient());
         }
         return [];
       });
@@ -27,6 +56,7 @@ jest.mock('@prisma/client', () => {
 
 jest.mock('./checkout-paid-effects', () => ({
   createAffiliateCommissionFromPaidCheckoutUpdate: jest.fn().mockResolvedValue(undefined),
+  creditWalletFromPaidCheckoutUpdate: jest.fn().mockResolvedValue(undefined),
   enqueuePurchaseWhatsappFromPaidCheckoutUpdate: jest.fn().mockResolvedValue(undefined),
   markCheckoutSocialLeadConvertedFromPaidUpdate: jest.fn().mockResolvedValue(undefined),
   sendFacebookCapiPurchaseFromPaidUpdate: jest.fn().mockResolvedValue(undefined),
@@ -112,6 +142,56 @@ describe('PrismaService', () => {
 
       const descriptor = Object.getOwnPropertyDescriptor(service, '$transaction');
       expect(descriptor).toBeDefined();
+    });
+
+    it('runs post-payment checkout effects after a direct PAID checkout update', async () => {
+      const paidUpdate = {
+        where: { id: 'order-1', workspaceId: 'ws-1' },
+        data: { status: 'PAID' as const },
+      };
+
+      await service.checkoutOrder.updateMany(paidUpdate);
+
+      expect(markCheckoutSocialLeadConvertedFromPaidUpdate).toHaveBeenCalledWith(
+        service,
+        paidUpdate,
+      );
+      expect(sendFacebookCapiPurchaseFromPaidUpdate).toHaveBeenCalledWith(service, paidUpdate);
+      expect(createAffiliateCommissionFromPaidCheckoutUpdate).toHaveBeenCalledWith(
+        service,
+        paidUpdate,
+      );
+      expect(creditWalletFromPaidCheckoutUpdate).toHaveBeenCalledWith(service, paidUpdate);
+      expect(enqueuePurchaseWhatsappFromPaidCheckoutUpdate).toHaveBeenCalledWith(
+        service,
+        paidUpdate,
+      );
+    });
+
+    it('runs post-payment checkout effects after a PAID checkout update committed inside a transaction', async () => {
+      const paidUpdate = {
+        where: { id: 'order-1', workspaceId: 'ws-1' },
+        data: { status: 'PAID' as const },
+      };
+
+      await service.$transaction(async (tx) => {
+        await tx.checkoutOrder.updateMany(paidUpdate);
+      });
+
+      expect(markCheckoutSocialLeadConvertedFromPaidUpdate).toHaveBeenCalledWith(
+        service,
+        paidUpdate,
+      );
+      expect(sendFacebookCapiPurchaseFromPaidUpdate).toHaveBeenCalledWith(service, paidUpdate);
+      expect(createAffiliateCommissionFromPaidCheckoutUpdate).toHaveBeenCalledWith(
+        service,
+        paidUpdate,
+      );
+      expect(creditWalletFromPaidCheckoutUpdate).toHaveBeenCalledWith(service, paidUpdate);
+      expect(enqueuePurchaseWhatsappFromPaidCheckoutUpdate).toHaveBeenCalledWith(
+        service,
+        paidUpdate,
+      );
     });
   });
 });

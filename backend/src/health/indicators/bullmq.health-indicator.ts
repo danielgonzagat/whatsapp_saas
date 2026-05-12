@@ -14,8 +14,10 @@ export class BullMQHealthIndicator extends HealthIndicator {
       let totalFailed = 0;
 
       for (const name of queueNames) {
+        const queue = queueRegistry[name];
+        if (!queue) continue;
         try {
-          const counts = await queueRegistry[name].getJobCounts(
+          const counts = await queue.getJobCounts(
             'waiting',
             'active',
             'delayed',

@@ -40,6 +40,13 @@ interface ToolSetBrandVoiceArgs {
   personality?: string;
 }
 
+interface ToolSetSalesPolicyArgs {
+  aggressiveness?: string;
+  tone?: string;
+  instructions?: string;
+  appliesTo?: string;
+}
+
 interface ToolRememberUserInfoArgs {
   key: string;
   value: string;
@@ -53,6 +60,12 @@ interface ToolCreateFlowArgs {
 
 interface ToolDashboardSummaryArgs {
   period?: 'today' | 'week' | 'month';
+}
+
+function centsFromUnknown(value: unknown): number {
+  if (typeof value === 'bigint') return Number(value);
+  if (typeof value === 'number' && Number.isFinite(value)) return Math.trunc(value);
+  return 0;
 }
 
 /** Handles product, flow, dashboard, payment, and misc AI chat tools. */
@@ -202,6 +215,57 @@ export class KloelChatToolsService {
     return { success: true, message: `Tom de voz definido como "${args.tone}"` };
   }
 
+  async toolSetSalesPolicy(
+    workspaceId: string,
+    args: ToolSetSalesPolicyArgs,
+    userId?: string,
+  ): Promise<ToolResult> {
+    const aggressiveness = safeStr(args.aggressiveness, 'balanced').trim().slice(0, 40);
+    const tone = safeStr(args.tone, '').trim().slice(0, 80);
+    const instructions = safeStr(args.instructions, '').trim().slice(0, 1000);
+    const appliesTo = safeStr(args.appliesTo, 'all').trim().slice(0, 120);
+
+    if (!aggressiveness && !tone && !instructions) {
+      return { success: false, error: 'missing_sales_policy_payload' };
+    }
+
+    const policy = {
+      aggressiveness: aggressiveness || 'balanced',
+      tone: tone || null,
+      instructions: instructions || null,
+      appliesTo: appliesTo || 'all',
+      updatedAt: new Date().toISOString(),
+      updatedByUserId: userId || null,
+    } satisfies Prisma.InputJsonObject;
+
+    await this.prisma.$transaction(async (tx) => {
+      const workspace = await tx.workspace.findUnique({
+        where: { id: workspaceId },
+        select: { providerSettings: true },
+      });
+      const settings = (workspace?.providerSettings as Record<string, unknown>) || {};
+      const autopilot = (settings.autopilot as Record<string, unknown>) || {};
+      await tx.workspace.update({
+        where: { id: workspaceId },
+        data: {
+          providerSettings: {
+            ...settings,
+            autopilot: {
+              ...autopilot,
+              salesPolicy: policy,
+            },
+          },
+        },
+      });
+    });
+
+    return {
+      success: true,
+      policy,
+      message: `Politica comercial atualizada: agressividade ${policy.aggressiveness}.`,
+    };
+  }
+
   async toolRememberUserInfo(
     workspaceId: string,
     args: ToolRememberUserInfoArgs,
@@ -331,15 +395,50 @@ export class KloelChatToolsService {
         dateFilter = new Date();
         dateFilter.setHours(0, 0, 0, 0);
     }
-    const [contacts, messages, flows] = await Promise.all([
+    const [contacts, messages, flows, paidOrders, wallet] = await Promise.all([
       this.prisma.contact.count({ where: { workspaceId, createdAt: { gte: dateFilter } } }),
       this.prisma.message.count({ where: { workspaceId, createdAt: { gte: dateFilter } } }),
       this.prisma.flow.count({ where: { workspaceId, isActive: true } }),
+      this.prisma.checkoutOrder.aggregate({
+        where: { workspaceId, status: 'PAID', paidAt: { gte: dateFilter } },
+        _count: { _all: true },
+        _sum: { totalInCents: true },
+      }),
+      this.prisma.kloelWallet.findUnique({
+        where: { workspaceId },
+        select: {
+          availableBalanceInCents: true,
+          pendingBalanceInCents: true,
+          blockedBalanceInCents: true,
+        },
+      }),
     ]);
+    const revenueInCents = paidOrders._sum.totalInCents || 0;
+    const availableInCents = centsFromUnknown(wallet?.availableBalanceInCents);
+    const pendingInCents = centsFromUnknown(wallet?.pendingBalanceInCents);
+    const blockedInCents = centsFromUnknown(wallet?.blockedBalanceInCents);
+    const totalInCents = availableInCents + pendingInCents + blockedInCents;
     return {
       success: true,
       period,
-      stats: { newContacts: contacts, messages, activeFlows: flows },
+      stats: {
+        newContacts: contacts,
+        messages,
+        activeFlows: flows,
+        paidOrders: paidOrders._count._all,
+        revenueInCents,
+        revenue: revenueInCents / 100,
+        wallet: {
+          availableInCents,
+          pendingInCents,
+          blockedInCents,
+          totalInCents,
+          available: availableInCents / 100,
+          pending: pendingInCents / 100,
+          blocked: blockedInCents / 100,
+          total: totalInCents / 100,
+        },
+      },
     };
   }
 

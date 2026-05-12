@@ -74,13 +74,13 @@ export async function sendFacebookCapiPurchaseFromPaidUpdate(
       pixelId: pixel.pixelId,
       accessToken: pixel.accessToken,
       eventName: 'Purchase',
-      email: order.customerEmail || undefined,
-      phone: order.customerPhone || undefined,
+      ...(order.customerEmail ? { email: order.customerEmail } : {}),
+      ...(order.customerPhone ? { phone: order.customerPhone } : {}),
       amount: order.totalInCents,
       currency: 'BRL',
       productId: order.plan.productId,
-      ip: order.ipAddress || undefined,
-      userAgent: order.userAgent || undefined,
+      ...(order.ipAddress ? { ip: order.ipAddress } : {}),
+      ...(order.userAgent ? { userAgent: order.userAgent } : {}),
     });
     if (sent) {
       await prisma.auditLog.create({

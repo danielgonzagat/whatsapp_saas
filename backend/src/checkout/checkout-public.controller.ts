@@ -1,15 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import {
-  Body,
-  Controller,
-  Get,
-  Headers,
-  Ip,
-  Param,
-  Patch,
-  Post,
-  Query,
-} from '@nestjs/common';
+import { Body, Controller, Get, Headers, Ip, Param, Patch, Post, Query } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { Public } from '../auth/public.decorator';
 import { Idempotent } from '../common/idempotency.guard';
@@ -51,8 +41,15 @@ export class CheckoutPublicController {
       return 'C***';
     }
     const first = parts[0];
+    if (!first) {
+      return 'C***';
+    }
     const masked = `${first[0]}***${first.length > 3 ? first.slice(-1) : ''}`;
-    return parts.length > 1 ? `${masked} ${parts[parts.length - 1][0]}.` : masked;
+    if (parts.length > 1) {
+      const lastPart = parts[parts.length - 1];
+      return lastPart && lastPart.length > 0 ? `${masked} ${lastPart[0]}.` : masked;
+    }
+    return masked;
   }
 
   // All dates stored as UTC via Prisma DateTime (toISOString)
@@ -93,8 +90,8 @@ export class CheckoutPublicController {
   ) {
     return this.checkoutSocialLeadService.getLeadPrefill({
       slug: String(slug || ''),
-      checkoutCode,
-      deviceFingerprint,
+      ...(checkoutCode !== undefined ? { checkoutCode } : {}),
+      ...(deviceFingerprint !== undefined ? { deviceFingerprint } : {}),
     });
   }
 

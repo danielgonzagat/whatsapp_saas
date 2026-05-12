@@ -22,11 +22,13 @@ import { getJwtExpiresIn, getJwtSecret } from './jwt-config';
     JwtModule.registerAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => {
-        const expiresIn = config.get<string>('JWT_EXPIRES_IN');
+        const expiresIn =
+          (config.get<string>('JWT_EXPIRES_IN') as ReturnType<typeof getJwtExpiresIn>) ??
+          getJwtExpiresIn();
         return {
           secret: String(config.get<string>('JWT_SECRET') || getJwtSecret()).trim(),
           signOptions: {
-            expiresIn: (expiresIn as ReturnType<typeof getJwtExpiresIn>) || getJwtExpiresIn(),
+            ...(expiresIn !== undefined ? { expiresIn } : {}),
           },
         };
       },

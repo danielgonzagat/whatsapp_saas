@@ -81,7 +81,9 @@ export async function pauseForWaitNode(
     waitNodeId,
     waitingForContact: contactPhone,
     waitExpiresAt,
-    fallbackMessage: nodeData.fallbackMessage || undefined,
+    ...(nodeData.fallbackMessage !== undefined
+      ? { fallbackMessage: nodeData.fallbackMessage }
+      : {}),
   };
 
   await deps.prisma.flowExecution.updateMany({
@@ -145,6 +147,10 @@ export async function resumeFromWait(
   }
 
   const execution = executions[0];
+  if (!execution) {
+    return { resumed: false };
+  }
+
   const state = (execution.state as WaitState) || ({} as WaitState);
   const now = new Date();
   const expired = state.waitExpiresAt ? now > new Date(state.waitExpiresAt) : false;
@@ -181,6 +187,8 @@ export async function resumeFromWait(
       `(contact: ${contactPhone})`,
   );
 
+  const fallbackMessage = expired ? state.fallbackMessage : undefined;
+
   return {
     resumed: true,
     executionId: execution.id,
@@ -188,7 +196,7 @@ export async function resumeFromWait(
     workspaceId: execution.workspaceId,
     resumeEdge,
     waitNodeId: state.waitNodeId,
-    fallbackMessage: expired ? state.fallbackMessage : undefined,
+    ...(fallbackMessage !== undefined ? { fallbackMessage } : {}),
     state: updatedState,
   };
 }
@@ -262,7 +270,7 @@ export async function expireWaitTimeouts(
       workspaceId: exec.workspaceId,
       resumeEdge: 'Timeout',
       waitNodeId: state.waitNodeId,
-      fallbackMessage: state.fallbackMessage,
+      ...(state.fallbackMessage !== undefined ? { fallbackMessage: state.fallbackMessage } : {}),
       state: updatedState,
     });
   });

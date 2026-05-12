@@ -51,8 +51,8 @@ export class FlowTemplateController {
       category,
       nodes,
       edges,
-      description,
-      isPublic,
+      ...(description !== undefined ? { description } : {}),
+      ...(isPublic !== undefined ? { isPublic } : {}),
     });
   }
 

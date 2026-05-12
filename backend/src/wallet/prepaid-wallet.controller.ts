@@ -203,10 +203,10 @@ export class PrepaidWalletController {
       const result = await this.walletService.chargeForUsage({
         workspaceId,
         operation: body.operation,
-        units: body.units,
-        quotedCostCents: body.quotedCostCents ? BigInt(body.quotedCostCents) : undefined,
+        ...(body.units !== undefined ? { units: body.units } : {}),
+        ...(body.quotedCostCents !== undefined ? { quotedCostCents: BigInt(body.quotedCostCents) } : {}),
         requestId: body.requestId,
-        metadata: body.metadata,
+        ...(body.metadata !== undefined ? { metadata: body.metadata } : {}),
       });
 
       return {

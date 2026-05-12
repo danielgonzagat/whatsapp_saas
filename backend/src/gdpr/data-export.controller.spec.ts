@@ -1,138 +1,50 @@
-import { PrismaService } from '../prisma/prisma.service';
+import { BadRequestException } from '@nestjs/common';
 import { DataExportController } from './data-export.controller';
 
 describe('DataExportController', () => {
-  let prisma: {
-    agent: {
-      findFirst: jest.Mock;
-    };
-    workspace: {
-      findUnique: jest.Mock;
-    };
-    auditLog: {
-      findMany: jest.Mock;
-    };
-    message: {
-      findMany: jest.Mock;
-    };
-  };
+  const requestExport = jest.fn();
   let controller: DataExportController;
 
   beforeEach(() => {
-    prisma = {
-      agent: {
-        findFirst: jest.fn().mockResolvedValue({
-          id: 'u-1',
-          email: 'agent@test.com',
-          name: 'Test Agent',
-          workspaceId: 'ws-1',
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        }),
-      },
-      workspace: {
-        findUnique: jest.fn().mockResolvedValue({
-          id: 'ws-1',
-          name: 'Test Workspace',
-          createdAt: new Date(),
-        }),
-      },
-      auditLog: {
-        findMany: jest
-          .fn()
-          .mockResolvedValue([
-            { action: 'LOGIN', resource: 'Agent', createdAt: new Date(), ipAddress: '1.2.3.4' },
-          ]),
-      },
-      message: {
-        findMany: jest
-          .fn()
-          .mockResolvedValue([
-            { id: 'msg-1', content: 'Hello', direction: 'INBOUND', createdAt: new Date() },
-          ]),
-      },
-    };
-    controller = new DataExportController(prisma as never as PrismaService);
+    requestExport.mockReset().mockResolvedValue({
+      id: 'gdpr-export-1',
+      type: 'EXPORT',
+      status: 'PENDING',
+      code: 'export-code',
+    });
+    controller = new DataExportController({ requestExport } as never);
   });
 
-  it('exports user data with workspace context', async () => {
+  it('delegates export to the full GDPR request workflow', async () => {
     const req = {
       user: { sub: 'u-1', workspaceId: 'ws-1' },
     } as never;
 
     const result = await controller.exportData(req);
 
-    expect(result).toHaveProperty('exportedAt');
-    expect(result.user).toHaveProperty('email', 'agent@test.com');
-    expect(result.workspace).toHaveProperty('name', 'Test Workspace');
-    expect(result.auditLogs).toHaveLength(1);
-    expect(result.messages).toHaveLength(1);
-
-    expect(prisma.agent.findFirst).toHaveBeenCalledWith({
-      where: { id: 'u-1', workspaceId: 'ws-1' },
-      select: expect.objectContaining({ email: true }) as Record<string, unknown>,
-    });
+    expect(requestExport).toHaveBeenCalledWith('u-1', 'ws-1');
+    expect(result).toEqual(
+      expect.objectContaining({
+        id: 'gdpr-export-1',
+        type: 'EXPORT',
+        status: 'PENDING',
+      }),
+    );
   });
 
-  it('exports user data without workspaceId', async () => {
+  it('rejects export when user is missing', async () => {
+    const req = { user: undefined } as never;
+
+    await expect(controller.exportData(req)).rejects.toThrow(BadRequestException);
+    expect(requestExport).not.toHaveBeenCalled();
+  });
+
+  it('rejects export when workspaceId is missing', async () => {
     const req = {
       user: { sub: 'u-2' },
     } as never;
 
-    const result = await controller.exportData(req);
-
-    expect(result.workspace).toBeNull();
-    expect(result.messages).toEqual([]);
-    expect(prisma.agent.findFirst).toHaveBeenCalledWith({
-      where: { id: 'u-2' },
-      select: expect.objectContaining({ email: true }) as Record<string, unknown>,
-    });
-    expect(prisma.auditLog.findMany).toHaveBeenCalledWith({
-      where: { agentId: 'u-2' },
-      orderBy: { createdAt: 'desc' },
-      take: 1000,
-      select: expect.objectContaining({ action: true }) as Record<string, unknown>,
-    });
-  });
-
-  it('handles missing user gracefully', async () => {
-    prisma.agent.findFirst.mockResolvedValueOnce(null);
-
-    const req = {
-      user: { sub: 'u-unknown' },
-    } as never;
-
-    const result = await controller.exportData(req);
-
-    expect(result.user).toBeNull();
-    expect(result.auditLogs).toHaveLength(1);
-  });
-
-  it('catches message findMany errors', async () => {
-    const msgError = new Error('Message table unavailable');
-    prisma.message.findMany.mockRejectedValueOnce(msgError);
-
-    const req = {
-      user: { sub: 'u-1', workspaceId: 'ws-1' },
-    } as never;
-
-    const result = await controller.exportData(req);
-
-    expect(result.messages).toEqual([]);
-  });
-
-  it('includes all required fields in response structure', async () => {
-    const req = {
-      user: { sub: 'u-1', workspaceId: 'ws-1' },
-    } as never;
-
-    const result = await controller.exportData(req);
-
-    expect(result).toHaveProperty('exportedAt');
-    expect(result).toHaveProperty('user');
-    expect(result).toHaveProperty('workspace');
-    expect(result).toHaveProperty('auditLogs');
-    expect(result).toHaveProperty('messages');
-    expect(typeof result.exportedAt).toBe('string');
+    await expect(controller.exportData(req)).rejects.toThrow('User identity required');
+    expect(requestExport).not.toHaveBeenCalled();
   });
 });

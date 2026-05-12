@@ -173,7 +173,8 @@ export class NotificationsService {
         const tokensToRemove: string[] = [];
         response.responses.forEach((resp, idx) => {
           if (!resp.success && resp.error?.code === 'messaging/registration-token-not-registered') {
-            tokensToRemove.push(tokens[idx]);
+            const tok = tokens[idx];
+            if (tok) tokensToRemove.push(tok);
           }
         });
 

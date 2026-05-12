@@ -43,17 +43,20 @@ export async function upsertSocialAccount(
     },
   });
 
+  const profileData = (profile.profileData as Prisma.InputJsonValue | null | undefined) || undefined;
+
   const data: Prisma.SocialAccountUncheckedCreateInput = {
     agentId,
     provider: profile.provider,
     providerUserId: profile.providerId,
     email: normalizeEmail(profile.email),
     accessToken:
-      encryptedAccessToken || (options?.overwriteTokens ? null : current?.accessToken) || null,
+      encryptedAccessToken ?? (options?.overwriteTokens ? null : (current?.accessToken ?? null)),
     refreshToken:
-      encryptedRefreshToken || (options?.overwriteTokens ? null : current?.refreshToken) || null,
+      encryptedRefreshToken ??
+      (options?.overwriteTokens ? null : (current?.refreshToken ?? null)),
     tokenExpiresAt: profile.tokenExpiresAt || null,
-    profileData: (profile.profileData as Prisma.InputJsonValue | null | undefined) || undefined,
+    ...(profileData !== undefined ? { profileData } : {}),
     revokedAt: null,
     lastUsedAt: new Date(),
   };
@@ -68,11 +71,11 @@ export async function upsertSocialAccount(
     create: data,
     update: {
       providerUserId: data.providerUserId,
-      email: data.email,
-      accessToken: data.accessToken,
-      refreshToken: data.refreshToken,
-      tokenExpiresAt: data.tokenExpiresAt,
-      profileData: data.profileData,
+      ...(data.email !== undefined ? { email: data.email } : {}),
+      ...(data.accessToken !== undefined ? { accessToken: data.accessToken } : {}),
+      ...(data.refreshToken !== undefined ? { refreshToken: data.refreshToken } : {}),
+      ...(data.tokenExpiresAt !== undefined ? { tokenExpiresAt: data.tokenExpiresAt } : {}),
+      ...(data.profileData !== undefined ? { profileData: data.profileData } : {}),
       revokedAt: null,
       lastUsedAt: new Date(),
     },

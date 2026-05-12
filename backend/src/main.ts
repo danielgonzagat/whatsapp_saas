@@ -11,6 +11,7 @@ import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { PrismaService } from './prisma/prisma.service';
 import { OpsAlertService } from './observability/ops-alert.service';
+import { assertProductionStartupSecrets } from './config/production-startup-guard';
 
 const HTTPS_____KLOEL_FRONTEN_RE = /^https:\/\/kloel-frontend-.*\.vercel\.app$/;
 const HTTPS_____KLOEL_ADMIN_RE = /^https:\/\/kloel-admin-.*\.vercel\.app$/;
@@ -189,6 +190,8 @@ async function bootstrap() {
     );
   }
 
+  assertProductionStartupSecrets();
+
   // ============================================================
   // STARTUP CHECK: reject placeholder secrets in production.
   //
@@ -233,7 +236,7 @@ async function bootstrap() {
 
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     rawBody: true,
-    logger: process.env.NODE_ENV === 'production' ? new ProductionBootstrapLogger() : undefined,
+    ...(process.env.NODE_ENV === 'production' ? { logger: new ProductionBootstrapLogger() } : {}),
   });
 
   // ============================================================
@@ -423,40 +426,43 @@ async function bootstrap() {
       return true;
     }
     console.log('[CORS] Blocked origin: %s on %s %s', rawOrigin, req.method, req.path);
-    return req.method !== 'OPTIONS';
+    const isPreflight = req.method === 'OPTIONS';
+    return !isPreflight;
   };
 
   app.use((req: Request, res: Response, next: NextFunction) => {
     const allowed = applyCorsOriginHeader(req, res);
     if (!allowed) {
-      return res.status(403).end();
-    }
-    res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, PUT, PATCH, POST, DELETE, OPTIONS');
-    res.setHeader(
-      'Access-Control-Allow-Headers',
-      [
-        'Content-Type',
-        'Authorization',
-        'Accept',
-        'Origin',
-        'User-Agent',
-        'Cache-Control',
-        'Pragma',
-        'X-Session-Id',
-        'x-workspace-id',
-        'X-Requested-With',
-        ...DATADOG_TRACING_HEADERS,
-      ].join(', '),
-    );
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-    res.setHeader('Access-Control-Max-Age', '86400');
-    res.setHeader('Vary', 'Origin');
+      res.status(403).end();
+    } else {
+      res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, PUT, PATCH, POST, DELETE, OPTIONS');
+      res.setHeader(
+        'Access-Control-Allow-Headers',
+        [
+          'Content-Type',
+          'Authorization',
+          'Accept',
+          'Origin',
+          'User-Agent',
+          'Cache-Control',
+          'Pragma',
+          'X-Session-Id',
+          'x-workspace-id',
+          'X-Requested-With',
+          ...DATADOG_TRACING_HEADERS,
+        ].join(', '),
+      );
+      res.setHeader('Access-Control-Allow-Credentials', 'true');
+      res.setHeader('Access-Control-Max-Age', '86400');
+      res.setHeader('Vary', 'Origin');
 
-    // Responder imediatamente a requisições OPTIONS (preflight)
-    if (req.method === 'OPTIONS') {
-      return res.status(204).end();
+      // Responder imediatamente a requisições OPTIONS (preflight)
+      if (req.method === 'OPTIONS') {
+        res.status(204).end();
+        return;
+      }
+      next();
     }
-    next();
   });
 
   // Serve Static Files (Audio/Images) from 'backend/public' mapped to root

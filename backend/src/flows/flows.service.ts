@@ -42,7 +42,7 @@ export class FlowsService {
       update: {
         nodes: data.nodes as Prisma.InputJsonValue,
         edges: data.edges as Prisma.InputJsonValue,
-        name: data.name || undefined,
+        ...(data.name !== undefined ? { name: data.name } : {}),
       },
       create: {
         id: flowId,

@@ -183,9 +183,9 @@ export function createMockPrisma(stores: AccountAgentMockStores): MockPrisma {
           }) => {
             const key = memoryKey(where.workspaceId_key.workspaceId, where.workspaceId_key.key);
             const existing = memoryStore.get(key);
-            const next = existing
+            const next = (existing
               ? { ...existing, ...update, workspaceId: existing.workspaceId, key: existing.key }
-              : { id: `memory-${memoryStore.size + 1}`, ...create };
+              : { id: `memory-${memoryStore.size + 1}`, ...create }) as MemoryRecord;
             memoryStore.set(key, next);
             return Promise.resolve(next);
           },

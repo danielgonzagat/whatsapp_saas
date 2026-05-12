@@ -272,8 +272,8 @@ export class I18nService {
     lang: SupportedLanguage = 'pt-BR',
     params?: Record<string, string | number>,
   ): string {
-    const langDict = translations[lang] || translations['pt-BR'];
-    let text = langDict[key] || translations['pt-BR'][key] || key;
+    const langDict = translations[lang] ?? translations['pt-BR'];
+    let text = langDict?.[key] ?? translations['pt-BR']?.[key] ?? key;
 
     // Substitui placeholders {param} por valores
     if (params) {
@@ -311,6 +311,7 @@ export class I18nService {
 
       // tokenBudget: caller responsible for pre-flight budget check
       await this.ensureBudget(workspaceId);
+      if (!this.openai) return text;
       const response = await chatCompletionWithRetry(this.openai, {
         model: resolveBackendOpenAIModel('writer'),
         messages: [

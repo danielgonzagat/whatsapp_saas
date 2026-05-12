@@ -140,7 +140,9 @@ export class CampaignsService {
       where: { id, workspaceId },
       data: {
         status: 'SCHEDULED',
-        scheduledAt: delay > 0 ? new Date(Date.now() + delay) : undefined,
+        ...((delay > 0
+          ? { scheduledAt: new Date(Date.now() + delay) }
+          : {}) as Prisma.CampaignUpdateManyMutationInput),
       },
     });
 
@@ -352,7 +354,7 @@ export class CampaignsService {
             name: `${base.name} - Var ${i + 1}`,
             status: 'DRAFT',
             messageTemplate: mutatedMessage,
-            filters: base.filters,
+            filters: base.filters as Prisma.InputJsonValue,
             stats: { sent: 0, replied: 0 },
             aiStrategy: base.aiStrategy,
             parentId: base.id,
@@ -399,20 +401,25 @@ export class CampaignsService {
     }
 
     // Promove mensagem vencedora para pai e pausa perdedores
+    const bestMessageTemplate =
+      best.messageTemplate != null ? String(best.messageTemplate) : undefined;
+    const bestAiStrategy = best.aiStrategy != null ? String(best.aiStrategy) : undefined;
+    const bestId = best.id != null ? String(best.id) : undefined;
+
     await this.prisma.campaign.updateMany({
       where: { id: parent.id, workspaceId },
       data: {
-        messageTemplate: best.messageTemplate,
-        aiStrategy: best.aiStrategy,
+        ...(bestMessageTemplate ? { messageTemplate: bestMessageTemplate } : {}),
+        ...(bestAiStrategy ? { aiStrategy: bestAiStrategy } : {}),
       },
     });
     await this.prisma.campaign.updateMany({
-      where: { workspaceId, parentId: parent.id, NOT: { id: best.id } },
+      where: { workspaceId, parentId: parent.id, ...(bestId ? { NOT: { id: bestId } } : {}) },
       data: { status: 'PAUSED' },
     });
 
     return {
-      winner: best.id,
+      winner: bestId,
       score: bestScore,
       promotedTo: parent.id,
     };

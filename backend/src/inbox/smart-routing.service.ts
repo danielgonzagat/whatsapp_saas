@@ -80,7 +80,9 @@ export class SmartRoutingService {
     const lastIndex = Number.parseInt((await this.redis.get(key)) || '-1', 10);
     const nextIndex = (lastIndex + 1) % agentsInQueue.length;
 
-    const selectedAgent = agentsInQueue[nextIndex].agent;
+    const agentAtIdx = agentsInQueue[nextIndex];
+    if (!agentAtIdx) return;
+    const selectedAgent = agentAtIdx.agent;
 
     // Assign
     await this.prisma.conversation.update({

@@ -151,14 +151,15 @@ export async function loadRemotePendingBatchHelper(
     createdAt: message.createdAt,
   }));
   const shouldMirrorReplies = deps.chatFilter.isRecentRemoteBatch(customerMessages);
+  const firstMsg = customerMessages[0];
 
   return {
     contactId: contact.id,
     phone,
     contactName: contact.name || detectedName,
     aggregatedMessage:
-      customerMessages.length === 1
-        ? customerMessages[0].content
+      customerMessages.length === 1 && firstMsg
+        ? firstMsg.content
         : customerMessages
             .map((message, index) => `[${index + 1}] ${String(message.content || '').trim()}`)
             .join('\n'),

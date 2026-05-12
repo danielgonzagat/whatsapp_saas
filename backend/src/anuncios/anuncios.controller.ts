@@ -34,6 +34,13 @@ export class AnunciosController {
     return { data: status };
   }
 
+  @Get('sync-status/google')
+  async getGoogleSyncStatus(@Req() req: Request) {
+    const wsId = this.workspaceId(req);
+    const status = await this.adsSyncProcessor.getSyncStatus(wsId);
+    return { data: status };
+  }
+
   @Get('accounts')
   async getAccounts(@Req() req: Request, @Query('platform') platform?: string) {
     const wsId = this.workspaceId(req);
@@ -52,6 +59,13 @@ export class AnunciosController {
   async getConnectUrl(@Req() req: Request, @Param('platform') platform: string) {
     const wsId = this.workspaceId(req);
     const result = await this.anunciosService.getConnectUrl(wsId, platform);
+    return { data: result };
+  }
+
+  @Post('disconnect/:platform')
+  async disconnect(@Req() req: Request, @Param('platform') platform: string) {
+    const wsId = this.workspaceId(req);
+    const result = await this.anunciosService.disconnect(wsId, platform);
     return { data: result };
   }
 

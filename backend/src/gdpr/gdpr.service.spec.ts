@@ -112,9 +112,15 @@ describe('GdprService', () => {
     },
     conversation: {
       findMany: jest.fn(),
+      updateMany: jest.fn(),
     },
     message: {
       findMany: jest.fn(),
+      updateMany: jest.fn(),
+    },
+    chatMessage: {
+      findMany: jest.fn(),
+      updateMany: jest.fn(),
     },
   };
 
@@ -149,7 +155,11 @@ describe('GdprService', () => {
     prismaMock.agent.findUnique.mockResolvedValue(agentRecord);
     prismaMock.agent.findFirst.mockResolvedValue(null);
     prismaMock.conversation.findMany.mockResolvedValue([]);
+    prismaMock.conversation.updateMany.mockResolvedValue({ count: 0 });
     prismaMock.message.findMany.mockResolvedValue([]);
+    prismaMock.message.updateMany.mockResolvedValue({ count: 0 });
+    prismaMock.chatMessage.findMany.mockResolvedValue([]);
+    prismaMock.chatMessage.updateMany.mockResolvedValue({ count: 0 });
     emailMock.sendEmail.mockResolvedValue(true);
     emailMock.sendDataDeletionConfirmationEmail.mockResolvedValue(true);
     storageMock.upload.mockResolvedValue({
@@ -478,6 +488,16 @@ describe('GdprService', () => {
       prismaMock.message.findMany.mockResolvedValueOnce([
         { id: 'm1', content: 'hello', direction: 'INBOUND', createdAt: new Date() },
       ]);
+      prismaMock.chatMessage.findMany.mockResolvedValueOnce([
+        {
+          id: 'cm1',
+          threadId: 'thread_1',
+          role: 'user',
+          content: 'internal chat',
+          metadata: null,
+          createdAt: new Date(),
+        },
+      ]);
 
       await service.processExport('gdpr_1');
 
@@ -491,7 +511,15 @@ describe('GdprService', () => {
           }),
         }),
       );
-      expect(fs.writeFileSync).toHaveBeenCalledTimes(4); // agent.json, conversations.json, messages.json, manifest.json
+      expect(prismaMock.chatMessage.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            userId: 'agent_1',
+            workspaceId: 'ws_1',
+          }),
+        }),
+      );
+      expect(fs.writeFileSync).toHaveBeenCalledTimes(5); // agent, conversations, messages, chat_messages, manifest
     });
   });
 
@@ -549,6 +577,54 @@ describe('GdprService', () => {
         return Boolean(arg?.data?.evidenceUrl);
       });
       expect(evidenceCall).toBeDefined();
+    });
+
+    it('anonymizes owner chat messages and records the count in audit details', async () => {
+      prismaMock.chatMessage.updateMany.mockResolvedValueOnce({ count: 3 });
+
+      await service.processDeletion('gdpr_1');
+
+      expect(prismaMock.chatMessage.updateMany).toHaveBeenCalledWith({
+        where: { workspaceId: 'ws_1', userId: 'agent_1', deletedAt: null },
+        data: expect.objectContaining({
+          userId: null,
+          content: '[deleted by GDPR request]',
+          deletedAt: expect.any(Date),
+        }),
+      });
+      expect(prismaMock.auditLog.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            details: expect.objectContaining({ chatMessagesAnonymized: 3 }),
+          }),
+        }),
+      );
+    });
+
+    it('unassigns agent-linked conversations and messages while preserving records', async () => {
+      prismaMock.conversation.updateMany.mockResolvedValueOnce({ count: 2 });
+      prismaMock.message.updateMany.mockResolvedValueOnce({ count: 5 });
+
+      await service.processDeletion('gdpr_1');
+
+      expect(prismaMock.conversation.updateMany).toHaveBeenCalledWith({
+        where: { workspaceId: 'ws_1', assignedAgentId: 'agent_1' },
+        data: { assignedAgentId: null },
+      });
+      expect(prismaMock.message.updateMany).toHaveBeenCalledWith({
+        where: { workspaceId: 'ws_1', agentId: 'agent_1' },
+        data: { agentId: null },
+      });
+      expect(prismaMock.auditLog.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            details: expect.objectContaining({
+              conversationsUnassigned: 2,
+              messagesUnassigned: 5,
+            }),
+          }),
+        }),
+      );
     });
   });
 });

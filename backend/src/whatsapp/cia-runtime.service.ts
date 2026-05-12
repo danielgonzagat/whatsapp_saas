@@ -182,12 +182,13 @@ export class CiaRuntimeService implements OnModuleDestroy {
       triggeredBy: 'autopilot_total',
     });
 
+    const runId = fullRun.runId;
     await this.agentEvents.publish({
       type: 'status',
       workspaceId,
       phase: 'autopilot_total',
       persistent: true,
-      runId: fullRun.runId,
+      ...(runId ? { runId } : {}),
       message:
         'Autopilot Total ativado. Vou assumir backlog, novas mensagens e ciclo contínuo do seu WhatsApp.',
       meta: { fullRun },
@@ -204,7 +205,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
     });
 
     const settings = asProviderSettings(workspace?.providerSettings);
-    const currentRunId = settings?.ciaRuntime?.currentRunId;
+    const currentRunId: string | null | undefined = settings?.ciaRuntime?.currentRunId;
 
     await this.runtimeState.updateWorkspaceAutonomy(workspaceId, {
       mode: 'OFF',
@@ -217,7 +218,9 @@ export class CiaRuntimeService implements OnModuleDestroy {
         autoBootstrapOnConnected: settings.autonomy?.autoBootstrapOnConnected ?? true,
       },
     });
-    await this.runtimeState.updateAutonomyRunStatus(workspaceId, currentRunId, 'PAUSED');
+    if (currentRunId) {
+      await this.runtimeState.updateAutonomyRunStatus(workspaceId, currentRunId, 'PAUSED');
+    }
     await this.stopPresenceHeartbeat(workspaceId);
 
     await this.agentEvents.publish({

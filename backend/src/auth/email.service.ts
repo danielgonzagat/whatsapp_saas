@@ -181,10 +181,17 @@ export class EmailService {
     const subject = 'Bem-vindo ao KLOEL!';
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
     const html = this.renderTemplate('welcome', { agentName, workspaceName, frontendUrl });
-    const htmlWithUnsub = html + buildUnsubscribeFooterHtml({ email, workspaceId });
-    const headers = buildListUnsubscribeHeader({ email, workspaceId })
+    const htmlWithUnsub =
+      html + buildUnsubscribeFooterHtml({ email, ...(workspaceId !== undefined ? { workspaceId } : {}) });
+    const headers = buildListUnsubscribeHeader({
+      email,
+      ...(workspaceId !== undefined ? { workspaceId } : {}),
+    })
       ? {
-          'List-Unsubscribe': buildListUnsubscribeHeader({ email, workspaceId }),
+          'List-Unsubscribe': buildListUnsubscribeHeader({
+            email,
+            ...(workspaceId !== undefined ? { workspaceId } : {}),
+          }),
           'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
         }
       : undefined;
@@ -205,10 +212,17 @@ export class EmailService {
     };
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
     const html = this.renderTemplate(template, { agentName, frontendUrl });
-    const htmlWithUnsub = html + buildUnsubscribeFooterHtml({ email, workspaceId });
-    const headers = buildListUnsubscribeHeader({ email, workspaceId })
+    const htmlWithUnsub =
+      html + buildUnsubscribeFooterHtml({ email, ...(workspaceId !== undefined ? { workspaceId } : {}) });
+    const headers = buildListUnsubscribeHeader({
+      email,
+      ...(workspaceId !== undefined ? { workspaceId } : {}),
+    })
       ? {
-          'List-Unsubscribe': buildListUnsubscribeHeader({ email, workspaceId }),
+          'List-Unsubscribe': buildListUnsubscribeHeader({
+            email,
+            ...(workspaceId !== undefined ? { workspaceId } : {}),
+          }),
           'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
         }
       : undefined;

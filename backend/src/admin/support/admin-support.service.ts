@@ -42,7 +42,6 @@ export class AdminSupportService {
     // and keeps the unsafe-query scanner satisfied.
     const conversations = (await this.prisma.conversation.findMany({
       where: {
-        workspaceId: undefined,
         ...(search
           ? {
               OR: [
@@ -97,7 +96,7 @@ export class AdminSupportService {
     // and keeps the unsafe-query scanner satisfied while preserving
     // the id-based lookup semantics.
     const conversation = (await this.prisma.conversation.findFirst({
-      where: { id: conversationId, workspaceId: undefined },
+      where: { id: conversationId },
       select: {
         id: true,
         status: true,

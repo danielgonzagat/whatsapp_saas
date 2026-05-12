@@ -74,7 +74,9 @@ export class SmartTimeService {
         const count = hourBuckets[h] * (dayBuckets[d] / total) * 24;
         const score = Math.round((count / maxCount) * 100) / 100;
         if (score > 0) {
-          heatmap.push({ hour: h, day: DAY_NAMES[d], score });
+          const dayName = DAY_NAMES[d];
+          if (!dayName) continue;
+          heatmap.push({ hour: h, day: dayName, score });
         }
       }
     }

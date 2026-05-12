@@ -166,11 +166,14 @@ export class MetaSdkService {
         throw new Error(res.error.message);
       }
 
-      return {
+      const result: { access_token: string; token_type: string; expires_in?: number } = {
         access_token: typeof res.access_token === 'string' ? res.access_token : '',
         token_type: typeof res.token_type === 'string' ? res.token_type : 'bearer',
-        expires_in: typeof res.expires_in === 'number' ? res.expires_in : undefined,
       };
+      if (typeof res.expires_in === 'number') {
+        result.expires_in = res.expires_in;
+      }
+      return result;
     } catch (err: unknown) {
       void this.opsAlert?.alertOnCriticalError(err, 'MetaSdkService.exchangeCodeForToken');
       this.logger.error(

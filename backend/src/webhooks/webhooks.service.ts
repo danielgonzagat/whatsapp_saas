@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import type { Redis } from 'ioredis';
+import { getCorrelationId } from '../common/observability/correlation-store';
 import { InboxGateway } from '../inbox/inbox.gateway';
 import { OmnichannelService } from '../inbox/omnichannel.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
@@ -85,6 +86,7 @@ export class WebhooksService {
 
   /** Process webhook. */
   async processWebhook(workspaceId: string, flowId: string, payload: WebhookJsonPayload) {
+    const correlationId = getCorrelationId();
     // 1. Validate Workspace & Flow
     const flow = await this.prisma.flow.findFirst({
       where: { id: flowId, workspaceId },
@@ -121,9 +123,11 @@ export class WebhooksService {
       workspaceId,
       flowId,
       user: phone,
+      correlationId,
       initialVars: {
         webhook: payload, // Access via {{webhook.email}}, {{webhook.data.id}}
         source: 'webhook',
+        correlationId,
       },
     });
 
@@ -135,6 +139,7 @@ export class WebhooksService {
    * Ex: { status: "paid", phone: "...", amount: 1000 }
    */
   async processFinanceEvent(workspaceId: string, payload: FinanceWebhookBody) {
+    const correlationId = getCorrelationId();
     const ws = await this.prisma.workspace.findUnique({
       where: { id: workspaceId },
       select: { providerSettings: true },
@@ -169,9 +174,11 @@ export class WebhooksService {
       workspaceId,
       flowId,
       user: phone,
+      correlationId,
       initialVars: {
         finance: payload,
         source: 'finance_webhook',
+        correlationId,
       },
     });
 

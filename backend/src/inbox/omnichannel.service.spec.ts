@@ -73,6 +73,7 @@ describe('OmnichannelService', () => {
       channel: 'instagram',
       executeTools: false,
       context: {
+        deliveryMode: 'reactive',
         externalId: 'ig_user_1',
         fromName: 'Ana',
         metadata: { messageId: 'ig_msg_1' },

@@ -1,5 +1,6 @@
 import { Body, Controller, Post, Request, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { AuthenticatedRequest } from '../common/interfaces';
 import { NotificationsService } from './notifications.service';
 import { RouteClass } from '../common/throttler/route-class.decorator';
 
@@ -12,7 +13,7 @@ export class NotificationsController {
 
   /** Register device. */
   @Post('register-device')
-  async registerDevice(@Request() req, @Body() body: { token: string; platform: string }) {
+  async registerDevice(@Request() req: AuthenticatedRequest, @Body() body: { token: string; platform: string }) {
     return this.notificationsService.registerDevice(req.user.sub, body.token, body.platform);
   }
 }

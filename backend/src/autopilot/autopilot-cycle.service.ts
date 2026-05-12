@@ -263,13 +263,18 @@ export class AutopilotCycleService {
     let customFields = (contact?.customFields as Record<string, unknown>) || {};
 
     if (!Array.isArray(tags)) {
-      const fullContact = await this.prisma.contact.findFirst({
-        where: { id: contact?.id, workspaceId },
-        select: { id: true, customFields: true, tags: { select: { name: true } } },
+      const fullContactTags = await this.prisma.contact.findFirst({
+        where: { ...(contact?.id !== undefined ? { id: contact.id } : {}), workspaceId },
+        select: {
+          customFields: true,
+          tags: { select: { name: true } },
+        },
       });
-      if (fullContact) {
-        tags = fullContact?.tags || [];
-        customFields = (fullContact.customFields as Record<string, unknown>) || {};
+      if (fullContactTags && 'tags' in fullContactTags) {
+        tags = (
+          fullContactTags as { tags: Array<{ name: string }>; customFields: Prisma.JsonValue }
+        ).tags;
+        customFields = (fullContactTags.customFields as Record<string, unknown>) || {};
       }
     }
 
@@ -292,7 +297,11 @@ export class AutopilotCycleService {
     const lastInbound =
       messages?.find((m) => m.direction === 'INBOUND') ||
       (await this.prisma.message.findFirst({
-        where: { workspaceId, contactId, direction: 'INBOUND' },
+        where: {
+          workspaceId,
+          ...(contactId !== undefined ? { contactId } : {}),
+          direction: 'INBOUND',
+        },
         orderBy: { createdAt: 'desc' },
         select: { createdAt: true },
       }));

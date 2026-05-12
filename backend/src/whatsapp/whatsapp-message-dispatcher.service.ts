@@ -220,13 +220,14 @@ export class WhatsappMessageDispatcherService {
       );
       await this.providerRegistry.stopTyping(ws, n).catch(() => {});
     }
-    const r = await this.providerRegistry
-      .sendMessage(ws, to, message, {
-        mediaUrl: opts?.mediaUrl,
-        mediaType: opts?.mediaType,
-        caption: opts?.caption,
-        quotedMessageId: opts?.quotedMessageId,
-      })
+    const sendOpts: Record<string, unknown> = {};
+    if (opts?.mediaUrl !== undefined) sendOpts.mediaUrl = opts.mediaUrl;
+    if (opts?.mediaType !== undefined) sendOpts.mediaType = opts.mediaType;
+    if (opts?.caption !== undefined) sendOpts.caption = opts.caption;
+    if (opts?.quotedMessageId !== undefined) sendOpts.quotedMessageId = opts.quotedMessageId;
+    const registry = this.providerRegistry;
+    const r = await registry
+      .sendMessage(ws, to, message, sendOpts as Record<string, unknown>)
       .catch((e: unknown) => {
         this.slog.error('send_direct_provider_failed', {
           workspaceId: ws,
@@ -245,14 +246,15 @@ export class WhatsappMessageDispatcherService {
     }
     await this.sessionService.markChatAsReadBestEffort(ws, to);
     await this.providerRegistry.setPresence(ws, 'offline', n).catch(() => {});
+    const extId = 'messageId' in r && r.messageId != null ? r.messageId : (opts?.externalId ?? undefined);
     await this.inbox.saveMessageByPhone({
       workspaceId: ws,
       phone: to,
       content: opts?.caption || message || opts?.mediaUrl || '',
       direction: 'OUTBOUND',
-      externalId: 'messageId' in r ? r.messageId : (opts?.externalId ?? null),
+      ...(extId !== undefined ? { externalId: extId } : {}),
       type: opts?.mediaType ? opts.mediaType.toUpperCase() : 'TEXT',
-      mediaUrl: opts?.mediaUrl,
+      ...(opts?.mediaUrl !== undefined ? { mediaUrl: opts.mediaUrl } : {}),
       status: 'SENT',
     });
     return {

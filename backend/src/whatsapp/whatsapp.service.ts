@@ -247,17 +247,19 @@ export class WhatsappService {
     const phone = this.normalizeNumber(input.phone || '');
     if (!phone) throw new BadRequestException('phone é obrigatório');
     const registered = await this.providerRegistry.isRegistered(ws, phone).catch(() => null);
+    const resolvedName = this.resolveTrustedContactName(phone, input.name);
+    const emailVal = input.email?.trim();
     const contact = await this.prisma.contact.upsert({
       where: { workspaceId_phone: { workspaceId: ws, phone } },
       update: {
-        name: this.resolveTrustedContactName(phone, input.name) || null,
-        email: input.email?.trim() || undefined,
+        name: resolvedName || null,
+        ...(emailVal ? { email: emailVal } : {}),
       },
       create: {
         workspaceId: ws,
         phone,
-        name: this.resolveTrustedContactName(phone, input.name) || null,
-        email: input.email?.trim() || undefined,
+        name: resolvedName || null,
+        ...(emailVal ? { email: emailVal } : {}),
       },
       select: { id: true, phone: true, name: true, email: true, createdAt: true, updatedAt: true },
     });
@@ -408,8 +410,8 @@ export class WhatsappService {
     return this.prisma.monitoredGroup.create({
       data: {
         jid: d.jid,
-        name: d.name,
-        inviteLink: d.inviteLink,
+        ...(d.name !== undefined ? { name: d.name } : {}),
+        ...(d.inviteLink !== undefined ? { inviteLink: d.inviteLink } : {}),
         settings: JSON.parse(JSON.stringify(d.settings || {})) as Prisma.InputJsonObject,
         workspace: { connect: { id: ws } },
       },

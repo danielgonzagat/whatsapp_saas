@@ -4,6 +4,7 @@ import {
   Controller,
   Delete,
   Get,
+  NotFoundException,
   Param,
   Post,
   Put,
@@ -28,6 +29,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { ConversationalOnboardingService } from './conversational-onboarding.service';
 import { KloelService } from './kloel.service';
 import { KloelThreadSearchService } from './kloel-thread-search.service';
+import { KloelToolDispatcherService } from './kloel-tool-dispatcher.service';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { StorageService } from '../common/storage/storage.service';
 
@@ -65,6 +67,10 @@ interface MemoryDto {
 interface OnboardingChatDto {
   message: string;
 }
+interface ApprovalDecisionDto {
+  note?: string;
+  adjustment?: Prisma.InputJsonValue;
+}
 
 const KLOEL_UPLOAD_GENERIC_MIME_RE =
   /^(image\/(jpeg|png|gif|webp)|application\/pdf|application\/msword|application\/vnd\.openxmlformats-officedocument\.wordprocessingml\.document)$/;
@@ -83,6 +89,7 @@ export class KloelController {
     private readonly storageService: StorageService,
     private readonly prisma: PrismaService,
     private readonly threadSearchService: KloelThreadSearchService,
+    private readonly toolDispatcher: KloelToolDispatcherService,
   ) {}
 
   private readUserId(user: unknown) {
@@ -91,6 +98,69 @@ export class KloelController {
     if (typeof sub === 'string' && sub.trim()) return sub;
     const legacyId = 'id' in user ? user.id : undefined;
     return typeof legacyId === 'string' && legacyId.trim() ? legacyId : undefined;
+  }
+
+  private readWorkspaceId(req: AuthenticatedRequest) {
+    const workspaceId = req.workspaceId || req.user?.workspaceId;
+    if (!workspaceId) {
+      throw new BadRequestException('workspace_id_required');
+    }
+    return workspaceId;
+  }
+
+  private normalizeApprovalNote(body?: ApprovalDecisionDto) {
+    return typeof body?.note === 'string' && body.note.trim() ? body.note.trim() : null;
+  }
+
+  private async transitionApprovalRequest(input: {
+    approvalRequestId: string;
+    req: AuthenticatedRequest;
+    state: 'APPROVED' | 'REJECTED' | 'ADJUSTMENT_REQUESTED';
+    body?: ApprovalDecisionDto;
+  }) {
+    const approvalRequestId = String(input.approvalRequestId || '').trim();
+    if (!approvalRequestId) {
+      throw new BadRequestException('approval_request_id_required');
+    }
+    const workspaceId = this.readWorkspaceId(input.req);
+    const approval = await this.prisma.approvalRequest.findFirst({
+      where: { id: approvalRequestId, workspaceId },
+      select: { id: true, state: true },
+    });
+    if (!approval) {
+      throw new NotFoundException('approval_request_not_found');
+    }
+    if (approval.state !== 'OPEN') {
+      throw new BadRequestException('approval_request_not_open');
+    }
+
+    const userId = this.readUserId(input.req.user);
+    const response: Prisma.InputJsonObject = {
+      action: input.state.toLowerCase(),
+      decidedAt: new Date().toISOString(),
+      ...(userId ? { decidedByUserId: userId } : {}),
+      note: this.normalizeApprovalNote(input.body),
+      ...(input.state === 'ADJUSTMENT_REQUESTED'
+        ? { adjustment: input.body?.adjustment ?? null }
+        : {}),
+    };
+
+    const result = await this.prisma.approvalRequest.updateMany({
+      where: { id: approvalRequestId, workspaceId, state: 'OPEN' },
+      data: {
+        state: input.state,
+        respondedAt: new Date(),
+        response,
+      },
+    });
+    if (result.count !== 1) {
+      throw new BadRequestException('approval_request_not_open');
+    }
+    return {
+      success: true,
+      approvalRequestId,
+      state: input.state,
+    };
   }
 
   // ═══ THINK ═══
@@ -136,6 +206,93 @@ export class KloelController {
   @Get('history')
   async getHistory(@Request() req: AuthenticatedRequest): Promise<unknown[]> {
     return this.kloelService.getHistory(req.user?.workspaceId);
+  }
+
+  @UseGuards(JwtAuthGuard, WorkspaceGuard)
+  @Get('approvals/pending')
+  async getPendingApprovals(@Request() req: AuthenticatedRequest) {
+    const workspaceId = req.workspaceId || req.user?.workspaceId;
+    if (!workspaceId) {
+      throw new BadRequestException('workspace_id_required');
+    }
+    const approvals = await this.prisma.approvalRequest.findMany({
+      where: { workspaceId, state: 'OPEN' },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+      select: {
+        id: true,
+        kind: true,
+        scope: true,
+        entityType: true,
+        entityId: true,
+        state: true,
+        title: true,
+        prompt: true,
+        payload: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+    return { approvals };
+  }
+
+  @UseGuards(JwtAuthGuard, WorkspaceGuard)
+  @Post('approvals/:approvalRequestId/approve')
+  async approveApprovalRequest(
+    @Param('approvalRequestId') approvalRequestId: string,
+    @Body() body: ApprovalDecisionDto,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    const transition = await this.transitionApprovalRequest({
+      approvalRequestId,
+      req,
+      state: 'APPROVED',
+      body,
+    });
+    const userId = this.readUserId(req.user);
+    const execution = await this.toolDispatcher.executeApprovedApprovalRequest({
+      workspaceId: this.readWorkspaceId(req),
+      approvalRequestId: transition.approvalRequestId,
+      ...(userId !== undefined ? { userId } : {}),
+    });
+    return execution.executed
+      ? {
+          ...transition,
+          state: execution.state,
+          executed: true,
+          result: execution.result,
+        }
+      : transition;
+  }
+
+  @UseGuards(JwtAuthGuard, WorkspaceGuard)
+  @Post('approvals/:approvalRequestId/reject')
+  async rejectApprovalRequest(
+    @Param('approvalRequestId') approvalRequestId: string,
+    @Body() body: ApprovalDecisionDto,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    return this.transitionApprovalRequest({
+      approvalRequestId,
+      req,
+      state: 'REJECTED',
+      body,
+    });
+  }
+
+  @UseGuards(JwtAuthGuard, WorkspaceGuard)
+  @Post('approvals/:approvalRequestId/adjust')
+  async adjustApprovalRequest(
+    @Param('approvalRequestId') approvalRequestId: string,
+    @Body() body: ApprovalDecisionDto,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    return this.transitionApprovalRequest({
+      approvalRequestId,
+      req,
+      state: 'ADJUSTMENT_REQUESTED',
+      body,
+    });
   }
 
   @UseGuards(JwtAuthGuard, WorkspaceGuard)

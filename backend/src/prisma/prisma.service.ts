@@ -8,6 +8,7 @@ import {
 import { Prisma, PrismaClient } from '@prisma/client';
 import {
   createAffiliateCommissionFromPaidCheckoutUpdate,
+  creditWalletFromPaidCheckoutUpdate,
   enqueuePurchaseWhatsappFromPaidCheckoutUpdate,
   markCheckoutSocialLeadConvertedFromPaidUpdate,
   sendFacebookCapiPurchaseFromPaidUpdate,
@@ -309,7 +310,7 @@ export class PrismaService
         memberAreaId: memberArea.id,
         studentName: order.customerName || order.customerEmail,
         studentEmail: order.customerEmail,
-        studentPhone: order.customerPhone || undefined,
+        ...(order.customerPhone !== undefined ? { studentPhone: order.customerPhone } : {}),
       },
     });
     await this.appendCheckoutEventIfMissing(tx, {
@@ -401,6 +402,10 @@ export class PrismaService
       const message = error instanceof Error ? error.message : 'unknown error';
       this.logger.warn(`Affiliate commission hook failed: ${message}`);
     });
+    await this.creditWalletFromPaidCheckoutUpdate(args).catch((error: unknown) => {
+      const message = error instanceof Error ? error.message : 'unknown error';
+      this.logger.warn(`Checkout wallet credit hook failed: ${message}`);
+    });
     await this.enqueuePurchaseWhatsappFromPaidCheckoutUpdate(args).catch((error: unknown) => {
       const message = error instanceof Error ? error.message : 'unknown error';
       this.logger.warn(`WhatsApp purchase notification hook failed: ${message}`);
@@ -424,6 +429,10 @@ export class PrismaService
 
   async createAffiliateCommissionFromPaidCheckoutUpdate(args: Prisma.CheckoutOrderUpdateManyArgs) {
     await createAffiliateCommissionFromPaidCheckoutUpdate(this, args);
+  }
+
+  async creditWalletFromPaidCheckoutUpdate(args: Prisma.CheckoutOrderUpdateManyArgs) {
+    await creditWalletFromPaidCheckoutUpdate(this, args);
   }
 
   async enqueuePurchaseWhatsappFromPaidCheckoutUpdate(args: Prisma.CheckoutOrderUpdateManyArgs) {

@@ -82,12 +82,11 @@ export async function upsertApprovalRequest(
       title: `Criar produto ${approval.requestedProductName}`,
       prompt: approval.operatorPrompt,
       payload: toPrismaJsonValue(approval),
-      respondedAt:
-        approval.status === 'APPROVED' ||
-        approval.status === 'REJECTED' ||
-        approval.status === 'COMPLETED'
-          ? new Date(approval.lastDetectedAt)
-          : undefined,
+      ...(approval.status === 'APPROVED' ||
+      approval.status === 'REJECTED' ||
+      approval.status === 'COMPLETED'
+        ? { respondedAt: new Date(approval.lastDetectedAt) }
+        : {}),
     },
     update: {
       state: approval.status,
@@ -120,7 +119,7 @@ export async function upsertInputCollectionSession(
       prompt: getPromptForStage(session.status, session.productName),
       answers: toPrismaJsonValue(session.answers || {}),
       payload: toPrismaJsonValue(session),
-      completedAt: session.completedAt ? new Date(session.completedAt) : undefined,
+      ...(session.completedAt ? { completedAt: new Date(session.completedAt) } : {}),
     },
     update: {
       state: session.status,
@@ -200,15 +199,20 @@ export async function upsertAccountWorkItem(
   const entityKey = String(input.entityId || 'global');
   const id = `${workspaceId}:${input.kind}:${input.entityType}:${entityKey}`;
   const previous = await findPreviousWorkItem(deps, workspaceId, id);
-  const updateData = buildWorkItemUpdateData(input, null);
+  const updateData = buildWorkItemUpdateData(input, null) as Prisma.AgentWorkItemUpdateInput;
+  const createDataBase = buildWorkItemUpdateData(input, undefined);
+  const { blockedBy: _cb, evidence: _ce, metadata: _cm, ...createDataClean } = createDataBase;
   const createData = {
     id,
     workspaceId,
     kind: input.kind,
     entityType: input.entityType,
     entityId: input.entityId || null,
-    ...buildWorkItemUpdateData(input, undefined),
-  };
+    ...createDataClean,
+    ...(_cb !== undefined ? { blockedBy: _cb } : {}),
+    ...(_ce !== undefined ? { evidence: _ce } : {}),
+    ...(_cm !== undefined ? { metadata: _cm } : {}),
+  } as Prisma.AgentWorkItemUncheckedCreateInput;
   await deps.prisma.agentWorkItem.upsert({
     where: { id, workspaceId },
     update: updateData,

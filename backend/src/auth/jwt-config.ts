@@ -41,7 +41,11 @@ const MS_DURATION_MAP: Record<string, number> = {
 export function getJwtCookieMaxAgeMs(): number {
   const raw = getJwtExpiresIn();
   if (typeof raw === 'number') return raw * 1000;
-  const match = /^(\d+)([smhd])$/.exec(raw as string);
-  if (match) return parseInt(match[1], 10) * (MS_DURATION_MAP[match[2]] ?? 60 * 1000);
+  const match = /^(\d+)([smhd])$/.exec(String(raw ?? ''));
+  if (match) {
+    const value = parseInt(match[1]!, 10);
+    const unit = match[2]!;
+    return value * (MS_DURATION_MAP[unit] ?? 60 * 1000);
+  }
   return 30 * 60 * 1000; // fallback 30 min
 }

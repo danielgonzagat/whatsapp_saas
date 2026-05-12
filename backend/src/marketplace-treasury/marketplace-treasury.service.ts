@@ -210,7 +210,7 @@ export class MarketplaceTreasuryService {
           orderId: input.orderId ?? null,
           feeSnapshotId: input.feeSnapshotId ?? null,
           reason: input.reason,
-          metadata: input.metadata,
+          ...(input.metadata !== undefined ? { metadata: input.metadata } : {}),
         },
       });
       const delta = input.direction === 'credit' ? input.amountInCents : -input.amountInCents;
@@ -284,7 +284,7 @@ export class MarketplaceTreasuryService {
             kind: MarketplaceTreasuryLedgerKind.PAYOUT_DEBIT,
             orderId: input.requestId,
             reason: 'marketplace_treasury_payout_debit',
-            metadata: input.metadata,
+            ...(input.metadata !== undefined ? { metadata: input.metadata } : {}),
           },
         });
 
@@ -346,7 +346,7 @@ export class MarketplaceTreasuryService {
             kind: MarketplaceTreasuryLedgerKind.ADJUSTMENT_CREDIT,
             orderId: input.requestId,
             reason: input.reason,
-            metadata: input.metadata,
+            ...(input.metadata !== undefined ? { metadata: input.metadata } : {}),
           },
         });
 

@@ -12,7 +12,7 @@ import { BillingSubscriptionService } from './billing-subscription.service';
 @Injectable()
 export class BillingService {
   private readonly logger = new Logger(BillingService.name);
-  private stripe: StripeClient;
+  private stripe!: StripeClient;
   private subsService: BillingSubscriptionService;
   private checkoutWebhook: BillingCheckoutWebhookService;
   private helper: BillingCheckoutHelperService;

@@ -251,7 +251,9 @@ export class AutopilotOpsConversionService {
       await this.prisma.autopilotEvent.create({
         data: {
           workspaceId,
-          contactId: contactIdResolved,
+          ...(contactIdResolved !== undefined
+            ? { contactId: contactIdResolved }
+            : {}),
           intent: 'BUYING',
           action: 'CONVERSION',
           status: 'executed',
@@ -270,7 +272,9 @@ export class AutopilotOpsConversionService {
           where: { id: contactIdResolved, workspaceId },
           select: { phone: true },
         });
-        contactPhone = contact.phone || contactPhone;
+        if (contact) {
+          contactPhone = contact.phone || contactPhone;
+        }
       }
 
       const ws = await this.prisma.workspace.findUnique({ where: { id: workspaceId } });

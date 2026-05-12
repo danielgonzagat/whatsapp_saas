@@ -1,4 +1,11 @@
-import { Injectable, Logger, OnModuleDestroy, OnModuleInit, Optional } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+  OnModuleInit,
+  Optional,
+} from '@nestjs/common';
 import { Queue, Worker } from 'bullmq';
 import { EmailService } from '../auth/email.service';
 import { getRedisUrl } from '../common/redis/redis.util';
@@ -154,7 +161,7 @@ export class EmailMarketingService implements OnModuleInit, OnModuleDestroy {
         status: 'DRAFT',
         totalRecipients: dto.recipients.length,
         provider,
-          recipients: {
+        recipients: {
           create: dto.recipients.map((r) => ({
             workspaceId,
             email: r.email,
@@ -232,6 +239,8 @@ export class EmailMarketingService implements OnModuleInit, OnModuleDestroy {
     if (campaign.status !== 'DRAFT') {
       throw new Error(`Cannot send campaign in status: ${campaign.status}`);
     }
+
+    await this.assertCampaignSendApproved(campaignId, workspaceId);
 
     await this.prisma.emailCampaign.update({
       where: { id: campaignId },
@@ -369,6 +378,22 @@ export class EmailMarketingService implements OnModuleInit, OnModuleDestroy {
     );
   }
 
+  private async assertCampaignSendApproved(campaignId: string, workspaceId: string): Promise<void> {
+    const approval = await this.prisma.approvalRequest.findFirst({
+      where: {
+        workspaceId,
+        kind: 'email_campaign:send',
+        entityType: 'EmailCampaign',
+        entityId: campaignId,
+        state: { in: ['APPROVED', 'COMPLETED'] },
+      },
+      select: { id: true },
+    });
+    if (!approval) {
+      throw new BadRequestException('Approved email campaign send request not found');
+    }
+  }
+
   private async recordDeliveryEvent(log: EmailDeliveryLog): Promise<void> {
     const event = log.event;
     const isSent = event === 'SENT';
@@ -387,7 +412,11 @@ export class EmailMarketingService implements OnModuleInit, OnModuleDestroy {
         where: { id: log.recipientId },
         data: isSent
           ? { status: 'SENT' as const, sentAt: new Date() }
-          : { status: 'FAILED' as const, failedAt: new Date(), ...(log.errorMessage ? { errorMessage: log.errorMessage } : {}) },
+          : {
+              status: 'FAILED' as const,
+              failedAt: new Date(),
+              ...(log.errorMessage ? { errorMessage: log.errorMessage } : {}),
+            },
       }),
     ]);
   }

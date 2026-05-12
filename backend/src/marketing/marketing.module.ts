@@ -11,6 +11,9 @@ import { FacebookMessengerController } from './facebook-messenger.controller';
 import { FacebookMessengerService } from './facebook-messenger.service';
 import { MailboxGmailOAuthCallbackController } from './mailbox-gmail-oauth-callback.controller';
 import { MailboxGmailOAuthService } from './mailbox-gmail-oauth.service';
+import { MailboxImapSmtpService } from './mailbox-imap-smtp.service';
+import { MailboxMicrosoftOAuthCallbackController } from './mailbox-microsoft-oauth-callback.controller';
+import { MailboxMicrosoftOAuthService } from './mailbox-microsoft-oauth.service';
 
 /** Marketing module. */
 @Module({
@@ -19,6 +22,7 @@ import { MailboxGmailOAuthService } from './mailbox-gmail-oauth.service';
     MarketingController,
     MarketingConnectController,
     MailboxGmailOAuthCallbackController,
+    MailboxMicrosoftOAuthCallbackController,
     TikTokMarketingController,
     FacebookMessengerController,
   ],
@@ -27,12 +31,16 @@ import { MailboxGmailOAuthService } from './mailbox-gmail-oauth.service';
     TikTokAdsService,
     FacebookMessengerService,
     MailboxGmailOAuthService,
+    MailboxMicrosoftOAuthService,
+    MailboxImapSmtpService,
   ],
   exports: [
     TikTokMarketingService,
     TikTokAdsService,
     FacebookMessengerService,
     MailboxGmailOAuthService,
+    MailboxMicrosoftOAuthService,
+    MailboxImapSmtpService,
   ],
 })
 export class MarketingModule {}

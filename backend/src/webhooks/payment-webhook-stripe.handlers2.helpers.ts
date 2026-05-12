@@ -11,18 +11,24 @@ export async function updatePaymentAndSaleForSessionHelper(
   try {
     if (deps.prisma.payment) {
       const existingPayment = await deps.prisma.payment.findFirst({
-        where: { workspaceId, externalId: stripePaymentExternalId ?? null },
+        where: {
+          workspaceId,
+          ...(stripePaymentExternalId ? { externalId: stripePaymentExternalId } : {}),
+        },
       });
       const canTransition =
         !existingPayment ||
         validatePaymentTransition(existingPayment.status || 'PENDING', 'RECEIVED', {
           paymentId: existingPayment?.id,
           provider: 'stripe',
-          externalId: stripePaymentExternalId ?? null,
+          ...(stripePaymentExternalId ? { externalId: stripePaymentExternalId } : {}),
         });
       if (canTransition) {
         await deps.prisma.payment.updateMany({
-          where: { workspaceId, externalId: stripePaymentExternalId ?? null },
+          where: {
+            workspaceId,
+            ...(stripePaymentExternalId ? { externalId: stripePaymentExternalId } : {}),
+          },
           data: { status: 'RECEIVED' },
         });
       } else {
@@ -38,7 +44,7 @@ export async function updatePaymentAndSaleForSessionHelper(
         : new Error(typeof paymentErr === 'string' ? paymentErr : 'unknown error');
     deps.financialAlert.webhookProcessingFailed(msg, {
       provider: 'stripe',
-      externalId: stripePaymentExternalId ?? null,
+      externalId: stripePaymentExternalId ?? undefined,
       eventType: 'checkout.session.completed',
     });
     deps.logger.error(
@@ -65,7 +71,7 @@ export async function updatePaymentAndSaleForSessionHelper(
         : new Error(typeof saleErr === 'string' ? saleErr : 'unknown error');
     deps.financialAlert.webhookProcessingFailed(msg, {
       provider: 'stripe',
-      externalId: stripePaymentExternalId ?? null,
+      externalId: stripePaymentExternalId ?? undefined,
       eventType: 'checkout.session.completed',
     });
     deps.logger.error(
@@ -97,7 +103,11 @@ export async function sendCheckoutConfirmationHelper(
     const notifyErrMsg = notifyErr instanceof Error ? notifyErr.message : 'unknown error';
     deps.financialAlert.webhookProcessingFailed(
       notifyErr instanceof Error ? notifyErr : new Error(notifyErrMsg),
-      { provider: 'stripe', externalId: session.id ?? null, eventType: 'checkout.session.completed' },
+      {
+        provider: 'stripe',
+        externalId: session.id ?? undefined,
+        eventType: 'checkout.session.completed',
+      },
     );
     deps.logger.error(`[STRIPE] Failed to notify customer ${customerPhone}: ${notifyErrMsg}`, {
       workspaceId,

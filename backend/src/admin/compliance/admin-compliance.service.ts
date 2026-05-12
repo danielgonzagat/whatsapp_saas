@@ -81,7 +81,7 @@ function accumulateRefunds(
   }
 }
 
-  type KycAgent = {
+type KycAgent = {
   id: string;
   name: string | null;
   email: string | null;
@@ -101,8 +101,8 @@ type AuditItem = {
 function mapKycQueue(kycAgents: KycAgent[]) {
   return kycAgents.map((agent) => ({
     agentId: agent.id,
-      workspaceId: agent.workspace?.id ?? '',
-      workspaceName: agent.workspace?.name ?? null,
+    workspaceId: agent.workspace?.id ?? '',
+    workspaceName: agent.workspace?.name ?? null,
     ownerName: agent.name,
     ownerEmail: agent.email,
     kycStatus: agent.kycStatus,

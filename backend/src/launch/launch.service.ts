@@ -67,9 +67,9 @@ export class LaunchService {
       data: {
         name: data.name || data.role || 'Grupo do lançamento',
         inviteLink,
-        capacity: data.capacity,
-        current: data.current,
-        isActive: data.isActive,
+        ...(data.capacity !== undefined ? { capacity: data.capacity } : {}),
+        ...(data.current !== undefined ? { current: data.current } : {}),
+        ...(data.isActive !== undefined ? { isActive: data.isActive } : {}),
         launcher: { connect: { id: launcherId } },
       },
     });

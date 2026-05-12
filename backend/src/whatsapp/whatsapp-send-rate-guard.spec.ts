@@ -105,8 +105,9 @@ describe('WhatsappSendRateGuardService', () => {
       expect(planLimits.ensureDailyMessageQuota).toHaveBeenCalledWith('workspace-123');
       expect(planLimits.ensureMessageRate).toHaveBeenCalledWith('workspace-123');
       // ensureDailyMessageQuota called before ensureMessageRate
-      expect(planLimits.ensureDailyMessageQuota.mock.invocationCallOrder[0])
-        .toBeLessThan(planLimits.ensureMessageRate.mock.invocationCallOrder[0]);
+      expect(planLimits.ensureDailyMessageQuota.mock.invocationCallOrder[0]).toBeLessThan(
+        planLimits.ensureMessageRate.mock.invocationCallOrder[0],
+      );
       expect(originalFn).toHaveBeenCalledWith('workspace-123', 'Hello');
       expect(result).toBe('original-result');
     });

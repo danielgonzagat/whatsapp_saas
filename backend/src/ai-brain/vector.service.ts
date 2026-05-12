@@ -10,7 +10,7 @@ type EmbeddingResult = { embedding: number[]; tokensUsed: number };
 @Injectable()
 export class VectorService {
   private readonly logger = new Logger(VectorService.name);
-  private openai: OpenAI;
+  private openai: OpenAI | null = null;
 
   constructor(private configService: ConfigService) {
     const apiKey = this.configService.get<string>('OPENAI_API_KEY');
@@ -41,7 +41,9 @@ export class VectorService {
 
     const responseWithUsage = response as { usage?: { total_tokens?: number } };
     const usage = responseWithUsage?.usage?.total_tokens || 0;
-    return { embedding: response.data[0].embedding, tokensUsed: usage };
+    const first = response.data[0];
+    if (!first) return { embedding: [], tokensUsed: 0 };
+    return { embedding: first.embedding, tokensUsed: usage };
   }
 
   /**
@@ -53,9 +55,12 @@ export class VectorService {
     let normB = 0;
 
     for (let i = 0; i < vecA.length; i++) {
-      dotProduct += vecA[i] * vecB[i];
-      normA += vecA[i] * vecA[i];
-      normB += vecB[i] * vecB[i];
+      const a = vecA[i];
+      const b = vecB[i];
+      if (a === undefined || b === undefined) continue;
+      dotProduct += a * b;
+      normA += a * a;
+      normB += b * b;
     }
 
     return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));

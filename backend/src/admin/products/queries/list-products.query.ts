@@ -300,7 +300,7 @@ export async function listAdminProducts(
           updatedAt: true,
         },
       }),
-      prisma.product.count({ where: { workspaceId: input.workspaceId ?? undefined, ...where } }),
+      prisma.product.count({ where }),
     ],
     { isolationLevel: 'ReadCommitted' },
   );

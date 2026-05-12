@@ -1,4 +1,10 @@
-import { ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { PIPELINE_STAGE_COLORS } from '../common/kloel-colors';
 import type { ContactCustomFields } from '../contacts/contact-custom-fields.types';
@@ -105,29 +111,23 @@ export class PipelineService {
     // Find first stage of default pipeline
     const pipeline = await this.getPipeline(workspaceId);
     const firstStage = pipeline.stages[0];
-
-    if (data.contactId) {
-      const contact = await this.prisma.contact.findUnique({
-        where: { id: data.contactId },
-        select: { workspaceId: true, customFields: true },
-      });
-      if (!contact || contact.workspaceId !== workspaceId) {
-        throw new ForbiddenException('Contato não pertence a este workspace');
-      }
-      const cf = (contact.customFields || {}) as ContactCustomFields;
-      const sourceCampaignId =
-        typeof cf.lastCampaignId === 'string' ? cf.lastCampaignId : undefined;
-
-      return this.prisma.deal.create({
-        data: {
-          title: data.title || '',
-          value: data.value || 0,
-          contactId: data.contactId,
-          stageId: firstStage.id,
-          ...(sourceCampaignId ? { sourceCampaignId } : {}),
-        },
-      });
+    if (!firstStage) {
+      throw new NotFoundException('Pipeline has no stages');
     }
+
+    if (!data.contactId) {
+      throw new BadRequestException('contactId is required to create a deal');
+    }
+
+    const contact = await this.prisma.contact.findUnique({
+      where: { id: data.contactId },
+      select: { workspaceId: true, customFields: true },
+    });
+    if (!contact || contact.workspaceId !== workspaceId) {
+      throw new ForbiddenException('Contato não pertence a este workspace');
+    }
+    const cf = (contact.customFields || {}) as ContactCustomFields;
+    const sourceCampaignId = typeof cf.lastCampaignId === 'string' ? cf.lastCampaignId : undefined;
 
     return this.prisma.deal.create({
       data: {
@@ -135,6 +135,7 @@ export class PipelineService {
         value: data.value || 0,
         contactId: data.contactId,
         stageId: firstStage.id,
+        ...(sourceCampaignId !== undefined ? { sourceCampaignId } : {}),
       },
     });
   }

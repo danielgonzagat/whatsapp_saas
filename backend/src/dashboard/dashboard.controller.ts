@@ -42,9 +42,9 @@ export class DashboardController {
   async getHome(@Req() req: AuthenticatedRequest, @Query() query: HomeQueryDto) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, query.workspaceId);
     const snapshot = await this.dashboardService.getHomeSnapshot(effectiveWorkspaceId, {
-      period: query.period,
-      startDate: query.startDate,
-      endDate: query.endDate,
+      ...(query.period !== undefined ? { period: query.period } : {}),
+      ...(query.startDate !== undefined ? { startDate: query.startDate } : {}),
+      ...(query.endDate !== undefined ? { endDate: query.endDate } : {}),
     });
 
     return {

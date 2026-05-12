@@ -175,10 +175,10 @@ export class StorageService implements OnModuleInit {
     const contentType =
       options.mimeType || response.headers.get('content-type') || 'application/octet-stream';
     return this.upload(buffer, {
-      filename: options.filename,
       mimeType: contentType,
       folder: options.folder || 'downloads',
-      workspaceId: options.workspaceId,
+      ...(options.filename !== undefined ? { filename: options.filename } : {}),
+      ...(options.workspaceId !== undefined ? { workspaceId: options.workspaceId } : {}),
     });
   }
 
@@ -275,7 +275,7 @@ export class StorageService implements OnModuleInit {
     return {
       relativePath,
       absolutePath,
-      downloadName: payload.d || undefined,
+      ...(payload.d !== undefined ? { downloadName: payload.d } : {}),
     };
   }
 

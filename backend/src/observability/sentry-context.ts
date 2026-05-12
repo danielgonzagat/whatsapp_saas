@@ -15,7 +15,7 @@ export function initSentryContext(runtime = 'backend'): void {
 }
 
 export function setSentryWorkspaceContext(workspaceId: string, userId?: string): void {
-  runtimeContext = { ...runtimeContext, workspaceId, userId };
+  runtimeContext = { ...runtimeContext, ...(userId !== undefined ? { workspaceId, userId } : { workspaceId }) };
   Sentry.setContext('kloel', runtimeContext);
   if (workspaceId) Sentry.setTag('workspaceId', workspaceId);
   if (userId) Sentry.setUser({ id: userId });
@@ -26,7 +26,7 @@ export function addSentryBreadcrumb(
   category = 'kloel',
   data?: Record<string, unknown>,
 ): void {
-  Sentry.addBreadcrumb({ message, category, data, level: 'info' });
+  Sentry.addBreadcrumb({ message, category, ...(data !== undefined ? { data } : {}), level: 'info' });
 }
 
 export function getSentryContext(): Readonly<KloelSentryContext> {

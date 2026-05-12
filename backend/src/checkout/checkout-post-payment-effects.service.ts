@@ -59,10 +59,16 @@ export class CheckoutPostPaymentEffectsService {
       .markConvertedFromOrder({
         workspaceId,
         orderId: order.id,
-        capturedLeadId,
-        customerEmail: order.customerEmail || undefined,
-        customerPhone: order.customerPhone || undefined,
-        deviceFingerprint,
+        ...(capturedLeadId !== null ? { capturedLeadId } : {}),
+        ...(order.customerEmail !== undefined &&
+        order.customerEmail !== null
+          ? { customerEmail: order.customerEmail }
+          : {}),
+        ...(order.customerPhone !== undefined &&
+        order.customerPhone !== null
+          ? { customerPhone: order.customerPhone }
+          : {}),
+        ...(deviceFingerprint !== null ? { deviceFingerprint } : {}),
       })
       .catch(() => undefined);
 
@@ -107,13 +113,26 @@ export class CheckoutPostPaymentEffectsService {
           pixelId: pixel.pixelId,
           accessToken: pixel.accessToken,
           eventName: 'Purchase',
-          email: order.customerEmail || undefined,
-          phone: order.customerPhone || undefined,
+          ...(order.customerEmail !== undefined &&
+          order.customerEmail !== null
+            ? { email: order.customerEmail }
+            : {}),
+          ...(order.customerPhone !== undefined &&
+          order.customerPhone !== null
+            ? { phone: order.customerPhone }
+            : {}),
           amount: Number(order.totalInCents || 0),
           currency: 'BRL',
-          productId: order.plan?.productId || undefined,
-          ip: order.ipAddress || undefined,
-          userAgent: order.userAgent || undefined,
+          ...(order.plan?.productId !== undefined &&
+          order.plan?.productId !== null
+            ? { productId: order.plan.productId }
+            : {}),
+          ...(order.ipAddress !== undefined && order.ipAddress !== null
+            ? { ip: order.ipAddress }
+            : {}),
+          ...(order.userAgent !== undefined && order.userAgent !== null
+            ? { userAgent: order.userAgent }
+            : {}),
         });
       });
     } catch (error: unknown) {

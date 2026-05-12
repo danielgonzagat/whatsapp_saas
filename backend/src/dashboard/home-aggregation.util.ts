@@ -263,7 +263,7 @@ export function sumByBuckets<T>(
         date.getTime() >= bucket.start.getTime() && date.getTime() <= bucket.end.getTime(),
     );
     if (bucketIndex >= 0) {
-      result[bucketIndex] += value;
+      result[bucketIndex] = (result[bucketIndex] ?? 0) + value;
     }
   });
 

@@ -78,7 +78,9 @@ export function determineMessageType(msg: NormalizedMessage): string {
   if (!msg.attachments || msg.attachments.length === 0) {
     return 'TEXT';
   }
-  const mimeType = (msg.attachments[0].mimeType || '').toLowerCase();
+  const firstAttachment = msg.attachments[0];
+  if (!firstAttachment) return 'TEXT';
+  const mimeType = (firstAttachment.mimeType || '').toLowerCase();
   for (const [pattern, type] of Object.entries(MIME_TYPE_TO_MESSAGE_TYPE)) {
     if (mimeType.startsWith(pattern)) {
       return type;
@@ -97,7 +99,7 @@ export function buildAttachmentContent(
   processed: ProcessedAttachment[],
 ): string {
   if (processed.length > 0 && !rawContent) {
-    return `[${messageType}] ${processed[0].name || 'arquivo'}`;
+    return `[${messageType}] ${processed[0]?.name || 'arquivo'}`;
   }
   return rawContent || '';
 }
@@ -107,12 +109,15 @@ export function buildProcessedAttachment(
   url: string,
   attachment: MessageAttachment,
 ): ProcessedAttachment {
-  return {
+  const result: ProcessedAttachment = {
     url,
     mimeType: attachment.mimeType || 'application/octet-stream',
     name: attachment.name || 'attachment',
-    size: attachment.size,
   };
+  if (attachment.size !== undefined) {
+    result.size = attachment.size;
+  }
+  return result;
 }
 
 /** Map an Instagram attachment type (image/video/audio) to a MIME type. */
@@ -205,14 +210,15 @@ export function extractInstagramMessage(messaging: InstagramMessaging): Instagra
   if (messaging.message?.story_mention) {
     content = `[Mencionou você em um Story]`;
   }
-  return {
+  const result: InstagramExtraction = {
     senderId,
-    senderName,
     content,
     attachments,
-    messageId: messaging.message?.mid,
-    timestamp: messaging.timestamp,
   };
+  if (senderName !== undefined) result.senderName = senderName;
+  if (messaging.message?.mid !== undefined) result.messageId = messaging.message.mid;
+  if (messaging.timestamp !== undefined) result.timestamp = messaging.timestamp;
+  return result;
 }
 
 interface InstagramWebhookPayload {

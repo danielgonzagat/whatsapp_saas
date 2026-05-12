@@ -152,13 +152,15 @@ export class CrmService {
 
     const where: Prisma.ContactWhereInput = {
       workspaceId,
-      OR: search
-        ? [
-            { name: { contains: search, mode: 'insensitive' } },
-            { phone: { contains: search } },
-            { email: { contains: search, mode: 'insensitive' } },
-          ]
-        : undefined,
+      ...(search
+        ? {
+            OR: [
+              { name: { contains: search, mode: 'insensitive' } },
+              { phone: { contains: search } },
+              { email: { contains: search, mode: 'insensitive' } },
+            ],
+          }
+        : {}),
     };
 
     const [total, data] = await Promise.all([

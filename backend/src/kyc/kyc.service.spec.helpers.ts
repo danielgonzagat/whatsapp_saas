@@ -96,7 +96,7 @@ export function buildService(options?: {
 
   const agentFindUnique: jest.Mock<
     Promise<unknown>,
-    [{ select?: Record<string, boolean> }?]
+    [({ select?: Record<string, boolean> } | undefined)?]
   > = jest.fn(({ select }: { select?: Record<string, boolean> } = {}) => {
     if (select && 'kycStatus' in select && Object.keys(select).length === 1) {
       return Promise.resolve({ kycStatus: agentRecord.kycStatus });

@@ -306,12 +306,26 @@ export class CheckoutController {
       trustBadges,
       ...configDto
     } = dto;
+    const normalizedTimer = timerType !== undefined ? normalizeTimerType(timerType) : undefined;
+    const normalizedTestimonials =
+      testimonials !== undefined ? toPrismaJsonValue(testimonials) : undefined;
+    const normalizedTrustBadges =
+      trustBadges !== undefined ? toPrismaJsonValue(trustBadges) : undefined;
+
     const configInput: Prisma.CheckoutConfigUpdateInput = {
-      ...configDto,
-      ...(timerType !== undefined ? { timerType: normalizeTimerType(timerType) } : {}),
-      ...(testimonials !== undefined ? { testimonials: toPrismaJsonValue(testimonials) } : {}),
-      ...(trustBadges !== undefined ? { trustBadges: toPrismaJsonValue(trustBadges) } : {}),
+      ...(normalizedTimer !== undefined ? { timerType: normalizedTimer } : {}),
+      ...(normalizedTestimonials !== undefined
+        ? { testimonials: normalizedTestimonials }
+        : {}),
+      ...(normalizedTrustBadges !== undefined
+        ? { trustBadges: normalizedTrustBadges }
+        : {}),
     };
+    for (const [key, value] of Object.entries(configDto)) {
+      if (value !== undefined) {
+        (configInput as Record<string, unknown>)[key] = value;
+      }
+    }
     return this.checkoutService.updateConfig(planId, configInput);
   }
 

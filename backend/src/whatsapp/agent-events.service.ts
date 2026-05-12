@@ -157,17 +157,19 @@ export class AgentEventsService implements OnModuleInit, OnModuleDestroy {
 
   /** Publish. */
   async publish(event: Omit<AgentStreamEvent, 'ts'> & { ts?: string }): Promise<void> {
+    const tokenVal =
+      typeof event.token === 'string'
+        ? event.token
+        : typeof event.meta?.token === 'string'
+          ? event.meta.token
+          : undefined;
+
     const normalized: AgentStreamEvent = {
       ...event,
       ts: event.ts || new Date().toISOString(),
       message: normalizeAgentMessage(event),
       streaming: event.streaming ?? event.meta?.streaming === true,
-      token:
-        typeof event.token === 'string'
-          ? event.token
-          : typeof event.meta?.token === 'string'
-            ? event.meta.token
-            : undefined,
+      ...(tokenVal !== undefined ? { token: tokenVal } : {}),
     };
 
     if (!normalized.workspaceId || !normalized.message) {
@@ -215,6 +217,7 @@ export class AgentEventsService implements OnModuleInit, OnModuleDestroy {
     if (this.isStreamingEvent(event) && previousHistory.length > 0) {
       const last = previousHistory[previousHistory.length - 1];
       if (
+        last &&
         this.isStreamingEvent(last) &&
         last.type === event.type &&
         (last.phase || '') === (event.phase || '') &&

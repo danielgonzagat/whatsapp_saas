@@ -1,4 +1,4 @@
-import type { Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
 import type { AccountDeps } from './account-agent.gap-detector';
 
@@ -30,14 +30,34 @@ export async function upsertWorkItem(deps: AccountDeps, workspaceId: string, inp
     where: { id, workspaceId },
     select: { id: true, state: true, title: true, summary: true, priority: true, utility: true },
   });
-  const upd = {
+  const upd: Prisma.AgentWorkItemUpdateInput = {
     state: input.state,
     owner: input.state === 'BLOCKED' ? 'RULES' : 'AGENT',
     title: input.title,
     summary: input.summary || null,
     priority: input.priority,
     utility: input.utility,
-    blockedBy: input.blockedBy ? toJson(input.blockedBy) : null,
+    blockedBy: input.blockedBy ? toJson(input.blockedBy) : Prisma.DbNull,
+    requiresApproval: input.requiresApproval,
+    requiresInput: input.requiresInput,
+    approvalState: input.approvalState || null,
+    inputState: input.inputState || null,
+    evidence: toJson(input.evidence),
+    metadata: toJson(input.metadata),
+  };
+  const createData: Prisma.AgentWorkItemCreateInput = {
+    id,
+    workspace: { connect: { id: workspaceId } },
+    kind: input.kind,
+    entityType: input.entityType,
+    entityId: input.entityId,
+    state: input.state,
+    owner: input.state === 'BLOCKED' ? 'RULES' : 'AGENT',
+    title: input.title,
+    summary: input.summary || null,
+    priority: input.priority,
+    utility: input.utility,
+    blockedBy: input.blockedBy ? toJson(input.blockedBy) : Prisma.DbNull,
     requiresApproval: input.requiresApproval,
     requiresInput: input.requiresInput,
     approvalState: input.approvalState || null,
@@ -48,14 +68,7 @@ export async function upsertWorkItem(deps: AccountDeps, workspaceId: string, inp
   await deps.prisma.agentWorkItem.upsert({
     where: { id },
     update: upd,
-    create: {
-      id,
-      workspaceId,
-      kind: input.kind,
-      entityType: input.entityType,
-      entityId: input.entityId,
-      ...upd,
-    },
+    create: createData,
   });
   const changed =
     !prev ||

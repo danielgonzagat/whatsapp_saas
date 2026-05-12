@@ -1,1 +1,5 @@
-export { encryptMetaToken, decryptMetaToken, isEncryptedMetaToken } from '../integrations/meta-token-crypto';
+export {
+  encryptMetaToken,
+  decryptMetaToken,
+  isEncryptedMetaToken,
+} from '../integrations/meta-token-crypto';

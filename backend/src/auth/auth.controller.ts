@@ -53,7 +53,10 @@ export class AuthController {
     @Body() body: RegisterDto,
   ) {
     try {
-      const result = await this.auth.register({ ...body, ip: req.ip });
+      const result = await this.auth.register({
+        ...body,
+        ...(req.ip !== undefined ? { ip: req.ip } : {}),
+      });
       // Set httpOnly cookie for enhanced security (dual mode: cookie + body)
       if (result?.access_token) {
         res.cookie('kloel_token', result.access_token, {
@@ -89,7 +92,10 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
     @Body() body: LoginDto,
   ) {
-    const result = await this.auth.login({ ...body, ip: req.ip });
+    const result = await this.auth.login({
+      ...body,
+      ...(req.ip !== undefined ? { ip: req.ip } : {}),
+    });
     if (result?.access_token) {
       Sentry.addBreadcrumb({
         message: `login: user authenticated`,
@@ -125,7 +131,10 @@ export class AuthController {
   @Public()
   @Post('oauth')
   async oauthLogin(@Req() req: Request, @Body() body: Record<string, unknown>) {
-    return this.auth.oauthLogin({ ...body, ip: req.ip });
+    return this.auth.oauthLogin({
+      ...body,
+      ...(req.ip !== undefined ? { ip: req.ip } : {}),
+    });
   }
 
   /**
@@ -137,7 +146,7 @@ export class AuthController {
   async googleOAuthLogin(@Req() req: Request, @Body() body: GoogleOAuthDto) {
     return this.auth.loginWithGoogleCredential({
       credential: body.credential,
-      ip: req.ip,
+      ...(req.ip !== undefined ? { ip: req.ip } : {}),
     });
   }
 
@@ -147,8 +156,8 @@ export class AuthController {
   async facebookOAuthLogin(@Req() req: Request, @Body() body: FacebookOAuthDto) {
     return this.auth.loginWithFacebookAccessToken({
       accessToken: body.accessToken,
-      userId: body.userId,
-      ip: req.ip,
+      ...(body.userId !== undefined ? { userId: body.userId } : {}),
+      ...(req.ip !== undefined ? { ip: req.ip } : {}),
     });
   }
 
@@ -159,12 +168,17 @@ export class AuthController {
   @Public()
   @Post('oauth/apple')
   async appleOAuthLogin(@Req() req: Request, @Body() body: AppleOAuthDto) {
+    if (!body.identityToken) {
+      throw new HttpException('identityToken is required', 400);
+    }
     return this.auth.loginWithAppleCredential({
       identityToken: body.identityToken,
-      authorizationCode: body.authorizationCode,
-      redirectUri: body.redirectUri,
-      user: body.user,
-      ip: req.ip,
+      ...(body.authorizationCode !== undefined
+        ? { authorizationCode: body.authorizationCode }
+        : {}),
+      ...(body.redirectUri !== undefined ? { redirectUri: body.redirectUri } : {}),
+      ...(body.user !== undefined ? { user: body.user } : {}),
+      ...(req.ip !== undefined ? { ip: req.ip } : {}),
     });
   }
 
@@ -175,17 +189,19 @@ export class AuthController {
     if (body.accessToken) {
       return this.auth.loginWithTikTokAccessToken({
         accessToken: body.accessToken,
-        openId: body.openId,
-        refreshToken: body.refreshToken,
-        expiresInSeconds: body.expiresInSeconds,
-        ip: req.ip,
+        ...(body.openId !== undefined ? { openId: body.openId } : {}),
+        ...(body.refreshToken !== undefined ? { refreshToken: body.refreshToken } : {}),
+        ...(body.expiresInSeconds !== undefined
+          ? { expiresInSeconds: body.expiresInSeconds }
+          : {}),
+        ...(req.ip !== undefined ? { ip: req.ip } : {}),
       });
     }
 
     return this.auth.loginWithTikTokAuthorizationCode({
       code: body.code || '',
-      redirectUri: body.redirectUri,
-      ip: req.ip,
+      ...(body.redirectUri !== undefined ? { redirectUri: body.redirectUri } : {}),
+      ...(req.ip !== undefined ? { ip: req.ip } : {}),
     });
   }
 
@@ -195,8 +211,8 @@ export class AuthController {
   requestMagicLink(@Req() req: Request, @Body() body: RequestMagicLinkDto) {
     return this.auth.requestMagicLink({
       email: body.email,
-      redirectTo: body.redirectTo,
-      ip: req.ip,
+      ...(body.redirectTo !== undefined ? { redirectTo: body.redirectTo } : {}),
+      ...(req.ip !== undefined ? { ip: req.ip } : {}),
     });
   }
 

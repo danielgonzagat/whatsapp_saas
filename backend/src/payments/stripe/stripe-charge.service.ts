@@ -27,7 +27,9 @@ export class StripeChargeService {
       saleValueCents: input.saleValueCents,
       interestCents: input.interestCents,
       marketplaceFeeCents: input.marketplaceFeeCents,
-      ...(input.splitConfig?.supplier !== undefined ? { supplier: input.splitConfig.supplier } : {}),
+      ...(input.splitConfig?.supplier !== undefined
+        ? { supplier: input.splitConfig.supplier }
+        : {}),
       ...(input.splitConfig?.affiliate !== undefined
         ? { affiliate: input.splitConfig.affiliate }
         : {}),

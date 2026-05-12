@@ -59,6 +59,7 @@ export interface ToolArgs {
   source?: string;
   stage?: string;
   status?: string;
+  subject?: string;
   stages?: string[];
   steps?: Prisma.InputJsonValue[];
   strategy?: string;

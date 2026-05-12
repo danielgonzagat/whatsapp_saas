@@ -21,7 +21,7 @@ interface ProcessOrderPostPaymentParams {
     couponCode?: string;
     shippingAddress: Prisma.InputJsonValue;
   };
-  orderData: { paymentMethod: Prisma.EnumPaymentMethodFilter['equals'] };
+  orderData: { paymentMethod: 'CREDIT_CARD' | 'PIX' | 'BOLETO' };
   qualityGate: { phoneDigits: string };
   normalizedBaseTotalInCents: number;
   normalizedInstallments: number;
@@ -53,22 +53,28 @@ export async function processOrderPostPayment(
       workspaceId: data.workspaceId,
       customerName: data.customerName,
       customerEmail: data.customerEmail,
-      customerCPF: data.customerCPF,
-      customerPhone: data.customerPhone,
+      ...(data.customerCPF !== undefined ? { customerCPF: data.customerCPF } : {}),
+      ...(data.customerPhone !== undefined
+        ? { customerPhone: data.customerPhone }
+        : {}),
       paymentMethod: orderData.paymentMethod,
       totalInCents: params.normalizedBaseTotalInCents,
       installments: params.normalizedInstallments,
-      cardHolderName: params.cardHolderName,
+      ...(params.cardHolderName !== undefined
+        ? { cardHolderName: params.cardHolderName }
+        : {}),
     });
+    const shippingAddr =
+      data.shippingAddress && typeof data.shippingAddress === 'object'
+        ? (data.shippingAddress as Record<string, unknown>)
+        : undefined;
+
     const contactSync = await orderSupport.ensureCheckoutContactRecord({
       workspaceId: data.workspaceId,
       customerName: data.customerName,
       customerEmail: data.customerEmail,
       customerPhone: qualityGate.phoneDigits,
-      shippingAddress:
-        data.shippingAddress && typeof data.shippingAddress === 'object'
-          ? (data.shippingAddress as Record<string, unknown>)
-          : undefined,
+      ...(shippingAddr !== undefined ? { shippingAddress: shippingAddr } : {}),
     });
     if (!contactSync.synced && !contactSync.skipped) {
       logOrderEvent('checkout_contact_sync_failed', {

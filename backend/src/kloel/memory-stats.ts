@@ -33,7 +33,7 @@ export async function computeMemoryStats(prisma: PrismaService): Promise<MemoryS
     _count: { id: true },
   });
   for (const g of categoryGroups) {
-    const countValue = (g._count as unknown as { id: number }).id;
+    const countValue = g._count.id;
     byCategory[g.category || 'uncategorized'] = countValue;
   }
 
@@ -45,7 +45,7 @@ export async function computeMemoryStats(prisma: PrismaService): Promise<MemoryS
     take: 10,
   });
   for (const g of workspaceGroups) {
-    const countValue = (g._count as unknown as { id: number }).id;
+    const countValue = g._count.id;
     byWorkspace[g.workspaceId] = countValue;
   }
 

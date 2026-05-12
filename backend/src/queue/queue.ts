@@ -108,12 +108,12 @@ function ensureInitialized() {
 // Getters para acesso lazy
 function getConnection() {
   ensureInitialized();
-  return _connection;
+  return _connection!;
 }
 
 function getQueueOptions() {
   ensureInitialized();
-  return _queueOptions;
+  return _queueOptions!;
 }
 
 // Aliases para compatibilidade
@@ -217,10 +217,11 @@ async function notifyOps(input: {
 }
 
 function attachDlq(queue: BullQueue) {
-  if (!_dlqQueues[queue.name]) {
-    _dlqQueues[queue.name] = new BullQueue(`${queue.name}-dlq`, getQueueOptions());
+  let dlq = _dlqQueues[queue.name];
+  if (!dlq) {
+    dlq = new BullQueue(`${queue.name}-dlq`, getQueueOptions());
+    _dlqQueues[queue.name] = dlq;
   }
-  const dlq = _dlqQueues[queue.name];
 
   if (!_queueEvents[queue.name]) {
     _queueEvents[queue.name] = new QueueEvents(queue.name, {
@@ -228,6 +229,10 @@ function attachDlq(queue: BullQueue) {
     });
   }
   const events = _queueEvents[queue.name];
+  if (!events) {
+    warn('[QUEUE] QueueEvents not found for', queue.name);
+    return;
+  }
 
   events.on('failed', (event) => {
     void handleQueueFailedEvent(queue, dlq, event);
@@ -267,15 +272,15 @@ async function moveJobToDlq(
       failedAt: new Date().toISOString(),
     },
     {
-      jobId,
+      ...(jobId !== undefined ? { jobId } : {}),
       removeOnComplete: true,
     },
   );
   await notifyOps({
     queue: queueName,
-    jobId: jobId,
+    ...(jobId !== undefined ? { jobId } : {}),
     jobName: job.name,
-    reason: failedReason,
+    ...(failedReason !== undefined ? { reason: failedReason } : {}),
   });
 }
 
@@ -308,10 +313,12 @@ async function handleQueueFailedEvent(
 const _queues: Record<string, BullQueue> = {};
 
 export function getDlqQueue(queue: BullQueue): BullQueue {
-  if (!_dlqQueues[queue.name]) {
-    _dlqQueues[queue.name] = new BullQueue(`${queue.name}-dlq`, getQueueOptions());
+  let dlq = _dlqQueues[queue.name];
+  if (!dlq) {
+    dlq = new BullQueue(`${queue.name}-dlq`, getQueueOptions());
+    _dlqQueues[queue.name] = dlq;
   }
-  return _dlqQueues[queue.name];
+  return dlq;
 }
 
 function getOrCreateQueue(name: string): BullQueue {

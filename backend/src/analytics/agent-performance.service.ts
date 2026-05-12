@@ -46,17 +46,14 @@ export class AgentPerformanceService {
     const pendingCustomerMessages = new Map<string, Date>();
 
     for (const msg of interactions) {
-      if (msg.direction === 'INBOUND') {
-        // Marca hora que o cliente falou
+      if (msg.direction === 'INBOUND' && msg.conversationId) {
         pendingCustomerMessages.set(msg.conversationId, msg.createdAt);
-      } else if (msg.direction === 'OUTBOUND' && msg.agentId) {
-        // Se o agente respondeu e havia uma msg pendente
+      } else if (msg.direction === 'OUTBOUND' && msg.agentId && msg.conversationId) {
         const lastCustomerMsgAt = pendingCustomerMessages.get(msg.conversationId);
         if (lastCustomerMsgAt) {
           const responseTimeSeconds =
             (msg.createdAt.getTime() - lastCustomerMsgAt.getTime()) / 1000;
 
-          // Ignora tempos absurdos (ex: > 24h) que distorcem a média (outliers)
           if (responseTimeSeconds < 86400) {
             const current = agentStats.get(msg.agentId) || {
               totalTime: 0,
@@ -67,7 +64,6 @@ export class AgentPerformanceService {
             agentStats.set(msg.agentId, current);
           }
 
-          // Limpa pendência
           pendingCustomerMessages.delete(msg.conversationId);
         }
       }

@@ -279,12 +279,12 @@ export class MetaWebhookController {
           channel: 'MESSENGER',
           externalId: String(msg.message?.mid || msg.sender?.id || 'unknown'),
           from: String(msg.sender?.id || 'unknown'),
-          fromName: String(msg.sender?.name || '').trim() || undefined,
+          ...(msg.sender?.name ? { fromName: String(msg.sender.name).trim() } : {}),
           content: String(msg.message?.text || '').trim(),
           metadata: {
             raw: msg,
-            recipientId: msg.recipient?.id,
-            timestamp: msg.timestamp,
+            ...(msg.recipient?.id !== undefined ? { recipientId: msg.recipient.id } : {}),
+            ...(msg.timestamp !== undefined ? { timestamp: msg.timestamp } : {}),
           },
         });
       }
@@ -326,7 +326,7 @@ export class MetaWebhookController {
       providerMessageId,
       from: senderPhone,
       to: String(change.value?.metadata?.display_phone_number || '').trim(),
-      senderName,
+      ...(senderName !== undefined ? { senderName } : {}),
       type: messageType,
       text: messageText,
       raw: msg,

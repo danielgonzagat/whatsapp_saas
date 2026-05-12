@@ -134,7 +134,7 @@ export class InboundProcessorService {
     );
     const contact = await this.prisma.contact.upsert({
       where: { workspaceId_phone: { workspaceId: msg.workspaceId, phone } },
-      update: trustedSenderName ? { name: trustedSenderName || undefined } : {},
+      update: trustedSenderName ? { name: trustedSenderName } : {},
       create: { workspaceId: msg.workspaceId, phone, name: trustedSenderName || null },
       select: { id: true, customFields: true },
     });
@@ -169,8 +169,8 @@ export class InboundProcessorService {
         direction: 'INBOUND',
         externalId: msg.providerMessageId,
         type: mapMessageType(msg.type),
-        mediaUrl: msg.mediaUrl,
-        createdAt: msg.createdAt,
+        ...(msg.mediaUrl !== undefined ? { mediaUrl: msg.mediaUrl } : {}),
+        ...(msg.createdAt !== undefined ? { createdAt: msg.createdAt } : {}),
         countAsUnread: msg.ingestMode !== 'catchup',
         silent: msg.ingestMode === 'catchup',
       });
@@ -271,7 +271,7 @@ export class InboundProcessorService {
               redis: this.redis,
               unifiedAgent: this.unifiedAgent,
               whatsappService: this.whatsappService,
-              opsAlert: this.opsAlert,
+              ...(this.opsAlert ? { opsAlert: this.opsAlert } : {}),
               logger: this.logger,
               contactDebounceMs: this.contactDebounceMs,
               sharedReplyLockMs: this.sharedReplyLockMs,
@@ -285,7 +285,7 @@ export class InboundProcessorService {
               providerMessageId,
               source: 'waha_inline_reactive',
               reason: 'inline_reactive_primary',
-              settings,
+              ...(settings !== undefined ? { settings } : {}),
             },
           );
           return;
@@ -298,7 +298,7 @@ export class InboundProcessorService {
               redis: this.redis,
               unifiedAgent: this.unifiedAgent,
               whatsappService: this.whatsappService,
-              opsAlert: this.opsAlert,
+              ...(this.opsAlert ? { opsAlert: this.opsAlert } : {}),
               logger: this.logger,
               contactDebounceMs: this.contactDebounceMs,
               sharedReplyLockMs: this.sharedReplyLockMs,
@@ -312,7 +312,7 @@ export class InboundProcessorService {
               providerMessageId,
               source: 'waha_inline_fallback',
               reason: 'worker_unavailable',
-              settings,
+              ...(settings !== undefined ? { settings } : {}),
             },
           );
           return;

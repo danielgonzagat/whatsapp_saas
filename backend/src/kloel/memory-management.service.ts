@@ -422,15 +422,15 @@ export class MemoryManagementService {
     // Agrupar por prefixo de key (ex: "product_", "lead_")
     const groups = new Map<string, typeof memories>();
 
-      for (const mem of memories) {
-        const prefix = mem.key.split('_').slice(0, 2).join('_');
-        const group = groups.get(prefix);
-        if (group) {
-          group.push(mem);
-        } else {
-          groups.set(prefix, [mem]);
-        }
+    for (const mem of memories) {
+      const prefix = mem.key.split('_').slice(0, 2).join('_');
+      const group = groups.get(prefix);
+      if (group) {
+        group.push(mem);
+      } else {
+        groups.set(prefix, [mem]);
       }
+    }
 
     let merged = 0;
 

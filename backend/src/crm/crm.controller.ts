@@ -55,7 +55,7 @@ export class CrmController {
     return this.crmService.listContacts(effectiveWorkspaceId, {
       page: Number(page) || 1,
       limit: Number(limit) || 20,
-      search,
+      ...(search !== undefined ? { search } : {}),
     });
   }
 
@@ -134,12 +134,12 @@ export class CrmController {
     const workspaceId = body.workspaceId;
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.crmService.createDeal(effectiveWorkspaceId, {
-      contactId: body.contactId,
-      contactPhone: body.contactPhone || body.contact,
-      contactName: body.contactName,
-      stageId: body.stageId || body.stage,
       title: body.title,
       value: body.value,
+      ...(body.contactId !== undefined ? { contactId: body.contactId } : {}),
+      ...(body.contactPhone !== undefined || body.contact !== undefined ? { contactPhone: body.contactPhone || body.contact } : {}),
+      ...(body.contactName !== undefined ? { contactName: body.contactName } : {}),
+      ...(body.stageId !== undefined || body.stage !== undefined ? { stageId: body.stageId || body.stage } : {}),
     });
   }
 
@@ -195,10 +195,10 @@ export class CrmController {
   ) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.crmService.listDeals(effectiveWorkspaceId, {
-      campaignId,
-      pipelineId,
-      stageId,
-      search,
+      ...(campaignId !== undefined ? { campaignId } : {}),
+      ...(pipelineId !== undefined ? { pipelineId } : {}),
+      ...(stageId !== undefined ? { stageId } : {}),
+      ...(search !== undefined ? { search } : {}),
     });
   }
 }

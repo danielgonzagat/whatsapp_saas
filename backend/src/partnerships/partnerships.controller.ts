@@ -108,9 +108,9 @@ export class PartnershipsController {
     @Query('search') search?: string,
   ) {
     return this.service.listAffiliates(this.getWorkspaceId(req), {
-      type,
-      status,
-      search,
+      ...(type !== undefined ? { type } : {}),
+      ...(status !== undefined ? { status } : {}),
+      ...(search !== undefined ? { search } : {}),
     });
   }
 

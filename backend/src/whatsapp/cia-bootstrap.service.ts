@@ -231,12 +231,13 @@ export class CiaBootstrapService {
         },
       );
 
+      const runIdVal = immediateRun?.runId;
       await this.agentEvents.publish({
         type: 'status',
         workspaceId,
         phase: 'instant_value',
         persistent: true,
-        runId: immediateRun?.runId,
+        ...(runIdVal !== undefined ? { runId: runIdVal } : {}),
         message: autoContinueBacklog
           ? `Já comecei a tratar ${immediateRun?.totalQueued || 0} conversas pendentes automaticamente.`
           : `Já comecei a responder os ${immediateRun?.totalQueued || 0} contatos mais recentes para te provar valor agora.`,

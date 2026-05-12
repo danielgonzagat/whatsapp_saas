@@ -152,9 +152,9 @@ export class FollowUpService {
         workspaceId,
         contactId: dto.contactId,
         scheduledFor,
-        message: dto.message,
-        reason: dto.reason,
-        flowId: dto.flowId,
+        ...(dto.message !== undefined ? { message: dto.message } : {}),
+        ...(dto.reason !== undefined ? { reason: dto.reason } : {}),
+        ...(dto.flowId !== undefined ? { flowId: dto.flowId } : {}),
         status: 'pending',
       },
     });
@@ -221,6 +221,7 @@ export class FollowUpService {
         scheduledFor: true,
         status: true,
         message: true,
+        reason: true,
       },
       orderBy: { scheduledFor: 'asc' },
     });

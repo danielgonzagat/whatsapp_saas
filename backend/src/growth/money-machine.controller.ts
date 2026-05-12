@@ -2,6 +2,7 @@ import { Controller, Get, Post, Request, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import { AuthenticatedRequest } from '../common/interfaces';
 import { MoneyMachineService } from './money-machine.service';
 import { RouteClass } from '../common/throttler/route-class.decorator';
 
@@ -19,14 +20,14 @@ export class MoneyMachineController {
   @ApiOperation({
     summary: 'ACTIVATE THE MONEY MACHINE (Scan & Auto-Campaign)',
   })
-  activate(@Request() req) {
+  activate(@Request() req: AuthenticatedRequest) {
     return this.moneyMachine.activateMachine(req.user.workspaceId);
   }
 
   /** Get report. */
   @Get('report')
   @ApiOperation({ summary: 'Get daily financial report from the machine' })
-  getReport(@Request() req) {
+  getReport(@Request() req: AuthenticatedRequest) {
     return this.moneyMachine.getDailyReport(req.user.workspaceId);
   }
 }

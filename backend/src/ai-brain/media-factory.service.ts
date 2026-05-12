@@ -33,7 +33,9 @@ export class MediaFactoryService {
       size: '1024x1024',
     });
 
-    return { url: response.data[0].url };
+    const first = response.data?.[0];
+    if (!first?.url) throw new ServiceUnavailableException('Image generation returned no URL');
+    return { url: first.url };
   }
 
   /** Generate voice. */

@@ -11,16 +11,19 @@ interface MinimalWhatsappService {
     ws: string,
     to: string,
     message: string,
-    opts?: {
-      mediaUrl?: string;
-      mediaType?: 'image' | 'video' | 'audio' | 'document';
-      caption?: string;
-      externalId?: string;
-      complianceMode?: 'reactive' | 'proactive';
-      forceDirect?: boolean;
-      quotedMessageId?: string;
-    },
-  ): Promise<{ error?: boolean; message?: string } | undefined>;
+    opts?: Record<string, unknown>,
+  ): Promise<unknown>;
+}
+
+function readSendResult(result: unknown): { error: boolean; message: string | null } {
+  if (!result || typeof result !== 'object') {
+    return { error: false, message: null };
+  }
+  const record = result as Record<string, unknown>;
+  return {
+    error: record.error === true,
+    message: typeof record.message === 'string' ? record.message : null,
+  };
 }
 import type { ProviderSettings } from './provider-settings.types';
 import {
@@ -225,8 +228,12 @@ export async function executeInlineAutopilot(
         forceDirect: true,
         quotedMessageId: plan.quotedMessageId || latestQid,
       });
-      if (r?.error)
-        deps.logger.error(`[AUTOPILOT] Inline reply failed: ${r.message || 'send_failed'}`);
+      const sendResult = readSendResult(r);
+      if (sendResult.error) {
+        deps.logger.error(
+          `[AUTOPILOT] Inline reply failed: ${sendResult.message || 'send_failed'}`,
+        );
+      }
     });
     keepReplyLock = true;
   } catch (agentError: unknown) {
@@ -256,7 +263,7 @@ export async function executeInlineAutopilot(
             quotedMessageId: latestQid,
           },
         );
-        if (!r?.error) keepReplyLock = true;
+        if (!readSendResult(r).error) keepReplyLock = true;
       } catch (fallbackErr: unknown) {
         deps.logger.error(
           `[AUTOPILOT] Fallback reply also failed: ${(fallbackErr instanceof Error ? fallbackErr : new Error(String(fallbackErr))).message}`,

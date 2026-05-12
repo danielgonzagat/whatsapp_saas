@@ -150,7 +150,7 @@ export class CheckoutPaymentService {
           billing_details: {
             name: params.customerName,
             email: params.customerEmail,
-            phone: params.customerPhone,
+            ...(params.customerPhone !== undefined ? { phone: params.customerPhone } : {}),
           },
         }
       : undefined;

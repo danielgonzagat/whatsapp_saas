@@ -488,11 +488,16 @@ export class WalletService {
   private shapeIntentResult(intent: StripePaymentIntent): CreateTopupIntentResult {
     const action = intent.next_action as PixNextAction | null | undefined;
     const isPix = action?.type === 'pix_display_qr_code';
-    return {
+    const result: CreateTopupIntentResult = {
       paymentIntentId: intent.id,
       clientSecret: intent.client_secret ?? null,
-      pixQrCode: isPix ? action?.pix_display_qr_code?.data : undefined,
-      pixQrCodeUrl: isPix ? action?.pix_display_qr_code?.image_url_png : undefined,
     };
+    if (isPix && action?.pix_display_qr_code?.data) {
+      result.pixQrCode = action.pix_display_qr_code.data;
+    }
+    if (isPix && action?.pix_display_qr_code?.image_url_png) {
+      result.pixQrCodeUrl = action.pix_display_qr_code.image_url_png;
+    }
+    return result;
   }
 }

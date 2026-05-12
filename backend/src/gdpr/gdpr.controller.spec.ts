@@ -74,9 +74,15 @@ describe('GdprController', () => {
     },
     conversation: {
       findMany: jest.fn(),
+      updateMany: jest.fn(),
     },
     message: {
       findMany: jest.fn(),
+      updateMany: jest.fn(),
+    },
+    chatMessage: {
+      findMany: jest.fn(),
+      updateMany: jest.fn(),
     },
   };
 
@@ -125,6 +131,12 @@ describe('GdprController', () => {
     });
     prismaMock.agent.findUnique.mockResolvedValue(agentRecord);
     prismaMock.agent.findFirst.mockResolvedValue(null);
+    prismaMock.conversation.findMany.mockResolvedValue([]);
+    prismaMock.conversation.updateMany.mockResolvedValue({ count: 0 });
+    prismaMock.message.findMany.mockResolvedValue([]);
+    prismaMock.message.updateMany.mockResolvedValue({ count: 0 });
+    prismaMock.chatMessage.findMany.mockResolvedValue([]);
+    prismaMock.chatMessage.updateMany.mockResolvedValue({ count: 0 });
     emailMock.sendEmail.mockResolvedValue(true);
     emailMock.sendDataDeletionConfirmationEmail.mockResolvedValue(true);
     storageMock.upload.mockResolvedValue({

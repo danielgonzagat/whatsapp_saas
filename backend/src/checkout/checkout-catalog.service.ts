@@ -271,7 +271,11 @@ export class CheckoutCatalogService {
   /** Delete coupon. */
   async deleteCoupon(id: string, workspaceId?: string) {
     return deleteCouponHelper(
-      { prisma: this.prisma, auditService: this.auditService, opsAlert: this.opsAlert },
+      {
+        prisma: this.prisma,
+        auditService: this.auditService,
+        ...(this.opsAlert !== undefined ? { opsAlert: this.opsAlert } : {}),
+      },
       id,
       workspaceId,
     );

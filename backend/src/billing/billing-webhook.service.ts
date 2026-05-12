@@ -31,7 +31,7 @@ import { syncSubscriptionStatus } from './billing-webhook.sync-subscription';
 @Injectable()
 export class BillingWebhookService {
   private readonly logger = new Logger(BillingWebhookService.name);
-  private stripe: StripeClient;
+  private stripe!: StripeClient;
   private whatsappService: WhatsappNotifier | null = null;
 
   constructor(

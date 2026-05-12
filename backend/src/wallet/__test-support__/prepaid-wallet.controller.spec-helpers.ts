@@ -83,7 +83,6 @@ export function makePrismaStub(wallets: PrepaidWallet[] = []) {
           }
           const row = {
             id: `pwl_${nextWalletId++}`,
-            workspaceId: create.workspaceId,
             balanceCents: 0n,
             currency: 'BRL',
             autoRechargeEnabled: false,

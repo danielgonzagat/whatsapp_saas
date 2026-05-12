@@ -352,9 +352,10 @@ export async function buildPendingInboundBatchExt(
   };
   const messages = usable.length ? usable : fb.content && fb.quotedMessageId ? [fb] : [];
   if (!messages.length) return null;
+  const first = messages[0];
   const aggregated =
-    messages.length === 1
-      ? messages[0].content
+    messages.length === 1 && first
+      ? first.content
       : messages.map((m, i) => `[${i + 1}] ${String(m.content || '').trim()}`).join('\n');
   return {
     aggregatedMessage: aggregated,

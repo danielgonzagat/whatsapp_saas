@@ -164,11 +164,13 @@ export class AutopilotCycleExecutorService {
         await this.prisma.autopilotEvent.create({
           data: {
             workspaceId: conv.workspaceId,
-            contactId: conv.contact?.id,
+            ...(conv.contact?.id !== undefined
+              ? { contactId: conv.contact.id }
+              : {}),
             intent: analysis?.intent || 'UNKNOWN',
             action,
             status: 'skipped',
-            reason: compliance.reason,
+            ...(compliance.reason !== undefined ? { reason: compliance.reason } : {}),
             meta: { compliance: true },
           },
         });
@@ -232,10 +234,12 @@ export class AutopilotCycleExecutorService {
     }
 
     if (action === 'send_calendar') {
+      const calendarLink =
+        (this.readRecord(this.readRecord(conv?.workspace).providerSettings)
+          .calendarLink as string) || undefined;
+
       return renderTemplate('SEND_CALENDAR', {
-        calendarLink:
-          (this.readRecord(this.readRecord(conv?.workspace).providerSettings)
-            .calendarLink as string) || undefined,
+        ...(calendarLink !== undefined ? { calendarLink } : {}),
       });
     }
 
@@ -247,7 +251,7 @@ export class AutopilotCycleExecutorService {
     };
 
     if (action in HARDCODED_RESPONSES) {
-      return HARDCODED_RESPONSES[action];
+      return HARDCODED_RESPONSES[action] ?? null;
     }
 
     if (action === 'handover_human') {
@@ -346,6 +350,6 @@ ${productContext ? `\nAVAILABLE PRODUCTS (use ONLY these real products in your r
         .catch(() => {});
     }
 
-    return completion.choices[0]?.message?.content;
+    return completion.choices[0]?.message?.content ?? null;
   }
 }

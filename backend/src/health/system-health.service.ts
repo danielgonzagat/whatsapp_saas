@@ -94,9 +94,11 @@ export class SystemHealthService {
       !hasDownDependency &&
       Object.values(status)
         .filter((s: unknown) => typeof s === 'object' && s && 'status' in s)
-        .every((s: unknown) =>
-          ['UP', 'CONFIGURED', 'NOT_CONFIGURED'].includes((s as Record<string, string>).status),
-        );
+        .every((s: unknown) => {
+          if (typeof s !== 'object' || !s || !('status' in s)) return true;
+          const status = String((s as Record<string, unknown>).status ?? '');
+          return ['UP', 'CONFIGURED', 'NOT_CONFIGURED'].includes(status);
+        });
     return {
       status: hasDownDependency ? 'DOWN' : isHealthy ? 'UP' : 'DEGRADED',
       details: status,
@@ -147,7 +149,10 @@ export class SystemHealthService {
 
       if (probe.status === 'DOWN') {
         failures.push(probe.dependency);
-        details[probe.dependency].error = probe.error ?? 'unknown';
+        const entry = details[probe.dependency];
+        if (entry) {
+          entry.error = probe.error ?? 'unknown';
+        }
       }
     }
 

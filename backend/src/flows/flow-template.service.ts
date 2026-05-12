@@ -29,7 +29,7 @@ export class FlowTemplateService {
         category: input.category,
         nodes: input.nodes as Prisma.InputJsonValue,
         edges: input.edges as Prisma.InputJsonValue,
-        description: input.description,
+        ...(input.description !== undefined ? { description: input.description } : {}),
         isPublic: input.isPublic ?? false,
       },
     });

@@ -65,7 +65,8 @@ function generateTotp(secret: string, timeStep: number): string {
   const counter = Buffer.alloc(8);
   counter.writeBigUInt64BE(BigInt(timeStep));
   const digest = createHmac('sha1', base32Decode(secret)).update(counter).digest();
-  const offset = digest[digest.length - 1] & 15;
+  const lastByte = digest[digest.length - 1];
+  const offset = (lastByte ?? 0) & 15;
   const binary = digest.readUInt32BE(offset) & 0x7fffffff;
 
   return String(binary % 1_000_000).padStart(6, '0');

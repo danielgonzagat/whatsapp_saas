@@ -76,6 +76,33 @@ const KLOEL_CHAT_TOOLS_CORE: ChatCompletionTool[] = [
   {
     type: 'function',
     function: {
+      name: 'set_sales_policy',
+      description:
+        'Atualiza uma orientação estratégica da CIA que deve afetar as próximas decisões comerciais nos canais',
+      parameters: {
+        type: 'object',
+        properties: {
+          aggressiveness: {
+            type: 'string',
+            description: 'Nível de agressividade comercial: passive, balanced, aggressive',
+          },
+          tone: { type: 'string', description: 'Tom estratégico desejado' },
+          instructions: {
+            type: 'string',
+            description: 'Instrução concreta em linguagem natural para as próximas decisões',
+          },
+          appliesTo: {
+            type: 'string',
+            description: 'Escopo da política, ex: all, checkout_abandoned_twice, product:<id>',
+          },
+        },
+        required: ['instructions'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
       name: 'remember_user_info',
       description:
         'Salva uma informação útil sobre o usuário do dashboard para personalizar conversas futuras',
@@ -141,7 +168,8 @@ const KLOEL_CHAT_TOOLS_CORE: ChatCompletionTool[] = [
     type: 'function',
     function: {
       name: 'get_dashboard_summary',
-      description: 'Retorna resumo de métricas do dashboard',
+      description:
+        'Retorna resumo operacional do dashboard com contatos, mensagens, fluxos, vendas pagas e saldos da carteira',
       parameters: {
         type: 'object',
         properties: {

@@ -208,7 +208,7 @@ export class WhatsAppWatchdogSessionService {
       this.logger.log(`Session reconnected: ${workspaceName || workspaceId}`);
     }
     health.consecutiveFailures = 0;
-    health.reconnectBlockedReason = undefined;
+    delete health.reconnectBlockedReason;
 
     await this.persistSessionDiagnostics(workspaceId, {
       lastHeartbeatAt: now.toISOString(),
@@ -243,7 +243,11 @@ export class WhatsAppWatchdogSessionService {
     );
 
     const reconnectBlockedReason = await this.getReconnectBlockReason(workspaceId);
-    health.reconnectBlockedReason = reconnectBlockedReason || undefined;
+    if (reconnectBlockedReason) {
+      health.reconnectBlockedReason = reconnectBlockedReason;
+    } else {
+      delete health.reconnectBlockedReason;
+    }
 
     await this.persistSessionDiagnostics(workspaceId, {
       lastWatchdogDisconnectedAt: now.toISOString(),
@@ -296,7 +300,7 @@ export class WhatsAppWatchdogSessionService {
         await this.handleConnectedSession(workspaceId, workspaceName, health, wasConnected, now);
       } else if (this.pendingStatuses.has(normalizedStatus)) {
         health.consecutiveFailures = 0;
-        health.reconnectBlockedReason = undefined;
+        delete health.reconnectBlockedReason;
         this.logger.debug(
           `Session awaiting action: ${workspaceName || workspaceId} (status: ${normalizedStatus})`,
         );

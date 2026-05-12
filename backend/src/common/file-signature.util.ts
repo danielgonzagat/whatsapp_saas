@@ -67,7 +67,7 @@ function isMp3Signature(buffer: Buffer): boolean {
   if (buffer.length >= 3 && bufferSliceEquals(buffer, 0, 3, 'ID3')) {
     return true;
   }
-  return buffer.length >= 2 && buffer[0] === 0xff && [0xf2, 0xf3, 0xfb].includes(buffer[1]);
+  return buffer.length >= 2 && buffer[0] === 0xff && buffer[1] !== undefined && [0xf2, 0xf3, 0xfb].includes(buffer[1]);
 }
 
 function detectBasicAudioMime(buffer: Buffer): string | null {

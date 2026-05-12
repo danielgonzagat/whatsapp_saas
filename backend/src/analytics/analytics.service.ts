@@ -157,12 +157,13 @@ export class AnalyticsService {
     for (let i = 0; i < 7; i++) {
       const d = new Date();
       d.setDate(d.getDate() - i);
-      const key = d.toISOString().split('T')[0];
+      const key = d.toISOString().slice(0, 10);
       activity[key] = { inbound: 0, outbound: 0 };
     }
 
     messages.forEach((m) => {
       const key = m.createdAt.toISOString().split('T')[0];
+      if (!key) return;
       if (activity[key]) {
         if (m.direction === 'INBOUND') {
           activity[key].inbound++;
@@ -390,7 +391,10 @@ export class AnalyticsService {
         const sorted = recent.map((m) => m.createdAt.getTime()).sort((a, b) => a - b);
         const intervals: number[] = [];
         for (let i = 1; i < sorted.length; i++) {
-          const delta = (sorted[i] - sorted[i - 1]) / 1000;
+          const curr = sorted[i];
+          const prev = sorted[i - 1];
+          if (curr === undefined || prev === undefined) continue;
+          const delta = (curr - prev) / 1000;
           if (delta > 0 && delta < 3600) intervals.push(delta);
         }
         if (intervals.length > 0) {

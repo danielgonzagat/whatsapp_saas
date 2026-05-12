@@ -119,6 +119,26 @@ export class UnifiedAgentContextService {
         : 'Nenhum produto cadastrado';
 
     const aiConfigContext: string[] = [];
+    const salesPolicy = this.readRecord(workspace.salesPolicy);
+    const policyInstructions = this.readText(salesPolicy.instructions).trim();
+    const policyAggressiveness = this.readText(salesPolicy.aggressiveness).trim();
+    const policyTone = this.readText(salesPolicy.tone).trim();
+    const policyScope = this.readText(salesPolicy.appliesTo).trim();
+    if (policyInstructions || policyAggressiveness || policyTone) {
+      aiConfigContext.push('POLÍTICA ESTRATÉGICA ATIVA DO DONO:');
+      if (policyAggressiveness) {
+        aiConfigContext.push(`  - Agressividade: ${policyAggressiveness}`);
+      }
+      if (policyTone) {
+        aiConfigContext.push(`  - Tom: ${policyTone}`);
+      }
+      if (policyScope) {
+        aiConfigContext.push(`  - Escopo: ${policyScope}`);
+      }
+      if (policyInstructions) {
+        aiConfigContext.push(`  - Instrução: ${policyInstructions}`);
+      }
+    }
     for (const cfg of aiConfigs) {
       const profile = (cfg.customerProfile ?? {}) as UnknownRecord;
       const objections = cfg.objections as UnknownRecord[];

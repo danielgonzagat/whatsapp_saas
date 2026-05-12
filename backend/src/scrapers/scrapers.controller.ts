@@ -22,16 +22,16 @@ import { RouteClass } from '../common/throttler/route-class.decorator';
 class CreateJobDto {
   @IsString()
   @MaxLength(2048)
-  workspaceId: string;
+  workspaceId!: string;
 
   @IsString()
   @MaxLength(2048)
   @IsIn(['MAPS', 'INSTAGRAM', 'GROUP'])
-  type: string;
+  type!: string;
 
   @IsString()
   @MaxLength(2048)
-  query: string;
+  query!: string;
 
   @IsOptional()
   @IsString()

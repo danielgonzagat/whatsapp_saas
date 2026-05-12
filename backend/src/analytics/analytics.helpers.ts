@@ -134,8 +134,8 @@ export function aggregateTimePatterns(paidSales: readonly ReportSale[]): {
   const salesByWeekday = new Array<number>(7).fill(0);
   paidSales.forEach((s) => {
     const d = new Date(s.createdAt);
-    salesByHour[d.getHours()]++;
-    salesByWeekday[d.getDay()]++;
+    salesByHour[d.getHours()] = (salesByHour[d.getHours()] ?? 0) + 1;
+    salesByWeekday[d.getDay()] = (salesByWeekday[d.getDay()] ?? 0) + 1;
   });
   return { salesByHour, salesByWeekday };
 }

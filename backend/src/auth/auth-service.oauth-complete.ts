@@ -229,7 +229,7 @@ export async function completeTrustedOAuthLogin(
           workspaceId: workspace.id,
           provider: normalizedProvider,
           providerId: normalizedProviderId,
-          avatarUrl: image,
+          ...(image !== undefined && image !== null ? { avatarUrl: image } : {}),
           emailVerified: !!emailVerified,
         },
         select: {

@@ -31,6 +31,8 @@ type ChatToolsPrismaMock = {
   flow: { create: jest.Mock; findMany: jest.Mock; count: jest.Mock };
   contact: { count: jest.Mock };
   message: { count: jest.Mock };
+  checkoutOrder: { aggregate: jest.Mock };
+  kloelWallet: { findUnique: jest.Mock };
   auditLog: { create: jest.Mock };
   $transaction: jest.Mock;
 };
@@ -65,6 +67,10 @@ describe('KloelChatToolsService', () => {
       },
       contact: { count: jest.fn().mockResolvedValue(0) },
       message: { count: jest.fn().mockResolvedValue(0) },
+      checkoutOrder: {
+        aggregate: jest.fn().mockResolvedValue({ _count: { _all: 0 }, _sum: { totalInCents: 0 } }),
+      },
+      kloelWallet: { findUnique: jest.fn().mockResolvedValue(null) },
       auditLog: { create: jest.fn().mockResolvedValue({}) },
       $transaction: jest.fn().mockImplementation((arg: unknown) => {
         if (typeof arg === 'function') return arg(prisma);
@@ -212,6 +218,47 @@ describe('KloelChatToolsService', () => {
     });
   });
 
+  describe('toolSetSalesPolicy', () => {
+    it('persists sales policy in workspace autopilot settings', async () => {
+      prisma.workspace.findUnique.mockResolvedValueOnce({
+        providerSettings: { autopilot: { enabled: true } },
+      });
+
+      const result = await service.toolSetSalesPolicy(
+        wsId,
+        {
+          aggressiveness: 'aggressive',
+          tone: 'direto',
+          instructions: 'Se o lead abandonou checkout duas vezes, avance para oferta objetiva.',
+          appliesTo: 'checkout_abandoned_twice',
+        },
+        'user-1',
+      );
+
+      expect(result.success).toBe(true);
+      expect(prisma.workspace.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: wsId },
+          data: {
+            providerSettings: expect.objectContaining({
+              autopilot: expect.objectContaining({
+                enabled: true,
+                salesPolicy: expect.objectContaining({
+                  aggressiveness: 'aggressive',
+                  tone: 'direto',
+                  instructions:
+                    'Se o lead abandonou checkout duas vezes, avance para oferta objetiva.',
+                  appliesTo: 'checkout_abandoned_twice',
+                  updatedByUserId: 'user-1',
+                }),
+              }),
+            }),
+          },
+        }),
+      );
+    });
+  });
+
   describe('toolRememberUserInfo', () => {
     it('upserts user profile in kloelMemory', async () => {
       const result = await service.toolRememberUserInfo(
@@ -282,22 +329,69 @@ describe('KloelChatToolsService', () => {
       prisma.contact.count.mockResolvedValue(5);
       prisma.message.count.mockResolvedValue(20);
       prisma.flow.count.mockResolvedValue(3);
+      prisma.checkoutOrder.aggregate.mockResolvedValue({
+        _count: { _all: 2 },
+        _sum: { totalInCents: 25900 },
+      });
+      prisma.kloelWallet.findUnique.mockResolvedValue({
+        availableBalanceInCents: BigInt(9201),
+        pendingBalanceInCents: BigInt(16700),
+        blockedBalanceInCents: BigInt(0),
+      });
 
       const result = await service.toolGetDashboardSummary(wsId, { period: 'today' });
 
       expect(result.success).toBe(true);
-      expect(result.stats).toEqual({ newContacts: 5, messages: 20, activeFlows: 3 });
+      expect(result.stats).toEqual({
+        newContacts: 5,
+        messages: 20,
+        activeFlows: 3,
+        paidOrders: 2,
+        revenueInCents: 25900,
+        revenue: 259,
+        wallet: {
+          availableInCents: 9201,
+          pendingInCents: 16700,
+          blockedInCents: 0,
+          totalInCents: 25901,
+          available: 92.01,
+          pending: 167,
+          blocked: 0,
+          total: 259.01,
+        },
+      });
+      expect(prisma.checkoutOrder.aggregate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ workspaceId: wsId, status: 'PAID' }),
+        }),
+      );
+      expect(prisma.kloelWallet.findUnique).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { workspaceId: wsId } }),
+      );
     });
 
     it('uses week filter for period=week', async () => {
       prisma.contact.count.mockResolvedValue(0);
       prisma.message.count.mockResolvedValue(0);
       prisma.flow.count.mockResolvedValue(0);
+      prisma.checkoutOrder.aggregate.mockResolvedValue({
+        _count: { _all: 0 },
+        _sum: { totalInCents: null },
+      });
 
       await service.toolGetDashboardSummary(wsId, { period: 'week' });
 
       expect(prisma.contact.count).toHaveBeenCalledWith(
         expect.objectContaining({ where: expect.objectContaining({ workspaceId: wsId }) }),
+      );
+      expect(prisma.checkoutOrder.aggregate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            workspaceId: wsId,
+            status: 'PAID',
+            paidAt: expect.objectContaining({ gte: expect.any(Date) }),
+          }),
+        }),
       );
     });
   });

@@ -216,8 +216,8 @@ export class ReportsService {
         amount: data.amount,
         platform: data.platform,
         date: parsedDate,
-        campaign: data.campaign,
-        description: data.description,
+        ...(data.campaign !== undefined ? { campaign: data.campaign } : {}),
+        ...(data.description !== undefined ? { description: data.description } : {}),
       },
     });
   }

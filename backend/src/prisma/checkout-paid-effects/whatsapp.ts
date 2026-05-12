@@ -133,7 +133,7 @@ export async function enqueuePurchaseWhatsappFromPaidCheckoutUpdate(
         productName: order.plan.product?.name || 'Seu pedido',
         orderNumber: order.orderNumber || order.id,
         totalInCents: order.totalInCents,
-        memberAreaUrl: memberArea?.slug ? `/area/${memberArea.slug}` : undefined,
+        ...(memberArea?.slug ? { memberAreaUrl: `/area/${memberArea.slug}` } : {}),
       }),
       externalId: jobId,
     },

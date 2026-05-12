@@ -21,7 +21,9 @@ function looksLikePhoneDoePlaceholder(value: string): boolean {
     return false;
   }
 
-  const last = parts[parts.length - 1].toLowerCase();
+  const lastPart = parts[parts.length - 1];
+  if (!lastPart) return false;
+  const last = lastPart.toLowerCase();
   if (last !== 'doe') {
     return false;
   }

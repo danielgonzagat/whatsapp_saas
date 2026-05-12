@@ -370,8 +370,8 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
       consecutiveFailures: 0,
     };
 
-    health.lastReconnectAttempt = undefined;
-    health.reconnectBlockedReason = undefined;
+    delete health.lastReconnectAttempt;
+    delete health.reconnectBlockedReason;
 
     const success = await this.recovery.attemptReconnect(workspaceId, workspace?.name, health);
 

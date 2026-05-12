@@ -118,10 +118,7 @@ describe('AdminDashboardService', () => {
     mockConversationCount.mockResolvedValue(100);
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        AdminDashboardService,
-        { provide: PrismaService, useValue: prismaMock },
-      ],
+      providers: [AdminDashboardService, { provide: PrismaService, useValue: prismaMock }],
     }).compile();
 
     service = module.get(AdminDashboardService);

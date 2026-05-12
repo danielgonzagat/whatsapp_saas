@@ -11,11 +11,9 @@ type FlexMock = jest.Mock & {
 };
 
 jest.mock('../common/async-sequence', () => ({
-  forEachSequential: jest.fn(
-    async <T>(arr: T[], fn: (item: T) => Promise<void>) => {
-      for (const item of arr) await fn(item);
-    },
-  ),
+  forEachSequential: jest.fn(async <T>(arr: T[], fn: (item: T) => Promise<void>) => {
+    for (const item of arr) await fn(item);
+  }),
 }));
 
 describe('AutopilotAnalyticsReportService', () => {

@@ -1,4 +1,4 @@
-import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service';
 import { PIPELINE_STAGE_COLORS } from '../common/kloel-colors';
@@ -234,21 +234,9 @@ describe('PipelineService', () => {
       });
     });
 
-    it('creates a deal without contactId', async () => {
-      const createdDeal = { id: 'd-new', title, value, stageId: 's-1' };
-      prisma.deal.create.mockResolvedValue(createdDeal);
-
-      const result = await service.createDeal(wsId, { title, value });
-
-      expect(result).toEqual(createdDeal);
-      expect(prisma.deal.create).toHaveBeenCalledWith({
-        data: {
-          title,
-          value,
-          contactId: undefined,
-          stageId: 's-1',
-        },
-      });
+    it('throws BadRequestException when contactId is missing', async () => {
+      await expect(service.createDeal(wsId, { title, value })).rejects.toThrow(BadRequestException);
+      expect(prisma.deal.create).not.toHaveBeenCalled();
     });
 
     it('creates a deal with contactId and sourceCampaignId from customFields', async () => {
@@ -301,17 +289,22 @@ describe('PipelineService', () => {
     });
 
     it('creates a deal with empty defaults when title and value are omitted', async () => {
-      const createdDeal = { id: 'd-min', title: '', value: 0, stageId: 's-1' };
+      const contactId = 'c-1';
+      const createdDeal = { id: 'd-min', title: '', value: 0, contactId, stageId: 's-1' };
+      prisma.contact.findUnique.mockResolvedValue({
+        workspaceId: wsId,
+        customFields: {},
+      });
       prisma.deal.create.mockResolvedValue(createdDeal);
 
-      const result = await service.createDeal(wsId, {});
+      const result = await service.createDeal(wsId, { contactId });
 
       expect(result).toEqual(createdDeal);
       expect(prisma.deal.create).toHaveBeenCalledWith({
         data: {
           title: '',
           value: 0,
-          contactId: undefined,
+          contactId,
           stageId: 's-1',
         },
       });

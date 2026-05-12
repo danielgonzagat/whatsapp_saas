@@ -32,6 +32,9 @@ export class ApiKeysService {
     }
 
     const [saltHex, derivedHex] = parts;
+    if (saltHex === undefined || derivedHex === undefined) {
+      return false;
+    }
     const salt = Buffer.from(saltHex, 'hex');
     const expected = Buffer.from(derivedHex, 'hex');
 

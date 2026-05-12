@@ -58,13 +58,18 @@ export class CalendarController {
   async createEvent(@Req() req: AuthenticatedRequest, @Body() dto: CreateEventDto) {
     const workspaceId = resolveWorkspaceId(req);
 
+    const startTime = parseDateOrFail(dto.startTime, 'startTime');
+    const endTime = parseDateOrFail(dto.endTime, 'endTime');
+    if (!startTime || !endTime) {
+      throw new BadRequestException('startTime and endTime are required');
+    }
     const event: CalendarEvent = {
       summary: dto.summary,
-      description: dto.description,
-      startTime: parseDateOrFail(dto.startTime, 'startTime') as Date,
-      endTime: parseDateOrFail(dto.endTime, 'endTime') as Date,
-      attendees: dto.attendees,
-      location: dto.location,
+      ...(dto.description !== undefined ? { description: dto.description } : {}),
+      startTime,
+      endTime,
+      ...(dto.attendees !== undefined ? { attendees: dto.attendees } : {}),
+      ...(dto.location !== undefined ? { location: dto.location } : {}),
     };
 
     return this.calendarService.createEvent(workspaceId, event);

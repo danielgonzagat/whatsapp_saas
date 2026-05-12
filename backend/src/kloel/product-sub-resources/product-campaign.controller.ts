@@ -198,9 +198,7 @@ export class ProductCampaignController {
       where: { id: campaignId },
       data: removeUndefined({
         ...(body.name !== undefined ? { name: safeStr(body.name).trim() } : {}),
-        ...(body.pixelId !== undefined
-          ? { pixelId: safeStr(body.pixelId).trim() || null }
-          : {}),
+        ...(body.pixelId !== undefined ? { pixelId: safeStr(body.pixelId).trim() || null } : {}),
       }),
     });
 

@@ -301,7 +301,7 @@ export class WhatsAppWatchdogRecoveryService {
           health.consecutiveFailures = 0;
           health.connected = true;
           health.upSince = new Date();
-          health.reconnectBlockedReason = undefined;
+          delete health.reconnectBlockedReason;
           await this.catchupService.triggerCatchup(workspaceId, 'watchdog_reconnected');
           await this.tryBootstrapAutonomy(workspaceId, workspaceName, 'watchdog_reconnected');
           await this.maintainConnectedWorkspace(workspaceId, workspaceName, 'watchdog_reconnected');
@@ -314,7 +314,7 @@ export class WhatsAppWatchdogRecoveryService {
           );
           health.connected = false;
           health.consecutiveFailures = 0;
-          health.reconnectBlockedReason = undefined;
+          delete health.reconnectBlockedReason;
           return false;
         }
 

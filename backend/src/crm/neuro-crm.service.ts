@@ -116,16 +116,17 @@ export class NeuroCrmService {
             best = idx;
           }
         });
-        buckets[best].push(p);
+        const bucket = buckets[best];
+        if (bucket) bucket.push(p);
       }
       centroids = buckets.map((bucket, idx) => {
         if (!bucket.length) {
-          return centroids[idx];
+          const fallback = centroids[idx];
+          return fallback ?? { x: 0, y: 0 };
         }
-        return {
-          x: bucket.reduce((a: number, b: ClusterPoint) => a + b.x, 0) / bucket.length,
-          y: bucket.reduce((a: number, b: ClusterPoint) => a + b.y, 0) / bucket.length,
-        };
+        const xSum = bucket.reduce((a, b) => a + b.x, 0);
+        const ySum = bucket.reduce((a, b) => a + b.y, 0);
+        return { x: xSum / bucket.length, y: ySum / bucket.length };
       });
     }
 

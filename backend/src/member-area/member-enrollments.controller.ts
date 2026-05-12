@@ -110,7 +110,7 @@ export class MemberEnrollmentsController {
         memberAreaId: areaId,
         studentName,
         studentEmail,
-        studentPhone,
+        ...(studentPhone !== undefined ? { studentPhone } : {}),
       },
     });
 

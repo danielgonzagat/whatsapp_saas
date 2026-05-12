@@ -168,8 +168,8 @@ export async function materializeProductExt(
           platform: 'other',
           productName: session.productName,
           price: offer.price || prices[0] || 0,
-          paymentUrl: offer.url,
-          checkoutUrl: offer.url,
+          paymentUrl: offer.url || '',
+          checkoutUrl: offer.url || '',
           isActive: true,
         },
       });

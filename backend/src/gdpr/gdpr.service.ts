@@ -22,7 +22,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { GdprStatus, GdprType } from '@prisma/client';
+import { GdprStatus, GdprType, Prisma } from '@prisma/client';
 import { Queue, Worker, type Job } from 'bullmq';
 import { createRedisClient } from '../common/redis/redis.util';
 import { StorageService } from '../common/storage/storage.service';
@@ -427,6 +427,21 @@ export class GdprService implements OnModuleInit, OnModuleDestroy {
     data.messages = messages;
     writeJson(exportDir, 'messages.json', messages);
 
+    const chatMessages = await this.prisma.chatMessage.findMany({
+      where: { workspaceId, userId },
+      select: {
+        id: true,
+        threadId: true,
+        role: true,
+        content: true,
+        metadata: true,
+        createdAt: true,
+      },
+      take: 10000,
+    });
+    data.chatMessages = chatMessages;
+    writeJson(exportDir, 'chat_messages.json', chatMessages);
+
     writeJson(exportDir, 'manifest.json', {
       exportDate: new Date().toISOString(),
       userId,
@@ -458,6 +473,26 @@ export class GdprService implements OnModuleInit, OnModuleDestroy {
           data: { usedAt: new Date() },
         });
 
+        const chatMessages = await tx.chatMessage.updateMany({
+          where: { workspaceId, userId, deletedAt: null },
+          data: {
+            userId: null,
+            content: '[deleted by GDPR request]',
+            metadata: Prisma.JsonNull,
+            deletedAt: new Date(),
+          },
+        });
+
+        const conversations = await tx.conversation.updateMany({
+          where: { workspaceId, assignedAgentId: userId },
+          data: { assignedAgentId: null },
+        });
+
+        const messages = await tx.message.updateMany({
+          where: { workspaceId, agentId: userId },
+          data: { agentId: null },
+        });
+
         await tx.agent.update({
           where: { id: userId },
           data: {
@@ -483,6 +518,9 @@ export class GdprService implements OnModuleInit, OnModuleDestroy {
               userId,
               deletedAt: new Date().toISOString(),
               requestId,
+              chatMessagesAnonymized: chatMessages.count,
+              conversationsUnassigned: conversations.count,
+              messagesUnassigned: messages.count,
             },
           },
         });

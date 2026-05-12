@@ -16,16 +16,14 @@ export class MemoryCrudService {
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
-  private toMemoryItem(
-    row: {
-      id: string;
-      workspaceId: string;
-      key: string;
-      value: unknown;
-      category: string;
-      content: string | null;
-    },
-  ): MemoryItem {
+  private toMemoryItem(row: {
+    id: string;
+    workspaceId: string;
+    key: string;
+    value: unknown;
+    category: string;
+    content: string | null;
+  }): MemoryItem {
     return {
       id: row.id,
       workspaceId: row.workspaceId,

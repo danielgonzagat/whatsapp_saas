@@ -73,7 +73,7 @@ export class AgentAssistService {
       requestId,
       assistantAction: operation,
       metadata: { model },
-      estimatedCostCents,
+      ...(estimatedCostCents !== undefined ? { estimatedCostCents } : {}),
     });
     try {
       await this.ensureBudget(workspaceId);
@@ -82,6 +82,7 @@ export class AgentAssistService {
         model,
         operation,
       });
+      if (!this.openai) throw new Error('OpenAI client not configured');
       const completion = await chatCompletionWithRetry(this.openai, { model, messages });
       if (estimatedCostCents !== undefined && usageCharged) {
         await settleAiUsageIfNeeded({
@@ -163,7 +164,7 @@ export class AgentAssistService {
           const content = completion.choices[0]?.message?.content?.toLowerCase() || '';
           return { sentiment: classifySentimentLabel(content), raw: content };
         },
-        estimatedCostCents,
+        ...(estimatedCostCents !== undefined ? { estimatedCostCents } : {}),
       });
       if (workspaceId) {
         await this.prisma.autopilotEvent
@@ -250,7 +251,7 @@ export class AgentAssistService {
       model,
       messages,
       handler: (completion) => ({ summary: completion.choices[0]?.message?.content || '' }),
-      estimatedCostCents,
+      ...(estimatedCostCents !== undefined ? { estimatedCostCents } : {}),
     });
   }
 
@@ -290,7 +291,7 @@ export class AgentAssistService {
       handler: (completion) => ({
         suggestion: completion.choices[0]?.message?.content || latest,
       }),
-      estimatedCostCents,
+      ...(estimatedCostCents !== undefined ? { estimatedCostCents } : {}),
     });
   }
 
@@ -331,7 +332,7 @@ export class AgentAssistService {
       handler: (completion) => ({
         pitch: completion.choices[0]?.message?.content || base,
       }),
-      estimatedCostCents,
+      ...(estimatedCostCents !== undefined ? { estimatedCostCents } : {}),
     });
   }
 }

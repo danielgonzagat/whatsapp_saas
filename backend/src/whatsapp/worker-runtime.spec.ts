@@ -11,7 +11,7 @@ describe('WorkerRuntimeService', () => {
     service = new WorkerRuntimeService(config as never);
     fetchSpy = jest.fn();
     originalFetch = globalThis.fetch;
-    globalThis.fetch = fetchSpy as unknown as typeof fetch;
+    globalThis.fetch = fetchSpy;
   });
 
   afterEach(() => {
@@ -59,7 +59,7 @@ describe('WorkerRuntimeService', () => {
       fetchSpy.mockResolvedValue({
         ok: true,
         json: async () => ({ status: 'ok' }),
-      } as Response);
+      });
 
       const first = await service.isAvailable();
       expect(first).toBe(true);
@@ -90,7 +90,7 @@ describe('WorkerRuntimeService', () => {
       fetchSpy.mockResolvedValue({
         ok: true,
         json: async () => ({ status: 'ok' }),
-      } as Response);
+      });
 
       await service.isAvailable();
       expect(fetchSpy).toHaveBeenCalledTimes(1);
@@ -107,7 +107,7 @@ describe('WorkerRuntimeService', () => {
       fetchSpy.mockResolvedValue({
         ok: true,
         json: async () => ({ status: 'healthy' }),
-      } as Response);
+      });
 
       const result = await service.isAvailable(true);
 
@@ -122,7 +122,7 @@ describe('WorkerRuntimeService', () => {
       fetchSpy.mockResolvedValue({
         ok: false,
         json: async () => ({ status: 'healthy' }),
-      } as Response);
+      });
 
       const result = await service.isAvailable(true);
 

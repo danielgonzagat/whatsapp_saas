@@ -23,6 +23,8 @@ import {
   normalizeWhatsAppSelectedProducts,
 } from './marketing-connect.helpers';
 import { MailboxGmailOAuthService } from './mailbox-gmail-oauth.service';
+import { MailboxImapSmtpService } from './mailbox-imap-smtp.service';
+import { MailboxMicrosoftOAuthService } from './mailbox-microsoft-oauth.service';
 
 type EmailSubSettings = Record<string, unknown> & { enabled?: boolean };
 type WhatsAppStatusValue = Record<string, unknown>;
@@ -51,6 +53,26 @@ interface GmailOAuthCompletePayload {
 
 interface GmailSyncPayload {
   limit?: unknown;
+}
+
+interface GmailSendTestPayload {
+  toEmail?: string;
+  subject?: string;
+  html?: string;
+}
+
+interface ImapSmtpConnectPayload {
+  email?: unknown;
+  imapHost?: unknown;
+  imapPort?: unknown;
+  imapSecure?: unknown;
+  imapUsername?: unknown;
+  imapPassword?: unknown;
+  smtpHost?: unknown;
+  smtpPort?: unknown;
+  smtpSecure?: unknown;
+  smtpUsername?: unknown;
+  smtpPassword?: unknown;
 }
 
 function readOptionalText(value: unknown): string | null {
@@ -123,6 +145,8 @@ export class MarketingConnectController {
     private readonly metaWhatsApp: MetaWhatsAppService,
     private readonly whatsappProviders: WhatsAppProviderRegistry,
     private readonly gmailMailbox: MailboxGmailOAuthService,
+    private readonly microsoftMailbox: MailboxMicrosoftOAuthService,
+    private readonly imapSmtpMailbox: MailboxImapSmtpService,
   ) {}
 
   private getEmailProviderSnapshot() {
@@ -179,31 +203,41 @@ export class MarketingConnectController {
   }
 
   private async getConnectionStatus(workspaceId: string) {
-    const [workspace, metaConnection, providerType, whatsappStatus, gmailMailbox] =
-      await Promise.all([
-        this.prisma.workspace.findUnique({
-          where: { id: workspaceId },
-          select: { providerSettings: true, name: true },
-        }),
-        this.prisma.metaConnection.findUnique({
-          where: { workspaceId },
-          select: {
-            status: true,
-            pageId: true,
-            pageName: true,
-            instagramAccountId: true,
-            instagramUsername: true,
-            whatsappPhoneNumberId: true,
-            whatsappBusinessId: true,
-            adAccountId: true,
-            tokenExpiresAt: true,
-            updatedAt: true,
-          },
-        }),
-        this.whatsappProviders.getProviderType(workspaceId).catch(() => 'meta-cloud' as const),
-        this.whatsappProviders.getSessionStatus(workspaceId).catch(() => null),
-        this.gmailMailbox.getPrimaryGmailStatus(workspaceId).catch(() => null),
-      ]);
+    const [
+      workspace,
+      metaConnection,
+      providerType,
+      whatsappStatus,
+      gmailMailbox,
+      microsoftMailbox,
+      imapSmtpMailbox,
+    ] = await Promise.all([
+      this.prisma.workspace.findUnique({
+        where: { id: workspaceId },
+        select: { providerSettings: true, name: true },
+      }),
+      this.prisma.metaConnection.findUnique({
+        where: { workspaceId },
+        select: {
+          status: true,
+          pageId: true,
+          pageName: true,
+          instagramAccountId: true,
+          instagramUsername: true,
+          whatsappPhoneNumberId: true,
+          whatsappBusinessId: true,
+          adAccountId: true,
+          tokenExpiresAt: true,
+          updatedAt: true,
+        },
+      }),
+      this.whatsappProviders.getProviderType(workspaceId).catch(() => 'meta-cloud' as const),
+      this.whatsappProviders.getSessionStatus(workspaceId).catch(() => null),
+      this.gmailMailbox.getPrimaryGmailStatus(workspaceId).catch(() => null),
+      this.microsoftMailbox.getPrimaryMicrosoftStatus(workspaceId).catch(() => null),
+      this.imapSmtpMailbox.getPrimaryImapSmtpStatus(workspaceId).catch(() => null),
+    ]);
+    const connectedMailbox = gmailMailbox || microsoftMailbox || imapSmtpMailbox;
 
     const providerSettings = asProviderSettings(workspace?.providerSettings);
     const emailSettings = (providerSettings.email ?? { enabled: false }) as EmailSubSettings;
@@ -300,8 +334,10 @@ export class MarketingConnectController {
           pageName: metaConnection?.pageName || null,
         },
         email: {
-          connected: Boolean(gmailMailbox || (emailProvider.available && emailSettings.enabled)),
-          status: gmailMailbox
+          connected: Boolean(
+            connectedMailbox || (emailProvider.available && emailSettings.enabled),
+          ),
+          status: connectedMailbox
             ? 'connected'
             : emailProvider.available
               ? emailSettings.enabled
@@ -309,16 +345,26 @@ export class MarketingConnectController {
                 : 'disconnected'
               : 'unavailable',
           enabled: Boolean(emailSettings.enabled),
-          provider: gmailMailbox ? 'gmail' : emailProvider.provider,
+          provider: gmailMailbox
+            ? 'gmail'
+            : microsoftMailbox
+              ? 'microsoft'
+              : imapSmtpMailbox
+                ? 'imap_smtp'
+                : emailProvider.provider,
           providerAvailable: emailProvider.available,
-          fromEmail: gmailMailbox?.email || emailProvider.fromEmail,
+          fromEmail:
+            gmailMailbox?.email ||
+            microsoftMailbox?.email ||
+            imapSmtpMailbox?.email ||
+            emailProvider.fromEmail,
           fromName: emailProvider.fromName,
-          mailboxConnectionId: gmailMailbox?.id || null,
-          mailboxProvider: gmailMailbox?.provider || null,
-          mailboxStatus: gmailMailbox?.status || null,
-          lastSyncAt: gmailMailbox?.lastSyncAt || null,
-          lastErrorAt: gmailMailbox?.lastErrorAt || null,
-          lastError: gmailMailbox?.lastError || null,
+          mailboxConnectionId: connectedMailbox?.id || null,
+          mailboxProvider: connectedMailbox?.provider || null,
+          mailboxStatus: connectedMailbox?.status || null,
+          lastSyncAt: connectedMailbox?.lastSyncAt || null,
+          lastErrorAt: connectedMailbox?.lastErrorAt || null,
+          lastError: connectedMailbox?.lastError || null,
           workspaceName: workspace?.name || null,
         },
       },
@@ -511,6 +557,37 @@ export class MarketingConnectController {
     );
   }
 
+  /** Start Microsoft mailbox OAuth for the workspace owner. */
+  @Get('connect/email/microsoft/auth-url')
+  getMicrosoftAuthUrl(
+    @Request() req: { user: { workspaceId: string; email?: string } },
+    @Query('returnTo') returnTo?: string,
+  ) {
+    return this.microsoftMailbox.buildAuthUrl(req.user.workspaceId, returnTo);
+  }
+
+  /** Complete Microsoft mailbox OAuth and persist encrypted tokens. */
+  @Post('connect/email/microsoft/complete')
+  async completeMicrosoftOAuth(
+    @Request() req: { user: { workspaceId: string; email?: string } },
+    @Body() body: GmailOAuthCompletePayload = {},
+  ) {
+    return this.microsoftMailbox.completeOAuth(
+      req.user.workspaceId,
+      String(body.code || ''),
+      String(body.state || ''),
+    );
+  }
+
+  /** Connect a generic customer mailbox through IMAP + SMTP credentials. */
+  @Post('connect/email/imap-smtp/connect')
+  async connectImapSmtpMailbox(
+    @Request() req: { user: { workspaceId: string; email?: string } },
+    @Body() body: ImapSmtpConnectPayload = {},
+  ) {
+    return this.imapSmtpMailbox.connectMailbox(req.user.workspaceId, body);
+  }
+
   /** Pull latest Gmail messages into the unified inbox for the connected mailbox. */
   @Post('connect/email/gmail/sync')
   async syncGmailMailbox(
@@ -518,6 +595,20 @@ export class MarketingConnectController {
     @Body() body: GmailSyncPayload = {},
   ) {
     return this.gmailMailbox.syncLatestInbox(req.user.workspaceId, Number(body.limit || 10));
+  }
+
+  /** Send a test message through the connected Gmail mailbox, not Kloel's sender. */
+  @Post('connect/email/gmail/send-test')
+  async sendGmailMailboxTest(
+    @Request() req: { user: { workspaceId: string; email?: string } },
+    @Body() body: GmailSendTestPayload = {},
+  ) {
+    return this.gmailMailbox.sendMessageFromMailbox(req.user.workspaceId, {
+      toEmail: String(body.toEmail || req.user.email || ''),
+      subject: body.subject || 'Kloel CIA - Gmail conectado',
+      html: body.html || '<p>Esta mensagem saiu da caixa Gmail conectada ao workspace Kloel.</p>',
+      proactive: true,
+    });
   }
 
   /** Send email test. */

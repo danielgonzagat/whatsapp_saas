@@ -128,9 +128,9 @@ export class MediaController {
 
     const workspaceId = resolveWorkspaceId(req, body?.workspaceId);
     return this.mediaService.uploadDocument(workspaceId, file, {
-      name: body.name,
-      description: body.description,
-      category: body.category,
+      ...(body.name !== undefined ? { name: body.name } : {}),
+      ...(body.description !== undefined ? { description: body.description } : {}),
+      ...(body.category !== undefined ? { category: body.category } : {}),
     });
   }
 

@@ -39,6 +39,7 @@ describe('AdminUsersService', () => {
   const mockAdminUserUpdate = jest.fn<Promise<unknown>, unknown[]>();
   const mockAdminPermissionDeleteMany = jest.fn<Promise<unknown>, unknown[]>();
   const mockAdminPermissionCreateMany = jest.fn<Promise<unknown>, unknown[]>();
+  const mockAdminSessionUpdateMany = jest.fn<Promise<unknown>, unknown[]>();
 
   const mockTx = {
     adminUser: {
@@ -48,6 +49,9 @@ describe('AdminUsersService', () => {
     adminPermission: {
       deleteMany: mockAdminPermissionDeleteMany,
       createMany: mockAdminPermissionCreateMany,
+    },
+    adminSession: {
+      updateMany: mockAdminSessionUpdateMany,
     },
     adminAuditLog: { create: jest.fn<Promise<unknown>, unknown[]>() },
   };
@@ -83,6 +87,7 @@ describe('AdminUsersService', () => {
     mockAdminUserUpdate.mockResolvedValue(adminUser);
     mockAdminPermissionDeleteMany.mockResolvedValue({ count: 0 });
     mockAdminPermissionCreateMany.mockResolvedValue({ count: 0 });
+    mockAdminSessionUpdateMany.mockResolvedValue({ count: 0 });
     mockPermissions.seedDefaults.mockResolvedValue(undefined);
     mockPermissions.replace.mockResolvedValue(undefined);
     mockPermissions.listFor.mockResolvedValue([]);
@@ -222,6 +227,7 @@ describe('AdminUsersService', () => {
       const result = await service.update('user_1', patch);
 
       expect(mockTx.adminUser.update).toHaveBeenCalled();
+      expect(mockAdminSessionUpdateMany).not.toHaveBeenCalled();
       expect(mockTx.adminAuditLog.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
@@ -259,6 +265,45 @@ describe('AdminUsersService', () => {
 
       expect(mockAdminPermissionDeleteMany).toHaveBeenCalledWith({
         where: { adminUserId: 'user_1' },
+      });
+    });
+
+    it('revokes active sessions when role changes', async () => {
+      const existingUser = { ...adminUser, role: AdminRole.MANAGER };
+      mockTx.adminUser.findUnique.mockResolvedValueOnce(existingUser);
+      mockAdminSessionUpdateMany.mockResolvedValueOnce({ count: 2 });
+
+      await service.update('user_1', { ...patch, role: AdminRole.STAFF });
+
+      expect(mockAdminSessionUpdateMany).toHaveBeenCalledWith({
+        where: {
+          adminUserId: 'user_1',
+          revokedAt: null,
+          expiresAt: { gt: expect.any(Date) },
+        },
+        data: { revokedAt: expect.any(Date) },
+      });
+      expect(mockTx.adminAuditLog.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            details: expect.objectContaining({ revokedSessions: 2 }),
+          }),
+        }),
+      );
+    });
+
+    it('revokes active sessions when status changes', async () => {
+      mockAdminSessionUpdateMany.mockResolvedValueOnce({ count: 1 });
+
+      await service.update('user_1', { ...patch, status: AdminUserStatus.SUSPENDED });
+
+      expect(mockAdminSessionUpdateMany).toHaveBeenCalledWith({
+        where: {
+          adminUserId: 'user_1',
+          revokedAt: null,
+          expiresAt: { gt: expect.any(Date) },
+        },
+        data: { revokedAt: expect.any(Date) },
       });
     });
   });

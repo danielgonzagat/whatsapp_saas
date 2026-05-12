@@ -47,12 +47,17 @@ export class UnifiedAgentContextDataService {
       where: { id: workspaceId },
       select: { name: true, providerSettings: true },
     });
+    const providerSettings = this.isRecord(workspace?.providerSettings)
+      ? workspace.providerSettings
+      : {};
+    const autopilot = this.isRecord(providerSettings.autopilot) ? providerSettings.autopilot : {};
     const brandVoice = await this.prisma.kloelMemory.findFirst({
       where: { workspaceId, key: 'brandVoice' },
     });
     return {
       ...workspace,
       brandVoice: (brandVoice?.value as BrandVoiceValue)?.style,
+      salesPolicy: this.isRecord(autopilot.salesPolicy) ? autopilot.salesPolicy : null,
     };
   }
 

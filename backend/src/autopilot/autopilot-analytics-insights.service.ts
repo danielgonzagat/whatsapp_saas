@@ -130,16 +130,18 @@ export class AutopilotAnalyticsInsightsService {
           (d) => d.getTime() > actionTs,
         );
         if (replies.length > 0) {
+          const firstReply = replies[0];
+          if (!firstReply) continue;
           repliedContacts += 1;
           totalReplies += replies.length;
-          const delay = Math.round((replies[0].getTime() - actionTs) / 60000);
+          const delay = Math.round((firstReply.getTime() - actionTs) / 60000);
           replyDelays.push(delay);
           const contact = contactMap.get(contactId);
           if (samples.length < 5 && contact) {
             samples.push({
               contactId,
               contact: contact.name || contact.phone,
-              replyAt: replies[0],
+              replyAt: firstReply,
               delayMinutes: delay,
             });
           }

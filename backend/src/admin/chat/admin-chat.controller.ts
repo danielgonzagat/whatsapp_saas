@@ -14,7 +14,10 @@ import {
 import { Public } from '../../auth/public.decorator';
 import { CurrentAdmin } from '../auth/decorators/current-admin.decorator';
 import { AdminAuthGuard } from '../auth/guards/admin-auth.guard';
-import { AdminGlobalOperation, AdminGlobalOperationGuard } from '../../common/decorators/admin-global-operation.decorator';
+import {
+  AdminGlobalOperation,
+  AdminGlobalOperationGuard,
+} from '../../common/decorators/admin-global-operation.decorator';
 import type { AuthenticatedAdmin } from '../auth/admin-token.types';
 import { AdminChatService } from './admin-chat.service';
 import { AdminChatSessionService } from './admin-chat-session.service';

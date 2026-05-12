@@ -2,6 +2,7 @@ import { Body, Controller, Post, Request, UseGuards } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiResponse, ApiSecurity, ApiTags } from '@nestjs/swagger';
 import { Public } from '../auth/public.decorator';
 import { InboxService } from '../inbox/inbox.service';
+import { AuthenticatedRequest } from '../common/interfaces';
 import { ApiKeyGuard } from './api-key.guard';
 import { RouteClass } from '../common/throttler/route-class.decorator';
 
@@ -36,7 +37,7 @@ export class PublicApiController {
     },
   })
   @ApiResponse({ status: 201, description: 'Message queued for delivery' })
-  async sendMessage(@Request() req, @Body() body: { phone: string; message: string }) {
+  async sendMessage(@Request() req: AuthenticatedRequest, @Body() body: { phone: string; message: string }) {
     return this.inbox.saveMessageByPhone({
       workspaceId: req.user.workspaceId,
       phone: body.phone,

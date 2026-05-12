@@ -136,8 +136,9 @@ describe('ConnectController', () => {
     });
   });
 
-  it('creates a payout for a balance that belongs to the workspace', async () => {
-    const { controller, prisma, connectPayoutService } = buildController();
+  it('creates a payout approval request for the legacy payout route', async () => {
+    const { controller, prisma, connectPayoutApprovalService, connectPayoutService } =
+      buildController();
     const result = await controller.createPayout('ws-1', {
       accountBalanceId: 'cab_seller',
       amountCents: 500,
@@ -148,37 +149,31 @@ describe('ConnectController', () => {
     expect(prisma.connectAccountBalance.findFirst).toHaveBeenCalledWith({
       where: { id: 'cab_seller', workspaceId: 'ws-1' },
     });
-    expect(connectPayoutService.createPayout).toHaveBeenCalledWith({
+    expect(connectPayoutApprovalService.createRequest).toHaveBeenCalledWith({
       accountBalanceId: 'cab_seller',
       workspaceId: 'ws-1',
       amountCents: 500n,
-      requestId: 'po_req_1',
       currency: 'brl',
     });
     expect(result).toEqual({
       success: true,
-      payoutId: 'po_123',
-      status: 'pending',
+      approvalRequired: true,
+      approvalRequestId: 'apr_1',
+      workspaceId: 'ws-1',
       accountBalanceId: 'cab_seller',
+      accountType: 'SELLER',
       stripeAccountId: 'acct_seller',
       amountCents: '500',
+      currency: 'BRL',
+      requestId: 'po_req_approval_1',
+      state: 'OPEN',
+      title: 'Aprovar saque SELLER',
+      createdAt: '2026-04-19T02:00:00.000Z',
+      updatedAt: '2026-04-19T02:00:00.000Z',
+      respondedAt: null,
+      decision: null,
     });
-    expect(prisma.adminAuditLog.create).toHaveBeenCalledWith({
-      data: {
-        action: 'system.connect.payout_requested',
-        entityType: 'connect_account_balance',
-        entityId: 'cab_seller',
-        details: {
-          workspaceId: 'ws-1',
-          accountType: 'SELLER',
-          stripeAccountId: 'acct_seller',
-          requestId: 'po_req_1',
-          payoutId: 'po_123',
-          status: 'pending',
-          amountCents: '500',
-        },
-      },
-    });
+    expect(connectPayoutService.createPayout).not.toHaveBeenCalled();
   });
 
   it('creates a payout approval request for a workspace balance', async () => {
@@ -263,7 +258,8 @@ describe('ConnectController', () => {
   });
 
   it('rejects payouts for balances outside the workspace boundary', async () => {
-    const { controller, prisma, connectPayoutService } = buildController();
+    const { controller, prisma, connectPayoutApprovalService, connectPayoutService } =
+      buildController();
     prisma.connectAccountBalance.findFirst.mockResolvedValueOnce(null);
     await expect(
       controller.createPayout('ws-1', {
@@ -273,36 +269,7 @@ describe('ConnectController', () => {
     ).rejects.toBeInstanceOf(NotFoundException);
 
     expect(connectPayoutService.createPayout).not.toHaveBeenCalled();
-  });
-
-  it('audits failed payout requests before rethrowing the error', async () => {
-    const { controller, prisma, connectPayoutService } = buildController();
-    connectPayoutService.createPayout.mockRejectedValueOnce(new Error('stripe down'));
-    await expect(
-      controller.createPayout('ws-1', {
-        accountBalanceId: 'cab_seller',
-        amountCents: 500,
-        requestId: 'po_req_2',
-      }),
-    ).rejects.toThrow('stripe down');
-
-    expect(prisma.adminAuditLog.create).toHaveBeenCalledWith({
-      data: {
-        action: 'system.connect.payout_request_failed',
-        entityType: 'connect_account_balance',
-        entityId: 'cab_seller',
-        details: {
-          workspaceId: 'ws-1',
-          accountType: 'SELLER',
-          stripeAccountId: 'acct_seller',
-          requestId: 'po_req_2',
-          payoutId: null,
-          status: 'failed',
-          amountCents: '500',
-          error: 'stripe down',
-        },
-      },
-    });
+    expect(connectPayoutApprovalService.createRequest).not.toHaveBeenCalled();
   });
 
   it('lists connect payout audit history for the workspace', async () => {

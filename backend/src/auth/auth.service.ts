@@ -158,8 +158,8 @@ export class AuthService {
   }) {
     const result = await loginWithAppleCredential(this.buildDeps(), {
       identityToken: data.identityToken,
-      user: data.user,
-      ip: data.ip,
+      ...(data.user !== undefined ? { user: data.user } : {}),
+      ...(data.ip !== undefined ? { ip: data.ip } : {}),
     });
     if (result.isNewUser) {
       this.triggerWelcomeFlow(

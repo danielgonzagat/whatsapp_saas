@@ -26,10 +26,8 @@ export async function actionImportContacts(
         if (val !== undefined) {
           if (h.includes('phone') || h.includes('telefone') || h.includes('whatsapp'))
             contact.phone = val.replace(D_RE, '');
-          else if (h.includes('name') || h.includes('nome'))
-            contact.name = val;
-          else if (h.includes('email'))
-            contact.email = val;
+          else if (h.includes('name') || h.includes('nome')) contact.name = val;
+          else if (h.includes('email')) contact.email = val;
         }
       });
       if (contact.phone) {

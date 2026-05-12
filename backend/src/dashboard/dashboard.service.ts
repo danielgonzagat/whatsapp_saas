@@ -445,6 +445,7 @@ export class DashboardService {
       }
 
       const current = productStats.get(key);
+      if (!current) return;
       current.totalRevenueInCents += Number(order.totalInCents || 0);
       current.totalSales += 1;
     });

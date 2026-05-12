@@ -184,12 +184,13 @@ export class AffiliateMarketplaceController {
       select: { category: true, name: true },
       take: 5,
     });
-    const categories = [...new Set(myProducts.map((product) => product.category).filter(Boolean))];
+    const categories = [...new Set(myProducts.map((product) => product.category).filter(Boolean))] as string[];
 
-    const where = buildMarketplaceWhere({
-      listed: true,
-      ...(categories.length > 0 ? { category: { in: categories } } : {}),
-    });
+    const whereInput: Prisma.AffiliateProductWhereInput = { listed: true };
+    if (categories.length > 0) {
+      whereInput.category = { in: categories };
+    }
+    const where = buildMarketplaceWhere(whereInput);
 
     const products = await this.prisma.affiliateProduct.findMany({
       where,

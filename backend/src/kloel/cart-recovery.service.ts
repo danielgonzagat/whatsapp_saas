@@ -64,7 +64,7 @@ export class CartRecoveryService {
           }
 
           const emailService = new EmailService();
-          const orderWithPlan = order as typeof order & { plan?: { product?: { name?: string } } };
+          const orderWithPlan = order;
           const productName = orderWithPlan.plan?.product?.name || 'Seu pedido';
           const customerEmail = order.customerEmail;
           const unsubscribeFooter = buildUnsubscribeFooterHtml({

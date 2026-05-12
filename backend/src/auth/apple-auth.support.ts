@@ -89,5 +89,5 @@ export function buildAppleName(user?: AppleUserHint | null, email?: string): str
     return joined;
   }
   const fallbackEmail = email?.trim();
-  return fallbackEmail ? (fallbackEmail.split('@')[0] || 'Apple User') : 'Apple User';
+  return fallbackEmail ? fallbackEmail.split('@')[0] || 'Apple User' : 'Apple User';
 }

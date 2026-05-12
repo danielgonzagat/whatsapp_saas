@@ -414,7 +414,7 @@ export class AutopilotService {
           intent: 'NBA',
           action: 'MANUAL_SEND',
           status: 'skipped',
-          reason: compliance.reason,
+          ...(compliance.reason !== undefined ? { reason: compliance.reason } : {}),
           meta: { compliance: true },
         },
       });

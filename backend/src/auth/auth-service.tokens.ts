@@ -48,8 +48,9 @@ async function signToken(
   if (name) {
     payload.name = name;
   }
+  const expiresIn = getJwtExpiresIn();
   return jwt.signAsync(payload, {
-    expiresIn: getJwtExpiresIn(),
+    ...(expiresIn !== undefined ? { expiresIn } : {}),
   });
 }
 

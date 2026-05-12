@@ -113,7 +113,7 @@ describe('CheckoutProductService', () => {
       const product = makeProduct();
       prisma.product.create.mockResolvedValue(product);
 
-      const result = await service.createProduct('ws_1', { name: 'Test Product' } as never);
+      const result = await service.createProduct('ws_1', { name: 'Test Product' });
 
       expect(prisma.product.create).toHaveBeenCalledWith({
         data: expect.objectContaining({ workspaceId: 'ws_1', name: 'Test Product' }),
@@ -143,9 +143,9 @@ describe('CheckoutProductService', () => {
       });
       prisma.product.update.mockRejectedValue(err);
 
-      await expect(
-        service.updateProduct('prod_1', 'ws_1', { name: 'X' }),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.updateProduct('prod_1', 'ws_1', { name: 'X' })).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -368,20 +368,20 @@ describe('CheckoutProductService', () => {
 
     it('throws BadRequestException on invalid plan selection', async () => {
       const planLinkManager = service.getPlanLinkManager();
-      jest.spyOn(planLinkManager, 'syncCheckoutLinks').mockRejectedValue(
-        new Error('INVALID_PLAN_SELECTION'),
-      );
+      jest
+        .spyOn(planLinkManager, 'syncCheckoutLinks')
+        .mockRejectedValue(new Error('INVALID_PLAN_SELECTION'));
 
-      await expect(
-        service.syncCheckoutLinks('checkout_1', ['plan_invalid']),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.syncCheckoutLinks('checkout_1', ['plan_invalid'])).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('throws NotFoundException when checkout not found', async () => {
       const planLinkManager = service.getPlanLinkManager();
-      jest.spyOn(planLinkManager, 'syncCheckoutLinks').mockRejectedValue(
-        new Error('CHECKOUT_NOT_FOUND'),
-      );
+      jest
+        .spyOn(planLinkManager, 'syncCheckoutLinks')
+        .mockRejectedValue(new Error('CHECKOUT_NOT_FOUND'));
 
       await expect(service.syncCheckoutLinks('checkout_1', ['plan_1'])).rejects.toThrow(
         NotFoundException,

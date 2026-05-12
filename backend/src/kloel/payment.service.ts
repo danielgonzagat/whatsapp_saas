@@ -363,8 +363,7 @@ export class PaymentService {
       select: { slug: true },
       take: 2,
     });
-    const memberAreaSlug =
-      activeMemberAreas.length === 1 ? activeMemberAreas[0]?.slug : undefined;
+    const memberAreaSlug = activeMemberAreas.length === 1 ? activeMemberAreas[0]?.slug : undefined;
 
     return {
       id: sale.externalPaymentId || sale.id,

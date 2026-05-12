@@ -45,11 +45,11 @@ export class AuditService {
         workspaceId: data.workspaceId,
         action: data.action,
         resource: data.resource,
-        resourceId: data.resourceId,
-        agentId: data.agentId,
+        ...(data.resourceId !== undefined ? { resourceId: data.resourceId } : {}),
+        ...(data.agentId !== undefined ? { agentId: data.agentId } : {}),
         details: (data.details ?? {}) as Prisma.InputJsonValue,
-        ipAddress: data.ipAddress,
-        userAgent: data.userAgent,
+        ...(data.ipAddress !== undefined ? { ipAddress: data.ipAddress } : {}),
+        ...(data.userAgent !== undefined ? { userAgent: data.userAgent } : {}),
       },
     });
   }
@@ -71,11 +71,11 @@ export class AuditService {
           workspaceId: data.workspaceId,
           action: data.action,
           resource: data.resource,
-          resourceId: data.resourceId,
-          agentId: data.agentId,
+          ...(data.resourceId !== undefined ? { resourceId: data.resourceId } : {}),
+          ...(data.agentId !== undefined ? { agentId: data.agentId } : {}),
           details: (data.details ?? {}) as Prisma.InputJsonValue,
-          ipAddress: data.ipAddress,
-          userAgent: data.userAgent,
+          ...(data.ipAddress !== undefined ? { ipAddress: data.ipAddress } : {}),
+          ...(data.userAgent !== undefined ? { userAgent: data.userAgent } : {}),
         },
       });
     } catch (error: unknown) {
@@ -94,11 +94,11 @@ export class AuditService {
             workspaceId: data.workspaceId,
             action: data.action,
             resource: data.resource,
-            resourceId: data.resourceId,
-            agentId: data.agentId,
+            ...(data.resourceId !== undefined ? { resourceId: data.resourceId } : {}),
+            ...(data.agentId !== undefined ? { agentId: data.agentId } : {}),
             details: (data.details ?? {}) as Prisma.InputJsonValue,
-            ipAddress: data.ipAddress,
-            userAgent: data.userAgent,
+            ...(data.ipAddress !== undefined ? { ipAddress: data.ipAddress } : {}),
+            ...(data.userAgent !== undefined ? { userAgent: data.userAgent } : {}),
           },
         });
       } catch (retryError: unknown) {

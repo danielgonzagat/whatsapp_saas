@@ -150,6 +150,8 @@ export class MercadoPagoWebhookController {
     }
 
     const status = mapMercadoPagoStatus(payment.status);
+    const pixExpiresAt = payment.expiresAt ? new Date(payment.expiresAt) : null;
+
     await this.prisma.checkoutPayment.updateMany({
       where: {
         OR: [{ externalId: payment.externalId }, { orderId }],
@@ -159,7 +161,7 @@ export class MercadoPagoWebhookController {
         externalId: payment.externalId,
         pixQrCode: payment.qrCodeBase64,
         pixCopyPaste: payment.copyPaste,
-        pixExpiresAt: payment.expiresAt ? new Date(payment.expiresAt) : undefined,
+        pixExpiresAt,
         webhookData: toJsonValue({
           provider: 'mercado_pago',
           eventType,

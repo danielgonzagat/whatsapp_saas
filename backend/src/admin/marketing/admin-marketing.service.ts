@@ -4,14 +4,6 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { AdminDashboardService } from '../dashboard/admin-dashboard.service';
 import { resolveAdminHomeRange, type AdminHomePeriod } from '../dashboard/range.util';
 
-type ConversationRow = {
-  id: string;
-  lastMessageAt: Date;
-  workspace: { name: string };
-  contact: { name: string | null; email: string | null; phone: string | null };
-  messages: Array<{ content: string | null }>;
-};
-
 const PAID_STATUSES: OrderStatus[] = [OrderStatus.PAID, OrderStatus.SHIPPED, OrderStatus.DELIVERED];
 
 const CHANNEL_LABELS: Record<string, string> = {
@@ -83,10 +75,10 @@ export class AdminMarketingService {
         // `workspaceId: undefined` is a Prisma-side no-op ("skip filter")
         // and keeps the unsafe-query scanner satisfied.
         this.prisma.checkoutSocialLead.count({
-          where: { createdAt: { gte: range.from, lte: range.to }, workspaceId: undefined },
+          where: { createdAt: { gte: range.from, lte: range.to } },
         }),
         this.prisma.conversation.findMany({
-          where: { lastMessageAt: { gte: range.from, lte: range.to }, workspaceId: undefined },
+          where: { lastMessageAt: { gte: range.from, lte: range.to } },
           orderBy: { lastMessageAt: 'desc' },
           take: 8,
           select: {
@@ -100,7 +92,7 @@ export class AdminMarketingService {
               select: { content: true },
             },
           },
-        }) as Promise<ConversationRow[]>,
+        }),
         this.prisma.checkoutOrder.findMany({
           where: {
             status: { in: PAID_STATUSES },

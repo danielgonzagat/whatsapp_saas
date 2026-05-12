@@ -149,8 +149,8 @@ export class MetaAuthController {
     const workspaceId = resolveWorkspaceId(req);
     return {
       url: this.metaWhatsApp.buildEmbeddedSignupUrl(workspaceId, {
-        channel,
-        ...(returnTo ? { returnTo: this.sanitizeReturnTo(returnTo, channel) } : {}),
+        ...(channel !== undefined ? { channel } : {}),
+        ...(returnTo !== undefined ? { returnTo: this.sanitizeReturnTo(returnTo, channel) } : {}),
       }),
     };
   }
@@ -286,7 +286,7 @@ export class MetaAuthController {
         tokenExpiresAt,
         pageId,
         pageName,
-        pageAccessToken: encryptMetaToken(pageAccessToken),
+        pageAccessToken: encryptMetaToken(pageAccessToken) ?? null,
         instagramAccountId,
         instagramUsername,
         whatsappPhoneNumberId: whatsappAssets.whatsappPhoneNumberId || null,
@@ -299,7 +299,7 @@ export class MetaAuthController {
         tokenExpiresAt,
         pageId,
         pageName,
-        pageAccessToken: encryptMetaToken(pageAccessToken),
+        pageAccessToken: encryptMetaToken(pageAccessToken) ?? null,
         instagramAccountId,
         instagramUsername,
         whatsappPhoneNumberId: whatsappAssets.whatsappPhoneNumberId || null,

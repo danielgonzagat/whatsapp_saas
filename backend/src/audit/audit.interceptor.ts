@@ -44,7 +44,7 @@ export class AuditInterceptor implements NestInterceptor {
     return next.handle().pipe(
       tap((response) => {
         // Determine resource ID from response or params
-        const resourceId = response?.id || params?.id || null;
+        const resourceId = (response as Record<string, unknown>)?.id as string | undefined || params?.id || null;
 
         // Filter sensitive data from details via shared sanitizer
         const details = sanitizePayload({

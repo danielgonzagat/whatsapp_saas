@@ -148,10 +148,10 @@ export class ReportsController {
       return { error: 'No email provided' };
     }
 
-    // Generate CSV from vendas summary
+    const periodParts = body.period?.split(',');
     const summary = await this.reportsService.getVendasSummary(workspaceId, {
-      startDate: body.period?.split(',')[0],
-      endDate: body.period?.split(',')[1],
+      ...(periodParts?.[0] !== undefined ? { startDate: periodParts[0] } : {}),
+      ...(periodParts?.[1] !== undefined ? { endDate: periodParts[1] } : {}),
     });
 
     await this.emailService.sendEmail({
@@ -203,7 +203,7 @@ export class ReportsController {
     });
     const scores = responses
       .map((r) => (r.details as ReportResponseDetails | null)?.score)
-      .filter(Boolean);
+      .filter((s): s is number => s != null);
     const avg =
       scores.length > 0 ? scores.reduce((a: number, b: number) => a + b, 0) / scores.length : 0;
     const promoters = scores.filter((s: number) => s >= 9).length;

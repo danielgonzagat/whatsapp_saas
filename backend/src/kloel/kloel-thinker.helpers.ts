@@ -65,7 +65,9 @@ export async function thinkSyncImpl(
           message,
           ...(workspaceId !== undefined ? { workspaceId } : {}),
           ...(metadata !== undefined ? { metadata } : {}),
-          ...(effectiveCompanyContext !== undefined ? { composerContext: effectiveCompanyContext } : {}),
+          ...(effectiveCompanyContext !== undefined
+            ? { composerContext: effectiveCompanyContext }
+            : {}),
         })
       : null;
   const assistantMessage =
@@ -76,9 +78,7 @@ export async function thinkSyncImpl(
       ...(userId ? { userId } : {}),
       ...(reqUserName ? { userName: reqUserName } : {}),
       mode,
-      ...(effectiveCompanyContext !== undefined
-        ? { companyContext: effectiveCompanyContext }
-        : {}),
+      ...(effectiveCompanyContext !== undefined ? { companyContext: effectiveCompanyContext } : {}),
       conversationState: historyState,
     }));
 

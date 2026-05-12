@@ -317,19 +317,21 @@ export class PartnershipsService {
         workspaceId,
         partnerName,
         partnerEmail,
-        partnerPhone: data.partnerPhone,
+        ...(data.partnerPhone !== undefined ? { partnerPhone: data.partnerPhone } : {}),
         type: partnerType,
         commissionRate: data.commissionRate || 30,
         status: requiresInvite ? 'PENDING' : 'ACTIVE',
         affiliateCode: code,
         affiliateLink: buildPayCheckoutUrl(undefined, code),
         productIds: data.productIds || [],
-        metadata: inviteTokenHash
+        ...(inviteTokenHash !== undefined
           ? {
-              inviteTokenHash,
-              inviteSentAt: new Date().toISOString(),
+              metadata: {
+                inviteTokenHash,
+                inviteSentAt: new Date().toISOString(),
+              },
             }
-          : undefined,
+          : {}),
         approvedAt: requiresInvite ? null : new Date(),
       },
     });
@@ -458,11 +460,17 @@ export class PartnershipsService {
 
       for (const order of orders) {
         const saleDate = order.paidAt ?? order.createdAt;
-        monthlyPerformance[saleDate.getUTCMonth()] += 1;
+        if (saleDate instanceof Date) {
+          const idx = saleDate.getUTCMonth();
+          monthlyPerformance[idx] = (monthlyPerformance[idx] ?? 0) + 1;
+        }
       }
 
       if (latestOrder) {
-        lastSaleAt = (latestOrder.paidAt ?? latestOrder.createdAt).toISOString();
+        const ts = latestOrder.paidAt ?? latestOrder.createdAt;
+        if (ts) {
+          lastSaleAt = ts.toISOString();
+        }
       }
     }
 

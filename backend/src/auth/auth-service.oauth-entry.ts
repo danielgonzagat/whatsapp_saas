@@ -96,7 +96,7 @@ export async function oauthLogin(
   if (data?.provider === 'google' && data?.credential) {
     return loginWithGoogleCredential(deps, {
       credential: data.credential,
-      ip: data.ip,
+      ...(data.ip !== undefined ? { ip: data.ip } : {}),
     });
   }
 
@@ -311,9 +311,11 @@ export async function loginWithTikTokAccessToken(
   await deps.rateLimitService.checkRateLimit(`oauth:tiktok:${data.ip || 'ip-unknown'}`);
   const profile = await deps.tikTokAuthService.verifyAccessToken({
     accessToken: data.accessToken,
-    openId: data.openId,
-    refreshToken: data.refreshToken,
-    expiresInSeconds: data.expiresInSeconds,
+    ...(data.openId !== undefined ? { openId: data.openId } : {}),
+    ...(data.refreshToken !== undefined ? { refreshToken: data.refreshToken } : {}),
+    ...(data.expiresInSeconds !== undefined
+      ? { expiresInSeconds: data.expiresInSeconds }
+      : {}),
   });
   return completeTrustedOAuthLogin(deps, profile);
 }

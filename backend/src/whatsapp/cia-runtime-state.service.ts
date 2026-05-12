@@ -285,10 +285,9 @@ export class CiaRuntimeStateService {
         where: { id: runId, workspaceId },
         data: {
           status,
-          endedAt:
-            status === 'COMPLETED' || status === 'FAILED' || status === 'PAUSED'
-              ? new Date()
-              : undefined,
+          ...(status === 'COMPLETED' || status === 'FAILED' || status === 'PAUSED'
+            ? { endedAt: new Date() }
+            : {}),
         },
       });
     } catch {}

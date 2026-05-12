@@ -171,9 +171,9 @@ export class AccountAgentService {
           canonical: true,
           status: s,
           answers: {
-            description: typeof a.description === 'string' ? a.description : p.answers.description,
-            offers: typeof a.offers === 'string' ? a.offers : p.answers.offers,
-            company: typeof a.company === 'string' ? a.company : p.answers.company,
+            description: typeof a.description === 'string' ? a.description : null,
+            offers: typeof a.offers === 'string' ? a.offers : null,
+            company: typeof a.company === 'string' ? a.company : null,
           },
           currentPrompt: getPromptForStage(s, pn),
         },

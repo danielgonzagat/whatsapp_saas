@@ -313,7 +313,9 @@ export class SmartPaymentService {
             content: buildNegotiationAiPrompt({
               ...(contact?.name != null ? { customerName: contact.name } : {}),
               ...(contact?.leadScore != null ? { leadScore: contact.leadScore } : {}),
-              ...(contact?.purchaseProbability != null ? { purchaseProbability: contact.purchaseProbability } : {}),
+              ...(contact?.purchaseProbability != null
+                ? { purchaseProbability: contact.purchaseProbability }
+                : {}),
               maxDiscount: rules.maxDiscount,
               minPurchaseForDiscount: rules.minPurchaseForDiscount,
               originalAmount,

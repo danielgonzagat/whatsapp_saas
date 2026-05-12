@@ -333,7 +333,9 @@ export class CheckoutSocialLeadService {
               phone: normalizedPhone,
               cpf: normalizeOptional(dto.cpf) || existing.cpf || null,
               stepReached: nextStep,
-              enrichmentData: mergedEnrichmentData,
+              ...(mergedEnrichmentData !== undefined
+                ? { enrichmentData: mergedEnrichmentData }
+                : {}),
             },
             select: {
               id: true,
@@ -497,10 +499,12 @@ export class CheckoutSocialLeadService {
     }
     if (provider === CheckoutSocialProvider.APPLE) {
       return this.appleAuthService.verifyCredential({
-        identityToken: dto.identityToken,
-        authorizationCode: dto.authorizationCode,
-        redirectUri: dto.redirectUri,
-        user: dto.user,
+        ...(dto.identityToken !== undefined ? { identityToken: dto.identityToken } : {}),
+        ...(dto.authorizationCode !== undefined
+          ? { authorizationCode: dto.authorizationCode }
+          : {}),
+        ...(dto.redirectUri !== undefined ? { redirectUri: dto.redirectUri } : {}),
+        ...(dto.user !== undefined ? { user: dto.user } : {}),
       });
     }
     return this.googleAuthService.verifyCredential(dto.credential || '');
@@ -545,8 +549,10 @@ export class CheckoutSocialLeadService {
         },
       },
       update: {
-        name: normalizeOptional(input.name) || undefined,
-        email: normalizeEmail(input.email) || undefined,
+        ...(normalizeOptional(input.name) ? { name: normalizeOptional(input.name) } : {}),
+        ...(normalizeEmail(input.email) !== undefined
+          ? { email: normalizeEmail(input.email) }
+          : {}),
       },
       select: { id: true },
     });

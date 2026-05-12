@@ -124,7 +124,7 @@ export class ScrapersService {
           },
         },
         update: {
-          name: lead.name || undefined,
+          ...(lead.name !== undefined ? { name: lead.name } : {}),
           customFields: {
             category: lead.category,
             address: lead.address,

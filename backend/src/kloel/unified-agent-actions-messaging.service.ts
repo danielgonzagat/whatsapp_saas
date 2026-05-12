@@ -1,9 +1,11 @@
 import { Inject, Injectable, Logger, forwardRef, Optional } from '@nestjs/common';
+import { ModuleRef } from '@nestjs/core';
 import { WHATSAPP_MESSAGING } from '../whatsapp/whatsapp.tokens';
 import type { IWhatsappMessaging } from '../whatsapp/whatsapp.interfaces';
 import { AudioService } from './audio.service';
 import type { ToolArgs } from './unified-agent.types';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import { MailboxGmailOAuthService } from '../marketing/mailbox-gmail-oauth.service';
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -19,6 +21,7 @@ export class UnifiedAgentActionsMessagingService {
     @Inject(forwardRef(() => WHATSAPP_MESSAGING))
     private readonly whatsappService: IWhatsappMessaging,
     private readonly audioService: AudioService,
+    @Optional() private readonly moduleRef?: ModuleRef,
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
@@ -95,6 +98,64 @@ export class UnifiedAgentActionsMessagingService {
 
   // ───────── send actions ─────────
 
+  private resolveGmailMailbox(): MailboxGmailOAuthService | null {
+    if (!this.moduleRef) {
+      return null;
+    }
+    try {
+      return this.moduleRef.get(MailboxGmailOAuthService, { strict: false });
+    } catch {
+      return null;
+    }
+  }
+
+  private async actionSendEmailMessage(
+    workspaceId: string,
+    recipientEmail: string,
+    args: ToolArgs,
+    context?: UnknownRecord,
+  ) {
+    const gmailMailbox = this.resolveGmailMailbox();
+    if (!gmailMailbox) {
+      return { success: false, error: 'gmail_mailbox_not_available' };
+    }
+
+    const message = this.str(args.message);
+    if (!message) {
+      return { success: false, error: 'Mensagem é obrigatória' };
+    }
+
+    const metadata = this.isRecord(context?.metadata) ? context.metadata : {};
+    const subject =
+      this.readOptionalText(args.subject) ||
+      this.readOptionalText(metadata.subject) ||
+      'Resposta Kloel CIA';
+    const result = await gmailMailbox.sendMessageFromMailbox(workspaceId, {
+      toEmail: recipientEmail,
+      subject: subject.startsWith('Re:') ? subject : `Re: ${subject}`,
+      html: `<p>${this.escapeHtml(message).replace(/\n/g, '<br>')}</p>`,
+      proactive: this.resolveComplianceMode(context) === 'proactive',
+    });
+
+    return {
+      success: Boolean(result.sent),
+      sent: Boolean(result.sent),
+      delivery: result.sent ? 'sent' : result.status,
+      message,
+      provider: 'gmail',
+      messageId: result.messageId,
+    };
+  }
+
+  private escapeHtml(value: string): string {
+    return value
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
   // messageLimit: enforced via PlanLimitsService.trackMessageSend
   async actionSendMessage(
     workspaceId: string,
@@ -106,6 +167,10 @@ export class UnifiedAgentActionsMessagingService {
       const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
       const msgText = this.str(args.message);
       if (!msgText) return { success: false, error: 'Mensagem é obrigatória' };
+
+      if (this.readText(context?.channel).toLowerCase() === 'email') {
+        return this.actionSendEmailMessage(workspaceId, phone, args, context);
+      }
 
       this.logger.log(`[AGENT] Enviando mensagem para ${phone}: "${msgText.substring(0, 50)}..."`);
       const result = await this.whatsappService.sendMessage(

@@ -97,7 +97,7 @@ export async function respondToInputSessionExt(
       prompt: getPromptForStage(next.status, next.productName),
       answers: toJson(next.answers || {}),
       payload: toJson(next),
-      completedAt: next.completedAt ? new Date(next.completedAt) : undefined,
+      ...(next.completedAt ? { completedAt: new Date(next.completedAt) } : {}),
     },
     update: {
       state: next.status,
