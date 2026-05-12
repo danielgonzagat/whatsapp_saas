@@ -1,6 +1,5 @@
 import { Logger } from '@nestjs/common';
 import Redis, { RedisOptions } from 'ioredis';
-import RedisMock from 'ioredis-mock';
 import {
   RedisConfigurationError,
   resolveRedisUrl as canonicalResolveRedisUrl,
@@ -69,6 +68,7 @@ export function getRedisUrl(): string {
  */
 export function createRedisClient(options?: RedisOptions): Redis {
   if (process.env.JEST_WORKER_ID) {
+    const RedisMock = require('ioredis-mock') as typeof Redis;
     return new RedisMock();
   }
 
