@@ -3,6 +3,7 @@ FROM node:22-bookworm AS backend-build
 WORKDIR /app/backend
 
 ENV PRISMA_CLI_BINARY_TARGETS="debian-openssl-3.0.x"
+ENV NPM_CONFIG_UPDATE_NOTIFIER=false
 
 COPY backend/package.json backend/package-lock.json ./
 COPY backend/vendor ./vendor
@@ -19,6 +20,7 @@ WORKDIR /app/backend
 
 ENV NODE_ENV=production
 ENV PRISMA_CLI_BINARY_TARGETS="debian-openssl-3.0.x"
+ENV NPM_CONFIG_UPDATE_NOTIFIER=false
 
 COPY --from=backend-build --chown=node:node /app/backend ./
 
