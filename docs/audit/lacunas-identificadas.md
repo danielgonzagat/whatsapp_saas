@@ -191,22 +191,29 @@
 
 ## L6 — Repertório de ações não é declarado por canal
 
-**Status:** documentada (Parte 6).
+**RESOLVIDA em 3f2c8e503** — `channel-repertoire.config.ts` declarado com
+`CHANNEL_REPERTOIRE: Record<ChannelKey, ChannelRepertoire>` exportando ações,
+tons e formatos por canal. Orquestrador consome `allowedFormatsFor`,
+`allowedTonesFor` e `repertoireFor` antes de consultar o mind. Audio em email
+força texto sem consultar mind. TikTok bloqueia proactive outbound por padrão.
+Tone fora do repertório é substituído com registro de override.
+
+**Status:** documentada (Parte 6). **RESOLVIDA.**
 
 **Onde vive:**
 
 - `backend/src/kloel/commercial-decision-orchestrator.service.ts` decide as
   mesmas dimensões para os 5 canais. Variação só no contexto.
-- Falta arquivo `channel-repertoire.config.ts`.
+- ~~Falta arquivo `channel-repertoire.config.ts`.~~ **RESOLVIDO.**
 - Crenças do mind/brain não são filtradas por canal de 1ª ordem.
 
 **Próximo passo:**
 
-1. Criar `backend/src/kloel/channel-repertoire.config.ts` exportando
+1. ~~Criar `backend/src/kloel/channel-repertoire.config.ts` exportando
    `CHANNEL_REPERTOIRE: Record<Channel, {actions: ActionId[], tones: Tone[],
-   formats: Format[], proactiveOutboundAllowed: boolean, ...}>`.
-2. Orquestrador consulta repertório antes de pedir decisão; filtra candidatos
-   inválidos para o canal.
+   formats: Format[], proactiveOutboundAllowed: boolean, ...}>`.~~ **FEITO.**
+2. ~~Orquestrador consulta repertório antes de pedir decisão; filtra candidatos
+   inválidos para o canal.~~ **FEITO.**
 3. Mind/brain `resolveBelief({channel, ...})` filtra crenças por canal.
 4. Tabela global de prior por canal para cold start.
 
