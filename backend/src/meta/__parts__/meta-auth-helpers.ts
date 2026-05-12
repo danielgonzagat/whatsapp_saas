@@ -143,7 +143,14 @@ export interface MetaDiagnosticsPayload {
   configIds: { whatsapp: boolean; instagram: boolean; messenger: boolean };
   scopes: Record<MetaMarketingChannel, string[]>;
   checklist: {
-    backendUrlRegistered: boolean;
+    /**
+     * True when the resolved redirect URI did NOT fall back to localhost — i.e.
+     * an env var (BACKEND_PUBLIC_URL / META_OAUTH_REDIRECT_URI / ...) provided
+     * a public URL. Does NOT verify the URL is registered in the Meta App
+     * console — that check is done by scripts/ops/check-meta-oauth-prod.sh
+     * and by hitting the actual OAuth flow.
+     */
+    backendUrlResolved: boolean;
     appCredentialsPresent: boolean;
     webhookVerifyTokenPresent: boolean;
   };
@@ -172,7 +179,7 @@ export function buildDiagnosticsPayload(input: {
     isFallback: resolved.isFallback,
     backendBaseUrl: resolved.baseUrl,
     frontendUrl,
-    appId: appIdRaw ? `${appIdRaw.slice(0, 4)}…${appIdRaw.slice(-4)}` : null,
+    appId: maskAppId(appIdRaw),
     appIdSet: Boolean(appIdRaw),
     appSecretSet,
     verifyTokenSet,
@@ -188,9 +195,20 @@ export function buildDiagnosticsPayload(input: {
     },
     scopes: scopesByChannel,
     checklist: {
-      backendUrlRegistered: !resolved.isFallback,
+      backendUrlResolved: !resolved.isFallback,
       appCredentialsPresent: Boolean(appIdRaw) && appSecretSet,
       webhookVerifyTokenPresent: verifyTokenSet,
     },
   };
+}
+
+/**
+ * Mask App ID for the diagnostics endpoint. For IDs <= 8 chars the entire
+ * value would be revealed by the prefix+suffix slice, so we return a constant
+ * placeholder instead. Longer IDs get the standard prefix…suffix mask.
+ */
+function maskAppId(raw: string): string | null {
+  if (!raw) return null;
+  if (raw.length <= 8) return '****';
+  return `${raw.slice(0, 4)}…${raw.slice(-4)}`;
 }

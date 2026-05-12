@@ -14,37 +14,37 @@ Como configurar e diagnosticar a integração da Meta usada pela aba
 
 ### Backend (Railway)
 
-| Variável                  | Exemplo                          | Obrigatória | Notas |
-|---------------------------|----------------------------------|-------------|-------|
-| `META_APP_ID`             | `2208402546567386`               | sim         | App ID público (painel Settings → Basic). |
-| `META_APP_SECRET`         | (rotacionado, valor secreto)     | sim         | App Secret. **Nunca commitar.** Rotacionar se vazar. |
-| `META_VERIFY_TOKEN`       | (string aleatória ≥ 32 chars)    | sim         | Verificação do webhook. Mesmo valor deve estar no painel da Meta. |
-| `META_GRAPH_API_VERSION`  | `v21.0`                          | recomendada | Default no código. |
-| `BACKEND_PUBLIC_URL`      | `https://api.kloel.com`          | sim         | Resolve em `redirect_uri = ${BACKEND_PUBLIC_URL}/meta/auth/callback`. |
-| `META_OAUTH_REDIRECT_URI` | `https://api.kloel.com/meta/auth/callback` | recomendada | **Override total** do redirect URI. Use quando o `BACKEND_PUBLIC_URL` não é o backend "público" exato (ex: split entre `api.kloel.com` e proxy interno). |
-| `FRONTEND_URL`            | `https://app.kloel.com`          | sim         | Para onde o callback redireciona depois do OAuth. |
-| `META_CONFIG_ID`          | (id do flow Embedded Signup)     | opcional    | Geral. Use os channel-specific abaixo se tiver mais de um flow. |
-| `META_CONFIG_ID_WHATSAPP` | (id do flow WhatsApp)            | opcional    | Override só para canal WhatsApp. |
-| `META_CONFIG_ID_INSTAGRAM`| (id do flow Instagram)           | opcional    | Override só para canal Instagram. |
-| `META_CONFIG_ID_MESSENGER`| (id do flow Messenger/FB)        | opcional    | Override só para Facebook/Messenger. |
+| Variável                   | Exemplo                                    | Obrigatória | Notas                                                                                                                                                    |
+| -------------------------- | ------------------------------------------ | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `META_APP_ID`              | `2208402546567386`                         | sim         | App ID público (painel Settings → Basic).                                                                                                                |
+| `META_APP_SECRET`          | (rotacionado, valor secreto)               | sim         | App Secret. **Nunca commitar.** Rotacionar se vazar.                                                                                                     |
+| `META_VERIFY_TOKEN`        | (string aleatória ≥ 32 chars)              | sim         | Verificação do webhook. Mesmo valor deve estar no painel da Meta.                                                                                        |
+| `META_GRAPH_API_VERSION`   | `v21.0`                                    | recomendada | Default no código.                                                                                                                                       |
+| `BACKEND_PUBLIC_URL`       | `https://api.kloel.com`                    | sim         | Resolve em `redirect_uri = ${BACKEND_PUBLIC_URL}/meta/auth/callback`.                                                                                    |
+| `META_OAUTH_REDIRECT_URI`  | `https://api.kloel.com/meta/auth/callback` | recomendada | **Override total** do redirect URI. Use quando o `BACKEND_PUBLIC_URL` não é o backend "público" exato (ex: split entre `api.kloel.com` e proxy interno). |
+| `FRONTEND_URL`             | `https://app.kloel.com`                    | sim         | Para onde o callback redireciona depois do OAuth.                                                                                                        |
+| `META_CONFIG_ID`           | (id do flow Embedded Signup)               | opcional    | Geral. Use os channel-specific abaixo se tiver mais de um flow.                                                                                          |
+| `META_CONFIG_ID_WHATSAPP`  | (id do flow WhatsApp)                      | opcional    | Override só para canal WhatsApp.                                                                                                                         |
+| `META_CONFIG_ID_INSTAGRAM` | (id do flow Instagram)                     | opcional    | Override só para canal Instagram.                                                                                                                        |
+| `META_CONFIG_ID_MESSENGER` | (id do flow Messenger/FB)                  | opcional    | Override só para Facebook/Messenger.                                                                                                                     |
 
 ### Frontend (Vercel)
 
-| Variável                       | Exemplo                  | Notas |
-|--------------------------------|--------------------------|-------|
-| `NEXT_PUBLIC_META_APP_ID`      | mesmo do backend         | Lido pelo SDK no client. |
-| `NEXT_PUBLIC_META_GRAPH_API_VERSION` | `v21.0`            | Idem. |
-| `NEXT_PUBLIC_SITE_URL`         | `https://kloel.com`      | |
-| `NEXT_PUBLIC_APP_URL`          | `https://app.kloel.com`  | |
-| `NEXT_PUBLIC_AUTH_URL`         | `https://auth.kloel.com` | |
-| `NEXT_PUBLIC_API_URL`          | `https://api.kloel.com`  | |
-| `NEXT_PUBLIC_PROD_ROOT_DOMAIN` | `kloel.com`              | Default. Setar só em white-label/staging clone. |
+| Variável                             | Exemplo                  | Notas                                           |
+| ------------------------------------ | ------------------------ | ----------------------------------------------- |
+| `NEXT_PUBLIC_META_APP_ID`            | mesmo do backend         | Lido pelo SDK no client.                        |
+| `NEXT_PUBLIC_META_GRAPH_API_VERSION` | `v21.0`                  | Idem.                                           |
+| `NEXT_PUBLIC_SITE_URL`               | `https://kloel.com`      |                                                 |
+| `NEXT_PUBLIC_APP_URL`                | `https://app.kloel.com`  |                                                 |
+| `NEXT_PUBLIC_AUTH_URL`               | `https://auth.kloel.com` |                                                 |
+| `NEXT_PUBLIC_API_URL`                | `https://api.kloel.com`  |                                                 |
+| `NEXT_PUBLIC_PROD_ROOT_DOMAIN`       | `kloel.com`              | Default. Setar só em white-label/staging clone. |
 
 ---
 
 ## 2. Ordem de resolução do redirect URI (lado backend)
 
-`backend/src/meta/__companions__/meta-oauth-url.helpers.ts → resolveOAuthRedirect`
+`backend/src/meta/__parts__/meta-oauth-url.helpers.ts → resolveOAuthRedirect`
 resolve, na ordem, o primeiro **não-vazio** que vencer:
 
 1. `META_OAUTH_REDIRECT_URI` — URL completa, override absoluto.
@@ -84,13 +84,13 @@ sem expor segredos:
   "scopes": {
     "whatsapp": ["pages_show_list", "...", "whatsapp_business_messaging"],
     "instagram": ["pages_show_list", "...", "instagram_content_publish"],
-    "facebook": ["pages_show_list", "...", "pages_messaging"]
+    "facebook": ["pages_show_list", "...", "pages_messaging"],
   },
   "checklist": {
-    "backendUrlRegistered": true,
+    "backendUrlResolved": true,
     "appCredentialsPresent": true,
-    "webhookVerifyTokenPresent": true
-  }
+    "webhookVerifyTokenPresent": true,
+  },
 }
 ```
 
@@ -115,7 +115,7 @@ OAuth não está cadastrado em alguma destas listas do app:
 1. **Settings → Basic → App Domains** — só host, sem path. Cadastrar
    `api.kloel.com`, `app.kloel.com`, `auth.kloel.com`, `kloel.com`.
 2. **Facebook Login → Settings → Valid OAuth Redirect URIs** — URL completa
-   *com path*. Cadastrar `https://api.kloel.com/meta/auth/callback`.
+   _com path_. Cadastrar `https://api.kloel.com/meta/auth/callback`.
 3. **Facebook Login → Settings → Allowed Domains for the JS SDK** — host com
    `https://`. Cadastrar os mesmos cinco.
 4. **Settings → Basic → Website → Site URL** — `https://kloel.com`.

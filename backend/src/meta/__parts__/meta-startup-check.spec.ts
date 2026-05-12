@@ -86,9 +86,9 @@ describe('runMetaStartupCheck', () => {
     expect(logger.error).not.toHaveBeenCalled();
   });
 
-  it('warns when redirect is not https in production', () => {
+  it('treats non-https redirect in production as a problem (Meta refuses http)', () => {
     const logger = loggerSpy();
-    runMetaStartupCheck({
+    const r = runMetaStartupCheck({
       env: {
         NODE_ENV: 'production',
         META_APP_ID: 'app',
@@ -103,6 +103,8 @@ describe('runMetaStartupCheck', () => {
       },
       logger,
     });
-    expect(logger.warn).toHaveBeenCalled();
+    expect(r.ok).toBe(false);
+    expect(r.problems.some((p) => p.includes('https'))).toBe(true);
+    expect(logger.error).toHaveBeenCalled();
   });
 });

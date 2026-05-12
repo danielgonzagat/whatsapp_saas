@@ -11,7 +11,7 @@
 #   - GET /meta/auth/diagnostics returns 200
 #   - isFallback === false
 #   - appCredentialsPresent === true
-#   - backendUrlRegistered === true
+#   - backendUrlResolved === true
 #   - redirectUri matches what you have in the Meta App console
 #
 # Does NOT touch secrets. Reads env vars only.
@@ -49,7 +49,7 @@ check() {
 
 check '.isFallback == false'                  'redirect URI is NOT the localhost fallback'
 check '.checklist.appCredentialsPresent'      'META_APP_ID + META_APP_SECRET both set'
-check '.checklist.backendUrlRegistered'       'backend URL registered'
+check '.checklist.backendUrlResolved'       'backend URL registered'
 check '.appIdSet'                             'META_APP_ID set'
 check '.appSecretSet'                         'META_APP_SECRET set'
 check '.verifyTokenSet'                       'META_VERIFY_TOKEN set (for webhook)'

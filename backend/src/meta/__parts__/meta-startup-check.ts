@@ -1,4 +1,4 @@
-import { Logger } from '@nestjs/common';
+import type { Logger } from '@nestjs/common';
 import type { ResolvedOAuthRedirect } from './meta-oauth-url.helpers';
 
 export interface MetaStartupCheckInput {
@@ -61,9 +61,9 @@ export function runMetaStartupCheck(input: MetaStartupCheckInput): MetaStartupCh
           'Defina BACKEND_PUBLIC_URL ou META_OAUTH_REDIRECT_URI para o backend publico.',
       );
     } else if (!resolved.redirectUri.startsWith('https://')) {
-      warnings.push(
+      problems.push(
         `OAuth redirect URI nao usa https (${resolved.redirectUri}). ` +
-          'A Meta exige https em producao.',
+          'A Meta exige https em producao — Facebook recusa o OAuth.',
       );
     }
   } else if (resolved.isFallback && logger) {

@@ -153,7 +153,7 @@ describe('buildDiagnosticsPayload', () => {
     expect(payload.scopes.instagram.length).toBeGreaterThan(0);
     expect(payload.scopes.facebook.length).toBeGreaterThan(0);
     expect(payload.checklist.appCredentialsPresent).toBe(true);
-    expect(payload.checklist.backendUrlRegistered).toBe(true);
+    expect(payload.checklist.backendUrlResolved).toBe(true);
     expect(payload.checklist.webhookVerifyTokenPresent).toBe(true);
   });
 
@@ -179,7 +179,7 @@ describe('buildDiagnosticsPayload', () => {
       scopesByChannel: { whatsapp: [], instagram: [], facebook: [] },
     });
     expect(payload.isFallback).toBe(true);
-    expect(payload.checklist.backendUrlRegistered).toBe(false);
+    expect(payload.checklist.backendUrlResolved).toBe(false);
   });
 
   it('returns appId=null when META_APP_ID is empty', () => {
