@@ -17,6 +17,8 @@ import {
 import { logAutopilotAction } from './safeguard';
 import { executeAction, sendDirectAutopilotText } from './execution';
 
+type ChannelName = 'whatsapp' | 'instagram' | 'messenger' | 'facebook' | 'tiktok' | 'email';
+
 export async function runFollowupContact(data: UnknownRecord) {
   const workspaceId = data?.workspaceId;
   if (!workspaceId) {
@@ -27,6 +29,7 @@ export async function runFollowupContact(data: UnknownRecord) {
   const phone = data?.phone;
   const scheduledAt = data?.scheduledAt ? new Date(data.scheduledAt) : null;
   const jobKey = contactId || phone || workspaceId;
+  const channel: ChannelName = (typeof data?.channel === 'string' ? data.channel : 'whatsapp') as ChannelName;
 
   const workspace = await prisma.workspace.findUnique({
     where: { id: workspaceId },
@@ -78,6 +81,36 @@ export async function runFollowupContact(data: UnknownRecord) {
       meta: { source: 'followup_contact' },
     });
     return 'skipped';
+  }
+
+  // P1.4 — per-channel followup enforcement. When the operator explicitly
+  // disabled followups for this channel, the scheduler must not enqueue and
+  // the handler must not execute. Record the decision for auditability.
+  try {
+    const channelConfig = await prisma.channelConfig.findUnique({
+      where: { workspaceId_channel: { workspaceId, channel } },
+      select: { followupEnabled: true },
+    });
+    if (channelConfig?.followupEnabled === false) {
+      log.info('followup.skipped.channel-disabled', { workspaceId, channel });
+      await logAutopilotAction({
+        workspaceId,
+        contactId,
+        phone,
+        action: 'FOLLOWUP_CONTACT',
+        intent: 'FOLLOW_UP',
+        status: 'skipped',
+        reason: 'followup_disabled_per_channel_config',
+        meta: { source: 'followup_contact', channel },
+      });
+      return null;
+    }
+  } catch (configErr: unknown) {
+    log.warn('followup_channel_config_lookup_failed', {
+      workspaceId,
+      channel,
+      error: configErr instanceof Error ? configErr.message : String(configErr),
+    });
   }
 
   const now = new Date();
