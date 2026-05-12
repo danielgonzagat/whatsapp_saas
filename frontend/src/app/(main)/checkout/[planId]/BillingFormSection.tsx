@@ -3,11 +3,7 @@ import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import type { CheckoutConfig } from '@/hooks/useCheckoutEditor';
-import {
-  Plus,
-  Star,
-  Trash2,
-} from 'lucide-react';
+import { Plus, Star, Trash2 } from 'lucide-react';
 import { type CSSProperties, type RefObject, useId } from 'react';
 import {
   C,
@@ -142,25 +138,12 @@ export function BillingFormSection({
         <h3 style={sectionTitleStyle}>{kloelT('Contador de Estoque')}</h3>
         <Toggle
           label={kloelT('Exibir contador')}
-          checked={config.showStockCounter}
-          onChange={(v) => void patch({ showStockCounter: v })}
+          checked={false}
+          onChange={() =>
+            void patch({ showStockCounter: false, stockMessage: '', fakeStockCount: 0 })
+          }
+          disabled
         />
-        {config.showStockCounter && (
-          <>
-            <Field
-              label={kloelT('Mensagem')}
-              value={config.stockMessage}
-              onChange={(v) => void patch({ stockMessage: v })}
-              placeholder={kloelT('Apenas {count} unidades restantes!')}
-            />
-            <Field
-              label={kloelT('Quantidade ficticia')}
-              value={config.fakeStockCount}
-              onChange={(v) => void patch({ fakeStockCount: Number.parseInt(v, 10) || 0 })}
-              type="number"
-            />
-          </>
-        )}
       </div>
 
       {/* ── 11. Testimonials ── */}
@@ -185,9 +168,7 @@ export function BillingFormSection({
                 marginBottom: 8,
               }}
             >
-              <span
-                style={{ fontSize: 12, fontWeight: 500, color: C.muted, fontFamily: FONT }}
-              >
+              <span style={{ fontSize: 12, fontWeight: 500, color: C.muted, fontFamily: FONT }}>
                 {kloelT('Depoimento')} {i + 1}
               </span>
               <button

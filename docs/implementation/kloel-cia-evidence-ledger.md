@@ -2,6 +2,46 @@
 
 Generated: 2026-05-11
 
+## 2026-05-12T15:09:53-03:00 - W9 - Checkout Fake Stock Counter Disabled
+
+- ID-visao: V19, V23.
+- Escopo: disable the public checkout stock counter path that was driven by a configurable `fakeStockCount` instead of real inventory.
+- Arquivos alterados:
+  - `frontend/src/app/(main)/checkout/[planId]/BillingFormSection.tsx`
+  - `frontend/src/app/(checkout)/components/CheckoutThemePage.tsx`
+  - `frontend/src/lib/public-checkout.ts`
+  - `frontend/src/lib/public-checkout-contract.ts`
+  - `frontend/src/hooks/useCheckoutEditor.ts`
+  - `frontend/src/lib/__tests__/public-checkout.test.ts`
+  - `docs/implementation/kloel-cia-evidence-ledger.md`
+  - `docs/implementation/kloel-cia-session-handoff.md`
+  - `docs/implementation/kloel-cia-vision-traceability.md`
+- Comportamento entregue:
+  - Checkout editor no longer lets the owner enable or edit a fake stock counter.
+  - Public checkout normalization forces legacy stock-counter config off and publishes count `0`, so the renderer does not display fake scarcity.
+  - Existing public checkout unit coverage now proves legacy fake-stock input is suppressed.
+- Comando(s) rodados:
+  - `npx prettier --write frontend/src/app/(main)/checkout/[planId]/BillingFormSection.tsx frontend/src/app/(checkout)/components/CheckoutThemePage.tsx frontend/src/lib/public-checkout.ts frontend/src/lib/public-checkout-contract.ts frontend/src/hooks/useCheckoutEditor.ts`
+  - `npm --prefix frontend test -- public-checkout.test.ts` (first run failed because the old test expected fake stock publication; after updating the expectation it passed)
+  - `npx prettier --write frontend/src/lib/__tests__/public-checkout.test.ts`
+  - `npm exec eslint -- src/app/(main)/checkout/[planId]/BillingFormSection.tsx src/app/(checkout)/components/CheckoutThemePage.tsx src/lib/public-checkout.ts src/lib/public-checkout-contract.ts src/hooks/useCheckoutEditor.ts src/lib/__tests__/public-checkout.test.ts` from `frontend/`
+  - `npm --prefix frontend run typecheck -- --pretty false`
+  - `git diff --check && node scripts/ops/check-governance-boundary.mjs`
+- Resultado:
+  - Vitest passed: 1 file / 4 tests after expectation update.
+  - Focused frontend ESLint passed.
+  - Frontend typecheck passed.
+  - Whitespace and governance boundary checks passed.
+- Evidencia:
+  - Current session command outputs and `public-checkout.test.ts` coverage for suppressing legacy fake-stock config.
+- Riscos remanescentes:
+  - This disables fake stock scarcity; it does not implement a real stock counter from inventory records.
+  - No browser screenshot was captured for the checkout editor/public checkout.
+- Plano de rollback:
+  - Re-enable the counter only after public checkout payloads are sourced from real inventory fields and covered by tests.
+- Referencia subagent:
+  - Orchestrator-owned V23 follow-up from the local fake-completion scan.
+
 ## 2026-05-12T15:03:58-03:00 - W9 - Boleto Product Settings Truthfulness
 
 - ID-visao: V19, V23.

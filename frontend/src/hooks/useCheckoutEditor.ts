@@ -6,7 +6,6 @@ import { swrFetcher } from '@/lib/fetcher';
 import { useCallback, useRef } from 'react';
 import useSWR from 'swr';
 
-
 /* ── Types ── */
 
 export interface CheckoutTestimonial {
@@ -181,9 +180,9 @@ export interface CheckoutConfig {
 
   /* Stock Counter */
   showStockCounter: boolean;
-  /** Stock message property. */
+  /** Legacy stock message property. */
   stockMessage: string;
-  /** Fake stock count property. */
+  /** Legacy displayed stock count property. */
   fakeStockCount: number;
 
   /* Testimonials */

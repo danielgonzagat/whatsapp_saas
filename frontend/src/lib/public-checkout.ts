@@ -191,15 +191,9 @@ export function normalizePublicCheckoutResponse(input: unknown): PublicCheckoutR
           timerMessage: asOptionalString(configRecord.timerMessage),
           timerExpiredMessage: asOptionalString(configRecord.timerExpiredMessage),
           timerPosition: asOptionalString(configRecord.timerPosition),
-          showStockCounter:
-            configRecord.showStockCounter === undefined
-              ? undefined
-              : asBoolean(configRecord.showStockCounter),
-          stockMessage: asOptionalString(configRecord.stockMessage),
-          fakeStockCount:
-            configRecord.fakeStockCount === undefined
-              ? undefined
-              : asNumber(configRecord.fakeStockCount, 0),
+          showStockCounter: false,
+          stockMessage: undefined,
+          fakeStockCount: 0,
           shippingMode:
             configRecord.shippingMode === 'VARIABLE'
               ? 'VARIABLE'

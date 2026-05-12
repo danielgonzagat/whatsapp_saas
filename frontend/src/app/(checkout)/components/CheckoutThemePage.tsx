@@ -74,7 +74,7 @@ export function CheckoutThemePage({
         textColor={theme.text}
       />
       <StockCounter
-        count={config?.fakeStockCount ?? 0}
+        count={config?.showStockCounter ? (config?.fakeStockCount ?? 0) : 0}
         message={config?.stockMessage}
         accentColor={theme.accentSecondary}
       />

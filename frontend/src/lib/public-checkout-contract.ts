@@ -197,11 +197,11 @@ export interface PublicCheckoutConfig {
   timerExpiredMessage?: string | undefined;
   /** Timer position property. */
   timerPosition?: string | undefined;
-  /** Show stock counter property. */
+  /** Legacy stock counter visibility property. */
   showStockCounter?: boolean | undefined;
-  /** Stock message property. */
+  /** Legacy stock message property. */
   stockMessage?: string | undefined;
-  /** Fake stock count property. */
+  /** Legacy displayed stock count property. */
   fakeStockCount?: number | undefined;
   /** Shipping mode property. */
   shippingMode?: 'FREE' | 'FIXED' | 'VARIABLE' | undefined;
