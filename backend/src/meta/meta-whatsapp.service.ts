@@ -1,4 +1,4 @@
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Injectable, Logger, Optional, type OnModuleInit } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
@@ -6,7 +6,17 @@ import { MetaSdkService } from './meta-sdk.service';
 import { decryptMetaToken } from './meta-token-crypto';
 import { asProviderSettings } from '../whatsapp/provider-settings.types';
 import { readRecord, readStrictText } from './__companions__/meta-read-helpers';
-import { resolvePublicBackendBaseUrl } from './__companions__/meta-oauth-url.helpers';
+import {
+  resolveOAuthRedirect,
+  resolvePublicBackendBaseUrl,
+  type ResolvedOAuthRedirect,
+} from './__parts__/meta-oauth-url.helpers';
+import { runMetaStartupCheck } from './__parts__/meta-startup-check';
+import {
+  EMBEDDED_SIGNUP_SUPERSET_SCOPES,
+  getRequestedScopesForChannel,
+  type MetaMarketingChannel,
+} from './__parts__/meta-scopes.helpers';
 
 const D_RE = /\D/g;
 
@@ -59,7 +69,7 @@ function extractGraphMessageId(response: Record<string, unknown>): string | null
 
 // cache.invalidate — Meta connections fetched live from DB; no Redis cache to invalidate
 @Injectable()
-export class MetaWhatsAppService {
+export class MetaWhatsAppService implements OnModuleInit {
   private readonly logger = new Logger(MetaWhatsAppService.name);
 
   constructor(
@@ -67,6 +77,14 @@ export class MetaWhatsAppService {
     private readonly metaSdk: MetaSdkService,
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
+
+  onModuleInit(): void {
+    runMetaStartupCheck({
+      env: process.env,
+      resolved: this.resolveRedirect(),
+      logger: this.logger,
+    });
+  }
 
   buildEmbeddedSignupUrl(
     workspaceId: string,
@@ -87,22 +105,7 @@ export class MetaWhatsAppService {
       return '';
     }
 
-    const scopes = [
-      'pages_show_list',
-      'pages_read_engagement',
-      'pages_manage_metadata',
-      'pages_messaging',
-      'instagram_basic',
-      'instagram_manage_messages',
-      'instagram_manage_comments',
-      'instagram_content_publish',
-      'business_management',
-      'ads_management',
-      'ads_read',
-      'catalog_management',
-      'whatsapp_business_management',
-      'whatsapp_business_messaging',
-    ].join(',');
+    const scopes = EMBEDDED_SIGNUP_SUPERSET_SCOPES.join(',');
 
     const params = new URLSearchParams({
       client_id: appId,
@@ -130,8 +133,16 @@ export class MetaWhatsAppService {
 
   /** Get o auth redirect uri. */
   getOAuthRedirectUri(): string {
-    const publicBackendUrl = this.getPublicBackendBaseUrl();
-    return `${publicBackendUrl}/meta/auth/callback`;
+    return this.resolveRedirect().redirectUri;
+  }
+
+  /**
+   * Full resolution of the OAuth redirect URI plus its source. The source is
+   * exposed via the /meta/auth/diagnostics endpoint so operators can verify
+   * that the URL Meta receives matches what is registered in the App console.
+   */
+  resolveRedirect(): ResolvedOAuthRedirect {
+    return resolveOAuthRedirect(process.env);
   }
 
   /** Resolve connection. */
@@ -572,6 +583,11 @@ export class MetaWhatsAppService {
   /** Get public backend base url. */
   getPublicBackendBaseUrl(): string {
     return resolvePublicBackendBaseUrl(process.env);
+  }
+
+  /** Re-export from meta-scopes.helpers so the controller has a single accessor. */
+  getRequestedScopesForChannel(channel: MetaMarketingChannel): string[] {
+    return getRequestedScopesForChannel(channel);
   }
 
   private normalizePhone(value: string): string {

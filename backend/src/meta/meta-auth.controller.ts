@@ -22,6 +22,11 @@ import { MetaSdkService } from './meta-sdk.service';
 import { decryptMetaToken, encryptMetaToken } from './meta-token-crypto';
 import { MetaWhatsAppService } from './meta-whatsapp.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import {
+  buildDiagnosticsPayload,
+  humanizeMetaError,
+  sanitizeReturnTo as sanitizeReturnToHelper,
+} from './__parts__/meta-auth-helpers';
 
 /**
  * Meta Platform OAuth controller.
@@ -87,19 +92,7 @@ export class MetaAuthController {
   }
 
   private sanitizeReturnTo(requestedReturnTo?: string | null, channel?: string | null): string {
-    const raw = String(requestedReturnTo || '').trim();
-    if (raw.startsWith('/') && !raw.startsWith('//')) {
-      return raw;
-    }
-
-    const marketingChannel = String(channel || '')
-      .trim()
-      .toLowerCase();
-    if (['whatsapp', 'instagram', 'facebook', 'email'].includes(marketingChannel)) {
-      return `/marketing/${marketingChannel}`;
-    }
-
-    return '/settings?section=apps';
+    return sanitizeReturnToHelper(requestedReturnTo, channel, this.frontendUrl);
   }
 
   private buildFrontendRedirect(
@@ -115,27 +108,8 @@ export class MetaAuthController {
     return url.toString();
   }
 
-  private humanizeMetaError(rawMessage: string): string {
-    const msg = rawMessage.toLowerCase();
-    if (msg.includes('redirect_uri') || msg.includes('redirect uri')) {
-      return 'A Meta nao autorizou o dominio de retorno. Ajuste os dominios do app Meta e tente novamente.';
-    }
-    if (msg.includes('expired') || msg.includes('code has expired')) {
-      return 'O codigo de autorizacao Meta expirou. Tente conectar novamente.';
-    }
-    if (msg.includes('invalid') && (msg.includes('code') || msg.includes('token'))) {
-      return 'Codigo de autorizacao Meta invalido ou ja usado. Tente conectar novamente.';
-    }
-    if (msg.includes('client_id') || msg.includes('app_id')) {
-      return 'A configuracao do app Meta nao foi aceita. Revise o app conectado e tente novamente.';
-    }
-    if (msg.includes('permission') || msg.includes('permissions')) {
-      return 'Permissoes insuficientes no app Meta. Verifique os scopes configurados no dashboard.';
-    }
-    if (msg.includes('rate') || msg.includes('limit')) {
-      return 'Limite de requisicoes da Meta atingido. Aguarde alguns minutos e tente novamente.';
-    }
-    return 'Nao foi possivel concluir a autenticacao Meta. Tente novamente em instantes.';
+  private humanizeMetaError(rawMessage: string, errorCode?: string | number | null): string {
+    return humanizeMetaError(rawMessage, errorCode);
   }
 
   // ─── Generate OAuth URL ──────────────────────────────────────────
@@ -154,6 +128,26 @@ export class MetaAuthController {
         returnTo: this.sanitizeReturnTo(returnTo, channel),
       }),
     };
+  }
+
+  // ─── Diagnostics ─────────────────────────────────────────────────
+  // Lets operators verify (1) which env var resolved the redirect URI,
+  // (2) that it matches what is registered in the Meta app, and
+  // (3) which scopes are requested per channel — all without dumping secrets.
+
+  @Get('diagnostics')
+  @UseGuards(WorkspaceGuard)
+  getDiagnostics() {
+    return buildDiagnosticsPayload({
+      env: process.env,
+      resolved: this.metaWhatsApp.resolveRedirect(),
+      frontendUrl: this.frontendUrl,
+      scopesByChannel: {
+        whatsapp: this.metaWhatsApp.getRequestedScopesForChannel('whatsapp'),
+        instagram: this.metaWhatsApp.getRequestedScopesForChannel('instagram'),
+        facebook: this.metaWhatsApp.getRequestedScopesForChannel('facebook'),
+      },
+    });
   }
 
   // ─── OAuth Callback ──────────────────────────────────────────────
@@ -210,6 +204,7 @@ export class MetaAuthController {
         const rawMetaError = String(
           tokenData.error.message || tokenData.error.error_user_msg || '',
         );
+        const rawErrorCode = tokenData.error.code ?? tokenData.error.type ?? null;
         this.logger.error(
           JSON.stringify({
             event: 'meta_oauth_token_exchange_failed',
@@ -218,7 +213,7 @@ export class MetaAuthController {
             operation: 'oauth_token_exchange',
             status: 'error',
             durationMs: Date.now() - startedAt,
-            errorCode: String(tokenData.error.code || tokenData.error.type || 'meta_oauth_error'),
+            errorCode: String(rawErrorCode ?? 'meta_oauth_error'),
             message: rawMetaError.slice(0, 512),
           }),
         );
@@ -226,7 +221,7 @@ export class MetaAuthController {
           this.buildFrontendRedirect(returnTo, parsedState.channel, {
             meta: 'error',
             reason: 'token_exchange',
-            meta_error: this.humanizeMetaError(rawMetaError),
+            meta_error: this.humanizeMetaError(rawMetaError, rawErrorCode),
           }),
         );
       }
