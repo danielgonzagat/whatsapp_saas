@@ -4396,6 +4396,21 @@ model DailyMessageCounter {
   @@map("RAC_DailyMessageCounter")
 }
 
+model DailyLimitCounter {
+  id          String   @id @default(uuid())
+  workspaceId String
+  channel     String
+  day         DateTime @db.Date
+  used        Int      @default(0)
+  capAtDay    Int      @default(25)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([workspaceId, channel, day])
+  @@index([workspaceId, channel, day])
+  @@map("RAC_DailyLimitCounter")
+}
+
 model IgPost {
   id            String    @id @default(uuid())
   workspaceId   String
@@ -4468,4 +4483,39 @@ model DecisionShadow {
   @@index([workspaceId, channel, createdAt])
   @@unique([workspaceId, inboundCorrelationId])
   @@map("RAC_DecisionShadow")
+}
+
+model DecisionOutcome {
+  id               String    @id @default(cuid())
+  workspaceId      String
+  decisionType     String
+  chosenAction     String
+  baselineAction   String?
+  outcomeKey       String    @unique
+  expectedWindow   Int
+  contextSnapshot  Json
+  outcomeAt        DateTime?
+  outcomeName      String?
+  outcomeValue     Json?
+  economicValue    Float?
+  wonVsBaseline    Boolean?
+  createdAt        DateTime  @default(now())
+
+  @@index([workspaceId, decisionType, createdAt])
+  @@map("RAC_DecisionOutcome")
+}
+
+model DecisionOutcomeEvent {
+  id           String   @id @default(cuid())
+  workspaceId  String
+  eventType    String
+  eventKey     String
+  correlation  Json?
+  processed    Boolean  @default(false)
+  processedAt  DateTime?
+  createdAt    DateTime @default(now())
+
+  @@index([workspaceId, eventType, createdAt])
+  @@index([workspaceId, processed, createdAt])
+  @@map("RAC_DecisionOutcomeEvent")
 }
