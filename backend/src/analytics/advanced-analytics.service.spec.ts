@@ -5,6 +5,8 @@ import { QueueStatsService } from './queue-stats.service';
 import { AdvancedAnalyticsService } from './advanced-analytics.service';
 
 describe('AdvancedAnalyticsService', () => {
+  type WorkspaceQueryCall = [{ where: { workspaceId: string } }];
+
   let service: AdvancedAnalyticsService;
   let prisma: {
     kloelSale: { findMany: jest.Mock };
@@ -43,16 +45,30 @@ describe('AdvancedAnalyticsService', () => {
 
   it('enforces workspace isolation on all four parallel queries', async () => {
     await service.getAdvancedDashboard('ws-tenant-A', start, end);
-    expect(prisma.kloelSale.findMany.mock.calls[0][0].where.workspaceId).toBe('ws-tenant-A');
-    expect(prisma.conversation.groupBy.mock.calls[0][0].where.workspaceId).toBe('ws-tenant-A');
-    expect(prisma.flowExecution.groupBy.mock.calls[0][0].where.workspaceId).toBe('ws-tenant-A');
-    expect(prisma.contact.count.mock.calls[0][0].where.workspaceId).toBe('ws-tenant-A');
+    const saleCalls = prisma.kloelSale.findMany.mock.calls as WorkspaceQueryCall[];
+    const conversationCalls = prisma.conversation.groupBy.mock.calls as WorkspaceQueryCall[];
+    const flowExecutionCalls = prisma.flowExecution.groupBy.mock.calls as WorkspaceQueryCall[];
+    const contactCalls = prisma.contact.count.mock.calls as WorkspaceQueryCall[];
+    expect(saleCalls[0][0].where.workspaceId).toBe('ws-tenant-A');
+    expect(conversationCalls[0][0].where.workspaceId).toBe('ws-tenant-A');
+    expect(flowExecutionCalls[0][0].where.workspaceId).toBe('ws-tenant-A');
+    expect(contactCalls[0][0].where.workspaceId).toBe('ws-tenant-A');
   });
 
   it('aggregates sales totals with conversionRate = paid/total', async () => {
     prisma.kloelSale.findMany.mockResolvedValue([
-      { amount: 100, status: 'paid', createdAt: new Date('2026-01-05'), paidAt: new Date('2026-01-05') },
-      { amount: 50, status: 'paid', createdAt: new Date('2026-01-06'), paidAt: new Date('2026-01-06') },
+      {
+        amount: 100,
+        status: 'paid',
+        createdAt: new Date('2026-01-05'),
+        paidAt: new Date('2026-01-05'),
+      },
+      {
+        amount: 50,
+        status: 'paid',
+        createdAt: new Date('2026-01-06'),
+        paidAt: new Date('2026-01-06'),
+      },
       { amount: 25, status: 'failed', createdAt: new Date('2026-01-07'), paidAt: null },
     ]);
     const result = await service.getAdvancedDashboard('ws-1', start, end);
@@ -72,9 +88,24 @@ describe('AdvancedAnalyticsService', () => {
   it('groups sales by day key (YYYY-MM-DD) and totals match', async () => {
     // Use mid-day dates so local-TZ day-of-month is stable across runners.
     prisma.kloelSale.findMany.mockResolvedValue([
-      { amount: 10, status: 'paid', createdAt: new Date('2026-01-05T12:00:00Z'), paidAt: new Date('2026-01-05T12:00:00Z') },
-      { amount: 20, status: 'paid', createdAt: new Date('2026-01-05T12:00:00Z'), paidAt: new Date('2026-01-05T12:00:00Z') },
-      { amount: 30, status: 'paid', createdAt: new Date('2026-01-06T12:00:00Z'), paidAt: new Date('2026-01-06T12:00:00Z') },
+      {
+        amount: 10,
+        status: 'paid',
+        createdAt: new Date('2026-01-05T12:00:00Z'),
+        paidAt: new Date('2026-01-05T12:00:00Z'),
+      },
+      {
+        amount: 20,
+        status: 'paid',
+        createdAt: new Date('2026-01-05T12:00:00Z'),
+        paidAt: new Date('2026-01-05T12:00:00Z'),
+      },
+      {
+        amount: 30,
+        status: 'paid',
+        createdAt: new Date('2026-01-06T12:00:00Z'),
+        paidAt: new Date('2026-01-06T12:00:00Z'),
+      },
     ]);
     const result = await service.getAdvancedDashboard('ws-1', start, end);
     expect(result.sales.byDay.length).toBe(2);
@@ -99,12 +130,10 @@ describe('AdvancedAnalyticsService', () => {
   });
 
   it('joins topFlows with flow names from flow table', async () => {
-    prisma.flowExecution.groupBy
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([
-        { flowId: 'flow-A', _count: { id: 5 } },
-        { flowId: 'flow-B', _count: { id: 3 } },
-      ]);
+    prisma.flowExecution.groupBy.mockResolvedValueOnce([]).mockResolvedValueOnce([
+      { flowId: 'flow-A', _count: { id: 5 } },
+      { flowId: 'flow-B', _count: { id: 3 } },
+    ]);
     prisma.flow.findMany.mockResolvedValue([
       { id: 'flow-A', name: 'Welcome flow' },
       { id: 'flow-B', name: 'Upsell flow' },
