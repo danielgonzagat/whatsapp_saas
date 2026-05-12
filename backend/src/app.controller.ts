@@ -87,8 +87,11 @@ export class AppController {
 
       // Contar registros em tabelas principais
       results.tables.workspaces = await this.prisma.workspace.count();
+      // @PublicMetric: health-check table-row counts, platform-wide
       results.tables.agents = await this.prisma.agent.count();
+      // @PublicMetric: health-check table-row counts, platform-wide
       results.tables.contacts = await this.prisma.contact.count();
+      // @PublicMetric: health-check table-row counts, platform-wide
       results.tables.conversations = await this.prisma.conversation.count();
     } catch (_error: unknown) {
       results.database = 'error';

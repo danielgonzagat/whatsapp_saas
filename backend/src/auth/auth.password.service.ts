@@ -39,6 +39,7 @@ export class AuthPasswordService {
   async checkEmail(email: string): Promise<{ exists: boolean }> {
     try {
       const where: Prisma.AgentWhereInput = { email };
+      // @AllowCrossWorkspace: email uniqueness check spans all workspaces
       const agent = await this.prisma.agent.findFirst({
         where,
       });

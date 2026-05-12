@@ -40,6 +40,7 @@ export async function listKycQueue(prisma: PrismaService, limit = 50): Promise<K
 
   const [agents, total] = await prisma.$transaction(
     [
+      // @AdminGlobalOperation: KYC queue review spans all workspaces
       prisma.agent.findMany({
         where,
         orderBy: [{ kycSubmittedAt: 'asc' }, { createdAt: 'asc' }],
@@ -54,6 +55,7 @@ export async function listKycQueue(prisma: PrismaService, limit = 50): Promise<K
           _count: { select: { kycDocuments: true } },
         },
       }),
+      // @AdminGlobalOperation: KYC queue total across all workspaces
       prisma.agent.count({ where }),
     ],
     { isolationLevel: 'ReadCommitted' },

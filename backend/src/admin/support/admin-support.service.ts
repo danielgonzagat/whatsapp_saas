@@ -37,9 +37,7 @@ export class AdminSupportService {
 
   /** Overview. */
   async overview(search?: string) {
-    // Platform-level admin query: intentionally cross-workspace.
-    // `workspaceId: undefined` is a Prisma-side no-op ("skip filter")
-    // and keeps the unsafe-query scanner satisfied.
+    // @AdminGlobalOperation: support conversations overview, platform-wide
     const conversations = (await this.prisma.conversation.findMany({
       where: {
         ...(search
@@ -91,10 +89,7 @@ export class AdminSupportService {
 
   /** Detail. */
   async detail(conversationId: string) {
-    // Platform-level admin detail: intentionally cross-workspace.
-    // `workspaceId: undefined` is a Prisma-side no-op ("skip filter")
-    // and keeps the unsafe-query scanner satisfied while preserving
-    // the id-based lookup semantics.
+    // @AdminGlobalOperation: support conversation detail by id, any workspace
     const conversation = (await this.prisma.conversation.findFirst({
       where: { id: conversationId },
       select: {

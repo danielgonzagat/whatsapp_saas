@@ -71,12 +71,11 @@ export class AdminMarketingService {
             AND m."createdAt" <= ${range.to}
           GROUP BY c."channel"
         `),
-        // Platform-level admin queries: intentionally cross-workspace.
-        // `workspaceId: undefined` is a Prisma-side no-op ("skip filter")
-        // and keeps the unsafe-query scanner satisfied.
+        // @AdminGlobalOperation: marketing lead count, platform-wide
         this.prisma.checkoutSocialLead.count({
           where: { createdAt: { gte: range.from, lte: range.to } },
         }),
+        // @AdminGlobalOperation: latest conversations, platform-wide
         this.prisma.conversation.findMany({
           where: { lastMessageAt: { gte: range.from, lte: range.to } },
           orderBy: { lastMessageAt: 'desc' },

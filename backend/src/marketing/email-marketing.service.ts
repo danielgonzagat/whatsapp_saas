@@ -439,6 +439,7 @@ export class EmailMarketingService implements OnModuleInit, OnModuleDestroy {
   }): Promise<boolean> {
     const { providerMessageId, event, metadata } = params;
 
+    // @AllowCrossWorkspace: webhook delivers providerMessageId globally; campaign include scopes
     const recipient = await this.prisma.emailCampaignRecipient.findFirst({
       where: { providerMessageId },
       include: { campaign: true },

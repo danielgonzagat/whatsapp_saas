@@ -193,6 +193,52 @@ function extractObjectLiteral(source, startIdx) {
 const SIMPLE_RE = /\b(?:this\.)?prisma(?:Any)?\.(\w+)\.(\w+)\s*\(/g;
 const TX_RE = /\btx\.(\w+)\.(\w+)\s*\(/g;
 
+/**
+ * Detect explicit cross-workspace marker comments immediately above a Prisma
+ * call. Supports up to 8 lines of preceding comment/whitespace so the marker
+ * may sit above a brief explanatory JSDoc block.
+ *
+ *   // @AllowCrossWorkspace: admin global metric, no tenant context
+ *   await this.prisma.agent.count();
+ *
+ * Block-comment form is also supported:
+ *
+ *   /* @AllowCrossWorkspace: cron cleanup, all workspaces (placeholder)
+ *   await this.prisma.kloelMemory.deleteMany(...)
+ *
+ * Recognized aliases (all case-insensitive): AllowCrossWorkspace,
+ * AdminGlobalOperation, PublicMetric, CrossWorkspaceMaintenance.
+ */
+const MARKER_RE = /@(?:AllowCrossWorkspace|AdminGlobalOperation|PublicMetric|CrossWorkspaceMaintenance)\b/i;
+
+function hasCrossWorkspaceMarker(source, matchStart) {
+  const before = source.slice(0, matchStart);
+  const lines = before.split('\n');
+  // walk up to 8 prior non-blank lines looking for the marker
+  let walked = 0;
+  for (let i = lines.length - 2; i >= 0 && walked < 8; i--) {
+    const raw = lines[i] ?? '';
+    const trimmed = raw.trim();
+    if (!trimmed) {
+      walked++;
+      continue;
+    }
+    walked++;
+    if (
+      trimmed.startsWith('//') ||
+      trimmed.startsWith('/*') ||
+      trimmed.startsWith('*') ||
+      trimmed.startsWith('*/')
+    ) {
+      if (MARKER_RE.test(trimmed)) return true;
+      continue;
+    }
+    // first non-comment, non-blank line above the call breaks the marker chain
+    return false;
+  }
+  return false;
+}
+
 function findPrismaCalls(source) {
   const findings = [];
 
@@ -202,6 +248,7 @@ function findPrismaCalls(source) {
       const method = m[2];
       if (!SCAN_METHODS.has(method)) continue;
       const matchStart = m.index ?? 0;
+      if (hasCrossWorkspaceMarker(source, matchStart)) continue;
       const argsBlock = extractObjectLiteral(source, matchStart + m[0].length - 1);
       const lineNumber = source.slice(0, matchStart).split('\n').length;
       findings.push({

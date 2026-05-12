@@ -38,6 +38,7 @@ export class ObservabilityQueriesService {
    * global infrastructure health aggregates.
    */
   async countConnectedMetaWorkspaces(): Promise<number> {
+    // @PublicMetric: platform-wide Meta connection gauge for /diag/metrics
     return this.prisma.metaConnection.count({
       where: { status: 'connected' },
     });
@@ -49,6 +50,7 @@ export class ObservabilityQueriesService {
    * `kloel_messages_today` — a platform-wide volume gauge.
    */
   async countAllMessagesSince(since: Date): Promise<number> {
+    // @PublicMetric: platform-wide message volume gauge for /diag/metrics
     return this.prisma.message.count({
       where: { createdAt: { gte: since } },
     });
@@ -60,6 +62,7 @@ export class ObservabilityQueriesService {
    * `kloel_autopilot_events_today` — a platform-wide volume gauge.
    */
   async countAllAutopilotEventsSince(since: Date): Promise<number> {
+    // @PublicMetric: platform-wide autopilot events gauge for /diag/metrics
     return this.prisma.autopilotEvent.count({
       where: { createdAt: { gte: since } },
     });

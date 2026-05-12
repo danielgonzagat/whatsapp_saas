@@ -25,9 +25,11 @@ export async function computeMemoryStats(prisma: PrismaService): Promise<MemoryS
     };
   }
 
+  // @PublicMetric: platform-wide memory total stat
   const total = await prisma.kloelMemory.count();
 
   const byCategory: Record<string, number> = {};
+  // @PublicMetric: platform-wide memory groupBy category stat
   const categoryGroups = await prisma.kloelMemory.groupBy({
     by: ['category'],
     _count: { id: true },

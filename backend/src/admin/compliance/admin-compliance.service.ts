@@ -219,6 +219,7 @@ export class AdminComplianceService {
   }
 
   private fetchKycAgents() {
+    // @AdminGlobalOperation: compliance review queue spans all workspaces
     return this.prisma.agent.findMany({
       where: {
         role: 'ADMIN',

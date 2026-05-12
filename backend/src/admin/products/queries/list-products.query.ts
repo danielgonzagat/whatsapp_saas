@@ -136,15 +136,14 @@ async function fetchCommerceGroups(
   last30dGroups: Last30dGroupRow[];
 }> {
   const [orderGroups, last30dGroups] = await Promise.all([
-    // Platform-level admin aggregate: intentionally cross-workspace.
-    // `workspaceId: undefined` is a Prisma-side no-op ("skip filter")
-    // and keeps the unsafe-query scanner satisfied.
+    // @AdminGlobalOperation: order groupBy by plan, platform-wide
     prisma.checkoutOrder.groupBy({
       by: ['planId', 'status'],
       where: { planId: { in: planIds } },
       _count: { _all: true },
       _sum: { totalInCents: true },
     }),
+    // @AdminGlobalOperation: 30d order groupBy by plan, platform-wide
     prisma.checkoutOrder.groupBy({
       by: ['planId'],
       where: {
@@ -300,6 +299,7 @@ export async function listAdminProducts(
           updatedAt: true,
         },
       }),
+      // @AdminGlobalOperation: product total count, platform-wide
       prisma.product.count({ where }),
     ],
     { isolationLevel: 'ReadCommitted' },

@@ -30,11 +30,8 @@ export async function queryTransactionCounts(
   from: Date,
   to: Date,
 ): Promise<TransactionCounts> {
-  // Platform-level admin aggregates: intentionally cross-workspace.
-  // `workspaceId: undefined` is a Prisma-side no-op ("skip filter")
-  // and keeps the unsafe-query scanner satisfied on each workspace-
-  // scoped model touched here.
   const [approved, declined, pending, refundAgg, chargebackAgg] = await Promise.all([
+    // @AdminGlobalOperation: approved transaction count, platform-wide
     prisma.checkoutOrder.count({
       where: {
         status: { in: [OrderStatus.PAID, OrderStatus.SHIPPED, OrderStatus.DELIVERED] },
@@ -47,12 +44,14 @@ export async function queryTransactionCounts(
         updatedAt: { gte: from, lte: to },
       },
     }),
+    // @AdminGlobalOperation: pending transaction count, platform-wide
     prisma.checkoutOrder.count({
       where: {
         status: { in: [OrderStatus.PENDING, OrderStatus.PROCESSING] },
         createdAt: { gte: from, lte: to },
       },
     }),
+    // @AdminGlobalOperation: refund aggregate, platform-wide
     prisma.checkoutOrder.aggregate({
       where: {
         status: OrderStatus.REFUNDED,
@@ -61,6 +60,7 @@ export async function queryTransactionCounts(
       _count: { _all: true },
       _sum: { totalInCents: true },
     }) as Promise<{ _count: { _all: number }; _sum: { totalInCents: bigint | number | null } }>,
+    // @AdminGlobalOperation: chargeback aggregate, platform-wide
     prisma.checkoutOrder.aggregate({
       where: {
         status: OrderStatus.CHARGEBACK,

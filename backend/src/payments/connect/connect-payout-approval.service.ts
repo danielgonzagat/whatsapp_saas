@@ -384,12 +384,14 @@ export class ConnectPayoutApprovalService {
 
     const [items, total] = await this.prisma.$transaction(
       [
+        // @AdminGlobalOperation: payout approval queue, platform-wide
         this.prisma.approvalRequest.findMany({
           where: { ...where },
           orderBy: { createdAt: 'desc' },
           skip,
           take,
         }),
+        // @AdminGlobalOperation: payout approval total, platform-wide
         this.prisma.approvalRequest.count({
           where: { ...where },
         }),

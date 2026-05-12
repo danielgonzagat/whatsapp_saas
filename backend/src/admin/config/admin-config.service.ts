@@ -75,14 +75,13 @@ export class AdminConfigService {
               customDomain: { not: null },
             },
           }),
-          // Platform-level admin aggregate: intentionally cross-workspace.
-          // `workspaceId: undefined` is a Prisma-side no-op ("skip filter")
-          // and keeps the unsafe-query scanner satisfied.
+          // @AdminGlobalOperation: platform-level admin aggregate across all workspaces
           this.prisma.apiKey.count({
             where: {
               workspace: where,
             },
           }),
+          // @AdminGlobalOperation: platform-level admin aggregate across all workspaces
           this.prisma.webhookSubscription.count({
             where: {
               workspace: where,

@@ -107,8 +107,7 @@ export class MemoryManagementService {
   async cleanupAll(): Promise<MemoryCleanupResult> {
     const start = Date.now();
 
-    // Contar antes (cross-workspace maintenance count; workspaceId filter is
-    // universal since the column is NOT NULL and no-op in practice).
+    // @CrossWorkspaceMaintenance: cleanup audit metric, global by design
     const totalBefore = (await this.prisma.kloelMemory.count()) || 0;
 
     // 1. Remover memórias expiradas
@@ -120,7 +119,7 @@ export class MemoryManagementService {
     // 3. Remover órfãos (workspaces deletados)
     const orphansRemoved = await this.removeOrphans();
 
-    // Contar depois (cross-workspace maintenance count).
+    // @CrossWorkspaceMaintenance: cleanup audit metric, global by design
     const totalAfter = (await this.prisma.kloelMemory.count()) || 0;
 
     const result: MemoryCleanupResult = {
@@ -179,6 +178,7 @@ export class MemoryManagementService {
       cutoffDate.setDate(cutoffDate.getDate() - days);
 
       try {
+        // @CrossWorkspaceMaintenance: cron purge of expired memories across all workspaces
         const result = await this.prisma.kloelMemory.deleteMany({
           where: {
             category,
@@ -208,6 +208,7 @@ export class MemoryManagementService {
     const knownCategories = Object.keys(this.EXPIRATION_DAYS).filter((c) => c !== 'default');
 
     try {
+      // @CrossWorkspaceMaintenance: cron purge of uncategorized stale memories
       const result = await this.prisma.kloelMemory.deleteMany({
         where: {
           category: { notIn: knownCategories },

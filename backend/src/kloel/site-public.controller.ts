@@ -16,6 +16,7 @@ export class SitePublicController {
   @Public()
   @Get(':slug')
   async serveSite(@Param('slug') slug: string, @Res() res: Response) {
+    // @PublicMetric: public site lookup by slug (slug is globally unique)
     const site = await this.prisma.kloelSite.findFirst({
       where: { slug, published: true },
     });

@@ -87,9 +87,7 @@ export async function queryMethodBreakdown(
   from: Date,
   to: Date,
 ): Promise<MethodBreakdownRow[]> {
-  // Platform-level admin aggregate: intentionally cross-workspace.
-  // `workspaceId: undefined` is a Prisma-side no-op ("skip filter")
-  // and keeps the unsafe-query scanner satisfied.
+  // @AdminGlobalOperation: GMV breakdown by method, platform-wide
   const grouped = (await prisma.checkoutOrder.groupBy({
     by: ['paymentMethod'],
     where: {

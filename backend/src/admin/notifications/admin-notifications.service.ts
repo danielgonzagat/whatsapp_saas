@@ -48,9 +48,7 @@ export class AdminNotificationsService {
             updatedAt: true,
           },
         }),
-        // Platform-level admin queries: intentionally cross-workspace.
-        // `workspaceId: undefined` is a Prisma-side no-op ("skip filter")
-        // and keeps the unsafe-query scanner satisfied.
+        // @AdminGlobalOperation: KYC notification queue, platform-wide
         this.prisma.agent.findMany({
           where: {
             role: 'ADMIN',
@@ -65,6 +63,7 @@ export class AdminNotificationsService {
             workspace: { select: { id: true, name: true } },
           },
         }),
+        // @AdminGlobalOperation: unread conversation notifications, platform-wide
         this.prisma.conversation.findMany({
           where: { unreadCount: { gt: 0 } },
           orderBy: { lastMessageAt: 'desc' },
