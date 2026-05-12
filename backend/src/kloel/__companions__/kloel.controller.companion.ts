@@ -33,7 +33,7 @@ export async function listThreads(
     const take = Math.min(50, Math.max(1, options.limit ?? 50));
     const skip = Math.max(0, options.cursor ?? 0);
     const threads = await deps.prisma.chatThread.findMany({
-      where: { workspaceId, messages: { some: {} } } satisfies Prisma.ChatThreadWhereInput,
+      where: { workspaceId, messages: { some: {} } },
       orderBy: { updatedAt: 'desc' },
       skip,
       take,
@@ -61,7 +61,7 @@ export async function listThreads(
       return items;
     }
     const total = await deps.prisma.chatThread.count({
-      where: { workspaceId, messages: { some: {} } } satisfies Prisma.ChatThreadWhereInput,
+      where: { workspaceId, messages: { some: {} } },
     });
     const nextCursor = skip + threads.length;
     return {

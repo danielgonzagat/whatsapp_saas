@@ -41,14 +41,7 @@ describe('ConversationHistoryProvider', () => {
   it('loads threads after auth bootstrap completes', async () => {
     authState.isAuthenticated = true;
     apiFetchMock.mockResolvedValue({
-      data: {
-        items: [
-          { id: 'thread-1', title: 'Nova conversa', updatedAt: '2026-04-21T18:00:00.000Z' },
-        ],
-        total: 1,
-        nextCursor: null,
-        hasMore: false,
-      },
+      data: [{ id: 'thread-1', title: 'Nova conversa', updatedAt: '2026-04-21T18:00:00.000Z' }],
     });
 
     const { result } = renderHook(() => useConversationHistory(), { wrapper });
