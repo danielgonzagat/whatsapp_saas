@@ -2,9 +2,7 @@
 
 import { kloelT } from '@/lib/i18n/t';
 import type { CheckoutConfig } from '@/hooks/useCheckoutEditor';
-import {
-  ArrowLeft,
-} from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import type { CSSProperties, RefObject } from 'react';
 import {
@@ -145,7 +143,10 @@ export function PlanSummarySection({
       )}
 
       {/* ── 1. Theme ── */}
-      <div ref={appearanceRef} style={sectionCardStyle('appearance', highlightActive, highlightedSection)}>
+      <div
+        ref={appearanceRef}
+        style={sectionCardStyle('appearance', highlightActive, highlightedSection)}
+      >
         <h3 style={sectionTitleStyle}>{kloelT('Tema')}</h3>
         <div style={{ display: 'flex', gap: 8 }}>
           {(['NOIR', 'BLANC'] as const).map((t) => (
@@ -317,9 +318,10 @@ export function PlanSummarySection({
           onChange={(v) => void patch({ enablePix: v })}
         />
         <Toggle
-          label={kloelT('Boleto')}
-          checked={config.enableBoleto}
-          onChange={(v) => void patch({ enableBoleto: v })}
+          label={kloelT('Boleto indisponivel no checkout Stripe atual')}
+          checked={false}
+          onChange={() => void patch({ enableBoleto: false })}
+          disabled
         />
       </div>
     </>

@@ -1,11 +1,7 @@
 'use client';
 
 import { kloelT } from '@/lib/i18n/t';
-import {
-  Monitor,
-  Smartphone,
-  Tablet,
-} from 'lucide-react';
+import { Monitor, Smartphone, Tablet } from 'lucide-react';
 import { useId, type CSSProperties } from 'react';
 import { colors } from '@/lib/design-tokens';
 
@@ -98,17 +94,25 @@ export function Toggle({
   checked,
   onChange,
   label,
+  disabled = false,
 }: {
   checked: boolean;
   onChange: (v: boolean) => void;
   label: string;
+  disabled?: boolean;
 }) {
   return (
     <div style={toggleRow}>
       <span style={{ fontSize: 13, color: C.text, fontFamily: FONT }}>{label}</span>
       <button
         type="button"
-        onClick={() => onChange(!checked)}
+        disabled={disabled}
+        aria-disabled={disabled}
+        onClick={() => {
+          if (!disabled) {
+            onChange(!checked);
+          }
+        }}
         style={{
           position: 'relative',
           width: 40,
@@ -116,7 +120,8 @@ export function Toggle({
           borderRadius: 11,
           border: 'none',
           backgroundColor: checked ? C.ember : C.border,
-          cursor: 'pointer',
+          cursor: disabled ? 'not-allowed' : 'pointer',
+          opacity: disabled ? 0.65 : 1,
           transition: 'background-color 150ms ease',
           flexShrink: 0,
         }}

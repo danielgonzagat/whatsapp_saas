@@ -79,7 +79,7 @@ export const DEFAULT_LANDING_CONTENT: LandingContent = {
       c: 'VENDA',
       items: [
         'Checkout inteligente',
-        'Pix, cartão, boleto',
+        'Pix e cartão',
         'Assinaturas',
         'Order bump / upsell',
         'Recuperação de carrinho',
@@ -193,7 +193,7 @@ export const DEFAULT_LANDING_CONTENT: LandingContent = {
       t: '09:03',
     },
     { ch: 'wa', f: 'lead', n: 'Marina C.', text: 'Quero sim!', t: '09:05' },
-    { ch: 'wa', f: 'ai', text: 'Link: pay.kloel.com/ck/abc — Pix, cartão ou boleto.', t: '09:05' },
+    { ch: 'wa', f: 'ai', text: 'Link: pay.kloel.com/ck/abc — Pix ou cartão.', t: '09:05' },
     { ch: 'ig', f: 'lead', n: 'Pedro A.', text: 'Me manda o link!', t: '09:06' },
     { ch: 'em', f: 'ai', n: 'Evento', text: 'Julia clicou no link — checkout aberto', t: '09:06' },
     { ch: 'ig', f: 'ai', text: 'pay.kloel.com/ck/pedro — Cupom INSTA20 já aplicado!', t: '09:06' },

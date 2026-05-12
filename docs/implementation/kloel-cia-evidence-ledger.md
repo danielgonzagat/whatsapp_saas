@@ -2,6 +2,41 @@
 
 Generated: 2026-05-11
 
+## 2026-05-12T14:32:00-03:00 - W9 - Checkout Boleto Copy and Link Cleanup
+
+- ID-visao: V19, V23.
+- Escopo: remove remaining active-product copy and link badges that still advertised boleto after the checkout backend was confirmed card/PIX-only.
+- Arquivos alterados:
+  - `frontend/src/lib/checkout-links.ts`
+  - `frontend/src/lib/__tests__/checkout-links.test.ts`
+  - `frontend/src/app/(main)/checkout/[planId]/checkout-editor-shared.tsx`
+  - `frontend/src/app/(main)/checkout/[planId]/PlanSummarySection.tsx`
+  - `frontend/src/components/kloel/settings/billing-legacy-providers-section.tsx`
+  - `frontend/src/components/kloel/landing/landing-data.ts`
+- Comportamento entregue:
+  - Checkout link badges no longer list `BOLETO` from legacy `enableBoleto` config.
+  - Visual checkout editor marks boleto unavailable and keeps its toggle disabled.
+  - Settings and landing copy now describe the current Stripe checkout rail as PIX/card, without promising boleto.
+- Comando(s) rodados:
+  - `npm --prefix frontend test -- checkout-links.test.ts CheckoutPaymentSection.test.tsx checkout-order-submit.test.ts`
+  - `npm --prefix frontend run typecheck -- --pretty false`
+  - `npm exec eslint -- 'src/app/(main)/checkout/[planId]/PlanSummarySection.tsx' 'src/app/(main)/checkout/[planId]/checkout-editor-shared.tsx' src/lib/checkout-links.ts src/lib/__tests__/checkout-links.test.ts src/components/kloel/landing/landing-data.ts src/components/kloel/settings/billing-legacy-providers-section.tsx` from `frontend/`
+  - `node scripts/ops/check-governance-boundary.mjs && git diff --check`
+- Resultado:
+  - Vitest passed: 3 files / 8 tests.
+  - Frontend typecheck passed.
+  - Focused frontend ESLint passed.
+  - Governance boundary and whitespace checks passed.
+- Evidencia:
+  - Current session command outputs for Prettier, Vitest, frontend typecheck, and focused ESLint.
+- Riscos remanescentes:
+  - Historical analytics/report filters can still show `BOLETO` for old data and were intentionally not removed.
+  - The public checkout boleto route/component still exists but remains unreachable while `supportsBoleto` is false; real route deprecation can be handled in a separate route-level hardening slice.
+- Plano de rollback:
+  - Restore boleto copy/link badges only after the backend/provider rail supports boleto and `supportsBoleto` is true in the public payload.
+- Referencia subagent:
+  - Based on accepted report `artifacts/opencode-live/kloel-cia-batch-17-readonly-2026-05-12/v23-anti-fake.out`, with manual implementation and focused validation.
+
 ## 2026-05-12T14:26:00-03:00 - W9 - Checkout Boleto Truthfulness Alignment
 
 - ID-visao: V19, V23.
