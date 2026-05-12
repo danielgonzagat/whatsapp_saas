@@ -59,9 +59,10 @@ beforeEach(() => {
 it('does not request threads for anonymous sessions', async () => {
   renderHook(() => useConversationHistory(), { wrapper: ConversationHistoryProvider });
 
-  await waitFor(() => {
-    expect(apiFetchMock).not.toHaveBeenCalled();
+  await act(async () => {
+    await Promise.resolve();
   });
+  expect(apiFetchMock).not.toHaveBeenCalled();
 });
 
 it('loads threads after auth bootstrap completes', async () => {
