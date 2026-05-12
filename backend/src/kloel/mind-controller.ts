@@ -8,6 +8,7 @@ import {
   Param,
   Post,
   Query,
+  ServiceUnavailableException,
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -217,7 +218,23 @@ export class MindController {
     @Body() body: BestVariantDto,
     @Headers('x-internal-key') internalKey?: string,
   ) {
+    // Internal-only endpoint consumed by the worker (mind-client.ts). The
+    // header guard exists; the failure mode without proper config must be
+    // fail-closed, not fail-open.
+    //
+    // Rules:
+    //  - In production (NODE_ENV=production), INTERNAL_API_KEY MUST be set;
+    //    if it is not, refuse with 503 so the operator notices instead of
+    //    silently accepting any caller.
+    //  - In non-production, an unset INTERNAL_API_KEY accepts any caller for
+    //    developer ergonomics, but a set key is enforced strictly.
     const expectedInternalKey = String(process.env.INTERNAL_API_KEY || '').trim();
+    const isProduction = String(process.env.NODE_ENV || '').toLowerCase() === 'production';
+    if (!expectedInternalKey && isProduction) {
+      throw new ServiceUnavailableException(
+        'INTERNAL_API_KEY not configured in production — variant-decision endpoint refuses to fail-open.',
+      );
+    }
     if (expectedInternalKey && internalKey !== expectedInternalKey) {
       throw new ForbiddenException('Invalid internal key');
     }
