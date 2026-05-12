@@ -6,12 +6,9 @@ import { MetaSdkService } from './meta-sdk.service';
 import { decryptMetaToken } from './meta-token-crypto';
 import { asProviderSettings } from '../whatsapp/provider-settings.types';
 import { readRecord, readStrictText } from './__companions__/meta-read-helpers';
-import {
-  resolveOAuthRedirect,
-  resolvePublicBackendBaseUrl,
-  type ResolvedOAuthRedirect,
-} from './__companions__/meta-oauth-url.helpers';
+import { resolveOAuthRedirect, resolvePublicBackendBaseUrl, type ResolvedOAuthRedirect } from './__companions__/meta-oauth-url.helpers';
 import { runMetaStartupCheck } from './__companions__/meta-startup-check';
+import { EMBEDDED_SIGNUP_SUPERSET_SCOPES, getRequestedScopesForChannel, type MetaMarketingChannel } from './__companions__/meta-scopes.helpers';
 
 const D_RE = /\D/g;
 
@@ -100,22 +97,7 @@ export class MetaWhatsAppService implements OnModuleInit {
       return '';
     }
 
-    const scopes = [
-      'pages_show_list',
-      'pages_read_engagement',
-      'pages_manage_metadata',
-      'pages_messaging',
-      'instagram_basic',
-      'instagram_manage_messages',
-      'instagram_manage_comments',
-      'instagram_content_publish',
-      'business_management',
-      'ads_management',
-      'ads_read',
-      'catalog_management',
-      'whatsapp_business_management',
-      'whatsapp_business_messaging',
-    ].join(',');
+    const scopes = EMBEDDED_SIGNUP_SUPERSET_SCOPES.join(',');
 
     const params = new URLSearchParams({
       client_id: appId,
@@ -595,26 +577,9 @@ export class MetaWhatsAppService implements OnModuleInit {
     return resolvePublicBackendBaseUrl(process.env);
   }
 
-  /**
-   * Scopes that buildEmbeddedSignupUrl will request for a given marketing
-   * channel. Exposed so /meta/auth/diagnostics can echo them back, letting
-   * operators verify the App Review submission covers the right permissions.
-   */
-  getRequestedScopesForChannel(channel: 'whatsapp' | 'instagram' | 'facebook'): string[] {
-    const common = ['pages_show_list', 'pages_read_engagement', 'business_management'];
-    if (channel === 'whatsapp') {
-      return [...common, 'whatsapp_business_management', 'whatsapp_business_messaging'];
-    }
-    if (channel === 'instagram') {
-      return [
-        ...common,
-        'instagram_basic',
-        'instagram_manage_messages',
-        'instagram_manage_comments',
-        'instagram_content_publish',
-      ];
-    }
-    return [...common, 'pages_messaging', 'pages_manage_metadata'];
+  /** Re-export from meta-scopes.helpers so the controller has a single accessor. */
+  getRequestedScopesForChannel(channel: MetaMarketingChannel): string[] {
+    return getRequestedScopesForChannel(channel);
   }
 
   private normalizePhone(value: string): string {

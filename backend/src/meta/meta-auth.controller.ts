@@ -189,7 +189,7 @@ export class MetaAuthController {
     if (msg.includes('whatsapp') && (msg.includes('not enabled') || msg.includes('disabled'))) {
       return 'Seu numero WhatsApp Business ainda nao foi habilitado para o app. Conclua o Embedded Signup ou peca verificacao a Meta.';
     }
-    if (msg.includes('no business') || msg.includes('not associated with any business')) {
+    if (msg.includes('no business') || msg.includes('not associated with')) {
       return 'O usuario Meta nao esta associado a nenhum Business Manager. Crie um em business.facebook.com antes de continuar.';
     }
     if (msg.includes('no page') || msg.includes('no pages')) {
