@@ -2,6 +2,52 @@
 
 Generated: 2026-05-11
 
+## 2026-05-12T15:22:00-03:00 - W9 - Marketing SMS Stub Removed From Navigation
+
+- ID-visao: V05, V23.
+- Escopo: remove the SMS "soon" tab from the customer-facing Marketing navigation because the product vision and backend support are limited to WhatsApp, Instagram, TikTok, Facebook, and Email.
+- Arquivos alterados:
+  - `frontend/src/components/kloel/marketing/MarketingView.Tabs.tsx`
+  - `frontend/src/components/kloel/marketing/MarketingView.tsx`
+  - `.opencode-prompts/batch-19/v23-checkout-boleto-readonly.md`
+  - `.opencode-prompts/batch-19/v23-owner-chat-persistence-readonly.md`
+  - `.opencode-prompts/batch-19/v23-marketing-stubs-readonly.md`
+  - `docs/implementation/kloel-cia-evidence-ledger.md`
+  - `docs/implementation/kloel-cia-session-handoff.md`
+  - `docs/implementation/kloel-cia-vision-traceability.md`
+- Comportamento entregue:
+  - Marketing tabs now expose only Conversas plus the five official channels: WhatsApp, Instagram, TikTok, Facebook, and Email.
+  - Direct `sms` default tab input is normalized back to `conversas`.
+  - The `SmsMarketingTab` is no longer imported or rendered from `MarketingView`.
+  - Batch 19 OpenCode read-only audits produced supervised reports for checkout boleto gating, owner chat persistence, and Marketing stubs.
+- Comando(s) rodados:
+  - `opencode models deepseek`
+  - `script -q artifacts/opencode-live/kloel-cia-batch-19-v23-readonly-2026-05-12/checkout-boleto.out opencode run --model deepseek/deepseek-v4-pro ...`
+  - `script -q artifacts/opencode-live/kloel-cia-batch-19-v23-readonly-2026-05-12/owner-chat.out opencode run --model deepseek/deepseek-v4-pro ...`
+  - `script -q artifacts/opencode-live/kloel-cia-batch-19-v23-readonly-2026-05-12/marketing-stubs.out opencode run --model deepseek/deepseek-v4-pro ...`
+  - `npx prettier --write frontend/src/components/kloel/marketing/MarketingView.Tabs.tsx frontend/src/components/kloel/marketing/MarketingView.tsx`
+  - `rg -n "sms|SmsMarketingTab|soon" frontend/src/components/kloel/marketing/MarketingView.tsx frontend/src/components/kloel/marketing/MarketingView.Tabs.tsx`
+  - `npm --prefix frontend run typecheck -- --pretty false`
+  - `npm exec eslint -- src/components/kloel/marketing/MarketingView.Tabs.tsx src/components/kloel/marketing/MarketingView.tsx` from `frontend/`
+  - `git diff --check && node scripts/ops/check-governance-boundary.mjs`
+- Resultado:
+  - OpenCode Batch 19 completed 3/3 read-only tasks with zero edits.
+  - Focused `rg` leaves only the direct `sms` normalizer guard.
+  - Frontend typecheck passed.
+  - Focused frontend ESLint passed.
+  - Whitespace and governance boundary checks passed.
+- Evidencia:
+  - `artifacts/opencode-live/kloel-cia-batch-19-v23-readonly-2026-05-12/checkout-boleto.out`
+  - `artifacts/opencode-live/kloel-cia-batch-19-v23-readonly-2026-05-12/owner-chat.out`
+  - `artifacts/opencode-live/kloel-cia-batch-19-v23-readonly-2026-05-12/marketing-stubs.out`
+- Riscos remanescentes:
+  - SMS legacy files remain in the codebase but are no longer reachable from the Marketing navigation.
+  - No browser screenshot was captured for Marketing tabs after this slice.
+- Plano de rollback:
+  - Re-add SMS to Marketing only when a real backend provider, inbox adapter, and channel setup journey exist.
+- Referencia subagent:
+  - `artifacts/opencode-live/kloel-cia-batch-19-v23-readonly-2026-05-12/marketing-stubs.out`
+
 ## 2026-05-12T15:09:53-03:00 - W9 - Checkout Fake Stock Counter Disabled
 
 - ID-visao: V19, V23.

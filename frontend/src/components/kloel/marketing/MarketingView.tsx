@@ -42,7 +42,10 @@ import InstagramMarketingTab from './InstagramMarketingTab';
 import TikTokMarketingTab from './TikTokMarketingTab';
 import FacebookMarketingTab from './FacebookMarketingTab';
 import EmailMarketingTab from './EmailMarketingTab';
-import SmsMarketingTab from './SmsMarketingTab';
+
+function normalizeMarketingTab(tab: string): string {
+  return tab === 'sms' ? 'conversas' : tab;
+}
 
 export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab?: string }) {
   const { isMobile } = useResponsiveViewport();
@@ -50,12 +53,13 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { workspace, userEmail, userName } = useAuth();
-  const [tab, setTab] = useState(defaultTab);
-  const prevDefault = useRef(defaultTab);
+  const [tab, setTab] = useState(() => normalizeMarketingTab(defaultTab));
+  const prevDefault = useRef(normalizeMarketingTab(defaultTab));
   useEffect(() => {
-    if (prevDefault.current !== defaultTab) {
-      setTab(defaultTab);
-      prevDefault.current = defaultTab;
+    const normalizedDefaultTab = normalizeMarketingTab(defaultTab);
+    if (prevDefault.current !== normalizedDefaultTab) {
+      setTab(normalizedDefaultTab);
+      prevDefault.current = normalizedDefaultTab;
     }
   }, [defaultTab]);
   const [feed, setFeed] = useState<string[]>([]);
@@ -91,7 +95,6 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
     CH_CONFIG.instagram.hasIntegration = connectionStatus?.channels?.instagram?.connected === true;
     CH_CONFIG.facebook.hasIntegration = connectionStatus?.channels?.facebook?.connected === true;
     CH_CONFIG.email.hasIntegration = connectionStatus?.channels?.email?.connected === true;
-    CH_CONFIG.sms.hasIntegration = false;
   }, [connectionStatus]);
 
   const handleConnectMeta = useCallback(
@@ -223,7 +226,6 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
     { id: 'tiktok', label: 'TikTok', icon: IC.tt },
     { id: 'facebook', label: 'Facebook', icon: IC.fb },
     { id: 'email', label: 'Email', icon: IC.em },
-    { id: 'sms', label: 'SMS', icon: IC.send, soon: true },
   ]);
 
   const switchTab = useCallback(
@@ -398,12 +400,6 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
               emailTestSending={channelTabProps.emailTestSending}
               emailTestResult={channelTabProps.emailTestResult}
             />
-          </div>
-        )}
-
-        {tab === 'sms' && (
-          <div style={{ position: 'relative' }}>
-            <SmsMarketingTab channelData={getChannelData('sms')} />
           </div>
         )}
       </div>

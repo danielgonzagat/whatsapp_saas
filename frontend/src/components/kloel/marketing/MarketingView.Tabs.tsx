@@ -1,7 +1,7 @@
 'use client';
 
 import { KLOEL_THEME } from '@/lib/kloel-theme';
-import { IC, EMBER, MONO, SORA } from './MarketingShared';
+import { IC, EMBER, SORA } from './MarketingShared';
 
 const TABS = Object.freeze([
   { id: 'conversas', label: 'Conversas', icon: IC.zap },
@@ -10,7 +10,6 @@ const TABS = Object.freeze([
   { id: 'tiktok', label: 'TikTok', icon: IC.tt },
   { id: 'facebook', label: 'Facebook', icon: IC.fb },
   { id: 'email', label: 'Email', icon: IC.em },
-  { id: 'sms', label: 'SMS', icon: IC.send, soon: true },
 ]);
 
 interface MarketingTabsProps {
@@ -55,18 +54,6 @@ export function MarketingTabs({ tab, isMobile, onSwitchTab }: MarketingTabsProps
         >
           <span style={{ display: 'flex', alignItems: 'center' }}>{t.icon(14)}</span>
           {t.label}
-          {t.soon && (
-            <span
-              style={{
-                fontSize: 8,
-                color: 'var(--app-text-tertiary)',
-                fontFamily: MONO,
-                marginLeft: 2,
-              }}
-            >
-              soon
-            </span>
-          )}
         </button>
       ))}
     </div>
