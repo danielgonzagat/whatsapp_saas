@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service';
 import { WhatsAppProviderRegistry } from './providers/provider-registry';
+import type { WahaChatMessage, WahaChatSummary } from './providers/whatsapp-api.provider';
 import { INBOX_SERVICE } from '../inbox/inbox.token';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { WhatsappCatchupHistoryService } from './whatsapp-catchup-history.service';
@@ -122,22 +123,20 @@ describe('WhatsappCatchupHistoryService', () => {
 
   describe('isRemoteChatAwaitingReply', () => {
     it('returns true when lastMessageFromMe is false (customer sent last)', () => {
-      expect(
-        service.isRemoteChatAwaitingReply({ id: 'a', lastMessageFromMe: false } as never),
-      ).toBe(true);
+      const chat = { id: 'a', lastMessageFromMe: false } as WahaChatSummary;
+      expect(service.isRemoteChatAwaitingReply(chat)).toBe(true);
     });
 
     it('returns false when we sent last', () => {
-      expect(service.isRemoteChatAwaitingReply({ id: 'a', lastMessageFromMe: true } as never)).toBe(
-        false,
-      );
+      const chat = { id: 'a', lastMessageFromMe: true } as WahaChatSummary;
+      expect(service.isRemoteChatAwaitingReply(chat)).toBe(false);
     });
   });
 
   describe('toInboundMessage', () => {
     it('returns null when id or from is missing', () => {
-      expect(service.toInboundMessage('ws-1', { id: '', from: 'x' } as never)).toBeNull();
-      expect(service.toInboundMessage('ws-1', { id: 'x', from: '' } as never)).toBeNull();
+      expect(service.toInboundMessage('ws-1', { id: '', from: 'x' } as WahaChatMessage)).toBeNull();
+      expect(service.toInboundMessage('ws-1', { id: 'x', from: '' } as WahaChatMessage)).toBeNull();
     });
 
     it('builds an InboundMessage with provider=meta-cloud by default', () => {
@@ -148,7 +147,7 @@ describe('WhatsappCatchupHistoryService', () => {
         body: 'hi',
         type: 'chat',
         timestamp: 1_700_000_000_000,
-      } as never);
+      } as WahaChatMessage);
       expect(result).toEqual(
         expect.objectContaining({
           workspaceId: 'ws-1',
@@ -179,11 +178,9 @@ describe('WhatsappCatchupHistoryService', () => {
       const cursor = service.resolveBackfillCursor({
         backfillCursor: { chatId: 'c1', activityTimestamp: 1_700_000_000_000 },
       });
-      expect(cursor).toEqual({
-        chatId: 'c1',
-        activityTimestamp: 1_700_000_000_000,
-        updatedAt: expect.any(String),
-      });
+      expect(cursor?.chatId).toBe('c1');
+      expect(cursor?.activityTimestamp).toBe(1_700_000_000_000);
+      expect(typeof cursor?.updatedAt).toBe('string');
     });
   });
 });
