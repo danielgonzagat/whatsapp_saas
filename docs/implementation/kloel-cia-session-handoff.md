@@ -9,7 +9,7 @@ Wave 0 discovery artifacts are active and W1-W9 have focused code-side slices de
 ## Branch atual e ultimo commit
 
 - Branch: `chore/purga-total-debt`
-- HEAD: pending local W9 smart-payment truthfulness commit on top of `3d929286a [W9] Atualizar rastreabilidade V19 V23`
+- HEAD: `34dc0d1b0 [W9] Alinhar cobranca inteligente ao Pix real`
 - Note: prior handoff referenced `feat/kloel-cia-convergence`, but the live checkout is currently `chore/purga-total-debt`; do not infer branch state from older docs.
 
 ## Gates passados na sessao
