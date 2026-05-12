@@ -1,6 +1,6 @@
 'use client';
 
-import { type CSSProperties, useCallback, useEffect, useMemo, useState } from 'react';
+import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useProducts } from '@/hooks/useProducts';
 import { apiFetch } from '@/lib/api';
@@ -17,6 +17,7 @@ import {
 
 interface Props {
   channel: ChannelKey;
+  initialStep?: number;
 }
 
 const SETUP_STEPS = ['Conexão', 'Produtos', 'Arsenal', 'Configuração'] as const;
@@ -116,7 +117,7 @@ function normalizeProduct(raw: unknown): ProductOption | null {
   };
 }
 
-export function OfficialMarketingChannelPage({ channel }: Props) {
+export function OfficialMarketingChannelPage({ channel, initialStep }: Props) {
   const meta = CHANNEL_META[channel];
   const { products } = useProducts();
   const [status, setStatus] = useState<ConnectStatus | null>(null);
@@ -128,6 +129,9 @@ export function OfficialMarketingChannelPage({ channel }: Props) {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [disconnectArmed, setDisconnectArmed] = useState(false);
+  const [completeBusy, setCompleteBusy] = useState(false);
+  const [completeMessage, setCompleteMessage] = useState<string | null>(null);
+  const initialStepApplied = useRef(false);
 
   const productOptions = useMemo(() => {
     if (!Array.isArray(products)) {
@@ -243,6 +247,18 @@ export function OfficialMarketingChannelPage({ channel }: Props) {
     void refresh();
   }, [refresh]);
 
+  useEffect(() => {
+    if (
+      initialStep !== undefined &&
+      initialStep > setup.currentStep &&
+      setupLoaded &&
+      !initialStepApplied.current
+    ) {
+      initialStepApplied.current = true;
+      setCurrentStep(initialStep);
+    }
+  }, [initialStep, setup.currentStep, setupLoaded, setCurrentStep]);
+
   const openMeta = useCallback(async () => {
     setBusy('meta');
     setMessage(null);
@@ -351,6 +367,24 @@ export function OfficialMarketingChannelPage({ channel }: Props) {
       setBusy(null);
     }
   }, []);
+
+  const handleComplete = useCallback(async () => {
+    setCompleteBusy(true);
+    setCompleteMessage(null);
+    const response = await apiFetch<{ completedAt?: string }>(
+      '/marketing/connect/channel-setup/complete',
+      { method: 'POST', body: { channel } },
+    );
+    setCompleteBusy(false);
+    if (response.error) {
+      setCompleteMessage(response.error);
+      return;
+    }
+    setCompleteMessage('Setup concluido. O canal esta liberado para operacao.');
+    setSetup({ ...setup, currentStep: 3 });
+    setSetupLoaded(true);
+    await refresh();
+  }, [channel, setup, refresh]);
 
   const details = channel === 'tiktok' ? tiktokStatus : connection;
   const setupUnavailable =
@@ -665,6 +699,38 @@ export function OfficialMarketingChannelPage({ channel }: Props) {
               >
                 {busy === 'setup' ? 'Salvando...' : 'Salvar configuração'}
               </button>
+              <button
+                type="button"
+                onClick={() => void handleComplete()}
+                disabled={completeBusy || !connection?.connected}
+                style={{
+                  border: 'none',
+                  borderRadius: 6,
+                  background: connection?.connected ? meta.color : KLOEL_THEME.borderPrimary,
+                  color: KLOEL_THEME.textOnAccent,
+                  padding: '12px 16px',
+                  fontWeight: 700,
+                  cursor: connection?.connected && !completeBusy ? 'pointer' : 'not-allowed',
+                  marginTop: 14,
+                  marginLeft: 10,
+                  opacity: connection?.connected && !completeBusy ? 1 : 0.6,
+                }}
+              >
+                {completeBusy ? 'Concluindo...' : 'Concluir'}
+              </button>
+              {completeMessage ? (
+                <p
+                  style={{
+                    marginTop: 10,
+                    color: completeMessage.includes('Falha') || completeMessage.includes('not_complete')
+                      ? KLOEL_THEME.error
+                      : KLOEL_THEME.success,
+                    fontSize: 12,
+                  }}
+                >
+                  {completeMessage}
+                </p>
+              ) : null}
             </div>
           ) : null}
         </section>
