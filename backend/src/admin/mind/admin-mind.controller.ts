@@ -67,6 +67,12 @@ export class AdminMindController {
     return this.service.askQuestion(workspaceId, body.question);
   }
 
+  @Get('lift')
+  @RequireAdminPermission(AdminModule.RELATORIOS, AdminAction.VIEW)
+  async liftOverview(@Query('sinceDays') sinceDays?: string) {
+    return this.service.getLiftReport(sinceDays ? Number(sinceDays) : 14);
+  }
+
   @Post(':workspaceId/report')
   @RequireAdminPermission(AdminModule.RELATORIOS, AdminAction.VIEW)
   async report(@Param('workspaceId') workspaceId: string) {
