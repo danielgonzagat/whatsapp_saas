@@ -149,6 +149,19 @@ function variantFromArm(
   };
 }
 
+export function resolveVariantByKey(family: VariantFamily, key: string): MessageVariant {
+  const variants = defaultVariantMap(family);
+  return variants.get(key) || firstDefaultVariant(family);
+}
+
+export function listVariantKeys(family: VariantFamily): string[] {
+  return Array.from(defaultVariantMap(family).keys());
+}
+
+/**
+ * @deprecated Decision authority migrated to MindService.resolveBestVariant via HTTP.
+ * Kept as local fallback when backend is unreachable. See ADR 0004.
+ */
 export async function pickVariant(
   prisma: PrismaClient,
   workspaceId: string,

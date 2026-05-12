@@ -1,7 +1,13 @@
 import { prisma } from '../../db';
 import { publishAgentEvent } from '../../providers/agent-events';
 import { buildDecisionEnvelope, computeDemandState } from '../../providers/commercial-intelligence';
-import { pickVariant, type VariantFamily } from '../cia/self-improvement';
+import { resolveBestVariantViaHttp } from '../../providers/mind-client';
+import {
+  listVariantKeys,
+  pickVariant,
+  resolveVariantByKey,
+  type VariantFamily,
+} from '../cia/self-improvement';
 import { type CognitiveActionType } from '../cia/cognitive-state';
 import { type UnknownRecord } from './shared';
 import { maybeEscalateToHumanControl } from './backlog-escalation';
@@ -123,7 +129,35 @@ export async function dispatchCiaActionByType(
   let message = '';
   let variant: Awaited<ReturnType<typeof pickVariant>> | null = null;
   if (family) {
-    variant = await pickVariant(prisma, workspaceId, family, data?.globalStrategy || null);
+    const variantIds = listVariantKeys(family);
+    const strategyContext = data?.globalStrategy
+      ? {
+          domain: data.globalStrategy.domain,
+          intent: data.globalStrategy.intent,
+          preferredVariantFamily: data.globalStrategy.preferredVariantFamily,
+          aggressiveness: data.globalStrategy.aggressiveness,
+        }
+      : null;
+
+    const brainDecision = strategyContext
+      ? await resolveBestVariantViaHttp({
+          workspaceId,
+          flow: family,
+          variantIds,
+          context: strategyContext,
+        })
+      : await resolveBestVariantViaHttp({
+          workspaceId,
+          flow: family,
+          variantIds,
+        });
+
+    if (brainDecision) {
+      variant = resolveVariantByKey(family, brainDecision.variant);
+    } else {
+      variant = await pickVariant(prisma, workspaceId, family, data?.globalStrategy || null);
+    }
+
     message =
       actionType === 'FOLLOWUP_URGENT'
         ? `${variant.text} Se ainda fizer sentido, eu consigo priorizar isso agora.`
