@@ -46,6 +46,7 @@ async function readAppleCallbackPayload(
     return {
       ...(identityToken !== '' ? { identityToken } : {}),
       ...(authorizationCode !== '' ? { authorizationCode } : {}),
+      state: request.nextUrl.searchParams.get('state')?.trim() || '',
       redirectUri: new URL(request.nextUrl.pathname, request.nextUrl.origin).toString(),
       ...(user !== undefined ? { user } : {}),
     };
@@ -62,6 +63,7 @@ async function readAppleCallbackPayload(
   return {
     ...(identityToken !== '' ? { identityToken } : {}),
     ...(authorizationCode !== '' ? { authorizationCode } : {}),
+    state: String(formData.get('state') || '').trim(),
     redirectUri: new URL(request.nextUrl.pathname, request.nextUrl.origin).toString(),
     ...(formUser !== undefined ? { user: formUser } : {}),
   };

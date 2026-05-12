@@ -327,19 +327,19 @@ const VARIANT_STYLES: Record<
     iconColor: colors.text.secondary,
   },
   'no-connection': {
-    bgColor: `${colors.state.warning}10`,
+    bgColor: 'rgba(110, 110, 115, 0.06)',
     iconColor: colors.state.warning,
-    borderColor: `${colors.state.warning}30`,
+    borderColor: 'rgba(110, 110, 115, 0.19)',
   },
   error: {
-    bgColor: `${colors.state.error}10`,
+    bgColor: 'rgba(232, 93, 48, 0.06)',
     iconColor: colors.state.error,
-    borderColor: `${colors.state.error}30`,
+    borderColor: 'rgba(232, 93, 48, 0.19)',
   },
   success: {
-    bgColor: `${colors.state.success}10`,
+    bgColor: 'rgba(224, 221, 216, 0.06)',
     iconColor: colors.state.success,
-    borderColor: `${colors.state.success}30`,
+    borderColor: 'rgba(224, 221, 216, 0.19)',
   },
 };
 

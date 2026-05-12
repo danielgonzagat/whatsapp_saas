@@ -754,12 +754,12 @@ export default function ThanosSection() {
                 color: E,
                 letterSpacing: '-.03em',
                 textAlign: 'center',
-                marginBottom: showSales ? 52 : 0,
+                marginBottom: showReveal || showSales ? 52 : 0,
               }}
             >
               {kloelT(`O Kloel escala.`)}
             </h2>
-            {(prefersReducedMotion || showSales) && (
+            {(prefersReducedMotion || showReveal || showSales) && (
               <div style={{ width: '100%', maxWidth: 740 }}>
                 <ThanosOmniSales runToken={prefersReducedMotion ? 0 : salesRunToken} />
               </div>

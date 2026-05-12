@@ -160,6 +160,7 @@ export function RadioGroup({
         {options.map((opt) => (
           <label key={opt.value} className="flex cursor-pointer items-start gap-2.5">
             <input
+              aria-label={opt.label}
               type="radio"
               name={groupName}
               value={opt.value}

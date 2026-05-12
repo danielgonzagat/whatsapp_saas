@@ -89,7 +89,6 @@ export const tokenStorage = {
       return null;
     }
     reconcileFreshSharedAuthSession();
-    syncBrowserStorageFromCookies();
     return readBrowserCookie(RENEWAL_BROWSER_SLOT);
   },
 
@@ -106,7 +105,6 @@ export const tokenStorage = {
       return null;
     }
     reconcileFreshSharedAuthSession();
-    syncBrowserStorageFromCookies();
     return syncWorkspaceFromToken();
   },
 
