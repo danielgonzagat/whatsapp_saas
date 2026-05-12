@@ -60,14 +60,26 @@ describe('StripeWebhookLedgerService', () => {
         sellerDestinationAmountCents: 9999n,
         transfers: [
           {
-            role: 'seller' as never,
+            role: 'seller',
             accountId: 'acct_seller',
             amountCents: 9999n,
             stripeTransferId: 'tr_1',
           },
         ],
       });
-      const arg = prisma.checkoutPayment.updateMany.mock.calls[0][0];
+      const [arg] = prisma.checkoutPayment.updateMany.mock.calls[0] as [
+        {
+          data: {
+            webhookData: {
+              existing: boolean;
+              connectPostSale: {
+                sellerDestinationAmountCents: string;
+                transfers: Array<{ amountCents: string }>;
+              };
+            };
+          };
+        },
+      ];
       expect(arg.data.webhookData.existing).toBe(true);
       expect(arg.data.webhookData.connectPostSale.sellerDestinationAmountCents).toBe('9999');
       expect(arg.data.webhookData.connectPostSale.transfers[0].amountCents).toBe('9999');
@@ -128,7 +140,9 @@ describe('StripeWebhookLedgerService', () => {
         stakeholderReversedAmountCents: 900n,
         marketplaceDebitCents: 100n,
       });
-      const append = marketplaceTreasury.append.mock.calls[0][0];
+      const [append] = marketplaceTreasury.append.mock.calls[0] as [
+        { direction: string; bucket: MarketplaceTreasuryBucket; amountInCents: bigint },
+      ];
       expect(append.direction).toBe('debit');
       expect(append.bucket).toBe(MarketplaceTreasuryBucket.AVAILABLE);
       expect(append.amountInCents).toBe(100n);
@@ -145,9 +159,9 @@ describe('StripeWebhookLedgerService', () => {
         marketplaceDebitCents: 100n,
       });
       expect(marketplaceTreasury.append).toHaveBeenCalledTimes(2);
-      const buckets = marketplaceTreasury.append.mock.calls.map(
-        (c) => (c[0] as { bucket: string }).bucket,
-      );
+      const buckets = (marketplaceTreasury.append.mock.calls as Array<
+        [{ bucket: MarketplaceTreasuryBucket }]
+      >).map(([call]) => call.bucket);
       expect(buckets).toContain(MarketplaceTreasuryBucket.PENDING);
       expect(buckets).toContain(MarketplaceTreasuryBucket.AVAILABLE);
     });
@@ -163,14 +177,19 @@ describe('StripeWebhookLedgerService', () => {
         currency: 'BRL',
         status: 'paid',
       });
-      expect(adminAudit.append).toHaveBeenCalledWith(
-        expect.objectContaining({
-          action: 'payout.paid',
-          entityType: 'marketplace_treasury',
-          entityId: 'BRL',
-          details: expect.objectContaining({ amountCents: '1000', status: 'paid' }),
-        }),
-      );
+      const [auditCall] = adminAudit.append.mock.calls[0] as [
+        {
+          action: string;
+          entityType: string;
+          entityId: string;
+          details: { amountCents: string; status: string };
+        },
+      ];
+      expect(auditCall.action).toBe('payout.paid');
+      expect(auditCall.entityType).toBe('marketplace_treasury');
+      expect(auditCall.entityId).toBe('BRL');
+      expect(auditCall.details.amountCents).toBe('1000');
+      expect(auditCall.details.status).toBe('paid');
     });
   });
 
@@ -189,7 +208,11 @@ describe('StripeWebhookLedgerService', () => {
         amountCents: 1000n,
         status: 'paid',
       });
-      const auditCall = adminAudit.append.mock.calls[0][0];
+      const [auditCall] = adminAudit.append.mock.calls[0] as [
+        {
+          details: { workspaceId: string; accountType: string; stripeAccountId: string };
+        },
+      ];
       expect(auditCall.details.workspaceId).toBe('ws-1');
       expect(auditCall.details.accountType).toBe('SELLER');
       expect(auditCall.details.stripeAccountId).toBe('acct_seller');

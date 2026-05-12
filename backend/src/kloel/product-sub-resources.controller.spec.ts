@@ -26,6 +26,8 @@ const WS_A_USER = { user: { sub: 'user-a', workspaceId: WS_A } } as never;
 const WS_B_USER = { user: { sub: 'user-b', workspaceId: WS_B } } as never;
 const PROD_A = 'prod-a';
 
+type PrismaMock = Record<string, Record<string, jest.Mock>>;
+
 function makeProductFindFirst() {
   return jest
     .fn()
@@ -38,9 +40,9 @@ function makeProductFindFirst() {
 }
 
 function moduleWith(
-  Controller: new (...args: any[]) => any,
-  prismaOverrides: Record<string, unknown> = {},
-  extraProviders: any[] = [],
+  Controller: new (...args: unknown[]) => unknown,
+  prismaOverrides: PrismaMock = {},
+  extraProviders: ReadonlyArray<unknown> = [],
 ) {
   return Test.createTestingModule({
     controllers: [Controller],
@@ -74,7 +76,7 @@ describe('Product Sub-Resources — Cross-Workspace Isolation', () => {
   // ─── AI Config ───────────────────────────────────────────────
   describe('ProductAIConfigController', () => {
     let controller: ProductAIConfigController;
-    let prisma: any;
+    let prisma: PrismaMock;
 
     beforeEach(async () => {
       const mod = await moduleWith(ProductAIConfigController, {
@@ -109,7 +111,7 @@ describe('Product Sub-Resources — Cross-Workspace Isolation', () => {
   // ─── Affiliate ────────────────────────────────────────────────
   describe('ProductAffiliateController', () => {
     let controller: ProductAffiliateController;
-    let prisma: any;
+    let prisma: PrismaMock;
 
     beforeEach(async () => {
       const mod = await moduleWith(ProductAffiliateController, {
@@ -188,7 +190,7 @@ describe('Product Sub-Resources — Cross-Workspace Isolation', () => {
   // ─── Campaign ────────────────────────────────────────────────
   describe('ProductCampaignController', () => {
     let controller: ProductCampaignController;
-    let prisma: any;
+    let prisma: PrismaMock;
 
     beforeEach(async () => {
       const mod = await moduleWith(ProductCampaignController, {
@@ -251,7 +253,7 @@ describe('Product Sub-Resources — Cross-Workspace Isolation', () => {
   // ─── Checkout ────────────────────────────────────────────────
   describe('ProductCheckoutController', () => {
     let controller: ProductCheckoutController;
-    let prisma: any;
+    let prisma: PrismaMock;
 
     beforeEach(async () => {
       const mod = await moduleWith(ProductCheckoutController, {
@@ -303,7 +305,6 @@ describe('Product Sub-Resources — Cross-Workspace Isolation', () => {
   // ─── Commission ──────────────────────────────────────────────
   describe('ProductCommissionController', () => {
     let controller: ProductCommissionController;
-    let prisma: any;
 
     beforeEach(async () => {
       const mod = await moduleWith(
@@ -333,7 +334,6 @@ describe('Product Sub-Resources — Cross-Workspace Isolation', () => {
         ],
       );
       controller = mod.get(ProductCommissionController);
-      prisma = mod.get(PrismaService);
     });
 
     it('blocks workspace-B from listing commissions on workspace-A product', async () => {
@@ -364,7 +364,6 @@ describe('Product Sub-Resources — Cross-Workspace Isolation', () => {
   // ─── Coupon ──────────────────────────────────────────────────
   describe('ProductCouponController', () => {
     let controller: ProductCouponController;
-    let prisma: any;
 
     beforeEach(async () => {
       const mod = await moduleWith(ProductCouponController, {
@@ -390,7 +389,6 @@ describe('Product Sub-Resources — Cross-Workspace Isolation', () => {
         ),
       });
       controller = mod.get(ProductCouponController);
-      prisma = mod.get(PrismaService);
     });
 
     it('blocks workspace-B from listing coupons on workspace-A product', async () => {
@@ -428,7 +426,6 @@ describe('Product Sub-Resources — Cross-Workspace Isolation', () => {
   // ─── Plan ────────────────────────────────────────────────────
   describe('ProductPlanController', () => {
     let controller: ProductPlanController;
-    let prisma: any;
 
     beforeEach(async () => {
       const mod = await moduleWith(ProductPlanController, {
@@ -451,7 +448,6 @@ describe('Product Sub-Resources — Cross-Workspace Isolation', () => {
         ),
       });
       controller = mod.get(ProductPlanController);
-      prisma = mod.get(PrismaService);
     });
 
     it('blocks workspace-B from listing plans on workspace-A product', async () => {
@@ -484,7 +480,6 @@ describe('Product Sub-Resources — Cross-Workspace Isolation', () => {
   // ─── Review ──────────────────────────────────────────────────
   describe('ProductReviewController', () => {
     let controller: ProductReviewController;
-    let prisma: any;
 
     beforeEach(async () => {
       const mod = await moduleWith(ProductReviewController, {
@@ -496,7 +491,6 @@ describe('Product Sub-Resources — Cross-Workspace Isolation', () => {
         },
       });
       controller = mod.get(ProductReviewController);
-      prisma = mod.get(PrismaService);
     });
 
     it('blocks workspace-B from listing reviews on workspace-A product', async () => {
@@ -517,7 +511,6 @@ describe('Product Sub-Resources — Cross-Workspace Isolation', () => {
   // ─── URL ─────────────────────────────────────────────────────
   describe('ProductUrlController', () => {
     let controller: ProductUrlController;
-    let prisma: any;
 
     beforeEach(async () => {
       const mod = await moduleWith(ProductUrlController, {
@@ -530,7 +523,6 @@ describe('Product Sub-Resources — Cross-Workspace Isolation', () => {
         },
       });
       controller = mod.get(ProductUrlController);
-      prisma = mod.get(PrismaService);
     });
 
     it('blocks workspace-B from listing URLs on workspace-A product', async () => {
