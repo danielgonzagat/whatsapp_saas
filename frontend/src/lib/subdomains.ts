@@ -5,7 +5,14 @@ export type KloelHostKind = 'marketing' | 'auth' | 'app' | 'pay' | 'unknown';
 /** Kloel host target type. */
 export type KloelHostTarget = Exclude<KloelHostKind, 'unknown'>;
 
-const PROD_ROOT_DOMAIN = 'kloel.com';
+// Allow operators to override the production root domain (e.g. for white-label
+// or staging clones) via NEXT_PUBLIC_PROD_ROOT_DOMAIN. Falls back to kloel.com.
+const PROD_ROOT_DOMAIN =
+  String(process.env.NEXT_PUBLIC_PROD_ROOT_DOMAIN || '')
+    .trim()
+    .toLowerCase()
+    .replace(/^https?:\/\//, '')
+    .replace(/\/+$/, '') || 'kloel.com';
 const AUTH_PATH_PREFIXES = [
   '/login',
   '/register',
