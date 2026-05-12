@@ -9,7 +9,7 @@ Wave 0 discovery artifacts are active and W1-W9 have focused code-side slices de
 ## Branch atual e ultimo commit
 
 - Branch: `chore/purga-total-debt`
-- HEAD: pending local W9 fake-stock truthfulness commit on top of `6ef5b62b6 [W9] Registrar handoff boleto settings`
+- HEAD: `6633e3d14 [W9] Desativar estoque ficticio no checkout`
 - Note: prior handoff referenced `feat/kloel-cia-convergence`, but the live checkout is currently `chore/purga-total-debt`; do not infer branch state from older docs.
 
 ## Gates passados na sessao
