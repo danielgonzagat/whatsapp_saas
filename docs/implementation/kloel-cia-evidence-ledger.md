@@ -2,6 +2,40 @@
 
 Generated: 2026-05-11
 
+## 2026-05-12T16:03:52-03:00 - W9 - Media Video Ping Truthfulness
+
+- ID-visao: V23.
+- Escopo: replace the legacy public `/media/video/ping` placeholder response with a truthful capability contract that points to the real MediaJob-backed video job path.
+- Arquivos alterados:
+  - `backend/src/media/video.service.ts`
+  - `backend/src/media/video.controller.ts`
+  - `backend/src/media/video.service.spec.ts`
+  - `backend/src/video/video.controller.ts`
+  - `docs/implementation/kloel-cia-evidence-ledger.md`
+  - `docs/implementation/kloel-cia-session-handoff.md`
+  - `docs/implementation/kloel-cia-vision-traceability.md`
+- Comportamento entregue:
+  - `VideoService.generate()` and its `{ ok: true }` placeholder were removed from the media module.
+  - The public ping endpoint now returns a capability contract for `/media/video`, `/media/job/:id`, `MediaJob`, and the `media-jobs` queue instead of claiming generation success.
+  - The stale backend video comment saying there was no frontend integration was removed because the frontend already uses `/video/create` and `/video/jobs`.
+- Comando(s) rodados:
+  - `npm --prefix backend test -- media/video.service.spec.ts --runInBand`
+  - `npm exec eslint -- src/media/video.service.ts src/media/video.controller.ts src/media/video.service.spec.ts src/video/video.controller.ts` from `backend/`
+  - `npm run backend:typecheck`
+- Resultado:
+  - Jest passed: 1 suite / 1 test.
+  - Focused backend ESLint passed.
+  - Backend typecheck passed.
+- Evidencia:
+  - Current session command outputs for focused Jest, focused ESLint, and backend typecheck.
+- Riscos remanescentes:
+  - This removes a fake success response; it does not add provider-side video generation beyond the existing MediaJob queue contract.
+  - No browser smoke was captured for `/video`.
+- Plano de rollback:
+  - Restore the old ping behavior only if the route is removed entirely or replaced by a stronger health/capability endpoint covered by tests.
+- Referencia subagent:
+  - Orchestrator-owned V23 follow-up from repo anti-fake scan; no subagent edit was used.
+
 ## 2026-05-12T15:22:00-03:00 - W9 - Marketing SMS Stub Removed From Navigation
 
 - ID-visao: V05, V23.

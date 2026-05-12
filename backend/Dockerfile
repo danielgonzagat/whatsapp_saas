@@ -16,13 +16,14 @@ RUN npm prune --omit=dev --no-audit --fund=false
 
 FROM node:22-bookworm AS backend-runtime
 
-WORKDIR /app/backend
+WORKDIR /app
 
 ENV NODE_ENV=production
 ENV PRISMA_CLI_BINARY_TARGETS="debian-openssl-3.0.x"
 ENV NPM_CONFIG_UPDATE_NOTIFIER=false
 
-COPY --from=backend-build --chown=node:node /app/backend ./
+COPY package.json ./
+COPY --from=backend-build --chown=node:node /app/backend ./backend
 
 RUN mkdir -p /app/backend/public/audio /app/backend/uploads && \
     chown -R node:node /app/backend
@@ -34,4 +35,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
 
 USER node
 
-CMD ["sh", "-c", "node prisma/ensure-migrations.js && node -r ./dd-trace-init.cjs dist/src/bootstrap.js"]
+CMD ["npm", "run", "railway:backend:start"]

@@ -13,6 +13,6 @@ export class VideoController {
   @Public()
   @Get('ping')
   ping() {
-    return this.videoService.generate();
+    return this.videoService.describeCapabilities();
   }
 }
