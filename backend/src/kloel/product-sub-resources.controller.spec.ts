@@ -139,7 +139,7 @@ describe('Product Sub-Resources — Cross-Workspace Isolation', () => {
           update: jest.fn().mockResolvedValue({ id: 'link1' }),
           updateMany: jest.fn().mockResolvedValue({ count: 1 }),
         },
-        $transaction: jest.fn().mockImplementation(async (fn: any) =>
+        $transaction: jest.fn().mockImplementation((fn: (tx: PrismaMock) => unknown) =>
           fn({
             affiliateRequest: {
               update: jest.fn().mockResolvedValue({ id: 'req1' }),
@@ -268,7 +268,7 @@ describe('Product Sub-Resources — Cross-Workspace Isolation', () => {
           update: jest.fn().mockResolvedValue({ id: 'ch1' }),
           delete: jest.fn().mockResolvedValue({ id: 'ch1' }),
         },
-        $transaction: jest.fn().mockImplementation(async (fn: any) =>
+        $transaction: jest.fn().mockImplementation((fn: (tx: PrismaMock) => unknown) =>
           fn({
             productCheckout: {
               findFirst: jest.fn().mockResolvedValue({ id: 'ch1', productId: PROD_A }),
@@ -312,7 +312,7 @@ describe('Product Sub-Resources — Cross-Workspace Isolation', () => {
         {
           productCommission: {
             findMany: jest.fn().mockResolvedValue([]),
-            create: jest.fn().mockImplementation(async ({ data }: any) => ({ id: 'cm1', ...data })),
+            create: jest.fn().mockImplementation((args: { data: Record<string, unknown> }) => Promise.resolve({ id: 'cm1', ...args.data })),
             delete: jest.fn().mockResolvedValue({ id: 'cm1' }),
             findFirst: jest.fn().mockResolvedValue({ id: 'cm1', productId: PROD_A }),
             update: jest.fn().mockResolvedValue({ id: 'cm1' }),
@@ -369,7 +369,7 @@ describe('Product Sub-Resources — Cross-Workspace Isolation', () => {
       const mod = await moduleWith(ProductCouponController, {
         productCoupon: {
           findMany: jest.fn().mockResolvedValue([]),
-          create: jest.fn().mockImplementation(async ({ data }: any) => ({ id: 'cp1', ...data })),
+          create: jest.fn().mockImplementation((args: { data: Record<string, unknown> }) => Promise.resolve({ id: 'cp1', ...args.data })),
           findFirst: jest
             .fn()
             .mockResolvedValue({ id: 'cp1', productId: PROD_A, code: 'ABC', active: true }),
@@ -379,7 +379,7 @@ describe('Product Sub-Resources — Cross-Workspace Isolation', () => {
           update: jest.fn().mockResolvedValue({ id: 'cp1', code: 'ABC' }),
           delete: jest.fn().mockResolvedValue({ id: 'cp1', code: 'ABC' }),
         },
-        $transaction: jest.fn().mockImplementation(async (fn: any) =>
+        $transaction: jest.fn().mockImplementation((fn: (tx: PrismaMock) => unknown) =>
           fn({
             productCoupon: {
               findFirst: jest.fn().mockResolvedValue({ id: 'cp1', productId: PROD_A, code: 'ABC' }),
@@ -438,7 +438,7 @@ describe('Product Sub-Resources — Cross-Workspace Isolation', () => {
           update: jest.fn().mockResolvedValue({ id: 'pl1' }),
           delete: jest.fn().mockResolvedValue({ id: 'pl1' }),
         },
-        $transaction: jest.fn().mockImplementation(async (fn: any) =>
+        $transaction: jest.fn().mockImplementation((fn: (tx: PrismaMock) => unknown) =>
           fn({
             productPlan: {
               findFirst: jest.fn().mockResolvedValue({ id: 'pl1', productId: PROD_A }),

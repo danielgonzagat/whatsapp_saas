@@ -159,9 +159,9 @@ describe('StripeWebhookLedgerService', () => {
         marketplaceDebitCents: 100n,
       });
       expect(marketplaceTreasury.append).toHaveBeenCalledTimes(2);
-      const buckets = (marketplaceTreasury.append.mock.calls as Array<
-        [{ bucket: MarketplaceTreasuryBucket }]
-      >).map(([call]) => call.bucket);
+      const buckets = (
+        marketplaceTreasury.append.mock.calls as Array<[{ bucket: MarketplaceTreasuryBucket }]>
+      ).map(([call]) => call.bucket);
       expect(buckets).toContain(MarketplaceTreasuryBucket.PENDING);
       expect(buckets).toContain(MarketplaceTreasuryBucket.AVAILABLE);
     });
