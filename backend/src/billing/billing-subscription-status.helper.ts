@@ -66,7 +66,7 @@ export async function markSubscriptionStatusHelper(
         await tx.subscription.update({ where: { workspaceId }, data: { status } });
         await tx.workspace.update({
           where: { id: workspaceId },
-          data: { providerSettings: nextSettings as Prisma.InputJsonObject },
+          data: { providerSettings: nextSettings as unknown as Prisma.InputJsonObject },
         });
         await tx.auditLog.create({
           data: {

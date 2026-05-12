@@ -5,6 +5,7 @@ import { allowedFormatsFor, allowedTonesFor, repertoireFor } from './channel-rep
 import { ChannelSetupService } from './channel-setup.service';
 import { MindConceptService } from './mind-concepts.service';
 import { MindService } from './mind.service';
+import { PrismaService } from '../prisma/prisma.service';
 import type { PredecidedAction } from './unified-agent.types';
 
 type ConceptRow = { concept: string; confidence?: number };
@@ -153,6 +154,21 @@ function stableInboundKey(input: InboundOrchestrationInput, subject: string, cha
     .slice(0, 24);
 }
 
+function buildLegacyBaseline(concept: string, _channel: string): Record<string, unknown> {
+  // Deterministic rule-based version of the same decisions, simulating
+  // what the pre-deterministic-pipeline path would have produced.
+  const baselines: Record<string, Record<string, unknown>> = {
+    general: { action: 'send_message', tone: 'NEUTRAL', aggressiveness: 'LOW' },
+    price_objection: { action: 'apply_discount', coupon: 'coupon_10', tone: 'CONSULTIVE' },
+    imminent_purchase: { action: 'send_message', productOffer: 'top_seller', tone: 'DIRECT' },
+    hot_lead: { action: 'send_message', productOffer: 'top_seller', tone: 'DIRECT' },
+    trust_objection: { action: 'transfer_to_human', tone: 'CONSULTIVE' },
+    fatigue_risk: { action: 'pause', tone: 'NEUTRAL' },
+    audio_preference: { action: 'send_audio', tone: 'NEUTRAL' },
+  };
+  return (baselines[concept] ?? baselines.general) as Record<string, unknown>;
+}
+
 @Injectable()
 export class CommercialDecisionOrchestratorService {
   private readonly logger = new Logger(CommercialDecisionOrchestratorService.name);
@@ -162,12 +178,61 @@ export class CommercialDecisionOrchestratorService {
     private readonly concepts: MindConceptService,
     private readonly events: BrainEventSpineService,
     private readonly setup: ChannelSetupService,
+    private readonly prisma: PrismaService,
   ) {}
 
   async orchestrateInbound(input: InboundOrchestrationInput): Promise<InboundDecision> {
     const channel = normalizeChannel(input.channel);
     const subject = input.contactId ? `contact:${input.contactId}` : `channel:${channel}`;
     const inboundKey = stableInboundKey(input, subject, channel);
+
+    const pipelineState = await this.prisma.pipelineState.findUnique({
+      where: { workspaceId: input.workspaceId },
+      select: { state: true, fallbackRate1h: true },
+    });
+    const pipelineMode = (pipelineState?.state ?? 'legacy') as 'legacy' | 'shadow' | 'active';
+
+    if (pipelineMode === 'legacy') {
+      this.logger.log(
+        `Pipeline legacy path for ${input.workspaceId}:${channel} — returning empty actions`,
+      );
+      return {
+        actions: [],
+        concepts: [],
+        trace: {
+          channel,
+          pipelineState: 'legacy',
+          skipped: true,
+          delegatedToLegacy: true,
+        },
+      };
+    }
+
+    try {
+      return await this.executeOrchestration(
+        input,
+        channel,
+        subject,
+        inboundKey,
+        pipelineMode,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Orchestration failed for ${input.workspaceId}:${channel}`,
+        error instanceof Error ? error.message : String(error),
+      );
+      await this.handleOrchestrationFallback(input.workspaceId, channel, pipelineMode);
+      throw error;
+    }
+  }
+
+  private async executeOrchestration(
+    input: InboundOrchestrationInput,
+    channel: string,
+    subject: string,
+    inboundKey: string,
+    pipelineMode: 'legacy' | 'shadow' | 'active',
+  ): Promise<InboundDecision> {
     const detections = await this.concepts.detect({
       workspaceId: input.workspaceId,
       subject,
@@ -458,13 +523,26 @@ export class CommercialDecisionOrchestratorService {
     });
 
     this.logger.log(`Deterministic inbound actions built for ${input.workspaceId}:${channel}`);
+
+    if (pipelineMode === 'shadow') {
+      await this.recordShadowExecution(
+        input.workspaceId,
+        channel,
+        inboundKey,
+        concept,
+        decisions,
+      );
+    }
+
     return {
-      actions,
+      actions: pipelineMode === 'shadow' ? [] : actions,
       concepts: conceptRows.map((row) => row.concept),
       trace: {
         channel,
         concept,
         decisions,
+        pipelineMode,
+        shadow: pipelineMode === 'shadow',
         setup: channelSetup
           ? {
               arsenalCount: channelSetup.arsenal.length,
@@ -475,5 +553,119 @@ export class CommercialDecisionOrchestratorService {
         similarCases: similarCases.length,
       },
     };
+  }
+
+  private async recordShadowExecution(
+    workspaceId: string,
+    channel: string,
+    inboundKey: string,
+    concept: string,
+    decisions: Record<string, unknown>,
+  ): Promise<void> {
+    try {
+      await this.prisma.decisionShadow.upsert({
+        where: {
+          workspaceId_inboundCorrelationId: {
+            workspaceId,
+            inboundCorrelationId: inboundKey,
+          },
+        },
+        create: {
+          workspaceId,
+          channel,
+          inboundCorrelationId: inboundKey,
+          orchestratorDecision: decisions as object,
+          legacyBaseline: buildLegacyBaseline(concept, channel) as object,
+          outcomeKey: `shadow:${workspaceId}:${channel}:${concept}`,
+        },
+        update: {
+          orchestratorDecision: decisions as object,
+          legacyBaseline: buildLegacyBaseline(concept, channel) as object,
+          outcomeKey: `shadow:${workspaceId}:${channel}:${concept}`,
+        },
+      });
+
+      await this.events.recordCommercial({
+        workspaceId,
+        subject: `channel:${channel}`,
+        eventType: 'pipeline.shadow_recorded',
+        occurredAt: new Date(),
+        idempotencyKey: `pipeline-shadow:${workspaceId}:${inboundKey}`,
+        payload: {
+          channel,
+          inboundCorrelationId: inboundKey,
+          outcomeKey: `shadow:${workspaceId}:${channel}:${concept}`,
+        },
+      });
+    } catch (err) {
+      this.logger.warn(
+        `Failed to record shadow for ${workspaceId}:${inboundKey} — non-fatal`,
+        err instanceof Error ? err.message : String(err),
+      );
+    }
+  }
+
+  private async handleOrchestrationFallback(
+    workspaceId: string,
+    channel: string,
+    pipelineMode: string,
+  ): Promise<void> {
+    if (pipelineMode !== 'active') return;
+
+    try {
+      await this.prisma.pipelineState.updateMany({
+        where: { workspaceId },
+        data: { fallbackRate1h: { increment: 0.01 } },
+      });
+
+      const state = await this.prisma.pipelineState.findUnique({
+        where: { workspaceId },
+        select: { state: true, fallbackRate1h: true },
+      });
+
+      if (
+        state &&
+        state.state === 'active' &&
+        state.fallbackRate1h >= 0.05
+      ) {
+        await this.prisma.pipelineState.update({
+          where: { workspaceId },
+          data: {
+            state: 'shadow',
+            transitionedAt: new Date(),
+            fallbackRate1h: 0,
+            snapshot: {
+              previousState: 'active',
+              reason: `auto-fallback: fallbackRate1h ${state.fallbackRate1h} >= 0.05`,
+              triggerChannel: channel,
+            },
+          },
+        });
+
+        await this.events.recordCommercial({
+          workspaceId,
+          subject: `workspace:${workspaceId}`,
+          eventType: 'pipeline.auto_fallback',
+          occurredAt: new Date(),
+          idempotencyKey: `pipeline-auto-fallback:${workspaceId}:${Date.now()}`,
+          payload: {
+            previousState: 'active',
+            newState: 'shadow',
+            fallbackRate1h: state.fallbackRate1h,
+            threshold: 0.05,
+            channel,
+          },
+        });
+
+        this.logger.warn(
+          `Pipeline auto-fallback ${workspaceId}: active -> shadow (fallbackRate1h=${state.fallbackRate1h})`,
+        );
+      }
+    } catch (err) {
+      this.logger.error(
+        `Failed to handle orchestration fallback for ${workspaceId}`,
+        err instanceof Error ? err.message : String(err),
+      );
+    }
   }
 }

@@ -78,9 +78,9 @@ export function runCatchup(
   reason: string,
   lockToken: string,
 ) {
-  const orchestrator = (service as { orchestrator: WhatsappCatchupOrchestratorService })
+  const orchestrator = (service as unknown as { orchestrator: WhatsappCatchupOrchestratorService })
     .orchestrator;
-  return (orchestrator as CatchupOrchestratorInternals).runCatchup(
+  return (orchestrator as unknown as CatchupOrchestratorInternals).runCatchup(
     workspaceId,
     reason,
     lockToken,

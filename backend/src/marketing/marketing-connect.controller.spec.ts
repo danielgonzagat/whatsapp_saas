@@ -4,6 +4,8 @@ import { MarketingConnectController } from './marketing-connect.controller';
 describe('MarketingConnectController channel setup', () => {
   const update = jest.fn();
   const findUnique = jest.fn();
+  const channelSetupFindUnique = jest.fn();
+  const channelSetupUpsert = jest.fn();
   const prisma = {
     workspace: {
       findUnique,
@@ -12,6 +14,30 @@ describe('MarketingConnectController channel setup', () => {
     metaConnection: {
       findUnique: jest.fn(),
     },
+    channelSetup: {
+      findUnique: channelSetupFindUnique,
+      upsert: channelSetupUpsert,
+    },
+    channelConfig: {
+      findUnique: jest.fn(async () => null),
+    },
+    channelProduct: {
+      findMany: jest.fn(async () => []),
+      deleteMany: jest.fn(),
+      create: jest.fn(),
+    },
+    channelArsenal: {
+      findMany: jest.fn(async () => []),
+    },
+    product: {
+      findMany: jest.fn(async () => []),
+    },
+    $transaction: jest.fn(async (operations: unknown) => {
+      if (typeof operations === 'function') {
+        return (operations as (tx: typeof prisma) => Promise<unknown>)(prisma);
+      }
+      return Promise.all(operations as Promise<unknown>[]);
+    }),
   };
   const metaWhatsApp = {
     buildEmbeddedSignupUrl: jest.fn(() => 'https://www.facebook.com/v21.0/dialog/oauth'),
@@ -68,6 +94,13 @@ describe('MarketingConnectController channel setup', () => {
       email: 'owner@kloel.test',
     })),
   };
+  const emailCampaign = {
+    sendTestEmail: jest.fn(async () => ({ sent: true, messageId: 'em-1' })),
+  };
+  const tiktokMarketing = {
+    getConnectionStatus: jest.fn(async () => ({ connected: false })),
+    getStatus: jest.fn(async () => ({ connected: false, status: 'disconnected' })),
+  };
   const controller = new MarketingConnectController(
     prisma as never,
     metaWhatsApp as never,
@@ -75,6 +108,8 @@ describe('MarketingConnectController channel setup', () => {
     gmailMailbox as never,
     microsoftMailbox as never,
     imapSmtpMailbox as never,
+    emailCampaign as never,
+    tiktokMarketing as never,
   );
   const req = { user: { workspaceId: 'ws_1', email: 'owner@kloel.test' } };
 
@@ -146,6 +181,9 @@ describe('MarketingConnectController channel setup', () => {
         arsenal: [],
         config: {},
       },
+      // P1.2 wire-wizard: getChannelSetup now also returns completedAt from
+      // ChannelSetup table so the frontend can gate the operational dashboard.
+      completedAt: null,
     });
   });
 

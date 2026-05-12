@@ -41,6 +41,9 @@ export const BRAIN_EVENT_TAXONOMY = [
   'channel.connected',
   'channel.disconnected',
   'channel.externally_blocked',
+  'pipeline.state.changed',
+  'pipeline.auto_fallback',
+  'pipeline.shadow_recorded',
   'identity.contact.merged',
   'identity.merge_candidate.created',
 ] as const;

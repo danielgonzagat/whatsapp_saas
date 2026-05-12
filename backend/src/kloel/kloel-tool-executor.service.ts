@@ -223,7 +223,7 @@ export class KloelToolExecutorService {
       };
       await tx.workspace.update({
         where: { id: workspaceId },
-        data: { providerSettings: newSettings as Prisma.InputJsonObject },
+        data: { providerSettings: newSettings as unknown as Prisma.InputJsonObject },
       });
       return {
         success: true,

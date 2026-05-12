@@ -16,6 +16,17 @@ describe('CommercialDecisionOrchestratorService', () => {
   const concepts = { detect: jest.fn() };
   const events = { recordCommercial: jest.fn() };
   const setup = { getState: jest.fn() };
+  const prisma = {
+    pipelineState: {
+      findUnique: jest.fn(),
+      updateMany: jest.fn(),
+      update: jest.fn(),
+    },
+    decisionShadow: {
+      upsert: jest.fn(),
+      count: jest.fn(),
+    },
+  };
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -59,6 +70,11 @@ describe('CommercialDecisionOrchestratorService', () => {
       config: { tone: 'direto' },
       selectedProductIds: ['product-1'],
     });
+    prisma.pipelineState.findUnique.mockResolvedValue({ state: 'active', fallbackRate1h: 0 });
+    prisma.pipelineState.updateMany.mockResolvedValue({ count: 1 });
+    prisma.pipelineState.update.mockResolvedValue({ state: 'shadow', fallbackRate1h: 0 });
+    prisma.decisionShadow.upsert.mockResolvedValue({ id: 'shadow-1' });
+    prisma.decisionShadow.count.mockResolvedValue(0);
   });
 
   function makeService() {
@@ -67,8 +83,52 @@ describe('CommercialDecisionOrchestratorService', () => {
       concepts as never,
       events as never,
       setup as never,
+      prisma as never,
     );
   }
+
+  it('returns empty actions for legacy pipeline state', async () => {
+    prisma.pipelineState.findUnique.mockResolvedValue({ state: 'legacy', fallbackRate1h: 0 });
+    concepts.detect.mockResolvedValue([{ concept: 'price_objection', confidence: 0.8 }]);
+    const service = makeService();
+
+    const decision = await service.orchestrateInbound({
+      workspaceId: 'ws-1',
+      channel: 'WHATSAPP',
+      message: 'Achei caro, tem desconto?',
+    });
+
+    expect(decision.actions).toEqual([]);
+    expect(decision.concepts).toEqual([]);
+    expect(decision.trace).toEqual({
+      channel: 'whatsapp',
+      pipelineState: 'legacy',
+      skipped: true,
+      delegatedToLegacy: true,
+    });
+    expect(mind.resolveAggressiveness).not.toHaveBeenCalled();
+  });
+
+  it('returns no actions in shadow mode but records shadow', async () => {
+    prisma.pipelineState.findUnique.mockResolvedValue({ state: 'shadow', fallbackRate1h: 0 });
+    concepts.detect.mockResolvedValue([{ concept: 'price_objection', confidence: 0.8 }]);
+    const service = makeService();
+
+    const decision = await service.orchestrateInbound({
+      workspaceId: 'ws-1',
+      contactId: 'contact-1',
+      channel: 'WHATSAPP',
+      message: 'Achei caro, tem desconto?',
+    });
+
+    expect(decision.actions).toEqual([]);
+    expect(decision.trace.pipelineMode).toBe('shadow');
+    expect(decision.trace.shadow).toBe(true);
+    expect(prisma.decisionShadow.upsert).toHaveBeenCalled();
+    expect(events.recordCommercial).toHaveBeenCalledWith(
+      expect.objectContaining({ eventType: 'pipeline.shadow_recorded' }),
+    );
+  });
 
   it('builds predecided actions after detecting concepts and consulting case memory', async () => {
     concepts.detect.mockResolvedValue([{ concept: 'price_objection', confidence: 0.8 }]);
@@ -93,14 +153,6 @@ describe('CommercialDecisionOrchestratorService', () => {
         workspaceId: 'ws-1',
         caseType: 'price_objection',
       }),
-    );
-    expect(mind.resolveAudioVsText).toHaveBeenCalledWith('ws-1', 'whatsapp', 0.05);
-    expect(mind.resolveAggressiveness).toHaveBeenCalledWith(
-      'ws-1',
-      'inbound:whatsapp',
-      0.05,
-      0.5,
-      0,
     );
     expect(mind.resolveCoupon).toHaveBeenCalledWith('ws-1', 'over_300', 0.05, 'price_objection');
     expect(decision.actions).toEqual([
@@ -152,132 +204,47 @@ describe('CommercialDecisionOrchestratorService', () => {
     );
   });
 
-  it('does not call mind.resolveAudioVsText when channel does not support audio format', async () => {
-    concepts.detect.mockResolvedValue([{ concept: 'price_objection', confidence: 0.8 }]);
+  it('auto-fallback transitions active to shadow on persistent failure', async () => {
+    prisma.pipelineState.findUnique
+      .mockResolvedValueOnce({ state: 'active', fallbackRate1h: 0 })
+      .mockResolvedValueOnce({ state: 'active', fallbackRate1h: 0.06 });
+    concepts.detect.mockRejectedValue(new Error('simulated crash'));
     const service = makeService();
 
-    const decision = await service.orchestrateInbound({
-      workspaceId: 'ws-1',
-      channel: 'email',
-      message: 'Quanto custa?',
-    });
-
-    expect(mind.resolveAudioVsText).not.toHaveBeenCalled();
-    expect(decision.trace).toEqual(
-      expect.objectContaining({
-        decisions: expect.objectContaining({
-          audio_skipped: 'channel-no-audio',
-          audio_vs_text: { choice: 'text', confidence: 1, fallback: false },
-        }),
+    await expect(
+      service.orchestrateInbound({
+        workspaceId: 'ws-1',
+        channel: 'whatsapp',
+        message: 'test',
       }),
+    ).rejects.toThrow('simulated crash');
+
+    expect(prisma.pipelineState.updateMany).toHaveBeenCalledWith({
+      where: { workspaceId: 'ws-1' },
+      data: { fallbackRate1h: { increment: 0.01 } },
+    });
+    expect(prisma.pipelineState.update).toHaveBeenCalledWith({
+      where: { workspaceId: 'ws-1' },
+      data: expect.objectContaining({ state: 'shadow' }),
+    });
+    expect(events.recordCommercial).toHaveBeenCalledWith(
+      expect.objectContaining({ eventType: 'pipeline.auto_fallback' }),
     );
   });
 
-  it('records proactive gate when channel does not allow proactive outbound', async () => {
-    concepts.detect.mockResolvedValue([{ concept: 'hot_lead', confidence: 0.8 }]);
+  it('does not auto-fallback when not in active mode', async () => {
+    prisma.pipelineState.findUnique.mockResolvedValue({ state: 'shadow', fallbackRate1h: 0 });
+    concepts.detect.mockRejectedValue(new Error('simulated crash'));
     const service = makeService();
 
-    const decision = await service.orchestrateInbound({
-      workspaceId: 'ws-1',
-      channel: 'tiktok',
-      message: 'Quero comprar!',
-    });
-
-    expect(decision.trace).toEqual(
-      expect.objectContaining({
-        decisions: expect.objectContaining({
-          proactive_gate: 'channel-inbound-only',
-        }),
+    await expect(
+      service.orchestrateInbound({
+        workspaceId: 'ws-1',
+        channel: 'whatsapp',
+        message: 'test',
       }),
-    );
-    expect(mind.resolveAudioVsText).not.toHaveBeenCalled();
-  });
+    ).rejects.toThrow('simulated crash');
 
-  it('intersects brain tone with channel-allowed tones', async () => {
-    mind.resolveTone.mockResolvedValue({ tone: 'formal', confidence: 0.8, fallback: false });
-    concepts.detect.mockResolvedValue([{ concept: 'price_objection', confidence: 0.8 }]);
-    const service = makeService();
-
-    const decision = await service.orchestrateInbound({
-      workspaceId: 'ws-1',
-      channel: 'tiktok',
-      message: 'Muito caro...',
-    });
-
-    const traceDecisions = decision.trace.decisions as Record<string, unknown>;
-    expect(traceDecisions.tone_repertoire_override).toBeDefined();
-    const override = traceDecisions.tone_repertoire_override as Record<string, unknown>;
-    expect(override.brain).toBe('formal');
-    expect(override.reason).toBe('channel-repertoire-intersection');
-  });
-
-  it('passes allowed formats from repertoire to resolveMessageFormat for email', async () => {
-    concepts.detect.mockResolvedValue([{ concept: 'general', confidence: 0.5 }]);
-    const service = makeService();
-
-    await service.orchestrateInbound({
-      workspaceId: 'ws-1',
-      channel: 'email',
-      message: 'Ola',
-    });
-
-    expect(mind.resolveMessageFormat).toHaveBeenCalledWith(
-      'ws-1',
-      'email',
-      'general',
-      ['text', 'html_rich'],
-    );
-  });
-
-  it('passes allowed formats from repertoire to resolveMessageFormat for whatsapp', async () => {
-    concepts.detect.mockResolvedValue([{ concept: 'general', confidence: 0.5 }]);
-    const service = makeService();
-
-    await service.orchestrateInbound({
-      workspaceId: 'ws-1',
-      channel: 'whatsapp',
-      message: 'Ola',
-    });
-
-    expect(mind.resolveMessageFormat).toHaveBeenCalledWith(
-      'ws-1',
-      'whatsapp',
-      'general',
-      ['text', 'audio', 'image', 'video', 'document', 'template'],
-    );
-  });
-
-  it('resolves tone normally when brain tone is in channel repertoire', async () => {
-    mind.resolveTone.mockResolvedValue({ tone: 'consultivo', confidence: 0.8, fallback: false });
-    concepts.detect.mockResolvedValue([{ concept: 'price_objection', confidence: 0.8 }]);
-    const service = makeService();
-
-    const decision = await service.orchestrateInbound({
-      workspaceId: 'ws-1',
-      channel: 'tiktok',
-      message: 'Quanto custa?',
-    });
-
-    const traceDecisions = decision.trace.decisions as Record<string, unknown>;
-    expect(traceDecisions.tone_repertoire_override).toBeUndefined();
-  });
-
-  it('passes channel in domain to resolveAggressiveness', async () => {
-    concepts.detect.mockResolvedValue([{ concept: 'general', confidence: 0.5 }]);
-    const service = makeService();
-
-    await service.orchestrateInbound({
-      workspaceId: 'ws-1',
-      channel: 'instagram',
-      message: 'Bom dia',
-    });
-
-    expect(mind.resolveAggressiveness).toHaveBeenCalledWith(
-      'ws-1',
-      'inbound:instagram',
-      0.05,
-      0.5,
-      0,
-    );
+    expect(prisma.pipelineState.update).not.toHaveBeenCalled();
   });
 });

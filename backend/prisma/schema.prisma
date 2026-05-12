@@ -4439,3 +4439,33 @@ model IgInsight {
   @@index([workspaceId, date])
   @@map("RAC_IgInsight")
 }
+
+model PipelineState {
+  id             String   @id @default(cuid())
+  workspaceId    String   @unique
+  state          String   @default("legacy")
+  transitionedAt DateTime @default(now())
+  transitionedBy String?
+  snapshot       Json?
+  fallbackRate1h Float    @default(0)
+
+  @@index([state])
+  @@map("RAC_PipelineState")
+}
+
+model DecisionShadow {
+  id                    String   @id @default(cuid())
+  workspaceId           String
+  channel               String
+  inboundCorrelationId  String
+  orchestratorDecision  Json
+  legacyBaseline        Json
+  outcomeKey            String
+  outcomeAt             DateTime?
+  outcomeValue          Json?
+  createdAt             DateTime @default(now())
+
+  @@index([workspaceId, channel, createdAt])
+  @@unique([workspaceId, inboundCorrelationId])
+  @@map("RAC_DecisionShadow")
+}

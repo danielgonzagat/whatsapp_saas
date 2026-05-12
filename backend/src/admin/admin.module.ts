@@ -16,6 +16,7 @@ import { AdminMindModule } from './mind/admin-mind.module';
 import { AdminNotificationsModule } from './notifications/admin-notifications.module';
 import { AdminOperationsModule } from './operations/operations.module';
 import { AdminPermissionsModule } from './permissions/admin-permissions.module';
+import { AdminPipelineModule } from './pipeline/pipeline.module';
 import { AdminProductsModule } from './products/admin-products.module';
 import { AdminReportsModule } from './reports/admin-reports.module';
 import { AdminSalesModule } from './sales/admin-sales.module';
@@ -51,6 +52,7 @@ import { AdminUsersModule } from './users/admin-users.module';
     AdminSupportModule,
     AdminSeedModule,
     AdminOperationsModule,
+    AdminPipelineModule,
   ],
   providers: [
     {

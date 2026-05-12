@@ -497,7 +497,7 @@ export class MarketingConnectController {
               ...allSetups,
               [channel]: nextSetup,
             },
-          } as Prisma.InputJsonObject,
+          } as unknown as Prisma.InputJsonObject,
         },
       }),
       this.prisma.channelSetup.upsert({
@@ -645,7 +645,7 @@ export class MarketingConnectController {
               : {}),
             enabled: nextEnabled,
           },
-        } as Prisma.InputJsonObject,
+        } as unknown as Prisma.InputJsonObject,
       },
     });
 

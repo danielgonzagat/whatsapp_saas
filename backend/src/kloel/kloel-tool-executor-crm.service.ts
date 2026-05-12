@@ -136,7 +136,7 @@ export class KloelToolExecutorCrmService {
               ...currentSettings,
               businessDescription: description,
               businessSegment: segment,
-            } as Prisma.InputJsonObject,
+            } as unknown as Prisma.InputJsonObject,
             ...(businessName ? { name: businessName } : {}),
           },
         });
@@ -165,7 +165,7 @@ export class KloelToolExecutorCrmService {
           providerSettings: {
             ...currentSettings,
             businessHours,
-          } as Prisma.InputJsonObject,
+          } as unknown as Prisma.InputJsonObject,
         },
       });
     });
