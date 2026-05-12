@@ -254,16 +254,61 @@ export class CommercialDecisionOrchestratorService {
 
     let productOffer: string | undefined;
     let productOfferDecision: Record<string, unknown> | undefined;
+    const allowedProductIds = channelSetup?.selectedProductIds ?? [];
     if (hasConcept(conceptRows, 'imminent_purchase') || hasConcept(conceptRows, 'hot_lead')) {
-      const product = await this.mind.resolveProductOffer(
-        input.workspaceId,
-        'new_lead',
-        concept,
-        priceBand,
-      );
-      decisions.product_offer = product;
-      productOfferDecision = product;
-      productOffer = product.offer;
+      if (allowedProductIds.length === 0 && channelSetup) {
+        // P1.4 — channel has been set up but no products selected for it.
+        // Recommending anything here would offer a product the operator did
+        // not authorize for the channel. Skip the offer and record the gap.
+        decisions.product_offer = {
+          offer: 'cold_start_no_products',
+          confidence: 0,
+          fallback: true,
+          reason: 'channel-setup has zero selectedProductIds',
+        };
+      } else {
+        const product = await this.mind.resolveProductOffer(
+          input.workspaceId,
+          'new_lead',
+          concept,
+          priceBand,
+          undefined,
+          { channel, allowedProductIds },
+        );
+        decisions.product_offer = product;
+        productOfferDecision = product;
+        productOffer = product.offer;
+      }
+    }
+
+    // P1.4 — enforce wizard-config ceilings. If the operator capped
+    // aggressiveness at "normal" or "baixa", the brain cannot escalate to
+    // "alta"/"agressiva" regardless of what scoring chose. Decision is
+    // recorded honestly in the trace so this override is auditable.
+    const aggressivenessCeiling = String(channelSetup?.config?.aggressiveness || '').toLowerCase();
+    const brainAggressiveness = String(aggressiveness.aggressiveness || '').toLowerCase();
+    const aggressivenessRank = (label: string): number => {
+      if (label.includes('alta') || label.includes('agress')) return 3;
+      if (label.includes('normal') || label.includes('moder')) return 2;
+      if (label.includes('baixa')) return 1;
+      return 2; // unknown -> treat as normal
+    };
+    const effectiveAggressiveness =
+      aggressivenessCeiling &&
+      aggressivenessRank(brainAggressiveness) > aggressivenessRank(aggressivenessCeiling)
+        ? aggressivenessCeiling
+        : aggressivenessRank(brainAggressiveness) === aggressivenessRank(aggressivenessCeiling)
+          ? brainAggressiveness
+          : brainAggressiveness;
+    if (
+      aggressivenessCeiling &&
+      effectiveAggressiveness !== brainAggressiveness
+    ) {
+      decisions.aggressiveness_ceiling_applied = {
+        brain: brainAggressiveness,
+        ceiling: aggressivenessCeiling,
+        effective: effectiveAggressiveness,
+      };
     }
 
     let humanTransferDecision: Record<string, unknown> | undefined;
@@ -295,12 +340,12 @@ export class CommercialDecisionOrchestratorService {
           })
       : undefined;
     const internalReplyPlan: InternalReplyPlan = {
-      aggressiveness: aggressiveness.aggressiveness,
+      aggressiveness: effectiveAggressiveness || aggressiveness.aggressiveness,
       concept,
       ...(couponAction !== undefined ? { couponAction } : {}),
       ...(productOffer !== undefined ? { productOffer } : {}),
       ...(setupContext !== undefined ? { setup: setupContext } : {}),
-      tone: tone.tone,
+      tone: channelTone || tone.tone,
     };
     const customerMessage = composeCustomerMessage(internalReplyPlan);
     // Guard: refuse to enqueue any send_message whose payload matches an

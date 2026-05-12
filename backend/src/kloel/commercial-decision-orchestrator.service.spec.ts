@@ -135,6 +135,8 @@ describe('CommercialDecisionOrchestratorService', () => {
       'new_lead',
       'imminent_purchase',
       'unknown',
+      undefined,
+      expect.objectContaining({ channel: 'instagram' }),
     );
     expect(mind.resolveHumanTransfer).toHaveBeenCalledWith(
       'ws-1',

@@ -291,6 +291,7 @@ export class MindService {
     concept: string,
     priceBand: string,
     lastPurchase?: string,
+    channelConstraint?: { channel?: string; allowedProductIds?: string[] },
   ): Promise<{ offer: string; confidence: number; fallback: boolean }> {
     return resolveProductOfferDecision(
       this.policy,
@@ -299,6 +300,7 @@ export class MindService {
       concept,
       priceBand,
       lastPurchase,
+      channelConstraint,
     );
   }
 
