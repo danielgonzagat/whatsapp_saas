@@ -1,8 +1,4 @@
-import {
-  buildDiagnosticsPayload,
-  humanizeMetaError,
-  sanitizeReturnTo,
-} from './meta-auth-helpers';
+import { buildDiagnosticsPayload, humanizeMetaError, sanitizeReturnTo } from './meta-auth-helpers';
 import type { ResolvedOAuthRedirect } from './meta-oauth-url.helpers';
 
 const FRONTEND = 'https://app.kloel.com';
@@ -15,9 +11,7 @@ describe('sanitizeReturnTo', () => {
   });
 
   it('preserves query string and hash for safe paths', () => {
-    expect(sanitizeReturnTo('/inbox?tab=open#42', 'whatsapp', FRONTEND)).toBe(
-      '/inbox?tab=open#42',
-    );
+    expect(sanitizeReturnTo('/inbox?tab=open#42', 'whatsapp', FRONTEND)).toBe('/inbox?tab=open#42');
   });
 
   it('rejects protocol-relative URLs that would redirect off-site', () => {
@@ -102,10 +96,7 @@ describe('humanizeMetaError', () => {
   });
 
   it('detects "no business" prose message', () => {
-    const out = humanizeMetaError(
-      'User is not associated with a verified business',
-      undefined,
-    );
+    const out = humanizeMetaError('User is not associated with a verified business', undefined);
     expect(out.toLowerCase()).toContain('business manager');
   });
 
@@ -141,7 +132,7 @@ describe('buildDiagnosticsPayload', () => {
         META_APP_SECRET: 'secret',
         META_VERIFY_TOKEN: 'verify',
         META_GRAPH_API_VERSION: 'v21.0',
-      } as NodeJS.ProcessEnv,
+      },
       resolved: good(),
       frontendUrl: FRONTEND,
       scopesByChannel: {
@@ -171,7 +162,7 @@ describe('buildDiagnosticsPayload', () => {
       env: {
         META_APP_ID: '12345',
         META_APP_SECRET: 'super-secret-do-not-leak',
-      } as NodeJS.ProcessEnv,
+      },
       resolved: good(),
       frontendUrl: FRONTEND,
       scopesByChannel: { whatsapp: [], instagram: [], facebook: [] },
@@ -182,7 +173,7 @@ describe('buildDiagnosticsPayload', () => {
 
   it('flags fallback redirect URI in checklist', () => {
     const payload = buildDiagnosticsPayload({
-      env: { META_APP_ID: 'app', META_APP_SECRET: 'sec' } as NodeJS.ProcessEnv,
+      env: { META_APP_ID: 'app', META_APP_SECRET: 'sec' },
       resolved: fallback(),
       frontendUrl: FRONTEND,
       scopesByChannel: { whatsapp: [], instagram: [], facebook: [] },
@@ -193,7 +184,7 @@ describe('buildDiagnosticsPayload', () => {
 
   it('returns appId=null when META_APP_ID is empty', () => {
     const payload = buildDiagnosticsPayload({
-      env: {} as NodeJS.ProcessEnv,
+      env: {},
       resolved: fallback(),
       frontendUrl: FRONTEND,
       scopesByChannel: { whatsapp: [], instagram: [], facebook: [] },

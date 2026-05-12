@@ -37,7 +37,7 @@ describe('runMetaStartupCheck', () => {
         META_APP_SECRET: 'secret',
         FRONTEND_URL: 'https://app.kloel.com',
         META_VERIFY_TOKEN: 'verify',
-      } as NodeJS.ProcessEnv,
+      },
       resolved: good(),
       logger,
     });
@@ -54,7 +54,7 @@ describe('runMetaStartupCheck', () => {
         META_APP_ID: 'app-1',
         META_APP_SECRET: 'secret',
         FRONTEND_URL: 'https://app.kloel.com',
-      } as NodeJS.ProcessEnv,
+      },
       resolved: fallback(),
       logger,
     });
@@ -66,7 +66,7 @@ describe('runMetaStartupCheck', () => {
   it('flags missing required vars in production', () => {
     const logger = loggerSpy();
     const r = runMetaStartupCheck({
-      env: { NODE_ENV: 'production', FRONTEND_URL: 'https://app.kloel.com' } as NodeJS.ProcessEnv,
+      env: { NODE_ENV: 'production', FRONTEND_URL: 'https://app.kloel.com' },
       resolved: good(),
       logger,
     });
@@ -78,7 +78,7 @@ describe('runMetaStartupCheck', () => {
   it('does not gate dev mode on missing vars', () => {
     const logger = loggerSpy();
     const r = runMetaStartupCheck({
-      env: { NODE_ENV: 'development' } as NodeJS.ProcessEnv,
+      env: { NODE_ENV: 'development' },
       resolved: fallback(),
       logger,
     });
@@ -94,7 +94,7 @@ describe('runMetaStartupCheck', () => {
         META_APP_ID: 'app',
         META_APP_SECRET: 's',
         FRONTEND_URL: 'http://app.kloel.com',
-      } as NodeJS.ProcessEnv,
+      },
       resolved: {
         redirectUri: 'http://api.kloel.com/meta/auth/callback',
         source: 'BACKEND_PUBLIC_URL',

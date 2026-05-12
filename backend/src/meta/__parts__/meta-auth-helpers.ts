@@ -63,10 +63,7 @@ export function sanitizeReturnTo(
  *
  * Reference: https://developers.facebook.com/docs/graph-api/guides/error-handling/
  */
-export function humanizeMetaError(
-  rawMessage: string,
-  errorCode?: string | number | null,
-): string {
+export function humanizeMetaError(rawMessage: string, errorCode?: string | number | null): string {
   const msg = rawMessage.toLowerCase();
   const code = String(errorCode || '').trim();
 
@@ -117,7 +114,10 @@ export function humanizeMetaError(
   if (msg.includes('no page') || msg.includes('no pages')) {
     return 'O usuario Meta nao possui uma pagina do Facebook associada. Crie a pagina e tente conectar de novo.';
   }
-  if (msg.includes('instagram') && (msg.includes('not connected') || msg.includes('no instagram'))) {
+  if (
+    msg.includes('instagram') &&
+    (msg.includes('not connected') || msg.includes('no instagram'))
+  ) {
     return 'Sua pagina do Facebook nao possui uma conta Instagram Business vinculada. Vincule pela pagina e reconecte.';
   }
   if (msg.includes('permission') || msg.includes('permissions')) {

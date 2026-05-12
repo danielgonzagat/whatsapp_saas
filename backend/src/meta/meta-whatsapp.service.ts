@@ -6,9 +6,17 @@ import { MetaSdkService } from './meta-sdk.service';
 import { decryptMetaToken } from './meta-token-crypto';
 import { asProviderSettings } from '../whatsapp/provider-settings.types';
 import { readRecord, readStrictText } from './__companions__/meta-read-helpers';
-import { resolveOAuthRedirect, resolvePublicBackendBaseUrl, type ResolvedOAuthRedirect } from './__companions__/meta-oauth-url.helpers';
-import { runMetaStartupCheck } from './__companions__/meta-startup-check';
-import { EMBEDDED_SIGNUP_SUPERSET_SCOPES, getRequestedScopesForChannel, type MetaMarketingChannel } from './__companions__/meta-scopes.helpers';
+import {
+  resolveOAuthRedirect,
+  resolvePublicBackendBaseUrl,
+  type ResolvedOAuthRedirect,
+} from './__parts__/meta-oauth-url.helpers';
+import { runMetaStartupCheck } from './__parts__/meta-startup-check';
+import {
+  EMBEDDED_SIGNUP_SUPERSET_SCOPES,
+  getRequestedScopesForChannel,
+  type MetaMarketingChannel,
+} from './__parts__/meta-scopes.helpers';
 
 const D_RE = /\D/g;
 

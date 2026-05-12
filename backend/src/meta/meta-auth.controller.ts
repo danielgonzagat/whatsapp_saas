@@ -26,7 +26,7 @@ import {
   buildDiagnosticsPayload,
   humanizeMetaError,
   sanitizeReturnTo as sanitizeReturnToHelper,
-} from './__companions__/meta-auth-helpers';
+} from './__parts__/meta-auth-helpers';
 
 /**
  * Meta Platform OAuth controller.

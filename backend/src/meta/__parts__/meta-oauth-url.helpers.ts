@@ -1,4 +1,4 @@
-import { readText } from './meta-read-helpers';
+import { readText } from '../__companions__/meta-read-helpers';
 
 const TRAILING_SLASH_RE = /\/+$/;
 const ABSOLUTE_URL_RE = /^https?:\/\//i;
