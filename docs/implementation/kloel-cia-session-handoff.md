@@ -1,15 +1,15 @@
 # Kloel CIA Session Handoff
 
-Updated: 2026-05-12T14:38:00-03:00
+Updated: 2026-05-12T14:45:00-03:00
 
 ## Onde parou exatamente
 
-Wave 0 discovery artifacts are active and W1-W9 have focused code-side slices delivered with evidence, but completion remains blocked by external provider smokes and open dependency-register items. W1 persists the official channel four-step wizard spine through `Workspace.providerSettings.marketingChannelSetup`; Playwright proves four steps at desktop/mobile widths, product persistence, and Meta disconnect double-confirmation. W2 hardens code-side Meta OAuth URL generation with channel-specific Config IDs/scopes, adds the `facebook` status alias, and rejects unsigned Meta webhook POSTs when `META_APP_SECRET` is configured. W3 hardens TikTok webhook signature handling and adds backend disconnect. W4 delivers code-side Gmail/Microsoft/IMAP mailbox foundations through EMAIL-10, including encrypted token storage, Gmail sync/send, Microsoft OAuth base, IMAP+SMTP validation, suppression checks, and mailbox metrics, while live mailbox smokes remain external. W5/W6 route TikTok/Omnichannel perception toward the same `UnifiedAgentService` and prove owner strategic policy persistence into CIA prompt context. W7/W8 add checkout-paid wallet/chat context and high-risk `ApprovalRequest` gates. On 2026-05-12, after the merge from `origin/main`, this orchestrator recovered the frontend TypeScript gate, ran Batch 17 read-only audits for V23 anti-fake/provider readiness, implemented frontend V23 truthfulness fixes, verified the external backend strict-mode repair after its OpenCode process exited, verified the guest-chat Redis persistence slice, aligned checkout boleto UI with the backend's current card/PIX-only rail, removed remaining active-product boleto copy/link badges, and hardened the direct boleto route to show a no-boleto state when no boleto data exists.
+Wave 0 discovery artifacts are active and W1-W9 have focused code-side slices delivered with evidence, but completion remains blocked by external provider smokes and open dependency-register items. W1 persists the official channel four-step wizard spine through `Workspace.providerSettings.marketingChannelSetup`; Playwright proves four steps at desktop/mobile widths, product persistence, and Meta disconnect double-confirmation. W2 hardens code-side Meta OAuth URL generation with channel-specific Config IDs/scopes, adds the `facebook` status alias, and rejects unsigned Meta webhook POSTs when `META_APP_SECRET` is configured. W3 hardens TikTok webhook signature handling and adds backend disconnect. W4 delivers code-side Gmail/Microsoft/IMAP mailbox foundations through EMAIL-10, including encrypted token storage, Gmail sync/send, Microsoft OAuth base, IMAP+SMTP validation, suppression checks, and mailbox metrics, while live mailbox smokes remain external. W5/W6 route TikTok/Omnichannel perception toward the same `UnifiedAgentService` and prove owner strategic policy persistence into CIA prompt context. W7/W8 add checkout-paid wallet/chat context and high-risk `ApprovalRequest` gates. On 2026-05-12, after the merge from `origin/main`, this orchestrator recovered the frontend TypeScript gate, ran Batch 17 read-only audits for V23 anti-fake/provider readiness, implemented frontend V23 truthfulness fixes, verified the external backend strict-mode repair after its OpenCode process exited, verified the guest-chat Redis persistence slice, aligned checkout boleto UI with the backend's current card/PIX-only rail, removed remaining active-product boleto copy/link badges, hardened the direct boleto route to show a no-boleto state, and added a billing mock-mode guard regression spec.
 
 ## Branch atual e ultimo commit
 
 - Branch: `chore/purga-total-debt`
-- HEAD: `a133185dc [W9] Corrigir rota de boleto sem dados`
+- HEAD: `fc5d235b5 [W9] Provar bloqueio de mock billing`
 - Note: prior handoff referenced `feat/kloel-cia-convergence`, but the live checkout is currently `chore/purga-total-debt`; do not infer branch state from older docs.
 
 ## Gates passados na sessao
@@ -129,6 +129,10 @@ Wave 0 discovery artifacts are active and W1-W9 have focused code-side slices de
 - `npx prettier --write frontend/src/app/'(checkout)'/order/'[orderId]'/boleto/page.tsx`: passed after checkout boleto route truthfulness hardening.
 - `npm --prefix frontend run typecheck -- --pretty false`: passed after checkout boleto route truthfulness hardening.
 - `npm exec eslint -- src/app/'(checkout)'/order/'[orderId]'/boleto/page.tsx` from `frontend/`: passed after checkout boleto route truthfulness hardening.
+- `npx prettier --write backend/src/billing/billing-checkout-webhook.service.spec.ts`: passed after billing mock guard regression spec.
+- `npm --prefix backend test -- billing-checkout-webhook.service.spec.ts --runInBand`: passed after billing mock guard regression spec, 1 suite / 2 tests.
+- `npm run backend:typecheck`: passed after billing mock guard regression spec.
+- `npm exec eslint -- src/billing/billing-checkout-webhook.service.spec.ts src/billing/billing-checkout-webhook.service.ts` from `backend/`: passed after billing mock guard regression spec.
 - `npm run worker:typecheck`: passed.
 - `npm --prefix backend run build`: passed.
 - `npm --prefix worker run build`: passed.
@@ -232,7 +236,7 @@ No `opencode run` process remains active after workspace stabilization. The prev
 
 ## Subagents concluidos nao revisados
 
-`kloel-cia-batch-15-frontend-typecheck-2026-05-12` is rejected as a subagent-complete delivery because task `A-frontend-typecheck-recovery` ended with SIGKILL after 600s. Its partial frontend diff was manually reviewed, completed, formatted and validated by this orchestrator. `kloel-cia-batch-16-readonly-readiness-2026-05-12` ended 1/3 ok: accepted `A-golden-path-readiness-audit` as read-only Golden Path mapping; rejected `B-anti-fake-ui-endpoint-audit` and `C-provider-readiness-audit` as incomplete because both timed out/SIGKILL without final reports. Batch 17 live read-only OpenCode outputs are reviewed: accepted `v23-anti-fake.out` with manual corrections, accepted `provider-readiness.out`, rejected `obsidian-macro.out` as completed subagent evidence because external-vault reads were denied. Older accepted/rejected fleet statuses from 2026-05-11 remain as previously recorded.
+`kloel-cia-batch-15-frontend-typecheck-2026-05-12` is rejected as a subagent-complete delivery because task `A-frontend-typecheck-recovery` ended with SIGKILL after 600s. Its partial frontend diff was manually reviewed, completed, formatted and validated by this orchestrator. `kloel-cia-batch-16-readonly-readiness-2026-05-12` ended 1/3 ok: accepted `A-golden-path-readiness-audit` as read-only Golden Path mapping; rejected `B-anti-fake-ui-endpoint-audit` and `C-provider-readiness-audit` as incomplete because both timed out/SIGKILL without final reports. Batch 17 live read-only OpenCode outputs are reviewed: accepted `v23-anti-fake.out` with manual corrections, accepted `provider-readiness.out`, rejected `obsidian-macro.out` as completed subagent evidence because external-vault reads were denied. Batch 18 read-only OpenCode outputs under `artifacts/opencode-live/kloel-cia-batch-18-v23-readonly-2026-05-12/` are rejected as complete evidence because all three workers exited with code `-1` and produced only partial progress lines. Older accepted/rejected fleet statuses from 2026-05-11 remain as previously recorded.
 
 ## Bloqueios externos vigentes
 
@@ -242,4 +246,4 @@ No `opencode run` process remains active after workspace stabilization. The prev
 
 ## Proxima acao exata
 
-Next action: commit/push the checkout boleto route truthfulness hardening, leaving untracked OpenCode prompt drafts out of the commit. After publication, continue V23 backlog with any billing mock hardening not already covered by production guards and then refresh the Vision Traceability statuses for this W9 cluster.
+Next action: commit/push the billing mock guard regression spec, leaving untracked OpenCode prompt drafts out of the commit. After publication, refresh the Vision Traceability statuses for the W9 V23 cluster and continue with any remaining fake-completion checks that have repo evidence.
