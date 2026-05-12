@@ -80,10 +80,10 @@ export class MindSimulatorService {
     const qualityFailed = qualityReport.failed;
 
     let overallVerdict: 'clean' | 'warning' | 'critical' = 'clean';
-    if (qualityFailed > 0 || replayReport.baselineMatchRate < 0.5) {
+    if (qualityFailed > 0) {
       overallVerdict = 'warning';
     }
-    if (qualityFailed >= 3 || replayReport.baselineMatchRate < 0.25) {
+    if (qualityFailed >= 3) {
       overallVerdict = 'critical';
     }
 

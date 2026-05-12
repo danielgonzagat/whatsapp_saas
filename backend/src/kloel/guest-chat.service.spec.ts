@@ -21,6 +21,7 @@ describe('GuestChatService', () => {
   let chatCompletionWithFallbackMock: jest.Mock;
   let chatCompletionWithRetryMock: jest.Mock;
   let mockConfigGet: jest.Mock;
+  let mockRedis: { get: jest.Mock; set: jest.Mock };
 
   const unavailableMessage =
     'Eu continuo aqui, mas a camada de IA esta instavel agora. Tenta de novo em alguns segundos que eu retomo de onde paramos.';
@@ -41,7 +42,11 @@ describe('GuestChatService', () => {
     };
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [GuestChatService, { provide: ConfigService, useValue: mockConfig }],
+      providers: [
+        GuestChatService,
+        { provide: ConfigService, useValue: mockConfig },
+        { provide: 'default_IORedisModuleConnectionToken', useValue: mockRedis },
+      ],
     }).compile();
 
     service = module.get<GuestChatService>(GuestChatService);
@@ -55,6 +60,10 @@ describe('GuestChatService', () => {
       }
       return undefined;
     });
+    mockRedis = {
+      get: jest.fn().mockResolvedValue(null),
+      set: jest.fn().mockResolvedValue('OK'),
+    };
     await createService();
   });
 
@@ -83,6 +92,45 @@ describe('GuestChatService', () => {
 
       expect(reply).toBe('Olá João! Em que posso ajudar?');
       expect(chatCompletionWithFallbackMock).toHaveBeenCalledTimes(2);
+    });
+
+    it('persists guest conversation updates in Redis with a 24h TTL', async () => {
+      await service.chatSync('Persistir conversa', 'redis-session');
+
+      expect(mockRedis.set).toHaveBeenCalledWith(
+        'kloel:guest-chat:redis-session',
+        expect.stringContaining('Persistir conversa'),
+        'EX',
+        86_400,
+      );
+      expect(mockRedis.set).toHaveBeenCalledWith(
+        'kloel:guest-chat:redis-session',
+        expect.stringContaining('Olá! Como posso ajudar?'),
+        'EX',
+        86_400,
+      );
+    });
+
+    it('loads existing guest conversation context from Redis', async () => {
+      mockRedis.get.mockResolvedValueOnce(
+        JSON.stringify({
+          messages: [
+            { role: 'user', content: 'Mensagem antiga' },
+            { role: 'assistant', content: 'Resposta antiga' },
+          ],
+          createdAt: new Date().toISOString(),
+          lastMessageAt: new Date().toISOString(),
+        }),
+      );
+
+      await service.chatSync('Continuar', 'stored-session');
+
+      const completionCalls = chatCompletionWithFallbackMock.mock
+        .calls as Array<[unknown, { messages?: Array<{ content?: string }> }]>;
+      const completionInput = completionCalls[0]?.[1];
+      expect(
+        completionInput?.messages?.some((message) => message.content === 'Mensagem antiga'),
+      ).toBe(true);
     });
 
     it('returns unavailable message when API key is missing', async () => {

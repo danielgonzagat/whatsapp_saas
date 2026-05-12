@@ -1,6 +1,8 @@
+import { InjectRedis } from '@nestjs-modules/ioredis';
 import { Injectable, Logger, OnModuleDestroy, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Request, Response } from 'express';
+import type Redis from 'ioredis';
 import OpenAI from 'openai';
 import { findFirstSequential } from '../common/async-sequence';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
@@ -14,7 +16,9 @@ interface GuestConversation {
   lastMessageAt: Date;
 }
 
-// cache.invalidate — guest conversations stored in-memory Map; cleaned up via periodic timer
+const GUEST_CONVERSATION_TTL_SECONDS = 24 * 60 * 60;
+
+// cache.invalidate — Redis is the primary guest conversation store; local Map is fallback.
 @Injectable()
 export class GuestChatService implements OnModuleDestroy {
   private readonly logger = new Logger(GuestChatService.name);
@@ -22,7 +26,7 @@ export class GuestChatService implements OnModuleDestroy {
   private readonly unavailableMessage =
     'Eu continuo aqui, mas a camada de IA esta instavel agora. Tenta de novo em alguns segundos que eu retomo de onde paramos.';
 
-  // In-memory store para conversas de visitantes (em produção, usar Redis)
+  // Local fallback when Redis is temporarily unavailable.
   private conversations: Map<string, GuestConversation> = new Map();
 
   // Limpar conversas antigas a cada 1 hora
@@ -31,6 +35,7 @@ export class GuestChatService implements OnModuleDestroy {
   constructor(
     private readonly configService: ConfigService,
     @Optional() private readonly opsAlert?: OpsAlertService,
+    @Optional() @InjectRedis() private readonly redis?: Redis,
   ) {
     const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
 
@@ -78,10 +83,11 @@ export class GuestChatService implements OnModuleDestroy {
     res.write(`data: ${JSON.stringify(data)}\n\n`);
   }
 
-  private buildGuestMessages(message: string, sessionId: string) {
-    const conversation = this.getOrCreateConversation(sessionId);
+  private async buildGuestMessages(message: string, sessionId: string) {
+    const conversation = await this.getOrCreateConversation(sessionId);
     conversation.messages.push({ role: 'user', content: message });
     conversation.lastMessageAt = new Date();
+    await this.persistConversation(sessionId, conversation);
 
     const contextMessages = [
       { role: 'system' as const, content: KLOEL_GUEST_SYSTEM_PROMPT },
@@ -204,7 +210,7 @@ export class GuestChatService implements OnModuleDestroy {
         return;
       }
 
-      const { conversation, contextMessages } = this.buildGuestMessages(message, sessionId);
+      const { conversation, contextMessages } = await this.buildGuestMessages(message, sessionId);
 
       const fullResponse = await this.generateGuestReply(contextMessages, sessionId);
 
@@ -216,6 +222,7 @@ export class GuestChatService implements OnModuleDestroy {
 
       // Salvar resposta na conversa
       conversation.messages.push({ role: 'assistant', content: fullResponse });
+      await this.persistConversation(sessionId, conversation);
 
       // Enviar done
       res.write(`data: [DONE]\n\n`);
@@ -248,7 +255,7 @@ export class GuestChatService implements OnModuleDestroy {
         return this.unavailableMessage;
       }
 
-      const { conversation, contextMessages } = this.buildGuestMessages(message, sessionId);
+      const { conversation, contextMessages } = await this.buildGuestMessages(message, sessionId);
 
       this.logger.log(
         `Guest chat sync: session=${sessionId}, message="${message.substring(0, 50)}..."`,
@@ -257,6 +264,7 @@ export class GuestChatService implements OnModuleDestroy {
       const reply = await this.generateGuestReply(contextMessages, sessionId);
 
       conversation.messages.push({ role: 'assistant', content: reply });
+      await this.persistConversation(sessionId, conversation);
 
       this.logger.log(`Guest chat sync reply: ${reply.substring(0, 100)}...`);
 
@@ -274,25 +282,82 @@ export class GuestChatService implements OnModuleDestroy {
   /**
    * 📋 Obter ou criar conversa
    */
-  private getOrCreateConversation(sessionId: string): GuestConversation {
-    if (!this.conversations.has(sessionId)) {
-      this.conversations.set(sessionId, {
-        messages: [],
-        createdAt: new Date(),
-        lastMessageAt: new Date(),
-      });
+  private getRedisKey(sessionId: string): string {
+    return `kloel:guest-chat:${sessionId}`;
+  }
+
+  private parseConversation(raw: string | null): GuestConversation | null {
+    if (!raw) {
+      return null;
     }
-    const conversation = this.conversations.get(sessionId);
-    if (!conversation) {
-      const created: GuestConversation = {
-        messages: [],
-        createdAt: new Date(),
-        lastMessageAt: new Date(),
+    try {
+      const parsed = JSON.parse(raw) as {
+        messages?: GuestConversation['messages'];
+        createdAt?: string;
+        lastMessageAt?: string;
       };
-      this.conversations.set(sessionId, created);
-      return created;
+      if (!Array.isArray(parsed.messages)) {
+        return null;
+      }
+      return {
+        messages: parsed.messages,
+        createdAt: parsed.createdAt ? new Date(parsed.createdAt) : new Date(),
+        lastMessageAt: parsed.lastMessageAt ? new Date(parsed.lastMessageAt) : new Date(),
+      };
+    } catch {
+      return null;
     }
-    return conversation;
+  }
+
+  private async getOrCreateConversation(sessionId: string): Promise<GuestConversation> {
+    const cached = this.conversations.get(sessionId);
+    if (cached) {
+      return cached;
+    }
+
+    if (this.redis) {
+      try {
+        const stored = this.parseConversation(await this.redis.get(this.getRedisKey(sessionId)));
+        if (stored) {
+          this.conversations.set(sessionId, stored);
+          return stored;
+        }
+      } catch (error: unknown) {
+        this.logger.warn(
+          `Guest chat Redis read failed (${error instanceof Error ? error.message : 'unknown_error'}). Falling back to local cache.`,
+        );
+      }
+    }
+
+    const created: GuestConversation = {
+      messages: [],
+      createdAt: new Date(),
+      lastMessageAt: new Date(),
+    };
+    this.conversations.set(sessionId, created);
+    return created;
+  }
+
+  private async persistConversation(
+    sessionId: string,
+    conversation: GuestConversation,
+  ): Promise<void> {
+    this.conversations.set(sessionId, conversation);
+    if (!this.redis) {
+      return;
+    }
+    try {
+      await this.redis.set(
+        this.getRedisKey(sessionId),
+        JSON.stringify(conversation),
+        'EX',
+        GUEST_CONVERSATION_TTL_SECONDS,
+      );
+    } catch (error: unknown) {
+      this.logger.warn(
+        `Guest chat Redis write failed (${error instanceof Error ? error.message : 'unknown_error'}). Continuing with local cache.`,
+      );
+    }
   }
 
   /**
