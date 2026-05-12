@@ -13,6 +13,7 @@ import { AdminDashboardModule } from './dashboard/admin-dashboard.module';
 import { AdminDestructiveModule } from './destructive/admin-destructive.module';
 import { AdminMarketingModule } from './marketing/admin-marketing.module';
 import { AdminNotificationsModule } from './notifications/admin-notifications.module';
+import { AdminOperationsModule } from './operations/operations.module';
 import { AdminPermissionsModule } from './permissions/admin-permissions.module';
 import { AdminProductsModule } from './products/admin-products.module';
 import { AdminReportsModule } from './reports/admin-reports.module';
@@ -47,6 +48,7 @@ import { AdminUsersModule } from './users/admin-users.module';
     AdminSessionsModule,
     AdminSupportModule,
     AdminSeedModule,
+    AdminOperationsModule,
   ],
   providers: [
     {

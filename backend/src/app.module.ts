@@ -82,6 +82,8 @@ import { MarketingModule } from './marketing/marketing.module';
 import { MarketplaceModule } from './marketplace/marketplace.module';
 import { MemberAreaModule } from './member-area/member-area.module';
 import { MetaModule } from './meta/meta.module';
+import { CorrelationIdMiddleware } from './common/observability/correlation-id.middleware';
+import { ObservabilityModule } from './common/observability/observability.module';
 import { OpsAlertModule } from './observability/ops-alert.module';
 import { OpsModule } from './ops/ops.module';
 import { PartnershipsModule } from './partnerships/partnerships.module';
@@ -250,6 +252,7 @@ function setRedisClientListenerBudget(client: Redis): void {
     MarketplaceTreasuryModule, // 💼 Marketplace treasury ledger / reconciliation
     WalletModule, // ⚡ Prepaid wallet for usage-metered services (FASE 4)
     IdempotencyModule, // 🔁 Idempotency middleware + service
+    ObservabilityModule, // 🔍 Correlation-id + OpenTelemetry spans
   ],
   controllers: [AppController, PaymentWebhookStripeController, PaymentWebhookGenericController],
   providers: [
@@ -313,6 +316,7 @@ export class AppModule implements NestModule {
         'autopilot/*path',
       );
     consumer.apply(IdempotencyMiddleware).forRoutes('*path');
+    consumer.apply(CorrelationIdMiddleware).forRoutes('*path');
     consumer.apply(AuditLogMiddleware).forRoutes('*path');
   }
 }
