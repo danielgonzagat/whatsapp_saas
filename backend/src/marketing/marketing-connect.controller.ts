@@ -432,20 +432,27 @@ export class MarketingConnectController {
     @Query('channel') rawChannel?: string,
   ) {
     const channel = assertMarketingChannel(rawChannel);
-    const workspace = await this.prisma.workspace.findUnique({
-      where: { id: req.user.workspaceId },
-      select: { providerSettings: true },
-    });
+    const [workspace, setupRecord] = await Promise.all([
+      this.prisma.workspace.findUnique({
+        where: { id: req.user.workspaceId },
+        select: { providerSettings: true },
+      }),
+      this.prisma.channelSetup.findUnique({
+        where: { workspaceId_channel: { workspaceId: req.user.workspaceId, channel } },
+        select: { completedAt: true, currentStep: true },
+      }),
+    ]);
     const providerSettings = asProviderSettings(workspace?.providerSettings);
     return {
       channel,
       setup: {
-        currentStep: 0,
+        currentStep: setupRecord?.currentStep ?? 0,
         selectedProductIds: [],
         arsenal: [],
         config: {},
         ...readMarketingChannelSetup(providerSettings, channel),
       },
+      completedAt: setupRecord?.completedAt?.toISOString() ?? null,
     };
   }
 
@@ -480,20 +487,82 @@ export class MarketingConnectController {
       updatedAt: new Date().toISOString(),
     };
 
-    await this.prisma.workspace.update({
-      where: { id: req.user.workspaceId },
-      data: {
-        providerSettings: {
-          ...currentSettings,
-          marketingChannelSetup: {
-            ...allSetups,
-            [channel]: nextSetup,
-          },
-        } as Prisma.InputJsonObject,
-      },
-    });
+    await Promise.all([
+      this.prisma.workspace.update({
+        where: { id: req.user.workspaceId },
+        data: {
+          providerSettings: {
+            ...currentSettings,
+            marketingChannelSetup: {
+              ...allSetups,
+              [channel]: nextSetup,
+            },
+          } as Prisma.InputJsonObject,
+        },
+      }),
+      this.prisma.channelSetup.upsert({
+        where: { workspaceId_channel: { workspaceId: req.user.workspaceId, channel } },
+        create: { workspaceId: req.user.workspaceId, channel, currentStep: nextSetup.currentStep },
+        update: { currentStep: nextSetup.currentStep },
+      }),
+    ]);
 
     return { channel, setup: nextSetup };
+  }
+
+  /** Complete the four-step channel setup, setting completedAt. */
+  @Post('connect/channel-setup/complete')
+  async completeChannelSetup(
+    @Request() req: { user: { workspaceId: string; email?: string } },
+    @Body() body: MarketingChannelSetupPayload = {},
+  ) {
+    const channel = assertMarketingChannel(body.channel);
+    const [workspace, existingSetup] = await Promise.all([
+      this.prisma.workspace.findUnique({
+        where: { id: req.user.workspaceId },
+        select: { providerSettings: true },
+      }),
+      this.prisma.channelSetup.findUnique({
+        where: { workspaceId_channel: { workspaceId: req.user.workspaceId, channel } },
+        select: { currentStep: true },
+      }),
+    ]);
+    const providerSettings = asProviderSettings(workspace?.providerSettings);
+    const jsonSetup = readMarketingChannelSetup(providerSettings, channel);
+    const step = existingSetup?.currentStep ?? normalizeStep(jsonSetup.currentStep);
+    if (step < 3) {
+      throw new BadRequestException(
+        `setup_not_complete: step ${step} of 3, complete all four steps before concluding`,
+      );
+    }
+    if (!Array.isArray(jsonSetup.selectedProductIds) || jsonSetup.selectedProductIds.length === 0) {
+      throw new BadRequestException('setup_not_complete: no products selected');
+    }
+    const hasConfig =
+      jsonSetup.config &&
+      typeof jsonSetup.config === 'object' &&
+      !Array.isArray(jsonSetup.config) &&
+      typeof (jsonSetup.config as Record<string, unknown>).tone === 'string';
+    if (!hasConfig) {
+      throw new BadRequestException('setup_not_complete: missing channel configuration');
+    }
+
+    const nextSetup = await this.prisma.channelSetup.upsert({
+      where: { workspaceId_channel: { workspaceId: req.user.workspaceId, channel } },
+      create: {
+        workspaceId: req.user.workspaceId,
+        channel,
+        currentStep: 3,
+        completedAt: new Date(),
+      },
+      update: { currentStep: 3, completedAt: new Date() },
+    });
+
+    return {
+      channel,
+      currentStep: nextSetup.currentStep,
+      completedAt: nextSetup.completedAt?.toISOString() ?? null,
+    };
   }
 
   /** Get whats app summary. */
