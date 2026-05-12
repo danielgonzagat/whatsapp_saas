@@ -2,6 +2,40 @@
 
 Generated: 2026-05-11
 
+## 2026-05-12T13:59:00-03:00 - W9 - Backend Merge Repair Verification
+
+- ID-visao: V01, V03, V13, V18, V23.
+- Escopo: verify the external backend repair agent's strict TypeScript changes after it exited, without rewriting its ownership slice.
+- Arquivos alterados:
+  - `backend/src/kloel/mind-bandit.service.ts`
+  - `backend/src/kloel/mind-controller.ts`
+  - `backend/src/kloel/mind-policy.service.ts`
+  - `backend/src/kloel/mind-replay.service.ts`
+  - `backend/src/kloel/mind.service.ts`
+  - `backend/src/kloel/unified-agent-actions-crm-predecided.helpers.ts`
+  - `docs/implementation/kloel-cia-evidence-ledger.md`
+  - `docs/implementation/kloel-cia-session-handoff.md`
+- Comportamento entregue:
+  - Backend strict-mode repair removed unsafe non-null assertions in mind/bandit/replay/controller paths and preserved the mind policy fallback behavior with explicit narrowing.
+  - Aggregate typecheck is green again across backend, frontend, and worker.
+- Comando(s) rodados:
+  - `npm run typecheck`
+  - `npm --prefix backend test -- mind-policy.service.spec.ts mind-replay.service.spec.ts mind-controller.spec.ts mind.service.spec.ts unified-agent-actions-predecided.spec.ts --runInBand`
+  - `npx prettier --check backend/src/kloel/mind-bandit.service.ts backend/src/kloel/mind-controller.ts backend/src/kloel/mind-policy.service.ts backend/src/kloel/mind-replay.service.ts backend/src/kloel/mind.service.ts backend/src/kloel/unified-agent-actions-crm-predecided.helpers.ts frontend/src/app/'(checkout)'/hooks/useCheckout.ts frontend/src/app/'(checkout)'/order/'[orderId]'/success/page.tsx frontend/src/components/kloel/marketing/MarketingView.tsx frontend/src/components/kloel/marketing/MarketingView.Tabs.tsx frontend/src/lib/kloel-chat.ts frontend/src/components/kloel/auth/auth-modal.tsx`
+- Resultado:
+  - `npm run typecheck`: passed backend, frontend, and worker.
+  - Backend focused Jest: passed 5 suites / 40 tests.
+  - Prettier check: passed.
+- Evidencia:
+  - Current session command outputs for typecheck, focused backend tests, and Prettier check.
+- Riscos remanescentes:
+  - This verifies compile/test safety for the touched mind/unified-agent backend files; it is not provider live proof.
+  - Full lint remains a known broader debt from earlier handoff entries.
+- Plano de rollback:
+  - Revert the narrow backend strict-mode changes by forward edit if a later test reveals semantic drift; current focused mind tests passed.
+- Referencia subagent:
+  - External OpenCode process observed as `backend-final-56-to-0`; no separate artifact path was produced by this orchestrator.
+
 ## 2026-05-12T13:54:00-03:00 - W9 - Checkout Success Page Truthfulness
 
 - ID-visao: V19, V23.
