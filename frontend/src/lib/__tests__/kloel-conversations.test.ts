@@ -73,6 +73,14 @@ function expectKloelMutateQueued() {
   expect(typeof mutatePredicate).toBe('function');
 }
 
+function buildSyncInput() {
+  return {
+    message: 'oi',
+    conversationId: 'thread-1',
+    mode: 'chat' as const,
+  };
+}
+
 describe('sendAuthenticatedKloelMessage', () => {
   beforeEach(() => {
     mutateMock.mockReset();
@@ -92,11 +100,7 @@ describe('sendAuthenticatedKloelMessage', () => {
 
     await expect(
       sendAuthenticatedKloelMessage(
-        {
-          message: 'oi',
-          conversationId: 'thread-1',
-          mode: 'chat',
-        },
+        buildSyncInput(),
         {
           signal: controller.signal,
         },
@@ -108,6 +112,31 @@ describe('sendAuthenticatedKloelMessage', () => {
 
     expectSyncKloelRequest(controller.signal);
     expectKloelMutateQueued();
+  });
+
+  it('surfaces request failures without mutating recents', async () => {
+    apiFetchMock.mockRejectedValue(new Error('network failure'));
+
+    await expect(sendAuthenticatedKloelMessage(buildSyncInput())).rejects.toThrow(
+      'network failure',
+    );
+
+    expect(mutateMock).not.toHaveBeenCalled();
+  });
+
+  it('surfaces aborted requests without mutating recents', async () => {
+    const controller = new AbortController();
+    const abortError = new DOMException('Aborted', 'AbortError');
+    apiFetchMock.mockRejectedValue(abortError);
+
+    const promise = sendAuthenticatedKloelMessage(buildSyncInput(), {
+      signal: controller.signal,
+    });
+    controller.abort();
+
+    await expect(promise).rejects.toThrow('Aborted');
+    expectSyncKloelRequest(controller.signal);
+    expect(mutateMock).not.toHaveBeenCalled();
   });
 });
 
