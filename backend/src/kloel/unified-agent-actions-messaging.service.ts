@@ -9,6 +9,8 @@ import { MailboxGmailOAuthService } from '../marketing/mailbox-gmail-oauth.servi
 import { ChannelTransportRegistry } from './channel-transport.registry';
 import type { ChannelName, ChannelSendResult } from './channel-transport.types';
 import { assertCustomerSafe } from './commercial-decision-orchestrator.service';
+import { BrainEventSpineService } from './brain-event-spine.service';
+import { DailyLimitService } from './daily-limit.service';
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -25,8 +27,10 @@ export class UnifiedAgentActionsMessagingService {
     private readonly whatsappService: IWhatsappMessaging,
     private readonly audioService: AudioService,
     private readonly transports: ChannelTransportRegistry,
+    private readonly dailyLimit: DailyLimitService,
     @Optional() private readonly moduleRef?: ModuleRef,
     @Optional() private readonly opsAlert?: OpsAlertService,
+    @Optional() private readonly events?: BrainEventSpineService,
   ) {}
 
   // ───────── helpers ─────────
@@ -251,6 +255,36 @@ export class UnifiedAgentActionsMessagingService {
           error: reason,
           customerSafetyViolation: true,
         };
+      }
+
+      // P1.4 — per-channel proactive daily limit. Inbound replies skip
+      // this check; only proactive outbound decrements the counter.
+      const outboundKind = String(context?.outboundKind ?? '').toLowerCase();
+      if (outboundKind !== 'reply' && outboundKind !== 'inbound-reply') {
+        const resolvedCh = this.resolveChannel(context);
+        const limitCheck = await this.dailyLimit.ensureProactiveDailyLimit(
+          workspaceId,
+          resolvedCh,
+        );
+        if (!limitCheck.allowed) {
+          void this.opsAlert?.alertOnCriticalError(
+            new Error(`daily-limit-exceeded: ws=${workspaceId} ch=${resolvedCh}`),
+            'UnifiedAgentActionsMessagingService.actionSendMessage.dailyLimit',
+          );
+          void this.events?.record({
+            action: 'transport.blocked' as never,
+            intent: 'send_message',
+            status: 'skipped',
+            workspaceId,
+            reason: 'channel-daily-limit-exceeded',
+            meta: {
+              channel: resolvedCh,
+              capAtDay: limitCheck.capAtDay,
+              remaining: limitCheck.remaining,
+            },
+          });
+          return { success: false, error: 'channel-daily-limit-exceeded' };
+        }
       }
 
       if (this.readText(context?.channel).toLowerCase() === 'email') {

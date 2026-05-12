@@ -4,7 +4,11 @@ import { UnifiedAgentActionsMessagingService } from './unified-agent-actions-mes
 import { WHATSAPP_MESSAGING } from '../whatsapp/whatsapp.tokens';
 import { AudioService } from './audio.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import { ChannelTransportRegistry } from './channel-transport.registry';
+import { DailyLimitService } from './daily-limit.service';
+import { BrainEventSpineService } from './brain-event-spine.service';
 import type { IWhatsappMessaging } from '../whatsapp/whatsapp.interfaces';
+import type { ChannelSendResult } from './channel-transport.types';
 
 jest.mock('../marketing/mailbox-gmail-oauth.service', () => ({
   MailboxGmailOAuthService: jest.fn(),
@@ -19,6 +23,9 @@ describe('UnifiedAgentActionsMessagingService', () => {
   >;
   let moduleRef: Pick<ModuleRef, 'get'>;
   let opsAlert: Pick<OpsAlertService, 'alertOnCriticalError'>;
+  let dailyLimit: Pick<DailyLimitService, 'ensureProactiveDailyLimit' | 'isReply'>;
+  let transports: Pick<ChannelTransportRegistry, 'send'>;
+  let events: Pick<BrainEventSpineService, 'record'>;
 
   const wsId = 'ws-1';
   const phone = '5511999999999';
@@ -52,6 +59,21 @@ describe('UnifiedAgentActionsMessagingService', () => {
     opsAlert = {
       alertOnCriticalError: jest.fn(),
     };
+    dailyLimit = {
+      ensureProactiveDailyLimit: jest.fn().mockResolvedValue({ allowed: true, remaining: 24, capAtDay: 25 }),
+      isReply: jest.fn().mockResolvedValue(false),
+    };
+    transports = {
+      send: jest.fn().mockResolvedValue({
+        success: true,
+        blocked: false,
+        delivery: 'sent',
+        messageId: 'wamid.123',
+      } as ChannelSendResult),
+    };
+    events = {
+      record: jest.fn().mockResolvedValue(undefined),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -60,6 +82,9 @@ describe('UnifiedAgentActionsMessagingService', () => {
         { provide: AudioService, useValue: audioService },
         { provide: ModuleRef, useValue: moduleRef },
         { provide: OpsAlertService, useValue: opsAlert },
+        { provide: ChannelTransportRegistry, useValue: transports },
+        { provide: DailyLimitService, useValue: dailyLimit },
+        { provide: BrainEventSpineService, useValue: events },
       ],
     }).compile();
 

@@ -109,6 +109,7 @@ import { UnifiedAgentService } from './unified-agent.service';
 import { UploadController } from './upload.controller';
 import { WebinarController } from './webinar.controller';
 import { BrainCapabilityRegistryService } from './brain-capability-registry.service';
+import { BrainCapabilityExecutorService } from './brain-capability-executor.service';
 import { BrainAutonomyService } from './brain-autonomy.service';
 import { BrainCommercialGraphService } from './brain-commercial-graph.service';
 import { BrainEventSpineService } from './brain-event-spine.service';
@@ -268,6 +269,7 @@ import { MindWorkspaceStateService } from './mind-workspace-state.service';
     WebhooksService,
     WebhookDispatcherService,
     BrainCapabilityRegistryService,
+    BrainCapabilityExecutorService,
     BrainAutonomyService,
     BrainCommercialGraphService,
     BrainEventSpineService,
