@@ -2,6 +2,30 @@
 
 Generated: 2026-05-11
 
+## 2026-05-12T14:51:00-03:00 - W9 - Vision Traceability Refresh for V19/V23
+
+- ID-visao: V19, V23.
+- Escopo: update the Vision Traceability Matrix after the checkout/billing truthfulness cluster.
+- Arquivos alterados:
+  - `docs/implementation/kloel-cia-vision-traceability.md`
+  - `docs/implementation/kloel-cia-evidence-ledger.md`
+- Comportamento entregue:
+  - V19 now references the W9 card/PIX-only boleto alignment and billing mock-mode regression proof.
+  - V23 now references the W9 anti-fake fixes delivered so far and explicitly keeps the remaining full anti-fake scan/browser/provider proof gap.
+- Comando(s) rodados:
+  - `rg -n "V19|V23|ENTREGUE|BLOQUEADO|BACKLOG|Status" docs/implementation/kloel-cia-vision-traceability.md`
+  - `sed -n '1,220p' docs/implementation/kloel-cia-vision-traceability.md`
+- Resultado:
+  - Matrix evidence/gap text refreshed; statuses remain conservative because full provider/browser proof is still blocked or pending.
+- Evidencia:
+  - Current session command outputs and diff in `docs/implementation/kloel-cia-vision-traceability.md`.
+- Riscos remanescentes:
+  - Documentation-only traceability refresh; no new runtime proof beyond ledger entries already recorded.
+- Plano de rollback:
+  - Supersede with the next traceability refresh if later evidence changes V19/V23 status.
+- Referencia subagent:
+  - None; orchestrator-owned documentation update.
+
 ## 2026-05-12T14:45:00-03:00 - W9 - Billing Mock Guard Regression Spec
 
 - ID-visao: V19, V23.

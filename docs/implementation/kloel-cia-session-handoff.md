@@ -1,15 +1,15 @@
 # Kloel CIA Session Handoff
 
-Updated: 2026-05-12T14:45:00-03:00
+Updated: 2026-05-12T14:51:00-03:00
 
 ## Onde parou exatamente
 
-Wave 0 discovery artifacts are active and W1-W9 have focused code-side slices delivered with evidence, but completion remains blocked by external provider smokes and open dependency-register items. W1 persists the official channel four-step wizard spine through `Workspace.providerSettings.marketingChannelSetup`; Playwright proves four steps at desktop/mobile widths, product persistence, and Meta disconnect double-confirmation. W2 hardens code-side Meta OAuth URL generation with channel-specific Config IDs/scopes, adds the `facebook` status alias, and rejects unsigned Meta webhook POSTs when `META_APP_SECRET` is configured. W3 hardens TikTok webhook signature handling and adds backend disconnect. W4 delivers code-side Gmail/Microsoft/IMAP mailbox foundations through EMAIL-10, including encrypted token storage, Gmail sync/send, Microsoft OAuth base, IMAP+SMTP validation, suppression checks, and mailbox metrics, while live mailbox smokes remain external. W5/W6 route TikTok/Omnichannel perception toward the same `UnifiedAgentService` and prove owner strategic policy persistence into CIA prompt context. W7/W8 add checkout-paid wallet/chat context and high-risk `ApprovalRequest` gates. On 2026-05-12, after the merge from `origin/main`, this orchestrator recovered the frontend TypeScript gate, ran Batch 17 read-only audits for V23 anti-fake/provider readiness, implemented frontend V23 truthfulness fixes, verified the external backend strict-mode repair after its OpenCode process exited, verified the guest-chat Redis persistence slice, aligned checkout boleto UI with the backend's current card/PIX-only rail, removed remaining active-product boleto copy/link badges, hardened the direct boleto route to show a no-boleto state, and added a billing mock-mode guard regression spec.
+Wave 0 discovery artifacts are active and W1-W9 have focused code-side slices delivered with evidence, but completion remains blocked by external provider smokes and open dependency-register items. W1 persists the official channel four-step wizard spine through `Workspace.providerSettings.marketingChannelSetup`; Playwright proves four steps at desktop/mobile widths, product persistence, and Meta disconnect double-confirmation. W2 hardens code-side Meta OAuth URL generation with channel-specific Config IDs/scopes, adds the `facebook` status alias, and rejects unsigned Meta webhook POSTs when `META_APP_SECRET` is configured. W3 hardens TikTok webhook signature handling and adds backend disconnect. W4 delivers code-side Gmail/Microsoft/IMAP mailbox foundations through EMAIL-10, including encrypted token storage, Gmail sync/send, Microsoft OAuth base, IMAP+SMTP validation, suppression checks, and mailbox metrics, while live mailbox smokes remain external. W5/W6 route TikTok/Omnichannel perception toward the same `UnifiedAgentService` and prove owner strategic policy persistence into CIA prompt context. W7/W8 add checkout-paid wallet/chat context and high-risk `ApprovalRequest` gates. On 2026-05-12, after the merge from `origin/main`, this orchestrator recovered the frontend TypeScript gate, ran Batch 17 read-only audits for V23 anti-fake/provider readiness, implemented frontend V23 truthfulness fixes, verified the external backend strict-mode repair after its OpenCode process exited, verified the guest-chat Redis persistence slice, aligned checkout boleto UI with the backend's current card/PIX-only rail, removed remaining active-product boleto copy/link badges, hardened the direct boleto route to show a no-boleto state, added a billing mock-mode guard regression spec, and refreshed V19/V23 traceability.
 
 ## Branch atual e ultimo commit
 
 - Branch: `chore/purga-total-debt`
-- HEAD: `fc5d235b5 [W9] Provar bloqueio de mock billing`
+- HEAD: `b763de5da [W9] Atualizar rastreabilidade V19 V23`
 - Note: prior handoff referenced `feat/kloel-cia-convergence`, but the live checkout is currently `chore/purga-total-debt`; do not infer branch state from older docs.
 
 ## Gates passados na sessao
@@ -132,6 +132,8 @@ Wave 0 discovery artifacts are active and W1-W9 have focused code-side slices de
 - `npm --prefix backend test -- billing-checkout-webhook.service.spec.ts --runInBand`: passed after billing mock guard regression spec, 1 suite / 2 tests.
 - `npm run backend:typecheck`: passed after billing mock guard regression spec.
 - `npm exec eslint -- src/billing/billing-checkout-webhook.service.spec.ts` from `backend/`: passed after billing mock guard regression spec.
+- `rg -n "V19|V23|ENTREGUE|BLOQUEADO|BACKLOG|Status" docs/implementation/kloel-cia-vision-traceability.md`: used for V19/V23 traceability refresh.
+- `sed -n '1,220p' docs/implementation/kloel-cia-vision-traceability.md`: used for V19/V23 traceability refresh.
 - `npm run worker:typecheck`: passed.
 - `npm --prefix backend run build`: passed.
 - `npm --prefix worker run build`: passed.
@@ -245,4 +247,4 @@ No `opencode run` process remains active after workspace stabilization. The prev
 
 ## Proxima acao exata
 
-Next action: commit/push the billing mock guard regression spec, leaving untracked OpenCode prompt drafts out of the commit. After publication, refresh the Vision Traceability statuses for the W9 V23 cluster and continue with any remaining fake-completion checks that have repo evidence.
+Next action: commit/push the V19/V23 traceability refresh, leaving untracked OpenCode prompt drafts and the untracked `backend/src/billing/plan-limits.service.spec.ts` out unless its owner asks for integration. After publication, continue with remaining fake-completion checks that have repo evidence.
