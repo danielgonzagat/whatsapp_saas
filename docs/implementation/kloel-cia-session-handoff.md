@@ -9,7 +9,7 @@ Wave 0 discovery artifacts are active and W1-W9 have focused code-side slices de
 ## Branch atual e ultimo commit
 
 - Branch: `chore/purga-total-debt`
-- HEAD: `b763de5da [W9] Atualizar rastreabilidade V19 V23`
+- HEAD: `3d929286a [W9] Atualizar rastreabilidade V19 V23`
 - Note: prior handoff referenced `feat/kloel-cia-convergence`, but the live checkout is currently `chore/purga-total-debt`; do not infer branch state from older docs.
 
 ## Gates passados na sessao
@@ -247,4 +247,4 @@ No `opencode run` process remains active after workspace stabilization. The prev
 
 ## Proxima acao exata
 
-Next action: commit/push the V19/V23 traceability refresh, leaving untracked OpenCode prompt drafts and the untracked `backend/src/billing/plan-limits.service.spec.ts` out unless its owner asks for integration. After publication, continue with remaining fake-completion checks that have repo evidence.
+Next action: commit/push the V19/V23 traceability refresh, leaving untracked OpenCode prompt drafts out of the commit. After publication, continue with remaining fake-completion checks that have repo evidence.
