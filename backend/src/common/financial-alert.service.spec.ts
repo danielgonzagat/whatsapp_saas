@@ -23,14 +23,19 @@ describe('FinancialAlertService', () => {
       amount: 1234,
       gateway: 'stripe',
     });
-    expect(Sentry.captureException).toHaveBeenCalledWith(
-      err,
-      expect.objectContaining({
-        tags: { type: 'financial_alert', gateway: 'stripe' },
-        level: 'fatal',
-        extra: expect.objectContaining({ workspaceId: 'ws-1', orderId: 'o-1' }),
-      }),
-    );
+    const [, sentryContext] = (Sentry.captureException as jest.Mock).mock.calls[0] as [
+      Error,
+      {
+        tags: { type: string; gateway: string };
+        level: string;
+        extra: { workspaceId: string; orderId: string };
+      },
+    ];
+    expect(Sentry.captureException).toHaveBeenCalledWith(err, sentryContext);
+    expect(sentryContext.tags).toEqual({ type: 'financial_alert', gateway: 'stripe' });
+    expect(sentryContext.level).toBe('fatal');
+    expect(sentryContext.extra.workspaceId).toBe('ws-1');
+    expect(sentryContext.extra.orderId).toBe('o-1');
   });
 
   it('withdrawalFailed forwards as fatal with operation=withdrawal', () => {

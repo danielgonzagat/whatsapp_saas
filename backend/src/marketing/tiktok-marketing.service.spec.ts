@@ -1,7 +1,7 @@
 import { TikTokMarketingService } from './tiktok-marketing.service';
 
 jest.mock('../meta/meta-token-crypto', () => ({
-  encryptMetaToken: jest.fn().mockImplementation((token: unknown) => `encrypted:${token}`),
+  encryptMetaToken: jest.fn().mockImplementation((token: string) => `encrypted:${token}`),
 }));
 
 jest.mock('../whatsapp/provider-settings.types', () => ({
@@ -32,7 +32,9 @@ describe('TikTokMarketingService', () => {
     jest.clearAllMocks();
     fetchSpy = jest.spyOn(global, 'fetch').mockRejectedValue(new Error('no fetch mock configured'));
 
-    const cryptoMock = jest.requireMock('../meta/meta-token-crypto');
+    const cryptoMock: {
+      encryptMetaToken: jest.Mock;
+    } = jest.requireMock('../meta/meta-token-crypto');
     encryptMetaToken = cryptoMock.encryptMetaToken;
 
     setEnv({
@@ -166,7 +168,7 @@ describe('TikTokMarketingService', () => {
       expect(encryptMetaToken).toHaveBeenCalledWith('plain-creator-token');
       expect(encryptMetaToken).toHaveBeenCalledWith('plain-refresh-token');
       expect(workspaceUpdate).toHaveBeenCalledTimes(1);
-      const updateCall = workspaceUpdate.mock.calls[0][0];
+      const [updateCall] = workspaceUpdate.mock.calls[0] as [{ where: { id: string } }];
       expect(updateCall.where.id).toBe('ws-1');
     });
 
