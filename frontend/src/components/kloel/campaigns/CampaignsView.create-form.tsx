@@ -33,7 +33,7 @@ export function CampaignCreateForm({
   onCreate,
   onCancel,
 }: CampaignCreateFormProps) {
-  if (!show) return null;
+  if (!show) {return null;}
 
   return (
     <div

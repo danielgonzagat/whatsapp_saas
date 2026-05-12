@@ -27,7 +27,9 @@ describe('HiddenDataExtractorService', () => {
 
   function buildService(openaiKey: string | undefined) {
     configGet = jest.fn().mockImplementation((key: string) => {
-      if (key === 'OPENAI_API_KEY') return openaiKey;
+      if (key === 'OPENAI_API_KEY') {
+        return openaiKey;
+      }
       return undefined;
     });
     const configStub = { get: configGet } as unknown as ConfigService;
@@ -48,9 +50,9 @@ describe('HiddenDataExtractorService', () => {
         expect.anything(),
         expect.objectContaining({
           model: expect.any(String) as string,
-          messages: expect.arrayContaining([
-            expect.objectContaining({ role: 'user' }),
-          ]) as Array<{ role: string }>,
+          messages: expect.arrayContaining([expect.objectContaining({ role: 'user' })]) as Array<{
+            role: string;
+          }>,
           response_format: { type: 'json_object' },
         }),
       );

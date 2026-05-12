@@ -1,7 +1,19 @@
 import { prisma } from '../../db';
 import { autopilotQueue } from '../../queue';
-import { getDelayUntilWorkspaceWindowOpens, getWorkspaceLocalHour, isWithinWorkspaceWindow } from '../../providers/timezone';
-import { log, notifyBillingSuspended, isAutonomousEnabled, isExplicitProactiveOutreachAllowed, WINDOW_START, WINDOW_END, type UnknownRecord } from './shared';
+import {
+  getDelayUntilWorkspaceWindowOpens,
+  getWorkspaceLocalHour,
+  isWithinWorkspaceWindow,
+} from '../../providers/timezone';
+import {
+  log,
+  notifyBillingSuspended,
+  isAutonomousEnabled,
+  isExplicitProactiveOutreachAllowed,
+  WINDOW_START,
+  WINDOW_END,
+  type UnknownRecord,
+} from './shared';
 import { logAutopilotAction } from './safeguard';
 import { executeAction, sendDirectAutopilotText } from './execution';
 

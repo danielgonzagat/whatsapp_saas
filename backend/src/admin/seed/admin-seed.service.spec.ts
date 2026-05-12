@@ -56,8 +56,12 @@ describe('AdminSeedService', () => {
 
     (AdminAuthService.hashPassword as jest.Mock).mockResolvedValue('hashed');
     configMock.get.mockImplementation((key: string) => {
-      if (key === 'ADMIN_SEED_OWNER_ENABLED') return 'true';
-      if (key === 'ADMIN_SEED_OWNER_INITIAL_PASSWORD') return 'StrongSeedPass1!';
+      if (key === 'ADMIN_SEED_OWNER_ENABLED') {
+        return 'true';
+      }
+      if (key === 'ADMIN_SEED_OWNER_INITIAL_PASSWORD') {
+        return 'StrongSeedPass1!';
+      }
       return undefined;
     });
     mockFindUnique.mockResolvedValue(null);
@@ -94,7 +98,9 @@ describe('AdminSeedService', () => {
 
     it('skips when ADMIN_SEED_OWNER_ENABLED=false', async () => {
       configMock.get.mockImplementation((key: string) => {
-        if (key === 'ADMIN_SEED_OWNER_ENABLED') return 'false';
+        if (key === 'ADMIN_SEED_OWNER_ENABLED') {
+          return 'false';
+        }
         return undefined;
       });
 
@@ -122,8 +128,12 @@ describe('AdminSeedService', () => {
 
     it('skips when ADMIN_SEED_OWNER_INITIAL_PASSWORD is empty', async () => {
       configMock.get.mockImplementation((key: string) => {
-        if (key === 'ADMIN_SEED_OWNER_ENABLED') return 'true';
-        if (key === 'ADMIN_SEED_OWNER_INITIAL_PASSWORD') return '';
+        if (key === 'ADMIN_SEED_OWNER_ENABLED') {
+          return 'true';
+        }
+        if (key === 'ADMIN_SEED_OWNER_INITIAL_PASSWORD') {
+          return '';
+        }
         return undefined;
       });
 

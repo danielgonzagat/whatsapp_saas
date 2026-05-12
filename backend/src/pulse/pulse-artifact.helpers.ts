@@ -22,7 +22,9 @@ export function getNumber(record: JsonObject | null | undefined, key: string): n
 }
 
 export function getStringArray(value: unknown): string[] {
-  if (!Array.isArray(value)) return [];
+  if (!Array.isArray(value)) {
+    return [];
+  }
   return value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0);
 }
 
@@ -41,6 +43,8 @@ export function normalizeAuthorityMode(
 }
 
 export function normalizeVerdict(value: string | null): RuntimeReadinessVerdict {
-  if (value === 'SIM' || value === 'NAO') return value;
+  if (value === 'SIM' || value === 'NAO') {
+    return value;
+  }
   return 'UNKNOWN';
 }

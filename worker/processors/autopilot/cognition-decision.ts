@@ -17,7 +17,11 @@ import {
   loadCustomerCognitiveState,
   persistCustomerCognitiveState,
 } from '../cia/cognitive-state';
-import { fetchConversationHistory, fetchCompressedContactContext, getKbContext } from './cognition-context';
+import {
+  fetchConversationHistory,
+  fetchCompressedContactContext,
+  getKbContext,
+} from './cognition-context';
 
 export async function generatePitchSafe(messageContent: string, settings: UnknownRecord) {
   const apiKey = settings?.openai?.apiKey || process.env.OPENAI_API_KEY;
@@ -27,9 +31,13 @@ export async function generatePitchSafe(messageContent: string, settings: Unknow
   try {
     const ai = new AIProvider(apiKey);
     const pitchPrompt = `Generate a short, high-converting offer message for a lead who said: "${messageContent}". Be direct.`;
-    return await ai.generateResponse('You are a concise sales copywriter. Return plain text.', pitchPrompt);
+    return await ai.generateResponse(
+      'You are a concise sales copywriter. Return plain text.',
+      pitchPrompt,
+    );
   } catch (err: unknown) {
-    const errInstanceofError = err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
+    const errInstanceofError =
+      err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
     log.warn('autopilot_pitch_fallback', { error: errInstanceofError.message });
     return 'Posso te fazer uma oferta exclusiva. Quer fechar agora?';
   }
@@ -49,22 +57,33 @@ export async function computePersistentCognitiveState(input: {
   source: string;
 }) {
   const previous = await loadCustomerCognitiveState(prisma, {
-    workspaceId: input.workspaceId, conversationId: input.conversationId,
-    contactId: input.contactId, phone: input.phone,
+    workspaceId: input.workspaceId,
+    conversationId: input.conversationId,
+    contactId: input.contactId,
+    phone: input.phone,
   });
 
   const state = buildSeedCognitiveState({
-    conversationId: input.conversationId, contactId: input.contactId,
-    phone: input.phone, contactName: input.contactName,
-    lastMessageText: input.messageContent, unreadCount: input.unreadCount,
-    lastMessageAt: input.lastMessageAt, leadScore: input.leadScore,
-    previousState: previous, demandState: input.demandState,
+    conversationId: input.conversationId,
+    contactId: input.contactId,
+    phone: input.phone,
+    contactName: input.contactName,
+    lastMessageText: input.messageContent,
+    unreadCount: input.unreadCount,
+    lastMessageAt: input.lastMessageAt,
+    leadScore: input.leadScore,
+    previousState: previous,
+    demandState: input.demandState,
   });
 
   return persistCustomerCognitiveState(prisma, {
-    workspaceId: input.workspaceId, conversationId: input.conversationId,
-    contactId: input.contactId, phone: input.phone,
-    contactName: input.contactName, state, source: input.source,
+    workspaceId: input.workspaceId,
+    conversationId: input.conversationId,
+    contactId: input.contactId,
+    phone: input.phone,
+    contactName: input.contactName,
+    state,
+    source: input.source,
   });
 }
 
@@ -78,14 +97,22 @@ export function computeCognitiveRewardSignal(
   const urgencyBoost = state.urgencyScore * 0.9;
 
   switch (action) {
-    case 'PAYMENT_RECOVERY': return Number((stageBoost + urgencyBoost + 0.9).toFixed(3));
-    case 'OFFER': return Number((stageBoost + trustBoost + 0.55).toFixed(3));
-    case 'SOCIAL_PROOF': return Number((trustBoost + 0.45).toFixed(3));
-    case 'ASK_CLARIFYING': return Number((0.55 + urgencyBoost * 0.35).toFixed(3));
-    case 'FOLLOWUP_URGENT': return Number((0.75 + urgencyBoost).toFixed(3));
-    case 'FOLLOWUP_SOFT': return Number((0.45 + trustBoost * 0.5).toFixed(3));
-    case 'RESPOND': return Number((0.7 + urgencyBoost * 0.45).toFixed(3));
-    default: return Number((0.1 + trustBoost * 0.2).toFixed(3));
+    case 'PAYMENT_RECOVERY':
+      return Number((stageBoost + urgencyBoost + 0.9).toFixed(3));
+    case 'OFFER':
+      return Number((stageBoost + trustBoost + 0.55).toFixed(3));
+    case 'SOCIAL_PROOF':
+      return Number((trustBoost + 0.45).toFixed(3));
+    case 'ASK_CLARIFYING':
+      return Number((0.55 + urgencyBoost * 0.35).toFixed(3));
+    case 'FOLLOWUP_URGENT':
+      return Number((0.75 + urgencyBoost).toFixed(3));
+    case 'FOLLOWUP_SOFT':
+      return Number((0.45 + trustBoost * 0.5).toFixed(3));
+    case 'RESPOND':
+      return Number((0.7 + urgencyBoost * 0.45).toFixed(3));
+    default:
+      return Number((0.1 + trustBoost * 0.2).toFixed(3));
   }
 }
 
@@ -105,13 +132,28 @@ export async function decideActionSafe(params: {
     return { intent: 'BUYING', action: 'GHOST_CLOSER', reason: 'price inquiry', confidence: 0.72 };
   }
   if (hasKeyword('agendar', 'agenda', 'calend', 'marcar', 'schedule')) {
-    return { intent: 'SCHEDULING', action: 'SEND_CALENDAR', reason: 'scheduling intent', confidence: 0.68 };
+    return {
+      intent: 'SCHEDULING',
+      action: 'SEND_CALENDAR',
+      reason: 'scheduling intent',
+      confidence: 0.68,
+    };
   }
   if (hasKeyword('reclama', 'problema', 'erro', 'suporte', 'ajuda')) {
-    return { intent: 'COMPLAINT', action: 'TRANSFER_AGENT', reason: 'complaint/support', confidence: 0.7 };
+    return {
+      intent: 'COMPLAINT',
+      action: 'TRANSFER_AGENT',
+      reason: 'complaint/support',
+      confidence: 0.7,
+    };
   }
   if (hasKeyword('cancelar', 'desistir', 'parei', 'não quero', 'nao quero')) {
-    return { intent: 'CHURN_RISK', action: 'ANTI_CHURN', reason: 'churn_language', confidence: 0.7 };
+    return {
+      intent: 'CHURN_RISK',
+      action: 'ANTI_CHURN',
+      reason: 'churn_language',
+      confidence: 0.7,
+    };
   }
   if (hasKeyword('oi', 'ola', 'olá', 'bom dia', 'boa tarde', 'boa noite')) {
     return { intent: 'GREET', action: 'QUALIFY', reason: 'greeting', confidence: 0.55 };
@@ -127,7 +169,12 @@ export async function decideActionSafe(params: {
 
   try {
     const ai = new AIProvider(apiKey);
-    const history = await fetchConversationHistory(workspaceId, contactId, phone, CONVERSATION_HISTORY_LIMIT);
+    const history = await fetchConversationHistory(
+      workspaceId,
+      contactId,
+      phone,
+      CONVERSATION_HISTORY_LIMIT,
+    );
     const compressedContext = await fetchCompressedContactContext(workspaceId, contactId, phone);
     const kbContext = await getKbContext(workspaceId, messageContent, apiKey);
     const ledger = buildConversationLedger(history);
@@ -148,7 +195,8 @@ export async function decideActionSafe(params: {
       usedKb: !!kbContext,
     };
   } catch (err: unknown) {
-    const errInstanceofError = err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
+    const errInstanceofError =
+      err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
     log.warn('autopilot_ai_fallback', { error: errInstanceofError.message });
     return { intent: 'IDLE', action: 'NONE', reason: 'ai_error', confidence: 0.3 };
   }

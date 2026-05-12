@@ -53,12 +53,24 @@ function buildAddress(address?: ConnectAddressInput): Record<string, string> | u
   const country = trimToUndefined(address.country);
 
   const result: Record<string, string> = {};
-  if (line1 !== undefined) result.line1 = line1;
-  if (line2 !== undefined) result.line2 = line2;
-  if (city !== undefined) result.city = city;
-  if (state !== undefined) result.state = state;
-  if (postal_code !== undefined) result.postal_code = postal_code;
-  if (country !== undefined) result.country = country;
+  if (line1 !== undefined) {
+    result.line1 = line1;
+  }
+  if (line2 !== undefined) {
+    result.line2 = line2;
+  }
+  if (city !== undefined) {
+    result.city = city;
+  }
+  if (state !== undefined) {
+    result.state = state;
+  }
+  if (postal_code !== undefined) {
+    result.postal_code = postal_code;
+  }
+  if (country !== undefined) {
+    result.country = country;
+  }
 
   return Object.keys(result).length > 0 ? result : undefined;
 }
@@ -79,13 +91,27 @@ function buildBusinessProfile(
   const support_url = trimToUndefined(profile.supportUrl);
 
   const result: Record<string, string> = {};
-  if (name !== undefined) result.name = name;
-  if (url !== undefined) result.url = url;
-  if (mcc !== undefined) result.mcc = mcc;
-  if (product_description !== undefined) result.product_description = product_description;
-  if (support_email !== undefined) result.support_email = support_email;
-  if (support_phone !== undefined) result.support_phone = support_phone;
-  if (support_url !== undefined) result.support_url = support_url;
+  if (name !== undefined) {
+    result.name = name;
+  }
+  if (url !== undefined) {
+    result.url = url;
+  }
+  if (mcc !== undefined) {
+    result.mcc = mcc;
+  }
+  if (product_description !== undefined) {
+    result.product_description = product_description;
+  }
+  if (support_email !== undefined) {
+    result.support_email = support_email;
+  }
+  if (support_phone !== undefined) {
+    result.support_phone = support_phone;
+  }
+  if (support_url !== undefined) {
+    result.support_url = support_url;
+  }
 
   return Object.keys(result).length > 0 ? result : undefined;
 }
@@ -150,12 +176,24 @@ function buildExternalAccount(
 
   const result: Record<string, string> = {};
   result.object = 'bank_account';
-  if (country !== undefined) result.country = country;
-  if (currency !== undefined) result.currency = currency;
-  if (account_holder_name !== undefined) result.account_holder_name = account_holder_name;
-  if (account_holder_type !== undefined) result.account_holder_type = account_holder_type;
-  if (routing_number !== undefined) result.routing_number = routing_number;
-  if (account_number !== undefined) result.account_number = account_number;
+  if (country !== undefined) {
+    result.country = country;
+  }
+  if (currency !== undefined) {
+    result.currency = currency;
+  }
+  if (account_holder_name !== undefined) {
+    result.account_holder_name = account_holder_name;
+  }
+  if (account_holder_type !== undefined) {
+    result.account_holder_type = account_holder_type;
+  }
+  if (routing_number !== undefined) {
+    result.routing_number = routing_number;
+  }
+  if (account_number !== undefined) {
+    result.account_number = account_number;
+  }
 
   return result;
 }

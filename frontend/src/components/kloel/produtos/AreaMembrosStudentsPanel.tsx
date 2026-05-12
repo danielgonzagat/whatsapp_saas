@@ -35,7 +35,7 @@ export default function AreaMembrosStudentsPanel({
   studentLoading: boolean;
   onClose: () => void;
 }) {
-  if (!studentAreaId) return null;
+  if (!studentAreaId) {return null;}
 
   const drawerBg = 'var(--app-bg-primary)';
   const hdrBorder = { borderBottom: `1px solid ${BORDER}` };

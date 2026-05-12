@@ -42,7 +42,7 @@ function mapThreadMessageToChatMessage(message: {
 }
 
 function normalizeMessageMeta(metadata: unknown): Record<string, unknown> | undefined {
-  if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) return undefined;
+  if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) {return undefined;}
   return metadata as Record<string, unknown>;
 }
 
@@ -164,7 +164,7 @@ export function useChatController({
 
   const loadConversation = useCallback(
     async (conversationId: string) => {
-      if (!conversationId) return;
+      if (!conversationId) {return;}
       try {
         const payload = await loadKloelThreadMessages(conversationId);
         setMessages(
@@ -192,12 +192,12 @@ export function useChatController({
   /* ── Effects ── */
   useEffect(() => {
     const authError = searchParams.get('authError');
-    if (!authError) return;
+    if (!authError) {return;}
     const message = AUTH_ERROR_MESSAGES[authError];
     if (message) {
       setMessages((prev) => {
         const id = `auth_error_${authError}`;
-        if (prev.some((m) => m.id === id)) return prev;
+        if (prev.some((m) => m.id === id)) {return prev;}
         return [...prev, { id, role: 'assistant', content: message }];
       });
     }
@@ -205,25 +205,25 @@ export function useChatController({
   }, [searchParams, openAuthModal]);
 
   useEffect(() => {
-    if (appliedAuthDeepLink.current) return;
+    if (appliedAuthDeepLink.current) {return;}
     const authMode = searchParams.get('authMode');
-    if (authMode !== 'login' && authMode !== 'signup') return;
+    if (authMode !== 'login' && authMode !== 'signup') {return;}
     appliedAuthDeepLink.current = true;
     openAuthModal(authMode);
   }, [searchParams, openAuthModal]);
 
   useEffect(() => {
-    if (!shouldOpenWhatsAppPanel || appliedWhatsAppPanelDeepLink.current) return;
+    if (!shouldOpenWhatsAppPanel || appliedWhatsAppPanelDeepLink.current) {return;}
     appliedWhatsAppPanelDeepLink.current = true;
     setShowAgentDesktop(true);
   }, [shouldOpenWhatsAppPanel]);
 
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated) {return;}
     const nextParams = new URLSearchParams(searchParams.toString());
     const authKeys = ['authMode', 'authError', 'email', 'authEmail'];
     const hasAuthQuery = authKeys.some((key) => nextParams.has(key));
-    if (!hasAuthQuery) return;
+    if (!hasAuthQuery) {return;}
     authKeys.forEach((key) => nextParams.delete(key));
     const nextQuery = nextParams.toString();
     const nextUrl = nextQuery ? `${pathname}?${nextQuery}` : pathname;
@@ -231,11 +231,11 @@ export function useChatController({
   }, [isAuthenticated, pathname, router, searchParams]);
 
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated) {return;}
     const targetConversationId =
       requestedConversationId || activeConversationId || activeConv || null;
-    if (!targetConversationId) return;
-    if (loadedConversationIdRef.current === targetConversationId && messages.length > 0) return;
+    if (!targetConversationId) {return;}
+    if (loadedConversationIdRef.current === targetConversationId && messages.length > 0) {return;}
     void loadConversation(targetConversationId);
   }, [
     activeConv,
@@ -259,7 +259,7 @@ export function useChatController({
     };
     const handleLoadChat = (event: Event) => {
       const conversationId = (event as CustomEvent).detail?.conversationId;
-      if (!conversationId) return;
+      if (!conversationId) {return;}
       loadedConversationIdRef.current = null;
       setActiveConversationId(String(conversationId));
     };
@@ -288,20 +288,20 @@ export function useChatController({
       setAgentStreamEnabled(true);
       return;
     }
-    if (typeof window === 'undefined') return;
-    if (tokenStorage.getToken() && tokenStorage.getWorkspaceId()) setAgentStreamEnabled(true);
+    if (typeof window === 'undefined') {return;}
+    if (tokenStorage.getToken() && tokenStorage.getWorkspaceId()) {setAgentStreamEnabled(true);}
   }, [isAuthenticated]);
 
   useEffect(() => {
-    if (isAuthenticated) refreshHasCard();
+    if (isAuthenticated) {refreshHasCard();}
   }, [isAuthenticated, refreshHasCard]);
   useEffect(() => {
-    if (showSettings && isAuthenticated) refreshHasCard();
+    if (showSettings && isAuthenticated) {refreshHasCard();}
   }, [showSettings, isAuthenticated, refreshHasCard]);
 
   const appendAssistantMessage = useCallback((content: string, meta?: Record<string, unknown>) => {
     const normalized = String(content || '').trim();
-    if (!normalized) return;
+    if (!normalized) {return;}
     setMessages((prev) => [
       ...prev,
       {
@@ -338,10 +338,10 @@ export function useChatController({
   );
 
   useEffect(() => {
-    if (!agentStreamEnabled) return;
+    if (!agentStreamEnabled) {return;}
     const token = tokenStorage.getToken();
     const workspaceId = tokenStorage.getWorkspaceId();
-    if (!token || !workspaceId) return;
+    if (!token || !workspaceId) {return;}
     const cleanup = connectAgentStream({
       onEvent: handleAgentEvent,
       onConnected: () => setIsAgentStreamConnected(true),
@@ -353,14 +353,14 @@ export function useChatController({
   useEffect(() => {
     return () => {
       const timer = thoughtTimerRef.current;
-      if (timer) clearTimeout(timer);
+      if (timer) {clearTimeout(timer);}
     };
   }, []);
 
   useEffect(() => {
     const interval = setInterval(() => {
       const nextDayKey = currentTraceDayKey();
-      if (traceDayRef.current === nextDayKey) return;
+      if (traceDayRef.current === nextDayKey) {return;}
       traceDayRef.current = nextDayKey;
       agentTraceEntriesRef.current = [];
       setAgentTraceEntries([]);
@@ -379,12 +379,12 @@ export function useChatController({
   }, []);
 
   useEffect(() => {
-    if (appliedInitialDeepLink.current) return;
+    if (appliedInitialDeepLink.current) {return;}
     if (!initialOpenSettings) {
       appliedInitialDeepLink.current = true;
       return;
     }
-    if (!isAuthenticated) return;
+    if (!isAuthenticated) {return;}
     setSettingsInitialTab(initialSettingsTab);
     setScrollToCreditCard(initialScrollToCreditCard);
     setShowSettings(true);
@@ -416,7 +416,7 @@ export function useChatController({
   const handleSendMessageRef = useRef<(content: string) => Promise<void>>(async () => {});
 
   const handleSendMessage = async (content: string) => {
-    if (!content.trim()) return;
+    if (!content.trim()) {return;}
     const clientRequestId = createClientRequestId();
     setMessages((prev) => [
       ...prev,
@@ -536,7 +536,7 @@ export function useChatController({
     setIsAgentThinking(true);
     try {
       const response = await whatsappApi.startBacklog(actionId);
-      if (response.error) throw new Error(response.error);
+      if (response.error) {throw new Error(response.error);}
     } catch (error: unknown) {
       const errMsg = extractErrorMessage(error, 'erro desconhecido');
       appendAssistantMessage(`Não consegui iniciar essa ação. Motivo: ${errMsg}.`);

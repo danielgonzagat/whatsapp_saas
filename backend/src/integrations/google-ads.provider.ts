@@ -34,7 +34,9 @@ function resolveEnv(name: string): string {
 }
 
 function maskToken(token: string): string {
-  if (!token || token.length < 8) return '****';
+  if (!token || token.length < 8) {
+    return '****';
+  }
   return `${token.slice(0, 4)}****${token.slice(-4)}`;
 }
 
@@ -59,9 +61,15 @@ export class GoogleAdsProvider implements AdProvider {
     const developerToken = resolveEnv('GOOGLE_ADS_DEVELOPER_TOKEN');
 
     const missing: string[] = [];
-    if (!clientId) missing.push('GOOGLE_ADS_CLIENT_ID');
-    if (!clientSecret) missing.push('GOOGLE_ADS_CLIENT_SECRET');
-    if (!developerToken) missing.push('GOOGLE_ADS_DEVELOPER_TOKEN');
+    if (!clientId) {
+      missing.push('GOOGLE_ADS_CLIENT_ID');
+    }
+    if (!clientSecret) {
+      missing.push('GOOGLE_ADS_CLIENT_SECRET');
+    }
+    if (!developerToken) {
+      missing.push('GOOGLE_ADS_DEVELOPER_TOKEN');
+    }
 
     if (missing.length > 0) {
       throw new NotConfiguredException(
@@ -603,7 +611,9 @@ export class GoogleAdsProvider implements AdProvider {
           const m = (row.metrics as Record<string, unknown>) || {};
           const seg = (row.segments as Record<string, unknown>) || {};
           const dateKey = String(seg.date || '');
-          if (!dateKey) continue;
+          if (!dateKey) {
+            continue;
+          }
 
           const costMicros = Number(m.cost_micros || 0);
           const spend = costMicros / 1_000_000;

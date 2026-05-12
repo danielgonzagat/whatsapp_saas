@@ -13,7 +13,10 @@ export class NotificationsController {
 
   /** Register device. */
   @Post('register-device')
-  async registerDevice(@Request() req: AuthenticatedRequest, @Body() body: { token: string; platform: string }) {
+  async registerDevice(
+    @Request() req: AuthenticatedRequest,
+    @Body() body: { token: string; platform: string },
+  ) {
     return this.notificationsService.registerDevice(req.user.sub, body.token, body.platform);
   }
 }

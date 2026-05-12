@@ -39,10 +39,14 @@ export class AutopilotAnalyticsInsightsService {
 
       const contactActions = new Map<string, number>();
       for (const ev of events) {
-        if (!ev.contactId) continue;
+        if (!ev.contactId) {
+          continue;
+        }
         const ts = ev.createdAt.getTime();
         const current = contactActions.get(ev.contactId);
-        if (!current || ts > current) contactActions.set(ev.contactId, ts);
+        if (!current || ts > current) {
+          contactActions.set(ev.contactId, ts);
+        }
       }
 
       const contactIds = Array.from(contactActions.keys());
@@ -108,7 +112,9 @@ export class AutopilotAnalyticsInsightsService {
 
       const inboundByContact = new Map<string, Date[]>();
       for (const msg of inboundMessages) {
-        if (!msg.contactId) continue;
+        if (!msg.contactId) {
+          continue;
+        }
         const list = inboundByContact.get(msg.contactId) || [];
         list.push(msg.createdAt);
         inboundByContact.set(msg.contactId, list);
@@ -131,7 +137,9 @@ export class AutopilotAnalyticsInsightsService {
         );
         if (replies.length > 0) {
           const firstReply = replies[0];
-          if (!firstReply) continue;
+          if (!firstReply) {
+            continue;
+          }
           repliedContacts += 1;
           totalReplies += replies.length;
           const delay = Math.round((firstReply.getTime() - actionTs) / 60000);

@@ -11,7 +11,9 @@ describe('OpenAIHealthIndicator', () => {
     jest.clearAllMocks();
     config = {
       get: jest.fn((key: string) => {
-        if (key === 'OPENAI_API_KEY') return 'test-openai-key';
+        if (key === 'OPENAI_API_KEY') {
+          return 'test-openai-key';
+        }
         return undefined;
       }),
     };

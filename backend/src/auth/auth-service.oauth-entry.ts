@@ -150,7 +150,9 @@ async function fetchAppleJwks(): Promise<Map<string, KeyObject>> {
 
   for (const jwk of body.keys || []) {
     const kid = String(jwk.kid || '').trim();
-    if (!kid || jwk.kty !== 'RSA' || !jwk.n || !jwk.e) continue;
+    if (!kid || jwk.kty !== 'RSA' || !jwk.n || !jwk.e) {
+      continue;
+    }
     keys.set(kid, createPublicKey({ key: { kty: 'RSA', n: jwk.n, e: jwk.e }, format: 'jwk' }));
   }
 
@@ -313,9 +315,7 @@ export async function loginWithTikTokAccessToken(
     accessToken: data.accessToken,
     ...(data.openId !== undefined ? { openId: data.openId } : {}),
     ...(data.refreshToken !== undefined ? { refreshToken: data.refreshToken } : {}),
-    ...(data.expiresInSeconds !== undefined
-      ? { expiresInSeconds: data.expiresInSeconds }
-      : {}),
+    ...(data.expiresInSeconds !== undefined ? { expiresInSeconds: data.expiresInSeconds } : {}),
   });
   return completeTrustedOAuthLogin(deps, profile);
 }

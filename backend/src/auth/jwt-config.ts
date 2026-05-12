@@ -40,7 +40,9 @@ const MS_DURATION_MAP: Record<string, number> = {
 /** Get jwt cookie max age in milliseconds for httpOnly cookie alignment. */
 export function getJwtCookieMaxAgeMs(): number {
   const raw = getJwtExpiresIn();
-  if (typeof raw === 'number') return raw * 1000;
+  if (typeof raw === 'number') {
+    return raw * 1000;
+  }
   const match = /^(\d+)([smhd])$/.exec(String(raw ?? ''));
   if (match) {
     const value = parseInt(match[1]!, 10);

@@ -113,23 +113,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const payload = decodeKloelJwtPayload(token);
       if (payload?.sub && payload?.email && !isAnonymousKloelPayload(payload)) {
         tokenStorage.ensureAuthCookie();
-        setAuthState({
-          isAuthenticated: true,
-          isLoading: true,
-          justSignedUp: false,
-          hasCompletedOnboarding: false,
-          user: { id: payload.sub, email: payload.email, name: payload.name || '' },
-          workspace: (() => {
-            const storedWorkspaceId = tokenStorage.getWorkspaceId();
-            if (storedWorkspaceId) {
-              return { id: storedWorkspaceId, name: '' };
-            }
-            if (payload.workspaceId) {
-              return { id: payload.workspaceId, name: '' };
-            }
-            return null;
-          })(),
-          subscription: { status: 'none', trialDaysLeft: 0, creditsBalance: 0 },
+        const payloadSub = payload.sub;
+        const payloadEmail = payload.email;
+        const payloadName = payload.name || '';
+        const payloadWorkspaceId = payload.workspaceId;
+        queueMicrotask(() => {
+          setAuthState({
+            isAuthenticated: true,
+            isLoading: true,
+            justSignedUp: false,
+            hasCompletedOnboarding: false,
+            user: { id: payloadSub, email: payloadEmail, name: payloadName },
+            workspace: (() => {
+              const storedWorkspaceId = tokenStorage.getWorkspaceId();
+              if (storedWorkspaceId) {
+                return { id: storedWorkspaceId, name: '' };
+              }
+              if (payloadWorkspaceId) {
+                return { id: payloadWorkspaceId, name: '' };
+              }
+              return null;
+            })(),
+            subscription: { status: 'none', trialDaysLeft: 0, creditsBalance: 0 },
+          });
         });
       }
     }
@@ -215,7 +221,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       let onboardingCompleted = false;
       if (user?.id) {
         try {
-          const meRes = await apiFetch<{ user?: { onboardingCompletedAt?: string | null } }>('/auth/me');
+          const meRes = await apiFetch<{ user?: { onboardingCompletedAt?: string | null } }>(
+            '/auth/me',
+          );
           onboardingCompleted = Boolean(meRes.data?.user?.onboardingCompletedAt);
         } catch (error) {
           logAuthBootstrapIssue('Failed to load onboarding status during auth bootstrap:', error);
@@ -259,7 +267,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [claimGuestWhatsAppSession]);
   useEffect(() => {
-    checkAuthStatus();
+    queueMicrotask(() => {
+      void checkAuthStatus();
+    });
   }, [checkAuthStatus]);
   const refreshSubscription = useCallback(async () => {
     if (!authState.workspace?.id) {
@@ -307,7 +317,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       };
       let onboardingCompleted = false;
       if (user?.id) {
-        const meRes = await apiFetch<{ user?: { onboardingCompletedAt?: string | null } }>('/auth/me').catch((error: unknown) => {
+        const meRes = await apiFetch<{ user?: { onboardingCompletedAt?: string | null } }>(
+          '/auth/me',
+        ).catch((error: unknown) => {
           logAuthBootstrapIssue('Failed to load onboarding status after auth response:', error);
           return null;
         });
@@ -438,7 +450,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (res.data?.user) {
       return hydrateFromAuthResponse(res.data, {
         fallbackEmail: res.data.user.email,
-        fallbackName: res.data.user.name ?? undefined,
+        ...(res.data.user.name ? { fallbackName: res.data.user.name } : {}),
       });
     }
     return { success: false, error: 'Falha ao autenticar com Google.' };
@@ -466,7 +478,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (res.data?.user) {
       return hydrateFromAuthResponse(res.data, {
         fallbackEmail: res.data.user.email,
-        fallbackName: res.data.user.name ?? undefined,
+        ...(res.data.user.name ? { fallbackName: res.data.user.name } : {}),
       });
     }
     return { success: false, error: 'Falha ao autenticar com Facebook.' };

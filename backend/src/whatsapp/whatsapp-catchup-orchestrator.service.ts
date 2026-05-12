@@ -120,7 +120,9 @@ export class WhatsappCatchupOrchestratorService {
     const n = String(name || '')
       .trim()
       .toLowerCase();
-    if (n === 'guest workspace') return true;
+    if (n === 'guest workspace') {
+      return true;
+    }
     return (
       s?.guestMode === true ||
       s?.anonymousGuest === true ||
@@ -134,9 +136,12 @@ export class WhatsappCatchupOrchestratorService {
     s?: Record<string, unknown> | null,
   ): string | null {
     const lc = (s?.whatsappLifecycle || {}) as CatchupLifecycle;
-    if (this.isGuestWorkspace(name, s)) return 'guest_workspace_disabled';
-    if (lc.catchupEnabled === false || lc.autoManage === false || lc.autoCatchup === false)
+    if (this.isGuestWorkspace(name, s)) {
+      return 'guest_workspace_disabled';
+    }
+    if (lc.catchupEnabled === false || lc.autoManage === false || lc.autoCatchup === false) {
       return 'catchup_disabled';
+    }
     return null;
   }
   private resolveTimestamp(value: unknown): number {
@@ -177,16 +182,20 @@ export class WhatsappCatchupOrchestratorService {
   // ═══ PUBLIC ═══
   async triggerCatchup(ws: string, reason = 'unknown') {
     const br = await this.getCatchupBlockReason(ws);
-    if (br) return { scheduled: false, reason: br };
+    if (br) {
+      return { scheduled: false, reason: br };
+    }
     const ck = getCooldownKey(ws);
     if (
       (await this.redis.set(ck, reason, 'EX', CATCHUP_MIN_TRIGGER_INTERVAL_SECONDS, 'NX')) !== 'OK'
-    )
+    ) {
       return { scheduled: false, reason: 'catchup_cooldown' };
+    }
     const lk = getLockKey(ws);
     const t = randomUUID();
-    if ((await this.redis.set(lk, t, 'EX', CATCHUP_LOCK_TTL_SECONDS, 'NX')) !== 'OK')
+    if ((await this.redis.set(lk, t, 'EX', CATCHUP_LOCK_TTL_SECONDS, 'NX')) !== 'OK') {
       return { scheduled: false, reason: 'catchup_locked' };
+    }
     void this.runCatchup(ws, reason, t).catch((e: unknown) =>
       this.logger.error(`catchup_failed ws=${ws}: ${e instanceof Error ? e.message : String(e)}`),
     );
@@ -198,11 +207,14 @@ export class WhatsappCatchupOrchestratorService {
     reason = 'manual_sync',
   ): Promise<({ scheduled: true } & CatchupRunSummary) | { scheduled: false; reason?: string }> {
     const br = await this.getCatchupBlockReason(ws);
-    if (br) return { scheduled: false, reason: br };
+    if (br) {
+      return { scheduled: false, reason: br };
+    }
     const lk = getLockKey(ws);
     const t = randomUUID();
-    if ((await this.redis.set(lk, t, 'EX', CATCHUP_LOCK_TTL_SECONDS, 'NX')) !== 'OK')
+    if ((await this.redis.set(lk, t, 'EX', CATCHUP_LOCK_TTL_SECONDS, 'NX')) !== 'OK') {
       return { scheduled: false, reason: 'catchup_locked' };
+    }
     const s = await this.runCatchup(ws, reason, t);
     return { scheduled: true, ...s };
   }
@@ -219,7 +231,9 @@ export class WhatsappCatchupOrchestratorService {
         where: { id: ws },
         select: { name: true, providerSettings: true },
       });
-      if (!w) return { importedMessages: im, touchedChats: tc, processedChats: pc, overflow: ho };
+      if (!w) {
+        return { importedMessages: im, touchedChats: tc, processedChats: pc, overflow: ho };
+      }
       await this.history.sanitizePlaceholderContacts(ws);
       const s = asProviderSettings(w.providerSettings);
       await this.providerRegistry.getProviderType(ws);
@@ -249,7 +263,9 @@ export class WhatsappCatchupOrchestratorService {
       const since = this.resolveCatchupSince(sm);
       const processedChatIds = new Set<string>();
       const runPass = async (pass: number): Promise<void> => {
-        if (pass >= CATCHUP_MAX_PASSES) return;
+        if (pass >= CATCHUP_MAX_PASSES) {
+          return;
+        }
         const raw = await this.providerRegistry.getChats(ws);
         const pending = this.normalizeChats(raw)
           .filter((c) => !!c.id)
@@ -278,18 +294,23 @@ export class WhatsappCatchupOrchestratorService {
           });
         }
         const chats = ccs.slice(0, CATCHUP_MAX_CHATS);
-        if (!chats.length) return;
-        if (ccs.length > chats.length || pending.length > ccs.length) ho = true;
+        if (!chats.length) {
+          return;
+        }
+        if (ccs.length > chats.length || pending.length > ccs.length) {
+          ho = true;
+        }
         await forEachSequential(chats, async (chat) => {
           processedChatIds.add(chat.id);
           pc += 1;
-          if (fallbackChatIds.has(chat.id))
+          if (fallbackChatIds.has(chat.id)) {
             nbc = {
               chatId: chat.id,
               activityTimestamp: this.resolveChatActivityTimestamp(chat),
               updatedAt: new Date().toISOString(),
             };
-          if (pc === 1 || pc === etc || pc % 5 === 0)
+          }
+          if (pc === 1 || pc === etc || pc % 5 === 0) {
             await this.agentEvents.publish({
               type: 'status',
               workspaceId: ws,
@@ -297,6 +318,7 @@ export class WhatsappCatchupOrchestratorService {
               message: `Sincronizando conversa ${pc} de ${Math.max(etc, pc)}.`,
               meta: { processedChats: pc, totalChats: Math.max(etc, pc), importedMessages: im },
             });
+          }
           const { messages, hadOverflow: co } = await loadCatchupMessages(ws, chat, since, {
             providerRegistry: this.providerRegistry,
             maxPagesPerChat: CATCHUP_MAX_PAGES_PER_CHAT,
@@ -309,7 +331,9 @@ export class WhatsappCatchupOrchestratorService {
             fallbackScan: fallbackChatIds.has(chat.id),
             firstSync,
           });
-          if (co) ho = true;
+          if (co) {
+            ho = true;
+          }
           await this.history
             .reconcileRemoteChatState(ws, chat)
             .catch((e: unknown) =>
@@ -319,24 +343,32 @@ export class WhatsappCatchupOrchestratorService {
                 }`,
               ),
             );
-          if (!messages.length) return;
+          if (!messages.length) {
+            return;
+          }
           tc += 1;
           await forEachSequential(messages, async (m) => {
             if (m.fromMe) {
               const p = await this.history.persistHistoricalOutboundMessage(ws, m);
-              if (p) im += 1;
+              if (p) {
+                im += 1;
+              }
               return;
             }
             const ib = this.history.toInboundMessage(ws, m);
-            if (!ib) return;
+            if (!ib) {
+              return;
+            }
             const result = (await this.inboundProcessor.process(ib)) as {
               deduped?: boolean;
               messageId?: string;
               contactId?: string;
             };
-            if (!result.deduped) im += 1;
+            if (!result.deduped) {
+              im += 1;
+            }
           });
-          if (CATCHUP_MARK_READ_WITHOUT_REPLY)
+          if (CATCHUP_MARK_READ_WITHOUT_REPLY) {
             await this.providerRegistry
               .readChatMessages(ws, chat.id)
               .catch((e: unknown) =>
@@ -344,6 +376,7 @@ export class WhatsappCatchupOrchestratorService {
                   `Failed to mark chat as read: ${e instanceof Error ? e.message : String(e)}`,
                 ),
               );
+          }
         });
         await runPass(pass + 1);
       };
@@ -448,7 +481,9 @@ export class WhatsappCatchupOrchestratorService {
         where: { id: ws },
         select: { providerSettings: true },
       });
-      if (!w) return;
+      if (!w) {
+        return;
+      }
       const s = asProviderSettings(w.providerSettings);
       const sm = s.whatsappApiSession || {};
       await tx.workspace.update({
@@ -468,7 +503,9 @@ export class WhatsappCatchupOrchestratorService {
     ws: string,
     input: { reason: string; processedChats: number; touchedChats: number },
   ): Promise<void> {
-    if (!ws) return;
+    if (!ws) {
+      return;
+    }
     const workerOk = await this.workerRuntime.isAvailable().catch(() => false);
     const triggeredBy = `catchup:${input.reason}`;
     if (!workerOk) {
@@ -528,10 +565,14 @@ export class WhatsappCatchupOrchestratorService {
       where: { id: ws },
       select: { name: true, providerSettings: true },
     });
-    if (!w) return null;
+    if (!w) {
+      return null;
+    }
     const s = asProviderSettings(w.providerSettings);
     const lb = this.getLifecycleBlockReason(w.name || undefined, s);
-    if (lb) return lb;
+    if (lb) {
+      return lb;
+    }
     const sm = s.whatsappApiSession || {};
     const rb = safeStr(sm.recoveryBlockedReason).trim();
     return this.isNowebStoreMisconfigured(rb) ? rb || 'noweb_store_misconfigured' : null;

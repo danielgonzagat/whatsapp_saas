@@ -21,7 +21,7 @@ export function EnvioRelatoriosTab({ filters, isMobile }: { filters: ReportFilte
     : kloelT(`Ultimos 30 dias`);
 
   const handleSend = async () => {
-    if (!email) return;
+    if (!email) {return;}
     setSending(true);
     setResult(null);
     try {
@@ -31,7 +31,7 @@ export function EnvioRelatoriosTab({ filters, isMobile }: { filters: ReportFilte
         period: periodDisplay,
         filters: filters as Record<string, string>,
       });
-      setResult({ success: true, message: res.message ?? kloelT(`Relatorio enviado com sucesso`) });
+      setResult({ success: true, message: res.data?.message ?? kloelT(`Relatorio enviado com sucesso`) });
     } catch {
       setResult({ success: false, message: kloelT(`Erro ao enviar relatorio`) });
     } finally {

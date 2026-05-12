@@ -93,7 +93,9 @@ export class WebhooksController {
         .digest('hex')
         .slice(0, 24);
     const catchDupe = await this.logWebhookEventSafe('hooks_catch', flowId, catchExternalId, body);
-    if (catchDupe) return { status: 'success', ...catchDupe };
+    if (catchDupe) {
+      return { status: 'success', ...catchDupe };
+    }
 
     this.logger.log(`Webhook received for flow ${flowId} in workspace ${workspaceId}`);
 
@@ -146,7 +148,9 @@ export class WebhooksController {
       financeExternalId,
       body,
     );
-    if (financeDupe) return { status: 'received', ...financeDupe };
+    if (financeDupe) {
+      return { status: 'received', ...financeDupe };
+    }
 
     try {
       const res = await this.webhooksService.processFinanceEvent(workspaceId, body);
@@ -341,7 +345,9 @@ export class WebhooksController {
       messageStatusExternalId,
       body,
     );
-    if (msgDupe) return { updated: 0, ...msgDupe };
+    if (msgDupe) {
+      return { updated: 0, ...msgDupe };
+    }
 
     const { workspaceId, externalId, status, errorCode, phone, channel } = body || {};
     return this.webhooksService.updateMessageStatus({
@@ -386,7 +392,9 @@ export class WebhooksController {
       emailStatusExternalId,
       body,
     );
-    if (emailDupe) return { updated: 0, ...emailDupe };
+    if (emailDupe) {
+      return { updated: 0, ...emailDupe };
+    }
 
     return this.webhooksService.updateMessageStatus({
       ...body,
@@ -425,7 +433,9 @@ export class WebhooksController {
       igExternalId,
       body,
     );
-    if (igDupe) return { status: 'success', ...igDupe };
+    if (igDupe) {
+      return { status: 'success', ...igDupe };
+    }
 
     this.logger.log(`[INSTAGRAM] Webhook received for workspace ${workspaceId}`);
 

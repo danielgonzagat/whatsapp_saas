@@ -181,7 +181,10 @@ export function resolveCanonicalChatId(chatId: string, lidMap?: Map<string, stri
   return normalizedChatId;
 }
 
-export function resolveCatalogPhoneFromChatId(chatId: string, lidMap?: Map<string, string>): string {
+export function resolveCatalogPhoneFromChatId(
+  chatId: string,
+  lidMap?: Map<string, string>,
+): string {
   return normalizeCatalogPhone(resolveCanonicalChatId(chatId, lidMap));
 }
 

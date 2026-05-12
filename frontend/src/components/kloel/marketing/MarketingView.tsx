@@ -209,7 +209,7 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
   const getChannelData = useCallback(
     (channelKey: string): ChannelRealData | null => {
       const cfg = CH_CONFIG[channelKey];
-      if (!cfg) return null;
+      if (!cfg) {return null;}
       return channelDataMap[cfg.backendKey] || null;
     },
     [channelDataMap],
@@ -229,7 +229,7 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
     (id: string) => {
       setTab(id);
       const nextRoute = id === 'conversas' ? '/marketing' : `/marketing/${id}`;
-      if (pathname === nextRoute) return;
+      if (pathname === nextRoute) {return;}
       startTransition(() => {
         router.push(nextRoute);
       });

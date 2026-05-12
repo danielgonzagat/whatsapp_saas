@@ -72,7 +72,9 @@ function mergeLocalConversationIntoListing(
   conversation: Awaited<ReturnType<typeof loadConversationsForListing>>[number],
 ) {
   const phone = deps.normalizeNumber(conversation.contact?.phone || '');
-  if (!phone) return;
+  if (!phone) {
+    return;
+  }
 
   const existing = merged.get(phone);
   const timestamp = existing?.timestamp || conversation.lastMessageAt?.getTime() || 0;

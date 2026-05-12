@@ -1,5 +1,4 @@
 import { BadRequestException, Body, Controller, Post, Req, UseGuards } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { resolveWorkspaceId } from '../auth/workspace-access';
@@ -85,7 +84,7 @@ export class MassSendController {
             requestedByUserId: req.user?.sub || null,
             risk: 'high',
             requiresApproval: true,
-          } as Prisma.InputJsonObject,
+          },
         },
         select: { id: true, state: true, title: true, createdAt: true },
       });

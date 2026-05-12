@@ -83,9 +83,7 @@ describe('UnifiedAgentActionsWorkspaceService', () => {
       ],
     }).compile();
 
-    service = module.get<UnifiedAgentActionsWorkspaceService>(
-      UnifiedAgentActionsWorkspaceService,
-    );
+    service = module.get<UnifiedAgentActionsWorkspaceService>(UnifiedAgentActionsWorkspaceService);
   });
 
   afterEach(() => {
@@ -443,7 +441,10 @@ describe('UnifiedAgentActionsWorkspaceService', () => {
   describe('actionGetWorkspaceStatus', () => {
     it('delegates to helper', async () => {
       const { actionGetWorkspaceStatus } = require('./unified-agent-actions-workspace.helpers');
-      actionGetWorkspaceStatus.mockResolvedValue({ workspaceId: wsId, health: { status: 'healthy' } });
+      actionGetWorkspaceStatus.mockResolvedValue({
+        workspaceId: wsId,
+        health: { status: 'healthy' },
+      });
 
       const result = await service.actionGetWorkspaceStatus(wsId, {});
 

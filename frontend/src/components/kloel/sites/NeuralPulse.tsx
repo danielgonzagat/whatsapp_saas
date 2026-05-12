@@ -10,9 +10,9 @@ export function NeuralPulse({ w, h, color = colors.ember.primary }: { w: number;
 
   useEffect(() => {
     const c = ref.current;
-    if (!c) return;
+    if (!c) {return;}
     const ctx = c.getContext('2d');
-    if (!ctx) return;
+    if (!ctx) {return;}
     let frame = 0;
     let raf: number;
     let visible = true;
@@ -38,8 +38,8 @@ export function NeuralPulse({ w, h, color = colors.ember.primary }: { w: number;
           const spike = secureRandomFloat() > 0.97 ? (secureRandomFloat() - 0.5) * h * 0.6 : 0;
           const y =
             h / 2 + Math.sin(x * 0.04 + frame * 0.03 + i * 1.5) * (h * 0.25 + i * 2) + spike;
-          if (x === 0) ctx.moveTo(x, y);
-          else ctx.lineTo(x, y);
+          if (x === 0) {ctx.moveTo(x, y);}
+          else {ctx.lineTo(x, y);}
         }
         ctx.stroke();
         ctx.globalAlpha = 1;

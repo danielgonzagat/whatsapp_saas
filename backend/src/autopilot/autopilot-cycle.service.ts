@@ -271,9 +271,7 @@ export class AutopilotCycleService {
         },
       });
       if (fullContactTags && 'tags' in fullContactTags) {
-        tags = (
-          fullContactTags as { tags: Array<{ name: string }>; customFields: Prisma.JsonValue }
-        ).tags;
+        tags = fullContactTags.tags;
         customFields = (fullContactTags.customFields as Record<string, unknown>) || {};
       }
     }

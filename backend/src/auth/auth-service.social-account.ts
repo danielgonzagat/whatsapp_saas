@@ -43,7 +43,8 @@ export async function upsertSocialAccount(
     },
   });
 
-  const profileData = (profile.profileData as Prisma.InputJsonValue | null | undefined) || undefined;
+  const profileData =
+    (profile.profileData as Prisma.InputJsonValue | null | undefined) || undefined;
 
   const data: Prisma.SocialAccountUncheckedCreateInput = {
     agentId,
@@ -53,8 +54,7 @@ export async function upsertSocialAccount(
     accessToken:
       encryptedAccessToken ?? (options?.overwriteTokens ? null : (current?.accessToken ?? null)),
     refreshToken:
-      encryptedRefreshToken ??
-      (options?.overwriteTokens ? null : (current?.refreshToken ?? null)),
+      encryptedRefreshToken ?? (options?.overwriteTokens ? null : (current?.refreshToken ?? null)),
     tokenExpiresAt: profile.tokenExpiresAt || null,
     ...(profileData !== undefined ? { profileData } : {}),
     revokedAt: null,

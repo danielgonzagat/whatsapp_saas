@@ -16,7 +16,9 @@ export async function sendPurchaseConfirmationEmailFromPaidCheckoutUpdate(
   sendEmail?: CheckoutEmailSender,
 ) {
   const scope = args.data.status === 'PAID' ? readPaidCheckoutOrderScope(args) : null;
-  if (!scope) return;
+  if (!scope) {
+    return;
+  }
 
   const existing = await prisma.auditLog.findFirst({
     where: {
@@ -60,7 +62,9 @@ export async function sendPurchaseConfirmationEmailFromPaidCheckoutUpdate(
     select: { slug: true },
   });
 
-  if (!sendEmail) return;
+  if (!sendEmail) {
+    return;
+  }
 
   const sent = await sendEmail({
     to: order.customerEmail,

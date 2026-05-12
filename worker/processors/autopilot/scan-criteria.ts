@@ -56,7 +56,9 @@ export async function buildPendingMessageBatch(params: {
 
   const inboundMessages = await prisma.message.findMany({
     where: {
-      workspaceId, contactId: resolvedContactId, direction: 'INBOUND',
+      workspaceId,
+      contactId: resolvedContactId,
+      direction: 'INBOUND',
       ...(lastOutbound?.createdAt ? { createdAt: { gt: lastOutbound.createdAt } } : {}),
     },
     orderBy: { createdAt: 'asc' },
@@ -65,56 +67,106 @@ export async function buildPendingMessageBatch(params: {
   });
 
   const usableMessages = inboundMessages.filter(
-    (message) => String(message.content || '').trim().length > 0);
+    (message) => String(message.content || '').trim().length > 0,
+  );
   let effectiveMessages = usableMessages.length
     ? usableMessages
     : fallbackMessageContent
-      ? [{ id: undefined as string | undefined, externalId: undefined as string | undefined, content: fallbackMessageContent, createdAt: new Date() }]
+      ? [
+          {
+            id: undefined as string | undefined,
+            externalId: undefined as string | undefined,
+            content: fallbackMessageContent,
+            createdAt: new Date(),
+          },
+        ]
       : [];
 
   const storedCustomFields = normalizeJsonObject(contact?.customFields);
   let resolvedContactName = resolveTrustedCatalogName(
-    resolvedPhone, contact?.name, storedCustomFields.remotePushName);
+    resolvedPhone,
+    contact?.name,
+    storedCustomFields.remotePushName,
+  );
   const remoteChatCandidates = Array.from(
     new Set(
-      [String(chatId || '').trim(), String(storedCustomFields.lastRemoteChatId || '').trim(),
-       String(storedCustomFields.lastCatalogChatId || '').trim(), String(storedCustomFields.lastResolvedChatId || '').trim(),
-       `${resolvedPhone}@c.us`].filter(Boolean)));
+      [
+        String(chatId || '').trim(),
+        String(storedCustomFields.lastRemoteChatId || '').trim(),
+        String(storedCustomFields.lastCatalogChatId || '').trim(),
+        String(storedCustomFields.lastResolvedChatId || '').trim(),
+        `${resolvedPhone}@c.us`,
+      ].filter(Boolean),
+    ),
+  );
   let resolvedRemoteChatId =
     remoteChatCandidates.find((candidate) => candidate.includes('@')) || `${resolvedPhone}@c.us`;
 
   if (!effectiveMessages.length && resolvedPhone) {
     await findFirstSequential(remoteChatCandidates, async (remoteChatId) => {
       const remoteMessages = await whatsappApiProvider
-        .getChatMessages(workspaceId, remoteChatId, { limit: Math.max(PENDING_MESSAGE_LIMIT * 4, 20), offset: 0, downloadMedia: false })
+        .getChatMessages(workspaceId, remoteChatId, {
+          limit: Math.max(PENDING_MESSAGE_LIMIT * 4, 20),
+          offset: 0,
+          downloadMedia: false,
+        })
         .catch(() => []);
       if (!Array.isArray(remoteMessages) || remoteMessages.length === 0) return undefined;
 
       const normalizedRemoteMessages = (remoteMessages as UnknownRecord[])
         .map((message) => ({
           id: undefined as string | undefined,
-          externalId: String(message?.externalId || message?.id || message?.key?.id || message?.key?._serialized || '').trim() || undefined,
-          direction: String(message?.direction || '').trim().toUpperCase() ||
-            (message?.fromMe === true || message?.key?.fromMe === true || message?.id?.fromMe === true ? 'OUTBOUND' : 'INBOUND'),
-          content: String(message?.content || message?.body || message?.text?.body || message?.caption || '').trim(),
-          createdAt: message?.createdAt || message?.timestamp || message?.messageTimestamp || new Date(),
+          externalId:
+            String(
+              message?.externalId ||
+                message?.id ||
+                message?.key?.id ||
+                message?.key?._serialized ||
+                '',
+            ).trim() || undefined,
+          direction:
+            String(message?.direction || '')
+              .trim()
+              .toUpperCase() ||
+            (message?.fromMe === true ||
+            message?.key?.fromMe === true ||
+            message?.id?.fromMe === true
+              ? 'OUTBOUND'
+              : 'INBOUND'),
+          content: String(
+            message?.content || message?.body || message?.text?.body || message?.caption || '',
+          ).trim(),
+          createdAt:
+            message?.createdAt || message?.timestamp || message?.messageTimestamp || new Date(),
         }))
         .filter((message) => message.content)
-        .sort((left, right) =>
-          new Date(left.createdAt as string | number | Date).getTime() -
-          new Date(right.createdAt as string | number | Date).getTime());
+        .sort(
+          (left, right) =>
+            new Date(left.createdAt as string | number | Date).getTime() -
+            new Date(right.createdAt as string | number | Date).getTime(),
+        );
 
-      for (const remoteMessage of (Array.isArray(remoteMessages) ? remoteMessages : []) as UnknownRecord[]) {
+      for (const remoteMessage of (Array.isArray(remoteMessages)
+        ? remoteMessages
+        : []) as UnknownRecord[]) {
         const remoteTrustedName = extractTrustedNameFromRemoteMessage(remoteMessage, resolvedPhone);
-        if (remoteTrustedName) { resolvedContactName = remoteTrustedName; break; }
+        if (remoteTrustedName) {
+          resolvedContactName = remoteTrustedName;
+          break;
+        }
       }
 
-      const latestRemoteMessage = normalizedRemoteMessages[normalizedRemoteMessages.length - 1] || null;
+      const latestRemoteMessage =
+        normalizedRemoteMessages[normalizedRemoteMessages.length - 1] || null;
       if (latestRemoteMessage?.direction === 'OUTBOUND') return undefined;
 
       const remoteInboundAfterLastOutbound = normalizedRemoteMessages.filter(
-        (message) => message.direction === 'INBOUND' &&
-          (!lastOutbound?.createdAt || new Date(message.createdAt as string | number | Date).getTime() > lastOutbound.createdAt.getTime()));
+        (message) =>
+          message.direction === 'INBOUND' &&
+          (!lastOutbound?.createdAt ||
+            new Date(message.createdAt as string | number | Date).getTime() >
+              lastOutbound.createdAt.getTime()),
+      );
 
       const trailingInbound: typeof normalizedRemoteMessages = [];
       for (let index = normalizedRemoteMessages.length - 1; index >= 0; index -= 1) {

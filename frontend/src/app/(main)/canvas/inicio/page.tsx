@@ -14,7 +14,6 @@ import { useEffect, useState } from 'react';
 import { mutate } from 'swr';
 
 const S = "var(--font-sora), 'Sora', sans-serif";
-const _M = "var(--font-jetbrains), 'JetBrains Mono', monospace";
 
 const SKELETON_SLOTS = ['alpha', 'beta', 'gamma', 'delta', 'epsilon', 'zeta'] as const;
 

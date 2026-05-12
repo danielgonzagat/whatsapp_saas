@@ -98,7 +98,9 @@ export async function getThreadMessages(
     where: { id, workspaceId },
     select: { id: true },
   });
-  if (!thread) throw new NotFoundException('Conversa não encontrada');
+  if (!thread) {
+    throw new NotFoundException('Conversa não encontrada');
+  }
   const messages = await deps.prisma.chatMessage.findMany({
     where: { threadId: id, workspaceId },
     select: {
@@ -146,8 +148,9 @@ export async function addThreadMessage(
 }
 
 function normalizeMessageMetadata(metadata: Prisma.JsonValue): Record<string, unknown> {
-  if (metadata && typeof metadata === 'object' && !Array.isArray(metadata))
+  if (metadata && typeof metadata === 'object' && !Array.isArray(metadata)) {
     return { ...(metadata as Record<string, unknown>) };
+  }
   return {};
 }
 
@@ -158,14 +161,19 @@ export async function updateThreadMessage(
   workspaceId: string,
 ) {
   const content = String(dto?.content || '').trim();
-  if (!content) throw new BadRequestException('Conteúdo da mensagem é obrigatório.');
+  if (!content) {
+    throw new BadRequestException('Conteúdo da mensagem é obrigatório.');
+  }
   const existing = await deps.prisma.chatMessage.findFirst({
     where: { id, thread: { workspaceId } },
     select: { id: true, threadId: true, role: true, metadata: true, createdAt: true },
   });
-  if (!existing) throw new NotFoundException('Mensagem não encontrada.');
-  if (existing.role !== 'user')
+  if (!existing) {
+    throw new NotFoundException('Mensagem não encontrada.');
+  }
+  if (existing.role !== 'user') {
     throw new BadRequestException('Somente mensagens do usuário podem ser editadas.');
+  }
   const nextMetadata = {
     ...normalizeMessageMetadata(existing.metadata),
     editedAt: new Date().toISOString(),
@@ -195,17 +203,21 @@ export async function updateMessageFeedback(
       : dto?.type === null
         ? null
         : undefined;
-  if (type === undefined)
+  if (type === undefined) {
     throw new BadRequestException('Feedback inválido. Use positive, negative ou null.');
+  }
 
   return deps.prisma.$transaction(async (tx) => {
     const existing = await tx.chatMessage.findFirst({
       where: { id, thread: { workspaceId } },
       select: { id: true, threadId: true, role: true, metadata: true, createdAt: true },
     });
-    if (!existing) throw new NotFoundException('Mensagem não encontrada.');
-    if (existing.role !== 'assistant')
+    if (!existing) {
+      throw new NotFoundException('Mensagem não encontrada.');
+    }
+    if (existing.role !== 'assistant') {
       throw new BadRequestException('Feedback só pode ser salvo em mensagens do assistente.');
+    }
     const nextMetadata = {
       ...normalizeMessageMetadata(existing.metadata),
       feedback: type ? { type, updatedAt: new Date().toISOString() } : null,

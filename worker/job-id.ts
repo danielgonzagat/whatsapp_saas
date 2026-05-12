@@ -14,4 +14,3 @@ function sanitizeQueueIdPart(value: unknown): string {
 export function buildQueueJobId(prefix: string, ...parts: unknown[]): string {
   return [sanitizeQueueIdPart(prefix), ...parts.map(sanitizeQueueIdPart)].join('__');
 }
-

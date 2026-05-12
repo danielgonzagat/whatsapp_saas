@@ -31,8 +31,8 @@ export default function AffiliateList({
   onSelect: (id: string) => void;
 }) {
   const gridCols = COL_SIZES.map((c, i) => {
-    if (i === 0) return '46px';
-    if (c === null) return '1fr';
+    if (i === 0) {return '46px';}
+    if (c === null) {return '1fr';}
     return `${c}px`;
   }).join(' ');
 
@@ -40,7 +40,7 @@ export default function AffiliateList({
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
       <div style={{ display: 'grid', gridTemplateColumns: gridCols, gap: 10, padding: '10px 18px', marginBottom: 4 }}>
         {HEADERS.map((h, i) => {
-          if (i === 0) return <span key={i} />;
+          if (i === 0) {return <span key={i} />;}
           const align = i >= 3 && i <= 6 ? 'right' : 'left';
           return <span key={i} style={headerStyle(align)}>{h}</span>;
         })}

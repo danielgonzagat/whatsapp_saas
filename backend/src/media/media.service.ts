@@ -93,8 +93,10 @@ export class MediaService {
       folder: 'documents',
       workspaceId,
     };
-    if (file.mimetype) uploadOpts.mimeType = file.mimetype;
-    const stored = await this.storage.upload(file.buffer, uploadOpts as { filename?: string; mimeType?: string; folder?: string; workspaceId?: string });
+    if (file.mimetype) {
+      uploadOpts.mimeType = file.mimetype;
+    }
+    const stored = await this.storage.upload(file.buffer, uploadOpts);
 
     const doc = await this.prisma.document.create({
       data: {

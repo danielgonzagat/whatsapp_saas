@@ -17,7 +17,7 @@ import type { AgentCursorTarget } from './AgentCursor';
 interface AgentDesktopTraceEntry {
   id: string;
   type: string;
-  phase?: string;
+  phase?: string | undefined;
   message: string;
   timestamp: Date;
 }

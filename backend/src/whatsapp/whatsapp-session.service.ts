@@ -25,8 +25,12 @@ export class WhatsappSessionService {
   ) {}
 
   private readText(v: unknown): string {
-    if (typeof v === 'string') return v.trim();
-    if (typeof v === 'number' || typeof v === 'boolean') return String(v).trim();
+    if (typeof v === 'string') {
+      return v.trim();
+    }
+    if (typeof v === 'number' || typeof v === 'boolean') {
+      return String(v).trim();
+    }
     return '';
   }
 
@@ -49,10 +53,13 @@ export class WhatsappSessionService {
   async createSession(ws: string) {
     const result = await this.providerRegistry.startSession(ws);
     this.logger.log(`Session start attempted for ws=${ws}: success=${result.success}`);
-    if (!result.success)
+    if (!result.success) {
       return { error: true, message: result.message || 'failed_to_start_session' };
+    }
     const qr = await this.providerRegistry.getQrCode(ws);
-    if (qr.success && qr.qr) return { status: 'qr_pending', code: qr.qr, qrCode: qr.qr };
+    if (qr.success && qr.qr) {
+      return { status: 'qr_pending', code: qr.qr, qrCode: qr.qr };
+    }
     const status = await this.providerRegistry.getSessionStatus(ws);
     return {
       status: status.connected ? 'already_connected' : status.status,
@@ -75,7 +82,9 @@ export class WhatsappSessionService {
       d?.webhookConfigured !== true ||
       d?.inboundEventsConfigured !== true ||
       d?.storeEnabled !== true;
-    if (!invalid) return { recreated: false, reason: 'session_config_healthy', diagnostics: d };
+    if (!invalid) {
+      return { recreated: false, reason: 'session_config_healthy', diagnostics: d };
+    }
     this.logger.warn(`Session invalid for ws=${ws}, recreating`);
     await this.providerRegistry.deleteSession(ws).catch((e: unknown) => {
       this.logger.warn(
@@ -153,16 +162,19 @@ export class WhatsappSessionService {
       session: null,
     };
     if (o?.requireInboundWebhook) {
-      if (!d.webhook.webhookConfigured) issues.push('meta_webhook_missing');
-      else if (!d.webhook.inboundEventsConfigured)
+      if (!d.webhook.webhookConfigured) {
+        issues.push('meta_webhook_missing');
+      } else if (!d.webhook.inboundEventsConfigured) {
         issues.push('meta_webhook_events_missing_inbound');
+      }
     }
     try {
       d.session = await this.providerRegistry.getSessionStatus(ws);
-      if (!d.session.connected)
+      if (!d.session.connected) {
         issues.push(
           `${pt.replace(PATTERN_RE, '_')}_session_${String(d.session.status || 'unknown').toLowerCase()}`,
         );
+      }
     } catch (e: unknown) {
       const errMsg = e instanceof Error ? e.message : 'unknown_error';
       this.logger.error(`Session status check failed for ws=${ws}: ${errMsg}`);

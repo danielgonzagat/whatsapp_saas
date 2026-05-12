@@ -18,10 +18,7 @@ describe('MetaAdsService', () => {
     metaSdk = createMockMetaSdk();
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        MetaAdsService,
-        { provide: MetaSdkService, useValue: metaSdk },
-      ],
+      providers: [MetaAdsService, { provide: MetaSdkService, useValue: metaSdk }],
     }).compile();
 
     service = module.get<MetaAdsService>(MetaAdsService);
@@ -48,15 +45,10 @@ describe('MetaAdsService', () => {
       metaSdk.graphApiGet.mockResolvedValue({ data: [] });
 
       await service.getCampaigns('12345', 'token', {
-        filtering: JSON.stringify([
-          { field: 'status', operator: 'EQUAL', value: 'ACTIVE' },
-        ]),
+        filtering: JSON.stringify([{ field: 'status', operator: 'EQUAL', value: 'ACTIVE' }]),
       });
 
-      const [, params] = metaSdk.graphApiGet.mock.calls[0] as [
-        string,
-        Record<string, unknown>,
-      ];
+      const [, params] = metaSdk.graphApiGet.mock.calls[0] as [string, Record<string, unknown>];
       expect(params.filtering).toBeDefined();
       expect(params.fields).toBeDefined();
     });
@@ -111,10 +103,7 @@ describe('MetaAdsService', () => {
         until: '2024-01-31',
       });
 
-      const [, params] = metaSdk.graphApiGet.mock.calls[0] as [
-        string,
-        Record<string, unknown>,
-      ];
+      const [, params] = metaSdk.graphApiGet.mock.calls[0] as [string, Record<string, unknown>];
       expect(params.level).toBe('account');
     });
   });
@@ -153,45 +142,27 @@ describe('MetaAdsService', () => {
       const mockResponse = { success: true };
       metaSdk.graphApiPost.mockResolvedValue(mockResponse);
 
-      const result = await service.updateCampaignStatus(
-        'camp_1',
-        'ACTIVE',
-        'token',
-      );
+      const result = await service.updateCampaignStatus('camp_1', 'ACTIVE', 'token');
 
       expect(result).toEqual(mockResponse);
-      expect(metaSdk.graphApiPost).toHaveBeenCalledWith(
-        'camp_1',
-        { status: 'ACTIVE' },
-        'token',
-      );
+      expect(metaSdk.graphApiPost).toHaveBeenCalledWith('camp_1', { status: 'ACTIVE' }, 'token');
     });
 
     it('sets status to PAUSED via graphApiPost', async () => {
       const mockResponse = { success: true };
       metaSdk.graphApiPost.mockResolvedValue(mockResponse);
 
-      const result = await service.updateCampaignStatus(
-        'camp_2',
-        'PAUSED',
-        'token',
-      );
+      const result = await service.updateCampaignStatus('camp_2', 'PAUSED', 'token');
 
       expect(result).toEqual(mockResponse);
-      expect(metaSdk.graphApiPost).toHaveBeenCalledWith(
-        'camp_2',
-        { status: 'PAUSED' },
-        'token',
-      );
+      expect(metaSdk.graphApiPost).toHaveBeenCalledWith('camp_2', { status: 'PAUSED' }, 'token');
     });
   });
 
   describe('getLeadForms', () => {
     it('delegates to metaSdk.graphApiGet with leadgen_forms endpoint', async () => {
       const mockResponse = {
-        data: [
-          { id: 'form_1', name: 'Form A', status: 'ACTIVE', leads_count: 42 },
-        ],
+        data: [{ id: 'form_1', name: 'Form A', status: 'ACTIVE', leads_count: 42 }],
       };
       metaSdk.graphApiGet.mockResolvedValue(mockResponse);
 
@@ -209,9 +180,7 @@ describe('MetaAdsService', () => {
   describe('getLeads', () => {
     it('delegates to metaSdk.graphApiGet with leads endpoint', async () => {
       const mockResponse = {
-        data: [
-          { id: 'lead_1', created_time: '2024-01-01', field_data: [] },
-        ],
+        data: [{ id: 'lead_1', created_time: '2024-01-01', field_data: [] }],
       };
       metaSdk.graphApiGet.mockResolvedValue(mockResponse);
 

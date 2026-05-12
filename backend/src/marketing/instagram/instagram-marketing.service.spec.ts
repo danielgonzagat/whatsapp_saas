@@ -102,11 +102,7 @@ describe('InstagramMarketingService', () => {
         status: 'published',
       });
 
-      const result = await service.publishPost(
-        'ws-1',
-        'https://img.test/photo.jpg',
-        'Summer sale',
-      );
+      const result = await service.publishPost('ws-1', 'https://img.test/photo.jpg', 'Summer sale');
 
       expect(publishPhoto).toHaveBeenCalledWith(
         'ig-123',
@@ -212,9 +208,9 @@ describe('InstagramMarketingService', () => {
         accessToken: 'token-abc',
       });
 
-      await expect(
-        service.getInsights('ws-1', ['impressions'], 'day'),
-      ).rejects.toBeInstanceOf(BadRequestException);
+      await expect(service.getInsights('ws-1', ['impressions'], 'day')).rejects.toBeInstanceOf(
+        BadRequestException,
+      );
     });
 
     it('handles empty insight data gracefully', async () => {

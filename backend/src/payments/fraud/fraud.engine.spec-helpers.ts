@@ -40,7 +40,9 @@ export function makePrismaStub(initial: FraudBlacklist[] = []) {
               value?: { contains: string; mode: string };
             };
           }) => {
-            if (!where) return rows;
+            if (!where) {
+              return rows;
+            }
             let filtered = rows;
             if (where.type) {
               filtered = filtered.filter((r) => r.type === where.type);
@@ -124,7 +126,9 @@ export function makeRedisStub() {
     del: jest.fn((...keys: string[]) => {
       let removed = 0;
       for (const key of keys) {
-        if (counters.delete(key)) removed += 1;
+        if (counters.delete(key)) {
+          removed += 1;
+        }
         ttl.delete(key);
       }
       return Promise.resolve(removed);

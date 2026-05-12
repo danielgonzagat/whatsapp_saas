@@ -1,9 +1,5 @@
 import type { CiaActionType, CiaCandidate, CiaWorkspaceState } from './build-state';
-import type {
-  CiaActionDecision,
-  CiaDecisionBatch,
-  CiaStrategyHints,
-} from './brain.types';
+import type { CiaActionDecision, CiaDecisionBatch, CiaStrategyHints } from './brain.types';
 
 export type {
   CiaActionDecision,

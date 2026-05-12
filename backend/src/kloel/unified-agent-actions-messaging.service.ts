@@ -32,9 +32,12 @@ export class UnifiedAgentActionsMessagingService {
   }
 
   private readText(value: unknown, fallback = ''): string {
-    if (typeof value === 'string') return value;
-    if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint')
+    if (typeof value === 'string') {
+      return value;
+    }
+    if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
       return String(value);
+    }
     return fallback;
   }
 
@@ -166,7 +169,9 @@ export class UnifiedAgentActionsMessagingService {
     try {
       const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
       const msgText = this.str(args.message);
-      if (!msgText) return { success: false, error: 'Mensagem é obrigatória' };
+      if (!msgText) {
+        return { success: false, error: 'Mensagem é obrigatória' };
+      }
 
       if (this.readText(context?.channel).toLowerCase() === 'email') {
         return this.actionSendEmailMessage(workspaceId, phone, args, context);
@@ -183,7 +188,9 @@ export class UnifiedAgentActionsMessagingService {
 
       if (sendResult.error) {
         const message = this.readText(sendResult.message, 'send_message_failed');
-        if (!isTestEnv) this.logger.error(`[AGENT] Erro ao enviar: ${message}`);
+        if (!isTestEnv) {
+          this.logger.error(`[AGENT] Erro ao enviar: ${message}`);
+        }
         return { success: false, error: message };
       }
 
@@ -210,7 +217,9 @@ export class UnifiedAgentActionsMessagingService {
       const msg =
         error instanceof Error ? error.message : typeof error === 'string' ? error : 'unknown';
       const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
-      if (!isTestEnv) this.logger.error(`Erro ao enviar mensagem: ${msg}`);
+      if (!isTestEnv) {
+        this.logger.error(`Erro ao enviar mensagem: ${msg}`);
+      }
       return { success: false, error: msg };
     }
   }
@@ -225,7 +234,9 @@ export class UnifiedAgentActionsMessagingService {
       const type = this.str(args.type, 'image');
       const url = this.str(args.url);
       const caption = this.str(args.caption);
-      if (!url) return { success: false, error: 'URL da mídia é obrigatória' };
+      if (!url) {
+        return { success: false, error: 'URL da mídia é obrigatória' };
+      }
       this.logger.log(`[AGENT] Enviando mídia para ${phone}: ${type} - ${url.substring(0, 50)}...`);
       const result = await this.whatsappService.sendMessage(
         workspaceId,
@@ -262,8 +273,12 @@ export class UnifiedAgentActionsMessagingService {
     try {
       const text = this.str(args.text);
       const voice = this.str(args.voice, 'nova');
-      if (!text) return { success: false, error: 'Texto é obrigatório para gerar áudio' };
-      if (!this.audioService) return { success: false, error: 'Serviço de áudio não disponível' };
+      if (!text) {
+        return { success: false, error: 'Texto é obrigatório para gerar áudio' };
+      }
+      if (!this.audioService) {
+        return { success: false, error: 'Serviço de áudio não disponível' };
+      }
       this.logger.log(`[AGENT] Gerando áudio TTS para ${phone}: "${text.substring(0, 50)}..."`);
       const audioBuffer = await this.audioService.textToSpeech(text, voice, workspaceId);
       const base64Audio = audioBuffer.toString('base64');
@@ -305,8 +320,12 @@ export class UnifiedAgentActionsMessagingService {
     try {
       const text = this.str(args.text);
       const voice = this.str(args.voice, 'nova');
-      if (!text) return { success: false, error: 'Texto é obrigatório para gerar áudio' };
-      if (!this.audioService) return { success: false, error: 'Serviço de áudio não disponível' };
+      if (!text) {
+        return { success: false, error: 'Texto é obrigatório para gerar áudio' };
+      }
+      if (!this.audioService) {
+        return { success: false, error: 'Serviço de áudio não disponível' };
+      }
       this.logger.log(`[AGENT] Gerando áudio para ${phone}: "${text.substring(0, 80)}..."`);
       const audioBuffer = await this.audioService.textToSpeech(text, voice, workspaceId);
       const base64Audio = audioBuffer.toString('base64');
@@ -343,16 +362,22 @@ export class UnifiedAgentActionsMessagingService {
       const audioUrl = this.str(args.audioUrl);
       const audioBase64 = this.str(args.audioBase64);
       const language = this.str(args.language, 'pt');
-      if (!this.audioService) return { success: false, error: 'Serviço de áudio não disponível' };
-      if (!audioUrl && !audioBase64)
+      if (!this.audioService) {
+        return { success: false, error: 'Serviço de áudio não disponível' };
+      }
+      if (!audioUrl && !audioBase64) {
         return { success: false, error: 'É necessário fornecer audioUrl ou audioBase64' };
+      }
       this.logger.log(`[AGENT] Transcrevendo áudio para workspace ${workspaceId}...`);
       let result: { text: string; duration?: number; language: string } | undefined;
-      if (audioUrl)
+      if (audioUrl) {
         result = await this.audioService.transcribeFromUrl(audioUrl, language, workspaceId);
-      else if (audioBase64)
+      } else if (audioBase64) {
         result = await this.audioService.transcribeFromBase64(audioBase64, language, workspaceId);
-      if (!result?.text) return { success: false, error: 'Transcrição falhou ou retornou vazia' };
+      }
+      if (!result?.text) {
+        return { success: false, error: 'Transcrição falhou ou retornou vazia' };
+      }
       this.logger.log(`[AGENT] Transcrição concluída: "${result.text.substring(0, 100)}..."`);
       return {
         success: true,

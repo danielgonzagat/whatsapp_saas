@@ -74,7 +74,9 @@ describe('KloelBusinessConfigToolsService', () => {
       campaign: { create: jest.fn().mockResolvedValue({}) },
       subscription: { upsert: jest.fn().mockResolvedValue({}) },
       $transaction: jest.fn().mockImplementation((fn: unknown) => {
-        if (typeof fn === 'function') return fn(prisma);
+        if (typeof fn === 'function') {
+          return fn(prisma);
+        }
         return Promise.resolve(undefined);
       }),
     };

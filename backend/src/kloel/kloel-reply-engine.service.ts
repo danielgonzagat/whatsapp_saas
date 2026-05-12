@@ -110,15 +110,20 @@ export class KloelReplyEngineService {
     ];
     const expertScore = expertSignals.filter((s) => combined.includes(s)).length;
     const advancedScore = advancedSignals.filter((s) => combined.includes(s)).length;
-    if (expertScore >= 3) return 'EXPERT';
-    if (expertScore >= 1 || advancedScore >= 5) return 'AVANÇADO';
+    if (expertScore >= 3) {
+      return 'EXPERT';
+    }
+    if (expertScore >= 1 || advancedScore >= 5) {
+      return 'AVANÇADO';
+    }
     if (
       advancedScore >= 2 ||
       String(message || '')
         .trim()
         .split(WHITESPACE_RE).length >= 14
-    )
+    ) {
       return 'INTERMEDIÁRIO';
+    }
     return 'INICIANTE';
   }
 
@@ -134,7 +139,9 @@ export class KloelReplyEngineService {
     const normalized = String(message || '')
       .trim()
       .toLowerCase();
-    if (!normalized || /ideias?/.test(normalized)) return false;
+    if (!normalized || /ideias?/.test(normalized)) {
+      return false;
+    }
     return (
       CRIE_CADASTRAR_CADASTRE_RE.test(normalized) && PRODUTO_CAT_A__LOGO_AUT_RE.test(normalized)
     );
@@ -150,7 +157,9 @@ export class KloelReplyEngineService {
         ? `A resposta demorou mais de ${secs}s e eu interrompi a tentativa para não travar sua conversa. Sua mensagem foi preservada. Tente dividir o pedido em partes ou enviar de novo.`
         : 'A resposta demorou demais e eu interrompi a tentativa para não travar sua conversa. Sua mensagem foi preservada. Tente novamente.';
     }
-    if (reason === KLOEL_STREAM_ABORT_REASON_CLIENT_DISCONNECTED) return 'client_disconnected';
+    if (reason === KLOEL_STREAM_ABORT_REASON_CLIENT_DISCONNECTED) {
+      return 'client_disconnected';
+    }
     return this.unavailableMessage;
   }
 
@@ -175,11 +184,15 @@ export class KloelReplyEngineService {
       { role: 'system', content: params.systemPrompt },
       { role: 'system', content: params.dynamicContext },
     ];
-    if (params.marketingPromptAddendum)
+    if (params.marketingPromptAddendum) {
       msgs.push({ role: 'system', content: params.marketingPromptAddendum });
-    if (params.summaryMessage) msgs.push(params.summaryMessage);
-    for (const entry of params.recentMessages)
+    }
+    if (params.summaryMessage) {
+      msgs.push(params.summaryMessage);
+    }
+    for (const entry of params.recentMessages) {
       msgs.push({ role: entry.role as 'user' | 'assistant', content: entry.content });
+    }
     msgs.push({ role: 'user', content: params.userMessage });
     if (params.assistantMessage) {
       const toolCalls = Array.isArray(params.assistantMessage.tool_calls)
@@ -194,7 +207,7 @@ export class KloelReplyEngineService {
         ...(toolCalls !== undefined ? { tool_calls: toolCalls } : {}),
       });
     }
-    if (params.toolMessages?.length)
+    if (params.toolMessages?.length) {
       msgs.push(
         ...params.toolMessages.map((m) => ({
           role: 'tool' as const,
@@ -202,6 +215,7 @@ export class KloelReplyEngineService {
           content: m.content,
         })),
       );
+    }
     return msgs;
   }
 
@@ -210,7 +224,9 @@ export class KloelReplyEngineService {
     mode: string | undefined,
     message: string,
   ): Promise<string | null> {
-    if (mode !== 'chat' || !workspaceId || !this.marketingSkillService) return null;
+    if (mode !== 'chat' || !workspaceId || !this.marketingSkillService) {
+      return null;
+    }
     try {
       return (
         (await this.marketingSkillService.buildPacket(workspaceId, message))?.promptAddendum || null

@@ -187,7 +187,9 @@ export class PulseArtifactService {
   private getArtifactRootDir() {
     const configured =
       this.config.get<string>('PULSE_ARTIFACT_ROOT') || this.config.get<string>('APP_ROOT_DIR');
-    if (configured) return configured;
+    if (configured) {
+      return configured;
+    }
     return this.detectArtifactRootDir(process.cwd());
   }
 
@@ -197,9 +199,13 @@ export class PulseArtifactService {
       const hasPulseRunner = fs.existsSync(path.join(current, 'scripts', 'pulse', 'run.js'));
       const hasRootPackage = fs.existsSync(path.join(current, 'package.json'));
       const hasBackendDir = fs.existsSync(path.join(current, 'backend'));
-      if (hasPulseRunner && hasRootPackage && hasBackendDir) return current;
+      if (hasPulseRunner && hasRootPackage && hasBackendDir) {
+        return current;
+      }
       const parent = path.dirname(current);
-      if (parent === current) return path.resolve(startDir);
+      if (parent === current) {
+        return path.resolve(startDir);
+      }
       current = parent;
     }
   }
@@ -209,7 +215,9 @@ export class PulseArtifactService {
       String(this.config.get<string>('PULSE_ARTIFACT_MAX_AGE_MS') || ''),
       10,
     );
-    if (Number.isFinite(configured) && configured >= 60_000) return configured;
+    if (Number.isFinite(configured) && configured >= 60_000) {
+      return configured;
+    }
     return DEFAULT_ARTIFACT_MAX_AGE_MS;
   }
 
@@ -357,9 +365,15 @@ export class PulseArtifactService {
     directiveMissing: boolean;
     humanReplacementReady: boolean;
   }): RuntimeMachineReadinessStatus {
-    if (input.humanReplacementReady || input.canDeclareComplete) return 'certified';
-    if (input.canWorkNow) return 'ready';
-    if (input.directiveMissing) return 'unknown';
+    if (input.humanReplacementReady || input.canDeclareComplete) {
+      return 'certified';
+    }
+    if (input.canWorkNow) {
+      return 'ready';
+    }
+    if (input.directiveMissing) {
+      return 'unknown';
+    }
     return 'blocked';
   }
 }

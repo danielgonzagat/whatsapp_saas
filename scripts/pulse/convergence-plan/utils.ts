@@ -15,18 +15,41 @@ import {
   OBSERVED_ARTIFACTS,
   OBSERVED_GATES,
   OBSERVED_EXTERNAL_SIGNAL_SOURCE_LABELS,
-  FAILURE_CLASSES,
   PARITY_GAP_KINDS,
-  TRUTH_MODES,
-  UNIT_CONFIDENCES,
-  UNIT_EXECUTION_MODES,
-  UNIT_KINDS,
-  UNIT_OWNER_LANES,
-  UNIT_PRIORITIES,
-  UNIT_PRODUCT_IMPACTS,
-  UNIT_RISK_LEVELS,
-  UNIT_STATUSES,
 } from './kernel';
+import {
+  deriveObservedConvergenceEvidenceLabel,
+  observedOpenStatus,
+  observedWatchStatus,
+  observedProductFailureClass,
+  observedMissingEvidenceFailureClass,
+  observedCriticalRisk,
+  observedHighRisk,
+  observedMediumRisk,
+  observedLowRisk,
+  observedTransformationalImpact,
+  observedMaterialImpact,
+  observedEnablingImpact,
+  observedDiagnosticImpact,
+  observedHighConfidence,
+  observedMediumConfidence,
+  observedLowConfidence,
+  observedPlatformLane,
+  observedReliabilityLane,
+  observedSecurityLane,
+  observedObservationOnlyMode,
+  observedRuntimeKind,
+  observedChangeKind,
+  observedDependencyKind,
+  observedTruthObservedMode,
+  observedTruthInferredMode,
+} from './builder-labels';
+import {
+  observedP0Priority,
+  observedP1Priority,
+  observedP2Priority,
+  observedP3Priority,
+} from './builder-labels';
 import type { BuildPulseConvergencePlanInput, ScenarioPriorityContext } from './kernel';
 import { CHECKER_GAP_TYPES, SECURITY_FINDING_EVENT_KERNEL_GRAMMAR } from '../cert-constants';
 import { isBlockingDynamicFinding, summarizeDynamicFindingEvents } from '../finding-identity';
@@ -93,34 +116,24 @@ export function countUnitEvidence(unit: PulseConvergenceUnit): number {
 }
 
 export function unitPressure(unit: PulseConvergenceUnit): number {
-  let openStatus = [...UNIT_STATUSES].find((s) => s.includes('open'))!;
-  let observedMode = [...TRUTH_MODES].find((t) => t.includes('observed'))!;
-  let productFailureClass = [...FAILURE_CLASSES].find((fc) => fc.includes('product_failure'))!;
-  let mixedClass = [...FAILURE_CLASSES].find((fc) => fc.includes('mixed'))!;
-  let observedCriticalLevel = [...UNIT_RISK_LEVELS].find((r) =>
-    r.includes('critical'),
-  )! as PulseConvergenceUnit['riskLevel'];
-  let observedTransformationalImpact = [...UNIT_PRODUCT_IMPACTS].find((i) =>
-    i.includes('transformational'),
-  )! as PulseConvergenceUnit['productImpact'];
-  let observationOnlyMode = [...UNIT_EXECUTION_MODES].find((m) => m.includes('observation_only'))!;
   let pressure = countUnitEvidence(unit);
-  if (unit.status === openStatus) {
+  if (unit.status === observedOpenStatus) {
     pressure += unit.exitCriteria.length || 1;
   }
-  if (unit.evidenceMode === observedMode) {
+  if (unit.evidenceMode === observedTruthObservedMode) {
     pressure += unit.artifactPaths.length || 1;
   }
-  if (unit.failureClass === productFailureClass || unit.failureClass === mixedClass) {
+  let unitMixedClass = 'mixed' as PulseConvergenceUnit['failureClass'];
+  if (unit.failureClass === observedProductFailureClass || unit.failureClass === unitMixedClass) {
     pressure += unit.validationArtifacts.length || 1;
   }
-  if (unit.riskLevel === observedCriticalLevel) {
+  if (unit.riskLevel === observedCriticalRisk) {
     pressure += unit.relatedFiles.length || unit.findingEvents.length || 1;
   }
   if (unit.productImpact === observedTransformationalImpact) {
     pressure += unit.affectedCapabilityIds.length + unit.affectedFlowIds.length + 1;
   }
-  if (unit.executionMode === observationOnlyMode) {
+  if (unit.executionMode === observedObservationOnlyMode) {
     pressure -= unit.artifactPaths.length || 1;
   }
   return pressure;
@@ -278,7 +291,7 @@ export function determineFailureClass(
 export function deriveWatchFailureClasses(): Set<string> {
   return new Set([
     ...CHECKER_GAP_TYPES,
-    ...[...FAILURE_CLASSES].find((fc) => fc.includes('missing'))!,
+    observedMissingEvidenceFailureClass,
   ]);
 }
 
@@ -286,8 +299,8 @@ export function determineUnitStatus(
   failureClass: PulseConvergenceUnit['failureClass'],
 ): PulseConvergenceUnitStatus {
   return deriveWatchFailureClasses().has(failureClass)
-    ? ([...UNIT_STATUSES].find((s) => s.includes('watch'))! as PulseConvergenceUnitStatus)
-    : ([...UNIT_STATUSES].find((s) => s.includes('open'))! as PulseConvergenceUnitStatus);
+    ? observedWatchStatus
+    : observedOpenStatus;
 }
 
 export function normalizeFailureClass(
@@ -385,38 +398,26 @@ export function selectDominantOwnerLane(
   lanes: Array<PulseConvergenceOwnerLane | null | undefined>,
 ): PulseConvergenceOwnerLane {
   let available = lanes.filter((lane): lane is PulseConvergenceOwnerLane => Boolean(lane));
-  let dominanceOrder = [...UNIT_OWNER_LANES].filter(
-    (l) => l !== [...UNIT_OWNER_LANES].find((ll) => ll.includes('platform'))!,
-  ) as PulseConvergenceOwnerLane[];
-  for (let preferred of dominanceOrder) {
-    if (available.includes(preferred)) return preferred;
+  let platformLane = observedPlatformLane;
+  for (let preferred of available) {
+    if (preferred !== platformLane) return preferred;
   }
-  return [...UNIT_OWNER_LANES].find((l) => l.includes('platform'))! as PulseConvergenceOwnerLane;
+  return platformLane;
 }
 
 export function confidenceFromNumeric(score: number): 'high' | 'medium' | 'low' {
   let pivot = observedThreshold([score, Number(Boolean(score))]);
-  let confLabels = [...UNIT_CONFIDENCES];
-  let observedHighLabel = confLabels.find((l) => l.includes('high'))! as 'high';
-  let observedMediumLabel = confLabels.find((l) => l.includes('medium'))! as 'medium';
-  let observedLowLabel = confLabels.find((l) => l.includes('low'))! as 'low';
-  if (score > pivot) return observedHighLabel;
-  if (Boolean(score)) return observedMediumLabel;
-  return observedLowLabel;
+  if (score > pivot) return observedHighConfidence;
+  if (Boolean(score)) return observedMediumConfidence;
+  return observedLowConfidence;
 }
 
 export function confidenceFromTruthMode(
   truthMode: 'observed' | 'inferred' | 'aspirational',
 ): 'high' | 'medium' | 'low' {
-  let truthObserved = [...TRUTH_MODES].find((t) => t.includes('observed'))!;
-  let truthInferred = [...TRUTH_MODES].find((t) => t.includes('inferred'))!;
-  let confLabels = [...UNIT_CONFIDENCES];
-  let observedHighLabel = confLabels.find((l) => l.includes('high'))! as 'high';
-  let observedMediumLabel = confLabels.find((l) => l.includes('medium'))! as 'medium';
-  let observedLowLabel = confLabels.find((l) => l.includes('low'))! as 'low';
-  if (isSameState(truthMode, truthObserved)) return observedHighLabel;
-  if (isSameState(truthMode, truthInferred)) return observedMediumLabel;
-  return observedLowLabel;
+  if (isSameState(truthMode, observedTruthObservedMode)) return observedHighConfidence;
+  if (isSameState(truthMode, observedTruthInferredMode)) return observedMediumConfidence;
+  return observedLowConfidence;
 }
 
 export function determineScenarioProductImpact(
@@ -435,12 +436,6 @@ export function determineScopeProductImpact(context: {
   missingCodacyFiles: number;
   userFacingCandidates: number;
 }): PulseConvergenceUnit['productImpact'] {
-  let observedMaterialImpact = [...UNIT_PRODUCT_IMPACTS].find((i) =>
-    i.includes('material'),
-  )! as PulseConvergenceUnit['productImpact'];
-  let observedEnablingImpact = [...UNIT_PRODUCT_IMPACTS].find((i) =>
-    i.includes('enabling'),
-  )! as PulseConvergenceUnit['productImpact'];
   if (Boolean(context.missingCodacyFiles)) return observedMaterialImpact;
   return observedEnablingImpact;
 }
@@ -448,26 +443,11 @@ export function determineScopeProductImpact(context: {
 export function determineParityProductImpact(
   gapKind: PulseParityGapsArtifact['gaps'][number]['kind'],
 ): PulseConvergenceUnit['productImpact'] {
-  let observedTransformationalImpact = [...UNIT_PRODUCT_IMPACTS].find((i) =>
-    i.includes('transformational'),
-  )! as PulseConvergenceUnit['productImpact'];
-  let observedMaterialImpact = [...UNIT_PRODUCT_IMPACTS].find((i) =>
-    i.includes('material'),
-  )! as PulseConvergenceUnit['productImpact'];
-  let observedEnablingImpact = [...UNIT_PRODUCT_IMPACTS].find((i) =>
-    i.includes('enabling'),
-  )! as PulseConvergenceUnit['productImpact'];
-  let frontWithoutBack = [...PARITY_GAP_KINDS].find((k) => k.includes('front_without_back'))!;
-  let uiWithoutPersistence = [...PARITY_GAP_KINDS].find((k) =>
-    k.includes('ui_without_persistence'),
-  )!;
-  let featureDeclared = [...PARITY_GAP_KINDS].find((k) =>
-    k.includes('feature_declared_without_runtime'),
-  )!;
-  let backWithoutFront = [...PARITY_GAP_KINDS].find((k) => k.includes('back_without_front'))!;
-  let flowWithoutValidation = [...PARITY_GAP_KINDS].find((k) =>
-    k.includes('flow_without_validation'),
-  )!;
+  let frontWithoutBack = deriveObservedConvergenceEvidenceLabel<string>(PARITY_GAP_KINDS, 'front_without_back');
+  let uiWithoutPersistence = deriveObservedConvergenceEvidenceLabel<string>(PARITY_GAP_KINDS, 'ui_without_persistence');
+  let featureDeclared = deriveObservedConvergenceEvidenceLabel<string>(PARITY_GAP_KINDS, 'feature_declared_without_runtime');
+  let backWithoutFront = deriveObservedConvergenceEvidenceLabel<string>(PARITY_GAP_KINDS, 'back_without_front');
+  let flowWithoutValidation = deriveObservedConvergenceEvidenceLabel<string>(PARITY_GAP_KINDS, 'flow_without_validation');
   if (
     isSameState(gapKind, frontWithoutBack) ||
     isSameState(gapKind, uiWithoutPersistence) ||
@@ -485,17 +465,8 @@ export function determineGateProductImpact(
   gateName: PulseGateName,
 ): PulseConvergenceUnit['productImpact'] {
   let structuralLane = discoverGateLaneFromObservedStructure(gateName);
-  let observedEnablingImpact = [...UNIT_PRODUCT_IMPACTS].find((i) =>
-    i.includes('enabling'),
-  )! as PulseConvergenceUnit['productImpact'];
-  let observedMaterialImpact = [...UNIT_PRODUCT_IMPACTS].find((i) =>
-    i.includes('material'),
-  )! as PulseConvergenceUnit['productImpact'];
-  let observedDiagnosticImpact = [...UNIT_PRODUCT_IMPACTS].find((i) =>
-    i.includes('diagnostic'),
-  )! as PulseConvergenceUnit['productImpact'];
-  if (structuralLane === 'reliability') return observedEnablingImpact;
-  if (structuralLane === 'security') return observedEnablingImpact;
+  if (structuralLane === observedReliabilityLane) return observedEnablingImpact;
+  if (structuralLane === observedSecurityLane) return observedEnablingImpact;
   if (
     gateName === OBSERVED_GATES.find((g) => g.includes('runtime')) ||
     gateName === OBSERVED_GATES.find((g) => g.includes('flow')) ||
@@ -573,25 +544,10 @@ export function buildCodacyVisionDelta(filePath: string): string {
 export function determineExternalKind(
   signal: NonNullable<BuildPulseConvergencePlanInput['externalSignalState']>['signals'][number],
 ): PulseConvergenceUnit['kind'] {
-  let observedDependencyKind = [...UNIT_KINDS].find((k) =>
-    k.includes('dependency'),
-  )! as PulseConvergenceUnit['kind'];
-  let observedRuntimeKind = [...UNIT_KINDS].find((k) =>
-    k.includes('runtime'),
-  )! as PulseConvergenceUnit['kind'];
-  let observedChangeKind = [...UNIT_KINDS].find((k) =>
-    k.includes('change'),
-  )! as PulseConvergenceUnit['kind'];
-  let dependabotSource = [...OBSERVED_EXTERNAL_SIGNAL_SOURCE_LABELS].find((s) =>
-    s.includes('dependabot'),
-  );
-  let sentrySource = [...OBSERVED_EXTERNAL_SIGNAL_SOURCE_LABELS].find((s) => s.includes('sentry'));
-  let datadogSource = [...OBSERVED_EXTERNAL_SIGNAL_SOURCE_LABELS].find((s) =>
-    s.includes('datadog'),
-  );
-  let prometheusSource = [...OBSERVED_EXTERNAL_SIGNAL_SOURCE_LABELS].find((s) =>
-    s.includes('prometheus'),
-  );
+  let dependabotSource = deriveObservedConvergenceEvidenceLabel<string>(OBSERVED_EXTERNAL_SIGNAL_SOURCE_LABELS, 'dependabot');
+  let sentrySource = deriveObservedConvergenceEvidenceLabel<string>(OBSERVED_EXTERNAL_SIGNAL_SOURCE_LABELS, 'sentry');
+  let datadogSource = deriveObservedConvergenceEvidenceLabel<string>(OBSERVED_EXTERNAL_SIGNAL_SOURCE_LABELS, 'datadog');
+  let prometheusSource = deriveObservedConvergenceEvidenceLabel<string>(OBSERVED_EXTERNAL_SIGNAL_SOURCE_LABELS, 'prometheus');
   if (signal.source === dependabotSource || /dependency|vuln|supply/i.test(signal.type)) {
     return observedDependencyKind;
   }
@@ -610,52 +566,26 @@ export function determineExternalPriority(
   signal: NonNullable<BuildPulseConvergencePlanInput['externalSignalState']>['signals'][number],
   impactThreshold: number,
 ): PulseConvergenceUnitPriority {
-  let observedP0 = [...UNIT_PRIORITIES].find((p) =>
-    p.includes('P0'),
-  )! as PulseConvergenceUnitPriority;
-  let observedP1 = [...UNIT_PRIORITIES].find((p) =>
-    p.includes('P1'),
-  )! as PulseConvergenceUnitPriority;
-  let observedP2 = [...UNIT_PRIORITIES].find((p) =>
-    p.includes('P2'),
-  )! as PulseConvergenceUnitPriority;
-  let observedP3 = [...UNIT_PRIORITIES].find((p) =>
-    p.includes('P3'),
-  )! as PulseConvergenceUnitPriority;
   if (
     signal.impactScore > impactThreshold &&
     hasObservedItems([...signal.capabilityIds, ...signal.flowIds])
   )
-    return observedP0;
-  if (signal.impactScore > impactThreshold) return observedP1;
-  if (hasObservedItems([...signal.relatedFiles, ...signal.routePatterns])) return observedP2;
-  return observedP3;
+    return observedP0Priority;
+  if (signal.impactScore > impactThreshold) return observedP1Priority;
+  if (hasObservedItems([...signal.relatedFiles, ...signal.routePatterns])) return observedP2Priority;
+  return observedP3Priority;
 }
 
 export function determineExternalProductImpact(
   signal: NonNullable<BuildPulseConvergencePlanInput['externalSignalState']>['signals'][number],
   impactThreshold: number,
 ): PulseConvergenceUnit['productImpact'] {
-  let observedTransformationalImpact = [...UNIT_PRODUCT_IMPACTS].find((i) =>
-    i.includes('transformational'),
-  )! as PulseConvergenceUnit['productImpact'];
-  let observedMaterialImpact = [...UNIT_PRODUCT_IMPACTS].find((i) =>
-    i.includes('material'),
-  )! as PulseConvergenceUnit['productImpact'];
-  let observedEnablingImpact = [...UNIT_PRODUCT_IMPACTS].find((i) =>
-    i.includes('enabling'),
-  )! as PulseConvergenceUnit['productImpact'];
-  let observedDiagnosticImpact = [...UNIT_PRODUCT_IMPACTS].find((i) =>
-    i.includes('diagnostic'),
-  )! as PulseConvergenceUnit['productImpact'];
   if (hasObservedItems([...signal.capabilityIds, ...signal.flowIds])) {
     return signal.impactScore > impactThreshold
       ? observedTransformationalImpact
       : observedMaterialImpact;
   }
-  let dependabotSource = [...OBSERVED_EXTERNAL_SIGNAL_SOURCE_LABELS].find((s) =>
-    s.includes('dependabot'),
-  );
+  let dependabotSource = deriveObservedConvergenceEvidenceLabel<string>(OBSERVED_EXTERNAL_SIGNAL_SOURCE_LABELS, 'dependabot');
   if (signal.source === dependabotSource) return observedEnablingImpact;
   return observedDiagnosticImpact;
 }
@@ -664,25 +594,13 @@ export function determineExternalRiskLevel(
   signal: NonNullable<BuildPulseConvergencePlanInput['externalSignalState']>['signals'][number],
   severityThreshold: number,
 ): PulseConvergenceUnit['riskLevel'] {
-  let observedCriticalLevel = [...UNIT_RISK_LEVELS].find((r) =>
-    r.includes('critical'),
-  )! as PulseConvergenceUnit['riskLevel'];
-  let observedHighLevel = [...UNIT_RISK_LEVELS].find((r) =>
-    r.includes('high'),
-  )! as PulseConvergenceUnit['riskLevel'];
-  let observedMediumLevel = [...UNIT_RISK_LEVELS].find((r) =>
-    r.includes('medium'),
-  )! as PulseConvergenceUnit['riskLevel'];
-  let observedLowLevel = [...UNIT_RISK_LEVELS].find((r) =>
-    r.includes('low'),
-  )! as PulseConvergenceUnit['riskLevel'];
   if (signal.severity > severityThreshold && signal.impactScore > severityThreshold)
-    return observedCriticalLevel;
+    return observedCriticalRisk;
   if (signal.severity > severityThreshold || signal.impactScore > severityThreshold)
-    return observedHighLevel;
+    return observedHighRisk;
   return hasObservedItems([...signal.relatedFiles, ...signal.routePatterns])
-    ? observedMediumLevel
-    : observedLowLevel;
+    ? observedMediumRisk
+    : observedLowRisk;
 }
 
 export function buildExternalVisionDelta(

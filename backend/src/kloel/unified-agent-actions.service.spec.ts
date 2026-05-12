@@ -58,7 +58,15 @@ describe('UnifiedAgentActionsService', () => {
   let prisma: ActionsPrismaMock;
   let storageService: Pick<StorageService, 'getSignedUrl'>;
   let whatsappService: { sendMessage: jest.Mock };
-  let messaging: Pick<UnifiedAgentActionsMessagingService, 'actionSendMessage' | 'actionSendMedia' | 'actionSendVoiceNote' | 'actionSendAudio' | 'actionTranscribeAudio' | 'buildWhatsAppSendOptions'>;
+  let messaging: Pick<
+    UnifiedAgentActionsMessagingService,
+    | 'actionSendMessage'
+    | 'actionSendMedia'
+    | 'actionSendVoiceNote'
+    | 'actionSendAudio'
+    | 'actionTranscribeAudio'
+    | 'buildWhatsAppSendOptions'
+  >;
   let crm: Partial<UnifiedAgentActionsCrmService>;
   let sales: Partial<UnifiedAgentActionsSalesService>;
   let workspace: Partial<UnifiedAgentActionsWorkspaceService>;
@@ -137,7 +145,9 @@ describe('UnifiedAgentActionsService', () => {
     };
     commerce = {
       actionSendProductInfo: jest.fn().mockResolvedValue({ success: true }),
-      actionCreatePaymentLink: jest.fn().mockResolvedValue({ success: true, paymentUrl: 'https://pay.test' }),
+      actionCreatePaymentLink: jest
+        .fn()
+        .mockResolvedValue({ success: true, paymentUrl: 'https://pay.test' }),
     };
     auditService = { logWithTx: jest.fn().mockResolvedValue(undefined) };
 
@@ -271,37 +281,66 @@ describe('UnifiedAgentActionsService', () => {
   describe('delegation to sub-services', () => {
     it('actionSendMessage delegates to messaging service', async () => {
       await service.actionSendMessage(wsId, phone, { message: 'Oi' });
-      expect(messaging.actionSendMessage).toHaveBeenCalledWith(wsId, phone, { message: 'Oi' }, undefined);
+      expect(messaging.actionSendMessage).toHaveBeenCalledWith(
+        wsId,
+        phone,
+        { message: 'Oi' },
+        undefined,
+      );
     });
 
     it('actionSendMedia delegates to messaging service', async () => {
       await service.actionSendMedia(wsId, phone, { url: 'http://img' });
-      expect(messaging.actionSendMedia).toHaveBeenCalledWith(wsId, phone, { url: 'http://img' }, undefined);
+      expect(messaging.actionSendMedia).toHaveBeenCalledWith(
+        wsId,
+        phone,
+        { url: 'http://img' },
+        undefined,
+      );
     });
 
     it('actionSendVoiceNote delegates to messaging service', async () => {
       await service.actionSendVoiceNote(wsId, phone, { url: 'http://audio' });
-      expect(messaging.actionSendVoiceNote).toHaveBeenCalledWith(wsId, phone, { url: 'http://audio' }, undefined);
+      expect(messaging.actionSendVoiceNote).toHaveBeenCalledWith(
+        wsId,
+        phone,
+        { url: 'http://audio' },
+        undefined,
+      );
     });
 
     it('actionSendAudio delegates to messaging service', async () => {
       await service.actionSendAudio(wsId, phone, { url: 'http://audio' });
-      expect(messaging.actionSendAudio).toHaveBeenCalledWith(wsId, phone, { url: 'http://audio' }, undefined);
+      expect(messaging.actionSendAudio).toHaveBeenCalledWith(
+        wsId,
+        phone,
+        { url: 'http://audio' },
+        undefined,
+      );
     });
 
     it('actionTranscribeAudio delegates to messaging service', async () => {
       await service.actionTranscribeAudio(wsId, { audioUrl: 'https://example.com/audio.ogg' });
-      expect(messaging.actionTranscribeAudio).toHaveBeenCalledWith(wsId, { audioUrl: 'https://example.com/audio.ogg' });
+      expect(messaging.actionTranscribeAudio).toHaveBeenCalledWith(wsId, {
+        audioUrl: 'https://example.com/audio.ogg',
+      });
     });
 
     it('actionSendProductInfo delegates to commerce service', async () => {
       await service.actionSendProductInfo(wsId, phone, { productId: 'p-1' });
-      expect(commerce.actionSendProductInfo).toHaveBeenCalledWith(wsId, phone, { productId: 'p-1' }, undefined);
+      expect(commerce.actionSendProductInfo).toHaveBeenCalledWith(
+        wsId,
+        phone,
+        { productId: 'p-1' },
+        undefined,
+      );
     });
 
     it('actionUpdateLeadStatus delegates to crm service', async () => {
       await service.actionUpdateLeadStatus(wsId, contactId, { status: 'qualified' });
-      expect(crm.actionUpdateLeadStatus).toHaveBeenCalledWith(wsId, contactId, { status: 'qualified' });
+      expect(crm.actionUpdateLeadStatus).toHaveBeenCalledWith(wsId, contactId, {
+        status: 'qualified',
+      });
     });
 
     it('actionAddTag delegates to crm service', async () => {
@@ -311,12 +350,16 @@ describe('UnifiedAgentActionsService', () => {
 
     it('actionScheduleFollowup delegates to crm service', async () => {
       await service.actionScheduleFollowup(wsId, contactId, phone, { delayHours: 1 });
-      expect(crm.actionScheduleFollowup).toHaveBeenCalledWith(wsId, contactId, phone, { delayHours: 1 });
+      expect(crm.actionScheduleFollowup).toHaveBeenCalledWith(wsId, contactId, phone, {
+        delayHours: 1,
+      });
     });
 
     it('actionTransferToHuman delegates to crm service', async () => {
       await service.actionTransferToHuman(wsId, contactId, { reason: 'complex' });
-      expect(crm.actionTransferToHuman).toHaveBeenCalledWith(wsId, contactId, { reason: 'complex' });
+      expect(crm.actionTransferToHuman).toHaveBeenCalledWith(wsId, contactId, {
+        reason: 'complex',
+      });
     });
 
     it('actionSearchKnowledgeBase delegates to crm service', async () => {
@@ -361,7 +404,9 @@ describe('UnifiedAgentActionsService', () => {
 
     it('actionUpdateWorkspaceSettings delegates to workspace service', async () => {
       await service.actionUpdateWorkspaceSettings(wsId, { businessName: 'A' });
-      expect(workspace.actionUpdateWorkspaceSettings).toHaveBeenCalledWith(wsId, { businessName: 'A' });
+      expect(workspace.actionUpdateWorkspaceSettings).toHaveBeenCalledWith(wsId, {
+        businessName: 'A',
+      });
     });
 
     it('actionCreateBroadcast delegates to workspace service', async () => {
@@ -428,12 +473,24 @@ describe('UnifiedAgentActionsService', () => {
 
     it('actionApplyDiscount delegates to sales service', async () => {
       await service.actionApplyDiscount(wsId, contactId, phone, { discountPercent: 10 });
-      expect(sales.actionApplyDiscount).toHaveBeenCalledWith(wsId, contactId, phone, { discountPercent: 10 }, undefined);
+      expect(sales.actionApplyDiscount).toHaveBeenCalledWith(
+        wsId,
+        contactId,
+        phone,
+        { discountPercent: 10 },
+        undefined,
+      );
     });
 
     it('actionHandleObjection delegates to sales service', async () => {
       await service.actionHandleObjection(wsId, contactId, phone, { objectionType: 'price' });
-      expect(sales.actionHandleObjection).toHaveBeenCalledWith(wsId, contactId, phone, { objectionType: 'price' }, undefined);
+      expect(sales.actionHandleObjection).toHaveBeenCalledWith(
+        wsId,
+        contactId,
+        phone,
+        { objectionType: 'price' },
+        undefined,
+      );
     });
 
     it('actionQualifyLead delegates to sales service', async () => {
@@ -443,17 +500,35 @@ describe('UnifiedAgentActionsService', () => {
 
     it('actionScheduleMeeting delegates to sales service', async () => {
       await service.actionScheduleMeeting(wsId, contactId, phone, { type: 'demo' });
-      expect(sales.actionScheduleMeeting).toHaveBeenCalledWith(wsId, contactId, phone, { type: 'demo' }, undefined);
+      expect(sales.actionScheduleMeeting).toHaveBeenCalledWith(
+        wsId,
+        contactId,
+        phone,
+        { type: 'demo' },
+        undefined,
+      );
     });
 
     it('actionAntiChurn delegates to sales service', async () => {
       await service.actionAntiChurn(wsId, contactId, phone, { strategy: 'discount' });
-      expect(sales.actionAntiChurn).toHaveBeenCalledWith(wsId, contactId, phone, { strategy: 'discount' }, undefined);
+      expect(sales.actionAntiChurn).toHaveBeenCalledWith(
+        wsId,
+        contactId,
+        phone,
+        { strategy: 'discount' },
+        undefined,
+      );
     });
 
     it('actionReactivateGhost delegates to sales service', async () => {
       await service.actionReactivateGhost(wsId, contactId, phone, { daysSilent: 7 });
-      expect(sales.actionReactivateGhost).toHaveBeenCalledWith(wsId, contactId, phone, { daysSilent: 7 }, undefined);
+      expect(sales.actionReactivateGhost).toHaveBeenCalledWith(
+        wsId,
+        contactId,
+        phone,
+        { daysSilent: 7 },
+        undefined,
+      );
     });
 
     it('actionCreatePaymentLink delegates to commerce and audits', async () => {

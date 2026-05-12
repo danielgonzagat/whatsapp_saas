@@ -37,9 +37,9 @@ async function api(method: string, path: string, body?: any, authToken?: string)
   if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
 
   const res = await fetch(`${API}${path}`, {
-    method,
+    method: method as 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH',
     headers,
-    body: body ? JSON.stringify(body) : undefined,
+    ...(body ? { body: JSON.stringify(body) } : {}),
   });
 
   const text = await res.text();

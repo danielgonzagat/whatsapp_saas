@@ -222,7 +222,7 @@ export function AdminChatHistoryProvider({ children }: { children: ReactNode }) 
 
   const createServerSession = useCallback(
     async (workspaceId: string, title?: string) => {
-      if (!admin) return null;
+      if (!admin) {return null;}
       try {
         const view = await adminChatApi.createSession(
           title !== undefined ? { workspaceId, title } : { workspaceId },
@@ -248,7 +248,7 @@ export function AdminChatHistoryProvider({ children }: { children: ReactNode }) 
 
   const updateServerSession = useCallback(
     async (id: string, workspaceId: string, title: string) => {
-      if (!admin) return;
+      if (!admin) {return;}
       try {
         const view = await adminChatApi.updateSession(id, { workspaceId, title });
         const mapped = mapSession(view);
@@ -270,7 +270,7 @@ export function AdminChatHistoryProvider({ children }: { children: ReactNode }) 
 
   const deleteServerSession = useCallback(
     async (id: string, workspaceId: string) => {
-      if (!admin) return;
+      if (!admin) {return;}
       try {
         await adminChatApi.deleteSession(id, workspaceId);
         setSessions((current) => {

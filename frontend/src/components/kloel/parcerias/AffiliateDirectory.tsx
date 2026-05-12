@@ -23,7 +23,7 @@ export default function AffiliateDirectory({
   const displayAffiliates = affiliates as Affiliate[];
 
   const filtered = displayAffiliates.filter((a) => {
-    if (filterType !== 'todos' && a.type !== filterType) return false;
+    if (filterType !== 'todos' && a.type !== filterType) {return false;}
     if (search) {
       const term = search.toLowerCase();
       return (a.name || '').toLowerCase().includes(term) || (a.email || '').toLowerCase().includes(term);

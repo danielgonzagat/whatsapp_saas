@@ -17,13 +17,11 @@ jest.mock('prom-client', () => ({
 }));
 
 jest.mock('../common/async-sequence', () => ({
-  forEachSequential: jest.fn(
-    async <T>(items: T[], fn: (item: T) => Promise<void>) => {
-      for (const item of items) {
-        await fn(item);
-      }
-    },
-  ),
+  forEachSequential: jest.fn(async <T>(items: T[], fn: (item: T) => Promise<void>) => {
+    for (const item of items) {
+      await fn(item);
+    }
+  }),
 }));
 
 jest.mock('./memory-stats', () => ({
@@ -77,7 +75,9 @@ describe('MemoryManagementService', () => {
         findMany: jest.fn().mockResolvedValue([]),
       },
       $transaction: jest.fn().mockImplementation((arg: unknown) => {
-        if (typeof arg === 'function') return arg(prisma);
+        if (typeof arg === 'function') {
+          return arg(prisma);
+        }
         return Promise.resolve(undefined);
       }),
       $queryRaw: jest.fn().mockResolvedValue([]),
@@ -111,9 +111,7 @@ describe('MemoryManagementService', () => {
 
   describe('cleanupAll', () => {
     it('removes expired memorii from known categories', async () => {
-      prisma.kloelMemory.count
-        .mockResolvedValueOnce(10)
-        .mockResolvedValueOnce(5);
+      prisma.kloelMemory.count.mockResolvedValueOnce(10).mockResolvedValueOnce(5);
       prisma.kloelMemory.deleteMany
         .mockResolvedValueOnce({ count: 2 })
         .mockResolvedValueOnce({ count: 2 })
@@ -135,9 +133,7 @@ describe('MemoryManagementService', () => {
     });
 
     it('removes duplicates when groups exceed 100 entries', async () => {
-      prisma.kloelMemory.count
-        .mockResolvedValueOnce(200)
-        .mockResolvedValueOnce(180);
+      prisma.kloelMemory.count.mockResolvedValueOnce(200).mockResolvedValueOnce(180);
       prisma.kloelMemory.groupBy.mockResolvedValueOnce([
         { workspaceId: 'ws-1', category: 'product', _count: { id: 150 } },
       ]);
@@ -165,9 +161,7 @@ describe('MemoryManagementService', () => {
     });
 
     it('removes orphans when workspace is deleted', async () => {
-      prisma.kloelMemory.count
-        .mockResolvedValueOnce(50)
-        .mockResolvedValueOnce(40);
+      prisma.kloelMemory.count.mockResolvedValueOnce(50).mockResolvedValueOnce(40);
       prisma.kloelMemory.groupBy
         .mockResolvedValueOnce([])
         .mockResolvedValueOnce([{ workspaceId: 'ws-orphan' }]);
@@ -190,15 +184,11 @@ describe('MemoryManagementService', () => {
     });
 
     it('skips orphan removal when no orphan workspaceIds found', async () => {
-      prisma.kloelMemory.count
-        .mockResolvedValueOnce(10)
-        .mockResolvedValueOnce(10);
+      prisma.kloelMemory.count.mockResolvedValueOnce(10).mockResolvedValueOnce(10);
       prisma.kloelMemory.groupBy
         .mockResolvedValueOnce([])
         .mockResolvedValueOnce([{ workspaceId: 'ws-alive' }]);
-      prisma.workspace.findMany.mockResolvedValue([
-        { id: 'ws-alive' },
-      ]);
+      prisma.workspace.findMany.mockResolvedValue([{ id: 'ws-alive' }]);
       prisma.kloelMemory.deleteMany
         .mockResolvedValueOnce({ count: 0 })
         .mockResolvedValueOnce({ count: 0 })
@@ -217,9 +207,7 @@ describe('MemoryManagementService', () => {
     });
 
     it('logs audit trail when memory was removed', async () => {
-      prisma.kloelMemory.count
-        .mockResolvedValueOnce(5)
-        .mockResolvedValueOnce(3);
+      prisma.kloelMemory.count.mockResolvedValueOnce(5).mockResolvedValueOnce(3);
       prisma.kloelMemory.deleteMany
         .mockResolvedValueOnce({ count: 2 })
         .mockResolvedValueOnce({ count: 2 })
@@ -243,9 +231,7 @@ describe('MemoryManagementService', () => {
     });
 
     it('does not log audit when nothing was removed', async () => {
-      prisma.kloelMemory.count
-        .mockResolvedValueOnce(0)
-        .mockResolvedValueOnce(0);
+      prisma.kloelMemory.count.mockResolvedValueOnce(0).mockResolvedValueOnce(0);
       prisma.kloelMemory.deleteMany
         .mockResolvedValueOnce({ count: 0 })
         .mockResolvedValueOnce({ count: 0 })
@@ -428,11 +414,7 @@ describe('MemoryManagementService', () => {
       prisma.kloelMemory.findFirst.mockResolvedValue(memory);
       prisma.kloelMemory.updateMany.mockResolvedValue({ count: 1 });
 
-      const result = await service.setMemoryPriority(
-        wsId,
-        'important',
-        'high',
-      );
+      const result = await service.setMemoryPriority(wsId, 'important', 'high');
 
       expect(result).toBe(true);
       expect(prisma.$transaction).toHaveBeenCalled();
@@ -441,11 +423,7 @@ describe('MemoryManagementService', () => {
     it('returns false when memory not found', async () => {
       prisma.kloelMemory.findFirst.mockResolvedValue(null);
 
-      const result = await service.setMemoryPriority(
-        wsId,
-        'nonexistent',
-        'high',
-      );
+      const result = await service.setMemoryPriority(wsId, 'nonexistent', 'high');
 
       expect(result).toBe(false);
     });
@@ -468,11 +446,7 @@ describe('MemoryManagementService', () => {
       prisma.kloelMemory.findFirst.mockResolvedValue(memory);
       prisma.kloelMemory.updateMany.mockResolvedValue({ count: 1 });
 
-      const result = await service.setMemoryPriority(
-        wsId,
-        'key',
-        'critical',
-      );
+      const result = await service.setMemoryPriority(wsId, 'key', 'critical');
 
       expect(result).toBe(true);
     });
@@ -496,9 +470,7 @@ describe('MemoryManagementService', () => {
     });
 
     it('returns empty stats on error', async () => {
-      (computeMemoryStats as jest.Mock).mockRejectedValue(
-        new Error('stats failed'),
-      );
+      (computeMemoryStats as jest.Mock).mockRejectedValue(new Error('stats failed'));
 
       const result = await service.getStats();
 
@@ -554,9 +526,7 @@ describe('MemoryManagementService', () => {
 
   describe('error handling', () => {
     it('cleanupAll handles expired category failure gracefully', async () => {
-      prisma.kloelMemory.count
-        .mockResolvedValueOnce(10)
-        .mockResolvedValueOnce(10);
+      prisma.kloelMemory.count.mockResolvedValueOnce(10).mockResolvedValueOnce(10);
       prisma.kloelMemory.deleteMany
         .mockRejectedValueOnce(new Error('delete failed'))
         .mockResolvedValueOnce({ count: 0 })
@@ -574,12 +544,8 @@ describe('MemoryManagementService', () => {
     });
 
     it('cleanupAll handles duplicates failure gracefully', async () => {
-      prisma.kloelMemory.count
-        .mockResolvedValueOnce(10)
-        .mockResolvedValueOnce(10);
-      prisma.kloelMemory.groupBy.mockRejectedValueOnce(
-        new Error('groupBy failed'),
-      );
+      prisma.kloelMemory.count.mockResolvedValueOnce(10).mockResolvedValueOnce(10);
+      prisma.kloelMemory.groupBy.mockRejectedValueOnce(new Error('groupBy failed'));
       prisma.kloelMemory.deleteMany
         .mockResolvedValueOnce({ count: 0 })
         .mockResolvedValueOnce({ count: 0 })
@@ -597,15 +563,11 @@ describe('MemoryManagementService', () => {
     });
 
     it('cleanupAll handles orphans failure gracefully', async () => {
-      prisma.kloelMemory.count
-        .mockResolvedValueOnce(10)
-        .mockResolvedValueOnce(10);
+      prisma.kloelMemory.count.mockResolvedValueOnce(10).mockResolvedValueOnce(10);
       prisma.kloelMemory.groupBy
         .mockResolvedValueOnce([])
         .mockResolvedValueOnce([{ workspaceId: 'ws-x' }]);
-      prisma.workspace.findMany.mockRejectedValue(
-        new Error('workspace find failed'),
-      );
+      prisma.workspace.findMany.mockRejectedValue(new Error('workspace find failed'));
       prisma.kloelMemory.deleteMany
         .mockResolvedValueOnce({ count: 0 })
         .mockResolvedValueOnce({ count: 0 })

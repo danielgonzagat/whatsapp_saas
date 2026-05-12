@@ -1,9 +1,6 @@
 import { AIProvider } from '../../providers/ai-provider';
 import { detectAndFixAntiPatterns } from '../cia/conversation-policy';
-import {
-  log,
-  type UnknownRecord,
-} from './shared';
+import { log, type UnknownRecord } from './shared';
 import { generatePitchSafe } from './cognition';
 
 export async function buildMessage(action: string, content: string, settings: UnknownRecord) {

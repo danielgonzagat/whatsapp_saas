@@ -49,7 +49,12 @@ export function computePriority(input: {
   unreadCount: number;
   lastMessageAt?: Date | string | null | undefined;
   isPayment: boolean;
-  cognitiveState: { trustScore: number; urgencyScore: number; nextBestAction: string; riskFlags: string[] };
+  cognitiveState: {
+    trustScore: number;
+    urgencyScore: number;
+    nextBestAction: string;
+    riskFlags: string[];
+  };
 }) {
   const recencyBoost = input.lastMessageAt
     ? Math.max(0, 48 - (Date.now() - new Date(input.lastMessageAt).getTime()) / 3_600_000) * 0.6

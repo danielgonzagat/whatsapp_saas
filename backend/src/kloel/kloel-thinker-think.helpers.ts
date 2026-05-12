@@ -74,7 +74,9 @@ export async function finalizeSuccessfulReply(
       source: 'initial',
     },
   ];
-  if (workspaceId) await planLimits.trackAiUsage(workspaceId, estimatedTokens).catch(() => {});
+  if (workspaceId) {
+    await planLimits.trackAiUsage(workspaceId, estimatedTokens).catch(() => {});
+  }
   if (thread?.id && workspaceId) {
     await threadService.persistAssistantThreadMessage(
       thread.id,
@@ -242,7 +244,9 @@ export async function runToolPlanningBranch(
       }),
       finalTemp,
     );
-    if (!streamedFinal) return;
+    if (!streamedFinal) {
+      return;
+    }
     let finalResp = streamedFinal.fullResponse.trim();
     if (!finalResp) {
       finalResp =
@@ -254,7 +258,9 @@ export async function runToolPlanningBranch(
   }
   await planLimits.ensureTokenBudget(workspaceId ?? '');
   const streamedReply = await streamWriterResponse(messages, responseTemperature);
-  if (!streamedReply) return;
+  if (!streamedReply) {
+    return;
+  }
   let fallbackText = streamedReply.fullResponse.trim();
   if (!fallbackText) {
     fallbackText =

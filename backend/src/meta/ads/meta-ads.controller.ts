@@ -9,7 +9,6 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { resolveWorkspaceId } from '../../auth/workspace-access';
 import { WorkspaceGuard } from '../../common/guards/workspace.guard';
@@ -137,7 +136,7 @@ export class MetaAdsController {
           status: body.status,
           risk: 'high',
           requiresApproval: true,
-        } as Prisma.InputJsonObject,
+        },
       },
       select: { id: true, state: true, title: true, createdAt: true },
     });

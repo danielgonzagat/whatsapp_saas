@@ -13,7 +13,7 @@ interface FilterDrawerProps {
 }
 
 export function AnalyticsFilterDrawer({ open, onClose, filters, setFilters }: FilterDrawerProps) {
-  if (!open) return null;
+  if (!open) {return null;}
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', justifyContent: 'flex-end' }}>

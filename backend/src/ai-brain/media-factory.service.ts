@@ -34,7 +34,9 @@ export class MediaFactoryService {
     });
 
     const first = response.data?.[0];
-    if (!first?.url) throw new ServiceUnavailableException('Image generation returned no URL');
+    if (!first?.url) {
+      throw new ServiceUnavailableException('Image generation returned no URL');
+    }
     return { url: first.url };
   }
 

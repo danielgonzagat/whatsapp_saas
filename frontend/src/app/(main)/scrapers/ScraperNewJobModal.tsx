@@ -23,10 +23,11 @@ export function ScraperNewJobModal({ onClose, onCreated }: { onClose: () => void
     setLoading(true);
     setError(null);
     try {
+      const loc = form.location.trim() || undefined;
       await createScraperJob({
         type: form.type,
         query: form.query.trim(),
-        location: form.location.trim() || undefined,
+        ...(loc !== undefined ? { location: loc } : {}),
       });
       onCreated();
       onClose();

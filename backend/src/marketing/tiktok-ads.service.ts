@@ -134,7 +134,9 @@ export class TikTokAdsService {
     const url = new URL(`${TIKTOK_BUSINESS_API}${path}`);
 
     for (const [key, value] of Object.entries(params)) {
-      if (value === undefined || value === null) continue;
+      if (value === undefined || value === null) {
+        continue;
+      }
       if (Array.isArray(value) || typeof value === 'object') {
         url.searchParams.set(key, JSON.stringify(value));
       } else if (

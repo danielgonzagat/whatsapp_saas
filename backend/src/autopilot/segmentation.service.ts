@@ -255,7 +255,7 @@ export class SegmentationService {
       phone: c.phone,
       name: c.name,
       updatedAt: c.updatedAt,
-      deals: c.deals as SegmentationDeal[],
+      deals: c.deals,
     }));
 
     // Filtros pós-query (histórico de compras)

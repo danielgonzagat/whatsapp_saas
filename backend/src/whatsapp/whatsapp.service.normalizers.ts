@@ -10,12 +10,18 @@ import type {
 } from './whatsapp-service.types';
 
 function unwrapProviderArray(raw: unknown): unknown[] {
-  if (Array.isArray(raw)) return raw;
+  if (Array.isArray(raw)) {
+    return raw;
+  }
   const r = raw as Record<string, unknown> | null | undefined;
-  if (!r || typeof r !== 'object') return [];
+  if (!r || typeof r !== 'object') {
+    return [];
+  }
   for (const key of ['contacts', 'chats', 'messages', 'items', 'data']) {
     const v = r[key];
-    if (Array.isArray(v)) return v as unknown[];
+    if (Array.isArray(v)) {
+      return v as unknown[];
+    }
   }
   return [];
 }

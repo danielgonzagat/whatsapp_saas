@@ -20,11 +20,16 @@ export function normalizePhone(phone: string): string {
 
 function expandComparablePhoneVariants(phone: string): string[] {
   const digits = normalizePhone(phone);
-  if (!digits) return [];
+  if (!digits) {
+    return [];
+  }
   const variants = new Set<string>([digits]);
-  if (digits.startsWith('55') && digits.length > 11) variants.add(digits.slice(2));
-  if (!digits.startsWith('55') && digits.length >= 10 && digits.length <= 11)
+  if (digits.startsWith('55') && digits.length > 11) {
+    variants.add(digits.slice(2));
+  }
+  if (!digits.startsWith('55') && digits.length >= 10 && digits.length <= 11) {
     variants.add(`55${digits}`);
+  }
   return Array.from(variants);
 }
 
@@ -107,8 +112,12 @@ export type ProcessDeps = {
 };
 
 function normalizeUnknownText(value: unknown): string {
-  if (typeof value === 'string') return value.trim();
-  if (typeof value === 'number' || typeof value === 'boolean') return String(value).trim();
+  if (typeof value === 'string') {
+    return value.trim();
+  }
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value).trim();
+  }
   return '';
 }
 
@@ -121,15 +130,21 @@ export async function checkDuplicateExt(
   workspaceId: string,
   providerMessageId: string,
 ): Promise<string | null> {
-  if (!providerMessageId) return null;
+  if (!providerMessageId) {
+    return null;
+  }
   const cacheKey = `inbound:dedupe:${workspaceId}:${providerMessageId}`;
   const cached = await deps.redis.get(cacheKey);
-  if (cached && cached !== 'processing') return cached;
+  if (cached && cached !== 'processing') {
+    return cached;
+  }
   if (cached === 'processing') {
     for (let i = 0; i < 3; i++) {
       await sleep(150);
       const r = await deps.redis.get(cacheKey);
-      if (r && r !== 'processing') return r;
+      if (r && r !== 'processing') {
+        return r;
+      }
     }
     return null;
   }
@@ -142,7 +157,9 @@ export async function checkDuplicateExt(
     return existing.id;
   }
   const locked = await deps.redis.set(cacheKey, 'processing', 'EX', 300, 'NX');
-  if (locked !== 'OK') return 'processing';
+  if (locked !== 'OK') {
+    return 'processing';
+  }
   return null;
 }
 
@@ -156,7 +173,9 @@ export function isWorkspaceSelfInboundExt(
   const selfIds = Array.isArray(sessionMeta.selfIds)
     ? (sessionMeta.selfIds as unknown[]).map((v: unknown) => normalizeUnknownText(v))
     : [];
-  if (areEquivalentPhones(selfPhone, phone)) return true;
+  if (areEquivalentPhones(selfPhone, phone)) {
+    return true;
+  }
   return selfIds.some(
     (c) =>
       normalizeUnknownText(c) === normalizeUnknownText(from) ||
@@ -171,12 +190,21 @@ export function isAutonomousEnabledExt(
   const mode = String(settings?.autonomy?.mode || '')
     .trim()
     .toUpperCase();
-  if (mode === 'LIVE' || mode === 'BACKLOG' || mode === 'FULL') return true;
-  if (mode === 'HUMAN_ONLY' || mode === 'SUSPENDED') return false;
-  if (mode === 'OFF') return settings?.autopilot?.enabled === true;
-  if (mode) return mode === 'LIVE' || mode === 'BACKLOG' || mode === 'FULL';
-  if (ingestMode === 'live' && shouldForceLiveAutonomyFallbackExt(settings, ingestMode))
+  if (mode === 'LIVE' || mode === 'BACKLOG' || mode === 'FULL') {
     return true;
+  }
+  if (mode === 'HUMAN_ONLY' || mode === 'SUSPENDED') {
+    return false;
+  }
+  if (mode === 'OFF') {
+    return settings?.autopilot?.enabled === true;
+  }
+  if (mode) {
+    return mode === 'LIVE' || mode === 'BACKLOG' || mode === 'FULL';
+  }
+  if (ingestMode === 'live' && shouldForceLiveAutonomyFallbackExt(settings, ingestMode)) {
+    return true;
+  }
   return settings?.autopilot?.enabled === true;
 }
 
@@ -184,12 +212,18 @@ export function shouldUseInlineReactiveProcessingExt(
   settings?: ProviderSettings,
   ingestMode?: InboundIngestMode,
 ): boolean {
-  if (ingestMode !== 'live') return false;
+  if (ingestMode !== 'live') {
+    return false;
+  }
   const override = String(process.env.AUTOPILOT_INLINE_REACTIVE || 'true')
     .trim()
     .toLowerCase();
-  if (['false', '0', 'off', 'no'].includes(override)) return false;
-  if (['true', '1', 'on', 'yes'].includes(override)) return true;
+  if (['false', '0', 'off', 'no'].includes(override)) {
+    return false;
+  }
+  if (['true', '1', 'on', 'yes'].includes(override)) {
+    return true;
+  }
   return settings?.autopilot?.enabled === true;
 }
 
@@ -197,11 +231,15 @@ export function shouldForceLiveAutonomyFallbackExt(
   settings?: ProviderSettings,
   ingestMode?: InboundIngestMode,
 ): boolean {
-  if (ingestMode !== 'live') return false;
+  if (ingestMode !== 'live') {
+    return false;
+  }
   const mode = String(settings?.autonomy?.mode || '')
     .trim()
     .toUpperCase();
-  if (mode) return false;
+  if (mode) {
+    return false;
+  }
   const provider = String(settings?.whatsappProvider || '')
     .trim()
     .toLowerCase();
@@ -234,8 +272,12 @@ export function shouldBypassHumanLockExt(settings?: ProviderSettings): boolean {
   const override = String(process.env.AUTOPILOT_BYPASS_HUMAN_LOCK || '')
     .trim()
     .toLowerCase();
-  if (['true', '1', 'on', 'yes'].includes(override)) return true;
-  if (['false', '0', 'off', 'no'].includes(override)) return false;
+  if (['true', '1', 'on', 'yes'].includes(override)) {
+    return true;
+  }
+  if (['false', '0', 'off', 'no'].includes(override)) {
+    return false;
+  }
   return (
     String(settings?.autonomy?.mode || '')
       .trim()
@@ -255,20 +297,28 @@ export function shouldAutoReclaimHumanLockExt(
   const override = String(process.env.AUTOPILOT_RECLAIM_HUMAN_LOCK_ON_INBOUND || 'true')
     .trim()
     .toLowerCase();
-  if (['false', '0', 'off', 'no'].includes(override)) return false;
+  if (['false', '0', 'off', 'no'].includes(override)) {
+    return false;
+  }
   const autonomyMode = String(settings?.autonomy?.mode || '')
     .trim()
     .toUpperCase();
-  if (autonomyMode === 'HUMAN_ONLY' || autonomyMode === 'SUSPENDED') return false;
+  if (autonomyMode === 'HUMAN_ONLY' || autonomyMode === 'SUSPENDED') {
+    return false;
+  }
   const conversationMode = String(conversation?.mode || '')
     .trim()
     .toUpperCase();
-  if (!conversation || conversationMode === 'PAUSED') return false;
+  if (!conversation || conversationMode === 'PAUSED') {
+    return false;
+  }
   const latestMsg = (conversation.messages || [])[0];
   const latestDirection = String(latestMsg?.direction || '')
     .trim()
     .toUpperCase();
-  if (latestDirection !== 'INBOUND') return false;
+  if (latestDirection !== 'INBOUND') {
+    return false;
+  }
   return conversationMode === 'HUMAN' || Boolean(conversation.assignedAgentId);
 }
 
@@ -277,14 +327,17 @@ export function buildInlineFallbackReplyExt(messageContent: string): string {
     .trim()
     .toLowerCase();
   const topic = extractFallbackTopicExt(messageContent);
-  if (PRE_C__O_QUANTO_VALOR_C_RE.test(normalized))
+  if (PRE_C__O_QUANTO_VALOR_C_RE.test(normalized)) {
     return topic
       ? `Boa, você foi direto ao ponto. Posso confirmar preço, pagamento e disponibilidade de ${topic}. Quer que eu siga por aí?`
       : 'Boa, sem rodeio fica melhor. Posso confirmar preço, pagamento e disponibilidade. Me diz o produto ou procedimento.';
-  if (AGENDAR_AGENDA_REUNI_A_RE.test(normalized))
+  }
+  if (AGENDAR_AGENDA_REUNI_A_RE.test(normalized)) {
     return 'Perfeito, organização ainda existe. Me diz o dia ou horário e eu organizo isso com você.';
-  if (OL__A__BOM_DIA_BOA_TARD_RE.test(normalized))
+  }
+  if (OL__A__BOM_DIA_BOA_TARD_RE.test(normalized)) {
     return 'Oi. Vamos pular a cerimônia: me diz o produto ou a dúvida e eu sigo com você.';
+  }
   return topic
     ? `Entendi. Você falou de ${topic}. Me diz o que quer confirmar e eu te respondo sem enrolação.`
     : 'Entendi. Me diz o produto, exame ou objetivo e eu sigo com a informação certa, sem teatro.';
@@ -307,7 +360,9 @@ export function hasOutboundActionExt(
     'send_audio',
   ]);
   return actions.some((a) => {
-    if (!outboundTools.has(String(a?.tool || ''))) return false;
+    if (!outboundTools.has(String(a?.tool || ''))) {
+      return false;
+    }
     const r =
       a?.result && typeof a.result === 'object' ? (a.result as Record<string, unknown>) : {};
     return r.sent === true || r.success === true || Boolean(r.messageId);
@@ -351,7 +406,9 @@ export async function buildPendingInboundBatchExt(
     quotedMessageId: String(params.fallbackProviderMessageId || '').trim(),
   };
   const messages = usable.length ? usable : fb.content && fb.quotedMessageId ? [fb] : [];
-  if (!messages.length) return null;
+  if (!messages.length) {
+    return null;
+  }
   const first = messages[0];
   const aggregated =
     messages.length === 1 && first

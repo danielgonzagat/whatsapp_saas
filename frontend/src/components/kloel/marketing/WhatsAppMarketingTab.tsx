@@ -27,11 +27,11 @@ export default function WhatsAppMarketingTab({
   }
 
   const optionalProps: Record<string, unknown> = {};
-  if (operator !== undefined) optionalProps.operator = operator;
-  if (mode !== undefined) optionalProps.mode = mode;
-  if (connection !== undefined) optionalProps.connection = connection;
+  if (operator !== undefined) {optionalProps.operator = operator;}
+  if (mode !== undefined) {optionalProps.mode = mode;}
+  if (connection !== undefined) {optionalProps.connection = connection;}
   if (onRefreshConnectionStatus !== undefined)
-    optionalProps.onConnectionRefresh = onRefreshConnectionStatus;
+    {optionalProps.onConnectionRefresh = onRefreshConnectionStatus;}
 
   return (
     <WhatsAppExperience

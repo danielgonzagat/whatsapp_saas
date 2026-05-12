@@ -27,6 +27,12 @@ export function generateCorrelationId(): string {
   return randomUUID();
 }
 
+function extractCorrelationId(job: Job): string | undefined {
+  const d = job.data as Record<string, unknown> | undefined;
+  const value = d?.correlationId;
+  return typeof value === 'string' && value.trim() ? value.trim() : undefined;
+}
+
 export function extractWorkspaceId(job: Job): string {
   const d = job.data as Record<string, unknown> | undefined;
   if (!d) {
@@ -70,7 +76,7 @@ export async function markCompleted(job: Job, ttl = DEFAULT_DEDUP_TTL): Promise<
 }
 
 export function startJob(job: Job, log: WorkerLogger): JobMeta {
-  const correlationId = generateCorrelationId();
+  const correlationId = extractCorrelationId(job) ?? generateCorrelationId();
   const workspaceId = extractWorkspaceId(job);
   log.info('job_start', {
     correlationId,

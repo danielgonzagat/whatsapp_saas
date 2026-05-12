@@ -50,7 +50,9 @@ describe('GoogleAdsProvider', () => {
       const result = await provider.connect('ws-1', 'https://app.kloel.com/callback');
       expect(result.connected).toBe(false);
       expect(result.status).toBe('google_ads_client_id_not_configured');
-      if (original) process.env.GOOGLE_ADS_CLIENT_ID = original;
+      if (original) {
+        process.env.GOOGLE_ADS_CLIENT_ID = original;
+      }
     });
 
     it('returns authUrl with PKCE when configured', async () => {

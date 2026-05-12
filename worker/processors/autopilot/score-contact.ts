@@ -1,7 +1,12 @@
 import { prisma } from '../../db';
 import { unifiedWhatsAppProvider as whatsappApiProvider } from '../../providers/unified-whatsapp-provider';
 import { resolveCatalogChatActivityTimestamp } from './identity-resolve';
-import { normalizeJsonObject, type UnknownRecord, CIA_CONTACT_CATALOG_LOOKBACK_DAYS, CIA_CONTACT_SCORE_MESSAGE_LIMIT } from './shared';
+import {
+  normalizeJsonObject,
+  type UnknownRecord,
+  CIA_CONTACT_CATALOG_LOOKBACK_DAYS,
+  CIA_CONTACT_SCORE_MESSAGE_LIMIT,
+} from './shared';
 import { buildHeuristicCatalogScore, maybeScoreContactWithAi } from './opportunity';
 
 export async function runScoreContact(data: UnknownRecord) {

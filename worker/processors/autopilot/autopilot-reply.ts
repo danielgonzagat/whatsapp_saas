@@ -1,5 +1,11 @@
 import { countReplyWords } from './autopilot-utils';
-import { WHITESPACE_G_RE, LIST_BULLET_RE, EMOJI_GU_RE, EMOJI_U_RE, SENTENCE_SPLIT_RE } from './autopilot-types';
+import {
+  WHITESPACE_G_RE,
+  LIST_BULLET_RE,
+  EMOJI_GU_RE,
+  EMOJI_U_RE,
+  SENTENCE_SPLIT_RE,
+} from './autopilot-types';
 
 export function computeReplyStyleBudget(
   message: string,

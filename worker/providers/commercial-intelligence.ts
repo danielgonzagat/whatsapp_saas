@@ -11,9 +11,17 @@ export type {
   RuntimeMode,
 } from './commercial-intelligence.types';
 
-export { computeDemandState, buildDecisionEnvelope, shouldAutonomousSend } from './commercial-intelligence.core';
+export {
+  computeDemandState,
+  buildDecisionEnvelope,
+  shouldAutonomousSend,
+} from './commercial-intelligence.core';
 export { extractMarketSignals } from './commercial-intelligence.signals';
-export { buildHumanTask, buildBusinessStateSnapshot, buildMissionPlan } from './commercial-intelligence.tasks';
+export {
+  buildHumanTask,
+  buildBusinessStateSnapshot,
+  buildMissionPlan,
+} from './commercial-intelligence.tasks';
 export {
   persistDemandState,
   persistMarketSignals,

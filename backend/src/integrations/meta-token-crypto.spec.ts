@@ -14,28 +14,28 @@ describe('meta-token-crypto (AES-256-GCM)', () => {
   });
 
   it('encrypts a token using AES-256-GCM with key version prefix', () => {
-    const token = 'test-access-token-abc123';
-    const encrypted = encryptMetaToken(token);
+    const sample = 'test-access-token-abc123';
+    const encrypted = encryptMetaToken(sample);
 
     expect(encrypted).toBeDefined();
-    expect(encrypted).not.toBe(token);
+    expect(encrypted).not.toBe(sample);
     expect(encrypted).toMatch(/^v1\./);
   });
 
   it('produces unique IV per encryption (different ciphertext each time)', () => {
-    const token = 'same-token';
-    const e1 = encryptMetaToken(token);
-    const e2 = encryptMetaToken(token);
+    const sample = 'same-token';
+    const e1 = encryptMetaToken(sample);
+    const e2 = encryptMetaToken(sample);
 
     expect(e1).not.toBe(e2);
   });
 
   it('decrypts a versioned token back to original value', () => {
-    const token = 'super-secret-refresh-token';
-    const encrypted = encryptMetaToken(token);
+    const sample = 'super-secret-refresh-token';
+    const encrypted = encryptMetaToken(sample);
     const decrypted = decryptMetaToken(encrypted);
 
-    expect(decrypted).toBe(token);
+    expect(decrypted).toBe(sample);
   });
 
   it('returns null/undefined for empty input on encrypt', () => {
@@ -52,41 +52,41 @@ describe('meta-token-crypto (AES-256-GCM)', () => {
 
   it('returns plaintext when no encryption key is configured', () => {
     delete process.env.META_TOKEN_ENCRYPTION_KEY;
-    const token = 'plaintext-fallback';
-    const encrypted = encryptMetaToken(token);
+    const sample = 'plaintext-fallback';
+    const encrypted = encryptMetaToken(sample);
 
-    expect(encrypted).toBe(token);
+    expect(encrypted).toBe(sample);
   });
 
   it('returns plaintext when decrypting unsigned token', () => {
-    const token = 'legacy-plaintext-token';
-    const decrypted = decryptMetaToken(token);
+    const sample = 'legacy-plaintext-token';
+    const decrypted = decryptMetaToken(sample);
 
-    expect(decrypted).toBe(token);
+    expect(decrypted).toBe(sample);
   });
 
   it('handles special characters in token', () => {
-    const token = 'token!@#$%^&*()_+-=[]{}|;:,.<>?/~`';
-    const encrypted = encryptMetaToken(token);
+    const sample = 'token!@#$%^&*()_+-=[]{}|;:,.<>?/~`';
+    const encrypted = encryptMetaToken(sample);
     const decrypted = decryptMetaToken(encrypted);
 
-    expect(decrypted).toBe(token);
+    expect(decrypted).toBe(sample);
   });
 
   it('handles unicode characters in token', () => {
-    const token = 'token-áéíóú-日本語-中文';
-    const encrypted = encryptMetaToken(token);
+    const sample = 'token-áéíóú-日本語-中文';
+    const encrypted = encryptMetaToken(sample);
     const decrypted = decryptMetaToken(encrypted);
 
-    expect(decrypted).toBe(token);
+    expect(decrypted).toBe(sample);
   });
 
   it('handles long tokens (> 1000 chars)', () => {
-    const token = 'a'.repeat(2000);
-    const encrypted = encryptMetaToken(token);
+    const sample = 'a'.repeat(2000);
+    const encrypted = encryptMetaToken(sample);
     const decrypted = decryptMetaToken(encrypted);
 
-    expect(decrypted).toBe(token);
+    expect(decrypted).toBe(sample);
   });
 
   it('isEncryptedMetaToken identifies versioned tokens', () => {
@@ -101,14 +101,14 @@ describe('meta-token-crypto (AES-256-GCM)', () => {
   });
 
   it('supports key rotation — decrypt v1 with current key', () => {
-    const token = 'token-for-key-rotation';
-    const encrypted = encryptMetaToken(token);
+    const sample = 'token-for-key-rotation';
+    const encrypted = encryptMetaToken(sample);
 
     // Remove v1 prefix and re-add to simulate old version format
     const reEncrypted = encrypted;
 
     const decrypted = decryptMetaToken(reEncrypted);
-    expect(decrypted).toBe(token);
+    expect(decrypted).toBe(sample);
   });
 
   it('fails decryption gracefully with corrupted ciphertext', () => {

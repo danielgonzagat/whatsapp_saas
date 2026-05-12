@@ -18,11 +18,13 @@ export default function GestaoVendasPage() {
   const [tagFilter, setTagFilter] = useState('');
   const [page, setPage] = useState('1');
 
+  const cSearch = search || undefined;
+  const cTag = tagFilter || undefined;
   const { contacts, total, hasMore, isLoading, mutate } = useContacts({
     page,
     limit: '20',
-    search: search || undefined,
-    tag: tagFilter || undefined,
+    ...(cSearch !== undefined ? { search: cSearch } : {}),
+    ...(cTag !== undefined ? { tag: cTag } : {}),
   });
 
   const { addTag, removeTag } = useCRMMutations();

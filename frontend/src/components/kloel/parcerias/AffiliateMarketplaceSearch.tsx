@@ -15,7 +15,7 @@ export default function AffiliateMarketplaceSearch() {
   const [saving, setSaving] = useState<Record<string, boolean>>({});
 
   const handleSearch = async () => {
-    if (!searchQuery.trim()) return;
+    if (!searchQuery.trim()) {return;}
     setSearchLoading(true);
     try {
       const res = await affiliateApi.aiSearch(searchQuery.trim());
@@ -46,7 +46,7 @@ export default function AffiliateMarketplaceSearch() {
       <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
         <input aria-label="Buscar no marketplace por categoria ou tag" type="text"
           value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter') handleSearch(); }}
+          onKeyDown={(e) => { if (e.key === 'Enter') {handleSearch();} }}
           placeholder={kloelT(`Buscar por categoria ou tag...`)}
           style={{ flex: 1, padding: '10px 12px', background: C.elevated, border: `1px solid ${C.border}`, borderRadius: 6, color: C.text, fontFamily: FONT.sans, fontSize: 13, outline: 'none' }}
           onFocus={(e) => { (e.target as HTMLInputElement).style.borderColor = C.ember; }}

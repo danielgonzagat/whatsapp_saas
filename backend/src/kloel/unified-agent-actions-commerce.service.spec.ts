@@ -41,7 +41,9 @@ describe('UnifiedAgentActionsCommerceService', () => {
         create: jest.fn().mockResolvedValue({}),
       },
       $transaction: jest.fn().mockImplementation((arg: unknown) => {
-        if (typeof arg === 'function') return arg(prisma);
+        if (typeof arg === 'function') {
+          return arg(prisma);
+        }
         return Promise.resolve(undefined);
       }),
     };
@@ -49,14 +51,12 @@ describe('UnifiedAgentActionsCommerceService', () => {
       get: jest.fn().mockReturnValue('https://kloel.com'),
     };
     paymentService = {
-      createPayment: jest
-        .fn()
-        .mockResolvedValue({
-          id: 'pay_1',
-          paymentLink: 'https://pay.test/link',
-          pixCopyPaste: 'pix-copy-paste-key',
-          invoiceUrl: 'https://pay.test/invoice',
-        }),
+      createPayment: jest.fn().mockResolvedValue({
+        id: 'pay_1',
+        paymentLink: 'https://pay.test/link',
+        pixCopyPaste: 'pix-copy-paste-key',
+        invoiceUrl: 'https://pay.test/invoice',
+      }),
     };
     auditService = {
       logWithTx: jest.fn().mockResolvedValue(undefined),
@@ -83,9 +83,7 @@ describe('UnifiedAgentActionsCommerceService', () => {
       ],
     }).compile();
 
-    service = module.get<UnifiedAgentActionsCommerceService>(
-      UnifiedAgentActionsCommerceService,
-    );
+    service = module.get<UnifiedAgentActionsCommerceService>(UnifiedAgentActionsCommerceService);
   });
 
   afterEach(() => {
@@ -207,9 +205,7 @@ describe('UnifiedAgentActionsCommerceService', () => {
     });
 
     it('uses fallback when paymentService throws', async () => {
-      paymentService.createPayment = jest
-        .fn()
-        .mockRejectedValue(new Error('payment failed'));
+      paymentService.createPayment = jest.fn().mockRejectedValue(new Error('payment failed'));
 
       const result = await service.actionCreatePaymentLink(wsId, phone, {
         amount: 50,
@@ -243,9 +239,7 @@ describe('UnifiedAgentActionsCommerceService', () => {
     });
 
     it('creates fallback kloelSale when payment service fails', async () => {
-      paymentService.createPayment = jest
-        .fn()
-        .mockRejectedValue(new Error('down'));
+      paymentService.createPayment = jest.fn().mockRejectedValue(new Error('down'));
 
       await service.actionCreatePaymentLink(wsId, phone, {
         amount: 75,
@@ -315,12 +309,8 @@ describe('UnifiedAgentActionsCommerceService', () => {
     });
 
     it('actionCreatePaymentLink handles messaging failure gracefully', async () => {
-      messaging.actionSendMessage = jest
-        .fn()
-        .mockResolvedValue({ success: true });
-      paymentService.createPayment = jest
-        .fn()
-        .mockRejectedValue(new Error('down'));
+      messaging.actionSendMessage = jest.fn().mockResolvedValue({ success: true });
+      paymentService.createPayment = jest.fn().mockRejectedValue(new Error('down'));
 
       const result = await service.actionCreatePaymentLink(wsId, phone, {
         amount: 50,

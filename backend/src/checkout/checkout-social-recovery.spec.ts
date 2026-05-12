@@ -58,7 +58,9 @@ describe('CheckoutSocialRecoveryService', () => {
         findUnique: jest.fn().mockResolvedValue(null),
       },
       $transaction: jest.fn().mockImplementation(async (fn: unknown) => {
-        if (typeof fn === 'function') return fn(prisma);
+        if (typeof fn === 'function') {
+          return fn(prisma);
+        }
         return await Promise.resolve((fn as Array<Promise<unknown>>)[0]);
       }),
     };

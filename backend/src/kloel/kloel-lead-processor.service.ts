@@ -135,7 +135,9 @@ export class KloelLeadProcessorService {
         { role: 'user', content: message },
       ];
 
-      if (workspaceId) await this.planLimits.ensureTokenBudget(workspaceId);
+      if (workspaceId) {
+        await this.planLimits.ensureTokenBudget(workspaceId);
+      }
       const response = await chatCompletionWithFallback(
         this.openai,
         {
@@ -146,10 +148,11 @@ export class KloelLeadProcessorService {
         },
         resolveBackendOpenAIModel('writer_fallback'),
       );
-      if (workspaceId)
+      if (workspaceId) {
         await this.planLimits
           .trackAiUsage(workspaceId, response?.usage?.total_tokens ?? 500)
           .catch(() => {});
+      }
 
       const kloelResponse =
         response.choices[0]?.message?.content || 'Olá! Como posso ajudá-lo hoje?';

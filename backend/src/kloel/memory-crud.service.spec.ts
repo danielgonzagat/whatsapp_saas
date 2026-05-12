@@ -143,9 +143,7 @@ describe('MemoryCrudService', () => {
       const error = new Error('unique constraint');
       prisma.kloelMemory.upsert.mockRejectedValue(error);
 
-      await expect(
-        service.saveMemory(wsId, 'key', 'value'),
-      ).rejects.toThrow('unique constraint');
+      await expect(service.saveMemory(wsId, 'key', 'value')).rejects.toThrow('unique constraint');
       expect(opsAlert.alertOnCriticalError).toHaveBeenCalledWith(
         error,
         'MemoryCrudService.saveMemory',
@@ -405,9 +403,7 @@ describe('MemoryCrudService', () => {
       const error = new Error('constraint violation');
       prisma.kloelMemory.upsert.mockRejectedValue(error);
 
-      await expect(service.saveMemory(wsId, 'k', 'v')).rejects.toThrow(
-        'constraint violation',
-      );
+      await expect(service.saveMemory(wsId, 'k', 'v')).rejects.toThrow('constraint violation');
       expect(opsAlert.alertOnCriticalError).toHaveBeenCalled();
     });
 
@@ -418,13 +414,9 @@ describe('MemoryCrudService', () => {
     });
 
     it('getMemoryStats propagates findMany error', async () => {
-      prisma.kloelMemory.findMany.mockRejectedValue(
-        new Error('connection lost'),
-      );
+      prisma.kloelMemory.findMany.mockRejectedValue(new Error('connection lost'));
 
-      await expect(service.getMemoryStats(wsId)).rejects.toThrow(
-        'connection lost',
-      );
+      await expect(service.getMemoryStats(wsId)).rejects.toThrow('connection lost');
     });
 
     it('deleteMemory swallows Prisma errors gracefully', async () => {

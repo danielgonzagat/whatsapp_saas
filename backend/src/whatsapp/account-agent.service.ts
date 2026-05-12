@@ -126,7 +126,9 @@ export class AccountAgentService {
     });
     return rows.flatMap((r) => {
       const p = parseApprovalPayload(r.payload);
-      if (!p) return [];
+      if (!p) {
+        return [];
+      }
       return [
         {
           ...p,
@@ -158,7 +160,9 @@ export class AccountAgentService {
     });
     return rows.flatMap((r) => {
       const p = parseInputSessionPayload(r.payload);
-      if (!p) return [];
+      if (!p) {
+        return [];
+      }
       const s = normalizeInputSessionStatus(r.state);
       const a = asRecord(r.answers) ?? asRecord(p.answers) ?? {};
       const pn =
@@ -374,24 +378,32 @@ export class AccountAgentService {
   private async findApproval(workspaceId: string, approvalId: string) {
     const approvals = await this.listApprovals(workspaceId);
     const a = approvals.find((i) => i.id === approvalId);
-    if (!a) throw new NotFoundException('Aprovação de conta não encontrada');
+    if (!a) {
+      throw new NotFoundException('Aprovação de conta não encontrada');
+    }
     const key = this.buildApprovalKey(a.normalizedProductName);
     const record = await this.prisma.kloelMemory.findUnique({
       where: { workspaceId_key: { workspaceId, key } },
     });
-    if (!record) throw new NotFoundException('Registro de aprovação não encontrado');
+    if (!record) {
+      throw new NotFoundException('Registro de aprovação não encontrado');
+    }
     return { record, approval: a };
   }
 
   private async findInputSession(workspaceId: string, sessionId: string) {
     const sessions = await this.listInputSessions(workspaceId);
     const s = sessions.find((i) => i.id === sessionId);
-    if (!s) throw new NotFoundException('Sessão de input não encontrada');
+    if (!s) {
+      throw new NotFoundException('Sessão de input não encontrada');
+    }
     const key = this.buildInputSessionKey(s.normalizedProductName);
     const record = await this.prisma.kloelMemory.findUnique({
       where: { workspaceId_key: { workspaceId, key } },
     });
-    if (!record) throw new NotFoundException('Registro da sessão não encontrado');
+    if (!record) {
+      throw new NotFoundException('Registro da sessão não encontrado');
+    }
     const recordTyped = {
       key: record.key,
       metadata:
@@ -409,7 +421,9 @@ export class AccountAgentService {
     });
     if (existing?.value) {
       const p = parseInputSessionPayload(existing.value);
-      if (p) return p;
+      if (p) {
+        return p;
+      }
     }
     const session: AccountInputSessionPayload = {
       id: randomUUID(),
@@ -480,7 +494,9 @@ export class AccountAgentService {
   }
 
   private async enqueueContactResumption(workspaceId: string, session: AccountInputSessionPayload) {
-    if (!session.contactId && !session.phone) return;
+    if (!session.contactId && !session.phone) {
+      return;
+    }
     try {
       await autopilotQueue.add(
         'scan-contact',

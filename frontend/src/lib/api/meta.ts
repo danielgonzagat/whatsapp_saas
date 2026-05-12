@@ -318,8 +318,8 @@ export const instagramMarketingApi = {
 
   getInsights: (metrics?: string, period?: string) => {
     const params: Record<string, string> = {};
-    if (metrics) params.metrics = metrics;
-    if (period) params.period = period;
+    if (metrics) {params.metrics = metrics;}
+    if (period) {params.period = period;}
     const qs = new URLSearchParams(params).toString();
     return apiFetch<{
       insight: IgInsightData;
@@ -329,9 +329,9 @@ export const instagramMarketingApi = {
 
   listInsights: (igAccountId?: string, since?: string, until?: string) => {
     const params: Record<string, string> = {};
-    if (igAccountId) params.igAccountId = igAccountId;
-    if (since) params.since = since;
-    if (until) params.until = until;
+    if (igAccountId) {params.igAccountId = igAccountId;}
+    if (since) {params.since = since;}
+    if (until) {params.until = until;}
     const qs = new URLSearchParams(params).toString();
     return apiFetch<{ insights: IgInsightData[] }>(
       `/marketing/instagram/insights/history${qs ? `?${qs}` : ''}`,

@@ -114,7 +114,10 @@ export function extractTrustedNameFromRemoteMessage(
   );
 }
 
-export function extractTrustedNameFromMessageText(value: unknown, fallbackPhone?: string | null): string {
+export function extractTrustedNameFromMessageText(
+  value: unknown,
+  fallbackPhone?: string | null,
+): string {
   const text = String(value || '')
     .replace(WHITESPACE_G_RE, ' ')
     .trim();

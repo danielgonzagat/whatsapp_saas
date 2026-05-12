@@ -82,7 +82,9 @@ export class AgentAssistService {
         model,
         operation,
       });
-      if (!this.openai) throw new Error('OpenAI client not configured');
+      if (!this.openai) {
+        throw new Error('OpenAI client not configured');
+      }
       const completion = await chatCompletionWithRetry(this.openai, { model, messages });
       if (estimatedCostCents !== undefined && usageCharged) {
         await settleAiUsageIfNeeded({

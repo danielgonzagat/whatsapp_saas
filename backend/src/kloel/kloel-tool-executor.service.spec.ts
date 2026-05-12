@@ -34,7 +34,11 @@ describe('KloelToolExecutorService', () => {
   let service: KloelToolExecutorService;
   let prisma: ExecutorPrismaMock;
   let smartPayment: { createSmartPayment: jest.Mock };
-  let planLimits: { ensureDailyMessageQuota: jest.Mock; ensureTokenBudget: jest.Mock; trackAiUsage: jest.Mock };
+  let planLimits: {
+    ensureDailyMessageQuota: jest.Mock;
+    ensureTokenBudget: jest.Mock;
+    trackAiUsage: jest.Mock;
+  };
   let whatsappTools: Partial<KloelToolExecutorWhatsAppService>;
   let billingTools: Partial<KloelToolExecutorBillingService>;
   let crmTools: Partial<KloelToolExecutorCrmService>;
@@ -48,7 +52,9 @@ describe('KloelToolExecutorService', () => {
         update: jest.fn().mockResolvedValue({}),
       },
       $transaction: jest.fn().mockImplementation((arg: unknown) => {
-        if (typeof arg === 'function') return arg(prisma);
+        if (typeof arg === 'function') {
+          return arg(prisma);
+        }
         return Promise.resolve(undefined);
       }),
     };
@@ -83,8 +89,12 @@ describe('KloelToolExecutorService', () => {
     };
 
     billingTools = {
-      toolUpdateBillingInfo: jest.fn().mockResolvedValue({ success: true, url: 'https://billing.test' }),
-      toolGetBillingStatus: jest.fn().mockResolvedValue({ success: true, plan: 'FREE', status: 'ACTIVE' }),
+      toolUpdateBillingInfo: jest
+        .fn()
+        .mockResolvedValue({ success: true, url: 'https://billing.test' }),
+      toolGetBillingStatus: jest
+        .fn()
+        .mockResolvedValue({ success: true, plan: 'FREE', status: 'ACTIVE' }),
       toolChangePlan: jest.fn().mockResolvedValue({ success: true, newPlan: 'PRO' }),
     };
 
@@ -157,7 +167,12 @@ describe('KloelToolExecutorService', () => {
     });
 
     it('routes remember_user_info to helper', async () => {
-      const result = await service.executeTool(wsId, 'remember_user_info', { key: 'lang', value: 'pt' }, 'u-1');
+      const result = await service.executeTool(
+        wsId,
+        'remember_user_info',
+        { key: 'lang', value: 'pt' },
+        'u-1',
+      );
       expect(result.success).toBe(true);
     });
 
@@ -179,7 +194,13 @@ describe('KloelToolExecutorService', () => {
         sources: [{ title: 'Site', url: 'https://test.com' }],
       });
 
-      const result = await service.executeTool(wsId, 'search_web', { query: 'typescript' }, undefined, searchFn);
+      const result = await service.executeTool(
+        wsId,
+        'search_web',
+        { query: 'typescript' },
+        undefined,
+        searchFn,
+      );
 
       expect(result.success).toBe(true);
       expect(result.summary).toBe('Resultado');
@@ -187,7 +208,10 @@ describe('KloelToolExecutorService', () => {
     });
 
     it('routes create_flow to helper', async () => {
-      const result = await service.executeTool(wsId, 'create_flow', { name: 'Flow', trigger: 'welcome' });
+      const result = await service.executeTool(wsId, 'create_flow', {
+        name: 'Flow',
+        trigger: 'welcome',
+      });
       expect(result.success).toBe(true);
     });
 
@@ -213,7 +237,10 @@ describe('KloelToolExecutorService', () => {
 
     it('routes create_campaign to crmTools', async () => {
       await service.executeTool(wsId, 'create_campaign', { name: 'Camp', message: 'msg' });
-      expect(crmTools.toolCreateCampaign).toHaveBeenCalledWith(wsId, { name: 'Camp', message: 'msg' });
+      expect(crmTools.toolCreateCampaign).toHaveBeenCalledWith(wsId, {
+        name: 'Camp',
+        message: 'msg',
+      });
     });
 
     it('routes list_leads to crmTools', async () => {
@@ -254,7 +281,10 @@ describe('KloelToolExecutorService', () => {
 
     it('routes send_whatsapp_message to whatsappTools', async () => {
       await service.executeTool(wsId, 'send_whatsapp_message', { phone: '5511', message: 'Test' });
-      expect(whatsappTools.toolSendWhatsAppMessage).toHaveBeenCalledWith(wsId, { phone: '5511', message: 'Test' });
+      expect(whatsappTools.toolSendWhatsAppMessage).toHaveBeenCalledWith(wsId, {
+        phone: '5511',
+        message: 'Test',
+      });
     });
 
     it('routes list_whatsapp_contacts to whatsappTools', async () => {
@@ -283,8 +313,14 @@ describe('KloelToolExecutorService', () => {
     });
 
     it('routes set_whatsapp_presence to whatsappTools', async () => {
-      await service.executeTool(wsId, 'set_whatsapp_presence', { chatId: 'c1', presence: 'typing' });
-      expect(whatsappTools.toolSetWhatsAppPresence).toHaveBeenCalledWith(wsId, { chatId: 'c1', presence: 'typing' });
+      await service.executeTool(wsId, 'set_whatsapp_presence', {
+        chatId: 'c1',
+        presence: 'typing',
+      });
+      expect(whatsappTools.toolSetWhatsAppPresence).toHaveBeenCalledWith(wsId, {
+        chatId: 'c1',
+        presence: 'typing',
+      });
     });
 
     it('routes sync_whatsapp_history to whatsappTools', async () => {
@@ -294,27 +330,45 @@ describe('KloelToolExecutorService', () => {
 
     it('routes send_audio to whatsappTools', async () => {
       await service.executeTool(wsId, 'send_audio', { phone: '5511', text: 'audio' });
-      expect(whatsappTools.toolSendAudio).toHaveBeenCalledWith(wsId, { phone: '5511', text: 'audio' });
+      expect(whatsappTools.toolSendAudio).toHaveBeenCalledWith(wsId, {
+        phone: '5511',
+        text: 'audio',
+      });
     });
 
     it('routes send_document to whatsappTools', async () => {
-      await service.executeTool(wsId, 'send_document', { phone: '5511', url: 'https://cdn.test/doc.pdf' });
-      expect(whatsappTools.toolSendDocument).toHaveBeenCalledWith(wsId, { phone: '5511', url: 'https://cdn.test/doc.pdf' });
+      await service.executeTool(wsId, 'send_document', {
+        phone: '5511',
+        url: 'https://cdn.test/doc.pdf',
+      });
+      expect(whatsappTools.toolSendDocument).toHaveBeenCalledWith(wsId, {
+        phone: '5511',
+        url: 'https://cdn.test/doc.pdf',
+      });
     });
 
     it('routes send_voice_note to sendAudio on whatsappTools', async () => {
       await service.executeTool(wsId, 'send_voice_note', { phone: '5511', text: 'note' });
-      expect(whatsappTools.toolSendAudio).toHaveBeenCalledWith(wsId, { phone: '5511', text: 'note' });
+      expect(whatsappTools.toolSendAudio).toHaveBeenCalledWith(wsId, {
+        phone: '5511',
+        text: 'note',
+      });
     });
 
     it('routes transcribe_audio to whatsappTools', async () => {
-      await service.executeTool(wsId, 'transcribe_audio', { audioUrl: 'https://cdn.test/audio.mp3' });
-      expect(whatsappTools.toolTranscribeAudio).toHaveBeenCalledWith(wsId, { audioUrl: 'https://cdn.test/audio.mp3' });
+      await service.executeTool(wsId, 'transcribe_audio', {
+        audioUrl: 'https://cdn.test/audio.mp3',
+      });
+      expect(whatsappTools.toolTranscribeAudio).toHaveBeenCalledWith(wsId, {
+        audioUrl: 'https://cdn.test/audio.mp3',
+      });
     });
 
     it('routes update_billing_info to billingTools', async () => {
       await service.executeTool(wsId, 'update_billing_info', { returnUrl: '/billing' });
-      expect(billingTools.toolUpdateBillingInfo).toHaveBeenCalledWith(wsId, { returnUrl: '/billing' });
+      expect(billingTools.toolUpdateBillingInfo).toHaveBeenCalledWith(wsId, {
+        returnUrl: '/billing',
+      });
     });
 
     it('routes get_billing_status to billingTools', async () => {
@@ -338,7 +392,9 @@ describe('KloelToolExecutorService', () => {
 
   describe('error handling', () => {
     it('catches errors and returns structured error result', async () => {
-      whatsappTools.toolSendWhatsAppMessage = jest.fn().mockRejectedValue(new Error('WhatsApp timeout'));
+      whatsappTools.toolSendWhatsAppMessage = jest
+        .fn()
+        .mockRejectedValue(new Error('WhatsApp timeout'));
 
       const result = await service.executeTool(wsId, 'send_whatsapp_message', {
         phone: '5511',

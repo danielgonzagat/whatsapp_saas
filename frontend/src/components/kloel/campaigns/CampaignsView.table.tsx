@@ -19,10 +19,10 @@ const BLUE = KLOEL_THEME.info;
 
 function statusBadgeColor(status: string | undefined): string {
   const s = (status || 'DRAFT').toUpperCase();
-  if (s === 'RUNNING') return BLUE;
-  if (s === 'COMPLETED') return GREEN;
-  if (s === 'SCHEDULED') return ACCENT;
-  if (s === 'PAUSED') return TEXT_TERTIARY;
+  if (s === 'RUNNING') {return BLUE;}
+  if (s === 'COMPLETED') {return GREEN;}
+  if (s === 'SCHEDULED') {return ACCENT;}
+  if (s === 'PAUSED') {return TEXT_TERTIARY;}
   return TEXT_TERTIARY;
 }
 

@@ -1,11 +1,6 @@
 import { prisma } from '../../db';
 import { connection } from '../../queue';
-import {
-  log,
-  type UnknownRecord,
-  CONTACT_DAILY_LIMIT,
-  WORKSPACE_DAILY_LIMIT,
-} from './shared';
+import { log, type UnknownRecord, CONTACT_DAILY_LIMIT, WORKSPACE_DAILY_LIMIT } from './shared';
 
 export function buildWorkspaceConfig(
   workspaceId: string,

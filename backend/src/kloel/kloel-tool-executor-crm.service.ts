@@ -14,8 +14,12 @@ import type {
 const NON_DIGIT_RE = /\D/g;
 
 function centsFromUnknown(value: unknown): number {
-  if (typeof value === 'bigint') return Number(value);
-  if (typeof value === 'number' && Number.isFinite(value)) return Math.trunc(value);
+  if (typeof value === 'bigint') {
+    return Number(value);
+  }
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return Math.trunc(value);
+  }
   return 0;
 }
 
@@ -89,7 +93,9 @@ export class KloelToolExecutorCrmService {
         include: contactInclude,
       });
     }
-    if (!contact) return { success: false, error: 'Lead não encontrado.' };
+    if (!contact) {
+      return { success: false, error: 'Lead não encontrado.' };
+    }
     return {
       success: true,
       lead: {

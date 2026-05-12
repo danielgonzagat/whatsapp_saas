@@ -33,7 +33,9 @@ describe('AdminAuditService', () => {
     mockOpsAlert.alertOnCriticalError.mockResolvedValue(undefined);
 
     mockTransaction.mockImplementation(async (ops: unknown) => {
-      if (typeof ops === 'function') return ops(prismaMock);
+      if (typeof ops === 'function') {
+        return ops(prismaMock);
+      }
       return [[], 0];
     });
 
@@ -168,7 +170,9 @@ describe('AdminAuditService', () => {
 
     beforeEach(() => {
       mockTransaction.mockImplementation(async (ops: unknown) => {
-        if (typeof ops === 'function') return ops(prismaMock);
+        if (typeof ops === 'function') {
+          return ops(prismaMock);
+        }
         return [[logEntry], 1];
       });
     });

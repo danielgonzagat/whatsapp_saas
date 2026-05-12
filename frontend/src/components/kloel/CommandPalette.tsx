@@ -81,7 +81,10 @@ export function CommandPalette({ open, onClose, initialSearch, className }: Comm
     inputRef,
     itemRefsRef,
     setActiveConversation,
-  } = useCommandPalette({ open, initialSearch });
+  } = useCommandPalette({
+    ...(open !== undefined ? { open } : {}),
+    ...(initialSearch !== undefined ? { initialSearch } : {}),
+  });
 
   const openConversation = useCallback(
     (conversationId: string) => {

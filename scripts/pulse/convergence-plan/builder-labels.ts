@@ -6,6 +6,7 @@ import type {
 } from '../types.convergence';
 import {
   FAILURE_CLASSES,
+  TRUTH_MODES,
   UNIT_CONFIDENCES,
   UNIT_EXECUTION_MODES,
   UNIT_KINDS,
@@ -120,3 +121,61 @@ export const observedProductFailureClass = deriveObservedConvergenceEvidenceLabe
 );
 export const observedCheckerGapFailureClass =
   deriveObservedConvergenceEvidenceLabel<PulseGateFailureClass>(FAILURE_CLASSES, 'checker_gap');
+
+export const observedMissingEvidenceFailureClass =
+  deriveObservedConvergenceEvidenceLabel<PulseGateFailureClass>(FAILURE_CLASSES, 'missing_evidence');
+
+export const observedRuntimeKind = deriveObservedConvergenceEvidenceLabel<PulseConvergenceUnit['kind']>(
+  dynamicKindEvidence,
+  'runtime',
+);
+export const observedChangeKind = deriveObservedConvergenceEvidenceLabel<PulseConvergenceUnit['kind']>(
+  dynamicKindEvidence,
+  'change',
+);
+export const observedDependencyKind = deriveObservedConvergenceEvidenceLabel<PulseConvergenceUnit['kind']>(
+  dynamicKindEvidence,
+  'dependency',
+);
+export const observedScopeKind = deriveObservedConvergenceEvidenceLabel<PulseConvergenceUnit['kind']>(
+  dynamicKindEvidence,
+  'scope',
+);
+export const observedCapabilityKind = deriveObservedConvergenceEvidenceLabel<PulseConvergenceUnit['kind']>(
+  dynamicKindEvidence,
+  'capability',
+);
+export const observedFlowKind = deriveObservedConvergenceEvidenceLabel<PulseConvergenceUnit['kind']>(
+  dynamicKindEvidence,
+  'flow',
+);
+
+export const observedObservationOnlyMode = deriveObservedConvergenceEvidenceLabel<
+  PulseConvergenceUnit['executionMode']
+>(UNIT_EXECUTION_MODES, 'observation_only');
+export const observedHumanRequiredMode = deriveObservedConvergenceEvidenceLabel<
+  PulseConvergenceUnit['executionMode']
+>(UNIT_EXECUTION_MODES, 'human_required');
+
+export const observedLowRisk = deriveObservedConvergenceEvidenceLabel<
+  PulseConvergenceUnit['riskLevel']
+>(UNIT_RISK_LEVELS, 'low');
+
+export const observedTransformationalImpact = deriveObservedConvergenceEvidenceLabel<
+  PulseConvergenceUnit['productImpact']
+>(UNIT_PRODUCT_IMPACTS, 'transformational');
+export const observedMaterialImpact = deriveObservedConvergenceEvidenceLabel<
+  PulseConvergenceUnit['productImpact']
+>(UNIT_PRODUCT_IMPACTS, 'material');
+
+export const observedReliabilityLane = deriveObservedConvergenceEvidenceLabel<PulseConvergenceOwnerLane>(
+  UNIT_OWNER_LANES,
+  'reliability',
+);
+
+export const observedTruthObservedMode = deriveObservedConvergenceEvidenceLabel<
+  PulseConvergenceUnit['evidenceMode']
+>(TRUTH_MODES, 'observed');
+export const observedTruthInferredMode = deriveObservedConvergenceEvidenceLabel<
+  PulseConvergenceUnit['evidenceMode']
+>(TRUTH_MODES, 'inferred');

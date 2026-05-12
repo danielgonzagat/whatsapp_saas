@@ -243,7 +243,9 @@ export class MetaWebhookController {
     req: RawBodyRequest | undefined,
     body: MetaWebhookBody,
   ): string {
-    if (eventId) return `webhook:meta:${eventId}`;
+    if (eventId) {
+      return `webhook:meta:${eventId}`;
+    }
     const raw = req?.rawBody || JSON.stringify(body || {});
     const hash = crypto
       .createHash('sha256')

@@ -9,10 +9,7 @@ type MemoryCrudMock = Pick<
   'saveMemory' | 'listMemories' | 'getMemoryStats' | 'deleteMemory'
 >;
 
-type MemorySearchMock = Pick<
-  MemorySearchService,
-  'searchMemory' | 'getSalesContext'
->;
+type MemorySearchMock = Pick<MemorySearchService, 'searchMemory' | 'getSalesContext'>;
 
 describe('MemoryService', () => {
   let service: MemoryService;
@@ -121,23 +118,13 @@ describe('MemoryService', () => {
       const result = await service.searchMemory(wsId, 'query', 10, 'product');
 
       expect(result).toEqual(sampleSearchResult);
-      expect(memorySearch.searchMemory).toHaveBeenCalledWith(
-        wsId,
-        'query',
-        10,
-        'product',
-      );
+      expect(memorySearch.searchMemory).toHaveBeenCalledWith(wsId, 'query', 10, 'product');
     });
 
     it('uses default limit and no category when not provided', async () => {
       await service.searchMemory(wsId, 'q');
 
-      expect(memorySearch.searchMemory).toHaveBeenCalledWith(
-        wsId,
-        'q',
-        5,
-        undefined,
-      );
+      expect(memorySearch.searchMemory).toHaveBeenCalledWith(wsId, 'q', 5, undefined);
     });
 
     it('returns empty result from search service', async () => {
@@ -164,10 +151,7 @@ describe('MemoryService', () => {
       const result = await service.getSalesContext(wsId, 'comprar');
 
       expect(result).toBe('=== PRODUTOS RELEVANTES ===\nProduct info');
-      expect(memorySearch.getSalesContext).toHaveBeenCalledWith(
-        wsId,
-        'comprar',
-      );
+      expect(memorySearch.getSalesContext).toHaveBeenCalledWith(wsId, 'comprar');
     });
 
     it('returns empty string when no context found', async () => {
@@ -270,12 +254,7 @@ BENEFÍCIOS: A, B`,
       const result = await service.listMemories(wsId, 'product', 2, 10);
 
       expect(result.total).toBe(1);
-      expect(memoryCrud.listMemories).toHaveBeenCalledWith(
-        wsId,
-        'product',
-        2,
-        10,
-      );
+      expect(memoryCrud.listMemories).toHaveBeenCalledWith(wsId, 'product', 2, 10);
     });
 
     it('returns empty list when no memories', async () => {
@@ -338,12 +317,7 @@ BENEFÍCIOS: A, B`,
     it('searchMemory delegates with correct workspaceId', async () => {
       await service.searchMemory('ws-tenant', 'q');
 
-      expect(memorySearch.searchMemory).toHaveBeenCalledWith(
-        'ws-tenant',
-        'q',
-        5,
-        undefined,
-      );
+      expect(memorySearch.searchMemory).toHaveBeenCalledWith('ws-tenant', 'q', 5, undefined);
     });
 
     it('saveProduct delegates with correct workspaceId', async () => {
@@ -365,12 +339,7 @@ BENEFÍCIOS: A, B`,
     it('listMemories delegates with correct workspaceId', async () => {
       await service.listMemories('ws-tenant');
 
-      expect(memoryCrud.listMemories).toHaveBeenCalledWith(
-        'ws-tenant',
-        undefined,
-        1,
-        20,
-      );
+      expect(memoryCrud.listMemories).toHaveBeenCalledWith('ws-tenant', undefined, 1, 20);
     });
 
     it('getMemoryStats delegates with correct workspaceId', async () => {
@@ -410,39 +379,25 @@ BENEFÍCIOS: A, B`,
 
   describe('error handling', () => {
     it('saveMemory propagates crud error', async () => {
-      (memoryCrud.saveMemory as jest.Mock).mockRejectedValue(
-        new Error('crud failure'),
-      );
+      (memoryCrud.saveMemory as jest.Mock).mockRejectedValue(new Error('crud failure'));
 
-      await expect(service.saveMemory(wsId, 'k', 'v')).rejects.toThrow(
-        'crud failure',
-      );
+      await expect(service.saveMemory(wsId, 'k', 'v')).rejects.toThrow('crud failure');
     });
 
     it('searchMemory propagates search error', async () => {
-      (memorySearch.searchMemory as jest.Mock).mockRejectedValue(
-        new Error('search failure'),
-      );
+      (memorySearch.searchMemory as jest.Mock).mockRejectedValue(new Error('search failure'));
 
-      await expect(service.searchMemory(wsId, 'q')).rejects.toThrow(
-        'search failure',
-      );
+      await expect(service.searchMemory(wsId, 'q')).rejects.toThrow('search failure');
     });
 
     it('deleteMemory propagates crud deletion error', async () => {
-      (memoryCrud.deleteMemory as jest.Mock).mockRejectedValue(
-        new Error('delete failed'),
-      );
+      (memoryCrud.deleteMemory as jest.Mock).mockRejectedValue(new Error('delete failed'));
 
-      await expect(service.deleteMemory(wsId, 'k')).rejects.toThrow(
-        'delete failed',
-      );
+      await expect(service.deleteMemory(wsId, 'k')).rejects.toThrow('delete failed');
     });
 
     it('listMemories propagates crud error', async () => {
-      (memoryCrud.listMemories as jest.Mock).mockRejectedValue(
-        new Error('list failed'),
-      );
+      (memoryCrud.listMemories as jest.Mock).mockRejectedValue(new Error('list failed'));
 
       await expect(service.listMemories(wsId)).rejects.toThrow('list failed');
     });

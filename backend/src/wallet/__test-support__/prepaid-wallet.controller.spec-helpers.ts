@@ -43,8 +43,12 @@ function lookupWallet(
   workspaceMap: Map<string, PrepaidWallet>,
   where: { id?: string; workspaceId?: string },
 ): PrepaidWallet | null {
-  if (where.id) return walletMap.get(where.id) ?? null;
-  if (where.workspaceId) return workspaceMap.get(where.workspaceId) ?? null;
+  if (where.id) {
+    return walletMap.get(where.id) ?? null;
+  }
+  if (where.workspaceId) {
+    return workspaceMap.get(where.workspaceId) ?? null;
+  }
   return null;
 }
 
@@ -110,7 +114,9 @@ export function makePrismaStub(wallets: PrepaidWallet[] = []) {
           data: Partial<PrepaidWallet>;
         }) => {
           const current = walletMap.get(where.id);
-          if (!current) return Promise.resolve({ count: 0 });
+          if (!current) {
+            return Promise.resolve({ count: 0 });
+          }
           const next = { ...current, ...data, updatedAt: new Date() };
           walletMap.set(where.id, next);
           workspaceMap.set(next.workspaceId, next);

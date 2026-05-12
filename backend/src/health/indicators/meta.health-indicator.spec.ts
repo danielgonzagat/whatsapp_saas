@@ -11,8 +11,12 @@ describe('MetaHealthIndicator', () => {
     jest.clearAllMocks();
     config = {
       get: jest.fn((key: string) => {
-        if (key === 'META_APP_ID') return 'test-app-id';
-        if (key === 'META_APP_SECRET') return 'test-app-secret';
+        if (key === 'META_APP_ID') {
+          return 'test-app-id';
+        }
+        if (key === 'META_APP_SECRET') {
+          return 'test-app-secret';
+        }
         return undefined;
       }),
     };
@@ -46,7 +50,9 @@ describe('MetaHealthIndicator', () => {
 
   it('throws HealthCheckError when META_APP_SECRET is missing', async () => {
     config.get = jest.fn((key: string) => {
-      if (key === 'META_APP_ID') return 'test-app-id';
+      if (key === 'META_APP_ID') {
+        return 'test-app-id';
+      }
       return undefined;
     });
 

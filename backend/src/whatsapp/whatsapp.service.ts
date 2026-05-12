@@ -52,8 +52,12 @@ export class WhatsappService {
 
   // ═══ UTILITY (thin) ═══
   private readText(v: unknown): string {
-    if (typeof v === 'string') return v.trim();
-    if (typeof v === 'number' || typeof v === 'boolean') return String(v).trim();
+    if (typeof v === 'string') {
+      return v.trim();
+    }
+    if (typeof v === 'number' || typeof v === 'boolean') {
+      return String(v).trim();
+    }
     return '';
   }
   private isPlaceholderContactName(v: unknown, p?: string | null): boolean {
@@ -62,7 +66,9 @@ export class WhatsappService {
   private resolveTrustedContactName(phone: string, ...candidates: unknown[]): string {
     for (const c of candidates) {
       const n = this.readText(c);
-      if (n && !this.isPlaceholderContactName(n, phone)) return n;
+      if (n && !this.isPlaceholderContactName(n, phone)) {
+        return n;
+      }
     }
     return '';
   }
@@ -215,7 +221,9 @@ export class WhatsappService {
         orderBy: { updatedAt: 'desc' },
       })) || [];
     const merged = new Map<string, NormalizedContact>();
-    for (const c of rContacts) merged.set(c.phone, c);
+    for (const c of rContacts) {
+      merged.set(c.phone, c);
+    }
     for (const l of lContacts) {
       const e = merged.get(l.phone);
       merged.set(l.phone, {
@@ -239,13 +247,17 @@ export class WhatsappService {
     }
     return Array.from(merged.values()).sort((a, b) => {
       const bu = (b.updatedAt || '').localeCompare(a.updatedAt || '');
-      if (bu !== 0) return bu;
+      if (bu !== 0) {
+        return bu;
+      }
       return String(a.name || a.phone).localeCompare(String(b.name || b.phone));
     });
   }
   async createContact(ws: string, input: { phone: string; name?: string; email?: string }) {
     const phone = this.normalizeNumber(input.phone || '');
-    if (!phone) throw new BadRequestException('phone é obrigatório');
+    if (!phone) {
+      throw new BadRequestException('phone é obrigatório');
+    }
     const registered = await this.providerRegistry.isRegistered(ws, phone).catch(() => null);
     const resolvedName = this.resolveTrustedContactName(phone, input.name);
     const emailVal = input.email?.trim();
@@ -429,7 +441,9 @@ export class WhatsappService {
       where: { id: gid, workspaceId: ws },
       select: { id: true },
     });
-    if (!g) throw new NotFoundException('Group not found');
+    if (!g) {
+      throw new NotFoundException('Group not found');
+    }
     return this.prisma.groupMember.create({ data: { groupId: gid, phone, isAdmin } });
   }
   async listBannedKeywords(gid: string) {
@@ -444,7 +458,9 @@ export class WhatsappService {
       where: { id: gid, workspaceId: ws },
       select: { id: true },
     });
-    if (!g) throw new NotFoundException('Group not found');
+    if (!g) {
+      throw new NotFoundException('Group not found');
+    }
     return this.prisma.bannedKeyword.create({ data: { groupId: gid, keyword, action } });
   }
 }

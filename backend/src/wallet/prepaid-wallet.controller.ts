@@ -204,7 +204,9 @@ export class PrepaidWalletController {
         workspaceId,
         operation: body.operation,
         ...(body.units !== undefined ? { units: body.units } : {}),
-        ...(body.quotedCostCents !== undefined ? { quotedCostCents: BigInt(body.quotedCostCents) } : {}),
+        ...(body.quotedCostCents !== undefined
+          ? { quotedCostCents: BigInt(body.quotedCostCents) }
+          : {}),
         requestId: body.requestId,
         ...(body.metadata !== undefined ? { metadata: body.metadata } : {}),
       });

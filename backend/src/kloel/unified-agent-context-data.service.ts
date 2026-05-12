@@ -26,9 +26,12 @@ export class UnifiedAgentContextDataService {
   }
 
   private readText(value: unknown, fallback = ''): string {
-    if (typeof value === 'string') return value;
-    if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint')
+    if (typeof value === 'string') {
+      return value;
+    }
+    if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
       return String(value);
+    }
     return fallback;
   }
 
@@ -79,7 +82,9 @@ export class UnifiedAgentContextDataService {
         where: { id: contactId, workspaceId },
         select,
       });
-      if (contact) return contact;
+      if (contact) {
+        return contact;
+      }
     }
 
     const contact = await this.prisma.contact.findFirst({
@@ -102,7 +107,9 @@ export class UnifiedAgentContextDataService {
         ? { workspaceId, contact: { phone } }
         : null;
 
-    if (!where) return [];
+    if (!where) {
+      return [];
+    }
 
     const messages = await this.prisma.message.findMany({
       where: { ...where, workspaceId },
@@ -129,7 +136,9 @@ export class UnifiedAgentContextDataService {
         ? { workspaceId, contact: { phone } }
         : null;
 
-    if (!where) return undefined;
+    if (!where) {
+      return undefined;
+    }
 
     const messages = await this.prisma.message.findMany({
       where: { ...where, workspaceId },

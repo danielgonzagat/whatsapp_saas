@@ -79,7 +79,7 @@ export default function AreaMembrosListPanel({
                 </svg>
               </button>
               <a href={previewHref || undefined} target="_blank" rel="noopener noreferrer"
-                onClick={(e) => { if (!previewHref) e.preventDefault(); }} aria-disabled={!previewHref}
+                onClick={(e) => { if (!previewHref) {e.preventDefault();} }} aria-disabled={!previewHref}
                 style={{ ...iconBtn, color: 'colors.ember.primary', opacity: previewHref ? 1 : 0.45, textDecoration: 'none' }}>
                 <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
                   <path d={kloelT('M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z')} />

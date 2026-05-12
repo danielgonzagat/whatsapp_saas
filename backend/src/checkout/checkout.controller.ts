@@ -147,7 +147,9 @@ export class CheckoutController {
   @Get('products')
   listProducts(@Request() req: AuthenticatedRequest) {
     const wsId = req.user?.workspaceId;
-    if (!wsId) throw new BadRequestException('workspaceId missing from token');
+    if (!wsId) {
+      throw new BadRequestException('workspaceId missing from token');
+    }
     return this.checkoutService.listProducts(wsId);
   }
 
@@ -314,12 +316,8 @@ export class CheckoutController {
 
     const configInput: Prisma.CheckoutConfigUpdateInput = {
       ...(normalizedTimer !== undefined ? { timerType: normalizedTimer } : {}),
-      ...(normalizedTestimonials !== undefined
-        ? { testimonials: normalizedTestimonials }
-        : {}),
-      ...(normalizedTrustBadges !== undefined
-        ? { trustBadges: normalizedTrustBadges }
-        : {}),
+      ...(normalizedTestimonials !== undefined ? { testimonials: normalizedTestimonials } : {}),
+      ...(normalizedTrustBadges !== undefined ? { trustBadges: normalizedTrustBadges } : {}),
     };
     for (const [key, value] of Object.entries(configDto)) {
       if (value !== undefined) {
@@ -424,7 +422,9 @@ export class CheckoutController {
   @Get('coupons')
   listCoupons(@Request() req: AuthenticatedRequest) {
     const wsId = req.user?.workspaceId;
-    if (!wsId) throw new BadRequestException('workspaceId missing from token');
+    if (!wsId) {
+      throw new BadRequestException('workspaceId missing from token');
+    }
     return this.checkoutService.listCoupons(wsId);
   }
 
@@ -480,7 +480,9 @@ export class CheckoutController {
     @Query('limit') limit?: string,
   ) {
     const wsId = req.user?.workspaceId;
-    if (!wsId) throw new BadRequestException('workspaceId missing from token');
+    if (!wsId) {
+      throw new BadRequestException('workspaceId missing from token');
+    }
     const clampedPage = page ? Math.max(Number.parseInt(page, 10) || 1, 1) : undefined;
     const clampedLimit = limit
       ? Math.min(Math.max(Number.parseInt(limit, 10) || 20, 1), 100)

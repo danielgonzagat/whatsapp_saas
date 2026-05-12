@@ -14,7 +14,9 @@ export async function createAffiliateCommissionFromPaidCheckoutUpdate(
   args: Prisma.CheckoutOrderUpdateManyArgs,
 ) {
   const scope = args.data.status === 'PAID' ? readPaidCheckoutOrderScope(args) : null;
-  if (!scope) return;
+  if (!scope) {
+    return;
+  }
 
   await prisma.$transaction(async (tx) => {
     const order = await tx.checkoutOrder.findUnique({

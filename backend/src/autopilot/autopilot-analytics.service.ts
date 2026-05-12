@@ -139,7 +139,9 @@ export class AutopilotAnalyticsService {
     ev: { createdAt: Date; status?: string | null; reason?: string | null },
     acc: ReturnType<AutopilotAnalyticsService['createStatsAccumulator']>,
   ) {
-    if (ev.status !== 'error') return;
+    if (ev.status !== 'error') {
+      return;
+    }
     acc.errorsLast7d += 1;
     const reason = ev.reason || 'error';
     acc.errorReasons[reason] = (acc.errorReasons[reason] || 0) + 1;
@@ -153,18 +155,26 @@ export class AutopilotAnalyticsService {
     ev: { reason?: string | null; status?: string | null },
     acc: ReturnType<AutopilotAnalyticsService['createStatsAccumulator']>,
   ) {
-    if (ev.status !== 'skipped') return;
+    if (ev.status !== 'skipped') {
+      return;
+    }
     acc.skippedTotal += 1;
     const reason = (ev.reason || '').toLowerCase();
-    if (reason.includes('optin')) acc.skippedOptin += 1;
-    if (reason.includes('24h') || reason.includes('session')) acc.skipped24h += 1;
+    if (reason.includes('optin')) {
+      acc.skippedOptin += 1;
+    }
+    if (reason.includes('24h') || reason.includes('session')) {
+      acc.skipped24h += 1;
+    }
   }
 
   private processStatsScheduled(
     ev: { status?: string | null; meta?: unknown },
     acc: ReturnType<AutopilotAnalyticsService['createStatsAccumulator']>,
   ) {
-    if (ev.status !== 'scheduled') return;
+    if (ev.status !== 'scheduled') {
+      return;
+    }
     acc.scheduledCount += 1;
     const cf = this.readOptionalText(this.readRecord(ev.meta).nextRetryAt);
     if (cf && (!acc.nextRetryAt || new Date(cf).getTime() < new Date(acc.nextRetryAt).getTime())) {
@@ -176,7 +186,9 @@ export class AutopilotAnalyticsService {
     ev: { status?: string | null; action?: string | null; createdAt: Date; meta?: unknown },
     acc: ReturnType<AutopilotAnalyticsService['createStatsAccumulator']>,
   ) {
-    if (ev.action !== 'CONVERSION') return;
+    if (ev.action !== 'CONVERSION') {
+      return;
+    }
     acc.conversionsLast7d += 1;
     const tsConv = ev.createdAt.getTime();
     if (!acc.lastConversionAt || tsConv > new Date(acc.lastConversionAt).getTime()) {

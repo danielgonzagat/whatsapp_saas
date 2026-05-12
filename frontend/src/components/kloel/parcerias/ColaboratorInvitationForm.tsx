@@ -24,7 +24,7 @@ export default function ColaboratorInvitationForm({ onClose }: { onClose: () => 
   const inviteRoles = ROLES.filter((r) => r.value !== 'admin');
 
   const handleSubmit = async () => {
-    if (!email.trim()) return;
+    if (!email.trim()) {return;}
     setSending(true);
     try {
       await inviteCollaborator({ email, role });

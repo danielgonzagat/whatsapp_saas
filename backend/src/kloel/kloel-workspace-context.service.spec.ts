@@ -450,11 +450,7 @@ describe('KloelWorkspaceContextService', () => {
     it('getWorkspaceContext passes workspaceId to dataService', async () => {
       await service.getWorkspaceContext('ws-tenant');
 
-      expect(dataService.fetchAll).toHaveBeenCalledWith(
-        'ws-tenant',
-        expect.any(Object),
-        undefined,
-      );
+      expect(dataService.fetchAll).toHaveBeenCalledWith('ws-tenant', expect.any(Object), undefined);
     });
 
     it('listPersonas filters by workspaceId', async () => {

@@ -229,7 +229,9 @@ export class AutopilotOpsService {
         intervalMs: 500,
         read: async () => {
           const current = await this.redisClient.get(smokeKey);
-          if (!current) return null;
+          if (!current) {
+            return null;
+          }
           try {
             return this.readRecord(JSON.parse(current));
           } catch {

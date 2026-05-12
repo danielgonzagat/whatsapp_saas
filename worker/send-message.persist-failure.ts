@@ -23,7 +23,18 @@ export interface PersistFailureInput {
 }
 
 export async function persistFailure(input: PersistFailureInput) {
-  const { prisma, redisPub, log, workspaceId, contactId, conversationId, content, msgType, mediaUrl, errorMessage } = input;
+  const {
+    prisma,
+    redisPub,
+    log,
+    workspaceId,
+    contactId,
+    conversationId,
+    content,
+    msgType,
+    mediaUrl,
+    errorMessage,
+  } = input;
 
   try {
     await prisma.message.create({

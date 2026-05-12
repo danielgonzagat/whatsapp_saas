@@ -60,12 +60,10 @@ export class CheckoutPostPaymentEffectsService {
         workspaceId,
         orderId: order.id,
         ...(capturedLeadId !== null ? { capturedLeadId } : {}),
-        ...(order.customerEmail !== undefined &&
-        order.customerEmail !== null
+        ...(order.customerEmail !== undefined && order.customerEmail !== null
           ? { customerEmail: order.customerEmail }
           : {}),
-        ...(order.customerPhone !== undefined &&
-        order.customerPhone !== null
+        ...(order.customerPhone !== undefined && order.customerPhone !== null
           ? { customerPhone: order.customerPhone }
           : {}),
         ...(deviceFingerprint !== null ? { deviceFingerprint } : {}),
@@ -113,18 +111,15 @@ export class CheckoutPostPaymentEffectsService {
           pixelId: pixel.pixelId,
           accessToken: pixel.accessToken,
           eventName: 'Purchase',
-          ...(order.customerEmail !== undefined &&
-          order.customerEmail !== null
+          ...(order.customerEmail !== undefined && order.customerEmail !== null
             ? { email: order.customerEmail }
             : {}),
-          ...(order.customerPhone !== undefined &&
-          order.customerPhone !== null
+          ...(order.customerPhone !== undefined && order.customerPhone !== null
             ? { phone: order.customerPhone }
             : {}),
           amount: Number(order.totalInCents || 0),
           currency: 'BRL',
-          ...(order.plan?.productId !== undefined &&
-          order.plan?.productId !== null
+          ...(order.plan?.productId !== undefined && order.plan?.productId !== null
             ? { productId: order.plan.productId }
             : {}),
           ...(order.ipAddress !== undefined && order.ipAddress !== null

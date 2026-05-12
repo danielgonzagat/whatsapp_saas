@@ -13,8 +13,8 @@ const SENTENCE_END_RE = /[.!?]/;
 
 function formatAgentPhaseLabel(value?: string | null): string {
   const raw = String(value || '').trim();
-  if (!raw) return '';
-  if (raw === 'streaming_token') return '';
+  if (!raw) {return '';}
+  if (raw === 'streaming_token') {return '';}
   return raw
     .replace(SEPARATOR_G_RE, ' ')
     .replace(WHITESPACE_G_RE, ' ')

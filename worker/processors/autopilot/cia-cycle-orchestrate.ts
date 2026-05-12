@@ -1,9 +1,6 @@
 import { prisma } from '../../db';
 import { forEachSequential } from '../../utils/async-sequence';
-import {
-  isCiaAutonomyMode,
-  type UnknownRecord,
-} from './shared';
+import { isCiaAutonomyMode, type UnknownRecord } from './shared';
 import { runCiaCycleWorkspace } from './cia-cycle-workspace';
 
 export { publishCiaProofEvent } from './cia-cycle-proof-event';
@@ -26,5 +23,6 @@ export async function runCiaCycleAll() {
   });
 }
 
-export type CiaProofEventPayload = Parameters<typeof import('./cia-cycle-proof-event').publishCiaProofEvent>[0];
-
+export type CiaProofEventPayload = Parameters<
+  typeof import('./cia-cycle-proof-event').publishCiaProofEvent
+>[0];

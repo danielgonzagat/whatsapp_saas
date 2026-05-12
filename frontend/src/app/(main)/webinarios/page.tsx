@@ -39,12 +39,12 @@ export default function WebinariosPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
-    if (!workspaceId) return;
+    if (!workspaceId) {return;}
     setError(null);
     setLoading(true);
     try {
       const res = await apiFetch<WebinarListResponse>('/webinars');
-      if (res.error) throw new Error(res.error);
+      if (res.error) {throw new Error(res.error);}
       setWebinars(Array.isArray(res.data?.webinars) ? res.data.webinars : []);
     } catch (err: unknown) {
       setError(readErrorMessage(err, 'Falha ao carregar webinarios'));
@@ -76,7 +76,7 @@ export default function WebinariosPage() {
             description: data.description || undefined,
           },
         });
-        if (res.error) throw new Error(res.error);
+        if (res.error) {throw new Error(res.error);}
         setShowCreate(false);
         invalidateCache();
         refresh();
@@ -103,16 +103,17 @@ export default function WebinariosPage() {
 
   const handleEdit = useCallback(
     async (data: WebinarFormData) => {
-      if (!editingWebinar) return;
+      if (!editingWebinar) {return;}
       setEditSaving(true);
       try {
+        const desc = data.description || undefined;
         const res = await webinarApi.update(editingWebinar.id, {
           title: data.title,
           url: data.url,
           date: data.date,
-          description: data.description || undefined,
+          ...(desc !== undefined ? { description: desc } : {}),
         });
-        if (res.error) throw new Error(res.error);
+        if (res.error) {throw new Error(res.error);}
         setEditingWebinar(null);
         setEditDefaults(undefined);
         invalidateCache();
@@ -131,7 +132,7 @@ export default function WebinariosPage() {
       setDeletingId(id);
       try {
         const res = await webinarApi.remove(id);
-        if (res.error) throw new Error(res.error);
+        if (res.error) {throw new Error(res.error);}
         setDeletingId(null);
         invalidateCache();
         refresh();

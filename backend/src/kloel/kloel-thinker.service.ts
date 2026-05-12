@@ -141,8 +141,9 @@ export class KloelThinkerService {
         ]);
         companyName = 'sua empresa';
         context = await this.wsContextService.getWorkspaceContext(workspaceId, userId);
-        if (enrichedCompanyContext)
+        if (enrichedCompanyContext) {
           context = [context, enrichedCompanyContext].filter(Boolean).join('\n\n');
+        }
         userName = this.replyEngine.contextFormatter.sanitizeUserNameForAssistant(
           reqUserName || agent?.name || userName,
         );
@@ -183,7 +184,9 @@ export class KloelThinkerService {
                 expertiseLevel,
               });
 
-      if (thread?.id) safeWrite(createKloelThreadEvent(thread.id, thread.title));
+      if (thread?.id) {
+        safeWrite(createKloelThreadEvent(thread.id, thread.title));
+      }
 
       const persistedUserMessage = thread?.id
         ? await this.threadService.persistUserThreadMessage(
@@ -277,7 +280,9 @@ export class KloelThinkerService {
       if (workspaceId && streamedReply) {
         this.llmBudget.recordSpend(workspaceId, streamedReply.estimatedTokens).catch(() => {});
       }
-      if (!streamedReply) return;
+      if (!streamedReply) {
+        return;
+      }
       let fullResponse = streamedReply.fullResponse;
       if (!fullResponse.trim()) {
         safeWrite(

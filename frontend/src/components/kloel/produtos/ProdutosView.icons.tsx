@@ -1,4 +1,5 @@
 import { kloelT } from '@/lib/i18n/t';
+import { colors } from '@/lib/design-tokens';
 import type React from 'react';
 
 // Pure SVG icon map extracted from ProdutosView.tsx to reduce the host

@@ -37,7 +37,10 @@ export class PublicApiController {
     },
   })
   @ApiResponse({ status: 201, description: 'Message queued for delivery' })
-  async sendMessage(@Request() req: AuthenticatedRequest, @Body() body: { phone: string; message: string }) {
+  async sendMessage(
+    @Request() req: AuthenticatedRequest,
+    @Body() body: { phone: string; message: string },
+  ) {
     return this.inbox.saveMessageByPhone({
       workspaceId: req.user.workspaceId,
       phone: body.phone,

@@ -83,7 +83,7 @@ describe('KloelLeadProcessorService', () => {
         paymentUrl: 'https://pay.test',
         suggestedMessage: 'Link de pagamento',
       }),
-    } as { createSmartPayment: jest.Mock };
+    };
     planLimits = {
       ensureTokenBudget: jest.fn().mockResolvedValue(undefined),
       trackAiUsage: jest.fn().mockResolvedValue(undefined),
@@ -118,17 +118,16 @@ describe('KloelLeadProcessorService', () => {
       expect(result).toContain('Resposta');
       expect(prisma.kloelLead.create).toHaveBeenCalled();
       expect(prisma.kloelConversation.create).toHaveBeenCalledWith(
-        expect.objectContaining({ data: expect.objectContaining({ leadId: 'lead-1', role: 'user' }) }),
+        expect.objectContaining({
+          data: expect.objectContaining({ leadId: 'lead-1', role: 'user' }),
+        }),
       );
     });
 
     it('returns error message on failure', async () => {
       prisma.workspace.findUnique.mockRejectedValue(new Error('DB down'));
-      const result = await service.processWhatsAppMessage(
-        wsId,
-        '5511999999999',
-        'Oi',
-        () => Promise.resolve('context'),
+      const result = await service.processWhatsAppMessage(wsId, '5511999999999', 'Oi', () =>
+        Promise.resolve('context'),
       );
       expect(result).toContain('problema técnico');
     });
@@ -144,11 +143,8 @@ describe('KloelLeadProcessorService', () => {
         providerSettings: { autopilot: { enabled: true } },
         name: 'Workspace Teste',
       });
-      const result = await service.processWhatsAppMessage(
-        wsId,
-        '5511999999999',
-        'Oi',
-        () => Promise.resolve('context'),
+      const result = await service.processWhatsAppMessage(wsId, '5511999999999', 'Oi', () =>
+        Promise.resolve('context'),
       );
       expect(unifiedAgent.processIncomingMessage).toHaveBeenCalled();
       expect(result).toEqual('Resposta do agente');
@@ -156,11 +152,8 @@ describe('KloelLeadProcessorService', () => {
 
     it('creates lead when not found', async () => {
       prisma.kloelLead.findFirst.mockResolvedValue(null);
-      await service.processWhatsAppMessage(
-        wsId,
-        '5511999999999',
-        'Teste',
-        () => Promise.resolve('c'),
+      await service.processWhatsAppMessage(wsId, '5511999999999', 'Teste', () =>
+        Promise.resolve('c'),
       );
       expect(prisma.kloelLead.create).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -172,21 +165,21 @@ describe('KloelLeadProcessorService', () => {
 
   describe('processWhatsAppMessageWithPayment', () => {
     it('returns payment link when buy intent is high', async () => {
-      prisma.kloelLead.findFirst
-        .mockResolvedValueOnce(null)
-        .mockResolvedValueOnce({
-          id: 'lead-1',
-          workspaceId: wsId,
-          phone: '5511999999999',
-          name: 'Cliente',
-          stage: 'new',
-          score: 0,
-        });
-      prisma.kloelMemory.findMany.mockResolvedValue([{
-        id: 'mem-1',
-        type: 'product',
-        value: { name: 'Curso X', price: 99.9 },
-      }]);
+      prisma.kloelLead.findFirst.mockResolvedValueOnce(null).mockResolvedValueOnce({
+        id: 'lead-1',
+        workspaceId: wsId,
+        phone: '5511999999999',
+        name: 'Cliente',
+        stage: 'new',
+        score: 0,
+      });
+      prisma.kloelMemory.findMany.mockResolvedValue([
+        {
+          id: 'mem-1',
+          type: 'product',
+          value: { name: 'Curso X', price: 99.9 },
+        },
+      ]);
 
       const result = await service.processWhatsAppMessageWithPayment(
         wsId,
@@ -292,7 +285,9 @@ describe('KloelLeadProcessorService', () => {
 
   describe('workspace isolation', () => {
     it('getOrCreateLead filters by workspaceId', async () => {
-      await service.processWhatsAppMessage('ws-tenant', '5511988888888', 'Oi', () => Promise.resolve('c'));
+      await service.processWhatsAppMessage('ws-tenant', '5511988888888', 'Oi', () =>
+        Promise.resolve('c'),
+      );
       expect(prisma.kloelLead.findFirst).toHaveBeenCalledWith(
         expect.objectContaining({ where: { workspaceId: 'ws-tenant', phone: '5511988888888' } }),
       );
@@ -314,7 +309,9 @@ describe('KloelLeadProcessorService', () => {
   describe('error handling', () => {
     it('processWhatsAppMessage propagates Prisma error gracefully', async () => {
       prisma.kloelLead.findFirst.mockRejectedValue(new Error('unique constraint'));
-      const result = await service.processWhatsAppMessage(wsId, '55119', 'Oi', () => Promise.resolve('c'));
+      const result = await service.processWhatsAppMessage(wsId, '55119', 'Oi', () =>
+        Promise.resolve('c'),
+      );
       expect(result).toContain('problema técnico');
     });
   });

@@ -3,8 +3,10 @@ import type { PulseConvergenceUnit } from '../types.convergence';
 import type { BuildPulseConvergencePlanInput } from './kernel';
 import {
   OBSERVED_ARTIFACTS,
+  OBSERVED_EXTERNAL_SIGNAL_SOURCE_LABELS,
 } from './kernel';
 import {
+  deriveObservedConvergenceEvidenceLabel,
   observedPulseSource,
   observedAiSafeExecutionMode,
   observedScenarioKind,
@@ -20,6 +22,8 @@ import {
   observedLowConfidence,
   observedDiagnosticImpact,
   observedCheckerGapFailureClass,
+  observedTruthObservedMode,
+  observedTruthInferredMode,
 } from './builder-labels';
 import {
   formatNoHardcodedRealityBlocker,
@@ -190,8 +194,8 @@ export function buildScenarioUnits(input: BuildPulseConvergencePlanInput): Pulse
       .map((result) => result!.flowId);
     let hasExecutedEvidence = accumulator.results.some((result) => result.executed);
     let evidenceMode: PulseConvergenceUnit['evidenceMode'] = hasExecutedEvidence
-      ? 'observed'
-      : 'inferred';
+      ? observedTruthObservedMode
+      : observedTruthInferredMode;
     let confidence: PulseConvergenceUnit['confidence'] = hasExecutedEvidence
       ? observedHighConfidence
       : hasObservedItems(accumulator.results) || hasPendingAsync
@@ -292,7 +296,7 @@ export function buildNoHardcodedRealityUnits(
       executionMode: observedAiSafeExecutionMode,
       ownerLane: observedPlatformLane,
       riskLevel: observedHighRisk,
-      evidenceMode: 'observed',
+      evidenceMode: observedTruthObservedMode,
       confidence: observedHighConfidence,
       productImpact: observedDiagnosticImpact,
       title: 'Remove PULSE Hardcoded Reality Authority',
@@ -332,8 +336,9 @@ export function buildExternalUnits(input: BuildPulseConvergencePlanInput): Pulse
   if (!input.externalSignalState) {
     return [];
   }
+  let codacySource = deriveObservedConvergenceEvidenceLabel<string>(OBSERVED_EXTERNAL_SIGNAL_SOURCE_LABELS, 'codacy');
   let candidateSignals = input.externalSignalState.signals.filter(
-    (signal) => signal.source !== 'codacy',
+    (signal) => signal.source !== codacySource,
   );
   let impactThreshold = observedThreshold(candidateSignals.map((signal) => signal.impactScore));
   let severityThreshold = observedThreshold(candidateSignals.map((signal) => signal.severity));

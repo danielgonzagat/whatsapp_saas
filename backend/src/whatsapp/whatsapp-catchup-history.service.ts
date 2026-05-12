@@ -29,8 +29,12 @@ function safeStr(v: unknown, fb = ''): string {
       : fb;
 }
 function normalizeOptionalText(value: unknown): string {
-  if (typeof value === 'string') return value.trim();
-  if (typeof value === 'number' || typeof value === 'boolean') return String(value).trim();
+  if (typeof value === 'string') {
+    return value.trim();
+  }
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value).trim();
+  }
   return '';
 }
 
@@ -115,13 +119,23 @@ export class WhatsappCatchupHistoryService {
 
   isPlaceholderContactName(value: unknown, phone?: string | null): boolean {
     const n = normalizeOptionalText(value);
-    if (!n) return true;
+    if (!n) {
+      return true;
+    }
     const l = n.toLowerCase();
     const pd = this.normalizePhone(String(phone || ''));
-    if (l === 'doe' || l === 'unknown' || l === 'desconhecido') return true;
-    if (D__D_S____S_DOE_RE.test(n)) return true;
-    if (pd && l === `${pd} doe`) return true;
-    if (pd && this.normalizePhone(n) === pd) return true;
+    if (l === 'doe' || l === 'unknown' || l === 'desconhecido') {
+      return true;
+    }
+    if (D__D_S____S_DOE_RE.test(n)) {
+      return true;
+    }
+    if (pd && l === `${pd} doe`) {
+      return true;
+    }
+    if (pd && this.normalizePhone(n) === pd) {
+      return true;
+    }
     return false;
   }
 
@@ -137,14 +151,18 @@ export class WhatsappCatchupHistoryService {
       chat?.lastMessage?._data?.verifiedBizName,
     ]) {
       const n = String(c || '').trim();
-      if (n && !this.isPlaceholderContactName(n, fp)) return n;
+      if (n && !this.isPlaceholderContactName(n, fp)) {
+        return n;
+      }
     }
     return '';
   }
 
   async resolveWorkspaceSelfPhone(ws: string, s?: ProviderSettings | null): Promise<string | null> {
     const cached = this.selfPhoneCache.get(ws);
-    if (cached && cached.expiresAt > Date.now()) return cached.phone;
+    if (cached && cached.expiresAt > Date.now()) {
+      return cached.phone;
+    }
     const wS = s?.whatsappWebSession;
     const aS = s?.whatsappApiSession;
     const sp = this.normalizePhone(safeStr(wS?.phoneNumber || aS?.phoneNumber));
@@ -175,11 +193,15 @@ export class WhatsappCatchupHistoryService {
     [key: string]: unknown;
   }): CatchupBackfillCursor {
     const rc = sm?.backfillCursor;
-    if (!rc || typeof rc !== 'object') return null;
+    if (!rc || typeof rc !== 'object') {
+      return null;
+    }
     const c = rc as BackfillCursorData;
     const cid = safeStr(c.chatId).trim();
     const at = Number(c.activityTimestamp || c.timestamp || 0) || 0;
-    if (!cid || at <= 0) return null;
+    if (!cid || at <= 0) {
+      return null;
+    }
     return {
       chatId: cid,
       activityTimestamp: at,
@@ -194,7 +216,9 @@ export class WhatsappCatchupHistoryService {
     chats: WahaChatSummary[],
     cursor?: CatchupBackfillCursor,
   ): WahaChatSummary[] {
-    if (!cursor || !chats.length) return chats;
+    if (!cursor || !chats.length) {
+      return chats;
+    }
     const i = chats.findIndex((c) => c.id === cursor.chatId);
     if (i >= 0) {
       const s = (i + 1) % chats.length;
@@ -203,7 +227,9 @@ export class WhatsappCatchupHistoryService {
     const ai = chats.findIndex(
       (c) => this.resolveChatActivityTimestamp(c) < cursor.activityTimestamp,
     );
-    if (ai > 0) return [...chats.slice(ai), ...chats.slice(0, ai)];
+    if (ai > 0) {
+      return [...chats.slice(ai), ...chats.slice(0, ai)];
+    }
     return chats;
   }
 
@@ -213,12 +239,24 @@ export class WhatsappCatchupHistoryService {
 
   mapInboundType(type?: string): InboundMessage['type'] {
     const n = String(type || '').toLowerCase();
-    if (n === 'chat' || n === 'text') return 'text';
-    if (n === 'audio' || n === 'ptt') return 'audio';
-    if (n === 'image') return 'image';
-    if (n === 'document') return 'document';
-    if (n === 'video') return 'video';
-    if (n === 'sticker') return 'sticker';
+    if (n === 'chat' || n === 'text') {
+      return 'text';
+    }
+    if (n === 'audio' || n === 'ptt') {
+      return 'audio';
+    }
+    if (n === 'image') {
+      return 'image';
+    }
+    if (n === 'document') {
+      return 'document';
+    }
+    if (n === 'video') {
+      return 'video';
+    }
+    if (n === 'sticker') {
+      return 'sticker';
+    }
     return 'unknown';
   }
 
@@ -233,7 +271,9 @@ export class WhatsappCatchupHistoryService {
       payload?.senderName,
     ];
     for (const c of cs) {
-      if (typeof c === 'string' && c.trim()) return c.trim();
+      if (typeof c === 'string' && c.trim()) {
+        return c.trim();
+      }
     }
     return undefined;
   }
@@ -267,7 +307,9 @@ export class WhatsappCatchupHistoryService {
   ): InboundMessage | null {
     const pid = String(m.id || '').trim();
     const from = String(m.from || m.chatId || '').trim();
-    if (!pid || !from) return null;
+    if (!pid || !from) {
+      return null;
+    }
     return {
       workspaceId: ws,
       provider,
@@ -288,7 +330,9 @@ export class WhatsappCatchupHistoryService {
   async persistHistoricalOutboundMessage(ws: string, message: WahaChatMessage): Promise<boolean> {
     const phone = this.normalizePhone(String(message.chatId || message.from || '').trim());
     const pid = String(message.id || '').trim();
-    if (!phone || !pid) return false;
+    if (!phone || !pid) {
+      return false;
+    }
     try {
       await this.inbox.saveMessageByPhone({
         workspaceId: ws,
@@ -329,9 +373,13 @@ export class WhatsappCatchupHistoryService {
 
   async reconcileRemoteChatState(ws: string, chat: WahaChatSummary): Promise<void> {
     const cid = String(chat.id || '').trim();
-    if (!cid || cid.includes('@g.us')) return;
+    if (!cid || cid.includes('@g.us')) {
+      return;
+    }
     const phone = await this.resolveCanonicalPhone(ws, cid);
-    if (!phone) return;
+    if (!phone) {
+      return;
+    }
     const ec = await this.prisma.contact.findUnique({
       where: { workspaceId_phone: { workspaceId: ws, phone } },
       select: { id: true, name: true, customFields: true },
@@ -387,7 +435,7 @@ export class WhatsappCatchupHistoryService {
             return false;
           })
       : false;
-    if (saved)
+    if (saved) {
       await this.prisma.contact.updateMany({
         where: { id: contact.id, workspaceId: ws },
         data: {
@@ -409,6 +457,7 @@ export class WhatsappCatchupHistoryService {
           ) as Prisma.InputJsonObject,
         },
       });
+    }
     const rAt = this.normalizeTimestamp(this.resolveChatActivityTimestamp(chat));
     const exC = await this.prisma.conversation.findFirst({
       where: { workspaceId: ws, contactId: contact.id },
@@ -448,7 +497,9 @@ export class WhatsappCatchupHistoryService {
   }
 
   async sanitizePlaceholderContacts(ws: string): Promise<void> {
-    if (typeof this.prisma.contact?.findMany !== 'function') return;
+    if (typeof this.prisma.contact?.findMany !== 'function') {
+      return;
+    }
     const contacts = await this.prisma.contact.findMany({
       take: 5000,
       where: { workspaceId: ws },
@@ -480,7 +531,9 @@ export class WhatsappCatchupHistoryService {
       const hp =
         this.isPlaceholderContactName(sn, contact.phone) ||
         this.isPlaceholderContactName(rp, contact.phone);
-      if (!hp) return;
+      if (!hp) {
+        return;
+      }
       const ncf = { ...cf };
       const rc =
         Number(contact._count?.messages || 0) +

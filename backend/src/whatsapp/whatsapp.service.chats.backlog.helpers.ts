@@ -11,7 +11,9 @@ export function shouldReplaceRemoteChat(
   existing: ChatNormalized | undefined,
   candidate: ChatNormalized,
 ): boolean {
-  if (!existing) return true;
+  if (!existing) {
+    return true;
+  }
   return Number(candidate.timestamp || 0) >= Number(existing.timestamp || 0);
 }
 
@@ -32,7 +34,9 @@ function shouldReplaceLocalConversation(
   existing: ConversationOperationalState | undefined,
   candidate: ConversationOperationalState,
 ): boolean {
-  if (!existing) return true;
+  if (!existing) {
+    return true;
+  }
   const currentTimestamp = deps.resolveTimestamp({ createdAt: candidate.lastMessageAt });
   const existingTimestamp = deps.resolveTimestamp({ createdAt: existing.lastMessageAt });
   return currentTimestamp >= existingTimestamp;
@@ -82,8 +86,12 @@ function resolveBacklogSource(
   remote: ChatNormalized | undefined,
   local: ConversationOperationalState | undefined,
 ): 'waha+crm' | 'waha' | 'crm' {
-  if (remote && local) return 'waha+crm';
-  if (remote) return 'waha';
+  if (remote && local) {
+    return 'waha+crm';
+  }
+  if (remote) {
+    return 'waha';
+  }
   return 'crm';
 }
 

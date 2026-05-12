@@ -97,7 +97,9 @@ function collectCandidateAfterCueWord(rawTokens: readonly string[], startIndex: 
   const candidate: string[] = [];
   for (let cursor = startIndex; cursor < rawTokens.length; cursor += 1) {
     const token = rawTokens[cursor];
-    if (!token) continue;
+    if (!token) {
+      continue;
+    }
     const normalized = normalizeCatalogText(token);
     if (!normalized || STOPWORDS.has(normalized)) {
       if (candidate.length > 0) {

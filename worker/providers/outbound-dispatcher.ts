@@ -9,11 +9,13 @@ export async function dispatchOutboundThroughFlow(input: {
   mediaUrl?: string | undefined;
   mediaType?: string | undefined;
   caption?: string | undefined;
-  template?: {
-    name: string;
-    language?: string;
-    components?: unknown[];
-  } | undefined;
+  template?:
+    | {
+        name: string;
+        language?: string;
+        components?: unknown[];
+      }
+    | undefined;
   jobId: string;
   externalId?: string | undefined;
   quotedMessageId?: string | undefined;

@@ -49,10 +49,7 @@ describe('UnifiedAgentContextDataService', () => {
     };
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        UnifiedAgentContextDataService,
-        { provide: PrismaService, useValue: prisma },
-      ],
+      providers: [UnifiedAgentContextDataService, { provide: PrismaService, useValue: prisma }],
     }).compile();
 
     service = module.get<UnifiedAgentContextDataService>(UnifiedAgentContextDataService);
@@ -122,15 +119,13 @@ describe('UnifiedAgentContextDataService', () => {
     });
 
     it('falls back to phone lookup when contactId returns null', async () => {
-      prisma.contact.findFirst
-        .mockResolvedValueOnce(null)
-        .mockResolvedValueOnce({
-          name: 'Jane',
-          phone,
-          sentiment: 'POSITIVE',
-          leadScore: 5,
-          tags: [],
-        });
+      prisma.contact.findFirst.mockResolvedValueOnce(null).mockResolvedValueOnce({
+        name: 'Jane',
+        phone,
+        sentiment: 'POSITIVE',
+        leadScore: 5,
+        tags: [],
+      });
 
       const result = await service.getContactContext(wsId, 'nonexistent', phone);
 
@@ -220,10 +215,23 @@ describe('UnifiedAgentContextDataService', () => {
   describe('getProducts', () => {
     it('combines DB products and memory products', async () => {
       prisma.product.findMany.mockResolvedValue([
-        { id: 'p-1', name: 'Produto DB', price: 99, description: null, status: 'active', active: true },
+        {
+          id: 'p-1',
+          name: 'Produto DB',
+          price: 99,
+          description: null,
+          status: 'active',
+          active: true,
+        },
       ]);
       prisma.kloelMemory.findMany.mockResolvedValue([
-        { id: 'm-1', key: 'prod_1', value: { name: 'Produto Mem', price: 50 }, type: 'product', category: 'products' },
+        {
+          id: 'm-1',
+          key: 'prod_1',
+          value: { name: 'Produto Mem', price: 50 },
+          type: 'product',
+          category: 'products',
+        },
       ]);
 
       const result = await service.getProducts(wsId);
@@ -233,10 +241,23 @@ describe('UnifiedAgentContextDataService', () => {
 
     it('deduplicates by name (case insensitive)', async () => {
       prisma.product.findMany.mockResolvedValue([
-        { id: 'p-1', name: 'Produto DB', price: 99, description: null, status: 'active', active: true },
+        {
+          id: 'p-1',
+          name: 'Produto DB',
+          price: 99,
+          description: null,
+          status: 'active',
+          active: true,
+        },
       ]);
       prisma.kloelMemory.findMany.mockResolvedValue([
-        { id: 'm-1', key: 'prod_1', value: { name: 'Produto DB', price: 99 }, type: 'product', category: 'products' },
+        {
+          id: 'm-1',
+          key: 'prod_1',
+          value: { name: 'Produto DB', price: 99 },
+          type: 'product',
+          category: 'products',
+        },
       ]);
 
       const result = await service.getProducts(wsId);

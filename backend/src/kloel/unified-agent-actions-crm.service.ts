@@ -56,7 +56,9 @@ export class UnifiedAgentActionsCrmService {
   // ───────── CRM actions ─────────
 
   async actionUpdateLeadStatus(workspaceId: string, contactId: string, args: ToolArgs) {
-    if (!contactId) return { success: false, error: 'No contact ID' };
+    if (!contactId) {
+      return { success: false, error: 'No contact ID' };
+    }
     const statusVal = this.str(args.status);
     const intentVal = this.str(args.intent);
     await this.prisma.$transaction(
@@ -76,7 +78,9 @@ export class UnifiedAgentActionsCrmService {
   }
 
   async actionAddTag(workspaceId: string, contactId: string, args: ToolArgs) {
-    if (!contactId) return { success: false, error: 'No contact ID' };
+    if (!contactId) {
+      return { success: false, error: 'No contact ID' };
+    }
     const tagName = this.str(args.tag);
     await this.prisma.$transaction(
       async (tx) => {
@@ -90,7 +94,9 @@ export class UnifiedAgentActionsCrmService {
           where: { id: contactId, workspaceId },
           select: { phone: true },
         });
-        if (!contact?.phone) return;
+        if (!contact?.phone) {
+          return;
+        }
         await tx.contact.update({
           where: { workspaceId_phone: { workspaceId, phone: contact.phone } },
           data: { tags: { connect: { id: tag.id } } },
@@ -265,7 +271,9 @@ export class UnifiedAgentActionsCrmService {
           },
         });
       }
-      if (!flow) return { success: false, error: 'Fluxo não encontrado' };
+      if (!flow) {
+        return { success: false, error: 'Fluxo não encontrado' };
+      }
       await flowQueue.add('run-flow', {
         workspaceId,
         flowId: flow.id,
@@ -307,9 +315,11 @@ export class UnifiedAgentActionsCrmService {
       const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
       if (!isTestEnv) {
         const code = (err as { code?: string } | null)?.code;
-        if (code === 'P2003')
+        if (code === 'P2003') {
           this.logger.debug(`Skipping autopilot event log due to FK (contactId=${contactId})`);
-        else this.logger.warn(`Failed to log event: ${msg}`);
+        } else {
+          this.logger.warn(`Failed to log event: ${msg}`);
+        }
       }
     }
     return { success: true, event: eventName };

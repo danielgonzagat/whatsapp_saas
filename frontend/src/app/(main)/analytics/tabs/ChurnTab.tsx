@@ -2,7 +2,6 @@
 
 import { kloelT } from '@/lib/i18n/t';
 import { V, FONT_MONO, chartCardStyle } from '../analytics.design-tokens';
-import { R$, Fmt } from '../analytics.design-tokens';
 import { ICONS } from '../shared/Icons';
 import { MetricCard, ChartTooltip } from '../shared/Components';
 import { useReport } from '../use-report';

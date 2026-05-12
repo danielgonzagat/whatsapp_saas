@@ -42,7 +42,9 @@ export async function loadCatchupMessages(
   const fS = opts.firstSync === true;
   const mp = fs ? Math.min(opts.maxPagesPerChat, opts.fallbackPagesPerChat) : opts.maxPagesPerChat;
   const loadPage = async (page: number): Promise<void> => {
-    if (page >= mp) return;
+    if (page >= mp) {
+      return;
+    }
     const raw = await opts.providerRegistry.getChatMessages(ws, chat.id, {
       limit: opts.maxMessagesPerChat,
       offset: off,
@@ -51,23 +53,36 @@ export async function loadCatchupMessages(
       .normalizeMessages(raw, chat.id)
       .filter((m) => !!m.id)
       .sort((a, b) => opts.resolveTimestamp(a) - opts.resolveTimestamp(b));
-    if (!np.length) return;
-    if (np.length >= opts.maxMessagesPerChat) ho = true;
+    if (!np.length) {
+      return;
+    }
+    if (np.length >= opts.maxMessagesPerChat) {
+      ho = true;
+    }
     for (const m of np) {
-      if (seen.has(m.id)) continue;
+      if (seen.has(m.id)) {
+        continue;
+      }
       seen.add(m.id);
       collected.push(m);
     }
     off += np.length;
-    if (np.length < opts.maxMessagesPerChat) return;
-    const ic = collected.filter((m) => !m.fromMe).length;
-    if (ur > 0 && ic >= ur) return;
-    if (ur === 0 && !fS && !fs && np.every((m) => opts.resolveTimestamp(m) < since.getTime()))
+    if (np.length < opts.maxMessagesPerChat) {
       return;
+    }
+    const ic = collected.filter((m) => !m.fromMe).length;
+    if (ur > 0 && ic >= ur) {
+      return;
+    }
+    if (ur === 0 && !fS && !fs && np.every((m) => opts.resolveTimestamp(m) < since.getTime())) {
+      return;
+    }
     return loadPage(page + 1);
   };
   await loadPage(0);
-  if (ur > 0 && collected.length < ur) ho = true;
+  if (ur > 0 && collected.length < ur) {
+    ho = true;
+  }
   const cm = await canonicalizeMessages(
     ws,
     collected,

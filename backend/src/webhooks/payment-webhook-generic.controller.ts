@@ -80,7 +80,9 @@ export class PaymentWebhookGenericController {
     const genericDupe = await ensureIdempotent(eventId, req, this.redis, this.logger, (msg, meta) =>
       sendOpsAlert(msg, meta, this.redis),
     );
-    if (genericDupe) return genericDupe;
+    if (genericDupe) {
+      return genericDupe;
+    }
 
     const genericExternalId = eventId || body.orderId || `generic_${Date.now()}`;
     let genericWebhookEvent: WebhookEvent | undefined;
@@ -105,10 +107,14 @@ export class PaymentWebhookGenericController {
     const isPaid =
       ['paid', 'pago', 'paga', 'payed', 'captured', 'success'].some((s) => status.includes(s)) ||
       status === 'payment_received';
-    if (!isPaid) return { ok: true, ignored: true, reason: 'status_not_paid' };
+    if (!isPaid) {
+      return { ok: true, ignored: true, reason: 'status_not_paid' };
+    }
 
     const workspaceId = body.workspaceId;
-    if (!workspaceId) throw new BadRequestException('missing_workspaceId');
+    if (!workspaceId) {
+      throw new BadRequestException('missing_workspaceId');
+    }
     await assertWorkspaceExists(this.prisma, workspaceId);
 
     const normalizedPhone = body.phone ? String(body.phone).replace(D_RE, '') : undefined;
@@ -138,7 +144,9 @@ export class PaymentWebhookGenericController {
       },
     });
 
-    if (normalizedPhone) await this.sendGenericConfirmation(workspaceId, normalizedPhone, body);
+    if (normalizedPhone) {
+      await this.sendGenericConfirmation(workspaceId, normalizedPhone, body);
+    }
 
     if (contact?.id) {
       try {
@@ -182,16 +190,22 @@ export class PaymentWebhookGenericController {
     @Body() body: ShopifyOrderWebhookBody,
   ) {
     const secret = process.env.SHOPIFY_WEBHOOK_SECRET;
-    if (!secret) throw new BadRequestException('SHOPIFY_WEBHOOK_SECRET not set');
+    if (!secret) {
+      throw new BadRequestException('SHOPIFY_WEBHOOK_SECRET not set');
+    }
     const raw: string | Buffer = req?.rawBody || JSON.stringify(body);
     const rawBuffer = Buffer.isBuffer(raw) ? raw : Buffer.from(raw, 'utf8');
     const digest = crypto.createHmac('sha256', secret).update(rawBuffer).digest('base64');
-    if (digest !== hmac) throw new ForbiddenException('invalid_shopify_hmac');
+    if (digest !== hmac) {
+      throw new ForbiddenException('invalid_shopify_hmac');
+    }
 
     const shopifyDupe = await ensureIdempotent(eventId, req, this.redis, this.logger, (msg, meta) =>
       sendOpsAlert(msg, meta, this.redis),
     );
-    if (shopifyDupe) return shopifyDupe;
+    if (shopifyDupe) {
+      return shopifyDupe;
+    }
 
     const shopifyExternalId = eventId || body.id || `shopify_${Date.now()}`;
     let shopifyWebhookEvent: WebhookEvent | undefined;
@@ -213,9 +227,13 @@ export class PaymentWebhookGenericController {
     }
 
     const status = (body.financial_status || '').toLowerCase();
-    if (status !== 'paid') return { ok: true, ignored: true, reason: 'status_not_paid' };
+    if (status !== 'paid') {
+      return { ok: true, ignored: true, reason: 'status_not_paid' };
+    }
     const workspaceId = body.workspaceId;
-    if (!workspaceId) throw new BadRequestException('missing_workspaceId');
+    if (!workspaceId) {
+      throw new BadRequestException('missing_workspaceId');
+    }
     await assertWorkspaceExists(this.prisma, workspaceId);
     const phone = body.phone || body?.customer?.phone;
     const amount = body.total_price
@@ -273,7 +291,9 @@ export class PaymentWebhookGenericController {
       this.logger,
       (msg, meta) => sendOpsAlert(msg, meta, this.redis),
     );
-    if (paghiperDupe) return paghiperDupe;
+    if (paghiperDupe) {
+      return paghiperDupe;
+    }
 
     const paghiperExternalId =
       eventId ||
@@ -300,11 +320,15 @@ export class PaymentWebhookGenericController {
 
     const status = (body?.status || body?.transaction?.status || '').toLowerCase();
     const isPaid = ['paid', 'completed', 'complete'].some((s) => status.includes(s));
-    if (!isPaid) return { ok: true, ignored: true, reason: 'status_not_paid' };
+    if (!isPaid) {
+      return { ok: true, ignored: true, reason: 'status_not_paid' };
+    }
 
     const workspaceId =
       body.workspaceId || body?.metadata?.workspaceId || body?.transaction?.metadata?.workspaceId;
-    if (!workspaceId) throw new BadRequestException('missing_workspaceId');
+    if (!workspaceId) {
+      throw new BadRequestException('missing_workspaceId');
+    }
     await assertWorkspaceExists(this.prisma, workspaceId);
 
     const phone =
@@ -351,16 +375,22 @@ export class PaymentWebhookGenericController {
     @Body() body: WooCommerceWebhookBody,
   ) {
     const secret = process.env.WC_WEBHOOK_SECRET;
-    if (!secret) throw new BadRequestException('WC_WEBHOOK_SECRET not set');
+    if (!secret) {
+      throw new BadRequestException('WC_WEBHOOK_SECRET not set');
+    }
     const raw: string | Buffer = req?.rawBody || JSON.stringify(body);
     const rawBuffer = Buffer.isBuffer(raw) ? raw : Buffer.from(raw, 'utf8');
     const digest = crypto.createHmac('sha256', secret).update(rawBuffer).digest('base64');
-    if (digest !== signature) throw new ForbiddenException('invalid_wc_signature');
+    if (digest !== signature) {
+      throw new ForbiddenException('invalid_wc_signature');
+    }
 
     const wooDupe = await ensureIdempotent(eventId, req, this.redis, this.logger, (msg, meta) =>
       sendOpsAlert(msg, meta, this.redis),
     );
-    if (wooDupe) return wooDupe;
+    if (wooDupe) {
+      return wooDupe;
+    }
 
     const wooExternalId = eventId || body?.id || body?.number || `woocommerce_${Date.now()}`;
     let wooWebhookEvent: WebhookEvent | undefined;
@@ -383,14 +413,18 @@ export class PaymentWebhookGenericController {
 
     const status = (body?.status || '').toLowerCase();
     const isPaid = status === 'completed' || status === 'processing' || status === 'paid';
-    if (!isPaid) return { ok: true, ignored: true, reason: 'status_not_paid' };
+    if (!isPaid) {
+      return { ok: true, ignored: true, reason: 'status_not_paid' };
+    }
 
     const metaWorkspace = body?.meta_data?.find?.(
       (m: WooCommerceMetaData) => m.key === 'workspaceId',
     )?.value;
     const workspaceId =
       body.workspaceId || (typeof metaWorkspace === 'string' ? metaWorkspace : undefined);
-    if (!workspaceId) throw new BadRequestException('missing_workspaceId');
+    if (!workspaceId) {
+      throw new BadRequestException('missing_workspaceId');
+    }
     await assertWorkspaceExists(this.prisma, workspaceId);
 
     const phone = body?.billing?.phone || body?.customer?.phone || body?.phone;

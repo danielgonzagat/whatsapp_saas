@@ -267,7 +267,7 @@ export function AuthFormFields({
           transition: 'opacity 150ms ease, border-color 150ms ease',
         }}
         onMouseEnter={(e) => {
-          if (isLoading) return;
+          if (isLoading) {return;}
           e.currentTarget.style.borderColor = colors.border.glow;
         }}
         onMouseLeave={(e) => {

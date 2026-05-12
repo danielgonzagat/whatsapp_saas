@@ -44,18 +44,24 @@ export class KloelWorkspaceContextLinkedProductService {
       | null
       | undefined,
   ): Promise<string | null> {
-    if (!linkedProduct) return null;
+    if (!linkedProduct) {
+      return null;
+    }
     const linkedSource = linkedProduct.source === 'affiliate' ? 'affiliate' : 'owned';
 
     if (linkedSource === 'owned') {
       const ownedProductId = String(linkedProduct.productId || linkedProduct.id || '').trim();
-      if (!ownedProductId) return null;
+      if (!ownedProductId) {
+        return null;
+      }
       const product = await this.fetchWorkspaceProductPromptRecord(
         workspaceId,
         ownedProductId,
         limits,
       );
-      if (!product) return null;
+      if (!product) {
+        return null;
+      }
       const contextFormatter = new KloelContextFormatter(limits);
       return [
         'PRODUTO VINCULADO AO PROMPT:',
@@ -67,7 +73,9 @@ export class KloelWorkspaceContextLinkedProductService {
     const affiliateProductId = String(
       linkedProduct.affiliateProductId || linkedProduct.id || '',
     ).trim();
-    if (!affiliateProductId) return null;
+    if (!affiliateProductId) {
+      return null;
+    }
 
     const [request, link] = await Promise.all([
       this.prisma.affiliateRequest.findFirst({

@@ -60,14 +60,18 @@ export class KloelThreadService {
     summary: string | null;
     summaryUpdatedAt: Date | null;
   } | null> {
-    if (!workspaceId) return null;
+    if (!workspaceId) {
+      return null;
+    }
 
     if (conversationId) {
       const existing = await this.prisma.chatThread.findFirst({
         where: { id: conversationId, workspaceId },
         select: { id: true, title: true, summary: true, summaryUpdatedAt: true },
       });
-      if (existing) return existing;
+      if (existing) {
+        return existing;
+      }
     }
 
     return this.prisma.chatThread.create({
@@ -81,7 +85,9 @@ export class KloelThreadService {
     workspaceId?: string,
     limit = this.recentThreadMessageLimit,
   ): Promise<ChatMessage[]> {
-    if (!threadId) return [];
+    if (!threadId) {
+      return [];
+    }
 
     const messages = await this.prisma.chatMessage.findMany({
       where: workspaceId ? { threadId, thread: { workspaceId } } : { threadId },
@@ -139,7 +145,9 @@ export class KloelThreadService {
   normalizeThreadMessageMetadataRecord(
     metadata?: Prisma.InputJsonValue | Prisma.JsonValue | null,
   ): Record<string, unknown> {
-    if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) return {};
+    if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) {
+      return {};
+    }
     return { ...(metadata as Record<string, unknown>) };
   }
 
@@ -168,7 +176,9 @@ export class KloelThreadService {
     userMessage: string,
     metadata?: Prisma.InputJsonValue,
   ): Promise<{ id: string } | null> {
-    if (!threadId) return null;
+    if (!threadId) {
+      return null;
+    }
     const created = await this.prisma.chatMessage.create({
       data: {
         thread: { connect: { id: threadId } },
@@ -189,7 +199,9 @@ export class KloelThreadService {
     assistantMessage: string,
     metadata?: Prisma.InputJsonValue,
   ): Promise<{ id: string } | null> {
-    if (!threadId) return null;
+    if (!threadId) {
+      return null;
+    }
     const created = await this.prisma.chatMessage.create({
       data: {
         thread: { connect: { id: threadId } },
@@ -213,10 +225,14 @@ export class KloelThreadService {
     const versions = Array.isArray(normalized.responseVersions)
       ? normalized.responseVersions
           .map((entry) => {
-            if (!entry || typeof entry !== 'object' || Array.isArray(entry)) return null;
+            if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+              return null;
+            }
             const candidate = entry as Record<string, unknown>;
             const content = typeof candidate.content === 'string' ? candidate.content : '';
-            if (!content.trim()) return null;
+            if (!content.trim()) {
+              return null;
+            }
             const createdAt =
               typeof candidate.createdAt === 'string' && candidate.createdAt.trim()
                 ? candidate.createdAt
@@ -231,9 +247,13 @@ export class KloelThreadService {
           .filter((e): e is StoredResponseVersion => !!e)
       : [];
 
-    if (versions.length > 0) return versions;
+    if (versions.length > 0) {
+      return versions;
+    }
     const normalizedFallback = String(fallbackContent || '');
-    if (!normalizedFallback.trim()) return [];
+    if (!normalizedFallback.trim()) {
+      return [];
+    }
     return [
       {
         id: fallbackVersionId || `resp_${Date.now()}`,
@@ -248,7 +268,9 @@ export class KloelThreadService {
     if (event.type === 'status') {
       const phase = event.phase === 'streaming_token' ? 'streaming' : event.phase;
       const label = String(event.message || '').trim();
-      if (!label) return null;
+      if (!label) {
+        return null;
+      }
       return {
         id: buildTimestampedRuntimeId(`trace_${phase}`),
         kind: 'status',
@@ -285,7 +307,9 @@ export class KloelThreadService {
 
   appendStoredProcessingTraceEntry(entries: StoredProcessingTraceEntry[], event: KloelStreamEvent) {
     const nextEntry = this.buildStoredProcessingTraceEntry(event);
-    if (!nextEntry) return;
+    if (!nextEntry) {
+      return;
+    }
     const prev = entries[entries.length - 1];
     if (
       prev &&
@@ -296,7 +320,9 @@ export class KloelThreadService {
       return;
     }
     entries.push(nextEntry);
-    if (entries.length > 16) entries.splice(0, entries.length - 16);
+    if (entries.length > 16) {
+      entries.splice(0, entries.length - 16);
+    }
   }
 
   buildProcessingTraceSummary(entries: StoredProcessingTraceEntry[]): string | undefined {
@@ -312,20 +338,34 @@ export class KloelThreadService {
           .filter(Boolean),
       ),
     );
-    if (labels.length === 0) return undefined;
+    if (labels.length === 0) {
+      return undefined;
+    }
     const first = labels[0];
-    if (!first) return undefined;
-    if (labels.length === 1) return `${first}.`;
+    if (!first) {
+      return undefined;
+    }
+    if (labels.length === 1) {
+      return `${first}.`;
+    }
     const second = labels[1];
-    if (!second) return undefined;
-    if (labels.length === 2) return `${first} e ${this.lowercaseLeadingCharacter(second)}.`;
+    if (!second) {
+      return undefined;
+    }
+    if (labels.length === 2) {
+      return `${first} e ${this.lowercaseLeadingCharacter(second)}.`;
+    }
     const last = labels[labels.length - 1];
-    if (!last) return `${first}, ${this.lowercaseLeadingCharacter(second)}.`;
+    if (!last) {
+      return `${first}, ${this.lowercaseLeadingCharacter(second)}.`;
+    }
     return `${first}, ${this.lowercaseLeadingCharacter(second)} e ${this.lowercaseLeadingCharacter(last)}.`;
   }
 
   private lowercaseLeadingCharacter(value: string): string {
-    if (!value) return value;
+    if (!value) {
+      return value;
+    }
     return value.charAt(0).toLowerCase() + value.slice(1);
   }
 
@@ -334,7 +374,9 @@ export class KloelThreadService {
       .trim()
       .replace(SEPARATOR_G_RE, ' ')
       .replace(WHITESPACE_G_RE, ' ');
-    if (!raw) return 'a ferramenta';
+    if (!raw) {
+      return 'a ferramenta';
+    }
     return raw
       .split(' ')
       .map((s) => s.toLowerCase())
@@ -345,7 +387,9 @@ export class KloelThreadService {
     summary?: string,
   ): import('openai/resources/chat').ChatCompletionMessageParam | null {
     const normalized = String(summary || '').trim();
-    if (!normalized) return null;
+    if (!normalized) {
+      return null;
+    }
     return {
       role: 'system',
       content: [
@@ -359,7 +403,9 @@ export class KloelThreadService {
   }
 
   resolveClientRequestId(metadata?: Prisma.InputJsonValue): string | undefined {
-    if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) return undefined;
+    if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) {
+      return undefined;
+    }
     const raw = (metadata as Record<string, unknown>).clientRequestId;
     const id = typeof raw === 'string' ? raw.trim() : '';
     return id || undefined;

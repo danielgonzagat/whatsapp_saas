@@ -75,9 +75,13 @@ export async function actionHandleObjection(deps: {
           ? JSON.parse(customObjection.value)
           : customObjection.value;
       const customResponse = (customData as Record<string, string>).response;
-      if (customResponse) response = customResponse;
+      if (customResponse) {
+        response = customResponse;
+      }
     }
-    if (!response) return { success: false, error: 'No objection response' };
+    if (!response) {
+      return { success: false, error: 'No objection response' };
+    }
     await deps.prisma.autopilotEvent.create({
       data: {
         workspaceId,

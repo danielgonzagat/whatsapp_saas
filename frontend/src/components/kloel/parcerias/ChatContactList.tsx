@@ -34,7 +34,7 @@ export default function ChatContactList({
   };
 
   const filteredContacts = displayContacts.filter((c) => {
-    if (!search) return true;
+    if (!search) {return true;}
     return (c.name || '').toLowerCase().includes(search.toLowerCase());
   });
 
@@ -67,8 +67,8 @@ export default function ChatContactList({
           return (
             <div key={contact.id} onClick={() => handleSelectContact(contact)}
               style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', cursor: 'pointer', background: isSelected ? C.emberBg : 'transparent', borderLeft: isSelected ? `2px solid ${C.ember}` : '2px solid transparent', transition: 'background 150ms ease' }}
-              onMouseEnter={(e) => { if (!isSelected) (e.currentTarget as HTMLElement).style.background = C.elevated; }}
-              onMouseLeave={(e) => { if (!isSelected) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+              onMouseEnter={(e) => { if (!isSelected) {(e.currentTarget as HTMLElement).style.background = C.elevated;} }}
+              onMouseLeave={(e) => { if (!isSelected) {(e.currentTarget as HTMLElement).style.background = 'transparent';} }}
               onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); (e.currentTarget as HTMLElement).click(); } }}>
               <div style={{ position: 'relative', flexShrink: 0 }}>
                 <div style={{ width: 38, height: 38, borderRadius: '50%', background: contact.type === 'producer' ? 'rgba(139,92,246,0.12)' : C.elevated, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: FONT.sans, fontSize: 14, fontWeight: 600, color: contact.type === 'producer' ? colors.semantic.purple : C.text }}>

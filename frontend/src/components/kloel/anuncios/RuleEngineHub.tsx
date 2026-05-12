@@ -38,7 +38,7 @@ export function RuleEngineHub() {
 
   useEffect(
     () => () => {
-      if (scrollTimer.current) clearTimeout(scrollTimer.current);
+      if (scrollTimer.current) {clearTimeout(scrollTimer.current);}
     },
     [],
   );
@@ -73,7 +73,7 @@ export function RuleEngineHub() {
   };
 
   const saveEdit = async (id: string) => {
-    if (!editCondition.trim() || !editAction.trim()) return;
+    if (!editCondition.trim() || !editAction.trim()) {return;}
     await apiFetch(`/ad-rules/${id}`, {
       method: 'PUT',
       body: { condition: editCondition.trim(), action: editAction.trim() },
@@ -84,7 +84,7 @@ export function RuleEngineHub() {
   };
 
   const handleCreateRule = async () => {
-    if (!newCondition.trim() || !newAction.trim()) return;
+    if (!newCondition.trim() || !newAction.trim()) {return;}
     await apiFetch('/ad-rules', {
       method: 'POST',
       body: { name: `Regra ${Date.now()}`, condition: newCondition.trim(), action: newAction.trim() },
@@ -98,7 +98,7 @@ export function RuleEngineHub() {
 
   const openForm = () => {
     setShowForm(true);
-    if (scrollTimer.current) clearTimeout(scrollTimer.current);
+    if (scrollTimer.current) {clearTimeout(scrollTimer.current);}
     scrollTimer.current = setTimeout(
       () => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }),
       100,
@@ -189,7 +189,7 @@ export function RuleEngineHub() {
                 aria-label="Acao da nova regra (THEN)"
                 type="text" value={newAction} onChange={(e) => setNewAction(e.target.value)}
                 placeholder={kloelT(`Ex: Pausar campanha`)} style={inputStyle}
-                onKeyDown={(e) => { if (e.key === 'Enter') handleCreateRule(); }} id={`${fid}-acao-2`}
+                onKeyDown={(e) => { if (e.key === 'Enter') {handleCreateRule();} }} id={`${fid}-acao-2`}
               />
             </div>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 4 }}>

@@ -7,21 +7,15 @@ import { KloelComposerE2EStubGuard } from './kloel-composer-web-search-e2e-stub'
 import { KloelLLME2EStubGuard } from './kloel-llm-test-stub';
 
 export function applyCheckoutPaymentE2EStub(builder: TestingModuleBuilder): TestingModuleBuilder {
-  return builder
-    .overrideProvider(CHECKOUT_PAYMENT_E2E_GUARD)
-    .useClass(CheckoutPaymentE2EStubGuard);
+  return builder.overrideProvider(CHECKOUT_PAYMENT_E2E_GUARD).useClass(CheckoutPaymentE2EStubGuard);
 }
 
 export function applyKloelComposerE2EStub(builder: TestingModuleBuilder): TestingModuleBuilder {
-  return builder
-    .overrideProvider(KLOEL_COMPOSER_E2E_GUARD)
-    .useClass(KloelComposerE2EStubGuard);
+  return builder.overrideProvider(KLOEL_COMPOSER_E2E_GUARD).useClass(KloelComposerE2EStubGuard);
 }
 
 export function applyKloelLLME2EStub(builder: TestingModuleBuilder): TestingModuleBuilder {
-  return builder
-    .overrideProvider(KLOEL_LLM_E2E_GUARD)
-    .useClass(KloelLLME2EStubGuard);
+  return builder.overrideProvider(KLOEL_LLM_E2E_GUARD).useClass(KloelLLME2EStubGuard);
 }
 
 export function applyAllE2EStubs(builder: TestingModuleBuilder): TestingModuleBuilder {

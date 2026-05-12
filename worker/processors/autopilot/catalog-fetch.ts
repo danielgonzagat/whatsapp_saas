@@ -24,9 +24,10 @@ export async function buildEligibleCatalogChats(
     .catch(() => [])) as UnknownRecord[];
 
   const lidMap = buildLidMap(
-    (await whatsappApiProvider
-      .getLidMappings(workspaceId)
-      .catch(() => [])) as Array<{ lid?: string | null; pn?: string | null }>,
+    (await whatsappApiProvider.getLidMappings(workspaceId).catch(() => [])) as Array<{
+      lid?: string | null;
+      pn?: string | null;
+    }>,
   );
 
   const eligibleChatMap = new Map<string, UnknownRecord>();

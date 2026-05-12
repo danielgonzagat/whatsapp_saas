@@ -87,7 +87,9 @@ export class InboundProcessorService {
           : typeof c === 'number' || typeof c === 'boolean'
             ? String(c).trim()
             : '';
-      if (n && !this.isPlaceholderContactName(n, phone)) return n;
+      if (n && !this.isPlaceholderContactName(n, phone)) {
+        return n;
+      }
     }
     return '';
   }
@@ -199,7 +201,9 @@ export class InboundProcessorService {
       300,
     );
     const isCatchup = msg.ingestMode === 'catchup';
-    if (!isCatchup) await this.deliverToFlowContext(phone, processedContent, msg.workspaceId);
+    if (!isCatchup) {
+      await this.deliverToFlowContext(phone, processedContent, msg.workspaceId);
+    }
     if (!isCatchup && msg.type === 'audio' && msg.mediaUrl) {
       await voiceQueue.add('transcribe-audio', {
         workspaceId: msg.workspaceId,
@@ -344,7 +348,9 @@ export class InboundProcessorService {
             const m = String(
               (error instanceof Error ? error : new Error(String(error))).message || '',
             );
-            if (!m.includes('Job is already waiting')) throw error;
+            if (!m.includes('Job is already waiting')) {
+              throw error;
+            }
           }
         }
       }
@@ -363,13 +369,14 @@ export class InboundProcessorService {
           'comprar',
           'assinar',
         ].some((k) => lower.includes(k))
-      )
+      ) {
         await flowQueue.add('run-flow', {
           workspaceId,
           flowId: hotFlowId,
           user: phone,
           initialVars: { source: 'hot_signal', lastMessage: messageContent },
         });
+      }
     } catch (err: unknown) {
       this.logger.warn(
         `[AUTOPILOT] Erro: ${(err instanceof Error ? err : new Error(String(err))).message}`,

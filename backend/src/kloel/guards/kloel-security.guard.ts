@@ -35,6 +35,42 @@ interface RateLimitEntry {
   resetAt: number;
 }
 
+type RequestRecord = Record<string, unknown>;
+
+interface KloelGuardRequest {
+  path?: string;
+  ip?: string;
+  headers: RequestRecord;
+  params?: RequestRecord;
+  body?: unknown;
+  user?: unknown;
+  workspace?: unknown;
+  userRole?: string;
+}
+
+function isRecord(value: unknown): value is RequestRecord {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function readStringProperty(source: unknown, key: string): string | undefined {
+  if (!isRecord(source)) {
+    return undefined;
+  }
+  const value = source[key];
+  return typeof value === 'string' && value.trim() ? value : undefined;
+}
+
+function getWorkspaceId(request: KloelGuardRequest): string | undefined {
+  return (
+    readStringProperty(request.params, 'workspaceId') ??
+    readStringProperty(request.body, 'workspaceId')
+  );
+}
+
+function getUserSubject(user: unknown): string | undefined {
+  return readStringProperty(user, 'sub');
+}
+
 /**
  * Guard de segurança para APIs KLOEL.
  *
@@ -78,8 +114,8 @@ export class KloelSecurityGuard implements CanActivate, OnModuleDestroy {
 
   /** Can activate. */
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context.switchToHttp().getRequest();
-    const path = request.path;
+    const request = context.switchToHttp().getRequest<KloelGuardRequest>();
+    const path = request.path ?? '';
 
     // 1. Rotas públicas
     const isPublic =
@@ -101,7 +137,7 @@ export class KloelSecurityGuard implements CanActivate, OnModuleDestroy {
     }
 
     // 3. Extrair workspaceId
-    const workspaceId = request.params.workspaceId || request.body?.workspaceId;
+    const workspaceId = getWorkspaceId(request);
 
     // 4. Rate Limiting
     this.enforceRateLimit(context, request, workspaceId, path);
@@ -117,7 +153,7 @@ export class KloelSecurityGuard implements CanActivate, OnModuleDestroy {
     return true;
   }
 
-  private isInternalApiRequest(request: { headers: Record<string, unknown> }): boolean {
+  private isInternalApiRequest(request: KloelGuardRequest): boolean {
     const internalKey = request.headers['x-internal-key'];
     const expectedKey = process.env.INTERNAL_API_KEY;
     if (
@@ -133,7 +169,7 @@ export class KloelSecurityGuard implements CanActivate, OnModuleDestroy {
 
   private enforceRateLimit(
     context: ExecutionContext,
-    request: { ip?: string },
+    request: KloelGuardRequest,
     workspaceId: string | undefined,
     path: string,
   ): void {
@@ -160,7 +196,7 @@ export class KloelSecurityGuard implements CanActivate, OnModuleDestroy {
   }
 
   private async validateWorkspaceContext(
-    request: { workspace?: unknown },
+    request: KloelGuardRequest,
     workspaceId: string,
     path: string,
   ): Promise<void> {
@@ -233,7 +269,7 @@ export class KloelSecurityGuard implements CanActivate, OnModuleDestroy {
   }
 
   private enforceAuthRequirement(
-    request: { user?: unknown },
+    request: KloelGuardRequest,
     workspaceId: string | undefined,
     path: string,
   ): void {
@@ -307,9 +343,9 @@ export class WorkspaceAccessGuard implements CanActivate {
 
   /** Can activate. */
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context.switchToHttp().getRequest();
+    const request = context.switchToHttp().getRequest<KloelGuardRequest>();
     const user = request.user;
-    const workspaceId = request.params.workspaceId || request.body?.workspaceId;
+    const workspaceId = getWorkspaceId(request);
 
     if (!workspaceId) {
       return true; // Sem workspace específico, delegar para outros guards
@@ -322,11 +358,15 @@ export class WorkspaceAccessGuard implements CanActivate {
       }
       throw new UnauthorizedException('User not authenticated');
     }
+    const userId = getUserSubject(user);
+    if (!userId) {
+      throw new UnauthorizedException('User not authenticated');
+    }
 
     // Verificar se usuário é membro do workspace
     const membership = await this.prisma.agent.findFirst({
       where: {
-        id: user.sub,
+        id: userId,
         workspaceId,
       },
       select: { id: true, role: true },
@@ -334,7 +374,7 @@ export class WorkspaceAccessGuard implements CanActivate {
 
     if (!membership) {
       this.logger.warn('Unauthorized workspace access attempt', {
-        userId: user.sub,
+        userId,
         workspaceId,
       });
       throw new ForbiddenException('Not a member of this workspace');
@@ -355,7 +395,7 @@ export class WorkspaceAccessGuard implements CanActivate {
 export class SensitiveOperationGuard implements CanActivate {
   /** Can activate. */
   canActivate(context: ExecutionContext): boolean {
-    const request = context.switchToHttp().getRequest();
+    const request = context.switchToHttp().getRequest<KloelGuardRequest>();
 
     // Verificar header de confirmação
     const confirmationToken = request.headers['x-confirm-action'];

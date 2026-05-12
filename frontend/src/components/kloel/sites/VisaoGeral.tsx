@@ -38,7 +38,7 @@ export function VisaoGeral({ switchTab }: { switchTab: (id: string) => void }) {
     apiFetch('/kloel/site/list')
       .then((res) => {
         const data = res.data as { sites?: SiteItem[] } | undefined;
-        if (data?.sites) setSites(data.sites);
+        if (data?.sites) {setSites(data.sites);}
       })
       .finally(() => setLoading(false));
   }, []);

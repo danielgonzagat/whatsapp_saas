@@ -109,11 +109,15 @@ export class KloelService {
     message: string,
     mode: ThinkRequest['mode'],
   ): ComposerCapability | null {
-    if (mode !== 'chat') return null;
+    if (mode !== 'chat') {
+      return null;
+    }
     const normalized = String(message || '')
       .trim()
       .toLowerCase();
-    if (!normalized) return null;
+    if (!normalized) {
+      return null;
+    }
     const wantsSite = [
       'landing',
       'landing page',
@@ -142,7 +146,9 @@ export class KloelService {
       'quero criar',
       'preciso criar',
     ].some((t) => normalized.includes(t));
-    if (wantsSite && wantsCreation) return 'create_site';
+    if (wantsSite && wantsCreation) {
+      return 'create_site';
+    }
     return null;
   }
 
@@ -162,15 +168,21 @@ export class KloelService {
     const { workspaceId, metadata, companyContext } = params;
     const composerMetadata = this.extractComposerMetadata(metadata);
     const blocks: string[] = [];
-    if (companyContext) blocks.push(companyContext);
+    if (companyContext) {
+      blocks.push(companyContext);
+    }
     const attachmentBlock = this.buildAttachmentPromptContext(composerMetadata.attachments);
-    if (attachmentBlock) blocks.push(attachmentBlock);
+    if (attachmentBlock) {
+      blocks.push(attachmentBlock);
+    }
     if (workspaceId && composerMetadata.linkedProduct) {
       const linkedProductBlock = await this.wsContextService.buildLinkedProductPromptContext(
         workspaceId,
         composerMetadata.linkedProduct,
       );
-      if (linkedProductBlock) blocks.push(linkedProductBlock);
+      if (linkedProductBlock) {
+        blocks.push(linkedProductBlock);
+      }
     }
     return blocks.length > 0 ? blocks.join('\n\n') : undefined;
   }
@@ -178,7 +190,9 @@ export class KloelService {
   private buildAttachmentPromptContext(
     attachments: ComposerAttachmentMetadata[] | null | undefined,
   ): string | null {
-    if (!Array.isArray(attachments) || attachments.length === 0) return null;
+    if (!Array.isArray(attachments) || attachments.length === 0) {
+      return null;
+    }
     const lines = attachments
       .slice(0, 10)
       .map((a, i) => {
@@ -192,7 +206,9 @@ export class KloelService {
         return `- ${parts.join(' | ')}`;
       })
       .filter(Boolean);
-    if (lines.length === 0) return null;
+    if (lines.length === 0) {
+      return null;
+    }
     return ['ANEXOS VINCULADOS AO PROMPT:', ...lines].join('\n');
   }
 
@@ -290,7 +306,9 @@ export class KloelService {
   async getHistory(
     workspaceId: string,
   ): Promise<{ id: string; role: string; content: string; timestamp: Date }[]> {
-    if (!workspaceId) return [];
+    if (!workspaceId) {
+      return [];
+    }
     try {
       const messages = await this.prisma.kloelMessage.findMany({
         where: { workspaceId },
@@ -388,7 +406,9 @@ export class KloelService {
   async listFollowups(workspaceId: string, contactId?: string) {
     try {
       const whereClause: Prisma.KloelMemoryWhereInput = { workspaceId, category: 'followups' };
-      if (contactId) whereClause.metadata = { path: ['contactId'], equals: contactId };
+      if (contactId) {
+        whereClause.metadata = { path: ['contactId'], equals: contactId };
+      }
       const followups = await this.prisma.kloelMemory.findMany({
         where: { ...whereClause, workspaceId },
         orderBy: { createdAt: 'desc' },

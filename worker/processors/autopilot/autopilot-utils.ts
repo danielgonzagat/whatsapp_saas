@@ -134,7 +134,10 @@ export function normalizeMatchableText(value: string): string {
     .trim();
 }
 
-export function messageMatchesProductText(normalizedMessage: string, candidateText: string): boolean {
+export function messageMatchesProductText(
+  normalizedMessage: string,
+  candidateText: string,
+): boolean {
   const normalizedCandidate = normalizeMatchableText(candidateText);
   if (!normalizedCandidate) {
     return false;
@@ -241,7 +244,10 @@ export function scoreToProbabilityBucket(score: number): 'LOW' | 'MEDIUM' | 'HIG
   return 'LOW';
 }
 
-export async function reportSmokeTest(smokeTestId: string | undefined, payload: Record<string, unknown>) {
+export async function reportSmokeTest(
+  smokeTestId: string | undefined,
+  payload: Record<string, unknown>,
+) {
   if (!smokeTestId) {
     return;
   }

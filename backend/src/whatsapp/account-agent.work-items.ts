@@ -181,7 +181,9 @@ function isWorkItemChanged(
   } | null,
   input: WorkItemUpsertInput,
 ): boolean {
-  if (!prev) return true;
+  if (!prev) {
+    return true;
+  }
   return (
     prev.state !== input.state ||
     prev.title !== input.title ||

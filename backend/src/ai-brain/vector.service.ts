@@ -42,7 +42,9 @@ export class VectorService {
     const responseWithUsage = response as { usage?: { total_tokens?: number } };
     const usage = responseWithUsage?.usage?.total_tokens || 0;
     const first = response.data[0];
-    if (!first) return { embedding: [], tokensUsed: 0 };
+    if (!first) {
+      return { embedding: [], tokensUsed: 0 };
+    }
     return { embedding: first.embedding, tokensUsed: usage };
   }
 
@@ -57,7 +59,9 @@ export class VectorService {
     for (let i = 0; i < vecA.length; i++) {
       const a = vecA[i];
       const b = vecB[i];
-      if (a === undefined || b === undefined) continue;
+      if (a === undefined || b === undefined) {
+        continue;
+      }
       dotProduct += a * b;
       normA += a * a;
       normB += b * b;

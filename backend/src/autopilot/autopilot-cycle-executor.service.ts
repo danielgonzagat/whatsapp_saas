@@ -117,12 +117,16 @@ export class AutopilotCycleExecutorService {
   }
 
   private decideNightAction(isNight: boolean, buyingSignal?: boolean): string | null {
-    if (!isNight) return null;
+    if (!isNight) {
+      return null;
+    }
     return buyingSignal ? 'soft_close_night' : 'auto_reply_night';
   }
 
   private decideBuyingAction(buyingSignal?: boolean, isOptimalTime?: boolean): string | null {
-    if (!buyingSignal) return null;
+    if (!buyingSignal) {
+      return null;
+    }
     return isOptimalTime ? 'send_offer' : 'send_offer_soft';
   }
 
@@ -141,7 +145,9 @@ export class AutopilotCycleExecutorService {
     sentiment?: string,
     buyingSignal?: boolean,
   ): string | null {
-    if (stage === 'new') return 'qualify';
+    if (stage === 'new') {
+      return 'qualify';
+    }
     if (stage === 'closing') {
       return sentiment === 'positive' && !buyingSignal ? 'try_upsell' : 'send_cta';
     }
@@ -164,9 +170,7 @@ export class AutopilotCycleExecutorService {
         await this.prisma.autopilotEvent.create({
           data: {
             workspaceId: conv.workspaceId,
-            ...(conv.contact?.id !== undefined
-              ? { contactId: conv.contact.id }
-              : {}),
+            ...(conv.contact?.id !== undefined ? { contactId: conv.contact.id } : {}),
             intent: analysis?.intent || 'UNKNOWN',
             action,
             status: 'skipped',
@@ -185,8 +189,12 @@ export class AutopilotCycleExecutorService {
     }
 
     const responseText = await this.resolveActionResponse(action, conv, analysis);
-    if (responseText === null) return;
-    if (responseText === '') return;
+    if (responseText === null) {
+      return;
+    }
+    if (responseText === '') {
+      return;
+    }
 
     try {
       await this.planLimits.ensureDailyMessageQuota(conv.workspaceId);

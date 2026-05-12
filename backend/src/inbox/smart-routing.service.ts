@@ -81,7 +81,9 @@ export class SmartRoutingService {
     const nextIndex = (lastIndex + 1) % agentsInQueue.length;
 
     const agentAtIdx = agentsInQueue[nextIndex];
-    if (!agentAtIdx) return;
+    if (!agentAtIdx) {
+      return;
+    }
     const selectedAgent = agentAtIdx.agent;
 
     // Assign

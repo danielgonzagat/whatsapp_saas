@@ -4,7 +4,12 @@ import { UnifiedAgentContextDataService } from './unified-agent-context-data.ser
 
 jest.mock('./kloel.prompts', () => ({
   buildKloelLeadPrompt: jest.fn(
-    (params: { companyName: string; brandVoice: string; productList: string; extraContext: string }) =>
+    (params: {
+      companyName: string;
+      brandVoice: string;
+      productList: string;
+      extraContext: string;
+    }) =>
       `SYSTEM PROMPT [${params.companyName}] [${params.productList}] [${params.brandVoice}] [${params.extraContext}]`,
   ),
 }));
@@ -85,10 +90,9 @@ describe('UnifiedAgentContextService', () => {
       const { buildKloelLeadPrompt } = require('./kloel.prompts');
       buildKloelLeadPrompt.mockClear();
 
-      const prompt = service.buildSystemPrompt(
-        { name: 'Empresa X' },
-        [{ value: { name: 'Produto A', price: 99 } }],
-      );
+      const prompt = service.buildSystemPrompt({ name: 'Empresa X' }, [
+        { value: { name: 'Produto A', price: 99 } },
+      ]);
 
       expect(prompt).toContain('SYSTEM PROMPT');
       expect(buildKloelLeadPrompt).toHaveBeenCalledWith(
@@ -151,13 +155,17 @@ describe('UnifiedAgentContextService', () => {
       const { buildKloelLeadPrompt } = require('./kloel.prompts');
       buildKloelLeadPrompt.mockClear();
 
-      service.buildSystemPrompt({ name: 'TestCo' }, [], [
-        {
-          tone: 'Consultivo',
-          persistenceLevel: 4,
-          customerProfile: { idealCustomer: 'Pequenas empresas' },
-        },
-      ]);
+      service.buildSystemPrompt(
+        { name: 'TestCo' },
+        [],
+        [
+          {
+            tone: 'Consultivo',
+            persistenceLevel: 4,
+            customerProfile: { idealCustomer: 'Pequenas empresas' },
+          },
+        ],
+      );
 
       expect(buildKloelLeadPrompt).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -209,9 +217,7 @@ describe('UnifiedAgentContextService', () => {
     it('includes last assistant message context', () => {
       const hint = service.buildLeadTacticalHint({
         currentMessage: 'quanto custa?',
-        conversationHistory: [
-          { role: 'assistant', content: 'Olá! Como posso ajudar?' },
-        ],
+        conversationHistory: [{ role: 'assistant', content: 'Olá! Como posso ajudar?' }],
       });
 
       expect(hint).toContain('Como posso ajudar?');

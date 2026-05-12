@@ -154,7 +154,9 @@ export async function collectCatalogContactEntriesExt(
       };
     })
     .filter((e) => {
-      if (onlyCataloged && !e.cataloged) return false;
+      if (onlyCataloged && !e.cataloged) {
+        return false;
+      }
       return e.latestRelevantTimestamp >= cutoff;
     })
     .sort((a, b) => {
@@ -166,9 +168,12 @@ export async function collectCatalogContactEntriesExt(
         resolveTimestampExt({ createdAt: b.catalogedAt }),
         resolveTimestampExt({ createdAt: b.lastScoredAt }),
       );
-      if (ca !== cb) return cb - ca;
-      if (a.purchaseProbabilityScore !== b.purchaseProbabilityScore)
+      if (ca !== cb) {
+        return cb - ca;
+      }
+      if (a.purchaseProbabilityScore !== b.purchaseProbabilityScore) {
         return b.purchaseProbabilityScore - a.purchaseProbabilityScore;
+      }
       return b.latestRelevantTimestamp - a.latestRelevantTimestamp;
     })
     .map(({ latestRelevantTimestamp: _, ...entry }) => entry);

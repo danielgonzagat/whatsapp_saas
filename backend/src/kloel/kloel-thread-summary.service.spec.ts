@@ -120,9 +120,7 @@ describe('KloelThreadSummaryService', () => {
     });
 
     it('returns true for messages with 8+ words', () => {
-      expect(
-        service.isSubstantiveMessage('um dois tres quatro cinco seis sete oito'),
-      ).toBe(true);
+      expect(service.isSubstantiveMessage('um dois tres quatro cinco seis sete oito')).toBe(true);
     });
 
     it('returns false for short non-substantive messages', () => {
@@ -132,7 +130,10 @@ describe('KloelThreadSummaryService', () => {
 
   describe('generateConversationTitle', () => {
     it('returns fallback when no openai instance is provided', async () => {
-      const title = await service.generateConversationTitle('Minha mensagem longa o suficiente', wsId);
+      const title = await service.generateConversationTitle(
+        'Minha mensagem longa o suficiente',
+        wsId,
+      );
       expect(title).toBe('Minha mensagem longa o suficiente');
     });
 
@@ -320,9 +321,7 @@ describe('KloelThreadSummaryService', () => {
         summaryUpdatedAt: null,
       });
       prisma.chatMessage.count = jest.fn().mockResolvedValue(30);
-      prisma.chatMessage.findMany.mockResolvedValueOnce([
-        { role: 'user', content: 'test' },
-      ]);
+      prisma.chatMessage.findMany.mockResolvedValueOnce([{ role: 'user', content: 'test' }]);
 
       await service.maybeRefreshThreadSummary('thread-1', 'ws-isolated', {} as any);
 

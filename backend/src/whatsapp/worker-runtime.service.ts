@@ -105,7 +105,7 @@ export class WorkerRuntimeService {
     const timeout = setTimeout(() => controller.abort(), this.getTimeoutMs());
 
     try {
-      const response = await fetchFn(workerHealthUrl as string, {
+      const response = await fetchFn(workerHealthUrl, {
         method: 'GET',
         headers: this.buildWorkerHealthHeaders(),
         signal: controller.signal,

@@ -3,6 +3,10 @@ import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { OpsAlertService } from '../../observability/ops-alert.service';
 
+function toAuditJson(value: unknown): Prisma.InputJsonValue {
+  return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
+}
+
 /** Append audit input shape. */
 export interface AppendAuditInput {
   /** Admin user id property. */
@@ -67,7 +71,7 @@ export class AdminAuditService {
           entityId: input.entityId ?? null,
           ...(input.details === undefined || input.details === null
             ? {}
-            : { details: input.details as Prisma.InputJsonValue }),
+            : { details: toAuditJson(input.details) }),
           ip: input.ip ?? null,
           userAgent: input.userAgent ?? null,
         },

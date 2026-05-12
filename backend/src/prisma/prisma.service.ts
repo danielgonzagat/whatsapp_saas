@@ -423,7 +423,9 @@ export class PrismaService
   async sendPurchaseConfirmationEmailFromPaidCheckoutUpdate(
     args: Prisma.CheckoutOrderUpdateManyArgs,
   ) {
-    if (!this.checkoutEmailSender) return;
+    if (!this.checkoutEmailSender) {
+      return;
+    }
     await sendPurchaseConfirmationEmailFromPaidCheckoutUpdate(this, args, this.checkoutEmailSender);
   }
 

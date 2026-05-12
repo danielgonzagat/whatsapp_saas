@@ -46,7 +46,9 @@ export class UnifiedAgentResponseService {
     const { workspaceId, customerMessage, assistantDraft, actions, historyTurns } = params;
     const fallbackReply = this.finalizeReplyStyle(customerMessage, assistantDraft, historyTurns);
 
-    if (!openai) return fallbackReply;
+    if (!openai) {
+      return fallbackReply;
+    }
 
     const compactActions = actions.map((action) => ({
       tool: action.tool,
@@ -55,7 +57,9 @@ export class UnifiedAgentResponseService {
     }));
 
     try {
-      if (workspaceId) await this.planLimits.ensureTokenBudget(workspaceId);
+      if (workspaceId) {
+        await this.planLimits.ensureTokenBudget(workspaceId);
+      }
       const writerResponse = await chatCompletionWithFallback(
         openai,
         {
@@ -111,7 +115,9 @@ export class UnifiedAgentResponseService {
       .replace(S_______S_RE, ' ')
       .trim();
 
-    if (!normalized) return undefined;
+    if (!normalized) {
+      return undefined;
+    }
 
     const budget = computeReplyStyleBudget(customerMessage, historyTurns);
     const allowEmoji = Array.from(customerMessage).some((character) =>
@@ -146,8 +152,12 @@ export class UnifiedAgentResponseService {
         selectedWords = sentenceWords;
         continue;
       }
-      if (selectedSentences.length >= effectiveSentenceBudget) break;
-      if (selectedWords + sentenceWords > budget.maxWords) break;
+      if (selectedSentences.length >= effectiveSentenceBudget) {
+        break;
+      }
+      if (selectedWords + sentenceWords > budget.maxWords) {
+        break;
+      }
       selectedSentences.push(sentence);
       selectedWords += sentenceWords;
     }
@@ -174,7 +184,9 @@ export class UnifiedAgentResponseService {
       }))
       .filter((message) => message.content && message.quotedMessageId);
 
-    if (!normalizedMessages.length) return [];
+    if (!normalizedMessages.length) {
+      return [];
+    }
 
     if (normalizedMessages.length === 1 || !openai) {
       return this.buildMirroredReplyPlanFallback(normalizedMessages, params.draftReply);
@@ -247,7 +259,9 @@ export class UnifiedAgentResponseService {
 
     if (customerMessages.length === 1) {
       const first = customerMessages[0];
-      if (!first) return [];
+      if (!first) {
+        return [];
+      }
       return [
         {
           quotedMessageId: first.quotedMessageId,
@@ -342,7 +356,9 @@ export class UnifiedAgentResponseService {
   }
 
   extractIntent(actions: Array<{ tool: string; args: unknown }>, _message: string): string {
-    if (actions.length === 0) return 'IDLE';
+    if (actions.length === 0) {
+      return 'IDLE';
+    }
     const toolIntentMap: Record<string, string> = {
       create_payment_link: 'BUYING',
       send_product_info: 'INTERESTED',
@@ -356,7 +372,9 @@ export class UnifiedAgentResponseService {
     };
     for (const action of actions) {
       const intent = toolIntentMap[action.tool];
-      if (intent) return intent;
+      if (intent) {
+        return intent;
+      }
     }
     return 'FOLLOW_UP';
   }
@@ -368,7 +386,9 @@ export class UnifiedAgentResponseService {
   ): number {
     let confidence = 0.5;
     confidence += Math.min(actions.length * 0.1, 0.3);
-    if (response.choices[0]?.message?.tool_calls?.length) confidence += 0.15;
+    if (response.choices[0]?.message?.tool_calls?.length) {
+      confidence += 0.15;
+    }
     return Math.min(confidence, 1);
   }
 

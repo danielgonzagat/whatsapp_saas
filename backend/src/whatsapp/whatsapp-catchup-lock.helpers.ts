@@ -11,5 +11,7 @@ export function getCooldownKey(ws: string): string {
 export async function releaseLock(redis: Redis, ws: string, token: string): Promise<void> {
   const lk = getLockKey(ws);
   const current = await redis.get(lk);
-  if (current === token) await redis.del(lk);
+  if (current === token) {
+    await redis.del(lk);
+  }
 }

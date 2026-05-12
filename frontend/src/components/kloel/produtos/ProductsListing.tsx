@@ -58,7 +58,7 @@ export default function ProductsListing({
   const displayRevRef = useRef(totalRevenue);
   useEffect(() => {
     displayRevRef.current = totalRevenue;
-    if (revElRef.current) revElRef.current.textContent = fmtBRL(totalRevenue);
+    if (revElRef.current) {revElRef.current.textContent = fmtBRL(totalRevenue);}
   }, [totalRevenue]);
 
   const productEvents =

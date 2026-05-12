@@ -54,15 +54,11 @@ export async function processOrderPostPayment(
       customerName: data.customerName,
       customerEmail: data.customerEmail,
       ...(data.customerCPF !== undefined ? { customerCPF: data.customerCPF } : {}),
-      ...(data.customerPhone !== undefined
-        ? { customerPhone: data.customerPhone }
-        : {}),
+      ...(data.customerPhone !== undefined ? { customerPhone: data.customerPhone } : {}),
       paymentMethod: orderData.paymentMethod,
       totalInCents: params.normalizedBaseTotalInCents,
       installments: params.normalizedInstallments,
-      ...(params.cardHolderName !== undefined
-        ? { cardHolderName: params.cardHolderName }
-        : {}),
+      ...(params.cardHolderName !== undefined ? { cardHolderName: params.cardHolderName } : {}),
     });
     const shippingAddr =
       data.shippingAddress && typeof data.shippingAddress === 'object'

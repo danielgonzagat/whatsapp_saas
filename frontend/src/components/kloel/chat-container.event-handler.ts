@@ -17,8 +17,8 @@ const ACESSANDO_SEU_WHATS_APP_RE =
 
 export function formatAgentPhaseLabel(value?: string | null): string {
   const raw = String(value || '').trim();
-  if (!raw) return '';
-  if (raw === 'streaming_token') return '';
+  if (!raw) {return '';}
+  if (raw === 'streaming_token') {return '';}
   return raw
     .replace(SEPARATOR_G_RE, ' ')
     .replace(WHITESPACE_G_RE, ' ')
@@ -47,7 +47,7 @@ export function isStreamingAgentEvent(
 
 export function isLowSignalSyncEvent(event: AgentStreamEvent): boolean {
   const message = String(event.message || '').trim();
-  if (!message) return true;
+  if (!message) {return true;}
   if (SINCRONIZANDO_CONVERSA_RE.test(message) || COME_ANDO_A_SINCRONIZA_RE.test(message)) {
     return true;
   }
@@ -74,20 +74,20 @@ export function createAgentEventKey(event: AgentStreamEvent): string {
 }
 
 export function resolveActivityType(event: AgentStreamEvent): AgentActivity['type'] {
-  if (event.type === 'thought' || event.type === 'typing') return 'agent_thinking';
+  if (event.type === 'thought' || event.type === 'typing') {return 'agent_thinking';}
   if (event.type === 'action' || event.type === 'proof' || event.type === 'account')
-    return 'action_executed';
-  if (event.type === 'contact') return 'message_sent';
-  if (event.type === 'error') return 'error';
-  if (event.type === 'sale') return 'lead_qualified';
+    {return 'action_executed';}
+  if (event.type === 'contact') {return 'message_sent';}
+  if (event.type === 'error') {return 'error';}
+  if (event.type === 'sale') {return 'lead_qualified';}
   if (event.type === 'status' && (event.phase || '').includes('session'))
-    return 'connection_status';
+    {return 'connection_status';}
   return 'action_executed';
 }
 
 export function resolveActivityStatus(event: AgentStreamEvent): AgentActivity['status'] {
-  if (event.type === 'error') return 'error';
-  if (event.type === 'thought' || event.type === 'typing') return 'pending';
+  if (event.type === 'error') {return 'error';}
+  if (event.type === 'thought' || event.type === 'typing') {return 'pending';}
   return 'success';
 }
 
@@ -109,6 +109,34 @@ function readMetaNumber(
 
 export function createAgentActivity(event: AgentStreamEvent): AgentActivity {
   const meta = event.meta;
+  const contactName = readMetaString(meta, 'contactName');
+  const contactPhone = readMetaString(meta, 'phone');
+  const actionType =
+    readMetaString(meta, 'action') ||
+    readMetaString(meta, 'actionType') ||
+    readMetaString(meta, 'capabilityCode');
+  const capabilityCode = readMetaString(meta, 'capabilityCode');
+  const tacticCode = readMetaString(meta, 'tacticCode') || readMetaString(meta, 'selectedTactic');
+  const conversationId = readMetaString(meta, 'conversationId');
+  const workItemId = readMetaString(meta, 'workItemId');
+  const conversationProofId = readMetaString(meta, 'conversationProofId');
+  const accountProofId = readMetaString(meta, 'accountProofId');
+  const cycleProofId = readMetaString(meta, 'cycleProofId');
+  const selectedActionUtility = readMetaNumber(meta, 'selectedActionUtility');
+  const selectedActionRank = readMetaNumber(meta, 'selectedActionRank');
+  const betterActionCount = readMetaNumber(meta, 'betterActionCount');
+  const betterExecutableActionCount = readMetaNumber(meta, 'betterExecutableActionCount');
+  const nextBestActionType = readMetaString(meta, 'nextBestActionType');
+  const nextBestActionUtility = readMetaNumber(meta, 'nextBestActionUtility');
+  const selectedTactic = readMetaString(meta, 'selectedTactic');
+  const selectedTacticUtility = readMetaNumber(meta, 'selectedTacticUtility');
+  const selectedTacticRank = readMetaNumber(meta, 'selectedTacticRank');
+  const betterTacticCount = readMetaNumber(meta, 'betterTacticCount');
+  const nextBestTactic = readMetaString(meta, 'nextBestTactic');
+  const nextBestTacticUtility = readMetaNumber(meta, 'nextBestTacticUtility');
+  const utility = readMetaNumber(meta, 'utility');
+  const state = readMetaString(meta, 'state');
+  const errorMessage = event.type === 'error' ? event.message : undefined;
   return {
     id: createAgentEventKey(event),
     type: resolveActivityType(event),
@@ -117,35 +145,32 @@ export function createAgentActivity(event: AgentStreamEvent): AgentActivity {
     timestamp: new Date(event.ts || Date.now()),
     status: resolveActivityStatus(event),
     metadata: {
-      contactName: readMetaString(meta, 'contactName'),
-      contactPhone: readMetaString(meta, 'phone'),
+      ...(contactName !== undefined ? { contactName } : {}),
+      ...(contactPhone !== undefined ? { contactPhone } : {}),
       messagePreview: event.message,
-      actionType:
-        readMetaString(meta, 'action') ||
-        readMetaString(meta, 'actionType') ||
-        readMetaString(meta, 'capabilityCode'),
-      capabilityCode: readMetaString(meta, 'capabilityCode'),
-      tacticCode: readMetaString(meta, 'tacticCode') || readMetaString(meta, 'selectedTactic'),
-      conversationId: readMetaString(meta, 'conversationId'),
-      workItemId: readMetaString(meta, 'workItemId'),
-      conversationProofId: readMetaString(meta, 'conversationProofId'),
-      accountProofId: readMetaString(meta, 'accountProofId'),
-      cycleProofId: readMetaString(meta, 'cycleProofId'),
-      selectedActionUtility: readMetaNumber(meta, 'selectedActionUtility'),
-      selectedActionRank: readMetaNumber(meta, 'selectedActionRank'),
-      betterActionCount: readMetaNumber(meta, 'betterActionCount'),
-      betterExecutableActionCount: readMetaNumber(meta, 'betterExecutableActionCount'),
-      nextBestActionType: readMetaString(meta, 'nextBestActionType'),
-      nextBestActionUtility: readMetaNumber(meta, 'nextBestActionUtility'),
-      selectedTactic: readMetaString(meta, 'selectedTactic'),
-      selectedTacticUtility: readMetaNumber(meta, 'selectedTacticUtility'),
-      selectedTacticRank: readMetaNumber(meta, 'selectedTacticRank'),
-      betterTacticCount: readMetaNumber(meta, 'betterTacticCount'),
-      nextBestTactic: readMetaString(meta, 'nextBestTactic'),
-      nextBestTacticUtility: readMetaNumber(meta, 'nextBestTacticUtility'),
-      utility: readMetaNumber(meta, 'utility'),
-      state: readMetaString(meta, 'state'),
-      errorMessage: event.type === 'error' ? event.message : undefined,
+      ...(actionType !== undefined ? { actionType } : {}),
+      ...(capabilityCode !== undefined ? { capabilityCode } : {}),
+      ...(tacticCode !== undefined ? { tacticCode } : {}),
+      ...(conversationId !== undefined ? { conversationId } : {}),
+      ...(workItemId !== undefined ? { workItemId } : {}),
+      ...(conversationProofId !== undefined ? { conversationProofId } : {}),
+      ...(accountProofId !== undefined ? { accountProofId } : {}),
+      ...(cycleProofId !== undefined ? { cycleProofId } : {}),
+      ...(selectedActionUtility !== undefined ? { selectedActionUtility } : {}),
+      ...(selectedActionRank !== undefined ? { selectedActionRank } : {}),
+      ...(betterActionCount !== undefined ? { betterActionCount } : {}),
+      ...(betterExecutableActionCount !== undefined ? { betterExecutableActionCount } : {}),
+      ...(nextBestActionType !== undefined ? { nextBestActionType } : {}),
+      ...(nextBestActionUtility !== undefined ? { nextBestActionUtility } : {}),
+      ...(selectedTactic !== undefined ? { selectedTactic } : {}),
+      ...(selectedTacticUtility !== undefined ? { selectedTacticUtility } : {}),
+      ...(selectedTacticRank !== undefined ? { selectedTacticRank } : {}),
+      ...(betterTacticCount !== undefined ? { betterTacticCount } : {}),
+      ...(nextBestTactic !== undefined ? { nextBestTactic } : {}),
+      ...(nextBestTacticUtility !== undefined ? { nextBestTacticUtility } : {}),
+      ...(utility !== undefined ? { utility } : {}),
+      ...(state !== undefined ? { state } : {}),
+      ...(errorMessage !== undefined ? { errorMessage } : {}),
     },
   };
 }
@@ -212,7 +237,7 @@ export function processAgentEvent(event: AgentStreamEvent, dispatch: AgentEventD
       };
       const next =
         last &&
-        isStreamingAgentEvent({ streaming: undefined, phase: last.phase, meta: undefined }) &&
+        isStreamingAgentEvent({ ...(last.phase !== undefined ? { phase: last.phase } : {}) }) &&
         last.type === event.type &&
         (last.phase || '') === (event.phase || '')
           ? [...prev.slice(0, -1), nextEntry]
@@ -222,7 +247,7 @@ export function processAgentEvent(event: AgentStreamEvent, dispatch: AgentEventD
     });
     setCurrentThought(event.message);
     setAgentThoughts((prev) => {
-      if (prev.length === 0) return [event.message];
+      if (prev.length === 0) {return [event.message];}
       const next = [...prev];
       next[next.length - 1] = event.message;
       return next;

@@ -76,7 +76,7 @@ export function ProductCatalogSection({
   useEffect(() => { void hydrateCatalog(); }, [hydrateCatalog]);
 
   const handleAddProduct = async () => {
-    if (!workspaceId || !newProduct.name || !newProduct.price) return;
+    if (!workspaceId || !newProduct.name || !newProduct.price) {return;}
     setCatalogLoading(true);
     setCatalogError('');
     setCatalogSuccess('');
@@ -95,7 +95,7 @@ export function ProductCatalogSection({
 
   const handleDeleteProduct = async (productId: string) => {
     const product = products.find((item) => item.id === productId);
-    if (!product) return;
+    if (!product) {return;}
     setCatalogLoading(true);
     setCatalogError('');
     setCatalogSuccess('');

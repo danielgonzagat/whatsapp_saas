@@ -61,7 +61,9 @@ export async function enqueuePurchaseWhatsappFromPaidCheckoutUpdate(
   args: Prisma.CheckoutOrderUpdateManyArgs,
 ) {
   const scope = args.data.status === 'PAID' ? readPaidCheckoutOrderScope(args) : null;
-  if (!scope) return;
+  if (!scope) {
+    return;
+  }
 
   const existing = await prisma.auditLog.findFirst({
     where: {
@@ -72,7 +74,9 @@ export async function enqueuePurchaseWhatsappFromPaidCheckoutUpdate(
     },
     select: { id: true },
   });
-  if (existing) return;
+  if (existing) {
+    return;
+  }
 
   const order = await prisma.checkoutOrder.findUnique({
     where: { id: scope.orderId },

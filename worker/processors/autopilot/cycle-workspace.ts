@@ -119,15 +119,33 @@ export async function runCycleWorkspace(workspaceId: string, presetSettings?: Un
     );
   }).length;
 
-  const recentExecuted = await prisma.autopilotEvent.findMany({
-    where: { workspaceId, status: 'executed', createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } },
-    take: 50, orderBy: { createdAt: 'desc' },
-  }).catch(() => []);
-  const approvedSalesCount = recentExecuted.filter((event: UnknownRecord) => event?.meta?.saleApproved === true).length;
-  const approvedSalesAmount = recentExecuted.reduce((sum, event: UnknownRecord) => sum + (Number(event?.meta?.amount || 0) || 0), 0);
+  const recentExecuted = await prisma.autopilotEvent
+    .findMany({
+      where: {
+        workspaceId,
+        status: 'executed',
+        createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+      },
+      take: 50,
+      orderBy: { createdAt: 'desc' },
+    })
+    .catch(() => []);
+  const approvedSalesCount = recentExecuted.filter(
+    (event: UnknownRecord) => event?.meta?.saleApproved === true,
+  ).length;
+  const approvedSalesAmount = recentExecuted.reduce(
+    (sum, event: UnknownRecord) => sum + (Number(event?.meta?.amount || 0) || 0),
+    0,
+  );
 
   const snapshot = buildBusinessStateSnapshot({
-    openBacklog, hotLeadCount, pendingPaymentCount, approvedSalesCount, approvedSalesAmount, avgResponseMinutes: 0, marketSignals,
+    openBacklog,
+    hotLeadCount,
+    pendingPaymentCount,
+    approvedSalesCount,
+    approvedSalesAmount,
+    avgResponseMinutes: 0,
+    marketSignals,
   });
   await persistBusinessSnapshot(prisma, { workspaceId, snapshot });
   await persistMarketSignals(prisma, { workspaceId, signals: marketSignals });

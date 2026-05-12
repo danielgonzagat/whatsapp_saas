@@ -132,10 +132,18 @@ const MEMBERSHIP_MODULES: ModuleTemplate[] = [
 ];
 
 function templateForAreaType(type: string): ModuleTemplate[] {
-  if (type === 'COURSE') return COURSE_MODULES;
-  if (type === 'COMMUNITY') return COMMUNITY_MODULES;
-  if (type === 'HYBRID') return HYBRID_MODULES;
-  if (type === 'MEMBERSHIP') return MEMBERSHIP_MODULES;
+  if (type === 'COURSE') {
+    return COURSE_MODULES;
+  }
+  if (type === 'COMMUNITY') {
+    return COMMUNITY_MODULES;
+  }
+  if (type === 'HYBRID') {
+    return HYBRID_MODULES;
+  }
+  if (type === 'MEMBERSHIP') {
+    return MEMBERSHIP_MODULES;
+  }
   return [];
 }
 

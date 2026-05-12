@@ -65,25 +65,31 @@ export class WhatsappMessageDispatcherService {
     const ew = this.workspaces.toEngineWorkspace(w);
     await this.ensureOptInAllowed(ws, to, opts?.complianceMode || 'proactive');
     const missing = this.sessionService.validateWorkspaceProvider(ew);
-    if (missing.length)
+    if (missing.length) {
       return { error: true, message: `Configuração do provedor incompleta: ${missing.join(', ')}` };
+    }
     const r = await this.sessionService.collectMessagingRuntimeIssues(ws, ew, {
       requireInboundWebhook: false,
     });
-    if (r.issues.length)
+    if (r.issues.length) {
       return {
         error: true,
         message: `Runtime do WhatsApp indisponível: ${r.issues.join(', ')}`,
         diagnostics: r.diagnostics,
       };
+    }
     if (opts?.forceDirect) {
       const dr = await this.sendDirectlyViaProvider(ws, to, message, opts);
-      if (dr.ok) await this.planLimits.trackMessageSend(ws);
+      if (dr.ok) {
+        await this.planLimits.trackMessageSend(ws);
+      }
       return dr;
     }
     if (!(await this.workerRuntime.isAvailable())) {
       const dr = await this.sendDirectlyViaProvider(ws, to, message, opts);
-      if (dr.ok) await this.planLimits.trackMessageSend(ws);
+      if (dr.ok) {
+        await this.planLimits.trackMessageSend(ws);
+      }
       return dr;
     }
     await flowQueue.add('send-message', {
@@ -123,17 +129,19 @@ export class WhatsappMessageDispatcherService {
     const ew = this.workspaces.toEngineWorkspace(w);
     await this.ensureOptInAllowed(ws, to);
     const m = this.sessionService.validateWorkspaceProvider(ew);
-    if (m.length)
+    if (m.length) {
       return { error: true, message: `Configuração do provedor incompleta: ${m.join(', ')}` };
+    }
     const r = await this.sessionService.collectMessagingRuntimeIssues(ws, ew, {
       requireInboundWebhook: false,
     });
-    if (r.issues.length)
+    if (r.issues.length) {
       return {
         error: true,
         message: `Runtime do WhatsApp indisponível: ${r.issues.join(', ')}`,
         diagnostics: r.diagnostics,
       };
+    }
     await flowQueue.add('send-message', {
       type: 'template',
       workspaceId: ws,
@@ -175,7 +183,9 @@ export class WhatsappMessageDispatcherService {
     );
     const deadline = Date.now() + ttlMs;
     const tryAcquire = async (): ReturnType<typeof this.sendDirectCore> => {
-      if (Date.now() >= deadline) return this.sendDirectCore(ws, to, message, opts);
+      if (Date.now() >= deadline) {
+        return this.sendDirectCore(ws, to, message, opts);
+      }
       if ((await this.redis.set(lockKey, token, 'PX', ttlMs, 'NX')) !== 'OK') {
         await this.sleep(250 + randomInt(250));
         return tryAcquire();
@@ -184,7 +194,9 @@ export class WhatsappMessageDispatcherService {
         return await this.sendDirectCore(ws, to, message, opts);
       } finally {
         const c = await this.redis.get(lockKey).catch(() => null);
-        if (c === token) await this.redis.del(lockKey).catch(() => {});
+        if (c === token) {
+          await this.redis.del(lockKey).catch(() => {});
+        }
       }
     };
     return tryAcquire();
@@ -221,32 +233,39 @@ export class WhatsappMessageDispatcherService {
       await this.providerRegistry.stopTyping(ws, n).catch(() => {});
     }
     const sendOpts: Record<string, unknown> = {};
-    if (opts?.mediaUrl !== undefined) sendOpts.mediaUrl = opts.mediaUrl;
-    if (opts?.mediaType !== undefined) sendOpts.mediaType = opts.mediaType;
-    if (opts?.caption !== undefined) sendOpts.caption = opts.caption;
-    if (opts?.quotedMessageId !== undefined) sendOpts.quotedMessageId = opts.quotedMessageId;
+    if (opts?.mediaUrl !== undefined) {
+      sendOpts.mediaUrl = opts.mediaUrl;
+    }
+    if (opts?.mediaType !== undefined) {
+      sendOpts.mediaType = opts.mediaType;
+    }
+    if (opts?.caption !== undefined) {
+      sendOpts.caption = opts.caption;
+    }
+    if (opts?.quotedMessageId !== undefined) {
+      sendOpts.quotedMessageId = opts.quotedMessageId;
+    }
     const registry = this.providerRegistry;
-    const r = await registry
-      .sendMessage(ws, to, message, sendOpts as Record<string, unknown>)
-      .catch((e: unknown) => {
-        this.slog.error('send_direct_provider_failed', {
-          workspaceId: ws,
-          to,
-          error: String(e instanceof Error ? e.message : e),
-        });
-        void this.opsAlert?.alertOnCriticalError(e, 'WhatsappMessageDispatcher.sendDirectCore', {
-          workspaceId: ws,
-          metadata: { to },
-        });
-        return { success: false, error: String(e instanceof Error ? e.message : e) };
+    const r = await registry.sendMessage(ws, to, message, sendOpts).catch((e: unknown) => {
+      this.slog.error('send_direct_provider_failed', {
+        workspaceId: ws,
+        to,
+        error: String(e instanceof Error ? e.message : e),
       });
+      void this.opsAlert?.alertOnCriticalError(e, 'WhatsappMessageDispatcher.sendDirectCore', {
+        workspaceId: ws,
+        metadata: { to },
+      });
+      return { success: false, error: String(e instanceof Error ? e.message : e) };
+    });
     if (!r.success) {
       await this.providerRegistry.setPresence(ws, 'offline', n).catch(() => {});
       return { error: true, message: r.error || 'send_failed' };
     }
     await this.sessionService.markChatAsReadBestEffort(ws, to);
     await this.providerRegistry.setPresence(ws, 'offline', n).catch(() => {});
-    const extId = 'messageId' in r && r.messageId != null ? r.messageId : (opts?.externalId ?? undefined);
+    const extId =
+      'messageId' in r && r.messageId != null ? r.messageId : (opts?.externalId ?? undefined);
     await this.inbox.saveMessageByPhone({
       workspaceId: ws,
       phone: to,
@@ -282,18 +301,25 @@ export class WhatsappMessageDispatcherService {
         tags: { select: { name: true } },
       },
     });
-    if (c && c.optIn === false)
+    if (c && c.optIn === false) {
       throw new ForbiddenException('Contato cancelou o recebimento de mensagens (opt-out)');
-    if (complianceMode === 'reactive') return;
+    }
+    if (complianceMode === 'reactive') {
+      return;
+    }
     if (eo) {
-      if (!c) throw new ForbiddenException('Contato sem opt-in para WhatsApp');
+      if (!c) {
+        throw new ForbiddenException('Contato sem opt-in para WhatsApp');
+      }
       const cf = (c.customFields as ContactCustomFields) || {};
       const has =
         c.optIn === true ||
         c.tags.some((t: { name: string }) => t.name === 'optin_whatsapp') ||
         cf.optin === true ||
         cf.optin_whatsapp === true;
-      if (!has) throw new ForbiddenException('Contato sem opt-in para WhatsApp');
+      if (!has) {
+        throw new ForbiddenException('Contato sem opt-in para WhatsApp');
+      }
     }
     if (e24) {
       const li = await this.prisma.message.findFirst({
@@ -301,8 +327,9 @@ export class WhatsappMessageDispatcherService {
         orderBy: { createdAt: 'desc' },
         select: { createdAt: true },
       });
-      if (!li || li.createdAt.getTime() < Date.now() - 24 * 60 * 60 * 1000)
+      if (!li || li.createdAt.getTime() < Date.now() - 24 * 60 * 60 * 1000) {
         throw new ForbiddenException('Fora da janela de 24h para envio');
+      }
     }
   }
 }

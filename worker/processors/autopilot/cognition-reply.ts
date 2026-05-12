@@ -22,7 +22,9 @@ export async function dispatchAutonomousTextMessage(input: {
   quotedMessageId?: string | undefined;
 }) {
   const result = await dispatchOutboundThroughFlow({
-    workspaceId: input.workspaceId, to: input.phone, chatId: input.chatId,
+    workspaceId: input.workspaceId,
+    to: input.phone,
+    chatId: input.chatId,
     message: input.message,
     jobId: buildQueueJobId('autonomy-send', input.idempotencyKey),
     externalId: input.idempotencyKey,
@@ -34,7 +36,12 @@ export async function dispatchAutonomousTextMessage(input: {
 }
 
 export function normalizeOutboundMessageForDedupe(content: string): string {
-  return String(content || '').normalize('NFKC').replace(WHITESPACE_G_RE, ' ').trim().toLowerCase().slice(0, 500);
+  return String(content || '')
+    .normalize('NFKC')
+    .replace(WHITESPACE_G_RE, ' ')
+    .trim()
+    .toLowerCase()
+    .slice(0, 500);
 }
 
 import { prisma } from '../../db';
@@ -50,16 +57,22 @@ export async function findRecentDuplicateOutbound(params: {
 
   const recentMessagesRaw = await prisma.message.findMany({
     where: {
-      workspaceId: params.workspaceId, contactId: params.contactId, direction: 'OUTBOUND',
+      workspaceId: params.workspaceId,
+      contactId: params.contactId,
+      direction: 'OUTBOUND',
       createdAt: { gte: new Date(Date.now() - (params.windowMs || 3 * 60_000)) },
     },
-    orderBy: { createdAt: 'desc' }, take: 5,
+    orderBy: { createdAt: 'desc' },
+    take: 5,
     select: { id: true, content: true, createdAt: true, externalId: true },
   });
   const recentMessages = Array.isArray(recentMessagesRaw) ? recentMessagesRaw : [];
 
-  return recentMessages.find(
-    (message) => normalizeOutboundMessageForDedupe(message.content) === normalizedTarget) || null;
+  return (
+    recentMessages.find(
+      (message) => normalizeOutboundMessageForDedupe(message.content) === normalizedTarget,
+    ) || null
+  );
 }
 
 export async function dispatchAutonomousReplyPlan(input: {
@@ -97,8 +110,11 @@ export async function dispatchAutonomousReplyPlan(input: {
   await forEachSequential(Array.from(replyPlan.entries()), async ([index, reply]) => {
     const effectiveQuotedMessageId = reply.quotedMessageId || input.quotedMessageId;
     await dispatchAutonomousTextMessage({
-      workspaceId: input.workspaceId, phone: input.phone, chatId: input.chatId,
-      message: reply.text, idempotencyKey: `${input.idempotencyKey}:${index + 1}`,
+      workspaceId: input.workspaceId,
+      phone: input.phone,
+      chatId: input.chatId,
+      message: reply.text,
+      idempotencyKey: `${input.idempotencyKey}:${index + 1}`,
       quotedMessageId: effectiveQuotedMessageId,
     });
   });
@@ -131,19 +147,26 @@ export async function buildQuotedReplyPlan(params: {
 
   try {
     const ai = new AIProvider(apiKey);
-    const response = await ai.generateChatResponse([
-      {
-        role: 'system',
-        content: 'Você organiza respostas curtas para WhatsApp. Retorne JSON puro com o formato {"replies":[{"index":1,"text":"..."},...]}. Deve haver exatamente uma resposta por mensagem do cliente, na mesma ordem. Cada resposta deve ser curta, humana e diretamente responsiva.',
-      },
-      {
-        role: 'user',
-        content: `Rascunho geral da resposta:\n${params.draftReply}\n\nMensagens do cliente:\n${normalizedMessages
-          .map((message, index) => `[${index + 1}] ${message.content}`)
-          .join('\n')}`,
-      },
-    ], 'writer');
-    const raw = String(response?.content || '').replace(JSON_FENCE_RE, '').replace(CODE_FENCE_RE, '').trim();
+    const response = await ai.generateChatResponse(
+      [
+        {
+          role: 'system',
+          content:
+            'Você organiza respostas curtas para WhatsApp. Retorne JSON puro com o formato {"replies":[{"index":1,"text":"..."},...]}. Deve haver exatamente uma resposta por mensagem do cliente, na mesma ordem. Cada resposta deve ser curta, humana e diretamente responsiva.',
+        },
+        {
+          role: 'user',
+          content: `Rascunho geral da resposta:\n${params.draftReply}\n\nMensagens do cliente:\n${normalizedMessages
+            .map((message, index) => `[${index + 1}] ${message.content}`)
+            .join('\n')}`,
+        },
+      ],
+      'writer',
+    );
+    const raw = String(response?.content || '')
+      .replace(JSON_FENCE_RE, '')
+      .replace(CODE_FENCE_RE, '')
+      .trim();
     const parsed = JSON.parse(raw);
     const replies = Array.isArray(parsed?.replies) ? parsed.replies : [];
 
@@ -151,10 +174,14 @@ export async function buildQuotedReplyPlan(params: {
 
     return normalizedMessages.map((message, index) => ({
       quotedMessageId: message.quotedMessageId,
-      text: finalizeReplyStyle(message.content, replies[index]?.text || params.draftReply, 0) || params.draftReply,
+      text:
+        finalizeReplyStyle(message.content, replies[index]?.text || params.draftReply, 0) ||
+        params.draftReply,
     }));
   } catch (err: unknown) {
-    log.warn('build_reply_variations_error', { error: err instanceof Error ? err.message : String(err) });
+    log.warn('build_reply_variations_error', {
+      error: err instanceof Error ? err.message : String(err),
+    });
     return fallback();
   }
 }

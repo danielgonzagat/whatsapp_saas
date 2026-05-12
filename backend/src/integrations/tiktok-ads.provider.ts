@@ -50,7 +50,9 @@ const ADVERTISER_TOKEN_URL = 'https://business-api.tiktok.com/open_api/v1.3/oaut
 const REVOKE_URL = 'https://business-api.tiktok.com/open_api/v1.3/oauth2/revoke/';
 
 function maskToken(token: string): string {
-  if (!token || token.length < 8) return '****';
+  if (!token || token.length < 8) {
+    return '****';
+  }
   return `${token.slice(0, 4)}****${token.slice(-4)}`;
 }
 
@@ -74,7 +76,9 @@ export class TikTokAdsProvider implements AdProvider {
   ) {}
 
   private resolveRedirectUri(explicit?: string): string {
-    if (explicit) return explicit;
+    if (explicit) {
+      return explicit;
+    }
     const frontendUrl = resolveEnv('FRONTEND_URL') || 'https://app.kloel.com';
     return `${frontendUrl.replace(/\/+$/, '')}/integrations/tiktok/callback`;
   }

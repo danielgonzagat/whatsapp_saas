@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 
 import { finalizeCheckoutOrder } from './checkout-order-submit';
-import { createOrder } from './useCheckout';
+import { createOrder, type OrderStatusData } from './useCheckout';
 
 vi.mock('./useCheckout', () => ({
   createOrder: vi.fn(),
@@ -70,7 +70,7 @@ describe('finalizeCheckoutOrder — Stripe-only checkout', () => {
         paymentIntentId: 'pi_test_123',
         approved: false,
       },
-    });
+    } as unknown as OrderStatusData);
 
     const result = await finalizeCheckoutOrder(baseArgs);
 
@@ -98,7 +98,7 @@ describe('finalizeCheckoutOrder — Stripe-only checkout', () => {
         approved: false,
         pixQrCode: 'data:image/png;base64,qr',
       },
-    });
+    } as unknown as OrderStatusData);
 
     const result = await finalizeCheckoutOrder({
       ...baseArgs,

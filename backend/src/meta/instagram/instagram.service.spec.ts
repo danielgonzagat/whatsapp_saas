@@ -18,10 +18,7 @@ describe('InstagramService', () => {
     metaSdk = createMockMetaSdk();
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        InstagramService,
-        { provide: MetaSdkService, useValue: metaSdk },
-      ],
+      providers: [InstagramService, { provide: MetaSdkService, useValue: metaSdk }],
     }).compile();
 
     service = module.get<InstagramService>(InstagramService);
@@ -32,12 +29,7 @@ describe('InstagramService', () => {
       const mockResponse = { message_id: 'msg_123' };
       metaSdk.graphApiPost.mockResolvedValue(mockResponse);
 
-      const result = await service.sendMessage(
-        'ig_1',
-        'recip_1',
-        'Hello!',
-        'token',
-      );
+      const result = await service.sendMessage('ig_1', 'recip_1', 'Hello!', 'token');
 
       expect(result).toEqual(mockResponse);
       expect(metaSdk.graphApiPost).toHaveBeenCalledWith(
@@ -75,10 +67,7 @@ describe('InstagramService', () => {
 
       await service.getProfile('ig_1', 'token');
 
-      const [, params] = metaSdk.graphApiGet.mock.calls[0] as [
-        string,
-        Record<string, string>,
-      ];
+      const [, params] = metaSdk.graphApiGet.mock.calls[0] as [string, Record<string, string>];
       const fields = params.fields.split(',');
       expect(fields).toContain('username');
       expect(fields).toContain('followers_count');
@@ -137,10 +126,7 @@ describe('InstagramService', () => {
         'token',
       );
 
-      const [, params] = metaSdk.graphApiGet.mock.calls[0] as [
-        string,
-        Record<string, string>,
-      ];
+      const [, params] = metaSdk.graphApiGet.mock.calls[0] as [string, Record<string, string>];
       expect(params.metric).toBe('impressions,reach,profile_views');
     });
   });

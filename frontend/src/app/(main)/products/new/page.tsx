@@ -1,5 +1,5 @@
 'use client';
-import { colors } from '@/lib/design-tokens';
+import { colors, typography } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 export const dynamic = 'force-dynamic';
@@ -9,7 +9,6 @@ import { usePersistentImagePreview } from '@/hooks/usePersistentImagePreview';
 import { useWorkspaceId } from '@/hooks/useWorkspaceId';
 import { apiFetch } from '@/lib/api';
 import { useProductCategories } from '@/hooks/useProducts';
-import { colors, typography } from '@/lib/design-tokens';
 import { readFileAsDataUrl, uploadGenericMedia } from '@/lib/media-upload';
 import { buildProductCreatePayload, extractCreatedProductId } from './page.helpers';
 import { ArrowLeft, ArrowRight, Check } from 'lucide-react';

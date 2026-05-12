@@ -1,7 +1,7 @@
 import type { PulseConvergencePlan } from '../types.convergence';
 import type { PulseGateName } from '../types.manifest';
 import type { BuildPulseConvergencePlanInput } from './kernel';
-import { SCENARIO_STATUSES, UNIT_EXECUTION_MODES, UNIT_KINDS, UNIT_PRIORITIES } from './kernel';
+import { SCENARIO_STATUSES } from './kernel';
 import {
   applyDerivedPriorities,
   compactText,
@@ -25,6 +25,20 @@ import {
   buildSecurityUnit,
   buildStaticUnit,
   collectCoveredGateNames,
+  deriveObservedConvergenceEvidenceLabel,
+  observedScenarioKind,
+  observedSecurityKind,
+  observedStaticKind,
+  observedGateKind,
+  observedRuntimeKind,
+  observedChangeKind,
+  observedDependencyKind,
+  observedScopeKind,
+  observedP0Priority,
+  observedP1Priority,
+  observedP2Priority,
+  observedP3Priority,
+  observedObservationOnlyMode,
 } from './builders';
 
 export function buildConvergencePlan(input: BuildPulseConvergencePlanInput): PulseConvergencePlan {
@@ -52,21 +66,21 @@ export function buildConvergencePlan(input: BuildPulseConvergencePlanInput): Pul
     }));
   let orderedQueue = applyDerivedPriorities(queue);
 
-  let scenarioKind = [...UNIT_KINDS].find((k) => k.includes('scenario'))!;
-  let securityKind = [...UNIT_KINDS].find((k) => k.includes('security'))!;
-  let staticKind = [...UNIT_KINDS].find((k) => k.includes('static'))!;
-  let runtimeKind = [...UNIT_KINDS].find((k) => k.includes('runtime'))!;
-  let changeKind = [...UNIT_KINDS].find((k) => k.includes('change'))!;
-  let dependencyKind = [...UNIT_KINDS].find((k) => k.includes('dependency'))!;
-  let scopeKind = [...UNIT_KINDS].find((k) => k.includes('scope'))!;
-  let gateKind = [...UNIT_KINDS].find((k) => k.includes('gate'))!;
-  let p0 = [...UNIT_PRIORITIES].find((p) => p.includes('P0'))!;
-  let p1 = [...UNIT_PRIORITIES].find((p) => p.includes('P1'))!;
-  let p2 = [...UNIT_PRIORITIES].find((p) => p.includes('P2'))!;
-  let p3 = [...UNIT_PRIORITIES].find((p) => p.includes('P3'))!;
-  let observationOnlyMode = [...UNIT_EXECUTION_MODES].find((m) => m.includes('observation_only'))!;
-  let failStatus = [...SCENARIO_STATUSES].find((s) => s.includes('fail'))!;
-  let satisfiedStatus = [...SCENARIO_STATUSES].find((s) => s.includes('satisfied'))!;
+  let scenarioKind = observedScenarioKind;
+  let securityKind = observedSecurityKind;
+  let staticKind = observedStaticKind;
+  let runtimeKind = observedRuntimeKind;
+  let changeKind = observedChangeKind;
+  let dependencyKind = observedDependencyKind;
+  let scopeKind = observedScopeKind;
+  let gateKind = observedGateKind;
+  let p0 = observedP0Priority;
+  let p1 = observedP1Priority;
+  let p2 = observedP2Priority;
+  let p3 = observedP3Priority;
+  let observationOnlyMode = observedObservationOnlyMode;
+  let failStatus = deriveObservedConvergenceEvidenceLabel<string>(SCENARIO_STATUSES, 'fail');
+  let satisfiedStatus = deriveObservedConvergenceEvidenceLabel<string>(SCENARIO_STATUSES, 'satisfied');
   return {
     generatedAt: input.certification.timestamp,
     commitSha: input.certification.commitSha,

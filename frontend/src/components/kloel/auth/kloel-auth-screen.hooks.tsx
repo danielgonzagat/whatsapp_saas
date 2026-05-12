@@ -31,7 +31,7 @@ export function useGoogleSignIn(
       return;
     }
     if (window.google?.accounts?.id) {
-      setSdkLoaded(true);
+      queueMicrotask(() => setSdkLoaded(true));
       return;
     }
 
@@ -42,7 +42,7 @@ export function useGoogleSignIn(
     if (existing) {
       existing.addEventListener('load', onLoad);
       if (window.google?.accounts?.id) {
-        setSdkLoaded(true);
+        queueMicrotask(() => setSdkLoaded(true));
       }
       return () => existing.removeEventListener('load', onLoad);
     }
@@ -164,7 +164,11 @@ export function useFacebookSignIn(
 
     if (existing) {
       return () => {
-        window.fbAsyncInit = previousInit;
+        if (previousInit) {
+          window.fbAsyncInit = previousInit;
+        } else {
+          delete window.fbAsyncInit;
+        }
       };
     }
 
@@ -176,7 +180,11 @@ export function useFacebookSignIn(
     document.head.appendChild(script);
 
     return () => {
-      window.fbAsyncInit = previousInit;
+      if (previousInit) {
+        window.fbAsyncInit = previousInit;
+      } else {
+        delete window.fbAsyncInit;
+      }
     };
   }, [appId, disabled, version]);
 
@@ -185,7 +193,11 @@ export function useFacebookSignIn(
       throw kloelError('Login com Facebook indisponível no momento.');
     }
 
-    await cbRef.current(await requestFacebookAccessTokenWithEmailScope());
+    const fbResult = await requestFacebookAccessTokenWithEmailScope();
+    await cbRef.current({
+      accessToken: fbResult.accessToken,
+      ...(fbResult.userId !== undefined ? { userId: fbResult.userId } : {}),
+    });
   }, [appId, disabled, sdkReady]);
 
   return {

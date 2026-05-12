@@ -3,7 +3,6 @@
 import { kloelT } from '@/lib/i18n/t';
 import { colors } from '@/lib/design-tokens';
 import { EMBER, SORA, MONO } from './AnunciosShared';
-import { useId } from 'react';
 
 interface RuleEditorFormProps {
   condition: string;
@@ -26,7 +25,6 @@ export function RuleEditorForm({
   saveLabel,
   idPrefix,
 }: RuleEditorFormProps) {
-  const fid = useId();
   return (
     <div style={{ padding: '12px 12px', display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
       <div>
@@ -57,7 +55,7 @@ export function RuleEditorForm({
           type="text"
           value={action}
           onChange={(e) => onActionChange(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter') onSave(); if (e.key === 'Escape') onCancel(); }}
+          onKeyDown={(e) => { if (e.key === 'Enter') {onSave();} if (e.key === 'Escape') {onCancel();} }}
           style={{ width: '100%', padding: '7px 10px', background: 'var(--app-bg-card)', border: '1px solid colors.text.dim', borderRadius: 6, color: 'var(--app-text-primary)', fontSize: 12, fontFamily: MONO, outline: 'none', boxSizing: 'border-box' as const }}
           id={`${idPrefix}-act`}
         />

@@ -1,3 +1,5 @@
+import { colors } from '@/lib/design-tokens';
+
 export type PlatformKey = 'meta' | 'google' | 'tiktok';
 
 export interface PlatformData {

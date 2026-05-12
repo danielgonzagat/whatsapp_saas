@@ -13,7 +13,11 @@ import { runCatalogContacts } from './autopilot/catalog';
 import { runScoreContact } from './autopilot/score';
 import { runCiaCycleAll, runCiaCycleWorkspace } from './autopilot/cia-cycle';
 import { runCiaAction } from './autopilot/cia-action';
-import { runCiaSelfImproveAll, runCiaSelfImproveWorkspace, runCiaGlobalLearningAll } from './autopilot/cia-learn';
+import {
+  runCiaSelfImproveAll,
+  runCiaSelfImproveWorkspace,
+  runCiaGlobalLearningAll,
+} from './autopilot/cia-learn';
 import { runCycleAll, runCycleWorkspace } from './autopilot/cycle';
 
 const autopilotLog = new WorkerLogger('autopilot-worker');

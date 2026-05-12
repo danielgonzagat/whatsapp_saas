@@ -311,7 +311,9 @@ export class I18nService {
 
       // tokenBudget: caller responsible for pre-flight budget check
       await this.ensureBudget(workspaceId);
-      if (!this.openai) return text;
+      if (!this.openai) {
+        return text;
+      }
       const response = await chatCompletionWithRetry(this.openai, {
         model: resolveBackendOpenAIModel('writer'),
         messages: [

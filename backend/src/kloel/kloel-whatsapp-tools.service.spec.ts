@@ -87,7 +87,9 @@ describe('KloelWhatsAppToolsService', () => {
     whatsappService = {
       sendMessage: jest.fn().mockResolvedValue(undefined),
       listContacts: jest.fn().mockResolvedValue([]),
-      createContact: jest.fn().mockResolvedValue({ id: 'c-1', phone: '5511999999999', name: 'João' }),
+      createContact: jest
+        .fn()
+        .mockResolvedValue({ id: 'c-1', phone: '5511999999999', name: 'João' }),
       listChats: jest.fn().mockResolvedValue([]),
       getChatMessages: jest.fn().mockResolvedValue([]),
       getBacklog: jest.fn().mockResolvedValue({
@@ -397,7 +399,10 @@ describe('KloelWhatsAppToolsService', () => {
     });
 
     it('returns error for empty chatId', async () => {
-      const result = await service.toolSetWhatsAppPresence(wsId, { chatId: '', presence: 'typing' });
+      const result = await service.toolSetWhatsAppPresence(wsId, {
+        chatId: '',
+        presence: 'typing',
+      });
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('Informe chatId ou phone');
@@ -436,11 +441,7 @@ describe('KloelWhatsAppToolsService', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(audioService.textToSpeech).toHaveBeenCalledWith(
-        'Olá, bem-vindo!',
-        'nova',
-        wsId,
-      );
+      expect(audioService.textToSpeech).toHaveBeenCalledWith('Olá, bem-vindo!', 'nova', wsId);
       expect(planLimits.ensureDailyMessageQuota).toHaveBeenCalledWith(wsId);
       expect(whatsappService.sendMessage).toHaveBeenCalled();
     });
@@ -507,11 +508,7 @@ describe('KloelWhatsAppToolsService', () => {
 
       expect(result.success).toBe(true);
       expect(result.transcript).toBe('Hello base64');
-      expect(audioService.transcribeFromBase64).toHaveBeenCalledWith(
-        'ZmFrZQ==',
-        'en',
-        wsId,
-      );
+      expect(audioService.transcribeFromBase64).toHaveBeenCalledWith('ZmFrZQ==', 'en', wsId);
     });
 
     it('returns error when no audio source provided', async () => {

@@ -86,7 +86,9 @@ describe('CopilotService', () => {
         expect(result).toHaveProperty('suggestion');
         expect(result.suggestion).toContain('Vi sua mensagem');
       } finally {
-        if (saved) process.env.OPENAI_API_KEY = saved;
+        if (saved) {
+          process.env.OPENAI_API_KEY = saved;
+        }
       }
     });
 
@@ -137,7 +139,9 @@ describe('CopilotService', () => {
         });
         expect(result.suggestion).toContain('Vi sua mensagem');
       } finally {
-        if (saved) process.env.OPENAI_API_KEY = saved;
+        if (saved) {
+          process.env.OPENAI_API_KEY = saved;
+        }
       }
     });
 

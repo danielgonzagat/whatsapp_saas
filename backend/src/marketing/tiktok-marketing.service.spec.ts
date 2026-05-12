@@ -32,9 +32,7 @@ describe('TikTokMarketingService', () => {
     jest.clearAllMocks();
     fetchSpy = jest.spyOn(global, 'fetch').mockRejectedValue(new Error('no fetch mock configured'));
 
-    const cryptoMock = jest.requireMock('../meta/meta-token-crypto') as {
-      encryptMetaToken: jest.Mock;
-    };
+    const cryptoMock = jest.requireMock('../meta/meta-token-crypto');
     encryptMetaToken = cryptoMock.encryptMetaToken;
 
     setEnv({
@@ -119,9 +117,7 @@ describe('TikTokMarketingService', () => {
       const result = service.generateAuthUrl('ws-1', 'creator');
       const url = new URL(result.url);
 
-      expect(url.origin + url.pathname).toBe(
-        'https://www.tiktok.com/v2/auth/authorize/',
-      );
+      expect(url.origin + url.pathname).toBe('https://www.tiktok.com/v2/auth/authorize/');
       expect(url.searchParams.get('client_key')).toBe('tk-client-key');
       expect(url.searchParams.get('response_type')).toBe('code');
       expect(url.searchParams.get('state')).toMatch(/^[^.]+\.[^.]+$/);
@@ -133,9 +129,7 @@ describe('TikTokMarketingService', () => {
       const result = service.generateAuthUrl('ws-1', 'advertiser');
       const url = new URL(result.url);
 
-      expect(url.origin + url.pathname).toBe(
-        'https://business-api.tiktok.com/portal/auth',
-      );
+      expect(url.origin + url.pathname).toBe('https://business-api.tiktok.com/portal/auth');
       expect(url.searchParams.get('app_id')).toBe('tk-client-key');
       expect(result.kind).toBe('advertiser');
     });
@@ -149,9 +143,7 @@ describe('TikTokMarketingService', () => {
 
   describe('completeOAuth', () => {
     it('completes creator OAuth flow successfully and encrypts tokens', async () => {
-      const authState = service
-        .generateAuthUrl('ws-1', 'creator')
-        .url.match(/state=([^&]+)/)?.[1];
+      const authState = service.generateAuthUrl('ws-1', 'creator').url.match(/state=([^&]+)/)?.[1];
 
       fetchSpy.mockResolvedValueOnce({
         json: async () => ({
@@ -161,7 +153,7 @@ describe('TikTokMarketingService', () => {
           open_id: 'open-123',
           scope: 'user.info.basic,video.list',
         }),
-      } as never);
+      });
 
       const result = await service.completeOAuth('ws-1', {
         code: 'auth-code-123',
@@ -191,7 +183,7 @@ describe('TikTokMarketingService', () => {
             expires_in: 3600,
           },
         }),
-      } as never);
+      });
 
       const result = await service.completeOAuth('ws-1', {
         auth_code: 'ad-code-456',
@@ -224,9 +216,7 @@ describe('TikTokMarketingService', () => {
     });
 
     it('returns server_not_configured when env vars are missing', async () => {
-      const authState = service
-        .generateAuthUrl('ws-1', 'creator')
-        .url.match(/state=([^&]+)/)?.[1];
+      const authState = service.generateAuthUrl('ws-1', 'creator').url.match(/state=([^&]+)/)?.[1];
 
       deleteEnv(['TIKTOK_CLIENT_KEY', 'NEXT_PUBLIC_TIKTOK_CLIENT_KEY', 'TIKTOK_CLIENT_SECRET']);
 
@@ -240,16 +230,14 @@ describe('TikTokMarketingService', () => {
     });
 
     it('returns token_exchange_failed when no access_token in response', async () => {
-      const authState = service
-        .generateAuthUrl('ws-1', 'creator')
-        .url.match(/state=([^&]+)/)?.[1];
+      const authState = service.generateAuthUrl('ws-1', 'creator').url.match(/state=([^&]+)/)?.[1];
 
       fetchSpy.mockResolvedValueOnce({
         json: async () => ({
           message: 'Authorization code expired',
           error: 'invalid_grant',
         }),
-      } as never);
+      });
 
       const result = await service.completeOAuth('ws-1', {
         code: 'bad-code',

@@ -29,12 +29,12 @@ interface MediaPreviewBoxProps {
   emptyContent?: ReactNode | undefined;
   emptySubtitle?: string | undefined;
   emptyTitle?: string | undefined;
-  fallbackUrl?: string | null;
-  hint?: string;
-  inputAriaLabel?: string;
-  label?: string;
-  layout?: Layout;
-  onClear?: () => void;
+  fallbackUrl?: string | null | undefined;
+  hint?: string | undefined;
+  inputAriaLabel?: string | undefined;
+  label?: string | undefined;
+  layout?: Layout | undefined;
+  onClear?: (() => void) | undefined;
   onSelectFile: (file: File) => void;
   previewFit?: 'contain' | 'cover' | undefined;
   previewUrl?: string | null | undefined;

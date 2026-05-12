@@ -343,7 +343,7 @@ export default function CheckoutNoir({
           n={1}
           state={step === 1 ? 'active' : step > 1 ? 'done' : 'locked'}
           onClick={() => {
-            if (mobileCanOpenStep1) goStep(1);
+            if (mobileCanOpenStep1) {goStep(1);}
           }}
           label={kloelT(`Informações pessoais`)}
           theme={stepTheme}
@@ -353,7 +353,7 @@ export default function CheckoutNoir({
           n={2}
           state={step === 2 ? 'active' : step > 2 ? 'done' : 'locked'}
           onClick={() => {
-            if (mobileCanOpenStep2) goStep(2);
+            if (mobileCanOpenStep2) {goStep(2);}
           }}
           label={kloelT(`Entrega`)}
           theme={stepTheme}
@@ -477,8 +477,8 @@ export default function CheckoutNoir({
                 }}
               >
                 {PAYMENT_BADGES.filter((item) => {
-                  if (item === 'Pix') return supportsPix;
-                  if (item === 'Boleto') return supportsBoleto;
+                  if (item === 'Pix') {return supportsPix;}
+                  if (item === 'Boleto') {return supportsBoleto;}
                   return supportsCard;
                 }).map((code) => (
                   <span

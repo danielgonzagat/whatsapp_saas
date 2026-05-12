@@ -3,8 +3,16 @@ import { prisma } from '../../db';
 import { autopilotQueue } from '../../queue';
 import { buildQueueJobId } from '../../job-id';
 import { forEachSequential } from '../../utils/async-sequence';
-import { AUTOPILOT_SWEEP_UNREAD_CONVERSATIONS_JOB, buildSweepUnreadConversationsJobData } from '../../contracts/autopilot-jobs';
-import { normalizeJsonObject, type UnknownRecord, type WorkspaceSelfIdentity, CIA_BACKLOG_CONTINUATION_LIMIT } from './shared';
+import {
+  AUTOPILOT_SWEEP_UNREAD_CONVERSATIONS_JOB,
+  buildSweepUnreadConversationsJobData,
+} from '../../contracts/autopilot-jobs';
+import {
+  normalizeJsonObject,
+  type UnknownRecord,
+  type WorkspaceSelfIdentity,
+  CIA_BACKLOG_CONTINUATION_LIMIT,
+} from './shared';
 import { isWorkspaceSelfTarget } from './identity';
 import { upsertCatalogConversationShell } from './opportunity';
 

@@ -59,8 +59,12 @@ export class UnifiedAgentActionsCommerceService {
     const chunks: string[] = [];
     const safeName = String(name || '').trim();
     const safeDescription = String(description || '').trim();
-    if (safeName) chunks.push(safeName);
-    if (safeDescription) chunks.push(safeDescription);
+    if (safeName) {
+      chunks.push(safeName);
+    }
+    if (safeDescription) {
+      chunks.push(safeDescription);
+    }
     if (price !== null && price !== undefined && String(price).trim() !== '') {
       const numericPrice = Number(price);
       const formattedPrice = Number.isFinite(numericPrice)
@@ -68,7 +72,9 @@ export class UnifiedAgentActionsCommerceService {
         : String(price);
       chunks.push(`Preço: ${formattedPrice}`);
     }
-    if (paymentLink) chunks.push(`Link de pagamento: ${paymentLink}`);
+    if (paymentLink) {
+      chunks.push(`Link de pagamento: ${paymentLink}`);
+    }
     return chunks.join('\n');
   }
 

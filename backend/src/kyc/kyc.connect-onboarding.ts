@@ -27,8 +27,12 @@ export async function doAdminApprove(
         where: { id: agentId },
         select: { id: true, workspaceId: true, kycStatus: true },
       });
-      if (!a) throw new NotFoundException('Agent not found');
-      if (a.kycStatus === 'approved') throw new BadRequestException('KYC already approved');
+      if (!a) {
+        throw new NotFoundException('Agent not found');
+      }
+      if (a.kycStatus === 'approved') {
+        throw new BadRequestException('KYC already approved');
+      }
       await tx.agent.update({
         where: { id: agentId, workspaceId: a.workspaceId },
         data: { kycStatus: 'approved', kycApprovedAt: new Date() },
@@ -68,7 +72,9 @@ async function ensureSellerConnectAccount(
   const existing = await deps.prisma.connectAccountBalance.findFirst({
     where: { workspaceId, accountType: 'SELLER' },
   });
-  if (existing?.stripeAccountId) return existing.stripeAccountId;
+  if (existing?.stripeAccountId) {
+    return existing.stripeAccountId;
+  }
 
   const created = await deps.connectService.createCustomAccount({
     workspaceId,
@@ -114,13 +120,18 @@ export async function syncSellerConnectOnboarding(
     }),
   ]);
 
-  if (!agent?.email)
+  if (!agent?.email) {
     throw new NotFoundException('Agente responsavel nao encontrado para onboarding financeiro');
-  if (!workspace)
+  }
+  if (!workspace) {
     throw new NotFoundException('Workspace nao encontrado para onboarding financeiro');
-  if (!fiscal) throw new BadRequestException('Dados fiscais ausentes para onboarding financeiro');
-  if (!bankAccount)
+  }
+  if (!fiscal) {
+    throw new BadRequestException('Dados fiscais ausentes para onboarding financeiro');
+  }
+  if (!bankAccount) {
     throw new BadRequestException('Conta bancaria ausente para onboarding financeiro');
+  }
 
   const businessType = fiscal.type === 'PJ' ? 'company' : 'individual';
   const address = deps.buildConnectAddress(fiscal);
@@ -184,9 +195,7 @@ export async function syncSellerConnectOnboarding(
             email: agent.email,
             ...(phone !== undefined ? { phone } : {}),
             ...(dob !== undefined ? { dateOfBirth: dob } : {}),
-            ...(representativeDocument !== undefined
-              ? { idNumber: representativeDocument }
-              : {}),
+            ...(representativeDocument !== undefined ? { idNumber: representativeDocument } : {}),
             address: cleanAddress,
           },
         }

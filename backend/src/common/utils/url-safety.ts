@@ -80,7 +80,9 @@ function normaliseHostList(allowedHosts: Iterable<string>): string[] {
     const v = String(h || '')
       .trim()
       .toLowerCase();
-    if (v) out.push(v);
+    if (v) {
+      out.push(v);
+    }
   }
   return out;
 }
@@ -113,13 +115,19 @@ function isPrivateOrInternalIpv4(address: string): boolean {
 
 function isPrivateOrInternalIpv6(address: string): boolean {
   const lower = address.toLowerCase();
-  if (lower === '::1' || lower === '::') return true;
+  if (lower === '::1' || lower === '::') {
+    return true;
+  }
   return BLOCKED_IPV6_PREFIXES.some((p) => lower.startsWith(p));
 }
 
 function isPrivateOrInternalIp(address: string, family: number): boolean {
-  if (family === 4) return isPrivateOrInternalIpv4(address);
-  if (family === 6) return isPrivateOrInternalIpv6(address);
+  if (family === 4) {
+    return isPrivateOrInternalIpv4(address);
+  }
+  if (family === 6) {
+    return isPrivateOrInternalIpv6(address);
+  }
   return false;
 }
 

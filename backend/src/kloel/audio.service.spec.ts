@@ -59,7 +59,9 @@ describe('AudioService', () => {
 
     const mockConfig = {
       get: jest.fn().mockImplementation((key: string) => {
-        if (key === 'OPENAI_API_KEY') return 'sk-test-key';
+        if (key === 'OPENAI_API_KEY') {
+          return 'sk-test-key';
+        }
         return undefined;
       }),
     };

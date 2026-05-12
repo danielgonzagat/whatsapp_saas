@@ -163,7 +163,9 @@ export async function executeInlineAutopilot(
     Math.max(5000, deps.contactDebounceMs + 3000),
     'NX',
   );
-  if (reserved !== 'OK') return;
+  if (reserved !== 'OK') {
+    return;
+  }
   const replyLockKey = getSharedReplyLockKey(input.workspaceId, input.contactId, input.phone);
   const replyRsv = await deps.redis.set(
     replyLockKey,
@@ -172,7 +174,9 @@ export async function executeInlineAutopilot(
     deps.sharedReplyLockMs,
     'NX',
   );
-  if (replyRsv !== 'OK') return;
+  if (replyRsv !== 'OK') {
+    return;
+  }
   let keepReplyLock = false;
   await sleep(deps.contactDebounceMs);
   const pendingBatch = await buildPendingInboundBatchExt(
@@ -211,7 +215,9 @@ export async function executeInlineAutopilot(
     const reply = String(
       result?.reply || result?.response || buildInlineFallbackReplyExt(aggMsg),
     ).trim();
-    if (!reply) return;
+    if (!reply) {
+      return;
+    }
     const replyPlan = await deps.unifiedAgent.buildQuotedReplyPlan({
       workspaceId: input.workspaceId,
       contactId: input.contactId,
@@ -263,7 +269,9 @@ export async function executeInlineAutopilot(
             quotedMessageId: latestQid,
           },
         );
-        if (!readSendResult(r).error) keepReplyLock = true;
+        if (!readSendResult(r).error) {
+          keepReplyLock = true;
+        }
       } catch (fallbackErr: unknown) {
         deps.logger.error(
           `[AUTOPILOT] Fallback reply also failed: ${(fallbackErr instanceof Error ? fallbackErr : new Error(String(fallbackErr))).message}`,

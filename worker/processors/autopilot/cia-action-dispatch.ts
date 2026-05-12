@@ -1,9 +1,6 @@
 import { prisma } from '../../db';
 import { publishAgentEvent } from '../../providers/agent-events';
-import {
-  buildDecisionEnvelope,
-  computeDemandState,
-} from '../../providers/commercial-intelligence';
+import { buildDecisionEnvelope, computeDemandState } from '../../providers/commercial-intelligence';
 import { pickVariant, type VariantFamily } from '../cia/self-improvement';
 import { type CognitiveActionType } from '../cia/cognitive-state';
 import { type UnknownRecord } from './shared';
@@ -11,9 +8,7 @@ import { maybeEscalateToHumanControl } from './backlog-escalation';
 import { runScanContact } from './scan';
 import { buildCognitiveMessage } from './cognition';
 import { sendDirectAutopilotText } from './execution';
-import {
-  createConversationProofSnapshotDraft,
-} from './score-proof';
+import { createConversationProofSnapshotDraft } from './score-proof';
 
 export async function dispatchCiaActionByType(
   data: UnknownRecord,
@@ -40,10 +35,15 @@ export async function dispatchCiaActionByType(
     phase: 'cia_best_action_selected',
     message: `Escolhi ${String(data?.type || 'ACTION').toLowerCase()} para ${data?.contactName || data?.phone || 'contato'} como a melhor próxima ação disponível neste tick.`,
     meta: {
-      contactId: data?.contactId, conversationId: data?.conversationId, phone: data?.phone,
-      cluster: data?.cluster, priority: data?.priority, governor: data?.governor,
+      contactId: data?.contactId,
+      conversationId: data?.conversationId,
+      phone: data?.phone,
+      cluster: data?.cluster,
+      priority: data?.priority,
+      governor: data?.governor,
       cognition: data?.cognitiveState?.summary || null,
-      cycleProofId: data?.cycleProofId || null, accountProofId: data?.accountProofId || null,
+      cycleProofId: data?.cycleProofId || null,
+      accountProofId: data?.accountProofId || null,
       selectedActionUtility: data?.selectedActionUtility || null,
       selectedActionRank: data?.selectedActionRank || null,
       betterActionCount: data?.betterActionCount || 0,
@@ -61,24 +61,38 @@ export async function dispatchCiaActionByType(
 
   if (data?.type === 'WAIT') {
     await publishAgentEvent({
-      type: 'status', workspaceId, phase: 'cia_wait',
+      type: 'status',
+      workspaceId,
+      phase: 'cia_wait',
       message: `Segurei a ação com ${data?.contactName || data?.phone || 'o contato'} até ter sinais melhores.`,
-      meta: { contactId: data?.contactId, phone: data?.phone, cognition: data?.cognitiveState?.summary || null },
+      meta: {
+        contactId: data?.contactId,
+        phone: data?.phone,
+        cognition: data?.cognitiveState?.summary || null,
+      },
     });
     return { ...defaultResult, outcome: 'SKIPPED' };
   }
 
   if (data?.type === 'ESCALATE_HUMAN') {
     const humanGate = await maybeEscalateToHumanControl({
-      workspaceId, contactId: data?.contactId, contactName: data?.contactName, phone: data?.phone,
+      workspaceId,
+      contactId: data?.contactId,
+      contactName: data?.contactName,
+      phone: data?.phone,
       decisionEnvelope: buildDecisionEnvelope({
         intent: data?.cognitiveState?.intent || 'GENERAL_ASSISTANCE',
         action: 'CIA_ESCALATE_HUMAN',
         confidence: data?.confidence || data?.cognitiveState?.classificationConfidence,
         messageContent: data?.lastMessageText || '',
-        demandState: data?.demandState || computeDemandState({
-          lastMessageAt: new Date(), unreadCount: 0, leadScore: 0, lastMessageText: data?.lastMessageText || '',
-        }),
+        demandState:
+          data?.demandState ||
+          computeDemandState({
+            lastMessageAt: new Date(),
+            unreadCount: 0,
+            leadScore: 0,
+            lastMessageText: data?.lastMessageText || '',
+          }),
         matchedProducts: [],
       }),
       messageContent: data?.lastMessageText || '',
@@ -90,7 +104,10 @@ export async function dispatchCiaActionByType(
 
   if (data?.type === 'RESPOND') {
     await runScanContact({
-      workspaceId, contactId: data?.contactId, phone: data?.phone, contactName: data?.contactName,
+      workspaceId,
+      contactId: data?.contactId,
+      phone: data?.phone,
+      contactName: data?.contactName,
     });
     return { ...defaultResult, outcome: 'SENT' };
   }
@@ -123,15 +140,22 @@ export async function dispatchCiaActionByType(
 
   const conversationProof = data?.conversationId
     ? await createConversationProofSnapshotDraft({
-        workspaceId, conversationId: data?.conversationId,
-        contactId: data?.contactId || null, phone: data?.phone || null,
-        cycleProofId: data?.cycleProofId || null, accountProofId: data?.accountProofId || null,
-        selectedActionType: actionType, selectedTactic: data?.conversationTactic || null,
-        governor: data?.governor || null, renderedMessage: message,
+        workspaceId,
+        conversationId: data?.conversationId,
+        contactId: data?.contactId || null,
+        phone: data?.phone || null,
+        cycleProofId: data?.cycleProofId || null,
+        accountProofId: data?.accountProofId || null,
+        selectedActionType: actionType,
+        selectedTactic: data?.conversationTactic || null,
+        governor: data?.governor || null,
+        renderedMessage: message,
         actionUniverse: data?.conversationActionUniverse || [],
         tacticUniverse: data?.conversationTacticUniverse || [],
         selectedAction: {
-          type: actionType, governor: data?.governor || null, reason: data?.reason || null,
+          type: actionType,
+          governor: data?.governor || null,
+          reason: data?.reason || null,
           priority: data?.priority || null,
           confidence: data?.confidence || data?.cognitiveState?.classificationConfidence || null,
           selectedActionUtility: data?.selectedActionUtility || null,
@@ -151,15 +175,25 @@ export async function dispatchCiaActionByType(
     : null;
 
   const result = await sendDirectAutopilotText({
-    workspaceId, contactId: data?.contactId, conversationId: data?.conversationId,
-    phone: data?.phone, contactName: data?.contactName, text: message, settings,
+    workspaceId,
+    contactId: data?.contactId,
+    conversationId: data?.conversationId,
+    phone: data?.phone,
+    contactName: data?.contactName,
+    text: message,
+    settings,
     intent: data?.cognitiveState?.intent || 'GENERAL_ASSISTANCE',
     reason: data?.reason || 'cia_nba_execution',
     workspaceRecord: { providerSettings: settings },
     intentConfidence: data?.confidence || data?.cognitiveState?.classificationConfidence,
-    actionLabel: actionType, usedHistory: true, usedKb: false, deliveryMode: 'proactive',
+    actionLabel: actionType,
+    usedHistory: true,
+    usedKb: false,
+    deliveryMode: 'proactive',
     idempotencyContext: {
-      source: 'cia_action', action: actionType, capabilityCode: actionType,
+      source: 'cia_action',
+      action: actionType,
+      capabilityCode: actionType,
       conversationTactic: data?.conversationTactic || null,
       conversationProofId: conversationProof?.id || null,
       cycleGeneratedAt: data?.cycleGeneratedAt || null,

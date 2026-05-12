@@ -87,7 +87,7 @@ export function SocialButtons({
           opacity: facebookAvailable ? 1 : 0.45,
         }}
         onMouseEnter={(e) => {
-          if (!facebookAvailable || isLoading) return;
+          if (!facebookAvailable || isLoading) {return;}
           e.currentTarget.style.borderColor = colors.border.glow;
         }}
         onMouseLeave={(e) => {
@@ -115,7 +115,7 @@ export function SocialButtons({
           opacity: tikTokAvailable ? 1 : 0.45,
         }}
         onMouseEnter={(e) => {
-          if (!tikTokAvailable || isLoading) return;
+          if (!tikTokAvailable || isLoading) {return;}
           e.currentTarget.style.borderColor = colors.border.glow;
         }}
         onMouseLeave={(e) => {

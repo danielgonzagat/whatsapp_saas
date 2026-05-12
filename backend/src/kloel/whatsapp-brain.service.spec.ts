@@ -1,15 +1,17 @@
 import { Test, TestingModule } from '@nestjs/testing';
 
 jest.mock('../whatsapp/whatsapp-normalization.util', () => ({
-  includesAnyPhrase: jest.fn(
-    (text: string, phrases: string[]) => {
-      if (!text) return false;
-      for (const phrase of phrases) {
-        if (text.toLowerCase().includes(phrase)) return true;
-      }
+  includesAnyPhrase: jest.fn((text: string, phrases: string[]) => {
+    if (!text) {
       return false;
-    },
-  ),
+    }
+    for (const phrase of phrases) {
+      if (text.toLowerCase().includes(phrase)) {
+        return true;
+      }
+    }
+    return false;
+  }),
   normalizeIntentText: jest.fn((text: string) => (text || '').toLowerCase()),
 }));
 
@@ -276,7 +278,9 @@ describe('WhatsAppBrainService', () => {
             {
               changes: [
                 {
-                  messages: [{ from: phone, id: 'm1', timestamp: '1', type: 'text', text: { body: 'Oi' } }],
+                  messages: [
+                    { from: phone, id: 'm1', timestamp: '1', type: 'text', text: { body: 'Oi' } },
+                  ],
                   metadata: {},
                 },
               ],

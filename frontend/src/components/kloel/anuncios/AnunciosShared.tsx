@@ -102,16 +102,16 @@ export function FmtMoney(n: number): string {
 }
 
 export function roasColor(r: number): string {
-  if (r > 4) return G;
-  if (r > 2) return colors.text.silver;
-  if (r > 1.5) return colors.semantic.warning;
+  if (r > 4) {return G;}
+  if (r > 2) {return colors.text.silver;}
+  if (r > 1.5) {return colors.semantic.warning;}
   return R;
 }
 
 export function fiberColor(r: number): string {
-  if (r > 10) return G;
-  if (r > 3) return colors.text.silver;
-  if (r > 1.5) return colors.semantic.warning;
+  if (r > 10) {return G;}
+  if (r > 3) {return colors.text.silver;}
+  if (r > 1.5) {return colors.semantic.warning;}
   return R;
 }
 
@@ -129,9 +129,9 @@ export function NP({
   const cv = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     const c = cv.current;
-    if (!c) return;
+    if (!c) {return;}
     const ctx = c.getContext('2d');
-    if (!ctx) return;
+    if (!ctx) {return;}
 
     if (intensity <= 0) {
       ctx.clearRect(0, 0, width, height);
@@ -158,8 +158,8 @@ export function NP({
           const y =
             height / 2 +
             Math.sin(x * 0.04 + frame * 0.03 + i * 1.5) * (height * 0.2 + i * 2) * intensity;
-          if (x === 0) ctx.moveTo(x, y);
-          else ctx.lineTo(x, y);
+          if (x === 0) {ctx.moveTo(x, y);}
+          else {ctx.lineTo(x, y);}
         }
         ctx.stroke();
         ctx.globalAlpha = 1;

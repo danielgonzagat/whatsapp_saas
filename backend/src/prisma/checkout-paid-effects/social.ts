@@ -10,12 +10,16 @@ export async function markCheckoutSocialLeadConvertedFromPaidUpdate(
   args: Prisma.CheckoutOrderUpdateManyArgs,
 ) {
   const scope = args.data.status === 'PAID' ? readPaidCheckoutOrderScope(args) : null;
-  if (!scope) return;
+  if (!scope) {
+    return;
+  }
   const order = await prisma.checkoutOrder.findUnique({
     where: { id: scope.orderId },
     select: { id: true, workspaceId: true, customerEmail: true, customerPhone: true },
   });
-  if (!order || order.workspaceId !== scope.workspaceId) return;
+  if (!order || order.workspaceId !== scope.workspaceId) {
+    return;
+  }
   const lead = await prisma.checkoutSocialLead.findFirst({
     where: {
       workspaceId: scope.workspaceId,
@@ -28,7 +32,9 @@ export async function markCheckoutSocialLeadConvertedFromPaidUpdate(
     orderBy: { createdAt: 'desc' },
     select: { id: true },
   });
-  if (!lead) return;
+  if (!lead) {
+    return;
+  }
   await prisma.checkoutSocialLead.update({
     where: { id: lead.id, workspaceId: scope.workspaceId },
     data: {

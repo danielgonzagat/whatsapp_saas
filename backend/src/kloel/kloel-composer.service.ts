@@ -17,14 +17,21 @@ function composeAbortSignal(
   signal: AbortSignal | undefined,
   timeoutSignal: AbortSignal,
 ): AbortSignal {
-  if (!signal) return timeoutSignal;
+  if (!signal) {
+    return timeoutSignal;
+  }
   const controller = new AbortController();
   const abortFrom = (source: AbortSignal) => {
-    if (!controller.signal.aborted) controller.abort(source.reason);
+    if (!controller.signal.aborted) {
+      controller.abort(source.reason);
+    }
   };
   for (const source of [signal, timeoutSignal]) {
-    if (source.aborted) abortFrom(source);
-    else source.addEventListener('abort', () => abortFrom(source), { once: true });
+    if (source.aborted) {
+      abortFrom(source);
+    } else {
+      source.addEventListener('abort', () => abortFrom(source), { once: true });
+    }
   }
   return controller.signal;
 }
@@ -88,7 +95,9 @@ export class KloelComposerService {
 
   formatSearchDigestAsMarkdown(digest: WebSearchDigest): string {
     const body = String(digest.answer || '').trim() || 'Nenhum resultado confiável foi encontrado.';
-    if (!Array.isArray(digest.sources) || digest.sources.length === 0) return body;
+    if (!Array.isArray(digest.sources) || digest.sources.length === 0) {
+      return body;
+    }
     const sourcesBlock = digest.sources
       .map((source, index) => `- [${index + 1}] ${source.title || source.url} — ${source.url}`)
       .join('\n');
@@ -97,7 +106,9 @@ export class KloelComposerService {
 
   async searchWeb(query: string): Promise<WebSearchDigest> {
     const normalizedQuery = String(query || '').trim();
-    if (!normalizedQuery) return { answer: '', sources: [] };
+    if (!normalizedQuery) {
+      return { answer: '', sources: [] };
+    }
 
     // E2E test harness: the workflow runs with OPENAI_API_KEY=e2e-dummy-key
     // so any real OpenAI Responses API call fails. The chat composer e2e
@@ -144,7 +155,9 @@ export class KloelComposerService {
       }))
       .filter((source) => source.url)
       .filter((source) => {
-        if (seen.has(source.url)) return false;
+        if (seen.has(source.url)) {
+          return false;
+        }
         seen.add(source.url);
         return true;
       })
@@ -179,7 +192,9 @@ export class KloelComposerService {
       return stored.url;
     }
     const remoteImageUrl = String(response?.data?.[0]?.url || '').trim();
-    if (!remoteImageUrl) return null;
+    if (!remoteImageUrl) {
+      return null;
+    }
     const stored = await this.storageService.uploadFromUrl(remoteImageUrl, {
       filename,
       mimeType: 'image/png',
@@ -201,7 +216,9 @@ export class KloelComposerService {
     const prompt = this.buildCapabilityPrompt(message, composerContext);
 
     if (capability === 'search_web') {
-      if (workspaceId) await this.planLimits.ensureTokenBudget(workspaceId);
+      if (workspaceId) {
+        await this.planLimits.ensureTokenBudget(workspaceId);
+      }
       const digest = await this.searchWeb(prompt);
       const content = this.formatSearchDigestAsMarkdown(digest);
       const usageTokens = Number(digest.totalTokens || 0);

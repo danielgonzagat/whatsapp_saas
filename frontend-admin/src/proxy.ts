@@ -1,16 +1,16 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
 /**
- * Admin middleware — purely a quality-of-life redirect layer.
+ * Admin proxy — purely a quality-of-life redirect layer.
  *
  * Real auth enforcement happens in (admin)/layout.tsx which checks the
- * client-side session context. This middleware exists only to reduce the
- * flash of protected content for visitors who have no session at all.
+ * client-side session context. This proxy exists only to reduce the flash of
+ * protected content for visitors who have no session at all.
  *
  * NOTE: we cannot fully check auth here because the access token lives in
  * memory (not in a cookie) by design, per the SP-0..2 spec.
  */
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Only redirect the bare root to /login. All other routes are guarded by

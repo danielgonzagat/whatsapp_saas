@@ -21,7 +21,9 @@ describe('WorkerRuntimeService', () => {
   describe('isAvailable', () => {
     it('returns true when WORKER_FORCE_AVAILABLE=true', async () => {
       config.get.mockImplementation((key: string) => {
-        if (key === 'WORKER_FORCE_AVAILABLE') return 'true';
+        if (key === 'WORKER_FORCE_AVAILABLE') {
+          return 'true';
+        }
         return undefined;
       });
 
@@ -33,7 +35,9 @@ describe('WorkerRuntimeService', () => {
 
     it('returns false when WORKER_FORCE_AVAILABLE=false', async () => {
       config.get.mockImplementation((key: string) => {
-        if (key === 'WORKER_FORCE_AVAILABLE') return 'false';
+        if (key === 'WORKER_FORCE_AVAILABLE') {
+          return 'false';
+        }
         return undefined;
       });
 
@@ -53,7 +57,9 @@ describe('WorkerRuntimeService', () => {
 
     it('uses cached result within TTL window', async () => {
       config.get.mockImplementation((key: string) => {
-        if (key === 'WORKER_HEALTH_URL') return 'http://localhost:3001/health';
+        if (key === 'WORKER_HEALTH_URL') {
+          return 'http://localhost:3001/health';
+        }
         return undefined;
       });
       fetchSpy.mockResolvedValue({
@@ -72,7 +78,9 @@ describe('WorkerRuntimeService', () => {
 
     it('returns false on fetch error', async () => {
       config.get.mockImplementation((key: string) => {
-        if (key === 'WORKER_HEALTH_URL') return 'http://localhost:3001/health';
+        if (key === 'WORKER_HEALTH_URL') {
+          return 'http://localhost:3001/health';
+        }
         return undefined;
       });
       fetchSpy.mockRejectedValue(new Error('Connection refused'));
@@ -84,7 +92,9 @@ describe('WorkerRuntimeService', () => {
 
     it('refetches when forceRefresh is true even within TTL', async () => {
       config.get.mockImplementation((key: string) => {
-        if (key === 'WORKER_HEALTH_URL') return 'http://localhost:3001/health';
+        if (key === 'WORKER_HEALTH_URL') {
+          return 'http://localhost:3001/health';
+        }
         return undefined;
       });
       fetchSpy.mockResolvedValue({
@@ -101,7 +111,9 @@ describe('WorkerRuntimeService', () => {
 
     it('interprets status=healthy as available', async () => {
       config.get.mockImplementation((key: string) => {
-        if (key === 'WORKER_HEALTH_URL') return 'http://localhost:3001/health';
+        if (key === 'WORKER_HEALTH_URL') {
+          return 'http://localhost:3001/health';
+        }
         return undefined;
       });
       fetchSpy.mockResolvedValue({
@@ -116,7 +128,9 @@ describe('WorkerRuntimeService', () => {
 
     it('interprets non-ok HTTP response as unavailable', async () => {
       config.get.mockImplementation((key: string) => {
-        if (key === 'WORKER_HEALTH_URL') return 'http://localhost:3001/health';
+        if (key === 'WORKER_HEALTH_URL') {
+          return 'http://localhost:3001/health';
+        }
         return undefined;
       });
       fetchSpy.mockResolvedValue({

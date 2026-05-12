@@ -2,6 +2,34 @@ import { buildProductAIConfigPrompt } from './kloel.prompts';
 import { KloelContextBaseFormatter } from './kloel-context-base-formatter';
 import type { KloelContextFormatterLimits } from './kloel-context-formatter.types';
 
+type PromptRecord = Record<string, unknown>;
+
+function isPromptRecord(value: unknown): value is PromptRecord {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function promptRecords(values: unknown): PromptRecord[] {
+  return Array.isArray(values) ? values.filter(isPromptRecord) : [];
+}
+
+function promptString(record: PromptRecord, key: string): string | null {
+  const value = record[key];
+  return typeof value === 'string' && value.trim().length > 0 ? value : null;
+}
+
+function promptBoolean(record: PromptRecord, key: string): boolean {
+  return record[key] === true;
+}
+
+function promptNumber(record: PromptRecord, key: string): number {
+  const value = Number(record[key] ?? 0);
+  return Number.isFinite(value) ? value : 0;
+}
+
+function hasPromptNumber(record: PromptRecord, key: string): boolean {
+  return Number.isFinite(Number(record[key]));
+}
+
 export class KloelProductMetaContextFormatter {
   constructor(
     protected base: KloelContextBaseFormatter,
@@ -9,24 +37,29 @@ export class KloelProductMetaContextFormatter {
   ) {}
 
   buildProductPlanContext(plans: unknown): string | null {
-    if (!Array.isArray(plans) || plans.length === 0) {
+    const records = promptRecords(plans);
+    if (records.length === 0) {
       return null;
     }
-    return plans
+    return records
       .slice(0, this.limits.workspaceProductPlanLimit)
       .map((plan) => {
+        const billingType = promptString(plan, 'billingType');
+        const recurringInterval = promptString(plan, 'recurringInterval');
         const parts = [
-          `${plan.name}: ${this.base.formatPromptCurrency(plan.price, plan.currency)}`,
-          plan.billingType ? `cobrança ${plan.billingType}` : null,
-          Number.isFinite(Number(plan.maxInstallments))
-            ? `até ${Number(plan.maxInstallments)}x`
+          `${promptString(plan, 'name') ?? 'Plano sem nome'}: ${this.base.formatPromptCurrency(plan.price, plan.currency)}`,
+          billingType ? `cobrança ${billingType}` : null,
+          hasPromptNumber(plan, 'maxInstallments')
+            ? `até ${promptNumber(plan, 'maxInstallments')}x`
             : null,
-          plan.recurringInterval ? `recorrência ${plan.recurringInterval}` : null,
-          plan.trialEnabled ? `trial ${Number(plan.trialDays || 0)} dias` : null,
-          Number.isFinite(Number(plan.salesCount)) ? `${Number(plan.salesCount)} vendas` : null,
+          recurringInterval ? `recorrência ${recurringInterval}` : null,
+          promptBoolean(plan, 'trialEnabled')
+            ? `trial ${promptNumber(plan, 'trialDays')} dias`
+            : null,
+          hasPromptNumber(plan, 'salesCount') ? `${promptNumber(plan, 'salesCount')} vendas` : null,
         ].filter(Boolean);
         const aiConfig = this.base.compactJsonForPrompt(plan.aiConfig, 180);
-        const termsUrl = this.base.truncatePromptText(plan.termsUrl, 140);
+        const termsUrl = this.base.truncatePromptText(promptString(plan, 'termsUrl'), 140);
         return [
           `  - ${parts.join(' | ')}`,
           aiConfig ? `    AI do plano: ${aiConfig}` : null,
@@ -39,20 +72,22 @@ export class KloelProductMetaContextFormatter {
   }
 
   buildProductUrlContext(urls: unknown): string | null {
-    if (!Array.isArray(urls) || urls.length === 0) {
+    const records = promptRecords(urls);
+    if (records.length === 0) {
       return null;
     }
-    return urls
+    return records
       .slice(0, this.limits.workspaceProductUrlLimit)
       .map((entry) => {
+        const salesFromUrl = promptNumber(entry, 'salesFromUrl');
         const parts = [
-          entry.description || 'URL sem descrição',
-          this.base.truncatePromptText(entry.url, 160),
-          entry.isPrivate ? 'privada' : 'pública',
-          entry.aiLearning ? 'aprendizado AI ativo' : null,
-          entry.chatEnabled ? 'chat habilitado' : null,
-          Number.isFinite(Number(entry.salesFromUrl)) && Number(entry.salesFromUrl) > 0
-            ? `${Number(entry.salesFromUrl)} vendas`
+          promptString(entry, 'description') ?? 'URL sem descrição',
+          this.base.truncatePromptText(promptString(entry, 'url'), 160),
+          promptBoolean(entry, 'isPrivate') ? 'privada' : 'pública',
+          promptBoolean(entry, 'aiLearning') ? 'aprendizado AI ativo' : null,
+          promptBoolean(entry, 'chatEnabled') ? 'chat habilitado' : null,
+          hasPromptNumber(entry, 'salesFromUrl') && salesFromUrl > 0
+            ? `${salesFromUrl} vendas`
             : null,
         ].filter(Boolean);
         return `  - ${parts.join(' | ')}`;
@@ -61,41 +96,47 @@ export class KloelProductMetaContextFormatter {
   }
 
   buildProductReviewContext(reviews: unknown): string | null {
-    if (!Array.isArray(reviews) || reviews.length === 0) {
+    const records = promptRecords(reviews);
+    if (records.length === 0) {
       return null;
     }
     const averageRating =
-      reviews.reduce((sum, review) => sum + Number(review.rating || 0), 0) / reviews.length;
+      records.reduce((sum, review) => sum + promptNumber(review, 'rating'), 0) / records.length;
     return [
       `  - média recente: ${averageRating.toFixed(1)}/5`,
-      ...reviews.slice(0, this.limits.workspaceProductReviewLimit).map((review) => {
-        const author = this.base.truncatePromptText(review.authorName, 32) || 'cliente';
-        const comment = this.base.truncatePromptText(review.comment, 140);
-        const suffix = review.verified ? ' | verificada' : '';
+      ...records.slice(0, this.limits.workspaceProductReviewLimit).map((review) => {
+        const author =
+          this.base.truncatePromptText(promptString(review, 'authorName'), 32) || 'cliente';
+        const comment = this.base.truncatePromptText(promptString(review, 'comment'), 140);
+        const rating = promptNumber(review, 'rating');
+        const suffix = promptBoolean(review, 'verified') ? ' | verificada' : '';
         return comment
-          ? `  - ${author}: ${Number(review.rating || 0)}/5${suffix} — ${comment}`
-          : `  - ${author}: ${Number(review.rating || 0)}/5${suffix}`;
+          ? `  - ${author}: ${rating}/5${suffix} — ${comment}`
+          : `  - ${author}: ${rating}/5${suffix}`;
       }),
     ].join('\n');
   }
 
   buildProductCheckoutContext(checkouts: unknown): string | null {
-    if (!Array.isArray(checkouts) || checkouts.length === 0) {
+    const records = promptRecords(checkouts);
+    if (records.length === 0) {
       return null;
     }
-    return checkouts
+    return records
       .slice(0, this.limits.workspaceProductCheckoutLimit)
       .map((checkout) => {
         const conversion = this.base.formatPromptPercent(checkout.conversionRate);
         const abandon = this.base.formatPromptPercent(checkout.abandonRate);
         const cancel = this.base.formatPromptPercent(checkout.cancelRate);
         const parts = [
-          checkout.name || checkout.code || 'checkout principal',
-          conversion && Number(checkout.conversionRate) > 0 ? `conversão ${conversion}` : null,
-          abandon && Number(checkout.abandonRate) > 0 ? `abandono ${abandon}` : null,
-          cancel && Number(checkout.cancelRate) > 0 ? `cancelamento ${cancel}` : null,
-          Number.isFinite(Number(checkout.totalVisits))
-            ? `${Number(checkout.totalVisits)} visitas`
+          promptString(checkout, 'name') ?? promptString(checkout, 'code') ?? 'checkout principal',
+          conversion && promptNumber(checkout, 'conversionRate') > 0
+            ? `conversão ${conversion}`
+            : null,
+          abandon && promptNumber(checkout, 'abandonRate') > 0 ? `abandono ${abandon}` : null,
+          cancel && promptNumber(checkout, 'cancelRate') > 0 ? `cancelamento ${cancel}` : null,
+          hasPromptNumber(checkout, 'totalVisits')
+            ? `${promptNumber(checkout, 'totalVisits')} visitas`
             : null,
         ].filter(Boolean);
         return `  - ${parts.join(' | ')}`;
@@ -104,22 +145,25 @@ export class KloelProductMetaContextFormatter {
   }
 
   buildProductCouponContext(coupons: unknown, currency: unknown = 'BRL'): string | null {
-    if (!Array.isArray(coupons) || coupons.length === 0) {
+    const records = promptRecords(coupons);
+    if (records.length === 0) {
       return null;
     }
-    return coupons
+    return records
       .slice(0, this.limits.workspaceProductCouponLimit)
       .map((coupon) => {
         const discount =
-          String(coupon.discountType || '').toUpperCase() === 'FIXED'
+          (promptString(coupon, 'discountType') ?? '').toUpperCase() === 'FIXED'
             ? this.base.formatPromptCurrency(coupon.discountValue, currency)
-            : `${Number(coupon.discountValue || 0)}%`;
+            : `${promptNumber(coupon, 'discountValue')}%`;
         const expiresAt = this.base.formatPromptDate(coupon.expiresAt);
         const parts = [
-          coupon.code,
+          promptString(coupon, 'code'),
           `desconto ${discount}`,
-          Number.isFinite(Number(coupon.usedCount)) ? `${Number(coupon.usedCount)} uso(s)` : null,
-          Number.isFinite(Number(coupon.maxUses)) ? `limite ${Number(coupon.maxUses)}` : null,
+          hasPromptNumber(coupon, 'usedCount')
+            ? `${promptNumber(coupon, 'usedCount')} uso(s)`
+            : null,
+          hasPromptNumber(coupon, 'maxUses') ? `limite ${promptNumber(coupon, 'maxUses')}` : null,
           expiresAt ? `expira ${expiresAt}` : null,
         ].filter(Boolean);
         return `  - ${parts.join(' | ')}`;
@@ -128,19 +172,20 @@ export class KloelProductMetaContextFormatter {
   }
 
   buildProductCampaignContext(campaigns: unknown): string | null {
-    if (!Array.isArray(campaigns) || campaigns.length === 0) {
+    const records = promptRecords(campaigns);
+    if (records.length === 0) {
       return null;
     }
-    return campaigns
+    return records
       .slice(0, this.limits.workspaceProductCampaignLimit)
       .map((campaign) => {
         const parts = [
-          campaign.name || campaign.code,
-          Number.isFinite(Number(campaign.salesCount))
-            ? `${Number(campaign.salesCount)} venda(s)`
+          promptString(campaign, 'name') ?? promptString(campaign, 'code'),
+          hasPromptNumber(campaign, 'salesCount')
+            ? `${promptNumber(campaign, 'salesCount')} venda(s)`
             : null,
-          Number.isFinite(Number(campaign.paidCount))
-            ? `${Number(campaign.paidCount)} paga(s)`
+          hasPromptNumber(campaign, 'paidCount')
+            ? `${promptNumber(campaign, 'paidCount')} paga(s)`
             : null,
         ].filter(Boolean);
         return `  - ${parts.join(' | ')}`;
@@ -149,17 +194,18 @@ export class KloelProductMetaContextFormatter {
   }
 
   buildProductCommissionContext(commissions: unknown): string | null {
-    if (!Array.isArray(commissions) || commissions.length === 0) {
+    const records = promptRecords(commissions);
+    if (records.length === 0) {
       return null;
     }
-    return commissions
+    return records
       .slice(0, this.limits.workspaceProductCommissionLimit)
       .map((commission) => {
         const actor =
-          this.base.truncatePromptText(commission.agentName, 40) ||
-          this.base.truncatePromptText(commission.agentEmail, 40) ||
+          this.base.truncatePromptText(promptString(commission, 'agentName'), 40) ||
+          this.base.truncatePromptText(promptString(commission, 'agentEmail'), 40) ||
           'parceiro sem nome';
-        return `  - ${commission.role}: ${Number(commission.percentage || 0)}%${actor ? ` | ${actor}` : ''}`;
+        return `  - ${promptString(commission, 'role') ?? 'parceiro'}: ${promptNumber(commission, 'percentage')}%${actor ? ` | ${actor}` : ''}`;
       })
       .join('\n');
   }

@@ -35,10 +35,7 @@ describe('KloelThreadSearchService', () => {
     };
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        KloelThreadSearchService,
-        { provide: PrismaService, useValue: prisma },
-      ],
+      providers: [KloelThreadSearchService, { provide: PrismaService, useValue: prisma }],
     }).compile();
 
     service = module.get<KloelThreadSearchService>(KloelThreadSearchService);
@@ -60,7 +57,7 @@ describe('KloelThreadSearchService', () => {
     });
 
     it('returns empty array for null/undefined query', async () => {
-      const result = await service.search(wsId, '' as unknown as string, undefined);
+      const result = await service.search(wsId, '', undefined);
       expect(result).toEqual([]);
     });
 

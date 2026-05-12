@@ -1,33 +1,67 @@
 import { KloelContextBaseFormatter } from './kloel-context-base-formatter';
 import type { KloelContextFormatterLimits } from './kloel-context-formatter.types';
 
+type PromptRecord = Record<string, unknown>;
+
+function isPromptRecord(value: unknown): value is PromptRecord {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function promptRecords(values: unknown): PromptRecord[] {
+  return Array.isArray(values) ? values.filter(isPromptRecord) : [];
+}
+
+function promptString(record: PromptRecord, key: string): string | null {
+  const value = record[key];
+  return typeof value === 'string' && value.trim().length > 0 ? value : null;
+}
+
+function promptNumber(record: PromptRecord, key: string): number {
+  const value = Number(record[key] ?? 0);
+  return Number.isFinite(value) ? value : 0;
+}
+
+function hasPromptNumber(record: PromptRecord, key: string): boolean {
+  return Number.isFinite(Number(record[key]));
+}
+
+function countByStatus(records: PromptRecord[]): Record<string, number> {
+  return records.reduce<Record<string, number>>((acc, item) => {
+    const key = (promptString(item, 'status') ?? 'UNKNOWN').toUpperCase();
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, {});
+}
+
 export class KloelWorkspaceCommerceContextFormatter {
   constructor(
     protected base: KloelContextBaseFormatter,
     protected limits: KloelContextFormatterLimits,
   ) {}
 
-  private buildAffiliateEntryHeader(entry: Record<string, unknown>): string[] {
-    const status = typeof entry.status === 'string' ? entry.status : null;
-    const approvalMode = typeof entry.approvalMode === 'string' ? entry.approvalMode : null;
+  private buildAffiliateEntryHeader(entry: PromptRecord): string[] {
+    const status = promptString(entry, 'status');
+    const approvalMode = promptString(entry, 'approvalMode');
     return [
-      typeof entry.productName === 'string' ? entry.productName : null,
+      promptString(entry, 'productName'),
       status ? `status ${status}` : null,
-      Number.isFinite(Number(entry.commissionPct))
-        ? `comissão ${Number(entry.commissionPct)}%`
+      hasPromptNumber(entry, 'commissionPct')
+        ? `comissão ${promptNumber(entry, 'commissionPct')}%`
         : null,
-      typeof entry.commissionType === 'string' ? entry.commissionType : null,
-      Number.isFinite(Number(entry.cookieDays)) ? `cookie ${Number(entry.cookieDays)} dias` : null,
+      promptString(entry, 'commissionType'),
+      hasPromptNumber(entry, 'cookieDays')
+        ? `cookie ${promptNumber(entry, 'cookieDays')} dias`
+        : null,
       approvalMode ? `aprovação ${approvalMode}` : null,
-      Number.isFinite(Number(entry.temperature))
-        ? `temperatura ${Number(entry.temperature)}`
+      hasPromptNumber(entry, 'temperature')
+        ? `temperatura ${promptNumber(entry, 'temperature')}`
         : null,
     ].filter((value): value is string => typeof value === 'string' && value.length > 0);
   }
 
-  private buildAffiliateEntryOffer(entry: Record<string, unknown>): string[] {
-    const category = typeof entry.category === 'string' ? entry.category : null;
-    const description = typeof entry.description === 'string' ? entry.description : null;
+  private buildAffiliateEntryOffer(entry: PromptRecord): string[] {
+    const category = promptString(entry, 'category');
+    const description = promptString(entry, 'description');
     return [
       entry.price ? this.base.formatPromptCurrency(entry.price, entry.currency || 'BRL') : null,
       category ? `categoria ${category}` : null,
@@ -35,20 +69,22 @@ export class KloelWorkspaceCommerceContextFormatter {
     ].filter((value): value is string => typeof value === 'string' && value.length > 0);
   }
 
-  private buildAffiliateEntryPerformance(entry: Record<string, unknown>): string[] {
+  private buildAffiliateEntryPerformance(entry: PromptRecord): string[] {
     return [
-      Number.isFinite(Number(entry.linkClicks)) ? `${Number(entry.linkClicks)} clique(s)` : null,
-      Number.isFinite(Number(entry.linkSales)) ? `${Number(entry.linkSales)} venda(s)` : null,
-      Number.isFinite(Number(entry.linkRevenue))
+      hasPromptNumber(entry, 'linkClicks')
+        ? `${promptNumber(entry, 'linkClicks')} clique(s)`
+        : null,
+      hasPromptNumber(entry, 'linkSales') ? `${promptNumber(entry, 'linkSales')} venda(s)` : null,
+      hasPromptNumber(entry, 'linkRevenue')
         ? `${this.base.formatPromptCurrency(entry.linkRevenue, 'BRL')} receita`
         : null,
-      Number.isFinite(Number(entry.linkCommissionEarned))
+      hasPromptNumber(entry, 'linkCommissionEarned')
         ? `${this.base.formatPromptCurrency(entry.linkCommissionEarned, 'BRL')} comissão`
         : null,
     ].filter((value): value is string => typeof value === 'string' && value.length > 0);
   }
 
-  private formatAffiliateEntry(entry: Record<string, unknown>): string {
+  private formatAffiliateEntry(entry: PromptRecord): string {
     const lines = [`- ${this.buildAffiliateEntryHeader(entry).join(' | ')}`];
     const offer = this.buildAffiliateEntryOffer(entry);
     if (offer.length > 0) {
@@ -58,7 +94,7 @@ export class KloelWorkspaceCommerceContextFormatter {
     if (performance.length > 0) {
       lines.push(`  Performance: ${performance.join(' | ')}`);
     }
-    const code = this.base.truncatePromptText(entry.affiliateCode, 80);
+    const code = this.base.truncatePromptText(promptString(entry, 'affiliateCode'), 80);
     if (code) {
       lines.push(`  Código/link afiliado: ${code}`);
     }
@@ -70,34 +106,37 @@ export class KloelWorkspaceCommerceContextFormatter {
   }
 
   buildWorkspaceAffiliateContext(entries: unknown): string | null {
-    if (!Array.isArray(entries) || entries.length === 0) {
+    const records = promptRecords(entries);
+    if (records.length === 0) {
       return null;
     }
-    return entries
+    return records
       .slice(0, this.limits.workspaceAffiliateContextLimit)
       .map((entry) => this.formatAffiliateEntry(entry))
       .join('\n');
   }
 
   buildWorkspaceAffiliatePartnerContext(partners: unknown): string | null {
-    if (!Array.isArray(partners) || partners.length === 0) {
+    const records = promptRecords(partners);
+    if (records.length === 0) {
       return null;
     }
-    return partners
+    return records
       .slice(0, this.limits.workspaceAffiliatePartnerContextLimit)
       .map((partner) => {
-        const label = this.base.truncatePromptText(partner.partnerName, 40) || 'parceiro';
+        const label =
+          this.base.truncatePromptText(promptString(partner, 'partnerName'), 40) || 'parceiro';
         const parts = [
           label,
-          partner.type ? `tipo ${partner.type}` : null,
-          partner.status ? `status ${partner.status}` : null,
-          Number.isFinite(Number(partner.commissionRate))
-            ? `comissão ${Number(partner.commissionRate)}%`
+          promptString(partner, 'type') ? `tipo ${promptString(partner, 'type')}` : null,
+          promptString(partner, 'status') ? `status ${promptString(partner, 'status')}` : null,
+          hasPromptNumber(partner, 'commissionRate')
+            ? `comissão ${promptNumber(partner, 'commissionRate')}%`
             : null,
-          Number.isFinite(Number(partner.totalSales))
-            ? `${Number(partner.totalSales)} vendas`
+          hasPromptNumber(partner, 'totalSales')
+            ? `${promptNumber(partner, 'totalSales')} vendas`
             : null,
-          Number.isFinite(Number(partner.totalCommission))
+          hasPromptNumber(partner, 'totalCommission')
             ? `${this.base.formatPromptCurrency(partner.totalCommission, 'BRL')} comissão`
             : null,
         ].filter(Boolean);
@@ -107,27 +146,25 @@ export class KloelWorkspaceCommerceContextFormatter {
   }
 
   buildWorkspaceCustomerSubscriptionContext(subscriptions: unknown): string | null {
-    if (!Array.isArray(subscriptions) || subscriptions.length === 0) {
+    const records = promptRecords(subscriptions);
+    if (records.length === 0) {
       return null;
     }
-    const statusCounts = subscriptions.reduce<Record<string, number>>((acc, item) => {
-      const key = String(item.status || 'UNKNOWN').toUpperCase();
-      acc[key] = (acc[key] || 0) + 1;
-      return acc;
-    }, {});
-    const summary = Object.entries(statusCounts)
+    const summary = Object.entries(countByStatus(records))
       .map(([status, count]) => `${count} ${status}`)
       .join(' | ');
-    const highlights = subscriptions
+    const highlights = records
       .slice(0, this.limits.workspaceCustomerSubscriptionContextLimit)
       .map((subscription) => {
         const nextBillingAt = this.base.formatPromptDate(subscription.nextBillingAt);
         const parts = [
-          subscription.planName,
-          subscription.productId ? `produto ${subscription.productId}` : null,
+          promptString(subscription, 'planName'),
+          promptString(subscription, 'productId')
+            ? `produto ${promptString(subscription, 'productId')}`
+            : null,
           this.base.formatPromptCurrency(subscription.amount, subscription.currency || 'BRL'),
-          subscription.interval ? subscription.interval : null,
-          subscription.status ? subscription.status : null,
+          promptString(subscription, 'interval'),
+          promptString(subscription, 'status'),
           nextBillingAt ? `próx. cobrança ${nextBillingAt}` : null,
         ].filter(Boolean);
         return `  - ${parts.join(' | ')}`;
@@ -139,26 +176,26 @@ export class KloelWorkspaceCommerceContextFormatter {
   }
 
   buildWorkspacePhysicalOrderContext(orders: unknown): string | null {
-    if (!Array.isArray(orders) || orders.length === 0) {
+    const records = promptRecords(orders);
+    if (records.length === 0) {
       return null;
     }
-    const statusCounts = orders.reduce<Record<string, number>>((acc, item) => {
-      const key = String(item.status || 'UNKNOWN').toUpperCase();
-      acc[key] = (acc[key] || 0) + 1;
-      return acc;
-    }, {});
-    const summary = Object.entries(statusCounts)
+    const summary = Object.entries(countByStatus(records))
       .map(([status, count]) => `${count} ${status}`)
       .join(' | ');
-    const highlights = orders
+    const highlights = records
       .slice(0, this.limits.workspacePhysicalOrderContextLimit)
       .map((order) => {
         const createdAt = this.base.formatPromptDate(order.createdAt);
         const parts = [
-          order.productName,
-          order.status,
-          order.paymentStatus ? `pagamento ${order.paymentStatus}` : null,
-          order.shippingMethod ? `frete ${order.shippingMethod}` : null,
+          promptString(order, 'productName'),
+          promptString(order, 'status'),
+          promptString(order, 'paymentStatus')
+            ? `pagamento ${promptString(order, 'paymentStatus')}`
+            : null,
+          promptString(order, 'shippingMethod')
+            ? `frete ${promptString(order, 'shippingMethod')}`
+            : null,
           createdAt ? `criado ${createdAt}` : null,
         ].filter(Boolean);
         return `  - ${parts.join(' | ')}`;
@@ -170,25 +207,21 @@ export class KloelWorkspaceCommerceContextFormatter {
   }
 
   buildWorkspacePaymentContext(payments: unknown): string | null {
-    if (!Array.isArray(payments) || payments.length === 0) {
+    const records = promptRecords(payments);
+    if (records.length === 0) {
       return null;
     }
-    const statusCounts = payments.reduce<Record<string, number>>((acc, item) => {
-      const key = String(item.status || 'UNKNOWN').toUpperCase();
-      acc[key] = (acc[key] || 0) + 1;
-      return acc;
-    }, {});
-    const summary = Object.entries(statusCounts)
+    const summary = Object.entries(countByStatus(records))
       .map(([status, count]) => `${count} ${status}`)
       .join(' | ');
-    const highlights = payments
+    const highlights = records
       .slice(0, this.limits.workspacePaymentContextLimit)
       .map((payment) => {
         const paymentDate = this.base.formatPromptDate(payment.paidAt || payment.createdAt);
         const parts = [
-          payment.provider,
-          payment.method ? payment.method : null,
-          payment.status,
+          promptString(payment, 'provider'),
+          promptString(payment, 'method'),
+          promptString(payment, 'status'),
           this.base.formatPromptCurrency(payment.amount, payment.currency || 'BRL'),
           paymentDate || null,
         ].filter(Boolean);

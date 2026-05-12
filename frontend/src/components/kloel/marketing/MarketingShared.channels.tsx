@@ -50,8 +50,8 @@ export function FmtMoney(n: number) {
 }
 
 export function formatFeedTime(value: FeedMessageLike): string {
-  if (value.time) return value.time;
-  if (!value.createdAt) return '';
+  if (value.time) {return value.time;}
+  if (!value.createdAt) {return '';}
   return new Date(value.createdAt).toLocaleTimeString('pt-BR', {
     hour: '2-digit',
     minute: '2-digit',

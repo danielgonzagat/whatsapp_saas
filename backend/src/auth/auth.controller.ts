@@ -191,9 +191,7 @@ export class AuthController {
         accessToken: body.accessToken,
         ...(body.openId !== undefined ? { openId: body.openId } : {}),
         ...(body.refreshToken !== undefined ? { refreshToken: body.refreshToken } : {}),
-        ...(body.expiresInSeconds !== undefined
-          ? { expiresInSeconds: body.expiresInSeconds }
-          : {}),
+        ...(body.expiresInSeconds !== undefined ? { expiresInSeconds: body.expiresInSeconds } : {}),
         ...(req.ip !== undefined ? { ip: req.ip } : {}),
       });
     }

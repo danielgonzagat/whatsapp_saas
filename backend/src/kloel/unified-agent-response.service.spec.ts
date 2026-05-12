@@ -63,13 +63,18 @@ describe('UnifiedAgentResponseService', () => {
       };
       chatCompletionWithFallback.mockResolvedValue(fakeCompletion);
 
-      const result = await service.composeWriterReply({ apiKey: 'fake' } as any, 'gpt-4', 'gpt-3.5', {
-        workspaceId: wsId,
-        customerMessage: 'Oi',
-        assistantDraft: 'Rascunho',
-        actions: [{ tool: 'send_message', args: { message: 'Oi' }, result: 'ok' }],
-        historyTurns: 2,
-      });
+      const result = await service.composeWriterReply(
+        { apiKey: 'fake' } as any,
+        'gpt-4',
+        'gpt-3.5',
+        {
+          workspaceId: wsId,
+          customerMessage: 'Oi',
+          assistantDraft: 'Rascunho',
+          actions: [{ tool: 'send_message', args: { message: 'Oi' }, result: 'ok' }],
+          historyTurns: 2,
+        },
+      );
 
       expect(result).toBeDefined();
       expect(chatCompletionWithFallback).toHaveBeenCalled();
@@ -80,12 +85,17 @@ describe('UnifiedAgentResponseService', () => {
       const { chatCompletionWithFallback } = require('./openai-wrapper');
       chatCompletionWithFallback.mockRejectedValue(new Error('API error'));
 
-      const result = await service.composeWriterReply({ apiKey: 'fake' } as any, 'gpt-4', 'gpt-3.5', {
-        customerMessage: 'Oi',
-        assistantDraft: 'Olá, como vai?',
-        actions: [],
-        historyTurns: 0,
-      });
+      const result = await service.composeWriterReply(
+        { apiKey: 'fake' } as any,
+        'gpt-4',
+        'gpt-3.5',
+        {
+          customerMessage: 'Oi',
+          assistantDraft: 'Olá, como vai?',
+          actions: [],
+          historyTurns: 0,
+        },
+      );
 
       expect(result).toBeDefined();
     });
@@ -127,7 +137,11 @@ describe('UnifiedAgentResponseService', () => {
 
     it('limits reply length for longer conversations', () => {
       const longReply = 'Frase um. '.repeat(20);
-      const result = service.finalizeReplyStyle('Me fale tudo sobre o produto e seus detalhes e benefícios', longReply, 10);
+      const result = service.finalizeReplyStyle(
+        'Me fale tudo sobre o produto e seus detalhes e benefícios',
+        longReply,
+        10,
+      );
 
       expect(result).toBeDefined();
       expect(result!.length).toBeLessThan(longReply.length);
@@ -174,7 +188,8 @@ describe('UnifiedAgentResponseService', () => {
         choices: [
           {
             message: {
-              content: '{"replies":[{"index":1,"text":"Resposta 1"},{"index":2,"text":"Resposta 2"}]}',
+              content:
+                '{"replies":[{"index":1,"text":"Resposta 1"},{"index":2,"text":"Resposta 2"}]}',
             },
           },
         ],
@@ -295,7 +310,10 @@ describe('UnifiedAgentResponseService', () => {
     });
 
     it('maps tool to intent', () => {
-      const intent = service.extractIntent([{ tool: 'create_payment_link', args: {} }], 'quero pagar');
+      const intent = service.extractIntent(
+        [{ tool: 'create_payment_link', args: {} }],
+        'quero pagar',
+      );
       expect(intent).toBe('BUYING');
     });
 
@@ -308,7 +326,15 @@ describe('UnifiedAgentResponseService', () => {
   describe('calculateConfidence', () => {
     it('calculates confidence based on actions and tool calls', () => {
       const response = {
-        choices: [{ message: { tool_calls: [{ id: 't1', type: 'function', function: { name: 'test', arguments: '{}' } }] } }],
+        choices: [
+          {
+            message: {
+              tool_calls: [
+                { id: 't1', type: 'function', function: { name: 'test', arguments: '{}' } },
+              ],
+            },
+          },
+        ],
       } as any;
 
       const confidence = service.calculateConfidence(

@@ -27,9 +27,10 @@ export function NewLauncherModal({ onClose, onCreated }: NewLauncherModalProps) 
     setLoading(true);
     setError(null);
     try {
+      const desc = description.trim() || undefined;
       const res = await launchApi.createLauncher({
         name: name.trim(),
-        description: description.trim() || undefined,
+        ...(desc !== undefined ? { description: desc } : {}),
       });
       if (res.error) {
         throw new Error(res.error);

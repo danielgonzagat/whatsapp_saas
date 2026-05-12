@@ -37,7 +37,9 @@ export async function handlePaymentIntentEvent(
 
   if (workspaceId) {
     const ws = await deps.prisma.workspace.findUnique({ where: { id: workspaceId } });
-    if (!ws) throw new BadRequestException('invalid_workspaceId');
+    if (!ws) {
+      throw new BadRequestException('invalid_workspaceId');
+    }
   }
 
   const checkoutPaymentStatus = mapStripeIntentStatusForCheckout(
@@ -199,9 +201,13 @@ export async function handleCheckoutSessionCompleted(
   const rawSession = event.data?.object;
   const session: StripeCheckoutSessionLike = rawSession ?? {};
   const workspaceId = session.metadata?.workspaceId;
-  if (!workspaceId) throw new BadRequestException('missing_workspaceId');
+  if (!workspaceId) {
+    throw new BadRequestException('missing_workspaceId');
+  }
   const ws = await deps.prisma.workspace.findUnique({ where: { id: workspaceId } });
-  if (!ws) throw new BadRequestException('invalid_workspaceId');
+  if (!ws) {
+    throw new BadRequestException('invalid_workspaceId');
+  }
 
   const email = session.customer_details?.email || session.customer_email;
   const phone = session.customer_details?.phone || session.metadata?.phone;
@@ -209,7 +215,9 @@ export async function handleCheckoutSessionCompleted(
   const currency = session.currency?.toUpperCase() || 'BRL';
 
   let contact = null;
-  if (email) contact = await deps.prisma.contact.findFirst({ where: { workspaceId, email } });
+  if (email) {
+    contact = await deps.prisma.contact.findFirst({ where: { workspaceId, email } });
+  }
   if (!contact && phone) {
     contact = await deps.prisma.contact.findFirst({
       where: { workspaceId, phone: String(phone).replace(D_RE, '') },

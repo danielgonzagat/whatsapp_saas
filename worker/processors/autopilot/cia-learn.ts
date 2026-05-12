@@ -76,7 +76,11 @@ export async function runCiaGlobalLearningAll() {
     for (const log of logs) {
       const signal = anonymizeDecisionLog({
         domain,
-        log: log as { createdAt?: string | Date; value?: Record<string, unknown>; metadata?: Record<string, unknown> },
+        log: log as {
+          createdAt?: string | Date;
+          value?: Record<string, unknown>;
+          metadata?: Record<string, unknown>;
+        },
       });
       if (signal) {
         signals.push(signal);

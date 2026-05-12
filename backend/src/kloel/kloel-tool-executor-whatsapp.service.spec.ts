@@ -35,7 +35,11 @@ describe('KloelToolExecutorWhatsAppService', () => {
     transcribeFromUrl: jest.Mock;
     transcribeFromBase64: jest.Mock;
   };
-  let planLimits: { ensureDailyMessageQuota: jest.Mock; ensureTokenBudget: jest.Mock; trackAiUsage: jest.Mock };
+  let planLimits: {
+    ensureDailyMessageQuota: jest.Mock;
+    ensureTokenBudget: jest.Mock;
+    trackAiUsage: jest.Mock;
+  };
   let opsAlert: { alertOnCriticalError: jest.Mock };
 
   const wsId = 'ws-whatsapp-1';
@@ -59,14 +63,18 @@ describe('KloelToolExecutorWhatsAppService', () => {
       createContact: jest.fn().mockResolvedValue({ id: 'c-1', phone: '5511', name: 'Test' }),
       listChats: jest.fn().mockResolvedValue([]),
       getChatMessages: jest.fn().mockResolvedValue([]),
-      getBacklog: jest.fn().mockResolvedValue({ connected: false, pendingConversations: 0, pendingMessages: 0 }),
+      getBacklog: jest
+        .fn()
+        .mockResolvedValue({ connected: false, pendingConversations: 0, pendingMessages: 0 }),
       setPresence: jest.fn().mockResolvedValue({}),
       triggerSync: jest.fn().mockResolvedValue({ scheduled: true, reason: null }),
     };
 
     providerRegistry = {
       startSession: jest.fn().mockResolvedValue({ success: true, message: 'connected' }),
-      getSessionStatus: jest.fn().mockResolvedValue({ connected: true, phoneNumber: '5511', status: 'connected' }),
+      getSessionStatus: jest
+        .fn()
+        .mockResolvedValue({ connected: true, phoneNumber: '5511', status: 'connected' }),
     };
 
     audioService = {
@@ -104,7 +112,10 @@ describe('KloelToolExecutorWhatsAppService', () => {
 
   describe('toolConnectWhatsapp', () => {
     it('returns already connected when session exists', async () => {
-      providerRegistry.startSession.mockResolvedValue({ success: true, message: 'already_connected' });
+      providerRegistry.startSession.mockResolvedValue({
+        success: true,
+        message: 'already_connected',
+      });
 
       const result = await service.toolConnectWhatsapp(wsId);
 
@@ -196,12 +207,20 @@ describe('KloelToolExecutorWhatsAppService', () => {
         data: { workspaceId: wsId, phone: '5511999999999', name: 'Via KLOEL' },
       });
       expect(planLimits.ensureDailyMessageQuota).toHaveBeenCalledWith(wsId);
-      expect(whatsappService.sendMessage).toHaveBeenCalledWith(wsId, '5511999999999', 'Olá, cliente!');
+      expect(whatsappService.sendMessage).toHaveBeenCalledWith(
+        wsId,
+        '5511999999999',
+        'Olá, cliente!',
+      );
     });
 
     it('finds existing contact without creating', async () => {
       providerRegistry.getSessionStatus.mockResolvedValue({ connected: true });
-      prisma.contact.findFirst.mockResolvedValue({ id: 'c-existing', phone: '5511', name: 'Existing' });
+      prisma.contact.findFirst.mockResolvedValue({
+        id: 'c-existing',
+        phone: '5511',
+        name: 'Existing',
+      });
       prisma.message.create.mockResolvedValue({ id: 'm-2' });
 
       const result = await service.toolSendWhatsAppMessage(wsId, {
@@ -281,11 +300,7 @@ describe('KloelToolExecutorWhatsAppService', () => {
 
   describe('toolListWhatsAppChats', () => {
     it('returns chats with pending count', async () => {
-      const chats = [
-        { unreadCount: 5 },
-        { unreadCount: 0 },
-        { unreadCount: 3 },
-      ];
+      const chats = [{ unreadCount: 5 }, { unreadCount: 0 }, { unreadCount: 3 }];
       whatsappService.listChats.mockResolvedValue(chats);
 
       const result = await service.toolListWhatsAppChats(wsId, {});
@@ -316,7 +331,11 @@ describe('KloelToolExecutorWhatsAppService', () => {
 
       expect(result.success).toBe(true);
       expect(result.count).toBe(2);
-      expect(whatsappService.getChatMessages).toHaveBeenCalledWith(wsId, 'chat-1', expect.any(Object));
+      expect(whatsappService.getChatMessages).toHaveBeenCalledWith(
+        wsId,
+        'chat-1',
+        expect.any(Object),
+      );
     });
   });
 
@@ -467,7 +486,11 @@ describe('KloelToolExecutorWhatsAppService', () => {
 
       expect(result.success).toBe(true);
       expect(result.transcript).toBe('Olá mundo');
-      expect(audioService.transcribeFromUrl).toHaveBeenCalledWith('https://cdn.test/audio.mp3', 'pt', wsId);
+      expect(audioService.transcribeFromUrl).toHaveBeenCalledWith(
+        'https://cdn.test/audio.mp3',
+        'pt',
+        wsId,
+      );
     });
 
     it('transcribes from base64', async () => {
@@ -509,7 +532,9 @@ describe('KloelToolExecutorWhatsAppService', () => {
       await service.toolSendWhatsAppMessage('ws-isolated', { phone: '5511', message: 'Test' });
 
       expect(prisma.contact.findFirst).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { workspaceId: 'ws-isolated', phone: { contains: '5511' } } }),
+        expect.objectContaining({
+          where: { workspaceId: 'ws-isolated', phone: { contains: '5511' } },
+        }),
       );
       expect(prisma.contact.create).toHaveBeenCalledWith(
         expect.objectContaining({ data: expect.objectContaining({ workspaceId: 'ws-isolated' }) }),

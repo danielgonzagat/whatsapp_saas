@@ -75,7 +75,7 @@ export function KnowledgeBaseSection({ onSourcesLoaded }: KnowledgeBaseSectionPr
   }, [hydrateKnowledgeBase]);
 
   const handleCreateKnowledgeBase = useCallback(async () => {
-    if (!workspaceId || !newKnowledgeBaseName.trim()) return;
+    if (!workspaceId || !newKnowledgeBaseName.trim()) {return;}
     setKnowledgeLoading(true);
     setKnowledgeError('');
     setKnowledgeSuccess('');
@@ -93,7 +93,7 @@ export function KnowledgeBaseSection({ onSourcesLoaded }: KnowledgeBaseSectionPr
   }, [hydrateKnowledgeBase, newKnowledgeBaseName, workspaceId]);
 
   const handleAddKnowledgeSource = useCallback(async () => {
-    if (!workspaceId || !selectedKnowledgeBaseId || !knowledgeSourceContent.trim()) return;
+    if (!workspaceId || !selectedKnowledgeBaseId || !knowledgeSourceContent.trim()) {return;}
     setKnowledgeLoading(true);
     setKnowledgeError('');
     setKnowledgeSuccess('');

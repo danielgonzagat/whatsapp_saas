@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import type { Prisma } from '@prisma/client';
 import { AuditService } from './audit.service';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -11,6 +12,31 @@ function buildMockPrisma(overrides: Record<string, unknown> = {}) {
     },
     ...overrides,
   };
+}
+
+function isUnknownArray(value: unknown): value is readonly unknown[] {
+  return Array.isArray(value);
+}
+
+function isAuditCreateInput(value: unknown): value is { data?: { details?: unknown } } {
+  return typeof value === 'object' && value !== null;
+}
+
+function firstAuditCreateInput(create: jest.Mock): { data?: { details?: unknown } } | undefined {
+  const mockState: unknown = create.mock;
+  if (typeof mockState !== 'object' || mockState === null || !('calls' in mockState)) {
+    return undefined;
+  }
+  const calls = (mockState as { calls?: unknown }).calls;
+  if (!isUnknownArray(calls)) {
+    return undefined;
+  }
+  const firstCall = calls[0];
+  if (!isUnknownArray(firstCall)) {
+    return undefined;
+  }
+  const input = firstCall[0];
+  return isAuditCreateInput(input) ? input : undefined;
 }
 
 describe('AuditService', () => {
@@ -69,13 +95,8 @@ describe('AuditService', () => {
         resource: 'Contact',
       });
 
-      expect(mockPrisma.auditLog.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
-            details: {},
-          }),
-        }),
-      );
+      const createInput = firstAuditCreateInput(mockPrisma.auditLog.create);
+      expect(createInput?.data?.details).toEqual({});
     });
 
     it('retries once when the first create fails', async () => {
@@ -114,7 +135,7 @@ describe('AuditService', () => {
   describe('logWithTx', () => {
     it('writes via the provided transaction client', async () => {
       const txCreate = jest.fn().mockResolvedValue({ id: 'tx-log-1' });
-      const tx = { auditLog: { create: txCreate } };
+      const tx = { auditLog: { create: txCreate } } as unknown as Prisma.TransactionClient;
 
       await service.logWithTx(tx, {
         workspaceId: 'ws-tx',

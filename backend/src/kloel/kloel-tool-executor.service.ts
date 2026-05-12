@@ -256,8 +256,12 @@ export class KloelToolExecutorService {
     ) => Promise<{ answer: string; sources: Array<{ title: string; url: string }> }>,
   ): Promise<ToolResult> {
     const query = String(args?.query || '').trim();
-    if (!query) return { success: false, error: 'missing_query' };
-    if (!searchWebFn) return { success: false, error: 'web_search_unavailable' };
+    if (!query) {
+      return { success: false, error: 'missing_query' };
+    }
+    if (!searchWebFn) {
+      return { success: false, error: 'web_search_unavailable' };
+    }
     try {
       await this.planLimits.ensureTokenBudget(workspaceId);
       const digest = await searchWebFn(query);

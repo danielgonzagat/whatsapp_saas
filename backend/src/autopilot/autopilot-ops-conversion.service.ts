@@ -251,9 +251,7 @@ export class AutopilotOpsConversionService {
       await this.prisma.autopilotEvent.create({
         data: {
           workspaceId,
-          ...(contactIdResolved !== undefined
-            ? { contactId: contactIdResolved }
-            : {}),
+          ...(contactIdResolved !== undefined ? { contactId: contactIdResolved } : {}),
           intent: 'BUYING',
           action: 'CONVERSION',
           status: 'executed',

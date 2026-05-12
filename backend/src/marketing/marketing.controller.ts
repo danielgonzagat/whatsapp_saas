@@ -9,7 +9,6 @@ import {
   Request,
   UseGuards,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { forEachSequential } from '../common/async-sequence';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
@@ -123,7 +122,9 @@ export class MarketingController {
     const msgsByChannel = new Map<string, number>();
     for (const g of msgGroups) {
       const convId = g.conversationId;
-      if (!convId) continue;
+      if (!convId) {
+        continue;
+      }
       const ch = channelByConvId.get(convId);
       if (ch) {
         msgsByChannel.set(ch, (msgsByChannel.get(ch) || 0) + g._count.id);
@@ -307,7 +308,9 @@ export class MarketingController {
       }
       for (const msg of recentInbound) {
         const cid = msg.conversationId;
-        if (!cid) continue;
+        if (!cid) {
+          continue;
+        }
         const reply = firstReplyByConv.get(cid);
         if (reply && reply > msg.createdAt) {
           totalResponseMs += reply.getTime() - msg.createdAt.getTime();
@@ -386,9 +389,9 @@ export class MarketingController {
     if (!sendBody.subject || !sendBody.html || !sendBody.recipients?.length) {
       throw new BadRequestException('Missing required fields: subject, html, recipients');
     }
-    const subject = sendBody.subject!;
-    const htmlTemplate = sendBody.html!;
-    const recipients = sendBody.recipients!;
+    const subject = sendBody.subject;
+    const htmlTemplate = sendBody.html;
+    const recipients = sendBody.recipients;
 
     if (!approvalRequestId) {
       const approval = await this.prisma.approvalRequest.create({
@@ -409,7 +412,7 @@ export class MarketingController {
             requestedByEmail: req.user.email || null,
             risk: 'high',
             requiresApproval: true,
-          } as Prisma.InputJsonObject,
+          },
         },
         select: { id: true, state: true, title: true, createdAt: true },
       });

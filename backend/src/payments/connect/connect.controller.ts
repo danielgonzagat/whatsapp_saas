@@ -194,15 +194,33 @@ export class ConnectController {
     const profileInput: SubmitOnboardingProfileInput = {
       stripeAccountId: balance.stripeAccountId,
     };
-    if (body.email !== undefined) profileInput.email = body.email;
-    if (body.country !== undefined) profileInput.country = body.country;
-    if (body.businessType !== undefined) profileInput.businessType = body.businessType;
-    if (body.businessProfile !== undefined) profileInput.businessProfile = body.businessProfile;
-    if (body.individual !== undefined) profileInput.individual = body.individual;
-    if (body.company !== undefined) profileInput.company = body.company;
-    if (body.externalAccount !== undefined) profileInput.externalAccount = body.externalAccount;
-    if (tosAcceptance !== undefined) profileInput.tosAcceptance = tosAcceptance;
-    if (body.metadata !== undefined) profileInput.metadata = body.metadata;
+    if (body.email !== undefined) {
+      profileInput.email = body.email;
+    }
+    if (body.country !== undefined) {
+      profileInput.country = body.country;
+    }
+    if (body.businessType !== undefined) {
+      profileInput.businessType = body.businessType;
+    }
+    if (body.businessProfile !== undefined) {
+      profileInput.businessProfile = body.businessProfile;
+    }
+    if (body.individual !== undefined) {
+      profileInput.individual = body.individual;
+    }
+    if (body.company !== undefined) {
+      profileInput.company = body.company;
+    }
+    if (body.externalAccount !== undefined) {
+      profileInput.externalAccount = body.externalAccount;
+    }
+    if (tosAcceptance !== undefined) {
+      profileInput.tosAcceptance = tosAcceptance;
+    }
+    if (body.metadata !== undefined) {
+      profileInput.metadata = body.metadata;
+    }
 
     const result = await this.connectService.submitOnboardingProfile(profileInput);
 
@@ -238,12 +256,20 @@ export class ConnectController {
     } = {
       workspaceId,
     };
-    if (accountBalanceId) payload.accountBalanceId = String(accountBalanceId).trim();
-    if (state) payload.state = String(state).trim();
+    if (accountBalanceId) {
+      payload.accountBalanceId = String(accountBalanceId).trim();
+    }
+    if (state) {
+      payload.state = String(state).trim();
+    }
     const s = parseSkip(skip);
-    if (s !== undefined) payload.skip = s;
+    if (s !== undefined) {
+      payload.skip = s;
+    }
     const t = parseTake(take);
-    if (t !== undefined) payload.take = t;
+    if (t !== undefined) {
+      payload.take = t;
+    }
 
     return this.connectPayoutApprovalService.listWorkspaceRequests(payload);
   }

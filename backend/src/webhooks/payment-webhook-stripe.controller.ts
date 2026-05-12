@@ -117,9 +117,12 @@ export class PaymentWebhookStripeController {
 
     let event: StripeEventLike = body;
     if (endpointSecrets.length > 0) {
-      if (!stripeSignature) throw new BadRequestException('Missing stripe-signature header');
-      if (!req.rawBody)
+      if (!stripeSignature) {
+        throw new BadRequestException('Missing stripe-signature header');
+      }
+      if (!req.rawBody) {
         throw new BadRequestException('Missing rawBody for Stripe webhook verification');
+      }
       const stripeKey = process.env.STRIPE_SECRET_KEY;
       if (!stripeKey) {
         this.logger.warn('STRIPE_SECRET_KEY not configured — payment webhooks disabled');
@@ -225,7 +228,9 @@ export class PaymentWebhookStripeController {
     }
 
     const stripeDupe = await this.ensureIdempotent(eventId || event?.id || body?.id, req);
-    if (stripeDupe) return stripeDupe;
+    if (stripeDupe) {
+      return stripeDupe;
+    }
 
     const stripeExternalId = event?.id || eventId || body?.id || `stripe_${Date.now()}`;
     let webhookEvent: WebhookEvent | undefined;
@@ -317,7 +322,9 @@ export class PaymentWebhookStripeController {
       process.env.OPS_WEBHOOK_URL ||
       process.env.AUTOPILOT_ALERT_WEBHOOK ||
       process.env.DLQ_WEBHOOK_URL;
-    if (!url || !globalThis.fetch) return;
+    if (!url || !globalThis.fetch) {
+      return;
+    }
     const stableId =
       asString(meta.eventId) ||
       asString(meta.externalId) ||

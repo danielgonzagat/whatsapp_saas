@@ -35,7 +35,7 @@ export function EngajamentoTab({ filters }: { filters: ReportFilters }) {
         <MetricCard
           title={kloelT(`Mensagens enviadas`)}
           value={rLoading ? '' : String(report?.messages?.total ?? 0)}
-          sub={report?.messages?.outbound !== undefined ? kloelT(`${report.messages.outbound} saida`) : undefined}
+          {...(report?.messages?.outbound !== undefined ? { sub: kloelT(`${report.messages.outbound} saida`) } : {})}
           color={V.bl}
           icon={ICONS.phone}
           loading={rLoading}
@@ -59,7 +59,7 @@ export function EngajamentoTab({ filters }: { filters: ReportFilters }) {
         <MetricCard
           title={kloelT(`Melhor horario`)}
           value={stLoading ? '' : `${smartTime?.peakHour ?? '--'}:00`}
-          sub={smartTime?.peakDay ? kloelT(`${smartTime.peakDay}`) : undefined}
+          {...(smartTime?.peakDay ? { sub: kloelT(`${smartTime.peakDay}`) } : {})}
           color={V.p}
           icon={ICONS.clock}
           loading={stLoading}

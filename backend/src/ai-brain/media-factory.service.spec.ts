@@ -4,7 +4,8 @@ jest.mock('../kloel/openai-wrapper', () => ({
     choices: [
       {
         message: {
-          content: 'Hook: Attention grabber\nBody: Key points\nCTA: Call to action\nVisual: Show product',
+          content:
+            'Hook: Attention grabber\nBody: Key points\nCTA: Call to action\nVisual: Show product',
         },
       },
     ],
@@ -36,7 +37,9 @@ describe('MediaFactoryService', () => {
 
   function buildService(openaiKey: string | undefined) {
     configGet = jest.fn().mockImplementation((key: string) => {
-      if (key === 'OPENAI_API_KEY') return openaiKey;
+      if (key === 'OPENAI_API_KEY') {
+        return openaiKey;
+      }
       return undefined;
     });
     const configStub = { get: configGet } as unknown as ConfigService;
@@ -65,9 +68,7 @@ describe('MediaFactoryService', () => {
     it('throws ServiceUnavailableException when API key is not configured', async () => {
       buildService(undefined);
 
-      await expect(service.generateImage('prompt')).rejects.toThrow(
-        ServiceUnavailableException,
-      );
+      await expect(service.generateImage('prompt')).rejects.toThrow(ServiceUnavailableException);
       await expect(service.generateImage('prompt')).rejects.toThrow(
         'Image generation requires OPENAI_API_KEY',
       );
@@ -77,9 +78,7 @@ describe('MediaFactoryService', () => {
       buildService('sk-test');
       mockImagesGenerate.mockResolvedValueOnce({ data: [] });
 
-      await expect(service.generateImage('prompt')).rejects.toThrow(
-        ServiceUnavailableException,
-      );
+      await expect(service.generateImage('prompt')).rejects.toThrow(ServiceUnavailableException);
       await expect(service.generateImage('prompt')).rejects.toThrow(
         'Image generation returned no URL',
       );
@@ -91,9 +90,7 @@ describe('MediaFactoryService', () => {
         data: [{ revised_prompt: 'revised prompt' }],
       });
 
-      await expect(service.generateImage('prompt')).rejects.toThrow(
-        ServiceUnavailableException,
-      );
+      await expect(service.generateImage('prompt')).rejects.toThrow(ServiceUnavailableException);
       await expect(service.generateImage('prompt')).rejects.toThrow(
         'Image generation returned no URL',
       );
@@ -104,20 +101,14 @@ describe('MediaFactoryService', () => {
     it('always throws ServiceUnavailableException', () => {
       buildService('sk-test');
 
-      expect(() => service.generateVoice('hello')).toThrow(
-        ServiceUnavailableException,
-      );
-      expect(() => service.generateVoice('hello')).toThrow(
-        'Voice synthesis is not configured',
-      );
+      expect(() => service.generateVoice('hello')).toThrow(ServiceUnavailableException);
+      expect(() => service.generateVoice('hello')).toThrow('Voice synthesis is not configured');
     });
 
     it('throws with the same message even when API key is not configured', () => {
       buildService(undefined);
 
-      expect(() => service.generateVoice('hello')).toThrow(
-        'Voice synthesis is not configured',
-      );
+      expect(() => service.generateVoice('hello')).toThrow('Voice synthesis is not configured');
     });
   });
 
@@ -129,7 +120,8 @@ describe('MediaFactoryService', () => {
 
       expect(chatCompletionWithRetry).toHaveBeenCalled();
       expect(result).toEqual({
-        script: 'Hook: Attention grabber\nBody: Key points\nCTA: Call to action\nVisual: Show product',
+        script:
+          'Hook: Attention grabber\nBody: Key points\nCTA: Call to action\nVisual: Show product',
       });
     });
 

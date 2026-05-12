@@ -200,7 +200,9 @@ export async function regenerateThreadAssistantResponseImpl(
     where: { id: conversationId, workspaceId },
     select: { id: true, summary: true },
   });
-  if (!thread) throw buildRegenerationError(ERR_THREAD_NOT_FOUND);
+  if (!thread) {
+    throw buildRegenerationError(ERR_THREAD_NOT_FOUND);
+  }
 
   const messages = (
     await prisma.chatMessage.findMany({
@@ -221,16 +223,22 @@ export async function regenerateThreadAssistantResponseImpl(
   const assistantIndex = messages.findIndex(
     (m) => m.id === assistantMessageId && m.role === 'assistant',
   );
-  if (assistantIndex === -1) throw buildRegenerationError(ERR_ASSISTANT_MSG_NOT_FOUND);
+  if (assistantIndex === -1) {
+    throw buildRegenerationError(ERR_ASSISTANT_MSG_NOT_FOUND);
+  }
 
   const sourceUserIndex = [...messages.slice(0, assistantIndex)]
     .map((m, i) => ({ m, i }))
     .reverse()
     .find((e) => e.m.role === 'user')?.i;
-  if (sourceUserIndex === undefined) throw buildRegenerationError(ERR_NO_USER_MSG_TO_REGENERATE);
+  if (sourceUserIndex === undefined) {
+    throw buildRegenerationError(ERR_NO_USER_MSG_TO_REGENERATE);
+  }
 
   const sourceUserMessage = messages[sourceUserIndex];
-  if (!sourceUserMessage) throw buildRegenerationError(ERR_NO_USER_MSG_TO_REGENERATE);
+  if (!sourceUserMessage) {
+    throw buildRegenerationError(ERR_NO_USER_MSG_TO_REGENERATE);
+  }
   const historyBeforeUser = messages
     .slice(Math.max(0, sourceUserIndex - 20), sourceUserIndex)
     .filter((m) => String(m.content || '').trim().length > 0)
@@ -261,7 +269,9 @@ export async function regenerateThreadAssistantResponseImpl(
 
   const deletedMessageIds = messages.slice(assistantIndex + 1).map((m) => m.id);
   const currentAssistantMessage = messages[assistantIndex];
-  if (!currentAssistantMessage) throw buildRegenerationError(ERR_ASSISTANT_MSG_NOT_FOUND);
+  if (!currentAssistantMessage) {
+    throw buildRegenerationError(ERR_ASSISTANT_MSG_NOT_FOUND);
+  }
   const currentMetadata = threadService.normalizeThreadMessageMetadataRecord(
     currentAssistantMessage.metadata,
   );
@@ -329,8 +339,12 @@ export async function regenerateThreadAssistantResponseImpl(
     metadata: Prisma.JsonValue | null;
     createdAt: Date;
   }>;
-  if (!updatedMessage) throw new Error('Transaction failed to return updated message');
-  if (!updatedMessage) throw buildRegenerationError(ERR_ASSISTANT_MSG_NOT_FOUND);
+  if (!updatedMessage) {
+    throw new Error('Transaction failed to return updated message');
+  }
+  if (!updatedMessage) {
+    throw buildRegenerationError(ERR_ASSISTANT_MSG_NOT_FOUND);
+  }
   await threadService.maybeRefreshThreadSummary(conversationId, workspaceId, replyEngine.openai);
   return {
     id: updatedMessage.id,

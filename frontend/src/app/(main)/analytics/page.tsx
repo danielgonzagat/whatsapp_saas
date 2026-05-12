@@ -42,7 +42,7 @@ export default function KloelRelatorio() {
 
   useEffect(() => {
     const nextTab = normalizeVisibleReportTab(tabParam);
-    if (nextTab !== active) setActive(nextTab);
+    if (nextTab !== active) {setActive(nextTab);}
     if (tabParam && !TABS.find((t) => t.k === tabParam)) {
       router.replace('/analytics?tab=vendas');
     }

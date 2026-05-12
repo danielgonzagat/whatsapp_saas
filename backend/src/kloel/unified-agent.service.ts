@@ -18,8 +18,12 @@ import type { ToolArgs, ActionEntry } from './unified-agent.types';
 type UnknownRecord = Record<string, unknown>;
 
 function formatPromptValue(value: unknown): string {
-  if (value === null) return 'null';
-  if (Array.isArray(value)) return `[${value.map(formatPromptValue).join(',')}]`;
+  if (value === null) {
+    return 'null';
+  }
+  if (Array.isArray(value)) {
+    return `[${value.map(formatPromptValue).join(',')}]`;
+  }
   if (typeof value === 'object') {
     const record = value as Record<string, unknown>;
     return `{${Object.keys(record)
@@ -240,9 +244,13 @@ Mensagem: ${message}`,
       this.logger.error(`OpenAI agent processing failed, using fallback: ${msg}`);
       return this.response.buildFallbackResult(message);
     }
-    if (!llmResponse) return this.response.buildFallbackResult(message);
+    if (!llmResponse) {
+      return this.response.buildFallbackResult(message);
+    }
     const firstChoice = llmResponse.choices[0];
-    if (!firstChoice) return this.response.buildFallbackResult(message);
+    if (!firstChoice) {
+      return this.response.buildFallbackResult(message);
+    }
     await this.planLimits
       .trackAiUsage(params.workspaceId, llmResponse.usage?.total_tokens ?? 500)
       .catch(() => {});
@@ -254,7 +262,9 @@ Mensagem: ${message}`,
     const executeTools = context?.executeTools !== false;
     if (executeTools && assistantMessage.tool_calls && assistantMessage.tool_calls.length > 0) {
       await forEachSequential(assistantMessage.tool_calls, async (toolCall) => {
-        if (toolCall.type !== 'function') return;
+        if (toolCall.type !== 'function') {
+          return;
+        }
         const toolName = toolCall.function.name;
         let toolArgs: Record<string, unknown> = {};
         try {

@@ -89,9 +89,14 @@ export async function getProductUrls(prisma: PrismaService, productId: string) {
 
 export async function validateCoupon(prisma: PrismaService, productId: string, code: string) {
   const coupon = await prisma.productCoupon.findFirst({ where: { productId, code, active: true } });
-  if (!coupon) return { valid: false, reason: 'not_found' };
-  if (coupon.maxUses && coupon.usedCount >= coupon.maxUses)
+  if (!coupon) {
+    return { valid: false, reason: 'not_found' };
+  }
+  if (coupon.maxUses && coupon.usedCount >= coupon.maxUses) {
     return { valid: false, reason: 'max_uses_reached' };
-  if (coupon.expiresAt && coupon.expiresAt < new Date()) return { valid: false, reason: 'expired' };
+  }
+  if (coupon.expiresAt && coupon.expiresAt < new Date()) {
+    return { valid: false, reason: 'expired' };
+  }
   return { valid: true, coupon };
 }

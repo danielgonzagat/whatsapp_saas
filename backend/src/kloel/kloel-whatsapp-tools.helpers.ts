@@ -131,7 +131,9 @@ export async function toolSendDocument(
   args: ToolSendDocumentArgs,
 ): Promise<ToolResult> {
   const { phone, documentName, url, caption } = args;
-  if (!phone) return { success: false, error: 'Parâmetro obrigatório: phone' };
+  if (!phone) {
+    return { success: false, error: 'Parâmetro obrigatório: phone' };
+  }
   try {
     const normalizedPhone = phone.replace(NON_DIGIT_RE, '');
     let documentUrl = url;

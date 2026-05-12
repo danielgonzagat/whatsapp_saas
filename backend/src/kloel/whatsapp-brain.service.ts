@@ -34,14 +34,22 @@ export class WhatsAppBrainService {
     this.logger.log('Processando webhook WhatsApp');
 
     const entry = (payload.entry as unknown[] | undefined)?.[0];
-    if (!entry) return;
+    if (!entry) {
+      return;
+    }
     const changes = (entry as Record<string, unknown>).changes as unknown[] | undefined;
-    if (!changes?.[0]) return;
+    if (!changes?.[0]) {
+      return;
+    }
     const value = changes[0] as Record<string, unknown> | undefined;
-    if (!value) return;
+    if (!value) {
+      return;
+    }
 
     const messages = value.messages as unknown[] | undefined;
-    if (!messages?.[0]) return;
+    if (!messages?.[0]) {
+      return;
+    }
     const message = messages[0] as Record<string, unknown>;
     const metadata =
       value.metadata && typeof value.metadata === 'object' && !Array.isArray(value.metadata)

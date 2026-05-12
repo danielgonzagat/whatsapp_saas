@@ -1,8 +1,7 @@
-import { colors } from '@/lib/design-tokens';
+import { colors, typography } from '@/lib/design-tokens';
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { colors, typography } from '@/lib/design-tokens';
 
 export const metadata: Metadata = {
   title: 'Pagamento | Kloel',

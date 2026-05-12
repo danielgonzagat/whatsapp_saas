@@ -159,14 +159,28 @@ async function handleRunFlow(job: Job) {
     const blocked = await checkFlowSubscription(job.id, workspace.id);
     subscriptionChecked = true;
     if (blocked) {
-      log.warn('flow_blocked_subscription', { jobId: job.id, workspaceId: workspace.id, reason: blocked.reason });
+      log.warn('flow_blocked_subscription', {
+        jobId: job.id,
+        workspaceId: workspace.id,
+        reason: blocked.reason,
+      });
       return blocked;
     }
   }
 
-  const alreadyCompleted = await checkIdempotentCompletion(engine, job.id, executionId, workspaceId);
+  const alreadyCompleted = await checkIdempotentCompletion(
+    engine,
+    job.id,
+    executionId,
+    workspaceId,
+  );
   if (alreadyCompleted) {
-    log.warn('flow_already_completed', { jobId: job.id, executionId, workspaceId, reason: alreadyCompleted.reason });
+    log.warn('flow_already_completed', {
+      jobId: job.id,
+      executionId,
+      workspaceId,
+      reason: alreadyCompleted.reason,
+    });
     return alreadyCompleted;
   }
 

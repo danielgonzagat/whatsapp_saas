@@ -88,8 +88,12 @@ export function makePrismaMock(): PrismaMock {
     },
     contact: {
       findUnique: jest.fn().mockImplementation(({ where }: { where: { id?: string } }) => {
-        if (where?.id === 'contact-1') return { id: 'contact-1', phone: '5511999991111' };
-        if (where?.id === 'contact-2') return { id: 'contact-2', phone: '5511888888888' };
+        if (where?.id === 'contact-1') {
+          return { id: 'contact-1', phone: '5511999991111' };
+        }
+        if (where?.id === 'contact-2') {
+          return { id: 'contact-2', phone: '5511888888888' };
+        }
         return null;
       }),
       findFirst: jest
@@ -97,8 +101,12 @@ export function makePrismaMock(): PrismaMock {
         .mockImplementation(
           ({ where }: { where: { phone?: string; contact?: { phone?: string } } }) => {
             const phone = where?.phone || where?.contact?.phone;
-            if (phone === '5511999991111') return { id: 'contact-1', phone: '5511999991111' };
-            if (phone === '5511888888888') return { id: 'contact-2', phone: '5511888888888' };
+            if (phone === '5511999991111') {
+              return { id: 'contact-1', phone: '5511999991111' };
+            }
+            if (phone === '5511888888888') {
+              return { id: 'contact-2', phone: '5511888888888' };
+            }
             return null;
           },
         ),

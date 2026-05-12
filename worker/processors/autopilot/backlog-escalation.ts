@@ -1,7 +1,17 @@
 import { prisma } from '../../db';
 import { publishAgentEvent } from '../../providers/agent-events';
-import { buildDecisionEnvelope, buildHumanTask, persistHumanTask, persistSystemInsight, shouldAutonomousSend } from '../../providers/commercial-intelligence';
-import { beginAutonomyExecution, buildAutonomyExecutionKey, finishAutonomyExecution } from './cognition';
+import {
+  buildDecisionEnvelope,
+  buildHumanTask,
+  persistHumanTask,
+  persistSystemInsight,
+  shouldAutonomousSend,
+} from '../../providers/commercial-intelligence';
+import {
+  beginAutonomyExecution,
+  buildAutonomyExecutionKey,
+  finishAutonomyExecution,
+} from './cognition';
 import { logAutopilotAction } from './safeguard';
 
 export async function maybeEscalateToHumanControl(input: {

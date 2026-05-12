@@ -1,13 +1,24 @@
 import { prisma } from '../../db';
 import { autopilotQueue } from '../../queue';
 import { buildQueueJobId } from '../../job-id';
-import { publishAgentEvent, createBacklogRunState, finishBacklogRunTask } from '../../providers/agent-events';
+import {
+  publishAgentEvent,
+  createBacklogRunState,
+  finishBacklogRunTask,
+} from '../../providers/agent-events';
 import { forEachSequential } from '../../utils/async-sequence';
-import { deriveOperationalUnreadCount, isConversationPendingForAgent } from '../../conversation-agent-state';
+import {
+  deriveOperationalUnreadCount,
+  isConversationPendingForAgent,
+} from '../../conversation-agent-state';
 import { parseSweepUnreadConversationsJobData } from '../../contracts/autopilot-jobs';
 import { normalizeJsonObject, type UnknownRecord, log } from './shared';
 import { resolveWorkspaceSelfIdentity, isWorkspaceSelfTarget } from './identity';
-import { getRemoteUnreadChatSnapshot, seedRemoteUnreadConversationShells, finalizeBacklogIntoSilentCatalog } from './backlog';
+import {
+  getRemoteUnreadChatSnapshot,
+  seedRemoteUnreadConversationShells,
+  finalizeBacklogIntoSilentCatalog,
+} from './backlog';
 
 export async function runSweepUnreadConversations(data: unknown) {
   const payload = parseSweepUnreadConversationsJobData(data);

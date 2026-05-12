@@ -164,7 +164,7 @@ export class WalletController {
           },
           risk: 'critical',
           requiresApproval: true,
-        } as Prisma.InputJsonObject,
+        },
       },
       select: { id: true, state: true, title: true, createdAt: true },
     });
@@ -299,7 +299,9 @@ export class WalletController {
       const day = new Date(t.createdAt).getDate() - 1;
       if (day >= 0 && day < daysInMonth) {
         const entry = daily[day];
-        if (!entry) return;
+        if (!entry) {
+          return;
+        }
         if (t.amount > 0) {
           entry.income += t.amount;
         } else {

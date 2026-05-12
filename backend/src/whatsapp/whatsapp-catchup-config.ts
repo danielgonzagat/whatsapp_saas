@@ -15,8 +15,12 @@ export function safeStr(v: unknown, fb = ''): string {
 }
 
 export function normalizeOptionalText(value: unknown): string {
-  if (typeof value === 'string') return value.trim();
-  if (typeof value === 'number' || typeof value === 'boolean') return String(value).trim();
+  if (typeof value === 'string') {
+    return value.trim();
+  }
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value).trim();
+  }
   return '';
 }
 

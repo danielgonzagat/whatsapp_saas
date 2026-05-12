@@ -116,13 +116,13 @@ export default function AuditPage() {
       from?: string;
       to?: string;
     } = {};
-    if (actionFilter) f.action = actionFilter;
-    if (entityTypeFilter) f.entityType = entityTypeFilter;
-    if (entityIdFilter) f.entityId = entityIdFilter;
+    if (actionFilter) {f.action = actionFilter;}
+    if (entityTypeFilter) {f.entityType = entityTypeFilter;}
+    if (entityIdFilter) {f.entityId = entityIdFilter;}
     const fromIso = isoOrUndefined(fromFilter);
-    if (fromIso !== undefined) f.from = fromIso;
+    if (fromIso !== undefined) {f.from = fromIso;}
     const toIso = isoOrUndefined(toFilter);
-    if (toIso !== undefined) f.to = toIso;
+    if (toIso !== undefined) {f.to = toIso;}
     return f;
   }, [actionFilter, entityTypeFilter, entityIdFilter, fromFilter, toFilter]);
 

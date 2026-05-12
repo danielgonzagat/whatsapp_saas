@@ -35,7 +35,9 @@ export async function markSubscriptionStatusHelper(
     });
     workspaceId = subRecord?.workspaceId || null;
   }
-  if (!workspaceId) return;
+  if (!workspaceId) {
+    return;
+  }
 
   if (['PAST_DUE', 'CANCELED'].includes(status)) {
     const ws = await deps.prisma.workspace.findUnique({

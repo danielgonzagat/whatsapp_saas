@@ -107,7 +107,7 @@ export function BrainSettingsSection() {
       rules: string[]; faqs: FaqItem[]; openingMessage: OpeningMessageProfile;
       emergencyMode: EmergencyModeProfile;
     }>) => {
-      if (!workspaceId) return;
+      if (!workspaceId) {return;}
 
       setProfileSaving(true);
       setProfileError('');

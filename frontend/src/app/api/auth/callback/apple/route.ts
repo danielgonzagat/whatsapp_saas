@@ -40,11 +40,12 @@ async function readAppleCallbackPayload(
       return null;
     }
 
+    const user = parseAppleUser(request.nextUrl.searchParams.get('user'));
     return {
-      identityToken: identityToken || undefined,
-      authorizationCode: authorizationCode || undefined,
+      ...(identityToken !== '' ? { identityToken } : {}),
+      ...(authorizationCode !== '' ? { authorizationCode } : {}),
       redirectUri: new URL(request.nextUrl.pathname, request.nextUrl.origin).toString(),
-      user: parseAppleUser(request.nextUrl.searchParams.get('user')),
+      ...(user !== undefined ? { user } : {}),
     };
   }
 
@@ -55,11 +56,12 @@ async function readAppleCallbackPayload(
     return null;
   }
 
+  const formUser = parseAppleUser(formData.get('user'));
   return {
-    identityToken: identityToken || undefined,
-    authorizationCode: authorizationCode || undefined,
+    ...(identityToken !== '' ? { identityToken } : {}),
+    ...(authorizationCode !== '' ? { authorizationCode } : {}),
     redirectUri: new URL(request.nextUrl.pathname, request.nextUrl.origin).toString(),
-    user: parseAppleUser(formData.get('user')),
+    ...(formUser !== undefined ? { user: formUser } : {}),
   };
 }
 

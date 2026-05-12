@@ -33,9 +33,12 @@ export class UnifiedAgentActionsBillingService {
   }
 
   private readText(value: unknown, fallback = ''): string {
-    if (typeof value === 'string') return value;
-    if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint')
+    if (typeof value === 'string') {
+      return value;
+    }
+    if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
       return String(value);
+    }
     return fallback;
   }
 
@@ -46,7 +49,9 @@ export class UnifiedAgentActionsBillingService {
 
   private createStripeClient(): StripeClient | null {
     const secretKey = this.readOptionalText(process.env.STRIPE_SECRET_KEY);
-    if (!secretKey) return null;
+    if (!secretKey) {
+      return null;
+    }
     return new StripeRuntime(secretKey);
   }
 
@@ -185,14 +190,17 @@ export class UnifiedAgentActionsBillingService {
   async actionUpdateBillingInfo(workspaceId: string, args: ToolArgs) {
     try {
       const stripe = this.createStripeClient();
-      if (!stripe)
+      if (!stripe) {
         return {
           success: false,
           error: 'Infraestrutura de cobrança indisponível no momento.',
           suggestion: 'Tente novamente em alguns minutos ou fale com o suporte Kloel.',
         };
+      }
       const workspace = await this.prisma.workspace.findUnique({ where: { id: workspaceId } });
-      if (!workspace) return { success: false, error: 'Workspace não encontrado' };
+      if (!workspace) {
+        return { success: false, error: 'Workspace não encontrado' };
+      }
       const settings = this.readRecord(workspace.providerSettings);
       let customerId =
         this.readOptionalText(settings.stripeCustomerId) ||
@@ -251,7 +259,9 @@ export class UnifiedAgentActionsBillingService {
   async actionGetBillingStatus(workspaceId: string) {
     try {
       const workspace = await this.prisma.workspace.findUnique({ where: { id: workspaceId } });
-      if (!workspace) return { success: false, error: 'Workspace não encontrado' };
+      if (!workspace) {
+        return { success: false, error: 'Workspace não encontrado' };
+      }
       const settings = this.readRecord(workspace.providerSettings);
       const limits = this.readRecord(settings.limits);
       return {
@@ -282,34 +292,43 @@ export class UnifiedAgentActionsBillingService {
   async actionChangePlan(workspaceId: string, args: ToolArgs) {
     try {
       const plan = args.plan || '';
-      if (!['starter', 'pro', 'enterprise'].includes(plan))
+      if (!['starter', 'pro', 'enterprise'].includes(plan)) {
         return { success: false, error: 'Plano inválido. Use: starter, pro ou enterprise' };
+      }
       const stripe = this.createStripeClient();
-      if (!stripe)
+      if (!stripe) {
         return { success: false, error: 'Infraestrutura de cobrança indisponível no momento.' };
+      }
       const priceIds: Record<string, string | undefined> = {
         starter: process.env.STRIPE_PRICE_STARTER,
         pro: process.env.STRIPE_PRICE_PRO,
         enterprise: process.env.STRIPE_PRICE_ENTERPRISE,
       };
       const priceId = priceIds[plan];
-      if (!priceId) return { success: false, error: `Preço não configurado para plano ${plan}` };
+      if (!priceId) {
+        return { success: false, error: `Preço não configurado para plano ${plan}` };
+      }
       const workspace = await this.prisma.workspace.findUnique({ where: { id: workspaceId } });
-      if (!workspace) return { success: false, error: 'Workspace não encontrado' };
+      if (!workspace) {
+        return { success: false, error: 'Workspace não encontrado' };
+      }
       const settings = this.readRecord(workspace.providerSettings);
       const customerId = this.readOptionalText(settings.stripeCustomerId);
       const subscriptionId = this.readOptionalText(settings.stripeSubscriptionId);
-      if (!customerId)
+      if (!customerId) {
         return {
           success: false,
           error: 'Nenhum cartão cadastrado',
           action: 'Cadastre um cartão primeiro usando a ferramenta update_billing_info',
         };
+      }
       let result: StripeSubscription;
       if (subscriptionId) {
         const subscription = await stripe.subscriptions.retrieve(subscriptionId);
         const item = subscription.items.data[0];
-        if (!item) return { success: false, error: 'No subscription item found' };
+        if (!item) {
+          return { success: false, error: 'No subscription item found' };
+        }
         result = await stripe.subscriptions.update(subscriptionId, {
           items: [{ id: item.id, price: priceId }],
           proration_behavior: 'create_prorations',

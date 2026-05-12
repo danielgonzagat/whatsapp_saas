@@ -119,10 +119,12 @@ export default function VideoPage() {
     }
     setCreatingVoice(true);
     try {
+      const vid = newVoiceId.trim() || undefined;
+      const vprov = newVoiceProvider || undefined;
       const res = await voiceApi.createProfile({
         name: newVoiceName.trim(),
-        voiceId: newVoiceId.trim() || undefined,
-        provider: newVoiceProvider || undefined,
+        ...(vid !== undefined ? { voiceId: vid } : {}),
+        ...(vprov !== undefined ? { provider: vprov } : {}),
       });
       if (res.error) {
         throw new Error(res.error);
@@ -145,9 +147,10 @@ export default function VideoPage() {
     setGenResult(null);
     setGenError(null);
     try {
+      const vpid = genProfileId || undefined;
       const res = await voiceApi.generate({
         text: genText.trim(),
-        voiceProfileId: genProfileId || undefined,
+        ...(vpid !== undefined ? { voiceProfileId: vpid } : {}),
       });
       if (res.error) {
         throw new Error(res.error);
@@ -174,9 +177,11 @@ export default function VideoPage() {
     setMediaJobId(null);
     setMediaStatus(null);
     try {
+      const iurl = mediaUrl.trim() || undefined;
+      const mprompt = mediaPrompt.trim() || undefined;
       const res = await mediaApi.processVideo({
-        inputUrl: mediaUrl.trim() || undefined,
-        prompt: mediaPrompt.trim() || undefined,
+        ...(iurl !== undefined ? { inputUrl: iurl } : {}),
+        ...(mprompt !== undefined ? { prompt: mprompt } : {}),
         type: mediaType,
       });
       if (res.error) {

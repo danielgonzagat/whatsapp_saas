@@ -37,7 +37,7 @@ export function LayersPanel({ editor, setLayerList }: LayersPanelProps) {
                 type="button"
                 key={`layer-${objType}-${layerNumber}-${objName}`}
                 onClick={() => {
-                  if (!editor) return;
+                  if (!editor) {return;}
                   editor.canvas.setActiveObject(obj);
                   editor.canvas.requestRenderAll();
                 }}

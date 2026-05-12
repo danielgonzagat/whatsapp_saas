@@ -161,7 +161,7 @@ export default function DadosBancariosSection({
             formBankName={form.bankName}
             formBankCode={form.bankCode}
             bankDropdownOpen={bankDropdownOpen}
-            onToggleDropdown={() => { if (!banksLoading) setBankDropdownOpen(true); }}
+            onToggleDropdown={() => { if (!banksLoading) {setBankDropdownOpen(true);} }}
             bankSearch={bankSearch}
             onBankSearchChange={setBankSearch}
             searchTerm={searchTerm}

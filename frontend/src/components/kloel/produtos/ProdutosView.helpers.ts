@@ -1,3 +1,5 @@
+import { colors } from '@/lib/design-tokens';
+
 // Pure helpers extracted from ProdutosView.tsx to reduce the host
 // component's cyclomatic complexity. Each builder produces the exact
 // payload shape the original inline code did — the refactor is purely

@@ -73,7 +73,9 @@ describe('KloelChatToolsService', () => {
       kloelWallet: { findUnique: jest.fn().mockResolvedValue(null) },
       auditLog: { create: jest.fn().mockResolvedValue({}) },
       $transaction: jest.fn().mockImplementation((arg: unknown) => {
-        if (typeof arg === 'function') return arg(prisma);
+        if (typeof arg === 'function') {
+          return arg(prisma);
+        }
         return Promise.resolve(undefined);
       }),
     };

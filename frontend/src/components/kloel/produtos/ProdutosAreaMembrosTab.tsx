@@ -83,7 +83,7 @@ export default function AreaMembros({
     setNewStudent({ name: '', email: '', phone: '' }); fetchStudents(areaId);
   };
   const handleAddStudent = async () => {
-    if (!newStudent.name || !newStudent.email || !studentAreaId) return;
+    if (!newStudent.name || !newStudent.email || !studentAreaId) {return;}
     setSaving(true);
     try {
       await apiFetch(`/member-areas/${studentAreaId}/students`, { method: 'POST', body: { studentName: newStudent.name, studentEmail: newStudent.email, studentPhone: newStudent.phone } });
@@ -93,7 +93,7 @@ export default function AreaMembros({
     setSaving(false);
   };
   const handleRemoveStudent = async (studentId: string) => {
-    if (!studentAreaId) return;
+    if (!studentAreaId) {return;}
     setSaving(true);
     try { await apiFetch(`/member-areas/${studentAreaId}/students/${studentId}`, { method: 'DELETE' }); fetchStudents(studentAreaId); mutateAreas(); } catch {}
     setSaving(false);
@@ -103,7 +103,7 @@ export default function AreaMembros({
     setEditStudentData({ name: student.studentName || '', email: student.studentEmail || '', phone: student.studentPhone || '', status: student.status || 'active', progress: String(Number(student.progress || 0)) });
   };
   const handleUpdateStudent = async () => {
-    if (!studentAreaId || !editingStudentId || !editStudentData.name || !editStudentData.email) return;
+    if (!studentAreaId || !editingStudentId || !editStudentData.name || !editStudentData.email) {return;}
     setSaving(true);
     try {
       await apiFetch(`/member-areas/${studentAreaId}/students/${editingStudentId}`, { method: 'PUT', body: { studentName: editStudentData.name, studentEmail: editStudentData.email, studentPhone: editStudentData.phone || null, status: editStudentData.status, progress: Math.max(0, Math.min(100, Number(editStudentData.progress) || 0)) } });
@@ -112,14 +112,14 @@ export default function AreaMembros({
     setSaving(false);
   };
   const handleToggleStudentStatus = async (student: MemberAreaStudent) => {
-    if (!studentAreaId) return;
+    if (!studentAreaId) {return;}
     setSaving(true);
     try { await apiFetch(`/member-areas/${studentAreaId}/students/${student.id}`, { method: 'PUT', body: { status: student.status === 'active' ? 'suspended' : 'active' } }); fetchStudents(studentAreaId, studentSearch || undefined); mutateAreas(); } catch {}
     setSaving(false);
   };
   const toggleArea = (id: string) => setExpandedAreas((prev) => ({ ...prev, [id]: !prev[id] }));
   const handleCreateArea = async () => {
-    if (!(newArea.name as string)?.trim()) return;
+    if (!(newArea.name as string)?.trim()) {return;}
     setSaving(true);
     try {
       const d = newArea;
@@ -136,7 +136,7 @@ export default function AreaMembros({
     setSaving(false);
   };
   const handleUpdateArea = async (id: string) => {
-    if (!(editAreaData.name as string)?.trim()) return;
+    if (!(editAreaData.name as string)?.trim()) {return;}
     setSaving(true);
     try {
       const d = editAreaData;
@@ -153,43 +153,43 @@ export default function AreaMembros({
     setSaving(false);
   };
   const handleDeleteArea = async (id: string) => {
-    if (!confirm('Excluir esta area?')) return;
+    if (!confirm('Excluir esta area?')) {return;}
     setSaving(true);
     try { await deleteArea(id); mutateAreas(); setEditingArea(null); } catch (e) { console.error(e); }
     setSaving(false);
   };
   const handleCreateModule = async (areaId: string) => {
-    if (!newModule.name.trim()) return;
+    if (!newModule.name.trim()) {return;}
     setSaving(true);
     try { await createModule(areaId, { name: newModule.name.trim() }); mutateAreas(); setNewModule({ name: '' }); setCreatingModule(null); } catch (e) { console.error(e); }
     setSaving(false);
   };
   const handleUpdateModule = async (areaId: string, moduleId: string) => {
-    if (!editModuleData.name.trim()) return;
+    if (!editModuleData.name.trim()) {return;}
     setSaving(true);
     try { await updateModule(areaId, moduleId, { name: editModuleData.name.trim() }); mutateAreas(); setEditingModule(null); } catch (e) { console.error(e); }
     setSaving(false);
   };
   const handleDeleteModule = async (areaId: string, moduleId: string) => {
-    if (!confirm('Excluir este modulo?')) return;
+    if (!confirm('Excluir este modulo?')) {return;}
     setSaving(true);
     try { await deleteModule(areaId, moduleId); mutateAreas(); } catch (e) { console.error(e); }
     setSaving(false);
   };
   const handleCreateLesson = async (areaId: string, moduleId: string) => {
-    if (!newLesson.name.trim()) return;
+    if (!newLesson.name.trim()) {return;}
     setSaving(true);
     try { await createLesson(areaId, moduleId, { name: newLesson.name.trim(), description: newLesson.description.trim(), videoUrl: newLesson.videoUrl.trim() }); mutateAreas(); setNewLesson({ name: '', description: '', videoUrl: '' }); setCreatingLesson(null); } catch (e) { console.error(e); }
     setSaving(false);
   };
   const handleUpdateLesson = async (areaId: string, lessonId: string) => {
-    if (!editLessonData.name.trim()) return;
+    if (!editLessonData.name.trim()) {return;}
     setSaving(true);
     try { await updateLesson(areaId, lessonId, { name: editLessonData.name.trim(), description: editLessonData.description.trim(), videoUrl: editLessonData.videoUrl.trim() }); mutateAreas(); setEditingLesson(null); } catch (e) { console.error(e); }
     setSaving(false);
   };
   const handleDeleteLesson = async (areaId: string, lessonId: string) => {
-    if (!confirm('Excluir esta aula?')) return;
+    if (!confirm('Excluir esta aula?')) {return;}
     setSaving(true);
     try { await deleteLesson(areaId, lessonId); mutateAreas(); } catch (e) { console.error(e); }
     setSaving(false);
@@ -244,7 +244,7 @@ export default function AreaMembros({
         <AreaMembrosStudentsPanel
           studentAreaId={studentAreaId} studentAreaName={studentAreaName} students={students}
           studentSearch={studentSearch}
-          handleSearchStudents={(q: string) => { setStudentSearch(q); if (studentAreaId) fetchStudents(studentAreaId, q || undefined); }}
+          handleSearchStudents={(q: string) => { setStudentSearch(q); if (studentAreaId) {fetchStudents(studentAreaId, q || undefined);} }}
           showAddStudent={showAddStudent} setShowAddStudent={setShowAddStudent}
           newStudent={newStudent} setNewStudent={setNewStudent} handleAddStudent={handleAddStudent}
           saving={saving} editingStudentId={editingStudentId} setEditingStudentId={setEditingStudentId}

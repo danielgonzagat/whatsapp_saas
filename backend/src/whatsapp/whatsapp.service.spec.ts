@@ -440,10 +440,16 @@ describe('WhatsappService', () => {
       });
       expect(result).toEqual(expect.objectContaining({ ok: true, direct: true, delivery: 'sent' }));
     } finally {
-      if (prevOptIn === undefined) delete process.env.ENFORCE_OPTIN;
-      else process.env.ENFORCE_OPTIN = prevOptIn;
-      if (prev24h === undefined) delete process.env.AUTOPILOT_ENFORCE_24H;
-      else process.env.AUTOPILOT_ENFORCE_24H = prev24h;
+      if (prevOptIn === undefined) {
+        delete process.env.ENFORCE_OPTIN;
+      } else {
+        process.env.ENFORCE_OPTIN = prevOptIn;
+      }
+      if (prev24h === undefined) {
+        delete process.env.AUTOPILOT_ENFORCE_24H;
+      } else {
+        process.env.AUTOPILOT_ENFORCE_24H = prev24h;
+      }
     }
   });
 

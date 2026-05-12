@@ -50,7 +50,9 @@ describe('OrderAlertsService', () => {
         findMany: jest.fn().mockResolvedValue([]),
       },
       $transaction: jest.fn().mockImplementation((arg: unknown) => {
-        if (typeof arg === 'function') return arg(prisma);
+        if (typeof arg === 'function') {
+          return arg(prisma);
+        }
         return Promise.resolve(undefined);
       }),
     };

@@ -7,8 +7,12 @@ import { SmartPaymentService } from './smart-payment.service';
 const NON_SLUG_CHAR_RE = /[^a-z0-9_:-]+/g;
 
 function safeStr(value: unknown, fallback = ''): string {
-  if (typeof value === 'string') return value;
-  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value);
+  }
   return fallback;
 }
 
@@ -63,8 +67,12 @@ interface ToolDashboardSummaryArgs {
 }
 
 function centsFromUnknown(value: unknown): number {
-  if (typeof value === 'bigint') return Number(value);
-  if (typeof value === 'number' && Number.isFinite(value)) return Math.trunc(value);
+  if (typeof value === 'bigint') {
+    return Number(value);
+  }
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return Math.trunc(value);
+  }
   return 0;
 }
 
@@ -116,7 +124,9 @@ export class KloelChatToolsService {
       where.name = { contains: productName, mode: 'insensitive' };
     }
     const product = await this.prisma.product.findFirst({ where: { ...where, workspaceId } });
-    if (!product) return { success: false, error: 'Produto não encontrado.' };
+    if (!product) {
+      return { success: false, error: 'Produto não encontrado.' };
+    }
 
     await this.prisma.$transaction(
       [
@@ -277,7 +287,9 @@ export class KloelChatToolsService {
       .replace(NON_SLUG_CHAR_RE, '_')
       .slice(0, 80);
     const value = String(args?.value || '').trim();
-    if (!normalizedKey || !value) return { success: false, error: 'missing_user_memory_payload' };
+    if (!normalizedKey || !value) {
+      return { success: false, error: 'missing_user_memory_payload' };
+    }
 
     const profileKey = `user_profile:${userId || 'workspace_owner'}`;
     const existing = await this.prisma.kloelMemory.findUnique({

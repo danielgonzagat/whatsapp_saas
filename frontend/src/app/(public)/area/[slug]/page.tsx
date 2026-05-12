@@ -24,13 +24,13 @@ export default function PublicMemberAreaPage({ params }: { params: Promise<{ slu
     let active = true;
     fetchPublicMemberArea(slug)
       .then((response) => {
-        if (active) setArea(response.area);
+        if (active) {setArea(response.area);}
       })
       .catch(() => {
-        if (active) setError('Area de membros nao encontrada.');
+        if (active) {setError('Area de membros nao encontrada.');}
       })
       .finally(() => {
-        if (active) setLoading(false);
+        if (active) {setLoading(false);}
       });
     return () => {
       active = false;

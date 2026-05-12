@@ -45,7 +45,9 @@ export class KloelWorkspaceContextService {
     private readonly linkedProductService: KloelWorkspaceContextLinkedProductService,
   ) {}
   hasLegacyProductMarker(value: string | null | undefined): boolean {
-    if (!value) return false;
+    if (!value) {
+      return false;
+    }
     return isLegacyProductName(String(value));
   }
   async getWorkspaceContext(workspaceId: string, userId?: string): Promise<string> {
@@ -66,11 +68,15 @@ export class KloelWorkspaceContextService {
       const affiliateProductIds = new Set<string>();
       for (const request of raw.affiliateRequests || []) {
         const pid = request?.affiliateProduct?.productId;
-        if (typeof pid === 'string' && pid) affiliateProductIds.add(pid);
+        if (typeof pid === 'string' && pid) {
+          affiliateProductIds.add(pid);
+        }
       }
       for (const link of raw.affiliateLinks || []) {
         const pid = link?.affiliateProduct?.productId;
-        if (typeof pid === 'string' && pid) affiliateProductIds.add(pid);
+        if (typeof pid === 'string' && pid) {
+          affiliateProductIds.add(pid);
+        }
       }
 
       const affiliateCatalogProducts = affiliateProductIds.size
@@ -108,7 +114,9 @@ export class KloelWorkspaceContextService {
           const link = affiliateLinkMap.get(affiliateProductId);
           const affiliateProduct = request?.affiliateProduct || link?.affiliateProduct || {};
           const linkedProduct = affiliateCatalogProductMap.get(safeStr(affiliateProduct.productId));
-          if (linkedProduct?.name && isLegacyProductName(linkedProduct.name)) return null;
+          if (linkedProduct?.name && isLegacyProductName(linkedProduct.name)) {
+            return null;
+          }
           return {
             productName:
               linkedProduct?.name ||
@@ -162,8 +170,9 @@ export class KloelWorkspaceContextService {
         raw.payments,
       );
       this.appendMemories(contextParts, raw.memories);
-      if (raw.userProfile?.content)
+      if (raw.userProfile?.content) {
         contextParts.unshift(`PERFIL DO USUÁRIO ATUAL:\n${raw.userProfile.content}`);
+      }
 
       return contextParts.filter(Boolean).join('\n\n');
     } catch (error: unknown) {
@@ -198,7 +207,9 @@ export class KloelWorkspaceContextService {
     }
   }
   private appendBusinessData(parts: string[], description: string, segment: string): void {
-    if (!description && !segment) return;
+    if (!description && !segment) {
+      return;
+    }
     parts.push(
       [
         'DADOS OPERACIONAIS VERIFICADOS DO NEGÓCIO:',
@@ -222,11 +233,15 @@ export class KloelWorkspaceContextService {
       providerSettings,
       ...(stripeCustomerId !== undefined ? { stripeCustomerId } : {}),
     });
-    if (billingContext) parts.push(`STATUS DA CONTA E DA ASSINATURA:\n${billingContext}`);
+    if (billingContext) {
+      parts.push(`STATUS DA CONTA E DA ASSINATURA:\n${billingContext}`);
+    }
   }
   private appendExternalLinks(parts: string[], links: Array<Record<string, unknown>>): void {
     const ctx = this.contextFormatter.buildWorkspaceExternalPaymentLinkContext(links);
-    if (ctx) parts.push(`LINKS EXTERNOS DE VENDA:\n${ctx}`);
+    if (ctx) {
+      parts.push(`LINKS EXTERNOS DE VENDA:\n${ctx}`);
+    }
   }
   private appendProductCatalog(
     parts: string[],
@@ -253,11 +268,15 @@ export class KloelWorkspaceContextService {
   ): void {
     if (affiliateEntries.length > 0) {
       const ctx = this.contextFormatter.buildWorkspaceAffiliateContext(affiliateEntries);
-      if (ctx) parts.push(`PRODUTOS EM QUE O WORKSPACE SE AFILIOU:\n${ctx}`);
+      if (ctx) {
+        parts.push(`PRODUTOS EM QUE O WORKSPACE SE AFILIOU:\n${ctx}`);
+      }
     }
     const partnerCtx =
       this.contextFormatter.buildWorkspaceAffiliatePartnerContext(affiliatePartners);
-    if (partnerCtx) parts.push(`REDE DE PARCEIROS E AFILIADOS DO WORKSPACE:\n${partnerCtx}`);
+    if (partnerCtx) {
+      parts.push(`REDE DE PARCEIROS E AFILIADOS DO WORKSPACE:\n${partnerCtx}`);
+    }
   }
   private appendFinancialContext(
     parts: string[],
@@ -280,10 +299,14 @@ export class KloelWorkspaceContextService {
     memories: Array<{ type?: string | null; content?: string | null }>,
   ): void {
     for (const memory of memories) {
-      if (this.hasLegacyProductMarker(memory.content)) continue;
+      if (this.hasLegacyProductMarker(memory.content)) {
+        continue;
+      }
       switch (memory.type) {
         case 'product':
-          if (!memory.content || isLegacyProductName(memory.content)) continue;
+          if (!memory.content || isLegacyProductName(memory.content)) {
+            continue;
+          }
           break;
         case 'persona':
           parts.push(`PERSONA/TOM DE VOZ: ${memory.content}`);
@@ -301,7 +324,9 @@ export class KloelWorkspaceContextService {
           parts.push(`CONTEXTO DE CONTATO: ${memory.content}`);
           break;
         default:
-          if (memory.content) parts.push(memory.content);
+          if (memory.content) {
+            parts.push(memory.content);
+          }
       }
     }
   }

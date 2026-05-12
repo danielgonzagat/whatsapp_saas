@@ -1,8 +1,12 @@
 export const NON_DIGIT_RE = /\D/g;
 
 export function safeStr(value: unknown, fallback = ''): string {
-  if (typeof value === 'string') return value;
-  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value);
+  }
   return fallback;
 }
 
@@ -52,13 +56,19 @@ export function detectBuyIntent(message: string): 'high' | 'medium' | 'low' | 'o
     'sem interesse',
   ];
   for (const kw of highIntentKeywords) {
-    if (lowerMessage.includes(kw)) return 'high';
+    if (lowerMessage.includes(kw)) {
+      return 'high';
+    }
   }
   for (const kw of mediumIntentKeywords) {
-    if (lowerMessage.includes(kw)) return 'medium';
+    if (lowerMessage.includes(kw)) {
+      return 'medium';
+    }
   }
   for (const kw of objectionKeywords) {
-    if (lowerMessage.includes(kw)) return 'objection';
+    if (lowerMessage.includes(kw)) {
+      return 'objection';
+    }
   }
   return 'low';
 }

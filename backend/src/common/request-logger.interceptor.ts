@@ -3,6 +3,52 @@ import { Observable } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 import { sanitizePayload } from './sanitize-payload';
 
+interface LoggedRequest {
+  id?: unknown;
+  method?: unknown;
+  url?: unknown;
+  ip?: unknown;
+  body?: unknown;
+}
+
+interface LoggedResponse {
+  statusCode?: unknown;
+}
+
+function readString(value: unknown): string | undefined {
+  return typeof value === 'string' && value.trim() ? value : undefined;
+}
+
+function readNumber(value: unknown): number | undefined {
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+}
+
+function getErrorStatus(error: unknown): number {
+  if (
+    typeof error === 'object' &&
+    error !== null &&
+    'getStatus' in error &&
+    typeof (error as { getStatus?: unknown }).getStatus === 'function'
+  ) {
+    const status = (error as { getStatus: () => unknown }).getStatus();
+    return readNumber(status) ?? 500;
+  }
+  if (typeof error === 'object' && error !== null && 'status' in error) {
+    return readNumber((error as { status?: unknown }).status) ?? 500;
+  }
+  return 500;
+}
+
+function getErrorMessage(error: unknown): string | undefined {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (typeof error === 'object' && error !== null && 'message' in error) {
+    return readString((error as { message?: unknown }).message);
+  }
+  return undefined;
+}
+
 /**
  * Structured request logger.
  *
@@ -25,8 +71,8 @@ export class RequestLoggerInterceptor implements NestInterceptor {
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     const now = Date.now();
     const http = context.switchToHttp();
-    const req = http.getRequest();
-    const res = http.getResponse();
+    const req = http.getRequest<LoggedRequest>();
+    const res = http.getResponse<LoggedResponse>();
 
     const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
 
@@ -36,9 +82,12 @@ export class RequestLoggerInterceptor implements NestInterceptor {
     // app.module.ts. Fall back to an empty string only as a defensive
     // measure for non-HTTP contexts (we don't generate our own UUID
     // here — that was the bug that produced multiple IDs per request).
-    const requestId: string = req.id || '';
+    const requestId = readString(req.id) ?? '';
 
-    const { method, url, ip, body } = req;
+    const method = readString(req.method);
+    const url = readString(req.url);
+    const ip = readString(req.ip);
+    const { body } = req;
     const safeBody = body ? sanitizePayload(body) : undefined;
 
     return next.handle().pipe(
@@ -50,7 +99,7 @@ export class RequestLoggerInterceptor implements NestInterceptor {
               msg: 'request_completed',
               method,
               url,
-              statusCode: res.statusCode,
+              statusCode: readNumber(res.statusCode),
               duration_ms: duration,
               ip,
               requestId,
@@ -59,14 +108,9 @@ export class RequestLoggerInterceptor implements NestInterceptor {
           );
         }
       }),
-      catchError((err) => {
+      catchError((err: unknown) => {
         const duration = Date.now() - now;
-        const statusCode =
-          typeof err?.getStatus === 'function'
-            ? err.getStatus()
-            : typeof err?.status === 'number'
-              ? err.status
-              : 500;
+        const statusCode = getErrorStatus(err);
 
         if (!isTestEnv) {
           const payload = {
@@ -79,7 +123,7 @@ export class RequestLoggerInterceptor implements NestInterceptor {
             ip,
             requestId,
             body: safeBody,
-            error: err?.message,
+            error: getErrorMessage(err),
           };
           if (statusCode >= 500) {
             this.logger.error(JSON.stringify(payload));

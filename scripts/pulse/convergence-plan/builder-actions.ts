@@ -20,6 +20,13 @@ import {
   observedHighConfidence,
   observedMediumRisk,
   observedPlatformLane,
+  observedCapabilityKind,
+  observedFlowKind,
+  observedTransformationalImpact,
+  observedMaterialImpact,
+  observedEnablingImpact,
+  observedProductFailureClass,
+  observedMissingEvidenceFailureClass,
 } from './builder-labels';
 import {
   buildCapabilityVisionDelta,
@@ -68,7 +75,7 @@ export function buildCapabilityUnits(
       id: `capability-${slugify(capability.id)}`,
       order: 0,
       priority: getCapabilityPriority(capability.status),
-      kind: 'capability' as const,
+      kind: observedCapabilityKind,
       status:
         capability.executionMode === 'observation_only' ? observedWatchStatus : observedOpenStatus,
       source: observedPulseSource,
@@ -83,10 +90,10 @@ export function buildCapabilityUnits(
       evidenceMode: capability.truthMode,
       confidence: confidenceFromNumeric(capability.confidence),
       productImpact: isSameState(capability.status, 'phantom')
-        ? 'transformational'
+        ? observedTransformationalImpact
         : isSameState(capability.status, 'partial')
-          ? 'material'
-          : 'enabling',
+          ? observedMaterialImpact
+          : observedEnablingImpact,
       title: `Materialize capability ${capability.name}`,
       summary: compactText(
         [
@@ -101,7 +108,7 @@ export function buildCapabilityUnits(
       visionDelta: buildCapabilityVisionDelta(capability),
       targetState: `Capability ${capability.name} must become materially real or at least structurally partial with no illusion-only path.`,
       failureClass:
-        capability.executionMode === 'observation_only' ? 'missing_evidence' : 'product_failure',
+        capability.executionMode === 'observation_only' ? observedMissingEvidenceFailureClass : observedProductFailureClass,
       actorKinds: [],
       gateNames: certificationMatches,
       scenarioIds: [],
@@ -144,7 +151,7 @@ export function buildFlowUnits(input: BuildPulseConvergencePlanInput): PulseConv
       id: `flow-${slugify(flow.id)}`,
       order: 0,
       priority: getFlowPriority(flow.status),
-      kind: 'flow' as const,
+      kind: observedFlowKind,
       status: flow.truthMode === 'aspirational' ? observedWatchStatus : observedOpenStatus,
       source: observedPulseSource,
       executionMode: flow.truthMode === 'aspirational' ? 'observation_only' : 'ai_safe',
@@ -159,10 +166,10 @@ export function buildFlowUnits(input: BuildPulseConvergencePlanInput): PulseConv
       evidenceMode: flow.truthMode,
       confidence: confidenceFromNumeric(flow.confidence),
       productImpact: isSameState(flow.status, 'phantom')
-        ? 'transformational'
+        ? observedTransformationalImpact
         : isSameState(flow.status, 'partial')
-          ? 'material'
-          : 'enabling',
+          ? observedMaterialImpact
+          : observedEnablingImpact,
       title: `Close flow ${humanize(flow.id)}`,
       summary: compactText(
         [`Flow ${flow.id} is ${flow.status}.`, flow.blockingReasons.join(' ')]
@@ -172,7 +179,7 @@ export function buildFlowUnits(input: BuildPulseConvergencePlanInput): PulseConv
       ),
       visionDelta: buildFlowVisionDelta(flow),
       targetState: `Flow ${flow.id} must reach a real interface->effect chain.`,
-      failureClass: flow.truthMode === 'aspirational' ? 'missing_evidence' : 'product_failure',
+      failureClass: flow.truthMode === 'aspirational' ? observedMissingEvidenceFailureClass : observedProductFailureClass,
       actorKinds: [],
       gateNames: certificationMatches,
       scenarioIds: [],
@@ -231,7 +238,7 @@ export function buildExecutionMatrixUnits(
         priority: isSameState(path.status, 'observed_fail')
           ? observedP0Priority
           : observedP1Priority,
-        kind: path.flowId ? ('flow' as const) : ('capability' as const),
+        kind: path.flowId ? observedFlowKind : observedCapabilityKind,
         status:
           path.executionMode === 'observation_only' ? observedWatchStatus : observedOpenStatus,
         source: observedPulseSource,
@@ -240,7 +247,7 @@ export function buildExecutionMatrixUnits(
         riskLevel: isSameState(path.status, 'observed_fail') ? observedCriticalRisk : path.risk,
         evidenceMode: path.truthMode,
         confidence: confidenceFromNumeric(path.confidence),
-        productImpact: isSameState(path.status, 'observed_fail') ? 'transformational' : 'material',
+        productImpact: isSameState(path.status, 'observed_fail') ? observedTransformationalImpact : observedMaterialImpact,
         title: isSameState(path.status, 'observed_fail')
           ? `Repair execution path ${path.pathId}`
           : `Observe execution path ${path.pathId}`,
@@ -260,8 +267,8 @@ export function buildExecutionMatrixUnits(
         targetState:
           'Path is classified as observed_pass or observed_fail with a precise breakpoint.',
         failureClass: isSameState(path.status, 'observed_fail')
-          ? 'product_failure'
-          : 'missing_evidence',
+          ? observedProductFailureClass
+          : observedMissingEvidenceFailureClass,
         actorKinds: [],
         gateNames: certificationMatches,
         scenarioIds: [],

@@ -97,7 +97,8 @@ export const PROBLEMA_RUIM_HORR_I__V_RE = /(problema|ruim|horr[ií]vel|cancelar|
 export const QUERO_COMPRAR_ASSINAR_F_RE = /(quero|comprar|assinar|fechar|como pago|pix|boleto)/i;
 export const PROBLEMA_ERRO_SUPORTE_A_RE_2 = /(problema|erro|suporte|ajuda)/i;
 export const RECLAMA_CANCELAR_RE = /(reclama|cancelar)/i;
-export const CARO_SEM_DINHEIRO_AGORA_RE = /(caro|sem dinheiro|agora não|agora nao|depois|sem tempo)/i;
+export const CARO_SEM_DINHEIRO_AGORA_RE =
+  /(caro|sem dinheiro|agora não|agora nao|depois|sem tempo)/i;
 export const SUMI_SEM_RESPOSTA_DEPOI_RE = /(sumi|sem resposta|depois te chamo|vou ver)/i;
 export const B_SOU_HOMEM_MEU_MARIDO_RE = /\b(sou homem|meu marido|pai|rapaz)\b/i;
 export const B_SOU_MULHER_MINHA_ESPO_RE = /\b(sou mulher|minha esposa|mãe|mae|moça|moca)\b/i;

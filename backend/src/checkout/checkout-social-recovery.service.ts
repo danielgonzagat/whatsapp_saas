@@ -180,7 +180,9 @@ export class CheckoutSocialRecoveryService {
         where: { id: leadId, workspaceId },
         select: { id: true, recoveryEmailSentAt: true },
       });
-      if (!lead || lead.recoveryEmailSentAt) return true;
+      if (!lead || lead.recoveryEmailSentAt) {
+        return true;
+      }
 
       await tx.checkoutSocialLead.update({
         where: { id: leadId },
@@ -190,7 +192,9 @@ export class CheckoutSocialRecoveryService {
       return false;
     });
 
-    if (alreadySent) return;
+    if (alreadySent) {
+      return;
+    }
 
     const unsubscribeFooter = buildUnsubscribeFooterHtml({ email, workspaceId });
     const listUnsubscribe = buildListUnsubscribeHeader({ email, workspaceId });

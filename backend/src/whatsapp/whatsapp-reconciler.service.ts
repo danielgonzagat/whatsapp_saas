@@ -46,8 +46,12 @@ export class WhatsappReconcilerService {
   ) {}
 
   private readText(v: unknown): string {
-    if (typeof v === 'string') return v.trim();
-    if (typeof v === 'number' || typeof v === 'boolean') return String(v).trim();
+    if (typeof v === 'string') {
+      return v.trim();
+    }
+    if (typeof v === 'number' || typeof v === 'boolean') {
+      return String(v).trim();
+    }
     return '';
   }
 
@@ -58,7 +62,9 @@ export class WhatsappReconcilerService {
   private resolveTrustedContactName(phone: string, ...candidates: unknown[]): string {
     for (const c of candidates) {
       const n = this.readText(c);
-      if (n && !this.isPlaceholderContactName(n, phone)) return n;
+      if (n && !this.isPlaceholderContactName(n, phone)) {
+        return n;
+      }
     }
     return '';
   }
@@ -87,14 +93,17 @@ export class WhatsappReconcilerService {
       throw new Error('Workspace not found');
     }
     const dedupeKey = `incoming:dedupe:${workspaceId}:${from}:${this.normalizeHash(message)}`;
-    if (await this.redis.get(dedupeKey)) return { skipped: true, reason: 'duplicate' };
+    if (await this.redis.get(dedupeKey)) {
+      return { skipped: true, reason: 'duplicate' };
+    }
     await this.redis.setex(dedupeKey, 60, '1');
 
     const lower = (message || '').toLowerCase();
     if (
       ['stop', 'sair', 'cancelar', 'cancel', 'parar', 'unsubscribe'].some((k) => lower.includes(k))
-    )
+    ) {
       await this.optOutContact(workspaceId, from.replace(D_RE, '')).catch(() => {});
+    }
 
     const saved = await this.inbox.saveMessageByPhone({
       workspaceId,
@@ -131,7 +140,7 @@ export class WhatsappReconcilerService {
       const settings = this.normalizeJsonObject(ws.providerSettings);
       if (this.isAutonomousEnabled(settings) && saved?.contactId) {
         const sk = `autopilot:scan-contact:${workspaceId}:${saved.contactId}`;
-        if ((await this.redis.set(sk, saved.id, 'PX', this.contactDebounceMs, 'NX')) === 'OK')
+        if ((await this.redis.set(sk, saved.id, 'PX', this.contactDebounceMs, 'NX')) === 'OK') {
           await autopilotQueue.add(
             'scan-contact',
             {
@@ -151,6 +160,7 @@ export class WhatsappReconcilerService {
               removeOnComplete: true,
             },
           );
+        }
       }
       const apc = this.normalizeJsonObject(settings.autopilot);
       const hf = typeof apc.hotFlowId === 'string' ? apc.hotFlowId : null;
@@ -167,13 +177,14 @@ export class WhatsappReconcilerService {
           'comprar',
           'assinar',
         ].some((k) => lower.includes(k))
-      )
+      ) {
         await flowQueue.add('run-flow', {
           workspaceId,
           flowId: hf,
           user: nPhone,
           initialVars: { source: 'hot_signal', lastMessage: message },
         });
+      }
       if (
         [
           'paguei',
@@ -220,8 +231,9 @@ export class WhatsappReconcilerService {
         workspaceId,
       });
     }
-    if (saved?.contactId)
+    if (saved?.contactId) {
       this.neuroCrm.analyzeContact(workspaceId, saved.contactId).catch(() => {});
+    }
     try {
       await this.redis.publish(
         `ws:copilot:${workspaceId}`,
@@ -248,7 +260,9 @@ export class WhatsappReconcilerService {
   ): Promise<boolean> {
     const np = this.normalizeNumber(phone || '');
     const nn = this.resolveTrustedContactName(phone, name);
-    if (!np || !nn) return false;
+    if (!np || !nn) {
+      return false;
+    }
     try {
       return await this.providerRegistry.upsertContactProfile(ws, { phone: np, name: nn });
     } catch (e: unknown) {
@@ -297,7 +311,9 @@ export class WhatsappReconcilerService {
         where: { workspaceId_phone: { workspaceId: ws, phone } },
         select: { id: true },
       });
-      if (!c) return { ok: true };
+      if (!c) {
+        return { ok: true };
+      }
       await tx.contact.updateMany({
         where: { id: c.id, workspaceId: ws },
         data: { optIn: false, optedOutAt: new Date() },
@@ -306,11 +322,12 @@ export class WhatsappReconcilerService {
         where: { workspaceId_name: { workspaceId: ws, name: 'optin_whatsapp' } },
         select: { id: true },
       });
-      if (t)
+      if (t) {
         await tx.contact.update({
           where: { workspaceId_phone: { workspaceId: ws, phone } },
           data: { tags: { disconnect: { id: t.id } } },
         });
+      }
       return { ok: true };
     });
   }
@@ -354,7 +371,9 @@ export class WhatsappReconcilerService {
       where: { workspaceId_phone: { workspaceId: ws, phone } },
       select: { id: true, tags: { select: { name: true } } },
     });
-    if (!c) return { optIn: false, contactExists: false };
+    if (!c) {
+      return { optIn: false, contactExists: false };
+    }
     return {
       optIn: c.tags.some((t: { name: string }) => t.name === 'optin_whatsapp'),
       contactExists: true,

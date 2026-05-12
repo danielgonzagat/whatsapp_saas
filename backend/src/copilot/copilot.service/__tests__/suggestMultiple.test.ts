@@ -90,7 +90,9 @@ describe('CopilotService', () => {
         expect(result.suggestions).toHaveLength(3);
         expect(result.suggestions[0]).toContain('Posso te ajudar');
       } finally {
-        if (saved) process.env.OPENAI_API_KEY = saved;
+        if (saved) {
+          process.env.OPENAI_API_KEY = saved;
+        }
       }
     });
 

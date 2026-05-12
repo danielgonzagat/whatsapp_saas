@@ -265,9 +265,15 @@ export class CalendarService {
         startTime: appointment.startAt ?? event.startTime,
         endTime: appointment.endAt ?? event.endTime,
       };
-      if (descVal) result.description = descVal;
-      if (locVal) result.location = locVal;
-      if (linkVal) result.meetingLink = linkVal;
+      if (descVal) {
+        result.description = descVal;
+      }
+      if (locVal) {
+        result.location = locVal;
+      }
+      if (linkVal) {
+        result.meetingLink = linkVal;
+      }
       return result;
     } catch (error: unknown) {
       this.logger.error(
@@ -302,8 +308,12 @@ export class CalendarService {
       const creds: { refresh_token?: string; access_token?: string } = {};
       const refreshToken = config.credentials?.refreshToken;
       const accessToken = config.credentials?.accessToken;
-      if (refreshToken) creds.refresh_token = refreshToken;
-      if (accessToken) creds.access_token = accessToken;
+      if (refreshToken) {
+        creds.refresh_token = refreshToken;
+      }
+      if (accessToken) {
+        creds.access_token = accessToken;
+      }
       oauth2Client.setCredentials(creds);
 
       const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
@@ -313,9 +323,15 @@ export class CalendarService {
         start: { dateTime: event.startTime.toISOString() },
         end: { dateTime: event.endTime.toISOString() },
       };
-      if (event.description) requestBody.description = event.description;
-      if (event.location) requestBody.location = event.location;
-      if (event.attendees) requestBody.attendees = event.attendees.map((email) => ({ email }));
+      if (event.description) {
+        requestBody.description = event.description;
+      }
+      if (event.location) {
+        requestBody.location = event.location;
+      }
+      if (event.attendees) {
+        requestBody.attendees = event.attendees.map((email) => ({ email }));
+      }
       if (!event.meetingLink) {
         requestBody.conferenceData = {
           createRequest: {
@@ -351,13 +367,21 @@ export class CalendarService {
         startTime: new Date(createdEvent.start?.dateTime || event.startTime),
         endTime: new Date(createdEvent.end?.dateTime || event.endTime),
       };
-      if (createdEvent.id) eventResult.id = createdEvent.id;
+      if (createdEvent.id) {
+        eventResult.id = createdEvent.id;
+      }
       const desc = createdEvent.description || event.description;
-      if (desc) eventResult.description = desc;
+      if (desc) {
+        eventResult.description = desc;
+      }
       const loc = createdEvent.location || event.location;
-      if (loc) eventResult.location = loc;
+      if (loc) {
+        eventResult.location = loc;
+      }
       const link = createdEvent.hangoutLink || event.meetingLink;
-      if (link) eventResult.meetingLink = link;
+      if (link) {
+        eventResult.meetingLink = link;
+      }
       return eventResult;
     } catch (error: unknown) {
       this.logger.error(
@@ -406,9 +430,15 @@ export class CalendarService {
             startTime: apt.startAt ?? new Date(),
             endTime: apt.endAt ?? new Date(),
           };
-          if (apt.description) item.description = apt.description;
-          if (apt.location) item.location = apt.location;
-          if (apt.meetingUrl) item.meetingLink = apt.meetingUrl;
+          if (apt.description) {
+            item.description = apt.description;
+          }
+          if (apt.location) {
+            item.location = apt.location;
+          }
+          if (apt.meetingUrl) {
+            item.meetingLink = apt.meetingUrl;
+          }
           return item;
         });
       } catch (error: unknown) {

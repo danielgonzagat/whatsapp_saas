@@ -19,13 +19,13 @@ export function useWhatsApp({ isAuthenticated, onConnected }: UseWhatsAppOpts) {
 
   const resolveWorkspaceIdForSession = useCallback(async () => {
     const stored = tokenStorage.getWorkspaceId() || '';
-    if (stored) return stored;
+    if (stored) {return stored;}
     const token = tokenStorage.getToken();
-    if (!token) return '';
+    if (!token) {return '';}
     try {
       const res = await authApi.getMe();
       const id = resolveWorkspaceFromAuthPayload(res.data)?.id || '';
-      if (id) tokenStorage.setWorkspaceId(id);
+      if (id) {tokenStorage.setWorkspaceId(id);}
       return id;
     } catch (error) {
       console.error('Failed to recover workspace for WhatsApp session:', error);
@@ -36,7 +36,7 @@ export function useWhatsApp({ isAuthenticated, onConnected }: UseWhatsAppOpts) {
   const checkWhatsAppStatus = useCallback(async () => {
     try {
       const workspaceId = await resolveWorkspaceIdForSession();
-      if (!workspaceId) return;
+      if (!workspaceId) {return;}
       const status = await getWhatsAppStatus(workspaceId);
       if (status.connected) {
         setIsWhatsAppConnected(true);
@@ -50,7 +50,7 @@ export function useWhatsApp({ isAuthenticated, onConnected }: UseWhatsAppOpts) {
   }, [resolveWorkspaceIdForSession, onConnected]);
 
   useEffect(() => {
-    if (isAuthenticated) void checkWhatsAppStatus();
+    if (isAuthenticated) {void checkWhatsAppStatus();}
   }, [checkWhatsAppStatus, isAuthenticated]);
 
   useEffect(() => {

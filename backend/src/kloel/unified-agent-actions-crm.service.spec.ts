@@ -105,7 +105,9 @@ describe('UnifiedAgentActionsCrmService', () => {
         update: jest.fn().mockResolvedValue({}),
       },
       $transaction: jest.fn().mockImplementation((arg: unknown) => {
-        if (typeof arg === 'function') return arg(prisma);
+        if (typeof arg === 'function') {
+          return arg(prisma);
+        }
         return Promise.resolve(undefined);
       }),
     };
@@ -129,9 +131,7 @@ describe('UnifiedAgentActionsCrmService', () => {
       ],
     }).compile();
 
-    service = module.get<UnifiedAgentActionsCrmService>(
-      UnifiedAgentActionsCrmService,
-    );
+    service = module.get<UnifiedAgentActionsCrmService>(UnifiedAgentActionsCrmService);
   });
 
   afterEach(() => {
@@ -207,12 +207,10 @@ describe('UnifiedAgentActionsCrmService', () => {
     const phone = '5511999999999';
 
     it('creates follow-up and logs autopilot event', async () => {
-      const result = await service.actionScheduleFollowup(
-        wsId,
-        contactId,
-        phone,
-        { delayHours: 48, message: 'Olá, ainda tem interesse?' },
-      );
+      const result = await service.actionScheduleFollowup(wsId, contactId, phone, {
+        delayHours: 48,
+        message: 'Olá, ainda tem interesse?',
+      });
 
       expect(result.success).toBe(true);
       expect(prisma.followUp.create).toHaveBeenCalledWith(
@@ -231,12 +229,9 @@ describe('UnifiedAgentActionsCrmService', () => {
         scheduledFor: new Date(),
       });
 
-      const result = await service.actionScheduleFollowup(
-        wsId,
-        contactId,
-        phone,
-        { delayHours: 1 },
-      );
+      const result = await service.actionScheduleFollowup(wsId, contactId, phone, {
+        delayHours: 1,
+      });
 
       expect(result.deduplicated).toBe(true);
       expect(prisma.followUp.create).not.toHaveBeenCalled();
@@ -448,12 +443,9 @@ describe('UnifiedAgentActionsCrmService', () => {
     it('actionScheduleFollowup returns error on failure', async () => {
       prisma.followUp.create.mockRejectedValue(new Error('DB error'));
 
-      const result = await service.actionScheduleFollowup(
-        wsId,
-        contactId,
-        '5511999999999',
-        { delayHours: 1 },
-      );
+      const result = await service.actionScheduleFollowup(wsId, contactId, '5511999999999', {
+        delayHours: 1,
+      });
 
       expect(result.success).toBe(false);
     });
@@ -461,19 +453,13 @@ describe('UnifiedAgentActionsCrmService', () => {
     it('actionTriggerFlow returns error on failure', async () => {
       prisma.flow.findFirst.mockRejectedValue(new Error('DB error'));
 
-      const result = await service.actionTriggerFlow(
-        wsId,
-        '5511999999999',
-        { flowId: 'f-1' },
-      );
+      const result = await service.actionTriggerFlow(wsId, '5511999999999', { flowId: 'f-1' });
 
       expect(result.success).toBe(false);
     });
 
     it('actionConnectWhatsApp returns error on failure', async () => {
-      providerRegistry.startSession = jest
-        .fn()
-        .mockRejectedValue(new Error('Meta API down'));
+      providerRegistry.startSession = jest.fn().mockRejectedValue(new Error('Meta API down'));
 
       const result = await service.actionConnectWhatsApp(wsId, {});
 

@@ -19,15 +19,11 @@ describe('TikTokAdsService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
-    const cryptoMock = jest.requireMock('../meta/meta-token-crypto') as {
-      decryptMetaToken: jest.Mock;
-    };
+    const cryptoMock = jest.requireMock('../meta/meta-token-crypto');
     decryptMetaToken = cryptoMock.decryptMetaToken;
     decryptMetaToken.mockImplementation((token: unknown) => token);
 
-    const settingsMock = jest.requireMock('../whatsapp/provider-settings.types') as {
-      asProviderSettings: jest.Mock;
-    };
+    const settingsMock = jest.requireMock('../whatsapp/provider-settings.types');
     asProviderSettings = settingsMock.asProviderSettings;
     asProviderSettings.mockImplementation((val: unknown) => val ?? {});
 
@@ -117,7 +113,7 @@ describe('TikTokAdsService', () => {
             page_info: { page: 1, page_size: 100, total_number: 2, total_page: 1 },
           },
         }),
-      } as never);
+      });
 
       const result = await service.getCampaignsForAdvertiser('token-abc', 'adv-1');
 
@@ -143,24 +139,20 @@ describe('TikTokAdsService', () => {
           json: async () => ({
             code: 0,
             data: {
-              list: [
-                { campaign_id: 'c-1', campaign_name: 'Campaign 1', primary_status: 'ENABLE' },
-              ],
+              list: [{ campaign_id: 'c-1', campaign_name: 'Campaign 1', primary_status: 'ENABLE' }],
               page_info: { page: 1, page_size: 100, total_number: 3, total_page: 3 },
             },
           }),
-        } as never)
+        })
         .mockResolvedValueOnce({
           json: async () => ({
             code: 0,
             data: {
-              list: [
-                { campaign_id: 'c-2', campaign_name: 'Campaign 2', primary_status: 'ENABLE' },
-              ],
+              list: [{ campaign_id: 'c-2', campaign_name: 'Campaign 2', primary_status: 'ENABLE' }],
               page_info: { page: 2, page_size: 100, total_number: 3, total_page: 3 },
             },
           }),
-        } as never)
+        })
         .mockResolvedValueOnce({
           json: async () => ({
             code: 0,
@@ -171,7 +163,7 @@ describe('TikTokAdsService', () => {
               page_info: { page: 3, page_size: 100, total_number: 3, total_page: 3 },
             },
           }),
-        } as never);
+        });
 
       const result = await service.getCampaignsForAdvertiser('token-abc', 'adv-1', 1, 100);
 
@@ -185,11 +177,11 @@ describe('TikTokAdsService', () => {
           code: 40100,
           message: 'Access token expired',
         }),
-      } as never);
+      });
 
-      await expect(
-        service.getCampaignsForAdvertiser('bad-token', 'adv-1'),
-      ).rejects.toThrow('TikTok Ads API error [40100]: Access token expired');
+      await expect(service.getCampaignsForAdvertiser('bad-token', 'adv-1')).rejects.toThrow(
+        'TikTok Ads API error [40100]: Access token expired',
+      );
     });
   });
 
@@ -222,7 +214,7 @@ describe('TikTokAdsService', () => {
             page_info: { page: 1, page_size: 200, total_number: 1, total_page: 1 },
           },
         }),
-      } as never);
+      });
 
       const result = await service.getReport('token-abc', 'adv-1', '2026-05-01', '2026-05-01');
 
@@ -257,7 +249,7 @@ describe('TikTokAdsService', () => {
               page_info: { page: 1, page_size: 200, total_number: 2, total_page: 2 },
             },
           }),
-        } as never)
+        })
         .mockResolvedValueOnce({
           json: async () => ({
             code: 0,
@@ -271,7 +263,7 @@ describe('TikTokAdsService', () => {
               page_info: { page: 2, page_size: 200, total_number: 2, total_page: 2 },
             },
           }),
-        } as never);
+        });
 
       const result = await service.getReport('token-abc', 'adv-1', '2026-05-01', '2026-05-02');
 
@@ -285,11 +277,11 @@ describe('TikTokAdsService', () => {
           code: 40002,
           message: 'Invalid date range',
         }),
-      } as never);
+      });
 
-      await expect(
-        service.getReport('token-abc', 'adv-1', 'invalid', 'invalid'),
-      ).rejects.toThrow('TikTok Ads API error [40002]: Invalid date range');
+      await expect(service.getReport('token-abc', 'adv-1', 'invalid', 'invalid')).rejects.toThrow(
+        'TikTok Ads API error [40002]: Invalid date range',
+      );
     });
   });
 

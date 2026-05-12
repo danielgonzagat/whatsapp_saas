@@ -22,7 +22,9 @@ describe('VectorService', () => {
 
   function buildService(openaiKey: string | undefined) {
     configGet = jest.fn().mockImplementation((key: string) => {
-      if (key === 'OPENAI_API_KEY') return openaiKey;
+      if (key === 'OPENAI_API_KEY') {
+        return openaiKey;
+      }
       return undefined;
     });
     const configStub = { get: configGet } as unknown as ConfigService;

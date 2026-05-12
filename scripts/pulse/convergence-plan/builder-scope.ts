@@ -13,9 +13,11 @@ import {
   discoverSourceLabelFromObservedContext,
 } from '../dynamic-reality-kernel/token-evidence';
 import {
+  deriveObservedConvergenceEvidenceLabel,
   observedPulseSource,
   observedAiSafeExecutionMode,
   observedStaticKind,
+  observedScopeKind,
   observedOpenStatus,
   observedWatchStatus,
   observedP0Priority,
@@ -31,7 +33,13 @@ import {
   observedDiagnosticImpact,
   observedEnablingImpact,
   observedCheckerGapFailureClass,
+  observedProductFailureClass,
+  observedTruthObservedMode,
+  observedTruthInferredMode,
 } from './builder-labels';
+import {
+  UNIT_SOURCES,
+} from './kernel';
 import {
   buildCodacyVisionDelta,
   buildParityVisionDelta,
@@ -76,13 +84,13 @@ export function buildScopeUnits(input: BuildPulseConvergencePlanInput): PulseCon
       id: 'scope-codacy-parity',
       order: 0,
       priority: observedP1Priority,
-      kind: 'scope',
+      kind: observedScopeKind,
       status: observedOpenStatus,
       source: discoverSourceLabelFromObservedContext('scope'),
       executionMode: observedAiSafeExecutionMode,
       ownerLane: observedPlatformLane,
       riskLevel: observedHighRisk,
-      evidenceMode: 'observed',
+      evidenceMode: observedTruthObservedMode,
       confidence: input.scopeState.parity.confidence,
       productImpact: determineScopeProductImpact(scopeImpactContext),
       title: 'Close Codacy Scope Parity Gaps',
@@ -124,13 +132,13 @@ export function buildScopeUnits(input: BuildPulseConvergencePlanInput): PulseCon
       id: 'scope-unmapped-module-candidates',
       order: 0,
       priority: observedP2Priority,
-      kind: 'scope',
+      kind: observedScopeKind,
       status: observedOpenStatus,
       source: discoverSourceLabelFromObservedContext('scope'),
       executionMode: observedAiSafeExecutionMode,
       ownerLane: observedPlatformLane,
       riskLevel: observedMediumRisk,
-      evidenceMode: 'inferred',
+      evidenceMode: observedTruthInferredMode,
       confidence: observedMediumConfidence,
       productImpact: determineScopeProductImpact({
         missingCodacyFiles: 0,
@@ -197,7 +205,7 @@ export function buildParityGapUnits(input: BuildPulseConvergencePlanInput): Puls
           : isSameState(gap.severity, observedMediumRisk)
             ? observedP2Priority
             : observedP3Priority,
-      kind: 'scope' as const,
+      kind: observedScopeKind,
       status: (gap.executionMode === 'observation_only'
         ? observedWatchStatus
         : observedOpenStatus) as PulseConvergenceUnitStatus,
@@ -215,9 +223,9 @@ export function buildParityGapUnits(input: BuildPulseConvergencePlanInput): Puls
       summary: gap.summary,
       visionDelta: buildParityVisionDelta(gap),
       targetState: `Structural parity gap ${gap.kind} must stop appearing in the next PULSE run.`,
-      failureClass: (gap.truthMode === 'observed'
-        ? 'product_failure'
-        : 'checker_gap') as PulseGateFailureClass,
+      failureClass: (gap.truthMode === observedTruthObservedMode
+        ? observedProductFailureClass
+        : observedCheckerGapFailureClass) as PulseGateFailureClass,
       actorKinds: [],
       gateNames: [],
       scenarioIds: [],
@@ -305,7 +313,7 @@ export function buildCodacyStaticUnits(
         priority: getScopeFilePriority(file),
         kind: observedStaticKind,
         status: observedOpenStatus,
-        source: 'codacy' as const,
+        source: deriveObservedConvergenceEvidenceLabel<PulseConvergenceUnit['source']>(UNIT_SOURCES, 'codacy'),
         executionMode: file?.executionMode || 'ai_safe',
         ownerLane: file?.ownerLane || observedPlatformLane,
         riskLevel: (file?.protectedByGovernance
@@ -315,7 +323,7 @@ export function buildCodacyStaticUnits(
             : file?.userFacing
               ? observedHighConfidence
               : observedMediumRisk) as PulseConvergenceUnit['riskLevel'],
-        evidenceMode: 'observed' as const,
+        evidenceMode: observedTruthObservedMode,
         confidence: observedHighConfidence,
         productImpact:
           file?.runtimeCritical || file?.userFacing

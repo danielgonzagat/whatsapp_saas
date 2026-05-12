@@ -119,7 +119,7 @@ export async function executeVoiceNode(
     }
 
     if (audioUrl) {
-    const { WhatsAppEngine } = await import('./providers/whatsapp-engine');
+      const { WhatsAppEngine } = await import('./providers/whatsapp-engine');
       const workspace = await prisma.workspace.findUnique({
         where: { id: state.workspaceId },
       });

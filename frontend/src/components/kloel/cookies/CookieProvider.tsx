@@ -27,7 +27,7 @@ function normalizeConsent(
     necessary: true,
     analytics: Boolean(input.analytics),
     marketing: Boolean(input.marketing),
-    updatedAt: input.updatedAt,
+    ...(input.updatedAt !== undefined ? { updatedAt: input.updatedAt } : {}),
   };
 }
 

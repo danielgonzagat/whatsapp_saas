@@ -2,6 +2,7 @@ import { colors } from '@/lib/design-tokens';
 import type { ReactNode } from 'react';
 import { V, FONT_MONO, FONT_SORA, chartCardStyle, labelStyle } from '../analytics.design-tokens';
 import { NeuroPulse } from './NeuroPulse';
+export { NeuroPulse };
 import type { IconFn } from '../analytics.types';
 
 export function MetricCard({
@@ -97,7 +98,7 @@ export function EmptyState({ message }: { message: string }) {
 }
 
 export function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: Array<{ name: string; value: number; color?: string }>; label?: string }) {
-  if (!active || !payload?.length) return null;
+  if (!active || !payload?.length) {return null;}
   return (
     <div style={{ background: V.s, border: `1px solid ${V.b}`, borderRadius: 8, padding: '10px 14px', boxShadow: '0 8px 32px rgba(0,0,0,.6)' }}>
       <span style={{ fontSize: 10, color: V.t3, display: 'block', marginBottom: 4, fontFamily: FONT_MONO }}>{label}</span>
@@ -112,7 +113,7 @@ export function ChartTooltip({ active, payload, label }: { active?: boolean; pay
 
 export function Pagination({ total, perPage = 10, page, setPage }: { total: number; perPage?: number; page: number; setPage: (p: number) => void }) {
   const pages = Math.ceil(total / perPage);
-  if (pages <= 1) return null;
+  if (pages <= 1) {return null;}
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 14px', borderTop: `1px solid ${V.b}` }}>
       <span style={{ fontSize: 10, color: V.t3, fontFamily: FONT_MONO }}>{(page - 1) * perPage + 1} ate {Math.min(page * perPage, total)} de {total}</span>

@@ -1,12 +1,7 @@
 import OpenAI from 'openai';
 import { AIProvider } from '../../providers/ai-provider';
 import { prisma } from '../../db';
-import {
-  log,
-  type UnknownRecord,
-  CONVERSATION_HISTORY_LIMIT,
-  WHITESPACE_RE,
-} from './shared';
+import { log, type UnknownRecord, CONVERSATION_HISTORY_LIMIT, WHITESPACE_RE } from './shared';
 import { buildConversationLedger } from './identity';
 import {
   analyzeForActiveListening,
@@ -25,10 +20,16 @@ export async function fetchConversationHistory(
 ) {
   if (!workspaceId) return [];
   let contact = contactId
-    ? await prisma.contact.findFirst({ where: { id: contactId, workspaceId }, select: { id: true, phone: true } })
+    ? await prisma.contact.findFirst({
+        where: { id: contactId, workspaceId },
+        select: { id: true, phone: true },
+      })
     : null;
   if (!contact && phone) {
-    contact = await prisma.contact.findFirst({ where: { workspaceId, phone }, select: { id: true, phone: true } });
+    contact = await prisma.contact.findFirst({
+      where: { workspaceId, phone },
+      select: { id: true, phone: true },
+    });
   }
   if (!contact) return [];
 
@@ -96,7 +97,8 @@ export async function getKbContext(workspaceId?: string, text?: string, apiKey?:
       .join('\n---\n')
       .slice(0, 1500);
   } catch (err: unknown) {
-    const errInstanceofError = err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
+    const errInstanceofError =
+      err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
     log.warn('kb_context_error', { error: errInstanceofError.message });
     return '';
   }
@@ -114,13 +116,21 @@ export async function generateAutonomousFallbackResponse(params: {
   deliveryMode?: string;
 }) {
   const {
-    workspaceId, messageContent, settings, matchedProducts = [],
-    contactId, phone, contactName, cognitiveState, deliveryMode,
+    workspaceId,
+    messageContent,
+    settings,
+    matchedProducts = [],
+    contactId,
+    phone,
+    contactName,
+    cognitiveState,
+    deliveryMode,
   } = params;
   const apiKey = settings?.openai?.apiKey || process.env.OPENAI_API_KEY;
 
   const workspace = await prisma.workspace.findUnique({
-    where: { id: workspaceId }, select: { name: true },
+    where: { id: workspaceId },
+    select: { name: true },
   });
   const products = await prisma.product.findMany({
     where: { workspaceId, active: true },
@@ -130,34 +140,58 @@ export async function generateAutonomousFallbackResponse(params: {
 
   const workspaceName = workspace?.name || 'empresa';
   const compressedContext = await fetchCompressedContactContext(workspaceId, contactId, phone);
-  const history = await fetchConversationHistory(workspaceId, contactId, phone, CONVERSATION_HISTORY_LIMIT);
+  const history = await fetchConversationHistory(
+    workspaceId,
+    contactId,
+    phone,
+    CONVERSATION_HISTORY_LIMIT,
+  );
   const ledger = buildConversationLedger(history);
   const listeningSignals = analyzeForActiveListening(messageContent, contactName);
   const productSummary = products.length
-    ? products.map((product: UnknownRecord) => {
-        const price = typeof product.price === 'number' ? ` (${product.currency || 'BRL'} ${product.price})` : '';
-        const description = product.description ? ` - ${String(product.description).slice(0, 120)}` : '';
-        return `${product.name}${price}${description}`;
-      }).join('\n')
+    ? products
+        .map((product: UnknownRecord) => {
+          const price =
+            typeof product.price === 'number'
+              ? ` (${product.currency || 'BRL'} ${product.price})`
+              : '';
+          const description = product.description
+            ? ` - ${String(product.description).slice(0, 120)}`
+            : '';
+          return `${product.name}${price}${description}`;
+        })
+        .join('\n')
     : 'Nenhum produto cadastrado.';
 
   if (!apiKey) {
     if (matchedProducts.length > 0) {
       return detectAndFixAntiPatterns(
-        `${contactName ? `${contactName.split(WHITESPACE_RE)[0]}, ` : ''}posso te ajudar com ${matchedProducts.join(', ')}. ${listeningSignals.validationNeeded ? 'Antes de qualquer coisa, faz sentido a sua dúvida.' : ''} ${cognitiveState?.nextBestQuestion || 'O que faz mais sentido ver primeiro?'}`);
+        `${contactName ? `${contactName.split(WHITESPACE_RE)[0]}, ` : ''}posso te ajudar com ${matchedProducts.join(', ')}. ${listeningSignals.validationNeeded ? 'Antes de qualquer coisa, faz sentido a sua dúvida.' : ''} ${cognitiveState?.nextBestQuestion || 'O que faz mais sentido ver primeiro?'}`,
+      );
     }
     return detectAndFixAntiPatterns(
-      `${listeningSignals.validationNeeded ? 'Faz sentido o que voce trouxe. ' : ''}Posso te ajudar por aqui. ${cognitiveState?.nextBestQuestion || 'O que voce precisa resolver primeiro?'}`);
+      `${listeningSignals.validationNeeded ? 'Faz sentido o que voce trouxe. ' : ''}Posso te ajudar por aqui. ${cognitiveState?.nextBestQuestion || 'O que voce precisa resolver primeiro?'}`,
+    );
   }
 
   try {
     const ai = new AIProvider(apiKey);
     const systemPrompt = buildWhatsAppConversationPrompt({
-      workspaceName, contactName, compressedContext,
-      conversationHistory: ledger.transcript, conversationLedger: ledger.factsText,
-      productSummary, matchedProducts, cognitiveState, listeningSignals, deliveryMode,
+      workspaceName,
+      contactName,
+      compressedContext,
+      conversationHistory: ledger.transcript,
+      conversationLedger: ledger.factsText,
+      productSummary,
+      matchedProducts,
+      cognitiveState,
+      listeningSignals,
+      deliveryMode,
       action: cognitiveState?.nextBestAction || 'RESPOND',
-      tactic: cognitiveState?.nextBestAction === 'RESPOND' && listeningSignals.validationNeeded ? 'EMPATHETIC_ECHO' : null,
+      tactic:
+        cognitiveState?.nextBestAction === 'RESPOND' && listeningSignals.validationNeeded
+          ? 'EMPATHETIC_ECHO'
+          : null,
     });
 
     const userPrompt = `Mensagem do cliente:\n${messageContent}\nGere uma unica mensagem pronta para WhatsApp.\nSe houver emocao, valide antes de conduzir.\nNao use listas.\nNao use emoji por padrao.\nNao use mais de uma pergunta.\nEvite frases de vendedor-script.\nSe a mensagem permitir, termine com um gancho curto que convide resposta.`;
@@ -165,11 +199,16 @@ export async function generateAutonomousFallbackResponse(params: {
     const response = await ai.generateResponse(systemPrompt, userPrompt, 'writer');
     return detectAndFixAntiPatterns(String(response || '').trim());
   } catch (err: unknown) {
-    const errInstanceofError = err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
-    log.warn('autopilot_generic_fallback_ai_error', { workspaceId, error: errInstanceofError?.message });
+    const errInstanceofError =
+      err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
+    log.warn('autopilot_generic_fallback_ai_error', {
+      workspaceId,
+      error: errInstanceofError?.message,
+    });
     return detectAndFixAntiPatterns(
       matchedProducts.length > 0
         ? `Posso te ajudar com ${matchedProducts.join(', ')}. ${cognitiveState?.nextBestQuestion || 'Qual ponto voce quer ver primeiro?'}`
-        : `${listeningSignals.validationNeeded ? 'Faz sentido o que voce trouxe. ' : ''}${cognitiveState?.nextBestQuestion || 'Me diz o que voce precisa resolver primeiro.'}`);
+        : `${listeningSignals.validationNeeded ? 'Faz sentido o que voce trouxe. ' : ''}${cognitiveState?.nextBestQuestion || 'Me diz o que voce precisa resolver primeiro.'}`,
+    );
   }
 }

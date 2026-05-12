@@ -1,18 +1,22 @@
 import { prisma } from '../../db';
 import { flowQueue } from '../../queue';
-import {
-  normalizeJsonObject,
-  type UnknownRecord,
-  type QuotedCustomerMessage,
-} from './shared';
+import { normalizeJsonObject, type UnknownRecord, type QuotedCustomerMessage } from './shared';
 import { ensureTrustedContactProfile } from './profile';
 import { buildMessage } from './execution-planner';
-import { checkDeliveryGuards, resolveContactForExecution, type GuardResult } from './execution-guards';
+import {
+  checkDeliveryGuards,
+  resolveContactForExecution,
+  type GuardResult,
+} from './execution-guards';
 import { dispatchAutopilotAction } from './execution-dispatcher';
 
 export { buildMessage } from './execution-planner';
 export { persistFallbackMessage } from './execution-audit';
-export { checkDeliveryGuards, ensureCompliance, resolveContactForExecution } from './execution-guards';
+export {
+  checkDeliveryGuards,
+  ensureCompliance,
+  resolveContactForExecution,
+} from './execution-guards';
 export { dispatchAutopilotAction } from './execution-dispatcher';
 
 export async function executeAction(
@@ -49,7 +53,17 @@ export async function executeAction(
   if (!targetPhone && input.contactId) {
     const contact = await prisma.contact.findUnique({
       where: { id: input.contactId },
-      select: { phone: true, email: true, customFields: true, optIn: true, optedOutAt: true, id: true, workspaceId: true, name: true, tags: { select: { name: true } } },
+      select: {
+        phone: true,
+        email: true,
+        customFields: true,
+        optIn: true,
+        optedOutAt: true,
+        id: true,
+        workspaceId: true,
+        name: true,
+        tags: { select: { name: true } },
+      },
     });
     contactRecord = contact as UnknownRecord | undefined;
     targetPhone = contact?.phone || input.contactId;
@@ -58,21 +72,36 @@ export async function executeAction(
   if (!targetPhone) return 'skipped';
 
   if (!contactEmail) {
-    const resolved = await resolveContactForExecution(input.workspaceId, targetPhone, input.contactId);
+    const resolved = await resolveContactForExecution(
+      input.workspaceId,
+      targetPhone,
+      input.contactId,
+    );
     contactRecord = resolved.contactRecord || contactRecord;
     contactEmail = resolved.contactEmail || contactEmail;
-    if (resolved.contactRecord?.id) input.contactId = input.contactId || (resolved.contactRecord.id as string);
+    if (resolved.contactRecord?.id)
+      input.contactId = input.contactId || (resolved.contactRecord.id as string);
   }
 
-  const displayName = input.contactName || (contactRecord?.name as string | undefined) || targetPhone || 'contato';
+  const displayName =
+    input.contactName || (contactRecord?.name as string | undefined) || targetPhone || 'contato';
   const deliveryMode = input.deliveryMode || 'proactive';
 
   const guard: GuardResult = await checkDeliveryGuards({
-    workspaceId: input.workspaceId, contactId: input.contactId, phone: targetPhone,
-    chatId: input.chatId, settings: input.settings || {}, workspaceRecord: input.workspaceRecord,
-    deliveryMode, action, intent: input.intent, intentConfidence: input.intentConfidence,
-    usedHistory: input.usedHistory, usedKb: input.usedKb,
-    smokeTestId: input.smokeTestId, conversationId: input.conversationId,
+    workspaceId: input.workspaceId,
+    contactId: input.contactId,
+    phone: targetPhone,
+    chatId: input.chatId,
+    settings: input.settings || {},
+    workspaceRecord: input.workspaceRecord,
+    deliveryMode,
+    action,
+    intent: input.intent,
+    intentConfidence: input.intentConfidence,
+    usedHistory: input.usedHistory,
+    usedKb: input.usedKb,
+    smokeTestId: input.smokeTestId,
+    conversationId: input.conversationId,
     idempotencyContext: input.idempotencyContext,
   });
   if (!guard.allowed) return 'skipped';
@@ -81,17 +110,31 @@ export async function executeAction(
   if (!msg) return 'skipped';
 
   const dispatchResult = await dispatchAutopilotAction({
-    workspaceId: input.workspaceId, action, contactId: input.contactId,
-    contactRecord, conversationId: input.conversationId, phone: targetPhone,
-    chatId: input.chatId, contactName: displayName, message: msg,
-    settings: input.settings || {}, workspaceRecord: input.workspaceRecord,
-    intent: input.intent, reason: input.reason, intentConfidence: input.intentConfidence,
-    usedHistory: input.usedHistory, usedKb: input.usedKb,
-    deliveryMode, smokeTestId: input.smokeTestId, smokeMode: input.smokeMode,
-    runId: input.runId, customerMessages: input.customerMessages,
+    workspaceId: input.workspaceId,
+    action,
+    contactId: input.contactId,
+    contactRecord,
+    conversationId: input.conversationId,
+    phone: targetPhone,
+    chatId: input.chatId,
+    contactName: displayName,
+    message: msg,
+    settings: input.settings || {},
+    workspaceRecord: input.workspaceRecord,
+    intent: input.intent,
+    reason: input.reason,
+    intentConfidence: input.intentConfidence,
+    usedHistory: input.usedHistory,
+    usedKb: input.usedKb,
+    deliveryMode,
+    smokeTestId: input.smokeTestId,
+    smokeMode: input.smokeMode,
+    runId: input.runId,
+    customerMessages: input.customerMessages,
     idempotencyContext: input.idempotencyContext,
     latestQuotedMessageId: guard.context?.latestQuotedMessageId,
-    hasEmailFallback: true, contactEmail,
+    hasEmailFallback: true,
+    contactEmail,
     followupEligible: action === 'SEND_OFFER' || action === 'GHOST_CLOSER',
     isAudioAction: action === 'SEND_AUDIO',
   });
@@ -104,8 +147,10 @@ export async function executeAction(
     const hotFlowId = input.settings?.autopilot?.hotFlowId;
     if (hotFlowId) {
       await flowQueue.add('run-flow', {
-        workspaceId: input.workspaceId, flowId: hotFlowId,
-        user: targetPhone, initialVars: { source: 'autopilot_hot', lastMessage: input.messageContent || '' },
+        workspaceId: input.workspaceId,
+        flowId: hotFlowId,
+        user: targetPhone,
+        initialVars: { source: 'autopilot_hot', lastMessage: input.messageContent || '' },
       });
     }
   }
@@ -146,14 +191,30 @@ export async function sendDirectAutopilotText(input: {
   if (!targetPhone && input.contactId) {
     contactRecord = await prisma.contact.findFirst({
       where: { id: input.contactId, workspaceId: input.workspaceId },
-      select: { id: true, phone: true, name: true, customFields: true, optIn: true, optedOutAt: true, tags: { select: { name: true } } },
+      select: {
+        id: true,
+        phone: true,
+        name: true,
+        customFields: true,
+        optIn: true,
+        optedOutAt: true,
+        tags: { select: { name: true } },
+      },
     });
     targetPhone = contactRecord?.phone;
   }
   if (!contactRecord && input.contactId) {
     contactRecord = await prisma.contact.findFirst({
       where: { id: input.contactId, workspaceId: input.workspaceId },
-      select: { id: true, phone: true, name: true, customFields: true, optIn: true, optedOutAt: true, tags: { select: { name: true } } },
+      select: {
+        id: true,
+        phone: true,
+        name: true,
+        customFields: true,
+        optIn: true,
+        optedOutAt: true,
+        tags: { select: { name: true } },
+      },
     });
   }
 
@@ -168,32 +229,58 @@ export async function sendDirectAutopilotText(input: {
     String(contactCustomFields.lastResolvedChatId || '').trim() ||
     undefined;
   const trustedProfile = await ensureTrustedContactProfile({
-    workspaceId: input.workspaceId, contactId: input.contactId, phone: targetPhone,
-    chatId: resolvedChatId, contactName: displayName, existingContact: contactRecord,
+    workspaceId: input.workspaceId,
+    contactId: input.contactId,
+    phone: targetPhone,
+    chatId: resolvedChatId,
+    contactName: displayName,
+    existingContact: contactRecord,
   }).catch(() => ({ contactId: '', trustedName: '', savedToWhatsapp: false }));
   if (trustedProfile.contactId && !input.contactId) input.contactId = trustedProfile.contactId;
 
   const deliveryMode = input.deliveryMode || 'proactive';
 
   const guard: GuardResult = await checkDeliveryGuards({
-    workspaceId: input.workspaceId, contactId: input.contactId, phone: targetPhone,
-    chatId: resolvedChatId, settings: input.settings || {}, workspaceRecord: input.workspaceRecord,
-    deliveryMode, action, intent: input.intent, intentConfidence: input.intentConfidence,
-    usedHistory: input.usedHistory, usedKb: input.usedKb,
-    smokeTestId: input.smokeTestId, conversationId: input.conversationId,
+    workspaceId: input.workspaceId,
+    contactId: input.contactId,
+    phone: targetPhone,
+    chatId: resolvedChatId,
+    settings: input.settings || {},
+    workspaceRecord: input.workspaceRecord,
+    deliveryMode,
+    action,
+    intent: input.intent,
+    intentConfidence: input.intentConfidence,
+    usedHistory: input.usedHistory,
+    usedKb: input.usedKb,
+    smokeTestId: input.smokeTestId,
+    conversationId: input.conversationId,
     idempotencyContext: input.idempotencyContext,
   });
   if (!guard.allowed) return 'skipped';
 
   const dispatchResult = await dispatchAutopilotAction({
-    workspaceId: input.workspaceId, action, contactId: input.contactId,
-    contactRecord, conversationId: input.conversationId, phone: targetPhone,
-    chatId: resolvedChatId, contactName: displayName, message,
-    settings: input.settings || {}, workspaceRecord: input.workspaceRecord,
-    intent: input.intent, reason: input.reason, intentConfidence: input.intentConfidence,
-    usedHistory: input.usedHistory, usedKb: input.usedKb,
-    deliveryMode, smokeTestId: input.smokeTestId, smokeMode: input.smokeMode,
-    runId: input.runId, customerMessages: input.customerMessages,
+    workspaceId: input.workspaceId,
+    action,
+    contactId: input.contactId,
+    contactRecord,
+    conversationId: input.conversationId,
+    phone: targetPhone,
+    chatId: resolvedChatId,
+    contactName: displayName,
+    message,
+    settings: input.settings || {},
+    workspaceRecord: input.workspaceRecord,
+    intent: input.intent,
+    reason: input.reason,
+    intentConfidence: input.intentConfidence,
+    usedHistory: input.usedHistory,
+    usedKb: input.usedKb,
+    deliveryMode,
+    smokeTestId: input.smokeTestId,
+    smokeMode: input.smokeMode,
+    runId: input.runId,
+    customerMessages: input.customerMessages,
     idempotencyContext: input.idempotencyContext,
     latestQuotedMessageId: guard.context?.latestQuotedMessageId,
     hasEmailFallback: false,

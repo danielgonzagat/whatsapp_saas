@@ -181,7 +181,7 @@ export class CheckoutPaymentService {
       currency: opts.currency,
       idempotencyKey: params.idempotencyKey || params.orderId,
       buyerEmail: params.customerEmail,
-      paymentMethodTypes: (isPix ? ['pix'] : ['card']) as ('pix' | 'card')[],
+      paymentMethodTypes: isPix ? ['pix'] : ['card'],
       metadata: {
         kloel_order_id: params.orderId,
         workspace_id: params.workspaceId,

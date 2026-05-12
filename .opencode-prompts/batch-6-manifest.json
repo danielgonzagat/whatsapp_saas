@@ -1,0 +1,31 @@
+{
+  "runId": "batch-6-2026-05-11",
+  "concurrency": 4,
+  "timeoutSec": 0,
+  "staggerMs": 30000,
+  "dir": "/Users/danielpenin/whatsapp_saas",
+  "skipPermissions": true,
+  "_note": "Batch 6 — strict-mode sweep splitting 703 backend + 152 frontend tsc errors into 4 parallel slices. Stagger 30s to avoid SQLite boot-window race. Background dispatch authorized 2026-05-11.",
+  "tasks": [
+    {
+      "id": "Q-7-kloel",
+      "title": "Wave Q/7 — Strict-mode kloel (~60 errors)",
+      "promptFile": ".opencode-prompts/batch-6/strict-mode-kloel.md"
+    },
+    {
+      "id": "Q-8-payments-marketing",
+      "title": "Wave Q/8 — Strict-mode payments + marketing + webhooks (~50 errors)",
+      "promptFile": ".opencode-prompts/batch-6/strict-mode-payments-marketing.md"
+    },
+    {
+      "id": "Q-9-rest-backend",
+      "title": "Wave Q/9 — Strict-mode auth + billing + checkout + flows + whatsapp + others (~200 errors)",
+      "promptFile": ".opencode-prompts/batch-6/strict-mode-rest.md"
+    },
+    {
+      "id": "Q-10-frontend",
+      "title": "Wave Q/10 — Strict-mode frontend (~152 errors, unblocks Vercel kloel-admin)",
+      "promptFile": ".opencode-prompts/batch-6/strict-mode-frontend.md"
+    }
+  ]
+}

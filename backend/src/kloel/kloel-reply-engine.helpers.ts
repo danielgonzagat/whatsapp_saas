@@ -232,7 +232,9 @@ export async function buildAssistantReplyImpl(
   } = params;
   const { openai, prisma, planLimits, threadService, wsContextService, toolRouter } = deps;
 
-  if (!deps.hasOpenAiKey() && !process.env.ANTHROPIC_API_KEY) return deps.unavailableMessage;
+  if (!deps.hasOpenAiKey() && !process.env.ANTHROPIC_API_KEY) {
+    return deps.unavailableMessage;
+  }
 
   const companyName = 'sua empresa';
   let userName = 'Usuário';
@@ -297,7 +299,9 @@ export async function buildAssistantReplyImpl(
     userMessage: message,
   });
   onTraceEvent?.(createKloelStatusEvent('thinking'));
-  if (workspaceId) await planLimits.ensureTokenBudget(workspaceId);
+  if (workspaceId) {
+    await planLimits.ensureTokenBudget(workspaceId);
+  }
 
   const isChatMode = mode === 'chat';
   const response = await chatCompletionWithFallback(
@@ -315,10 +319,11 @@ export async function buildAssistantReplyImpl(
     },
     resolveBackendOpenAIModel(isChatMode ? 'brain_fallback' : 'writer_fallback'),
   );
-  if (workspaceId)
+  if (workspaceId) {
     await planLimits
       .trackAiUsage(workspaceId, response?.usage?.total_tokens ?? 500)
       .catch(() => {});
+  }
 
   const initialMsg = response.choices[0]?.message;
   let assistantMessage = initialMsg?.content || deps.unavailableMessage;

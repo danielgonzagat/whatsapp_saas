@@ -27,7 +27,7 @@ export function PlatformDetailTab({
   const camps = campaigns.filter((c) => c.platform === platformKey);
 
   const handleCampaignToggle = async (c: Campaign) => {
-    if (platformKey !== 'meta' || !metaAccessToken) return;
+    if (platformKey !== 'meta' || !metaAccessToken) {return;}
     const newStatus = c.status === 'active' ? 'PAUSED' : 'ACTIVE';
     await metaAdsApi.updateCampaignStatus(c.id, newStatus);
     onCampaignsChange(
@@ -72,7 +72,7 @@ export function PlatformDetailTab({
           <button
             type="button"
             onClick={() => {
-              if (platformKey === 'meta') window.location.href = '/conta';
+              if (platformKey === 'meta') {window.location.href = '/conta';}
             }}
             style={{
               padding: '10px 24px', background: platform.color, border: 'none', borderRadius: 6,

@@ -9,16 +9,24 @@ export function sortChatsByPriority(
 ): WahaChatSummary[] {
   return [...chats].sort((a, b) => {
     const ud = (b.unreadCount || 0) - (a.unreadCount || 0);
-    if (ud !== 0) return ud;
+    if (ud !== 0) {
+      return ud;
+    }
     const ad = resolveChatActivityTimestamp(b) - resolveChatActivityTimestamp(a);
-    if (ad !== 0) return ad;
+    if (ad !== 0) {
+      return ad;
+    }
     const rpd =
       Number(history.isRemoteChatAwaitingReply(b)) - Number(history.isRemoteChatAwaitingReply(a));
-    if (rpd !== 0) return rpd;
+    if (rpd !== 0) {
+      return rpd;
+    }
     const rd =
       Number(resolveChatActivityTimestamp(b) >= since.getTime()) -
       Number(resolveChatActivityTimestamp(a) >= since.getTime());
-    if (rd !== 0) return rd;
+    if (rd !== 0) {
+      return rd;
+    }
     return String(a.id).localeCompare(String(b.id));
   });
 }
@@ -60,7 +68,9 @@ export function selectCandidateChats(
   );
   const deduped = new Map<string, WahaChatSummary>();
   for (const c of [...pri, ...fb]) {
-    if (!deduped.has(c.id)) deduped.set(c.id, c);
+    if (!deduped.has(c.id)) {
+      deduped.set(c.id, c);
+    }
   }
   return { chats: Array.from(deduped.values()), fallbackChatIds: new Set(fb.map((c) => c.id)) };
 }

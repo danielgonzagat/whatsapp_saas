@@ -15,8 +15,12 @@ const NON_SLUG_CHAR_RE = /[^a-z0-9_:-]+/g;
 
 /** Safely coerce unknown values to string. */
 function safeStr(value: unknown, fallback = ''): string {
-  if (typeof value === 'string') return value;
-  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value);
+  }
   return fallback;
 }
 
@@ -51,7 +55,9 @@ export async function toolListProducts(
       take: 100,
     }),
   );
-  if (products.length === 0) return { success: true, message: 'Nenhum produto cadastrado ainda.' };
+  if (products.length === 0) {
+    return { success: true, message: 'Nenhum produto cadastrado ainda.' };
+  }
   const list = products.map((p) => `- ${p.name}: R$ ${p.price}`).join('\n');
   return { success: true, products, message: `Aqui estão seus produtos:\n\n${list}` };
 }
@@ -69,7 +75,9 @@ export async function toolDeleteProduct(
     where.name = { contains: args.productName, mode: 'insensitive' };
   }
   const product = await prisma.product.findFirst({ where: { ...where, workspaceId } });
-  if (!product) return { success: false, error: 'Produto não encontrado.' };
+  if (!product) {
+    return { success: false, error: 'Produto não encontrado.' };
+  }
   await prisma.$transaction(
     [
       prisma.product.updateMany({
@@ -133,7 +141,9 @@ export async function toolRememberUserInfo(
     .replace(NON_SLUG_CHAR_RE, '_')
     .slice(0, 80);
   const value = safeStr(args?.value).trim();
-  if (!normalizedKey || !value) return { success: false, error: 'missing_user_memory_payload' };
+  if (!normalizedKey || !value) {
+    return { success: false, error: 'missing_user_memory_payload' };
+  }
   const profileKey = `user_profile:${userId || 'workspace_owner'}`;
   const existing = await prisma.kloelMemory.findUnique({
     where: { workspaceId_key: { workspaceId, key: profileKey } },

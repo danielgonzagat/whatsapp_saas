@@ -5,11 +5,6 @@ export interface BrazilianBank {
   ispb: string;
 }
 
-/** Top ~15 banks shown when the user opens the dropdown without typing */
-const POPULAR_BANK_CODES = new Set([
-  1, 33, 77, 104, 212, 237, 260, 290, 323, 336, 341, 380, 422, 748, 756,
-]);
-
 /**
  * Brazilian banks registered with Banco Central (COMPE codes).
  * Source: BrasilAPI /api/banks/v1 — filtered to banks with code, sorted by code.
@@ -270,8 +265,3 @@ export const BRAZILIAN_BANKS: BrazilianBank[] = [
     ispb: '02318507',
   },
 ];
-
-/** Format bank code with zero-fill to 3 digits */
-function formatBankCode(code: number): string {
-  return String(code).padStart(3, '0');
-}

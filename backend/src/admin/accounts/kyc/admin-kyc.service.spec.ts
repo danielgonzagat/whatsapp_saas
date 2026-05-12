@@ -45,7 +45,9 @@ describe('AdminKycService', () => {
     mockAudit.append.mockResolvedValue(undefined);
 
     mockTransaction.mockImplementation(async (ops: unknown) => {
-      if (typeof ops === 'function') return ops(prismaMock);
+      if (typeof ops === 'function') {
+        return ops(prismaMock);
+      }
       return { count: 1 };
     });
 

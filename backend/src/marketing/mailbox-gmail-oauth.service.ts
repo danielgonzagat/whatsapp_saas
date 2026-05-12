@@ -453,7 +453,9 @@ export class MailboxGmailOAuthService {
   private metricReason(error: unknown): string {
     if (error instanceof BadRequestException) {
       const response = error.getResponse();
-      if (typeof response === 'string') return response;
+      if (typeof response === 'string') {
+        return response;
+      }
       if (response && typeof response === 'object' && 'message' in response) {
         const message = response.message;
         return Array.isArray(message) ? String(message[0] || 'bad_request') : String(message);

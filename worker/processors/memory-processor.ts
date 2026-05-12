@@ -316,5 +316,3 @@ export const memoryWorker = new Worker(
   },
   { concurrency: WORKER_CONCURRENCY, ...buildQueueOptions(), lockDuration: 300_000 },
 );
-
-

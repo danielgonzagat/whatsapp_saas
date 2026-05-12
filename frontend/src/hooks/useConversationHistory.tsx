@@ -103,8 +103,10 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
 
     if (!isAuthenticated) {
       didSyncRef.current = false;
-      setConversations([]);
-      setActiveConv(null);
+      queueMicrotask(() => {
+        setConversations([]);
+        setActiveConv(null);
+      });
       return;
     }
 
@@ -113,7 +115,9 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
     }
     didSyncRef.current = true;
 
-    void refreshConversations();
+    queueMicrotask(() => {
+      void refreshConversations();
+    });
   }, [isAuthenticated, isLoading, refreshConversations]);
 
   useEffect(() => {

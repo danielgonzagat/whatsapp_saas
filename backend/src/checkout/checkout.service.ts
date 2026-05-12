@@ -313,12 +313,8 @@ export class CheckoutService {
       quantity: checkout.quantity,
       freeShipping: checkout.freeShipping,
       brandName: checkout.checkoutConfig?.brandName ?? checkout.name,
-      ...(checkout.compareAtPrice != null
-        ? { compareAtPrice: checkout.compareAtPrice }
-        : {}),
-      ...(checkout.shippingPrice != null
-        ? { shippingPrice: checkout.shippingPrice }
-        : {}),
+      ...(checkout.compareAtPrice != null ? { compareAtPrice: checkout.compareAtPrice } : {}),
+      ...(checkout.shippingPrice != null ? { shippingPrice: checkout.shippingPrice } : {}),
     };
     const duplicated = await this.productService.createCheckout(
       checkout.productId,

@@ -256,9 +256,13 @@ export class AuthTokenService {
 
   /** Blacklist an access token JTI so it cannot be reused before natural expiry. */
   async revokeAccessToken(jti: string, exp: number): Promise<void> {
-    if (!this.redis) return;
+    if (!this.redis) {
+      return;
+    }
     const ttlSeconds = Math.max(0, Math.ceil(exp - Date.now() / 1000));
-    if (ttlSeconds <= 0) return;
+    if (ttlSeconds <= 0) {
+      return;
+    }
     try {
       await this.redis.setex(`jti:revoked:${jti}`, ttlSeconds, '1');
     } catch (error: unknown) {
@@ -270,7 +274,9 @@ export class AuthTokenService {
 
   /** Check whether an access token JTI has been revoked. */
   async isAccessTokenRevoked(jti: string): Promise<boolean> {
-    if (!this.redis) return false;
+    if (!this.redis) {
+      return false;
+    }
     try {
       const entry = await this.redis.exists(`jti:revoked:${jti}`);
       return entry === 1;

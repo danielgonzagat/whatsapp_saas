@@ -184,7 +184,9 @@ export class AffiliateMarketplaceController {
       select: { category: true, name: true },
       take: 5,
     });
-    const categories = [...new Set(myProducts.map((product) => product.category).filter(Boolean))] as string[];
+    const categories = [
+      ...new Set(myProducts.map((product) => product.category).filter(Boolean)),
+    ] as string[];
 
     const whereInput: Prisma.AffiliateProductWhereInput = { listed: true };
     if (categories.length > 0) {

@@ -95,7 +95,9 @@ export class SystemHealthService {
       Object.values(status)
         .filter((s: unknown) => typeof s === 'object' && s && 'status' in s)
         .every((s: unknown) => {
-          if (typeof s !== 'object' || !s || !('status' in s)) return true;
+          if (typeof s !== 'object' || !s || !('status' in s)) {
+            return true;
+          }
           const status = String((s as Record<string, unknown>).status ?? '');
           return ['UP', 'CONFIGURED', 'NOT_CONFIGURED'].includes(status);
         });

@@ -221,7 +221,7 @@ function MetaConnectPrompt({
   connecting?: boolean;
 }) {
   const ch = CH_CONFIG[channelKey];
-  if (!ch) return null;
+  if (!ch) {return null;}
 
   return (
     <div

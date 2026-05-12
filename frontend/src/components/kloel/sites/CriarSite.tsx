@@ -36,12 +36,12 @@ export function CriarSite({ mode }: { mode?: string }) {
   const productName = searchParams?.get('productName') || '';
 
   useEffect(() => {
-    if (!dynamicMode || prompt.trim()) return;
+    if (!dynamicMode || prompt.trim()) {return;}
     setPrompt(DEFAULT_DYNAMIC_PROMPT);
   }, [dynamicMode, prompt]);
 
   useEffect(() => {
-    if (prompt.trim() || !productName) return;
+    if (prompt.trim() || !productName) {return;}
     setPrompt(`Crie uma página de vendas para o produto ${productName}, com headline forte, provas, FAQ, CTA principal e integração natural com checkout.`);
   }, [productName, prompt]);
 
@@ -50,13 +50,13 @@ export function CriarSite({ mode }: { mode?: string }) {
     apiFetch('/kloel/site/list')
       .then((res) => {
         const data = res.data as { sites?: SiteItem[] } | undefined;
-        if (data?.sites) setSavedSites(data.sites);
+        if (data?.sites) {setSavedSites(data.sites);}
       })
       .finally(() => setLoadingSites(false));
   }, []);
 
   const productList = useMemo(() => {
-    if (!rawProducts || !Array.isArray(rawProducts)) return [];
+    if (!rawProducts || !Array.isArray(rawProducts)) {return [];}
     return (rawProducts as Record<string, unknown>[])
       .slice(0, 6)
       .map((p: Record<string, unknown>) => ({
@@ -68,7 +68,7 @@ export function CriarSite({ mode }: { mode?: string }) {
   const invalidateSites = () => mutate((key: string) => typeof key === 'string' && key.startsWith('/kloel/site'));
 
   const handleGenerate = async () => {
-    if (!prompt.trim()) return;
+    if (!prompt.trim()) {return;}
     setError('');
     setPhase('building');
     const res = await apiFetch('/kloel/site/generate', { method: 'POST', body: { prompt: prompt.trim() } });
@@ -90,13 +90,13 @@ export function CriarSite({ mode }: { mode?: string }) {
     const body = { name: siteName || 'Site sem titulo', htmlContent: generatedHtml };
     if (savedSiteId) {
       const res = await apiFetch(`/kloel/site/${savedSiteId}`, { method: 'PUT', body });
-      if (res.error) setError(res.error);
-      else invalidateSites();
+      if (res.error) {setError(res.error);}
+      else {invalidateSites();}
     } else {
       const res = await apiFetch('/kloel/site/save', { method: 'POST', body });
       if (res.error) { setError(res.error); } else {
         const data = res.data as { site?: { id?: string } } | undefined;
-        if (data?.site?.id) setSavedSiteId(data.site.id);
+        if (data?.site?.id) {setSavedSiteId(data.site.id);}
         invalidateSites();
       }
     }
@@ -122,11 +122,11 @@ export function CriarSite({ mode }: { mode?: string }) {
     setPublishing(false);
     if (res.error) { setError(res.error); return; }
     const data = res.data as { url?: string } | undefined;
-    if (data?.url) setPublishedUrl(data.url);
+    if (data?.url) {setPublishedUrl(data.url);}
   };
 
   const handleEditWithAI = async () => {
-    if (!editPrompt.trim()) return;
+    if (!editPrompt.trim()) {return;}
     setEditLoading(true);
     setError('');
     const res = await apiFetch('/kloel/site/generate', { method: 'POST', body: { prompt: editPrompt.trim(), currentHtml: generatedHtml } });
@@ -153,7 +153,7 @@ export function CriarSite({ mode }: { mode?: string }) {
     }
   };
 
-  if (phase === 'building') return <CriarSiteBuildingPhase />;
+  if (phase === 'building') {return <CriarSiteBuildingPhase />;}
 
   if (phase === 'editor') {
     return (

@@ -93,9 +93,13 @@ export class KloelController {
   ) {}
 
   private readUserId(user: unknown) {
-    if (!user || typeof user !== 'object') return undefined;
+    if (!user || typeof user !== 'object') {
+      return undefined;
+    }
     const sub = 'sub' in user ? user.sub : undefined;
-    if (typeof sub === 'string' && sub.trim()) return sub;
+    if (typeof sub === 'string' && sub.trim()) {
+      return sub;
+    }
     const legacyId = 'id' in user ? user.id : undefined;
     return typeof legacyId === 'string' && legacyId.trim() ? legacyId : undefined;
   }
@@ -177,7 +181,9 @@ export class KloelController {
     const userName = typeof req.user?.name === 'string' ? req.user.name : undefined;
     const abortController = new AbortController();
     const abortWithReason = (reason: string) => {
-      if (!abortController.signal.aborted) abortController.abort(reason);
+      if (!abortController.signal.aborted) {
+        abortController.abort(reason);
+      }
     };
     const timeoutMs = Number(process.env.KLOEL_THINK_TIMEOUT_MS || 240000);
     const timeout = setTimeout(() => abortWithReason('request_timeout'), timeoutMs);
@@ -608,7 +614,9 @@ export class KloelController {
     @Req() req: AuthenticatedRequest,
   ) {
     const messageId = String(dto?.messageId || '').trim();
-    if (!messageId) throw new BadRequestException('messageId é obrigatório.');
+    if (!messageId) {
+      throw new BadRequestException('messageId é obrigatório.');
+    }
     const userId = typeof req.user?.sub === 'string' ? req.user.sub : undefined;
     const userName = typeof req.user?.name === 'string' ? req.user.name : undefined;
     return this.kloelService.regenerateThreadAssistantResponse({

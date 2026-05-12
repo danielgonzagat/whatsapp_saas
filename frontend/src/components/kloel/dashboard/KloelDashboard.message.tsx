@@ -237,8 +237,8 @@ export function MessageBlock({
           entries={processingTrace}
           summary={processingSummary}
           isProcessing={true}
-          showSlowHint={showSlowHint}
-          onCancel={onCancelProcessing}
+          {...(showSlowHint !== undefined ? { showSlowHint } : {})}
+          {...(onCancelProcessing !== undefined ? { onCancel: onCancelProcessing } : {})}
         />
       );
     }
@@ -260,8 +260,8 @@ export function MessageBlock({
           entries={processingTrace}
           summary={processingSummary}
           isProcessing={isThinking}
-          showSlowHint={showSlowHint}
-          onCancel={onCancelProcessing}
+          {...(showSlowHint !== undefined ? { showSlowHint } : {})}
+          {...(onCancelProcessing !== undefined ? { onCancel: onCancelProcessing } : {})}
         />
       ) : null}
 
@@ -271,7 +271,9 @@ export function MessageBlock({
         onChange={setActiveVersionIndex}
       />
 
-      <AssistantAssetBlock metadata={message.metadata} />
+      <AssistantAssetBlock
+        {...(message.metadata !== undefined ? { metadata: message.metadata } : {})}
+      />
       <KloelMarkdown content={visibleAssistantText} />
       {isStreaming ? (
         <span

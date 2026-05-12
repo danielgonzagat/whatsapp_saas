@@ -1,12 +1,7 @@
 import { prisma } from '../../db';
 import { findFirstSequential } from '../../utils/async-sequence';
 import { unifiedWhatsAppProvider as whatsappApiProvider } from '../../providers/unified-whatsapp-provider';
-import {
-  log,
-  normalizeJsonObject,
-  type UnknownRecord,
-  type RemoteChatSummary,
-} from './shared';
+import { log, normalizeJsonObject, type UnknownRecord, type RemoteChatSummary } from './shared';
 import {
   normalizeCatalogPhone,
   expandComparablePhoneVariants,
@@ -79,7 +74,11 @@ export async function ensureTrustedContactProfile(input: {
     input = {
       ...input,
       contactId: seededContact.id,
-      existingContact: seededContact as unknown as { id?: string | null; name?: string | null; customFields?: UnknownRecord } | null,
+      existingContact: seededContact as unknown as {
+        id?: string | null;
+        name?: string | null;
+        customFields?: UnknownRecord;
+      } | null,
     };
   }
 

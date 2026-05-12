@@ -224,7 +224,7 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
       });
       mutate((key: unknown) => typeof key === 'string' && key.startsWith('/products'));
       setShowSaved(true);
-      if (savedTimer.current) clearTimeout(savedTimer.current);
+      if (savedTimer.current) {clearTimeout(savedTimer.current);}
       savedTimer.current = setTimeout(() => setShowSaved(false), 3000);
     } catch {}
     setSaving(false);

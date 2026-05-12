@@ -24,6 +24,8 @@ export function InboxConversationFilters({
             ['whatsapp', 'WhatsApp'],
             ['email', 'Email'],
             ['instagram', 'Instagram'],
+            ['facebook', 'Facebook'],
+            ['tiktok', 'TikTok'],
           ] as [ChannelFilter, string][]
         ).map(([value, label]) => (
           <button

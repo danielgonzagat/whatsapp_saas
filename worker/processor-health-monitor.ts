@@ -10,7 +10,11 @@ let lastQueueAlert = 0;
 const QUEUE_ALERT_COOLDOWN_MS = 5 * 60_000;
 const AUTOPILOT_QUEUE_CHECK_INTERVAL_MS = 60_000;
 
-async function sendOpsAlert(log: WorkerLogger, message: string, meta: Record<string, unknown> = {}): Promise<void> {
+async function sendOpsAlert(
+  log: WorkerLogger,
+  message: string,
+  meta: Record<string, unknown> = {},
+): Promise<void> {
   if (!ALERT_WEBHOOK || typeof globalThis.fetch !== 'function') {
     return;
   }
@@ -32,7 +36,12 @@ async function sendOpsAlert(log: WorkerLogger, message: string, meta: Record<str
   }
 }
 
-async function maybeAlertHighQueue(log: WorkerLogger, waiting: number, failed: number, now: number): Promise<void> {
+async function maybeAlertHighQueue(
+  log: WorkerLogger,
+  waiting: number,
+  failed: number,
+  now: number,
+): Promise<void> {
   if (waiting <= QUEUE_THRESHOLD || now - lastQueueAlert <= QUEUE_ALERT_COOLDOWN_MS) {
     return;
   }
@@ -41,7 +50,12 @@ async function maybeAlertHighQueue(log: WorkerLogger, waiting: number, failed: n
   await sendOpsAlert(log, 'Autopilot queue high', { waiting, failed, threshold: QUEUE_THRESHOLD });
 }
 
-async function maybeAlertFailedJobs(log: WorkerLogger, failed: number, waiting: number, now: number): Promise<void> {
+async function maybeAlertFailedJobs(
+  log: WorkerLogger,
+  failed: number,
+  waiting: number,
+  now: number,
+): Promise<void> {
   if (failed <= 0 || now - lastQueueAlert <= QUEUE_ALERT_COOLDOWN_MS) {
     return;
   }

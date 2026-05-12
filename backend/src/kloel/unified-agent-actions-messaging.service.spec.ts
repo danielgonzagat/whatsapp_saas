@@ -32,11 +32,9 @@ describe('UnifiedAgentActionsMessagingService', () => {
         direct: false,
       }),
       syncRemoteContactProfile: jest.fn().mockResolvedValue(undefined),
-    } as IWhatsappMessaging;
+    };
     audioService = {
-      textToSpeech: jest
-        .fn()
-        .mockResolvedValue(Buffer.from('fake-audio-data')),
+      textToSpeech: jest.fn().mockResolvedValue(Buffer.from('fake-audio-data')),
       transcribeFromUrl: jest.fn().mockResolvedValue({
         text: 'Transcrição de áudio',
         duration: 30,
@@ -65,9 +63,7 @@ describe('UnifiedAgentActionsMessagingService', () => {
       ],
     }).compile();
 
-    service = module.get<UnifiedAgentActionsMessagingService>(
-      UnifiedAgentActionsMessagingService,
-    );
+    service = module.get<UnifiedAgentActionsMessagingService>(UnifiedAgentActionsMessagingService);
   });
 
   afterEach(() => {
@@ -145,9 +141,7 @@ describe('UnifiedAgentActionsMessagingService', () => {
     });
 
     it('handles thrown exceptions gracefully', async () => {
-      whatsappService.sendMessage = jest
-        .fn()
-        .mockRejectedValue(new Error('network timeout'));
+      whatsappService.sendMessage = jest.fn().mockRejectedValue(new Error('network timeout'));
 
       const result = await service.actionSendMessage(wsId, phone, {
         message: 'Test',
@@ -324,11 +318,7 @@ describe('UnifiedAgentActionsMessagingService', () => {
 
       expect(result.success).toBe(true);
       expect(result.text).toBe('Transcrição base64');
-      expect(audioService.transcribeFromBase64).toHaveBeenCalledWith(
-        'base64data',
-        'en',
-        wsId,
-      );
+      expect(audioService.transcribeFromBase64).toHaveBeenCalledWith('base64data', 'en', wsId);
     });
 
     it('returns error when no audio source provided', async () => {
@@ -338,9 +328,7 @@ describe('UnifiedAgentActionsMessagingService', () => {
     });
 
     it('returns error when transcription is empty', async () => {
-      audioService.transcribeFromUrl = jest
-        .fn()
-        .mockResolvedValue({ text: '', language: 'pt' });
+      audioService.transcribeFromUrl = jest.fn().mockResolvedValue({ text: '', language: 'pt' });
 
       const result = await service.actionTranscribeAudio(wsId, {
         audioUrl: 'https://empty.audio',
@@ -364,10 +352,7 @@ describe('UnifiedAgentActionsMessagingService', () => {
     });
 
     it('resolves quotedMessageId from context', () => {
-      const options = service.buildWhatsAppSendOptions(
-        { providerMessageId: 'wamid.q' },
-        {},
-      );
+      const options = service.buildWhatsAppSendOptions({ providerMessageId: 'wamid.q' }, {});
 
       expect(options.quotedMessageId).toBe('wamid.q');
     });
@@ -389,9 +374,7 @@ describe('UnifiedAgentActionsMessagingService', () => {
 
   describe('resolveComplianceMode', () => {
     it('returns reactive when context deliveryMode is reactive', () => {
-      expect(
-        service.resolveComplianceMode({ deliveryMode: 'reactive' }),
-      ).toBe('reactive');
+      expect(service.resolveComplianceMode({ deliveryMode: 'reactive' })).toBe('reactive');
     });
 
     it('returns proactive by default', () => {
@@ -431,11 +414,7 @@ describe('UnifiedAgentActionsMessagingService', () => {
         text: 'Voice',
       });
 
-      expect(audioService.textToSpeech).toHaveBeenCalledWith(
-        'Voice',
-        'nova',
-        'ws-tenant',
-      );
+      expect(audioService.textToSpeech).toHaveBeenCalledWith('Voice', 'nova', 'ws-tenant');
     });
 
     it('actionTranscribeAudio passes workspaceId to audio service', async () => {
@@ -453,9 +432,7 @@ describe('UnifiedAgentActionsMessagingService', () => {
 
   describe('error handling', () => {
     it('actionSendMessage catches and returns error', async () => {
-      whatsappService.sendMessage = jest
-        .fn()
-        .mockRejectedValue(new Error('network failure'));
+      whatsappService.sendMessage = jest.fn().mockRejectedValue(new Error('network failure'));
 
       const result = await service.actionSendMessage(wsId, phone, {
         message: 'Test',
@@ -466,9 +443,7 @@ describe('UnifiedAgentActionsMessagingService', () => {
     });
 
     it('actionSendMedia catches and returns error', async () => {
-      whatsappService.sendMessage = jest
-        .fn()
-        .mockRejectedValue(new Error('timeout'));
+      whatsappService.sendMessage = jest.fn().mockRejectedValue(new Error('timeout'));
 
       const result = await service.actionSendMedia(wsId, phone, {
         url: 'https://fail.test',

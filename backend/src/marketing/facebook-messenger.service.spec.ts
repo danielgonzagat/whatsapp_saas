@@ -77,13 +77,7 @@ describe('FacebookMessengerService', () => {
       });
       fbMessageCreate.mockResolvedValue({});
 
-      const result = await service.sendMessage(
-        'ws-1',
-        'page-1',
-        'psid-1',
-        'Hello',
-        'token-abc',
-      );
+      const result = await service.sendMessage('ws-1', 'page-1', 'psid-1', 'Hello', 'token-abc');
 
       expect(fbMessageCreate).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -101,13 +95,7 @@ describe('FacebookMessengerService', () => {
       graphApiPost.mockResolvedValue({});
       fbMessageCreate.mockResolvedValue({});
 
-      const result = await service.sendMessage(
-        'ws-1',
-        'page-1',
-        'psid-1',
-        'Hello',
-        'token-abc',
-      );
+      const result = await service.sendMessage('ws-1', 'page-1', 'psid-1', 'Hello', 'token-abc');
 
       expect(result).toEqual({ mid: null, error: null });
     });
@@ -143,7 +131,7 @@ describe('FacebookMessengerService', () => {
         message: {},
       };
 
-      const result = await service.processIncomingMessage('ws-1', 'page-1', msg as never);
+      const result = await service.processIncomingMessage('ws-1', 'page-1', msg);
 
       expect(fbMessageUpsert).not.toHaveBeenCalled();
       expect(result).toBeUndefined();
@@ -329,9 +317,7 @@ describe('FacebookMessengerService', () => {
 
       await service.getMessages('ws-1', 'page-1');
 
-      expect(fbMessageFindMany).toHaveBeenCalledWith(
-        expect.objectContaining({ take: 50 }),
-      );
+      expect(fbMessageFindMany).toHaveBeenCalledWith(expect.objectContaining({ take: 50 }));
     });
   });
 

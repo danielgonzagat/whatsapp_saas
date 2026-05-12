@@ -25,7 +25,7 @@ export function useExportReport(filters: ReportFilters) {
   const exportReport = useCallback(
     (tabKey: string, fileLabel?: string) => {
       const ep = resolveExportEndpoint(tabKey);
-      if (!ep) return;
+      if (!ep) {return;}
       const url = buildUrl(ep, { ...filters, perPage: 1000 });
       swrFetcher(url)
         .then((data: unknown) => {
@@ -38,7 +38,7 @@ export function useExportReport(filters: ReportFilters) {
           } else {
             rows = (raw.data as ReportRow[]) || [];
           }
-          if (rows.length === 0) return;
+          if (rows.length === 0) {return;}
           const headers = Object.keys(rows[0]);
           const csv = [
             headers.join(','),
@@ -46,7 +46,7 @@ export function useExportReport(filters: ReportFilters) {
               headers
                 .map((h) => {
                   const val = row[h];
-                  if (val === null || val === undefined) return '';
+                  if (val === null || val === undefined) {return '';}
                   const str = typeof val === 'object' ? JSON.stringify(val) : String(val);
                   return str.includes(',') || str.includes('"') ? `"${str.replace(PATTERN_RE, '""')}"` : str;
                 })

@@ -20,10 +20,13 @@ export async function handleUploadFile(
   folder: string,
   req: Request,
 ) {
-  if (!file) return { success: false, error: 'Nenhum arquivo enviado' };
+  if (!file) {
+    return { success: false, error: 'Nenhum arquivo enviado' };
+  }
   const detectedMime = detectUploadedMime(file);
-  if (!detectedMime)
+  if (!detectedMime) {
     return { success: false, error: 'Tipo de arquivo não permitido ou assinatura inválida' };
+  }
   file.mimetype = detectedMime;
   const uniqueSuffix = buildTimestampedRuntimeId('upload');
   const filename = `${uniqueSuffix}${extname(file.originalname || '')}`;
@@ -48,10 +51,13 @@ export async function handleUploadChatFile(
   workspaceId: string,
   req: Request,
 ) {
-  if (!file) return { success: false, error: 'Nenhum arquivo enviado' };
+  if (!file) {
+    return { success: false, error: 'Nenhum arquivo enviado' };
+  }
   const detectedMime = detectUploadedMime(file);
-  if (!detectedMime)
+  if (!detectedMime) {
     return { success: false, error: 'Tipo de arquivo não permitido ou assinatura inválida' };
+  }
   file.mimetype = detectedMime;
   const uniqueSuffix = buildTimestampedRuntimeId('upload');
   const filename = `${uniqueSuffix}${extname(file.originalname || '')}`;
@@ -62,8 +68,11 @@ export async function handleUploadChatFile(
     workspaceId,
   });
   let fileType: 'image' | 'document' | 'audio' = 'document';
-  if (detectedMime.startsWith('image/')) fileType = 'image';
-  else if (detectedMime.startsWith('audio/')) fileType = 'audio';
+  if (detectedMime.startsWith('image/')) {
+    fileType = 'image';
+  } else if (detectedMime.startsWith('audio/')) {
+    fileType = 'audio';
+  }
   return {
     success: true,
     url: normalizeStorageUrlForRequest(stored.url, req),

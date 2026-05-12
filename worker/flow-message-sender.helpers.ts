@@ -143,7 +143,7 @@ export async function sendMessage(
                 id: created.id,
                 conversationId: conversation.id,
                 contactId: contact.id,
-            externalId: externalId || null,
+                externalId: externalId || null,
                 status: 'SENT',
               },
             }),

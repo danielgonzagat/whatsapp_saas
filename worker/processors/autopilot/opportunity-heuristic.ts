@@ -39,17 +39,43 @@ interface CatalogScoreResult {
   demographics: ReturnType<typeof inferHeuristicDemographics>;
 }
 
-function computeHeuristicScore(text: string, inboundCount: number, unreadCount: number, ageHours: number | null): { score: number; reasons: string[] } {
+function computeHeuristicScore(
+  text: string,
+  inboundCount: number,
+  unreadCount: number,
+  ageHours: number | null,
+): { score: number; reasons: string[] } {
   let score = 18;
   const reasons: string[] = [];
 
-  if (inboundCount >= 2) { score += Math.min(28, inboundCount * 6); reasons.push('multiple_recent_inbounds'); }
-  if (unreadCount > 0) { score += 12; reasons.push('has_unread_backlog'); }
-  if (PRE_C__O_VALOR_QUANTO_O_RE.test(text)) { score += 16; reasons.push('asked_price'); }
-  if (QUERO_VOU_COMPRAR_ME_MA_RE.test(text)) { score += 24; reasons.push('buying_signal'); }
-  if (PROBLEMA_ERRO_SUPORTE_A_RE.test(text)) { score -= 12; reasons.push('support_or_complaint'); }
-  if (ageHours !== null && ageHours <= 72) { score += 10; reasons.push('recent_activity'); }
-  if (ageHours !== null && ageHours > 24 * 7) { score -= 10; reasons.push('stale_interest'); }
+  if (inboundCount >= 2) {
+    score += Math.min(28, inboundCount * 6);
+    reasons.push('multiple_recent_inbounds');
+  }
+  if (unreadCount > 0) {
+    score += 12;
+    reasons.push('has_unread_backlog');
+  }
+  if (PRE_C__O_VALOR_QUANTO_O_RE.test(text)) {
+    score += 16;
+    reasons.push('asked_price');
+  }
+  if (QUERO_VOU_COMPRAR_ME_MA_RE.test(text)) {
+    score += 24;
+    reasons.push('buying_signal');
+  }
+  if (PROBLEMA_ERRO_SUPORTE_A_RE.test(text)) {
+    score -= 12;
+    reasons.push('support_or_complaint');
+  }
+  if (ageHours !== null && ageHours <= 72) {
+    score += 10;
+    reasons.push('recent_activity');
+  }
+  if (ageHours !== null && ageHours > 24 * 7) {
+    score -= 10;
+    reasons.push('stale_interest');
+  }
 
   score = Math.max(0, Math.min(100, Math.round(score)));
   return { score, reasons };
@@ -70,7 +96,8 @@ function inferHeuristicIntent(text: string, inboundCount: number): string {
 }
 
 function inferHeuristicNextBestAction(purchaseProbability: string): string {
-  if (purchaseProbability === 'VERY_HIGH' || purchaseProbability === 'HIGH') return 'PRIORITIZE_MANUAL_FOLLOWUP';
+  if (purchaseProbability === 'VERY_HIGH' || purchaseProbability === 'HIGH')
+    return 'PRIORITIZE_MANUAL_FOLLOWUP';
   if (purchaseProbability === 'MEDIUM') return 'NURTURE_LATER';
   return 'MONITOR_ONLY';
 }
@@ -89,7 +116,9 @@ function buildBoughtResult(input: {
   wonDealValue?: number | null;
   boughtByDeal: boolean;
 }): CatalogScoreResult {
-  const purchaseReason = input.boughtByDeal ? 'won_deal_recorded' : 'payment_or_access_confirmed_in_chat';
+  const purchaseReason = input.boughtByDeal
+    ? 'won_deal_recorded'
+    : 'payment_or_access_confirmed_in_chat';
   const purchasedProduct =
     String(input.wonDealTitle || '').trim() ||
     (CURSO_PLANO_MENTORIA_PR_RE.exec(input.text)?.[0] ?? null);
@@ -97,7 +126,8 @@ function buildBoughtResult(input: {
   const positivePostPurchaseSignal = OBRIGAD_VALEU_PERFEITO_RE.test(input.text);
   const repurchaseProbabilityScore = positivePostPurchaseSignal ? 0.78 : 0.56;
   const repurchaseLeadScore = Math.round(repurchaseProbabilityScore * 100);
-  const purchasedTitle = String(input.wonDealTitle || 'Cliente convertido').trim() || 'Cliente convertido';
+  const purchasedTitle =
+    String(input.wonDealTitle || 'Cliente convertido').trim() || 'Cliente convertido';
   return {
     leadScore: repurchaseLeadScore,
     purchaseProbability: positivePostPurchaseSignal ? ('HIGH' as const) : ('MEDIUM' as const),
@@ -106,7 +136,10 @@ function buildBoughtResult(input: {
     intent: 'BUY',
     summary: `${purchasedTitle} com compra identificada.`,
     nextBestAction: positivePostPurchaseSignal ? 'RETAIN_AND_UPSELL' : 'CUSTOMER_SUCCESS',
-    reasons: [purchaseReason, positivePostPurchaseSignal ? 'positive_post_purchase_signal' : 'existing_customer'],
+    reasons: [
+      purchaseReason,
+      positivePostPurchaseSignal ? 'positive_post_purchase_signal' : 'existing_customer',
+    ],
     buyerStatus: 'BOUGHT' as const,
     purchasedProduct,
     purchaseValue: purchaseValueRaw > 0 ? Number(purchaseValueRaw.toFixed(2)) : null,
@@ -119,7 +152,9 @@ function buildBoughtResult(input: {
   };
 }
 
-function buildOptedOutResult(demographics: ReturnType<typeof inferHeuristicDemographics>): CatalogScoreResult {
+function buildOptedOutResult(
+  demographics: ReturnType<typeof inferHeuristicDemographics>,
+): CatalogScoreResult {
   return {
     leadScore: 0,
     purchaseProbability: 'LOW' as const,
@@ -154,9 +189,10 @@ function buildColdLeadResult(
   const intent = inferHeuristicIntent(text, inboundCount);
   const nextBestAction = inferHeuristicNextBestAction(purchaseProbability);
   const notPurchasedReason = inferHeuristicNotPurchasedReason(text, inboundCount);
-  const summary = inboundCount > 0
-    ? `Contato com ${inboundCount} mensagem(ns) inbound recente(s). Ultimo tema: ${String(lastInboundContent || '').slice(0, 140)}`
-    : 'Contato catalogado sem historico suficiente para alta confianca.';
+  const summary =
+    inboundCount > 0
+      ? `Contato com ${inboundCount} mensagem(ns) inbound recente(s). Ultimo tema: ${String(lastInboundContent || '').slice(0, 140)}`
+      : 'Contato catalogado sem historico suficiente para alta confianca.';
 
   return {
     leadScore,
@@ -206,11 +242,29 @@ export function buildHeuristicCatalogScore(input: {
     (Number(input.wonDealValue || 0) || 0) > 0;
 
   if (boughtByDeal || PAGAMENTO_APROVADO_PAGA_RE.test(text)) {
-    return buildBoughtResult({ text, demographics, wonDealTitle: input.wonDealTitle ?? null, wonDealValue: input.wonDealValue ?? null, boughtByDeal });
+    return buildBoughtResult({
+      text,
+      demographics,
+      wonDealTitle: input.wonDealTitle ?? null,
+      wonDealValue: input.wonDealValue ?? null,
+      boughtByDeal,
+    });
   }
 
-  const { score, reasons } = computeHeuristicScore(text, inboundMessages.length, input.unreadCount, ageHours);
-  return buildColdLeadResult(score, reasons, text, inboundMessages.length, lastInbound?.content ?? null, demographics);
+  const { score, reasons } = computeHeuristicScore(
+    text,
+    inboundMessages.length,
+    input.unreadCount,
+    ageHours,
+  );
+  return buildColdLeadResult(
+    score,
+    reasons,
+    text,
+    inboundMessages.length,
+    lastInbound?.content ?? null,
+    demographics,
+  );
 }
 
 export function inferHeuristicDemographics(text: string): {

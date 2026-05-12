@@ -74,6 +74,7 @@ export async function scrapeInstagram(query: string, limit = 5): Promise<Scraped
       console.warn('[IG] Login wall detected. Public scraping might be limited.');
       // If we have credentials, we could login here.
     } catch {
+      // No login wall detected; continue with public scraping.
     }
 
     // Try to find posts

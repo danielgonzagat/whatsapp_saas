@@ -196,7 +196,9 @@ export class InboxService {
       ...(data.status !== undefined ? { status: data.status } : {}),
       ...(data.createdAt !== undefined ? { createdAt: data.createdAt } : {}),
       ...(data.countAsUnread !== undefined ? { countAsUnread: data.countAsUnread } : {}),
-      ...(data.resetUnreadOnOutbound !== undefined ? { resetUnreadOnOutbound: data.resetUnreadOnOutbound } : {}),
+      ...(data.resetUnreadOnOutbound !== undefined
+        ? { resetUnreadOnOutbound: data.resetUnreadOnOutbound }
+        : {}),
       ...(data.silent !== undefined ? { silent: data.silent } : {}),
     });
   }

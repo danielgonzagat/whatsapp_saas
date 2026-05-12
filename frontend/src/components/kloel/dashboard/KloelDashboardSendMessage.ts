@@ -193,7 +193,7 @@ export function createSendMessageHandler(ctx: SendMessageContext) {
       ctx.activeStreamRef.current = streamAuthenticatedKloelMessage(
         {
           message: text,
-          conversationId: ctx.activeConversationId || undefined,
+          ...(ctx.activeConversationId ? { conversationId: ctx.activeConversationId } : {}),
           mode: 'chat',
           metadata: normalizedMetadata,
         },

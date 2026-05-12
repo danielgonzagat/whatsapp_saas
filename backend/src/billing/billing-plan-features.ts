@@ -55,9 +55,10 @@ export async function activatePlanFeatures(
   workspaceId: string,
   plan: string,
 ): Promise<void> {
-  const limitsCandidate =
-    PLAN_LIMITS[plan.toUpperCase()] ?? PLAN_LIMITS['STARTER'];
-  if (!limitsCandidate) return;
+  const limitsCandidate = PLAN_LIMITS[plan.toUpperCase()] ?? PLAN_LIMITS['STARTER'];
+  if (!limitsCandidate) {
+    return;
+  }
   const limits = limitsCandidate;
   const workspace = await prisma.workspace.findUnique({
     where: { id: workspaceId },

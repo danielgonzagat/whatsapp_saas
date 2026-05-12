@@ -25,10 +25,22 @@ export interface PersistSuccessInput {
 }
 
 export async function persistSuccess(input: PersistSuccessInput) {
-  const { prisma, redisPub, log, workspaceId, contactId, conversationId, content, msgType, mediaUrl, providerError, externalId } = input;
+  const {
+    prisma,
+    redisPub,
+    log,
+    workspaceId,
+    contactId,
+    conversationId,
+    content,
+    msgType,
+    mediaUrl,
+    providerError,
+    externalId,
+  } = input;
 
   try {
-    const created = await prisma.message.create({
+    const created = (await prisma.message.create({
       data: {
         id: uuidv4(),
         workspaceId,
@@ -42,7 +54,7 @@ export async function persistSuccess(input: PersistSuccessInput) {
         errorCode: providerError ? String(providerError) : null,
         externalId: externalId || null,
       },
-    }) as { id: string; createdAt: Date };
+    })) as { id: string; createdAt: Date };
 
     await prisma.conversation.updateMany({
       where: { id: conversationId, workspaceId },

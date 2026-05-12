@@ -26,7 +26,9 @@ export function trimToUndefined(value: unknown): string | undefined {
 
 export function digitsOnly(value: unknown): string | undefined {
   const raw = trimToUndefined(value);
-  if (!raw) return undefined;
+  if (!raw) {
+    return undefined;
+  }
   const normalized = raw.replace(/\D/g, '');
   return normalized || undefined;
 }
@@ -36,7 +38,9 @@ export function buildPersonName(name: string | null | undefined): {
   lastName?: string;
 } {
   const normalized = trimToUndefined(name);
-  if (!normalized) return {};
+  if (!normalized) {
+    return {};
+  }
   const parts = normalized.split(/\s+/);
   const firstName = parts.shift();
   const lastName = parts.join(' ') || undefined;
@@ -49,7 +53,9 @@ export function buildPersonName(name: string | null | undefined): {
 export function buildDateOfBirth(
   date: Date | null | undefined,
 ): { day: number; month: number; year: number } | undefined {
-  if (!(date instanceof Date) || Number.isNaN(date.getTime())) return undefined;
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
+    return undefined;
+  }
   return { day: date.getUTCDate(), month: date.getUTCMonth() + 1, year: date.getUTCFullYear() };
 }
 

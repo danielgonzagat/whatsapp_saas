@@ -162,7 +162,9 @@ export class ConversationalOnboardingService {
     toolCalls: OpenAI.Chat.ChatCompletionMessageToolCall[],
   ): Promise<void> {
     for (const toolCall of toolCalls) {
-      if (!('function' in toolCall)) continue;
+      if (!('function' in toolCall)) {
+        continue;
+      }
       const functionName = toolCall.function.name;
       const args = this.parseToolArguments(toolCall.function.arguments, functionName);
       this.logger.log(`Executando tool: ${functionName}`, args);
@@ -181,9 +183,13 @@ export class ConversationalOnboardingService {
     workspaceId: string,
     toolCalls: OpenAI.Chat.ChatCompletionMessageToolCall[] | null | undefined,
   ): Promise<void> {
-    if (!toolCalls) return;
+    if (!toolCalls) {
+      return;
+    }
     for (const toolCall of toolCalls) {
-      if (!('function' in toolCall)) continue;
+      if (!('function' in toolCall)) {
+        continue;
+      }
       const functionName: string = toolCall.function.name;
       const args = this.parseToolArguments(toolCall.function.arguments, functionName);
       await this.toolsService.executeToolCall(workspaceId, functionName, args);
@@ -198,7 +204,9 @@ export class ConversationalOnboardingService {
     await this.executeAndAppendToolCalls(workspaceId, messages, initialToolCalls);
     const finalResponse = await this.runOnboardingCompletion(workspaceId, messages, 'writer');
     const assistantChoice = finalResponse.choices[0];
-    if (!assistantChoice) return '';
+    if (!assistantChoice) {
+      return '';
+    }
     const responseText = assistantChoice.message.content || '';
     await this.executeFollowupToolCalls(workspaceId, assistantChoice.message.tool_calls);
 
@@ -230,7 +238,9 @@ export class ConversationalOnboardingService {
     try {
       const response = await this.runOnboardingCompletion(workspaceId, messages, 'brain');
       const assistantChoice = response.choices[0];
-      if (!assistantChoice) return '';
+      if (!assistantChoice) {
+        return '';
+      }
       const assistantMessage = assistantChoice.message;
       let responseText = assistantMessage.content || '';
 

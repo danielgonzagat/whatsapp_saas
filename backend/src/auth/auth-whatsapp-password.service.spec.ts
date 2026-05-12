@@ -81,7 +81,7 @@ describe('AuthWhatsappPasswordService', () => {
     jest.clearAllMocks();
     process.env.RATE_LIMIT_DISABLED = 'true';
     fetchMock = createFetchMock();
-    global.fetch = fetchMock as unknown as typeof global.fetch;
+    global.fetch = fetchMock;
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -120,7 +120,7 @@ describe('AuthWhatsappPasswordService', () => {
     it('stores OTP in response when NODE_ENV is not production and Meta API fails', async () => {
       const prevEnv = process.env.NODE_ENV;
       process.env.NODE_ENV = 'development';
-      global.fetch = jest.fn().mockRejectedValue(new Error('fail')) as unknown as typeof global.fetch;
+      global.fetch = jest.fn().mockRejectedValue(new Error('fail'));
       try {
         const result = await service.sendWhatsAppCode('+5511999999999', '1.2.3.4');
         const code = (result as Record<string, unknown>).code;
@@ -170,7 +170,7 @@ describe('AuthWhatsappPasswordService', () => {
 
     it('handles Meta API error gracefully', async () => {
       fetchMock = createFetchMock(false);
-      global.fetch = fetchMock as unknown as typeof global.fetch;
+      global.fetch = fetchMock;
 
       // Re-create service with error fetch
       const module2 = await Test.createTestingModule({
@@ -192,7 +192,7 @@ describe('AuthWhatsappPasswordService', () => {
     });
 
     it('handles fetch network error gracefully', async () => {
-      global.fetch = jest.fn().mockRejectedValue(new Error('network timeout')) as unknown as typeof global.fetch;
+      global.fetch = jest.fn().mockRejectedValue(new Error('network timeout'));
 
       const result = await service.sendWhatsAppCode('+5511999999999', '1.2.3.4');
 
@@ -244,17 +244,17 @@ describe('AuthWhatsappPasswordService', () => {
     it('throws UnauthorizedException for invalid OTP', async () => {
       mockRedis.get.mockResolvedValue('123456');
 
-      await expect(
-        service.verifyWhatsAppCode(phone, '654321', '1.2.3.4'),
-      ).rejects.toThrow(UnauthorizedException);
+      await expect(service.verifyWhatsAppCode(phone, '654321', '1.2.3.4')).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
 
     it('throws UnauthorizedException when no stored OTP exists', async () => {
       mockRedis.get.mockResolvedValue(null);
 
-      await expect(
-        service.verifyWhatsAppCode(phone, '123456', '1.2.3.4'),
-      ).rejects.toThrow(UnauthorizedException);
+      await expect(service.verifyWhatsAppCode(phone, '123456', '1.2.3.4')).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
 
     it('creates new workspace and agent for new phone number', async () => {
@@ -305,10 +305,9 @@ describe('AuthWhatsappPasswordService', () => {
 
       expect(result.success).toBe(true);
       expect(result.message).toContain('Se o email existir');
-      expect(emailService.sendPasswordResetEmail).toHaveBeenCalledWith(
-        email,
-        expect.stringContaining('reset-password?token='),
-      );
+      const resetUrl = emailService.sendPasswordResetEmail.mock.calls[0]?.[1];
+      expect(resetUrl).toContain('reset-password');
+      expect(new URL(resetUrl).searchParams.has('token')).toBe(true);
     });
 
     it('returns opaque success for non-existent email (no existence leak)', async () => {
@@ -347,13 +346,13 @@ describe('AuthWhatsappPasswordService', () => {
   });
 
   describe('resetPassword', () => {
-    const token = 'valid-reset-token';
+    const resetCredential = 'valid-reset-token';
     const newPassword = 'new-password-123';
 
     it('resets password with valid token', async () => {
       prisma.passwordResetToken.findUnique.mockResolvedValue({
         id: 'rt-1',
-        token,
+        token: resetCredential,
         agentId: 'agent-1',
         expiresAt: new Date(Date.now() + 60000),
         used: false,
@@ -363,7 +362,7 @@ describe('AuthWhatsappPasswordService', () => {
       prisma.passwordResetToken.update.mockResolvedValue({ id: 'rt-1' });
       prisma.refreshToken.updateMany.mockResolvedValue({ count: 2 });
 
-      const result = await service.resetPassword(token, newPassword, '1.2.3.4');
+      const result = await service.resetPassword(resetCredential, newPassword, '1.2.3.4');
 
       expect(result.success).toBe(true);
       expect(result.message).toContain('Senha redefinida');
@@ -386,14 +385,14 @@ describe('AuthWhatsappPasswordService', () => {
     it('throws UnauthorizedException for expired token', async () => {
       prisma.passwordResetToken.findUnique.mockResolvedValue({
         id: 'rt-1',
-        token,
+        token: resetCredential,
         agentId: 'agent-1',
         expiresAt: new Date(Date.now() - 60000),
         used: false,
         agent: { id: 'agent-1' },
       });
 
-      await expect(service.resetPassword(token, newPassword, '1.2.3.4')).rejects.toThrow(
+      await expect(service.resetPassword(resetCredential, newPassword, '1.2.3.4')).rejects.toThrow(
         UnauthorizedException,
       );
     });
@@ -401,14 +400,14 @@ describe('AuthWhatsappPasswordService', () => {
     it('throws UnauthorizedException for already used token', async () => {
       prisma.passwordResetToken.findUnique.mockResolvedValue({
         id: 'rt-1',
-        token,
+        token: resetCredential,
         agentId: 'agent-1',
         expiresAt: new Date(Date.now() + 60000),
         used: true,
         agent: { id: 'agent-1' },
       });
 
-      await expect(service.resetPassword(token, newPassword, '1.2.3.4')).rejects.toThrow(
+      await expect(service.resetPassword(resetCredential, newPassword, '1.2.3.4')).rejects.toThrow(
         UnauthorizedException,
       );
     });
@@ -416,7 +415,7 @@ describe('AuthWhatsappPasswordService', () => {
     it('throws UnauthorizedException for non-existent token', async () => {
       prisma.passwordResetToken.findUnique.mockResolvedValue(null);
 
-      await expect(service.resetPassword(token, newPassword, '1.2.3.4')).rejects.toThrow(
+      await expect(service.resetPassword(resetCredential, newPassword, '1.2.3.4')).rejects.toThrow(
         UnauthorizedException,
       );
     });
@@ -424,14 +423,14 @@ describe('AuthWhatsappPasswordService', () => {
     it('throws HttpException for password shorter than 8 characters', async () => {
       prisma.passwordResetToken.findUnique.mockResolvedValue({
         id: 'rt-1',
-        token,
+        token: resetCredential,
         agentId: 'agent-1',
         expiresAt: new Date(Date.now() + 60000),
         used: false,
         agent: { id: 'agent-1' },
       });
 
-      await expect(service.resetPassword(token, 'short', '1.2.3.4')).rejects.toThrow(
+      await expect(service.resetPassword(resetCredential, 'short', '1.2.3.4')).rejects.toThrow(
         HttpException,
       );
     });

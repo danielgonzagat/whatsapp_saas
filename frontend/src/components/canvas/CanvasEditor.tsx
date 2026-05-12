@@ -72,7 +72,7 @@ export default function CanvasEditor() {
 
   /* ═══ Initialize editor ═══ */
   useEffect(() => {
-    if (!canvasRef.current) return;
+    if (!canvasRef.current) {return;}
     const { width, height } = initialSizeRef.current;
     const editor = new KloelEditor(canvasRef.current, width, height);
     editorRef.current = editor;
@@ -87,7 +87,7 @@ export default function CanvasEditor() {
     });
 
     editor.onChange(() => {
-      if (saveTimer.current) clearTimeout(saveTimer.current);
+      if (saveTimer.current) {clearTimeout(saveTimer.current);}
       setSaved(false);
       setLayerList([...editor.layers.getObjects()]);
 
@@ -166,7 +166,7 @@ export default function CanvasEditor() {
       editor.dispose();
       editorRef.current = null;
       setEditorUi(null);
-      if (saveTimer.current) clearTimeout(saveTimer.current);
+      if (saveTimer.current) {clearTimeout(saveTimer.current);}
     };
   }, []);
 
@@ -175,7 +175,7 @@ export default function CanvasEditor() {
   const handleRedo = useCallback(() => editorRef.current?.history.redo(), []);
   const handleExportFmt = useCallback(
     (fmt: 'png' | 'jpg' | 'svg' | 'pdf') => {
-      if (!editorRef.current) return;
+      if (!editorRef.current) {return;}
       try {
         editorRef.current.exporter.download(designName, fmt);
       } catch (e) {
@@ -215,24 +215,24 @@ export default function CanvasEditor() {
   }, []);
 
   const handleAddText = useCallback((preset: 'heading' | 'subheading' | 'body') => {
-    if (!editorRef.current) return;
-    if (preset === 'heading') editorRef.current.text.addHeading('Titulo');
-    else if (preset === 'subheading') editorRef.current.text.addSubheading('Subtitulo');
-    else editorRef.current.text.addBody('Corpo de texto');
+    if (!editorRef.current) {return;}
+    if (preset === 'heading') {editorRef.current.text.addHeading('Titulo');}
+    else if (preset === 'subheading') {editorRef.current.text.addSubheading('Subtitulo');}
+    else {editorRef.current.text.addBody('Corpo de texto');}
   }, []);
 
   const handleAddShape = useCallback((shape: 'rect' | 'circle' | 'triangle' | 'line' | 'star') => {
-    if (!editorRef.current) return;
+    if (!editorRef.current) {return;}
     const e = editorRef.current.shapes;
-    if (shape === 'rect') e.addRect();
-    else if (shape === 'circle') e.addCircle();
-    else if (shape === 'triangle') e.addTriangle();
-    else if (shape === 'line') e.addLine();
-    else if (shape === 'star') e.addStar();
+    if (shape === 'rect') {e.addRect();}
+    else if (shape === 'circle') {e.addCircle();}
+    else if (shape === 'triangle') {e.addTriangle();}
+    else if (shape === 'line') {e.addLine();}
+    else if (shape === 'star') {e.addStar();}
   }, []);
 
   const handleUpload = useCallback(async (file: File) => {
-    if (!editorRef.current) return;
+    if (!editorRef.current) {return;}
     try {
       await editorRef.current.image.addImageFromFile(file);
     } catch (e) {
@@ -243,7 +243,7 @@ export default function CanvasEditor() {
   const handleFileInput = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
-      if (file) handleUpload(file);
+      if (file) {handleUpload(file);}
       e.target.value = '';
     },
     [handleUpload],
@@ -254,19 +254,19 @@ export default function CanvasEditor() {
       e.preventDefault();
       setUploadDrag(false);
       const file = e.dataTransfer.files[0];
-      if (file?.type.startsWith('image/')) handleUpload(file);
+      if (file?.type.startsWith('image/')) {handleUpload(file);}
     },
     [handleUpload],
   );
 
   const handleApplyTemplate = useCallback((tpl: ProductTemplate) => {
-    if (!editorRef.current) return;
+    if (!editorRef.current) {return;}
     editorRef.current.loadJSON(tpl.json).catch(() => {});
     setDesignName(tpl.name);
   }, []);
 
   const handleSetBackground = useCallback((color: string) => {
-    if (!editorRef.current) return;
+    if (!editorRef.current) {return;}
     editorRef.current.background.setColor(color);
   }, []);
 
@@ -276,9 +276,9 @@ export default function CanvasEditor() {
 
   const updateProp = useCallback((prop: string, value: unknown) => {
     const ed = editorRef.current;
-    if (!ed) return;
+    if (!ed) {return;}
     const obj = ed.canvas.getActiveObject();
-    if (!obj) return;
+    if (!obj) {return;}
     obj.set(prop as keyof typeof obj, value as never);
     obj.setCoords();
     ed.canvas.requestRenderAll();
@@ -287,7 +287,7 @@ export default function CanvasEditor() {
   }, []);
 
   useEffect(() => {
-    if (!ctxMenu) return;
+    if (!ctxMenu) {return;}
     const close = () => setCtxMenu(null);
     window.addEventListener('click', close);
     return () => window.removeEventListener('click', close);
@@ -299,7 +299,7 @@ export default function CanvasEditor() {
 
   const handleToggleDrawMode = useCallback(() => {
     const ed = editorRef.current;
-    if (!ed) return;
+    if (!ed) {return;}
     const nextMode = !ed.canvas.isDrawingMode;
     (ed.canvas as { isDrawingMode: boolean }).isDrawingMode = nextMode;
     if (nextMode && ed.canvas.freeDrawingBrush) {
@@ -469,7 +469,7 @@ export default function CanvasEditor() {
             e.stopPropagation();
             setCanvasDragOver(false);
             const file = e.dataTransfer?.files?.[0];
-            if (file?.type.startsWith('image/')) handleUpload(file);
+            if (file?.type.startsWith('image/')) {handleUpload(file);}
           }}
         >
           {selectedObj && !Array.isArray(selectedObj) && (

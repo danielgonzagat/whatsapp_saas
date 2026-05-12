@@ -93,20 +93,42 @@ function buildUserDataPayload(userData: TikTokUserData): Record<string, string> 
 }
 
 function buildPropertiesPayload(customData?: TikTokCustomData): Record<string, unknown> {
-  if (!customData) return {};
+  if (!customData) {
+    return {};
+  }
 
   const properties: Record<string, unknown> = {};
 
-  if (customData.value !== undefined) properties.value = customData.value;
-  if (customData.currency) properties.currency = customData.currency;
-  if (customData.contentName) properties.content_name = customData.contentName;
-  if (customData.contentCategory) properties.content_category = customData.contentCategory;
-  if (customData.contentId) properties.content_id = customData.contentId;
-  if (customData.contentType) properties.content_type = customData.contentType;
-  if (customData.orderId) properties.order_id = customData.orderId;
-  if (customData.numItems !== undefined) properties.num_items = customData.numItems;
-  if (customData.searchString) properties.search_string = customData.searchString;
-  if (customData.status) properties.status = customData.status;
+  if (customData.value !== undefined) {
+    properties.value = customData.value;
+  }
+  if (customData.currency) {
+    properties.currency = customData.currency;
+  }
+  if (customData.contentName) {
+    properties.content_name = customData.contentName;
+  }
+  if (customData.contentCategory) {
+    properties.content_category = customData.contentCategory;
+  }
+  if (customData.contentId) {
+    properties.content_id = customData.contentId;
+  }
+  if (customData.contentType) {
+    properties.content_type = customData.contentType;
+  }
+  if (customData.orderId) {
+    properties.order_id = customData.orderId;
+  }
+  if (customData.numItems !== undefined) {
+    properties.num_items = customData.numItems;
+  }
+  if (customData.searchString) {
+    properties.search_string = customData.searchString;
+  }
+  if (customData.status) {
+    properties.status = customData.status;
+  }
 
   return properties;
 }
@@ -152,7 +174,9 @@ export class TikTokEventsApiService {
       },
     };
 
-    if (event.eventId) payload.event_id = event.eventId;
+    if (event.eventId) {
+      payload.event_id = event.eventId;
+    }
     if (event.eventTime) {
       payload.timestamp = new Date(event.eventTime).toISOString();
     }

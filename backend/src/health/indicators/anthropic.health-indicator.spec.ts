@@ -11,7 +11,9 @@ describe('AnthropicHealthIndicator', () => {
     jest.clearAllMocks();
     config = {
       get: jest.fn((key: string) => {
-        if (key === 'ANTHROPIC_API_KEY') return 'test-anthropic-key';
+        if (key === 'ANTHROPIC_API_KEY') {
+          return 'test-anthropic-key';
+        }
         return undefined;
       }),
     };

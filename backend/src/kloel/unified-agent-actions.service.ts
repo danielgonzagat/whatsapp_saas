@@ -79,7 +79,9 @@ export class UnifiedAgentActionsService {
       void this.opsAlert?.alertOnCriticalError(err, 'UnifiedAgentActionsService.parse');
       const msg = err instanceof Error ? err.message : typeof err === 'string' ? err : 'unknown';
       const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
-      if (isTestEnv) return;
+      if (isTestEnv) {
+        return;
+      }
       const code = (err as { code?: string } | null)?.code;
       if (code === 'P2003') {
         this.logger.debug(`Skipping autopilot event log due to FK (contactId=${contactId})`);
@@ -111,12 +113,16 @@ export class UnifiedAgentActionsService {
             expiresInSeconds: 15 * 60,
             downloadName: document.fileName,
           });
-          if (!documentCaption && document.description) documentCaption = document.description;
+          if (!documentCaption && document.description) {
+            documentCaption = document.description;
+          }
         } else {
           return { success: false, error: `Documento "${documentName}" não encontrado.` };
         }
       }
-      if (!documentUrl) return { success: false, error: 'URL ou nome do documento é obrigatório' };
+      if (!documentUrl) {
+        return { success: false, error: 'URL ou nome do documento é obrigatório' };
+      }
       const result = await this.whatsappService.sendMessage(
         workspaceId,
         phone,

@@ -69,9 +69,12 @@ export class UnifiedAgentContextService {
   }
 
   readText(value: unknown, fallback = ''): string {
-    if (typeof value === 'string') return value;
-    if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint')
+    if (typeof value === 'string') {
+      return value;
+    }
+    if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
       return String(value);
+    }
     return fallback;
   }
 
@@ -89,11 +92,17 @@ export class UnifiedAgentContextService {
   }
 
   readTagList(value: unknown): string {
-    if (!Array.isArray(value)) return 'nenhuma';
+    if (!Array.isArray(value)) {
+      return 'nenhuma';
+    }
     const tags = value
       .map((tag) => {
-        if (typeof tag === 'string') return tag.trim();
-        if (this.isRecord(tag)) return this.readText(tag.name).trim();
+        if (typeof tag === 'string') {
+          return tag.trim();
+        }
+        if (this.isRecord(tag)) {
+          return this.readText(tag.name).trim();
+        }
         return '';
       })
       .filter((tag) => tag.length > 0);
@@ -144,12 +153,15 @@ export class UnifiedAgentContextService {
       const objections = cfg.objections as UnknownRecord[];
       const salesArgs = (cfg.salesArguments ?? {}) as UnknownRecord;
 
-      if (profile.idealCustomer)
+      if (profile.idealCustomer) {
         aiConfigContext.push(`PERFIL DO CLIENTE IDEAL: ${this.str(profile.idealCustomer)}`);
-      if (profile.painPoints)
+      }
+      if (profile.painPoints) {
         aiConfigContext.push(`PRINCIPAIS DORES: ${this.str(profile.painPoints)}`);
-      if (profile.promisedResult)
+      }
+      if (profile.promisedResult) {
         aiConfigContext.push(`RESULTADO PROMETIDO: ${this.str(profile.promisedResult)}`);
+      }
       if (objections && Array.isArray(objections) && objections.length > 0) {
         aiConfigContext.push('OBJEÇÕES E RESPOSTAS:');
         for (const obj of objections) {
@@ -181,24 +193,28 @@ export class UnifiedAgentContextService {
           `LIMITE DE MENSAGENS: máximo ${this.str(cfg.messageLimit)} mensagens antes de enviar link ou encerrar`,
         );
       }
-      if (salesArgs.autoCheckoutLink)
+      if (salesArgs.autoCheckoutLink) {
         aiConfigContext.push(
           'REGRA: Envie o link de checkout automaticamente quando detectar intenção de compra.',
         );
-      if (salesArgs.offerDiscount)
+      }
+      if (salesArgs.offerDiscount) {
         aiConfigContext.push(
           'REGRA: Se detectar resistência de preço, ofereça desconto antes de perder o lead.',
         );
-      if (salesArgs.useUrgency)
+      }
+      if (salesArgs.useUrgency) {
         aiConfigContext.push(
           'REGRA: Use urgência e escassez quando houver contexto real para isso.',
         );
-      if (salesArgs.hideAiIdentity)
+      }
+      if (salesArgs.hideAiIdentity) {
         aiConfigContext.push(
           'REGRA CRÍTICA: NUNCA revele, confirme ou negue ser uma inteligência artificial, chatbot ou assistente virtual. ' +
             'Se perguntarem se você é um robô/IA, desvie naturalmente para o atendimento sem confirmar ou negar. ' +
             'Aja como uma atendente humana da empresa.',
         );
+      }
       if (salesArgs.maxDiscountPercent != null) {
         const maxDiscount = Number(salesArgs.maxDiscountPercent);
         if (maxDiscount >= 0) {
@@ -328,9 +344,15 @@ export class UnifiedAgentContextService {
 
   private isUsableLeadName(name?: string | null): boolean {
     const normalized = String(name || '').trim();
-    if (!normalized) return false;
-    if (D__D_S_RE.test(normalized)) return false;
-    if (CONTATO_RE.test(normalized)) return false;
+    if (!normalized) {
+      return false;
+    }
+    if (D__D_S_RE.test(normalized)) {
+      return false;
+    }
+    if (CONTATO_RE.test(normalized)) {
+      return false;
+    }
     return true;
   }
 
@@ -348,7 +370,9 @@ export class UnifiedAgentContextService {
 
     for (const candidate of candidates) {
       const label = this.str(candidate).trim();
-      if (!label || this.isGenericWorkspaceLabel(label)) continue;
+      if (!label || this.isGenericWorkspaceLabel(label)) {
+        continue;
+      }
       return label;
     }
 

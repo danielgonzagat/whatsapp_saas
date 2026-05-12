@@ -228,7 +228,7 @@ export function BackgroundPanel({ editor, handleSetBackground }: BackgroundPanel
             input.accept = 'image/*';
             input.onchange = (ev) => {
               const file = (ev.target as HTMLInputElement).files?.[0];
-              if (file) editor?.background.setImageFromFile(file);
+              if (file) {editor?.background.setImageFromFile(file);}
             };
             input.click();
           }}

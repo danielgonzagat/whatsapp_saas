@@ -29,11 +29,11 @@ export default function AffiliateDetailSheet({
   const [perfLoading, setPerfLoading] = useState(false);
 
   useEffect(() => {
-    if (!a.id) return;
+    if (!a.id) {return;}
     setPerfLoading(true);
     partnershipsApi
       .affiliatePerformance(a.id)
-      .then((res) => { if (!res.error && res.data) setPerfData(res.data); })
+      .then((res) => { if (!res.error && res.data) {setPerfData(res.data);} })
       .catch(() => {})
       .finally(() => setPerfLoading(false));
   }, [a.id]);

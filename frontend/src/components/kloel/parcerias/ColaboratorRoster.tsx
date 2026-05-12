@@ -18,7 +18,7 @@ export default function ColaboratorRoster({
   const displayAgents = agents as Agent[];
 
   const filtered = displayAgents.filter((c) => {
-    if (!search) return true;
+    if (!search) {return true;}
     const term = search.toLowerCase();
     return (c.name || '').toLowerCase().includes(term) || (c.email || '').toLowerCase().includes(term);
   });

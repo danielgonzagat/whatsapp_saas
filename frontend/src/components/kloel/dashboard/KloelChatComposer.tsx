@@ -19,7 +19,6 @@ const F = "'Sora', sans-serif";
 const SURFACE = KLOEL_THEME.bgCard;
 const SURFACE_ALT = KLOEL_THEME.bgSecondary;
 const TEXT = KLOEL_THEME.textPrimary;
-const _MUTED = KLOEL_THEME.textSecondary;
 const MUTED_2 = KLOEL_THEME.textTertiary;
 const DIVIDER = KLOEL_THEME.borderPrimary;
 const EMBER = KLOEL_THEME.accent;

@@ -9,8 +9,12 @@ export interface ChatMessage {
 export const NON_DIGIT_RE = /\D/g;
 
 export function safeStr(value: unknown, fallback = ''): string {
-  if (typeof value === 'string') return value;
-  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value);
+  }
   return fallback;
 }
 
@@ -60,13 +64,19 @@ export function detectBuyIntent(message: string): 'high' | 'medium' | 'low' | 'o
     'sem interesse',
   ];
   for (const keyword of highIntentKeywords) {
-    if (lowerMessage.includes(keyword)) return 'high';
+    if (lowerMessage.includes(keyword)) {
+      return 'high';
+    }
   }
   for (const keyword of mediumIntentKeywords) {
-    if (lowerMessage.includes(keyword)) return 'medium';
+    if (lowerMessage.includes(keyword)) {
+      return 'medium';
+    }
   }
   for (const keyword of objectionKeywords) {
-    if (lowerMessage.includes(keyword)) return 'objection';
+    if (lowerMessage.includes(keyword)) {
+      return 'objection';
+    }
   }
   return 'low';
 }
@@ -165,8 +175,9 @@ export async function extractProductFromMessage(
     for (const product of products) {
       const productData = product.value as Record<string, unknown>;
       const productName = safeStr(productData.name).toLowerCase();
-      if (productName && lowerMessage.includes(productName))
+      if (productName && lowerMessage.includes(productName)) {
         return { name: safeStr(productData.name), price: Number(productData.price) || 0 };
+      }
     }
     const dbProducts = await prisma.product
       ?.findMany?.({
@@ -176,8 +187,9 @@ export async function extractProductFromMessage(
       })
       .catch(() => []);
     for (const product of dbProducts || []) {
-      if (lowerMessage.includes(product.name.toLowerCase()))
+      if (lowerMessage.includes(product.name.toLowerCase())) {
         return { name: product.name, price: product.price };
+      }
     }
     return null;
   } catch (_error: unknown) {

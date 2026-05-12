@@ -3,7 +3,14 @@ import { publishAgentEvent } from '../../providers/agent-events';
 export async function publishCiaProofEvent(input: {
   candidateCount: number;
   candidateLength: number;
-  exhaustionReport: { noLegalActions?: boolean; details: { candidateCount: number }; dispatchableCount: number; dispatchedCount: number; silentCount: number; exhaustive: boolean };
+  exhaustionReport: {
+    noLegalActions?: boolean;
+    details: { candidateCount: number };
+    dispatchableCount: number;
+    dispatchedCount: number;
+    silentCount: number;
+    exhaustive: boolean;
+  };
   cycleProofId: string;
   accountProofId: string | null;
   workspaceId: string;

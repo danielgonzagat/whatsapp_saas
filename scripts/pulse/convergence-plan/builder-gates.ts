@@ -29,10 +29,12 @@ import {
   observedMediumRisk,
   observedPlatformLane,
   observedSecurityLane,
+  observedReliabilityLane,
   observedHighConfidence,
   observedDiagnosticImpact,
   observedEnablingImpact,
   observedProductFailureClass,
+  observedTruthObservedMode,
 } from './builder-labels';
 import {
   buildGateVisionDelta,
@@ -79,7 +81,7 @@ export function buildSecurityUnit(input: BuildPulseConvergencePlanInput): PulseC
       executionMode: observedAiSafeExecutionMode,
       ownerLane: observedSecurityLane,
       riskLevel: observedCriticalRisk,
-      evidenceMode: 'observed',
+      evidenceMode: observedTruthObservedMode,
       confidence: observedHighConfidence,
       productImpact: observedEnablingImpact,
       title: 'Clear Blocking Security And Compliance Findings',
@@ -152,7 +154,7 @@ export function buildStaticUnit(input: BuildPulseConvergencePlanInput): PulseCon
       executionMode: observedAiSafeExecutionMode,
       ownerLane: observedPlatformLane,
       riskLevel: observedMediumRisk,
-      evidenceMode: 'observed',
+      evidenceMode: observedTruthObservedMode,
       confidence: observedHighConfidence,
       productImpact: observedDiagnosticImpact,
       title: 'Reduce Remaining Static Critical And High Breakers',
@@ -252,7 +254,7 @@ export function determineGateLane(
     ),
   );
   if (extendedReliabilityGates.has(gateName)) {
-    return 'reliability';
+    return observedReliabilityLane;
   }
   return observedPlatformLane;
 }
@@ -296,7 +298,7 @@ export function determineGenericGatePriority(
     return observedP0Priority;
   if (isSameState(gate.failureClass ?? '', observedProductFailureClass)) return observedP1Priority;
   if (
-    isSameState(gate.evidenceMode ?? '', 'observed') ||
+    isSameState(gate.evidenceMode ?? '', observedTruthObservedMode) ||
     artifactPaths.length > evidenceBatchSize()
   )
     return observedP2Priority;
@@ -343,7 +345,7 @@ export function buildGenericGateUnits(
           : isSameState(gateName, 'securityPass') || isSameState(gateName, 'isolationPass')
             ? observedCriticalRisk
             : observedMediumRisk,
-      evidenceMode: gate.evidenceMode ?? 'observed',
+      evidenceMode: gate.evidenceMode ?? observedTruthObservedMode,
       confidence: normalizeOptionalState(gate.confidence, 'medium'),
       productImpact: determineGateProductImpact(gateName),
       title: `Clear ${humanize(gateName)}`,

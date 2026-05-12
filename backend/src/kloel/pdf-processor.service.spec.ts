@@ -26,8 +26,7 @@ jest.mock('../common/async-sequence', () => ({
   ),
 }));
 
-const mockChatCompletionWithRetry =
-  jest.requireMock('./openai-wrapper').chatCompletionWithRetry;
+const mockChatCompletionWithRetry = jest.requireMock('./openai-wrapper').chatCompletionWithRetry;
 
 describe('PdfProcessorService', () => {
   let service: PdfProcessorService;

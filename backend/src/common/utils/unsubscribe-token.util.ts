@@ -81,7 +81,9 @@ export function generateUnsubscribeToken(payload: UnsubscribePayload): string {
 export function verifyUnsubscribeToken(token: string): UnsubscribePayload | null {
   try {
     const parts = token.split(TOKEN_SEPARATOR);
-    if (parts.length !== 3) return null;
+    if (parts.length !== 3) {
+      return null;
+    }
 
     const [headerB64, bodyB64, signatureB64] = parts as [string, string, string];
     const expectedSig = base64UrlDecode(signatureB64);

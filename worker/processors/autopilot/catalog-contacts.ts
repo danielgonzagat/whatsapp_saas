@@ -4,10 +4,24 @@ import { buildQueueJobId } from '../../job-id';
 import { forEachSequential } from '../../utils/async-sequence';
 import { publishAgentEvent } from '../../providers/agent-events';
 import { unifiedWhatsAppProvider as whatsappApiProvider } from '../../providers/unified-whatsapp-provider';
-import { log, normalizeJsonObject, type UnknownRecord, CIA_BACKLOG_CONTINUATION_LIMIT, CIA_CONTACT_CATALOG_LOOKBACK_DAYS, CIA_CONTACT_CATALOG_MAX_CHATS, NON_DIGIT_RE, D__D_S____S_DOE_RE } from './shared';
+import {
+  log,
+  normalizeJsonObject,
+  type UnknownRecord,
+  CIA_BACKLOG_CONTINUATION_LIMIT,
+  CIA_CONTACT_CATALOG_LOOKBACK_DAYS,
+  CIA_CONTACT_CATALOG_MAX_CHATS,
+  NON_DIGIT_RE,
+  D__D_S____S_DOE_RE,
+} from './shared';
 import { resolveLastMessageFromMe, isWorkspaceSelfTarget } from './identity-resolve';
 import { extractCatalogChatName } from './identity-names';
-import { getRemoteUnreadChatSnapshot, seedRemoteUnreadConversationShells, scheduleBacklogContinuation, setWorkspaceSilentLiveMode } from './backlog';
+import {
+  getRemoteUnreadChatSnapshot,
+  seedRemoteUnreadConversationShells,
+  scheduleBacklogContinuation,
+  setWorkspaceSilentLiveMode,
+} from './backlog';
 import { upsertCatalogConversationShell } from './opportunity';
 import { buildEligibleCatalogChats } from './catalog-fetch';
 
@@ -281,4 +295,3 @@ export async function runCatalogContacts(data: UnknownRecord) {
 
   return { cataloged, scoredQueued, days };
 }
-

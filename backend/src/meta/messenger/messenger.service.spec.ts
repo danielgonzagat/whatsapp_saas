@@ -18,10 +18,7 @@ describe('MessengerService', () => {
     metaSdk = createMockMetaSdk();
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        MessengerService,
-        { provide: MetaSdkService, useValue: metaSdk },
-      ],
+      providers: [MessengerService, { provide: MetaSdkService, useValue: metaSdk }],
     }).compile();
 
     service = module.get<MessengerService>(MessengerService);
@@ -32,12 +29,7 @@ describe('MessengerService', () => {
       const mockResponse = { message_id: 'msg_abc' };
       metaSdk.graphApiPost.mockResolvedValue(mockResponse);
 
-      const result = await service.sendTextMessage(
-        'page_1',
-        'user_1',
-        'Hello!',
-        'page_token',
-      );
+      const result = await service.sendTextMessage('page_1', 'user_1', 'Hello!', 'page_token');
 
       expect(result).toEqual(mockResponse);
       expect(metaSdk.graphApiPost).toHaveBeenCalledWith(
@@ -101,10 +93,7 @@ describe('MessengerService', () => {
         'page_token',
       );
 
-      const [, body] = metaSdk.graphApiPost.mock.calls[0] as [
-        string,
-        Record<string, unknown>,
-      ];
+      const [, body] = metaSdk.graphApiPost.mock.calls[0] as [string, Record<string, unknown>];
       const message = body.message as Record<string, unknown>;
       const attachment = message.attachment as Record<string, unknown>;
       expect(attachment.type).toBe('video');
@@ -134,9 +123,7 @@ describe('MessengerService', () => {
   describe('getConversations', () => {
     it('delegates to metaSdk.graphApiGet with nested messages fields', async () => {
       const mockResponse = {
-        data: [
-          { id: 'conv_1', senders: { data: [] }, message_count: 5 },
-        ],
+        data: [{ id: 'conv_1', senders: { data: [] }, message_count: 5 }],
       };
       metaSdk.graphApiGet.mockResolvedValue(mockResponse);
 
@@ -146,8 +133,7 @@ describe('MessengerService', () => {
       expect(metaSdk.graphApiGet).toHaveBeenCalledWith(
         'page_1/conversations',
         {
-          fields:
-            'id,senders,message_count,updated_time,messages{message,from,created_time}',
+          fields: 'id,senders,message_count,updated_time,messages{message,from,created_time}',
         },
         'page_token',
       );
@@ -158,10 +144,7 @@ describe('MessengerService', () => {
 
       await service.getConversations('page_1', 'page_token');
 
-      const [, params] = metaSdk.graphApiGet.mock.calls[0] as [
-        string,
-        Record<string, string>,
-      ];
+      const [, params] = metaSdk.graphApiGet.mock.calls[0] as [string, Record<string, string>];
       expect(params.fields).toContain('messages{');
       expect(params.fields).toContain('message,from,created_time');
     });

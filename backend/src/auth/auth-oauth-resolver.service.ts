@@ -126,14 +126,24 @@ export class AuthOAuthResolverService {
     },
   ): Promise<ResolvedAgent> {
     const nextAgentData: Prisma.AgentUpdateInput = {};
-    if (!agent.provider) nextAgentData.provider = opts.normalizedProvider;
-    if (!agent.providerId && agent.provider === opts.normalizedProvider)
+    if (!agent.provider) {
+      nextAgentData.provider = opts.normalizedProvider;
+    }
+    if (!agent.providerId && agent.provider === opts.normalizedProvider) {
       nextAgentData.providerId = opts.normalizedProviderId;
-    if (opts.image && agent.avatarUrl !== opts.image) nextAgentData.avatarUrl = opts.image;
-    if (opts.emailVerified && !agent.emailVerified) nextAgentData.emailVerified = true;
-    if (!opts.syntheticEmail && agent.email !== opts.normalizedEmail)
+    }
+    if (opts.image && agent.avatarUrl !== opts.image) {
+      nextAgentData.avatarUrl = opts.image;
+    }
+    if (opts.emailVerified && !agent.emailVerified) {
+      nextAgentData.emailVerified = true;
+    }
+    if (!opts.syntheticEmail && agent.email !== opts.normalizedEmail) {
       nextAgentData.email = opts.normalizedEmail;
-    if (!agent.name || agent.name.trim() === '') nextAgentData.name = opts.finalName;
+    }
+    if (!agent.name || agent.name.trim() === '') {
+      nextAgentData.name = opts.finalName;
+    }
 
     if (Object.keys(nextAgentData).length === 0) {
       return agent;

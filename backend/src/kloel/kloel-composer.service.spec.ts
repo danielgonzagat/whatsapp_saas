@@ -14,8 +14,12 @@ jest.mock('openai', () => ({
 
 jest.mock('../lib/ai-models', () => ({
   resolveKloelCapabilityModel: jest.fn((capability: string) => {
-    if (capability === 'search_web') return 'gpt-4o';
-    if (capability === 'create_image') return 'dall-e-3';
+    if (capability === 'search_web') {
+      return 'gpt-4o';
+    }
+    if (capability === 'create_image') {
+      return 'dall-e-3';
+    }
     return 'claude-sonnet';
   }),
 }));
@@ -206,7 +210,8 @@ describe('KloelComposerService', () => {
   describe('error handling', () => {
     it('executeComposerCapability propagates search_web errors', async () => {
       e2EGuard.isEnabled = jest.fn().mockReturnValue(false);
-      const openai = (service as unknown as { openai: { responses: { create: jest.Mock } } }).openai;
+      const openai = (service as unknown as { openai: { responses: { create: jest.Mock } } })
+        .openai;
       if (openai?.responses?.create) {
         openai.responses.create.mockRejectedValue(new Error('API error'));
         await expect(

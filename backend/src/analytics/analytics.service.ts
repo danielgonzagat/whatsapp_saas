@@ -163,7 +163,9 @@ export class AnalyticsService {
 
     messages.forEach((m) => {
       const key = m.createdAt.toISOString().split('T')[0];
-      if (!key) return;
+      if (!key) {
+        return;
+      }
       if (activity[key]) {
         if (m.direction === 'INBOUND') {
           activity[key].inbound++;
@@ -393,9 +395,13 @@ export class AnalyticsService {
         for (let i = 1; i < sorted.length; i++) {
           const curr = sorted[i];
           const prev = sorted[i - 1];
-          if (curr === undefined || prev === undefined) continue;
+          if (curr === undefined || prev === undefined) {
+            continue;
+          }
           const delta = (curr - prev) / 1000;
-          if (delta > 0 && delta < 3600) intervals.push(delta);
+          if (delta > 0 && delta < 3600) {
+            intervals.push(delta);
+          }
         }
         if (intervals.length > 0) {
           const sum = intervals.reduce((a, b) => a + b, 0);

@@ -163,6 +163,41 @@ const dlqRegistryMap = new Map<string, BullQueue>();
 const queueEventsRegistry = new Map<string, QueueEvents>();
 const additionalWorkers: Worker[] = [];
 
+function logBullMqBackgroundError(label: string, err: Error): void {
+  console.warn(`[QUEUE] ${label} background error: ${err.message}`);
+}
+
+type ErrorEmitter = {
+  on: (event: 'error', handler: (err: Error) => void) => unknown;
+};
+
+function hasErrorEmitter(value: unknown): value is ErrorEmitter {
+  return Boolean(
+    value &&
+      typeof value === 'object' &&
+      'on' in value &&
+      typeof (value as { on?: unknown }).on === 'function',
+  );
+}
+
+function attachQueueErrorLogger(queue: BullQueue, label: string): void {
+  if (hasErrorEmitter(queue)) {
+    queue.on('error', (err) => logBullMqBackgroundError(label, err));
+  }
+}
+
+function attachQueueEventsErrorLogger(events: QueueEvents, label: string): void {
+  if (hasErrorEmitter(events)) {
+    events.on('error', (err) => logBullMqBackgroundError(label, err));
+  }
+}
+
+function attachWorkerErrorLogger(worker: Worker, label: string): void {
+  if (hasErrorEmitter(worker)) {
+    worker.on('error', (err) => logBullMqBackgroundError(label, err));
+  }
+}
+
 function getOrCreateQueue(name: string): BullQueue {
   const existing = queueRegistryMap.get(name);
   if (existing) {
@@ -170,6 +205,7 @@ function getOrCreateQueue(name: string): BullQueue {
   }
 
   const queue = new BullQueue(name, buildQueueOptions());
+  attachQueueErrorLogger(queue, `queue:${name}`);
   queueRegistryMap.set(name, queue);
   attachDlq(queue);
   return queue;
@@ -182,6 +218,7 @@ function attachDlq(queue: BullQueue) {
   }
 
   const dlq = new BullQueue(dlqName, buildQueueOptions());
+  attachQueueErrorLogger(dlq, `queue:${dlqName}`);
   dlqRegistryMap.set(dlqName, dlq);
 
   const events = getQueueEvents(queue.name);
@@ -258,6 +295,7 @@ export function getQueueEvents(queueName: string): QueueEvents {
   const events = new QueueEvents(queueName, {
     connection: buildBullMqConnectionOptions(`QueueEvents:${queueName}`),
   });
+  attachQueueEventsErrorLogger(events, `queueEvents:${queueName}`);
   queueEventsRegistry.set(queueName, events);
   return events;
 }
@@ -336,6 +374,7 @@ export class Queue {
   constructor(name: string) {
     this.name = name;
     this.queue = new BullQueue(name, buildQueueOptions());
+    attachQueueErrorLogger(this.queue, `legacyQueue:${name}`);
     console.log(`📦 [Queue] Criada fila "${name}" com conexão Redis configurada`);
   }
 
@@ -354,6 +393,7 @@ export class Queue {
         },
         { connection: buildBullMqConnectionOptions(`QueueWorker:${this.name}`), lockDuration: 120_000 },
       );
+      attachWorkerErrorLogger(this.worker, `legacyWorker:${this.name}`);
       additionalWorkers.push(this.worker);
       console.log(`👷 [Queue] Worker criado para fila "${this.name}"`);
     }

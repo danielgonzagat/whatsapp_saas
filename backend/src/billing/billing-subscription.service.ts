@@ -234,7 +234,9 @@ export class BillingSubscriptionService {
       },
     };
     const limitsCandidate = planLimits[plan.toUpperCase()] ?? planLimits['STARTER'];
-    if (!limitsCandidate) return;
+    if (!limitsCandidate) {
+      return;
+    }
     const limits = limitsCandidate;
     const workspace = await this.prisma.workspace.findUnique({
       where: { id: workspaceId },

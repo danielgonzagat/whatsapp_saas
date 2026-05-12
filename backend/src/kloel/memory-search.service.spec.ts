@@ -161,9 +161,7 @@ describe('MemorySearchService', () => {
     });
 
     it('returns empty result on prisma error instead of throwing', async () => {
-      prisma.kloelMemory.findMany.mockRejectedValue(
-        new Error('connection timeout'),
-      );
+      prisma.kloelMemory.findMany.mockRejectedValue(new Error('connection timeout'));
 
       const result = await service.searchMemory(wsId, 'query');
 
@@ -177,10 +175,7 @@ describe('MemorySearchService', () => {
 
       await service.searchMemory(wsId, 'query');
 
-      expect(opsAlert.alertOnCriticalError).toHaveBeenCalledWith(
-        error,
-        'MemorySearchService.now',
-      );
+      expect(opsAlert.alertOnCriticalError).toHaveBeenCalledWith(error, 'MemorySearchService.now');
     });
   });
 
@@ -274,9 +269,7 @@ describe('MemorySearchService', () => {
     });
 
     it('returns empty string on error', async () => {
-      prisma.kloelMemory.findMany.mockRejectedValue(
-        new Error('search failed'),
-      );
+      prisma.kloelMemory.findMany.mockRejectedValue(new Error('search failed'));
 
       const result = await service.getSalesContext(wsId, 'test');
 

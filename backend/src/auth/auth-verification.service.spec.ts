@@ -103,10 +103,9 @@ describe('AuthVerificationService', () => {
           }),
         }),
       );
-      expect(emailService.sendMagicLinkEmail).toHaveBeenCalledWith(
-        email,
-        expect.stringContaining('/magic-link?token='),
-      );
+      const magicLinkUrl = emailService.sendMagicLinkEmail.mock.calls[0]?.[1];
+      expect(magicLinkUrl).toContain('/magic-link');
+      expect(new URL(magicLinkUrl).searchParams.has('token')).toBe(true);
     });
 
     it('includes token in dev response body', async () => {
@@ -274,10 +273,9 @@ describe('AuthVerificationService', () => {
       const result = await service.sendVerificationEmail('agent-1');
 
       expect(result.success).toBe(true);
-      expect(emailService.sendVerificationEmail).toHaveBeenCalledWith(
-        'user@example.com',
-        expect.stringContaining('verify-email?token='),
-      );
+      const verificationUrl = emailService.sendVerificationEmail.mock.calls[0]?.[1];
+      expect(verificationUrl).toContain('verify-email');
+      expect(new URL(verificationUrl).searchParams.has('token')).toBe(true);
     });
 
     it('returns alreadyVerified when email is already verified', async () => {

@@ -95,7 +95,7 @@ export default function AfiliarSe({
   const handleCopyLink = (link: string) => {
     navigator.clipboard.writeText(link).then(() => {
       setCopiedAffiliate(true);
-      if (copiedTimer.current) clearTimeout(copiedTimer.current);
+      if (copiedTimer.current) {clearTimeout(copiedTimer.current);}
       copiedTimer.current = setTimeout(() => setCopiedAffiliate(false), 2000);
     });
   };

@@ -192,7 +192,7 @@ export function VoiceProfilesTab({
                     onClick={() => onGenProfileIdChange(p.id)}
                     style={{
                       background: 'rgba(255,255,255,0.04)',
-                      color: 'var(--app-text-primary)',
+                      color: genProfileId === p.id ? colors.ember.primary : 'var(--app-text-primary)',
                       border: '1px solid var(--app-border-primary)',
                       borderRadius: 6,
                       padding: '4px 10px',
@@ -201,7 +201,6 @@ export function VoiceProfilesTab({
                       fontFamily: "'Sora', sans-serif",
                       whiteSpace: 'nowrap',
                       borderColor: genProfileId === p.id ? colors.ember.primary : undefined,
-                      color: genProfileId === p.id ? colors.ember.primary : undefined,
                     }}
                   >
                     {genProfileId === p.id ? 'Selecionado' : 'Selecionar'}

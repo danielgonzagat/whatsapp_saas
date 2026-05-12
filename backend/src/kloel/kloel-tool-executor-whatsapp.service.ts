@@ -37,15 +37,17 @@ export class KloelToolExecutorWhatsAppService {
   async toolConnectWhatsapp(workspaceId: string): Promise<ToolResult> {
     try {
       const result = await this.providerRegistry.startSession(workspaceId);
-      if (result.message === 'already_connected')
+      if (result.message === 'already_connected') {
         return { success: true, connected: true, message: 'WhatsApp já conectado.' };
-      if (result.success && result.authUrl)
+      }
+      if (result.success && result.authUrl) {
         return {
           success: true,
           connectionRequired: true,
           authUrl: result.authUrl,
           message: 'Conclua a conexão oficial da Meta para ativar o canal do WhatsApp.',
         };
+      }
       return {
         success: !!result.success,
         message:
@@ -66,7 +68,7 @@ export class KloelToolExecutorWhatsAppService {
   async toolGetWhatsAppStatus(workspaceId: string): Promise<ToolResult> {
     const connStatus = await this.providerRegistry.getSessionStatus(workspaceId);
     const connected = connStatus?.connected === true;
-    if (connected)
+    if (connected) {
       return {
         success: true,
         connected: true,
@@ -74,6 +76,7 @@ export class KloelToolExecutorWhatsAppService {
         status: connStatus?.status,
         message: `WhatsApp conectado${connStatus?.phoneNumber ? ` (${connStatus.phoneNumber})` : ''}.`,
       };
+    }
     return {
       success: true,
       connected: false,
@@ -93,12 +96,13 @@ export class KloelToolExecutorWhatsAppService {
     const { phone, message } = args;
     const normalizedPhone = phone.replace(NON_DIGIT_RE, '');
     const status = await this.providerRegistry.getSessionStatus(workspaceId);
-    if (!status.connected)
+    if (!status.connected) {
       return {
         success: false,
         error: 'WhatsApp não está conectado. Conclua a conexão oficial da Meta antes de enviar.',
         authUrl: status.authUrl || null,
       };
+    }
     let contact = await this.prisma.contact.findFirst({
       where: { workspaceId, phone: { contains: normalizedPhone } },
     });
@@ -198,7 +202,9 @@ export class KloelToolExecutorWhatsAppService {
     args: ToolGetWhatsAppMessagesArgs,
   ): Promise<ToolResult> {
     const chatId = String(args?.chatId || args?.phone || '').trim();
-    if (!chatId) return { success: false, error: 'Informe chatId ou phone para ler as mensagens.' };
+    if (!chatId) {
+      return { success: false, error: 'Informe chatId ou phone para ler as mensagens.' };
+    }
     const messages = await this.whatsappService.getChatMessages(workspaceId, chatId, {
       limit: Number(args?.limit || 100) || 100,
       offset: Number(args?.offset || 0) || 0,
@@ -232,7 +238,9 @@ export class KloelToolExecutorWhatsAppService {
   ): Promise<ToolResult> {
     const chatId = String(args?.chatId || args?.phone || '').trim();
     const presence = String(args?.presence || '').trim() as 'typing' | 'paused' | 'seen';
-    if (!chatId) return { success: false, error: 'Informe chatId ou phone para enviar presença.' };
+    if (!chatId) {
+      return { success: false, error: 'Informe chatId ou phone para enviar presença.' };
+    }
     const result = await this.whatsappService.setPresence(workspaceId, chatId, presence);
     return { success: true, ...result, message: `Presença ${presence} enviada para ${chatId}.` };
   }
@@ -256,7 +264,9 @@ export class KloelToolExecutorWhatsAppService {
 
   async toolSendAudio(workspaceId: string, args: ToolSendAudioArgs): Promise<ToolResult> {
     const { phone, text, voice = 'nova' } = args;
-    if (!phone || !text) return { success: false, error: 'Parâmetros obrigatórios: phone e text' };
+    if (!phone || !text) {
+      return { success: false, error: 'Parâmetros obrigatórios: phone e text' };
+    }
     try {
       const audioBuffer = await this.audioService.textToSpeech(text, voice, workspaceId);
       const dataUri = `data:audio/mpeg;base64,${audioBuffer.toString('base64')}`;
@@ -280,7 +290,9 @@ export class KloelToolExecutorWhatsAppService {
 
   async toolSendDocument(workspaceId: string, args: ToolSendDocumentArgs): Promise<ToolResult> {
     const { phone, documentName, url, caption } = args;
-    if (!phone) return { success: false, error: 'Parâmetro obrigatório: phone' };
+    if (!phone) {
+      return { success: false, error: 'Parâmetro obrigatório: phone' };
+    }
     try {
       const normalizedPhone = phone.replace(NON_DIGIT_RE, '');
       let documentUrl = url;
@@ -290,11 +302,12 @@ export class KloelToolExecutorWhatsAppService {
         });
         documentUrl = doc?.filePath;
       }
-      if (!documentUrl)
+      if (!documentUrl) {
         return {
           success: false,
           error: 'Documento não encontrado. Forneça URL ou nome cadastrado.',
         };
+      }
       await this.planLimits.ensureDailyMessageQuota(workspaceId);
       await this.whatsappService.sendMessage(workspaceId, normalizedPhone, caption || '', {
         mediaUrl: documentUrl,

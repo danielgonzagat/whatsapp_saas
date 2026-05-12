@@ -125,7 +125,9 @@ export class KloelBusinessConfigToolsService {
         include: contactInclude,
       });
     }
-    if (!contact) return { success: false, error: 'Lead não encontrado.' };
+    if (!contact) {
+      return { success: false, error: 'Lead não encontrado.' };
+    }
 
     return {
       success: true,
@@ -153,7 +155,9 @@ export class KloelBusinessConfigToolsService {
   ): Promise<ToolResult> {
     const { businessName, description, segment } = args;
     const updateData: Prisma.WorkspaceUpdateInput = {};
-    if (businessName) updateData.name = businessName;
+    if (businessName) {
+      updateData.name = businessName;
+    }
     if (description || segment) {
       await this.prisma.$transaction(async (tx) => {
         const workspace = await tx.workspace.findUnique({ where: { id: workspaceId } });
@@ -272,7 +276,9 @@ export class KloelBusinessConfigToolsService {
           subscription: { select: { plan: true, stripeId: true } },
         },
       });
-      if (!workspace) return { success: false, error: 'Workspace não encontrado' };
+      if (!workspace) {
+        return { success: false, error: 'Workspace não encontrado' };
+      }
       const settings = (workspace.providerSettings as Record<string, unknown>) || {};
       const plan = String(workspace.subscription?.plan || 'FREE');
       const subscriptionId = workspace.subscription?.stripeId || null;

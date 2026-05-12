@@ -38,9 +38,7 @@ describe('RateLimitService', () => {
     it('throws 503 when Redis is not available', async () => {
       const service = new RateLimitService(null);
 
-      await expect(service.checkRateLimit('test-key')).rejects.toThrow(
-        ServiceUnavailableException,
-      );
+      await expect(service.checkRateLimit('test-key')).rejects.toThrow(ServiceUnavailableException);
     });
 
     it('throws 429 when limit is exceeded', async () => {
@@ -57,9 +55,7 @@ describe('RateLimitService', () => {
       mockRedis.incr.mockResolvedValue(3);
       const service = new RateLimitService(mockRedis as unknown as import('ioredis').Redis);
 
-      await expect(
-        service.checkRateLimit('test-key', 5, 60000),
-      ).resolves.toBeUndefined();
+      await expect(service.checkRateLimit('test-key', 5, 60000)).resolves.toBeUndefined();
     });
 
     it('increments counter and sets expiry on first call', async () => {
@@ -76,9 +72,7 @@ describe('RateLimitService', () => {
       mockRedis.incr.mockRejectedValue(new Error('connection refused'));
       const service = new RateLimitService(mockRedis as unknown as import('ioredis').Redis);
 
-      await expect(service.checkRateLimit('test-key')).rejects.toThrow(
-        ServiceUnavailableException,
-      );
+      await expect(service.checkRateLimit('test-key')).rejects.toThrow(ServiceUnavailableException);
     });
 
     it('re-throws HttpException from Redis catch block', async () => {

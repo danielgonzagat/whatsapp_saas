@@ -3,9 +3,22 @@ import { prisma } from '../../db';
 import { redis } from '../../redis-client';
 import { forEachSequential } from '../../utils/async-sequence';
 import { buildCiaWorkspaceStateFromSeed } from '../cia/build-state';
-import { deriveOperationalUnreadCount, isConversationPendingForAgent } from '../../conversation-agent-state';
-import { log, type UnknownRecord, CIA_OPPORTUNITY_REFRESH_TTL_SECONDS, CIA_OPPORTUNITY_LOOKBACK_DAYS, CIA_OPPORTUNITY_REFRESH_LIMIT } from './shared';
-import { classifyOpportunityCandidate, buildCompressedOpportunityContext, mapOpportunityBucket } from './opportunity';
+import {
+  deriveOperationalUnreadCount,
+  isConversationPendingForAgent,
+} from '../../conversation-agent-state';
+import {
+  log,
+  type UnknownRecord,
+  CIA_OPPORTUNITY_REFRESH_TTL_SECONDS,
+  CIA_OPPORTUNITY_LOOKBACK_DAYS,
+  CIA_OPPORTUNITY_REFRESH_LIMIT,
+} from './shared';
+import {
+  classifyOpportunityCandidate,
+  buildCompressedOpportunityContext,
+  mapOpportunityBucket,
+} from './opportunity';
 
 export async function refreshOpportunityUniverse(workspaceId: string) {
   const throttleKey = `cia:opportunity-refresh:${workspaceId}`;

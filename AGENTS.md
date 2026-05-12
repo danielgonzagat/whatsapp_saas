@@ -293,67 +293,67 @@ O estado de rigor maximo do Codacy faz parte da governance.
 <claude-mem-context>
 # Memory Context
 
-# [whatsapp_saas] recent context, 2026-05-10 10:22pm GMT-3
+# [whatsapp_saas] recent context, 2026-05-12 10:48am GMT-3
 
 Legend: 🎯session 🔴bugfix 🟣feature 🔄refactor ✅change 🔵discovery ⚖️decision
 Format: ID TIME TYPE TITLE
 Fetch details: get_observations([IDs]) | Search: mem-search skill
 
-Stats: 50 obs (21,424t read) | 290,628t work | 93% savings
+Stats: 50 obs (20,276t read) | 1,688,324t work | 99% savings
 
-### May 10, 2026
-846 7:59p 🔵 check:all Suite — Full 20/20 Green After Tenant Isolation Fix
-848 8:00p 🔵 Pre-Push Hook Chain — Full Gate Sequence Confirmed on Tenant Isolation Fix Commit
-849 " ✅ chore/ai-constitution-convergence-gates Branch Pushed — Pre-Push Fully Green Including Boot Smoke
-852 8:08p ⚖️ Kloel AI Constitution — Wave-7+ Total Enrichment Mandate Issued
-853 " 🔵 PR #277 CI Check Snapshot — Mixed Pass/Pending/Skip State at ~11:07 PM GMT-3
-854 8:13p 🔵 PR #277 Quality Gate Failure — sales-templates Constants Drift Detected
-855 " 🔵 sales-templates Drift Root Cause — Missing `export` Keyword in Backend Source of Truth
-856 " 🔴 Fixed sales-templates Export Missing in Backend Source of Truth
-857 8:14p 🔴 sales-templates Sync + Typecheck Fully Green After Export Fix
-858 " 🔵 Quality Gate Pipeline — Full Step Inventory in ci-cd.yml
-862 8:15p 🔵 Full Local Quality Gate Run — All Sync Checks Green, Baselines Confirmed
-863 " 🔵 Tenant Isolation Scan Baseline — 1971 Prisma Queries, 637 Transitive-Scope Unresolved
-865 8:17p 🔵 check:all Suite Running Green — lint, All Typechecks, Frontend Test Passing
-866 8:19p 🔵 check:all Suite — All 20 Gates Fully Green on AI Constitution Convergence Branch
-868 8:20p ✅ sales-templates Export Fix Committed — SHA 81f2bf7f0
-870 " 🔵 Pre-Push Hook Pipeline — Scoped Hard Gates Run Before Every Push
-871 " ✅ PR #277 Fix Pushed — chore/ai-constitution-convergence-gates Updated to 81f2bf7f0
-875 8:30p ⚖️ Kloel AI Constitution — Total Enrichment Mandate (Wave-8+)
-877 " 🔵 PR #277 CI Status Snapshot — Two Gates Still Pending, Both Vercel Deployments Complete
-879 8:40p 🔵 PR #277 CI Status — Codacy Static Code Analysis FAILED, quality Gate Still Pending
-880 8:41p 🔵 Codacy Failure Root Cause — 28 New Issues in check-ai-constitution.mjs and worker/resolve-redis-url.ts
-881 8:43p 🔵 Local Gate Suite Fully Green on AI Constitution Branch — Codacy Complexity Is Sole Remaining Blocker
-882 " 🔵 check:all Suite — 13/14+ Gates Green, Lint Running at 30s Yield Point
-884 8:46p 🔵 check:all Suite Progress — 18/19+ Gates Green Including All Typechecks and Frontend Tests
-885 8:47p 🔵 check:all Suite — Full 20/20 Green on AI Constitution Convergence Branch
-886 8:48p 🔄 check-ai-constitution.mjs and resolve-redis-url.ts Refactored to Fix Codacy Complexity Violations
-888 8:50p 🔵 Pre-Push Hook — Backend Boot Smoke Pass, 276 Frontend Tests Green, Frontend Build Starting
-891 8:51p ✅ Codacy Complexity Fix Pushed to Remote — Pre-Push Hook Passed All Gates Including Frontend Build and Worker Tests
-893 8:54p 🔵 PR #277 New CI Run After Codacy Fix Push — Fresh Gates Running on Commit c750bcabe
-895 9:00p ⚖️ Kloel AI Constitution — Wave-9+ Total Enrichment Mandate Issued
-897 9:03p 🔵 PR #277 CI Status — Quality and Codacy Still Pending, Vercel Deployments and Static Analysis Passed
-898 9:10p 🔵 PR #277 Quality Gate Still Running — Log Fetch Confirms Job 75267096745 In Progress
-900 9:20p 🔵 Kloel AI Constitution — Anti-Cheat Gate System Architecture
-901 " ⚖️ AI Constitution Total Enrichment Mandate — Wave-10+ Issued
-902 9:23p 🔄 check-ai-constitution.mjs — Regex Patterns Replaced with Named Function Rules
-903 " 🔵 macOS zsh Missing GNU `timeout` Command — pulse:ci Runner Workaround Needed
-904 9:28p 🔵 pulse:ci Execution Timed Out at 300s Default Threshold
-905 " 🔵 PULSE CI Architecture — ts-node spawnSync Blocks Full 300s Until Timeout
-908 9:32p 🔵 check:all Suite — 6 Gates Green After Constitution Refactor
-910 9:33p 🔵 check:all Suite — Full Green (21/21 Gates) After AI Constitution Enrichment
-911 9:35p 🔄 check-ai-constitution.mjs — Second Refactor Pass Consolidates to Named Constant Arrays
-913 " 🔵 check-ai-constitution.mjs — Full Internal Check Sequence and Self-Integrity Rules Mapped
-915 9:36p 🔵 guard:new-code Command Composition Confirmed — 5 Sub-Gates in Sequence
-917 " 🔵 guard:new-code + format:check — Full Green After Constitution Refactor
-920 9:40p 🔵 check:all Suite — Second Full Green (21/21) After Constitution Second Refactor Pass
-922 " ✅ Constitution Refactor Committed — e86b87c05 on chore/ai-constitution-convergence-gates
-924 9:41p 🔵 Pre-Push Hook Architecture — 6-Stage Sequence via run-scoped-pre-push.mjs
-926 " 🔵 Pre-Push Hook — Backend Build and Boot Smoke Stages Confirmed
-928 9:42p 🔵 Pre-Push Hook — Boot Smoke OK, 276 Frontend Tests Pass, Frontend Clean Build Stage Added
-930 9:43p ⚖️ Kloel AI Constitution — Total Enrichment Mandate Wave-13+ Issued
+### May 11, 2026
+1341 2:43p 🔵 Visual Diff (Chromium) CI Gate Failed — login-desktop 180px Diff + Chat Test Context Disposed
+1342 2:44p 🔴 Backend TypeScript Typecheck and Build Now Pass Clean — Zero Errors
+1343 2:45p 🔵 Working Railway CLI Deploy Command for Kloel Backend Service
+1345 2:47p 🔵 New PR Push Triggered Fresh CI Run — Visual Snapshot Baseline Fix Attempt
+1346 2:49p 🟣 Kloel Backend Successfully Deployed to Railway Production
+1347 2:50p 🔵 Worker Service Health Check Confirmed Healthy — Redis Connected, Autopilot Queue Active
+1348 " 🔴 WhatsAppProviderRegistry Added to WhatsappModule Exports
+1349 2:51p 🔴 Visual Baseline Updated — signup-mobile.png Snapshot Regenerated from CI Artifact
+1350 2:57p ⚖️ Kloel CIA v3 Execution Contract — Full Mission Definition Issued
+1351 " 🔵 PR #266 Gap Analysis — Foundation Delivered, Production State Not Reached
+1352 " 🔵 Baseline Lift Bug — outcome and baselineOutcome Always Equal, Lift Always Zero
+1353 " ⚖️ Email Channel Architecture Mandate — Per-Workspace OAuth Mailbox, Not Shared Sender
+1354 " 🔵 Meta OAuth Error Root Cause — 11-Step Diagnostic Tree Defined
+1355 2:58p 🔵 Fourth CI Push — New Run Group 25687403xxx, Both Vercel Deploys Passing, Visual Diff Still Pending After 300s
+1356 3:00p 🔵 CI Quality Job Failure — Prettier Lint Errors in 5 Backend Files on codex/pr266-exec Branch
+1357 " 🔵 Visual Diff CI Failure — login-mobile Playwright Snapshot Has 123 Pixel Mismatch on Linux
+1358 " 🔵 Worktree at /private/tmp/kloel-pr266-exec Has No node_modules — Fixed by Symlinking from Main Repo
+1359 " ✅ Worktree Branch Fast-Forward Merged to origin/main (v0.4.1) — PR #287 and #288 Now Incorporated
+1360 3:01p ⚖️ Railway Full Automation Mandate — Auto-Deploy on PR Merge + Production Perfection
+1361 3:02p 🔵 Backend Docker Build — 5 npm Vulnerabilities Found During Railway Deploy
+1362 " 🔵 Worktree Full npm ci Install — Node v25.9.0 Used Despite Package Engine Requiring Node 20.x
+1363 3:03p ⚖️ 4-Problem Production Fix Mandate Issued — Kloel Platform (Eighth Issuance)
+1364 " 🔴 Visual Baseline signup-tablet-visual-linux.png Updated on fix/quatro-problemas-producao
+1365 3:05p 🔵 CI Run 25680826106 — All Three Jobs Passed (quality, architecture, e2e) on main After v0.4.1 Merge
+1366 " 🔵 Auth Screen Decomposed into 5 New Files — Social Buttons, Icons, Hooks, Form Fields, and State Machine
+1367 " ✅ 51 Visual Regression Snapshots Updated in PR #266 — Login, Signup, Landing, Settings, KYC, and More
+1368 " ✅ Railway Backend Docker Image Built and Deployed — amd64/linux
+1369 3:06p 🔵 Kloel Backend Production Health — All Services UP After Deployment
+1370 " 🔵 Backend Production Logs — Two Residual Warnings After Clean Deploy
+1371 " 🔵 Worker Health Check — Redis Connected, 3 Delayed Autopilot Jobs in Queue
+1372 " 🔵 Backend Stack Architecture — Node 20, dd-trace, Prisma Auto-Migrate on Start
+1373 " 🔵 Backend npm Audit — 5 Vulnerabilities Fully Catalogued, All Fixable Without Breaking Changes
+1375 3:09p ✅ Backend Upgraded to Node 22, Firebase Warning Downgraded, npm Vulnerabilities Eliminated
+1376 " 🔴 ledger.service.ts — Missing Prisma Namespace Import Fixed (TS2503)
+1383 3:14p 🔴 Backend TypeScript Typecheck and Build Now Pass Clean — Zero Errors
+1384 " ✅ Railway Backend Redeployment Triggered — New Deployment a9f749e3 with Node 22 + Clean Build
+1385 3:15p 🔴 Visual Baseline signup-desktop-visual-linux.png Updated — Second Iteration
+1386 " 🔵 PR #289 CI State — Visual Baselines Cascading, Non-Visual Gates All Green
+1387 " 🔵 Worker `__companions__` Directory Excluded from TypeScript Compilation
+1388 " 🔵 fallback-email.helpers.ts and templates/fallback-email.html Deleted in Wave-14
+1389 " 🔵 Railway Worker Has Two Environment Deployments with Different Root Configs
+1390 " 🔵 PR266 Visual Regression Root Cause — macOS Snapshots Committed as Linux Baseline
+1391 " ✅ Deploy-Production Workflow Manually Re-Triggered — Run 25688283908
+1392 3:16p 🔵 Kilo Code Review Failing with Sandbox Infrastructure Error — Transient, Not Code Issue
+1406 3:25p 🔵 PR #289 CI Status — Most Checks Passing, Three Still In Progress
+1407 3:26p ⚖️ Railway Full Automation and Production Perfection Mandate Issued
+1412 3:30p 🔵 Kloel Backend and Worker Production Health Confirmed — Both Services UP
+1413 " 🔵 Backend Railway Deployment Startup Sequence — Full NestJS Boot Captured
+1414 " 🔵 Working Tree State — Branch chore/purga-total-debt Has ~160 Modified Files Pre-Commit
+1415 3:31p ⚖️ Kloel CIA v3 Execution Contract Re-Issued in New Session — Full Mandate Active
 
-Access 291k tokens of past work via get_observations([IDs]) or mem-search skill.
+Access 1688k tokens of past work via get_observations([IDs]) or mem-search skill.
 </claude-mem-context>
 
 ## PULSE Auditor Immutability

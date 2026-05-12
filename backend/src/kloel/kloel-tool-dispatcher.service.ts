@@ -376,9 +376,13 @@ export class KloelToolDispatcherService {
     toolName: string;
     args: UnknownRecord;
   } | null {
-    if (!this.isRecord(payload)) return null;
+    if (!this.isRecord(payload)) {
+      return null;
+    }
     const toolName = typeof payload.toolName === 'string' ? payload.toolName.trim() : '';
-    if (!toolName || !this.isRecord(payload.args)) return null;
+    if (!toolName || !this.isRecord(payload.args)) {
+      return null;
+    }
     return { toolName, args: payload.args };
   }
 
@@ -443,7 +447,9 @@ export class KloelToolDispatcherService {
     const SENSITIVE_KEY_RE = /password|token|secret|cpf|ssn|card|pan/i;
     const out: UnknownRecord = {};
     for (const [k, v] of Object.entries(args ?? {})) {
-      if (SENSITIVE_KEY_RE.test(k)) continue;
+      if (SENSITIVE_KEY_RE.test(k)) {
+        continue;
+      }
       out[k] = v;
     }
     return out;
@@ -464,7 +470,9 @@ export class KloelToolDispatcherService {
     error?: string;
   }> {
     const query = String(args?.query || '').trim();
-    if (!query) return { success: false, error: 'missing_query' };
+    if (!query) {
+      return { success: false, error: 'missing_query' };
+    }
     try {
       await this.planLimits.ensureTokenBudget(workspaceId);
       const digest = await this.composerService.searchWeb(query);

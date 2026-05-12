@@ -26,7 +26,9 @@ describe('AdminLoginAttemptsService', () => {
     mockAttemptCreate.mockResolvedValue({ id: 'att_1' });
 
     prismaMock.$transaction.mockImplementation(async (ops: unknown) => {
-      if (typeof ops === 'function') return ops(prismaMock);
+      if (typeof ops === 'function') {
+        return ops(prismaMock);
+      }
       return [0, 0];
     });
 

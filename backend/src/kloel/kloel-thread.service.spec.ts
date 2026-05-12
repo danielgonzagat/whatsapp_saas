@@ -178,9 +178,7 @@ describe('KloelThreadService', () => {
         summaryUpdatedAt: new Date(),
       });
       prisma.chatMessage.count = jest.fn().mockResolvedValue(5);
-      prisma.chatMessage.findMany.mockResolvedValueOnce([
-        { role: 'user', content: 'Olá' },
-      ]);
+      prisma.chatMessage.findMany.mockResolvedValueOnce([{ role: 'user', content: 'Olá' }]);
 
       const result = await service.getThreadConversationState('thread-1', wsId);
 
@@ -239,11 +237,7 @@ describe('KloelThreadService', () => {
     });
 
     it('creates assistant message with correct role', async () => {
-      await service.persistAssistantThreadMessage(
-        'thread-1',
-        wsId,
-        'Resposta do assistente',
-      );
+      await service.persistAssistantThreadMessage('thread-1', wsId, 'Resposta do assistente');
 
       expect(prisma.chatMessage.create).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -292,7 +286,10 @@ describe('KloelThreadService', () => {
 
     it('filters out invalid version entries', () => {
       const metadata = {
-        responseVersions: [{ not: 'valid' }, { id: 'v1', content: 'Ok', createdAt: '2024-01-01', source: 'initial' }],
+        responseVersions: [
+          { not: 'valid' },
+          { id: 'v1', content: 'Ok', createdAt: '2024-01-01', source: 'initial' },
+        ],
       };
       const result = service.buildStoredResponseVersions(metadata);
       expect(result).toHaveLength(1);
@@ -307,7 +304,13 @@ describe('KloelThreadService', () => {
 
     it('returns single label when one entry', () => {
       const entries = [
-        { id: '1', kind: 'status' as const, phase: 'thinking' as const, label: 'Pensando', createdAt: '' },
+        {
+          id: '1',
+          kind: 'status' as const,
+          phase: 'thinking' as const,
+          label: 'Pensando',
+          createdAt: '',
+        },
       ];
       const result = service.buildProcessingTraceSummary(entries);
       expect(result).toContain('Pensando');
@@ -315,9 +318,27 @@ describe('KloelThreadService', () => {
 
     it('returns compound label for multiple entries', () => {
       const entries = [
-        { id: '1', kind: 'status' as const, phase: 'thinking' as const, label: 'Pensando', createdAt: '' },
-        { id: '2', kind: 'tool_call' as const, phase: 'tool_calling' as const, label: 'Buscando', createdAt: '' },
-        { id: '3', kind: 'tool_result' as const, phase: 'tool_result' as const, label: 'Respondendo', createdAt: '' },
+        {
+          id: '1',
+          kind: 'status' as const,
+          phase: 'thinking' as const,
+          label: 'Pensando',
+          createdAt: '',
+        },
+        {
+          id: '2',
+          kind: 'tool_call' as const,
+          phase: 'tool_calling' as const,
+          label: 'Buscando',
+          createdAt: '',
+        },
+        {
+          id: '3',
+          kind: 'tool_result' as const,
+          phase: 'tool_result' as const,
+          label: 'Respondendo',
+          createdAt: '',
+        },
       ];
       const result = service.buildProcessingTraceSummary(entries);
       expect(result).toContain('Pensando');
@@ -389,9 +410,9 @@ describe('KloelThreadService', () => {
   describe('error handling', () => {
     it('persistUserThreadMessage propagates Prisma error', async () => {
       prisma.chatMessage.create.mockRejectedValue(new Error('DB error'));
-      await expect(
-        service.persistUserThreadMessage('thread-1', wsId, 'msg'),
-      ).rejects.toThrow('DB error');
+      await expect(service.persistUserThreadMessage('thread-1', wsId, 'msg')).rejects.toThrow(
+        'DB error',
+      );
     });
 
     it('resolveThread propagates create error', async () => {

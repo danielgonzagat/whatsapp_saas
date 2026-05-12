@@ -406,12 +406,7 @@ export class MetaWhatsAppService {
       ? ((response as Record<string, unknown>).messages as Array<Record<string, unknown>>)
       : null;
     const msgId =
-      (msgs &&
-      msgs.length > 0 &&
-      msgs[0] &&
-      typeof (msgs[0] as Record<string, unknown>).id === 'string'
-        ? (msgs[0] as Record<string, unknown>).id
-        : null) ||
+      (msgs && msgs.length > 0 && msgs[0] && typeof msgs[0].id === 'string' ? msgs[0].id : null) ||
       (typeof (response as Record<string, unknown>).message_id === 'string'
         ? (response as Record<string, unknown>).message_id
         : null) ||
@@ -484,12 +479,7 @@ export class MetaWhatsAppService {
       ? ((response as Record<string, unknown>).messages as Array<Record<string, unknown>>)
       : null;
     const msgId =
-      (msgs &&
-      msgs.length > 0 &&
-      msgs[0] &&
-      typeof (msgs[0] as Record<string, unknown>).id === 'string'
-        ? (msgs[0] as Record<string, unknown>).id
-        : null) ||
+      (msgs && msgs.length > 0 && msgs[0] && typeof msgs[0].id === 'string' ? msgs[0].id : null) ||
       (typeof (response as Record<string, unknown>).message_id === 'string'
         ? (response as Record<string, unknown>).message_id
         : null) ||

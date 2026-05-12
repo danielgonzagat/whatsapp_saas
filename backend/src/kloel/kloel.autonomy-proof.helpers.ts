@@ -92,8 +92,12 @@ export function normalizePhone(value: string): string {
 
 export function normalizeChatId(value: string): string {
   const raw = String(value || '').trim();
-  if (!raw) return '';
-  if (raw.includes('@')) return raw;
+  if (!raw) {
+    return '';
+  }
+  if (raw.includes('@')) {
+    return raw;
+  }
   return `${normalizePhone(raw)}@c.us`;
 }
 
@@ -102,8 +106,12 @@ export function phoneFromChatId(value: string): string {
 }
 
 export function asStr(v: unknown, fallback = ''): string {
-  if (typeof v === 'string') return v;
-  if (typeof v === 'number' || typeof v === 'boolean') return String(v);
+  if (typeof v === 'string') {
+    return v;
+  }
+  if (typeof v === 'number' || typeof v === 'boolean') {
+    return String(v);
+  }
   return fallback;
 }
 

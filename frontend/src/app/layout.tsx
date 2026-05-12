@@ -82,11 +82,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       >
         <Script
           id="kloel-public-landing-canvas-guard"
+          src="/kloel-public-landing-canvas-guard.js"
           strategy="beforeInteractive"
-          dangerouslySetInnerHTML={{
-            __html:
-              "(() => { const original = HTMLCanvasElement.prototype.getContext; HTMLCanvasElement.prototype.getContext = function(type, options) { if (type === '2d' && this && this.style && this.style.mixBlendMode === 'screen') return null; return original.call(this, type, options); }; })();",
-          }}
         />
         <DatadogRumRouter />
         <NextIntlClientProvider locale={locale} messages={messages}>

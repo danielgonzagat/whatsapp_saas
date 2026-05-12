@@ -137,9 +137,13 @@ export class CrmController {
       title: body.title,
       value: body.value,
       ...(body.contactId !== undefined ? { contactId: body.contactId } : {}),
-      ...(body.contactPhone !== undefined || body.contact !== undefined ? { contactPhone: body.contactPhone || body.contact } : {}),
+      ...(body.contactPhone !== undefined || body.contact !== undefined
+        ? { contactPhone: body.contactPhone || body.contact }
+        : {}),
       ...(body.contactName !== undefined ? { contactName: body.contactName } : {}),
-      ...(body.stageId !== undefined || body.stage !== undefined ? { stageId: body.stageId || body.stage } : {}),
+      ...(body.stageId !== undefined || body.stage !== undefined
+        ? { stageId: body.stageId || body.stage }
+        : {}),
     });
   }
 

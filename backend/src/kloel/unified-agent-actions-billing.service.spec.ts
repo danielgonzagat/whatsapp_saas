@@ -69,9 +69,7 @@ describe('UnifiedAgentActionsBillingService', () => {
       contact: { count: jest.fn().mockResolvedValue(50) },
       autopilotEvent: {
         count: jest.fn().mockResolvedValue(10),
-        groupBy: jest.fn().mockResolvedValue([
-          { status: 'converted', _count: 5 },
-        ]),
+        groupBy: jest.fn().mockResolvedValue([{ status: 'converted', _count: 5 }]),
       },
       flow: { findFirst: jest.fn().mockResolvedValue(null) },
       product: { findFirst: jest.fn().mockResolvedValue(null) },
@@ -89,7 +87,9 @@ describe('UnifiedAgentActionsBillingService', () => {
       },
       $queryRaw: jest.fn().mockResolvedValue([{ avg_minutes: 2.5 }]),
       $transaction: jest.fn().mockImplementation((arg: unknown) => {
-        if (typeof arg === 'function') return arg(prisma);
+        if (typeof arg === 'function') {
+          return arg(prisma);
+        }
         return Promise.resolve(undefined);
       }),
     };
@@ -97,15 +97,10 @@ describe('UnifiedAgentActionsBillingService', () => {
     process.env.STRIPE_SECRET_KEY = 'sk_test_mock';
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        UnifiedAgentActionsBillingService,
-        { provide: PrismaService, useValue: prisma },
-      ],
+      providers: [UnifiedAgentActionsBillingService, { provide: PrismaService, useValue: prisma }],
     }).compile();
 
-    service = module.get<UnifiedAgentActionsBillingService>(
-      UnifiedAgentActionsBillingService,
-    );
+    service = module.get<UnifiedAgentActionsBillingService>(UnifiedAgentActionsBillingService);
   });
 
   afterEach(() => {
@@ -297,17 +292,15 @@ describe('UnifiedAgentActionsBillingService', () => {
     it('actionGetAnalytics propagates db error', async () => {
       prisma.message.count.mockRejectedValue(new Error('DB down'));
 
-      await expect(
-        service.actionGetAnalytics(wsId, { metric: 'messages' }),
-      ).rejects.toThrow('DB down');
+      await expect(service.actionGetAnalytics(wsId, { metric: 'messages' })).rejects.toThrow(
+        'DB down',
+      );
     });
 
     it('actionGetBillingStatus propagates db error', async () => {
       prisma.workspace.findUnique.mockRejectedValue(new Error('connection lost'));
 
-      await expect(
-        service.actionGetBillingStatus(wsId),
-      ).rejects.toThrow('connection lost');
+      await expect(service.actionGetBillingStatus(wsId)).rejects.toThrow('connection lost');
     });
   });
 });

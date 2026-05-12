@@ -117,7 +117,9 @@ export class NeuroCrmService {
           }
         });
         const bucket = buckets[best];
-        if (bucket) bucket.push(p);
+        if (bucket) {
+          bucket.push(p);
+        }
       }
       centroids = buckets.map((bucket, idx) => {
         if (!bucket.length) {

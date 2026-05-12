@@ -99,7 +99,7 @@ describe('KloelLeadBrainService', () => {
         paymentUrl: 'https://pay.test',
         suggestedMessage: 'Link',
       }),
-    } as { createSmartPayment: jest.Mock };
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -150,7 +150,11 @@ describe('KloelLeadBrainService', () => {
       await service.saveLeadMessage('lead-1', wsId, 'user', 'Minha mensagem');
       expect(prisma.kloelConversation.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({ leadId: 'lead-1', role: 'user', content: 'Minha mensagem' }),
+          data: expect.objectContaining({
+            leadId: 'lead-1',
+            role: 'user',
+            content: 'Minha mensagem',
+          }),
         }),
       );
     });
@@ -174,7 +178,12 @@ describe('KloelLeadBrainService', () => {
     });
 
     it('updates lead with objection intent', async () => {
-      await service.updateLeadFromConversation(wsId, 'lead-1', 'Muito caro, não posso pagar isso', 'Resposta');
+      await service.updateLeadFromConversation(
+        wsId,
+        'lead-1',
+        'Muito caro, não posso pagar isso',
+        'Resposta',
+      );
       expect(prisma.kloelLead.updateMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: 'lead-1', workspaceId: wsId },
@@ -202,9 +211,7 @@ describe('KloelLeadBrainService', () => {
 
     it('finds product from DB when memory is empty', async () => {
       prisma.kloelMemory.findMany.mockResolvedValue([]);
-      prisma.product.findMany.mockResolvedValue([
-        { id: 'p-1', name: 'Produto DB', price: 149.9 },
-      ]);
+      prisma.product.findMany.mockResolvedValue([{ id: 'p-1', name: 'Produto DB', price: 149.9 }]);
       const product = await service.extractProductFromMessage(wsId, 'Quero produto db');
       expect(product).toEqual({ name: 'Produto DB', price: 149.9 });
     });
@@ -229,7 +236,14 @@ describe('KloelLeadBrainService', () => {
         workspaceId: wsId,
         name: 'Cliente',
       });
-      const result = await service.generatePaymentForLead(wsId, 'lead-1', '55119', 'Produto', 99.9, 'conversa');
+      const result = await service.generatePaymentForLead(
+        wsId,
+        'lead-1',
+        '55119',
+        'Produto',
+        99.9,
+        'conversa',
+      );
       expect(result?.paymentUrl).toBe('https://pay.test');
     });
 
@@ -256,11 +270,8 @@ describe('KloelLeadBrainService', () => {
         providerSettings: { autopilotEnabled: true },
         name: 'Test Workspace',
       });
-      const result = await service.processWhatsAppMessage(
-        wsId,
-        '5511999999999',
-        'Oi',
-        () => Promise.resolve('context'),
+      const result = await service.processWhatsAppMessage(wsId, '5511999999999', 'Oi', () =>
+        Promise.resolve('context'),
       );
       expect(unifiedAgent.processIncomingMessage).toHaveBeenCalled();
       expect(result).toBe('Resposta do agente');
@@ -268,12 +279,16 @@ describe('KloelLeadBrainService', () => {
 
     it('returns fallback on error', async () => {
       prisma.workspace.findUnique.mockRejectedValue(new Error('DB down'));
-      const result = await service.processWhatsAppMessage(wsId, '55119', 'Oi', () => Promise.resolve('c'));
+      const result = await service.processWhatsAppMessage(wsId, '55119', 'Oi', () =>
+        Promise.resolve('c'),
+      );
       expect(result).toContain('problema técnico');
     });
 
     it('scopes lead creation by workspaceId', async () => {
-      await service.processWhatsAppMessage('ws-tenant', '5511988888888', 'Oi', () => Promise.resolve('c'));
+      await service.processWhatsAppMessage('ws-tenant', '5511988888888', 'Oi', () =>
+        Promise.resolve('c'),
+      );
       expect(prisma.kloelLead.findFirst).toHaveBeenCalledWith(
         expect.objectContaining({ where: { workspaceId: 'ws-tenant', phone: '5511988888888' } }),
       );
@@ -282,14 +297,12 @@ describe('KloelLeadBrainService', () => {
 
   describe('processWhatsAppMessageWithPayment', () => {
     it('returns payment link on high buy intent', async () => {
-      prisma.kloelLead.findFirst
-        .mockResolvedValueOnce(null)
-        .mockResolvedValueOnce({
-          id: 'lead-1',
-          workspaceId: wsId,
-          phone: '5511999999999',
-          name: 'Cliente',
-        });
+      prisma.kloelLead.findFirst.mockResolvedValueOnce(null).mockResolvedValueOnce({
+        id: 'lead-1',
+        workspaceId: wsId,
+        phone: '5511999999999',
+        name: 'Cliente',
+      });
       prisma.kloelMemory.findMany.mockResolvedValue([
         { id: 'm-1', value: { name: 'Curso X', price: 99.9 } },
       ]);

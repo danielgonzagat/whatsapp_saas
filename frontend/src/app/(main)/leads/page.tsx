@@ -1,27 +1,21 @@
 'use client';
-import { colors } from '@/lib/design-tokens';
-
 import { kloelT } from '@/lib/i18n/t';
-/** Dynamic. */
+
 export const dynamic = 'force-dynamic';
-import { KloelMushroomMark } from '@/components/kloel/KloelBrand';
-import { useAuth } from '@/components/kloel/auth/auth-provider';
 import { type Lead, getLeads } from '@/lib/api';
 import { buildDashboardHref } from '@/lib/kloel-dashboard-context';
-import { Check, Copy, Search, Users, XCircle } from 'lucide-react';
+import { useAuth } from '@/components/kloel/auth/auth-provider';
+import { XCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import {
-  LEADS_DIGIT_RE as D_RE,
-  LEAD_STATUS_LABEL as STATUS_LABEL,
-  formatLeadTimeAgo as formatTimeAgo,
-  leadTitle,
-  safeLeadDate as safeDate,
-} from './leads-page.helpers';
+import { LeadsHeader } from './LeadsHeader';
+import { LeadsContextBar } from './LeadsContextBar';
+import { LeadsListPanel } from './LeadsListPanel';
+import { LeadsDetailPanel } from './LeadsDetailPanel';
+import { LEADS_DIGIT_RE as D_RE, leadTitle } from './leads-page.helpers';
 
-/** Leads page. */
 export default function LeadsPage() {
   const searchParams = useSearchParams();
   const { isAuthenticated, isLoading, workspace, openAuthModal } = useAuth();
@@ -65,9 +59,11 @@ export default function LeadsPage() {
       setError(null);
       setLoadingLeads(true);
       try {
+        const lStatus = status || undefined;
+        const lSearch = searchTerm || undefined;
         const data = await getLeads(workspaceId, {
-          status: status || undefined,
-          search: searchTerm || undefined,
+          ...(lStatus !== undefined ? { status: lStatus } : {}),
+          ...(lSearch !== undefined ? { search: lSearch } : {}),
           limit: 200,
         });
         const normalized = (Array.isArray(data) ? data : []).map((l) => ({
@@ -152,6 +148,21 @@ export default function LeadsPage() {
         `Analise este lead (${leadTitle(lead)}) e me diga a próxima melhor ação para avançar a venda.`,
     });
 
+  const handleCopyPhone = async (lead: Lead) => {
+    if (!lead.phone) {
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(lead.phone);
+      setCopiedLeadId(lead.id);
+      window.setTimeout(() => {
+        setCopiedLeadId((current) => (current === lead.id ? null : current));
+      }, 1200);
+    } catch {
+      // ignore
+    }
+  };
+
   if (!isLoading && !isAuthenticated) {
     return (
       <div className="mx-auto max-w-3xl px-6 py-10">
@@ -203,82 +214,17 @@ export default function LeadsPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-8">
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-foreground">{kloelT(`Leads`)}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {kloelT(`Acompanhe e acione contatos com intenção de compra.`)}
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Link
-            href="/followups"
-            className="text-sm font-medium text-muted-foreground hover:text-foreground"
-          >
-            {kloelT(`Follow-ups`)}
-          </Link>
-          <Link
-            href="/flow"
-            className="text-sm font-medium text-muted-foreground hover:text-foreground"
-          >
-            {kloelT(`Flow`)}
-          </Link>
-          <Link
-            href="/inbox"
-            className="text-sm font-medium text-muted-foreground hover:text-foreground"
-          >
-            {kloelT(`Inbox`)}
-          </Link>
-          <Link
-            href="/"
-            className="text-sm font-medium text-muted-foreground hover:text-foreground"
-          >
-            {kloelT(`Voltar ao chat`)}
-          </Link>
-          <button
-            type="button"
-            onClick={() => refreshLeads({ keepSelection: true })}
-            disabled={loadingLeads}
-            className="rounded-xl border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground hover:bg-muted disabled:opacity-50"
-          >
-            {kloelT(`Atualizar`)}
-          </button>
-        </div>
-      </div>
+      <LeadsHeader
+        loadingLeads={loadingLeads}
+        onRefresh={() => refreshLeads({ keepSelection: true })}
+      />
 
-      {(sourceLabel || requestedLeadId || requestedPhone || requestedEmail) && (
-        <div className="mb-6 rounded-2xl border border-border bg-card px-5 py-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                {kloelT(`Contexto operacional`)}
-              </p>
-              <p className="mt-1 text-sm text-foreground">
-                {sourceLabel
-                  ? `Voce chegou aqui via ${sourceLabel.toLowerCase()}.`
-                  : 'Lead destacado para acao rapida.'}{' '}
-                {kloelT(
-                  `Use os atalhos abaixo para mover este contato para inbox, flow ou recuperacao.`,
-                )}
-              </p>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <Link
-                href="/scrapers"
-                className="rounded-xl border border-border bg-muted px-3 py-2 text-xs font-semibold text-foreground hover:bg-accent"
-              >
-                {kloelT(`Voltar para aquisicao`)}
-              </Link>
-              <Link
-                href="/followups"
-                className="rounded-xl border border-border bg-muted px-3 py-2 text-xs font-semibold text-foreground hover:bg-accent"
-              >
-                {kloelT(`Abrir follow-ups`)}
-              </Link>
-            </div>
-          </div>
-        </div>
-      )}
+      <LeadsContextBar
+        sourceLabel={sourceLabel}
+        requestedLeadId={requestedLeadId}
+        requestedPhone={requestedPhone}
+        requestedEmail={requestedEmail}
+      />
 
       {error && (
         <div className="mb-6 flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -288,296 +234,24 @@ export default function LeadsPage() {
       )}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-        {/* Left: list */}
-        <div className="lg:col-span-5">
-          <div className="rounded-2xl border border-border bg-card shadow-sm">
-            <div className="border-b border-border px-5 py-4">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-center gap-2">
-                  <Users className="h-4 w-4 text-muted" aria-hidden="true" />
-                  <span className="text-sm font-semibold text-foreground">{kloelT(`Lista`)}</span>
-                  <span className="text-xs text-muted-foreground">({filteredLeads.length})</span>
-                </div>
-              </div>
-              <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <div className="relative">
-                  <Search
-                    className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted"
-                    aria-hidden="true"
-                  />
-                  <input
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    placeholder={kloelT(`Buscar por nome, telefone ou email`)}
-                    className="w-full rounded-xl border border-border bg-muted py-2 pl-9 pr-3 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/20"
-                  />
-                </div>
-                <select
-                  value={status}
-                  onChange={(e) => setStatus(e.target.value)}
-                  className="w-full rounded-xl border border-border bg-muted px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
-                >
-                  <option value="">{kloelT(`Todos os status`)}</option>
-                  <option value="hot">{kloelT(`Quentes`)}</option>
-                  <option value="warm">{kloelT(`Mornos`)}</option>
-                  <option value="new">{kloelT(`Novos`)}</option>
-                  <option value="cold">{kloelT(`Frios`)}</option>
-                  <option value="converted">{kloelT(`Convertidos`)}</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="max-h-[70vh] overflow-y-auto">
-              {loadingLeads && leads.length === 0 ? (
-                <div className="flex items-center justify-center px-5 py-10">
-                  <KloelMushroomMark size={22} title="Carregando leads" traceColor={colors.ember.primary} />
-                </div>
-              ) : filteredLeads.length === 0 ? (
-                <div className="px-5 py-10 text-center">
-                  <p className="text-sm font-medium text-foreground">
-                    {kloelT(`Nenhum lead encontrado`)}
-                  </p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {source === 'scrapers'
-                      ? 'Volte para Scrapers e conclua uma importacao para abastecer esta fila.'
-                      : 'Tente ajustar o filtro ou o termo de busca.'}
-                  </p>
-                  <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-                    <Link
-                      href="/scrapers"
-                      className="rounded-xl border border-border bg-muted px-3 py-2 text-xs font-semibold text-foreground hover:bg-accent"
-                    >
-                      {kloelT(`Abrir Scrapers`)}
-                    </Link>
-                    <Link
-                      href="/marketing/whatsapp?mode=broadcast"
-                      className="rounded-xl border border-border bg-muted px-3 py-2 text-xs font-semibold text-foreground hover:bg-accent"
-                    >
-                      {kloelT(`Preparar broadcast`)}
-                    </Link>
-                  </div>
-                </div>
-              ) : (
-                <div className="divide-y divide-border">
-                  {filteredLeads.map((lead) => {
-                    const isActive = lead.id === selectedLeadId;
-                    const lastInteraction =
-                      safeDate(lead.lastInteraction) ||
-                      safeDate(lead.updatedAt) ||
-                      safeDate(lead.createdAt);
-                    const statusLabel = STATUS_LABEL[lead.status] || lead.status || '—';
-                    return (
-                      <button
-                        type="button"
-                        key={lead.id}
-                        onClick={() => setSelectedLeadId(lead.id)}
-                        className={`w-full px-5 py-4 text-left transition-colors ${isActive ? 'bg-muted' : 'hover:bg-muted'}`}
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <p className="truncate text-sm font-semibold text-foreground">
-                              {leadTitle(lead)}
-                            </p>
-                            <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                              {lead.phone}
-                            </p>
-                            {lead.email ? (
-                              <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                                {lead.email}
-                              </p>
-                            ) : null}
-                          </div>
-                          <div className="flex flex-col items-end gap-1">
-                            <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-semibold text-foreground">
-                              {statusLabel}
-                            </span>
-                            <span className="text-[11px] text-muted-foreground">
-                              {formatTimeAgo(lastInteraction)}
-                            </span>
-                          </div>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Right: details */}
-        <div className="lg:col-span-7">
-          <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-            {!selectedLead ? (
-              <div>
-                <h2 className="text-sm font-semibold text-foreground">{kloelT(`Detalhes`)}</h2>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  {kloelT(`Selecione um lead à esquerda para ver informações.`)}
-                </p>
-              </div>
-            ) : (
-              <div>
-                <div className="flex items-start justify-between gap-4">
-                  <div className="min-w-0">
-                    <h2 className="truncate text-lg font-semibold text-foreground">
-                      {leadTitle(selectedLead)}
-                    </h2>
-                    <p className="mt-1 text-sm text-muted-foreground">{selectedLead.phone}</p>
-                    {selectedLead.email ? (
-                      <p className="mt-1 text-sm text-muted-foreground">{selectedLead.email}</p>
-                    ) : null}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Link
-                      href={buildLeadDashboardHref(selectedLead)}
-                      className="rounded-xl border border-border bg-card px-3 py-2 text-sm font-semibold text-foreground hover:bg-muted"
-                    >
-                      {kloelT(`Abrir com IA`)}
-                    </Link>
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        if (!selectedLead.phone) {
-                          return;
-                        }
-                        try {
-                          await navigator.clipboard.writeText(selectedLead.phone);
-                          setCopiedLeadId(selectedLead.id);
-                          window.setTimeout(() => {
-                            setCopiedLeadId((current) =>
-                              current === selectedLead.id ? null : current,
-                            );
-                          }, 1200);
-                        } catch {
-                          // ignore
-                        }
-                      }}
-                      className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-2 text-sm font-semibold text-foreground hover:bg-muted"
-                    >
-                      {copiedLeadId === selectedLead.id ? (
-                        <Check className="h-4 w-4 text-foreground" aria-hidden="true" />
-                      ) : (
-                        <Copy className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
-                      )}
-
-                      {kloelT(`Copiar`)}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <div className="rounded-xl border border-border bg-muted px-4 py-3">
-                    <p className="text-xs font-medium text-muted-foreground">{kloelT(`Status`)}</p>
-                    <p className="mt-1 text-sm font-semibold text-foreground">
-                      {STATUS_LABEL[selectedLead.status] || selectedLead.status || '—'}
-                    </p>
-                  </div>
-                  <div className="rounded-xl border border-border bg-muted px-4 py-3">
-                    <p className="text-xs font-medium text-muted-foreground">
-                      {kloelT(`Última intenção`)}
-                    </p>
-                    <p className="mt-1 text-sm font-semibold text-foreground">
-                      {selectedLead.lastIntent || '—'}
-                    </p>
-                  </div>
-                  <div className="rounded-xl border border-border bg-muted px-4 py-3">
-                    <p className="text-xs font-medium text-muted-foreground">
-                      {kloelT(`Mensagens`)}
-                    </p>
-                    <p className="mt-1 text-sm font-semibold text-foreground">
-                      {selectedLead.totalMessages ?? '—'}
-                    </p>
-                  </div>
-                  <div className="rounded-xl border border-border bg-muted px-4 py-3">
-                    <p className="text-xs font-medium text-muted-foreground">
-                      {kloelT(`Última interação`)}
-                    </p>
-                    <p className="mt-1 text-sm font-semibold text-foreground">
-                      {formatTimeAgo(
-                        safeDate(selectedLead.lastInteraction) ||
-                          safeDate(selectedLead.updatedAt) ||
-                          safeDate(selectedLead.createdAt),
-                      )}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="mt-6 rounded-xl border border-border bg-card px-4 py-3">
-                  <p className="text-xs font-medium text-muted-foreground">{kloelT(`Atalhos`)}</p>
-                  <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <Link
-                      href={`/inbox?source=leads&phone=${encodeURIComponent(selectedLead.phone || '')}`}
-                      className="rounded-xl border border-border bg-muted px-4 py-3 text-sm font-semibold text-foreground hover:bg-accent"
-                    >
-                      {kloelT(`Levar para Inbox`)}
-                      <span className="mt-1 block text-xs font-normal text-muted-foreground">
-                        {kloelT(`Assuma a conversa manualmente ou devolva para IA.`)}
-                      </span>
-                    </Link>
-                    <Link
-                      href={buildLeadDashboardHref(selectedLead)}
-                      className="rounded-xl border border-border bg-muted px-4 py-3 text-sm font-semibold text-foreground hover:bg-accent"
-                    >
-                      {kloelT(`Pedir plano para IA`)}
-                      <span className="mt-1 block text-xs font-normal text-muted-foreground">
-                        {kloelT(
-                          `Abra o Kloel com o contexto deste lead e peça a próxima melhor ação.`,
-                        )}
-                      </span>
-                    </Link>
-                    <Link
-                      href={`/followups?source=leads&leadId=${encodeURIComponent(selectedLead.id)}`}
-                      className="rounded-xl border border-border bg-muted px-4 py-3 text-sm font-semibold text-foreground hover:bg-accent"
-                    >
-                      {kloelT(`Iniciar Follow-up`)}
-                      <span className="mt-1 block text-xs font-normal text-muted-foreground">
-                        {kloelT(`Recupere leads mornos e abandos sem perder contexto.`)}
-                      </span>
-                    </Link>
-                    <Link
-                      href={`/flow?source=leads&leadId=${encodeURIComponent(selectedLead.id)}`}
-                      className="rounded-xl border border-border bg-muted px-4 py-3 text-sm font-semibold text-foreground hover:bg-accent"
-                    >
-                      {kloelT(`Automatizar no Flow`)}
-                      <span className="mt-1 block text-xs font-normal text-muted-foreground">
-                        {kloelT(`Transforme este lead em automacao de retorno ou nurture.`)}
-                      </span>
-                    </Link>
-                    <Link
-                      href={`/marketing/whatsapp?mode=broadcast&source=leads&phone=${encodeURIComponent(selectedLead.phone || '')}`}
-                      className="rounded-xl border border-border bg-muted px-4 py-3 text-sm font-semibold text-foreground hover:bg-accent"
-                    >
-                      {kloelT(`Acionar Marketing`)}
-                      <span className="mt-1 block text-xs font-normal text-muted-foreground">
-                        {kloelT(`Abra broadcast ou templates para destravar resposta rapida.`)}
-                      </span>
-                    </Link>
-                  </div>
-                  <div className="mt-3 flex flex-wrap items-center gap-3">
-                    <Link
-                      href={buildDashboardHref({
-                        source: 'leads',
-                        purpose: 'qualification',
-                        draft:
-                          'Quero importar minha lista de leads e organizar a melhor operação de aquisição.',
-                      })}
-                      className="text-sm font-medium text-muted-foreground hover:text-foreground"
-                    >
-                      {kloelT(`Pedir para o KLOEL importar`)}
-                    </Link>
-                    <span className="text-muted">•</span>
-                    <Link
-                      href="/autopilot"
-                      className="text-sm font-medium text-muted-foreground hover:text-foreground"
-                    >
-                      {kloelT(`Configurar Autopilot`)}
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+        <LeadsListPanel
+          loadingLeads={loadingLeads}
+          leads={leads}
+          filteredLeads={filteredLeads}
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          status={status}
+          onStatusChange={setStatus}
+          selectedLeadId={selectedLeadId}
+          onSelectLead={setSelectedLeadId}
+          source={source}
+        />
+        <LeadsDetailPanel
+          selectedLead={selectedLead}
+          copiedLeadId={copiedLeadId}
+          onCopyPhone={handleCopyPhone}
+          buildLeadDashboardHref={buildLeadDashboardHref}
+        />
       </div>
     </div>
   );

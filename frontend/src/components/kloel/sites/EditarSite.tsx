@@ -27,13 +27,13 @@ export function EditarSite({ mode }: { mode?: string }) {
     apiFetch('/kloel/site/list')
       .then((res) => {
         const data = res.data as { sites?: SiteItem[] } | undefined;
-        if (data?.sites) setSavedSites(data.sites);
+        if (data?.sites) {setSavedSites(data.sites);}
       })
       .finally(() => setLoading(false));
   }, []);
 
   const handleEditWithAI = async () => {
-    if (!editPrompt.trim() || !selectedSite) return;
+    if (!editPrompt.trim() || !selectedSite) {return;}
     setEditLoading(true);
     setError('');
     const res = await apiFetch('/kloel/site/generate', { method: 'POST', body: { prompt: editPrompt.trim(), currentHtml: selectedSite.htmlContent } });
@@ -44,11 +44,11 @@ export function EditarSite({ mode }: { mode?: string }) {
   };
 
   const handleSave = async () => {
-    if (!selectedSite) return;
+    if (!selectedSite) {return;}
     setSaving(true);
     setError('');
     const res = await apiFetch(`/kloel/site/${selectedSite.id}`, { method: 'PUT', body: { name: selectedSite.name, htmlContent: selectedSite.htmlContent } });
-    if (res.error) setError(res.error);
+    if (res.error) {setError(res.error);}
     setSaving(false);
   };
 
@@ -56,12 +56,12 @@ export function EditarSite({ mode }: { mode?: string }) {
     const res = await apiFetch(`/kloel/site/${siteId}`, { method: 'DELETE' });
     if (!res.error) {
       setSavedSites((prev) => prev.filter((s) => s.id !== siteId));
-      if (selectedSite?.id === siteId) setSelectedSite(null);
+      if (selectedSite?.id === siteId) {setSelectedSite(null);}
     }
   };
 
   const handleCreateVariant = async () => {
-    if (!selectedSite || !variantPrompt.trim()) return;
+    if (!selectedSite || !variantPrompt.trim()) {return;}
     setVariantLoading(true);
     setVariantNotice('');
     setError('');

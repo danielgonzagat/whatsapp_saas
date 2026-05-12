@@ -182,7 +182,8 @@ export class EmailService {
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
     const html = this.renderTemplate('welcome', { agentName, workspaceName, frontendUrl });
     const htmlWithUnsub =
-      html + buildUnsubscribeFooterHtml({ email, ...(workspaceId !== undefined ? { workspaceId } : {}) });
+      html +
+      buildUnsubscribeFooterHtml({ email, ...(workspaceId !== undefined ? { workspaceId } : {}) });
     const headers = buildListUnsubscribeHeader({
       email,
       ...(workspaceId !== undefined ? { workspaceId } : {}),
@@ -213,7 +214,8 @@ export class EmailService {
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
     const html = this.renderTemplate(template, { agentName, frontendUrl });
     const htmlWithUnsub =
-      html + buildUnsubscribeFooterHtml({ email, ...(workspaceId !== undefined ? { workspaceId } : {}) });
+      html +
+      buildUnsubscribeFooterHtml({ email, ...(workspaceId !== undefined ? { workspaceId } : {}) });
     const headers = buildListUnsubscribeHeader({
       email,
       ...(workspaceId !== undefined ? { workspaceId } : {}),
@@ -413,8 +415,11 @@ export class EmailService {
           await new Promise<void>((res, rej) => {
             socket.once('data', (data: Buffer) => {
               const resp = data.toString();
-              if (resp.startsWith('2')) res();
-              else rej(new Error(`SMTP DATA error: ${resp.trim()}`));
+              if (resp.startsWith('2')) {
+                res();
+              } else {
+                rej(new Error(`SMTP DATA error: ${resp.trim()}`));
+              }
             });
           });
           await sendCmd('QUIT');

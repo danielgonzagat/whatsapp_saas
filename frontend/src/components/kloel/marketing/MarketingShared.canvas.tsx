@@ -36,9 +36,9 @@ export function NP({ w, h, color = EMBER }: { w: number; h: number; color?: stri
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     const c = ref.current;
-    if (!c) return;
+    if (!c) {return;}
     const ctx = c.getContext('2d');
-    if (!ctx) return;
+    if (!ctx) {return;}
     let frame = 0;
     let raf: number;
     let visible = true;
@@ -50,7 +50,7 @@ export function NP({ w, h, color = EMBER }: { w: number; h: number; color?: stri
     );
     obs.observe(c);
     const draw = () => {
-      if (!visible) return;
+      if (!visible) {return;}
       drawNeuralFrame(ctx, w, h, color, frame);
       frame++;
       raf = requestAnimationFrame(draw);

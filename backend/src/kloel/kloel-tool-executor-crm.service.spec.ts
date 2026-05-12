@@ -41,7 +41,9 @@ describe('KloelToolExecutorCrmService', () => {
       campaign: { create: jest.fn().mockResolvedValue({}), count: jest.fn().mockResolvedValue(0) },
       message: { count: jest.fn().mockResolvedValue(0) },
       $transaction: jest.fn().mockImplementation((arg: unknown) => {
-        if (typeof arg === 'function') return arg(prisma);
+        if (typeof arg === 'function') {
+          return arg(prisma);
+        }
         return Promise.resolve(undefined);
       }),
     };
@@ -225,7 +227,9 @@ describe('KloelToolExecutorCrmService', () => {
       });
 
       expect(result.success).toBe(true);
-      expect((result as Record<string, unknown>).campaign).toMatchObject({ estimatedRecipients: 12 });
+      expect((result as Record<string, unknown>).campaign).toMatchObject({
+        estimatedRecipients: 12,
+      });
       expect(prisma.contact.count).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { workspaceId: wsId, leadScore: { gte: 70 } },

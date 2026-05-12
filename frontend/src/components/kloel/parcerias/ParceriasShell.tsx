@@ -35,7 +35,7 @@ export default function ParceriasShell({ defaultTab = 'colaboradores' }: { defau
       chat: '/parcerias/chat',
     };
     const nextRoute = routes[t] || '/parcerias';
-    if (pathname === nextRoute) return;
+    if (pathname === nextRoute) {return;}
     startTransition(() => {
       router.push(nextRoute);
     });

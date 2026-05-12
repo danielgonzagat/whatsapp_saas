@@ -126,7 +126,9 @@ export async function triggerCatalogRescore(
       where: { id: o.contactId, workspaceId: ws },
       select: { id: true, phone: true, name: true, customFields: true },
     });
-    if (!c) throw new BadRequestException('contactId inválido');
+    if (!c) {
+      throw new BadRequestException('contactId inválido');
+    }
     const cf = normalizeJsonObjExt(c.customFields);
     targets = [
       {

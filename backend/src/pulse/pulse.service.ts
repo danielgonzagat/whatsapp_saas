@@ -154,7 +154,8 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
       const status = toOrganismStatus(String(health?.status || 'DEGRADED'));
       const nodeId = `backend:${this.getNodeSuffix()}`;
       const memory = process.memoryUsage();
-      const versionValue = String(process.env.RAILWAY_GIT_COMMIT_SHA || '').slice(0, 12) || undefined;
+      const versionValue =
+        String(process.env.RAILWAY_GIT_COMMIT_SHA || '').slice(0, 12) || undefined;
       const summary =
         status === 'UP'
           ? 'Backend heartbeat healthy.'

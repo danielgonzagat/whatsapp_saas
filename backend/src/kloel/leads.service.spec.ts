@@ -36,10 +36,7 @@ describe('LeadsService', () => {
     };
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        LeadsService,
-        { provide: PrismaService, useValue: prisma },
-      ],
+      providers: [LeadsService, { provide: PrismaService, useValue: prisma }],
     }).compile();
 
     service = module.get<LeadsService>(LeadsService);
@@ -107,9 +104,7 @@ describe('LeadsService', () => {
       expect(prisma.kloelLead.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({
-            OR: expect.arrayContaining([
-              { name: { contains: 'joao', mode: 'insensitive' } },
-            ]),
+            OR: expect.arrayContaining([{ name: { contains: 'joao', mode: 'insensitive' } }]),
           }),
         }),
       );
@@ -125,9 +120,7 @@ describe('LeadsService', () => {
     it('respects custom limit', async () => {
       await service.listLeads(wsId, { limit: 10 });
 
-      expect(prisma.kloelLead.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({ take: 10 }),
-      );
+      expect(prisma.kloelLead.findMany).toHaveBeenCalledWith(expect.objectContaining({ take: 10 }));
     });
 
     it('defaults limit to 200', async () => {
@@ -140,9 +133,7 @@ describe('LeadsService', () => {
 
     it('clamps limit between 1 and 500', async () => {
       await service.listLeads(wsId, { limit: 0 });
-      expect(prisma.kloelLead.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({ take: 1 }),
-      );
+      expect(prisma.kloelLead.findMany).toHaveBeenCalledWith(expect.objectContaining({ take: 1 }));
 
       await service.listLeads(wsId, { limit: 1000 });
       expect(prisma.kloelLead.findMany).toHaveBeenCalledWith(
@@ -276,9 +267,9 @@ describe('LeadsService', () => {
     it('listLeads with filters propagates Prisma error', async () => {
       prisma.kloelLead.findMany.mockRejectedValue(new Error('timeout'));
 
-      await expect(
-        service.listLeads(wsId, { status: 'new', search: 'test' }),
-      ).rejects.toThrow('timeout');
+      await expect(service.listLeads(wsId, { status: 'new', search: 'test' })).rejects.toThrow(
+        'timeout',
+      );
     });
   });
 });

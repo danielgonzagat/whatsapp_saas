@@ -6,7 +6,7 @@ function requireTemplateJson(value: Prisma.JsonValue, field: string): Prisma.Inp
   if (value === null) {
     throw new Error(`Template ${field} is missing`);
   }
-  return value as Prisma.InputJsonValue;
+  return value;
 }
 
 /** Marketplace service. */

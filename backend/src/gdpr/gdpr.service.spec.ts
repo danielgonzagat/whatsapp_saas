@@ -16,7 +16,9 @@ jest.mock('node:fs', () => {
     event: string,
     cb: () => void,
   ) {
-    if (event === 'close') setImmediate(cb);
+    if (event === 'close') {
+      setImmediate(cb);
+    }
     return this;
   });
   return {

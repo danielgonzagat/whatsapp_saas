@@ -213,13 +213,14 @@ export function buildMockPrisma(localContactsSeed: ContactSeed[]) {
             c.workspaceId === where.workspaceId_phone.workspaceId &&
             c.phone === where.workspaceId_phone.phone,
         );
-        if (existing)
+        if (existing) {
           return Promise.resolve({
             ...existing,
             name: update?.name ?? existing.name,
             email: update?.email ?? existing.email,
             updatedAt: new Date('2026-03-20T12:00:00.000Z'),
           });
+        }
         const next: ContactSeed = {
           id: `contact-${createdContacts.length + 10}`,
           workspaceId: create.workspaceId,

@@ -77,7 +77,7 @@ export async function upsertWorkItem(deps: AccountDeps, workspaceId: string, inp
     String(prev.summary || '') !== String(input.summary || '') ||
     Number(prev.priority || 0) !== Number(input.priority || 0) ||
     Number(prev.utility || 0) !== Number(input.utility || 0);
-  if (changed)
+  if (changed) {
     await deps.agentEvents.publish({
       type: 'account',
       workspaceId,
@@ -100,4 +100,5 @@ export async function upsertWorkItem(deps: AccountDeps, workspaceId: string, inp
         capabilityCode: input.metadata.capabilityCode || null,
       },
     });
+  }
 }

@@ -2,8 +2,24 @@ import { autopilotQueue } from '../../queue';
 import { buildQueueJobId } from '../../job-id';
 import { forEachSequential } from '../../utils/async-sequence';
 import { unifiedWhatsAppProvider as whatsappApiProvider } from '../../providers/unified-whatsapp-provider';
-import { type UnknownRecord, type WorkspaceSelfIdentity, type RemoteChatSummary, CIA_BACKLOG_CONTINUATION_LIMIT, CIA_REMOTE_PENDING_PROBE_LIMIT, NON_DIGIT_RE } from './shared';
-import { resolveCatalogPhoneFromChatId, resolveCanonicalChatId, buildLidMap, extractCatalogChatName, isIndividualWahaChatId, resolveLastMessageFromMe, resolveCatalogChatActivityTimestamp, isWorkspaceSelfTarget } from './identity';
+import {
+  type UnknownRecord,
+  type WorkspaceSelfIdentity,
+  type RemoteChatSummary,
+  CIA_BACKLOG_CONTINUATION_LIMIT,
+  CIA_REMOTE_PENDING_PROBE_LIMIT,
+  NON_DIGIT_RE,
+} from './shared';
+import {
+  resolveCatalogPhoneFromChatId,
+  resolveCanonicalChatId,
+  buildLidMap,
+  extractCatalogChatName,
+  isIndividualWahaChatId,
+  resolveLastMessageFromMe,
+  resolveCatalogChatActivityTimestamp,
+  isWorkspaceSelfTarget,
+} from './identity';
 
 async function scheduleCatalogContactsJob(
   workspaceId: string,
@@ -58,7 +74,12 @@ export async function getRemoteUnreadChatSnapshot(
   const chats: RemoteChatSummary[] = (await whatsappApiProvider
     .getChats(workspaceId)
     .catch((): RemoteChatSummary[] => [])) as RemoteChatSummary[];
-  const lidMap = buildLidMap((await whatsappApiProvider.getLidMappings(workspaceId).catch(() => [])) as Array<{ lid?: string | null; pn?: string | null }>);
+  const lidMap = buildLidMap(
+    (await whatsappApiProvider.getLidMappings(workspaceId).catch(() => [])) as Array<{
+      lid?: string | null;
+      pn?: string | null;
+    }>,
+  );
 
   const normalizedChats = (Array.isArray(chats) ? chats : [])
     .map((chat: UnknownRecord) => {
@@ -131,7 +152,9 @@ export async function getRemoteUnreadChatSnapshot(
         })
         .catch(() => []);
 
-      const latestMessage = ((Array.isArray(messages) ? messages : ([] as UnknownRecord[])) as UnknownRecord[])
+      const latestMessage = (
+        (Array.isArray(messages) ? messages : ([] as UnknownRecord[])) as UnknownRecord[]
+      )
         .map((message: UnknownRecord) => ({
           fromMe: message?.fromMe === true,
           timestamp: Number(message?.timestamp || message?.t || 0) || 0,

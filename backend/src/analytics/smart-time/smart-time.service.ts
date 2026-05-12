@@ -75,7 +75,9 @@ export class SmartTimeService {
         const score = Math.round((count / maxCount) * 100) / 100;
         if (score > 0) {
           const dayName = DAY_NAMES[d];
-          if (!dayName) continue;
+          if (!dayName) {
+            continue;
+          }
           heatmap.push({ hour: h, day: dayName, score });
         }
       }

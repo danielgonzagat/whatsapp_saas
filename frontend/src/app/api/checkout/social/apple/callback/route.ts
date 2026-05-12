@@ -39,20 +39,28 @@ function parseAppleUser(rawUser: FormDataEntryValue | null) {
 
 async function readAppleCallbackPayload(request: NextRequest): Promise<AppleCallbackPayload> {
   if (request.method === 'GET') {
+    const identityToken = request.nextUrl.searchParams.get('id_token')?.trim() || undefined;
+    const authorizationCode = request.nextUrl.searchParams.get('code')?.trim() || undefined;
+    const state = request.nextUrl.searchParams.get('state')?.trim() || undefined;
+    const user = parseAppleUser(request.nextUrl.searchParams.get('user'));
     return {
-      identityToken: request.nextUrl.searchParams.get('id_token')?.trim() || undefined,
-      authorizationCode: request.nextUrl.searchParams.get('code')?.trim() || undefined,
-      state: request.nextUrl.searchParams.get('state')?.trim() || undefined,
-      user: parseAppleUser(request.nextUrl.searchParams.get('user')),
+      ...(identityToken !== undefined ? { identityToken } : {}),
+      ...(authorizationCode !== undefined ? { authorizationCode } : {}),
+      ...(state !== undefined ? { state } : {}),
+      ...(user !== undefined ? { user } : {}),
     };
   }
 
   const formData = await request.formData();
+  const identityToken = String(formData.get('id_token') || '').trim() || undefined;
+  const authorizationCode = String(formData.get('code') || '').trim() || undefined;
+  const state = String(formData.get('state') || '').trim() || undefined;
+  const user = parseAppleUser(formData.get('user'));
   return {
-    identityToken: String(formData.get('id_token') || '').trim() || undefined,
-    authorizationCode: String(formData.get('code') || '').trim() || undefined,
-    state: String(formData.get('state') || '').trim() || undefined,
-    user: parseAppleUser(formData.get('user')),
+    ...(identityToken !== undefined ? { identityToken } : {}),
+    ...(authorizationCode !== undefined ? { authorizationCode } : {}),
+    ...(state !== undefined ? { state } : {}),
+    ...(user !== undefined ? { user } : {}),
   };
 }
 

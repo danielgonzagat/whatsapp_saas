@@ -6,9 +6,15 @@ function pickBooleanFromMe(
   lastMsgDataId: Record<string, unknown> | undefined,
   lastMsgId: Record<string, unknown> | undefined,
 ): boolean | null {
-  if (typeof lastMessage?.fromMe === 'boolean') return lastMessage.fromMe;
-  if (typeof lastMsgDataId?.fromMe === 'boolean') return lastMsgDataId.fromMe;
-  if (typeof lastMsgId?.fromMe === 'boolean') return lastMsgId.fromMe;
+  if (typeof lastMessage?.fromMe === 'boolean') {
+    return lastMessage.fromMe;
+  }
+  if (typeof lastMsgDataId?.fromMe === 'boolean') {
+    return lastMsgDataId.fromMe;
+  }
+  if (typeof lastMsgId?.fromMe === 'boolean') {
+    return lastMsgId.fromMe;
+  }
   return null;
 }
 
@@ -31,7 +37,9 @@ function resolvePreferredChatIdExt(
     .filter((c) => typeof c === 'string')
     .map((c) => String(c).trim())
     .filter(Boolean);
-  if (!candidates.length) return null;
+  if (!candidates.length) {
+    return null;
+  }
   return candidates.find((c) => !c.includes('@lid')) || candidates[0] || null;
 }
 

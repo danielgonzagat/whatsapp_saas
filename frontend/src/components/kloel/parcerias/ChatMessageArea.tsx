@@ -32,7 +32,7 @@ export default function ChatMessageArea({
   }, [displayMessages.length]);
 
   const handleSend = async () => {
-    if (!chatInput.trim() || !selectedChat) return;
+    if (!chatInput.trim() || !selectedChat) {return;}
     const content = chatInput.trim();
     setChatInput('');
     try {

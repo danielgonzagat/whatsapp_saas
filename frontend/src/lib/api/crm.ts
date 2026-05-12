@@ -178,9 +178,9 @@ export const crmApi = {
 
   listDeals: (params?: { pipeline?: string; stage?: string; search?: string }) => {
     const searchParams = new URLSearchParams();
-    if (params?.pipeline) searchParams.set('pipeline', params.pipeline);
-    if (params?.stage) searchParams.set('stage', params.stage);
-    if (params?.search) searchParams.set('search', params.search);
+    if (params?.pipeline) {searchParams.set('pipeline', params.pipeline);}
+    if (params?.stage) {searchParams.set('stage', params.stage);}
+    if (params?.search) {searchParams.set('search', params.search);}
     const qs = searchParams.toString();
     return apiFetch<CrmDeal[]>(`/crm/deals${qs ? `?${qs}` : ''}`);
   },

@@ -31,7 +31,9 @@ export async function detectCatalogGapExt(
   },
 ) {
   const messageContent = String(input.messageContent || '').trim();
-  if (!messageContent) return { created: false, approval: null, reason: 'empty_message' as const };
+  if (!messageContent) {
+    return { created: false, approval: null, reason: 'empty_message' as const };
+  }
   const [products, memoryProducts] = await Promise.all([
     deps.prisma.product.findMany({
       where: { workspaceId: input.workspaceId, active: true },
@@ -60,16 +62,20 @@ export async function detectCatalogGapExt(
     ),
   );
   const detection = detectGap({ messageContent, productNames });
-  if (!detection.buyingIntent)
+  if (!detection.buyingIntent) {
     return { created: false, approval: null, reason: 'no_buying_intent' as const };
-  if (detection.matchedProducts.length > 0)
+  }
+  if (detection.matchedProducts.length > 0) {
     return { created: false, approval: null, reason: 'catalog_match_found' as const };
+  }
   const missingProductName = String(detection.missingProductName || '').trim();
-  if (!missingProductName)
+  if (!missingProductName) {
     return { created: false, approval: null, reason: 'candidate_not_found' as const };
+  }
   const normalizedProductName = slugifyCatalogKey(missingProductName);
-  if (!normalizedProductName)
+  if (!normalizedProductName) {
     return { created: false, approval: null, reason: 'candidate_not_normalized' as const };
+  }
   const key = buildApprovalKey(normalizedProductName);
   const existing = await deps.prisma.kloelMemory.findUnique({
     where: { workspaceId_key: { workspaceId: input.workspaceId, key } },
@@ -167,7 +173,7 @@ export async function detectCatalogGapExt(
           : null,
     },
   });
-  if (!existing)
+  if (!existing) {
     await deps.agentEvents.publish({
       type: 'prompt',
       workspaceId: input.workspaceId,
@@ -185,6 +191,7 @@ export async function detectCatalogGapExt(
         ],
       },
     });
+  }
   return {
     created: !existing,
     approval,

@@ -3,6 +3,16 @@ import type { KloelContextFormatterLimits } from './kloel-context-formatter.type
 
 export const S_RE = /\s+/g;
 
+type PromptRecord = Record<string, unknown>;
+
+function isPromptRecord(value: unknown): value is PromptRecord {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function promptRecords(values: unknown): PromptRecord[] {
+  return Array.isArray(values) ? values.filter(isPromptRecord) : [];
+}
+
 export class KloelWorkspaceCoreContextFormatter {
   constructor(
     protected base: KloelContextBaseFormatter,
@@ -18,13 +28,13 @@ export class KloelWorkspaceCoreContextFormatter {
   }
 
   buildWorkspaceBusinessHoursContext(businessHours: unknown): string | null {
-    if (!businessHours || typeof businessHours !== 'object') {
+    if (!isPromptRecord(businessHours)) {
       return null;
     }
-    const bh = businessHours as Record<string, unknown>;
-    const bhWeekday = bh.weekday as Record<string, unknown> | undefined;
-    const bhSaturday = bh.saturday as Record<string, unknown> | undefined;
-    const bhSunday = bh.sunday as Record<string, unknown> | undefined;
+    const bh = businessHours;
+    const bhWeekday = isPromptRecord(bh.weekday) ? bh.weekday : undefined;
+    const bhSaturday = isPromptRecord(bh.saturday) ? bh.saturday : undefined;
+    const bhSunday = isPromptRecord(bh.sunday) ? bh.sunday : undefined;
     const weekday = bhWeekday
       ? `${this.safeStr(bhWeekday.start, '--')}-${this.safeStr(bhWeekday.end, '--')}`
       : null;
@@ -46,15 +56,18 @@ export class KloelWorkspaceCoreContextFormatter {
   }
 
   buildWorkspaceIntegrationContext(integrations: unknown): string | null {
-    if (!Array.isArray(integrations) || integrations.length === 0) {
+    const integrationRecords = promptRecords(integrations);
+    if (integrationRecords.length === 0) {
       return null;
     }
-    return integrations
+    return integrationRecords
       .slice(0, this.limits.workspaceIntegrationContextLimit)
       .map((integration) => {
+        const type = this.safeStr(integration.type);
+        const name = this.safeStr(integration.name);
         const parts = [
-          integration.type || integration.name,
-          integration.name && integration.name !== integration.type ? integration.name : null,
+          type || name,
+          name && name !== type ? name : null,
           integration.isActive ? 'ativa' : 'inativa',
         ].filter(Boolean);
         return `- ${parts.join(' | ')}`;
@@ -69,9 +82,7 @@ export class KloelWorkspaceCoreContextFormatter {
     stripeCustomerId?: string | null;
   }): string | null {
     const { invoices, providerSettings, stripeCustomerId } = params;
-    const sub = (
-      params.subscription && typeof params.subscription === 'object' ? params.subscription : null
-    ) as Record<string, unknown> | null;
+    const sub = isPromptRecord(params.subscription) ? params.subscription : null;
     const lines: string[] = [];
     if (sub) {
       const renewal = this.base.formatPromptDate(sub.currentPeriodEnd);
@@ -102,16 +113,14 @@ export class KloelWorkspaceCoreContextFormatter {
     } else {
       lines.push('- Assinatura: sem assinatura registrada');
     }
-    const relevantInvoices = Array.isArray(invoices)
-      ? invoices.slice(0, this.limits.workspaceInvoiceContextLimit)
-      : [];
+    const relevantInvoices = promptRecords(invoices).slice(
+      0,
+      this.limits.workspaceInvoiceContextLimit,
+    );
     if (relevantInvoices.length > 0) {
       lines.push(
         `- Faturas recentes:\n${relevantInvoices
-          .map((invoiceRaw: unknown) => {
-            const invoice = (
-              invoiceRaw && typeof invoiceRaw === 'object' ? invoiceRaw : {}
-            ) as Record<string, unknown>;
+          .map((invoice) => {
             const amount = this.base.formatPromptCurrency(Number(invoice.amount || 0) / 100, 'BRL');
             const when = this.base.formatPromptDate(invoice.createdAt);
             return `  - ${this.safeStr(invoice.status)} | ${amount}${when ? ` | ${when}` : ''}`;
@@ -126,20 +135,23 @@ export class KloelWorkspaceCoreContextFormatter {
   }
 
   buildWorkspaceExternalPaymentLinkContext(links: unknown): string | null {
-    if (!Array.isArray(links) || links.length === 0) {
+    const linkRecords = promptRecords(links);
+    if (linkRecords.length === 0) {
       return null;
     }
-    return links
+    return linkRecords
       .slice(0, this.limits.workspaceExternalLinkContextLimit)
       .map((link) => {
         const lastSaleAt = this.base.formatPromptDate(link.lastSaleAt);
+        const totalSales = Number(link.totalSales);
+        const totalRevenue = Number(link.totalRevenue);
         const parts = [
           link.platform,
           link.productName,
           this.base.formatPromptCurrency(link.price, 'BRL'),
-          Number.isFinite(Number(link.totalSales)) ? `${Number(link.totalSales)} vendas` : null,
-          Number.isFinite(Number(link.totalRevenue))
-            ? `${this.base.formatPromptCurrency(link.totalRevenue, 'BRL')} faturados`
+          Number.isFinite(totalSales) ? `${totalSales} vendas` : null,
+          Number.isFinite(totalRevenue)
+            ? `${this.base.formatPromptCurrency(totalRevenue, 'BRL')} faturados`
             : null,
           lastSaleAt ? `última venda ${lastSaleAt}` : null,
         ].filter(Boolean);
@@ -149,11 +161,11 @@ export class KloelWorkspaceCoreContextFormatter {
   }
 
   buildAgentProfileContext(agent: unknown): string | null {
-    if (!agent || typeof agent !== 'object') {
+    if (!isPromptRecord(agent)) {
       return null;
     }
-    const a = agent as Record<string, unknown>;
-    const persona = a.persona as Record<string, unknown> | undefined;
+    const a = agent;
+    const persona = isPromptRecord(a.persona) ? a.persona : undefined;
     const lines: string[] = [];
     const identity = [
       a.publicName ? `nome público ${this.safeStr(a.publicName)}` : null,

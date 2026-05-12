@@ -8,8 +8,12 @@ import { normalizeNumber, resolveTimestampExt, toIsoTimestamp } from './whatsapp
 const D_RE = /\D/g;
 
 function readText(value: unknown): string {
-  if (typeof value === 'string') return value.trim();
-  if (typeof value === 'number' || typeof value === 'boolean') return String(value).trim();
+  if (typeof value === 'string') {
+    return value.trim();
+  }
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value).trim();
+  }
   return '';
 }
 
@@ -44,7 +48,9 @@ export function normalizeContactEntry(
     typeof cWid === 'object' ? cWid?.user : undefined,
   ].find((v) => typeof v === 'string' && v.trim());
   const phone = normalizeNumber(typeof pc === 'string' ? pc : deps.extractPhone(rawId));
-  if (!phone) return null;
+  if (!phone) {
+    return null;
+  }
   const pushNameRaw = c?.pushName || c?.pushname;
   const pushName = typeof pushNameRaw === 'string' && pushNameRaw.trim() ? pushNameRaw : null;
   return {
@@ -86,7 +92,9 @@ export function normalizeChatEntry(
   const phone = normalizeNumberLocal(
     typeof chat?.phone === 'string' ? chat.phone : deps.extractPhone(rawId),
   );
-  if (!rawId || !phone) return null;
+  if (!rawId || !phone) {
+    return null;
+  }
   const timestamp = resolveTimestampExt(chat);
   const ur = Number(chat?.unreadCount || chat?.unread || 0) || 0;
   return {
@@ -132,7 +140,9 @@ export function normalizeMessageEntry(
     [message?.chatId, message?.from, message?.to].find((v) => typeof v === 'string' && v.trim()) ??
       fallbackChatId,
   );
-  if (!id || !chatId) return null;
+  if (!id || !chatId) {
+    return null;
+  }
   const phone = normalizeNumberLocal(
     typeof message?.phone === 'string' ? message.phone : deps.extractPhone(chatId),
   );

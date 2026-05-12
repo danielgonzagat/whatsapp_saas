@@ -116,7 +116,7 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
 
   const navigateTo = useCallback(
     (nextRoute: string) => {
-      if (pathname === nextRoute) return;
+      if (pathname === nextRoute) {return;}
       startTransition(() => {
         router.push(nextRoute);
       });
@@ -139,7 +139,7 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
 
   const handleCampaignToggle = useCallback(
     async (campaign: Campaign) => {
-      if (!metaConnected || campaign.platform !== 'meta') return;
+      if (!metaConnected || campaign.platform !== 'meta') {return;}
       const newStatus = campaign.status === 'active' ? 'PAUSED' : 'ACTIVE';
       await metaAdsApi.updateCampaignStatus(campaign.id, newStatus);
       setCampaigns((prev) =>

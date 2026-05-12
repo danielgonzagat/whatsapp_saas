@@ -3,10 +3,7 @@ import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MetaSdkService } from './meta-sdk.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
-import {
-  REDIS_MODULE_CONNECTION_TOKEN,
-  REDIS_MODULE_CONNECTION,
-} from '@nestjs-modules/ioredis';
+import { REDIS_MODULE_CONNECTION_TOKEN, REDIS_MODULE_CONNECTION } from '@nestjs-modules/ioredis';
 
 function buildSignature(secret: string, payload: string): string {
   return `sha256=${createHmac('sha256', secret).update(payload).digest('hex')}`;
@@ -33,7 +30,11 @@ function createMockOpsAlert() {
 async function buildModule(
   appId = 'test-app-id',
   appSecret = 'test-app-secret',
-): Promise<{ module: TestingModule; redis: ReturnType<typeof createMockRedis>; opsAlert: ReturnType<typeof createMockOpsAlert> }> {
+): Promise<{
+  module: TestingModule;
+  redis: ReturnType<typeof createMockRedis>;
+  opsAlert: ReturnType<typeof createMockOpsAlert>;
+}> {
   const redis = createMockRedis();
   const opsAlert = createMockOpsAlert();
 
@@ -105,9 +106,7 @@ describe('MetaSdkService', () => {
       const mockFetch = createMockFetch().mockRejectedValue(networkError);
       globalThis.fetch = mockFetch;
 
-      await expect(
-        service.graphApiGet('me', {}, 'token'),
-      ).rejects.toThrow('ECONNREFUSED');
+      await expect(service.graphApiGet('me', {}, 'token')).rejects.toThrow('ECONNREFUSED');
       expect(mockOpsAlert.alertOnCriticalError).toHaveBeenCalledWith(
         networkError,
         'MetaSdkService.graphApiGet',
@@ -120,11 +119,7 @@ describe('MetaSdkService', () => {
       );
       globalThis.fetch = mockFetch;
 
-      await service.graphApiGet(
-        'me',
-        { fields: 'id,name', limit: '10' },
-        'token',
-      );
+      await service.graphApiGet('me', { fields: 'id,name', limit: '10' }, 'token');
 
       const urlArg = mockFetch.mock.calls[0][0] as string;
       expect(urlArg).toContain('fields=id%2Cname');
@@ -141,20 +136,13 @@ describe('MetaSdkService', () => {
       );
       globalThis.fetch = mockFetch;
 
-      const result = await service.graphApiPost(
-        'me/feed',
-        { message: 'hello' },
-        'token',
-      );
+      const result = await service.graphApiPost('me/feed', { message: 'hello' }, 'token');
 
       expect(result).toEqual({ id: '123', success: true });
       expect(mockFetch).toHaveBeenCalledTimes(1);
       const [, options] = mockFetch.mock.calls[0] as [string, RequestInit];
       expect(options.method).toBe('POST');
-      expect(options.headers).toHaveProperty(
-        'Content-Type',
-        'application/json',
-      );
+      expect(options.headers).toHaveProperty('Content-Type', 'application/json');
       const body = JSON.parse(options.body as string);
       expect(body.access_token).toBe('token');
       expect(body.message).toBe('hello');
@@ -173,11 +161,7 @@ describe('MetaSdkService', () => {
       );
       globalThis.fetch = mockFetch;
 
-      const result = await service.graphApiPost(
-        'me/feed',
-        { message: 'x' },
-        'token',
-      );
+      const result = await service.graphApiPost('me/feed', { message: 'x' }, 'token');
 
       expect(result.error).toBeDefined();
       expect(result.error!.message).toBe('Permission denied');
@@ -188,9 +172,7 @@ describe('MetaSdkService', () => {
       const mockFetch = createMockFetch().mockRejectedValue(networkError);
       globalThis.fetch = mockFetch;
 
-      await expect(
-        service.graphApiPost('me/feed', {}, 'token'),
-      ).rejects.toThrow('ENOTFOUND');
+      await expect(service.graphApiPost('me/feed', {}, 'token')).rejects.toThrow('ENOTFOUND');
       expect(mockOpsAlert.alertOnCriticalError).toHaveBeenCalledWith(
         networkError,
         'MetaSdkService.graphApiPost',
@@ -239,9 +221,7 @@ describe('MetaSdkService', () => {
       const mockFetch = createMockFetch().mockRejectedValue(networkError);
       globalThis.fetch = mockFetch;
 
-      await expect(
-        service.graphApiDelete('me/permissions', 'token'),
-      ).rejects.toThrow('ETIMEDOUT');
+      await expect(service.graphApiDelete('me/permissions', 'token')).rejects.toThrow('ETIMEDOUT');
       expect(mockOpsAlert.alertOnCriticalError).toHaveBeenCalledWith(
         networkError,
         'MetaSdkService.graphApiDelete',
@@ -283,9 +263,7 @@ describe('MetaSdkService', () => {
       );
       globalThis.fetch = mockFetch;
 
-      await expect(service.exchangeToken('bad-token')).rejects.toThrow(
-        'Invalid OAuth token',
-      );
+      await expect(service.exchangeToken('bad-token')).rejects.toThrow('Invalid OAuth token');
     });
 
     it('handles missing access_token in response gracefully', async () => {
@@ -306,9 +284,7 @@ describe('MetaSdkService', () => {
       const mockFetch = createMockFetch().mockRejectedValue(networkError);
       globalThis.fetch = mockFetch;
 
-      await expect(service.exchangeToken('token')).rejects.toThrow(
-        'Network error',
-      );
+      await expect(service.exchangeToken('token')).rejects.toThrow('Network error');
       expect(mockOpsAlert.alertOnCriticalError).toHaveBeenCalledWith(
         networkError,
         'MetaSdkService.exchangeCodeForToken',
@@ -345,8 +321,7 @@ describe('MetaSdkService', () => {
 
     it('returns false for an invalid signature', () => {
       const payload = '{"object":"page"}';
-      const signature =
-        'sha256=0000000000000000000000000000000000000000000000000000000000000000';
+      const signature = 'sha256=0000000000000000000000000000000000000000000000000000000000000000';
 
       const result = service.validateWebhookSignature(payload, signature);
       expect(result).toBe(false);
@@ -375,10 +350,7 @@ describe('MetaSdkService', () => {
       const signature = buildSignature('test-app-secret', originalPayload);
       const tamperedPayload = '{"object":"hacked"}';
 
-      const result = service.validateWebhookSignature(
-        tamperedPayload,
-        signature,
-      );
+      const result = service.validateWebhookSignature(tamperedPayload, signature);
       expect(result).toBe(false);
     });
   });
@@ -393,9 +365,7 @@ describe('MetaSdkService', () => {
       const result = await service.checkRateLimit('acct-1', 'instagram');
 
       expect(result).toBe(true);
-      expect(mockRedis.incr).toHaveBeenCalledWith(
-        'meta:ratelimit:instagram:acct-1',
-      );
+      expect(mockRedis.incr).toHaveBeenCalledWith('meta:ratelimit:instagram:acct-1');
     });
 
     it('sets TTL on first call (counter === 1)', async () => {
@@ -404,10 +374,7 @@ describe('MetaSdkService', () => {
 
       await service.checkRateLimit('acct-2', 'ads');
 
-      expect(mockRedis.expire).toHaveBeenCalledWith(
-        'meta:ratelimit:ads:acct-2',
-        3600,
-      );
+      expect(mockRedis.expire).toHaveBeenCalledWith('meta:ratelimit:ads:acct-2', 3600);
     });
 
     it('does not set TTL when counter > 1', async () => {
@@ -465,9 +432,7 @@ describe('MetaSdkService', () => {
       const result = await service.checkRateLimit('acct-8', 'graph');
 
       expect(result).toBe(true);
-      expect(mockRedis.incr).toHaveBeenCalledWith(
-        'meta:ratelimit:graph:acct-8',
-      );
+      expect(mockRedis.incr).toHaveBeenCalledWith('meta:ratelimit:graph:acct-8');
     });
   });
 });

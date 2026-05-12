@@ -146,14 +146,18 @@ export class UnifiedAgentActionsWorkspaceService {
   }
 
   async actionUpdateProduct(workspaceId: string, args: ToolArgs) {
-    if (!args.productId) return { success: false, error: 'Product ID is required' };
+    if (!args.productId) {
+      return { success: false, error: 'Product ID is required' };
+    }
     const productId = args.productId;
     const result = await this.prisma.$transaction(
       async (tx) => {
         const product = await tx.kloelMemory.findFirst({
           where: { workspaceId, key: productId, type: 'product' },
         });
-        if (!product) return { success: false as const, error: 'Produto não encontrado' };
+        if (!product) {
+          return { success: false as const, error: 'Produto não encontrado' };
+        }
         const currentValue = product.value as MemoryValue;
         const updatedValue = {
           ...currentValue,
@@ -171,12 +175,16 @@ export class UnifiedAgentActionsWorkspaceService {
       },
       { isolationLevel: 'ReadCommitted' },
     );
-    if (!result.success) return result;
+    if (!result.success) {
+      return result;
+    }
     return { success: true, message: 'Produto atualizado com sucesso' };
   }
 
   async actionCreateFlow(workspaceId: string, args: ToolArgs) {
-    if (!args.name) return { success: false, error: 'Flow name is required' };
+    if (!args.name) {
+      return { success: false, error: 'Flow name is required' };
+    }
     const flowKey = `flow_${Date.now()}_${args.name.toLowerCase().replace(WHITESPACE_G_RE, '_')}`;
     await this.prisma.kloelMemory.create({
       data: {
@@ -203,7 +211,9 @@ export class UnifiedAgentActionsWorkspaceService {
 
   async actionUpdateWorkspaceSettings(workspaceId: string, args: ToolArgs) {
     const updates: UnknownRecord = {};
-    if (args.businessName) updates.name = args.businessName;
+    if (args.businessName) {
+      updates.name = args.businessName;
+    }
     if (Object.keys(updates).length > 0) {
       await this.prisma.workspace.update({ where: { id: workspaceId }, data: updates });
     }
@@ -321,7 +331,9 @@ export class UnifiedAgentActionsWorkspaceService {
     fallbackBrainModel: string,
   ) {
     const { description, objective, autoActivate = false } = args;
-    if (!openai) return { success: false, error: 'OpenAI não configurada' };
+    if (!openai) {
+      return { success: false, error: 'OpenAI não configurada' };
+    }
     const prompt = `Você é um especialista em automação comercial.\nCrie um fluxo de automação para WhatsApp com base na descrição:\n"${description}"\n\nObjetivo: ${objective}\n\nRetorne APENAS um JSON válido com nós e arestas.\n\nTipos de nós disponíveis: message, wait, condition, aiNode, mediaNode, endNode`;
     try {
       await this.planLimits.ensureTokenBudget(workspaceId);

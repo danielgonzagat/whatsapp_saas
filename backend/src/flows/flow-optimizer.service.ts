@@ -7,6 +7,14 @@ import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
+function toFlowJson(value: unknown): Prisma.InputJsonValue {
+  return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
+}
+
+function isSuggestionRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
 /** Flow optimizer service. */
 @Injectable()
 export class FlowOptimizerService {
@@ -18,7 +26,7 @@ export class FlowOptimizerService {
     private config: ConfigService,
     private readonly planLimits: PlanLimitsService,
   ) {
-    const apiKey = this.config.get('OPENAI_API_KEY');
+    const apiKey = this.config.get<string>('OPENAI_API_KEY');
     this.openai = apiKey ? new OpenAI({ apiKey }) : null;
   }
 
@@ -72,7 +80,8 @@ export class FlowOptimizerService {
       .catch(() => {});
     let suggestion: Record<string, unknown> = {};
     try {
-      suggestion = JSON.parse(completion.choices[0]?.message?.content || '{}');
+      const parsed = JSON.parse(completion.choices[0]?.message?.content || '{}') as unknown;
+      suggestion = isSuggestionRecord(parsed) ? parsed : {};
     } catch {
       /* invalid JSON from model */
     }
@@ -83,8 +92,8 @@ export class FlowOptimizerService {
         data: {
           flowId,
           workspaceId,
-          nodes: suggestion.nodes as Prisma.InputJsonValue,
-          edges: flow.edges as Prisma.InputJsonValue,
+          nodes: toFlowJson(suggestion.nodes),
+          edges: toFlowJson(flow.edges),
           label:
             'AI Auto-Optimization: ' +
             (typeof suggestion.reason === 'string' ? suggestion.reason : ''),

@@ -27,7 +27,11 @@ export class GoogleAdsAuthController {
   }
 
   @Get('callback')
-  async oauthCallback(@Req() req: Request, @Query('code') code?: string, @Query('error') error?: string) {
+  async oauthCallback(
+    @Req() req: Request,
+    @Query('code') code?: string,
+    @Query('error') error?: string,
+  ) {
     const wsId = this.workspaceId(req);
 
     if (error) {
@@ -47,7 +51,15 @@ export class GoogleAdsAuthController {
     const wsId = this.workspaceId(req);
     const statuses = await this.anunciosService.getPlatformStatuses(wsId);
     const google = statuses.find((s) => s.platform === 'google');
-    return { data: google || { platform: 'google', connected: false, status: 'disconnected', accountId: '', clientConfigured: false } };
+    return {
+      data: google || {
+        platform: 'google',
+        connected: false,
+        status: 'disconnected',
+        accountId: '',
+        clientConfigured: false,
+      },
+    };
   }
 
   @Post('disconnect')

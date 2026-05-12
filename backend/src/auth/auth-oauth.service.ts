@@ -71,7 +71,8 @@ export class AuthOAuthService {
       select: { id: true, accessToken: true, refreshToken: true },
     });
 
-    const profileData = (profile.profileData as Prisma.InputJsonValue | null | undefined) || undefined;
+    const profileData =
+      (profile.profileData as Prisma.InputJsonValue | null | undefined) || undefined;
 
     const data: Prisma.SocialAccountUncheckedCreateInput = {
       agentId,
@@ -98,7 +99,9 @@ export class AuthOAuthService {
       create: data,
       update: {
         providerUserId: profile.providerId,
-        email: String(profile.email || '').trim().toLowerCase(),
+        email: String(profile.email || '')
+          .trim()
+          .toLowerCase(),
         accessToken:
           encryptedAccessToken ??
           (options?.overwriteTokens ? null : (current?.accessToken ?? null)),
@@ -159,9 +162,7 @@ export class AuthOAuthService {
       accessToken: data.accessToken,
       ...(data.openId !== undefined ? { openId: data.openId } : {}),
       ...(data.refreshToken !== undefined ? { refreshToken: data.refreshToken } : {}),
-      ...(data.expiresInSeconds !== undefined
-        ? { expiresInSeconds: data.expiresInSeconds }
-        : {}),
+      ...(data.expiresInSeconds !== undefined ? { expiresInSeconds: data.expiresInSeconds } : {}),
     });
   }
 

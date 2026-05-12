@@ -25,7 +25,7 @@ export function OrderAlertsBanner({
   onGenerate,
   onResolve,
 }: OrderAlertsBannerProps) {
-  if (alerts.length === 0) return null;
+  if (alerts.length === 0) {return null;}
 
   return (
     <div

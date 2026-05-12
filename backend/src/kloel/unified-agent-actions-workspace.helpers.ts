@@ -74,7 +74,9 @@ export async function actionGetWorkspaceStatus(deps: {
       result.health.status = 'warning';
     }
     const met = result.metrics as { activeFlows?: number } | undefined;
-    if (met?.activeFlows === 0) result.health.warnings.push('Nenhum fluxo ativo');
+    if (met?.activeFlows === 0) {
+      result.health.warnings.push('Nenhum fluxo ativo');
+    }
   }
   return { success: true, ...result };
 }

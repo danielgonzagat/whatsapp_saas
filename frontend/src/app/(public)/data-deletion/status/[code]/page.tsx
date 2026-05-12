@@ -2,7 +2,7 @@
 
 import { kloelT } from '@/lib/i18n/t';
 import { colors } from '@/lib/design-tokens';
-import { useParams, useSearchParams } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 const sora = "var(--font-sora), 'Sora', sans-serif";
@@ -28,9 +28,7 @@ type DeletionStatusResponse = {
 /** Data deletion status page. */
 export default function DataDeletionStatusPage() {
   const params = useParams<{ code: string }>();
-  const searchParams = useSearchParams();
   const code = String(params?.code || '').trim();
-  const token = searchParams.get('token') || '';
   const [state, setState] = useState<{
     loading: boolean;
     error: string;
@@ -65,7 +63,9 @@ export default function DataDeletionStatusPage() {
         }
 
         const gdprData = (await gdprRes.json().catch(() => ({}))) as GdprStatusResponse;
-        const complianceData = (await complianceRes.json().catch(() => ({}))) as DeletionStatusResponse;
+        const complianceData = (await complianceRes
+          .json()
+          .catch(() => ({}))) as DeletionStatusResponse;
 
         if (gdprRes.ok && gdprData.status) {
           setState({ loading: false, error: '', data: gdprData });
@@ -77,7 +77,8 @@ export default function DataDeletionStatusPage() {
           return;
         }
 
-        const errorMsg = (gdprData as { message?: string }).message ||
+        const errorMsg =
+          (gdprData as { message?: string }).message ||
           (complianceData as { message?: string }).message ||
           'Não foi possível consultar o status da solicitação.';
 
@@ -180,10 +181,17 @@ export default function DataDeletionStatusPage() {
               gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
             }}
           >
-            <StatusCard label={kloelT(`Código`)} value={'code' in state.data && state.data.code ? state.data.code : code} />
+            <StatusCard
+              label={kloelT(`Código`)}
+              value={'code' in state.data && state.data.code ? state.data.code : code}
+            />
             <StatusCard
               label={kloelT(`Tipo`)}
-              value={'type' in state.data ? translateGdprType(state.data.type) : translateProvider((state.data as DeletionStatusResponse).provider)}
+              value={
+                'type' in state.data
+                  ? translateGdprType(state.data.type)
+                  : translateProvider((state.data as DeletionStatusResponse).provider)
+              }
             />
             <StatusCard
               label={kloelT(`Solicitado em`)}

@@ -79,7 +79,9 @@ export function determineMessageType(msg: NormalizedMessage): string {
     return 'TEXT';
   }
   const firstAttachment = msg.attachments[0];
-  if (!firstAttachment) return 'TEXT';
+  if (!firstAttachment) {
+    return 'TEXT';
+  }
   const mimeType = (firstAttachment.mimeType || '').toLowerCase();
   for (const [pattern, type] of Object.entries(MIME_TYPE_TO_MESSAGE_TYPE)) {
     if (mimeType.startsWith(pattern)) {
@@ -215,9 +217,15 @@ export function extractInstagramMessage(messaging: InstagramMessaging): Instagra
     content,
     attachments,
   };
-  if (senderName !== undefined) result.senderName = senderName;
-  if (messaging.message?.mid !== undefined) result.messageId = messaging.message.mid;
-  if (messaging.timestamp !== undefined) result.timestamp = messaging.timestamp;
+  if (senderName !== undefined) {
+    result.senderName = senderName;
+  }
+  if (messaging.message?.mid !== undefined) {
+    result.messageId = messaging.message.mid;
+  }
+  if (messaging.timestamp !== undefined) {
+    result.timestamp = messaging.timestamp;
+  }
   return result;
 }
 

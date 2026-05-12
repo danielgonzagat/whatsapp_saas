@@ -99,10 +99,7 @@ describe('KloelWorkspaceContextDataService', () => {
     };
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        KloelWorkspaceContextDataService,
-        { provide: PrismaService, useValue: prisma },
-      ],
+      providers: [KloelWorkspaceContextDataService, { provide: PrismaService, useValue: prisma }],
     }).compile();
 
     service = module.get<KloelWorkspaceContextDataService>(KloelWorkspaceContextDataService);

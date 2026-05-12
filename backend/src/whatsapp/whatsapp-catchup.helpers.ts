@@ -12,8 +12,12 @@ export function normalizePhoneExt(phone: string): string {
 }
 
 export function normalizeTimestampExt(value?: Date | string | number | null): Date | null {
-  if (!value && value !== 0) return null;
-  if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value;
+  if (!value && value !== 0) {
+    return null;
+  }
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value;
+  }
   if (typeof value === 'number' && Number.isFinite(value)) {
     const n = value > 1e12 ? value : value * 1000;
     const p = new Date(n);
@@ -36,8 +40,12 @@ export function normalizeJsonObjExt(value: unknown): Record<string, unknown> {
 }
 
 function normalizeOptionalText(value: unknown): string {
-  if (typeof value === 'string') return value.trim();
-  if (typeof value === 'number' || typeof value === 'boolean') return String(value).trim();
+  if (typeof value === 'string') {
+    return value.trim();
+  }
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value).trim();
+  }
   return '';
 }
 
@@ -60,12 +68,18 @@ export function resolveTimestampExt(value: unknown): number {
     val.lastMessageTimestamp,
     val.last_time,
   ]) {
-    if (typeof c === 'number' && Number.isFinite(c)) return c > 1e12 ? c : c * 1000;
+    if (typeof c === 'number' && Number.isFinite(c)) {
+      return c > 1e12 ? c : c * 1000;
+    }
     if (typeof c === 'string') {
       const n = Number(c);
-      if (Number.isFinite(n) && n > 0) return n > 1e12 ? n : n * 1000;
+      if (Number.isFinite(n) && n > 0) {
+        return n > 1e12 ? n : n * 1000;
+      }
       const d = new Date(c);
-      if (!Number.isNaN(d.getTime())) return d.getTime();
+      if (!Number.isNaN(d.getTime())) {
+        return d.getTime();
+      }
     }
   }
   return 0;
@@ -98,11 +112,16 @@ export function isNowebStoreMisconfiguredExt(error: unknown): boolean {
 
 function expandComparablePhoneVariantsExt(phone: string): string[] {
   const digits = normalizePhoneExt(phone);
-  if (!digits) return [];
+  if (!digits) {
+    return [];
+  }
   const variants = new Set<string>([digits]);
-  if (digits.startsWith('55') && digits.length > 11) variants.add(digits.slice(2));
-  if (!digits.startsWith('55') && digits.length >= 10 && digits.length <= 11)
+  if (digits.startsWith('55') && digits.length > 11) {
+    variants.add(digits.slice(2));
+  }
+  if (!digits.startsWith('55') && digits.length >= 10 && digits.length <= 11) {
     variants.add(`55${digits}`);
+  }
   return Array.from(variants);
 }
 
@@ -114,10 +133,14 @@ function areEquivalentPhonesExt(left: string, right: string): boolean {
 
 export function resolveCanonicalChatIdExt(chatId: string, mappings: Map<string, string>): string {
   const n = String(chatId || '').trim();
-  if (!n) return '';
+  if (!n) {
+    return '';
+  }
   if (LID_RE.test(n)) {
     const m = mappings.get(n) || mappings.get(n.replace(LID_RE, '')) || '';
-    if (m) return m;
+    if (m) {
+      return m;
+    }
   }
   return n;
 }
@@ -130,11 +153,15 @@ export async function resolveCanonicalPhoneExt(
   lidMapCache: Map<string, { expiresAt: number; mappings: Map<string, string> }>,
 ): Promise<string> {
   const n = String(chatId || '').trim();
-  if (!n) return '';
+  if (!n) {
+    return '';
+  }
   if (LID_RE.test(n)) {
     const mappings = await getLidPnMapExt(deps, workspaceId, lidMapCacheMs, lidMapCache);
     const m = mappings.get(n) || mappings.get(n.replace(LID_RE, '')) || '';
-    if (m) return normalizePhoneExt(m);
+    if (m) {
+      return normalizePhoneExt(m);
+    }
   }
   return normalizePhoneExt(n);
 }
@@ -146,7 +173,9 @@ export async function getLidPnMapExt(
   cache: Map<string, { expiresAt: number; mappings: Map<string, string> }>,
 ): Promise<Map<string, string>> {
   const cached = cache.get(workspaceId);
-  if (cached && cached.expiresAt > Date.now()) return cached.mappings;
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.mappings;
+  }
   const raw = await deps.providerRegistry
     .listLidMappings(workspaceId)
     .catch(() => [] as WahaLidMapping[]);
@@ -154,7 +183,9 @@ export async function getLidPnMapExt(
   for (const m of raw) {
     const lid = String(m?.lid || '').trim();
     const pn = String(m?.pn || '').trim();
-    if (!lid || !pn) continue;
+    if (!lid || !pn) {
+      continue;
+    }
     normalized.set(lid, pn);
     normalized.set(lid.replace(LID_RE, ''), pn);
   }
@@ -169,8 +200,12 @@ export function isWorkspaceSelfChatIdExt(
   mappings: Map<string, string>,
 ): boolean {
   const n = String(chatId || '').trim();
-  if (selfIds.some((c) => String(c || '').trim() === n)) return true;
-  if (!selfPhone) return false;
+  if (selfIds.some((c) => String(c || '').trim() === n)) {
+    return true;
+  }
+  if (!selfPhone) {
+    return false;
+  }
   const canonical = resolveCanonicalChatIdExt(n, mappings);
   return areEquivalentPhonesExt(normalizePhoneExt(canonical), selfPhone);
 }

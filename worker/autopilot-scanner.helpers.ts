@@ -49,7 +49,9 @@ function asNestedString(value: unknown): string | null {
   return typeof value === 'string' ? value : null;
 }
 
-export function parseAutopilotSettings(raw: Prisma.JsonValue | null | undefined): AutopilotSettings {
+export function parseAutopilotSettings(
+  raw: Prisma.JsonValue | null | undefined,
+): AutopilotSettings {
   const base = asJsonObject(raw);
   const openai = asNestedObject(base.openai);
   const autonomy = asNestedObject(base.autonomy);

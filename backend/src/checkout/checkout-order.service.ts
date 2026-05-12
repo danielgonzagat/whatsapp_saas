@@ -215,7 +215,9 @@ export class CheckoutOrderService {
             payment: true,
           },
         });
-        if (existing) return { replay: true, order: existing } as const;
+        if (existing) {
+          return { replay: true, order: existing } as const;
+        }
 
         const created = await tx.checkoutOrder.create({
           data: {
@@ -228,33 +230,17 @@ export class CheckoutOrderService {
             ...(orderData.shippingMethod !== undefined
               ? { shippingMethod: orderData.shippingMethod }
               : {}),
-            ...(orderData.customerCPF !== undefined
-              ? { customerCPF: orderData.customerCPF }
-              : {}),
+            ...(orderData.customerCPF !== undefined ? { customerCPF: orderData.customerCPF } : {}),
             ...(orderData.customerPhone !== undefined
               ? { customerPhone: orderData.customerPhone }
               : {}),
-            ...(orderData.utmSource !== undefined
-              ? { utmSource: orderData.utmSource }
-              : {}),
-            ...(orderData.utmMedium !== undefined
-              ? { utmMedium: orderData.utmMedium }
-              : {}),
-            ...(orderData.utmCampaign !== undefined
-              ? { utmCampaign: orderData.utmCampaign }
-              : {}),
-            ...(orderData.utmContent !== undefined
-              ? { utmContent: orderData.utmContent }
-              : {}),
-            ...(orderData.utmTerm !== undefined
-              ? { utmTerm: orderData.utmTerm }
-              : {}),
-            ...(orderData.ipAddress !== undefined
-              ? { ipAddress: orderData.ipAddress }
-              : {}),
-            ...(orderData.userAgent !== undefined
-              ? { userAgent: orderData.userAgent }
-              : {}),
+            ...(orderData.utmSource !== undefined ? { utmSource: orderData.utmSource } : {}),
+            ...(orderData.utmMedium !== undefined ? { utmMedium: orderData.utmMedium } : {}),
+            ...(orderData.utmCampaign !== undefined ? { utmCampaign: orderData.utmCampaign } : {}),
+            ...(orderData.utmContent !== undefined ? { utmContent: orderData.utmContent } : {}),
+            ...(orderData.utmTerm !== undefined ? { utmTerm: orderData.utmTerm } : {}),
+            ...(orderData.ipAddress !== undefined ? { ipAddress: orderData.ipAddress } : {}),
+            ...(orderData.userAgent !== undefined ? { userAgent: orderData.userAgent } : {}),
             shippingPrice: normalizedShippingInCents,
             acceptedBumps: toPrismaJsonArray(serverTotals.acceptedBumpIds),
             subtotalInCents: normalizedSubtotalInCents,
@@ -325,22 +311,13 @@ export class CheckoutOrderService {
           planId: data.planId,
           customerName: data.customerName,
           customerEmail: data.customerEmail,
-          ...(data.customerCPF !== undefined
-            ? { customerCPF: data.customerCPF }
-            : {}),
-          ...(data.customerPhone !== undefined
-            ? { customerPhone: data.customerPhone }
-            : {}),
-          ...(data.couponCode !== undefined
-            ? { couponCode: data.couponCode }
-            : {}),
+          ...(data.customerCPF !== undefined ? { customerCPF: data.customerCPF } : {}),
+          ...(data.customerPhone !== undefined ? { customerPhone: data.customerPhone } : {}),
+          ...(data.couponCode !== undefined ? { couponCode: data.couponCode } : {}),
           shippingAddress: data.shippingAddress,
         },
         orderData: {
-          paymentMethod: orderData.paymentMethod as
-            | 'CREDIT_CARD'
-            | 'PIX'
-            | 'BOLETO',
+          paymentMethod: orderData.paymentMethod as 'CREDIT_CARD' | 'PIX' | 'BOLETO',
         },
         qualityGate,
         normalizedBaseTotalInCents,
@@ -368,22 +345,13 @@ export class CheckoutOrderService {
         planId: data.planId,
         customerName: data.customerName,
         customerEmail: data.customerEmail,
-        ...(data.customerCPF !== undefined
-          ? { customerCPF: data.customerCPF }
-          : {}),
-        ...(data.customerPhone !== undefined
-          ? { customerPhone: data.customerPhone }
-          : {}),
-        ...(data.couponCode !== undefined
-          ? { couponCode: data.couponCode }
-          : {}),
+        ...(data.customerCPF !== undefined ? { customerCPF: data.customerCPF } : {}),
+        ...(data.customerPhone !== undefined ? { customerPhone: data.customerPhone } : {}),
+        ...(data.couponCode !== undefined ? { couponCode: data.couponCode } : {}),
         shippingAddress: data.shippingAddress,
       },
       orderData: {
-        paymentMethod: orderData.paymentMethod as
-          | 'CREDIT_CARD'
-          | 'PIX'
-          | 'BOLETO',
+        paymentMethod: orderData.paymentMethod as 'CREDIT_CARD' | 'PIX' | 'BOLETO',
       },
       qualityGate,
       normalizedBaseTotalInCents,

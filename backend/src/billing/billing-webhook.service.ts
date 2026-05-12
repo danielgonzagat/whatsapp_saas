@@ -108,7 +108,9 @@ export class BillingWebhookService {
       const alreadyProcessed = await tx.webhookEvent.findFirst({
         where: { provider: 'stripe', externalId: webhookIdempotencyKey, status: 'processed' },
       });
-      if (alreadyProcessed) return true;
+      if (alreadyProcessed) {
+        return true;
+      }
 
       try {
         await tx.webhookEvent.create({
@@ -157,12 +159,16 @@ export class BillingWebhookService {
         }
         case 'invoice.payment_failed': {
           const subId = readInvoiceSubscriptionId(event.data.object);
-          if (subId) await this.markSubscriptionStatus(subId, 'PAST_DUE');
+          if (subId) {
+            await this.markSubscriptionStatus(subId, 'PAST_DUE');
+          }
           break;
         }
         case 'invoice.payment_succeeded': {
           const subId = readInvoiceSubscriptionId(event.data.object);
-          if (subId) await this.markSubscriptionStatus(subId, 'ACTIVE');
+          if (subId) {
+            await this.markSubscriptionStatus(subId, 'ACTIVE');
+          }
           break;
         }
         default:
@@ -224,9 +230,13 @@ export class BillingWebhookService {
 
   private async resolveWorkspaceId(subscription: StripeSubscription): Promise<string | null> {
     const metaWs = (subscription.metadata as Record<string, string> | null)?.workspaceId;
-    if (metaWs) return metaWs;
+    if (metaWs) {
+      return metaWs;
+    }
     const customerId = subscription.customer as string;
-    if (!customerId) return null;
+    if (!customerId) {
+      return null;
+    }
     const ws = await this.prisma.workspace.findFirst({
       where: { stripeCustomerId: customerId },
       select: { id: true },

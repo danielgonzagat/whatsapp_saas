@@ -39,7 +39,7 @@ export default function SitesView({ defaultTab = 'visao-geral' }: { defaultTab?:
   const switchTab = useCallback((id: string) => {
     setTab(id);
     const nextRoute = id === 'visao-geral' ? '/sites' : `/sites/${id}`;
-    if (pathname === nextRoute) return;
+    if (pathname === nextRoute) {return;}
     startTransition(() => { router.push(nextRoute); });
   }, [pathname, router]);
 

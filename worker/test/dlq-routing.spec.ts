@@ -115,6 +115,30 @@ describe('processor-base — idempotency & structured logging', () => {
     expect(extractWorkspaceId(job as never)).toBe('unknown');
   });
 
+  it('startJob preserves an upstream correlationId from job data', async () => {
+    const { startJob } = await import('../processor-base');
+    const log = { info: vi.fn() };
+    const job = {
+      id: 'job-1',
+      name: 'run-flow',
+      queueName: 'flow-jobs',
+      data: { workspaceId: 'ws-1', correlationId: 'corr-upstream-1' },
+    };
+
+    const meta = startJob(job as never, log as never);
+
+    expect(meta.correlationId).toBe('corr-upstream-1');
+    expect(meta.workspaceId).toBe('ws-1');
+    expect(log.info).toHaveBeenCalledWith(
+      'job_start',
+      expect.objectContaining({
+        correlationId: 'corr-upstream-1',
+        workspaceId: 'ws-1',
+        jobId: 'job-1',
+      }),
+    );
+  });
+
   it('checkIdempotent returns false when no dedup key exists', async () => {
     mockRedisGet.mockResolvedValue(null);
     const { checkIdempotent } = await import('../processor-base');

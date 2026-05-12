@@ -118,7 +118,7 @@ export async function respondToInputSessionExt(
       meta: { inputSessionId: next.id, productId, requestedProductName: next.productName },
     });
     await enqueueContactResumptionFn(workspaceId, next);
-  } else if (nextPrompt)
+  } else if (nextPrompt) {
     await deps.agentEvents.publish({
       type: 'prompt',
       workspaceId,
@@ -127,5 +127,6 @@ export async function respondToInputSessionExt(
       message: nextPrompt,
       meta: { inputSessionId: next.id, stage: next.status },
     });
+  }
   return { completed, productId, session: next, nextPrompt };
 }

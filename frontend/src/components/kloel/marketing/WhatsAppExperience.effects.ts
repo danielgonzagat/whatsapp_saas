@@ -91,7 +91,7 @@ export function useWhatsAppConnectionEffects({
   }, [mode, setReconfiguring]);
 
   useEffect(() => {
-    if (hydratedRef.current && hydratedSetupKeyRef.current === savedSetupKey) return;
+    if (hydratedRef.current && hydratedSetupKeyRef.current === savedSetupKey) {return;}
     hydratedRef.current = true;
     hydratedSetupKeyRef.current = savedSetupKey;
     setDraft(savedSetup);
@@ -232,7 +232,7 @@ export function useWhatsAppConnectionEffects({
   ]);
 
   useEffect(() => {
-    if (!showWizard || step !== 0 || !effectiveConnection.connected || advancedRef.current) return;
+    if (!showWizard || step !== 0 || !effectiveConnection.connected || advancedRef.current) {return;}
     advancedRef.current = true;
     setScanProgress(100);
     const timeoutId = window.setTimeout(() => {
@@ -255,7 +255,7 @@ export function useWhatsAppConnectionEffects({
   ]);
 
   useEffect(() => {
-    if (!activated) return;
+    if (!activated) {return;}
     const timeoutId = window.setTimeout(() => {
       setActivated(false);
       setReconfiguring(false);
