@@ -1,6 +1,6 @@
 # Kloel CIA Session Handoff
 
-Updated: 2026-05-12T14:55:27-03:00
+Updated: 2026-05-12T14:59:30-03:00
 
 ## Onde parou exatamente
 
@@ -9,7 +9,7 @@ Wave 0 discovery artifacts are active and W1-W9 have focused code-side slices de
 ## Branch atual e ultimo commit
 
 - Branch: `chore/purga-total-debt`
-- HEAD: `34dc0d1b0 [W9] Alinhar cobranca inteligente ao Pix real`
+- HEAD: `8d0ff922a merge: preservar commits paralelos de cobertura`
 - Note: prior handoff referenced `feat/kloel-cia-convergence`, but the live checkout is currently `chore/purga-total-debt`; do not infer branch state from older docs.
 
 ## Gates passados na sessao
