@@ -5,12 +5,8 @@ import { MindConceptService } from './mind-concepts.service';
 
 describe('MindConceptService', () => {
   type ConceptCreateCall = [{ data: { workspaceId: string } }];
-  type CommercialEventCall = [
-    { workspaceId: string; eventType: string; idempotencyKey: string },
-  ];
-  type RecentFindManyCall = [
-    { where: { workspaceId: string; occurredAt: { gte: Date } } },
-  ];
+  type CommercialEventCall = [{ workspaceId: string; eventType: string; idempotencyKey: string }];
+  type RecentFindManyCall = [{ where: { workspaceId: string; occurredAt: { gte: Date } } }];
 
   let service: MindConceptService;
   let prisma: {
