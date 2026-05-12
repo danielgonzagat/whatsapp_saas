@@ -59,7 +59,6 @@ export function PlanStoreTab({ planId, productId }: { planId: string; productId:
   const [redirectUrl, setRedirectUrl] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [thankyouUrl, setThankyouUrl] = useState('');
-  const [thankyouBoletoUrl, setThankyouBoletoUrl] = useState('');
   const [thankyouPixUrl, setThankyouPixUrl] = useState('');
   const [saving, setSaving] = useState(false);
   const { showToast } = useToast();
@@ -128,9 +127,6 @@ export function PlanStoreTab({ planId, productId }: { planId: string; productId:
         if (d.thankyouUrl != null) {
           setThankyouUrl(d.thankyouUrl as string);
         }
-        if (d.thankyouBoletoUrl != null) {
-          setThankyouBoletoUrl(d.thankyouBoletoUrl as string);
-        }
         if (d.thankyouPixUrl != null) {
           setThankyouPixUrl(d.thankyouPixUrl as string);
         }
@@ -164,7 +160,6 @@ export function PlanStoreTab({ planId, productId }: { planId: string; productId:
             redirectUrl,
             imageUrl,
             thankyouUrl,
-            thankyouBoletoUrl,
             thankyouPixUrl,
           },
         },
@@ -347,18 +342,6 @@ export function PlanStoreTab({ planId, productId }: { planId: string; productId:
             />
           </div>
           <div>
-            <label className={labelClass} htmlFor={`${fid}-ty-boleto`}>
-              {kloelT(`Página de obrigado (boletos)`)}
-            </label>
-            <input
-              value={thankyouBoletoUrl}
-              onChange={(e) => setThankyouBoletoUrl(e.target.value)}
-              placeholder="https://..."
-              className={inputClass}
-              id={`${fid}-ty-boleto`}
-            />
-          </div>
-          <div>
             <label className={labelClass} htmlFor={`${fid}-ty-pix`}>
               {kloelT(`Página de obrigado (PIX)`)}
             </label>
@@ -380,7 +363,11 @@ export function PlanStoreTab({ planId, productId }: { planId: string; productId:
           onClick={handleSave}
           disabled={saving}
           className="rounded-xl px-8 py-3 text-sm font-semibold text-white transition-all disabled:opacity-50"
-          style={{ backgroundColor: colors.text.silver, color: colors.background.void, boxShadow: 'none' }}
+          style={{
+            backgroundColor: colors.text.silver,
+            color: colors.background.void,
+            boxShadow: 'none',
+          }}
         >
           {saving ? 'Salvando...' : 'Salvar'}
         </button>

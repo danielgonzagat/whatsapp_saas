@@ -6,7 +6,6 @@ import { apiFetch } from '@/lib/api';
 import { useEffect, useId, useRef, useState } from 'react';
 import { mutate } from 'swr';
 
-
 /* ── Design Tokens ── */
 
 const BG_SURFACE = 'colors.background.surface';
@@ -18,8 +17,6 @@ const TEXT_DIM = 'colors.text.dim';
 const EMBER = 'colors.ember.primary';
 const GREEN = colors.semantic.success;
 const FONT_BODY = "'Sora', sans-serif";
-
-
 
 /* ── Inline SVG Icons ── */
 const LinkIcon = () => (
@@ -118,7 +115,6 @@ export function PlanThankYouTab({ planId, productId }: { planId: string; product
   const uid = useId();
   const [_loading, setLoading] = useState(true);
   const [urlCard, setUrlCard] = useState('');
-  const [urlBoleto, setUrlBoleto] = useState('');
   const [urlPix, setUrlPix] = useState('');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -140,7 +136,6 @@ export function PlanThankYouTab({ planId, productId }: { planId: string; product
         const p = (envelope?.data ?? envelope) as Record<string, unknown> | undefined;
         if (p) {
           setUrlCard((p.thankyouUrl as string | undefined) ?? '');
-          setUrlBoleto((p.thankyouBoletoUrl as string | undefined) ?? '');
           setUrlPix((p.thankyouPixUrl as string | undefined) ?? '');
         }
       })
@@ -155,7 +150,6 @@ export function PlanThankYouTab({ planId, productId }: { planId: string; product
         method: 'PUT',
         body: {
           thankyouUrl: urlCard || null,
-          thankyouBoletoUrl: urlBoleto || null,
           thankyouPixUrl: urlPix || null,
         },
       });
@@ -228,36 +222,6 @@ export function PlanThankYouTab({ planId, productId }: { planId: string; product
               value={urlCard}
               onChange={(e) => setUrlCard(e.target.value)}
               placeholder="https://seusite.com/obrigado"
-              style={{ ...inputStyle, paddingLeft: '36px' }}
-            />
-          </div>
-        </div>
-
-        {/* Boleto URL */}
-        <div>
-          <label htmlFor={`${uid}-url-boleto`} style={labelStyle}>
-            {kloelT(`URL de obrigado para boletos`)}
-          </label>
-          <div style={{ position: 'relative' }}>
-            <div
-              style={{
-                position: 'absolute',
-                left: '12px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                display: 'flex',
-                alignItems: 'center',
-              }}
-            >
-              <LinkIcon />
-            </div>
-            <input
-              id={`${uid}-url-boleto`}
-              type="url"
-              aria-label="URL de obrigado para boletos"
-              value={urlBoleto}
-              onChange={(e) => setUrlBoleto(e.target.value)}
-              placeholder="https://seusite.com/obrigado-boleto"
               style={{ ...inputStyle, paddingLeft: '36px' }}
             />
           </div>

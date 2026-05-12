@@ -103,7 +103,6 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
   const [maxInstallments, setMaxInstallments] = useState('12');
   const [maxNoInterest, setMaxNoInterest] = useState('3');
   const [discountByPayment, setDiscountByPayment] = useState(false);
-  const [notifyBoleto, setNotifyBoleto] = useState(true);
   const [billingType, setBillingType] = useState('ONE_TIME');
   const [recurringInterval, setRecurringInterval] = useState('MONTHLY');
   const [trialEnabled, setTrialEnabled] = useState(false);
@@ -138,9 +137,6 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
         }
         if (d.discountByPayment != null) {
           setDiscountByPayment(d.discountByPayment as boolean);
-        }
-        if (d.notifyBoleto != null) {
-          setNotifyBoleto(d.notifyBoleto as boolean);
         }
         if (d.billingType != null) {
           setBillingType(d.billingType as string);
@@ -203,6 +199,7 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
             trialDays: Number(trialDays),
             paymentMethods: { credit: creditEnabled, boleto: false, pix: pixEnabled },
             boletoEnabled: false,
+            notifyBoleto: false,
             boletoInstallments: Number(boletoMaxInstallments),
           },
         },
@@ -370,11 +367,6 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
               </p>
             )}
           </div>
-          <PaymentToggle
-            checked={notifyBoleto}
-            onChange={setNotifyBoleto}
-            label={kloelT(`Avisar comprador sobre vencimento de boletos?`)}
-          />
         </div>
       </div>
 

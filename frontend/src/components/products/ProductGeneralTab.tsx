@@ -228,9 +228,7 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
               id={`${fid}-cat`}
               disabled={catLoading}
             >
-              <option value="">
-                {catLoading ? kloelT(`Carregando...`) : kloelT(`Selecione`)}
-              </option>
+              <option value="">{catLoading ? kloelT(`Carregando...`) : kloelT(`Selecione`)}</option>
               {catError ? (
                 <option value="" disabled>
                   {kloelT(`Erro ao carregar categorias`)}
@@ -299,7 +297,6 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
           {[
             { key: 'salesPageUrl', label: 'Pagina de vendas' },
             { key: 'thankyouUrl', label: 'Pagina de obrigado' },
-            { key: 'thankyouBoletoUrl', label: 'Obrigado (boleto)' },
             { key: 'thankyouPixUrl', label: 'Obrigado (PIX)' },
             { key: 'reclameAquiUrl', label: 'Reclame Aqui' },
             { key: 'supportEmail', label: 'E-mail de suporte' },

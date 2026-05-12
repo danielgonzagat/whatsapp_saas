@@ -2,6 +2,45 @@
 
 Generated: 2026-05-11
 
+## 2026-05-12T15:03:58-03:00 - W9 - Boleto Product Settings Truthfulness
+
+- ID-visao: V19, V23.
+- Escopo: remove active product/plan settings that still let the owner configure boleto thank-you URLs or boleto-due reminders while checkout support is currently Pix/card only.
+- Arquivos alterados:
+  - `frontend/src/components/plans/PlanThankYouTab.tsx`
+  - `frontend/src/components/plans/PlanStoreTab.tsx`
+  - `frontend/src/components/products/ProductGeneralTab.tsx`
+  - `frontend/src/components/plans/PlanPaymentTab.tsx`
+  - `docs/implementation/kloel-cia-evidence-ledger.md`
+  - `docs/implementation/kloel-cia-session-handoff.md`
+  - `docs/implementation/kloel-cia-vision-traceability.md`
+- Comportamento entregue:
+  - Product and plan editors no longer show editable boleto thank-you URL fields in the active checkout configuration surfaces.
+  - The plan payment tab no longer renders the boleto due-date notification toggle and persists `notifyBoleto: false` with the existing `boletoEnabled: false` save path.
+  - Existing legacy `thankyouBoletoUrl` data is not surfaced as a current capability.
+- Comando(s) rodados:
+  - `npx prettier --write frontend/src/components/plans/PlanThankYouTab.tsx frontend/src/components/plans/PlanStoreTab.tsx frontend/src/components/products/ProductGeneralTab.tsx frontend/src/components/plans/PlanPaymentTab.tsx`
+  - `rg -n "thankyouBoletoUrl|obrigado.*boleto|boletos|notifyBoleto" frontend/src/components/plans frontend/src/components/products/ProductGeneralTab.tsx`
+  - `npm --prefix frontend run typecheck -- --pretty false`
+  - `npm exec eslint -- src/components/plans/PlanThankYouTab.tsx src/components/plans/PlanStoreTab.tsx src/components/products/ProductGeneralTab.tsx src/components/plans/PlanPaymentTab.tsx` from `frontend/`
+  - `git diff --check`
+  - `node scripts/ops/check-governance-boundary.mjs`
+- Resultado:
+  - Prettier completed.
+  - Remaining `rg` hits are the `ProductData` legacy type and `notifyBoleto: false` save guard only.
+  - Frontend typecheck passed.
+  - Focused frontend ESLint passed.
+  - Whitespace and governance boundary checks passed.
+- Evidencia:
+  - Current session command outputs and diff in the four frontend product/plan files listed above.
+- Riscos remanescentes:
+  - This hides active configuration of unsupported boleto behavior; it does not delete legacy schema fields or historical records.
+  - No browser screenshot was captured for these tabs.
+- Plano de rollback:
+  - Reintroduce boleto-specific URL/reminder controls only after checkout/provider support is live and proved.
+- Referencia subagent:
+  - Orchestrator-owned V23 follow-up from the local fake-completion scan.
+
 ## 2026-05-12T14:55:27-03:00 - W9 - Smart Payment Frontend Truthfulness
 
 - ID-visao: V19, V23.
