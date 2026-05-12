@@ -1,15 +1,15 @@
 # Kloel CIA Session Handoff
 
-Updated: 2026-05-12T14:26:00-03:00
+Updated: 2026-05-12T14:32:00-03:00
 
 ## Onde parou exatamente
 
-Wave 0 discovery artifacts are active and W1-W9 have focused code-side slices delivered with evidence, but completion remains blocked by external provider smokes and open dependency-register items. W1 persists the official channel four-step wizard spine through `Workspace.providerSettings.marketingChannelSetup`; Playwright proves four steps at desktop/mobile widths, product persistence, and Meta disconnect double-confirmation. W2 hardens code-side Meta OAuth URL generation with channel-specific Config IDs/scopes, adds the `facebook` status alias, and rejects unsigned Meta webhook POSTs when `META_APP_SECRET` is configured. W3 hardens TikTok webhook signature handling and adds backend disconnect. W4 delivers code-side Gmail/Microsoft/IMAP mailbox foundations through EMAIL-10, including encrypted token storage, Gmail sync/send, Microsoft OAuth base, IMAP+SMTP validation, suppression checks, and mailbox metrics, while live mailbox smokes remain external. W5/W6 route TikTok/Omnichannel perception toward the same `UnifiedAgentService` and prove owner strategic policy persistence into CIA prompt context. W7/W8 add checkout-paid wallet/chat context and high-risk `ApprovalRequest` gates. On 2026-05-12, after the merge from `origin/main`, this orchestrator recovered the frontend TypeScript gate, ran Batch 17 read-only audits for V23 anti-fake/provider readiness, implemented frontend V23 truthfulness fixes, verified the external backend strict-mode repair after its OpenCode process exited, verified the guest-chat Redis persistence slice, and aligned checkout boleto UI with the backend's current card/PIX-only rail.
+Wave 0 discovery artifacts are active and W1-W9 have focused code-side slices delivered with evidence, but completion remains blocked by external provider smokes and open dependency-register items. W1 persists the official channel four-step wizard spine through `Workspace.providerSettings.marketingChannelSetup`; Playwright proves four steps at desktop/mobile widths, product persistence, and Meta disconnect double-confirmation. W2 hardens code-side Meta OAuth URL generation with channel-specific Config IDs/scopes, adds the `facebook` status alias, and rejects unsigned Meta webhook POSTs when `META_APP_SECRET` is configured. W3 hardens TikTok webhook signature handling and adds backend disconnect. W4 delivers code-side Gmail/Microsoft/IMAP mailbox foundations through EMAIL-10, including encrypted token storage, Gmail sync/send, Microsoft OAuth base, IMAP+SMTP validation, suppression checks, and mailbox metrics, while live mailbox smokes remain external. W5/W6 route TikTok/Omnichannel perception toward the same `UnifiedAgentService` and prove owner strategic policy persistence into CIA prompt context. W7/W8 add checkout-paid wallet/chat context and high-risk `ApprovalRequest` gates. On 2026-05-12, after the merge from `origin/main`, this orchestrator recovered the frontend TypeScript gate, ran Batch 17 read-only audits for V23 anti-fake/provider readiness, implemented frontend V23 truthfulness fixes, verified the external backend strict-mode repair after its OpenCode process exited, verified the guest-chat Redis persistence slice, aligned checkout boleto UI with the backend's current card/PIX-only rail, and removed remaining active-product boleto copy/link badges.
 
 ## Branch atual e ultimo commit
 
 - Branch: `chore/purga-total-debt`
-- HEAD: `93703e701 [W9] Alinhar boleto ao checkout real`
+- HEAD: `b2b36517c fix(checkout): remove remaining boleto claims`
 - Note: prior handoff referenced `feat/kloel-cia-convergence`, but the live checkout is currently `chore/purga-total-debt`; do not infer branch state from older docs.
 
 ## Gates passados na sessao
@@ -122,6 +122,10 @@ Wave 0 discovery artifacts are active and W1-W9 have focused code-side slices de
 - `npm --prefix frontend test -- product-nerve-center.view-models.test.ts CheckoutPaymentSection.test.tsx checkout-order-submit.test.ts`: passed after checkout boleto truthfulness alignment, 3 files / 5 tests.
 - `npm --prefix frontend run typecheck -- --pretty false`: passed after checkout boleto truthfulness alignment.
 - `npm exec eslint -- src/components/products/ProductCheckoutsTab.helpers.ts src/components/plans/PlanPaymentTab.tsx src/components/products/CheckoutConfigPage.tsx src/components/products/checkout/CheckoutCheckbox.tsx src/components/kloel/products/product-nerve-center.view-models.ts src/components/kloel/products/product-nerve-center.view-models.test.ts` from `frontend/`: passed after checkout boleto truthfulness alignment.
+- `npx prettier --write frontend/src/lib/checkout-links.ts frontend/src/lib/__tests__/checkout-links.test.ts frontend/src/app/'(main)'/checkout/'[planId]'/checkout-editor-shared.tsx frontend/src/app/'(main)'/checkout/'[planId]'/PlanSummarySection.tsx frontend/src/components/kloel/settings/billing-legacy-providers-section.tsx frontend/src/components/kloel/landing/landing-data.ts`: passed after checkout boleto copy/link cleanup.
+- `npm --prefix frontend test -- checkout-links.test.ts product-nerve-center.view-models.test.ts`: passed after checkout boleto copy/link cleanup, 2 files / 7 tests.
+- `npm --prefix frontend run typecheck -- --pretty false`: passed after checkout boleto copy/link cleanup.
+- `npm exec eslint -- src/lib/checkout-links.ts src/lib/__tests__/checkout-links.test.ts src/app/'(main)'/checkout/'[planId]'/checkout-editor-shared.tsx src/app/'(main)'/checkout/'[planId]'/PlanSummarySection.tsx src/components/kloel/settings/billing-legacy-providers-section.tsx src/components/kloel/landing/landing-data.ts` from `frontend/`: passed after checkout boleto copy/link cleanup.
 - `npm run worker:typecheck`: passed.
 - `npm --prefix backend run build`: passed.
 - `npm --prefix worker run build`: passed.
@@ -235,4 +239,4 @@ No `opencode run` process remains active after workspace stabilization. The prev
 
 ## Proxima acao exata
 
-Next action: commit/push the checkout boleto truthfulness alignment, leaving untracked OpenCode prompt drafts out of the commit. After publication, continue V23 backlog with remaining fake-completion checks, especially marketing/landing payment copy and any billing mock hardening not already covered by production guards.
+Next action: commit/push the checkout boleto copy/link cleanup, leaving untracked OpenCode prompt drafts out of the commit. After publication, continue V23 backlog with route-level checkout hardening and any billing mock hardening not already covered by production guards.
