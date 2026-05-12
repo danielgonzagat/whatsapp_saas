@@ -19,7 +19,9 @@ describe('WorkspaceService', () => {
     prisma = {
       workspace: {
         findUnique: jest.fn(),
-        update: jest.fn().mockImplementation(({ data }) => Promise.resolve({ id: 'ws-1', ...data })),
+        update: jest
+          .fn()
+          .mockImplementation(({ data }) => Promise.resolve({ id: 'ws-1', ...data })),
         delete: jest.fn().mockResolvedValue({}),
       },
     };
@@ -41,17 +43,19 @@ describe('WorkspaceService', () => {
 
   describe('getWorkspace', () => {
     it('returns workspace when found (via cache.wrap)', async () => {
-      prisma.workspace.findUnique.mockResolvedValue({ id: 'ws-1', name: 'X', providerSettings: {} });
+      prisma.workspace.findUnique.mockResolvedValue({
+        id: 'ws-1',
+        name: 'X',
+        providerSettings: {},
+      });
       await expect(service.getWorkspace('ws-1')).resolves.toEqual({
         id: 'ws-1',
         name: 'X',
         providerSettings: {},
       });
-      expect(cache.wrap).toHaveBeenCalledWith(
-        'cache:workspace:ws-1',
-        expect.any(Function),
-        { ttl: 30 },
-      );
+      expect(cache.wrap).toHaveBeenCalledWith('cache:workspace:ws-1', expect.any(Function), {
+        ttl: 30,
+      });
     });
 
     it('throws NotFoundException when workspace missing', async () => {

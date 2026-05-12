@@ -19,10 +19,7 @@ describe('MindPerceptionService', () => {
       checkoutOrder: { findMany: jest.fn().mockResolvedValue([]) },
     };
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        MindPerceptionService,
-        { provide: PrismaService, useValue: prisma },
-      ],
+      providers: [MindPerceptionService, { provide: PrismaService, useValue: prisma }],
     }).compile();
     service = module.get(MindPerceptionService);
   });
@@ -64,8 +61,24 @@ describe('MindPerceptionService', () => {
 
   it('maps sale status="paid" → kind="sale.completed", others stay as sale.<status>', async () => {
     prisma.kloelSale.findMany.mockResolvedValue([
-      { id: 's1', leadId: null, productName: 'X', amount: 1, status: 'paid', paymentMethod: 'pix', createdAt: new Date(0) },
-      { id: 's2', leadId: null, productName: 'Y', amount: 2, status: 'failed', paymentMethod: 'card', createdAt: new Date(1) },
+      {
+        id: 's1',
+        leadId: null,
+        productName: 'X',
+        amount: 1,
+        status: 'paid',
+        paymentMethod: 'pix',
+        createdAt: new Date(0),
+      },
+      {
+        id: 's2',
+        leadId: null,
+        productName: 'Y',
+        amount: 2,
+        status: 'failed',
+        paymentMethod: 'card',
+        createdAt: new Date(1),
+      },
     ]);
     const events = await service.since('ws-1', new Date(0));
     expect(events.map((e) => e.kind)).toEqual(['sale.completed', 'sale.failed']);
@@ -73,10 +86,42 @@ describe('MindPerceptionService', () => {
 
   it('classifies checkout price bands correctly', async () => {
     prisma.checkoutOrder.findMany.mockResolvedValue([
-      { id: 'o1', status: 'PAID', customerEmail: 'a', paymentMethod: 'pix', totalInCents: 5_000, utmSource: null, createdAt: new Date(1) },
-      { id: 'o2', status: 'PAID', customerEmail: 'b', paymentMethod: 'pix', totalInCents: 30_000, utmSource: null, createdAt: new Date(2) },
-      { id: 'o3', status: 'PAID', customerEmail: 'c', paymentMethod: 'pix', totalInCents: 75_000, utmSource: null, createdAt: new Date(3) },
-      { id: 'o4', status: 'PAID', customerEmail: 'd', paymentMethod: 'pix', totalInCents: 200_000, utmSource: null, createdAt: new Date(4) },
+      {
+        id: 'o1',
+        status: 'PAID',
+        customerEmail: 'a',
+        paymentMethod: 'pix',
+        totalInCents: 5_000,
+        utmSource: null,
+        createdAt: new Date(1),
+      },
+      {
+        id: 'o2',
+        status: 'PAID',
+        customerEmail: 'b',
+        paymentMethod: 'pix',
+        totalInCents: 30_000,
+        utmSource: null,
+        createdAt: new Date(2),
+      },
+      {
+        id: 'o3',
+        status: 'PAID',
+        customerEmail: 'c',
+        paymentMethod: 'pix',
+        totalInCents: 75_000,
+        utmSource: null,
+        createdAt: new Date(3),
+      },
+      {
+        id: 'o4',
+        status: 'PAID',
+        customerEmail: 'd',
+        paymentMethod: 'pix',
+        totalInCents: 200_000,
+        utmSource: null,
+        createdAt: new Date(4),
+      },
     ]);
     const events = await service.since('ws-1', new Date(0));
     const bands = events.map((e) => (e.payload as { priceBand: string }).priceBand);
