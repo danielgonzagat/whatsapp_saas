@@ -53,6 +53,26 @@ function buildSseResponse(lines: string[]) {
   });
 }
 
+function expectSyncKloelRequest(signal: AbortSignal) {
+  expect(apiFetchMock).toHaveBeenCalledWith('/kloel/think/sync', {
+    method: 'POST',
+    body: {
+      message: 'oi',
+      conversationId: 'thread-1',
+      mode: 'chat',
+      companyContext: undefined,
+      metadata: undefined,
+    },
+    signal,
+  });
+}
+
+function expectKloelMutateQueued() {
+  expect(mutateMock).toHaveBeenCalledOnce();
+  const [mutatePredicate] = mutateMock.mock.calls[0] ?? [];
+  expect(typeof mutatePredicate).toBe('function');
+}
+
 describe('sendAuthenticatedKloelMessage', () => {
   beforeEach(() => {
     mutateMock.mockReset();
@@ -86,20 +106,8 @@ describe('sendAuthenticatedKloelMessage', () => {
       conversationId: 'thread-1',
     });
 
-    expect(apiFetchMock).toHaveBeenCalledWith('/kloel/think/sync', {
-      method: 'POST',
-      body: {
-        message: 'oi',
-        conversationId: 'thread-1',
-        mode: 'chat',
-        companyContext: undefined,
-        metadata: undefined,
-      },
-      signal: controller.signal,
-    });
-    expect(mutateMock).toHaveBeenCalledOnce();
-    const [mutatePredicate] = mutateMock.mock.calls[0] ?? [];
-    expect(typeof mutatePredicate).toBe('function');
+    expectSyncKloelRequest(controller.signal);
+    expectKloelMutateQueued();
   });
 });
 
