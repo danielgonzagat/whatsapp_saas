@@ -4,6 +4,14 @@ import { BrainEventSpineService } from './brain-event-spine.service';
 import { MindConceptService } from './mind-concepts.service';
 
 describe('MindConceptService', () => {
+  type ConceptCreateCall = [{ data: { workspaceId: string } }];
+  type CommercialEventCall = [
+    { workspaceId: string; eventType: string; idempotencyKey: string },
+  ];
+  type RecentFindManyCall = [
+    { where: { workspaceId: string; occurredAt: { gte: Date } } },
+  ];
+
   let service: MindConceptService;
   let prisma: {
     mindConceptDetection: { create: jest.Mock; findMany: jest.Mock };
@@ -65,11 +73,11 @@ describe('MindConceptService', () => {
       subject: 'sub-99',
       text: 'preco caro demais',
     });
-    expect(prisma.mindConceptDetection.create.mock.calls[0][0].data.workspaceId).toBe(
-      'ws-tenant-A',
-    );
+    const createCalls = prisma.mindConceptDetection.create.mock.calls as ConceptCreateCall[];
+    expect(createCalls[0][0].data.workspaceId).toBe('ws-tenant-A');
     expect(events.recordCommercial).toHaveBeenCalled();
-    const eventArg = events.recordCommercial.mock.calls[0][0];
+    const eventCalls = events.recordCommercial.mock.calls as CommercialEventCall[];
+    const eventArg = eventCalls[0][0];
     expect(eventArg.workspaceId).toBe('ws-tenant-A');
     expect(eventArg.eventType).toBe('concept.detected');
     expect(typeof eventArg.idempotencyKey).toBe('string');
@@ -87,7 +95,8 @@ describe('MindConceptService', () => {
 
   it('recent applies workspace filter and time window of N hours', async () => {
     await service.recent('ws-1', 6);
-    const arg = prisma.mindConceptDetection.findMany.mock.calls[0][0];
+    const findManyCalls = prisma.mindConceptDetection.findMany.mock.calls as RecentFindManyCall[];
+    const arg = findManyCalls[0][0];
     expect(arg.where.workspaceId).toBe('ws-1');
     expect(arg.where.occurredAt.gte).toBeInstanceOf(Date);
   });
