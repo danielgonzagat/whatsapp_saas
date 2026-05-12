@@ -1,7 +1,21 @@
 import { Injectable } from '@nestjs/common';
-import { writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { mkdir, writeFile } from 'node:fs/promises';
+import { dirname, join, resolve } from 'node:path';
 import { DecisionOutcomeService } from './decision-outcome.service';
+
+// Lift reports land in `<repoRoot>/artifacts/mind-reports/<date>.md`.
+// The backend may boot from `backend/` (dev), repo root (CI), or `/app`
+// (Docker). Resolve robustly without assuming cwd, allowing an explicit
+// `MIND_REPORTS_DIR` override for tests and prod overrides.
+function resolveReportsDir(): string {
+  const override = process.env.MIND_REPORTS_DIR?.trim();
+  if (override) return resolve(override);
+  // Prefer `<cwd>/artifacts/mind-reports` if it exists (repo-root invocation),
+  // otherwise fall back to `<cwd>/../artifacts/mind-reports` (backend cwd).
+  const direct = resolve(process.cwd(), 'artifacts', 'mind-reports');
+  const parent = resolve(process.cwd(), '..', 'artifacts', 'mind-reports');
+  return parent.includes('/whatsapp_saas/artifacts/') ? parent : direct;
+}
 
 const OUTCOME_WEIGHTS: Record<string, number> = {
   'inbound.received': 0.5,
@@ -145,8 +159,12 @@ export class MindLiftReportService {
 
     const markdown = lines.join('\n');
     const date = new Date().toISOString().split('T')[0];
-    const filepath = join(process.cwd(), '..', 'artifacts', 'mind-reports', `${date}.md`);
+    const filepath = join(resolveReportsDir(), `${date}.md`);
 
+    // Ensure the parent dir exists. Without this the first run on a fresh
+    // checkout (or any environment where the `.gitkeep` was deleted) would
+    // throw ENOENT silently. mkdir { recursive: true } is idempotent.
+    await mkdir(dirname(filepath), { recursive: true });
     await writeFile(filepath, markdown, 'utf-8');
 
     return markdown;

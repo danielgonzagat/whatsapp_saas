@@ -77,6 +77,106 @@ describe('DecisionOutcomeService', () => {
     });
   });
 
+  describe('recordDecision (additional paths)', () => {
+    it('persists baselineAction=null when not provided', async () => {
+      await service.recordDecision({
+        workspaceId: 'ws-2',
+        decisionType: 'audio_vs_text',
+        chosenAction: 'audio',
+        outcomeKey: 'k:b',
+        expectedWindow: 24,
+        contextSnapshot: { channel: 'whatsapp' },
+      });
+      expect(prisma.decisionOutcome.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ baselineAction: null }),
+        }),
+      );
+    });
+
+    it('serializes contextSnapshot through JSON.stringify (Prisma JSON safety)', async () => {
+      const symbol = Symbol('not-serializable');
+      // The service should NOT throw — JSON.stringify drops symbols silently.
+      await expect(
+        service.recordDecision({
+          workspaceId: 'ws-3',
+          decisionType: 'product_offer',
+          chosenAction: 'top_seller',
+          outcomeKey: 'k:c',
+          expectedWindow: 48,
+          contextSnapshot: { channel: 'instagram', token: symbol as never },
+        }),
+      ).resolves.toBeUndefined();
+      const lastCall = (prisma.decisionOutcome.create as jest.Mock).mock.calls.at(-1);
+      const ctx = (lastCall![0].data as { contextSnapshot: Record<string, unknown> }).contextSnapshot;
+      expect(ctx.token).toBeUndefined();
+      expect(ctx.channel).toBe('instagram');
+    });
+  });
+
+  describe('closeOutcome (additional paths)', () => {
+    it('preserves outcomeValue when provided', async () => {
+      await service.closeOutcome({
+        outcomeKey: 'k1',
+        outcomeName: 'payment.succeeded',
+        outcomeValue: { amount: 99.9, currency: 'BRL' },
+      });
+      const data = (prisma.decisionOutcome.updateMany as jest.Mock).mock.calls.at(-1)![0]
+        .data as { outcomeValue?: { amount: number } };
+      expect(data.outcomeValue).toEqual({ amount: 99.9, currency: 'BRL' });
+    });
+
+    it('defaults economicValue to null when not provided', async () => {
+      await service.closeOutcome({ outcomeKey: 'k1', outcomeName: 'inbound.received' });
+      const data = (prisma.decisionOutcome.updateMany as jest.Mock).mock.calls.at(-1)![0]
+        .data as { economicValue: number | null; wonVsBaseline: boolean | null };
+      expect(data.economicValue).toBeNull();
+      expect(data.wonVsBaseline).toBeNull();
+    });
+
+    it('only updates rows still open (outcomeAt: null) — closed rows untouched', async () => {
+      await service.closeOutcome({ outcomeKey: 'k-already-closed', outcomeName: 'payment.succeeded' });
+      const call = (prisma.decisionOutcome.updateMany as jest.Mock).mock.calls.at(-1);
+      expect(call![0].where).toEqual({ outcomeKey: 'k-already-closed', outcomeAt: null });
+    });
+  });
+
+  describe('findOpenByWorkspace', () => {
+    it('queries with outcomeAt: null and orders by createdAt desc', async () => {
+      await service.findOpenByWorkspace('ws-1');
+      expect(prisma.decisionOutcome.findMany).toHaveBeenCalledWith({
+        where: { workspaceId: 'ws-1', outcomeAt: null },
+        orderBy: { createdAt: 'desc' },
+      });
+    });
+  });
+
+  describe('findClosedByDecisionType', () => {
+    it('filters by workspace, decisionType, and outcomeAt >= since', async () => {
+      const since = new Date('2026-05-01T00:00:00Z');
+      await service.findClosedByDecisionType('ws-1', 'followup_timing', since);
+      expect(prisma.decisionOutcome.findMany).toHaveBeenCalledWith({
+        where: {
+          workspaceId: 'ws-1',
+          decisionType: 'followup_timing',
+          outcomeAt: { not: null, gte: since },
+        },
+        orderBy: { outcomeAt: 'desc' },
+      });
+    });
+  });
+
+  describe('findAllClosedSince', () => {
+    it('returns all closed rows across workspaces since the given date', async () => {
+      const since = new Date('2026-05-01T00:00:00Z');
+      await service.findAllClosedSince(since);
+      expect(prisma.decisionOutcome.findMany).toHaveBeenCalledWith({
+        where: { outcomeAt: { not: null, gte: since } },
+        orderBy: { outcomeAt: 'desc' },
+      });
+    });
+  });
+
   describe('recordEvent', () => {
     it('persists a raw outcome event', async () => {
       await service.recordEvent({
