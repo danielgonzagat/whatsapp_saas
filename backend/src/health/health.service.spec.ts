@@ -84,12 +84,9 @@ describe('HealthService', () => {
 
   it('attaches queue snapshot with threshold from env', async () => {
     const result = await service.getHealth('ws-1');
-    expect(result.queue).toEqual(
-      expect.objectContaining({
-        waiting: 0,
-        failed: 0,
-        threshold: expect.any(Number),
-      }),
-    );
+    expect(result.queue?.waiting).toBe(0);
+    expect(result.queue?.failed).toBe(0);
+    expect(typeof result.queue?.threshold).toBe('number');
+    expect(result.queue?.threshold).toBeGreaterThan(0);
   });
 });

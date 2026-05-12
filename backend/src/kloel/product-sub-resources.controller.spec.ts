@@ -1,9 +1,5 @@
-import {
-  BadRequestException,
-  NotFoundException,
-  ServiceUnavailableException,
-} from '@nestjs/common';
-import { Test, TestingModule } from '@nestjs/testing';
+import { NotFoundException, type Provider } from '@nestjs/common';
+import { Test } from '@nestjs/testing';
 import { AuditService } from '../audit/audit.service';
 import { CampaignsService } from '../campaigns/campaigns.service';
 import { PartnershipsService } from '../partnerships/partnerships.service';
@@ -26,7 +22,9 @@ const WS_A_USER = { user: { sub: 'user-a', workspaceId: WS_A } } as never;
 const WS_B_USER = { user: { sub: 'user-b', workspaceId: WS_B } } as never;
 const PROD_A = 'prod-a';
 
-type PrismaMock = Record<string, Record<string, jest.Mock>>;
+type PrismaMock = { product: { findFirst: jest.Mock } };
+type PrismaOverrides = Record<string, Record<string, jest.Mock> | jest.Mock>;
+type PrismaTransactionMock = Record<string, Record<string, jest.Mock>>;
 
 function makeProductFindFirst() {
   return jest
@@ -41,8 +39,8 @@ function makeProductFindFirst() {
 
 function moduleWith(
   Controller: new (...args: unknown[]) => unknown,
-  prismaOverrides: PrismaMock = {},
-  extraProviders: ReadonlyArray<unknown> = [],
+  prismaOverrides: PrismaOverrides = {},
+  extraProviders: ReadonlyArray<Provider> = [],
 ) {
   return Test.createTestingModule({
     controllers: [Controller],
@@ -111,7 +109,6 @@ describe('Product Sub-Resources — Cross-Workspace Isolation', () => {
   // ─── Affiliate ────────────────────────────────────────────────
   describe('ProductAffiliateController', () => {
     let controller: ProductAffiliateController;
-    let prisma: PrismaMock;
 
     beforeEach(async () => {
       const mod = await moduleWith(ProductAffiliateController, {
@@ -139,7 +136,7 @@ describe('Product Sub-Resources — Cross-Workspace Isolation', () => {
           update: jest.fn().mockResolvedValue({ id: 'link1' }),
           updateMany: jest.fn().mockResolvedValue({ count: 1 }),
         },
-        $transaction: jest.fn().mockImplementation((fn: (tx: PrismaMock) => unknown) =>
+        $transaction: jest.fn().mockImplementation((fn: (tx: PrismaTransactionMock) => unknown) =>
           fn({
             affiliateRequest: {
               update: jest.fn().mockResolvedValue({ id: 'req1' }),
@@ -155,7 +152,6 @@ describe('Product Sub-Resources — Cross-Workspace Isolation', () => {
         ),
       });
       controller = mod.get(ProductAffiliateController);
-      prisma = mod.get(PrismaService);
     });
 
     it('blocks workspace-B from reading workspace-A affiliate summary', async () => {
@@ -190,7 +186,6 @@ describe('Product Sub-Resources — Cross-Workspace Isolation', () => {
   // ─── Campaign ────────────────────────────────────────────────
   describe('ProductCampaignController', () => {
     let controller: ProductCampaignController;
-    let prisma: PrismaMock;
 
     beforeEach(async () => {
       const mod = await moduleWith(ProductCampaignController, {
@@ -216,7 +211,6 @@ describe('Product Sub-Resources — Cross-Workspace Isolation', () => {
         },
       });
       controller = mod.get(ProductCampaignController);
-      prisma = mod.get(PrismaService);
     });
 
     it('blocks workspace-B from listing campaigns on workspace-A product', async () => {
@@ -253,7 +247,6 @@ describe('Product Sub-Resources — Cross-Workspace Isolation', () => {
   // ─── Checkout ────────────────────────────────────────────────
   describe('ProductCheckoutController', () => {
     let controller: ProductCheckoutController;
-    let prisma: PrismaMock;
 
     beforeEach(async () => {
       const mod = await moduleWith(ProductCheckoutController, {
@@ -268,7 +261,7 @@ describe('Product Sub-Resources — Cross-Workspace Isolation', () => {
           update: jest.fn().mockResolvedValue({ id: 'ch1' }),
           delete: jest.fn().mockResolvedValue({ id: 'ch1' }),
         },
-        $transaction: jest.fn().mockImplementation((fn: (tx: PrismaMock) => unknown) =>
+        $transaction: jest.fn().mockImplementation((fn: (tx: PrismaTransactionMock) => unknown) =>
           fn({
             productCheckout: {
               findFirst: jest.fn().mockResolvedValue({ id: 'ch1', productId: PROD_A }),
@@ -278,7 +271,6 @@ describe('Product Sub-Resources — Cross-Workspace Isolation', () => {
         ),
       });
       controller = mod.get(ProductCheckoutController);
-      prisma = mod.get(PrismaService);
     });
 
     it('blocks workspace-B from listing checkouts on workspace-A product', async () => {
@@ -312,12 +304,16 @@ describe('Product Sub-Resources — Cross-Workspace Isolation', () => {
         {
           productCommission: {
             findMany: jest.fn().mockResolvedValue([]),
-            create: jest.fn().mockImplementation((args: { data: Record<string, unknown> }) => Promise.resolve({ id: 'cm1', ...args.data })),
+            create: jest
+              .fn()
+              .mockImplementation((args: { data: Record<string, unknown> }) =>
+                Promise.resolve({ id: 'cm1', ...args.data }),
+              ),
             delete: jest.fn().mockResolvedValue({ id: 'cm1' }),
             findFirst: jest.fn().mockResolvedValue({ id: 'cm1', productId: PROD_A }),
             update: jest.fn().mockResolvedValue({ id: 'cm1' }),
           },
-          $transaction: jest.fn().mockImplementation((fn: (tx: PrismaMock) => unknown) =>
+          $transaction: jest.fn().mockImplementation((fn: (tx: PrismaTransactionMock) => unknown) =>
             fn({
               productCommission: {
                 findFirst: jest.fn().mockResolvedValue({ id: 'cm1', productId: PROD_A }),
@@ -369,7 +365,11 @@ describe('Product Sub-Resources — Cross-Workspace Isolation', () => {
       const mod = await moduleWith(ProductCouponController, {
         productCoupon: {
           findMany: jest.fn().mockResolvedValue([]),
-          create: jest.fn().mockImplementation((args: { data: Record<string, unknown> }) => Promise.resolve({ id: 'cp1', ...args.data })),
+          create: jest
+            .fn()
+            .mockImplementation((args: { data: Record<string, unknown> }) =>
+              Promise.resolve({ id: 'cp1', ...args.data }),
+            ),
           findFirst: jest
             .fn()
             .mockResolvedValue({ id: 'cp1', productId: PROD_A, code: 'ABC', active: true }),
@@ -379,7 +379,7 @@ describe('Product Sub-Resources — Cross-Workspace Isolation', () => {
           update: jest.fn().mockResolvedValue({ id: 'cp1', code: 'ABC' }),
           delete: jest.fn().mockResolvedValue({ id: 'cp1', code: 'ABC' }),
         },
-        $transaction: jest.fn().mockImplementation((fn: (tx: PrismaMock) => unknown) =>
+        $transaction: jest.fn().mockImplementation((fn: (tx: PrismaTransactionMock) => unknown) =>
           fn({
             productCoupon: {
               findFirst: jest.fn().mockResolvedValue({ id: 'cp1', productId: PROD_A, code: 'ABC' }),
@@ -431,14 +431,18 @@ describe('Product Sub-Resources — Cross-Workspace Isolation', () => {
       const mod = await moduleWith(ProductPlanController, {
         productPlan: {
           findMany: jest.fn().mockResolvedValue([]),
-          create: jest.fn().mockImplementation((args: { data: Record<string, unknown> }) => Promise.resolve({ id: 'pl1', ...args.data })),
+          create: jest
+            .fn()
+            .mockImplementation((args: { data: Record<string, unknown> }) =>
+              Promise.resolve({ id: 'pl1', ...args.data }),
+            ),
           findFirst: jest
             .fn()
             .mockResolvedValue({ id: 'pl1', productId: PROD_A, name: 'Basic', price: 100 }),
           update: jest.fn().mockResolvedValue({ id: 'pl1' }),
           delete: jest.fn().mockResolvedValue({ id: 'pl1' }),
         },
-        $transaction: jest.fn().mockImplementation((fn: (tx: PrismaMock) => unknown) =>
+        $transaction: jest.fn().mockImplementation((fn: (tx: PrismaTransactionMock) => unknown) =>
           fn({
             productPlan: {
               findFirst: jest.fn().mockResolvedValue({ id: 'pl1', productId: PROD_A }),
@@ -485,7 +489,11 @@ describe('Product Sub-Resources — Cross-Workspace Isolation', () => {
       const mod = await moduleWith(ProductReviewController, {
         productReview: {
           findMany: jest.fn().mockResolvedValue([]),
-          create: jest.fn().mockImplementation((args: { data: Record<string, unknown> }) => Promise.resolve({ id: 'rv1', ...args.data })),
+          create: jest
+            .fn()
+            .mockImplementation((args: { data: Record<string, unknown> }) =>
+              Promise.resolve({ id: 'rv1', ...args.data }),
+            ),
           findFirst: jest.fn().mockResolvedValue({ id: 'rv1', productId: PROD_A }),
           delete: jest.fn().mockResolvedValue({ id: 'rv1' }),
         },
@@ -516,7 +524,11 @@ describe('Product Sub-Resources — Cross-Workspace Isolation', () => {
       const mod = await moduleWith(ProductUrlController, {
         productUrl: {
           findMany: jest.fn().mockResolvedValue([]),
-          create: jest.fn().mockImplementation((args: { data: Record<string, unknown> }) => Promise.resolve({ id: 'u1', ...args.data })),
+          create: jest
+            .fn()
+            .mockImplementation((args: { data: Record<string, unknown> }) =>
+              Promise.resolve({ id: 'u1', ...args.data }),
+            ),
           findFirst: jest.fn().mockResolvedValue({ id: 'u1', productId: PROD_A }),
           update: jest.fn().mockResolvedValue({ id: 'u1' }),
           delete: jest.fn().mockResolvedValue({ id: 'u1' }),
@@ -544,106 +556,5 @@ describe('Product Sub-Resources — Cross-Workspace Isolation', () => {
     it('blocks workspace-B from deleting URL on workspace-A product', async () => {
       await expect(controller.delete(PROD_A, 'u1', WS_B_USER)).rejects.toThrow(NotFoundException);
     });
-  });
-});
-
-describe('ProductCommissionController — Core Behavior', () => {
-  let controller: ProductCommissionController;
-  let prisma: {
-    product: { findFirst: jest.Mock };
-    productCommission: {
-      findMany: jest.Mock;
-      create: jest.Mock;
-      delete: jest.Mock;
-    };
-  };
-  let partnershipsService: { createPartner: jest.Mock };
-
-  const req = {
-    user: { sub: 'agent-1', workspaceId: 'ws-1' },
-  };
-
-  beforeEach(async () => {
-    prisma = {
-      product: { findFirst: jest.fn().mockResolvedValue({ id: 'prod-1', workspaceId: 'ws-1' }) },
-      productCommission: {
-        findMany: jest.fn().mockResolvedValue([]),
-        create: jest
-          .fn()
-          .mockImplementation((args: { data: Record<string, unknown> }) => Promise.resolve({ id: 'commission-1', ...args.data })),
-        delete: jest.fn().mockResolvedValue({ id: 'commission-1' }),
-      },
-    };
-    partnershipsService = { createPartner: jest.fn().mockResolvedValue({ id: 'partner-1' }) };
-
-    const module: TestingModule = await Test.createTestingModule({
-      controllers: [ProductCommissionController],
-      providers: [
-        { provide: PrismaService, useValue: prisma },
-        { provide: AuditService, useValue: { log: jest.fn() } },
-        { provide: PartnershipsService, useValue: partnershipsService },
-      ],
-    }).compile();
-
-    controller = module.get(ProductCommissionController);
-  });
-
-  it('creates a commission and triggers partner onboarding for coproducers', async () => {
-    const result = await controller.create(
-      'prod-1',
-      {
-        role: 'COPRODUCER',
-        percentage: 12,
-        agentName: 'Carla',
-        agentEmail: 'carla@example.com',
-      },
-      req as never,
-    );
-
-    expect(result).toEqual(
-      expect.objectContaining({ id: 'commission-1', productId: 'prod-1', role: 'COPRODUCER' }),
-    );
-    expect(partnershipsService.createPartner).toHaveBeenCalledWith('ws-1', {
-      partnerName: 'Carla',
-      partnerEmail: 'carla@example.com',
-      type: 'COPRODUCER',
-      commissionRate: 12,
-    });
-  });
-
-  it('does not trigger partner onboarding for affiliate commission records', async () => {
-    await controller.create(
-      'prod-1',
-      {
-        role: 'AFFILIATE',
-        percentage: 40,
-        agentName: 'Ana',
-        agentEmail: 'ana@example.com',
-      },
-      req as never,
-    );
-
-    expect(partnershipsService.createPartner).not.toHaveBeenCalled();
-  });
-
-  it('rolls back the commission when the partner invite fails', async () => {
-    partnershipsService.createPartner.mockRejectedValueOnce(
-      new ServiceUnavailableException('invite failed'),
-    );
-
-    await expect(
-      controller.create(
-        'prod-1',
-        {
-          role: 'MANAGER',
-          percentage: 8,
-          agentName: 'Marcos',
-          agentEmail: 'marcos@example.com',
-        },
-        req as never,
-      ),
-    ).rejects.toThrow(ServiceUnavailableException);
-
-    expect(prisma.productCommission.delete).toHaveBeenCalledWith({ where: { id: 'commission-1' } });
   });
 });

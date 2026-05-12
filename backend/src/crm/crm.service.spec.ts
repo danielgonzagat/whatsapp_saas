@@ -3,6 +3,43 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { CrmService } from './crm.service';
 
+type ContactCreateArg = {
+  data: { workspace: { connect: { id: string } } };
+  include: { tags: boolean };
+};
+
+type ContactUpsertArg = {
+  where: { workspaceId_phone: { workspaceId: string; phone: string } };
+  update: { name: string };
+  create: { workspace: { connect: { id: string } } };
+};
+
+type ContactFindUniqueArg = {
+  where: { workspaceId_phone: { workspaceId: string; phone: string } };
+  include: { deals: { take: number } };
+};
+
+type PipelineCreateArg = {
+  data: {
+    workspace: { connect: { id: string } };
+    name: string;
+    stages: { create: ReadonlyArray<unknown> };
+  };
+};
+
+type PipelineFindManyArg = {
+  where: { workspaceId: string };
+};
+
+function firstMockArg<T>(mock: jest.Mock): T {
+  const calls = mock.mock.calls as ReadonlyArray<ReadonlyArray<unknown>>;
+  const call = calls[0];
+  if (!call) {
+    throw new Error('Expected mock to be called');
+  }
+  return call[0] as T;
+}
+
 describe('CrmService', () => {
   let service: CrmService;
   let prisma: {
@@ -50,8 +87,8 @@ describe('CrmService', () => {
 
   describe('createContact', () => {
     it('connects contact to workspace by id', async () => {
-      await service.createContact('ws-1', { name: 'X', phone: '+5511' } as never);
-      const arg = prisma.contact.create.mock.calls[0][0];
+      await service.createContact('ws-1', { name: 'X', phone: '+5511' });
+      const arg = firstMockArg<ContactCreateArg>(prisma.contact.create);
       expect(arg.data.workspace).toEqual({ connect: { id: 'ws-1' } });
       expect(arg.include).toEqual({ tags: true });
     });
@@ -59,8 +96,8 @@ describe('CrmService', () => {
 
   describe('upsertContact', () => {
     it('upserts by (workspaceId, phone) unique key', async () => {
-      await service.upsertContact('ws-1', '+5511', { name: 'Alice' } as never);
-      const arg = prisma.contact.upsert.mock.calls[0][0];
+      await service.upsertContact('ws-1', '+5511', { name: 'Alice' });
+      const arg = firstMockArg<ContactUpsertArg>(prisma.contact.upsert);
       expect(arg.where).toEqual({
         workspaceId_phone: { workspaceId: 'ws-1', phone: '+5511' },
       });
@@ -74,7 +111,7 @@ describe('CrmService', () => {
       prisma.contact.findUnique.mockResolvedValue({ id: 'c1', tags: [], deals: [] });
       const result = await service.getContact('ws-1', '+5511');
       expect(result).toEqual({ id: 'c1', tags: [], deals: [] });
-      const arg = prisma.contact.findUnique.mock.calls[0][0];
+      const arg = firstMockArg<ContactFindUniqueArg>(prisma.contact.findUnique);
       expect(arg.where).toEqual({
         workspaceId_phone: { workspaceId: 'ws-1', phone: '+5511' },
       });
@@ -85,7 +122,7 @@ describe('CrmService', () => {
   describe('createPipeline', () => {
     it('creates pipeline with default stages, connected to workspace', async () => {
       await service.createPipeline('ws-1', 'Sales');
-      const arg = prisma.pipeline.create.mock.calls[0][0];
+      const arg = firstMockArg<PipelineCreateArg>(prisma.pipeline.create);
       expect(arg.data.workspace).toEqual({ connect: { id: 'ws-1' } });
       expect(arg.data.name).toBe('Sales');
       expect(arg.data.stages.create).toHaveLength(3);
@@ -95,7 +132,7 @@ describe('CrmService', () => {
   describe('listPipelines', () => {
     it('filters by workspaceId', async () => {
       await service.listPipelines('ws-tenant-A');
-      const arg = prisma.pipeline.findMany.mock.calls[0][0];
+      const arg = firstMockArg<PipelineFindManyArg>(prisma.pipeline.findMany);
       expect(arg.where).toEqual({ workspaceId: 'ws-tenant-A' });
     });
   });
