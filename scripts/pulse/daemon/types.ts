@@ -187,6 +187,8 @@ export interface FullScanOptions {
   includeParser?: (name: string) => boolean;
   /** Parser timeout ms. */
   parserTimeoutMs?: number;
+  /** Perfectness scan mode. */
+  perfectnessMode?: 'tier0' | 'full';
   /** Execution tracer. */
   tracer?: PulseExecutionTracer;
 }

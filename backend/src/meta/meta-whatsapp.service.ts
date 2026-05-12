@@ -9,9 +9,21 @@ import { readRecord, readStrictText, readText } from './meta-read-helpers';
 
 const D_RE = /\D/g;
 
-const PATTERN_RE = /\/+$/;
-const HTTPS_RE = /^https?:\/\//i;
-const LOCALHOST_127__0__0__1_RE = /^(localhost|127\.0\.0\.1)(:\d+)?$/i;
+function resolveMetaConfigChannelSuffix(channel: string): string {
+  switch (channel) {
+    case 'facebook':
+    case 'messenger':
+      return 'MESSENGER';
+    case 'whatsapp':
+      return 'WHATSAPP';
+    case 'instagram':
+      return 'INSTAGRAM';
+    case 'ads':
+      return 'ADS';
+    default:
+      return channel.toUpperCase();
+  }
+}
 
 type ResolvedMetaConnection = {
   workspaceId: string;
@@ -596,39 +608,7 @@ export class MetaWhatsAppService {
 
   /** Get public backend base url. */
   getPublicBackendBaseUrl(): string {
-    const candidates = [
-      process.env.BACKEND_PUBLIC_URL,
-      process.env.APP_URL,
-      process.env.BACKEND_URL,
-      process.env.NEXT_PUBLIC_API_URL,
-      process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : '',
-    ];
-
-    for (const candidate of candidates) {
-      const normalized = this.normalizePublicBaseUrl(candidate);
-      if (normalized) {
-        return normalized;
-      }
-    }
-
-    return 'http://localhost:3001';
-  }
-
-  private normalizePublicBaseUrl(candidate: unknown): string {
-    const raw = readText(candidate).trim().replace(PATTERN_RE, '');
-    if (!raw) {
-      return '';
-    }
-
-    if (HTTPS_RE.test(raw)) {
-      return raw;
-    }
-
-    if (LOCALHOST_127__0__0__1_RE.test(raw)) {
-      return `http://${raw}`;
-    }
-
-    return `https://${raw}`;
+    return resolvePublicBackendBaseUrl(process.env);
   }
 
   private normalizePhone(value: string): string {

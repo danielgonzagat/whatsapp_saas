@@ -390,7 +390,12 @@ export class CampaignsService {
       throw new BadRequestException('No variants to evaluate');
     }
 
-    let best: Record<string, unknown> = parent;
+    let best = {
+      id: parent.id,
+      messageTemplate: parent.messageTemplate,
+      aiStrategy: parent.aiStrategy,
+      stats: parent.stats,
+    };
     let bestScore = this.scoreCampaign(parent);
     for (const v of variants) {
       const score = this.scoreCampaign(v);

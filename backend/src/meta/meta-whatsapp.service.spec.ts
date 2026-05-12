@@ -15,6 +15,22 @@ describe('MetaWhatsAppService', () => {
   let service: MetaWhatsAppService;
 
   beforeEach(() => {
+    delete process.env.META_APP_ID;
+    delete process.env.META_CONFIG_ID;
+    delete process.env.META_CONFIG_ID_FACEBOOK;
+    delete process.env.META_CONFIG_ID_MESSENGER;
+    delete process.env.META_CONFIG_ID_INSTAGRAM;
+    delete process.env.META_GRAPH_API_VERSION;
+    delete process.env.PUBLIC_BACKEND_URL;
+    delete process.env.API_PUBLIC_URL;
+    delete process.env.API_URL;
+    delete process.env.APP_URL;
+    delete process.env.BACKEND_PUBLIC_URL;
+    delete process.env.BACKEND_URL;
+    delete process.env.NEXT_PUBLIC_API_URL;
+    delete process.env.RAILWAY_PUBLIC_DOMAIN;
+    delete process.env.SERVICE_BASE_URL;
+
     prisma = {
       metaConnection: {
         findUnique: jest.fn(),

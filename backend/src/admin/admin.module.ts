@@ -12,6 +12,7 @@ import { AdminConfigModule } from './config/admin-config.module';
 import { AdminDashboardModule } from './dashboard/admin-dashboard.module';
 import { AdminDestructiveModule } from './destructive/admin-destructive.module';
 import { AdminMarketingModule } from './marketing/admin-marketing.module';
+import { AdminMindModule } from './mind/admin-mind.module';
 import { AdminNotificationsModule } from './notifications/admin-notifications.module';
 import { AdminOperationsModule } from './operations/operations.module';
 import { AdminPermissionsModule } from './permissions/admin-permissions.module';
@@ -35,6 +36,7 @@ import { AdminUsersModule } from './users/admin-users.module';
     AdminDestructiveModule,
     AdminConfigModule,
     AdminMarketingModule,
+    AdminMindModule,
     AdminComplianceModule,
     AdminReportsModule,
     AdminNotificationsModule,

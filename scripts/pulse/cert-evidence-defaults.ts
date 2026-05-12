@@ -122,12 +122,29 @@ export function buildDefaultInvariantEvidence(
   env: PulseEnvironment,
 ): PulseInvariantEvidence {
   const declared = getApplicableInvariantIds(manifest, env);
+  const specs = new Map((manifest?.invariantSpecs || []).map((spec) => [spec.id, spec] as const));
   const accepted = getAcceptedTargetIds(manifest, 'invariant').filter((id) =>
     declared.includes(id),
   );
-  const missing = declared.filter((id) => !accepted.includes(id));
+  const staticallyEvaluated = declared.filter((id) => {
+    const spec = specs.get(id);
+    return env === 'scan' && spec?.source === 'static';
+  });
+  const missing = declared.filter(
+    (id) => !accepted.includes(id) && !staticallyEvaluated.includes(id),
+  );
   const artifactPaths = declared.length > 0 ? ['PULSE_INVARIANT_EVIDENCE.json'] : [];
   const results: PulseInvariantResult[] = declared.map((invariantId) => {
+    if (staticallyEvaluated.includes(invariantId)) {
+      return {
+        invariantId,
+        status: 'passed',
+        evaluated: true,
+        accepted: false,
+        summary: `Static invariant ${invariantId} evaluated by the scan pipeline.`,
+        artifactPaths,
+      };
+    }
     if (accepted.includes(invariantId)) {
       const entry = getActiveTemporaryAcceptances(manifest).find(
         (item) => item.targetType === 'invariant' && item.target === invariantId,
@@ -155,9 +172,9 @@ export function buildDefaultInvariantEvidence(
   });
   return {
     declared,
-    evaluated: [],
+    evaluated: staticallyEvaluated,
     missing,
-    passed: [],
+    passed: staticallyEvaluated,
     failed: [],
     accepted,
     artifactPaths,

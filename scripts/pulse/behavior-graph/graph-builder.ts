@@ -29,21 +29,24 @@ function collectSourceFiles(
   rootDir: string,
 ): { filePath: string; sourceRoot: DetectedSourceRoot }[] {
   const files: { filePath: string; sourceRoot: DetectedSourceRoot }[] = [];
+  const seenFilePaths = new Set<string>();
 
   for (const sourceRoot of detectSourceRoots(rootDir)) {
     const dir = sourceRoot.absolutePath;
     if (!pathExists(dir)) continue;
 
-    const entries = readDir(dir, { recursive: true }) as string[];
     const sourceExtensions = discoverSourceExtensionsFromObservedTypescript();
-    for (const entry of entries) {
+    for (const entry of walkUnskippedFiles(dir)) {
       const ext = path.extname(entry);
       if (!sourceExtensions.has(ext)) continue;
 
-      const normalized = entry.split(path.sep).join('/');
+      const normalized = normalizeRelative(entry);
       if (SKIP_DIRS.some((skip) => normalized.includes(skip))) continue;
 
-      files.push({ filePath: safeJoin(dir, entry), sourceRoot });
+      const filePath = safeJoin(dir, normalized);
+      if (seenFilePaths.has(filePath)) continue;
+      seenFilePaths.add(filePath);
+      files.push({ filePath, sourceRoot });
     }
   }
 

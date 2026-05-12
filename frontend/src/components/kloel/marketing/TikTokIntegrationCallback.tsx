@@ -46,9 +46,7 @@ export function TikTokIntegrationCallback({ kind }: { kind: 'creator' | 'adverti
           setStatus('TikTok conectado com sucesso.');
           return;
         }
-        setStatus(
-          response.data?.providerMessage || response.data?.status || 'Falha ao conectar TikTok.',
-        );
+        setStatus('Nao foi possivel confirmar a conexao TikTok. Tente conectar novamente.');
       })
       .catch(() => {
         setStatus('Falha ao finalizar conexão TikTok.');

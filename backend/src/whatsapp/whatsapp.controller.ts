@@ -3,6 +3,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { Idempotent } from '../common/idempotency.guard';
 import type { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
+import { ChannelTransportRegistry } from '../kloel/channel-transport.registry';
 import { WhatsappService } from './whatsapp.service';
 
 import { RouteClass } from '../common/throttler/route-class.decorator';
@@ -32,7 +33,10 @@ type LegacyBulkBody = {
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 @RouteClass('mutate')
 export class WhatsappController {
-  constructor(private readonly whatsappService: WhatsappService) {}
+  constructor(
+    private readonly whatsappService: WhatsappService,
+    private readonly transports: ChannelTransportRegistry,
+  ) {}
 
   private resolveWorkspaceId(req: AuthenticatedRequest, workspaceId: string) {
     return req?.workspaceId || workspaceId;

@@ -8,7 +8,7 @@ import Link from 'next/link';
 import { type FormEvent, useCallback, useEffect, useId, useRef, useState } from 'react';
 import { useAuth } from './auth-provider';
 import { TheMachine } from './kloel-auth-screen.machine';
-import { useGoogleSignIn, useFacebookSignIn } from './kloel-auth-screen.hooks';
+import { useGoogleSignIn } from './kloel-auth-screen.hooks';
 import { SocialButtons } from './kloel-auth-screen.social-buttons';
 import { AuthFormFields } from './kloel-auth-screen.form-fields';
 
@@ -67,14 +67,7 @@ function resolveOAuthErrorMessage(errorCode: string, reason: string): string {
    ──────────────────────────────────────────────────────────── */
 export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps) {
   const fid = useId();
-  const {
-    signIn,
-    signUp,
-    signInWithGoogle,
-    signInWithFacebook,
-    requestMagicLink,
-    isAuthenticated,
-  } = useAuth();
+  const { signIn, signUp, signInWithGoogle, requestMagicLink, isAuthenticated } = useAuth();
   const redirectingRef = useRef(false);
 
   const [mode, setMode] = useState<Mode>(initialMode);
@@ -88,9 +81,6 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
   const [error, setError] = useState('');
   const [forgotSent, setForgotSent] = useState(false);
   const [magicLinkSent, setMagicLinkSent] = useState('');
-  const tikTokAvailable =
-    (typeof process !== 'undefined' ? process.env.NEXT_PUBLIC_TIKTOK_CLIENT_KEY?.trim() : '') || '';
-
   const shouldBypassExistingSessionRedirect = useCallback(() => {
     if (typeof window === 'undefined') {return false;}
     return new URLSearchParams(window.location.search).get('forceAuth') === '1';
@@ -208,28 +198,6 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
   const googleButtonRef = useRef<HTMLDivElement>(null);
   useGoogleSignIn(handleGoogleCredential, googleButtonRef);
 
-  const handleFacebookAuth = useCallback(
-    async ({ accessToken, userId }: { accessToken: string; userId?: string }) => {
-      setError('');
-      setMagicLinkSent('');
-      setIsLoading(true);
-      const result = await signInWithFacebook(accessToken, userId);
-      if (!result.success) {
-        setError(result.error || 'Falha ao autenticar com Facebook.');
-        setIsLoading(false);
-        return;
-      }
-      redirectToApp();
-    },
-    [redirectToApp, signInWithFacebook],
-  );
-
-  const {
-    available: facebookAvailable,
-    sdkReady: facebookSdkReady,
-    signIn: triggerFacebookSignIn,
-  } = useFacebookSignIn(handleFacebookAuth, isLoading);
-
   const handleForgotPassword = async () => {
     if (!email.trim()) {
       setError('Preencha o e-mail.');
@@ -272,29 +240,14 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
     }
   }, [email, requestMagicLink, resolveNextPath]);
 
-  const handleFacebookClick = useCallback(async () => {
-    setError('');
-    setForgotSent(false);
-    setMagicLinkSent('');
-    try {
-      await triggerFacebookSignIn();
-    } catch (facebookError: unknown) {
-      setError(
-        facebookError instanceof Error
-          ? facebookError.message
-          : 'Falha ao autenticar com Facebook.',
-      );
-      setIsLoading(false);
-    }
-  }, [triggerFacebookSignIn]);
-
   const handleApple = async () => {
     setIsLoading(true);
     try {
-      const appleAuthUrl = `https://appleid.apple.com/auth/authorize?client_id=${encodeURIComponent(process.env.NEXT_PUBLIC_APPLE_CLIENT_ID || 'com.kloel.web')}&redirect_uri=${encodeURIComponent(`${window.location.origin}/api/auth/callback/apple`)}&response_type=code id_token&scope=name email&response_mode=form_post`;
-      window.location.href = appleAuthUrl;
-    } catch (e) {
-      console.error('Apple Sign-In error:', e);
+      const destination = new URL('/api/auth/apple/start', window.location.origin);
+      destination.searchParams.set('next', resolveNextPath('/'));
+      window.location.href = destination.toString();
+    } catch {
+      setError('Login com Apple indisponível no momento.');
       setIsLoading(false);
     }
   };
@@ -437,11 +390,6 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
             <SocialButtons
               googleButtonRef={googleButtonRef}
               isLoading={isLoading}
-              facebookAvailable={facebookAvailable}
-              facebookSdkReady={facebookSdkReady}
-              tikTokAvailable={tikTokAvailable}
-              onFacebookClick={() => void handleFacebookClick()}
-              onTikTokClick={() => void handleTikTok()}
               onAppleClick={handleApple}
             />
 

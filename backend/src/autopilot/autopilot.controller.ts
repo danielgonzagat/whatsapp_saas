@@ -96,11 +96,15 @@ export class AutopilotController {
     @Query('status') status?: string,
   ) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
-    const data: AutopilotActionRow[] = await this.autopilotService.getRecentActions(
-      effectiveWorkspaceId,
-      200,
-      status,
-    );
+    const data: AutopilotActionRow[] = (
+      await this.autopilotService.getRecentActions(effectiveWorkspaceId, 200, status)
+    ).map((row) => ({
+      ...row,
+      contact: row.contact ?? undefined,
+      contactId: row.contactId ?? undefined,
+      contactPhone: row.contactPhone ?? undefined,
+      nextRetryAt: row.nextRetryAt ?? undefined,
+    }));
     const rows = [
       ['createdAt', 'contactId', 'contact', 'intent', 'action', 'status', 'reason'].join(','),
       ...data.map((d) =>

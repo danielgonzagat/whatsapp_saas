@@ -6,6 +6,10 @@ import { AuthenticatedRequest } from '../common/interfaces';
 import { ApiKeyGuard } from './api-key.guard';
 import { RouteClass } from '../common/throttler/route-class.decorator';
 
+interface ApiKeyAuthenticatedRequest {
+  user: { workspaceId: string };
+}
+
 /** Public api controller. */
 @ApiTags('Public API v1')
 @ApiSecurity('x-api-key')

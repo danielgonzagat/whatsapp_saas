@@ -1,5 +1,6 @@
 import { Injectable, Logger, NestMiddleware, OnModuleDestroy, Optional } from '@nestjs/common';
 import { NextFunction, Request, Response } from 'express';
+import { Prisma } from '@prisma/client';
 import { sanitizePayload } from '../../common/sanitize-payload';
 import { getTraceHeaders } from '../../common/trace-headers';
 import { validateNoInternalAccess } from '../../common/utils/url-validator';
@@ -66,6 +67,39 @@ function isHealthCheckPath(path: string): boolean {
 
 function matchesLoggedGetPath(path: string): boolean {
   return LOGGED_GET_PATH_FRAGMENTS.some((fragment) => path.includes(fragment));
+}
+
+function isAuditLogEntryWithWorkspace(
+  log: AuditLogEntry,
+): log is AuditLogEntry & { workspaceId: string } {
+  return typeof log.workspaceId === 'string' && log.workspaceId.length > 0;
+}
+
+function buildAuditDetails(log: AuditLogEntry): Prisma.InputJsonValue {
+  return JSON.parse(
+    JSON.stringify({
+      statusCode: log.statusCode,
+      responseTimeMs: log.responseTimeMs,
+      requestBody: log.requestBody
+        ? (sanitizePayload(log.requestBody) as Record<string, unknown>)
+        : undefined,
+      error: log.error || undefined,
+    }),
+  ) as Prisma.InputJsonValue;
+}
+
+function toAuditCreateManyInput(
+  log: AuditLogEntry & { workspaceId: string },
+): Prisma.AuditLogCreateManyInput {
+  return {
+    workspaceId: log.workspaceId,
+    action: `HTTP_${log.method}`,
+    resource: log.path,
+    details: buildAuditDetails(log),
+    agentId: log.userId,
+    ipAddress: log.ip,
+    userAgent: log.userAgent,
+  };
 }
 
 /**
@@ -328,7 +362,6 @@ export function AuditOperation(operationType: string) {
         });
         return result;
       } catch (error: unknown) {
-        void this.opsAlert?.alertOnCriticalError(error, 'AuditLogMiddleware.now');
         logger.error({
           operation: operationType,
           method: propertyKey,

@@ -1,6 +1,6 @@
-import { OfficialMarketingChannelPage } from '@/components/kloel/marketing/OfficialMarketingChannelPage';
+import MarketingView from '@/components/kloel/marketing/MarketingView';
 
 /** Facebook page. */
 export default function FacebookPage() {
-  return <OfficialMarketingChannelPage channel="facebook" />;
+  return <MarketingView defaultTab="facebook" />;
 }

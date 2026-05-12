@@ -27,10 +27,19 @@ type RecoveryLead = {
   createdAt: Date;
 };
 
-/** Checkout social recovery service. */
+type WorkspaceChannelState = {
+  whatsappActive: boolean;
+  emailActive: boolean;
+};
+
+/** Checkout social recovery service with deterministic channel constraints. */
 @Injectable()
 export class CheckoutSocialRecoveryService {
   private readonly logger = new Logger(CheckoutSocialRecoveryService.name);
+  private readonly workspaceChannels = new Map<
+    string,
+    { state: WorkspaceChannelState; fetchedAt: number }
+  >();
 
   constructor(
     private readonly prisma: PrismaService,
@@ -40,7 +49,7 @@ export class CheckoutSocialRecoveryService {
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
-  /** Recover abandoned leads. */
+  /** Recover abandoned leads with deterministic channel-gate decisions. */
   @Cron(CronExpression.EVERY_10_MINUTES)
   async recoverAbandonedLeads() {
     const now = Date.now();
@@ -69,16 +78,20 @@ export class CheckoutSocialRecoveryService {
       orderBy: { createdAt: 'asc' },
     });
 
+    const workspaceIds = [...new Set(leads.map((l) => l.workspaceId))];
+    await this.warmChannelStates(workspaceIds);
+
     await forEachSequential(leads, async (lead) => {
       const age = now - lead.createdAt.getTime();
+      const channels = this.getChannelState(lead.workspaceId);
 
       await this.markAbandonedIfEligible(lead, age);
 
-      if (this.shouldDispatchWhatsAppRecovery(lead, age)) {
+      if (this.shouldDispatchWhatsAppRecovery(lead, age, channels)) {
         await this.dispatchWhatsAppRecovery(lead.id);
       }
 
-      if (this.shouldDispatchEmailRecovery(lead, age)) {
+      if (this.shouldDispatchEmailRecovery(lead, age, channels)) {
         await this.dispatchEmailRecovery(
           lead.id,
           lead.workspaceId,
@@ -88,6 +101,55 @@ export class CheckoutSocialRecoveryService {
         );
       }
     });
+  }
+
+  private async warmChannelStates(workspaceIds: string[]) {
+    const now = Date.now();
+    const cacheTtl = 5 * 60 * 1000;
+
+    const missing = workspaceIds.filter((id) => {
+      const entry = this.workspaceChannels.get(id);
+      return !entry || now - entry.fetchedAt > cacheTtl;
+    });
+
+    if (missing.length === 0) return;
+
+    const workspaces = await this.prisma.workspace.findMany({
+      where: { id: { in: missing } },
+      select: { id: true, providerSettings: true },
+    });
+
+    for (const ws of workspaces) {
+      const settings = (ws.providerSettings ?? {}) as Record<string, unknown>;
+      const whatsappProvider = settings.whatsappProvider;
+      const connectionStatus = settings.connectionStatus;
+
+      this.workspaceChannels.set(ws.id, {
+        state: {
+          whatsappActive: typeof whatsappProvider === 'string' && connectionStatus === 'connected',
+          emailActive: true,
+        },
+        fetchedAt: now,
+      });
+    }
+
+    for (const id of missing) {
+      if (!this.workspaceChannels.has(id)) {
+        this.workspaceChannels.set(id, {
+          state: { whatsappActive: false, emailActive: true },
+          fetchedAt: now,
+        });
+      }
+    }
+  }
+
+  private getChannelState(workspaceId: string): WorkspaceChannelState {
+    return (
+      this.workspaceChannels.get(workspaceId)?.state ?? {
+        whatsappActive: false,
+        emailActive: true,
+      }
+    );
   }
 
   private async markAbandonedIfEligible(lead: RecoveryLead, age: number) {
@@ -115,14 +177,21 @@ export class CheckoutSocialRecoveryService {
     }
   }
 
-  private shouldDispatchWhatsAppRecovery(lead: RecoveryLead, age: number) {
+  private shouldDispatchWhatsAppRecovery(
+    lead: RecoveryLead,
+    age: number,
+    channels: WorkspaceChannelState,
+  ) {
+    if (!channels.whatsappActive) return false;
     return age >= THIRTY_MINUTES_MS && !lead.recoveryWhatsAppSentAt;
   }
 
   private shouldDispatchEmailRecovery(
     lead: RecoveryLead,
     age: number,
+    channels: WorkspaceChannelState,
   ): lead is RecoveryLead & { email: string } {
+    if (!channels.emailActive) return false;
     return age >= ONE_HOUR_MS && !lead.recoveryEmailSentAt && Boolean(lead.email);
   }
 

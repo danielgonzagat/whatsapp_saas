@@ -8,79 +8,6 @@ import type { AuthPartsDeps } from './auth-service.register-login';
 import { completeTrustedOAuthLogin } from './auth-service.oauth-complete';
 import type { TokenIssuanceResult } from './auth-service.tokens';
 
-const APPLE_JWKS_URL = 'https://appleid.apple.com/auth/keys';
-const APPLE_ISSUER = 'https://appleid.apple.com';
-const JWKS_CACHE_TTL_MS = 5 * 60 * 1000;
-
-interface AppleJwk {
-  kid?: string;
-  kty?: string;
-  alg?: string;
-  use?: string;
-  n?: string;
-  e?: string;
-}
-
-interface AppleJwtHeader {
-  kid?: string;
-  alg?: string;
-}
-
-interface AppleJwtPayload {
-  sub?: string;
-  iss?: string;
-  aud?: string | string[];
-  exp?: number;
-  iat?: number;
-  email?: string;
-  email_verified?: boolean | string;
-}
-
-let appleKeysMap: Map<string, KeyObject> | null = null;
-let appleKeysExpiresAt = 0;
-
-function decodeBase64UrlJson<T>(value: string): T | null {
-  try {
-    return JSON.parse(Buffer.from(value, 'base64url').toString('utf8')) as T;
-  } catch {
-    return null;
-  }
-}
-
-function decodeAppleToken(token: string): {
-  header: AppleJwtHeader;
-  payload: AppleJwtPayload;
-  signingInput: string;
-  signature: Buffer;
-} | null {
-  const [headerPart, payloadPart, signaturePart] = token.split('.');
-  if (!headerPart || !payloadPart || !signaturePart) {
-    return null;
-  }
-  const header = decodeBase64UrlJson<AppleJwtHeader>(headerPart);
-  const payload = decodeBase64UrlJson<AppleJwtPayload>(payloadPart);
-  if (!header || !payload) {
-    return null;
-  }
-  return {
-    header,
-    payload,
-    signingInput: `${headerPart}.${payloadPart}`,
-    signature: Buffer.from(signaturePart, 'base64url'),
-  };
-}
-
-function verifyAppleRs256Signature(
-  signingInput: string,
-  signature: Buffer,
-  key: KeyObject,
-): boolean {
-  const verifier = createVerify('RSA-SHA256');
-  verifier.update(signingInput);
-  verifier.end();
-  return verifier.verify(key, signature);
-}
-
 export async function oauthLogin(
   deps: AuthPartsDeps,
   data: {
@@ -204,83 +131,26 @@ export async function loginWithAppleCredential(
   deps: AuthPartsDeps,
   data: {
     identityToken: string;
+    authorizationCode?: string;
+    redirectUri?: string;
     user?: { name?: { firstName?: string; lastName?: string }; email?: string };
     ip?: string;
   },
 ): Promise<TokenIssuanceResult> {
   await deps.rateLimitService.checkRateLimit(`oauth:apple:${data.ip || 'ip-unknown'}`);
-
-  const token = (data.identityToken || '').trim();
-  if (!token) {
+  if (!data.identityToken?.trim() && !data.authorizationCode?.trim()) {
     throw new BadRequestException({
       error: 'invalid_apple_token',
-      message: 'Apple identity token ausente.',
+      message: 'Login Apple ausente.',
     });
   }
 
-  const decoded = decodeAppleToken(token);
-  if (!decoded) {
-    throw new BadRequestException({
-      error: 'invalid_apple_token',
-      message: 'Apple identity token malformado.',
-    });
-  }
-
-  const kid = typeof decoded.header.kid === 'string' ? decoded.header.kid.trim() : '';
-  if (!kid) {
-    throw new BadRequestException({
-      error: 'invalid_apple_token',
-      message: 'Apple identity token missing key id.',
-    });
-  }
-
-  const appleKey = await resolveAppleKey(kid);
-  const clientIds = resolveAppleClientIds(deps.config);
-
-  if (decoded.header.alg !== 'RS256') {
-    throw new UnauthorizedException('Apple identity token algorithm invalido.');
-  }
-  if (!verifyAppleRs256Signature(decoded.signingInput, decoded.signature, appleKey)) {
-    deps.logger.warn('apple_token_verification_rejected: invalid_signature');
-    throw new UnauthorizedException('Apple identity token assinatura invalida.');
-  }
-
-  const nowSeconds = Math.floor(Date.now() / 1000);
-  if (typeof decoded.payload.exp !== 'number' || decoded.payload.exp <= nowSeconds) {
-    throw new UnauthorizedException('Apple identity token expirado.');
-  }
-  if (typeof decoded.payload.iat === 'number' && decoded.payload.iat > nowSeconds + 300) {
-    throw new UnauthorizedException('Apple identity token iat invalido.');
-  }
-
-  const verifiedPayload = verifyAppleTokenPayload(decoded.payload, clientIds);
-
-  const sub = String(verifiedPayload.sub).trim();
-  const tokenEmail =
-    typeof verifiedPayload.email === 'string' ? verifiedPayload.email.trim().toLowerCase() : '';
-  const userEmail =
-    typeof data.user?.email === 'string' ? data.user.email.trim().toLowerCase() : '';
-
-  const email = tokenEmail || userEmail || `${sub}@privaterelay.appleid.com`;
-  const isPrivateRelayEmail = email.endsWith('@privaterelay.appleid.com');
-
-  const name = data.user?.name
-    ? `${data.user.name.firstName || ''} ${data.user.name.lastName || ''}`.trim()
-    : typeof verifiedPayload.email === 'string'
-      ? verifiedPayload.email.split('@')[0]
-      : 'Apple User';
-
-  const profile = {
-    provider: 'apple' as const,
-    providerId: sub,
-    email,
-    name: name || 'Apple User',
-    image: null as string | null,
-    emailVerified:
-      verifiedPayload.email_verified === true || verifiedPayload.email_verified === 'true',
-    syntheticEmail: isPrivateRelayEmail,
-  };
-
+  const profile = await deps.appleAuthService.verifyCredential({
+    identityToken: data.identityToken,
+    authorizationCode: data.authorizationCode,
+    redirectUri: data.redirectUri,
+    user: data.user,
+  });
   return completeTrustedOAuthLogin(deps, profile);
 }
 

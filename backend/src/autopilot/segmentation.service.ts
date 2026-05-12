@@ -25,7 +25,7 @@ type SegmentationDeal = {
  */
 type SegmentationContact = {
   id: string;
-  phone: string | null;
+  phone: string;
   name: string | null;
   updatedAt: Date;
   deals: SegmentationDeal[];

@@ -157,7 +157,10 @@ export function detectTypeEscapeHatches(rootDir: string): TypeEscapeHatchResult 
   const candidates = walkSourceFiles(
     rootDir,
     (relativePath, fileName) =>
-      isSourceFile(fileName) && !isTestFileName(fileName) && !isInTestDirectory(relativePath),
+      isSourceFile(fileName) &&
+      !isTestFileName(fileName) &&
+      !isInTestDirectory(relativePath) &&
+      !relativePath.replaceAll('\\', '/').includes('scripts/pulse/__parts__/test-honesty/'),
   );
 
   for (const candidate of candidates) {

@@ -236,7 +236,7 @@ export class AutopilotCycleService {
     }
 
     const analysis = await this.executor.analyzeContext(conv.messages);
-    const action = this.executor.decideAction(analysis, conv, isOptimalTime);
+    const action = await this.executor.decideAction(analysis, conv, isOptimalTime);
 
     if (action !== 'wait') {
       const compliance = await this.ensureCompliance(conv.workspaceId, conv.contact, conv.messages);

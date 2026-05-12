@@ -31,8 +31,9 @@ describe('MassSendService', () => {
     service = module.get<MassSendService>(MassSendService);
   });
 
-  afterAll(async () => {
+  afterEach(async () => {
     await module?.close();
+    jest.clearAllMocks();
   });
 
   it('should be defined', () => {

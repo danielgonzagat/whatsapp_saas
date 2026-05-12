@@ -32,7 +32,7 @@ export class OmnichannelService {
     private readonly moduleRef: ModuleRef,
   ) {}
 
-  /** Unified entry point for ALL channels — saves and (optionally) routes the message. */
+  /** Unified entry point for ALL channels — saves, triggers CIA, and (optionally) routes. */
   async handleIncomingMessage(msg: NormalizedMessage) {
     this.logger.log(`[OMNI] Incoming from ${msg.channel}: ${msg.from}`);
 
@@ -52,9 +52,26 @@ export class OmnichannelService {
       ...(mediaUrlVal !== undefined ? { mediaUrl: mediaUrlVal } : {}),
     });
 
-    // Smart routing hook — kept as a no-op until conversation re-routing is wired
-    // through this entry point. Reading the service prevents an unused-property
-    // warning while preserving the public DI surface.
+    const savedMsg = resolved
+      ? await this.inbox.saveMessage({
+          workspaceId: msg.workspaceId,
+          contactId: resolved.id,
+          content,
+          direction: 'INBOUND',
+          type: messageType,
+          channel: msg.channel,
+          mediaUrl: processedAttachments.length > 0 ? processedAttachments[0].url : undefined,
+        })
+      : await this.inbox.saveMessageByPhone({
+          workspaceId: msg.workspaceId,
+          phone: identifier,
+          content,
+          direction: 'INBOUND',
+          type: messageType,
+          channel: msg.channel,
+          mediaUrl: processedAttachments.length > 0 ? processedAttachments[0].url : undefined,
+        });
+
     void this.routing;
 
     await this.maybeDispatchToUnifiedAgent(msg, identifier, content, savedMsg.contactId);

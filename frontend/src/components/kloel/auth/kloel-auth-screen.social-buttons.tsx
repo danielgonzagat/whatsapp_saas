@@ -1,18 +1,13 @@
 'use client';
 import { colors } from '@/lib/design-tokens';
 import { kloelT } from '@/lib/i18n/t';
-import { AppleIcon, FacebookIcon, GoogleIcon, TikTokIcon } from './kloel-auth-screen.icons';
+import { AppleIcon, GoogleIcon } from './kloel-auth-screen.icons';
 
 const sora = "var(--font-sora), 'Sora', sans-serif";
 
 interface SocialButtonsProps {
   googleButtonRef: React.RefObject<HTMLDivElement | null>;
   isLoading: boolean;
-  facebookAvailable: boolean;
-  facebookSdkReady: boolean;
-  tikTokAvailable: string;
-  onFacebookClick: () => void;
-  onTikTokClick: () => void;
   onAppleClick: () => void;
 }
 
@@ -31,16 +26,7 @@ const socialBtnBase: React.CSSProperties = {
   transition: 'border-color 150ms ease, opacity 150ms ease',
 };
 
-export function SocialButtons({
-  googleButtonRef,
-  isLoading,
-  facebookAvailable,
-  facebookSdkReady,
-  tikTokAvailable,
-  onFacebookClick,
-  onTikTokClick,
-  onAppleClick,
-}: SocialButtonsProps) {
+export function SocialButtons({ googleButtonRef, isLoading, onAppleClick }: SocialButtonsProps) {
   return (
     <div
       style={{
@@ -62,7 +48,7 @@ export function SocialButtons({
           }}
         >
           <GoogleIcon />
-          {kloelT(`Google`)}
+          {kloelT(`Continuar com Google`)}
         </div>
         {/* Real Google button on top (transparent, receives clicks) */}
         <div
@@ -143,7 +129,7 @@ export function SocialButtons({
         }}
       >
         <AppleIcon />
-        {kloelT(`Apple`)}
+        {kloelT(`Continuar com Apple`)}
       </button>
     </div>
   );

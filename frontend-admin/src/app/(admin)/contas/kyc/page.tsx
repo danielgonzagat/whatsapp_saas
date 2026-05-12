@@ -48,6 +48,7 @@ export default function KycQueuePage() {
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [renderedAt] = useState(() => Date.now());
 
   async function submitAction() {
     if (!pending) {
@@ -107,7 +108,7 @@ export default function KycQueuePage() {
                 if (!row.kycSubmittedAt) {
                   return false;
                 }
-                return Date.now() - new Date(row.kycSubmittedAt).getTime() > 48 * 60 * 60 * 1000;
+                return renderedAt - new Date(row.kycSubmittedAt).getTime() > 48 * 60 * 60 * 1000;
               }).length ?? null,
             kind: 'integer',
             detail: 'Prioridade operacional',

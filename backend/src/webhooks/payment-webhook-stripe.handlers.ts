@@ -12,7 +12,7 @@ import {
   type StripeEventLike,
 } from './payment-webhook-types';
 
-export type { StripeHandlerDeps } from './payment-webhook-stripe.deps';
+export type { PaymentWebhookNotifier, StripeHandlerDeps } from './payment-webhook-stripe.deps';
 import type { StripeHandlerDeps } from './payment-webhook-stripe.deps';
 
 /**

@@ -1,4 +1,15 @@
-import { Body, Controller, Delete, Get, Param, Post, Req, Res, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Inject,
+  Param,
+  Post,
+  Req,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import type { Response } from 'express';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../../common/guards/workspace.guard';
@@ -6,7 +17,11 @@ import { AuthenticatedRequest } from '../../common/interfaces';
 import { WorkspaceService } from '../../workspaces/workspace.service';
 import { AccountAgentService } from '../account-agent.service';
 import { AgentEventsService } from '../agent-events.service';
-import { CiaRuntimeService } from '../cia-runtime.service';
+import {
+  CIA_RUNTIME_SERVICE,
+  type CiaBacklogMode,
+  type CiaRuntimePort,
+} from '../../cia/cia-runtime.port';
 import { asProviderSettings, type ProviderSessionSnapshot } from '../provider-settings.types';
 import { WhatsAppProviderRegistry } from '../providers/provider-registry';
 import { WhatsAppApiProvider } from '../providers/whatsapp-api.provider';
@@ -26,12 +41,22 @@ export class WhatsAppApiController {
     private readonly whatsappApi: WhatsAppApiProvider,
     private readonly catchupService: WhatsAppCatchupService,
     private readonly agentEvents: AgentEventsService,
-    private readonly ciaRuntime: CiaRuntimeService,
+    @Inject(CIA_RUNTIME_SERVICE) private readonly ciaRuntime: CiaRuntimePort,
     private readonly whatsappService: WhatsappService,
     private readonly accountAgent: AccountAgentService,
     private readonly workspaces: WorkspaceService,
     private readonly watchdog: WhatsAppWatchdogService,
   ) {}
+
+  private requireWorkspaceId(req: AuthenticatedRequest): string {
+    if (!req.workspaceId) {
+      const error = new Error();
+      error.message = WHATSAPP_API_WORKSPACE_REQUIRED;
+      throw error;
+    }
+    return req.workspaceId;
+  }
+
   private async getSessionDiagnostics(workspaceId: string) {
     const workspace = await this.workspaces.getWorkspace(workspaceId);
     const sessionSnapshot = this.readSessionSnapshot(workspace?.providerSettings);

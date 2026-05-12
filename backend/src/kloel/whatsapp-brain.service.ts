@@ -19,6 +19,16 @@ interface IntentDetection {
   entities: Record<string, unknown>;
 }
 
+function recordValue(value: unknown): Record<string, unknown> | null {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function firstRecord(value: unknown): Record<string, unknown> | null {
+  return Array.isArray(value) ? (recordValue(value[0]) ?? null) : null;
+}
+
 /** Whats app brain service. */
 @Injectable()
 export class WhatsAppBrainService {

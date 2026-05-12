@@ -63,6 +63,7 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
   const requestedMode = searchParams?.get('mode') || searchParams?.get('focus') || undefined;
   const metaQueryState = searchParams?.get('meta') || null;
   const metaQueryReason = searchParams?.get('reason') || null;
+  const tiktokQueryState = searchParams?.get('tiktok') || null;
   const [connectingKey, setConnectingKey] = useState<string | null>(null);
   const [emailTestSending, setEmailTestSending] = useState(false);
   const [emailTestResult, setEmailTestResult] = useState<string | null>(null);
@@ -119,13 +120,43 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
     [],
   );
 
+  const handleConnectTikTok = useCallback(async () => {
+    setConnectingKey('tiktok');
+    try {
+      const res = await apiFetch<{ url?: string }>('/marketing/connect/tiktok/url?kind=creator');
+      const url = String(res?.data?.url || '').trim();
+      if (!url) {
+        throw kloelError('Nao foi possivel iniciar a conexao oficial do TikTok.');
+      }
+      navigateCurrentWindow(url);
+    } catch (error: unknown) {
+      setConnectingKey(null);
+      setConnectionMessage(error instanceof Error ? error.message : 'Falha ao abrir o TikTok.');
+    }
+  }, []);
+
+  const handleDisconnectTikTok = useCallback(async () => {
+    setConnectingKey('tiktok');
+    try {
+      await apiFetch('/marketing/connect/tiktok/disconnect', { method: 'POST' });
+      await mutateConnectionStatus();
+      setConnectionMessage('Canal TikTok desconectado do workspace.');
+    } catch (error: unknown) {
+      setConnectionMessage(
+        error instanceof Error ? error.message : 'Falha ao desconectar o TikTok.',
+      );
+    } finally {
+      setConnectingKey(null);
+    }
+  }, [mutateConnectionStatus]);
+
   const handleConnectEmail = useCallback(async () => {
     setConnectingKey('email');
     try {
       await apiFetch('/marketing/connect/email', { method: 'POST', body: { enabled: true } });
       await mutateConnectionStatus();
       setEmailTestResult(
-        'Email ativado com sucesso. Agora voce pode enviar campanhas e testar o provider.',
+        'Email ativado com sucesso. Agora voce pode enviar campanhas e testar a entrega.',
       );
     } catch (error: unknown) {
       setEmailTestResult(
@@ -163,7 +194,7 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
       );
       const payload = res?.data;
       setEmailTestResult(
-        `Email de teste enviado para ${payload?.toEmail || userEmail || 'seu email'} via ${payload?.provider || 'provider configurado'}.`,
+        `Email de teste enviado para ${payload?.toEmail || userEmail || 'seu email'} pelo canal configurado.`,
       );
     } catch (error: unknown) {
       setEmailTestResult(
@@ -306,18 +337,6 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
           >
             <span style={{ display: 'flex', alignItems: 'center' }}>{t.icon(14)}</span>
             {t.label}
-            {t.soon && (
-              <span
-                style={{
-                  fontSize: 8,
-                  color: 'var(--app-text-tertiary)',
-                  fontFamily: MONO,
-                  marginLeft: 2,
-                }}
-              >
-                soon
-              </span>
-            )}
           </button>
         ))}
       </div>

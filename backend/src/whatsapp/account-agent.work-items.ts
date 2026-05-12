@@ -152,7 +152,7 @@ async function findPreviousWorkItem(
 
 function buildWorkItemUpdateData(
   input: WorkItemUpsertInput,
-  missingValue: Prisma.InputJsonValue | null | undefined,
+  missingValue: Prisma.InputJsonValue | Prisma.NullTypes.JsonNull | undefined,
 ) {
   return {
     state: input.state,

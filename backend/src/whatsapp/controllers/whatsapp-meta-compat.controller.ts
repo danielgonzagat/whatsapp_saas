@@ -5,6 +5,9 @@ import { AuthenticatedRequest } from '../../common/interfaces';
 import { WhatsAppProviderRegistry } from '../providers/provider-registry';
 import { RouteClass } from '../../common/throttler/route-class.decorator';
 
+const WHATSAPP_META_COMPAT_WORKSPACE_REQUIRED =
+  'workspaceId is required for WhatsApp Meta compatibility routes';
+
 /**
  * Meta-compat stubs — endpoints that are not supported under the Meta Cloud API
  * provider but must exist for backward compatibility with WAHA-based clients.
@@ -14,6 +17,15 @@ import { RouteClass } from '../../common/throttler/route-class.decorator';
 @RouteClass('mutate')
 export class WhatsAppMetaCompatController {
   constructor(private readonly providerRegistry: WhatsAppProviderRegistry) {}
+
+  private requireWorkspaceId(req: AuthenticatedRequest): string {
+    if (!req.workspaceId) {
+      const error = new Error();
+      error.message = WHATSAPP_META_COMPAT_WORKSPACE_REQUIRED;
+      throw error;
+    }
+    return req.workspaceId;
+  }
 
   private buildMetaUnsupportedResponse(feature: string, extra?: Record<string, unknown>) {
     return {

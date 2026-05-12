@@ -85,14 +85,16 @@ function asUnknownRecord(value: unknown): Record<string, unknown> | null {
 @Injectable()
 export class KloelComposerService {
   private readonly logger = new Logger(KloelComposerService.name);
-  private readonly openai: OpenAI;
+  private readonly openai: OpenAI | null;
 
   constructor(
     private readonly planLimits: PlanLimitsService,
     private readonly storageService: StorageService,
     @Inject(KLOEL_COMPOSER_E2E_GUARD) private readonly e2EGuard: KloelComposerE2EGuard,
   ) {
-    this.openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    this.openai = process.env.OPENAI_API_KEY
+      ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+      : null;
   }
 
   buildCapabilityPrompt(message: string, composerContext?: string): string {
@@ -110,10 +112,36 @@ export class KloelComposerService {
     return `${body}\n\nFontes:\n${sourcesBlock}`;
   }
 
+  codeNativeSearchWeb(query: string): WebSearchDigest {
+    const normalizedQuery = String(query || '').trim();
+    if (!normalizedQuery) return { answer: '', sources: [], totalTokens: 0 };
+
+    const terms = normalizedQuery
+      .split(/\s+/)
+      .filter((w) => w.length > 2)
+      .slice(0, 5);
+    const termList =
+      terms.length > 0 ? terms.map((t) => `"${t}"`).join(', ') : 'os termos informados';
+
+    return {
+      answer:
+        `Pesquisa web indisponível no momento (motor LLM não configurado). ` +
+        `A busca por ${termList} não pode ser completada. ` +
+        `Verifique a configuração da API key ou tente novamente mais tarde.`,
+      sources: [],
+      totalTokens: 0,
+    };
+  }
+
   async searchWeb(query: string): Promise<WebSearchDigest> {
     const normalizedQuery = String(query || '').trim();
     if (!normalizedQuery) {
       return { answer: '', sources: [] };
+    }
+
+    if (!this.openai) {
+      this.logger.warn('searchWeb falling back to code-native — no OpenAI client');
+      return this.codeNativeSearchWeb(normalizedQuery);
     }
 
     // E2E test harness: the workflow runs with OPENAI_API_KEY=e2e-dummy-key
@@ -241,6 +269,9 @@ export class KloelComposerService {
     if (capability === 'create_image') {
       if (this.e2EGuard.isEnabled()) {
         return this.e2EGuard.buildImageResult();
+      }
+      if (!this.openai) {
+        throw new Error(ERR_IMAGE_API_KEY_MISSING);
       }
       if (!process.env.OPENAI_API_KEY) {
         throw new NotFoundException(ERR_IMAGE_API_KEY_MISSING);

@@ -1,4 +1,5 @@
 import { Injectable, Logger, Optional } from '@nestjs/common';
+import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { formatBrlAmount } from './money-format.util';
 import { UnifiedAgentActionsMessagingService } from './unified-agent-actions-messaging.service';
@@ -18,6 +19,56 @@ function describeUnknownError(error: unknown): string {
   return 'Unknown error';
 }
 
+function readString(value: unknown, fallback = ''): string {
+  return typeof value === 'string' && value.trim() ? value.trim() : fallback;
+}
+
+function isRecord(value: unknown): value is UnknownRecord {
+  return typeof value === 'object' && value !== null;
+}
+
+function isDeterministicPipeline(context?: UnknownRecord): boolean {
+  return context?.deterministicPipeline === true;
+}
+
+function toJsonValue(value: unknown): Prisma.InputJsonValue | null {
+  if (value === null) return null;
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    return value;
+  }
+  if (Array.isArray(value)) {
+    const output: Array<Prisma.InputJsonValue | null> = [];
+    for (const item of value) {
+      output.push(toJsonValue(item));
+    }
+    return output;
+  }
+  if (isRecord(value)) {
+    const output: { [key: string]: Prisma.InputJsonValue | null } = {};
+    for (const [key, item] of Object.entries(value)) {
+      output[key] = toJsonValue(item);
+    }
+    return output;
+  }
+  return null;
+}
+
+function priceBandFor(price: number): string {
+  if (price >= 1000) return 'over_1000';
+  if (price >= 500) return 'over_500';
+  if (price >= 300) return 'over_300';
+  if (price >= 100) return 'over_100';
+  return 'under_100';
+}
+
+function discountPercentFromMind(action: string | undefined, requestedPercent: number): number {
+  if (action === 'coupon_5') return 5;
+  if (action === 'coupon_10') return 10;
+  if (action === 'coupon_15') return 15;
+  if (action === 'coupon_20') return 20;
+  return requestedPercent;
+}
+
 /**
  * Handles sales/negotiation tool actions: discount, objection handling,
  * lead qualification, meeting scheduling, anti-churn, and ghost reactivation.
@@ -30,6 +81,9 @@ export class UnifiedAgentActionsSalesService {
     private readonly prisma: PrismaService,
     private readonly messaging: UnifiedAgentActionsMessagingService,
     @Optional() private readonly opsAlert?: OpsAlertService,
+    @Optional() private readonly mind?: MindService,
+    @Optional() private readonly guardContextBuilder?: MindGuardContextBuilderService,
+    @Optional() private readonly guards?: MindGuardsService,
   ) {}
 
   async actionApplyDiscount(
@@ -40,7 +94,10 @@ export class UnifiedAgentActionsSalesService {
     context?: UnknownRecord,
   ) {
     try {
-      const discountPercent = Math.min(Math.max(Number(args?.discountPercent) || 10, 1), 30);
+      const requestedDiscountPercent = Math.min(
+        Math.max(Number(args?.discountPercent) || 10, 1),
+        30,
+      );
       const reason = args?.reason || 'Oferta especial';
       const expiresIn = args?.expiresIn || '24h';
       const recentMemory = await this.prisma.kloelMemory.findFirst({
@@ -57,6 +114,79 @@ export class UnifiedAgentActionsSalesService {
         originalPrice = ((productData as UnknownRecord).price as number) || 0;
         productName = ((productData as UnknownRecord).name as string) || 'produto';
       }
+      const predecided = isDeterministicPipeline(context);
+      const segment = readString(
+        args.segment,
+        readString(context?.segment, readString(args.stage, 'general')),
+      );
+      const priceBand = readString(args.priceBand, priceBandFor(originalPrice));
+      const productOffer = predecided
+        ? args.productOffer
+        : this.mind
+          ? await this.mind.resolveProductOffer(workspaceId, segment, 'discount', priceBand)
+          : null;
+      const couponDecision = predecided
+        ? args.couponDecision
+        : this.mind
+          ? await this.mind.resolveCoupon(workspaceId, priceBand, 0, segment)
+          : null;
+      const couponAction = isRecord(couponDecision) ? readString(couponDecision.action) : undefined;
+      const metaSource = predecided ? 'orchestrator_predecided' : 'legacy_action_decision';
+      const couponJson = toJsonValue(couponDecision);
+      const productJson = toJsonValue(productOffer);
+      if (couponAction === 'no_coupon' || couponAction === 'human_negotiate') {
+        await this.prisma.autopilotEvent.create({
+          data: {
+            workspaceId,
+            contactId,
+            intent: 'NEGOTIATION',
+            action:
+              couponAction === 'human_negotiate'
+                ? 'DISCOUNT_HUMAN_NEGOTIATION'
+                : 'DISCOUNT_SKIPPED',
+            status: 'completed',
+            meta: {
+              priceBand,
+              productOffer: productJson,
+              couponDecision: couponJson,
+              decisionTraceId: args.decisionTraceId || null,
+              inboundCorrelationId: args.inboundCorrelationId || null,
+              source: metaSource,
+            },
+          },
+        });
+        return {
+          success: true,
+          discountApplied: false,
+          messageSent: false,
+          mind: { couponDecision, productOffer },
+        };
+      }
+      const discountPercent = discountPercentFromMind(couponAction, requestedDiscountPercent);
+      const discountContext = await this.buildDiscountGuardContext(workspaceId, {
+        ...(context || {}),
+        contactId,
+        discountPercent,
+        maxDiscountPercent: 30,
+        minMarginPercent: 0,
+        productName,
+      });
+      const guard = await this.guards?.evaluate({
+        workspaceId,
+        decisionType: 'coupon_offer',
+        action: 'apply_discount',
+        context: discountContext,
+      });
+      if (guard && !guard.allowed) {
+        return {
+          success: false,
+          blocked: true,
+          discountApplied: false,
+          messageSent: false,
+          reason: guard.reason,
+          guardName: guard.guardName,
+        };
+      }
       const finalPrice = originalPrice * (1 - discountPercent / 100);
       await this.prisma.autopilotEvent.create({
         data: {
@@ -65,7 +195,19 @@ export class UnifiedAgentActionsSalesService {
           intent: 'NEGOTIATION',
           action: 'DISCOUNT_APPLIED',
           status: 'executed',
-          meta: { discountPercent, reason, expiresIn, originalPrice, finalPrice, productName },
+          meta: {
+            discountPercent,
+            reason,
+            expiresIn,
+            originalPrice,
+            finalPrice,
+            productName,
+            priceBand,
+            decisionTraceId: args.decisionTraceId || null,
+            inboundCorrelationId: args.inboundCorrelationId || null,
+            mind: { couponDecision: couponJson, productOffer: productJson },
+            source: metaSource,
+          },
         },
       });
       const priceFormatted = new Intl.NumberFormat('pt-BR', {
@@ -105,6 +247,13 @@ export class UnifiedAgentActionsSalesService {
     }
   }
 
+  private async buildDiscountGuardContext(
+    workspaceId: string,
+    context: MindActionContext,
+  ): Promise<MindActionContext> {
+    return (await this.guardContextBuilder?.buildForDiscount(workspaceId, context)) ?? context;
+  }
+
   async actionHandleObjection(
     workspaceId: string,
     contactId: string,
@@ -112,6 +261,16 @@ export class UnifiedAgentActionsSalesService {
     args: ToolArgs,
     context?: UnknownRecord,
   ) {
+    if (this.mind && !isDeterministicPipeline(context)) {
+      try {
+        const segment = readString(context?.segment, readString(args.stage, 'general'));
+        const concept = readString(args.objectionType, 'objection');
+        await this.mind.resolveProductOffer(workspaceId, segment, concept, 'unknown');
+      } catch (error: unknown) {
+        const msg = describeUnknownError(error);
+        this.logger.warn(`MIND product offer fallback for objection: ${msg}`);
+      }
+    }
     return actionHandleObjectionFn({
       workspaceId,
       contactId,

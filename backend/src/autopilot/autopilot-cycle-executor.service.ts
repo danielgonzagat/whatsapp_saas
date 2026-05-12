@@ -6,6 +6,8 @@ import { PlanLimitsService } from '../billing/plan-limits.service';
 import { renderTemplate } from '../common/sales-templates';
 import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
+import { MindPolicyService } from '../kloel/mind-policy.service';
+import type { MindJson, MindPolicyOption } from '../kloel/mind.types';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { flowQueue } from '../queue/queue';
@@ -35,6 +37,22 @@ export interface ConversationAnalysis {
   stage?: string;
 }
 
+const AUTOPILOT_MIND_DECISION_TYPE = 'autopilot_action';
+const AUTOPILOT_ACTIONS = [
+  'send_offer',
+  'send_offer_soft',
+  'send_price',
+  'send_calendar',
+  'handover_human',
+  'handle_objection',
+  'qualify',
+  'try_upsell',
+  'send_cta',
+  'soft_close_night',
+  'auto_reply_night',
+  'ai_chat',
+] as const;
+
 /**
  * Handles AI response generation, action execution, and compliance for autopilot cycles.
  * Extracted from AutopilotCycleService to keep each file under 400 lines.
@@ -49,6 +67,7 @@ export class AutopilotCycleExecutorService {
     private readonly config: ConfigService,
     private readonly planLimits: PlanLimitsService,
     @Optional() private readonly opsAlert?: OpsAlertService,
+    @Optional() private readonly mindPolicy?: MindPolicyService,
   ) {
     const apiKey = this.config.get<string>('OPENAI_API_KEY');
     this.openai = apiKey ? new OpenAI({ apiKey }) : null;
@@ -98,9 +117,42 @@ export class AutopilotCycleExecutorService {
     return analysisResult;
   }
 
-  decideAction(
+  async decideAction(
     analysis: { intent?: string; sentiment?: string; buyingSignal?: boolean; stage?: string },
-    _conv: AutopilotConversation,
+    conv: AutopilotConversation,
+    isOptimalTime: boolean,
+  ): Promise<string> {
+    const baseline = this.decideActionBaseline(analysis, isOptimalTime);
+    if (!this.mindPolicy) {
+      return baseline;
+    }
+
+    const context = this.buildMindActionContext(analysis, conv, isOptimalTime);
+    try {
+      const result = await this.mindPolicy.choose({
+        workspaceId: conv.workspaceId,
+        subject: this.autopilotSubject(conv),
+        decisionType: AUTOPILOT_MIND_DECISION_TYPE,
+        context,
+        baselineActionQuiet: baseline,
+        options: this.buildMindActionOptions(context),
+        outcomeKey: this.autopilotOutcomeKey(conv),
+      });
+      return result.chosen;
+    } catch (error: unknown) {
+      this.logger.warn({
+        operation: 'autopilot.mind_decision_failed',
+        workspaceId: conv.workspaceId,
+        conversationId: conv.id,
+        baseline,
+        errorCode: error instanceof Error ? error.message : 'unknown',
+      });
+      return baseline;
+    }
+  }
+
+  private decideActionBaseline(
+    analysis: { intent?: string; sentiment?: string; buyingSignal?: boolean; stage?: string },
     isOptimalTime: boolean,
   ): string {
     const { intent, sentiment, buyingSignal, stage } = analysis;
@@ -152,6 +204,45 @@ export class AutopilotCycleExecutorService {
       return sentiment === 'positive' && !buyingSignal ? 'try_upsell' : 'send_cta';
     }
     return null;
+  }
+
+  private buildMindActionContext(
+    analysis: { intent?: string; sentiment?: string; buyingSignal?: boolean; stage?: string },
+    conv: AutopilotConversation,
+    isOptimalTime: boolean,
+  ): MindJson {
+    const lastInbound = conv.messages.find((message) => message.direction === 'INBOUND');
+    return {
+      channel: 'whatsapp',
+      conversationId: conv.id,
+      contactId: conv.contact?.id ?? conv.contactId ?? null,
+      hour: new Date().getHours(),
+      intent: analysis.intent ?? 'unknown',
+      sentiment: analysis.sentiment ?? 'neutral',
+      buyingSignal: analysis.buyingSignal === true,
+      stage: analysis.stage ?? 'unknown',
+      isOptimalTime,
+      lastInboundAt: lastInbound?.createdAt?.toISOString?.() ?? null,
+    };
+  }
+
+  private buildMindActionOptions(context: MindJson): MindPolicyOption[] {
+    return AUTOPILOT_ACTIONS.map((action) => ({
+      action,
+      predicate: 'P(success|autopilot_action,intent,stage,channel,hour)',
+      context: { ...context, action },
+    }));
+  }
+
+  private autopilotSubject(conv: AutopilotConversation): string {
+    const contactId = conv.contact?.id ?? conv.contactId;
+    return contactId ? `contact:${contactId}` : `conversation:${conv.id}`;
+  }
+
+  private autopilotOutcomeKey(conv: AutopilotConversation): string {
+    const lastInbound = conv.messages.find((message) => message.direction === 'INBOUND');
+    const lastInboundAt = lastInbound?.createdAt?.toISOString?.() ?? 'no-inbound';
+    return `autopilot_action:${conv.workspaceId}:${conv.id}:${lastInboundAt}`;
   }
 
   async executeAction(

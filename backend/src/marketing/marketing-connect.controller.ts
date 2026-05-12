@@ -9,9 +9,16 @@ import {
   Request,
   UseGuards,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
+import { encryptString } from '../lib/crypto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { buildUnsubscribeFooterHtml } from '../common/utils/unsubscribe-footer.util';
+import { EmailCampaignService } from '../kloel/email-campaign.service';
+import {
+  isWorkspaceDeliveryReady,
+  readWorkspaceEmailDelivery,
+} from '../kloel/email-workspace-delivery';
 import { MetaWhatsAppService } from '../meta/meta-whatsapp.service';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -149,12 +156,12 @@ export class MarketingConnectController {
     private readonly imapSmtpMailbox: MailboxImapSmtpService,
   ) {}
 
-  private getEmailProviderSnapshot() {
+  private getGlobalEmailProviderSnapshot(): EmailProviderSnapshot {
     const provider = process.env.RESEND_API_KEY
       ? 'resend'
       : process.env.SENDGRID_API_KEY
         ? 'sendgrid'
-        : process.env.SMTP_HOST
+        : process.env.EMAIL_OUTBOUND_SMTP_HOST || process.env.SMTP_HOST
           ? 'smtp'
           : 'log';
 
@@ -163,24 +170,51 @@ export class MarketingConnectController {
       available: provider !== 'log',
       fromEmail: process.env.EMAIL_FROM || 'noreply@kloel.com',
       fromName: process.env.EMAIL_FROM_NAME || 'KLOEL',
+      workspaceConfigured: false,
     };
   }
 
-  private async sendSingleEmail(recipientEmail: string, subject: string, html: string) {
-    const providerConfig = this.getEmailProviderSnapshot();
+  private async getEmailProviderSnapshot(workspaceId: string): Promise<EmailProviderSnapshot> {
+    const config = await this.prisma.channelConfig.findUnique({
+      where: { workspaceId_channel: { workspaceId, channel: 'email' } },
+      select: { transferCriteria: true },
+    });
+    const delivery = readWorkspaceEmailDelivery(config?.transferCriteria);
+    if (isWorkspaceDeliveryReady(delivery)) {
+      return {
+        provider: delivery?.provider ?? 'email',
+        available: true,
+        fromEmail: delivery?.fromEmail || process.env.EMAIL_FROM || 'noreply@kloel.com',
+        fromName: delivery?.fromName || process.env.EMAIL_FROM_NAME || 'KLOEL',
+        workspaceConfigured: true,
+      };
+    }
+    return this.getGlobalEmailProviderSnapshot();
+  }
+
+  private async sendSingleEmail(
+    workspaceId: string,
+    recipientEmail: string,
+    subject: string,
+    html: string,
+  ) {
+    const providerConfig = await this.getEmailProviderSnapshot(workspaceId);
     if (!providerConfig.available) {
       throw new BadRequestException('email_provider_not_configured');
     }
 
     const safeHtml = html + buildUnsubscribeFooterHtml({ email: recipientEmail });
-
-    const { EmailService } = await import('../auth/email.service');
-    const emailService = new EmailService();
-    const success = await emailService.sendEmail({
-      to: recipientEmail,
-      subject,
-      html: safeHtml,
+    const config = await this.prisma.channelConfig.findUnique({
+      where: { workspaceId_channel: { workspaceId, channel: 'email' } },
+      select: { transferCriteria: true },
     });
+    const delivery = readWorkspaceEmailDelivery(config?.transferCriteria);
+    const success = await this.emailCampaign.sendSingleEmail(
+      recipientEmail,
+      subject,
+      safeHtml,
+      isWorkspaceDeliveryReady(delivery) ? (delivery ?? undefined) : undefined,
+    );
     if (!success) {
       throw new BadRequestException('email_provider_rejected_request');
     }
@@ -333,6 +367,7 @@ export class MarketingConnectController {
           pageId: metaConnection?.pageId || null,
           pageName: metaConnection?.pageName || null,
         },
+        tiktok: await this.tiktokMarketing.getStatus(workspaceId),
         email: {
           connected: Boolean(
             connectedMailbox || (emailProvider.available && emailSettings.enabled),
@@ -507,7 +542,7 @@ export class MarketingConnectController {
   @Post('connect/email')
   async connectEmail(
     @Request() req: { user: { workspaceId: string; email?: string } },
-    @Body() body: { enabled?: boolean } = {},
+    @Body() body: ConnectEmailBody = {},
   ) {
     const workspaceId = req.user.workspaceId;
     const workspace = await this.prisma.workspace.findUnique({
@@ -516,6 +551,20 @@ export class MarketingConnectController {
     });
     const currentSettings = asProviderSettings(workspace?.providerSettings);
     const nextEnabled = body.enabled !== false;
+    const deliveryCriteria = buildEmailDeliveryCriteria(body);
+    const currentConfig = await this.prisma.channelConfig.findUnique({
+      where: { workspaceId_channel: { workspaceId, channel: 'email' } },
+      select: { transferCriteria: true },
+    });
+    const currentCriteria: Prisma.InputJsonObject = isJsonObject(currentConfig?.transferCriteria)
+      ? toInputJsonObject(currentConfig.transferCriteria)
+      : {};
+    const nextCriteria: Prisma.InputJsonObject = deliveryCriteria
+      ? {
+          ...currentCriteria,
+          ...(deliveryCriteria as Prisma.InputJsonObject),
+        }
+      : currentCriteria;
 
     await this.prisma.workspace.update({
       where: { id: workspaceId },
@@ -624,11 +673,66 @@ export class MarketingConnectController {
     }
 
     const result = await this.sendSingleEmail(
+      workspaceId,
       toEmail,
       'KLOEL - conexao de email validada',
       EMAIL_VALIDATION_HTML_BODY,
     );
 
     return { success: true, workspaceId, toEmail, provider: result.provider };
+  }
+
+  /** Get email connect status. */
+  @Get('connect/email/status')
+  async getEmailStatus(@Request() req: { user: { workspaceId: string } }) {
+    const workspaceId = req.user.workspaceId;
+    const workspace = await this.prisma.workspace.findUnique({
+      where: { id: workspaceId },
+      select: { providerSettings: true, name: true },
+    });
+    const providerSettings = (workspace?.providerSettings as Record<string, unknown>) || {};
+    const emailSettings = ((providerSettings.email || {}) as Record<string, unknown>) || {
+      enabled: false,
+    };
+    const emailProvider = await this.getEmailProviderSnapshot(workspaceId);
+
+    return {
+      connected: Boolean(emailProvider.available && emailSettings.enabled),
+      status: emailProvider.available
+        ? emailSettings.enabled
+          ? 'connected'
+          : 'disconnected'
+        : 'unavailable',
+      enabled: Boolean(emailSettings.enabled),
+      provider: emailProvider.provider,
+      providerAvailable: emailProvider.available,
+      fromEmail: emailProvider.fromEmail,
+      fromName: emailProvider.fromName,
+      workspaceConfigured: emailProvider.workspaceConfigured,
+      workspaceName: workspace?.name || null,
+    };
+  }
+
+  /** Disconnect email. */
+  @Post('connect/email/disconnect')
+  async disconnectEmail(@Request() req: { user: { workspaceId: string } }) {
+    const workspaceId = req.user.workspaceId;
+    const workspace = await this.prisma.workspace.findUnique({
+      where: { id: workspaceId },
+      select: { providerSettings: true },
+    });
+    const currentSettings = (workspace?.providerSettings as Record<string, unknown>) || {};
+
+    await this.prisma.workspace.update({
+      where: { id: workspaceId },
+      data: {
+        providerSettings: {
+          ...currentSettings,
+          email: { enabled: false },
+        },
+      },
+    });
+
+    return this.getEmailStatus({ user: { workspaceId } });
   }
 }

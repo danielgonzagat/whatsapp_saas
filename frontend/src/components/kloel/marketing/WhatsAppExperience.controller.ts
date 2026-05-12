@@ -8,7 +8,7 @@ import {
   getWhatsAppStatus,
 } from '@/lib/api/whatsapp';
 import { swrFetcher } from '@/lib/fetcher';
-import { useCallback, useId, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import useSWR from 'swr';
 import {
   type SelectableProduct,
@@ -104,6 +104,7 @@ export function useWhatsAppExperienceController({
   const [scanProgress, setScanProgress] = useState(0);
   const [uploadingCount, setUploadingCount] = useState(0);
   const [sessionExpired, setSessionExpired] = useState(false);
+  const [metaConnecting, setMetaConnecting] = useState(false);
 
   const { data: affiliateResponse } = useSWR<unknown[] | undefined>(
     workspaceId ? `affiliate/my-products/${workspaceId}` : null,
@@ -205,7 +206,9 @@ export function useWhatsAppExperienceController({
       qrRequestInFlightRef.current = false;
     }
   };
-  requestQrCodeRef.current = requestQrCode;
+  useEffect(() => {
+    requestQrCodeRef.current = requestQrCode;
+  }, [requestQrCode]);
 
   const selectableProducts = useMemo(() => {
     const own = ownedProducts
@@ -235,6 +238,9 @@ export function useWhatsAppExperienceController({
     () => draft.selectedProducts.map((product) => productMap.get(product.id) || product),
     [draft.selectedProducts, productMap],
   );
+
+  const metaAuthUrl = connection?.authUrl || null;
+  const isMetaProvider = effectiveProvider === 'meta-cloud';
 
   const summaryProducts = useMemo(() => {
     if (summaryData?.selectedProducts?.length) {
@@ -364,5 +370,9 @@ export function useWhatsAppExperienceController({
     resolveStatusLabel,
     workspaceId,
     operator,
+    metaAuthUrl,
+    isMetaProvider,
+    metaConnecting,
+    setMetaConnecting,
   } as const;
 }

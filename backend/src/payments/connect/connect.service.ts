@@ -40,6 +40,15 @@ function compactObject<T extends Record<string, unknown>>(value: T): T | undefin
   return entries.length > 0 ? (Object.fromEntries(entries) as T) : undefined;
 }
 
+function compactStringObject(
+  value: Record<string, string | undefined>,
+): Record<string, string> | undefined {
+  const entries = Object.entries(value).filter(
+    (entry): entry is [string, string] => typeof entry[1] === 'string',
+  );
+  return entries.length > 0 ? Object.fromEntries(entries) : undefined;
+}
+
 function buildAddress(address?: ConnectAddressInput): Record<string, string> | undefined {
   if (!address) {
     return undefined;

@@ -200,7 +200,11 @@ export class EmailHealthIndicator extends HealthIndicator {
     try {
       const response = await fetch(url, {
         method: config.method,
-        headers: config.headers,
+        headers: Object.fromEntries(
+          Object.entries(config.headers).filter((entry): entry is [string, string] => {
+            return typeof entry[1] === 'string';
+          }),
+        ),
         signal: controller.signal,
       });
 

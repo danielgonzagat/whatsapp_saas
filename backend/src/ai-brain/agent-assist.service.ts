@@ -33,6 +33,15 @@ interface ExecuteAiOperationArgs<T> {
   workspaceId: string | undefined;
 }
 
+const AGENT_ASSIST_PROVIDER_CONFIG_REQUIRED =
+  'OpenAI configuration is required for agent assist operations';
+
+function agentAssistConfigError(): Error {
+  const error = new Error();
+  error.message = AGENT_ASSIST_PROVIDER_CONFIG_REQUIRED;
+  return error;
+}
+
 /** Agent assist service — sentiment, summary, reply suggestions and pitch generation. */
 @Injectable()
 export class AgentAssistService {

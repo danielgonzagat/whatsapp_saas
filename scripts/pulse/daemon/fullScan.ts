@@ -260,6 +260,13 @@ export async function fullScan(
     externalSignalState,
     autonomyState: autonomyState as PulseAutonomyStateSnapshot | null,
   });
+  options.tracer?.finishPhase('scan:certification:preliminary', PASSED, {
+    metadata: {
+      status: preliminaryCertification.status,
+      score: preliminaryCertification.score,
+    },
+  });
+  options.tracer?.startPhase('scan:certification:execution-matrix');
   const executionMatrix = buildExecutionMatrix({
     structuralGraph,
     scopeState,
@@ -269,7 +276,16 @@ export async function fullScan(
     executionEvidence: preliminaryCertification.evidenceSummary,
     externalSignalState,
   });
+  options.tracer?.finishPhase('scan:certification:execution-matrix', PASSED, {
+    metadata: {
+      totalPaths: executionMatrix.summary.totalPaths,
+      unknownPaths: executionMatrix.summary.unknownPaths,
+    },
+  });
+  options.tracer?.startPhase('scan:certification:path-coverage');
   buildPathCoverageState(config.rootDir, executionMatrix);
+  options.tracer?.finishPhase('scan:certification:path-coverage', PASSED);
+  options.tracer?.startPhase('scan:certification:final');
   const certification = computeCertification({
     rootDir: config.rootDir,
     manifestResult,
@@ -286,6 +302,13 @@ export async function fullScan(
     executionMatrix,
     autonomyState: autonomyState as PulseAutonomyStateSnapshot | null,
   });
+  options.tracer?.finishPhase('scan:certification:final', PASSED, {
+    metadata: {
+      status: certification.status,
+      score: certification.score,
+    },
+  });
+  options.tracer?.startPhase('scan:certification:parity-and-vision');
   const parityGaps = buildParityGaps({
     codebaseTruth,
     capabilityState,
@@ -303,6 +326,11 @@ export async function fullScan(
     resolvedManifest,
     parityGaps,
     externalSignalState,
+  });
+  options.tracer?.finishPhase('scan:certification:parity-and-vision', PASSED, {
+    metadata: {
+      parityGaps: parityGaps.summary.totalGaps,
+    },
   });
   options.tracer?.finishPhase('scan:certification', PASSED, {
     metadata: {

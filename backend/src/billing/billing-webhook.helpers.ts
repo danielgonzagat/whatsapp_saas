@@ -114,13 +114,13 @@ async function resolveCustomerPhone(
 export async function notifyCustomerPaymentConfirmedHelper(
   logger: Logger,
   prisma: PrismaService,
-  whatsappService: WhatsappNotifier | null,
+  notifier: WhatsappNotifier | null,
   workspaceId: string,
   session: StripeCheckoutSession,
   plan: string,
   financialAlert?: FinancialAlertService,
 ): Promise<void> {
-  if (!whatsappService) {
+  if (!notifier) {
     logger.log('WhatsappService não disponível para notificação');
     return;
   }
@@ -138,7 +138,7 @@ export async function notifyCustomerPaymentConfirmedHelper(
     const paymentIntentId =
       typeof session.payment_intent === 'string' ? session.payment_intent : session.id;
     const message = buildConfirmationMessage(plan, formattedAmount, paymentIntentId);
-    await whatsappService.sendMessage(workspaceId, phone, message);
+    await notifier.sendMessage(workspaceId, phone, message);
     logger.log(`Notificação de pagamento enviada para ${phone}`);
   } catch (err: unknown) {
     const errorMessage = err instanceof Error ? err.message : 'unknown_error';

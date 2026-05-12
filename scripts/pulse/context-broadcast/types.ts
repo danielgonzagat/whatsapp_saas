@@ -86,6 +86,12 @@ export interface PulseContextDelta {
 }
 
 export interface PulseContextFabricBundle {
+  artifactRefs: {
+    contextBroadcast: string;
+    workerLeases: string;
+    gitnexusState: string;
+    beadsState: string;
+  };
   gitnexusState: PulseContextSnapshot;
   beadsState: PulseContextSnapshot;
   broadcast: PulseContextBroadcast;

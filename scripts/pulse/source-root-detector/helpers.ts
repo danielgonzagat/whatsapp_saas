@@ -196,3 +196,29 @@ export function hasSkippedSegment(relativePath: string): boolean {
     .split('/')
     .some((part) => SKIP_DIR_NAMES.has(part));
 }
+
+export function walkUnskippedFiles(rootDir: string, relativeDir = ''): string[] {
+  const baseRelative = normalizeRelative(relativeDir);
+  const files: string[] = [];
+
+  function walk(currentRelative: string): void {
+    const absoluteDir = safeJoin(rootDir, baseRelative || '.', currentRelative || '.');
+    const entries = readDir(absoluteDir, { withFileTypes: true });
+
+    for (const entry of entries) {
+      const entryRelative = normalizeRelative(safeJoin(currentRelative || '.', entry.name));
+      const rootRelative = normalizeRelative(safeJoin(baseRelative || '.', entryRelative));
+      if (hasSkippedSegment(rootRelative)) continue;
+
+      if (entry.isDirectory()) {
+        walk(entryRelative);
+        continue;
+      }
+
+      files.push(entryRelative);
+    }
+  }
+
+  walk('');
+  return files.sort();
+}

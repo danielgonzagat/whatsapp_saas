@@ -71,6 +71,8 @@ import { CartRecoveryService } from './cart-recovery.service';
 import { DiagnosticsController } from './diagnostics.controller';
 import { EmailCampaignService } from './email-campaign.service';
 import { KloelAudioModule } from './kloel-audio.module';
+import { KloelRuleEngineService } from './rules/kloel-rule-engine.service';
+import { KloelRulesModule } from './rules/kloel-rules.module';
 import { LeadsController } from './leads.controller';
 import { LeadsService } from './leads.service';
 import { OrderAlertsService } from './order-alerts.service';
@@ -107,6 +109,46 @@ import { UnifiedAgentController } from './unified-agent.controller';
 import { UnifiedAgentService } from './unified-agent.service';
 import { UploadController } from './upload.controller';
 import { WebinarController } from './webinar.controller';
+import { BrainCapabilityRegistryService } from './brain-capability-registry.service';
+import { BrainAutonomyService } from './brain-autonomy.service';
+import { BrainCommercialGraphService } from './brain-commercial-graph.service';
+import { BrainEventSpineService } from './brain-event-spine.service';
+import { BrainRuntimeController } from './brain-runtime.controller';
+import { BrainRuntimeService } from './brain-runtime.service';
+import {
+  EmailChannelTransport,
+  InstagramChannelTransport,
+  MessengerChannelTransport,
+  TikTokChannelTransport,
+  WhatsAppChannelTransport,
+} from './channel-transport.providers';
+import { ChannelTransportRegistry } from './channel-transport.registry';
+import { ChannelSetupController } from './channel-setup.controller';
+import { ChannelSetupService } from './channel-setup.service';
+import { CommercialDecisionOrchestratorService } from './commercial-decision-orchestrator.service';
+import { MindBeliefService } from './mind-belief.service';
+import { MindBanditService } from './mind-bandit.service';
+import { MindCaseMemoryService } from './mind-case-memory.service';
+import { MindConceptService } from './mind-concepts.service';
+import { MindGlobalPriorService } from './mind-global-prior.service';
+import { MindController } from './mind-controller';
+import { MindEventProcessorService } from './mind-event-processor.service';
+import { MindGuardContextBuilderService } from './mind-guard-context-builder.service';
+import { MindGuardsService } from './mind-guards.service';
+import { MindObservabilityService } from './mind-observability.service';
+import { MindPerceptionService } from './mind-perception.service';
+import { MindPolicyService } from './mind-policy.service';
+import { MindPredictorService } from './mind-predictor.service';
+import { MindProcessorService } from './mind-processor.service';
+import { MindQualityService } from './mind-quality.service';
+import { MindReportService } from './mind-report.service';
+import { MindReplayService } from './mind-replay.service';
+import { MindSimulatorService } from './mind-simulator.service';
+import { MindSyntheticGeneratorService } from './mind-synthetic-generator.service';
+import { MindService } from './mind.service';
+import { MindSurpriseService } from './mind-surprise.service';
+import { MindVerbalizerService } from './mind-verbalizer.service';
+import { MindWorkspaceStateService } from './mind-workspace-state.service';
 
 /** Kloel module. */
 @Module({
@@ -157,6 +199,9 @@ import { WebinarController } from './webinar.controller';
     LeadsController,
     AdRulesController,
     WebinarController,
+    ChannelSetupController,
+    BrainRuntimeController,
+    MindController,
   ],
   providers: [
     { provide: KLOEL_COMPOSER_E2E_GUARD, useClass: NoopKloelComposerE2EGuard },
@@ -262,6 +307,17 @@ import { WebinarController } from './webinar.controller';
     OrderAlertsService,
     AdRulesEngineService,
     EmailCampaignService,
+    ChannelTransportRegistry,
+    CommercialDecisionOrchestratorService,
+    MindBeliefService,
+    MindBanditService,
+    MindGlobalPriorService,
+    MindPolicyService,
+    MindService,
+    KloelRuleEngineService,
+    MindObservabilityService,
+    MindReportService,
+    MindVerbalizerService,
   ],
 })
 export class KloelModule {}

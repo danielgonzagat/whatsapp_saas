@@ -22,30 +22,79 @@ interface Conversation {
 interface ConversationHistoryContextType {
   conversations: Conversation[];
   activeConv: string | null;
+  hasMoreConversations: boolean;
+  isLoadingMoreConversations: boolean;
+  totalConversations: number | null;
   addConversation: (title?: string) => Promise<string | null>;
   updateConversationTitle: (id: string, title: string) => void;
   deleteConversation: (id: string) => void;
   setActiveConversation: (id: string | null) => void;
   upsertConversation: (conversation: Conversation) => void;
   refreshConversations: () => Promise<void>;
+  loadMoreConversations: () => Promise<void>;
+  loadAllConversations: () => Promise<Conversation[]>;
   clearAll: () => void;
 }
 
 const ConversationHistoryContext = createContext<ConversationHistoryContextType>({
   conversations: [],
   activeConv: null,
+  hasMoreConversations: false,
+  isLoadingMoreConversations: false,
+  totalConversations: null,
   addConversation: async () => null,
   updateConversationTitle: () => {},
   deleteConversation: () => {},
   setActiveConversation: () => {},
   upsertConversation: () => {},
   refreshConversations: async () => {},
+  loadMoreConversations: async () => {},
+  loadAllConversations: async () => [],
   clearAll: () => {},
 });
 
 function isValidConversationId(value?: string | null): boolean {
   const normalized = String(value || '').trim();
   return Boolean(normalized) && !normalized.startsWith('local_');
+}
+
+function normalizeConversation(conversation: Conversation): Conversation {
+  return {
+    id: conversation.id,
+    title: String(conversation.title || 'Nova conversa').trim() || 'Nova conversa',
+    updatedAt: conversation.updatedAt,
+    lastMessagePreview: String(conversation.lastMessagePreview || '').trim(),
+  };
+}
+
+function sortConversations(items: Conversation[]): Conversation[] {
+  return [...items].sort((a, b) => {
+    const aTime = new Date(a.updatedAt || 0).getTime();
+    const bTime = new Date(b.updatedAt || 0).getTime();
+    return bTime - aTime;
+  });
+}
+
+function unwrapConversationPayload(
+  response: { data?: ConversationApiPayload } | ConversationApiPayload,
+): ConversationApiPayload | undefined {
+  if (response && typeof response === 'object' && 'data' in response) {
+    return (response as { data?: ConversationApiPayload }).data;
+  }
+  return response as ConversationApiPayload;
+}
+
+function readThreadPage(response: { data?: ConversationApiPayload } | ConversationApiPayload): ThreadPage {
+  const payload = unwrapConversationPayload(response);
+  if (Array.isArray(payload)) {
+    return { items: payload, total: payload.length, nextCursor: null, hasMore: false };
+  }
+  return {
+    items: Array.isArray(payload?.items) ? payload.items : [],
+    total: typeof payload?.total === 'number' ? payload.total : 0,
+    nextCursor: typeof payload?.nextCursor === 'string' ? payload.nextCursor : null,
+    hasMore: Boolean(payload?.hasMore),
+  };
 }
 
 /** Conversation history provider. */
@@ -56,20 +105,9 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
   const didSyncRef = useRef(false);
 
   const applyConversations = useCallback((nextConversations: Conversation[]) => {
-    const normalized = nextConversations
-      .filter((conversation) => isValidConversationId(conversation?.id))
-      .map((conversation) => ({
-        id: conversation.id,
-        title: String(conversation.title || 'Nova conversa').trim() || 'Nova conversa',
-        updatedAt: conversation.updatedAt,
-        lastMessagePreview: String(conversation.lastMessagePreview || '').trim(),
-      }))
-      .sort((a, b) => {
-        const aTime = new Date(a.updatedAt || 0).getTime();
-        const bTime = new Date(b.updatedAt || 0).getTime();
-        return bTime - aTime;
-      })
-      .slice(0, 50);
+    const normalized = sortConversations(
+      nextConversations.filter((conversation) => isValidConversationId(conversation?.id)).map(normalizeConversation),
+    );
 
     setConversations(normalized);
     setActiveConv((current) =>
@@ -82,19 +120,67 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
       return;
     }
     try {
-      const res = await apiFetch<Conversation[]>('/kloel/threads');
-      const threads: Conversation[] = Array.isArray(res?.data) ? res.data : [];
-      const mapped = threads.map((t) => ({
-        id: t.id,
-        title: t.title,
-        updatedAt: t.updatedAt,
-        lastMessagePreview: t.lastMessagePreview,
-      }));
-      applyConversations(mapped);
+      const res = await apiFetch<ConversationApiPayload>(`/kloel/threads?limit=${CONVERSATION_PAGE_SIZE}`);
+      const page = readThreadPage(res);
+      applyConversations(page.items);
+      setNextCursor(page?.nextCursor ?? null);
+      setHasMoreConversations(Boolean(page?.hasMore));
+      setTotalConversations(typeof page?.total === 'number' ? page.total : page.items.length);
     } catch {
       // Keep current conversations when backend is temporarily unavailable
     }
   }, [applyConversations, isAuthenticated]);
+
+  const loadMoreConversations = useCallback(async () => {
+    if (!isAuthenticated || !hasMoreConversations || isLoadingMoreConversations || !nextCursor) {
+      return;
+    }
+    setIsLoadingMoreConversations(true);
+    try {
+      const res = await apiFetch<ConversationApiPayload>(
+        `/kloel/threads?limit=${CONVERSATION_PAGE_SIZE}&cursor=${encodeURIComponent(nextCursor)}`,
+      );
+      const page = readThreadPage(res);
+      mergeConversations(page.items);
+      setNextCursor(page?.nextCursor ?? null);
+      setHasMoreConversations(Boolean(page?.hasMore));
+      setTotalConversations(typeof page?.total === 'number' ? page.total : null);
+    } catch {
+      // Keep the current list; the sentinel can retry on the next scroll.
+    } finally {
+      setIsLoadingMoreConversations(false);
+    }
+  }, [
+    hasMoreConversations,
+    isAuthenticated,
+    isLoadingMoreConversations,
+    mergeConversations,
+    nextCursor,
+  ]);
+
+  const loadAllConversations = useCallback(async (): Promise<Conversation[]> => {
+    if (!isAuthenticated) {
+      return conversations;
+    }
+    const all: Conversation[] = [];
+    let cursor: string | null = null;
+    let keepGoing = true;
+    while (keepGoing) {
+      const query: string = cursor
+        ? `/kloel/threads?limit=50&cursor=${encodeURIComponent(cursor)}`
+        : '/kloel/threads?limit=50';
+      const res = await apiFetch<ConversationApiPayload>(query);
+      const page = readThreadPage(res);
+      all.push(...page.items);
+      cursor = page?.nextCursor ?? null;
+      keepGoing = Boolean(page?.hasMore && cursor);
+    }
+    mergeConversations(all);
+    setNextCursor(null);
+    setHasMoreConversations(false);
+    setTotalConversations(all.length);
+    return all;
+  }, [conversations, isAuthenticated, mergeConversations]);
 
   useEffect(() => {
     if (isLoading) {
@@ -160,7 +246,7 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
           updatedAt: payload.updatedAt,
           lastMessagePreview: payload.lastMessagePreview,
         };
-        setConversations((prev) => [conv, ...prev].slice(0, 50));
+        setConversations((prev) => [conv, ...prev]);
         return payload.id;
       }
     } catch {
@@ -202,7 +288,7 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
           lastMessagePreview: String(conversation.lastMessagePreview || '').trim(),
         },
         ...prev.filter((entry) => entry.id !== conversation.id),
-      ].slice(0, 50);
+      ];
 
       return next;
     });
@@ -218,12 +304,17 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
       value={{
         conversations,
         activeConv,
+        hasMoreConversations,
+        isLoadingMoreConversations,
+        totalConversations,
         addConversation,
         updateConversationTitle,
         deleteConversation,
         setActiveConversation,
         upsertConversation,
         refreshConversations,
+        loadMoreConversations,
+        loadAllConversations,
         clearAll,
       }}
     >

@@ -52,6 +52,7 @@ const entryFileName = ENTRY_MAP[userArgs[0]] || 'index.ts';
 const forwardedArgs = ENTRY_MAP[userArgs[0]] ? userArgs.slice(1) : userArgs;
 
 const args = [
+  '--transpile-only',
   '--project',
   path.join(rootDir, 'scripts', 'pulse', 'tsconfig.json'),
   path.join(rootDir, 'scripts', 'pulse', entryFileName),

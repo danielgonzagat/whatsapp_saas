@@ -1,7 +1,5 @@
 'use client';
-import { kloelError } from '@/lib/i18n/t';
-import { requestFacebookAccessTokenWithEmailScope } from '@/lib/facebook-sdk';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 /* ────────────────────────────────────────────────────────────
    GOOGLE SIGN-IN HOOK

@@ -29,6 +29,7 @@ export class KloelToolExecutorWhatsAppService {
     private readonly prisma: PrismaService,
     private readonly whatsappService: WhatsappService,
     private readonly providerRegistry: WhatsAppProviderRegistry,
+    private readonly transports: ChannelTransportRegistry,
     private readonly audioService: AudioService,
     private readonly planLimits: PlanLimitsService,
     @Optional() private readonly opsAlert?: OpsAlertService,
@@ -123,7 +124,15 @@ export class KloelToolExecutorWhatsAppService {
     });
     try {
       await this.planLimits.ensureDailyMessageQuota(workspaceId);
-      await this.whatsappService.sendMessage(workspaceId, normalizedPhone, message);
+      const send = await this.transports.send(workspaceId, {
+        workspaceId,
+        channel: 'whatsapp',
+        recipientId: normalizedPhone,
+        content: message,
+      });
+      if (!send.success) {
+        throw new Error(send.blockedReason || send.error || 'Falha ao enviar mensagem');
+      }
       await this.prisma.message.updateMany({
         where: { id: msg.id, workspaceId },
         data: { status: 'SENT' },
@@ -272,10 +281,20 @@ export class KloelToolExecutorWhatsAppService {
       const dataUri = `data:audio/mpeg;base64,${audioBuffer.toString('base64')}`;
       const normalizedPhone = phone.replace(NON_DIGIT_RE, '');
       await this.planLimits.ensureDailyMessageQuota(workspaceId);
-      await this.whatsappService.sendMessage(workspaceId, normalizedPhone, '', {
+      const send = await this.transports.send(workspaceId, {
+        workspaceId,
+        channel: 'whatsapp',
+        recipientId: normalizedPhone,
+        content: '',
         mediaUrl: dataUri,
         mediaType: 'audio',
       });
+      if (!send.success) {
+        return {
+          success: false,
+          error: send.blockedReason || send.error || 'Falha ao enviar áudio',
+        };
+      }
       return { success: true, message: `Áudio enviado para ${normalizedPhone}` };
     } catch (error: unknown) {
       void this.opsAlert?.alertOnCriticalError(
@@ -309,11 +328,21 @@ export class KloelToolExecutorWhatsAppService {
         };
       }
       await this.planLimits.ensureDailyMessageQuota(workspaceId);
-      await this.whatsappService.sendMessage(workspaceId, normalizedPhone, caption || '', {
+      const send = await this.transports.send(workspaceId, {
+        workspaceId,
+        channel: 'whatsapp',
+        recipientId: normalizedPhone,
+        content: caption || '',
         mediaUrl: documentUrl,
         mediaType: 'document',
         ...(caption !== undefined ? { caption } : {}),
       });
+      if (!send.success) {
+        return {
+          success: false,
+          error: send.blockedReason || send.error || 'Falha ao enviar documento',
+        };
+      }
       return { success: true, message: `Documento enviado para ${normalizedPhone}` };
     } catch (error: unknown) {
       void this.opsAlert?.alertOnCriticalError(

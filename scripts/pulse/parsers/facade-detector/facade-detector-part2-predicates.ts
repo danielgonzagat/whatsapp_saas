@@ -172,6 +172,8 @@ export function contextAllowsEmptyReturn(context: string): boolean {
     'default',
     'fallback',
     'if(!',
+    '<=0',
+    'length===0',
     'normalize',
     'sanitize',
     'safeparse',

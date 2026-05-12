@@ -69,6 +69,7 @@ export const ANY_TYPE_PATTERN = new RegExp(
 export const PROTECTED_FILES = new Set([
   ['CLAUDE', 'md'].join('.'),
   ['AGENTS', 'md'].join('.'),
+  ['CODEX', 'md'].join('.'),
   ['docs', 'design', 'KLOEL_VISUAL_DESIGN_CONTRACT.md'].join('/'),
   ['docs', 'design', 'KLOEL_ANTI_HARDCODE_CONTRACT.md'].join('/'),
   ['ops', 'kloel-design-tokens.json'].join('/'),

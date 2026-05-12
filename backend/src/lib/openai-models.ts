@@ -7,6 +7,7 @@ type BackendOpenAIModelRole =
   | 'writer'
   | 'writer_fallback'
   | 'guest_emergency'
+  | 'image_generation'
   | 'audio_understanding'
   | 'audio_understanding_fallback';
 
@@ -18,6 +19,7 @@ const DEFAULT_MODELS: Record<BackendOpenAIModelRole, string> = {
   writer: 'gpt-5.4-nano-2026-03-17',
   writer_fallback: 'gpt-4.1',
   guest_emergency: 'gpt-4o-mini',
+  image_generation: 'dall-e-3',
   audio_understanding: 'gpt-tempo-real-1.5',
   audio_understanding_fallback: 'gpt-4o-mini-transcribe',
 };
@@ -29,6 +31,7 @@ const MODEL_ENV_KEYS: Record<BackendOpenAIModelRole, readonly string[]> = {
   writer: ['OPENAI_WRITER_MODEL', 'OPENAI_MODEL'],
   writer_fallback: ['OPENAI_WRITER_FALLBACK_MODEL', 'OPENAI_FALLBACK_MODEL'],
   guest_emergency: ['OPENAI_GUEST_EMERGENCY_MODEL'],
+  image_generation: ['OPENAI_IMAGE_MODEL'],
   audio_understanding: ['OPENAI_AUDIO_UNDERSTANDING_MODEL'],
   audio_understanding_fallback: ['OPENAI_AUDIO_UNDERSTANDING_FALLBACK_MODEL'],
 };

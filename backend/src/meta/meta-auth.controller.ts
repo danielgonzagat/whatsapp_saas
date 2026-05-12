@@ -137,6 +137,29 @@ export class MetaAuthController {
     return url.toString();
   }
 
+  private humanizeMetaError(rawMessage: string): string {
+    const msg = rawMessage.toLowerCase();
+    if (msg.includes('redirect_uri') || msg.includes('redirect uri')) {
+      return 'A Meta nao autorizou o dominio de retorno. Ajuste os dominios do app Meta e tente novamente.';
+    }
+    if (msg.includes('expired') || msg.includes('code has expired')) {
+      return 'O codigo de autorizacao Meta expirou. Tente conectar novamente.';
+    }
+    if (msg.includes('invalid') && (msg.includes('code') || msg.includes('token'))) {
+      return 'Codigo de autorizacao Meta invalido ou ja usado. Tente conectar novamente.';
+    }
+    if (msg.includes('client_id') || msg.includes('app_id')) {
+      return 'A configuracao do app Meta nao foi aceita. Revise o app conectado e tente novamente.';
+    }
+    if (msg.includes('permission') || msg.includes('permissions')) {
+      return 'Permissoes insuficientes no app Meta. Verifique os scopes configurados no dashboard.';
+    }
+    if (msg.includes('rate') || msg.includes('limit')) {
+      return 'Limite de requisicoes da Meta atingido. Aguarde alguns minutos e tente novamente.';
+    }
+    return 'Nao foi possivel concluir a autenticacao Meta. Tente novamente em instantes.';
+  }
+
   // ─── Generate OAuth URL ──────────────────────────────────────────
 
   @Get('url')
@@ -164,6 +187,7 @@ export class MetaAuthController {
     @Query('state') state: string,
     @Res() res: Response,
   ) {
+    const startedAt = Date.now();
     const parsedState = this.parseState(state);
     const workspaceId = parsedState.workspaceId;
     const returnTo = this.sanitizeReturnTo(parsedState.returnTo, parsedState.channel);
@@ -205,11 +229,26 @@ export class MetaAuthController {
       const tokenData = await tokenRes.json();
 
       if (tokenData.error) {
-        this.logger.error(`Meta OAuth token exchange error: ${tokenData.error.message}`);
+        const rawMetaError = String(
+          tokenData.error.message || tokenData.error.error_user_msg || '',
+        );
+        this.logger.error(
+          JSON.stringify({
+            event: 'meta_oauth_token_exchange_failed',
+            workspaceId,
+            provider: 'meta',
+            operation: 'oauth_token_exchange',
+            status: 'error',
+            durationMs: Date.now() - startedAt,
+            errorCode: String(tokenData.error.code || tokenData.error.type || 'meta_oauth_error'),
+            message: rawMetaError.slice(0, 512),
+          }),
+        );
         return res.redirect(
           this.buildFrontendRedirect(returnTo, parsedState.channel, {
             meta: 'error',
             reason: 'token_exchange',
+            meta_error: this.humanizeMetaError(rawMetaError),
           }),
         );
       }
@@ -322,14 +361,25 @@ export class MetaAuthController {
         }),
       );
     } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : 'unknown_error';
       void this.opsAlert?.alertOnCriticalError(err, 'MetaAuthController.callback');
       this.logger.error(
-        `Meta OAuth callback failed: ${err instanceof Error ? err.message : 'unknown_error'}`,
+        JSON.stringify({
+          event: 'meta_oauth_callback_failed',
+          workspaceId,
+          provider: 'meta',
+          operation: 'oauth_callback',
+          status: 'error',
+          durationMs: Date.now() - startedAt,
+          errorCode: err instanceof Error ? err.name : 'unknown_error',
+          message: errMsg.slice(0, 512),
+        }),
       );
       return res.redirect(
         this.buildFrontendRedirect(returnTo, parsedState.channel, {
           meta: 'error',
           reason: 'callback_failed',
+          meta_error: this.humanizeMetaError(errMsg),
         }),
       );
     }

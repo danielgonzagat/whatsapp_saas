@@ -168,6 +168,11 @@ function resolveFromModeFallback(): string | null {
   return 'redis://localhost:6379';
 }
 
+function hasRedisComponentsConfigured(): boolean {
+  const { host, password } = readRedisComponents();
+  return Boolean(host && password);
+}
+
 /**
  * Resolve a Redis URL from the environment. Returns:
  *   - a string URL when one is found OR when in dev fallback mode
@@ -206,10 +211,7 @@ export function isRedisConfigured(): boolean {
   if (process.env.REDIS_URL) {
     return true;
   }
-  const host = process.env.REDIS_HOST ?? process.env.REDISHOST ?? process.env.REDIS_HOSTNAME;
-  const password =
-    process.env.REDIS_PASSWORD ?? process.env.REDISPASSWORD ?? process.env.REDIS_PASS;
-  if (host && password) {
+  if (hasRedisComponentsConfigured()) {
     return true;
   }
   if (process.env.REDIS_FALLBACK_URL) {

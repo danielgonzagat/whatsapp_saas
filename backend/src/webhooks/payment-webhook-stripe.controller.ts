@@ -27,8 +27,8 @@ import { ConnectReversalService } from '../payments/connect/connect-reversal.ser
 import { StripeWebhookProcessor } from '../payments/stripe/stripe-webhook.processor';
 import { FinancialAlertService } from '../common/financial-alert.service';
 import { validateNoInternalAccess } from '../common/utils/url-validator';
+import { ChannelTransportRegistry } from '../kloel/channel-transport.registry';
 import { PrismaService } from '../prisma/prisma.service';
-import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { WebhooksService } from './webhooks.service';
 import { StripeWebhookLedgerService } from './stripe-webhook-ledger.service';
 import {
@@ -43,6 +43,7 @@ import {
   handleDisputeClosed,
   handlePayoutEvent,
   handleAccountUpdated,
+  type PaymentWebhookNotifier,
   type StripeHandlerDeps,
 } from './payment-webhook-stripe.handlers';
 import {
@@ -63,7 +64,7 @@ export class PaymentWebhookStripeController {
 
   constructor(
     private readonly autopilot: AutopilotService,
-    private readonly whatsapp: WhatsappService,
+    private readonly channelTransports: ChannelTransportRegistry,
     private readonly prisma: PrismaService,
     @InjectRedis() private readonly redis: Redis,
     private readonly webhooksService: WebhooksService,
@@ -76,12 +77,31 @@ export class PaymentWebhookStripeController {
     private readonly ledger: StripeWebhookLedgerService,
   ) {}
 
+  private get whatsappNotifier(): PaymentWebhookNotifier {
+    return {
+      sendMessage: (workspaceId, phone, message) => {
+        const transport = this.channelTransports as ChannelTransportRegistry & {
+          sendMessage?: (workspaceId: string, phone: string, message: string) => Promise<unknown>;
+        };
+        if (typeof transport.send === 'function') {
+          return transport.send(workspaceId, {
+            workspaceId,
+            channel: 'whatsapp',
+            recipientId: phone,
+            content: message,
+          });
+        }
+        return transport.sendMessage?.(workspaceId, phone, message) ?? Promise.resolve(null);
+      },
+    };
+  }
+
   private get deps(): StripeHandlerDeps {
     return {
       logger: this.logger,
       prisma: this.prisma,
       autopilot: this.autopilot,
-      whatsapp: this.whatsapp,
+      whatsapp: this.whatsappNotifier,
       webhooksService: this.webhooksService,
       stripeWebhookProcessor: this.stripeWebhookProcessor,
       connectReversalService: this.connectReversalService,

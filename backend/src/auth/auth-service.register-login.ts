@@ -33,6 +33,7 @@ export interface AuthPartsDeps {
   config: ConfigService;
   googleAuthService: GoogleAuthService;
   facebookAuthService: FacebookAuthService;
+  appleAuthService: AppleAuthService;
   tikTokAuthService: TikTokAuthService;
   connectService: ConnectService;
   rateLimitService: RateLimitService;

@@ -9,6 +9,7 @@ import { KloelToolRouter } from './kloel-tool-router';
 import { KloelWorkspaceContextService } from './kloel-workspace-context.service';
 import { buildKloelResponseEnginePrompt } from './kloel.prompts';
 import { MarketingSkillService } from './marketing-skills/marketing-skill.service';
+import { MindService } from './mind.service';
 import { UnifiedAgentService } from './unified-agent.service';
 import {
   WHITESPACE_RE,
@@ -42,6 +43,7 @@ export class KloelReplyEngineService {
     private readonly wsContextService: KloelWorkspaceContextService,
     private readonly unifiedAgentService: UnifiedAgentService,
     @Optional() private readonly marketingSkillService?: MarketingSkillService,
+    @Optional() private readonly mindService?: MindService,
   ) {
     this.openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
@@ -250,12 +252,57 @@ export class KloelReplyEngineService {
     expertiseLevel: ExpertiseLevel;
     companyContext?: string;
   }): Promise<string> {
-    return buildDynamicRuntimeContextHelper({
+    const baseContext = await buildDynamicRuntimeContextHelper({
       ...params,
       prisma: this.prisma,
       wsContextService: this.wsContextService,
       contextFormatter: this.contextFormatter,
     });
+    const kloelRuntimeContext = await this.buildInternalKloelRuntimeContext(params);
+    return kloelRuntimeContext ? `${baseContext}\n\n${kloelRuntimeContext}` : baseContext;
+  }
+
+  private async buildInternalKloelRuntimeContext(params: {
+    workspaceId?: string;
+    expertiseLevel: ExpertiseLevel;
+  }): Promise<string | null> {
+    if (!params.workspaceId || !this.mindService) return null;
+
+    try {
+      const channel = 'kloel_chat';
+      const segment = params.expertiseLevel.toLowerCase();
+      const [tone, aggressiveness, format, objection] = await Promise.all([
+        this.mindService.resolveTone(params.workspaceId, channel, 0.5, 0.5, segment),
+        this.mindService.resolveAggressiveness(
+          params.workspaceId,
+          'official_kloel_chat',
+          0.5,
+          0.5,
+          1,
+        ),
+        this.mindService.resolveMessageFormat(params.workspaceId, channel, segment, ['text']),
+        this.mindService.resolveObjectionResponse(params.workspaceId, channel, segment, 'unknown'),
+      ]);
+
+      return [
+        'Contexto operacional interno do Kloel:',
+        `- Tom recomendado: ${tone.tone}.`,
+        `- Intensidade comercial recomendada: ${aggressiveness.aggressiveness}.`,
+        `- Formato recomendado nesta superfície: ${format.format === 'text' ? 'texto claro' : format.format}.`,
+        `- Estratégia comercial recomendada: ${objection.strategy}.`,
+        '- Use essas diretrizes apenas como ajuste interno da resposta oficial do Kloel.',
+        '- Nunca apresente outro agente, outro chat, outro motor ou outra voz ao usuário.',
+      ].join('\n');
+    } catch (error: unknown) {
+      const msg =
+        error instanceof Error
+          ? error.message
+          : typeof error === 'string'
+            ? error
+            : 'unknown error';
+      this.logger.warn(`Falha ao montar contexto operacional interno do Kloel: ${msg}`);
+      return null;
+    }
   }
 
   async buildAssistantReply(params: {

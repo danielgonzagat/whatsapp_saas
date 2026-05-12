@@ -6,6 +6,7 @@ import { EmailService } from './email.service';
 import { ConfigService } from '@nestjs/config';
 import { FacebookAuthService } from './facebook-auth.service';
 import { GoogleAuthService } from './google-auth.service';
+import { AppleAuthService } from './apple-auth.service';
 import { ConnectService } from '../payments/connect/connect.service';
 import { TikTokAuthService } from './tiktok-auth.service';
 import { RateLimitService } from './rate-limit.service';
@@ -89,6 +90,10 @@ const mockGoogleAuthService = {
   verifyCredential: jest.fn(),
 };
 
+const mockAppleAuthService = {
+  verifyCredential: jest.fn(),
+};
+
 const mockFacebookAuthService = {
   verifyAccessToken: jest.fn(),
 };
@@ -138,6 +143,7 @@ describe('AuthService', () => {
         { provide: EmailService, useValue: mockEmailService },
         { provide: ConfigService, useValue: mockConfigService },
         { provide: GoogleAuthService, useValue: mockGoogleAuthService },
+        { provide: AppleAuthService, useValue: mockAppleAuthService },
         { provide: FacebookAuthService, useValue: mockFacebookAuthService },
         { provide: TikTokAuthService, useValue: mockTikTokAuthService },
         { provide: ConnectService, useValue: mockConnectService },
@@ -418,6 +424,7 @@ describe('AuthService', () => {
           mockEmailService as never,
           mockConfigService as never,
           mockGoogleAuthService as never,
+          mockAppleAuthService as never,
           mockFacebookAuthService as never,
           mockTikTokAuthService as never,
           mockConnectService as never,
@@ -461,6 +468,7 @@ describe('AuthService', () => {
           mockEmailService as never,
           mockConfigService as never,
           mockGoogleAuthService as never,
+          mockAppleAuthService as never,
           mockFacebookAuthService as never,
           mockTikTokAuthService as never,
           mockConnectService as never,

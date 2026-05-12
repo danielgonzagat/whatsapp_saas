@@ -27,6 +27,8 @@ import type {
   SystemHealth,
 } from './page.types';
 
+import type { AutopilotSmokeTestResult } from './page.ui';
+
 export function unwrapSettled<T>(
   result: PromiseSettledResult<unknown>,
   transform: (value: unknown) => T,

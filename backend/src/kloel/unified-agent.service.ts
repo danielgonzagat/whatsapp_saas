@@ -8,7 +8,6 @@ import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { PrismaService } from '../prisma/prisma.service';
 import { chatCompletionWithFallback } from './openai-wrapper';
 import { forEachSequential } from '../common/async-sequence';
-import { UNIFIED_AGENT_TOOLS } from './unified-agent-tools-def';
 import { UnifiedAgentContextService } from './unified-agent-context.service';
 import { UnifiedAgentResponseService } from './unified-agent-response.service';
 import { UnifiedAgentActionsService } from './unified-agent-actions.service';
@@ -16,6 +15,9 @@ export type { ToolArgs, ActionEntry } from './unified-agent.types';
 import type { ToolArgs, ActionEntry } from './unified-agent.types';
 
 type UnknownRecord = Record<string, unknown>;
+
+const UNIFIED_AGENT_PROVIDER_CONFIG_REQUIRED =
+  'OpenAI configuration is required for unified agent generation';
 
 function formatPromptValue(value: unknown): string {
   if (value === null) {
@@ -78,9 +80,6 @@ export class UnifiedAgentService {
     this.fallbackWriterModel = resolveBackendOpenAIModel('writer_fallback', this.config);
   }
 
-  /**
-   * API simplificada para processar mensagem inbound (WhatsApp/omnichannel).
-   */
   async processIncomingMessage(params: {
     workspaceId: string;
     phone: string;
@@ -118,10 +117,9 @@ export class UnifiedAgentService {
     };
   }
 
-  /**
-   * Processa uma mensagem recebida e decide as ações a tomar.
-   */
   async processMessage(params: {
+    allowedTools?: string[];
+    predecidedActions?: PredecidedAction[];
     workspaceId: string;
     contactId: string;
     phone: string;
@@ -135,7 +133,9 @@ export class UnifiedAgentService {
   }> {
     const { workspaceId, contactId, phone, message, context } = params;
 
-    if (!this.openai) {
+    const predecidedActions = params.predecidedActions ?? [];
+
+    if (!this.openai && predecidedActions.length === 0) {
       this.logger.warn('OpenAI not configured');
       return this.response.buildFallbackResult(message);
     }
@@ -196,7 +196,6 @@ export class UnifiedAgentService {
       message,
       conversationHistory.length,
     );
-
     const contactData: Record<string, unknown> = this.ctx.isRecord(contact) ? contact : {};
     const contactName = this.ctx.readText(contactData.name).trim() || phone;
     const contactSentiment = this.ctx.readText(contactData.sentiment).trim() || 'NEUTRAL';
@@ -223,17 +222,54 @@ Mensagem: ${message}`,
       },
     ];
 
-    // 4. Call OpenAI with tools
+    if (predecidedActions.length > 0) {
+      const actionsList = await executePredecidedAgentActions({
+        allowedTools: params.allowedTools,
+        contactId,
+        context,
+        executeTool: this.executeToolAction.bind(this),
+        logAutopilotEvent: this.actions.logAutopilotEvent.bind(this.actions),
+        phone,
+        predecidedActions,
+        workspaceId,
+      });
+      const intent = this.response.extractIntent(actionsList, message);
+      const draftedReply = await this.response.composeWriterReply(
+        this.openai,
+        this.writerModel,
+        this.fallbackWriterModel,
+        {
+          workspaceId,
+          customerMessage: message,
+          assistantDraft: buildPredecidedActionDraft(actionsList),
+          actions: actionsList,
+          historyTurns: conversationHistory.length,
+        },
+      );
+
+      return {
+        actions: actionsList,
+        response: draftedReply,
+        intent,
+        confidence: actionsList.length > 0 ? 0.85 : 0.55,
+      };
+    }
+
+    // 4. Ask the LLM to verbalize only; code-native actions enter via predecidedActions.
     let llmResponse: OpenAI.Chat.ChatCompletion;
     try {
       await this.planLimits.ensureTokenBudget(params.workspaceId);
+      const openai = this.openai;
+      if (!openai) {
+        const error = new Error();
+        error.message = UNIFIED_AGENT_PROVIDER_CONFIG_REQUIRED;
+        throw error;
+      }
       llmResponse = await chatCompletionWithFallback(
-        this.openai,
+        openai,
         {
           model: this.primaryBrainModel,
           messages,
-          tools: UNIFIED_AGENT_TOOLS,
-          tool_choice: 'auto',
           temperature: 0.82,
           top_p: 0.9,
         },
@@ -266,6 +302,15 @@ Mensagem: ${message}`,
           return;
         }
         const toolName = toolCall.function.name;
+        if (!isAllowedTool(toolName, params.allowedTools)) {
+          this.logger.warn(
+            `Blocked disallowed agent tool call: workspaceId=${workspaceId} tool=${toolName}`,
+          );
+          const blockedResult = { blocked: true, reason: 'capability_not_allowed' };
+          actionsList.push({ tool: toolName, args: {}, result: blockedResult });
+          await this.actions.logAutopilotEvent(workspaceId, contactId, toolName, {}, blockedResult);
+          return;
+        }
         let toolArgs: Record<string, unknown> = {};
         try {
           toolArgs = JSON.parse(toolCall.function.arguments || '{}');
@@ -396,9 +441,9 @@ Mensagem: ${message}`,
       case 'add_tag':
         return this.actions.actionAddTag(workspaceId, contactId, args);
       case 'schedule_followup':
-        return this.actions.actionScheduleFollowup(workspaceId, contactId, phone, args);
+        return this.actions.actionScheduleFollowup(workspaceId, contactId, phone, args, context);
       case 'transfer_to_human':
-        return this.actions.actionTransferToHuman(workspaceId, contactId, args);
+        return this.actions.actionTransferToHuman(workspaceId, contactId, args, context);
       case 'search_knowledge_base':
         return this.actions.actionSearchKnowledgeBase(workspaceId, args);
       case 'trigger_flow':
@@ -437,7 +482,7 @@ Mensagem: ${message}`,
       case 'update_workspace_settings':
         return this.actions.actionUpdateWorkspaceSettings(workspaceId, args);
       case 'create_broadcast':
-        return this.actions.actionCreateBroadcast(workspaceId, args);
+        return this.actions.actionCreateBroadcast(workspaceId, args, context);
       case 'get_analytics':
         return this.actions.actionGetAnalytics(workspaceId, args);
       case 'configure_ai_persona':

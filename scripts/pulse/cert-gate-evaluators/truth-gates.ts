@@ -30,10 +30,7 @@ export function evaluateTruthExtractionGate(
     return (
       capability.runtimeCritical &&
       (capability.status === 'phantom' || capability.status === 'latent') &&
-      (capability.userFacing ||
-        capability.routePatterns.length > 0 ||
-        roles.has('interface') ||
-        roles.has('persistence'))
+      (capability.userFacing || capability.routePatterns.length > 0 || roles.has('interface'))
     );
   };
 

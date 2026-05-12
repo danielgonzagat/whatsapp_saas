@@ -126,15 +126,32 @@ export class TikTokMarketingService {
     const settings = asProviderSettings(workspace?.providerSettings);
     const tiktok = (settings.tiktok || {}) as TikTokProviderSubsettings;
 
+    const expiresAt = typeof tiktok.expiresAt === 'string' ? tiktok.expiresAt : null;
+    const expired = expiresAt ? new Date(expiresAt).getTime() < Date.now() : false;
+    const clientConfigured = Boolean(this.tryReadTikTokClientKey());
+    const secretConfigured = Boolean(this.tryReadTikTokSecret());
+
+    const connected = Boolean(tiktok.connected) && !expired;
+    const status =
+      !clientConfigured || !secretConfigured
+        ? 'config_missing'
+        : connected
+          ? 'connected'
+          : expired && tiktok.connected
+            ? 'expired'
+            : 'disconnected';
+
     return {
-      connected: Boolean(tiktok.connected),
-      status: tiktok.connected ? 'connected' : 'disconnected',
+      connected,
+      status,
       kind: typeof tiktok.kind === 'string' ? tiktok.kind : null,
       openId: typeof tiktok.openId === 'string' ? tiktok.openId : null,
       advertiserIds: Array.isArray(tiktok.advertiserIds) ? tiktok.advertiserIds : [],
-      expiresAt: typeof tiktok.expiresAt === 'string' ? tiktok.expiresAt : null,
-      clientConfigured: Boolean(this.tryReadTikTokClientKey()),
-      secretConfigured: Boolean(this.tryReadTikTokSecret()),
+      expiresAt,
+      expired,
+      clientConfigured,
+      secretConfigured,
+      configReady: clientConfigured && secretConfigured,
     };
   }
 

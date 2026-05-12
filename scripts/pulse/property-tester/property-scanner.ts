@@ -29,6 +29,10 @@ interface PropertyExecutionResult {
   counterexample: { input: unknown; expected: unknown; actual: unknown } | null;
 }
 
+function shouldExecuteDiscoveredPropertyFiles(): boolean {
+  return process.env.PULSE_EXECUTE_DISCOVERED_PROPERTY_TESTS === String(deriveUnitValue());
+}
+
 /**
  * Scan the repository for existing property-based tests that use the
  * fast-check library. Searches test files for import/require of fast-check
@@ -122,6 +126,15 @@ export function executePropertyTestFile(
   rootDir: string,
   relativePath: string,
 ): PropertyExecutionResult {
+  if (!shouldExecuteDiscoveredPropertyFiles()) {
+    return {
+      status: 'not_executed',
+      failures: 0,
+      durationMs: 0,
+      counterexample: null,
+    };
+  }
+
   let runner = resolvePropertyRunner(rootDir, relativePath);
   if (!runner) {
     return {

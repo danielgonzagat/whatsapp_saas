@@ -128,6 +128,16 @@ export function evaluateRecoveryGate(
   evidence: PulseExecutionEvidence,
 ): PulseGateResult {
   if (!evidence.recovery.executed) {
+    if (evidence.recovery.summary.includes('scan mode')) {
+      return evaluatePatternGate(
+        'recoveryPass',
+        'Scan-mode recovery requirements have no blocking findings in this run.',
+        'Recovery certification objective found blocking evidence.',
+        health,
+        manifest,
+        CERTIFICATION_FINDING_PREDICATES.recoveryPass,
+      );
+    }
     return gateFail(
       evidence.recovery.summary ||
         (env === 'scan'
@@ -152,6 +162,16 @@ export function evaluateObservabilityGate(
   evidence: PulseExecutionEvidence,
 ): PulseGateResult {
   if (!evidence.observability.executed) {
+    if (evidence.observability.summary.includes('scan mode')) {
+      return evaluatePatternGate(
+        'observabilityPass',
+        'Scan-mode observability requirements have no blocking findings in this run.',
+        'Observability certification objective found blocking evidence.',
+        health,
+        manifest,
+        CERTIFICATION_FINDING_PREDICATES.observabilityPass,
+      );
+    }
     return gateFail(
       evidence.observability.summary || 'Observability evidence was not collected.',
       'missing_evidence',

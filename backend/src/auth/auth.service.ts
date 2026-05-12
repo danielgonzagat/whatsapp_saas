@@ -8,6 +8,7 @@ import { WelcomeAndOnboardingEmailService } from '../notifications/welcome-onboa
 import { ConnectService } from '../payments/connect/connect.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from './email.service';
+import { AppleAuthService } from './apple-auth.service';
 import { FacebookAuthService } from './facebook-auth.service';
 import { GoogleAuthService } from './google-auth.service';
 import { TikTokAuthService } from './tiktok-auth.service';
@@ -45,6 +46,7 @@ export class AuthService {
     private readonly emailService: EmailService,
     private readonly config: ConfigService,
     private readonly googleAuthService: GoogleAuthService,
+    private readonly appleAuthService: AppleAuthService,
     private readonly facebookAuthService: FacebookAuthService,
     private readonly tikTokAuthService: TikTokAuthService,
     private readonly connectService: ConnectService,
@@ -64,6 +66,7 @@ export class AuthService {
       config: this.config,
       googleAuthService: this.googleAuthService,
       facebookAuthService: this.facebookAuthService,
+      appleAuthService: this.appleAuthService,
       tikTokAuthService: this.tikTokAuthService,
       connectService: this.connectService,
       rateLimitService: this.rateLimitService,

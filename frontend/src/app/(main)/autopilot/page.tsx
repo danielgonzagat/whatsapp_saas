@@ -70,9 +70,7 @@ export default function AutopilotPage() {
       if (!href || pathname === href) {
         return;
       }
-      startTransition(() => {
-        router.push(href);
-      });
+      startTransition(() => router.push(href));
     },
     [pathname, router],
   );
@@ -84,13 +82,12 @@ export default function AutopilotPage() {
         style={{ backgroundColor: colors.background.obsidian }}
       >
         <div className="flex flex-col items-center gap-4">
-          <RefreshCw
+          <KloelMushroomMark
             size={32}
-            className="animate-spin"
-            style={{ color: colors.brand.green }}
-            aria-hidden="true"
+            title="Carregando Autopilot"
+            traceColor={colors.brand.green}
           />
-          <span style={{ color: colors.text.muted }}>{kloelT(`Carregando Autopilot...`)}</span>
+          <span style={{ color: colors.text.muted }}>{kloelT('Carregando Autopilot...')}</span>
         </div>
       </div>
     );

@@ -15,6 +15,8 @@ import {
 import type { AuthenticatedAdmin } from './admin-token.types';
 
 const BCRYPT_WORK_FACTOR = 12;
+const ADMIN_MFA_BYPASS_ENV = 'ADMIN_MFA_BYPASS_ENABLED';
+const MFA_BYPASS_ENABLED_VALUES = new Set(['1', 'true', 'yes', 'on']);
 
 /** Login state response shape. */
 export interface LoginStateResponse {
@@ -168,7 +170,7 @@ export class AdminAuthService {
     user: AdminUser,
     ip: string,
     userAgent: string,
-  ): Promise<LoginStateResponse> {
+  ): Promise<LoginStateResponse | AuthenticatedSession> {
     if (user.passwordChangeRequired) {
       const changeToken = await this.sessionFactory.signScoped({
         sub: user.id,
@@ -182,6 +184,21 @@ export class AdminAuthService {
         userAgent,
       });
       return { state: 'password_change_required', token: changeToken };
+    }
+
+    if (this.isMfaBypassEnabled()) {
+      const updated = await this.prisma.adminUser.update({
+        where: { id: user.id },
+        data: { lastLoginAt: new Date() },
+      });
+      await this.audit.append({
+        adminUserId: user.id,
+        action: 'admin.auth.login.mfa_bypassed',
+        details: { env: ADMIN_MFA_BYPASS_ENV },
+        ip,
+        userAgent,
+      });
+      return this.sessionFactory.createFullSession(updated, ip, userAgent);
     }
 
     if (user.mfaPendingSetup || !user.mfaEnabled) {
@@ -213,6 +230,14 @@ export class AdminAuthService {
     return { state: 'mfa_required', token: mfaToken };
   }
 
+  private isMfaBypassEnabled(): boolean {
+    return MFA_BYPASS_ENABLED_VALUES.has(
+      String(process.env[ADMIN_MFA_BYPASS_ENV] || '')
+        .trim()
+        .toLowerCase(),
+    );
+  }
+
   // ──────────────────────────────────────────────────────────
   // Password change (forced on first login)
   // ──────────────────────────────────────────────────────────
@@ -222,7 +247,7 @@ export class AdminAuthService {
     newPassword: string,
     ip: string,
     userAgent: string,
-  ): Promise<LoginStateResponse> {
+  ): Promise<LoginStateResponse | AuthenticatedSession> {
     if (admin.scope !== 'password_change') {
       throw adminErrors.invalidToken();
     }
@@ -305,7 +330,6 @@ export class AdminAuthService {
         },
         { isolationLevel: 'ReadCommitted' },
       );
-      return { otpauthUrl, qrDataUrl };
     }
     return { otpauthUrl, qrDataUrl };
   }

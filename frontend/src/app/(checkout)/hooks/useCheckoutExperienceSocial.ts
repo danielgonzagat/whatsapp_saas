@@ -351,7 +351,7 @@ export function useCheckoutExperienceSocial({
         return rejectCoupon(error instanceof Error ? error.message : 'Cupom inválido ou expirado.');
       }
     },
-    [acceptCoupon, config?.enableCoupon, couponCode, plan?.id, rejectCoupon, subtotal, workspaceId],
+    [acceptCoupon, config?.enableCoupon, couponCode, plan, rejectCoupon, subtotal, workspaceId],
   );
 
   const resetStripeConfirmation = useCallback(() => {

@@ -205,7 +205,15 @@ function buildGitNexusLocalSnapshot(input: {
 }
 
 function gitNexusAutoReindexEnabled(): boolean {
-  return process.env.PULSE_GITNEXUS_AUTO_REINDEX !== '0';
+  return (
+    process.env.PULSE_DISABLE_LOCAL_ENV !== 'true' &&
+    process.env.CI !== 'true' &&
+    process.env.PULSE_GITNEXUS_AUTO_REINDEX !== '0'
+  );
+}
+
+function gitNexusCliProbeEnabled(): boolean {
+  return process.env.PULSE_DISABLE_LOCAL_ENV !== 'true' && process.env.CI !== 'true';
 }
 
 function attemptGitNexusReindex(input: {
@@ -274,12 +282,14 @@ export function buildGitNexusSnapshot(rootDir: string, generatedAt: string): Pul
   const cliWarnings: string[] = [];
   const errors: string[] = [];
 
-  const cli = spawnSync('npx', ['-y', 'gitnexus@latest', '--version'], {
-    cwd: rootDir,
-    encoding: 'utf8',
-    stdio: ['ignore', 'pipe', 'pipe'],
-    timeout: 15_000,
-  });
+  const cli = gitNexusCliProbeEnabled()
+    ? spawnSync('npx', ['-y', 'gitnexus@latest', '--version'], {
+        cwd: rootDir,
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
+        timeout: 15_000,
+      })
+    : null;
   let snapshot = buildGitNexusLocalSnapshot({
     rootDir,
     commit,
@@ -288,8 +298,11 @@ export function buildGitNexusSnapshot(rootDir: string, generatedAt: string): Pul
     metaPath,
   });
   let metadata = snapshot.metadata;
-  metadata.cliAvailable = cli.status === 0;
-  if (cli.status !== 0) {
+  metadata.cliAvailable = cli?.status === 0;
+  metadata.cliProbeSkipped = cli === null;
+  if (cli === null) {
+    cliWarnings.push('GitNexus CLI probe skipped in isolated CI/local-env-disabled mode.');
+  } else if (cli.status !== 0) {
     cliWarnings.push('GitNexus CLI version probe did not succeed.');
     if (cli.stderr) {
       errors.push(compact(cli.stderr, 240));
@@ -298,7 +311,7 @@ export function buildGitNexusSnapshot(rootDir: string, generatedAt: string): Pul
 
   const reindex = attemptGitNexusReindex({
     rootDir,
-    cliAvailable: cli.status === 0,
+    cliAvailable: cli?.status === 0,
     status: snapshot.status,
   });
   metadata.reindexEligible = reindex.eligible;
@@ -322,6 +335,7 @@ export function buildGitNexusSnapshot(rootDir: string, generatedAt: string): Pul
     metadata = {
       ...refreshedSnapshot.metadata,
       cliAvailable: metadata.cliAvailable,
+      cliProbeSkipped: metadata.cliProbeSkipped,
       reindexEligible: metadata.reindexEligible,
       reindexAttempted: metadata.reindexAttempted,
       reindexCommand: metadata.reindexCommand,

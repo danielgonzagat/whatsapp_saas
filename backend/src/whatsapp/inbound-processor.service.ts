@@ -221,6 +221,15 @@ export class InboundProcessorService {
       conversationId: savedMessage.conversationId || null,
       messageContent: processedContent,
     });
+    triggerWhatsappMindPercept({
+      mindHook: this.mindHook,
+      logger: this.logger,
+      msg,
+      contactId: contact.id,
+      messageId: savedMessage.id,
+      phone,
+      content: processedContent,
+    });
     await this.triggerAutopilot(
       msg.workspaceId,
       contact.id,

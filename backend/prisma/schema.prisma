@@ -137,18 +137,19 @@ model Workspace {
   stripeCustomerId String?
 
   // Relations
-  contacts        Contact[]
-  flows           Flow[]
-  flowExecutions  FlowExecution[]
-  tags            Tag[]
-  campaigns       Campaign[]
-  variables       Variable[]
-  conversations   Conversation[]
-  agents          Agent[]
-  messages        Message[]
-  scrapingJobs    ScrapingJob[]
-  voiceJobs       VoiceJob[]
-  monitoredGroups MonitoredGroup[]
+  contacts           Contact[]
+  channelIdentifiers ChannelIdentifier[]
+  flows              Flow[]
+  flowExecutions     FlowExecution[]
+  tags               Tag[]
+  campaigns          Campaign[]
+  variables          Variable[]
+  conversations      Conversation[]
+  agents             Agent[]
+  messages           Message[]
+  scrapingJobs       ScrapingJob[]
+  voiceJobs          VoiceJob[]
+  monitoredGroups    MonitoredGroup[]
 
   // Omnichannel & Routing
   queues       Queue[]
@@ -384,7 +385,8 @@ model Contact {
   nextBestAction      String? // "Send Offer", "Wait 2 days"
   aiSummary           String? // Auto-generated summary
 
-  insights ContactInsight[]
+  insights           ContactInsight[]
+  channelIdentifiers ChannelIdentifier[]
 
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
@@ -401,6 +403,7 @@ model Contact {
   checkoutSocialLeads CheckoutSocialLead[]
 
   @@unique([workspaceId, phone])
+  @@unique([id, workspaceId])
   @@map("RAC_Contact")
 }
 
@@ -416,6 +419,27 @@ model ContactInsight {
   createdAt DateTime @default(now())
 
   @@map("RAC_ContactInsight")
+}
+
+model ChannelIdentifier {
+  id          String    @id @default(uuid())
+  channel     String // WHATSAPP, INSTAGRAM, MESSENGER, EMAIL, TIKTOK
+  value       String // channel-specific identifier (phone, IG-SID, FB-PSID, email)
+  contactId   String
+  workspaceId String
+  contact     Contact   @relation(fields: [contactId, workspaceId], references: [id, workspaceId], onDelete: Cascade)
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  isPrimary  Boolean   @default(false)
+  verifiedAt DateTime?
+  metadata   Json?     @default("{}")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([workspaceId, channel, value])
+  @@index([contactId])
+  @@map("RAC_ChannelIdentifier")
 }
 
 model SystemInsight {
@@ -1702,6 +1726,7 @@ model Product {
   checkoutPlans       CheckoutProductPlan[]
   checkoutSocialLeads CheckoutSocialLead[]
   campaigns           ProductCampaign[]
+  channelProducts     ChannelProduct[]
 
   @@unique([workspaceId, sku])
   @@index([workspaceId, active])

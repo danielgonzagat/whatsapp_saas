@@ -33,9 +33,10 @@
 
 import type { Break, PulseConfig } from '../types';
 import {
-  httpGet,
-  httpPost,
-  httpDelete,
+  httpDeleteProduct,
+  httpGetProduct,
+  httpGetProducts,
+  httpPostProduct,
   makeTestJwt,
   dbQuery,
 } from './runtime-utils';
@@ -84,8 +85,7 @@ export async function checkE2eProductCreation(_config: PulseConfig): Promise<Bre
 
   // ── Step 1: POST /products ───────────────────────────────────────────────
   try {
-    const createRes = await httpPost(
-      '/products',
+    const createRes = await httpPostProduct(
       {
         name: '__pulse_test__product',
         description: 'PULSE E2E test product — safe to delete',
@@ -127,7 +127,7 @@ export async function checkE2eProductCreation(_config: PulseConfig): Promise<Bre
     }
 
     // ── Step 2: GET /products/:id — verify data matches ──────────────────
-    const getRes = await httpGet(`/products/${productId}`, { jwt });
+    const getRes = await httpGetProduct(productId, { jwt });
     if (!getRes.ok) {
       breaks.push({
         type: 'E2E_PRODUCT_BROKEN',
@@ -155,7 +155,7 @@ export async function checkE2eProductCreation(_config: PulseConfig): Promise<Bre
     }
 
     // ── Step 3: GET /products (list) — verify product appears ───────────
-    const listRes = await httpGet('/products', { jwt });
+    const listRes = await httpGetProducts({ jwt });
     if (listRes.ok) {
       const listBody = listRes.body as { products?: ProductRow[] } | ProductRow[] | undefined;
       const products: ProductRow[] = Array.isArray(listBody) ? listBody : listBody?.products || [];
@@ -204,7 +204,7 @@ export async function checkE2eProductCreation(_config: PulseConfig): Promise<Bre
     // ── Cleanup: DELETE /products/:id ─────────────────────────────────────
     if (productId && jwt) {
       try {
-        await httpDelete(`/products/${productId}`, { jwt });
+        await httpDeleteProduct(productId, { jwt });
       } catch {
         // Non-critical — cleanup failure doesn't affect test result
       }

@@ -8,7 +8,7 @@ import type { DetectedSourceRoot } from './source-root-detector/types';
 function hasMatchingFile(rootDir: string, matcher: (relativePath: string) => boolean): boolean {
   if (!pathExists(rootDir)) return false;
   try {
-    const files = readDir(rootDir, { recursive: true }) as string[];
+    const files = walkUnskippedFiles(rootDir);
     return files.some((file) => matcher(String(file).split(path.sep).join('/')));
   } catch {
     return false;

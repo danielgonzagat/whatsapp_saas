@@ -1,0 +1,47 @@
+name: MIND Simulator
+
+on:
+  pull_request:
+    paths:
+      - 'backend/src/kloel/rules/**'
+      - 'backend/src/kloel/mind-*.ts'
+      - 'backend/src/kloel/economic-objective.ts'
+      - 'backend/src/kloel/generators/**'
+
+permissions:
+  contents: read
+
+jobs:
+  simulate:
+    name: mind-simulator
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install backend dependencies
+        run: npm --prefix backend ci --include=dev
+
+      - name: Generate Prisma client
+        run: npm --prefix backend run prisma:generate
+
+      - name: Typecheck backend
+        run: npm --prefix backend run typecheck
+
+      - name: Run MIND simulator
+        id: simulator
+        run: npx --prefix backend ts-node --project backend/tsconfig.json scripts/mind/run-simulator.ts
+
+      - name: Upload simulator report
+        uses: actions/upload-artifact@v4
+        with:
+          name: mind-simulator-report
+          path: simulator-report.md

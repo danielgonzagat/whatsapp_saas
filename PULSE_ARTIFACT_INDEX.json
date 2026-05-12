@@ -884,6 +884,7 @@
         "exportName": "writeRegisteredArtifact.runtime-probes"
       },
       "consumers": [
+        "./__parts__/runtime-probes/main",
         "./artifact-gc",
         "./cert-gate-evidence",
         "./production-proof/dimensions",

@@ -46,15 +46,12 @@ export function QRCodePane({
     setDots(generated);
   }, []);
 
-  const showGeneratingOverlay = !qrCode && (loading || progress > 0) && !connected;
-  const showConnectedOverlay = connected;
-  const showOverlay = showGeneratingOverlay || showConnectedOverlay;
+  const showGenerating = !qrCode && (loading || progress > 0) && !connected;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24 }}>
       <div
         style={{
-          position: 'relative',
           background: UI.bg,
           borderRadius: UI.radiusMd,
           padding: 12,
@@ -91,40 +88,21 @@ export function QRCodePane({
             ))}
           </svg>
         )}
-
-        {showOverlay ? (
-          <div
-            style={{
-              position: 'absolute',
-              inset: 0,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              background: 'rgba(255,255,255,0.85)',
-              borderRadius: UI.radiusMd,
-            }}
-          >
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 8 }}>
-                {progress >= 100 ? 'OK' : 'WA'}
-              </div>
-              <div
-                style={{
-                  fontFamily: M,
-                  fontSize: 14,
-                  fontWeight: 700,
-                  color: showConnectedOverlay ? G : E,
-                }}
-              >
-                {showConnectedOverlay ? '100%' : `${Math.min(100, Math.round(progress))}%`}
-              </div>
-              <div style={{ fontSize: 11, color: S, marginTop: 4 }}>
-                {showConnectedOverlay ? 'Conectado!' : 'Gerando QR Code...'}
-              </div>
-            </div>
-          </div>
-        ) : null}
       </div>
+      {showGenerating ? (
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontFamily: M, fontSize: 13, fontWeight: 600, color: E }}>
+            {Math.min(99, Math.round(progress))}%
+          </div>
+          <div style={{ fontSize: 11, color: S, marginTop: 2 }}>{kloelT(`Gerando QR Code...`)}</div>
+        </div>
+      ) : null}
+      {connected ? (
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontFamily: M, fontSize: 13, fontWeight: 600, color: G }}>100%</div>
+          <div style={{ fontSize: 11, color: G, marginTop: 2 }}>{kloelT(`Conectado!`)}</div>
+        </div>
+      ) : null}
 
       {!connected ? (
         <>
@@ -173,10 +151,6 @@ export function QRCodePane({
             {loading ? 'Atualizando...' : qrCode ? 'Gerar novo QR Code' : 'Atualizar QR Code'}
           </button>
         </>
-      ) : progress < 100 ? (
-        <p style={{ fontSize: 12, color: S }}>
-          {kloelT(`Aguardando confirmação do dispositivo...`)}
-        </p>
       ) : null}
     </div>
   );

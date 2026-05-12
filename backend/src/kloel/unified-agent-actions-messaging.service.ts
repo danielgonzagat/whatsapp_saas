@@ -58,6 +58,24 @@ export class UnifiedAgentActionsMessagingService {
     return context?.deliveryMode === 'reactive' ? 'reactive' : 'proactive';
   }
 
+  private resolveChannel(context?: UnknownRecord): ChannelName {
+    const rawChannel =
+      this.readOptionalText(context?.channel) ||
+      this.readOptionalText(context?.sourceChannel) ||
+      this.readOptionalText(context?.provider);
+    const channel = rawChannel?.toLowerCase();
+    if (
+      channel === 'instagram' ||
+      channel === 'messenger' ||
+      channel === 'tiktok' ||
+      channel === 'email' ||
+      channel === 'whatsapp'
+    ) {
+      return channel;
+    }
+    return 'whatsapp';
+  }
+
   buildWhatsAppSendOptions(
     context?: UnknownRecord,
     extra: UnknownRecord = {},
@@ -97,6 +115,41 @@ export class UnifiedAgentActionsMessagingService {
       complianceMode: this.resolveComplianceMode(context),
       forceDirect: context?.forceDirect === true,
     };
+  }
+
+  async sendViaTransport(
+    workspaceId: string,
+    recipientId: string,
+    content: string,
+    context?: UnknownRecord,
+    extra: UnknownRecord = {},
+  ): Promise<ChannelSendResult> {
+    const options = this.buildWhatsAppSendOptions(context, extra);
+    const result = await this.transports.send(workspaceId, {
+      workspaceId,
+      channel: this.resolveChannel(context),
+      recipientId,
+      content,
+      mediaUrl: options.mediaUrl,
+      mediaType: options.mediaType,
+      guardContext: context ?? {},
+    });
+
+    this.logger.log(
+      [
+        '[AGENT] Transport result',
+        `channel=${this.resolveChannel(context)}`,
+        `success=${result.success}`,
+        `blocked=${result.blocked}`,
+        result.messageId ? `messageId=${result.messageId}` : null,
+        result.error ? `error=${result.error}` : null,
+        result.blockedReason ? `blockedReason=${result.blockedReason}` : null,
+      ]
+        .filter(Boolean)
+        .join(' '),
+    );
+
+    return result;
   }
 
   // ───────── send actions ─────────
@@ -178,12 +231,7 @@ export class UnifiedAgentActionsMessagingService {
       }
 
       this.logger.log(`[AGENT] Enviando mensagem para ${phone}: "${msgText.substring(0, 50)}..."`);
-      const result = await this.whatsappService.sendMessage(
-        workspaceId,
-        phone,
-        msgText,
-        this.buildWhatsAppSendOptions(context),
-      );
+      const result = await this.sendViaTransport(workspaceId, phone, msgText, context);
       const sendResult: Record<string, unknown> = this.isRecord(result) ? result : {};
 
       if (sendResult.error) {
@@ -238,9 +286,9 @@ export class UnifiedAgentActionsMessagingService {
         return { success: false, error: 'URL da mídia é obrigatória' };
       }
       this.logger.log(`[AGENT] Enviando mídia para ${phone}: ${type} - ${url.substring(0, 50)}...`);
-      const result = await this.whatsappService.sendMessage(
-        workspaceId,
-        phone,
+      const result = await this.sendViaTransport(workspaceId, phone, caption, context, {
+        mediaUrl: url,
+        mediaType: type,
         caption,
         this.buildWhatsAppSendOptions(context, { mediaUrl: url, mediaType: type, caption }),
       );

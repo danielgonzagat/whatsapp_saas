@@ -13,6 +13,7 @@ import {
   normalizeRelative,
   hasSkippedSegment,
   inferKindFromFileEvidence,
+  walkUnskippedFiles,
 } from './helpers';
 import { addRoot } from './source-resolution';
 import { addPackageRoots, addTsConfigRoots, discoverBuildConfigRoots } from './scanners';
@@ -88,7 +89,7 @@ export function sourceGlobsForTsMorph(rootDir: string): string[] {
   const files = new Set<string>();
   for (const root of detectSourceRoots(rootDir)) {
     if (!pathExists(root.absolutePath)) continue;
-    for (const entry of readDir(root.absolutePath, { recursive: true }) as string[]) {
+    for (const entry of walkUnskippedFiles(root.absolutePath)) {
       const relativeEntry = normalizeRelative(entry);
       if (hasSkippedSegment(relativeEntry)) continue;
       const extension = path.extname(relativeEntry);

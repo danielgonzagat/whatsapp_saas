@@ -9,12 +9,12 @@
 
 import { randomUUID } from 'node:crypto';
 import { InjectRedis } from '@nestjs-modules/ioredis';
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import type Redis from 'ioredis';
 import * as Sentry from '@sentry/node';
 import { safeCompareStrings } from '../common/utils/crypto-compare.util';
 import { PrismaService } from '../prisma/prisma.service';
-import { CiaRuntimeService } from './cia-runtime.service';
+import { CIA_RUNTIME_SERVICE, type CiaRuntimePort } from '../cia/cia-runtime.port';
 import { WhatsAppProviderRegistry } from './providers/provider-registry';
 import { asProviderSettings } from './provider-settings.types';
 import { WhatsAppCatchupService } from './whatsapp-catchup.service';
@@ -50,7 +50,7 @@ export class WhatsAppWatchdogRecoveryService {
     private readonly prisma: PrismaService,
     private readonly providerRegistry: WhatsAppProviderRegistry,
     private readonly catchupService: WhatsAppCatchupService,
-    private readonly ciaRuntime: CiaRuntimeService,
+    @Inject(CIA_RUNTIME_SERVICE) private readonly ciaRuntime: CiaRuntimePort,
     @InjectRedis() private readonly redis: Redis,
   ) {}
 

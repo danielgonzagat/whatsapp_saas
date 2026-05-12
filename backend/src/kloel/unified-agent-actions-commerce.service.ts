@@ -8,6 +8,9 @@ import { formatBrlAmount } from './money-format.util';
 import { UnifiedAgentActionsMessagingService } from './unified-agent-actions-messaging.service';
 import type { ToolArgs } from './unified-agent.types';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import { MindGuardContextBuilderService } from './mind-guard-context-builder.service';
+import { MindGuardsService } from './mind-guards.service';
+import type { MindActionContext } from './mind-code-native.types';
 
 type UnknownRecord = Record<string, unknown>;
 type ProductMemoryValue = {
@@ -33,6 +36,8 @@ export class UnifiedAgentActionsCommerceService {
     private readonly auditService: AuditService,
     private readonly messaging: UnifiedAgentActionsMessagingService,
     @Optional() private readonly opsAlert?: OpsAlertService,
+    @Optional() private readonly guardContextBuilder?: MindGuardContextBuilderService,
+    @Optional() private readonly guards?: MindGuardsService,
   ) {}
 
   // ───────── helpers ─────────
@@ -164,6 +169,28 @@ export class UnifiedAgentActionsCommerceService {
       const productName = this.str(args.productName);
       const description = this.str(args.description, `Pagamento - ${productName}`);
       const contact = await this.prisma.contact.findFirst({ where: { workspaceId, phone } });
+      const paymentContext = await this.buildPaymentGuardContext(workspaceId, {
+        ...(context || {}),
+        contactId: contact?.id,
+        maxPaymentAmount: this.num(context?.maxPaymentAmount, 5000),
+        paymentAmount: amount,
+        paymentExternalId: this.str(context?.paymentExternalId),
+        productName,
+      });
+      const guard = await this.guards?.evaluate({
+        workspaceId,
+        decisionType: 'product_offer',
+        action: 'create_payment_link',
+        context: paymentContext,
+      });
+      if (guard && !guard.allowed) {
+        return {
+          success: false,
+          blocked: true,
+          error: guard.reason,
+          guardName: guard.guardName,
+        };
+      }
       const payment = await this.paymentService.createPayment({
         workspaceId,
         leadId: contact?.id || phone,
@@ -271,5 +298,12 @@ export class UnifiedAgentActionsCommerceService {
         fallback: true,
       };
     }
+  }
+
+  private async buildPaymentGuardContext(
+    workspaceId: string,
+    context: MindActionContext,
+  ): Promise<MindActionContext> {
+    return (await this.guardContextBuilder?.buildForPayment(workspaceId, context)) ?? context;
   }
 }

@@ -1,6 +1,6 @@
-import { OfficialMarketingChannelPage } from '@/components/kloel/marketing/OfficialMarketingChannelPage';
+import MarketingView from '@/components/kloel/marketing/MarketingView';
 
 /** Tik tok page. */
 export default function TikTokPage() {
-  return <OfficialMarketingChannelPage channel="tiktok" />;
+  return <MarketingView defaultTab="tiktok" />;
 }

@@ -162,6 +162,25 @@ function modelFromCallParts(parts: string[], prismaReceivers: Set<string>): stri
   return null;
 }
 
+function modelFromPrismaPropertyParts(
+  parts: string[],
+  prismaReceivers: Set<string>,
+): string | null {
+  for (let index = 0; index < parts.length; index++) {
+    const part = parts[index];
+    const isPrismaToken = part === 'prisma';
+    const isKnownReceiver = prismaReceivers.has(part);
+    const modelIndex = index + 1;
+    if ((isPrismaToken || isKnownReceiver) && modelIndex < parts.length) {
+      const modelName = parts[modelIndex];
+      if (modelName && !modelName.startsWith('$')) {
+        return modelName;
+      }
+    }
+  }
+  return null;
+}
+
 function sourceFilesForTraceText(fileName: string, text: string): ts.SourceFile[] {
   return [
     ts.createSourceFile(fileName, text, ts.ScriptTarget.Latest, true),
@@ -184,6 +203,13 @@ function collectPrismaModelsFromText(text: string): Set<string> {
       if (ts.isCallExpression(node)) {
         const parts = expressionParts(node.expression);
         const modelName = modelFromCallParts(parts, prismaReceivers);
+        if (modelName) {
+          models.add(modelName);
+        }
+      }
+      if (ts.isPropertyAccessExpression(node)) {
+        const parts = expressionParts(node);
+        const modelName = modelFromPrismaPropertyParts(parts, prismaReceivers);
         if (modelName) {
           models.add(modelName);
         }
@@ -389,7 +415,9 @@ export function traceServices(config: PulseConfig): ServiceTrace[] {
       f.endsWith('.engine.ts') ||
       f.endsWith('.guard.ts') ||
       f.endsWith('.interceptor.ts') ||
-      f.endsWith('.middleware.ts'),
+      f.endsWith('.middleware.ts') ||
+      f.endsWith('.work-items.ts') ||
+      f.endsWith('.companion.ts'),
   );
 
   for (const file of files) {
