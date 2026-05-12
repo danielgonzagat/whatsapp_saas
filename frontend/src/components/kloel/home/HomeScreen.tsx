@@ -339,11 +339,16 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
             },
           );
         } else {
-          const response = await sendAuthenticatedKloelMessage({
-            message: messageText,
-            conversationId: activeConversationId,
-            mode: 'chat',
-          });
+          const response = await sendAuthenticatedKloelMessage(
+            {
+              message: messageText,
+              conversationId: activeConversationId,
+              mode: 'chat',
+            },
+            {
+              signal: ac.signal,
+            },
+          );
           fullContent = String(response.response || '').trim();
           nextConversationId = response.conversationId || activeConversationId;
           nextTitle =
