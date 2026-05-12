@@ -3,6 +3,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { MindPerceptionService } from './mind-perception.service';
 
 describe('MindPerceptionService', () => {
+  type SourceFindManyCall = [{ where: { workspaceId: string; createdAt: { gt: Date } } }];
+
   let service: MindPerceptionService;
   let prisma: {
     autopilotEvent: { findMany: jest.Mock };
@@ -26,10 +28,14 @@ describe('MindPerceptionService', () => {
 
   it('enforces workspace isolation on all 4 source tables', async () => {
     await service.since('ws-tenant-A', new Date('2026-01-01'));
-    expect(prisma.autopilotEvent.findMany.mock.calls[0][0].where.workspaceId).toBe('ws-tenant-A');
-    expect(prisma.message.findMany.mock.calls[0][0].where.workspaceId).toBe('ws-tenant-A');
-    expect(prisma.kloelSale.findMany.mock.calls[0][0].where.workspaceId).toBe('ws-tenant-A');
-    expect(prisma.checkoutOrder.findMany.mock.calls[0][0].where.workspaceId).toBe('ws-tenant-A');
+    const autopilotCalls = prisma.autopilotEvent.findMany.mock.calls as SourceFindManyCall[];
+    const messageCalls = prisma.message.findMany.mock.calls as SourceFindManyCall[];
+    const saleCalls = prisma.kloelSale.findMany.mock.calls as SourceFindManyCall[];
+    const checkoutOrderCalls = prisma.checkoutOrder.findMany.mock.calls as SourceFindManyCall[];
+    expect(autopilotCalls[0][0].where.workspaceId).toBe('ws-tenant-A');
+    expect(messageCalls[0][0].where.workspaceId).toBe('ws-tenant-A');
+    expect(saleCalls[0][0].where.workspaceId).toBe('ws-tenant-A');
+    expect(checkoutOrderCalls[0][0].where.workspaceId).toBe('ws-tenant-A');
   });
 
   it('merges and sorts events ascending by occurredAt', async () => {
@@ -154,7 +160,8 @@ describe('MindPerceptionService', () => {
       prisma.kloelSale.findMany,
       prisma.checkoutOrder.findMany,
     ]) {
-      expect(table.mock.calls[0][0].where.createdAt).toEqual({ gt: watermark });
+      const calls = table.mock.calls as SourceFindManyCall[];
+      expect(calls[0][0].where.createdAt).toEqual({ gt: watermark });
     }
   });
 });

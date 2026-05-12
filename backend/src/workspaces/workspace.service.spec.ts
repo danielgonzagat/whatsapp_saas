@@ -5,6 +5,17 @@ import { CacheService } from '../common/cache/cache.service';
 import { WorkspaceService } from './workspace.service';
 
 describe('WorkspaceService', () => {
+  type WorkspaceUpdateCall = [
+    {
+      data: {
+        providerSettings: {
+          autopilot: { enabled: boolean };
+          conversionFlowId?: string;
+        };
+      };
+    },
+  ];
+
   let service: WorkspaceService;
   let prisma: {
     workspace: {
@@ -127,7 +138,8 @@ describe('WorkspaceService', () => {
         providerSettings: { autopilot: { enabled: false } },
       });
       await service.patchSettings('ws-1', { autonomy: { mode: 'live' } });
-      const args = prisma.workspace.update.mock.calls[0][0];
+      const updateCalls = prisma.workspace.update.mock.calls as WorkspaceUpdateCall[];
+      const args = updateCalls[0][0];
       expect(args.data.providerSettings.autopilot.enabled).toBe(true);
     });
 
@@ -137,7 +149,8 @@ describe('WorkspaceService', () => {
         providerSettings: { autopilot: { enabled: true } },
       });
       await service.patchSettings('ws-1', { conversionFlowId: 'f1' });
-      const args = prisma.workspace.update.mock.calls[0][0];
+      const updateCalls = prisma.workspace.update.mock.calls as WorkspaceUpdateCall[];
+      const args = updateCalls[0][0];
       expect(args.data.providerSettings.autopilot.enabled).toBe(true);
       expect(args.data.providerSettings.conversionFlowId).toBe('f1');
     });
