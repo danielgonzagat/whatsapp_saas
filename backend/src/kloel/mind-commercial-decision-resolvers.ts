@@ -180,6 +180,37 @@ export async function resolveBroadcastWindowDecision(
   };
 }
 
+export async function resolveBestVariantDecision(
+  policy: MindPolicyChooser,
+  workspaceId: string,
+  flow: string,
+  variantIds: string[],
+  context?: Record<string, unknown>,
+): Promise<{ variant: string; confidence: number; fallback: boolean }> {
+  const baseline = variantIds[0] ?? 'followup:direct';
+  const ctx: Record<string, unknown> = { flow, ...(context ?? {}) };
+
+  const result = await policy.choose({
+    workspaceId,
+    subject: `workspace:${workspaceId}`,
+    decisionType: 'flow_variant',
+    context: ctx,
+    options: variantIds.map((variantId) => ({
+      action: variantId,
+      predicate: 'P(conversion|flow_variant,flow)',
+      context: { flow, variant_id: variantId },
+    })),
+    baseline,
+    outcomeKey: `flow_variant:${workspaceId}:${flow}:${Date.now()}`,
+  });
+
+  return {
+    variant: result.chosen,
+    confidence: decisionConfidence(result),
+    fallback: result.decision.fallbackActive,
+  };
+}
+
 export async function resolveAdAlertActionDecision(
   policy: MindPolicyChooser,
   workspaceId: string,

@@ -18,6 +18,7 @@ import {
 } from './mind-catalog-decision-resolvers';
 import {
   resolveAdAlertActionDecision,
+  resolveBestVariantDecision,
   resolveBroadcastWindowDecision,
   resolveChannelChoiceDecision,
   resolveHumanTransferDecision,
@@ -335,6 +336,21 @@ export class MindService {
       window,
       threshold,
       campaign,
+    );
+  }
+
+  async resolveBestVariant(
+    workspaceId: string,
+    flow: string,
+    variantIds: string[],
+    context?: Record<string, unknown>,
+  ): Promise<{ variant: string; confidence: number; fallback: boolean }> {
+    return resolveBestVariantDecision(
+      this.policy,
+      workspaceId,
+      flow,
+      variantIds,
+      context,
     );
   }
 }

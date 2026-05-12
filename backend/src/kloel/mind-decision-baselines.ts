@@ -5,6 +5,7 @@ export const LEGACY_DECISION_TYPES = [
   'audio_vs_text',
   'tom',
   'cupom',
+  'flow_variant',
 ] as const;
 
 export const KNOWN_DECISION_TYPES = [...MIND_DECISION_TYPES] as const;

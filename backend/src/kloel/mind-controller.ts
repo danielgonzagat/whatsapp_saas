@@ -2,17 +2,21 @@ import {
   BadRequestException,
   Body,
   Controller,
+  ForbiddenException,
   Get,
+  Headers,
   Param,
   Post,
   Query,
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { Public } from '../auth/public.decorator';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import {
   AggressivenessDto,
   AudioVsTextDto,
+  BestVariantDto,
   CouponDto,
   DecideDto,
   GuardEvaluateDto,
@@ -204,6 +208,25 @@ export class MindController {
   @Post(':workspaceId/coupon')
   coupon(@Param('workspaceId') workspaceId: string, @Body() body: CouponDto) {
     return this.mind.resolveCoupon(workspaceId, body.priceBand, body.soldRate, body.segment);
+  }
+
+  @Post(':workspaceId/variant-decision')
+  @Public()
+  async variantDecision(
+    @Param('workspaceId') workspaceId: string,
+    @Body() body: BestVariantDto,
+    @Headers('x-internal-key') internalKey?: string,
+  ) {
+    const expectedInternalKey = String(process.env.INTERNAL_API_KEY || '').trim();
+    if (expectedInternalKey && internalKey !== expectedInternalKey) {
+      throw new ForbiddenException('Invalid internal key');
+    }
+    return this.mind.resolveBestVariant(
+      workspaceId,
+      body.flow,
+      body.variantIds,
+      body.context,
+    );
   }
 
   @Post(':workspaceId/simulate')
