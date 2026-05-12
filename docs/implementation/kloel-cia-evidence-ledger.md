@@ -2,6 +2,40 @@
 
 Generated: 2026-05-11
 
+## 2026-05-12T14:16:00-03:00 - W9 - Guest Chat Redis Persistence Verification
+
+- ID-visao: V04, V17, V23.
+- Escopo: verify and document the backend guest-chat persistence slice that removes the in-memory-only conversation behavior from the owner-facing public chat path.
+- Arquivos alterados:
+  - `backend/src/kloel/guest-chat.service.ts`
+  - `backend/src/kloel/guest-chat.service.spec.ts`
+  - `docs/implementation/kloel-cia-evidence-ledger.md`
+  - `docs/implementation/kloel-cia-session-handoff.md`
+- Comportamento entregue:
+  - `GuestChatService` now uses Redis as the primary guest conversation store with a 24h TTL and keeps the local `Map` only as a process-local fallback/cache.
+  - Existing Redis conversation context is loaded back into the OpenAI prompt path, so a reload/process boundary no longer implies losing prior guest chat context when Redis is available.
+  - The spec covers Redis TTL persistence and context hydration from a stored conversation.
+- Comando(s) rodados:
+  - `npx prettier --write backend/src/kloel/guest-chat.service.ts backend/src/kloel/guest-chat.service.spec.ts`
+  - `npm --prefix backend test -- guest-chat.service.spec.ts --runInBand`
+  - `npm run backend:typecheck`
+  - `npm exec eslint -- src/kloel/guest-chat.service.ts src/kloel/guest-chat.service.spec.ts` from `backend/`
+- Resultado:
+  - Prettier completed.
+  - Guest chat Jest passed: 1 suite / 13 tests.
+  - Backend typecheck passed.
+  - Focused backend ESLint passed after replacing unsafe mock-call access with an explicitly typed call tuple.
+- Evidencia:
+  - Current session command outputs for Prettier, Jest, backend typecheck, and focused ESLint.
+  - Commits `e95bb1df3` and `a54a3c621` on `chore/purga-total-debt` contain the verified guest-chat code/test state.
+- Riscos remanescentes:
+  - No live Redis deployment smoke was run in this slice.
+  - This covers the public guest chat persistence path; it does not prove all owner chat streaming/history requirements from V17.
+- Plano de rollback:
+  - Forward-edit `GuestChatService` back to process-local storage only if Redis injection causes a production boot regression, while preserving the Redis-backed tests as the target behavior.
+- Referencia subagent:
+  - Based on accepted report `artifacts/opencode-live/kloel-cia-batch-17-readonly-2026-05-12/v23-anti-fake.out`, with implementation/verification performed after the backend repair agent exited.
+
 ## 2026-05-12T13:59:00-03:00 - W9 - Backend Merge Repair Verification
 
 - ID-visao: V01, V03, V13, V18, V23.

@@ -1,15 +1,15 @@
 # Kloel CIA Session Handoff
 
-Updated: 2026-05-12T13:59:00-03:00
+Updated: 2026-05-12T14:16:00-03:00
 
 ## Onde parou exatamente
 
-Wave 0 discovery artifacts are active and W1-W9 have focused code-side slices delivered with evidence, but completion remains blocked by external provider smokes and open dependency-register items. W1 persists the official channel four-step wizard spine through `Workspace.providerSettings.marketingChannelSetup`; Playwright proves four steps at desktop/mobile widths, product persistence, and Meta disconnect double-confirmation. W2 hardens code-side Meta OAuth URL generation with channel-specific Config IDs/scopes, adds the `facebook` status alias, and rejects unsigned Meta webhook POSTs when `META_APP_SECRET` is configured. W3 hardens TikTok webhook signature handling and adds backend disconnect. W4 delivers code-side Gmail/Microsoft/IMAP mailbox foundations through EMAIL-10, including encrypted token storage, Gmail sync/send, Microsoft OAuth base, IMAP+SMTP validation, suppression checks, and mailbox metrics, while live mailbox smokes remain external. W5/W6 route TikTok/Omnichannel perception toward the same `UnifiedAgentService` and prove owner strategic policy persistence into CIA prompt context. W7/W8 add checkout-paid wallet/chat context and high-risk `ApprovalRequest` gates. On 2026-05-12, after the merge from `origin/main`, this orchestrator recovered the frontend TypeScript gate, ran Batch 17 read-only audits for V23 anti-fake/provider readiness, implemented two frontend-only V23 truthfulness fixes, and verified the external backend strict-mode repair after its OpenCode process exited.
+Wave 0 discovery artifacts are active and W1-W9 have focused code-side slices delivered with evidence, but completion remains blocked by external provider smokes and open dependency-register items. W1 persists the official channel four-step wizard spine through `Workspace.providerSettings.marketingChannelSetup`; Playwright proves four steps at desktop/mobile widths, product persistence, and Meta disconnect double-confirmation. W2 hardens code-side Meta OAuth URL generation with channel-specific Config IDs/scopes, adds the `facebook` status alias, and rejects unsigned Meta webhook POSTs when `META_APP_SECRET` is configured. W3 hardens TikTok webhook signature handling and adds backend disconnect. W4 delivers code-side Gmail/Microsoft/IMAP mailbox foundations through EMAIL-10, including encrypted token storage, Gmail sync/send, Microsoft OAuth base, IMAP+SMTP validation, suppression checks, and mailbox metrics, while live mailbox smokes remain external. W5/W6 route TikTok/Omnichannel perception toward the same `UnifiedAgentService` and prove owner strategic policy persistence into CIA prompt context. W7/W8 add checkout-paid wallet/chat context and high-risk `ApprovalRequest` gates. On 2026-05-12, after the merge from `origin/main`, this orchestrator recovered the frontend TypeScript gate, ran Batch 17 read-only audits for V23 anti-fake/provider readiness, implemented two frontend-only V23 truthfulness fixes, verified the external backend strict-mode repair after its OpenCode process exited, and verified the guest-chat Redis persistence slice with focused tests/typecheck/lint.
 
 ## Branch atual e ultimo commit
 
 - Branch: `chore/purga-total-debt`
-- HEAD: `26080a4ca fix(railway): align service lockfiles`
+- HEAD: `a54a3c621 chore(post-merge): final cleanup batch-17 partial`
 - Note: prior handoff referenced `feat/kloel-cia-convergence`, but the live checkout is currently `chore/purga-total-debt`; do not infer branch state from older docs.
 
 ## Gates passados na sessao
@@ -114,6 +114,10 @@ Wave 0 discovery artifacts are active and W1-W9 have focused code-side slices de
 - `npx eslint` on the touched frontend auth/checkout/search/media/history files: passed after local hook-rule fixes.
 - `npm run backend:typecheck`: passed after aligning `backend/src/integrations/ads-sync.processor.ts` with the current branch state.
 - `npm run typecheck`: passed after backend/frontend/worker typecheck all completed successfully.
+- `npx prettier --write backend/src/kloel/guest-chat.service.ts backend/src/kloel/guest-chat.service.spec.ts`: passed after guest-chat Redis persistence verification.
+- `npm --prefix backend test -- guest-chat.service.spec.ts --runInBand`: passed after guest-chat Redis persistence verification, 1 suite / 13 tests.
+- `npm run backend:typecheck`: passed after guest-chat Redis persistence verification.
+- `npm exec eslint -- src/kloel/guest-chat.service.ts src/kloel/guest-chat.service.spec.ts` from `backend/`: passed after guest-chat Redis persistence verification.
 - `npm run worker:typecheck`: passed.
 - `npm --prefix backend run build`: passed.
 - `npm --prefix worker run build`: passed.
@@ -227,4 +231,4 @@ No `opencode run` process remains active after workspace stabilization. The prev
 
 ## Proxima acao exata
 
-Next action: stage the one remaining unstaged backend narrowing change, review the staged set, then commit/push the verified accumulated slice unless a new dirty protected-file change appears. After publication, continue V23 backlog with backend-dependent fake-completion items such as guest-chat persistence, billing mock hardening, and boleto/status alignment.
+Next action: commit/push the documentation-only guest-chat Redis evidence entry, leaving untracked OpenCode prompt drafts out of the commit. After publication, continue V23 backlog with the next backend-safe fake-completion items, especially boleto/status alignment and any remaining billing mock hardening that is not already production-guarded.
