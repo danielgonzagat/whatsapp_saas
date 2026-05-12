@@ -317,7 +317,7 @@ describe('Product Sub-Resources — Cross-Workspace Isolation', () => {
             findFirst: jest.fn().mockResolvedValue({ id: 'cm1', productId: PROD_A }),
             update: jest.fn().mockResolvedValue({ id: 'cm1' }),
           },
-          $transaction: jest.fn().mockImplementation(async (fn: any) =>
+          $transaction: jest.fn().mockImplementation((fn: (tx: PrismaMock) => unknown) =>
             fn({
               productCommission: {
                 findFirst: jest.fn().mockResolvedValue({ id: 'cm1', productId: PROD_A }),
