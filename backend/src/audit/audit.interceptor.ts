@@ -9,6 +9,7 @@ import { Reflector } from '@nestjs/core';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { sanitizePayload } from '../common/sanitize-payload';
+import type { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { AuditService } from './audit.service';
 
 /** Audit action metadata. */
@@ -34,7 +35,7 @@ export class AuditInterceptor implements NestInterceptor {
       return next.handle();
     }
 
-    const request = context.switchToHttp().getRequest();
+    const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
     const { user, ip, headers, params, body } = request;
 
     if (!user || !user.workspaceId) {
@@ -44,7 +45,16 @@ export class AuditInterceptor implements NestInterceptor {
     return next.handle().pipe(
       tap((response) => {
         // Determine resource ID from response or params
-        const resourceId = response?.id || params?.id || null;
+        const responseRecord =
+          typeof response === 'object' && response !== null
+            ? (response as Record<string, unknown>)
+            : {};
+        const resourceId =
+          typeof responseRecord.id === 'string'
+            ? responseRecord.id
+            : typeof params?.id === 'string'
+              ? params.id
+              : null;
 
         // Filter sensitive data from details via shared sanitizer
         const details = sanitizePayload({
@@ -52,15 +62,19 @@ export class AuditInterceptor implements NestInterceptor {
           body,
         });
 
+        const forwardedFor = headers['x-forwarded-for'];
+        const userAgent = headers['user-agent'];
+        const ipAddress =
+          typeof forwardedFor === 'string' ? forwardedFor : typeof ip === 'string' ? ip : undefined;
         void this.auditService.log({
           workspaceId: user.workspaceId,
           agentId: user.sub,
           action: metadata.action,
           resource: metadata.resource,
-          resourceId,
+          resourceId: resourceId ?? undefined,
           details: details as Record<string, unknown>,
-          ipAddress: ip || headers['x-forwarded-for'],
-          userAgent: headers['user-agent'],
+          ipAddress,
+          userAgent: typeof userAgent === 'string' ? userAgent : undefined,
         });
       }),
     );

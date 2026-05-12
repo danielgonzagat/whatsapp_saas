@@ -85,7 +85,10 @@ export class KycService {
           where: { id: agentId, workspaceId: { not: '' } },
           select: { kycStatus: true, workspaceId: true },
         });
-        if (agent?.kycStatus === 'rejected') {
+        if (!agent) {
+          throw new NotFoundException('Agente não encontrado');
+        }
+        if (agent.kycStatus === 'rejected') {
           data.kycStatus = 'pending';
           data.kycRejectedReason = null;
         }

@@ -105,7 +105,7 @@ export function SidebarRecents({ expanded }: SidebarRecentsProps) {
     return () => observer.disconnect();
   }, [expanded, hasMoreConversations, loadMoreConversations]);
 
-  if (!expanded || (conversations.length === 0 && !hasMoreConversations && !isLoadingMoreConversations)) {
+  if (!expanded || conversations.length === 0) {
     return null;
   }
 

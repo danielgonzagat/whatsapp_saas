@@ -40,12 +40,21 @@ function compactObject<T extends Record<string, unknown>>(value: T): T | undefin
   return entries.length > 0 ? (Object.fromEntries(entries) as T) : undefined;
 }
 
+function compactStringObject(
+  value: Record<string, string | undefined>,
+): Record<string, string> | undefined {
+  const entries = Object.entries(value).filter(
+    (entry): entry is [string, string] => typeof entry[1] === 'string',
+  );
+  return entries.length > 0 ? Object.fromEntries(entries) : undefined;
+}
+
 function buildAddress(address?: ConnectAddressInput): Record<string, string> | undefined {
   if (!address) {
     return undefined;
   }
 
-  return compactObject({
+  return compactStringObject({
     line1: trimToUndefined(address.line1),
     line2: trimToUndefined(address.line2),
     city: trimToUndefined(address.city),
@@ -62,7 +71,7 @@ function buildBusinessProfile(
     return undefined;
   }
 
-  return compactObject({
+  return compactStringObject({
     name: trimToUndefined(profile.name),
     url: trimToUndefined(profile.url),
     mcc: trimToUndefined(profile.mcc),
@@ -124,7 +133,7 @@ function buildExternalAccount(
     return token;
   }
 
-  return compactObject({
+  return compactStringObject({
     object: 'bank_account',
     country: trimToUndefined(externalAccount.country) ?? 'BR',
     currency: trimToUndefined(externalAccount.currency)?.toLowerCase() ?? 'brl',

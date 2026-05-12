@@ -13,7 +13,7 @@ import {
   Request,
   UseGuards,
 } from '@nestjs/common';
-import type { Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { generateUniquePublicCheckoutCode } from '../checkout/checkout-code.util';
@@ -288,7 +288,7 @@ export class AffiliateController {
         category: dto.category || product.category || null,
         tags: dto.tags || product.tags || [],
         thumbnailUrl: dto.thumbnailUrl || product.imageUrl || null,
-        promoMaterials: dto.promoMaterials || null,
+        promoMaterials: dto.promoMaterials ?? Prisma.JsonNull,
       },
     });
 

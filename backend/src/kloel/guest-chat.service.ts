@@ -15,6 +15,8 @@ interface GuestConversation {
   lastMessageAt: Date;
 }
 
+const GUEST_CONVERSATION_INIT_FAILED = 'Failed to initialize guest conversation';
+
 // cache.invalidate — guest conversations stored in-memory Map; cleaned up via periodic timer
 @Injectable()
 export class GuestChatService implements OnModuleDestroy {
@@ -284,7 +286,13 @@ export class GuestChatService implements OnModuleDestroy {
         lastMessageAt: new Date(),
       });
     }
-    return this.conversations.get(sessionId);
+    const conversation = this.conversations.get(sessionId);
+    if (!conversation) {
+      const error = new Error();
+      error.message = GUEST_CONVERSATION_INIT_FAILED;
+      throw error;
+    }
+    return conversation;
   }
 
   /**

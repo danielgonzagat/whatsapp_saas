@@ -2,6 +2,7 @@ import { Controller, Get, Param, Post, Query, Request, UseGuards } from '@nestjs
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { MarketplaceService } from './marketplace.service';
+import type { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 
 /** Marketplace controller. */
 @Controller('marketplace')
@@ -17,7 +18,10 @@ export class MarketplaceController {
 
   /** Install template. */
   @Post('install/:templateId')
-  async installTemplate(@Request() req, @Param('templateId') templateId: string) {
+  async installTemplate(
+    @Request() req: AuthenticatedRequest,
+    @Param('templateId') templateId: string,
+  ) {
     return this.marketplaceService.installTemplate(req.user.workspaceId, templateId);
   }
 }

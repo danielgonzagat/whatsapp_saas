@@ -10,6 +10,7 @@ import {
   Request,
   UseGuards,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
@@ -241,7 +242,7 @@ export class MemberModulesController {
         videoUrl: dto.videoUrl || null,
         textContent: dto.textContent || null,
         downloadUrl: dto.downloadUrl || null,
-        quizData: dto.quizData || null,
+        quizData: dto.quizData ?? Prisma.JsonNull,
         durationMin: dto.durationMin ?? null,
       },
     });

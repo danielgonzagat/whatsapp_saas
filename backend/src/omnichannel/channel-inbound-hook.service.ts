@@ -91,7 +91,7 @@ export class ChannelInboundHookService {
 
     await this.recordDurableMessageEvent(
       event,
-      { workspaceId, externalId: messageId },
+      { workspaceId, externalId: messageId ?? event.subject },
       contactId,
       perceptChannel,
     );

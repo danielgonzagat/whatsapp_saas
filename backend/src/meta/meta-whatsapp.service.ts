@@ -41,6 +41,22 @@ type ResolvedMetaConnection = {
   persistedConnection: boolean;
 };
 
+function firstStrictText(values: unknown[]): string | null {
+  for (const value of values) {
+    const text = readStrictText(value);
+    if (text) {
+      return text;
+    }
+  }
+  return null;
+}
+
+function extractGraphMessageId(response: Record<string, unknown>): string | null {
+  const messages = Array.isArray(response.messages) ? response.messages : [];
+  const firstMessage = readRecord(messages[0]);
+  return firstStrictText([firstMessage.id, response.message_id, response.id]);
+}
+
 // cache.invalidate — Meta connections fetched live from DB; no Redis cache to invalidate
 @Injectable()
 export class MetaWhatsAppService {
@@ -387,7 +403,7 @@ export class MetaWhatsAppService {
 
     return {
       success: true,
-      messageId: response?.messages?.[0]?.id || response?.message_id || response?.id || null,
+      messageId: extractGraphMessageId(response),
       raw: response,
     };
   }
@@ -448,7 +464,7 @@ export class MetaWhatsAppService {
 
     return {
       success: true,
-      messageId: response?.messages?.[0]?.id || response?.message_id || response?.id || null,
+      messageId: extractGraphMessageId(response),
       raw: response,
     };
   }
