@@ -1,6 +1,5 @@
 [build]
-builder = "DOCKERFILE"
-dockerfilePath = "backend/Dockerfile"
+builder = "RAILPACK"
 buildCommand = "npm run railway:backend:build"
 
 [deploy]
