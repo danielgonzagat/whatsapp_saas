@@ -139,7 +139,7 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
 }
 
-function buildLegacyLayout(width: number, height: number, dpr: number): LegacyLayout {
+export function buildLegacyLayout(width: number, height: number, dpr: number): LegacyLayout {
   const isMobile = width < 500;
   const iconSize = isMobile ? 56 : 80;
   const containerSize = iconSize + (isMobile ? 20 : 28);
@@ -189,7 +189,11 @@ function buildLegacyLayout(width: number, height: number, dpr: number): LegacyLa
   };
 }
 
-function drawScene(ctx: CanvasRenderingContext2D, layout: LegacyLayout, icons: LoadedIcon[]) {
+export function drawScene(
+  ctx: CanvasRenderingContext2D,
+  layout: LegacyLayout,
+  icons: LoadedIcon[],
+) {
   ctx.setTransform(layout.dpr, 0, 0, layout.dpr, 0, 0);
   ctx.clearRect(0, 0, layout.width, layout.height);
   ctx.font = `800 ${layout.txtSize}px Sora,sans-serif`;
@@ -228,7 +232,7 @@ function drawScene(ctx: CanvasRenderingContext2D, layout: LegacyLayout, icons: L
   ctx.globalAlpha = 1;
 }
 
-async function thanosLoadImages(icons: typeof THANOS_ICONS): Promise<LoadedIcon[]> {
+export async function thanosLoadImages(icons: typeof THANOS_ICONS): Promise<LoadedIcon[]> {
   const loaded = await Promise.all(
     icons.map(
       (icon) =>
@@ -244,14 +248,14 @@ async function thanosLoadImages(icons: typeof THANOS_ICONS): Promise<LoadedIcon[
   return loaded.filter((icon): icon is LoadedIcon => Boolean(icon));
 }
 
-function particleNoise(px: number, py: number, salt: number): number {
+export function particleNoise(px: number, py: number, salt: number): number {
   let value = (Math.imul(px + 1, 374_761_393) ^ Math.imul(py + 1, 668_265_263) ^ salt) >>> 0;
   value = Math.imul(value ^ (value >>> 15), 2_246_822_519) >>> 0;
   value = Math.imul(value ^ (value >>> 13), 3_266_489_917) >>> 0;
   return ((value ^ (value >>> 16)) >>> 0) / 4_294_967_296;
 }
 
-function captureParticles(ctx: CanvasRenderingContext2D, layout: LegacyLayout) {
+export function captureParticles(ctx: CanvasRenderingContext2D, layout: LegacyLayout) {
   const imgData = ctx.getImageData(0, 0, layout.pixelWidth, layout.pixelHeight);
   const data = imgData.data;
   const particles: Particle[] = [];
@@ -319,7 +323,7 @@ function captureParticles(ctx: CanvasRenderingContext2D, layout: LegacyLayout) {
   return particles;
 }
 
-function blendSquare(
+export function blendSquare(
   buffer: Uint8ClampedArray,
   widthPx: number,
   heightPx: number,
@@ -369,7 +373,7 @@ function blendSquare(
   }
 }
 
-function updateParticleMotion(particle: Particle, dtSec: number, frameScale: number) {
+export function updateParticleMotion(particle: Particle, dtSec: number, frameScale: number) {
   const localSec = particle.ageSec - particle.delaySec;
   particle.ramp = Math.min(1, localSec / (30 / 60));
   particle.vx += particle.dvx * 0.008 * particle.ramp * frameScale;
@@ -389,7 +393,7 @@ function updateParticleMotion(particle: Particle, dtSec: number, frameScale: num
   particle.life -= particle.decay * frameScale;
 }
 
-function isParticleOffscreen(particle: Particle, layout: LegacyLayout): boolean {
+export function isParticleOffscreen(particle: Particle, layout: LegacyLayout): boolean {
   return (
     particle.x + particle.size < -8 ||
     particle.y + particle.size < -8 ||
@@ -440,7 +444,11 @@ function ThanosOmniSales({ runToken }: { runToken: number }) {
         {(Object.keys(SALES_CHANNELS) as ChannelKey[]).map((key) => (
           <div
             key={key}
-            style={{ background: colors.background.void, borderRadius: radius.md, border: `1px solid ${colors.divider}` }}
+            style={{
+              background: colors.background.void,
+              borderRadius: radius.md,
+              border: `1px solid ${colors.divider}`,
+            }}
           >
             <div
               style={{
@@ -485,7 +493,14 @@ function ThanosOmniSales({ runToken }: { runToken: number }) {
                     key={`${key}-${msg.f}-${msg.t}`}
                     style={{ textAlign: 'center', animation: 'thanosIn .2s ease both' }}
                   >
-                    <span style={{ fontSize: 9, fontWeight: 700, color: SALES_CHANNELS.sms.c, fontFamily: M }}>
+                    <span
+                      style={{
+                        fontSize: 9,
+                        fontWeight: 700,
+                        color: SALES_CHANNELS.sms.c,
+                        fontFamily: M,
+                      }}
+                    >
                       {msg.t}
                     </span>
                   </div>
