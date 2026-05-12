@@ -66,9 +66,11 @@ export class MindPolicyService {
     });
     const baselineAction = resolveBaselineAction({
       ...(input.baseline !== undefined ? { baseline: input.baseline } : {}),
-      ...(input.baselineActionQuiet !== undefined ? { baselineActionQuiet: input.baselineActionQuiet } : {}),
-      ...(artifacts.candidates[artifacts.candidates.length - 1]?.action !== undefined
-        ? { fallback: artifacts.candidates[artifacts.candidates.length - 1]!.action }
+      ...(input.baselineActionQuiet !== undefined
+        ? { baselineActionQuiet: input.baselineActionQuiet }
+        : {}),
+      ...(artifacts.candidates.at(-1)?.action !== undefined
+        ? { fallback: artifacts.candidates.at(-1)?.action }
         : {}),
     });
     const decision = buildPolicyDecision({
@@ -288,14 +290,15 @@ export class MindPolicyService {
   }
 
   private async persist(decision: MindPolicyDecision): Promise<void> {
-    if (decision.outcomeKey) {
+    const { outcomeKey } = decision;
+    if (outcomeKey) {
       await this.prisma.$transaction(async (tx) => {
         await tx.$executeRaw /* raw justified: PostgreSQL advisory lock for outcome deduplication */ `
-          SELECT pg_advisory_xact_lock(hashtext(${`${decision.workspaceId}:${decision.outcomeKey}`}))
+          SELECT pg_advisory_xact_lock(hashtext(${`${decision.workspaceId}:${outcomeKey}`}))
         `;
         const existing = await tx.mindPolicy.findFirst({
           where: {
-            outcomeKey: decision.outcomeKey!,
+            outcomeKey,
             workspaceId: decision.workspaceId,
           },
           select: { id: true },

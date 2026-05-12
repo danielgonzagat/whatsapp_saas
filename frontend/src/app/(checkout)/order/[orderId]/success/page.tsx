@@ -44,7 +44,7 @@ function AnimatedCheck() {
 export default function SuccessPage() {
   const params = useParams();
   const orderId = params.orderId as string;
-  const { data } = useOrderStatus(orderId, 0); // single fetch, no polling
+  const { data, error, loading } = useOrderStatus(orderId, 3000);
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -53,8 +53,25 @@ export default function SuccessPage() {
   }, []);
 
   const font = "'DM Sans', sans-serif";
-  const accent = colors.checkout.success;
+  const isPaid = data?.status === 'PAID';
+  const isTerminalFailure =
+    data?.status === 'CANCELED' || data?.status === 'REFUNDED' || Boolean(error);
+  const accent = isPaid
+    ? colors.checkout.success
+    : isTerminalFailure
+      ? colors.checkout.danger
+      : colors.semantic.warning;
   const orderNumber = data?.orderNumber || '...';
+  const title = isPaid
+    ? 'Pedido confirmado!'
+    : isTerminalFailure
+      ? 'Pedido nao confirmado'
+      : 'Confirmando pedido...';
+  const subtitle = isPaid
+    ? 'Obrigado pela sua compra'
+    : isTerminalFailure
+      ? 'Nao encontramos uma confirmacao de pagamento para este pedido.'
+      : 'Estamos aguardando a confirmacao do pagamento.';
 
   return (
     <div
@@ -78,15 +95,42 @@ export default function SuccessPage() {
           transition: 'all 0.5s ease',
         }}
       >
-        {/* Animated checkmark */}
-        <AnimatedCheck />
+        {isPaid ? (
+          <AnimatedCheck />
+        ) : (
+          <div
+            style={{
+              width: '80px',
+              height: '80px',
+              margin: '0 auto 20px',
+              borderRadius: '50%',
+              border: `3px solid ${accent}`,
+              color: accent,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 26,
+              fontWeight: 700,
+            }}
+            aria-hidden="true"
+          >
+            {loading ? '...' : '!'}
+          </div>
+        )}
 
         {/* Title */}
-        <h1 style={{ color: colors.checkout.textPrimary, fontSize: '24px', fontWeight: 700, margin: '0 0 8px' }}>
-          {kloelT(`Pedido confirmado!`)}
+        <h1
+          style={{
+            color: colors.checkout.textPrimary,
+            fontSize: '24px',
+            fontWeight: 700,
+            margin: '0 0 8px',
+          }}
+        >
+          {kloelT(title)}
         </h1>
         <p style={{ color: colors.text.muted, fontSize: '14px', margin: '0 0 28px' }}>
-          {kloelT(`Obrigado pela sua compra`)}
+          {kloelT(subtitle)}
         </p>
 
         {/* Order number */}
@@ -148,11 +192,13 @@ export default function SuccessPage() {
           >
             <span>{kloelT(`Status`)}</span>
             <span style={{ color: accent, fontWeight: 600 }}>
-              {data?.status === 'PAID'
-                ? 'Pago'
-                : data?.status === 'PENDING'
-                  ? 'Pendente'
-                  : data?.status || '...'}
+              {loading
+                ? 'Consultando...'
+                : data?.status === 'PAID'
+                  ? 'Pago'
+                  : data?.status === 'PENDING'
+                    ? 'Pendente'
+                    : data?.status || error || '...'}
             </span>
           </div>
           <div
@@ -173,15 +219,19 @@ export default function SuccessPage() {
         {/* Email notice */}
         <div
           style={{
-            background: colors.checkout.successBg,
-            border: `1px solid ${colors.checkout.success}33`,
+            background: isPaid ? colors.checkout.successBg : colors.checkout.bg,
+            border: `1px solid ${accent}33`,
             borderRadius: '10px',
             padding: '14px 16px',
             marginBottom: '20px',
           }}
         >
-          <p style={{ color: colors.checkout.success, fontSize: '13px', margin: 0, lineHeight: '1.5' }}>
-            {kloelT(`Voce recebera os detalhes por e-mail com informacoes de acompanhamento.`)}
+          <p style={{ color: accent, fontSize: '13px', margin: 0, lineHeight: '1.5' }}>
+            {isPaid
+              ? kloelT(`Voce recebera os detalhes por e-mail com informacoes de acompanhamento.`)
+              : kloelT(
+                  `Esta pagina sera atualizada automaticamente quando o pagamento for confirmado.`,
+                )}
           </p>
         </div>
 
@@ -195,7 +245,9 @@ export default function SuccessPage() {
         >
           <p style={{ margin: 0 }}>
             {kloelT(`Prazo estimado de entrega:`)}{' '}
-            <strong style={{ color: colors.checkout.textPrimary }}>{kloelT(`5 a 10 dias uteis`)}</strong>
+            <strong style={{ color: colors.checkout.textPrimary }}>
+              {kloelT(`5 a 10 dias uteis`)}
+            </strong>
           </p>
         </div>
 

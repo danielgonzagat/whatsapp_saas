@@ -16,15 +16,17 @@ export interface OrderStatusData {
   /** Status property. */
   status: string;
   /** Payment property. */
-  payment?: {
-    status: string;
-    pixQrCode?: string | undefined;
-    pixCopyPaste?: string | undefined;
-    pixExpiresAt?: string | undefined;
-    boletoUrl?: string | undefined;
-    boletoBarcode?: string | undefined;
-    boletoExpiresAt?: string | undefined;
-  } | undefined;
+  payment?:
+    | {
+        status: string;
+        pixQrCode?: string | undefined;
+        pixCopyPaste?: string | undefined;
+        pixExpiresAt?: string | undefined;
+        boletoUrl?: string | undefined;
+        boletoBarcode?: string | undefined;
+        boletoExpiresAt?: string | undefined;
+      }
+    | undefined;
 }
 
 /** Create order data shape. */
@@ -155,7 +157,9 @@ export function useOrderStatus(orderId: string, pollIntervalMs = 3000) {
     };
 
     fetchStatus();
-    intervalRef.current = setInterval(fetchStatus, pollIntervalMs);
+    if (pollIntervalMs > 0) {
+      intervalRef.current = setInterval(fetchStatus, pollIntervalMs);
+    }
 
     return () => stopPolling();
   }, [orderId, pollIntervalMs, stopPolling]);

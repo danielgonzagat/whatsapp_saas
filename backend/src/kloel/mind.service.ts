@@ -100,7 +100,7 @@ export class MindService {
         });
       }
 
-      const nextWatermark = events.length ? events[events.length - 1]!.occurredAt : watermark;
+      const nextWatermark = events.at(-1)?.occurredAt ?? watermark;
 
       this.watermarks.set(workspaceId, nextWatermark);
 

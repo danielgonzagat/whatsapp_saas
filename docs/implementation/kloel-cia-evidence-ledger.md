@@ -2,6 +2,37 @@
 
 Generated: 2026-05-11
 
+## 2026-05-12T13:54:00-03:00 - W9 - Checkout Success Page Truthfulness
+
+- ID-visao: V19, V23.
+- Escopo: frontend-only V23 fix for checkout success status truthfulness, avoiding backend/protected files while another agent repairs backend.
+- Arquivos alterados:
+  - `frontend/src/app/(checkout)/hooks/useCheckout.ts`
+  - `frontend/src/app/(checkout)/order/[orderId]/success/page.tsx`
+  - `docs/implementation/kloel-cia-evidence-ledger.md`
+  - `docs/implementation/kloel-cia-session-handoff.md`
+- Comportamento entregue:
+  - `useOrderStatus(orderId, 0)` no longer creates a zero-delay interval; polling is created only when `pollIntervalMs > 0`.
+  - The checkout success page now polls order status every 3s and renders distinct paid, pending, and failure states instead of presenting every reachable success URL as a confirmed paid order.
+- Comando(s) rodados:
+  - `npx prettier --write frontend/src/app/'(checkout)'/hooks/useCheckout.ts frontend/src/app/'(checkout)'/order/'[orderId]'/success/page.tsx`
+  - `npm --prefix frontend run typecheck -- --pretty false`
+  - `npm exec eslint -- src/app/'(checkout)'/hooks/useCheckout.ts src/app/'(checkout)'/order/'[orderId]'/success/page.tsx src/components/kloel/marketing/MarketingView.tsx src/components/kloel/marketing/MarketingView.Tabs.tsx src/lib/kloel-chat.ts src/components/kloel/auth/auth-modal.tsx` from `frontend/`
+- Resultado:
+  - Prettier completed.
+  - Frontend typecheck passed.
+  - Focused ESLint passed.
+- Evidencia:
+  - Current session command outputs for frontend typecheck and ESLint.
+  - Diff in the two checkout frontend files listed above.
+- Riscos remanescentes:
+  - No browser screenshot/E2E was run for this checkout page slice.
+  - Backend checkout/payment smokes remain blocked by external payment sandbox dependencies.
+- Plano de rollback:
+  - Forward-edit the success page back to single-fetch status display if a later product decision requires static post-payment display, though current V23 evidence favors truthful polling.
+- Referencia subagent:
+  - Based on accepted report `artifacts/opencode-live/kloel-cia-batch-17-readonly-2026-05-12/v23-anti-fake.out`, with manual verification.
+
 ## 2026-05-12T13:49:00-03:00 - W9 - V23 Frontend Truthfulness Fixes
 
 - ID-visao: V05, V06, V17, V23.

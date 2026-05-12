@@ -27,10 +27,12 @@ function nearestFollowUpBucket(
   requestedDelayHours: number,
   buckets: Record<string, number>,
 ): string {
-  return Object.entries(buckets).sort(
-    ([, left], [, right]) =>
-      Math.abs(left - requestedDelayHours) - Math.abs(right - requestedDelayHours),
-  )[0]![0];
+  const [bucket] =
+    Object.entries(buckets).sort(
+      ([, left], [, right]) =>
+        Math.abs(left - requestedDelayHours) - Math.abs(right - requestedDelayHours),
+    )[0] ?? [];
+  return bucket ?? 'immediate';
 }
 
 export async function chooseFollowUpTiming(input: {

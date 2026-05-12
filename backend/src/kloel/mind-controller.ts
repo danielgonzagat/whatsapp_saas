@@ -230,8 +230,11 @@ export class MindController {
       const recipeKeys = body.recipeKeys ?? ['followup_timing', 'cart_recovery', 'coupon_offer'];
       const recipes = MindSyntheticGeneratorService.builtinRecipes();
       decisions = recipeKeys
-        .filter((key) => recipes[key])
-        .map((key, index) => this.synthetic.generateDecision(recipes[key]!, seed + index * 100));
+        .map((key, index) => {
+          const recipe = recipes[key];
+          return recipe ? this.synthetic.generateDecision(recipe, seed + index * 100) : null;
+        })
+        .filter((decision): decision is ReplayInput => decision !== null);
     } else {
       const report = this.simulator.simulateSyntheticWorkspace(workspaceId, seed);
       return {
