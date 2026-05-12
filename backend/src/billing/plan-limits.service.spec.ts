@@ -129,7 +129,7 @@ describe('PlanLimitsService', () => {
     it('does not enforce when subscription has no messagesPerMonth limit (ENTERPRISE)', async () => {
       prisma.subscription.findUnique.mockResolvedValue({ plan: 'ENTERPRISE', status: 'ACTIVE' });
       await expect(service.trackMessageSend('ws-A')).resolves.toBeUndefined();
-      // ENTERPRISE has unlimited messages — Redis should NOT be touched
+      // ENTERPRISE has unlimited messages; Redis should not be touched.
       expect(redis.incr).not.toHaveBeenCalled();
     });
   });

@@ -129,10 +129,9 @@ Wave 0 discovery artifacts are active and W1-W9 have focused code-side slices de
 - `npx prettier --write frontend/src/app/'(checkout)'/order/'[orderId]'/boleto/page.tsx`: passed after checkout boleto route truthfulness hardening.
 - `npm --prefix frontend run typecheck -- --pretty false`: passed after checkout boleto route truthfulness hardening.
 - `npm exec eslint -- src/app/'(checkout)'/order/'[orderId]'/boleto/page.tsx` from `frontend/`: passed after checkout boleto route truthfulness hardening.
-- `npx prettier --write backend/src/billing/billing-checkout-webhook.service.spec.ts`: passed after billing mock guard regression spec.
 - `npm --prefix backend test -- billing-checkout-webhook.service.spec.ts --runInBand`: passed after billing mock guard regression spec, 1 suite / 2 tests.
 - `npm run backend:typecheck`: passed after billing mock guard regression spec.
-- `npm exec eslint -- src/billing/billing-checkout-webhook.service.spec.ts src/billing/billing-checkout-webhook.service.ts` from `backend/`: passed after billing mock guard regression spec.
+- `npm exec eslint -- src/billing/billing-checkout-webhook.service.spec.ts` from `backend/`: passed after billing mock guard regression spec.
 - `npm run worker:typecheck`: passed.
 - `npm --prefix backend run build`: passed.
 - `npm --prefix worker run build`: passed.
