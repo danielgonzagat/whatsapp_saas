@@ -12,7 +12,8 @@
     "@tootallnate/once": "3.0.1",
     "babel-plugin-istanbul": "8.0.0",
     "test-exclude": "8.0.0",
-    "glob": "13.0.6"
+    "glob": "13.0.6",
+    "node-domexception": "file:./vendor/node-domexception-native"
   },
   "engines": {
     "node": ">=22 <23"
