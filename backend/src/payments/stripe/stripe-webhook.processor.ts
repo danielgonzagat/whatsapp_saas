@@ -8,6 +8,8 @@ import { ConnectService } from '../connect/connect.service';
 import { LedgerService } from '../ledger/ledger.service';
 import type { SplitRole } from '../split/split.types';
 
+const stripeWebhookLogger = new Logger('StripeWebhookProcessor');
+
 interface PersistedSplitLine {
   role: SplitRole;
   accountId: string;
@@ -69,7 +71,7 @@ function parseLines(json: string): PersistedSplitLine[] {
       }));
   } catch (error: unknown) {
     const err = error instanceof Error ? error : new Error('Unknown error');
-    console.error('[stripe-webhook] Failed to parse transfer reversals:', err.message);
+    stripeWebhookLogger.error('Failed to parse transfer reversals', err.message);
     try {
       Sentry.captureException(err);
     } catch {

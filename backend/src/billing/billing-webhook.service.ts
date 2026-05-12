@@ -59,7 +59,7 @@ export class BillingWebhookService {
       return this.whatsappService;
     } catch (error: unknown) {
       const err = error instanceof Error ? error : new Error('Unknown error');
-      console.error('[billing-webhook] Failed to resolve WhatsApp service:', err.message);
+      this.logger.error('Failed to resolve WhatsApp service', err.message);
       try {
         Sentry.captureException(err);
       } catch {

@@ -1,4 +1,11 @@
-import { Injectable, Inject, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Inject,
+  InternalServerErrorException,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import type { ImagesResponse, ImageGenerateParamsNonStreaming } from 'openai/resources/images';
 import OpenAI from 'openai';
 import { Prisma } from '@prisma/client';
@@ -7,7 +14,6 @@ import { StorageService } from '../common/storage/storage.service';
 import { getTraceHeaders } from '../common/trace-headers';
 import { resolveKloelCapabilityModel } from '../lib/ai-models';
 import { KloelComposerE2EGuard, KLOEL_COMPOSER_E2E_GUARD } from './kloel-composer-e2e-guard';
-
 const MODEL_RE = /model/i;
 const INVALID_RE = /invalid/i;
 
@@ -237,7 +243,7 @@ export class KloelComposerService {
         return this.e2EGuard.buildImageResult();
       }
       if (!process.env.OPENAI_API_KEY) {
-        throw new Error(ERR_IMAGE_API_KEY_MISSING);
+        throw new NotFoundException(ERR_IMAGE_API_KEY_MISSING);
       }
       if (workspaceId) {
         await this.planLimits.ensureTokenBudget(workspaceId);
@@ -262,9 +268,9 @@ export class KloelComposerService {
           MODEL_RE.test(errorCode) ||
           INVALID_RE.test(errorMessage)
         ) {
-          throw new Error(ERR_IMAGE_GENERATION_RETRY);
+          throw new InternalServerErrorException(ERR_IMAGE_GENERATION_RETRY);
         }
-        throw new Error(ERR_IMAGE_GENERATION_FAILED);
+        throw new InternalServerErrorException(ERR_IMAGE_GENERATION_FAILED);
       }
 
       const rawImageUrl = String(
@@ -274,7 +280,7 @@ export class KloelComposerService {
             : ''),
       ).trim();
       if (!rawImageUrl) {
-        throw new Error(ERR_IMAGE_GENERATION_FAILED);
+        throw new InternalServerErrorException(ERR_IMAGE_GENERATION_FAILED);
       }
 
       const generatedImageFilename = `kloel-image-${workspaceId || 'workspace'}-${Date.now()}.png`;
@@ -311,7 +317,7 @@ export class KloelComposerService {
 
     if (capability === 'create_site') {
       if (!process.env.ANTHROPIC_API_KEY) {
-        throw new Error(ERR_SITE_API_KEY_MISSING);
+        throw new NotFoundException(ERR_SITE_API_KEY_MISSING);
       }
       if (workspaceId) {
         await this.planLimits.ensureTokenBudget(workspaceId);
@@ -347,13 +353,15 @@ export class KloelComposerService {
 
       if (!response.ok) {
         const errorText = await response.text().catch(() => '');
-        throw new Error(`Anthropic API error ${response.status}: ${errorText}`);
+        throw new InternalServerErrorException(
+          `Anthropic API error ${response.status}: ${errorText}`,
+        );
       }
 
       const result = await response.json();
       const html = String(result?.content?.[0]?.text || '').trim();
       if (!html) {
-        throw new Error(ERR_SITE_EMPTY_HTML);
+        throw new InternalServerErrorException(ERR_SITE_EMPTY_HTML);
       }
 
       const usageTokens =
@@ -368,6 +376,6 @@ export class KloelComposerService {
       };
     }
 
-    throw new Error(ERR_UNSUPPORTED_CAPABILITY);
+    throw new BadRequestException(ERR_UNSUPPORTED_CAPABILITY);
   }
 }
