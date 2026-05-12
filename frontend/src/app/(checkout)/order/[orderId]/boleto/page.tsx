@@ -57,9 +57,11 @@ export default function BoletoPaymentPage() {
     : hasBoletoData
       ? kloelT(`Boleto gerado`)
       : kloelT(`Boleto indisponivel`);
-  const subtitle = hasBoletoData
-    ? kloelT(`Copie o codigo de barras ou abra o PDF para pagar`)
-    : kloelT(`Este pedido nao possui boleto gerado. Use Pix ou cartao no checkout.`);
+  const subtitle = loading
+    ? kloelT(`Buscando os dados do pedido`)
+    : hasBoletoData
+      ? kloelT(`Copie o codigo de barras ou abra o PDF para pagar`)
+      : kloelT(`Este pedido nao possui boleto gerado. Use Pix ou cartao no checkout.`);
 
   return (
     <div

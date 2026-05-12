@@ -9,7 +9,7 @@ Wave 0 discovery artifacts are active and W1-W9 have focused code-side slices de
 ## Branch atual e ultimo commit
 
 - Branch: `chore/purga-total-debt`
-- HEAD: `07e273752 [W9] Corrigir rota de boleto sem dados`
+- HEAD: `a133185dc [W9] Corrigir rota de boleto sem dados`
 - Note: prior handoff referenced `feat/kloel-cia-convergence`, but the live checkout is currently `chore/purga-total-debt`; do not infer branch state from older docs.
 
 ## Gates passados na sessao
