@@ -148,7 +148,7 @@ const defaultBackoff = Math.max(
 
 export function buildQueueOptions() {
   return {
-    connection: buildBullMqConnectionOptions('BullMQ queue connection'),
+    connection: getConnection(),
     defaultJobOptions: {
       attempts: defaultAttempts,
       backoff: { type: 'exponential', delay: defaultBackoff },

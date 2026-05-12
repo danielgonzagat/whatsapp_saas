@@ -105,6 +105,8 @@ export async function dispatchAutopilotAction(input: DispatchInput): Promise<Dis
   const execution = await beginAutonomyExecution({
     workspaceId,
     actionType: action,
+    contactId: contactId || (contactRecord?.id as string | undefined) || undefined,
+    conversationId: input.conversationId,
     workItemId: (idemCtx.workItemId as string | null) || null,
     proofId:
       (idemCtx.conversationProofId as string | null) ||
