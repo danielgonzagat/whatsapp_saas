@@ -37,6 +37,7 @@ import type {
 import { mapTopProducts, toChannelDataMap } from './marketing-utils';
 import { MarketingConversationsHub } from './MarketingConversationsHub';
 
+import { OfficialMarketingChannelPage } from './OfficialMarketingChannelPage';
 import WhatsAppMarketingTab from './WhatsAppMarketingTab';
 import InstagramMarketingTab from './InstagramMarketingTab';
 import TikTokMarketingTab from './TikTokMarketingTab';
@@ -70,6 +71,10 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
   const [emailTestSending, setEmailTestSending] = useState(false);
   const [emailTestResult, setEmailTestResult] = useState<string | null>(null);
   const [connectionMessage, setConnectionMessage] = useState<string | null>(null);
+  const [channelSetupMap, setChannelSetupMap] = useState<
+    Record<string, { currentStep: number; completedAt: string | null } | null>
+  >({});
+  const [wizardInitialStep, setWizardInitialStep] = useState<number | undefined>(undefined);
 
   const { data: connectionStatus, mutate: mutateConnectionStatus } = useSWR<MarketingConnectStatus>(
     '/marketing/connect/status',
@@ -176,17 +181,41 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
     }
   }, [userEmail]);
 
+  const channelKeys = ['whatsapp', 'instagram', 'facebook', 'tiktok', 'email'] as const;
+  const activeChannelKey = channelKeys.includes(tab as (typeof channelKeys)[number])
+    ? tab
+    : null;
+
   useEffect(() => {
     if (metaQueryState === 'success') {
       setConnectionMessage(
         'Conta Meta conectada com sucesso. O canal ja voltou para o Marketing no contexto certo.',
       );
+      if (activeChannelKey) {
+        apiFetch('/marketing/connect/channel-setup', {
+          method: 'POST',
+          body: { channel: activeChannelKey, currentStep: 1 },
+        })
+          .then(() => {
+            setWizardInitialStep(1);
+            setChannelSetupMap((prev) => {
+              const existing = prev[activeChannelKey];
+              return {
+                ...prev,
+                [activeChannelKey]: existing
+                  ? { ...existing, currentStep: 1 }
+                  : { currentStep: 1, completedAt: null },
+              };
+            });
+          })
+          .catch(() => {});
+      }
     } else if (metaQueryState === 'error') {
       setConnectionMessage(
         `Falha na conexao Meta${metaQueryReason ? `: ${metaQueryReason}` : '.'}`,
       );
     }
-  }, [metaQueryReason, metaQueryState]);
+  }, [metaQueryReason, metaQueryState, activeChannelKey]);
 
   const { stats: realStats } = useMarketingStats();
   const { channels: realChannels } = useMarketingChannels();
@@ -195,6 +224,40 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
   const { products: rawProducts } = useProducts();
 
   const mappedProducts = useMemo(() => mapTopProducts(rawProducts), [rawProducts]);
+
+  useEffect(() => {
+    if (!activeChannelKey || !workspace?.id) {
+      return;
+    }
+    let cancelled = false;
+    apiFetch(
+      `/marketing/connect/channel-setup?channel=${encodeURIComponent(activeChannelKey)}`,
+    )
+      .then((res) => {
+        if (cancelled) {
+          return;
+        }
+        const data = res.data as { setup?: { currentStep?: number }; completedAt?: string | null };
+        setChannelSetupMap((prev) => ({
+          ...prev,
+          [activeChannelKey]: {
+            currentStep: data?.setup?.currentStep ?? 0,
+            completedAt: data?.completedAt || null,
+          },
+        }));
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setChannelSetupMap((prev) => ({
+            ...prev,
+            [activeChannelKey]: null,
+          }));
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [activeChannelKey, workspace?.id]);
 
   const channelDataMap: Record<string, ChannelRealData> = useMemo(
     () => toChannelDataMap(realChannels),
@@ -259,6 +322,36 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
     workspaceId: workspace?.id || null,
     operator: userEmail || userName || null,
   };
+
+  const isChannelConnected = useCallback(
+    (channelKey: string): boolean => {
+      if (channelKey === 'tiktok') {
+        return false;
+      }
+      return (connectionStatus?.channels as Record<string, { connected?: boolean }> | undefined)?.[
+        channelKey
+      ]?.connected === true;
+    },
+    [connectionStatus],
+  );
+
+  const shouldShowWizard = useCallback(
+    (channelKey: string): boolean => {
+      if (!connectionStatus) {
+        return false;
+      }
+      const connected = isChannelConnected(channelKey);
+      if (!connected) {
+        return true;
+      }
+      const setup = channelSetupMap[channelKey];
+      if (!setup || setup.completedAt === null) {
+        return true;
+      }
+      return false;
+    },
+    [connectionStatus, channelSetupMap, isChannelConnected],
+  );
 
   return (
     <div
@@ -345,61 +438,81 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
         )}
 
         {tab === 'whatsapp' && (
-          <WhatsAppMarketingTab
-            channelData={getChannelData('whatsapp')}
-            liveFeed={feed.filter((m) => m.includes('[whatsapp]'))}
-            mode={channelTabProps.mode}
-            workspaceId={channelTabProps.workspaceId}
-            operator={channelTabProps.operator}
-            connection={channelTabProps.connectionStatus?.channels?.whatsapp}
-            onRefreshConnectionStatus={channelTabProps.onRefreshConnectionStatus}
-          />
+          shouldShowWizard('whatsapp') ? (
+            <OfficialMarketingChannelPage channel="whatsapp" {...(wizardInitialStep !== undefined ? { initialStep: wizardInitialStep } : {})} />
+          ) : (
+            <WhatsAppMarketingTab
+              channelData={getChannelData('whatsapp')}
+              liveFeed={feed.filter((m) => m.includes('[whatsapp]'))}
+              mode={channelTabProps.mode}
+              workspaceId={channelTabProps.workspaceId}
+              operator={channelTabProps.operator}
+              connection={channelTabProps.connectionStatus?.channels?.whatsapp}
+              onRefreshConnectionStatus={channelTabProps.onRefreshConnectionStatus}
+            />
+          )
         )}
 
         {tab === 'instagram' && (
           <div style={{ position: 'relative' }}>
-            <InstagramMarketingTab
-              channelData={getChannelData('instagram')}
-              connectionStatus={channelTabProps.connectionStatus}
-              metaConnected={channelTabProps.metaConnected}
-              onConnectMeta={(key) => channelTabProps.onConnectMeta(key)}
-              connectingKey={channelTabProps.connectingKey}
-            />
+            {shouldShowWizard('instagram') ? (
+              <OfficialMarketingChannelPage channel="instagram" {...(wizardInitialStep !== undefined ? { initialStep: wizardInitialStep } : {})} />
+            ) : (
+              <InstagramMarketingTab
+                channelData={getChannelData('instagram')}
+                connectionStatus={channelTabProps.connectionStatus}
+                metaConnected={channelTabProps.metaConnected}
+                onConnectMeta={(key) => channelTabProps.onConnectMeta(key)}
+                connectingKey={channelTabProps.connectingKey}
+              />
+            )}
           </div>
         )}
 
         {tab === 'tiktok' && (
           <div style={{ position: 'relative' }}>
-            <TikTokMarketingTab channelData={getChannelData('tiktok')} />
+            {shouldShowWizard('tiktok') ? (
+              <OfficialMarketingChannelPage channel="tiktok" {...(wizardInitialStep !== undefined ? { initialStep: wizardInitialStep } : {})} />
+            ) : (
+              <TikTokMarketingTab channelData={getChannelData('tiktok')} />
+            )}
           </div>
         )}
 
         {tab === 'facebook' && (
           <div style={{ position: 'relative' }}>
-            <FacebookMarketingTab
-              channelData={getChannelData('facebook')}
-              connectionStatus={channelTabProps.connectionStatus}
-              metaConnected={channelTabProps.metaConnected}
-              onConnectMeta={(key) => channelTabProps.onConnectMeta(key)}
-              connectingKey={channelTabProps.connectingKey}
-            />
+            {shouldShowWizard('facebook') ? (
+              <OfficialMarketingChannelPage channel="facebook" {...(wizardInitialStep !== undefined ? { initialStep: wizardInitialStep } : {})} />
+            ) : (
+              <FacebookMarketingTab
+                channelData={getChannelData('facebook')}
+                connectionStatus={channelTabProps.connectionStatus}
+                metaConnected={channelTabProps.metaConnected}
+                onConnectMeta={(key) => channelTabProps.onConnectMeta(key)}
+                connectingKey={channelTabProps.connectingKey}
+              />
+            )}
           </div>
         )}
 
         {tab === 'email' && (
           <div style={{ position: 'relative' }}>
-            <EmailMarketingTab
-              channelData={getChannelData('email')}
-              connectionStatus={channelTabProps.connectionStatus}
-              mode={channelTabProps.mode}
-              defaultRecipientEmail={channelTabProps.operator}
-              onConnectEmail={channelTabProps.onConnectEmail}
-              onDisconnectEmail={channelTabProps.onDisconnectEmail}
-              onSendEmailTest={channelTabProps.onSendEmailTest}
-              connectingKey={channelTabProps.connectingKey}
-              emailTestSending={channelTabProps.emailTestSending}
-              emailTestResult={channelTabProps.emailTestResult}
-            />
+            {shouldShowWizard('email') ? (
+              <OfficialMarketingChannelPage channel="email" {...(wizardInitialStep !== undefined ? { initialStep: wizardInitialStep } : {})} />
+            ) : (
+              <EmailMarketingTab
+                channelData={getChannelData('email')}
+                connectionStatus={channelTabProps.connectionStatus}
+                mode={channelTabProps.mode}
+                defaultRecipientEmail={channelTabProps.operator}
+                onConnectEmail={channelTabProps.onConnectEmail}
+                onDisconnectEmail={channelTabProps.onDisconnectEmail}
+                onSendEmailTest={channelTabProps.onSendEmailTest}
+                connectingKey={channelTabProps.connectingKey}
+                emailTestSending={channelTabProps.emailTestSending}
+                emailTestResult={channelTabProps.emailTestResult}
+              />
+            )}
           </div>
         )}
       </div>
