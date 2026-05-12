@@ -97,7 +97,9 @@ describe('sendAuthenticatedKloelMessage', () => {
       },
       signal: controller.signal,
     });
-    expect(mutateMock).toHaveBeenCalledWith(expect.any(Function));
+    expect(mutateMock).toHaveBeenCalledOnce();
+    const [mutatePredicate] = mutateMock.mock.calls[0] ?? [];
+    expect(typeof mutatePredicate).toBe('function');
   });
 });
 
