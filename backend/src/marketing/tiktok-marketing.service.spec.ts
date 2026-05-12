@@ -198,7 +198,7 @@ describe('TikTokMarketingService', () => {
     it('returns missing_code when no code is provided', async () => {
       const result = await service.completeOAuth('ws-1', {
         kind: 'creator',
-        state: 'any-state',
+        state: 'arbitrary-state',
       });
 
       expect(result).toEqual({ connected: false, status: 'missing_code' });

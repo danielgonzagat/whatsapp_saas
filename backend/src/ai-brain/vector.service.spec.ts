@@ -51,7 +51,7 @@ describe('VectorService', () => {
     it('returns empty embedding when API key is not configured', async () => {
       buildService(undefined);
 
-      const result = await service.getEmbedding('any text');
+      const result = await service.getEmbedding('sample text');
 
       expect(result).toEqual({ embedding: [], tokensUsed: 0 });
       expect(mockEmbeddingsCreate).not.toHaveBeenCalled();

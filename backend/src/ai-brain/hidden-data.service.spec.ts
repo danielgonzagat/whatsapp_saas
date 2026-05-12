@@ -46,16 +46,19 @@ describe('HiddenDataExtractorService', () => {
 
       const result = await service.extract('I need a solution for $5000, urgent');
 
-      expect(chatCompletionWithRetry).toHaveBeenCalledWith(
-        expect.anything(),
-        expect.objectContaining({
-          model: expect.any(String) as string,
-          messages: expect.arrayContaining([expect.objectContaining({ role: 'user' })]) as Array<{
-            role: string;
-          }>,
-          response_format: { type: 'json_object' },
-        }),
+      const [, completionOptions] = (chatCompletionWithRetry as jest.Mock).mock.calls[0] as [
+        unknown,
+        {
+          model: string;
+          messages: Array<{ role: string }>;
+          response_format: { type: string };
+        },
+      ];
+      expect(typeof completionOptions.model).toBe('string');
+      expect(completionOptions.messages).toEqual(
+        expect.arrayContaining([expect.objectContaining({ role: 'user' })]),
       );
+      expect(completionOptions.response_format).toEqual({ type: 'json_object' });
       expect(result).toEqual({
         budget: 5000,
         urgency: 'HIGH',
@@ -68,7 +71,7 @@ describe('HiddenDataExtractorService', () => {
     it('returns empty object when API key is not configured', async () => {
       buildService(undefined);
 
-      const result = await service.extract('any text');
+      const result = await service.extract('sample text');
 
       expect(result).toEqual({});
       expect(chatCompletionWithRetry).not.toHaveBeenCalled();
@@ -81,7 +84,7 @@ describe('HiddenDataExtractorService', () => {
       });
       buildService('sk-test');
 
-      const result = await service.extract('any text');
+      const result = await service.extract('sample text');
 
       expect(result).toEqual({});
     });
@@ -93,7 +96,7 @@ describe('HiddenDataExtractorService', () => {
       });
       buildService('sk-test');
 
-      const result = await service.extract('any text');
+      const result = await service.extract('sample text');
 
       expect(result).toEqual({});
     });

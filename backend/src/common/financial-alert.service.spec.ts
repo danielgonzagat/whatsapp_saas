@@ -34,9 +34,10 @@ describe('FinancialAlertService', () => {
   });
 
   it('withdrawalFailed forwards as fatal with operation=withdrawal', () => {
-    service.withdrawalFailed(new Error('x'), { workspaceId: 'ws-2', amount: 100 });
+    const error = new Error('x');
+    service.withdrawalFailed(error, { workspaceId: 'ws-2', amount: 100 });
     expect(Sentry.captureException).toHaveBeenCalledWith(
-      expect.any(Error),
+      error,
       expect.objectContaining({
         tags: { type: 'financial_alert', operation: 'withdrawal' },
         level: 'fatal',
@@ -45,13 +46,14 @@ describe('FinancialAlertService', () => {
   });
 
   it('webhookProcessingFailed forwards as error with provider tag', () => {
-    service.webhookProcessingFailed(new Error('y'), {
+    const error = new Error('y');
+    service.webhookProcessingFailed(error, {
       provider: 'stripe',
       externalId: 'evt_1',
       eventType: 'invoice.paid',
     });
     expect(Sentry.captureException).toHaveBeenCalledWith(
-      expect.any(Error),
+      error,
       expect.objectContaining({
         tags: { type: 'financial_alert', provider: 'stripe' },
         level: 'error',
