@@ -1,5 +1,7 @@
 import {
   BadRequestException,
+  forwardRef,
+  Inject,
   Injectable,
   Logger,
   ServiceUnavailableException,
@@ -132,6 +134,7 @@ export class MailboxGmailOAuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
+    @Inject(forwardRef(() => OmnichannelService))
     private readonly omnichannel: OmnichannelService,
   ) {}
 
