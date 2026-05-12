@@ -86,7 +86,7 @@ describe('CheckoutPostPaymentEffectsService', () => {
       markConvertedFromOrder: jest.fn().mockResolvedValue(undefined),
     };
 
-    const prismaAny = prisma as unknown as PrismaService & {
+    const prismaAny = prisma as PrismaService & {
       memberAreaUpdate: { updateMany: jest.Mock };
     };
     prismaAny.memberAreaUpdate = { updateMany: memberAreaUpdateMock };

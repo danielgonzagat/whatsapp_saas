@@ -48,10 +48,10 @@ describe('BillingSubscriptionService', () => {
       },
     };
     service = new BillingSubscriptionService(
-      prisma as unknown as PrismaService,
+      prisma as PrismaService,
       configService,
       {} as ModuleRef,
-      stripe as unknown as StripeClient,
+      stripe as StripeClient,
       {} as BillingCheckoutHelperService,
     );
   });

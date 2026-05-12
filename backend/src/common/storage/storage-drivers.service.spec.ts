@@ -20,7 +20,7 @@ describe('StorageDriversService', () => {
     config = { get: jest.fn().mockReturnValue(undefined) };
 
     service = new StorageDriversService(
-      config as unknown as ConfigService,
+      config as ConfigService,
     );
   });
 

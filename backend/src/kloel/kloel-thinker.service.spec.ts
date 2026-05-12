@@ -192,7 +192,7 @@ describe('KloelThinkerService', () => {
       openai: {},
       unavailableMessage: 'Indisponível no momento.',
       contextFormatter: { sanitizeUserNameForAssistant: jest.fn().mockReturnValue('User') },
-    } as unknown as typeof replyEngine;
+    } as typeof replyEngine;
 
     llmE2EGuard = {
       isEnabled: jest.fn().mockReturnValue(false),

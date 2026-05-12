@@ -282,7 +282,7 @@ describe('AdminAuditService', () => {
       const publicMethods = proto.filter(
         (k) =>
           k !== 'constructor' &&
-          typeof (service as unknown as Record<string, unknown>)[k] === 'function',
+          typeof (service as Record<string, unknown>)[k] === 'function',
       );
       expect(publicMethods).not.toContain('update');
       expect(publicMethods).not.toContain('delete');

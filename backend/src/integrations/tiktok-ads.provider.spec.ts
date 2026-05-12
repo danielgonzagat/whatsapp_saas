@@ -15,14 +15,14 @@ describe('TikTokAdsProvider', () => {
       getCampaignsForAdvertiser: jest.fn(),
       getReport: jest.fn(),
       getAccessTokenAndAdvertiserIds: jest.fn(),
-    } as unknown as jest.Mocked<TikTokAdsService>;
+    } as jest.Mocked<TikTokAdsService>;
 
     prismaService = {
       workspace: {
         findUnique: jest.fn(),
         update: jest.fn(),
       },
-    } as unknown as jest.Mocked<PrismaService>;
+    } as jest.Mocked<PrismaService>;
 
     const module = await Test.createTestingModule({
       providers: [

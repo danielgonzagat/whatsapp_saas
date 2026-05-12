@@ -19,7 +19,7 @@ describe('FacebookCAPIService', () => {
 
   it('hashes email and phone with sha256 in user_data', async () => {
     const fetchMock = jest.fn().mockResolvedValue({ ok: true, status: 200, text: async () => '' });
-    global.fetch = fetchMock as unknown as typeof fetch;
+    global.fetch = fetchMock as typeof fetch;
 
     await service.sendEvent({
       pixelId: 'pix-1',
@@ -42,7 +42,7 @@ describe('FacebookCAPIService', () => {
 
   it('converts cents to currency in custom_data.value', async () => {
     const fetchMock = jest.fn().mockResolvedValue({ ok: true, status: 200, text: async () => '' });
-    global.fetch = fetchMock as unknown as typeof fetch;
+    global.fetch = fetchMock as typeof fetch;
     await service.sendEvent({
       pixelId: 'pix',
       accessToken: 'tok',
@@ -58,7 +58,7 @@ describe('FacebookCAPIService', () => {
     global.fetch = jest
       .fn()
       .mockResolvedValueOnce({ ok: true, status: 200, text: async () => '' })
-      .mockResolvedValueOnce({ ok: false, status: 400, text: async () => 'bad' }) as unknown as typeof fetch;
+      .mockResolvedValueOnce({ ok: false, status: 400, text: async () => 'bad' }) as typeof fetch;
 
     const ok = await service.sendEvent({
       pixelId: 'p',
@@ -82,7 +82,7 @@ describe('FacebookCAPIService', () => {
   it('swallows fetch errors and returns false (never throws)', async () => {
     global.fetch = jest
       .fn()
-      .mockRejectedValue(new Error('network down')) as unknown as typeof fetch;
+      .mockRejectedValue(new Error('network down')) as typeof fetch;
     const result = await service.sendEvent({
       pixelId: 'p',
       accessToken: 't',
@@ -95,7 +95,7 @@ describe('FacebookCAPIService', () => {
 
   it('targets the correct Meta Graph endpoint with the pixel id in URL', async () => {
     const fetchMock = jest.fn().mockResolvedValue({ ok: true, status: 200, text: async () => '' });
-    global.fetch = fetchMock as unknown as typeof fetch;
+    global.fetch = fetchMock as typeof fetch;
     await service.sendEvent({
       pixelId: 'my-pixel',
       accessToken: 'tok',

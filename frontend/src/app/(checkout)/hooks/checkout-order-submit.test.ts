@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 
 import { finalizeCheckoutOrder } from './checkout-order-submit';
-import { createOrder, type OrderStatusData } from './useCheckout';
+import { createOrder } from './useCheckout';
 
 vi.mock('./useCheckout', () => ({
   createOrder: vi.fn(),
@@ -64,13 +64,14 @@ describe('finalizeCheckoutOrder — Stripe-only checkout', () => {
     mockedCreateOrder.mockResolvedValue({
       id: 'order_123',
       orderNumber: 'KLOEL-123',
+      status: 'PENDING',
       plan: { upsells: [] },
       paymentData: {
         clientSecret: 'pi_test_secret_123',
         paymentIntentId: 'pi_test_123',
         approved: false,
       },
-    } as unknown as OrderStatusData);
+    });
 
     const result = await finalizeCheckoutOrder(baseArgs);
 
@@ -94,11 +95,12 @@ describe('finalizeCheckoutOrder — Stripe-only checkout', () => {
     mockedCreateOrder.mockResolvedValue({
       id: 'order_pix_1',
       orderNumber: 'KLOEL-PIX-1',
+      status: 'PENDING',
       paymentData: {
         approved: false,
         pixQrCode: 'data:image/png;base64,qr',
       },
-    } as unknown as OrderStatusData);
+    });
 
     const result = await finalizeCheckoutOrder({
       ...baseArgs,

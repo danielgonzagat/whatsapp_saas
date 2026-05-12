@@ -173,7 +173,7 @@ describe('KloelBusinessConfigToolsService', () => {
         leadScore: 50,
         tags: [],
         conversations: [],
-      } as unknown as ContactRecord;
+      } as ContactRecord;
       prisma.contact.findFirst.mockResolvedValue(contact);
 
       const result = await service.toolGetLeadDetails(wsId, { leadId: 'c-1' });
@@ -194,7 +194,7 @@ describe('KloelBusinessConfigToolsService', () => {
         leadScore: null,
         tags: [],
         conversations: [],
-      } as unknown as ContactRecord;
+      } as ContactRecord;
       prisma.contact.findFirst.mockResolvedValue(contact);
 
       const result = await service.toolGetLeadDetails(wsId, { phone: '(11) 98888-7777' });

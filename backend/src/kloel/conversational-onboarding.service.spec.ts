@@ -166,7 +166,7 @@ describe('ConversationalOnboardingService', () => {
       const write = jest.fn();
       const end = jest.fn();
       const setHeader = jest.fn();
-      const res = { setHeader, write, end } as unknown as import('express').Response;
+      const res = { setHeader, write, end } as import('express').Response;
 
       await service.chat('ws-1', 'Olá', res);
 

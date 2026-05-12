@@ -74,7 +74,7 @@ describe('MetaAuthController', () => {
   describe('parseState', () => {
     it('parses JSON state from encoded URI', () => {
       const result = (
-        controller as unknown as {
+        controller as {
           parseState: (s: string) => {
             workspaceId: string;
             channel?: string | null;
@@ -91,7 +91,7 @@ describe('MetaAuthController', () => {
 
     it('falls back to raw string when not JSON', () => {
       const result = (
-        controller as unknown as {
+        controller as {
           parseState: (s: string) => { workspaceId: string };
         }
       ).parseState('plain-state');
@@ -101,7 +101,7 @@ describe('MetaAuthController', () => {
 
     it('returns empty workspaceId for empty state', () => {
       const result = (
-        controller as unknown as {
+        controller as {
           parseState: (s: string) => { workspaceId: string };
         }
       ).parseState('');

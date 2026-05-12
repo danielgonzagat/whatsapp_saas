@@ -7,6 +7,28 @@ import type { PartnerContact } from './partnershipTypes';
 import { IC } from './ParceriasView.icons';
 import { C, FONT } from './ParceriasDesignTokens';
 
+function toPartnerContact(contact: Record<string, unknown>): PartnerContact | null {
+  if (typeof contact.id !== 'string') {
+    return null;
+  }
+
+  const normalized: PartnerContact = {
+    id: contact.id,
+    name: typeof contact.name === 'string' ? contact.name : '',
+    unread: typeof contact.unread === 'number' ? contact.unread : 0,
+    lastMessage: typeof contact.lastMessage === 'string' ? contact.lastMessage : '',
+    online: typeof contact.online === 'boolean' ? contact.online : false,
+    time: typeof contact.time === 'string' ? contact.time : '',
+  };
+  if (typeof contact.avatar === 'string') {
+    normalized.avatar = contact.avatar;
+  }
+  if (typeof contact.type === 'string') {
+    normalized.type = contact.type;
+  }
+  return normalized;
+}
+
 export default function ChatContactList({
   selectedChat,
   onSelect,
@@ -19,7 +41,10 @@ export default function ChatContactList({
   setSearch: (s: string) => void;
 }) {
   const { contacts, mutate: mutateContacts } = usePartnerChatContacts();
-  const displayContacts = contacts as unknown as PartnerContact[];
+  const displayContacts: PartnerContact[] = contacts.flatMap((contact) => {
+    const normalized = toPartnerContact(contact);
+    return normalized ? [normalized] : [];
+  });
 
   const handleSelectContact = async (contact: PartnerContact) => {
     onSelect(contact);

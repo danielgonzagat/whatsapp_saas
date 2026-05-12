@@ -125,7 +125,7 @@ describe('StructuredLogger', () => {
     it('handles extra fields with null values', () => {
       const spy = jest.spyOn(console, 'warn').mockImplementation(() => {});
 
-      const sentinelNull: string = null as unknown as string;
+      const sentinelNull: string = null as string;
       logger.warn('null extra', { nullable: sentinelNull });
 
       const logged = spy.mock.calls[0][0];

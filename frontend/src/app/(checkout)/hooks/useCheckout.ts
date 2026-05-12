@@ -9,6 +9,7 @@ import { mutate } from 'swr';
 /* ─── Types ────────────────────────────────────────────────────────────────── */
 
 export interface OrderStatusData {
+  [key: string]: unknown;
   /** Id property. */
   id: string;
   /** Order number property. */
@@ -27,6 +28,9 @@ export interface OrderStatusData {
         boletoExpiresAt?: string | undefined;
       }
     | undefined;
+  paymentData?: Record<string, unknown> | undefined;
+  plan?: { upsells?: unknown[] } | undefined;
+  data?: { id?: string; orderNumber?: string; [key: string]: unknown } | undefined;
 }
 
 /** Create order data shape. */

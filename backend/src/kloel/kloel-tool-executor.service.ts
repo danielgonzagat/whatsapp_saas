@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import type { Prisma } from '@prisma/client';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { SmartPaymentService } from './smart-payment.service';
@@ -223,7 +223,7 @@ export class KloelToolExecutorService {
       };
       await tx.workspace.update({
         where: { id: workspaceId },
-        data: { providerSettings: newSettings as unknown as Prisma.InputJsonObject },
+        data: { providerSettings: newSettings as Prisma.InputJsonObject },
       });
       return {
         success: true,

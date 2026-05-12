@@ -56,9 +56,9 @@ describe('MediaService', () => {
     };
 
     service = new MediaService(
-      prisma as unknown as PrismaService,
-      config as unknown as ConfigService,
-      storage as unknown as StorageService,
+      prisma as PrismaService,
+      config as ConfigService,
+      storage as StorageService,
     );
   });
 

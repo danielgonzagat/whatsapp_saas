@@ -41,7 +41,7 @@ function makeMockCiaBootstrap(listPending: jest.Mock, resolveKey: jest.Mock) {
     countPendingMessagesFromConversations: jest.fn(),
     resolveActiveSessionKey: resolveKey,
     run: jest.fn(),
-  } as unknown as import('./cia-bootstrap.service').CiaBootstrapService;
+  } as import('./cia-bootstrap.service').CiaBootstrapService;
 }
 
 describe('CiaBacklogRunService', () => {

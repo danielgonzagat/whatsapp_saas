@@ -22,7 +22,7 @@ describe('MassSendController', () => {
         role: 'ADMIN',
       },
       workspaceId: 'ws_1',
-    }) as unknown as AuthenticatedRequest;
+    }) as AuthenticatedRequest;
 
   beforeEach(async () => {
     enqueueCampaign.mockReset();

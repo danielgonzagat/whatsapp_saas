@@ -65,7 +65,7 @@ export class AdminSupportService {
         workspace: { select: { id: true, name: true } },
         contact: { select: { id: true, name: true, email: true, phone: true } },
       },
-    })) as unknown as ConversationSelectRow[];
+    })) as ConversationSelectRow[];
 
     return {
       items: conversations.map((conversation) => ({

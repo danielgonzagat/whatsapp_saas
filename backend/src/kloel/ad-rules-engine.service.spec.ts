@@ -78,7 +78,7 @@ describe('AdRulesEngineService', () => {
 
       // Access private method via reflection since evaluateRules uses cron
       await (
-        service as unknown as { evaluateRulesWithObservability: () => Promise<void> }
+        service as { evaluateRulesWithObservability: () => Promise<void> }
       ).evaluateRulesWithObservability();
 
       expect(prisma.adRule.findMany).toHaveBeenCalledWith(
@@ -103,7 +103,7 @@ describe('AdRulesEngineService', () => {
       prisma.adRule.findMany.mockResolvedValue([]);
 
       await (
-        service as unknown as { evaluateRulesWithObservability: () => Promise<void> }
+        service as { evaluateRulesWithObservability: () => Promise<void> }
       ).evaluateRulesWithObservability();
 
       expect(prisma.adRule.updateMany).not.toHaveBeenCalled();
@@ -118,7 +118,7 @@ describe('AdRulesEngineService', () => {
       prisma.kloelSale.count.mockResolvedValue(0);
 
       await (
-        service as unknown as { evaluateRulesWithObservability: () => Promise<void> }
+        service as { evaluateRulesWithObservability: () => Promise<void> }
       ).evaluateRulesWithObservability();
 
       const tenantCalls = prisma.kloelSale.count.mock.calls as Array<
@@ -134,7 +134,7 @@ describe('AdRulesEngineService', () => {
       prisma.adRule.findMany.mockResolvedValue([rule]);
 
       await (
-        service as unknown as { evaluateRulesWithObservability: () => Promise<void> }
+        service as { evaluateRulesWithObservability: () => Promise<void> }
       ).evaluateRulesWithObservability();
 
       expect(prisma.adRule.updateMany).toHaveBeenCalledWith(
@@ -152,7 +152,7 @@ describe('AdRulesEngineService', () => {
       prisma.adRule.findMany.mockResolvedValue([rule]);
 
       await (
-        service as unknown as { evaluateRulesWithObservability: () => Promise<void> }
+        service as { evaluateRulesWithObservability: () => Promise<void> }
       ).evaluateRulesWithObservability();
 
       expect(prisma.adRule.updateMany).not.toHaveBeenCalled();
@@ -165,7 +165,7 @@ describe('AdRulesEngineService', () => {
       prisma.kloelSale.count.mockResolvedValue(0);
 
       await (
-        service as unknown as { evaluateRulesWithObservability: () => Promise<void> }
+        service as { evaluateRulesWithObservability: () => Promise<void> }
       ).evaluateRulesWithObservability();
 
       expect(prisma.adRule.updateMany).toHaveBeenCalled();
@@ -176,7 +176,7 @@ describe('AdRulesEngineService', () => {
       prisma.adRule.findMany.mockResolvedValue([rule]);
 
       await (
-        service as unknown as { evaluateRulesWithObservability: () => Promise<void> }
+        service as { evaluateRulesWithObservability: () => Promise<void> }
       ).evaluateRulesWithObservability();
 
       expect(prisma.adRule.updateMany).toHaveBeenCalled();
@@ -191,7 +191,7 @@ describe('AdRulesEngineService', () => {
       prisma.kloelSale.count.mockRejectedValueOnce(new Error('DB down')).mockResolvedValueOnce(5);
 
       await (
-        service as unknown as { evaluateRulesWithObservability: () => Promise<void> }
+        service as { evaluateRulesWithObservability: () => Promise<void> }
       ).evaluateRulesWithObservability();
 
       // rule-2 should still have been evaluated and fired
@@ -204,7 +204,7 @@ describe('AdRulesEngineService', () => {
 
       await expect(
         (
-          service as unknown as { evaluateRulesWithObservability: () => Promise<void> }
+          service as { evaluateRulesWithObservability: () => Promise<void> }
         ).evaluateRulesWithObservability(),
       ).resolves.toBeUndefined();
     });

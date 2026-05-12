@@ -72,7 +72,7 @@ describe('IdempotencyMiddleware', () => {
 
   describe('header handling', () => {
     it('calls next() when no Idempotency-Key header is present', async () => {
-      const req = makeFakeRequest({}) as unknown as Request;
+      const req = makeFakeRequest({}) as Request;
       const res = {} as Response;
       const next = jest.fn() as NextFunction;
 
@@ -83,7 +83,7 @@ describe('IdempotencyMiddleware', () => {
     });
 
     it('calls next() for GET requests even with Idempotency-Key header', async () => {
-      const req = makeFakeRequest({ idempotencyKey: 'key-1', method: 'GET' }) as unknown as Request;
+      const req = makeFakeRequest({ idempotencyKey: 'key-1', method: 'GET' }) as Request;
       const res = {} as Response;
       const next = jest.fn() as NextFunction;
 
@@ -97,7 +97,7 @@ describe('IdempotencyMiddleware', () => {
       const req = makeFakeRequest({
         idempotencyKey: 'key-1',
         method: 'HEAD',
-      }) as unknown as Request;
+      }) as Request;
       const res = {} as Response;
       const next = jest.fn() as NextFunction;
 
@@ -111,13 +111,13 @@ describe('IdempotencyMiddleware', () => {
       const req = makeFakeRequest({
         idempotencyKey: 'key-1',
         method: 'POST',
-      }) as unknown as Request;
+      }) as Request;
       const res = makeFakeRes();
       const next = jest.fn() as NextFunction;
 
       idempotencyService.get.mockResolvedValueOnce(null);
 
-      await middleware.use(req, res as unknown as Response, next);
+      await middleware.use(req, res as Response, next);
 
       expect(idempotencyService.get).toHaveBeenCalledWith('key-1', 'POST', '/api/wallet/withdraw');
       expect(next).toHaveBeenCalled();
@@ -129,13 +129,13 @@ describe('IdempotencyMiddleware', () => {
       const req = makeFakeRequest({
         idempotencyKey: 'key-1',
         method: 'POST',
-      }) as unknown as Request;
+      }) as Request;
       const res = makeFakeRes();
       const next = jest.fn() as NextFunction;
 
       idempotencyService.get.mockResolvedValueOnce({ status: 201, body: { id: 42, ok: true } });
 
-      await middleware.use(req, res as unknown as Response, next);
+      await middleware.use(req, res as Response, next);
 
       expect(res.status).toHaveBeenCalledWith(201);
       expect(res.json).toHaveBeenCalledWith({ id: 42, ok: true });
@@ -146,13 +146,13 @@ describe('IdempotencyMiddleware', () => {
       const req = makeFakeRequest({
         idempotencyKey: 'key-1',
         method: 'POST',
-      }) as unknown as Request;
+      }) as Request;
       const res = makeFakeRes();
       const next = jest.fn() as NextFunction;
 
       idempotencyService.get.mockResolvedValueOnce({ status: 400, body: { error: 'bad input' } });
 
-      await middleware.use(req, res as unknown as Response, next);
+      await middleware.use(req, res as Response, next);
 
       expect(res.status).toHaveBeenCalledWith(400);
       expect(res.json).toHaveBeenCalledWith({ error: 'bad input' });
@@ -165,16 +165,16 @@ describe('IdempotencyMiddleware', () => {
       const req = makeFakeRequest({
         idempotencyKey: 'key-1',
         method: 'POST',
-      }) as unknown as Request;
+      }) as Request;
       const res = makeFakeRes();
       let capturedJson: ((body: unknown) => Response) | null = null;
       const next = jest.fn(() => {
-        capturedJson = (res as unknown as Response).json;
+        capturedJson = (res as Response).json;
       }) as NextFunction;
 
       idempotencyService.get.mockResolvedValueOnce(null);
 
-      await middleware.use(req, res as unknown as Response, next);
+      await middleware.use(req, res as Response, next);
 
       if (capturedJson) {
         capturedJson({ id: 99 });
@@ -194,17 +194,17 @@ describe('IdempotencyMiddleware', () => {
       const req = makeFakeRequest({
         idempotencyKey: 'key-1',
         method: 'POST',
-      }) as unknown as Request;
+      }) as Request;
       const res = makeFakeRes();
       let capturedJson: ((body: unknown) => Response) | null = null;
       const next = jest.fn(() => {
-        capturedJson = (res as unknown as Response).json;
+        capturedJson = (res as Response).json;
       }) as NextFunction;
 
       idempotencyService.get.mockResolvedValueOnce(null);
       idempotencyService.set.mockRejectedValueOnce(new Error('redis is down'));
 
-      await middleware.use(req, res as unknown as Response, next);
+      await middleware.use(req, res as Response, next);
 
       expect(() => capturedJson?.({ id: 99 })).not.toThrow();
     });
@@ -216,13 +216,13 @@ describe('IdempotencyMiddleware', () => {
         idempotencyKey: 'key-1',
         method: 'PUT',
         path: '/api/wallet/withdraw',
-      }) as unknown as Request;
+      }) as Request;
       const res = makeFakeRes();
       const next = jest.fn() as NextFunction;
 
       idempotencyService.get.mockResolvedValueOnce(null);
 
-      await middleware.use(req, res as unknown as Response, next);
+      await middleware.use(req, res as Response, next);
 
       expect(idempotencyService.get).toHaveBeenCalledWith('key-1', 'PUT', '/api/wallet/withdraw');
     });
@@ -232,13 +232,13 @@ describe('IdempotencyMiddleware', () => {
         idempotencyKey: 'key-1',
         method: 'POST',
         path: '/api/wallet/deposit',
-      }) as unknown as Request;
+      }) as Request;
       const res = makeFakeRes();
       const next = jest.fn() as NextFunction;
 
       idempotencyService.get.mockResolvedValueOnce(null);
 
-      await middleware.use(req, res as unknown as Response, next);
+      await middleware.use(req, res as Response, next);
 
       expect(idempotencyService.get).toHaveBeenCalledWith('key-1', 'POST', '/api/wallet/deposit');
     });

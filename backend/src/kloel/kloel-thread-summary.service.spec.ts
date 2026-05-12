@@ -33,7 +33,7 @@ describe('KloelThreadSummaryService', () => {
         updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
       chatMessage: {
-        count: undefined as unknown as jest.Mock,
+        count: undefined as jest.Mock,
         findMany: jest.fn().mockResolvedValue([]),
       },
     };

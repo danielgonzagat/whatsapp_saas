@@ -43,7 +43,7 @@ describe('RateLimitService', () => {
 
     it('throws 429 when limit is exceeded', async () => {
       mockRedis.incr.mockResolvedValue(6);
-      const service = new RateLimitService(mockRedis as unknown as import('ioredis').Redis);
+      const service = new RateLimitService(mockRedis as import('ioredis').Redis);
 
       await expect(service.checkRateLimit('test-key', 5, 60000)).rejects.toThrow(HttpException);
       await expect(service.checkRateLimit('test-key', 5, 60000)).rejects.toMatchObject({
@@ -53,14 +53,14 @@ describe('RateLimitService', () => {
 
     it('allows request when under limit', async () => {
       mockRedis.incr.mockResolvedValue(3);
-      const service = new RateLimitService(mockRedis as unknown as import('ioredis').Redis);
+      const service = new RateLimitService(mockRedis as import('ioredis').Redis);
 
       await expect(service.checkRateLimit('test-key', 5, 60000)).resolves.toBeUndefined();
     });
 
     it('increments counter and sets expiry on first call', async () => {
       mockRedis.incr.mockResolvedValue(1);
-      const service = new RateLimitService(mockRedis as unknown as import('ioredis').Redis);
+      const service = new RateLimitService(mockRedis as import('ioredis').Redis);
 
       await service.checkRateLimit('test-key', 5, 60000);
 
@@ -70,14 +70,14 @@ describe('RateLimitService', () => {
 
     it('throws 503 on Redis error (fail-closed)', async () => {
       mockRedis.incr.mockRejectedValue(new Error('connection refused'));
-      const service = new RateLimitService(mockRedis as unknown as import('ioredis').Redis);
+      const service = new RateLimitService(mockRedis as import('ioredis').Redis);
 
       await expect(service.checkRateLimit('test-key')).rejects.toThrow(ServiceUnavailableException);
     });
 
     it('re-throws HttpException from Redis catch block', async () => {
       mockRedis.incr.mockResolvedValue(6);
-      const service = new RateLimitService(mockRedis as unknown as import('ioredis').Redis);
+      const service = new RateLimitService(mockRedis as import('ioredis').Redis);
 
       await expect(service.checkRateLimit('test-key')).rejects.toThrow(HttpException);
       await expect(service.checkRateLimit('test-key')).rejects.toMatchObject({

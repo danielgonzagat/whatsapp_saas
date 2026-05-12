@@ -27,7 +27,7 @@ describe('VectorService', () => {
       }
       return undefined;
     });
-    const configStub = { get: configGet } as unknown as ConfigService;
+    const configStub = { get: configGet } as ConfigService;
     service = new VectorService(configStub);
   }
 

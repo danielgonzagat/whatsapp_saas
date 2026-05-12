@@ -20,14 +20,14 @@ describe('TikTokAuthController', () => {
       syncAccounts: jest.fn(),
       syncCampaigns: jest.fn(),
       syncInsights: jest.fn(),
-    } as unknown as jest.Mocked<TikTokAdsProvider>;
+    } as jest.Mocked<TikTokAdsProvider>;
 
     prismaService = {
       workspace: {
         findUnique: jest.fn(),
         update: jest.fn(),
       },
-    } as unknown as jest.Mocked<PrismaService>;
+    } as jest.Mocked<PrismaService>;
 
     const module = await Test.createTestingModule({
       controllers: [TikTokAuthController],

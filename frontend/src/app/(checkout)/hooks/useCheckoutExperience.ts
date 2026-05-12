@@ -478,7 +478,7 @@ export function useCheckoutExperience({
 
     try {
       const payload = buildOrderPayload(resolvedPlanId, resolvedWorkspaceId);
-      const result = (await createOrder(payload)) as unknown as Record<string, unknown>;
+      const result = await createOrder(payload);
       setPixelEvent('Purchase');
 
       const successPath = resolveSuccessRedirect(result);

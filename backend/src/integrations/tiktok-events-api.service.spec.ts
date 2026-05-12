@@ -49,7 +49,7 @@ describe('TikTokEventsApiService', () => {
     const fetchMock = jest
       .fn()
       .mockResolvedValue({ json: async () => ({ code: 0, request_id: 'r1' }) });
-    global.fetch = fetchMock as unknown as typeof fetch;
+    global.fetch = fetchMock as typeof fetch;
 
     await service.sendEvent('ws-1', 'PX', {
       eventName: 'Purchase',
@@ -71,7 +71,7 @@ describe('TikTokEventsApiService', () => {
   it('returns success=true when TikTok responds with code=0', async () => {
     global.fetch = jest
       .fn()
-      .mockResolvedValue({ json: async () => ({ code: 0, request_id: 'req-1' }) }) as unknown as typeof fetch;
+      .mockResolvedValue({ json: async () => ({ code: 0, request_id: 'req-1' }) }) as typeof fetch;
     const result = await service.sendEvent('ws-1', 'PX', {
       eventName: 'Purchase',
       userData: { email: 'a@a.com' },
@@ -83,7 +83,7 @@ describe('TikTokEventsApiService', () => {
   it('returns success=false and error message on non-zero TikTok code', async () => {
     global.fetch = jest
       .fn()
-      .mockResolvedValue({ json: async () => ({ code: 40001, message: 'bad', request_id: 'r2' }) }) as unknown as typeof fetch;
+      .mockResolvedValue({ json: async () => ({ code: 40001, message: 'bad', request_id: 'r2' }) }) as typeof fetch;
     const result = await service.sendEvent('ws-1', 'PX', {
       eventName: 'Purchase',
       userData: {},
@@ -94,7 +94,7 @@ describe('TikTokEventsApiService', () => {
   });
 
   it('returns success=false on fetch exception (no throw)', async () => {
-    global.fetch = jest.fn().mockRejectedValue(new Error('network down')) as unknown as typeof fetch;
+    global.fetch = jest.fn().mockRejectedValue(new Error('network down')) as typeof fetch;
     const result = await service.sendEvent('ws-1', 'PX', {
       eventName: 'Purchase',
       userData: {},
@@ -105,7 +105,7 @@ describe('TikTokEventsApiService', () => {
 
   it('targets the canonical TikTok Events API track URL', async () => {
     const fetchMock = jest.fn().mockResolvedValue({ json: async () => ({ code: 0 }) });
-    global.fetch = fetchMock as unknown as typeof fetch;
+    global.fetch = fetchMock as typeof fetch;
     await service.sendEvent('ws-1', 'PX', {
       eventName: 'Purchase',
       userData: {},
@@ -121,7 +121,7 @@ describe('TikTokEventsApiService', () => {
       .fn()
       .mockResolvedValueOnce({ json: async () => ({ code: 0 }) })
       .mockResolvedValueOnce({ json: async () => ({ code: 1, message: 'bad' }) })
-      .mockResolvedValueOnce({ json: async () => ({ code: 0 }) }) as unknown as typeof fetch;
+      .mockResolvedValueOnce({ json: async () => ({ code: 0 }) }) as typeof fetch;
 
     const result = await service.sendEvents('ws-1', 'PX', [
       { eventName: 'A', userData: {} },

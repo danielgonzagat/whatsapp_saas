@@ -88,8 +88,8 @@ export type IconComponent = LucideIcon | ComponentType<SVGProps<SVGSVGElement>>;
 
 /** Icon_map. */
 export const ICON_MAP: Record<string, IconComponent> = {
-  HomeIcon: HomeIcon as unknown as IconComponent,
-  SalesIcon: SalesIcon as unknown as IconComponent,
+  HomeIcon: HomeIcon as IconComponent,
+  SalesIcon: SalesIcon as IconComponent,
   Package,
   Megaphone,
   Globe,

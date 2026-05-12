@@ -117,7 +117,7 @@ describe('CheckoutService — duplicateCheckout', () => {
 
     service = new CheckoutService(prisma as never, productSvc as never, {} as never, {} as never);
 
-    const internal = service as unknown as CheckoutServiceInternals;
+    const internal = service as CheckoutServiceInternals;
     jest.spyOn(internal.logger, 'log').mockImplementation(() => undefined);
     internal.publicPayloadBuilder.build = jest
       .fn()
@@ -293,7 +293,7 @@ describe('CheckoutService — getCheckoutBySlug', () => {
 
     service = new CheckoutService(prisma as never, productSvc as never, {} as never, {} as never);
 
-    internal = service as unknown as CheckoutServiceInternals;
+    internal = service as CheckoutServiceInternals;
     jest.spyOn(internal.logger, 'log').mockImplementation(() => undefined);
     internal.publicPayloadBuilder.build = jest
       .fn()

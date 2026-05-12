@@ -300,7 +300,7 @@ async function runPostSendCleanup(
         String(finalCustomFields.lastResolvedChatId || '').trim() ||
         undefined,
       contactName: finalContactName,
-      existingContact: finalContactRecord as unknown as {
+      existingContact: finalContactRecord as {
         id?: string | null;
         name?: string | null;
         customFields?: UnknownRecord;

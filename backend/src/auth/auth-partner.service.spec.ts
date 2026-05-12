@@ -214,8 +214,8 @@ describe('AuthPartnerService', () => {
 
       await service.finalizePartnerInviteRegistration({
         invite: { id: 'partner-1', metadata: { inviteTokenHash: 'hash' }, type: 'AFFILIATE' },
-        workspace: workspaceStub as unknown as import('@prisma/client').Workspace,
-        agent: agentStub as unknown as import('@prisma/client').Agent,
+        workspace: workspaceStub as import('@prisma/client').Workspace,
+        agent: agentStub as import('@prisma/client').Agent,
         email: 'partner@example.com',
       });
 
@@ -243,8 +243,8 @@ describe('AuthPartnerService', () => {
       await expect(
         service.finalizePartnerInviteRegistration({
           invite: { id: 'partner-1', metadata: null, type: 'AFFILIATE' },
-          workspace: workspaceStub as unknown as import('@prisma/client').Workspace,
-          agent: agentStub as unknown as import('@prisma/client').Agent,
+          workspace: workspaceStub as import('@prisma/client').Workspace,
+          agent: agentStub as import('@prisma/client').Agent,
           email: 'partner@example.com',
         }),
       ).rejects.toThrow(ServiceUnavailableException);

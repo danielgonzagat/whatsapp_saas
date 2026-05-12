@@ -34,7 +34,7 @@ describe('ScrapersService', () => {
       },
       contact: { upsert: jest.fn().mockResolvedValue({}) },
     };
-    service = new ScrapersService(prisma as unknown as PrismaService);
+    service = new ScrapersService(prisma as PrismaService);
   });
 
   describe('createJob', () => {

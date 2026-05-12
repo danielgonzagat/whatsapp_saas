@@ -164,10 +164,10 @@ describe('GuestChatService', () => {
         write,
         end,
         flushHeaders,
-      } as unknown as import('express').Response;
+      } as import('express').Response;
       const req = {
         headers: { origin: 'https://kloel.com' },
-      } as unknown as import('express').Request;
+      } as import('express').Request;
 
       await service.chat('Olá', 'sse-session', req, res);
 
@@ -191,8 +191,8 @@ describe('GuestChatService', () => {
         write,
         end,
         flushHeaders,
-      } as unknown as import('express').Response;
-      const req = { headers: {} } as unknown as import('express').Request;
+      } as import('express').Response;
+      const req = { headers: {} } as import('express').Request;
 
       await service.chat('Olá', 'no-key-sse', req, res);
 

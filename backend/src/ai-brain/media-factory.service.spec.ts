@@ -42,7 +42,7 @@ describe('MediaFactoryService', () => {
       }
       return undefined;
     });
-    const configStub = { get: configGet } as unknown as ConfigService;
+    const configStub = { get: configGet } as ConfigService;
     service = new MediaFactoryService(configStub);
   }
 

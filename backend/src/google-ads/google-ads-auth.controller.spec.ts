@@ -13,10 +13,10 @@ describe('GoogleAdsAuthController', () => {
     getPlatformStatuses,
     disconnect,
   };
-  const controller = new GoogleAdsAuthController(anunciosService as unknown as AnunciosService);
+  const controller = new GoogleAdsAuthController(anunciosService as AnunciosService);
 
   const mockRequest = (workspaceId: string) =>
-    ({ workspaceId }) as unknown as Parameters<(typeof controller)['workspaceId']>[0];
+    ({ workspaceId }) as Parameters<(typeof controller)['workspaceId']>[0];
 
   beforeEach(() => {
     jest.clearAllMocks();

@@ -135,7 +135,7 @@ describe('AuditService', () => {
   describe('logWithTx', () => {
     it('writes via the provided transaction client', async () => {
       const txCreate = jest.fn().mockResolvedValue({ id: 'tx-log-1' });
-      const tx = { auditLog: { create: txCreate } } as unknown as Prisma.TransactionClient;
+      const tx = { auditLog: { create: txCreate } } as Prisma.TransactionClient;
 
       await service.logWithTx(tx, {
         workspaceId: 'ws-tx',

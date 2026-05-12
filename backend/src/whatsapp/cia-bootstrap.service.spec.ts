@@ -84,7 +84,7 @@ describe('CiaBootstrapService', () => {
       resetStaleRuntimeRunIfNeeded: jest.fn(),
       getOperationalIntelligence: jest.fn(),
       finalizeRun: jest.fn(),
-    } as unknown as CiaRuntimeStateMock;
+    } as CiaRuntimeStateMock;
 
     catchupService = {
       triggerCatchup: jest.fn().mockResolvedValue({ scheduled: true }),

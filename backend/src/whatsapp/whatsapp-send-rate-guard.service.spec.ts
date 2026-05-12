@@ -32,7 +32,7 @@ describe('WhatsappSendRateGuardService', () => {
 
   describe('onModuleInit', () => {
     beforeEach(() => {
-      const proto = WhatsappService.prototype as unknown as Record<string | symbol, unknown>;
+      const proto = WhatsappService.prototype as Record<string | symbol, unknown>;
       delete proto[Symbol.for('kloel.whatsapp.sendRateGuard.patched')];
       proto.sendMessage = async function (...args: unknown[]) {
         return { ok: true, args };
@@ -46,7 +46,7 @@ describe('WhatsappSendRateGuardService', () => {
     });
 
     afterEach(() => {
-      const proto = WhatsappService.prototype as unknown as Record<string | symbol, unknown>;
+      const proto = WhatsappService.prototype as Record<string | symbol, unknown>;
       delete proto[Symbol.for('kloel.whatsapp.sendRateGuard.patched')];
     });
 

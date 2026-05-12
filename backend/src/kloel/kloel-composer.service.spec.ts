@@ -210,7 +210,7 @@ describe('KloelComposerService', () => {
   describe('error handling', () => {
     it('executeComposerCapability propagates search_web errors', async () => {
       e2EGuard.isEnabled = jest.fn().mockReturnValue(false);
-      const openai = (service as unknown as { openai: { responses: { create: jest.Mock } } })
+      const openai = (service as { openai: { responses: { create: jest.Mock } } })
         .openai;
       if (openai?.responses?.create) {
         openai.responses.create.mockRejectedValue(new Error('API error'));

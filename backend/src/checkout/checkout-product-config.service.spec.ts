@@ -240,7 +240,7 @@ describe('CheckoutProductConfigService', () => {
     const planLinkMgr = {
       generateCheckoutSlug: slugFn,
       generatePublicCheckoutCode: codeFn,
-    } as unknown as CheckoutPlanLinkManager;
+    } as CheckoutPlanLinkManager;
 
     it('skips when plan is not kind PLAN', async () => {
       const plan = makePlan({ kind: 'CHECKOUT' });
@@ -345,7 +345,7 @@ describe('CheckoutProductConfigService', () => {
     const planLinkMgr = {
       generateCheckoutSlug: jest.fn().mockResolvedValue('chk-slug'),
       generatePublicCheckoutCode: jest.fn().mockResolvedValue('CHKCODE'),
-    } as unknown as CheckoutPlanLinkManager;
+    } as CheckoutPlanLinkManager;
 
     it('processes all legacy-enabled PLAN-kind entries', async () => {
       prisma.checkoutProductPlan.findMany.mockResolvedValue([{ id: 'plan_a' }, { id: 'plan_b' }]);

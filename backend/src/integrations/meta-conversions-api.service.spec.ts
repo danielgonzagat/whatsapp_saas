@@ -26,8 +26,8 @@ describe('MetaConversionsApiService', () => {
     });
 
     it('returns empty string for null/undefined', () => {
-      expect(MetaConversionsApiService.hashEmail(null as unknown as string)).toBe('');
-      expect(MetaConversionsApiService.hashEmail(undefined as unknown as string)).toBe('');
+      expect(MetaConversionsApiService.hashEmail(null as string)).toBe('');
+      expect(MetaConversionsApiService.hashEmail(undefined as string)).toBe('');
     });
 
     it('produces consistent hashes', () => {

@@ -42,9 +42,9 @@ describe('BillingCheckoutHelperService', () => {
       subscriptions: { retrieve: jest.fn() } as never,
     };
     service = new BillingCheckoutHelperService(
-      prisma as unknown as PrismaService,
+      prisma as PrismaService,
       new ConfigService(),
-      moduleRef as unknown as ModuleRef,
+      moduleRef as ModuleRef,
       stripe as StripeClient,
     );
   });
@@ -112,7 +112,7 @@ describe('BillingCheckoutHelperService', () => {
   describe('notifyOps', () => {
     it('no-ops when no webhook URL configured', async () => {
       const fetchMock = jest.fn();
-      global.fetch = fetchMock as unknown as typeof fetch;
+      global.fetch = fetchMock as typeof fetch;
       const originalWebhook = process.env.OPS_WEBHOOK_URL;
       delete process.env.OPS_WEBHOOK_URL;
       delete process.env.DLQ_WEBHOOK_URL;

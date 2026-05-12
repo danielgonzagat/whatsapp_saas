@@ -10,7 +10,7 @@ type PlanLimitsMock = {
 };
 
 function getProto(): Record<string, unknown> {
-  return WhatsappService.prototype as unknown as Record<string, unknown>;
+  return WhatsappService.prototype as Record<string, unknown>;
 }
 
 describe('WhatsappSendRateGuardService', () => {
@@ -71,7 +71,7 @@ describe('WhatsappSendRateGuardService', () => {
       expect(typeof proto.sendMessage).toBe('function');
       expect(typeof proto.sendTemplate).toBe('function');
       expect(typeof proto.sendDirectMessage).toBe('function');
-      expect(proto[PATCH_MARKER as unknown as string]).toBe(true);
+      expect(proto[PATCH_MARKER as string]).toBe(true);
     });
 
     it('is idempotent — does not re-patch when marker is present', () => {

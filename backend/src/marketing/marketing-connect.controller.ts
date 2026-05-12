@@ -9,6 +9,7 @@ import {
   Request,
   UseGuards,
 } from '@nestjs/common';
+import type { Prisma } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { buildUnsubscribeFooterHtml } from '../common/utils/unsubscribe-footer.util';
@@ -19,7 +20,6 @@ import {
 import { MetaWhatsAppService } from '../meta/meta-whatsapp.service';
 import { EmailCampaignService } from '../kloel/email-campaign.service';
 import { TikTokMarketingService } from './tiktok-marketing.service';
-import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
 import { asProviderSettings, type ProviderSettings } from '../whatsapp/provider-settings.types';
@@ -489,7 +489,7 @@ export class MarketingConnectController {
             ...allSetups,
             [channel]: nextSetup,
           },
-        } as unknown as Prisma.InputJsonObject,
+        } as Prisma.InputJsonObject,
       },
     });
 
@@ -576,7 +576,7 @@ export class MarketingConnectController {
               : {}),
             enabled: nextEnabled,
           },
-        } as unknown as Prisma.InputJsonObject,
+        } as Prisma.InputJsonObject,
       },
     });
 

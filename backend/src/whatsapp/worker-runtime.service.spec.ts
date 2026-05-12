@@ -27,7 +27,7 @@ describe('WorkerRuntimeService', () => {
       key === 'WORKER_FORCE_AVAILABLE' ? 'true' : undefined,
     );
     const fetchMock = jest.fn();
-    global.fetch = fetchMock as unknown as typeof fetch;
+    global.fetch = fetchMock as typeof fetch;
     await expect(service.isAvailable()).resolves.toBe(true);
     expect(fetchMock).not.toHaveBeenCalled();
   });
@@ -53,7 +53,7 @@ describe('WorkerRuntimeService', () => {
     global.fetch = jest.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ status: 'ok' }),
-    }) as unknown as typeof fetch;
+    }) as typeof fetch;
     await expect(service.isAvailable()).resolves.toBe(true);
   });
 
@@ -61,7 +61,7 @@ describe('WorkerRuntimeService', () => {
     config.get.mockImplementation((key: string) =>
       key === 'WORKER_HEALTH_URL' ? 'http://worker/health' : undefined,
     );
-    global.fetch = jest.fn().mockResolvedValue({ ok: false }) as unknown as typeof fetch;
+    global.fetch = jest.fn().mockResolvedValue({ ok: false }) as typeof fetch;
     await expect(service.isAvailable()).resolves.toBe(false);
   });
 
@@ -69,7 +69,7 @@ describe('WorkerRuntimeService', () => {
     config.get.mockImplementation((key: string) =>
       key === 'WORKER_HEALTH_URL' ? 'http://worker/health' : undefined,
     );
-    global.fetch = jest.fn().mockRejectedValue(new Error('down')) as unknown as typeof fetch;
+    global.fetch = jest.fn().mockRejectedValue(new Error('down')) as typeof fetch;
     await expect(service.isAvailable()).resolves.toBe(false);
   });
 
@@ -81,7 +81,7 @@ describe('WorkerRuntimeService', () => {
       ok: true,
       json: async () => ({ status: 'ok' }),
     });
-    global.fetch = fetchMock as unknown as typeof fetch;
+    global.fetch = fetchMock as typeof fetch;
     await service.isAvailable();
     await service.isAvailable();
     expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -95,7 +95,7 @@ describe('WorkerRuntimeService', () => {
       ok: true,
       json: async () => ({ status: 'ok' }),
     });
-    global.fetch = fetchMock as unknown as typeof fetch;
+    global.fetch = fetchMock as typeof fetch;
     await service.isAvailable();
     await service.isAvailable(true);
     expect(fetchMock).toHaveBeenCalledTimes(2);
@@ -111,7 +111,7 @@ describe('WorkerRuntimeService', () => {
       ok: true,
       json: async () => ({ status: 'ok' }),
     });
-    global.fetch = fetchMock as unknown as typeof fetch;
+    global.fetch = fetchMock as typeof fetch;
     await service.isAvailable();
     const init = fetchMock.mock.calls[0][1] as { headers?: Record<string, string> };
     expect(init.headers?.Authorization).toBe('Bearer sk-test-token');

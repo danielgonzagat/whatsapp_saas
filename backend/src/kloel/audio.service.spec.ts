@@ -75,7 +75,7 @@ describe('AudioService', () => {
     }).compile();
 
     service = module.get<AudioService>(AudioService);
-    const openaiMock = (await import('openai')) as unknown as {
+    const openaiMock = (await import('openai')) as {
       default: jest.Mock;
     };
     openaiInstance = openaiMock.default.mock.results[0]?.value as {

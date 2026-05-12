@@ -145,7 +145,7 @@ describe('AuthWhatsappPasswordService', () => {
 
     it('logs warning when Redis is not available', async () => {
       const loggerWarnSpy = jest.spyOn(
-        (service as unknown as Record<string, unknown>)['logger'] as { warn: jest.Mock },
+        (service as Record<string, unknown>)['logger'] as { warn: jest.Mock },
         'warn',
       );
 
@@ -202,7 +202,7 @@ describe('AuthWhatsappPasswordService', () => {
 
     it('does not log the OTP code in debug log', async () => {
       const loggerDebugSpy = jest.spyOn(
-        (service as unknown as Record<string, unknown>)['logger'] as { debug: jest.Mock },
+        (service as Record<string, unknown>)['logger'] as { debug: jest.Mock },
         'debug',
       );
 

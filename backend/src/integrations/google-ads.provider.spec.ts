@@ -30,7 +30,7 @@ describe('GoogleAdsProvider', () => {
       },
     };
 
-    provider = new GoogleAdsProvider(mockPrisma as unknown as PrismaService);
+    provider = new GoogleAdsProvider(mockPrisma as PrismaService);
   });
 
   afterEach(() => {

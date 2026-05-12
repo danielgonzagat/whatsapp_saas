@@ -27,7 +27,7 @@ describe('WhatsappMediaService', () => {
     });
 
     it('handles null-ish input safely', () => {
-      expect(svc.normalizeChatId('' as unknown as string)).toBe('@c.us');
+      expect(svc.normalizeChatId('' as string)).toBe('@c.us');
     });
 
     it('normalizes formatted numbers before appending suffix', () => {

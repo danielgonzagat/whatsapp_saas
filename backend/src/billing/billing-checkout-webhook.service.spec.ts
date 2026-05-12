@@ -22,7 +22,7 @@ function buildService(env: string | undefined, billingMockMode: string | undefin
       }
       return undefined;
     }),
-  } as unknown as ConfigService;
+  } as ConfigService;
 
   const service = new BillingCheckoutWebhookService(
     prisma,

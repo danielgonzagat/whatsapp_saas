@@ -18,7 +18,7 @@ import * as fs from 'node:fs';
 function createConfig(values: Record<string, string | undefined>) {
   return {
     get: jest.fn((key: string) => values[key]),
-  } as unknown as ConfigService;
+  } as ConfigService;
 }
 
 function freshDirectiveData() {

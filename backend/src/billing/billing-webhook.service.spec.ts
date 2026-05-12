@@ -101,13 +101,13 @@ describe('BillingWebhookService', () => {
   describe('handleWebhook', () => {
     it('throws when rawBody is missing', async () => {
       await expect(
-        service.handleWebhook('sig', undefined as unknown as Buffer),
+        service.handleWebhook('sig', undefined as Buffer),
       ).rejects.toThrow('Missing rawBody or signature');
     });
 
     it('throws when signature is missing', async () => {
       await expect(
-        service.handleWebhook(undefined as unknown as string, Buffer.from('{}')),
+        service.handleWebhook(undefined as string, Buffer.from('{}')),
       ).rejects.toThrow('Missing rawBody or signature');
     });
 

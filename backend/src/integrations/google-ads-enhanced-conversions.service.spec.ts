@@ -7,7 +7,7 @@ describe('GoogleAdsEnhancedConversionsService', () => {
     integrationCredential: { findUnique },
   };
 
-  const service = new GoogleAdsEnhancedConversionsService(prisma as unknown as PrismaService);
+  const service = new GoogleAdsEnhancedConversionsService(prisma as PrismaService);
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -51,8 +51,8 @@ describe('GoogleAdsEnhancedConversionsService', () => {
 
     it('returns empty string for empty input', () => {
       expect(GoogleAdsEnhancedConversionsService.hashEmail('')).toBe('');
-      expect(GoogleAdsEnhancedConversionsService.hashEmail(null as unknown as string)).toBe('');
-      expect(GoogleAdsEnhancedConversionsService.hashEmail(undefined as unknown as string)).toBe(
+      expect(GoogleAdsEnhancedConversionsService.hashEmail(null as string)).toBe('');
+      expect(GoogleAdsEnhancedConversionsService.hashEmail(undefined as string)).toBe(
         '',
       );
     });

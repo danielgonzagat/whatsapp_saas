@@ -161,7 +161,7 @@ export function OfficialMarketingChannelPage({ channel }: Props) {
       if (nextStatus.error) {
         throw new Error(nextStatus.error);
       }
-      setStatus(nextStatus.data || (nextStatus as unknown as ConnectStatus));
+      setStatus(nextStatus.data || null);
       const setupResponse = await apiFetch<{ setup?: unknown }>(
         `/marketing/connect/channel-setup?channel=${encodeURIComponent(channel)}`,
       );

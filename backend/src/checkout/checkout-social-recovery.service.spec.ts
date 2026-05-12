@@ -76,10 +76,10 @@ describe('CheckoutSocialRecoveryService', () => {
     };
 
     service = new CheckoutSocialRecoveryService(
-      prisma as unknown as PrismaService,
-      emailService as unknown as EmailService,
-      followUpService as unknown as FollowUpService,
-      socialLeadService as unknown as CheckoutSocialLeadService,
+      prisma as PrismaService,
+      emailService as EmailService,
+      followUpService as FollowUpService,
+      socialLeadService as CheckoutSocialLeadService,
     );
   });
 

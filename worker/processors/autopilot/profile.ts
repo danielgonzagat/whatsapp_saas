@@ -74,7 +74,7 @@ export async function ensureTrustedContactProfile(input: {
     input = {
       ...input,
       contactId: seededContact.id,
-      existingContact: seededContact as unknown as {
+      existingContact: seededContact as {
         id?: string | null;
         name?: string | null;
         customFields?: UnknownRecord;

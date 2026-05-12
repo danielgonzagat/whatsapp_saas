@@ -88,7 +88,7 @@ describe('ReportsService', () => {
       ['getChargeback', 'getChargeback'],
       ['getAfterPay', 'getAfterPay'],
     ])('delegates %s to ReportsOrdersService.%s', (method, ordersMethod) => {
-      void (service as unknown as Record<string, (...args: unknown[]) => unknown>)[method]?.(
+      void (service as Record<string, (...args: unknown[]) => unknown>)[method]?.(
         'ws-1',
         {},
       );
@@ -100,12 +100,12 @@ describe('ReportsService', () => {
       ['getIndicadores', 'getIndicadores'],
       ['getIndicadoresProduto', 'getIndicadoresProduto'],
     ])('delegates %s to ReportsAffiliateService.%s', (method, affMethod) => {
-      void (service as unknown as Record<string, (...args: unknown[]) => unknown>)[method]?.(
+      void (service as Record<string, (...args: unknown[]) => unknown>)[method]?.(
         'ws-1',
         {},
       );
       expect(
-        (affiliateService as unknown as Record<string, jest.Mock>)[affMethod],
+        (affiliateService as Record<string, jest.Mock>)[affMethod],
       ).toHaveBeenCalledWith('ws-1', {});
     });
   });
