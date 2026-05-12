@@ -66,7 +66,7 @@ describe('CommercialDecisionOrchestratorService', () => {
     });
     events.recordCommercial.mockResolvedValue(undefined);
     setup.getState.mockResolvedValue({
-      arsenal: [{ id: 'asset-1' }],
+      arsenal: [{ id: 'asset-1', type: 'text' }, { id: 'asset-2', type: 'image' }],
       config: { tone: 'direto' },
       selectedProductIds: ['product-1'],
     });
@@ -128,6 +128,57 @@ describe('CommercialDecisionOrchestratorService', () => {
     expect(events.recordCommercial).toHaveBeenCalledWith(
       expect.objectContaining({ eventType: 'pipeline.shadow_recorded' }),
     );
+  });
+
+  it('attaches hierarchyJustification to every decision in the trace', async () => {
+    concepts.detect.mockResolvedValue([
+      { concept: 'imminent_purchase', confidence: 0.9 },
+      { concept: 'trust_objection', confidence: 0.7 },
+    ]);
+    const service = makeService();
+
+    const decision = await service.orchestrateInbound({
+      workspaceId: 'ws-1',
+      contactId: 'contact-1',
+      channel: 'WHATSAPP',
+      message: 'Quero comprar, mas confio pouco.',
+    });
+
+    const trace = decision.trace as Record<string, unknown>;
+    const decisions = trace.decisions as Record<string, Record<string, unknown>>;
+    expect(decisions).toBeTruthy();
+
+    const decisionKeys = [
+      'audio_vs_text',
+      'channel_choice',
+      'message_format',
+      'tom',
+      'cia_aggressiveness',
+      'product_offer',
+      'human_transfer',
+    ];
+
+    for (const key of decisionKeys) {
+      const entry = decisions[key];
+      expect(entry).toBeTruthy();
+      const justification = entry.hierarchyJustification as Record<string, unknown> | undefined;
+      expect(justification).toBeTruthy();
+      expect(justification!.level).toBeDefined();
+      expect(typeof justification!.reason).toBe('string');
+      expect((justification!.reason as string).length).toBeGreaterThan(0);
+    }
+
+    const eventCall = events.recordCommercial.mock.calls.find(
+      (call: Array<{ eventType: string }>) => call[0]?.eventType === 'predecided_actions.built',
+    );
+    expect(eventCall).toBeTruthy();
+    const payload = eventCall[0].payload as Record<string, unknown>;
+    const payloadDecisions = payload.decisions as Record<string, Record<string, unknown>>;
+    for (const key of decisionKeys) {
+      const entry = payloadDecisions[key];
+      expect(entry).toBeTruthy();
+      expect(entry.hierarchyJustification).toBeTruthy();
+    }
   });
 
   it('builds predecided actions after detecting concepts and consulting case memory', async () => {
@@ -246,5 +297,128 @@ describe('CommercialDecisionOrchestratorService', () => {
     ).rejects.toThrow('simulated crash');
 
     expect(prisma.pipelineState.update).not.toHaveBeenCalled();
+  });
+
+  // ─── P1.4 — Arsenal-aware format tests ───
+
+  it('filters resolveMessageFormat candidates to arsenal-owned formats', async () => {
+    setup.getState.mockResolvedValue({
+      arsenal: [{ id: 'a1', type: 'text' }, { id: 'a2', type: 'image' }],
+      config: { tone: 'direto' },
+      selectedProductIds: ['product-1'],
+    });
+    concepts.detect.mockResolvedValue([{ concept: 'general', confidence: 0.9 }]);
+    const service = makeService();
+
+    await service.orchestrateInbound({
+      workspaceId: 'ws-1',
+      channel: 'whatsapp',
+      message: 'Olá',
+    });
+
+    expect(mind.resolveMessageFormat).toHaveBeenCalledWith(
+      'ws-1',
+      'whatsapp',
+      'general',
+      ['text', 'image'],
+    );
+  });
+
+  it('removes audio from format candidates when zero audio assets uploaded', async () => {
+    setup.getState.mockResolvedValue({
+      arsenal: [{ id: 'a1', type: 'text' }],
+      config: { tone: 'direto' },
+      selectedProductIds: ['product-1'],
+    });
+    concepts.detect.mockResolvedValue([{ concept: 'general', confidence: 0.9 }]);
+    const service = makeService();
+
+    const decision = await service.orchestrateInbound({
+      workspaceId: 'ws-1',
+      channel: 'whatsapp',
+      message: 'Olá',
+    });
+
+    const formatsArg = (mind.resolveMessageFormat as jest.Mock).mock.calls[0][3];
+    expect(formatsArg).not.toContain('audio');
+    expect(formatsArg).not.toContain('video');
+    expect(formatsArg).not.toContain('document');
+    expect(formatsArg).not.toContain('template');
+    expect(formatsArg).toEqual(['text']);
+
+    const trace = decision.trace as Record<string, unknown>;
+    const decisions = trace.decisions as Record<string, unknown>;
+    expect(decisions.arsenal_format_filter).toBeDefined();
+  });
+
+  it('records arsenal-empty-for-format when formats are pruned by upload count', async () => {
+    setup.getState.mockResolvedValue({
+      arsenal: [],
+      config: { tone: 'direto' },
+      selectedProductIds: ['product-1'],
+    });
+    concepts.detect.mockResolvedValue([{ concept: 'general', confidence: 0.9 }]);
+    const service = makeService();
+
+    const decision = await service.orchestrateInbound({
+      workspaceId: 'ws-1',
+      channel: 'whatsapp',
+      message: 'Olá',
+    });
+
+    const trace = decision.trace as Record<string, unknown>;
+    const decisions = trace.decisions as Record<string, unknown>;
+    const filter = decisions.arsenal_format_filter as Record<string, unknown>;
+    expect(filter).toBeDefined();
+    expect(filter.reason).toBe('arsenal-empty-for-format');
+    expect(filter.channel_allowed).toContain('audio');
+    expect(filter.arsenal_present).toEqual([]);
+  });
+
+  it('preserves format candidates when arsenal covers all channel formats', async () => {
+    setup.getState.mockResolvedValue({
+      arsenal: [
+        { id: 'a1', type: 'text' },
+        { id: 'a2', type: 'audio' },
+        { id: 'a3', type: 'image' },
+        { id: 'a4', type: 'video' },
+        { id: 'a5', type: 'document' },
+        { id: 'a6', type: 'template' },
+      ],
+      config: { tone: 'direto' },
+      selectedProductIds: ['product-1'],
+    });
+    concepts.detect.mockResolvedValue([{ concept: 'general', confidence: 0.9 }]);
+    const service = makeService();
+
+    await service.orchestrateInbound({
+      workspaceId: 'ws-1',
+      channel: 'whatsapp',
+      message: 'Olá',
+    });
+
+    const formatsArg = (mind.resolveMessageFormat as jest.Mock).mock.calls[0][3];
+    expect(formatsArg).toContain('text');
+    expect(formatsArg).toContain('audio');
+    expect(formatsArg).toContain('image');
+    expect(formatsArg).toContain('video');
+    expect(formatsArg).toContain('document');
+    expect(formatsArg).toContain('template');
+  });
+
+  it('uses full allowedFormats when arsenal is null/empty (no setup)', async () => {
+    setup.getState.mockResolvedValue(null);
+    concepts.detect.mockResolvedValue([{ concept: 'general', confidence: 0.9 }]);
+    const service = makeService();
+
+    await service.orchestrateInbound({
+      workspaceId: 'ws-1',
+      channel: 'whatsapp',
+      message: 'Olá',
+    });
+
+    const formatsArg = (mind.resolveMessageFormat as jest.Mock).mock.calls[0][3];
+    expect(formatsArg).toContain('audio');
+    expect(formatsArg).toContain('image');
   });
 });

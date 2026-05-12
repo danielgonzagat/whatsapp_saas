@@ -1,8 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { createHash } from 'node:crypto';
 import { BrainEventSpineService } from './brain-event-spine.service';
-import { allowedFormatsFor, allowedTonesFor, repertoireFor } from './channel-repertoire.config';
+import { allowedFormatsFor, allowedTonesFor, repertoireFor, type FormatId } from './channel-repertoire.config';
 import { ChannelSetupService } from './channel-setup.service';
+import { attributeHierarchy } from './economic-hierarchy';
 import { MindConceptService } from './mind-concepts.service';
 import { MindService } from './mind.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -274,6 +275,33 @@ export class CommercialDecisionOrchestratorService {
 
     const decisions: Record<string, unknown> = {};
 
+    // P1.4 — arsenal-aware format filtering. Intersect channel-allowed
+    // formats with the arsenal types the operator actually uploaded.
+    // Formats without uploaded assets are removed from the candidate set
+    // and the exclusion is recorded for auditability.
+    const arsenalFormatTypes = new Set(
+      (channelSetup?.arsenal ?? []).map((asset) => String(asset.type || '').toLowerCase()),
+    );
+    const arsenalAwareFormats: FormatId[] = [];
+    const arsenalExcludedFormats: string[] = [];
+    for (const fmt of allowedFormats) {
+      const fmtStr = String(fmt);
+      if (arsenalFormatTypes.has(fmtStr)) {
+        arsenalAwareFormats.push(fmt as FormatId);
+      } else {
+        arsenalExcludedFormats.push(fmtStr);
+      }
+    }
+    if (arsenalExcludedFormats.length > 0) {
+      decisions.arsenal_format_filter = {
+        channel_allowed: allowedFormats,
+        arsenal_present: [...arsenalFormatTypes],
+        excluded: arsenalExcludedFormats,
+        reason: 'arsenal-empty-for-format',
+        effective: arsenalAwareFormats,
+      };
+    }
+
     // P6 — if channel does not support audio format, force text without
     // consulting the mind. Record the reason so the trace is auditable.
     let audio: { choice: string; confidence: number; fallback: boolean };
@@ -283,6 +311,9 @@ export class CommercialDecisionOrchestratorService {
     } else {
       audio = await this.mind.resolveAudioVsText(input.workspaceId, channel, audioRatio);
     }
+
+    const formatCandidates =
+      arsenalAwareFormats.length > 0 ? arsenalAwareFormats : allowedFormats;
 
     const [toneRaw, aggressiveness, format, channelChoice] = await Promise.all([
       this.mind.resolveTone(input.workspaceId, channel, repliedRate, soldRate, concept),
@@ -297,7 +328,7 @@ export class CommercialDecisionOrchestratorService {
         input.workspaceId,
         channel,
         concept,
-        allowedFormats,
+        formatCandidates,
       ),
       this.mind.resolveChannelChoice(
         input.workspaceId,
@@ -334,11 +365,56 @@ export class CommercialDecisionOrchestratorService {
       decisions.proactive_gate = 'channel-inbound-only';
     }
 
-    decisions.audio_vs_text = audio;
-    decisions.channel_choice = channelChoice;
-    decisions.message_format = format;
-    decisions.tom = tone;
-    decisions.cia_aggressiveness = aggressiveness;
+    const arsenalCount = channelSetup?.arsenal?.length ?? 0;
+    const allConcepts = conceptRows.map((r) => r.concept);
+
+    decisions.audio_vs_text = {
+      ...audio,
+      hierarchyJustification: attributeHierarchy({
+        type: 'audio_vs_text',
+        chosen: audio.choice,
+        context: {
+          audioRatio,
+          arsenalCount,
+          concept,
+          concepts: allConcepts,
+          confidence: audio.confidence,
+        },
+      }),
+    };
+    decisions.channel_choice = {
+      ...channelChoice,
+      hierarchyJustification: attributeHierarchy({
+        type: 'channel_choice',
+        chosen: channelChoice.channel,
+        context: { concept, concepts: allConcepts, confidence: channelChoice.confidence },
+      }),
+    };
+    decisions.message_format = {
+      ...format,
+      hierarchyJustification: attributeHierarchy({
+        type: 'message_format',
+        chosen: format.format,
+        context: { concept, concepts: allConcepts, confidence: format.confidence },
+      }),
+    };
+    decisions.tom = {
+      ...tone,
+      hierarchyJustification: attributeHierarchy({
+        type: 'tom',
+        chosen: tone.tone,
+        context: {
+          concept,
+          concepts: allConcepts,
+          confidence: tone.confidence,
+          repliedRate,
+          soldRate,
+        },
+      }),
+    };
+    decisions.cia_aggressiveness = {
+      ...aggressiveness,
+    };
 
     let couponAction: string | undefined;
     let couponDecision: Record<string, unknown> | undefined;
@@ -350,8 +426,30 @@ export class CommercialDecisionOrchestratorService {
         concept,
         priceBand,
       );
-      decisions.coupon_offer = coupon;
-      decisions.objection_response = objection;
+      const discountPct = discountPercentFromCoupon(coupon.action) ?? 0;
+      const channelMaxDiscount = 100;
+      decisions.coupon_offer = {
+        ...coupon,
+        hierarchyJustification: attributeHierarchy({
+          type: 'coupon_offer',
+          chosen: coupon.action,
+          context: {
+            concept,
+            concepts: allConcepts,
+            confidence: coupon.confidence,
+            discountPercent: discountPct,
+            channelMaxDiscount,
+          },
+        }),
+      };
+      decisions.objection_response = {
+        ...objection,
+        hierarchyJustification: attributeHierarchy({
+          type: 'objection_response',
+          chosen: objection.strategy,
+          context: { concept, concepts: allConcepts, confidence: objection.confidence, priceBand },
+        }),
+      };
       couponDecision = coupon;
       couponAction = coupon.action;
     }
@@ -369,6 +467,11 @@ export class CommercialDecisionOrchestratorService {
           confidence: 0,
           fallback: true,
           reason: 'channel-setup has zero selectedProductIds',
+          hierarchyJustification: attributeHierarchy({
+            type: 'product_offer',
+            chosen: 'cold_start_no_products',
+            context: { concept, concepts: allConcepts, confidence: 0 },
+          }),
         };
       } else {
         const product = await this.mind.resolveProductOffer(
@@ -379,7 +482,21 @@ export class CommercialDecisionOrchestratorService {
           undefined,
           { channel, allowedProductIds },
         );
-        decisions.product_offer = product;
+        decisions.product_offer = {
+          ...product,
+          hierarchyJustification: attributeHierarchy({
+            type: 'product_offer',
+            chosen: product.offer,
+            context: {
+              concept,
+              concepts: allConcepts,
+              confidence: product.confidence,
+              priceBand,
+              repliedRate,
+              segment: 'new_lead',
+            },
+          }),
+        };
         productOfferDecision = product;
         productOffer = product.offer;
       }
@@ -415,6 +532,23 @@ export class CommercialDecisionOrchestratorService {
       };
     }
 
+    decisions.cia_aggressiveness = {
+      ...aggressiveness,
+      hierarchyJustification: attributeHierarchy({
+        type: 'cia_aggressiveness',
+        chosen: effectiveAggressiveness || aggressiveness.aggressiveness,
+        context: {
+          concept,
+          concepts: allConcepts,
+          confidence: aggressiveness.confidence,
+          aggressivenessCeiling,
+          brainAggressiveness,
+          soldRate,
+          repliedRate,
+        },
+      }),
+    };
+
     let humanTransferDecision: Record<string, unknown> | undefined;
     if (hasConcept(conceptRows, 'trust_objection') || hasConcept(conceptRows, 'fatigue_risk')) {
       const transferConcept = hasConcept(conceptRows, 'trust_objection')
@@ -426,7 +560,18 @@ export class CommercialDecisionOrchestratorService {
         transferConcept,
         0.7,
       );
-      decisions.human_transfer = transfer;
+      decisions.human_transfer = {
+        ...transfer,
+        hierarchyJustification: attributeHierarchy({
+          type: 'human_transfer',
+          chosen: transfer.action,
+          context: {
+            concept: transferConcept,
+            concepts: allConcepts,
+            confidence: transfer.confidence,
+          },
+        }),
+      };
       humanTransferDecision = transfer;
     }
 
