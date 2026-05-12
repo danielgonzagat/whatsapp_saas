@@ -64,6 +64,8 @@ interface ThreadPage {
   hasMore: boolean;
 }
 
+type ConversationApiPayload = Conversation[] | ThreadPage;
+
 function readCache<T>(key: string, fallback: T): T {
   try {
     const raw = localStorage.getItem(key);
@@ -89,6 +91,45 @@ function isValidConversationId(value?: string | null): boolean {
   return Boolean(normalized) && !normalized.startsWith('local_');
 }
 
+function normalizeConversation(conversation: Conversation): Conversation {
+  return {
+    id: conversation.id,
+    title: String(conversation.title || 'Nova conversa').trim() || 'Nova conversa',
+    updatedAt: conversation.updatedAt,
+    lastMessagePreview: String(conversation.lastMessagePreview || '').trim(),
+  };
+}
+
+function sortConversations(items: Conversation[]): Conversation[] {
+  return [...items].sort((a, b) => {
+    const aTime = new Date(a.updatedAt || 0).getTime();
+    const bTime = new Date(b.updatedAt || 0).getTime();
+    return bTime - aTime;
+  });
+}
+
+function unwrapConversationPayload(
+  response: { data?: ConversationApiPayload } | ConversationApiPayload,
+): ConversationApiPayload | undefined {
+  if (response && typeof response === 'object' && 'data' in response) {
+    return (response as { data?: ConversationApiPayload }).data;
+  }
+  return response as ConversationApiPayload;
+}
+
+function readThreadPage(response: { data?: ConversationApiPayload } | ConversationApiPayload): ThreadPage {
+  const payload = unwrapConversationPayload(response);
+  if (Array.isArray(payload)) {
+    return { items: payload, total: payload.length, nextCursor: null, hasMore: false };
+  }
+  return {
+    items: Array.isArray(payload?.items) ? payload.items : [],
+    total: typeof payload?.total === 'number' ? payload.total : 0,
+    nextCursor: typeof payload?.nextCursor === 'string' ? payload.nextCursor : null,
+    hasMore: Boolean(payload?.hasMore),
+  };
+}
+
 /** Conversation history provider. */
 export function ConversationHistoryProvider({ children }: { children: ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
@@ -102,25 +143,12 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
   const didSyncRef = useRef(false);
 
   const applyConversations = useCallback((nextConversations: Conversation[]) => {
-    const normalized = nextConversations
-      .filter((conversation) => isValidConversationId(conversation?.id))
-      .map((conversation) => ({
-        id: conversation.id,
-        title: String(conversation.title || 'Nova conversa').trim() || 'Nova conversa',
-        updatedAt: conversation.updatedAt,
-        lastMessagePreview: String(conversation.lastMessagePreview || '').trim(),
-      }))
-      .sort((a, b) => {
-        const aTime = new Date(a.updatedAt || 0).getTime();
-        const bTime = new Date(b.updatedAt || 0).getTime();
-        return bTime - aTime;
-      });
+    const normalized = sortConversations(
+      nextConversations.filter((conversation) => isValidConversationId(conversation?.id)).map(normalizeConversation),
+    );
 
     setConversations(normalized);
     writeCache(CONVERSATIONS_CACHE_SLOT, normalized);
-    setActiveConv((current) =>
-      current && !normalized.some((conversation) => conversation.id === current) ? null : current,
-    );
   }, []);
 
   const mergeConversations = useCallback((nextConversations: Conversation[]) => {
@@ -130,18 +158,9 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
         if (!isValidConversationId(conversation.id)) {
           continue;
         }
-        byId.set(conversation.id, {
-          id: conversation.id,
-          title: String(conversation.title || 'Nova conversa').trim() || 'Nova conversa',
-          updatedAt: conversation.updatedAt,
-          lastMessagePreview: String(conversation.lastMessagePreview || '').trim(),
-        });
+        byId.set(conversation.id, normalizeConversation(conversation));
       }
-      const merged = Array.from(byId.values()).sort((a, b) => {
-        const aTime = new Date(a.updatedAt || 0).getTime();
-        const bTime = new Date(b.updatedAt || 0).getTime();
-        return bTime - aTime;
-      });
+      const merged = sortConversations(Array.from(byId.values()));
       writeCache(CONVERSATIONS_CACHE_SLOT, merged);
       return merged;
     });
@@ -152,19 +171,12 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
       return;
     }
     try {
-      const res = await apiFetch<ThreadPage>(`/kloel/threads?limit=${CONVERSATION_PAGE_SIZE}`);
-      const page = res?.data;
-      const threads: Conversation[] = Array.isArray(page?.items) ? page.items : [];
-      const mapped = threads.map((t) => ({
-        id: t.id,
-        title: t.title,
-        updatedAt: t.updatedAt,
-        lastMessagePreview: t.lastMessagePreview,
-      }));
-      applyConversations(mapped);
+      const res = await apiFetch<ConversationApiPayload>(`/kloel/threads?limit=${CONVERSATION_PAGE_SIZE}`);
+      const page = readThreadPage(res);
+      applyConversations(page.items);
       setNextCursor(page?.nextCursor ?? null);
       setHasMoreConversations(Boolean(page?.hasMore));
-      setTotalConversations(typeof page?.total === 'number' ? page.total : mapped.length);
+      setTotalConversations(typeof page?.total === 'number' ? page.total : page.items.length);
     } catch {
       // Keep cached conversations when backend is temporarily unavailable
     }
@@ -176,12 +188,11 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
     }
     setIsLoadingMoreConversations(true);
     try {
-      const res = await apiFetch<ThreadPage>(
+      const res = await apiFetch<ConversationApiPayload>(
         `/kloel/threads?limit=${CONVERSATION_PAGE_SIZE}&cursor=${encodeURIComponent(nextCursor)}`,
       );
-      const page = res?.data;
-      const threads = Array.isArray(page?.items) ? page.items : [];
-      mergeConversations(threads);
+      const page = readThreadPage(res);
+      mergeConversations(page.items);
       setNextCursor(page?.nextCursor ?? null);
       setHasMoreConversations(Boolean(page?.hasMore));
       setTotalConversations(typeof page?.total === 'number' ? page.total : null);
@@ -209,10 +220,9 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
       const query: string = cursor
         ? `/kloel/threads?limit=50&cursor=${encodeURIComponent(cursor)}`
         : '/kloel/threads?limit=50';
-      const res: { data?: ThreadPage } = await apiFetch<ThreadPage>(query);
-      const page: ThreadPage | undefined = res.data;
-      const items = Array.isArray(page?.items) ? page.items : [];
-      all.push(...items);
+      const res = await apiFetch<ConversationApiPayload>(query);
+      const page = readThreadPage(res);
+      all.push(...page.items);
       cursor = page?.nextCursor ?? null;
       keepGoing = Boolean(page?.hasMore && cursor);
     }
