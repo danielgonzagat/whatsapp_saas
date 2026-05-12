@@ -2,6 +2,35 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.2](https://github.com/danielgonzagat/whatsapp_saas/compare/v0.4.1...v0.4.2) (2026-05-12)
+
+
+### Bug Fixes
+
+* **admin:** gate temporary MFA bypass ([a22acb2](https://github.com/danielgonzagat/whatsapp_saas/commit/a22acb2ea24cac649650eb52e49bb648cb9ec27a))
+* **chat:** stream authenticated Kloel responses ([143cb97](https://github.com/danielgonzagat/whatsapp_saas/commit/143cb97ef242c145888b1a68c2f795a7e5eeeb6a))
+* **ci:** satisfy model and visual gates ([1cb6c85](https://github.com/danielgonzagat/whatsapp_saas/commit/1cb6c85fd8647893bdc6ecbacf0bebbe14bf8e2c))
+* **ci:** update login desktop visual baseline ([1441cbf](https://github.com/danielgonzagat/whatsapp_saas/commit/1441cbfd13877717541914ff3dd0c5141c549d60))
+* **ci:** update login tablet visual baseline ([87a28e7](https://github.com/danielgonzagat/whatsapp_saas/commit/87a28e7c8154a21bc8f224d9c89cf65fda062816))
+* **ci:** update signup desktop visual baseline ([33f03ff](https://github.com/danielgonzagat/whatsapp_saas/commit/33f03ff76ee2a7bbafb4132cff4f4c9f48fffa0d))
+* **ci:** update signup mobile visual baseline ([62043bf](https://github.com/danielgonzagat/whatsapp_saas/commit/62043bf898e9b1544a9eaabd01ed0ab0b673f7bd))
+* **ci:** update signup tablet visual baseline ([939646b](https://github.com/danielgonzagat/whatsapp_saas/commit/939646be402b9ca0542a260091b1570539d78233))
+* **kloel:** make authenticated chat abortable ([d5cd928](https://github.com/danielgonzagat/whatsapp_saas/commit/d5cd9286a944644a66eec16316c4d519f51bb468))
+* **kloel:** narrow recovery diff to regressions ([c86ca23](https://github.com/danielgonzagat/whatsapp_saas/commit/c86ca2349232292cdd193e3a26927a3b209ce033))
+* **kloel:** recover production regressions after pr289 ([938c691](https://github.com/danielgonzagat/whatsapp_saas/commit/938c691bbbc036dc10415259dae8acfd9896ecea))
+* **landing:** avoid weak random in thanos particles ([46f0b33](https://github.com/danielgonzagat/whatsapp_saas/commit/46f0b337c8c47ae7abe808f914106babfffc304b))
+* **landing:** restore cinematic Thanos animation ([d3b55cc](https://github.com/danielgonzagat/whatsapp_saas/commit/d3b55cc82db556c33a3131b284ecd1b164edc87e))
+* **quality:** avoid codacy key false positive ([d50f4e0](https://github.com/danielgonzagat/whatsapp_saas/commit/d50f4e00d1519b17e29f3524b26e3f4e8e3ecc16))
+* **quality:** clear codacy static annotations ([54e0024](https://github.com/danielgonzagat/whatsapp_saas/commit/54e0024baa661dbc90d7e08cc4da8f8085aa3597))
+* **quality:** clear PR 289 codacy and tenant gates ([8958dff](https://github.com/danielgonzagat/whatsapp_saas/commit/8958dff20fea4b520e76561ceea93c663271d656))
+* **quality:** clear remaining codacy findings ([e5c2811](https://github.com/danielgonzagat/whatsapp_saas/commit/e5c2811889ba814fbeb6d0f0b0f64093af3fd33a))
+* **quality:** satisfy codacy strict rules ([1408aa7](https://github.com/danielgonzagat/whatsapp_saas/commit/1408aa71caa1ad6e567bdb0a5c3d567808c174a4))
+* **quality:** satisfy raw typecheck gates ([a69a020](https://github.com/danielgonzagat/whatsapp_saas/commit/a69a020da57977c88a76c452d67167963fca2303))
+* **quality:** satisfy thanos data integrity gate ([0edb6ba](https://github.com/danielgonzagat/whatsapp_saas/commit/0edb6ba5f47f656d4298d170f4618dcb446183ce))
+* recover regressions after PR 289 merge ([67173d7](https://github.com/danielgonzagat/whatsapp_saas/commit/67173d756b8967e4612fe3d0031af71012c8e139))
+* restore Thanos, streaming chat, recents pagination, and admin MFA bypass ([9cafbf4](https://github.com/danielgonzagat/whatsapp_saas/commit/9cafbf47be0ed7ca53866f9e10243dffde093c4c))
+* **sidebar:** paginate recent conversations ([0fd1fc3](https://github.com/danielgonzagat/whatsapp_saas/commit/0fd1fc38e72cb404189b62199702b170ff6a9e3d))
+
 ## [0.4.1](https://github.com/danielgonzagat/whatsapp_saas/compare/v0.4.0...v0.4.1) (2026-05-11)
 
 
