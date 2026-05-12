@@ -14,9 +14,9 @@ describe('WhatsappCatchupHistoryService', () => {
   beforeEach(async () => {
     prisma = {};
     providerRegistry = {
-      extractPhoneFromChatId: jest.fn().mockImplementation((id: string) =>
-        String(id || '').replace(/\D/g, ''),
-      ),
+      extractPhoneFromChatId: jest
+        .fn()
+        .mockImplementation((id: string) => String(id || '').replace(/\D/g, '')),
     };
     inbox = { saveMessageByPhone: jest.fn().mockResolvedValue(undefined) };
     const module: TestingModule = await Test.createTestingModule({
@@ -99,7 +99,9 @@ describe('WhatsappCatchupHistoryService', () => {
     it('prefers remoteJidAlt over remoteJid in _data.key', () => {
       expect(
         service.resolvePreferredChatId({
-          _data: { key: { remoteJidAlt: '5511@s.whatsapp.net', remoteJid: 'fallback@s.whatsapp.net' } },
+          _data: {
+            key: { remoteJidAlt: '5511@s.whatsapp.net', remoteJid: 'fallback@s.whatsapp.net' },
+          },
         }),
       ).toBe('5511@s.whatsapp.net');
     });
@@ -126,9 +128,9 @@ describe('WhatsappCatchupHistoryService', () => {
     });
 
     it('returns false when we sent last', () => {
-      expect(
-        service.isRemoteChatAwaitingReply({ id: 'a', lastMessageFromMe: true } as never),
-      ).toBe(false);
+      expect(service.isRemoteChatAwaitingReply({ id: 'a', lastMessageFromMe: true } as never)).toBe(
+        false,
+      );
     });
   });
 
