@@ -115,6 +115,14 @@ interface ToolUpsertAgentSkillArgs {
   body?: string;
 }
 
+interface ToolRecordAgentDelegationArgs {
+  sessionId?: string;
+  task: string;
+  result: string;
+  childSessionId?: string;
+  metadata?: Record<string, unknown>;
+}
+
 function centsFromUnknown(value: unknown): number {
   if (typeof value === 'bigint') {
     return Number(value);
@@ -654,6 +662,46 @@ export class KloelChatToolsService {
       version: result.version,
       reasons: result.reasons,
       message: result.ok ? 'Skill procedural registrada.' : 'Skill procedural recusada.',
+    };
+  }
+
+  async toolRecordAgentDelegation(
+    workspaceId: string,
+    args: ToolRecordAgentDelegationArgs,
+  ): Promise<ToolResult> {
+    if (!this.agentSessions) {
+      return { success: false, error: 'agent_sessions_unavailable' };
+    }
+    const task = safeStr(args.task).trim().slice(0, 2000);
+    const result = safeStr(args.result).trim().slice(0, 3000);
+    if (!task || !result) {
+      return { success: false, error: 'missing_delegation_task_or_result' };
+    }
+    const sessionId = safeStr(args.sessionId, 'kloel_delegation').trim().slice(0, 160);
+    const childSessionId = safeStr(args.childSessionId).trim().slice(0, 160);
+    const metadata =
+      args.metadata && typeof args.metadata === 'object' && !Array.isArray(args.metadata)
+        ? args.metadata
+        : {};
+    await this.agentSessions.recordRuntimeEvent({
+      workspaceId,
+      sessionId: sessionId || 'kloel_delegation',
+      eventType: 'delegation',
+      content: [
+        `childSessionId=${childSessionId}`,
+        `task: ${task}`,
+        `result: ${result}`,
+      ].join('\n'),
+      metadata: {
+        ...metadata,
+        childSessionId: childSessionId || null,
+        source: 'kloel_tool',
+      },
+    });
+    return {
+      success: true,
+      message: 'Delegação registrada na memória operacional do Kloel.',
+      sessionId: sessionId || 'kloel_delegation',
     };
   }
 

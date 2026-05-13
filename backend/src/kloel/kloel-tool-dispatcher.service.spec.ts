@@ -62,6 +62,7 @@ describe('KloelToolDispatcherService', () => {
     | 'toolSearchAgentMemory'
     | 'toolSearchAgentSessions'
     | 'toolUpsertAgentSkill'
+    | 'toolRecordAgentDelegation'
     | 'toolCreatePaymentLink'
   >;
   let bizConfigToolsService: Pick<
@@ -142,6 +143,7 @@ describe('KloelToolDispatcherService', () => {
       toolSearchAgentMemory: jest.fn().mockResolvedValue({ success: true, memories: [] }),
       toolSearchAgentSessions: jest.fn().mockResolvedValue({ success: true, sessions: [] }),
       toolUpsertAgentSkill: jest.fn().mockResolvedValue({ success: true, skillId: 'skill_1' }),
+      toolRecordAgentDelegation: jest.fn().mockResolvedValue({ success: true }),
       toolCreatePaymentLink: jest
         .fn()
         .mockResolvedValue({ success: true, paymentUrl: 'https://pay.test' }),
@@ -336,6 +338,17 @@ describe('KloelToolDispatcherService', () => {
           summary: 'Recover checkout',
         });
         expect(chatToolsService.toolUpsertAgentSkill).toHaveBeenCalledWith(
+          wsId,
+          expect.any(Object),
+        );
+      });
+
+      it('routes record_agent_delegation to chatToolsService', async () => {
+        await service.executeTool(wsId, 'record_agent_delegation', {
+          task: 'Inspect Hermes delegation',
+          result: 'Found governed child sessions',
+        });
+        expect(chatToolsService.toolRecordAgentDelegation).toHaveBeenCalledWith(
           wsId,
           expect.any(Object),
         );

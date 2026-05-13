@@ -54,6 +54,7 @@ describe('KloelChatToolsService', () => {
   let agentSessions: {
     search: jest.Mock;
     searchSessions: jest.Mock;
+    recordRuntimeEvent: jest.Mock;
   };
   let agentSkills: {
     upsertSkill: jest.Mock;
@@ -111,6 +112,7 @@ describe('KloelChatToolsService', () => {
       searchSessions: jest
         .fn()
         .mockResolvedValue({ query: 'checkout', totalFound: 0, sessions: [] }),
+      recordRuntimeEvent: jest.fn().mockResolvedValue('agent_event:delegation'),
     };
     agentSkills = {
       upsertSkill: jest.fn().mockResolvedValue({ ok: true, reasons: [] }),
@@ -321,6 +323,31 @@ describe('KloelChatToolsService', () => {
           title: 'Checkout Recovery',
           riskLevel: 'normal',
           allowedTools: ['list_products'],
+        }),
+      );
+    });
+
+    it('records governed delegation observations into runtime events', async () => {
+      const result = await service.toolRecordAgentDelegation(wsId, {
+        sessionId: 'thread_1',
+        task: 'Inspect Hermes delegation',
+        result: 'Subagent found bounded child-session pattern.',
+        childSessionId: 'child_1',
+        metadata: { worker: 'D' },
+      });
+
+      expect(result.success).toBe(true);
+      expect(agentSessions.recordRuntimeEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          workspaceId: wsId,
+          sessionId: 'thread_1',
+          eventType: 'delegation',
+          content: expect.stringContaining('Inspect Hermes delegation'),
+          metadata: expect.objectContaining({
+            worker: 'D',
+            childSessionId: 'child_1',
+            source: 'kloel_tool',
+          }),
         }),
       );
     });

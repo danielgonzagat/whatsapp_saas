@@ -159,4 +159,27 @@ export const KLOEL_CHAT_TOOLS_SETTINGS_CAMPAIGNS: ChatCompletionTool[] = [
       },
     },
   },
+  {
+    type: 'function',
+    function: {
+      name: 'record_agent_delegation',
+      description:
+        'Registra uma observação durável sobre delegação/subagente, incluindo tarefa, resultado e sessão filha',
+      parameters: {
+        type: 'object',
+        properties: {
+          sessionId: { type: 'string', description: 'Sessão principal ou thread associada' },
+          task: { type: 'string', description: 'Tarefa delegada' },
+          result: { type: 'string', description: 'Resultado observado da delegação' },
+          childSessionId: { type: 'string', description: 'Sessão filha/subagente, se houver' },
+          metadata: {
+            type: 'object',
+            additionalProperties: true,
+            description: 'Metadados auditáveis e não sensíveis da delegação',
+          },
+        },
+        required: ['task', 'result'],
+      },
+    },
+  },
 ];

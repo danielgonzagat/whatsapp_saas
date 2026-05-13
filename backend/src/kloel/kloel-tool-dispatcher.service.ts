@@ -114,6 +114,11 @@ export class KloelToolDispatcherService {
           return await this.chatToolsService.toolSearchAgentSessions(workspaceId, asToolArgs(args));
         case 'upsert_agent_skill':
           return await this.chatToolsService.toolUpsertAgentSkill(workspaceId, asToolArgs(args));
+        case 'record_agent_delegation':
+          return await this.chatToolsService.toolRecordAgentDelegation(
+            workspaceId,
+            asToolArgs(args),
+          );
         case 'create_payment_link':
           return await this.dispatchCreatePaymentLink(workspaceId, args, userId);
         case 'connect_whatsapp':
