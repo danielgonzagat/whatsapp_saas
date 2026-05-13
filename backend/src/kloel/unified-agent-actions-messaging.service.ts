@@ -8,6 +8,7 @@ import { OpsAlertService } from '../observability/ops-alert.service';
 import { MailboxGmailOAuthService } from '../marketing/mailbox-gmail-oauth.service';
 import { ChannelTransportRegistry } from './channel-transport.registry';
 import type { ChannelName, ChannelSendResult } from './channel-transport.types';
+import { buildUnsubscribeFooterHtml } from '../common/utils/unsubscribe-footer.util';
 import { assertCustomerSafe } from './commercial-decision-orchestrator.service';
 import { BrainEventSpineService } from './brain-event-spine.service';
 import { DailyLimitService } from './daily-limit.service';
@@ -189,6 +190,15 @@ export class UnifiedAgentActionsMessagingService {
       return { success: false, error: 'Mensagem é obrigatória' };
     }
 
+    const isProactive = this.resolveComplianceMode(context) === 'proactive';
+
+    if (isProactive) {
+      const footerCheck = buildUnsubscribeFooterHtml({ email: recipientEmail });
+      if (!footerCheck || footerCheck.length < 10) {
+        return { success: false, error: 'unsubscribe_footer_unavailable' };
+      }
+    }
+
     const metadata = this.isRecord(context?.metadata) ? context.metadata : {};
     const subject =
       this.readOptionalText(args.subject) ||
@@ -198,7 +208,7 @@ export class UnifiedAgentActionsMessagingService {
       toEmail: recipientEmail,
       subject: subject.startsWith('Re:') ? subject : `Re: ${subject}`,
       html: `<p>${this.escapeHtml(message).replace(/\n/g, '<br>')}</p>`,
-      proactive: this.resolveComplianceMode(context) === 'proactive',
+      proactive: isProactive,
     });
 
     return {
