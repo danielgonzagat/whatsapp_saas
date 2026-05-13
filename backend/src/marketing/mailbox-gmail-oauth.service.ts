@@ -3,7 +3,7 @@ import {
   Injectable,
 } from '@nestjs/common';
 import { MailboxProvider, MailboxStatus } from '@prisma/client';
-import type { ConfigService } from '@nestjs/config';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { Metrics } from '../observability/metrics';
 import { GOOGLE_AUTH_URL, GMAIL_SCOPES } from './mailbox-gmail-oauth/constants';

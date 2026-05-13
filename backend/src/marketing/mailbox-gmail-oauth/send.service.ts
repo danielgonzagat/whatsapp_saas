@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { MailboxProvider, MailboxStatus } from '@prisma/client';
-import type { ConfigService } from '@nestjs/config';
+import { ConfigService } from '@nestjs/config';
 import { Metrics } from '../../observability/metrics';
 import { PrismaService } from '../../prisma/prisma.service';
 import { buildUnsubscribeFooterHtml } from '../../common/utils/unsubscribe-footer.util';

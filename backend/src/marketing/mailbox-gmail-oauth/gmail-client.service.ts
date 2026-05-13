@@ -4,7 +4,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { MailboxStatus } from '@prisma/client';
-import type { ConfigService } from '@nestjs/config';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
 import { decryptMailboxToken, encryptMailboxToken } from '../mailbox-token-crypto';
 import { expiresAtFromSeconds } from './oauth-state';
