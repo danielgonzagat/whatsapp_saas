@@ -75,53 +75,47 @@ export const silent24hResolverWorker = new Worker(
           ...(contactId ? { contactId } : {}),
         };
 
-        if (replyEvent) {
-          await prisma.decisionOutcome.updateMany({
-            where: { id: decision.id, outcomeAt: null },
-            data: {
+        const resolution = replyEvent ? 'replied' : 'silent_24h';
+        const updateData = replyEvent
+          ? { outcomeAt: now, outcomeName: 'inbound.received' as const, wonVsBaseline: true }
+          : {
               outcomeAt: now,
-              outcomeName: 'inbound.received',
-              wonVsBaseline: true,
-            },
-          });
+              outcomeName: 'inbound.silent_24h' as const,
+              economicValue: 0,
+              wonVsBaseline: false,
+            };
 
-          await prisma.autopilotEvent.create({
-            data: {
-              workspaceId: decision.workspaceId,
-              contactId: contactId ?? null,
-              intent: 'outcome.silent_24h_closed',
-              action: 'outcome.silent_24h_closed',
-              status: 'executed',
-              reason: 'replied',
-              meta: { ...metaPayload, resolution: 'replied' },
-            },
-          });
+        // Atomic claim — only the worker that flips outcomeAt: null -> now wins.
+        // Subsequent autopilotEvent.create runs only on win, avoiding duplicate
+        // outcome.silent_24h_closed events when concurrency > 1.
+        const claim = await prisma.decisionOutcome.updateMany({
+          where: { id: decision.id, outcomeAt: null },
+          data: updateData,
+        });
 
+        if (claim.count === 0) {
+          ctxLog.info('outcome_claim_lost_to_concurrent_worker', {
+            outcomeKey: decision.outcomeKey,
+          });
+          continue;
+        }
+
+        await prisma.autopilotEvent.create({
+          data: {
+            workspaceId: decision.workspaceId,
+            contactId: contactId ?? null,
+            intent: 'outcome.silent_24h_closed',
+            action: 'outcome.silent_24h_closed',
+            status: 'executed',
+            reason: resolution,
+            meta: { ...metaPayload, resolution },
+          },
+        });
+
+        if (replyEvent) {
           replied++;
           ctxLog.info('outcome_resolved_replied', { outcomeKey: decision.outcomeKey });
         } else {
-          await prisma.decisionOutcome.updateMany({
-            where: { id: decision.id, outcomeAt: null },
-            data: {
-              outcomeAt: now,
-              outcomeName: 'inbound.silent_24h',
-              economicValue: 0,
-              wonVsBaseline: false,
-            },
-          });
-
-          await prisma.autopilotEvent.create({
-            data: {
-              workspaceId: decision.workspaceId,
-              contactId: contactId ?? null,
-              intent: 'outcome.silent_24h_closed',
-              action: 'outcome.silent_24h_closed',
-              status: 'executed',
-              reason: 'silent_24h',
-              meta: { ...metaPayload, resolution: 'silent_24h' },
-            },
-          });
-
           silent++;
           ctxLog.info('outcome_resolved_silent_24h', { outcomeKey: decision.outcomeKey });
         }

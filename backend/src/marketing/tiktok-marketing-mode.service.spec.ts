@@ -167,12 +167,13 @@ describe('TikTokMarketingModeService', () => {
             direction: 'OUTBOUND',
             status: { in: ['SENT', 'DELIVERED', 'READ'] },
             createdAt: expect.objectContaining({ gte: expect.any(Date) }),
+            conversation: { channel: 'TIKTOK' },
           }),
         }),
       );
     });
 
-    it('returns sell when recent outbound exists via paid sales', async () => {
+    it('stays in listen when only paid sales exist but no TikTok outbound message — sales alone are not TikTok-scoped', async () => {
       setEnv('TIKTOK_CLIENT_KEY', 'ck');
       setEnv('TIKTOK_CLIENT_SECRET', 'sec');
       setEnv('TIKTOK_OUTBOUND_APPROVED', 'true');
@@ -181,17 +182,8 @@ describe('TikTokMarketingModeService', () => {
 
       const result = await service.resolveMode('ws_1');
 
-      expect(result.mode).toBe('sell');
-      expect(result.details.recentOutbound).toBe(true);
-      expect(kloelSaleCount).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({
-            workspaceId: 'ws_1',
-            status: 'paid',
-            paidAt: expect.objectContaining({ gte: expect.any(Date) }),
-          }),
-        }),
-      );
+      expect(result.mode).toBe('listen');
+      expect(result.details.recentOutbound).toBe(false);
     });
 
     it('uses NEXT_PUBLIC_TIKTOK_CLIENT_KEY as fallback for client key', async () => {

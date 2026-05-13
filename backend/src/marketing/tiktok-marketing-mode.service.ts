@@ -147,28 +147,21 @@ export class TikTokMarketingModeService {
 
   private async hasRecentOutbound(workspaceId: string): Promise<boolean> {
     const since = new Date(Date.now() - SEVEN_DAYS_MS);
+    // Channel scope is critical: without this filter, any outbound (WhatsApp,
+    // Instagram, etc.) would flip TikTok to 'sell' mode. Conversation.channel
+    // uses uppercase enum values per the schema; TIKTOK isn't in the comment
+    // list but is the canonical value when TikTok writes here.
     const count = await this.prisma.message.count({
       where: {
         workspaceId,
         direction: 'OUTBOUND',
         status: { in: ['SENT', 'DELIVERED', 'READ'] },
         createdAt: { gte: since },
+        conversation: { channel: 'TIKTOK' },
       },
     });
 
-    if (count > 0) {
-      return true;
-    }
-
-    const saleCount = await this.prisma.kloelSale.count({
-      where: {
-        workspaceId,
-        status: 'paid',
-        paidAt: { gte: since },
-      },
-    });
-
-    return saleCount > 0;
+    return count > 0;
   }
 
   private tryReadTikTokClientKey(): string {
