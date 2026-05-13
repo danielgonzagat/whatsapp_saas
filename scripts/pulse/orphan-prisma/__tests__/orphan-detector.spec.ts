@@ -19,7 +19,7 @@ function makeModel(name: string, relations: Array<{ fieldName: string; targetMod
     accessorName: name.charAt(0).toLowerCase() + name.slice(1),
     line: 1,
     fields: [{ name: 'id', type: 'String', line: 2, isOptional: false, isArray: false, isId: true }],
-    relations,
+    relations: relations.map((r) => ({ ...r, line: 0 })),
   };
 }
 

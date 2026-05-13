@@ -34,6 +34,8 @@
     "browser_stress_pass_rate_min": 100,
     "codacy_total_issues_max": 0,
     "codacy_high_severity_issues_max": 0,
-    "codacy_medium_severity_issues_max": 0
+    "codacy_medium_severity_issues_max": 0,
+    "coverage_lines_min": 80,
+    "coverage_branches_min": 75
   }
 }
