@@ -23,7 +23,9 @@ const SEVERITY_TAG_PREFIX = 'findings/severity-';
 
 function findSidecars(root) {
   const out = [];
-  if (!existsSync(root)) return out;
+  if (!existsSync(root)) {
+    return out;
+  }
   const stack = [root];
   while (stack.length) {
     const dir = stack.pop();

@@ -102,12 +102,18 @@ const SKIP_EXTS = new Set([
 ]);
 
 function isSourceFile(relPath) {
-  if (SKIP_ROOT_FILES.has(relPath)) return false;
+  if (SKIP_ROOT_FILES.has(relPath)) {
+    return false;
+  }
   for (const prefix of SKIP_PREFIXES) {
-    if (relPath.startsWith(prefix)) return false;
+    if (relPath.startsWith(prefix)) {
+      return false;
+    }
   }
   const ext = relPath.includes('.') ? '.' + relPath.split('.').pop() : '';
-  if (SKIP_EXTS.has(ext)) return false;
+  if (SKIP_EXTS.has(ext)) {
+    return false;
+  }
   if (
     relPath.includes('/node_modules/') ||
     relPath.includes('/dist/') ||

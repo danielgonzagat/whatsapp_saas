@@ -20,7 +20,9 @@ const WORKSPACES = ['', 'backend', 'frontend', 'worker'];
 
 function toolVersion() {
   const r = spawnSync('npx', ['--no-install', 'depcheck', '--version'], { encoding: 'utf-8' });
-  if (r.status === 0 && r.stdout) return `depcheck ${r.stdout.trim()}`;
+  if (r.status === 0 && r.stdout) {
+    return `depcheck ${r.stdout.trim()}`;
+  }
   return 'depcheck unknown';
 }
 

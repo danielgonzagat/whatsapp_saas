@@ -1,12 +1,20 @@
 // Helpers extracted from phase-tags-emitter
 export function isSkippable(relPath) {
-  if (SKIP_ROOT_FILES.has(relPath)) return true;
+  if (SKIP_ROOT_FILES.has(relPath)) {
+    return true;
+  }
   for (const prefix of SKIP_PREFIXES) {
-    if (relPath.startsWith(prefix)) return true;
+    if (relPath.startsWith(prefix)) {
+      return true;
+    }
   }
   const ext = relPath.includes('.') ? '.' + relPath.split('.').pop() : '';
-  if (SKIP_EXTS.has(ext)) return true;
-  if (relPath.startsWith('../../') || relPath.startsWith('/')) return true;
+  if (SKIP_EXTS.has(ext)) {
+    return true;
+  }
+  if (relPath.startsWith('../../') || relPath.startsWith('/')) {
+    return true;
+  }
   if (
     relPath.includes('/node_modules/') ||
     relPath.includes('/dist/') ||
@@ -14,8 +22,9 @@ export function isSkippable(relPath) {
     relPath.includes('/coverage/') ||
     relPath.includes('/.next/') ||
     relPath.includes('/__pycache__/')
-  )
+  ) {
     return true;
+  }
   return false;
 }
 

@@ -78,10 +78,16 @@ function computeSeverity(name, baseline, current) {
     // _min metrics: a DECREASE is worse. Percentage decrease = (baseline - current) / baseline * 100
     // _max metrics: an INCREASE is worse. Percentage increase = (current - baseline) / baseline * 100
     // But these are all _min, so decrease.
-    if (baseline === 0) return 'medium';
+    if (baseline === 0) {
+      return 'medium';
+    }
     const pctChange = ((baseline - current) / baseline) * 100;
-    if (pctChange > 5) return 'critical';
-    if (pctChange > 1) return 'high';
+    if (pctChange > 5) {
+      return 'critical';
+    }
+    if (pctChange > 1) {
+      return 'high';
+    }
     return 'medium';
   }
 
@@ -171,10 +177,14 @@ function main() {
   const findings = [];
 
   for (const [name, baselineValue] of Object.entries(baseline)) {
-    if (typeof baselineValue !== 'number') continue;
+    if (typeof baselineValue !== 'number') {
+      continue;
+    }
 
     const currentValue = current[name];
-    if (typeof currentValue !== 'number') continue;
+    if (typeof currentValue !== 'number') {
+      continue;
+    }
 
     const result = compareMetric(name, baselineValue, currentValue);
 

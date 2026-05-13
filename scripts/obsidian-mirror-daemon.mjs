@@ -132,8 +132,12 @@ function rebuild(force) {
       log('INFO', `Mirroring ${index + 1}/${sources.length}: ${relative(REPO_ROOT, source)}`);
     }
     const result = mirrorFile(source, manifest);
-    if (result.status === 'updated') updated++;
-    if (result.status === 'error') errors++;
+    if (result.status === 'updated') {
+      updated++;
+    }
+    if (result.status === 'error') {
+      errors++;
+    }
   }
 
   // Remove stale mirrors from manifest (files that no longer have a source)
@@ -375,8 +379,12 @@ function startWatch() {
     for (const [absPath, event] of batch) {
       const rel = relative(REPO_ROOT, absPath);
 
-      if (rel.startsWith('..') || rel === '') continue;
-      if (!isConfiguredSourcePath(absPath)) continue;
+      if (rel.startsWith('..') || rel === '') {
+        continue;
+      }
+      if (!isConfiguredSourcePath(absPath)) {
+        continue;
+      }
 
       if (event === 'unlink') {
         toRemove.push(absPath);

@@ -193,8 +193,12 @@ function buildLegacyPulseSummary(providerName) {
   if (!match) return null;
 
   const line = match[0];
-  if (/error|fail|down|broken/i.test(line)) return 'degraded';
-  if (/healthy|ok|operational/i.test(line)) return 'healthy';
+  if (/error|fail|down|broken/i.test(line)) {
+    return 'degraded';
+  }
+  if (/healthy|ok|operational/i.test(line)) {
+    return 'healthy';
+  }
   return null;
 }
 
