@@ -1,5 +1,6 @@
 import * as path from 'path';
 import type { PulseArtifactRegistry } from './artifact-registry/discovery';
+import { PULSE_EXTERNAL_INPUT_FILES } from './external-signals/snapshot-config';
 import { ensureDir, pathExists, readDir, removePath } from './safe-fs';
 import { safeJoin } from './safe-path';
 
@@ -85,6 +86,7 @@ export function cleanupPulseArtifacts(registry: PulseArtifactRegistry): PulseArt
   }
 
   const rootMirrors = new Set(registry.mirrors);
+  const externalInputArtifacts = new Set(PULSE_EXTERNAL_INPUT_FILES);
   for (const entry of readDir(registry.rootDir)) {
     const normalizedEntry = entry.toUpperCase();
     if (normalizedEntry.startsWith('PULSE_FLOW_') && normalizedEntry.endsWith('.JSON')) {
@@ -93,6 +95,7 @@ export function cleanupPulseArtifacts(registry: PulseArtifactRegistry): PulseArt
     }
     if (
       entry !== 'PULSE_CODACY_STATE.json' &&
+      !externalInputArtifacts.has(entry) &&
       isRootPulseArtifact(entry) &&
       !rootMirrors.has(entry)
     ) {
