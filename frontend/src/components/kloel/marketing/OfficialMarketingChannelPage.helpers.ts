@@ -17,6 +17,21 @@ export interface TikTokStatus {
   [key: string]: unknown;
 }
 
+export type TikTokMode = 'sell' | 'listen' | 'blocked';
+
+export interface TikTokModeData {
+  mode: TikTokMode;
+  details: {
+    clientConfigured: boolean;
+    secretConfigured: boolean;
+    outboundApproved: boolean;
+    tokenValid: boolean;
+    recentOutbound: boolean;
+    missingVariables: string[];
+    requiredSteps: string[];
+  };
+}
+
 interface ChannelMeta {
   label: string;
   summary: string;

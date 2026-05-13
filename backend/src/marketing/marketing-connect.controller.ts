@@ -18,8 +18,10 @@ import {
   readWorkspaceEmailDelivery,
 } from '../kloel/email-workspace-delivery';
 import { MetaWhatsAppService } from '../meta/meta-whatsapp.service';
+import { MetaConnectionStateService } from '../meta/meta-connection-state.service';
 import { EmailCampaignService } from '../kloel/email-campaign.service';
 import { TikTokMarketingService } from './tiktok-marketing.service';
+import { TikTokMarketingModeService, type TikTokModeResult } from './tiktok-marketing-mode.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
 import { asProviderSettings, type ProviderSettings } from '../whatsapp/provider-settings.types';
@@ -161,12 +163,14 @@ export class MarketingConnectController {
   constructor(
     private readonly prisma: PrismaService,
     private readonly metaWhatsApp: MetaWhatsAppService,
+    private readonly metaConnectionState: MetaConnectionStateService,
     private readonly whatsappProviders: WhatsAppProviderRegistry,
     private readonly gmailMailbox: MailboxGmailOAuthService,
     private readonly microsoftMailbox: MailboxMicrosoftOAuthService,
     private readonly imapSmtpMailbox: MailboxImapSmtpService,
     private readonly emailCampaign: EmailCampaignService,
     private readonly tiktokMarketing: TikTokMarketingService,
+    private readonly tiktokMode: TikTokMarketingModeService,
   ) {}
 
   private getGlobalEmailProviderSnapshot(): EmailProviderSnapshot {
@@ -253,6 +257,7 @@ export class MarketingConnectController {
     const [
       workspace,
       metaConnection,
+      metaState,
       providerType,
       whatsappStatus,
       gmailMailbox,
@@ -278,6 +283,7 @@ export class MarketingConnectController {
           updatedAt: true,
         },
       }),
+      this.metaConnectionState.forWorkspace(workspaceId),
       this.whatsappProviders.getProviderType(workspaceId).catch(() => 'meta-cloud' as const),
       this.whatsappProviders.getSessionStatus(workspaceId).catch(() => null),
       this.gmailMailbox.getPrimaryGmailStatus(workspaceId).catch(() => null),
@@ -315,7 +321,7 @@ export class MarketingConnectController {
 
     return {
       meta: {
-        connected: Boolean(metaConnection),
+        connected: metaState.metaConnected,
         tokenExpired: Boolean(
           metaConnection?.tokenExpiresAt &&
           new Date(metaConnection.tokenExpiresAt).getTime() < Date.now(),
@@ -334,7 +340,7 @@ export class MarketingConnectController {
             providerType === 'meta-cloud'
               ? safeWhatsApp.authUrl ||
                 snapshot.authUrl ||
-                this.metaWhatsApp.buildEmbeddedSignupUrl(workspaceId, {
+                this.metaWhatsApp.safeBuildEmbeddedSignupUrl(workspaceId, {
                   channel: 'whatsapp',
                   returnTo: '/marketing/whatsapp',
                 })
@@ -360,9 +366,9 @@ export class MarketingConnectController {
                 readOptionalText(snapshot.disconnectReason),
         },
         instagram: {
-          connected: Boolean(metaConnection?.instagramAccountId),
-          status: metaConnection?.instagramAccountId ? 'connected' : 'disconnected',
-          authUrl: this.metaWhatsApp.buildEmbeddedSignupUrl(workspaceId, {
+          connected: metaState.instagram.connected,
+          status: metaState.instagram.connected ? 'connected' : 'disconnected',
+          authUrl: this.metaWhatsApp.safeBuildEmbeddedSignupUrl(workspaceId, {
             channel: 'instagram',
             returnTo: '/marketing/instagram',
           }),
@@ -371,9 +377,9 @@ export class MarketingConnectController {
           pageName: metaConnection?.pageName || null,
         },
         facebook: {
-          connected: Boolean(metaConnection?.pageId),
-          status: metaConnection?.pageId ? 'connected' : 'disconnected',
-          authUrl: this.metaWhatsApp.buildEmbeddedSignupUrl(workspaceId, {
+          connected: metaState.facebook.connected,
+          status: metaState.facebook.connected ? 'connected' : 'disconnected',
+          authUrl: this.metaWhatsApp.safeBuildEmbeddedSignupUrl(workspaceId, {
             channel: 'facebook',
             returnTo: '/marketing/facebook',
           }),
@@ -802,5 +808,13 @@ export class MarketingConnectController {
     });
 
     return this.getEmailStatus({ user: { workspaceId } });
+  }
+
+  /** Get TikTok marketing mode: sell, listen, or blocked. */
+  @Get('tiktok/mode')
+  async getTikTokMode(@Request() req: { user: { workspaceId: string } }): Promise<TikTokModeResult> {
+    const status = await this.tiktokMarketing.getStatus(req.user.workspaceId);
+    const expired = status.expired === true;
+    return this.tiktokMode.resolveMode(req.user.workspaceId, expired);
   }
 }

@@ -7,6 +7,7 @@ import { MarketingConnectController } from './marketing-connect.controller';
 import { MarketingController } from './marketing.controller';
 import { TikTokMarketingController } from './tiktok-marketing.controller';
 import { TikTokMarketingService } from './tiktok-marketing.service';
+import { TikTokMarketingModeService } from './tiktok-marketing-mode.service';
 import { TikTokAdsService } from './tiktok-ads.service';
 import { FacebookMessengerController } from './facebook-messenger.controller';
 import { FacebookMessengerService } from './facebook-messenger.service';
@@ -29,6 +30,7 @@ import { MailboxMicrosoftOAuthService } from './mailbox-microsoft-oauth.service'
   ],
   providers: [
     TikTokMarketingService,
+    TikTokMarketingModeService,
     TikTokAdsService,
     FacebookMessengerService,
     MailboxGmailOAuthService,
@@ -37,6 +39,7 @@ import { MailboxMicrosoftOAuthService } from './mailbox-microsoft-oauth.service'
   ],
   exports: [
     TikTokMarketingService,
+    TikTokMarketingModeService,
     TikTokAdsService,
     FacebookMessengerService,
     MailboxGmailOAuthService,

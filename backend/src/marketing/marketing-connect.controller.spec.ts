@@ -41,6 +41,14 @@ describe('MarketingConnectController channel setup', () => {
   };
   const metaWhatsApp = {
     buildEmbeddedSignupUrl: jest.fn(() => 'https://www.facebook.com/v21.0/dialog/oauth'),
+    safeBuildEmbeddedSignupUrl: jest.fn(() => 'https://www.facebook.com/v21.0/dialog/oauth'),
+  };
+  const metaConnectionState = {
+    forWorkspace: jest.fn(async () => ({
+      instagram: { connected: false },
+      facebook: { connected: false },
+      whatsapp: { connected: false },
+    })),
   };
   const whatsappProviders = {
     getProviderType: jest.fn(async () => 'meta-cloud'),
@@ -101,15 +109,31 @@ describe('MarketingConnectController channel setup', () => {
     getConnectionStatus: jest.fn(async () => ({ connected: false })),
     getStatus: jest.fn(async () => ({ connected: false, status: 'disconnected' })),
   };
+  const tiktokMode = {
+    resolveMode: jest.fn(async () => ({
+      mode: 'listen',
+      details: {
+        clientConfigured: true,
+        secretConfigured: true,
+        outboundApproved: false,
+        tokenValid: true,
+        recentOutbound: false,
+        missingVariables: [],
+        requiredSteps: [],
+      },
+    })),
+  };
   const controller = new MarketingConnectController(
     prisma as never,
     metaWhatsApp as never,
+    metaConnectionState as never,
     whatsappProviders as never,
     gmailMailbox as never,
     microsoftMailbox as never,
     imapSmtpMailbox as never,
     emailCampaign as never,
     tiktokMarketing as never,
+    tiktokMode as never,
   );
   const req = { user: { workspaceId: 'ws_1', email: 'owner@kloel.test' } };
 
