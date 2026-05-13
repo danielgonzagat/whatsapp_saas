@@ -1,10 +1,17 @@
 import * as path from 'path';
 import * as ts from 'typescript';
-import type { ServiceTrace } from '../types.core';
+import type { PrismaModel, ServiceTrace } from '../types.core';
 import type { PulseConfig } from '../types.manifest';
 import { walkFiles } from './utils';
 import { readTextFile } from '../safe-fs';
 import { discoverReservedJsKeywords } from '../dynamic-reality-kernel/catalog-arithmetic';
+import {
+  buildRelationFieldMap,
+  buildTableNameMap,
+  collectModelsFromIncludeSelect,
+  collectModelsFromRawSql,
+} from '../orphan-prisma/enhanced-detector';
+import { parseSchema } from './schema-parser';
 
 function isNonMethodName(name: string): boolean {
   return discoverReservedJsKeywords().has(name);
@@ -193,7 +200,11 @@ function sourceFilesForTraceText(fileName: string, text: string): ts.SourceFile[
   ];
 }
 
-function collectPrismaModelsFromText(text: string): Set<string> {
+function collectPrismaModelsFromText(
+  text: string,
+  relationFieldMap?: Map<string, string>,
+  tableNameMap?: Map<string, string>,
+): Set<string> {
   const models = new Set<string>();
 
   for (const sourceFile of sourceFilesForTraceText('service-trace-slice.ts', text)) {
@@ -205,6 +216,36 @@ function collectPrismaModelsFromText(text: string): Set<string> {
         const modelName = modelFromCallParts(parts, prismaReceivers);
         if (modelName) {
           models.add(modelName);
+
+          if (relationFieldMap) {
+            for (const m of collectModelsFromIncludeSelect(node, relationFieldMap)) {
+              models.add(m);
+            }
+          }
+        }
+
+        if (tableNameMap) {
+          for (const m of collectModelsFromRawSql(node, tableNameMap)) {
+            models.add(m);
+          }
+        }
+
+        const hasTransaction = parts.some((p) => p === '$transaction');
+        const usesPrismaReceiver = parts.some((p) => prismaReceivers.has(p));
+        if (hasTransaction && usesPrismaReceiver) {
+          for (const arg of node.arguments) {
+            if (ts.isArrowFunction(arg) || ts.isFunctionExpression(arg)) {
+              ts.forEachChild(arg.body, visit);
+            }
+          }
+        }
+      }
+
+      if (ts.isTaggedTemplateExpression(node)) {
+        if (tableNameMap) {
+          for (const m of collectModelsFromRawSql(node, tableNameMap)) {
+            models.add(m);
+          }
         }
       }
       if (ts.isPropertyAccessExpression(node)) {
@@ -276,7 +317,7 @@ function collectServiceCallsFromText(
   className: string,
 ): Set<string> {
   const calls = new Set<string>();
-  const callRe = /\bthis\.([A-Za-z_]\w*)\.([A-Za-z_]\w*)\s*\(/g;
+  const callRe = /\bthis\.([A-Za-z_]\w*)\??\.([A-Za-z_]\w*)\s*\(/g;
   let match: RegExpExecArray | null;
   while ((match = callRe.exec(text)) !== null) {
     const serviceName = serviceAliases.get(match[1]);
@@ -367,7 +408,11 @@ function extractDeclarationBody(lines: string[], startIndex: number, maxLines = 
   return block.join('\n');
 }
 
-function buildPrismaHelperModelMap(files: string[]): Map<string, string[]> {
+function buildPrismaHelperModelMap(
+  files: string[],
+  relationFieldMap?: Map<string, string>,
+  tableNameMap?: Map<string, string>,
+): Map<string, string[]> {
   const helperModels = new Map<string, string[]>();
 
   for (const file of files) {
@@ -387,7 +432,7 @@ function buildPrismaHelperModelMap(files: string[]): Map<string, string[]> {
         }
 
         const body = extractDeclarationBody(lines, i);
-        const models = collectPrismaModelsFromText(body);
+        const models = collectPrismaModelsFromText(body, relationFieldMap, tableNameMap);
         if (models.size > 0) {
           helperModels.set(functionMatch[1], [...models]);
         }
@@ -406,7 +451,21 @@ export function traceServices(config: PulseConfig): ServiceTrace[] {
   const backendFiles = walkFiles(config.backendDir, ['.ts']).filter(
     (file) => !/\.(spec|test|d)\.ts$/.test(file),
   );
-  const helperModelMap = buildPrismaHelperModelMap(backendFiles);
+
+  let relationFieldMap: Map<string, string> | undefined;
+  let tableNameMap: Map<string, string> | undefined;
+  if (config.schemaPath) {
+    try {
+      const schemaContent = readTextFile(config.schemaPath, 'utf8');
+      const prismaModels: PrismaModel[] = parseSchema(config);
+      relationFieldMap = buildRelationFieldMap(prismaModels);
+      tableNameMap = buildTableNameMap(schemaContent);
+    } catch {
+      // Schema unavailable — skip enhanced detection
+    }
+  }
+
+  const helperModelMap = buildPrismaHelperModelMap(backendFiles, relationFieldMap, tableNameMap);
   // Scan BOTH services AND controllers for Prisma model access
   const files = backendFiles.filter(
     (f) =>
@@ -515,7 +574,7 @@ export function traceServices(config: PulseConfig): ServiceTrace[] {
           // Method ended
           if (braceDepth === 0 && currentMethod) {
             const methodText = currentMethodLines.join('\n');
-            for (const modelName of collectPrismaModelsFromText(methodText)) {
+            for (const modelName of collectPrismaModelsFromText(methodText, relationFieldMap, tableNameMap)) {
               currentModels.add(modelName);
             }
             for (const modelName of collectHelperModelsFromText(methodText, helperModelMap)) {

@@ -264,6 +264,46 @@ export function isNoopHandlerType(handlerType: string): boolean {
   return labels.has(handlerType) && handlerType === 'noop';
 }
 
+export function expandUsedModelsWithRelations(
+  usedModels: Set<string>,
+  prismaModels: PrismaModel[],
+): void {
+  let changed = true;
+  const modelMap = new Map<string, PrismaModel>();
+  for (const model of prismaModels) {
+    modelMap.set(model.accessorName, model);
+    modelMap.set(model.name, model);
+  }
+
+  let iterations = 0;
+  while (changed && iterations < 20) {
+    changed = false;
+    iterations++;
+    const currentUsed = [...usedModels];
+    for (const accessor of currentUsed) {
+      const model = modelMap.get(accessor);
+      if (!model) continue;
+      for (const rel of model.relations) {
+        const relAccessor = rel.targetModel.charAt(0).toLowerCase() + rel.targetModel.slice(1);
+        if (!usedModels.has(relAccessor)) {
+          usedModels.add(relAccessor);
+          changed = true;
+        }
+      }
+    }
+    for (const model of prismaModels) {
+      if (!usedModels.has(model.accessorName)) continue;
+      for (const rel of model.relations) {
+        const relAccessor = rel.targetModel.charAt(0).toLowerCase() + rel.targetModel.slice(1);
+        if (!usedModels.has(relAccessor)) {
+          usedModels.add(relAccessor);
+          changed = true;
+        }
+      }
+    }
+  }
+}
+
 export function calculateDynamicScore(totalNodes: number, breaks: Break[]): number {
   if (totalNodes === deriveZeroValue()) {
     return 100;

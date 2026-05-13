@@ -67,6 +67,13 @@ export function parseSchema(config: PulseConfig): PrismaModel[] {
       continue;
     }
 
+    // Parse @@map annotation (before skipping all @@ lines)
+    const mapMatch = trimmed.match(/^@@map\s*\(\s*"([^"]+)"\s*\)/);
+    if (mapMatch) {
+      currentModel.tableName = mapMatch[1];
+      continue;
+    }
+
     // Skip comments and decorators-only lines
     if (trimmed.startsWith('//') || trimmed.startsWith('@@') || trimmed === '') {
       continue;

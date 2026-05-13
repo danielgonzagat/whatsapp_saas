@@ -83,6 +83,8 @@ export interface PrismaModel {
   fields: PrismaField[];
   /** Relations property. */
   relations: PrismaRelation[];
+  /** Table name from @@map, if present. */
+  tableName?: string;
 }
 
 /** Prisma field shape. */

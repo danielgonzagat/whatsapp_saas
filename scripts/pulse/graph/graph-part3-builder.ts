@@ -18,6 +18,7 @@ import {
   graphFinding,
   buildAuthEvidenceTokens,
   buildStateEvidenceTokens,
+  expandUsedModelsWithRelations,
 } from './graph-part1-core';
 import {
   buildRouteLookup,
@@ -64,6 +65,12 @@ export function buildGraph(input: PulseGraphInput): PulseHealth {
 
       const models = resolveRouteModels(route, serviceModelMap, serviceTraces);
       models.forEach((m) => usedModels.add(m));
+
+      for (const trace of serviceTraces) {
+        if (trace.file === route.file && trace.methodName === route.methodName) {
+          trace.prismaModels.forEach((m) => usedModels.add(m));
+        }
+      }
     } else {
       if (call.isProxy) {
         const proxyExists = proxyRoutes.some(
@@ -108,6 +115,12 @@ export function buildGraph(input: PulseGraphInput): PulseHealth {
           route.serviceCalls.forEach((serviceCall) => consumedServiceCalls.add(serviceCall));
           const models = resolveRouteModels(route, serviceModelMap, serviceTraces);
           models.forEach((m) => usedModels.add(m));
+
+          for (const trace of serviceTraces) {
+            if (trace.file === route.file && trace.methodName === route.methodName) {
+              trace.prismaModels.forEach((m) => usedModels.add(m));
+            }
+          }
         }
       }
     }
@@ -134,6 +147,8 @@ export function buildGraph(input: PulseGraphInput): PulseHealth {
       ];
     }
   }
+
+  expandUsedModelsWithRelations(usedModels, prismaModels);
 
   for (const model of prismaModels) {
     if (usedModels.has(model.accessorName)) {

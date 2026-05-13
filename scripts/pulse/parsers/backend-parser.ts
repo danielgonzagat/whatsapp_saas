@@ -52,7 +52,7 @@ function extractConstructorAliases(content: string): Map<string, string> {
   }
 
   const paramRe =
-    /(?:private|public|protected)?\s*(?:readonly\s+)?(\w+)\s*:\s*([A-Z][A-Za-z0-9_]+)/g;
+    /(?:@(?:Inject|InjectRedis|Optional)\([^)]*\)\s*)?(?:private|public|protected)?\s*(?:readonly\s+)?(\w+)\??\s*:\s*([A-Z][A-Za-z0-9_]+)/g;
   let match: RegExpExecArray | null;
   while ((match = paramRe.exec(ctorMatch[1])) !== null) {
     aliases.set(match[1], match[2]);
@@ -209,7 +209,7 @@ export function parseBackendRoutes(config: PulseConfig): BackendRoute[] {
                   const bodyText = [firstLine, ...lines.slice(bodyStart.line + 1, j + 1)].join(
                     '\n',
                   );
-                  const svcRe = /this\.(\w+Service|\w+)\.(\w+)\s*\(/g;
+                  const svcRe = /this\.(\w+Service|\w+)\??\.(\w+)\s*\(/g;
                   let svcMatch;
                   while ((svcMatch = svcRe.exec(bodyText)) !== null) {
                     const svcName = serviceAliases.get(svcMatch[1]) || svcMatch[1];
