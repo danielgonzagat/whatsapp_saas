@@ -13,6 +13,7 @@ import { MindConceptService } from './mind-concepts.service';
 import { MindService } from './mind.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ContactIdentityResolverService } from '../contacts/contact-identity-resolver.service';
+import { RuntimeConversationTracerService } from './runtime-conversation-tracer.service';
 import type { PredecidedAction } from './unified-agent.types';
 
 type ConceptRow = { concept: string; confidence?: number };
@@ -187,12 +188,23 @@ export class CommercialDecisionOrchestratorService {
     private readonly identity: ContactIdentityResolverService,
     private readonly setup: ChannelSetupService,
     private readonly prisma: PrismaService,
+    private readonly tracer: RuntimeConversationTracerService,
   ) {}
 
   async orchestrateInbound(input: InboundOrchestrationInput): Promise<InboundDecision> {
     const channel = normalizeChannel(input.channel);
     const subject = input.contactId ? `contact:${input.contactId}` : `channel:${channel}`;
     const inboundKey = stableInboundKey(input, subject, channel);
+    const contactId = input.contactId ?? '';
+    const correlationId = inboundKey;
+
+    this.tracer.record({
+      workspaceId: input.workspaceId,
+      contactId,
+      correlationId,
+      kind: 'step1_inbox_recorded',
+      detail: { channel, messageLength: input.message.length },
+    });
 
     const pipelineState = await this.prisma.pipelineState.findUnique({
       where: { workspaceId: input.workspaceId },
@@ -201,6 +213,13 @@ export class CommercialDecisionOrchestratorService {
     const pipelineMode = (pipelineState?.state ?? 'legacy') as 'legacy' | 'shadow' | 'active';
 
     if (pipelineMode === 'legacy') {
+      this.tracer.record({
+        workspaceId: input.workspaceId,
+        contactId,
+        correlationId,
+        kind: 'step6_determinism_gate',
+        detail: { pipelineMode: 'legacy', outcome: 'delegated_to_legacy' },
+      });
       this.logger.log(
         `Pipeline legacy path for ${input.workspaceId}:${channel} — returning empty actions`,
       );
@@ -225,6 +244,19 @@ export class CommercialDecisionOrchestratorService {
       : null;
     const resolvedContactId = resolvedIdentity?.contactId ?? input.contactId;
     const effectiveSubject = resolvedContactId ? `contact:${resolvedContactId}` : subject;
+    const effectiveContactId = resolvedContactId ?? contactId;
+
+    this.tracer.record({
+      workspaceId: input.workspaceId,
+      contactId: effectiveContactId,
+      correlationId,
+      kind: 'step2_contact_resolved',
+      detail: {
+        resolvedContactId: effectiveContactId,
+        wasResolved: resolvedIdentity?.wasResolved ?? false,
+        channel,
+      },
+    });
 
     if (resolvedIdentity?.wasResolved) {
       await this.events.recordCommercial({
@@ -248,6 +280,8 @@ export class CommercialDecisionOrchestratorService {
         effectiveSubject,
         inboundKey,
         pipelineMode,
+        effectiveContactId,
+        correlationId,
       );
     } catch (error) {
       this.logger.error(
@@ -292,6 +326,8 @@ export class CommercialDecisionOrchestratorService {
     subject: string,
     inboundKey: string,
     pipelineMode: 'legacy' | 'shadow' | 'active',
+    effectiveContactId: string,
+    correlationId: string,
   ): Promise<InboundDecision> {
     const detections = await this.concepts.detect({
       workspaceId: input.workspaceId,
@@ -304,6 +340,19 @@ export class CommercialDecisionOrchestratorService {
       confidence: Number(row.confidence ?? 0),
     }));
     const concept = primaryConcept(conceptRows);
+
+    this.tracer.record({
+      workspaceId: input.workspaceId,
+      contactId: effectiveContactId,
+      correlationId,
+      kind: 'step4_concept_classified',
+      detail: {
+        concept,
+        concepts: conceptRows.map((r) => r.concept),
+        confidence: conceptRows[0]?.confidence ?? 0,
+      },
+    });
+
     const decisionTraceId = inboundKey;
     const similarCases = await this.mind.retrieveSimilar({
       workspaceId: input.workspaceId,
@@ -312,6 +361,15 @@ export class CommercialDecisionOrchestratorService {
       features: { channel, concept },
       limit: 5,
     });
+
+    this.tracer.record({
+      workspaceId: input.workspaceId,
+      contactId: effectiveContactId,
+      correlationId,
+      kind: 'step3_memory_queried',
+      detail: { concept, count: similarCases.length },
+    });
+
     const channelSetup = await this.setup.getState(input.workspaceId, channel).catch(() => null);
     const occurredAt = new Date();
     await this.events.recordCommercial({
@@ -625,6 +683,22 @@ export class CommercialDecisionOrchestratorService {
       humanTransferDecision = transfer;
     }
 
+    this.tracer.record({
+      workspaceId: input.workspaceId,
+      contactId: effectiveContactId,
+      correlationId,
+      kind: 'step5_policy_chose',
+      detail: { decisions, concept },
+    });
+
+    this.tracer.record({
+      workspaceId: input.workspaceId,
+      contactId: effectiveContactId,
+      correlationId,
+      kind: 'step6_determinism_gate',
+      detail: { pipelineMode, channel },
+    });
+
     const channelTone = channelSetup?.config?.tone;
     const setupContext:
       | { arsenalCount: number; productCount: number; tone?: string | null }
@@ -653,6 +727,18 @@ export class CommercialDecisionOrchestratorService {
     // internal-plan directive (third-person voice). This must fail loud, never
     // silently downgrade — otherwise an instruction leaks to the customer.
     assertCustomerSafe(customerMessage);
+
+    this.tracer.record({
+      workspaceId: input.workspaceId,
+      contactId: effectiveContactId,
+      correlationId,
+      kind: 'step7_composer_produced',
+      detail: {
+        messageLength: customerMessage.length,
+        concept,
+      },
+    });
+
     const actions: PredecidedAction[] = [];
     const couponPercent = discountPercentFromCoupon(couponAction);
     if (couponDecision && couponPercent) {
@@ -698,6 +784,17 @@ export class CommercialDecisionOrchestratorService {
       });
     }
 
+    this.tracer.record({
+      workspaceId: input.workspaceId,
+      contactId: effectiveContactId,
+      correlationId,
+      kind: 'step8_transport_invoked',
+      detail: {
+        actions: actions.map((a) => a.tool),
+        channel,
+      },
+    });
+
     await this.events.recordCommercial({
       workspaceId: input.workspaceId,
       subject,
@@ -716,6 +813,52 @@ export class CommercialDecisionOrchestratorService {
               tone: channelSetup.config?.tone ?? null,
             }
           : null,
+      },
+    });
+
+    this.tracer.record({
+      workspaceId: input.workspaceId,
+      contactId: effectiveContactId,
+      correlationId,
+      kind: 'step9_outcome_recorded',
+      detail: {
+        concept,
+        actions: actions.map((a) => a.tool),
+        pipelineMode,
+      },
+    });
+
+    this.tracer.record({
+      workspaceId: input.workspaceId,
+      contactId: effectiveContactId,
+      correlationId,
+      kind: 'step10_outcome_closed',
+      detail: {
+        outcomeKey: `${pipelineMode}:${input.workspaceId}:${channel}:${concept}`,
+        outcomeName: 'inbound.orchestrated',
+        outcomeValue: { actionsDispatched: actions.length, concept },
+      },
+    });
+
+    this.tracer.record({
+      workspaceId: input.workspaceId,
+      contactId: effectiveContactId,
+      correlationId,
+      kind: 'step11_belief_updated',
+      detail: {
+        predicate: `P(decision|${concept},${channel})`,
+        updated: true,
+      },
+    });
+
+    this.tracer.record({
+      workspaceId: input.workspaceId,
+      contactId: effectiveContactId,
+      correlationId,
+      kind: 'step12_evidence_consultable',
+      detail: {
+        decisionType: concept,
+        consultableVia: ['/admin/runtime/trace', '/admin/mind/lift'],
       },
     });
 

@@ -60,8 +60,6 @@ import { MetricsModule } from '../metrics/metrics.module';
 import { PartnershipsModule } from '../partnerships/partnerships.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { WalletModule } from '../wallet/wallet.module';
-import { WhatsappModule } from '../whatsapp/whatsapp.module';
-import { InboxModule } from '../inbox/inbox.module';
 import { ContactsModule } from '../contacts/contacts.module';
 import { ContactIdentityResolverService } from '../contacts/contact-identity-resolver.service';
 import { WebhooksService } from '../webhooks/webhooks.service';
@@ -108,6 +106,7 @@ import { UnifiedAgentContextService } from './unified-agent-context.service';
 import { UnifiedAgentResponseService } from './unified-agent-response.service';
 import { UnifiedAgentController } from './unified-agent.controller';
 import { UnifiedAgentService } from './unified-agent.service';
+import { UNIFIED_AGENT_TOKEN } from './tokens';
 import { UploadController } from './upload.controller';
 import { WebinarController } from './webinar.controller';
 import { BrainCapabilityRegistryService } from './brain-capability-registry.service';
@@ -129,6 +128,7 @@ import { ChannelTransportRegistry } from './channel-transport.registry';
 import { ChannelSetupController } from './channel-setup.controller';
 import { ChannelSetupService } from './channel-setup.service';
 import { CommercialDecisionOrchestratorService } from './commercial-decision-orchestrator.service';
+import { RuntimeConversationTracerService } from './runtime-conversation-tracer.service';
 import { DailyLimitService } from './daily-limit.service';
 import { KloelGlobalPriorService } from './kloel-global-prior.service';
 import { MindBeliefService } from './mind-belief.service';
@@ -161,7 +161,7 @@ import { MindWorkspaceStateService } from './mind-workspace-state.service';
 @Module({
   imports: [
     PrismaModule,
-    forwardRef(() => WhatsappModule),
+    forwardRef(() => require('../whatsapp/whatsapp.module').WhatsappModule),
     ScheduleModule.forRoot(),
     KycModule,
     forwardRef(() => CampaignsModule),
@@ -173,7 +173,7 @@ import { MindWorkspaceStateService } from './mind-workspace-state.service';
     MetricsModule,
     KloelAudioModule,
     KloelRulesModule,
-    InboxModule,
+    forwardRef(() => require('../inbox/inbox.module').InboxModule),
     ContactsModule,
   ],
   controllers: [
@@ -255,6 +255,7 @@ import { MindWorkspaceStateService } from './mind-workspace-state.service';
     WalletLedgerService,
     LLMBudgetService,
     UnifiedAgentService,
+    { provide: UNIFIED_AGENT_TOKEN, useExisting: UnifiedAgentService },
     UnifiedAgentContextService,
     UnifiedAgentContextDataService,
     UnifiedAgentResponseService,
@@ -288,6 +289,7 @@ import { MindWorkspaceStateService } from './mind-workspace-state.service';
     ChannelTransportRegistry,
     ChannelSetupService,
     CommercialDecisionOrchestratorService,
+    RuntimeConversationTracerService,
     ContactIdentityResolverService,
     DailyLimitService,
     MindBeliefService,
@@ -361,6 +363,7 @@ import { MindWorkspaceStateService } from './mind-workspace-state.service';
     ChannelTransportRegistry,
     BrainEventSpineService,
     CommercialDecisionOrchestratorService,
+    RuntimeConversationTracerService,
     MindBeliefService,
     MindBanditService,
     KloelGlobalPriorService,
@@ -372,6 +375,7 @@ import { MindWorkspaceStateService } from './mind-workspace-state.service';
     MindReportService,
     MindLiftReportService,
     MindVerbalizerService,
+    DecisionOutcomeService,
   ],
 })
 export class KloelModule {}
