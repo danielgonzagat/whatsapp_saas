@@ -41,7 +41,7 @@ export class MessengerController {
     },
   ) {
     const workspaceId = resolveWorkspaceId(req);
-    const resolved = await this.metaWhatsApp.resolveConnection(workspaceId);
+    const resolved = await this.metaWhatsApp.resolveConnection(workspaceId, 'facebook');
     if (!resolved.accessToken) {
       throw new BadRequestException('meta_connection_required');
     }
@@ -72,7 +72,7 @@ export class MessengerController {
   @Get('conversations')
   async getConversations(@Req() req: AuthenticatedRequest, @Query('pageId') pageId: string) {
     const workspaceId = resolveWorkspaceId(req);
-    const resolved = await this.metaWhatsApp.resolveConnection(workspaceId);
+    const resolved = await this.metaWhatsApp.resolveConnection(workspaceId, 'facebook');
     if (!resolved.accessToken) {
       throw new BadRequestException('meta_connection_required');
     }

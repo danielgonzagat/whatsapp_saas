@@ -33,7 +33,7 @@ export class InstagramController {
     igAccountId?: string,
     accessToken?: string,
   ) {
-    const resolved = await this.metaWhatsApp.resolveConnection(workspaceId);
+    const resolved = await this.metaWhatsApp.resolveConnection(workspaceId, 'instagram');
     const finalIgAccountId = normalizeMetaGraphSegment(
       igAccountId || resolved.instagramAccountId || '',
       'Instagram account id',

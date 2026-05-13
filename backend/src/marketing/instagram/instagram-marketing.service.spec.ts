@@ -1,9 +1,13 @@
 import { BadRequestException } from '@nestjs/common';
 import { InstagramMarketingService } from './instagram-marketing.service';
+import * as tokenCrypto from '../../meta/meta-token-crypto';
+
+jest.mock('../../meta/meta-token-crypto', () => ({
+  decryptMetaToken: jest.fn((token: string | null | undefined) => token || null),
+}));
 
 describe('InstagramMarketingService', () => {
-  const metaConnectionFindUnique = jest.fn();
-  const resolveConnection = jest.fn();
+  const metaConnectionFindFirst = jest.fn();
   const publishPhoto = jest.fn();
   const getAccountInsights = jest.fn();
   const igPostCreate = jest.fn();
@@ -18,7 +22,7 @@ describe('InstagramMarketingService', () => {
     jest.clearAllMocks();
     service = new InstagramMarketingService(
       {
-        metaConnection: { findUnique: metaConnectionFindUnique },
+        metaConnection: { findFirst: metaConnectionFindFirst },
         igPost: {
           create: igPostCreate,
           findMany: igPostFindMany,
@@ -29,14 +33,13 @@ describe('InstagramMarketingService', () => {
           upsert: igInsightUpsert,
         },
       } as never,
-      { resolveConnection } as never,
       { publishPhoto, getAccountInsights } as never,
     );
   });
 
   describe('listAccounts', () => {
     it('returns connected accounts list when ig account exists', async () => {
-      metaConnectionFindUnique.mockResolvedValue({
+      metaConnectionFindFirst.mockResolvedValue({
         instagramAccountId: 'ig-123',
         instagramUsername: 'kloel_official',
         pageName: 'Kloel Page',
@@ -45,9 +48,9 @@ describe('InstagramMarketingService', () => {
 
       const result = await service.listAccounts('ws-1');
 
-      expect(metaConnectionFindUnique).toHaveBeenCalledWith(
+      expect(metaConnectionFindFirst).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { workspaceId: 'ws-1' },
+          where: { workspaceId: 'ws-1', channel: 'instagram' },
         }),
       );
       expect(result).toEqual({
@@ -63,7 +66,7 @@ describe('InstagramMarketingService', () => {
     });
 
     it('returns empty accounts when no instagram account is connected', async () => {
-      metaConnectionFindUnique.mockResolvedValue(null);
+      metaConnectionFindFirst.mockResolvedValue(null);
 
       const result = await service.listAccounts('ws-1');
 
@@ -71,7 +74,7 @@ describe('InstagramMarketingService', () => {
     });
 
     it('returns empty accounts when connection exists but no instagramAccountId', async () => {
-      metaConnectionFindUnique.mockResolvedValue({
+      metaConnectionFindFirst.mockResolvedValue({
         instagramAccountId: null,
         instagramUsername: null,
         pageName: 'Kloel Page',
@@ -86,7 +89,7 @@ describe('InstagramMarketingService', () => {
 
   describe('publishPost', () => {
     it('publishes a photo and creates an igPost record', async () => {
-      resolveConnection.mockResolvedValue({
+      metaConnectionFindFirst.mockResolvedValue({
         instagramAccountId: 'ig-123',
         accessToken: 'token-abc',
       });
@@ -123,10 +126,7 @@ describe('InstagramMarketingService', () => {
     });
 
     it('throws BadRequestException when no instagram account is connected', async () => {
-      resolveConnection.mockResolvedValue({
-        instagramAccountId: null,
-        accessToken: 'token-abc',
-      });
+      metaConnectionFindFirst.mockResolvedValue(null);
 
       await expect(
         service.publishPost('ws-1', 'https://img.test/photo.jpg', 'Caption'),
@@ -135,7 +135,7 @@ describe('InstagramMarketingService', () => {
     });
 
     it('records post as failed when no media id is returned', async () => {
-      resolveConnection.mockResolvedValue({
+      metaConnectionFindFirst.mockResolvedValue({
         instagramAccountId: 'ig-123',
         accessToken: 'token-abc',
       });
@@ -162,7 +162,7 @@ describe('InstagramMarketingService', () => {
 
   describe('getInsights', () => {
     it('fetches insights and upserts the daily record', async () => {
-      resolveConnection.mockResolvedValue({
+      metaConnectionFindFirst.mockResolvedValue({
         instagramAccountId: 'ig-123',
         accessToken: 'token-abc',
       });
@@ -203,10 +203,7 @@ describe('InstagramMarketingService', () => {
     });
 
     it('throws BadRequestException when no instagram account is connected', async () => {
-      resolveConnection.mockResolvedValue({
-        instagramAccountId: null,
-        accessToken: 'token-abc',
-      });
+      metaConnectionFindFirst.mockResolvedValue(null);
 
       await expect(service.getInsights('ws-1', ['impressions'], 'day')).rejects.toBeInstanceOf(
         BadRequestException,
@@ -214,7 +211,7 @@ describe('InstagramMarketingService', () => {
     });
 
     it('handles empty insight data gracefully', async () => {
-      resolveConnection.mockResolvedValue({
+      metaConnectionFindFirst.mockResolvedValue({
         instagramAccountId: 'ig-123',
         accessToken: 'token-abc',
       });

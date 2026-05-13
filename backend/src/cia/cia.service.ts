@@ -40,7 +40,7 @@ export class CiaService {
       capabilityRegistry,
       conversationActionRegistry,
       mindLift,
-      metaConnection,
+      metaConnections,
       integrations,
     ] = await Promise.all([
       this.runtime.getOperationalIntelligence(workspaceId),
@@ -55,8 +55,9 @@ export class CiaService {
         this.logger.warn(`MIND lift unavailable for ${workspaceId}: ${String(err)}`);
         return null;
       }),
-      this.prisma.metaConnection.findUnique({
+      this.prisma.metaConnection.findMany({
         where: { workspaceId },
+        select: { whatsappPhoneNumberId: true, instagramAccountId: true, pageId: true },
       }),
       this.prisma.integration.findMany({
         where: { workspaceId, isActive: true },
@@ -68,9 +69,13 @@ export class CiaService {
     const businessState = this.readRecord(intelligence.businessState);
 
     const activeChannels = new Set<string>();
-    if (metaConnection?.whatsappPhoneNumberId) activeChannels.add('whatsapp');
-    if (metaConnection?.instagramAccountId) activeChannels.add('instagram');
-    if (metaConnection?.pageId) activeChannels.add('facebook');
+    if (metaConnections && metaConnections.length > 0) {
+      for (const mc of metaConnections) {
+        if (mc.whatsappPhoneNumberId) activeChannels.add('whatsapp');
+        if (mc.instagramAccountId) activeChannels.add('instagram');
+        if (mc.pageId) activeChannels.add('facebook');
+      }
+    }
     for (const integration of integrations) {
       const lower = integration.type.toLowerCase();
       if (lower === 'instagram') activeChannels.add('instagram');

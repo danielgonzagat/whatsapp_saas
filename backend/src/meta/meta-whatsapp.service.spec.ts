@@ -4,7 +4,7 @@ import { MetaWhatsAppService } from './meta-whatsapp.service';
 describe('MetaWhatsAppService', () => {
   let prisma: {
     metaConnection: {
-      findUnique: jest.Mock;
+      findFirst: jest.Mock;
     };
     workspace: {
       findUnique: jest.Mock;
@@ -37,7 +37,7 @@ describe('MetaWhatsAppService', () => {
 
     prisma = {
       metaConnection: {
-        findUnique: jest.fn(),
+        findFirst: jest.fn(),
       },
       workspace: {
         findUnique: jest.fn(),
@@ -188,7 +188,7 @@ describe('MetaWhatsAppService', () => {
   });
 
   it('ignores malformed Meta phone details instead of stringifying objects', async () => {
-    prisma.metaConnection.findUnique.mockResolvedValue({
+    prisma.metaConnection.findFirst.mockResolvedValue({
       accessToken: 'meta-token',
       tokenExpiresAt: null,
       pageId: 'page-1',

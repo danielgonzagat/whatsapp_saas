@@ -13,8 +13,8 @@ describe('MetaAuthController', () => {
   let mockPrisma: {
     metaConnection: {
       upsert: jest.Mock;
-      findUnique: jest.Mock;
-      delete: jest.Mock;
+      findMany: jest.Mock;
+      deleteMany: jest.Mock;
     };
   };
 
@@ -45,7 +45,7 @@ describe('MetaAuthController', () => {
     mockPrisma = {
       metaConnection: {
         upsert: jest.fn().mockResolvedValue({}),
-        findUnique: jest.fn().mockResolvedValue({
+        findMany: jest.fn().mockResolvedValue([{
           workspaceId: 'ws-1',
           accessToken: 'encrypted-token',
           status: 'connected',
@@ -59,8 +59,8 @@ describe('MetaAuthController', () => {
           tokenExpiresAt: new Date(Date.now() + 86400000),
           connectedAt: new Date(),
           updatedAt: new Date(),
-        }),
-        delete: jest.fn().mockResolvedValue({}),
+        }]),
+        deleteMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
     };
 
@@ -191,7 +191,7 @@ describe('MetaAuthController', () => {
 
       expect(result.connected).toBe(true);
       expect(result).toHaveProperty('channels');
-      if ('channels' in result) {
+      if (result && 'channels' in result) {
         expect(result.channels.facebook).toEqual(
           expect.objectContaining({
             connected: true,
@@ -203,7 +203,7 @@ describe('MetaAuthController', () => {
     });
 
     it('returns disconnected when no MetaConnection', async () => {
-      mockPrisma.metaConnection.findUnique.mockResolvedValue(null);
+      mockPrisma.metaConnection.findMany.mockResolvedValue([]);
 
       const result = await controller.getStatus(missingAuthReq as never);
 
@@ -216,11 +216,11 @@ describe('MetaAuthController', () => {
       const result = await controller.disconnect(authReq as never);
 
       expect(result.status).toBe('disconnected');
-      expect(mockPrisma.metaConnection.delete).toHaveBeenCalled();
+      expect(mockPrisma.metaConnection.deleteMany).toHaveBeenCalled();
     });
 
     it('throws 404 when no MetaConnection exists', async () => {
-      mockPrisma.metaConnection.findUnique.mockResolvedValue(null);
+      mockPrisma.metaConnection.findMany.mockResolvedValue([]);
 
       await expect(controller.disconnect(missingAuthReq as never)).rejects.toThrow(
         'No Meta connection found',

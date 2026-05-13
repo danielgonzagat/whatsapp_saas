@@ -35,7 +35,7 @@ export class MetaAdsController {
   ) {}
 
   private async resolveAdAccountAccess(workspaceId: string, adAccountId: string) {
-    const resolved = await this.metaWhatsApp.resolveConnection(workspaceId);
+    const resolved = await this.metaWhatsApp.resolveConnection(workspaceId, 'facebook');
     if (!resolved.accessToken) {
       throw new BadRequestException('meta_connection_required');
     }
@@ -89,7 +89,7 @@ export class MetaAdsController {
       if (!approvedStatus) {
         throw new BadRequestException('Approved Meta Ads status payload is invalid');
       }
-      const resolved = await this.metaWhatsApp.resolveConnection(workspaceId);
+      const resolved = await this.metaWhatsApp.resolveConnection(workspaceId, 'facebook');
       if (!resolved.accessToken) {
         throw new BadRequestException('meta_connection_required');
       }
@@ -117,7 +117,7 @@ export class MetaAdsController {
     if (body.status !== 'ACTIVE' && body.status !== 'PAUSED') {
       throw new BadRequestException('status must be ACTIVE or PAUSED');
     }
-    const resolved = await this.metaWhatsApp.resolveConnection(workspaceId);
+    const resolved = await this.metaWhatsApp.resolveConnection(workspaceId, 'facebook');
     if (!resolved.accessToken) {
       throw new BadRequestException('meta_connection_required');
     }
@@ -171,7 +171,7 @@ export class MetaAdsController {
     @Query() query: MetaAdsDailyInsightsQueryDto,
   ) {
     const workspaceId = resolveWorkspaceId(req);
-    const resolved = await this.metaWhatsApp.resolveConnection(workspaceId);
+    const resolved = await this.metaWhatsApp.resolveConnection(workspaceId, 'facebook');
     if (!resolved.accessToken) {
       throw new BadRequestException('meta_connection_required');
     }
@@ -187,7 +187,7 @@ export class MetaAdsController {
   @Get('leads')
   async getLeadForms(@Req() req: AuthenticatedRequest, @Query('pageId') pageId: string) {
     const workspaceId = resolveWorkspaceId(req);
-    const resolved = await this.metaWhatsApp.resolveConnection(workspaceId);
+    const resolved = await this.metaWhatsApp.resolveConnection(workspaceId, 'facebook');
     if (!resolved.accessToken) {
       throw new BadRequestException('meta_connection_required');
     }
@@ -201,7 +201,7 @@ export class MetaAdsController {
   @Get('leads/:formId')
   async getLeads(@Req() req: AuthenticatedRequest, @Param('formId') formId: string) {
     const workspaceId = resolveWorkspaceId(req);
-    const resolved = await this.metaWhatsApp.resolveConnection(workspaceId);
+    const resolved = await this.metaWhatsApp.resolveConnection(workspaceId, 'facebook');
     if (!resolved.accessToken) {
       throw new BadRequestException('meta_connection_required');
     }

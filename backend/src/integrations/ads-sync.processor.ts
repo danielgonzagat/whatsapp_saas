@@ -362,7 +362,7 @@ export class AdsSyncProcessor implements OnModuleDestroy {
   // ── Sync status reader ────────────────────────────────────────────
 
   async getSyncStatus(workspaceId: string) {
-    const metaConn = await this.prisma.metaConnection.findUnique({
+    const metaConn = await this.prisma.metaConnection.findFirst({
       where: { workspaceId },
       select: { adAccountId: true, status: true },
     });

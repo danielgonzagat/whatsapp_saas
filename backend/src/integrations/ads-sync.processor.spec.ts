@@ -93,7 +93,7 @@ describe('AdsSyncProcessor', () => {
     });
 
     it('returns meta connected when MetaConnection exists', async () => {
-      mockPrisma.metaConnection.findUnique.mockResolvedValue({
+      mockPrisma.metaConnection.findFirst.mockResolvedValue({
         adAccountId: 'act_123',
         status: 'connected',
       });

@@ -332,7 +332,7 @@ export class MetaAuthController {
         whatsappBusinessId: whatsappAssets.whatsappBusinessId || null,
         adAccountId,
         status: 'connected',
-        channel: parsedState.channel || null,
+        channel: parsedState.channel || 'whatsapp',
       };
       const connectionUpdate: Prisma.MetaConnectionUpdateInput = {
         accessToken: encryptMetaToken(accessToken) || accessToken,
@@ -347,15 +347,16 @@ export class MetaAuthController {
         adAccountId,
         status: 'connected',
         updatedAt: new Date(),
-        channel: parsedState.channel || null,
+        channel: parsedState.channel || 'whatsapp',
       };
+      const resolvedChannel = parsedState.channel || 'whatsapp';
       await this.prisma.metaConnection.upsert({
-        where: { workspaceId },
-        create: connectionCreate,
+        where: { workspaceId_channel: { workspaceId, channel: resolvedChannel } },
+        create: { ...connectionCreate, channel: resolvedChannel },
         update: connectionUpdate,
       });
 
-      this.logger.log(`Meta connected for workspace ${workspaceId} (page: ${pageName || 'none'})`);
+      this.logger.log(`Meta connected for workspace ${workspaceId} channel=${resolvedChannel} (page: ${pageName || 'none'})`);
 
       return res.redirect(
         this.buildFrontendRedirect(returnTo, parsedState.channel, {
@@ -396,16 +397,17 @@ export class MetaAuthController {
   async disconnect(@Req() req: AuthenticatedRequest) {
     const workspaceId = resolveWorkspaceId(req);
 
-    const connection = await this.prisma.metaConnection.findUnique({
+    const connections = await this.prisma.metaConnection.findMany({
       where: { workspaceId },
     });
 
-    if (!connection) {
+    if (connections.length === 0) {
       throw new HttpException('No Meta connection found', HttpStatus.NOT_FOUND);
     }
 
-    // Revoke permission on Meta's side (best-effort)
-    const resolvedAccessToken = decryptMetaToken(connection.accessToken);
+    // Revoke permission on Meta's side (best-effort, use first token)
+    const firstConnection = connections[0];
+    const resolvedAccessToken = firstConnection ? decryptMetaToken(firstConnection.accessToken) : null;
     if (resolvedAccessToken) {
       try {
         await this.metaSdk.graphApiDelete('me/permissions', resolvedAccessToken);
@@ -416,7 +418,7 @@ export class MetaAuthController {
       }
     }
 
-    await this.prisma.metaConnection.delete({
+    await this.prisma.metaConnection.deleteMany({
       where: { workspaceId },
     });
 
@@ -432,7 +434,7 @@ export class MetaAuthController {
   async getStatus(@Req() req: AuthenticatedRequest) {
     const workspaceId = resolveWorkspaceId(req);
 
-    const connection = await this.prisma.metaConnection.findUnique({
+    const connections = await this.prisma.metaConnection.findMany({
       where: { workspaceId },
       select: {
         status: true,
@@ -451,47 +453,64 @@ export class MetaAuthController {
       },
     });
 
-    if (!connection) {
+    if (connections.length === 0) {
       return { connected: false };
     }
 
+    const merged = connections.reduce(
+      (acc, c) => {
+        if (c.pageId) acc.pageId = c.pageId;
+        if (c.pageName) acc.pageName = c.pageName;
+        if (c.instagramAccountId) acc.instagramAccountId = c.instagramAccountId;
+        if (c.instagramUsername) acc.instagramUsername = c.instagramUsername;
+        if (c.whatsappPhoneNumberId) acc.whatsappPhoneNumberId = c.whatsappPhoneNumberId;
+        if (c.whatsappBusinessId) acc.whatsappBusinessId = c.whatsappBusinessId;
+        if (c.adAccountId) acc.adAccountId = c.adAccountId;
+        if (c.pixelId) acc.pixelId = c.pixelId;
+        if (c.catalogId) acc.catalogId = c.catalogId;
+        if (c.tokenExpiresAt) acc.tokenExpiresAt = c.tokenExpiresAt;
+        return acc;
+      },
+      {} as Record<string, unknown>,
+    );
+
     const tokenExpired =
-      connection.tokenExpiresAt && new Date(connection.tokenExpiresAt) < new Date();
+      merged.tokenExpiresAt && new Date(merged.tokenExpiresAt as Date) < new Date();
 
     return {
       connected: true,
       tokenExpired: !!tokenExpired,
       channels: {
         whatsapp: {
-          connected: Boolean(connection.whatsappPhoneNumberId),
+          connected: Boolean(merged.whatsappPhoneNumberId),
           provider: 'meta-cloud',
-          phoneNumberId: connection.whatsappPhoneNumberId,
-          whatsappBusinessId: connection.whatsappBusinessId,
-          status: connection.whatsappPhoneNumberId ? 'connected' : 'connection_incomplete',
+          phoneNumberId: merged.whatsappPhoneNumberId,
+          whatsappBusinessId: merged.whatsappBusinessId,
+          status: merged.whatsappPhoneNumberId ? 'connected' : 'connection_incomplete',
         },
         instagram: {
-          connected: Boolean(connection.instagramAccountId),
-          instagramAccountId: connection.instagramAccountId,
-          username: connection.instagramUsername,
-          status: connection.instagramAccountId ? 'connected' : 'disconnected',
+          connected: Boolean(merged.instagramAccountId),
+          instagramAccountId: merged.instagramAccountId,
+          username: merged.instagramUsername,
+          status: merged.instagramAccountId ? 'connected' : 'disconnected',
         },
         messenger: {
-          connected: Boolean(connection.pageId),
-          pageId: connection.pageId,
-          status: connection.pageId ? 'connected' : 'disconnected',
+          connected: Boolean(merged.pageId),
+          pageId: merged.pageId,
+          status: merged.pageId ? 'connected' : 'disconnected',
         },
         facebook: {
-          connected: Boolean(connection.pageId),
-          pageId: connection.pageId,
-          status: connection.pageId ? 'connected' : 'disconnected',
+          connected: Boolean(merged.pageId),
+          pageId: merged.pageId,
+          status: merged.pageId ? 'connected' : 'disconnected',
         },
         ads: {
-          connected: Boolean(connection.adAccountId),
-          adAccountId: connection.adAccountId,
-          status: connection.adAccountId ? 'connected' : 'disconnected',
+          connected: Boolean(merged.adAccountId),
+          adAccountId: merged.adAccountId,
+          status: merged.adAccountId ? 'connected' : 'disconnected',
         },
       },
-      ...connection,
+      ...merged,
     };
   }
 }

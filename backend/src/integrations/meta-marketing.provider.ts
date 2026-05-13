@@ -143,14 +143,17 @@ export class MetaMarketingProvider implements AdProvider {
 
       const tokenExpiresAt = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000);
 
+      const adsChannel = 'facebook';
+
       await this.prisma.metaConnection.upsert({
-        where: { workspaceId },
+        where: { workspaceId_channel: { workspaceId, channel: adsChannel } },
         create: {
           workspaceId,
           accessToken: encryptedToken || accessToken,
           tokenExpiresAt,
           adAccountId: (primaryAccount?.id as string) ?? null,
           status: 'connected',
+          channel: adsChannel,
         },
         update: {
           accessToken: encryptedToken || accessToken,
@@ -158,6 +161,7 @@ export class MetaMarketingProvider implements AdProvider {
           adAccountId: (primaryAccount?.id as string) ?? null,
           status: 'connected',
           updatedAt: new Date(),
+          channel: adsChannel,
         },
       });
 
@@ -173,8 +177,8 @@ export class MetaMarketingProvider implements AdProvider {
   }
 
   async getStatus(workspaceId: string): Promise<OAuthStatusResult> {
-    const conn = await this.prisma.metaConnection.findUnique({
-      where: { workspaceId },
+    const conn = await this.prisma.metaConnection.findFirst({
+      where: { workspaceId, channel: 'facebook' },
       select: { status: true, adAccountId: true },
     });
 
@@ -193,8 +197,8 @@ export class MetaMarketingProvider implements AdProvider {
   }
 
   async disconnect(workspaceId: string): Promise<DisconnectResult> {
-    const conn = await this.prisma.metaConnection.findUnique({
-      where: { workspaceId },
+    const conn = await this.prisma.metaConnection.findFirst({
+      where: { workspaceId, channel: 'facebook' },
       select: { accessToken: true },
     });
 
@@ -215,7 +219,7 @@ export class MetaMarketingProvider implements AdProvider {
     }
 
     await this.prisma.metaConnection.delete({
-      where: { workspaceId },
+      where: { workspaceId_channel: { workspaceId, channel: 'facebook' } },
     });
 
     this.logger.log(`Meta marketing disconnected for workspace ${workspaceId}`);
@@ -224,8 +228,8 @@ export class MetaMarketingProvider implements AdProvider {
   }
 
   async refreshToken(workspaceId: string): Promise<RefreshTokenResult | null> {
-    const conn = await this.prisma.metaConnection.findUnique({
-      where: { workspaceId },
+    const conn = await this.prisma.metaConnection.findFirst({
+      where: { workspaceId, channel: 'facebook' },
       select: { accessToken: true, tokenExpiresAt: true },
     });
 
@@ -250,7 +254,7 @@ export class MetaMarketingProvider implements AdProvider {
         : new Date(Date.now() + 60 * 24 * 60 * 60 * 1000);
 
       await this.prisma.metaConnection.update({
-        where: { workspaceId },
+        where: { workspaceId_channel: { workspaceId, channel: 'facebook' } },
         data: {
           accessToken: encryptedToken || newAccessToken,
           tokenExpiresAt,
@@ -274,8 +278,8 @@ export class MetaMarketingProvider implements AdProvider {
   }
 
   async syncAccounts(workspaceId: string): Promise<SyncAccountsResult> {
-    const conn = await this.prisma.metaConnection.findUnique({
-      where: { workspaceId },
+    const conn = await this.prisma.metaConnection.findFirst({
+      where: { workspaceId, channel: 'facebook' },
       select: { accessToken: true, adAccountId: true },
     });
 
@@ -309,8 +313,8 @@ export class MetaMarketingProvider implements AdProvider {
   }
 
   async syncCampaigns(workspaceId: string): Promise<SyncCampaignsResult> {
-    const conn = await this.prisma.metaConnection.findUnique({
-      where: { workspaceId },
+    const conn = await this.prisma.metaConnection.findFirst({
+      where: { workspaceId, channel: 'facebook' },
       select: { accessToken: true, adAccountId: true },
     });
 
@@ -366,8 +370,8 @@ export class MetaMarketingProvider implements AdProvider {
   }
 
   async syncInsights(workspaceId: string, since: Date, until: Date): Promise<SyncInsightsResult> {
-    const conn = await this.prisma.metaConnection.findUnique({
-      where: { workspaceId },
+    const conn = await this.prisma.metaConnection.findFirst({
+      where: { workspaceId, channel: 'facebook' },
       select: { accessToken: true, adAccountId: true },
     });
 

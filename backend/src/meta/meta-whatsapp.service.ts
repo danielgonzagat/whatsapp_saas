@@ -56,15 +56,8 @@ function normalizeMetaChannel(channel?: string | null): MetaChannel {
 }
 
 function readChannelConfigId(channel: MetaChannel): string {
-  const lookup = (
-    primary: string,
-    legacy: string,
-  ): string => {
-    const val =
-      process.env[primary] ||
-      process.env[legacy] ||
-      process.env.META_CONFIG_ID ||
-      '';
+  const lookup = (primary: string, legacy: string): string => {
+    const val = process.env[primary] || process.env[legacy] || process.env.META_CONFIG_ID || '';
     return String(val).trim();
   };
 
@@ -82,14 +75,13 @@ function readChannelConfigId(channel: MetaChannel): string {
     }
     return result;
   }
-  const result =
-    String(
-      process.env.META_FACEBOOK_CONFIG_ID ||
-        process.env.META_CONFIG_ID_MESSENGER ||
-        process.env.META_CONFIG_ID_FACEBOOK ||
-        process.env.META_CONFIG_ID ||
-        '',
-    ).trim();
+  const result = String(
+    process.env.META_FACEBOOK_CONFIG_ID ||
+      process.env.META_CONFIG_ID_MESSENGER ||
+      process.env.META_CONFIG_ID_FACEBOOK ||
+      process.env.META_CONFIG_ID ||
+      '',
+  ).trim();
   if (!result) {
     throw new BadRequestException('meta-config-id-missing-for-channel');
   }
@@ -164,9 +156,12 @@ export class MetaWhatsAppService {
   }
 
   /** Resolve connection. */
-  async resolveConnection(workspaceId: string): Promise<ResolvedMetaConnection> {
-    const connection = await this.prisma.metaConnection.findUnique({
-      where: { workspaceId },
+  async resolveConnection(
+    workspaceId: string,
+    channel: string = 'whatsapp',
+  ): Promise<ResolvedMetaConnection> {
+    const connection = await this.prisma.metaConnection.findFirst({
+      where: { workspaceId, channel },
       select: {
         accessToken: true,
         tokenExpiresAt: true,

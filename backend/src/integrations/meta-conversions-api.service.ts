@@ -142,7 +142,7 @@ export class MetaConversionsApiService {
     pixelId: string,
     event: CapiEventData,
   ): Promise<{ success: boolean; eventId?: string; error?: string }> {
-    const connection = await this.prisma.metaConnection.findUnique({
+    const connection = await this.prisma.metaConnection.findFirst({
       where: { workspaceId },
       select: { accessToken: true },
     });

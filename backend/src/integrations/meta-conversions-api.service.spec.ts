@@ -63,7 +63,7 @@ describe('MetaConversionsApiService', () => {
 
   describe('sendEvent', () => {
     let service: MetaConversionsApiService;
-    let mockPrisma: { metaConnection: { findUnique: jest.Mock } };
+    let mockPrisma: { metaConnection: { findFirst: jest.Mock } };
     let mockMetaSdk: { graphApiGet: jest.Mock };
     let mockOpsAlert: { alertOnCriticalError: jest.Mock };
 
@@ -72,7 +72,7 @@ describe('MetaConversionsApiService', () => {
 
       mockPrisma = {
         metaConnection: {
-          findUnique: jest.fn(),
+          findFirst: jest.fn(),
         },
       };
 
@@ -96,7 +96,7 @@ describe('MetaConversionsApiService', () => {
     });
 
     it('returns no_meta_connection when workspace has no MetaConnection', async () => {
-      mockPrisma.metaConnection.findUnique.mockResolvedValue(null);
+      mockPrisma.metaConnection.findFirst.mockResolvedValue(null);
 
       const result = await service.sendEvent('ws-no-conn', 'pixel-123', {
         eventName: 'Purchase',
@@ -108,7 +108,7 @@ describe('MetaConversionsApiService', () => {
     });
 
     it('returns error when no access token on connection', async () => {
-      mockPrisma.metaConnection.findUnique.mockResolvedValue({
+      mockPrisma.metaConnection.findFirst.mockResolvedValue({
         accessToken: null,
       });
 
@@ -127,7 +127,7 @@ describe('MetaConversionsApiService', () => {
         json: async () => ({ events_received: 1 }),
       });
 
-      mockPrisma.metaConnection.findUnique.mockResolvedValue({
+      mockPrisma.metaConnection.findFirst.mockResolvedValue({
         accessToken: 'test-access-token',
       });
 
@@ -149,7 +149,7 @@ describe('MetaConversionsApiService', () => {
         json: async () => ({ events_received: 1 }),
       });
 
-      mockPrisma.metaConnection.findUnique.mockResolvedValue({
+      mockPrisma.metaConnection.findFirst.mockResolvedValue({
         accessToken: 'test-access-token',
       });
 

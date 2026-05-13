@@ -1,8 +1,23 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { InstagramService } from '../../meta/instagram/instagram.service';
-import { MetaWhatsAppService } from '../../meta/meta-whatsapp.service';
 import { PrismaService } from '../../prisma/prisma.service';
+import { decryptMetaToken } from '../../meta/meta-token-crypto';
+
+type InstagramConnection = {
+  accessToken: string;
+  instagramAccountId: string | null;
+  instagramUsername: string | null;
+};
+
+function resolveInstagramConnection(connection: unknown): InstagramConnection {
+  const row = connection as Record<string, unknown> | null;
+  return {
+    accessToken: String(decryptMetaToken(typeof row?.accessToken === 'string' ? row.accessToken : null) || process.env.META_ACCESS_TOKEN || '').trim(),
+    instagramAccountId: (row?.instagramAccountId as string) || null,
+    instagramUsername: (row?.instagramUsername as string) || null,
+  };
+}
 
 @Injectable()
 export class InstagramMarketingService {
@@ -10,13 +25,12 @@ export class InstagramMarketingService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly metaWhatsApp: MetaWhatsAppService,
     private readonly instagramService: InstagramService,
   ) {}
 
   async listAccounts(workspaceId: string) {
-    const connection = await this.prisma.metaConnection.findUnique({
-      where: { workspaceId },
+    const connection = await this.prisma.metaConnection.findFirst({
+      where: { workspaceId, channel: 'instagram' },
       select: {
         instagramAccountId: true,
         instagramUsername: true,
@@ -42,7 +56,10 @@ export class InstagramMarketingService {
   }
 
   async publishPost(workspaceId: string, imageUrl: string, caption?: string) {
-    const connection = await this.metaWhatsApp.resolveConnection(workspaceId);
+    const row = await this.prisma.metaConnection.findFirst({
+      where: { workspaceId, channel: 'instagram' },
+    });
+    const connection = resolveInstagramConnection(row);
 
     if (!connection.instagramAccountId) {
       throw new BadRequestException('instagram_account_not_connected');
@@ -80,7 +97,10 @@ export class InstagramMarketingService {
   }
 
   async getInsights(workspaceId: string, metrics: string[], period: string) {
-    const connection = await this.metaWhatsApp.resolveConnection(workspaceId);
+    const row = await this.prisma.metaConnection.findFirst({
+      where: { workspaceId, channel: 'instagram' },
+    });
+    const connection = resolveInstagramConnection(row);
 
     if (!connection.instagramAccountId) {
       throw new BadRequestException('instagram_account_not_connected');

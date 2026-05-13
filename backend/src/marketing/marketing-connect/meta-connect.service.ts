@@ -4,10 +4,7 @@ import { MetaWhatsAppService } from '../../meta/meta-whatsapp.service';
 import { MetaConnectionStateService } from '../../meta/meta-connection-state.service';
 import { WhatsAppProviderRegistry } from '../../whatsapp/providers/provider-registry';
 import { asProviderSettings, type ProviderSettings } from '../../whatsapp/provider-settings.types';
-import {
-  readOptionalText,
-  type WhatsAppStatusValue,
-} from './shared/channel-helpers';
+import { readOptionalText, type WhatsAppStatusValue } from './shared/channel-helpers';
 
 @Injectable()
 export class MetaConnectService {
@@ -33,18 +30,12 @@ export class MetaConnectService {
   }
 
   async getStatus(workspaceId: string) {
-    const [
-      workspace,
-      metaConnection,
-      metaState,
-      providerType,
-      whatsappStatus,
-    ] = await Promise.all([
+    const [workspace, metaConnection, metaState, providerType, whatsappStatus] = await Promise.all([
       this.prisma.workspace.findUnique({
         where: { id: workspaceId },
         select: { providerSettings: true },
       }),
-      this.prisma.metaConnection.findUnique({
+      this.prisma.metaConnection.findFirst({
         where: { workspaceId },
         select: {
           status: true,

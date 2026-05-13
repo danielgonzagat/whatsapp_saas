@@ -271,8 +271,8 @@ export class FacebookMessengerService {
     pageId: string | null;
     pageName: string | null;
   }> {
-    const connection = await this.prisma.metaConnection.findUnique({
-      where: { workspaceId },
+    const connection = await this.prisma.metaConnection.findFirst({
+      where: { workspaceId, channel: 'facebook' },
       select: { pageId: true, pageName: true },
     });
 

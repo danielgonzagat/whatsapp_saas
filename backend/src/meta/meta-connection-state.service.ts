@@ -31,16 +31,14 @@ export interface MetaConnectionState {
 const EXPIRED = (expiresAt: Date | null | undefined): boolean =>
   Boolean(expiresAt && new Date(expiresAt).getTime() < Date.now());
 
-const ISO = (d: Date | null | undefined): string | null =>
-  d ? d.toISOString() : null;
+const ISO = (d: Date | null | undefined): string | null => (d ? d.toISOString() : null);
 
 @Injectable()
 export class MetaConnectionStateService {
-
   constructor(private readonly prisma: PrismaService) {}
 
   async forWorkspace(workspaceId: string): Promise<MetaConnectionState> {
-    const connection = await this.prisma.metaConnection.findUnique({
+    const connections = await this.prisma.metaConnection.findMany({
       where: { workspaceId },
       select: {
         channel: true,
@@ -53,7 +51,7 @@ export class MetaConnectionStateService {
       },
     });
 
-    if (!connection) {
+    if (connections.length === 0) {
       return {
         instagram: { connected: false, accountId: null, pageId: null, expiresAt: null },
         facebook: { connected: false, pageId: null, expiresAt: null },
@@ -63,32 +61,47 @@ export class MetaConnectionStateService {
       };
     }
 
-    const tokenValid = Boolean(connection.accessToken) && !EXPIRED(connection.tokenExpiresAt);
+    const anyTokenValid = connections.some(
+      (c) => Boolean(c.accessToken) && !EXPIRED(c.tokenExpiresAt),
+    );
 
-    const instagramConnected = tokenValid && Boolean(connection.instagramAccountId);
-    const facebookConnected = tokenValid && Boolean(connection.pageId);
-    const whatsappConnected = tokenValid && Boolean(connection.whatsappPhoneNumberId);
+    const instagramRow = connections.find(
+      (c) => c.channel === 'instagram' && Boolean(c.accessToken) && !EXPIRED(c.tokenExpiresAt),
+    );
+    const instagramConnected = Boolean(instagramRow?.instagramAccountId);
+
+    const facebookRow = connections.find(
+      (c) => c.channel === 'facebook' && Boolean(c.accessToken) && !EXPIRED(c.tokenExpiresAt),
+    );
+    const facebookConnected = Boolean(facebookRow?.pageId);
+
+    const whatsappRow = connections.find(
+      (c) => c.channel === 'whatsapp' && Boolean(c.accessToken) && !EXPIRED(c.tokenExpiresAt),
+    );
+    const whatsappConnected = Boolean(whatsappRow?.whatsappPhoneNumberId);
+
+    const primaryChannel = connections[0]?.channel || null;
 
     return {
       instagram: {
         connected: instagramConnected,
-        accountId: connection.instagramAccountId || null,
-        pageId: connection.pageId || null,
-        expiresAt: ISO(connection.tokenExpiresAt),
+        accountId: instagramRow?.instagramAccountId || null,
+        pageId: instagramRow?.pageId || null,
+        expiresAt: ISO(instagramRow?.tokenExpiresAt),
       },
       facebook: {
         connected: facebookConnected,
-        pageId: connection.pageId || null,
-        expiresAt: ISO(connection.tokenExpiresAt),
+        pageId: facebookRow?.pageId || null,
+        expiresAt: ISO(facebookRow?.tokenExpiresAt),
       },
       whatsapp: {
         connected: whatsappConnected,
-        phoneNumberId: connection.whatsappPhoneNumberId || null,
-        businessId: connection.whatsappBusinessId || null,
-        expiresAt: ISO(connection.tokenExpiresAt),
+        phoneNumberId: whatsappRow?.whatsappPhoneNumberId || null,
+        businessId: whatsappRow?.whatsappBusinessId || null,
+        expiresAt: ISO(whatsappRow?.tokenExpiresAt),
       },
-      metaConnected: tokenValid,
-      channel: connection.channel || null,
+      metaConnected: anyTokenValid,
+      channel: primaryChannel,
     };
   }
 }

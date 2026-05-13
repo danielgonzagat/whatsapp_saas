@@ -6,8 +6,9 @@ describe('MetaMarketingProvider', () => {
   let mockPrisma: {
     metaConnection: {
       upsert: jest.Mock;
-      findUnique: jest.Mock;
+      findFirst: jest.Mock;
       delete: jest.Mock;
+      update: jest.Mock;
     };
   };
   let mockMetaSdk: {
@@ -25,8 +26,9 @@ describe('MetaMarketingProvider', () => {
     mockPrisma = {
       metaConnection: {
         upsert: jest.fn().mockResolvedValue({}),
-        findUnique: jest.fn(),
+        findFirst: jest.fn(),
         delete: jest.fn().mockResolvedValue({}),
+        update: jest.fn().mockResolvedValue({}),
       },
     };
 
@@ -138,7 +140,7 @@ describe('MetaMarketingProvider', () => {
 
   describe('getStatus', () => {
     it('returns connected when MetaConnection status is connected', async () => {
-      mockPrisma.metaConnection.findUnique.mockResolvedValue({
+      mockPrisma.metaConnection.findFirst.mockResolvedValue({
         status: 'connected',
         adAccountId: 'act_123',
       });
@@ -151,7 +153,7 @@ describe('MetaMarketingProvider', () => {
     });
 
     it('returns disconnected when no MetaConnection', async () => {
-      mockPrisma.metaConnection.findUnique.mockResolvedValue(null);
+      mockPrisma.metaConnection.findFirst.mockResolvedValue(null);
 
       const result = await provider.getStatus('ws-none');
 
@@ -162,7 +164,7 @@ describe('MetaMarketingProvider', () => {
 
   describe('syncAccounts', () => {
     it('returns empty accounts when no connection', async () => {
-      mockPrisma.metaConnection.findUnique.mockResolvedValue(null);
+      mockPrisma.metaConnection.findFirst.mockResolvedValue(null);
 
       const result = await provider.syncAccounts('ws-none');
 
@@ -170,7 +172,7 @@ describe('MetaMarketingProvider', () => {
     });
 
     it('returns accounts from Meta API', async () => {
-      mockPrisma.metaConnection.findUnique.mockResolvedValue({
+      mockPrisma.metaConnection.findFirst.mockResolvedValue({
         accessToken: 'token-123',
         adAccountId: 'act_456',
       });
@@ -191,7 +193,7 @@ describe('MetaMarketingProvider', () => {
 
   describe('syncCampaigns', () => {
     it('returns empty campaigns when no connection', async () => {
-      mockPrisma.metaConnection.findUnique.mockResolvedValue(null);
+      mockPrisma.metaConnection.findFirst.mockResolvedValue(null);
 
       const result = await provider.syncCampaigns('ws-none');
 
@@ -199,7 +201,7 @@ describe('MetaMarketingProvider', () => {
     });
 
     it('returns campaigns with insights from Meta API', async () => {
-      mockPrisma.metaConnection.findUnique.mockResolvedValue({
+      mockPrisma.metaConnection.findFirst.mockResolvedValue({
         accessToken: 'token-123',
         adAccountId: 'act_456',
       });
@@ -231,7 +233,7 @@ describe('MetaMarketingProvider', () => {
 
   describe('syncInsights', () => {
     it('returns empty insights when no connection', async () => {
-      mockPrisma.metaConnection.findUnique.mockResolvedValue(null);
+      mockPrisma.metaConnection.findFirst.mockResolvedValue(null);
 
       const result = await provider.syncInsights('ws-none', new Date(), new Date());
 
@@ -241,7 +243,7 @@ describe('MetaMarketingProvider', () => {
 
   describe('disconnect', () => {
     it('removes MetaConnection and attempts Meta-side revocation', async () => {
-      mockPrisma.metaConnection.findUnique.mockResolvedValue({
+      mockPrisma.metaConnection.findFirst.mockResolvedValue({
         workspaceId: 'ws-1',
         accessToken: 'v1.encrypted-token',
       });
@@ -253,7 +255,7 @@ describe('MetaMarketingProvider', () => {
     });
 
     it('returns already_disconnected when no MetaConnection', async () => {
-      mockPrisma.metaConnection.findUnique.mockResolvedValue(null);
+      mockPrisma.metaConnection.findFirst.mockResolvedValue(null);
 
       const result = await provider.disconnect('ws-none');
 
